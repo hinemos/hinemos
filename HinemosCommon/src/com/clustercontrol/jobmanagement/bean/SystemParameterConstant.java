@@ -51,6 +51,20 @@ public class SystemParameterConstant {
 	public static final String TRIGGER_INFO = "TRIGGER_INFO";
 	/** ジョブ起動契機 */
 	public static final String TRIGGER_TYPE = "TRIGGER_TYPE";
+	/** 呼び出し元の終了値 */
+	public static final String END_NUM = "END_NUM";
+	/** ファイル名（ファイルチェックジョブ用） */
+	public static final String FFILENAME = "FFILENAME";
+	/** ディレクトリ（ファイルチェックジョブ用） */
+	public static final String FDIRECTORY = "FDIRECTORY";
+	/** ファイルチェックのチェック種別 */
+	public static final String FCHECKCOND = "FCHECKCOND";
+	/** 条件に一致したファイルのファイル更新日時 */
+	public static final String FTIMESTAMP = "FTIMESTAMP";
+	/** 条件に一致したファイルのファイルサイズ */
+	public static final String FILESIZE = "FILESIZE";
+	/** ファイルチェックが開始しているか */
+	public static final String FCISSTART = "FCISSTART";
 
 	//システム（ノード）
 	/** 全件取得 */
@@ -110,7 +124,18 @@ public class SystemParameterConstant {
 	public static final String CLOUD_RESOURCE_TYPE = "CLOUD_RESOURCE_TYPE";
 	public static final String CLOUD_RESOURCE_ID = "CLOUD_RESOURCE_ID";
 	public static final String CLOUD_RESOURCE_NAME = "CLOUD_RESOURCE_NAME";
-	public static final String CLOUD_LOCATION = "CLOUD_LOCATION"; public static final String DESCRIPTION = "DESCRIPTION";
+	public static final String CLOUD_LOCATION = "CLOUD_LOCATION"; 
+	public static final String CLOUD_LOG_PRIORITY = "CLOUD_LOG_PRIORITY"; 
+	public static final String DESCRIPTION = "DESCRIPTION";
+	public static final String RPA_LOG_DIRECTORY = "RPA_LOG_DIRECTORY";
+	public static final String RPA_MGMT_TOOL_TYPE = "RPA_MGMT_TOOL_TYPE";
+	public static final String RPA_RESOURCE_ID = "RPA_RESOURCE_ID";
+	public static final String RPA_USER = "RPA_USER";
+	public static final String RPA_EXEC_ENV_ID = "RPA_EXEC_ENV_ID";
+	public static final String RPA_TOOL_EXE_FILEPATH = "RPA_TOOL_EXE_FILEPATH";
+	public static final String RPA_TOOL_EXE_FILENAME = "RPA_TOOL_EXE_FILENAME";
+	public static final String RPA_TOOL_SCENARIO_FILEPATH = "RPA_TOOL_SCENARIO_FILEPATH";
+	public static final String RPA_TOOL_OPTIONS = "RPA_TOOL_OPTIONS";
 	public static final String AUTO_DEVICE_SEARCH = "AUTO_DEVICE_SEARCH";
 	public static final String PLATFORM_FAMILY = "PLATFORM_FAMILY";
 	public static final String SUB_PLATFORM_FAMILY = "SUB_PLATFORM_FAMILY";
@@ -160,7 +185,8 @@ public class SystemParameterConstant {
 		MONITOR_DETAIL_ID,
 		ORG_MESSAGE,
 		PLUGIN_ID,
-		PRIORITY
+		PRIORITY,
+		END_NUM
 	};
 
 	// ジョブパラメータ情報(通知情報)
@@ -242,6 +268,7 @@ public class SystemParameterConstant {
 		CLOUD_RESOURCE_ID,
 		CLOUD_RESOURCE_NAME,
 		CLOUD_LOCATION,
+		CLOUD_LOG_PRIORITY,
 		DESCRIPTION,
 		AUTO_DEVICE_SEARCH,
 		PLATFORM_FAMILY,
@@ -276,12 +303,25 @@ public class SystemParameterConstant {
 		NOTE
 	};
 
+	// ジョブパラメータ情報(ファイルチェックジョブ)
+	public static final String SYSTEM_ID_LIST_FILECHECK_JOB_PARAM[] = {
+		FFILENAME,
+		FDIRECTORY,
+		FCHECKCOND,
+		FTIMESTAMP,
+		FILESIZE,
+		FCISSTART
+	};
+
 	private static List<String> notifyParamIdList =
 			Collections.unmodifiableList(Arrays.asList(SystemParameterConstant.SYSTEM_ID_LIST_NOTIFY_PARAM));
 	
 	private static List<String> runJobParamIdList =
 			Collections.unmodifiableList(Arrays.asList(SystemParameterConstant.SYSTEM_ID_LIST_RUN_JOB_PARAM));
-	
+
+	private static List<String> filecheckJobParamIdList =
+			Collections.unmodifiableList(Arrays.asList(SystemParameterConstant.SYSTEM_ID_LIST_FILECHECK_JOB_PARAM));
+
 	/**
 	 * strが#[param]の形式であるかを判定する
 	 *
@@ -352,7 +392,24 @@ public class SystemParameterConstant {
 		}
 		return false;
 	}
-	
+
+	/**
+	 * 「:jobid」を除いた形でファイルチェックジョブのジョブ変数であるかを判定する
+	 * 
+	 * @param paramId
+	 * @return
+	 */
+	public static boolean isFilecheckJobParam(String paramId) {
+		if (!paramId.contains(KEY_SEPARATOR)) {
+			return false;
+		}
+		String prefix = paramId.substring(0, paramId.indexOf(KEY_SEPARATOR));
+		if (filecheckJobParamIdList.contains(prefix)) {
+			return true;
+		}
+		return false;
+	}
+
 	/**
 	 * strが#[param]の形式であるかを判定する
 	 *

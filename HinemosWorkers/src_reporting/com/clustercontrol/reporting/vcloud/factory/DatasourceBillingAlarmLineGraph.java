@@ -86,7 +86,7 @@ public class DatasourceBillingAlarmLineGraph extends DatasourceBase {
 	 * ver.4.1のレポーティングオプションと同様の動きをする
 	 */
 	private HashMap<String, Object> createDataSourceAuto(int num) throws ReportingPropertyNotFound {
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		// プロパティからグラフ生成にかかわる情報を取得
 		try {
 			m_log.info("start create csvfile. " + m_propertiesMap.get("template.name"+num));
@@ -110,7 +110,7 @@ public class DatasourceBillingAlarmLineGraph extends DatasourceBase {
 		}
 		// プロパティからマニュアル固有動作にかかわる情報を取得
 		m_monitorId = m_propertiesMap.get(MONITOR_ID_KEY_VALUE+"."+num);
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		try {
 			m_log.info("createDataSourceManual() : facility_id : " + m_facilityId + ", monitor_id : " + m_monitorId);
 			String csvFileName = getCsvFromDB(dayString, m_facilityId);
@@ -134,7 +134,7 @@ public class DatasourceBillingAlarmLineGraph extends DatasourceBase {
 	private String getCsvFromDB(String dayString, String facilityId) {
 		String[] columns = { "collectorid", "display_name", "date_time" ,"facilityid", "value"};
 		
-		String columnsStr = ReportUtil.joinStrings(columns, ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 
 		// プロパティからグラフ生成にかかわる情報を取得
 		int divider = Integer.parseInt(isDefine(m_propertiesMap.get(DIVIDER_KEY_VALUE+"."+m_num), "1"));
@@ -184,7 +184,7 @@ public class DatasourceBillingAlarmLineGraph extends DatasourceBase {
 					m_log.info("create csv file. " + csvFileName);
 					if (!resultList.isEmpty()) {
 						for (String[] results : resultList) {
-							bw.write(ReportUtil.joinStrings(results, ","));
+							bw.write(ReportUtil.joinStringsToCsv(results));
 							bw.newLine();
 						}
 					}
@@ -214,6 +214,13 @@ public class DatasourceBillingAlarmLineGraph extends DatasourceBase {
 	private List<String[]> getResultList(List<Integer> idList, String[] columns, int divider,
 			Map<Integer, CollectKeyInfo> itemDataMap) {
 		List<String[]> resultList = new ArrayList<String[]>();
+
+		// オーナーロールID取得
+		String ownerRoleId = null;
+		if (!"ADMINISTRATORS".equals(ReportUtil.getOwnerRoleId())) {
+			ownerRoleId = ReportUtil.getOwnerRoleId();
+		}
+
 		ReportingCollectControllerBean controller = new ReportingCollectControllerBean();
 		// サマリデータ、または収集データ(raw)のタイプでスイッチ
 		int summaryType = ReportUtil.getSummaryType(m_startDate.getTime(), m_endDate.getTime());
@@ -221,7 +228,7 @@ public class DatasourceBillingAlarmLineGraph extends DatasourceBase {
 		case SummaryTypeConstant.TYPE_AVG_HOUR:
 			List<SummaryHour> summaryHList = null;
 			try {
-				summaryHList = controller.getSummaryHourList(idList, m_startDate.getTime(), m_endDate.getTime());
+				summaryHList = controller.getSummaryHourList(idList, m_startDate.getTime(), m_endDate.getTime(), ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -251,7 +258,7 @@ public class DatasourceBillingAlarmLineGraph extends DatasourceBase {
 		case SummaryTypeConstant.TYPE_AVG_DAY:
 			List<SummaryDay> summaryDList = null;
 			try {
-				summaryDList = controller.getSummaryDayList(idList, m_startDate.getTime(), m_endDate.getTime());
+				summaryDList = controller.getSummaryDayList(idList, m_startDate.getTime(), m_endDate.getTime(), ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -281,7 +288,7 @@ public class DatasourceBillingAlarmLineGraph extends DatasourceBase {
 		case SummaryTypeConstant.TYPE_AVG_MONTH:
 			List<SummaryMonth> summaryMList = null;
 			try {
-				summaryMList = controller.getSummaryMonthList(idList, m_startDate.getTime(), m_endDate.getTime());
+				summaryMList = controller.getSummaryMonthList(idList, m_startDate.getTime(), m_endDate.getTime(), ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -311,7 +318,7 @@ public class DatasourceBillingAlarmLineGraph extends DatasourceBase {
 		default: // defaultはRAWとする
 			List<CollectData> summaryList = null;
 			try {
-				summaryList = controller.getCollectDataList(idList, m_startDate.getTime(), m_endDate.getTime());
+				summaryList = controller.getCollectDataList(idList, m_startDate.getTime(), m_endDate.getTime(), ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}

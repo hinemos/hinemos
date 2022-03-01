@@ -10,6 +10,8 @@ package com.clustercontrol.xcloud.model.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openapitools.client.model.NetworkInfoResponse;
+
 public class Network extends Resource implements INetwork {
 	protected String id = null;
 	protected String name = null;
@@ -34,17 +36,17 @@ public class Network extends Resource implements INetwork {
 	@Override
 	public ComputeResources getCloudCompute() {return (ComputeResources)getOwner();}
 
-	public static Network convert(com.clustercontrol.ws.xcloud.Network source) {
+	public static Network convert(NetworkInfoResponse source) {
 		Network network = new Network();
 		network.update(source);
 		return network;
 	}
 	
-	public boolean equalValues(com.clustercontrol.ws.xcloud.Network source) {
+	public boolean equalValues(NetworkInfoResponse source) {
 		return getId().equals(source.getId());
 	}
 
-	protected void update(com.clustercontrol.ws.xcloud.Network source) {
+	protected void update(NetworkInfoResponse source) {
 		setId(source.getId());
 		setName(source.getName());
 		setNetworkType(source.getResourceTypeAsPlatform());

@@ -16,7 +16,7 @@ import java.util.List;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 
 /**
  * ジョブツリー用コンポジットのツリービューア用のITreeContentProviderクラスです。
@@ -63,18 +63,18 @@ public class JobTreeContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public Object[] getChildren(Object parentElement) {
-		List<JobTreeItem> ret = null;
+		List<JobTreeItemWrapper> ret = null;
 		if(parentElement instanceof ArrayList<?>) {
 			ArrayList<?> list = (ArrayList<?>)parentElement;
-			ret = ((JobTreeItem)list.get(0)).getChildren();
-		} else if (parentElement instanceof JobTreeItem){
-			ret = ((JobTreeItem)parentElement).getChildren();
+			ret = ((JobTreeItemWrapper)list.get(0)).getChildren();
+		} else if (parentElement instanceof JobTreeItemWrapper){
+			ret = ((JobTreeItemWrapper)parentElement).getChildren();
 		} else {
 			throw new InternalError("ret is null.");
 		}
-		Collections.sort(ret, new Comparator<JobTreeItem>(){
+		Collections.sort(ret, new Comparator<JobTreeItemWrapper>(){
 			@Override
-			public int compare(JobTreeItem o1, JobTreeItem o2) {
+			public int compare(JobTreeItemWrapper o1, JobTreeItemWrapper o2) {
 				String s1 = o1.getData().getId();
 				String s2 = o2.getData().getId();
 				return s1.compareTo(s2);
@@ -93,7 +93,7 @@ public class JobTreeContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public Object getParent(Object element) {
-		return ((JobTreeItem) element).getParent();
+		return ((JobTreeItemWrapper) element).getParent();
 	}
 
 	/**
@@ -106,7 +106,7 @@ public class JobTreeContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public boolean hasChildren(Object element) {
-		return ((JobTreeItem) element).getChildren().size() > 0;
+		return ((JobTreeItemWrapper) element).getChildren().size() > 0;
 	}
 
 }

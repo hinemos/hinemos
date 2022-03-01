@@ -30,7 +30,6 @@ import com.clustercontrol.notify.model.NotifyStatusInfo;
 import com.clustercontrol.notify.monitor.model.StatusInfoEntity;
 import com.clustercontrol.notify.monitor.model.StatusInfoEntityPK;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.util.MessageConstant;
 
 /**
  * ステータス情報を更新するクラス<BR>
@@ -285,13 +284,5 @@ public class OutputStatus implements DependDbNotifier {
 		}
 		
 		return true;
-	}
-
-	/**
-	 * 通知失敗時の内部エラー通知を定義します
-	 */
-	@Override
-	public void internalErrorNotify(int priority, String notifyId, MessageConstant msgCode, String detailMsg) {
-		// 何もしない
 	}
 }

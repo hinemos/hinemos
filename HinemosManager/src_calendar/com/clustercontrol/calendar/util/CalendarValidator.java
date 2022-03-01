@@ -25,12 +25,14 @@ import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.hub.model.TransferInfo;
 import com.clustercontrol.jobmanagement.bean.JobKickConstant;
 import com.clustercontrol.jobmanagement.model.JobKickEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.model.NotifyInfo;
+import com.clustercontrol.reporting.model.ReportingInfoEntity;
 import com.clustercontrol.repository.model.NodeConfigSettingInfo;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
@@ -381,6 +383,30 @@ public class CalendarValidator {
 					if(nodeConfigSettingInfo.getCalendarId() != null){
 						String[] args = {nodeConfigSettingInfo.getSettingId(), calendarId};
 						throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_NODECONFIG_REFERENCE.getMessage(args));
+					}
+				}
+			}
+			//レポーティング設定
+			List<ReportingInfoEntity> reportingList =
+					com.clustercontrol.reporting.util.QueryUtil.getReportingInfoFindByCalendarId_NONE(calendarId);
+			if (reportingList != null) {
+				for(ReportingInfoEntity reportingInfo : reportingList){
+					m_log.debug("valideDeleteCalendar() target ReportingInfoEntity " + reportingInfo.getReportScheduleId() + ", calendarId = " + calendarId);
+					if(reportingInfo.getCalendarId() != null){
+						String[] args = {reportingInfo.getReportScheduleId(),calendarId};
+						throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_REPORTING_SCHEDULE_REFERENCE.getMessage(args));
+					}
+				}
+			}
+			//収集蓄積転送設定
+			List<TransferInfo> transferInfoList =
+					com.clustercontrol.hub.util.QueryUtil.getTransferInfoFindByCalendarId_NONE(calendarId);
+			if (transferInfoList != null) {
+				for(TransferInfo transferInfo : transferInfoList){
+					m_log.debug("valideDeleteCalendar() target TransferInfo " + transferInfo.getTransferId() + ", calendarId = " + calendarId);
+					if(transferInfo.getCalendarId() != null){
+						String[] args = {transferInfo.getTransferId(),calendarId};
+						throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_HUB_TRANSFER_REFERENCE.getMessage(args));
 					}
 				}
 			}

@@ -21,6 +21,9 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.PageResponse;
+import org.openapitools.client.model.PatternResponse;
+import org.openapitools.client.model.VarBindPatternResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.monitor.run.viewer.TableItemTableViewer;
@@ -163,6 +166,16 @@ public class TableItemListComposite<T> extends Composite {
 	public void update() {
 		// データ取得
 		Object[] list = m_define.getTableItemInfoManager().get();
+		for (int i = 0; i < list.length; i++) {
+			Object obj = list[i];
+			if (obj instanceof VarBindPatternResponse) {
+				((VarBindPatternResponse)obj).setOrderNo(i);
+			} else if (obj instanceof PageResponse) {
+				((PageResponse)obj).setPageOrderNo(i);
+			} else if (obj instanceof PatternResponse) {
+				((PatternResponse)obj).setPatternOrderNo(i);
+			}
+		}
 
 		// テーブル更新
 		this.m_tableViewer.setInput(list);

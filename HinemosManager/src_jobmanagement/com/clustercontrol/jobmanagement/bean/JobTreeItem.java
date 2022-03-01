@@ -25,16 +25,16 @@ public class JobTreeItem implements Serializable {
 	private static final long serialVersionUID = -5749478055659165471L;
 
 	/** ジョブ情報 */
-	private JobInfo m_data;
+	private JobInfo data;
 
 	/** ジョブ詳細 */
-	private JobDetailInfo m_detail;
+	private JobDetailInfo detail;
 
 	/** 子のジョブツリーアイテムのリスト */
-	private ArrayList<JobTreeItem> m_children = new ArrayList<JobTreeItem>();
+	private ArrayList<JobTreeItem> children = new ArrayList<JobTreeItem>();
 
 	/** 親のジョブツリーアイテム */
-	private JobTreeItem m_parent;
+	private JobTreeItem parent;
 
 	/** パスセパレータ */
 	private static final String SEPARATOR = ">";
@@ -71,7 +71,7 @@ public class JobTreeItem implements Serializable {
 			parent.addChildren(this);
 		}
 
-		this.m_children = new ArrayList<JobTreeItem>();
+		this.children = new ArrayList<JobTreeItem>();
 	}
 
 	/**
@@ -79,7 +79,7 @@ public class JobTreeItem implements Serializable {
 	 * @param parent 親のジョブツリーアイテム
 	 */
 	public void setParent(JobTreeItem parent) {
-		this.m_parent = parent;
+		this.parent = parent;
 	}
 
 	/**
@@ -87,7 +87,7 @@ public class JobTreeItem implements Serializable {
 	 * @return 親のジョブツリーアイテム
 	 */
 	public JobTreeItem getParent() {
-		return m_parent;
+		return parent;
 	}
 
 	/**
@@ -96,7 +96,7 @@ public class JobTreeItem implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobInfo
 	 */
 	public void setData(JobInfo data) {
-		this.m_data = data;
+		this.data = data;
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class JobTreeItem implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobInfo
 	 */
 	public JobInfo getData() {
-		return m_data;
+		return data;
 	}
 
 
@@ -115,7 +115,7 @@ public class JobTreeItem implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobInfo
 	 */
 	public void setDetail(JobDetailInfo detail) {
-		this.m_detail = detail;
+		this.detail = detail;
 	}
 
 	/**
@@ -124,7 +124,7 @@ public class JobTreeItem implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobInfo
 	 */
 	public JobDetailInfo getDetail() {
-		return m_detail;
+		return detail;
 	}
 
 
@@ -134,7 +134,7 @@ public class JobTreeItem implements Serializable {
 	 * @param child 子のジョブツリーアイテム
 	 */
 	public void addChildren(JobTreeItem child) {
-		m_children.add(child);
+		children.add(child);
 		child.setParent(this);
 	}
 
@@ -143,9 +143,9 @@ public class JobTreeItem implements Serializable {
 	 * @param child 子のジョブツリーアイテム
 	 */
 	public void removeChildren(JobTreeItem child) {
-		for (int i = 0; i < m_children.size(); i++) {
-			if (child.equals(m_children.get(i))) {
-				m_children.remove(i);
+		for (int i = 0; i < children.size(); i++) {
+			if (child.equals(children.get(i))) {
+				children.remove(i);
 				break;
 			}
 		}
@@ -156,7 +156,7 @@ public class JobTreeItem implements Serializable {
 	 * @return 子のジョブツリーアイテムの数
 	 */
 	public int size() {
-		return m_children.size();
+		return children.size();
 	}
 
 	/**
@@ -165,15 +165,15 @@ public class JobTreeItem implements Serializable {
 	 * @return 子のジョブツリーアイテム
 	 */
 	public JobTreeItem getChildren(int index) {
-		return m_children.get(index);
+		return this.children.get(index);
 	}
 
 	public void setChildren(ArrayList<JobTreeItem> children) {
-		m_children = children;
+		this.children = children;
 	}
 
 	public ArrayList<JobTreeItem> getChildren() {
-		return m_children;
+		return this.children;
 	}
 
 	/**
@@ -181,7 +181,7 @@ public class JobTreeItem implements Serializable {
 	 * @return 子のジョブツリーアイテムの配列
 	 */
 	public JobTreeItem[] getChildrenArray() {
-		return m_children.toArray(new JobTreeItem[m_children.size()]);
+		return children.toArray(new JobTreeItem[children.size()]);
 	}
 
 	/**

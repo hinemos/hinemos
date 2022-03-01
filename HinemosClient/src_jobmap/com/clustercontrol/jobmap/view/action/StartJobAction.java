@@ -19,21 +19,25 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.JobOperationPropResponse;
+import org.openapitools.client.model.JobOperationPropResponse.AvailableOperationListEnum;
 
+import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyConstant;
 import com.clustercontrol.bean.PropertyDefineConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.OperationMessage;
 import com.clustercontrol.jobmanagement.action.OperationJob;
 import com.clustercontrol.jobmanagement.bean.JobOperationConstant;
 import com.clustercontrol.jobmanagement.dialog.JobOperationDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.preference.JobManagementPreferencePage;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmap.composite.JobMapComposite;
 import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.view.JobMapHistoryView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
 
 /**
  * ジョブ[履歴]・ジョブ[ジョブ詳細]・ジョブ[ノード詳細]ビューの「開始」のクライアント側アクションクラス<BR>
@@ -52,6 +56,7 @@ public class StartJobAction extends BaseAction {
 		String sessionId = null;
 		String jobunitId = null;
 		String jobId = null;
+		String jobName = null;
 		String facilityId = null;
 		String managerName = null;
 		
@@ -71,6 +76,8 @@ public class StartJobAction extends BaseAction {
 			jobunitId = jobFigure.getJobTreeItem().getData().getJobunitId();
 			//ジョブID取得
 			jobId = jobFigure.getJobTreeItem().getData().getId();
+			//ジョブ名取得
+			jobName = jobFigure.getJobTreeItem().getData().getName();
 
 			managerName = composite.getManagerName();
 		}
@@ -84,13 +91,27 @@ public class StartJobAction extends BaseAction {
 					.getWorkbench().getActiveWorkbenchWindow().getShell());
 
 			//プロパティ設定
-			dialog.setProperty(getStartProperty(managerName, 
-					sessionId, jobunitId, jobId, facilityId));
+			dialog.setProperty(getStartProperty(managerName, sessionId, jobunitId, jobId, jobName, facilityId));
 			dialog.setTitleText(Messages.getString("job") + "["
 					+ Messages.getString("start") + "]");
 
 			//ダイアログ表示
 			if (dialog.open() == IDialogConstants.OK_ID) {
+				// 確認ダイアログを表示するかどうかのフラグをPreferenceから取得
+				if (ClusterControlPlugin.getDefault().getPreferenceStore().getBoolean(JobManagementPreferencePage.P_HISTORY_CONFIRM_DIALOG_FLG)) {
+					StringBuffer jobListMessage = new StringBuffer(); 
+					jobListMessage.append(Messages.getString("dialog.job.start.confirm")); 
+					jobListMessage.append("\n");
+					Object[] args1 = { managerName, jobName, jobId, jobunitId, sessionId };
+					jobListMessage.append(Messages.getString(Messages.getString("dialog.job.confirm.name"), args1));
+					if(!MessageDialog.openConfirm(
+						null,
+						Messages.getString("confirmed"),
+						jobListMessage.toString())) {
+						// OKが押されない場合は処理しない
+						return null;
+					}
+				}
 				//ジョブ開始
 				OperationJob operation = new OperationJob();
 				operation.operationJob(managerName, dialog.getProperty());
@@ -111,7 +132,7 @@ public class StartJobAction extends BaseAction {
 	 * @return ジョブ開始操作用プロパティ
 	 * 
 	 */
-	private Property getStartProperty(String managerName, String sessionId, String jobunitId, String jobId, String facilityId) {
+	private Property getStartProperty(String managerName, String sessionId, String jobunitId, String jobId, String jobName, String facilityId) {
 		Locale locale = Locale.getDefault();
 		//セッションID
 		Property session =
@@ -122,6 +143,9 @@ public class StartJobAction extends BaseAction {
 		//ジョブID
 		Property job =
 			new Property(JobOperationConstant.JOB, Messages.getString("job.id", locale), PropertyDefineConstant.EDITOR_TEXT);
+		//ジョブ名
+		Property name =
+			new Property(JobOperationConstant.JOB_NAME, Messages.getString("job.name", locale), PropertyDefineConstant.EDITOR_TEXT);
 		//ファシリティID
 		Property facility =
 			new Property(JobOperationConstant.FACILITY, Messages.getString("facility.id", locale), PropertyDefineConstant.EDITOR_TEXT);
@@ -129,10 +153,18 @@ public class StartJobAction extends BaseAction {
 		Property control =
 			new Property(JobOperationConstant.CONTROL, Messages.getString("control", locale), PropertyDefineConstant.EDITOR_SELECT);
 
-		List<Integer> values = null;
+		JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+		List<AvailableOperationListEnum> values = null;
+		JobOperationPropResponse response = null;
 		try {
-			values = JobEndpointWrapper.getWrapper(managerName).getAvailableStartOperation(sessionId, jobunitId, jobId, facilityId);
-		} catch (InvalidRole_Exception e) {
+			if(facilityId == null){
+				response = wrapper.getAvailableStartOperationSessionJob(sessionId, jobunitId, jobId);
+				values = response.getAvailableOperationList();
+			} else {
+				response = wrapper.getAvailableStartOperationSessionNode(sessionId, jobunitId, jobId, facilityId);
+				values = response.getAvailableOperationList();
+			}
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"), Messages.getString("message.accesscontrol.16"));
 			return null;
 		} catch (Exception e) {
@@ -146,8 +178,8 @@ public class StartJobAction extends BaseAction {
 
 		// 値をtypeからStringに変換
 		List<String> valuesStr = new ArrayList<String>();
-		for (Integer controlType : values) {
-			valuesStr.add(OperationMessage.typeToString(controlType));
+		for (AvailableOperationListEnum controlType : values) {
+			valuesStr.add(OperationMessage.enumToString(controlType));
 		}
 		
 		//値を初期化
@@ -165,6 +197,7 @@ public class StartJobAction extends BaseAction {
 		session.setValue(sessionId);
 		jobUnit.setValue(jobunitId);
 		job.setValue(jobId);
+		name.setValue(jobName);
 		if(facilityId != null && facilityId.length() > 0){
 			facility.setValue(facilityId);
 		}
@@ -176,6 +209,7 @@ public class StartJobAction extends BaseAction {
 		session.setModify(PropertyConstant.MODIFY_NG);
 		jobUnit.setModify(PropertyConstant.MODIFY_NG);
 		job.setModify(PropertyConstant.MODIFY_NG);
+		name.setModify(PropertyConstant.MODIFY_NG);
 		facility.setModify(PropertyConstant.MODIFY_NG);
 		control.setModify(PropertyConstant.MODIFY_OK);
 
@@ -186,6 +220,7 @@ public class StartJobAction extends BaseAction {
 		property.addChildren(session);
 		property.addChildren(jobUnit);
 		property.addChildren(job);
+		property.addChildren(name);
 		if(facilityId != null && facilityId.length() > 0){
 			property.addChildren(facility);
 		}

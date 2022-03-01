@@ -10,19 +10,18 @@ package com.clustercontrol.accesscontrol.util;
 
 import java.util.Date;
 
-import javax.xml.ws.WebServiceException;
-
-import com.sun.xml.internal.ws.client.ClientTransportException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.SingletonUtil;
+import org.openapitools.client.model.ConnectCheckResponse;
 
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.EndpointUnit;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
+import com.clustercontrol.rest.ApiException;
 import com.clustercontrol.util.FacilityTreeCache;
-import com.clustercontrol.util.LoginManager;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.RestConnectUnit;
+import com.clustercontrol.util.RestLoginManager;
 
 /**
  * Client Session<BR>
@@ -35,6 +34,7 @@ public class ClientSession {
 
 	/** ファシリティID更新用タイマー * */
 	private SessionTimer m_timer = null;
+	private int interval = 0;
 
 	/** Whether error dialog is available or not */
 	private boolean dialogFlag = true;
@@ -66,6 +66,7 @@ public class ClientSession {
 
 			clientSession.m_timer = new SessionTimer();
 			clientSession.m_timer.start( interval );
+			clientSession.interval=interval;
 		}
 	}
 
@@ -105,24 +106,31 @@ public class ClientSession {
 
 		// ログインチェック
 		try {
-			if( !LoginManager.isLogin() ){
-				m_log.trace("ClientSession.doCheck() Not logged in yet. Skip.");
+			if( !RestLoginManager.isLogin() ){
+				m_log.debug("ClientSession.doCheck() Not logged in yet. Skip.");
 				return;
 			}
-	
-			// リポジトリの最新更新時間を取得
-			for( EndpointUnit endpointUnit : EndpointManager.getAllManagerList() ){
-				String managerName = endpointUnit.getManagerName();
-				m_log.trace("ClientSession.doCheck() Get last updated time from Manager " + managerName);
+			for( RestConnectUnit connectUnit : RestConnectManager.getAllManagerList() ){
+				String managerName = connectUnit.getManagerName();
+				m_log.debug("ClientSession.doCheck() Get last updated time from Manager " + managerName);
 				Date lastUpdateManager = null;
-				if (endpointUnit.isActive()) {
+				if (connectUnit.isActive()) {
 					try{
-						RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-						lastUpdateManager = new Date(wrapper.getLastUpdate());
-						m_log.trace("ClientSession.doCheck() lastUpdate(Manager) = " + lastUpdateManager);
+						
+						//connectCheckで接続チェック
+						AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
+						ConnectCheckResponse ret =wrapper.connectCheck();
+						m_log.debug("ClientSession.doCheck() connectCheck = " + ret);
+
+						//必要ならアクセストークンを更新
+						ClientSession clientSession = getInstance();
+						connectUnit.updateTokenIfNeeded(clientSession.interval);
+
+						lastUpdateManager = new Date(RepositoryRestClientWrapper.getWrapper(managerName).getLastUpdate());
+
 					}catch (Exception e){
 						// マネージャ停止時はスタックとレースを出さない。
-						if(e instanceof ClientTransportException || e instanceof WebServiceException){
+						if(e instanceof RestConnectFailed  || e instanceof ApiException){
 							m_log.warn("ClientSession.doCheck() Manager is dead ! , " +
 									e.getClass().getName() + ", "+ e.getMessage());
 						} else {
@@ -131,23 +139,24 @@ public class ClientSession {
 									e.getClass().getName() + ", "+ e.getMessage(), e);
 						}
 						// ダイアログを表示する
-						LoginManager.forceLogout(managerName);
+						RestLoginManager.forceLogout(managerName);
 					}
 				}
-	
+
 				Date lastUpdateClient = FacilityTreeCache.getCacheDate(managerName);
-				
-				// リポジトリの最新更新時刻が異なる場合にキャッシュ更新
-				if (lastUpdateManager == lastUpdateClient)
+				if (lastUpdateManager != null && lastUpdateManager == lastUpdateClient) {
+					//リポジトリの最新更新時刻が変化なしなら、次のマネージャの処理へ
 					continue;
-				
+				}
+
+				//リポジトリの最新更新時刻でキャッシュ更新
 				boolean update = false;
 				if (lastUpdateClient == null) {
 					update = true;
 				} else {
 					update = !lastUpdateClient.equals(lastUpdateManager);
 				}
-				
+
 				if (update) {
 					m_log.debug("ClientSession.doCheck() lastUpdate(Manager)=" + lastUpdateManager +
 							", lastUpdate(Client)=" + lastUpdateClient +

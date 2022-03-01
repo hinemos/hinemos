@@ -9,24 +9,27 @@
 package com.clustercontrol.analytics.util;
 
 import java.util.Arrays;
+
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.swt.widgets.Combo;
+import org.openapitools.client.model.MonitorInfoResponseP1;
 
+import org.openapitools.client.model.CollectKeyInfoResponseP1;
+import org.openapitools.client.model.CollectKeyMapForAnalyticsResponse;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.collect.util.CollectEndpointWrapper;
+
+import com.clustercontrol.collect.util.CollectRestClientWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.monitor.run.bean.MonitorTypeMessage;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.collect.CollectKeyInfo;
-import com.clustercontrol.ws.collect.HashMapInfo;
-import com.clustercontrol.ws.collect.HinemosUnknown_Exception;
-import com.clustercontrol.ws.collect.InvalidUserPass_Exception;
-import com.clustercontrol.ws.collect.HashMapInfo.Map9;
-import com.clustercontrol.ws.collect.HashMapInfo.Map9.Entry;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * サイレント障害系監視のユーティリティクラス
@@ -45,7 +48,7 @@ public class AnalyticsUtil {
 	 * @param isNode true:ノードのみ、false：ノード・スコープ
 	 */
 	public static void setComboItemNameForNumeric(
-			Combo combo, Map<String, CollectKeyInfo> map, 
+			Combo combo, Map<String, CollectKeyInfoResponseP1> map, 
 			String facilityId, String managerName, String ownerRoleId) {
 		combo.removeAll();
 		map.clear();
@@ -53,14 +56,16 @@ public class AnalyticsUtil {
 			return;
 		}
 		try {
-			CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
-			HashMapInfo hashMapInfo = wrapper.getCollectKeyMapForAnalytics(
-					facilityId, ownerRoleId);
-			Map9 map9 = hashMapInfo.getMap9();
-			if (map9 == null) {
+			CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
+			CollectKeyMapForAnalyticsResponse res = wrapper.getCollectKeyMapForAnalytics(facilityId, ownerRoleId);
+			Map<String, CollectKeyInfoResponseP1> resMap =  null;
+			resMap = res.getCollectKeyMapForAnalytics();
+			
+			if (resMap == null) {
 				return;
 			}
-			for (Entry entry : map9.getEntry()) {
+
+			for (Entry<String, CollectKeyInfoResponseP1> entry : resMap.entrySet()) {
 				String key = HinemosMessage.replace(entry.getKey());
 				map.put(key, entry.getValue());
 				combo.add(key);
@@ -69,9 +74,9 @@ public class AnalyticsUtil {
 			String[] items = combo.getItems();
 			Arrays.sort(items);
 			combo.setItems(items);
-		} catch (HinemosUnknown_Exception 
-				| com.clustercontrol.ws.collect.InvalidRole_Exception
-				| InvalidUserPass_Exception e) {
+		} catch (RuntimeException e) {
+			// findbugs対応 RuntimeExceptionのcatchを明示化
+		} catch (Exception e) {
 			// 何もしない
 		}
 	}
@@ -86,25 +91,28 @@ public class AnalyticsUtil {
 	 * @param ownerRoleId オーナーロールID
 	 */
 	public static void setComboItemNameForString(
-			Combo combo, Map<String, MonitorInfo> map, String facilityId, String managerName, String ownerRoleId) {
+			Combo combo, Map<String, MonitorInfoResponseP1> map, String facilityId, String managerName, String ownerRoleId) {
 		combo.removeAll();
 		if (facilityId == null || facilityId.isEmpty()) {
 			return;
 		}
 		try {
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			List<MonitorInfo> list = wrapper.getStringMonitoInfoListForAnalytics(facilityId, ownerRoleId);
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
+			List<MonitorInfoResponseP1> list = wrapper.getStringMonitoInfoList(facilityId, ownerRoleId);
 			if (list == null) {
 				return;
 			}
-			for (MonitorInfo monitorInfo : list) {
+			for (MonitorInfoResponseP1 monitorInfo : list) {
+				// FIXME v.7.0不具合#5761
+				// 上記対応のため、あえてクラウドログ監視は監視対象外としている
+				if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CLOUD_LOG)) {
+					continue;
+				}
 				String label = AnalyticsUtil.getMonitorIdLabel(monitorInfo);
 				map.put(label, monitorInfo);
 				combo.add(label);
 			}
-		} catch (com.clustercontrol.ws.monitor.HinemosUnknown_Exception
-				| com.clustercontrol.ws.monitor.InvalidRole_Exception
-				| com.clustercontrol.ws.monitor.InvalidUserPass_Exception e) {
+		} catch (RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown e) {
 			// 何もしない
 		}
 	}
@@ -118,7 +126,7 @@ public class AnalyticsUtil {
 	 * @param itemName　ItemName
 	 * @return　収集値表示名
 	 */
-	public static String getComboItemNameForNumeric(Map<String, CollectKeyInfo> map, 
+	public static String getComboItemNameForNumeric(Map<String, CollectKeyInfoResponseP1> map, 
 			String monitorId, String displayName, String itemName) {
 		String rtn = "";
 		if (map == null 
@@ -127,7 +135,7 @@ public class AnalyticsUtil {
 				|| itemName == null || itemName.isEmpty()) {
 			return rtn;
 		}
-		for (Map.Entry<String, CollectKeyInfo> entry : map.entrySet()) {
+		for (Map.Entry<String, CollectKeyInfoResponseP1> entry : map.entrySet()) {
 			if (entry.getValue().getMonitorId().equals(monitorId)
 					&& entry.getValue().getDisplayName().equals(displayName)
 					&& entry.getValue().getItemName().equals(itemName)) {
@@ -145,14 +153,14 @@ public class AnalyticsUtil {
 	 * @param monitorId ファシリティID
 	 * @return　収集値表示名
 	 */
-	public static String getComboItemNameForString(Map<String, MonitorInfo> map, 
+	public static String getComboItemNameForString(Map<String, MonitorInfoResponseP1> map, 
 			String monitorId) {
 		String rtn = "";
 		if (map == null 
 				|| monitorId == null || monitorId.isEmpty()) {
 			return rtn;
 		}
-		for (Map.Entry<String, MonitorInfo> entry : map.entrySet()) {
+		for (Map.Entry<String, MonitorInfoResponseP1> entry : map.entrySet()) {
 			if (entry.getValue().getMonitorId().equals(monitorId)) {
 				rtn = entry.getKey();
 				break;
@@ -167,7 +175,7 @@ public class AnalyticsUtil {
 	 * @param monitorInfo 監視情報
 	 * @return 監視設定文字列
 	 */
-	public static String getMonitorIdLabel(MonitorInfo monitorInfo) {
+	public static String getMonitorIdLabel(MonitorInfoResponseP1 monitorInfo) {
 		String pluginName = "";
 		if (monitorInfo == null || monitorInfo.getMonitorTypeId() == null) {
 			pluginName = "";
@@ -210,6 +218,8 @@ public class AnalyticsUtil {
 		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
 				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)) {
 			pluginName = Messages.getString("customtrap.monitor");
+		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CLOUD_LOG)) {
+			pluginName = Messages.getString("cloudlog.monitor");
 		} else {
 			pluginName = monitorInfo.getMonitorTypeId();
 		}
@@ -217,6 +227,6 @@ public class AnalyticsUtil {
 		return String.format("%s (%s[%s])", 
 				monitorInfo.getMonitorId(),
 				pluginName, 
-				MonitorTypeMessage.typeToString(monitorInfo.getMonitorType()));
+				MonitorTypeMessage.codeToString(monitorInfo.getMonitorType().toString()));
 	}
 }

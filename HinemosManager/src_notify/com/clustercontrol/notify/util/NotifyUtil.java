@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,8 +38,10 @@ import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.EventNotifyInfo;
+import com.clustercontrol.notify.bean.NotifyJobType;
 import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
+import com.clustercontrol.notify.model.NotifyCloudInfo;
 import com.clustercontrol.notify.model.NotifyCommandInfo;
 import com.clustercontrol.notify.model.NotifyEventInfo;
 import com.clustercontrol.notify.model.NotifyInfo;
@@ -47,6 +50,8 @@ import com.clustercontrol.notify.model.NotifyInfraInfo;
 import com.clustercontrol.notify.model.NotifyJobInfo;
 import com.clustercontrol.notify.model.NotifyLogEscalateInfo;
 import com.clustercontrol.notify.model.NotifyMailInfo;
+import com.clustercontrol.notify.model.NotifyMessageInfo;
+import com.clustercontrol.notify.model.NotifyRestInfo;
 import com.clustercontrol.notify.model.NotifyStatusInfo;
 import com.clustercontrol.notify.monitor.util.OwnerDispatcher;
 import com.clustercontrol.repository.model.FacilityInfo;
@@ -56,9 +61,16 @@ import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.FacilityUtil;
 import com.clustercontrol.repository.util.RepositoryUtil;
+import com.clustercontrol.rest.endpoint.notify.dto.CloudNotifyLinkInfoKeyValueObjectRequest;
+import com.clustercontrol.rest.endpoint.notify.dto.CloudNotifyLinkInfoKeyValueObjectResponse;
+import com.clustercontrol.rpa.scenario.model.RpaScenarioOperationResultCreateSetting;
+import com.clustercontrol.sdml.model.SdmlControlSettingInfo;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * 通知に関するUtilityクラス<br/>
@@ -98,9 +110,12 @@ public class NotifyUtil {
 	private static final String _KEY_JOB_APPROVAL_TEXT = "JOB_APPROVAL_TEXT";
 	private static final String _KEY_JOB_APPROVAL_MAIL = "JOB_APPROVAL_MAIL";
 
+	private static final String _KEY_NOTIFY_UUID = "NOTIFY_UUID";
+
 	/** 通知キー */
 	private static final String _KEY_NOTIFY_ID = "NOTIFY_ID";
 	private static final String _KEY_NOTIFY_DESCRIPTION = "NOTIFY_DESCRIPTION";
+
 	
 	private static final String NOTIFY_LOCALE_KEY = "notify.locale";
 
@@ -234,6 +249,7 @@ public class NotifyUtil {
 				param.put(_KEY_JOB_APPROVAL_MAIL, HinemosMessage.replace(outputInfo.getJobApprovalMail()));
 				log.info("_KEY_JOB_APPROVAL_MAIL" + outputInfo.getJobApprovalMail());
 			}
+			param.put(_KEY_NOTIFY_UUID, outputInfo.getNotifyUUID());
 		}
 
 		if (notifyInfo != null) {
@@ -268,7 +284,7 @@ public class NotifyUtil {
 		entity.setUnknownEffectiveUser(command.getUnknownEffectiveUser());
 
 		entity.setTimeout(command.getTimeout());
-		entity.setSetEnvironment(command.getSetEnvironment());
+		entity.setCommandSettingType(command.getCommandSettingType());
 	}
 
 	public static void copyProperties(NotifyEventInfo event,
@@ -285,28 +301,58 @@ public class NotifyUtil {
 
 	public static void copyProperties(NotifyJobInfo job,
 			NotifyJobInfo entity) {
+		entity.setNotifyJobType(job.getNotifyJobType());
 		entity.setInfoValidFlg(job.getInfoValidFlg());
 		entity.setWarnValidFlg(job.getWarnValidFlg());
 		entity.setCriticalValidFlg(job.getCriticalValidFlg());
 		entity.setUnknownValidFlg(job.getUnknownValidFlg());
 
-		entity.setInfoJobunitId(job.getInfoJobunitId());
-		entity.setWarnJobunitId(job.getWarnJobunitId());
-		entity.setCriticalJobunitId(job.getCriticalJobunitId());
-		entity.setUnknownJobunitId(job.getUnknownJobunitId());
+		if (job.getNotifyJobType() == NotifyJobType.TYPE_DIRECT) {
+			entity.setInfoJobunitId(job.getInfoJobunitId());
+			entity.setWarnJobunitId(job.getWarnJobunitId());
+			entity.setCriticalJobunitId(job.getCriticalJobunitId());
+			entity.setUnknownJobunitId(job.getUnknownJobunitId());
+	
+			entity.setInfoJobId(job.getInfoJobId());
+			entity.setWarnJobId(job.getWarnJobId());
+			entity.setCriticalJobId(job.getCriticalJobId());
+			entity.setUnknownJobId(job.getUnknownJobId());
+	
+			entity.setInfoJobFailurePriority(job.getInfoJobFailurePriority());
+			entity.setWarnJobFailurePriority(job.getWarnJobFailurePriority());
+			entity.setCriticalJobFailurePriority(job.getCriticalJobFailurePriority());
+			entity.setUnknownJobFailurePriority(job.getUnknownJobFailurePriority());
+	
+			entity.setJobExecFacilityFlg(job.getJobExecFacilityFlg());
+			entity.setJobExecFacility(job.getJobExecFacility());
 
-		entity.setInfoJobId(job.getInfoJobId());
-		entity.setWarnJobId(job.getWarnJobId());
-		entity.setCriticalJobId(job.getCriticalJobId());
-		entity.setUnknownJobId(job.getUnknownJobId());
+			entity.setRetryFlg(null);
+			entity.setRetryCount(null);
+			entity.setSuccessInternalFlg(null);
+			entity.setFailureInternalFlg(null);
+			entity.setJoblinkSendSettingId(null);
 
-		entity.setInfoJobFailurePriority(job.getInfoJobFailurePriority());
-		entity.setWarnJobFailurePriority(job.getWarnJobFailurePriority());
-		entity.setCriticalJobFailurePriority(job.getCriticalJobFailurePriority());
-		entity.setUnknownJobFailurePriority(job.getUnknownJobFailurePriority());
-
-		entity.setJobExecFacilityFlg(job.getJobExecFacilityFlg());
-		entity.setJobExecFacility(job.getJobExecFacility());
+		} else if (job.getNotifyJobType() == NotifyJobType.TYPE_JOB_LINK_SEND) {
+			entity.setRetryFlg(job.getRetryFlg());
+			entity.setRetryCount(job.getRetryCount());
+			entity.setSuccessInternalFlg(job.getSuccessInternalFlg());
+			entity.setFailureInternalFlg(job.getFailureInternalFlg());
+			entity.setJoblinkSendSettingId(job.getJoblinkSendSettingId());
+			entity.setInfoJobunitId(null);
+			entity.setWarnJobunitId(null);
+			entity.setCriticalJobunitId(null);
+			entity.setUnknownJobunitId(null);
+			entity.setInfoJobId(null);
+			entity.setWarnJobId(null);
+			entity.setCriticalJobId(null);
+			entity.setUnknownJobId(null);
+			entity.setInfoJobFailurePriority(null);
+			entity.setWarnJobFailurePriority(null);
+			entity.setCriticalJobFailurePriority(null);
+			entity.setUnknownJobFailurePriority(null);
+			entity.setJobExecFacilityFlg(null);
+			entity.setJobExecFacility(null);
+		}
 	}
 
 	public static void copyProperties(NotifyLogEscalateInfo log,
@@ -361,6 +407,18 @@ public class NotifyUtil {
 		entity.setStatusValidPeriod(status.getStatusValidPeriod());
 	}
 	
+	public static void copyProperties(NotifyMessageInfo job, NotifyMessageInfo entity) {
+		entity.setInfoValidFlg(job.getInfoValidFlg());
+		entity.setWarnValidFlg(job.getWarnValidFlg());
+		entity.setCriticalValidFlg(job.getCriticalValidFlg());
+		entity.setUnknownValidFlg(job.getUnknownValidFlg());
+
+		entity.setInfoRulebaseId(job.getInfoRulebaseId());
+		entity.setWarnRulebaseId(job.getWarnRulebaseId());
+		entity.setCriticalRulebaseId(job.getCriticalRulebaseId());
+		entity.setUnknownRulebaseId(job.getUnknownRulebaseId());
+	}
+
 	public static void copyProperties(NotifyInfraInfo job,
 			NotifyInfraInfo entity) {
 		entity.setInfoValidFlg(job.getInfoValidFlg());
@@ -380,6 +438,58 @@ public class NotifyUtil {
 
 		entity.setInfraExecFacilityFlg(job.getInfraExecFacilityFlg());
 		entity.setInfraExecFacility(job.getInfraExecFacility());
+	}
+	
+	public static void copyProperties(NotifyCloudInfo cloud, NotifyCloudInfo entity){
+		entity.setFacilityId(cloud.getFacilityId());
+		entity.setTextScope(cloud.getScopeText());
+		entity.setPlatformType(cloud.getPlatformType());
+		
+		entity.setInfoValidFlg(cloud.getInfoValidFlg());
+		entity.setWarnValidFlg(cloud.getWarnValidFlg());
+		entity.setCriticalValidFlg(cloud.getCriticalValidFlg());
+		entity.setUnknownValidFlg(cloud.getUnknownValidFlg());
+
+		entity.setInfoAccessKey(cloud.getInfoAccessKey());
+		entity.setInfoDataVersion(cloud.getInfoDataVersion());
+		entity.setInfoDetailType(cloud.getInfoDetailType());
+		entity.setInfoEventBus(cloud.getInfoEventBus());
+		entity.setInfoJsonData(cloud.getInfoJsonData());
+		entity.setInfoSource(cloud.getInfoSource());
+		
+		entity.setWarnAccessKey(cloud.getWarnAccessKey());
+		entity.setWarnDataVersion(cloud.getWarnDataVersion());
+		entity.setWarnDetailType(cloud.getWarnDetailType());
+		entity.setWarnEventBus(cloud.getWarnEventBus());
+		entity.setWarnJsonData(cloud.getWarnJsonData());
+		entity.setWarnSource(cloud.getWarnSource());
+		
+		entity.setCritAccessKey(cloud.getCritAccessKey());
+		entity.setCritDataVersion(cloud.getCritDataVersion());
+		entity.setCritDetailType(cloud.getCritDetailType());
+		entity.setCritEventBus(cloud.getCritEventBus());
+		entity.setCritJsonData(cloud.getCritJsonData());
+		entity.setCritSource(cloud.getCritSource());
+		
+		entity.setUnkAccessKey(cloud.getUnkAccessKey());
+		entity.setUnkDataVersion(cloud.getUnkDataVersion());
+		entity.setUnkDetailType(cloud.getUnkDetailType());
+		entity.setUnkEventBus(cloud.getUnkEventBus());
+		entity.setUnkJsonData(cloud.getUnkJsonData());
+		entity.setUnkSource(cloud.getUnkSource());
+		
+	}
+
+	public static void copyProperties(NotifyRestInfo rest, NotifyRestInfo entity) {
+		entity.setInfoValidFlg(rest.getInfoValidFlg());
+		entity.setWarnValidFlg(rest.getWarnValidFlg());
+		entity.setCriticalValidFlg(rest.getCriticalValidFlg());
+		entity.setUnknownValidFlg(rest.getUnknownValidFlg());
+
+		entity.setInfoRestAccessId(rest.getInfoRestAccessId());
+		entity.setWarnRestAccessId(rest.getWarnRestAccessId());
+		entity.setCriticalRestAccessId(rest.getCriticalRestAccessId());
+		entity.setUnknownRestAccessId(rest.getUnknownRestAccessId());
 	}
 
 	public static ArrayList<Integer> getValidFlgIndexes(NotifyInfoDetail info) {
@@ -424,6 +534,10 @@ public class NotifyUtil {
 			}
 			// 通知元がジョブの場合
 			else if(pluginId.matches(HinemosModuleConstant.JOB+".*")) {
+				if (HinemosModuleConstant.SYSYTEM.equals(monitorId)) {
+					// monitorIdがSYSの場合はINTERNAL
+					return RoleIdConstant.INTERNAL;
+				}
 				// オブジェクト権限チェックのため、cc_job_session_jobのowner_role_idを設定する
 				JobSessionEntity jobSessionEntity
 				= em.find(JobSessionEntity.class, monitorId, ObjectPrivilegeMode.NONE);
@@ -492,6 +606,29 @@ public class NotifyUtil {
 				
 				if (nodeConfigSettingEntity != null && nodeConfigSettingEntity.getOwnerRoleId() != null) {
 					return nodeConfigSettingEntity.getOwnerRoleId();
+				} else {
+					return RoleIdConstant.INTERNAL;
+				}
+			}
+			// 通知元がSDMLの場合
+			else if(pluginId.matches(HinemosModuleConstant.SDML_CONTROL)){
+				// オブジェクト権限チェックのため、cc_sdml_control_setting_infoのowner_role_idを設定する
+				SdmlControlSettingInfo sdmlControlSettingEntity
+				= em.find(SdmlControlSettingInfo.class, monitorId, ObjectPrivilegeMode.NONE);
+				
+				if (sdmlControlSettingEntity != null && sdmlControlSettingEntity.getOwnerRoleId() != null) {
+					return sdmlControlSettingEntity.getOwnerRoleId();
+				} else {
+					return RoleIdConstant.INTERNAL;
+				}
+			}
+			// 通知元がシナリオ実績作成設定の場合
+			else if(pluginId.matches(HinemosModuleConstant.RPA_SCENARIO_CREATE)) {
+				// オブジェクト権限チェックのため、cc_rpa_scenario_operation_result_create_settingのowner_role_idを設定する
+				RpaScenarioOperationResultCreateSetting rpaScenarioOperationResultCreateSettingEntity
+				= em.find(RpaScenarioOperationResultCreateSetting.class, monitorId, ObjectPrivilegeMode.NONE);
+				if (rpaScenarioOperationResultCreateSettingEntity != null && rpaScenarioOperationResultCreateSettingEntity.getOwnerRoleId() != null) {
+					return rpaScenarioOperationResultCreateSettingEntity.getOwnerRoleId();
 				} else {
 					return RoleIdConstant.INTERNAL;
 				}
@@ -1033,4 +1170,78 @@ public class NotifyUtil {
 		}
 		return null;
 	}
+
+	/**
+	 * クラウド通知のDTO個別変換用メソッド<BR>
+	 * ディテール/データのリストをjsonに変換します。
+	 * 
+	 * @param mapData
+	 * @return
+	 * @throws HinemosUnknown
+	 */
+	public static String getJsonStringForCloudNotify(List<CloudNotifyLinkInfoKeyValueObjectRequest> infoList) throws HinemosUnknown {
+		
+		// 空の場合は変換せずに空文字を返す
+		if (infoList == null || infoList.isEmpty()){
+			return "";
+		}
+		
+		HashMap<String,String> mapData = new HashMap<String,String>();
+		
+		for(CloudNotifyLinkInfoKeyValueObjectRequest data: infoList){
+			mapData.put(data.getName(), data.getValue());
+		}
+		
+		ObjectMapper mapper = new ObjectMapper();
+		String jsonString = "";
+		try {
+			jsonString = mapper.writeValueAsString(mapData);
+		} catch (JsonProcessingException e) {
+			log.error("getJsonStringForCloudNotify(): Failed parsing map to json", e);
+			throw new HinemosUnknown(e);
+		}
+
+		return jsonString;
+	}
+
+	/**
+	 * クラウド通知のDTO個別変換用メソッド<BR>
+	 * jsonのディテールデータをリストに変換します。
+	 * 
+	 * @param jsonString
+	 * @return
+	 * @throws HinemosUnknown
+	 */
+	public static List<CloudNotifyLinkInfoKeyValueObjectResponse> getDataListForCloudNotify(String jsonString) throws HinemosUnknown {
+		
+		List<CloudNotifyLinkInfoKeyValueObjectResponse> dataList = new ArrayList<CloudNotifyLinkInfoKeyValueObjectResponse>();
+
+		if (jsonString == null || jsonString.isEmpty()) {
+			return dataList;
+		}
+
+		ObjectMapper om = new ObjectMapper();
+		HashMap<String, String> mapData = null;
+		try {
+			// キーがString、値がObjectのマップに読み込みます。
+			mapData = om.readValue(jsonString, new TypeReference<HashMap<String, String>>() {
+			});
+		} catch (Exception e) {
+			// mapへの変換に失敗した場合
+			log.error("getMapDataForCloudNotify(): Map Parse failed", e);
+			throw new HinemosUnknown(e);
+		}
+		
+		// listへの変換
+		
+		for (Entry<String, String> tmpSet : mapData.entrySet()){
+			CloudNotifyLinkInfoKeyValueObjectResponse dataObject = new CloudNotifyLinkInfoKeyValueObjectResponse();
+			dataObject.setName(tmpSet.getKey());
+			dataObject.setValue(tmpSet.getValue());
+			dataList.add(dataObject);
+		}
+		
+		return dataList;
+	}
+
 }

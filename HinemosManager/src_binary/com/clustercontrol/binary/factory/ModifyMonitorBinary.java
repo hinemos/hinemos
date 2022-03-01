@@ -11,7 +11,7 @@ package com.clustercontrol.binary.factory;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import com.clustercontrol.binary.model.BinaryPatternInfo;
 import com.clustercontrol.commons.util.HinemosEntityManager;
@@ -50,6 +50,7 @@ abstract public class ModifyMonitorBinary extends ModifyMonitor {
 			if (binaryList != null) {
 				for (int index = 0; index < binaryList.size(); index++) {
 					BinaryPatternInfo value = binaryList.get(index);
+					value.setMonitorId(m_monitorInfo.getMonitorId());
 					value.setOrderNo(index + 1);
 					em.persist(value);
 					value.relateToMonitorInfo(m_monitorInfo);

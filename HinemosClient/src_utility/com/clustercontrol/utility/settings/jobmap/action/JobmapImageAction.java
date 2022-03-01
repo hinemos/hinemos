@@ -17,16 +17,29 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-
-import javax.xml.ws.WebServiceException;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.AddJobmapIconImageRequest;
+import org.openapitools.client.model.JobmapIconIdDefaultListResponse;
+import org.openapitools.client.model.JobmapIconImageInfoResponse;
+import org.openapitools.client.model.ModifyJobmapIconImageRequest;
 
-import com.clustercontrol.jobmap.util.JobMapEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.IconFileDuplicate;
+import com.clustercontrol.fault.IconFileNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.jobmap.util.JobMapRestClientWrapper;
+import com.clustercontrol.jobmap.util.JobmapIconImageCacheEntry;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffUtil;
@@ -54,13 +67,7 @@ import com.clustercontrol.utility.util.Config;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.jobmanagement.HinemosUnknown_Exception;
-import com.clustercontrol.ws.jobmanagement.IconFileDuplicate_Exception;
-import com.clustercontrol.ws.jobmanagement.IconFileNotFound_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidSetting_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidUserPass_Exception;
-import com.clustercontrol.ws.jobmanagement.JobmapIconImage;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * 
@@ -80,7 +87,11 @@ public class JobmapImageAction {
 			"FILEJOB_DEFAULT",
 			"JOBNET_DEFAULT",
 			"JOB_DEFAULT",
-			"MONITORJOB_DEFAULT"
+			"MONITORJOB_DEFAULT",
+			"FILECHECKJOB_DEFAULT",
+			"JOBLINKRCVJOB_DEFAULT",
+			"JOBLINKSENDJOB_DEFAULT",
+			"RESOURCEJOB_DEFAULT"
 			};
 
 	public JobmapImageAction() throws ConvertorException {
@@ -88,49 +99,63 @@ public class JobmapImageAction {
 	}
 
 	/**
-	 * レポーティングスケジュール定義情報を全て削除します。<BR>
+	 * ジョブマップ定義情報を全て削除します。<BR>
 	 * 
 	 * @since 6.0
 	 * @return 終了コード
+	 * @throws RestConnectFailed 
 	 */
 	@ClearMethod
 	public int clearJobmapImage(){
 		log.debug("Start Clear JobmapImage ");
 
 		int ret = 0;
-		List<JobmapIconImage> list;
+		List<JobmapIconImageCacheEntry> list;
 		
 		// ジョブマップ用アイコンファイル一覧情報取得
 		try {
 			list = JobmapImageCacheUtil.getJobmapIconImageList(UtilityManagerUtil.getCurrentManagerName());
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | InvalidSetting_Exception
-				| IconFileNotFound_Exception e) {
+		} catch (HinemosUnknown | InvalidRole | InvalidUserPass | InvalidSetting | IconFileNotFound | RestConnectFailed e) {
 			log.error(Messages.getString("JobmapImage.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 			return ret;
 		}
 		
 		List<String> iconIdList = new ArrayList<String>();
-		for (JobmapIconImage jobmapIconImage : list){
-			iconIdList.add(jobmapIconImage.getIconId());
+		for (JobmapIconImageCacheEntry jobmapIconImage : list){
+			iconIdList.add(jobmapIconImage.getJobmapIconImage().getIconId());
+		}
+		
+		JobMapRestClientWrapper wrapper =JobMapRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+		//デフォルトIDの一覧を取得
+		List<JobmapIconIdDefaultListResponse> defaultListRes = null;
+		try {
+			defaultListRes = wrapper.getJobmapIconIdDefaultList();
+		} catch (HinemosUnknown | InvalidRole | InvalidUserPass | RestConnectFailed e) {
+			log.error(Messages.getString("JobmapImage.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+			ret = SettingConstants.ERROR_INPROCESS;
+			return ret;
+		}
+		Set<String> defaultIdSet = new HashSet<String>();
+		for (JobmapIconIdDefaultListResponse rec : defaultListRes){
+			defaultIdSet.add(rec.getDefaultId());
 		}
 		
 		List<String> iconIds = new ArrayList<String>();
 		for (String  iconId: iconIdList){
-			if(Arrays.asList(DEFAULT_IMAGE).contains(iconId)){
+			if(defaultIdSet.contains(iconId)){
+				log.info(Messages.getString("SettingTools.SkipDefaultIcon") + " : Id : " + iconId);
 				continue;// skip
 			}
 			iconIds.clear();
 			iconIds.add(iconId);
 			try {
-				JobMapEndpointWrapper
-				.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-				.deleteJobmapIconImage(iconIds);
-			} catch (HinemosUnknown_Exception e){
+				wrapper.deleteJobmapIconImage(String.join(",", iconIds));
+				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + String.join(",", iconIds));
+			} catch (HinemosUnknown e){
 				log.error(Messages.getString("JobmapImage.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch ( InvalidRole_Exception | InvalidUserPass_Exception
-					| InvalidSetting_Exception | IconFileNotFound_Exception e) {
+			} catch (InvalidRole | InvalidUserPass | InvalidSetting | IconFileNotFound | RestConnectFailed e) {
 				log.error(Messages.getString("JobmapImage.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 			}
@@ -150,30 +175,32 @@ public class JobmapImageAction {
 	public int exportJobmapImage(String xmlFile) {
 		log.debug("Start Export Jobmap Image ");
 		int ret = 0;
-		boolean backup = xmlFile.contains(BackupUtil.getBackupFolder());
 
-		List<JobmapIconImage> list;
+		boolean backup = false;
+		String directoryPath = MultiManagerPathUtil.getDirectoryPath(SettingToolsXMLPreferencePage.KEY_XML);
+		if (directoryPath != null && (xmlFile.length() > directoryPath.length())) {
+			backup = xmlFile.substring(directoryPath.length()).contains(BackupUtil.getBackupFolder());
+		}
+
+		List<JobmapIconImageCacheEntry> list;
 		
 		// ジョブマップ用アイコンファイル一覧情報取得
 		try {
 			list = JobmapImageCacheUtil.getJobmapIconImageList(UtilityManagerUtil.getCurrentManagerName());
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | InvalidSetting_Exception
-				| IconFileNotFound_Exception e) {
+		} catch (HinemosUnknown | InvalidRole | InvalidUserPass | InvalidSetting | IconFileNotFound | RestConnectFailed e) {
 			log.error(Messages.getString("JobmapImage.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 			return ret;
 		}
+		//list = new ArrayList<>();
 		
 		//XML作成
 		Jobmap jobmap = new Jobmap();
-		for (com.clustercontrol.ws.jobmanagement.JobmapIconImage jobmaImage : list) {
+		for (JobmapIconImageCacheEntry jobmaImage : list) {
 			try{
-				jobmap.addJobmapInfo(JobmapImageConv.getJobmap(jobmaImage));
-				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + jobmaImage.getIconId());
+				jobmap.addJobmapInfo(JobmapImageConv.getJobmap(jobmaImage.getJobmapIconImage()));
+				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + jobmaImage.getJobmapIconImage().getIconId());
 				
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
 			} catch (Exception e) {
 				log.warn(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
@@ -198,16 +225,16 @@ public class JobmapImageAction {
 		String path = null;
 		String basePath = getFolderPath(backup);
 		
-		for (com.clustercontrol.ws.jobmanagement.JobmapIconImage jobmaImage : list) {
+		for (JobmapIconImageCacheEntry jobmaImage : list) {
 			fileData = jobmaImage.getFiledata();
-			path = getFilePath(jobmaImage.getIconId(), basePath);
+			path = getFilePath(jobmaImage.getJobmapIconImage().getIconId(), basePath);
 			log.debug("path = " + path);
 			FileOutputStream fileOutStm = null;
 			try {
 				fileOutStm = new FileOutputStream(path);
 				fileOutStm.write(fileData);
 			} catch (IOException e) {
-				log.error(Messages.getString("JobMapImage.ExportFailed") + " IconId=" + jobmaImage.getIconId(),e);//処理続行
+				log.error(Messages.getString("JobMapImage.ExportFailed") + " IconId=" + jobmaImage.getJobmapIconImage().getIconId(),e);//処理続行
 				ret = SettingConstants.ERROR_INPROCESS;
 			}finally{
 				try {
@@ -249,7 +276,7 @@ public class JobmapImageAction {
 		// XMLファイルからの読み込み
 		JobmapType jobmap = null;
 		try {
-			jobmap = Jobmap.unmarshal(new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
+			jobmap = XmlMarshallUtil.unmarshall( JobmapType.class, new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"),e);
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -264,61 +291,79 @@ public class JobmapImageAction {
 		}
 		
 		List<String> objectIdList = new ArrayList<String>();
+		JobMapRestClientWrapper wrapper = JobMapRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+
+		// 重複確認用の一覧を取得
+		 List<JobmapIconImageInfoResponse> retList = null;
+		try {
+			retList = wrapper.getJobmapIconImageList();
+		} catch (HinemosUnknown | InvalidRole | InvalidUserPass | IconFileNotFound | RestConnectFailed e) {
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") + " : " + HinemosMessage.replace(e.getMessage()));
+			ret = SettingConstants.ERROR_INPROCESS;
+		}
+		Set<String> exitIdSet = new HashSet<String>();
+		for (JobmapIconImageInfoResponse info : retList) {
+			exitIdSet.add(info.getIconId());
+		}
+
+		// インポート
 		for (JobmapInfo info : jobmap.getJobmapInfo()) {
-			com.clustercontrol.ws.jobmanagement.JobmapIconImage jobmapImage = null;
+			JobmapIconImageInfoResponse jobmapImage =  JobmapImageConv.getJobmapInfoDto(info);
+			File imageFile = JobmapImageConv.getJobmapImageFile(jobmapImage.getIconId());
 			try {
-				jobmapImage = JobmapImageConv.getJobmapInfoDto(info);
-				JobMapEndpointWrapper
-					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-					.addJobmapIconImage(jobmapImage);
-				objectIdList.add(info.getIconId());
-				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + info.getIconId());
-			} catch (IconFileDuplicate_Exception e) {
-				//重複時、インポート処理方法を確認する
-				if(!ImportProcessMode.isSameprocess()){
-					String[] args = {info.getIconId()};
-					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-							null, Messages.getString("message.import.confirm2", args));
-					ImportProcessMode.setProcesstype(dialog.open());
-					ImportProcessMode.setSameprocess(dialog.getToggleState());
-				}
-				
-				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-					try {
-						JobMapEndpointWrapper
-							.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-							.modifyJobmapIconImage(jobmapImage);
+				if(!exitIdSet.contains(info.getIconId())){
+					// 新規IDなら追加
+					AddJobmapIconImageRequest reqDto = new AddJobmapIconImageRequest();
+					RestClientBeanUtil.convertBean(jobmapImage, reqDto);
+					wrapper.addJobmapIconImage(imageFile ,reqDto);
+					objectIdList.add(info.getIconId());
+					log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + info.getIconId());
+				}else{
+					// ID重複時、インポート処理方法を確認して、必要なら変更
+					if(!ImportProcessMode.isSameprocess()){
+						String[] args = {info.getIconId()};
+						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
+								null, Messages.getString("message.import.confirm2", args));
+						ImportProcessMode.setProcesstype(dialog.open());
+						ImportProcessMode.setSameprocess(dialog.getToggleState());
+					}
+					if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
+						ModifyJobmapIconImageRequest reqDto = new ModifyJobmapIconImageRequest();
+						RestClientBeanUtil.convertBean(jobmapImage, reqDto);
+						wrapper.modifyJobmapIconImage(jobmapImage.getIconId(), imageFile,reqDto);
 						objectIdList.add(info.getIconId());
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + info.getIconId());
-					} catch (Exception e1) {
-						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-						ret = SettingConstants.ERROR_INPROCESS;
-					} catch (Throwable t){
-						log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-						ret = SettingConstants.ERROR_INPROCESS;
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
+						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + info.getIconId());
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
+						log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
+						return ret;
 					}
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + info.getIconId());
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-					return ret;
 				}
-			} catch (HinemosUnknown_Exception e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+			} catch (IconFileDuplicate e) {
+				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()) + " : " +jobmapImage.getIconId());
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
+			} catch (HinemosUnknown e) {
+				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()) + " : " +jobmapImage.getIconId());
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
+			} catch (InvalidRole e) {
+				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()) + " : " +jobmapImage.getIconId());
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (javax.xml.ws.WebServiceException e){
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				throw e;//継続不可
+			} catch (InvalidUserPass e) {
+				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()) + " : " +jobmapImage.getIconId());
+				ret = SettingConstants.ERROR_INPROCESS;
+			} catch (RestConnectFailed e){
+				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()) + " : " +jobmapImage.getIconId());
+				return SettingConstants.ERROR_INPROCESS; 
 			} catch (Exception e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()) + " : " +jobmapImage.getIconId());
 				ret = SettingConstants.ERROR_INPROCESS;
 			}
+		}
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
 		}
 		
 		//オブジェクト権限同時インポート
@@ -360,20 +405,34 @@ public class JobmapImageAction {
 	}
 	
 	protected void checkDelete(JobmapType xmlElements){
-		List<com.clustercontrol.ws.jobmanagement.JobmapIconImage> subList;
+		List<JobmapIconImageCacheEntry> subList;
 		
 		// ジョブマップ用アイコンファイル一覧情報取得
 		try {
 			subList = JobmapImageCacheUtil.getJobmapIconImageList(UtilityManagerUtil.getCurrentManagerName());
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | InvalidSetting_Exception
-				| IconFileNotFound_Exception e) {
+		} catch (HinemosUnknown | InvalidRole | InvalidUserPass | InvalidSetting | IconFileNotFound | RestConnectFailed e) {
 			log.error(Messages.getString("SettingTools.EndWithErrorCode") + " : " + HinemosMessage.replace(e.getMessage()));
 			return;
 		}
+		JobMapRestClientWrapper wrapper = JobMapRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		
-		List<com.clustercontrol.ws.jobmanagement.JobmapIconImage> listExclusion = new ArrayList<JobmapIconImage>();
-		for (JobmapIconImage jobmapIconImage : subList){
-			if(Arrays.asList(DEFAULT_IMAGE).contains(jobmapIconImage.getIconId())){
+		//デフォルトIDの一覧を取得
+		List<JobmapIconIdDefaultListResponse> defaultListRes = null;
+		try {
+			defaultListRes = wrapper.getJobmapIconIdDefaultList();
+		} catch (HinemosUnknown | InvalidRole | InvalidUserPass | RestConnectFailed e) {
+			log.error(Messages.getString("SettingTools.EndWithErrorCode") + " : " + HinemosMessage.replace(e.getMessage()));
+			return;
+		}
+		Set<String> defaultIdSet = new HashSet<String>();
+		for (JobmapIconIdDefaultListResponse rec : defaultListRes){
+			defaultIdSet.add(rec.getDefaultId());
+		}
+		
+		// 既設ID一覧を抽出（デフォルトは除外）
+		List<JobmapIconImageCacheEntry> listExclusion = new ArrayList<JobmapIconImageCacheEntry>();
+		for (JobmapIconImageCacheEntry jobmapIconImage : subList){
+			if(defaultIdSet.contains(jobmapIconImage.getJobmapIconImage().getIconId())){
 				continue;// skip
 			}
 			listExclusion.add(jobmapIconImage);
@@ -381,9 +440,9 @@ public class JobmapImageAction {
 		
 		List<JobmapInfo> xmlElementList = new ArrayList<>(Arrays.asList(xmlElements.getJobmapInfo()));
 		
-		for(com.clustercontrol.ws.jobmanagement.JobmapIconImage mgrInfo: new ArrayList<>(listExclusion)){
+		for(JobmapIconImageCacheEntry mgrInfo: new ArrayList<>(listExclusion)){
 			for(JobmapInfo xmlElement: new ArrayList<>(xmlElementList)){
-				if(mgrInfo.getIconId().equals(xmlElement.getIconId())){
+				if(mgrInfo.getJobmapIconImage().getIconId().equals(xmlElement.getIconId())){
 					listExclusion.remove(mgrInfo);
 					xmlElementList.remove(xmlElement);
 					break;
@@ -392,12 +451,11 @@ public class JobmapImageAction {
 			
 		}
 		
-		List<String> iconIds = new ArrayList<String>();
 		if(listExclusion.size() > 0){
-			for(com.clustercontrol.ws.jobmanagement.JobmapIconImage info: listExclusion){
+			for(JobmapIconImageCacheEntry info: listExclusion){
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
-					String[] args = {info.getIconId()};
+					String[] args = {info.getJobmapIconImage().getIconId()};
 					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
@@ -406,17 +464,15 @@ public class JobmapImageAction {
 
 				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
-						iconIds.clear();
-						iconIds.add(info.getIconId());
-						JobMapEndpointWrapper
+						JobMapRestClientWrapper
 							.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-							.deleteJobmapIconImage(iconIds);
-						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getIconId());
+							.deleteJobmapIconImage(info.getJobmapIconImage().getIconId());
+						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getJobmapIconImage().getIconId());
 					} catch (Exception e1) {
 						getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
 				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getIconId());
+					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getJobmapIconImage().getIconId());
 				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 					return;
@@ -447,8 +503,8 @@ public class JobmapImageAction {
 		JobmapType jobmap1 = null;
 		JobmapType jobmap2 = null;
 		try {
-			jobmap1 = Jobmap.unmarshal(new InputStreamReader(new FileInputStream(xmlFile1), "UTF-8"));
-			jobmap2 = Jobmap.unmarshal(new InputStreamReader(new FileInputStream(xmlFile2), "UTF-8"));
+			jobmap1 = XmlMarshallUtil.unmarshall(JobmapType.class,new InputStreamReader(new FileInputStream(xmlFile1), "UTF-8"));
+			jobmap2 = XmlMarshallUtil.unmarshall(JobmapType.class,new InputStreamReader(new FileInputStream(xmlFile2), "UTF-8"));
 			sort(jobmap1);
 			sort(jobmap2);
 		} catch (Exception e) {

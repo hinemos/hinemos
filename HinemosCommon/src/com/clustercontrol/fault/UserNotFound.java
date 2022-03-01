@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * ユーザが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class UserNotFound extends HinemosException {
+public class UserNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = -2084566019791245622L;
 

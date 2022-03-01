@@ -25,13 +25,13 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.FileTransferVariableInfoResponse;
 
 import com.clustercontrol.infra.action.GetInfraFileReplaceSettingTableDefine;
 import com.clustercontrol.infra.dialog.ReplaceTextDialog;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.infra.FileTransferVariableInfo;
 
 /**
  * ファイル配布モジュール作成時の置換設定用コンポジットクラスです。
@@ -57,7 +57,7 @@ public class FileReplaceSettingComposite extends Composite {
 	/** 選択アイテム */
 	private List<Object> m_selectItem = null;
 
-	private List<FileTransferVariableInfo> m_inputData = new ArrayList<FileTransferVariableInfo>();
+	private List<FileTransferVariableInfoResponse> m_inputData = new ArrayList<FileTransferVariableInfoResponse>();
 
 	/**
 	 * コンストラクタ
@@ -233,7 +233,7 @@ public class FileReplaceSettingComposite extends Composite {
 		m_deleteCondition.setEnabled(enabled);
 	}
 
-	public List<FileTransferVariableInfo> getInputData() {
+	public List<FileTransferVariableInfoResponse> getInputData() {
 		@SuppressWarnings("unchecked")
 		List<List<Object>> list = (List<List<Object>>) m_viewer.getInput();
 		m_inputData = new ArrayList<>();
@@ -242,7 +242,7 @@ public class FileReplaceSettingComposite extends Composite {
 			list = new ArrayList<>();
 		}
 		for(List<Object> item: list){
-			FileTransferVariableInfo info = new FileTransferVariableInfo();
+			FileTransferVariableInfoResponse info = new FileTransferVariableInfoResponse();
 			info.setName((String)item.get(GetInfraFileReplaceSettingTableDefine.SEARCH_WORD));
 			info.setValue((String)item.get(GetInfraFileReplaceSettingTableDefine.REPLACEMENT_WORD));
 			m_inputData.add(info);
@@ -250,10 +250,10 @@ public class FileReplaceSettingComposite extends Composite {
 		return m_inputData;
 	}
 
-	public void setInputData(List<FileTransferVariableInfo> inputData) {
+	public void setInputData(List<FileTransferVariableInfoResponse> inputData) {
 		this.m_inputData = inputData;
 		List<Object> list = new ArrayList<Object>();
-		for(FileTransferVariableInfo info: inputData){
+		for(FileTransferVariableInfoResponse info: inputData){
 			List<Object> item = new ArrayList<Object>();
 			item.add(info.getName());
 			item.add(info.getValue());

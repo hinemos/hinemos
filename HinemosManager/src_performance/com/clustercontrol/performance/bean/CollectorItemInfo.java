@@ -26,9 +26,9 @@ import javax.xml.bind.annotation.XmlType;
 public class CollectorItemInfo implements Serializable {
 	private static final long serialVersionUID = 4107793107236713239L;
 
-	private String m_collectorId;   //収集ID
-	private String m_itemCode;      //収集項目コード
-	private String m_displayName;  //リポジトリ表示名 (Ver3.1.0)より追加
+	private String collectorId;   //収集ID
+	private String itemCode;      //収集項目コード
+	private String displayName;  //リポジトリ表示名 (Ver3.1.0)より追加
 
 	public CollectorItemInfo(){
 		super();
@@ -46,9 +46,9 @@ public class CollectorItemInfo implements Serializable {
 			final String collectorId,
 			final String itemCode,
 			final String displayName){
-		m_collectorId = collectorId;
-		m_itemCode = itemCode;
-		m_displayName = displayName;
+		this.collectorId = collectorId;
+		this.itemCode = itemCode;
+		this.displayName = displayName;
 	}
 
 	/**
@@ -56,42 +56,42 @@ public class CollectorItemInfo implements Serializable {
 	 * @return 収集ID
 	 */
 	public String getCollectorId() {
-		return m_collectorId;
+		return collectorId;
 	}
 	/**
 	 * 収集IDを設定します。
 	 * @param collectorId 収集ID
 	 */
 	public void setCollectorId(String collectorId) {
-		m_collectorId = collectorId;
+		this.collectorId = collectorId;
 	}
 	/**
 	 * 収集項目コードを取得します。
 	 * @return 収集項目コード
 	 */
 	public String getItemCode() {
-		return m_itemCode;
+		return itemCode;
 	}
 	/**
 	 * 収集項目コードを設定します。
 	 * @param itemCode 収集項目コード
 	 */
 	public void setItemCode(String itemCode) {
-		m_itemCode = itemCode;
+		this.itemCode = itemCode;
 	}
 	/**
 	 * リポジトリ表示名を取得します。
 	 * @return リポジトリ表示名
 	 */
 	public String getDisplayName() {
-		return m_displayName;
+		return displayName;
 	}
 	/**
 	 * リポジトリ表示名を設定します。
 	 * @param name リポジトリ表示名
 	 */
 	public void setDisplayName(String name) {
-		m_displayName = name;
+		this.displayName = name;
 	}
 
 	/**
@@ -105,29 +105,29 @@ public class CollectorItemInfo implements Serializable {
 			CollectorItemInfo lTest = (CollectorItemInfo) pOther;
 			boolean lEquals = true;
 
-			if( this.m_collectorId == null )
+			if( this.collectorId == null )
 			{
-				lEquals = lEquals && ( lTest.m_collectorId == null );
+				lEquals = lEquals && ( lTest.collectorId == null );
 			}
 			else
 			{
-				lEquals = lEquals && this.m_collectorId.equals( lTest.m_collectorId );
+				lEquals = lEquals && this.collectorId.equals( lTest.collectorId );
 			}
-			if( this.m_itemCode == null )
+			if( this.itemCode == null )
 			{
-				lEquals = lEquals && ( lTest.m_itemCode == null );
-			}
-			else
-			{
-				lEquals = lEquals && this.m_itemCode.equals( lTest.m_itemCode );
-			}
-			if( this.m_displayName == null )
-			{
-				lEquals = lEquals && ( lTest.m_displayName == null );
+				lEquals = lEquals && ( lTest.itemCode == null );
 			}
 			else
 			{
-				lEquals = lEquals && this.m_displayName.equals( lTest.m_displayName );
+				lEquals = lEquals && this.itemCode.equals( lTest.itemCode );
+			}
+			if( this.displayName == null )
+			{
+				lEquals = lEquals && ( lTest.displayName == null );
+			}
+			else
+			{
+				lEquals = lEquals && this.displayName.equals( lTest.displayName );
 			}
 
 			return lEquals;
@@ -146,11 +146,11 @@ public class CollectorItemInfo implements Serializable {
 	{
 		int result = 17;
 
-		result = 37*result + ((this.m_collectorId != null) ? this.m_collectorId.hashCode() : 0);
+		result = 37*result + ((this.collectorId != null) ? this.collectorId.hashCode() : 0);
 
-		result = 37*result + ((this.m_itemCode != null) ? this.m_itemCode.hashCode() : 0);
+		result = 37*result + ((this.itemCode != null) ? this.itemCode.hashCode() : 0);
 
-		result = 37*result + ((this.m_displayName != null) ? this.m_displayName.hashCode() : 0);
+		result = 37*result + ((this.displayName != null) ? this.displayName.hashCode() : 0);
 
 		return result;
 	}

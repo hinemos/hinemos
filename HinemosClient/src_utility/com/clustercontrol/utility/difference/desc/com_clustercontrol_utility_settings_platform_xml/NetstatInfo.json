@@ -54,6 +54,7 @@
 	{
 	"propName":"pid",
 	"annotations":[
+		{"type":"Column", "columnName":"NetstatInfo_pid"},
 		{"type":"PrimaryKey"}
 	]},
 

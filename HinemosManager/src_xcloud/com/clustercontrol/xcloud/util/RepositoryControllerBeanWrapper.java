@@ -7,7 +7,10 @@
  */
 package com.clustercontrol.xcloud.util;
 
+import java.util.List;
+
 import com.clustercontrol.fault.FacilityDuplicate;
+import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -45,95 +48,111 @@ public class RepositoryControllerBeanWrapper extends RepositoryControllerBean {
 		this.autoCommit = autoCommit;
 	}
 
-	public void addNode(NodeInfo nodeInfo) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
+	public NodeInfo addNode(NodeInfo nodeInfo) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
+		NodeInfo ret;
 		if (autoCommit) {
 			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.addNode(nodeInfo);
+				ret = super.addNode(nodeInfo);
 				scope.complete();
 			}
 		} else {
-			super.addNode(nodeInfo);
+			ret = super.addNode(nodeInfo);
 		}
+		return ret;
 	}
 
-	public void addNode(NodeInfo nodeInfo, boolean topicSendFlg)
+	public NodeInfo addNode(NodeInfo nodeInfo, boolean topicSendFlg)
 			throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
+		NodeInfo ret;
 		if (autoCommit) {
 			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.addNode(nodeInfo, topicSendFlg);
+				ret = super.addNode(nodeInfo, topicSendFlg);
 				scope.complete();
 			}
 		} else {
-			super.addNode(nodeInfo, topicSendFlg);
+			ret = super.addNode(nodeInfo, topicSendFlg);
 		}
+		return ret;
 	}
 
-	public void modifyNode(NodeInfo info) throws InvalidSetting, InvalidRole, HinemosUnknown {
+	public NodeInfo modifyNode(NodeInfo info) throws InvalidSetting, InvalidRole, FacilityNotFound, HinemosUnknown {
+		NodeInfo ret;
 		if (autoCommit) {
 			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.modifyNode(info);
+				ret = super.modifyNode(info);
 				scope.complete();
 			}
 		} else {
-			super.modifyNode(info);
+			ret = super.modifyNode(info);
 		}
+		return ret;
 	}
 
-	public void deleteNode(String[] facilityIds) throws UsedFacility, InvalidRole, HinemosUnknown {
+	public List<NodeInfo> deleteNode(String[] facilityIds) throws UsedFacility, InvalidRole, FacilityNotFound, HinemosUnknown {
+		List<NodeInfo> ret;
 		if (autoCommit) {
 			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.deleteNode(facilityIds);
+				ret = super.deleteNode(facilityIds);
 				scope.complete();
 			}
 		} else {
-			super.deleteNode(facilityIds);
+			ret = super.deleteNode(facilityIds);
 		}
+		return ret;
 	}
 
-	public void addScope(String parentFacilityId, ScopeInfo property)
+	public ScopeInfo addScope(String parentFacilityId, ScopeInfo property)
 			throws FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
+		ScopeInfo ret;
 		if (autoCommit) {
 			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.addScope(parentFacilityId, property);
+				ret = super.addScope(parentFacilityId, property);
 				scope.complete();
 			}
 		} else {
-			super.addScope(parentFacilityId, property);
+			ret =super.addScope(parentFacilityId, property);
 		}
+		return ret;
 	}
 
-	public void addScope(String parentFacilityId, ScopeInfo info, int displaySortOrder)
+	public ScopeInfo addScope(String parentFacilityId, ScopeInfo info, int displaySortOrder)
 			throws FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
+		ScopeInfo ret;
 		if (autoCommit) {
 			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.addScope(parentFacilityId, info, displaySortOrder);
+				 ret = super.addScope(parentFacilityId, info, displaySortOrder);
 				scope.complete();
 			}
 		} else {
-			super.addScope(parentFacilityId, info, displaySortOrder);
+			ret = super.addScope(parentFacilityId, info, displaySortOrder);
 		}
+		return ret;
 	}
 
-	public void modifyScope(ScopeInfo info) throws InvalidSetting, InvalidRole, HinemosUnknown {
+	public ScopeInfo modifyScope(ScopeInfo info) throws InvalidSetting, InvalidRole, FacilityNotFound, HinemosUnknown {
+		ScopeInfo ret;
 		if (autoCommit) {
 			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.modifyScope(info);
+				ret = super.modifyScope(info);
 				scope.complete();
 			}
 		} else {
-			super.modifyScope(info);
+			ret = super.modifyScope(info);
 		}
+		return ret;
 	}
 
-	public void deleteScope(String[] facilityIds) throws UsedFacility, InvalidRole, HinemosUnknown {
+	public List<ScopeInfo> deleteScope(String[] facilityIds) throws UsedFacility, InvalidRole, FacilityNotFound, HinemosUnknown {
+		List<ScopeInfo> ret;
 		if (autoCommit) {
 			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				super.deleteScope(facilityIds);
+				ret = super.deleteScope(facilityIds);
 				scope.complete();
 			}
 		} else {
-			super.deleteScope(facilityIds);
+			ret = super.deleteScope(facilityIds);
 		}
+		return ret;
 	}
 
 	public void assignNodeScope(String parentFacilityId, String[] facilityIds, boolean topicSendFlg)

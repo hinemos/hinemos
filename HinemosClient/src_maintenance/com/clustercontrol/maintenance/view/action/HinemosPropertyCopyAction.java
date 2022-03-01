@@ -27,9 +27,10 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.HinemosPropertyResponse;
+import org.openapitools.client.model.HinemosPropertyResponse.TypeEnum;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
-import com.clustercontrol.maintenance.HinemosPropertyTypeConstant;
 import com.clustercontrol.maintenance.HinemosPropertyTypeMessage;
 import com.clustercontrol.maintenance.action.GetHinemosPropertyTableDefine;
 import com.clustercontrol.maintenance.composite.HinemosPropertyComposite;
@@ -37,7 +38,6 @@ import com.clustercontrol.maintenance.dialog.HinemosPropertyDialog;
 import com.clustercontrol.maintenance.view.HinemosPropertyView;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.maintenance.HinemosPropertyInfo;
 
 /**
  * メンテナンス[共通設定]ビューののコピーアクションクラス<BR>
@@ -92,10 +92,12 @@ public class HinemosPropertyCopyAction extends AbstractHandler implements IEleme
 		List<?> list = (List) selection.getFirstElement();
 		String key = null;
 		String managerName = null;
-		int valueType = 0;
+		String valueTypeStr = null;
+		TypeEnum valueType = null;
+
 		if(list != null && list.size() > 0){
 			key = (String) list.get(GetHinemosPropertyTableDefine.KEY);
-			String valueTypeStr = (String)list.get(GetHinemosPropertyTableDefine.VALUE_TYPE);
+			valueTypeStr = (String)list.get(GetHinemosPropertyTableDefine.VALUE_TYPE);
 			managerName = (String)list.get(GetHinemosPropertyTableDefine.MANAGER_NAME);
 			valueType = HinemosPropertyTypeMessage.stringToType(valueTypeStr);
 		}
@@ -106,28 +108,10 @@ public class HinemosPropertyCopyAction extends AbstractHandler implements IEleme
 		if(key != null){
 
 			try{
-				HinemosPropertyInfo info = new HinemosPropertyInfo();
+				HinemosPropertyResponse info = new HinemosPropertyResponse();
 				info.setKey(key);
-				info.setValueType(valueType);
-				if (valueType == HinemosPropertyTypeConstant.TYPE_STRING) {
-					String value = (String)list.get(GetHinemosPropertyTableDefine.VALUE);
-					info.setValueString(value);
-				} else if (valueType == HinemosPropertyTypeConstant.TYPE_NUMERIC) {
-					Long value = (Long)list.get(GetHinemosPropertyTableDefine.VALUE);
-					try {
-						info.setValueNumeric(value);
-					} catch (NumberFormatException e) {
-						m_log.info("run() setValueNumeric(), " + e.getMessage());
-						Object[] args = {Messages.getString("hinemos.property.key"), Long.MIN_VALUE, Long.MAX_VALUE};
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.common.4", args));
-					}
-				} else {
-					boolean value = Boolean.parseBoolean((String)list.get(GetHinemosPropertyTableDefine.VALUE));
-					info.setValueBoolean(value);
-				}
+				info.setType(valueType);
+				info.setValue((String)list.get(GetHinemosPropertyTableDefine.VALUE));
 				info.setDescription((String)list.get(GetHinemosPropertyTableDefine.DESCRIPTION));
 
 				// ダイアログを生成

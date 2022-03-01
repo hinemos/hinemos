@@ -10,10 +10,10 @@ package com.clustercontrol.editor;
 
 import org.eclipse.jface.viewers.DialogCellEditor;
 import org.eclipse.swt.widgets.Control;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.dialog.ScopeTreeDialog;
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 
 /**
  * スコープツリーダイアログセルエディタークラス<BR>
@@ -46,11 +46,11 @@ public class ScopeDialogCellEditor extends DialogCellEditor {
 		dialog.setSelectNodeOnly(selectNodeOnly);
 		dialog.open();
 		//選択したファシリティツリーアイテムを取得する
-		FacilityTreeItem item = null;
+		FacilityTreeItemResponse item = null;
 		if (dialog.getReturnCode() == ScopeTreeDialog.OK) {
 			item = dialog.getSelectItem();
-			if (item.getData().isNotReferFlg()
-					|| item.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE) {
+			if (item.getData().getNotReferFlg()
+					|| item.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE) {
 				item = null;
 			}
 		}

@@ -9,8 +9,6 @@
 package com.clustercontrol.collect.dialog;
 
 import java.lang.reflect.InvocationTargetException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -42,16 +40,18 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.CollectKeyInfoResponseP1;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.client.ui.util.FileDownloader;
 import com.clustercontrol.collect.action.RecordDataWriter;
 import com.clustercontrol.collect.bean.SummaryTypeMessage;
 import com.clustercontrol.collect.util.CollectGraphUtil.CollectFacilityDataInfo;
+import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.collect.CollectKeyInfoPK;
+
 
 /**
  * 収集した実績データをエクスポートするためのダイアログクラス
@@ -72,7 +72,7 @@ public class ExportDialog extends Dialog {
 	
 	private TreeMap<String, CollectFacilityDataInfo> m_managerFacilityDataInfoMap = null;
 	private Integer m_summaryType = null;
-	private List<CollectKeyInfoPK> m_collectKeyInfoPkList = null;	
+	private List<CollectKeyInfoResponseP1> m_collectKeyInfoPkList = null;	
 	private TreeMap<String, List<String>> m_targetManagerFacilityMap = null;
 	private static final String SQUARE_SEPARATOR = "\u2029";
 	/**
@@ -80,7 +80,7 @@ public class ExportDialog extends Dialog {
 	 */
 	public ExportDialog(Shell parent, TreeMap<String, CollectFacilityDataInfo> managerFacilityDataInfoMap,
 			Integer summaryType,
-			List<CollectKeyInfoPK> targetCollectKeyInfoList,
+			List<CollectKeyInfoResponseP1> targetCollectKeyInfoList,
 			TreeMap<String, List<String>> managerFacilityIdMap){
 		super(parent);
 		this.m_managerFacilityDataInfoMap = managerFacilityDataInfoMap;
@@ -189,7 +189,7 @@ public class ExportDialog extends Dialog {
 		Label itemLabel = new Label(composite, SWT.RIGHT | SWT.WRAP);
 		itemLabel.setText(Messages.getString("collection.display.name") + " : ");
 		org.eclipse.swt.widgets.List itemList = new org.eclipse.swt.widgets.List(composite, SWT.V_SCROLL | SWT.H_SCROLL | SWT.LEFT | SWT.BORDER);
-		for (CollectKeyInfoPK collectInfo : m_collectKeyInfoPkList) {
+		for (CollectKeyInfoResponseP1 collectInfo : m_collectKeyInfoPkList) {
 			String itemName = HinemosMessage.replace(collectInfo.getItemName());
 			if (!collectInfo.getDisplayName().equals("") && !itemName.endsWith("[" + collectInfo.getDisplayName() + "]")) {
 				itemName += "[" + collectInfo.getDisplayName() + "]";
@@ -224,9 +224,7 @@ public class ExportDialog extends Dialog {
 					// 名前に日本語を含めると文字化けするため、英語にする
 					
 					// 対象ファイル名に含めるID(日付)を生成
-					SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-					// クライアントで出力するファイル名の日時情報はクライアントのタイムゾーンの現在時刻とする(マネージャのタイムゾーン時刻に補正しない)
-					String defaultDateStr = sdf.format(new Date(System.currentTimeMillis()));
+					String defaultDateStr = DateTimeStringConverter.formatLongDate(System.currentTimeMillis(), "yyyyMMddHHmmss");
 					String defaultFileName = SummaryTypeMessage.typeToStringEN(m_summaryType)+ '_' + defaultDateStr;
 					this.saveDialog.setFilterExtensions(new String[] { "*.zip" });
 					defaultFileName += ".zip";
@@ -247,7 +245,7 @@ public class ExportDialog extends Dialog {
 				 */
 				protected void output(TreeMap<String,CollectFacilityDataInfo> managerFacilityDataInfoMap,
 						Integer summaryType,
-						List<CollectKeyInfoPK> targetCollectKeyInfoList,
+						List<CollectKeyInfoResponseP1> targetCollectKeyInfoList,
 						TreeMap<String, List<String>> targetManagerFacilityMap,
 						boolean headerFlag,
 						String filePath,

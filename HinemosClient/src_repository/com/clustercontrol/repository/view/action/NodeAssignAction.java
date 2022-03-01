@@ -23,13 +23,13 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
-import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.dialog.NodeAssignDialog;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.repository.view.ScopeListView;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * ノード選択ダイアログによる、ノードのスコープ割り当て処理を行うクライアント側アクションクラス<BR>
@@ -78,19 +78,19 @@ public class NodeAssignAction extends AbstractHandler implements IElementUpdater
 			return null;
 		}
 
-		FacilityTreeItem item = scopeListView.getSelectedScopeItem();
+		FacilityTreeItemResponse item = scopeListView.getSelectedScopeItem();
 		// 未選択の場合は、処理終了
 		if( null == item ){
 			return null;
 		}
 
 		// スコープ以外を選択している場合は、処理終了
-		FacilityInfo info = item.getData();
-		if (info.getFacilityType() != FacilityConstant.TYPE_SCOPE) {
+		FacilityInfoResponse info = item.getData();
+		if (info.getFacilityType() != FacilityTypeEnum.SCOPE) {
 			return null;
 		}
 
-		FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
+		FacilityTreeItemResponse manager = ScopePropertyUtil.getManager(item);
 		String managerName = manager.getData().getFacilityId();
 
 		// ダイアログを生成
@@ -124,12 +124,12 @@ public class NodeAssignAction extends AbstractHandler implements IElementUpdater
 							view.getComposite().getTable().isFocusControl())) {
 
 						switch(view.getType()) {
-							case FacilityConstant.TYPE_COMPOSITE:
+							case COMPOSITE:
 								break;
-							case FacilityConstant.TYPE_SCOPE:
+							case SCOPE:
 								editEnable = !view.getNotReferFlg();
 								break;
-							case FacilityConstant.TYPE_NODE:
+							case NODE:
 								break;
 							default: // 既定の対処はスルー。
 								break;

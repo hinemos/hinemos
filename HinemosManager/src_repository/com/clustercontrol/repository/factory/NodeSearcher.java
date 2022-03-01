@@ -39,10 +39,12 @@ import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.repository.util.FacilityIdCacheInitCallback;
 import com.clustercontrol.repository.util.FacilityTreeCacheRefreshCallback;
+import com.clustercontrol.repository.util.MultiTenantSupport;
 import com.clustercontrol.repository.util.RepositoryChangedNotificationCallback;
 import com.clustercontrol.repository.util.RepositoryUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
 
 
 /**
@@ -97,6 +99,9 @@ public class NodeSearcher {
 						}
 					}
 				}
+				if (ownerRoleId == null || ownerRoleId.length() == 0) {
+					throw new HinemosUnknown(MessageConstant.MESSAGE_PLEASE_SET_OWNERROLEID.getMessage());
+				}
 
 				List<String> ipAddressList = null;
 
@@ -137,6 +142,8 @@ public class NodeSearcher {
 					m_log.debug("ipAddress=" + str);
 				}
 
+				MultiTenantSupport multiTenantSupport = Singletons.get(MultiTenantSupport.class);
+				
 				List<NodeInfoDeviceSearch> searchList = new ArrayList<>();
 				try {
 					//ノード一覧を取得
@@ -155,6 +162,12 @@ public class NodeSearcher {
 						}
 						try {
 							InetAddress address = InetAddress.getByName(ipAddress);
+							// テナントアドレスグループ外のIPアドレスはスキップ
+							if (multiTenantSupport.isEnabled() &&
+									!multiTenantSupport.containsAddressGroup(ownerRoleId, address.getAddress())) {
+								m_log.info("ipAddress " + address + " is out of the tenant address group.");
+								continue;
+							}
 							List<String> facilityList = new RepositoryControllerBean().getFacilityIdByIpAddress(address);
 							if(facilityList != null && 0 < facilityList.size()) {
 								//ノード一覧に既にIPアドレスが存在する場合は終了
@@ -190,6 +203,7 @@ public class NodeSearcher {
 
 				//ノード登録
 				RepositoryControllerBean controller = new RepositoryControllerBean();
+				List<String> notifyNodeFacilityIdList = new ArrayList<String>();
 
 				boolean commitFlag = false;
 				for(NodeInfoDeviceSearch searchInfo : searchList) {
@@ -200,6 +214,9 @@ public class NodeSearcher {
 						}
 						nodeList.add(searchInfo);
 						NodeInfo nodeInfo = searchInfo.getNodeInfo();
+						// テナントごとのプレフィックスを付与
+						nodeInfo.setFacilityId(multiTenantSupport.decorateNodeSearchedFacilityId(
+								ownerRoleId, nodeInfo.getFacilityId()));
 						nodeInfo.setOwnerRoleId(ownerRoleId);
 						m_log.info("nodeInfo " + nodeInfo);
 						if (searchInfo.getErrorMessage() != null) {
@@ -215,6 +232,7 @@ public class NodeSearcher {
 						try {
 							//性能改善のためリフレッシュは全ノード登録後に一度のみ行う
 							controller.addNode(nodeInfo);
+							notifyNodeFacilityIdList.add(nodeInfo.getFacilityId());
 							commitFlag = true;
 						} catch (FacilityDuplicate | InvalidSetting | HinemosUnknown e) {
 							String errorMessage = "" + e.getMessage();
@@ -241,8 +259,12 @@ public class NodeSearcher {
 					} finally {
 						jtm.close();
 					}
-
-					new RepositoryChangedNotificationCallback().postCommit();
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("searchNode() : RepositoryChangedNotificationCallback targetIdList=" + notifyNodeFacilityIdList.toString());
+					}
+					RepositoryChangedNotificationCallback RepsitoryNotify = new RepositoryChangedNotificationCallback();
+					RepsitoryNotify.setNotifyFacilityIdList(notifyNodeFacilityIdList);
+					RepsitoryNotify.postCommit();
 				}
 			} catch(HinemosUnknown e) {
 				throw e;

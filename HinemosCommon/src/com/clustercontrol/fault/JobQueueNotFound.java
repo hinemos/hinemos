@@ -13,13 +13,21 @@ package com.clustercontrol.fault;
  * 
  * @version 6.2.0
  */
-public class JobQueueNotFound extends HinemosException {
+public class JobQueueNotFound extends HinemosNotFound {
 
 	// 実装を変更したときのバージョン番号に合わせる。 {major(high)}_{major(low)}_{minor}_{patch}
 	private static final long serialVersionUID = 6_02_00_00000000L;
 
 	private String queueId;
 
+	public JobQueueNotFound() {
+		super();
+	}
+	
+	public JobQueueNotFound(String messages) {
+		super(messages);
+	}
+	
 	public JobQueueNotFound(String messages, String queueId) {
 		super(messages);
 		this.queueId = queueId;

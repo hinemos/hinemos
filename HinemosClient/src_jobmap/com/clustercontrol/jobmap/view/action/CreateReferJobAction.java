@@ -8,7 +8,7 @@
 
 package com.clustercontrol.jobmap.view.action;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
 /**
  * ジョブ[一覧]ビューの「参照ジョブの作成」のクライアント側アクションクラス<BR>
@@ -20,7 +20,7 @@ public class CreateReferJobAction extends BaseCreateAction {
 	public static final String ID = ActionIdBase + CreateReferJobAction.class.getSimpleName();
 	
 	@Override
-	public int getJobType() {
-		return JobConstant.TYPE_REFERJOB;
+	public JobInfoWrapper.TypeEnum getJobType() {
+		return JobInfoWrapper.TypeEnum.REFERJOB;
 	}
 }

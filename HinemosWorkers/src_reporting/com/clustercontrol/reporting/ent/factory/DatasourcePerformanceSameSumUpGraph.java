@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
@@ -35,6 +34,7 @@ import com.clustercontrol.reporting.ReportUtil;
 import com.clustercontrol.reporting.bean.OutputMonitorInfo;
 import com.clustercontrol.reporting.bean.ReportingConstant;
 import com.clustercontrol.reporting.ent.bean.DataKey;
+import com.clustercontrol.reporting.ent.bean.KeyedDataStore;
 import com.clustercontrol.reporting.ent.bean.OutputFacilityInfo;
 import com.clustercontrol.reporting.ent.bean.OutputFacilityInfo.OutputNodeInfo;
 import com.clustercontrol.reporting.ent.bean.OutputFacilityInfo.OutputScopeInfo;
@@ -60,7 +60,10 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 	private static Log m_log = LogFactory.getLog(DatasourcePerformanceSameSumUpGraph.class);
 
 	private Map<String, OutputMonitorInfo> m_outputMonitorInfoMap = new HashMap<>();
-	private Map<String,Map<String,List<String[]>>> m_databaseMap = new HashMap<>();
+	private KeyedDataStore m_databaseMap = new KeyedDataStore();
+
+	/** CSV出力用データ内での表示名のインデックス番号 */
+	private static final int INDEX_OF_DISPLAY_NAME = 2;
 
 	private String m_title;
 	private String m_suffix;
@@ -98,12 +101,12 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 		m_log.info("create csv file. file name : " + csvFileName);
 		File csv = new File(csvFileName);
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(csv, false))) {
-			bw.write(ReportUtil.joinStrings(columns(), ","));
+			bw.write(ReportUtil.joinStringsToCsv(columns()));
 			bw.newLine();
 
 			Map<String,Integer> legendNames = new HashMap<>();
 			for (DataKey dataKey : datakeys) {
-				List<String[]> dataLines = m_databaseMap.get(dataKey.getFacilityId()).get(dataKey.getDisplayName());
+				List<String[]> dataLines = m_databaseMap.getData(dataKey);
 				if (dataLines != null && !dataLines.isEmpty()) {
 					String addNumbering = "";
 					if (legendNames.containsKey(dataLines.get(0)[4])) {
@@ -132,9 +135,9 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 							modifiedLine[4] = legendName.toString();
 							modifiedLine[5] = line[5];
 							modifiedLine[6] = line[6];
-							bw.write(ReportUtil.joinStrings(modifiedLine, ","));
+							bw.write(ReportUtil.joinStringsToCsv(modifiedLine));
 						} else {
-							bw.write(ReportUtil.joinStrings(line, ","));
+							bw.write(ReportUtil.joinStringsToCsv(line));
 						}
 						bw.newLine();
 					}
@@ -246,6 +249,13 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 			String MonitorId, List<String> itemCodeList, int divider, Boolean trimFlg, String legendTypeName,
 			String facilityName, Integer first, Integer last) {
 		Map<String, List<String[]>> itemDataMap = new TreeMap<>();
+		
+		// オーナーロールID取得
+		String ownerRoleId = null;
+		if (!"ADMINISTRATORS".equals(ReportUtil.getOwnerRoleId())) {
+			ownerRoleId = ReportUtil.getOwnerRoleId();
+		}
+		
 		int summaryType = ReportUtil.getSummaryType(m_startDate.getTime(), m_endDate.getTime());
 		// サマリデータ、または収集データ(raw)のタイプでスイッチ
 		switch (summaryType) {
@@ -253,7 +263,7 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 			List<Object[]> summaryHList = null;
 			try {
 				summaryHList = controller.getSummaryPrefAvgHour(facilityId, m_startDate.getTime(),
-						m_endDate.getTime(), MonitorId, itemCodeList);
+						m_endDate.getTime(), MonitorId, itemCodeList, ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getItemDataMap() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -267,7 +277,7 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 				String[] result = new String[columns().length];
 				result[0] = summaryHour[0].toString();
 				result[1] = itemCode;
-				result[2] = ""; // display_name
+				result[2] = summaryHour[6].toString();
 				result[3] = new Timestamp((Long) summaryHour[3]).toString();
 
 				// 凡例表記にファシリティ名が設定されている場合
@@ -322,7 +332,7 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 			List<Object[]> summaryDList = null;
 			try {
 				summaryDList = controller.getSummaryPrefAvgDay(facilityId, m_startDate.getTime(),
-						m_endDate.getTime(), MonitorId, itemCodeList);
+						m_endDate.getTime(), MonitorId, itemCodeList, ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getItemDataMap() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -336,7 +346,7 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 				String[] result = new String[columns().length];
 				result[0] = summaryDay[0].toString();
 				result[1] = itemCode;
-				result[2] = ""; // display_name
+				result[2] = summaryDay[6].toString();
 				result[3] = new Timestamp((Long) summaryDay[3]).toString();
 
 				// 凡例表記にファシリティ名が設定されている場合
@@ -391,7 +401,7 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 			List<Object[]> summaryMList = null;
 			try {
 				summaryMList = controller.getSummaryPrefAvgMonth(facilityId, m_startDate.getTime(),
-						m_endDate.getTime(), MonitorId, itemCodeList);
+						m_endDate.getTime(), MonitorId, itemCodeList, ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getItemDataMap() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -405,7 +415,7 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 				String[] result = new String[columns().length];
 				result[0] = summaryMonth[0].toString();
 				result[1] = itemCode;
-				result[2] = ""; // display_name
+				result[2] = summaryMonth[6].toString();
 				result[3] = new Timestamp((Long) summaryMonth[3]).toString();
 
 				// 凡例表記にファシリティ名が設定されている場合
@@ -460,7 +470,7 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 			List<Object[]> summaryList = null;
 			try {
 				summaryList = controller.getSummaryPrefAvgData(facilityId, m_startDate.getTime(),
-						m_endDate.getTime(), MonitorId, itemCodeList);
+						m_endDate.getTime(), MonitorId, itemCodeList, ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getItemDataMap() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -474,7 +484,7 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 				String[] result = new String[columns().length];
 				result[0] = data[0].toString();
 				result[1] = itemCode;
-				result[2] = ""; // display_name
+				result[2] = data[6].toString();
 				result[3] = new Timestamp((Long) data[3]).toString();
 
 				// 凡例表記にファシリティ名が設定されている場合
@@ -592,9 +602,9 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 			monitorMap = m_outputMonitorInfoMap;
 		}
 
-		m_databaseMap = new HashMap<>();
+		m_databaseMap = new KeyedDataStore();
 		String facilityName = null;
-		for(Entry<String, OutputMonitorInfo> info : monitorMap.entrySet()) {
+		for (OutputMonitorInfo info : OutputMonitorInfo.sortByRunInterval(monitorMap.values())) {
 
 			//DBからIDごとに情報を取得していく
 			for (String id : facilityIds) {
@@ -612,11 +622,11 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 					}
 					
 					List<String> itemCodeList = Arrays.asList(itemStr.split(","));
-					Map<String, List<String[]>> itemDataMap = getItemDataMap(performanceController, id, info.getValue().getMonitorId(), itemCodeList, divider, trimFlg, legendTypeName, facilityName, first, last);
-					
+					Map<String, List<String[]>> itemDataMap = getItemDataMap(performanceController, id,
+							info.getMonitorId(), itemCodeList, divider, trimFlg, legendTypeName, facilityName, first,
+							last);
 					if (!itemDataMap.isEmpty()) {
 						//DBから取得した情報を整理する
-						// TODO display nameの取得方法について、調べる。5.0も取れていない。
 						List<String[]> colData = new ArrayList<>();
 						List<String[]> currentData = itemDataMap.get(itemStr.split(",")[0]);
 						if (itemStr.split(",").length > 1) {
@@ -635,25 +645,8 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 						} else {
 							colData = currentData;
 						}
-	
-						if (!colData.isEmpty()) {
-							Map<String, List<String[]>> dataMap = new TreeMap<>();
-							String currentDisplayName = colData.get(0)[2];
-							List<String[]> modifiedData = new ArrayList<>();
-							for (String[] result : colData) {
-								String displayName = result[2];
-								if (!currentDisplayName.equals(displayName)) {
-									dataMap.put(currentDisplayName, modifiedData);
-									currentDisplayName = displayName;
-									modifiedData = new ArrayList<>();
-								}
-								modifiedData.add(result);
-							}
-							if (!modifiedData.isEmpty())
-								dataMap.put(currentDisplayName, modifiedData);
-	
-							m_databaseMap.put(id, dataMap);
-						}
+
+						m_databaseMap.addData(id, INDEX_OF_DISPLAY_NAME, colData);
 					}
 				} catch (FacilityNotFound e) {
 					m_log.error(e,e);
@@ -664,23 +657,14 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 
 	@Override
 	public List<DataKey> getKeys(String facilityId) {
-		List<DataKey> keys = new ArrayList<>();
-		Map<String, List<String[]>> dataMap = m_databaseMap.get(facilityId);
-		if (dataMap == null)
-			return new ArrayList<DataKey>();
-
-		for (String displaname : m_databaseMap.get(facilityId).keySet()) {
-			DataKey key = new DataKey(facilityId, displaname);
-			keys.add(key);
-		}
-		return keys;
+		return m_databaseMap.getDataKeys(facilityId);
 	}
 
 	@Override
 	public Map<String, Object> createDataSource(ResourceChart chart, int chartNum) throws ReportingPropertyNotFound {
 		count++;
 		m_retMap = new HashMap<String, Object>();
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		String csvFileName = ReportUtil.getCsvFileNameForTemplateType(m_templateId, m_suffix + count + "_" + chartNum + "_" + dayString);
 
 		getCsvFromDB(csvFileName, chart.getItems());
@@ -720,4 +704,5 @@ public class DatasourcePerformanceSameSumUpGraph extends DatasourceSamePattern {
 
 		return m_retMap;
 	}
+
 }

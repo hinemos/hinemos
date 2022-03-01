@@ -627,8 +627,16 @@ public class ExportCollectDataFile {
 											Messages.getString(SummaryTypeConstant.typeToMessageCode(m_summaryType), Locale.ENGLISH), 
 											facilityId, m_fileId, "csv");
 							m_log.debug("itemCodeTimeDataMap is Empty. addFilePathList add = " + createFilePath);
-							createFilePathList.add(createFilePath);
-							writeEmptyDataFile(createFilePath);
+
+							// ファイル名の重複をなくす
+							// - collect key に重複があると発生する
+							// - ファイル名短縮でも発生する可能性あり
+							if (createFilePathList.contains(createFilePath)) {
+								m_log.info("run() File Name Duplication: " + createFilePath);
+							} else {
+								createFilePathList.add(createFilePath);
+								writeEmptyDataFile(createFilePath);
+							}
 						} else {
 							m_log.debug("run() Create CSV File at targetFacilityId = " + facilityId);
 							String createTmpFilePath = exportDirectory
@@ -657,8 +665,12 @@ public class ExportCollectDataFile {
 							// 完成したらファイル名を変更
 							m_log.debug("itemCodeTimeDataMap is not Empty. addFilePathList add = " + createFilePath);
 							
-							// ファイル名の重複をなくす(ファイル名短縮により発生する可能性)
-							if (!createFilePathList.contains(createFilePath)) {
+							// ファイル名の重複をなくす
+							// - collect key に重複があると発生する
+							// - ファイル名短縮でも発生する可能性あり
+							if (createFilePathList.contains(createFilePath)) {
+								m_log.info("run() File Name Duplication: " + createFilePath);
+							} else {
 								createFilePathList.add(createFilePath);
 							}
 							renameFile(createTmpFilePath, createFilePath);

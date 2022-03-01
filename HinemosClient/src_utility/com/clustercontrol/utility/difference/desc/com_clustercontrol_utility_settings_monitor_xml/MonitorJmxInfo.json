@@ -22,6 +22,12 @@
 	]},
 	
 	{
+	"propName":"urlFormatName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorJmxInfo_urlFormatName"}
+	]},
+
+	{
 	"propName":"port",
 	"annotations":[
 		{"type":"Column", "columnName":"MonitorJmxInfo_port"}

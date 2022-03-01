@@ -21,7 +21,7 @@ import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.monitor.run.bean.CollectMonitorDisplayNameConstant;
 import com.clustercontrol.monitor.run.bean.CollectMonitorNotifyConstant;
 import com.clustercontrol.monitor.run.bean.MonitorNumericType;
-import com.clustercontrol.monitor.run.bean.MonitorPredictionMethodConstant;
+import com.clustercontrol.monitor.run.bean.MonitorPredictionMethod;
 import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
@@ -124,7 +124,7 @@ public class CollectMonitorManagerUtil {
 				resultInfo.setAverage(changeMountDataInfo.getAverage());
 				resultInfo.setStandardDeviation(changeMountDataInfo.getStandardDeviation());
 				Integer checkResult = PriorityConstant.TYPE_UNKNOWN;
-				if (latestValue != null) {
+				if (latestValue != null && !latestValue.isNaN()) {
 					checkResult = getChangeCheckResult(monitorInfo, latestValue, resultInfo.getAverage(), resultInfo.getStandardDeviation());
 				}
 				resultInfo.setCheckResult(checkResult);
@@ -269,7 +269,7 @@ public class CollectMonitorManagerUtil {
 									timeSb.toString(),
 									predictionValueStr,
 									MessageConstant.PREDICTION_METHOD.getMessage(),
-									MonitorPredictionMethodConstant.typeToMessage(monitorInfo.getPredictionMethod()));
+									MonitorPredictionMethod.typeToMessage(monitorInfo.getPredictionMethod()));
 				StringBuilder sb = new StringBuilder();
 				sb.append(MessageConstant.PREDICTION_COLLECTION_VALUES.getMessage());
 				sb.append("(time, value) : \n");
@@ -369,7 +369,10 @@ public class CollectMonitorManagerUtil {
 				// 標準偏差がnullの場合は不明のため、ここでは処理なし
 			} else if (standardDeviation.doubleValue() == 0D) {
 				// 標準偏差=0の場合
-				if (average.doubleValue() != value.doubleValue()) {
+				// 算出された平均値及びキャッシュのvalueはfloatで管理されているので、比較はfloatで行う
+				// TODO 本対応は収集値や平均値等がrealとしてDBに登録およびキャッシュで保持されるための対処
+				// 改善チケット1135 の対応がされた場合は、doubleで比較が必要となる。
+				if (average.floatValue() != value.floatValue()) {
 					// 平均値と値が異なる場合は「危険」
 					rtn  = PriorityConstant.TYPE_CRITICAL;
 				} else {

@@ -181,6 +181,7 @@ public class IncrementMonitorThread extends Thread {
 	 * スレッドクローズ(スレッド紐づきオブジェクト削除・ログ出力).
 	 */
 	private void close() {
+		BinaryMonitorManager.closeFileChannels(Long.toString(this.getId()));
 		BinaryMonitorManager.rootRSMap.remove(Long.toString(this.getId()));
 		BinaryMonitorManager.binMonCacheMap.remove(Long.toString(this.getId()));
 		this.monitorMap.clear();

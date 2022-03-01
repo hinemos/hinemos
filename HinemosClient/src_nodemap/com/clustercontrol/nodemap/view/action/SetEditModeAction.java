@@ -13,6 +13,7 @@ import java.util.Map;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -22,6 +23,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.nodemap.view.NodeMapView;
+import com.clustercontrol.util.Messages;
 
 /**
  * ビューをコネクション編集可能モードに変更するクライアント側アクションクラス<BR>
@@ -48,6 +50,15 @@ public class SetEditModeAction extends AbstractHandler implements IElementUpdate
 		this.viewPart = HandlerUtil.getActivePart(event);
 		
 		NodeMapView view = (NodeMapView) viewPart.getAdapter(NodeMapView.class);
+		if (view == null) {
+			MessageDialog.openInformation(
+					null,
+					Messages.getString("message"),
+					com.clustercontrol.nodemap.messages.Messages.getString("view.select.prompt"));
+			return null;
+		}
+		
+		view.setEnabled(true);
 		view.setMode(NodeMapView.Mode.EDIT_CONNECTION_MODE);
 
 		view.setFocus();

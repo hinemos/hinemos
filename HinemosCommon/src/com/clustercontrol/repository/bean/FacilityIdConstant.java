@@ -15,4 +15,7 @@ public class FacilityIdConstant {
 
 	/** _ROOT_ */
 	public static final String ROOT = "_ROOT_";
+
+	/** 最大長 */
+	public static final int MAX_LEN = 512;
 }

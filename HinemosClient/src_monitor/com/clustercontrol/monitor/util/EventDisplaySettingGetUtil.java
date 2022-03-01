@@ -19,16 +19,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.internal.service.ContextProvider;
 import org.eclipse.rap.rwt.internal.service.ServiceContext;
+import org.openapitools.client.model.EventDisplaySettingInfoResponse;
 
+import com.clustercontrol.accesscontrol.util.ClientSession;
+import com.clustercontrol.common.util.CommonRestClientWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.MultiManagerRunUtil;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.monitor.EventDisplaySettingInfo;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-
 
 /**
  * イベント表示設定情報取得の実行管理を行う Session Bean クラス<BR>
@@ -37,6 +38,8 @@ import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 public class EventDisplaySettingGetUtil extends MultiManagerRunUtil{
 	/** ログ出力のインスタンス<BR> */
 	private static Log m_log = LogFactory.getLog(EventDisplaySettingGetUtil.class);
+	/** 接続成功可否フラグ */
+	private boolean m_updateSuccess = true;
 
 	public MultiManagerEventDisplaySettingInfo getEventDisplaySettingInfo(List<String> managerList) {
 		MultiManagerEventDisplaySettingInfo settingDataMap = new MultiManagerEventDisplaySettingInfo();
@@ -63,8 +66,8 @@ public class EventDisplaySettingGetUtil extends MultiManagerRunUtil{
 					//必ず1回でループを抜ける
 					String managerName = entry.getKey();
 					List<?> ret = entry.getValue();
-					if (ret.get(POS_INFO) != null && ret.get(POS_INFO) instanceof EventDisplaySettingInfo) {
-						EventDisplaySettingInfo displayInfo = (EventDisplaySettingInfo)ret.get(POS_INFO);
+					if (ret.get(POS_INFO) != null && ret.get(POS_INFO) instanceof EventDisplaySettingInfoResponse) {
+						EventDisplaySettingInfoResponse displayInfo = (EventDisplaySettingInfoResponse)ret.get(POS_INFO);
 						settingDataMap.addDisplayInfo(managerName, displayInfo);
 					}
 					if (ret.get(POS_ERROR) != null && ret.get(POS_ERROR) instanceof String) {
@@ -78,14 +81,26 @@ public class EventDisplaySettingGetUtil extends MultiManagerRunUtil{
 		}
 
 		//メッセージ表示
-		if( 0 < errMsgs.size() ){
+		if( 0 < errMsgs.size() && ClientSession.isDialogFree()){
+			ClientSession.occupyDialog();
 			UIManager.showMessageBox(errMsgs, true);
+			m_updateSuccess = false;
+			ClientSession.freeDialog();
 		}
 
 		long end = System.currentTimeMillis();
 		m_log.debug("time=" + (end - start));
 		return settingDataMap;
 	}
+
+	/**
+	 * 更新成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isUpdateSuccess() {
+		return this.m_updateSuccess;
+	}
+
 	
 	public class EventDisplaySettingGetTask implements Callable<Map<String, List<?>>> {
 
@@ -102,7 +117,7 @@ public class EventDisplaySettingGetUtil extends MultiManagerRunUtil{
 		
 		@Override
 		public Map<String, List<?>> call() throws Exception {
-			EventDisplaySettingInfo records = null;
+			EventDisplaySettingInfoResponse records = null;
 			Map<String, List<?>> settingDataMap= new ConcurrentHashMap<>();
 			String errMsgs = null;
 			
@@ -111,13 +126,13 @@ public class EventDisplaySettingGetUtil extends MultiManagerRunUtil{
 			ContextProvider.setContext(context);
 			
 			try {
-				MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(this.managerName);
-				EventDisplaySettingInfo info = wrapper.getEventDisplaySettingInfo();
+				CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(this.managerName);
+				EventDisplaySettingInfoResponse info = wrapper.getEventDisplaySettingInfo();
 				records = info;
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				errMsgs = Messages.getString("message.accesscontrol.16");
-			} catch (HinemosUnknown_Exception e) {
+			} catch (HinemosUnknown e) {
 				errMsgs = Messages.getString("message.monitor.67") + ", " + HinemosMessage.replace(e.getMessage());
 			} catch (Exception e) {
 				m_log.warn("EventDisplaySettingGetTask(), " + e.getMessage(), e);

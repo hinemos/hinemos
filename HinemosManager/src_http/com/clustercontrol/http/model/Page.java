@@ -14,17 +14,17 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -45,9 +45,9 @@ public class Page implements Serializable {
 	
 	private HttpScenarioCheckInfo monitorHttpScenarioInfoEntity;
 
-	private List<Pattern> monitorHttpScenarioPatternInfoEntities = new ArrayList<>();
+	private List<Pattern> patterns = new ArrayList<>();
 
-	private List<Variable> monitorHttpScenarioVariableInfoEntities = new ArrayList<>();
+	private List<Variable> variables = new ArrayList<>();
 
 	public Page() {
 	}
@@ -183,28 +183,28 @@ public class Page implements Serializable {
 
 	@OneToMany(mappedBy="monitorHttpScenarioPageInfoEntity", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public List<Pattern> getPatterns() {
-		return this.monitorHttpScenarioPatternInfoEntities;
+		return this.patterns;
 	}
 
-	public void setPatterns(List<Pattern> monitorHttpScenarioPatternInfoEntities) {
-		if (monitorHttpScenarioPatternInfoEntities != null && monitorHttpScenarioPatternInfoEntities.size() > 0) {
-			Collections.sort(monitorHttpScenarioPatternInfoEntities, new Comparator<Pattern>() {
+	public void setPatterns(List<Pattern> patterns) {
+		if (patterns != null && patterns.size() > 0) {
+			Collections.sort(patterns, new Comparator<Pattern>() {
 				@Override
 				public int compare(Pattern o1, Pattern o2) {
 					return o1.getId().getPatternOrderNo().compareTo(o2.getId().getPatternOrderNo());
 				}
 			});
 		}
-		this.monitorHttpScenarioPatternInfoEntities = monitorHttpScenarioPatternInfoEntities;
+		this.patterns = patterns;
 	}
 
 
 	@OneToMany(mappedBy="monitorHttpScenarioPageInfoEntity", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public List<Variable> getVariables() {
-		return this.monitorHttpScenarioVariableInfoEntities;
+		return this.variables;
 	}
 
-	public void setVariables(List<Variable> monitorHttpScenarioVariableInfoEntities) {
-		this.monitorHttpScenarioVariableInfoEntities = monitorHttpScenarioVariableInfoEntities;
+	public void setVariables(List<Variable> variables) {
+		this.variables = variables;
 	}
 }

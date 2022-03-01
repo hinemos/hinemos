@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"key",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkExpInfo_key"}
+	]},
+	
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkExpInfo_value"}
+	]}
+]
+}

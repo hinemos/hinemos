@@ -14,7 +14,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
 
-import com.clustercontrol.util.LoginManager;
+import com.clustercontrol.util.RestLoginManager;
 
 /**
  * ログインを行うアクションクラス<BR>
@@ -38,7 +38,7 @@ public class LoginAction extends AbstractHandler{
 			return null;
 		}
 
-		LoginManager.login(window);
+		RestLoginManager.login(window);
 
 		return null;
 	}

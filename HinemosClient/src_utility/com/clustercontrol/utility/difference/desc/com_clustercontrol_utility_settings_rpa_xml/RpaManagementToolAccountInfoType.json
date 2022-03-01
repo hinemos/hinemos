@@ -1,0 +1,13 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"rpaManagementToolAccountInfo",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Ignore", "propNames":["itemName", "measure"]}
+	]}
+]
+}

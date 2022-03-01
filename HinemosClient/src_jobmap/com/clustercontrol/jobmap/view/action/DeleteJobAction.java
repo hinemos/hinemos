@@ -15,16 +15,15 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmap.composite.JobMapTreeComposite;
 import com.clustercontrol.jobmap.util.JobMapActionUtil;
 import com.clustercontrol.jobmap.view.JobTreeView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[一覧]ビューの「削除」のクライアント側アクションクラス<BR>
@@ -39,8 +38,8 @@ public class DeleteJobAction extends BaseAction {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		super.execute(event);
 		
-		JobTreeItem item = m_jobTreeItem;
-		JobTreeItem parent = m_jobTreeItem.getParent();
+		JobTreeItemWrapper item = m_jobTreeItem;
+		JobTreeItemWrapper parent = m_jobTreeItem.getParent();
 		
 		String message = Messages.getString("job") + "["
 				+ item.getData().getId() + "]"
@@ -61,7 +60,7 @@ public class DeleteJobAction extends BaseAction {
 		JobTreeItemUtil.removeChildren(parent, item);
 		JobEditState editState = JobEditStateUtil.getJobEditState(JobTreeItemUtil.getManagerName(item));
 
-		if (item.getData().getType() == JobConstant.TYPE_JOBUNIT) {
+		if (item.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 			// ジョブユニットの削除
 			editState.removeEditedJobunit(item);
 			if (editState.getLockedJobunitBackup(item.getData()) != null) {
@@ -90,23 +89,28 @@ public class DeleteJobAction extends BaseAction {
 			return;
 		}
 		
-		JobInfo info = m_jobTreeItem.getData();
+		JobInfoWrapper info = m_jobTreeItem.getData();
 		boolean enable = false;
 		String managerName = JobTreeItemUtil.getManagerName(m_jobTreeItem);
 		if (managerName != null) {
 			JobEditState editState = JobEditStateUtil.getJobEditState(managerName);
 			enable = editState.isLockedJobunitId(info.getJobunitId());
 		}
-		Integer type = info.getType();
+		JobInfoWrapper.TypeEnum type = info.getType();
 		this.setBaseEnabled(enable && 
-				(type == JobConstant.TYPE_JOBUNIT || 
-				type == JobConstant.TYPE_JOBNET ||
-				type == JobConstant.TYPE_JOB ||
-				type == JobConstant.TYPE_FILEJOB ||
-				type == JobConstant.TYPE_APPROVALJOB ||
-				type == JobConstant.TYPE_MONITORJOB ||
-				type == JobConstant.TYPE_REFERJOBNET ||
-				type == JobConstant.TYPE_REFERJOB
+				(type == JobInfoWrapper.TypeEnum.JOBUNIT || 
+				type == JobInfoWrapper.TypeEnum.JOBNET ||
+				type == JobInfoWrapper.TypeEnum.JOB ||
+				type == JobInfoWrapper.TypeEnum.FILEJOB ||
+				type == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+				type == JobInfoWrapper.TypeEnum.MONITORJOB ||
+				type == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+				type == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+				type == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+				type == JobInfoWrapper.TypeEnum.REFERJOBNET ||
+				type == JobInfoWrapper.TypeEnum.REFERJOB ||
+				type == JobInfoWrapper.TypeEnum.RESOURCEJOB ||
+				type == JobInfoWrapper.TypeEnum.RPAJOB
 				));
 	}
 }

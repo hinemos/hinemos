@@ -11,8 +11,8 @@ package com.clustercontrol.winevent.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 
 /**
  * The primary key class for the cc_monitor_winevent_id_info database table.

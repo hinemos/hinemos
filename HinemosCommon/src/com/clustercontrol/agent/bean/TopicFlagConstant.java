@@ -19,4 +19,7 @@ public class TopicFlagConstant {
 	public static long BINARY_CHANGED = 1 << 7;
 	public static long NODE_CONFIG_SETTING_CHANGED = 1 << 8;
 	public static long NODE_CONFIG_RUN_COLLECT = 1 << 9;
+	public static long SDML_CONTROL_SETTING_CHANGED = 1 << 10;
+	public static long RPA_LOGFILE_CHANGED = 1 << 11;
+	public static long CLOUDLOG_CHANGED = 1 << 12;
 }

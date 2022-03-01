@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="src_app"/>
+	<classpathentry kind="src" path="src_standalone"/>
+	<classpathentry kind="src" path="src_log"/>
+	<classpathentry kind="lib" path="platform_switch/JavaEE/lib/servlet-api.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+		<attributes>
+			<attribute name="owner.project.facets" value="java"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/log4j-api-2.17.1.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-core-2.17.1.jar"/>
+	<classpathentry kind="lib" path="platform_switch/JakartaEE/lib/jakarta.servlet-api-5.0.0.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

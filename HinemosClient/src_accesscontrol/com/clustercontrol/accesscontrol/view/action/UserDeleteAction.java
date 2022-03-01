@@ -30,15 +30,14 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.accesscontrol.action.GetUserListTableDefine;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.accesscontrol.view.RoleSettingTreeView;
 import com.clustercontrol.accesscontrol.view.UserListView;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UnEditableUser;
+import com.clustercontrol.fault.UsedUser;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.UnEditableUser_Exception;
-import com.clustercontrol.ws.access.UsedUser_Exception;
 
 /**
  * アクセス[ユーザ]ビューの「削除」のアクションクラス<BR>
@@ -147,8 +146,7 @@ public class UserDeleteAction extends AbstractHandler implements IElementUpdater
 					continue;
 				}
 				String managerName = entry.getKey();
-				AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
-
+				AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 				if(i > 0) {
 					messageArg.append(", ");
 				}
@@ -156,21 +154,21 @@ public class UserDeleteAction extends AbstractHandler implements IElementUpdater
 
 				try {
 					// 削除処理
-					wrapper.deleteUserInfo(uidList);
+					wrapper.deleteUserInfo(String.join(",", uidList));
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// 権限なし
 						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
-					} else if (e instanceof UsedUser_Exception) {
+					} else if (e instanceof UsedUser) {
 						// 現在ログインしているユーザは削除できない
 						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.37"));
-					} else if (e instanceof UnEditableUser_Exception) {
+					} else if (e instanceof UnEditableUser) {
 						// 削除不可なユーザの場合は削除できない。（システムユーザ、内部モジュール用ユーザ
 						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.39"));
 					} else {
 						// 上記以外の例外
-						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+						errMessage = ", " + e.getMessage();
 						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.12") + errMessage);
 					}
 				}

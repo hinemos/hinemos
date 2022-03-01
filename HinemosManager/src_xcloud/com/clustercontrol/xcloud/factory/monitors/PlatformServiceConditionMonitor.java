@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.log4j.Logger;
 
@@ -29,6 +29,7 @@ import com.clustercontrol.xcloud.Session;
 import com.clustercontrol.xcloud.factory.CloudManager;
 import com.clustercontrol.xcloud.factory.ICloudOption;
 import com.clustercontrol.xcloud.factory.IPlatformServiceMonitor;
+import com.clustercontrol.xcloud.factory.ICloudOption.PlatformServiceStatus;
 import com.clustercontrol.xcloud.factory.IPlatformServiceMonitor.ICloudScopeAreaMonitor;
 import com.clustercontrol.xcloud.factory.IPlatformServiceMonitor.IPlatformAreaMonitor;
 import com.clustercontrol.xcloud.model.CloudScopeEntity;
@@ -64,7 +65,7 @@ public class PlatformServiceConditionMonitor extends CloudManagerJob {
 								public void visit(IPlatformAreaMonitor monitor) throws CloudManagerException {
 									if (platformIds.contains(scope.getPlatformId())) 
 										return;
-									
+
 									// スコープに関連するサービスの監視情報をチェック
 									updatePlatformAreaServiceConditions(monitor, monitor.getPlatformId(), monitor.monitorPlatformServiceConditions());
 									
@@ -103,6 +104,19 @@ public class PlatformServiceConditionMonitor extends CloudManagerJob {
 					}
 					@Override
 					public void matched(PlatformAreaServiceConditionEntity o1, ICloudOption.PlatformServiceCondition o2) throws CloudManagerException {
+						Logger.getLogger(PlatformServiceConditionMonitor.class).debug(" o2.getStatus() = " + o2.getStatus());
+						Logger.getLogger(PlatformServiceConditionMonitor.class).debug(" o1.getStatus() = " + o1.getStatus());
+						if("AWS".equals(monitor.getPlatformId())){
+							if((o2.getStatus()!= PlatformServiceStatus.exception && o1.getStatus()== PlatformServiceStatus.exception)){
+								// exceptionからステータスが戻った場合は時刻を見ずに更新する。
+								Logger.getLogger(PlatformServiceConditionMonitor.class).debug(o2.getServiceId() + " update ");
+							} else if((o1.getRecordDate() > o2.getMonitorDate().getTime())) {
+								// AWSでRSSのPublishedDateがDBの記録時刻より古い場合は更新しない。
+								Logger.getLogger(PlatformServiceConditionMonitor.class).debug(o2.getServiceId() + " does not update.");
+								return;
+							}	
+						}
+						
 						o1.setServiceName(o2.getServiceName());
 						o1.setStatus(o2.getStatus());
 						o1.setMessage(o2.getMessage());
@@ -115,6 +129,8 @@ public class PlatformServiceConditionMonitor extends CloudManagerJob {
 					@Override
 					public void afterO1(PlatformAreaServiceConditionEntity o1) throws CloudManagerException {
 						// 観測値なし
+						Logger.getLogger(PlatformServiceConditionMonitor.class).info("updatePlatformAreaServiceConditions() delete condition entiry serviceId=" + o1.getServiceId());
+						PersistenceUtil.remove(Session.current().getEntityManager(), o1);
 					}
 					@Override
 					public void afterO2(ICloudOption.PlatformServiceCondition o2) throws CloudManagerException {

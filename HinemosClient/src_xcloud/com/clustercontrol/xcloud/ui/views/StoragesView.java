@@ -35,7 +35,8 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.util.TableViewerSorter;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.ICloudModelContentProvider;
 import com.clustercontrol.xcloud.extensions.CloudModelContentProviderExtension;
@@ -51,7 +52,6 @@ import com.clustercontrol.xcloud.model.repository.IScope;
 import com.clustercontrol.xcloud.plugin.CloudOptionSourceProvider;
 import com.clustercontrol.xcloud.util.ControlUtil;
 import com.clustercontrol.xcloud.util.CloudUtil;
-import com.clustercontrol.xcloud.util.TableViewerSorter;
 
 
 /**
@@ -259,7 +259,7 @@ public class StoragesView extends AbstractCloudViewPart implements CloudStringCo
 				@Override
 				public String getText(Object element) {
 					IStorage storage = (IStorage)element;
-					List<FacilityTreeItem> items = CloudUtil.collectScopes(storage.getCloudScope().getCloudScopes().getHinemosManager().getManagerName(), storage.getFacilityId());
+					List<FacilityTreeItemResponse> items = CloudUtil.collectScopes(storage.getCloudScope().getCloudScopes().getHinemosManager().getManagerName(), storage.getFacilityId());
 					if (!items.isEmpty()) {
 						return items.get(0).getData().getFacilityName();
 					} else {

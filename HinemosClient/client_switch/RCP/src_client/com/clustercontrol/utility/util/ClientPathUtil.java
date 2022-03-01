@@ -14,11 +14,11 @@ public class ClientPathUtil {
 	private static ClientPathUtil instance = new ClientPathUtil();
 	
 	public static String getDefaultXMLPath(){
-		return "C:" + File.separator + "tmp";
+		return "";
 	}
 	
 	public static String getDefaultXMLDiffPath(){
-		return "C:" + File.separator + "tmp2";
+		return "";
 	}
 	
 	public static ClientPathUtil getInstance(){

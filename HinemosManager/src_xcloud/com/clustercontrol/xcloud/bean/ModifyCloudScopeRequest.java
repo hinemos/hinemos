@@ -7,8 +7,8 @@
  */
 package com.clustercontrol.xcloud.bean;
 
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
@@ -78,7 +78,7 @@ public abstract class ModifyCloudScopeRequest extends Request {
 	}
 	
 	@ElementId("XCLOUD_CORE_CLOUDSCOPE_NAME")
-	@Size(max=128)
+	@Size(max=256)
 	public String getScopeName() {
 		return scopeName;
 	}

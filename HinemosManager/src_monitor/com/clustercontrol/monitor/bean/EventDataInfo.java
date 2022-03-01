@@ -87,6 +87,7 @@ public class EventDataInfo implements Serializable {
 	private String userItem38;//ユーザ項目38
 	private String userItem39;//ユーザ項目39
 	private String userItem40;//ユーザ項目40
+	private String notifyUUID;//通知UUID
 	private String managerName = null;			//マネージャ名
 	private List<EventLogOperationHistoryEntity> eventLogHitory = null;
 	
@@ -555,7 +556,15 @@ public class EventDataInfo implements Serializable {
 	public void setUserItem40(String userItem40) {
 		this.userItem40 = userItem40;
 	}
-	
+
+	public String getNotifyUUID() {
+		return notifyUUID;
+	}
+
+	public void setNotifyUUID(String notifyUUID) {
+		this.notifyUUID = notifyUUID;
+	}
+
 	public List<EventLogOperationHistoryEntity> getEventLogHitory() {
 		return eventLogHitory;
 	}
@@ -570,5 +579,4 @@ public class EventDataInfo implements Serializable {
 	public void setManagerName(String managerName) {
 		this.managerName = managerName;
 	}
-
 }

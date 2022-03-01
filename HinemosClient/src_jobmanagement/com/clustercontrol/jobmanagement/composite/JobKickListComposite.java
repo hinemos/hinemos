@@ -9,7 +9,6 @@
 package com.clustercontrol.jobmanagement.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,29 +22,26 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.GetJobKickListByConditionRequest;
+import org.openapitools.client.model.JobKickFilterInfoRequest;
+import org.openapitools.client.model.JobKickResponse;
 
 import com.clustercontrol.bean.DayOfWeekConstant;
 import com.clustercontrol.bean.Property;
-import com.clustercontrol.bean.ScheduleConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.action.GetJobKickTableDefine;
-import com.clustercontrol.jobmanagement.bean.JobKickConstant;
 import com.clustercontrol.jobmanagement.bean.JobKickTypeMessage;
 import com.clustercontrol.jobmanagement.composite.action.JobKickDoubleClickListener;
 import com.clustercontrol.jobmanagement.composite.action.JobKickSelectionChangedListener;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
 import com.clustercontrol.jobmanagement.util.JobKickFilterPropertyUtil;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobFileCheck;
-import com.clustercontrol.ws.jobmanagement.JobKick;
-import com.clustercontrol.ws.jobmanagement.JobKickFilterInfo;
-import com.clustercontrol.ws.jobmanagement.JobSchedule;
 
 /**
  * ジョブ[実行契機]ビュー用のコンポジットクラスです。
@@ -155,7 +151,7 @@ public class JobKickListComposite extends Composite {
 	 * @param condition 検索条件
 	 */
 	public void update(Property condition) {
-		Map<String, List<JobKick>> dispDataMap = new ConcurrentHashMap<String, List<JobKick>>();
+		Map<String, List<JobKickResponse>> dispDataMap = new ConcurrentHashMap<String, List<JobKickResponse>>();
 		ArrayList<Object> listInput = new ArrayList<Object>();
 
 		// ジョブ実行契機情報取得
@@ -166,13 +162,14 @@ public class JobKickListComposite extends Composite {
 		}
 
 		if (conditionManager == null || conditionManager.equals("")) {
-			for (String managerName : EndpointManager.getActiveManagerSet()) {
+			for (String managerName : RestConnectManager.getActiveManagerSet()) {
 				if (condition != null) {
 					getJobKickWithCondition(managerName, condition, dispDataMap, errorMsgs);
 				} else {
 					getJobKick(managerName, dispDataMap, errorMsgs);
 				}
 			}
+			
 		} else {
 			getJobKickWithCondition(conditionManager, condition, dispDataMap, errorMsgs);
 		}
@@ -182,11 +179,11 @@ public class JobKickListComposite extends Composite {
 			UIManager.showMessageBox(errorMsgs, true);
 		}
 
-		for (Map.Entry<String, List<JobKick>> set : dispDataMap.entrySet()) {
-			for(JobKick jobKick : set.getValue()) {
+		for (Map.Entry<String, List<JobKickResponse>> set : dispDataMap.entrySet()) {
+			for(JobKickResponse jobKick : set.getValue()) {
 				ArrayList<Object> a = new ArrayList<Object>();
 				a.add(set.getKey());
-				a.add(JobKickTypeMessage.typeToString(jobKick.getType()));
+				a.add(JobKickTypeMessage.typeEnumValueToString(jobKick.getType().getValue()));
 				a.add(jobKick.getId());
 				a.add(jobKick.getName());
 				a.add(jobKick.getJobId());
@@ -194,21 +191,21 @@ public class JobKickListComposite extends Composite {
 				a.add(jobKick.getJobunitId());
 				a.add(new JobKickDetail(jobKick));
 				a.add(jobKick.getCalendarId());
-				a.add(jobKick.isValid());
+				a.add(jobKick.getValid());
 				a.add(jobKick.getOwnerRoleId());
 				a.add(jobKick.getCreateUser());
 				if(jobKick.getCreateTime() == null){
 					a.add(null);
 				}
 				else{
-					a.add(new Date(jobKick.getCreateTime()));
+					a.add(jobKick.getCreateTime());
 				}
 				a.add(jobKick.getUpdateUser());
 				if(jobKick.getUpdateTime() == null){
 					a.add(null);
 				}
 				else{
-					a.add(new Date(jobKick.getUpdateTime()));
+					a.add(jobKick.getUpdateTime());
 				}
 				listInput.add(a);
 			}
@@ -227,46 +224,53 @@ public class JobKickListComposite extends Composite {
 	}
 
 	private static class JobKickDetail {
-		JobKick jobKick;
-		private JobKickDetail(JobKick jobKick) {
+		JobKickResponse jobKick;
+		private JobKickDetail(JobKickResponse jobKick) {
 			this.jobKick = jobKick;
 		}
 		
 		@Override
 		public String toString() {
-			if (jobKick instanceof JobSchedule) {
-				JobSchedule schedule = (JobSchedule) jobKick;
+			if (jobKick.getType() == JobKickResponse.TypeEnum.SCHEDULE) {
 				String ret = "";
-				if (schedule.getScheduleType() == ScheduleConstant.TYPE_DAY) {
-					if (schedule.getHour() == null) {
+				if (jobKick.getScheduleType() ==  JobKickResponse.ScheduleTypeEnum.DAY) {
+					if (jobKick.getHour() == null) {
 						ret += "*";
 					} else {
-						ret += String.format("%02d", schedule.getHour());
+						ret += String.format("%02d", jobKick.getHour());
 					}
-					ret += ":" + String.format("%02d", schedule.getMinute());
-				} else if (schedule.getScheduleType() == ScheduleConstant.TYPE_WEEK) {
-					ret += DayOfWeekConstant.typeToString(schedule.getWeek()) + " ";
-					if (schedule.getHour() == null) {
+					ret += ":" + String.format("%02d", jobKick.getMinute());
+				} else if (jobKick.getScheduleType() == JobKickResponse.ScheduleTypeEnum.WEEK) {
+					ret += DayOfWeekConstant.typeToString(jobKick.getWeek()) + " ";
+					if (jobKick.getHour() == null) {
 						ret += "*";
 					} else {
-						ret += String.format("%02d", schedule.getHour());
+						ret += String.format("%02d", jobKick.getHour());
 					}
-					ret += ":" + String.format("%02d", schedule.getMinute());
-				} else if (schedule.getScheduleType() == ScheduleConstant.TYPE_REPEAT) {
-					ret += String.format("%02d", schedule.getFromXminutes()) +
+					ret += ":" + String.format("%02d", jobKick.getMinute());
+				} else if (jobKick.getScheduleType() == JobKickResponse.ScheduleTypeEnum.REPEAT) {
+					ret += String.format("%02d", jobKick.getFromXminutes()) +
 							Messages.getString("schedule.min.start.time") +
-							String.format("%02d", schedule.getEveryXminutes()) +
+							String.format("%02d", jobKick.getEveryXminutes()) +
+							Messages.getString("schedule.min.execution.interval");
+				} else if (jobKick.getScheduleType() == JobKickResponse.ScheduleTypeEnum.INTERVAL) {
+					ret += String.format("%02d", jobKick.getHour()) +
+							Messages.getString("hr") +
+							String.format("%02d", jobKick.getMinute()) +
+							Messages.getString("schedule.min.start.time") +
+							String.format("%02d", jobKick.getEveryXminutes()) +
 							Messages.getString("schedule.min.execution.interval");
 				}
 				return ret;
-			} else if (jobKick instanceof JobFileCheck) {
-				JobFileCheck fileCheck = (JobFileCheck) jobKick;
-				return fileCheck.getFileName();
-			} else if (jobKick.getType() == JobKickConstant.TYPE_MANUAL) {
+			} else if (jobKick.getType() == JobKickResponse.TypeEnum.FILECHECK) {
+				return jobKick.getFileName();
+			} else if (jobKick.getType() == JobKickResponse.TypeEnum.JOBLINKRCV) {
+				return jobKick.getJoblinkMessageId();
+			} else if (jobKick.getType() == JobKickResponse.TypeEnum.MANUAL) {
 				//マニュアル実行契機の場合は何も表示しない
 				return "";
 			} else {
-				m_log.warn("unknown class " + jobKick.getClass().getName());
+				m_log.warn("unknown type " + jobKick.getType());
 			}
 			return "";
 		}
@@ -281,14 +285,14 @@ public class JobKickListComposite extends Composite {
 	 */
 	private void getJobKick(
 			String managerName,
-			Map<String, List<JobKick>> dispDataMap, 
+			Map<String, List<JobKickResponse>> dispDataMap, 
 			Map<String, String> errorMsgs) {
 
 		//実行契機情報取得
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
 			dispDataMap.put(managerName, wrapper.getJobKickList());
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 		} catch (Exception e) {
 			m_log.warn("getJobKick(), " + e.getMessage(), e);
@@ -309,15 +313,18 @@ public class JobKickListComposite extends Composite {
 	private void getJobKickWithCondition(
 			String managerName, 
 			Property condition, 
-			Map<String, List<JobKick>> dispDataMap, 
+			Map<String, List<JobKickResponse>> dispDataMap, 
 			Map<String, String> errorMsgs) {
 
 		//実行契機情報取得
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-			JobKickFilterInfo jobKickFilterInfo = JobKickFilterPropertyUtil.property2dto(condition);
-			dispDataMap.put(managerName, wrapper.getJobKickListByCondition(jobKickFilterInfo));
-		} catch (InvalidRole_Exception e) {
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			JobKickFilterInfoRequest jobKickFilterInfo = JobKickFilterPropertyUtil.property2dto(condition);
+			GetJobKickListByConditionRequest getJobKickListByCondition = new GetJobKickListByConditionRequest();
+			getJobKickListByCondition.setJobKickFilterInfo(jobKickFilterInfo);
+
+			dispDataMap.put(managerName, wrapper.getJobKickListByCondition(getJobKickListByCondition));
+		} catch (InvalidRole e) {
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 		} catch (Exception e) {
 			m_log.warn("getJobKick(), " + e.getMessage(), e);

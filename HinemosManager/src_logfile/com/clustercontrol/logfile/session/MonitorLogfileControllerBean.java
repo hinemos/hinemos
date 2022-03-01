@@ -18,7 +18,6 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
-import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
@@ -35,13 +34,13 @@ import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.logfile.bean.LogfileResultDTO;
 import com.clustercontrol.logfile.factory.RunMonitorLogfileString;
-import com.clustercontrol.logfile.util.LogfileManagerUtil;
 import com.clustercontrol.monitor.run.factory.SelectMonitor;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.MonitorOnAgentUtil;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.sdml.util.SdmlUtil;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -167,9 +166,7 @@ public class MonitorLogfileControllerBean {
 			
 			for (MonitorInfo monitorInfo : monitorList) {
 				String scope = monitorInfo.getFacilityId();
-				ArrayList<String> facilityIdList
-				= new RepositoryControllerBean().getExecTargetFacilityIdList(scope, monitorInfo.getOwnerRoleId());
-				if (facilityIdList != null && facilityIdList.contains(facilityId)) {
+				if (new RepositoryControllerBean().containsFacilityIdWithoutList(scope, facilityId, monitorInfo.getOwnerRoleId())) {
 					if (withCalendar) {
 						String calendarId = monitorInfo.getCalendarId();
 						try {
@@ -224,7 +221,13 @@ public class MonitorLogfileControllerBean {
 						continue;
 					}
 					RunMonitorLogfileString runMonitorLogfileString = new RunMonitorLogfileString();
-					notifyInfoList.addAll(runMonitorLogfileString.run(facilityId, result));
+
+					List<OutputBasicInfo> rtn = runMonitorLogfileString.run(facilityId, result);
+					if (SdmlUtil.isCreatedBySdml(result.monitorInfo)) {
+						// SDML監視種別の場合プラグインIDを置き換える
+						SdmlUtil.replacePluginId(result.monitorInfo, rtn);
+					}
+					notifyInfoList.addAll(rtn);
 					monitorJobEndNodeList.addAll(runMonitorLogfileString.getMonitorJobEndNodeList());
 				}
 			}
@@ -255,9 +258,6 @@ public class MonitorLogfileControllerBean {
 							monitorJobEndNode.getStatus(),
 							monitorJobEndNode.getEndValue());
 				}
-				// 接続中のHinemosAgentに対する更新通知
-				SettingUpdateInfo.getInstance().setLogFileMonitorUpdateTime(HinemosTime.currentTimeMillis());
-				LogfileManagerUtil.broadcastConfigured();
 			}
 		} catch (Exception e) {
 			m_log.warn("run() MonitorJobWorker.endMonitorJob() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);

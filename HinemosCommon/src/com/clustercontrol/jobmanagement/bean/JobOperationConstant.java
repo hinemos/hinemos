@@ -20,6 +20,8 @@ public class JobOperationConstant {
 	public static final String JOB_UNIT = "jobUnit";
 	/** ジョブID */
 	public static final String JOB = "job";
+	/** ジョブ名 */
+	public static final String JOB_NAME = "jobName";
 	/** ファシリティID */
 	public static final String FACILITY = "facility";
 	/** 制御 */

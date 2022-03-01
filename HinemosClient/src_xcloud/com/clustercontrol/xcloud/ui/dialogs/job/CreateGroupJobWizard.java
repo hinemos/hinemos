@@ -7,8 +7,6 @@
  */
 package com.clustercontrol.xcloud.ui.dialogs.job;
 
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.IPageChangedListener;
@@ -20,23 +18,22 @@ import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.JobEndStatusInfoResponse;
+import org.openapitools.client.model.JobResourceInfoResponse;
+import org.openapitools.client.model.ReplaceJobunitRequest;
 
 import com.clustercontrol.bean.EndStatusConstant;
-import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.bean.ResourceJobConstant;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.view.JobListView;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobCommandInfo;
-import com.clustercontrol.ws.jobmanagement.JobEndStatusInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.InvalidStateException;
@@ -51,9 +48,9 @@ public class CreateGroupJobWizard extends Wizard {
 	
 	public interface IJobDetailProvider {
 		ICloudScope getCloudScope();
-		String getCommand(CloudEndpoint endpoint, String facilityId) throws Exception;
 		String getJobName(String facilityId);
 		String getJobId(String facilityId);
+		JobResourceInfoResponse.ResourceActionEnum getAction();
 	}
 	
 	protected final String ownerRoleId;
@@ -83,86 +80,71 @@ public class CreateGroupJobWizard extends Wizard {
 	@Override
 	public boolean performFinish() {
 		IHinemosManager manager = provider.getCloudScope().getCloudScopes().getHinemosManager();
-		CloudEndpoint endpoint = manager.getEndpoint(CloudEndpoint.class);
-		List<String> facilities;
-		try {
-			facilities = endpoint.getManagerFacilityIds();
-			if (facilities.isEmpty()) {
-				// 失敗報告ダイアログを生成
-				MessageDialog.openError(null, Messages.getString("failed"), CloudConstants.bundle_messages.getString("message.job.manager_node.not_found"));
-				return false;
-			}
-		} catch (CloudManagerException | com.clustercontrol.ws.xcloud.InvalidRole_Exception | com.clustercontrol.ws.xcloud.InvalidUserPass_Exception e) {
-			logger.error(e.getMessage(), e);
-
-			// 失敗報告ダイアログを生成
-			ControlUtil.openError(e, CloudStringConstants.msgErrorFinishCreateJob);
-			return false;
-		} 
 		JobDetailPage detailPage = (JobDetailPage)getPage(JobDetailPage.pageName);
 		JobTreePage jobPage = (JobTreePage)getPage(JobTreePage.pageName);
 		FacilityTreePage facilityPage = (FacilityTreePage)getPage(FacilityTreePage.pageName);
 
-		JobTreeItem parent = jobPage.getSelectedItem();
+		JobTreeItemWrapper parent = jobPage.getSelectedItem();
 
 		String facilityId = facilityPage.getSelectedItem().getData().getFacilityId();
-		JobTreeItem item = new JobTreeItem();
+		JobTreeItemWrapper item = new JobTreeItemWrapper();
 		JobTreeItemUtil.addChildren(parent, item);
 
-		item.setData(JobTreeItemUtil.getNewJobInfo(parent.getData().getJobunitId(), JobConstant.TYPE_JOB));
-		item.getData().setCommand(new JobCommandInfo());
-		item.getData().getCommand().setMessageRetryEndFlg(false);
-		item.getData().getCommand().setMessageRetryEndValue(-1);
-		item.getData().getCommand().setCommandRetry(10);
-		item.getData().getCommand().setCommandRetryFlg(true);
-		item.getData().getCommand().setMessageRetry(10);
-		item.getData().getCommand().setProcessingMethod(0);
-		item.getData().getCommand().setScope("");
-		item.getData().getCommand().setSpecifyUser(false);
-		item.getData().getCommand().setStopType(1);
-		item.getData().getCommand().setCommandRetryFlg(false);
+		item.setData(JobTreeItemUtil.getNewJobInfo(parent.getData().getJobunitId(), JobInfoWrapper.TypeEnum.RESOURCEJOB));
 
-		JobEndStatusInfo normalEndStatus = new JobEndStatusInfo();
-		normalEndStatus.setType(EndStatusConstant.TYPE_NORMAL);
+		// リソース制御ジョブ情報の作成
+		JobResourceInfoResponse resourceJobInfo = new JobResourceInfoResponse();
+		item.getData().setResource(resourceJobInfo);
+		resourceJobInfo.setResourceType(JobResourceInfoResponse.ResourceTypeEnum.COMPUTE_FACILITY_ID);
+		resourceJobInfo.setResourceCloudScopeId(provider.getCloudScope().getId());
+		resourceJobInfo.setResourceAction(provider.getAction());
+		resourceJobInfo.setResourceSuccessValue(ResourceJobConstant.SUCCESS_VALUE);
+		resourceJobInfo.setResourceFailureValue(ResourceJobConstant.FAILURE_VALUE);
+		resourceJobInfo.setResourceTargetId(facilityId);
+		resourceJobInfo.setResourceStatusConfirmTime(ResourceJobConstant.STATUS_CONFIRM_TIME);
+		resourceJobInfo.setResourceStatusConfirmInterval(ResourceJobConstant.STATUS_CONFIRM_INTERVAL);
+		resourceJobInfo.setResourceNotifyScope(facilityId);
+
+		JobEndStatusInfoResponse normalEndStatus = new JobEndStatusInfoResponse();
+		normalEndStatus.setType(JobEndStatusInfoResponse.TypeEnum.NORMAL);
 		normalEndStatus.setValue(EndStatusConstant.INITIAL_VALUE_NORMAL);
 		normalEndStatus.setStartRangeValue(0);
 		normalEndStatus.setEndRangeValue(0);
 		item.getData().getEndStatus().add(normalEndStatus);
-		JobEndStatusInfo warningEndStatus = new JobEndStatusInfo();
-		warningEndStatus.setType(EndStatusConstant.TYPE_WARNING);
+		JobEndStatusInfoResponse warningEndStatus = new JobEndStatusInfoResponse();
+		warningEndStatus.setType(JobEndStatusInfoResponse.TypeEnum.WARNING);
 		warningEndStatus.setValue(EndStatusConstant.INITIAL_VALUE_WARNING);
 		warningEndStatus.setStartRangeValue(1);
 		warningEndStatus.setEndRangeValue(1);
 		item.getData().getEndStatus().add(warningEndStatus);
-		JobEndStatusInfo abnormalEndStatus = new JobEndStatusInfo();
-		abnormalEndStatus.setType(EndStatusConstant.TYPE_ABNORMAL);
+		JobEndStatusInfoResponse abnormalEndStatus = new JobEndStatusInfoResponse();
+		abnormalEndStatus.setType(JobEndStatusInfoResponse.TypeEnum.ABNORMAL);
 		abnormalEndStatus.setValue(EndStatusConstant.INITIAL_VALUE_ABNORMAL);
-		item.getData().getEndStatus().add(abnormalEndStatus);			
-		item.getData().setNormalPriority(PriorityConstant.TYPE_INFO);
+		item.getData().getEndStatus().add(abnormalEndStatus);
+		item.getData().setNormalPriority(JobInfoWrapper.NormalPriorityEnum.INFO);
 		item.getData().setPropertyFull(true);
-		item.getData().setWarnPriority(PriorityConstant.TYPE_WARNING);
+		item.getData().setWarnPriority(JobInfoWrapper.WarnPriorityEnum.WARNING);
 
 		item.getData().setWaitRule(JobTreeItemUtil.getNewJobWaitRuleInfo());
 
 		item.getData().setOwnerRoleId(parent.getData().getOwnerRoleId());
 		item.getData().setId(detailPage.getJobId());
 		item.getData().setName(detailPage.getJobName());
-		item.getData().getCommand().setFacilityID(facilities.get(0));
-		item.getData().setBeginPriority(PriorityConstant.TYPE_INFO);
+		item.getData().setBeginPriority(JobInfoWrapper.BeginPriorityEnum.INFO);
 		
 		try {
-			item.getData().getCommand().setStartCommand(provider.getCommand(endpoint, facilityId));
-			
-			while(parent != null && parent.getData().getType() !=  JobConstant.TYPE_JOBUNIT) {
+			while(parent != null && parent.getData().getType() !=  JobInfoWrapper.TypeEnum.JOBUNIT) {
 				parent = parent.getParent();
 			}
 			
 			if (parent == null)
 				throw new InvalidStateException();
 			
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(manager.getManagerName());
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(manager.getManagerName());
 			
-			wrapper.registerJobunit(JobUtil.getTopJobUnitTreeItem(parent));
+			ReplaceJobunitRequest request = new ReplaceJobunitRequest();
+			request.setJobTreeItem(JobTreeItemUtil.getRequestFromItem(JobUtil.getTopJobUnitTreeItem(parent)) );
+			wrapper.replaceJobunit(parent.getData().getJobunitId(),request);
 			JobEditState jobEditState = JobEditStateUtil.getJobEditState(manager.getManagerName());
 			jobEditState.updateJobTree(ownerRoleId, false);
 			
@@ -194,18 +176,18 @@ public class CreateGroupJobWizard extends Wizard {
 		}
 	}
 	
-	protected JobTreeItem getTopJobTreeItem(JobTreeItem item) {
+	protected JobTreeItemWrapper getTopJobTreeItem(JobTreeItemWrapper item) {
 		if (item.getParent() != null)
 			return item.getParent();
 		return item;
 	}
 
-	protected JobTreeItem findJobTreeItem(JobTreeItem item, String jobUnitId, String jobId) {
+	protected JobTreeItemWrapper findJobTreeItem(JobTreeItemWrapper item, String jobUnitId, String jobId) {
 		if (item.getData().getJobunitId().equals(jobUnitId) && item.getData().getId().equals(jobId)) {
 			return item;
 		}
-		for (JobTreeItem child: item.getChildren()) {
-			JobTreeItem matched = findJobTreeItem(child, jobUnitId, jobId);
+		for (JobTreeItemWrapper child: item.getChildren()) {
+			JobTreeItemWrapper matched = findJobTreeItem(child, jobUnitId, jobId);
 			if (matched != null)
 				return matched;
 		}
@@ -222,18 +204,18 @@ public class CreateGroupJobWizard extends Wizard {
 					Object nextPage = event.getSelectedPage();
 					if (nextPage instanceof JobDetailPage && !firstShowDetail) {
 						FacilityTreePage facilityTreePage = (FacilityTreePage)getPage(FacilityTreePage.pageName);
-						FacilityTreeItem facilityTreeItem = facilityTreePage.getSelectedItem();
+						FacilityTreeItemResponse facilityTreeItem = facilityTreePage.getSelectedItem();
 
 						JobTreePage jobTreePage = (JobTreePage)getPage(JobTreePage.pageName);
-						JobTreeItem parent =jobTreePage.getSelectedItem();
+						JobTreeItemWrapper parent =jobTreePage.getSelectedItem();
 
-						JobTreeItem top = getTopJobTreeItem(parent);
+						JobTreeItemWrapper top = getTopJobTreeItem(parent);
 
 						int count = 0;
 						String jobIdOrigine = provider.getJobId(facilityTreeItem.getData().getFacilityId()).replace(" ", "_").replaceAll("[^0-9a-zA-Z_\\-\\.@]", "");
 						String jobId = jobIdOrigine;
 						while (true) {
-							JobTreeItem matched = findJobTreeItem(top, parent.getData().getJobunitId(), jobId);
+							JobTreeItemWrapper matched = findJobTreeItem(top, parent.getData().getJobunitId(), jobId);
 							if (matched == null)
 								break;
 							jobId = jobIdOrigine + "-" + ++count;
@@ -246,7 +228,7 @@ public class CreateGroupJobWizard extends Wizard {
 						firstShowDetail = true;
 					} else if (nextPage instanceof FacilityTreePage) {
 						JobTreePage jobTreePage = (JobTreePage)getPage(JobTreePage.pageName);
-						JobTreeItem jobTreeItem = jobTreePage.getSelectedItem();
+						JobTreeItemWrapper jobTreeItem = jobTreePage.getSelectedItem();
 						
 						((FacilityTreePage)nextPage).setOwnerRole(jobTreeItem.getData().getOwnerRoleId());
 					}
@@ -265,12 +247,12 @@ public class CreateGroupJobWizard extends Wizard {
 		return page.getJobId();
 	}
 	
-	public JobTreeItem getJobTreeItem() {
+	public JobTreeItemWrapper getJobTreeItem() {
 		JobTreePage page = (JobTreePage)getPage(JobTreePage.pageName);
 		return page.getSelectedItem();
 	}
 	
-	public FacilityTreeItem getFacilityTreeItem() {
+	public FacilityTreeItemResponse getFacilityTreeItem() {
 		FacilityTreePage page = (FacilityTreePage)getPage(FacilityTreePage.pageName);
 		return page.getSelectedItem();
 	}

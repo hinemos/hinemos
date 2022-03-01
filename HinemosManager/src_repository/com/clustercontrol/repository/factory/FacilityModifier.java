@@ -8,15 +8,16 @@
 
 package com.clustercontrol.repository.factory;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
-import javax.persistence.EntityExistsException;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.util.OptionManager;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.Ipv6Util;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -26,7 +27,6 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.UsedFacility;
 import com.clustercontrol.nodemap.session.NodeMapControllerBean;
-import com.clustercontrol.platform.repository.FacilityModifierUtil;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.bean.NodeRegisterFlagConstant;
@@ -40,12 +40,16 @@ import com.clustercontrol.repository.model.NodeGeneralDeviceInfo;
 import com.clustercontrol.repository.model.NodeHistory;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.NodeNoteInfo;
+import com.clustercontrol.repository.model.NodePackageInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.FacilityUtil;
 import com.clustercontrol.repository.util.NodeConfigRegisterUtil;
 import com.clustercontrol.repository.util.QueryUtil;
+import com.clustercontrol.rpa.model.RpaToolMst;
 import com.clustercontrol.util.HinemosTime;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * ファシリティの更新処理を実装したクラス<BR>
@@ -299,7 +303,6 @@ public class FacilityModifier {
 
 		// 関連インスタンス、ファシリティインスタンスを削除する
 		deleteScopeRecursive(facility);
-		FacilityModifierUtil.deleteFacilityRelation(facilityId);
 
 		m_log.info("deleteScope() successful in deleting a owner role scope with sub scopes. (facilityId = " + facilityId + ")");
 	}
@@ -324,7 +327,6 @@ public class FacilityModifier {
 
 		// 関連インスタンス、ファシリティインスタンスを削除する
 		deleteScopeRecursive(facility);
-		FacilityModifierUtil.deleteFacilityRelation(facilityId);
 
 		m_log.info("deleteScope() successful in deleting a scope with sub scopes. (facilityId = " + facilityId + ")");
 	}
@@ -492,6 +494,10 @@ public class FacilityModifier {
 			String platformFamily = nodeInfo.getPlatformFamily();
 			assignFacilityToScope(platformFamily, facilityId);
 			m_log.info(String.format("assignFacilityToScope %s: %dms", platformFamily, HinemosTime.currentTimeMillis() - startTime));
+			
+			// RPAツールスコープへの登録
+			assignRpaScope(nodeInfo, modifyUserId);
+
 		} catch (FacilityNotFound e) {
 			throw e;
 		} catch (EntityExistsException e) {
@@ -619,6 +625,9 @@ public class FacilityModifier {
 				//新OSスコープに割り当て
 				assignFacilityToScope(platformFamily, facilityId);
 			}
+			
+			// RPAツールスコープの更新
+			assignRpaScope(nodeInfo, modifyUserId);
 		}
 
 		m_log.info("modifyNode() successful in modifing a node. (facilityId = " + facilityId + ")");
@@ -690,7 +699,6 @@ public class FacilityModifier {
 
 			m_log.debug("deleteNode() delete node optional success");
 
-			FacilityModifierUtil.deleteFacilityRelation(facilityId);
 			m_log.info("deleteNode() successful in deleting a node. (facilityId = " + facilityId + ")");
 		}
 	}
@@ -744,6 +752,53 @@ public class FacilityModifier {
 		}
 
 		m_log.info("assignFacilitiesToScope() successful in assigning facilities to a scope.");
+	}
+	
+	public static void assinRpaScope(String facilityId, List<NodePackageInfo> nodePackageInfo, String modifyUserId) throws FacilityNotFound, HinemosUnknown {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			NodeInfo nodeInfo = NodeProperty.getProperty(facilityId);
+			assignRpaScope(nodeInfo, nodePackageInfo, modifyUserId);
+		}
+	}
+	
+	private static void assignRpaScope(NodeInfo nodeInfo, String modifyUserId) throws FacilityNotFound, HinemosUnknown {
+		assignRpaScope(nodeInfo, nodeInfo.getNodePackageInfo(), modifyUserId);
+	}
+	
+	// RPAツールパッケージがインストールされている場合、RPAツールスコープ(管理ツールなし)に割り当てる。
+	// パッケージ情報が登録前(構成情報取得時等)の場合があるため、パッケージ情報は引数で指定
+	private static void assignRpaScope(NodeInfo nodeInfo, List<NodePackageInfo> nodePackageInfo, String modifyUserId) throws FacilityNotFound, HinemosUnknown {
+		// Enterprise機能が有効な場合のみ実行
+		if (!OptionManager.checkEnterprise()) {
+			return;
+		}
+		
+		// RPA管理ツールが設定されている場合は、割当を行わない。
+		if (!nodeInfo.getRpaManagementToolType().isEmpty()) {
+			return;
+		}
+
+		// パッケージに応じてRPAツールスコープへ割当てる。
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			// RPAツールマスタを取得
+			List<RpaToolMst> mstList = com.clustercontrol.rpa.util.QueryUtil.getRpaToolMstList();
+			
+			// パッケージ名から、RPA組み込みスコープに割り当てるか判定
+			List<String> packageNameList = nodePackageInfo.stream().map(NodePackageInfo::getPackageName).collect(Collectors.toList());
+			for (RpaToolMst mst : mstList) {
+				if (packageNameList.contains(mst.getRpaToolPackageName())) {
+					assignFacilityToScope(mst.getDefaultScopeId(), nodeInfo.getFacilityId());
+				} else {
+					// 存在しない場合、割当を外す。
+					try {
+						releaseNodeFromScope(mst.getDefaultScopeId(), new String[]{nodeInfo.getFacilityId()}, modifyUserId, false);
+					} catch (Exception e) {
+						// 元々割当されてない場合は例外が投げられるので、無視
+						continue;
+					}
+				}
+			}
+		}
 	}
 
 	private static boolean doesFacilityRelationEntityExist(
@@ -934,7 +989,15 @@ public class FacilityModifier {
 		nodeEntity.setCloudResourceName(nodeInfo.getCloudResourceName());
 		nodeEntity.setCloudResourceId(nodeInfo.getCloudResourceId());
 		nodeEntity.setCloudLocation(nodeInfo.getCloudLocation());
+		nodeEntity.setCloudLogPriority(nodeInfo.getCloudLogPriority());
 
+		// RPA関連
+		nodeEntity.setRpaLogDir(nodeInfo.getRpaLogDir());
+		nodeEntity.setRpaManagementToolType(nodeInfo.getRpaManagementToolType());
+		nodeEntity.setRpaResourceId(nodeInfo.getRpaResourceId());
+		nodeEntity.setRpaUser(nodeInfo.getRpaUser());
+		nodeEntity.setRpaExecEnvId(nodeInfo.getRpaExecEnvId());
+		
 		// 管理情報関連
 		nodeEntity.setAdministrator(nodeInfo.getAdministrator());
 		nodeEntity.setContact(nodeInfo.getContact());
@@ -1069,4 +1132,137 @@ public class FacilityModifier {
 		}
 	}
 
+	/**
+	 * スコープの 親スコープを変更する。<BR>
+	 * 親が無指定ならルートスコープとなる。<BR>
+	 *
+	 * @param facilityId 変更対象スコープのID
+	 * @param parentFacilityId 変更後の親スコープのID。ルートスコープならnull指定
+	 * @param modifyUserId 作業ユーザID
+	 * @throws FacilityNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown 
+	 */
+	public static void modifyParentForScope(String facilityId ,String parentFacilityId, String modifyUserId ) throws FacilityNotFound, InvalidRole, HinemosUnknown {
+		/** ローカル変数 */
+		FacilityInfo facility = null;
+		FacilityInfo parentFacility = null;
+
+		/** メイン処理 */
+		m_log.debug("modifyParentForScope() : start modifing a parent of scope ...");
+
+		// ファシリティインスタンスを取得
+		facility = QueryUtil.getFacilityPK(facilityId, ObjectPrivilegeMode.MODIFY);
+		
+		// ファシリティがスコープかどうかを確認する
+		if (!FacilityUtil.isScope(facility)) {
+			FacilityNotFound e = new FacilityNotFound("this facility is not a scope. (facilityId = " + facilityId + ")");
+			m_log.info("modifyParentForScope() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		// 親ファシリティがスコープかどうかを確認する
+		if (! ObjectValidator.isEmptyString(parentFacilityId)) {
+			parentFacility = QueryUtil.getFacilityPK_NONE(parentFacilityId);
+			if (!FacilityUtil.isScope(parentFacility)) {
+				FacilityNotFound e = new FacilityNotFound("this facility is not a scope. (facilityId = " + parentFacilityId + ")");
+				m_log.info("modifyParentForScope() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		}
+		//現状設定を取得
+		String oldParentFacilityId = null;
+		Collection<FacilityInfo> parentBeanCol = com.clustercontrol.repository.util.QueryUtil.getParentFacilityEntity(facilityId);
+		//findbugs対応 getParentFacilityEntityの戻り値は nullはあり得ない実装なので nullチェックを削除
+		if( parentBeanCol.size() == 1 ){
+			FacilityInfo oldParentBean = (parentBeanCol.toArray(new FacilityInfo[0]))[0];
+			oldParentFacilityId = oldParentBean.getFacilityId();
+		}else if( parentBeanCol.size() > 1 ){
+			HinemosUnknown e = new HinemosUnknown("this facility is mutli parent. (facilityId = " + facilityId + ")");
+			m_log.info("modifyParentForScope() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+
+		// 設定に変更がないなら何もせず 終了
+		if( oldParentFacilityId == null && parentFacilityId == null ){
+			return;
+		}
+		if( oldParentFacilityId != null && oldParentFacilityId.equals(parentFacilityId)){
+			return;
+		}
+		
+		// 現状の親とのリレーションを削除( 現状が最上位なら何もしない)
+		if (!(ObjectValidator.isEmptyString(oldParentFacilityId))) {
+			String[] facilityIds = {facilityId};
+			releaseSubscopesFromScope( oldParentFacilityId , facilityIds, modifyUserId, false);
+		}
+
+		// 新しい親とのリレーションを追加( 新しい階層が最上位なら何もしない)
+		if (!(ObjectValidator.isEmptyString(parentFacilityId))) {
+			assignFacilityToScope(parentFacilityId, facilityId);
+		}
+
+		m_log.info("modifyParentScope() :successful in modifing a parent of scope . (facilityId = " + facilityId + ")");
+	}
+
+	/**
+	 * サブスコープから親となるスコープへの割り当てを解除する。<BR>
+	 *
+	 * 対象となったサブスコープはルートスコープとなる。
+	 *
+	 * @param parentFacilityId 親スコープのファシリティID
+	 * @param facilityIds 対象となるサブスコープのファシリティID
+	 * @param modifyUserId 作業ユーザID
+	 * @param isAuthCheckTarget 操作ユーザーの親スコープへのオブジェクト権限を確認する場合は true ,確認しない場合はfalse
+	 *
+	 * @throws FacilityNotFound
+	 * @throws InvalidRole
+	 */
+	private static void releaseSubscopesFromScope(String parentFacilityId, String[] subFacilityIds, String modifyUserId, boolean isAuthCheckTarget)
+			throws FacilityNotFound, InvalidRole {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
+			/** ローカル変数 */
+			FacilityInfo facility = null;
+			String facilityId = null;
+
+			/** メイン処理 */
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("releaseSubscopesFromScope(): releasing subscopes from a scope... parentFacilityId=" + parentFacilityId + " , isAuthCheckTarget=" + isAuthCheckTarget);
+			}
+
+			// 該当するファシリティインスタンスを取得（オプジェクト権限チェックの要否を考慮）
+			if (isAuthCheckTarget) {
+				facility = QueryUtil.getFacilityPK(parentFacilityId);
+			} else {
+				facility = QueryUtil.getFacilityPK_NONE(parentFacilityId);
+			}
+
+			if (!FacilityUtil.isScope(facility)) {
+				FacilityNotFound e = new FacilityNotFound("this facility is not a scope. (facilityId = " + parentFacilityId + ")");
+				m_log.info("releaseSubscopesFromScope() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+
+			for (int i = 0; i < subFacilityIds.length; i++) {
+				facilityId = subFacilityIds[i];
+				facility = QueryUtil.getFacilityPK(facilityId);
+				if (!FacilityUtil.isScope(facility)) {
+					FacilityNotFound e = new FacilityNotFound("this facility is not a scope. (facilityId = " + facilityId + ")");
+					m_log.info("releaseSubscopesFromScope() : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage());
+					throw e;
+				}
+				FacilityRelationEntity relation = QueryUtil.getFacilityRelationPk(parentFacilityId, facilityId);
+				em.remove(relation);
+				m_log.info("releaseSubscopesFromScope() successful in releaseing a subscope. (parentFacilityId = " + parentFacilityId + ", facilityId = " + facilityId + ")");
+			}
+
+			m_log.info("releaseSubscopesFromScope() successful in releasing subscopes from a scope..");
+		}
+	}
 }

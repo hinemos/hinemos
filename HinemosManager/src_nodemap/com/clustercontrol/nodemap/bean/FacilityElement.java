@@ -9,7 +9,6 @@
 package com.clustercontrol.nodemap.bean;
 
 import java.io.Serializable;
-import java.util.Properties;
 
 import javax.xml.bind.annotation.XmlType;
 
@@ -48,7 +47,7 @@ public class FacilityElement implements Serializable {
 	private String ownerRoleId;
 
 	// toolchip用に利用する属性値
-	Properties attributes = new Properties();
+	NodeMapAttributes attributes = new NodeMapAttributes();
 
 	public FacilityElement(){}
 
@@ -186,12 +185,12 @@ public class FacilityElement implements Serializable {
 
 	// Webサービスのためgetter、setterを用意しておく
 	@Deprecated
-	public Properties getAttributes() {
+	public NodeMapAttributes getNodeMapAttributes() {
 		return attributes;
 	}
 
 	@Deprecated
-	public void setAttributes(Properties attributes) {
+	public void setNodeMapAttributes(NodeMapAttributes attributes) {
 		this.attributes = attributes;
 	}
 }

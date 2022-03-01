@@ -8,11 +8,12 @@
 
 package com.clustercontrol.http.viewer;
 
+import org.openapitools.client.model.PatternResponse;
+
 import com.clustercontrol.bean.ValidMessage;
 import com.clustercontrol.monitor.bean.HttpStatusMessage;
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
 import com.clustercontrol.monitor.run.viewer.CommonTableLabelProvider;
-import com.clustercontrol.ws.monitor.Pattern;
 
 /**
  * 文字列監視の判定情報一覧のラベルプロバイダークラス<BR>
@@ -20,9 +21,9 @@ import com.clustercontrol.ws.monitor.Pattern;
  * @version 5.0.0
  * @since 5.0.0
  */
-public class PatternTableLabelProvider extends CommonTableLabelProvider<Pattern> {
+public class PatternTableLabelProvider extends CommonTableLabelProvider<PatternResponse> {
 
-	public PatternTableLabelProvider(ITableItemCompositeDefine<Pattern> define) {
+	public PatternTableLabelProvider(ITableItemCompositeDefine<PatternResponse> define) {
 		super(define);
 	}
 
@@ -35,13 +36,13 @@ public class PatternTableLabelProvider extends CommonTableLabelProvider<Pattern>
 	@Override
 	public String getColumnText(Object element, int columnIndex) {
 
-		if (element instanceof Pattern) {
-			Pattern Pattern = (Pattern) element;
+		if (element instanceof PatternResponse) {
+			PatternResponse Pattern = (PatternResponse) element;
 			if (columnIndex == GetPageTableDefine.ORDER_NO) {
 				return String.valueOf(indexOf(Pattern) + 1);
 			} else if (columnIndex == GetPatternTableDefine.PROCESS_TYPE) {
 				// 処理する(true)->異常(abnormal)／処理しない(false)->正常(normal)
-				return HttpStatusMessage.typeToString(Pattern.isProcessType());
+				return HttpStatusMessage.typeToString(Pattern.getProcessType());
 			} else if (columnIndex == GetPatternTableDefine.PATTERN_STRING) {
 				if (Pattern.getPattern() != null) {
 					return Pattern.getPattern();
@@ -51,7 +52,7 @@ public class PatternTableLabelProvider extends CommonTableLabelProvider<Pattern>
 					return Pattern.getDescription();
 				}
 			} else if (columnIndex == GetPatternTableDefine.VALID_FLG) {
-				return ValidMessage.typeToString(Pattern.isValidFlg());
+				return ValidMessage.typeToString(Pattern.getValidFlg());
 			}
 		}
 		return "";

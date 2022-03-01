@@ -9,14 +9,17 @@
 package com.clustercontrol.jobmanagement.action;
 
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.JobOperationRequest;
 
 import com.clustercontrol.bean.Property;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.jobmanagement.util.JobOperationRequestWrapper;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * ジョブ操作を実行するクライアント側アクションクラス<BR>
@@ -40,10 +43,17 @@ public class OperationJob {
 		PropertyUtil.deletePropertyDefine(property);
 
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-			wrapper.operationJob(JobPropertyUtil.property2jobOperation(property));
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			JobOperationRequestWrapper requestSrc = JobPropertyUtil.property2jobOperation(property);
+			JobOperationRequest request = new JobOperationRequest();
+			RestClientBeanUtil.convertBean(requestSrc, request);
+			if (requestSrc.getFacilityId() == null) {
+				wrapper.operationSessionJob(requestSrc.getSessionId(), requestSrc.getJobunitId(), requestSrc.getJobId(), request);
+			} else {
+				wrapper.operationSessionNode(requestSrc.getSessionId(), requestSrc.getJobunitId(), requestSrc.getJobId(), requestSrc.getFacilityId(), request);
+			}
 			result = true;
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 		} catch (Exception e) {

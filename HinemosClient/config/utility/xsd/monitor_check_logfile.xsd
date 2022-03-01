@@ -21,7 +21,7 @@
 					<xs:documentation>データ型のバージョン</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="2">
 				<xs:annotation>
 					<xs:documentation>データ型のバージョン</xs:documentation>
 				</xs:annotation>
@@ -126,7 +126,7 @@
 					
 					<xs:element name="fileMaxBytes" type="xs:int" minOccurs="0" maxOccurs="1">
 						<xs:annotation>
-							<xs:documentation>最大読み取りバイト長(Byte)です。</xs:documentation>
+							<xs:documentation>最大読み取り文字数です。</xs:documentation>
 						</xs:annotation>
 					</xs:element>
 				</xs:sequence>

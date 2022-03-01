@@ -26,26 +26,30 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponseP1;
+import org.openapitools.client.model.ModifyInfraManagementRequest;
+import org.openapitools.client.model.ReferManagementModuleInfoResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementDuplicate;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NotifyDuplicate;
+import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.infra.util.InfraDtoConverter;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraManagementDuplicate_Exception;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleInfo;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidSetting_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyDuplicate_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
-import com.clustercontrol.ws.infra.ReferManagementModuleInfo;
 
 /**
  * 環境構築[参照環境構築モジュールの作成・変更]ダイアログクラスです。
@@ -57,8 +61,8 @@ public class ReferManagementModuleDialog extends CommonDialog {
 	// ログ
 	private static Log m_log = LogFactory.getLog( ReferManagementModuleDialog.class );
 	/** 環境構築[構築]情報*/
-	private InfraManagementInfo infraInfo ;
-	private ReferManagementModuleInfo moduleInfo;
+	private InfraManagementInfoResponse infraInfo ;
+	private ReferManagementModuleInfoResponse moduleInfo;
 	
 	/**
 	 * ダイアログの最背面レイヤのカラム数
@@ -96,8 +100,6 @@ public class ReferManagementModuleDialog extends CommonDialog {
 	private String moduleId = null;
 	/** 所属構築ID */
 	private String managementId = null;
-	/** インデックス（初期：-1）*/
-	private int index = -1;
 
 
 	/**
@@ -307,21 +309,21 @@ public class ReferManagementModuleDialog extends CommonDialog {
 	 * @see com.clustercontrol.infra.bean.InfraManagementInfo
 	 */
 	private void setInputData() {
-		InfraManagementInfo info = null;
-		ReferManagementModuleInfo module = null;
+		InfraManagementInfoResponse info = null;
+		ReferManagementModuleInfoResponse module = null;
 		this.m_comboReferManagementId.removeAll();
 		try {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(this.managerName);
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(this.managerName);
 			// 環境構築情報取得
 			info = wrapper.getInfraManagement(this.managementId);
 			// 参照環境設定IDコンボボックス設定
-			List<String> referManagementIdList = wrapper.getReferManagementIdList(info.getOwnerRoleId());
-			if (referManagementIdList != null) {
-				for (String referManagementId : referManagementIdList) {
-					m_comboReferManagementId.add(referManagementId);
+			List<InfraManagementInfoResponseP1> referManagementList = wrapper.getReferManagementList(info.getOwnerRoleId());
+			if (referManagementList != null) {
+				for (InfraManagementInfoResponseP1 i : referManagementList) {
+					m_comboReferManagementId.add(i.getManagementId());
 				}
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
@@ -339,41 +341,48 @@ public class ReferManagementModuleDialog extends CommonDialog {
 		}
 
 		if (mode == PropertyDefineConstant.MODE_ADD | mode == PropertyDefineConstant.MODE_COPY) {
-			// 作成・コピーの場合新規モジュールを末尾に追加
-			moduleInfo = new ReferManagementModuleInfo();
-			List<InfraModuleInfo> modules = info.getModuleList();
+			//作成・コピーの場合新規モジュールの orderNo を計算して設定しておく
+			moduleInfo = new ReferManagementModuleInfoResponse();
+			int orderNo = getOrderNoWhenAddModule(info);
+			moduleInfo.setOrderNo(orderNo);
+			List<ReferManagementModuleInfoResponse> modules = info.getReferManagementModuleInfoList();
 			modules.add(moduleInfo);
 		} else if (mode == PropertyDefineConstant.MODE_MODIFY){
 			// 変更の場合モジュールを取得
-			for(InfraModuleInfo tmpModule: info.getModuleList()){
+			for(ReferManagementModuleInfoResponse tmpModule: info.getReferManagementModuleInfoList()){
 				if(tmpModule.getModuleId().equals(moduleId)){
-					moduleInfo = (ReferManagementModuleInfo) tmpModule;
+					moduleInfo = tmpModule;
 				}
 			}
 		}
 		
 		// 変更、コピーの場合、情報取得
 		if (moduleId != null) {
-			for (InfraModuleInfo tmpModule : info.getModuleList()) {
+			for (ReferManagementModuleInfoResponse tmpModule : info.getReferManagementModuleInfoList()) {
 				if (tmpModule.getModuleId().equals(moduleId)) {
-					index = info.getModuleList().indexOf(tmpModule);
+					module = tmpModule;
 					break;
 				}
 			}
-			module = (ReferManagementModuleInfo)info.getModuleList().get(index);
 			//	モジュールID
-			m_moduleId.setText(module.getModuleId());
+			//	findbugs対応 nullチェック追加
+			if (module != null) {
+				m_moduleId.setText(module.getModuleId());
+			}
 			if (mode == PropertyDefineConstant.MODE_MODIFY) {
 				m_moduleId.setEnabled(false);
 			}
-			//	モジュール名
-			m_moduleName.setText(module.getName());
-			//	参照環境設定ID
-			if (module.getReferManagementId() != null) {
-				m_comboReferManagementId.setText(module.getReferManagementId());
+			//	findbugs対応 nullチェック追加
+			if (module != null) {
+				//	モジュール名
+				m_moduleName.setText(module.getName());
+				//	参照環境設定ID
+				if (module.getReferManagementId() != null) {
+					m_comboReferManagementId.setText(module.getReferManagementId());
+				}
+				//	設定の有効･無効
+				m_validFlg.setSelection(module.getValidFlg());
 			}
-			//	設定の有効･無効
-			m_validFlg.setSelection(module.isValidFlg());
 
 		} else {
 			// 作成の場合(default設定)
@@ -406,6 +415,9 @@ public class ReferManagementModuleDialog extends CommonDialog {
 
 		//設定の有効
 		moduleInfo.setValidFlg(m_validFlg.getSelection());
+		
+		moduleInfo.setStopIfFailFlg(true);
+		moduleInfo.setPrecheckFlg(true);
 	}
 
 	/**
@@ -478,8 +490,12 @@ public class ReferManagementModuleDialog extends CommonDialog {
 			}
 
 			try {
-				InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(this.managerName);
-				wrapper.modifyInfraManagement(infraInfo);
+				InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(this.managerName);
+				String managementId = infraInfo.getManagementId();
+				ModifyInfraManagementRequest dtoReq = new ModifyInfraManagementRequest();
+				RestClientBeanUtil.convertBean(infraInfo, dtoReq);
+				InfraDtoConverter.convertInfoToDto(infraInfo, dtoReq);
+				wrapper.modifyInfraManagement(managementId, dtoReq);
 				action += "(" + this.managerName + ")";
 				result = true;
 				MessageDialog.openInformation(null, Messages
@@ -488,15 +504,16 @@ public class ReferManagementModuleDialog extends CommonDialog {
 						new Object[] { Messages.getString("infra.module"),
 								action, Messages.getString("successful"),
 								m_moduleId.getText() }));
-			} catch (InfraManagementDuplicate_Exception e) {
+			} catch (InfraManagementDuplicate e) {
 				// ID重複
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.infra.module.duplicate", new String[]{m_moduleId.getText()}));
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// 権限なし
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
-			} catch (InfraManagementNotFound_Exception | NotifyDuplicate_Exception | NotifyNotFound_Exception | HinemosUnknown_Exception | InvalidUserPass_Exception | InvalidSetting_Exception e) {
+			} catch (RestConnectFailed | NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidUserPass | 
+					InvalidSetting | InfraManagementNotFound e) {
 				m_log.info("action() modifyInfraManagement : " + e.getMessage() + " (" + e.getClass().getName() + ")");
 				MessageDialog.openError(
 						null,
@@ -519,5 +536,10 @@ public class ReferManagementModuleDialog extends CommonDialog {
 					Messages.getString("message.infra.action.result", new Object[]{Messages.getString("infra.module"), action, Messages.getString("failed"), m_moduleId.getText()}));
 		}
 		return result;
+	}
+	
+	private int getOrderNoWhenAddModule(InfraManagementInfoResponse info) {
+		return info.getCommandModuleInfoList().size() + info.getFileTransferModuleInfoList().size()
+				+ info.getReferManagementModuleInfoList().size();
 	}
 }

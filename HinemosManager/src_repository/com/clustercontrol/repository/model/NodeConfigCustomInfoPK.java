@@ -10,7 +10,7 @@ package com.clustercontrol.repository.model;
 
 import java.io.Serializable;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * The primary key class for the cc_node_config_custom_setting_info database

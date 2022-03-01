@@ -10,6 +10,7 @@ package com.clustercontrol.jobmanagement.util;
 
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +32,7 @@ import com.clustercontrol.commons.util.EmptyJpaTransactionCallback;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
+import com.clustercontrol.custom.bean.CustomConstant;
 import com.clustercontrol.custom.util.CustomManagerUtil;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -51,12 +53,14 @@ import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.session.JobRunManagementBean;
 import com.clustercontrol.logfile.util.LogfileManagerUtil;
+import com.clustercontrol.monitor.bean.ConvertValueConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
 import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.winevent.util.WinEventManagerUtil;
+import com.clustercontrol.xcloud.factory.monitors.CloudLogManagerUtil;
 
 /**
  * HinemosManager上でジョブを実行するクラス<BR>
@@ -69,8 +73,8 @@ public class MonitorJobWorker {
 	private static ExecutorService service;
 	private static String workerName = "MonitorJobWorker";
 
-	// 監視ジョブ情報を保持（監視種別ID、監視情報）
-	private static ConcurrentHashMap<String, ConcurrentHashMap<RunInstructionInfo, MonitorInfo>> monitorJobMap
+	// 監視ジョブ情報を保持（監視種別ID、監視情報(キー情報, MonitorJobInfo)）
+	private static ConcurrentHashMap<String, ConcurrentHashMap<String, MonitorJobInfo>> monitorJobMap
 		= new ConcurrentHashMap<>();
 
 	// カスタム監視（数値）前回値を保持（指示情報、値）
@@ -92,25 +96,29 @@ public class MonitorJobWorker {
 
 		// Mapの設定
 		monitorJobMap.put(HinemosModuleConstant.MONITOR_SYSTEMLOG, 
-				new ConcurrentHashMap<RunInstructionInfo, MonitorInfo>());
+				new ConcurrentHashMap<String, MonitorJobInfo>());
 		monitorJobMap.put(HinemosModuleConstant.MONITOR_SNMPTRAP, 
-				new ConcurrentHashMap<RunInstructionInfo, MonitorInfo>());
+				new ConcurrentHashMap<String, MonitorJobInfo>());
 		monitorJobMap.put(HinemosModuleConstant.MONITOR_LOGFILE, 
-				new ConcurrentHashMap<RunInstructionInfo, MonitorInfo>());
+				new ConcurrentHashMap<String, MonitorJobInfo>());
+		monitorJobMap.put(HinemosModuleConstant.MONITOR_RPA_LOGFILE, 
+				new ConcurrentHashMap<String, MonitorJobInfo>());
 		monitorJobMap.put(HinemosModuleConstant.MONITOR_BINARYFILE_BIN,
-				new ConcurrentHashMap<RunInstructionInfo, MonitorInfo>());
+				new ConcurrentHashMap<String, MonitorJobInfo>());
 		monitorJobMap.put(HinemosModuleConstant.MONITOR_PCAP_BIN,
-				new ConcurrentHashMap<RunInstructionInfo, MonitorInfo>());
+				new ConcurrentHashMap<String, MonitorJobInfo>());
 		monitorJobMap.put(HinemosModuleConstant.MONITOR_WINEVENT, 
-				new ConcurrentHashMap<RunInstructionInfo, MonitorInfo>());
+				new ConcurrentHashMap<String, MonitorJobInfo>());
 		monitorJobMap.put(HinemosModuleConstant.MONITOR_CUSTOM_N, 
-				new ConcurrentHashMap<RunInstructionInfo, MonitorInfo>());
+				new ConcurrentHashMap<String, MonitorJobInfo>());
 		monitorJobMap.put(HinemosModuleConstant.MONITOR_CUSTOM_S, 
-				new ConcurrentHashMap<RunInstructionInfo, MonitorInfo>());
+				new ConcurrentHashMap<String, MonitorJobInfo>());
 		monitorJobMap.put(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N, 
-				new ConcurrentHashMap<RunInstructionInfo, MonitorInfo>());
+				new ConcurrentHashMap<String, MonitorJobInfo>());
 		monitorJobMap.put(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S, 
-				new ConcurrentHashMap<RunInstructionInfo, MonitorInfo>());
+				new ConcurrentHashMap<String, MonitorJobInfo>());
+		monitorJobMap.put(HinemosModuleConstant.MONITOR_CLOUD_LOG, 
+				new ConcurrentHashMap<String, MonitorJobInfo>());
 	}
 
 	/**
@@ -169,7 +177,8 @@ public class MonitorJobWorker {
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOM_S)
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
-						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)) {
+						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)
+						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CLOUD_LOG)) {
 					// キャッシュから削除
 					removeMonitorJobMap(monitorTypeId, runInstructionInfo);
 				}
@@ -181,15 +190,6 @@ public class MonitorJobWorker {
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PERFORMANCE)) {
 					// 前回値削除
 					removePrevMonitorValue(runInstructionInfo);
-					// スケジューラ削除
-					if (!monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)) {
-						try {
-							deleteSchedule(runInstructionInfo);
-						} catch (HinemosUnknown e) {
-							// エラーとしない
-							m_log.debug("schedule is not found.");
-						}
-					}
 				}
 			}
 			// 履歴削除
@@ -198,6 +198,19 @@ public class MonitorJobWorker {
 			// メッセージ送信
 			execJobEndNode(runInstructionInfo, status,
 					message, errorMessage, endValue);
+
+			// スケジューラ削除(execJobEndNode()でjtm.begin()時にコールバックメソッドが削除されるためここで行う)
+			if (monitorTypeId != null
+				&& (monitorTypeId.equals(HinemosModuleConstant.MONITOR_JMX)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_SNMP_N)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PERFORMANCE))) {
+				try {
+					deleteSchedule(runInstructionInfo);
+				} catch (HinemosUnknown e) {
+					// エラーとしない
+					m_log.debug("schedule is not found.");
+				}
+			}
 			jtm.commit();
 		} catch (Exception e) {
 			if (jtm != null){
@@ -360,10 +373,10 @@ public class MonitorJobWorker {
 	 * @param runInstructionInfo 指示情報
 	 * @return キー文字列
 	 */
-	private static String getKey(RunInstructionInfo runInstructionInfo) {
-		return runInstructionInfo.getSessionId()
-				+ runInstructionInfo.getJobunitId()
-				+ runInstructionInfo.getJobId()
+	public static String getKey(RunInstructionInfo runInstructionInfo) {
+		return runInstructionInfo.getSessionId() + "#"
+				+ runInstructionInfo.getJobunitId() + "#"
+				+ runInstructionInfo.getJobId() + "#"
 				+ runInstructionInfo.getFacilityId();
 	}
 
@@ -404,7 +417,11 @@ public class MonitorJobWorker {
 	 * @return 監視ジョブマップ
 	 */
 	public static Map<RunInstructionInfo, MonitorInfo> getMonitorJobMap(String monitorTypeId) {
-		return monitorJobMap.get(monitorTypeId);
+		ConcurrentHashMap<RunInstructionInfo, MonitorInfo> map = new ConcurrentHashMap<>();
+		for (Map.Entry<String, MonitorJobInfo> entry : monitorJobMap.get(monitorTypeId).entrySet()) {
+			map.put(entry.getValue().runInstructionInfo, entry.getValue().monitorInfo);
+		}
+		return map;
 	}
 
 	/**
@@ -415,27 +432,37 @@ public class MonitorJobWorker {
 	private static void addMonitorJobMap(
 			RunInstructionInfo runInstructionInfo,
 			MonitorInfo monitorInfo) {
-		monitorJobMap.get(monitorInfo.getMonitorTypeId()).put(runInstructionInfo, monitorInfo);
+
+		if (m_log.isTraceEnabled()) {
+			m_log.trace(String.format("addMonitorJobMap() : monitorTypeId=%s, key=%s", 
+					monitorInfo.getMonitorTypeId(), getKey(runInstructionInfo)));
+		}
+		monitorJobMap.get(monitorInfo.getMonitorTypeId())
+			.put(getKey(runInstructionInfo), new MonitorJobInfo(runInstructionInfo, monitorInfo));
 
 		// 接続中のHinemosAgentに対する更新通知
 		if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_LOGFILE)) {
 			// ログファイル監視
 			SettingUpdateInfo.getInstance().setLogFileMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			LogfileManagerUtil.broadcastConfigured();
+			LogfileManagerUtil.specificcastConfigured(runInstructionInfo.getFacilityId());
 		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_WINEVENT)) {
 			// Windowsイベント監視
 			SettingUpdateInfo.getInstance().setWinEventMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			WinEventManagerUtil.broadcastConfigured();
+			WinEventManagerUtil.specificcastConfigured(runInstructionInfo.getFacilityId());
 		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
 				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_S)) {
 			// 接続中のHinemosAgentに対する更新通知
 			SettingUpdateInfo.getInstance().setCustomMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			CustomManagerUtil.broadcastConfigured();
+			CustomManagerUtil.specificcastConfigured(getCustomFacilityId(monitorInfo, runInstructionInfo));
 		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
 				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_PCAP_BIN)) {
 			// バイナリ監視.
 			SettingUpdateInfo.getInstance().setBinaryMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			BinaryManagerUtil.broadcastConfigured();
+			BinaryManagerUtil.specificcastConfigured(runInstructionInfo.getFacilityId());
+		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CLOUD_LOG)) {
+			//　クラウドログ監視
+			SettingUpdateInfo.getInstance().setCloudLogMonitorUpdateTime(HinemosTime.currentTimeMillis());
+			CloudLogManagerUtil.specificcastConfigured(runInstructionInfo.getFacilityId());
 		}
 	}
 
@@ -448,10 +475,28 @@ public class MonitorJobWorker {
 			return;
 		}
 
-		for (Map.Entry<RunInstructionInfo, MonitorInfo> entry : monitorJobMap.get(monitorTypeId).entrySet()) {
-			if (getKey(entry.getKey()).equals(getKey(runInstructionInfo))) {
-				monitorJobMap.get(monitorTypeId).remove(entry.getKey());
-				break;
+		String customFacilityId = "";
+		String monitorJobKey = getKey(runInstructionInfo);
+		if (m_log.isTraceEnabled()) {
+			m_log.trace(String.format("removeMonitorJobMap() : monitorTypeId=%s, key=%s", monitorTypeId, monitorJobKey));
+		}
+		if (monitorJobMap.get(monitorTypeId).containsKey(monitorJobKey)) {
+			if (m_log.isTraceEnabled()) {
+				m_log.trace(String.format("removeMonitorJobMap() : before map(%s) count=%d", 
+						monitorTypeId, monitorJobMap.get(monitorTypeId).size()));
+			}
+			if (monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
+				|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOM_S)) {
+				// 接続中のHinemosAgentに対する更新通知
+				MonitorJobInfo tmp = monitorJobMap.get(monitorTypeId).get(monitorJobKey);
+				if (tmp != null) {
+					customFacilityId = getCustomFacilityId(tmp.monitorInfo, runInstructionInfo);
+				}
+			}
+			monitorJobMap.get(monitorTypeId).remove(monitorJobKey);
+			if (m_log.isTraceEnabled()) {
+				m_log.trace(String.format("removeMonitorJobMap() : after map(%s) count=%d", 
+						monitorTypeId, monitorJobMap.get(monitorTypeId).size()));
 			}
 		}
 
@@ -459,21 +504,25 @@ public class MonitorJobWorker {
 		if (monitorTypeId.equals(HinemosModuleConstant.MONITOR_LOGFILE)) {
 			// ログファイル監視
 			SettingUpdateInfo.getInstance().setLogFileMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			LogfileManagerUtil.broadcastConfigured();
+			LogfileManagerUtil.specificcastConfigured(runInstructionInfo.getFacilityId());
 		} else if (monitorTypeId.equals(HinemosModuleConstant.MONITOR_WINEVENT)) {
 			// Windowsイベント監視
 			SettingUpdateInfo.getInstance().setWinEventMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			WinEventManagerUtil.broadcastConfigured();
+			WinEventManagerUtil.specificcastConfigured(runInstructionInfo.getFacilityId());
 		} else if (monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
 				|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOM_S)) {
 			// 接続中のHinemosAgentに対する更新通知
 			SettingUpdateInfo.getInstance().setCustomMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			CustomManagerUtil.broadcastConfigured();
+			CustomManagerUtil.specificcastConfigured(customFacilityId);
 		} else if (monitorTypeId.equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
 				|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)) {
 			// バイナリ監視.
 			SettingUpdateInfo.getInstance().setBinaryMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			BinaryManagerUtil.broadcastConfigured();
+			BinaryManagerUtil.specificcastConfigured(runInstructionInfo.getFacilityId());
+		} else if (monitorTypeId.equals(HinemosModuleConstant.MONITOR_CLOUD_LOG)) {
+			// クラウドログ監視
+			SettingUpdateInfo.getInstance().setCloudLogMonitorUpdateTime(HinemosTime.currentTimeMillis());
+			CloudLogManagerUtil.specificcastConfigured(runInstructionInfo.getFacilityId());
 		}
 	}
 
@@ -533,36 +582,80 @@ public class MonitorJobWorker {
 		}
 
 		/** 監視ジョブマップ削除 */
-		HashSet<String> keySet = new HashSet<>();
-		for (Map.Entry<String, ConcurrentHashMap<RunInstructionInfo, MonitorInfo>> entry 
+		HashSet<String> logfileFacilityIds = new HashSet<>();
+		HashSet<String> winEventFacilityIds = new HashSet<>();
+		HashSet<String> customFacilityIds = new HashSet<>();
+		HashSet<String> binaryFacilityIds = new HashSet<>();
+		HashSet<String> cloudlogFacilityIds = new HashSet<>();
+
+		for (Map.Entry<String, ConcurrentHashMap<String, MonitorJobInfo>> entry 
 				: monitorJobMap.entrySet()) {
-			for (Map.Entry<RunInstructionInfo, MonitorInfo> childEntry : entry.getValue().entrySet()) {
-				if (sessionId.equals(childEntry.getKey().getSessionId())) {
-					monitorJobMap.get(childEntry.getValue().getMonitorTypeId()).remove(childEntry.getKey());
-					keySet.add(childEntry.getValue().getMonitorTypeId());
+			Iterator<Map.Entry<String, MonitorJobInfo>> iter = entry.getValue().entrySet().iterator();
+			if (m_log.isTraceEnabled()) {
+				m_log.trace(String.format("removeInfoBySessionId() : before map(%s) count=%d", 
+						entry.getKey(), entry.getValue().size()));
+			}
+			while(iter.hasNext()) {
+				Map.Entry<String, MonitorJobInfo> childEntry = iter.next();
+				RunInstructionInfo runInstructionInfo = childEntry.getValue().runInstructionInfo;
+				MonitorInfo monitorInfo = (MonitorInfo)childEntry.getValue().monitorInfo;
+				if (sessionId.equals(runInstructionInfo.getSessionId())) {
+					if (entry.getKey().equals(HinemosModuleConstant.MONITOR_LOGFILE)) {
+						// ログファイル監視
+						logfileFacilityIds.add(runInstructionInfo.getFacilityId());
+					} else if (entry.getKey().equals(HinemosModuleConstant.MONITOR_WINEVENT)) {
+						// Windowsイベント監視
+						winEventFacilityIds.add(runInstructionInfo.getFacilityId());
+					} else if (entry.getKey().equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
+							|| entry.getKey().equals(HinemosModuleConstant.MONITOR_CUSTOM_S)) {
+						// カスタム監視
+						customFacilityIds.add(getCustomFacilityId(monitorInfo, runInstructionInfo));
+					} else if (entry.getKey().equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
+							|| entry.getKey().equals(HinemosModuleConstant.MONITOR_PCAP_BIN)) {
+						// バイナリ監視.
+						binaryFacilityIds.add(runInstructionInfo.getFacilityId());
+					}else if (entry.getKey().equals(HinemosModuleConstant.MONITOR_CLOUD_LOG)) {
+						// クラウドログ監視
+						cloudlogFacilityIds.add(runInstructionInfo.getFacilityId());
+					}
+					if (m_log.isTraceEnabled()) {
+						m_log.trace(String.format("removeInfoBySessionId() : monitorTypeId=%s, key=%s",
+								entry.getKey(), childEntry.getKey()));
+					}
+					iter.remove();
 				}
+			}
+			if (m_log.isTraceEnabled()) {
+				m_log.trace(String.format("removeInfoBySessionId() : after map(%s) count=%d", 
+						entry.getKey(), entry.getValue().size()));
 			}
 		}
 
 		// 接続中のHinemosAgentに対する更新通知
-		if (keySet.contains(HinemosModuleConstant.MONITOR_LOGFILE)) {
+		if (logfileFacilityIds.size() > 0) {
 			// ログファイル監視
 			SettingUpdateInfo.getInstance().setLogFileMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			LogfileManagerUtil.broadcastConfigured();
-		} else if (keySet.contains(HinemosModuleConstant.MONITOR_WINEVENT)) {
+			LogfileManagerUtil.specificcastConfigured(logfileFacilityIds);
+		}
+		if (winEventFacilityIds.size() > 0) {
 			// Windowsイベント監視
 			SettingUpdateInfo.getInstance().setWinEventMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			WinEventManagerUtil.broadcastConfigured();
-		} else if (keySet.contains(HinemosModuleConstant.MONITOR_CUSTOM_N)
-				|| keySet.contains(HinemosModuleConstant.MONITOR_CUSTOM_S)) {
-			// 接続中のHinemosAgentに対する更新通知
+			WinEventManagerUtil.specificcastConfigured(winEventFacilityIds);
+		}
+		if (customFacilityIds.size() > 0) {
+			// カスタム監視
 			SettingUpdateInfo.getInstance().setCustomMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			CustomManagerUtil.broadcastConfigured();
-		} else if (keySet.contains(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
-				|| keySet.contains(HinemosModuleConstant.MONITOR_PCAP_BIN)) {
+			CustomManagerUtil.specificcastConfigured(customFacilityIds);
+		}
+		if (binaryFacilityIds.size() > 0) {
 			// バイナリ監視.
 			SettingUpdateInfo.getInstance().setBinaryMonitorUpdateTime(HinemosTime.currentTimeMillis());
-			BinaryManagerUtil.broadcastConfigured();
+			BinaryManagerUtil.specificcastConfigured(binaryFacilityIds);
+		}
+		if (cloudlogFacilityIds.size() > 0) {
+			// クラウドログ監視
+			SettingUpdateInfo.getInstance().setCloudLogMonitorUpdateTime(HinemosTime.currentTimeMillis());
+			CloudLogManagerUtil.specificcastConfigured(cloudlogFacilityIds);
 		}
 
 		/** 前回値削除 */
@@ -575,6 +668,38 @@ public class MonitorJobWorker {
 		/** RunHistory削除 */
 		for (RunInstructionInfo runInstructionInfo : runInstructionInfoList) {
 			RunHistoryUtil.delRunHistory(runInstructionInfo);
+		}
+	}
+
+	/**
+	 * コマンド監視の監視ジョブ対象ノード取得
+	 * 
+	 * @param monitorInfo 監視設定
+	 * @param runInstructionInfo 実行指示情報
+	 * @return 監視ジョブ対象ノードのファシリティID
+	 */
+	private static String getCustomFacilityId(MonitorInfo monitorInfo, RunInstructionInfo runInstructionInfo) {
+		if ((monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
+				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_S))
+				&& monitorInfo.getCustomCheckInfo().getCommandExecType() == CustomConstant.CommandExecType.SELECTED
+				&& monitorInfo.getCustomCheckInfo().getSelectedFacilityId() != null) {
+			return monitorInfo.getCustomCheckInfo().getSelectedFacilityId();
+		} else {
+			return runInstructionInfo.getFacilityId();
+		} 
+	}
+
+	/**
+	 * 監視ジョブ情報を格納する
+	 */
+	private static class MonitorJobInfo {
+		// 実行指示情報
+		RunInstructionInfo runInstructionInfo;
+		// 監視設定情報
+		MonitorInfo monitorInfo;
+		MonitorJobInfo(RunInstructionInfo runInstructionInfo, MonitorInfo monitorInfo) {
+			this.runInstructionInfo = runInstructionInfo;
+			this.monitorInfo = monitorInfo;
 		}
 	}
 
@@ -645,19 +770,48 @@ public class MonitorJobWorker {
 									+ ", FacilityID=" + m_runInstructionInfo.getFacilityId());
 							return;
 						}
+
 						// Hinemosエージェントで行う監視は、Hinemosエージェントにアクセスできない場合エラー
-						if ((monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_LOGFILE)
-								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_BINARYFILE_BIN)
-								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
-								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_WINEVENT)
-								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
-								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_S))
-								&& !AgentConnectUtil.isValidAgent(m_runInstructionInfo.getFacilityId())) {
-							// メッセージ作成
+						boolean isValidAgent=true;
+						//  カスタム監視の場合
+						if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
+								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_S)) {
+							//監視側で別途実行ファシリティを指定できる（まとめ実行）ので考慮
+							if (monitorInfo.getCustomCheckInfo().getCommandExecType() == CustomConstant.CommandExecType.SELECTED
+									&& monitorInfo.getCustomCheckInfo().getSelectedFacilityId() != null) {
+								isValidAgent = AgentConnectUtil.isValidAgent(monitorInfo.getCustomCheckInfo().getSelectedFacilityId());
+							} else {
+								isValidAgent = AgentConnectUtil.isValidAgent(m_runInstructionInfo.getFacilityId());
+							}
+						}
+						
+						
+						if (!(isValidAgent)) {
+							// エージェント利用不可ならメッセージを作って処理打ち切り
 							execJobEndNode(m_runInstructionInfo, RunStatusConstant.ERROR, "",
 									MessageConstant.MESSAGE_AGENT_IS_NOT_AVAILABLE.getMessage(),
 									getReturnValue(m_runInstructionInfo, PriorityConstant.TYPE_UNKNOWN));
 							return;
+						}
+						
+						//TODO #8205のマイナー対応(監視ジョブでカスタム監視を実施する際の根本対処時に見直すこと)
+						// カスタム監視(数値・差分あり)の場合でタイムアウト設定が1分を超えているとジョブが実行中のままになるので、この時点でエラー終了させ処理を打ち切り
+						if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_N)) {
+							if (monitorInfo.getCustomCheckInfo().getConvertFlg() == ConvertValueConstant.TYPE_DELTA) {
+								Integer timeout = monitorInfo.getCustomCheckInfo().getTimeout();
+								if (60000 < timeout) {
+									m_log.warn("monitor job canceled. "
+											+ "SessionID=" + m_runInstructionInfo.getSessionId()
+											+ ", JobunitID=" + m_runInstructionInfo.getJobunitId()
+											+ ", JobID=" + m_runInstructionInfo.getJobId()
+											+ ", FacilityID=" + m_runInstructionInfo.getFacilityId()
+											+ ", TargetMonitorID=" +monitorInfo.getMonitorId());
+									execJobEndNode(m_runInstructionInfo, RunStatusConstant.ERROR, "",
+											MessageConstant.MESSAGE_JOB_MONITOR_SNMP_N_ABORT_RUN.getMessage(monitorInfo.getMonitorId() ,String.valueOf(timeout)),
+											getReturnValue(m_runInstructionInfo, PriorityConstant.TYPE_UNKNOWN));
+									return;
+								}
+							}
 						}
 
 						// 実行履歴に追加
@@ -672,7 +826,8 @@ public class MonitorJobWorker {
 								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_N)
 								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOM_S)
 								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
-								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)){
+								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)
+								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CLOUD_LOG)){
 							// 監視対象の情報を設定する。
 							addMonitorJobMap(m_runInstructionInfo, monitorInfo);
 						} else {
@@ -688,7 +843,8 @@ public class MonitorJobWorker {
 								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_WINEVENT)
 								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
-								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)){
+								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)
+								|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CLOUD_LOG)){
 							JobSessionJobImpl.addForceCheck(m_runInstructionInfo.getSessionId());
 						}
 					} else {
@@ -706,18 +862,6 @@ public class MonitorJobWorker {
 							endMonitorJob(m_runInstructionInfo, null, "Internal Error : Ex. Job already terminated.", 
 									"", RunStatusConstant.ERROR, getReturnValue(m_runInstructionInfo, PriorityConstant.TYPE_UNKNOWN));
 						} else {
-							// メッセージ送信
-							if (!execJobEndNode(m_runInstructionInfo, RunStatusConstant.START, 
-								"", "", MonitorJobConstant.INITIAL_END_VALUE_INFO)) {
-								// ジョブがすでに起動している場合
-								m_log.warn("This job already run by other. "
-									+ ", SessionID=" + m_runInstructionInfo.getSessionId() 
-									+ ", JobunitID=" + m_runInstructionInfo.getJobunitId()
-									+ ", JobID=" + m_runInstructionInfo.getJobId()
-									+ ", FacilityID=" + m_runInstructionInfo.getFacilityId());
-								return;
-							}
-
 							// 終了処理
 							// キャンセル処理
 							endMonitorJob(m_runInstructionInfo, monitorInfo.getMonitorTypeId(), "",

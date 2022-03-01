@@ -35,4 +35,7 @@ public class JudgmentObjectConstant {
 
 	/** セッション横断ジョブ終了値 */
 	public static final int TYPE_CROSS_SESSION_JOB_END_VALUE = 6;
+
+	/** ジョブ戻り値 */
+	public static final int TYPE_JOB_RETURN_VALUE = 7;
 }

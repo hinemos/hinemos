@@ -29,27 +29,22 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.StatusFilterBaseRequest;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.util.ClientSession;
-import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.bean.Property;
-import com.clustercontrol.composite.CustomizableListComposite;
 import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
+import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.composite.CustomizableListComposite;
 import com.clustercontrol.monitor.action.GetStatusListTableDefine;
 import com.clustercontrol.monitor.dialog.StatusInfoDialog;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
 import com.clustercontrol.monitor.util.ConvertListUtil;
-import com.clustercontrol.monitor.util.StatusFilterPropertyUtil;
 import com.clustercontrol.monitor.util.StatusSearchRunUtil;
-import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
-import com.clustercontrol.repository.bean.FacilityTargetConstant;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.util.PropertyUtil;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.monitor.StatusFilterInfo;
 
 /**
  * ステータス情報一覧のコンポジットクラス<BR>
@@ -79,7 +74,10 @@ public class StatusListComposite extends CustomizableListComposite {
 	private Label totalLabel = null;
 
 	private Shell m_shell = null;
-	
+
+	/** 更新成功可否フラグ */
+	private boolean m_updateSuccess = true;
+
 	/**
 	 * インスタンスを返します。
 	 *
@@ -207,22 +205,14 @@ public class StatusListComposite extends CustomizableListComposite {
 	 * <li>共通テーブルビューアーにステータス情報一覧をセットします。</li>
 	 * </ol>
 	 *
-	 * @param facilityId 表示対象の親ファシリティID
-	 * @param condition 検索条件
+	 * @param filter 検索条件
 	 * @param managerList マネージャ名リスト
-	 * @param refreshFlg リフレッシュフラグ
-	 * @see #updateStatus(ArrayList)
 	 */
-	public void setDisp(String facilityId, Property condition, List<String> managerList) {
-		if(facilityId == null) {
-			facilityId = ReservedFacilityIdConstant.ROOT_SCOPE;
-		}
-		Map<String, ArrayList<ArrayList<Object>>> map = null;
-		if(condition == null) {
-			map = getStatusList(facilityId, managerList);
-		} else {
-			map = getStatusListByCondition(facilityId, condition, managerList);
-		}
+	public void setDisp(StatusFilterBaseRequest filter, List<String> managerList) {
+		StatusSearchRunUtil util = new StatusSearchRunUtil();
+		Map<String, ArrayList<ArrayList<Object>>> map = util.searchInfo(managerList, filter);
+		m_updateSuccess = util.isSearchSuccess();
+
 		for (Map.Entry<String, ArrayList<ArrayList<Object>>> entry : map.entrySet()) {
 			ArrayList<ArrayList<Object>> viewListInfo = dispDataMap.get(entry.getKey());
 			if (viewListInfo == null) {
@@ -320,25 +310,6 @@ public class StatusListComposite extends CustomizableListComposite {
 		}
 		this.updateStatus(statusList);
 		tableViewer.setInput(statusList);
-	}
-
-	private Map<String, ArrayList<ArrayList<Object>>> getStatusList(String facilityId, List<String> managerList) {
-		StatusSearchRunUtil util = new StatusSearchRunUtil();
-		StatusFilterInfo filter = new StatusFilterInfo();
-		filter.setFacilityType(FacilityTargetConstant.TYPE_ALL);
-		Map<String, ArrayList<ArrayList<Object>>> map = util.searchInfo(managerList, facilityId, filter);
-		return map;
-	}
-
-	private Map<String, ArrayList<ArrayList<Object>>> getStatusListByCondition(String facilityId,
-			Property condition, List<String> managerList) {
-
-		PropertyUtil.deletePropertyDefine(condition);
-		StatusFilterInfo filter = StatusFilterPropertyUtil.property2dto(condition);
-		StatusSearchRunUtil util = new StatusSearchRunUtil();
-		Map<String, ArrayList<ArrayList<Object>>> map = util.searchInfo(managerList, facilityId, filter);
-
-		return map;
 	}
 
 	/**
@@ -463,4 +434,11 @@ public class StatusListComposite extends CustomizableListComposite {
 		return GetStatusListTableDefine.COLNAME_INDEX_MAP;
 	}
 
+	/**
+	 * 更新成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isUpdateSuccess() {
+		return this.m_updateSuccess;
+	}
 }

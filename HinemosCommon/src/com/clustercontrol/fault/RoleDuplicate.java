@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * ロールIDが重複している場合に利用するException
  * @version 3.2.0
  */
-public class RoleDuplicate extends HinemosException {
+public class RoleDuplicate extends HinemosDuplicate {
 
 	private static final long serialVersionUID = 1L;
 	private String m_roleId = null;

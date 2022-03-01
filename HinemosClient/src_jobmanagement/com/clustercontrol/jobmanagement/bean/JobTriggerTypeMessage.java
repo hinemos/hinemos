@@ -22,8 +22,10 @@ public class JobTriggerTypeMessage {
 	public static final String STRING_UNKOWN = Messages.getString("unknown");
 	/** スケジュール（文字列） */
 	public static final String STRING_SCHEDULE = Messages.getString("schedule");
-	/** スケジュール（文字列） */
+	/** ファイルチェック（文字列） */
 	public static final String STRING_FILECHECK = Messages.getString("file.check");
+	/** ジョブ連携受信実行契機（文字列） */
+	public static final String STRING_JOBLINKRCV = Messages.getString("joblink.rcv.jobkick");
 	/** 手動実行（文字列） */
 	public static final String STRING_MANUAL = Messages.getString("trigger.manual");
 	/** 監視連動（文字列） */
@@ -40,6 +42,8 @@ public class JobTriggerTypeMessage {
 			return STRING_SCHEDULE;
 		} else if (type == JobTriggerTypeConstant.TYPE_FILECHECK){
 			return STRING_FILECHECK;
+		} else if (type == JobTriggerTypeConstant.TYPE_JOBLINKRCV){
+			return STRING_JOBLINKRCV;
 		} else if (type == JobTriggerTypeConstant.TYPE_MANUAL) {
 			return STRING_MANUAL;
 		} else if (type == JobTriggerTypeConstant.TYPE_MONITOR) {
@@ -59,6 +63,8 @@ public class JobTriggerTypeMessage {
 			return JobTriggerTypeConstant.TYPE_SCHEDULE;
 		} else if (string.equals(STRING_FILECHECK)) {
 			return JobTriggerTypeConstant.TYPE_FILECHECK;
+		} else if (string.equals(STRING_JOBLINKRCV)) {
+			return JobTriggerTypeConstant.TYPE_JOBLINKRCV;
 		} else if (string.equals(STRING_MANUAL)) {
 			return JobTriggerTypeConstant.TYPE_MANUAL;
 		} else if (string.equals(STRING_MONITOR)) {
@@ -66,4 +72,5 @@ public class JobTriggerTypeMessage {
 		}
 		return -1;
 	}
+
 }

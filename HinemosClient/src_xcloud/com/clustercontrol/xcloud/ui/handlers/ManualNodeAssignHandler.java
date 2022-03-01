@@ -20,20 +20,19 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.handlers.HandlerUtil;
 
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.cloud.IInstance;
+import com.clustercontrol.xcloud.util.ControlUtil;
 
 public class ManualNodeAssignHandler extends AbstractCloudOptionHandler implements CloudStringConstants {
 	
 	private static final Log logger = LogFactory.getLog(ManualNodeAssignHandler.class);
 	
 	@Override
-	public Object internalExecute(ExecutionEvent event) throws CloudManagerException, InvalidRole_Exception, InvalidUserPass_Exception {
+	public Object internalExecute(ExecutionEvent event) throws CloudManagerException {
 		IStructuredSelection selection = (IStructuredSelection)HandlerUtil.getActiveSite(event).getSelectionProvider().getSelection();
 		final IInstance selected = (IInstance)selection.getFirstElement();
 		
@@ -49,27 +48,30 @@ public class ManualNodeAssignHandler extends AbstractCloudOptionHandler implemen
 			instances.size() > 1 ? MessageFormat.format(msgConfirmManualRegistNodeModifyMulti, instances.size()):
 				MessageFormat.format(msgConfirmManualRegistNodeModify, selected.getName(), selected.getId()))) {
 
-			for (IInstance instance: instances) {
-				try {
-					CloudEndpoint endpoint = instance.getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-					endpoint.assignNodeToInstance(instance.getCloudScope().getId(), instance.getLocation().getId(), instance.getId());
-				} catch (Exception e) {
-					logger.warn(e);
+			try {
+				for (IInstance instance: instances) {
+					String managerName = instance.getCloudScope().getCloudScopes().getHinemosManager().getManagerName();
+					RepositoryRestClientWrapper repoWrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+					repoWrapper.addNodeAndAssignScopeFromInstance(instance.getCloudScope().getId(), instance.getLocation().getId(), instance.getId());
 				}
-			}
+				// 成功報告ダイアログを生成
+				MessageDialog.openInformation(
+						null,
+						Messages.getString("successful"),
+						msgFinishManualRegistNodeModify);
 
-			// 成功報告ダイアログを生成
-			MessageDialog.openInformation(
-					null,
-					Messages.getString("successful"),
-					msgFinishManualRegistNodeModify);
-			
-			Display.getCurrent().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					selected.getLocation().updateLocation();
-				}
-			});
+			}catch(Exception e) {
+				// 失敗報告ダイアログを生成
+				ControlUtil.openError(e, getErrorMessage());
+				logger.warn(e);
+			}finally{
+				Display.getCurrent().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						selected.getLocation().updateLocation();
+					}
+				});
+			}
 		}
 		return null;
 	}

@@ -9,7 +9,6 @@
 package com.clustercontrol.repository.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,10 +27,14 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse.RunIntervalEnum;
+import org.openapitools.client.model.NodeConfigSettingItemInfoResponse;
 
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.jobmanagement.bean.HistoryFilterPropertyConstant;
 import com.clustercontrol.repository.action.GetNodeConfigSettingListTableDefine;
+import com.clustercontrol.repository.bean.NodeConfigRunInterval;
 import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.repository.action.GetNodeConfigSettingList;
 import com.clustercontrol.repository.composite.action.NodeConfigSettingDoubleClickListener;
@@ -39,9 +42,8 @@ import com.clustercontrol.repository.view.NodeConfigSettingListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
-import com.clustercontrol.ws.repository.NodeConfigSettingItemInfo;
 
 /**
  * 構成情報取得一覧コンポジットクラス<BR>
@@ -187,7 +189,7 @@ public class NodeConfigSettingInfoListComposite extends Composite {
 	@Override
 	public void update() {
 		// データ取得
-		Map<String, List<NodeConfigSettingInfo>> dispDataMap = null;
+		Map<String, List<NodeConfigSettingInfoResponse>> dispDataMap = null;
 		ArrayList<Object> listInput = new ArrayList<Object>();
 
 		if (this.condition == null) {
@@ -205,26 +207,26 @@ public class NodeConfigSettingInfoListComposite extends Composite {
 			if(conditionManager == null || conditionManager.equals("")) {
 				dispDataMap = new GetNodeConfigSettingList().getAll();
 			} else {
-				List<NodeConfigSettingInfo> list = new GetNodeConfigSettingList().getAll(conditionManager);
-				dispDataMap = new ConcurrentHashMap<String, List<NodeConfigSettingInfo>>();
+				List<NodeConfigSettingInfoResponse> list = new GetNodeConfigSettingList().getAll(conditionManager);
+				dispDataMap = new ConcurrentHashMap<String, List<NodeConfigSettingInfoResponse>>();
 				dispDataMap.put(conditionManager, list);
 			}
 		}
 
 		int cnt = 0;
-		for(Map.Entry<String, List<NodeConfigSettingInfo>> entrySet : dispDataMap.entrySet()) {
-			List<NodeConfigSettingInfo> list = entrySet.getValue();
+		for(Map.Entry<String, List<NodeConfigSettingInfoResponse>> entrySet : dispDataMap.entrySet()) {
+			List<NodeConfigSettingInfoResponse> list = entrySet.getValue();
 
 			if(list == null){
-				list = new ArrayList<NodeConfigSettingInfo>();
+				list = new ArrayList<NodeConfigSettingInfoResponse>();
 			}
 
-			for (NodeConfigSettingInfo config : list) {
+			for (NodeConfigSettingInfoResponse config : list) {
 
 				//有効になっている収集項目の文字列を生成
 				String targets = "";
 				boolean isStart = true;
-				for (NodeConfigSettingItemInfo info : config.getNodeConfigSettingItemList()) {
+				for (NodeConfigSettingItemInfoResponse info : config.getNodeConfigSettingItemList()) {
 					if (!isStart) {
 						targets += ", ";
 					} else {
@@ -266,23 +268,37 @@ public class NodeConfigSettingInfoListComposite extends Composite {
 				a.add(config.getSettingName());
 				a.add(config.getDescription());
 				a.add(targets);
-				a.add(config.getRunInterval());
+				int runInterval = 0;
+				if (config.getRunInterval() == RunIntervalEnum._6) {
+					runInterval = NodeConfigRunInterval.TYPE_HOUR_6.toSec();
+				} else if (config.getRunInterval() == RunIntervalEnum._12) {
+					runInterval = NodeConfigRunInterval.TYPE_HOUR_12.toSec();
+				} else if (config.getRunInterval() == RunIntervalEnum._24) {
+					runInterval = NodeConfigRunInterval.TYPE_HOUR_24.toSec();
+				}
+				a.add(runInterval);
 				a.add(config.getFacilityId());
 				a.add(HinemosMessage.replace(config.getScope()));
 				a.add(config.getCalendarId());
-				a.add(config.isValidFlg());
+				a.add(config.getValidFlg());
 				a.add(config.getOwnerRoleId());
 				a.add(config.getRegUser());
 				if (config.getRegDate() == null) {
 					a.add(null);
 				} else {
-					a.add(new Date(config.getRegDate()));
+					try {
+						a.add(TimezoneUtil.getSimpleDateFormat().parse(config.getRegDate()));
+					} catch (Exception e) {
+					}
 				}
 				a.add(config.getUpdateUser());
 				if (config.getUpdateDate() == null) {
 					a.add(null);
 				} else {
-					a.add(new Date(config.getUpdateDate()));
+					try {
+						a.add(TimezoneUtil.getSimpleDateFormat().parse(config.getUpdateDate()));
+					} catch (Exception e) {
+					}
 				}
 				a.add(null);
 				listInput.add(a);

@@ -8,6 +8,8 @@
 
 package com.clustercontrol.bean;
 
+import org.openapitools.client.model.JobDetailInfoResponse;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -17,6 +19,9 @@ import com.clustercontrol.util.Messages;
  * @since 1.0.0
  */
 public class StatusMessage {
+	/** 実行予定(状態の種別) */
+	public static final String STRING_SCHEDULED = Messages.getString("scheduled");
+
 	/** 待機(状態の種別) */
 	public static final String STRING_WAIT = Messages.getString("wait");
 
@@ -71,6 +76,12 @@ public class StatusMessage {
 	/** 終了(キューサイズ超過) (状態の種別) */
 	public static final String STRING_END_QUEUE_LIMIT = Messages.getString("end.queue.limit");
 
+	/** 終了(ファイル出力失敗) (状態の種別) */
+	public static final String STRING_END_FAILED_OUTPUT = Messages.getString("end.failed.output");
+
+	/** 未実行(管理対象外)(状態の種別) */
+	public static final String STRING_NOT_MANAGED = Messages.getString("not.managed");
+
 	/** 起動失敗(状態の種別) */
 	public static final String STRING_ERROR = Messages.getString("start.error");
 
@@ -85,6 +96,8 @@ public class StatusMessage {
 			return STRING_RUNNING;
 		} else if (type == StatusConstant.TYPE_END) {
 			return STRING_END;
+		} else if (type == StatusConstant.TYPE_SCHEDULED) {
+			return STRING_SCHEDULED;
 		} else if (type == StatusConstant.TYPE_WAIT) {
 			return STRING_WAIT;
 		} else if (type == StatusConstant.TYPE_STOPPING) {
@@ -119,6 +132,10 @@ public class StatusMessage {
 			return STRING_SUSPEND_QUEUE;
 		} else if (type == StatusConstant.TYPE_END_QUEUE_LIMIT) {
 			return STRING_END_QUEUE_LIMIT;
+		} else if (type == StatusConstant.TYPE_NOT_MANAGED) {
+			return STRING_NOT_MANAGED;
+		} else if (type == StatusConstant.TYPE_END_FAILED_OUTPUT) {
+			return STRING_END_FAILED_OUTPUT;
 		}
 		return "";
 	}
@@ -134,6 +151,8 @@ public class StatusMessage {
 			return StatusConstant.TYPE_RUNNING;
 		} else if (string.equals(STRING_END)) {
 			return StatusConstant.TYPE_END;
+		} else if (string.equals(STRING_SCHEDULED)) {
+			return StatusConstant.TYPE_SCHEDULED;
 		} else if (string.equals(STRING_WAIT)) {
 			return StatusConstant.TYPE_WAIT;
 		} else if (string.equals(STRING_STOPPING)) {
@@ -168,7 +187,124 @@ public class StatusMessage {
 			return StatusConstant.TYPE_SUSPEND_QUEUE;
 		} else if (string.equals(STRING_END_QUEUE_LIMIT)) {
 			return StatusConstant.TYPE_END_QUEUE_LIMIT;
+		} else if (string.equals(STRING_NOT_MANAGED)) {
+			return StatusConstant.TYPE_NOT_MANAGED;
+		} else if (string.equals(STRING_END_FAILED_OUTPUT)) {
+			return StatusConstant.TYPE_END_FAILED_OUTPUT;
 		}
 		return -1;
 	}
+
+	/**
+	 * 種別(enum)から文字列に変換します。<BR>
+	 * 
+	 * @param type
+	 * @return
+	 */
+	public static String typeEnumValueToString(String type) {
+		//findbugs対応 String比較方法をequelsに統一
+		if (type.equals(JobDetailInfoResponse.StatusEnum.RUNNING.getValue())) {
+			return STRING_RUNNING;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.END.getValue())) {
+			return STRING_END;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.SCHEDULED.getValue())) {
+			return STRING_SCHEDULED;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.WAIT.getValue())) {
+			return STRING_WAIT;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.STOPPING.getValue())) {
+			return STRING_STOPPING;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.STOP.getValue())) {
+			return STRING_STOP;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.RESERVING.getValue())) {
+			return STRING_RESERVING;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.MODIFIED.getValue())) {
+			return STRING_MODIFIED;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.END_CALENDAR.getValue())) {
+			return STRING_END_CALENDAR;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.END_UNMATCH.getValue())) {
+			return STRING_END_UNMATCH;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.END_EXCLUSIVE_BRANCH.getValue())) {
+			return STRING_END_EXCLUSIVE_BRANCH;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.END_SKIP.getValue())) {
+			return STRING_END_SKIP;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.END_START_DELAY.getValue())) {
+			return STRING_END_START_DELAY;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.END_END_DELAY.getValue())) {
+			return STRING_END_END_DELAY;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.ERROR.getValue())) {
+			return STRING_ERROR;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.SKIP.getValue())) {
+			return STRING_SKIP;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.SUSPEND.getValue())) {
+			return STRING_SUSPEND;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.RUNNING_QUEUE.getValue())) {
+			return STRING_RUNNING_QUEUE;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.SUSPEND_QUEUE.getValue())) {
+			return STRING_SUSPEND_QUEUE;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.END_QUEUE_LIMIT.getValue())) {
+			return STRING_END_QUEUE_LIMIT;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.NOT_MANAGED.getValue())) {
+			return STRING_NOT_MANAGED;
+		} else if (type.equals(JobDetailInfoResponse.StatusEnum.END_FAILED_OUTPUT.getValue())) {
+			return STRING_END_FAILED_OUTPUT;
+		}
+		return "";
+	}
+	
+	/**
+	 * 文字列から種別(enum)に変換します。<BR>
+	 * 
+	 * @param type
+	 * @return typeEnumValue
+	 */
+	public static String stringTotypeEnumValue(String string) {
+		if (string.equals(STRING_RUNNING)) {
+			return JobDetailInfoResponse.StatusEnum.RUNNING.getValue();
+		} else if (string.equals(STRING_END)) {
+			return JobDetailInfoResponse.StatusEnum.END.getValue();
+		} else if (string.equals(STRING_SCHEDULED)) {
+			return JobDetailInfoResponse.StatusEnum.SCHEDULED.getValue();
+		} else if (string.equals(STRING_WAIT)) {
+			return JobDetailInfoResponse.StatusEnum.WAIT.getValue();
+		} else if (string.equals(STRING_STOPPING)) {
+			return JobDetailInfoResponse.StatusEnum.STOPPING.getValue();
+		} else if (string.equals(STRING_STOP)) {
+			return JobDetailInfoResponse.StatusEnum.STOP.getValue();
+		} else if (string.equals(STRING_RESERVING)) {
+			return JobDetailInfoResponse.StatusEnum.RESERVING.getValue();
+		} else if (string.equals(STRING_MODIFIED)) {
+			return JobDetailInfoResponse.StatusEnum.MODIFIED.getValue();
+		} else if (string.equals(STRING_END_UNMATCH)) {
+			return JobDetailInfoResponse.StatusEnum.END_UNMATCH.getValue();
+		} else if (string.equals(STRING_END_EXCLUSIVE_BRANCH)) {
+			return JobDetailInfoResponse.StatusEnum.END_EXCLUSIVE_BRANCH.getValue();
+		} else if (string.equals(STRING_END_CALENDAR)) {
+			return JobDetailInfoResponse.StatusEnum.END_CALENDAR.getValue();
+		} else if (string.equals(STRING_END_SKIP)) {
+			return JobDetailInfoResponse.StatusEnum.END_SKIP.getValue();
+		} else if (string.equals(STRING_END_START_DELAY)) {
+			return JobDetailInfoResponse.StatusEnum.END_SKIP.getValue();
+		} else if (string.equals(STRING_END_END_DELAY)) {
+			return JobDetailInfoResponse.StatusEnum.END_SKIP.getValue();
+		} else if (string.equals(STRING_ERROR)) {
+			return JobDetailInfoResponse.StatusEnum.ERROR.getValue();
+		} else if (string.equals(STRING_SKIP)) {
+			return JobDetailInfoResponse.StatusEnum.SKIP.getValue();
+		} else if (string.equals(STRING_SUSPEND)) {
+			return JobDetailInfoResponse.StatusEnum.SUSPEND.getValue();
+		} else if (string.equals(STRING_RUNNING_QUEUE)) {
+			return JobDetailInfoResponse.StatusEnum.RUNNING_QUEUE.getValue();
+		} else if (string.equals(STRING_SUSPEND_QUEUE)) {
+			return JobDetailInfoResponse.StatusEnum.SUSPEND_QUEUE.getValue();
+		} else if (string.equals(STRING_END_QUEUE_LIMIT)) {
+			return JobDetailInfoResponse.StatusEnum.END_QUEUE_LIMIT.getValue();
+		} else if (string.equals(STRING_NOT_MANAGED)) {
+			return JobDetailInfoResponse.StatusEnum.NOT_MANAGED.getValue();
+		} else if (string.equals(STRING_END_FAILED_OUTPUT)) {
+			return JobDetailInfoResponse.StatusEnum.END_FAILED_OUTPUT.getValue();
+		}
+		return null;
+	}
+
+
 }

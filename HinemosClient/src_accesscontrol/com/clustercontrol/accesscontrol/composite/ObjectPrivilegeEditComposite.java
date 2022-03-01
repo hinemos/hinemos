@@ -41,7 +41,8 @@ public class ObjectPrivilegeEditComposite extends Composite {
 	private CommonTableViewer m_viewer = null;
 	/** オブジェクト権限 */
 	private ObjectPrivilegeBean m_objPriv = null;
-
+	/** 実行権限の表示/非表示 */
+	private boolean hasExecutablePrivilege = true;
 
 	/**
 	 * コンストラクタ
@@ -58,6 +59,24 @@ public class ObjectPrivilegeEditComposite extends Composite {
 		initialize(false);
 	}
 	
+	/**
+	 * コンストラクタ
+	 *
+	 * @param parent 親のコンポジット
+	 * @param style スタイル
+	 * @param hasExecutablePrivilege 実行権限の表示/非表示
+	 *
+	 * @see org.eclipse.swt.SWT
+	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
+	 * @see #initialize()
+	 */
+	public ObjectPrivilegeEditComposite(Composite parent, int style, boolean hasExecutablePrivilege) {
+		super(parent, style);
+		this.hasExecutablePrivilege = hasExecutablePrivilege;
+		
+		initialize(false);
+	}
+
 	/**
 	 * コンポジットを配置します。
 	 */
@@ -103,12 +122,14 @@ public class ObjectPrivilegeEditComposite extends Composite {
 		a.add(ObjectPrivilegeMode.MODIFY);
 		a.add(1);
 		listInput.add(a);
-		a = new ArrayList<Object>();
-		a.add(Messages.getString("run"));
-		a.add(false);
-		a.add(ObjectPrivilegeMode.EXEC);
-		a.add(2);
-		listInput.add(a);
+		if (this.hasExecutablePrivilege) {
+			a = new ArrayList<Object>();
+			a.add(Messages.getString("run"));
+			a.add(false);
+			a.add(ObjectPrivilegeMode.EXEC);
+			a.add(2);
+			listInput.add(a);
+		}
 		this.m_viewer.setInput(listInput);
 
 		// table 選択時のチェックボックスの挙動
@@ -198,13 +219,14 @@ public class ObjectPrivilegeEditComposite extends Composite {
 		a.add(ObjectPrivilegeMode.MODIFY);
 		a.add(1);
 		listInput.add(a);
-		a = new ArrayList<Object>();
-		a.add(Messages.getString("run"));
-		a.add(m_objPriv.getExecPrivilege());
-		a.add(ObjectPrivilegeMode.EXEC);
-		a.add(2);
-		a.add(null);
-		listInput.add(a);
+		if (this.hasExecutablePrivilege) {
+			a = new ArrayList<Object>();
+			a.add(Messages.getString("run"));
+			a.add(m_objPriv.getExecPrivilege());
+			a.add(ObjectPrivilegeMode.EXEC);
+			a.add(2);
+			listInput.add(a);
+		}
 		this.m_viewer.setInput(listInput);
 
 	}

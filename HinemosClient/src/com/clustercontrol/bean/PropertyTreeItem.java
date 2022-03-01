@@ -78,6 +78,15 @@ public class PropertyTreeItem implements Serializable {
 	}
 
 	/**
+	 * 複数の子を追加します。
+	 */
+	public void addChildren(Iterable<? extends PropertyTreeItem> children) {
+		for (PropertyTreeItem child : children) {
+			addChildren(child);
+		}
+	}
+
+	/**
 	 * @param children
 	 *            children を設定します。<BR>
 	 * @param index

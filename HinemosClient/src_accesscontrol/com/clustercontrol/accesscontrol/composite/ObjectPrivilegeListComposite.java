@@ -41,8 +41,9 @@ public class ObjectPrivilegeListComposite extends Composite {
 	private Object m_data = null;
 	/** オブジェクト権限マップ */
 	private  HashMap<String, ObjectPrivilegeBean> m_objPrivMap = null;
-
-
+	/** 実行権限の表示/非表示 */
+	private boolean hasExecutablePrivilege = true;
+	
 	/**
 	 * コンストラクタ
 	 *
@@ -62,14 +63,18 @@ public class ObjectPrivilegeListComposite extends Composite {
 	 *
 	 * @param parent 親のコンポジット
 	 * @param style スタイル
+	 * @param objPrivMap オブジェクト権限マップ
+	 * @param hasExecutablePrivilege 実行権限の表示/非表示
 	 *
 	 * @see org.eclipse.swt.SWT
 	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
 	 * @see #initialize()
 	 */
-	public ObjectPrivilegeListComposite(Composite parent, int style, HashMap<String, ObjectPrivilegeBean> objPrivMap) {
+	public ObjectPrivilegeListComposite(Composite parent, int style, HashMap<String, ObjectPrivilegeBean> objPrivMap,
+			boolean hasExecutablePrivilege) {
 		super(parent, style);
 		this.m_objPrivMap = objPrivMap;
+		this.hasExecutablePrivilege = hasExecutablePrivilege;
 
 		initialize(false);
 	}
@@ -98,7 +103,7 @@ public class ObjectPrivilegeListComposite extends Composite {
 
 		// テーブルビューアの作成
 		this.m_viewer = new CommonTableViewer(table);
-		this.m_viewer.createTableColumn(GetObjectPrivilegeListTableDefine.get(),
+		this.m_viewer.createTableColumn(GetObjectPrivilegeListTableDefine.get(this.hasExecutablePrivilege),
 				GetObjectPrivilegeListTableDefine.SORT_COLUMN_INDEX,
 				GetObjectPrivilegeListTableDefine.SORT_ORDER);
 
@@ -143,11 +148,14 @@ public class ObjectPrivilegeListComposite extends Composite {
 				a.add(true);
 			else
 				a.add(false);
-			// 実行権限が存在する場合
-			if(bean.getExecPrivilege())
-				a.add(true);
-			else
-				a.add(false);
+			// 実行権限を表示する場合
+			if (this.hasExecutablePrivilege) {
+				// 実行権限が存在する場合
+				if(bean.getExecPrivilege())
+					a.add(true);
+				else
+					a.add(false);
+			}
 
 			a.add(null);
 			inputList.add(a);

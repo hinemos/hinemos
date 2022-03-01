@@ -1,0 +1,36 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"FilterSettingJobHistoryList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Filtersetting.OwnerUserId",
+			"Filtersetting.FilterId",
+			"Filtersetting.FilterName",
+			"Filtersetting.OwnerRoleId",
+			"Filtersetting.ObjectId",
+			"Filtersetting.FilterCategory",
+			"JobHistoryInfo.JobHistoryConditions",
+			"JobHistoryInfo.JobHistoryConditions.*.ConditionIdx",
+			"JobHistoryInfo.JobHistoryConditions.*.Description",
+			"JobHistoryInfo.JobHistoryConditions.*.Negative",
+			"JobHistoryInfo.JobHistoryConditions.*.StartDateFrom",
+			"JobHistoryInfo.JobHistoryConditions.*.StartDateTo",
+			"JobHistoryInfo.JobHistoryConditions.*.EndDateFrom",
+			"JobHistoryInfo.JobHistoryConditions.*.EndDateTo",
+			"JobHistoryInfo.JobHistoryConditions.*.JobId",
+			"JobHistoryInfo.JobHistoryConditions.*.Status",
+			"JobHistoryInfo.JobHistoryConditions.*.EndStatus",
+			"JobHistoryInfo.JobHistoryConditions.*.TriggerType",
+			"JobHistoryInfo.JobHistoryConditions.*.TriggerInfo",
+			"JobHistoryInfo.JobHistoryConditions.*.OwnerRoleId"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"FilterJobHistory",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

@@ -11,8 +11,6 @@ package com.clustercontrol.accesscontrol.factory;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -47,11 +45,23 @@ import com.clustercontrol.fault.UnEditableRole;
 import com.clustercontrol.fault.UsedObjectPrivilege;
 import com.clustercontrol.fault.UsedRole;
 import com.clustercontrol.fault.UserNotFound;
+import com.clustercontrol.hub.model.TransferInfo;
+import com.clustercontrol.infra.model.InfraManagementInfo;
 import com.clustercontrol.jobmanagement.model.JobKickEntity;
+import com.clustercontrol.jobmanagement.model.JobLinkSendSettingEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
+import com.clustercontrol.maintenance.model.MaintenanceInfo;
+import com.clustercontrol.monitor.run.bean.CollectMonitorNotifyConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.model.NotifyInfo;
+import com.clustercontrol.reporting.model.ReportingInfoEntity;
+import com.clustercontrol.repository.model.NodeConfigSettingInfo;
+import com.clustercontrol.rpa.scenario.model.RpaScenarioOperationResultCreateSetting;
+import com.clustercontrol.sdml.model.SdmlControlSettingInfo;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * ロール情報を更新するファクトリクラス<BR>
@@ -385,7 +395,27 @@ public class RoleModifier {
 							 *  (参照権限の継承されている場合、ノードが指定されている場合はチェック不可)
 							 */
 							// 監視設定
-							referList = em.createNamedQuery("MonitorInfo.findByFacilityIdOwnerRoleId", MonitorInfo.class)
+							referList = em.createNamedQuery("MonitorInfo.findByFacilityIdOwnerRoleId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.MONITOR;
+								break;
+							}
+
+							// 監視設定(相関係数監視 参照先スコープ)
+							referList = em.createNamedQuery("MonitorInfo.findByCorrelationFacilityIdOwnerRoleId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.MONITOR;
+								break;
+							}
+
+							// 監視設定(収集値統合監視 参照先スコープ)
+							referList = em.createNamedQuery("MonitorInfo.findByIntegrationFacilityIdOwnerRoleId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -395,7 +425,17 @@ public class RoleModifier {
 							}
 
 							// ジョブ
-							referList = em.createNamedQuery("JobMstEntity.findByFacilityIdOwnerRoleId", JobMstEntity.class)
+							referList = em.createNamedQuery("JobMstEntity.findByFacilityIdOwnerRoleId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.JOB;
+								break;
+							}
+
+							// ファイル転送ジョブ(転送スコープ、受信スコープ)
+							referList = em.createNamedQuery("JobMstEntity.findByFileFacilityIdOwnerRoleId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -405,7 +445,7 @@ public class RoleModifier {
 							}
 
 							// ジョブ実行契機
-							referList = em.createNamedQuery("JobKickEntity.findByFacilityIdOwnerRoleId", JobKickEntity.class)
+							referList = em.createNamedQuery("JobKickEntity.findByFacilityIdOwnerRoleId", JobKickEntity.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -414,8 +454,18 @@ public class RoleModifier {
 								break;
 							}
 
+							// ジョブ連携送信設定
+							referList = em.createNamedQuery("JobLinkSendSettingEntity.findByFacilityIdOwnerRoleId", JobLinkSendSettingEntity.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.JOB_LINK_SEND;
+								break;
+							}
+
 							// 通知（ログエスカレーション）
-							referList = em.createNamedQuery("NotifyInfoEntity.findByEscalateFacilityIdOwnerRoleId", NotifyInfo.class)
+							referList = em.createNamedQuery("NotifyInfoEntity.findByEscalateFacilityIdOwnerRoleId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -425,7 +475,7 @@ public class RoleModifier {
 							}
 
 							// 通知（ジョブ）
-							referList = em.createNamedQuery("NotifyInfoEntity.findByExecFacilityIdOwnerRoleId", NotifyInfo.class)
+							referList = em.createNamedQuery("NotifyInfoEntity.findByExecFacilityIdOwnerRoleId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -433,12 +483,73 @@ public class RoleModifier {
 								referObjectType = HinemosModuleConstant.PLATFORM_NOTIFY;
 								break;
 							}
+
+							// 通知（環境構築）
+							referList = em.createNamedQuery("NotifyInfoEntity.findByInfraFacilityIdOwnerRoleId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.PLATFORM_NOTIFY;
+								break;
+							}
+
+							// 環境構築
+							referList = em.createNamedQuery("InfraManagementInfo.findByFacilityIdOwnerRoleId", InfraManagementInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.INFRA;
+								break;
+							}
+
+							// レポーティングスケジュール
+							referList = em.createNamedQuery("ReportingInfoEntity.findByFacilityIdOwnerRoleId", ReportingInfoEntity.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.REPORTING;
+								break;
+							}
+
+							// 構成情報取得設定
+							referList = em.createNamedQuery("NodeConfigSettingInfo.findByFacilityIdOwnerRoleId", NodeConfigSettingInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.NODE_CONFIG_SETTING;
+								break;
+							}
+
+							// SDML制御設定
+							referList = em.createNamedQuery("SdmlControlSettingInfo.findByFacilityIdOwnerRoleId", SdmlControlSettingInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.SDML_CONTROL;
+								break;
+							}
+
+							// RPAシナリオ実績作成設定
+							referList = em.createNamedQuery("RpaScenarioOperationResultCreateSetting.findByFacilityIdOwnerRoleId", RpaScenarioOperationResultCreateSetting.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.RPA_SCENARIO_CREATE;
+								break;
+							}
+
 						} else if (HinemosModuleConstant.JOB.equals(objectType)) {
 							/*
 							 * ジョブの場合
 							 */
 							// ジョブ実行契機
-							referList = em.createNamedQuery("JobKickEntity.findByJobUnitIdOwnerRoleId", JobKickEntity.class)
+							referList = em.createNamedQuery("JobKickEntity.findByJobUnitIdOwnerRoleId", JobKickEntity.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -448,7 +559,7 @@ public class RoleModifier {
 							}
 
 							// 通知（ジョブ）
-							referList = em.createNamedQuery("NotifyInfoEntity.findByJobUnitIdOwnerRoleId", NotifyInfo.class)
+							referList = em.createNamedQuery("NotifyInfoEntity.findByJobUnitIdOwnerRoleId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -458,7 +569,7 @@ public class RoleModifier {
 							}
 							
 							// ジョブ(承認ジョブ)
-							referList = em.createNamedQuery("JobMstEntity.findByJobUnitIdApprovalReqRoleId", JobMstEntity.class)
+							referList = em.createNamedQuery("JobMstEntity.findByJobUnitIdApprovalReqRoleId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("roleId", deletePk.getRoleId())
 									.getResultList();
@@ -472,7 +583,7 @@ public class RoleModifier {
 							 *  カレンダの場合
 							 */
 							// 監視設定
-							referList = em.createNamedQuery("MonitorInfo.findByCalendarIdOwnerRoleId", MonitorInfo.class)
+							referList = em.createNamedQuery("MonitorInfo.findByCalendarIdOwnerRoleId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -482,7 +593,7 @@ public class RoleModifier {
 							}
 
 							// ジョブ
-							referList = em.createNamedQuery("JobMstEntity.findByCalendarIdOwnerRoleId", JobMstEntity.class)
+							referList = em.createNamedQuery("JobMstEntity.findByCalendarIdOwnerRoleId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -492,7 +603,7 @@ public class RoleModifier {
 							}
 
 							// ジョブ実行契機
-							referList = em.createNamedQuery("JobKickEntity.findByCalendarIdOwnerRoleId", JobKickEntity.class)
+							referList = em.createNamedQuery("JobKickEntity.findByCalendarIdOwnerRoleId", JobKickEntity.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -501,12 +612,82 @@ public class RoleModifier {
 								break;
 							}
 
+							// レポーティングスケジュール
+							referList = em.createNamedQuery("ReportingInfoEntity.findByCalendarIdOwnerRoleId", ReportingInfoEntity.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.REPORTING;
+								break;
+							}
+
+							// 通知設定
+							referList = em.createNamedQuery("NotifyInfoEntity.findByCalendarIdOwnerRoleId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.PLATFORM_NOTIFY;
+								break;
+							}
+
+							// 履歴情報削除
+							referList = em.createNamedQuery("MaintenanceInfo.findByCalendarIdOwnerRoleId", MaintenanceInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.SYSYTEM_MAINTENANCE;
+								break;
+							}
+
+							// 転送設定
+							referList = em.createNamedQuery("TransferInfo.findByCalendarIdOwnerRoleId", TransferInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.HUB_TRANSFER;
+								break;
+							}
+
+							// 構成情報取得設定
+							referList = em.createNamedQuery("NodeConfigSettingInfo.findByCalendarIdOwnerRoleId", NodeConfigSettingInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.NODE_CONFIG_SETTING;
+								break;
+							}
+
+							// SDML制御設定
+							referList = em.createNamedQuery("SdmlControlSettingInfo.findByCalendarIdOwnerRoleId", SdmlControlSettingInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.SDML_CONTROL;
+								break;
+							}
+
+							// RPAシナリオ実績作成設定
+							referList = em.createNamedQuery("RpaScenarioOperationResultCreateSetting.findByCalendarIdOwnerRoleId", RpaScenarioOperationResultCreateSetting.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.RPA_SCENARIO_CREATE;
+								break;
+							}
+
 						} else if (HinemosModuleConstant.PLATFORM_CALENDAR_PATTERN.equals(objectType)) {
 							/*
 							 * カレンダパターンの場合
 							 */
 							// カレンダ
-							referList = em.createNamedQuery("CalInfoEntity.findByCalendarPatternIdOwnerRoleId", CalendarInfo.class)
+							referList = em.createNamedQuery("CalInfoEntity.findByCalendarPatternIdOwnerRoleId", CalendarInfo.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -520,7 +701,7 @@ public class RoleModifier {
 							 *  通知の場合
 							 */
 							// 監視設定
-							referList = em.createNamedQuery("MonitorInfo.findByNotifyIdOwnerRoleId", MonitorInfo.class)
+							referList = em.createNamedQuery("MonitorInfo.findByNotifyIdOwnerRoleId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -529,8 +710,30 @@ public class RoleModifier {
 								break;
 							}
 
+							// 変化量監視設定
+							referList = em.createNamedQuery("MonitorInfo.findByOtherNotifyIdOwnerRoleId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.setParameter("otherKey", CollectMonitorNotifyConstant.CHANGE_NOTIFY_GROUPID_PREFIX)
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.MONITOR;
+								break;
+							}
+
+							// 将来予測監視設定
+							referList = em.createNamedQuery("MonitorInfo.findByOtherNotifyIdOwnerRoleId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.setParameter("otherKey", CollectMonitorNotifyConstant.PREDICTION_NOTIFY_GROUPID_PREFIX)
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.MONITOR;
+								break;
+							}
+
 							// ジョブ
-							referList = em.createNamedQuery("JobMstEntity.findByNotifyIdOwnerRoleId", JobMstEntity.class)
+							referList = em.createNamedQuery("JobMstEntity.findByNotifyIdOwnerRoleId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
@@ -539,27 +742,185 @@ public class RoleModifier {
 								break;
 							}
 
+							// 環境構築設定
+							referList = em.createNamedQuery("InfraManagementInfo.findByNotifyIdOwnerRoleId", InfraManagementInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.INFRA;
+								break;
+							}
+
+							// 履歴情報削除
+							referList = em.createNamedQuery("MaintenanceInfo.findByNotifyIdOwnerRoleId", MaintenanceInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.SYSYTEM_MAINTENANCE;
+								break;
+							}
+
+							// レポーティングスケジュール
+							referList = em.createNamedQuery("ReportingInfoEntity.findByNotifyIdOwnerRoleId", ReportingInfoEntity.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.REPORTING;
+								break;
+							}
+
+							// 構成情報取得設定
+							referList = em.createNamedQuery("NodeConfigSettingInfo.findByNotifyIdOwnerRoleId", NodeConfigSettingInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.NODE_CONFIG_SETTING;
+								break;
+							}
+
+							// SDML制御設定
+							referList = em.createNamedQuery("SdmlControlSettingInfo.findByNotifyIdOwnerRoleId", SdmlControlSettingInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.SDML_CONTROL;
+								break;
+							}
+							referList = em.createNamedQuery("SdmlControlSettingInfo.findByAutoMonitorCommonNotifyIdOwnerRoleId", SdmlControlSettingInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.SDML_CONTROL;
+								break;
+							}
+							referList = em.createNamedQuery("SdmlControlSettingInfo.findByAutoMonitorIndividualNotifyIdOwnerRoleId", SdmlControlSettingInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.SDML_CONTROL;
+								break;
+							}
+							// RPAシナリオ実績作成
+							referList = em.createNamedQuery("RpaScenarioOperationResultCreateSetting.findByNotifyIdOwnerRoleId", RpaScenarioOperationResultCreateSetting.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.RPA_SCENARIO_CREATE;
+								break;
+							}
+
+						} else if (HinemosModuleConstant.MONITOR.equals(objectType)) {
+							/*
+							 *  監視の場合
+							 */
+							// 監視設定
+							referList = em.createNamedQuery("MonitorInfo.findByCorrelationMonitorIdOwnerRoleId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if (referList.size() == 0) {
+								referList = em.createNamedQuery("MonitorInfo.findByIntegrationMonitorIdOwnerRoleId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
+										.setParameter("objectId", objectId)
+										.setParameter("ownerRoleId", deletePk.getRoleId())
+										.getResultList();
+							}
+							if (referList.size() == 0) {
+								referList = em.createNamedQuery("MonitorInfo.findByLogcountMonitorIdOwnerRoleId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
+										.setParameter("objectId", objectId)
+										.setParameter("ownerRoleId", deletePk.getRoleId())
+										.getResultList();
+							}
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.MONITOR;
+								break;
+							}
+
 						} else if (HinemosModuleConstant.PLATFORM_MAIL_TEMPLATE.equals(objectType)) {
 							/*
 							 *  メールテンプレート
 							 */
 							// メール通知
-							referList = em.createNamedQuery("NotifyInfoEntity.findByMailTemplateIdOwnerRoleId", NotifyInfo.class)
+							referList = em.createNamedQuery("NotifyInfoEntity.findByMailTemplateIdOwnerRoleId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
 							referObjectType = HinemosModuleConstant.PLATFORM_NOTIFY;
+
+						} else if (HinemosModuleConstant.INFRA.equals(objectType)) {
+							/*
+							 *  環境構築設定
+							 */
+							// 通知設定
+							referList = em.createNamedQuery("NotifyInfoEntity.findByInfraManagementIdOwnerRoleId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							referObjectType = HinemosModuleConstant.PLATFORM_NOTIFY;
+
+						} else if (HinemosModuleConstant.INFRA_FILE.equals(objectType)) {
+							/*
+							 *  環境構築ファイル
+							 */
+							// 環境構築設定
+							referList = em.createNamedQuery("InfraManagementInfo.findByInfraFileIdOwnerRoleId", InfraManagementInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							referObjectType = HinemosModuleConstant.PLATFORM_NOTIFY;
+
+						} else if (HinemosModuleConstant.JOBMAP_IMAGE_FILE.equals(objectType)) {
+							/*
+							 *  ジョブマップイメージ
+							 */
+							// ジョブ設定
+							referList = em.createNamedQuery("JobMstEntity.findByJobmapIconIdOwnerRoleId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							referObjectType = HinemosModuleConstant.JOB;
+
 						} else if (HinemosModuleConstant.JOB_QUEUE.equals(objectType)) {
 							/*
 							 * ジョブキュー
 							 */
 							// ジョブ設定
-							referList = em.createNamedQuery("JobMstEntity.findByQueueIdOwnerRoleId", JobMstEntity.class)
+							referList = em.createNamedQuery("JobMstEntity.findByQueueIdOwnerRoleId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
 									.setParameter("objectId", objectId)
 									.setParameter("ownerRoleId", deletePk.getRoleId())
 									.getResultList();
 							if(referList.size() > 0) {
 								referObjectType = HinemosModuleConstant.JOB;
+								break;
+							}
+						} else if (HinemosModuleConstant.JOB_LINK_SEND.equals(objectType)) {
+							/*
+							 * ジョブ連携送信設定
+							 */
+							// ジョブ設定
+							referList = em.createNamedQuery("JobMstEntity.findByJoblinkSendSettingIdOwnerRoleId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.JOB;
+								break;
+							}
+
+							// 通知（ジョブ）
+							referList = em.createNamedQuery("NotifyInfoEntity.findByJoblinkSendSettingIdOwnerRoleId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
+									.setParameter("objectId", objectId)
+									.setParameter("ownerRoleId", deletePk.getRoleId())
+									.getResultList();
+							if(referList.size() > 0) {
+								referObjectType = HinemosModuleConstant.PLATFORM_NOTIFY;
 								break;
 							}
 						}
@@ -574,11 +935,12 @@ public class RoleModifier {
 					}
 				}
 				if (referList != null && referList.size() > 0) {
-					UsedObjectPrivilege e = new UsedObjectPrivilege(referObjectType, referList.get(0).getObjectId());
+					UsedObjectPrivilege e = new UsedObjectPrivilege(
+							MessageConstant.MESSAGE_ACCESS_OBJECT_PRIVILEGE_DELETE_FAILED.getMessage(referObjectType, referList.get(0).getObjectId()));
 					m_log.warn("replaceObjectPrivilegeInfo() : "
-							+ "objectType = " + e.getObjectType()
-							+ ", objectId = " + e.getObjectId()
-							+ ", " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+							+ "objectType = " + referObjectType
+							+ ", objectId = " + referList.get(0).getObjectId()
+							+ ", " + e.getClass().getSimpleName(), e);
 					throw e;
 				}
 			}

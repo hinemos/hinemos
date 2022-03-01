@@ -1,0 +1,14 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"jobHistoryConditions",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"conditionIdx"},
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_jobHistoryConditions"},
+		{"type":"Ignore", "propNames":["conditionIdx"]}
+	]}
+]
+}

@@ -8,6 +8,7 @@
 
 package com.clustercontrol.accesscontrol.dialog;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,23 +27,25 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.ObjectPrivilegeInfoRequestP1;
+import org.openapitools.client.model.ObjectPrivilegeInfoResponse;
+import org.openapitools.client.model.ReplaceObjectPrivilegeRequest;
 
 import com.clustercontrol.accesscontrol.composite.ObjectPrivilegeEditComposite;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.accesscontrol.util.ObjectPrivilegeBean;
 import com.clustercontrol.accesscontrol.util.RoleObjectPrivilegeUtil;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.HinemosModuleMessage;
 import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.JobMasterNotFound;
+import com.clustercontrol.fault.UsedObjectPrivilege;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.JobMasterNotFound_Exception;
-import com.clustercontrol.ws.access.ObjectPrivilegeInfo;
-import com.clustercontrol.ws.access.UsedObjectPrivilege_Exception;
 
 /**
  * オブジェクト権限編集ダイアログクラス<BR>
@@ -326,8 +329,11 @@ public class ObjectPrivilegeEditDialog extends CommonDialog{
 		else
 			lblObjectPrivilegeEdit.setText(Messages.getString("object.privilege.setting"));
 
-		//オブジェクト権限編集コンポジット
-		this.m_objectPrivEditComposite = new ObjectPrivilegeEditComposite(parent, SWT.NONE);
+		// オブジェクト権限編集コンポジット
+		// どのm_objectsも、同じ機能から呼び出されるので同じオブジェクトタイプとなる
+		boolean hasExec = !ObjectPrivilegeConstant.OBJECT_TYPE_LIST_OF_NOT_HAVING_EXECUTE_PRIVILEGE
+				.contains(this.m_objects.get(0).getObjectType());
+		this.m_objectPrivEditComposite = new ObjectPrivilegeEditComposite(parent, SWT.NONE, hasExec);
 		WidgetTestUtil.setTestId(this, null, m_objectPrivEditComposite);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
@@ -383,7 +389,7 @@ public class ObjectPrivilegeEditDialog extends CommonDialog{
 	protected boolean action() {
 		boolean result = true;
 
-		java.util.List<ObjectPrivilegeInfo> inputdata = createInputData();
+		java.util.List<ObjectPrivilegeInfoResponse> inputdata = createInputData();
 		StringBuffer confirmList = new StringBuffer();
 		StringBuffer successList = new StringBuffer();
 		StringBuffer failureList = new StringBuffer();
@@ -392,7 +398,7 @@ public class ObjectPrivilegeEditDialog extends CommonDialog{
 		// 一括でオブジェクト権限を変更する場合は、確認ダイアログを表示する
 		if (m_objects.size() > 1) {
 			for (ObjectBean objectBean : m_objects) {
-				confirmList.append(objectBean.getObjectId() + "\n");
+				confirmList.append(objectBean.getObjectIdForDisplay() + "\n");
 			}
 
 			args = new String[]{ confirmList.toString() } ;
@@ -407,33 +413,38 @@ public class ObjectPrivilegeEditDialog extends CommonDialog{
 
 		for (ObjectBean objectBean : m_objects) {
 			String objectPrivilegeParam = Messages.getString("object.privilege.param",
-					new String[]{ HinemosModuleMessage.nameToString(objectBean.getObjectType()), objectBean.getObjectId()});
+					new String[]{ HinemosModuleMessage.nameToString(objectBean.getObjectType()), objectBean.getObjectIdForDisplay()});
 			String managerName = objectBean.getManagerName();
-			AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 			try {
-				wrapper.replaceObjectPrivilegeInfo(
-						objectBean.getObjectType(),
-						objectBean.getObjectId(),
-						inputdata);
+				ReplaceObjectPrivilegeRequest req = new ReplaceObjectPrivilegeRequest();
+				req.setObjectId(objectBean.getObjectId());
+				req.setObjectType(objectBean.getObjectType());
+				ArrayList<ObjectPrivilegeInfoRequestP1> list = new ArrayList<ObjectPrivilegeInfoRequestP1>();
+
+				for(ObjectPrivilegeInfoResponse rec: inputdata){
+					ObjectPrivilegeInfoRequestP1 set = new ObjectPrivilegeInfoRequestP1();
+					set.setObjectPrivilege(rec.getObjectPrivilege());
+					set.setRoleId(rec.getRoleId());
+					list.add(set);
+				}
+				req.setObjectPrigilegeInfoList(list);
+				wrapper.replaceObjectPrivilege(req);
 				successList.append(objectPrivilegeParam + "(" + managerName + ")\n");
-			} catch (UsedObjectPrivilege_Exception e) {
-				args = new String[]{
-						HinemosModuleMessage.nameToString(e.getFaultInfo().getObjectType()),
-						e.getFaultInfo().getObjectId()
-				};
+			} catch (UsedObjectPrivilege e) {
 				// 他機能で参照しているため、削除できない。
-				failureList.append(objectPrivilegeParam + " (" + Messages.getString("message.accesscontrol.36", args) + ")\n");
-			} catch (InvalidRole_Exception e) {
+				failureList.append(objectPrivilegeParam + " (" + e.getMessage() + ")\n");
+			} catch (InvalidRole e) {
 				// 権限なし
 				failureList.append(objectPrivilegeParam + " (" + Messages.getString("message.accesscontrol.16") + ")\n");
-			} catch (JobMasterNotFound_Exception e) {
+			} catch (JobMasterNotFound e) {
 				// ジョブが登録前の場合
 				failureList.append(objectPrivilegeParam + " (" + Messages.getString("message.accesscontrol.46") + ")\n");
 			} catch (Exception e) {
 				// 上記以外の例外
-				m_log.warn("getOwnUserList(), " + HinemosMessage.replace(e.getMessage()), e);
+				m_log.warn("getOwnUserList(), " + e.getMessage(), e);
 				failureList.append(objectPrivilegeParam + " (" + Messages.getString("message.hinemos.failure.unexpected") 
-						+ ", " + HinemosMessage.replace(e.getMessage()) + ")\n");
+						+ ", " + e.getMessage() + ")\n");
 			}
 		}
 
@@ -458,9 +469,9 @@ public class ObjectPrivilegeEditDialog extends CommonDialog{
 		return result;
 	}
 
-	private java.util.List<ObjectPrivilegeInfo> createInputData() {
+	private java.util.List<ObjectPrivilegeInfoResponse> createInputData() {
 
-		java.util.List<ObjectPrivilegeInfo> list = null;
+		java.util.List<ObjectPrivilegeInfoResponse> list = null;
 		list = RoleObjectPrivilegeUtil.beanMap2dtoList(m_modObjPrivMap);
 
 		return list;

@@ -16,12 +16,12 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.composite.FacilityTreeComposite;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * スコープツリーからスコープもしくはノードを選択するためのダイアログ<BR>
@@ -34,7 +34,7 @@ public class ScopeTreeDialog extends CommonDialog {
 	// ----- instance フィールド ----- //
 
 	/** 選択されたアイテム */
-	private FacilityTreeComposite treeComposite = null;
+	protected FacilityTreeComposite treeComposite = null;
 
 	/**ノードをツリーに含めるかのフラグ**/
 	private boolean scopeOnly;
@@ -144,22 +144,22 @@ public class ScopeTreeDialog extends CommonDialog {
 				});
 	}
 
-	public FacilityTreeItem getSelectItem() {
+	public FacilityTreeItemResponse getSelectItem() {
 		return this.treeComposite.getSelectItem();
 	}
 
 	@Override
 	protected ValidateResult validate() {
 		ValidateResult result = null;
-		FacilityTreeItem item = this.getSelectItem();
+		FacilityTreeItemResponse item = this.getSelectItem();
 
 		if (this.selectNodeOnly) {
 			// ノードのみ選択可能な場合
 			if (item == null
-					|| item.getData().isNotReferFlg()
-					|| item.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE
-					|| item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER
-					|| item.getData().getFacilityType() == FacilityConstant.TYPE_SCOPE) {
+					|| item.getData().getNotReferFlg()
+					|| item.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE
+					|| item.getData().getFacilityType() == FacilityTypeEnum.MANAGER
+					|| item.getData().getFacilityType() == FacilityTypeEnum.SCOPE) {
 				// 未選択の場合エラー
 				// 参照不可のスコープを選択した場合はエラー
 				// ルートを選択した場合はエラー
@@ -172,9 +172,9 @@ public class ScopeTreeDialog extends CommonDialog {
 		} else {
 			// ノード・スコープが選択可能な場合
 			if (item == null
-					|| item.getData().isNotReferFlg()
-					|| item.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE
-					|| item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER) {
+					|| item.getData().getNotReferFlg()
+					|| item.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE
+					|| item.getData().getFacilityType() == FacilityTypeEnum.MANAGER) {
 				// 未選択の場合エラー
 				// 参照不可のスコープを選択した場合はエラー
 				// ルートを選択した場合はエラー
@@ -196,5 +196,14 @@ public class ScopeTreeDialog extends CommonDialog {
 	@Override
 	protected String getCancelButtonText() {
 		return Messages.getString("cancel");
+	}
+
+
+	public String getOwnerRoleId() {
+		return ownerRoleId;
+	}
+
+	public String getManagerName() {
+		return managerName;
 	}
 }

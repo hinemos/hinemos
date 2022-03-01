@@ -21,17 +21,25 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtBinaryCheckInfoResponse;
+import org.openapitools.client.model.AgtMonitorInfoResponse;
+import org.openapitools.client.model.AgtOutputBasicInfoRequest;
+import org.openapitools.client.model.AgtRunInstructionInfoRequest;
+import org.openapitools.client.model.AgtRunInstructionInfoResponse;
 import org.pcap4j.core.PcapHandle;
 
 import com.clustercontrol.agent.Agent;
 import com.clustercontrol.agent.SendQueue;
+import com.clustercontrol.agent.SendQueue.MessageSendableObject;
 import com.clustercontrol.agent.binary.packet.PacketCapture;
 import com.clustercontrol.agent.binary.packet.PacketListenerImpl;
 import com.clustercontrol.agent.binary.readingstatus.DirectoryReadingStatus;
@@ -47,10 +55,6 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.binary.bean.BinaryConstant;
 import com.clustercontrol.util.FileUtil;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.ws.agent.OutputBasicInfo;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
-import com.clustercontrol.ws.monitor.BinaryCheckInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * バイナリファイル転送スレッド管理クラス.<br>
@@ -90,7 +94,7 @@ public class BinaryMonitorManager {
 	private static final String parentThreadName = "BinaryThread";
 
 	/** 監視設定一覧 */
-	private static List<MonitorInfoWrapper> monitorList = new ArrayList<MonitorInfoWrapper>();
+	private static List<MonitorInfoWrapper> monitorList;
 
 	/** 監視設定一覧のロック用オブジェクト */
 	private static final Object monitorListLock = new Object();
@@ -201,7 +205,7 @@ public class BinaryMonitorManager {
 	 * 他の監視やジョブ実行結果と共に送信するため共通のQueueをTopic上で設定.
 	 * 
 	 * @param sendQueue
-	 *            監視管理Queue送信
+	 *			  監視管理Queue送信
 	 */
 	public static void setSendQueue(SendQueue sendQueue) {
 		BinaryMonitorManager.sendQueue = sendQueue;
@@ -265,9 +269,6 @@ public class BinaryMonitorManager {
 	 */
 	private static class BinaryThread extends Thread {
 
-		/** ファイル増分監視間隔デフォルト値(AgentPropertiesの設定優先) */
-		private static int runInterval = 10000; // 10sec
-
 		/** スレッド繰返し(trueだとrun()の処理内容が繰返される). */
 		private boolean loop = true;
 
@@ -283,13 +284,11 @@ public class BinaryMonitorManager {
 		/** 子スレッド(任意バイナリファイル監視用). */
 		private WholeFileMonitorThread wholeFileMonitorThread;
 
-		/** スレッド開始時間(性能検証用). */
-		private long startmsec = 0L;
+		/** シグナル(キューへの要素挿入)を待機するための blocking queue */
+		private BlockingQueue<Object> signalQueue = new ArrayBlockingQueue<>(1);
 
-		static {
-			// 監視スレッド間隔の設定.
-			runInterval = BinaryMonitorConfig.getIncrementBinInterval();
-		}
+		/** {@link #signalQueue}へ送るシグナル */
+		private static final Object WAKE_UP_SIGNAL = new Object();
 
 		/**
 		 * スレッド実行処理.
@@ -299,42 +298,24 @@ public class BinaryMonitorManager {
 			log.info("run " + parentThreadName);
 			while (loop) {
 				try {
-					if (log.isDebugEnabled()) {
-						long msec = 0L;
-						if (this.startmsec > 0) {
-							msec = HinemosTime.getDateInstance().getTime() - this.startmsec;
-						}
-						log.debug(String.format(
-								"run() : " + parentThreadName + " is on top of run(). thread interval time=%dmsec",
-								msec));
-						this.startmsec = HinemosTime.getDateInstance().getTime();
-					}
+					// 処理時間計測用
+					long startTime = System.currentTimeMillis();
+
 					// 最新の監視設定を取得.
 					List<MonitorInfoWrapper> newMonList = popMonitorInfoList();
 
 					// 取得した監視設定をログ出力.
-					if (log.isDebugEnabled()) {
 						if (newMonList == null) {
-							log.debug("run() : " + parentThreadName + " get no new monitor info list.");
+						log.info("run: " + parentThreadName + " got new monitor info list. size=null");
 						} else {
-							log.debug(
-									String.format("run() : " + parentThreadName + " get new monitor info list. size=%d",
-											newMonList.size()));
-							StringBuilder monitorInfoSb = new StringBuilder();
-							boolean isTop = true;
-							for (MonitorInfoWrapper popMonitorInfo : newMonList) {
-								if (isTop) {
-									monitorInfoSb.append("[");
-								} else {
-									monitorInfoSb.append(", ");
+						StringBuilder monIds = new StringBuilder();
+						String delim = "";
+						for (MonitorInfoWrapper monInfo : newMonList) {
+							monIds.append(delim).append(monInfo.getId());
+							delim =", ";
 								}
-								monitorInfoSb.append("monitorID=");
-								monitorInfoSb.append(popMonitorInfo.getId());
-								isTop = false;
-							}
-							monitorInfoSb.append("]");
-							log.debug(String.format("newMonList=%s", monitorInfoSb.toString()));
-						}
+						log.info("run: " + parentThreadName + " got new monitor info list. size=" + newMonList.size()
+								+ ", monitorId=[" + monIds + "]");
 					}
 
 					// 監視設定ファイル毎に必要なスレッドを生成.
@@ -358,12 +339,14 @@ public class BinaryMonitorManager {
 						// 定期監視用のスレッドを作成・スレッドに紐づく監視設定を更新.
 						for (MonitorInfoWrapper moninfo : newMonList) {
 							// 監視ジョブ以外で監視フラグと収集フラグがoffの場合は監視処理走らせないのでskip
-							if ((!moninfo.monitorInfo.isMonitorFlg() && !moninfo.monitorInfo.isCollectorFlg())
+							if ((!moninfo.monitorInfo.getMonitorFlg().booleanValue()
+									&& !moninfo.monitorInfo.getCollectorFlg().booleanValue())
 									&& moninfo.runInstructionInfo == null) {
 								log.debug(String.format(
 										"run() : skip to create thread. monitorID=%s, monitorFlg=%b,  collectorFlg=%b",
-										moninfo.getId(), moninfo.monitorInfo.isMonitorFlg(),
-										moninfo.monitorInfo.isCollectorFlg()));
+										moninfo.getId(),
+										moninfo.monitorInfo.getMonitorFlg(),
+										moninfo.monitorInfo.getCollectorFlg()));
 								continue;
 							}
 
@@ -478,7 +461,11 @@ public class BinaryMonitorManager {
 						// 監視設定から削除されたスレッドの停止.
 						this.removeThreadMap(newMonList);
 
+						// 取得された監視設定から不要なRSディレクトリの削除
+						RootReadingStatus.refreshRootStoreDirectory(newMonList);
 					}
+					// 設定反映に掛かった時間をログ出力
+					log.info("run: " + parentThreadName + " spent " + (System.currentTimeMillis() - startTime) + "ms.");
 
 				} catch (Exception e) {
 					log.warn(parentThreadName + " : " + e.getClass().getCanonicalName() + ", " + e.getMessage(), e);
@@ -487,12 +474,13 @@ public class BinaryMonitorManager {
 				}
 
 				try {
-					Thread.sleep(runInterval);
+					// シグナルが来るまで待機する (戻り値はなんでもよい)
+					signalQueue.take();
 				} catch (InterruptedException e) {
 					log.info(parentThreadName + " for is Interrupted");
 					break;
 				}
-			}
+			} // while (loop)
 			this.close();
 		}
 
@@ -668,8 +656,8 @@ public class BinaryMonitorManager {
 		 * ダンプファイルに対してバイナリファイル監視を実施する.<br>
 		 * 
 		 */
-		private BinaryCheckInfo getNewBinaryCheckInfo(String monitorId) {
-			BinaryCheckInfo returnNewInfo = new BinaryCheckInfo();
+		private AgtBinaryCheckInfoResponse getNewBinaryCheckInfo(String monitorId) {
+			AgtBinaryCheckInfoResponse returnNewInfo = new AgtBinaryCheckInfoResponse();
 
 			// パケットキャプチャ出力ダンプファイルに関する情報.
 			String storeDir = BinaryMonitorConfig.getPcapExportDir();
@@ -680,7 +668,7 @@ public class BinaryMonitorManager {
 			returnNewInfo.setCollectType(BinaryConstant.COLLECT_TYPE_ONLY_INCREMENTS);
 			returnNewInfo.setCutType(BinaryConstant.CUT_TYPE_LENGTH);
 			returnNewInfo.setTagType(BinaryConstant.TAG_TYPE_PCAP);
-			returnNewInfo.setFileHeadSize(24);
+			returnNewInfo.setFileHeadSize(24L);
 
 			returnNewInfo.setLengthType(BinaryConstant.LENGTH_TYPE_VARIABLE);
 			returnNewInfo.setRecordSize(0);
@@ -702,7 +690,7 @@ public class BinaryMonitorManager {
 		 */
 		private List<String> getAddressByNif() {
 			// AgentInfoから取得(AgentInfoの更新含む)(IPv4/IPv6 設定されてれば両方取得).
-			List<String> addressListDouble = Agent.getAgentInfo().getIpAddress();
+			List<String> addressListDouble = Agent.getAgentInfoRequest().getIpAddressList();
 			List<String> addressList = new ArrayList<String>();
 
 			// AgentInfoから取得したアドレスをNIFで一意にする
@@ -824,7 +812,8 @@ public class BinaryMonitorManager {
 					for (MonitorInfoWrapper moninfo : newMonList) {
 						if (entry.getKey().equals(moninfo.getId())) {
 							// 取得した監視設定に含まれてる.
-							if (moninfo.monitorInfo.isCollectorFlg() || moninfo.monitorInfo.isMonitorFlg()
+							if (moninfo.monitorInfo.getCollectorFlg().booleanValue()
+									|| moninfo.monitorInfo.getMonitorFlg().booleanValue()
 									|| moninfo.runInstructionInfo != null) {
 								// 有効なら問題なし.
 								toDelete = false;
@@ -849,11 +838,26 @@ public class BinaryMonitorManager {
 		}
 
 		/**
+		 * メインループが待機状態にある場合、その待機状態を解除して、処理を実行させます。
+		 */
+		public void wakeUp() {
+			// キューがいっぱいになっていても構わない(空でなくすればよい)
+			// findbus対応 戻り値をチェックしてログを出力とした。
+			boolean ret = signalQueue.offer(WAKE_UP_SIGNAL);
+			if(!ret){
+				log.debug("wakeUp: signalQueue.offer is failed.");
+			}
+			log.debug("wakeUp: Sent a signal.");
+		}
+
+		/**
 		 * スレッド停止.
 		 */
 		public void terminate() {
-			// 自身の停止.
+			// メインループを抜けるようにフラグをセット
 			loop = false;
+			// 待機状態を解除する
+			wakeUp();
 		}
 
 		/**
@@ -897,7 +901,7 @@ public class BinaryMonitorManager {
 	 * 最新の監視設定を元に読込状態を更新する.<br>
 	 * 
 	 * @param monitorList
-	 *            監視設定のリスト.
+	 *			  監視設定のリスト.
 	 * 
 	 */
 	public static void refreshReadingStatus(String threadID, List<MonitorInfoWrapper> monList, int runInterval,
@@ -1122,11 +1126,12 @@ public class BinaryMonitorManager {
 	 * マネージャーから取得した監視設定をスレッド内に保持.
 	 * 
 	 * @param monitorList
-	 *            監視設定一覧からの設定情報
+	 *			  監視設定一覧からの設定情報
 	 * @param monitorMap
-	 *            ジョブ設定一覧(監視ジョブ)からの設定情報
+	 *			  ジョブ設定一覧(監視ジョブ)からの設定情報
 	 */
-	public static void pushMonitorInfoList(List<MonitorInfo> monList, Map<RunInstructionInfo, MonitorInfo> monitorMap) {
+	public static void pushMonitorInfoList(List<AgtMonitorInfoResponse> monList,
+			Map<AgtRunInstructionInfoResponse, AgtMonitorInfoResponse> monitorMap) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		log.debug(methodName + DELIMITER + "start.");
 
@@ -1135,9 +1140,9 @@ public class BinaryMonitorManager {
 
 			// 監視設定一覧.
 			StringBuilder fileNameSb = new StringBuilder();
-			for (MonitorInfo info : monList) {
+			for (AgtMonitorInfoResponse info : monList) {
 
-				BinaryCheckInfo check = info.getBinaryCheckInfo();
+				AgtBinaryCheckInfoResponse check = info.getBinaryCheckInfo();
 				String monitorTypeId = info.getMonitorTypeId();
 
 				// 返却用監視設定リストに追加.
@@ -1158,8 +1163,8 @@ public class BinaryMonitorManager {
 			log.info("setBinaryMonitor() : m_monitorList=" + fileNameSb.toString());
 
 			// ジョブ設定一覧.
-			for (Map.Entry<RunInstructionInfo, MonitorInfo> entry : monitorMap.entrySet()) {
-				BinaryCheckInfo check = entry.getValue().getBinaryCheckInfo();
+			for (Map.Entry<AgtRunInstructionInfoResponse, AgtMonitorInfoResponse> entry : monitorMap.entrySet()) {
+				AgtBinaryCheckInfoResponse check = entry.getValue().getBinaryCheckInfo();
 				String monitorTypeId = entry.getValue().getMonitorTypeId();
 
 				wrapperList.add(new MonitorInfoWrapper(entry.getValue(), entry.getKey()));
@@ -1179,6 +1184,12 @@ public class BinaryMonitorManager {
 			}
 			log.info("setBinaryMonitor() : m_monitorList=" + fileNameSb.toString());
 			BinaryMonitorManager.monitorList = wrapperList;
+		}
+		// ファイル監視を行っているスレッドへ設定を反映させる処理を起動する
+		synchronized (BinaryMonitorManager.class) {
+			if (binaryThread != null) {
+				binaryThread.wakeUp();
+			}
 		}
 	}
 
@@ -1213,34 +1224,49 @@ public class BinaryMonitorManager {
 	}
 
 	/**
-	 * 監視管理のJMSへの情報通知.<br>
-	 * <br>
-	 * 
-	 * @param priority
-	 *            重要度
-	 * @param app
-	 *            アプリケーション
-	 * @param msg
-	 *            メッセージ
-	 * @param msgOrg
-	 *            オリジナルメッセージ
+	 * Hinemosマネージャへ情報を通知します。<BR>
 	 */
 	public static void sendMessage(int priority, String app, String msg, String msgOrg, String monitorId,
-			RunInstructionInfo runInstructionInfo, String monitorType) {
+			AgtRunInstructionInfoRequest runInstructionInfo, String monitorType) {
 		// ログ出力情報
-		OutputBasicInfo output = new OutputBasicInfo();
-		output.setPluginId(monitorType);
-		output.setPriority(priority);
-		output.setApplication(app);
-		output.setMessage(msg);
-		output.setMessageOrg(msgOrg);
+		MessageSendableObject sendme = new MessageSendableObject();
+		sendme.body = new AgtOutputBasicInfoRequest();
+		sendme.body.setPluginId(monitorType);
+		sendme.body.setPriority(priority);
+		sendme.body.setApplication(app);
+		sendme.body.setMessage(msg);
+		sendme.body.setMessageOrg(msgOrg);
+		sendme.body.setGenerationDate(HinemosTime.getDateInstance().getTime());
+		sendme.body.setMonitorId(monitorId);
+		sendme.body.setFacilityId(""); // マネージャがセット.
+		sendme.body.setScopeText(""); // マネージャがセット.
+		sendme.body.setRunInstructionInfo(runInstructionInfo);
 
-		output.setGenerationDate(HinemosTime.getDateInstance().getTime());
-		output.setMonitorId(monitorId);
-		output.setFacilityId(""); // マネージャがセット.
-		output.setScopeText(""); // マネージャがセット.
-		output.setRunInstructionInfo(runInstructionInfo);
+		sendQueue.put(sendme);
+	}
 
-		sendQueue.put(output);
+	/**
+	 * ファイルのクローズ処理.<br>
+	 * <br>
+	 * スレッドをクローズする際、監視用オブジェクトを削除する前に全てのファイルをクローズする<br>
+	 * 
+	 */
+	public static void closeFileChannels(String threadID) {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+		log.debug(methodName + DELIMITER + "start.");
+		
+		Map<String, BinaryMonitor> binaryMonitorCache = BinaryMonitorManager.binMonCacheMap.get(threadID);
+		if (binaryMonitorCache == null) {
+			log.debug(methodName + DELIMITER + "skip to close File Channels. threadID=" + threadID);
+			return;
+		}
+		
+		// スレッドに紐づくファイルチャンネルを全てクローズしてから削除.
+		Iterator<Entry<String, BinaryMonitor>> it = binaryMonitorCache.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<String, BinaryMonitor> entry = it.next();
+			entry.getValue().closeFileChannel();
+			it.remove();
+		}
 	}
 }

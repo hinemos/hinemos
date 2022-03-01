@@ -26,6 +26,10 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.fault.CalendarNotFound;
 
+/**
+ * カレンダのキャッシュを保持するクラス
+ * オーナーロールに寄らず、全てのカレンダを保持します。
+ */
 public class CalendarCache {
 
 	private static Log m_log = LogFactory.getLog( CalendarCache.class );
@@ -98,6 +102,8 @@ public class CalendarCache {
 	 * @throws CalendarNotFound
 	 */
 	public static CalendarInfo getCalendarInfo(String id) throws CalendarNotFound {
+		m_log.debug("getCalendarInfo(" + id + ")");
+
 		if (id == null) {
 			return null;
 		}
@@ -125,6 +131,7 @@ public class CalendarCache {
 			cache.put(id, calendar);
 			storeCache(cache);
 			
+			m_log.trace("CalendarInfo: " + calendar);
 			return calendar;
 		} finally {
 			_lock.writeUnlock();
@@ -137,12 +144,9 @@ public class CalendarCache {
 	 * @throws CalendarNotFound
 	 */
 	private static CalendarInfo getCalendarInfoDB(String id) throws CalendarNotFound{
+		m_log.debug("getCalendarInfoDB(" + id + ")");
+
 		//カレンダ取得
 		return QueryUtil.getCalInfoPK_NONE(id);
 	}
-	/**
-	 * IDと一致するカレンダ詳細情報一覧をDBより取得します。
-	 * @param id
-	 * @return カレンダ詳細情報のリスト
-	 */
 }

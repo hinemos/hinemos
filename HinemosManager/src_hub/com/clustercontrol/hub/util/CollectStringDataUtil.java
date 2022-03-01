@@ -17,15 +17,15 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JdbcBatchExecutor;
 import com.clustercontrol.commons.util.JdbcBatchQuery;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CollectKeyNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.LogFormatNotFound;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.hub.bean.CollectStringTag;
 import com.clustercontrol.hub.bean.StringSample;
@@ -41,7 +41,6 @@ import com.clustercontrol.hub.session.HubControllerBean;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -144,7 +143,7 @@ public class CollectStringDataUtil {
 				
 				Long dataId = StringDataIdGenerator.getNext();
 				if (dataId == StringDataIdGenerator.getMax() / 2) {
-					AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.HUB_TRANSFER, MessageConstant.MESSAGE_HUB_COLLECT_NUMBERING_OVER_INTERMEDIATE, new String[]{},
+					AplLogger.put(InternalIdCommon.HUB_TRF_SYS_001, new String[]{},
 							String.format("current=%d, max=%d", dataId, StringDataIdGenerator.getMax()));
 				}
 				
@@ -199,7 +198,7 @@ public class CollectStringDataUtil {
 							m_log.warn("store() : fail to change to timestamp of log. time=" + timestamp.getValue(), e);
 						}
 					}
-				} catch (MonitorNotFound | HinemosUnknown | InvalidRole e) {
+				} catch (MonitorNotFound | LogFormatNotFound | HinemosUnknown | InvalidRole e) {
 					m_log.warn(String.format("failed to get a MonitorInfo : %s", sample.getMonitorId()));
 				}
 				

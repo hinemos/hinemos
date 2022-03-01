@@ -22,7 +22,7 @@
 					<xs:documentation>データ型のバージョン</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="2">
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="3">
 				<xs:annotation>
 					<xs:documentation>データ型のバージョン</xs:documentation>
 				</xs:annotation>
@@ -233,7 +233,7 @@
 						</xs:annotation>
 					</xs:element>
 					<xs:element name="message" type="xs:string"
-						minOccurs="1" maxOccurs="1">
+						minOccurs="0" maxOccurs="1">
 						<xs:annotation>
 							<xs:documentation>
 								判定結果を示すメッセージです。

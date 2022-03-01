@@ -28,7 +28,11 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.PageResponse;
+import org.openapitools.client.model.PatternResponse;
+import org.openapitools.client.model.VariableResponse;
 
+import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.composite.TextWithParameterComposite;
@@ -40,9 +44,6 @@ import com.clustercontrol.monitor.run.composite.TableItemInfoComposite;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.Page;
-import com.clustercontrol.ws.monitor.Pattern;
-import com.clustercontrol.ws.monitor.Variable;
 
 /**
  * HttpScenario監視（文字列）作成・変更ダイアログクラス<BR>
@@ -64,10 +65,10 @@ public class PageCreateDialog extends CommonDialog {
 	private Shell shell = null;
 
 	/** 入力値を保持するオブジェクト。 */
-	private Page m_inputData = null;
+	private PageResponse m_inputData = null;
 
 	/** 文字列監視判定情報 */
-	protected TableItemInfoComposite<Pattern> m_pattern = null;
+	protected TableItemInfoComposite<PatternResponse> m_pattern = null;
 
 	/** URL */
 	private TextWithParameterComposite m_textRequestUrl = null;
@@ -88,7 +89,7 @@ public class PageCreateDialog extends CommonDialog {
 	private Text m_textMessage = null;
 
 	/** 変数 */
-	private TableItemInfoComposite<Variable> m_variable = null;
+	private TableItemInfoComposite<VariableResponse> m_variable = null;
 
 	protected Group groupDetermine = null;			// 判定グループ
 	protected Group groupNotifyAttribute = null;	// 通知グループ
@@ -112,7 +113,7 @@ public class PageCreateDialog extends CommonDialog {
 	 * @param monitorId 変更する監視項目ID
 	 * @param updateFlg 更新するか否か（true:変更、false:新規登録）
 	 */
-	public PageCreateDialog(Shell parent, Page page) {
+	public PageCreateDialog(Shell parent, PageResponse page) {
 		super(parent);
 		this.m_inputData = page;
 	}
@@ -300,7 +301,7 @@ public class PageCreateDialog extends CommonDialog {
 		groupDetermine.setText(Messages.getString("monitor.http.scenario.page.content.determine"));
 
 		// 文字列判定定義情報
-		this.m_pattern = new TableItemInfoComposite<Pattern>(groupDetermine, SWT.NONE, new PatternCompositeDefine());
+		this.m_pattern = new TableItemInfoComposite<PatternResponse>(groupDetermine, SWT.NONE, new PatternCompositeDefine());
 		WidgetTestUtil.setTestId(this, "pattern", m_pattern);
 		gridData = new GridData();
 		gridData.horizontalSpan = 1;
@@ -414,7 +415,7 @@ public class PageCreateDialog extends CommonDialog {
 		groupVariable.setText(Messages.getString("monitor.http.scenario.available.variable.on.next.page"));
 
 		// テーブルコンポジット
-		this.m_variable = new TableItemInfoComposite<Variable>(groupVariable, SWT.NONE, new VariableCompositeDefine());
+		this.m_variable = new TableItemInfoComposite<VariableResponse>(groupVariable, SWT.NONE, new VariableCompositeDefine());
 		WidgetTestUtil.setTestId(this, "variable", m_variable);
 		gridData = new GridData();
 		gridData.horizontalSpan = CommonMonitorDialog.WIDTH_TITLE + 10;
@@ -459,9 +460,9 @@ public class PageCreateDialog extends CommonDialog {
 	 */
 	protected void setInputData() {
 		if(this.m_inputData == null){
-			this.m_inputData = new Page();
+			this.m_inputData = new PageResponse();
 		} else {
-			this.m_comboNotify.select(this.m_comboNotify.indexOf(PriorityMessage.typeToString(this.m_inputData.getPriority())));
+			this.m_comboNotify.select(this.m_comboNotify.indexOf(PriorityMessage.codeToString(this.m_inputData.getPriority().toString())));
 		}
 
 		if(this.m_inputData.getMessage() != null){
@@ -501,21 +502,22 @@ public class PageCreateDialog extends CommonDialog {
 	 *
 	 * @return 入力値を保持した通知情報
 	 */
-	protected Page createInputData() {
-		Page page = new Page();
+	protected PageResponse createInputData() {
+		PageResponse page = new PageResponse();
 
 		page.setDescription(this.m_textDescription.getText());
 		page.setUrl(this.m_textRequestUrl.getText());
 		page.setStatusCode(this.m_textStatusCode.getText());
 		page.setPost(this.m_textPost.getText());
-		page.setPriority(PriorityMessage.stringToType(this.m_comboNotify.getText()));
+		page.setPriority(PriorityMessage.stringToEnum(
+				this.m_comboNotify.getText(), PageResponse.PriorityEnum.class));
 		if(!"".equals(this.m_comboNotify.getText().trim())){
 			page.setMessage(this.m_textMessage.getText());
 		}
-		List<Pattern> patterns = page.getPatterns();
+		List<PatternResponse> patterns = page.getPatterns();
 		patterns.clear();
 		patterns.addAll(this.m_pattern.getItems());
-		List<Variable> variables = page.getVariables();
+		List<VariableResponse> variables = page.getVariables();
 		variables.clear();
 		variables.addAll(this.m_variable.getItems());
 
@@ -585,7 +587,7 @@ public class PageCreateDialog extends CommonDialog {
 		// 変数に重複したものないかをチェック
 		if(!this.m_variable.getItems().isEmpty()){
 			Set<String> uniqueSet = new HashSet<>();
-			for(Variable one : this.m_variable.getItems()){
+			for(VariableResponse one : this.m_variable.getItems()){
 				String key = one.getName();
 				if (uniqueSet.contains(key)){
 					result = createValidateResult(Messages.getString("message.hinemos.1"), Messages.getString(
@@ -615,7 +617,7 @@ public class PageCreateDialog extends CommonDialog {
 	 *
 	 * @return 判定情報
 	 */
-	public Page getInputData() {
+	public PageResponse getInputData() {
 		return this.m_inputData;
 	}
 	

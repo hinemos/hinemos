@@ -8,11 +8,15 @@
 
 package com.clustercontrol.repository.util;
 
+import java.util.List;
+
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.JpaTransactionCallback;
 import com.clustercontrol.util.HinemosTime;
 
 public class RepositoryChangedNotificationCallback implements JpaTransactionCallback {
+
+	private List<String> notifyFacilityIdList = null;
 
 	@Override
 	public void preFlush() { }
@@ -29,7 +33,11 @@ public class RepositoryChangedNotificationCallback implements JpaTransactionCall
 		SettingUpdateInfo.getInstance().setRepositoryUpdateTime(HinemosTime.currentTimeMillis());
 		
 		// 接続中のHinemosAgentに対する更新通知
-		RepositoryManagerUtil.broadcastConfigured();
+		if(notifyFacilityIdList != null){
+			RepositoryManagerUtil.specificcastConfigured( notifyFacilityIdList );
+		}else{
+			RepositoryManagerUtil.broadcastConfiguredFlowControl();
+		}
 	}
 
 	@Override
@@ -57,4 +65,12 @@ public class RepositoryChangedNotificationCallback implements JpaTransactionCall
 		return obj instanceof RepositoryChangedNotificationCallback;
 	}
 	
+	/**
+	 * 通知対象となるノードの一覧を設定する。
+	 * 
+	 * @param notifyConfigredFacilityIds 通知対象となるファシリティIDのList
+	 */
+	public void setNotifyFacilityIdList( List<String> notifyConfigredFacilityIds ){
+		this.notifyFacilityIdList = notifyConfigredFacilityIds;
+	}
 }

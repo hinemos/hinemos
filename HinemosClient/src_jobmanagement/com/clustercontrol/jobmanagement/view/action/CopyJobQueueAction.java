@@ -19,16 +19,17 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.AddJobQueueRequest;
+import org.openapitools.client.model.JobQueueResponse;
 
 import com.clustercontrol.dialog.ApiResultDialog;
 import com.clustercontrol.jobmanagement.dialog.JobQueueSettingDialog;
 import com.clustercontrol.jobmanagement.dialog.JobQueueSettingDialog.EditMode;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.view.action.JobQueueEditor.JobQueueEditTarget;
 import com.clustercontrol.util.ViewUtil;
-import com.clustercontrol.util.LogUtil;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobQueueSetting;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * ジョブ同時実行制御キューのコピーコマンドを実行します。
@@ -63,12 +64,12 @@ public class CopyJobQueueAction extends AbstractHandler implements IElementUpdat
 			if (target.isEmpty()) return;
 
 			// 変更前の設定情報を取得
-			JobQueueSetting setting;
+			JobQueueResponse setting;
 			try {
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(target.getManagerName());
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(target.getManagerName());
 				setting = wrapper.getJobQueue(target.getQueueId());
 			} catch (Throwable t) {
-				log.info(LogUtil.filterWebFault("execute: ", t));
+				log.info("execute: " + t.getClass().getName() + ", " + t.getMessage());
 				new ApiResultDialog().addFailure(target.getManagerName(), t,
 						Messages.get("message.jobqueue.id", target.getQueueId())).show();
 				return;
@@ -83,14 +84,16 @@ public class CopyJobQueueAction extends AbstractHandler implements IElementUpdat
 						ApiResultDialog resultDialog = new ApiResultDialog();
 						boolean shouldClose;
 						try {
-							JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-							wrapper.addJobQueue(setting);
+							JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+							AddJobQueueRequest request = new AddJobQueueRequest();
+							RestClientBeanUtil.convertBean(setting, request);
+							wrapper.addJobQueue(request);
 
 							resultDialog.addSuccess(managerName,
 									Messages.get("message.jobqueue.created", setting.getQueueId()));
 							shouldClose = true;
 						} catch (Throwable t) {
-							log.info(LogUtil.filterWebFault("execute: ", t));
+							log.info("execute: " + t.getClass().getName() + ", " + t.getMessage());
 							resultDialog.addFailure(managerName, t,
 									Messages.get("message.jobqueue.id", setting.getQueueId()));
 							shouldClose = false;

@@ -1,0 +1,25 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"conditionIdx",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionInfo_conditionIdx"}
+	]},
+	
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionInfo_description"}
+	]},
+
+	{
+	"propName":"negative",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionInfo_negative"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]}
+]
+}

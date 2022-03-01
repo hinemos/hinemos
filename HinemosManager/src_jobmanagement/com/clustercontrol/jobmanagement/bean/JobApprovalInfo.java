@@ -23,7 +23,7 @@ public class JobApprovalInfo implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/** マネージャー名 */
-	private String managerName = null;
+	private String mangerName = null;
 
 	/** 承認状態 */
 	private Integer status = null;
@@ -69,7 +69,7 @@ public class JobApprovalInfo implements Serializable {
 	public JobApprovalInfo(String managerName, Integer status, Integer result, String sessionId, String jobunitId, String jobId,
 			String jobName, String requestUser, String approvalUser, Long startDate, Long endDate, String requestSentence, String comment) {
 		super();
-		this.managerName = managerName;
+		this.mangerName = managerName;
 		this.status = status;
 		this.result = result;
 		this.sessionId = sessionId;
@@ -89,14 +89,14 @@ public class JobApprovalInfo implements Serializable {
 	 * @return マネージャー名
 	 */
 	public String getMangerName() {
-		return managerName;
+		return mangerName;
 	}
 	/**
 	 * マネージャー名を設定する<BR>
 	 * @param status マネージャー名
 	 */
 	public void setMangerName(String managerName) {
-		this.managerName = managerName;
+		this.mangerName = managerName;
 	}
 
 	/**

@@ -12,7 +12,7 @@
 			<xs:documentation>XMLスキーマ情報</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
-			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="J">
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="K">
 				<xs:annotation>
 					<xs:documentation>データ型のタイプ</xs:documentation>
 				</xs:annotation>
@@ -98,7 +98,7 @@
 
 			<xs:element name="type" type="xs:int" minOccurs="1" maxOccurs="1">
 				<xs:annotation>
-					<xs:documentation>ジョブ種別(0:ジョブユニット,1:ジョブネット,2:ジョブ,3:ファイル転送ジョブ,5:参照ジョブ)</xs:documentation>
+					<xs:documentation>ジョブ種別(0:ジョブユニット,1:ジョブネット,2:ジョブ,3:ファイル転送ジョブ,5:参照ジョブ,7:参照ジョブネット,8:承認ジョブ,9:監視ジョブ,10:リソース制御ジョブ,11:ジョブ連携送信ジョブ,12:ジョブ連携待機ジョブ,13:ファイルチェックジョブ)</xs:documentation>
 				</xs:annotation>
 			</xs:element>
 			<xs:element name="facilityId" type="xs:string" minOccurs="0" maxOccurs="1">
@@ -329,7 +329,7 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="startDelayOperationType" type="xs:int" minOccurs="0" maxOccurs="1">
+			<xs:element name="startDelayOperationType" type="xs:int" minOccurs="0" maxOccurs="1" default="4">
 				<xs:annotation>
 					<xs:documentation>
 						開始遅延操作種別
@@ -432,7 +432,7 @@
 				<xs:annotation>
 					<xs:documentation>
 						終了遅延操作
-						{false:しない、true:する）の何れかを指定します。
+						{false:しない、true:する}の何れかを指定します。
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
@@ -609,23 +609,7 @@
 				</xs:annotation>
 			</xs:element>
 
-			<xs:element name="startJob" type="JobStartJobInfo" minOccurs="0" maxOccurs="unbounded">
-				<xs:annotation>
-					<xs:documentation>ジョブ待ち条件詳細情報</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="param" type="JobParameterInfo" minOccurs="0" maxOccurs="unbounded">
-				<xs:annotation>
-					<xs:documentation>ジョブ変数情報</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="notifyRelationInfos" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
-				<xs:annotation>
-					<xs:documentation>
-						監視設定で用いる通知IDです。 複数の通知を併用する場合は併記します。
-					</xs:documentation>
-				</xs:annotation>
-			</xs:element>
+
 			<xs:element name="abnormalPriority" type="xs:int" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>
@@ -700,6 +684,12 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
+			<xs:element name="jobRetryInterval" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブが指定された状態になるまで繰り返す(試行間隔(分))</xs:documentation>
+				</xs:annotation>
+			</xs:element>
 
 			<xs:element name="normalEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
@@ -766,17 +756,17 @@
 					<xs:documentation>承認依頼メール件名</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="approvalReqMailBody" type="xs:string" minOccurs="0" maxOccurs="1">
-				<xs:annotation>
-					<xs:documentation>承認依頼メール本文</xs:documentation>
-				</xs:annotation>
-			</xs:element>
 			<xs:element name="useApprovalReqSentence" type="xs:boolean" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>
 						承認依頼文を利用
 						{false:しない true:する}の何れかを指定します。
 					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="approvalReqMailBody" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>承認依頼メール本文</xs:documentation>
 				</xs:annotation>
 			</xs:element>
 			<xs:element name="monitorId" type="xs:string" minOccurs="0" maxOccurs="1">
@@ -814,7 +804,99 @@
 					<xs:documentation>監視終了値</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-
+			<xs:element name="fileCheckFacilityId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ファイルチェックジョブの対象ファシリティID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceCloudScopeId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>クラウドスコープID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceLocationId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						クラウドロケーションID
+						コンピュートやストレージのロケーションを指定します。クラウド環境の場合はリージョンID、仮想環境の場合はクラウドプラットフォームIDを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						リソース種別
+						{0:コンピュートノード(スコープ、ノード), 1:コンピュート, 2:ストレージ}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceAction" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						クラウドリソースに対する操作
+						{0:電源ON, 1:電源OFF, 2:再起動, 3:サスペンド, 4:スナップショットの作成, 5:アタッチ, 6:デタッチ}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceTargetFacilityId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						リソース種別がコンピュートノード(スコープ、ノード)の場合はこの設定にスコープもしくはノードのファシリティIDを指定します。
+						※JobResourceInfoRequest.resourceTargetIdに設定されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceTargetComputeId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						リソース種別がコンピュートの場合はこの設定にコンピュートIDを指定します。
+						※JobResourceInfoRequest.resourceTargetIdに設定されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceTargetStorageId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						リソース種別がストレージの場合はこの設定にストレージIDを指定します。
+						※JobResourceInfoRequest.resourceTargetIdに設定されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceNotifyScope" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>通知先スコープ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceSuccessEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>リソース制御ジョブの成功時の終了値(successEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceFailureEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>リソース制御ジョブの失敗時の終了値(failureEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceStatusConfirmTime" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>状態確認期間(秒)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceStatusConfirmInterval" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>状態確認間隔(秒)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceAttachNode" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>アタッチ先コンピュートノード</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="resourceAttachDevice" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>アタッチ先デバイス</xs:documentation>
+				</xs:annotation>
+			</xs:element>
 			<xs:element name="exclusiveBranch" type="xs:boolean" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>後続ジョブをどれか一つだけ実行するかの排他分岐フラグ。{true:排他分岐を行う,false:分岐を行わない}のいずれかをセットします。</xs:documentation>
@@ -846,6 +928,628 @@
 			<xs:element name="queueId" type="xs:string" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>同時実行制御キューのID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="expNodeRuntimeFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						実行対象ノードの決定タイミング
+						{true:ジョブ開始時, false:セッション作成時}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="retryFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携送信ジョブ送信失敗時に再送するか否か
+						{true:再送する, false:再送しない}の何れかを指定します。
+					</xs:documentation>
+		 	  </xs:annotation>
+			</xs:element>
+			<xs:element name="retryCount" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携送信ジョブ送信失敗時の再送回数</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="failureOperation" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携送信ジョブ送信失敗時の操作
+						{2:停止[中断], 10:停止[状態指定]}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="joblinkMessageId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携メッセージID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="priority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携送信ジョブで送信するジョブ連携メッセージの重要度
+						{0:危険, 1:不明, 2:警告, 3:情報}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="message" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>メッセージ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkSendSuccessEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携送信ジョブの成功時の終了値(successEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkSendFailureEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携送信ジョブの失敗時の終了値(failureEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkStandbyFacilityId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブのファシリティID(facilityId)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pastFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携待機ジョブで過去のジョブ連携メッセージを対象とするか否か
+						{true:対象とする, false:対象としない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pastMin" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブで過去のジョブ連携メッセージを対象とする場合の対象期間(分)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkStandbyJoblinkMessageId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携メッセージID(joblinkMessageId)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="infoValidFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携待機ジョブで重要度(情報)を対象とするか否か
+						{true:対象とする, false:対象としない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="warnValidFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携待機ジョブで重要度(警告)を対象とするか否か
+						{true:対象とする, false:対象としない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="criticalValidFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携待機ジョブで重要度(危険)を対象とするか否か
+						{true:対象とする, false:対象としない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="unknownValidFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携待機ジョブで重要度(不明)を対象とするか否か
+						{true:対象とする, false:対象としない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="applicationFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携待機ジョブでアプリケーションを条件に指定するか否か
+						{true:条件にする, false:条件にしない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="application" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブで条件とするアプリケーション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorDetailIdFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携待機ジョブで監視詳細を条件に指定するか否か
+						{true:条件にする, false:条件にしない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorDetailId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブで条件とする監視詳細</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="messageFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携待機ジョブでメッセージを条件に指定するか否か
+						{true:条件にする, false:条件にしない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkStandbyMessage" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブのメッセージ(message)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="expFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携待機ジョブで拡張情報を条件に指定するか否か
+						{true:条件にする, false:条件にしない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorAllEndValueFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブ連携待機ジョブでメッセージが得られた常に同じ終了値を返すか否か
+						{true:同じ終了値を返す, false:重要度に応じた終了値を返す}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorAllEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブでメッセージが得られたら常に同じ終了値を返す場合の終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkStandbyMonitorInfoEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブの監視終了値(情報)(monitorInfoEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkStandbyMonitorWarnEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブの監視終了値(警告)(monitorWarnEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkStandbyMonitorCriticalEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブの監視終了値(危険)(monitorCriticalEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkStandbyMonitorUnknownEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブの監視終了値(不明)(monitorUnknownEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkStandbyMonitorWaitTime" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブの監視終了値(タイムアウト)(monitorWaitTime)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkStandbyMonitorWaitEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携待機ジョブの監視終了値(monitorWaitEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="linkStandbyFailureEndFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						条件を満たさなければ終了するか否か
+						{true:終了する, false:終了しない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="failureEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						失敗時の終了状態
+						{0:正常, 1:警告, 2:異常}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="directory" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ファイルチェックジョブのチェック先ディレクトリ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="fileName" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ファイルチェックジョブのチェック先ファイル名(正規表現)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="fileCheckProcessMode" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+					処理方式(0:全てのノードで条件を満たしたら終了2:いずれかノードで条件を満たしたら終了)
+					ファイルチェックジョブのスコープ処理
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="createValidFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイルチェックジョブでファイル作成をチェック対象とするか否か
+						{true:チェック対象とする, false:チェック対象としない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="createBeforeJobStartFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイルチェックジョブでジョブ開始前に作成されたファイルをチェック対象とするか否か
+						{true:チェック対象とする, false:チェック対象としない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="deleteValidFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイルチェックジョブでファイル削除をチェック対象とするか否か
+						{true:チェック対象とする, false:チェック対象としない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="modifyValidFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイルチェックジョブでファイル変更をチェック対象とするか否か
+						{true:チェック対象とする, false:チェック対象としない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="modifyType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイルチェックジョブでファイル変更をチェック対象とする場合の判断基準
+						{0:タイムスタンプで判断する, 1:ファイルサイズで判断する}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notJudgeFileInUseFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイルチェックジョブで使用中のファイルはチェック対象外とするか
+						{true:チェック対象外とする, false:チェック対象外としない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="fileCheckSuccessEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ファイルチェックジョブの成功時の終了値(successEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="fileCheckFailureEndFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイルチェックジョブの条件を満たさなければ終了するか否か(failureEndFlg)
+						{true:終了する, false:終了しない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="fileCheckFailureWaitTime" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>条件を満たさなければ終了する場合のタイムアウト時間(分)(failureWaitTime)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="fileCheckFailureEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ファイルチェックジョブの失敗時の終了値(failureEndValue)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="joblinkSendSettingId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携送信ジョブで使用するジョブ連携送信設定ID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="objectGroup" type="JobObjectGroupInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ジョブ待ち条件情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="param" type="JobParameterInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ジョブ変数情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="normalJobOutput" type="JobOutputInfo" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>コマンドジョブのファイル出力情報(標準出力)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="errorJobOutput" type="JobOutputInfo" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>コマンドジョブのファイル出力情報(標準エラー出力)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="jobLinkExp" type="JobLinkExpInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携拡張情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="jobLinkInherit" type="JobLinkInherit" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ジョブ連携メッセージの引継ぎ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyRelationInfos" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブで用いる通知IDです。 複数の通知を併用する場合は併記します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			
+			<xs:element name="rpaJobType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAシナリオジョブ種別{0:直接実行, 1:間接実行}</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaScenarioFacilityId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAシナリオジョブのファシリティID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaProcessMode" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+					処理方式(0:全てのノードで条件を満たしたら終了2:正常終了するまでノードを順次リトライ)
+					RPAシナリオジョブのスコープ処理
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaToolId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAツールID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaExeFilepath" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>実行ファイルパス</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaScenarioFilepath" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオファイルパス</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLogDirectory" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了値判定用ログファイルディレクトリ </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLogFileName" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了値判定用ログファイル名 </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLogEncoding" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了値判定用ログファイルエンコーディング </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLogReturnCode" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了値判定用ログファイル区切り文字  </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLogPatternHead" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了値判定用ログファイル先頭パターン  </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLogPatternTail" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了値判定用ログファイル終端パターン </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLogMaxBytes" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了値判定用ログファイル最大読み取り文字数 </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaDefaultEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>いずれの判定にも一致しない場合の終了値 </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLoginFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行前後でOSへログイン・ログアウトする </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLoginUserId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ログインユーザID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLoginPassword" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ログインパスワード</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLoginRetry" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ログインリトライ回数</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLoginEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ログインできない場合の終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLoginResolution" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ログインの解像度</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaLogoutFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>異常終了時もログアウトする</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaScreenshotEndDelayFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了遅延発生時にスクリーンショットを取得する</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaScreenshotEndValueFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>特定の終了値の場合にスクリーンショットを取得する</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaScreenshotEndValue" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>スクリーンショットを取得する終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaScreenshotEndValueCondition" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>スクリーンショットを取得する終了値判定条件</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaNotLoginNotify" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ログインされていない場合 通知</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaNotLoginNotifyPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ログインされていない場合 通知重要度</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaNotLoginEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ログインされていない場合 終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaAlreadyRunningNotify" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAツールが既に動作している場合 通知</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaAlreadyRunningNotifyPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAツールが既に動作している場合 通知重要度</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaAlreadyRunningEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAツールが既に動作している場合 終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaAbnormalExitNotify" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAツールが既に動作している場合 通知</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaAbnormalExitNotifyPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAツールが異常終了した場合 通知重要度</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaAbnormalExitEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAツールが異常終了した場合 終了値 </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			
+			<xs:element name="rpaScopeId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAスコープID </xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaRunType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPA管理ツール 実行種別</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			
+			<xs:element name="rpaScenarioParam" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ入力パラメータ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaStopType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>停止種別</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaStopMode" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>停止方法</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaRunConnectTimeout" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行 コネクションタイムアウト</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaRunRequestTimeout" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行 リクエストタイムアウト</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaRunEndFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行 実行できない場合に終了する</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaRunRetry" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行 リトライ回数</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaRunEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行 終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaCheckConnectTimeout" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行結果確認 コネクションタイムアウト</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaCheckRequestTimeout" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行結果確認 リクエストタイムアウト</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaCheckEndFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行結果確認 実行できない場合に終了する</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaCheckRetry" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行結果確認 リトライ回数</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaCheckEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>シナリオ実行結果確認 終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaJobOptionInfos" type="JobRpaOptionMst" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>実行オプション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaJobEndValueConditionInfos" type="JobRpaEndValueConditionMst" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>終了値判定条件</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaJobRunParamInfos" type="JobRpaRunParamMst" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>起動パラメータ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="rpaJobCheckEndValueInfos" type="JobRpaCheckEndValueMst" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>終了値判定条件</xs:documentation>
 				</xs:annotation>
 			</xs:element>
 
@@ -883,68 +1587,106 @@
 		</xs:sequence>
 	</xs:complexType>
 
-	<xs:complexType name="JobStartJobInfo">
+	<xs:complexType name="JobObjectGroupInfo">
+		<xs:annotation>
+			<xs:documentation>ジョブ待ち条件に関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="orderNo" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						順序（差分比較用PK）
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="conditionType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						判定対象の条件関係
+						{0:AND、1:OR}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="objectInfo" type="JobObjectInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ジョブ待ち条件情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="JobObjectInfo">
 		<xs:annotation>
 			<xs:documentation>ジョブ待ち条件詳細に関する情報</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
-			<xs:element name="targetJobId" type="xs:string" minOccurs="0" maxOccurs="1">
+			<xs:element name="jobId" type="xs:string" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>ジョブID</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="targetJobType" type="xs:int" minOccurs="1" maxOccurs="1">
+			<xs:element name="type" type="xs:int" minOccurs="1" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>
 						判定対象種別
-						{0:ジョブ終了状態, 1:ジョブ終了値, 2:時刻, 3:セッション開始後の時間（分）, 4:ジョブ変数, 5:セッション横断ジョブ終了状態, 6:セッション横断ジョブ終了値}の何れかを指定します。
+						{0:ジョブ終了状態, 1:ジョブ終了値, 2:時刻, 3:セッション開始後の時間（分）, 4:ジョブ変数, 5:セッション横断ジョブ終了状態, 6:セッション横断ジョブ終了値, 7:ジョブ戻り値}の何れかを指定します。
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="targetJobEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+			<xs:element name="status" type="xs:int" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>
-						終了値/終了状態
-						{0:正常, 1:警告, 2:異常, 4:*}の何れかを指定します。
+						終了状態
+						{0:正常, 1:警告, 2:異常, 4:何れか}の何れかを指定します。
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="startTime" type="xs:string" minOccurs="0" maxOccurs="1">
+			<xs:element name="value" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了値/判定値2</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="time" type="xs:string" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>時刻</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-
-			<xs:element name="startDecisionValue01" type="xs:string" minOccurs="0" maxOccurs="1">
+			<xs:element name="startMinute" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>セッション開始時の時間（分）</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="decisionValue" type="xs:string" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>判定値1</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="startDecisionValue02" type="xs:string" minOccurs="0" maxOccurs="1">
-				<xs:annotation>
-					<xs:documentation>判定値2</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="startDecisionCondition" type="xs:int" minOccurs="0" maxOccurs="1">
+			<xs:element name="decisionCondition" type="xs:int" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>
-					判定条件
-					{0:=(数値), 1:!=(数値), 2:＞(数値), 3:≧(数値), 4:＜(数値), 5:≦(数値), 6:=(文字列),7:!=(文字列)}の何れかを指定します。
+					判定条件(ジョブ変数)
+					{0:=(数値), 1:!=(数値), 2:＞(数値), 3:≧(数値), 4:＜(数値), 5:≦(数値), 6:=(文字列), 7:!=(文字列), 8:IN(数値), 9:NOT IN(数値)}の何れかを指定します。
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="targetJobDescription" type="xs:string" minOccurs="0" maxOccurs="1">
+			<xs:element name="numberDecisionCondition" type="xs:int" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
-					<xs:documentation>説明</xs:documentation>
+					<xs:documentation>
+					判定条件(ジョブ変数以外の数値)
+					{0:=(数値), 1:!=(数値), 2:＞(数値), 3:≧(数値), 4:＜(数値), 5:≦(数値), 8:IN(数値), 9:NOT IN(数値)}の何れかを指定します。
+					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-
-			<xs:element name="targetCrossSessionRange" type="xs:int" minOccurs="0" maxOccurs="1">
+			<xs:element name="crossSessionRange" type="xs:int" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>セッション横断ジョブ履歴判定対象範囲（分）</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明</xs:documentation>
+				</xs:annotation>
+			</xs:element>
 		</xs:sequence>
 	</xs:complexType>
 
@@ -1016,5 +1758,260 @@
 			</xs:element>
 		</xs:sequence>
 	</xs:complexType>
+	
+	<xs:complexType name="JobRpaOptionMst">
+		<xs:annotation>
+			<xs:documentation>RPAジョブの実行オプションに関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="orderNo" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>順序</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="option" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>オプション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="JobRpaEndValueConditionMst">
+		<xs:annotation>
+			<xs:documentation>RPAジョブの終了値判定条件に関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="orderNo" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>順序</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="conditionType" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>オプション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pattern" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>パターンマッチ文字列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="caseSensitivityFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>大文字・小文字を区別しないフラグ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="processType" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>条件に一致する場合フラグ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="returnCode" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>リターンコードの指定文字列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="returnCodeCondition" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>リターンコードの判定条件</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="useCommandReturnCodeFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>コマンドのリターンコードをそのまま終了値にするフラグ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="JobRpaRunParamMst">
+		<xs:annotation>
+			<xs:documentation>ジョブ変数に関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="paramId" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>パラメータID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="paramValue" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>パラメータの値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="JobRpaCheckEndValueMst">
+		<xs:annotation>
+			<xs:documentation>RPAジョブの実行オプションに関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="endStatusId" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPA管理ツール 終了状態ID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="endValue" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
 
+	<xs:complexType name="JobOutputInfo">
+		<xs:annotation>
+			<xs:documentation>コマンドジョブのファイル出力に関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="outputType" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						標準出力の種別（差分比較用PK）
+						{0:標準出力, 1:標準エラー出力}
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="validFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイル出力を行うか否か
+						{true:出力する, false:出力しない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="sameNormalFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						標準エラー出力を標準出力と同じ出力先にするか
+						{true:同じ出力先にする, false:同じ出力先にしない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="directory" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>出力先ディレクトリ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="fileName" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>出力先ファイル名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="appendFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイルへの追記
+						{true:追記する, false:追記しない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="failureOperationFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイル出力失敗時の操作の指定
+						{true:操作を指定する, false:操作を指定しない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="failureOperationType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイル出力失敗時の操作
+						{2:停止[中断], 10:停止[状態指定]}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="failureOperationEndStatus" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイル出力失敗時の操作で10(停止[状態指定])を指定した場合の終了状態
+						{0:正常, 1:警告, 2:異常}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="failureOperationEndValue" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ファイル出力失敗時の操作で10(停止[状態指定])を指定した場合の終了値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="failureNotifyFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイル出力失敗時に通知するか否か
+						{true:通知する, false:通知しない}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="failureNotifyPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファイル出力失敗時に通知を行う場合の通知の重要度
+						{0:危険, 1:不明, 2:警告, 3:情報}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="JobLinkExpInfo">
+		<xs:annotation>
+			<xs:documentation>ジョブ連携拡張情報に関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="key" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>キー</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="value" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="JobLinkInherit">
+		<xs:annotation>
+			<xs:documentation>ジョブ連携メッセージの引継ぎに関する情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="paramId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>変数の名前</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="keyInfo" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						メッセージ情報
+						{SOURCE_IP_ADDRESS:送信元ファシリティID, SOURCE_IP_ADDRESS:送信元IPアドレス, JOBLINK_MESSAGE_ID:ジョブ連携メッセージID, MONITOR_DETAIL_ID:監視詳細, PRIORITY:重要度, APPLICATION:アプリケーション, MESSAGE:メッセージ, MESSAGE_ORG:オリジナルメッセージ, EXP_INFO:拡張情報}の何れかを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="expKey" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>拡張情報キー</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
 </xs:schema>

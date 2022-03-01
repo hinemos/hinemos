@@ -90,7 +90,7 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 	 */
 	private HashMap<String, Object> createDataSourceAuto(int num) throws ReportingPropertyNotFound {
 		// プロパティからグラフ生成にかかわる情報を取得
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		String csvFileName = "";
 		
 		String[] columns = { "monitor_id", "item_name", "display_name", "date_time", "facilityid", "value" };
@@ -172,7 +172,7 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 		}
 		String monitorId = m_propertiesMap.get(MONITOR_ID_KEY_VALUE+"."+num);
 		
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		String csvFileName = ReportUtil.getCsvFileNameForTemplateType(m_templateId, m_facilityId + "_" + monitorId + "_" + dayString);
 		
 		String[] columns = { "monitor_id", "item_name", "display_name", "date_time", "facilityid", "value" };
@@ -250,7 +250,7 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 	 * @return
 	 */
 	private String getCsvFromDB(String csvFileName, String facilityId, String monitorId, String[] columns, int divider, OutputMonitorInfo outputMonitorInfo) {
-		String columnsStr = ReportUtil.joinStrings(columns,  ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 		m_log.info("output monitorId : " + monitorId + ", csv: " + csvFileName);
 
 		// get data from Hinemos DB
@@ -287,7 +287,7 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 			if (!resultList.isEmpty()) {
 				// write to csv file
 				for (String[] results : resultList) {
-					bw.write(ReportUtil.joinStrings(results, ","));
+					bw.write(ReportUtil.joinStringsToCsv(results));
 					bw.newLine();
 				}
 			}
@@ -312,7 +312,7 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 	 * @return
 	 */
 	private String getCsvFromDBDevice(String csvFileName, String facilityId, String monitorId, String[] columns, int divider, OutputMonitorInfo outputMonitorInfo) {
-		String columnsStr = ReportUtil.joinStrings(columns,  ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 		m_log.info("output csv: " + csvFileName);
 
 		// get data from Hinemos DB
@@ -358,7 +358,7 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 			if (!resultList.isEmpty()) {
 				// write to csv file
 				for (String[] results : resultList) {
-					bw.write(ReportUtil.joinStrings(results, ","));
+					bw.write(ReportUtil.joinStringsToCsv(results));
 					bw.newLine();
 				}
 			}
@@ -383,7 +383,7 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 	 * @return
 	 */
 	private String getEmptyCsv(String csvFileName, String facilityId, String monitorId, String[] columns) {
-		String columnsStr = ReportUtil.joinStrings(columns,  ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 		m_log.info("output monitorId : " + monitorId + ", csv: " + csvFileName);
 
 		// カラムだけの空のCSVファイルを作成
@@ -557,12 +557,12 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 				CollectKeyInfo keyInfo = itemDataMap.get(summaryHour.getCollectorId());
 				results[0] = keyInfo.getMonitorId();
 				String itemName = HinemosMessage.replace(keyInfo.getItemName());
-				results[1] = '"' + itemName.replace("\"", "\"\"") + '"';
+				results[1] = itemName;
 				if(!"".equals(keyInfo.getDisplayName())){
 					results[2] = keyInfo.getDisplayName();
 				}
 				else {
-					results[2] = '"' + itemName.replace("\"", "\"\"") + '"';
+					results[2] = itemName;
 				}
 				Timestamp time = new Timestamp(summaryHour.getTime());
 				results[3] = time.toString();
@@ -599,12 +599,12 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 				CollectKeyInfo keyInfo = itemDataMap.get(summaryDay.getCollectorId());
 				results[0] = keyInfo.getMonitorId();
 				String itemName = HinemosMessage.replace(keyInfo.getItemName());
-				results[1] = '"' + itemName.replace("\"", "\"\"") + '"';
+				results[1] = itemName;
 				if(!"".equals(keyInfo.getDisplayName())){
 					results[2] = keyInfo.getDisplayName();
 				}
 				else {
-					results[2] = '"' + itemName.replace("\"", "\"\"") + '"';
+					results[2] = itemName;
 				}
 				Timestamp time = new Timestamp(summaryDay.getTime());
 				results[3] = time.toString();
@@ -641,12 +641,12 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 				CollectKeyInfo keyInfo = itemDataMap.get(summaryMonth.getCollectorId());
 				results[0] = keyInfo.getMonitorId();
 				String itemName = HinemosMessage.replace(keyInfo.getItemName());
-				results[1] = '"' + itemName.replace("\"", "\"\"") + '"';
+				results[1] = itemName;
 				if(!"".equals(keyInfo.getDisplayName())){
 					results[2] = keyInfo.getDisplayName();
 				}
 				else {
-					results[2] = '"' + itemName.replace("\"", "\"\"") + '"';
+					results[2] = itemName;
 				}
 				Timestamp time = new Timestamp(summaryMonth.getTime());
 				results[3] = time.toString();
@@ -683,12 +683,12 @@ public class DatasourceMonitorLineGraph extends DatasourceBase {
 				CollectKeyInfo keyInfo = itemDataMap.get(data.getCollectorId());
 				results[0] = keyInfo.getMonitorId();
 				String itemName = HinemosMessage.replace(keyInfo.getItemName());
-				results[1] = '"' + itemName.replace("\"", "\"\"") + '"';
+				results[1] = itemName;
 				if(!"".equals(keyInfo.getDisplayName())){
 					results[2] = keyInfo.getDisplayName();
 				}
 				else {
-					results[2] = '"' + itemName.replace("\"", "\"\"") + '"';
+					results[2] = itemName;
 				}
 				Timestamp time = new Timestamp(data.getTime());
 				results[3] = time.toString();

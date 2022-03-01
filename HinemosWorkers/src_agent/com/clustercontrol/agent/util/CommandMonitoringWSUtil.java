@@ -12,14 +12,13 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import org.openapitools.client.model.AgtCustomMonitorInfoResponse;
+import org.openapitools.client.model.AgtCustomMonitorVarsInfoResponse;
+import org.openapitools.client.model.AgtCustomResultDTORequest;
 
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.ws.monitor.CommandExecuteDTO;
-import com.clustercontrol.ws.monitor.CommandResultDTO;
-import com.clustercontrol.ws.monitor.CommandResultDTO.InvalidLines;
-import com.clustercontrol.ws.monitor.CommandResultDTO.Results;
-import com.clustercontrol.ws.monitor.CommandVariableDTO;
-import com.clustercontrol.ws.monitor.CommandVariableDTO.Variables.Entry;
 
 /**
  * Utilities for Command Monitoring WS DTO
@@ -27,15 +26,15 @@ import com.clustercontrol.ws.monitor.CommandVariableDTO.Variables.Entry;
  */
 public class CommandMonitoringWSUtil {
 
-	public static Map<String, String> getVariable(CommandExecuteDTO dto, String facilityId) {
+	public static Map<String, String> getVariable(AgtCustomMonitorInfoResponse config, String facilityId) {
 		// Local Variable
-		CommandVariableDTO variableDTO = null;
+		AgtCustomMonitorVarsInfoResponse variableDTO = null;
 		Map<String, String> ret = new HashMap<String, String>();
 
 		// Main
-		variableDTO = getVariableDTO(dto, facilityId);
-		if (variableDTO != null && variableDTO.getVariables() != null && variableDTO.getVariables().getEntry() != null) {
-			for (CommandVariableDTO.Variables.Entry entry : variableDTO.getVariables().getEntry()) {
+		variableDTO = getVariableDTO(config, facilityId);
+		if (variableDTO != null && variableDTO.getVariables() != null) {
+			for (Entry<String, String> entry : variableDTO.getVariables().entrySet()) {
 				ret.put(entry.getKey(), entry.getValue());
 			}
 		}
@@ -43,13 +42,13 @@ public class CommandMonitoringWSUtil {
 		return ret;
 	}
 
-	public static CommandVariableDTO getVariableDTO(CommandExecuteDTO dto, String facilityId) {
+	public static AgtCustomMonitorVarsInfoResponse getVariableDTO(AgtCustomMonitorInfoResponse config, String facilityId) {
 		// Local Variable
-		CommandVariableDTO ret = null;
+		AgtCustomMonitorVarsInfoResponse ret = null;
 
 		// Main
-		if (dto.getVariables() != null) {
-			for (CommandVariableDTO vdto : dto.getVariables()) {
+		if (config.getVariables() != null) {
+			for (AgtCustomMonitorVarsInfoResponse vdto : config.getVariables()) {
 				if (facilityId.equals(vdto.getFacilityId())) {
 					ret = vdto;
 					break;
@@ -60,7 +59,7 @@ public class CommandMonitoringWSUtil {
 		return ret;
 	}
 
-	public static String toStringCommandExecuteDTO(CommandExecuteDTO dto) {
+	public static String toStringCommandExecuteDTO(AgtCustomMonitorInfoResponse dto) {
 		// Local Variables
 		String ret = null;
 		String variablesStr = null;
@@ -68,7 +67,7 @@ public class CommandMonitoringWSUtil {
 		// MAIN
 		if (dto != null) {
 			if (dto.getVariables() != null) {
-				for (CommandVariableDTO vdto : dto.getVariables()) {
+				for (AgtCustomMonitorVarsInfoResponse vdto : dto.getVariables()) {
 					if (variablesStr == null) {
 						variablesStr = vdto.getFacilityId();
 					} else {
@@ -90,16 +89,16 @@ public class CommandMonitoringWSUtil {
 		return ret;
 	}
 
-	public static String toStringCommandVariableDTO(CommandVariableDTO dto) {
+	public static String toStringCommandVariableDTO(AgtCustomMonitorVarsInfoResponse dto) {
 		// Local Variables
 		String ret = null;
 		String variableStr = null;
 
 		// MAIN
 		if (dto != null) {
-			if (dto.getVariables() != null && dto.getVariables().getEntry() != null) {
+			if (dto.getVariables() != null) {
 				StringBuilder temp = new StringBuilder();
-				for (Entry entry : dto.getVariables().getEntry()) {
+				for (Entry<String, String> entry : dto.getVariables().entrySet()) {
 					temp.append(temp.length() == 0 ? "" : ", ");
 					temp.append("[key = " + entry.getKey() + ", value = " + entry.getValue() + "]");
 				}
@@ -114,7 +113,7 @@ public class CommandMonitoringWSUtil {
 		return ret;
 	}
 	
-	public static String toShortString(CommandResultDTO dto) {
+	public static String toShortString(AgtCustomResultDTORequest dto) {
 		// Local Variables
 		String ret = null;
 
@@ -127,7 +126,7 @@ public class CommandMonitoringWSUtil {
 					+ ", facilityId = " + dto.getFacilityId()
 					+ ", command = " + dto.getCommand()
 					+ ", user = " + dto.getUser()
-					+ ", timeout = " + dto.isTimeout()
+					+ ", timeout = " + dto.getTimeout()
 					+ ", exitCode = " + dto.getExitCode()
 					+ ", collectDate = " + sdf.format(new Date(dto.getCollectDate()))
 					+ ", executeDate = " + sdf.format(new Date(dto.getExecuteDate()))
@@ -139,7 +138,7 @@ public class CommandMonitoringWSUtil {
 		return ret;
 	}
 	
-	public static String toString(CommandResultDTO dto) {
+	public static String toString(AgtCustomResultDTORequest dto) {
 		// Local Variables
 		String ret = null;
 		
@@ -152,7 +151,7 @@ public class CommandMonitoringWSUtil {
 					+ ", facilityId = " + dto.getFacilityId()
 					+ ", command = " + dto.getCommand()
 					+ ", user = " + dto.getUser()
-					+ ", timeout = " + dto.isTimeout()
+					+ ", timeout = " + dto.getTimeout()
 					+ ", exitCode = " + dto.getExitCode()
 					+ ", stdout = " + dto.getStdout()
 					+ ", stderr = " + dto.getStderr()
@@ -168,30 +167,13 @@ public class CommandMonitoringWSUtil {
 		return ret;
 	}
 
-	public static String toString(Results dto) {
+	public static String toString(Map<String, String> dto) {
 		// Local Variables
 		String ret = null;
 		// MAIN
-		if (dto != null && dto.getEntry() != null) {
+		if (dto != null) {
 			StringBuilder temp = new StringBuilder();
-			for (CommandResultDTO.Results.Entry entry : dto.getEntry()) {
-				temp.append("[key = " + entry.getKey()
-						+ ", value = " + entry.getValue()
-						+ "]");
-			}
-			ret = temp.length() == 0 ? null: temp.toString();
-		}
-		return ret;
-	}
-
-	public static String toString(InvalidLines dto) {
-		// Local Variables
-		String ret = null;
-
-		// MAIN
-		if (dto != null && dto.getEntry() != null) {
-			StringBuilder temp = new StringBuilder();
-			for (CommandResultDTO.InvalidLines.Entry entry : dto.getEntry()) {
+			for (Entry<String, String> entry : dto.entrySet()) {
 				temp.append("[key = " + entry.getKey()
 						+ ", value = " + entry.getValue()
 						+ "]");

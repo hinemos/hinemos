@@ -14,13 +14,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse;
+
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
 
 /**
  * 構成情報収集のリストを取得するクライアント側アクションクラス<BR>
@@ -41,15 +42,15 @@ public class GetNodeConfigSettingList {
 	 * @param managerName マネージャ名
 	 * @return 構成情報収集設定一覧
 	 */
-	public List<NodeConfigSettingInfo> getAll(String managerName) {
+	public List<NodeConfigSettingInfoResponse> getAll(String managerName) {
 
-		List<NodeConfigSettingInfo> records = null;
+		List<NodeConfigSettingInfoResponse> records = null;
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 
 		try {
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-			records = wrapper.getNodeConfigSettingListAll();
-		} catch (InvalidRole_Exception e) {
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+			records = wrapper.getNodeConfigSettingList();
+		} catch (InvalidRole e) {
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 		} catch (Exception e) {
 			m_log.warn("getAll(), " + e.getMessage(), e);
@@ -68,17 +69,17 @@ public class GetNodeConfigSettingList {
 	 *
 	 * @return 構成情報収集設定一覧
 	 */
-	public Map<String, List<NodeConfigSettingInfo>> getAll() {
+	public Map<String, List<NodeConfigSettingInfoResponse>> getAll() {
 
-		Map<String, List<NodeConfigSettingInfo>> dispDataMap= new ConcurrentHashMap<>();
-		List<NodeConfigSettingInfo> records = null;
+		Map<String, List<NodeConfigSettingInfoResponse>> dispDataMap= new ConcurrentHashMap<>();
+		List<NodeConfigSettingInfoResponse> records = null;
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		for (String managerName : EndpointManager.getActiveManagerSet()) {
+		for (String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-				records = wrapper.getNodeConfigSettingListAll();
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+				records = wrapper.getNodeConfigSettingList();
 				dispDataMap.put(managerName, records);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
 				m_log.warn("getAll(), " + e.getMessage(), e);

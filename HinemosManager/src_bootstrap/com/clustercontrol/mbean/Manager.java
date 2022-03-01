@@ -11,8 +11,6 @@ package com.clustercontrol.mbean;
 import java.util.Collections;
 import java.util.List;
 
-import javax.persistence.Cache;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.persistence.internal.jpa.CacheImpl;
@@ -21,6 +19,7 @@ import org.eclipse.persistence.sessions.server.ConnectionPool;
 import org.eclipse.persistence.sessions.server.ServerSession;
 
 import com.clustercontrol.commons.util.DBConnectionPoolStats;
+import com.clustercontrol.commons.util.EmptyJpaTransactionCallback;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaSessionEventListener;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -31,14 +30,16 @@ import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.jobmanagement.util.JobSessionNodeRetryController;
 import com.clustercontrol.notify.model.MonitorStatusEntity;
 import com.clustercontrol.notify.model.NotifyHistoryEntity;
+import com.clustercontrol.notify.util.MonitorStatusCache;
 import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
+import com.clustercontrol.plugin.impl.RestServiceAgentPlugin;
+import com.clustercontrol.plugin.impl.RestServicePlugin;
 import com.clustercontrol.plugin.impl.SchedulerInfo;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
 import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
 import com.clustercontrol.plugin.impl.SnmpTrapPlugin;
 import com.clustercontrol.plugin.impl.SystemLogPlugin;
 import com.clustercontrol.plugin.impl.WebServiceAgentPlugin;
-import com.clustercontrol.plugin.impl.WebServiceCorePlugin;
 import com.clustercontrol.repository.factory.NodeProperty;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.selfcheck.SelfCheckTaskSubmitter;
@@ -50,6 +51,20 @@ import com.clustercontrol.selfcheck.monitor.JobRunSessionMonitor;
 import com.clustercontrol.selfcheck.monitor.SchedulerMonitor;
 import com.clustercontrol.selfcheck.monitor.TableSizeMonitor;
 
+import jakarta.persistence.Cache;
+
+/**
+ * ----!注意!----<BR>
+ * このクラスおよびManagerMXBeanインターフェイスのMBeanの属性を変更したり追加する時は以下に注意してください。<BR>
+ * 
+ * 1. JMX監視にHinemosのセルフチェック対象を監視できる監視項目が存在します。<BR>
+ * 変更や追加をする場合はJMX監視の監視項目への対応も合わせて検討してください。<BR>
+ * TablePhysicalSizeやAsyncTaskQueueCountのキーを追加する場合も同様です。<BR>
+ * 
+ * 2. hinemos_manager_summaryでこのクラスのMBeanから情報を取得しています。（manager_cli経由）<BR>
+ * 変更や追加をする場合はhinemos_manager_summaryとの整合性に注意してください。<BR>
+ * --------------
+ */
 public class Manager implements ManagerMXBean {
 
 	private static final Log log = LogFactory.getLog(Manager.class);
@@ -70,6 +85,11 @@ public class Manager implements ManagerMXBean {
 			str.append(facilityId + ", " + agentString + lineSeparator);
 		}
 		return str.toString();
+	}
+
+	@Override
+	public int getValidAgentCount(){
+		return AgentConnectUtil.getValidAgent().size();
 	}
 
 	@Override
@@ -149,6 +169,18 @@ public class Manager implements ManagerMXBean {
 			em = tm.getEntityManager();
 			em.createNamedQuery("MonitorStatusEntity.deleteAll", MonitorStatusEntity.class).executeUpdate();
 			em.createNamedQuery("NotifyHistoryEntity.deleteAll", NotifyHistoryEntity.class).executeUpdate();
+
+			// コミット完了後に、MonitorStatusCache内の抑制情報を初期化
+			tm.addCallback(new EmptyJpaTransactionCallback() {
+				@Override
+				public void postCommit() {
+					try {
+						MonitorStatusCache.removeAll();
+					} catch (Exception e) {
+						log.warn("Failed to reset NotifyStatusCache.", e);
+					}
+				}
+			});
 
 			tm.commit();
 		} catch (Exception e) {
@@ -285,11 +317,6 @@ public class Manager implements ManagerMXBean {
 	public int getSyslogQueueCount() {
 		return SystemLogPlugin.getQueuedCount();
 	}
-
-	@Override
-	public int getWebServiceQueueCount() {
-		return WebServiceCorePlugin.getQueueSize();
-	}
 	
 	@Override
 	public int getWebServiceForAgentQueueCount() {
@@ -312,6 +339,31 @@ public class Manager implements ManagerMXBean {
 	}
 
 	@Override
+	public int getRestServiceForAgentQueueCount() {
+		return RestServiceAgentPlugin.getAgentQueueSize();
+	}
+
+	@Override
+	public int getRestServiceForAgentHubQueueCount() {
+		return RestServiceAgentPlugin.getAgentHubQueueSize();
+	}
+
+	@Override
+	public int getRestServiceForAgentBinaryQueueCount() {
+		return RestServiceAgentPlugin.getAgentBinaryQueueSize();
+	}
+
+	@Override
+	public int getRestServiceForAgentNodeConfigQueueCount() {
+		return RestServiceAgentPlugin.getAgentNodeConfigQueueSize();
+	}
+
+	@Override
+	public int getRestServiceQueueCount() {
+		return RestServicePlugin.getQueueSize();
+	}
+
+	@Override
 	public TablePhysicalSizes getTablePhysicalSize() {
 		// 各テーブルの物理テーブルサイズを取得する
 		long log_cc_collect_data_raw = TableSizeMonitor.getTableSize("log.cc_collect_data_raw");
@@ -326,7 +378,7 @@ public class Manager implements ManagerMXBean {
 		long log_cc_job_session = TableSizeMonitor.getTableSize("log.cc_job_session");
 		long log_cc_job_session_job = TableSizeMonitor.getTableSize("log.cc_job_session_job");
 		long log_cc_job_session_node = TableSizeMonitor.getTableSize("log.cc_job_session_node");
-		long log_cc_job_start_job_info = TableSizeMonitor.getTableSize("log.cc_job_start_job_info");
+		long log_cc_job_wait_group_info = TableSizeMonitor.getTableSize("log.cc_job_wait_group_info");
 		long log_cc_status_info = TableSizeMonitor.getTableSize("log.cc_status_info");
 
 		TablePhysicalSizes tablePhysicalSizes = new TablePhysicalSizes(
@@ -342,7 +394,7 @@ public class Manager implements ManagerMXBean {
 				log_cc_job_session,
 				log_cc_job_session_job,
 				log_cc_job_session_node,
-				log_cc_job_start_job_info,
+				log_cc_job_wait_group_info,
 				log_cc_status_info);
 		return tablePhysicalSizes;
 	}
@@ -368,8 +420,12 @@ public class Manager implements ManagerMXBean {
 		int notifyJobTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.NOTIFY_JOB_TASK_FACTORY);
 		int createJobSessionTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.CREATE_JOB_SESSION_TASK_FACTORY);
 		int notifyInfraTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.NOTIFY_INFRA_TASK_FACTORY);
+		int notifyRestTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.NOTIFY_REST_TASK_FACTORY);
+		int notifyCloudTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.NOTIFY_CLOUD_TASK_FACTORY);
 		int agentRestartTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.AGENT_RESTART_TASK_FACTORY);
 		int agentUpdateTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.AGENT_UPDATE_TASK_FACTORY);
+		int agentBroadcastAwakeTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.AGENT_BROADCAST_AWAKE_TASK_FACTORY);
+		int notifyMessageTaskFactory = AsyncTaskQueueMonitor.getTaskCount(AsyncWorkerPlugin.NOTIFY_MESSAGE_TASK_FACTORY);
 		
 		AsyncTaskQueueCounts asyncTaskQueueCounts = new AsyncTaskQueueCounts(
 				notifyStatusTaskFactory,
@@ -380,8 +436,12 @@ public class Manager implements ManagerMXBean {
 				notifyJobTaskFactory,
 				createJobSessionTaskFactory,
 				notifyInfraTaskFactory,
+				notifyRestTaskFactory,
+				notifyCloudTaskFactory,
 				agentRestartTaskFactory,
-				agentUpdateTaskFactory);
+				agentUpdateTaskFactory,
+				agentBroadcastAwakeTaskFactory,
+				notifyMessageTaskFactory);
 		return asyncTaskQueueCounts;
 	}
 

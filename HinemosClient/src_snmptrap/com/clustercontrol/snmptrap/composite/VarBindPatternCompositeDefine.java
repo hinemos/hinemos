@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.VarBindPatternResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
@@ -19,18 +20,17 @@ import com.clustercontrol.monitor.run.util.TableItemManager;
 import com.clustercontrol.monitor.run.viewer.CommonTableLabelProvider;
 import com.clustercontrol.snmptrap.action.GetVarBindPatternTableDefine;
 import com.clustercontrol.snmptrap.dialog.CreateVarBindPatternDialog;
-import com.clustercontrol.ws.monitor.VarBindPattern;
 
-public class VarBindPatternCompositeDefine implements ITableItemCompositeDefine<VarBindPattern> {
+public class VarBindPatternCompositeDefine implements ITableItemCompositeDefine<VarBindPatternResponse> {
 
 	/** 現在有効なダイアログ */
 	private CreateVarBindPatternDialog dialog = null;
 
 	/** テーブルアイテムの管理クラス */
-	private TableItemManager<VarBindPattern> manager = null;
+	private TableItemManager<VarBindPatternResponse> manager = null;
 
 	@Override
-	public VarBindPattern getCurrentCreatedItem() {
+	public VarBindPatternResponse getCurrentCreatedItem() {
 		if(dialog != null){
 			return dialog.getInputData();
 		}
@@ -45,7 +45,7 @@ public class VarBindPatternCompositeDefine implements ITableItemCompositeDefine<
 	}
 
 	@Override
-	public CommonDialog createDialog(Shell shell, VarBindPattern item) {
+	public CommonDialog createDialog(Shell shell, VarBindPatternResponse item) {
 		dialog = new CreateVarBindPatternDialog(shell, item);
 		return dialog;
 	}
@@ -56,7 +56,7 @@ public class VarBindPatternCompositeDefine implements ITableItemCompositeDefine<
 	}
 
 	@Override
-	public TableItemManager<VarBindPattern> getTableItemInfoManager() {
+	public TableItemManager<VarBindPatternResponse> getTableItemInfoManager() {
 		return manager;
 	}
 
@@ -66,7 +66,7 @@ public class VarBindPatternCompositeDefine implements ITableItemCompositeDefine<
 	}
 
 	@Override
-	public void initTableItemInfoManager(List<VarBindPattern> items) {
+	public void initTableItemInfoManager(List<VarBindPatternResponse> items) {
 		manager = new TableItemManager<>(items);
 	}
 
@@ -76,17 +76,17 @@ public class VarBindPatternCompositeDefine implements ITableItemCompositeDefine<
 	}
 
 	@Override
-	public String getItemsIdentifier(VarBindPattern item) {
-		return item.getDescription();
+	public String getItemsIdentifier(VarBindPatternResponse item) {
+		return item.getPattern();
 	}
 
 	@Override
-	public CommonTableLabelProvider<VarBindPattern> getLabelProvider() {
+	public CommonTableLabelProvider<VarBindPatternResponse> getLabelProvider() {
 		return new VarBindPatternTableLabelProvider(this);
 	}
 
 	@Override
-	public int indexOf(VarBindPattern item) {
+	public int indexOf(VarBindPatternResponse item) {
 		if(this.manager != null){
 			return this.manager.indexOf(item);
 		}

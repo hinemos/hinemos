@@ -11,6 +11,7 @@ package com.clustercontrol.plugin.impl;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.text.ParseException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -22,8 +23,10 @@ import org.apache.log4j.Logger;
 
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
+import com.clustercontrol.customtrap.bean.CustomTraps;
 import com.clustercontrol.customtrap.service.CustomTrapMonitorService;
 import com.clustercontrol.plugin.api.HinemosPlugin;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 /**
  * CustomTrap監視の初期化・終了処理を制御するプラグイン.
@@ -67,6 +70,28 @@ public class CustomTrapPlugin implements HinemosPlugin {
 	@Override
 	public void destroy() {
 
+	}
+
+	/**
+	 * HAからのデータ受信時処理
+	 * @param custonTraps 受信したカスタムトラップ
+	 */
+	public static void customTrapReceivedSync(CustomTraps receivedCustomTraps) {
+		customtrapService.customtrapReceivedSync(receivedCustomTraps);
+	}
+
+	/**
+	 * 受信データをパースします。
+	 * 
+	 * @param exchange	HttpExchange
+	 * @param msgBody	受信データ
+	 * @param recvTimestamp	受信時刻（主にMCでの受信時刻を想定）
+	 * @return		パース後の受信データ配列
+	 * @throws JsonProcessingException
+	 * @throws ParseException
+	 */
+	public static CustomTraps parseCustomTrap(String senderAddress, String message, Long recvTimestamp) throws JsonProcessingException, ParseException {
+		return customtrapService.parseCustomTrap(senderAddress, message, recvTimestamp);
 	}
 
 	private static void createService() {

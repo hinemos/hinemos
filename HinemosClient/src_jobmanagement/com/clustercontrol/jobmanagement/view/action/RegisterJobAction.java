@@ -23,17 +23,21 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import org.openapitools.client.model.JobTreeItemResponseP2;
+import org.openapitools.client.model.RegisterJobunitRequest;
+import org.openapitools.client.model.ReplaceJobunitRequest;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[一覧]ビューの「登録」のクライアント側アクションクラス<BR>
@@ -109,13 +113,23 @@ public class RegisterJobAction extends AbstractHandler {
 			// ジョブユニットごとのメッセージのリスト(成功、失敗の結果の詳細が入る）
 			HashMap<String, String> resultList = new HashMap<String, String>();
 
-			for (JobTreeItem mgrTree : JobEditStateUtil.getJobTreeItem().getChildren().get(0).getChildren() ) {
+			JobTreeItemWrapper jobTreeItem = JobEditStateUtil.getJobTreeItem();
+			if (jobTreeItem == null
+					|| jobTreeItem.getChildren() == null
+					|| jobTreeItem.getChildren().size() == 0
+					|| jobTreeItem.getChildren().get(0).getChildren() == null) {
+				// ジョブのキャッシュ情報が最新でないため処理終了
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						Messages.getString("message.accesscontrol.46"));
+				return null;
+			}		
+			for (JobTreeItemWrapper mgrTree : jobTreeItem.getChildren().get(0).getChildren() ) {
 
 				// 成功して編集モードから解除されたのジョブユニットのリスト
-				ArrayList<JobTreeItem> releaseList = new ArrayList<JobTreeItem>();
+				ArrayList<JobTreeItemWrapper> releaseList = new ArrayList<JobTreeItemWrapper>();
 
 				String managerName = mgrTree.getData().getId();
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
 
 				// ジョブ登録の開始
 				m_log.debug("registerJob start (managerName=" + managerName +")" + new Date());
@@ -125,7 +139,7 @@ public class RegisterJobAction extends AbstractHandler {
 				// ジョブユニットの削除
 				m_log.debug("deleteJobunit start");
 				JobEditState jobEditState = JobEditStateUtil.getJobEditState(managerName);
-				for (JobTreeItem jobunit : jobEditState.getDeletedJobunitList()) {
+				for (JobTreeItemWrapper jobunit : jobEditState.getDeletedJobunitList()) {
 					try {
 						String jobunitId = jobunit.getData().getJobunitId();
 						m_log.debug("delete " + jobunitId);
@@ -138,7 +152,7 @@ public class RegisterJobAction extends AbstractHandler {
 						}
 						Object[] arg = { managerName };
 						resultList.put(jobunitId, Messages.getString("message.job.75", arg));
-					} catch (InvalidRole_Exception e) {
+					} catch (InvalidRole e) {
 						// システム権限エラーの場合は次のジョブユニットを処理する
 						m_log.error("run() delete: " + e.getMessage());
 						error = true;
@@ -156,12 +170,12 @@ public class RegisterJobAction extends AbstractHandler {
 				Long registerStart = System.currentTimeMillis();
 				// ジョブユニットの登録
 				m_log.debug("registerJobunit start");
-				for (JobInfo info : jobEditState.getLockedJobunitList()) {
+				for (JobInfoWrapper info : jobEditState.getLockedJobunitList()) {
 					try {
-						JobTreeItem jobunit = null; // ループで一致すると判定された場合にはjobunitに値が設定される
+						JobTreeItemWrapper jobunit = null; // ループで一致すると判定された場合にはjobunitに値が設定される
 
 						// 削除したジョブユニットかチェックする
-						for (JobTreeItem item : releaseList) {
+						for (JobTreeItemWrapper item : releaseList) {
 							if (item.getData().equals(info)) {
 								jobunit = item;
 								break;
@@ -172,7 +186,7 @@ public class RegisterJobAction extends AbstractHandler {
 							continue;
 						}
 						// 編集したジョブユニットかどうかをチェックする
-						for (JobTreeItem item : jobEditState.getEditedJobunitList()) {
+						for (JobTreeItemWrapper item : jobEditState.getEditedJobunitList()) {
 							if (item.getData().equals(info)) {
 								jobunit = item;
 								break;
@@ -181,23 +195,33 @@ public class RegisterJobAction extends AbstractHandler {
 
 						if (jobunit == null) {
 							// 編集していないジョブユニットは、ロックを開放する
-							wrapper.releaseEditLock(jobEditState.getEditSession(info));
+							wrapper.releaseEditLock(info.getJobunitId(),jobEditState.getEditSession(info));
 							jobEditState.removeLockedJobunit(info);
 						} else {
 							// 編集したジョブユニットはマネージャに登録する
+							JobTreeItemResponseP2 updateRes =null;
 							m_log.debug("register " + jobunit.getData().getJobunitId());
 							String jobunitId = jobunit.getData().getJobunitId();
 							wrapper.checkEditLock(jobunitId, jobEditState.getEditSession(jobunit.getData()));
-							Long updateTime = wrapper.registerJobunit(jobunit);
-
+							if (jobEditState.getLockedJobunitBackup(jobunit.getData()) == null) {
+								m_log.debug("add jobunit " + jobunit.getData().getJobunitId());
+								RegisterJobunitRequest request = new RegisterJobunitRequest();
+								request.setJobTreeItem(JobTreeItemUtil.getRequestFromItem(jobunit));
+								updateRes = wrapper.registerJobunit(request);
+							}else{
+								m_log.debug("mod jobunit " + jobunit.getData().getJobunitId());
+								ReplaceJobunitRequest request = new ReplaceJobunitRequest();
+								request.setJobTreeItem(JobTreeItemUtil.getRequestFromItem(jobunit));
+								updateRes = wrapper.replaceJobunit(jobunit.getData().getJobunitId(), request);
+							}
 							// 編集ロック開放リストに追加する
 							releaseList.add(jobunit);
 
-							jobEditState.putJobunitUpdateTime(jobunitId, updateTime);
+							jobEditState.putJobunitUpdateTime(updateRes.getData().getJobunitId(), JobTreeItemUtil.convertDtStringtoLong(updateRes.getData().getUpdateTime()));
 							Object[] arg = { managerName };
 							resultList.put(jobunitId, Messages.getString("message.job.79", arg));
 						}
-					} catch (InvalidRole_Exception e) {
+					} catch (InvalidRole e) {
 						// システム権限エラーの場合は次のジョブユニットを処理する
 						m_log.error("run() register: " + e.getMessage());
 						error = true;
@@ -215,9 +239,9 @@ public class RegisterJobAction extends AbstractHandler {
 				Long releaseStart = System.currentTimeMillis();
 
 				// 編集ロックを解除したジョブユニットのpropertyFullをまとめてクリアする
-				for (JobTreeItem item : releaseList) {
+				for (JobTreeItemWrapper item : releaseList) {
 					try {
-						// 編集ロックの解除
+						// 編集ロックの解除(マネージャ側のロックはマネージャ側編集操作の完了時に併せて実施されている前提で不要 )
 						m_log.debug("release " + item.getData().getJobunitId());
 						jobEditState.exitEditMode(item);
 

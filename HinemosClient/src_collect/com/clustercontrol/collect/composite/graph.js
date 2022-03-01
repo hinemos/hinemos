@@ -38,6 +38,7 @@ this.monitorid = options.monitorid;
 this.displayname = options.displayname;
 this.prediction = [];// 将来予測の情報
 this.starlist = [];
+this.isjob = options.isjob;
 
 this.graphrange;
 
@@ -671,11 +672,14 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 		var self = graph[groupkey];
 		var k = 0;
 		var nodatacount = 0;
+		//HTTP監視（シナリオ）フラグ（近似直線の予測先の描画判定のため）
+		var ishttpsce = false;
 		for (line_key in data_arr) {
 			var item = data_arr[line_key];
 			var facilityid = item.facilityid;
 			var facilityname = item.facilityname;
 			var managerName = item.managername;
+			ishttpsce = item.ishttpsce
 
 			self.sliderstartdate = item.sliderstartdate;
 			self.sliderenddate = item.sliderenddate;
@@ -692,8 +696,9 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 			var measure = item.measure;
 			self.addMeasure(self, measure);
 
-			if (getGraphConfig("data-threshold-flg") && !item.ishttpsce) {
+			if (getGraphConfig("data-threshold-flg") && !item.ishttpsce && !self.isjob) {
 				// 閾値モードがtrueの場合、かつ、http監視(シナリオ)以外の場合
+				// かつ、ジョブ実行履歴ではない場合
 				var thresholdinfo = {};
 				thresholdinfo.warn_min = item.thresholdwarnmin;
 				thresholdinfo.warn_max = item.thresholdwarnmax;
@@ -715,8 +720,9 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 				self.lineids[k] = line_key;
 				self.points2[line_key] = [];
 				self.colorlist[line_key] = self.colors(self.lineids.length);
-				if (getGraphConfig("data-approx-flg")) {
+				if (getGraphConfig("data-approx-flg") && !item.ishttpsce && !self.isjob) {
 					// 近似フラグがONの場合は、近似グラフIDを作成する
+					// http監視(シナリオ)の場合、または、ジョブ実行履歴の場合は表示しない
 					k++;
 					self.lineids[k] = ControlGraph.getApproxLineId(line_key);
 					self.colorlist[self.lineids[k]] = self.colorlist[line_key];
@@ -724,7 +730,8 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 					self.lineids[k] = ControlGraph.getApproxTargetLineId(line_key);
 					self.colorlist[self.lineids[k]] = self.colorlist[line_key];
 				}
-				if (getGraphConfig("data-sigma-flg")) {
+				if (getGraphConfig("data-sigma-flg") && !item.ishttpsce && !self.isjob) {
+					// http監視(シナリオ)の場合、または、ジョブ実行履歴の場合は表示しない
 					k++;
 					var sigmalineid = line_key + "avg";
 					self.lineids[k] = sigmalineid;
@@ -749,14 +756,14 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 				if (singledata[1] != null && !isReallyNaN(singledata[1])) {
 					newpoint.y = Number(singledata[1]);
 				}
-				if (getGraphConfig("data-approx-flg")) {
+				if (getGraphConfig("data-approx-flg") && !item.ishttpsce && !self.isjob) {
 					if (singledata[1] != null && !isReallyNaN(singledata[1])
 							&& Number(singledata[0]) >= item.now - item.predictionrange * 60 * 1000
 							&& Number(singledata[0]) <= item.now) {
 						newpoint.tar = Number(singledata[1]);
 					}
 				}
-				if (getGraphConfig("data-sigma-flg")) {
+				if (getGraphConfig("data-sigma-flg") && !item.ishttpsce && !self.isjob) {
 					if (singledata[2] != null && !isReallyNaN(singledata[2])) {
 						newpoint.avg = Number(singledata[2]); // 平均
 						if (singledata[3] != null && !isReallyNaN(singledata[3])) {
@@ -943,8 +950,11 @@ NewGraph.prototype.createPoints = function(groupkey, data_arr, eventflaginfo) {
 		// イベントフラグの線を描画
 		self.createEventFlag(eventflaginfo);
 		
-		// 
-		self.createPredictionTarget();
+		// 近似直線の予測先を描画
+		if (!ishttpsce && !self.isjob) {
+			// http監視(シナリオ)の場合、または、ジョブ実行履歴の場合は表示しない
+			self.createPredictionTarget();
+		}
 		
 		// プロットの作成
 		self.redrawPlotData()();

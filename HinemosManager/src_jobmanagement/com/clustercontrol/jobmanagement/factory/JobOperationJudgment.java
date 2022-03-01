@@ -92,6 +92,7 @@ public class JobOperationJudgment {
 		operation.addAll(StatusConstant.getEndList());
 		operation.add(StatusConstant.TYPE_STOP);
 		operation.add(StatusConstant.TYPE_ERROR);
+		operation.add(StatusConstant.TYPE_END_EXCLUSIVE_BRANCH);
 		m_statusPatternMap.put(OperationConstant.TYPE_STOP_MAINTENANCE, operation);
 
 		//停止[強制]
@@ -101,6 +102,11 @@ public class JobOperationJudgment {
 		operation.add(StatusConstant.TYPE_SUSPEND_QUEUE);
 		operation.add(StatusConstant.TYPE_STOPPING);
 		m_statusPatternMap.put(OperationConstant.TYPE_STOP_FORCE, operation);
+		
+		//RPAシナリオのスクリーンショット取得
+		operation = new ArrayList<Integer>();
+		operation.add(StatusConstant.TYPE_RUNNING);
+		m_statusPatternMap.put(OperationConstant.TYPE_RPA_SCREENSHOT, operation);
 
 		// ジョブ操作のジョブ種別毎のパターンをハッシュに保持
 
@@ -173,6 +179,11 @@ public class JobOperationJudgment {
 		operation.add(TYPE_JOB);
 		operation.add(TYPE_JOBNET);
 		m_jobPatternMap.put(OperationConstant.TYPE_STOP_FORCE, operation);
+		
+		//RPAシナリオのスクリーンショット取得
+		operation = new ArrayList<Integer>();
+		operation.add(TYPE_NODE);
+		m_jobPatternMap.put(OperationConstant.TYPE_RPA_SCREENSHOT, operation);
 	}
 
 	/**

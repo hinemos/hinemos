@@ -9,6 +9,7 @@
 package com.clustercontrol.calendar.composite;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -35,19 +36,18 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.CalendarMonthResponse;
 
 import com.clustercontrol.calendar.action.GetCalendarMonthTableDefine;
 import com.clustercontrol.calendar.composite.action.VerticalBarSelectionListener;
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
 import com.clustercontrol.calendar.view.CalendarWeekView;
 import com.clustercontrol.calendar.viewer.CalendarMonthTableViewer;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.CalendarNotFound;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.calendar.CalendarNotFound_Exception;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
-//import com.clustercontrol.ClusterControlPlugin;
 
 /**
  * カレンダ[月間予定]ビューコンポジットクラス<BR>
@@ -371,22 +371,37 @@ public class CalendarMonthComposite extends Composite {
 
 		//サマリ情報取得
 		try {
-			CalendarEndpointWrapper  wrapper = CalendarEndpointWrapper.getWrapper(m_managerName);
-			m_summaryInfo = wrapper.getCalendarMonth(m_calendarId, nowYear, nowMonth);
-		} catch (InvalidRole_Exception e) {
+			CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(m_managerName);
+			List<CalendarMonthResponse> resDtoList = wrapper.getCalendarMonth(m_calendarId, nowYear, nowMonth);
+			List<Integer> operationStatusList = new ArrayList<>();
+			for(CalendarMonthResponse res : resDtoList) {
+				switch (res.getOperationStatus()) {
+				case ALL_OPERATION:
+					operationStatusList.add(0);
+					break;
+				case PARTIAL_OPERATION:
+					operationStatusList.add(1);
+					break;
+				case NOT_OPERATION:
+					operationStatusList.add(2);
+					break;
+				}
+			}
+			m_summaryInfo = operationStatusList;
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.accesscontrol.16"));
-		} catch (CalendarNotFound_Exception e) {
+					e.getMessage());
+		} catch (CalendarNotFound e) {
 			// カレンダを削除した際などは、ここを通る。
-			m_log.info("update(), " + HinemosMessage.replace(e.getMessage()));
+			m_log.info("update(), " + e.getMessage());
 		} catch (Exception e) {
 			// 上記以外の例外
-			m_log.warn("update(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("update(), " +e.getMessage(), e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					e.getMessage());
 			return;
 		}
 

@@ -28,12 +28,12 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.accesscontrol.util.ObjectBean;
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
 import com.clustercontrol.calendar.view.CalendarPatternView;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
 
 /**
  * カレンダ[カレンダパターン]の削除を行うクライアント側アクションクラス<BR>
@@ -134,10 +134,10 @@ public class CalendarPatternDeleteAction extends AbstractHandler implements IEle
 			messageArg.append(managerName);
 
 			try {
-				CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
-				wrapper.deleteCalendarPattern(idList);
+				CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
+				wrapper.deleteCalendarPattern(String.join(",", idList));
 			} catch (Exception e) {
-				if (e instanceof InvalidRole_Exception) {
+				if (e instanceof InvalidRole) {
 					errMsg.put(managerName, Messages.getString("message.accesscontrol.16"));
 				} else {
 					errMsg.put(managerName, HinemosMessage.replace(e.getMessage()));

@@ -20,19 +20,22 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Tree;
+import org.openapitools.client.model.JobTreeItemResponseP4;
 
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.accesscontrol.util.ClientSession;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.action.GetJobDetailTableDefine;
 import com.clustercontrol.jobmanagement.composite.action.JobDetailSelectionChangedListener;
 import com.clustercontrol.jobmanagement.composite.action.SessionJobDoubleClickListener;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.viewer.JobTableTreeViewer;
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * ジョブ[ジョブ詳細]ビュー用のコンポジットクラスです。
@@ -53,6 +56,8 @@ public class DetailComposite extends Composite {
 	private String m_jobunitId = null;
 	/** ジョブID */
 	private String m_jobId = null;
+	/** ジョブ名 */
+	private String m_jobName = null;
 	/** セッションID用ラベル */
 	private Label m_sessionIdLabel = null;
 	/** マネージャ名 */
@@ -142,13 +147,18 @@ public class DetailComposite extends Composite {
 	 * @see #setJobId(String)
 	 */
 	public void update(String managerName, String sessionId, String jobunitId) {
+		long start = HinemosTime.currentTimeMillis();
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("DetailComposite update() is start : m_sessionId=" + sessionId + ", startTime="  + start + "ms.");
+		}
 		//ジョブ詳細情報取得
-		JobTreeItem item = null;
+		JobTreeItemWrapper item = null;
 		if (sessionId != null && sessionId.length() > 0) {
 			try {
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-				item = wrapper.getJobDetailList(sessionId);
-			} catch (InvalidRole_Exception e) {
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+				JobTreeItemResponseP4 detail = wrapper.getJobDetailList(sessionId);
+				item = JobTreeItemUtil.getItemFromP4(detail);
+			} catch (InvalidRole e) {
 				if(ClientSession.isDialogFree()){
 					ClientSession.occupyDialog();
 					MessageDialog.openInformation(null, Messages.getString("message"),
@@ -168,6 +178,10 @@ public class DetailComposite extends Composite {
 			}
 		}
 		setItem(managerName, sessionId, jobunitId, item);
+		if (m_log.isDebugEnabled()) {
+			long end = HinemosTime.currentTimeMillis();
+			m_log.debug("DetailComposite update() is end :  m_sessionId=" + sessionId + ", endTime=" + end  + "ms, diffTime="  + (end - start) + "ms.");
+		}
 	}
 
 	/**
@@ -177,11 +191,12 @@ public class DetailComposite extends Composite {
 	 * @param jobunitId ジョブユニットID
 	 * @param item アイテム情報
 	 */
-	public void setItem(String managerName, String sessionId, String jobunitId, JobTreeItem item) {
+	public void setItem(String managerName, String sessionId, String jobunitId, JobTreeItemWrapper item) {
 		if (item == null) {
-			return;
+			m_viewer.setInput(new JobTreeItemWrapper());
+		} else {
+			m_viewer.setInput(item);
 		}
-		m_viewer.setInput(item);
 		m_viewer.expandAll();
 
 		if (m_sessionId != null && m_sessionId.length() > 0
@@ -210,11 +225,11 @@ public class DetailComposite extends Composite {
 	 *
 	 * @param item テーブルツリーアイテム
 	 */
-	public void selectDetail(JobTreeItem item) {
+	public void selectDetail(JobTreeItemWrapper item) {
 		if (getJobId() != null && getJobId().length() > 0) {
 			if (m_viewer.getSelection().isEmpty()) {
 				boolean select = false;
-				JobInfo info = item.getData();
+				JobInfoWrapper info = item.getData();
 				if (info == null) {
 					m_log.info("selectDetail info is null");
 					return;
@@ -228,7 +243,7 @@ public class DetailComposite extends Composite {
 					m_viewer.setSelection(new StructuredSelection(item), true);
 				} else {
 					for (int i = 0; i < item.getChildren().size(); i++) {
-						JobTreeItem children = item.getChildren().get(i);
+						JobTreeItemWrapper children = item.getChildren().get(i);
 						selectDetail(children);
 					}
 				}
@@ -301,6 +316,24 @@ public class DetailComposite extends Composite {
 	 */
 	public void setJobId(String jobId) {
 		m_jobId = jobId;
+	}
+
+	/**
+	 * ジョブ名を返します。
+	 *
+	 * @return ジョブ名
+	 */
+	public String getJobName() {
+		return m_jobName;
+	}
+
+	/**
+	 * ジョブ名を設定します。
+	 *
+	 * @param jobName ジョブ名
+	 */
+	public void setJobName(String jobName) {
+		m_jobName = jobName;
 	}
 
 	/**

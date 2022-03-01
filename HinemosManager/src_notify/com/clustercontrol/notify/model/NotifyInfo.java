@@ -8,15 +8,15 @@
 
 package com.clustercontrol.notify.model;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import javax.xml.bind.annotation.XmlType;
 
 import org.apache.log4j.Logger;
@@ -58,13 +58,17 @@ public class NotifyInfo extends ObjectPrivilegeTargetInfo {
 	private String updateUser;
 	private Boolean validFlg;
 	private String calendarId;
-	private NotifyCommandInfo notifyCommandInfoEntity;
-	private NotifyEventInfo notifyEventInfoEntity;
-	private NotifyJobInfo notifyJobInfoEntity;
-	private NotifyLogEscalateInfo notifyLogEscalateInfoEntity;
-	private NotifyMailInfo notifyMailInfoEntity;
-	private NotifyStatusInfo notifyStatusInfoEntity;
-	private NotifyInfraInfo notifyInfraInfoEntity;
+	private NotifyCommandInfo notifyCommandInfo;
+	private NotifyEventInfo notifyEventInfo;
+	private NotifyJobInfo notifyJobInfo;
+	private NotifyLogEscalateInfo notifyLogEscalateInfo;
+	private NotifyMailInfo notifyMailInfo;
+	private NotifyStatusInfo notifyStatusInfo;
+	private NotifyInfraInfo notifyInfraInfo;
+	private NotifyRestInfo notifyRestInfo;
+	private NotifyCloudInfo notifyCloudInfo;
+	private NotifyMessageInfo notifyMessageInfo;
+
 
 	@Deprecated
 	public NotifyInfo() {
@@ -210,76 +214,108 @@ public class NotifyInfo extends ObjectPrivilegeTargetInfo {
 	//bi-directional one-to-one association to NotifyCommandInfoEntity
 	@OneToOne(mappedBy="notifyInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public NotifyCommandInfo getNotifyCommandInfo() {
-		return this.notifyCommandInfoEntity;
+		return this.notifyCommandInfo;
 	}
 
-	public void setNotifyCommandInfo(NotifyCommandInfo notifyCommandInfoEntity) {
-		this.notifyCommandInfoEntity = notifyCommandInfoEntity;
+	public void setNotifyCommandInfo(NotifyCommandInfo notifyCommandInfo) {
+		this.notifyCommandInfo = notifyCommandInfo;
 	}
 
 
 	//bi-directional one-to-one association to NotifyEventInfoEntity
 	@OneToOne(mappedBy="notifyInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public NotifyEventInfo getNotifyEventInfo() {
-		return this.notifyEventInfoEntity;
+		return this.notifyEventInfo;
 	}
 
-	public void setNotifyEventInfo(NotifyEventInfo notifyEventInfoEntity) {
-		this.notifyEventInfoEntity = notifyEventInfoEntity;
+	public void setNotifyEventInfo(NotifyEventInfo notifyEventInfo) {
+		this.notifyEventInfo = notifyEventInfo;
 	}
 
 
 	//bi-directional one-to-one association to NotifyJobInfoEntity
 	@OneToOne(mappedBy="notifyInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public NotifyJobInfo getNotifyJobInfo() {
-		return this.notifyJobInfoEntity;
+		return this.notifyJobInfo;
 	}
 
-	public void setNotifyJobInfo(NotifyJobInfo notifyJobInfoEntity) {
-		this.notifyJobInfoEntity = notifyJobInfoEntity;
+	public void setNotifyJobInfo(NotifyJobInfo notifyJobInfo) {
+		this.notifyJobInfo = notifyJobInfo;
 	}
 
 	//bi-directional one-to-one association to NotifyJobInfoEntity
 	@OneToOne(mappedBy="notifyInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public NotifyInfraInfo getNotifyInfraInfo() {
-		return this.notifyInfraInfoEntity;
+		return this.notifyInfraInfo;
 	}
 
-	public void setNotifyInfraInfo(NotifyInfraInfo notifyInfraInfoEntity) {
-		this.notifyInfraInfoEntity = notifyInfraInfoEntity;
+	public void setNotifyInfraInfo(NotifyInfraInfo notifyInfraInfo) {
+		this.notifyInfraInfo = notifyInfraInfo;
 	}
 
 	//bi-directional one-to-one association to NotifyLogEscalateInfoEntity
 	@OneToOne(mappedBy="notifyInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public NotifyLogEscalateInfo getNotifyLogEscalateInfo() {
-		return this.notifyLogEscalateInfoEntity;
+		return this.notifyLogEscalateInfo;
 	}
 
-	public void setNotifyLogEscalateInfo(NotifyLogEscalateInfo notifyLogEscalateInfoEntity) {
-		this.notifyLogEscalateInfoEntity = notifyLogEscalateInfoEntity;
+	public void setNotifyLogEscalateInfo(NotifyLogEscalateInfo notifyLogEscalateInfo) {
+		this.notifyLogEscalateInfo = notifyLogEscalateInfo;
 	}
 
 	//bi-directional one-to-one association to NotifyMailInfoEntity
 	@OneToOne(mappedBy="notifyInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public NotifyMailInfo getNotifyMailInfo() {
-		return this.notifyMailInfoEntity;
+		return this.notifyMailInfo;
 	}
 
-	public void setNotifyMailInfo(NotifyMailInfo notifyMailInfoEntity) {
-		this.notifyMailInfoEntity = notifyMailInfoEntity;
+	public void setNotifyMailInfo(NotifyMailInfo notifyMailInfo) {
+		this.notifyMailInfo = notifyMailInfo;
 	}
 
 
 	//bi-directional one-to-one association to NotifyStatusInfoEntity
 	@OneToOne(mappedBy="notifyInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public NotifyStatusInfo getNotifyStatusInfo() {
-		return this.notifyStatusInfoEntity;
+		return this.notifyStatusInfo;
 	}
 
-	public void setNotifyStatusInfo(NotifyStatusInfo notifyStatusInfoEntity) {
-		this.notifyStatusInfoEntity = notifyStatusInfoEntity;
+	public void setNotifyStatusInfo(NotifyStatusInfo notifyStatusInfo) {
+		this.notifyStatusInfo = notifyStatusInfo;
+	}
+
+	//bi-directional one-to-one association to NotifyRestInfoEntity
+	@OneToOne(mappedBy="notifyInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public NotifyRestInfo getNotifyRestInfo() {
+		return this.notifyRestInfo;
+	}
+
+	public void setNotifyRestInfo(NotifyRestInfo notifyRestInfo) {
+		this.notifyRestInfo = notifyRestInfo;
 	}
 	
+	//bi-directional one-to-one association to NotifyStatusInfoEntity
+	@OneToOne(mappedBy="notifyInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public NotifyCloudInfo getNotifyCloudInfo() {
+		return this.notifyCloudInfo;
+	}
+	
+	
+
+	public void setNotifyCloudInfo(NotifyCloudInfo notifyCloudInfo) {
+		this.notifyCloudInfo = notifyCloudInfo;
+	}
+
+	//bi-directional one-to-one association to NotifyMessageInfo
+	@OneToOne(mappedBy="notifyInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public NotifyMessageInfo getNotifyMessageInfo() {
+		return notifyMessageInfo;
+	}
+
+	public void setNotifyMessageInfo(NotifyMessageInfo notifyMessageInfo) {
+		this.notifyMessageInfo = notifyMessageInfo;
+	}
+
 	public NotifyInfoDetail getNotifyInfoDetail() {
 		switch (getNotifyType()) {
 		case NotifyTypeConstant.TYPE_EVENT:
@@ -296,6 +332,12 @@ public class NotifyInfo extends ObjectPrivilegeTargetInfo {
 			return getNotifyCommandInfo();
 		case NotifyTypeConstant.TYPE_INFRA:
 			return getNotifyInfraInfo();
+		case NotifyTypeConstant.TYPE_REST:
+			return getNotifyRestInfo();
+		case NotifyTypeConstant.TYPE_CLOUD:
+			return getNotifyCloudInfo();
+		case NotifyTypeConstant.TYPE_MESSAGE:
+			return getNotifyMessageInfo();
 		default:
 			String m = "setValidFlgtoDetail() notify type mismatch. " + getNotifyId() + "  type = " + getNotifyType();
 			Logger.getLogger(this.getClass()).info(m);
@@ -304,30 +346,30 @@ public class NotifyInfo extends ObjectPrivilegeTargetInfo {
 	}
 	
 	public void persistSelf() {
-		if (notifyCommandInfoEntity != null) {
-			notifyCommandInfoEntity.setNotifyId(getNotifyId());
-			notifyCommandInfoEntity.relateToNotifyInfoEntity(this);
+		if (notifyCommandInfo != null) {
+			notifyCommandInfo.setNotifyId(getNotifyId());
+			notifyCommandInfo.relateToNotifyInfoEntity(this);
 		}
-		if (notifyEventInfoEntity != null) {
-			notifyEventInfoEntity.setNotifyId(getNotifyId());
-			notifyEventInfoEntity.relateToNotifyInfoEntity(this);
+		if (notifyEventInfo != null) {
+			notifyEventInfo.setNotifyId(getNotifyId());
+			notifyEventInfo.relateToNotifyInfoEntity(this);
 		}
-		if (notifyJobInfoEntity != null) {
-			notifyJobInfoEntity.setNotifyId(getNotifyId());
-			notifyJobInfoEntity.relateToNotifyInfoEntity(this);
+		if (notifyJobInfo != null) {
+			notifyJobInfo.setNotifyId(getNotifyId());
+			notifyJobInfo.relateToNotifyInfoEntity(this);
 		}
-		if (notifyLogEscalateInfoEntity != null) {
-			notifyLogEscalateInfoEntity.setNotifyId(getNotifyId());
-			notifyLogEscalateInfoEntity.relateToNotifyInfoEntity(this);
+		if (notifyLogEscalateInfo != null) {
+			notifyLogEscalateInfo.setNotifyId(getNotifyId());
+			notifyLogEscalateInfo.relateToNotifyInfoEntity(this);
 		}
-		if (notifyMailInfoEntity != null) {
-			notifyMailInfoEntity.setNotifyId(getNotifyId());
-			notifyMailInfoEntity.relateToNotifyInfoEntity(this);
-			if (notifyMailInfoEntity.getMailTemplateId() != null && !notifyMailInfoEntity.getMailTemplateId().isEmpty()) {
+		if (notifyMailInfo != null) {
+			notifyMailInfo.setNotifyId(getNotifyId());
+			notifyMailInfo.relateToNotifyInfoEntity(this);
+			if (notifyMailInfo.getMailTemplateId() != null && !notifyMailInfo.getMailTemplateId().isEmpty()) {
 				try {
 					MailTemplateInfo mailTemplateInfoEntity
-						= com.clustercontrol.notify.mail.util.QueryUtil.getMailTemplateInfoPK(notifyMailInfoEntity.getMailTemplateId());
-					notifyMailInfoEntity.relateToMailTemplateInfoEntity(mailTemplateInfoEntity);
+						= com.clustercontrol.notify.mail.util.QueryUtil.getMailTemplateInfoPK(notifyMailInfo.getMailTemplateId());
+					notifyMailInfo.relateToMailTemplateInfoEntity(mailTemplateInfoEntity);
 				} catch (MailTemplateNotFound e) {
 					Logger.getLogger(this.getClass()).debug(e.getMessage(), e);
 				} catch (InvalidRole e) {
@@ -335,13 +377,25 @@ public class NotifyInfo extends ObjectPrivilegeTargetInfo {
 				}
 			}
 		}
-		if (notifyStatusInfoEntity != null) {
-			notifyStatusInfoEntity.setNotifyId(getNotifyId());
-			notifyStatusInfoEntity.relateToNotifyInfoEntity(this);
+		if (notifyStatusInfo != null) {
+			notifyStatusInfo.setNotifyId(getNotifyId());
+			notifyStatusInfo.relateToNotifyInfoEntity(this);
 		}
-		if (notifyInfraInfoEntity != null) {
-			notifyInfraInfoEntity.setNotifyId(getNotifyId());
-			notifyInfraInfoEntity.relateToNotifyInfoEntity(this);
+		if (notifyInfraInfo != null) {
+			notifyInfraInfo.setNotifyId(getNotifyId());
+			notifyInfraInfo.relateToNotifyInfoEntity(this);
+		}
+		if (notifyRestInfo != null) {
+			notifyRestInfo.setNotifyId(getNotifyId());
+			notifyRestInfo.relateToNotifyInfoEntity(this);
+		}
+		if (notifyCloudInfo != null) {
+			notifyCloudInfo.setNotifyId(getNotifyId());
+			notifyCloudInfo.relateToNotifyInfoEntity(this);
+		}
+		if (notifyMessageInfo != null) {
+			notifyMessageInfo.setNotifyId(getNotifyId());
+			notifyMessageInfo.relateToNotifyInfoEntity(this);
 		}
 	}
 }

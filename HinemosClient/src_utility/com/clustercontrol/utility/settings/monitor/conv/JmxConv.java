@@ -8,15 +8,29 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.JmxCheckInfoResponse;
+import org.openapitools.client.model.JmxMasterInfoResponseP1;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse.MonitorTypeEnum;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.PriorityEnum;
 
 import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -26,14 +40,8 @@ import com.clustercontrol.utility.settings.monitor.xml.JmxMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.NumericChangeAmount;
 import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.JmxCheckInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
 
 /**
  * Jmx 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -48,7 +56,7 @@ public class JmxConv {
 
 	static private String SCHEMA_TYPE = "I";
 	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "1";
+	static private String SCHEMA_REVISION = "2";
 
 	/**
 	 * <BR>
@@ -81,37 +89,39 @@ public class JmxConv {
 	 * <BR>
 	 *
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static JmxMonitors createJmxMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static JmxMonitors createJmxMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		JmxMonitors jmxMonitors = new JmxMonitors();
 
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			JmxMonitor jmxMonitor = new JmxMonitor();
 			jmxMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 
-			for (MonitorNumericValueInfo numericValueInfo : monitorInfo.getNumericValueInfo()) {
-				if(numericValueInfo.getPriority() == PriorityConstant.TYPE_INFO ||
-						numericValueInfo.getPriority() == PriorityConstant.TYPE_WARNING){
-					if(numericValueInfo.getMonitorNumericType().contains("CHANGE")) {
-						jmxMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(numericValueInfo));
+			for (MonitorNumericValueInfoResponse numericValueInfo : monitorInfo.getNumericValueInfo()) {
+				if(numericValueInfo.getPriority() == PriorityEnum.INFO ||
+						numericValueInfo.getPriority() == PriorityEnum.WARNING){
+					if(numericValueInfo.getMonitorNumericType().name().equals("CHANGE")) {
+						jmxMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 					else{
-						jmxMonitor.addNumericValue(MonitorConv.createNumericValue(numericValueInfo));
+						jmxMonitor.addNumericValue(MonitorConv.createNumericValue(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 				}
 			}
 
-			jmxMonitor.setJmxInfo(createJmxInfo(monitorInfo.getJmxCheckInfo()));
+			jmxMonitor.setJmxInfo(createJmxInfo(monitorInfo));
 			jmxMonitors.addJmxMonitor(jmxMonitor);
 		}
 
@@ -121,15 +131,24 @@ public class JmxConv {
 		return jmxMonitors;
 	}
 
-	public static List<MonitorInfo> createMonitorInfoList(JmxMonitors JmxMonitors) throws ConvertorException {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(JmxMonitors JmxMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		String managerName = UtilityManagerUtil.getCurrentManagerName();
+		// JMXマスタを取得
+		List<JmxMasterInfoResponseP1> jmxMstInfoList = null;
+		try {
+			jmxMstInfoList = getJmxMonitorItemList(managerName);
+		} catch (Exception e) {
+			jmxMstInfoList = new ArrayList<>();
+			logger.warn("createMonitorInfoList() getJmxMasterInfoList, " + e.getMessage(), e);
+		}
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 
 		for (JmxMonitor jmxMonitor : JmxMonitors.getJmxMonitor()) {
 			logger.debug("Monitor Id : " + jmxMonitor.getMonitor().getMonitorId());
 
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(jmxMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(jmxMonitor.getMonitor());
 
-			if(monitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC){
+			if(monitorInfo.getMonitorType() == MonitorTypeEnum.NUMERIC){
 				for (NumericValue numericValue : jmxMonitor.getNumericValue()) {
 					if(numericValue.getPriority() == PriorityConstant.TYPE_INFO ||
 							numericValue.getPriority() == PriorityConstant.TYPE_WARNING){
@@ -148,46 +167,46 @@ public class JmxConv {
 						monitorInfo.getNumericValueInfo().add(MonitorConv.createMonitorNumericValueInfo(changeValue));
 					}
 				}		
-				MonitorNumericValueInfo monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+				MonitorNumericValueInfoResponse monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(null);
+				monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(null);
+				monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
 				// 変化量監視が無効の場合、関連閾値が未入力なら、画面デフォルト値にて補完
-				if( monitorInfo.isChangeFlg() ==false && jmxMonitor.getNumericChangeAmount().length == 0 ){
+				if( monitorInfo.getChangeFlg() ==false && jmxMonitor.getNumericChangeAmount().length == 0 ){
 					MonitorConv.setMonitorChangeAmountDefault(monitorInfo);
 				}
 				
 				// 変化量についても閾値判定と同様にTYPE_CRITICALとTYPE_UNKNOWNを定義する
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericValueInfoResponse.MonitorNumericTypeEnum.CHANGE);
+				monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 				
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericValueInfoResponse.MonitorNumericTypeEnum.CHANGE);
+				monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 			}
 
 			monitorInfo.setJmxCheckInfo(createJmxCheckInfo(jmxMonitor.getJmxInfo()));
+
+			// 監視項目コードに対応した収集値表示名と収集値単位を設定
+			setJmxMasterInfo(managerName, jmxMstInfoList, monitorInfo);
+
 			monitorInfoList.add(monitorInfo);
 		}
 
@@ -199,16 +218,18 @@ public class JmxConv {
 	 *
 	 * @return
 	 */
-	private static JmxInfo createJmxInfo(JmxCheckInfo jmxCheckInfo) {
+	private static JmxInfo createJmxInfo(MonitorInfoResponse jmxCheckInfo) {
 		JmxInfo jmxInfo = new JmxInfo();
 		jmxInfo.setMonitorTypeId("");
 
 		jmxInfo.setMonitorId(jmxCheckInfo.getMonitorId());
-		jmxInfo.setAuthUser(ifNull2Empty(jmxCheckInfo.getAuthUser()));
-		jmxInfo.setAuthPassword(ifNull2Empty(jmxCheckInfo.getAuthPassword()));
-		jmxInfo.setMasterId(ifNull2Empty(jmxCheckInfo.getMasterId()));
-		jmxInfo.setPort(jmxCheckInfo.getPort());
-		jmxInfo.setConvertFlg(jmxCheckInfo.getConvertFlg());
+		jmxInfo.setAuthUser(ifNull2Empty(jmxCheckInfo.getJmxCheckInfo().getAuthUser()));
+		jmxInfo.setAuthPassword(ifNull2Empty(jmxCheckInfo.getJmxCheckInfo().getAuthPassword()));
+		jmxInfo.setMasterId(ifNull2Empty(jmxCheckInfo.getJmxCheckInfo().getMasterId()));
+		jmxInfo.setPort(jmxCheckInfo.getJmxCheckInfo().getPort());
+		int convertFlgInt = OpenApiEnumConverter.enumToInteger(jmxCheckInfo.getJmxCheckInfo().getConvertFlg());
+		jmxInfo.setConvertFlg(convertFlgInt);
+		jmxInfo.setUrlFormatName(jmxCheckInfo.getJmxCheckInfo().getUrlFormatName());
 		return jmxInfo;
 	}
 
@@ -216,17 +237,19 @@ public class JmxConv {
 	 * <BR>
 	 *
 	 * @return
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	private static JmxCheckInfo createJmxCheckInfo(JmxInfo jmxInfo) {
-		JmxCheckInfo jmxCheckInfo = new JmxCheckInfo();
-		jmxCheckInfo.setMonitorId(jmxInfo.getMonitorId());
-		jmxCheckInfo.setMonitorTypeId("");
+	private static JmxCheckInfoResponse createJmxCheckInfo(JmxInfo jmxInfo) throws InvalidSetting, HinemosUnknown {
+		JmxCheckInfoResponse jmxCheckInfo = new JmxCheckInfoResponse();
 
 		jmxCheckInfo.setAuthUser(jmxInfo.getAuthUser());
 		jmxCheckInfo.setAuthPassword(jmxInfo.getAuthPassword());
 		jmxCheckInfo.setMasterId(jmxInfo.getMasterId());
 		jmxCheckInfo.setPort(jmxInfo.getPort());
-		jmxCheckInfo.setConvertFlg(jmxInfo.getConvertFlg());
+		JmxCheckInfoResponse.ConvertFlgEnum convertFlgEnum = OpenApiEnumConverter.integerToEnum(jmxInfo.getConvertFlg(), JmxCheckInfoResponse.ConvertFlgEnum.class);
+		jmxCheckInfo.setConvertFlg(convertFlgEnum);
+		jmxCheckInfo.setUrlFormatName(jmxInfo.getUrlFormatName());
 		return jmxCheckInfo;
 	}
 
@@ -235,5 +258,44 @@ public class JmxConv {
 			return "";
 		}
 		return str;
+	}
+	
+	private static List<JmxMasterInfoResponseP1> getJmxMonitorItemList(String managerName) throws HinemosUnknown, InvalidRole, InvalidUserPass, RestConnectFailed {
+		List<JmxMasterInfoResponseP1> jmxMasterInfoList = MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJmxMonitorItemList();
+		return jmxMasterInfoList;
+	}
+	
+	/**
+	 * JMXマスタよりマスタIDに対応した収集値表示名と収集値単位を設定する<BR>
+	 * XMLに定義されていた情報は上書きする<BR>
+	 * 
+	 * @return
+	 */
+	private static void setJmxMasterInfo(String managerName, List<JmxMasterInfoResponseP1> jmxMstInfoList, MonitorInfoResponse monitorInfo) {
+		if (managerName == null || managerName.equals("")) {
+			return;
+		}
+		if (jmxMstInfoList == null || jmxMstInfoList.size() == 0) {
+			logger.warn("setJmxMasterInfo() can not get JmxMaster. monitorId=" + monitorInfo.getMonitorId()
+					+ ", facilityId=" + monitorInfo.getFacilityId() + ", managerName=" + managerName);
+			return;
+		}
+		
+		JmxMasterInfoResponseP1 jmxMstInfo = null;
+		Iterator<JmxMasterInfoResponseP1> itr = jmxMstInfoList.iterator();
+		while(itr.hasNext()){
+			JmxMasterInfoResponseP1 tmpJmxMstInfo = itr.next();
+			if (tmpJmxMstInfo.getId().equals(monitorInfo.getJmxCheckInfo().getMasterId())) {
+				jmxMstInfo = tmpJmxMstInfo;
+				break;
+			}
+		}
+		if (jmxMstInfo != null) {
+			monitorInfo.setItemName(jmxMstInfo.getName());
+			monitorInfo.setMeasure(jmxMstInfo.getMeasure());
+		} else {
+			logger.warn("setJmxMasterInfo() This masterId is not exist in JmxMaster. masterId="
+					+ monitorInfo.getJmxCheckInfo().getMasterId());
+		}
 	}
 }

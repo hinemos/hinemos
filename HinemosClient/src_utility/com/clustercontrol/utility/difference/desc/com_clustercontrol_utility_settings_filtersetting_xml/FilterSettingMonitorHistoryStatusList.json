@@ -1,0 +1,42 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"FilterSettingMonitorHistoryStatusList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Filtersetting.OwnerUserId",
+			"Filtersetting.FilterId",
+			"Filtersetting.FilterName",
+			"Filtersetting.OwnerRoleId",
+			"Filtersetting.ObjectId",
+			"Filtersetting.FilterCategory",
+			"MonitorHistoryStatusInfo.FacilityId",
+			"MonitorHistoryStatusInfo.Scope",
+			"MonitorHistoryStatusInfo.FacilityTarget",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.ConditionIdx",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.Description",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.Negative",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.PriorityCritical",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.PriorityWarning",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.PriorityInfo",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.PriorityUnknown",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.GenerationDateFrom",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.GenerationDateTo",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.OutputDateFrom",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.OutputDateTo",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.MonitorId",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.MonitorDetail",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.Application",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.Message",
+			"MonitorHistoryStatusInfo.MonitorHistoryStatusConditions.*.OwnerRoleId"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"FilterMonitorHistoryStatus",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

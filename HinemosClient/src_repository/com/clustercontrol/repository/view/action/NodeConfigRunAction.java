@@ -25,15 +25,16 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.RunCollectNodeConfigResponse;
 
+import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.action.GetNodeConfigSettingListTableDefine;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.repository.view.NodeConfigSettingListView;
 import com.clustercontrol.util.DateUtil;
 import com.clustercontrol.util.DateUtil.TimeUnitSet;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.FacilityNotFound_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
 
 /**
  * 構成情報取得の即時実行を行うクライアント側アクションクラス<BR>
@@ -95,10 +96,10 @@ public class NodeConfigRunAction extends AbstractHandler implements IElementUpda
 		if (settingId == null) {
 			return null;
 		}
-		RepositoryEndpointWrapper wrapper = null;
+		RepositoryRestClientWrapper wrapper = null;
 		String message = "";
 		try {
-			wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
+			wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
 		} catch (IllegalStateException e) {
 			message = Messages.getString("message.accesscontrol.18");
 			MessageDialog.openError(null, Messages.getString("message.error"), message);
@@ -107,12 +108,13 @@ public class NodeConfigRunAction extends AbstractHandler implements IElementUpda
 
 		Long delay = null;
 		try {
-			delay = wrapper.runCollectNodeConfig(settingId);
-		} catch (FacilityNotFound_Exception e) {
+			RunCollectNodeConfigResponse response = wrapper.runCollectNodeConfig(settingId);
+			delay = response.getLoadDistributionTime();
+		} catch (FacilityNotFound e) {
 			message = Messages.getString("message.node.config.9");
 			MessageDialog.openWarning(null, Messages.getString("word.warn"), message);
 			return null;
-		}  catch (InvalidRole_Exception e) {
+		}  catch (InvalidRole e) {
 			message = Messages.getString("message.accesscontrol.16");
 			MessageDialog.openError(null, Messages.getString("message.error"), message);
 			return null;

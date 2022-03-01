@@ -18,15 +18,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-
-import javax.xml.ws.WebServiceException;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.AddTransferInfoRequest;
+import org.openapitools.client.model.ImportTransferRecordRequest;
+import org.openapitools.client.model.ImportTransferRequest;
+import org.openapitools.client.model.ImportTransferResponse;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
+import org.openapitools.client.model.TransferInfoResponse;
+import org.openapitools.client.model.TransferInfoResponseP1;
 
-import com.clustercontrol.hub.util.HubEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.hub.util.HubRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffUtil;
@@ -45,17 +59,17 @@ import com.clustercontrol.utility.settings.hub.xml.TransferType;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.hub.HinemosUnknown_Exception;
-import com.clustercontrol.ws.hub.InvalidRole_Exception;
-import com.clustercontrol.ws.hub.InvalidSetting_Exception;
-import com.clustercontrol.ws.hub.InvalidUserPass_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
+
 /**
  * 転送設定定義情報をインポート・エクスポート・削除するアクションクラス<br>
  *
@@ -84,10 +98,10 @@ public class HubTransferAction {
 		int ret = 0;
 
 		// 転送設定定義一覧の取得
-		List<com.clustercontrol.ws.hub.TransferInfo> transferList = null;
+		List<TransferInfoResponseP1> transferList = null;
 
 		try {
-			transferList = HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getTransferInfoList();
+			transferList = HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getTransferInfoIdList(null);
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			 ret=SettingConstants.ERROR_INPROCESS;
@@ -96,14 +110,10 @@ public class HubTransferAction {
 		}
 
 		// 転送設定定義の削除
-		for (com.clustercontrol.ws.hub.TransferInfo transferInfo : transferList) {
+		for (TransferInfoResponseP1 transferInfo : transferList) {
 			try {
-				HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteTransferInfo(Arrays.asList(transferInfo.getTransferId()));
+				HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteTransferInfo(transferInfo.getTransferId());
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + transferInfo.getTransferId());
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-				break;
 			} catch (Exception e) {
 				log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
@@ -136,14 +146,14 @@ public class HubTransferAction {
 		int ret = 0;
 
 		// 転送設定定義一覧の取得
-		List<com.clustercontrol.ws.hub.TransferInfo> transferList = null;
+		List<TransferInfoResponse> transferList = null;
 		try {
-			transferList = HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getTransferInfoList();
-			Collections.sort(transferList, new Comparator<com.clustercontrol.ws.hub.TransferInfo>() {
+			transferList = HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getTransferListByOwnerRole(null);
+			Collections.sort(transferList, new Comparator<TransferInfoResponse>() {
 				@Override
 				public int compare(
-						com.clustercontrol.ws.hub.TransferInfo info1,
-						com.clustercontrol.ws.hub.TransferInfo info2) {
+						TransferInfoResponse info1,
+						TransferInfoResponse info2) {
 					return info1.getTransferId().compareTo(info2.getTransferId());
 				}
 			});
@@ -156,7 +166,7 @@ public class HubTransferAction {
 
 		// 転送設定定義の取得
 		Transfer transfer = new Transfer();
-		for (com.clustercontrol.ws.hub.TransferInfo transfer2 : transferList) {
+		for (TransferInfoResponse transfer2 : transferList) {
 			try {
 				transfer.addTransferInfo(HubTransferConv.getTransferInfo(transfer2));
 				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + transfer2.getTransferId());
@@ -212,10 +222,10 @@ public class HubTransferAction {
 		}
 
 		TransferType transferType = null;
-//
+
 		// XMLファイルからの読み込み
 		try {
-			transferType = Transfer.unmarshal(new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
+			transferType = XmlMarshallUtil.unmarshall(TransferType.class,new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
 			ret=SettingConstants.ERROR_INPROCESS;
@@ -229,58 +239,33 @@ public class HubTransferAction {
 		}
 		// 転送設定定義の登録
 		List<String> objectIdList = new ArrayList<String>();
-		for (TransferInfo transferInfo : transferType.getTransferInfo()) {
-			com.clustercontrol.ws.hub.TransferInfo info = null;
-			try {
-				info = HubTransferConv.getTransferData(transferInfo);
-				HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addTransferInfo(info);
-				objectIdList.add(transferInfo.getTransferId());
-				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + transferInfo.getTransferId());
-
-			} catch (com.clustercontrol.ws.hub.LogTransferDuplicate_Exception e) {
-				//重複時、インポート処理方法を確認する
-				if(!ImportProcessMode.isSameprocess()){
-					String[] args = {transferInfo.getTransferId()};
-					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-							null, Messages.getString("message.import.confirm2", args));
-					ImportProcessMode.setProcesstype(dialog.open());
-					ImportProcessMode.setSameprocess(dialog.getToggleState());
-				}
-
-				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-					try {
-						HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyTransferInfo(info);
-						objectIdList.add(transferInfo.getTransferId());
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + transferInfo.getTransferId());
-					} catch (Exception e1) {
-						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-						ret = SettingConstants.ERROR_INPROCESS;
-					}
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + transferInfo.getTransferId());
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-					return ret;
-				}
-			} catch (HinemosUnknown_Exception e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidSetting_Exception e) {
-				log.warn(Messages.getString("SettingTools.InvalidSetting") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (Exception e) {
-				log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
+		
+		/////////////////////////////////////
+		// 転送設定定義情報のインポート処理
+		/////////////////////////////////////
+		
+		// レコードの確認(転送設定定義情報)
+		ImportTransferRecordConfirmer transferConfirmer = new ImportTransferRecordConfirmer( log, transferType.getTransferInfo());
+		int transferConfirmerRet = transferConfirmer.executeConfirm();
+		if (transferConfirmerRet != 0) {
+			ret = transferConfirmerRet;
+		}
+		// レコードの登録（転送設定定義情報）
+		if (!(transferConfirmer.getImportRecDtoList().isEmpty())) {
+			ImportTransferClientController transferController = new ImportTransferClientController(log,
+					Messages.getString("hub.transfer"), transferConfirmer.getImportRecDtoList(), true);
+			int transferControllerRet = transferController.importExecute();
+			for (RecordRegistrationResponse rec: transferController.getImportSuccessList() ){
+				objectIdList.add(rec.getImportKeyValue());
 			}
+			if (transferControllerRet != 0) {
+				ret = transferControllerRet;
+			}
+		}
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
 		}
 		
 		//オブジェクト権限同時インポート
@@ -342,8 +327,8 @@ public class HubTransferAction {
 
 		// XMLファイルからの読み込み
 		try {
-			transferType1 = Transfer.unmarshal(new InputStreamReader(new FileInputStream(filePath1), "UTF-8"));
-			transferType2 = Transfer.unmarshal(new InputStreamReader(new FileInputStream(filePath2), "UTF-8"));
+			transferType1 = XmlMarshallUtil.unmarshall(TransferType.class,new InputStreamReader(new FileInputStream(filePath1), "UTF-8"));
+			transferType2 = XmlMarshallUtil.unmarshall(TransferType.class,new InputStreamReader(new FileInputStream(filePath2), "UTF-8"));
 			sort(transferType1);
 			sort(transferType2);
 		} catch (Exception e) {
@@ -423,14 +408,10 @@ public class HubTransferAction {
 		transferType.setTransferInfo(infoList);
 	}
 
-//	public Logger getLogger() {
-//		return log;
-//	}
-
 	protected void checkDelete(TransferType xmlElements){
-		List<com.clustercontrol.ws.hub.TransferInfo> subList = null;
+		List<TransferInfoResponseP1> subList = null;
 		try {
-			subList = HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getTransferInfoList();
+			subList = HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getTransferInfoIdList(null);
 		}
 		catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -442,7 +423,7 @@ public class HubTransferAction {
 		}
 
 		List<TransferInfo> xmlElementList = new ArrayList<>(Arrays.asList(xmlElements.getTransferInfo()));
-		for(com.clustercontrol.ws.hub.TransferInfo mgrInfo: new ArrayList<>(subList)){
+		for(TransferInfoResponseP1 mgrInfo: new ArrayList<>(subList)){
 			for(TransferInfo xmlElement: new ArrayList<>(xmlElementList)){
 				if(mgrInfo.getTransferId().equals(xmlElement.getTransferId())){
 					subList.remove(mgrInfo);
@@ -453,7 +434,7 @@ public class HubTransferAction {
 		}
 
 		if(subList.size() > 0){
-			for(com.clustercontrol.ws.hub.TransferInfo info: subList){
+			for(TransferInfoResponseP1 info: subList){
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getTransferId()};
@@ -465,7 +446,7 @@ public class HubTransferAction {
 
 				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
-						HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteTransferInfo(Arrays.asList(info.getTransferId()));
+						HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteTransferInfo(info.getTransferId());
 						log.info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getTransferId());
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
@@ -498,5 +479,125 @@ public class HubTransferAction {
 	
 	public Logger getLogger() {
 		return log;
+	}
+	
+	/**
+	 *  転送設定定義情報 インポート向けのレコード確認用クラス
+	 * 
+	 */
+	protected static class ImportTransferRecordConfirmer extends ImportRecordConfirmer<TransferInfo, ImportTransferRecordRequest, String>{
+		
+		public ImportTransferRecordConfirmer(Logger logger, TransferInfo[] importRecDtoList) {
+			super(logger, importRecDtoList);
+		}
+		
+		@Override
+		protected ImportTransferRecordRequest convertDtoXmlToRestReq(TransferInfo xmlDto)
+				throws HinemosUnknown, InvalidSetting {
+			// xmlから変換
+			AddTransferInfoRequest dto = HubTransferConv.getTransferData(xmlDto);
+			ImportTransferRecordRequest dtoRec = new ImportTransferRecordRequest();
+			dtoRec.setImportData(new AddTransferInfoRequest());
+			RestClientBeanUtil.convertBean(dto, dtoRec.getImportData());
+			
+			dtoRec.setImportKeyValue(dtoRec.getImportData().getTransferId());
+			return dtoRec;
+		}
+
+		@Override
+		protected Set<String> getExistIdSet() throws Exception {
+			Set<String> retSet = new HashSet<String>();
+			List<TransferInfoResponseP1> transferInfoInfoList = HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getTransferInfoIdList(null);
+			for (TransferInfoResponseP1 rec : transferInfoInfoList) {
+				retSet.add(rec.getTransferId());
+			}
+			return retSet;
+		}
+		@Override
+		protected boolean isLackRestReq(ImportTransferRecordRequest restDto) {
+			return (restDto == null || restDto.getImportData().getTransferId() == null || restDto.getImportData().getTransferId().equals(""));
+		}
+		@Override
+		protected String getKeyValueXmlDto(TransferInfo xmlDto) {
+			return xmlDto.getTransferId();
+		}
+		@Override
+		protected String getId(TransferInfo xmlDto) {
+			return xmlDto.getTransferId();
+		}
+		@Override
+		protected void setNewRecordFlg(ImportTransferRecordRequest restDto, boolean flag) {
+			restDto.setIsNewRecord(flag);
+		}
+	}
+
+	/**
+	 *  転送設定定義情報 インポート向けのレコード登録用クラス
+	 * 
+	 */
+	protected static class ImportTransferClientController extends ImportClientController<ImportTransferRecordRequest, ImportTransferResponse, RecordRegistrationResponse>{
+		
+		public ImportTransferClientController(Logger logger, String importInfoName, List<ImportTransferRecordRequest> importRecList ,boolean displayFailed) {
+			super(logger, importInfoName,importRecList,displayFailed);
+		}
+		@Override
+		protected List<RecordRegistrationResponse> getResRecList(ImportTransferResponse importResponse) {
+			return importResponse.getResultList();
+		};
+
+		@Override
+		protected Boolean getOccurException(ImportTransferResponse importResponse) {
+			return importResponse.getIsOccurException();
+		};
+
+		@Override
+		protected String getReqKeyValue(ImportTransferRecordRequest importRec) {
+			return importRec.getImportKeyValue();
+		};
+
+		@Override
+		protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+			return responseRec.getImportKeyValue();
+		};
+
+		@Override
+		protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+			return (responseRec.getResult() == ResultEnum.NORMAL) ;
+		};
+
+		@Override
+		protected boolean isResSkip(RecordRegistrationResponse responseRec) {
+			return (responseRec.getResult() == ResultEnum.SKIP) ;
+		};
+
+		@Override
+		protected ImportTransferResponse callImportWrapper(List<ImportTransferRecordRequest> importRecList)
+				throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+			ImportTransferRequest reqDto = new ImportTransferRequest();
+			reqDto.setRecordList(importRecList);
+			reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+			return UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importTransfer(reqDto);
+		}
+
+		@Override
+		protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+			if (responseRec.getExceptionInfo() != null) {
+				return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+			}
+			return null;
+		};
+
+		@Override
+		protected void setResultLog( RecordRegistrationResponse responseRec ){
+			String keyValue = getResKeyValue(responseRec);
+			if ( isResNormal(responseRec) ) {
+				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : "+ this.importInfoName + ":" + keyValue);
+			} else if(isResSkip(responseRec)){
+				log.info(Messages.getString("SettingTools.SkipSystemRole") + " : " + this.importInfoName + ":" + keyValue);
+			} else {
+				log.warn(Messages.getString("SettingTools.ImportFailed") + " : "+ this.importInfoName + ":" + keyValue + " : "
+						+ HinemosMessage.replace(getRestExceptionMessage(responseRec)));
+			}
+		}
 	}
 }

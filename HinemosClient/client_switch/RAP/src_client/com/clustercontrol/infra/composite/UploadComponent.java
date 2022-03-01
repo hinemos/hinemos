@@ -96,10 +96,14 @@ public class UploadComponent{
 		fileUpload.addSelectionListener(new SelectionAdapter(){
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				FileUpload fileUpload = (FileUpload) e.widget;
+				if (fileUpload.getFileName() == null) {
+					return;
+				}
+
 				// Cleanup the temporary file at first
 				cleanup();
 
-				FileUpload fileUpload = (FileUpload) e.widget;
 				m_fileName.setText(fileUpload.getFileName());
 
 				UploadComponent.this.setBusy();
@@ -180,11 +184,17 @@ public class UploadComponent{
 	}
 
 	private void setFree(){
+		if(fileUpload.isDisposed()) {
+			// キャンセルや×ボタンでダイアログが閉じられた場合、既にdisposeされている
+			return;
+		}
 		fileUpload.getDisplay().asyncExec( new Runnable() {
 			@Override
 			public void run() {
-				fileUpload.setEnabled( true );
-				fileUpload.setText( "..." );
+				if (!fileUpload.isDisposed()) {
+					fileUpload.setEnabled( true );
+					fileUpload.setText( "..." );
+				}
 			}
 		});
 	}
@@ -193,7 +203,9 @@ public class UploadComponent{
 		fileUpload.getDisplay().asyncExec( new Runnable() {
 			@Override
 			public void run() {
-				fileUpload.setText( precentageText );
+				if (!fileUpload.isDisposed()) {
+					fileUpload.setText( precentageText );
+				}
 			}
 		});
 	}

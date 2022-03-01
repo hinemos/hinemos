@@ -37,6 +37,8 @@ import com.clustercontrol.performance.monitor.factory.RunMonitorPerformance;
 import com.clustercontrol.ping.factory.RunMonitorPing;
 import com.clustercontrol.port.factory.RunMonitorPort;
 import com.clustercontrol.process.factory.RunMonitorProcess;
+import com.clustercontrol.sdml.util.SdmlUtil;
+import com.clustercontrol.rpa.monitor.factory.RunMonitorRpaManagementToolService;
 import com.clustercontrol.snmp.factory.RunMonitorSnmp;
 import com.clustercontrol.snmp.factory.RunMonitorSnmpString;
 import com.clustercontrol.sql.factory.RunMonitorSql;
@@ -189,6 +191,10 @@ public class MonitorRunManagementBean {
 				runMonitor = new RunMonitorIntegration();
 				break;
 				
+			case HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE:
+				runMonitor = new RunMonitorRpaManagementToolService();
+				break;
+
 			case HinemosModuleConstant.MONITOR_LOGFILE:
 			case HinemosModuleConstant.MONITOR_BINARYFILE_BIN:
 			case HinemosModuleConstant.MONITOR_PCAP_BIN:
@@ -201,6 +207,8 @@ public class MonitorRunManagementBean {
 			case HinemosModuleConstant.MONITOR_WINEVENT:
 			case HinemosModuleConstant.MONITOR_CUSTOMTRAP_N:
 			case HinemosModuleConstant.MONITOR_CUSTOMTRAP_S:
+			case HinemosModuleConstant.MONITOR_RPA_LOGFILE:
+			case HinemosModuleConstant.MONITOR_CLOUD_LOG:
 				// 本来呼び出すべきではない
 				break;
 				
@@ -336,6 +344,8 @@ public class MonitorRunManagementBean {
 			case HinemosModuleConstant.MONITOR_CUSTOM_S:
 			case HinemosModuleConstant.MONITOR_WINEVENT:
 			case HinemosModuleConstant.MONITOR_CORRELATION:
+			case HinemosModuleConstant.MONITOR_RPA_LOGFILE:
+			case HinemosModuleConstant.MONITOR_CLOUD_LOG:
 				// 本来呼び出すべきではない
 				break;
 				
@@ -374,6 +384,11 @@ public class MonitorRunManagementBean {
 				notifyInfoList = runMonitor.runMonitorAggregateByNode(monitorTypeId, facilityId);
 			} else {
 				throw new NullPointerException("runMonitor is null");
+			}
+
+			if (SdmlUtil.isCreatedBySdml(runMonitor.getMonitorInfo())) {
+				// SDML監視種別の場合プラグインIDを置き換える
+				SdmlUtil.replacePluginId(runMonitor.getMonitorInfo(), notifyInfoList);
 			}
 
 			// 通知設定

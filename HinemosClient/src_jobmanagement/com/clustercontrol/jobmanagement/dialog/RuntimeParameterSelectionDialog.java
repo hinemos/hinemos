@@ -23,6 +23,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import org.openapitools.client.model.JobRuntimeParamDetailResponse;
+
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -32,7 +34,6 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobRuntimeParamDetail;
 
 /**
  * ジョブ実行契機 ランタイムジョブ変数選択候補ダイアログクラスです。
@@ -48,10 +49,10 @@ public class RuntimeParameterSelectionDialog extends CommonDialog {
 	private Button m_chkDefaultValue = null;
 
 	/** ランタイムジョブ変数詳細情報 */
-	private JobRuntimeParamDetail m_jobRuntimeParamDetail = null;
+	private JobRuntimeParamDetailResponse m_jobRuntimeParamDetail = null;
 
 	/** ランタイムジョブ変数詳細情報リスト */
-	private List<JobRuntimeParamDetail> m_parentJobRuntimeParamDetailList = null;
+	private List<JobRuntimeParamDetailResponse> m_parentJobRuntimeParamDetailList = null;
 
 	/** デフォルト値選択有無 */
 	private Boolean m_defaultValueSelect = false;
@@ -64,8 +65,8 @@ public class RuntimeParameterSelectionDialog extends CommonDialog {
 	 */
 	public RuntimeParameterSelectionDialog(
 			Shell parent,
-			List<JobRuntimeParamDetail> parentJobRuntimeParamDetailList,
-			JobRuntimeParamDetail jobRuntimeParamDetail,
+			List<JobRuntimeParamDetailResponse> parentJobRuntimeParamDetailList,
+			JobRuntimeParamDetailResponse jobRuntimeParamDetail,
 			Boolean defaultValueSelect){
 		super(parent);
 		this.m_jobRuntimeParamDetail = jobRuntimeParamDetail;
@@ -82,8 +83,8 @@ public class RuntimeParameterSelectionDialog extends CommonDialog {
 	 */
 	public RuntimeParameterSelectionDialog(
 			Shell parent,
-			List<JobRuntimeParamDetail> parentJobRuntimeParamDetailList,
-			JobRuntimeParamDetail jobRuntimeParamDetail){
+			List<JobRuntimeParamDetailResponse> parentJobRuntimeParamDetailList,
+			JobRuntimeParamDetailResponse jobRuntimeParamDetail){
 		super(parent);
 		this.m_jobRuntimeParamDetail = jobRuntimeParamDetail;
 		this.m_parentJobRuntimeParamDetailList = parentJobRuntimeParamDetailList;
@@ -245,7 +246,7 @@ public class RuntimeParameterSelectionDialog extends CommonDialog {
 
 		if (this.m_jobRuntimeParamDetail == null) {
 			// 新規作成
-			this.m_jobRuntimeParamDetail = new JobRuntimeParamDetail();
+			this.m_jobRuntimeParamDetail = new JobRuntimeParamDetailResponse();
 		}
 
 		// 値
@@ -294,7 +295,7 @@ public class RuntimeParameterSelectionDialog extends CommonDialog {
 	 *
 	 * @return ジョブ変数情報
 	 */
-	public JobRuntimeParamDetail getInputData() {
+	public JobRuntimeParamDetailResponse getInputData() {
 		return this.m_jobRuntimeParamDetail;
 	}
 
@@ -333,7 +334,7 @@ public class RuntimeParameterSelectionDialog extends CommonDialog {
 		if (oldValue != null && oldValue.equals(newValue)) {
 			// キーに変更がない場合は処理終了
 		}
-		for (JobRuntimeParamDetail jobRuntimeParamDetail 
+		for (JobRuntimeParamDetailResponse jobRuntimeParamDetail 
 				: this.m_parentJobRuntimeParamDetailList) {
 			if (oldValue != null && jobRuntimeParamDetail.getParamValue().equals(oldValue)) {
 				continue;

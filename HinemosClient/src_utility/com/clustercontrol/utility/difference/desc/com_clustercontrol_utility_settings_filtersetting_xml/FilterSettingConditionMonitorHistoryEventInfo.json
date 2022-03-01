@@ -1,0 +1,160 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"priorityCritical",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_priorityCritical"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"priorityWarning",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_priorityWarning"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"priorityInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_priorityInfo"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"priorityUnknown",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_priorityUnknown"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"generationDateFrom",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_generationDateFrom"}
+	]},
+	
+	{
+	"propName":"generationDateTo",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_generationDateTo"}
+	]},
+	
+	{
+	"propName":"outputDateFrom",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_outputDateFrom"}
+	]},
+	
+	{
+	"propName":"outputDateTo",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_outputDateTo"}
+	]},
+	
+	{
+	"propName":"monitorId",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_monitorId"}
+	]},
+	
+	{
+	"propName":"monitorDetail",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_monitorDetail"}
+	]},
+	
+	{
+	"propName":"application",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_application"}
+	]},
+	
+	{
+	"propName":"message",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_message"}
+	]},
+	
+	{
+	"propName":"confirmYet",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_confirmYet"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"confirmDoing",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_confirmDoing"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"confirmDone",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_confirmDone"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"confirmUser",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_confirmUser"}
+	]},
+	
+	{
+	"propName":"comment",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_comment"}
+	]},
+	
+	{
+	"propName":"commentUser",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_commentUser"}
+	]},
+	
+	{
+	"propName":"graphFlag",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_graphFlag"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"notifyUUID",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_notifyUUID"}
+	]},
+	
+	{
+	"propName":"userItems",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"key"},
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_userItems"},
+		{"type":"Ignore", "propNames":["key"]}
+	]},
+	
+	{
+	"propName":"positionFrom",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_positionFrom"}
+	]},
+	
+	{
+	"propName":"positionTo",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_positionTo"}
+	]}
+]
+}

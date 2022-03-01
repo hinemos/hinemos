@@ -20,10 +20,10 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブコピーするクライアント側アクションクラス<BR>
@@ -66,7 +66,7 @@ public class CopyJobAction extends AbstractHandler implements IElementUpdater{
 		if (viewPart instanceof JobListView) {
 			JobListView view = (JobListView)viewPart;
 
-			JobTreeItem copyItem = view.getSelectJobTreeItemList().get(0);
+			JobTreeItemWrapper copyItem = view.getSelectJobTreeItemList().get(0);
 			view.setCopyJobTreeItem(copyItem);
 		}
 		return null;
@@ -86,7 +86,7 @@ public class CopyJobAction extends AbstractHandler implements IElementUpdater{
 					// Enable button when 1 item is selected
 					JobListView view = (JobListView)part;
 					int size = view.getJobTreeComposite().getSelectItemList().size();
-					if(size != 1 || view.getDataType() == JobConstant.TYPE_COMPOSITE || view.getDataType() == JobConstant.TYPE_MANAGER){
+					if(size != 1 || view.getDataType() == JobInfoWrapper.TypeEnum.COMPOSITE || view.getDataType() == JobInfoWrapper.TypeEnum.MANAGER){
 						editEnable = false;
 					}
 				}

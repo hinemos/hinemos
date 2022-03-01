@@ -6,7 +6,7 @@
 // 改変者: NTT DATA INTELLILINK Corporation
 // 改変内容:
 //   - ビルドインのDateクラスを、DateWithOffsetで置き換えるようにした。
-//     それに伴い、オフセット値をコンストラクタの最後の引数ではなく、getGraphMessages()から取得するようにした。
+//     オフセット値はコンストラクタの最後の引数であるが、デフォルト値はgetGraphMessages()から取得する。
 //     Dateが提供していたstaticメソッドをカバーするため、とりあえずHinemosが使用している'now'のみ、実装を追加した。
 //   - 複数の引数を取るsetterに対応した。
 // 補足:
@@ -20,6 +20,12 @@
   var slice = Array.prototype.slice,
       MILLISECONDS_PER_MINUTE = 60 * 1000,
       OFFSET_SUFFIX = /(((GMT)?[\+\-]\d\d:?\d\d)|Z)(\s*\(.+\))?$/;
+  // タイムゾーンのオフセット最大値（分）
+  var OFFSET_MAX = 14 * 60;
+  // 年の最小値
+  var YEAR_MIN = 1900;
+  // 年の最大値（この値は含まない）
+  var YEAR_MAX = 3000;
 
   var dateOffset;
   
@@ -32,7 +38,9 @@
     if (isFunction(x.valueOf)) {
       x = x.valueOf();
     }
-    return isNumber(x);
+    if (!isNumber(x)) { return false; }
+    // タイムゾーンオフセット値か、時刻値かを判定する
+    return x <= OFFSET_MAX;
   }
 
   function applyOffset(date, offset) {
@@ -47,12 +55,16 @@
     if (args.length === 1 && isNumber(args[0]))       { return new OrgDate(args[0]); }
 
     if (args.length > 1) {
-      args[3] = args[3] || null;
-      args[4] = args[4] || null;
-      args[5] = args[5] || null;
-      args[6] = args[6] || null;
+      if (args.length === 2) {
+        date = new OrgDate(args[0], args[1]);
+      } else {
+        args[3] = args[3] || null;
+        args[4] = args[4] || null;
+        args[5] = args[5] || null;
+        args[6] = args[6] || null;
 
-      date = new OrgDate(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+        date = new OrgDate(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+      }
       return applyOffset( date, -date.getTimezoneOffset() - offset );
     }
 
@@ -79,16 +91,89 @@
     return 'GMT' + sign + hours + minutes;
   }
 
+  /**
+   * コンストラクタ
+   * 
+   * Dateのタイムゾーン拡張のため、引数最後にタイムゾーンオフセット(分)を任意で設定可能。
+   * それ以外の引数はDateとほぼ同じ。
+   * cf) https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Date/Date
+   * 以下の通り、引数の数、型、値で引数の種類を判定する。
+   *
+   * 引数パターン
+   * 引数0個）引数なし。現在日時設定を設定。タイムゾーンオフセットは、"mess-timezoneoffset"が設定されていればその値、されていなければローカルの値とする。
+   * 引数1個）タイムゾーンオフセット値（分）：数値かつ、<= 840(=14*60) の場合
+   *          時刻値（ミリ秒）：数値かつ、 > 840 の場合
+   *          タイムスタンプ文字列：文字列の場合
+   *          Dateオブジェクト：オブジェクトの場合
+   * 引数2個）独立した日付と時刻の成分の値2個（年、月）：第1引数が、数値かつ、>= 1900 かつ < 3000 の場合
+   *          時刻値、タイムゾーンのオフセット値（分）：第1引数が、数値かつ、< 1900 または >= 3000 の場合
+   *          タイムスタンプ文字列、タイムゾーンのオフセット値（分）
+   *          Dateオブジェクト、タイムゾーンのオフセット値（分）
+   * 引数3～7個）独立した日付と時刻の成分の値3～7個（年、月、日、時、分、秒、ミリ秒）
+   * 引数8個）独立した日付と時刻の成分の値7個（年、月、日、時、分、秒、ミリ秒）、タイムゾーンのオフセット値（分）
+   */
   function DateWithOffset() {
-        var args = slice.call(arguments, 0);
-    var offset = dateOffset;
-
-    if (offset === undefined) {
-      if (typeof getGraphMessages == "function") {
-        offset = dateOffset = getGraphMessages("mess-timezoneoffset") - 0;
-      } else {
-        offset = 0;
+    var args = slice.call(arguments, 0);
+    var aDate = new OrgDate();
+    var offset = - aDate.getTimezoneOffset();
+    if (dateOffset == null) {
+      if (typeof getGraphMessages == "function") {		// isFunction()を使うとエラー
+        dateOffset = getGraphMessages("mess-timezoneoffset") - 0;
       }
+    }
+
+    switch (arguments.length) {
+      case 0:
+          if (dateOffset != null) {
+            offset = dateOffset;
+          }
+        break;
+      case 1:
+        if (isOffset(args[0])) {
+          // タイムゾーンのオフセット値
+          offset = args.pop();
+        } else {
+          // 時刻値の場合
+          // タイムスタンプ文字列の場合
+          // Dateオブジェクトの場合
+          if (dateOffset != null) {
+            offset = dateOffset;
+          }
+        }
+        break;
+      case 2:
+        // 独立した日付と時刻の成分の値2個（年、月）の場合
+        if (isNumber(args[0]) && args[0] >= YEAR_MIN && args[0] < YEAR_MAX) {
+          if (dateOffset != null) {
+            offset = dateOffset;
+          }
+          break;
+        }
+        // 時刻値、タイムゾーンのオフセット値の場合
+        // タイムスタンプ文字列、タイムゾーンのオフセット値の場合
+        // Dateオブジェクト、タイムゾーンのオフセット値の場合
+        // 下へ続行
+      case 8:
+        // 独立した日付と時刻の成分の値7個、タイムゾーンのオフセット値の場合
+        offset = args.pop();
+        if (!isOffset(offset)) {
+          // offsetが異常
+          throw 'invalid offset.';
+        }
+        break;
+      case 3:
+      case 4:
+      case 5:
+      case 6:
+      case 7:
+        // 独立した日付と時刻の成分の値7個の場合
+        if (dateOffset != null) {
+          offset = dateOffset;
+        }
+        break;
+      default:
+        // 引数が異常
+        throw 'invalid arguments.';
     }
 
     this.setTime(buildDate(args, offset));

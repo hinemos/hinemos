@@ -14,18 +14,20 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.JobInfoResponse;
+
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
 import com.clustercontrol.bean.EndStatusColorConstant;
 import com.clustercontrol.bean.EndStatusMessage;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.notify.composite.NotifyIdListComposite;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
 
 /**
  * 通知先の指定タブ用のコンポジットクラスです。
@@ -44,7 +46,7 @@ public class NotificationsComposite extends Composite {
 	private Combo m_startPriority = null;
 	/** 通知ID */
 	private NotifyIdListComposite m_notifyId = null;
-	private JobInfo m_jobInfo = null;
+	private JobInfoWrapper m_jobInfo = null;
 
 	/** マネージャ名 */
 	private String managerName = null;
@@ -183,21 +185,18 @@ public class NotificationsComposite extends Composite {
 
 		if (this.m_jobInfo != null) {
 			if (m_jobInfo.getBeginPriority() != null) {
-				setSelectPriority(m_startPriority, m_jobInfo.getBeginPriority());
+				setSelectPriority(m_startPriority, m_jobInfo.getBeginPriority() , JobInfoResponse.BeginPriorityEnum.class );
 			}
 			if (m_jobInfo.getNormalPriority() != null) {
-				setSelectPriority(m_normalPriority, m_jobInfo.getNormalPriority());
+				setSelectPriority(m_normalPriority, m_jobInfo.getNormalPriority() , JobInfoResponse.NormalPriorityEnum.class );
 			}
 			if (m_jobInfo.getWarnPriority() != null) {
-				setSelectPriority(m_warningPriority, m_jobInfo.getWarnPriority());
+				setSelectPriority(m_warningPriority, m_jobInfo.getWarnPriority() , JobInfoResponse.WarnPriorityEnum.class );
 			}
 			if (m_jobInfo.getAbnormalPriority() != null) {
-				setSelectPriority(m_abnormalPriority,
-						m_jobInfo.getAbnormalPriority());
+				setSelectPriority(m_abnormalPriority,m_jobInfo.getAbnormalPriority() , JobInfoResponse.AbnormalPriorityEnum.class );
 			}
-
-			if (m_jobInfo.getNotifyRelationInfos() != null
-					&& m_jobInfo.getNotifyRelationInfos().size() > 0) {
+			if (m_jobInfo.getNotifyRelationInfos() != null) {
 				m_notifyId.setNotify(m_jobInfo.getNotifyRelationInfos());
 			}
 		}
@@ -208,7 +207,7 @@ public class NotificationsComposite extends Composite {
 	 *
 	 * @return ジョブ通知情報のリスト
 	 */
-	public JobInfo getJobInfo() {
+	public JobInfoWrapper getJobInfo() {
 		return m_jobInfo;
 	}
 
@@ -220,11 +219,11 @@ public class NotificationsComposite extends Composite {
 	 * @see com.clustercontrol.jobmanagement.bean.JobNotificationsInfo
 	 */
 	public ValidateResult createNotificationsInfo() {
-		m_jobInfo = new JobInfo();
-		m_jobInfo.setBeginPriority(getSelectPriority(m_startPriority));
-		m_jobInfo.setNormalPriority(getSelectPriority(m_normalPriority));
-		m_jobInfo.setWarnPriority(getSelectPriority(m_warningPriority));
-		m_jobInfo.setAbnormalPriority(getSelectPriority(m_abnormalPriority));
+		m_jobInfo = JobTreeItemUtil.createJobInfoWrapper();
+		m_jobInfo.setBeginPriority(PriorityMessage.stringToEnum(m_startPriority.getText(), JobInfoResponse.BeginPriorityEnum.class));
+		m_jobInfo.setNormalPriority(PriorityMessage.stringToEnum(m_normalPriority.getText(), JobInfoResponse.NormalPriorityEnum.class));
+		m_jobInfo.setWarnPriority(PriorityMessage.stringToEnum(m_warningPriority.getText(), JobInfoResponse.WarnPriorityEnum.class));
+		m_jobInfo.setAbnormalPriority(PriorityMessage.stringToEnum(m_abnormalPriority.getText(), JobInfoResponse.AbnormalPriorityEnum.class));
 		if (m_notifyId.getNotify() != null) {
 			m_jobInfo.getNotifyRelationInfos().addAll(m_notifyId.getNotify());
 		}
@@ -235,24 +234,12 @@ public class NotificationsComposite extends Composite {
 	 * 指定した重要度に該当する重要度用コンボボックスの項目を選択します。
 	 *
 	 * @param combo 重要度用コンボボックスのインスタンス
-	 * @param priority 重要度
+	 * @param priorityEnum 重要度
 	 *
 	 * @see com.clustercontrol.bean.PriorityConstant
 	 */
-	public void setSelectPriority(Combo combo, int priority) {
-		String select = "";
-
-		if (priority == PriorityConstant.TYPE_CRITICAL) {
-			select = PriorityMessage.STRING_CRITICAL;
-		} else if (priority == PriorityConstant.TYPE_WARNING) {
-			select = PriorityMessage.STRING_WARNING;
-		} else if (priority == PriorityConstant.TYPE_INFO) {
-			select = PriorityMessage.STRING_INFO;
-		} else if (priority == PriorityConstant.TYPE_UNKNOWN) {
-			select = PriorityMessage.STRING_UNKNOWN;
-		} else if (priority == PriorityConstant.TYPE_NONE) {
-			select = PriorityMessage.STRING_NONE;
-		}
+	public <T extends Enum<T>> void setSelectPriority(Combo combo, T priorityEnum, Class<T> enumType) {
+		String select = PriorityMessage.enumToString(priorityEnum,enumType);
 
 		combo.select(0);
 		for (int i = 0; i < combo.getItemCount(); i++) {
@@ -261,32 +248,6 @@ public class NotificationsComposite extends Composite {
 				break;
 			}
 		}
-	}
-
-	/**
-	 * 重要度用コンボボックスにて選択している重要度を取得します。
-	 *
-	 * @param combo 重要度用コンボボックスのインスタンス
-	 * @return 重要度
-	 *
-	 * @see com.clustercontrol.bean.PriorityConstant
-	 */
-	public int getSelectPriority(Combo combo) {
-		String select = combo.getText();
-
-		if (select.equals(PriorityMessage.STRING_CRITICAL)) {
-			return PriorityConstant.TYPE_CRITICAL;
-		} else if (select.equals(PriorityMessage.STRING_WARNING)) {
-			return PriorityConstant.TYPE_WARNING;
-		} else if (select.equals(PriorityMessage.STRING_INFO)) {
-			return PriorityConstant.TYPE_INFO;
-		} else if (select.equals(PriorityMessage.STRING_UNKNOWN)) {
-			return PriorityConstant.TYPE_UNKNOWN;
-		} else if (select.equals(PriorityMessage.STRING_NONE)) {
-			return PriorityConstant.TYPE_NONE;
-		}
-
-		return -1;
 	}
 
 	public NotifyIdListComposite getNotifyId() {
@@ -309,8 +270,7 @@ public class NotificationsComposite extends Composite {
 		m_notifyId.setButtonEnabled(enabled);
 	}
 
-	public void setJobInfo(JobInfo info) {
+	public void setJobInfo(JobInfoWrapper info) {
 		this.m_jobInfo = info;
 	}
-
 }

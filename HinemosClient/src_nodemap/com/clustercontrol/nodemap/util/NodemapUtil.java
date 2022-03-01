@@ -13,28 +13,31 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.GetNodeListRequest;
+import org.openapitools.client.model.NodeConfigFilterInfoRequest;
+import org.openapitools.client.model.NodeConfigFilterItemInfoRequest;
+
 import com.clustercontrol.repository.bean.NodeConfigFilterDataType;
 import com.clustercontrol.repository.bean.NodeConfigFilterItem;
 import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
-import com.clustercontrol.ws.repository.NodeConfigFilterInfo;
-import com.clustercontrol.ws.repository.NodeConfigFilterItemInfo;
-import com.clustercontrol.ws.repository.NodeInfo;
 
 /**
  * ノードマップのUtilityクラス
  *
  */
 public class NodemapUtil {
-
+	private static Log m_log = LogFactory.getLog(NodemapUtil.class);
 	/**
 	 * 検索条件文字列を作成
 	 *
 	 * @param nodeFilterInfo 構成情報検索条件
 	 * @return 検索条件文字列
 	 */
-	public static String createConditionString(NodeInfo nodeFilterInfo){
+	public static String createConditionString(GetNodeListRequest nodeFilterInfo){
 		if (nodeFilterInfo == null) {
 			return "";
 		}
@@ -46,39 +49,56 @@ public class NodemapUtil {
 		List<String> conditionDetailList = new ArrayList<>();
 		// 対象日時
 		if (nodeFilterInfo.getNodeConfigTargetDatetime() != null
-				&& nodeFilterInfo.getNodeConfigTargetDatetime() != 0L) {
-			conditionList.add(String.format("%s=%s", Messages.getString("target.datetime"), 
-					sdf.format(new Date(nodeFilterInfo.getNodeConfigTargetDatetime()))));
+				&& !nodeFilterInfo.getNodeConfigTargetDatetime().equals("")) {
+			try {
+				conditionList.add(String.format("%s=%s", Messages.getString("target.datetime"), 
+						sdf.format(TimezoneUtil.getSimpleDateFormat().parse(nodeFilterInfo.getNodeConfigTargetDatetime()))));
+			} catch (Exception e) {
+				//findbugs対応 エラーは発生しない想定なので本来不要だが Exception無視と思われないようtraceログの出力を追加
+				m_log.trace("createConditionString : exception occuered",e);
+			}
 		}
 		if (nodeFilterInfo.getNodeConfigFilterList() != null
 				&& nodeFilterInfo.getNodeConfigFilterList().size() > 0) {
 			// 各種条件
-			for (NodeConfigFilterInfo nodeConfigFilterInfo : nodeFilterInfo.getNodeConfigFilterList()) {
+			for (NodeConfigFilterInfoRequest nodeConfigFilterInfo : nodeFilterInfo.getNodeConfigFilterList()) {
 				if (nodeConfigFilterInfo.getItemList() == null 
 						|| nodeConfigFilterInfo.getItemList().size() == 0) {
 					continue;
 				}
-				NodeConfigSettingItem settingItem = NodeConfigSettingItem.nameToType(nodeConfigFilterInfo.getNodeConfigSettingItemName());
+				NodeConfigSettingItem settingItem = NodeConfigSettingItem.nameToType(nodeConfigFilterInfo.getNodeConfigSettingItemName().getValue());
 				List<String> list = new ArrayList<>();
-				for (NodeConfigFilterItemInfo itemInfo : nodeConfigFilterInfo.getItemList()) {
-					if (itemInfo.getItemName() == null || itemInfo.getItemName().isEmpty()
-							|| itemInfo.getMethod() == null || itemInfo.getMethod().isEmpty()
-							|| itemInfo.getItemValue() == null
-							|| (itemInfo.getItemValue() instanceof String && ((String)itemInfo.getItemValue()).isEmpty())) {
+				for (NodeConfigFilterItemInfoRequest itemInfo : nodeConfigFilterInfo.getItemList()) {
+					if (itemInfo.getItemName() == null || itemInfo.getMethod() == null || itemInfo.getMethod().isEmpty()) {
 						continue;
 					}
-					NodeConfigFilterItem filterItem = NodeConfigFilterItem.valueOf(itemInfo.getItemName());
+					NodeConfigFilterItem filterItem = NodeConfigFilterItem.valueOf(itemInfo.getItemName().getValue());
 					Object objValue = "";
 					if (filterItem.dataType() == NodeConfigFilterDataType.DATETIME) {
-						objValue = sdf.format(new Date((Long)itemInfo.getItemValue()));
-					} else {
-						objValue = itemInfo.getItemValue();
+						if (itemInfo.getItemLongValue() == null) {
+							continue;
+						}
+						objValue = sdf.format(new Date(itemInfo.getItemLongValue()));
+					} else if (filterItem.dataType() == NodeConfigFilterDataType.INTEGER
+						|| filterItem.dataType() == NodeConfigFilterDataType.INTEGER_ONLYEQUAL) {
+						if (itemInfo.getItemIntegerValue() == null) {
+							continue;
+						}
+						objValue = itemInfo.getItemIntegerValue();
+
+					} else if (filterItem.dataType() == NodeConfigFilterDataType.STRING
+						|| filterItem.dataType() == NodeConfigFilterDataType.STRING_ONLYEQUAL
+						|| filterItem.dataType() == NodeConfigFilterDataType.STRING_VERSION) {
+						if (itemInfo.getItemStringValue() == null || itemInfo.getItemStringValue().isEmpty()) {
+							continue;
+						}
+						objValue = itemInfo.getItemStringValue();
 					}
 					list.add(String.format("%s%s%s", filterItem.displayName(), itemInfo.getMethod(), objValue));
 				}
 				if (list.size() > 0) {
 					String existsString = "";
-					if (nodeConfigFilterInfo.isExists()) {
+					if (nodeConfigFilterInfo.getExists()) {
 						existsString = Messages.getString("node.config.exits.condition.exists.output");
 					} else{
 						existsString = Messages.getString("node.config.exits.condition.notexists.output");
@@ -95,7 +115,7 @@ public class NodemapUtil {
 			if (conditionDetailList.size() > 0) {
 				// AND/OR
 				String andOr = "";
-				if (nodeFilterInfo.isNodeConfigFilterIsAnd()) {
+				if (nodeFilterInfo.getNodeConfigFilterIsAnd()) {
 					andOr = "AND";
 				} else {
 					andOr = "OR";

@@ -30,20 +30,21 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.ReplaceSystemPrivilegeWithRoleRequest;
+import org.openapitools.client.model.RoleInfoResponse;
+import org.openapitools.client.model.SystemPrivilegeInfoRequestP1;
+import org.openapitools.client.model.SystemPrivilegeInfoResponse;
 
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.accesscontrol.util.SystemPrivilegePropertyUtil;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.UnEditableRole;
+import com.clustercontrol.fault.UserDuplicate;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.InvalidSetting_Exception;
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.access.SystemPrivilegeInfo;
-import com.clustercontrol.ws.access.UnEditableRole_Exception;
-import com.clustercontrol.ws.access.UserDuplicate_Exception;
 
 /**
  * アカウント[システム権限設定]ダイアログクラスです。
@@ -90,7 +91,7 @@ public class SystemPrivilegeDialog extends CommonDialog {
 	public static final int WIDTH_TEXT = 10;
 
 	/** 入力値を保持するオブジェクト。 */
-	private RoleInfo inputData = null;
+	private RoleInfoResponse inputData = null;
 
 	/**
 	 * コンストラクタ
@@ -128,12 +129,12 @@ public class SystemPrivilegeDialog extends CommonDialog {
 		//itemから、KEYを生成して、テーブルにソート優先順位の指定別に格納
 		for (String value : items) {
 			//画面表示の文言別に、KEY用のKEY項目を作成する。
-			SystemPrivilegeInfo systemPrivilegeInfo = SystemPrivilegePropertyUtil.getFunctionPrivilege(managerName, value);
+			SystemPrivilegeInfoResponse systemPrivilegeInfo = SystemPrivilegePropertyUtil.getFunctionPrivilege(managerName, value);
 			String func = "";
 			String priv = "";
 			if (systemPrivilegeInfo != null) {
-				func = systemPrivilegeInfo.getSystemFunction();
-				priv = systemPrivilegeInfo.getSystemPrivilege();
+				func = systemPrivilegeInfo.getSystemFunction().getValue();
+				priv = systemPrivilegeInfo.getSystemPrivilege().getValue();
 			}
 			String key = "";
 			if (sortOrder) {
@@ -169,11 +170,11 @@ public class SystemPrivilegeDialog extends CommonDialog {
 				.getString("dialog.accesscontrol.system.privilege.setting"));
 
 		// ロール情報の取得
-		RoleInfo info = null;
+		RoleInfoResponse info = null;
 		try {
-			AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(this.managerName);
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(this.managerName);
 			info = wrapper.getRoleInfo(this.roleId);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 			throw new InternalError(e.getMessage());
@@ -182,7 +183,7 @@ public class SystemPrivilegeDialog extends CommonDialog {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 			throw new InternalError(e.getMessage());
 		}
 
@@ -408,14 +409,18 @@ public class SystemPrivilegeDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		RoleInfo roleInfo = this.inputData;
+		RoleInfoResponse roleInfo = this.inputData;
 		if(roleInfo == null){
 			return result;
 		}
 
 		try {
-			AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(this.managerName);
-			wrapper.replaceSystemPrivilegeRole(this.roleId, roleInfo.getSystemPrivilegeList());
+			ReplaceSystemPrivilegeWithRoleRequest param = new ReplaceSystemPrivilegeWithRoleRequest();
+			java.util.List<SystemPrivilegeInfoRequestP1> infoList = convertSystemPrivilegeResToReq(roleInfo.getSystemPrivilegeList());
+			param.setSystemPrivilegeList(infoList);
+
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(this.managerName);
+			wrapper.replaceSystemPrivilegeWithRole(this.roleId, param);
 			result = true;
 
 			Object[] arg = {this.managerName};
@@ -425,17 +430,7 @@ public class SystemPrivilegeDialog extends CommonDialog {
 					Messages.getString("successful"),
 					Messages.getString("message.accesscontrol.47", arg));
 
-		} catch (UserDuplicate_Exception e) {
-			//ロールID取得
-			String args[] = { roleInfo.getRoleId() };
-
-			// ロールIDが重複している場合、エラーダイアログを表示する
-			MessageDialog.openInformation(
-					null,
-					Messages.getString("message"),
-					Messages.getString("message.accesscontrol.48", args));
-
-		} catch (InvalidSetting_Exception e) {
+		} catch (InvalidSetting e) {
 			// 「リポジトリ - 参照」が登録するシステム権限に含まれていない
 			String args[] = {
 					Messages.getString("system_privilege.function.repository", Locale.getDefault()) 
@@ -447,19 +442,18 @@ public class SystemPrivilegeDialog extends CommonDialog {
 					Messages.getString("message"),
 					Messages.getString("message.accesscontrol.51", args));
 
-
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				// 権限なし
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
-			} else if (e instanceof UnEditableRole_Exception) {
+			} else if (e instanceof UnEditableRole) {
 				// システム権限の変更なロールの場合はエラー（ADMINISTRATORS）
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.44"));
 			} else {
-				errMessage = ", " + HinemosMessage.replace(e.getMessage());
+				errMessage = ", " + e.getMessage();
 			}
 			MessageDialog.openError(
 					null,
@@ -477,33 +471,33 @@ public class SystemPrivilegeDialog extends CommonDialog {
 	 *
 	 * @param roleInfo 設定値として用いるロール情報
 	 */
-	protected void setInputData(String managerName, RoleInfo roleInfo) {
+	protected void setInputData(String managerName, RoleInfoResponse roleInfo) {
 
 		this.inputData = roleInfo;
 
 		// 各項目に反映
 
 		java.util.List<String> allSystemPrivilegeList = null;
-		java.util.List<SystemPrivilegeInfo> roleSystemPrivilegeKeyList = null;
+		java.util.List<SystemPrivilegeInfoResponse> roleSystemPrivilegeKeyList = null;
 		// 全システム権限を取得
 		allSystemPrivilegeList = SystemPrivilegePropertyUtil.getSystemPrivilegeNameList(managerName);
 		java.util.Collections.sort(allSystemPrivilegeList);
 		// 付与システム権限を取得
 		try {
-			AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 			roleSystemPrivilegeKeyList = wrapper.getSystemPrivilegeInfoListByRoleId(roleId);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 			throw new InternalError(e.getMessage());
 		} catch (Exception e) {
 			// 上記以外の例外
-			m_log.warn("getOwnUserList(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("getOwnUserList(), " + e.getMessage(), e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 			throw new InternalError(e.getMessage());
 		}
 		java.util.List<String> roleSystemPrivilegeValueList
@@ -524,10 +518,10 @@ public class SystemPrivilegeDialog extends CommonDialog {
 	 *
 	 * @return ロール情報
 	 */
-	private RoleInfo createInputData() {
-		RoleInfo info = this.inputData;
+	private RoleInfoResponse createInputData() {
+		RoleInfoResponse info = this.inputData;
 
-		java.util.List<SystemPrivilegeInfo> roleSystemPrivilegeList = info.getSystemPrivilegeList();
+		java.util.List<SystemPrivilegeInfoResponse> roleSystemPrivilegeList = info.getSystemPrivilegeList();
 		roleSystemPrivilegeList.clear();
 		if (this.listRoleSystemPrivilege.getItemCount() > 0) {
 			roleSystemPrivilegeList.addAll(getSystemPrivilegeKeyList(Arrays.asList(this.listRoleSystemPrivilege.getItems())));
@@ -585,10 +579,10 @@ public class SystemPrivilegeDialog extends CommonDialog {
 	 * @param beforeList 表示名称リスト
 	 * @return システム権限リスト
 	 */
-	private java.util.List<SystemPrivilegeInfo> getSystemPrivilegeKeyList(java.util.List<String> beforeList) {
-		java.util.List<SystemPrivilegeInfo> afterList = new ArrayList<SystemPrivilegeInfo>();
+	private java.util.List<SystemPrivilegeInfoResponse> getSystemPrivilegeKeyList(java.util.List<String> beforeList) {
+		java.util.List<SystemPrivilegeInfoResponse> afterList = new ArrayList<SystemPrivilegeInfoResponse>();
 		for (String beforeStr : beforeList) {
-			SystemPrivilegeInfo info = SystemPrivilegePropertyUtil.getFunctionPrivilege(managerName, beforeStr);
+			SystemPrivilegeInfoResponse info = SystemPrivilegePropertyUtil.getFunctionPrivilege(managerName, beforeStr);
 			// 画面変更前の仮対応
 			if (info != null) {
 				afterList.add(info);
@@ -603,11 +597,31 @@ public class SystemPrivilegeDialog extends CommonDialog {
 	 * @param beforeList システム権限リスト
 	 * @return 表示名称リスト
 	 */
-	private java.util.List<String> getSystemPrivilegeValueList(java.util.List<SystemPrivilegeInfo> beforeList) {
+	private java.util.List<String> getSystemPrivilegeValueList(java.util.List<SystemPrivilegeInfoResponse> beforeList) {
 		java.util.List<String> afterList = new ArrayList<String>();
-		for (SystemPrivilegeInfo systemPrivilegeInfo : beforeList) {
+		for (SystemPrivilegeInfoResponse systemPrivilegeInfo : beforeList) {
 			afterList.add(SystemPrivilegePropertyUtil.getSystemPrivilegeName(managerName, systemPrivilegeInfo));
 		}
 		return afterList;
 	}
+
+	/**
+	 * システム権限リスト(Response)からシステム権限リスト(Request)を返す
+	 *
+	 * @param beforeList システム権限リスト(Response)
+	 * @return システム権限リスト(Request)
+	 */
+	private java.util.List<SystemPrivilegeInfoRequestP1> convertSystemPrivilegeResToReq(java.util.List<SystemPrivilegeInfoResponse> beforeList) {
+		java.util.List<SystemPrivilegeInfoRequestP1> afterList = new ArrayList<SystemPrivilegeInfoRequestP1>();
+		for (SystemPrivilegeInfoResponse systemPrivilegeInfo : beforeList) {
+			SystemPrivilegeInfoRequestP1 convRec = new SystemPrivilegeInfoRequestP1();
+			convRec.setSystemFunction(SystemPrivilegeInfoRequestP1.SystemFunctionEnum
+					.fromValue(systemPrivilegeInfo.getSystemFunction().getValue()));
+			convRec.setSystemPrivilege(SystemPrivilegeInfoRequestP1.SystemPrivilegeEnum
+					.fromValue(systemPrivilegeInfo.getSystemPrivilege().getValue()));
+			afterList.add(convRec);
+		}
+		return afterList;
+	}
+
 }

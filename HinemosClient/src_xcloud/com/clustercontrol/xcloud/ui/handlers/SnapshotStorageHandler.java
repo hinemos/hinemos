@@ -16,22 +16,24 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.CreateStorageSnapshotRequest;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.CreateStorageSnapshotRequest;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.CloudOptionExtension;
 import com.clustercontrol.xcloud.model.cloud.IStorage;
 import com.clustercontrol.xcloud.ui.dialogs.SnapshotDialog;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 public class SnapshotStorageHandler extends AbstractCloudOptionHandler implements CloudStringConstants {
 
 	@Override
-	public Object internalExecute(ExecutionEvent event) throws ExecutionException, CloudManagerException, InvalidRole_Exception, InvalidUserPass_Exception {
+	public Object internalExecute(ExecutionEvent event) throws ExecutionException, CloudManagerException, InvalidUserPass, InvalidRole, RestConnectFailed, HinemosUnknown {
 		IStructuredSelection selection = (IStructuredSelection)HandlerUtil.getActiveSite(event).getSelectionProvider().getSelection();
 		final IStorage storage = (IStorage)selection.getFirstElement();
 
@@ -51,8 +53,9 @@ public class SnapshotStorageHandler extends AbstractCloudOptionHandler implement
 				request.setStorageId(storage.getId());
 				request.setName(dialog.getSnapshotName());
 				request.setDescription(dialog.getDescription());
-
-				CloudEndpoint endpoint = storage.getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
+				
+				String managerName = storage.getCloudScope().getCloudScopes().getHinemosManager().getManagerName();
+				CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
 				endpoint.snapshotStorage(storage.getCloudScope().getId(), storage.getLocation().getId(), request);
 
 				// 成功報告ダイアログを生成

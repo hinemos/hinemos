@@ -11,6 +11,7 @@ package com.clustercontrol.analytics.dialog;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,19 +30,27 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddLogcountMonitorRequest;
+import org.openapitools.client.model.GetMonitorStringTagListResponse;
+import org.openapitools.client.model.LogcountCheckInfoResponse;
+import org.openapitools.client.model.ModifyLogcountMonitorRequest;
+import org.openapitools.client.model.MonitorInfoBeanResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponseP1;
+import org.openapitools.client.model.MonitorNumericValueInfoRequest;
 
 import com.clustercontrol.analytics.util.AnalyticsUtil;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorNumericDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.LogcountCheckInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * ログ件数監視作成・変更ダイアログクラスです。
@@ -76,7 +85,7 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 	private Combo m_comboTag = null;
 
 	/** 対象監視設定マップ（監視設定ラベル, 監視設定) */
-	private Map<String, MonitorInfo> m_targetMonitorInfoMap = new HashMap<>();
+	private Map<String, MonitorInfoResponseP1> m_targetMonitorInfoMap = new HashMap<>();
 
 	// ----- コンストラクタ ----- //
 
@@ -342,17 +351,17 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getMonitor(monitorId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -403,7 +412,7 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 	 *            設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
@@ -412,17 +421,20 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 		setComboTargetMonitorId();
 
 		// チェック項目
-		LogcountCheckInfo collectLogCountCheckInfo = monitor.getLogcountCheckInfo();
+		LogcountCheckInfoResponse collectLogCountCheckInfo = monitor.getLogcountCheckInfo();
 		if (collectLogCountCheckInfo != null) {
 			if(collectLogCountCheckInfo.getTargetMonitorId() != null
 				&& !collectLogCountCheckInfo.getTargetMonitorId().isEmpty()) {
-				MonitorInfo targetMonitorInfo = null;
+				MonitorInfoResponseP1 targetMonitorInfo = null;
 	
 				// 対象監視設定取得
 				try {
-					MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-					targetMonitorInfo = wrapper.getMonitor(collectLogCountCheckInfo.getTargetMonitorId());
-				} catch (InvalidRole_Exception e) {
+					MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
+					MonitorInfoResponse info = wrapper.getMonitor(collectLogCountCheckInfo.getTargetMonitorId());
+					targetMonitorInfo = new MonitorInfoResponseP1();
+					RestClientBeanUtil.convertBean(info, targetMonitorInfo);
+					targetMonitorInfo.setMonitorType(MonitorInfoResponseP1.MonitorTypeEnum.fromValue(info.getMonitorType().getValue()));
+				} catch (InvalidRole e) {
 					// アクセス権なしの場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -447,7 +459,7 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 			}
 
 			// AND/OR
-			if (collectLogCountCheckInfo.isIsAnd()) {
+			if (collectLogCountCheckInfo.getIsAnd()) {
 				this.m_radioAnd.setSelection(true);
 				this.m_radioOr.setSelection(false);
 			} else {
@@ -477,17 +489,14 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		// 監視固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_LOGCOUNT);
-
 		// 監視条件 監視情報
-		LogcountCheckInfo collectLogCountCheckInfo = new LogcountCheckInfo();
+		LogcountCheckInfoResponse collectLogCountCheckInfo = new LogcountCheckInfoResponse();
 		if (this.m_comboTargetMonitorId.getText() != null) {
 			collectLogCountCheckInfo.setTargetMonitorId(getMonitorId(this.m_comboTargetMonitorId.getText()));
 		}
@@ -542,27 +551,37 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		if(info != null){
-			String[] args = { info.getMonitorId(), getManagerName() };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(getManagerName());
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if(result){
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddLogcountMonitorRequest info = new AddLogcountMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddLogcountMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					info.setPredictionMethod(AddLogcountMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.addLogcountMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorIdInvalid e) {
+					// 監視項目IDが不適切な場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.97", args));
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -570,7 +589,7 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 							Messages.getString("message.monitor.53", args));
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(
 								null,
@@ -587,25 +606,36 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if(result){
+					ModifyLogcountMonitorRequest info = new ModifyLogcountMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyLogcountMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(ModifyLogcountMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.modifyLogcountMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
@@ -624,18 +654,45 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 			return;
 		}
 		try {
-			MonitorSettingEndpointWrapper monitorSettingWrapper = MonitorSettingEndpointWrapper.getWrapper(this.getManagerName());
-			List<MonitorInfo> targetMonitorInfoList = monitorSettingWrapper.getMonitorListForLogcount(
+			MonitorsettingRestClientWrapper monitorSettingWrapper = MonitorsettingRestClientWrapper.getWrapper(this.getManagerName());
+			List<MonitorInfoBeanResponse> targetMonitorInfoList = monitorSettingWrapper.getStringAndTrapMonitorInfoList(
 					m_monitorBasic.getFacilityId(), this.m_monitorBasic.getOwnerRoleId());
 			if (targetMonitorInfoList == null) {
 				return;
 			}
-			for (MonitorInfo monitorInfo : targetMonitorInfoList) {
+			for (MonitorInfoBeanResponse monitorBeanInfo : targetMonitorInfoList) {
+				MonitorInfoResponseP1 monitorInfo = new MonitorInfoResponseP1();
+				RestClientBeanUtil.convertBean(monitorBeanInfo, monitorInfo);
+				// FIXME v.7.0不具合#5761
+				// 上記対応のため、あえてクラウドログ監視は監視対象外としている
+				if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CLOUD_LOG)) {
+					continue;
+				}
+				switch (monitorBeanInfo.getMonitorType()) {
+				case TRUTH:
+					monitorInfo.setMonitorType(MonitorInfoResponseP1.MonitorTypeEnum.TRUTH);
+					break;
+				case NUMERIC:
+					monitorInfo.setMonitorType(MonitorInfoResponseP1.MonitorTypeEnum.NUMERIC);
+					break;
+				case STRING:
+					monitorInfo.setMonitorType(MonitorInfoResponseP1.MonitorTypeEnum.STRING);
+					break;
+				case TRAP:
+					monitorInfo.setMonitorType(MonitorInfoResponseP1.MonitorTypeEnum.TRAP);
+					break;
+				case SCENARIO:
+					monitorInfo.setMonitorType(MonitorInfoResponseP1.MonitorTypeEnum.SCENARIO);
+					break;
+				case BINARY:
+					monitorInfo.setMonitorType(MonitorInfoResponseP1.MonitorTypeEnum.BINARY);
+					break;
+				}
 				String targetMonitorIdLabel = AnalyticsUtil.getMonitorIdLabel(monitorInfo);
 				m_targetMonitorInfoMap.put(targetMonitorIdLabel, monitorInfo);
 				m_comboTargetMonitorId.add(targetMonitorIdLabel);
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
@@ -661,14 +718,19 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 		}
 		try {
 			String monitorId = getMonitorId(this.m_comboTargetMonitorId.getText());
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(this.getManagerName());
-			List<String> aggregateList = wrapper.getMonitorStringTagList(monitorId, this.m_monitorBasic.getOwnerRoleId());
-			if (aggregateList != null && aggregateList.size() > 0) {
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(this.getManagerName());
+			
+			List<GetMonitorStringTagListResponse> tagList = wrapper.getMonitorStringTagList(monitorId, this.m_monitorBasic.getOwnerRoleId());
+			if (tagList != null && tagList.size() > 0) {
+				List<String> aggregateList = tagList
+					.stream()
+					.map(response -> response.getKey())
+					.collect(Collectors.toList());
 				for (String item : aggregateList) {
 					m_comboTag.add(item);
 				}
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
@@ -692,13 +754,13 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 	 * @see com.clustercontrol.dialog.CommonMonitorDialog#setInfoInitialValue()
 	 */
 	@Override
-	protected void setInfoInitialValue(MonitorInfo monitor) {
+	protected void setInfoInitialValue(MonitorInfoResponse monitor) {
 
 		super.setInfoInitialValue(monitor);
 
 		// 対象監視設定を取得する
 		
-		LogcountCheckInfo logcountCheckInfo = new LogcountCheckInfo();
+		LogcountCheckInfoResponse logcountCheckInfo = new LogcountCheckInfoResponse();
 		logcountCheckInfo.setIsAnd(true);
 		monitor.setLogcountCheckInfo(logcountCheckInfo);
 	}
@@ -711,7 +773,7 @@ public class LogcountCreateDialog extends CommonMonitorNumericDialog {
 	 * @return 監視項目ID
 	 */
 	private String getMonitorId(String monitorIdLabel) {
-		MonitorInfo monitorInfo = this.m_targetMonitorInfoMap.get(monitorIdLabel);
+		MonitorInfoResponseP1 monitorInfo = this.m_targetMonitorInfoMap.get(monitorIdLabel);
 		if (monitorInfo == null) {
 			return null;
 		} else {

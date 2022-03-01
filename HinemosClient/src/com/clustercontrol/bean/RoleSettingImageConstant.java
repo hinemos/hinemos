@@ -10,11 +10,11 @@ package com.clustercontrol.bean;
 
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
+import org.openapitools.client.model.RoleInfoResponse;
+import org.openapitools.client.model.UserInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.access.UserInfo;
 
 /**
  * ロールイメージ定数のクラス<BR>
@@ -41,14 +41,14 @@ public class RoleSettingImageConstant {
 		ImageRegistry registry = ClusterControlPlugin.getDefault()
 				.getImageRegistry();
 
-		if (data instanceof RoleInfo) {
-			if (((RoleInfo)data).getRoleId().equals(RoleSettingTreeConstant.ROOT_ID)) {
+		if (data instanceof RoleInfoResponse) {
+			if (((RoleInfoResponse)data).getRoleId().equals(RoleSettingTreeConstant.ROOT_ID)) {
 				if (root == null) {
 					root = registry.getDescriptor(
 							ClusterControlPlugin.IMG_ROLESETTING_ROOT).createImage();
 				}
 				return root;
-			} else if (((RoleInfo)data).getRoleId().equals(RoleSettingTreeConstant.MANAGER)) {
+			} else if (((RoleInfoResponse)data).getRoleId().equals(RoleSettingTreeConstant.MANAGER)) {
 					if (manager == null) {
 						manager = registry.getDescriptor(
 								ClusterControlPlugin.IMG_CONSOLE).createImage();
@@ -61,7 +61,7 @@ public class RoleSettingImageConstant {
 				}
 				return role;
 			}
-		} else if (data instanceof UserInfo) {
+		} else if (data instanceof UserInfoResponse) {
 			if (user == null) {
 				user = registry.getDescriptor(
 						ClusterControlPlugin.IMG_ROLESETTING_USER).createImage();

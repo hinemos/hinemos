@@ -22,18 +22,25 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.snmp4j.CommunityTarget;
+import org.snmp4j.MessageDispatcher;
+import org.snmp4j.MessageDispatcherImpl;
 import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.Target;
 import org.snmp4j.UserTarget;
 import org.snmp4j.mp.MPv3;
 import org.snmp4j.mp.SnmpConstants;
+import org.snmp4j.security.AuthHMAC128SHA224;
+import org.snmp4j.security.AuthHMAC192SHA256;
+import org.snmp4j.security.AuthHMAC256SHA384;
+import org.snmp4j.security.AuthHMAC384SHA512;
 import org.snmp4j.security.AuthMD5;
 import org.snmp4j.security.AuthSHA;
 import org.snmp4j.security.PrivAES128;
+import org.snmp4j.security.PrivAES192;
+import org.snmp4j.security.PrivAES256;
 import org.snmp4j.security.PrivDES;
 import org.snmp4j.security.SecurityLevel;
-import org.snmp4j.security.SecurityModels;
 import org.snmp4j.security.SecurityProtocols;
 import org.snmp4j.security.USM;
 import org.snmp4j.security.UsmUser;
@@ -219,6 +226,13 @@ public class Snmp4jPollerImpl {
 				}
 			}
 			if (errorFlag) {
+				// 何らかのエラーがある場合、全OIDについて失敗した情報を格納する
+				dataTable = new DataTable();
+				for (final String oid : oidSet) {
+					final String entryOid = getEntryKey(oid) +".0";
+					dataTable.putValue(new TableEntry(entryOid, HinemosTime.currentTimeMillis(),
+							ErrorType.RESPONSE_NOT_FOUND, new SnmpResponseError(MessageConstant.MESSAGE_COULD_NOT_GET_VALUE.getMessage())));
+				}
 				log.warn("reach max retry(" + maxRetry + ")");
 			}
 		} catch (IOException e) {
@@ -311,16 +325,16 @@ public class Snmp4jPollerImpl {
 	}
 
 	private DefaultPDUFactory createPduFactory(Set<String> oids, int version) {
-		DefaultPDUFactory factory = new DefaultPDUFactory();
+		DefaultPDUFactory factory;
 		
 		// SNMPv1以外のプロセス監視の場合はBULK
 		if (isProcessOidList(oids) && version != SnmpConstants.version1) {
-			factory.setPduType(PDU.GETBULK);
+			factory = new DefaultPDUFactory(PDU.GETBULK);
 			factory.setMaxRepetitions(maxRepetitions);
 			factory.setNonRepeaters(nonRepeaters);
 		//　それ以外の場合はv4.1踏襲のGETNEXT
 		}else{
-			factory.setPduType(PDU.GETNEXT);
+			factory = new DefaultPDUFactory(PDU.GETNEXT);
 		}
 		return factory;
 	}
@@ -333,22 +347,52 @@ public class Snmp4jPollerImpl {
 
 	public Snmp createV3Snmp(String securityLevel, String user, String authPassword, 
 			String privPassword, String authProtocol, String privProtocol) throws IOException {
-		Snmp snmp = new Snmp(new UdpTransportMappingImpl());
 
-		OctetString securityName = new OctetString(user);
 		USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
-		SecurityModels.getInstance().addSecurityModel(usm);
+		MessageDispatcher md = new MessageDispatcherImpl();
+		md.addMessageProcessingModel(new MPv3(usm));
+		Snmp snmp = new Snmp(md, new UdpTransportMappingImpl());
 
-		OID authProtocolOid = AuthMD5.ID;
-		if (SnmpProtocolConstant.SHA.equals(authProtocol)) {
+		OID authProtocolOid;
+		switch (authProtocol) {
+		case SnmpProtocolConstant.SHA:
 			authProtocolOid = AuthSHA.ID;
+			break;
+		case SnmpProtocolConstant.SHA224:
+			authProtocolOid = AuthHMAC128SHA224.ID;
+			break;
+		case SnmpProtocolConstant.SHA256:
+			authProtocolOid = AuthHMAC192SHA256.ID;
+			break;
+		case SnmpProtocolConstant.SHA384:
+			authProtocolOid = AuthHMAC256SHA384.ID;
+			break;
+		case SnmpProtocolConstant.SHA512:
+			authProtocolOid = AuthHMAC384SHA512.ID;
+			break;
+		default:
+			authProtocolOid = AuthMD5.ID;
+			break;
 		}
-		OID privProtocolOid = PrivDES.ID;
-		if (SnmpProtocolConstant.AES.equals(privProtocol)) {
+
+		OID privProtocolOid;
+		switch (privProtocol) {
+		case SnmpProtocolConstant.AES:
 			privProtocolOid = PrivAES128.ID;
+			break;
+		case SnmpProtocolConstant.AES192:
+			privProtocolOid = PrivAES192.ID;
+			break;
+		case SnmpProtocolConstant.AES256:
+			privProtocolOid = PrivAES256.ID;
+			break;
+		default:
+			privProtocolOid = PrivDES.ID;
+			break;
 		}
 
 		UsmUser usmUser;
+		OctetString securityName = new OctetString(user);
 		if (convertSecurityLevelToInt(securityLevel) == SecurityLevel.NOAUTH_NOPRIV) {
 			usmUser = new UsmUser(securityName, null, null, null, null);
 		} else if (convertSecurityLevelToInt(securityLevel) == SecurityLevel.AUTH_NOPRIV) {

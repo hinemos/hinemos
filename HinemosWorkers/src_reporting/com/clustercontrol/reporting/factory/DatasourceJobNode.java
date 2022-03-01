@@ -56,7 +56,7 @@ public class DatasourceJobNode extends DatasourceBase {
 			throw new ReportingPropertyNotFound(SUFFIX_KEY_VALUE+"."+num + " is not defined.");
 		}
 		String suffix = m_propertiesMap.get(SUFFIX_KEY_VALUE+"."+num);		
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		
 		String jobUnitRegex = isDefine(JOB_UNIT_REGEX+"."+num, "%%");		
 		String jobIdRegex = isDefine(JOB_ID_REGEX+"."+num, "%%");
@@ -69,7 +69,7 @@ public class DatasourceJobNode extends DatasourceBase {
 				"session_id", "jobunit_id", "job_id", "status",
 				"start_date", "end_date", "end_value", "job_series", "end_status",
 				"status_str", "end_status_str", "jobunit_label", "job_label", "message" };
-		String columnsStr = ReportUtil.joinStrings(columns, ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 
 		int rows = 0;
 
@@ -145,23 +145,20 @@ public class DatasourceJobNode extends DatasourceBase {
 						String rootJobLabel = rootjobId + " (" + rootjob_name + ")";
 						rootJobLabel = (rootJobLabel.length() <= maxLength ? rootJobLabel :
 							rootJobLabel.substring(0, maxLength) + "...");
-						rootJobLabel = '"' + rootJobLabel.replace("\"", "\"\"") + '"';
 						String jobLabel = jobId + " (" + jobName + ")";
 						jobLabel = (jobLabel.length() <= maxLength ? jobLabel :
 							jobLabel.substring(0, maxLength) + "...");
-						jobLabel = '"' + jobLabel.replace("\"", "\"\"") + '"';
 						
 						message = (message.length() <= maxLength ? message :
 							message.substring(0, maxLength) + "...");
 						// 改行コードをスペースに置換
 						message = message.replaceAll("\r\n", "  ");
-						// 「"」を「""」に置換し、ダブルクォーテーションで囲う
-						message = '"' + message.replace("\"", "\"\"") + '"';
 						
-						bw.write(sessionId + "," + jobunitId + "," + jobId + "," + status + ","
-								 + startDate + "," + (endDate == null ? "" : endDate) + ","
-								 + endValue + "," + "job1" + "," + endStatus + "," + statusStr + "," + endStatusStr + ","
-								 + rootJobLabel + "," + jobLabel + "," + message);
+						String[] data = { sessionId, jobunitId, jobId, Integer.toString(status),
+								(startDate == null ? "" : startDate.toString()),
+								(endDate == null ? "" : endDate.toString()), Integer.toString(endValue), "job1",
+								Integer.toString(endStatus), statusStr, endStatusStr, rootJobLabel, jobLabel, message };
+						bw.write(ReportUtil.joinStringsToCsv(data));
 						bw.newLine();
 						rows++;
 					}

@@ -54,6 +54,15 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="TransferInfo.findByCalendarId">
+		<query>
+			<![CDATA[
+				SELECT a FROM TransferInfo a
+				WHERE a.calendarId = :calendarId
+				ORDER BY a.transferId
+			]]>
+		</query>
+	</named-query>
 	<!-- CollectStringKeyInfo -->
 	<named-query name="CollectStringKeyInfo.findMaxId">
 		<query>
@@ -66,6 +75,13 @@
 		<query>
 			<![CDATA[
 				SELECT a.collectId FROM CollectStringKeyInfo a WHERE a.collectId = :collectId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectStringKeyInfo.findByMonitorIdsAndFacilityIds">
+		<query>
+			<![CDATA[
+				SELECT a FROM CollectStringKeyInfo a WHERE a.id.monitorId IN :monitorIds AND a.id.facilityId IN :facilityIds
 			]]>
 		</query>
 	</named-query>
@@ -89,7 +105,7 @@
 		<query>
 			<![CDATA[
 				SELECT DISTINCT a FROM CollectStringData a LEFT JOIN FETCH a.tagList
-				WHERE a.id.dataId > :prevlast AND a.id.dataId <= :last AND a.id.collectId IN :collectIds
+				WHERE a.id.dataId > :prevlast AND a.id.dataId <= :last AND a.id.collectId IN (SELECT b.collectId FROM CollectStringKeyInfo b JOIN MonitorInfo c ON c.monitorId = b.id.monitorId WHERE c.ownerRoleId = :ownerRoleId AND c.monitorType IN (2, 3))
 				ORDER BY a.id.dataId
 			]]>
 		</query>
@@ -98,7 +114,7 @@
 		<query>
 			<![CDATA[
 				SELECT DISTINCT a FROM CollectStringData a LEFT JOIN FETCH a.tagList
-				WHERE a.id.dataId > :prevlast AND a.id.dataId <= :last AND (a.time + :delay) < :current AND a.id.collectId IN :collectIds
+				WHERE a.id.dataId > :prevlast AND a.id.dataId <= :last AND (a.time + :delay) < :current AND a.id.collectId IN (SELECT b.collectId FROM CollectStringKeyInfo b JOIN MonitorInfo c ON c.monitorId = b.id.monitorId WHERE c.ownerRoleId = :ownerRoleId AND c.monitorType IN (2, 3))
 				ORDER BY a.id.dataId
 			]]>
 		</query>
@@ -108,6 +124,16 @@
 			<![CDATA[
 				SELECT k FROM CollectStringKeyInfo k
 				WHERE k.id.monitorId IN :monitorIds
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectStringKeyInfo.transfer.subquery">
+		<query>
+			<![CDATA[
+				SELECT k FROM CollectStringKeyInfo k
+				WHERE k.id.monitorId IN (
+				SELECT b.monitorId FROM MonitorInfo b WHERE b.ownerRoleId = :ownerRoleId
+				)
 			]]>
 		</query>
 	</named-query>
@@ -125,7 +151,7 @@
 			<![CDATA[
 				SELECT a
 				FROM CollectData a
-				WHERE a.position > :prevlast AND a.position <= :last AND a.id.collectorid IN :collectIds
+				WHERE a.position > :prevlast AND a.position <= :last AND a.id.collectorid IN (SELECT b.collectorid FROM CollectKeyInfo b JOIN MonitorInfo c ON c.monitorId = b.id.monitorId WHERE c.ownerRoleId = :ownerRoleId AND c.monitorType = 1)
 				ORDER BY a.position
 			]]>
 		</query>
@@ -135,7 +161,7 @@
 			<![CDATA[
 				SELECT a
 				FROM CollectData a
-				WHERE a.position > :prevlast AND a.position <= :last AND (a.id.time + :delay) < :current AND a.id.collectorid IN :collectIds
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.id.time + :delay) < :current AND a.id.collectorid IN (SELECT b.collectorid FROM CollectKeyInfo b JOIN MonitorInfo c ON c.monitorId = b.id.monitorId WHERE c.ownerRoleId = :ownerRoleId AND c.monitorType = 1)
 				ORDER BY a.position
 			]]>
 		</query>
@@ -148,12 +174,33 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="CollectKeyInfo.transfer.subquery">
+		<query>
+			<![CDATA[
+				SELECT k FROM CollectKeyInfo k
+				WHERE k.id.monitorId IN (
+				SELECT b.monitorId FROM MonitorInfo b WHERE b.ownerRoleId = :ownerRoleId
+				)
+			]]>
+		</query>
+	</named-query>
 	<!-- EventLogEntity -->
 	<named-query name="EventLogEntity.transfer">
 		<query>
 			<![CDATA[
 				SELECT a FROM EventLogEntity a 
 				WHERE a.position > :prevlast AND a.position <= :last AND (a.id.monitorId IN :monitorIds OR (:admin IS NOT NULL OR a.ownerRoleId = :ownerRoleId))
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="EventLogEntity.transfer.subquery">
+		<query>
+			<![CDATA[
+				SELECT a FROM EventLogEntity a 
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.id.monitorId IN (
+				SELECT b.monitorId FROM MonitorInfo b WHERE b.ownerRoleId = :ownerRoleId
+				) OR (:admin IS NOT NULL OR a.ownerRoleId = :ownerRoleId))
 				ORDER BY a.position
 			]]>
 		</query>
@@ -172,6 +219,17 @@
 			<![CDATA[
 				SELECT a FROM EventLogEntity a 
 				WHERE a.position > :prevlast AND a.position <= :last AND (a.generationDate + :delay) < :current AND  (a.id.monitorId IN :monitorIds OR (:admin IS NOT NULL OR a.ownerRoleId = :ownerRoleId))
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="EventLogEntity.transfer.delay.subquery">
+		<query>
+			<![CDATA[
+				SELECT a FROM EventLogEntity a 
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.generationDate + :delay) < :current AND  (a.id.monitorId IN (
+				SELECT b.monitorId FROM MonitorInfo b WHERE b.ownerRoleId = :ownerRoleId
+				) OR (:admin IS NOT NULL OR a.ownerRoleId = :ownerRoleId))
 				ORDER BY a.position
 			]]>
 		</query>
@@ -195,6 +253,18 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="JobSessionEntity.transfer.subquery">
+		<query>
+			<![CDATA[
+ 				SELECT DISTINCT a FROM JobSessionEntity a LEFT JOIN FETCH a.jobSessionJobEntities AS b LEFT JOIN FETCH b.jobSessionNodeEntities LEFT JOIN FETCH b.jobInfoEntity
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.jobunitId IN (
+				SELECT c.parentJobunitId FROM JobMstEntity c WHERE c.parentJobId = :parentJobId AND c.parentJobunitId = :parentJobunitId AND EXISTS(
+				SELECT 1 FROM ObjectPrivilegeInfo d WHERE d.id.objectPrivilege = 'READ' AND d.id.objectId = c.objectId
+				)) OR (b.id.jobunitId = '_ROOT_' AND b.id.jobId = 'TOP' AND (:admin IS NOT NULL OR b.ownerRoleId = :ownerRoleId)))
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
 	<named-query name="JobSessionEntity.transfer.only_ownerrole">
 		<query>
 			<![CDATA[
@@ -209,6 +279,18 @@
 			<![CDATA[
  				SELECT DISTINCT a FROM JobSessionEntity a LEFT JOIN FETCH a.jobSessionJobEntities AS b LEFT JOIN FETCH b.jobSessionNodeEntities LEFT JOIN FETCH b.jobInfoEntity
 				WHERE a.position > :prevlast AND a.position <= :last AND (a.scheduleDate + :delay) < :current AND (a.jobunitId IN :jobunitIds OR (b.id.jobunitId = '_ROOT_' AND b.id.jobId = 'TOP' AND (:admin IS NOT NULL OR b.ownerRoleId = :ownerRoleId)))
+				ORDER BY a.position
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionEntity.transfer.delay.subquery">
+		<query>
+			<![CDATA[
+ 				SELECT DISTINCT a FROM JobSessionEntity a LEFT JOIN FETCH a.jobSessionJobEntities AS b LEFT JOIN FETCH b.jobSessionNodeEntities LEFT JOIN FETCH b.jobInfoEntity
+				WHERE a.position > :prevlast AND a.position <= :last AND (a.scheduleDate + :delay) < :current AND (a.jobunitId IN (
+				SELECT c.parentJobunitId FROM JobMstEntity c WHERE c.parentJobId = :parentJobId AND c.parentJobunitId = :parentJobunitId AND EXISTS(
+				SELECT 1 FROM ObjectPrivilegeInfo d WHERE d.id.objectType = 'JOB' AND d.id.objectPrivilege = 'READ' AND d.id.objectId = c.objectId AND d.id.roleId = c.ownerRoleId 
+				)) OR (b.id.jobunitId = '_ROOT_' AND b.id.jobId = 'TOP' AND (:admin IS NOT NULL OR b.ownerRoleId = :ownerRoleId)))
 				ORDER BY a.position
 			]]>
 		</query>

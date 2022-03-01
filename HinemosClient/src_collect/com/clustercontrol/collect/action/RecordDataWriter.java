@@ -14,25 +14,32 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
 import javax.activation.DataHandler;
+import javax.activation.FileDataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.internal.service.ContextProvider;
 import org.eclipse.rap.rwt.internal.service.ServiceContext;
+import org.openapitools.client.model.CollectKeyInfoRequest;
+import org.openapitools.client.model.CollectKeyInfoResponseP1;
+import org.openapitools.client.model.CreatePerfFileRequest;
+import org.openapitools.client.model.CreatePerfFileRequest.SummaryTypeEnum;
+import org.openapitools.client.model.CreatePerfFileResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.preference.PerformancePreferencePage;
-import com.clustercontrol.collect.util.CollectEndpointWrapper;
 import com.clustercontrol.collect.util.CollectGraphUtil.CollectFacilityDataInfo;
+import com.clustercontrol.collect.util.CollectRestClientWrapper;
+import com.clustercontrol.fault.HinemosException;
+import com.clustercontrol.fault.PerfFileNotFound;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.collect.CollectKeyInfoPK;
-import com.clustercontrol.ws.collect.HinemosUnknown_Exception;
-import com.clustercontrol.ws.collect.InvalidRole_Exception;
-import com.clustercontrol.ws.collect.InvalidUserPass_Exception;
+
 
 /**
  * 実績データをエクスポートするクラス
@@ -47,7 +54,7 @@ public class RecordDataWriter implements Runnable {
 	// input
 	private TreeMap<String, CollectFacilityDataInfo> m_managerFacilityDataInfoMap = null;
 	private Integer m_summaryType = null;
-	private List<CollectKeyInfoPK> m_targetCollectKeyInfoList = null;	
+	private List<CollectKeyInfoResponseP1> m_targetCollectKeyInfoList = null;	
 	private Map<String, List<String>> m_targetManagerFacilityMap = null;
 	
 	private boolean headerFlag;
@@ -81,7 +88,7 @@ public class RecordDataWriter implements Runnable {
 	 */
 	public RecordDataWriter(TreeMap<String, CollectFacilityDataInfo> managerFacilityDataInfoMap,
 			Integer summaryType,
-			List<CollectKeyInfoPK> targetCollectKeyInfoList,
+			List<CollectKeyInfoResponseP1> targetCollectKeyInfoList,
 			TreeMap<String,  List<String>> targetManagerFacilityMap,
 			boolean headerFlag, String filePath, String defaultDateStr) {
 		super();
@@ -138,11 +145,36 @@ public class RecordDataWriter implements Runnable {
 						facilityIdNameMap.put(facilityName, managerFacilityDataInfo.getValue().getName());
 					}
 				}
-			CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
-			downloadFileList = wrapper.createPerfFile(facilityIdNameMap, m_targetCollectKeyInfoList, 
-					entry.getValue(), m_summaryType, headerFlag, defaultDateStr);
+				// ラッパー取得
+				CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
+				
+				// Request生成
+				CreatePerfFileRequest createPerfFileRequest = new CreatePerfFileRequest();
+	
+				List<CollectKeyInfoRequest> collectKeyInfoReqList = new ArrayList<>();
+				
+				for(CollectKeyInfoResponseP1 collectKeyInfoList:m_targetCollectKeyInfoList){
+					// findbugs対応 collectKeyInfoRequestの変数スコープを変更
+					CollectKeyInfoRequest collectKeyInfoRequest = new CollectKeyInfoRequest();
+					collectKeyInfoRequest.setDisplayName(collectKeyInfoList.getDisplayName());
+					collectKeyInfoRequest.facilityId(collectKeyInfoList.getFacilityId());
+					collectKeyInfoRequest.setMonitorId(collectKeyInfoList.getMonitorId());
+					collectKeyInfoRequest.setItemName(collectKeyInfoList.getItemName());
+					collectKeyInfoReqList.add(collectKeyInfoRequest);
+				}
+				createPerfFileRequest.setCollectKeyInfoList(collectKeyInfoReqList);
+				
+				createPerfFileRequest.setFacilityNameMap(facilityIdNameMap);
+				createPerfFileRequest.setFacilityList(entry.getValue());
+				createPerfFileRequest.setSummaryType(SummaryTypeEnum.fromValue(SummaryTypeConstant.typeToString(m_summaryType)));
+				createPerfFileRequest.setLocaleStr(Locale.getDefault().toString());
+				createPerfFileRequest.setHeader(headerFlag);
+				createPerfFileRequest.setDefaultDateStr(defaultDateStr);
+	
+				CreatePerfFileResponse createPerfFileResponse = wrapper.createPerfFile(createPerfFileRequest);
+				downloadFileList = createPerfFileResponse.getFileList();
 			}
-		} catch (HinemosUnknown_Exception | InvalidUserPass_Exception | InvalidRole_Exception e) {
+		} catch (HinemosException e) {
 			setCancelMessage(Messages.getString("performance.get.collecteddata.error.message") + ":" + e.getMessage());
 			setCanceled(true);
 			m_log.warn("export()", e);
@@ -178,9 +210,12 @@ public class RecordDataWriter implements Runnable {
 		m_log.debug("download() downloadFileName = " + prefName + ", name = " + name);
 		m_log.info("download perf file  = " + name);
 
+		File file = new File( this.fileDir, name );
 		FileOutputStream fileOutputStream = null;
 		DataHandler handler = null;
 		try{
+			fileOutputStream = new FileOutputStream(file);
+			
 			// 指定回数だけファイル存在確認をする
 			m_log.info("download perf file = " + name + ", waitCount = " + waitCount);
 			
@@ -191,49 +226,40 @@ public class RecordDataWriter implements Runnable {
 						Thread.sleep(waitSleep);
 						m_log.debug("download perf file = " + name + ", create check. count = " + i);
 						// クライアントのヒープが小さい場合は下記の行で落ちる。(out of memory)
-						CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
-						handler = wrapper.downloadPerfFile(prefName);
-						if(handler != null){
+						CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
+						try {
+							file = wrapper.downloadPerfFile(prefName);
+						} catch (PerfFileNotFound e) {
+							// ファイルの作成が完了していない場合はリトライ
+							file = null;
+						}
+						if(file != null){
 							m_log.info("download perf file = " + name + ", created !");
 							break;
 						}
 					}
 				}
-				if(handler == null){
-					m_log.info("download handler is null");
+				if(file == null){
+					m_log.info("file is null");
 					setCancelMessage(Messages.getString("performance.get.collecteddata.error.message") +
 							": cannot create collected data for client-timeout");
 					setCanceled(true);
 					return;
 				}
 			}
-			if(handler == null){
-				m_log.info("download handler is null");
-				setCancelMessage(Messages.getString("performance.get.collecteddata.error.message") +
-						": cannot create collected data for client-timeout");
-				setCanceled(true);
-				return;
-			}
 
-			File file = new File( this.fileDir, name );
 			boolean ret = file.createNewFile();
 			if (!ret) {
 				m_log.warn("file is already exist.");
 			}
-			fileOutputStream = new FileOutputStream(file);
+			FileDataSource source = new FileDataSource(file);
+			handler = new DataHandler(source);
+
 			handler.writeTo(fileOutputStream);
 
 			m_log.info("download perf file  = " + name + ", succeed !");
 			m_log.debug("download() succeed!");
-		} catch (HinemosUnknown_Exception e) {
-			setCancelMessage(Messages.getString("performance.get.collecteddata.error.message") + ":" + e.getMessage());
-			setCanceled(true);
-			m_log.warn("download()", e);
-		} catch (InvalidUserPass_Exception e) {
-			setCancelMessage(Messages.getString("performance.get.collecteddata.error.message") + ":" + e.getMessage());
-			setCanceled(true);
-			m_log.warn("download()", e);
-		} catch (InvalidRole_Exception e) {
+		} catch (HinemosException e) {
 			setCancelMessage(Messages.getString("performance.get.collecteddata.error.message") + ":" + e.getMessage());
 			setCanceled(true);
 			m_log.warn("download()", e);
@@ -257,40 +283,6 @@ public class RecordDataWriter implements Runnable {
 			}
 		}
 	}
-
-	/**
-	 * マネージャサーバで作成した性能実績データのファイルを削除する
-	 *
-	 * @param fileNameList
-	 */
-	public void delete(List<String> fileNameList){
-		m_log.debug("delete()");
-
-		try{
-			if(fileNameList != null && fileNameList.size() > 0){
-				m_log.debug("delete() run delete!");
-				for (Map.Entry<String, List<String>> entry : m_targetManagerFacilityMap.entrySet()) {
-					String managerName = entry.getKey();
-					CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
-					wrapper.deletePerfFile(new ArrayList<String>(fileNameList));
-				}
-			}
-			m_log.debug("delete() succeed!");
-		} catch (HinemosUnknown_Exception e) {
-			setCancelMessage(Messages.getString("performance.get.collecteddata.error.delete") + ":" + e.getMessage());
-			setCanceled(true);
-			m_log.warn("delete()", e);
-		} catch (InvalidUserPass_Exception e) {
-			setCancelMessage(Messages.getString("performance.get.collecteddata.error.delete") + ":" + e.getMessage());
-			setCanceled(true);
-			m_log.warn("delete()", e);
-		} catch (InvalidRole_Exception e) {
-			setCancelMessage(Messages.getString("performance.get.collecteddata.error.delete") + ":" + e.getMessage());
-			setCanceled(true);
-			m_log.warn("delete()", e);
-		}
-	}
-
 
 	/**
 	 * ファイルへのエクスポートを実行します。
@@ -332,7 +324,7 @@ public class RecordDataWriter implements Runnable {
 			if(!this.canceled){
 				download(downloadFileList.get(0), this.fileName);
 			}else{
-				delete(downloadFileList);
+				// findbugs対応 サーバ側にデータファイルの削除を要請するメソッドが廃止されたので 併せて不要メソッド呼び出し廃止
 				this.progress = 100;
 				return;
 			}
@@ -343,7 +335,7 @@ public class RecordDataWriter implements Runnable {
 				if(!this.canceled){
 					download(downloadFile, null);
 				}else{
-					delete(downloadFileList);
+					// findbugs対応 サーバ側にデータファイルの削除を要請するメソッドが廃止されたので 併せて不要メソッド呼び出し廃止
 					this.progress = 100;
 					return;
 				}
@@ -355,7 +347,7 @@ public class RecordDataWriter implements Runnable {
 		////
 		// delete(10%)
 		////
-		delete(downloadFileList);
+		// findbugs対応 サーバ側にデータファイルの削除を要請するメソッドが廃止されたので 併せて不要メソッド呼び出し廃止
 
 		// 終了
 		this.progress = 100;

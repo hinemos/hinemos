@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id: monitor_check_logfile.xsd 295 2015-02-03 16:00:00Z kawamoto $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_filtersetting_master.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+	
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="H">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="filtersettingJobHistories" type="FilterSettingJobHistoryList">
+		<xs:annotation>
+			<xs:documentation>フィルタ設定（ジョブ履歴[一覧]）のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	
+	<xs:complexType name="FilterSettingJobHistoryList">
+		<xs:annotation>
+			<xs:documentation>フィルタ設定（ジョブ履歴[一覧]）のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="filterJobHistory" type="FilterSettingJobHistory" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>フィルタ設定（ジョブ履歴[一覧]）</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="jobHistory" type="FilterSettingJobHistory" />
+	<xs:complexType name="FilterSettingJobHistory">
+		<xs:annotation>
+			<xs:documentation>フィルタ設定（ジョブ履歴[一覧]）の1設定分です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="filtersetting" type="FilterSettingInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>フィルタ設定情報（共通）です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="jobHistoryInfo" type="JobHistoryInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						フィルタ設定情報（ジョブ履歴[一覧]固有部分）です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="JobHistoryInfo">
+		<xs:annotation>
+			<xs:documentation>フィルタ設定（ジョブ履歴[一覧]）情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="jobHistoryConditions" type="FilterSettingConditionJobHistoryInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>フィルタ詳細情報リストです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="FilterSettingConditionJobHistoryInfo">
+		<xs:annotation>
+			<xs:documentation>フィルタ詳細（ジョブ履歴[一覧]）情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="FilterSettingConditionInfo">
+				<xs:sequence>
+					<xs:element name="startDateFrom" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>開始・再実行日時 開始です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="startDateTo" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>開始・再実行日時 終了です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="endDateFrom" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>終了・中断日時 開始です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="endDateTo" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>終了・中断日時 終了です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="sessionId" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>セッションIDです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="jobId" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>ジョブIDです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="status" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>実行状態です。本来はintが想定されていますが、null時の比較の為にstringとしています。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="endStatus" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>終了状態です。本来はintが想定されていますが、null時の比較の為にstringとしています。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="triggerType" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>実行契機種別です。本来はintが想定されていますが、null時の比較の為にstringとしています。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="triggerInfo" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>実行契機情報です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="ownerRoleId" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>オーナーロールIDです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

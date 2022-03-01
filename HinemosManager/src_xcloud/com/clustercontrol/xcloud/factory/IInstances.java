@@ -16,6 +16,7 @@ import com.clustercontrol.xcloud.bean.ModifyInstanceRequest;
 import com.clustercontrol.xcloud.bean.Option;
 import com.clustercontrol.xcloud.model.EntityEntity;
 import com.clustercontrol.xcloud.model.InstanceBackupEntity;
+import com.clustercontrol.xcloud.model.InstanceBackupEntryEntity;
 import com.clustercontrol.xcloud.model.InstanceEntity;
 
 
@@ -31,7 +32,7 @@ public interface IInstances extends IResources {
 	
 	InstanceEntity addInstance(AddInstanceRequest request) throws CloudManagerException;
 	
-	void removeInstances(List<String> instanceIds) throws CloudManagerException;
+	List<InstanceEntity> removeInstances(List<String> instanceIds) throws CloudManagerException;
 	
 	void powerOnInstances(List<String> instanceIds) throws CloudManagerException;
 	void powerOffInstances(List<String> instanceIds) throws CloudManagerException;
@@ -45,7 +46,8 @@ public interface IInstances extends IResources {
 	List<InstanceEntity> updateInstances(List<String> instanceIds) throws CloudManagerException;
 	
 	InstanceBackupEntity takeInstanceSnapshot(String instanceId, String name, String description, List<Option> options) throws CloudManagerException;
-	void deletInstanceSnapshots(String instanceId, List<String> snapshotIds) throws CloudManagerException;
+
+	List<InstanceBackupEntryEntity> deletInstanceSnapshots(String instanceId, List<String> snapshotIds) throws CloudManagerException;
 	List<InstanceBackupEntity> updateInstanceBackups(List<String> instanceIds) throws CloudManagerException;
 	InstanceEntity cloneBackupedInstance(CloneBackupedInstanceRequest request) throws CloudManagerException;
 

@@ -29,6 +29,7 @@ import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
@@ -53,7 +54,9 @@ import com.clustercontrol.infra.model.InfraManagementInfo;
 import com.clustercontrol.infra.model.InfraModuleInfo;
 import com.clustercontrol.infra.model.ReferManagementModuleInfo;
 import com.clustercontrol.infra.util.InfraParameterUtil;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.factory.CreateSessionId;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.repository.factory.NodeProperty;
@@ -143,7 +146,7 @@ public class AsyncModuleWorker {
 		protected void notifyModuleCheckStart(InfraModuleInfo<?> module) {
 			String msg = null;
 			msg = MessageConstant.MESSAGE_MODULE_CHECK_BEGINS.getMessage();
-			notifyMessage(module, management.getStartPriority(), msg, msg);
+			notifyMessage(module, management.getStartPriority(), msg, msg, NotifyTriggerType.INFRA_CHECK_START);
 		}
 		
 		// 終了の通知
@@ -161,14 +164,14 @@ public class AsyncModuleWorker {
 				msg = MessageConstant.MESSAGE_MODULE_CHECK_FAILED.getMessage();
 				break;
 			}
-			notifyMessage(module, priority, msg, result.getMessage());
+			notifyMessage(module, priority, msg, result.getMessage(), NotifyTriggerType.INFRA_CHECK_END);
 		}
 		
 		// 開始の通知
 		protected void notifyModuleRunStart(InfraModuleInfo<?> module) {
 			String msg = null;
 			msg = MessageConstant.MESSAGE_MODULE_EXECUTION_BEGINS.getMessage();
-			notifyMessage(module, management.getStartPriority(), msg, msg);
+			notifyMessage(module, management.getStartPriority(), msg, msg, NotifyTriggerType.INFRA_RUN_START);
 		}
 		
 		// 終了の通知
@@ -186,21 +189,29 @@ public class AsyncModuleWorker {
 				msg = MessageConstant.MESSAGE_MODULE_EXECUTION_FAILED.getMessage();
 				break;
 			}
-			notifyMessage(module, priority, msg, result.getMessage());
+			notifyMessage(module, priority, msg, result.getMessage(), NotifyTriggerType.INFRA_RUN_END);
 		}
 
 		/**
 		 * 通知実行
+		 * 
 		 * @param module モジュール（参照環境構築モジュールの場合は、参照している環境構築のモジュール）
 		 * @param priority 重要度
 		 * @param msg メッセージ
 		 * @param msgOrg オリジナルメッセージ
+		 * @param notifyTriggerType 通知契機種別
 		 */
 		protected void notifyMessage(
 				InfraModuleInfo<?> module,
 				int priority,
 				String msg,
-				String msgOrg) {
+				String msgOrg,
+				NotifyTriggerType notifyTriggerType) {
+			
+			//重要度が空の場合は通知対象外
+			if (priority == PriorityConstant.TYPE_NONE){
+				return;
+			}
 
 			try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 				InfraManagementInfo infraManagementInfo = null;
@@ -222,6 +233,9 @@ public class AsyncModuleWorker {
 						HinemosTime.getDateInstance().getTime()
 						);
 				info.setNotifyGroupId(infraManagementInfo.getNotifyGroupId());
+				// ジョブ連携メッセージID
+				info.setJoblinkMessageId(JobLinkMessageId.getId(
+						notifyTriggerType, HinemosModuleConstant.INFRA, infraManagementInfo.getManagementId()));
 
 				// 通知設定
 				jtm.addCallback(new NotifyCallback(info));
@@ -344,7 +358,7 @@ public class AsyncModuleWorker {
 		
 		@Override
 		public void unexpectedError(Exception e) throws Exception {
-			notifyMessage(module, management.getAbnormalPriorityRun(), MessageConstant.MESSAGE_UNEXPECTED_ERR_OCCURRED.getMessage(), e.getMessage());
+			notifyMessage(module, management.getAbnormalPriorityRun(), MessageConstant.MESSAGE_UNEXPECTED_ERR_OCCURRED.getMessage(), e.getMessage(), NotifyTriggerType.INFRA_RUN_END);
 		}
 	}
 
@@ -414,7 +428,7 @@ public class AsyncModuleWorker {
 		
 		@Override
 		public void unexpectedError(Exception e) throws Exception {
-			notifyMessage(module, management.getAbnormalPriorityCheck(),  MessageConstant.MESSAGE_UNEXPECTED_ERR_OCCURRED.getMessage(), e.getMessage());
+			notifyMessage(module, management.getAbnormalPriorityCheck(),  MessageConstant.MESSAGE_UNEXPECTED_ERR_OCCURRED.getMessage(), e.getMessage(), NotifyTriggerType.INFRA_CHECK_END);
 		}
 	}
 	
@@ -464,7 +478,7 @@ public class AsyncModuleWorker {
 			for (AccessInfo accessInfo : paramAccessList) {
 				// サブセッションごとにログイン情報マップに設定
 				String subSessionId = null;
-				if (accessInfo.getModuleId().equals("")) {
+				if (accessInfo.getModuleId() == null || accessInfo.getModuleId().equals("")) {
 					subSessionId = this.sessionId;
 				} else {
 					subSessionId = String.format("%s" + AccessInfo.MODULEID_DELIMITER + "%s", this.sessionId, accessInfo.getModuleId());
@@ -494,7 +508,7 @@ public class AsyncModuleWorker {
 				}
 			}
 			if (moduleList.size() == 0) {
-				throw new InfraModuleNotFound(managementId, "");
+				throw new InfraModuleNotFound(String.format("managementId = %s, moduleId = %s", managementId, ""));
 			}
 		}
 		
@@ -542,7 +556,7 @@ public class AsyncModuleWorker {
 		}
 	}
 
-	public static String createSession(String managementId, List<String> moduleIdList, List<AccessInfo> accessList)
+	public static SessionInfo createSession(String managementId, List<String> moduleIdList, List<AccessInfo> accessList)
 			throws InfraManagementNotFound, InfraModuleNotFound, InfraManagementInvalid, InvalidRole, HinemosUnknown, FacilityNotFound, InvalidSetting {
 		
 		InfraManagementInfo management = new SelectInfraManagement().get(managementId, null, ObjectPrivilegeMode.EXEC);
@@ -562,11 +576,14 @@ public class AsyncModuleWorker {
 		}
 		
 		String sessionId = SESSION_PREFIX + CreateSessionId.create();
-		sessionMap.put(sessionId, new Session(managementId, moduleIdList, accessList, sessionId));
+		Session session = new Session(managementId, moduleIdList, accessList, sessionId);
+		sessionMap.put(sessionId, session);
 		if (sessionMap.size() > 10) {
 			m_log.warn("size of sessionMap is too large " + sessionMap.size());
 		}
-		return sessionId;
+		m_log.debug("size of sessionMap is " + sessionMap.size());
+		
+		return new SessionInfo(session);
 	}
 
 	/**
@@ -579,20 +596,50 @@ public class AsyncModuleWorker {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public static boolean deleteSession(String sessionId) throws InfraManagementNotFound, InvalidRole, HinemosUnknown {
+	public static SessionInfo deleteSession(String sessionId) throws InfraManagementNotFound, InvalidRole, HinemosUnknown {
 		
 		Session session = sessionMap.get(sessionId);
 		if (session == null) {
-			return false;
+			return null;
 		}
 		
 		// このセッションを触ってよいかチェック。
 		new SelectInfraManagement().get(session.management.getManagementId(), null, ObjectPrivilegeMode.EXEC);
 		
 		sessionMap.remove(sessionId);
-		return true;
+		
+		return new SessionInfo(session);
 	}
 
+	/**
+	 * 外部参照用のセッション情報保持クラス
+	 */
+	public static class SessionInfo {
+		String sessionId = null;
+		String managementId = null;
+		List<String> moduleList = new ArrayList<>();
+		
+		public SessionInfo(Session session) {
+			this.sessionId = session.sessionId;
+			this.managementId = session.management.getManagementId();
+			List<String> moduleList = new ArrayList<>();
+			for(InfraModuleInfo info : session.moduleList) {
+				moduleList.add(info.getModuleId());
+			}
+			this.moduleList = moduleList;
+		}
+		
+		public String getSessionId() {
+			return sessionId;
+		}
+		public String getManagementId() {
+			return managementId;
+		}
+		public List<String> getModuleList() {
+			return moduleList;
+		}
+	}
+	
 	/**
 	 * 実行モジュール実行
 	 * @param sessionId
@@ -655,7 +702,6 @@ public class AsyncModuleWorker {
 			}
 			if (moduleList.size() == 0) {
 				ret.setHasNext(false);
-				deleteSession(session.sessionId);
 			} else {
 				ret.setHasNext(true);
 			}
@@ -667,7 +713,6 @@ public class AsyncModuleWorker {
 			ret = new ModuleResult(session.sessionId, module.getModuleId());
 			if (moduleList.size() == 0) {
 				ret.setHasNext(false);
-				deleteSession(session.sessionId);
 			} else {
 				ret.setHasNext(true);
 			}
@@ -831,7 +876,6 @@ public class AsyncModuleWorker {
 			}
 			if (moduleList.size() == 0) {
 				ret.setHasNext(false);
-				deleteSession(session.sessionId);
 			} else {
 				ret.setHasNext(true);
 			}
@@ -843,7 +887,6 @@ public class AsyncModuleWorker {
 			ret = new ModuleResult(session.sessionId, module.getModuleId());
 			if (moduleList.size() == 0) {
 				ret.setHasNext(false);
-				deleteSession(session.sessionId);
 			} else {
 				ret.setHasNext(true);
 			}

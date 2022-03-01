@@ -14,14 +14,20 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse.AbnormalPriorityCheckEnum;
+import org.openapitools.client.model.InfraManagementInfoResponse.AbnormalPriorityRunEnum;
+import org.openapitools.client.model.InfraManagementInfoResponse.NormalPriorityCheckEnum;
+import org.openapitools.client.model.InfraManagementInfoResponse.NormalPriorityRunEnum;
+import org.openapitools.client.model.InfraManagementInfoResponse.StartPriorityEnum;
 
 import com.clustercontrol.bean.EndStatusColorConstant;
 import com.clustercontrol.bean.EndStatusMessage;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
+import com.clustercontrol.infra.util.NotiryPriorityConverter;
 import com.clustercontrol.notify.composite.NotifyIdListComposite;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
 
 /**
  * 通知先の指定タブ用のコンポジットクラスです。
@@ -186,20 +192,20 @@ public class InfraNoticeComposite extends Composite {
 	 */
 	public void setNotificationsInfo() {
 		// 初期値
-		setSelectPriority(m_startPriority, PriorityConstant.TYPE_INFO);
-		setSelectPriority(m_checkAbnormalPriority, PriorityConstant.TYPE_CRITICAL);
-		setSelectPriority(m_runNormalPriority,PriorityConstant.TYPE_INFO);
-		setSelectPriority(m_runAbnormalPriority, PriorityConstant.TYPE_CRITICAL);
-		setSelectPriority(m_checkNormalPriority, PriorityConstant.TYPE_INFO);
+		NotiryPriorityConverter.setSelectStartPriority(m_startPriority, StartPriorityEnum.INFO);
+		NotiryPriorityConverter.setSelectAbnormalPriorityCheck(m_checkAbnormalPriority, AbnormalPriorityCheckEnum.CRITICAL);
+		NotiryPriorityConverter.setSelectNormalPriorityRun(m_runNormalPriority,NormalPriorityRunEnum.INFO);
+		NotiryPriorityConverter.setSelectAbnormalPriorityRun(m_runAbnormalPriority, AbnormalPriorityRunEnum.CRITICAL);
+		NotiryPriorityConverter.setSelectNormalPriorityCheck(m_checkNormalPriority, NormalPriorityCheckEnum.INFO);
 	}
 
-	public void setNotificationsInfo(InfraManagementInfo info) {
+	public void setNotificationsInfo(InfraManagementInfoResponse info) {
 		if (info != null) {
-			setSelectPriority(m_startPriority, info.getStartPriority());
-			setSelectPriority(m_checkAbnormalPriority, info.getAbnormalPriorityCheck());
-			setSelectPriority(m_runNormalPriority, info.getNormalPriorityRun());
-			setSelectPriority(m_runAbnormalPriority, info.getAbnormalPriorityRun());
-			setSelectPriority(m_checkNormalPriority, info.getNormalPriorityCheck());
+			NotiryPriorityConverter.setSelectStartPriority(m_startPriority, info.getStartPriority());
+			NotiryPriorityConverter.setSelectAbnormalPriorityCheck(m_checkAbnormalPriority, info.getAbnormalPriorityCheck());
+			NotiryPriorityConverter.setSelectNormalPriorityRun(m_runNormalPriority, info.getNormalPriorityRun());
+			NotiryPriorityConverter.setSelectAbnormalPriorityRun(m_runAbnormalPriority, info.getAbnormalPriorityRun());
+			NotiryPriorityConverter.setSelectNormalPriorityCheck(m_checkNormalPriority, info.getNormalPriorityCheck());
 
 			if (info.getNotifyRelationList() != null) {
 				m_notifyId.setNotify(info.getNotifyRelationList());
@@ -211,20 +217,20 @@ public class InfraNoticeComposite extends Composite {
 		m_notifyId.setOwnerRoleId(ownerRoleId, true);
 	}
 
-	public int getAbnormalPriorityCheck() {
-		return getSelectPriority(m_checkAbnormalPriority);
+	public AbnormalPriorityCheckEnum getAbnormalPriorityCheck() {
+		return NotiryPriorityConverter.getSelectAbnormalPriorityCheck(m_checkAbnormalPriority);
 	}
-	public int getNormalPriorityCheck() {
-		return getSelectPriority(m_checkNormalPriority);
+	public NormalPriorityCheckEnum getNormalPriorityCheck() {
+		return NotiryPriorityConverter.getSelectNormalPriorityCheck(m_checkNormalPriority);
 	}
-	public int getAbnormalPriorityRun() {
-		return getSelectPriority(m_runAbnormalPriority);
+	public AbnormalPriorityRunEnum getAbnormalPriorityRun() {
+		return NotiryPriorityConverter.getSelectAbnormalPriorityRun(m_runAbnormalPriority);
 	}
-	public int getNormalPriorityRun() {
-		return getSelectPriority(m_runNormalPriority);
+	public NormalPriorityRunEnum getNormalPriorityRun() {
+		return NotiryPriorityConverter.getSelectNormalPriorityRun(m_runNormalPriority);
 	}
-	public int getStartPriority() {
-		return getSelectPriority(m_startPriority);
+	public StartPriorityEnum getStartPriority() {
+		return NotiryPriorityConverter.getSelectStartPriority(m_startPriority);
 	}
 	public String getManagerName() {
 		return m_managerName;
@@ -232,64 +238,6 @@ public class InfraNoticeComposite extends Composite {
 	public void setManagerName(String m_managerName) {
 		this.m_managerName = m_managerName;
 		this.m_notifyId.setManagerName(m_managerName);
-	}
-
-	/**
-	 * 指定した重要度に該当する重要度用コンボボックスの項目を選択します。
-	 *
-	 * @param combo 重要度用コンボボックスのインスタンス
-	 * @param priority 重要度
-	 *
-	 * @see com.clustercontrol.bean.PriorityConstant
-	 */
-	public void setSelectPriority(Combo combo, int priority) {
-		String select = "";
-
-		if (priority == PriorityConstant.TYPE_CRITICAL) {
-			select = PriorityMessage.STRING_CRITICAL;
-		} else if (priority == PriorityConstant.TYPE_UNKNOWN) {
-			select = PriorityMessage.STRING_UNKNOWN;
-		} else if (priority == PriorityConstant.TYPE_WARNING) {
-			select = PriorityMessage.STRING_WARNING;
-		} else if (priority == PriorityConstant.TYPE_INFO) {
-			select = PriorityMessage.STRING_INFO;
-		} else if (priority == PriorityConstant.TYPE_NONE) {
-			select = PriorityMessage.STRING_NONE;
-		}
-
-		combo.select(0);
-		for (int i = 0; i < combo.getItemCount(); i++) {
-			if (select.equals(combo.getItem(i))) {
-				combo.select(i);
-				break;
-			}
-		}
-	}
-
-	/**
-	 * 重要度用コンボボックスにて選択している重要度を取得します。
-	 *
-	 * @param combo 重要度用コンボボックスのインスタンス
-	 * @return 重要度
-	 *
-	 * @see com.clustercontrol.bean.PriorityConstant
-	 */
-	public int getSelectPriority(Combo combo) {
-		String select = combo.getText();
-
-		if (select.equals(PriorityMessage.STRING_CRITICAL)) {
-			return PriorityConstant.TYPE_CRITICAL;
-		} else if (select.equals(PriorityMessage.STRING_WARNING)) {
-			return PriorityConstant.TYPE_WARNING;
-		} else if (select.equals(PriorityMessage.STRING_INFO)) {
-			return PriorityConstant.TYPE_INFO;
-		} else if (select.equals(PriorityMessage.STRING_UNKNOWN)) {
-			return PriorityConstant.TYPE_UNKNOWN;
-		} else if (select.equals(PriorityMessage.STRING_NONE)) {
-			return PriorityConstant.TYPE_NONE;
-		}
-
-		return -1;
 	}
 
 	public NotifyIdListComposite getNotifyId() {

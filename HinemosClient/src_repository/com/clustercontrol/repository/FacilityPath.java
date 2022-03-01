@@ -8,8 +8,9 @@
 
 package com.clustercontrol.repository;
 
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
+
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 
 /**
  * スコープ情報をツリー構造化するためのクラス<BR>
@@ -34,14 +35,14 @@ public class FacilityPath {
 	 *            セパレーター
 	 * @return パス文字列
 	 */
-	public String getPath(FacilityTreeItem item) {
+	public String getPath(FacilityTreeItemResponse item) {
 
 		if (item == null) {
 			return "";
 		}
 
 		// トップ("ルート")の場合は、文字を出力しません。
-		if (item.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE) {
+		if (item.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE) {
 			return "";
 		}
 
@@ -50,11 +51,11 @@ public class FacilityPath {
 		buffer.append(item.getData().getFacilityName());
 
 		// スコープの場合は、最後に">"を追加
-		if (item.getData().getFacilityType() == FacilityConstant.TYPE_SCOPE) {
-			FacilityTreeItem parent = item.getParent();
+		if (item.getData().getFacilityType() == FacilityTypeEnum.SCOPE) {
+			FacilityTreeItemResponse parent = item.getParent();
 			while (parent != null
-					&& parent.getData().getFacilityType() != FacilityConstant.TYPE_COMPOSITE
-					&& parent.getData().getFacilityType() != FacilityConstant.TYPE_MANAGER) {
+					&& parent.getData().getFacilityType() != FacilityTypeEnum.COMPOSITE
+					&& parent.getData().getFacilityType() != FacilityTypeEnum.MANAGER) {
 
 				buffer.insert(0, separator);
 				buffer.insert(0, parent.getData().getFacilityName());

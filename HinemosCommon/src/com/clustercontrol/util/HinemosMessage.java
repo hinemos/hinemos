@@ -98,7 +98,8 @@ public class HinemosMessage {
 			int idx = messageSetting.curIdx + matcherArgs.end();
 			boolean isClosed = false;
 			for (int i = messageSetting.curIdx + matcherArgs.end(); i < messageSetting.message.length(); i++) {
-				if (messageSetting.message.charAt(i) == '$'
+				if (messageSetting.message.length() >= (i + 2) 
+						&& messageSetting.message.charAt(i) == '$'
 						&& messageSetting.message.charAt(i + 1) == '[') {
 					// 変数置換
 					messageSetting.curIdx = i;

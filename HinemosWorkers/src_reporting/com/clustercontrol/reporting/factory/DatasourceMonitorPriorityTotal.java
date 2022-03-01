@@ -51,7 +51,7 @@ public class DatasourceMonitorPriorityTotal extends DatasourceBase {
 		HashMap<String, Object> retMap = new HashMap<String, Object>();
 		
 		String[] columns = { "priority", "count"};
-		String columnsStr = ReportUtil.joinStrings(columns, ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 		
 		// get data from Hinemos DB
 		try {
@@ -80,7 +80,7 @@ public class DatasourceMonitorPriorityTotal extends DatasourceBase {
 				for (Object[] object : nums) {
 					results[0] = object[0].toString();
 					results[1] = object[1].toString();
-					bw.write(ReportUtil.joinStrings(results, ","));
+					bw.write(ReportUtil.joinStringsToCsv(results));
 					bw.newLine();
 				}
 				bw.close();

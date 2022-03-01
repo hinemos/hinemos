@@ -8,21 +8,35 @@
 
 package com.clustercontrol.utility.settings.infra.action;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.xml.ws.WebServiceException;
+import org.openapitools.client.model.AddInfraManagementRequest;
+import org.openapitools.client.model.ImportInfraManagementInfoRecordRequest;
+import org.openapitools.client.model.ImportInfraManagementInfoRequest;
+import org.openapitools.client.model.ImportInfraManagementInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.SettingConstants;
@@ -32,16 +46,16 @@ import com.clustercontrol.utility.settings.infra.xml.InfraManagementInfo;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidSetting_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * 環境構築設定定義情報をインポート・エクスポート・削除するアクションクラス<br>
@@ -49,10 +63,10 @@ import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
  * @version 6.0.0
  * @since 5.0.a
  */
-public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.InfraManagementInfo, InfraManagementInfo, InfraManagement> {
+public class InfraSettingAction extends BaseAction<InfraManagementInfoResponse, InfraManagementInfo, InfraManagement> {
 
 	protected InfraSettingConv conv;
-	
+	protected List<String> objectList = new ArrayList<String>();
 	public InfraSettingAction() throws ConvertorException {
 		super();
 		conv = new InfraSettingConv();
@@ -62,19 +76,17 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 	protected String getActionName() {return "InfraManagement";}
 
 	@Override
-	protected List<com.clustercontrol.ws.infra.InfraManagementInfo> getList()	throws Exception {
-		return InfraEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getInfraManagementList();
+	protected List<InfraManagementInfoResponse> getList()	throws Exception {
+		return InfraRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getInfraManagementList(null);
 	}
 
 	@Override
-	protected void deleteInfo(com.clustercontrol.ws.infra.InfraManagementInfo info) throws WebServiceException, Exception {
-		List<String> ids = new ArrayList<>();
-		ids.add(info.getManagementId());
-		InfraEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteInfraManagement(ids);
+	protected void deleteInfo(InfraManagementInfoResponse info) throws Exception {
+		InfraRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteInfraManagement(info.getManagementId());
 	}
 
 	@Override
-	protected String getKeyInfoD(com.clustercontrol.ws.infra.InfraManagementInfo info) {
+	protected String getKeyInfoD(InfraManagementInfoResponse info) {
 		return info.getManagementId();
 	}
 
@@ -84,7 +96,7 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 	}
 
 	@Override
-	protected void addInfo(InfraManagement xmlInfo,	com.clustercontrol.ws.infra.InfraManagementInfo info)	throws Exception {
+	protected void addInfo(InfraManagement xmlInfo,	InfraManagementInfoResponse info)	throws Exception {
 		xmlInfo.addInfraManagementInfo(conv.getXmlInfo(info));
 	}
 
@@ -103,65 +115,109 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 		return Arrays.asList(xmlInfo.getInfraManagementInfo());
 	}
 
-	protected Set<String> registerdSet;
 	@Override
-	protected void preCheckDuplicate() {
-		registerdSet = new HashSet<>();
-		try {
-			for(com.clustercontrol.ws.infra.InfraManagementInfo info: getList()){
-				registerdSet.add(getKeyInfoD(info));
+	protected int registElements(InfraManagement xmlInfo){
+		int ret =0;
+		// 定義の登録
+		ImportRecordConfirmer<InfraManagementInfo, ImportInfraManagementInfoRecordRequest, String> confirmer = new ImportRecordConfirmer<InfraManagementInfo, ImportInfraManagementInfoRecordRequest, String>(
+				log, xmlInfo.getInfraManagementInfo()) {
+			@Override
+			protected ImportInfraManagementInfoRecordRequest convertDtoXmlToRestReq(InfraManagementInfo xmlDto) throws InvalidSetting, HinemosUnknown {
+				InfraManagementInfoResponse dto = conv.getDTO(xmlDto);
+				ImportInfraManagementInfoRecordRequest dtoRec = new ImportInfraManagementInfoRecordRequest();
+				dtoRec.setImportData( new AddInfraManagementRequest() );
+				RestClientBeanUtil.convertBean(dto, dtoRec.getImportData());
+				dtoRec.setImportKeyValue(dtoRec.getImportData().getManagementId());
+				return dtoRec;
 			}
-		} catch (Exception e) {
-			log.error(Messages.getString("SettingTools.FailToGetList"), e);
-			log.debug("End Clear " + getActionName() + " (Error)");
+			@Override
+			protected Set<String> getExistIdSet() throws Exception {
+				Set<String> retSet = new HashSet<String>();
+				List<InfraManagementInfoResponse> infoList = InfraRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getInfraManagementList(null);
+				for (InfraManagementInfoResponse rec : infoList) {
+					retSet.add(rec.getManagementId() );
+				}
+				return retSet;
+			}
+			@Override
+			protected boolean isLackRestReq(ImportInfraManagementInfoRecordRequest restDto) {
+				return (restDto == null || restDto.getImportData().getManagementId() == null);
+			}
+			@Override
+			protected String getKeyValueXmlDto(InfraManagementInfo xmlDto) {
+				return xmlDto.getManagementId();
+			}
+			@Override
+			protected String getId(InfraManagementInfo xmlDto) {
+				return xmlDto.getManagementId();
+			}
+			@Override
+			protected void setNewRecordFlg(ImportInfraManagementInfoRecordRequest restDto, boolean flag) {
+				restDto.setIsNewRecord(flag);
+			}
+		};
+		int confirmRet = confirmer.executeConfirm();
+		if( confirmRet != SettingConstants.SUCCESS && confirmRet != SettingConstants.ERROR_CANCEL ){
+			//変換エラーならUnmarshalXml扱いで処理打ち切り(キャンセルはキャンセル以前の選択結果を反映するので次に進む)
+			log.warn(Messages.getString("SettingTools.UnmarshalXmlFailed"));
+			return confirmRet;
 		}
 		
-	}
-	
-	@Override
-	protected int registElement(InfraManagementInfo element) throws Exception {
-		InfraEndpointWrapper endpoint = InfraEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-		com.clustercontrol.ws.infra.InfraManagementInfo dto = conv.getDTO(element);
-		int ret = 0;
-		try {
-			if(!registerdSet.contains(getKeyInfoE(element))){
-				endpoint.addInfraManagement(dto);
-			} else {
-				//重複時、インポート処理方法を確認する
-				if(!ImportProcessMode.isSameprocess()){
-					String[] args = {getKeyInfoE(element)};
-					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-							null, Messages.getString("message.import.confirm2", args));
-				    ImportProcessMode.setProcesstype(dialog.open());
-				    ImportProcessMode.setSameprocess(dialog.getToggleState());
-				}
-			    
-			    if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-			    	try {
-			    		endpoint.modifyInfraManagement(dto);
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + getKeyInfoE(element));
-					} catch (Exception e1) {
-						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-						ret = SettingConstants.ERROR_INPROCESS;
-					}
-			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-			    	log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + getKeyInfoE(element));
-			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-			    	log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-			    	ret = -1;
-			    }
+		// 更新単位の件数毎にインポートメソッドを呼び出し、結果をログ出力
+		// API異常発生時はそこで中断、レコード個別の異常発生時はユーザ選択次第で続行
+		ImportClientController<ImportInfraManagementInfoRecordRequest, ImportInfraManagementInfoResponse, RecordRegistrationResponse> importController = new ImportClientController<ImportInfraManagementInfoRecordRequest, ImportInfraManagementInfoResponse, RecordRegistrationResponse>(
+				log, Messages.getString("infra.management"), confirmer.getImportRecDtoList(),true) {
+			@Override
+			protected List<RecordRegistrationResponse> getResRecList(ImportInfraManagementInfoResponse importResponse) {
+				return importResponse.getResultList();
+			};
+			@Override
+			protected Boolean getOccurException(ImportInfraManagementInfoResponse importResponse) {
+				return importResponse.getIsOccurException();
+			};
+			@Override
+			protected String getReqKeyValue(ImportInfraManagementInfoRecordRequest importRec) {
+				return importRec.getImportKeyValue();
+			};
+			@Override
+			protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+				return responseRec.getImportKeyValue();
+			};
+			@Override
+			protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+				return (responseRec.getResult() == ResultEnum.NORMAL) ;
+			};
+			@Override
+			protected ImportInfraManagementInfoResponse callImportWrapper(List<ImportInfraManagementInfoRecordRequest> importRecList)
+					throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+				ImportInfraManagementInfoRequest reqDto = new ImportInfraManagementInfoRequest();
+				reqDto.setRecordList(importRecList);
+				reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+				return UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importInfraManagementInfo(reqDto) ;
 			}
-		} catch (InvalidRole_Exception e) {
-			log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (InvalidUserPass_Exception e) {
-			log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (InvalidSetting_Exception e) {
-			log.warn(Messages.getString("SettingTools.InvalidSetting") + " : " + HinemosMessage.replace(e.getMessage()));
-			ret = SettingConstants.ERROR_INPROCESS;
+			@Override
+			protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+				if (responseRec.getExceptionInfo() != null) {
+					return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+				}
+				return null;
+			};
+		};
+		ret = importController.importExecute();
+
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		// オブジェクト権限のインポート対象を設定
+		for( RecordRegistrationResponse rec: importController.getImportSuccessList() ){
+			objectList.add(rec.getImportKeyValue());
 		}
 		return ret;
+	}
+
+	protected List<String> getImportObjects(){
+		return objectList;
 	}
 
 	@Override
@@ -171,7 +227,22 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 
 	@Override
 	protected InfraManagement getXmlInfo(String filePath) throws Exception {
-		return (InfraManagement) InfraManagement.unmarshal(new InputStreamReader(new FileInputStream(filePath), "UTF-8"));
+		// FIXME
+		// #5672 attibute である execCommand, checkCommand に含まれる改行が半角スペースに変更されてしまう事象への暫定対処
+		// 本質的には execCommand, checkCommand を attibute ではなく element として定義する必要があるが、
+		// マイナーバージョンでは修正前の XML が取り込めなくなってしまうため対応できない
+		// 次期メジャーバージョンでは element への変換を検討すること
+		StringBuffer sb = new StringBuffer();
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(filePath), "UTF-8"))) {
+			String line = in.readLine();
+			while ((line = in.readLine()) != null) {
+				sb.append("&#xA;");
+				sb.append(line);
+			}
+		}
+		// XML宣言後の改行は元に戻す
+		String xml = sb.toString().replaceFirst("&#xA;", System.getProperty("line.separator"));
+		return XmlMarshallUtil.unmarshall(InfraManagement.class,new StringReader(xml));
 	}
 
 	@Override
@@ -197,8 +268,8 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 
 	@Override
 	protected int compare(
-			com.clustercontrol.ws.infra.InfraManagementInfo info1,
-			com.clustercontrol.ws.infra.InfraManagementInfo info2) {
+			InfraManagementInfoResponse info1,
+			InfraManagementInfoResponse info2) {
 		return info1.getManagementId().compareTo(info2.getManagementId());
 	}
 
@@ -216,10 +287,10 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 	@Override
 	protected void checkDelete(InfraManagement xmlInfo) throws Exception{
 		
-		List<com.clustercontrol.ws.infra.InfraManagementInfo> subList = getList();
+		List<InfraManagementInfoResponse> subList = getList();
 		List<InfraManagementInfo> xmlElements = new ArrayList<>(getElements(xmlInfo));
 		
-		for(com.clustercontrol.ws.infra.InfraManagementInfo mgrInfo: new ArrayList<>(subList)){
+		for(InfraManagementInfoResponse mgrInfo: new ArrayList<>(subList)){
 			for(InfraManagementInfo xmlElement: new ArrayList<>(xmlElements)){
 				if(getKeyInfoD(mgrInfo).equals(getKeyInfoE(xmlElement))){
 					subList.remove(mgrInfo);
@@ -230,7 +301,7 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 		}
 		
 		if(subList.size() > 0){
-			for(com.clustercontrol.ws.infra.InfraManagementInfo info: subList){
+			for(InfraManagementInfoResponse info: subList){
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {getKeyInfoD(info)};
@@ -263,17 +334,12 @@ public class InfraSettingAction extends BaseAction<com.clustercontrol.ws.infra.I
 	 * @param objectIdList
 	 */
 	@Override
-	protected void importObjectPrivilege(List<InfraManagementInfo> objectList){
+	protected void importObjectPrivilege(List<String> objectList){
 		if(ImportProcessMode.isSameObjectPrivilege()){
-			List<String> objectIdList = new ArrayList<String>();
-			if(objectList != null){
-				for(InfraManagementInfo info : objectList)
-					objectIdList.add(info.getManagementId());
-			}
 			ObjectPrivilegeAction.importAccessExtraction(
 					ImportProcessMode.getXmlObjectPrivilege(),
 					HinemosModuleConstant.INFRA,
-					objectIdList,
+					objectList,
 					getLogger());
 		}
 	}

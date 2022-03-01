@@ -24,68 +24,59 @@ public class JobFileInfo implements Serializable {
 	private static final long serialVersionUID = 6448926354392693297L;
 
 	/** スコープ処理方法 */
-	private Integer m_processingMethod = 0;
+	private Integer processingMethod = 0;
 
 	/** 転送ファシリティID */
-	private String m_srcFacilityID;
+	private String srcFacilityID;
 
 	/** 受信ファシリティID */
-	private String m_destFacilityID;
+	private String destFacilityID;
 
 	/** 転送スコープ */
-	private String m_srcScope;
+	private String srcScope;
 
 	/** 受信スコープ */
-	private String m_destScope;
+	private String destScope;
 
 	/** ファイル */
-	private String m_srcFile;
+	private String srcFile;
 
 	/** 転送作業ディレクトリ */
-	private String m_srcWorkDir = "";
+	private String srcWorkDir = "";
 
 	/** 受信ディレクトリ */
-	private String m_destDirectory;
+	private String destDirectory;
 
 	/** 受信作業ディレクトリ */
-	private String m_destWorkDir = "";
+	private String destWorkDir = "";
 
 	/** ファイル圧縮 */
-	private Boolean m_compressionFlg = false;
+	private Boolean compressionFlg = false;
 
 	/** ファイルチェック */
-	private Boolean m_checkFlg = false;
+	private Boolean checkFlg = false;
 
 	/** ユーザ種別 */
-	private Boolean m_specifyUser = false;
+	private Boolean specifyUser = false;
 
 	/** 実効ユーザ */
-	private String m_user;
+	private String user;
 
 	/** リトライ回数 */
-	private Integer m_messageRetry = 0;
+	private Integer messageRetry = 0;
 	
 	/** コマンド実行失敗時終了フラグ */
-	private Boolean m_messageRetryEndFlg = false;
+	private Boolean messageRetryEndFlg = false;
 
 	/** コマンド実行失敗時終了値 */
-	private Integer m_messageRetryEndValue = 0;
-
-	/** 繰り返し実行フラグ */
-	private Boolean m_commandRetryFlg = false;
-
-	/** 繰り返し実行回数 */
-	private Integer m_commandRetry;
-
-	/** 繰り返し実行完了状態 */
-	private Integer m_commandRetryEndStatus;
+	private Integer messageRetryEndValue = 0;
 
 	/**
 	 * ファイル圧縮をするかしないかを返す。<BR>
 	 * @return ファイル圧縮のするかしないか
 	 */
 	public Boolean isCompressionFlg() {
-		return m_compressionFlg;
+		return compressionFlg;
 	}
 
 	/**
@@ -93,7 +84,7 @@ public class JobFileInfo implements Serializable {
 	 * @param compressionFlg ファイル圧縮をするかしないか
 	 */
 	public void setCompressionFlg(Boolean compressionFlg) {
-		this.m_compressionFlg = compressionFlg;
+		this.compressionFlg = compressionFlg;
 	}
 
 	/**
@@ -101,7 +92,7 @@ public class JobFileInfo implements Serializable {
 	 * @return ファイルチェックをするかしないか
 	 */
 	public Boolean isCheckFlg() {
-		return m_checkFlg;
+		return checkFlg;
 	}
 
 	/**
@@ -109,7 +100,7 @@ public class JobFileInfo implements Serializable {
 	 * @param checkFlg ファイルチェックをするかしないか
 	 */
 	public void setCheckFlg(Boolean checkFlg) {
-		this.m_checkFlg = checkFlg;
+		this.checkFlg = checkFlg;
 	}
 
 	/**
@@ -117,7 +108,7 @@ public class JobFileInfo implements Serializable {
 	 * @return 転送元のスコープ
 	 */
 	public String getSrcScope() {
-		return m_srcScope;
+		return srcScope;
 	}
 
 	/**
@@ -125,7 +116,7 @@ public class JobFileInfo implements Serializable {
 	 * @param srcScope 転送元のスコープ
 	 */
 	public void setSrcScope(String srcScope) {
-		this.m_srcScope = srcScope;
+		this.srcScope = srcScope;
 	}
 
 	/**
@@ -133,7 +124,7 @@ public class JobFileInfo implements Serializable {
 	 * @return 受信スコープ
 	 */
 	public String getDestScope() {
-		return m_destScope;
+		return destScope;
 	}
 
 	/**
@@ -141,7 +132,7 @@ public class JobFileInfo implements Serializable {
 	 * @param destScope 受信スコープ
 	 */
 	public void setDestScope(String destScope) {
-		this.m_destScope = destScope;
+		this.destScope = destScope;
 	}
 
 	/**
@@ -149,7 +140,7 @@ public class JobFileInfo implements Serializable {
 	 * @return 転送元のファシリティID
 	 */
 	public String getSrcFacilityID() {
-		return m_srcFacilityID;
+		return srcFacilityID;
 	}
 
 	/**
@@ -157,7 +148,7 @@ public class JobFileInfo implements Serializable {
 	 * @param srcFacilityID 転送元のファシリティID
 	 */
 	public void setSrcFacilityID(String srcFacilityID) {
-		this.m_srcFacilityID = srcFacilityID;
+		this.srcFacilityID = srcFacilityID;
 	}
 
 	/**
@@ -165,7 +156,7 @@ public class JobFileInfo implements Serializable {
 	 * @return 受信ファシリティID
 	 */
 	public String getDestFacilityID() {
-		return m_destFacilityID;
+		return destFacilityID;
 	}
 
 	/**
@@ -173,7 +164,7 @@ public class JobFileInfo implements Serializable {
 	 * @param destFacilityID 受信ファシリティID
 	 */
 	public void setDestFacilityID(String destFacilityID) {
-		this.m_destFacilityID = destFacilityID;
+		this.destFacilityID = destFacilityID;
 	}
 
 	/**
@@ -181,7 +172,7 @@ public class JobFileInfo implements Serializable {
 	 * @return 転送するファイルのパス
 	 */
 	public String getSrcFile() {
-		return m_srcFile;
+		return srcFile;
 	}
 
 	/**
@@ -189,7 +180,7 @@ public class JobFileInfo implements Serializable {
 	 * @param srcFile ファイル
 	 */
 	public void setSrcFile(String srcFile) {
-		this.m_srcFile = srcFile;
+		this.srcFile = srcFile;
 	}
 
 	/**
@@ -197,7 +188,7 @@ public class JobFileInfo implements Serializable {
 	 * @return 転送作業ディレクトリ
 	 */
 	public String getSrcWorkDir() {
-		return m_srcWorkDir;
+		return srcWorkDir;
 	}
 
 	/**
@@ -205,7 +196,7 @@ public class JobFileInfo implements Serializable {
 	 * @param srcWorkDir 転送作業ディレクトリ
 	 */
 	public void setSrcWorkDir(String srcWorkDir) {
-		this.m_srcWorkDir = srcWorkDir;
+		this.srcWorkDir = srcWorkDir;
 	}
 
 	/**
@@ -213,7 +204,7 @@ public class JobFileInfo implements Serializable {
 	 * @return 受信ディレクトリ
 	 */
 	public String getDestDirectory() {
-		return m_destDirectory;
+		return destDirectory;
 	}
 
 	/**
@@ -221,7 +212,7 @@ public class JobFileInfo implements Serializable {
 	 * @param destDirectory 受信ディレクトリ
 	 */
 	public void setDestDirectory(String destDirectory) {
-		this.m_destDirectory = destDirectory;
+		this.destDirectory = destDirectory;
 	}
 
 	/**
@@ -229,7 +220,7 @@ public class JobFileInfo implements Serializable {
 	 * @return 受信作業ディレクトリ
 	 */
 	public String getDestWorkDir() {
-		return m_destWorkDir;
+		return destWorkDir;
 	}
 
 	/**
@@ -237,7 +228,7 @@ public class JobFileInfo implements Serializable {
 	 * @param destWorkDir 受信作業ディレクトリ
 	 */
 	public void setDestWorkDir(String destWorkDir) {
-		this.m_destWorkDir = destWorkDir;
+		this.destWorkDir = destWorkDir;
 	}
 
 	/**
@@ -246,7 +237,7 @@ public class JobFileInfo implements Serializable {
 	 * @see com.clustercontrol.bean.ProcessingMethodConstant
 	 */
 	public Integer getProcessingMethod() {
-		return m_processingMethod;
+		return processingMethod;
 	}
 
 	/**
@@ -255,7 +246,7 @@ public class JobFileInfo implements Serializable {
 	 * @see com.clustercontrol.bean.ProcessingMethodConstant
 	 */
 	public void setProcessingMethod(Integer processingMethod) {
-		this.m_processingMethod = processingMethod;
+		this.processingMethod = processingMethod;
 	}
 
 	/**
@@ -263,7 +254,7 @@ public class JobFileInfo implements Serializable {
 	 * @return ユーザ種別
 	 */
 	public Boolean isSpecifyUser() {
-		return m_specifyUser;
+		return specifyUser;
 	}
 
 	/**
@@ -271,7 +262,7 @@ public class JobFileInfo implements Serializable {
 	 * @param userType ユーザ種別
 	 */
 	public void setSpecifyUser(Boolean specifyUser) {
-		this.m_specifyUser = specifyUser;
+		this.specifyUser = specifyUser;
 	}
 
 	/**
@@ -279,7 +270,7 @@ public class JobFileInfo implements Serializable {
 	 * @return 実効ユーザ
 	 */
 	public String getUser() {
-		return m_user;
+		return user;
 	}
 
 	/**
@@ -287,7 +278,7 @@ public class JobFileInfo implements Serializable {
 	 * @param user 実効ユーザ
 	 */
 	public void setUser(String user) {
-		this.m_user = user;
+		this.user = user;
 	}
 
 	/**
@@ -295,7 +286,7 @@ public class JobFileInfo implements Serializable {
 	 * @return リトライ回数
 	 */
 	public Integer getMessageRetry() {
-		return m_messageRetry;
+		return messageRetry;
 	}
 
 	/**
@@ -303,7 +294,7 @@ public class JobFileInfo implements Serializable {
 	 * @param messageRetry リトライ回数
 	 */
 	public void setMessageRetry(Integer messageRetry) {
-		this.m_messageRetry = messageRetry;
+		this.messageRetry = messageRetry;
 	}
 
 	/**
@@ -311,7 +302,7 @@ public class JobFileInfo implements Serializable {
 	 * @return コマンド実行失敗時終了フラグ
 	 */
 	public Boolean isMessageRetryEndFlg() {
-		return m_messageRetryEndFlg;
+		return messageRetryEndFlg;
 	}
 
 	/**
@@ -319,7 +310,7 @@ public class JobFileInfo implements Serializable {
 	 * @param errorEndFlg コマンド実行失敗時終了フラグ
 	 */
 	public void setMessageRetryEndFlg(Boolean messageRetryEndFlg) {
-		this.m_messageRetryEndFlg = messageRetryEndFlg;
+		this.messageRetryEndFlg = messageRetryEndFlg;
 	}
 
 	/**
@@ -327,7 +318,7 @@ public class JobFileInfo implements Serializable {
 	 * @return コマンド実行失敗時終了値
 	 */
 	public Integer getMessageRetryEndValue() {
-		return m_messageRetryEndValue;
+		return messageRetryEndValue;
 	}
 
 	/**
@@ -335,56 +326,7 @@ public class JobFileInfo implements Serializable {
 	 * @param errorEndValue コマンド実行失敗時終了値
 	 */
 	public void setMessageRetryEndValue(Integer messageRetryEndValue) {
-		this.m_messageRetryEndValue = messageRetryEndValue;
-	}
-
-
-	/**
-	 * 繰り返し実行フラグを返す。<BR>
-	 * @return 繰り返し実行フラグ
-	 */
-	public Boolean isCommandRetryFlg() {
-		return m_commandRetryFlg;
-	}
-
-	/**
-	 * 繰り返し実行フラグを設定する。<BR>
-	 * @param commandRetryFlg 繰り返し実行フラグ
-	 */
-	public void setCommandRetryFlg(Boolean commandRetryFlg) {
-		this.m_commandRetryFlg = commandRetryFlg;
-	}
-
-	/**
-	 * 繰り返し実行回数を返す。<BR>
-	 * @return 繰り返し実行回数
-	 */
-	public Integer getCommandRetry() {
-		return m_commandRetry;
-	}
-
-	/**
-	 * 繰り返し実行回数を設定する。<BR>
-	 * @param commandRetry 繰り返し実行回数
-	 */
-	public void setCommandRetry(Integer commandRetry) {
-		this.m_commandRetry = commandRetry;
-	}
-	
-	/**
-	 * 繰り返し実行完了状態を返す。<BR>
-	 * @return 繰り返し実行完了状態
-	 */
-	public Integer getCommandRetryEndStatus() {
-		return m_commandRetryEndStatus;
-	}
-
-	/**
-	 * 繰り返し実行完了状態を設定する。<BR>
-	 * @param commandRetryEndStatus 繰り返し実行完了状態
-	 */
-	public void setCommandRetryEndStatus(Integer commandRetryEndStatus) {
-		this.m_commandRetryEndStatus = commandRetryEndStatus;
+		this.messageRetryEndValue = messageRetryEndValue;
 	}
 
 	@Override
@@ -392,54 +334,44 @@ public class JobFileInfo implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result
-				+ ((m_checkFlg == null) ? 0 : m_checkFlg.hashCode());
-		result = prime * result
-				+ ((m_commandRetry == null) ? 0 : m_commandRetry.hashCode());
+				+ ((checkFlg == null) ? 0 : checkFlg.hashCode());
 		result = prime
 				* result
-				+ ((m_commandRetryFlg == null) ? 0 : m_commandRetryFlg
+				+ ((compressionFlg == null) ? 0 : compressionFlg.hashCode());
+		result = prime * result
+				+ ((destDirectory == null) ? 0 : destDirectory.hashCode());
+		result = prime
+				* result
+				+ ((destFacilityID == null) ? 0 : destFacilityID.hashCode());
+		result = prime * result
+				+ ((destScope == null) ? 0 : destScope.hashCode());
+		result = prime * result
+				+ ((destWorkDir == null) ? 0 : destWorkDir.hashCode());
+		result = prime * result
+				+ ((messageRetry == null) ? 0 : messageRetry.hashCode());
+		result = prime
+				* result
+				+ ((messageRetryEndFlg == null) ? 0 : messageRetryEndFlg
 						.hashCode());
 		result = prime
 				* result
-				+ ((m_commandRetryEndStatus == null) ? 0 : m_commandRetryEndStatus
-						.hashCode());
+				+ ((messageRetryEndValue == null) ? 0
+						: messageRetryEndValue.hashCode());
 		result = prime
 				* result
-				+ ((m_compressionFlg == null) ? 0 : m_compressionFlg.hashCode());
-		result = prime * result
-				+ ((m_destDirectory == null) ? 0 : m_destDirectory.hashCode());
-		result = prime
-				* result
-				+ ((m_destFacilityID == null) ? 0 : m_destFacilityID.hashCode());
-		result = prime * result
-				+ ((m_destScope == null) ? 0 : m_destScope.hashCode());
-		result = prime * result
-				+ ((m_destWorkDir == null) ? 0 : m_destWorkDir.hashCode());
-		result = prime * result
-				+ ((m_messageRetry == null) ? 0 : m_messageRetry.hashCode());
-		result = prime
-				* result
-				+ ((m_messageRetryEndFlg == null) ? 0 : m_messageRetryEndFlg
-						.hashCode());
-		result = prime
-				* result
-				+ ((m_messageRetryEndValue == null) ? 0
-						: m_messageRetryEndValue.hashCode());
-		result = prime
-				* result
-				+ ((m_processingMethod == null) ? 0 : m_processingMethod
+				+ ((processingMethod == null) ? 0 : processingMethod
 						.hashCode());
 		result = prime * result
-				+ ((m_specifyUser == null) ? 0 : m_specifyUser.hashCode());
+				+ ((specifyUser == null) ? 0 : specifyUser.hashCode());
 		result = prime * result
-				+ ((m_srcFacilityID == null) ? 0 : m_srcFacilityID.hashCode());
+				+ ((srcFacilityID == null) ? 0 : srcFacilityID.hashCode());
 		result = prime * result
-				+ ((m_srcFile == null) ? 0 : m_srcFile.hashCode());
+				+ ((srcFile == null) ? 0 : srcFile.hashCode());
 		result = prime * result
-				+ ((m_srcScope == null) ? 0 : m_srcScope.hashCode());
+				+ ((srcScope == null) ? 0 : srcScope.hashCode());
 		result = prime * result
-				+ ((m_srcWorkDir == null) ? 0 : m_srcWorkDir.hashCode());
-		result = prime * result + ((m_user == null) ? 0 : m_user.hashCode());
+				+ ((srcWorkDir == null) ? 0 : srcWorkDir.hashCode());
+		result = prime * result + ((user == null) ? 0 : user.hashCode());
 		return result;
 	}
 
@@ -461,9 +393,6 @@ public class JobFileInfo implements Serializable {
 				equalsSub(o1.getMessageRetry(), o2.getMessageRetry()) &&
 				equalsSub(o1.isMessageRetryEndFlg(), o2.isMessageRetryEndFlg()) &&
 				equalsSub(o1.getMessageRetryEndValue(), o2.getMessageRetryEndValue()) &&
-				equalsSub(o1.isCommandRetryFlg(), o2.isCommandRetryFlg()) &&
-				equalsSub(o1.getCommandRetry(), o2.getCommandRetry()) &&
-				equalsSub(o1.getCommandRetryEndStatus(), o2.getCommandRetryEndStatus()) &&
 				equalsSub(o1.getProcessingMethod(), o2.getProcessingMethod()) &&
 				equalsSub(o1.isSpecifyUser(), o2.isSpecifyUser()) &&
 				equalsSub(o1.getSrcFacilityID(), o2.getSrcFacilityID()) &&

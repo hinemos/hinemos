@@ -60,6 +60,7 @@ public class AplLoggerPutEventAfterRollbackCallback implements JpaTransactionCal
 	 */
 	@Override
 	public void postRollback() {
+		m_log.debug("postRollback()");
 		this.rollbackFlg = true;
 	}
 
@@ -71,6 +72,7 @@ public class AplLoggerPutEventAfterRollbackCallback implements JpaTransactionCal
 	 */
 	@Override
 	public void postClose() {
+		m_log.debug("postClose()");
 		if(rollbackFlg) {
 			JpaTransactionManager jtm = new JpaTransactionManager();
 			

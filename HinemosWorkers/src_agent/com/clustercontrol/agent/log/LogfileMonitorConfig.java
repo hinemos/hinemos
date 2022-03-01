@@ -12,13 +12,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.agent.util.AgentProperties;
-import com.clustercontrol.ws.monitor.MonitorInfo;
+import com.clustercontrol.agent.util.filemonitor.FileMonitorConfig;
 
-public class LogfileMonitorConfig {
+public class LogfileMonitorConfig implements FileMonitorConfig{
 
 	// ロガー
 	private static Log m_log = LogFactory.getLog(LogfileMonitorConfig.class);
 
+	private static final String MAX_THREADS = "monitor.logfile.filter.threads";
+
+	private static final String RUN_INTERVAL = "monitor.logfile.filter.interval";
+	
 	private static final String UNCHANGED_STATS_PERIOD = "monitor.logfile.filter.filesizecheck.period";
 
 	private static final String FIRST_PART_DATA_CHECK_PERIOD = "monitor.logfile.filter.fileheadercheck.period";
@@ -37,45 +41,83 @@ public class LogfileMonitorConfig {
 	
 	private static final String READ_CARRYOVER_LENGTH = "monitor.logfile.read.carryover.length";
 
+	private static final String MAX_FILE_NOTIFY_INTERVAL_KEY = "monitor.logfile.filter.maxfiles.notify.interval";
+
+	/** ログファイル監視スレッド数上限 */
+	private int maxThreads = 2;
+
+	/** ログファイル監視間隔 */
+	private int runInterval = 10000; // 10sec
+
 	/** ファイル変更チェック期間設定（ミリ秒） */
-	protected static int unchangedStatsPeriod = 0;
+	private int unchangedStatsPeriod = 0;
 
 	/** ファイル変更詳細チェック（冒頭データ比較）期間（ミリ秒） */
-	protected static int firstPartDataCheckPeriod = 0;
+	private int firstPartDataCheckPeriod = 0;
 
 	/** ファイル変更詳細チェック（冒頭データ比較）サイズ（byte） */
-	protected static int firstPartDataCheckSize = 0;
+	private int firstPartDataCheckSize = 0;
 
 	/** 上限ファイルサイズ設定（byte） */
-	protected static long fileMaxSize = 0L;
+	private long fileMaxSize = 0L;
 	
 	/** 上限ファイル数 */
-	protected static long fileMaxFiles = 0;
+	private long fileMaxFiles = 0;
 
 	/** オリジナルメッセージのサイズ上限*/
-	private static int logfilMessageLength = 0;
+	private int logfilMessageLength = 0;
 	
 	/** オリジナルメッセージの読み込み行数上限*/
-	protected static int logfilMessageLine = 0;
+	private int logfilMessageLine = 0;
 
 	/** ログファイル読込繰越データ長：ログファイル読込（バッファ単位取得、末尾まで連続）次回繰越データ最大長 */
-	protected static int logfileReadCarryOverLength = 0;
+	private int logfileReadCarryOverLength = 0;
 
-	protected static final String HINEMOS_LOG_AGENT = "hinemos_agent";
+	private static final String HINEMOS_LOG_AGENT = "hinemos_agent";
 
 	/** ログ先頭に定義するプログラム名 */
-	protected static String program = HINEMOS_LOG_AGENT;
+	private String program = HINEMOS_LOG_AGENT;
 
-	static {
+	private long logfileMaxFileNotifyInterval = 0;
+	
+	private static LogfileMonitorConfig instance = new LogfileMonitorConfig();
+
+	private LogfileMonitorConfig() {
+		// ログファイル監視スレッド数上限
+		String maxThreadsStr = AgentProperties.getProperty(MAX_THREADS, Integer.toString(maxThreads));
+		try {
+			int value = Integer.parseInt(maxThreadsStr);
+			if (value < 1) {
+				throw new NumberFormatException("invalid value: " + maxThreadsStr);
+			}
+			maxThreads = value;
+		} catch (NumberFormatException e) {
+			m_log.warn("LogfileMonitorConfig() : " + MAX_THREADS + ", " + e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("LogfileMonitorConfig() : " + MAX_THREADS + ", " + e.getMessage(), e);
+		}
+		m_log.debug(MAX_THREADS + "=" + maxThreads);
+
+		// ログファイル監視間隔 (ミリ秒)
+		String runIntervalStr = AgentProperties.getProperty(RUN_INTERVAL, Integer.toString(runInterval));
+		try {
+			runInterval = Integer.parseInt(runIntervalStr);
+		} catch (NumberFormatException e) {
+			m_log.warn("LogfileMonitorConfig() : " + RUN_INTERVAL, e);
+		} catch (Exception e) {
+			m_log.warn("LogfileMonitorConfig() : " + RUN_INTERVAL, e);
+		}
+		m_log.debug(RUN_INTERVAL + "=" + runInterval);
+
 		// ファイル変更チェック期間（秒）
 		String sleepInterval = AgentProperties.getProperty(UNCHANGED_STATS_PERIOD, "5");
 		m_log.info(UNCHANGED_STATS_PERIOD + " = " + sleepInterval + " sec");
 		try {
 			unchangedStatsPeriod = Integer.parseInt(sleepInterval) * 1000;
 		} catch (NumberFormatException e) {
-			m_log.warn("LogfileManager() : " + UNCHANGED_STATS_PERIOD, e);
+			m_log.warn("LogfileMonitorConfig() : " + UNCHANGED_STATS_PERIOD, e);
 		} catch (Exception e) {
-			m_log.warn("LogfileManager() : " + UNCHANGED_STATS_PERIOD, e);
+			m_log.warn("LogfileMonitorConfig() : " + UNCHANGED_STATS_PERIOD, e);
 		}
 		m_log.debug(UNCHANGED_STATS_PERIOD + " = " + unchangedStatsPeriod);
 
@@ -84,9 +126,9 @@ public class LogfileMonitorConfig {
 		try {
 			firstPartDataCheckPeriod = Integer.parseInt(firstPartDataCheckPeriodStr) * 1000;
 		} catch (NumberFormatException e) {
-			m_log.warn("LogfileManager() : " + FIRST_PART_DATA_CHECK_PERIOD, e);
+			m_log.warn("LogfileMonitorConfig() : " + FIRST_PART_DATA_CHECK_PERIOD, e);
 		} catch (Exception e) {
-			m_log.warn("LogfileManager() : " + FIRST_PART_DATA_CHECK_PERIOD, e);
+			m_log.warn("LogfileMonitorConfig() : " + FIRST_PART_DATA_CHECK_PERIOD, e);
 		}
 		m_log.debug(FIRST_PART_DATA_CHECK_PERIOD + " = " + firstPartDataCheckPeriod);
 
@@ -95,9 +137,9 @@ public class LogfileMonitorConfig {
 		try {
 			firstPartDataCheckSize = Integer.parseInt(firstPartDataCheckSizeStr);
 		} catch (NumberFormatException e) {
-			m_log.warn("LogfileManager() : " + FIRST_PART_DATA_CHECK_SIZE, e);
+			m_log.warn("LogfileMonitorConfig() : " + FIRST_PART_DATA_CHECK_SIZE, e);
 		} catch (Exception e) {
-			m_log.warn("LogfileManager() : " + FIRST_PART_DATA_CHECK_SIZE, e);
+			m_log.warn("LogfileMonitorConfig() : " + FIRST_PART_DATA_CHECK_SIZE, e);
 		}
 		m_log.debug(FIRST_PART_DATA_CHECK_SIZE + " = " + firstPartDataCheckSize);
 
@@ -107,9 +149,9 @@ public class LogfileMonitorConfig {
 		try {
 			fileMaxSize = Long.parseLong(fileMaxSizeStr);
 		} catch (NumberFormatException e) {
-			m_log.warn("LogfileManager() : " + FILE_MAX_SIZE, e);
+			m_log.warn("LogfileMonitorConfig() : " + FILE_MAX_SIZE, e);
 		} catch (Exception e) {
-			m_log.warn("LogfileManager() : " + FILE_MAX_SIZE, e);
+			m_log.warn("LogfileMonitorConfig() : " + FILE_MAX_SIZE, e);
 		}
 		m_log.debug(FILE_MAX_SIZE + " = " + fileMaxSize);
 		
@@ -119,7 +161,7 @@ public class LogfileMonitorConfig {
 		try {
 			fileMaxFiles = Integer.parseInt(fileMaxStr);
 		} catch (Exception e) {
-			m_log.warn("LogfileThread : " + e.getMessage());
+			m_log.warn("LogfileMonitorConfig() : " + e.getMessage());
 		}
 		m_log.info(FILE_MAX_FILES + "=" + fileMaxFiles);
 
@@ -130,9 +172,9 @@ public class LogfileMonitorConfig {
 		try {
 			logfilMessageLength = Integer.parseInt(logfilMessageLimitLengthStr);
 		} catch (NumberFormatException e) {
-			m_log.warn("LogfileManager() : " + MONITOR_LOGFILE_MESSAGE_LENGTH, e);
+			m_log.warn("LogfileMonitorConfig() : " + MONITOR_LOGFILE_MESSAGE_LENGTH, e);
 		} catch (Exception e) {
-			m_log.warn("LogfileManager() : " + MONITOR_LOGFILE_MESSAGE_LENGTH, e);
+			m_log.warn("LogfileMonitorConfig() : " + MONITOR_LOGFILE_MESSAGE_LENGTH, e);
 		}
 		m_log.debug(MONITOR_LOGFILE_MESSAGE_LENGTH + " = " + logfilMessageLength);
 
@@ -143,9 +185,9 @@ public class LogfileMonitorConfig {
 		try {
 			logfilMessageLine = Integer.parseInt(logfilMessageLimitLineStr);
 		} catch (NumberFormatException e) {
-			m_log.warn("LogfileManager() : " + MONITOR_LOGFILE_MESSAGE_LINE, e);
+			m_log.warn("LogfileMonitorConfig() : " + MONITOR_LOGFILE_MESSAGE_LINE, e);
 		} catch (Exception e) {
-			m_log.warn("LogfileManager() : " + MONITOR_LOGFILE_MESSAGE_LINE, e);
+			m_log.warn("LogfileMonitorConfig() : " + MONITOR_LOGFILE_MESSAGE_LINE, e);
 		}
 		m_log.debug(MONITOR_LOGFILE_MESSAGE_LINE + " = " + logfilMessageLine);
 		
@@ -156,9 +198,9 @@ public class LogfileMonitorConfig {
 		try {
 				logfileReadCarryOverLength = Integer.parseInt(logfileReadCarryOverLengthStr);
 		} catch (NumberFormatException e) {
-				m_log.warn("LogfileManager() : " + READ_CARRYOVER_LENGTH, e);
+				m_log.warn("LogfileMonitorConfig() : " + READ_CARRYOVER_LENGTH, e);
 		} catch (Exception e) {
-				m_log.warn("LogfileManager() : " + READ_CARRYOVER_LENGTH, e);
+				m_log.warn("LogfileMonitorConfig() : " + READ_CARRYOVER_LENGTH, e);
 		}
 		m_log.debug(READ_CARRYOVER_LENGTH + " = " + logfileReadCarryOverLength);
 		
@@ -168,38 +210,87 @@ public class LogfileMonitorConfig {
 			program = HINEMOS_LOG_AGENT;
 		}
 		m_log.debug(PROGRAM + " = " + program);
-	}
-	/**
-	 * 監視文字列を整形する
-	 * @param line
-	 * @return formatted line
-	 */
-	public static String formatLine(String line, MonitorInfo monitorInfo){
-		String separator = "\n";
-		switch(monitorInfo.getLogfileCheckInfo().getFileReturnCode()) {
-			case "LF":
-				separator = "\n";
-				break;
-			case "CR":
-				separator = "\r";
-				break;
-			case "CRLF":
-				separator = "\r\n";
-				break;
-			default:
-				m_log.warn("ReturnCode:" + monitorInfo.getLogfileCheckInfo().getFileReturnCode());
-		}
 
-		// ファイル改行コードが残ってしまうので、ここで削除する。
-		line = line.replace(separator, "");
-		
-		// 長さが上限値を超える場合は切り捨てる
-		if (line.length() > logfilMessageLength) {
-			if (m_log.isDebugEnabled()) {
-				m_log.debug("log line is too long");
-			}
-			line = line.substring(0, logfilMessageLength);
+		String logfileMaxFileNotifyIntervalStr = AgentProperties.getProperty(MAX_FILE_NOTIFY_INTERVAL_KEY, "0");
+		try {
+			logfileMaxFileNotifyInterval = Long.parseLong(logfileMaxFileNotifyIntervalStr);
+		} catch (NumberFormatException e) {
+				m_log.warn("LogfileMonitorConfig() : " + MAX_FILE_NOTIFY_INTERVAL_KEY, e);
+		} catch (Exception e) {
+				m_log.warn("LogfileMonitorConfig() : " + MAX_FILE_NOTIFY_INTERVAL_KEY, e);
 		}
-		return line;
+		m_log.debug(MAX_FILE_NOTIFY_INTERVAL_KEY + " = " + logfileReadCarryOverLength);
 	}
+
+	public static LogfileMonitorConfig getInstance() {
+		return instance;
+	}
+
+	@Override
+	public int getMaxThreads() {
+		return maxThreads;
+	}
+
+	@Override
+	public String getThreadName() {
+		// LogfileMonitor-execute-
+		return this.getClass().getSimpleName().replace("Config", "") + "-execute-";
+	}
+
+	@Override
+	public int getRunInterval() {
+		return runInterval;
+	}
+
+	@Override
+	public int getUnchangedStatsPeriod() {
+		return unchangedStatsPeriod;
+	}
+
+	@Override
+	public int getFirstPartDataCheckPeriod() {
+		return firstPartDataCheckPeriod;
+	}
+
+	@Override
+	public int getFirstPartDataCheckSize() {
+		return firstPartDataCheckSize;
+	}
+
+	@Override
+	public long getFileMaxSize() {
+		return fileMaxSize;
+	}
+
+	@Override
+	public long getFileMaxFiles() {
+		return fileMaxFiles;
+	}
+
+	@Override
+	public int getFilMessageLength() {
+		return logfilMessageLength;
+	}
+
+	@Override
+	public int getFilMessageLine() {
+		return logfilMessageLine;
+	}
+
+	@Override
+	public int getFileReadCarryOverLength() {
+		return logfileReadCarryOverLength;
+	}
+
+	@Override
+	public String getProgram() {
+		return program;
+	}
+
+	@Override
+	public long getMaxFileNotifyInterval() {
+		return logfileMaxFileNotifyInterval;
+	}
+
+	
 }

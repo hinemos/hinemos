@@ -8,13 +8,22 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorStringValueInfoResponse;
 
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
@@ -23,12 +32,6 @@ import com.clustercontrol.utility.settings.monitor.xml.SyslogInfo;
 import com.clustercontrol.utility.settings.monitor.xml.SyslogMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.SyslogMonitors;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorStringValueInfo;
 
 /**
  * システムログ 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -42,7 +45,7 @@ public class SystemlogConv {
 
 	private final static String SCHEMA_TYPE = "H";
 	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "1";
+	private final static String SCHEMA_REVISION = "2";
 
 	/**
 	 * <BR>
@@ -80,14 +83,17 @@ public class SystemlogConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws ParseException 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	public static List<MonitorInfo> createMonitorInfoList(SyslogMonitors syslogMonitors) throws ConvertorException {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(SyslogMonitors syslogMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 
 		for (SyslogMonitor syslogMonitor : syslogMonitors.getSyslogMonitor()) {
 			logger.debug("Monitor Id : " + syslogMonitor.getMonitor().getMonitorId());
 
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(syslogMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(syslogMonitor.getMonitor());
 			StringValue[] values = syslogMonitor.getStringValue();
 			MonitorConv.sort(values);
 			for (StringValue stringValue : values) {
@@ -105,18 +111,20 @@ public class SystemlogConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static SyslogMonitors createSyslogMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static SyslogMonitors createSyslogMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		SyslogMonitors syslogMonitors = new SyslogMonitors();
 
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
@@ -124,8 +132,8 @@ public class SystemlogConv {
 			syslogMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 
 			int orderNo = 0;
-			for (MonitorStringValueInfo monitorStringValueInfo : monitorInfo.getStringValueInfo()) {
-				syslogMonitor.addStringValue(MonitorConv.createStringValue(monitorStringValueInfo, ++orderNo));
+			for (MonitorStringValueInfoResponse monitorStringValueInfo : monitorInfo.getStringValueInfo()) {
+				syslogMonitor.addStringValue(MonitorConv.createStringValue(monitorInfo.getMonitorId(),monitorStringValueInfo, ++orderNo));
 			}
 
 			syslogMonitor.setSyslogInfo(createSyslogInfo(monitorInfo));
@@ -143,7 +151,7 @@ public class SystemlogConv {
 	 *
 	 * @return
 	 */
-	private static SyslogInfo createSyslogInfo(MonitorInfo monitorInfo) {
+	private static SyslogInfo createSyslogInfo(MonitorInfoResponse monitorInfo) {
 		SyslogInfo syslogInfo = new SyslogInfo();
 		syslogInfo.setMonitorTypeId("");
 

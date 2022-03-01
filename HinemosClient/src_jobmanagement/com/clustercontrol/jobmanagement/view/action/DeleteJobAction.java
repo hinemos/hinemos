@@ -25,15 +25,15 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.composite.JobTreeComposite;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[一覧]ビューの「削除」のクライアント側アクションクラス<BR>
@@ -102,16 +102,16 @@ public class DeleteJobAction extends AbstractHandler implements IElementUpdater 
 			return null;
 		}
 
-		List<JobTreeItem> itemList = jobListView.getSelectJobTreeItemList();
+		List<JobTreeItemWrapper> itemList = jobListView.getSelectJobTreeItemList();
 		if(null == itemList || itemList.isEmpty()){
 			return null;
 		}
 
 		//親と子のペアを用意する
 		int size = itemList.size();
-		JobTreeItem[][] itemAry = new JobTreeItem[size][2];
+		JobTreeItemWrapper[][] itemAry = new JobTreeItemWrapper[size][2];
 		for(int i=0; i<size; i++) {
-			JobTreeItem item = itemList.get(i);
+			JobTreeItemWrapper item = itemList.get(i);
 			itemAry[i][0] = item.getParent();
 			itemAry[i][1] = item;
 		}
@@ -137,14 +137,14 @@ public class DeleteJobAction extends AbstractHandler implements IElementUpdater 
 				Messages.getString("confirmed"),
 				message)) {
 
-			for(JobTreeItem[] ary : itemAry) {
-				JobTreeItem parent = ary[0];
-				JobTreeItem item = ary[1];
+			for(JobTreeItemWrapper[] ary : itemAry) {
+				JobTreeItemWrapper parent = ary[0];
+				JobTreeItemWrapper item = ary[1];
 
 				JobTreeItemUtil.removeChildren(parent, item);
 
 				JobEditState jobEditState = JobEditStateUtil.getJobEditState(JobTreeItemUtil.getManagerName( parent ));
-				if (item.getData().getType() == JobConstant.TYPE_JOBUNIT) {
+				if (item.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 					// ジョブユニットの削除
 					jobEditState.removeEditedJobunit(item);
 					if (jobEditState.getLockedJobunitBackup(item.getData()) != null) {
@@ -178,14 +178,19 @@ public class DeleteJobAction extends AbstractHandler implements IElementUpdater 
 					// Enable button when 1 item is selected
 					JobListView view = (JobListView)part;
 
-					if(view.getDataType() == JobConstant.TYPE_JOBUNIT ||
-							view.getDataType() == JobConstant.TYPE_JOBNET ||
-							view.getDataType() == JobConstant.TYPE_JOB ||
-							view.getDataType() == JobConstant.TYPE_FILEJOB ||
-							view.getDataType() == JobConstant.TYPE_APPROVALJOB ||
-							view.getDataType() == JobConstant.TYPE_MONITORJOB ||
-							view.getDataType() == JobConstant.TYPE_REFERJOBNET ||
-							view.getDataType() == JobConstant.TYPE_REFERJOB){
+					if(view.getDataType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.JOBNET ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.JOB ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.FILEJOB ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.MONITORJOB ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.RPAJOB ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.REFERJOBNET ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.REFERJOB ||
+							view.getDataType() == JobInfoWrapper.TypeEnum.RESOURCEJOB){
 						editEnable = view.getEditEnable();
 					}
 				}

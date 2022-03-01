@@ -8,7 +8,7 @@
 
 package com.clustercontrol.fault;
 
-public class LogTransferNotFound extends HinemosException {
+public class LogTransferNotFound extends HinemosNotFound {
 
 	/**
 	 * 

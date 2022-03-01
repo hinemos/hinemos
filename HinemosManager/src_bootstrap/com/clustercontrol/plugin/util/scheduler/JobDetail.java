@@ -22,6 +22,8 @@ public class JobDetail implements Serializable, Cloneable {
 	private JobDataMap jobDataMap;
 	private boolean durability = false;
 	private transient JobKey key = null;
+	private Long executeTime;
+	private Long previousFireTime;
 
 	public JobDetail() {
 	}
@@ -141,6 +143,18 @@ public class JobDetail implements Serializable, Cloneable {
 	public boolean isDurable() {
 		return durability;
 	}
+	public Long getExecuteTime() {
+		return executeTime;
+	}
+	public void setExecuteTime(Long executeTime) {
+		this.executeTime = executeTime;
+	}
+	public Long getPreviousFireTime() {
+		return previousFireTime;
+	}
+	public void setPreviousFireTime(Long previousFireTime) {
+		this.previousFireTime = previousFireTime;
+	}
 
 	@Override
 	public String toString() {
@@ -180,7 +194,8 @@ public class JobDetail implements Serializable, Cloneable {
 			cloneInfo.setDescription(this.description);
 			cloneInfo.setJobClass(this.jobClass);
 			cloneInfo.setJobDataMap(this.jobDataMap);
-			cloneInfo.setDurability(this.durability);
+			cloneInfo.setExecuteTime(this.executeTime);
+			cloneInfo.setPreviousFireTime(this.previousFireTime);
 			return cloneInfo;
 		} catch (CloneNotSupportedException e) {
 			throw new InternalError(e.toString());

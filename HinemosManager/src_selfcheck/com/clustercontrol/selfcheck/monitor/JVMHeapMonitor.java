@@ -11,9 +11,8 @@ package com.clustercontrol.selfcheck.monitor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
-import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -81,7 +80,7 @@ public class JVMHeapMonitor extends SelfCheckMonitorBase {
 
 		String[] msgAttr1 = { Integer.toString(freeHeapMByte),
 				Integer.toString(jvmMinHeapThreshold) };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_003_SYS_SFC, msgAttr1,
+		AplLogger.put(InternalIdCommon.SYS_SFC_SYS_003, msgAttr1,
 				"free heap of jvm (" +
 						freeHeapMByte +
 						" [mbyte]) is not enough (threshold " +

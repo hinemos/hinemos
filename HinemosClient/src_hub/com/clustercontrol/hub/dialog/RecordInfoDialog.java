@@ -33,12 +33,12 @@ import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.hub.action.DownloadCollectedData;
 import com.clustercontrol.hub.composite.LogSearchComposite;
+import com.clustercontrol.hub.dto.DataResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.PropertySheet;
-import com.clustercontrol.ws.hub.StringData;
 
 /**
  * 収集蓄積[レコードの詳細]ダイアログクラス<BR>
@@ -52,7 +52,7 @@ public class RecordInfoDialog extends CommonDialog {
 	private static Log m_log = LogFactory.getLog(RecordInfoDialog.class);
 
 	/** 選択されたアイテム */
-	private StringData selectData = null;
+	private DataResponse selectData = null;
 	/** プロパティシート */
 	private PropertySheet propertySheet = null;
 	/** プロパティ */
@@ -81,7 +81,7 @@ public class RecordInfoDialog extends CommonDialog {
 	 * @param parent
 	 *            親のシェルオブジェクト
 	 */
-	public RecordInfoDialog(Shell parentShell, String manager, StringData selectData, boolean isBinary) {
+	public RecordInfoDialog(Shell parentShell, String manager, DataResponse selectData, boolean isBinary) {
 		super(parentShell);
 		setShellStyle(getShellStyle() | SWT.RESIZE | SWT.MAX);
 		this.parentShell = parentShell;
@@ -197,7 +197,7 @@ public class RecordInfoDialog extends CommonDialog {
 	 * @param locale
 	 *            ロケール情報
 	 */
-	private Property columnToProperty(StringData stringData, Locale locale) {
+	private Property columnToProperty(DataResponse stringData, Locale locale) {
 		// 受信日時
 		Property time = new Property(PROPERTY_ID_TIME,
 				Messages.getString("view.hub.log.search.result.culumn.timestamp", locale),

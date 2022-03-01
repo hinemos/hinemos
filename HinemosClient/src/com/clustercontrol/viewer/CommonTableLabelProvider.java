@@ -21,7 +21,18 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
+import org.openapitools.client.model.JobApprovalInfoResponse;
+import org.openapitools.client.model.JobDetailInfoResponse;
+import org.openapitools.client.model.JobForwardFileResponse;
+import org.openapitools.client.model.JobHistoryResponse;
+import org.openapitools.client.model.JobNodeDetailResponse;
+import org.openapitools.client.model.JobObjectInfoResponse;
+import org.openapitools.client.model.JobParameterInfoResponse;
+import org.openapitools.client.model.JobRpaEndValueConditionInfoResponse;
+import org.openapitools.client.model.JobRuntimeParamResponse;
+import org.openapitools.client.model.MaintenanceScheduleResponse;
 
+import com.clustercontrol.approval.util.JobApprovalInfoWrapper;
 import com.clustercontrol.bean.CheckBoxImageConstant;
 import com.clustercontrol.bean.DayOfWeekConstant;
 import com.clustercontrol.bean.EndStatusImageConstant;
@@ -34,7 +45,6 @@ import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.ProcessMessage;
 import com.clustercontrol.bean.RadioButtonImageConstant;
 import com.clustercontrol.bean.RunInterval;
-import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.bean.StatusMessage;
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.bean.ValidMessage;
@@ -46,10 +56,13 @@ import com.clustercontrol.jobmanagement.bean.JobApprovalResultMessage;
 import com.clustercontrol.jobmanagement.bean.JobApprovalStatusImageConstant;
 import com.clustercontrol.jobmanagement.bean.JobApprovalStatusMessage;
 import com.clustercontrol.jobmanagement.bean.JobParamTypeMessage;
+import com.clustercontrol.jobmanagement.bean.JobRpaEndValueJudgmentTypeMessage;
+import com.clustercontrol.jobmanagement.bean.JobRpaReturnCodeConditionMessage;
 import com.clustercontrol.jobmanagement.bean.JobRuntimeParamTypeMessage;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectMessage;
 import com.clustercontrol.jobmanagement.bean.ScheduleOnOffImageConstant;
 import com.clustercontrol.jobmanagement.bean.StatusImageConstant;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.monitor.bean.ConfirmMessage;
 import com.clustercontrol.notify.util.NotifyTypeUtil;
@@ -59,7 +72,6 @@ import com.clustercontrol.repository.bean.NodeConfigRunInterval;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimeStringConverter;
 import com.clustercontrol.util.TimezoneUtil;
-import com.clustercontrol.ws.common.Schedule;
 
 /**
  * CommonTableViewerクラス用のLabelProviderクラス<BR>
@@ -114,9 +126,27 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 		switch(tableColumn.getType()){
 		case TableColumnInfo.JOB:
 			//データタイプが「ジョブ」の処理
+			if(item instanceof JobInfoWrapper.TypeEnum){
+				return JobMessage.typeEnumValueToString(((JobInfoWrapper.TypeEnum) item).getValue());
+			}
+			if(item instanceof JobHistoryResponse.JobTypeEnum){
+				return JobMessage.typeEnumValueToString(((JobHistoryResponse.JobTypeEnum) item).getValue());
+			}
 			return JobMessage.typeToString(((Number) item).intValue());
 		case TableColumnInfo.STATE:
 			//データタイプが「状態」の処理
+			if (item instanceof JobHistoryResponse.StatusEnum) {
+				return StatusMessage.typeEnumValueToString(((JobHistoryResponse.StatusEnum) item).getValue());
+			}
+			if (item instanceof JobNodeDetailResponse.StatusEnum) {
+				return StatusMessage.typeEnumValueToString(((JobNodeDetailResponse.StatusEnum) item).getValue());
+			}
+			if (item instanceof JobForwardFileResponse.StatusEnum) {
+				return StatusMessage.typeEnumValueToString(((JobForwardFileResponse.StatusEnum) item).getValue());
+			}
+			if (item instanceof JobDetailInfoResponse.StatusEnum) {
+				return StatusMessage.typeEnumValueToString(((JobDetailInfoResponse.StatusEnum) item).getValue());
+			}
 			return StatusMessage.typeToString(((Number) item).intValue());
 		case TableColumnInfo.PRIORITY:
 			//データタイプが「重要度」の処理
@@ -139,7 +169,19 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			}
 		case TableColumnInfo.JUDGMENT_OBJECT:
 			//データタイプが「判定対象」の処理
-			return JudgmentObjectMessage.typeToString(((Number) item).intValue());
+			if( item instanceof JobObjectInfoResponse.TypeEnum ){
+				if( (int)list.get(1) == 0) {
+					return JudgmentObjectMessage.enumToString((JobObjectInfoResponse.TypeEnum) item);
+				} else {
+					// 待ち条件が子要素だった場合、ネスト表現用の空白を追加する
+					return "    " + JudgmentObjectMessage.enumToString((JobObjectInfoResponse.TypeEnum) item);
+				}
+			} else if( item instanceof String ){
+				// 待ち条件群タイトル
+				return (String)item;
+			} else {
+				return null;
+			}
 		case TableColumnInfo.NOTIFY_TYPE:
 			//データタイプが「判定対象」の処理
 			return NotifyTypeUtil.typeToString(((Number) item).intValue());
@@ -156,10 +198,10 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			}
 		case TableColumnInfo.SCHEDULE:
 			//データタイプが「スケジュール」の処理
-			Schedule schedule = (Schedule) item;
+			MaintenanceScheduleResponse schedule = (MaintenanceScheduleResponse) item;
 			String scheduleString = null;
 			DecimalFormat format = new DecimalFormat("00");
-			if (schedule.getType() == ScheduleConstant.TYPE_DAY) {
+			if (MaintenanceScheduleResponse.TypeEnum.DAY.equals(schedule.getType())) {
 				if (schedule.getMonth() != null) {
 					scheduleString = format.format(schedule.getMonth()) +
 							"/" + format.format(schedule.getDay()) + " " +
@@ -177,7 +219,7 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 					scheduleString = format.format(schedule.getMinute()) +
 							Messages.getString("minute");
 				}
-			} else if (schedule.getType() == ScheduleConstant.TYPE_WEEK){
+			} else if (MaintenanceScheduleResponse.TypeEnum.WEEK.equals(schedule.getType())){
 				if (schedule.getHour() != null) {
 					scheduleString = DayOfWeekConstant.typeToString(schedule.getWeek()) +
 							" " + format.format(schedule.getHour()) + ":" +
@@ -202,6 +244,13 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			return ProcessMessage.typeToString(((Boolean) item).booleanValue());
 		case TableColumnInfo.END_STATUS:
 			//データタイプが「終了状態」の処理
+			if(item instanceof JobHistoryResponse.EndStatusEnum){
+				return EndStatusMessage.typeEnumValueToString(((JobHistoryResponse.EndStatusEnum) item).getValue() );
+			}
+			if(item instanceof JobForwardFileResponse.EndStatusEnum){
+				return EndStatusMessage.typeEnumValueToString(((JobForwardFileResponse.EndStatusEnum) item).getValue() );
+			}
+			
 			return EndStatusMessage.typeToString(((Number) item).intValue());
 		case TableColumnInfo.CHECKBOX:
 			//データタイプが「チェックボックス」の処理
@@ -214,6 +263,9 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			return "";
 		case TableColumnInfo.JOB_PARAM_TYPE:
 			//データタイプが「ジョブパラメータ種別」の処理
+			if(item instanceof JobParameterInfoResponse.TypeEnum){
+				return JobParamTypeMessage.typeEnumToString((JobParameterInfoResponse.TypeEnum)item);
+			}
 			return JobParamTypeMessage.typeToString(((Number) item).intValue());
 		case TableColumnInfo.COLLECT_STATUS:
 			//データタイプが「収集状態」の処理
@@ -222,19 +274,31 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			//データタイプが「ランタイムジョブ変数パ種別」の処理
 			return String.format("%s(%s)"
 					, JobParamTypeMessage.STRING_RUNTIME
-					, JobRuntimeParamTypeMessage.typeToString(((Number) item).intValue()));
+					, JobRuntimeParamTypeMessage.typeEnumToString(((JobRuntimeParamResponse.ParamTypeEnum) item)));
 		case TableColumnInfo.JOBMAP_ICON_IMAGE:
 			//データタイプが「ジョブマップアイコンイメージ」の処理
 			return "";
 		case TableColumnInfo.APPROVAL_STATUS:
 			//データタイプが「承認状態」の処理
-			return JobApprovalStatusMessage.typeToString(((Number) item).intValue());
+			return JobApprovalStatusMessage.typeEnumToString(((JobApprovalInfoWrapper.StatusEnum) item));
 		case TableColumnInfo.APPROVAL_RESULT:
 			//データタイプが「承認結果」の処理
-			return JobApprovalResultMessage.typeToString(((Number) item).intValue());
+			return JobApprovalResultMessage.typeEnumToString(((JobApprovalInfoWrapper.ResultEnum) item));
 		case TableColumnInfo.DECISION_CONDITION:
 			//データタイプが「判定条件」の処理
-			return DecisionObjectMessage.typeToString(((Number) item).intValue());
+			return DecisionObjectMessage.typeEnumToString((JobObjectInfoResponse.DecisionConditionEnum) item);
+		case TableColumnInfo.RPA_JUDGMENT_TYPE:
+			// データタイプがRPAシナリオジョブの「判定対象」の処理
+			return JobRpaEndValueJudgmentTypeMessage.typeToString(((JobRpaEndValueConditionInfoResponse.ConditionTypeEnum)item).getValue());
+		case TableColumnInfo.RPA_JUDGMENT_CONDITION:
+			// データタイプがRPAシナリオジョブの「判定条件」の処理
+			if (item instanceof JobRpaEndValueConditionInfoResponse.ReturnCodeConditionEnum) {
+				// リターンコードによる判定
+				return JobRpaReturnCodeConditionMessage.typeToString(((JobRpaEndValueConditionInfoResponse.ReturnCodeConditionEnum)item).getValue());
+			} else {
+				// ファイルによる判定
+				return item.toString();
+			}
 		default:
 			//上記以外のデータタイプの処理
 			Class<?> itemClass2 = item.getClass();
@@ -283,6 +347,12 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 
 		if (tableColumn.getType() == TableColumnInfo.JOB) {
 			//データタイプが「ジョブ」の処理
+			if(item instanceof JobInfoWrapper.TypeEnum){
+				return JobImageConstant.typeEnumValueToImage((((JobInfoWrapper.TypeEnum) item).getValue()));
+			}
+			if(item instanceof JobHistoryResponse.JobTypeEnum){
+				return JobImageConstant.typeEnumValueToImage((((JobHistoryResponse.JobTypeEnum) item).getValue()));
+			}
 			return JobImageConstant.typeToImage(((Number) item).intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.FACILITY) {
 			//データタイプが「ファシリティ」の処理
@@ -299,15 +369,33 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 
 		} else if (tableColumn.getType() == TableColumnInfo.STATE) {
 			//データタイプが「状態」の処理
+			if(item instanceof JobHistoryResponse.StatusEnum){
+				return StatusImageConstant.typeEnumValueToImage(((JobHistoryResponse.StatusEnum) item).getValue() );
+			}
+			if(item instanceof JobNodeDetailResponse.StatusEnum){
+				return StatusImageConstant.typeEnumValueToImage(((JobNodeDetailResponse.StatusEnum) item).getValue() );
+			}
+			if (item instanceof JobForwardFileResponse.StatusEnum) {
+				return StatusImageConstant.typeEnumValueToImage(((JobForwardFileResponse.StatusEnum) item).getValue());
+			}
+			if (item instanceof JobDetailInfoResponse.StatusEnum) {
+				return StatusImageConstant.typeEnumValueToImage(((JobDetailInfoResponse.StatusEnum) item).getValue());
+			}
 			return StatusImageConstant.typeToImage(((Number) item).intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.END_STATUS) {
 			//データタイプが「終了状態」の処理
+			if(item instanceof JobHistoryResponse.EndStatusEnum){
+				return EndStatusImageConstant.typeEnumValueToImage(((JobHistoryResponse.EndStatusEnum) item).getValue() );
+			}
+			if(item instanceof JobForwardFileResponse.EndStatusEnum){
+				return EndStatusImageConstant.typeEnumValueToImage(((JobForwardFileResponse.EndStatusEnum) item).getValue() );
+			}
 			return EndStatusImageConstant.typeToImage(((Number) item)
 					.intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.CHECKBOX) {
 			//データタイプが「チェックボックス」の処理
-			return CheckBoxImageConstant.typeToImage(((Boolean) item)
-					.booleanValue());
+			// findbugs対応不要なcastを抑止
+			return CheckBoxImageConstant.typeToImage(((Boolean) item));
 		} else if (tableColumn.getType() == TableColumnInfo.SCHEDULE_ON_OFF) {
 			//データタイプが「予定」の処理
 			return ScheduleOnOffImageConstant.dateToImage(new Date((Long)item));
@@ -316,10 +404,10 @@ public class CommonTableLabelProvider extends LabelProvider implements ICommonTa
 			return PerformanceStatusImageConstant.typeToImage(((Boolean) item).booleanValue());
 		} else if (tableColumn.getType() == TableColumnInfo.APPROVAL_STATUS) {
 			//データタイプが「承認状態」の処理
-			return JobApprovalStatusImageConstant.typeToImage(((Number) item).intValue());
+			return JobApprovalStatusImageConstant.typeEnumToImage(((JobApprovalInfoWrapper.StatusEnum) item));
 		} else if (tableColumn.getType() == TableColumnInfo.APPROVAL_RESULT) {
 			//データタイプが「承認結果」の処理
-			return JobApprovalResultImageConstant.typeToImage(((Number) item).intValue());
+			return JobApprovalResultImageConstant.typeEnumToImage((JobApprovalInfoResponse.ResultEnum) item);
 		} else if (tableColumn.getType() == TableColumnInfo.JOBMAP_ICON_IMAGE) {
 			//データタイプが「ジョブマップアイコンイメージ」の処理
 			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import org.apache.log4j.Logger;
 
@@ -88,7 +88,6 @@ public class ModifyTransfer {
 			}
 			
 			entity.setDescription(logTransfer.getDescription());
-			entity.setDataType(logTransfer.getDataType());
 			entity.setDestTypeId(logTransfer.getDestTypeId());
 			entity.setTransType(logTransfer.getTransType());
 			entity.setInterval(logTransfer.getInterval());

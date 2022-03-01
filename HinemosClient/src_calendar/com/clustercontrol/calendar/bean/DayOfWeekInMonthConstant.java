@@ -8,6 +8,8 @@
 
 package com.clustercontrol.calendar.bean;
 
+import org.openapitools.client.model.CalendarDetailInfoResponse.WeekXthEnum;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -17,23 +19,6 @@ import com.clustercontrol.util.Messages;
  * @since 1.0.0
  */
 public class DayOfWeekInMonthConstant {
-	/** 第１ 曜日 */
-	public static final int TYPE_FIRST = 1;//Calendar.SUNDAY;
-
-	/** 第2 曜日 */
-	public static final int TYPE_SECOND = 2;
-
-	/** 第3 曜日*/
-	public static final int TYPE_THIRD = 3;
-
-	/** 第4 曜日*/
-	public static final int TYPE_FOURTH = 4;
-
-	/** 第5 曜日*/
-	public static final int TYPE_FIFTH = 5;
-
-	/** 毎週*/
-	public static final int TYPE_EVERYWEEK = 0;
 
 	/** 第１ 曜日 */
 	public static final String STRING_FIRST = Messages.getString("calendar.detail.first");
@@ -59,18 +44,18 @@ public class DayOfWeekInMonthConstant {
 	 * @param type
 	 * @return
 	 */
-	public static String typeToString(int type) {
-		if (type == TYPE_FIRST) {
+	public static String enumToString(WeekXthEnum type) {
+		if (WeekXthEnum.FIRST_WEEK.equals(type)) {
 			return STRING_FIRST;
-		} else if (type == TYPE_SECOND) {
+		} else if (WeekXthEnum.SECOND_WEEK.equals(type)) {
 			return STRING_SECOND;
-		} else if (type == TYPE_THIRD) {
+		} else if (WeekXthEnum.THIRD_WEEK.equals(type)) {
 			return STRING_THIRD;
-		} else if (type == TYPE_FOURTH) {
+		} else if (WeekXthEnum.FOURTH_WEEK.equals(type)) {
 			return STRING_FOURTH;
-		} else if (type == TYPE_FIFTH) {
+		} else if (WeekXthEnum.FIFTH_WEEK.equals(type)) {
 			return STRING_FIFTH;
-		} else if (type == TYPE_EVERYWEEK) {
+		} else if (WeekXthEnum.EVERY_WEEK.equals(type)) {
 			return STRING_EVERYWEEｋ;
 		}
 		return "";
@@ -82,20 +67,20 @@ public class DayOfWeekInMonthConstant {
 	 * @param type
 	 * @return
 	 */
-	public static int stringToType(String string) {
+	public static WeekXthEnum stringToEnum(String string) {
 		if (string.equals(STRING_FIRST)) {
-			return TYPE_FIRST;
+			return WeekXthEnum.FIRST_WEEK;
 		} else if (string.equals(STRING_SECOND)) {
-			return TYPE_SECOND;
+			return WeekXthEnum.SECOND_WEEK;
 		} else if (string.equals(STRING_THIRD)) {
-			return TYPE_THIRD;
+			return WeekXthEnum.THIRD_WEEK;
 		} else if (string.equals(STRING_FOURTH)) {
-			return TYPE_FOURTH;
+			return WeekXthEnum.FOURTH_WEEK;
 		} else if (string.equals(STRING_FIFTH)) {
-			return TYPE_FIFTH;
+			return WeekXthEnum.FIFTH_WEEK;
 		} else if (string.equals(STRING_EVERYWEEｋ)) {
-			return TYPE_EVERYWEEK;
+			return WeekXthEnum.EVERY_WEEK;
 		}
-		return -1;
+		return null;
 	}
 }

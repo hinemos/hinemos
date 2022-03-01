@@ -18,12 +18,15 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.CloudScopeInfoResponse;
+import org.openapitools.client.model.HFacilityResponse;
+import org.openapitools.client.model.HRepositoryResponse;
+import org.openapitools.client.model.InstanceBackupResponse;
+import org.openapitools.client.model.InstanceInfoResponse;
+import org.openapitools.client.model.LocationInfoResponse;
+import org.openapitools.client.model.StorageBackupInfoResponse;
+import org.openapitools.client.model.StorageInfoResponse;
 
-import com.clustercontrol.ws.xcloud.HCloudScopeScope;
-import com.clustercontrol.ws.xcloud.HInstanceNode;
-import com.clustercontrol.ws.xcloud.HLocationScope;
-import com.clustercontrol.ws.xcloud.HRepository;
-import com.clustercontrol.ws.xcloud.InstanceBackup;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.util.CollectionComparator;
@@ -59,33 +62,34 @@ public class CloudScopes extends Element implements ICloudScopes {
 		return (HinemosManager)getOwner();
 	}
 	
-	public void updateCloudScopes(HRepository repository) {
+	public void updateCloudScopes(HRepositoryResponse repository) {
 		if (cloudScopes == null)
 			cloudScopes = new ArrayList<>();
 
-		final List<com.clustercontrol.ws.xcloud.CloudScope> webCloudScopes = new ArrayList<>();
-		final Map<List<String>, Set<com.clustercontrol.ws.xcloud.Instance>> webInstanceMap = new HashMap<List<String>, Set<com.clustercontrol.ws.xcloud.Instance>>();
+		final List<CloudScopeInfoResponse> webCloudScopes = new ArrayList<>();
+		final Map<List<String>, Set<InstanceInfoResponse>> webInstanceMap = new HashMap<List<String>, Set<InstanceInfoResponse>>();
 		HRepositoryParser.parse(repository, new HRepositoryParser.Handler() {
-			private com.clustercontrol.ws.xcloud.CloudScope currentScope;
-			private com.clustercontrol.ws.xcloud.Location currentLocation;
-			public boolean cloudScopeScope(HCloudScopeScope s) {
-				currentScope = (com.clustercontrol.ws.xcloud.CloudScope)s.getCloudScope();
-				currentLocation = s.getLocation();
+			private CloudScopeInfoResponse currentScope;
+			private LocationInfoResponse currentLocation;
+			public boolean cloudScopeScope(HFacilityResponse f) {
+				currentScope = f.getCloudScope();
+				currentLocation = f.getLocation();
 				webCloudScopes.add(currentScope);
 				return true;
 			};
-			public boolean locationScope(HLocationScope s) {
-				currentLocation = s.getLocation();
+			public boolean locationScope(HFacilityResponse f) {
+				currentLocation = f.getLocation();
 				return true;
 			};
-			public void instanceNode(HInstanceNode n){
-				com.clustercontrol.ws.xcloud.Instance i = (com.clustercontrol.ws.xcloud.Instance)n.getInstance();
-				if (!currentScope.getId().equals(i.getCloudScopeId()) || !currentLocation.getId().equals(i.getLocationId())) {
+
+			public void instanceNode(HFacilityResponse f) {
+				InstanceInfoResponse i = f.getInstance();
+				if (!currentScope.getEntity().getCloudScopeId().equals(i.getCloudScopeId()) || !currentLocation.getId().equals(i.getLocationId())) {
 					logger.warn(String.format("instance is placed in another cloudscope tree. cloudscopeId=%s, locationId=%s, instanceId=%s",
 							i.getCloudScopeId(), i.getLocationId(), i.getId()));
 				} else {
 					List<String> key = Arrays.asList(i.getCloudScopeId(), i.getLocationId());
-					Set<com.clustercontrol.ws.xcloud.Instance> instances = webInstanceMap.get(key);
+					Set<InstanceInfoResponse> instances = webInstanceMap.get(key);
 					if (instances == null) {
 						instances = new HashSet<>();
 						webInstanceMap.put(key, instances);
@@ -95,30 +99,30 @@ public class CloudScopes extends Element implements ICloudScopes {
 			};
 		});
 		
-		CollectionComparator.compareCollection(cloudScopes, webCloudScopes, new CollectionComparator.Comparator<CloudScope, com.clustercontrol.ws.xcloud.CloudScope>() {
-			public boolean match(CloudScope o1, com.clustercontrol.ws.xcloud.CloudScope o2) {return o1.equalValues(o2);}
-			public void matched(CloudScope o1, com.clustercontrol.ws.xcloud.CloudScope o2) {o1.update(o2);}
+		CollectionComparator.compareCollection(cloudScopes, webCloudScopes, new CollectionComparator.Comparator<CloudScope, CloudScopeInfoResponse>() {
+			public boolean match(CloudScope o1, CloudScopeInfoResponse o2) {return o1.equalValues(o2);}
+			public void matched(CloudScope o1, CloudScopeInfoResponse o2) {o1.update(o2);}
 			public void afterO1(CloudScope o1) {
 				internalRemoveProperty(p.cloudScopes, o1, cloudScopes);
 			}
-			public void afterO2(com.clustercontrol.ws.xcloud.CloudScope o2) {
+			public void afterO2(CloudScopeInfoResponse o2) {
 				CloudScope newCloudScope = CloudScope.convert(CloudScopes.this, o2);
 				internalAddProperty(p.cloudScopes, newCloudScope, cloudScopes);
 			}
 		});
 		
-		Map<List<String>, InstanceBackup> instanceBackupMap = new HashMap<>();
-		for (InstanceBackup backup: repository.getInstanceBackups()) {
+		Map<List<String>, InstanceBackupResponse> instanceBackupMap = new HashMap<>();
+		for (InstanceBackupResponse backup : repository.getInstanceBackups()) {
 			instanceBackupMap.put(Arrays.asList(backup.getCloudScopeId(), backup.getInstanceId()), backup);
 		}
 
-		List<com.clustercontrol.ws.xcloud.Instance> instances = new ArrayList<>(repository.getInstances());
+		List<InstanceInfoResponse> instances = new ArrayList<>(repository.getInstances());
 		for (CloudScope scope: getCloudScopes()) {
 			for (Location location: scope.getLocations()) {
-				List<com.clustercontrol.ws.xcloud.Instance> locationInstances = new ArrayList<>();
-				Iterator<com.clustercontrol.ws.xcloud.Instance> iter = instances.iterator();
+				List<InstanceInfoResponse> locationInstances = new ArrayList<>();
+				Iterator<InstanceInfoResponse> iter = instances.iterator();
 				while (iter.hasNext()) {
-					com.clustercontrol.ws.xcloud.Instance instance = iter.next();
+					InstanceInfoResponse instance = iter.next();
 					if (instance.getCloudScopeId().equals(scope.getId()) && instance.getLocationId().equals(location.getId())) {
 						locationInstances.add(instance);
 						iter.remove();
@@ -131,18 +135,18 @@ public class CloudScopes extends Element implements ICloudScopes {
 			}
 		}
 		
-		Map<List<String>, com.clustercontrol.ws.xcloud.StorageBackup> storageBackupMap = new HashMap<>();
-		for (com.clustercontrol.ws.xcloud.StorageBackup backup: repository.getStorageBackups()) {
+		Map<List<String>, StorageBackupInfoResponse> storageBackupMap = new HashMap<>();
+		for (StorageBackupInfoResponse backup: repository.getStorageBackups()) {
 			storageBackupMap.put(Arrays.asList(backup.getCloudScopeId(), backup.getStorageId()), backup);
 		}
 		
-		List<com.clustercontrol.ws.xcloud.Storage> storages = new ArrayList<>(repository.getStorages());
+		List<StorageInfoResponse> storages = new ArrayList<>(repository.getStorages());
 		for (CloudScope scope: getCloudScopes()) {
 			for (Location location: scope.getLocations()) {
-				List<com.clustercontrol.ws.xcloud.Storage> locationStorages = new ArrayList<>();
-				Iterator<com.clustercontrol.ws.xcloud.Storage> iter = storages.iterator();
+				List<StorageInfoResponse> locationStorages = new ArrayList<>();
+				Iterator<StorageInfoResponse> iter = storages.iterator();
 				while (iter.hasNext()) {
-					com.clustercontrol.ws.xcloud.Storage storage = iter.next();
+					StorageInfoResponse storage = iter.next();
 					if (storage.getCloudScopeId().equals(scope.getId()) && storage.getLocationId().equals(location.getId())) {
 						locationStorages.add(storage);
 						iter.remove();

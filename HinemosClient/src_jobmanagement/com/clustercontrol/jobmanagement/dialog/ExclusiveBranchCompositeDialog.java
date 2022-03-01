@@ -8,26 +8,39 @@
 
 package com.clustercontrol.jobmanagement.dialog;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.JobNextJobOrderInfoResponse;
+import org.openapitools.client.model.JobWaitRuleInfoResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.composite.ExclusiveBranchComposite;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobWaitRuleInfo;
 
 public class ExclusiveBranchCompositeDialog extends CommonDialog{
 	
 	private ExclusiveBranchComposite m_exclusiveBranchComposite;
 	private boolean m_readOnly = false;
-	private JobWaitRuleInfo m_waitRule;
-	private JobTreeItem m_jobTreeItem;
+	private JobTreeItemWrapper m_jobTreeItem;
+
+	/** ジョブ待ち条件情報（後続ジョブ実行設定） */
+	/** 排他分岐 */
+	private boolean m_exclusiveBranch;
+	/** 排他分岐の終了状態 */
+	private  JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum m_exclusiveBranchEndStatus = null;
+	/** 排他分岐の終了値 */
+	private Integer m_exclusiveBranchEndValue = null;
+	/** 排他分岐の優先度リスト */
+	private List<JobNextJobOrderInfoResponse> m_exclusiveBranchNextJobOrderList = new ArrayList<>();
 
 	/** コンストラクタ
 	 * 
@@ -69,27 +82,12 @@ public class ExclusiveBranchCompositeDialog extends CommonDialog{
 	 * ジョブ変数情報をコンポジットに反映します。
 	 */
 	private void reflectExclusiveBranchInfo() {
-		m_exclusiveBranchComposite.setWaitRuleInfo(m_waitRule);
+		m_exclusiveBranchComposite.setExclusiveBranchRtn(m_exclusiveBranch);
+		m_exclusiveBranchComposite.setExclusiveBranchEndStatusRtn(m_exclusiveBranchEndStatus);
+		m_exclusiveBranchComposite.setExclusiveBranchEndValueRtn(m_exclusiveBranchEndValue);
+		m_exclusiveBranchComposite.setExclusiveBranchNextJobOrderListRtn(m_exclusiveBranchNextJobOrderList);
 		m_exclusiveBranchComposite.setJobTreeItem(m_jobTreeItem);
 		m_exclusiveBranchComposite.reflectExclusiveBranchInfo();
-	}
-
-	/**
-	 * ジョブ待ち条件情報を設定します。
-	 *
-	 * @param waitRule ジョブ待ち条件情報
-	 */
-	public void setWaitRuleInfo(JobWaitRuleInfo waitRule) {
-		m_waitRule = waitRule;
-	}
-
-	/**
-	 * ジョブ待ち条件情報を返します。
-	 *
-	 * @return ジョブ待ち条件情報
-	 */
-	public JobWaitRuleInfo getWaitRuleInfo() {
-		return m_waitRule;
 	}
 
 	/**
@@ -97,7 +95,7 @@ public class ExclusiveBranchCompositeDialog extends CommonDialog{
 	 *
 	 * @return ジョブ待ち条件情報
 	 */
-	public void setJobTreeItem(JobTreeItem jobTreeItem) {
+	public void setJobTreeItem(JobTreeItemWrapper jobTreeItem) {
 		m_jobTreeItem = jobTreeItem;
 	}
 
@@ -122,7 +120,79 @@ public class ExclusiveBranchCompositeDialog extends CommonDialog{
 	protected String getCancelButtonText() {
 		return Messages.getString("cancel");
 	}
-	
+
+	/**
+	 * 排他分岐を設定します。
+	 *
+	 * @param m_exclusiveBranch 排他分岐
+	 */
+	public boolean isExclusiveBranch() {
+		return m_exclusiveBranch;
+	}
+
+	/**
+	 * 排他分岐を返します。
+	 *
+	 * @return 排他分岐
+	 */
+	public void setExclusiveBranch(boolean m_exclusiveBranch) {
+		this.m_exclusiveBranch = m_exclusiveBranch;
+	}
+
+	/**
+	 * 排他分岐の終了状態を返します。
+	 *
+	 * @return 排他分岐の終了状態
+	 */
+	public JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum getExclusiveBranchEndStatus() {
+		return m_exclusiveBranchEndStatus;
+	}
+
+	/**
+	 * 排他分岐の終了状態を設定します。
+	 *
+	 * @param m_exclusiveBranchEndStatus 排他分岐の終了状態
+	 */
+	public void setExclusiveBranchEndStatus( JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum m_exclusiveBranchEndStatus) {
+		this.m_exclusiveBranchEndStatus = m_exclusiveBranchEndStatus;
+	}
+
+	/**
+	 * 排他分岐の終了値を返します。
+	 *
+	 * @return 排他分岐の終了値
+	 */
+	public Integer getExclusiveBranchEndValue() {
+		return m_exclusiveBranchEndValue;
+	}
+
+	/**
+	 *  排他分岐の終了値を設定します。
+	 *
+	 * @param m_exclusiveBranchEndValue  排他分岐の終了値
+	 */
+	public void setExclusiveBranchEndValue(Integer m_exclusiveBranchEndValue) {
+		this.m_exclusiveBranchEndValue = m_exclusiveBranchEndValue;
+	}
+
+	/**
+	 * 排他分岐の優先度リストを返します。
+	 *
+	 * @return 排他分岐の優先度リスト
+	 */
+	public List<JobNextJobOrderInfoResponse> getExclusiveBranchNextJobOrderList() {
+		return m_exclusiveBranchNextJobOrderList;
+	}
+
+	/**
+	 * 排他分岐の優先度リストを設定します。
+	 *
+	 * @param m_exclusiveBranchNextJobOrderList 排他分岐の優先度リスト
+	 */
+	public void setExclusiveBranchNextJobOrderList(List<JobNextJobOrderInfoResponse> m_exclusiveBranchNextJobOrderList) {
+		this.m_exclusiveBranchNextJobOrderList = m_exclusiveBranchNextJobOrderList;
+	}
+
 	/**
 	 * 入力値チェックをします。
 	 *
@@ -138,7 +208,11 @@ public class ExclusiveBranchCompositeDialog extends CommonDialog{
 		if (result != null) {
 			return result;
 		}
-		setWaitRuleInfo(m_exclusiveBranchComposite.getWaitRuleInfo());
+		setExclusiveBranch(m_exclusiveBranchComposite.isExclusiveBranchRtn());
+		setExclusiveBranchEndStatus(m_exclusiveBranchComposite.getExclusiveBranchEndStatusRtn());
+		setExclusiveBranchEndValue(m_exclusiveBranchComposite.getExclusiveBranchEndValueRtn());
+		setExclusiveBranchNextJobOrderList(m_exclusiveBranchComposite.getExclusiveBranchNextJobOrderListRtn());
+		
 		return null;
 	}
 }

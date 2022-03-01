@@ -26,6 +26,8 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.TrapValueInfoResponse;
+import org.openapitools.client.model.VarBindPatternResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.PriorityMessage;
@@ -38,8 +40,6 @@ import com.clustercontrol.monitor.run.composite.TableItemInfoComposite;
 import com.clustercontrol.snmptrap.composite.VarBindPatternCompositeDefine;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.TrapValueInfo;
-import com.clustercontrol.ws.monitor.VarBindPattern;
 
 /**
  * SNMPTRAP監視 マスタ選択ダイアログクラス<BR>
@@ -60,7 +60,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 	// ----- instance フィールド ----- //
 
 	/** 入力値を保持するオブジェクト */
-	private TrapValueInfo inputData = null;
+	private TrapValueInfoResponse inputData = null;
 
 	/** MIB */
 	private Text txtMib;
@@ -69,7 +69,6 @@ public class CreateTrapDefineDialog extends CommonDialog {
 	private Text txtName;
 
 	/** バージョン */
-	private Composite cmpVersion;
 	private Button btnV1;
 	private Button btnV2c;
 
@@ -101,7 +100,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 	private Text txtTargetString;
 
 	/** 文字列テーブルコンポジット */
-	private TableItemInfoComposite<VarBindPattern> cmpPatternList = null;
+	private TableItemInfoComposite<VarBindPatternResponse> cmpPatternList = null;
 
 	/** 有効・無効 */
 	private Button btnValid;
@@ -118,7 +117,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		this(parent, null);
 	}
 
-	public CreateTrapDefineDialog(Shell parent, TrapValueInfo info) {
+	public CreateTrapDefineDialog(Shell parent, TrapValueInfoResponse info) {
 		super(parent);
 		setShellStyle(getShellStyle() | SWT.RESIZE | SWT.MAX);
 		this.inputData = info;
@@ -246,27 +245,11 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		label.setText(Messages.getString("monitor.snmptrap.version"));
 
 
-		// バージョン
-		cmpVersion = new Composite(parent, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "version", cmpVersion);
-		layout = new GridLayout(1, true);
-		layout.marginWidth = 5;
-		layout.marginHeight = 5;
-		layout.numColumns = MAX_COLUMN - WIDTH_TITLE;
-		cmpVersion.setLayout(layout);
-		gridData = new GridData();
-		gridData.horizontalSpan = MAX_COLUMN - WIDTH_TITLE;
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.verticalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		gridData.grabExcessVerticalSpace = true;
-		cmpVersion.setLayoutData(gridData);
-
-		this.btnV1 = new Button(cmpVersion, SWT.RADIO | SWT.LEFT);
-		WidgetTestUtil.setTestId(this, "communitynamev1", btnV1);
+		// バージョン(1)
+		this.btnV1 = new Button(parent, SWT.RADIO | SWT.LEFT);
 		gridData = new GridData();
 		gridData.horizontalSpan = WIDTH_TITLE;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.btnV1.setLayoutData(gridData);
 		this.btnV1.addSelectionListener(new SelectionAdapter() {
@@ -277,12 +260,11 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		});
 		this.btnV1.setText(SnmpVersionConstant.STRING_V1);
 
-		// バージョン
-		this.btnV2c = new Button(cmpVersion, SWT.RADIO | SWT.LEFT);
-		WidgetTestUtil.setTestId(this, "communitynamev2c", btnV2c);
+		// バージョン(2c/3)
+		this.btnV2c = new Button(parent, SWT.RADIO | SWT.LEFT);
 		gridData = new GridData();
 		gridData.horizontalSpan = WIDTH_TITLE;
-		gridData.horizontalAlignment = GridData.FILL;
+		gridData.horizontalAlignment = SWT.BEGINNING;
 		gridData.grabExcessHorizontalSpace = true;
 		this.btnV2c.setLayoutData(gridData);
 		this.btnV2c.addSelectionListener(new SelectionAdapter() {
@@ -294,8 +276,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		this.btnV2c.setText(SnmpVersionConstant.STRING_V2 + "/" + SnmpVersionConstant.STRING_V3);
 
 		// 空白
-		label = new Label(cmpVersion, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "space3", label);
+		label = new Label(parent, SWT.NONE);
 		gridData = new GridData();
 		gridData.horizontalSpan = MAX_COLUMN - WIDTH_TITLE * 3;
 		gridData.horizontalAlignment = GridData.FILL;
@@ -629,7 +610,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		/*
 		 * パターン文字列テーブル
 		 */
-		this.cmpPatternList = new TableItemInfoComposite<VarBindPattern>(groupDetermine, SWT.NONE , new VarBindPatternCompositeDefine());
+		this.cmpPatternList = new TableItemInfoComposite<>(groupDetermine, SWT.NONE , new VarBindPatternCompositeDefine());
 		WidgetTestUtil.setTestId(this, "patternlist", cmpPatternList);
 		gridData = new GridData();
 		gridData.horizontalSpan = MAX_COLUMN - 5;
@@ -733,7 +714,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 	 *
 	 * @return 入力内容を保持した通知情報
 	 */
-	public TrapValueInfo getInputData() {
+	public TrapValueInfoResponse getInputData() {
 		return this.inputData;
 	}
 
@@ -757,7 +738,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 			if(inputData.getUei() != null){
 				txtName.setText(inputData.getUei());
 			}
-			if(inputData.getVersion() == SnmpVersionConstant.TYPE_V1){
+			if(inputData.getVersion() == TrapValueInfoResponse.VersionEnum.V1){
 				btnV1.setSelection(true);
 				if(inputData.getGenericId() != null){
 					txtGenericId.setText(inputData.getGenericId().toString());
@@ -777,9 +758,9 @@ public class CreateTrapDefineDialog extends CommonDialog {
 			if(inputData.getDescription() != null){
 				txtMessageDetail.setText(inputData.getDescription());
 			}
-			if(!inputData.isProcessingVarbindSpecified()){
+			if(!inputData.getProcVarbindSpecified()){
 				btnNotifyIgnoreVariable.setSelection(true);
-				cmbPriority.select(cmbPriority.indexOf(PriorityMessage.typeToString(inputData.getPriorityAnyVarbind())));
+				cmbPriority.select(cmbPriority.indexOf(PriorityMessage.codeToString(inputData.getPriorityAnyVarBind().toString())));
 				txtTargetString.setText(DEFAULT_TARGET_STRING);
 			} else {
 				btnNotifyUseVariable.setSelection(true);
@@ -788,7 +769,7 @@ public class CreateTrapDefineDialog extends CommonDialog {
 				}
 				cmpPatternList.setInputData(inputData.getVarBindPatterns());
 			}
-			btnValid.setSelection(inputData.isValidFlg());
+			btnValid.setSelection(inputData.getValidFlg());
 		}
 
 		cmpPatternList.update();
@@ -873,29 +854,30 @@ public class CreateTrapDefineDialog extends CommonDialog {
 	 *
 	 * @return 入力値を保持した通知情報
 	 */
-	protected TrapValueInfo createInputData() {
-		TrapValueInfo info = new TrapValueInfo();
+	protected TrapValueInfoResponse createInputData() {
+		TrapValueInfoResponse info = new TrapValueInfoResponse();
 
 		info.setMib(txtMib.getText());
 		info.setUei(txtName.getText());
 		info.setTrapOid(txtOid.getText());
 		if(btnV1.getSelection()){
-			info.setVersion(SnmpVersionConstant.TYPE_V1);
+			info.setVersion(TrapValueInfoResponse.VersionEnum.V1);
 			info.setGenericId(Integer.valueOf(txtGenericId.getText()));
 			info.setSpecificId(Integer.valueOf(txtSpecificId.getText()));
 		} else {
-			info.setVersion(SnmpVersionConstant.TYPE_V2);
+			info.setVersion(TrapValueInfoResponse.VersionEnum.V2C_V3);
 		}
 		info.setLogmsg(txtMessage.getText());
 		info.setDescription(txtMessageDetail.getText());
 
 		if(btnNotifyIgnoreVariable.getSelection()){
-			info.setProcessingVarbindSpecified(false);
-			info.setPriorityAnyVarbind(PriorityMessage.stringToType(cmbPriority.getText()));
+			info.setProcVarbindSpecified(false);
+			info.setPriorityAnyVarBind(PriorityMessage.stringToEnum(
+					cmbPriority.getText(), TrapValueInfoResponse.PriorityAnyVarBindEnum.class));
 		} else {
-			info.setProcessingVarbindSpecified(true);
+			info.setProcVarbindSpecified(true);
 			info.setFormatVarBinds(txtTargetString.getText());
-			List<VarBindPattern> patterns = info.getVarBindPatterns();
+			List<VarBindPatternResponse> patterns = info.getVarBindPatterns();
 			patterns.clear();
 			patterns.addAll(cmpPatternList.getItems());
 		}

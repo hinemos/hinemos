@@ -10,6 +10,7 @@ package com.clustercontrol.jobmanagement.bean;
 
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
+import com.clustercontrol.approval.util.JobApprovalInfoWrapper;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.JobApprovalResultConstant;
@@ -41,6 +42,29 @@ public class JobApprovalResultImageConstant extends JobApprovalResultConstant {
 						ClusterControlPlugin.IMG_END_STATUS_NORMAL).createImage();
 			return approval;
 		} else if (type == TYPE_DENIAL) {
+			if (denial == null)
+				denial = registry.getDescriptor(
+						ClusterControlPlugin.IMG_END_STATUS_ABNORMAL).createImage();
+			return denial;
+		}
+		return null;
+	}
+
+	/**
+	 * EnumからImageに変換
+	 * @param type
+	 * @return
+	 */
+	public static Image typeEnumToImage(JobApprovalInfoWrapper.ResultEnum type) {
+		ImageRegistry registry = ClusterControlPlugin.getDefault()
+				.getImageRegistry();
+
+		if (type == JobApprovalInfoWrapper.ResultEnum.APPROVAL) {
+			if (approval == null)
+				approval = registry.getDescriptor(
+						ClusterControlPlugin.IMG_END_STATUS_NORMAL).createImage();
+			return approval;
+		} else if (type == JobApprovalInfoWrapper.ResultEnum.DENIAL) {
 			if (denial == null)
 				denial = registry.getDescriptor(
 						ClusterControlPlugin.IMG_END_STATUS_ABNORMAL).createImage();

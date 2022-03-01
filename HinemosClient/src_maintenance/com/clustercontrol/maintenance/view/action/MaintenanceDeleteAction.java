@@ -28,14 +28,14 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.maintenance.action.GetMaintenanceListTableDefine;
 import com.clustercontrol.maintenance.composite.MaintenanceListComposite;
-import com.clustercontrol.maintenance.util.MaintenanceEndpointWrapper;
+import com.clustercontrol.maintenance.util.MaintenanceRestClientWrapper;
 import com.clustercontrol.maintenance.view.MaintenanceListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.maintenance.InvalidRole_Exception;
 
 /**
  * メンテナンス[一覧]ビューの削除アクションクラス<BR>
@@ -85,18 +85,13 @@ public class MaintenanceDeleteAction extends AbstractHandler implements IElement
 		List<?> list = (List<?>)selection.toList();
 
 		Map<String, List<String>> map = new ConcurrentHashMap<String, List<String>>();
+		StringBuffer maintenanceId = new StringBuffer();
 		for(Object obj : list) {
 			List<?> objList = (List<?>)obj;
 			String managerName = (String) objList.get(GetMaintenanceListTableDefine.MANAGER_NAME);
 			if(map.get(managerName) == null) {
 				map.put(managerName, new ArrayList<String>());
 			}
-		}
-
-		StringBuffer maintenanceId = new StringBuffer();
-		for(Object obj : list) {
-			List<?> objList = (List<?>)obj;
-			String managerName = (String) objList.get(GetMaintenanceListTableDefine.MANAGER_NAME);
 			String id = (String) objList.get(GetMaintenanceListTableDefine.MAINTENANCE_ID);
 			map.get(managerName).add(id);
 			if(maintenanceId.length() > 0) {
@@ -127,16 +122,14 @@ public class MaintenanceDeleteAction extends AbstractHandler implements IElement
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 		for(Map.Entry<String, List<String>> entry : map.entrySet()) {
 			String managerName = entry.getKey();
-			MaintenanceEndpointWrapper wrapper = MaintenanceEndpointWrapper.getWrapper(managerName);
-			for(String val : entry.getValue()) {
-				try {
-					wrapper.deleteMaintenance(val);
-				} catch (InvalidRole_Exception e) {
-					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					m_log.warn("run(), " + e.getMessage(), e);
-					errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
-				}
+			MaintenanceRestClientWrapper wrapper = MaintenanceRestClientWrapper.getWrapper(managerName);
+			try {
+				wrapper.deleteMaintenance(String.join(",", entry.getValue()));
+			} catch (InvalidRole e) {
+				errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
+			} catch (Exception e) {
+				m_log.warn("run(), " + e.getMessage(), e);
+				errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
 			}
 		}
 

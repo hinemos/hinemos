@@ -18,22 +18,25 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.DeleteStorageSnapshotRequest;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.cloud.IStorage;
 import com.clustercontrol.xcloud.model.cloud.IStorageBackupEntry;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 public class DeleteStorageSnapshotHandler extends AbstractCloudOptionHandler implements CloudStringConstants {
 	
 	private IStorage storage;
 	
 	@Override
-	public Object internalExecute(ExecutionEvent event) throws ExecutionException, CloudManagerException, InvalidRole_Exception, InvalidUserPass_Exception {
+	public Object internalExecute(ExecutionEvent event) throws ExecutionException, InvalidUserPass, InvalidRole, RestConnectFailed, HinemosUnknown, CloudManagerException {
 		IStructuredSelection selection = (IStructuredSelection)HandlerUtil.getActiveSite(event).getSelectionProvider().getSelection();
 		IStorageBackupEntry entry = (IStorageBackupEntry)selection.getFirstElement();
 		storage = entry.getBackup().getStorage();
@@ -48,14 +51,18 @@ public class DeleteStorageSnapshotHandler extends AbstractCloudOptionHandler imp
 				entryIds.add(((IStorageBackupEntry)iter.next()).getId());
 			}
 
-				CloudEndpoint endpoint = entry.getBackup().getStorage().getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-				endpoint.deleteStorageSnapshots(
-						entry.getBackup().getStorage().getCloudScope().getId(),
-						entry.getBackup().getStorage().getLocation().getId(),
-						entry.getBackup().getStorage().getId(),
-						entryIds
-						);;
-				
+			String managerName = entry.getBackup().getStorage().getCloudScope().getCloudScopes().getHinemosManager().getManagerName();
+			CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
+			
+			DeleteStorageSnapshotRequest request = new DeleteStorageSnapshotRequest();
+			request.setStorageId(entry.getBackup().getStorage().getId());
+			request.setStorageSnapshotIds(entryIds);
+
+			endpoint.deleteStorageSnapshots(
+					entry.getBackup().getStorage().getCloudScope().getId(),
+					entry.getBackup().getStorage().getLocation().getId(),
+					request
+					);
 				// 成功報告ダイアログを生成
 				MessageDialog.openInformation(
 					null,

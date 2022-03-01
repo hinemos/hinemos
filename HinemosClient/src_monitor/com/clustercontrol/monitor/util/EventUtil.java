@@ -8,9 +8,8 @@
 
 package com.clustercontrol.monitor.util;
 
-
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.monitor.EventFilterInfo;
+import org.openapitools.client.model.EventLogInfoRequest;
+import org.openapitools.client.model.EventLogInfoResponse;
 
 /**
  * EventUtil
@@ -18,7 +17,7 @@ import com.clustercontrol.ws.monitor.EventFilterInfo;
  */
 public class EventUtil {
 
-	public static void setUserItemValue(EventDataInfo info, int index, String value) {
+	public static void setUserItemValue(EventLogInfoRequest info, int index, String value) {
 		if (info == null) {
 			return;
 		}
@@ -189,7 +188,7 @@ public class EventUtil {
 		}
 	}
 
-	public static String getUserItemValue(EventDataInfo info, int index) {
+	public static String getUserItemValue(EventLogInfoRequest info, int index) {
 		
 		if (info == null) {
 			return "";
@@ -367,175 +366,183 @@ public class EventUtil {
 		}
 		return retVal;
 	}
-	
-	public static void setUserItemValue(EventFilterInfo info, int index, String value) {
+	public static String getUserItemValue(EventLogInfoResponse info, int index) {
+		
 		if (info == null) {
-			return;
+			return "";
 		}
+		
+		String retVal = null;
 		
 		switch (index) {
 		case 1 :
-			info.setUserItem01(value);
+			retVal = info.getUserItem01();
 			break;
 			
 		case 2 :
-			info.setUserItem02(value);
+			retVal = info.getUserItem02();
 			break;
 			
 		case 3 :
-			info.setUserItem03(value);
+			retVal = info.getUserItem03();
 			break;
 			
 		case 4 :
-			info.setUserItem04(value);
+			retVal = info.getUserItem04();
 			break;
 			
 		case 5 :
-			info.setUserItem05(value);
+			retVal = info.getUserItem05();
 			break;
 			
 		case 6 :
-			info.setUserItem06(value);
+			retVal = info.getUserItem06();
 			break;
 			
 		case 7 :
-			info.setUserItem07(value);
+			retVal = info.getUserItem07();
 			break;
 			
 		case 8 :
-			info.setUserItem08(value);
+			retVal = info.getUserItem08();
 			break;
 			
 		case 9 :
-			info.setUserItem09(value);
+			retVal = info.getUserItem09();
 			break;
 			
 		case 10 :
-			info.setUserItem10(value);
+			retVal = info.getUserItem10();
 			break;
 			
 		case 11 :
-			info.setUserItem11(value);
+			retVal = info.getUserItem11();
 			break;
 			
 		case 12 :
-			info.setUserItem12(value);
+			retVal = info.getUserItem12();
 			break;
 			
 		case 13 :
-			info.setUserItem13(value);
+			retVal = info.getUserItem13();
 			break;
 			
 		case 14 :
-			info.setUserItem14(value);
+			retVal = info.getUserItem14();
 			break;
 			
 		case 15 :
-			info.setUserItem15(value);
+			retVal = info.getUserItem15();
 			break;
 			
 		case 16 :
-			info.setUserItem16(value);
+			retVal = info.getUserItem16();
 			break;
 			
 		case 17 :
-			info.setUserItem17(value);
+			retVal = info.getUserItem17();
 			break;
 			
 		case 18 :
-			info.setUserItem18(value);
+			retVal = info.getUserItem18();
 			break;
 			
 		case 19 :
-			info.setUserItem19(value);
+			retVal = info.getUserItem19();
 			break;
 			
 		case 20 :
-			info.setUserItem20(value);
+			retVal = info.getUserItem20();
 			break;
 			
 		case 21 :
-			info.setUserItem21(value);
+			retVal = info.getUserItem21();
 			break;
 			
 		case 22 :
-			info.setUserItem22(value);
+			retVal = info.getUserItem22();
 			break;
 			
 		case 23 :
-			info.setUserItem23(value);
+			retVal = info.getUserItem23();
 			break;
 			
 		case 24 :
-			info.setUserItem24(value);
+			retVal = info.getUserItem24();
 			break;
 			
 		case 25 :
-			info.setUserItem25(value);
+			retVal = info.getUserItem25();
 			break;
 			
 		case 26 :
-			info.setUserItem26(value);
+			retVal = info.getUserItem26();
 			break;
 			
 		case 27 :
-			info.setUserItem27(value);
+			retVal = info.getUserItem27();
 			break;
 			
 		case 28 :
-			info.setUserItem28(value);
+			retVal = info.getUserItem28();
 			break;
 			
 		case 29 :
-			info.setUserItem29(value);
+			retVal = info.getUserItem29();
 			break;
 			
 		case 30 :
-			info.setUserItem30(value);
+			retVal = info.getUserItem30();
 			break;
 			
 		case 31 :
-			info.setUserItem31(value);
+			retVal = info.getUserItem31();
 			break;
 			
 		case 32 :
-			info.setUserItem32(value);
+			retVal = info.getUserItem32();
 			break;
 			
 		case 33 :
-			info.setUserItem33(value);
+			retVal = info.getUserItem33();
 			break;
 			
 		case 34 :
-			info.setUserItem34(value);
+			retVal = info.getUserItem34();
 			break;
 			
 		case 35 :
-			info.setUserItem35(value);
+			retVal = info.getUserItem35();
 			break;
 			
 		case 36 :
-			info.setUserItem36(value);
+			retVal = info.getUserItem36();
 			break;
 			
 		case 37 :
-			info.setUserItem37(value);
+			retVal = info.getUserItem37();
 			break;
 			
 		case 38 :
-			info.setUserItem38(value);
+			retVal = info.getUserItem38();
 			break;
 			
 		case 39 :
-			info.setUserItem39(value);
+			retVal = info.getUserItem39();
 			break;
 			
 		case 40 :
-			info.setUserItem40(value);
+			retVal = info.getUserItem40();
 			break;
-			
-		default:
+		
+		default :
 			break;
 		}
+		
+		if (retVal == null) {
+			retVal = "";
+		}
+		return retVal;
 	}
+
 }

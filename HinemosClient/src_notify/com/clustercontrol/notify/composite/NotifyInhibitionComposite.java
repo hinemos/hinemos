@@ -21,12 +21,12 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.notify.bean.RenotifyTypeConstant;
+import com.clustercontrol.notify.dialog.bean.NotifyInfoInputData;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.notify.NotifyInfo;
+import com.clustercontrol.util.WidgetTestUtil;
 
 
 /**
@@ -217,7 +217,7 @@ public class NotifyInhibitionComposite extends Composite {
 	 *
 	 * @param notify 設定値として用いる通知情報
 	 */
-	public void setInputData(NotifyInfo notify) {
+	public void setInputData(NotifyInfoInputData notify) {
 
 		if(notify != null){
 
@@ -239,14 +239,12 @@ public class NotifyInhibitionComposite extends Composite {
 	/**
 	 * 引数で指定された通知情報に、入力値を設定します。
 	 * <p>
-	 * 入力値チェックを行い、不正な場合は認証結果を返します。
-	 * 不正ではない場合は、<code>null</code>を返します。
+	 * 入力値チェックは行いません（マネージャ側で行います）。
 	 *
 	 * @param info 入力値を設定する通知情報
-	 * @return 検証結果
 	 *
 	 */
-	public ValidateResult createInputData(NotifyInfo info) {
+	public void createInputData(NotifyInfoInputData info) {
 
 		if(info != null){
 			// 抑制
@@ -263,12 +261,9 @@ public class NotifyInhibitionComposite extends Composite {
 			try {
 				info.setRenotifyPeriod(Integer.parseInt(this.m_textRenotifyPeriod.getText()));
 			} catch (NumberFormatException e) {
-				if (this.m_radioRenotifyPeriod.getSelection()) {
-					return this.setValidateResult(Messages.getString("message.hinemos.1"),Messages.getString("message.notify.14"));
-				}
+				info.setRenotifyPeriod(null);  // 数値以外が入力された場合（マネージャ側でバリデーション）
 			}
 		}
-		return null;
 	}
 
 	/* (非 Javadoc)

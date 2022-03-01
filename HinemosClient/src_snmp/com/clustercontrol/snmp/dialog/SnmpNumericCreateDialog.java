@@ -8,6 +8,7 @@
 
 package com.clustercontrol.snmp.dialog;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -19,20 +20,25 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddSnmpNumericMonitorRequest;
+import org.openapitools.client.model.ModifySnmpNumericMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.SnmpCheckInfoRequest;
+import org.openapitools.client.model.SnmpCheckInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoRequest;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
-import com.clustercontrol.bean.SnmpVersionConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.monitor.bean.ConvertValueConstant;
 import com.clustercontrol.monitor.bean.ConvertValueMessage;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorNumericDialog;
-import com.clustercontrol.snmp.action.AddSnmp;
-import com.clustercontrol.snmp.action.GetSnmp;
-import com.clustercontrol.snmp.action.ModifySnmp;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.SnmpCheckInfo;
 
 /**
  * SNMP監視（数値）作成・変更ダイアログクラス<BR>
@@ -188,15 +194,31 @@ public class SnmpNumericCreateDialog extends CommonMonitorNumericDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
-		}
-		else{
+		} else {
 			// 変更の場合、情報取得
-			info = new GetSnmp().getSnmp(this.getManagerName(), this.monitorId);
+			try {
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
+				info = wrapper.getMonitor(this.monitorId);
+			} catch (InvalidRole e) {
+				// アクセス権なしの場合、エラーダイアログを表示する
+				MessageDialog.openInformation(
+						null,
+						Messages.getString("message"),
+						Messages.getString("message.accesscontrol.16"));
+				throw new InternalError(e.getMessage());
+			} catch (Exception e) {
+				// 上記以外の例外
+				MessageDialog.openInformation(
+						null,
+						Messages.getString("message"),
+						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+				throw new InternalError(e.getMessage());
+			}
 		}
 		this.setInputData(info);
 	}
@@ -224,24 +246,23 @@ public class SnmpNumericCreateDialog extends CommonMonitorNumericDialog {
 	 *            設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
 
 		// 監視条件 SNMP監視情報
-		SnmpCheckInfo snmpInfo = monitor.getSnmpCheckInfo();
+		SnmpCheckInfoResponse snmpInfo = monitor.getSnmpCheckInfo();
 		if(snmpInfo == null){
-			snmpInfo = new SnmpCheckInfo();
-			snmpInfo.setConvertFlg(ConvertValueConstant.TYPE_NO);
-			snmpInfo.setSnmpVersion(SnmpVersionConstant.TYPE_V1);
+			snmpInfo = new SnmpCheckInfoResponse();
+			snmpInfo.setConvertFlg(SnmpCheckInfoResponse.ConvertFlgEnum.NONE);
 		}
 		if(snmpInfo != null){
 			if (snmpInfo.getSnmpOid() != null) {
 				this.m_textOid.setText(snmpInfo.getSnmpOid());
 			}
 			if (snmpInfo.getConvertFlg() != null) {
-				this.m_comboConvertValue.setText(ConvertValueMessage.typeToString(snmpInfo.getConvertFlg().intValue()));
+				this.m_comboConvertValue.setText(ConvertValueMessage.codeToString(snmpInfo.getConvertFlg().toString()));
 			}
 
 			// OIDが必須項目であることを明示
@@ -259,21 +280,15 @@ public class SnmpNumericCreateDialog extends CommonMonitorNumericDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		//SNMP監視固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_SNMP_N);
-
 		// 監視条件 SNMP監視情報
-		SnmpCheckInfo snmpInfo = new SnmpCheckInfo();
-		snmpInfo.setConvertFlg(ConvertValueConstant.TYPE_NO);
-		snmpInfo.setSnmpVersion(SnmpVersionConstant.TYPE_V1);
-		snmpInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_SNMP_N);
-		snmpInfo.setMonitorId(monitorInfo.getMonitorId());
+		SnmpCheckInfoResponse snmpInfo = new SnmpCheckInfoResponse();
+		snmpInfo.setConvertFlg(SnmpCheckInfoResponse.ConvertFlgEnum.NONE);
 
 		if (this.m_textOid.getText() != null
 				&& !"".equals((this.m_textOid.getText()).trim())) {
@@ -283,8 +298,12 @@ public class SnmpNumericCreateDialog extends CommonMonitorNumericDialog {
 
 		if (this.m_comboConvertValue.getText() != null
 				&& !"".equals((this.m_comboConvertValue.getText()).trim())) {
-
-			snmpInfo.setConvertFlg(Integer.valueOf(ConvertValueMessage.stringToType(this.m_comboConvertValue.getText())));
+			int convertFlgType = ConvertValueMessage.stringToType(this.m_comboConvertValue.getText());
+			if (convertFlgType == ConvertValueConstant.TYPE_NO) {
+				snmpInfo.setConvertFlg(SnmpCheckInfoResponse.ConvertFlgEnum.NONE);
+			} else if (convertFlgType == ConvertValueConstant.TYPE_DELTA) {
+				snmpInfo.setConvertFlg(SnmpCheckInfoResponse.ConvertFlgEnum.DELTA);
+			}
 		}
 		monitorInfo.setSnmpCheckInfo(snmpInfo);
 
@@ -322,19 +341,108 @@ public class SnmpNumericCreateDialog extends CommonMonitorNumericDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-		if(info != null){
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
-				result = new AddSnmp().add(managerName, info);
-			}
-			else{
+				try {
+					AddSnmpNumericMonitorRequest info = new AddSnmpNumericMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddSnmpNumericMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getSnmpCheckInfo() != null && this.inputData.getSnmpCheckInfo() != null) {
+						info.getSnmpCheckInfo().setConvertFlg(
+								SnmpCheckInfoRequest.ConvertFlgEnum.fromValue(
+										this.inputData.getSnmpCheckInfo().getConvertFlg().getValue()));
+					}
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(AddSnmpNumericMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.addSnmpNumericMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorIdInvalid e) {
+					// 監視項目IDが不適切な場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.97", args));
+				} catch (MonitorDuplicate e) {
+					// 監視項目IDが重複している場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.53", args));
+
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.34", args) + errMessage);
+				}
+			} else{
 				// 変更の場合
-				result = new ModifySnmp().modify(managerName, info);
+				try {
+					ModifySnmpNumericMonitorRequest info = new ModifySnmpNumericMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifySnmpNumericMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getSnmpCheckInfo() != null && this.inputData.getSnmpCheckInfo() != null) {
+						info.getSnmpCheckInfo().setConvertFlg(
+								SnmpCheckInfoRequest.ConvertFlgEnum.fromValue(
+										this.inputData.getSnmpCheckInfo().getConvertFlg().getValue()));
+					}
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(ModifySnmpNumericMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.modifySnmpNumericMonitor(this.inputData.getMonitorId(), info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.35", args));
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.36", args) + errMessage);
+				}
 			}
 		}
-
 		return result;
 	}
 
@@ -344,13 +452,12 @@ public class SnmpNumericCreateDialog extends CommonMonitorNumericDialog {
 	 * @see com.clustercontrol.dialog.CommonMonitorDialog#setInfoInitialValue()
 	 */
 	@Override
-	protected void setInfoInitialValue(MonitorInfo monitor) {
+	protected void setInfoInitialValue(MonitorInfoResponse monitor) {
 
 		super.setInfoInitialValue(monitor);
 
-		SnmpCheckInfo snmpCheckInfo = new SnmpCheckInfo();
-		snmpCheckInfo.setConvertFlg(ConvertValueConstant.TYPE_NO);
-		snmpCheckInfo.setSnmpVersion(SnmpVersionConstant.TYPE_V1);
+		SnmpCheckInfoResponse snmpCheckInfo = new SnmpCheckInfoResponse();
+		snmpCheckInfo.setConvertFlg(SnmpCheckInfoResponse.ConvertFlgEnum.NONE);
 		monitor.setSnmpCheckInfo(snmpCheckInfo);
 	}
 }

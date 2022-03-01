@@ -12,17 +12,17 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.PrimaryKeyJoinColumn;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -47,11 +47,11 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 	private boolean levelError;
 	private boolean levelInformational;
 	
-	private List<String> logNameList = new ArrayList<>();
-	private List<String> sourceList = new ArrayList<>();
-	private List<Integer> eventIdList = new ArrayList<>();
-	private List<Integer> categoryList = new ArrayList<>();
-	private List<Long> keywordList = new ArrayList<>();
+	private List<String> logName = new ArrayList<>();
+	private List<String> source = new ArrayList<>();
+	private List<Integer> eventId = new ArrayList<>();
+	private List<Integer> category = new ArrayList<>();
+	private List<Long> keywords = new ArrayList<>();
 	
 	private List<MonitorWinEventLogInfoEntity> monitorWinEventLogInfoEntities = new ArrayList<>();
 	private List<MonitorWinEventSourceInfoEntity> monitorWinEventSourceInfoEntities = new ArrayList<>();
@@ -153,20 +153,20 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 	 * JDK1.8の場合は、マネージャがDTOを受け取った直後にrefrectメソッドを呼び出す必要あり。
 	 */
 	public void reflect() {
-		setLogName(logNameList);
-		setSource(sourceList);
-		setEventId(eventIdList);
-		setCategory(categoryList);
-		setKeywords(keywordList);
+		setLogName(logName);
+		setSource(source);
+		setEventId(eventId);
+		setCategory(category);
+		setKeywords(keywords);
 	}
 	
 	@Transient
 	public List<String> getLogName(){
-		logNameList = new ArrayList<>();
+		logName = new ArrayList<>();
 		for (MonitorWinEventLogInfoEntity entity: getMonitorWinEventLogInfoEntities()) {
-			logNameList.add(entity.getId().getLogName());
+			logName.add(entity.getId().getLogName());
 		}
-		return logNameList;
+		return logName;
 	}
 	public void setLogName(List<String> logName){
 		for(MonitorWinEventLogInfoEntity info: getMonitorWinEventLogInfoEntities()){
@@ -182,11 +182,11 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 
 	@Transient
 	public List<String> getSource(){
-		sourceList = new ArrayList<>();
+		source = new ArrayList<>();
 		for (MonitorWinEventSourceInfoEntity entity: getMonitorWinEventSourceInfoEntities()) {
-			sourceList.add(entity.getId().getSource());
+			source.add(entity.getId().getSource());
 		}
-		return sourceList;
+		return source;
 	}
 	public void setSource(List<String> source){
 		for(MonitorWinEventSourceInfoEntity info: getMonitorWinEventSourceInfoEntities()){
@@ -202,11 +202,11 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 
 	@Transient
 	public List<Integer> getEventId() {
-		eventIdList = new ArrayList<>();
+		eventId = new ArrayList<>();
 		for (MonitorWinEventIdInfoEntity entity: getMonitorWinEventIdInfoEntities()) {
-			eventIdList.add(entity.getId().getEventId());
+			eventId.add(entity.getId().getEventId());
 		}
-		return eventIdList;
+		return eventId;
 	}
 	public void setEventId(List<Integer> eventId){
 		for(MonitorWinEventIdInfoEntity info: getMonitorWinEventIdInfoEntities()){
@@ -222,11 +222,11 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 
 	@Transient
 	public List<Integer> getCategory(){
-		categoryList = new ArrayList<>();
+		category = new ArrayList<>();
 		for (MonitorWinEventCategoryInfoEntity entity: getMonitorWinEventCategoryInfoEntities()) {
-			categoryList.add(entity.getId().getCategory());
+			category.add(entity.getId().getCategory());
 		}
-		return categoryList;
+		return category;
 	}
 	public void setCategory(List<Integer> category){
 		for(MonitorWinEventCategoryInfoEntity info: getMonitorWinEventCategoryInfoEntities()){
@@ -242,11 +242,11 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 
 	@Transient
 	public List<Long> getKeywords() {
-		keywordList = new ArrayList<>();
+		keywords = new ArrayList<>();
 		for (MonitorWinEventKeywordInfoEntity entity: getMonitorWinEventKeywordInfoEntities()) {
-			keywordList.add(entity.getId().getKeyword());
+			keywords.add(entity.getId().getKeyword());
 		}
-		return keywordList;
+		return keywords;
 	}
 	public void setKeywords(List<Long> keywords) {
 		for(MonitorWinEventKeywordInfoEntity info: getMonitorWinEventKeywordInfoEntities()){

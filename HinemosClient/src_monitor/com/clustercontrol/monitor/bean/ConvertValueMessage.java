@@ -8,6 +8,8 @@
 
 package com.clustercontrol.monitor.bean;
 
+import org.openapitools.client.model.CustomCheckInfoResponse;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -51,5 +53,20 @@ public class ConvertValueMessage {
 			return ConvertValueConstant.TYPE_DELTA;
 		}
 		return -1;
+	}
+
+	/**
+	 * ConvertFlgEnumの値から文字列に変換します。<BR>
+	 * 
+	 * @param code ConvertFlgEnumの値
+	 * @return
+	 */
+	public static String codeToString(String code) {
+		if (CustomCheckInfoResponse.ConvertFlgEnum.NONE.toString().equals(code)) {
+			return STRING_NO;
+		} else if (CustomCheckInfoResponse.ConvertFlgEnum.DELTA.toString().equals(code)) {
+			return STRING_DELTA;
+		}
+		return "";
 	}
 }

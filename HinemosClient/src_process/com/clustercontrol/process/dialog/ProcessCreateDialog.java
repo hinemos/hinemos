@@ -22,19 +22,22 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddProcessMonitorRequest;
+import org.openapitools.client.model.ModifyProcessMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.ProcessCheckInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoRequest;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorNumericDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.ProcessCheckInfo;
 
 /**
  * プロセス監視作成・変更ダイアログクラス<BR>
@@ -189,27 +192,28 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 		this.m_checkCaseSensitive.setLayoutData(gridData);
 		this.m_checkCaseSensitive.setText(Messages.getString("case.sensitive"));
 
+		// SDMLの自動作成監視と合わせるためにcommonから取得する
 		// 収集値表示名のデフォルト値を設定
-		this.itemName.setText(Messages.getString("process.number"));
+		this.itemName.setText(Messages.getString("PROCESS_NUMBER"));
 
 		// 収集値単位のデフォルト値を設定
-		this.measure.setText(Messages.getString("process.measure"));
+		this.measure.setText(Messages.getString("PROCESS_MEASURE"));
 
 		// ダイアログを調整
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getMonitor(this.monitorId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -253,15 +257,15 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 	 *            設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
 
 		// 監視条件 プロセス監視情報
-		ProcessCheckInfo processInfo = monitor.getProcessCheckInfo();
+		ProcessCheckInfoResponse processInfo = monitor.getProcessCheckInfo();
 		if(processInfo == null){
-			processInfo = new ProcessCheckInfo();
+			processInfo = new ProcessCheckInfoResponse();
 		}
 
 		if (processInfo.getCommand() != null) {
@@ -270,7 +274,7 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 		if (processInfo.getParam() != null) {
 			this.m_textParam.setText(processInfo.getParam());
 		}
-		if (processInfo.isCaseSensitivityFlg() != null && processInfo.isCaseSensitivityFlg()){
+		if (processInfo.getCaseSensitivityFlg() != null && processInfo.getCaseSensitivityFlg()){
 			this.m_checkCaseSensitive.setSelection(true);
 		}
 
@@ -285,20 +289,14 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		// プロセス監視固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_PROCESS);
-		monitorInfo.setMonitorType(MonitorTypeConstant.TYPE_NUMERIC);
-
 		// 監視条件 プロセス監視情報
-		ProcessCheckInfo processInfo = new ProcessCheckInfo();
-		processInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_PROCESS);
-		processInfo.setMonitorId(monitorInfo.getMonitorId());
+		ProcessCheckInfoResponse processInfo = new ProcessCheckInfoResponse();
 
 		if (this.m_textCommand.getText() != null
 				&& !"".equals((this.m_textCommand.getText()).trim())) {
@@ -348,28 +346,37 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-		if(info != null){
-			String[] args = { info.getMonitorId(), managerName };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if(result){
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddProcessMonitorRequest info = new AddProcessMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddProcessMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					info.setPredictionMethod(AddProcessMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.addProcessMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorIdInvalid e) {
+					// 監視項目IDが不適切な場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.97", args));
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -378,7 +385,7 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
@@ -393,25 +400,36 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if(result){
+					ModifyProcessMonitorRequest info = new ModifyProcessMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyProcessMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(ModifyProcessMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.modifyProcessMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
@@ -419,7 +437,6 @@ public class ProcessCreateDialog extends CommonMonitorNumericDialog {
 				}
 			}
 		}
-
 		return result;
 	}
 }

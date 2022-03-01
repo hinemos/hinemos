@@ -28,12 +28,11 @@ import com.clustercontrol.analytics.factory.RunMonitorLogcount;
 import com.clustercontrol.analytics.factory.SummaryLogcountCollectData;
 import com.clustercontrol.analytics.factory.SummaryLogcountCollectData.LogcountCollectData;
 import com.clustercontrol.analytics.model.LogcountCheckInfo;
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.collect.model.CollectKeyInfoPK;
 import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.fault.CalendarNotFound;
@@ -181,13 +180,12 @@ public class SummaryLogcountWorker {
 
 				long interval = monitorInfo.getRunInterval().longValue() * 1000L;
 
-				// m_endDate - intervalを設定する
-				m_endDate = m_endDate - interval;
-
 				// SummaryLogcountCollectDataに渡すstartDateは、収集ログ取得の時間に合わせる
-				long fromDate  = m_startDate - m_startDate % interval - interval;
-				long toDate = m_startDate - m_startDate % interval;
-				SummaryLogcountCollectData summaryLogcount = new SummaryLogcountCollectData(monitorInfo, toDate, m_endDate);
+				long toDate = m_startDate - (m_startDate % interval);
+				long fromDate  = toDate - interval;
+		        SummaryLogcountCollectData summaryLogcount = new SummaryLogcountCollectData(monitorInfo, toDate, m_endDate);
+		        m_log.debug("m_startDate=" + m_startDate + ", m_endDate=" + m_endDate + ", interval=" + interval);
+		        m_log.debug("fromDate=" + fromDate + ", toDate=" + toDate);
 
 				// 収集ログより、監視間隔ごとの集計結果を取得する
 				while(toDate <= m_endDate) {
@@ -195,7 +193,7 @@ public class SummaryLogcountWorker {
 							|| new CalendarControllerBean().isRun(monitorInfo.getCalendarId(), toDate)) {
 						for (String facilityId : facilityIdList) {
 							StringQueryResult stringQueryResult = new RunMonitorLogcount().summaryLogcount(
-									monitorInfo, facilityId, fromDate, toDate);
+									monitorInfo, facilityId, fromDate, toDate, false);
 							if (logcountCheckInfo.getTag() == null || logcountCheckInfo.getTag().isEmpty()) {
 								// 全て集計
 								summaryLogcount.addData(facilityId, "", toDate, stringQueryResult.getCount().doubleValue());
@@ -221,7 +219,7 @@ public class SummaryLogcountWorker {
 				int count = CollectDataUtil.replace(monitorInfo.getMonitorId(), summaryDataMap, m_startDate, m_endDate, collectLogcountTimeout);
 
 				// 通知処理(処理終了)
-				AplLogger.put(PriorityConstant.TYPE_INFO, HinemosModuleConstant.MONITOR_LOGCOUNT, MessageConstant.MESSAGE_SYS_002_MON_LOGCOUNT, 
+				AplLogger.put(InternalIdCommon.MON_LOGCOUNT_N_SYS_002, 
 						new String[]{m_monitorId}, getOrgMessage(operateStartDate, count, m_startDate, m_endDate));
 
 				// 終了処理
@@ -229,7 +227,7 @@ public class SummaryLogcountWorker {
 
 			} catch (HinemosDbTimeout e) {
 				// 通知処理(エラー)
-				AplLogger.put(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.MONITOR_LOGCOUNT, MessageConstant.MESSAGE_SYS_003_MON_LOGCOUNT, 
+				AplLogger.put(InternalIdCommon.MON_LOGCOUNT_N_SYS_003, 
 						new String[]{m_monitorId}, getOrgMessage(operateStartDate, 0, m_startDate, m_endDate));
 				if (jtm != null) {
 					jtm.rollback();
@@ -240,7 +238,7 @@ public class SummaryLogcountWorker {
 						+ ", startDate=" + sdf.format(new Date(this.m_startDate))
 						+ ", endDate=" + sdf.format(new Date(this.m_endDate)), e);
 				// 通知処理(エラー)
-				AplLogger.put(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.MONITOR_LOGCOUNT, MessageConstant.MESSAGE_SYS_003_MON_LOGCOUNT, 
+				AplLogger.put(InternalIdCommon.MON_LOGCOUNT_N_SYS_003, 
 						new String[]{m_monitorId}, getOrgMessage(operateStartDate, 0, m_startDate, m_endDate));
 				
 				if (jtm != null) {

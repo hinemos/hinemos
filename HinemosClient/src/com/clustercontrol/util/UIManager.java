@@ -115,15 +115,15 @@ public class UIManager {
 	public static void checkAsyncExec(Runnable r){
 		UIManager uiManager = getInstance();
 		if( uiManager.display == null){
-			m_log.trace("LoginManager.checkAsyncExec() m_dislpay is null");
+			m_log.trace("RestLoginManager.checkAsyncExec() m_dislpay is null");
 			throw new InternalError("uiManager.display is null");
 		}
 
 		if(! uiManager.display.isDisposed()){
-			m_log.trace("LoginManager.checkAsyncExec() is true");
+			m_log.trace("RestLoginManager.checkAsyncExec() is true");
 			 uiManager.display.asyncExec(r);
 		}else{
-			m_log.trace("LoginManager.checkAsyncExec() is false");
+			m_log.trace("RestLoginManager.checkAsyncExec() is false");
 		}
 	}
 

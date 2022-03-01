@@ -27,16 +27,16 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.JobKickResponse;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.action.GetJobKickTableDefine;
-import com.clustercontrol.jobmanagement.bean.JobKickConstant;
 import com.clustercontrol.jobmanagement.bean.JobKickTypeMessage;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.view.JobKickListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
 
 /**
  * ジョブ[実行契機]ビューの「削除」のクライアント側アクションクラス<BR>
@@ -113,36 +113,47 @@ public class DeleteJobKickAction extends AbstractHandler implements IElementUpda
 
 		String scheId = null;
 		String fileId = null;
+		String joblinkrcvId = null;
 		String manId = null;
 		int scheSize = 0;
 		int fileCheckSize = 0;
+		int joblinkrcvSize = 0;
 		int manualSize = 0;
 
 		for(Object obj : list) {
 			List<?> objList = (List<?>)obj;
 			String managerName = (String) objList.get(GetJobKickTableDefine.MANAGER_NAME);
 			if(jobKickIdMap.get(managerName) == null) {
-				jobKickIdMap.put(managerName, new ArrayList[3]);
+				jobKickIdMap.put(managerName, new ArrayList[4]);
 				jobKickIdMap.get(managerName)[0] = new ArrayList<>();
 				jobKickIdMap.get(managerName)[1] = new ArrayList<>();
 				jobKickIdMap.get(managerName)[2] = new ArrayList<>();
+				jobKickIdMap.get(managerName)[3] = new ArrayList<>();
 			}
 			String id = (String) objList.get(GetJobKickTableDefine.JOBKICK_ID);
-			Integer type = JobKickTypeMessage.stringToType((String) objList.get(GetJobKickTableDefine.TYPE));
-			if (type == JobKickConstant.TYPE_SCHEDULE) {
+			JobKickResponse.TypeEnum type = JobKickResponse.TypeEnum
+					.fromValue(JobKickTypeMessage.stringToTypeEnumValue((String) objList.get(GetJobKickTableDefine.TYPE)));
+
+			if (type == JobKickResponse.TypeEnum.SCHEDULE) {
 				jobKickIdMap.get(managerName)[0].add(id);
 				if (scheId == null || scheId.equals("")) {
 					scheId = id;
 				}
 				scheSize++;
-			} else if (type == JobKickConstant.TYPE_FILECHECK) {
+			} else if (type == JobKickResponse.TypeEnum.FILECHECK) {
 				jobKickIdMap.get(managerName)[1].add(id);
 				if (fileId == null || fileId.equals("")) {
 					fileId = id;
 				}
 				fileCheckSize++;
-			} else if (type == JobKickConstant.TYPE_MANUAL) {
+			} else if (type == JobKickResponse.TypeEnum.JOBLINKRCV) {
 				jobKickIdMap.get(managerName)[2].add(id);
+				if (joblinkrcvId == null || joblinkrcvId.equals("")) {
+					joblinkrcvId = id;
+				}
+				joblinkrcvSize++;
+			} else if (type == JobKickResponse.TypeEnum.MANUAL) {
+				jobKickIdMap.get(managerName)[3].add(id);
 				if (manId == null || manId.equals("")) {
 					manId = id;
 				}
@@ -184,19 +195,21 @@ public class DeleteJobKickAction extends AbstractHandler implements IElementUpda
 				}
 				messageArg.append(managerName);
 
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-				try {
-					wrapper.deleteSchedule(entry.getValue()[0]);
-				} catch (InvalidRole_Exception e) {
-					// 権限がない場合にはエラーメッセージを表示する
-					MessageDialog.openInformation(
-							null, 
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-					error = true;
-				} catch (Exception e) {
-					m_log.warn("run(), " + e.getMessage(), e);
-					errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+				if(entry.getValue()[0].size() != 0) {
+					try {
+						wrapper.deleteJobKick(String.join(",", entry.getValue()[0]));
+					} catch (InvalidRole e) {
+						// 権限がない場合にはエラーメッセージを表示する
+						MessageDialog.openInformation(
+								null, 
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16") + "(" + managerName + ")");
+						error = true;
+					} catch (Exception e) {
+						m_log.warn("run(), " + e.getMessage(), e);
+						errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
+					}
 				}
 				i++;
 			}
@@ -241,15 +254,17 @@ public class DeleteJobKickAction extends AbstractHandler implements IElementUpda
 				}
 				messageArg.append(managerName);
 
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-				//実行契機[ファイルチェック]を選択した場合
-				try {
-					wrapper.deleteFileCheck(entry.getValue()[1]);
-				} catch (InvalidRole_Exception e) {
-					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					m_log.warn("run(), " + e.getMessage(), e);
-					errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+				if(entry.getValue()[1].size() != 0) {
+					//実行契機[ファイルチェック]を選択した場合
+					try {
+						wrapper.deleteJobKick(String.join(",", entry.getValue()[1]));
+					} catch (InvalidRole e) {
+						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
+					} catch (Exception e) {
+						m_log.warn("run(), " + e.getMessage(), e);
+						errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
+					}
 				}
 				i++;
 			}
@@ -264,6 +279,59 @@ public class DeleteJobKickAction extends AbstractHandler implements IElementUpda
 			}
 		}
 
+		//実行契機[ジョブ連携受信実行契機]を選択した場合
+		if(joblinkrcvSize == 1) {
+			message = Messages.getString("joblink.rcv.jobkick") + "["
+					+ joblinkrcvId + "]"
+					+ Messages.getString("message.job.2");
+		} else if(joblinkrcvSize > 1){
+			Object[] args = {joblinkrcvSize, Messages.getString("joblink.rcv.jobkick")};
+			message = Messages.getString("message.job.123", args);
+		}
+
+		if(joblinkrcvSize > 0) {
+			if (MessageDialog.openQuestion(
+					null,
+					Messages.getString("confirmed"),
+					message) == false) {
+				return null;
+			}
+
+			Map<String, String> errorMsgs = new ConcurrentHashMap<>();
+			StringBuffer messageArg = new StringBuffer();
+			int i = 0;
+			for(Map.Entry<String, List<String>[]> entry : jobKickIdMap.entrySet()) {
+				String managerName = entry.getKey();
+
+				if(i > 0) {
+					messageArg.append(", ");
+				}
+				messageArg.append(managerName);
+
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+				if(entry.getValue()[2].size() != 0) {
+					//実行契機[ジョブ連携受信実行契機]を選択した場合
+					try {
+						wrapper.deleteJobKick(String.join(",", entry.getValue()[2]));
+					} catch (InvalidRole e) {
+						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
+					} catch (Exception e) {
+						m_log.warn("run(), " + e.getMessage(), e);
+						errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
+					}
+				}
+				i++;
+			}
+
+			//メッセージ表示
+			if( 0 < errorMsgs.size() ){
+				UIManager.showMessageBox(errorMsgs, true);
+			} else {
+				Object[] arg = {messageArg.toString()};
+				MessageDialog.openInformation(null, Messages.getString("successful"),
+						Messages.getString("message.job.75", arg));
+			}
+		}
 
 		//実行契機[マニュアル実行契機]を選択した場合
 		if(manualSize == 1) {
@@ -294,15 +362,17 @@ public class DeleteJobKickAction extends AbstractHandler implements IElementUpda
 				}
 				messageArg.append(managerName);
 
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-				//実行契機[マニュアル実行契機]を選択した場合
-				try {
-					wrapper.deleteJobManual(entry.getValue()[2]);
-				} catch (InvalidRole_Exception e) {
-					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					m_log.warn("run(), " + e.getMessage(), e);
-					errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+				if(entry.getValue()[3].size() != 0) {
+					//実行契機[マニュアル実行契機]を選択した場合
+					try {
+						wrapper.deleteJobKick(String.join(",", entry.getValue()[3]));
+					} catch (InvalidRole e) {
+						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
+					} catch (Exception e) {
+						m_log.warn("run(), " + e.getMessage(), e);
+						errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
+					}
 				}
 				i++;
 			}

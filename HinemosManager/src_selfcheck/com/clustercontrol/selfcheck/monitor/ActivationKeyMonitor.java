@@ -15,10 +15,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.ActivationKeyConstant;
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.util.KeyCheck;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -27,7 +25,6 @@ import com.clustercontrol.util.apllog.AplLogger;
 public class ActivationKeyMonitor {
 	
 	private static Log m_log = LogFactory.getLog(ActivationKeyMonitor.class);
-	private static final String PLUGIN_ID = HinemosModuleConstant.SYSYTEM_SELFCHECK;
 
 	public void execute() {
 		for (String option : ActivationKeyConstant.getOptions()) {
@@ -61,17 +58,17 @@ public class ActivationKeyMonitor {
 				// 評価版で動いている場合
 				String expireDateStr = expireDate.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
 				if (ActivationKeyConstant.TYPE_ENTERPRISE.equals(option)){
-					AplLogger.put(PriorityConstant.TYPE_INFO, PLUGIN_ID,  MessageConstant.MESSAGE_SYS_014_SYS_SFC, new String[]{expireDateStr, activationKeyFilename});
+					AplLogger.put(InternalIdCommon.SYS_SFC_SYS_014, new String[]{expireDateStr, activationKeyFilename});
 				} else if (ActivationKeyConstant.TYPE_XCLOUD.equals(option)) {
-					AplLogger.put(PriorityConstant.TYPE_INFO, PLUGIN_ID,  MessageConstant.MESSAGE_SYS_015_SYS_SFC, new String[]{expireDateStr, activationKeyFilename});
+					AplLogger.put(InternalIdCommon.SYS_SFC_SYS_015, new String[]{expireDateStr, activationKeyFilename});
 				}
 				m_log.info( option + " is evaluation key.");
 			} else {
 				// 評価版かつ期限切れの場合
 				if (ActivationKeyConstant.TYPE_ENTERPRISE.equals(option)) {
-					AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID,  MessageConstant.MESSAGE_SYS_016_SYS_SFC, new String[]{activationKeyFilename});
+					AplLogger.put(InternalIdCommon.SYS_SFC_SYS_016, new String[]{activationKeyFilename});
 				} else if (ActivationKeyConstant.TYPE_XCLOUD.equals(option)) {
-					AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID,  MessageConstant.MESSAGE_SYS_017_SYS_SFC, new String[]{activationKeyFilename});
+					AplLogger.put(InternalIdCommon.SYS_SFC_SYS_017, new String[]{activationKeyFilename});
 				}
 				m_log.info( option + " is expired evaluation key.");
 			}

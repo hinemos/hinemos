@@ -9,6 +9,7 @@
 package com.clustercontrol.utility.jobutil.ui.views.commands;
 
 import java.io.File;
+import java.text.ParseException;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -28,7 +29,13 @@ import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.client.ui.util.FileDownloader;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.UrlNotFound;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
@@ -37,13 +44,9 @@ import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.jobutil.dialog.JobExportDialog;
 import com.clustercontrol.utility.jobutil.util.JobConvert;
 import com.clustercontrol.utility.settings.SettingConstants;
+import com.clustercontrol.utility.settings.job.xml.JobMasters;
 import com.clustercontrol.utility.util.ClientPathUtil;
-import com.clustercontrol.utility.util.UtilityEndpointWrapper;
-import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
-import com.clustercontrol.ws.utility.InvalidRole_Exception;
-import com.clustercontrol.ws.utility.InvalidUserPass_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
 
 /**
  * ジョブをエクスポートするダイアログを開くためのクライアント側アクションクラス<BR>
@@ -72,30 +75,6 @@ public class ExportJobCommand extends AbstractHandler implements IElementUpdater
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		// keyチェック
-		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-			String version = wrapper.getVersion();
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							Messages.getString("message.expiration.term.invalid"));
-				}
-			}
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					e.getMessage());
-			return null;
-		} catch (Exception e) {
-			// キーファイルを確認できませんでした。処理を終了します。
-			// Key file not found. This process will be terminated.
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.expiration.term"));
-			return null;
-		}
 
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
 		// In case this action has been disposed
@@ -105,7 +84,7 @@ public class ExportJobCommand extends AbstractHandler implements IElementUpdater
 		// 選択アイテムの取得
 		this.viewPart = HandlerUtil.getActivePart(event);
 
-		JobTreeItem selectJob;
+		JobTreeItemWrapper selectJob;
 		if (viewPart instanceof JobMapEditorView) {
 			JobMapEditorView view = (JobMapEditorView) viewPart;
 			JobFigure figure = (JobFigure) view.getCanvasComposite().getSelection();
@@ -123,11 +102,52 @@ public class ExportJobCommand extends AbstractHandler implements IElementUpdater
 			log.debug("execute: view " + viewPart.getTitle()); 
 			return null;
 		}
+		if (selectJob == null){
+			return null;
+		}
+
+		// 対象マネージャを取得
+		String managerName = null;
+		JobTreeItemWrapper mgrTree = JobTreeItemUtil.getManager(selectJob);
+		if(mgrTree == null) {
+			managerName = selectJob.getChildren().get(0).getData().getId();
+		} else {
+			managerName = mgrTree.getData().getId();
+		}
+
+		// 対象マネージャのPublishを確認
+		try {
+			UtilityRestClientWrapper wrapper = UtilityRestClientWrapper.getWrapper(managerName);
+			boolean isPublish = wrapper.checkPublish().getPublish();
+			if (!isPublish) {
+				MessageDialog.openWarning(
+						null,
+						Messages.getString("warning"),
+						Messages.getString("message.enterprise.required"));			}
+		} catch (InvalidRole | InvalidUserPass e) {
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					e.getMessage());
+			return null;
+		} catch (HinemosUnknown e) {
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						Messages.getString("message.enterprise.required"));
+				return null;
+			} else {
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						e.getMessage());
+				return null;
+			}
+		} catch (Exception e) {
+			// キーファイルを確認できませんでした。処理を終了します。
+			// Key file not found. This process will be terminated.
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					Messages.getString("message.enterprise.required"));
+			return null;
+		}
+		
 
 		//viewから選択されている部分を取り出す
-		if (selectJob == null)
-			return null;
-
 		JobExportDialog dialog = new JobExportDialog(viewPart.getSite().getShell());
 		dialog.setSelectJob(selectJob);
 		
@@ -135,7 +155,17 @@ public class ExportJobCommand extends AbstractHandler implements IElementUpdater
 			return null;
 		
 		//jobtreeitem convert to jobxml
-		int ret = JobConvert.exportJobXML(JobConvert.convertJobMastersXML(selectJob, dialog.isScope(), dialog.isNotify()), dialog.getFileName());
+		JobMasters jobMasters = null;
+		int ret = SettingConstants.ERROR_INPROCESS;
+		try {
+			jobMasters = JobConvert.convertJobMastersXML(selectJob, dialog.isScope(), dialog.isNotify());
+			ret = JobConvert.exportJobXML(jobMasters, dialog.getFileName());
+		} catch (NullPointerException e) {
+			log.warn("convertJobMastersXML failed "+ e);
+			
+		} catch (ParseException e) {
+			log.warn("convertJobMastersXML failed" + e);
+		}
 
 		// 結果出力ダイアログ
 		if (ret == SettingConstants.SUCCESS) {
@@ -184,7 +214,7 @@ public class ExportJobCommand extends AbstractHandler implements IElementUpdater
 		IWorkbenchPart part = page.getActivePart();
 		boolean editEnable = false;
 		
-		int jobType = -1;
+		JobInfoWrapper.TypeEnum jobType = null;
 		if (part instanceof JobListView) {
 			// Enable button when 1 item is selected
 			JobListView view = (JobListView)part;
@@ -205,8 +235,7 @@ public class ExportJobCommand extends AbstractHandler implements IElementUpdater
 				jobType = view.getDataType();
 		}
 
-		if (jobType == JobConstant.TYPE_JOBUNIT || jobType == JobConstant.TYPE_JOBNET ||
-				jobType == JobConstant.TYPE_REFERJOBNET) {
+		if (jobType == JobInfoWrapper.TypeEnum.JOBUNIT || jobType == JobInfoWrapper.TypeEnum.JOBNET) {
 			editEnable = true;
 		}
 		

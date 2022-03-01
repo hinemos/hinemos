@@ -10,7 +10,6 @@ package com.clustercontrol.jobmanagement.composite;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
@@ -29,6 +28,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.JobNextJobOrderInfoResponse;
+import org.openapitools.client.model.JobWaitRuleInfoResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.EndStatusMessage;
@@ -37,16 +38,12 @@ import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.composite.action.NumberVerifyListener;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.action.GetControlNextJobOrderTableDefine;
-import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
+import com.clustercontrol.jobmanagement.util.JobWaitRuleUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobNextJobOrderInfo;
-import com.clustercontrol.ws.jobmanagement.JobObjectInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobWaitRuleInfo;
 
 public class ExclusiveBranchComposite extends Composite{
 
@@ -65,11 +62,20 @@ public class ExclusiveBranchComposite extends Composite{
 	private Button m_exclusiveBranchNextJobOrderTableButtonDown = null;
 
 	/** 排他分岐用後続ジョブ優先度*/
-	private List<JobNextJobOrderInfo> m_exclusiveBranchNextJobOrderList = null;
+	private List<JobNextJobOrderInfoResponse> m_exclusiveBranchNextJobOrderList = null;
 	private CommonTableViewer m_viewer = null;
-	private JobWaitRuleInfo m_waitRule;
 
-	private JobTreeItem m_jobTreeItem;
+	/** ジョブ待ち条件情報（後続ジョブ実行設定） */
+	/** 排他分岐 */
+	private Boolean m_exclusiveBranchRtn;
+	/** 排他分岐の終了状態 */
+	private  JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum m_exclusiveBranchEndStatusRtn = null;
+	/** 排他分岐の終了値 */
+	private Integer m_exclusiveBranchEndValueRtn = null;
+	/** 排他分岐の優先度リスト */
+	private List<JobNextJobOrderInfoResponse> m_exclusiveBranchNextJobOrderListRtn = null;
+
+	private JobTreeItemWrapper m_jobTreeItem;
 
 	/**
 	 * コンストラクタ
@@ -102,21 +108,12 @@ public class ExclusiveBranchComposite extends Composite{
 		this.m_exclusiveBranchCondition.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				Button check = (Button) e.getSource();
-				WidgetTestUtil.setTestId(this, null, check);
-				if (check.getSelection()) {
-					m_exclusiveBranchEndStatus.setEnabled(true);
-					m_exclusiveBranchEndValue.setEditable(true);
-					m_exclusiveBranchNextJobOrderTableButtonUp.setEnabled(true);
-					m_exclusiveBranchNextJobOrderTableButtonDown.setEnabled(true);
-					reflectNextJobOrderTable();
-				} else {
-					m_exclusiveBranchEndStatus.setEnabled(false);
-					m_exclusiveBranchEndValue.setEditable(false);
-					m_exclusiveBranchNextJobOrderTableButtonUp.setEnabled(false);
-					m_exclusiveBranchNextJobOrderTableButtonDown.setEnabled(false);
-					reflectNextJobOrderTable();
-				}
+				reflectNextJobOrderTable();
+				boolean enabled = m_exclusiveBranchCondition.getSelection();
+				m_exclusiveBranchEndStatus.setEnabled(enabled);
+				m_exclusiveBranchEndValue.setEditable(enabled);
+				m_exclusiveBranchNextJobOrderTableButtonUp.setEnabled(enabled);
+				m_exclusiveBranchNextJobOrderTableButtonDown.setEnabled(enabled);
 				update();
 			}
 
@@ -205,11 +202,13 @@ public class ExclusiveBranchComposite extends Composite{
 		this.m_exclusiveBranchNextJobOrderTableButtonUp.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int index = (Integer) ((ArrayList<?>) m_viewer.getTable().getSelection()[0].getData()).get(0) - 1;
-				if (index >= 0) {
-					upOrder(index);
-				}
-				else{
+				TableItem[] selectItem = m_viewer.getTable().getSelection();
+				if (selectItem.length != 0) {
+					int index = (Integer) ((ArrayList<?>) selectItem[0].getData()).get(0) - 1;
+					if (index >= 0) {
+						upOrder(index);
+					}
+				} else {
 					MessageDialog.openWarning(
 							null,
 							Messages.getString("warning"),
@@ -224,11 +223,13 @@ public class ExclusiveBranchComposite extends Composite{
 		this.m_exclusiveBranchNextJobOrderTableButtonDown.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int index = (Integer) ((ArrayList<?>) m_viewer.getTable().getSelection()[0].getData()).get(0) - 1;
-				if (index >= 0) {
-					downOrder(index);
-				}
-				else{
+				TableItem[] selectItem = m_viewer.getTable().getSelection();
+				if (selectItem.length != 0) {
+					int index = (Integer) ((ArrayList<?>) selectItem[0].getData()).get(0) - 1;
+					if (index >= 0) {
+						downOrder(index);
+					}
+				} else {
 					MessageDialog.openWarning(
 							null,
 							Messages.getString("warning"),
@@ -244,13 +245,10 @@ public class ExclusiveBranchComposite extends Composite{
 	 * @see com.clustercontrol.jobmanagement.bean.JobWaitRuleInfo
 	 */
 	public void reflectExclusiveBranchInfo() {
-		if (m_waitRule == null) {
-			throw new InternalError("JobWaitRuleInfo is null");
-		}
 		//排他分岐
-		m_exclusiveBranchCondition.setSelection(m_waitRule.isExclusiveBranch() && !m_waitRule.getExclusiveBranchNextJobOrderList().isEmpty());
+		m_exclusiveBranchCondition.setSelection(m_exclusiveBranchRtn && !m_exclusiveBranchNextJobOrderListRtn.isEmpty());
 		//排他分岐終了値
-		m_exclusiveBranchEndValue.setText(String.valueOf(m_waitRule.getExclusiveBranchEndValue()));
+		m_exclusiveBranchEndValue.setText(String.valueOf(m_exclusiveBranchEndValueRtn));
 
 		//排他分岐
 		if (m_exclusiveBranchCondition.getSelection()) {
@@ -262,11 +260,19 @@ public class ExclusiveBranchComposite extends Composite{
 		}
 
 		//排他分岐の終了状態
-		setSelectEndStatus(m_exclusiveBranchEndStatus, m_waitRule.getExclusiveBranchEndStatus());
+		setSelectEndStatus(m_exclusiveBranchEndStatus, m_exclusiveBranchEndStatusRtn);
 		
 		//後続ジョブ優先度を設定
 		//優先度順でリストに格納されている
-		m_exclusiveBranchNextJobOrderList = m_waitRule.getExclusiveBranchNextJobOrderList();
+		m_exclusiveBranchNextJobOrderList = new ArrayList<>();
+		for (JobNextJobOrderInfoResponse jobNextJobOrderInfo : m_exclusiveBranchNextJobOrderListRtn) {
+			JobNextJobOrderInfoResponse info = new JobNextJobOrderInfoResponse();
+			info.setJobId(jobNextJobOrderInfo.getJobId());
+			info.setJobunitId(jobNextJobOrderInfo.getJobunitId());
+			info.setNextJobId(jobNextJobOrderInfo.getNextJobId());
+			m_exclusiveBranchNextJobOrderList.add(info);
+		}
+		
 		//後続ジョブ優先度をテーブルに反映
 		reflectNextJobOrderTable();
 	}
@@ -284,75 +290,16 @@ public class ExclusiveBranchComposite extends Composite{
 			return;
 		}
 
-		//このジョブを待ち条件としているジョブIDリスト
-		List<String> nextJobIdList = new ArrayList<>();
-		//待ち条件が削除されたジョブを除外するために使用
-		List<String> notNextJobIdList = new ArrayList<>();
-		JobTreeItem parent= m_jobTreeItem.getParent();
-		if (parent != null) {
-			//同一階層のジョブリスト
-			List<JobTreeItem> siblingJobList = parent.getChildren();
-			List<String> siblingJobIdList = siblingJobList.stream().map(treeItem -> treeItem.getData().getId()).collect(Collectors.toList());
-			//新規に作成された後続ジョブを表示するために使用する
-			for (JobTreeItem sibling : siblingJobList) {
-				if (sibling == m_jobTreeItem) {
-					continue;
-				}
-				//Full Jobで情報が取得されていないジョブはスキップ
-				JobInfo siblingJobInfo = sibling.getData();
-				if (siblingJobInfo.getWaitRule() == null) {
-					continue;
-				}
-				List<JobObjectInfo> siblingWaitJobObjectInfoList = siblingJobInfo.getWaitRule().getObject();
-				if (siblingWaitJobObjectInfoList != null) {
-					for (JobObjectInfo siblingWaitJobObjectInfo : siblingWaitJobObjectInfoList) {
-						//同じ階層のジョブの中でこのジョブを待ち条件としているもの
-						if ((siblingWaitJobObjectInfo.getType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS ||
-							siblingWaitJobObjectInfo.getType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE) &&
-							siblingWaitJobObjectInfo.getJobId().equals(m_jobTreeItem.getData().getId())) {
-							nextJobIdList.add(sibling.getData().getId());
-							break;
-						} 
-					}
-				}
-				//このジョブを待ち条件としていないジョブ
-				if (!nextJobIdList.contains(sibling.getData().getId())) {
-					notNextJobIdList.add(sibling.getData().getId());
-				}
-			}
-			//同一階層ジョブにないものは優先度設定から除く(削除されたジョブ)
-			m_exclusiveBranchNextJobOrderList.removeIf(nextJobOrder -> !siblingJobIdList.contains(nextJobOrder.getNextJobId()));
-			//後続ジョブでないジョブは優先度設定から除く（待ち条件が削除された場合など）
-			m_exclusiveBranchNextJobOrderList.removeIf(nextJobOrder -> notNextJobIdList.contains(nextJobOrder.getNextJobId()));
-		}
+		JobWaitRuleUtil.updateNextJobOrderInfo(m_jobTreeItem, m_exclusiveBranchNextJobOrderList);
 		Integer order = 1;
-		for(JobNextJobOrderInfo nextJobOrder: m_exclusiveBranchNextJobOrderList) {
+		for(JobNextJobOrderInfoResponse nextJobOrder: m_exclusiveBranchNextJobOrderList) {
 			ArrayList<Object> tableLineData = new ArrayList<Object>();
 			tableLineData.add(order++);  
 			tableLineData.add(nextJobOrder.getNextJobId());
 			tableData.add(tableLineData);
 		}
-
-		//新規に待ち条件に追加されたジョブも反映する
-		//既に優先度設定がある後続ジョブIDリスト
-		List<String> nextJobOrderJobIdList = m_exclusiveBranchNextJobOrderList.stream()
-											.map(nextJobOrder -> nextJobOrder.getNextJobId()).collect(Collectors.toList());
-		for (String nextJobId: nextJobIdList) {
-			//後続ジョブに優先度設定がなければ下位の優先度として追加する
-			if (!nextJobOrderJobIdList.contains(nextJobId)) {
-				ArrayList<Object> tableLineData = new ArrayList<Object>();
-				tableLineData.add(order);  
-				tableLineData.add(nextJobId);
-				tableData.add(tableLineData);
-				
-				JobNextJobOrderInfo nextJobOrder = new JobNextJobOrderInfo();
-				nextJobOrder.setJobunitId(m_jobTreeItem.getData().getJobunitId());
-				nextJobOrder.setJobId(m_jobTreeItem.getData().getId());
-				nextJobOrder.setNextJobId(nextJobId);
-				m_exclusiveBranchNextJobOrderList.add(nextJobOrder);
-
-				order += 1;
-			}
+		if (m_exclusiveBranchNextJobOrderList.size() == 0) {
+			m_exclusiveBranchCondition.setSelection(false);
 		}
 		m_viewer.setInput(tableData);
 	}
@@ -372,44 +319,30 @@ public class ExclusiveBranchComposite extends Composite{
 	}
 
 	/**
-	 * ジョブ待ち条件情報を設定します。
-	 *
-	 * @param start ジョブ待ち条件情報
-	 */
-	public void setWaitRuleInfo(JobWaitRuleInfo start) {
-		m_waitRule = start;
-	}
-
-	/**
-	 * ジョブ待ち条件情報を返します。
-	 *
-	 * @return ジョブ待ち条件情報
-	 */
-	public JobWaitRuleInfo getWaitRuleInfo() {
-		return m_waitRule;
-	}
-
-	/**
 	 * 後続ジョブ表示用JobTreeItemを設定します。
 	 *
 	 * @return ジョブ待ち条件情報
 	 */
-	public void setJobTreeItem(JobTreeItem jobTreeItem) {
+	public void setJobTreeItem(JobTreeItemWrapper jobTreeItem) {
 		m_jobTreeItem = jobTreeItem;
 	}
 
 	public ValidateResult createExclusiveBranchInfo() {
 		ValidateResult result = null;
 
+		// 排他分岐の優先度リスト 
+		m_exclusiveBranchNextJobOrderListRtn.clear();
+		m_exclusiveBranchNextJobOrderListRtn.addAll(m_exclusiveBranchNextJobOrderList);
+
 		//排他分岐フラグ
-		m_waitRule.setExclusiveBranch(m_exclusiveBranchCondition.getSelection() && !m_waitRule.getExclusiveBranchNextJobOrderList().isEmpty());
+		m_exclusiveBranchRtn = m_exclusiveBranchCondition.getSelection() && !m_exclusiveBranchNextJobOrderListRtn.isEmpty();
 
 		//排他分岐終了値、終了状態
 		try {
-			m_waitRule.setExclusiveBranchEndStatus(getSelectEndStatus(m_exclusiveBranchEndStatus));
-			m_waitRule.setExclusiveBranchEndValue(Integer.parseInt(m_exclusiveBranchEndValue.getText()));
+			m_exclusiveBranchEndStatusRtn= getSelectEndStatus(m_exclusiveBranchEndStatus);
+			m_exclusiveBranchEndValueRtn = Integer.parseInt(m_exclusiveBranchEndValue.getText());
 		} catch (NumberFormatException e) {
-			if (m_waitRule.isExclusiveBranch().booleanValue()) {
+			if (m_exclusiveBranchRtn.booleanValue()) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -417,7 +350,6 @@ public class ExclusiveBranchComposite extends Composite{
 				return result;
 			}
 		}
-		
 		return null;
 	}
 
@@ -425,19 +357,19 @@ public class ExclusiveBranchComposite extends Composite{
 	 *終了状態用コンボボックスにて選択している項目を取得します。
 	 *
 	 */
-	private int getSelectEndStatus(Combo combo) {
+	private JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum getSelectEndStatus(Combo combo) {
 		String select = combo.getText();
-		return EndStatusMessage.stringToType(select);
+		return JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum .fromValue(EndStatusMessage.stringTotypeEnumValue(select));
 	}
 
 	/**
 	 * 指定した重要度に該当する終了状態用コンボボックスの項目を選択します。
 	 *
 	 */
-	private void setSelectEndStatus(Combo combo, int status) {
+	private void setSelectEndStatus(Combo combo,  JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum status) {
 		String select = "";
 
-		select = EndStatusMessage.typeToString(status);
+		select = EndStatusMessage.typeEnumValueToString(status.getValue());
 
 		combo.select(0);
 		for (int i = 0; i < combo.getItemCount(); i++) {
@@ -455,8 +387,8 @@ public class ExclusiveBranchComposite extends Composite{
 		m_exclusiveBranchCondition.setEnabled(enabled);
 		m_exclusiveBranchEndStatus.setEnabled(m_exclusiveBranchCondition.getSelection() && enabled);
 		m_exclusiveBranchEndValue.setEditable(m_exclusiveBranchCondition.getSelection() && enabled);
-		m_exclusiveBranchNextJobOrderTableButtonUp.setEnabled(enabled);
-		m_exclusiveBranchNextJobOrderTableButtonDown.setEnabled(enabled);
+		m_exclusiveBranchNextJobOrderTableButtonUp.setEnabled(m_exclusiveBranchCondition.getSelection() && enabled);
+		m_exclusiveBranchNextJobOrderTableButtonDown.setEnabled(m_exclusiveBranchCondition.getSelection() && enabled);
 	}
 
 	/**
@@ -516,8 +448,8 @@ public class ExclusiveBranchComposite extends Composite{
 	}
 	
 	private void swapOrder(final Integer currentIndex, final Integer targetIndex) {
-		JobNextJobOrderInfo current = m_exclusiveBranchNextJobOrderList.get(currentIndex);
-		JobNextJobOrderInfo target;
+		JobNextJobOrderInfoResponse current = m_exclusiveBranchNextJobOrderList.get(currentIndex);
+		JobNextJobOrderInfoResponse target;
 		try {
 			target = m_exclusiveBranchNextJobOrderList.get(targetIndex);
 		} catch (IndexOutOfBoundsException e) {
@@ -528,6 +460,79 @@ public class ExclusiveBranchComposite extends Composite{
 		m_exclusiveBranchNextJobOrderList.set(targetIndex, current);
 		//テーブルを更新
 		reflectNextJobOrderTable();
+	}
+
+	
+	/**
+	 * 排他分岐を設定します。
+	 *
+	 * @param m_exclusiveBranchRtn 排他分岐
+	 */
+	public boolean isExclusiveBranchRtn() {
+		return m_exclusiveBranchRtn;
+	}
+
+	/**
+	 * 排他分岐を返します。
+	 *
+	 * @return 排他分岐
+	 */
+	public void setExclusiveBranchRtn(boolean m_exclusiveBranchRtn) {
+		this.m_exclusiveBranchRtn = m_exclusiveBranchRtn;
+	}
+
+	/**
+	 * 排他分岐の終了状態を返します。
+	 *
+	 * @return 排他分岐の終了状態
+	 */
+	public JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum getExclusiveBranchEndStatusRtn() {
+		return m_exclusiveBranchEndStatusRtn;
+	}
+
+	/**
+	 * 排他分岐の終了状態を設定します。
+	 *
+	 * @param m_exclusiveBranchEndStatusRtn 排他分岐の終了状態
+	 */
+	public void setExclusiveBranchEndStatusRtn(JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum  m_exclusiveBranchEndStatusRtn) {
+		this.m_exclusiveBranchEndStatusRtn = m_exclusiveBranchEndStatusRtn;
+	}
+
+	/**
+	 * 排他分岐の終了値を返します。
+	 *
+	 * @return 排他分岐の終了値
+	 */
+	public Integer getExclusiveBranchEndValueRtn() {
+		return m_exclusiveBranchEndValueRtn;
+	}
+
+	/**
+	 *  排他分岐の終了値を設定します。
+	 *
+	 * @param m_exclusiveBranchEndValueRtn  排他分岐の終了値
+	 */
+	public void setExclusiveBranchEndValueRtn(Integer m_exclusiveBranchEndValueRtn) {
+		this.m_exclusiveBranchEndValueRtn = m_exclusiveBranchEndValueRtn;
+	}
+
+	/**
+	 * 排他分岐の優先度リストを返します。
+	 *
+	 * @return 排他分岐の優先度リスト
+	 */
+	public List<JobNextJobOrderInfoResponse> getExclusiveBranchNextJobOrderListRtn() {
+		return m_exclusiveBranchNextJobOrderListRtn;
+	}
+
+	/**
+	 * 排他分岐の優先度リストを設定します。
+	 *
+	 * @param m_exclusiveBranchNextJobOrderListRtn 排他分岐の優先度リスト
+	 */
+	public void setExclusiveBranchNextJobOrderListRtn(List<JobNextJobOrderInfoResponse> m_exclusiveBranchNextJobOrderListRtn) {
+		this.m_exclusiveBranchNextJobOrderListRtn = m_exclusiveBranchNextJobOrderListRtn;
 	}
 }
 

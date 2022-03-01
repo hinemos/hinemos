@@ -9,8 +9,13 @@ package com.clustercontrol.xcloud.ui.views;
 
 import static com.clustercontrol.xcloud.common.CloudConstants.bundle_messages;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigDecimal;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -25,8 +30,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.activation.DataHandler;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.layout.TreeColumnLayout;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnPixelData;
@@ -49,12 +54,13 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
+import org.openapitools.client.model.BillingResultResponse;
+import org.openapitools.client.model.BillingResultResponse.TypeEnum;
+import org.openapitools.client.model.DataPointResponse;
+import org.openapitools.client.model.FacilityBillingResponse;
+import org.openapitools.client.model.ResourceBillingResponse;
 
-import com.clustercontrol.ws.xcloud.BillingResult;
-import com.clustercontrol.ws.xcloud.DataPoint;
-import com.clustercontrol.ws.xcloud.FacilityBilling;
-import com.clustercontrol.ws.xcloud.ResourceBilling;
-import com.clustercontrol.ws.xcloud.TargetType;
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 
 
@@ -62,14 +68,16 @@ import com.clustercontrol.xcloud.common.CloudStringConstants;
  */
 public class BillingDetailsView extends AbstractCloudViewPart implements CloudStringConstants {
 	public static final String Id = BillingDetailsView.class.getName();
-	
+	private static Log m_log = LogFactory.getLog(BillingDetailsView.class);
+
 	private static Pattern pattern = Pattern.compile("^(\\d*\\.\\d*[1-9]|\\d*)0*$");
 
 	public interface DataHolder {
 		int getYear();
 		int getMonth();
-		BillingResult getData();
-		DataHandler getDataHandler();
+
+		BillingResultResponse getData();
+		File getFile();
 	}
 	
 	public interface DataProvider {
@@ -322,6 +330,14 @@ public class BillingDetailsView extends AbstractCloudViewPart implements CloudSt
 			public ColumnLabelProvider getProvider() {
 				return provider;
 			}
+			//findbugs対応 SE_BAD_FIELD シリアル化は用途として想定されていないが 対応メソッドを追加する。
+			private void writeObject(ObjectOutputStream stream) throws IOException {
+				stream.defaultWriteObject();
+			}
+
+			private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+				stream.defaultReadObject();
+			}
 		}
 
 		private static class TreeContentProvider implements ITreeContentProvider{
@@ -497,19 +513,33 @@ public class BillingDetailsView extends AbstractCloudViewPart implements CloudSt
 	}
 	
 	public static class BillingResultWrapper {
-		protected BillingResult data;
+		protected BillingResultResponse data;
 		protected List<FacilityBillingWrapper> children;
 		
-		public BillingResultWrapper(BillingResult data) {
+		public BillingResultWrapper(BillingResultResponse data) {
 			this.data = data;
 		}
 		
 		public Instant getBeginTime() {
-			return Instant.ofEpochMilli(data.getBeginTime());
+			Instant result = null;
+			try {
+				result = Instant.ofEpochMilli(TimezoneUtil.getSimpleDateFormat().parse(data.getBeginTime()).getTime());
+			} catch (ParseException e) {
+				// ここには入らない想定
+				m_log.warn("invalid beginTime.", e);
+			}
+			return result;
 		}
 		
 		public Instant getEndTime() {
-			return Instant.ofEpochMilli(data.getEndTime());
+			Instant result = null;
+			try {
+				result = Instant.ofEpochMilli(TimezoneUtil.getSimpleDateFormat().parse(data.getEndTime()).getTime());
+			} catch (ParseException e) {
+				// ここには入らない想定
+				m_log.warn("invalid endTime.", e);
+			}
+			return result;
 		}
 		
 		public LocalDateTime getBeginDate() {
@@ -555,22 +585,22 @@ public class BillingDetailsView extends AbstractCloudViewPart implements CloudSt
 			return data.getUnit();
 		}
 
-		public TargetType getType() {
+		public TypeEnum getType() {
 			return data.getType();
 		}
 		
-		protected FacilityBillingWrapper createFacilityBillingWrapper(FacilityBilling data) {
+		protected FacilityBillingWrapper createFacilityBillingWrapper(FacilityBillingResponse data) {
 			return new FacilityBillingWrapper(this, data);
 		}
 	}
 	
 	public static class FacilityBillingWrapper {
 		protected BillingResultWrapper root;
-		protected FacilityBilling data;
+		protected FacilityBillingResponse data;
 		protected List<ResourceBillingWrapper> resources;
 		protected Map<List<Integer>, DataPointWrapper> pricesMap;
 		
-		public FacilityBillingWrapper(BillingResultWrapper root, FacilityBilling data) {
+		public FacilityBillingWrapper(BillingResultWrapper root, FacilityBillingResponse data) {
 			this.root = root;
 			this.data = data;
 		}
@@ -579,7 +609,7 @@ public class BillingDetailsView extends AbstractCloudViewPart implements CloudSt
 			if (resources == null) {
 				int etcIndex = 0;
 				resources = new ArrayList<>();
-				for (ResourceBilling r: data.getResources()) {
+				for (ResourceBillingResponse r : data.getResources()) {
 					ResourceBillingWrapper billingWrapper = createResourceBillingWrapper(r);
 					if ("etc".equals(r.getCategory())) {
 						resources.add(billingWrapper);
@@ -595,7 +625,7 @@ public class BillingDetailsView extends AbstractCloudViewPart implements CloudSt
 		public DataPointWrapper getTotalsPerDate(int month, int day) {
 			if (pricesMap == null) {
 				pricesMap = new HashMap<>();
-				for (DataPoint price: data.getTotalsPerDate()) {
+				for (DataPointResponse price : data.getTotalsPerDate()) {
 					DataPointWrapper d = createDataPointWrapper(price);
 					pricesMap.put(Arrays.asList(d.getMonth(), d.getDay()), d);
 				}
@@ -615,21 +645,21 @@ public class BillingDetailsView extends AbstractCloudViewPart implements CloudSt
 			return root;
 		}
 		
-		protected ResourceBillingWrapper createResourceBillingWrapper(ResourceBilling data) {
+		protected ResourceBillingWrapper createResourceBillingWrapper(ResourceBillingResponse data) {
 			return new ResourceBillingWrapper(this, data);
 		}
 		
-		protected DataPointWrapper createDataPointWrapper(DataPoint data) {
+		protected DataPointWrapper createDataPointWrapper(DataPointResponse data) {
 			return new DataPointWrapper(data);
 		}
 	}
 	
 	public static class ResourceBillingWrapper {
 		protected FacilityBillingWrapper parent;
-		protected ResourceBilling data;
+		protected ResourceBillingResponse data;
 		protected Map<List<Integer>, DataPointWrapper> pricesMap;
 		
-		public ResourceBillingWrapper(FacilityBillingWrapper parent, ResourceBilling data) {
+		public ResourceBillingWrapper(FacilityBillingWrapper parent, ResourceBillingResponse data) {
 			this.parent = parent;
 			this.data = data;
 		}
@@ -637,7 +667,7 @@ public class BillingDetailsView extends AbstractCloudViewPart implements CloudSt
 		public DataPointWrapper getPrice(int month, int day) {
 			if (pricesMap == null) {
 				pricesMap = new HashMap<>();
-				for (DataPoint price: data.getPrices()) {
+				for (DataPointResponse price : data.getPrices()) {
 					DataPointWrapper d = createDataPointWrapper(price);
 					pricesMap.put(Arrays.asList(d.getMonth(), d.getDay()), d);
 				}
@@ -677,15 +707,15 @@ public class BillingDetailsView extends AbstractCloudViewPart implements CloudSt
 			return data.getResourceId();
 		}
 		
-		protected DataPointWrapper createDataPointWrapper(DataPoint data) {
+		protected DataPointWrapper createDataPointWrapper(DataPointResponse data) {
 			return new DataPointWrapper(data);
 		}
 	}
 	
 	public static class DataPointWrapper {
-		protected DataPoint data;
+		protected DataPointResponse data;
 		
-		public DataPointWrapper(DataPoint data) {
+		public DataPointWrapper(DataPointResponse data) {
 			this.data = data;
 		}
 		
@@ -754,7 +784,7 @@ public class BillingDetailsView extends AbstractCloudViewPart implements CloudSt
 		if (s.result != null) {
 			DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM);
 			switch (s.dataHolder.getData().getType()) {
-			case CLOUD_SCOPE:
+			case CLOUDSCOPE:
 				lblHeader.setText(String.format(bundle_messages.getString("word.billing_date_format_cloudscope"), s.year, s.month, s.result.getTargetId(),
 						df.format(new Date(s.result.getBeginTime().toEpochMilli())),
 						df.format(new Date(s.result.getEndTime().minus(1, ChronoUnit.DAYS).toEpochMilli() - 1))));
@@ -803,7 +833,7 @@ public class BillingDetailsView extends AbstractCloudViewPart implements CloudSt
 		return Id;
 	}
 	
-	protected BillingResultWrapper createBillingResultWrapper(BillingResult result) {
+	protected BillingResultWrapper createBillingResultWrapper(BillingResultResponse result) {
 		return new BillingResultWrapper(result);
 	}
 }

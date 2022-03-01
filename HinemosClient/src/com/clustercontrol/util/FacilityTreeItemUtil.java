@@ -11,14 +11,15 @@ package com.clustercontrol.util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.SingletonUtil;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 
 public class FacilityTreeItemUtil {
 	// ログ
@@ -38,13 +39,13 @@ public class FacilityTreeItemUtil {
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
-	public static FacilityTreeItem deepCopy(FacilityTreeItem item, FacilityTreeItem parentItem) {
+	public static FacilityTreeItemResponse deepCopy(FacilityTreeItemResponse item, FacilityTreeItemResponse parentItem) {
 		synchronized(getInstance()) {
-		FacilityTreeItem resultItem = new FacilityTreeItem();
+		FacilityTreeItemResponse resultItem = new FacilityTreeItemResponse();
 			if (item.getData() != null) {
-				FacilityInfo resultData = new FacilityInfo();
-				if (item.getData().isBuiltInFlg() != null) {
-					resultData.setBuiltInFlg(item.getData().isBuiltInFlg() != null ? item.getData().isBuiltInFlg(): Boolean.FALSE);
+				FacilityInfoResponse resultData = new FacilityInfoResponse();
+				if (item.getData().getBuiltInFlg() != null) {
+					resultData.setBuiltInFlg(item.getData().getBuiltInFlg() != null ? item.getData().getBuiltInFlg(): Boolean.FALSE);
 				}
 				if (item.getData().getCreateDatetime() != null) {
 					resultData.setCreateDatetime(item.getData().getCreateDatetime());
@@ -63,21 +64,21 @@ public class FacilityTreeItemUtil {
 					resultData.setModifyDatetime(item.getData().getModifyDatetime());
 				}
 				resultData.setModifyUserId(item.getData().getModifyUserId());
-				if (item.getData().isValid() != null) {
-					resultData.setValid(item.getData().isValid());
+				if (item.getData().getValid() != null) {
+					resultData.setValid(item.getData().getValid());
 				}
 				resultData.setOwnerRoleId(item.getData().getOwnerRoleId());
-				if (item.getData().isNotReferFlg() != null) {
-					resultData.setNotReferFlg(item.getData().isNotReferFlg());
+				if (item.getData().getNotReferFlg() != null) {
+					resultData.setNotReferFlg(item.getData().getNotReferFlg());
 				}
 				resultItem.setData(resultData);
 			}
 	
 			if (item.getChildren() != null) {
-				List<FacilityTreeItem> resultChildren = new ArrayList<FacilityTreeItem>();
-				for(FacilityTreeItem child : item.getChildren()) {
+				List<FacilityTreeItemResponse> resultChildren = new ArrayList<FacilityTreeItemResponse>();
+				for(FacilityTreeItemResponse child : item.getChildren()) {
 					if (child != null) {
-						FacilityTreeItem resultChild = deepCopy(child, resultItem);
+						FacilityTreeItemResponse resultChild = deepCopy(child, resultItem);
 						resultChildren.add(resultChild);
 					} else {
 						resultChildren.add(null);
@@ -102,8 +103,8 @@ public class FacilityTreeItemUtil {
 	 * @param child
 	 *            子
 	 */
-	public static void addChild(FacilityTreeItem parent, FacilityTreeItem child){
-		List<FacilityTreeItem> facilityTreeItemList = parent.getChildren();
+	public static void addChild(FacilityTreeItemResponse parent, FacilityTreeItemResponse child){
+		List<FacilityTreeItemResponse> facilityTreeItemList = parent.getChildren();
 		facilityTreeItemList.add(child);
 		child.setParent(parent);
 
@@ -115,8 +116,8 @@ public class FacilityTreeItemUtil {
 	 * 1つだけ消します。
 	 * 
 	 */
-	public static boolean removeChild(FacilityTreeItem parent, String facilityId) {
-		List<FacilityTreeItem> children = parent.getChildren();
+	public static boolean removeChild(FacilityTreeItemResponse parent, String facilityId) {
+		List<FacilityTreeItemResponse> children = parent.getChildren();
 		for (int i = 0; i < children.size(); i++) {
 			if (facilityId.equals(children.get(i).getData().getFacilityId())) {
 				children.remove(i);
@@ -132,13 +133,13 @@ public class FacilityTreeItemUtil {
 	 * 一つ以上消せた場合、trueを返します。
 	 * 
 	 */
-	public static boolean keepChild(FacilityTreeItem parent, String facilityId){
+	public static boolean keepChild(FacilityTreeItemResponse parent, String facilityId){
 
 		boolean ret = false;
 		if (facilityId == null) {
 			return ret;
 		}
-		List<FacilityTreeItem> children = parent.getChildren();
+		List<FacilityTreeItemResponse> children = parent.getChildren();
 		for(int i=0 ; i< children.size(); i++){
 			if(!facilityId.equals((children.get(i)).getData().getFacilityId())){
 
@@ -160,16 +161,16 @@ public class FacilityTreeItemUtil {
 	/**
 	 * ノードを削除して、スコープだけのツリーにします。
 	 */
-	public static boolean removeNode(FacilityTreeItem parent) {
+	public static boolean removeNode(FacilityTreeItemResponse parent) {
 
 		boolean flag = false;
 
-		List<FacilityTreeItem> children = parent.getChildren();
+		List<FacilityTreeItemResponse> children = parent.getChildren();
 		// for(int i=0 ; i< childrens.size(); i++){
 		// removeするとインデックスが変わってしまうため、i--で検索する。
 		for(int i=children.size()-1 ; i >= 0; i--){
 			if ((children.get(i)).getData().getFacilityType() ==
-					FacilityConstant.TYPE_NODE) {
+					FacilityTypeEnum.NODE) {
 				//マッチした場合にはその要素を消します。
 				children.remove(i);
 				flag = true;
@@ -186,7 +187,7 @@ public class FacilityTreeItemUtil {
 	 * 
 	 * @param parent 対象スコープ
 	 */
-	public static void removeOverNode(FacilityTreeItem parent) {
+	public static void removeOverNode(FacilityTreeItemResponse parent) {
 		// プレファレンスページよりスコープごとのノード表示数を取得
 		int scopeNodecount = 0;
 		try {
@@ -194,10 +195,10 @@ public class FacilityTreeItemUtil {
 		} catch (NumberFormatException e) {
 			m_log.info("System environment value \"scope.node.count\" is not correct.");
 		}
-		List<FacilityTreeItem> children = parent.getChildren();
+		List<FacilityTreeItemResponse> children = parent.getChildren();
 		// removeするとインデックスが変わってしまうため、i--で検索する。
 		for(int i=children.size()-1 ; i >= 0; i--){
-			if ((children.get(i)).getData().getFacilityType() == FacilityConstant.TYPE_NODE
+			if ((children.get(i)).getData().getFacilityType() == FacilityTypeEnum.NODE
 					&& scopeNodecount > 0 
 					&& scopeNodecount <= i) {
 				//マッチした場合にはその要素を消します。
@@ -206,5 +207,19 @@ public class FacilityTreeItemUtil {
 				removeOverNode(children.get(i));
 			}
 		}
+	}
+
+	/**
+	 * 指定された{@link FacilityTreeItemResponse}をトラバースします。
+	 * visitorがnull以外を返したとき、トラバースをそこで停止して、その値を返します。
+	 */
+	public static <T> T visitTreeItems(FacilityTreeItemResponse parent, Function<FacilityTreeItemResponse, T> visitor) {
+		T r = visitor.apply(parent);
+		if (r != null) return r;
+		for (FacilityTreeItemResponse child : parent.getChildren()) {
+			r = visitTreeItems(child, visitor);
+			if (r != null) return r;
+		}
+		return r;
 	}
 }

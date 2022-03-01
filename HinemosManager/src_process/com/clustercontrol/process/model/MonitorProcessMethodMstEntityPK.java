@@ -11,7 +11,7 @@ package com.clustercontrol.process.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * The primary key class for the cc_monitor_process_method_mst database table.

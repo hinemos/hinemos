@@ -9,8 +9,8 @@ package com.clustercontrol.xcloud.validation;
 
 import java.lang.reflect.Method;
 
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;

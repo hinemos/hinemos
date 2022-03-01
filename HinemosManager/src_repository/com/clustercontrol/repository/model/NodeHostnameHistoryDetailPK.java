@@ -10,7 +10,7 @@ package com.clustercontrol.repository.model;
 
 import java.io.Serializable;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import com.clustercontrol.util.HinemosTime;
 

@@ -18,13 +18,33 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import javax.xml.ws.WebServiceException;
-
 import org.apache.log4j.Logger;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.ValidationException;
+import org.openapitools.client.model.AddCollectMasterRequest;
+import org.openapitools.client.model.CollectMasterInfoResponse;
+import org.openapitools.client.model.CollectorCalcMethodMstDataRequest;
+import org.openapitools.client.model.CollectorCalcMethodMstDataResponse;
+import org.openapitools.client.model.CollectorCategoryCollectMstDataRequest;
+import org.openapitools.client.model.CollectorCategoryCollectMstDataResponse;
+import org.openapitools.client.model.CollectorCategoryMstDataRequest;
+import org.openapitools.client.model.CollectorCategoryMstDataResponse;
+import org.openapitools.client.model.CollectorItemCalcMethodMstDataRequest;
+import org.openapitools.client.model.CollectorItemCalcMethodMstDataResponse;
+import org.openapitools.client.model.CollectorItemCodeMstDataRequest;
+import org.openapitools.client.model.CollectorItemCodeMstDataResponse;
+import org.openapitools.client.model.CollectorPollingMstDataRequest;
+import org.openapitools.client.model.CollectorPollingMstDataResponse;
 
+import org.openapitools.client.model.PerformanceMonitorInfoResponse;
+
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.collect.util.CollectRestClientWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ClearMethod;
@@ -34,7 +54,6 @@ import com.clustercontrol.utility.settings.ImportMethod;
 import com.clustercontrol.utility.settings.SettingConstants;
 import com.clustercontrol.utility.settings.collect.conv.CollectConv;
 import com.clustercontrol.utility.settings.collect.conv.CollectMasterConv;
-import com.clustercontrol.utility.settings.collect.util.PerformanceCollectMasterEndpointWrapper;
 import com.clustercontrol.utility.settings.master.xml.ChildItems;
 import com.clustercontrol.utility.settings.master.xml.CollectMasters;
 import com.clustercontrol.utility.settings.master.xml.CollectorCalcMethodFrame;
@@ -48,17 +67,13 @@ import com.clustercontrol.utility.settings.master.xml.CollectorItemCodes;
 import com.clustercontrol.utility.settings.master.xml.CollectorItems;
 import com.clustercontrol.utility.settings.master.xml.PollingCollector;
 import com.clustercontrol.utility.settings.model.BaseAction;
+import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
+import com.clustercontrol.utility.ui.dialog.MessageDialogWithScroll;
 import com.clustercontrol.utility.util.Config;
-import com.clustercontrol.ws.collectmaster.CollectMasterInfo;
-import com.clustercontrol.ws.collectmaster.CollectorCalcMethodMstData;
-import com.clustercontrol.ws.collectmaster.CollectorCategoryCollectMstData;
-import com.clustercontrol.ws.collectmaster.CollectorCategoryMstData;
-import com.clustercontrol.ws.collectmaster.CollectorItemCalcMethodMstData;
-import com.clustercontrol.ws.collectmaster.CollectorItemCodeMstData;
-import com.clustercontrol.ws.collectmaster.CollectorPollingMstData;
-import com.clustercontrol.ws.collectmaster.HinemosUnknown_Exception;
-import com.clustercontrol.ws.collectmaster.InvalidRole_Exception;
-import com.clustercontrol.ws.collectmaster.InvalidUserPass_Exception;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * 収集項目定義情報のマスター情報を取得、設定します。<br>
@@ -83,6 +98,66 @@ public class CollectMasterAction {
 	public CollectMasterAction() throws ConvertorException {
 		super();
 	}
+	
+	/**
+	 * リソース監視が存在するかチェックし、存在する場合ユーザに<BR>
+	 * 削除可否を問うダイアログを出力します。
+	 * 
+	 * @return 削除可否(true:削除可、false:削除不可)
+	 */
+	
+	private boolean checkDelete(){
+		
+		boolean delete = false;
+		
+		List<PerformanceMonitorInfoResponse> resMonList = null;
+		
+		//マネージャからリソース監視の一覧を取得
+		try {
+			resMonList = MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getPerformanceList(null);
+		} catch (RestConnectFailed | HinemosUnknown | InvalidRole | InvalidUserPass e) {
+			log.warn("checkDelete(): " + HinemosMessage.replace(e.getMessage()), e);
+			return false;
+		}catch (MonitorNotFound e) {
+			//リソース監視が存在しない場合もここを通るので、何もしない
+			log.debug("checkDelete(): No Resource Monitoring found");
+		}
+		
+		//リソース監視設定が存在しない場合は、削除
+		if(resMonList == null || resMonList.isEmpty()){
+			log.debug("checkDelete(): Since there is no resource monitoring, do delete");
+			return true;
+		}
+		
+		StringBuilder monIds= new StringBuilder() ;
+		int count=0;
+		
+		//リソース監視一覧を取得
+		for (PerformanceMonitorInfoResponse resMon : resMonList){
+			if (count > 0) {
+				monIds.append(", ");
+			}
+
+			//初回と以降10監視項目IDごとに改行を挿入
+			if(count%10 == 0){
+				monIds.append("\n");
+			}
+			monIds.append(resMon.getMonitorId());
+			
+			count++;
+		}
+		
+		//ダイアログ表示
+		MessageDialogWithScroll messageDialogWithScroll = new MessageDialogWithScroll(Messages.getString("CollectMaster.UsedMaster",new String[] { monIds.toString() }));
+		delete = messageDialogWithScroll.openQuestion();
+		
+		//消さない場合はログ出力
+		if(!delete){
+			log.info(Messages.getString("CollectMaster.NotDeleteUsedMaster"));
+		}
+		
+		return delete;
+	}
 
 	/**
 	 * 収集項目定義情報を全て削除します。<BR>
@@ -97,14 +172,21 @@ public class CollectMasterAction {
 
 		int ret = 0;
 		
-		try {
-			PerformanceCollectMasterEndpointWrapper.deleteCollectMasterAll();
-		} catch (Exception e) {
-			log.error(Messages.getString("CollectMaster.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+		//削除前にリソース監視設定の有無を確認
+		if(checkDelete()){
+			try {
+				CollectRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteCollectMasterAll();
+				log.info(Messages.getString("CollectMaster.ClearAllSettings") );
+			} catch (Exception e) {
+				log.error(Messages.getString("CollectMaster.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+				ret = SettingConstants.ERROR_INPROCESS;
+				log.debug("End Import CollectMaster : (Error)");
+				return ret;
+			}
+		}else{
 			ret = SettingConstants.ERROR_INPROCESS;
-			log.debug("End Import CollectMaster : (Error)");
-			return ret;
 		}
+
 		
 		// 処理の終了
 		if (ret == 0) {
@@ -116,7 +198,6 @@ public class CollectMasterAction {
 		log.debug("End Clear CollectMaster");
 		return ret;
 	}
-
 
 	/**
 	 * 収集項目定義情報をマネージャに投入します。
@@ -133,7 +214,7 @@ public class CollectMasterAction {
 		//XMからBeanに取り込みます。
 		CollectMasters list = null;
 		try {
-			list = (CollectMasters)CollectMasters.unmarshal(new InputStreamReader(
+			list = XmlMarshallUtil.unmarshall(CollectMasters.class,new InputStreamReader(
 					new FileInputStream(fileName), "UTF-8"));
 			
 		} catch (MarshalException e1) {
@@ -173,12 +254,12 @@ public class CollectMasterAction {
 		// CollectorItemCalcMethodMstData
 		// CollectorPollingMstData
 		// CollectorCategoryCollectMstData
-
+		
 		/*
 		 * インポート用計算定義情報の作成
 		 */
-		ArrayList<CollectorCalcMethodMstData> calcMethodList = new ArrayList<CollectorCalcMethodMstData>();
-		CollectorCalcMethodMstData calcMethodData = null;
+		ArrayList<CollectorCalcMethodMstDataRequest> calcMethodList = new ArrayList<CollectorCalcMethodMstDataRequest>();
+		CollectorCalcMethodMstDataRequest calcMethodData = null;
 		
 		CollectorCalcMethodFrame calcFrame = list.getCollectorCalcMethodFrame();
 		for (CollectorCalcMethods methods : calcFrame.getCollectorCalcMethods()) {
@@ -193,11 +274,11 @@ public class CollectMasterAction {
 		/*
 		 * インポート用収集項目コードの作成
 		 */
-		ArrayList<CollectorCategoryMstData> categoryList = new ArrayList<CollectorCategoryMstData>();
-		ArrayList<CollectorItemCodeMstData> itemCodeList = new ArrayList<CollectorItemCodeMstData>();
-		CollectorCategoryMstData categoryData = null;
-		CollectorItemCodeMstData itemCodeData = null;
-		CollectorItemCodeMstData childItemCodeData = null;
+		ArrayList<CollectorCategoryMstDataRequest> categoryList = new ArrayList<CollectorCategoryMstDataRequest>();
+		ArrayList<CollectorItemCodeMstDataRequest> itemCodeList = new ArrayList<CollectorItemCodeMstDataRequest>();
+		CollectorCategoryMstDataRequest categoryData = null;
+		CollectorItemCodeMstDataRequest itemCodeData = null;
+		CollectorItemCodeMstDataRequest childItemCodeData = null;
 		
 		CollectorItemCodeFrame itemFrame = list.getCollectorItemCodeFrame();
 		for (CollectorItems items : itemFrame.getCollectorItems()) {
@@ -230,10 +311,10 @@ public class CollectMasterAction {
 		/*
 		 * インポート用プラットフォーム毎の収集対象定義の作成
 		 */
-		ArrayList<CollectorItemCalcMethodMstData> itemCalcMethodList = new ArrayList<CollectorItemCalcMethodMstData>();
-		ArrayList<CollectorPollingMstData> pollingList = new ArrayList<CollectorPollingMstData>();
-		CollectorItemCalcMethodMstData itemCalcMethodData = null;
-		CollectorPollingMstData pollingData = null;
+		ArrayList<CollectorItemCalcMethodMstDataRequest> itemCalcMethodList = new ArrayList<CollectorItemCalcMethodMstDataRequest>();
+		ArrayList<CollectorPollingMstDataRequest> pollingList = new ArrayList<CollectorPollingMstDataRequest>();
+		CollectorItemCalcMethodMstDataRequest itemCalcMethodData = null;
+		CollectorPollingMstDataRequest pollingData = null;
 		
 		CollectorItemCalcFrame itemCalcFrame = list.getCollectorItemCalcFrame();
 		
@@ -268,8 +349,8 @@ public class CollectMasterAction {
 		/*
 		 * インポート用カテゴリ毎の収集方法の作成
 		 */
-		ArrayList<CollectorCategoryCollectMstData> categoryCollectList = new ArrayList<CollectorCategoryCollectMstData>();
-		CollectorCategoryCollectMstData categoryCollectData = null;
+		ArrayList<CollectorCategoryCollectMstDataRequest> categoryCollectList = new ArrayList<CollectorCategoryCollectMstDataRequest>();
+		CollectorCategoryCollectMstDataRequest categoryCollectData = null;
 		
 		CollectorCategoryCollectFrame categoryCollectFrame = list.getCollectorCategoryCollectFrame();
 		for (CollectorCategoryCollects categoryCollects : categoryCollectFrame.getCollectorCategoryCollects()) {
@@ -284,7 +365,7 @@ public class CollectMasterAction {
 			
 		}
 
-		CollectMasterInfo collectMasterInfo = new CollectMasterInfo();
+		AddCollectMasterRequest  collectMasterInfo = new AddCollectMasterRequest ();
 
 		// 計算定義情報の設定
 		if (calcMethodList != null && calcMethodList.size() > 0) {
@@ -319,19 +400,16 @@ public class CollectMasterAction {
 		// 収集項目定義のインポート
 		log.debug("Start Import CollectMasterInfo :" + fileName);
 		try{
-			PerformanceCollectMasterEndpointWrapper.addCollectMaster(collectMasterInfo);
+			CollectRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addCollectMaster(collectMasterInfo);
 			log.info(Messages.getString("CollectMaster.ImportSucceeded") + " : " + fileName);
 
-		} catch (HinemosUnknown_Exception e) {
+		} catch (HinemosUnknown e) {
 			log.error(Messages.getString("CollectMaster.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			log.error(Messages.getString("CollectMaster.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (InvalidUserPass_Exception e) {
-			log.error(Messages.getString("CollectMaster.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (WebServiceException e) {
+		} catch (InvalidUserPass e) {
 			log.error(Messages.getString("CollectMaster.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 		} catch (Exception e) {
@@ -379,17 +457,17 @@ public class CollectMasterAction {
 		
 		int ret = 0;
 		
-		CollectMasterInfo collectMasterInfo = null;
-		List<CollectorCalcMethodMstData> calcList = null;
-		List<CollectorCategoryMstData> categoryList = null;
-		List<CollectorItemCodeMstData> itemCodeList = null;
-		List<CollectorItemCalcMethodMstData> itemCalcList = null;
-		List<CollectorPollingMstData> pollingList = null;
-		List<CollectorCategoryCollectMstData> categoryCollectList = null;
-		
+		CollectMasterInfoResponse               collectMasterInfo = null;
+		List<CollectorCalcMethodMstDataResponse>         calcList = null;
+		List<CollectorCategoryMstDataResponse>       categoryList = null;
+		List<CollectorItemCodeMstDataResponse>       itemCodeList = null;
+		List<CollectorItemCalcMethodMstDataResponse>  itemCalcList = null;
+		List<CollectorPollingMstDataResponse>          pollingList = null;
+		List<CollectorCategoryCollectMstDataResponse> categoryCollectList = null;
+
 		try {
 			// 収集項目定義のエクスポート
-			collectMasterInfo = PerformanceCollectMasterEndpointWrapper.getCollectMasterInfo();
+			collectMasterInfo = CollectRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getCollectMasterInfo();
 
 			// 各項目定義の取得
 			calcList = collectMasterInfo.getCollectorCalcMethodMstDataList();
@@ -418,7 +496,7 @@ public class CollectMasterAction {
 		log.debug("Export CollectorCalcMethods start");
 		CollectorCalcMethods methods = null;
 		
-		Iterator<CollectorCalcMethodMstData> itrCalc = calcList.iterator();
+		Iterator<CollectorCalcMethodMstDataResponse> itrCalc = calcList.iterator();
 		while(itrCalc.hasNext()) {
 			
 			methods = CollectMasterConv.dto2Xml(itrCalc.next());
@@ -433,17 +511,17 @@ public class CollectMasterAction {
 		CollectorItemCodes parentItemCodeData = null;
 		ChildItems childItemCodeData = null;
 		
-		Iterator<CollectorCategoryMstData> itrCategory = categoryList.iterator();
+		Iterator<CollectorCategoryMstDataResponse> itrCategory = categoryList.iterator();
 		while(itrCategory.hasNext()) {
 			
 			// カテゴリコードの取得
 			items = CollectMasterConv.dto2Xml(itrCategory.next());
 			
-			Iterator<CollectorItemCodeMstData> itrItemCode = itemCodeList.iterator();
+			Iterator<CollectorItemCodeMstDataResponse> itrItemCode = itemCodeList.iterator();
 			while(itrItemCode.hasNext()) {
 				
 				// 親アイテムコードの取得
-				CollectorItemCodeMstData parentItemCode = itrItemCode.next();
+				CollectorItemCodeMstDataResponse parentItemCode = itrItemCode.next();
 				
 				// CollectCategoryMstData と CollectItemCodeData のcategoryCodeが同じ場合
 				// かつ parentItemCodeが入っていないもの
@@ -453,10 +531,10 @@ public class CollectMasterAction {
 					parentItemCodeData = CollectMasterConv.dto2Xml(parentItemCode);
 					
 					// 子アイテムコードの取得
-					Iterator<CollectorItemCodeMstData> itrChildItemCode = itemCodeList.iterator();
+					Iterator<CollectorItemCodeMstDataResponse> itrChildItemCode = itemCodeList.iterator();
 					while(itrChildItemCode.hasNext()){
 						
-						CollectorItemCodeMstData childItemCode = itrChildItemCode.next();
+						CollectorItemCodeMstDataResponse childItemCode = itrChildItemCode.next();
 						
 						// 親アイテムコードのitemCodeと子アイテムコードのparentItemCodeが等しい場合
 						if(parentItemCode.getItemCode().equals(childItemCode.getParentItemCode())){
@@ -492,16 +570,16 @@ public class CollectMasterAction {
 		CollectorItemCalcMethods itemCalcMethods = null;
 		PollingCollector pollingCollector = null;
 		
-		Iterator<CollectorItemCalcMethodMstData> itrItemCalc = itemCalcList.iterator();
+		Iterator<CollectorItemCalcMethodMstDataResponse> itrItemCalc = itemCalcList.iterator();
 		while(itrItemCalc.hasNext()) {
 			
 			// プラットフォーム別収集対象情報の取得
 			itemCalcMethods = CollectMasterConv.dto2Xml(itrItemCalc.next());
 			
-			Iterator<CollectorPollingMstData> itrPolling = pollingList.iterator();
+			Iterator<CollectorPollingMstDataResponse> itrPolling = pollingList.iterator();
 			while(itrPolling.hasNext()) {
 				
-				CollectorPollingMstData pollingData = itrPolling.next();
+				CollectorPollingMstDataResponse pollingData = itrPolling.next();
 				
 				if(itemCalcMethods.getCollectMethod().equals(pollingData.getCollectMethod())
 						&& itemCalcMethods.getPlatformId().equals(pollingData.getPlatformId())
@@ -523,7 +601,7 @@ public class CollectMasterAction {
 		log.debug("Export CollectorCategoryCollects start");
 		CollectorCategoryCollects categoryCollects = null;
 		
-		Iterator<CollectorCategoryCollectMstData> itrCategoryCollects = categoryCollectList.iterator();
+		Iterator<CollectorCategoryCollectMstDataResponse> itrCategoryCollects = categoryCollectList.iterator();
 		while(itrCategoryCollects.hasNext()) {
 			
 			categoryCollects = CollectMasterConv.dto2Xml(itrCategoryCollects.next());
@@ -566,4 +644,5 @@ public class CollectMasterAction {
 	public Logger getLogger() {
 		return log;
 	}
+
 }

@@ -12,13 +12,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.StringJoiner;
+import org.openapitools.client.model.EventDisplaySettingInfoResponse;
+import org.openapitools.client.model.EventNoDisplayInfoResponse;
+import org.openapitools.client.model.EventUserExtensionItemInfoResponse;
 
 import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
 import com.clustercontrol.monitor.util.EventHinemosPropertyUtil;
-import com.clustercontrol.ws.monitor.EventDisplaySettingInfo;
-import com.clustercontrol.ws.monitor.EventNoDisplayInfo;
-import com.clustercontrol.ws.monitor.EventUserExtensionItemInfo;
-import com.clustercontrol.ws.monitor.EventDisplaySettingInfo.UserItemInfoMap.Entry;
 
 /**
  * イベント表示設定情報（マルチマネージャ対応）
@@ -26,8 +25,8 @@ import com.clustercontrol.ws.monitor.EventDisplaySettingInfo.UserItemInfoMap.Ent
  */
 public class MultiManagerEventDisplaySettingInfo {
 	
-	private Map<String, EventNoDisplayInfo> eventNoInfoMap = null;
-	private Map<String, Map<Integer, EventUserExtensionItemInfo>> userItemInfoMap = null;
+	private Map<String, EventNoDisplayInfoResponse> eventNoInfoMap = null;
+	private Map<String, Map<Integer, EventUserExtensionItemInfoResponse>> userItemInfoMap = null;
 	
 	public MultiManagerEventDisplaySettingInfo() {
 		//マネージャの順序を保つため、LinkedHashMapを使用する
@@ -37,13 +36,12 @@ public class MultiManagerEventDisplaySettingInfo {
 	
 	public void addDisplayInfo(
 			String managerName,
-			EventDisplaySettingInfo eventDisplaySettingInfo) {
+			EventDisplaySettingInfoResponse eventDisplaySettingInfo) {
 		this.eventNoInfoMap.put(managerName, eventDisplaySettingInfo.getEventNoInfo());
 		
-		Map<Integer, EventUserExtensionItemInfo> userItemMap = new HashMap<>();
-		for (Entry entry : eventDisplaySettingInfo.getUserItemInfoMap().getEntry()) {
-			userItemMap.put(entry.getKey(), entry.getValue());
-		}
+		Map<Integer, EventUserExtensionItemInfoResponse> userItemMap = new HashMap<>();
+		for (Map.Entry<String, EventUserExtensionItemInfoResponse> entry : eventDisplaySettingInfo.getUserItemInfoMap().entrySet()) {
+			userItemMap.put(Integer.parseInt(entry.getKey()), entry.getValue());		}
 		
 		this.userItemInfoMap.put(managerName, userItemMap);
 	}
@@ -62,9 +60,9 @@ public class MultiManagerEventDisplaySettingInfo {
 	}
 	
 	private boolean isEventNoDisplayImpl() {
-		for (EventNoDisplayInfo info : eventNoInfoMap.values()) {
-			if (info.isDisplayEnable() != null 
-					&& info.isDisplayEnable().booleanValue()) {
+		for (EventNoDisplayInfoResponse info : eventNoInfoMap.values()) {
+			if (info.getDisplayEnable() != null 
+					&& info.getDisplayEnable().booleanValue()) {
 				return true;
 			}
 		}
@@ -72,10 +70,10 @@ public class MultiManagerEventDisplaySettingInfo {
 	}
 	
 	public boolean isEventNoDisplayImpl(String managerName) {
-		EventNoDisplayInfo info = eventNoInfoMap.get(managerName);
+		EventNoDisplayInfoResponse info = eventNoInfoMap.get(managerName);
 		Boolean retVal = null;
 		if (info != null) {
-			retVal = info.isDisplayEnable();
+			retVal = info.getDisplayEnable();
 		}
 		if (retVal == null) {
 			return false;
@@ -120,13 +118,13 @@ public class MultiManagerEventDisplaySettingInfo {
 		dspInfo.setModifyClientEnable(false);
 		StringJoiner toolTipName = new StringJoiner("\n");
 		
-		for (java.util.Map.Entry<String, Map<Integer, EventUserExtensionItemInfo>> userItemInfos : userItemInfoMap.entrySet()) {
+		for (java.util.Map.Entry<String, Map<Integer, EventUserExtensionItemInfoResponse>> userItemInfos : userItemInfoMap.entrySet()) {
 			Boolean isDisplay = null;
 			String displayName = null;
-			EventUserExtensionItemInfo userItemInfo = userItemInfos.getValue().get(index);
+			EventUserExtensionItemInfoResponse userItemInfo = userItemInfos.getValue().get(index);
 			
 			if (userItemInfo != null) {
-				isDisplay = userItemInfo.isDisplayEnable();
+				isDisplay = userItemInfo.getDisplayEnable();
 				displayName = EventHinemosPropertyUtil.getDisplayName(
 						userItemInfo.getDisplayName(), index);
 			}
@@ -163,14 +161,14 @@ public class MultiManagerEventDisplaySettingInfo {
 		Boolean isDisplay = null;
 		Boolean isModifyClientEnable = null;
 		String displayName = null;
-		EventUserExtensionItemInfo userItemInfo = null;
+		EventUserExtensionItemInfoResponse userItemInfo = null;
 		
 		if (userItemInfoMap.get(managerName) != null) {
 			userItemInfo = userItemInfoMap.get(managerName).get(index);
 		}
 		if (userItemInfo != null) {
-			isDisplay = userItemInfo.isDisplayEnable();
-			isModifyClientEnable = userItemInfo.isModifyClientEnable();
+			isDisplay = userItemInfo.getDisplayEnable();
+			isModifyClientEnable = userItemInfo.getModifyClientEnable();
 			displayName = EventHinemosPropertyUtil.getDisplayName(userItemInfo.getDisplayName(), index);
 		}
 		

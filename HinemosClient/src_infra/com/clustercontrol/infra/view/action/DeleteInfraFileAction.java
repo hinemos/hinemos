@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,9 +26,17 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.menus.UIElement;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraFileBeingUsed;
+import com.clustercontrol.fault.InfraFileNotFound;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.action.GetInfraFileManagerTableDefine;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
 import com.clustercontrol.infra.util.InfraFileUtil;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.InfraFileManagerView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -76,9 +85,9 @@ public class DeleteInfraFileAction extends InfraFileManagerBaseAction {
 			tmpFileId = (String) ((ArrayList<?>)object).get(GetInfraFileManagerTableDefine.FILE_ID);
 			map.get(managerName).add(tmpFileId);
 			if (strFileIds.length() == 0) {
-				strFileIds.append(tmpFileId);
+				strFileIds.append(tmpFileId + "(" + managerName + ")");
 			} else {
-				strFileIds.append(", " + tmpFileId);
+				strFileIds.append(", " + tmpFileId + "(" + managerName + ")");
 			}
 		}
 
@@ -91,12 +100,24 @@ public class DeleteInfraFileAction extends InfraFileManagerBaseAction {
 			Map<String, String> errMsg = new ConcurrentHashMap<String, String>();
 			for(Map.Entry<String, List<String>> entry : map.entrySet()) {
 				String managerName = entry.getKey();
-				InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+				InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 				try {
-					wrapper.deleteInfraFileList(entry.getValue());
-				} catch (Exception e) {
-					m_log.error(e);
-					errMsg.put(managerName, HinemosMessage.replace(e.getMessage()));
+					List<String> files = entry.getValue();
+					wrapper.deleteInfraFileList(files.stream().collect(Collectors.joining(",")));
+				} catch (InvalidRole e){
+					// 権限なし
+					errMsg.put(managerName, Messages.getString("message.accesscontrol.16"));
+				} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidSetting | InfraManagementNotFound |
+						InfraFileNotFound | InfraFileBeingUsed e) {
+					m_log.debug("execute() : " + e.getClass() + e.getMessage());
+					String arg = Messages.getString(
+							"message.infra.action.result",
+							new Object[] {
+									Messages.getString("infra.filemanager.file.id"),
+									Messages.getString("delete"),
+									Messages.getString("failed"),
+									HinemosMessage.replace(e.getMessage()) });
+					errMsg.put(managerName, arg);
 				}
 			}
 

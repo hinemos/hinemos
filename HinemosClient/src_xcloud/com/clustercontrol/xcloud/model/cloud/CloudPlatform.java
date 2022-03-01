@@ -10,7 +10,9 @@ package com.clustercontrol.xcloud.model.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.clustercontrol.ws.xcloud.CloudSpec;
+import org.openapitools.client.model.CloudPlatformInfoResponse;
+import org.openapitools.client.model.CloudSpecResponse;
+
 import com.clustercontrol.xcloud.model.base.Element;
 
 public class CloudPlatform extends Element implements ICloudPlatform {
@@ -19,7 +21,7 @@ public class CloudPlatform extends Element implements ICloudPlatform {
 	private String id;
 	private String name;
 	private String description;
-	private CloudSpec cloudSpec;
+	private CloudSpecResponse cloudSpec;
 	
 	public CloudPlatform(HinemosManager manager){
 		this.manager = manager;
@@ -41,7 +43,7 @@ public class CloudPlatform extends Element implements ICloudPlatform {
 	}
 
 	@Override
-	public CloudSpec getCloudSpec() {
+	public CloudSpecResponse getCloudSpec() {
 		return cloudSpec;
 	}
 
@@ -57,7 +59,7 @@ public class CloudPlatform extends Element implements ICloudPlatform {
 		internalSetProperty(p.description, description, ()->this.description, (s)->this.description=s);
 	}
 
-	public void setCloudSpec(CloudSpec cloudSpec) {
+	public void setCloudSpec(CloudSpecResponse cloudSpec) {
 		internalSetProperty(p.cloudSpec, cloudSpec, ()->this.cloudSpec, (s)->this.cloudSpec=s);
 	}
 
@@ -72,14 +74,14 @@ public class CloudPlatform extends Element implements ICloudPlatform {
 		return list;
 	}
 	
-	public void update(com.clustercontrol.ws.xcloud.CloudPlatform platform){
-		setId(platform.getId());
-		setName(platform.getName());
-		setDescription(platform.getDescription());
+	public void update(CloudPlatformInfoResponse platform) {
+		setId(platform.getEntity().getPlatformId());
+		setName(platform.getEntity().getName());
+		setDescription(platform.getEntity().getDescription());
 		setCloudSpec(platform.getCloudSpec());
 	}
 	
-	public static CloudPlatform convert(HinemosManager manager, com.clustercontrol.ws.xcloud.CloudPlatform platform){
+	public static CloudPlatform convert(HinemosManager manager, CloudPlatformInfoResponse platform) {
 		CloudPlatform p = new CloudPlatform(manager);
 		p.update(platform);
 		return p;
@@ -90,8 +92,8 @@ public class CloudPlatform extends Element implements ICloudPlatform {
 		return manager;
 	}
 	
-	public boolean equalValues(com.clustercontrol.ws.xcloud.CloudPlatform source) {
+	public boolean equalValues(CloudPlatformInfoResponse source) {
 		assert source != null;
-		return this.getId().equals(source.getId());
+		return this.getId().equals(source.getEntity().getPlatformId());
 	}
 }

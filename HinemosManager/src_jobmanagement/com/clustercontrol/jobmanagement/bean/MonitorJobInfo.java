@@ -28,47 +28,41 @@ public class MonitorJobInfo implements Serializable {
 	private static Log m_log = LogFactory.getLog( MonitorJobInfo.class );
 
 	/** ファシリティID */
-	private String m_facilityID;
+	private String facilityID;
 
 	/** スコープ */
-	private String m_scope;
+	private String scope;
 
 	/** スコープ処理 */
-	private Integer m_processingMethod = 0;
-
-	/** 正常終了するまでリトライフラグ */
-	private Boolean m_commandRetryFlg = false;
-
-	/** 正常終了するまでリトライ回数 */
-	private Integer m_commandRetry;
+	private Integer processingMethod = 0;
 
 	/** 監視ID */
-	private String m_monitorId = "";
+	private String monitorId = "";
 
 	/** 監視結果戻り値(情報) */
-	private Integer m_monitorInfoEndValue = MonitorJobConstant.INITIAL_END_VALUE_INFO;
+	private Integer monitorInfoEndValue = MonitorJobConstant.INITIAL_END_VALUE_INFO;
 
 	/** 監視結果戻り値（警告） */
-	private Integer m_monitorWarnEndValue = MonitorJobConstant.INITIAL_END_VALUE_WARN;
+	private Integer monitorWarnEndValue = MonitorJobConstant.INITIAL_END_VALUE_WARN;
 
 	/** 監視結果戻り値（危険） */
-	private Integer m_monitorCriticalEndValue = MonitorJobConstant.INITIAL_END_VALUE_CRITICAL;
+	private Integer monitorCriticalEndValue = MonitorJobConstant.INITIAL_END_VALUE_CRITICAL;
 
 	/** 監視結果戻り値（不明） */
-	private Integer m_monitorUnknownEndValue = MonitorJobConstant.INITIAL_END_VALUE_UNKNOWN;
+	private Integer monitorUnknownEndValue = MonitorJobConstant.INITIAL_END_VALUE_UNKNOWN;
 
 	/** 監視結果が得られない場合の待ち時間（分） */
-	private Integer m_monitorWaitTime = 1;
+	private Integer monitorWaitTime = 1;
 
 	/** 監視結果が得られない場合の終了値 */
-	private Integer m_monitorWaitEndValue = MonitorJobConstant.INITIAL_END_VALUE_UNKNOWN;
+	private Integer monitorWaitEndValue = MonitorJobConstant.INITIAL_END_VALUE_UNKNOWN;
 
 	/**
 	 * スコープを返す。<BR>
 	 * @return スコープ
 	 */
 	public String getScope() {
-		return m_scope;
+		return scope;
 	}
 
 	/**
@@ -76,7 +70,7 @@ public class MonitorJobInfo implements Serializable {
 	 * @param scope スコープ
 	 */
 	public void setScope(String scope) {
-		this.m_scope = scope;
+		this.scope = scope;
 	}
 
 	/**
@@ -84,7 +78,7 @@ public class MonitorJobInfo implements Serializable {
 	 * @return ファシリティID
 	 */
 	public String getFacilityID() {
-		return m_facilityID;
+		return facilityID;
 	}
 
 	/**
@@ -92,7 +86,7 @@ public class MonitorJobInfo implements Serializable {
 	 * @param facilityID ファシリティID
 	 */
 	public void setFacilityID(String facilityID) {
-		this.m_facilityID = facilityID;
+		this.facilityID = facilityID;
 	}
 
 	/**
@@ -101,7 +95,7 @@ public class MonitorJobInfo implements Serializable {
 	 * @see com.clustercontrol.bean.ProcessingMethodConstant
 	 */
 	public Integer getProcessingMethod() {
-		return m_processingMethod;
+		return processingMethod;
 	}
 
 	/**
@@ -110,38 +104,7 @@ public class MonitorJobInfo implements Serializable {
 	 * @see com.clustercontrol.bean.ProcessingMethodConstant
 	 */
 	public void setProcessingMethod(Integer processingMethod) {
-		this.m_processingMethod = processingMethod;
-	}
-
-	/**
-	 * 正常終了するまでリトライフラグを返す。<BR>
-	 * @return 正常終了するまでリトライフラグ
-	 */
-	public Boolean isCommandRetryFlg() {
-		return m_commandRetryFlg;
-	}
-
-	/**
-	 * 正常終了するまでリトライフラグを設定する。<BR>
-	 * @param errorRetryFlg 正常終了するまでリトライフラグ
-	 */
-	public void setCommandRetryFlg(Boolean commandRetryFlg) {
-		this.m_commandRetryFlg = commandRetryFlg;
-	}
-
-	/**
-	 * 正常終了するまでリトライ回数を返す。<BR>
-	 * @return 正常終了するまでリトライ回数
-	 */
-	public Integer getCommandRetry() {
-		return m_commandRetry;
-	}
-	/**
-	 * 正常終了するまでリトライ回数を設定する。<BR>
-	 * @param commandRetry 正常終了するまでリトライ回数
-	 */
-	public void setCommandRetry(Integer commandRetry) {
-		this.m_commandRetry = commandRetry;
+		this.processingMethod = processingMethod;
 	}
 
 	/**
@@ -149,14 +112,14 @@ public class MonitorJobInfo implements Serializable {
 	 * @return 監視ID
 	 */
 	public String getMonitorId() {
-		return m_monitorId;
+		return monitorId;
 	}
 	/**
 	 * 監視IDを設定する。<BR>
 	 * @param monitorId 監視ID
 	 */
 	public void setMonitorId(String monitorId) {
-		this.m_monitorId = monitorId;
+		this.monitorId = monitorId;
 	}
 
 	/**
@@ -164,14 +127,14 @@ public class MonitorJobInfo implements Serializable {
 	 * @return 監視結果終了値（情報）
 	 */
 	public Integer getMonitorInfoEndValue() {
-		return m_monitorInfoEndValue;
+		return monitorInfoEndValue;
 	}
 	/**
 	 * 監視結果終了値（情報）を設定する。<BR>
 	 * @param monitorInfoEndValue 監視結果終了値（情報）
 	 */
 	public void setMonitorInfoEndValue(Integer monitorInfoEndValue) {
-		this.m_monitorInfoEndValue = monitorInfoEndValue;
+		this.monitorInfoEndValue = monitorInfoEndValue;
 	}
 
 	/**
@@ -179,14 +142,14 @@ public class MonitorJobInfo implements Serializable {
 	 * @return 監視結果終了値（警告）
 	 */
 	public Integer getMonitorWarnEndValue() {
-		return m_monitorWarnEndValue;
+		return monitorWarnEndValue;
 	}
 	/**
 	 * 監視結果終了値（警告）を設定する。<BR>
 	 * @param monitorWarnEndValue 監視結果終了値（警告）
 	 */
 	public void setMonitorWarnEndValue(Integer monitorWarnEndValue) {
-		this.m_monitorWarnEndValue = monitorWarnEndValue;
+		this.monitorWarnEndValue = monitorWarnEndValue;
 	}
 
 	/**
@@ -194,14 +157,14 @@ public class MonitorJobInfo implements Serializable {
 	 * @return 監視結果終了値（危険）
 	 */
 	public Integer getMonitorCriticalEndValue() {
-		return m_monitorCriticalEndValue;
+		return monitorCriticalEndValue;
 	}
 	/**
 	 * 監視結果終了値（危険）を設定する。<BR>
 	 * @param monitorCriticalEndValue 監視結果終了値（危険）
 	 */
 	public void setMonitorCriticalEndValue(Integer monitorCriticalEndValue) {
-		this.m_monitorCriticalEndValue = monitorCriticalEndValue;
+		this.monitorCriticalEndValue = monitorCriticalEndValue;
 	}
 
 	/**
@@ -209,14 +172,14 @@ public class MonitorJobInfo implements Serializable {
 	 * @return 監視結果終了値（不明）
 	 */
 	public Integer getMonitorUnknownEndValue() {
-		return m_monitorUnknownEndValue;
+		return monitorUnknownEndValue;
 	}
 	/**
 	 * 監視結果終了値（不明）を設定する。<BR>
 	 * @param monitorUnknownEndValue 監視結果終了値（不明）
 	 */
 	public void setMonitorUnknownEndValue(Integer monitorUnknownEndValue) {
-		this.m_monitorUnknownEndValue = monitorUnknownEndValue;
+		this.monitorUnknownEndValue = monitorUnknownEndValue;
 	}
 
 	/**
@@ -224,14 +187,14 @@ public class MonitorJobInfo implements Serializable {
 	 * @return 監視結果が得られない場合の待ち時間
 	 */
 	public Integer getMonitorWaitTime() {
-		return m_monitorWaitTime;
+		return monitorWaitTime;
 	}
 	/**
 	 * 監視結果が得られない場合の待ち時間を設定する。<BR>
 	 * @param monitorWaitTime 監視結果が得られない場合の待ち時間
 	 */
 	public void setMonitorWaitTime(Integer monitorWaitTime) {
-		this.m_monitorWaitTime = monitorWaitTime;
+		this.monitorWaitTime = monitorWaitTime;
 	}
 
 	/**
@@ -239,14 +202,14 @@ public class MonitorJobInfo implements Serializable {
 	 * @return 監視結果が得られない場合の終了値
 	 */
 	public Integer getMonitorWaitEndValue() {
-		return m_monitorWaitEndValue;
+		return monitorWaitEndValue;
 	}
 	/**
 	 * 監視結果が得られない場合の終了値を設定する。<BR>
 	 * @param monitorWaitEndValue 監視結果が得られない場合の終了値
 	 */
 	public void setMonitorWaitEndValue(Integer monitorWaitEndValue) {
-		this.m_monitorWaitEndValue = monitorWaitEndValue;
+		this.monitorWaitEndValue = monitorWaitEndValue;
 	}
 
 	@Override
@@ -254,21 +217,17 @@ public class MonitorJobInfo implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result
-				+ ((m_commandRetryFlg == null) ? 0 : m_commandRetryFlg.hashCode());
+				+ ((facilityID == null) ? 0 : facilityID.hashCode());
 		result = prime * result
-				+ ((m_commandRetry == null) ? 0 : m_commandRetry.hashCode());
-		result = prime * result
-				+ ((m_facilityID == null) ? 0 : m_facilityID.hashCode());
-		result = prime * result
-				+ ((m_processingMethod == null) ? 0 : m_processingMethod.hashCode());
-		result = prime * result + ((m_scope == null) ? 0 : m_scope.hashCode());
-		result = prime * result + ((m_monitorId == null) ? 0 : m_monitorId.hashCode());
-		result = prime * result + ((m_monitorInfoEndValue == null) ? 0 : m_monitorInfoEndValue.hashCode());
-		result = prime * result + ((m_monitorWarnEndValue == null) ? 0 : m_monitorWarnEndValue.hashCode());
-		result = prime * result + ((m_monitorCriticalEndValue == null) ? 0 : m_monitorCriticalEndValue.hashCode());
-		result = prime * result + ((m_monitorUnknownEndValue == null) ? 0 : m_monitorUnknownEndValue.hashCode());
-		result = prime * result + ((m_monitorWaitTime == null) ? 0 : m_monitorWaitTime.hashCode());
-		result = prime * result + ((m_monitorWaitEndValue == null) ? 0 : m_monitorWaitEndValue.hashCode());
+				+ ((processingMethod == null) ? 0 : processingMethod.hashCode());
+		result = prime * result + ((scope == null) ? 0 : scope.hashCode());
+		result = prime * result + ((monitorId == null) ? 0 : monitorId.hashCode());
+		result = prime * result + ((monitorInfoEndValue == null) ? 0 : monitorInfoEndValue.hashCode());
+		result = prime * result + ((monitorWarnEndValue == null) ? 0 : monitorWarnEndValue.hashCode());
+		result = prime * result + ((monitorCriticalEndValue == null) ? 0 : monitorCriticalEndValue.hashCode());
+		result = prime * result + ((monitorUnknownEndValue == null) ? 0 : monitorUnknownEndValue.hashCode());
+		result = prime * result + ((monitorWaitTime == null) ? 0 : monitorWaitTime.hashCode());
+		result = prime * result + ((monitorWaitEndValue == null) ? 0 : monitorWaitEndValue.hashCode());
 		return result;
 	}
 
@@ -282,8 +241,6 @@ public class MonitorJobInfo implements Serializable {
 
 		boolean ret = false;
 		ret = 	equalsSub(o1.getFacilityID(), o2.getFacilityID()) &&
-				equalsSub(o1.isCommandRetryFlg(), o2.isCommandRetryFlg()) &&
-				equalsSub(o1.getCommandRetry(), o2.getCommandRetry()) &&
 				equalsSub(o1.getProcessingMethod(), o2.getProcessingMethod()) &&
 				equalsSub(o1.getMonitorId(), o2.getMonitorId()) &&
 				equalsSub(o1.getMonitorInfoEndValue(), o2.getMonitorInfoEndValue()) &&

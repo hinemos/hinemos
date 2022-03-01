@@ -11,8 +11,6 @@ package com.clustercontrol.reporting.dialog;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.ws.WebServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -28,15 +26,18 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.TemplateIdListResponse;
+import org.openapitools.client.model.TemplateSetDetailInfoResponse;
 
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.TemplateSetDetailInfo;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UrlNotFound;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 
 /**
  * テンプレートセット詳細設定ダイアログ作成・変更ダイアログクラス<BR>
@@ -57,7 +58,7 @@ public class TemplateSetDetailDialog extends CommonDialog{
 	 */
 	private final int DIALOG_WIDTH = 8;
 	/** 入力値を保持するオブジェクト */
-	private TemplateSetDetailInfo inputData = null;
+	private TemplateSetDetailInfoResponse inputData = null;
 	/** 入力値の正当性を保持するオブジェクト。 */
 	private ValidateResult m_validateResult = null;
 	// ----- 共通メンバ変数 ----- //
@@ -82,7 +83,7 @@ public class TemplateSetDetailDialog extends CommonDialog{
 	 *
 	 * @return
 	 */
-	public TemplateSetDetailInfo getInputData() {
+	public TemplateSetDetailInfoResponse getInputData() {
 		return this.inputData;
 	}
 	// ----- コンストラクタ ----- //
@@ -121,7 +122,7 @@ public class TemplateSetDetailDialog extends CommonDialog{
 	 * @param detailInfo カレンダ詳細情報
 	 * @param ownerRoleId オーナーロールID
 	 */
-	public TemplateSetDetailDialog(Shell parent, String managerName, TemplateSetDetailInfo detailInfo, String ownerRoleId){
+	public TemplateSetDetailDialog(Shell parent, String managerName, TemplateSetDetailInfoResponse detailInfo, String ownerRoleId){
 		super(parent);
 		this.managerName = managerName;
 		this.inputData = detailInfo;
@@ -275,9 +276,9 @@ public class TemplateSetDetailDialog extends CommonDialog{
 	 *
 	 * @see
 	 */
-	private TemplateSetDetailInfo createTemplateSetDetailInfo() {
+	private TemplateSetDetailInfoResponse createTemplateSetDetailInfo() {
 
-		inputData = new TemplateSetDetailInfo();
+		inputData = new TemplateSetDetailInfoResponse();
 		/*
 		 * 説明
 		 */
@@ -314,7 +315,7 @@ public class TemplateSetDetailDialog extends CommonDialog{
 	 */
 	private void reflectTemplateSetDetail() {
 		// 初期表示
-		TemplateSetDetailInfo detailInfo = null;
+		TemplateSetDetailInfoResponse detailInfo = null;
 		if(this.inputData != null){
 			// 変更の場合、情報取得
 			detailInfo = this.inputData;
@@ -322,7 +323,7 @@ public class TemplateSetDetailDialog extends CommonDialog{
 		}
 		else{
 			// 作成の場合
-			detailInfo = new TemplateSetDetailInfo();
+			detailInfo = new TemplateSetDetailInfoResponse();
 		}
 		//テンプレートセット詳細情報取得
 		if(detailInfo != null){
@@ -421,19 +422,30 @@ public class TemplateSetDetailDialog extends CommonDialog{
 		
 		//テンプレートIDの一覧をマネージャより取得
 		try {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-			templateIdList = wrapper.getTemplateIdList(ownerRoleId);
-		} catch (InvalidRole_Exception e) {
+			ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(managerName);
+			TemplateIdListResponse listRes = wrapper.getTemplateIdList(ownerRoleId);
+			templateIdList = listRes.getTemplateIdList();
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
 				Messages.getString("message.accesscontrol.16"));
-		} catch (WebServiceException  e) {
+		} catch (HinemosUnknown  e) {
 			//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
+			//(エンタープライズ機能が無効の場合は HinemosUnknownでラップしたUrlNotFoundとなる。)
 			//この場合、その旨のダイアログを表示
-			MessageDialog.openError(
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				MessageDialog.openError(
+						null,
+						Messages.getString("failed"),
+						Messages.getString("message.expiration.term") + ":"+managerName );
+			} else {
+				String errMessage = HinemosMessage.replace(e.getMessage());
+				m_log.warn("update() getTemplateSetInfoList, " + errMessage, e);
+				MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.expiration.term") + ":"+managerName );
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
+			}
 		} catch (Exception e) {
 			// 上記以外の例外
 			String errMessage = HinemosMessage.replace(e.getMessage());

@@ -16,12 +16,12 @@ import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.FacilityInfoResponse;
 
 import com.clustercontrol.composite.FacilityTreeComposite;
 import com.clustercontrol.monitor.action.GetScopeListTableDefine;
 import com.clustercontrol.monitor.view.ScopeView;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 
 /**
  * 監視[スコープ]ビューでダブルクリック時にスコープ階層ペインを更新するクライアント側アクションクラス<BR>
@@ -56,17 +56,17 @@ public class ScopeSpecifiedShowAction implements IDoubleClickListener {
 
 			if (scopeView != null) {
 
-				List<FacilityTreeItem> children = null;
+				List<FacilityTreeItemResponse> children = null;
 
 				// 現在選択されているツリーアイテムを取得
 				FacilityTreeComposite facilityTree = scopeView.getScopeTreeComposite();
-				FacilityTreeItem selectItem = facilityTree.getSelectItem();
+				FacilityTreeItemResponse selectItem = facilityTree.getSelectItem();
 
 				// ツリーアイテムが選択されていない場合
 				if(selectItem == null){
 
 					// 最上位のツリーアイテムを取得
-					List<FacilityTreeItem> root = ((FacilityTreeItem)facilityTree.getTreeViewer().getInput()).getChildren();
+					List<FacilityTreeItemResponse> root = ((FacilityTreeItemResponse)facilityTree.getTreeViewer().getInput()).getChildren();
 					if(root != null && root.size()>0){
 						children = root.get(0).getChildren();
 					}
@@ -84,8 +84,8 @@ public class ScopeSpecifiedShowAction implements IDoubleClickListener {
 
 				if(children != null){
 
-					FacilityInfo tmpInfo = null;
-					List<FacilityTreeItem> grandchild = null;
+					FacilityInfoResponse tmpInfo = null;
+					List<FacilityTreeItemResponse> grandchild = null;
 					String tmpFacilityId = null;
 
 					// ダブルクリックしたスコープのファシリティIDと一致するツリーアイテムを取得

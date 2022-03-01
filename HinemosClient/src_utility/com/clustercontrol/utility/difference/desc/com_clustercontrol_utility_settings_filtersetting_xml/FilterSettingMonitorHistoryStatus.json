@@ -1,0 +1,19 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"filtersetting",
+	"annotations":[
+		{"type":"PrimaryKey"},
+		{"type":"Ignore", "propNames":["ownerUserId", "filterId"]}
+	]},
+
+	{
+	"propName":"monitorHistoryStatusInfo",
+	"annotations":[
+		{"type":"Ignore", "propNames":[]}
+	]}
+]
+}

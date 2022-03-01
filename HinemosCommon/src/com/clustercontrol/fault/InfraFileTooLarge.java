@@ -19,6 +19,13 @@ public class InfraFileTooLarge extends HinemosException {
 	/**
 	 * コンストラクタ
 	 */
+	public InfraFileTooLarge() {
+		super();
+	}
+
+	/**
+	 * コンストラクタ
+	 */
 	public InfraFileTooLarge(String message) {
 		super(message);
 	}

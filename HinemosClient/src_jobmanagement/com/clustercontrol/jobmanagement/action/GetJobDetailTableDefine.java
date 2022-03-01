@@ -30,32 +30,34 @@ public class GetJobDetailTableDefine {
 	public static final int TREE = 0;
 	/** 実行状態 */
 	public static final int STATUS = 1;
+	/** スキップ */
+	public static final int SKIP = 2;
 	/** 終了状態 */
-	public static final int END_STATUS = 2;
+	public static final int END_STATUS = 3;
 	/** 終了値 */
-	public static final int END_VALUE = 3;
+	public static final int END_VALUE = 4;
 	/** ジョブID */
-	public static final int JOB_ID = 4;
+	public static final int JOB_ID = 5;
 	/** ジョブ名 */
-	public static final int JOB_NAME = 5;
+	public static final int JOB_NAME = 6;
 	/** 所属ジョブユニットのジョブID */
-	public static final int JOBUNIT_ID = 6;
+	public static final int JOBUNIT_ID = 7;
 	/** 種別 */
-	public static final int JOB_TYPE = 7;
+	public static final int JOB_TYPE = 8;
 	/** ファシリティID */
-	public static final int FACILITY_ID = 8;
+	public static final int FACILITY_ID = 9;
 	/** スコープ */
-	public static final int SCOPE = 9;
+	public static final int SCOPE = 10;
 	/** 時刻 */
-	public static final int WAIT_RULE_TIME = 10;
+	public static final int WAIT_RULE_TIME = 11;
 	/** 開始・再実行日時 */
-	public static final int START_RERUN_TIME = 11;
+	public static final int START_RERUN_TIME = 12;
 	/** 終了・中断日時 */
-	public static final int END_SUSPEND_TIME = 12;
+	public static final int END_SUSPEND_TIME = 13;
 	/** 実行時間 */
-	public static final int SESSION_TIME = 13;
+	public static final int SESSION_TIME = 14;
 	/** 実行回数 */
-	public static final int RUN_COUNT = 14;
+	public static final int RUN_COUNT = 15;
 
 	/** 初期表示時ソートカラム */
 	public static final int SORT_COLUMN_INDEX = JOB_ID;
@@ -77,6 +79,8 @@ public class GetJobDetailTableDefine {
 				new TableColumnInfo("", TableColumnInfo.NONE, 30, SWT.LEFT));
 		tableDefine.add(STATUS,
 				new TableColumnInfo(Messages.getString("run.status", locale), TableColumnInfo.STATE, 100, SWT.LEFT));
+		tableDefine.add(SKIP,
+				new TableColumnInfo(Messages.getString("skip", locale), TableColumnInfo.CHECKBOX, 50, SWT.LEFT));
 		tableDefine.add(END_STATUS,
 				new TableColumnInfo(Messages.getString("end.status", locale), TableColumnInfo.END_STATUS, 65, SWT.LEFT));
 		tableDefine.add(END_VALUE,

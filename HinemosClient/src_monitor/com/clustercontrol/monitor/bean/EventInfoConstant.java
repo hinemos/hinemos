@@ -73,4 +73,6 @@ public class EventInfoConstant {
 	public static String getUserItemConst(int index) {
 		return String.format(USER_ITEM_FORMAT, index);
 	}
+	/** 通知のUUID */
+	public static final String NOTIFY_UUID = "notifyUUID";
 }

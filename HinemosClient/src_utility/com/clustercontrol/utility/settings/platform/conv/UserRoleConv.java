@@ -12,6 +12,8 @@ import java.util.Objects;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.RoleInfoResponse;
+import org.openapitools.client.model.UserInfoResponse;
 
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -68,9 +70,9 @@ public class UserRoleConv {
 	 *            XMLユーザ情報オブジェクト
 	 * @return Dtoユーザ情報オブジェクト
 	 */
-	public static com.clustercontrol.ws.access.UserInfo convUserXml2Dto(UserInfo userInfo) {
+	public static UserInfoResponse convUserXml2Dto(UserInfo userInfo) {
 
-		com.clustercontrol.ws.access.UserInfo dto = new com.clustercontrol.ws.access.UserInfo();
+		UserInfoResponse dto = new UserInfoResponse();
 
 		try {
 			if(userInfo.getUserId() != null
@@ -119,7 +121,7 @@ public class UserRoleConv {
 	 *            DTOユーザ情報オブジェクト
 	 * @return XMLユーザ情報オブジェクト
 	 */
-	public static UserInfo convUserDto2Xml(com.clustercontrol.ws.access.UserInfo dto) {
+	public static UserInfo convUserDto2Xml(UserInfoResponse dto) {
 		UserInfo userInfo = new UserInfo();
 		userInfo.setUserId(dto.getUserId());
 		userInfo.setName(dto.getUserName());
@@ -137,9 +139,9 @@ public class UserRoleConv {
 	 *            XMLロール情報オブジェクト
 	 * @return Dtoロール情報オブジェクト
 	 */
-	public static com.clustercontrol.ws.access.RoleInfo convRoleXml2Dto(RoleInfo roleInfo) {
+	public static RoleInfoResponse convRoleXml2Dto(RoleInfo roleInfo) {
 
-		com.clustercontrol.ws.access.RoleInfo dto = new com.clustercontrol.ws.access.RoleInfo();
+		RoleInfoResponse dto = new RoleInfoResponse();
 
 		try {
 			if(roleInfo.getRoleId() != null
@@ -175,7 +177,7 @@ public class UserRoleConv {
 	 *            DTOロール情報オブジェクト
 	 * @return XMLロール情報オブジェクト
 	 */
-	public static RoleInfo convRoleDto2Xml(com.clustercontrol.ws.access.RoleInfo dto) {
+	public static RoleInfo convRoleDto2Xml(RoleInfoResponse dto) {
 
 		RoleInfo roleInfo = new RoleInfo();
 

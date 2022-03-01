@@ -56,6 +56,7 @@ import org.eclipse.ui.IWorkbenchPart;
 import com.clustercontrol.bean.FacilityImageConstant;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.TableViewerSorter;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.CloudModelContentProviderExtension;
 import com.clustercontrol.xcloud.extensions.ICloudModelContentProvider;
@@ -67,7 +68,6 @@ import com.clustercontrol.xcloud.model.cloud.IServiceCondition;
 import com.clustercontrol.xcloud.platform.PlatformDependent;
 import com.clustercontrol.xcloud.ui.dialogs.DetailDialog;
 import com.clustercontrol.xcloud.util.ControlUtil;
-import com.clustercontrol.xcloud.util.TableViewerSorter;
 
 /**
  */
@@ -221,7 +221,7 @@ public class ServiceStateView extends AbstractCloudViewPart implements CloudStri
 		lblFooter.setLayoutData(gridData);
 		lblFooter.setText(strFooterTitle + 0);
 
-		tableViewer = new TableViewer(composite_1, SWT.BORDER | SWT.FULL_SELECTION | SWT.SINGLE);
+		tableViewer = new TableViewer(composite_1, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI);
 		final Table table = tableViewer.getTable();
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);

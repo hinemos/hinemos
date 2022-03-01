@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * メンテナンスが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class MaintenanceNotFound extends HinemosException {
+public class MaintenanceNotFound extends HinemosNotFound {
 
 
 	/**

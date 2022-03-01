@@ -75,7 +75,7 @@ public class MultipleOidsUtils extends AbstractSnmpUtility {
 				log.info(target.getAddress() + " response is null : result.size=" + result.values().size());
 				if (result.values().size() == 0 || !allowIncomplete) {
 					// 1件も取得できなかった場合 もしくは 不完全な結果返却を許容しない場合、応答なしとする。
-					throw new IOException(MessageConstant.MESSAGE_RESPONSE_NOT_FOUND.getMessage());
+					throw new IOException(MessageConstant.MESSAGE_SNMP_NO_RESPONSE.getMessage());
 				}
 				return result.values();
 			}

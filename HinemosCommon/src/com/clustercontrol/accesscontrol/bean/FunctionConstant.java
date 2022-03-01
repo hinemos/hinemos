@@ -8,6 +8,8 @@
 
 package com.clustercontrol.accesscontrol.bean;
 
+// TODO SystemPrivilegeFunction に移行したのでクライアント側の影響を確認したら削除する
+
 /**
  * Hinemosのシステム権限の機能名を定数として格納するクラス<BR>
  * 
@@ -49,6 +51,10 @@ public final class FunctionConstant {
 	public static final String REPORTING = "Reporting";
 	/** 収集蓄積 */
 	public static final String HUB = "Hub";
-	/** 遠隔管理 */
-	public static final String INQUIRY = "Inquiry";
+	/** フィルタ設定 */
+	public static final String FILTER_SETTING = "FilterSetting";
+	/** SDML設定 */
+	public static final String SDML_SETTING = "SdmlSetting";
+	/** RPA管理 */
+	public static final String RPA = "Rpa";
 }

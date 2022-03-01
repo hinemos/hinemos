@@ -11,7 +11,7 @@ package com.clustercontrol.fault;
 /**
  * オブジェクト権限が監視等で利用されている場合に利用するException
  */
-public class UsedObjectPrivilege extends HinemosException {
+public class UsedObjectPrivilege extends HinemosUsed {
 
 	private static final long serialVersionUID = 1L;
 

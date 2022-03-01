@@ -86,6 +86,10 @@ public class WebServiceAgentPlugin extends WebServicePlugin implements HinemosPl
 	public static int getAgentQueueSize() {
 		return _threadPoolForAgent.getQueue().size();
 	}
+	
+	public static ThreadPoolExecutor getAgentPool(){
+		return _threadPoolForAgent;
+	}
 
 	public static int getAgentHubQueueSize() {
 		return _threadPoolForAgentHub.getQueue().size();
@@ -102,7 +106,7 @@ public class WebServiceAgentPlugin extends WebServicePlugin implements HinemosPl
 	@Override
 	public Set<String> getDependency() {
 		Set<String> dependency = new HashSet<String>();
-		dependency.add(WebServiceCorePlugin.class.getName());
+		dependency.add(RestServiceClientPlugin.class.getName());
 		return dependency;
 	}
 

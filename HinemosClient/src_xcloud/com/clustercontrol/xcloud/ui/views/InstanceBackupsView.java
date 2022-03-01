@@ -7,6 +7,9 @@
  */
 package com.clustercontrol.xcloud.ui.views;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
@@ -33,12 +36,12 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 
+import com.clustercontrol.util.TableViewerSorter;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
 import com.clustercontrol.xcloud.model.base.IElement;
 import com.clustercontrol.xcloud.model.cloud.IInstance;
 import com.clustercontrol.xcloud.model.cloud.IInstanceBackupEntry;
-import com.clustercontrol.xcloud.util.TableViewerSorter;
 
 
 /**
@@ -240,6 +243,14 @@ public class InstanceBackupsView extends AbstractCloudViewPart implements CloudS
 
 		public ColumnLabelProvider getProvider() {
 			return provider;
+		}
+		
+		// findbugs対応 SE_BAD_FIELD シリアル化は用途として想定されていないが 対応メソッドを追加する。
+		private void writeObject(ObjectOutputStream stream) throws IOException {
+			stream.defaultWriteObject();
+		}
+		private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+			stream.defaultReadObject();
 		}
 	}
 

@@ -17,11 +17,13 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -48,7 +50,8 @@ public class SystemLogNotifier {
 			String facilityId = facilityIdList.get(i);
 			
 			String message = "";
-			if (HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId())) {
+			if (HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId())
+					|| HinemosModuleConstant.MONITOR_RPA_LOGFILE.equals(monitorInfo.getMonitorTypeId())) {
 				message += MessageConstant.LOGFILE_FILENAME.getMessage() + "=" + monitorInfo.getLogfileCheckInfo().getLogfile() + "\n";
 			}
 			
@@ -61,6 +64,8 @@ public class SystemLogNotifier {
 			OutputBasicInfo output = new OutputBasicInfo();
 
 			output.setNotifyGroupId(NotifyGroupIdGenerator.generate(monitorInfo));
+			output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR,
+					HinemosModuleConstant.MONITOR_SYSTEMLOG, monitorStringValueInfo.getMonitorId()));
 			output.setMonitorId(monitorStringValueInfo.getMonitorId());
 			output.setFacilityId(facilityId);
 
@@ -107,6 +112,9 @@ public class SystemLogNotifier {
 			if(receiverId != null && !"".equals(receiverId)){
 				output.setMultiId(receiverId);
 			}
+
+			output.setPriorityChangeJudgmentType(monitorInfo.getPriorityChangeJudgmentType());
+			output.setPriorityChangeFailureType(monitorInfo.getPriorityChangeFailureType());
 
 			rtn.add(output);
 			m_log.debug("called makeMessage.");

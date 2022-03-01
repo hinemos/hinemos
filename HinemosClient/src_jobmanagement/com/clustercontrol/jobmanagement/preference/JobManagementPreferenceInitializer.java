@@ -23,6 +23,8 @@ public class JobManagementPreferenceInitializer extends AbstractPreferenceInitia
 		store.setDefault(JobManagementPreferencePage.P_HISTORY_UPDATE_CYCLE, 10);
 		store.setDefault(JobManagementPreferencePage.P_HISTORY_MESSAGE_FLG, false);
 		store.setDefault(JobManagementPreferencePage.P_HISTORY_MAX_HISTORIES, 500);
+		store.setDefault(JobManagementPreferencePage.P_HISTORY_CONFIRM_DIALOG_FLG,
+				Boolean.valueOf(System.getProperty("job.operation.confirm.dialog")));
 		store.setDefault(JobManagementPreferencePage.P_PLAN_MAX_SCHEDULE, 100);
 	}
 }

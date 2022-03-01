@@ -85,13 +85,13 @@ public class GetHistoryTableDefine {
 		tableDefine.add(MANAGER_NAME,
 				new TableColumnInfo(Messages.getString("facility.manager", locale), TableColumnInfo.NONE, 100, SWT.LEFT));
 		tableDefine.add(STATUS,
-				new TableColumnInfo(Messages.getString("run.status", locale), TableColumnInfo.STATE, 70, SWT.LEFT));
+				new TableColumnInfo(Messages.getString("run.status", locale), TableColumnInfo.STATE, 90, SWT.LEFT));
 		tableDefine.add(END_STATUS,
 				new TableColumnInfo(Messages.getString("end.status", locale), TableColumnInfo.END_STATUS, 60, SWT.LEFT));
 		tableDefine.add(END_VALUE,
 				new TableColumnInfo(Messages.getString("end.value", locale), TableColumnInfo.NONE, 50, SWT.LEFT));
 		tableDefine.add(SESSION_ID,
-				new TableColumnInfo(Messages.getString("session.id", locale), TableColumnInfo.NONE, 140, SWT.LEFT));
+				new TableColumnInfo(Messages.getString("session.id", locale), TableColumnInfo.NONE, 220, SWT.LEFT));
 		tableDefine.add(JOB_ID,
 				new TableColumnInfo(Messages.getString("job.id", locale), TableColumnInfo.NONE, 100, SWT.LEFT));
 		tableDefine.add(JOB_NAME,

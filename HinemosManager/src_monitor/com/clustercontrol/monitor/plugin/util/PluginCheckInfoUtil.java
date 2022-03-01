@@ -33,9 +33,11 @@ public class PluginCheckInfoUtil {
 			em.persist(info);
 			
 			for (MonitorPluginNumericInfo num: info.getMonitorPluginNumericInfoList()) {
+				num.setMonitorId(info.getMonitorId());
 				em.persist(num);
 			}
 			for (MonitorPluginStringInfo str: info.getMonitorPluginStringInfoList()) {
+				str.setMonitorId(info.getMonitorId());
 				em.persist(str);
 			}
 			return true;
@@ -68,7 +70,7 @@ public class PluginCheckInfoUtil {
 					if(value != null){
 						MonitorPluginNumericInfo nEntity = null;
 						MonitorPluginNumericInfoEntityPK entityPk = new MonitorPluginNumericInfoEntityPK(
-								value.getMonitorId(),
+								info.getMonitorId(),
 								value.getKey());
 						try {
 							nEntity = com.clustercontrol.monitor.plugin.util.QueryUtil.getMonitorPluginNumericInfoEntity(entityPk);
@@ -96,7 +98,7 @@ public class PluginCheckInfoUtil {
 					if(value != null){
 						MonitorPluginStringInfo sEntity = null;
 						MonitorPluginStringInfoEntityPK entityPk = new MonitorPluginStringInfoEntityPK(
-								value.getMonitorId(),
+								info.getMonitorId(),
 								value.getKey());
 						try {
 							sEntity = com.clustercontrol.monitor.plugin.util.QueryUtil.getMonitorPluginStringInfoEntity(entityPk);

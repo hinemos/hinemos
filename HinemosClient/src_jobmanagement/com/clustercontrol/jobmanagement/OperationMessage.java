@@ -8,6 +8,9 @@
 
 package com.clustercontrol.jobmanagement;
 
+import org.openapitools.client.model.JobOperationPropResponse.AvailableOperationListEnum;
+import org.openapitools.client.model.JobOperationRequest.ControlEnum;
+
 import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.util.Messages;
 
@@ -43,6 +46,8 @@ public class OperationMessage {
 	public static final String STRING_STOP_MAINTENANCE = Messages.getString("job.stop.maintenance");
 	/** 停止[状態指定] */
 	public static final String STRING_STOP_SET_END_VALUE = Messages.getString("job.stop.set.end.value");
+	/** 停止[状態指定](強制) */
+	public static final String STRING_STOP_SET_END_VALUE_FORCE = Messages.getString("job.stop.set.end.value.force");
 	/** 停止[強制] */
 	public static final String STRING_STOP_FORCE = Messages.getString("job.stop.force");
 
@@ -85,6 +90,9 @@ public class OperationMessage {
 		}
 		else if(type == OperationConstant.TYPE_STOP_SET_END_VALUE){
 			return STRING_STOP_SET_END_VALUE;
+		}
+		else if(type == OperationConstant.TYPE_STOP_SET_END_VALUE_FORCE){
+			return STRING_STOP_SET_END_VALUE_FORCE;
 		}
 		else if(type == OperationConstant.TYPE_STOP_FORCE){
 			return STRING_STOP_FORCE;
@@ -132,9 +140,110 @@ public class OperationMessage {
 		else if(string.equals(STRING_STOP_SET_END_VALUE)){
 			return OperationConstant.TYPE_STOP_SET_END_VALUE;
 		}
+		else if(string.equals(STRING_STOP_SET_END_VALUE_FORCE)){
+			return OperationConstant.TYPE_STOP_SET_END_VALUE_FORCE;
+		}
 		else if(string.equals(STRING_STOP_FORCE)){
 			return OperationConstant.TYPE_STOP_FORCE;
 		}
 		return -1;
+	}
+	
+	/**
+	 * 種別から文字列に変換する。<BR>
+	 * 
+	 * @param type AvailableOperationListEnum
+	 * @return 文字列
+	 */
+	public static String enumToString(AvailableOperationListEnum type){
+		if(type == AvailableOperationListEnum.START_AT_ONCE){
+			return STRING_START_AT_ONCE;
+		}
+		else if(type == AvailableOperationListEnum.START_SUSPEND){
+			return STRING_START_SUSPEND;
+		}
+		else if(type == AvailableOperationListEnum.START_SKIP){
+			return STRING_START_SKIP;
+		}
+		else if(type == AvailableOperationListEnum.START_WAIT){
+			return STRING_START_WAIT;
+		}
+		else if(type == AvailableOperationListEnum.START_FORCE_RUN){
+			return STRING_START_FORCE_RUN;
+		}
+		else if(type == AvailableOperationListEnum.STOP_AT_ONCE){
+			return STRING_STOP_AT_ONCE;
+		}
+		else if(type == AvailableOperationListEnum.STOP_SUSPEND){
+			return STRING_STOP_SUSPEND;
+		}
+		else if(type == AvailableOperationListEnum.STOP_SKIP){
+			return STRING_STOP_SKIP;
+		}
+		else if(type == AvailableOperationListEnum.STOP_WAIT){
+			return STRING_STOP_WAIT;
+		}
+		else if(type == AvailableOperationListEnum.STOP_MAINTENANCE){
+			return STRING_STOP_MAINTENANCE;
+		}
+		else if(type == AvailableOperationListEnum.STOP_SET_END_VALUE){
+			return STRING_STOP_SET_END_VALUE;
+		}
+		else if(type == AvailableOperationListEnum.STOP_SET_END_VALUE_FORCE){
+			return STRING_STOP_SET_END_VALUE_FORCE;
+		}
+		else if(type == AvailableOperationListEnum.STOP_FORCE){
+			return STRING_STOP_FORCE;
+		}
+		return "";
+	}
+	
+	/**
+	 * 文字列から種別に変換する。<BR>
+	 * 
+	 * @param string String
+	 * @return ControlEnum
+	 */
+	public static ControlEnum stringToEnum(String string){
+		if(string.equals(STRING_START_AT_ONCE)){
+			return ControlEnum.START_AT_ONCE;
+		}
+		else if(string.equals(STRING_START_SUSPEND)){
+			return ControlEnum.START_SUSPEND;
+		}
+		else if(string.equals(STRING_START_SKIP)){
+			return ControlEnum.START_SKIP;
+		}
+		else if(string.equals(STRING_START_WAIT)){
+			return ControlEnum.START_WAIT;
+		}
+		else if(string.equals(STRING_START_FORCE_RUN)){
+			return ControlEnum.START_FORCE_RUN;
+		}
+		else if(string.equals(STRING_STOP_AT_ONCE)){
+			return ControlEnum.STOP_AT_ONCE;
+		}
+		else if(string.equals(STRING_STOP_SUSPEND)){
+			return ControlEnum.STOP_SUSPEND;
+		}
+		else if(string.equals(STRING_STOP_SKIP)){
+			return ControlEnum.STOP_SKIP;
+		}
+		else if(string.equals(STRING_STOP_WAIT)){
+			return ControlEnum.STOP_WAIT;
+		}
+		else if(string.equals(STRING_STOP_MAINTENANCE)){
+			return ControlEnum.STOP_MAINTENANCE;
+		}
+		else if(string.equals(STRING_STOP_SET_END_VALUE)){
+			return ControlEnum.STOP_SET_END_VALUE;
+		}
+		else if(string.equals(STRING_STOP_SET_END_VALUE_FORCE)){
+			return ControlEnum.STOP_SET_END_VALUE_FORCE;
+		}
+		else if(string.equals(STRING_STOP_FORCE)){
+			return ControlEnum.STOP_FORCE;
+		}
+		return null;
 	}
 }

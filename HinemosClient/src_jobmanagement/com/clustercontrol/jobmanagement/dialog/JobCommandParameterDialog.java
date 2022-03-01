@@ -20,6 +20,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.JobCommandParamResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.PropertyDefineConstant;
@@ -29,8 +30,6 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobCommandParam;
-import com.clustercontrol.ws.monitor.Variable;
 
 /**
  * フィルタ[作成・変更]ダイアログクラス<BR>
@@ -47,7 +46,7 @@ public class JobCommandParameterDialog extends CommonDialog {
 	public static final int WIDTH_VALUE = 2;
 
 	/** 入力値を保持するオブジェクト **/
-	private JobCommandParam m_inputData = null;
+	private JobCommandParamResponse m_inputData = null;
 
 	/** 入力値の正当性を保持するオブジェクト **/
 	private ValidateResult m_validateResult = null;
@@ -82,7 +81,7 @@ public class JobCommandParameterDialog extends CommonDialog {
 	 * @param parent 親のシェルオブジェクト
 	 * @param identifier 変更する文字列監視の判定情報の識別キー
 	 */
-	public JobCommandParameterDialog(Shell parent, JobCommandParam variable) {
+	public JobCommandParameterDialog(Shell parent, JobCommandParamResponse variable) {
 		super(parent);
 
 		this.m_inputData = variable;
@@ -208,9 +207,9 @@ public class JobCommandParameterDialog extends CommonDialog {
 				(display.getBounds().height - shell.getSize().y) / 2);
 
 		// 識別子が指定されている場合、その情報を初期表示する。
-		JobCommandParam variable = this.m_inputData;
+		JobCommandParamResponse variable = this.m_inputData;
 		if (variable == null) {
-			variable = new JobCommandParam();
+			variable = new JobCommandParamResponse();
 			variable.setJobStandardOutputFlg(false);
 		}
 
@@ -242,7 +241,7 @@ public class JobCommandParameterDialog extends CommonDialog {
 	 *
 	 * @return 判定情報
 	 */
-	public JobCommandParam getInputData() {
+	public JobCommandParamResponse getInputData() {
 		return this.m_inputData;
 	}
 
@@ -251,7 +250,7 @@ public class JobCommandParameterDialog extends CommonDialog {
 	 *
 	 * @param info 設定値として用いる判定情報
 	 */
-	protected void setInputData(JobCommandParam variable) {
+	protected void setInputData(JobCommandParamResponse variable) {
 
 		this.m_inputData = variable;
 
@@ -263,7 +262,7 @@ public class JobCommandParameterDialog extends CommonDialog {
 			this.m_textValue.setText(this.m_inputData.getValue());
 		}
 
-		this.m_buttonMatchingWithResponse.setSelection(this.m_inputData.isJobStandardOutputFlg());
+		this.m_buttonMatchingWithResponse.setSelection(this.m_inputData.getJobStandardOutputFlg());
 
 		// 必須項目を可視化
 		this.update();
@@ -279,8 +278,8 @@ public class JobCommandParameterDialog extends CommonDialog {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	private JobCommandParam createInputData() {
-		JobCommandParam info = new JobCommandParam();
+	private JobCommandParamResponse createInputData() {
+		JobCommandParamResponse info = new JobCommandParamResponse();
 
 		// 名前
 		if (this.m_textName.getText() != null
@@ -374,7 +373,7 @@ public class JobCommandParameterDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		JobCommandParam info = this.m_inputData;
+		JobCommandParamResponse info = this.m_inputData;
 		if(info != null){
 			result = true;
 		}

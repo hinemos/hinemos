@@ -28,6 +28,14 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.InfraNotifyDetailInfoResponse;
+import org.openapitools.client.model.InfraNotifyDetailInfoResponse.CriticalInfraFailurePriorityEnum;
+import org.openapitools.client.model.InfraNotifyDetailInfoResponse.InfoInfraFailurePriorityEnum;
+import org.openapitools.client.model.InfraNotifyDetailInfoResponse.InfraExecFacilityFlgEnum;
+import org.openapitools.client.model.InfraNotifyDetailInfoResponse.UnknownInfraFailurePriorityEnum;
+import org.openapitools.client.model.InfraNotifyDetailInfoResponse.WarnInfraFailurePriorityEnum;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PriorityColorConstant;
@@ -35,21 +43,17 @@ import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.notify.action.AddNotify;
 import com.clustercontrol.notify.action.GetNotify;
 import com.clustercontrol.notify.action.ModifyNotify;
-import com.clustercontrol.notify.bean.ExecFacilityConstant;
+import com.clustercontrol.notify.dialog.bean.NotifyInfoInputData;
 import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.notify.NotifyInfo;
-import com.clustercontrol.ws.notify.NotifyInfraInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 通知（環境構築実行）作成・変更ダイアログクラス<BR>
@@ -127,7 +131,7 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 	/** 呼出失敗時の重要度（不明） コンボボックス。 */
 	private Combo m_comboFailurePriorityUnknown = null;
 	
-	private List<InfraManagementInfo> m_infraList = new ArrayList<>();
+	private List<InfraManagementInfoResponse> m_infraList = new ArrayList<>();
 	
 	// 表示とIDを紐付けるマップ
 	// key=CalendarId
@@ -143,6 +147,7 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 	 */
 	public NotifyInfraCreateDialog(Shell parent) {
 		super(parent);
+		parentDialog = this;
 	}
 
 	/**
@@ -155,6 +160,7 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 	 */
 	public NotifyInfraCreateDialog(Shell parent, String managerName, String notifyId, boolean updateFlg) {
 		super(parent, managerName, notifyId, updateFlg);
+		parentDialog = this;
 	}
 
 	// ----- instance メソッド ----- //
@@ -166,7 +172,7 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 	 *
 	 * @see com.clustercontrol.notify.dialog.NotifyBasicCreateDialog#customizeDialog(Composite)
 	 * @see com.clustercontrol.notify.action.GetNotify#getNotify(String)
-	 * @see #setInputData(NotifyInfo)
+	 * @see #setInputData(NotifyInfoInputData)
 	 */
 	@Override
 	protected void customizeDialog(Composite parent) {
@@ -174,14 +180,14 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 		super.customizeDialog(parent);
 
 		// 通知IDが指定されている場合、その情報を初期表示する。
-		NotifyInfo info = null;
+		NotifyInfoInputData inputData;
 		if(this.notifyId != null){
-			info = new GetNotify().getNotify(this.managerName, this.notifyId);
+			inputData = new GetNotify().getInfraNotify(this.managerName, this.notifyId);
+		} else {
+			inputData = new NotifyInfoInputData();
 		}
-		else{
-			info = new NotifyInfo();
-		}
-		this.setInputData(info);
+		this.setInputData(inputData);
+
 	}
 
 	/**
@@ -308,12 +314,10 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 		this.m_scopeSelect.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				ScopeTreeDialog dialog = new ScopeTreeDialog(shell,
-						m_notifyBasic.getManagerListComposite().getText(),
-						m_notifyBasic.getRoleIdList().getText());
+				ScopeTreeDialog dialog = new ScopeTreeDialog(shell, managerName, ownerRoleId);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem selectItem = dialog.getSelectItem();
-					FacilityInfo info = selectItem.getData();
+					FacilityTreeItemResponse selectItem = dialog.getSelectItem();
+					FacilityInfoResponse info = selectItem.getData();
 					FacilityPath path = new FacilityPath(
 							ClusterControlPlugin.getDefault()
 							.getSeparator());
@@ -492,28 +496,6 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 		setEnabled(false,
 				m_comboInfraIdUnknown,
 				m_comboFailurePriorityUnknown);
-		
-		if (!this.updateFlg) {
-			// マネージャを変えたときのイベント
-			getComboManagerName().addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					String managerNames = getComboManagerName().getText();
-					managerName = managerNames;
-					refreshComboInfraId();
-					update();
-				}
-			});
-			
-			// オーナーロールIDを変えたときのイベント
-			getComboOwnerRoleId().addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					refreshComboInfraId();
-					update();
-				}
-			});
-		}
 	}
 
 	/**
@@ -561,7 +543,7 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 	 * @return 通知情報
 	 */
 	@Override
-	public NotifyInfo getInputData() {
+	public NotifyInfoInputData getInputData() {
 		return this.inputData;
 	}
 
@@ -571,14 +553,14 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 	 * @param notify 設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(NotifyInfo notify) {
+	protected void setInputData(NotifyInfoInputData notify) {
 		super.setInputData(notify);
 		
 		// 構築IDのコンボボックスのデータを取得
 		refreshComboInfraId();
 
 		// コマンド情報
-		NotifyInfraInfo info = notify.getNotifyInfraInfo();
+		InfraNotifyDetailInfoResponse info = notify.getNotifyInfraInfo();
 		if (info != null) {
 			this.setInputDatal(info);
 		} else {
@@ -589,12 +571,12 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 		update();
 	}
 
-	private void setInputDatal(NotifyInfraInfo infra) {
-		if (infra.getInfraExecFacility() != null) {
-			this.m_facilityId = infra.getInfraExecFacility();
+	private void setInputDatal(InfraNotifyDetailInfoResponse infra) {
+		if (infra.getInfraExecFacilityId() != null) {
+			this.m_facilityId = infra.getInfraExecFacilityId();
 			this.m_textScope.setText(HinemosMessage.replace(infra.getInfraExecScope()));
 		}
-		if (infra.getInfraExecFacilityFlg() != null && infra.getInfraExecFacilityFlg() == ExecFacilityConstant.TYPE_GENERATION) {
+		if (infra.getInfraExecFacilityFlg() != null && infra.getInfraExecFacilityFlg() == InfraExecFacilityFlgEnum.GENERATION) {
 			this.m_radioGenerationNodeValue.setSelection(true);
 			this.m_scopeSelect.setEnabled(false);
 		}
@@ -622,11 +604,11 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 				this.m_comboInfraIdCritical,
 				this.m_comboInfraIdUnknown
 		};
-		Integer[] infraFailurePriorities = new Integer[] {
-				infra.getInfoInfraFailurePriority(),
-				infra.getWarnInfraFailurePriority(),
-				infra.getCriticalInfraFailurePriority(),
-				infra.getUnknownInfraFailurePriority()
+		String[] infraFailurePriorities = new String[] {
+				PriorityMessage.enumToString(infra.getInfoInfraFailurePriority(), InfoInfraFailurePriorityEnum.class),
+				PriorityMessage.enumToString(infra.getWarnInfraFailurePriority(), WarnInfraFailurePriorityEnum.class),
+				PriorityMessage.enumToString(infra.getCriticalInfraFailurePriority(), CriticalInfraFailurePriorityEnum.class),
+				PriorityMessage.enumToString(infra.getUnknownInfraFailurePriority(), UnknownInfraFailurePriorityEnum.class)
 		};
 		Combo[] comboFailurePriorities = new Combo[] {
 				this.m_comboFailurePriorityInfo,
@@ -649,7 +631,7 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 
 			// 構築失敗時の重要度
 			if (infraFailurePriorities[i] != null) {
-				comboFailurePriorities[i].setText(PriorityMessage.typeToString(infraFailurePriorities[i]));
+				comboFailurePriorities[i].setText(infraFailurePriorities[i]);
 				WidgetTestUtil.setTestId(this, "comboFailurePriorities" + i, comboFailurePriorities[i]);
 			}
 			
@@ -666,7 +648,7 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 	 * @param checkInhibition 抑制チェックボックス
 	 * @param comboFailurePriority 呼出失敗時の重要度
 	 */
-	protected void setInputDataForInfra(NotifyInfraInfo info,
+	protected void setInputDataForInfra(InfraNotifyDetailInfoResponse info,
 			Button checkInfraRun,
 			Text textInfraunitId,
 			Text textInfraId,
@@ -683,21 +665,21 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 	 * @see #createInputDataForInfra(ArrayList, int, Button, Text, Button, Combo)
 	 */
 	@Override
-	protected NotifyInfo createInputData() {
-		NotifyInfo info = super.createInputData();
+	protected NotifyInfoInputData createInputData() {
+		NotifyInfoInputData info = super.createInputData();
 
 		// 通知タイプの設定
 		info.setNotifyType(TYPE_INFRA);
 
 		// コマンド情報
-		NotifyInfraInfo notifyInfraInfo = createNotifyInfoDetail();
+		InfraNotifyDetailInfoResponse notifyInfraInfo = createNotifyInfoDetail();
 		info.setNotifyInfraInfo(notifyInfraInfo);
 		return info;
 	}
 
-	private NotifyInfraInfo createNotifyInfoDetail() {
+	private InfraNotifyDetailInfoResponse createNotifyInfoDetail() {
 		// 環境構築情報
-		NotifyInfraInfo infra = new NotifyInfraInfo();
+		InfraNotifyDetailInfoResponse infra = new InfraNotifyDetailInfoResponse();
 
 		//　実行
 		infra.setInfoValidFlg(m_checkInfraRunInfo.getSelection());
@@ -722,30 +704,30 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 
 		// 呼出失敗時
 		if (isNotNullAndBlank(m_comboFailurePriorityInfo.getText())) {
-			infra.setInfoInfraFailurePriority(PriorityMessage.stringToType(m_comboFailurePriorityInfo.getText()));
+			infra.setInfoInfraFailurePriority(PriorityMessage.stringToEnum(m_comboFailurePriorityInfo.getText(), InfoInfraFailurePriorityEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboFailurePriorityWarning.getText())) {
-			infra.setWarnInfraFailurePriority(PriorityMessage.stringToType(m_comboFailurePriorityWarning.getText()));
+			infra.setWarnInfraFailurePriority(PriorityMessage.stringToEnum(m_comboFailurePriorityWarning.getText(), WarnInfraFailurePriorityEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboFailurePriorityCritical.getText())) {
-			infra.setCriticalInfraFailurePriority(PriorityMessage.stringToType(m_comboFailurePriorityCritical.getText()));
+			infra.setCriticalInfraFailurePriority(PriorityMessage.stringToEnum(m_comboFailurePriorityCritical.getText(), CriticalInfraFailurePriorityEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboFailurePriorityUnknown.getText())) {
-			infra.setUnknownInfraFailurePriority(PriorityMessage.stringToType(m_comboFailurePriorityUnknown.getText()));
+			infra.setUnknownInfraFailurePriority(PriorityMessage.stringToEnum(m_comboFailurePriorityUnknown.getText(), UnknownInfraFailurePriorityEnum.class));
 		}
 
 		// 共通部分登録
 		// 実行ファシリティID
 		if (isNotNullAndBlank(this.m_textScope.getText())) {
-			infra.setInfraExecFacility(this.m_facilityId);
+			infra.setInfraExecFacilityId(this.m_facilityId);
 			infra.setInfraExecScope(this.m_textScope.getText());
 		}
 		// 実行ファシリティ
 		if (this.m_radioGenerationNodeValue.getSelection()) {
-			infra.setInfraExecFacilityFlg(ExecFacilityConstant.TYPE_GENERATION);
+			infra.setInfraExecFacilityFlg(InfraExecFacilityFlgEnum.GENERATION);
 		}
 		else if (this.m_radioFixedValue.getSelection()){
-			infra.setInfraExecFacilityFlg(ExecFacilityConstant.TYPE_FIX);
+			infra.setInfraExecFacilityFlg(InfraExecFacilityFlgEnum.FIX);
 		}
 
 		return infra;
@@ -775,15 +757,15 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		NotifyInfo info = this.getInputData();
+		NotifyInfoInputData info = this.getInputData();
 		if(info != null){
 			if (!this.updateFlg) {
 				// 作成の場合
-				result = new AddNotify().add(this.getInputManagerName(), info);
+				result = new AddNotify().addInfraNotify(managerName, info);
 			}
 			else{
 				// 変更の場合
-				result = new ModifyNotify().modify(this.getInputManagerName(), info);
+				result = new ModifyNotify().modifyInfraNotify(managerName, info);
 			}
 		}
 
@@ -949,8 +931,8 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 		m_comboInfraIdUnknown.removeAll();
 
 		try {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
-			m_infraList = wrapper.getInfraManagementListByOwnerRole(getOwnerRoleId());
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
+			m_infraList = wrapper.getInfraManagementList(ownerRoleId);
 		} catch (Exception e) {
 			MessageDialog.openError(getShell(), MessageConstant.MESSAGE.getMessage(), e.getMessage());
 			return;
@@ -958,7 +940,7 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 		
 		putMap("","");
 		
-		for (InfraManagementInfo infra : m_infraList) {
+		for (InfraManagementInfoResponse infra : m_infraList) {
 			putMap(infra.getManagementId(), infra.getName());
 		}
 	}
@@ -1036,14 +1018,28 @@ public class NotifyInfraCreateDialog extends NotifyBasicCreateDialog {
 		return combo;
 	}
 
+	private Boolean[] getValidFlgs(InfraNotifyDetailInfoResponse info) {
+		Boolean[] validFlgs = new Boolean[] {
+				info.getInfoValidFlg(),
+				info.getWarnValidFlg(),
+				info.getCriticalValidFlg(),
+				info.getUnknownValidFlg()
+		};
+		return validFlgs;
+	}
+
 	@Override
-	public void setOwnerRoleId(String ownerRoleId) {
-		super.setOwnerRoleId(ownerRoleId);
+	public void updateManagerName(String managerName) {
+		super.updateManagerName(managerName);
+	}
+
+	@Override
+	public void updateOwnerRole(String ownerRoleId) {
+		super.updateOwnerRole(ownerRoleId);
 		this.m_facilityPath = "";
 		this.m_facilityId = "";
 		this.m_textScope.setText(HinemosMessage.replace(m_facilityPath));
-
 		refreshComboInfraId();
+		update();
 	}
-
 }

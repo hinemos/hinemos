@@ -11,7 +11,7 @@ package com.clustercontrol.jmx.session;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -22,6 +22,7 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.jmx.model.JmxMasterInfo;
+import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.util.MessageConstant;
 
 /**
@@ -39,12 +40,12 @@ public class JmxMasterControllerBean {
 	 * JMX 監視項目マスタを登録します。
 	 * 
 	 * @param datas JMX 監視項目マスタ
-	 * @return 登録に成功した場合、true
+	 * @return 登録したJMX監視項目マスタ一覧
 	 * @throws HinemosUnknown
 	 * @throws InvalidSetting
 	 */
-	public boolean addJmxMasterList(List<JmxMasterInfo> datas) throws HinemosUnknown, InvalidSetting {
-		boolean ret = false;
+	public List<JmxMasterInfo> addJmxMasterList(List<JmxMasterInfo> datas) throws HinemosUnknown, InvalidSetting {
+		List<JmxMasterInfo> retList = new ArrayList<>();
 
 		for (JmxMasterInfo m: datas) {
 			validateJmxMasterInfo(m);
@@ -64,7 +65,15 @@ public class JmxMasterControllerBean {
 
 			jtm.commit();
 
-			ret = true;
+			// 結果取得
+			List<String> ids = new ArrayList<>();
+			for (JmxMasterInfo data: datas) {
+				ids.add(data.getId());
+			}
+			List<JmxMasterInfo> entities = em.createNamedQuery("MonitorJmxMstEntity.findList", JmxMasterInfo.class).setParameter("ids", ids).getResultList();
+			for (JmxMasterInfo entity : entities) {
+				retList.add(entity);
+			}
 		} catch (EntityExistsException e) {
 			jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
@@ -78,19 +87,18 @@ public class JmxMasterControllerBean {
 			}
 		}
 
-		return ret;
+		return retList;
 	}
 
 	/**
 	 * JMX 監視項目マスタを削除します。
 	 * 
-	 * @return 削除に成功した場合、true
+	 * @return 削除したJMX監視項目マスタ一覧
 	 * @throws HinemosUnknown
 	 */
-	public boolean deleteJmxMasterList(List<String> ids) throws HinemosUnknown {
+	public List<JmxMasterInfo> deleteJmxMasterList(List<String> ids) throws HinemosUnknown {
 		JpaTransactionManager jtm = null;
-
-		boolean ret = false;
+		List<JmxMasterInfo> retList = new ArrayList<>();
 
 		try {
 			jtm = new JpaTransactionManager();
@@ -99,13 +107,13 @@ public class JmxMasterControllerBean {
 			HinemosEntityManager em = jtm.getEntityManager();
 			List<JmxMasterInfo> entities = em.createNamedQuery("MonitorJmxMstEntity.findList", JmxMasterInfo.class).setParameter("ids", ids).getResultList();
 			for (JmxMasterInfo entity : entities) {
+				retList.add(entity);
 				// 削除処理
 				em.remove(entity);
 			}
 
 			jtm.commit();
 
-			ret = true;
 		} catch (Exception e) {
 			m_log.warn("deleteJmxMasterList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
@@ -116,35 +124,35 @@ public class JmxMasterControllerBean {
 				jtm.close();
 			}
 		}
-		return ret;
+		return retList;
 
 	}
 
 	/**
 	 * JMX 監視項目マスタを全て削除します。
 	 * 
-	 * @return 削除に成功した場合、true
+	 * @return 削除したJMX監視項目マスタ一覧
 	 * @throws HinemosUnknown
 	 */
-	public boolean deleteJmxMasterAll() throws HinemosUnknown {
+	public List<JmxMasterInfo> deleteJmxMasterAll() throws HinemosUnknown {
 		JpaTransactionManager jtm = null;
-
-		boolean ret = false;
+		List<JmxMasterInfo> retList = new ArrayList<>();
 
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			HinemosEntityManager em = jtm.getEntityManager();
+
 			List<JmxMasterInfo> entities = em.createNamedQuery("MonitorJmxMstEntity.findAll", JmxMasterInfo.class).getResultList();
 			for (JmxMasterInfo entity : entities) {
+				retList.add(entity);
 				// 削除処理
 				em.remove(entity);
 			}
 
 			jtm.commit();
 
-			ret = true;
 		} catch (Exception e) {
 			m_log.warn("deleteJmxMasterAll() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
@@ -155,7 +163,7 @@ public class JmxMasterControllerBean {
 				jtm.close();
 			}
 		}
-		return ret;
+		return retList;
 
 	}
 

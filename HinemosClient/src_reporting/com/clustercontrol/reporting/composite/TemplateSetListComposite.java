@@ -9,12 +9,9 @@
 package com.clustercontrol.reporting.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.xml.ws.WebServiceException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,18 +23,20 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.TemplateSetInfoResponse;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.reporting.action.GetTemplateSetListTableDefine;
 import com.clustercontrol.reporting.composite.action.TemplateSetDoubleClickListener;
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.TemplateSetInfo;
 
 /**
  * テンプレートセット一覧コンポジットクラス<BR>
@@ -156,54 +155,52 @@ public class TemplateSetListComposite extends Composite {
 	 */
 	@Override
 	public void update() {
-		List<TemplateSetInfo> list = null;
+		List<TemplateSetInfoResponse> list = null;
 
 		//カレンダ一覧情報取得
-		Map<String, List<TemplateSetInfo>> dispDataMap= new ConcurrentHashMap<String, List<TemplateSetInfo>>();
+		Map<String, List<TemplateSetInfoResponse>> dispDataMap= new ConcurrentHashMap<String, List<TemplateSetInfoResponse>>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<String, String>();
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-			boolean key = false;
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
+			ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(managerName);
 			try {
-				String version = wrapper.getVersion();
-				m_log.debug("version : " + version);
-				key = true;
-				if (version.length() > 7) {
-					boolean result = Boolean.valueOf(version.substring(7, version.length()));
-					if (!result) {
-						MessageDialog.openWarning(
-								null,
-								Messages.getString("warning"),
-								Messages.getString("message.expiration.term.invalid"));
-					}
+				boolean isPublish = wrapper.checkPublish().getPublish();
+				if (!isPublish) {
+					MessageDialog.openWarning(
+							null,
+							Messages.getString("warning"),
+							Messages.getString("message.expiration.term.invalid"));
 				}
-			} catch (WebServiceException  e) {
-				//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
-				//この場合は無視
-				continue;
+			} catch (HinemosUnknown e) {
+				// エンタープライズ機能が無効の場合は HinemosUnknownでラップしたUrlNotFoundとなる。
+				// この場合は無視する
+				if(UrlNotFound.class.equals(e.getCause().getClass())) {
+					continue;
+				}
+				String errMsg = HinemosMessage.replace(e.getMessage());
+				m_log.warn("checkPublish Error, " + errMsg);
+				errorMsgs.put(managerName, Messages.getString("message.expiration.term"));
 			} catch (Exception e) {
 				String errMsg = HinemosMessage.replace(e.getMessage());
-				m_log.warn("getVersionError, " + errMsg);
+				m_log.warn("checkPublish Error, " + errMsg);
 				errorMsgs.put(managerName, Messages.getString("message.expiration.term"));
 			}
-			if (key) {
-				try {
-					list = wrapper.getTemplateSetInfoList(null);
-				} catch (InvalidRole_Exception e) {
-					// 権限なし
-					errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
-				} catch (Exception e) {
-					// 上記以外の例外
-					String errMessage = HinemosMessage.replace(e.getMessage());
-					m_log.warn("update(), " + errMessage, e);
-					errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
-				}
-				if(list == null){
-					list = new ArrayList<TemplateSetInfo>();
-				}
 
-				dispDataMap.put(managerName, list);
+			try {
+				list = wrapper.getTemplateSetList(null);
+			} catch (InvalidRole e) {
+				// 権限なし
+				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
+			} catch (Exception e) {
+				// 上記以外の例外
+				String errMessage = HinemosMessage.replace(e.getMessage());
+				m_log.warn("update(), " + errMessage, e);
+				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
 			}
+			if(list == null){
+				list = new ArrayList<TemplateSetInfoResponse>();
+			}
+
+			dispDataMap.put(managerName, list);
 		}
 
 		//メッセージ表示
@@ -212,8 +209,8 @@ public class TemplateSetListComposite extends Composite {
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<TemplateSetInfo>> map: dispDataMap.entrySet()) {
-			for (TemplateSetInfo info : map.getValue()) {
+		for(Map.Entry<String, List<TemplateSetInfoResponse>> map: dispDataMap.entrySet()) {
+			for (TemplateSetInfoResponse info : map.getValue()) {
 				ArrayList<Object> obj = new ArrayList<Object>();
 				obj.add(map.getKey());
 				obj.add(info.getTemplateSetId());
@@ -221,9 +218,9 @@ public class TemplateSetListComposite extends Composite {
 				obj.add(HinemosMessage.replace(info.getDescription()));
 				obj.add(info.getOwnerRoleId());
 				obj.add(info.getRegUser());
-				obj.add(new Date(info.getRegDate()));
+				obj.add(info.getRegDate());
 				obj.add(info.getUpdateUser());
-				obj.add(new Date(info.getUpdateDate()));
+				obj.add(info.getUpdateDate());
 				obj.add(null);
 				listInput.add(obj);
 			}

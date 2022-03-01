@@ -15,12 +15,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.commons.bean.Schedule;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.reporting.bean.ReportingTypeConstant;
-import com.clustercontrol.reporting.fault.ReportingNotFound;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -115,7 +115,7 @@ public class SelectReportingInfo {
 
 		//表示用スコープテキストの取得
 		String facilityPath = new RepositoryControllerBean().getFacilityPath(entity.getFacilityId(), null);
-		info.setScopeText(facilityPath);
+		info.setScope(facilityPath);
 
 		info.setCalendarId(entity.getCalendarId());
 		info.setOutputPeriodType(entity.getOutputPeriodType());
@@ -167,7 +167,7 @@ public class SelectReportingInfo {
 		info.setUpdateUser(entity.getUpdateUser());
 
 		//通知情報の取得
-		info.setNotifyId(NotifyRelationCache.getNotifyList(info.getNotifyGroupId()));
+		info.setNotifyRelationList(NotifyRelationCache.getNotifyList(info.getNotifyGroupId()));
 
 		return info;
 	}

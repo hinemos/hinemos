@@ -62,7 +62,14 @@ public class TimezoneUtil {
 	 *  クライアントが保持するタイムゾーンに基づく日付フォーマットを返す
 	 */
 	public static SimpleDateFormat getSimpleDateFormat(){
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		return getSimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+	}
+
+	/**
+	 *  クライアントが保持するタイムゾーンに基づく日付フォーマットを返す
+	 */
+	public static SimpleDateFormat getSimpleDateFormat(String pattern){
+		SimpleDateFormat sdf = new SimpleDateFormat(pattern);
 		sdf.setTimeZone(getTimeZone());
 		return sdf;
 	}

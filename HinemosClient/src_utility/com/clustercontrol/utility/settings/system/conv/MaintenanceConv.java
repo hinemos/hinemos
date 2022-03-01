@@ -11,12 +11,18 @@ package com.clustercontrol.utility.settings.system.conv;
 import java.util.Calendar;
 import java.util.Date;
 
+import org.openapitools.client.model.AddMaintenanceRequest;
+import org.openapitools.client.model.MaintenanceInfoResponse;
+import org.openapitools.client.model.MaintenanceScheduleRequest;
+import org.openapitools.client.model.MaintenanceScheduleResponse;
+
 import com.clustercontrol.bean.ScheduleConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.maintenance.util.MaintenanceUtil;
 import com.clustercontrol.utility.settings.maintenance.xml.MaintenanceInfo;
 import com.clustercontrol.utility.settings.model.BaseConv;
-import com.clustercontrol.utility.util.Config;
-import com.clustercontrol.ws.common.Schedule;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 
 /**
  * メンテナンス設定情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -65,7 +71,7 @@ public class MaintenanceConv {
 	 * @return
 	 */
 	public static MaintenanceInfo getMaintenanceInfo(
-			com.clustercontrol.ws.maintenance.MaintenanceInfo info) {
+			MaintenanceInfoResponse info) {
 
 		MaintenanceInfo ret = new MaintenanceInfo();
 
@@ -76,7 +82,8 @@ public class MaintenanceConv {
 		} else {
 			ret.setDescription("");
 		}
-		ret.setTypeId(info.getTypeId());
+		
+		ret.setTypeId(info.getTypeId().getValue());
 		ret.setDataRetentionPeriod(info.getDataRetentionPeriod());
 		if (info.getCalendarId() != null) {
 			ret.setCalendarId(info.getCalendarId());
@@ -86,14 +93,12 @@ public class MaintenanceConv {
 		ret.setOwnerRoleId(info.getOwnerRoleId());
 
 		//通知部分のセット
-		ret.setNotifyGroupId(info.getNotifyGroupId());
 		ret.setNotifyId( com.clustercontrol.utility.settings.platform.conv.CommonConv.notifyMaintennceDto2Xml(info.getNotifyId()));
-		
-		
-		ret.setApplication(info.getApplication());
-		ret.setValidFlg(info.isValidFlg());
 
-		Schedule schedule = info.getSchedule();
+		ret.setApplication(info.getApplication());
+		ret.setValidFlg(info.getValidFlg());
+
+		MaintenanceScheduleResponse schedule = info.getSchedule();
 		if (schedule != null) {
 			// カレンダオブジェクトに日付時刻を設定
 			Calendar calendarWk = Calendar.getInstance();
@@ -111,10 +116,11 @@ public class MaintenanceConv {
 			}
 
 			// スケジュール種別の設定
-			ret.setType(schedule.getType());
+			int typeInt = OpenApiEnumConverter.enumToInteger(schedule.getType());
+			ret.setType(typeInt);
 
 			// スケジュール種別が曜日指定の場合、曜日を設定
-			if (schedule.getType() == ScheduleConstant.TYPE_WEEK && schedule.getWeek() != null) {
+			if (typeInt == ScheduleConstant.TYPE_WEEK && schedule.getWeek() != null) {
 				ret.setDayOfWeek(schedule.getWeek());
 			}
 
@@ -131,26 +137,21 @@ public class MaintenanceConv {
 			if (schedule.getMinute() != null) {
 				ret.setMin(calendarWk.get(Calendar.MINUTE));
 			}
-
-			// スケジュール種別の設定
-			ret.setType(schedule.getType());
+			
 		}
 
 		return ret;
 	}
 
-	public static com.clustercontrol.ws.maintenance.MaintenanceInfo getMaintenanceInfoData(
-			MaintenanceInfo info) {
-		com.clustercontrol.ws.maintenance.MaintenanceInfo ret = new com.clustercontrol.ws.maintenance.MaintenanceInfo();
-
-		// 登録日時、更新日時に利用する日時（実行日時とする）
-		long now = new Date().getTime();
+	public static AddMaintenanceRequest getMaintenanceInfoData(
+			MaintenanceInfo info) throws InvalidSetting, HinemosUnknown {
+		AddMaintenanceRequest ret = new AddMaintenanceRequest();
 
 		ret.setMaintenanceId(info.getMaintenanceId());
 		if (info.getDescription() != null && !info.getDescription().isEmpty()) {
 			ret.setDescription(info.getDescription());
 		}
-		ret.setTypeId(info.getTypeId());
+		ret.setTypeId(AddMaintenanceRequest.TypeIdEnum.fromValue(info.getTypeId()));
 		// 2012/04/09 修正(カレンダIDが未設定の場合の対応)
 		String calendarId = info.getCalendarId();
 		ret.setCalendarId( calendarId.equals("") ? null : calendarId );
@@ -160,7 +161,6 @@ public class MaintenanceConv {
 
 		//通知グループIDを生成します。
 		String notifyGroupId = MaintenanceUtil.createNotifyGroupIdMaintenance(info.getMaintenanceId());
-		ret.setNotifyGroupId(notifyGroupId);
 		
 		com.clustercontrol.utility.settings.maintenance.xml.NotifyId[] notifies = info.getNotifyId();
 
@@ -168,11 +168,6 @@ public class MaintenanceConv {
 		
 		ret.setApplication(info.getApplication());
 		ret.setValidFlg(info.getValidFlg());
-
-		ret.setRegUser(Config.getConfig("Login.USER"));
-		ret.setRegDate(now);
-		ret.setUpdateUser(Config.getConfig("Login.USER"));
-		ret.setUpdateDate(now);
 
 		ret.setSchedule(getSchedule(info));
 
@@ -185,17 +180,20 @@ public class MaintenanceConv {
 	 * 
 	 * @param info
 	 * @return
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	private static com.clustercontrol.ws.common.Schedule getSchedule(com.clustercontrol.utility.settings.maintenance.xml.MaintenanceInfo info) {
+	private static MaintenanceScheduleRequest getSchedule(com.clustercontrol.utility.settings.maintenance.xml.MaintenanceInfo info) throws InvalidSetting, HinemosUnknown {
 
-		com.clustercontrol.ws.common.Schedule ret = new com.clustercontrol.ws.common.Schedule();
+		MaintenanceScheduleRequest ret = new MaintenanceScheduleRequest();
 
 		Calendar calendar = Calendar.getInstance();
 
 		calendar.setTime(new Date(0));
 		calendar.set(Calendar.YEAR, 0);
 
-		ret.setType(info.getType());
+		MaintenanceScheduleRequest.TypeEnum typeEnum = OpenApiEnumConverter.integerToEnum(info.getType(),MaintenanceScheduleRequest.TypeEnum.class);
+		ret.setType(typeEnum);
 
 		if (info.hasMonth())
 			if(info.getMonth() >0)
@@ -210,11 +208,11 @@ public class MaintenanceConv {
 			}
 		if (info.hasDayOfWeek() && (!info.hasMday() || (info.hasMday() && info.getMday() == 0)))
 			if(info.getDayOfWeek()>=0){
-				calendar.set(Calendar.DAY_OF_WEEK, info.getDayOfWeek());
-				ret.setWeek(info.getDayOfWeek());
+				calendar.set(Calendar.DAY_OF_WEEK, (int)info.getDayOfWeek());
+				ret.setWeek((int)info.getDayOfWeek());
 			}else{
 				calendar.set(Calendar.DAY_OF_WEEK, 0);
-				ret.setWeek(info.getDayOfWeek());
+				ret.setWeek((int)info.getDayOfWeek());
 			}
 		if (info.hasHour())
 			if(info.getHour() >0){

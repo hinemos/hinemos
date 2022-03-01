@@ -28,14 +28,14 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
+import com.clustercontrol.common.util.CommonRestClientWrapper;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.maintenance.action.GetHinemosPropertyTableDefine;
 import com.clustercontrol.maintenance.composite.HinemosPropertyComposite;
-import com.clustercontrol.maintenance.util.HinemosPropertyEndpointWrapper;
 import com.clustercontrol.maintenance.view.HinemosPropertyView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.maintenance.InvalidRole_Exception;
 
 /**
  * メンテナンス[共通設定]ビューの削除アクションクラス<BR>
@@ -132,16 +132,14 @@ public class HinemosPropertyDeleteAction extends AbstractHandler implements IEle
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 		for(Map.Entry<String, List<String>> entry : map.entrySet()) {
 			String managerName = entry.getKey();
-			HinemosPropertyEndpointWrapper wrapper = HinemosPropertyEndpointWrapper.getWrapper(managerName);
-			for(String val : entry.getValue()) {
-				try {
-					wrapper.deleteHinemosProperty(val);
-				} catch (InvalidRole_Exception e) {
-					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					m_log.warn("run(), " + e.getMessage(), e);
-					errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
-				}
+			CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(managerName);
+			try {
+				wrapper.deleteHinemosProperty(String.join(",", entry.getValue()));
+			} catch (InvalidRole e) {
+				errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
+			} catch (Exception e) {
+				m_log.warn("run(), " + e.getMessage(), e);
+				errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
 			}
 		}
 

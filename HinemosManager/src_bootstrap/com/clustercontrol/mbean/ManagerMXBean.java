@@ -19,6 +19,12 @@ public interface ManagerMXBean {
 	public String getValidAgentStr();
 
 	/**
+	 * 接続しているエージェント数を返す。<br/>
+	 * @return 接続しているエージェント数
+	 */
+	public int getValidAgentCount();
+
+	/**
 	 * 管理しているスケジューラ情報を文字列で返す。
 	 * @return スケジューラ情報文字列
 	 * @throws HinemosUnknown
@@ -88,12 +94,6 @@ public interface ManagerMXBean {
 	public int getSyslogQueueCount();
 	
 	/**
-	 * WSのQueueサイズを取得
-	 * @return WSのQueueサイズ
-	 */
-	public int getWebServiceQueueCount();
-	
-	/**
 	 * WS(ForAgent)のQueueサイズを取得
 	 * @return WSのQueueサイズ
 	 */
@@ -117,7 +117,37 @@ public interface ManagerMXBean {
 	 * @return WSのQueueサイズ
 	 */
 	public int getWebServiceForAgentNodeConfigQueueCount();
+
+	/**
+	 * Rest(ForAgent)のQueueサイズを取得
+	 * @return RestのQueueサイズ
+	 */
+	public int getRestServiceForAgentQueueCount();
 	
+	/**
+	 * Rest(ForAgentHub)のQueueサイズを取得
+	 * @return RestのQueueサイズ
+	 */
+	public int getRestServiceForAgentHubQueueCount();
+
+	/**
+	 * Rest(ForAgentBinary)のQueueサイズを取得
+	 * @return RestのQueueサイズ
+	 */
+	public int getRestServiceForAgentBinaryQueueCount();
+	
+	/**
+	 * Rest(ForAgentNodeConfig)のQueueサイズを取得
+	 * @return RestのQueueサイズ
+	 */
+	public int getRestServiceForAgentNodeConfigQueueCount();
+
+	/**
+	 * Rest(ForClient)のQueueサイズを取得
+	 * @return RestのQueueサイズ
+	 */
+	public int getRestServiceQueueCount();
+
 	/**
 	 * テーブルの物理サイズ（Byte）を取得
 	 * @return テーブルの物理サイズ（Byte）

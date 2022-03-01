@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * 収集データのPKが存在しない場合に利用するException
  * @version 5.1.0
  */
-public class CollectKeyNotFound extends HinemosException {
+public class CollectKeyNotFound extends HinemosNotFound {
 	private static final long serialVersionUID = 3038092388339914953L;
 
 	/**

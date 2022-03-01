@@ -13,11 +13,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.jobmanagement.queue.JobQueue;
 import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
-import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.InternalIdAbstract;
 import com.clustercontrol.util.Singletons;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -55,8 +55,8 @@ public class JobQueueMonitor extends SelfCheckMonitorBase {
 			return monitor.isNotify(subKey, warnFlag);
 		}
 		
-		void putInternalEvent(int priority, String pluginId, MessageConstant message, String[] messageArgs) {
-			AplLogger.put(priority, pluginId, message, messageArgs);
+		void putInternalEvent(InternalIdAbstract internalId, String[] messageArgs) {
+			AplLogger.put(internalId, messageArgs);
 		}
 	}
 
@@ -115,7 +115,7 @@ public class JobQueueMonitor extends SelfCheckMonitorBase {
 
 		if (!external.shouldNotify(this, SUBKEY_SIZE + "[" + queue.getId() + "]", harmful)) return;
 
-		external.putInternalEvent(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_JOBQUEUE_SIZE,
+		external.putInternalEvent(InternalIdCommon.SYS_SFC_SYS_024,
 				new String[] { queue.getId(), String.valueOf(limit) });
 	}
 
@@ -135,7 +135,7 @@ public class JobQueueMonitor extends SelfCheckMonitorBase {
 
 		if (!external.shouldNotify(this, SUBKEY_DEADLOCK + "[" + queue.getId() + "]", harmful)) return;
 
-		external.putInternalEvent(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_JOBQUEUE_DEADLOCK,
+		external.putInternalEvent(InternalIdCommon.SYS_SFC_SYS_025,
 				new String[] { queue.getId(), String.valueOf(interval) });
 	}
 }

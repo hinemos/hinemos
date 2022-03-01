@@ -108,11 +108,6 @@
 					<xs:documentation>収集の有効フラグ</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
-				<xs:annotation>
-					<xs:documentation>通知IDのコレクション</xs:documentation>
-				</xs:annotation>
-			</xs:element>
 			<xs:element name="settingItemList" type="SettingItemList" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>収集対象のコレクション</xs:documentation>
@@ -121,6 +116,11 @@
 			<xs:element name="customItemInfo" type="CustomItemInfo" minOccurs="0" maxOccurs="unbounded">
 				<xs:annotation>
 					<xs:documentation>ユーザ任意の収集対象のコレクション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>通知IDのコレクション</xs:documentation>
 				</xs:annotation>
 			</xs:element>
 		</xs:sequence>

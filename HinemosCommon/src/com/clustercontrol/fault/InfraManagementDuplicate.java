@@ -13,7 +13,7 @@ package com.clustercontrol.fault;
  * @version 5.0.0
  * @since 5.0.0
  */
-public class InfraManagementDuplicate extends HinemosException {
+public class InfraManagementDuplicate extends HinemosDuplicate {
 	
 	/**
 	 * 

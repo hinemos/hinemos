@@ -87,6 +87,8 @@ public class EventFilterConstant {
 	public static final String COLLECT_GRAPH_FLG = "collectGraphFlg";
 	/** ユーザ項目フォーマット */
 	private static final String USER_ITEM_FORMAT = "userItem%02d";
+	/** UUID */
+	public static final String NOTIFY_UUID = "notifyUUID";
 	/** イベント番号(自) */
 	public static final String EVENT_NO_FROM = "eventNoFrom";
 	/** イベント番号(至) */

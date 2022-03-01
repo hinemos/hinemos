@@ -37,8 +37,11 @@ public class GetObjectPrivilegeListTableDefine {
 	/** 実行チェックボックス */
 	public static final int EXEC_CHECKBOX = 3;
 
-	/** ダミー**/
-	public static final int DUMMY=4;
+	/** ダミー（実行チェックボックスなしの場合） **/
+	public static final int DUMMY_WITHOUT_EXEC = 3;
+
+	/** ダミー **/
+	public static final int DUMMY = 4;
 
 	/** 初期表示時ソートカラム */
 	public static final int SORT_COLUMN_INDEX = ROLE_NAME;
@@ -49,12 +52,13 @@ public class GetObjectPrivilegeListTableDefine {
 	/**
 	 * マネージャにSessionBean経由でアクセスし、<BR>
 	 * オブジェクト権限定義を取得します。
-	 *
+	 * 
+	 * @param hasExecutablePrivilege 実行権限欄の有無
 	 * @return テーブル定義情報（{@link com.clustercontrol.bean.TableColumnInfo}のリスト）
 	 *
 	 * @see com.clustercontrol.accesscontrol.ejb.session.AccessController#getUserListTableDefine(java.util.Locale)
 	 */
-	public static ArrayList<TableColumnInfo> get() {
+	public static ArrayList<TableColumnInfo> get(boolean hasExecutablePrivilege) {
 		Locale locale = Locale.getDefault();
 		ArrayList<TableColumnInfo> tableDefine = new ArrayList<TableColumnInfo>();
 
@@ -62,8 +66,12 @@ public class GetObjectPrivilegeListTableDefine {
 		tableDefine.add(ROLE_NAME, new TableColumnInfo( Messages.getString("role.name", locale), TableColumnInfo.NONE, 150, SWT.LEFT) );
 		tableDefine.add(READ_CHECKBOX, new TableColumnInfo( Messages.getString("refer", locale), TableColumnInfo.CHECKBOX, 50, SWT.LEFT) );
 		tableDefine.add(WRITE_CHECKBOX, new TableColumnInfo( Messages.getString("modify", locale), TableColumnInfo.CHECKBOX, 50, SWT.LEFT) );
-		tableDefine.add(EXEC_CHECKBOX, new TableColumnInfo( Messages.getString("run", locale), TableColumnInfo.CHECKBOX, 50, SWT.LEFT) );
-		tableDefine.add(DUMMY, new TableColumnInfo("", TableColumnInfo.DUMMY, 200, SWT.LEFT));
+		if (hasExecutablePrivilege) {
+			tableDefine.add(EXEC_CHECKBOX, new TableColumnInfo( Messages.getString("run", locale), TableColumnInfo.CHECKBOX, 50, SWT.LEFT) );
+			tableDefine.add(DUMMY, new TableColumnInfo("", TableColumnInfo.DUMMY, 200, SWT.LEFT));
+		} else {
+			tableDefine.add(DUMMY_WITHOUT_EXEC, new TableColumnInfo("", TableColumnInfo.DUMMY, 200, SWT.LEFT));
+		}
 
 		return tableDefine;
 	}

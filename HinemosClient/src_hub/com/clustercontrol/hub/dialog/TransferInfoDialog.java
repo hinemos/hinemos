@@ -39,6 +39,13 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.TransferDestPropResponse;
+import org.openapitools.client.model.TransferInfoDestTypeMstResponse;
+import org.openapitools.client.model.TransferInfoDestTypePropMstResponse;
+import org.openapitools.client.model.TransferInfoResponse;
+import org.openapitools.client.model.TransferInfoResponse.DataTypeEnum;
+import org.openapitools.client.model.TransferInfoResponse.IntervalEnum;
+import org.openapitools.client.model.TransferInfoResponse.TransTypeEnum;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -48,25 +55,19 @@ import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.hub.action.AddLog;
 import com.clustercontrol.hub.action.GetLog;
 import com.clustercontrol.hub.action.GetTransferInfoDestPropDefine;
 import com.clustercontrol.hub.action.ModifyLog;
 import com.clustercontrol.hub.composite.TransferDataTypeConstant;
 import com.clustercontrol.hub.composite.TransferTransIntervalConstant;
-import com.clustercontrol.hub.util.HubEndpointWrapper;
+import com.clustercontrol.hub.util.HubRestClientWrapper;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.hub.DataType;
-import com.clustercontrol.ws.hub.InvalidRole_Exception;
-import com.clustercontrol.ws.hub.TransferDestProp;
-import com.clustercontrol.ws.hub.TransferDestTypePropMst;
-import com.clustercontrol.ws.hub.TransferInfo;
-import com.clustercontrol.ws.hub.TransferInfoDestTypeMst;
-import com.clustercontrol.ws.hub.TransferType;
 
 /**
  * 
@@ -90,7 +91,7 @@ public class TransferInfoDialog extends CommonDialog {
 	private String managerName;
 	//受け渡し設定ID
 	private String exportId;
-	private TransferInfo transferInfo;
+	private TransferInfoResponse transferInfo;
 	private GridData gd_TransferInfoComposite;
 	
 	protected Shell shell;
@@ -279,7 +280,7 @@ public class TransferInfoDialog extends CommonDialog {
 				update();
 			}
 		});
-		for (DataType type : DataType.values()) {
+		for (DataTypeEnum type : DataTypeEnum.values()) {
 			cmbDataType.add(Messages.getString(TransferDataTypeConstant.typeToString(type)));
 			cmbDataType.setData(Messages.getString(TransferDataTypeConstant.typeToString(type)), type);
 		}
@@ -306,7 +307,7 @@ public class TransferInfoDialog extends CommonDialog {
 
 		// データ取得
 		if (managerName != null) {
-			List<TransferInfoDestTypeMst> list = transDestTypeMstMap.get(managerName);
+			List<TransferInfoDestTypeMstResponse> list = transDestTypeMstMap.get(managerName);
 			if (list == null || list.isEmpty()){
 				updateTransferInfoDestTypeMstList(managerName);
 			}
@@ -393,7 +394,7 @@ public class TransferInfoDialog extends CommonDialog {
 
 		cmbRegular = new Combo(transferIntervalGroup, SWT.READ_ONLY);
 		cmbRegular.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		for (int type : TransferTransIntervalConstant.getRegularList()) {
+		for (IntervalEnum type : TransferTransIntervalConstant.getRegularList()) {
 			cmbRegular.add(Messages.getString(TransferTransIntervalConstant.typeToString(type)));
 			cmbRegular.setData(Messages.getString(TransferTransIntervalConstant.typeToString(type)), type);
 		}
@@ -418,7 +419,7 @@ public class TransferInfoDialog extends CommonDialog {
 		
 		cmbLag = new Combo(transferIntervalGroup, SWT.READ_ONLY);
 		cmbLag.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		for (int type : TransferTransIntervalConstant.getLagList()) {
+		for (IntervalEnum type : TransferTransIntervalConstant.getLagList()) {
 			cmbLag.add(Messages.getString(TransferTransIntervalConstant.typeToString(type)));
 			cmbLag.setData(Messages.getString(TransferTransIntervalConstant.typeToString(type)), type);
 		}
@@ -587,7 +588,7 @@ public class TransferInfoDialog extends CommonDialog {
 	private void reflectLogTransfer() {
 		// 初期表示
 		
-		TransferInfo export = null;
+		TransferInfoResponse export = null;
 		
 		if (mode == PropertyDefineConstant.MODE_MODIFY
 				|| mode == PropertyDefineConstant.MODE_COPY) {
@@ -595,7 +596,7 @@ public class TransferInfoDialog extends CommonDialog {
 			export = new GetLog().getLogTransfer(this.managerName, this.exportId);
 		} else {
 			// 作成の場合
-			export = new TransferInfo();
+			export = new TransferInfoResponse();
 		}
 		
 		this.transferInfo = export;
@@ -666,21 +667,21 @@ public class TransferInfoDialog extends CommonDialog {
 			}
 		}
 		//有効・無効
-		if (export.isValidFlg() != null) {
-			chkValid.setSelection(export.isValidFlg());
+		if (export.getValidFlg() != null) {
+			chkValid.setSelection(export.getValidFlg());
 		}
 		this.update();
 	}
 
 	/**
-	 * ダイアログの情報から収集蓄積[エクスポート]設定情報を作成します。
+	 * ダイアログの情報から収集蓄積[転送]設定情報を作成します。
 	 *
 	 * @return 入力値の検証結果
 	 *
 	 * @see
 	 */
 	private void createTransfer() {
-		this.transferInfo = new TransferInfo();
+		this.transferInfo = new TransferInfoResponse();
 		this.transferInfo.setTransferId(this.txtTransferId.getText());
 		this.transferInfo.setDescription(this.txtDescription.getText());
 		
@@ -688,7 +689,7 @@ public class TransferInfoDialog extends CommonDialog {
 		
 		this.transferInfo.setCalendarId(this.m_calendarId.getText());
 		
-		this.transferInfo.setDataType((DataType) this.cmbDataType.getData(this.cmbDataType.getText()));
+		this.transferInfo.setDataType((DataTypeEnum) this.cmbDataType.getData(this.cmbDataType.getText()));
 		
 		String destTypeId = this.cmbDestTypeIdList.getText();
 		this.transferInfo.setDestTypeId(destTypeId);
@@ -697,7 +698,7 @@ public class TransferInfoDialog extends CommonDialog {
 		TableItem[] items = table.getItems();
 		transferInfo.getDestProps().clear();
 		for (int i = 0; i < m_tableViewer.getTable().getItemCount(); i++) {
-			TransferDestProp prop = new TransferDestProp();
+			TransferDestPropResponse prop = new TransferDestPropResponse();
 			//名前
 			prop.setName(replaceDestPropName.get(items[i].getText(0)));
 			//値
@@ -706,16 +707,16 @@ public class TransferInfoDialog extends CommonDialog {
 		}
 		
 		if (this.btnRealTime.getSelection()) {
-			this.transferInfo.setTransType(TransferType.REALTIME);
+			this.transferInfo.setTransType(TransTypeEnum.REALTIME);
 			this.transferInfo.setInterval(null);
 		}else if (this.btnRegular.getSelection()) {
-			this.transferInfo.setTransType(TransferType.BATCH);
+			this.transferInfo.setTransType(TransTypeEnum.BATCH);
 			this.transferInfo.setInterval(
-					(Integer)cmbRegular.getData(cmbRegular.getText()));
+					(IntervalEnum)cmbRegular.getData(cmbRegular.getText()));
 		}else if (this.btnLag.getSelection()) {
-			this.transferInfo.setTransType(TransferType.DELAY);
+			this.transferInfo.setTransType(TransTypeEnum.DELAY);
 			this.transferInfo.setInterval(
-					(Integer)cmbLag.getData(cmbLag.getText()));
+					(IntervalEnum)cmbLag.getData(cmbLag.getText()));
 		}else {
 			m_log.warn("");
 		}
@@ -735,7 +736,7 @@ public class TransferInfoDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 		createTransfer();
-		TransferInfo export = this.transferInfo;
+		TransferInfoResponse export = this.transferInfo;
 		String managerName = this.managerListComposite.getText();
 		
 		if(export != null){
@@ -804,7 +805,7 @@ public class TransferInfoDialog extends CommonDialog {
 	}
 	
 	/** 転送先の一覧 */
-	private Map<String, List<TransferInfoDestTypeMst>> transDestTypeMstMap= new HashMap<>();
+	private Map<String, List<TransferInfoDestTypeMstResponse>> transDestTypeMstMap= new HashMap<>();
 	
 	/**
 	 * 転送データ種別一覧の取得
@@ -813,12 +814,12 @@ public class TransferInfoDialog extends CommonDialog {
 	private void updateTransferInfoDestTypeMstList(String managerName){
 		Map<String, String> errorMsgs = new HashMap<>();
 
-		List<TransferInfoDestTypeMst> mst = null;
+		List<TransferInfoDestTypeMstResponse> mst = null;
 		try {
-			HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
+			HubRestClientWrapper wrapper = HubRestClientWrapper.getWrapper(managerName);
 			mst = wrapper.getTransferInfoDestTypeMstList();
 			transDestTypeMstMap.put(managerName, mst);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 		} catch (Exception e) {
 			m_log.warn("getLogTransferDestTypeMstList(), " + e.getMessage(), e);
@@ -840,10 +841,10 @@ public class TransferInfoDialog extends CommonDialog {
 		// テーブル更新用リスト
 		List<List<Object>> listAll = new ArrayList<>();
 		// DBから取得したマスタデータをテーブルに反映
-		List<TransferInfoDestTypeMst> msts = transDestTypeMstMap.get(managerName);
-		for (TransferInfoDestTypeMst mst : msts) {
+		List<TransferInfoDestTypeMstResponse> msts = transDestTypeMstMap.get(managerName);
+		for (TransferInfoDestTypeMstResponse mst : msts) {
 			if (mst.getDestTypeId().equals(cmbDestTypeIdList.getText())) {
-				for (TransferDestTypePropMst prop : mst.getDestTypePropMsts()) {
+				for (TransferInfoDestTypePropMstResponse prop : mst.getDestTypePropMsts()) {
 					List<Object> list = new ArrayList<>();
 					replaceDestPropName.put(Messages.getString(prop.getName()), prop.getName());
 					list.add(Messages.getString(prop.getName()));
@@ -858,7 +859,7 @@ public class TransferInfoDialog extends CommonDialog {
 			//変更操作の場合、テーブルの値をマージする。
 			if (transferInfo.getDestTypeId().equals(cmbDestTypeIdList.getText())) {
 				for (List<Object> list: listAll) {
-					for (TransferDestProp prop : transferInfo.getDestProps()) {
+					for (TransferDestPropResponse prop : transferInfo.getDestProps()) {
 						if (prop.getName().equals(replaceDestPropName.get(list.get(0)))) {
 							if (prop.getValue() != null && !prop.getValue().isEmpty()) {
 								list.set(1, prop.getValue());
@@ -880,9 +881,9 @@ public class TransferInfoDialog extends CommonDialog {
 			this.cmbDestTypeIdList.removeAll();
 		}
 		// 転送データ種別プルダウンメニューの作成
-		for(Map.Entry<String, List<TransferInfoDestTypeMst>> map : transDestTypeMstMap.entrySet()) {
+		for(Map.Entry<String, List<TransferInfoDestTypeMstResponse>> map : transDestTypeMstMap.entrySet()) {
 			if (map.getKey().equals(this.managerName)) {
-				for(TransferInfoDestTypeMst type : map.getValue()){
+				for(TransferInfoDestTypeMstResponse type : map.getValue()){
 					this.cmbDestTypeIdList.add(Messages.getString(type.getDestTypeId()));
 				}
 			}

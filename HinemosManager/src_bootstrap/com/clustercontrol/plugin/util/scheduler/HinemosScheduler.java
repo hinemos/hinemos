@@ -28,8 +28,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.fault.DbmsSchedulerNotFound;
 import com.clustercontrol.plugin.factory.ModifyDbmsScheduler;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
+import com.clustercontrol.plugin.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -101,6 +104,9 @@ public final class HinemosScheduler {
 		private TriggerState status = TriggerState.VIRGIN;
 
 		private List<Task> executingTasks = new ArrayList<>();
+		
+		private long postponedCount = 0;
+		private long additionalDelay = 0;
 
 		public JobWrapper(HinemosScheduler scheduler, JobDetail detail, Trigger trigger) {
 			this.scheduler = scheduler;
@@ -122,7 +128,6 @@ public final class HinemosScheduler {
 		public synchronized void setStatus(TriggerState status) {
 			this.status = status;
 		}
-		
 		public synchronized void addTask(Task task) {
 			executingTasks.add(task);
 		}
@@ -223,8 +228,36 @@ public final class HinemosScheduler {
 
 		@Override
 		public synchronized long getDelay(TimeUnit unit) {
-			long delayMillisec = getTrigger().getNextFireTime() - HinemosTime.currentTimeMillis();
+			long delayMillisec = getTrigger().getNextFireTime() - HinemosTime.currentTimeMillis() + additionalDelay;
 			return unit.convert(delayMillisec, TimeUnit.MILLISECONDS);
+		}
+		
+		/**
+		 * 実行予定時刻が少し後になるように、遅延時間を追加します。
+		 * 
+		 * @return true:後回しOK。false:後回し不可(上限回数に到達した)。
+		 */
+		// 必要かどうか分からないが念のため他メソッドに倣って synchronized とする
+		public synchronized boolean postpone() {
+			++postponedCount;
+			long limit = HinemosPropertyCommon.scheduler_dbms_postpone_limit.getNumericValue();
+			if (postponedCount < limit) {
+				additionalDelay += HinemosPropertyCommon.scheduler_dbms_postpone_delay.getNumericValue();
+				return true;
+			} else {
+				// 後回し回数には上限がある
+				m_log.warn("JobWrapper.postpone: Exceeded the limit to postpone."
+						+ " name=" + detail.getName() + ", group=" + detail.getGroup() + ", limit=" + limit);
+				return false;
+			}
+		}
+		
+		/**
+		 * {@link #postpone()} による後回し回数カウントと追加遅延時間をゼロに戻します。
+		 */
+		public synchronized void resetPostponing() {
+			postponedCount = 0;
+			additionalDelay = 0;
 		}
 	}
 
@@ -378,16 +411,46 @@ public final class HinemosScheduler {
 					// キャンセル済みのジョブであれば何もしない
 					if (fireTargetJob.getStatus() == TriggerState.CANCELLED) {
 						m_log.debug("mainLoop() : cancel Job=" + fireTargetJob.detail.getName() + ", group=" + fireTargetJob.detail.getGroup());
-						JobKey key = fireTargetJob.getDetail().getKey();
-						if (key != null) {
-							jobs.remove(key);
-						}
+						removeFromJobs(fireTargetJob);
 						continue;
 					}
 					
-					long currentTime = HinemosTime.currentTimeMillis();
-					long nextFireTime = fireTargetJob.getTrigger().getNextFireTime();
+					// #10977: この時点で fireTargetJob に対応する DbmsSchedulerEntity がコミットされていないケースがある。
+					// フェッチを試みて、見つからなければ後回しにしてキューへ戻す。
+					if (SchedulerPlugin.isDBMS(schedulerType)) {
+						try {
+							QueryUtil.getDbmsSchedulerPK_NONE(fireTargetJob.getDetail().getName(), fireTargetJob.getDetail().getGroup());
+						} catch (DbmsSchedulerNotFound dsnfe) {
+							m_log.info("mainloop() : Failed to fetch. " + " Job=" + fireTargetJob.getDetail().getName() + ", group=" + fireTargetJob.getDetail().getGroup());
+							if (fireTargetJob.postpone()) {
+								schedulerQueue.add(fireTargetJob);
+							} else {
+								// 後回し上限を超えるような場合(デフォルトのHinemosプロパティ設定なら20秒待ってもDBが同期しない場合)は、
+								// スケジュール登録後に例外が発生してDBのみロールバックしたなど、
+								// 対応するエンティティが永久に見つからない状況であると考え、今後は処理しないように削除する。
+								removeFromJobs(fireTargetJob);
+							}
+							continue;
+						}
+						// この fireTargetJob オブジェクトを再びキューに入れるので、後回しで追加した遅延があれば、
+						// 次回以降へ影響しないようにリセットする必要がある。
+						fireTargetJob.resetPostponing();
+					}
 					
+					long currentTime = HinemosTime.currentTimeMillis();
+
+					// SimpleIntervalTriggerの場合は、hinemos_reset_schedulerスクリプト実行直後、マネージャ起動時から再開する
+					if (fireTargetJob.getTrigger() instanceof SimpleIntervalTrigger
+							&& fireTargetJob.getTrigger().getNextFireTime() == 0L
+							&& fireTargetJob.getTrigger().getPreviousFireTime() > 0L) {
+						((SimpleIntervalTrigger)fireTargetJob.getTrigger()).setNextFireTime(currentTime);
+					}
+
+					long nextFireTime = fireTargetJob.getTrigger().getNextFireTime();
+
+					// 前回実行時間を設定
+					fireTargetJob.detail.setPreviousFireTime(fireTargetJob.getTrigger().getPreviousFireTime());
+
 					if (currentTime - nextFireTime < threshold) {
 						if (m_log.isDebugEnabled()) m_log.debug("mainLoop() : Kick Job=" + fireTargetJob.detail.getName() + ", group=" + fireTargetJob.detail.getGroup());
 						// 現在時刻が実行予定時刻からmisfireThreashold以内のパターン
@@ -399,6 +462,7 @@ public final class HinemosScheduler {
 						// として動く
 						fireTargetJob.getTrigger().triggered(currentTime);
 						if (m_log.isDebugEnabled()) m_log.debug("mainLoop() : PrevFireTime=" + fireTargetJob.getTrigger().getPreviousFireTime() + ", NextFireTime=" + fireTargetJob.getTrigger().getNextFireTime());
+						fireTargetJob.detail.setExecuteTime(currentTime);
 						Task task = new Task(fireTargetJob);
 						fireTargetJob.addTask(task);
 						Future<?> future = executor.submit(task);
@@ -423,6 +487,10 @@ public final class HinemosScheduler {
 							m_log.trace("mainLoop() : modifyDbmsSchedulerInternal() call.");
 							ModifyDbmsScheduler dbms = new ModifyDbmsScheduler();
 							dbms.modifyDbmsSchedulerInternal(fireTargetJob.getDetail(), fireTargetJob.getTrigger(), fireTargetJob.getStatus().name());
+						} catch (DbmsSchedulerNotFound e) {
+							// キューから fireTargetJob を取り出して、この処理にたどり着くまでの間に、スケジュールが削除された場合に起こりうる
+							m_log.warn("mainLoop() : Missing." + " job=" + fireTargetJob.getDetail().getName() + ", group=" + fireTargetJob.getDetail().getGroup());
+							continue;
 						} catch(Exception e) {
 							m_log.error("modifyDbmsSchedulerInternal() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 							throw  new SchedulerException(e);
@@ -437,10 +505,7 @@ public final class HinemosScheduler {
 					} else {
 						// ワンショットのスケジュールなので再登録は行わず、全ての情報を削除
 						// （現在のHinemosではこのパスは通らないはず）
-						JobKey key = fireTargetJob.getDetail().getKey();
-						if (key != null) {
-							jobs.remove(key);
-						}
+						removeFromJobs(fireTargetJob);
 					}
 				}
 			}
@@ -460,6 +525,13 @@ public final class HinemosScheduler {
 		}
 	}
 
+	private void removeFromJobs(JobWrapper jw) {
+		JobKey key = jw.getDetail().getKey();
+		if (key != null) {
+			jobs.remove(key);
+		}
+	}
+	
 	public void scheduleJob(JobDetail jobDetail, Trigger trigger) throws SchedulerException {
 		if (jobs.containsKey(jobDetail.getKey()))
 			throw new SchedulerException("Jobkey is already registerd");
@@ -488,7 +560,8 @@ public final class HinemosScheduler {
 			}
 			schedulerQueue.add(wrapper);
 			if(jobs.size() != schedulerQueue.size()) {
-				m_log.error("jobs.size=" + jobs.size() + ", queue.size=" + schedulerQueue.size());
+				// jobsとschedulerQueue間で同期が取れていないため、タイミングによっては正常時でも以下のログは出力される。
+				m_log.debug("jobs.size=" + jobs.size() + ", queue.size=" + schedulerQueue.size());
 			}
 		}
 	}
@@ -569,6 +642,7 @@ public final class HinemosScheduler {
 		return this.getClass().getSimpleName();
 	}
 	
+	@Override
 	protected void finalize() throws Throwable {
 		shutdown();
 		super.finalize();

@@ -98,12 +98,13 @@ public class QuartzConstant {
 	public static final int INDEX_TRIGGER_JOB_COMMAND = 9;
 	public static final int INDEX_TRIGGER_JOB_COMMAND_TEXT = 10;
 	public static final int INDEX_TRIGGER_JOBKICK_ID = 11;
+	public static final int INDEX_EXECUTE_TIME = 12;
 	
 	/** Quartzからコールバックされるメソッドの引数の数
 	 * 
 	 * @see com.clustercontrol.jobmanagement.ejb.session.JobControllerBean#scheduleRunJob()
 	 */
-	public static final int ARGS_NUM = 12;
+	public static final int ARGS_NUM = 13;
 
 
 	/**
@@ -113,4 +114,50 @@ public class QuartzConstant {
 	public static final String GROUP_NAME_FOR_MONITORJOB = "MONITORJOB";
 	/** メソッド名（監視） */
 	public static final String METHOD_NAME_FOR_MONITORJOB = "runMonitorJob";
+
+	/**
+	 *  ジョブ連携待機ジョブ用の設定
+	 */
+	/** グループ名 */
+	public static final String GROUP_NAME_FOR_JOBLINKRCVJOB = "JOBLINKRCVJOB";
+	/** メソッド名（ジョブ連携待機ジョブ） */
+	public static final String METHOD_NAME_FOR_JOBLINKRCVJOB = "runJobLinkRcvJob";
+
+	/**
+	 *  ジョブセッション事前生成用の設定
+	 */
+	/** グループ名 */
+	public static final String GROUP_NAME_FOR_JOBPREMAKE = "JOBPREMAKE";
+
+	/** メソッド名 */
+	public static final String METHOD_NAME_FOR_JOBPREMAKE = "schedulePremakeJobSession";
+
+	/** メソッド名(一度のみ実行) */
+	public static final String METHOD_NAME_FOR_JOBPREMAKE_ONCE = "schedulePremakeJobSessionOnce";
+
+	/** Quartzからコールバックされるメソッドの引数として、ジョブセッション事前生成情報を指定する位置 */
+	public static final int INDEX_JOBKICK_ID_FOR_JOBPREMAKE = 0;
+	public static final int INDEX_TRIGGER_TYPE_FOR_JOBPREMAKE = 1;
+	public static final int INDEX_TRIGGER_INFO_FOR_JOBPREMAKE = 2;
+	public static final int INDEX_PREMAKE_ELAPSED_TIME_FOR_JOBPREMAKE = 3;
+	public static final int INDEX_EXECUTE_TIME_FOR_JOBPREMAKE = 4;
+
+	/** Quartzからコールバックされるメソッドの引数の数 */
+	public static final int ARGS_NUM_FOR_JOBPREMAKE = 5;
+
+	/**
+	 *  ジョブ連携受信実行契機用の設定
+	 */
+	/** グループ名 */
+	public static final String GROUP_NAME_FOR_JOBLINKRCV = "JOBLINKRCV";
+	/** メソッド名 */
+	public static final String METHOD_NAME_FOR_JOBLINKRCV = "scheduleJobLinkRcv";
+	/** 引数 */
+	public static final int INDEX_JOBKICK_ID_FOR_JOBLINKRCV = 0;
+	public static final int INDEX_EXECUTE_TIME_FOR_JOBLINKRCV = 1;
+	public static final int INDEX_PREVIOUS_FIRE_TIME_FOR_JOBLINKRCV = 2;
+	
+	/** Quartzからコールバックされるメソッドの引数の数 */
+	public static final int ARGS_NUM_FOR_JOBLINKRCV = 3;
+
 }

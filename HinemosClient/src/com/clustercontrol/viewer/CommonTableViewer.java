@@ -37,7 +37,7 @@ import com.clustercontrol.util.WidgetTestUtil;
  * @since 1.0.0
  */
 public class CommonTableViewer extends TableViewer {
-	private ArrayList<TableColumnInfo> m_tableColumnList = null;
+	protected ArrayList<TableColumnInfo> m_tableColumnList = null;
 
 	/**
 	 * コンストラクタ
@@ -112,6 +112,7 @@ public class CommonTableViewer extends TableViewer {
 		for (int i = 0; i < this.m_tableColumnList.size(); i++) {
 			TableColumnInfo tableColumnInfo = (TableColumnInfo) this.m_tableColumnList.get(i);
 			TableColumn column = new TableColumn(getTable(), tableColumnInfo.getStyle(), i);
+			column.setData(i);
 			WidgetTestUtil.setTestId(this, null, column);
 			//column.setData(ClusterControlPlugin.CUSTOM_WIDGET_ID, "commonTableViewerColumn" + String.valueOf(i));
 			column.setText(tableColumnInfo.getName());
@@ -156,20 +157,20 @@ public class CommonTableViewer extends TableViewer {
 					TableColumn selectedColumn = (TableColumn) e.getSource();
 					ArrayList<TableColumnInfo> tableColumnList = getTableColumnList();
 					int order = 0;
-					for (int i = 0; i < tableColumnList.size(); i++) {
-						TableColumnInfo tableColumnInfo = tableColumnList.get(i);
-						if (tableColumnInfo.getName().compareTo(selectedColumn.getText()) == 0) {
-							order = tableColumnInfo.getOrder() * -1;
-							tableColumnInfo.setOrder(order);
-							//第1ソート順はi 第２ソート順は無し（-1）、ソート順はorder(昇順？降順？)で
-							//ソートを実行
-							setSorter(new CommonTableViewerSorter(i,-1,order));
-							break;
-						}
-					}
+					
+					//カラムオブジェクトからインデックスを特定
+					int columnIndex = (int)selectedColumn.getData();
+					TableColumnInfo tableColumnInfo = tableColumnList.get(columnIndex);
+
+					order = tableColumnInfo.getOrder() * -1;
+					tableColumnInfo.setOrder(order);
+					//第1ソート順はcolumnIndex 第２ソート順は無し（-1）、ソート順はorder(昇順？降順？)で
+					//ソートを実行
+					setSorter(new CommonTableViewerSorter(columnIndex, -1, order));
+
 					Table table = selectedColumn.getParent();
 					table.setSortColumn(selectedColumn);
-					if (order > 0){
+					if (order > 0) {
 						table.setSortDirection(SWT.UP);
 					} else {
 						table.setSortDirection(SWT.DOWN);

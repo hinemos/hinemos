@@ -1,0 +1,44 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"RestAccessType_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Description",
+			"OwnerRoleId",
+			"httpConnectTimeout",
+			"httpRequestTimeout",
+			"httpRetryNum",
+			"useWebProxy",
+			"webProxyUrlString",
+			"webProxyPort",
+			"webProxyAuthUser",
+			"webProxyAuthPassword",
+			"sendHttpMethodType",
+			"sendUrlString",
+			"sendHttpBody",
+			"authType",
+			"authBasicUser",
+			"authBasicPassword",
+			"authUrlMethodType",
+			"authUrlString",
+			"authUrlBody",
+			"authUrlGetRegex",
+			"sendHttpHeaders",
+			"sendHttpHeaders.*.headerOrderNo",
+			"sendHttpHeaders.*.key",
+			"sendHttpHeaders.*.value",
+			"authHttpHeaders",
+			"authHttpHeaders.*.headerOrderNo",
+			"authHttpHeaders.*.key",
+			"authHttpHeaders.*.value"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"RestAccessInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

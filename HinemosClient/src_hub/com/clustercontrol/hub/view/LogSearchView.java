@@ -247,4 +247,12 @@ public class LogSearchView extends CommonViewPart implements ObjectPrivilegeTarg
 			getViewSite().getActionBars().getToolBarManager().update(false);
 		}
 	}
+	
+	@Override
+	public void setFocus() {
+		super.setFocus();
+		if (logSearchComposite != null) {
+			logSearchComposite.setFocus();
+		}
+	}
 }

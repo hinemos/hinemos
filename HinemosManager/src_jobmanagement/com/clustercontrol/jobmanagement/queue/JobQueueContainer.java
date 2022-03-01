@@ -125,8 +125,9 @@ public class JobQueueContainer {
 	 *
 	 * @param setting 生成するジョブキューの情報。
 	 * @throws InvalidSetting 設定に不備があります。
+	 * @throws JobQueueNotFoundException 
 	 */
-	public void add(JobQueueSetting setting) throws InvalidSetting {
+	public JobQueueSetting add(JobQueueSetting setting) throws InvalidSetting, JobQueueNotFoundException {
 		setting.validate();
 		// 上記のvalidate()では書式チェックのみ、オーナーロールに関しては別途チェックする
 		external.validateOwnerRoleId(setting.getOwnerRoleId(), setting.getQueueId());
@@ -156,6 +157,7 @@ public class JobQueueContainer {
 			}
 
 			log.info("add: id=" + qid);
+			return queues.get(qid).getSetting();
 		}
 	}
 
@@ -209,15 +211,14 @@ public class JobQueueContainer {
 	/**
 	 * 指定されたロールから参照可能なジョブキュー(同時実行制御キュー)の設定情報のリストを返します。
 	 * <p>
-	 * クライアント向けのメソッドであり、指定されたロールにユーザが所属しているかのチェックを行います。
+	 * クライアント向けのメソッドですが、指定されたロールにユーザが所属しているかのチェックは行いません。
+	 * これは、オブジェクト権限を付与されたジョブ定義からの紐付けで参照される可能性があるためです。
 	 * システム権限のチェックは呼び出し元で行う必要があります。
 	 * 
 	 * @param roleId ロールID。
 	 * @return ジョブキューの設定情報のリスト。
-	 * @throws InvalidSetting 
 	 */
-	public List<JobQueueSetting> findSettingsByRole(String roleId) throws InvalidSetting {
-		external.checkUserRoles(roleId);
+	public List<JobQueueSetting> findSettingsByRole(String roleId) {
 		List<JobQueueSetting> result = new ArrayList<>();
 		try (JobQueueTx tx = external.newTransaction()) {
 			for (JobQueueEntity entity : tx.findJobQueueEntitiesWithRoleForRead(roleId)) {

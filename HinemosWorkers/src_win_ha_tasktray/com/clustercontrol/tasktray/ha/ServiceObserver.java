@@ -352,11 +352,11 @@ public class ServiceObserver   {
 					if(process != null){
 						process.destroy();
 					}
+					
+					try {
+						Thread.sleep(TASK_SLEEP);
+					} catch (InterruptedException e) {}
 				}
-				
-				try {
-					Thread.sleep(TASK_SLEEP);
-				} catch (InterruptedException e) {}
 				
 			}
 		}

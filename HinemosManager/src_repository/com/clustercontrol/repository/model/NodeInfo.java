@@ -13,12 +13,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlType;
 
 import com.clustercontrol.bean.SnmpProtocolConstant;
@@ -29,6 +23,13 @@ import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.repository.bean.NodeConfigFilterInfo;
 import com.clustercontrol.repository.bean.NodeRegisterFlagConstant;
 import com.clustercontrol.util.HinemosTime;
+
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 
 
@@ -52,6 +53,7 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	private String cloudResourceId			= "";//
 	private String cloudResourceName		= "";//
 	private String cloudLocation			= "";//
+	private Integer cloudLogPriority		= 16;
 	private String contact					= "";//
 	private String hardwareType				= "";//
 	private String ipAddressV4				= "";//
@@ -101,22 +103,22 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	private String winrmUserPassword		= "";//
 	private String winrmVersion				= "";//
 	private Integer agentAwakePort			= 24005;//
-	private NodeOsInfo nodeOsEntity = new NodeOsInfo();
-	private List<NodeCpuInfo> nodeCpuEntities = new ArrayList<>();//
-	private List<NodeGeneralDeviceInfo> nodeDeviceEntities = new ArrayList<>();
-	private List<NodeDiskInfo> nodeDiskEntities = new ArrayList<>();//
-	private List<NodeFilesystemInfo> nodeFilesystemEntities = new ArrayList<>();//
-	private List<NodeHostnameInfo> nodeHostnameEntities = new ArrayList<>();//
-	private List<NodeMemoryInfo> nodeMemoryEntities = new ArrayList<>();//
-	private List<NodeNetworkInterfaceInfo> nodeNetworkInterfaceEntities = new ArrayList<>();//
-	private List<NodeNoteInfo> nodeNoteEntities = new ArrayList<>();//
-	private List<NodeVariableInfo> nodeVariableEntities = new ArrayList<>();//
-	private List<NodeNetstatInfo> nodeNetstatEntities = new ArrayList<>();
-	private List<NodeProcessInfo> nodeProcessEntities = new ArrayList<>();
-	private List<NodePackageInfo> nodePackageEntities = new ArrayList<>();
-	private List<NodeProductInfo> nodeProductEntities = new ArrayList<>();
-	private List<NodeLicenseInfo> nodeLicenseEntities = new ArrayList<>();
-	private List<NodeCustomInfo> nodeCustomEntities = new ArrayList<>();
+	private NodeOsInfo nodeOsInfo = new NodeOsInfo();
+	private List<NodeCpuInfo> nodeCpuInfo = new ArrayList<>();//
+	private List<NodeGeneralDeviceInfo> nodeDeviceInfo = new ArrayList<>();
+	private List<NodeDiskInfo> nodeDiskInfo = new ArrayList<>();//
+	private List<NodeFilesystemInfo> nodeFilesystemInfo = new ArrayList<>();//
+	private List<NodeHostnameInfo> nodeHostnameInfo = new ArrayList<>();//
+	private List<NodeMemoryInfo> nodeMemoryInfo = new ArrayList<>();//
+	private List<NodeNetworkInterfaceInfo> nodeNetworkInterfaceInfo = new ArrayList<>();//
+	private List<NodeNoteInfo> nodeNoteInfo = new ArrayList<>();//
+	private List<NodeVariableInfo> nodeVariableInfo = new ArrayList<>();//
+	private List<NodeNetstatInfo> nodeNetstatInfo = new ArrayList<>();
+	private List<NodeProcessInfo> nodeProcessInfo = new ArrayList<>();
+	private List<NodePackageInfo> nodePackageInfo = new ArrayList<>();
+	private List<NodeProductInfo> nodeProductInfo = new ArrayList<>();
+	private List<NodeLicenseInfo> nodeLicenseInfo = new ArrayList<>();
+	private List<NodeCustomInfo> nodeCustomInfo = new ArrayList<>();
 	private Integer nodeOsRegisterFlag = NodeRegisterFlagConstant.GET_SUCCESS;
 	private Integer nodeCpuRegisterFlag = NodeRegisterFlagConstant.GET_SUCCESS;
 	private Integer nodeDiskRegisterFlag = NodeRegisterFlagConstant.GET_SUCCESS;
@@ -130,6 +132,11 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	private Integer nodeProductRegisterFlag = NodeRegisterFlagConstant.GET_SUCCESS;
 	private Integer nodeLicenseRegisterFlag = NodeRegisterFlagConstant.GET_SUCCESS;
 	private Integer nodeVariableRegisterFlag = NodeRegisterFlagConstant.GET_SUCCESS;
+	private String rpaLogDir				= "";
+	private String rpaManagementToolType	= "";
+	private String rpaResourceId			= "";
+	private String rpaUser					= "";
+	private String rpaExecEnvId				= "";
 
 	// 即時取得フラグ(エージェント→マネージャ送信時のみ設定.
 	private Boolean nodeConfigAcquireOnce = false;
@@ -231,6 +238,14 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		this.cloudLocation = cloudLocation;
 	}
 
+	public void setCloudLogPriority(Integer cloudLogPriority) {
+		this.cloudLogPriority = cloudLogPriority;
+	}
+	
+	@Column(name="cloud_log_priority")
+	public Integer getCloudLogPriority() {
+		return this.cloudLogPriority;
+	}
 
 	@Column(name="contact")
 	public String getContact() {
@@ -768,6 +783,51 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		this.winrmVersion = winrmVersion;
 	}
 
+	@Column(name="rpa_log_dir")
+	public String getRpaLogDir() {
+		return rpaLogDir;
+	}
+	
+	public void setRpaLogDir(String rpaLogDir) {
+		this.rpaLogDir = rpaLogDir;
+	}
+	
+	@Column(name="rpa_management_tool_type")
+	public String getRpaManagementToolType() {
+		return rpaManagementToolType;
+	}
+	
+	public void setRpaManagementToolType(String rpaManagementToolType) {
+		this.rpaManagementToolType = rpaManagementToolType;
+	}
+	
+	@Column(name="rpa_resource_id")
+	public String getRpaResourceId() {
+		return rpaResourceId;
+	}
+	
+	public void setRpaResourceId(String rpaResourceId) {
+		this.rpaResourceId = rpaResourceId;
+	}
+	
+	@Column(name="rpa_user")
+	public String getRpaUser() {
+		return rpaUser;
+	}
+	
+	public void setRpaUser(String rpaUser) {
+		this.rpaUser = rpaUser;
+	}
+	
+	@Column(name="rpa_exec_env_id")
+	public String getRpaExecEnvId() {
+		return rpaExecEnvId;
+	}
+	
+	public void setRpaExecEnvId(String rpaExecEnvId) {
+		this.rpaExecEnvId = rpaExecEnvId;
+	}
+
 	@Column(name="agent_awake_port")
 	public Integer getAgentAwakePort() {
 		return this.agentAwakePort;
@@ -779,159 +839,159 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 
 	@Transient
 	public NodeOsInfo getNodeOsInfo() {
-		return nodeOsEntity;
+		return nodeOsInfo;
 	}
 
-	public void setNodeOsInfo(NodeOsInfo nodeOsEntity) {
-		this.nodeOsEntity = nodeOsEntity;
+	public void setNodeOsInfo(NodeOsInfo nodeOsInfo) {
+		this.nodeOsInfo = nodeOsInfo;
 	}
 
 	@Transient
 	public List<NodeCpuInfo> getNodeCpuInfo() {
-		return this.nodeCpuEntities;
+		return this.nodeCpuInfo;
 	}
 
-	public void setNodeCpuInfo(List<NodeCpuInfo> nodeCpuEntities) {
-		this.nodeCpuEntities = nodeCpuEntities;
+	public void setNodeCpuInfo(List<NodeCpuInfo> nodeCpuInfo) {
+		this.nodeCpuInfo = nodeCpuInfo;
 	}
 
 
 	@Transient
 	public List<NodeGeneralDeviceInfo> getNodeDeviceInfo() {
-		return this.nodeDeviceEntities;
+		return this.nodeDeviceInfo;
 	}
 
-	public void setNodeDeviceInfo(List<NodeGeneralDeviceInfo> nodeDeviceEntities) {
-		this.nodeDeviceEntities = nodeDeviceEntities;
+	public void setNodeDeviceInfo(List<NodeGeneralDeviceInfo> nodeDeviceInfo) {
+		this.nodeDeviceInfo = nodeDeviceInfo;
 	}
 
 
 	@Transient
 	public List<NodeDiskInfo> getNodeDiskInfo() {
-		return this.nodeDiskEntities;
+		return this.nodeDiskInfo;
 	}
 
-	public void setNodeDiskInfo(List<NodeDiskInfo> nodeDiskEntities) {
-		this.nodeDiskEntities = nodeDiskEntities;
+	public void setNodeDiskInfo(List<NodeDiskInfo> nodeDiskInfo) {
+		this.nodeDiskInfo = nodeDiskInfo;
 	}
 
 	@Transient
 	public List<NodeFilesystemInfo> getNodeFilesystemInfo() {
-		return this.nodeFilesystemEntities;
+		return this.nodeFilesystemInfo;
 	}
 
-	public void setNodeFilesystemInfo(List<NodeFilesystemInfo> nodeFilesystemEntities) {
-		this.nodeFilesystemEntities = nodeFilesystemEntities;
+	public void setNodeFilesystemInfo(List<NodeFilesystemInfo> nodeFilesystemInfo) {
+		this.nodeFilesystemInfo = nodeFilesystemInfo;
 	}
 
 
 	@Transient
 	public List<NodeHostnameInfo> getNodeHostnameInfo() {
-		return this.nodeHostnameEntities;
+		return this.nodeHostnameInfo;
 	}
 
-	public void setNodeHostnameInfo(List<NodeHostnameInfo> nodeHostnameEntities) {
-		this.nodeHostnameEntities = nodeHostnameEntities;
+	public void setNodeHostnameInfo(List<NodeHostnameInfo> nodeHostnameInfo) {
+		this.nodeHostnameInfo = nodeHostnameInfo;
 	}
 
 
 	@Transient
 	public List<NodeMemoryInfo> getNodeMemoryInfo() {
-		return this.nodeMemoryEntities;
+		return this.nodeMemoryInfo;
 	}
 
-	public void setNodeMemoryInfo(List<NodeMemoryInfo> nodeMemoryEntities) {
-		this.nodeMemoryEntities = nodeMemoryEntities;
+	public void setNodeMemoryInfo(List<NodeMemoryInfo> nodeMemoryInfo) {
+		this.nodeMemoryInfo = nodeMemoryInfo;
 	}
 
 
 	@Transient
 	public List<NodeNetworkInterfaceInfo> getNodeNetworkInterfaceInfo() {
-		return this.nodeNetworkInterfaceEntities;
+		return this.nodeNetworkInterfaceInfo;
 	}
 
-	public void setNodeNetworkInterfaceInfo(List<NodeNetworkInterfaceInfo> nodeNetworkInterfaceEntities) {
-		this.nodeNetworkInterfaceEntities = nodeNetworkInterfaceEntities;
+	public void setNodeNetworkInterfaceInfo(List<NodeNetworkInterfaceInfo> nodeNetworkInterfaceInfo) {
+		this.nodeNetworkInterfaceInfo = nodeNetworkInterfaceInfo;
 	}
 
 
 	@Transient
 	public List<NodeNoteInfo> getNodeNoteInfo() {
-		return this.nodeNoteEntities;
+		return this.nodeNoteInfo;
 	}
 
-	public void setNodeNoteInfo(List<NodeNoteInfo> nodeNoteEntities) {
-		this.nodeNoteEntities = nodeNoteEntities;
+	public void setNodeNoteInfo(List<NodeNoteInfo> nodeNoteInfo) {
+		this.nodeNoteInfo = nodeNoteInfo;
 	}
 
 
 	@Transient
 	public List<NodeVariableInfo> getNodeVariableInfo() {
-		return this.nodeVariableEntities;
+		return this.nodeVariableInfo;
 	}
 
-	public void setNodeVariableInfo(List<NodeVariableInfo> nodeVariableEntities) {
-		this.nodeVariableEntities = nodeVariableEntities;
+	public void setNodeVariableInfo(List<NodeVariableInfo> nodeVariableInfo) {
+		this.nodeVariableInfo = nodeVariableInfo;
 	}
 
 
 	@Transient
 	public List<NodeNetstatInfo> getNodeNetstatInfo() {
-		return this.nodeNetstatEntities;
+		return this.nodeNetstatInfo;
 	}
 
-	public void setNodeNetstatInfo(List<NodeNetstatInfo> nodeNetstatEntities) {
-		this.nodeNetstatEntities = nodeNetstatEntities;
+	public void setNodeNetstatInfo(List<NodeNetstatInfo> nodeNetstatInfo) {
+		this.nodeNetstatInfo = nodeNetstatInfo;
 	}
 
 
 	@Transient
 	public List<NodeProcessInfo> getNodeProcessInfo() {
-		return this.nodeProcessEntities;
+		return this.nodeProcessInfo;
 	}
 
-	public void setNodeProcessInfo(List<NodeProcessInfo> nodeProcessEntities) {
-		this.nodeProcessEntities = nodeProcessEntities;
+	public void setNodeProcessInfo(List<NodeProcessInfo> nodeProcessInfo) {
+		this.nodeProcessInfo = nodeProcessInfo;
 	}
 
 
 	@Transient
 	public List<NodePackageInfo> getNodePackageInfo() {
-		return this.nodePackageEntities;
+		return this.nodePackageInfo;
 	}
 
-	public void setNodePackageInfo(List<NodePackageInfo> nodePackageEntities) {
-		this.nodePackageEntities = nodePackageEntities;
+	public void setNodePackageInfo(List<NodePackageInfo> nodePackageInfo) {
+		this.nodePackageInfo = nodePackageInfo;
 	}
 
 
 	@Transient
 	public List<NodeProductInfo> getNodeProductInfo() {
-		return this.nodeProductEntities;
+		return this.nodeProductInfo;
 	}
 
-	public void setNodeProductInfo(List<NodeProductInfo> nodeProductEntities) {
-		this.nodeProductEntities = nodeProductEntities;
+	public void setNodeProductInfo(List<NodeProductInfo> nodeProductInfo) {
+		this.nodeProductInfo = nodeProductInfo;
 	}
 
 
 	@Transient
 	public List<NodeLicenseInfo> getNodeLicenseInfo() {
-		return this.nodeLicenseEntities;
+		return this.nodeLicenseInfo;
 	}
 
-	public void setNodeLicenseInfo(List<NodeLicenseInfo> nodeLicenseEntities) {
-		this.nodeLicenseEntities = nodeLicenseEntities;
+	public void setNodeLicenseInfo(List<NodeLicenseInfo> nodeLicenseInfo) {
+		this.nodeLicenseInfo = nodeLicenseInfo;
 	}
 
 
 	@Transient
 	public List<NodeCustomInfo> getNodeCustomInfo() {
-		return this.nodeCustomEntities;
+		return this.nodeCustomInfo;
 	}
 
-	public void setNodeCustomInfo(List<NodeCustomInfo> nodeCustomEntities) {
-		this.nodeCustomEntities = nodeCustomEntities;
+	public void setNodeCustomInfo(List<NodeCustomInfo> nodeCustomInfo) {
+		this.nodeCustomInfo = nodeCustomInfo;
 	}
 	
 	@Transient
@@ -1113,6 +1173,13 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		cloneInfo.jobPriority = this.jobPriority;
 		cloneInfo.jobMultiplicity = this.jobMultiplicity;
 
+		// RPA
+		cloneInfo.rpaLogDir = this.rpaLogDir;
+		cloneInfo.rpaManagementToolType = this.rpaManagementToolType;
+		cloneInfo.rpaResourceId = this.rpaResourceId;
+		cloneInfo.rpaUser = this.rpaUser;
+		cloneInfo.rpaExecEnvId = this.rpaExecEnvId;
+
 		// SNMP
 		cloneInfo.snmpUser = this.snmpUser;
 		cloneInfo.snmpAuthPassword = this.snmpAuthPassword;
@@ -1154,10 +1221,10 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		cloneInfo.winrmRetries = this.winrmRetries;
 
 		// OS
-		if (this.nodeOsEntity == null) {
-			this.nodeOsEntity = new NodeOsInfo(this.getFacilityId());
+		if (this.nodeOsInfo == null) {
+			this.nodeOsInfo = new NodeOsInfo(this.getFacilityId());
 		}
-		cloneInfo.setNodeOsInfo(this.nodeOsEntity.clone());
+		cloneInfo.setNodeOsInfo(this.nodeOsInfo.clone());
 
 		// デバイス
 		//参照型は一旦別のオブジェクトへコピー
@@ -1289,24 +1356,24 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 
 		// OS
 		if (nodeName == null) nodeName = "";
-		if (nodeOsEntity != null) {
-			if (nodeOsEntity.getOsName() == null) {
-				nodeOsEntity.setOsName("");
+		if (nodeOsInfo != null) {
+			if (nodeOsInfo.getOsName() == null) {
+				nodeOsInfo.setOsName("");
 			}
-			if (nodeOsEntity.getOsRelease() == null) {
-				nodeOsEntity.setOsRelease("");
+			if (nodeOsInfo.getOsRelease() == null) {
+				nodeOsInfo.setOsRelease("");
 			}
-			if (nodeOsEntity.getOsVersion() == null) {
-				nodeOsEntity.setOsVersion("");
+			if (nodeOsInfo.getOsVersion() == null) {
+				nodeOsInfo.setOsVersion("");
 			}
-			if (nodeOsEntity.getCharacterSet() == null) {
-				nodeOsEntity.setCharacterSet("");
+			if (nodeOsInfo.getCharacterSet() == null) {
+				nodeOsInfo.setCharacterSet("");
 			}
-			if (nodeOsEntity.getStartupDateTime() == null) {
-				nodeOsEntity.setStartupDateTime(0L);
+			if (nodeOsInfo.getStartupDateTime() == null) {
+				nodeOsInfo.setStartupDateTime(0L);
 			}
 		} else {
-			nodeOsEntity = new NodeOsInfo(this.getFacilityId());
+			nodeOsInfo = new NodeOsInfo(this.getFacilityId());
 		}
 
 		// Hinemosエージェント
@@ -1315,6 +1382,13 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		// JOB
 		if (jobPriority == null) jobPriority = 16;
 		if (jobMultiplicity == null) jobMultiplicity = 0;
+
+		// WBEM
+		if (rpaLogDir == null) rpaLogDir = "";
+		if (rpaManagementToolType == null) rpaManagementToolType = "";
+		if (rpaResourceId == null) rpaResourceId = "";
+		if (rpaUser == null) rpaUser = "";
+		if (rpaExecEnvId == null) rpaExecEnvId = "";
 
 		// SNMP
 		if (snmpUser == null) snmpUser = "";
@@ -1372,6 +1446,7 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		if (cloudResourceName == null) cloudResourceName = "";
 		if (cloudResourceId == null) cloudResourceId = "";
 		if (cloudLocation == null) cloudLocation = "";
+		if (cloudLogPriority == null) cloudLogPriority = 16;
 
 		// ノード変数
 
@@ -1499,46 +1574,33 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	@Override
 	public String toString() {
 		return "NodeInfo [" + super.toString()
-				+ ", autoDeviceSearch=" + autoDeviceSearch + ", administrator=" + administrator + ", cloudService="
-				+ cloudService + ", cloudScope=" + cloudScope + ", cloudResourceType=" + cloudResourceType
-				+ ", cloudResourceId=" + cloudResourceId + ", cloudResourceName=" + cloudResourceName
-				+ ", cloudLocation=" + cloudLocation + ", contact=" + contact + ", hardwareType=" + hardwareType
-				+ ", ipAddressV4=" + ipAddressV4 + ", ipAddressV6=" + ipAddressV6 + ", ipAddressVersion="
-				+ ipAddressVersion + ", ipmiIpAddress=" + ipmiIpAddress + ", ipmiLevel=" + ipmiLevel + ", ipmiPort="
-				+ ipmiPort + ", ipmiProtocol=" + ipmiProtocol + ", ipmiRetries=" + ipmiRetries + ", ipmiTimeout="
-				+ ipmiTimeout + ", ipmiUser=" + ipmiUser + ", ipmiUserPassword=" + ipmiUserPassword + ", jobPriority="
-				+ jobPriority + ", jobMultiplicity=" + jobMultiplicity + ", nodeName=" + nodeName + ", platformFamily="
-				+ platformFamily + ", snmpCommunity=" + snmpCommunity + ", snmpPort=" + snmpPort + ", snmpRetryCount="
-				+ snmpRetryCount + ", snmpTimeout=" + snmpTimeout + ", snmpVersion=" + snmpVersion
-				+ ", snmpSecurityLevel=" + snmpSecurityLevel + ", snmpUser=" + snmpUser + ", snmpAuthPassword="
-				+ snmpAuthPassword + ", snmpPrivPassword=" + snmpPrivPassword + ", snmpAuthProtocol=" + snmpAuthProtocol
-				+ ", snmpPrivProtocol=" + snmpPrivProtocol + ", sshUser=" + sshUser + ", sshUserPassword="
-				+ sshUserPassword + ", sshPrivateKeyFilepath=" + sshPrivateKeyFilepath + ", sshPrivateKeyPassphrase="
-				+ sshPrivateKeyPassphrase + ", sshPort=" + sshPort + ", sshTimeout=" + sshTimeout
-				+ ", subPlatformFamily=" + subPlatformFamily + ", wbemPort=" + wbemPort + ", wbemProtocol="
-				+ wbemProtocol + ", wbemRetryCount=" + wbemRetryCount + ", wbemTimeout=" + wbemTimeout + ", wbemUser="
-				+ wbemUser + ", wbemUserPassword=" + wbemUserPassword + ", winrmPort=" + winrmPort + ", winrmProtocol="
-				+ winrmProtocol + ", winrmRetries=" + winrmRetries + ", winrmTimeout=" + winrmTimeout + ", winrmUser="
-				+ winrmUser + ", winrmUserPassword=" + winrmUserPassword + ", winrmVersion=" + winrmVersion
-				+ ", agentAwakePort=" + agentAwakePort + ", nodeOsEntity=" + nodeOsEntity + ", nodeCpuEntities="
-				+ nodeCpuEntities + ", nodeDeviceEntities=" + nodeDeviceEntities + ", nodeDiskEntities="
-				+ nodeDiskEntities + ", nodeFilesystemEntities=" + nodeFilesystemEntities + ", nodeHostnameEntities="
-				+ nodeHostnameEntities + ", nodeMemoryEntities=" + nodeMemoryEntities
-				+ ", nodeNetworkInterfaceEntities=" + nodeNetworkInterfaceEntities + ", nodeNoteEntities="
-				+ nodeNoteEntities + ", nodeVariableEntities=" + nodeVariableEntities + ", nodeNetstatEntities="
-				+ nodeNetstatEntities + ", nodeProcessEntities=" + nodeProcessEntities + ", nodePackageEntities="
-				+ nodePackageEntities + ", nodeProductEntities=" + nodeProductEntities + ", nodeLicenseEntities="
-				+ nodeLicenseEntities + ", nodeCustomEntities=" + nodeCustomEntities + ", nodeOsRegisterFlag="
-				+ nodeOsRegisterFlag + ", nodeCpuRegisterFlag=" + nodeCpuRegisterFlag + ", nodeDiskRegisterFlag="
-				+ nodeDiskRegisterFlag + ", nodeFilesystemRegisterFlag=" + nodeFilesystemRegisterFlag
-				+ ", nodeHostnameRegisterFlag=" + nodeHostnameRegisterFlag + ", nodeMemoryRegisterFlag="
-				+ nodeMemoryRegisterFlag + ", nodeNetworkInterfaceRegisterFlag=" + nodeNetworkInterfaceRegisterFlag
-				+ ", nodeNetstatRegisterFlag=" + nodeNetstatRegisterFlag + ", nodeProcessRegisterFlag="
-				+ nodeProcessRegisterFlag + ", nodePackageRegisterFlag=" + nodePackageRegisterFlag
-				+ ", nodeProductRegisterFlag=" + nodeProductRegisterFlag + ", nodeLicenseRegisterFlag="
-				+ nodeLicenseRegisterFlag + ", nodeVariableRegisterFlag=" + nodeVariableRegisterFlag
-				+ ", nodeConfigSettingId=" + nodeConfigSettingId + ", nodeConfigFilterIsAnd=" + nodeConfigFilterIsAnd
-				+ ", nodeConfigFilterList=" + nodeConfigFilterList + ", nodeConfigTargetDatetime="
+				+ ", autoDeviceSearch=" + autoDeviceSearch + ", administrator=" + administrator + ", cloudService=" + cloudService + ", cloudScope=" + cloudScope
+				+ ", cloudResourceType=" + cloudResourceType + ", cloudResourceId=" + cloudResourceId + ", cloudResourceName=" + cloudResourceName + ", cloudLocation="
+				+ cloudLocation + ", contact=" + contact + ", hardwareType=" + hardwareType + ", ipAddressV4=" + ipAddressV4 + ", ipAddressV6=" + ipAddressV6
+				+ ", ipAddressVersion=" + ipAddressVersion + ", ipmiIpAddress=" + ipmiIpAddress + ", ipmiLevel=" + ipmiLevel + ", ipmiPort=" + ipmiPort
+				+ ", ipmiProtocol=" + ipmiProtocol + ", ipmiRetries=" + ipmiRetries + ", ipmiTimeout=" + ipmiTimeout + ", ipmiUser=" + ipmiUser + ", ipmiUserPassword="
+				+ ipmiUserPassword + ", jobPriority=" + jobPriority + ", jobMultiplicity=" + jobMultiplicity + ", nodeName=" + nodeName + ", platformFamily="
+				+ platformFamily + ", snmpCommunity=" + snmpCommunity + ", snmpPort=" + snmpPort + ", snmpRetryCount=" + snmpRetryCount + ", snmpTimeout=" + snmpTimeout
+				+ ", snmpVersion=" + snmpVersion + ", snmpSecurityLevel=" + snmpSecurityLevel + ", snmpUser=" + snmpUser + ", snmpAuthPassword=" + snmpAuthPassword
+				+ ", snmpPrivPassword=" + snmpPrivPassword + ", snmpAuthProtocol=" + snmpAuthProtocol + ", snmpPrivProtocol=" + snmpPrivProtocol + ", sshUser=" + sshUser
+				+ ", sshUserPassword=" + sshUserPassword + ", sshPrivateKeyFilepath=" + sshPrivateKeyFilepath + ", sshPrivateKeyPassphrase=" + sshPrivateKeyPassphrase
+				+ ", sshPort=" + sshPort + ", sshTimeout=" + sshTimeout + ", subPlatformFamily=" + subPlatformFamily + ", wbemPort=" + wbemPort + ", wbemProtocol="
+				+ wbemProtocol + ", wbemRetryCount=" + wbemRetryCount + ", wbemTimeout=" + wbemTimeout + ", wbemUser=" + wbemUser + ", wbemUserPassword="
+				+ wbemUserPassword + ", winrmPort=" + winrmPort + ", winrmProtocol=" + winrmProtocol + ", winrmRetries=" + winrmRetries + ", winrmTimeout=" + winrmTimeout
+				+ ", winrmUser=" + winrmUser + ", winrmUserPassword=" + winrmUserPassword + ", winrmVersion=" + winrmVersion + ", agentAwakePort=" + agentAwakePort
+				+ ", nodeOsInfo=" + nodeOsInfo + ", nodeCpuInfo=" + nodeCpuInfo + ", nodeDeviceInfo=" + nodeDeviceInfo + ", nodeDiskInfo=" + nodeDiskInfo
+				+ ", nodeFilesystemInfo=" + nodeFilesystemInfo + ", nodeHostnameInfo=" + nodeHostnameInfo + ", nodeMemoryInfo=" + nodeMemoryInfo
+				+ ", nodeNetworkInterfaceInfo=" + nodeNetworkInterfaceInfo + ", nodeNoteInfo=" + nodeNoteInfo + ", nodeVariableInfo=" + nodeVariableInfo
+				+ ", nodeNetstatInfo=" + nodeNetstatInfo + ", nodeProcessInfo=" + nodeProcessInfo + ", nodePackageInfo=" + nodePackageInfo + ", nodeProductInfo="
+				+ nodeProductInfo + ", nodeLicenseInfo=" + nodeLicenseInfo + ", nodeCustomInfo=" + nodeCustomInfo + ", nodeOsRegisterFlag=" + nodeOsRegisterFlag
+				+ ", nodeCpuRegisterFlag=" + nodeCpuRegisterFlag + ", nodeDiskRegisterFlag=" + nodeDiskRegisterFlag + ", nodeFilesystemRegisterFlag="
+				+ nodeFilesystemRegisterFlag + ", nodeHostnameRegisterFlag=" + nodeHostnameRegisterFlag + ", nodeMemoryRegisterFlag=" + nodeMemoryRegisterFlag
+				+ ", nodeNetworkInterfaceRegisterFlag=" + nodeNetworkInterfaceRegisterFlag + ", nodeNetstatRegisterFlag=" + nodeNetstatRegisterFlag
+				+ ", nodeProcessRegisterFlag=" + nodeProcessRegisterFlag + ", nodePackageRegisterFlag=" + nodePackageRegisterFlag + ", nodeProductRegisterFlag="
+				+ nodeProductRegisterFlag + ", nodeLicenseRegisterFlag=" + nodeLicenseRegisterFlag + ", nodeVariableRegisterFlag=" + nodeVariableRegisterFlag
+				+ ", rpaLogDir=" + rpaLogDir + ", rpaManagementToolType=" + rpaManagementToolType + ", rpaResourceId=" + rpaResourceId + ", rpaUser=" + rpaUser
+				+ ", rpaExecEnvId=" + rpaExecEnvId + ", nodeConfigAcquireOnce=" + nodeConfigAcquireOnce + ", nodeConfigSettingId=" + nodeConfigSettingId
+				+ ", nodeConfigFilterIsAnd=" + nodeConfigFilterIsAnd + ", nodeConfigFilterList=" + nodeConfigFilterList + ", nodeConfigTargetDatetime="
 				+ nodeConfigTargetDatetime + "]";
 	}
 
@@ -1551,15 +1613,15 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		StringBuilder sb = new StringBuilder();
 		sb.append("NodeInfo [" + super.toString() + ", ");
 		sb.append("NodeOsEntity [");
-		if (nodeOsEntity != null) {
-			sb.append("facilityId=" + nodeOsEntity.getFacilityId());
+		if (nodeOsInfo != null) {
+			sb.append("facilityId=" + nodeOsInfo.getFacilityId());
 		}
 		sb.append("], ");
 
 		sb.append("NodeCpuEntity ");
-		if (nodeCpuEntities != null && nodeCpuEntities.size() > 0) {
+		if (nodeCpuInfo != null && nodeCpuInfo.size() > 0) {
 			List<NodeDeviceInfoPK> pkList = new ArrayList<>();
-			for (NodeCpuInfo info : nodeCpuEntities) {
+			for (NodeCpuInfo info : nodeCpuInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1569,9 +1631,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeDeviceEntity ");
-		if (nodeDeviceEntities != null && nodeDeviceEntities.size() > 0) {
+		if (nodeDeviceInfo != null && nodeDeviceInfo.size() > 0) {
 			List<NodeDeviceInfoPK> pkList = new ArrayList<>();
-			for (NodeDeviceInfo info : nodeDeviceEntities) {
+			for (NodeDeviceInfo info : nodeDeviceInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1581,9 +1643,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeDiskEntity ");
-		if (nodeDiskEntities != null && nodeDiskEntities.size() > 0) {
+		if (nodeDiskInfo != null && nodeDiskInfo.size() > 0) {
 			List<NodeDeviceInfoPK> pkList = new ArrayList<>();
-			for (NodeDiskInfo info : nodeDiskEntities) {
+			for (NodeDiskInfo info : nodeDiskInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1593,9 +1655,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeFilesystemEntity ");
-		if (nodeFilesystemEntities != null && nodeFilesystemEntities.size() > 0) {
+		if (nodeFilesystemInfo != null && nodeFilesystemInfo.size() > 0) {
 			List<NodeDeviceInfoPK> pkList = new ArrayList<>();
-			for (NodeFilesystemInfo info : nodeFilesystemEntities) {
+			for (NodeFilesystemInfo info : nodeFilesystemInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1605,9 +1667,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeHostnameEntity ");
-		if (nodeHostnameEntities != null && nodeHostnameEntities.size() > 0) {
+		if (nodeHostnameInfo != null && nodeHostnameInfo.size() > 0) {
 			List<NodeHostnameInfoPK> pkList = new ArrayList<>();
-			for (NodeHostnameInfo info : nodeHostnameEntities) {
+			for (NodeHostnameInfo info : nodeHostnameInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1617,9 +1679,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeMemoryEntity ");
-		if (nodeMemoryEntities != null && nodeMemoryEntities.size() > 0) {
+		if (nodeMemoryInfo != null && nodeMemoryInfo.size() > 0) {
 			List<NodeDeviceInfoPK> pkList = new ArrayList<>();
-			for (NodeMemoryInfo info : nodeMemoryEntities) {
+			for (NodeMemoryInfo info : nodeMemoryInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1629,9 +1691,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeNetworkInterfaceEntity ");
-		if (nodeNetworkInterfaceEntities != null && nodeNetworkInterfaceEntities.size() > 0) {
+		if (nodeNetworkInterfaceInfo != null && nodeNetworkInterfaceInfo.size() > 0) {
 			List<NodeDeviceInfoPK> pkList = new ArrayList<>();
-			for (NodeNetworkInterfaceInfo info : nodeNetworkInterfaceEntities) {
+			for (NodeNetworkInterfaceInfo info : nodeNetworkInterfaceInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1641,9 +1703,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeNoteEntity ");
-		if (nodeNoteEntities != null && nodeNoteEntities.size() > 0) {
+		if (nodeNoteInfo != null && nodeNoteInfo.size() > 0) {
 			List<NodeNoteInfoPK> pkList = new ArrayList<>();
-			for (NodeNoteInfo info : nodeNoteEntities) {
+			for (NodeNoteInfo info : nodeNoteInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1653,9 +1715,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeVariableEntity ");
-		if (nodeVariableEntities != null && nodeVariableEntities.size() > 0) {
+		if (nodeVariableInfo != null && nodeVariableInfo.size() > 0) {
 			List<NodeVariableInfoPK> pkList = new ArrayList<>();
-			for (NodeVariableInfo info : nodeVariableEntities) {
+			for (NodeVariableInfo info : nodeVariableInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1665,9 +1727,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeNetstatEntity ");
-		if (nodeNetstatEntities != null && nodeNetstatEntities.size() > 0) {
+		if (nodeNetstatInfo != null && nodeNetstatInfo.size() > 0) {
 			List<NodeNetstatInfoPK> pkList = new ArrayList<>();
-			for (NodeNetstatInfo info : nodeNetstatEntities) {
+			for (NodeNetstatInfo info : nodeNetstatInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1677,9 +1739,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeProcessEntity ");
-		if (nodeProcessEntities != null && nodeProcessEntities.size() > 0) {
+		if (nodeProcessInfo != null && nodeProcessInfo.size() > 0) {
 			List<NodeProcessInfoPK> pkList = new ArrayList<>();
-			for (NodeProcessInfo info : nodeProcessEntities) {
+			for (NodeProcessInfo info : nodeProcessInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1689,9 +1751,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodePackageEntity ");
-		if (nodePackageEntities != null && nodePackageEntities.size() > 0) {
+		if (nodePackageInfo != null && nodePackageInfo.size() > 0) {
 			List<NodePackageInfoPK> pkList = new ArrayList<>();
-			for (NodePackageInfo info : nodePackageEntities) {
+			for (NodePackageInfo info : nodePackageInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1701,9 +1763,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeProductEntity ");
-		if (nodeProductEntities != null && nodeProductEntities.size() > 0) {
+		if (nodeProductInfo != null && nodeProductInfo.size() > 0) {
 			List<NodeProductInfoPK> pkList = new ArrayList<>();
-			for (NodeProductInfo info : nodeProductEntities) {
+			for (NodeProductInfo info : nodeProductInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1713,9 +1775,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeLicenseEntity ");
-		if (nodeLicenseEntities != null && nodeLicenseEntities.size() > 0) {
+		if (nodeLicenseInfo != null && nodeLicenseInfo.size() > 0) {
 			List<NodeLicenseInfoPK> pkList = new ArrayList<>();
-			for (NodeLicenseInfo info : nodeLicenseEntities) {
+			for (NodeLicenseInfo info : nodeLicenseInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);
@@ -1725,9 +1787,9 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 		sb.append(", ");
 
 		sb.append("NodeCustomEntity ");
-		if (nodeCustomEntities != null && nodeCustomEntities.size() > 0) {
+		if (nodeCustomInfo != null && nodeCustomInfo.size() > 0) {
 			List<NodeCustomInfoPK> pkList = new ArrayList<>();
-			for (NodeCustomInfo info : nodeCustomEntities) {
+			for (NodeCustomInfo info : nodeCustomInfo) {
 				pkList.add(info.getId());
 			}
 			sb.append(pkList);

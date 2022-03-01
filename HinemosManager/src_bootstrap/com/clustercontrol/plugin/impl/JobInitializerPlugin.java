@@ -17,8 +17,10 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
+import com.clustercontrol.jobmanagement.util.RpaJobWorker;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.util.Singletons;
+import com.clustercontrol.xcloud.util.ResourceJobWorker;
 
 public class JobInitializerPlugin implements HinemosPlugin {
 	public static final Log log = LogFactory.getLog(JobInitializerPlugin.class);
@@ -28,6 +30,7 @@ public class JobInitializerPlugin implements HinemosPlugin {
 		Set<String> dependency = new HashSet<String>();
 		dependency.add(Log4jReloadPlugin.class.getName());
 		dependency.add(CacheInitializerPlugin.class.getName());
+		dependency.add(AsyncWorkerPlugin.class.getName());
 		return dependency;
 	}
 
@@ -51,6 +54,12 @@ public class JobInitializerPlugin implements HinemosPlugin {
 
 			// ジョブキューコンテナを生成(ジョブキュー機能を起動)
 			Singletons.get(JobQueueContainer.class);
+			
+			// 実行途中のRPAシナリオジョブを別スレッドで再実行
+			RpaJobWorker.restartRunningJob();
+
+			// 実行途中のリソース制御ジョブを別スレッドで再実行
+			ResourceJobWorker.restartRunningJob();
 
 			jtm.commit();
 		} catch (Exception e) {

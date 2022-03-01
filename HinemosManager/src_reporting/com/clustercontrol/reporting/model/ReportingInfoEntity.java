@@ -8,12 +8,12 @@
 
 package com.clustercontrol.reporting.model;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;

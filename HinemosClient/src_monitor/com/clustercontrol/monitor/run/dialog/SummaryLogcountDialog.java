@@ -30,21 +30,24 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.RunSummaryLogcountRequest;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.collect.util.CollectRestClientWrapper;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.DateTimeDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.run.bean.MonitorTypeMessage;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * ログ件数監視[集計]ダイアログクラス<BR>
@@ -216,16 +219,16 @@ public class SummaryLogcountDialog extends CommonDialog {
 			return result;
 		}
 		try {
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(m_managerName);
-			wrapper.runSummaryLogcount(m_monitorId, m_startDate);
+			CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(m_managerName);
+			RunSummaryLogcountRequest reqDto = new RunSummaryLogcountRequest();
+			reqDto.setMonitorId(m_monitorId);
+			reqDto.setStartDate(DateTimeStringConverter.formatLongDate(m_startDate));
+			wrapper.runSummaryLogcount(reqDto);
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("successful"),
 					Messages.getString("message.monitor.95", args));
 			result = true;
-		} catch (InvalidRole_Exception e) { 
-			MessageDialog.openInformation(null, Messages.getString("message"), 
-					Messages.getString("message.accesscontrol.16")); 
 		} catch (Exception e) { 
 			m_log.warn("run(), " + e.getMessage(), e); 
 			MessageDialog.openError( 
@@ -245,11 +248,11 @@ public class SummaryLogcountDialog extends CommonDialog {
 	private void reflectData() {
 
 		// 監視設定
-		MonitorInfo monitorInfo = null;
+		MonitorInfoResponse monitorInfo = null;
 		try {
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(this.m_managerName);
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(this.m_managerName);
 			monitorInfo = wrapper.getMonitor(this.m_monitorId);
-		} catch (com.clustercontrol.ws.monitor.InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 		} catch (Exception e) {
@@ -354,7 +357,7 @@ public class SummaryLogcountDialog extends CommonDialog {
 	 * @param monitorInfo 監視情報
 	 * @return 監視設定文字列
 	 */
-	private String getMonitorIdLabel(MonitorInfo monitorInfo) {
+	private String getMonitorIdLabel(MonitorInfoResponse monitorInfo) {
 		String pluginName = "";
 		if (monitorInfo == null || monitorInfo.getMonitorTypeId() == null) {
 			m_log.warn("monitorInfo=" + monitorInfo);
@@ -369,6 +372,6 @@ public class SummaryLogcountDialog extends CommonDialog {
 		return String.format("%s (%s[%s])", 
 				monitorInfo.getMonitorId(),
 				pluginName, 
-				MonitorTypeMessage.typeToString(monitorInfo.getMonitorType()));
+				MonitorTypeMessage.codeToString(monitorInfo.getMonitorType().toString()));
 	}
 }

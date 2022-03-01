@@ -15,7 +15,6 @@ public interface SelfCheckMonitor {
 
 	public void execute();
 
-	@Override
 	public String toString();
 
 	public String getMonitorId();

@@ -8,32 +8,49 @@
 
 package com.clustercontrol.utility.settings.monitor.action;
 
+import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import javax.xml.ws.WebServiceException;
+import org.openapitools.client.model.ImportMonitorCommonRecordRequest;
+import org.openapitools.client.model.ImportMonitorCommonRequest;
+import org.openapitools.client.model.ImportMonitorCommonResponse;
+import org.openapitools.client.model.JmxMonitorInfoResponse;
+import org.openapitools.client.model.MonitorInfoRequestForUtility;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.EndpointUnit.EndpointSetting;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.settings.ConvertorException;
+import com.clustercontrol.utility.settings.SettingConstants;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.JmxConv;
 import com.clustercontrol.utility.settings.monitor.xml.JmxMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.JmxMonitors;
+import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorSettingEndpoint;
-import com.clustercontrol.ws.monitor.MonitorSettingEndpointService;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
 
 /**
  * Jmx 監視設定情報を取得、設定、削除します。<br>
  * XMLファイルに定義された Jmx 監視情報をマネージャに反映させるクラス<br>
- * ただし、すでに登録されている Jmx 監視情報と重複する場合はスキップされる。
+ * ただし、すでに登録されている Jmx 監視情報と重複した場合はダイアログにて上書き/スキップをユーザに選択させる。
  *
  * @version 6.1.0
  * @since 5.0.a
@@ -58,17 +75,26 @@ public class JmxAction extends AbstractMonitorAction<JmxMonitors> {
 	}
 
 	@Override
-	public List<MonitorInfo> createMonitorInfoList(JmxMonitors object) throws ConvertorException {
+	public List<MonitorInfoResponse> createMonitorInfoList(JmxMonitors object) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
 		return JmxConv.createMonitorInfoList(object);
 	}
 
 	@Override
-	protected List<MonitorInfo> getFilterdMonitorList() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
-		return getEndpoint().getJmxList();
+	protected List<MonitorInfoResponse> getFilterdMonitorList() throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed {
+		List<JmxMonitorInfoResponse> jmxList = MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJmxList(null);
+		List<MonitorInfoResponse> monitorInfoList = new ArrayList<MonitorInfoResponse>();
+		
+		for(JmxMonitorInfoResponse jmxInfo:jmxList){
+			MonitorInfoResponse monitorInfo = new MonitorInfoResponse();
+			RestClientBeanUtil.convertBeanSimple(jmxInfo, monitorInfo);
+			monitorInfoList.add(monitorInfo);
+		}
+		
+		return monitorInfoList;
 	}
 
 	@Override
-	protected JmxMonitors createCastorData(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	protected JmxMonitors createCastorData(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		return JmxConv.createJmxMonitors(monitorInfoList);
 	}
 
@@ -86,16 +112,4 @@ public class JmxAction extends AbstractMonitorAction<JmxMonitors> {
 		 object.setJmxMonitor(ms);
 	}
 
-	public MonitorSettingEndpoint getEndpoint() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
-		WebServiceException wse = null;
-		for (EndpointSetting<MonitorSettingEndpoint> endpointSetting : EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getEndpoint(MonitorSettingEndpointService.class, MonitorSettingEndpoint.class)) {
-			try {
-				return endpointSetting.getEndpoint();
-			} catch (WebServiceException e) {
-				wse = e;
-				getLogger().warn("getJmxList(), " + e.getMessage());
-			}
-		}
-		throw wse;
-	}
 }

@@ -17,6 +17,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
+import com.clustercontrol.bean.FunctionPrefixEnum;
 import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
@@ -67,7 +68,12 @@ public class JobUtil {
 			if (type == JobConstant.TYPE_JOB 
 					|| type == JobConstant.TYPE_FILEJOB
 					|| type == JobConstant.TYPE_APPROVALJOB
-					|| type == JobConstant.TYPE_MONITORJOB) {
+					|| type == JobConstant.TYPE_MONITORJOB
+					|| type == JobConstant.TYPE_JOBLINKSENDJOB
+					|| type == JobConstant.TYPE_JOBLINKRCVJOB
+					|| type == JobConstant.TYPE_FILECHECKJOB
+					|| type == JobConstant.TYPE_RESOURCEJOB
+					|| type == JobConstant.TYPE_RPAJOB) {
 				if(selectType == 1 && !info.isRegisteredModule()){
 					//存在していても、モジュール登録済みフラグが解除されていれば無効とする
 					return 1;
@@ -296,6 +302,7 @@ public class JobUtil {
 			// JobNoticeInfo用の通知グループIDで、通知関連テーブルのコピーを作成する
 			for (NotifyRelationInfo relation : ct) {
 				relation.setNotifyGroupId(infoNotifyGroupId);
+				relation.setFunctionPrefix(FunctionPrefixEnum.JOB_SESSION.name());
 			}
 			// JobからNotifyRelationInfoは１件のみ登録すればよい。
 			new NotifyControllerBean().addNotifyRelation(ct);

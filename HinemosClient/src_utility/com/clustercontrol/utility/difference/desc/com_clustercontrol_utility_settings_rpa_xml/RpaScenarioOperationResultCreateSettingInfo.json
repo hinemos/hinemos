@@ -1,0 +1,67 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"rpaScenarioOperationResultCreateSettingId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioOperationResultCreateSettingInfo_description"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioOperationResultCreateSettingInfo_ownerRoleId"}
+	]},
+
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioOperationResultCreateSettingInfo_facilityId"}
+	]},
+	
+	{
+	"propName":"interval",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioOperationResultCreateSettingInfo_interval"}
+	]},
+	
+	{
+	"propName":"calendarId",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioOperationResultCreateSettingInfo_calendarId"}
+	]},
+	
+	{
+	"propName":"createFromDate",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioOperationResultCreateSettingInfo_createFromDate"}
+	]},
+	
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioOperationResultCreateSettingInfo_validFlg"}
+	]},
+	
+	{
+	"propName":"application",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioOperationResultCreateSettingInfo_application"}
+	]},
+	
+	{
+	"propName":"notifyId",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioOperationResultCreateSettingInfo_notifyId"},
+		{"type":"Array"}
+	]}
+]
+}

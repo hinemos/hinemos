@@ -12,14 +12,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtOutputBasicInfoRequest;
+import org.openapitools.client.model.AgtRunInstructionInfoRequest;
 
 import com.clustercontrol.agent.SendQueue;
+import com.clustercontrol.agent.SendQueue.MessageSendableObject;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
-import com.clustercontrol.ws.agent.OutputBasicInfo;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
 
 public class WinEventMonitorManager {
 
@@ -73,13 +75,19 @@ public class WinEventMonitorManager {
 			log.info("run WinEventThread");
 			while (true) {
 				try {
-					for (String mapKey : winEventMonitorMap.keySet()) {
-						WinEventMonitor winEventMonitor = winEventMonitorMap.get(mapKey);
+					for (WinEventMonitor winEventMonitor : winEventMonitorMap.values()) {
 						winEventMonitor.run();
 					}
 				} catch (Exception e) {
 					log.warn("WinEventThread : " + e.getClass().getCanonicalName() + ", " +
 							e.getMessage(), e);
+				} catch (UnsatisfiedLinkError | NoClassDefFoundError e){
+					log.error("WinEventThread : WinEventThread is terminated. " + e.getClass().getCanonicalName() + ", " +
+							e.getMessage(), e);
+					sendMessage(PriorityConstant.TYPE_CRITICAL,
+							MessageConstant.MESSAGE_WINEVENT_STOP_MONITOR_FAILED_TO_GET_WINDOWS_EVENTLOG.getMessage(),
+							"Failed to exec winEventMonitor.run(). WinEventThread is terminated. " + e.getClass().getCanonicalName() + ", " + e.getMessage(), HinemosModuleConstant.SYSYTEM, null);
+					break;
 				} catch (Throwable e) {
 					log.error("WinEventThread : " + e.getClass().getCanonicalName() + ", " +
 							e.getMessage(), e);
@@ -101,19 +109,20 @@ public class WinEventMonitorManager {
 	 * @param messageOrg
 	 * @param monitorId
 	 */
-	public static void sendMessage(int priority, String message, String messageOrg, String monitorId, RunInstructionInfo runInstructionInfo) {
-		OutputBasicInfo output = new OutputBasicInfo();
-		output.setPluginId(HinemosModuleConstant.MONITOR_WINEVENT);
-		output.setPriority(priority);
-		output.setApplication(MessageConstant.AGENT.getMessage());
-		output.setMessage(message);
-		output.setMessageOrg(messageOrg);
-		output.setGenerationDate(HinemosTime.getDateInstance().getTime());
-		output.setMonitorId(monitorId);
-		output.setFacilityId(""); // マネージャがセットする。
-		output.setScopeText(""); // マネージャがセットする。
-		output.setRunInstructionInfo(runInstructionInfo);
+	public static void sendMessage(int priority, String message, String messageOrg, String monitorId, AgtRunInstructionInfoRequest runInstructionInfo) {
+		MessageSendableObject sendme = new MessageSendableObject();
+		sendme.body = new AgtOutputBasicInfoRequest();
+		sendme.body.setPluginId(HinemosModuleConstant.MONITOR_WINEVENT);
+		sendme.body.setPriority(priority);
+		sendme.body.setApplication(MessageConstant.AGENT.getMessage());
+		sendme.body.setMessage(message);
+		sendme.body.setMessageOrg(messageOrg);
+		sendme.body.setGenerationDate(HinemosTime.getDateInstance().getTime());
+		sendme.body.setMonitorId(monitorId);
+		sendme.body.setFacilityId(""); // マネージャがセットする。
+		sendme.body.setScopeText(""); // マネージャがセットする。
+		sendme.body.setRunInstructionInfo(runInstructionInfo);
 
-		sendQueue.put(output);
+		sendQueue.put(sendme);
 	}
 }

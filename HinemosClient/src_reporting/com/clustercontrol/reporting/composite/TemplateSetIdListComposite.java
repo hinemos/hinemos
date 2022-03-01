@@ -11,8 +11,6 @@ package com.clustercontrol.reporting.composite;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.ws.WebServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -29,15 +27,17 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.TemplateSetInfoResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.reporting.dialog.TemplateSetDialog;
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.TemplateSetInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 
 
@@ -233,53 +233,55 @@ public class TemplateSetIdListComposite extends Composite {
 		// データ取得
 		List<String> list = new ArrayList<String>();
 
-		boolean key = false;
 		try {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(this.managerName);
-			String version = wrapper.getVersion();
-			m_log.debug("version : " + version);
-			key = true;
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							Messages.getString("message.expiration.term.invalid"));
-				}
+			ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(this.managerName);
+			boolean isPublish = wrapper.checkPublish().getPublish();
+			if (!isPublish) {
+				MessageDialog.openWarning(
+						null,
+						Messages.getString("warning"),
+						Messages.getString("message.expiration.term.invalid"));
 			}
-		} catch (WebServiceException  e) {
-			//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
-			//この場合、空表示
-			return;
+		} catch (HinemosUnknown e) {
+			// エンタープライズ機能が無効の場合は HinemosUnknownでラップしたUrlNotFoundとなる。
+			// この場合は無視する
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				return;
+			}
+			String errMsg = HinemosMessage.replace(e.getMessage());
+			m_log.warn("checkPublish Error, " + errMsg);
+			MessageDialog.openError(
+					null,
+					Messages.getString("failed"),
+					Messages.getString("message.expiration.term"));
 		} catch (Exception e) {
 			String errMsg = HinemosMessage.replace(e.getMessage());
-			m_log.warn("getVersionError, " + errMsg);
+			m_log.warn("checkPublish Error, " + errMsg);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
 					Messages.getString("message.expiration.term"));
 		}
-		if (key) {
-			try {
-				ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(this.managerName);
-				List<TemplateSetInfo> listTmp = wrapper.getTemplateSetInfoList(ownerRoleId);
 
-				for(TemplateSetInfo info : listTmp) {
-					list.add(info.getTemplateSetId());
-				}
-			} catch (InvalidRole_Exception e) {
-				MessageDialog.openInformation(null, Messages.getString("message"),
-						Messages.getString("message.accesscontrol.16"));
-			} catch (Exception e) {
-				String errMessage = HinemosMessage.replace(e.getMessage());
-				m_log.warn("update() getTemplateSetInfoList, " + errMessage, e);
-				MessageDialog.openError(
-						null,
-						Messages.getString("failed"),
-						Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
+		try {
+			ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(this.managerName);
+			List<TemplateSetInfoResponse> listTmp = wrapper.getTemplateSetList(ownerRoleId);
+
+			for(TemplateSetInfoResponse info : listTmp) {
+				list.add(info.getTemplateSetId());
 			}
+		} catch (InvalidRole e) {
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					Messages.getString("message.accesscontrol.16"));
+		} catch (Exception e) {
+			String errMessage = HinemosMessage.replace(e.getMessage());
+			m_log.warn("update() getTemplateSetInfoList, " + errMessage, e);
+			MessageDialog.openError(
+					null,
+					Messages.getString("failed"),
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
 		}
+		
 		if(list != null){
 			// テンプレートIDリスト
 			for(int index=0; index<list.size(); index++){

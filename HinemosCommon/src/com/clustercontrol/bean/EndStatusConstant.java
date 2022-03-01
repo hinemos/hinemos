@@ -30,6 +30,9 @@ public class EndStatusConstant {
 	/** すべての終了状態 */
 	public static final int TYPE_ANY = 4;
 
+	/** なし */
+	public static final int TYPE_NONE = -1;
+
 	/** 正常 */
 	public static final int INITIAL_VALUE_NORMAL = 0;
 

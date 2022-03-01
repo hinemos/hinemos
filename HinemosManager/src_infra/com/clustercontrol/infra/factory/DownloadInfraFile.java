@@ -8,10 +8,7 @@
 
 package com.clustercontrol.infra.factory;
 
-import java.io.IOException;
-
-import javax.activation.DataHandler;
-import javax.activation.FileDataSource;
+import java.io.File;
 
 import org.apache.log4j.Logger;
 
@@ -32,7 +29,7 @@ import com.clustercontrol.infra.util.InfraJdbcExecutor;
 public class DownloadInfraFile {
 	private static Logger m_log = Logger.getLogger( DownloadInfraFile.class );
 	
-	public DataHandler download(String fileId, String fileName) throws InfraFileNotFound, HinemosUnknown, IOException {
+	public File download(String fileId) throws InfraFileNotFound, HinemosUnknown {
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -43,9 +40,9 @@ public class DownloadInfraFile {
 				throw e;
 			}
 			
-			String filename = InfraJdbcExecutor.selectFileContent(fileId, fileName);
-			FileDataSource fileData = new FileDataSource(filename);
-			return new DataHandler(fileData);
+			String filename = InfraJdbcExecutor.selectFileContent(fileId);
+			File file = new File(filename);
+			return file;
 		}
 	}
 }

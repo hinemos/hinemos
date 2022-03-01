@@ -20,21 +20,24 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.CloudScopeInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.composite.FacilityTreeComposite;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.CloudScope;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 /**
  * スコープツリーからスコープもしくはノードを選択するためのダイアログ<BR>
@@ -92,15 +95,15 @@ public class ScopeTreeDialog extends CommonDialog {
 		layout.marginWidth = 0;
 		
 		
-		CloudEndpoint endpoint = manager.getEndpoint(CloudEndpoint.class);
-		List<CloudScope> cloudScopes;
+		CloudRestClientWrapper wrapper = manager.getWrapper();
+		List<CloudScopeInfoResponse> cloudScopes;
 		try {
 			if ("ADMINISTRATORS".equals(this.ownerRoleId)) {
-				cloudScopes = endpoint.getAllCloudScopes();
+				cloudScopes = wrapper.getCloudScopes(null);
 			} else {
-				cloudScopes = endpoint.getCloudScopesByRole(this.ownerRoleId);
+				cloudScopes = wrapper.getCloudScopes(this.ownerRoleId);
 			}
-		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (CloudManagerException | InvalidUserPass | InvalidRole | InvalidSetting | RestConnectFailed | HinemosUnknown e) {
 			throw new CloudModelException(e);
 		}
 		
@@ -112,7 +115,7 @@ public class ScopeTreeDialog extends CommonDialog {
 				treeViewer.setContentProvider(new ITreeContentProvider() {
 					@Override
 					public Object getParent(Object element) {
-						return ((FacilityTreeItem) element).getParent();
+						return ((FacilityTreeItemResponse) element).getParent();
 					}
 					@Override
 					public Object[] getElements(Object inputElement) {
@@ -120,9 +123,9 @@ public class ScopeTreeDialog extends CommonDialog {
 					}
 					@Override
 					public Object[] getChildren(Object parentElement) {
-						List<FacilityTreeItem> children = new ArrayList<>();
-						for (FacilityTreeItem child: ((FacilityTreeItem) parentElement).getChildren()) {
-							if (child.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE || checkValidScope(child))
+						List<FacilityTreeItemResponse> children = new ArrayList<>();
+						for (FacilityTreeItemResponse child: ((FacilityTreeItemResponse) parentElement).getChildren()) {
+							if (child.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE || checkValidScope(child))
 								children.add(child);
 						}
 						return children.toArray();
@@ -140,20 +143,20 @@ public class ScopeTreeDialog extends CommonDialog {
 					public void dispose() {
 					}
 					
-					protected boolean checkValidScope(final FacilityTreeItem target) {
+					protected boolean checkValidScope(final FacilityTreeItemResponse target) {
 						if (!CloudConstants.PRIVATE_CLOUD_SCOPE_ID.equals(target.getData().getFacilityId()) &&
 							!CloudConstants.PUBLIC_CLOUD_SCOPE_ID.equals(target.getData().getFacilityId()) &&
-							target.getData().isBuiltInFlg()) {
+							target.getData().getBuiltInFlg()) {
 							return false;
 						}
 						
 						// クラウドスコープが関連するノードで絞り込み
-						for (CloudScope cloudScope: cloudScopes) {
-							String cloudScopeNodeId = String.format("_%s_%s_Node", cloudScope.getPlatformId(), cloudScope.getId());
+						for (CloudScopeInfoResponse cloudScope: cloudScopes) {
+							String cloudScopeNodeId = String.format("_%s_%s_Node", cloudScope.getEntity().getPlatformId(), cloudScope.getEntity().getCloudScopeId());
 							if (cloudScopeNodeId.equals(target.getData().getFacilityId()))
 								return true;
 						}
-						for (FacilityTreeItem child: target.getChildren()) {
+						for (FacilityTreeItemResponse child: target.getChildren()) {
 							if (checkValidScope(child))
 								return true;
 						}
@@ -184,19 +187,19 @@ public class ScopeTreeDialog extends CommonDialog {
 		treeComposite.setExpand(true);
 	}
 
-	public FacilityTreeItem getSelectItem() {
+	public FacilityTreeItemResponse getSelectItem() {
 		return this.treeComposite.getSelectItem();
 	}
 	
 	@Override
 	protected ValidateResult validate() {
 		ValidateResult result = null;
-		FacilityTreeItem item = this.getSelectItem();
+		FacilityTreeItemResponse item = this.getSelectItem();
 
 		if (item == null
-			|| item.getData().isNotReferFlg()
-			|| item.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE
-			|| item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER) {
+			|| item.getData().getNotReferFlg()
+			|| item.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE
+			|| item.getData().getFacilityType() == FacilityTypeEnum.MANAGER) {
 			result = new ValidateResult();
 			result.setValid(false);
 			result.setID(Messages.getString("message.hinemos.1"));

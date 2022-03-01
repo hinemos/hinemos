@@ -9,29 +9,28 @@
 package com.clustercontrol.maintenance.session;
 
 import java.util.ArrayList;
-
-import javax.persistence.EntityExistsException;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyInfoCacheRefreshCallback;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosPropertyDuplicate;
 import com.clustercontrol.fault.HinemosPropertyNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
-import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.MaintenanceDuplicate;
 import com.clustercontrol.fault.MaintenanceNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
-import com.clustercontrol.maintenance.factory.HinemosPropertyInfoCache;
 import com.clustercontrol.maintenance.factory.ModifyHinemosProperty;
 import com.clustercontrol.maintenance.factory.SelectHinemosPropertyInfo;
 import com.clustercontrol.maintenance.model.HinemosPropertyInfo;
-import com.clustercontrol.maintenance.util.HinemosPropertyValidator;
 import com.clustercontrol.notify.util.NotifyRelationCache;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * 
@@ -45,16 +44,18 @@ public class HinemosPropertyControllerBean {
 	/**
 	 * 共通設定情報を追加します。
 	 * 
+	 * @param HinemosPropertyInfo
+	 * @return HinemosPropertyInfo
 	 * @throws HinemosUnknown
 	 * @throws MaintenanceDuplicate
-	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public void addHinemosProperty(HinemosPropertyInfo info)
-			throws HinemosUnknown, HinemosPropertyDuplicate, InvalidSetting, InvalidRole {
+	public HinemosPropertyInfo addHinemosProperty(HinemosPropertyInfo info)
+			throws HinemosUnknown, HinemosPropertyDuplicate, InvalidRole {
 		m_log.debug("addMaintenance");
 
 		JpaTransactionManager jtm = null;
+		HinemosPropertyInfo ret = null;
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 
 		// メイン処理
@@ -62,17 +63,17 @@ public class HinemosPropertyControllerBean {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			// 入力チェック
-			HinemosPropertyValidator.validateHinemosPropertyInfo(info);
-
 			// 共通設定情報を登録
 			ModifyHinemosProperty property = new ModifyHinemosProperty();
 			property.addHinemosProperty(info, loginUser);
 
+			// コミット後にキャッシュ更新
+			jtm.addCallback(new HinemosPropertyInfoCacheRefreshCallback());
 			jtm.commit();
-			HinemosPropertyInfoCache.refresh();
 
-		} catch (HinemosUnknown | InvalidSetting | InvalidRole e) {
+			ret = new SelectHinemosPropertyInfo().getHinemosPropertyInfo(info.getKey());
+
+		} catch (HinemosUnknown | InvalidRole e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
@@ -95,21 +96,24 @@ public class HinemosPropertyControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
 	 * 共通設定情報を変更します。
 	 * 
+	 * @param HinemosPropertyInfo
+	 * @return HinemosPropertyInfo
 	 * @throws HinemosUnknown
 	 * @throws NotifyNotFound
 	 * @throws MaintenanceNotFound
-	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public void modifyHinemosProperty(HinemosPropertyInfo info) throws HinemosUnknown, HinemosPropertyNotFound, InvalidSetting, InvalidRole {
+	public HinemosPropertyInfo modifyHinemosProperty(HinemosPropertyInfo info) throws HinemosUnknown, HinemosPropertyNotFound, InvalidRole {
 		m_log.debug("modifyHinemosProperty");
 
 		JpaTransactionManager jtm = null;
+		HinemosPropertyInfo ret = null;
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 
 		// メイン処理
@@ -117,18 +121,17 @@ public class HinemosPropertyControllerBean {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			// 入力チェック
-			HinemosPropertyValidator.validateHinemosPropertyInfo(info);
-
 			// 共通設定情報を登録
 			ModifyHinemosProperty property = new ModifyHinemosProperty();
 			property.modifyHinemosProperty(info, loginUser);
 
+			// コミット後にキャッシュ更新
+			jtm.addCallback(new HinemosPropertyInfoCacheRefreshCallback());
 			jtm.commit();
 
-			HinemosPropertyInfoCache.refresh();
+			ret = new SelectHinemosPropertyInfo().getHinemosPropertyInfo(info.getKey());
 
-		} catch (InvalidSetting | HinemosPropertyNotFound | InvalidRole | HinemosUnknown e) {
+		} catch (HinemosPropertyNotFound | InvalidRole | HinemosUnknown e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
@@ -147,33 +150,40 @@ public class HinemosPropertyControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
 	 * 共通設定情報を削除します。
 	 * 
 	 * @param key キー
+	 * @return List<HinemosPropertyInfo>
 	 * @throws HinemosUnknown
 	 * @throws MaintenanceNotFound
 	 * @throws InvalidRole
 	 * 
 	 */
-	public void deleteHinemosProperty(String key) throws HinemosUnknown, HinemosPropertyNotFound, InvalidRole {
+	public List<HinemosPropertyInfo> deleteHinemosProperty(List<String> keyList) throws HinemosUnknown, HinemosPropertyNotFound, InvalidRole {
 		m_log.debug("deleteHinemosProperty");
 
 		JpaTransactionManager jtm = null;
+		List<HinemosPropertyInfo> retList =  new ArrayList<>();
+
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			// 共通設定情報を削除
 			ModifyHinemosProperty property = new ModifyHinemosProperty();
-			property.deleteHinemosProperty(key);
+			for(String key : keyList) {
+				retList.add(new SelectHinemosPropertyInfo().getHinemosPropertyInfo(key));
+				property.deleteHinemosProperty(key);
+			}
 
+			// コミット後にキャッシュ更新
+			jtm.addCallback(new HinemosPropertyInfoCacheRefreshCallback());
 			jtm.commit();
-
-			HinemosPropertyInfoCache.refresh();
-
+			
 			// コミット後にキャッシュクリア
 			NotifyRelationCache.refresh();
 
@@ -196,6 +206,8 @@ public class HinemosPropertyControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+
+		return retList;
 	}
 
 
@@ -203,7 +215,7 @@ public class HinemosPropertyControllerBean {
 	 * 共通設定情報を取得します。
 	 *
 	 * @param key キー
-	 * @return 共通設定情報
+	 * @return HinemosPropertyInfo
 	 * @throws HinemosPropertyNotFound
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
@@ -256,7 +268,7 @@ public class HinemosPropertyControllerBean {
 	/**
 	 * 共通設定情報の一覧を取得します。<BR>
 	 * 
-	 * @return 共通設定情報の一覧を保持するArrayList
+	 * @return ArrayList<HinemosPropertyInfo>
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * 

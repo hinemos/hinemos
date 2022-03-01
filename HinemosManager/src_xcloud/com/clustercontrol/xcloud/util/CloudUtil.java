@@ -19,24 +19,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.xml.ws.WebServiceContext;
-
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.bean.ObjectPrivilegeFilterInfo;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
-import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.ILock;
+import com.clustercontrol.commons.util.ILockManager;
+import com.clustercontrol.commons.util.LockManagerFactory;
+import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
-import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.PrivilegeDuplicate;
 import com.clustercontrol.fault.UsedObjectPrivilege;
@@ -61,16 +61,25 @@ import com.clustercontrol.repository.model.NodeOsInfo;
 import com.clustercontrol.repository.model.NodeVariableInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.repository.util.MultiTenantSupport;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.InternalIdAbstract;
+import com.clustercontrol.util.Singletons;
 import com.clustercontrol.util.apllog.AplLogger;
-import com.clustercontrol.ws.util.HttpAuthenticator;
+import com.clustercontrol.xcloud.CloudManagerException;
+import com.clustercontrol.xcloud.common.ErrorCode;
+import com.clustercontrol.xcloud.common.InternalIdCloud;
 
 public class CloudUtil {
-	protected CloudUtil() {
-	}
+	private static final Logger logger = Logger.getLogger(CloudUtil.class);
+	/** DB上の最大値 */
+	public static final int INSTANCE_NAME_MAX_BYTE = 128;
+	public static final int ENTITY_NAME_MAX_BYTE = 128;
 
-	public static void authCheck(WebServiceContext wsctx, SystemPrivilegeInfo... demandingRight) throws InvalidUserPass, InvalidRole, HinemosUnknown {
-		HttpAuthenticator.authCheck(wsctx, new ArrayList<SystemPrivilegeInfo>(Arrays.asList(demandingRight)));
+	/** SQLに渡すListパラメータのサイズ上限(SQL Serverの上限2100に抵触させないため) */
+	public static final int SQL_PARAM_NUMBER_THRESHOLD = 2000;
+
+	protected CloudUtil() {
 	}
 
 	public static ScopeInfo createScope(String facilityId, String facilityName, String roleId) {
@@ -109,15 +118,19 @@ public class CloudUtil {
 			NodeVariableInfo...variables
 			) {
 		NodeInfo nodeInfo = new NodeInfo();
+
+		nodeInfo.setOwnerRoleId(roleId); // setDefaultValue()内で参照するので先に設定する
 		setDefaultValue(nodeInfo);
 
 		nodeInfo.setFacilityId(facilityId);
-		nodeInfo.setFacilityName(facilityName);
+		// DBの桁数に合わせてカットする
+		nodeInfo.setFacilityName(truncateString(facilityName, com.clustercontrol.repository.util.RepositoryUtil.NODE_FACILITY_NAME_MAX_BYTE));
 		nodeInfo.setPlatformFamily(platform);
 		nodeInfo.setSubPlatformFamily(subPlatform);
 		nodeInfo.setIpAddressVersion(4);
 		nodeInfo.setIpAddressV4(HinemosPropertyCommon.xcloud_ipaddress_notavailable.getStringValue());
-		nodeInfo.setNodeName(nodeName);
+		// DBの桁数に合わせてカットする
+		nodeInfo.setNodeName(truncateString(nodeName, com.clustercontrol.repository.util.RepositoryUtil.NODE_NODE_NAME_MAX_BYTE));
 		nodeInfo.setDescription(description);
 
 		// ノード変数
@@ -125,7 +138,7 @@ public class CloudUtil {
 		String[] keyArr = key.split(",");
 		String value = HinemosPropertyCommon.xcloud_node_property_node_variablevalue.getStringValue();
 		String[] valueArr = value.split(",");
-		if (keyArr.length == valueArr.length) {
+		if (keyArr.length == valueArr.length && keyArr.length > 0) {
 			ArrayList<NodeVariableInfo> vars = new ArrayList<NodeVariableInfo>();
 			for (int i = 0; i < keyArr.length; i++) {
 				NodeVariableInfo var = new NodeVariableInfo(facilityId, keyArr[i]);
@@ -136,17 +149,16 @@ public class CloudUtil {
 		}
 		
 		ArrayList<NodeHostnameInfo> hostnameList = new ArrayList<NodeHostnameInfo>();
-		hostnameList.add(new NodeHostnameInfo(facilityId, nodeName));
+		hostnameList.add(new NodeHostnameInfo(facilityId, nodeInfo.getNodeName()));
 		nodeInfo.setNodeHostnameInfo(hostnameList);
 		
 		nodeInfo.setCloudService(serviceId);
 		nodeInfo.setCloudScope(cloudScopeId);
-		nodeInfo.setCloudResourceName(resourceName);
+		// DBの桁数に合わせてカットする
+		nodeInfo.setCloudResourceName(truncateString(resourceName, com.clustercontrol.repository.util.RepositoryUtil.NODE_CLOUD_RESOURCE_NAME_MAX_BYTE));
 		nodeInfo.setCloudResourceType(resourceType);
 		nodeInfo.setCloudResourceId(instanceId);
 		nodeInfo.setCloudLocation(location);
-
-		nodeInfo.setOwnerRoleId(roleId);
 
 		return nodeInfo;
 	}
@@ -286,12 +298,23 @@ public class CloudUtil {
 		nodeInfo.setJobPriority(HinemosPropertyCommon.xcloud_node_property_job_priority.getIntegerValue());
 		nodeInfo.setJobMultiplicity(HinemosPropertyCommon.xcloud_node_property_job_multiplicity.getIntegerValue());
 		
+		// RPA
+		nodeInfo.setRpaLogDir(HinemosPropertyCommon.xcloud_node_property_rpa_log_directory.getStringValue());
+		nodeInfo.setRpaManagementToolType(HinemosPropertyCommon.xcloud_node_property_rpa_management_tool_type.getStringValue());
+		nodeInfo.setRpaResourceId(HinemosPropertyCommon.xcloud_node_property_rpa_resource_id.getStringValue());
+		nodeInfo.setRpaUser(HinemosPropertyCommon.xcloud_node_property_rpa_user.getStringValue());
+		nodeInfo.setRpaExecEnvId(HinemosPropertyCommon.xcloud_node_property_rpa_execution_environment_id.getStringValue());
+
 		// SNMP
 		nodeInfo.setSnmpUser(HinemosPropertyCommon.xcloud_node_property_snmp_user.getStringValue());
 		nodeInfo.setSnmpPort(HinemosPropertyCommon.xcloud_node_property_snmp_port.getIntegerValue());
 		nodeInfo.setSnmpCommunity(HinemosPropertyCommon.xcloud_node_property_snmp_community.getStringValue());
 		nodeInfo.setSnmpVersion(SnmpVersionConstant.stringToType(HinemosPropertyCommon.xcloud_node_property_snmp_version.getStringValue()));
 		nodeInfo.setSnmpSecurityLevel(HinemosPropertyCommon.xcloud_node_property_snmp_securitylevel.getStringValue());
+		nodeInfo.setSnmpAuthPassword(HinemosPropertyCommon.xcloud_node_property_snmp_auth_password.getStringValue());
+		nodeInfo.setSnmpPrivPassword(HinemosPropertyCommon.xcloud_node_property_snmp_priv_password.getStringValue());
+		nodeInfo.setSnmpAuthProtocol(HinemosPropertyCommon.xcloud_node_property_snmp_auth_protocol.getStringValue());
+		nodeInfo.setSnmpPrivProtocol(HinemosPropertyCommon.xcloud_node_property_snmp_priv_protocol.getStringValue());
 		nodeInfo.setSnmpTimeout(HinemosPropertyCommon.xcloud_node_property_snmp_timeout.getIntegerValue());
 		nodeInfo.setSnmpRetryCount(HinemosPropertyCommon.xcloud_node_property_snmp_retries.getIntegerValue());
 
@@ -330,9 +353,15 @@ public class CloudUtil {
 		nodeInfo.setSshPort(HinemosPropertyCommon.xcloud_node_property_ssh_port.getIntegerValue());
 		nodeInfo.setSshTimeout(HinemosPropertyCommon.xcloud_node_property_ssh_timeout.getIntegerValue());
 
+		// xcloud
+		nodeInfo.setCloudLogPriority(HinemosPropertyCommon.xcloud_node_property_cloudlog_priority.getIntegerValue());
+		
 		// 保守
 		nodeInfo.setAdministrator(HinemosPropertyCommon.xcloud_node_property_administrator.getStringValue());
 		nodeInfo.setContact(HinemosPropertyCommon.xcloud_node_property_contact.getStringValue());
+
+		// マルチテナント設定
+		Singletons.get(MultiTenantSupport.class).replaceNodeProperties(nodeInfo);
 	}
 
 	public static String getFacilityName(RepositoryControllerBean repositoryController, String facilityId) {
@@ -483,18 +512,20 @@ public class CloudUtil {
 	}
 	
 	public static void notifyInternalMessage (
-			Priority priority,
-			String pluginId,
-			String message,
+			InternalIdAbstract internalId,
+			String[] args,
 			String detailMsg) {
-		AplLogger.put(priority.type, pluginId, message, detailMsg);
+		AplLogger.put(internalId, args, detailMsg);
 	}
 	
 
 	public static void notifyInternalMessage (
-			Priority priority,
-			String pluginId,
-			Exception exception) {
+			InternalIdAbstract internalId,
+			String detailMsg) {
+		AplLogger.put(internalId, internalId.getMessage(), detailMsg);
+	}
+
+	public static void notifyInternalMessage (Exception exception) {
 		
 		StringWriter sw = new StringWriter();
 		PrintWriter pw = new PrintWriter(sw);
@@ -502,7 +533,14 @@ public class CloudUtil {
 		pw.flush();
 		String messageOrg = sw.toString();
 		
-		AplLogger.put(priority.type, pluginId, exception.getMessage(), messageOrg);
+		String[] args = {exception.getMessage()};
+		if (exception instanceof CloudManagerException
+			&& ((CloudManagerException)exception).getInternalId() != null) {
+			InternalIdAbstract internalId = ((CloudManagerException)exception).getInternalId();
+			AplLogger.put(internalId, args, messageOrg);
+		} else {
+			AplLogger.put(InternalIdCloud.CLOUD_SYS_099, args, messageOrg);
+		}
 	}
 	
 	public static class ObjectPriviledgeOperator {
@@ -808,5 +846,57 @@ public class CloudUtil {
 			trace.append(e.getClassName() + "." + e.getMethodName() + "(" + e.getFileName() + ":" + e.getLineNumber() + ")");
 		}
 		return trace.toString();
+	}
+
+	/**
+	 * 文字列を指定された桁数にカットする
+	 * 
+	 * @param str
+	 * @param length
+	 * @return 
+	 */
+	public static String truncateString(String str, int length) {
+		if (str != null && str.length() > length) {
+			logger.debug("truncateString() : length=" + length + ", original string=" + str);
+			return str.substring(0, length);
+		} else {
+			return str;
+		}
+	}
+	
+	/**
+	 * リソース更新時に使用されるロックを取得する
+	 * @param className
+	 * @param cloudScopeId
+	 * @param locationId
+	 * @return
+	 */
+	public static ILock getLock(String className, String cloudScopeId, String locationId) {
+		ILockManager lm = LockManagerFactory.instance().create();
+		return lm.create(getLockKey(className, cloudScopeId, locationId));
+	}
+
+	private static String getLockKey(String className, String cloudScopeId, String locationId) {
+		return String.format("%s [%s, %s]", className, cloudScopeId, locationId);
+	}
+
+	/**
+	 * 指定したファシリティIDのノードの管理対象フラグを更新する
+	 * @param facilityId
+	 * @param newValue
+	 */
+	public static void updateValidFlg(String facilityId, Boolean newValue) {
+		try {
+			RepositoryControllerBean repositoryControllerBean = RepositoryControllerBeanWrapper.bean();
+			NodeInfo nodeInfo = repositoryControllerBean.getNode(facilityId);
+			Boolean oldValue = nodeInfo.getValid();
+			if (!newValue.equals(oldValue)) {
+				nodeInfo.setValid(newValue);
+				repositoryControllerBean.modifyNode(nodeInfo);
+				logger.info(String.format("updateValidFlg(): FacilityID=%s, ValidFlg:%s->%s", facilityId, oldValue, newValue));
+			}
+		} catch (InvalidSetting | InvalidRole | FacilityNotFound | HinemosUnknown e) {
+			ErrorCode.HINEMOS_MANAGER_ERROR.cloudManagerFault(e);
+		}
 	}
 }

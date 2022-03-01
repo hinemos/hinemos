@@ -8,16 +8,24 @@
 
 package com.clustercontrol.accesscontrol.util;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.ObjectPrivilegeFilterInfo;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.factory.RoleSelector;
+import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
 import com.clustercontrol.accesscontrol.model.RoleInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PluginConstant;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.model.CalendarPatternInfo;
 import com.clustercontrol.commons.util.CommonValidator;
@@ -31,25 +39,36 @@ import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.MailTemplateNotFound;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.SdmlControlSettingNotFound;
 import com.clustercontrol.fault.UsedOwnerRole;
+import com.clustercontrol.filtersetting.bean.FilterSettingObjectId;
+import com.clustercontrol.filtersetting.entity.FilterEntity;
+import com.clustercontrol.hub.model.LogFormat;
+import com.clustercontrol.hub.model.TransferInfo;
+import com.clustercontrol.infra.model.InfraFileInfo;
 import com.clustercontrol.infra.model.InfraManagementInfo;
 import com.clustercontrol.jobmanagement.model.JobKickEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
 import com.clustercontrol.jobmanagement.model.JobmapIconImageEntity;
-import com.clustercontrol.jobmanagement.queue.JobQueue;
-import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
 import com.clustercontrol.jobmanagement.queue.internal.JobQueueEntity;
+import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.mail.model.MailTemplateInfo;
 import com.clustercontrol.notify.model.NotifyInfo;
+import com.clustercontrol.reporting.model.ReportingInfoEntity;
+import com.clustercontrol.reporting.model.TemplateSetInfoEntity;
 import com.clustercontrol.repository.model.FacilityInfo;
+import com.clustercontrol.repository.model.NodeConfigSettingInfo;
+import com.clustercontrol.sdml.model.SdmlControlSettingInfo;
+import com.clustercontrol.rpa.scenario.model.RpaScenario;
+import com.clustercontrol.rpa.scenario.model.RpaScenarioOperationResultCreateSetting;
+import com.clustercontrol.rpa.scenario.model.RpaScenarioTag;
 import com.clustercontrol.util.MessageConstant;
-import com.clustercontrol.util.Singletons;
 
 /**
  * ロール管理の入力チェッククラス
- * 
+ *
  * @since 4.0
  */
 public class RoleValidator {
@@ -85,102 +104,180 @@ public class RoleValidator {
 	 */
 	public static void validateDeleteRole(String roleId) throws UsedOwnerRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
-
+		StringBuilder sb = new StringBuilder();
+		HashMap<String, List<String>> map = new HashMap<>();
+		List<String> list = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			// リポジトリ（ノード、スコープ）
-			List<FacilityInfo> infoCollectionFacility
-			= com.clustercontrol.repository.util.QueryUtil.getFacilityByOwnerRoleId_NONE(roleId);
-			if (infoCollectionFacility != null && infoCollectionFacility.size() > 0) {
-				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_REPOSITORY);
-				throw new UsedOwnerRole(PluginConstant.TYPE_REPOSITORY);
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(FacilityInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.REPOSITORY.getMessage(), new ArrayList<>(list));
+			}
+
+			// 構成情報管理
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(NodeConfigSettingInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.NODE_CONFIG_SETTING.getMessage(), new ArrayList<>(list));
 			}
 
 			// 監視設定
-			List<MonitorInfo> infoCollectionMonitor
-			=  com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoByOwnerRoleId_NONE(roleId);
-			if (infoCollectionMonitor != null && infoCollectionMonitor.size() > 0) {
-				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_MONITOR);
-				throw new UsedOwnerRole(PluginConstant.TYPE_MONITOR);
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(MonitorInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.MONITOR_SETTING.getMessage(), new ArrayList<>(list));
 			}
 
 			// ジョブ
-			List<JobMstEntity> infoCollectionJob
-			= com.clustercontrol.jobmanagement.util.QueryUtil.getJobMstEntityFindByOwnerRoleId_NONE(roleId);
-			if (infoCollectionJob != null && infoCollectionJob.size() > 0) {
-				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_JOBMANAGEMENT);
-				throw new UsedOwnerRole(PluginConstant.TYPE_JOBMANAGEMENT);
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(JobMstEntity.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.JOB_MANAGEMENT.getMessage(), new ArrayList<>(list));
 			}
 
 			// ジョブ実行契機
-			List<JobKickEntity> infoCollectionJobKick
-			= com.clustercontrol.jobmanagement.util.QueryUtil.getJobKickEntityFindByOwnerRoleId_NONE(roleId);
-			if (infoCollectionJobKick != null && infoCollectionJobKick.size() > 0) {
-				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_JOBMANAGEMENT);
-				throw new UsedOwnerRole(PluginConstant.TYPE_JOBMANAGEMENT);
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(JobKickEntity.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.JOB_KICK.getMessage(), new ArrayList<>(list));
 			}
 
 			// ジョブキュー
-			List<JobQueue> jobQueues = Singletons.get(JobQueueContainer.class).findByOwnerRoleId(roleId);
-			if (!jobQueues.isEmpty()) {
-				String ids = jobQueues.stream().map(q -> q.getId()).collect(Collectors.joining(","));
-				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_JOBMANAGEMENT
-						+ " JobQueue[" + ids + "]");
-				throw new UsedOwnerRole(PluginConstant.TYPE_JOBMANAGEMENT);
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(JobQueueEntity.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.JOB_QUEUE.getMessage(), new ArrayList<>(list));
 			}
 
 			// カレンダ
-			List<CalendarInfo> infoCollectionCalInfo
-			= com.clustercontrol.calendar.util.QueryUtil.getCalInfoFindByOwnerRoleId_NONE(roleId);
-			if (infoCollectionCalInfo != null && infoCollectionCalInfo.size() > 0) {
-				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_CALENDAR);
-				throw new UsedOwnerRole(PluginConstant.TYPE_CALENDAR);
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(CalendarInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.CALENDAR.getMessage(), new ArrayList<>(list));
 			}
 
 			// カレンダパターン
-			List<CalendarPatternInfo> infoCollectionCalPattern
-			= com.clustercontrol.calendar.util.QueryUtil.getCalPatternInfoFindByOwnerRoleId_NONE(roleId);
-			if (infoCollectionCalPattern != null && infoCollectionCalPattern.size() > 0) {
-				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_CALENDAR);
-				throw new UsedOwnerRole(PluginConstant.TYPE_CALENDAR);
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(CalendarPatternInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.CALENDAR_PATTERN.getMessage(), new ArrayList<>(list));
 			}
 
 			// 通知
-			List<NotifyInfo> infoCollectionNotifyInfo
-			= com.clustercontrol.notify.util.QueryUtil.getNotifyInfoFindByOwnerRoleId_NONE(roleId);
-			if (infoCollectionNotifyInfo != null && infoCollectionNotifyInfo.size() > 0) {
-				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_NOTIFY);
-				throw new UsedOwnerRole(PluginConstant.TYPE_NOTIFY);
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(NotifyInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.NOTIFY.getMessage(), new ArrayList<>(list));
 			}
 
 			// メールテンプレート
-			List<MailTemplateInfo> infoCollectionMailTemp
-			= com.clustercontrol.notify.mail.util.QueryUtil.getMailTemplateInfoFindByOwnerRoleId_NONE(roleId);
-			if (infoCollectionMailTemp != null && infoCollectionMailTemp.size() > 0) {
-				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_NOTIFY);
-				throw new UsedOwnerRole(PluginConstant.TYPE_NOTIFY);
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(MailTemplateInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.MAIL_TEMPLATE.getMessage(), new ArrayList<>(list));
+			}
+
+			// ログフォーマット
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(LogFormat.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.LOG_FORMAT.getMessage(), new ArrayList<>(list));
 			}
 
 			// 環境構築
-			List<InfraManagementInfo> infoCollectionInfra
-			= com.clustercontrol.infra.util.QueryUtil.getInfraManagementInfoFindByOwnerRoleId_NONE(roleId);
-			if (infoCollectionInfra != null && infoCollectionInfra.size() > 0) {
-				m_log.info("validateDeleteRole,[" + roleId + "] : " + PluginConstant.TYPE_INFRA);
-				throw new UsedOwnerRole(PluginConstant.TYPE_INFRA);
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(InfraManagementInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.INFRA_MANAGEMENT.getMessage(), new ArrayList<>(list));
 			}
+
+			// 環境構築ファイル
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(InfraFileInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.INFRA_FILE.getMessage(), new ArrayList<>(list));
+			}
+
+			// 履歴情報削除設定
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(MaintenanceInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.HISTORY_DELETE.getMessage(), new ArrayList<>(list));
+			}
+
+			// 転送設定 (収集蓄積機能)
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(TransferInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.HUB_TRANSFER_SETTING.getMessage(), new ArrayList<>(list));
+			}
+
+			// SDML制御設定
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(SdmlControlSettingInfo.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.SDML_CONTROL_SETTING.getMessage(), new ArrayList<>(list));
+			}
+
+			// アイコンイメージ (ジョブマップオプション)
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(JobmapIconImageEntity.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.JOBMAP_ICON_IMAGE.getMessage(), new ArrayList<>(list));
+			}
+
+			// スケジュール (レポーティングオプション)
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(ReportingInfoEntity.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.REPORTING_SCHEDULE.getMessage(), new ArrayList<>(list));
+			}
+
+			// テンプレートセット (レポーティングオプション)
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(TemplateSetInfoEntity.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.REPORTING_TEMPLATE.getMessage(), new ArrayList<>(list));
+			}
+
+			// フィルタ設定
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(FilterEntity.class, roleId);
+			if (list != null && list.size() > 0) {
+				List<String> readables = new ArrayList<>();
+				for (String objectId : list) {
+					readables.add(new FilterSettingObjectId(objectId).toMessage());
+				}
+				map.put(MessageConstant.FILTER_SETTING.getMessage(), readables);
+			}
+
 			
+			// RPAシナリオ
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(RpaScenario.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.RPA_SCENARIO.getMessage(), new ArrayList<>(list));
+			}
+
+			// RPAシナリオタグ
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(RpaScenarioTag.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.RPA_SCENARIO_TAG.getMessage(), new ArrayList<>(list));
+			}
+
+			// RPAシナリオ実績作成設定
+			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(RpaScenarioOperationResultCreateSetting.class, roleId);
+			if (list != null && list.size() > 0) {
+				map.put(MessageConstant.RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING.getMessage(), new ArrayList<>(list));
+			}
+
 			
+			// オーナーロールIDに指定されている場合に例外発生
+			if (!map.isEmpty()) {
+				for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+					sb.append(entry.getKey() + " : ");
+					sb.append(entry.getValue().stream().collect(Collectors.joining(",")));
+					sb.append("\n");
+				}
+				m_log.info("validateDeleteRole,[" + roleId + "] : " + sb.toString());
+				throw new UsedOwnerRole(0, sb.toString());
+			}
+
 			jtm.commit();
 		} catch (UsedOwnerRole e) {
 			jtm.rollback();
+			e.setRoleId(roleId);
 			throw e;
 		} catch (Exception e) {
 			m_log.warn("validateDeleteRole() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(),e);
 		} finally {
 			if (jtm != null)
 				jtm.close();
@@ -188,8 +285,144 @@ public class RoleValidator {
 	}
 
 	/**
+	 * オブジェクト権限で使用されているロールかどうか確認する。
+	 * 参照状態の場合、メッセージダイアログが出力される。
+	 * @param roleId
+	 * @throw UsedRole
+	 * @throw HinemosUnknown
+	 */
+	public static void checkHavingObjectPrivilege(String roleId) throws UsedOwnerRole, HinemosUnknown {
+		try {
+			ObjectPrivilegeFilterInfo filter = new ObjectPrivilegeFilterInfo();
+			filter.setRoleId(roleId);
+			ArrayList<ObjectPrivilegeInfo> list = RoleSelector.getObjectPrivilegeInfoList(filter);
+			m_log.debug("Check ObjectPrivileges , Role [" + roleId + "]");
+
+			// オブジェクト権限がない場合、例外スローなしでリターン
+			if (list == null || list.size() == 0) {
+				return;
+			}
+
+			// オブジェクト権限があればUsedOwnerRoleの例外をスローする
+			// objectType, objectIdを格納する変数にはTreeMap, TreeSetを用いる
+			// (メッセージ内容の表示順が変動しないようにするため)
+			StringBuilder sb = new StringBuilder();
+			Map<String, Set<String>> map = new TreeMap<>();
+
+			// オブジェクト権限のobjectTypeごとにobjectIdをまとめる
+			for (ObjectPrivilegeInfo entry : list) {
+				if (!map.containsKey(entry.getObjectType())) {
+					map.put(entry.getObjectType(), new TreeSet<String>());
+				}
+				map.get(entry.getObjectType()).add(entry.getObjectId());
+			}
+
+			// ダイアログのメッセージの文字列を作成する
+			for (Map.Entry<String, Set<String>> entry : map.entrySet()) {
+				String str = "";
+				switch (entry.getKey()) {
+					// リポジトリ（スコープ）
+					case HinemosModuleConstant.PLATFORM_REPOSITORY:
+						str = MessageConstant.REPOSITORY.getMessage();
+						break;
+					// 監視設定
+					case HinemosModuleConstant.MONITOR:
+						str = MessageConstant.MONITOR_SETTING.getMessage();
+						break;
+					// ログフォーマット
+					case HinemosModuleConstant.HUB_LOGFORMAT:
+						str = MessageConstant.LOG_FORMAT.getMessage();
+						break;
+					// ジョブ
+					case HinemosModuleConstant.JOB:
+						str = MessageConstant.JOB_MANAGEMENT.getMessage();
+						break;
+					// ジョブ実行契機
+					case HinemosModuleConstant.JOB_KICK:
+						str = MessageConstant.JOB_KICK.getMessage();
+						break;
+					// ジョブキュー
+					case HinemosModuleConstant.JOB_QUEUE:
+						str = MessageConstant.JOB_QUEUE.getMessage();
+						break;
+					// 環境構築
+					case HinemosModuleConstant.INFRA:
+						str = MessageConstant.INFRA_MANAGEMENT.getMessage();
+						break;
+					// 環境構築ファイル
+					case HinemosModuleConstant.INFRA_FILE:
+						str = MessageConstant.INFRA_FILE.getMessage();
+						break;
+					// カレンダ
+					case HinemosModuleConstant.PLATFORM_CALENDAR:
+						str = MessageConstant.CALENDAR.getMessage();
+						break;
+					// カレンダパターン
+					case HinemosModuleConstant.PLATFORM_CALENDAR_PATTERN:
+						str = MessageConstant.CALENDAR_PATTERN.getMessage();
+						break;
+					// 通知
+					case HinemosModuleConstant.PLATFORM_NOTIFY:
+						str = MessageConstant.NOTIFY.getMessage();
+						break;
+					// メールテンプレート
+					case HinemosModuleConstant.PLATFORM_MAIL_TEMPLATE:
+						str = MessageConstant.MAIL_TEMPLATE.getMessage();
+						break;
+					// 履歴情報削除設定
+					case HinemosModuleConstant.SYSYTEM_MAINTENANCE:
+						str = MessageConstant.HISTORY_DELETE.getMessage();
+						break;
+					// 転送設定 (収集蓄積機能)
+					case HinemosModuleConstant.HUB_TRANSFER:
+						str = MessageConstant.HUB_TRANSFER_SETTING.getMessage();
+						break;
+					// SDML制御設定
+					case HinemosModuleConstant.SDML_CONTROL:
+						str = MessageConstant.SDML_CONTROL_SETTING.getMessage();
+						break;
+					// アイコンイメージ (ジョブマップ)
+					case HinemosModuleConstant.JOBMAP_IMAGE_FILE:
+						str = MessageConstant.JOBMAP_ICON_IMAGE.getMessage();
+						break;
+					// フィルタ設定
+					case HinemosModuleConstant.FILTER_SETTING:
+						str = MessageConstant.FILTER_SETTING.getMessage();
+						break;
+					// RPAシナリオ実績作成設定
+					case HinemosModuleConstant.RPA_SCENARIO_CREATE:
+						str = MessageConstant.RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING.getMessage();
+						break;
+					// RPAシナリオ
+					case HinemosModuleConstant.RPA_SCENARIO:
+						str = MessageConstant.RPA_SCENARIO.getMessage();
+						break;						
+					// objectTypeがオブジェクト権限の設定できるものでない場合
+					default:
+						m_log.info("checkHavingObjectPrivilege, [" + roleId + "] : "
+									+ "Illegal objectType [" + entry.getKey() + "] of "
+									+ String.join(",", entry.getValue()));
+						str = entry.getKey();
+				}
+				sb.append(str + " : ");
+				sb.append(String.join(",", entry.getValue()));
+				sb.append("\n");
+			}
+
+			m_log.info("checkHavingObjectPrivilege, [" + roleId + "] : " + sb.toString());
+			throw new UsedOwnerRole(0, sb.toString());
+		} catch (UsedOwnerRole e) {
+			e.setRoleId(roleId);
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("checkHavingObjectPrivilege() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
+		}
+	}
+
+	/**
 	 * 変更前後でオーナーロールが変更されていないかチェックする
-	 * 
+	 *
 	 * @param pk
 	 * @param objectType
 	 * @param ownerRoleId
@@ -303,7 +536,7 @@ public class RoleValidator {
 					throw ise;
 				}
 			}
-			
+
 			// カレンダ
 			else if (objectType.equals(HinemosModuleConstant.PLATFORM_CALENDAR)) {
 
@@ -376,6 +609,40 @@ public class RoleValidator {
 				}
 			}
 
+			// フィルタ設定
+			else if (objectType.equals(HinemosModuleConstant.FILTER_SETTING)) {
+
+				m_log.debug("validateModifyOwnerRole() : FilterEntity check.");
+				HinemosEntityManager em = jtm.getEntityManager();
+				FilterEntity info = em.find(FilterEntity.class, pk, ObjectPrivilegeMode.READ);
+				if (info == null) {
+					// 設定が見つからない場合は新規登録と判断し、何もしない
+				}
+
+				// 既存の設定のオーナーロールから変更されている場合
+				if (info != null && !info.getOwnerRoleId().equals(ownerRoleId)) {
+					throw ise;
+				}
+			}
+
+			// SDML制御設定
+			else if (objectType.equals(HinemosModuleConstant.SDML_CONTROL)) {
+
+				m_log.debug("validateModifyOwnerRole() : SdmlControlSettingInfoEntity check.");
+				SdmlControlSettingInfo info = null;
+
+				try {
+					info = com.clustercontrol.sdml.util.QueryUtil.getSdmlControlSettingInfoPK((String)pk);
+				} catch (SdmlControlSettingNotFound e) {
+					// 設定が見つからない場合は新規登録と判断し、何もしない
+				}
+
+				// 既存の設定のオーナーロールから変更されている場合
+				if(info != null && !info.getOwnerRoleId().equals(ownerRoleId)) {
+					throw ise;
+				}
+			}
+
 			jtm.commit();
 		} catch (InvalidSetting e) {
 			m_log.warn("validateModifyOwnerRole() : "
@@ -396,7 +663,7 @@ public class RoleValidator {
 	/**
 	 * ユーザがロールに所属しているかチェックする
 	 * (ADMINISTRATORS所属のユーザの場合はチェックしない)
-	 * 
+	 *
 	 * @param role
 	 * @param user
 	 * @param isAdmin

@@ -28,14 +28,15 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.NodeInfoDeviceSearchResponse;
+import org.openapitools.client.model.NodeInfoResponse;
+import org.openapitools.client.model.NodeInfoResponse.IpAddressVersionEnum;
 
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
 import com.clustercontrol.repository.bean.IpAddr;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.NodeInfo;
-import com.clustercontrol.ws.repository.NodeInfoDeviceSearch;
 
 /**
  * リポジトリ[ノードサーチ]のノードサーチエラー実行結果ダイアログクラスです。
@@ -48,7 +49,7 @@ public class NodeSearchResultDialog extends Dialog {
 	// ログ
 	private static Log m_log = LogFactory.getLog(NodeSearchResultDialog.class);
 
-	private List<NodeInfoDeviceSearch> nodeinfoList;
+	private List<NodeInfoDeviceSearchResponse> nodeinfoList;
 	private Shell shell;
 	private boolean success;
 	
@@ -57,7 +58,7 @@ public class NodeSearchResultDialog extends Dialog {
 	 *
 	 * @param parent 親シェル
 	 */
-	public NodeSearchResultDialog(Shell parent, List<NodeInfoDeviceSearch> list, boolean success) {
+	public NodeSearchResultDialog(Shell parent, List<NodeInfoDeviceSearchResponse> list, boolean success) {
 		super(parent);
 		this.nodeinfoList = list;
 		this.success = success;
@@ -92,7 +93,7 @@ public class NodeSearchResultDialog extends Dialog {
 		WidgetTestUtil.setTestId(this, null, group);
 		group.setLayout(new GridLayout(1, true));
 		int count = 0;
-		for(NodeInfoDeviceSearch info : this.nodeinfoList) {
+		for(NodeInfoDeviceSearchResponse info : this.nodeinfoList) {
 			if (info.getErrorMessage() != null ^ success) {
 				count++;
 			}
@@ -124,16 +125,16 @@ public class NodeSearchResultDialog extends Dialog {
 
 		//取得した情報
 		ArrayList<ArrayList<Object>> listInfo = new ArrayList<>();
-		for (NodeInfoDeviceSearch info : nodeinfoList) {
+		for (NodeInfoDeviceSearchResponse info : nodeinfoList) {
 			if (info.getErrorMessage() == null ^ success) {
 				continue;
 			}
 			ArrayList<Object> list = new ArrayList<>();
-			NodeInfo nodeInfo = info.getNodeInfo();
+			NodeInfoResponse nodeInfo = info.getNodeInfo();
 			
 			list.add(nodeInfo.getFacilityId());
 			IpAddr ipAddress = null;
-			if (nodeInfo.getIpAddressVersion() == 6) {
+			if (nodeInfo.getIpAddressVersion() == IpAddressVersionEnum.IPV6) {
 				ipAddress = new IpAddr(nodeInfo.getIpAddressV6(), 6);
 			} else {
 				ipAddress = new IpAddr(nodeInfo.getIpAddressV4(), 4);

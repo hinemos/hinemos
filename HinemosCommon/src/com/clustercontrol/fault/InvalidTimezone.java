@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * 適切なタイムゾーンではない場合に利用するException
  * @version 5.1.0
  */
-public class InvalidTimezone extends HinemosException {
+public class InvalidTimezone extends HinemosInvalid {
 
 	private static final long serialVersionUID = 1636867491172325635L;
 

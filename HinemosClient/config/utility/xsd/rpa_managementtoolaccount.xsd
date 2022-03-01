@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: platform_role.xsd 295 295 2013-05-13 16:00:00Z sekiyaman $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="K">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="RpaManagementToolAccounts" type="RpaManagementToolAccountList">
+		<xs:annotation>
+			<xs:documentation>RPA管理ツールアカウント定義一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
+	<xs:complexType name="RpaManagementToolAccountList">
+		<xs:annotation>
+			<xs:documentation>RPA管理ツールアカウント定義一覧のデータ型です。</xs:documentation>
+		</xs:annotation>
+		
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RpaManagementToolAccount" type="RpaManagementToolAccountInfoType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>RPA管理ツールアカウント定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="rpaManagementToolAccount" type="RpaManagementToolAccountInfoType" />
+	<xs:complexType name="RpaManagementToolAccountInfoType">
+		<xs:annotation>
+			<xs:documentation>RPA管理ツールアカウント定義の1設定分です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="rpaManagementToolAccountInfo" type="RpaManagementToolAccountInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPA管理ツールアカウント定義情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="RpaManagementToolAccountInfo">
+		<xs:annotation>
+			<xs:documentation>RPA管理ツールアカウント情報</xs:documentation>
+		</xs:annotation>
+
+		<xs:attribute name="rpaScopeId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>RPAスコープID</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="rpaScopeName" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>RPAスコープ名</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="ownerRoleId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>オーナーロールID</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="description" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>説明</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="rpaManagementToolId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>RPA管理ツールID</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="url" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>URL</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="accountId" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>アカウントID</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="password" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>パスワード</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="tenantName" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>テナント名</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="displayName" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>表示名</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="proxyFlg" type="xs:boolean" use="required">
+			<xs:annotation>
+				<xs:documentation>プロキシ有効フラグ</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="proxyUrl" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>プロキシURL</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="proxyPort" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>プロキシポート</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="proxyUser" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>プロキシユーザ</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="proxyPassword" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>プロキシパスワード</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+</xs:schema>

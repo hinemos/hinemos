@@ -10,15 +10,16 @@ package com.clustercontrol.reporting.vcloud.util;
 
 import java.util.List;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */
@@ -66,18 +67,19 @@ public class QueryUtil {
 			jquery.append("SELECT a.monitor_id");
 			jquery.append(" FROM setting.cc_monitor_info a");
 			jquery.append(" LEFT OUTER JOIN setting.cc_monitor_plugin_string_info b ON (a.monitor_id = b.monitor_id)");
-			jquery.append(" WHERE a.monitor_type_id = 'MON_CLOUD_SERVICE_BILLING_DETAIL'");
+			jquery.append(" WHERE a.monitor_type_id = ?1");
 			jquery.append(" AND b.property_key = 'MonitorKind'");
-			jquery.append(" AND b.property_value = ?1");
+			jquery.append(" AND b.property_value = ?2");
 			// monitorId
 			if (monitorId != null && "".equals(monitorId)) {
-				jquery.append(" AND a.monitor_id = ?2");
+				jquery.append(" AND a.monitor_id = ?3");
 			}
 			jquery.append(" ORDER BY a.monitor_id");
 
 			typedQuery = em.createNativeQuery(jquery.toString());
-			typedQuery.setParameter(1, value);
-			typedQuery.setParameter(2, monitorId);
+			typedQuery.setParameter(1, HinemosModuleConstant.MONITOR_CLOUD_SERVICE_BILLING_DETAIL);
+			typedQuery.setParameter(2, value);
+			typedQuery.setParameter(3, monitorId);
 			
 			list = (List<Object[]>)typedQuery.getResultList();
 		} catch (Exception e) {

@@ -8,7 +8,10 @@
 
 package com.clustercontrol.agent.binary.readingstatus;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +49,12 @@ public class RootReadingStatus {
 
 	/** ディレクトリ読込状態を書き込むファイル名の先頭に付加 */
 	protected static final String dir_prefix = "rs_";
+
+	/** 監視種別判定用のディレクトリ */
+	protected static final String monitor_type_dir = "monitor_type";
+
+	/** 監視種別判定用のファイル */
+	protected static final String monitor_type = "binary";
 
 	// 読込情報に書き込む項目名(rstatus.json).
 	/** 監視対象ディレクトリ(項目名) */
@@ -315,6 +324,73 @@ public class RootReadingStatus {
 		String home = Agent.getAgentHome();
 		String storepath = new File(new File(home), "readingstatus").getAbsolutePath();
 		return new File(storepath);
+	}
+
+	/**
+	 * RS保存ディレクトリの最新化
+	 * 取得された監視設定をもとに不要なバイナリ監視のRSディレクトリを削除する
+	 * 
+	 * @param newMonList
+	 */
+	public static void refreshRootStoreDirectory(List<MonitorInfoWrapper> newMonList) {
+		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+
+		List<String> newMonDirList = new ArrayList<String>();
+		for (MonitorInfoWrapper newWrapper : newMonList) {
+			newMonDirList.add(dir_prefix + newWrapper.getId());
+		}
+		// 現在のRS保存ディレクトリを取得
+		File storePath = RootReadingStatus.getRootStoreDirectory();
+		File[] dirList;
+		if (storePath.exists()) {
+			dirList = storePath.listFiles();
+		} else {
+			log.warn(methodName + DELIMITER + storePath.getPath() + " does not exist.");
+			return;
+		}
+		if (dirList == null || dirList.length == 0) {
+			log.debug(methodName + DELIMITER + storePath.getPath() + " has no directory.");
+			return;
+		}
+		// 現在のRS保存ディレクトリからバイナリ監視のRSディレクトリだけを取得
+		List<File> binDirList = new ArrayList<File>();
+		for (File dir : dirList) {
+			File monTypeDir = new File(dir, monitor_type_dir);
+			if (monTypeDir.exists()) {
+				File monTypeFile = new File(monTypeDir, monitor_type);
+				if (monTypeFile.exists()) {
+					log.info(methodName + DELIMITER + "monitor type is " + monitor_type + ". " + dir.getName());
+					binDirList.add(dir);
+				}
+			} else {
+				// パッチ適用後の初回は監視種別判定用のファイルがないためrsstatus.jsonの中身で判定する
+				log.info(methodName + DELIMITER + "monitor type directory does not exist. " + dir.getName());
+				try (BufferedReader reader = new BufferedReader(new FileReader(new File(dir, file_rstatus)))) {
+					String line;
+					boolean isBinary = false;
+					while ((line = reader.readLine()) != null) {
+						isBinary = line.startsWith(updatedate);
+					}
+					if (isBinary) {
+						log.info(methodName + DELIMITER + dir.getName() + " is readindstatus for binary monitor.");
+						binDirList.add(dir);
+					}
+				} catch (IOException e) {
+					log.warn(methodName + DELIMITER + e.getMessage(), e);
+					continue;
+				}
+			}
+		}
+		// 今回取得された監視設定に含まれないバイナリ監視のRSディレクトリを削除
+		for (File binDir : binDirList) {
+			if (!newMonDirList.contains(binDir.getName())) {
+				if (FileUtils.deleteQuietly(binDir)) {
+					log.info(methodName + DELIMITER + "success to delete binary monitor directory = [" + binDir.getAbsolutePath() + "]");
+				} else {
+					log.warn(methodName + DELIMITER + "failed to delete binary monitor directory = [" + binDir.getAbsolutePath() + "]");
+				}
+			}
+		}
 	}
 
 	// 以下各フィールドのgetter.

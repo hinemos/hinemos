@@ -18,6 +18,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.platform.PlatformDivergence;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -45,6 +46,8 @@ public class JdbcBatchExecutor {
 		PreparedStatement pstmt = null;
 		try {
 			tm = new JpaTransactionManager();
+			log.debug("execute() : isNestedEm=" + tm.isNestedEm());
+			log.debug("execute() : isNestedTx=" + tm.isNestedTx());
 
 			// 実行前にJPAの内容をDBに反映させるためflushする。
 			tm.flush();
@@ -60,6 +63,7 @@ public class JdbcBatchExecutor {
 				conn.commit();
 			}
 		} catch (Exception e) {
+			boolean isDuplicate = false;
 			if (e instanceof BatchUpdateException) {
 				BatchUpdateException bue = (BatchUpdateException)e;
 				log.warn("BatchUpdateException:" + bue, bue);
@@ -67,15 +71,24 @@ public class JdbcBatchExecutor {
 				if (sqe != null) {
 					log.warn("SQLException: " + sqe, sqe);
 				}
+				if (bue.getSQLState().equals(PlatformDivergence.getSQLStateDuplicate())) {
+					isDuplicate = true;
+				}
 			} else {
 				log.warn(e);
 			}
 			if (conn != null) {
-				tm.getEntityManager().notifyUpdateError(e);
 				try {
+					// INTERNALイベントを出力するため、先にrollbackしておく。
+					// JpaTransactionManager#beginを使用していないためcallbackは使用できない。
 					conn.rollback();
 				} catch (SQLException e1) {
 					log.warn(e1, e1);
+				}
+				if (isDuplicate) {
+					tm.getEntityManager().notifyUpdateDuplicateError(e);
+				} else {
+					tm.getEntityManager().notifyUpdateError(e);
 				}
 			}
 		} finally {
@@ -96,14 +109,14 @@ public class JdbcBatchExecutor {
 		if (queryList.size() != 0) {
 			className = queryList.get(0).getClass().getSimpleName();
 		}
-		String sizeStr = "";
+		StringBuilder sizeStr = new StringBuilder();
 		for (JdbcBatchQuery query : queryList) {
 			if (0 < sizeStr.length()) {
-				sizeStr += ",";
+				sizeStr.append(",");
 			}
-			sizeStr += query.getSize();
+			sizeStr.append(query.getSize());
 		}
-		String message = String.format("Execute [%s] batch: %dms. size=%s", className, time, sizeStr);
+		String message = String.format("Execute [%s] batch: %dms. size=%s", className, time, sizeStr.toString());
 		if (time > 3000) {
 			log.warn(message);
 		} else if (time > 1000) {

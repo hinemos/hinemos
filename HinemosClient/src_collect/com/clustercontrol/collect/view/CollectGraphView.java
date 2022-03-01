@@ -31,9 +31,9 @@ import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.collect.composite.CollectGraphComposite;
 import com.clustercontrol.collect.composite.CollectSettingComposite;
 import com.clustercontrol.composite.FacilityTreeComposite;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 性能[グラフ]ビュー
@@ -153,7 +153,7 @@ public class CollectGraphView extends CommonViewPart {
 			public void selectionChanged(SelectionChangedEvent event) {
 				// 選択アイテム取得(ツリー自体でも行っているが、念のため)
 				StructuredSelection selection = (StructuredSelection) event.getSelection();
-				FacilityTreeItem selectItem = (FacilityTreeItem) selection
+				FacilityTreeItemResponse selectItem = (FacilityTreeItemResponse) selection
 						.getFirstElement();
 				if (selectItem != null) {
 					baseComposite.layout(true, true);
@@ -218,12 +218,12 @@ public class CollectGraphView extends CommonViewPart {
 	 * FacilityTreeItemに変換してからFacilityTreeItemのリストを返します。
 	 * @return
 	 */
-	public List<FacilityTreeItem> getCheckedTreeItemList() {
+	public List<FacilityTreeItemResponse> getCheckedTreeItemList() {
 		Object[] objs = ((CheckboxTreeViewer)this.scopeTreeComposite.getTreeViewer()).getCheckedElements();
-		List<FacilityTreeItem> itemList = new ArrayList<>();
+		List<FacilityTreeItemResponse> itemList = new ArrayList<>();
 		for (Object obj : objs) {
-			if (obj instanceof FacilityTreeItem) {
-				itemList.add((FacilityTreeItem)obj);
+			if (obj instanceof FacilityTreeItemResponse) {
+				itemList.add((FacilityTreeItemResponse)obj);
 			}
 		}
 		return itemList;

@@ -13,21 +13,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import javax.persistence.FlushModeType;
-import javax.persistence.LockModeType;
-import javax.persistence.Query;
-import javax.persistence.StoredProcedureQuery;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import javax.persistence.metamodel.Metamodel;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -40,12 +25,25 @@ import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfoPK;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.jobmanagement.factory.CreateJobSession;
-import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.InternalIdAbstract;
 import com.clustercontrol.util.apllog.AplLogger;
 
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Query;
+import jakarta.persistence.StoredProcedureQuery;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Metamodel;
 import net.sf.jpasecurity.jpql.parser.JpqlBrackets;
 import net.sf.jpasecurity.jpql.parser.JpqlFrom;
 import net.sf.jpasecurity.jpql.parser.JpqlParser;
@@ -61,8 +59,36 @@ public class HinemosEntityManager implements EntityManager {
 	private static Log m_log = LogFactory.getLog(HinemosEntityManager.class);
 	private static ErrorNotification errorNotification = new ErrorNotification();
 
+	/** テスト時に置換可能な外部依存処理 */
+	public interface External {
+		List<String> getRoleIdList(String userId);
+	}
+
+	/** デフォルトの外部依存処理実装 */
+	private static final External defaultExternal = new External() {
+		@Override
+		public List<String> getRoleIdList(String userId) {
+			return UserRoleCache.getRoleIdList(userId);
+		}
+	};
+
+	/** デフォルトの外部依存処理実装を返します。 */
+	public static External getDefaultExternal() {
+		return defaultExternal;
+	}
+
+	private final External external;
 	private EntityManager em;
+
+	public HinemosEntityManager() {
+		this(null, getDefaultExternal());
+	}
 	
+	public HinemosEntityManager(EntityManager em, External external) {
+		this.em = em;
+		this.external = external;
+	}
+
 	public EntityManager getEntityManager() {
 		return em;
 	}
@@ -94,8 +120,12 @@ public class HinemosEntityManager implements EntityManager {
 	/**
 	 * オブジェクト権限チェックを含めたEntityManager#createNamedQuery()の実装<br/>
 	 * オーナーロールによるチェック
+	 * 
+	 * このメソッドを使用してnamed-native-queryを呼び出す場合はmodeにObjectPrivilegeMode.NONEを
+	 * 指定する必要がある。
+	 * 指定しなかった場合はNullPointerExceptionが発生して落ちる。
 	 */
-	public <T> TypedQuery<T> createNamedQuery_OR(String name, Class<T> resultClass, ObjectPrivilegeMode mode, String ownerRoleId) {
+	public <T> TypedQuery<T> createNamedQuery_OR(String name, Class<T> resultClass, Class<?> entityClass, ObjectPrivilegeMode mode, String ownerRoleId) {
 		if (ObjectPrivilegeMode.NONE.equals(mode)) {
 			// オブジェクト権限チェックを行わない場合、オブジェクト権限による絞込みを行わない。
 			return em.createNamedQuery(name, resultClass);
@@ -105,15 +135,27 @@ public class HinemosEntityManager implements EntityManager {
 			return em.createNamedQuery(name, resultClass);
 		}
 		String query_before = JpaUtil.getJpqlString(em.createNamedQuery(name, resultClass));
-		return getQuery(query_before, resultClass, resultClass, mode, ownerRoleId);
+		return getQuery(query_before, resultClass, entityClass, mode, ownerRoleId);
+	}
+
+	public <T> TypedQuery<T> createNamedQuery_OR(String name, Class<T> resultClass, Class<?> entityClass, String ownerRoleId) {
+		return createNamedQuery_OR(name, resultClass, entityClass, ObjectPrivilegeMode.READ, ownerRoleId);
+	}
+
+	public <T> TypedQuery<T> createNamedQuery_OR(String name, Class<T> resultClass, ObjectPrivilegeMode mode, String ownerRoleId) {
+		return createNamedQuery_OR(name, resultClass, resultClass, mode, ownerRoleId);
 	}
 
 	public <T> TypedQuery<T> createNamedQuery_OR(String name, Class<T> resultClass, String ownerRoleId) {
-		return createNamedQuery_OR(name, resultClass, ObjectPrivilegeMode.READ, ownerRoleId);
+		return createNamedQuery_OR(name, resultClass, resultClass, ObjectPrivilegeMode.READ, ownerRoleId);
 	}
 
 	/**
 	 * オブジェクト権限チェックを含めたEntityManager#createNamedQuery()の実装<br/>
+	 * 
+	 * このメソッドを使用してnamed-native-queryを呼び出す場合はmodeにObjectPrivilegeMode.NONEを
+	 * 指定する必要がある。
+	 * 指定しなかった場合はNullPointerExceptionが発生して落ちる。
 	 */
 	public <T> TypedQuery<T> createNamedQuery(String name, Class<T> resultClass, ObjectPrivilegeMode mode) {
 		if (ObjectPrivilegeMode.NONE.equals(mode)) {
@@ -166,7 +208,7 @@ public class HinemosEntityManager implements EntityManager {
 	 * オブジェクト権限チェックを含めたEntityManager#createNamedQuery()の実装<br/>
 	 * オーナーロールによるチェック
 	 */
-	public <T> TypedQuery<T> createQuery_OR(String qlString, Class<T> resultClass, ObjectPrivilegeMode mode, String ownerRoleId) {
+	public <T> TypedQuery<T> createQuery_OR(String qlString, Class<T> resultClass, Class<?> entityClass, ObjectPrivilegeMode mode, String ownerRoleId) {
 		if (ObjectPrivilegeMode.NONE.equals(mode)) {
 			// オブジェクト権限チェックを行わない場合、オブジェクト権限による絞込みを行わない。
 			return em.createQuery(qlString, resultClass);
@@ -175,11 +217,19 @@ public class HinemosEntityManager implements EntityManager {
 			// オーナーロールが特権ロールの場合、オブジェクト権限による絞込みを行わない。
 			return em.createQuery(qlString, resultClass);
 		}
-		return getQuery(qlString, resultClass, resultClass, mode, ownerRoleId);
+		return getQuery(qlString, resultClass, entityClass, mode, ownerRoleId);
+	}
+
+	public <T> TypedQuery<T> createQuery_OR(String qlString, Class<T> resultClass, Class<?> entityClass, String ownerRoleId) {
+		return createQuery_OR(qlString, resultClass, entityClass, ObjectPrivilegeMode.READ, ownerRoleId);
+	}
+
+	public <T> TypedQuery<T> createQuery_OR(String qlString, Class<T> resultClass, ObjectPrivilegeMode mode, String ownerRoleId) {
+		return createQuery_OR(qlString, resultClass, resultClass, mode, ownerRoleId);
 	}
 
 	public <T> TypedQuery<T> createQuery_OR(String qlString, Class<T> resultClass, String ownerRoleId) {
-		return createQuery_OR(qlString, resultClass, ObjectPrivilegeMode.READ, ownerRoleId);
+		return createQuery_OR(qlString, resultClass, resultClass, ObjectPrivilegeMode.READ, ownerRoleId);
 	}
 
 
@@ -577,7 +627,7 @@ public class HinemosEntityManager implements EntityManager {
 		if (loginUser == null || "".equals(loginUser.trim())) {
 			return;
 		}
-		List<String> roleIdList = UserRoleCache.getRoleIdList(loginUser);
+		List<String> roleIdList = external.getRoleIdList(loginUser);
 
 		// オーナーロールにユーザのロールが設定されている場合は実装を返す
 		T before_entity = em.find(entityClass, primaryKey);
@@ -679,9 +729,15 @@ public class HinemosEntityManager implements EntityManager {
 				return em.createQuery(beforeJpql, resultClass);
 			}
 
+			// ユーザがADMINISTRATORSロールに所属している場合はオブジェクト権限チェックはしない
+			Boolean isAdministrator = (Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR);
+			if (isAdministrator != null && isAdministrator) {
+				return em.createQuery(beforeJpql, resultClass);
+			}
+
 			// オブジェクト権限チェックを含むJPQLに変換
 			String afterJpql = getObjectPrivilegeJPQL(beforeJpql, entityClass, mode, null);
-			List<String> roleIds = UserRoleCache.getRoleIdList(loginUser);
+			List<String> roleIds = external.getRoleIdList(loginUser);
 			afterJpql = afterJpql.replaceAll(":roleIds", HinemosEntityManager.getParamNameString("roleId", roleIds.toArray(new String[roleIds.size()])));
 			typedQuery = em.createQuery(afterJpql, resultClass);
 			HinemosEntityManager.appendParam(typedQuery, "roleId", roleIds.toArray(new String[roleIds.size()]));
@@ -897,21 +953,32 @@ public class HinemosEntityManager implements EntityManager {
 	 * @param cause 発生した例外。
 	 */
 	public void notifyUpdateError(Exception cause) {
-		errorNotification.send(cause);
+		errorNotification.send(InternalIdCommon.MNG_SYS_024, cause);
+	}
+
+	/**
+	 * PKの重複エラーによる更新エラーをINTERNALイベントとして通知する。
+	 * EntityManager外で独自更新を行っている処理で更新エラーが発生した場合に使用できる。
+	 * @param cause 発生した例外。
+	 */
+	public void notifyUpdateDuplicateError(Exception cause) {
+		errorNotification.send(InternalIdCommon.MNG_SYS_025, cause);
 	}
 	
 	// 更新エラーの通知を行うクラス
 	private static class ErrorNotification {
-		private static Log m_log = LogFactory.getLog(ErrorNotification.class);
+		private static final Log m_log2 = LogFactory.getLog(ErrorNotification.class);
 
 		private long lastNotified = 0;
 		private int suppressedCount = 0;
 
 		/**
 		 * 更新エラーをINTERNALイベントとして通知する。
+		 * @param priority INTERNALイベントで通知する重要度。
+		 * @param message INTERNALイベントで通知するメッセージ。
 		 * @param cause 発生した例外。
 		 */
-		public synchronized void send(Exception cause) {
+		public synchronized void send(InternalIdAbstract internalId, Exception cause) {
 			try {
 				// 今回通知すべきかの判定を行う。
 				boolean shouldNotify = false;
@@ -930,16 +997,16 @@ public class HinemosEntityManager implements EntityManager {
 				}
 	
 				if (shouldNotify) {
-					AplLogger.put(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.HINEMOS_MANAGER_MONITOR,
-							MessageConstant.MESSAGE_SYS_024_MNG.getMessage(), cause.getMessage());
+					String[] args = {};
+					AplLogger.put(internalId, args, cause.getMessage());
 	
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-					m_log.warn("send() : Notified. Next:" + sdf.format(new Date(lastNotified + span)) + ", Suppressed:"
+					m_log2.warn("send() : Notified. Next:" + sdf.format(new Date(lastNotified + span)) + ", Suppressed:"
 							+ suppressedCount);
 					suppressedCount = 0;
 				}
 			} catch (Exception e) {
-				m_log.warn("send() : Error.", e);
+				m_log2.warn("send() : Error.", e);
 				// 本処理中に万が一例外が発生した場合でも、呼び出し元には伝播させない。
 			}
 		}

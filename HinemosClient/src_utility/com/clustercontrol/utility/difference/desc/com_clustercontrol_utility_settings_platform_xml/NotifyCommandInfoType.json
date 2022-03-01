@@ -55,6 +55,18 @@
 	"propName":"commandTimeout",
 	"annotations":[
 		{"type":"Column", "columnName":"NotifyCommandInfoType_commandTimeout"}
+	]},
+
+	{
+	"propName":"commandSettingType",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCommandInfoType_commandSettingType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"1", "name":"name_commnad_type_direct"},
+				{"value":"2", "name":"name_command_type_template"}
+			]
+		}
 	]}
 ]
 }

@@ -35,30 +35,30 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.JobmapIconImageInfoResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
-import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.Messages;
-import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.IconFileDuplicate_Exception;
-import com.clustercontrol.ws.jobmanagement.IconFileNotFound_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidSetting_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidUserPass_Exception;
-import com.clustercontrol.ws.jobmanagement.JobmapIconImage;
 import com.clustercontrol.composite.ManagerListComposite;
 import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.jobmap.util.ImageFileUploadReceiver;
-import com.clustercontrol.jobmap.util.JobMapEndpointWrapper;
+import com.clustercontrol.fault.IconFileDuplicate;
+import com.clustercontrol.fault.IconFileNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.jobmanagement.util.JobmapIconImageUtil;
+import com.clustercontrol.jobmap.util.ImageFileUploadReceiver;
+import com.clustercontrol.jobmap.util.JobMapRestClientWrapper;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
+import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * ジョブマップ用イメージファイル作成・変更ダイアログクラス(RAP)<BR>
@@ -77,7 +77,11 @@ public class JobMapImageDialog extends CommonDialog {
 	private long maxFileSize = 2 * 1024 * 1024;
 	
 	/** ジョブマップ用アイコンファイル情報 */
-	private JobmapIconImage m_jobmapIconImage = null;
+	private JobmapIconImageInfoResponse m_jobmapIconImage = null;
+	/** ジョブマップ用アイコン画像ファイル */
+	private File m_iconImageFile = null;
+	/** ジョブマップ用アイコン画像ファイルデータ */
+	private byte[] m_iconImageFiledata = null;
 	/** マネージャ名 */
 	private String m_managerName = null;
 	/** アイコンID */
@@ -135,7 +139,7 @@ public class JobMapImageDialog extends CommonDialog {
 	public JobMapImageDialog(Shell parent, 	String managerName) {
 		super(parent);
 		this.m_managerName = managerName;
-		this.m_jobmapIconImage = new JobmapIconImage();
+		this.m_jobmapIconImage = new JobmapIconImageInfoResponse();
 	}
 
 	/**
@@ -278,10 +282,13 @@ public class JobMapImageDialog extends CommonDialog {
 		this.m_fileUpload.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				FileUpload fileUpload = (FileUpload) e.widget;
+				if (fileUpload.getFileName() == null) {
+					return;
+				}
 				// Cleanup the temporary file at first
 				cleanup();
 
-				FileUpload fileUpload = (FileUpload) e.widget;
 				m_txtImageFilePath.setText(fileUpload.getFileName());
 				setBusy();
 
@@ -352,11 +359,17 @@ public class JobMapImageDialog extends CommonDialog {
 	}
 
 	private void setFree(){
+		if(this.m_fileUpload.isDisposed()) {
+			// キャンセルや×ボタンでダイアログが閉じられた場合、既にdisposeされている
+			return;
+		}
 		this.m_fileUpload.getDisplay().asyncExec( new Runnable() {
 			@Override
 			public void run() {
-				m_fileUpload.setEnabled( true );
-				m_fileUpload.setText( "..." );
+				if (!m_fileUpload.isDisposed()) {
+					m_fileUpload.setEnabled( true );
+					m_fileUpload.setText( "..." );
+				}
 			}
 		});
 	}
@@ -365,7 +378,9 @@ public class JobMapImageDialog extends CommonDialog {
 		this.m_fileUpload.getDisplay().asyncExec( new Runnable() {
 			@Override
 			public void run() {
-				m_fileUpload.setText( precentageText );
+				if (!m_fileUpload.isDisposed()) {
+					m_fileUpload.setText( precentageText );
+				}
 			}
 		});
 	}
@@ -379,6 +394,7 @@ public class JobMapImageDialog extends CommonDialog {
 				if(path != null && !"".equals(path)){
 					try {
 						File file = new File(path);
+						m_iconImageFile = file;
 						if(file.exists()) {
 							if (file.length() > maxFileSize) {
 								String[] args = {Long.toString(file.length()), Long.toString(maxFileSize)};
@@ -389,9 +405,9 @@ public class JobMapImageDialog extends CommonDialog {
 							} else {
 								// ファイルデータを取得する
 								byte[] filedata = JobmapIconImageUtil.getImageFileData(path);
-								m_jobmapIconImage.setFiledata(filedata);
+								m_iconImageFiledata = filedata;
 								// イメージの反映
-								m_lblImage.setImage(JobmapIconImageUtil.getIconImage(m_jobmapIconImage.getFiledata()));
+								m_lblImage.setImage(JobmapIconImageUtil.getIconImage(m_iconImageFiledata));
 							}
 						}
 					} catch (IOException ie) {
@@ -482,24 +498,25 @@ public class JobMapImageDialog extends CommonDialog {
 		try {
 			//アイコンキャッシュの取得
 			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
-			this.m_jobmapIconImage  = iconCache.getJobmapIconImage(this.m_managerName, this.m_iconId);
-		} catch (IconFileNotFound_Exception e) {
+			this.m_jobmapIconImage  = iconCache.getJobmapIconImageCacheEntry(this.m_managerName, this.m_iconId).getJobmapIconImage();
+			this.m_iconImageFiledata = iconCache.getJobmapIconImageCacheEntry(this.m_managerName, this.m_iconId).getFiledata();
+		} catch (IconFileNotFound e) {
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
 					Messages.getString("message.job.148", new String[]{this.m_iconId}));
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (InvalidUserPass_Exception e) {
+		} catch (InvalidUserPass e) {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
 					Messages.getString("message.job.140") + " " + HinemosMessage.replace(e.getMessage()));
-		} catch (InvalidSetting_Exception e) {
+		} catch (InvalidSetting e) {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
@@ -532,10 +549,9 @@ public class JobMapImageDialog extends CommonDialog {
 		}
 
 		// アイコンイメージファイルパスを設定
-		if (this.m_jobmapIconImage.getFiledata() != null) {
+		if (m_iconImageFiledata != null) {
 			this.m_txtImageFilePath.setText(REGISTERED);
-			this.m_lblImage.setImage(JobmapIconImageUtil.getIconImage(
-					this.m_jobmapIconImage.getFiledata()));
+			this.m_lblImage.setImage(JobmapIconImageUtil.getIconImage(m_iconImageFiledata));
 		}
 	}
 
@@ -593,8 +609,8 @@ public class JobMapImageDialog extends CommonDialog {
 			String managerName = this.m_managerComposite.getText();
 			//ジョブマップ向けエンドポイント有効チェック
 			try {
-				JobMapEndpointWrapper wrapper = JobMapEndpointWrapper.getWrapper(managerName);
-				wrapper.getVersion();
+				JobMapRestClientWrapper wrapper = JobMapRestClientWrapper.getWrapper(managerName);
+				wrapper.checkPublish();
 			} catch (Exception e) {
 				//NGならエラーダイアログを表示して終了する。
 				MessageDialog.openInformation(
@@ -605,35 +621,35 @@ public class JobMapImageDialog extends CommonDialog {
 			}
 			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
 			if (this.m_mode == PropertyDefineConstant.MODE_MODIFY) {
-				iconCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, false);
+				iconCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, this.m_iconImageFile, false, this.m_iconImageFiledata);
 				Object[] arg = {managerName};
 				MessageDialog.openInformation(null, Messages.getString("successful"),
 						Messages.getString("message.job.77", arg));
 			} else {
-				iconCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, true);
+				iconCache.modifyJobmapIconImage(managerName, this.m_jobmapIconImage, this.m_iconImageFile, true, null);
 				Object[] arg = {managerName};
 				MessageDialog.openInformation(null, Messages.getString("successful"),
 						Messages.getString("message.job.79", arg));
 			}
 			result = true;
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (IconFileDuplicate_Exception e) {
+		} catch (IconFileDuplicate e) {
 			String[] args = {this.m_jobmapIconImage.getIconId()};
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
 					Messages.getString("message.job.139",args) + " " + HinemosMessage.replace(e.getMessage()));
-		} catch (InvalidUserPass_Exception e) {
+		} catch (InvalidUserPass e) {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
 					Messages.getString("message.job.140") + " " + HinemosMessage.replace(e.getMessage()));
-		} catch (InvalidSetting_Exception e) {
+		} catch (InvalidSetting e) {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),

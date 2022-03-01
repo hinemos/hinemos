@@ -25,16 +25,16 @@ public class NodeConfigSettingManagerUtil {
 	/**
 	 * topicを送信します。
 	 */
-	public static void broadcastConfigured() {
+	public static void broadcastConfiguredFlowControl() {
 		// Local Variables
 		TopicInfo topicInfo = null;
 
 		// MAIN
-		log.info("broadcasting configuration modified.");
+		log.info("broadcasting configuration modified. with flow control.");
 
 		topicInfo = new TopicInfo();
 		topicInfo.setNodeConfigSettingChanged(true);
 
-		AgentConnectUtil.setTopic(null, topicInfo);
+		AgentConnectUtil.broadcastTopicFlowControl(topicInfo);
 	}
 }

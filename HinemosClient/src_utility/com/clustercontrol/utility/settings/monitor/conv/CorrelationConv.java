@@ -8,14 +8,26 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.CorrelationCheckInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.MonitorNumericTypeEnum;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.PriorityEnum;
 
 import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -26,13 +38,6 @@ import com.clustercontrol.utility.settings.monitor.xml.NumericChangeAmount;
 import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.CorrelationCheckInfo;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
 
 /**
  * 相関係数監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -48,7 +53,7 @@ public class CorrelationConv {
 
 	private final static String SCHEMA_TYPE = "I";
 	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "1";
+	private final static String SCHEMA_REVISION = "2";
 
 	/**
 	 * <BR>
@@ -87,14 +92,17 @@ public class CorrelationConv {
 	 * @param
 	 * @return
 	 * @throws ConvertorException
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
+	 * @throws ParseException 
 	 */
-	public static List<MonitorInfo> createMonitorInfoList(CorrelationMonitors correlationMonitors) throws ConvertorException {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(CorrelationMonitors correlationMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 
 		for (CorrelationMonitor correlationMonitor : correlationMonitors.getCorrelationMonitor()) {
 			logger.debug("Monitor Id : " + correlationMonitor.getMonitor().getMonitorId());
 
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(correlationMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(correlationMonitor.getMonitor());
 
 			for (NumericValue numericValue : correlationMonitor.getNumericValue()) {
 				if(numericValue.getPriority() == PriorityConstant.TYPE_INFO ||
@@ -114,40 +122,36 @@ public class CorrelationConv {
 					monitorInfo.getNumericValueInfo().add(MonitorConv.createMonitorNumericValueInfo(changeValue));
 				}
 			}			
-			MonitorNumericValueInfo monitorNumericValueInfo = new MonitorNumericValueInfo();
-			monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-			monitorNumericValueInfo.setMonitorNumericType("");
-			monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+			MonitorNumericValueInfoResponse monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+			monitorNumericValueInfo.setMonitorNumericType(null);
+			monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 			monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 			monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 			monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
-			monitorNumericValueInfo = new MonitorNumericValueInfo();
-			monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-			monitorNumericValueInfo.setMonitorNumericType("");
-			monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+			monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+			monitorNumericValueInfo.setMonitorNumericType(null);
+			monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 			monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 			monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 			monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
 			// 変化量監視が無効の場合、関連閾値が未入力なら、画面デフォルト値にて補完
-			if( monitorInfo.isChangeFlg() ==false && correlationMonitor.getNumericChangeAmount().length == 0 ){
+			if( monitorInfo.getChangeFlg() ==false && correlationMonitor.getNumericChangeAmount().length == 0 ){
 				MonitorConv.setMonitorChangeAmountDefault(monitorInfo);
 			}
 			
 			// 変化量についても閾値判定と同様にTYPE_CRITICALとTYPE_UNKNOWNを定義する
-			monitorNumericValueInfo = new MonitorNumericValueInfo();
-			monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-			monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-			monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+			monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+			monitorNumericValueInfo.setMonitorNumericType(MonitorNumericTypeEnum.CHANGE);
+			monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 			monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 			monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 			monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 			
-			monitorNumericValueInfo = new MonitorNumericValueInfo();
-			monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-			monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-			monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+			monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+			monitorNumericValueInfo.setMonitorNumericType(MonitorNumericTypeEnum.CHANGE);
+			monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 			monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 			monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 			monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
@@ -164,37 +168,39 @@ public class CorrelationConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static CorrelationMonitors createCorrelationMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static CorrelationMonitors createCorrelationMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		CorrelationMonitors correlationMonitors = new CorrelationMonitors();
 
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			CorrelationMonitor correlationMonitor = new CorrelationMonitor();
 			correlationMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 
-			for (MonitorNumericValueInfo numericValueInfo : monitorInfo.getNumericValueInfo()) {
-				if(numericValueInfo.getPriority() == PriorityConstant.TYPE_INFO ||
-						numericValueInfo.getPriority() == PriorityConstant.TYPE_WARNING){
-					if(numericValueInfo.getMonitorNumericType().contains("CHANGE")) {
-						correlationMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(numericValueInfo));
+			for (MonitorNumericValueInfoResponse numericValueInfo : monitorInfo.getNumericValueInfo()) {
+				if(numericValueInfo.getPriority() == PriorityEnum.INFO ||
+						numericValueInfo.getPriority() == PriorityEnum.WARNING){
+					if(numericValueInfo.getMonitorNumericType().name().equals("CHANGE")) {
+						correlationMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 					else{
-						correlationMonitor.addNumericValue(MonitorConv.createNumericValue(numericValueInfo));
+						correlationMonitor.addNumericValue(MonitorConv.createNumericValue(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 				}
 			}
 
-			correlationMonitor.setCorrelationInfo(createCorrelationInfo(monitorInfo.getCorrelationCheckInfo()));
+			correlationMonitor.setCorrelationInfo(createCorrelationInfo(monitorInfo));
 			correlationMonitors.addCorrelationMonitor(correlationMonitor);
 		}
 
@@ -209,20 +215,20 @@ public class CorrelationConv {
 	 *
 	 * @return
 	 */
-	private static CorrelationInfo createCorrelationInfo(CorrelationCheckInfo correlationCheckInfo) {
+	private static CorrelationInfo createCorrelationInfo(MonitorInfoResponse monitorInfo) {
 		CorrelationInfo correlationInfo = new CorrelationInfo();
 
 		correlationInfo.setMonitorTypeId("");
 
-		correlationInfo.setMonitorId(correlationCheckInfo.getMonitorId());
-		correlationInfo.setTargetMonitorId(correlationCheckInfo.getTargetMonitorId());
-		correlationInfo.setTargetItemName(correlationCheckInfo.getTargetItemName());
-		correlationInfo.setTargetDisplayName(correlationCheckInfo.getTargetDisplayName());
-		correlationInfo.setReferMonitorId(correlationCheckInfo.getReferMonitorId());
-		correlationInfo.setReferItemName(correlationCheckInfo.getReferItemName());
-		correlationInfo.setReferDisplayName(correlationCheckInfo.getReferDisplayName());
-		correlationInfo.setReferFacilityId(correlationCheckInfo.getReferFacilityId());
-		correlationInfo.setAnalysysRange(correlationCheckInfo.getAnalysysRange());
+		correlationInfo.setMonitorId(monitorInfo.getMonitorId());
+		correlationInfo.setTargetMonitorId(monitorInfo.getCorrelationCheckInfo().getTargetMonitorId());
+		correlationInfo.setTargetItemName(monitorInfo.getCorrelationCheckInfo().getTargetItemName());
+		correlationInfo.setTargetDisplayName(monitorInfo.getCorrelationCheckInfo().getTargetDisplayName());
+		correlationInfo.setReferMonitorId(monitorInfo.getCorrelationCheckInfo().getReferMonitorId());
+		correlationInfo.setReferItemName(monitorInfo.getCorrelationCheckInfo().getReferItemName());
+		correlationInfo.setReferDisplayName(monitorInfo.getCorrelationCheckInfo().getReferDisplayName());
+		correlationInfo.setReferFacilityId(monitorInfo.getCorrelationCheckInfo().getReferFacilityId());
+		correlationInfo.setAnalysysRange(monitorInfo.getCorrelationCheckInfo().getAnalysysRange());
 
 		return correlationInfo;
 	}
@@ -232,12 +238,9 @@ public class CorrelationConv {
 	 *
 	 * @return
 	 */
-	private static CorrelationCheckInfo createCorrelationCheckInfo(CorrelationInfo correlationInfo) {
-		CorrelationCheckInfo correlationCheckInfo = new CorrelationCheckInfo();
+	private static CorrelationCheckInfoResponse createCorrelationCheckInfo(CorrelationInfo correlationInfo) {
+		CorrelationCheckInfoResponse correlationCheckInfo = new CorrelationCheckInfoResponse();
 
-		correlationCheckInfo.setMonitorTypeId(correlationInfo.getMonitorTypeId());
-
-		correlationCheckInfo.setMonitorId(correlationInfo.getMonitorId());
 		correlationCheckInfo.setTargetMonitorId(correlationInfo.getTargetMonitorId());
 		correlationCheckInfo.setTargetItemName(correlationInfo.getTargetItemName());
 		correlationCheckInfo.setTargetDisplayName(correlationInfo.getTargetDisplayName());

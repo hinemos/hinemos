@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.PatternResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.http.dialog.PatternCreateDialog;
@@ -20,18 +21,17 @@ import com.clustercontrol.http.viewer.PatternTableLabelProvider;
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
 import com.clustercontrol.monitor.run.util.TableItemManager;
 import com.clustercontrol.monitor.run.viewer.CommonTableLabelProvider;
-import com.clustercontrol.ws.monitor.Pattern;
 
-public class PatternCompositeDefine implements ITableItemCompositeDefine<Pattern> {
+public class PatternCompositeDefine implements ITableItemCompositeDefine<PatternResponse> {
 
 	/** 現在有効なダイアログ */
 	private PatternCreateDialog dialog = null;
 
 	/** テーブルアイテムの管理クラス */
-	private TableItemManager<Pattern> manager = null;
+	private TableItemManager<PatternResponse> manager = null;
 
 	@Override
-	public Pattern getCurrentCreatedItem() {
+	public PatternResponse getCurrentCreatedItem() {
 		if(dialog != null){
 			return dialog.getInputData();
 		}
@@ -46,7 +46,7 @@ public class PatternCompositeDefine implements ITableItemCompositeDefine<Pattern
 	}
 
 	@Override
-	public CommonDialog createDialog(Shell shell, Pattern item) {
+	public CommonDialog createDialog(Shell shell, PatternResponse item) {
 		dialog = new PatternCreateDialog(shell, item);
 		return dialog;
 	}
@@ -57,7 +57,7 @@ public class PatternCompositeDefine implements ITableItemCompositeDefine<Pattern
 	}
 
 	@Override
-	public TableItemManager<Pattern> getTableItemInfoManager() {
+	public TableItemManager<PatternResponse> getTableItemInfoManager() {
 		return manager;
 	}
 
@@ -67,7 +67,7 @@ public class PatternCompositeDefine implements ITableItemCompositeDefine<Pattern
 	}
 
 	@Override
-	public void initTableItemInfoManager(List<Pattern> items) {
+	public void initTableItemInfoManager(List<PatternResponse> items) {
 		manager = new TableItemManager<>(items);
 	}
 
@@ -77,17 +77,17 @@ public class PatternCompositeDefine implements ITableItemCompositeDefine<Pattern
 	}
 
 	@Override
-	public String getItemsIdentifier(Pattern item) {
-		return item.getDescription();
+	public String getItemsIdentifier(PatternResponse item) {
+		return item.getPattern();
 	}
 
 	@Override
-	public CommonTableLabelProvider<Pattern> getLabelProvider() {
+	public CommonTableLabelProvider<PatternResponse> getLabelProvider() {
 		return new PatternTableLabelProvider(this);
 	}
 
 	@Override
-	public int indexOf(Pattern item) {
+	public int indexOf(PatternResponse item) {
 		if(this.manager != null){
 			return this.manager.indexOf(item);
 		}

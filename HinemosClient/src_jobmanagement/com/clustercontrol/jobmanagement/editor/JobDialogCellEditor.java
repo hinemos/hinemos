@@ -8,12 +8,14 @@
 
 package com.clustercontrol.jobmanagement.editor;
 
+import java.util.List;
+
 import org.eclipse.jface.viewers.DialogCellEditor;
 import org.eclipse.swt.widgets.Control;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.dialog.JobTreeDialog;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 
 /**
  * ジョブ選択用のDialogCellEditorです。
@@ -22,13 +24,27 @@ import com.clustercontrol.ws.jobmanagement.JobTreeItem;
  * @since 1.0.0
  */
 public class JobDialogCellEditor extends DialogCellEditor {
+
+	private JobTreeItemWrapper m_jobTreeItem = null;
 	/** ツリーのみフラグ */
 	private boolean m_treeOnly = false;
 
-	private JobTreeItem m_jobTreeItem = null;
-	
-	private Integer m_mode = null;
+	/**
+	 * 表示ツリーの形式
+	 * 値として、JobConstantクラスで定義したものが入る
+	 * @see com.clustercontrol.jobmanagement.bean.JobConstant
+	 *  null : 選択したユニット、ネットの子のみ表示する
+	 *  TYPE_REFERJOB,TYPE_REFERJOBNET		: 選択したユニット、ネットの所属するジョブユニット以下すべて表示する
+	 */
+	private JobInfoWrapper.TypeEnum m_mode = null;
 
+	/**
+	 * 表示するジョブ種別のリスト
+	 * 値として、JobConstantクラスで定義したものが入る
+	 * @see com.clustercontrol.jobmanagement.bean.JobConstant
+	 *  null : 全てのユニット、ネット
+	 */
+	private List<JobInfoWrapper.TypeEnum> m_targetJobTypeList = null;
 	/**
 	 * コンストラクタ
 	 */
@@ -52,10 +68,10 @@ public class JobDialogCellEditor extends DialogCellEditor {
 	/**
 	 * コンストラクタ
 	 *
-	 * @param parentJobId 親ジョブID
-	 * @param jobId ジョブID
+	 * @param JobTreeItemWrapper
+	 *            ジョブツリー
 	 */
-	public JobDialogCellEditor(JobTreeItem jobTreeItem) {
+	public JobDialogCellEditor(JobTreeItemWrapper jobTreeItem) {
 		super();
 		m_treeOnly = true;
 		m_jobTreeItem = jobTreeItem;
@@ -63,15 +79,19 @@ public class JobDialogCellEditor extends DialogCellEditor {
 
 	/**
 	 * コンストラクタ
-	 *
-	 * @param parentJobId 親ジョブID
-	 * @param jobId ジョブID
+	 * @param jobTreeItem
+	 * @param mode
+	 *            表示元ジョブ種別
+	 * @param targetJobTypeList
+	 *            表示対象のジョブ種別
 	 */
-	public JobDialogCellEditor(JobTreeItem jobTreeItem, Integer mode) {
+	public JobDialogCellEditor(JobTreeItemWrapper jobTreeItem, JobInfoWrapper.TypeEnum mode,
+			List<JobInfoWrapper.TypeEnum> targetJobTypeList) {
 		super();
 		m_treeOnly = true;
 		m_jobTreeItem = jobTreeItem;
 		m_mode = mode;
+		m_targetJobTypeList = targetJobTypeList;
 	}
 
 	/**
@@ -85,17 +105,25 @@ public class JobDialogCellEditor extends DialogCellEditor {
 		JobTreeDialog dialog = null;
 		if (m_jobTreeItem == null) {
 			dialog = new JobTreeDialog(cellEditorWindow.getShell(), null, null, m_treeOnly);
-		} else if (m_mode != null) {
-			dialog = new JobTreeDialog(cellEditorWindow.getShell(), null, m_jobTreeItem, m_mode);
 		} else {
-			dialog = new JobTreeDialog(cellEditorWindow.getShell(), null, m_jobTreeItem);
+			dialog = new JobTreeDialog(cellEditorWindow.getShell(), null, m_jobTreeItem, m_mode, m_targetJobTypeList);
 		}
 		dialog.open();
-		//選択したジョブツリーアイテムを取得する
-		JobTreeItem item = null;
+		JobTreeItemWrapper item = getSelectJobItem(dialog);
+		return item;
+	}
+
+	/**
+	 * 選択したジョブツリーアイテムを取得する
+	 *
+	 * @param dialog
+	 * @return
+	 */
+	private JobTreeItemWrapper getSelectJobItem(JobTreeDialog dialog) {
+		JobTreeItemWrapper item = null;
 		if (dialog.getReturnCode() == JobTreeDialog.OK) {
 			item = dialog.getSelectItem().isEmpty() ? null : dialog.getSelectItem().get(0);
-			if (item != null && item.getData().getType() == JobConstant.TYPE_COMPOSITE) {
+			if (item != null && item.getData().getType() == JobInfoWrapper.TypeEnum.COMPOSITE) {
 				item = null;
 			}
 		}

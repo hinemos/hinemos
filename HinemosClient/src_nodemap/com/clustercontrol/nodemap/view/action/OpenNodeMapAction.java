@@ -23,6 +23,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.nodemap.composite.ScopeComposite;
@@ -30,9 +31,9 @@ import com.clustercontrol.nodemap.util.RelationViewController;
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.nodemap.view.ScopeTreeView;
 import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * スコープツリービューの新規ノードマップビューを開くためのボタン用
@@ -68,8 +69,8 @@ public class OpenNodeMapAction extends AbstractHandler implements IElementUpdate
 
 		ScopeComposite tree = view.getScopeComposite();
 
-		FacilityTreeItem item = tree.getSelectItem();
-		if (item.getData().getFacilityType() == FacilityConstant.TYPE_NODE) {
+		FacilityTreeItemResponse item = tree.getSelectItem();
+		if (item.getData().getFacilityType() == FacilityTypeEnum.NODE) {
 			/*
 			 * ボタンはdisableになっているので、呼ばれる事はない。
 			 */
@@ -79,7 +80,7 @@ public class OpenNodeMapAction extends AbstractHandler implements IElementUpdate
 
 		try {
 			String facilityId = item.getData().getFacilityId();
-			if (item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER) {
+			if (item.getData().getFacilityType() == FacilityTypeEnum.MANAGER) {
 				facilityId = ReservedFacilityIdConstant.ROOT_SCOPE;
 			}
 			RelationViewController.createNewView(ScopePropertyUtil.getManager(item).getData().getFacilityId(), facilityId, NodeMapView.class);
@@ -110,18 +111,18 @@ public class OpenNodeMapAction extends AbstractHandler implements IElementUpdate
 					ScopeTreeView view = (ScopeTreeView)part;
 					ScopeComposite tree = view.getScopeComposite();
 
-					FacilityTreeItem item = tree.getSelectItem();
+					FacilityTreeItemResponse item = tree.getSelectItem();
 					
-					int type = item.getData().getFacilityType();
-					if (type == FacilityConstant.TYPE_COMPOSITE) {
+					FacilityTypeEnum type = item.getData().getFacilityType();
+					if (type == FacilityTypeEnum.COMPOSITE) {
 						editEnable = false;
-					} else if (type == FacilityConstant.TYPE_MANAGER) {
+					} else if (type == FacilityTypeEnum.MANAGER) {
 						editEnable = true;
-					} else if(item.getData().isBuiltInFlg()){
+					} else if(item.getData().getBuiltInFlg()){
 						editEnable = true;
-					} else if (type == FacilityConstant.TYPE_SCOPE) {
+					} else if (type == FacilityTypeEnum.SCOPE) {
 						editEnable = true;
-					} else if (type == FacilityConstant.TYPE_NODE) {
+					} else if (type == FacilityTypeEnum.NODE) {
 						editEnable = false;
 					}
 				}

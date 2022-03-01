@@ -29,6 +29,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.InfraManagementParamInfoResponse;
 
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.infra.action.GetInfraParameterTableDefine;
@@ -36,7 +37,6 @@ import com.clustercontrol.infra.dialog.InfraParameterDialog;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.infra.InfraManagementParamInfo;
 
 /**
  * 環境変数タブ用のコンポジットクラスです。
@@ -57,7 +57,7 @@ public class InfraParameterComposite extends Composite {
 	/** 変数 削除用ボタン */
 	private Button m_btnDelete = null;
 	/** 環境変数変数情報 */
-	private Map<String, InfraManagementParamInfo> m_infraManagementParamMap = new HashMap<>();
+	private Map<String, InfraManagementParamInfoResponse> m_infraManagementParamMap = new HashMap<>();
 
 	/**
 	 * コンストラクタ
@@ -230,15 +230,15 @@ public class InfraParameterComposite extends Composite {
 		if (this.m_infraManagementParamMap != null) {
 			// 環境構築変数
 			ArrayList<ArrayList<?>> tableData = new ArrayList<ArrayList<?>>();
-			for (InfraManagementParamInfo infraParam : this.m_infraManagementParamMap.values()) {
+			for (InfraManagementParamInfoResponse infraParam : this.m_infraManagementParamMap.values()) {
 				ArrayList<Object> tableLineData = new ArrayList<Object>();
 				tableLineData.add(infraParam.getParamId());
 				String value = infraParam.getValue();
-				if (infraParam.isPasswordFlg()) {
+				if (infraParam.getPasswordFlg()) {
 					value = value.replaceAll(".", "*");
 				}
 				tableLineData.add(value);
-				tableLineData.add(infraParam.isPasswordFlg());
+				tableLineData.add(infraParam.getPasswordFlg());
 				tableLineData.add(infraParam.getDescription());
 				tableData.add(tableLineData);
 			}
@@ -259,7 +259,7 @@ public class InfraParameterComposite extends Composite {
 	 * 環境構築変数情報を戻します。
 	 * @return 環境構築変数情報
 	 */
-	public List<InfraManagementParamInfo> getInfraManagementParamList() {
+	public List<InfraManagementParamInfoResponse> getInfraManagementParamList() {
 		return new ArrayList<>(this.m_infraManagementParamMap.values());
 	}
 
@@ -267,11 +267,11 @@ public class InfraParameterComposite extends Composite {
 	 * 環境構築変数情報を設定します。
 	 * @param infraManagementParamList ランタイムジョブ変数情報
 	 */
-	public void setInfraManagementParamList(List<InfraManagementParamInfo> infraManagementParamList) {
+	public void setInfraManagementParamList(List<InfraManagementParamInfoResponse> infraManagementParamList) {
 		if (infraManagementParamList == null) {
 			this.m_infraManagementParamMap = new HashMap<>();
 		} else {
-			for (InfraManagementParamInfo infraManagementParam : infraManagementParamList) {
+			for (InfraManagementParamInfoResponse infraManagementParam : infraManagementParamList) {
 				this.m_infraManagementParamMap.put(infraManagementParam.getParamId(), infraManagementParam);
 			}
 			reflectParamInfo();

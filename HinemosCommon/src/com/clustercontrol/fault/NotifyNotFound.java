@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * facilityIDが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class NotifyNotFound extends HinemosException {
+public class NotifyNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = -5140106939019160410L;
 

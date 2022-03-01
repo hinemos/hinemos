@@ -17,6 +17,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -77,8 +78,8 @@ public class NodeConfigCollectReferenceTimeUtil {
 	 * Internalエラー出力.
 	 */
 	private static void putInternalLog(HinemosPropertyCommon property, String defaultValue) {
-		AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.NODE_CONFIG_SETTING,
-				MessageConstant.MESSAGE_INVALID_PROPERTY.getMessage(), property.message_invalid(defaultValue));
+		String[] args = {};
+		AplLogger.put(InternalIdCommon.NODE_CONFIG_SETTING_SYS_003, args, property.message_invalid(defaultValue));
 	}
 
 	/**

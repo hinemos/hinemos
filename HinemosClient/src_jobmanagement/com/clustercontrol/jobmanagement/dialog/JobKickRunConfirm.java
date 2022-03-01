@@ -35,6 +35,11 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.openapitools.client.model.JobRuntimeParamRequest;
+import org.openapitools.client.model.RunJobRequest;
+
+import org.openapitools.client.model.JobKickResponse;
+import org.openapitools.client.model.JobRuntimeParamResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -45,9 +50,6 @@ import com.clustercontrol.jobmanagement.action.GetJobKick;
 import com.clustercontrol.jobmanagement.composite.JobKickInputParamComposite;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobKick;
-import com.clustercontrol.ws.jobmanagement.JobRuntimeParam;
-import com.clustercontrol.ws.jobmanagement.JobTriggerInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -62,7 +64,7 @@ public class JobKickRunConfirm extends CommonDialog {
 	private String m_MessageText = "";
 
 	/** ジョブ変数情報 */
-	private JobTriggerInfo m_trigger = null;
+	private RunJobRequest m_trigger = null;
 
 	/** ジョブの待ち条件（時刻）有効無効チェックボタン */
 	private Button btnJobWaitTime = null;
@@ -279,10 +281,10 @@ public class JobKickRunConfirm extends CommonDialog {
 	private void createDetailComposite(Composite parent) {
 
 		// ジョブ実行契機よりランタイムジョブ変数情報を取得
-		JobKick jobKick = GetJobKick.getJobKick(this.m_managerName, this.m_jobkickId);
+		JobKickResponse jobKick = GetJobKick.getJobKick(this.m_managerName, this.m_jobkickId);
 		if (jobKick != null
 				&& jobKick.getJobRuntimeParamList() != null) {
-			for (JobRuntimeParam jobRuntimeParam : jobKick.getJobRuntimeParamList()) {
+			for (JobRuntimeParamResponse jobRuntimeParam : jobKick.getJobRuntimeParamList()) {
 				JobKickInputParamComposite composite 
 					= new JobKickInputParamComposite(parent, SWT.NONE, jobRuntimeParam);
 				composite.setLayoutData(new RowData());
@@ -410,7 +412,7 @@ public class JobKickRunConfirm extends CommonDialog {
 	 *
 	 */
 	private void setTriggerInfo(){
-		this.m_trigger = new JobTriggerInfo();
+		this.m_trigger = new RunJobRequest();
 
 		//条件関係取得
 		if (this.btnJobWaitTime.getSelection()) {
@@ -445,7 +447,7 @@ public class JobKickRunConfirm extends CommonDialog {
 					: this.m_jobKickInputParamCompositeList){
 				if (paramComposite.getParamId() != null 
 						&& paramComposite.getValue() != null) {
-					JobRuntimeParam jobRuntimeParam = new JobRuntimeParam();
+					JobRuntimeParamRequest jobRuntimeParam = new JobRuntimeParamRequest();
 					jobRuntimeParam.setParamId(paramComposite.getParamId());
 					jobRuntimeParam.setValue(paramComposite.getValue());
 					this.m_trigger.getJobRuntimeParamList().add(jobRuntimeParam);
@@ -459,7 +461,7 @@ public class JobKickRunConfirm extends CommonDialog {
 	 *
 	 * @param info 入力情報
 	 */
-	public void setInputData(JobTriggerInfo info) {
+	public void setInputData(RunJobRequest info) {
 		m_trigger = info;
 	}
 
@@ -468,7 +470,7 @@ public class JobKickRunConfirm extends CommonDialog {
 	 *
 	 * @return 入力情報
 	 */
-	public JobTriggerInfo getInputData() {
+	public RunJobRequest getInputData() {
 		return m_trigger;
 	}
 }

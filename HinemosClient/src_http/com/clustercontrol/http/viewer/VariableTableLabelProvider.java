@@ -8,10 +8,11 @@
 
 package com.clustercontrol.http.viewer;
 
+import org.openapitools.client.model.VariableResponse;
+
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
 import com.clustercontrol.monitor.run.viewer.CommonTableLabelProvider;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.Variable;
 
 /**
  * 文字列監視の判定情報一覧のラベルプロバイダークラス<BR>
@@ -19,9 +20,9 @@ import com.clustercontrol.ws.monitor.Variable;
  * @version 5.0.0
  * @since 5.0.0
  */
-public class VariableTableLabelProvider extends CommonTableLabelProvider<Variable> {
+public class VariableTableLabelProvider extends CommonTableLabelProvider<VariableResponse> {
 
-	public VariableTableLabelProvider(ITableItemCompositeDefine<Variable> define) {
+	public VariableTableLabelProvider(ITableItemCompositeDefine<VariableResponse> define) {
 		super(define);
 	}
 
@@ -34,8 +35,8 @@ public class VariableTableLabelProvider extends CommonTableLabelProvider<Variabl
 	@Override
 	public String getColumnText(Object element, int columnIndex) {
 
-		if (element instanceof Variable) {
-			Variable variable = (Variable) element;
+		if (element instanceof VariableResponse) {
+			VariableResponse variable = (VariableResponse) element;
 
 			if (columnIndex == GetVariableTableDefine.NAME) {
 				if(variable.getName() != null){
@@ -46,7 +47,7 @@ public class VariableTableLabelProvider extends CommonTableLabelProvider<Variabl
 					return variable.getValue();
 				}
 			} else if (columnIndex == GetVariableTableDefine.MATCHING_WITH_RESPONSE) {
-				if(variable.isMatchingWithResponseFlg()){
+				if(variable.getMatchingWithResponseFlg()){
 					return Messages.getString("monitor.http.scenario.page.obtain.from.current.page.valid");
 				} else {
 					return Messages.getString("monitor.http.scenario.page.obtain.from.current.page.invalid");

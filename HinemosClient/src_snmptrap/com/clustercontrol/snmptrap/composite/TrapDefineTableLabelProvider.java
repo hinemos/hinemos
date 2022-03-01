@@ -8,12 +8,13 @@
 
 package com.clustercontrol.snmptrap.composite;
 
+import org.openapitools.client.model.TrapValueInfoResponse;
+
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.bean.ValidMessage;
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
 import com.clustercontrol.monitor.run.viewer.CommonTableLabelProvider;
 import com.clustercontrol.snmptrap.action.GetTrapDefineTableDefine;
-import com.clustercontrol.ws.monitor.TrapValueInfo;
 
 /**
  * 文字列監視の判定情報一覧のラベルプロバイダークラス<BR>
@@ -21,9 +22,9 @@ import com.clustercontrol.ws.monitor.TrapValueInfo;
  * @version 5.0.0
  * @since 5.0.0
  */
-public class TrapDefineTableLabelProvider extends CommonTableLabelProvider<TrapValueInfo> {
+public class TrapDefineTableLabelProvider extends CommonTableLabelProvider<TrapValueInfoResponse> {
 
-	public TrapDefineTableLabelProvider(ITableItemCompositeDefine<TrapValueInfo> define) {
+	public TrapDefineTableLabelProvider(ITableItemCompositeDefine<TrapValueInfoResponse> define) {
 		super(define);
 	}
 
@@ -36,28 +37,32 @@ public class TrapDefineTableLabelProvider extends CommonTableLabelProvider<TrapV
 	@Override
 	public String getColumnText(Object element, int columnIndex) {
 
-		if (element instanceof TrapValueInfo) {
-			TrapValueInfo info = (TrapValueInfo) element;
+		if (element instanceof TrapValueInfoResponse) {
+			TrapValueInfoResponse info = (TrapValueInfoResponse) element;
 			if (columnIndex == GetTrapDefineTableDefine.MIB) {
 				return info.getMib();
 			} else if (columnIndex == GetTrapDefineTableDefine.TRAP_NAME) {
 				return info.getUei();
 			} else if (columnIndex == GetTrapDefineTableDefine.VERSION) {
-				return SnmpVersionConstant.typeToString(info.getVersion());
+				if (info.getVersion() == TrapValueInfoResponse.VersionEnum.V1) {
+					return SnmpVersionConstant.typeToString(SnmpVersionConstant.TYPE_V1);
+				} else if (info.getVersion() == TrapValueInfoResponse.VersionEnum.V2C_V3) {
+					return SnmpVersionConstant.typeToString(SnmpVersionConstant.TYPE_V2);
+				}
 			} else if (columnIndex == GetTrapDefineTableDefine.TRAP_OID) {
 				return info.getTrapOid();
 			} else if (columnIndex == GetTrapDefineTableDefine.GENERIC_ID) {
-				if(info.getVersion() == SnmpVersionConstant.TYPE_V1 && info.getGenericId() != null){
+				if(info.getVersion() == TrapValueInfoResponse.VersionEnum.V1 && info.getGenericId() != null){
 					return info.getGenericId().toString();
 				}
 			} else if (columnIndex == GetTrapDefineTableDefine.SPECIFIC_ID) {
-				if(info.getVersion() == SnmpVersionConstant.TYPE_V1 && info.getSpecificId() != null){
+				if(info.getVersion() == TrapValueInfoResponse.VersionEnum.V1 && info.getSpecificId() != null){
 					return info.getSpecificId().toString();
 				}
 			} else if (columnIndex == GetTrapDefineTableDefine.VALID_FLG) {
-				return ValidMessage.typeToString(info.isValidFlg());
+				return ValidMessage.typeToString(info.getValidFlg());
 			} else if (columnIndex == GetTrapDefineTableDefine.VARIABLE) {
-				return ValidMessage.typeToString(info.isProcessingVarbindSpecified());
+				return ValidMessage.typeToString(info.getProcVarbindSpecified());
 			} else if (columnIndex == GetTrapDefineTableDefine.MESSAGE) {
 				return info.getLogmsg();
 			}

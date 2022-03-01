@@ -8,7 +8,6 @@
 
 package com.clustercontrol.approval.dialog;
 
-import java.util.Date;
 import java.util.Locale;
 
 import org.apache.commons.logging.Log;
@@ -28,27 +27,27 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import com.clustercontrol.approval.util.JobApprovalInfoWrapper;
+import org.openapitools.client.model.ModifyApprovalInfoRequest;
 
 import com.clustercontrol.bean.DataRangeConstant;
-import com.clustercontrol.bean.JobApprovalResultConstant;
-import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidApprovalStatus;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.OperationMessage;
 import com.clustercontrol.jobmanagement.action.OperationJob;
 import com.clustercontrol.jobmanagement.bean.JobApprovalResultMessage;
 import com.clustercontrol.jobmanagement.bean.JobApprovalStatusMessage;
 import com.clustercontrol.jobmanagement.bean.JobOperationConstant;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.TimezoneUtil;
-import com.clustercontrol.ws.jobmanagement.InvalidApprovalStatus_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobApprovalInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 
 
@@ -63,7 +62,7 @@ public class ApprovalDetailDialog extends CommonDialog {
 	// ログ
 	private static Log m_log = LogFactory.getLog( ApprovalDetailDialog.class );
 	
-	private JobApprovalInfo approvalInfo;
+	private JobApprovalInfoWrapper approvalInfo;
 
 	/** 承認状態 テキストボックス */
 	private Text approvalStatusText = null;
@@ -112,7 +111,7 @@ public class ApprovalDetailDialog extends CommonDialog {
 	 * 作成時
 	 * @param parent 親シェル
 	 */
-	public ApprovalDetailDialog(Shell parent, JobApprovalInfo info) {
+	public ApprovalDetailDialog(Shell parent, JobApprovalInfoWrapper info) {
 		super(parent);
 		this.approvalInfo = info;
 	}
@@ -318,8 +317,8 @@ public class ApprovalDetailDialog extends CommonDialog {
 			this.setInputData();
 			// 承認可能な状態でなければコメント欄は更新させないようにする
 			//(承認権限がなければコメント更新もさせないため)
-			if(approvalInfo.getStatus() != JobApprovalStatusConstant.TYPE_PENDING &&
-				approvalInfo.getStatus() != JobApprovalStatusConstant.TYPE_SUSPEND){
+			if(approvalInfo.getStatus() != JobApprovalInfoWrapper.StatusEnum.PENDING &&
+				approvalInfo.getStatus() != JobApprovalInfoWrapper.StatusEnum.SUSPEND){
 				approvalCommentText.setEnabled(false);
 			}
 		}
@@ -344,10 +343,10 @@ public class ApprovalDetailDialog extends CommonDialog {
 		composite.setFont(parent.getFont());
 		
 		if(approvalInfo != null){
-			if(approvalInfo.getStatus() == JobApprovalStatusConstant.TYPE_PENDING ||
-				approvalInfo.getStatus() == JobApprovalStatusConstant.TYPE_SUSPEND){
+			if(approvalInfo.getStatus() == JobApprovalInfoWrapper.StatusEnum.PENDING ||
+				approvalInfo.getStatus() == JobApprovalInfoWrapper.StatusEnum.SUSPEND){
 				createButtonsForApprovalButtonBar(composite);
-			}else if(approvalInfo.getStatus() == JobApprovalStatusConstant.TYPE_STILL){
+			}else if(approvalInfo.getStatus() == JobApprovalInfoWrapper.StatusEnum.STILL){
 				createButtonsForStopButtonBar(composite);
 			}else{
 				createButtonsForCancelButtonBar(composite);
@@ -407,10 +406,10 @@ public class ApprovalDetailDialog extends CommonDialog {
 	private void setInputData(){
 		
 		if(approvalInfo.getStatus() != null){
-			approvalStatusText.setText(JobApprovalStatusMessage.typeToString(approvalInfo.getStatus()));
+			approvalStatusText.setText(JobApprovalStatusMessage.typeEnumToString(approvalInfo.getStatus()));
 		}
 		if(approvalInfo.getResult() != null){
-			approvalResultText.setText(JobApprovalResultMessage.typeToString(approvalInfo.getResult()));
+			approvalResultText.setText(JobApprovalResultMessage.typeEnumToString(approvalInfo.getResult()));
 		}
 		if(approvalInfo.getSessionId() != null){
 			jobSessionIdText.setText(approvalInfo.getSessionId());
@@ -431,10 +430,16 @@ public class ApprovalDetailDialog extends CommonDialog {
 			approvalUserText.setText(approvalInfo.getApprovalUser());
 		}
 		if(approvalInfo.getStartDate() != null){
-			approvalRequestTimeText.setText(TimezoneUtil.getSimpleDateFormat().format(new Date(approvalInfo.getStartDate())));
+			try {
+				approvalRequestTimeText.setText(TimezoneUtil.getSimpleDateFormat().format(TimezoneUtil.getSimpleDateFormat().parse(approvalInfo.getStartDate())));
+			} catch (Exception e) {
+			}
 		}
 		if(approvalInfo.getEndDate() != null){
-			approvalCompletionTimeText.setText(TimezoneUtil.getSimpleDateFormat().format(new Date(approvalInfo.getEndDate())));
+			try {
+				approvalCompletionTimeText.setText(TimezoneUtil.getSimpleDateFormat().format(TimezoneUtil.getSimpleDateFormat().parse(approvalInfo.getEndDate())));
+			} catch (Exception e) {
+			}
 		}
 		if(approvalInfo.getRequestSentence() != null){
 			requestSentenceText.setText(approvalInfo.getRequestSentence());
@@ -521,7 +526,7 @@ public class ApprovalDetailDialog extends CommonDialog {
 	 * @return ジョブ停止操作用プロパティ
 	 *
 	 */
-	private Property getStopProperty(JobApprovalInfo info) {
+	private Property getStopProperty(JobApprovalInfoWrapper info) {
 		Locale locale = Locale.getDefault();
 
 		//セッションID
@@ -561,7 +566,7 @@ public class ApprovalDetailDialog extends CommonDialog {
 		return property;
 	}
 	
-	private void OperationStop(JobApprovalInfo info) {
+	private void OperationStop(JobApprovalInfoWrapper info) {
 		
 		if (MessageDialog.openQuestion(null, Messages.getString("confirmed"), Messages.getString("message.approval.5"))) {
 			if (info.getSessionId() != null && info.getSessionId().length() > 0 && info.getJobunitId() != null
@@ -572,7 +577,7 @@ public class ApprovalDetailDialog extends CommonDialog {
 				
 				//ジョブ停止
 				OperationJob operation = new OperationJob();
-				boolean result = operation.operationJob(info.getMangerName(), prop);
+				boolean result = operation.operationJob(info.getManagerName(), prop);
 				
 				if(result){
 					MessageDialog.openInformation(null, Messages.getString("confirmed"),Messages.getString("message.approval.6"));
@@ -587,14 +592,14 @@ public class ApprovalDetailDialog extends CommonDialog {
 			//承認
 			if (MessageDialog.openQuestion(null, Messages.getString("confirmed"), Messages.getString("message.approval.1"))) {
 				isApprove = true;
-				approvalInfo.setResult(JobApprovalResultConstant.TYPE_APPROVAL);
+				approvalInfo.setResult(JobApprovalInfoWrapper.ResultEnum.APPROVAL);
 				okPressed();
 			}
 		}else{
 			//却下
 			if (MessageDialog.openQuestion(null, Messages.getString("confirmed"), Messages.getString("message.approval.3"))) {
 				isApprove = false;
-				approvalInfo.setResult(JobApprovalResultConstant.TYPE_DENIAL);
+				approvalInfo.setResult(JobApprovalInfoWrapper.ResultEnum.DENIAL);
 				okPressed();
 			}
 		}
@@ -605,14 +610,17 @@ public class ApprovalDetailDialog extends CommonDialog {
 		boolean result = false;
 		
 		String errMsg = null;
-		JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(approvalInfo.getMangerName());
+		JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(approvalInfo.getManagerName());
 		try {
-			wrapper.modifyApprovalInfo(approvalInfo, isApprove);
+			ModifyApprovalInfoRequest modifyApprovalInfoRequest = new ModifyApprovalInfoRequest();
+			RestClientBeanUtil.convertBean(approvalInfo, modifyApprovalInfoRequest);
+
+			wrapper.modifyApprovalInfo(approvalInfo.getSessionId(), approvalInfo.getJobunitId(), approvalInfo.getJobId(), modifyApprovalInfoRequest);
 			result = true;
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			m_log.warn("action() modifyApprovalInfo, " + e.getMessage());
 			errMsg = Messages.getString("message.accesscontrol.16");
-		} catch (InvalidApprovalStatus_Exception e) {
+		} catch (InvalidApprovalStatus e) {
 			m_log.warn("action() modifyApprovalInfo, " + e.getMessage());
 			errMsg = e.getMessage();
 		} catch (Exception e) {
@@ -623,9 +631,9 @@ public class ApprovalDetailDialog extends CommonDialog {
 			if(isApprove != null){
 				String msg;
 				if(isApprove == true){
-					msg = Messages.getString("message.approval.2") + "("+ approvalInfo.getMangerName() +")";
+					msg = Messages.getString("message.approval.2") + "("+ approvalInfo.getManagerName() +")";
 				} else {
-					msg = Messages.getString("message.approval.4") + "("+ approvalInfo.getMangerName() +")";
+					msg = Messages.getString("message.approval.4") + "("+ approvalInfo.getManagerName() +")";
 				}
 				MessageDialog.openInformation(null,
 						Messages.getString("confirmed"),msg);

@@ -21,18 +21,33 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
-import javax.xml.ws.WebServiceException;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.ValidationException;
+import org.openapitools.client.model.AddNodeRequest;
+import org.openapitools.client.model.ImportNodeRecordRequest;
+import org.openapitools.client.model.ImportNodeRequest;
+import org.openapitools.client.model.ImportNodeResponse;
+import org.openapitools.client.model.NodeInfoResponse;
+import org.openapitools.client.model.NodeInfoResponseP2;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffAnnotation;
 import com.clustercontrol.utility.difference.DiffUtil;
@@ -77,19 +92,16 @@ import com.clustercontrol.utility.settings.platform.xml.ProductInfo;
 import com.clustercontrol.utility.settings.platform.xml.ProductList;
 import com.clustercontrol.utility.settings.platform.xml.RepositoryNode;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.repository.FacilityDuplicate_Exception;
-import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.InvalidSetting_Exception;
-import com.clustercontrol.ws.repository.InvalidUserPass_Exception;
-import com.clustercontrol.ws.repository.UsedFacility_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * リポジトリ-ノード-情報をインポート・エクスポート・削除するアクションクラス<br>
@@ -123,11 +135,11 @@ public class RepositoryNodeAction {
 
 		// 返り値変数(条件付き正常終了用）
 		int ret = 0;
-		List<com.clustercontrol.ws.repository.NodeInfo> nodeList = null;
+		List<NodeInfoResponseP2> nodeInfoList;
 
 		// ノード情報一覧の取得
 		try {
-			nodeList = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeListAll();
+			nodeInfoList = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeListAll();
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -136,31 +148,33 @@ public class RepositoryNodeAction {
 		}
 
 		// ノード情報の削除
+		RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+		// ノード情報の削除
 		List<String> ids = new ArrayList<>();
-		for (com.clustercontrol.ws.repository.NodeInfo nodeInfo : nodeList) {
+		for (NodeInfoResponseP2 nodeInfo : nodeInfoList) {
 			ids.add(nodeInfo.getFacilityId());
 		}
 
 		try {
-			RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteNode(ids);
-			log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + ids.toString());
-		} catch (HinemosUnknown_Exception e) {
-			log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+			wrapper.deleteNode(String.join(",", ids));
+			log.info(Messages.getString("SettingTools.ClearSucceeded") + " (Node): " + ids.toString());
+		} catch (HinemosUnknown e) {
+			log.warn(Messages.getString("SettingTools.ClearFailed") + " (Node): " + ids.toString() + " , " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (InvalidUserPass_Exception e) {
-			log.warn(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
+		} catch (InvalidUserPass e) {
+			log.warn(Messages.getString("SettingTools.InvalidUserPass") + " (Node): " + ids.toString() + " , " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (InvalidRole_Exception e) {
-			log.warn(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
+		} catch (InvalidRole e) {
+			log.warn(Messages.getString("SettingTools.InvalidRole") + " (Node): " + ids.toString() + " , " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (UsedFacility_Exception e) {
-			log.warn(Messages.getString("SettingTools.UsedFacility") + " : " + HinemosMessage.replace(e.getMessage()));
+		} catch (UsedFacility e) {
+			log.warn(Messages.getString("SettingTools.UsedFacility") + " (Node): " + ids.toString() + " , " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (WebServiceException e) {
-			log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+		} catch (RestConnectFailed e) {
+			log.warn(Messages.getString("SettingTools.ClearFailed") + " (Node): " + ids.toString() + " , " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 		} catch (Exception e) {
-			log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+			log.warn(Messages.getString("SettingTools.ClearFailed") + " (Node): " + ids.toString() + " , " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 		}
 		
@@ -208,16 +222,16 @@ public class RepositoryNodeAction {
 		NodeVariableList variable = new NodeVariableList();
 		NoteList note = new NoteList();
 
-		List<com.clustercontrol.ws.repository.NodeInfo> nodeInfoList;
+		List<NodeInfoResponseP2> nodeInfoList;
 
 		// ノード情報一覧の取得
 		try {
-			nodeInfoList = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeListAll();
-			Collections.sort(nodeInfoList, new Comparator<com.clustercontrol.ws.repository.NodeInfo>() {
+			nodeInfoList = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeListAll();
+			Collections.sort(nodeInfoList, new Comparator<NodeInfoResponseP2>() {
 				@Override
 				public int compare(
-						com.clustercontrol.ws.repository.NodeInfo info1,
-						com.clustercontrol.ws.repository.NodeInfo info2) {
+						NodeInfoResponseP2 info1,
+						NodeInfoResponseP2 info2 ) {
 					return info1.getFacilityId().compareTo(info2.getFacilityId());
 				}
 			});
@@ -249,9 +263,9 @@ public class RepositoryNodeAction {
 		for (int i = 0; i < nodeInfoList.size(); i++) {
 			xmlNodeInfo[i] = new NodeInfo();
 			// ノード情報の取得
-			com.clustercontrol.ws.repository.NodeInfo nodeInfo;
+			NodeInfoResponse nodeInfo;
 			try {
-				nodeInfo = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeFull(nodeInfoList.get(i).getFacilityId());
+				nodeInfo = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeFull(nodeInfoList.get(i).getFacilityId());
 			} catch (Exception e) {
 				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
@@ -260,6 +274,7 @@ public class RepositoryNodeAction {
 			}
 
 			//Hinemos DTOからXMLへの変換
+			
 			RepositoryConv.convDto2Xml(nodeInfo, xmlNodeInfo[i]);
 			//デバイス、ファイルシステムはCollectionで返ってくるので、1つのArrayListに足しこむ
 			hostnameList.addAll(RepositoryConv.convHostnameDto2Xml(nodeInfo));
@@ -504,7 +519,6 @@ public class RepositoryNodeAction {
 		// 返り値変数(条件付き正常終了用）
 		int ret = 0;
 		RepositoryNode node = null;
-		NodeInfo xmlNodeInfo = null;
 
 		HostnameList hostname = null;
 		CPUList cpu = null;
@@ -516,18 +530,21 @@ public class RepositoryNodeAction {
 		NodeVariableList variable = null;
 		NoteList note = null;
 		
+		UtilityRestClientWrapper utilityWrapper = UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+		RepositoryRestClientWrapper repositoryWrapper = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+
 		// XMLファイルからの読み込み
 		try {
-			node = RepositoryNode.unmarshal(new InputStreamReader(new FileInputStream(xmlNode), "UTF-8"));
-			hostname = HostnameList.unmarshal(new InputStreamReader(new FileInputStream(xmlHostname), "UTF-8"));
-			cpu = CPUList.unmarshal(new InputStreamReader(new FileInputStream(xmlCPU), "UTF-8"));
-			memory = MemoryList.unmarshal(new InputStreamReader(new FileInputStream(xmlMemory), "UTF-8"));
-			networkInterface = NetworkInterfaceList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetworkInterface), "UTF-8"));
-			disk = DiskList.unmarshal(new InputStreamReader(new FileInputStream(xmlDisk), "UTF-8"));
-			fs = FSList.unmarshal(new InputStreamReader(new FileInputStream(xmlFS), "UTF-8"));
-			device = DeviceList.unmarshal(new InputStreamReader(new FileInputStream(xmlDevice), "UTF-8"));
-			variable = NodeVariableList.unmarshal(new InputStreamReader(new FileInputStream(xmlVariable), "UTF-8"));
-			note = NoteList.unmarshal(new InputStreamReader(new FileInputStream(xmlNote), "UTF-8"));
+			node = XmlMarshallUtil.unmarshall(RepositoryNode.class,new InputStreamReader(new FileInputStream(xmlNode), "UTF-8"));
+			hostname = XmlMarshallUtil.unmarshall(HostnameList.class,new InputStreamReader(new FileInputStream(xmlHostname), "UTF-8"));
+			cpu = XmlMarshallUtil.unmarshall(CPUList.class,new InputStreamReader(new FileInputStream(xmlCPU), "UTF-8"));
+			memory = XmlMarshallUtil.unmarshall(MemoryList.class,new InputStreamReader(new FileInputStream(xmlMemory), "UTF-8"));
+			networkInterface = XmlMarshallUtil.unmarshall(NetworkInterfaceList.class,new InputStreamReader(new FileInputStream(xmlNetworkInterface), "UTF-8"));
+			disk = XmlMarshallUtil.unmarshall(DiskList.class,new InputStreamReader(new FileInputStream(xmlDisk), "UTF-8"));
+			fs = XmlMarshallUtil.unmarshall(FSList.class,new InputStreamReader(new FileInputStream(xmlFS), "UTF-8"));
+			device = XmlMarshallUtil.unmarshall(DeviceList.class,new InputStreamReader(new FileInputStream(xmlDevice), "UTF-8"));
+			variable = XmlMarshallUtil.unmarshall(NodeVariableList.class,new InputStreamReader(new FileInputStream(xmlVariable), "UTF-8"));
+			note = XmlMarshallUtil.unmarshall(NoteList.class,new InputStreamReader(new FileInputStream(xmlNote), "UTF-8"));
 		} catch (MarshalException | ValidationException e) {
 			log.warn(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -546,68 +563,128 @@ public class RepositoryNodeAction {
 			return ret;
 		}
 
-		// ノード情報の登録
-		for (int i = 0; i < node.getNodeInfoCount(); i++) {
-			xmlNodeInfo = node.getNodeInfo()[i];
-			com.clustercontrol.ws.repository.NodeInfo nodeInfo = RepositoryConv.convNodeXml2Dto(xmlNodeInfo, hostname.getHostnameInfo(), cpu.getCPUInfo(),
-													  memory.getMemoryInfo(), networkInterface.getNetworkInterfaceInfo(),
-													  disk.getDiskInfo(), fs.getFSInfo(), device.getDeviceInfo(),
-													  variable.getNodeVariableInfo(), note.getNoteInfo());
+		// インポート向けデータの存在チェックとREST向けDtoへの変換（既設レコードなら上書き/スキップの確認も行う）
+		final HostnameList hostnameFinal = hostname;
+		final CPUList cpuFinal = cpu;
+		final MemoryList memoryFinal = memory;
+		final NetworkInterfaceList networkInterfaceFinal = networkInterface;
+		final DiskList diskFinal = disk;
+		final FSList fsFinal = fs;
+		final DeviceList deviceFinal = device;
+		final NodeVariableList variableFinal = variable;
+		final NoteList noteFinal = note;
 
-			if (nodeInfo.getFacilityId() != null && !nodeInfo.getFacilityId().equals("")) {
-				try {
-					RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addNode(nodeInfo);
-					log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + nodeInfo.getFacilityId());
-				} catch (FacilityDuplicate_Exception e) {
-					//重複時、インポート処理方法を確認する
-					if(!ImportProcessMode.isSameprocess()){
-						String[] args = {nodeInfo.getFacilityId()};
-						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-								null, Messages.getString("message.import.confirm2", args));
-					    ImportProcessMode.setProcesstype(dialog.open());
-					    ImportProcessMode.setSameprocess(dialog.getToggleState());
-					}
-				    
-				    if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-				    	try {
-				    		RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyNode(nodeInfo);
-							log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + nodeInfo.getFacilityId());
-						} catch (Exception e1) {
-							log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-							ret = SettingConstants.ERROR_INPROCESS;
-						}
-				    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-				    	log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + nodeInfo.getFacilityId());
-				    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-				    	log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-				    	ret = SettingConstants.ERROR_INPROCESS;
-				    	break;
-				    }
-				} catch (HinemosUnknown_Exception e) {
-					log.info(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-					ret = SettingConstants.ERROR_INPROCESS;
-				} catch (InvalidUserPass_Exception e) {
-					log.info(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-					ret = SettingConstants.ERROR_INPROCESS;
-				} catch (InvalidRole_Exception e) {
-					log.info(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-					ret = SettingConstants.ERROR_INPROCESS;
-				} catch (WebServiceException e) {
-					log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-					ret = SettingConstants.ERROR_INPROCESS;
-				} catch (InvalidSetting_Exception e) {
-					log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-					ret = SettingConstants.ERROR_INPROCESS;
-				}
-			}else{
-				//必須項目が入っていない場合には、facilityIDを""で返す。
-				//そのためここに入る。
-				log.warn(Messages.getString("SettingTools.ImportFailed") + " : "
-						+ xmlNodeInfo.getFacilityId());
+		ImportRecordConfirmer<NodeInfo, ImportNodeRecordRequest, String> confirmer = new ImportRecordConfirmer<NodeInfo, ImportNodeRecordRequest, String>(
+				log, node.getNodeInfo()) {
+			@Override
+			protected ImportNodeRecordRequest convertDtoXmlToRestReq(NodeInfo xmlDto)
+					throws HinemosUnknown, InvalidSetting {
+				NodeInfoResponse nodeInfo = RepositoryConv.convNodeXml2Dto(xmlDto, hostnameFinal.getHostnameInfo(),
+						cpuFinal.getCPUInfo(), memoryFinal.getMemoryInfo(),
+						networkInterfaceFinal.getNetworkInterfaceInfo(), diskFinal.getDiskInfo(), fsFinal.getFSInfo(),
+						deviceFinal.getDeviceInfo(), variableFinal.getNodeVariableInfo(), noteFinal.getNoteInfo());
+				ImportNodeRecordRequest dtoRec = new ImportNodeRecordRequest();
+				dtoRec.setImportData(new AddNodeRequest());
+				RestClientBeanUtil.convertBean(nodeInfo, dtoRec.getImportData());
+				dtoRec.setImportKeyValue(dtoRec.getImportData().getFacilityId());
+				return dtoRec;
 			}
+
+			@Override
+			protected Set<String> getExistIdSet() throws Exception {
+				Set<String> retSet = new HashSet<String>();
+				List<NodeInfoResponseP2> nodeInfoList = repositoryWrapper.getNodeListAll();
+				for (NodeInfoResponseP2 rec : nodeInfoList) {
+					retSet.add(rec.getFacilityId());
+				}
+				return retSet;
+			}
+
+			@Override
+			protected boolean isLackRestReq(ImportNodeRecordRequest restDto) {
+				return (restDto == null || restDto.getImportData().getFacilityId() == null || restDto.getImportData().getFacilityId().equals(""));
+			}
+
+			@Override
+			protected String getKeyValueXmlDto(NodeInfo xmlDto) {
+				return xmlDto.getFacilityId();
+			}
+
+			@Override
+			protected String getId(NodeInfo xmlDto) {
+				return xmlDto.getFacilityId();
+			}
+
+			@Override
+			protected void setNewRecordFlg(ImportNodeRecordRequest restDto, boolean flag) {
+				restDto.setIsNewRecord(flag);
+			}
+
+		};
+		int confirmRet = confirmer.executeConfirm();
+		if( confirmRet != SettingConstants.SUCCESS && confirmRet != SettingConstants.ERROR_CANCEL ){
+			//変換エラーならUnmarshalXml扱いで処理打ち切り(キャンセルはキャンセル以前の選択結果を反映するので次に進む)
+			log.warn(Messages.getString("SettingTools.UnmarshalXmlFailed"));
+			return confirmRet;
+		}
+		
+		// 更新単位の件数毎にインポートメソッドを呼び出し、結果をログ出力
+		// API異常発生時はそこで中断、レコード個別の異常発生時はユーザ選択次第で続行
+		ImportClientController<ImportNodeRecordRequest, ImportNodeResponse, RecordRegistrationResponse> importController = new ImportClientController<ImportNodeRecordRequest, ImportNodeResponse, RecordRegistrationResponse>(
+				log, Messages.getString("platform.repository.node"), confirmer.getImportRecDtoList(),true) {
+			@Override
+			protected List<RecordRegistrationResponse> getResRecList(ImportNodeResponse importResponse) {
+				return importResponse.getResultList();
+			};
+
+			@Override
+			protected Boolean getOccurException(ImportNodeResponse importResponse) {
+				return importResponse.getIsOccurException();
+			};
+
+			@Override
+			protected String getReqKeyValue(ImportNodeRecordRequest importRec) {
+				return importRec.getImportKeyValue();
+			};
+
+			@Override
+			protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+				return responseRec.getImportKeyValue();
+			};
+
+			@Override
+			protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+				return (responseRec.getResult() == ResultEnum.NORMAL) ;
+			};
+
+			@Override
+			protected ImportNodeResponse callImportWrapper(List<ImportNodeRecordRequest> importRecList)
+					throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+				ImportNodeRequest reqDto = new ImportNodeRequest();
+				reqDto.setRecordList(importRecList);
+				reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+				return utilityWrapper.importNode(reqDto);
+			}
+
+			@Override
+			protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+				if (responseRec.getExceptionInfo() != null) {
+					return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+				}
+				return null;
+			};
+
+		};
+		ret = importController.importExecute();
+	
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
 		}
 
 		checkDelete(node);
+
 		
 		// 処理の終了
 		if (ret == 0) {
@@ -1364,70 +1441,70 @@ public class RepositoryNodeAction {
 
 		// XMLファイルからの読み込み
 		try {
-			node1 = RepositoryNode.unmarshal(new InputStreamReader(new FileInputStream(xmlNode1), "UTF-8"));
-			node2 = RepositoryNode.unmarshal(new InputStreamReader(new FileInputStream(xmlNode2), "UTF-8"));
+			node1 = XmlMarshallUtil.unmarshall(RepositoryNode.class,new InputStreamReader(new FileInputStream(xmlNode1), "UTF-8"));
+			node2 = XmlMarshallUtil.unmarshall(RepositoryNode.class,new InputStreamReader(new FileInputStream(xmlNode2), "UTF-8"));
 
-			hostname1 = HostnameList.unmarshal(new InputStreamReader(new FileInputStream(xmlHostname1), "UTF-8"));
-			hostname2 = HostnameList.unmarshal(new InputStreamReader(new FileInputStream(xmlHostname2), "UTF-8"));
+			hostname1 = XmlMarshallUtil.unmarshall(HostnameList.class,new InputStreamReader(new FileInputStream(xmlHostname1), "UTF-8"));
+			hostname2 = XmlMarshallUtil.unmarshall(HostnameList.class,new InputStreamReader(new FileInputStream(xmlHostname2), "UTF-8"));
 
-			cpu1 = CPUList.unmarshal(new InputStreamReader(new FileInputStream(xmlCPU1), "UTF-8"));
-			cpu2 = CPUList.unmarshal(new InputStreamReader(new FileInputStream(xmlCPU2), "UTF-8"));
+			cpu1 = XmlMarshallUtil.unmarshall(CPUList.class,new InputStreamReader(new FileInputStream(xmlCPU1), "UTF-8"));
+			cpu2 = XmlMarshallUtil.unmarshall(CPUList.class,new InputStreamReader(new FileInputStream(xmlCPU2), "UTF-8"));
 
-			memory1 = MemoryList.unmarshal(new InputStreamReader(new FileInputStream(xmlMemory1), "UTF-8"));
-			memory2 = MemoryList.unmarshal(new InputStreamReader(new FileInputStream(xmlMemory2), "UTF-8"));
+			memory1 = XmlMarshallUtil.unmarshall(MemoryList.class,new InputStreamReader(new FileInputStream(xmlMemory1), "UTF-8"));
+			memory2 = XmlMarshallUtil.unmarshall(MemoryList.class,new InputStreamReader(new FileInputStream(xmlMemory2), "UTF-8"));
 
-			networkInterface1 = NetworkInterfaceList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetworkInterface1), "UTF-8"));
-			networkInterface2 = NetworkInterfaceList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetworkInterface2), "UTF-8"));
+			networkInterface1 = XmlMarshallUtil.unmarshall(NetworkInterfaceList.class,new InputStreamReader(new FileInputStream(xmlNetworkInterface1), "UTF-8"));
+			networkInterface2 = XmlMarshallUtil.unmarshall(NetworkInterfaceList.class,new InputStreamReader(new FileInputStream(xmlNetworkInterface2), "UTF-8"));
 
-			disk1 = DiskList.unmarshal(new InputStreamReader(new FileInputStream(xmlDisk1), "UTF-8"));
-			disk2 = DiskList.unmarshal(new InputStreamReader(new FileInputStream(xmlDisk2), "UTF-8"));
+			disk1 = XmlMarshallUtil.unmarshall(DiskList.class,new InputStreamReader(new FileInputStream(xmlDisk1), "UTF-8"));
+			disk2 = XmlMarshallUtil.unmarshall(DiskList.class,new InputStreamReader(new FileInputStream(xmlDisk2), "UTF-8"));
 
-			fs1 = FSList.unmarshal(new InputStreamReader(new FileInputStream(xmlFS1), "UTF-8"));
-			fs2 = FSList.unmarshal(new InputStreamReader(new FileInputStream(xmlFS2), "UTF-8"));
+			fs1 = XmlMarshallUtil.unmarshall(FSList.class,new InputStreamReader(new FileInputStream(xmlFS1), "UTF-8"));
+			fs2 = XmlMarshallUtil.unmarshall(FSList.class,new InputStreamReader(new FileInputStream(xmlFS2), "UTF-8"));
 
-			device1 = DeviceList.unmarshal(new InputStreamReader(new FileInputStream(xmlDevice1), "UTF-8"));
-			device2 = DeviceList.unmarshal(new InputStreamReader(new FileInputStream(xmlDevice2), "UTF-8"));
+			device1 = XmlMarshallUtil.unmarshall(DeviceList.class,new InputStreamReader(new FileInputStream(xmlDevice1), "UTF-8"));
+			device2 = XmlMarshallUtil.unmarshall(DeviceList.class,new InputStreamReader(new FileInputStream(xmlDevice2), "UTF-8"));
 
 			if (new File(xmlNetstat1).exists()) {
-				netstat1 = NetstatList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetstat1), "UTF-8"));
+				netstat1 = XmlMarshallUtil.unmarshall(NetstatList.class,new InputStreamReader(new FileInputStream(xmlNetstat1), "UTF-8"));
 			}
 			if (new File(xmlNetstat2).exists()) {
-				netstat2 = NetstatList.unmarshal(new InputStreamReader(new FileInputStream(xmlNetstat2), "UTF-8"));
+				netstat2 = XmlMarshallUtil.unmarshall(NetstatList.class,new InputStreamReader(new FileInputStream(xmlNetstat2), "UTF-8"));
 			}
 
 			if (new File(xmlProcess1).exists()) {
-				process1 = ProcessList.unmarshal(new InputStreamReader(new FileInputStream(xmlProcess1), "UTF-8"));
+				process1 = XmlMarshallUtil.unmarshall(ProcessList.class,new InputStreamReader(new FileInputStream(xmlProcess1), "UTF-8"));
 			}
 			if (new File(xmlProcess2).exists()) {
-				process2 = ProcessList.unmarshal(new InputStreamReader(new FileInputStream(xmlProcess2), "UTF-8"));
+				process2 = XmlMarshallUtil.unmarshall(ProcessList.class,new InputStreamReader(new FileInputStream(xmlProcess2), "UTF-8"));
 			}
 
 			if (new File(xmlPackage1).exists()) {
-				package1 = PackageList.unmarshal(new InputStreamReader(new FileInputStream(xmlPackage1), "UTF-8"));
+				package1 = XmlMarshallUtil.unmarshall(PackageList.class,new InputStreamReader(new FileInputStream(xmlPackage1), "UTF-8"));
 			}
 			if (new File(xmlPackage2).exists()) {
-				package2 = PackageList.unmarshal(new InputStreamReader(new FileInputStream(xmlPackage2), "UTF-8"));
+				package2 = XmlMarshallUtil.unmarshall(PackageList.class,new InputStreamReader(new FileInputStream(xmlPackage2), "UTF-8"));
 			}
 
 			if (new File(xmlProduct1).exists()) {
-				product1 = ProductList.unmarshal(new InputStreamReader(new FileInputStream(xmlProduct1), "UTF-8"));
+				product1 = XmlMarshallUtil.unmarshall(ProductList.class,new InputStreamReader(new FileInputStream(xmlProduct1), "UTF-8"));
 			}
 			if (new File(xmlProduct2).exists()) {
-				product2 = ProductList.unmarshal(new InputStreamReader(new FileInputStream(xmlProduct2), "UTF-8"));
+				product2 = XmlMarshallUtil.unmarshall(ProductList.class,new InputStreamReader(new FileInputStream(xmlProduct2), "UTF-8"));
 			}
 
 			if (new File(xmlLicense1).exists()) {
-				license1 = LicenseList.unmarshal(new InputStreamReader(new FileInputStream(xmlLicense1), "UTF-8"));
+				license1 = XmlMarshallUtil.unmarshall(LicenseList.class,new InputStreamReader(new FileInputStream(xmlLicense1), "UTF-8"));
 			}
 			if (new File(xmlLicense2).exists()) {
-				license2 = LicenseList.unmarshal(new InputStreamReader(new FileInputStream(xmlLicense2), "UTF-8"));
+				license2 = XmlMarshallUtil.unmarshall(LicenseList.class,new InputStreamReader(new FileInputStream(xmlLicense2), "UTF-8"));
 			}
 
-			variable1 = NodeVariableList.unmarshal(new InputStreamReader(new FileInputStream(xmlVariable1), "UTF-8"));
-			variable2 = NodeVariableList.unmarshal(new InputStreamReader(new FileInputStream(xmlVariable2), "UTF-8"));
+			variable1 = XmlMarshallUtil.unmarshall(NodeVariableList.class,new InputStreamReader(new FileInputStream(xmlVariable1), "UTF-8"));
+			variable2 = XmlMarshallUtil.unmarshall(NodeVariableList.class,new InputStreamReader(new FileInputStream(xmlVariable2), "UTF-8"));
 
-			note1 = NoteList.unmarshal(new InputStreamReader(new FileInputStream(xmlNote1), "UTF-8"));
-			note2 = NoteList.unmarshal(new InputStreamReader(new FileInputStream(xmlNote2), "UTF-8"));
+			note1 = XmlMarshallUtil.unmarshall(NoteList.class,new InputStreamReader(new FileInputStream(xmlNote1), "UTF-8"));
+			note2 = XmlMarshallUtil.unmarshall(NoteList.class,new InputStreamReader(new FileInputStream(xmlNote2), "UTF-8"));
 
 			sort(node1);
 			sort(node2);
@@ -2025,9 +2102,10 @@ public class RepositoryNodeAction {
 	
 
 	protected void checkDelete(RepositoryNode node){
-		List<com.clustercontrol.ws.repository.NodeInfo> subList = null;
+		List<NodeInfoResponseP2> subList = null;
+		RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		try {
-			subList = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeListAll();
+			subList = wrapper.getNodeListAll();
 		}
 		catch (Exception e) {
 			getLogger().error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -2039,7 +2117,7 @@ public class RepositoryNodeAction {
 		}
 		
 		List<NodeInfo> xmlElementList = new ArrayList<>(Arrays.asList(node.getNodeInfo()));
-		for(com.clustercontrol.ws.repository.NodeInfo mgrInfo: new ArrayList<>(subList)){
+		for(NodeInfoResponseP2 mgrInfo: new ArrayList<>(subList)){
 			for(NodeInfo xmlElement: new ArrayList<>(xmlElementList)){
 				if(mgrInfo.getFacilityId().equals(xmlElement.getFacilityId()) || RepositoryConv.checkInternalScope(mgrInfo.getFacilityId())){
 					subList.remove(mgrInfo);
@@ -2050,7 +2128,7 @@ public class RepositoryNodeAction {
 		}
 		
 		if(subList.size() > 0){
-			for(com.clustercontrol.ws.repository.NodeInfo info: subList){
+			for(NodeInfoResponseP2 info: subList){
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getFacilityId()};
@@ -2059,22 +2137,22 @@ public class RepositoryNodeAction {
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
-			    
-			    if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
-			    	try {
-			    		List<String> args = new ArrayList<>();
-			    		args.add(info.getFacilityId());
-			    		RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteNode(args);
-			    		getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getFacilityId());
+				
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
+					try {
+						List<String> args = new ArrayList<>();
+						args.add(info.getFacilityId());
+						wrapper.deleteNode(String.join(",", args));
+						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getFacilityId());
 					} catch (Exception e1) {
 						getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-			    	getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getFacilityId());
-			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-			    	getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
-			    	return;
-			    }
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
+					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getFacilityId());
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
+					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
+					return;
+				}
 			}
 		}
 	}

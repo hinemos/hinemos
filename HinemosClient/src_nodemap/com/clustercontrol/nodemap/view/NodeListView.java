@@ -21,7 +21,14 @@ import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
-
+import org.openapitools.client.model.GetNodeListRequest;
+import org.openapitools.client.model.ScopeInfoResponseP1;
+import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.nodemap.composite.NodeListAttributeComposite;
 import com.clustercontrol.nodemap.composite.NodeListComposite;
 import com.clustercontrol.nodemap.dialog.NodeListFindDialog;
@@ -30,18 +37,10 @@ import com.clustercontrol.nodemap.util.SecondaryIdMap;
 import com.clustercontrol.nodemap.view.action.NodeListDownloadAction;
 import com.clustercontrol.nodemap.view.action.NodeListFindAction;
 import com.clustercontrol.nodemap.view.action.NodeListScopeAddAction;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.view.CommonViewPart;
-import com.clustercontrol.ws.nodemap.InvalidRole_Exception;
-import com.clustercontrol.ws.nodemap.InvalidSetting_Exception;
-import com.clustercontrol.ws.repository.FacilityNotFound_Exception;
-import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
-import com.clustercontrol.ws.repository.InvalidUserPass_Exception;
-import com.clustercontrol.ws.repository.NodeInfo;
-import com.clustercontrol.ws.repository.ScopeInfo;
-import com.sun.xml.internal.ws.client.ClientTransportException;
 
 /**
  * 構成情報一覧ビューを描画するためのクラス。
@@ -67,7 +66,7 @@ public class NodeListView extends CommonViewPart {
 	public String m_secondaryId;
 
 	// 検索条件
-	private NodeInfo m_nodeFilterInfo;
+	private GetNodeListRequest m_nodeFilterInfo;
 
 	public NodeListView(){
 		m_log.debug("nodelistview constructor");
@@ -185,14 +184,11 @@ public class NodeListView extends CommonViewPart {
 		try {
 			if (m_listComposite.getManagerName() != null
 					&& !m_listComposite.getManagerName().isEmpty()) {
-				RepositoryEndpointWrapper repositoryWrapper = RepositoryEndpointWrapper.getWrapper(m_listComposite.getManagerName());
-				ScopeInfo scopeInfo = repositoryWrapper.getScope(facilityId);
+				RepositoryRestClientWrapper repositoryWrapper = RepositoryRestClientWrapper.getWrapper(m_listComposite.getManagerName());
+				ScopeInfoResponseP1 scopeInfo = repositoryWrapper.getScope(facilityId);
 				scopeName = HinemosMessage.replace(scopeInfo.getFacilityName());
 			}
-		} catch (FacilityNotFound_Exception 
-				| HinemosUnknown_Exception 
-				| com.clustercontrol.ws.repository.InvalidRole_Exception
-				| InvalidUserPass_Exception e) {
+		} catch (FacilityNotFound | HinemosUnknown | InvalidRole | InvalidUserPass | RestConnectFailed e) {
 			m_log.warn("updateView() : Failed to acquire scope info. facilityId=" + facilityId);
 		}
 
@@ -239,17 +235,17 @@ public class NodeListView extends CommonViewPart {
 		long start = System.currentTimeMillis();
 		try {
 			m_controller.update(m_nodeFilterInfo);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(null, Messages.getString("message"), 
 					Messages.getString("message.accesscontrol.16"));
 			return false;
 		} catch (Exception e) {
 			String errMsg = "";
-			if (e instanceof ClientTransportException) {
+			if (e instanceof RestConnectFailed) {
 				m_log.debug("reload(), " + e.getMessage());
 				errMsg = Messages.getString("message.hinemos.failure.transfer") + ", " + e.getMessage();
-			} else if (e instanceof InvalidSetting_Exception) {
+			} else if (e instanceof InvalidSetting) {
 				m_log.warn("reload(), " + e.getMessage(), e);
 				errMsg = HinemosMessage.replace(e.getMessage());
 			} else {
@@ -287,13 +283,13 @@ public class NodeListView extends CommonViewPart {
 	/**
 	 * ノードフィルタ情報の設定
 	 */
-	public void setNodeFilterInfo(NodeInfo nodeFilterInfo) {
+	public void setNodeFilterInfo(GetNodeListRequest nodeFilterInfo) {
 		this.m_nodeFilterInfo = nodeFilterInfo;
 	}
 	/**
 	 * ノードフィルタ情報の取得
 	 */
-	public NodeInfo getNodeFilterInfo() {
+	public GetNodeListRequest getNodeFilterInfo() {
 		return this.m_nodeFilterInfo;
 	}
 

@@ -8,14 +8,23 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorTruthValueInfoResponse;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.monitor.xml.AgentInfo;
@@ -25,12 +34,6 @@ import com.clustercontrol.utility.settings.monitor.xml.AgentMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.TruthValue;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorTruthValueInfo;
 
 /**
  * AGENT 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -44,7 +47,7 @@ public class AgentConv {
 
 	static private String SCHEMA_TYPE = "H";
 	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "2";
+	static private String SCHEMA_REVISION = "3";
 
 	/**
 	 * <BR>
@@ -77,24 +80,26 @@ public class AgentConv {
 	 * <BR>
 	 *
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static AgentMonitors createAgentMonitors(List<com.clustercontrol.ws.monitor.MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static AgentMonitors createAgentMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		AgentMonitors agentMonitorList = new AgentMonitors();
 
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
+			monitorInfo =  MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
 
 			AgentMonitor agentMonitor = new AgentMonitor();
 			agentMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 
-			for (MonitorTruthValueInfo truthValueInfo : monitorInfo.getTruthValueInfo()) {
-				agentMonitor.addTruthValue(MonitorConv.createTruthValue(truthValueInfo));
+			for (MonitorTruthValueInfoResponse truthValueInfo : monitorInfo.getTruthValueInfo()) {
+				agentMonitor.addTruthValue(MonitorConv.createTruthValue(monitorInfo.getMonitorId(),truthValueInfo));
 			}
 
 			agentMonitor.setAgentInfo(createAgentInfo(monitorInfo));
@@ -111,14 +116,17 @@ public class AgentConv {
 	 * <BR>
 	 *
 	 * @return
+	 * @throws ParseException 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	public static List<MonitorInfo> createMonitorInfoList(AgentMonitorList agentMonitorList) throws ConvertorException {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(AgentMonitorList agentMonitorList) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 
 		for (AgentMonitor agentMonitor : agentMonitorList.getAgentMonitor()) {
 			logger.debug("Monitor Id : " + agentMonitor.getMonitor().getMonitorId());
 
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(agentMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(agentMonitor.getMonitor());
 			for (TruthValue truthValue : agentMonitor.getTruthValue()) {
 				monitorInfo.getTruthValueInfo().add(MonitorConv.createTruthValue(truthValue));
 			}
@@ -134,7 +142,7 @@ public class AgentConv {
 	 *
 	 * @return
 	 */
-	private static AgentInfo createAgentInfo(MonitorInfo monitorInfo) {
+	private static AgentInfo createAgentInfo(MonitorInfoResponse monitorInfo) {
 		assert HinemosModuleConstant.MONITOR_AGENT.equals(monitorInfo.getMonitorTypeId()): "monitorInfo.getMonitorTypeId() == HinemosModuleConstant.TYPE_MONITOR_AGENT";
 
 		AgentInfo agentInfo = new AgentInfo();

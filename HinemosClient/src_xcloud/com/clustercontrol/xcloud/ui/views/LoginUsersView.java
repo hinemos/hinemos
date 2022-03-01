@@ -38,6 +38,7 @@ import org.eclipse.swt.widgets.TableColumn;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.util.FacilityTreeCache;
+import com.clustercontrol.util.TableViewerSorter;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
@@ -48,7 +49,6 @@ import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
 import com.clustercontrol.xcloud.model.cloud.ILoginUser;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.ControlUtil;
-import com.clustercontrol.xcloud.util.TableViewerSorter;
 
 
 /**
@@ -261,7 +261,12 @@ public class LoginUsersView extends AbstractCloudViewPart implements CloudString
 				new CollectionComparator.Comparator<ICloudScopes, ICloudScopes>() {
 					@Override
 					public boolean match(ICloudScopes o1, ICloudScopes o2) {
-						return o1.getHinemosManager().getManagerName().equals(o2.getHinemosManager().getManagerName());
+						if(o1.getHinemosManager().getManagerName().equals(o1.getHinemosManager().getManagerName())){
+							return o1.getCloudScopes().length == o2.getCloudScopes().length;
+						} else {
+							logger.info("update() : number of login managers changed.");
+						}
+						return false;
 					}
 					@Override
 					public void afterO1(ICloudScopes o1) {

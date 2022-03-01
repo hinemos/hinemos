@@ -65,7 +65,7 @@ public class GetEventCustomCommandListTableDefine {
 		tableDefine.add(COMMAND_NAME,
 				new TableColumnInfo(Messages.getString("event.customcommand.displayname", locale), TableColumnInfo.NONE, 150, SWT.LEFT));
 		tableDefine.add(DESCRIPTION,
-				new TableColumnInfo(Messages.getString("event.customcommand.description", locale), TableColumnInfo.TEXT_DIALOG, 350, SWT.LEFT));
+				new TableColumnInfo(Messages.getString("event.customcommand.description", locale), TableColumnInfo.TEXT_DIALOG, 550, SWT.LEFT));
 		
 		return tableDefine;
 	}

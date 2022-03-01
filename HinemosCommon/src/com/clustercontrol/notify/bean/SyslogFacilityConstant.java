@@ -8,8 +8,6 @@
 
 package com.clustercontrol.notify.bean;
 
-import org.apache.log4j.net.SyslogAppender;
-
 /**
  * syslogで用いるFacilityの定数クラス<BR>
  * 
@@ -19,64 +17,64 @@ import org.apache.log4j.net.SyslogAppender;
 public class SyslogFacilityConstant {
 
 	/** kern（種別）。 */
-	public static final int TYPE_KERN = SyslogAppender.LOG_KERN;
+	public static final int TYPE_KERN = 0;
 
 	/** user（種別）。 */
-	public static final int TYPE_USER = SyslogAppender.LOG_USER;
+	public static final int TYPE_USER = 1<<3;
 
 	/** mail（種別）。 */
-	public static final int TYPE_MAIL = SyslogAppender.LOG_MAIL;
+	public static final int TYPE_MAIL = 2<<3;
 
 	/** daemon（種別）。 */
-	public static final int TYPE_DAEMON = SyslogAppender.LOG_DAEMON;
+	public static final int TYPE_DAEMON = 3<<3;
 
 	/** auth（種別）。 */
-	public static final int TYPE_AUTH = SyslogAppender.LOG_AUTH;
+	public static final int TYPE_AUTH = 4<<3;
 
 	/** syslog（種別）。 */
-	public static final int TYPE_SYSLOG = SyslogAppender.LOG_SYSLOG;
+	public static final int TYPE_SYSLOG = 5<<3;
 
 	/** lpr（種別）。 */
-	public static final int TYPE_LPR = SyslogAppender.LOG_LPR;
+	public static final int TYPE_LPR = 6<<3;
 
 	/** news（種別）。 */
-	public static final int TYPE_NEWS = SyslogAppender.LOG_NEWS;
+	public static final int TYPE_NEWS = 7<<3;
 
 	/** uucp（種別）。 */
-	public static final int TYPE_UUCP = SyslogAppender.LOG_UUCP;
+	public static final int TYPE_UUCP = 8<<3;
 
 	/** cron（種別）。 */
-	public static final int TYPE_CRON = SyslogAppender.LOG_CRON;
+	public static final int TYPE_CRON = 9<<3;
 
 	/** authpriv（種別）。 */
-	public static final int TYPE_AUTHPRIV = SyslogAppender.LOG_AUTHPRIV;
+	public static final int TYPE_AUTHPRIV = 10<<3;
 
 	/** ftp（種別）。 */
-	public static final int TYPE_FTP = SyslogAppender.LOG_FTP;
+	public static final int TYPE_FTP = 11<<3;
 
 	/** local0（種別）。 */
-	public static final int TYPE_LOCAL0 = SyslogAppender.LOG_LOCAL0;
+	public static final int TYPE_LOCAL0 = 16<<3;
 
 	/** local1（種別）。 */
-	public static final int TYPE_LOCAL1 = SyslogAppender.LOG_LOCAL1;
+	public static final int TYPE_LOCAL1 = 17<<3;
 
 	/** local2（種別）。 */
-	public static final int TYPE_LOCAL2 = SyslogAppender.LOG_LOCAL2;
+	public static final int TYPE_LOCAL2 = 18<<3;
 
 	/** local3（種別）。 */
-	public static final int TYPE_LOCAL3 = SyslogAppender.LOG_LOCAL3;
+	public static final int TYPE_LOCAL3 = 19<<3;
 
 	/** local4（種別）。 */
-	public static final int TYPE_LOCAL4 = SyslogAppender.LOG_LOCAL4;
+	public static final int TYPE_LOCAL4 = 20<<3;
 
 	/** local5（種別）。 */
-	public static final int TYPE_LOCAL5 = SyslogAppender.LOG_LOCAL5;
+	public static final int TYPE_LOCAL5 = 21<<3;
 
 	/** local6（種別）。 */
-	public static final int TYPE_LOCAL6 = SyslogAppender.LOG_LOCAL6;
+	public static final int TYPE_LOCAL6 = 22<<3;
 
 	/** local7（種別）。 */
-	public static final int TYPE_LOCAL7 = SyslogAppender.LOG_LOCAL7;
+	public static final int TYPE_LOCAL7 = 23<<3;
 
 
 	/** （文字列）。 */

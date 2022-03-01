@@ -67,9 +67,4 @@ public class PingProperties {
 		return HinemosPropertyDefault.monitor_ping_fping_path.getStringValue();
 	}
 
-	public static String getFping6Path() {
-		/** fping6 のパス **/
-		return HinemosPropertyDefault.monitor_ping_fping6_path.getStringValue();
-	}
-
 }

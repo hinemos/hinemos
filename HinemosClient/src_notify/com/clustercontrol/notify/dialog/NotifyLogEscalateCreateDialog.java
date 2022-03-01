@@ -28,6 +28,17 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.LogEscalateNotifyDetailInfoResponse;
+import org.openapitools.client.model.LogEscalateNotifyDetailInfoResponse.CriticalSyslogFacilityEnum;
+import org.openapitools.client.model.LogEscalateNotifyDetailInfoResponse.CriticalSyslogPriorityEnum;
+import org.openapitools.client.model.LogEscalateNotifyDetailInfoResponse.EscalateFacilityFlgEnum;
+import org.openapitools.client.model.LogEscalateNotifyDetailInfoResponse.InfoSyslogFacilityEnum;
+import org.openapitools.client.model.LogEscalateNotifyDetailInfoResponse.InfoSyslogPriorityEnum;
+import org.openapitools.client.model.LogEscalateNotifyDetailInfoResponse.UnknownSyslogFacilityEnum;
+import org.openapitools.client.model.LogEscalateNotifyDetailInfoResponse.UnknownSyslogPriorityEnum;
+import org.openapitools.client.model.LogEscalateNotifyDetailInfoResponse.WarnSyslogFacilityEnum;
+import org.openapitools.client.model.LogEscalateNotifyDetailInfoResponse.WarnSyslogPriorityEnum;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PriorityColorConstant;
@@ -38,17 +49,16 @@ import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.notify.action.AddNotify;
 import com.clustercontrol.notify.action.GetNotify;
 import com.clustercontrol.notify.action.ModifyNotify;
-import com.clustercontrol.notify.bean.ExecFacilityConstant;
 import com.clustercontrol.notify.bean.SyslogFacilityConstant;
 import com.clustercontrol.notify.bean.SyslogSeverityConstant;
+import com.clustercontrol.notify.dialog.bean.NotifyInfoInputData;
+import com.clustercontrol.notify.util.SyslogFacilityUtil;
+import com.clustercontrol.notify.util.SyslogSeverityUtil;
 import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.notify.NotifyInfo;
-import com.clustercontrol.ws.notify.NotifyLogEscalateInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 通知（ログエスカレーション）作成・変更ダイアログクラス<BR>
@@ -150,6 +160,7 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 	 */
 	public NotifyLogEscalateCreateDialog(Shell parent) {
 		super(parent);
+		parentDialog = this;
 	}
 
 	/**
@@ -162,6 +173,7 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 	 */
 	public NotifyLogEscalateCreateDialog(Shell parent, String managerName, String notifyId, boolean updateFlg) {
 		super(parent, managerName, notifyId, updateFlg);
+		parentDialog = this;
 	}
 
 	// ----- instance メソッド ----- //
@@ -173,7 +185,7 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 	 *
 	 * @see com.clustercontrol.notify.dialog.NotifyBasicCreateDialog#customizeDialog(Composite)
 	 * @see com.clustercontrol.notify.action.GetNotify#getNotify(String)
-	 * @see #setInputData(NotifyInfo)
+	 * @see #setInputData(NotifyInfoInputData)
 	 */
 	@Override
 	protected void customizeDialog(Composite parent) {
@@ -181,14 +193,14 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 		super.customizeDialog(parent);
 
 		// 通知IDが指定されている場合、その情報を初期表示する。
-		NotifyInfo info = null;
+		NotifyInfoInputData inputData;
 		if(this.notifyId != null){
-			info = new GetNotify().getNotify(this.managerName, this.notifyId);
+			inputData = new GetNotify().getLogEscalateNotify(this.managerName, this.notifyId);
+		} else {
+			inputData = new NotifyInfoInputData();
 		}
-		else{
-			info = new NotifyInfo();
-		}
-		this.setInputData(info);
+		this.setInputData(inputData);
+
 	}
 
 	/**
@@ -333,12 +345,10 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 		this.m_scopeSelect.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				ScopeTreeDialog dialog = new ScopeTreeDialog(shell,
-						m_notifyBasic.getManagerListComposite().getText(),
-						m_notifyBasic.getRoleIdList().getText());
+				ScopeTreeDialog dialog = new ScopeTreeDialog(shell, managerName, ownerRoleId);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem selectItem = dialog.getSelectItem();
-					FacilityInfo info = selectItem.getData();
+					FacilityTreeItemResponse selectItem = dialog.getSelectItem();
+					FacilityInfoResponse info = selectItem.getData();
 					FacilityPath path = new FacilityPath(
 							ClusterControlPlugin.getDefault()
 							.getSeparator());
@@ -617,7 +627,7 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 	 * @return 通知情報
 	 */
 	@Override
-	public NotifyInfo getInputData() {
+	public NotifyInfoInputData getInputData() {
 		return this.inputData;
 	}
 
@@ -627,11 +637,11 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 	 * @param notify 設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(NotifyInfo notify) {
+	protected void setInputData(NotifyInfoInputData notify) {
 		super.setInputData(notify);
 
 		// コマンド情報
-		NotifyLogEscalateInfo info = notify.getNotifyLogEscalateInfo();
+		LogEscalateNotifyDetailInfoResponse info = notify.getNotifyLogEscalateInfo();
 		if (info != null) {
 			this.setInputDatal(info);
 		} else {
@@ -641,15 +651,15 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 		}
 	}
 
-	private void setInputDatal(NotifyLogEscalateInfo log) {
-		if (log.getEscalateFacility() != null) {
-			this.m_facilityId = log.getEscalateFacility();
+	private void setInputDatal(LogEscalateNotifyDetailInfoResponse log) {
+		if (log.getEscalateFacilityId() != null) {
+			this.m_facilityId = log.getEscalateFacilityId();
 			this.m_textScope.setText(HinemosMessage.replace(log.getEscalateScope()));
 		}
 		if (log.getEscalatePort() != null) {
 			this.m_textEscalatePort.setText(log.getEscalatePort().toString());
 		}
-		if (log.getEscalateFacilityFlg() != null && log.getEscalateFacilityFlg() == ExecFacilityConstant.TYPE_GENERATION) {
+		if (log.getEscalateFacilityFlg() != null && log.getEscalateFacilityFlg() == EscalateFacilityFlgEnum.GENERATION) {
 			this.m_radioGenerationNodeValue.setSelection(true);
 			this.m_scopeSelect.setEnabled(false);
 		}
@@ -682,17 +692,17 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 				this.m_textLogEscalateMessageCritical,
 				this.m_textLogEscalateMessageUnknown
 		};
-		Integer[] syslogFacilities = new Integer[] {
-				log.getInfoSyslogFacility(),
-				log.getWarnSyslogFacility(),
-				log.getCriticalSyslogFacility(),
-				log.getUnknownSyslogFacility()
+		String[] syslogFacilities = new String[] {
+				SyslogFacilityUtil.enumToString(log.getInfoSyslogFacility(), InfoSyslogFacilityEnum.class),
+				SyslogFacilityUtil.enumToString(log.getWarnSyslogFacility(), WarnSyslogFacilityEnum.class),
+				SyslogFacilityUtil.enumToString(log.getCriticalSyslogFacility(), CriticalSyslogFacilityEnum.class),
+				SyslogFacilityUtil.enumToString(log.getUnknownSyslogFacility(), UnknownSyslogFacilityEnum.class)
 		};
-		Integer[] syslogPriorities = new Integer[] {
-				log.getInfoSyslogPriority(),
-				log.getWarnSyslogPriority(),
-				log.getCriticalSyslogPriority(),
-				log.getUnknownSyslogPriority()
+		String[] syslogPriorities = new String[] {
+				SyslogSeverityUtil.enumToString(log.getInfoSyslogPriority(), InfoSyslogPriorityEnum.class),
+				SyslogSeverityUtil.enumToString(log.getWarnSyslogPriority(), WarnSyslogPriorityEnum.class),
+				SyslogSeverityUtil.enumToString(log.getCriticalSyslogPriority(), CriticalSyslogPriorityEnum.class),
+				SyslogSeverityUtil.enumToString(log.getUnknownSyslogPriority(), UnknownSyslogPriorityEnum.class)
 		};
 		String[] escalateMessages = new String[] {
 				log.getInfoEscalateMessage(),
@@ -716,11 +726,11 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 
 			// ファシリティ
 			if (syslogFacilities[i] != null) {
-				comboLogEscalateFacilities[i].setText(SyslogFacilityConstant.typeToString(syslogFacilities[i]));
+				comboLogEscalateFacilities[i].setText(syslogFacilities[i]);
 			}
 			// プライオリティ
 			if (syslogPriorities[i] != null) {
-				comboLogEscalateServerities[i].setText(SyslogSeverityConstant.typeToString(syslogPriorities[i]));
+				comboLogEscalateServerities[i].setText(syslogPriorities[i]);
 			}
 			// ジョブID
 			if (escalateMessages[i] != null) {
@@ -738,40 +748,44 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 	 * @see #createInputDataForLogEscalate(ArrayList, int, Button, Combo, Button, Combo, Button, Text)
 	 */
 	@Override
-	protected NotifyInfo createInputData() {
-		NotifyInfo info = super.createInputData();
+	protected NotifyInfoInputData createInputData() {
+		NotifyInfoInputData info = super.createInputData();
 
 		// 通知タイプの設定
 		info.setNotifyType(TYPE_LOG_ESCALATE);
 
 		// 通知タイプの設定
-		NotifyLogEscalateInfo log = createNotifyInfoDetail();
+		LogEscalateNotifyDetailInfoResponse log = createNotifyInfoDetail();
 		info.setNotifyLogEscalateInfo(log);
 
 		return info;
 	}
 
-	private NotifyLogEscalateInfo createNotifyInfoDetail() {
-		NotifyLogEscalateInfo log = new NotifyLogEscalateInfo();
+	private LogEscalateNotifyDetailInfoResponse createNotifyInfoDetail() {
+		LogEscalateNotifyDetailInfoResponse log = new LogEscalateNotifyDetailInfoResponse();
 
 		// 共通部分登録
 		// 実行ファシリティID
 		if (this.m_textScope.getText() != null
 				&& !"".equals(this.m_textScope.getText())) {
-			log.setEscalateFacility(this.m_facilityId);
+			log.setEscalateFacilityId(this.m_facilityId);
 			log.setEscalateScope(this.m_textScope.getText());
 		}
 		// 実行ファシリティ
 		if (this.m_radioGenerationNodeValue.getSelection()) {
-			log.setEscalateFacilityFlg(ExecFacilityConstant.TYPE_GENERATION);
+			log.setEscalateFacilityFlg(EscalateFacilityFlgEnum.GENERATION);
 		}
 		else if (this.m_radioFixedValue.getSelection()){
-			log.setEscalateFacilityFlg(ExecFacilityConstant.TYPE_FIX);
+			log.setEscalateFacilityFlg(EscalateFacilityFlgEnum.FIX);
 		}
 		// ポート番号
 		if (this.m_textEscalatePort.getText() != null
 				&& !"".equals(this.m_textEscalatePort.getText())) {
-			log.setEscalatePort(Integer.parseInt(this.m_textEscalatePort.getText()));
+			try {
+				log.setEscalatePort(Integer.parseInt(this.m_textEscalatePort.getText()));
+			} catch(NumberFormatException e) {
+				log.setEscalatePort(null);  // 数値以外が入力された場合（マネージャ側でバリデーション）
+			}
 		}
 
 		// 実行
@@ -782,30 +796,30 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 
 		// ファシリティ
 		if (isNotNullAndBlank(m_comboLogEscalateFacilityInfo.getText())) {
-			log.setInfoSyslogFacility(SyslogFacilityConstant.stringToType(m_comboLogEscalateFacilityInfo.getText()));
+			log.setInfoSyslogFacility(SyslogFacilityUtil.stringToEnum(m_comboLogEscalateFacilityInfo.getText(), InfoSyslogFacilityEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboLogEscalateFacilityWarning.getText())) {
-			log.setWarnSyslogFacility(SyslogFacilityConstant.stringToType(m_comboLogEscalateFacilityWarning.getText()));
+			log.setWarnSyslogFacility(SyslogFacilityUtil.stringToEnum(m_comboLogEscalateFacilityWarning.getText(), WarnSyslogFacilityEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboLogEscalateFacilityCritical.getText())) {
-			log.setCriticalSyslogFacility(SyslogFacilityConstant.stringToType(m_comboLogEscalateFacilityCritical.getText()));
+			log.setCriticalSyslogFacility(SyslogFacilityUtil.stringToEnum(m_comboLogEscalateFacilityCritical.getText(), CriticalSyslogFacilityEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboLogEscalateFacilityUnknown.getText())) {
-			log.setUnknownSyslogFacility(SyslogFacilityConstant.stringToType(m_comboLogEscalateFacilityUnknown.getText()));
+			log.setUnknownSyslogFacility(SyslogFacilityUtil.stringToEnum(m_comboLogEscalateFacilityUnknown.getText(), UnknownSyslogFacilityEnum.class));
 		}
 
 		// プライオリティ
 		if (isNotNullAndBlank(m_comboLogEscalateSeverityInfo.getText())) {
-			log.setInfoSyslogPriority(SyslogSeverityConstant.stringToType(m_comboLogEscalateSeverityInfo.getText()));
+			log.setInfoSyslogPriority(SyslogSeverityUtil.stringToEnum(m_comboLogEscalateSeverityInfo.getText(), InfoSyslogPriorityEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboLogEscalateSeverityWarning.getText())) {
-			log.setWarnSyslogPriority(SyslogSeverityConstant.stringToType(m_comboLogEscalateSeverityWarning.getText()));
+			log.setWarnSyslogPriority(SyslogSeverityUtil.stringToEnum(m_comboLogEscalateSeverityWarning.getText(), WarnSyslogPriorityEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboLogEscalateSeverityCritical.getText())) {
-			log.setCriticalSyslogPriority(SyslogSeverityConstant.stringToType(m_comboLogEscalateSeverityCritical.getText()));
+			log.setCriticalSyslogPriority(SyslogSeverityUtil.stringToEnum(m_comboLogEscalateSeverityCritical.getText(), CriticalSyslogPriorityEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboLogEscalateSeverityUnknown.getText())) {
-			log.setUnknownSyslogPriority(SyslogSeverityConstant.stringToType(m_comboLogEscalateSeverityUnknown.getText()));
+			log.setUnknownSyslogPriority(SyslogSeverityUtil.stringToEnum(m_comboLogEscalateSeverityUnknown.getText(), UnknownSyslogPriorityEnum.class));
 		}
 
 		// メッセージ
@@ -849,15 +863,15 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		NotifyInfo info = this.getInputData();
+		NotifyInfoInputData info = this.getInputData();
 		if(info != null){
 			if (!this.updateFlg) {
 				// 作成の場合
-				result = new AddNotify().add(this.getInputManagerName(), info);
+				result = new AddNotify().addLogEscalateNotify(managerName, info);
 			}
 			else{
 				// 変更の場合
-				result = new ModifyNotify().modify(this.getInputManagerName(), info);
+				result = new ModifyNotify().modifyLogEscalateNotify(managerName, info);
 			}
 		}
 
@@ -1124,12 +1138,27 @@ public class NotifyLogEscalateCreateDialog extends NotifyBasicCreateDialog {
 		return text;
 	}
 
+	private Boolean[] getValidFlgs(LogEscalateNotifyDetailInfoResponse info) {
+		Boolean[] validFlgs = new Boolean[] {
+				info.getInfoValidFlg(),
+				info.getWarnValidFlg(),
+				info.getCriticalValidFlg(),
+				info.getUnknownValidFlg()
+		};
+		return validFlgs;
+	}
+
 	@Override
-	public void setOwnerRoleId(String ownerRoleId) {
-		super.setOwnerRoleId(ownerRoleId);
+	public void updateManagerName(String managerName) {
+		super.updateManagerName(managerName);
+	}
+
+	@Override
+	public void updateOwnerRole(String ownerRoleId) {
+		super.updateOwnerRole(ownerRoleId);
 		this.m_facilityPath = "";
 		this.m_facilityId = "";
 		this.m_textScope.setText(HinemosMessage.replace(m_facilityPath));
+		update();
 	}
-
 }

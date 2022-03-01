@@ -31,30 +31,35 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddSnmptrapMonitorRequest;
+import org.openapitools.client.model.LogFormatResponse;
+import org.openapitools.client.model.ModifySnmptrapMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.TrapCheckInfoRequest;
+import org.openapitools.client.model.TrapCheckInfoResponse;
+import org.openapitools.client.model.TrapValueInfoRequest;
+import org.openapitools.client.model.TrapValueInfoResponse;
+import org.openapitools.client.model.VarBindPatternRequest;
+import org.openapitools.client.model.VarBindPatternResponse;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityColorConstant;
+import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
-import com.clustercontrol.hub.util.HubEndpointWrapper;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.hub.util.HubRestClientWrapper;
 import com.clustercontrol.monitor.run.composite.MonitorBasicScopeComposite;
 import com.clustercontrol.monitor.run.composite.MonitorRuleComposite;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.notify.composite.NotifyInfoComposite;
 import com.clustercontrol.snmptrap.composite.TrapDefineCompositeDefine;
 import com.clustercontrol.snmptrap.composite.TrapDefineListComposite;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.hub.LogFormat;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.TrapCheckInfo;
-import com.clustercontrol.ws.monitor.TrapValueInfo;
 
 /**
  * SNMPTRAP監視作成・変更ダイアログクラス<BR>
@@ -115,7 +120,6 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 	 * 作成用ダイアログのインスタンスを返します。
 	 *
 	 * @param parent 親のシェルオブジェクト
-	 * @param monitorType 監視判定タイプ
 	 */
 	public SnmpTrapCreateDialog(Shell parent) {
 		super(parent, null);
@@ -493,19 +497,19 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		this.m_notifyInfo.setLayoutData(gridData);
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(getManagerName());
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 				info = wrapper.getMonitor(this.monitorId);
 			} catch (Exception e) {
 				String errMessage = "";
-				if (e instanceof InvalidRole_Exception) {
+				if (e instanceof InvalidRole) {
 					// アクセス権なしの場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -616,19 +620,19 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 	 *            設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 
 		// 監視基本情報
 		super.setInputData(monitor);
 		this.inputData = monitor;
 
-		TrapCheckInfo checkInfo = monitor.getTrapCheckInfo();
+		TrapCheckInfoResponse checkInfo = monitor.getTrapCheckInfo();
 		if (checkInfo == null) {
-			checkInfo = new TrapCheckInfo();
+			checkInfo = new TrapCheckInfoResponse();
 			checkInfo.setCommunityCheck(false);
 			checkInfo.setCharsetConvert(false);
 			checkInfo.setNotifyofReceivingUnspecifiedFlg(true);
-			checkInfo.setPriorityUnspecified(PriorityColorConstant.TYPE_UNKNOWN);
+			checkInfo.setPriorityUnspecified(TrapCheckInfoResponse.PriorityUnspecifiedEnum.UNKNOWN);
 			monitor.setTrapCheckInfo(checkInfo);
 		}
 
@@ -636,7 +640,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		if(checkInfo.getCommunityName() != null){
 			textCommunityName.setText(checkInfo.getCommunityName());
 		}
-		if (checkInfo.isCommunityCheck().booleanValue()) {
+		if (checkInfo.getCommunityCheck().booleanValue()) {
 			buttonCommunityCheckOn.setSelection(true);
 		}
 		textCommunityName.setEnabled(buttonCommunityCheckOn.getSelection());
@@ -645,18 +649,18 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		if(checkInfo.getCharsetName() != null){
 			textCharsetName.setText(checkInfo.getCharsetName());
 		}
-		if (checkInfo.isCharsetConvert().booleanValue()) {
+		if (checkInfo.getCharsetConvert().booleanValue()) {
 			buttonCharsetConvertOn.setSelection(true);
 		}
 		textCharsetName.setEnabled(buttonCharsetConvertOn.getSelection());
 
 		//未指定のトラップ受信時の処理
-		buttonNotifyNonSpecifiedTrap.setSelection(checkInfo.isNotifyofReceivingUnspecifiedFlg());
-		comboPriority.select(comboPriority.indexOf(PriorityMessage.typeToString(checkInfo.getPriorityUnspecified())));
-		tableDefineListComposite.setInputData(checkInfo.getTrapValueInfos());
+		buttonNotifyNonSpecifiedTrap.setSelection(checkInfo.getNotifyofReceivingUnspecifiedFlg());
+		comboPriority.select(comboPriority.indexOf(PriorityMessage.codeToString(checkInfo.getPriorityUnspecified().toString())));
+		tableDefineListComposite.setInputData(checkInfo.getMonitorTrapValueInfoEntities());
 
 		// 収集
-		if (monitor.isCollectorFlg()) {
+		if (monitor.getCollectorFlg()) {
 			this.confirmCollectValid.setSelection(true);
 		}else{
 			this.setCollectorEnabled(false);
@@ -674,46 +678,42 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		//SNMPTRAP監視固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_SNMPTRAP);
-		monitorInfo.setMonitorType(MonitorTypeConstant.TYPE_TRAP);
-
 		// 監視条件 SNMPTRAP監視情報
-		TrapCheckInfo trapInfo = new TrapCheckInfo();
-		trapInfo.setMonitorId(monitorInfo.getMonitorId());
-		trapInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_SNMPTRAP);
-		monitorInfo.setTrapCheckInfo(trapInfo);
+		monitorInfo.setTrapCheckInfo(new TrapCheckInfoResponse());
 
 		// コミュニティ名
 		if (this.buttonCommunityCheckOn.getSelection()) {
-			(monitorInfo.getTrapCheckInfo()).setCommunityCheck(true);
+			monitorInfo.getTrapCheckInfo().setCommunityCheck(true);
 		} else {
-			(monitorInfo.getTrapCheckInfo()).setCommunityCheck(false);
+			monitorInfo.getTrapCheckInfo().setCommunityCheck(false);
 		}
 		if (this.buttonCommunityCheckOn.getSelection() && !"".equals((this.textCommunityName.getText()).trim())) {
-			(monitorInfo.getTrapCheckInfo()).setCommunityName(textCommunityName.getText());
+			monitorInfo.getTrapCheckInfo().setCommunityName(textCommunityName.getText());
 		}
 
 		// 文字コード
 		if (this.buttonCharsetConvertOn.getSelection()) {
-			(monitorInfo.getTrapCheckInfo()).setCharsetConvert(true);
+			monitorInfo.getTrapCheckInfo().setCharsetConvert(true);
 		} else {
-			(monitorInfo.getTrapCheckInfo()).setCharsetConvert(false);
+			monitorInfo.getTrapCheckInfo().setCharsetConvert(false);
 		}
 		if (this.buttonCharsetConvertOn.getSelection() && !"".equals((this.textCharsetName.getText()).trim())) {
-			(monitorInfo.getTrapCheckInfo()).setCharsetName(textCharsetName.getText());
+			monitorInfo.getTrapCheckInfo().setCharsetName(textCharsetName.getText());
 		}
 
 		// 未指定のトラップ情報受信時の処理
-		trapInfo.setNotifyofReceivingUnspecifiedFlg(buttonNotifyNonSpecifiedTrap.getSelection());
-		trapInfo.setPriorityUnspecified(PriorityMessage.stringToType(comboPriority.getText()));
-		List<TrapValueInfo> monitorTrapValueInfoList_old = monitorInfo.getTrapCheckInfo().getTrapValueInfos();
+		monitorInfo.getTrapCheckInfo().setNotifyofReceivingUnspecifiedFlg(buttonNotifyNonSpecifiedTrap.getSelection());
+
+		monitorInfo.getTrapCheckInfo().setPriorityUnspecified(
+				PriorityMessage.stringToEnum(comboPriority.getText(), TrapCheckInfoResponse.PriorityUnspecifiedEnum.class));
+
+		List<TrapValueInfoResponse> monitorTrapValueInfoList_old = monitorInfo.getTrapCheckInfo().getMonitorTrapValueInfoEntities();
 		monitorTrapValueInfoList_old.clear();
 		if (tableDefineListComposite.getItems() != null) {
 			monitorTrapValueInfoList_old.addAll(tableDefineListComposite.getItems());
@@ -735,7 +735,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		}
 
 		// 監視間隔
-		monitorInfo.setRunInterval(0);
+		monitorInfo.setRunInterval(MonitorInfoResponse.RunIntervalEnum.NONE);
 
 		// 監視 有効/無効
 		monitorInfo.setMonitorFlg(this.confirmMonitorValid.getSelection());
@@ -760,28 +760,57 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-		MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-		if(info != null){
-			String[] args = { info.getMonitorId(), managerName };
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
+					AddSnmptrapMonitorRequest info = new AddSnmptrapMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddSnmptrapMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
 
-					if(result){
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					TrapCheckInfoRequest destTrapCheckInfo = info.getTrapCheckInfo();
+					TrapCheckInfoResponse srcTrapCheckInfo = this.inputData.getTrapCheckInfo();
+
+					if (destTrapCheckInfo != null && srcTrapCheckInfo != null) {
+						destTrapCheckInfo.setPriorityUnspecified(
+								TrapCheckInfoRequest.PriorityUnspecifiedEnum.fromValue(srcTrapCheckInfo.getPriorityUnspecified().getValue()));
+
+						List<TrapValueInfoRequest> destTrapValueList = destTrapCheckInfo.getMonitorTrapValueInfoEntities();
+						List<TrapValueInfoResponse> srcTrapValueList = srcTrapCheckInfo.getMonitorTrapValueInfoEntities();
+
+						if (destTrapValueList != null && srcTrapValueList != null) {
+							for (int i = 0; i < destTrapValueList.size(); i++) {
+
+								destTrapValueList.get(i).setVersion(TrapValueInfoRequest.VersionEnum.fromValue(
+										srcTrapValueList.get(i).getVersion().getValue()));
+
+								if (srcTrapValueList.get(i).getPriorityAnyVarBind() != null) {
+									destTrapValueList.get(i).setPriorityAnyVarBind(TrapValueInfoRequest.PriorityAnyVarBindEnum.fromValue(
+											srcTrapValueList.get(i).getPriorityAnyVarBind().getValue()));
+								}
+
+								List<VarBindPatternRequest> destVarbindPatternList = destTrapValueList.get(i).getVarBindPatterns();
+								List<VarBindPatternResponse> srcVarbindPatternList = srcTrapValueList.get(i).getVarBindPatterns();
+
+								if (destVarbindPatternList != null && srcVarbindPatternList != null) {
+									for (int j = 0; j < destVarbindPatternList.size(); j++) {
+										destVarbindPatternList.get(j).setPriority(
+												VarBindPatternRequest.PriorityEnum.fromValue(
+														srcVarbindPatternList.get(j).getPriority().getValue()));
+									}
+								}
+							}
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					wrapper.addSnmptrapMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -790,7 +819,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(
 								null,
@@ -807,26 +836,68 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
+					ModifySnmptrapMonitorRequest info = new ModifySnmptrapMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifySnmptrapMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
 
-				if(result){
+					TrapCheckInfoRequest destTrapCheckInfo = info.getTrapCheckInfo();
+					TrapCheckInfoResponse srcTrapCheckInfo = this.inputData.getTrapCheckInfo();
+
+					if (destTrapCheckInfo != null && srcTrapCheckInfo != null) {
+						destTrapCheckInfo.setPriorityUnspecified(
+								TrapCheckInfoRequest.PriorityUnspecifiedEnum.fromValue(srcTrapCheckInfo.getPriorityUnspecified().getValue()));
+
+						List<TrapValueInfoRequest> destTrapValueList = destTrapCheckInfo.getMonitorTrapValueInfoEntities();
+						List<TrapValueInfoResponse> srcTrapValueList = srcTrapCheckInfo.getMonitorTrapValueInfoEntities();
+
+						if (destTrapValueList != null && srcTrapValueList != null) {
+							for (int i = 0; i < destTrapValueList.size(); i++) {
+
+								destTrapValueList.get(i).setVersion(TrapValueInfoRequest.VersionEnum.fromValue(
+										srcTrapValueList.get(i).getVersion().getValue()));
+
+								if (srcTrapValueList.get(i).getPriorityAnyVarBind() != null) {
+									destTrapValueList.get(i).setPriorityAnyVarBind(TrapValueInfoRequest.PriorityAnyVarBindEnum.fromValue(
+											srcTrapValueList.get(i).getPriorityAnyVarBind().getValue()));
+								}
+
+								List<VarBindPatternRequest> destVarbindPatternList = destTrapValueList.get(i).getVarBindPatterns();
+								List<VarBindPatternResponse> srcVarbindPatternList = srcTrapValueList.get(i).getVarBindPatterns();
+
+								if (destVarbindPatternList != null && srcVarbindPatternList != null) {
+									for (int j = 0; j < destVarbindPatternList.size(); j++) {
+										destVarbindPatternList.get(j).setPriority(
+												VarBindPatternRequest.PriorityEnum.fromValue(
+														srcVarbindPatternList.get(j).getPriority().getValue()));
+									}
+								}
+							}
+						}
+					}
+					wrapper.modifySnmptrapMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				}
-				else{
+					result = true;
+				} catch (RuntimeException e) {
+					String errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.36", args) + errMessage);
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
@@ -893,10 +964,10 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		logFormat.removeAll();
 		
 		//ログフォーマット一覧情報取得
-		List<LogFormat> list = null;
+		List<LogFormatResponse> list = null;
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
-			HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
+			HubRestClientWrapper wrapper = HubRestClientWrapper.getWrapper(managerName);
 			try {
 				list = wrapper.getLogFormatListByOwnerRole(ownerRoleId);
 			} catch (Exception e) {
@@ -909,7 +980,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 			}
 
 			logFormat.add("");
-			for (LogFormat format:list){
+			for (LogFormatResponse format:list){
 				logFormat.add(format.getLogFormatId());
 			}
 		}

@@ -12,12 +12,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.bean.FunctionPrefixEnum;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
@@ -39,6 +39,8 @@ import com.clustercontrol.notify.factory.ModifyNotifyRelation;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.util.HinemosTime;
+
+import jakarta.persistence.EntityExistsException;
 
 
 /**
@@ -105,9 +107,10 @@ public class ModifyInfraManagement {
 					&& info.getNotifyRelationList().size() > 0) {
 				for (NotifyRelationInfo notifyRelationInfo : info.getNotifyRelationList()) {
 					notifyRelationInfo.setNotifyGroupId(info.getNotifyGroupId());
+					notifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.INFRA.name());
 				}
 				// 通知情報を登録
-				new ModifyNotifyRelation().add(info.getNotifyRelationList());
+				new ModifyNotifyRelation().add(info.getNotifyRelationList(), info.getOwnerRoleId());
 			}
 
 			m_log.debug("add() : end");
@@ -178,10 +181,11 @@ public class ModifyInfraManagement {
 					&& webEntity.getNotifyRelationList().size() > 0) {
 				for (NotifyRelationInfo notifyRelationInfo : webEntity.getNotifyRelationList()) {
 					notifyRelationInfo.setNotifyGroupId(entity.getNotifyGroupId());
+					notifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.INFRA.name());
 				}
 			}
 			new NotifyControllerBean().modifyNotifyRelation(
-					webEntity.getNotifyRelationList(), entity.getNotifyGroupId());
+					webEntity.getNotifyRelationList(), entity.getNotifyGroupId(), entity.getOwnerRoleId());
 
 			List<InfraModuleInfo<?>> webModuleList = new ArrayList<InfraModuleInfo<?>>(webEntity.getModuleList());
 			List<InfraModuleInfo<?>> moduleList = new ArrayList<InfraModuleInfo<?>>(entity.getModuleList());
@@ -249,6 +253,10 @@ public class ModifyInfraManagement {
 
 			// 監視情報を削除
 			entity.removeSelf(em);
+
+			// 通知履歴情報を削除する
+			new NotifyControllerBean().deleteNotifyHistory(HinemosModuleConstant.INFRA, managementId);
+
 			m_log.debug("delete() : end");
 			
 			return true;

@@ -30,24 +30,25 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Tree;
+import org.openapitools.client.model.JobTreeItemResponseP1;
+import org.openapitools.client.model.JobTreeItemResponseP2;
 
-import com.clustercontrol.util.UIManager;
-import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.viewer.JobTreeContentProvider;
 import com.clustercontrol.jobmanagement.viewer.JobTreeLabelProvider;
 import com.clustercontrol.jobmanagement.viewer.JobTreeViewer;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.util.UIManager;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * ジョブツリー用のコンポジットクラスです。
@@ -63,7 +64,7 @@ public class JobTreeComposite extends Composite {
 	/** ツリービューア */
 	protected JobTreeViewer m_viewer = null;
 	/** 選択ジョブツリーアイテムリスト */
-	protected List<JobTreeItem> m_selectItemList = new ArrayList<JobTreeItem>();
+	protected List<JobTreeItemWrapper> m_selectItemList = new ArrayList<JobTreeItemWrapper>();
 	/** ツリーのみ */
 	private boolean m_treeOnly = false;
 	private String m_jobId = null;
@@ -77,11 +78,18 @@ public class JobTreeComposite extends Composite {
 	 * 表示ツリーの形式
 	 * 値として、JobConstantクラスで定義したものが入る
 	 * @see com.clustercontrol.jobmanagement.bean.JobConstant
-	 *  -1 : 未選択
-	 *  TYPE_REFERJOB,TYPE_REFERJOBNET以外	: 選択したユニット、ネットの子のみ表示する
+	 *  null : 選択したユニット、ネットの子のみ表示する
 	 *  TYPE_REFERJOB,TYPE_REFERJOBNET		: 選択したユニット、ネットの所属するジョブユニット以下すべて表示する
 	 */
-	private int mode = -1;
+	private JobInfoWrapper.TypeEnum m_mode = null;
+
+	/**
+	 * 表示するジョブ種別のリスト
+	 * 値として、JobConstantクラスで定義したものが入る
+	 * @see com.clustercontrol.jobmanagement.bean.JobConstant
+	 *  null : 全てのユニット、ネット
+	 */
+	private List<JobInfoWrapper.TypeEnum> m_targetJobTypeList = null;
 
 	/** オーナーロールID */
 	private String ownerRoleId = null;
@@ -89,11 +97,14 @@ public class JobTreeComposite extends Composite {
 	/**
 	 * コンストラクタ
 	 *
-	 * @param parent 親コンポジット
-	 * @param style スタイル
+	 * @param parent
+	 *            親コンポジット
+	 * @param style
+	 *            スタイル
 	 *
 	 * @see org.eclipse.swt.SWT
-	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
+	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int
+	 *      style)
 	 * @see #initialize()
 	 */
 	public JobTreeComposite(Composite parent, int style, String ownerRoleId) {
@@ -109,18 +120,19 @@ public class JobTreeComposite extends Composite {
 	/**
 	 * コンストラクタ
 	 *
-	 * @param parent 親コンポジット
-	 * @param style スタイル
-	 * @param treeOnly true：ツリーのみ、false：ジョブ情報を含む
+	 * @param parent
+	 *            親コンポジット
+	 * @param style
+	 *            スタイル
+	 * @param treeOnly
+	 *            true：ツリーのみ、false：ジョブ情報を含む
 	 *
 	 * @see org.eclipse.swt.SWT
-	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
+	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int
+	 *      style)
 	 * @see #initialize()
 	 */
-	public JobTreeComposite(Composite parent, int style,
-			String managerName,
-			String ownerRoleId,
-			boolean treeOnly,
+	public JobTreeComposite(Composite parent, int style, String managerName, String ownerRoleId, boolean treeOnly,
 			boolean useForView) {
 		super(parent, style);
 
@@ -134,45 +146,41 @@ public class JobTreeComposite extends Composite {
 	/**
 	 * コンストラクタ
 	 *
-	 * @param parent 親コンポジット
-	 * @param style スタイル
-	 * @param parentJobId 親ジョブID
-	 * @param jobId ジョブID
-	 *
+	 * @param parent
+	 *            親コンポジット
+	 * @param style
+	 *            スタイル
+	 * @param parentJobId
+	 *            親ジョブID
+	 * @param jobId
+	 *            ジョブID
+	 * @param mode
+	 *            表示元ジョブ種別
+	 * @param targetJobTypeList
+	 *            表示対象のジョブ種別
 	 * @see org.eclipse.swt.SWT
-	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
+	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int
+	 *      style)
 	 * @see #initialize()
 	 */
-	public JobTreeComposite(Composite parent, int style,
-			String ownerRoleId,
-			JobTreeItem selectItem) {
+	public JobTreeComposite(Composite parent, int style, String ownerRoleId, JobTreeItemWrapper jobTreeItem, JobInfoWrapper.TypeEnum mode,
+			List<JobInfoWrapper.TypeEnum> targetJobTypeList) {
 		super(parent, style);
 
+		JobTreeItemWrapper selectItem = jobTreeItem;
 		m_treeOnly = true;
 		m_selectItemList.add(selectItem);
 		m_jobId = selectItem.getData().getId();
-		this.ownerRoleId = ownerRoleId;
-		m_useForView = false;
-		initialize();
-	}
-	public JobTreeComposite(Composite parent, int style,
-			String ownerRoleId,
-			JobTreeItem selectItem,
-			int mode) {
-		super(parent, style);
-
-		m_treeOnly = true;
-		m_selectItemList.add(selectItem);
-		m_jobId = selectItem.getData().getId();
-		this.mode = mode;
+		m_mode = mode;
+		m_targetJobTypeList = targetJobTypeList;
 		this.ownerRoleId = ownerRoleId;
 		m_useForView = false;
 		initialize();
 	}
 
-	private JobTreeItem searchNeighbors( JobTreeItem current, String keyword ){
-		JobTreeItem found;
-		JobTreeItem parent = current.getParent();
+	private JobTreeItemWrapper searchNeighbors( JobTreeItemWrapper current, String keyword ){
+		JobTreeItemWrapper found;
+		JobTreeItemWrapper parent = current.getParent();
 		if( null != parent ){
 			do{
 				int offset = parent.getChildren().indexOf( current ) + 1;
@@ -187,16 +195,16 @@ public class JobTreeComposite extends Composite {
 		return null;
 	}
 
-	private JobTreeItem searchChildren( JobTreeItem parent, String keyword, int offset ){
-		List<JobTreeItem> children = parent.getChildren();
+	private JobTreeItemWrapper searchChildren( JobTreeItemWrapper parent, String keyword, int offset ){
+		List<JobTreeItemWrapper> children = parent.getChildren();
 		int len = children.size();
 		for( int i = offset; i<len; i++ ){
-			JobTreeItem child = children.get(i);
+			JobTreeItemWrapper child = children.get(i);
 
 			if( -1 != child.getData().getId().indexOf( keyword ) ){
 				return child;
 			}else{
-				JobTreeItem found = searchChildren( child, keyword, 0 );
+				JobTreeItemWrapper found = searchChildren( child, keyword, 0 );
 				if( null != found ){
 					return found;
 				}
@@ -205,8 +213,8 @@ public class JobTreeComposite extends Composite {
 		return null;
 	}
 
-	private JobTreeItem searchItem( JobTreeItem item, String keyword ){
-		JobTreeItem found;
+	private JobTreeItemWrapper searchItem( JobTreeItemWrapper item, String keyword ){
+		JobTreeItemWrapper found;
 
 		// 1. Search children
 		found= searchChildren(item, keyword, 0);
@@ -235,19 +243,19 @@ public class JobTreeComposite extends Composite {
 
 		StructuredSelection selection = (StructuredSelection) m_viewer.getSelection();
 		Object targetItem = selection.getFirstElement();
-		JobTreeItem result = searchItem( (JobTreeItem)( null != targetItem ? targetItem: m_viewer.getInput() ), keyword );
+		JobTreeItemWrapper result = searchItem( (JobTreeItemWrapper)( null != targetItem ? targetItem: m_viewer.getInput() ), keyword );
 		if( null != result ){
-			JobTreeItem trace = result;
-			LinkedList<JobTreeItem> pathList = new LinkedList<>();
+			JobTreeItemWrapper trace = result;
+			LinkedList<JobTreeItemWrapper> pathList = new LinkedList<>();
 			do{
 				pathList.addFirst( trace );
 				trace = trace.getParent();
 			}while( null != trace );
-			TreePath path = new TreePath( pathList.toArray(new JobTreeItem[]{}) );
+			TreePath path = new TreePath( pathList.toArray(new JobTreeItemWrapper[]{}) );
 			m_viewer.setSelection( new TreeSelection(path), true );
 		}else{
 			MessageDialog.openInformation( this.getShell(), Messages.getString("message"), Messages.getString("search.not.found") );
-			m_viewer.setSelection( new StructuredSelection(((JobTreeItem)m_viewer.getInput()).getChildren().get(0)), true );
+			m_viewer.setSelection( new StructuredSelection(((JobTreeItemWrapper)m_viewer.getInput()).getChildren().get(0)), true );
 		}
 	}
 
@@ -295,22 +303,27 @@ public class JobTreeComposite extends Composite {
 				@Override
 				public void doubleClick(DoubleClickEvent event) {
 					StructuredSelection selection = (StructuredSelection) event.getSelection();
-					JobTreeItem item = (JobTreeItem) selection.getFirstElement();
-					int type = item.getData().getType();
+					JobTreeItemWrapper item = (JobTreeItemWrapper) selection.getFirstElement();
+					JobInfoWrapper.TypeEnum type = item.getData().getType();
 					m_log.info("double click. type=" + type);
-					if (type != JobConstant.TYPE_REFERJOB &&
-						type != JobConstant.TYPE_REFERJOBNET &&
-						type != JobConstant.TYPE_APPROVALJOB &&
-						type != JobConstant.TYPE_FILEJOB &&
-						type != JobConstant.TYPE_MONITORJOB &&
-						type != JobConstant.TYPE_JOB &&
-						type != JobConstant.TYPE_JOBUNIT &&
-						type != JobConstant.TYPE_JOBNET) {
+					if (type != JobInfoWrapper.TypeEnum.REFERJOB &&
+						type != JobInfoWrapper.TypeEnum.REFERJOBNET &&
+						type != JobInfoWrapper.TypeEnum.APPROVALJOB &&
+						type != JobInfoWrapper.TypeEnum.FILEJOB &&
+						type != JobInfoWrapper.TypeEnum.MONITORJOB &&
+						type != JobInfoWrapper.TypeEnum.FILECHECKJOB &&
+						type != JobInfoWrapper.TypeEnum.JOBLINKSENDJOB &&
+						type != JobInfoWrapper.TypeEnum.JOBLINKRCVJOB &&
+						type != JobInfoWrapper.TypeEnum.RPAJOB &&
+						type != JobInfoWrapper.TypeEnum.JOB &&
+						type != JobInfoWrapper.TypeEnum.JOBUNIT &&
+						type != JobInfoWrapper.TypeEnum.JOBNET &&
+						type != JobInfoWrapper.TypeEnum.RESOURCEJOB) {
 						return;
 					}
 
 					String managerName = null;
-					JobTreeItem mgrTree = JobTreeItemUtil.getManager(item);
+					JobTreeItemWrapper mgrTree = JobTreeItemUtil.getManager(item);
 					if(mgrTree == null) {
 						managerName = item.getChildren().get(0).getData().getId();
 					} else {
@@ -328,7 +341,7 @@ public class JobTreeComposite extends Composite {
 						if (jobEditState.isLockedJobunitId(item.getData().getJobunitId())) {
 							// 編集モードのジョブが更新された場合(ダイアログで編集モードになったものを含む）
 							jobEditState.addEditedJobunit(item);
-							if (item.getData().getType() == JobConstant.TYPE_JOBUNIT) {
+							if (item.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 								JobUtil.setJobunitIdAll(item, item.getData().getJobunitId());
 							}
 						}
@@ -391,13 +404,13 @@ public class JobTreeComposite extends Composite {
 	 */
 	public void updateTree(boolean useChache) {
 		// 非Javadoc 継承の関係でupdate(boolean)はoverrideの警告が出るのでメソッド名を変更した
-		List<JobTreeItem> jobTreeList = new ArrayList<JobTreeItem>();
+		List<JobTreeItemWrapper> jobTreeList = new ArrayList<JobTreeItemWrapper>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 
 		//　ジョブ一覧情報取得
 		if (m_useForView) {
 			if( useChache ){
-				JobTreeItem item = JobEditStateUtil.getJobTreeItem();
+				JobTreeItemWrapper item = JobEditStateUtil.getJobTreeItem();
 				if( null != item ){
 					jobTreeList.add(item);
 				}
@@ -407,12 +420,20 @@ public class JobTreeComposite extends Composite {
 			}
 		} else if (m_jobId == null) {
 			try {
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(this.managerName);
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(this.managerName);
 				long start = System.currentTimeMillis();
-				jobTreeList.add(wrapper.getJobTree(ownerRoleId, m_treeOnly));
+				JobTreeItemWrapper res =null;
+				if( m_treeOnly ){
+					JobTreeItemResponseP1 orgTreeRes = wrapper.getJobTree(ownerRoleId);
+					res = JobTreeItemUtil.getItemFromP1(orgTreeRes);
+				}else{
+					JobTreeItemResponseP2 orgTreeRes = wrapper.getJobTreeJobInfoFull(ownerRoleId);
+					res = JobTreeItemUtil.getItemFromP2ForTreeView(orgTreeRes);
+				}
+				jobTreeList.add(res);
 				long end = System.currentTimeMillis();
 				m_log.info("getJobTree time=" + (end - start) + "ms");
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
@@ -423,18 +444,18 @@ public class JobTreeComposite extends Composite {
 			if( 0 < errorMsgs.size() ){
 				UIManager.showMessageBox(errorMsgs, true);
 			}
-		} else if (mode == JobConstant.TYPE_REFERJOB || mode == JobConstant.TYPE_REFERJOBNET) {
-			for(JobTreeItem selectItem : m_selectItemList) {
+		} else if (m_mode == JobInfoWrapper.TypeEnum.REFERJOB || m_mode == JobInfoWrapper.TypeEnum.REFERJOBNET) {
+			for(JobTreeItemWrapper selectItem : m_selectItemList) {
 				jobTreeList.add(getJobTreeOneUnit(selectItem));
 			}
 		} else {
-			for(JobTreeItem selectItem : m_selectItemList) {
-				jobTreeList.add(getJobTreeOneLevel(selectItem));
+			for(JobTreeItemWrapper selectItem : m_selectItemList) {
+				jobTreeList.add(getJobTreeOneLevel(selectItem, m_targetJobTypeList));
 			}
 		}
 		m_selectItemList.clear();
 
-		for(JobTreeItem tree : jobTreeList) {
+		for(JobTreeItemWrapper tree : jobTreeList) {
 			if(tree == null) {
 				continue;
 			}
@@ -459,12 +480,12 @@ public class JobTreeComposite extends Composite {
 	 * @param jobId
 	 */
 	public void setFocus(String managerName, String jobunitId, String jobId){
-		JobTreeItem root = (JobTreeItem) m_viewer.getInput();
+		JobTreeItemWrapper root = (JobTreeItemWrapper) m_viewer.getInput();
 		
-		for (JobTreeItem item1 : root.getChildren().get(0).getChildren()) {
+		for (JobTreeItemWrapper item1 : root.getChildren().get(0).getChildren()) {
 			String name = item1.getData().getName();
 			if (managerName.equals(name)) {
-				for (JobTreeItem item2 : item1.getChildren()) {
+				for (JobTreeItemWrapper item2 : item1.getChildren()) {
 					String unit = item2.getData().getJobunitId();
 					if (jobunitId.equals(unit)) {
 						setFocus(item2, jobId);
@@ -475,13 +496,13 @@ public class JobTreeComposite extends Composite {
 	}
 	
 	// 目的のジョブが見つかったらtrueを、見つからなかったらfalseを返す
-	private boolean setFocus (JobTreeItem item, String jobId) {
+	private boolean setFocus (JobTreeItemWrapper item, String jobId) {
 		if (jobId.equals(item.getData().getId())) {
 			m_viewer.setSelection(new StructuredSelection(item), true);
 			return true;
 		}
 		
-		for (JobTreeItem child : item.getChildren()) {
+		for (JobTreeItemWrapper child : item.getChildren()) {
 			if (setFocus(child, jobId)) {
 				return true;
 			}
@@ -495,7 +516,7 @@ public class JobTreeComposite extends Composite {
 	 *
 	 * @return ジョブツリーアイテムリスト
 	 */
-	public List<JobTreeItem> getSelectItemList() {
+	public List<JobTreeItemWrapper> getSelectItemList() {
 		return m_selectItemList;
 	}
 
@@ -504,7 +525,7 @@ public class JobTreeComposite extends Composite {
 	 *
 	 * @param itemList ジョブツリーアイテムリスト
 	 */
-	public void setSelectItem(List<JobTreeItem> itemList) {
+	public void setSelectItem(List<JobTreeItemWrapper> itemList) {
 		if(itemList != null) {
 			m_selectItemList.clear();
 			m_selectItemList.addAll(itemList);
@@ -515,25 +536,32 @@ public class JobTreeComposite extends Composite {
 	 * 引数で渡された親ジョブIDの直下のジョブツリーアイテムを取得する。<BR><BR>
 	 * 取得したジョブツリーアイテムから、<BR>
 	 * 引数で渡されたジョブIDと一致するジョブツリーアイテムを除いたジョブツリーアイテムを返す。
+	 * ジョブ種別の指定があった場合はその種別のみ取得する。
 	 *
 	 * @return ジョブツリー情報{@link com.clustercontrol.jobmanagement.bean.JobTreeItem}の階層オブジェクト
 	 */
-	public JobTreeItem getJobTreeOneLevel(JobTreeItem self) {
-		JobTreeItem parentOrg = self.getParent();
+	private JobTreeItemWrapper getJobTreeOneLevel(JobTreeItemWrapper self, List<JobInfoWrapper.TypeEnum> targetJobTypeList) {
+		JobTreeItemWrapper parentOrg = self.getParent();
 
 		// selfの親
-		JobTreeItem parentClone = new JobTreeItem();
+		JobTreeItemWrapper parentClone = new JobTreeItemWrapper();
 		parentClone.setData(copyJobInfo(parentOrg.getData()));
 
 		// selfの兄弟
 		String jobId = self.getData().getId();
-		for (JobTreeItem brotherOrg : self.getParent().getChildren()) {
-			if (!jobId.equals(brotherOrg.getData().getId())) {
-				JobTreeItem brotherClone = new JobTreeItem();
-				brotherClone.setParent(parentClone);
-				parentClone.getChildren().add(brotherClone);
-				brotherClone.setData(copyJobInfo(brotherOrg.getData()));
+		for (JobTreeItemWrapper brotherOrg : self.getParent().getChildren()) {
+			if (jobId.equals(brotherOrg.getData().getId())) {
+				continue;
 			}
+			if(targetJobTypeList != null){
+				if(!targetJobTypeList.contains(brotherOrg.getData().getType())){
+					continue;
+				}
+			}
+			JobTreeItemWrapper brotherClone = new JobTreeItemWrapper();
+			brotherClone.setParent(parentClone);
+			parentClone.getChildren().add(brotherClone);
+			brotherClone.setData(copyJobInfo(brotherOrg.getData()));
 		}
 		return parentClone;
 	}
@@ -543,11 +571,11 @@ public class JobTreeComposite extends Composite {
 	 * @param self
 	 * @return
 	 */
-	public JobTreeItem getJobTreeOneUnit(JobTreeItem self) {
+	public JobTreeItemWrapper getJobTreeOneUnit(JobTreeItemWrapper self) {
 		// selfの親
-		JobTreeItem parentOrg = self.getParent();
+		JobTreeItemWrapper parentOrg = self.getParent();
 		// selfの親のクローン
-		JobTreeItem ret = new JobTreeItem();
+		JobTreeItemWrapper ret = new JobTreeItemWrapper();
 		//selfの所属するジョブユニットのジョブID
 		String jobUnitId = self.getData().getJobunitId();
 		//selfの階層から、root階層まで、探索する
@@ -574,10 +602,10 @@ public class JobTreeComposite extends Composite {
 	 * @param itemList
 	 * @return
 	 */
-	private JobTreeItem cloneChildren(String id, JobTreeItem parent, List<JobTreeItem> itemList){
-		for (JobTreeItem childrenOrg : itemList) {
+	private JobTreeItemWrapper cloneChildren(String id, JobTreeItemWrapper parent, List<JobTreeItemWrapper> itemList){
+		for (JobTreeItemWrapper childrenOrg : itemList) {
 			if (!id.equals(childrenOrg.getData().getId())) {
-				JobTreeItem childrenClone = new JobTreeItem();
+				JobTreeItemWrapper childrenClone = new JobTreeItemWrapper();
 
 				childrenClone.setData(copyJobInfo(childrenOrg.getData()));
 				if(!childrenOrg.getChildren().isEmpty()){
@@ -596,14 +624,14 @@ public class JobTreeComposite extends Composite {
 	 * @param orgInfo コピー元ジョブ情報
 	 * @return ジョブ情報
 	 */
-	private JobInfo copyJobInfo(JobInfo orgInfo) {
+	private JobInfoWrapper copyJobInfo(JobInfoWrapper orgInfo) {
 
-		JobInfo info = new JobInfo();
+		JobInfoWrapper info = JobTreeItemUtil.createJobInfoWrapper();
 		info.setJobunitId(orgInfo.getJobunitId());
 		info.setId(orgInfo.getId());
 		info.setName(orgInfo.getName());
 		info.setType(orgInfo.getType());
-		info.setRegisteredModule(orgInfo.isRegisteredModule());
+		info.setRegistered(orgInfo.getRegistered());
 
 		return info;
 	}

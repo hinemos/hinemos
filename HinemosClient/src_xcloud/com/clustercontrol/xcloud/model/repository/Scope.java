@@ -10,6 +10,8 @@ package com.clustercontrol.xcloud.model.repository;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openapitools.client.model.HFacilityResponse;
+
 import com.clustercontrol.xcloud.model.cloud.HinemosManager;
 
 public class Scope extends Facility implements IScope {
@@ -60,7 +62,7 @@ public class Scope extends Facility implements IScope {
 		return getCloudRepository().getHinemosManager();
 	}
 	
-	public static Scope convert(com.clustercontrol.ws.xcloud.HScope source) {
+	public static Scope convert(HFacilityResponse source) {
 		Scope scope = new Scope();
 		scope.update(source);
 		return scope;

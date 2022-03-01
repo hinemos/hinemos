@@ -17,8 +17,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.rap.rwt.RWT;
-import org.eclipse.rap.rwt.service.UISession;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -35,18 +33,20 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Widget;
+import org.openapitools.client.model.GetNodeListRequest;
+import org.openapitools.client.model.NodeConfigFilterInfoRequest;
+import org.openapitools.client.model.NodeConfigFilterInfoRequest.NodeConfigSettingItemNameEnum;
+import org.openapitools.client.model.NodeConfigFilterItemInfoRequest;
 
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.DateTimeDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.nodemap.composite.NodeListConfigFilterItemComposite;
+import com.clustercontrol.repository.bean.NodeConfigSettingItem;
+import com.clustercontrol.util.FilterPropertyCache;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
-import com.clustercontrol.ws.repository.NodeConfigFilterInfo;
-import com.clustercontrol.ws.repository.NodeConfigFilterItemInfo;
-import com.clustercontrol.ws.repository.NodeInfo;
 
 /**
  * ノード検索ダイアログクラス<BR>
@@ -59,7 +59,7 @@ public class NodeListFindDialog extends CommonDialog {
 	private Shell m_shell;
 
 	/** 検索条件 */
-	private NodeInfo m_nodeInfo;
+	private GetNodeListRequest m_nodeInfo;
 
 	/** 親Composite */
 	private Composite m_parentComposite;
@@ -91,8 +91,9 @@ public class NodeListFindDialog extends CommonDialog {
 	/** 各構成情報条件のチェック対象リスト(削除チェックボックスでチェックされている表示順を保持) */
 	private List<Integer> m_infoDelCheckOnList = new ArrayList<>();
 
-	/** 検索条件キャッシュマップ */
-	private static Map<UISession, HashMap<String, NodeInfo>> filterCache = new ConcurrentHashMap<>();
+	/** プロパティのキャッシュ用クラス */
+	// findbugs対応 非同期な遅延初期化対策にてvolatile化
+	private static volatile FilterPropertyCache filterPropertyCache = null;
 
 	private static final int SCROLL_WIDTH = 20;
 
@@ -220,10 +221,10 @@ public class NodeListFindDialog extends CommonDialog {
 		m_nodeConfigComposite.setLayoutData(gridData);
 
 		// Composite作成
-		NodeInfo nodeInfo = getOrInitFilterCache();
-		if (nodeInfo != null) {
-			if (nodeInfo.getNodeConfigFilterList() != null) {
-				for (NodeConfigFilterInfo filterInfo : nodeInfo.getNodeConfigFilterList()) {
+		GetNodeListRequest nodeFilterInfo = getOrInitFilterCache();
+		if (nodeFilterInfo != null) {
+			if (nodeFilterInfo.getNodeConfigFilterList() != null) {
+				for (NodeConfigFilterInfoRequest filterInfo : nodeFilterInfo.getNodeConfigFilterList()) {
 					addInputComposite(filterInfo);
 					m_nodeConfigComposite.layout();
 					m_nodeConfigGroup.layout();
@@ -234,10 +235,16 @@ public class NodeListFindDialog extends CommonDialog {
 							getAreaComposite().computeSize(SWT.DEFAULT, SWT.DEFAULT).x - SCROLL_WIDTH);
 				}
 			}
-			if (nodeInfo.getNodeConfigTargetDatetime() != null
-					&& nodeInfo.getNodeConfigTargetDatetime() != 0L) {
+
+			Long longDate = null;
+			try {
+				longDate = TimezoneUtil.getSimpleDateFormat().parse(nodeFilterInfo.getNodeConfigTargetDatetime()).getTime();
+			} catch (Exception e1) {
+			}
+
+			if (longDate != null && longDate != 0L) {
 				m_targetDatetimeCheck.setSelection(true);
-				m_targetDatetime = nodeInfo.getNodeConfigTargetDatetime();
+				m_targetDatetime = longDate;
 				//ダイアログより取得した日時を"yyyy/MM/dd HH:mm:ss"の形式に変換
 				SimpleDateFormat sdf = TimezoneUtil.getSimpleDateFormat();
 				String tmp = sdf.format(m_targetDatetime);
@@ -248,9 +255,9 @@ public class NodeListFindDialog extends CommonDialog {
 		// サイズ最適化
 		adjustDialog();
 
-		if (nodeInfo != null) {
+		if (nodeFilterInfo != null) {
 			// 値設定
-			setInputData(nodeInfo);
+			setInputData(nodeFilterInfo);
 		}
 
 //		this.update();
@@ -278,11 +285,11 @@ public class NodeListFindDialog extends CommonDialog {
 	 * @param nodeInfo 検索条件
 	 *
 	 */
-	public void setInputData(NodeInfo nodeInfo) {
+	public void setInputData(GetNodeListRequest nodeInfo) {
 		// 構成情報　判定対象の条件関係
-		if (nodeInfo.isNodeConfigFilterIsAnd() != null) {
-			m_nodeConfigAndRadio.setSelection(nodeInfo.isNodeConfigFilterIsAnd());
-			m_nodeConfigOrRadio.setSelection(!nodeInfo.isNodeConfigFilterIsAnd());
+		if (nodeInfo.getNodeConfigFilterIsAnd() != null) {
+			m_nodeConfigAndRadio.setSelection(nodeInfo.getNodeConfigFilterIsAnd());
+			m_nodeConfigOrRadio.setSelection(!nodeInfo.getNodeConfigFilterIsAnd());
 		}
 	}
 
@@ -319,30 +326,32 @@ public class NodeListFindDialog extends CommonDialog {
 	 *
 	 * @return データモデル
 	 */
-	public NodeInfo getInputData() {
-		NodeInfo cloneInfo = new NodeInfo();
+	public GetNodeListRequest getInputData() {
+		GetNodeListRequest cloneInfo = new GetNodeListRequest();
 
 		// 構成情報検索条件
-		cloneInfo.setNodeConfigFilterIsAnd(m_nodeInfo.isNodeConfigFilterIsAnd());
+		cloneInfo.setNodeConfigFilterIsAnd(m_nodeInfo.getNodeConfigFilterIsAnd());
 
 		// 構成情報対象日時
 		cloneInfo.setNodeConfigTargetDatetime(m_nodeInfo.getNodeConfigTargetDatetime());
 
 		// 構成情報検索条件
 		cloneInfo.getNodeConfigFilterList().clear();
-		List<NodeConfigFilterInfo> tmpNodeConfigFilterList = new ArrayList<>();
-		for (NodeConfigFilterInfo originalInfo : m_nodeInfo.getNodeConfigFilterList()) {
-			NodeConfigFilterInfo nodeConfigFilterInfo = new NodeConfigFilterInfo();
+		List<NodeConfigFilterInfoRequest> tmpNodeConfigFilterList = new ArrayList<>();
+		for (NodeConfigFilterInfoRequest originalInfo : m_nodeInfo.getNodeConfigFilterList()) {
+			NodeConfigFilterInfoRequest nodeConfigFilterInfo = new NodeConfigFilterInfoRequest();
 			nodeConfigFilterInfo.setNodeConfigSettingItemName(originalInfo.getNodeConfigSettingItemName());
-			nodeConfigFilterInfo.setExists(originalInfo.isExists());
+			nodeConfigFilterInfo.setExists(originalInfo.getExists());
 			nodeConfigFilterInfo.getItemList().clear();
 			if (originalInfo.getItemList() != null) {
-				List<NodeConfigFilterItemInfo> tmpItemList = new ArrayList<>();
-				for (NodeConfigFilterItemInfo originalItemInfo : originalInfo.getItemList()) {
-					NodeConfigFilterItemInfo nodeConfigFilterItemInfo = new NodeConfigFilterItemInfo();
+				List<NodeConfigFilterItemInfoRequest> tmpItemList = new ArrayList<>();
+				for (NodeConfigFilterItemInfoRequest originalItemInfo : originalInfo.getItemList()) {
+					NodeConfigFilterItemInfoRequest nodeConfigFilterItemInfo = new NodeConfigFilterItemInfoRequest();
 					nodeConfigFilterItemInfo.setItemName(originalItemInfo.getItemName());
 					nodeConfigFilterItemInfo.setMethod(originalItemInfo.getMethod());
-					nodeConfigFilterItemInfo.setItemValue(originalItemInfo.getItemValue());
+					nodeConfigFilterItemInfo.setItemStringValue(originalItemInfo.getItemStringValue());
+					nodeConfigFilterItemInfo.setItemLongValue(originalItemInfo.getItemLongValue());
+					nodeConfigFilterItemInfo.setItemIntegerValue(originalItemInfo.getItemIntegerValue());
 					tmpItemList.add(nodeConfigFilterItemInfo);
 				}
 				nodeConfigFilterInfo.getItemList().addAll(tmpItemList);
@@ -370,7 +379,7 @@ public class NodeListFindDialog extends CommonDialog {
 				new SelectionAdapter() {
 					@Override
 					public void widgetSelected(SelectionEvent e) {
-						addInputComposite(new NodeConfigFilterInfo());
+						addInputComposite(new NodeConfigFilterInfoRequest());
 						m_nodeConfigComposite.layout();
 						m_nodeConfigGroup.layout();
 						NodeListFindDialog.this.m_parentComposite.layout();
@@ -427,7 +436,7 @@ public class NodeListFindDialog extends CommonDialog {
 	 * 検索条件欄を追加する
 	 * 
 	 */
-	private void addInputComposite(NodeConfigFilterInfo filterInfo) {
+	private void addInputComposite(NodeConfigFilterInfoRequest filterInfo) {
 
 		Integer idx = ++m_maxIdx;
 
@@ -476,16 +485,16 @@ public class NodeListFindDialog extends CommonDialog {
 		nodeConfigExistsRadio.setLayoutData(new GridData(70, SizeConstant.SIZE_BUTTON_HEIGHT));
 		nodeConfigExistsRadio.setText(Messages.getString("node.config.exits.condition.exists"));
 		nodeConfigExistsRadio.setSelection(true);
-		if (filterInfo.isExists() != null) {
-			nodeConfigExistsRadio.setSelection(filterInfo.isExists());
+		if (filterInfo.getExists() != null) {
+			nodeConfigExistsRadio.setSelection(filterInfo.getExists());
 		}
 
 		// 構成情報Not Exists条件ラジオ（Radio）
 		Button nodeConfigNotExistsRadio = new Button(existConditionComposite, SWT.RADIO);
 		nodeConfigNotExistsRadio.setText(Messages.getString("node.config.exits.condition.notexists"));
 		nodeConfigNotExistsRadio.setLayoutData(new GridData(70, SizeConstant.SIZE_BUTTON_HEIGHT));
-		if (filterInfo.isExists() != null) {
-			nodeConfigNotExistsRadio.setSelection(!filterInfo.isExists());
+		if (filterInfo.getExists() != null) {
+			nodeConfigNotExistsRadio.setSelection(!filterInfo.getExists());
 		}
 
 		// 構成情報条件 (Label)
@@ -515,8 +524,8 @@ public class NodeListFindDialog extends CommonDialog {
 				String displayName = ((Combo)e.getSource()).getText();
 				Integer idx = (Integer)((Combo)e.getSource()).getData();
 				NodeListConfigFilterItemComposite itemComposite = m_compositeMap.get(idx).getItemComposite();
-				NodeConfigFilterInfo filterInfo = new NodeConfigFilterInfo();
-				filterInfo.setNodeConfigSettingItemName((String)((Combo)e.getSource()).getData(displayName));
+				NodeConfigFilterInfoRequest filterInfo = new NodeConfigFilterInfoRequest();
+				filterInfo.setNodeConfigSettingItemName(NodeConfigSettingItemNameEnum.fromValue((String)((Combo)e.getSource()).getData(displayName)));
 				itemComposite.createItemsComposite(filterInfo);
 				m_nodeConfigComposite.layout();
 				m_nodeConfigGroup.layout();
@@ -538,10 +547,9 @@ public class NodeListFindDialog extends CommonDialog {
 		
 		// 既に構成情報種別が設定されている場合
 		if (filterInfo.getNodeConfigSettingItemName() != null) {
-			NodeConfigSettingItem nodeConfigSettingItem = NodeConfigSettingItem.nameToType(filterInfo.getNodeConfigSettingItemName());
+			NodeConfigSettingItem nodeConfigSettingItem = NodeConfigSettingItem.nameToType(filterInfo.getNodeConfigSettingItemName().getValue());
 			combo.setText(nodeConfigSettingItem.displayName());
-			
-			filterInfo.setNodeConfigSettingItemName(nodeConfigSettingItem.name());
+
 			itemComposite.createItemsComposite(filterInfo);
 			itemComposite.setInputData();
 			m_nodeConfigComposite.layout();
@@ -593,58 +601,67 @@ public class NodeListFindDialog extends CommonDialog {
 	/**
 	 * Initialize a filter info
 	 */
-	private NodeInfo createFilterCache() {
-		NodeInfo nodeInfo = new NodeInfo();
+	private GetNodeListRequest createFilterCache() {
+		GetNodeListRequest nodeFilterInfo = new GetNodeListRequest();
 		// 構成情報
 		if (m_compositeMap.size() > 0) {
 			for (Map.Entry<Integer, NodeFilterCompositeInfo> entry : m_compositeMap.entrySet()) {
 				NodeFilterCompositeInfo filterCompositeInfo = entry.getValue();
 				NodeListConfigFilterItemComposite itemComposite = filterCompositeInfo.getItemComposite();
 				itemComposite.createInputData();
-				NodeConfigFilterInfo nodeConfigFilterInfo = itemComposite.getNodeConfigFilterInfo();
+				NodeConfigFilterInfoRequest nodeConfigFilterInfo = itemComposite.getNodeConfigFilterInfo();
 				nodeConfigFilterInfo.setExists(filterCompositeInfo.getIsExistsRadio().getSelection());
-				nodeInfo.getNodeConfigFilterList().add(itemComposite.getNodeConfigFilterInfo());
+				nodeFilterInfo.getNodeConfigFilterList().add(itemComposite.getNodeConfigFilterInfo());
 			}
 		}
 		// 構成情報 AND/OR
-		nodeInfo.setNodeConfigFilterIsAnd(m_nodeConfigAndRadio.getSelection());
+		nodeFilterInfo.setNodeConfigFilterIsAnd(m_nodeConfigAndRadio.getSelection());
 		// 構成情報 対象日時
 		if (m_targetDatetimeCheck.getSelection()) {
-			nodeInfo.setNodeConfigTargetDatetime(m_targetDatetime);
+			nodeFilterInfo.setNodeConfigTargetDatetime(TimezoneUtil.getSimpleDateFormat().format(m_targetDatetime));
 		} else {
-			nodeInfo.setNodeConfigTargetDatetime(0L);
+			nodeFilterInfo.setNodeConfigTargetDatetime("");
 		}
-		if (!filterCache.containsKey(RWT.getUISession())) {
-			filterCache.put(RWT.getUISession(), new HashMap<>());
+		// 構成情報
+		Map<String, GetNodeListRequest> map = (HashMap<String, GetNodeListRequest>)filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.NODELIST_FIND_DIALOG_PROPERTY);
+		if( null == map ){
+			filterPropertyCache.initFilterPropertyCache("nodeListFindDialogProperty", new HashMap<>());
+		}else{
+			//findbugs対応 mapがnot nullの場合のみ mapを利用する処理を行う
+			map.put(m_secondaryId, nodeFilterInfo);
+			filterPropertyCache.initFilterPropertyCache("nodeListFindDialogProperty",map);
 		}
-		filterCache.get(RWT.getUISession()).put(m_secondaryId, nodeInfo);
-		return nodeInfo;
+
+		return nodeFilterInfo;
 	}
 
 	/**
 	 * Get the cached filter info if existed,
 	 * or initialize one while not.
 	 */
-	private NodeInfo getOrInitFilterCache() {
-		NodeInfo nodeInfo = null;
-
-		if (!filterCache.containsKey(RWT.getUISession())
-				|| !filterCache.get(RWT.getUISession()).containsKey(m_secondaryId)) {
-			nodeInfo = createFilterCache();
-		} else {
-			nodeInfo = filterCache.get(RWT.getUISession()).get(m_secondaryId);
+	private GetNodeListRequest getOrInitFilterCache() {
+		GetNodeListRequest nodeFilterInfo = null;
+		// FilterPropertyCacheに構成情報が存在すれば取得
+		if( null == filterPropertyCache ){
+			filterPropertyCache = new FilterPropertyCache();
 		}
-		return nodeInfo;
+		Map<String, GetNodeListRequest> map = (HashMap<String, GetNodeListRequest>)filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.NODELIST_FIND_DIALOG_PROPERTY);
+		if( null == map || !map.containsKey(m_secondaryId) ){
+			nodeFilterInfo = createFilterCache();
+		} else {
+			nodeFilterInfo = map.get(m_secondaryId);
+		}
+		return nodeFilterInfo;
 	}
 
 	/**
 	 * Remove the cached filter.
 	 */
 	public static void removeFilterCache(String secondaryId) {
-		if (filterCache.containsKey(RWT.getUISession())
-				&& filterCache.get(RWT.getUISession()).containsKey(secondaryId)) {
-			filterCache.get(RWT.getUISession()).remove(secondaryId);
-		}
+		Map<String, GetNodeListRequest> map = (HashMap<String, GetNodeListRequest>)filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.NODELIST_FIND_DIALOG_PROPERTY);
+		if(map != null && map.containsKey(secondaryId)){
+			map.remove(secondaryId);
+		}	
 	}
 
 	/**

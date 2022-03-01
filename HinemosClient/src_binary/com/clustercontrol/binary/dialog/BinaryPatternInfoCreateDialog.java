@@ -29,6 +29,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.BinaryPatternInfoResponse;
 
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
@@ -41,7 +42,6 @@ import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.CommonVerifyListener;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.BinaryPatternInfo;
 
 /**
  * バイナリ検索条件ダイアログ<BR>
@@ -79,7 +79,7 @@ public class BinaryPatternInfoCreateDialog extends CommonDialog {
 
 	// そのほかフィールド
 	/** バイナリ検索条件の入力値保持オブジェクト */
-	private BinaryPatternInfo m_binaryInputData = null;
+	private BinaryPatternInfoResponse m_binaryInputData = null;
 	/** 入力値チェック結果 */
 	private ValidateResult m_binaryValidateResult = null;
 	/** メッセージにデフォルト値を入れるフラグ */
@@ -96,10 +96,10 @@ public class BinaryPatternInfoCreateDialog extends CommonDialog {
 		this.logLineFlag = logLineFlag;
 
 		// バイナリ検索条件の初期化.
-		BinaryPatternInfo info = new BinaryPatternInfo();
+		BinaryPatternInfoResponse info = new BinaryPatternInfoResponse();
 		info.setProcessType(true);
 		info.setValidFlg(true);
-		info.setPriority(PriorityConstant.TYPE_CRITICAL);
+		info.setPriority(BinaryPatternInfoResponse.PriorityEnum.CRITICAL);
 		info.setEncoding("UTF-8");
 
 		m_binaryInputData = info;
@@ -113,7 +113,7 @@ public class BinaryPatternInfoCreateDialog extends CommonDialog {
 	 * @param identifier
 	 *            変更する文字列監視の判定情報の識別キー
 	 */
-	public BinaryPatternInfoCreateDialog(Shell parent, BinaryPatternInfo binaryInfo) {
+	public BinaryPatternInfoCreateDialog(Shell parent, BinaryPatternInfoResponse binaryInfo) {
 		super(parent);
 		this.logLineFlag = false;
 		m_binaryInputData = binaryInfo;
@@ -548,7 +548,7 @@ public class BinaryPatternInfoCreateDialog extends CommonDialog {
 			}
 
 			// 処理する／しない
-			if (m_binaryInputData.isProcessType()) {
+			if (m_binaryInputData.getProcessType()) {
 				this.m_radioProcess.setSelection(true);
 			} else {
 				this.m_radioNotProcess.setSelection(true);
@@ -560,7 +560,7 @@ public class BinaryPatternInfoCreateDialog extends CommonDialog {
 			}
 
 			// 重要度
-			this.m_comboPriority.setText(PriorityMessage.typeToString(m_binaryInputData.getPriority()));
+			this.m_comboPriority.setText(PriorityMessage.codeToString(m_binaryInputData.getPriority().toString()));
 
 			// メッセージ
 			if (m_binaryInputData.getMessage() != null) {
@@ -568,7 +568,7 @@ public class BinaryPatternInfoCreateDialog extends CommonDialog {
 			}
 
 			// 有効／無効
-			if (m_binaryInputData.isValidFlg()) {
+			if (m_binaryInputData.getValidFlg()) {
 				this.m_buttonValid.setSelection(true);
 			}
 		}
@@ -591,7 +591,7 @@ public class BinaryPatternInfoCreateDialog extends CommonDialog {
 	 *
 	 * @return 判定情報
 	 */
-	public BinaryPatternInfo getBinaryInputData() {
+	public BinaryPatternInfoResponse getBinaryInputData() {
 		return this.m_binaryInputData;
 	}
 
@@ -626,10 +626,10 @@ public class BinaryPatternInfoCreateDialog extends CommonDialog {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	private BinaryPatternInfo createInputData() {
+	private BinaryPatternInfoResponse createInputData() {
 
 		// 変数初期化.
-		BinaryPatternInfo info = new BinaryPatternInfo();
+		BinaryPatternInfoResponse info = new BinaryPatternInfoResponse();
 		String[] args = null;
 
 		// 説明
@@ -714,8 +714,7 @@ public class BinaryPatternInfoCreateDialog extends CommonDialog {
 		}
 
 		// 重要度
-		String priorityText = this.m_comboPriority.getText();
-		info.setPriority(PriorityMessage.stringToType(priorityText));
+		info.setPriority(PriorityMessage.stringToEnum(this.m_comboPriority.getText(), BinaryPatternInfoResponse.PriorityEnum.class));
 
 		// メッセージ
 		if (this.m_textMessage.getText() != null && !"".equals((this.m_textMessage.getText()).trim())) {

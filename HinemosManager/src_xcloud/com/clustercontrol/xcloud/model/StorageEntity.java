@@ -7,18 +7,18 @@
  */
 package com.clustercontrol.xcloud.model;
 
-import javax.persistence.Column;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinColumns;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
 import com.clustercontrol.xcloud.factory.IResourceManagement.Storage.StorageStatus;
 
@@ -49,7 +49,7 @@ public class StorageEntity extends LocationResourceEntity {
 	private String storageType;
 	
 	private String targetInstanceId;
-	private String facilityId;
+	private String targetFacilityId;
 	private Integer deviceIndex;
 	private String deviceType;
 	private String deviceName;
@@ -89,10 +89,10 @@ public class StorageEntity extends LocationResourceEntity {
 	
 	@Column(name="target_facility_id", unique=true)
 	public String getTargetFacilityId() {
-		return this.facilityId;
+		return this.targetFacilityId;
 	}
 	public void setTargetFacilityId( String facilityId ) {
-		this.facilityId = facilityId;
+		this.targetFacilityId = facilityId;
 	}
 
 	@Column(name="device_index")

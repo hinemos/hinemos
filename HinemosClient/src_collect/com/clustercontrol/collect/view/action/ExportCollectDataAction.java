@@ -22,12 +22,13 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.CollectKeyInfoResponseP1;
 
 import com.clustercontrol.collect.dialog.ExportDialog;
 import com.clustercontrol.collect.util.CollectGraphUtil;
 import com.clustercontrol.collect.util.CollectGraphUtil.CollectFacilityDataInfo;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.collect.CollectKeyInfoPK;
+
 
 /**
  * 収集済みデータのエクスポートを行うアクションクラス
@@ -83,7 +84,7 @@ public class ExportCollectDataAction extends AbstractHandler{
 		Integer m_summaryType = CollectGraphUtil.getSummaryType();
 		
 		// itemanmeとmonitorid
-		List<CollectKeyInfoPK> collectKeyInfoList = CollectGraphUtil.getCollectKeyInfoList();
+		List<CollectKeyInfoResponseP1> collectKeyInfoList = CollectGraphUtil.getCollectKeyInfoList();
 
 		// マネージャ名とmonitorIdとcollectIdのリスト
 		TreeMap<String, Map<String, List<Integer>>> m_targetItemCodeCollectMap = CollectGraphUtil.getManagerMonitorCollectIdMap();

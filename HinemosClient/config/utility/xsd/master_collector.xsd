@@ -471,16 +471,6 @@
 			<xs:documentation>カテゴリ毎の収集方法</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
-			<xs:element name="categoryCode" type="xs:string" minOccurs="1" maxOccurs="1">
-				<xs:annotation>
-					<xs:documentation>カテゴリコード</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="collectMethod" type="xs:string" minOccurs="1" maxOccurs="1">
-				<xs:annotation>
-					<xs:documentation>収集メソッド</xs:documentation>
-				</xs:annotation>
-			</xs:element>
 			<xs:element name="platformId" type="xs:string" minOccurs="1" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>プラットフォームID</xs:documentation>
@@ -491,6 +481,17 @@
 					<xs:documentation>サブプラットフォームID</xs:documentation>
 				</xs:annotation>
 			</xs:element>
+			<xs:element name="categoryCode" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カテゴリコード</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="collectMethod" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集メソッド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
 		</xs:sequence>
 	</xs:complexType>
 	

@@ -9,6 +9,7 @@
 package com.clustercontrol.monitor.util;
 
 import java.sql.Timestamp;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,17 +18,21 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.openapitools.client.model.EventLogInfoRequest;
+import org.openapitools.client.model.EventLogInfoResponse;
+import org.openapitools.client.model.GetEventListResponse;
+import org.openapitools.client.model.ScopeDataInfoResponse;
+import org.openapitools.client.model.StatusInfoResponse;
+
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
 import com.clustercontrol.monitor.action.GetScopeListTableDefine;
 import com.clustercontrol.monitor.action.GetStatusListTableDefine;
 import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
 import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.monitor.ScopeDataInfo;
-import com.clustercontrol.ws.monitor.StatusDataInfo;
-import com.clustercontrol.ws.monitor.ViewListInfo;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * ConvertListUtil
@@ -37,22 +42,22 @@ import com.clustercontrol.ws.monitor.ViewListInfo;
  */
 public class ConvertListUtil {
 
-	public static List<EventDataInfo> eventLogDataMap2SortedList(Map<String, ViewListInfo> map){
-		List<EventDataInfo> eventList = new ArrayList<>();
+	public static List<EventLogInfoResponse> eventLogDataMap2SortedList(Map<String, GetEventListResponse> map){
+		List<EventLogInfoResponse> eventList = new ArrayList<>();
 		List<String> keys = new ArrayList<>(map.keySet());
-		ViewListInfo infoList;
+		GetEventListResponse infoList;
 		for( String managerName : keys ){
 			infoList = map.get(managerName);
-			for( EventDataInfo eventLogData : infoList.getEventList() ){
+			for( EventLogInfoResponse eventLogData : infoList.getEventList() ){
 				eventLogData.setManagerName(managerName);
 				eventList.add(eventLogData);
 			}
 		}
 
 		// Sort - OutputDate, 降順で並べ替え
-		Collections.sort(eventList, new Comparator<EventDataInfo>() {
+		Collections.sort(eventList, new Comparator<EventLogInfoResponse>() {
 			@Override
-			public int compare(EventDataInfo o1, EventDataInfo o2) {
+			public int compare(EventLogInfoResponse o1, EventLogInfoResponse o2) {
 				return o2.getOutputDate().compareTo(o1.getOutputDate());
 			}
 		});
@@ -73,18 +78,31 @@ public class ConvertListUtil {
 	 *
 	 * @param map
 	 * @return
+	 * @throws ParseException 
+	 * @throws HinemosUnknown 
 	 */
-	public static ArrayList<ArrayList<Object>> eventLogList2Input(List<EventDataInfo> eventList){
+	public static ArrayList<ArrayList<Object>> eventLogList2Input(List<EventLogInfoResponse> eventList) throws ParseException, HinemosUnknown{
 
 		ArrayList<ArrayList<Object>> ret = new ArrayList<ArrayList<Object>>();
-		for(Iterator<EventDataInfo> it = eventList.iterator(); it.hasNext();) {
+		for(Iterator<EventLogInfoResponse> it = eventList.iterator(); it.hasNext();) {
 			ArrayList<Object> list = new ArrayList<Object>();
-			EventDataInfo eventLogData = it.next();
-
+			EventLogInfoResponse eventLogData = it.next();
+			
+			Long receiveTime = null;
+			Long outputDate = null;
+			Date tmpDate;
+			
 			list.add(GetEventListTableDefine.MANAGER_NAME, eventLogData.getManagerName());
 			list.add(GetEventListTableDefine.PRIORITY, eventLogData.getPriority());
-			list.add(GetEventListTableDefine.RECEIVE_TIME, new Date(eventLogData.getOutputDate()));
-			list.add(GetEventListTableDefine.OUTPUT_DATE, new Date(eventLogData.getGenerationDate()));
+			
+			tmpDate = MonitorResultRestClientWrapper.parseDate(eventLogData.getOutputDate());
+			receiveTime = tmpDate.getTime();
+			list.add(GetEventListTableDefine.RECEIVE_TIME, new Date(receiveTime));
+			
+			tmpDate = MonitorResultRestClientWrapper.parseDate(eventLogData.getGenerationDate());
+			outputDate = tmpDate.getTime();
+			list.add(GetEventListTableDefine.OUTPUT_DATE, new Date(outputDate));
+			
 			list.add(GetEventListTableDefine.PLUGIN_ID, eventLogData.getPluginId());
 			list.add(GetEventListTableDefine.MONITOR_ID, eventLogData.getMonitorId());
 			list.add(GetEventListTableDefine.MONITOR_DETAIL_ID, eventLogData.getMonitorDetailId());
@@ -96,8 +114,11 @@ public class ConvertListUtil {
 			list.add(GetEventListTableDefine.CONFIRM_USER, eventLogData.getConfirmUser());
 			list.add(GetEventListTableDefine.COMMENT, eventLogData.getComment());
 			list.add(GetEventListTableDefine.OWNER_ROLE, eventLogData.getOwnerRoleId());
+			list.add(GetEventListTableDefine.NOTIFY_UUID, eventLogData.getNotifyUUID());
 			for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
-				list.add(GetEventListTableDefine.getUserItemIndex(i), EventUtil.getUserItemValue(eventLogData, i));
+				EventLogInfoRequest eventLogInfoReqest = new EventLogInfoRequest();
+				RestClientBeanUtil.convertBean(eventLogData, eventLogInfoReqest);
+				list.add(GetEventListTableDefine.getUserItemIndex(i), EventUtil.getUserItemValue(eventLogInfoReqest, i));
 			}
 			list.add(GetEventListTableDefine.EVENT_NO, eventLogData.getPosition());
 			
@@ -119,8 +140,8 @@ public class ConvertListUtil {
 	 * @param list
 	 * @return
 	 */
-	public static ArrayList<EventDataInfo> listToEventLogDataList(List<?> list) {
-		ArrayList<EventDataInfo> eventLogDataList = new ArrayList<EventDataInfo>();
+	public static List<EventLogInfoRequest> listToEventLogDataList(List<?> list) {
+		List<EventLogInfoRequest> eventLogDataList = new ArrayList<EventLogInfoRequest>();
 		Iterator<?> itr = list.iterator();
 		while(itr.hasNext()) {
 			ArrayList<?> event = (ArrayList<?>) itr.next();
@@ -140,15 +161,21 @@ public class ConvertListUtil {
 			String confirmUser = (String) event.get(GetEventListTableDefine.CONFIRM_USER);
 			String comment = (String) event.get(GetEventListTableDefine.COMMENT);
 			String ownerRoleId = (String) event.get(GetEventListTableDefine.OWNER_ROLE);
+			String notifyUUID = (String) event.get(GetEventListTableDefine.NOTIFY_UUID);
 
-
-
-			EventDataInfo eventLogData = new EventDataInfo();
+			EventLogInfoRequest eventLogData = new EventLogInfoRequest();
 
 			eventLogData.setManagerName(managerName);
 			eventLogData.setPriority(priority);
-			eventLogData.setOutputDate(outputDate.getTime());
-			eventLogData.setGenerationDate(generationDate.getTime());
+
+			Long outputDateLong = outputDate.getTime();
+			String outputDateString = MonitorResultRestClientWrapper.formatDate(new Date(outputDateLong));
+			eventLogData.setOutputDate(outputDateString);
+
+			Long generationDateLong = generationDate.getTime();
+			String generationDateString = MonitorResultRestClientWrapper.formatDate(new Date(generationDateLong));
+			eventLogData.setGenerationDate(generationDateString);
+			
 			eventLogData.setPluginId(pluginId);
 			eventLogData.setMonitorId(monitorId);
 			eventLogData.setMonitorDetailId(monitorDetailId);
@@ -164,6 +191,7 @@ public class ConvertListUtil {
 				String userItem = (String) event.get(GetEventListTableDefine.getUserItemIndex(i));
 				EventUtil.setUserItemValue(eventLogData, i, userItem);
 			}
+			eventLogData.setNotifyUUID(notifyUUID);
 			Long position = (Long) event.get(GetEventListTableDefine.EVENT_NO);
 			eventLogData.setPosition(position);
 
@@ -173,13 +201,14 @@ public class ConvertListUtil {
 		return eventLogDataList;
 	}
 
-	public static ArrayList<ArrayList<Object>> statusInfoDataListToArrayList(String managerName, List<StatusDataInfo> list) {
+	public static ArrayList<ArrayList<Object>> statusInfoDataListToArrayList(String managerName, List<StatusInfoResponse> list) throws ParseException {
 		ArrayList<ArrayList<Object>> ret  = new ArrayList<ArrayList<Object>>();
-		Iterator<StatusDataInfo> itr = list.iterator();
+		Iterator<StatusInfoResponse> itr = list.iterator();
 
+		Date tmpDate;
 		while(itr.hasNext()) {
 			ArrayList<Object> status = new ArrayList<Object>();
-			StatusDataInfo statusInfoData = itr.next();
+			StatusInfoResponse statusInfoData = itr.next();
 			status.add(GetStatusListTableDefine.MANAGER_NAME, managerName);
 			status.add(GetStatusListTableDefine.PRIORITY, statusInfoData.getPriority());
 			status.add(GetStatusListTableDefine.PLUGIN_ID, statusInfoData.getPluginId());
@@ -188,8 +217,15 @@ public class ConvertListUtil {
 			status.add(GetStatusListTableDefine.FACILITY_ID, statusInfoData.getFacilityId());
 			status.add(GetStatusListTableDefine.SCOPE, HinemosMessage.replace(statusInfoData.getFacilityPath()));
 			status.add(GetStatusListTableDefine.APPLICATION, HinemosMessage.replace(statusInfoData.getApplication()));
-			status.add(GetStatusListTableDefine.UPDATE_TIME, new Date(statusInfoData.getOutputDate()));
-			status.add(GetStatusListTableDefine.OUTPUT_TIME, new Date(statusInfoData.getGenerationDate()));
+			
+			tmpDate = MonitorResultRestClientWrapper.parseDate(statusInfoData.getOutputDate());
+			Long outputDateLong = tmpDate.getTime();
+			status.add(GetStatusListTableDefine.UPDATE_TIME, new Date(outputDateLong));
+			
+			tmpDate = MonitorResultRestClientWrapper.parseDate(statusInfoData.getGenerationDate());
+			Long generationDateLong = tmpDate.getTime();
+			status.add(GetStatusListTableDefine.OUTPUT_TIME, new Date(generationDateLong));
+			
 			status.add(GetStatusListTableDefine.MESSAGE, HinemosMessage.replace(statusInfoData.getMessage()));
 			status.add(GetStatusListTableDefine.OWNER_ROLE, statusInfoData.getOwnerRoleId());
 			status.add(GetStatusListTableDefine.DUMMY, null);
@@ -201,8 +237,8 @@ public class ConvertListUtil {
 
 	}
 
-	public static ArrayList<StatusDataInfo> listToStatusInfoDataList(List<?> list) {
-		ArrayList<StatusDataInfo> ret = new ArrayList<StatusDataInfo>();
+	public static ArrayList<StatusInfoResponse> listToStatusInfoDataList(List<?> list) {
+		ArrayList<StatusInfoResponse> ret = new ArrayList<StatusInfoResponse>();
 		Iterator<?> itr = list.iterator();
 		while (itr.hasNext()) {
 			ArrayList<?> status = (ArrayList<?>) itr.next();
@@ -217,13 +253,13 @@ public class ConvertListUtil {
 			Integer priority = (Integer) status.get(GetStatusListTableDefine.PRIORITY);
 			String ownerRoleId = (String) status.get(GetStatusListTableDefine.OWNER_ROLE);
 
-			StatusDataInfo info = new StatusDataInfo();
+			StatusInfoResponse info = new StatusInfoResponse();
 			info.setMonitorId(monitorId);
 			info.setMonitorDetailId(monitorDetailId);
 			info.setPluginId(pluginId);
 			info.setFacilityId(facilityId);
 			info.setApplication(application);
-			info.setGenerationDate(generationDate);
+			info.setGenerationDate( String.valueOf( generationDate ));
 			info.setMessage(message);
 			info.setPriority(priority);
 			info.setOwnerRoleId(ownerRoleId);
@@ -234,19 +270,21 @@ public class ConvertListUtil {
 		return ret;
 	}
 
-	public static ArrayList<ArrayList<Object>> scopeInfoDataListToArrayList(String managerName, List<ScopeDataInfo> list) {
+	public static ArrayList<ArrayList<Object>> scopeInfoDataListToArrayList(String managerName, List<ScopeDataInfoResponse> list) throws ParseException {
 		ArrayList<ArrayList<Object>> ret  = new ArrayList<ArrayList<Object>>();
 
-		Iterator<ScopeDataInfo> itr = list.iterator();
+		Iterator<ScopeDataInfoResponse> itr = list.iterator();
 		while(itr.hasNext()) {
 			ArrayList<Object> status = new ArrayList<Object>();
-			ScopeDataInfo scopeInfoData = itr.next();
+			ScopeDataInfoResponse scopeInfoData = itr.next();
 			status.add(GetScopeListTableDefine.MANAGER_NAME, managerName);
 			status.add(GetScopeListTableDefine.PRIORITY, scopeInfoData.getPriority());
 			status.add(GetScopeListTableDefine.FACILITY_ID, scopeInfoData.getFacilityId());
 			status.add(GetScopeListTableDefine.SCOPE, HinemosMessage.replace(scopeInfoData.getFacilityPath()));
 			status.add(null);
-			status.add(GetScopeListTableDefine.UPDATE_TIME, new Date(scopeInfoData.getOutputDate()));
+			Date tmpDate = MonitorResultRestClientWrapper.parseDate(scopeInfoData.getOutputDate());
+			Long outputDateLong = tmpDate.getTime();
+			status.add(GetScopeListTableDefine.UPDATE_TIME, new Date(outputDateLong));
 			String facilityId = scopeInfoData.getFacilityId();
 			Integer sortVal = scopeInfoData.getSortValue();
 			String order = sortVal.toString() + facilityId;

@@ -44,6 +44,7 @@ import com.clustercontrol.repository.model.NodeProductInfo;
 import com.clustercontrol.repository.model.NodeVariableInfo;
 import com.clustercontrol.util.DateUtil;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.StringBinder;
 
 /**
  * リポジトリに関するUtilityクラス<br/>
@@ -55,6 +56,10 @@ public class RepositoryUtil {
 	private static Log log = LogFactory.getLog(RepositoryUtil.class);
 	private static final String DELIMITER = "() : ";
 	private static final String DEFAULT_DATE_FORMAT = "yyyy/MM/dd HH:mm:ss";
+	/** DB上の最大値 */
+	public static final int NODE_NODE_NAME_MAX_BYTE = 256;
+	public static final int NODE_FACILITY_NAME_MAX_BYTE = 256;
+	public static final int NODE_CLOUD_RESOURCE_NAME_MAX_BYTE = 128;
 
 	/**
 	 * ノードの基本情報をハッシュとして返す
@@ -129,6 +134,13 @@ public class RepositoryUtil {
 			}
 			log.trace(methodName + DELIMITER + "key=[" + key + "]");
 			String value = null;
+			
+			String[] splitedkey = StringBinder.splitPostfix(key);
+			// :original以外(:quoteSh, :escapeCmd)が付与されていた場合は、元の置換キーで判定する。
+			if (splitedkey[1] != null && !splitedkey[1].equals(SystemParameterConstant.NOT_REPLACE_TO_ESCAPE)) {
+				key = splitedkey[0];
+			}
+			
 			if (key.equals(SystemParameterConstant.FACILITY_ID) || key
 					.equals(SystemParameterConstant.FACILITY_ID + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE)) {
 				value = facilityId;
@@ -875,6 +887,30 @@ public class RepositoryUtil {
 					.equals(SystemParameterConstant.CLOUD_LOCATION + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE)) {
 				value = nodeInfo.getCloudLocation();
 
+			} else if (key.equals(SystemParameterConstant.RPA_LOG_DIRECTORY)
+					|| key.equals(SystemParameterConstant.RPA_LOG_DIRECTORY + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE)) {
+				value = nodeInfo.getRpaLogDir();
+
+			} else if (key.equals(SystemParameterConstant.RPA_MGMT_TOOL_TYPE)
+					|| key.equals(SystemParameterConstant.RPA_MGMT_TOOL_TYPE + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE)) {
+				value = nodeInfo.getRpaManagementToolType();
+
+			} else if (key.equals(SystemParameterConstant.RPA_RESOURCE_ID)
+					|| key.equals(SystemParameterConstant.RPA_RESOURCE_ID + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE)) {
+				value = nodeInfo.getRpaResourceId();
+
+			} else if (key.equals(SystemParameterConstant.RPA_USER)
+					|| key.equals(SystemParameterConstant.RPA_USER + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE)) {
+				value = nodeInfo.getRpaUser();
+
+			} else if (key.equals(SystemParameterConstant.RPA_EXEC_ENV_ID)
+					|| key.equals(SystemParameterConstant.RPA_EXEC_ENV_ID + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE)) {
+				value = nodeInfo.getRpaExecEnvId();
+
+			} else if (key.equals(SystemParameterConstant.CLOUD_LOG_PRIORITY) || key
+					.equals(SystemParameterConstant.CLOUD_LOG_PRIORITY + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE)) {
+				value = parseParam(nodeInfo.getCloudLogPriority(), true);
+		
 			} else if (key.equals(SystemParameterConstant.ADMINISTRATOR) || key
 					.equals(SystemParameterConstant.ADMINISTRATOR + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE)) {
 				value = nodeInfo.getAdministrator();

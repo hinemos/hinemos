@@ -1,0 +1,20 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"RpaScenarioTagList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"RpaScenarioTag.tagName",
+			"RpaScenarioTag.description",
+			"RpaScenarioTag.ownerRoleId",
+			"RpaScenarioTag.tagPath"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"RpaScenarioTag",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

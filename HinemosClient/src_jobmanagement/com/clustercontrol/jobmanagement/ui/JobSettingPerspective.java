@@ -17,6 +17,7 @@ import com.clustercontrol.jobmanagement.view.JobPlanListView;
 import com.clustercontrol.jobmanagement.view.JobQueueReferrerView;
 import com.clustercontrol.jobmanagement.view.JobQueueSettingView;
 import com.clustercontrol.jobmanagement.view.JobKickListView;
+import com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView;
 
 /**
  * ジョブ管理のパースペクティブを生成するクラスです。
@@ -43,6 +44,7 @@ public class JobSettingPerspective extends ClusterControlPerspectiveBase {
 		IFolderLayout middle = layout.createFolder( "middle", IPageLayout.TOP, 0.5f, editorArea );
 		middle.addView(JobKickListView.ID);
 		middle.addView(JobQueueSettingView.ID);
+		middle.addView(JobLinkSendSettingListView.ID);
 		//残りのViewの作成
 		IFolderLayout bottom = layout.createFolder( "bottom", IPageLayout.TOP, IPageLayout.RATIO_MAX, editorArea );
 		bottom.addView(JobPlanListView.ID);

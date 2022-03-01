@@ -111,7 +111,7 @@ public class RunCustom extends RunCustomBase{
 			exitDate = dateFormat.format(result.getExitDate());
 			collectDate = dateFormat.format(result.getCollectDate());
 
-			if (result.getTimeout() || result.getStdout() == null || "".equals(result.getStdout()) || result.getResults() == null) {
+			if (result.getTimeout() || result.getStdout() == null || "".equals(result.getStdout()) || "\n".equals(result.getStdout()) || result.getResults() == null) {
 				if (m_log.isDebugEnabled()) {
 					m_log.debug("command monitoring : timeout or no stdout [" + result + "]");
 				}
@@ -179,7 +179,7 @@ public class RunCustom extends RunCustomBase{
 						// cacheより前回情報を取得
 						if (!isMonitorJob) {
 							// 監視ジョブ以外
-							valueEntity = MonitorCustomCache.getMonitorCustomValue(monitor.getMonitorId(), monitor.getFacilityId(), key);
+							valueEntity = MonitorCustomCache.getMonitorCustomValue(monitor.getMonitorId(), result.getFacilityId(), key);
 							prevValue = (Double)valueEntity.getValue();
 							// 前回の取得値
 							if (valueEntity.getGetDate() != null) {
@@ -193,7 +193,7 @@ public class RunCustom extends RunCustomBase{
 								prevValue = (Double)valueEntity.getValue();
 								prevDate = valueEntity.getGetDate();
 							} else {
-								valueEntity = new MonitorCustomValue(new MonitorCustomValuePK(monitor.getMonitorId(), monitor.getFacilityId(), key));
+								valueEntity = new MonitorCustomValue(new MonitorCustomValuePK(monitor.getMonitorId(), result.getFacilityId(), key));
 							}
 						}
 						// 前回値情報を今回の取得値に更新
@@ -202,7 +202,7 @@ public class RunCustom extends RunCustomBase{
 						if (!isMonitorJob) {
 							// 監視ジョブ以外
 							// 監視処理時に対象の監視項目IDが有効である場合にキャッシュを更新
-							MonitorCustomCache.update(monitor.getMonitorId(), monitor.getFacilityId(), key, valueEntity);
+							MonitorCustomCache.update(monitor.getMonitorId(), result.getFacilityId(), key, valueEntity);
 							
 							m_validSecond = HinemosPropertyCommon.monitor_custom_valid_second.getIntegerValue();
 							// 前回値取得時刻が取得許容時間よりも前だった場合、値取得失敗

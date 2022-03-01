@@ -75,7 +75,10 @@ public class CloudConstants {
 	// パスワードを暗号化するためのキー
 	public static final String cryptkeyFileRelativePath = "etc/db_crypt.key";
 	public static final String cryptkeyName = "cryptkey";
-	
+
+	// クラウドオプションのプラグインID
+	public static final String PLUGIN_ID = "CLOUD";
+
 	public static DateFormat createTimeFormat() {
 		return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	}

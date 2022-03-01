@@ -41,4 +41,7 @@ public class MaintenanceTypeMstConstant {
 	public static final String DELETE_COLLECT_BINARY_DATA = "DELETE_COLLECT_BINARY_DATA";
 
 	public static final String DELETE_NODE_CONFIG_HISTORY = "DELETE_NODE_CONFIG_HISTORY";
+
+	public static final String DELETE_JOBLINK_MSG = "DELETE_JOBLINK_MSG";
+	public static final String DELETE_RPA_SCENARIO_OPERATION_RESULT = "DELETE_RPA_SCENARIO_OPERATION_RESULT";
 }

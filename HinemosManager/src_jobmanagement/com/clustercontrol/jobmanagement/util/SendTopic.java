@@ -37,6 +37,21 @@ public class SendTopic {
 	}
 
 	/**
+	 * 引数で指定されたメッセージをキューへ送信します。<BR>
+	 * 特定バージョン以降のエージェントにのみトピックを送りたい場合にバージョンを指定します。
+	 * 
+	 * @param info 実行指示情報
+	 * @param supportedAgentversion 対象とするエージェントのバージョン
+	 */
+	public static void put(RunInstructionInfo info, String supportedAgentversion) {
+		TopicInfo topicInfo = new TopicInfo();
+		topicInfo.setRunInstructionInfo(info);
+		topicInfo.setSupportedAgentVersion(supportedAgentversion);
+
+		AgentConnectUtil.setTopic(info.getFacilityId(), topicInfo);
+	}
+
+	/**
 	 * ファイルチェックの再取得を促すためのトピック。
 	 * @param facilityId
 	 */

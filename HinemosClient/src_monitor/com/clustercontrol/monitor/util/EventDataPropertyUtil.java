@@ -9,8 +9,13 @@
 package com.clustercontrol.monitor.util;
 
 import java.sql.Date;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
+
+import org.openapitools.client.model.EventLogInfoResponse;
+import org.openapitools.client.model.EventLogOperationHistoryEntityResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.PriorityMessage;
@@ -24,9 +29,6 @@ import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo.UserItemDisplayInfo;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.util.TimezoneUtil;
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.notify.EventLogOperationHistoryEntity;
 
 public class EventDataPropertyUtil {
 
@@ -68,13 +70,17 @@ public class EventDataPropertyUtil {
 	 * 
 	 * @param locale ロケール情報
 	 * @return イベント詳細情報表示用プロパティ
+	 * @throws ParseException 
 	 * 
 	 * @see com.clustercontrol.bean.Property
 	 * @see com.clustercontrol.bean.PropertyDefineConstant
 	 * @see com.clustercontrol.bean.PriorityConstant
 	 * @see com.clustercontrol.bean.ConfirmConstant
 	 */
-	public static Property dto2property(EventDataInfo info, Locale locale, MultiManagerEventDisplaySettingInfo eventDspSetting, String managerName) {
+	public static Property dto2property(EventLogInfoResponse info, Locale locale, MultiManagerEventDisplaySettingInfo eventDspSetting, String managerName) throws ParseException {
+		//マネージャ
+		Property m_managerName = 
+				new Property(managerName, Messages.getString("string.manager", locale), PropertyDefineConstant.EDITOR_TEXT);
 		//重要度
 		Property m_priority =
 				new Property(EventInfoConstant.PRIORITY, Messages.getString("priority", locale), PropertyDefineConstant.EDITOR_TEXT);
@@ -139,19 +145,30 @@ public class EventDataPropertyUtil {
 		//オーナーロールID
 		Property m_ownerRoleId =
 				new Property (EventInfoConstant.OWNER_ROLE_ID, Messages.getString("owner.role.id", locale), PropertyDefineConstant.EDITOR_TEXT);
+		//通知のUUID
+		Property m_notifyUUID =
+				new Property (EventInfoConstant.NOTIFY_UUID, Messages.getString("notify.uuid", locale), PropertyDefineConstant.EDITOR_TEXT);
 		//イベント操作履歴
 		Property m_eventHistory =
 				new Property (EventInfoConstant.EVENT_HISTORY, Messages.getString("event.history", locale), PropertyDefineConstant.EDITOR_TEXTAREA, DataRangeConstant.TEXT);
 
 		// 値を初期化
+		m_managerName.setValue(managerName);
 		m_priority.setValue(PriorityMessage.typeToString(info.getPriority().intValue()));
 
 		if(info.getOutputDate() != null){
-			m_outputDate.setValue(new Date(info.getOutputDate()));
+			Long m_outputDateLong = null;
+				java.util.Date tmpDate = MonitorResultRestClientWrapper.parseDate(info.getOutputDate());
+				m_outputDateLong = tmpDate.getTime();
+			m_outputDate.setValue(new Date(m_outputDateLong));
 		}
 		if(info.getGenerationDate() != null){
-			m_generationDate.setValue(new Date(info.getGenerationDate()));
+			Long m_generationDateLong = null;
+				java.util.Date tmpDate = MonitorResultRestClientWrapper.parseDate(info.getGenerationDate());
+				m_generationDateLong = tmpDate.getTime();
+			m_generationDate.setValue(new Date(m_generationDateLong));
 		}
+		
 		m_pluginId.setValue(info.getPluginId());
 		m_monitorId.setValue(info.getMonitorId());
 		m_monitorDetailId.setValue(info.getMonitorDetailId());
@@ -163,7 +180,10 @@ public class EventDataPropertyUtil {
 		m_messageOrg.setValue(nullToSpace(HinemosMessage.replace(info.getMessageOrg())));
 		m_confirmed.setValue(ConfirmMessage.typeToString(info.getConfirmed().intValue()));
 		if(info.getConfirmDate() != null){
-			m_confirmDate.setValue(new Date(info.getConfirmDate()));
+			Long m_confirmDateLong = null;
+				java.util.Date tmpDate = MonitorResultRestClientWrapper.parseDate(info.getConfirmDate());
+				m_confirmDateLong = tmpDate.getTime();
+			m_confirmDate.setValue(new Date(m_confirmDateLong));
 		}
 
 		m_confirmUser.setValue(info.getConfirmUser());
@@ -171,14 +191,19 @@ public class EventDataPropertyUtil {
 
 		m_comment.setValue(info.getComment());
 		if (info.getCommentDate() != null) {
-			m_commentDate.setValue(new Date(info.getCommentDate()));
+			Long m_commentDateLong = null;
+				java.util.Date tmpDate = MonitorResultRestClientWrapper.parseDate(info.getCommentDate());
+				m_commentDateLong = tmpDate.getTime();
+			m_commentDate.setValue(new Date(m_commentDateLong));
 		}
 		m_commentUser.setValue(info.getCommentUser());
-		m_collectGraphFlg.setValue(CollectGraphFlgMessage.typeToString(info.isCollectGraphFlg()));
+		m_collectGraphFlg.setValue(CollectGraphFlgMessage.typeToString(info.getCollectGraphFlg()));
 		m_ownerRoleId.setValue(info.getOwnerRoleId());
+		m_notifyUUID.setValue(info.getNotifyUUID());
 		m_eventHistory.setValue(getEventHistoryString(info.getEventLogHitory()));
 
 		//変更の可/不可を設定
+		m_managerName.setModify(PropertyDefineConstant.MODIFY_NG);
 		m_priority.setModify(PropertyDefineConstant.MODIFY_NG);
 		m_outputDate.setModify(PropertyDefineConstant.MODIFY_NG);
 		m_generationDate.setModify(PropertyDefineConstant.MODIFY_NG);
@@ -200,12 +225,14 @@ public class EventDataPropertyUtil {
 		m_commentUser.setModify(PropertyDefineConstant.MODIFY_NG);
 		m_collectGraphFlg.setModify(PropertyDefineConstant.MODIFY_NG);
 		m_ownerRoleId.setModify(PropertyDefineConstant.MODIFY_NG);
+		m_notifyUUID.setModify(PropertyDefineConstant.MODIFY_NG);
 		m_eventHistory.setModify(PropertyDefineConstant.MODIFY_NG);
 
 		Property property = new Property(null, null, "");
 
 		// 初期表示ツリーを構成。
 		property.removeChildren();
+		property.addChildren(m_managerName);
 		property.addChildren(m_priority);
 		property.addChildren(m_outputDate);
 		property.addChildren(m_generationDate);
@@ -227,6 +254,7 @@ public class EventDataPropertyUtil {
 		property.addChildren(m_commentUser);
 		property.addChildren(m_collectGraphFlg);
 		property.addChildren(m_ownerRoleId);
+		property.addChildren(m_notifyUUID);
 		property.addChildren(m_eventHistory);
 
 		//ユーザ項目の設定
@@ -237,8 +265,7 @@ public class EventDataPropertyUtil {
 						EventInfoConstant.getUserItemConst(i), 
 						EventHinemosPropertyUtil.getDisplayName(userItemInfo.getDisplayName(), i),
 						PropertyDefineConstant.EDITOR_TEXT,
-						DataRangeConstant.VARCHAR_128);
-				
+						DataRangeConstant.VARCHAR_4096);
 				
 				//値のセット
 				userItemProperty.setValue(EventUtil.getUserItemValue(info, i));
@@ -292,7 +319,7 @@ public class EventDataPropertyUtil {
 	 * @param list
 	 * @return String
 	 */
-	private static String getEventHistoryString(List<EventLogOperationHistoryEntity> list){
+	private static String getEventHistoryString(List<EventLogOperationHistoryEntityResponse> list){
 
 		StringBuilder sb = new StringBuilder();
 		
@@ -300,8 +327,8 @@ public class EventDataPropertyUtil {
 			return "";
 		}
 		
-		for (EventLogOperationHistoryEntity history : list) {
-			String date = TimezoneUtil.getSimpleDateFormat().format(new Date(history.getOperationDate()));
+		for (EventLogOperationHistoryEntityResponse history : list) {
+			String date = history.getOperationDate().split(Pattern.quote("."))[0];
 			String user = history.getOperationUser();
 			String detail = HinemosMessage.replace(history.getDetail());
 			

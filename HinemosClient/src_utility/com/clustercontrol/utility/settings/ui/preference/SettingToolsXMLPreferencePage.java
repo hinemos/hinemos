@@ -14,6 +14,7 @@ import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.RadioGroupFieldEditor;
 import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.swt.SWT;
@@ -25,9 +26,11 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.sdml.util.SdmlUtilityInterface;
 import com.clustercontrol.ui.util.OptionUtil;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.settings.ui.constant.XMLConstant;
 import com.clustercontrol.utility.ui.settings.composite.UtilityDirectoryFieldEditor;
@@ -97,6 +100,12 @@ implements IWorkbenchPreferencePage {
 	private StringFieldEditor notify = null;
 	private StringFieldEditor mailTemplate = null;
 	private StringFieldEditor logformat = null;
+	private StringFieldEditor restAccess = null;
+	
+	// フィルタ設定
+	private StringFieldEditor filterSettingMonitorHistoryEvent = null;
+	private StringFieldEditor filterSettingMonitorHistoryStatus = null;
+	private StringFieldEditor filterSettingJobHistory = null;
 
 	private StringFieldEditor calender = null;
 	private StringFieldEditor calenderPattern = null;
@@ -135,7 +144,9 @@ implements IWorkbenchPreferencePage {
 	private StringFieldEditor jobSchedule = null;
 	private StringFieldEditor jobFileCheck = null;
 	private StringFieldEditor jobManual = null;
+	private StringFieldEditor jobLinkRcv = null;
 	private StringFieldEditor jobQueue = null;
+	private StringFieldEditor jobLinkSend = null;
 	
 	private StringFieldEditor maintenance = null;
 	private StringFieldEditor hinemosProperty = null;
@@ -160,11 +171,20 @@ implements IWorkbenchPreferencePage {
 	
 	// Jobmap
 	private StringFieldEditor jobMapSetting = null;
+	
+	// RPA
+	private StringFieldEditor rpaScenarioTag = null;
+	private StringFieldEditor rpaScenarioOperationResultCreateSetting = null;
+	private StringFieldEditor rpaManagementToolAccount = null;
+	private StringFieldEditor rpaScenarioCoefficientPattern = null;
+	private StringFieldEditor monitorRpaLogfile = null;
+	private StringFieldEditor monitorRpaManagementToolService = null;
 
 	// AWS
 	private StringFieldEditor awsUser = null;
 	private StringFieldEditor awsMonService = null;
 	private StringFieldEditor awsMonBilling = null;
+	private StringFieldEditor awsMonLog = null;
 	
 	private BooleanFieldEditor backupImport=null;
 	private BooleanFieldEditor backupExport=null;
@@ -489,6 +509,14 @@ implements IWorkbenchPreferencePage {
 		mailTemplate.setTextLimit(256);
 		this.addField(mailTemplate);
 		
+		//RESTアクセス
+		restAccess = new StringFieldEditor(XMLConstant.DEFAULT_XML_PLATFORM_REST_ACCESS,
+				HinemosModuleConstant.STRING_PLATFORM_REST_ACCESS,
+				group);
+		restAccess.setTextLimit(256);
+		this.addField(restAccess);
+		
+
 		// カレンダー
 		calender = new StringFieldEditor(XMLConstant.DEFAULT_XML_PLATFORM_CALENDAR,
 				HinemosModuleConstant.STRING_PLATFORM_CALENDAR ,
@@ -558,6 +586,36 @@ implements IWorkbenchPreferencePage {
 		accessObjectPrivilege.setTextLimit(256);
 		this.addField(accessObjectPrivilege);
 
+		// フィルタ設定
+		Group filterSettingGroup = new Group(groupXMLFile, SWT.SHADOW_NONE);
+		gridData = new GridData();
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		filterSettingGroup.setLayoutData(gridData);
+
+		filterSettingGroup.setText(Messages.getString("filtersetting"));
+		
+		// フィルタ設定（監視履歴[イベント]）
+		filterSettingMonitorHistoryEvent = new StringFieldEditor(XMLConstant.DEFAULT_XML_FILTER_SETTING_MONITOR_HISTORY_EVENT,
+				HinemosModuleConstant.STRING_FILTER_SETTING_MONITOR_HISTORY_EVENT,
+				filterSettingGroup);
+		filterSettingMonitorHistoryEvent.setTextLimit(256);
+		this.addField(filterSettingMonitorHistoryEvent);
+		
+		// フィルタ設定（監視履歴[ステータス]）
+		filterSettingMonitorHistoryStatus = new StringFieldEditor(XMLConstant.DEFAULT_XML_FILTER_SETTING_MONITOR_HISTORY_STATUS,
+				HinemosModuleConstant.STRING_FILTER_SETTING_MONITOR_HISTORY_STATUS,
+				filterSettingGroup);
+		filterSettingMonitorHistoryStatus.setTextLimit(256);
+		this.addField(filterSettingMonitorHistoryStatus);
+		
+		// フィルタ設定（ジョブ履歴[履歴]）
+		filterSettingJobHistory = new StringFieldEditor(XMLConstant.DEFAULT_XML_FILTER_SETTING_JOB_HISTORY,
+				HinemosModuleConstant.STRING_FILTER_SETTING_JOB_HISTORY,
+				filterSettingGroup);
+		filterSettingJobHistory.setTextLimit(256);
+		this.addField(filterSettingJobHistory);
+		
 		Group group2 = new Group(groupXMLFile, SWT.SHADOW_NONE);
 		gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
@@ -756,6 +814,13 @@ implements IWorkbenchPreferencePage {
 				group3);
 		jobManual.setTextLimit(256);
 		this.addField(jobManual);
+
+		// ジョブ連携受信
+		jobLinkRcv = new StringFieldEditor(XMLConstant.DEFAULT_XML_JOB_JOBLINKRCV,
+				HinemosModuleConstant.STRING_JOB_JOBLINKRCV,
+				group3);
+		jobLinkRcv.setTextLimit(256);
+		this.addField(jobLinkRcv);
 		
 		// ジョブキュー
 		jobQueue = new StringFieldEditor(XMLConstant.DEFAULT_XML_JOB_QUEUE,
@@ -763,6 +828,13 @@ implements IWorkbenchPreferencePage {
 				group3);
 		jobQueue.setTextLimit(256);
 		this.addField(jobQueue);
+		
+		// ジョブキュー
+		jobLinkSend = new StringFieldEditor(XMLConstant.DEFAULT_XML_JOB_JOBLINKSEND,
+				HinemosModuleConstant.STRING_JOBLINK_SEND_SETTING,
+				group3);
+		jobLinkSend.setTextLimit(256);
+		this.addField(jobLinkSend);
 		
 		// Hub設定
 		Group groupHub = new Group(groupXMLFile, SWT.SHADOW_NONE);
@@ -802,8 +874,15 @@ implements IWorkbenchPreferencePage {
 				group4);
 		infraFile.setTextLimit(256);
 		this.addField(infraFile);
-		
-		
+
+		// SDML用の設定追加を個別に実施する
+		Group sdmlGroup = SdmlUtilityInterface.getSdmlGruopForPreference(groupXMLFile);
+		if (sdmlGroup != null) {
+			for (StringFieldEditor editor : SdmlUtilityInterface.getFieldEditorForPreference(sdmlGroup)) {
+				this.addField(editor);
+			}
+		}
+
 		Group group5 = new Group(groupXMLFile, SWT.SHADOW_NONE);
 		gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
@@ -834,7 +913,7 @@ implements IWorkbenchPreferencePage {
 		masterJmx.setTextLimit(256);
 		this.addField(masterJmx);
 		
-		Set<String> options = EndpointManager.getAllOptions();
+		Set<String> options = RestConnectManager.getAllOptions();
 		if (options.contains(OptionUtil.TYPE_ENTERPRISE)) {
 			// ノードマップのグループ
 			Group groupNode = new Group(groupXMLFile, SWT.SHADOW_NONE);
@@ -902,6 +981,57 @@ implements IWorkbenchPreferencePage {
 					groupReport);
 			reportTemplate.setTextLimit(256);
 			this.addField(reportTemplate);
+			
+			// RPAのグループ
+			Group groupRpa = new Group(groupXMLFile, SWT.SHADOW_NONE);
+			gridData = new GridData();
+			gridData.horizontalAlignment = GridData.FILL;
+			gridData.grabExcessHorizontalSpace = true;
+			gridData.horizontalSpan = 2;
+			groupRpa.setLayoutData(gridData);
+			groupRpa.setText(Messages.getString("rpa"));
+
+			// RPAシナリオタグ
+			rpaScenarioTag = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_SCENARIO_TAG,
+					HinemosModuleConstant.STRING_RPA_SCENARIO_TAG,
+					groupRpa);
+			rpaScenarioTag.setTextLimit(256);
+			this.addField(rpaScenarioTag);
+
+			// RPAシナリオ実績作成設定
+			rpaScenarioOperationResultCreateSetting = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+					HinemosModuleConstant.STRING_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+					groupRpa);
+			rpaScenarioOperationResultCreateSetting.setTextLimit(256);
+			this.addField(rpaScenarioOperationResultCreateSetting);
+			
+			// RPA管理ツールアカウント
+			rpaManagementToolAccount = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_MANAGEMENT_TOOL_ACCOUNT,
+					HinemosModuleConstant.STRING_RPA_MANAGEMENT_TOOL_ACCOUNT,
+					groupRpa);
+			rpaManagementToolAccount.setTextLimit(256);
+			this.addField(rpaManagementToolAccount);
+			
+			// 自動化効果計算マスタ
+			rpaScenarioCoefficientPattern = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_SCENARIO_COEFFICIENT_PATTERN,
+					HinemosModuleConstant.STRING_RPA_SCENARIO_COEFFICIENT_PATTERN,
+					groupRpa);
+			rpaScenarioCoefficientPattern.setTextLimit(256);
+			this.addField(rpaScenarioCoefficientPattern);
+			
+			// RPAログファイル監視
+			monitorRpaLogfile = new StringFieldEditor(XMLConstant.DEFAULT_XML_MONITOR_RPA_LOGFILE,
+					HinemosModuleConstant.STRING_MONITOR_RPA_LOGFILE,
+					groupRpa);
+			monitorRpaLogfile.setTextLimit(256);
+			this.addField(monitorRpaLogfile);
+			
+			// RPA管理ツール監視
+			monitorRpaManagementToolService = new StringFieldEditor(XMLConstant.DEFAULT_XML_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+					HinemosModuleConstant.STRING_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+					groupRpa);
+			monitorRpaManagementToolService.setTextLimit(256);
+			this.addField(monitorRpaManagementToolService);
 		}
 
 		// AWSのグループ
@@ -935,6 +1065,13 @@ implements IWorkbenchPreferencePage {
 					groupAws);
 			awsMonBilling.setTextLimit(256);
 			this.addField(awsMonBilling);
+			
+			// Cloud ログ監視
+			awsMonLog = new StringFieldEditor(XMLConstant.DEFAULT_XML_CLOUD_MON_LOG,
+					HinemosModuleConstant.STRING_CLOUD_MONITOR_LOG,
+					groupAws);
+			awsMonLog.setTextLimit(256);
+			this.addField(awsMonLog);
 		}
 	}
 

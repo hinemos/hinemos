@@ -9,13 +9,16 @@
 package com.clustercontrol.maintenance.action;
 
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.MaintenanceInfoResponse;
+import org.openapitools.client.model.MaintenanceScheduleRequest;
+import org.openapitools.client.model.ModifyMaintenanceRequest;
 
-import com.clustercontrol.maintenance.util.MaintenanceEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.maintenance.util.MaintenanceRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.maintenance.HinemosUnknown_Exception;
-import com.clustercontrol.ws.maintenance.InvalidRole_Exception;
-import com.clustercontrol.ws.maintenance.MaintenanceInfo;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  *
@@ -27,13 +30,18 @@ import com.clustercontrol.ws.maintenance.MaintenanceInfo;
  */
 public class ModifyMaintenance {
 
-	public boolean modify(String managerName, MaintenanceInfo info) {
+	public boolean modify(String managerName, MaintenanceInfoResponse info) {
 		boolean ret = false;
 
 		String[] args = { info.getMaintenanceId(), managerName };
 		try {
-			MaintenanceEndpointWrapper wrapper = MaintenanceEndpointWrapper.getWrapper(managerName);
-			wrapper.modifyMaintenance(info);
+			MaintenanceRestClientWrapper wrapper = MaintenanceRestClientWrapper.getWrapper(managerName);
+
+			ModifyMaintenanceRequest mod = new ModifyMaintenanceRequest();
+			RestClientBeanUtil.convertBean(info, mod);
+			mod.setTypeId(ModifyMaintenanceRequest.TypeIdEnum.fromValue(info.getTypeId().getValue()));
+			mod.getSchedule().setType(MaintenanceScheduleRequest.TypeEnum.fromValue(info.getSchedule().getType().getValue()));
+			wrapper.modifyMaintenance(info.getMaintenanceId(), mod);
 
 			MessageDialog.openInformation(
 					null,
@@ -42,14 +50,14 @@ public class ModifyMaintenance {
 
 			ret = true;
 
-		} catch (HinemosUnknown_Exception e) {
+		} catch (HinemosUnknown e) {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
 					Messages.getString("message.maintenance.2", args) + ", " + HinemosMessage.replace(e.getMessage()));
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
 			} else {

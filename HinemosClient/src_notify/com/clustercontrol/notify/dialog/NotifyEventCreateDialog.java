@@ -21,18 +21,21 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.EventNotifyDetailInfoResponse;
+import org.openapitools.client.model.EventNotifyDetailInfoResponse.CriticalEventNormalStateEnum;
+import org.openapitools.client.model.EventNotifyDetailInfoResponse.InfoEventNormalStateEnum;
+import org.openapitools.client.model.EventNotifyDetailInfoResponse.UnknownEventNormalStateEnum;
+import org.openapitools.client.model.EventNotifyDetailInfoResponse.WarnEventNormalStateEnum;
 
 import com.clustercontrol.bean.PriorityColorConstant;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.monitor.bean.EventConfirmConstant;
 import com.clustercontrol.monitor.bean.EventConfirmMessage;
 import com.clustercontrol.notify.action.AddNotify;
 import com.clustercontrol.notify.action.GetNotify;
 import com.clustercontrol.notify.action.ModifyNotify;
+import com.clustercontrol.notify.dialog.bean.NotifyInfoInputData;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.notify.NotifyEventInfo;
-import com.clustercontrol.ws.notify.NotifyInfo;
 
 /**
  * 通知（イベント）作成・変更ダイアログクラス<BR>
@@ -94,6 +97,7 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 	 */
 	public NotifyEventCreateDialog(Shell parent) {
 		super(parent);
+		parentDialog = this;
 	}
 
 	/**
@@ -106,6 +110,7 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 	 */
 	public NotifyEventCreateDialog(Shell parent, String managerName, String notifyId, boolean updateFlg) {
 		super(parent, managerName, notifyId, updateFlg);
+		parentDialog = this;
 	}
 
 	// ----- instance メソッド ----- //
@@ -117,7 +122,7 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 	 *
 	 * @see com.clustercontrol.notify.dialog.NotifyBasicCreateDialog#customizeDialog(Composite)
 	 * @see com.clustercontrol.notify.action.GetNotify#getNotify(String)
-	 * @see #setInputData(NotifyInfo)
+	 * @see #setInputData(NotifyInfoInputData)
 	 */
 	@Override
 	protected void customizeDialog(Composite parent) {
@@ -125,13 +130,13 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 		super.customizeDialog(parent);
 
 		// 通知IDが指定されている場合、その情報を初期表示する。
-		NotifyInfo info = null;
+		NotifyInfoInputData inputData;
 		if(this.notifyId != null){
-			info = new GetNotify().getNotify(this.managerName, this.notifyId);
-		}else{
-			info = new NotifyInfo();
+			inputData = new GetNotify().getEventNotify(this.managerName, this.notifyId);
+		} else {
+			inputData = new NotifyInfoInputData();
 		}
-		this.setInputData(info);
+		this.setInputData(inputData);
 
 	}
 
@@ -293,7 +298,7 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 	 * @return 通知情報
 	 */
 	@Override
-	public NotifyInfo getInputData() {
+	public NotifyInfoInputData getInputData() {
 		return this.inputData;
 	}
 
@@ -303,17 +308,17 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 	 * @param notify 設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(NotifyInfo notify) {
+	protected void setInputData(NotifyInfoInputData notify) {
 		super.setInputData(notify);
 
 		// コマンド情報
-		NotifyEventInfo info = notify.getNotifyEventInfo();
+		EventNotifyDetailInfoResponse info = notify.getNotifyEventInfo();
 		if (info != null) {
 			this.setInputDatal(info);
 		}
 	}
 
-	private void setInputDatal(NotifyEventInfo info) {
+	private void setInputDatal(EventNotifyDetailInfoResponse info) {
 		Button[] checkEventNormals = new Button[] {
 				this.m_checkEventNormalInfo,
 				this.m_checkEventNormalWarning,
@@ -326,11 +331,11 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 				this.m_comboEventNormalCritical,
 				this.m_comboEventNormalUnknown
 		};
-		Integer[] eventNormalStates = new Integer[] {
-				info.getInfoEventNormalState(),
-				info.getWarnEventNormalState(),
-				info.getCriticalEventNormalState(),
-				info.getUnknownEventNormalState()
+		String[] eventNormalStates = new String[] {
+				EventConfirmMessage.enumToString(info.getInfoEventNormalState(), InfoEventNormalStateEnum.class),
+				EventConfirmMessage.enumToString(info.getWarnEventNormalState(), WarnEventNormalStateEnum.class),
+				EventConfirmMessage.enumToString(info.getCriticalEventNormalState(), CriticalEventNormalStateEnum.class),
+				EventConfirmMessage.enumToString(info.getUnknownEventNormalState(), UnknownEventNormalStateEnum.class)
 		};
 
 		Boolean[] validFlgs = this.getValidFlgs(info);
@@ -343,7 +348,7 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 
 			// イベント画面出力時の通知状態
 			if (eventNormalStates[i] != null) {
-				comboEventNormals[i].setText(EventConfirmMessage.typeToString(eventNormalStates[i]));
+				comboEventNormals[i].setText(eventNormalStates[i]);
 				WidgetTestUtil.setTestId(this, "comboEventNormals" + i, comboEventNormals[i]);
 			}
 
@@ -359,14 +364,14 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 	 * @see #createInputDataForEvent(ArrayList, int, Button, Combo, Button, Combo)
 	 */
 	@Override
-	protected NotifyInfo createInputData() {
-		NotifyInfo info = super.createInputData();
+	protected NotifyInfoInputData createInputData() {
+		NotifyInfoInputData info = super.createInputData();
 
 		// 通知タイプの設定
 		info.setNotifyType(TYPE_EVENT);
 
 		// イベント情報
-		NotifyEventInfo event = createNotifyInfoDetail();
+		EventNotifyDetailInfoResponse event = createNotifyInfoDetail();
 		info.setNotifyEventInfo(event);
 
 		return info;
@@ -379,8 +384,8 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 	 * @return 通知イベント情報
 	 *
 	 */
-	private NotifyEventInfo createNotifyInfoDetail() {
-		NotifyEventInfo event = new NotifyEventInfo();
+	private EventNotifyDetailInfoResponse createNotifyInfoDetail() {
+		EventNotifyDetailInfoResponse event = new EventNotifyDetailInfoResponse();
 
 		// イベント通知
 		event.setInfoValidFlg(m_checkEventNormalInfo.getSelection());
@@ -389,22 +394,22 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 		event.setUnknownValidFlg(m_checkEventNormalUnknown.getSelection());
 
 		// イベント通知時の状態
-		event.setInfoEventNormalState(EventConfirmConstant.TYPE_UNCONFIRMED);
-		event.setWarnEventNormalState(EventConfirmConstant.TYPE_UNCONFIRMED);
-		event.setCriticalEventNormalState(EventConfirmConstant.TYPE_UNCONFIRMED);
-		event.setUnknownEventNormalState(EventConfirmConstant.TYPE_UNCONFIRMED);
+		event.setInfoEventNormalState(InfoEventNormalStateEnum.UNCONFIRMED);
+		event.setWarnEventNormalState(WarnEventNormalStateEnum.UNCONFIRMED);
+		event.setCriticalEventNormalState(CriticalEventNormalStateEnum.UNCONFIRMED);
+		event.setUnknownEventNormalState(UnknownEventNormalStateEnum.UNCONFIRMED);
 
 		if (isNotNullAndBlank(m_comboEventNormalInfo.getText())) {
-			event.setInfoEventNormalState(EventConfirmMessage.stringToType(m_comboEventNormalInfo.getText()));
+			event.setInfoEventNormalState(EventConfirmMessage.stringToEnum(m_comboEventNormalInfo.getText(), InfoEventNormalStateEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboEventNormalWarning.getText())) {
-			event.setWarnEventNormalState(EventConfirmMessage.stringToType(m_comboEventNormalWarning.getText()));
+			event.setWarnEventNormalState(EventConfirmMessage.stringToEnum(m_comboEventNormalWarning.getText(), WarnEventNormalStateEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboEventNormalCritical.getText())) {
-			event.setCriticalEventNormalState(EventConfirmMessage.stringToType(m_comboEventNormalCritical.getText()));
+			event.setCriticalEventNormalState(EventConfirmMessage.stringToEnum(m_comboEventNormalCritical.getText(), CriticalEventNormalStateEnum.class));
 		}
 		if (isNotNullAndBlank(m_comboEventNormalUnknown.getText())) {
-			event.setUnknownEventNormalState(EventConfirmMessage.stringToType(m_comboEventNormalUnknown.getText()));
+			event.setUnknownEventNormalState(EventConfirmMessage.stringToEnum(m_comboEventNormalUnknown.getText(), UnknownEventNormalStateEnum.class));
 		}
 
 		return event;
@@ -434,16 +439,15 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		NotifyInfo info = this.getInputData();
-
+		NotifyInfoInputData info = this.getInputData();
 		if(info != null){
 			if (!this.updateFlg) {
 				// 作成の場合
-				result = new AddNotify().add(this.getInputManagerName(), info);
+				result = new AddNotify().addEventNotify(managerName, info);
 			}
 			else{
 				// 変更の場合
-				result = new ModifyNotify().modify(this.getInputManagerName(), info);
+				result = new ModifyNotify().modifyEventNotify(managerName, info);
 			}
 		}
 
@@ -585,5 +589,15 @@ public class NotifyEventCreateDialog extends NotifyBasicCreateDialog {
 		combo.setText(EventConfirmMessage.STRING_UNCONFIRMED);
 
 		return combo;
+	}
+
+	private Boolean[] getValidFlgs(EventNotifyDetailInfoResponse info) {
+		Boolean[] validFlgs = new Boolean[] {
+				info.getInfoValidFlg(),
+				info.getWarnValidFlg(),
+				info.getCriticalValidFlg(),
+				info.getUnknownValidFlg()
+		};
+		return validFlgs;
 	}
 }

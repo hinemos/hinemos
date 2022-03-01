@@ -16,7 +16,7 @@ import java.net.URL;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.utility.settings.ui.preference.PreferencePageConstant;
 
 public class MultiManagerPathUtil {
@@ -106,7 +106,7 @@ public class MultiManagerPathUtil {
 	private static String getManagerAddress(){
 		if (UtilityManagerUtil.getCurrentManagerName() == null) {return null;}
 		try {
-			URL url = new URL(EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr());
+			URL url = new URL(RestConnectManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr());
 			return url.getHost();
 		} catch (MalformedURLException e) {
 			// TODO
@@ -121,5 +121,22 @@ public class MultiManagerPathUtil {
 			preference = defaultPreference;
 		}
 		return preference;
+	}
+
+	/**
+	 * 引数のKeyから取得したディレクトリのパスが存在する場合にtrueを返す
+	 * 
+	 */
+	public static boolean existsDirectory(String preference) {
+		IUtilityPreferenceStore store = UtilityPreferenceStore.get();
+		String path = store.getString(preference);
+		if(path == null || path.equals("")) {
+			return false;
+		}
+		File file = new File(path);
+		if (file.exists()) {
+			return true;
+		}
+		return false;
 	}
 }

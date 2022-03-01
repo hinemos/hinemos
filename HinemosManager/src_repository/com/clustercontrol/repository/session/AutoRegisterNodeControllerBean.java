@@ -16,10 +16,9 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.AutoRegisterNodeSettingNotFound;
 import com.clustercontrol.fault.HinemosDbTimeout;
@@ -74,8 +73,7 @@ public class AutoRegisterNodeControllerBean {
 			String message = String.format("failed to get the IP address on source. MAC addresses=[%s]", forLogAddress);
 			m_log.warn(methodName + DELIMITER + message);
 			String[] args = { MessageConstant.MAC_ADDRESS.getMessage(), forLogAddress };
-			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_REPSITORY_AUTO_REGISTER,
-					MessageConstant.MESSAGE_AUTO_REGISTER_NODE_FAILED, args);
+			AplLogger.put(InternalIdCommon.PLT_REP_AREG_SYS_002, args);
 			throw new HinemosUnknown(message);
 		}
 

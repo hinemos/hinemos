@@ -16,8 +16,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -33,10 +31,11 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.fault.ReportingDuplicate;
+import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.fault.UsedFacility;
-import com.clustercontrol.notify.util.NotifyRelationCache;
-import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.bean.ReportingInfo;
+import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.bean.TemplateSetDetailInfo;
 import com.clustercontrol.reporting.bean.TemplateSetInfo;
 import com.clustercontrol.reporting.factory.AddReporting;
@@ -49,13 +48,15 @@ import com.clustercontrol.reporting.factory.ModifyTemplateSet;
 import com.clustercontrol.reporting.factory.OperationReporting;
 import com.clustercontrol.reporting.factory.SelectReportingInfo;
 import com.clustercontrol.reporting.factory.SelectTemplateSetInfo;
-import com.clustercontrol.reporting.fault.ReportingDuplicate;
-import com.clustercontrol.reporting.fault.ReportingNotFound;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
+import com.clustercontrol.reporting.util.ReportingChangeCallback;
 import com.clustercontrol.reporting.util.ReportingValidator;
+import com.clustercontrol.rest.endpoint.reporting.dto.CreateReportingFileRequest;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * 
@@ -74,10 +75,10 @@ public class ReportingControllerBean implements CheckFacility {
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public boolean addReporting(ReportingInfo reportingInfo)
+	public ReportingInfo addReporting(ReportingInfo reportingInfo)
 			throws HinemosUnknown, ReportingDuplicate, InvalidSetting, InvalidRole {
 
-		boolean retFlg;
+		ReportingInfo ret;
 		JpaTransactionManager jtm = null;
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 
@@ -88,7 +89,7 @@ public class ReportingControllerBean implements CheckFacility {
 			jtm.begin();
 
 			// 入力チェック
-			ReportingValidator.validateReportingInfo(reportingInfo);
+			ReportingValidator.validateReportingInfo(reportingInfo, false);
 			
 			// TODO 6.1ではマネージャのRoleValidator#validateUserBelongRoleを使うように修正すること
 			//ユーザがオーナーロールIDに所属しているかチェック
@@ -99,16 +100,17 @@ public class ReportingControllerBean implements CheckFacility {
 
 			// レポーティング情報を登録
 			AddReporting add = new AddReporting();
-			retFlg = add.addReporting(reportingInfo, loginUser);
+			ret = add.addReporting(reportingInfo, loginUser);
 
 			// Quartzへ登録
 			ModifySchedule modify = new ModifySchedule();
 			modify.addSchedule(reportingInfo, loginUser);
 
+			// コミット後にNotifyRelationCacheを更新
+			jtm.addCallback(new ReportingChangeCallback());
+
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
 		} catch (HinemosUnknown | InvalidSetting | InvalidRole e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -137,7 +139,7 @@ public class ReportingControllerBean implements CheckFacility {
 			}
 		}
 		
-		return retFlg;
+		return ret;
 	}
 
 	/**
@@ -149,9 +151,9 @@ public class ReportingControllerBean implements CheckFacility {
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public boolean modifyReporting(ReportingInfo reportingInfo) throws HinemosUnknown, NotifyNotFound, ReportingNotFound, InvalidSetting, InvalidRole {
+	public ReportingInfo modifyReporting(ReportingInfo reportingInfo) throws HinemosUnknown, NotifyNotFound, ReportingNotFound, InvalidSetting, InvalidRole {
 
-		boolean retFlg;
+		ReportingInfo ret = null;
 		JpaTransactionManager jtm = null;
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 
@@ -161,21 +163,26 @@ public class ReportingControllerBean implements CheckFacility {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
+			//レポーティング情報を取得(通知情報のバリデーション用)
+			ReportingInfoEntity entity = QueryUtil.getReportingInfoPK(reportingInfo.getReportScheduleId());
+			reportingInfo.setOwnerRoleId(entity.getOwnerRoleId());
+			
 			// 入力チェック
-			ReportingValidator.validateReportingInfo(reportingInfo);
+			ReportingValidator.validateReportingInfo(reportingInfo, true);
 
 			// テンプレートセット情報を登録
 			ModifyReporting modify = new ModifyReporting();
-			retFlg = modify.modifyReporting(reportingInfo, loginUser);
+			ret = modify.modifyReporting(reportingInfo, loginUser);
 
 			// Quartzへ登録
 			ModifySchedule modifySchedule = new ModifySchedule();
 			modifySchedule.addSchedule(reportingInfo, loginUser);
 
+			// コミット後にNotifyRelationCacheを更新
+			jtm.addCallback(new ReportingChangeCallback());
+
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
 		} catch (InvalidSetting | ReportingNotFound | NotifyNotFound | InvalidRole | HinemosUnknown e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -199,7 +206,7 @@ public class ReportingControllerBean implements CheckFacility {
 			}
 		}
 		
-		return retFlg;
+		return ret;
 	}
 
 	/**
@@ -209,26 +216,30 @@ public class ReportingControllerBean implements CheckFacility {
 	 * @throws InvalidRole
 	 * 
 	 */
-	public boolean deleteReporting(String reportId) throws HinemosUnknown, ReportingNotFound, InvalidRole {
-		m_log.debug("deleteReporting() : reportId=" + reportId);
+	public List<ReportingInfo> deleteReporting(List<String> reportIdList) throws HinemosUnknown, ReportingNotFound, InvalidRole {
+		m_log.debug("deleteReporting() : reportIds=" + reportIdList);
 
-		boolean retFlg;
+		List<ReportingInfo> retList = new ArrayList<>();
 		JpaTransactionManager jtm = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-
+			
 			// メンテナンス情報を削除
-			DeleteReporting delete = new DeleteReporting();
-			retFlg = delete.deleteReporting(reportId);
-
-			ModifySchedule modify = new ModifySchedule();
-			modify.deleteSchedule(reportId);
+			for(String reportId : reportIdList) {
+				retList.add(new SelectReportingInfo().getReportingInfo(reportId));
+				
+				DeleteReporting delete = new DeleteReporting();
+				delete.deleteReporting(reportId);
+				
+				ModifySchedule modify = new ModifySchedule();
+				modify.deleteSchedule(reportId);
+			}
+			
+			// コミット後にNotifyRelationCacheを更新
+			jtm.addCallback(new ReportingChangeCallback());
 
 			jtm.commit();
-
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
 
 		} catch (ReportingNotFound | InvalidRole | HinemosUnknown e) {
 			if (jtm != null) {
@@ -253,7 +264,7 @@ public class ReportingControllerBean implements CheckFacility {
 			}
 		}
 		
-		return retFlg;
+		return retList;
 	}
 
 
@@ -356,24 +367,38 @@ public class ReportingControllerBean implements CheckFacility {
 	 * @throws NotifyNotFound
 	 * @throws InvalidRole
 	 */
-	public void setReportingStatus(String reportId, boolean validFlag) throws NotifyNotFound, ReportingNotFound, InvalidRole, HinemosUnknown{
-		m_log.debug("setReportingStatus() : reportId=" + reportId + ", validFlag=" + validFlag);
+	public List<ReportingInfo> setReportingStatus(List<String> reportIdList, boolean validFlag) throws NotifyNotFound, ReportingNotFound, InvalidRole, HinemosUnknown{
+		m_log.debug("setReportingStatus() : reportIdList=" + reportIdList + ", validFlag=" + validFlag);
+		List<ReportingInfo> retList = new ArrayList<>();
+		
 		// null check
-		if(reportId == null || "".equals(reportId)){
-			HinemosUnknown e = new HinemosUnknown("target reportId is null or empty.");
+		if(reportIdList == null || reportIdList.size() == 0){
+			HinemosUnknown e = new HinemosUnknown("target reportIdList is null or empty.");
 			m_log.info("setReportingStatus() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
 		}
-
-		ReportingInfo info = this.getReportingInfo(reportId);
-		info.setValidFlg(validFlag);
-
-		try{
-			this.modifyReporting(info);
-		} catch (InvalidSetting  e) {
-			throw new HinemosUnknown(e.getMessage(), e);
+		
+		for(String reportId : reportIdList) {
+			// null check
+			if(reportId == null || "".equals(reportId)){
+				HinemosUnknown e = new HinemosUnknown("target reportId is null or empty.");
+				m_log.info("setReportingStatus() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			
+			ReportingInfo info = this.getReportingInfo(reportId);
+			info.setValidFlg(validFlag);
+			
+			try{
+				retList.add(this.modifyReporting(info));
+			} catch (InvalidSetting  e) {
+				throw new HinemosUnknown(e.getMessage(), e);
+			}			
 		}
+		
+		return retList;
 	}
 
 	/**
@@ -462,7 +487,7 @@ public class ReportingControllerBean implements CheckFacility {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public List<String> runReporting(String reportId, ReportingInfo tmpReportingInfo) throws InvalidRole, HinemosUnknown {
+	public List<String> runReporting(String reportId, CreateReportingFileRequest dtoReq) throws InvalidRole, HinemosUnknown {
 		m_log.debug("runReporting() : reportId=" + reportId);
 
 		JpaTransactionManager jtm = null;
@@ -474,7 +499,7 @@ public class ReportingControllerBean implements CheckFacility {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			ret = operation.runReporting(reportId, tmpReportingInfo);
+			ret = operation.runReporting(reportId, dtoReq);
 
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
@@ -509,10 +534,10 @@ public class ReportingControllerBean implements CheckFacility {
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public boolean addTemplateSet(TemplateSetInfo templateSetInfo)
+	public TemplateSetInfo addTemplateSet(TemplateSetInfo templateSetInfo)
 			throws HinemosUnknown, ReportingDuplicate, InvalidSetting, InvalidRole {
 
-		boolean retFlg;
+		TemplateSetInfo ret;
 		JpaTransactionManager jtm = null;
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 
@@ -533,7 +558,7 @@ public class ReportingControllerBean implements CheckFacility {
 
 			// テンプレートセット情報を登録
 			AddTemplateSet add = new AddTemplateSet();
-			retFlg = add.addTemplateSet(templateSetInfo, loginUser);
+			ret = add.addTemplateSet(templateSetInfo, loginUser);
 
 			jtm.commit();
 
@@ -565,7 +590,7 @@ public class ReportingControllerBean implements CheckFacility {
 			}
 		}
 		
-		return retFlg;
+		return ret;
 	}
 
 	/**
@@ -579,9 +604,9 @@ public class ReportingControllerBean implements CheckFacility {
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public boolean modifyTemplateSet(TemplateSetInfo templateSetInfo) throws HinemosUnknown, NotifyNotFound, ReportingNotFound, InvalidSetting, InvalidRole {
+	public TemplateSetInfo modifyTemplateSet(TemplateSetInfo templateSetInfo) throws HinemosUnknown, NotifyNotFound, ReportingNotFound, InvalidSetting, InvalidRole {
 
-		boolean retFlg;
+		TemplateSetInfo ret = null;
 		JpaTransactionManager jtm = null;
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 
@@ -596,7 +621,7 @@ public class ReportingControllerBean implements CheckFacility {
 
 			// テンプレートセット情報を登録
 			ModifyTemplateSet modify = new ModifyTemplateSet();
-			retFlg = modify.modifyTemplateSet(templateSetInfo, loginUser);
+			ret = modify.modifyTemplateSet(templateSetInfo, loginUser);
 
 			jtm.commit();
 
@@ -623,23 +648,27 @@ public class ReportingControllerBean implements CheckFacility {
 			}
 		}
 		
-		return retFlg;
+		return ret;
 	}
 
-	public boolean deleteTemplateSet(String templateSetId) throws HinemosUnknown, ReportingNotFound, InvalidRole {
-		m_log.debug("deleteTemplateSet() : templateSetId=" + templateSetId);
+	public List<TemplateSetInfo> deleteTemplateSet(List<String> templateSetIdList) throws HinemosUnknown, ReportingNotFound, InvalidRole {
+		m_log.debug("deleteTemplateSet() : templateSetIds=" + templateSetIdList);
 
-		boolean retFlg;
+		List<TemplateSetInfo> retList = new ArrayList<>();
 		JpaTransactionManager jtm = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			
-			ReportingValidator.validateDeleteTemplateSetInfo(templateSetId);
-
-			// テンプレートセット情報を削除
-			DeleteTemplateSet delete = new DeleteTemplateSet();
-			retFlg = delete.deleteTemplateSet(templateSetId);
+			for(String templateSetId : templateSetIdList) {
+				ReportingValidator.validateDeleteTemplateSetInfo(templateSetId);
+				
+				retList.add(new SelectTemplateSetInfo().getTemplateSetInfo(templateSetId));
+				
+				// テンプレートセット情報を削除
+				DeleteTemplateSet delete = new DeleteTemplateSet();
+				delete.deleteTemplateSet(templateSetId);
+			}
 
 			jtm.commit();
 
@@ -666,7 +695,7 @@ public class ReportingControllerBean implements CheckFacility {
 			}
 		}
 		
-		return retFlg;
+		return retList;
 	}
 	
 	

@@ -19,11 +19,11 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.composite.FacilityTreeComposite;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.view.ScopeListView;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * リポジトリ[スコープ]ビューのツリービューア用のSelectionChangedListenerクラス<BR>
@@ -59,11 +59,11 @@ public class FacilityTreeSelectionChangedListener implements ISelectionChangedLi
 	 */
 	@Override
 	public void selectionChanged(SelectionChangedEvent event) {
-		FacilityTreeItem selectItem = null;
+		FacilityTreeItemResponse selectItem = null;
 
 		if (((StructuredSelection) event.getSelection()).getFirstElement() != null) {
 			//選択アイテムを取得
-			selectItem = (FacilityTreeItem) ((StructuredSelection) event.getSelection()).getFirstElement();
+			selectItem = (FacilityTreeItemResponse) ((StructuredSelection) event.getSelection()).getFirstElement();
 		}
 
 		// リポジトリ[登録]ビューのインスタンスを取得
@@ -87,12 +87,12 @@ public class FacilityTreeSelectionChangedListener implements ISelectionChangedLi
 
 			TreeSelection selection = (TreeSelection)event.getSelection();
 			boolean builtin = false;
-			if (selectItem.getData().getFacilityType() != FacilityConstant.TYPE_MANAGER) {
+			if (selectItem.getData().getFacilityType() != FacilityTypeEnum.MANAGER) {
 				builtin = isBuiltin((List<?>)selection.toList());
 			}
 
 			// ビューのアクションの有効/無効を設定
-			view.setEnabledAction(builtin, selectItem.getData().getFacilityType(), event.getSelection(), selectItem.getData().isNotReferFlg());
+			view.setEnabledAction(builtin, selectItem.getData().getFacilityType(), event.getSelection(), selectItem.getData().getNotReferFlg());
 		}
 
 	}
@@ -100,12 +100,12 @@ public class FacilityTreeSelectionChangedListener implements ISelectionChangedLi
 	private boolean isBuiltin(List<?> treeList) {
 		boolean ret = false;
 			for(Object obj : treeList) {
-				if (obj instanceof FacilityTreeItem == false) {
+				if (obj instanceof FacilityTreeItemResponse == false) {
 					continue;
 				}
-				FacilityTreeItem tree = (FacilityTreeItem)obj;
+				FacilityTreeItemResponse tree = (FacilityTreeItemResponse)obj;
 				m_log.debug("facilityId:" + tree.getData().getFacilityId());
-				ret = ret || tree.getData().isBuiltInFlg();
+				ret = ret || tree.getData().getBuiltInFlg();
 				if (ret == false && tree.getChildren().isEmpty() == false) {
 					ret = isBuiltin(tree.getChildren());
 				}

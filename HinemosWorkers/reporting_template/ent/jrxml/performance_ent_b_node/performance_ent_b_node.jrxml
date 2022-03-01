@@ -21,7 +21,6 @@
 		<field name="date_time" class="java.sql.Timestamp"/>
 		<field name="facilityid" class="java.lang.String"/>
 		<field name="value" class="java.lang.Float"/>
-		<sortField name="display_name"/>
 	</subDataset>
 	<parameter name="title.main" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="title.cover" class="java.lang.String" isForPrompting="false"/>

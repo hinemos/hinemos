@@ -25,16 +25,15 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.composite.JobListComposite;
 import com.clustercontrol.jobmanagement.composite.JobTreeComposite;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[一覧]ビューの「ジョブの作成」のクライアント側アクションクラス<BR>
@@ -86,8 +85,8 @@ public class CreateJobAction extends AbstractHandler implements IElementUpdater 
 		// 選択アイテムの取得
 		this.viewPart = HandlerUtil.getActivePart(event);
 
-		JobTreeItem item = null;
-		JobTreeItem parent = null;
+		JobTreeItemWrapper item = null;
+		JobTreeItemWrapper parent = null;
 
 		if (!(viewPart instanceof JobListView)) {
 			return null;
@@ -110,12 +109,12 @@ public class CreateJobAction extends AbstractHandler implements IElementUpdater 
 		parent = view.getSelectJobTreeItemList().get(0);
 
 		if (parent != null) {
-			JobInfo jobInfo = JobTreeItemUtil.getNewJobInfo(parent.getData().getJobunitId(),
-					JobConstant.TYPE_JOB);
-			item = new JobTreeItem();
+			JobInfoWrapper jobInfo = JobTreeItemUtil.getNewJobInfo(parent.getData().getJobunitId(),
+					JobInfoWrapper.TypeEnum.JOB);
+			item = new JobTreeItemWrapper();
 			item.setData(jobInfo);
 			String managerName = null;
-			JobTreeItem mgrTree = JobTreeItemUtil.getManager(parent);
+			JobTreeItemWrapper mgrTree = JobTreeItemUtil.getManager(parent);
 			if(mgrTree == null) {
 				managerName = parent.getChildren().get(0).getData().getId();
 			} else {
@@ -162,8 +161,8 @@ public class CreateJobAction extends AbstractHandler implements IElementUpdater 
 						size = view.getJobListComposite().getSelectItemList().size();
 					}
 					if(size == 1) {
-						if(view.getDataType() == JobConstant.TYPE_JOBUNIT ||
-								view.getDataType() == JobConstant.TYPE_JOBNET){
+						if(view.getDataType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.JOBNET){
 							editEnable = view.getEditEnable();
 						}
 					}

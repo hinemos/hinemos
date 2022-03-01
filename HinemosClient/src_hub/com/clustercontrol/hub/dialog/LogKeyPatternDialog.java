@@ -28,15 +28,16 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.LogFormatKeyResponse;
+import org.openapitools.client.model.LogFormatKeyResponse.KeyTypeEnum;
+import org.openapitools.client.model.LogFormatKeyResponse.ValueTypeEnum;
+
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.hub.KeyType;
-import com.clustercontrol.ws.hub.LogFormatKey;
-import com.clustercontrol.ws.hub.ValueType;
 
 public class LogKeyPatternDialog extends CommonDialog {
 	private Text txtKey;
@@ -48,18 +49,18 @@ public class LogKeyPatternDialog extends CommonDialog {
 	private Button btnMsg;
 	private Button btnMeta;
 
-	private LogFormatKey m_logFormatKey;
+	private LogFormatKeyResponse m_logFormatKey;
 	private int mode;
-	private List<LogFormatKey> keys;
+	private List<LogFormatKeyResponse> keys;
 	/**
 	 * コンストラクタ
 	 * @param parent
 	 * @wbp.parser.constructor
 	 */
-	public LogKeyPatternDialog(Shell parent, int mode, List<LogFormatKey> keys) {
+	public LogKeyPatternDialog(Shell parent, int mode, List<LogFormatKeyResponse> keys) {
 		super(parent);
 		this.mode = mode;
-		this.m_logFormatKey = new LogFormatKey();
+		this.m_logFormatKey = new LogFormatKeyResponse();
 		this.keys = keys;
 	}
 	/**
@@ -69,18 +70,18 @@ public class LogKeyPatternDialog extends CommonDialog {
 	 * @param ownerRoleId
 	 * @param logFormatKey
 	 */
-	public LogKeyPatternDialog(Shell parent, int mode, List<LogFormatKey> keys, LogFormatKey logFormatKey) {
+	public LogKeyPatternDialog(Shell parent, int mode, List<LogFormatKeyResponse> keys, LogFormatKeyResponse logFormatKey) {
 		super(parent);
 		this.mode = mode;
 		this.m_logFormatKey = logFormatKey;
 		this.keys = keys;
 	}
 	
-	public LogFormatKey getLogFormatKey(){
+	public LogFormatKeyResponse getLogFormatKey(){
 		return this.m_logFormatKey;
 	}
 
-	public void setLogFormatKey(LogFormatKey inputData) {
+	public void setLogFormatKey(LogFormatKeyResponse inputData) {
 		this.m_logFormatKey = inputData;
 	}
 
@@ -146,12 +147,12 @@ public class LogKeyPatternDialog extends CommonDialog {
 		this.cmbValueType = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
 		this.cmbValueType.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 
-		for (ValueType valueType : ValueType.values()) {
+		for (ValueTypeEnum valueType : ValueTypeEnum.values()) {
 			String disp = getDispValue(valueType);
 			this.cmbValueType.add(disp);
 			this.cmbValueType.setData(disp, valueType);
 		}
-		cmbValueType.setText(getDispValue(ValueType.STRING));
+		cmbValueType.setText(getDispValue(ValueTypeEnum.STRING));
 
 		// ラジオグループ
 		Group compositeMsgOrMeta = new Group(parent, SWT.NONE);
@@ -174,7 +175,7 @@ public class LogKeyPatternDialog extends CommonDialog {
 		Label lblMsgPattern = new Label(compositeMsgOrMeta, SWT.LEFT);
 		griddata = new GridData();
 		griddata.horizontalIndent = 20;
-		griddata.widthHint = 145;
+		griddata.widthHint = 250;
 		lblMsgPattern.setLayoutData(griddata);
 		lblMsgPattern.setText(Messages.getString("hub.log.format.key.pattern.regex"));
 
@@ -201,6 +202,7 @@ public class LogKeyPatternDialog extends CommonDialog {
 		Label lblMetaPattern = new Label(compositeMsgOrMeta, SWT.LEFT);
 		griddata = new GridData();
 		griddata.horizontalIndent = 20;
+		griddata.widthHint = 250;
 		lblMetaPattern.setLayoutData(griddata);
 		lblMetaPattern.setText(Messages.getString("hub.log.format.key.pattern.regex"));
 		this.txtMetaPattern = new Text(compositeMsgOrMeta, SWT.BORDER);
@@ -265,18 +267,18 @@ public class LogKeyPatternDialog extends CommonDialog {
 	 * 
 	 */
 	private void createLogFormatKey(){
-		this.m_logFormatKey = new LogFormatKey();
+		this.m_logFormatKey = new LogFormatKeyResponse();
 		this.m_logFormatKey.setKey(this.txtKey.getText());
 		this.m_logFormatKey.setDescription(this.txtDescription.getText());
 		if (this.cmbValueType.getText() != null) {
-			this.m_logFormatKey.setValueType((ValueType)this.cmbValueType.getData(this.cmbValueType.getText()));
+			this.m_logFormatKey.setValueType((ValueTypeEnum)this.cmbValueType.getData(this.cmbValueType.getText()));
 		}
 		if (btnMsg.getSelection()) {
-			this.m_logFormatKey.setKeyType(KeyType.PARSING);
+			this.m_logFormatKey.setKeyType(KeyTypeEnum.PARSING);
 			this.m_logFormatKey.setPattern(this.txtMsgPattern.getText());
 			this.m_logFormatKey.setValue(null);
 		} else {
-			this.m_logFormatKey.setKeyType(KeyType.FIXED);
+			this.m_logFormatKey.setKeyType(KeyTypeEnum.FIXED);
 			this.m_logFormatKey.setPattern(this.txtMetaPattern.getText());
 			this.m_logFormatKey.setValue(this.txtValue.getText());
 		}
@@ -300,7 +302,7 @@ public class LogKeyPatternDialog extends CommonDialog {
 		} else {
 			this.cmbValueType.setText(getDispValue(this.m_logFormatKey.getValueType()));
 		}
-		if (this.m_logFormatKey.getKeyType() == null || this.m_logFormatKey.getKeyType() == KeyType.PARSING) {
+		if (this.m_logFormatKey.getKeyType() == null || this.m_logFormatKey.getKeyType() == KeyTypeEnum.PARSING) {
 			this.btnMsg.setSelection(true);
 			this.btnMeta.setSelection(false);
 		} else {
@@ -308,7 +310,7 @@ public class LogKeyPatternDialog extends CommonDialog {
 			this.btnMeta.setSelection(true);
 		}
 		if (this.m_logFormatKey.getPattern() != null) {
-			if (this.m_logFormatKey.getKeyType() == KeyType.PARSING) {
+			if (this.m_logFormatKey.getKeyType() == KeyTypeEnum.PARSING) {
 				this.txtMsgPattern.setText(this.m_logFormatKey.getPattern());
 			} else {
 				this.txtMetaPattern.setText(this.m_logFormatKey.getPattern());
@@ -337,7 +339,7 @@ public class LogKeyPatternDialog extends CommonDialog {
 		//キー重複チェック 変更時はチェックしない
 		if (mode != PropertyDefineConstant.MODE_MODIFY) {
 			Set<String> set = new HashSet<String>();
-			for (LogFormatKey key : keys) {
+			for (LogFormatKeyResponse key : keys) {
 				set.add(key.getKey());
 			}
 			if (set.contains(txtKey.getText())) {
@@ -395,7 +397,7 @@ public class LogKeyPatternDialog extends CommonDialog {
 		return true;
 	}
 
-	private String getDispValue(ValueType type){
+	private String getDispValue(ValueTypeEnum type){
 		String dispValue=null;
 		switch(type){
 			case NUMBER:

@@ -14,8 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,6 +32,7 @@ import com.clustercontrol.collect.model.SummaryHour;
 import com.clustercontrol.collect.model.SummaryMonth;
 import com.clustercontrol.collect.util.ExportCollectDataFile;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CollectKeyNotFound;
@@ -489,6 +491,10 @@ public class CollectControllerBean{
 			jtm.begin();
 			SelectCollectKeyInfo select = new SelectCollectKeyInfo();
 			list = select.getCollectKeyList(facilityIdList);
+			// 取得したリストを絞り込む
+			if(list != null && list.size() > 0){
+				list = filteringItemCodeList(list);
+			}
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
 			m_log.warn("getCollectId() : "
@@ -506,6 +512,28 @@ public class CollectControllerBean{
 			if (jtm != null)
 				jtm.close();
 		}
+		return list;
+	}
+	
+	/**
+	 * 収集項目コードのリストをフィルタします。
+	 * @param fullList フィルタ前のリスト
+	 * @return フィルタ後のリスト
+	 */
+	private List<CollectKeyInfoPK> filteringItemCodeList(List<CollectKeyInfoPK> fullList){
+		
+		// リストをフィルタ条件で絞り込む
+		String listFilter = HinemosPropertyCommon.performance_list_filter_displayname.getStringValue();
+		List<CollectKeyInfoPK> list = fullList.stream()
+				.filter(e -> e.getDisplayName().matches(listFilter))
+				.collect(Collectors.toList());
+		
+		// 絞り込み後のサイズが最大件数を超えている場合件数を制限する
+		int listMaxSize = HinemosPropertyCommon.performance_list_size.getIntegerValue();
+		if(list.size() > listMaxSize){
+			list = list.subList(0, listMaxSize);
+		}
+				
 		return list;
 	}
 	

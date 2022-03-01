@@ -11,8 +11,9 @@ import java.text.MessageFormat;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.JobResourceInfoResponse;
+import org.openapitools.client.model.JobResourceInfoResponse.ResourceActionEnum;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
 import com.clustercontrol.xcloud.extensions.CloudOptionExtension;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.plugin.CloudOptionSourceProvider;
@@ -30,10 +31,6 @@ public class RebootInstanceGroupJobHandler extends AbstaractCloudOptionGroupJobH
 		return cloudScope;
 	}
 	@Override
-	protected String getCommand(CloudEndpoint endpoint, String facilityId) throws Exception {
-		return endpoint.makeRebootInstancesCommandUsingFacility(cloudScope.getId(), facilityId);
-	}
-	@Override
 	protected String getJobName(String facilityId) {
 		return getJobId(facilityId);
 	}
@@ -47,10 +44,6 @@ public class RebootInstanceGroupJobHandler extends AbstaractCloudOptionGroupJobH
 		
 		return jobid;
 	}
-	@Override
-	protected String getMethodName() {
-		return "makeRebootInstancesCommandUsingFacility";
-	}
 
 	@Override
 	protected String getWizardTitle() {
@@ -60,5 +53,10 @@ public class RebootInstanceGroupJobHandler extends AbstaractCloudOptionGroupJobH
 	@Override
 	protected String getErrorMessage() {
 		return msgErrorFinishCreateRebootJob;
+	}
+
+	@Override
+	protected ResourceActionEnum getAction() {
+		return JobResourceInfoResponse.ResourceActionEnum.REBOOT;
 	}
 }

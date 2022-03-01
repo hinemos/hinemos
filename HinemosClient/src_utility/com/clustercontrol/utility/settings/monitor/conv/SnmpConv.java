@@ -8,15 +8,29 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse.MonitorTypeEnum;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.PriorityEnum;
+import org.openapitools.client.model.MonitorStringValueInfoResponse;
+import org.openapitools.client.model.SnmpCheckInfoResponse;
+import org.openapitools.client.model.SnmpCheckInfoResponse.ConvertFlgEnum;
 
 import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -27,15 +41,8 @@ import com.clustercontrol.utility.settings.monitor.xml.SnmpInfo;
 import com.clustercontrol.utility.settings.monitor.xml.SnmpMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.SnmpMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
-import com.clustercontrol.ws.monitor.MonitorStringValueInfo;
-import com.clustercontrol.ws.monitor.SnmpCheckInfo;
 
 /**
  * SNMP 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -50,7 +57,7 @@ public class SnmpConv {
 
 	private final static String SCHEMA_TYPE = "I";
 	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "1";
+	private final static String SCHEMA_REVISION = "2";
 	
 	/**
 	 * <BR>
@@ -89,16 +96,19 @@ public class SnmpConv {
 	 * @param
 	 * @return
 	 * @throws ConvertorException
+	 * @throws ParseException 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	public static List<MonitorInfo> createMonitorInfoList(SnmpMonitors snmpMonitors) throws ConvertorException {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(SnmpMonitors snmpMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 		
 		for (SnmpMonitor snmpMonitor : snmpMonitors.getSnmpMonitor()) {
 			logger.debug("Monitor Id : " + snmpMonitor.getMonitor().getMonitorId());
 
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(snmpMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(snmpMonitor.getMonitor());
 
-			if(monitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC){
+			if(monitorInfo.getMonitorType() == MonitorTypeEnum.NUMERIC){
 				for (NumericValue numericValue : snmpMonitor.getNumericValue()) {
 					if(numericValue.getPriority() == PriorityConstant.TYPE_INFO ||
 							numericValue.getPriority() == PriorityConstant.TYPE_WARNING){
@@ -117,40 +127,36 @@ public class SnmpConv {
 						monitorInfo.getNumericValueInfo().add(MonitorConv.createMonitorNumericValueInfo(changeValue));
 					}
 				}				
-				MonitorNumericValueInfo monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+				MonitorNumericValueInfoResponse monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(null);
+				monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(null);
+				monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
 				// 変化量監視が無効の場合、関連閾値が未入力なら、画面デフォルト値にて補完
-				if( monitorInfo.isChangeFlg() ==false && snmpMonitor.getNumericChangeAmount().length == 0 ){
+				if( monitorInfo.getChangeFlg() ==false && snmpMonitor.getNumericChangeAmount().length == 0 ){
 					MonitorConv.setMonitorChangeAmountDefault(monitorInfo);
 				}
 				
 				// 変化量についても閾値判定と同様にTYPE_CRITICALとTYPE_UNKNOWNを定義する
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericValueInfoResponse.MonitorNumericTypeEnum.CHANGE);
+				monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericValueInfoResponse.MonitorNumericTypeEnum.CHANGE);
+				monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
@@ -175,40 +181,42 @@ public class SnmpConv {
 	 * 
 	 * @param
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static SnmpMonitors createSnmpMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static SnmpMonitors createSnmpMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		SnmpMonitors snmpMonitors = new SnmpMonitors();
 		
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
+			monitorInfo =  MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
 
 			SnmpMonitor snmpMonitor = new SnmpMonitor();
 			snmpMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 			
-			for (MonitorNumericValueInfo numericValueInfo : monitorInfo.getNumericValueInfo()) {
-				if(numericValueInfo.getPriority() == PriorityConstant.TYPE_INFO ||
-						numericValueInfo.getPriority() == PriorityConstant.TYPE_WARNING){
-					if(numericValueInfo.getMonitorNumericType().contains("CHANGE")) {
-						snmpMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(numericValueInfo));
+			for (MonitorNumericValueInfoResponse numericValueInfo : monitorInfo.getNumericValueInfo()) {
+				if(numericValueInfo.getPriority() == PriorityEnum.INFO ||
+						numericValueInfo.getPriority() == PriorityEnum.WARNING){
+					if(numericValueInfo.getMonitorNumericType().name().equals("CHANGE")) {
+						snmpMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 					else{
-						snmpMonitor.addNumericValue(MonitorConv.createNumericValue(numericValueInfo));
+						snmpMonitor.addNumericValue(MonitorConv.createNumericValue(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 				}
 			}
 			
 			int orderNo = 0;
-			for (MonitorStringValueInfo monitorStringValueInfo : monitorInfo.getStringValueInfo()) {
-				snmpMonitor.addStringValue(MonitorConv.createStringValue(monitorStringValueInfo, ++orderNo));
+			for (MonitorStringValueInfoResponse monitorStringValueInfo : monitorInfo.getStringValueInfo()) {
+				snmpMonitor.addStringValue(MonitorConv.createStringValue(monitorInfo.getMonitorId(),monitorStringValueInfo, ++orderNo));
 			}
 
-			snmpMonitor.setSnmpInfo(createSnmpInfo(monitorInfo.getSnmpCheckInfo()));
+			snmpMonitor.setSnmpInfo(createSnmpInfo(monitorInfo));
 			snmpMonitors.addSnmpMonitor(snmpMonitor);
 		}
 		
@@ -223,16 +231,15 @@ public class SnmpConv {
 	 * 
 	 * @return
 	 */
-	private static SnmpInfo createSnmpInfo(SnmpCheckInfo snmpCheckInfo) {
+	private static SnmpInfo createSnmpInfo(MonitorInfoResponse monitorInfo) {
 		SnmpInfo snmpInfo = new SnmpInfo();
 		// DBからMonitorTypeIdがなくなっているのでこのままだとnullが設定されてしまう。
 		// nullが設定されるとエクスポート時にValidedにひっかかる為、空文字を設定しておく。
-		//snmpInfo.setMonitorTypeId(snmpCheckInfo.getMonitorTypeId());
 		snmpInfo.setMonitorTypeId("");
-
-		snmpInfo.setMonitorId(snmpCheckInfo.getMonitorId());
-		snmpInfo.setConvertFlg(snmpCheckInfo.getConvertFlg());
-		snmpInfo.setSnmpOid(snmpCheckInfo.getSnmpOid());
+		snmpInfo.setMonitorId(monitorInfo.getMonitorId());
+		int convertFlgInt = OpenApiEnumConverter.enumToInteger(monitorInfo.getSnmpCheckInfo().getConvertFlg());
+		snmpInfo.setConvertFlg(convertFlgInt);
+		snmpInfo.setSnmpOid(monitorInfo.getSnmpCheckInfo().getSnmpOid());
 		
 		return snmpInfo;
 	}
@@ -241,20 +248,14 @@ public class SnmpConv {
 	 * <BR>
 	 * 
 	 * @return
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	private static SnmpCheckInfo createSnmpCheckInfo(SnmpInfo snmpInfo) {
-		SnmpCheckInfo snmpCheckInfo = new SnmpCheckInfo();
-		// DBからMonitorTypeIdがなくなっているのでこのままだとnullが設定されてしまう。
-		// nullが設定されるとエクスポート時にValidedにひっかかる為、空文字を設定しておく。
-		//snmpCheckInfo.setMonitorTypeId(snmpInfo.getMonitorTypeId());
-		snmpCheckInfo.setMonitorTypeId("");
-		snmpCheckInfo.setMonitorId(snmpInfo.getMonitorId());
-		snmpCheckInfo.setConvertFlg(snmpInfo.getConvertFlg());
+	private static SnmpCheckInfoResponse createSnmpCheckInfo(SnmpInfo snmpInfo) throws InvalidSetting, HinemosUnknown {
+		SnmpCheckInfoResponse snmpCheckInfo = new SnmpCheckInfoResponse();
+		ConvertFlgEnum convertFlgEnum =  OpenApiEnumConverter.integerToEnum(snmpInfo.getConvertFlg(), ConvertFlgEnum.class);
+		snmpCheckInfo.setConvertFlg(convertFlgEnum);
 		snmpCheckInfo.setSnmpOid(snmpInfo.getSnmpOid());
-
-//		snmpCheckInfo.setCommunityName();
-//		snmpCheckInfo.setSnmpPort();
-//		snmpCheckInfo.setSnmpVersion();
 		
 		return snmpCheckInfo;
 	}

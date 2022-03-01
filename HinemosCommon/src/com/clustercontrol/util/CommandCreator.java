@@ -10,6 +10,7 @@ package com.clustercontrol.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,7 +23,7 @@ public class CommandCreator {
 
 	private static Log log = LogFactory.getLog(CommandCreator.class);
 
-	public static enum PlatformType { AUTO, WINDOWS, UNIX, REGACY, UNIX_SU};
+	public static enum PlatformType { AUTO, WINDOWS, UNIX, REGACY, UNIX_SU, WINDOWS_CMD };
 
 	public static final String sysUser;
 
@@ -42,7 +43,7 @@ public class CommandCreator {
 
 		osName = System.getProperty("os.name");
 		if (osName != null && (osName.startsWith("Windows") || osName.startsWith("windows"))) {
-			sysPlatform = PlatformType.WINDOWS;
+			sysPlatform = PlatformType.WINDOWS_CMD;
 		} else {
 			sysPlatform = PlatformType.UNIX;
 		}
@@ -62,6 +63,8 @@ public class CommandCreator {
 		// MAIN
 		if ("windows".equals(str)) {
 			platform = PlatformType.WINDOWS;
+		} else if ("windows.cmd".equals(str)) {
+			platform = PlatformType.WINDOWS_CMD;
 		} else if ("unix".equals(str)) {
 			platform = PlatformType.UNIX;
 		} else if ("unix.su".equals(str)) {
@@ -82,6 +85,27 @@ public class CommandCreator {
 
 	public static String[] createCommand(String execUser, String execCommand, PlatformType platform, boolean specifyUser) throws HinemosUnknown {
 		return createCommand(execUser, execCommand, platform, specifyUser, false);
+	}
+
+	public static String[] createCommand(String execUser, String execCommand, PlatformType platform, boolean specifyUser, boolean loginFlag,
+		boolean envExportFlag, Map<String, String> envMap) throws HinemosUnknown {
+		// 実効ユーザの指定があり、環境変数出力フラグがtrueなら、ジョブ設定の環境変数をExport文としてコマンド先頭に追加する。
+		if (specifyUser && envExportFlag) {
+			if (envMap != null && !envMap.isEmpty()) {
+				StringBuilder setEnvBulider = new StringBuilder();
+				for (Map.Entry<String, String> env : envMap.entrySet()) {
+					// 変数の内容は シェル内でのメタ文字対応のため ' で囲む
+					// 変数内の ' は エスケープ対応として '\'' に変換
+					setEnvBulider.append("export " + env.getKey() + "='" + env.getValue().replaceAll("'", "'\\\\''") + "';");
+				}
+				setEnvBulider.append(execCommand);
+				execCommand = setEnvBulider.toString();
+				if (log.isDebugEnabled()) {
+					log.debug("add environment command =" + execCommand);
+				}
+			}
+		}
+		return createCommand(execUser, execCommand, platform, specifyUser, loginFlag);
 	}
 
 	/**
@@ -119,6 +143,9 @@ public class CommandCreator {
 		switch (platform) {
 		case WINDOWS :
 			command = createWindowsCommand(user, execCommand);
+			break;
+		case WINDOWS_CMD:
+			command = createWindowsCmdCommand(user, execCommand);
 			break;
 		case UNIX :
 			command = createUnixCommand(user, execCommand, loginFlag);
@@ -185,6 +212,27 @@ public class CommandCreator {
 			if (isDebugEnable) {
 				log.debug("created command for windows. (cmd = " + Arrays.toString(command) + ")");
 			}
+		} else {
+			throw new HinemosUnknown("execution user and jvm user must be same on Windows. (execUser = " + execUser + ", sysUser = " + sysUser + ")");
+		}
+		return command;
+	}
+
+	/**
+	 * create command for Windows like CMD /S /C "[COMMAND]"
+	 * @param execUser execution user
+	 * @param execCommand command string parsed by CMD
+	 * @return command and arguments
+	 * @throws HinemosUnknown
+	 */
+	private static String[] createWindowsCmdCommand(String execUser, String execCommand) throws HinemosUnknown {
+		// Local Variables
+		String[] command = null;
+		
+		// MAIN
+		if (execUser.equals(sysUser)) {
+			command = new String[]{ "CMD", "/S", "/C", "\"" + execCommand + "\"" };
+			if (log.isDebugEnabled()) log.debug("created command for windows. (cmd = " + Arrays.toString(command) + ")");
 		} else {
 			throw new HinemosUnknown("execution user and jvm user must be same on Windows. (execUser = " + execUser + ", sysUser = " + sysUser + ")");
 		}

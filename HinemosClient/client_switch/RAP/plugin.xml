@@ -15,6 +15,10 @@
 		schema="schema/cloud_option_handler.exsd" />
 	<extension-point id="cloudOptionTester" name="cloudOptionTester"
 		schema="schema/cloud_option_tester.exsd" />
+	<extension-point id="restConnectMsgFilter" name="restConnectMsgFilter"
+		schema="schema/rest_connect_msgfilter.exsd" />
+	<extension-point id="msgFilterPreferenceInitializer" name="msgFilterPreferenceInitializer"
+		schema="schema/msg_filter_preference_Initializer.exsd" />
 	<extension id="ClusterControlApplication" name="%product.name"
 		point="org.eclipse.core.runtime.applications">
 		<application>
@@ -41,7 +45,9 @@
 		<initializer class="com.clustercontrol.jobmap.preference.JobMapPreferenceInitializer" />
 		<initializer class="com.clustercontrol.nodemap.preference.NodeMapPreferenceInitializer" />
 		<initializer class="com.clustercontrol.reporting.preference.ReportingPreferenceInitializer" />
+		<initializer class="com.clustercontrol.rpa.preference.RpaPreferenceInitializer" />
 		<initializer class="com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage$Initializer" />
+		<initializer class="com.clustercontrol.msgfilter.preference.MsgFilterPreferenceInitializer" />
 	</extension>
 	<extension point="org.eclipse.ui.preferencePages">
 		<page class="com.clustercontrol.preference.ClusterControlCorePreferencePage"
@@ -102,6 +108,13 @@
 			id="com.clustercontrol.reporting.preference.ReportingPreferencePage"
 			name="%reporting">
 		</page>
+		<!-- Rpa -->
+		<page
+			category="com.clustercontrol.enterprise.EnterprisePreferencePage"
+			class="com.clustercontrol.rpa.preference.RpaPreferencePage"
+			id="com.clustercontrol.rpa.preference.RpaPreferencePage"
+			name="%rpa">
+		</page>
 		<!-- Utility -->
 		<page
 			category="com.clustercontrol.enterprise.EnterprisePreferencePage"
@@ -144,6 +157,12 @@
 		<view class="com.clustercontrol.jobmanagement.view.JobQueueContentsView"
 			id="com.clustercontrol.jobmanagement.view.JobQueueContentsView" name="%view.job.queue.contents">
 		</view>
+		<view class="com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView"
+			id="com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView" name="%view.job.job.link.send.setting">
+		</view>
+		<view class="com.clustercontrol.jobmanagement.view.JobLinkMessageView"
+			id="com.clustercontrol.jobmanagement.view.JobLinkMessageView" name="%view.job.job.link.message">
+		</view>
 		<view class="com.clustercontrol.monitor.view.ScopeView" id="com.clustercontrol.monitor.view.ScopeView"
 			name="%view.monitor.history.scope">
 		</view>
@@ -162,8 +181,14 @@
 		<view class="com.clustercontrol.notify.mail.view.MailTemplateListView"
 			id="com.clustercontrol.notify.mail.view.MailTemplateListView" name="%view.mail.list">
 		</view>
+		<view class="com.clustercontrol.notify.restaccess.view.RestAccessInfoListView"
+			id="com.clustercontrol.notify.restaccess.view.RestAccessInfoListView" name="%view.restaccess.list">
+		</view>
 		<view class="com.clustercontrol.hub.view.LogFormatView"
 			id="com.clustercontrol.hub.view.LogFormatView" name="%view.log.format">
+		</view>
+		<view class="com.clustercontrol.notify.view.CommandTemplateListView"
+			id="com.clustercontrol.notify.view.CommandTemplateListView" name="%view.command.template">
 		</view>
 		<view class="com.clustercontrol.collect.view.CollectGraphView"
 			id="com.clustercontrol.collect.view.CollectGraphView" name="%view.performance.graph">
@@ -250,12 +275,6 @@
 		</view>
 		<!-- Enterprise -->
 		<category id="com.clustercontrol.categories.options" name="%category.cloud" />
-		<!-- Inquiry -->
-		<view
-			class="com.clustercontrol.inquiry.view.InquiryView"
-			id="com.clustercontrol.inquiry.view.InquiryView"
-			name="%view.inquiry.list">
-		</view>
 		<!-- JobMap -->
 		<view
 			class="com.clustercontrol.jobmap.view.JobMapEditorView"
@@ -338,6 +357,30 @@
 			class="com.clustercontrol.utility.settings.ui.views.ImportExportExecView"
 			id="com.clustercontrol.utility.settings.ui.views.ImportExportExecView"
 			name="%settingtools">
+		</view>
+		<!-- RPA -->
+		<view class="com.clustercontrol.rpa.view.RpaManagementToolAccountView"
+			id="com.clustercontrol.rpa.view.RpaManagementToolAccountView" name="%view.rpa.management.tool.account.list">
+		</view>
+		<view class="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView"
+			id="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView" name="%view.rpa.scenario.create.setting.list">
+		</view>
+		<view class="com.clustercontrol.rpa.view.RpaScenarioTagView"
+			id="com.clustercontrol.rpa.view.RpaScenarioTagView" name="%view.rpa.scenariotag.list">
+		</view>
+		<view class="com.clustercontrol.rpa.view.RpaScenarioListView" 
+			id="com.clustercontrol.rpa.view.RpaScenarioListView" name="%view.rpa.scenario.operation.result.list">
+		</view>
+		<view
+			allowMultiple="true"
+			category="com.clustercontrol.categories.options"
+			class="com.clustercontrol.rpa.view.RpaScenarioOperationResultSearchView"
+			id="com.clustercontrol.rpa.view.RpaScenarioOperationResultSearchView"
+			name="%view.nodesearch"
+			restorable="false">
+		</view>
+		<view class="com.clustercontrol.rpa.view.RpaScenarioSummaryGraphView" 
+			id="com.clustercontrol.rpa.view.RpaScenarioSummaryGraphView" name="%view.rpa.scenario.summary.graph">
 		</view>
 		<!-- xCloud -->
 		<view category="com.clustercontrol.categories.options" class="com.clustercontrol.xcloud.ui.views.InstancesView"
@@ -440,10 +483,6 @@
 			name="%hub">
 		</perspective>
 		<!-- Enterprise -->
-		<!-- Inquiry -->
-		<perspective class="com.clustercontrol.inquiry.InquiryPerspective"
-			id="com.clustercontrol.enterprise.inquiry.InquiryPerspective" name="%inquiry">
-		</perspective>
 		<!-- JobMap -->
 		<perspective class="com.clustercontrol.jobmap.JobMapHistoryPerspective"
 			id="com.clustercontrol.enterprise.jobmap.JobMapHistoryPerspective" name="%jobmap.history">
@@ -462,6 +501,13 @@
 		<!-- Utility -->
 		<perspective class="com.clustercontrol.utility.settings.ui.SettingToolsPerspective"
 			id="com.clustercontrol.enterprise.utility.SettingToolsPerspective" name="%settingtools"/>
+		<!-- RPA -->
+		<perspective class="com.clustercontrol.rpa.ui.RpaSettingPerspective"
+			id="com.clustercontrol.enterprise.rpa.ui.RpaSettingPerspective" name="%rpa">
+		</perspective>
+		<perspective class="com.clustercontrol.rpa.ui.RpaScenarioOperationResultPerspective"
+			id="com.clustercontrol.enterprise.ui.RpaScenarioOperationResultPerspective" name="%rpaScenarioOperationResultList">
+		</perspective>
 		<!-- xCloud -->
 		<perspective class="com.clustercontrol.xcloud.ui.ServicePerspective"
 			id="com.clustercontrol.xcloud.ui.ServicePerspective" name="%perspective.cloud.service">
@@ -564,6 +610,10 @@
 						commandId="com.clustercontrol.jobmanagement.etc.action.JobQueueContentsAction"
 						label="%view.job.queue.contentsC" style="push">
 					</command>
+					<command
+						commandId="com.clustercontrol.jobmanagement.etc.action.JobLinkMessageAction"
+						label="%view.job.job.link.messageU" style="push">
+					</command>
 				</menu>
 				<menu id="com.clustercontrol.job.setting" label="%job.settingJ">
 					<command
@@ -585,6 +635,10 @@
 					<command
 						commandId="com.clustercontrol.jobmanagement.etc.action.JobQueueReferrerAction"
 						label="%view.job.queue.referrerR" style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.jobmanagement.etc.action.JobLinkSendSettingListAction"
+						label="%view.job.job.link.send.settingT" style="push">
 					</command>
 				</menu>
 				<menu id="com.clustercontrol.repository" label="%repositoryR">
@@ -674,22 +728,28 @@
 						label="%view.log.formatF"
 						style="push">
 					</command>
+					<command
+						commandId="com.clustercontrol.notify.etc.action.CommandTemplateViewAction"
+						label="%view.command.templateE"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.notify.restaccess.etc.action.OpenRestAccessInfoListViewAction"
+						label="%view.restaccess.listR" style="push">
+					</command>
 				</menu>
 				<separator name="enterpriseViewsSeparator" visible="true"></separator>
 				<!-- Enterprise -->
-				<!-- Inquiry -->
-				<menu id="com.clustercontrol.inquiry" label="%inquiryE">
+				<!-- JobMap History -->
+				<menu id="com.clustercontrol.enterprise.jobmap.history" label="%jobmap.history">
 					<command
-						commandId="com.clustercontrol.enterprise.inquiry.etc.action.OpenInquiryViewAction"
-						label="%view.inquiry.listL"
+						commandId="com.clustercontrol.enterprise.jobmanagement.etc.action.JobHistoryAction"
+						label="%view.job.historyH"
 						style="push">
 					</command>
-				</menu>
-				<!-- JobMap -->
-				<menu id="com.clustercontrol.enterprise.jobmap.history" label="%jobmap">
 					<command
-						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobMapEditorAction"
-						label="%view.jobmap.editor"
+						commandId="com.clustercontrol.enterprise.jobmanagement.etc.action.JobQueueActivityAction"
+						label="%view.job.queue.activityA"
 						style="push">
 					</command>
 					<command
@@ -698,20 +758,81 @@
 						style="push">
 					</command>
 					<command
+						commandId="com.clustercontrol.enterprise.jobmanagement.etc.action.JobNodeDetailAction"
+						label="%view.job.node.detailN"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.jobmanagement.etc.action.ForwardFileListAction"
+						label="%view.job.forward.fileF"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.jobmanagement.etc.action.JobQueueContentsAction"
+						label="%view.job.queue.contentsC"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.jobmanagement.etc.action.JobLinkMessageAction"
+						label="%view.job.job.link.messageU"
+						style="push">
+					</command>
+				</menu>
+				<!-- JobMap Editor -->
+				<menu id="com.clustercontrol.enterprise.jobmap.editor" label="%jobmap.editor">
+					<command
+						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobTreeAction"
+						label="%view.job.tree"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobModuleAction"
+						label="%view.job.module"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobMapEditorAction"
+						label="%view.jobmap.editor"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.jobmanagement.etc.action.JobKickListAction"
+						label="%view.job.job.kickK"
+						style="push">
+					</command>
+					<command
 						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobMapImageListAction"
 						label="%view.jobmap.icon"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.jobmanagement.etc.action.JobQueueSettingAction"
+						label="%view.job.queue.settingQ"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.jobmanagement.etc.action.JobLinkSendSettingListAction"
+						label="%view.job.job.link.send.settingT"
 						style="push">
 					</command>
 				</menu>
 				<!-- NodeMap -->
 				<menu id="com.clustercontrol.enterprise.nodemap.viewMenu" label="%nodemap">
-					<menu label="%monitor.historyM">
-						<command
-							commandId="com.clustercontrol.enterprise.nodemap.etc.action.ScopeTreeViewAction"
-							label="%view.scopetree"
-							style="push">
-						</command>
-					</menu>
+					<command
+						commandId="com.clustercontrol.enterprise.nodemap.etc.action.ScopeTreeViewAction"
+						label="%view.scopetree"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.nodemap.etc.action.StatusViewMAction"
+						label="%view.status"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.nodemap.etc.action.EventViewMAction"
+						label="%view.event"
+						style="push">
+					</command>
 				</menu>
 				<!-- Reporting -->
 				<menu id="com.clustercontrol.enterprise.reporting.views" label="%reporting">
@@ -723,6 +844,44 @@
 					<command
 						commandId="com.clustercontrol.enterprise.reporting.etc.action.OpenReportingTemplateSetViewAction"
 						label="%view.reporting.template.set"
+						style="push">
+					</command>
+				</menu>
+				<!-- Utility -->
+				<menu id="com.clustercontrol.enterprise.utility.view" label="%settingtools">
+					<command
+						commandId="com.clustercontrol.enterprise.utility.settings.ui.etc.action.OpenImportExportExecViewAction"
+						label="%settingtools"
+						style="push">
+					</command>
+				</menu>
+				<!-- RPA -->
+				<menu id="com.clustercontrol.enterprise.rpa.view" label="%rpa">
+					<command
+						commandId="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaManagementToolAccountViewAction"
+						label="%view.rpa.management.tool.account.list"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioOperationResultCreateSettingViewAction"
+						label="%view.rpa.scenario.create.setting.list"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioTagViewAction"
+						label="%view.rpa.scenariotag.list"
+						style="push">
+					</command>
+				</menu>
+				<menu id="com.clustercontrol.enterprise.rpa.scenario.operation.result" label="%rpaScenarioOperationResultList">
+					<command
+						commandId="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioListViewAction"
+						label="%view.rpa.scenario.operation.result.list"
+						style="push">
+					</command>
+					<command
+						commandId="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioSummaryGraphViewAction"
+						label="%view.rpa.scenario.summary.graph"
 						style="push">
 					</command>
 				</menu>
@@ -866,6 +1025,9 @@
 				commandId="com.clustercontrol.jobmanagement.view.action.HistoryFilterAction"
 				icon="icons/searchres.gif" label="%filter" style="toggle" tooltip="%filter">
 			</command>
+			<command commandId="com.clustercontrol.jobmanagement.view.action.JobHistoryFilterSettingAction"
+				icon="icons/filter_setting.png" label="%filter.setting" style="push" tooltip="%filter.setting">
+			</command>
 			<separator name="jobHistoryViewSeparator1" visible="true"></separator>
 			<command
 				commandId="com.clustercontrol.jobmanagement.view.action.StartJobHistoryAction"
@@ -920,6 +1082,10 @@
 				commandId="com.clustercontrol.jobmanagement.view.action.StopJobNodeDetailAction"
 				icon="icons/terminate_co.gif" label="%stop" style="push" tooltip="%stop">
 			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.DownloadScreenshotJobNodeDetailAction"
+				icon="icons/newfile_wiz.gif" label="%download" style="push" tooltip="%download">
+			</command>
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.jobmanagement.view.JobNodeDetailView" allPopups="false">
 			<command
@@ -930,6 +1096,14 @@
 			<command
 				commandId="com.clustercontrol.jobmanagement.view.action.StopJobNodeDetailAction"
 				icon="icons/terminate_co.gif" label="%stop" style="push" tooltip="%stop">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.TakeScreenshotJobNodeDetailAction"
+				label="%take.rpa.screenshot" style="push" tooltip="%take.rpa.screenshot">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.DownloadScreenshotJobNodeDetailAction"
+				icon="icons/newfile_wiz.gif" label="%download" style="push" tooltip="%download">
 			</command>
 		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.jobmanagement.view.JobListView" allPopups="false">
@@ -981,6 +1155,31 @@
 				commandId="com.clustercontrol.jobmanagement.view.action.CreateMonitorJobAction"
 				icon="icons/monitor_job.gif" label="%create.monitor.job"
 				style="push" tooltip="%create.monitor.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateFileCheckJobAction"
+				icon="icons/filecheck_job.png" label="%create.filecheck.job"
+				style="push" tooltip="%create.filecheck.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendJobAction"
+				icon="icons/joblinksend_job.png" label="%create.joblinksend.job"
+				style="push" tooltip="%create.joblinksend.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvJobAction"
+				icon="icons/joblinkrcv_job.png" label="%create.joblinkrcv.job"
+				style="push" tooltip="%create.joblinkrcv.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.xcloud.jobmanagement.view.action.CreateResourceJobAction"
+				icon="icons/resource_job.png" label="%create.resource.job"
+				style="push" tooltip="%create.resource.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateRpaJobAction"
+				icon="icons/rpa_job.png" label="%create.rpa.job"
+				style="push" tooltip="%create.rpa.job">
 			</command>
 			<separator name="jobListViewSeparator2" visible="true"></separator>
 			<command
@@ -1069,6 +1268,31 @@
 				tooltip="%create.monitor.job">
 			</command>
 			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateFileCheckJobAction"
+				icon="icons/filecheck_job.png" label="%create.filecheck.job" style="push"
+				tooltip="%create.filecheck.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendJobAction"
+				icon="icons/joblinksend_job.png" label="%create.joblinksend.job" style="push"
+				tooltip="%create.joblinksend.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvJobAction"
+				icon="icons/joblinkrcv_job.png" label="%create.joblinkrcv.job" style="push"
+				tooltip="%create.joblinkrcv.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.xcloud.jobmanagement.view.action.CreateResourceJobAction"
+				icon="icons/resource_job.png" label="%create.resource.job" style="push"
+				tooltip="%create.resource.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateRpaJobAction"
+				icon="icons/rpa_job.png" label="%create.rpa.job" style="push" 
+				tooltip="%create.rpa.job">
+			</command>
+			<command
 				commandId="com.clustercontrol.jobmanagement.view.action.ModifyJobAction"
 				icon="icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
 			</command>
@@ -1124,6 +1348,11 @@
 				tooltip="%createSchedule">
 			</command>
 			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvAction"
+				icon="icons/add_joblinkrcv_icon.png" label="%createJobLinkRcv" style="push"
+				tooltip="%createJobLinkRcv">
+			</command>
+			<command
 				commandId="com.clustercontrol.jobmanagement.view.action.ModifyJobKickAction"
 				icon="icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
 			</command>
@@ -1154,6 +1383,10 @@
 				commandId="com.clustercontrol.jobmanagement.view.action.RunJobKickAction"
 				icon="icons/lrun_obj.gif" label="%run" style="push" tooltip="%run">
 			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.DeletePremakeJobsessionAction"
+				icon="icons/delete_premake_jobsession.png" label="%deletePremakeJobsession" style="push" tooltip="%deletePremakeJobsession">
+			</command>
 		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.jobmanagement.view.JobKickListView" allPopups="false">
 			<command
@@ -1170,6 +1403,11 @@
 				commandId="com.clustercontrol.jobmanagement.view.action.CreateScheduleAction"
 				icon="icons/add_schedule_icon.gif" label="%createSchedule" style="push"
 				tooltip="%createSchedule">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvAction"
+				icon="icons/add_joblinkrcv_icon.png" label="%createJobLinkRcv" style="push"
+				tooltip="%createJobLinkRcv">
 			</command>
 			<command
 				commandId="com.clustercontrol.jobmanagement.view.action.ModifyJobKickAction"
@@ -1199,6 +1437,10 @@
 			<command
 				commandId="com.clustercontrol.jobmanagement.view.action.RunJobKickAction"
 				icon="icons/lrun_obj.gif" label="%run" style="push" tooltip="%run">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.DeletePremakeJobsessionAction"
+				icon="icons/delete_premake_jobsession.png" label="%deletePremakeJobsession" style="push" tooltip="%deletePremakeJobsession">
 			</command>
 			<separator name="jobKickListViewSeparator1" visible="true"></separator>
 			<command
@@ -1301,6 +1543,85 @@
 				icon="icons/refresh.gif" label="%update" style="push" tooltip="%update">
 			</command>
 		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendSettingAction"
+				icon="icons/add_obj.gif" label="%create" style="push"
+				tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.ModifyJobLinkSendSettingAction"
+				icon="icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.DeleteJobLinkSendSettingAction"
+				icon="icons/delete_obj.gif" label="%delete" style="push" tooltip="%delete">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CopyJobLinkSendSettingAction"
+				icon="icons/copy_obj.gif" label="%copy" style="push" tooltip="%copy">
+			</command>
+			<separator name="jobLinkSendSettingListViewSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobLinkSendSettingAction"
+				icon="icons/obj_priv.gif" label="%object.privilege.setting" style="push"
+				tooltip="%object.privilege.setting">
+			</command>
+			<separator name="jobLinkSendSettingListViewSeparator2" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.ManualSendJobLinkMessageAction"
+				icon="icons/lrun_obj.gif" label="%send.manually" style="push" tooltip="%send.manually">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendSettingAction"
+				icon="icons/add_obj.gif" label="%create" style="push"
+				tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.ModifyJobLinkSendSettingAction"
+				icon="icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.DeleteJobLinkSendSettingAction"
+				icon="icons/delete_obj.gif" label="%delete" style="push" tooltip="%delete">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.CopyJobLinkSendSettingAction"
+				icon="icons/copy_obj.gif" label="%copy" style="push" tooltip="%copy">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobLinkSendSettingAction"
+				icon="icons/obj_priv.gif" label="%object.privilege.setting" style="push"
+				tooltip="%object.privilege.setting">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.ManualSendJobLinkMessageAction"
+				icon="icons/lrun_obj.gif" label="%send.manually" style="push" tooltip="%send.manually">
+			</command>
+			<separator name="jobLinkSendSettingListViewSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.JobLinkSendSettingRefreshAction"
+				icon="icons/refresh_tab.gif" label="%update" style="push" tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.jobmanagement.view.JobLinkMessageView" allPopups="false">
+			<command commandId="com.clustercontrol.jobmanagement.view.action.JobLinkMessageRefreshAction"
+				icon="icons/refresh.gif" label="%update" style="push" tooltip="%update">
+			</command>
+			<command commandId="com.clustercontrol.jobmanagement.view.action.JobLinkMessageFilterAction"
+				icon="icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.jobmanagement.view.JobLinkMessageView" allPopups="false">
+			<command commandId="com.clustercontrol.jobmanagement.view.action.JobLinkMessageRefreshAction"
+				icon="icons/refresh.gif" label="%update" style="push" tooltip="%update">
+			</command>
+			<command commandId="com.clustercontrol.jobmanagement.view.action.JobLinkMessageFilterAction"
+				icon="icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
+			</command>
+		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.collect.view.CollectGraphView" allPopups="false">
 			<command
 				commandId="com.clustercontrol.collect.view.action.ScopeShowAction"
@@ -1336,6 +1657,9 @@
 			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.StatusFilterAction"
 				icon="icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
+			</command>
+			<command commandId="com.clustercontrol.monitor.view.action.StatusFilterSettingAction"
+				icon="icons/filter_setting.png" label="%filter.setting" style="push" tooltip="%filter.setting">
 			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.ScopeShowActionStatus"
 				icon="icons/show_tree.gif" label="%show.scopetree" style="toggle"
@@ -1402,6 +1726,9 @@
 			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.EventFilterAction"
 				icon="icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
+			</command>
+			<command commandId="com.clustercontrol.monitor.view.action.EventFilterSettingAction"
+				icon="icons/filter_setting.png" label="%filter.setting" style="push" tooltip="%filter.setting">
 			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.ScopeShowActionEvent"
 				icon="icons/show_tree.gif" label="%show.scopetree" style="toggle"
@@ -1674,6 +2001,91 @@
 			<separator name="MailTemplateListViewSeparator2" visible="true"></separator>
 			<command
 				commandId="com.clustercontrol.notify.mail.view.action.ObjectPrivilegeMailTemplateListAction"
+				icon="icons/obj_priv.gif" label="%object.privilege.setting" style="push"
+				tooltip="%object.privilege.setting">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.notify.view.CommandTemplateListView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.notify.view.action.CommandTemplateShowAction"
+				icon="icons/refer_mark.gif" label="%show" tooltip="%show" style="push">
+			</command>
+			<command
+				commandId="com.clustercontrol.notify.view.action.ObjectPrivilegeCommandTemplateAction"
+				icon="icons/obj_priv.gif" label="%object.privilege.setting" style="push"
+				tooltip="%object.privilege.setting">
+			</command>
+			<separator name="MailTemplateListViewSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.notify.view.action.CommandTemplateRefreshAction"
+				icon="icons/refresh_tab.gif" label="%update" style="push" tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.notify.view.CommandTemplateListView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.notify.view.action.CommandTemplateShowAction"
+				icon="icons/refer_mark.gif" label="%show" tooltip="%show" style="push">
+			</command>
+			<command
+				commandId="com.clustercontrol.notify.view.action.ObjectPrivilegeCommandTemplateAction"
+				icon="icons/obj_priv.gif" label="%object.privilege.setting" style="push"
+				tooltip="%object.privilege.setting">
+			</command>
+			<separator name="MailTemplateListViewSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.notify.view.action.CommandTemplateRefreshAction"
+				icon="icons/refresh_tab.gif" label="%update" style="push" tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.notify.restaccess.view.RestAccessInfoListView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoAddAction"
+				icon="icons/add_obj.gif" label="%create" tooltip="%create" style="push">
+			</command>
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoModifyAction"
+				icon="icons/write_obj.gif" label="%modify" tooltip="%modify" style="push">
+			</command>
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoDeleteAction"
+				icon="icons/delete_obj.gif" label="%delete" tooltip="%delete" style="push">
+			</command>
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoCopyAction"
+				icon="icons/copy_obj.gif" label="%copy" tooltip="%copy" style="push">
+			</command>
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.ObjectPrivilegeRestAccessInfoListAction"
+				icon="icons/obj_priv.gif" label="%object.privilege.setting" style="push"
+				tooltip="%object.privilege.setting">
+			</command>
+			<separator name="RestAccessInfoListViewSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoRefreshAction"
+				icon="icons/refresh_tab.gif" label="%update" style="push" tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.notify.restaccess.view.RestAccessInfoListView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoAddAction"
+				icon="icons/add_obj.gif" label="%create" style="push" tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoModifyAction"
+				icon="icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoDeleteAction"
+				icon="icons/delete_obj.gif" label="%delete" style="push" tooltip="%delete">
+			</command>
+			<separator name="RestAccessInfoListViewSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoCopyAction"
+				icon="icons/copy_obj.gif" label="%copy" style="push" tooltip="%copy">
+			</command>
+			<separator name="RestAccessInfoListViewSeparator2" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.notify.restaccess.view.action.ObjectPrivilegeRestAccessInfoListAction"
 				icon="icons/obj_priv.gif" label="%object.privilege.setting" style="push"
 				tooltip="%object.privilege.setting">
 			</command>
@@ -2507,61 +2919,6 @@
 				tooltip="%update">
 			</command>
 		</menuContribution>
-		<menuContribution
-			allPopups="false"
-			locationURI="toolbar:com.clustercontrol.inquiry.view.InquiryView">
-			<command
-				commandId="com.clustercontrol.enterprise.inquiry.view.action.CreateTargetDataAction"
-				icon="icons/add_obj.gif"
-				id="%create"
-				label="%create"
-				style="push"
-				tooltip="%create">
-			</command>
-			<command
-				commandId="com.clustercontrol.enterprise.inquiry.view.action.DownloadTargetDataAction"
-				icon="icons/down.gif"
-				id="%download"
-				label="%download"
-				style="push"
-				tooltip="%download">
-			</command>
-			<command
-				commandId="com.clustercontrol.enterprise.inquiry.view.action.RefreshTargetDataAction"
-				icon="icons/refresh_tab.gif"
-				id="%update"
-				label="%update"
-				style="push"
-				tooltip="%update">
-			</command>
-		</menuContribution>
-		<menuContribution
-				allPopups="false"
-				locationURI="popup:com.clustercontrol.inquiry.view.InquiryView">
-			<command
-				commandId="com.clustercontrol.enterprise.inquiry.view.action.CreateTargetDataAction"
-				icon="icons/add_obj.gif"
-				id="%create"
-				label="%create"
-				style="push"
-				tooltip="%create">
-			</command>
-			<command
-				commandId="com.clustercontrol.enterprise.inquiry.view.action.DownloadTargetDataAction"
-				icon="icons/down.gif"
-				id="%download"
-				label="%download"
-				style="push"
-				tooltip="%download">
-			</command>
-			<command
-				commandId="com.clustercontrol.enterprise.inquiry.view.action.RefreshTargetDataAction"
-				icon="icons/refresh_tab.gif"
-				label="%update"
-				style="push"
-				tooltip="%update">
-			</command>
-		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.hub.view.TransferView" allPopups="false">
 			<command
 				commandId="com.clustercontrol.hub.view.action.LogTransferAddAction"
@@ -2733,12 +3090,14 @@
 			<separator name="JobTreeViewSeparator1" visible="true"></separator>
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.CopyJobAction"
+				icon="icons/copy_obj.gif"
 				label="%copy"
 				style="push"
 				tooltip="%copy">
 			</command>
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.PasteJobAction"
+				icon="icons/paste_edit.gif"
 				label="%paste"
 				style="push"
 				tooltip="%paste">
@@ -2794,6 +3153,41 @@
 				tooltip="%create.monitor.job">
 			</command>
 			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateFileCheckJobAction"
+				icon="icons/filecheck_job.png"
+				label="%create.filecheck.job"
+				style="push"
+				tooltip="%create.filecheck.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkSendJobAction"
+				icon="icons/joblinksend_job.png"
+				label="%create.joblinksend.job"
+				style="push"
+				tooltip="%create.joblinksend.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkRcvJobAction"
+				icon="icons/joblinkrcv_job.png"
+				label="%create.joblinkrcv.job"
+				style="push"
+				tooltip="%create.joblinkrcv.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.xcloud.jobmap.view.action.CreateResourceJobAction"
+				icon="icons/resource_job.png"
+				label="%create.resource.job"
+				style="push"
+				tooltip="%create.resource.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateRpaJobAction"
+				icon="icons/rpa_job.png"
+				label="%create.rpa.job"
+				style="push"
+				tooltip="%create.rpa.job">
+			</command>
+			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.ModifyJobAction"
 				icon="icons/write_obj.gif"
 				label="%modify"
@@ -2817,7 +3211,7 @@
 			<separator name="JobTreeViewSeparator3" visible="true"></separator>
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.JobObjectPrivilegeAction"
-				icon="icons/checked.gif"
+				icon="icons/obj_priv.gif"
 				label="%object.privilege.setting"
 				style="push"
 				tooltip="%object.privilege.setting">
@@ -2846,7 +3240,7 @@
 		<menuContribution locationURI="popup:com.clustercontrol.jobmap.view.JobMapEditorView" allPopups="false">
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.JobObjectPrivilegeAction"
-				icon="icons/checked.gif"
+				icon="icons/obj_priv.gif"
 				label="%object.privilege.setting"
 				style="push"
 				tooltip="%object.privilege.setting">
@@ -2862,12 +3256,14 @@
 			<separator name="JobMapEditorSeparator2" visible="true"></separator>
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.CopyJobAction"
+				icon="icons/copy_obj.gif"
 				label="%copy"
 				style="push"
 				tooltip="%copy">
 			</command>
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.PasteJobAction"
+				icon="icons/paste_edit.gif"
 				label="%paste"
 				style="push"
 				tooltip="%paste">
@@ -2921,6 +3317,41 @@
 				label="%create.monitor.job"
 				style="push"
 				tooltip="%create.monitor.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateFileCheckJobAction"
+				icon="icons/filecheck_job.png"
+				label="%create.filecheck.job"
+				style="push"
+				tooltip="%create.filecheck.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkSendJobAction"
+				icon="icons/joblinksend_job.png"
+				label="%create.joblinksend.job"
+				style="push"
+				tooltip="%create.joblinksend.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkRcvJobAction"
+				icon="icons/joblinkrcv_job.png"
+				label="%create.joblinkrcv.job"
+				style="push"
+				tooltip="%create.joblinkrcv.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.xcloud.jobmap.view.action.CreateResourceJobAction"
+				icon="icons/resource_job.png"
+				label="%create.resource.job"
+				style="push"
+				tooltip="%create.resource.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateRpaJobAction"
+				icon="icons/rpa_job.png"
+				label="%create.rpa.job"
+				style="push"
+				tooltip="%create.rpa.job">
 			</command>
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.ModifyJobAction"
@@ -3027,6 +3458,41 @@
 				style="push"
 				tooltip="%create.monitor.job">
 			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateFileCheckJobAction"
+				icon="icons/filecheck_job.png"
+				label="%create.filecheck.job"
+				style="push"
+				tooltip="%create.filecheck.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkSendJobAction"
+				icon="icons/joblinksend_job.png"
+				label="%create.joblinksend.job"
+				style="push"
+				tooltip="%create.joblinksend.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkRcvJobAction"
+				icon="icons/joblinkrcv_job.png"
+				label="%create.joblinkrcv.job"
+				style="push"
+				tooltip="%create.joblinkrcv.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.xcloud.jobmap.view.action.CreateResourceJobAction"
+				icon="icons/resource_job.png"
+				label="%create.resource.job"
+				style="push"
+				tooltip="%create.resource.job">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateRpaJobAction"
+				icon="icons/rpa_job.png"
+				label="%create.rpa.job"
+				style="push"
+				tooltip="%create.rpa.job">
+			</command>
 			<separator name="JobMapEditorToolbarSeparator2" visible="true"></separator>
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.ModifyJobAction"
@@ -3044,7 +3510,7 @@
 			</command>
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.JobObjectPrivilegeAction"
-				icon="icons/checked.gif"
+				icon="icons/obj_priv.gif"
 				label="%object.privilege.setting"
 				style="push"
 				tooltip="%object.privilege.setting">
@@ -3123,7 +3589,7 @@
 			<separator name="JobMapImageListPopupSeparator1" visible="true"></separator>
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.JobMapImageListObjectPrivilegeAction"
-				icon="icons/checked.gif"
+				icon="icons/obj_priv.gif"
 				label="%object.privilege.setting"
 				style="push"
 				tooltip="%object.privilege.setting">
@@ -3162,7 +3628,7 @@
 			<separator name="JobMapImageListToolbarSeparator1" visible="true"></separator>
 			<command
 				commandId="com.clustercontrol.enterprise.jobmap.view.action.JobMapImageListObjectPrivilegeAction"
-				icon="icons/checked.gif"
+				icon="icons/obj_priv.gif"
 				label="%object.privilege.setting"
 				style="push"
 				tooltip="%object.privilege.setting">
@@ -3206,6 +3672,13 @@
 				label="%filter"
 				style="toggle"
 				tooltip="%filter">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.JobHistoryFilterSettingAction"
+				icon="icons/filter_setting.png"
+				label="%filter.setting"
+				style="push"
+				tooltip="%filter.setting">
 			</command>
 			<separator name="JobMapEditorSeparator7" visible="true"></separator>
 			<command
@@ -3429,21 +3902,6 @@
 				tooltip="%node.search">
 			</command>
 		</menuContribution>
-		<menuContribution locationURI="menu:org.eclipse.ui.main.menu" allPopups="false">
-			<menu
-				id="viewMenu"
-				label="%viewV">
-			<menu
-				id="com.clustercontrol.monitor.history"
-				label="%monitor.historyM">
-				<command
-					commandId="com.clustercontrol.enterprise.nodemap.etc.action.ScopeTreeViewAction"
-					label="%view.scopetree"
-					style="push">
-				</command>
-			</menu>
-			</menu>
-		</menuContribution>
 			<menuContribution locationURI="toolbar:com.clustercontrol.nodemap.view.StatusViewM" allPopups="false">
 			<command
 			commandId="com.clustercontrol.monitor.view.action.StatusModifyMonitorSettingAction"
@@ -3465,6 +3923,9 @@
 			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.StatusFilterAction"
 			icon="icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
+			</command>
+			<command commandId="com.clustercontrol.monitor.view.action.StatusFilterSettingAction"
+			icon="icons/filter_setting.png" label="%filter.setting" style="push" tooltip="%filter.setting">
 			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.ScopeShowActionStatus"
 			icon="icons/show_tree.gif" label="%show.scopetree" style="toggle"
@@ -3547,6 +4008,9 @@
 			<command commandId="com.clustercontrol.monitor.view.action.EventFilterAction"
 				icon="icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
 			</command>
+			<command commandId="com.clustercontrol.monitor.view.action.EventFilterSettingAction"
+				icon="icons/filter_setting.png" label="%filter.setting" style="push" tooltip="%filter.setting">
+			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.ScopeShowActionEvent"
 				icon="icons/show_tree.gif" label="%show.scopetree" style="toggle"
 				tooltip="%show.scopetree">
@@ -3619,6 +4083,23 @@
 				style="push"
 				tooltip="%view.jobmap.history">
 			 </command>
+		</menuContribution>
+		<!-- Hub -->
+		<menuContribution locationURI="popup:com.clustercontrol.hub.view.LogScopeTreeView" allPopups="true">
+			<command
+				commandId="com.clustercontrol.hub.etc.action.LogSearchViewAction"
+				label="%button.hub.search"
+				style="push"
+				tooltip="%button.hub.search">
+			</command>
+			<command
+				commandId="com.clustercontrol.enterprise.rpa.etc.action.RpaScenarioOperationResultSearchViewAction"
+				label="%button.rpa.scenario.result.search"
+				style="push"
+				tooltip="%button.rpa.scenario.result.search">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.hub.view.LogScopeTreeView" allPopups="false">
 		</menuContribution>
 		<!-- Reporting -->
 		<menuContribution locationURI="toolbar:com.clustercontrol.reporting.view.ReportingScheduleView" allPopups="false">
@@ -3911,6 +4392,322 @@
 				tooltip="%import.mib">
 			</command>
 		</menuContribution>
+		<!-- RPA -->
+		<menuContribution locationURI="toolbar:com.clustercontrol.rpa.view.RpaScenarioListView" allPopups="false">
+			<command commandId="com.clustercontrol.rpa.view.action.RpaScenarioAddAction"
+				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif" label="%create" style="push" tooltip="%create">
+			</command>
+			<command commandId="com.clustercontrol.rpa.view.action.RpaScenarioModifyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
+			</command>
+			<command commandId="com.clustercontrol.rpa.view.action.RpaScenarioDeleteAction"
+				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif" label="%delete" style="push" tooltip="%delete">
+			</command>
+			<command commandId="com.clustercontrol.rpa.view.action.RpaScenarioCopyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif" label="%copy" style="push" tooltip="%copy">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.ObjectPrivilegeRpaScenarioListAction"
+				icon="platform:/plugin/com.clustercontrol/icons/obj_priv.gif" label="%object.privilege.setting" style="push"
+				tooltip="%object.privilege.setting">
+			</command>
+			<separator name="RpaScenarioListViewSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioRefreshAction"
+				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif" label="%update" style="push" tooltip="%update">
+			</command>
+			<command commandId="com.clustercontrol.rpa.view.action.RpaScenarioFilterAction"
+				icon="platform:/plugin/com.clustercontrol/icons/filter.gif" label="%filter" style="toggle" tooltip="%filter">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioModifyExecNodeAction"
+				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif" label="%modifyExecNode" style="push" tooltip="%modifyExecNode">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.rpa.view.RpaScenarioListView" allPopups="false">
+			<command commandId="com.clustercontrol.rpa.view.action.RpaScenarioAddAction"
+				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif" label="%create" style="push" tooltip="%create">
+			</command>
+			<command commandId="com.clustercontrol.rpa.view.action.RpaScenarioModifyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif" label="%modify" style="push" tooltip="%modify">
+			</command>
+			<command commandId="com.clustercontrol.rpa.view.action.RpaScenarioDeleteAction"
+				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif" label="%delete" style="push" tooltip="%delete">
+			</command>
+			<separator name="MonitorListViewSeparator1" visible="true"></separator>
+			<command commandId="com.clustercontrol.rpa.view.action.RpaScenarioCopyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif" label="%copy" style="push" tooltip="%copy">
+			</command>
+			<command commandId="com.clustercontrol.rpa.view.action.RpaScenarioModifyExecNodeAction"
+				icon="platform:/plugin/com.clustercontrol/icons/modify_exec_node_obj.png" label="%modifyExecNode" style="push" tooltip="%modifyExecNode">
+			</command>
+			<separator name="RpaScenarioListViewSeparator2" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.ObjectPrivilegeRpaScenarioListAction"
+				icon="platform:/plugin/com.clustercontrol/icons/obj_priv.gif" label="%object.privilege.setting" style="push"
+				tooltip="%object.privilege.setting">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.rpa.view.RpaManagementToolAccountView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.rpa.view.action.AccountAddAction"
+				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif"
+				label="%create"
+				style="push"
+				tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.AccountModifyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif"
+				label="%modify"
+				style="push"
+				tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.AccountDeleteAction"
+				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif"
+				label="%delete"
+				style="push"
+				tooltip="%delete">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.AccountCopyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif"
+				label="%copy"
+				style="push"
+				tooltip="%copy">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.AccountRefreshAction"
+				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif"
+				label="%update"
+				style="push"
+				tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.rpa.view.RpaManagementToolAccountView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.rpa.view.action.AccountAddAction"
+				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif"
+				label="%create"
+				style="push"
+				tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.AccountModifyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif"
+				label="%modify"
+				style="push"
+				tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.AccountDeleteAction"
+				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif"
+				label="%delete"
+				style="push"
+				tooltip="%delete">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.AccountCopyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif"
+				label="%copy"
+				style="push"
+				tooltip="%copy">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.AccountRefreshAction"
+				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif"
+				label="%update"
+				style="push"
+				tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.rpa.view.RpaScenarioTagView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagAddAction"
+				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif"
+				label="%create"
+				style="push"
+				tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagModifyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif"
+				label="%modify"
+				style="push"
+				tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagDeleteAction"
+				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif"
+				label="%delete"
+				style="push"
+				tooltip="%delete">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagCopyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif"
+				label="%copy"
+				style="push"
+				tooltip="%copy">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagRefreshAction"
+				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif"
+				label="%update"
+				style="push"
+				tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.rpa.view.RpaScenarioTagView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagAddAction"
+				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif"
+				label="%create"
+				style="push"
+				tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagModifyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif"
+				label="%modify"
+				style="push"
+				tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagDeleteAction"
+				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif"
+				label="%delete"
+				style="push"
+				tooltip="%delete">
+			</command>
+			<separator name="RpaScenarioTagViewSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagCopyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif"
+				label="%copy"
+				style="push"
+				tooltip="%copy">
+			</command>
+			<separator name="RpaScenarioTagViewSeparator2" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagRefreshAction"
+				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif"
+				label="%update"
+				style="push"
+				tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="toolbar:com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingAddAction"
+				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif"
+				label="%create"
+				style="push"
+				tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingModifyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif"
+				label="%modify"
+				style="push"
+				tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingDeleteAction"
+				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif"
+				label="%delete"
+				style="push"
+				tooltip="%delete">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingCopyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif"
+				label="%copy"
+				style="push"
+				tooltip="%copy">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingEnableAction"
+				icon="platform:/plugin/com.clustercontrol/icons/booleantrue.gif"
+				label="%enable"
+				style="push"
+				tooltip="%enable">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingDisableAction"
+				icon="platform:/plugin/com.clustercontrol/icons/booleanfalse.gif"
+				label="%disable"
+				style="push"
+				tooltip="%disable">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.ObjectPrivilegeRpaScenarioOperationResultCreateSettingListAction"
+				icon="platform:/plugin/com.clustercontrol/icons/obj_priv.gif"
+				label="%object.privilege.setting"
+				style="push"
+				tooltip="%object.privilege.setting">
+			</command>
+			<separator name="RpaScenarioCreateSettingViewSeparator1" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingRefreshAction"
+				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif"
+				label="%update"
+				style="push"
+				tooltip="%update">
+			</command>
+		</menuContribution>
+		<menuContribution locationURI="popup:com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingAddAction"
+				icon="platform:/plugin/com.clustercontrol/icons/add_obj.gif"
+				label="%create"
+				style="push"
+				tooltip="%create">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingModifyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif"
+				label="%modify"
+				style="push"
+				tooltip="%modify">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingDeleteAction"
+				icon="platform:/plugin/com.clustercontrol/icons/delete_obj.gif"
+				label="%delete"
+				style="push"
+				tooltip="%delete">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingCopyAction"
+				icon="platform:/plugin/com.clustercontrol/icons/copy_obj.gif"
+				label="%copy"
+				style="push"
+				tooltip="%copy">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingEnableAction"
+				icon="platform:/plugin/com.clustercontrol/icons/booleantrue.gif"
+				label="%enable"
+				style="push"
+				tooltip="%enable">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingDisableAction"
+				icon="platform:/plugin/com.clustercontrol/icons/booleanfalse.gif"
+				label="%disable"
+				style="push"
+				tooltip="%disable">
+			</command>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.ObjectPrivilegeRpaScenarioOperationResultCreateSettingListAction"
+				icon="platform:/plugin/com.clustercontrol/icons/obj_priv.gif"
+				label="%object.privilege.setting"
+				style="push"
+				tooltip="%object.privilege.setting">
+			</command>
+		</menuContribution>
 		<!-- xCloud -->
 		<menuContribution locationURI="toolbar:com.clustercontrol.xcloud.ui.views.InstancesView" allPopups="true">
 			<command commandId="com.clustercontrol.xcloud.ui.instance.poweron.pulldown"
@@ -4108,12 +4905,20 @@
 			</command>
 		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.xcloud.ui.views.ServiceStateView" allPopups="false">
+			<command commandId="com.clustercontrol.xcloud.ui.cloudservice.modify"
+				icon="icons/edit.png" label="%command.edit" style="push"
+				tooltip="%command.edit">
+			</command>
 			<command commandId="com.clustercontrol.xcloud.ui.view.refresh"
 				icon="icons/refresh.gif" label="%update" style="push"
 				tooltip="%update">
 			</command>
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.xcloud.ui.views.ServiceStateView" allPopups="false">
+			<command commandId="com.clustercontrol.xcloud.ui.cloudservice.modify"
+				icon="icons/edit.png" label="%command.edit"
+				style="push" tooltip="%command.edit">
+			</command>
 			<command commandId="com.clustercontrol.xcloud.ui.view.refresh"
 				icon="icons/refresh.gif" label="%update" style="push"
 				tooltip="%update">
@@ -4621,6 +5426,16 @@
 			name="jobQueueContents">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobLinkMessageAction"
+			id="com.clustercontrol.jobmanagement.etc.action.JobLinkMessageAction"
+			name="jobLinkMessage">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobLinkSendSettingListAction"
+			id="com.clustercontrol.jobmanagement.etc.action.JobLinkSendSettingListAction"
+			name="jobLinkSendSettingList">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
 			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobListAction"
 			id="com.clustercontrol.jobmanagement.etc.action.JobListAction" name="jobList">
 		</command>
@@ -4702,6 +5517,11 @@
 			id="com.clustercontrol.notify.mail.etc.action.OpenMailTemplateListViewAction"
 			name="openMailTemplateListView">
 		</command>
+		<command categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.restaccess.etc.action.OpenRestAccessInfoListViewAction"
+			id="com.clustercontrol.notify.restaccess.etc.action.OpenRestAccessInfoListViewAction"
+			name="openRestAccessInfoListView">
+		</command>
 		<command categoryId="com.clustercontrol.categories.Calendar"
 			defaultHandler="com.clustercontrol.calendar.view.action.CalendarAddAction"
 			id="com.clustercontrol.calendar.view.action.CalendarAddAction" name="calendarAdd">
@@ -4761,6 +5581,11 @@
 			<state class="org.eclipse.ui.handlers.RegistryToggleState:false"
 				id="org.eclipse.ui.commands.toggleState">
 			</state>
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.JobHistoryFilterSettingAction"
+			id="com.clustercontrol.jobmanagement.view.action.JobHistoryFilterSettingAction"
+			name="jobHistoryFilterSettingAction">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Job"
 			defaultHandler="com.clustercontrol.jobmanagement.view.action.HistoryRefreshAction"
@@ -4830,6 +5655,31 @@
 			name="createMonitorJob">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.CreateFileCheckJobAction"
+			id="com.clustercontrol.jobmanagement.view.action.CreateFileCheckJobAction"
+			name="createFileCheckJob">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendJobAction"
+			id="com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendJobAction"
+			name="createJobLinkSendJob">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvJobAction"
+			id="com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvJobAction"
+			name="createJobLinkRcvJob">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.CreateResourceJobAction"
+			id="com.clustercontrol.xcloud.jobmanagement.view.action.CreateResourceJobAction"
+			name="createResourceJob">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.CreateRpaJobAction"
+			id="com.clustercontrol.jobmanagement.view.action.CreateRpaJobAction"
+			name="createRpaJob">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
 			defaultHandler="com.clustercontrol.jobmanagement.view.action.ModifyJobAction"
 			id="com.clustercontrol.jobmanagement.view.action.ModifyJobAction"
 			name="modifyJob">
@@ -4880,6 +5730,11 @@
 			name="createFileCheck">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvAction"
+			id="com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvAction"
+			name="createJobLinkRcv">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
 			defaultHandler="com.clustercontrol.jobmanagement.view.action.ModifyJobKickAction"
 			id="com.clustercontrol.jobmanagement.view.action.ModifyJobKickAction"
 			name="modifyJobKick">
@@ -4915,6 +5770,11 @@
 			name="runJobKick">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.DeletePremakeJobsessionAction"
+			id="com.clustercontrol.jobmanagement.view.action.DeletePremakeJobsessionAction"
+			name="deletePremakeJobsession">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
 			defaultHandler="com.clustercontrol.jobmanagement.view.action.JobKickFilterAction"
 			id="com.clustercontrol.jobmanagement.view.action.JobKickFilterAction"
 			name="jobKickFilter">
@@ -4946,6 +5806,16 @@
 			defaultHandler="com.clustercontrol.jobmanagement.view.action.StopJobNodeDetailAction"
 			id="com.clustercontrol.jobmanagement.view.action.StopJobNodeDetailAction"
 			name="stopJobNodeDetail">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.TakeScreenshotJobNodeDetailAction"
+			id="com.clustercontrol.jobmanagement.view.action.TakeScreenshotJobNodeDetailAction"
+			name="takeScreenshotNodeDetail">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.DownloadScreenshotJobNodeDetailAction"
+			id="com.clustercontrol.jobmanagement.view.action.DownloadScreenshotJobNodeDetailAction"
+			name="downloadScreenshotNodeDetail">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Job"
 			defaultHandler="com.clustercontrol.jobmanagement.view.action.StopJobDetailAction"
@@ -5018,6 +5888,54 @@
 			id="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueContentsAction"
 			name="refreshJobQueueContentsAction">
 		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendSettingAction"
+			id="com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendSettingAction"
+			name="createJobLinkSendSetting">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.ModifyJobLinkSendSettingAction"
+			id="com.clustercontrol.jobmanagement.view.action.ModifyJobLinkSendSettingAction"
+			name="modifyJobLinkSendSetting">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.DeleteJobLinkSendSettingAction"
+			id="com.clustercontrol.jobmanagement.view.action.DeleteJobLinkSendSettingAction"
+			name="deleteJobLinkSendSetting">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.CopyJobLinkSendSettingAction"
+			id="com.clustercontrol.jobmanagement.view.action.CopyJobLinkSendSettingAction"
+			name="copyJobLinkSendSetting">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.ManualSendJobLinkMessageAction"
+			id="com.clustercontrol.jobmanagement.view.action.ManualSendJobLinkMessageAction"
+			name="manualSendJobLinkMessageAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.JobLinkSendSettingRefreshAction"
+			id="com.clustercontrol.jobmanagement.view.action.JobLinkSendSettingRefreshAction"
+			name="jobLinkSendSettingRefresh">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobLinkSendSettingAction"
+			id="com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobLinkSendSettingAction"
+			name="objectPrivilegeJobLinkSendSettingAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.JobLinkMessageRefreshAction"
+			id="com.clustercontrol.jobmanagement.view.action.JobLinkMessageRefreshAction"
+			name="jobLinkMessageRefresh">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.JobLinkMessageFilterAction"
+			id="com.clustercontrol.jobmanagement.view.action.JobLinkMessageFilterAction"
+			name="jobLinkMessageFilter">
+			<state class="org.eclipse.ui.handlers.RegistryToggleState:false"
+				id="org.eclipse.ui.commands.toggleState">
+			</state>
+		</command>
 		<category id="com.clustercontrol.categories.Performance"
 			name="performance">
 		</category>
@@ -5063,6 +5981,10 @@
 			<state class="org.eclipse.ui.handlers.RegistryToggleState:false"
 				id="org.eclipse.ui.commands.toggleState">
 			</state>
+		</command>
+		<command categoryId="com.clustercontrol.categories.Monitor"
+			defaultHandler="com.clustercontrol.monitor.view.action.StatusFilterSettingAction"
+			id="com.clustercontrol.monitor.view.action.StatusFilterSettingAction" name="statusFilterSettingAction">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Monitor"
 			defaultHandler="com.clustercontrol.monitor.view.action.RefreshAction"
@@ -5120,6 +6042,10 @@
 			<state class="org.eclipse.ui.handlers.RegistryToggleState:false"
 				id="org.eclipse.ui.commands.toggleState">
 			</state>
+		</command>
+		<command categoryId="com.clustercontrol.categories.Monitor"
+			defaultHandler="com.clustercontrol.monitor.view.action.EventFilterSettingAction"
+			id="com.clustercontrol.monitor.view.action.EventFilterSettingAction" name="eventFilterSettingAction">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Monitor"
 			defaultHandler="com.clustercontrol.monitor.view.action.EventDetailAction"
@@ -5229,6 +6155,55 @@
 			defaultHandler="com.clustercontrol.notify.mail.view.action.MailTemplateRefreshAction"
 			id="com.clustercontrol.notify.mail.view.action.MailTemplateRefreshAction"
 			name="mailTemplateRefreshAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.etc.action.CommandTemplateViewAction"
+			id="com.clustercontrol.notify.etc.action.CommandTemplateViewAction"
+			name="OpenCommandTemplateViewAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.view.action.CommandTemplateShowAction"
+			id="com.clustercontrol.notify.view.action.CommandTemplateShowAction"
+			name="showCommandTemplate">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.view.action.CommandTemplateRefreshAction"
+			id="com.clustercontrol.notify.view.action.CommandTemplateRefreshAction"
+			name="refreshCommandTemplate">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.view.action.ObjectPrivilegeCommandTemplateAction"
+			id="com.clustercontrol.notify.view.action.ObjectPrivilegeCommandTemplateAction"
+			name="objectPrivilegeCommandTemplate">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoCopyAction"
+			id="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoCopyAction"
+			name="restAccessInfoCopyAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoDeleteAction"
+			id="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoDeleteAction"
+			name="restAccessInfoDeleteAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoModifyAction"
+			id="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoModifyAction"
+			name="restAccessInfoModifyAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoAddAction"
+			id="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoAddAction"
+			name="restAccessInfoAddAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoRefreshAction"
+			id="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoRefreshAction"
+			name="restAccessInfoRefreshAction">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Repository"
 			defaultHandler="com.clustercontrol.repository.view.action.ProgramExecutionAction"
@@ -5641,6 +6616,11 @@
 			id="com.clustercontrol.notify.mail.view.action.ObjectPrivilegeMailTemplateListAction"
 			name="objectPrivilegeMailTemplateListAction">
 		</command>
+		<command categoryId="com.clustercontrol.categories.Notify"
+			defaultHandler="com.clustercontrol.notify.restaccess.view.action.ObjectPrivilegeRestAccessInfoListAction"
+			id="com.clustercontrol.notify.restaccess.view.action.ObjectPrivilegeRestAccessInfoListAction"
+			name="objectPrivilegeRestAccessInfoListAction">
+		</command>
 		<command categoryId="com.clustercontrol.categories.Monitor"
 			defaultHandler="com.clustercontrol.monitor.view.action.ObjectPrivilegeMonitorListAction"
 			id="com.clustercontrol.monitor.view.action.ObjectPrivilegeMonitorListAction"
@@ -5729,6 +6709,11 @@
 			id="com.clustercontrol.hub.etc.action.TransferViewAction"
 			name="openTransferView">
 		</command>
+		<command categoryId="com.clustercontrol.categories.Hub"
+			defaultHandler="com.clustercontrol.hub.etc.action.LogSearchViewAction"
+			id="com.clustercontrol.hub.etc.action.LogSearchViewAction"
+			name="openLogSearchTreeView">
+		</command>
 		<command
 			categoryId="com.clustercontrol.categories.Hub"
 			defaultHandler="com.clustercontrol.hub.view.action.LogTransferDeleteAction"
@@ -5775,31 +6760,6 @@
 			id="com.clustercontrol.categories.Hub"
 			name="Hub">
 		</category>
-		<category id="com.clustercontrol.categories.Inquiry" name="Inquiry" />
-		<command
-			categoryId="com.clustercontrol.categories.Inquiry"
-			defaultHandler="com.clustercontrol.inquiry.view.action.CreateTargetDataAction"
-			id="com.clustercontrol.enterprise.inquiry.view.action.CreateTargetDataAction"
-			name="CreateTargetDataAction">
-		</command>
-		<command
-			categoryId="com.clustercontrol.categories.Inquiry"
-			defaultHandler="com.clustercontrol.inquiry.view.action.DownloadTargetDataAction"
-			id="com.clustercontrol.enterprise.inquiry.view.action.DownloadTargetDataAction"
-			name="DownloadTargetDataAction">
-		</command>
-		<command
-			categoryId="com.clustercontrol.categories.Inquiry"
-			defaultHandler="com.clustercontrol.inquiry.view.action.RefreshTargetDataAction"
-			id="com.clustercontrol.enterprise.inquiry.view.action.RefreshTargetDataAction"
-			name="RefreshTargetDataAction">
-		</command>
-		<command
-			categoryId="com.clustercontrol.categories.Inquiry"
-			defaultHandler="com.clustercontrol.inquiry.etc.action.OpenInquiryViewAction"
-			id="com.clustercontrol.enterprise.inquiry.etc.action.OpenInquiryViewAction"
-			name="OpenInquiryViewAction">
-		</command>
 		<category id="com.clustercontrol.categories.cloud.Service"
 			name="Service">
 		</category>
@@ -5839,6 +6799,9 @@
 		</command>
 		<command categoryId="com.clustercontrol.categories.cloud.Service"
 			id="com.clustercontrol.xcloud.ui.loginuser.assign.role" name="loginuser.assign.role">
+		</command>
+		<command categoryId="com.clustercontrol.categories.cloud.Service"
+			id="com.clustercontrol.xcloud.ui.cloudservice.modify" name="cloudservice.modify">
 		</command>
 		<command categoryId="com.clustercontrol.categories.cloud.Compute"
 			id="com.clustercontrol.xcloud.ui.instance.poweron.pulldown" name="instance.poweron.pulldown">
@@ -6091,6 +7054,72 @@
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmap.etc.action.JobTreeAction"
+			id="com.clustercontrol.enterprise.jobmap.etc.action.JobTreeAction"
+			name="JobTreeAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmap.etc.action.JobModuleAction"
+			id="com.clustercontrol.enterprise.jobmap.etc.action.JobModuleAction"
+			name="JobModuleAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobHistoryAction"
+			id="com.clustercontrol.enterprise.jobmanagement.etc.action.JobHistoryAction"
+			name="JobHistoryAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobQueueActivityAction"
+			id="com.clustercontrol.enterprise.jobmanagement.etc.action.JobQueueActivityAction"
+			name="JobQueueActivityAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobNodeDetailAction"
+			id="com.clustercontrol.enterprise.jobmanagement.etc.action.JobNodeDetailAction"
+			name="JobNodeDetailAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.ForwardFileListAction"
+			id="com.clustercontrol.enterprise.jobmanagement.etc.action.ForwardFileListAction"
+			name="ForwardFileListAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobQueueContentsAction"
+			id="com.clustercontrol.enterprise.jobmanagement.etc.action.JobQueueContentsAction"
+			name="JobQueueContentsAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobLinkMessageAction"
+			id="com.clustercontrol.enterprise.jobmanagement.etc.action.JobLinkMessageAction"
+			name="JobLinkMessageAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobKickListAction"
+			id="com.clustercontrol.enterprise.jobmanagement.etc.action.JobKickListAction"
+			name="JobKickListAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobQueueSettingAction"
+			id="com.clustercontrol.enterprise.jobmanagement.etc.action.JobQueueSettingAction"
+			name="JobQueueSettingAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmanagement.etc.action.JobLinkSendSettingListAction"
+			id="com.clustercontrol.enterprise.jobmanagement.etc.action.JobLinkSendSettingListAction"
+			name="JobLinkSendSettingListAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
 			defaultHandler="com.clustercontrol.jobmap.view.action.JobMapHistoryRefreshAction"
 			id="com.clustercontrol.enterprise.jobmap.view.action.JobMapHistoryRefreshAction"
 			name="jobMapHistoryRefreshAction">
@@ -6139,9 +7168,39 @@
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmap.view.action.CreateRpaJobAction"
+			id="com.clustercontrol.enterprise.jobmap.view.action.CreateRpaJobAction"
+			name="createRpaJobAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
 			defaultHandler="com.clustercontrol.jobmap.view.action.CreateApprovalJobAction"
 			id="com.clustercontrol.enterprise.jobmap.view.action.CreateApprovalJobAction"
 			name="createApprovalJobAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmap.view.action.CreateFileCheckJobAction"
+			id="com.clustercontrol.enterprise.jobmap.view.action.CreateFileCheckJobAction"
+			name="createFileCheckJobAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmap.view.action.CreateJobLinkSendJobAction"
+			id="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkSendJobAction"
+			name="createJobLinkSendJobAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmap.view.action.CreateJobLinkRcvJobAction"
+			id="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkRcvJobAction"
+			name="createJobLinkRcvJobAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.JobMap"
+			defaultHandler="com.clustercontrol.jobmap.view.action.CreateResourceJobAction"
+			id="com.clustercontrol.xcloud.jobmap.view.action.CreateResourceJobAction"
+			name="ceateResourceJobAction">
 		</command>
 		<command
 			categoryId="com.clustercontrol.categories.JobMap"
@@ -6427,6 +7486,204 @@
 			id="com.clustercontrol.enterprise.nodemap.view.action.NodeSearchAction"
 			name="NodeSearch">
 		</command>
+		<command
+			categoryId="com.clustercontrol.categories.NodeMap"
+			defaultHandler="com.clustercontrol.nodemap.etc.action.EventViewMAction"
+			id="com.clustercontrol.enterprise.nodemap.etc.action.EventViewMAction"
+			name="scopeTreeViewAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.NodeMap"
+			defaultHandler="com.clustercontrol.nodemap.etc.action.StatusViewMAction"
+			id="com.clustercontrol.enterprise.nodemap.etc.action.StatusViewMAction"
+			name="scopeTreeViewAction">
+		</command>
+		<!-- RPA -->
+		<category id="com.clustercontrol.categories.Rpa" name="Rpa"></category>
+		<category id="com.clustercontrol.categories.rpa.account" name="RpaAccount"></category>
+		<category id="com.clustercontrol.categories.rpa.scenariocreatesetting" name="ScenarioCreateSetting"></category>
+		<category id="com.clustercontrol.categories.rpa.scenariotag" name="ScenarioTag"></category>
+		<category id="com.clustercontrol.categories.rpa.scenariooperationresult" name="ScenarioOperationResult"></category>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.account"
+			defaultHandler="com.clustercontrol.rpa.view.action.AccountAddAction"
+			id="com.clustercontrol.rpa.view.action.AccountAddAction"
+			name="CreateAccount">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.account"
+			defaultHandler="com.clustercontrol.rpa.view.action.AccountModifyAction"
+			id="com.clustercontrol.rpa.view.action.AccountModifyAction"
+			name="ModifyAccount">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.account"
+			defaultHandler="com.clustercontrol.rpa.view.action.AccountDeleteAction"
+			id="com.clustercontrol.rpa.view.action.AccountDeleteAction"
+			name="DeleteAccount">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.account"
+			defaultHandler="com.clustercontrol.rpa.view.action.AccountCopyAction"
+			id="com.clustercontrol.rpa.view.action.AccountCopyAction"
+			name="CopyAccount">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.account"
+			defaultHandler="com.clustercontrol.rpa.view.action.AccountRefreshAction"
+			id="com.clustercontrol.rpa.view.action.AccountRefreshAction"
+			name="RefreshAccount">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.Rpa"
+			defaultHandler="com.clustercontrol.rpa.etc.action.OpenRpaManagementToolAccountViewAction"
+			id="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaManagementToolAccountViewAction"
+			name="OpenRpaManagementToolAccountView">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariocreatesetting"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingAddAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingAddAction"
+			name="CreateScenarioCreateSetting">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariocreatesetting"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingModifyAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingModifyAction"
+			name="ModifyScenarioCreateSetting">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariocreatesetting"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingDeleteAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingDeleteAction"
+			name="DeleteScenarioCreateSetting">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariocreatesetting"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingCopyAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingCopyAction"
+			name="CopyScenarioCreateSetting">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariocreatesetting"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingEnableAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingEnableAction"
+			name="EnableScenarioCreateSetting">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariocreatesetting"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingDisableAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingDisableAction"
+			name="DisableScenarioCreateSetting">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariocreatesetting"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingRefreshAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingRefreshAction"
+			name="RefreshScenarioCreateSetting">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariocreatesetting"
+			defaultHandler="com.clustercontrol.rpa.view.action.ObjectPrivilegeRpaScenarioOperationResultCreateSettingListAction"
+			id="com.clustercontrol.rpa.view.action.ObjectPrivilegeRpaScenarioOperationResultCreateSettingListAction"
+			name="ObjectPrivilegeRpaScenarioOperationResultCreateSettingListAction">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariotag"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioTagAddAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioTagAddAction"
+			name="CreateScenarioTag">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariotag"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioTagModifyAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioTagModifyAction"
+			name="ModifyScenarioTag">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariotag"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioTagDeleteAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioTagDeleteAction"
+			name="DeleteScenarioTag">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariotag"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioTagCopyAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioTagCopyAction"
+			name="CopyScenarioTag">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariotag"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioTagRefreshAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioTagRefreshAction"
+			name="RefreshScenarioTag">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.Rpa"
+			defaultHandler="com.clustercontrol.rpa.etc.action.OpenRpaScenarioOperationResultCreateSettingViewAction"
+			id="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioOperationResultCreateSettingViewAction"
+			name="OpenRpaScenarioTagView">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.Rpa"
+			defaultHandler="com.clustercontrol.rpa.etc.action.OpenRpaScenarioTagViewAction"
+			id="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioTagViewAction"
+			name="OpenRpaScenarioTagView">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.etc.action.RpaScenarioOperationResultSearchViewAction"
+			id="com.clustercontrol.enterprise.rpa.etc.action.RpaScenarioOperationResultSearchViewAction"
+			name="RpaScenarioOperationResultSearchView">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.etc.action.OpenRpaScenarioListViewAction"
+			id="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioListViewAction"
+			name="OpenRpaScenarioListView">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.etc.action.OpenRpaScenarioSummaryGraphViewAction"
+			id="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioSummaryGraphViewAction"
+			name="OpenRpaScenarioSummaryGraphViewAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioFilterAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioFilterAction" name="rpaScenarioFilterAction">
+			<state class="org.eclipse.ui.handlers.RegistryToggleState:false"
+				id="org.eclipse.ui.commands.toggleState">
+			</state>
+		</command>
+		<command categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioRefreshAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioRefreshAction"
+			name="RpaScenarioRefreshAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioAddAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioAddAction" name="RpaScenarioAddAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioModifyAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioModifyAction" name="RpaScenarioModifyAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioCopyAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioCopyAction" name="RpaScenarioCopyAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioDeleteAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioDeleteAction" name="RpaScenarioDeleteAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.view.action.RpaScenarioModifyExecNodeAction"
+			id="com.clustercontrol.rpa.view.action.RpaScenarioModifyExecNodeAction" name="RpaScenarioModifyExecNodeAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.rpa.scenariooperationresult"
+			defaultHandler="com.clustercontrol.rpa.view.action.ObjectPrivilegeRpaScenarioListAction"
+			id="com.clustercontrol.rpa.view.action.ObjectPrivilegeRpaScenarioListAction" name="ObjectPrivilegeRpaScenarioListAction">
+		</command>
 		<!-- Reporting -->
 		<category id="com.clustercontrol.categories.Reporting" name="Reporting"></category>
 		<category id="com.clustercontrol.categories.reporting.schedule" name="Schedule"></category>
@@ -6512,16 +7769,17 @@
 		<command
 				categoryId="com.clustercontrol.categories.Reporting"
 				defaultHandler="com.clustercontrol.reporting.etc.action.OpenReportingScheduleViewAction"
-				id="com.clustercontrol.reporting.etc.action.OpenReportingScheduleViewAction"
+				id="com.clustercontrol.enterprise.reporting.etc.action.OpenReportingScheduleViewAction"
 				name="OpenReportingScheduleView">
 		</command>
 		<command
 				categoryId="com.clustercontrol.categories.Reporting"
 				defaultHandler="com.clustercontrol.reporting.etc.action.OpenReportingTemplateSetViewAction"
-				id="com.clustercontrol.reporting.etc.action.OpenReportingTemplateSetViewAction"
+				id="com.clustercontrol.enterprise.reporting.etc.action.OpenReportingTemplateSetViewAction"
 				name="OpenReportingTemplateSetView">
 		</command>
 		<!-- Utility -->
+		<category id="com.clustercontrol.categories.utility" name="Utility"></category>
 		<category id="com.clustercontrol.categories.utility.settings" name="Settings"></category>
 		<category id="com.clustercontrol.categories.utility.traputil" name="TrapUtil"></category>
 		<category id="com.clustercontrol.categories.utility.jobutil" name="JobUtil"></category>
@@ -6584,6 +7842,12 @@
 			defaultHandler="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommandJobTree"
 			id="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommandJobTree"
 			name="ExportJobJobTree">
+		</command>
+		<command
+			categoryId="com.clustercontrol.categories.utility"
+			defaultHandler="com.clustercontrol.utility.settings.ui.etc.action.OpenImportExportExecViewAction"
+			id="com.clustercontrol.enterprise.utility.settings.ui.etc.action.OpenImportExportExecViewAction"
+			name="OpenImportExportExecViewAction">
 		</command>
 	</extension>
 	<extension point="org.eclipse.ui.bindings">
@@ -7026,6 +8290,37 @@
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+N">
 		</key>
+		<!-- RestAccessInfoListView -->
+		<key
+			commandId="com.clustercontrol.notify.restaccess.view.action.ObjectPrivilegeRestAccessInfoListAction"
+			contextId="com.clustercontrol.notify.restaccess.view.RestAccessInfoListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+O">
+		</key>
+		<key
+			commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoRefreshAction"
+			contextId="com.clustercontrol.notify.restaccess.view.RestAccessInfoListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
+		<key
+			commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoCopyAction"
+			contextId="com.clustercontrol.notify.restaccess.view.RestAccessInfoListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+D">
+		</key>
+		<key
+			commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoDeleteAction"
+			contextId="com.clustercontrol.notify.restaccess.view.RestAccessInfoListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="DEL">
+		</key>
+		<key
+			commandId="com.clustercontrol.notify.restaccess.view.action.RestAccessInfoAddAction"
+			contextId="com.clustercontrol.notify.restaccess.view.RestAccessInfoListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+N">
+		</key>
 		<!-- EventView -->
 		<key
 			commandId="com.clustercontrol.monitor.view.action.EventBatchConfirmAction"
@@ -7086,6 +8381,12 @@
 			contextId="com.clustercontrol.monitor.view.EventView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+F">
+		</key>
+		<key
+			commandId="com.clustercontrol.monitor.view.action.EventFilterSettingAction"
+			contextId="com.clustercontrol.monitor.view.EventView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+G">
 		</key>
 		<key
 			commandId="com.clustercontrol.monitor.view.action.EventUnconfirmAction"
@@ -7155,6 +8456,12 @@
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+F">
 		</key>
+		<key
+			commandId="com.clustercontrol.monitor.view.action.StatusFilterSettingAction"
+			contextId="com.clustercontrol.monitor.view.StatusView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+G">
+		</key>
 		<!-- JobListView -->
 		<key
 			commandId="com.clustercontrol.jobmanagement.view.action.JobObjectPrivilegeAction"
@@ -7197,6 +8504,36 @@
 			contextId="com.clustercontrol.jobmanagement.view.JobListView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+7">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.CreateFileCheckJobAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+8">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendJobAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+9">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvJobAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+0">
+		</key>
+		<key
+			commandId="com.clustercontrol.xcloud.jobmanagement.view.action.CreateResourceJobAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M2+1">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.CreateRpaJobAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M2+2">
 		</key>
 		<key
 			commandId="com.clustercontrol.jobmanagement.view.action.RunJobAction"
@@ -7260,6 +8597,12 @@
 			sequence="M1+ARROW_UP">
 		</key>
 		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.DeletePremakeJobsessionAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobKickListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+ARROW_DOWN">
+		</key>
+		<key
 			commandId="com.clustercontrol.jobmanagement.view.action.CopyJobKickAction"
 			contextId="com.clustercontrol.jobmanagement.view.JobKickListView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
@@ -7288,6 +8631,12 @@
 			contextId="com.clustercontrol.jobmanagement.view.JobKickListView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+3">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobKickListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+4">
 		</key>
 		<key
 			commandId="com.clustercontrol.jobmanagement.view.action.DisableJobKickAction"
@@ -7344,6 +8693,12 @@
 			contextId="com.clustercontrol.jobmanagement.view.JobHistoryView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+F">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.JobHistoryFilterSettingAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobHistoryView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+G">
 		</key>
 		<!-- JobDetailView -->
 		<key
@@ -7446,6 +8801,56 @@
 			contextId="com.clustercontrol.jobmanagement.view.JobQueueContentsView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+R">
+		</key>
+		<!-- JobLinkSendSettingListView -->
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobLinkSendSettingAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+O">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.JobLinkSendSettingRefreshAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.ManualSendJobLinkMessageAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+ARROW_UP">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.CopyJobLinkSendSettingAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+D">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.DeleteJobLinkSendSettingAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="DEL">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendSettingAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+N">
+		</key>
+		<!-- JobLinkMessageView -->
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.JobLinkMessageRefreshAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobLinkMessageView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
+		<key
+			commandId="com.clustercontrol.jobmanagement.view.action.JobLinkMessageFilterAction"
+			contextId="com.clustercontrol.jobmanagement.view.JobLinkMessageView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+F">
 		</key>
 		<!-- HinemosPropertyView -->
 		<key
@@ -7870,6 +9275,36 @@
 			sequence="M1+7">
 		</key>
 		<key
+			commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateFileCheckJobAction"
+			contextId="com.clustercontrol.jobmap.view.JobTreeView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+8">
+		</key>
+		<key
+			commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkSendJobAction"
+			contextId="com.clustercontrol.jobmap.view.JobTreeView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+9">
+		</key>
+		<key
+			commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkRcvJobAction"
+			contextId="com.clustercontrol.jobmap.view.JobTreeView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+0">
+		</key>
+		<key
+			commandId="com.clustercontrol.xcloud.jobmap.view.action.CreateResourceJobAction"
+			contextId="com.clustercontrol.jobmap.view.JobTreeView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M2+1">
+		</key>
+		<key
+			commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateRpaJobAction"
+			contextId="com.clustercontrol.jobmap.view.JobTreeView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M2+2">
+		</key>
+		<key
 			commandId="com.clustercontrol.enterprise.jobmap.view.action.DeleteJobAction"
 			contextId="com.clustercontrol.jobmap.view.JobTreeView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
@@ -7941,6 +9376,36 @@
 			contextId="com.clustercontrol.jobmap.view.JobMapEditorView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M1+7">
+		</key>
+		<key
+			commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateFileCheckJobAction"
+			contextId="com.clustercontrol.jobmap.view.JobMapEditorView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+8">
+		</key>
+		<key
+			commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkSendJobAction"
+			contextId="com.clustercontrol.jobmap.view.JobMapEditorView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+9">
+		</key>
+		<key
+			commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateJobLinkRcvJobAction"
+			contextId="com.clustercontrol.jobmap.view.JobMapEditorView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+0">
+		</key>
+		<key
+			commandId="com.clustercontrol.xcloud.jobmap.view.action.CreateResourceJobAction"
+			contextId="com.clustercontrol.jobmap.view.JobMapEditorView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M2+1">
+		</key>
+		<key
+			commandId="com.clustercontrol.enterprise.jobmap.view.action.CreateRpaJobAction"
+			contextId="com.clustercontrol.jobmap.view.JobMapEditorView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M2+2">
 		</key>
 		<key
 			commandId="com.clustercontrol.enterprise.jobmap.view.action.DeleteJobAction"
@@ -8057,14 +9522,150 @@
 			commandId="com.clustercontrol.enterprise.jobmap.view.action.EventOpenJobMapViewerAction"
 			contextId="com.clustercontrol.monitor.view.EventView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-			sequence="M2+M">
+			sequence="M1+M2+M">
 		</key>
 		<!-- StatusView -->
 		<key
 			commandId="com.clustercontrol.enterprise.jobmap.view.action.StatusOpenJobMapViewerAction"
 			contextId="com.clustercontrol.monitor.view.StatusView"
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-			sequence="M2+M">
+			sequence="M1+M2+M">
+		</key>
+		<!-- RpaManagementToolAccountView -->
+		<key
+			commandId="com.clustercontrol.rpa.view.action.AccountRefreshAction"
+			contextId="com.clustercontrol.rpa.view.RpaManagementToolAccountView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.AccountCopyAction"
+			contextId="com.clustercontrol.rpa.view.RpaManagementToolAccountView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+D">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.AccountDeleteAction"
+			contextId="com.clustercontrol.rpa.view.RpaManagementToolAccountView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="DEL">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.AccountAddAction"
+			contextId="com.clustercontrol.rpa.view.RpaManagementToolAccountView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+N">
+		</key>
+		<!-- RpaScenarioTagView -->
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagRefreshAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioTagView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagCopyAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioTagView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+D">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagDeleteAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioTagView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="DEL">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioTagAddAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioTagView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+N">
+		</key>
+		<!-- RpaScenarioOperationResultCreateSettingView -->
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingRefreshAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingCopyAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+D">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingDeleteAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="DEL">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingAddAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+N">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingEnableAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+ARROW_RIGHT">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingDisableAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+ARROW_LEFT">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.ObjectPrivilegeRpaScenarioOperationResultCreateSettingListAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+O">
+		</key>
+		<!-- RpaScenarioListView -->
+		<key
+			commandId="com.clustercontrol.rpa.view.action.ObjectPrivilegeRpaScenarioListAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+O">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioRefreshAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+R">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioCopyAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+D">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioDeleteAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="DEL">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioAddAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+N">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioFilterAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+F">
+		</key>
+		<key
+			commandId="com.clustercontrol.rpa.view.action.RpaScenarioModifyExecNodeAction"
+			contextId="com.clustercontrol.rpa.view.RpaScenarioListView"
+			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+			sequence="M1+ENTER">
 		</key>
 		<!-- Utility -->
 		<key
@@ -8202,6 +9803,12 @@
 			name="com.clustercontrol.notify.mail.view.MailTemplateListView"
 			parentId="org.eclipse.ui.contexts.window">
 		</context>
+		<!-- RestAccessInfoListView -->
+		<context
+			id="com.clustercontrol.notify.restaccess.view.RestAccessInfoListView"
+			name="com.clustercontrol.notify.restaccess.view.RestAccessInfoListView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
 		<!-- EventView -->
 		<context
 			id="com.clustercontrol.monitor.view.EventView"
@@ -8230,6 +9837,12 @@
 		<context
 			id="com.clustercontrol.jobmanagement.view.JobKickListView"
 			name="com.clustercontrol.jobmanagement.view.JobKickListView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- ForwardFileView -->
+		<context
+			id="com.clustercontrol.jobmanagement.view.ForwardFileView"
+			name="com.clustercontrol.jobmanagement.view.ForwardFileView"
 			parentId="org.eclipse.ui.contexts.window">
 		</context>
 		<!-- JobPlanListView -->
@@ -8278,6 +9891,18 @@
 		<context
 			id="com.clustercontrol.jobmanagement.view.JobQueueContentsView"
 			name="com.clustercontrol.jobmanagement.view.JobQueueContentsView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- JobLinkSendSettingListView -->
+		<context
+			id="com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView"
+			name="com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- JobLinkMessageView -->
+		<context
+			id="com.clustercontrol.jobmanagement.view.JobLinkMessageView"
+			name="com.clustercontrol.jobmanagement.view.JobLinkMessageView"
 			parentId="org.eclipse.ui.contexts.window">
 		</context>
 		<!-- HinemosPropertyView -->
@@ -8401,8 +10026,8 @@
 		</context>
 		<!-- NodeMap -->
 		<context
-			id="com.clustercontrol.nodmap.view.EventViewM"
-			name="com.clustercontrol.nodmap.view.EventViewM"
+			id="com.clustercontrol.nodemap.view.EventViewM"
+			name="com.clustercontrol.nodemap.view.EventViewM"
 			parentId="org.eclipse.ui.contexts.window">
 		</context>
 		<context
@@ -8425,10 +10050,59 @@
 			name="com.clustercontrol.nodemap.view.StatusViewM"
 			parentId="org.eclipse.ui.contexts.window">
 		</context>
+		<!-- Reporting -->
+		<context
+			id="com.clustercontrol.reporting.view.ReportingScheduleView"
+			name="com.clustercontrol.reporting.view.ReportingScheduleView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<context
+			id="com.clustercontrol.reporting.view.ReportingTemplateSetView"
+			name="com.clustercontrol.reporting.view.ReportingTemplateSetView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
 		<!-- Utility -->
 		<context
 			id="com.clustercontrol.utility.settings.ui.views.ImportExportExecView"
 			name="com.clustercontrol.utility.settings.ui.views.ImportExportExecView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- RPA -->
+		<!-- RpaManagementToolAccountView -->
+		<context
+			id="com.clustercontrol.rpa.view.RpaManagementToolAccountView"
+			name="com.clustercontrol.rpa.view.RpaManagementToolAccountView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- RpaScenarioOperationResultCreateSettingView -->
+		<context
+			id="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView"
+			name="com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+
+		<!-- RpaScenarioTagView -->
+		<context
+			id="com.clustercontrol.rpa.view.RpaScenarioTagView"
+			name="com.clustercontrol.rpa.view.RpaScenarioTagView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- RpaScenarioListView -->
+		<context
+			id="com.clustercontrol.rpa.view.RpaScenarioListView"
+			name="com.clustercontrol.rpa.view.RpaScenarioListView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- RpaScenarioOperationResultSearchView -->
+		<context
+			id="com.clustercontrol.rpa.view.RpaScenarioOperationResultSearchView"
+			name="com.clustercontrol.rpa.view.RpaScenarioOperationResultSearchView"
+			parentId="org.eclipse.ui.contexts.window">
+		</context>
+		<!-- RpaScenarioSummaryGraphView -->
+		<context
+			id="com.clustercontrol.rpa.view.RpaScenarioSummaryGraphView"
+			name="com.clustercontrol.rpa.view.RpaScenarioSummaryGraphView"
 			parentId="org.eclipse.ui.contexts.window">
 		</context>
 		<!-- xCloud -->
@@ -8484,12 +10158,6 @@
 		<context id="com.clustercontrol.xcloud.ui.views.CloudScopesView"
 			name="com.clustercontrol.xcloud.ui.views.CloudScopesView" parentId="org.eclipse.ui.contexts.window">
 		</context>
-		<!-- InquiryView -->
-		<context
-			id="com.clustercontrol.inquiry.view.InquiryView"
-			name="com.clustercontrol.inquiry.view.InquiryView"
-			parentId="org.eclipse.ui.contexts.window">
-		</context>
 	</extension>
 
 	<!-- Customized extension points -->
@@ -8502,6 +10170,9 @@
 		</monitorPlugin>
 		<monitorPlugin label="%monitor.cloudservice.billing.detail.monitor"
 			plugin_monitor_class="com.clustercontrol.xcloud.plugin.monitor.PlatformServiceBillingDetailMonitorPlugin">
+		</monitorPlugin>
+		<monitorPlugin label="%monitor.cloudservice.log.monitor"
+			plugin_monitor_class="com.clustercontrol.xcloud.plugin.monitor.CloudLogMonitorPlugin">
 		</monitorPlugin>
 	</extension>
 	
@@ -9399,6 +11070,20 @@
 				</with>
 			</enabledWhen>
 		</handler>
+		<handler class="com.clustercontrol.xcloud.ui.handlers.CloudOptionHandler"
+			commandId="com.clustercontrol.xcloud.ui.cloudservice.modify">
+			<enabledWhen>
+				<with variable="selection">
+					<iterate ifEmpty="false" operator="and">
+						<adapt type="com.clustercontrol.xcloud.model.cloud.IServiceCondition">
+							<test property="com.clustercontrol.xcloud.model.IServiceCondition.handler"
+								value="cloudservice.modify">
+							</test>
+						</adapt>
+					</iterate>
+				</with>
+			</enabledWhen>
+		</handler>
 	</extension>
 	
 	<extension point="org.eclipse.ui.services">
@@ -9466,6 +11151,12 @@
 			namespace="com.clustercontrol.xcloud.model.IBillingAlarm" properties="handler"
 			type="com.clustercontrol.xcloud.model.cloud.IBillingAlarm">
 		</propertyTester>
+		<propertyTester
+			class="com.clustercontrol.xcloud.plugin.tester.ServiceConditionTester"
+			id="com.clustercontrol.xcloud.presenter.newmodel.IServiceCondition.tester"
+			namespace="com.clustercontrol.xcloud.model.IServiceCondition" properties="handler"
+			type="com.clustercontrol.xcloud.model.cloud.IServiceCondition">
+		</propertyTester>
 	</extension>
 	<extension point="com.clustercontrol.cloudOptionCommand">
 		<cloudOptionCommand
@@ -9475,6 +11166,8 @@
 		<cloudOptionCommand id="cloudscope.modify">
 		</cloudOptionCommand>
 		<cloudOptionCommand id="loginuser.modify.limited">
+		</cloudOptionCommand>
+		<cloudOptionCommand id="cloudservice.modify">
 		</cloudOptionCommand>
 		<cloudOptionCommand id="instance.poweron"
 			defaultHandlerClass="com.clustercontrol.xcloud.ui.handlers.PowerOnInstanceHandler">

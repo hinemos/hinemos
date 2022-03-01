@@ -18,10 +18,11 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.jobmanagement.composite.NodeDetailComposite;
+import com.clustercontrol.jobmanagement.view.action.DownloadScreenshotJobNodeDetailAction;
 import com.clustercontrol.jobmanagement.view.action.StartJobNodeDetailAction;
 import com.clustercontrol.jobmanagement.view.action.StopJobNodeDetailAction;
+import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
 
 /**
@@ -84,9 +85,11 @@ public class JobNodeDetailView extends CommonViewPart {
 		//ポップアップメニュー作成
 		createContextMenu();
 
-		//ビューの更新
-		this.update(null, null, null, null);
+		// タブ名の取得
 		orgViewName = this.getPartName();
+
+		//ビューの更新
+		this.update(null, null, null, null, null);
 	}
 
 	/**
@@ -115,12 +118,15 @@ public class JobNodeDetailView extends CommonViewPart {
 	 *
 	 * @see com.clustercontrol.jobmanagement.composite.NodeDetailComposite#update(String, String)
 	 */
-	public void update(String managerName, String sessionId, String jobunitId, String jobId) {
+	public void update(String managerName, String sessionId, String jobunitId, String jobId, String jobName) {
+		String viewName = "";
 		if(managerName == null || managerName.equals("")) {
-			return;
+			m_nodeDetail.update(null, null, null, null, null);
+			viewName = orgViewName;
+		} else {
+			m_nodeDetail.update(managerName, sessionId, jobunitId, jobId, jobName);
+			viewName = orgViewName + "(" + managerName + ")";
 		}
-		m_nodeDetail.update(managerName, sessionId, jobunitId, jobId);
-		String viewName = orgViewName + "(" + managerName + ")";
 		setPartName(viewName);
 	}
 
@@ -155,6 +161,7 @@ public class JobNodeDetailView extends CommonViewPart {
 		if( null != service ){
 			service.refreshElements(StartJobNodeDetailAction.ID, null);
 			service.refreshElements(StopJobNodeDetailAction.ID, null);
+			service.refreshElements(DownloadScreenshotJobNodeDetailAction.ID, null);
 
 			// Update ToolBar after elements refreshed
 			// WARN : Both ToolBarManager must be updated after updateActionBars(), otherwise icon won't change.

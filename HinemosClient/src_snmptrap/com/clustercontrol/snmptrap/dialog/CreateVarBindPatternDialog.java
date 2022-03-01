@@ -26,15 +26,15 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.VarBindPatternResponse;
 
+import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.Pattern;
-import com.clustercontrol.ws.monitor.VarBindPattern;
 
 /**
  * フィルタ[作成・変更]ダイアログクラス<BR>
@@ -48,7 +48,7 @@ public class CreateVarBindPatternDialog extends CommonDialog {
 	public static final int WIDTH_TITLE = 4;
 
 	/** 入力値を保持するオブジェクト。 */
-	private VarBindPattern m_inputData = null;
+	private VarBindPatternResponse m_inputData = null;
 
 	/** 入力値の正当性を保持するオブジェクト。 */
 	private ValidateResult m_validateResult = null;
@@ -89,7 +89,7 @@ public class CreateVarBindPatternDialog extends CommonDialog {
 	 * @param parent 親のシェルオブジェクト
 	 * @param identifier 変更する文字列監視の判定情報の識別キー
 	 */
-	public CreateVarBindPatternDialog(Shell parent, VarBindPattern pattern) {
+	public CreateVarBindPatternDialog(Shell parent, VarBindPatternResponse pattern) {
 		super(parent);
 
 		this.m_inputData = pattern;
@@ -332,9 +332,9 @@ public class CreateVarBindPatternDialog extends CommonDialog {
 				(display.getBounds().height - shell.getSize().y) / 2);
 
 		// 識別子が指定されている場合、その情報を初期表示する。
-		VarBindPattern info = this.m_inputData;
+		VarBindPatternResponse info = this.m_inputData;
 		if (info == null) {
-			info = new VarBindPattern();
+			info = new VarBindPatternResponse();
 			info.setProcessType(true);
 			info.setValidFlg(true);
 		}
@@ -363,7 +363,7 @@ public class CreateVarBindPatternDialog extends CommonDialog {
 	 *
 	 * @return 判定情報
 	 */
-	public VarBindPattern getInputData() {
+	public VarBindPatternResponse getInputData() {
 		return this.m_inputData;
 	}
 
@@ -372,7 +372,7 @@ public class CreateVarBindPatternDialog extends CommonDialog {
 	 *
 	 * @param info 設定値として用いる判定情報
 	 */
-	protected void setInputData(VarBindPattern info) {
+	protected void setInputData(VarBindPatternResponse info) {
 
 		this.m_inputData = info;
 
@@ -387,7 +387,7 @@ public class CreateVarBindPatternDialog extends CommonDialog {
 		}
 
 		// 処理する(true)->異常／処理しない(false)->正常
-		if (info.isProcessType()) {
+		if (info.getProcessType()) {
 			this.m_radioProcess.setSelection(true);
 		} else {
 			this.m_radioNotProcess.setSelection(true);
@@ -395,16 +395,16 @@ public class CreateVarBindPatternDialog extends CommonDialog {
 
 		// 重要度
 		if (info.getPriority() != null) {
-			this.m_comboPriority.setText(PriorityMessage.typeToString(info.getPriority()));
+			this.m_comboPriority.setText(PriorityMessage.codeToString(info.getPriority().toString()));
 		}
 
 		// 大文字・小文字を区別しない
-		if (info.isCaseSensitivityFlg() != null && info.isCaseSensitivityFlg()){
+		if (info.getCaseSensitivityFlg() != null && info.getCaseSensitivityFlg()){
 			this.m_checkCaseSensitive.setSelection(true);
 		}
 
 		// 有効／無効
-		if (info.isValidFlg() != null && info.isValidFlg()) {
+		if (info.getValidFlg() != null && info.getValidFlg()) {
 			this.m_buttonValid.setSelection(true);
 		}
 
@@ -422,8 +422,8 @@ public class CreateVarBindPatternDialog extends CommonDialog {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	private VarBindPattern createInputData() {
-		VarBindPattern info = new VarBindPattern();
+	private VarBindPatternResponse createInputData() {
+		VarBindPatternResponse info = new VarBindPatternResponse();
 
 		// 説明
 		if (this.m_textDescription.getText() != null
@@ -459,7 +459,8 @@ public class CreateVarBindPatternDialog extends CommonDialog {
 		}
 
 		// 重要度
-		info.setPriority(PriorityMessage.stringToType(this.m_comboPriority.getText()));
+		info.setPriority(PriorityMessage.stringToEnum(
+				this.m_comboPriority.getText(), VarBindPatternResponse.PriorityEnum.class));
 
 		// 大文字・小文字を区別する/しない
 		if (this.m_checkCaseSensitive.getSelection()){
@@ -542,7 +543,7 @@ public class CreateVarBindPatternDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		VarBindPattern info = this.m_inputData;
+		VarBindPatternResponse info = this.m_inputData;
 		if(info != null){
 			result = true;
 		}

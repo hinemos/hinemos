@@ -17,7 +17,7 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
 
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.WidgetTestUtil;
 
 
@@ -100,7 +100,7 @@ public class ManagerListComposite extends Composite {
 		if (this.m_enabledFlg) {
 			// マネージャ名リストの初期化
 			this.comboManagerName.removeAll();
-			for(String managerName : EndpointManager.getActiveManagerSet()) {
+			for(String managerName : RestConnectManager.getActiveManagerSet()) {
 				this.comboManagerName.add(managerName);
 			}
 			this.update();
@@ -159,6 +159,11 @@ public class ManagerListComposite extends Composite {
 
 	public void add(String managerName) {
 		this.comboManagerName.add(managerName);
+		this.update();
+	}
+
+	public void add(String managerName, int index) {
+		this.comboManagerName.add(managerName, index);
 		this.update();
 	}
 

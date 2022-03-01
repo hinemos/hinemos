@@ -9,13 +9,12 @@
 package com.clustercontrol.utility.settings.ui.etc.action;
 
 import org.apache.log4j.Logger;
-import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.core.commands.AbstractHandler;
 
 import com.clustercontrol.utility.settings.ui.views.ImportExportExecView;
 
@@ -27,8 +26,7 @@ import com.clustercontrol.utility.settings.ui.views.ImportExportExecView;
  * 
  *
  */
-public class OpenImportExportExecViewAction implements
-		IWorkbenchWindowActionDelegate {
+public class OpenImportExportExecViewAction extends AbstractHandler {
 	/* ロガー */
 	private static Logger log = Logger.getLogger(OpenImportExportExecViewAction.class);
 
@@ -36,10 +34,10 @@ public class OpenImportExportExecViewAction implements
  	* 設定インポートエクスポートビューを表示します。
  	* 
  	* @see org.eclipse.ui.IActionDelegate#run(org.eclipse.jface.action.IAction)
- 	* @see com.clustercontrol.utility.traputil.view.EditTrapMasterView
  	*/
+
 	@Override
-	public void run(IAction action) {
+	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// アクティブページ取得
 		IWorkbenchPage page = PlatformUI.getWorkbench()
 		.getActiveWorkbenchWindow().getActivePage();
@@ -52,35 +50,6 @@ public class OpenImportExportExecViewAction implements
 		} catch (PartInitException e) {
 			log.error(e);
 		}
+		return null;
 	}
-	
-
-	/**
- 	* 終了する際に呼ばれます。
- 	* 
- 	* @see org.eclipse.ui.IWorkbenchWindowActionDelegate#dispose()
- 	*/
-	@Override
-	public void dispose() {
-	}
-
-	/**
-	 * ワークベンチにロードされた際に呼ばれます。
-	 * 
-	 * @see org.eclipse.ui.IWorkbenchWindowActionDelegate#init(org.eclipse.ui.IWorkbenchWindow)
-	 */
-	@Override
-	public void init(IWorkbenchWindow window) {
-	}
-
-	/**
-	 * 選択を変更した際に呼ばれます。
-	 * 
-	 * @see org.eclipse.ui.IActionDelegate#selectionChanged(org.eclipse.jface.action.IAction,
-	 *	  org.eclipse.jface.viewers.ISelection)
-	 */
-	@Override
-	public void selectionChanged(IAction action, ISelection selection) {
-	}
-
 }

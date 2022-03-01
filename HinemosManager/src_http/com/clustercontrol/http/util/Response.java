@@ -10,7 +10,7 @@ package com.clustercontrol.http.util;
 
 import java.util.List;
 
-import org.apache.http.Header;
+import org.apache.hc.core5.http.Header;
 
 /**
  *
@@ -44,4 +44,17 @@ public class Response {
 
 	/** ヘッダー */
 	public List<Header> headers;
+
+	public String toString() {
+		return "Response [success=" + this.success
+				+ "," + " url=" + this.url
+				+ "," + " statusCode=" + this.statusCode
+				+ "," + " headerString=" + this.headerString
+				+ "," + " responseBody=" + this.responseBody
+				+ "," + " responseTime=" + this.responseTime
+				+ "," + " errorMessage=" + this.errorMessage
+				+ "," + " exception=" + this.exception
+				+ "," + " headers=" + this.headers
+				+ "]";
+	}
 }

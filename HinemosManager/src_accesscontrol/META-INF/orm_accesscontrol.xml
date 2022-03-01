@@ -118,11 +118,56 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="MonitorInfo.findByCorrelationFacilityIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a JOIN a.correlationCheckInfo b
+				WHERE b.referFacilityId = :objectId 
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.monitorId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorInfo.findByIntegrationFacilityIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a
+				JOIN a.integrationCheckInfo b
+				JOIN b.conditionList c
+				WHERE c.targetFacilityId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.monitorId
+			]]>
+		</query>
+	</named-query>
 	<named-query name="JobMstEntity.findByFacilityIdOwnerRoleId">
 		<query>
 			<![CDATA[
 				SELECT a FROM JobMstEntity a
 				WHERE a.facilityId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobMstEntity.findByFileFacilityIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobMstEntity a
+				WHERE (
+				a.srcFacilityId = :objectId
+				OR a.destFacilityId = :objectId
+				)
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobMstEntity.findByJoblinkSendSettingIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobMstEntity a
+				WHERE a.joblinkSendSettingId = :objectId
 				AND a.ownerRoleId = :ownerRoleId
 				ORDER BY a.id.jobunitId, a.id.jobId
 			]]>
@@ -135,6 +180,16 @@
 				WHERE a.facilityId = :objectId
 				AND a.ownerRoleId = :ownerRoleId
 				ORDER BY a.jobkickId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobLinkSendSettingEntity.findByFacilityIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobLinkSendSettingEntity a
+				WHERE a.facilityId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.joblinkSendSettingId
 			]]>
 		</query>
 	</named-query>
@@ -157,6 +212,78 @@
 				WHERE b.jobExecFacility = :objectId
 				AND a.ownerRoleId = :ownerRoleId
 				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyInfoEntity.findByInfraFacilityIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+					JOIN a.notifyInfraInfo b
+				WHERE b.infraExecFacility = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyInfoEntity.findByJoblinkSendSettingIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+					JOIN a.notifyJobInfo b
+				WHERE b.joblinkSendSettingId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="InfraManagementInfo.findByFacilityIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM InfraManagementInfo a
+				WHERE a.facilityId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.managementId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingInfoEntity.findByFacilityIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM ReportingInfoEntity a
+				WHERE a.facilityId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.reportScheduleId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeConfigSettingInfo.findByFacilityIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeConfigSettingInfo a
+				WHERE a.facilityId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.settingId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlControlSettingInfo.findByFacilityIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a
+				WHERE a.facilityId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.applicationId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResultCreateSetting.findByFacilityIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioOperationResultCreateSetting a
+				WHERE a.facilityId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.scenarioOperationResultCreateSettingId
 			]]>
 		</query>
 	</named-query>
@@ -225,6 +352,76 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="ReportingInfoEntity.findByCalendarIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM ReportingInfoEntity a
+				WHERE a.calendarId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.reportScheduleId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyInfoEntity.findByCalendarIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+				WHERE a.calendarId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MaintenanceInfo.findByCalendarIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MaintenanceInfo a
+				WHERE a.calendarId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.maintenanceId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="TransferInfo.findByCalendarIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM TransferInfo a
+				WHERE a.calendarId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.transferId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeConfigSettingInfo.findByCalendarIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeConfigSettingInfo a
+				WHERE a.calendarId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.settingId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlControlSettingInfo.findByCalendarIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a
+				WHERE a.autoMonitorCalendarId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.applicationId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResultCreateSetting.findByCalendarIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioOperationResultCreateSetting a
+				WHERE a.calendarId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.scenarioOperationResultCreateSettingId
+			]]>
+		</query>
+	</named-query>
 
 	<!-- Calendar(Pattern) -->
 	<named-query name="CalInfoEntity.findByCalendarPatternIdOwnerRoleId">
@@ -253,12 +450,42 @@
 		</query>
 	</named-query>
 
+	<!-- Notify(Infra) -->
+	<named-query name="NotifyInfoEntity.findByInfraManagementIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+					JOIN a.notifyInfraInfo b
+				WHERE (
+				b.infoInfraId = :objectId
+				OR b.warnInfraId = :objectId
+				OR b.criticalInfraId = :objectId
+				OR b.unknownInfraId = :objectId
+				)
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+
 	<!-- Notify -->
 	<named-query name="MonitorInfo.findByNotifyIdOwnerRoleId">
 		<query>
 			<![CDATA[
 				SELECT a FROM MonitorInfo a, NotifyRelationInfo b, NotifyInfo c
 				WHERE a.notifyGroupId = b.id.notifyGroupId
+				AND b.id.notifyId = c.notifyId
+				AND c.notifyId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.monitorId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorInfo.findByOtherNotifyIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a, NotifyRelationInfo b, NotifyInfo c
+				WHERE CONCAT(:otherKey, a.notifyGroupId) = b.id.notifyGroupId
 				AND b.id.notifyId = c.notifyId
 				AND c.notifyId = :objectId
 				AND a.ownerRoleId = :ownerRoleId
@@ -278,6 +505,104 @@
 			]]>
 		</query>
 	</named-query>
+
+	<named-query name="InfraManagementInfo.findByNotifyIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM InfraManagementInfo a, NotifyRelationInfo b, NotifyInfo c
+				WHERE a.notifyGroupId = b.id.notifyGroupId
+				AND b.id.notifyId = c.notifyId
+				AND c.notifyId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.managementId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MaintenanceInfo.findByNotifyIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MaintenanceInfo a, NotifyRelationInfo b, NotifyInfo c
+				WHERE a.notifyGroupId = b.id.notifyGroupId
+				AND b.id.notifyId = c.notifyId
+				AND c.notifyId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.maintenanceId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="ReportingInfoEntity.findByNotifyIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM ReportingInfoEntity a, NotifyRelationInfo b, NotifyInfo c
+				WHERE a.notifyGroupId = b.id.notifyGroupId
+				AND b.id.notifyId = c.notifyId
+				AND c.notifyId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.reportScheduleId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NodeConfigSettingInfo.findByNotifyIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NodeConfigSettingInfo a, NotifyRelationInfo b, NotifyInfo c
+				WHERE a.notifyGroupId = b.id.notifyGroupId
+				AND b.id.notifyId = c.notifyId
+				AND c.notifyId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.settingId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlControlSettingInfo.findByNotifyIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a, NotifyRelationInfo b, NotifyInfo c
+				WHERE a.notifyGroupId = b.id.notifyGroupId
+				AND b.id.notifyId = c.notifyId
+				AND c.notifyId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.applicationId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlControlSettingInfo.findByAutoMonitorCommonNotifyIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a, NotifyRelationInfo b, NotifyInfo c
+				WHERE a.autoMonitorCommonNotifyGroupId = b.id.notifyGroupId
+				AND b.id.notifyId = c.notifyId
+				AND c.notifyId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.applicationId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlControlSettingInfo.findByAutoMonitorIndividualNotifyIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a, SdmlMonitorNotifyRelation b, NotifyRelationInfo c, NotifyInfo d
+				WHERE a.applicationId = b.id.applicationId
+				AND b.notifyGroupId = c.id.notifyGroupId
+				AND c.id.notifyId = d.notifyId
+				AND d.notifyId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.applicationId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResultCreateSetting.findByNotifyIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioOperationResultCreateSetting a, NotifyRelationInfo b, NotifyInfo c
+				WHERE a.notifyGroupId = b.id.notifyGroupId
+				AND b.id.notifyId = c.notifyId
+				AND c.notifyId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.scenarioOperationResultCreateSettingId
+			]]>
+		</query>
+	</named-query>
 	
 	<!-- JobQueue -->
 	<named-query name="JobMstEntity.findByQueueIdOwnerRoleId">
@@ -290,4 +615,68 @@
 			]]>
 		</query>
 	</named-query>
+
+	<!-- Monitor -->
+	<named-query name="MonitorInfo.findByCorrelationMonitorIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a JOIN a.correlationCheckInfo b
+				WHERE (
+				b.targetMonitorId = :objectId 
+				OR b.referMonitorId = :objectId
+				)
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.monitorId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorInfo.findByIntegrationMonitorIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a
+				JOIN a.integrationCheckInfo b
+				JOIN b.conditionList c
+				WHERE c.targetMonitorId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.monitorId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorInfo.findByLogcountMonitorIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a JOIN a.logcountCheckInfo b
+				WHERE b.targetMonitorId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.monitorId
+			]]>
+		</query>
+	</named-query>
+
+	<!-- Infra -->
+	<named-query name="InfraManagementInfo.findByInfraFileIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM InfraManagementInfo a
+				WHERE EXISTS (SELECT b FROM FileTransferModuleInfo b
+					WHERE b.id.managementId = a.managementId
+					AND b.fileId = :objectId)
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.managementId
+			]]>
+		</query>
+	</named-query>
+
+	<!-- JobmapIconImage -->
+	<named-query name="JobMstEntity.findByJobmapIconIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobMstEntity a
+				WHERE a.iconId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
+
 </entity-mappings>

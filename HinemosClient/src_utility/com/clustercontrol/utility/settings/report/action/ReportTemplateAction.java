@@ -18,15 +18,29 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-
-import javax.xml.ws.WebServiceException;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.AddTemplateSetRequest;
+import org.openapitools.client.model.ImportReportingTemplateSetResponse;
+import org.openapitools.client.model.ImportReportingTemplateSetRecordRequest;
+import org.openapitools.client.model.ImportReportingTemplateSetRequest;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.TemplateSetInfoResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.ReportingNotFound;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffUtil;
 import com.clustercontrol.utility.difference.ResultA;
@@ -42,19 +56,16 @@ import com.clustercontrol.utility.settings.report.xml.ReportTemplate;
 import com.clustercontrol.utility.settings.report.xml.ReportTemplateType;
 import com.clustercontrol.utility.settings.report.xml.TemplateInfo;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.reporting.HinemosUnknown_Exception;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.InvalidUserPass_Exception;
-import com.clustercontrol.ws.reporting.ReportingDuplicate_Exception;
-import com.clustercontrol.ws.reporting.ReportingNotFound_Exception;
-
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * 
@@ -87,31 +98,23 @@ public class ReportTemplateAction {
 		log.debug("Start Clear ReportTemplate ");
 		int ret = 0;
 
-		List<com.clustercontrol.ws.reporting.TemplateSetInfo> templateSetInfoList =null;
-		
+		List<TemplateSetInfoResponse> templateSetInfoList =null;
+		ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		try {
-			templateSetInfoList = ReportingEndpointWrapper
-					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-					.getTemplateSetInfoList(null);
-		} catch (com.clustercontrol.ws.reporting.HinemosUnknown_Exception
-				| com.clustercontrol.ws.reporting.InvalidRole_Exception
-				| com.clustercontrol.ws.reporting.InvalidUserPass_Exception | ReportingNotFound_Exception e) {
+			templateSetInfoList = wrapper.getTemplateSetList(null);
+		} catch ( RestConnectFailed |HinemosUnknown	| InvalidRole | InvalidUserPass | ReportingNotFound e) {
 			log.error(Messages.getString("ReportTemplate.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 			return ret;
 		}
 		
-		for (com.clustercontrol.ws.reporting.TemplateSetInfo templateSetInfo:templateSetInfoList){
+		for (TemplateSetInfoResponse templateSetInfo:templateSetInfoList){
 			try {
-				ReportingEndpointWrapper
-				.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-				.deleteTemplateSet(templateSetInfo.getTemplateSetId());
-			} catch (com.clustercontrol.ws.reporting.HinemosUnknown_Exception
-					| com.clustercontrol.ws.reporting.InvalidRole_Exception
-					| com.clustercontrol.ws.reporting.InvalidUserPass_Exception | ReportingNotFound_Exception e) {
+				wrapper.deleteTemplateSet(templateSetInfo.getTemplateSetId());
+				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + templateSetInfo.getTemplateSetId());
+			} catch ( RestConnectFailed |HinemosUnknown	| InvalidRole | InvalidUserPass | ReportingNotFound e) {
 				log.error(Messages.getString("ReportTemplate.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-				return ret;
 			}
 		}
 		
@@ -131,16 +134,14 @@ public class ReportTemplateAction {
 		log.debug("Start Export Reporting Template ");
 
 		int ret = 0;
-		ReportingEndpointWrapper wrapper =
-				ReportingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+		ReportingRestClientWrapper wrapper =
+				ReportingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		
-		List<com.clustercontrol.ws.reporting.TemplateSetInfo> templateSetInfoList =null;
+		List<TemplateSetInfoResponse> templateSetInfoList =null;
 		
 		try {
-			templateSetInfoList = wrapper.getTemplateSetInfoList(null);
-		} catch (com.clustercontrol.ws.reporting.HinemosUnknown_Exception
-				| com.clustercontrol.ws.reporting.InvalidRole_Exception
-				| com.clustercontrol.ws.reporting.InvalidUserPass_Exception | ReportingNotFound_Exception e) {
+			templateSetInfoList = wrapper.getTemplateSetList(null);
+		} catch ( RestConnectFailed |HinemosUnknown	| InvalidRole | InvalidUserPass | ReportingNotFound e) {
 			log.error(Messages.getString("ReportTemplate.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 			return ret;
@@ -148,12 +149,12 @@ public class ReportTemplateAction {
 		
 		ReportTemplate reportTemplate = new ReportTemplate();
 		
-		for (com.clustercontrol.ws.reporting.TemplateSetInfo info : templateSetInfoList) {
+		for (TemplateSetInfoResponse info : templateSetInfoList) {
 			try{
 				info = wrapper.getTemplateSetInfo(info.getTemplateSetId());
 				reportTemplate.addTemplateInfo(ReportTemplateConv.getTemplate(info));
 				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + info.getTemplateSetId());
-			} catch (WebServiceException e) {
+			} catch (RestConnectFailed e) {
 				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 				break;
@@ -206,7 +207,7 @@ public class ReportTemplateAction {
 		// XMLファイルからの読み込み
 		ReportTemplateType template = null;
 		try {
-			template = ReportTemplate.unmarshal(new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
+			template = XmlMarshallUtil.unmarshall(ReportTemplateType.class,new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"),e);
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -219,59 +220,100 @@ public class ReportTemplateAction {
 			return ret;
 		}
 
-		for (TemplateInfo info : template.getTemplateInfo()) {
-			com.clustercontrol.ws.reporting.TemplateSetInfo templateSetInfo = null;
-			try {
-				templateSetInfo = ReportTemplateConv.getTemplateInfoDto(info);
-				ReportingEndpointWrapper
-					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-					.addTemplateSet(templateSetInfo);
-				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + info.getTemplateSetId());
-			} catch (ReportingDuplicate_Exception e) {
-				//重複時、インポート処理方法を確認する
-				if(!ImportProcessMode.isSameprocess()){
-					String[] args = {info.getTemplateSetId()};
-					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-							null, Messages.getString("message.import.confirm2", args));
-					ImportProcessMode.setProcesstype(dialog.open());
-					ImportProcessMode.setSameprocess(dialog.getToggleState());
-				}
-				
-				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-					try {
-						ReportingEndpointWrapper
-							.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-							.modifyTemplateSet(templateSetInfo);
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + info.getTemplateSetId());
-					} catch (Exception e1) {
-						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-						ret = SettingConstants.ERROR_INPROCESS;
-					}
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + info.getTemplateSetId());
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-					ret = SettingConstants.ERROR_INPROCESS;
-					return ret;
-				}
-			} catch (HinemosUnknown_Exception e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (javax.xml.ws.WebServiceException e){
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				throw e;//継続不可
-			} catch (Exception e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
+		// 定義の登録
+		ImportRecordConfirmer<TemplateInfo, ImportReportingTemplateSetRecordRequest, String> confirmer = new ImportRecordConfirmer<TemplateInfo, ImportReportingTemplateSetRecordRequest, String>(
+				log, template.getTemplateInfo() ) {
+			@Override
+			protected ImportReportingTemplateSetRecordRequest convertDtoXmlToRestReq(TemplateInfo xmlDto) throws InvalidSetting, HinemosUnknown {
+				TemplateSetInfoResponse reportingInfo = ReportTemplateConv.getTemplateInfoDto(xmlDto);
+				ImportReportingTemplateSetRecordRequest dtoRec = new ImportReportingTemplateSetRecordRequest();
+				dtoRec.setImportData(new AddTemplateSetRequest());
+				RestClientBeanUtil.convertBean(reportingInfo, dtoRec.getImportData());
+				dtoRec.setImportKeyValue(dtoRec.getImportData().getTemplateSetId());
+				return dtoRec;
 			}
+			@Override
+			protected Set<String> getExistIdSet() throws Exception {
+				Set<String> retSet = new HashSet<String>();
+				List<TemplateSetInfoResponse> infoList = ReportingRestClientWrapper
+						.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getTemplateSetList(null);
+				for (TemplateSetInfoResponse rec : infoList) {
+					retSet.add(rec.getTemplateSetId());
+				}
+				return retSet;
+			}
+			@Override
+			protected boolean isLackRestReq(ImportReportingTemplateSetRecordRequest restDto) {
+				return (restDto == null || restDto.getImportData().getTemplateSetId()  == null);
+			}
+			@Override
+			protected String getKeyValueXmlDto(TemplateInfo xmlDto) {
+				return xmlDto.getTemplateSetId();
+			}
+			@Override
+			protected String getId(TemplateInfo xmlDto) {
+				return xmlDto.getTemplateSetId();
+			}
+			@Override
+			protected void setNewRecordFlg(ImportReportingTemplateSetRecordRequest restDto, boolean flag) {
+				restDto.setIsNewRecord(flag);
+			}
+		};
+		int confirmRet = confirmer.executeConfirm();
+		if( confirmRet != SettingConstants.SUCCESS && confirmRet != SettingConstants.ERROR_CANCEL ){
+			//変換エラーならUnmarshalXml扱いで処理打ち切り(キャンセルはキャンセル以前の選択結果を反映するので次に進む)
+			log.warn(Messages.getString("SettingTools.UnmarshalXmlFailed"));
+			return confirmRet;
 		}
 		
+		// 更新単位の件数毎にインポートメソッドを呼び出し、結果をログ出力
+		// API異常発生時はそこで中断、レコード個別の異常発生時はユーザ選択次第で続行
+		ImportClientController<ImportReportingTemplateSetRecordRequest, ImportReportingTemplateSetResponse, RecordRegistrationResponse> importController = new ImportClientController<ImportReportingTemplateSetRecordRequest, ImportReportingTemplateSetResponse, RecordRegistrationResponse>(
+				log, Messages.getString("report.template"), confirmer.getImportRecDtoList(),true) {
+			@Override
+			protected List<RecordRegistrationResponse> getResRecList(ImportReportingTemplateSetResponse importResponse) {
+				return importResponse.getResultList();
+			};
+			@Override
+			protected Boolean getOccurException(ImportReportingTemplateSetResponse importResponse) {
+				return importResponse.getIsOccurException();
+			};
+			@Override
+			protected String getReqKeyValue(ImportReportingTemplateSetRecordRequest importRec) {
+				return importRec.getImportKeyValue();
+			};
+			@Override
+			protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+				return responseRec.getImportKeyValue();
+			};
+			@Override
+			protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+				return (responseRec.getResult() == ResultEnum.NORMAL) ;
+			};
+			@Override
+			protected ImportReportingTemplateSetResponse callImportWrapper(List<ImportReportingTemplateSetRecordRequest> importRecList)
+					throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+				ImportReportingTemplateSetRequest reqDto = new ImportReportingTemplateSetRequest();
+				reqDto.setRecordList(importRecList);
+				reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+				return UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importReportingTemplateSet(reqDto) ;
+			}
+			@Override
+			protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+				if (responseRec.getExceptionInfo() != null) {
+					return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+				}
+				return null;
+			};
+		};
+		ret = importController.importExecute();
+
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
+		}
+
 		checkDelete(template);
 		
 		// 処理の終了
@@ -302,14 +344,12 @@ public class ReportTemplateAction {
 	}
 	
 	protected void checkDelete(ReportTemplateType xmlElements){
-		List<com.clustercontrol.ws.reporting.TemplateSetInfo> subList =null;
+		List<TemplateSetInfoResponse> subList =null;
 
 		try {
-			subList = ReportingEndpointWrapper
-					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-					.getTemplateSetInfoList(null);
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception
-				| ReportingNotFound_Exception e) {
+			subList = ReportingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName())
+					.getTemplateSetList(null);
+		} catch ( RestConnectFailed |HinemosUnknown	| InvalidRole | InvalidUserPass | ReportingNotFound e) {
 			log.error(Messages.getString("ReportTemplate.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			return ;
 		}
@@ -319,7 +359,7 @@ public class ReportTemplateAction {
 		}
 		
 		List<TemplateInfo> xmlElementList = new ArrayList<>(Arrays.asList(xmlElements.getTemplateInfo()));
-		for(com.clustercontrol.ws.reporting.TemplateSetInfo mgrInfo: new ArrayList<>(subList)){
+		for(TemplateSetInfoResponse mgrInfo: new ArrayList<>(subList)){
 			for(TemplateInfo xmlElement: new ArrayList<>(xmlElementList)){
 				if(mgrInfo.getTemplateSetId().equals(xmlElement.getTemplateSetId())){
 					subList.remove(mgrInfo);
@@ -330,7 +370,7 @@ public class ReportTemplateAction {
 		}
 
 		if(subList.size() > 0){
-			for(com.clustercontrol.ws.reporting.TemplateSetInfo info: subList){
+			for(TemplateSetInfoResponse info: subList){
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getTemplateSetId()};
@@ -342,7 +382,7 @@ public class ReportTemplateAction {
 				
 				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
-						ReportingEndpointWrapper
+						ReportingRestClientWrapper
 							.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 							.deleteTemplateSet(info.getTemplateSetId());
 						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getTemplateSetId());
@@ -380,8 +420,8 @@ public class ReportTemplateAction {
 		ReportTemplateType report1 = null;
 		ReportTemplateType report2 = null;
 		try {
-			report1 = ReportTemplateType.unmarshal(new InputStreamReader(new FileInputStream(xmlFile1), "UTF-8"));
-			report2 = ReportTemplateType.unmarshal(new InputStreamReader(new FileInputStream(xmlFile2), "UTF-8"));
+			report1 = XmlMarshallUtil.unmarshall(ReportTemplateType.class,new InputStreamReader(new FileInputStream(xmlFile1), "UTF-8"));
+			report2 = XmlMarshallUtil.unmarshall(ReportTemplateType.class,new InputStreamReader(new FileInputStream(xmlFile2), "UTF-8"));
 			sort(report1);
 			sort(report2);
 		} catch (Exception e) {

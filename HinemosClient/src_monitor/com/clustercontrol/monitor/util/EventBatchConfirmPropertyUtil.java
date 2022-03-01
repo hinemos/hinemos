@@ -8,163 +8,16 @@
 
 package com.clustercontrol.monitor.util;
 
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.Locale;
 
 import com.clustercontrol.bean.DataRangeConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.monitor.bean.EventBatchConfirmConstant;
-import com.clustercontrol.monitor.bean.StatusFilterConstant;
 import com.clustercontrol.repository.bean.FacilityTargetMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.ws.monitor.EventBatchConfirmInfo;
 
 public class EventBatchConfirmPropertyUtil {
-
-	/**
-	 * プロパティをイベント一括確認情報DTOに変換するメソッドです。
-	 * 
-	 * @param property
-	 * @return イベント一括確認情報
-	 */
-	public static EventBatchConfirmInfo property2dto(Property property){
-		EventBatchConfirmInfo info = new EventBatchConfirmInfo();
-
-		ArrayList<?> values = null;
-
-		Timestamp outputFromDate = null;
-		Timestamp outputToDate = null;
-		Timestamp generationFromDate = null;
-		Timestamp generationToDate = null;
-		String monitorId = null;
-		String monitorDetailId = null;
-		Integer facilityType = null;
-		String application = null;
-		String message = null;
-		String comment = null;
-		String commentUser = null;
-
-		//重要度取得
-		values = PropertyUtil.getPropertyValue(property,
-				EventBatchConfirmConstant.PRIORITY_CRITICAL);
-		if (!"".equals(values.get(0))) {
-			if ((Boolean)values.get(0)) {
-				info.getPriorityList().add(PriorityConstant.TYPE_CRITICAL);
-			}
-		}
-		values = PropertyUtil.getPropertyValue(property,
-				EventBatchConfirmConstant.PRIORITY_WARNING);
-		if (!"".equals(values.get(0))) {
-			if ((Boolean)values.get(0)) {
-				info.getPriorityList().add(PriorityConstant.TYPE_WARNING);
-			}
-		}
-		values = PropertyUtil.getPropertyValue(property,
-				EventBatchConfirmConstant.PRIORITY_INFO);
-		if (!"".equals(values.get(0))) {
-			if ((Boolean)values.get(0)) {
-				info.getPriorityList().add(PriorityConstant.TYPE_INFO);
-			}
-		}
-		values = PropertyUtil.getPropertyValue(property,
-				EventBatchConfirmConstant.PRIORITY_UNKNOWN);
-		if (!"".equals(values.get(0))) {
-			if ((Boolean)values.get(0)) {
-				info.getPriorityList().add(PriorityConstant.TYPE_UNKNOWN);
-			}
-		}
-
-		//更新日時（自）取得
-		values = PropertyUtil.getPropertyValue(property, EventBatchConfirmConstant.OUTPUT_FROM_DATE);
-		if(values.get(0) instanceof Date){
-			outputFromDate = new Timestamp(((Date)values.get(0)).getTime());
-			outputFromDate.setNanos(0);
-			info.setOutputFromDate(outputFromDate.getTime());
-		}
-
-		//更新日時（至）取得
-		values = PropertyUtil.getPropertyValue(property, EventBatchConfirmConstant.OUTPUT_TO_DATE);
-		if(values.get(0) instanceof Date){
-			outputToDate = new Timestamp(((Date)values.get(0)).getTime());
-			outputToDate.setNanos(999999999);
-			info.setOutputToDate(outputToDate.getTime());
-		}
-
-		//出力日時（自）取得
-		values = PropertyUtil.getPropertyValue(property, EventBatchConfirmConstant.GENERATION_FROM_DATE);
-		if(values.get(0) instanceof Date){
-			generationFromDate = new Timestamp(((Date)values.get(0)).getTime());
-			generationFromDate.setNanos(0);
-			info.setGenerationFromDate(generationFromDate.getTime());
-		}
-
-		//出力日時（至）取得
-		values = PropertyUtil.getPropertyValue(property, EventBatchConfirmConstant.GENERATION_TO_DATE);
-		if(values.get(0) instanceof Date){
-			generationToDate = new Timestamp(((Date)values.get(0)).getTime());
-			generationToDate.setNanos(999999999);
-			info.setGenerationToDate(generationToDate.getTime());
-		}
-
-		//監視項目ID取得
-		values = PropertyUtil.getPropertyValue(property,
-				EventBatchConfirmConstant.MONITOR_ID);
-		if (!"".equals(values.get(0))) {
-			monitorId = (String) values.get(0);
-			info.setMonitorId(monitorId);
-		}
-
-		//監視詳細取得
-		values = PropertyUtil.getPropertyValue(property,
-				EventBatchConfirmConstant.MONITOR_DETAIL_ID);
-		if (!"".equals(values.get(0))) {
-			monitorDetailId = (String) values.get(0);
-			info.setMonitorDetailId(monitorDetailId);
-		}
-
-		//対象ファシリティ種別取得
-		values = PropertyUtil.getPropertyValue(property, StatusFilterConstant.FACILITY_TYPE);
-		if (!"".equals(values.get(0))) {
-			facilityType = (Integer)FacilityTargetMessage.stringToType((String)values.get(0));
-			info.setFacilityType(facilityType);
-		}
-
-		//アプリケーション取得
-		values = PropertyUtil.getPropertyValue(property, StatusFilterConstant.APPLICATION);
-		if(!"".equals(values.get(0))){
-			application = (String)values.get(0);
-			info.setApplication(application);
-		}
-
-		//メッセージ取得
-		values = PropertyUtil.getPropertyValue(property, StatusFilterConstant.MESSAGE);
-		if(!"".equals(values.get(0))){
-			message = (String)values.get(0);
-			info.setMessage(message);
-		}
-
-		//コメント
-		values = PropertyUtil.getPropertyValue(property, EventBatchConfirmConstant.COMMENT);
-		if(!"".equals(values.get(0))){
-			comment = (String)values.get(0);
-			info.setComment(comment);
-		}
-
-		//コメントユーザ
-		values = PropertyUtil.getPropertyValue(property, EventBatchConfirmConstant.COMMENT_USER);
-		if(!"".equals(values.get(0))){
-			commentUser = (String)values.get(0);
-			info.setCommentUser(commentUser);
-		}
-
-
-		return info;
-	}
 
 	/**
 	 * イベント情報一括確認用プロパティを取得します。<BR>

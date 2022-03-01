@@ -20,17 +20,34 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
-import javax.xml.ws.WebServiceException;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.AddScopeRequest;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.ImportScopeRecordRequest;
+import org.openapitools.client.model.ImportScopeRequest;
+import org.openapitools.client.model.ImportScopeResponse;
+import org.openapitools.client.model.NodeInfoResponseP1;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.ScopeInfoRequest;
+import org.openapitools.client.model.ScopeInfoResponseP1;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffAnnotation;
@@ -50,19 +67,16 @@ import com.clustercontrol.utility.settings.platform.xml.RepositoryScopeNode;
 import com.clustercontrol.utility.settings.platform.xml.ScopeInfo;
 import com.clustercontrol.utility.settings.platform.xml.ScopeNodeInfo;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
+import com.clustercontrol.utility.util.AccountUtil;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.repository.FacilityDuplicate_Exception;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
-import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.InvalidSetting_Exception;
-import com.clustercontrol.ws.repository.InvalidUserPass_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * リポジトリ-スコープ-情報をインポート・エクスポート・削除するアクションクラス<br>
@@ -90,36 +104,64 @@ public class RepositoryScopeAction {
 	@ClearMethod
 	public int clearRepositoryScope() {
 		logger.debug("Start Clear ScopeInfo ");
-
-		// スコープ情報、スコープ内ノード情報の取得
-		List<com.clustercontrol.ws.repository.FacilityInfo> scopeList;
-		try {
-			scopeList = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getFacilityList("");
-		}
-		catch (Exception e) {
-			handleDTOException(e, Messages.getString("SettingTools.FailToGetList"), HinemosMessage.replace(e.getMessage()));
-			return SettingConstants.ERROR_INPROCESS;
-		}
-
-		// スコープの削除
-		List<String> ids = new ArrayList<>();
 		int resultNumber = SettingConstants.SUCCESS;
-		for (com.clustercontrol.ws.repository.FacilityInfo scope : scopeList) {
-			// 起点となるスコープのみ削除
-			if (!RepositoryConv.checkInternalScope(scope.getFacilityId())) {
-				ids.add(scope.getFacilityId());
-			}
-		}
+		RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 
-		try {
-			RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteScope(ids);
-			logger.info(Messages.getString("SettingTools.ClearSucceeded") + "(Scope) : " + ids.toString());
-		} catch (WebServiceException e) {
-			logger.error(Messages.getString("SettingTools.ClearFailed") + "(Scope) : " + HinemosMessage.replace(e.getMessage()));
-			resultNumber = SettingConstants.ERROR_INPROCESS;
-		} catch (Exception e) {
-			logger.warn(Messages.getString("SettingTools.ClearFailed") + "(Scope) : " + HinemosMessage.replace(e.getMessage()));
-			resultNumber = SettingConstants.ERROR_INPROCESS;
+		if (AccountUtil.isAdministrator(UtilityManagerUtil.getCurrentManagerName())) {
+			// ADMINISTRATORS権限を持つ場合
+			// スコープ情報、スコープ内ノード情報の取得
+			List<FacilityInfoResponse> scopeList;
+			try {
+				scopeList =wrapper.getFacilityList("");
+			}
+			catch (Exception e) {
+				handleDTOException(e, Messages.getString("SettingTools.FailToGetList"), HinemosMessage.replace(e.getMessage()));
+				return SettingConstants.ERROR_INPROCESS;
+			}
+
+			// スコープの削除
+			List<String> idList = new ArrayList<>();
+			for (FacilityInfoResponse scope : scopeList) {
+				// 起点となるスコープのみ削除
+				if (!RepositoryConv.checkInternalScope(scope.getFacilityId())) {
+					idList.add(scope.getFacilityId());
+				}
+			}
+
+			try {
+				wrapper.deleteScope(String.join(",", idList));
+				logger.info(Messages.getString("SettingTools.ClearSucceeded") + "(Scope) : " + idList.toString());
+			} catch (Exception e) {
+				logger.warn(Messages.getString("SettingTools.ClearFailed") + "(Scope) : " + HinemosMessage.replace(e.getMessage()));
+				resultNumber = SettingConstants.ERROR_INPROCESS;
+			}
+		} else {
+			// ADMINISTRATORS権限を持たない場合
+			// スコープ情報、スコープ内ノード情報の取得
+			List<String> idList = null;
+			try {
+				FacilityTreeItemResponse facilityTreeItem = wrapper.getFacilityTree(null);
+				idList = createScopeList(facilityTreeItem);
+			} catch (Exception e) {
+				handleDTOException(e, Messages.getString("SettingTools.FailToGetList"), HinemosMessage.replace(e.getMessage()));
+				return SettingConstants.ERROR_INPROCESS;
+			}
+
+			for (String id : idList) {
+				try {
+					wrapper.deleteScope(String.join(",", id));
+					logger.info(Messages.getString("SettingTools.ClearSucceeded") + "(Scope) : " + id);
+				} catch (InvalidRole | InvalidUserPass | UsedFacility e) {
+					logger.warn(Messages.getString("SettingTools.ClearFailed") + "(Scope) : " + id + ", " + HinemosMessage.replace(e.getMessage()));
+					resultNumber = SettingConstants.ERROR_INPROCESS;
+				} catch (RestConnectFailed e) {
+					logger.error(Messages.getString("SettingTools.ClearFailed") + "(Scope) : " + id + ", " + HinemosMessage.replace(e.getMessage()));
+					resultNumber = SettingConstants.ERROR_INPROCESS;
+				} catch (Exception e) {
+					// 所属元のスコープが既に削除されている場合も通るため、ここではトレースログだけ出力する
+					logger.trace(Messages.getString("SettingTools.ClearFailed") + "(Scope) : " + id + ", " + HinemosMessage.replace(e.getMessage()));
+				}
+			}
 		}
 
 		if (resultNumber == SettingConstants.SUCCESS) {
@@ -128,6 +170,40 @@ public class RepositoryScopeAction {
 
 		logger.debug("End Clear PlatformRepositoryScope ");
 		return resultNumber;
+	}
+
+	/**
+	 * 指定されたスコープと、その配下にあるスコープのファシリティIDリストを返す
+	 * 
+	 * ただし、ファシリティIDリストからはシステムスコープを除く。
+	 * 
+	 * @param treeItem ファシリティツリー
+	 * @return ツリー配下のスコープのファシリティID
+	 * @throws HinemosUnknown_Exception
+	 * @throws InvalidRole_Exception
+	 * @throws InvalidUserPass_Exception
+	 */
+	private List<String> createScopeList(FacilityTreeItemResponse treeItem) throws HinemosUnknown, InvalidRole, InvalidUserPass {
+
+		List<String> rtnList = new ArrayList<>();
+
+		FacilityInfoResponse scopeInfo_ws = treeItem.getData();
+
+		if (scopeInfo_ws.getFacilityType() == FacilityInfoResponse.FacilityTypeEnum.SCOPE
+				|| scopeInfo_ws.getFacilityType() ==  FacilityInfoResponse.FacilityTypeEnum.COMPOSITE) {
+			if (RepositoryConv.checkInternalScope(scopeInfo_ws.getFacilityId())) {
+				return rtnList;
+			}
+			if (scopeInfo_ws.getFacilityType() ==  FacilityInfoResponse.FacilityTypeEnum.SCOPE) {
+				rtnList.add(scopeInfo_ws.getFacilityId());
+			}
+
+			// 子供を探索
+			for (FacilityTreeItemResponse childItem : treeItem.getChildren()) {
+				rtnList.addAll(createScopeList(childItem));
+			}
+		}
+		return rtnList;
 	}
 
 	/**
@@ -142,17 +218,17 @@ public class RepositoryScopeAction {
 		logger.debug("Start Import RepositoryScope and RepositoryScopeNode");
 
 		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-	    	logger.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-	    	logger.debug("End Import RepositoryScope and RepositoryScopeNode (Cancel)");
+			logger.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
+			logger.debug("End Import RepositoryScope and RepositoryScopeNode (Cancel)");
 			return SettingConstants.ERROR_INPROCESS;
-	    }
+		}
 		
 		// XMLファイルからの読み込み
 		RepositoryScope scope = null;
 		RepositoryScopeNode scopeNode = null;
 		try {
-			scope = RepositoryScope.unmarshal(new InputStreamReader(new FileInputStream(xmlScope), "UTF-8"));
-			scopeNode = RepositoryScopeNode.unmarshal(new InputStreamReader(new FileInputStream(xmlScopeNode), "UTF-8"));
+			scope = XmlMarshallUtil.unmarshall(RepositoryScope.class,new InputStreamReader(new FileInputStream(xmlScope), "UTF-8"));
+			scopeNode = XmlMarshallUtil.unmarshall(RepositoryScopeNode.class,new InputStreamReader(new FileInputStream(xmlScopeNode), "UTF-8"));
 		}
 		catch (Exception e) {
 			logger.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
@@ -167,44 +243,22 @@ public class RepositoryScopeAction {
 			return SettingConstants.ERROR_SCHEMA_VERSION;
 		}
 
-		//　スコープ情報の登録。
+		//　スコープ情報の登録（スコープ内ノード情報含む）
 		List<String> objectIdList = new ArrayList<String>();
 		int resultNumber_Scope = SettingConstants.SUCCESS;
-		for (com.clustercontrol.utility.settings.platform.xml.ScopeInfo childScope : scope.getScopeInfo()) {
-			resultNumber_Scope = recursiveRegistScopeInfo(null, childScope, objectIdList);
-			if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-				return SettingConstants.ERROR_INPROCESS;
-		    }
-		}
 
+		resultNumber_Scope = registScopeInfoAndScopeNode(scope,scopeNode,objectIdList);
+		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
+			logger.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		
 		// 全スコープの登録に成功した場合
 		if (resultNumber_Scope == SettingConstants.SUCCESS) {
 			logger.info(Messages.getString("SettingTools.ImportCompleted") + "(Scope)");
-		}
-
-		// スコープ内ノード情報の登録
-		int resultNumber_ScopeNode = SettingConstants.SUCCESS;
-		for (com.clustercontrol.utility.settings.platform.xml.ScopeNodeInfo scopeNodeInfo : scopeNode.getScopeNodeInfo()) {
-			ArrayList<String> facilityIdList = new ArrayList<String>();
-			facilityIdList.add(scopeNodeInfo.getNodeFacilityId());
-			try {
-				RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).assignNodeScope(scopeNodeInfo.getScopeFacilityId(), facilityIdList);
-				logger.info(
-						Messages.getString("SettingTools.ImportSucceeded") + "(ScopeNode) : " + scopeNodeInfo.getNodeFacilityId() + "@" + scopeNodeInfo.getScopeFacilityId()
-						);
-			}
-			catch (Exception e) {
-				resultNumber_ScopeNode = SettingConstants.ERROR_INPROCESS;
-				String scopeNodeString = "(ScopeNode) : " + scopeNodeInfo.getNodeFacilityId() + "@" + scopeNodeInfo.getScopeFacilityId() + " " + HinemosMessage.replace(e.getMessage());
-				if (!handleDTOException(e, Messages.getString("SettingTools.ImportFailed"), scopeNodeString)) {
-					break;
-				}
-			}
-		}
-
-		// 全スコープ内ノードの登録に成功した場合
-		if (resultNumber_ScopeNode == SettingConstants.SUCCESS) {
 			logger.info(Messages.getString("SettingTools.ImportCompleted") + "(ScopeNode)");
+		}else{
+			logger.error(Messages.getString("SettingTools.EndWithErrorCode"));
 		}
 		
 		//オブジェクト権限同時インポート
@@ -214,7 +268,7 @@ public class RepositoryScopeAction {
 		checkDelete(scope);
 		
 		int resultNumber;
-		if (resultNumber_Scope == SettingConstants.SUCCESS && resultNumber_ScopeNode == SettingConstants.SUCCESS) {
+		if (resultNumber_Scope == SettingConstants.SUCCESS ) {
 			resultNumber = SettingConstants.SUCCESS;
 		}
 		else {
@@ -253,23 +307,23 @@ public class RepositoryScopeAction {
 	private static boolean handleDTOException(Exception e, String title, String scopeNodeString) {
 		boolean isContinue = true;
 
-		if (e instanceof HinemosUnknown_Exception) {
+		if (e instanceof HinemosUnknown) {
 			logger.error(title + scopeNodeString);
 			logger.error(Messages.getString("SettingTools.UnexpectedError"));
 		}
-		else if (e instanceof InvalidRole_Exception) {
+		else if (e instanceof InvalidRole) {
 			logger.error(title + scopeNodeString);
 			logger.error(Messages.getString("SettingTools.InvalidRole"));
 		}
-		else if (e instanceof InvalidUserPass_Exception) {
+		else if (e instanceof InvalidUserPass) {
 			logger.error(title + scopeNodeString);
 			logger.error(Messages.getString("SettingTools.InvalidUserPass"));
 		}
-		else if (e instanceof InvalidSetting_Exception) {
+		else if (e instanceof InvalidSetting) {
 			logger.warn(title + scopeNodeString);
 			logger.warn(Messages.getString("SettingTools.InvalidSetting"));
 		}
-		else if (e instanceof WebServiceException) {
+		else if (e instanceof RestConnectFailed) {
 			logger.error(title + scopeNodeString);
 		}
 		else {
@@ -281,83 +335,176 @@ public class RepositoryScopeAction {
 	}
 
 	/**
-	 * Caster のスコープ情報を DTO 構造に変換し登録する<BR>
-	 *
-	 * @param 親の FacilityId。 null の場合、ルートの "スコープ" スコープに接続。
-	 * @param 登録する ScopeInfo。
-	 * @return
+	 * Caster のスコープ情報を List化する<BR>
 	 */
-	private static int recursiveRegistScopeInfo(
-			String parentFacilityId,
-			com.clustercontrol.utility.settings.platform.xml.ScopeInfo childScope_ca,
-			List<String> objectIdList) {
-
-		com.clustercontrol.ws.repository.ScopeInfo childScope_ws = RepositoryScopeConv.createScopeInfo_ws(childScope_ca);
-
-		int resultNumber = SettingConstants.SUCCESS;
-		try {
-			childScope_ws.setFacilityType(FacilityConstant.TYPE_SCOPE);
-			// parentFacilityId が null の場合、ルートのスコープに接続。
-			RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addScope(parentFacilityId == null ? "" : parentFacilityId, childScope_ws);
-			objectIdList.add(childScope_ws.getFacilityId());
-			logger.info(Messages.getString("SettingTools.ImportSucceeded") + "(Scope) : " + childScope_ca.getFacilityId());
+	private static void recursiveConvertXmlScopeInfoToList(
+			com.clustercontrol.utility.settings.platform.xml.ScopeInfo clildScopeInfo,
+			List<com.clustercontrol.utility.settings.platform.xml.ScopeInfo> list) {
+		list.add(clildScopeInfo);
+		for (com.clustercontrol.utility.settings.platform.xml.ScopeInfo gchildInfo_ca : clildScopeInfo.getScopeInfo()) {
+			recursiveConvertXmlScopeInfoToList(gchildInfo_ca, list);
 		}
-		catch (FacilityDuplicate_Exception e) {
-			//重複時、インポート処理方法を確認する
-			if(!ImportProcessMode.isSameprocess()){
-				String[] args = {childScope_ca.getFacilityId()};
-				UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-						null, Messages.getString("message.import.confirm2", args));
-			    ImportProcessMode.setProcesstype(dialog.open());
-			    ImportProcessMode.setSameprocess(dialog.getToggleState());
+	}
+	/**
+	 * RestのFacilityTree のスコープID情報を List化する<BR>
+	 */
+	private static void recursiveConvertDtoScopeInfoToIdList(
+			FacilityTreeItemResponse faciltyInfo,
+			List<String> list) {
+		if (faciltyInfo.getData().getFacilityType() == FacilityInfoResponse.FacilityTypeEnum.SCOPE) {
+			list.add(faciltyInfo.getData().getFacilityId());
+		}
+		for (FacilityTreeItemResponse childInfo : faciltyInfo.getChildren() ) {
+			recursiveConvertDtoScopeInfoToIdList(childInfo, list);
+		}
+	}
+
+	/**
+	 * Caster のスコープ情報（スコープ内ノード情報含む）を インポートする<BR>
+	 */
+	private static int registScopeInfoAndScopeNode( RepositoryScope scope, RepositoryScopeNode scopeNode,List<String> objectIdList){
+		int ret = 0;
+		
+		final HashMap<String, List<String>> mapScopeNode = new HashMap<>();
+		for (com.clustercontrol.utility.settings.platform.xml.ScopeNodeInfo scopeNodeInfo : scopeNode.getScopeNodeInfo()) {
+			if (!mapScopeNode.containsKey(scopeNodeInfo.getScopeFacilityId())) {
+				mapScopeNode.put(scopeNodeInfo.getScopeFacilityId(), new ArrayList<String>());
 			}
+			mapScopeNode.get(scopeNodeInfo.getScopeFacilityId()).add(scopeNodeInfo.getNodeFacilityId());
+		}
+		
+		// インポート向けデータの存在チェックとREST向けDtoへの変換（既設レコードなら上書き/スキップの確認も行う）
+		List<ScopeInfo> importObjectList = new ArrayList<ScopeInfo>();
+		for (com.clustercontrol.utility.settings.platform.xml.ScopeInfo childScope : scope.getScopeInfo()) {
+			recursiveConvertXmlScopeInfoToList( childScope, importObjectList);
+		}
 
-			if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-				try {
-					RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyScope(childScope_ws);
-
-					objectIdList.add(childScope_ws.getFacilityId());
-					logger.info(Messages.getString("SettingTools.ImportSucceeded.Update") + "(Scope) : " + childScope_ca.getFacilityId());
-				} catch (HinemosUnknown_Exception e1) {
-					logger.warn(Messages.getString("SettingTools.ImportFailed") + "(Scope) : " + HinemosMessage.replace(e.getMessage()));
-					resultNumber = SettingConstants.ERROR_INPROCESS;
-				} catch (InvalidRole_Exception e1) {
-					logger.warn(Messages.getString("SettingTools.InvalidRole") + "(Scope) : " + HinemosMessage.replace(e.getMessage()));
-					resultNumber = SettingConstants.ERROR_INPROCESS;
-				} catch (InvalidUserPass_Exception e1) {
-					logger.warn(Messages.getString("SettingTools.InvalidUserPass") + "(Scope) : " + HinemosMessage.replace(e.getMessage()));
-					resultNumber = SettingConstants.ERROR_INPROCESS;
-				} catch (InvalidSetting_Exception e1) {
-					logger.warn(Messages.getString("SettingTools.InvalidSetting") + "(Scope) : " + HinemosMessage.replace(e.getMessage()));
-					resultNumber = SettingConstants.ERROR_INPROCESS;
-				} catch (Exception e1) {
-					logger.warn(Messages.getString("SettingTools.ImportFailed") + "(Scope) : " + HinemosMessage.replace(e.getMessage()));
-					resultNumber = SettingConstants.ERROR_INPROCESS;
-				}
-			} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-				logger.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + "(Scope) : " + childScope_ca.getFacilityId());
-			} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-				logger.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
+		//スコープのIDの一意チェックも行う
+		Set<String> ScopeIdSet = new HashSet<String>();
+		for (ScopeInfo scopeRec : importObjectList) {
+			if( ScopeIdSet.contains(scopeRec.getFacilityId()) ){
+				String[] args = { Messages.getString("word.facility.id"), scopeRec.getFacilityId() };
+				logger.warn(Messages.getString("message.repository.32", args));
+				logger.warn(Messages.getString("SettingTools.UnmarshalXmlFailed"));
 				return SettingConstants.ERROR_INPROCESS;
-			}
-		} catch (Exception e) {
-			String scopeInfoString = "(Scope) : " + childScope_ca.getFacilityId() + " " + HinemosMessage.replace(e.getMessage());
-			resultNumber = SettingConstants.ERROR_INPROCESS;
-			if (!handleDTOException(e, Messages.getString("SettingTools.ImportFailed"), scopeInfoString)) {
-				return resultNumber;
+			}else{
+				ScopeIdSet.add(scopeRec.getFacilityId());
 			}
 		}
+		
+		com.clustercontrol.utility.settings.platform.xml.ScopeInfo[] importObjectArray = importObjectList.toArray( new com.clustercontrol.utility.settings.platform.xml.ScopeInfo[0]);
+		ImportRecordConfirmer<ScopeInfo, ImportScopeRecordRequest, String> confirmer = new ImportRecordConfirmer<ScopeInfo, ImportScopeRecordRequest, String>(
+				logger,importObjectArray) {
+			@Override
+			protected ImportScopeRecordRequest convertDtoXmlToRestReq(ScopeInfo xmlDto)
+					throws HinemosUnknown, InvalidSetting {
+				ScopeInfoResponseP1 info = RepositoryScopeConv.createScopeInfo_ws(xmlDto);
+				ImportScopeRecordRequest dtoRec = new ImportScopeRecordRequest();
+				dtoRec.setImportData(new AddScopeRequest());
+				dtoRec.getImportData().setScopeInfo(new ScopeInfoRequest());
+				RestClientBeanUtil.convertBean(info, dtoRec.getImportData().getScopeInfo());
+				dtoRec.getImportData().setParentFacilityId(xmlDto.getParentFacilityId());
+				dtoRec.setImportKeyValue( dtoRec.getImportData().getScopeInfo().getFacilityId());
+				//スコープ内ノード情報も併せて送信
+				dtoRec.setAssignFacilityIdList(mapScopeNode.get(xmlDto.getFacilityId()));
+				
+				return dtoRec;
+			}
 
-		// スコープ情報の登録。
-		// 途中、例外が発生しても継続する。
-		for (com.clustercontrol.utility.settings.platform.xml.ScopeInfo gchildInfo_ca : childScope_ca.getScopeInfo()) {
-			recursiveRegistScopeInfo(childScope_ca.getFacilityId(), gchildInfo_ca, objectIdList);
-			if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-				break;
-		    }
+			@Override
+			protected Set<String> getExistIdSet() throws Exception {
+				List<String> idList = new ArrayList<String>();
+				FacilityTreeItemResponse ret = RepositoryRestClientWrapper
+						.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getFacilityTree(null);
+				recursiveConvertDtoScopeInfoToIdList(ret, idList);
+				Set<String> idSet = new HashSet<String>();
+				for (String id : idList) {
+					idSet.add(id);
+				}
+				return idSet;
+			}
+
+			@Override
+			protected boolean isLackRestReq(ImportScopeRecordRequest restDto) {
+				return (restDto == null || restDto.getImportData().getScopeInfo().getFacilityId() == null || restDto.getImportData().getScopeInfo().getFacilityId().equals(""));
+			}
+
+			@Override
+			protected String getKeyValueXmlDto(ScopeInfo xmlDto) {
+				return xmlDto.getFacilityId();
+			}
+
+			@Override
+			protected String getId(ScopeInfo xmlDto) {
+				return xmlDto.getFacilityId();
+			}
+
+			@Override
+			protected void setNewRecordFlg(ImportScopeRecordRequest restDto, boolean flag) {
+				restDto.setIsNewRecord(flag);
+			}
+		};
+		int confirmRet = confirmer.executeConfirm();
+		//変換エラーならUnmarshalXml扱いで処理打ち切り(キャンセルはキャンセル以前の選択結果を反映するので次に進む)
+		if( confirmRet != SettingConstants.SUCCESS && confirmRet != SettingConstants.ERROR_CANCEL ){
+			logger.warn(Messages.getString("SettingTools.UnmarshalXmlFailed"));
+			return confirmRet;
 		}
+		
+		// 更新単位の件数毎にインポートメソッドを呼び出し、結果をログ出力
+		// API異常発生時はそこで中断、レコード個別の異常発生時はユーザ選択次第で続行
+		ImportClientController<ImportScopeRecordRequest, ImportScopeResponse, RecordRegistrationResponse> importController = new ImportClientController<ImportScopeRecordRequest, ImportScopeResponse, RecordRegistrationResponse>(
+				logger, Messages.getString("platform.repository.scope"), confirmer.getImportRecDtoList(),true) {
+			@Override
+			protected List<RecordRegistrationResponse> getResRecList(ImportScopeResponse importResponse) {
+				return importResponse.getResultList();
+			};
 
-		return resultNumber;
+			@Override
+			protected Boolean getOccurException(ImportScopeResponse importResponse) {
+				return importResponse.getIsOccurException();
+			};
+
+			@Override
+			protected String getReqKeyValue(ImportScopeRecordRequest importRec) {
+				return importRec.getImportKeyValue();
+			};
+
+			@Override
+			protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+				return responseRec.getImportKeyValue();
+			};
+
+			@Override
+			protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+				return (responseRec.getResult() == ResultEnum.NORMAL) ;
+			};
+
+			@Override
+			protected ImportScopeResponse callImportWrapper(List<ImportScopeRecordRequest> importRecList)
+					throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+				ImportScopeRequest reqDto = new ImportScopeRequest();
+				reqDto.setRecordList(importRecList);
+				reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+				return UtilityRestClientWrapper
+						.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importScope(reqDto);
+			}
+
+			@Override
+			protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+				if (responseRec.getExceptionInfo() != null) {
+					return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+				}
+				return null;
+			};
+
+		};
+		ret = importController.importExecute();
+		for (RecordRegistrationResponse rec: importController.getImportSuccessList() ){
+			objectIdList.add(rec.getImportKeyValue());
+		}
+		
+		return ret;
 	}
 
 	/**
@@ -379,11 +526,11 @@ public class RepositoryScopeAction {
 	 */
 	public static class WrappedFacilityTreeItem implements RepositoryScopeConv.IFacilityTreeItem {
 		private List<RepositoryScopeConv.IFacilityTreeItem> children;
-	    private FacilityInfo data;
-	    private FacilityTreeItem facilityTreeItem;
+	    private FacilityInfoResponse data;
+	    private FacilityTreeItemResponse facilityTreeItem;
 	    private RepositoryScopeConv.IFacilityTreeItem parent;
 
-	    private WrappedFacilityTreeItem(RepositoryScopeConv.IFacilityTreeItem parent, FacilityTreeItem facilityTreeItem) throws ConvertorException {
+	    private WrappedFacilityTreeItem(RepositoryScopeConv.IFacilityTreeItem parent, FacilityTreeItemResponse facilityTreeItem) throws ConvertorException {
 	    	super();
 	    	assert facilityTreeItem != null;
 
@@ -396,7 +543,7 @@ public class RepositoryScopeAction {
 	    	if (children == null) {
 	    		children = new ArrayList<RepositoryScopeConv.IFacilityTreeItem>();
 
-	    		for (FacilityTreeItem child: facilityTreeItem.getChildren()) {
+	    		for (FacilityTreeItemResponse child: facilityTreeItem.getChildren()) {
 	    			children.add(new WrappedFacilityTreeItem(this, child));
 	    		}
 	    	}
@@ -405,20 +552,25 @@ public class RepositoryScopeAction {
 	    }
 
 		@Override
-	    public FacilityInfo getData() throws Exception {
-	    	if (data == null) {
-	    		switch (facilityTreeItem.getData().getFacilityType()) {
-	    		case FacilityConstant.TYPE_SCOPE:
-			    	data = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getScope(facilityTreeItem.getData().getFacilityId());
-			    	data.setFacilityType(FacilityConstant.TYPE_SCOPE);//Manager側のバグ対応
-			    	break;
-	    		case FacilityConstant.TYPE_NODE:
-			    	data = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNode(facilityTreeItem.getData().getFacilityId());
-			    	break;
-	    		default:
-	    			data = facilityTreeItem.getData();
-	    		}
-	    	}
+		public FacilityInfoResponse getData() throws Exception {
+			if (data == null) {
+				switch (facilityTreeItem.getData().getFacilityType()) {
+				case SCOPE:
+					ScopeInfoResponseP1 scopeInfo = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getScope(facilityTreeItem.getData().getFacilityId()); 
+					data = new FacilityInfoResponse();
+					RestClientBeanUtil.convertBean(scopeInfo, data);
+					data.setFacilityType( FacilityInfoResponse.FacilityTypeEnum.SCOPE);
+					break;
+				case NODE:
+					NodeInfoResponseP1 nodeInfo = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNode(facilityTreeItem.getData().getFacilityId());
+					data = new FacilityInfoResponse();
+					RestClientBeanUtil.convertBean(nodeInfo, data);
+					data.setFacilityType( FacilityInfoResponse.FacilityTypeEnum.NODE);
+					break;
+				default:
+					data = facilityTreeItem.getData();
+				}
+			}
 
 	        return data;
 	    }
@@ -443,7 +595,7 @@ public class RepositoryScopeAction {
 		RepositoryScope rs = null;
 		RepositoryScopeNode rsn = null;
 		try {
-			FacilityTreeItem facilityTreeItem = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getFacilityTree(null);
+			FacilityTreeItemResponse facilityTreeItem = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getFacilityTree(null);
 			WrappedFacilityTreeItem treeItem = new WrappedFacilityTreeItem(null, facilityTreeItem);
 
 			// Caster のデータ構造に変換。
@@ -550,10 +702,10 @@ public class RepositoryScopeAction {
 		RepositoryScope scope2 = null;
 		RepositoryScopeNode scopeNode2 = null;
 		try {
-			scope1 = RepositoryScope.unmarshal(new InputStreamReader(new FileInputStream(xmlScope1), "UTF-8"));
-			scopeNode1 = RepositoryScopeNode.unmarshal(new InputStreamReader(new FileInputStream(xmlScopeNode1), "UTF-8"));
-			scope2 = RepositoryScope.unmarshal(new InputStreamReader(new FileInputStream(xmlScope2), "UTF-8"));
-			scopeNode2 = RepositoryScopeNode.unmarshal(new InputStreamReader(new FileInputStream(xmlScopeNode2), "UTF-8"));
+			scope1 = XmlMarshallUtil.unmarshall(RepositoryScope.class,new InputStreamReader(new FileInputStream(xmlScope1), "UTF-8"));
+			scopeNode1 = XmlMarshallUtil.unmarshall(RepositoryScopeNode.class,new InputStreamReader(new FileInputStream(xmlScopeNode1), "UTF-8"));
+			scope2 = XmlMarshallUtil.unmarshall(RepositoryScope.class,new InputStreamReader(new FileInputStream(xmlScope2), "UTF-8"));
+			scopeNode2 = XmlMarshallUtil.unmarshall(RepositoryScopeNode.class,new InputStreamReader(new FileInputStream(xmlScopeNode2), "UTF-8"));
 		}
 		catch (Exception e) {
 			logger.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
@@ -668,62 +820,98 @@ public class RepositoryScopeAction {
 	
 
 	protected void checkDelete(RepositoryScope xmlElements){
-		List<com.clustercontrol.ws.repository.FacilityInfo> subList = null;
+		List<com.clustercontrol.utility.settings.platform.xml.ScopeInfo> xmlElementList = createXmlElementList(xmlElements.getScopeInfo());
+		FacilityTreeItemResponse facilityTreeItem = null;
 		try {
-			subList = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getFacilityList("");
-		}
-		catch (Exception e) {
+			facilityTreeItem = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getFacilityTree("");
+		} catch (Exception e) {
 			logger.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			logger.debug(e.getMessage(), e);
 		}
+		if (facilityTreeItem != null) {
+			recursiveCheckDelete(xmlElementList, facilityTreeItem);
+		}
+	}
+
+	private List<com.clustercontrol.utility.settings.platform.xml.ScopeInfo> 
+			createXmlElementList(com.clustercontrol.utility.settings.platform.xml.ScopeInfo[] xmlElements) {
+		List<com.clustercontrol.utility.settings.platform.xml.ScopeInfo> xmlElementList = new ArrayList<>();
+		xmlElementList.addAll(Arrays.asList(xmlElements));
+		for (com.clustercontrol.utility.settings.platform.xml.ScopeInfo xmlElement : xmlElements) {
+			if (xmlElement.getScopeInfo().length > 0) {
+				// 子供を探索
+				xmlElementList.addAll(createXmlElementList(xmlElement.getScopeInfo()));
+			}
+		}
+		return xmlElementList;
+	}
+
+	/**
+	 * 指定されたスコープとその配下のスコープを探索し、マネージャのみに存在するデータの削除確認をする
+	 * 
+	 * @param xmlElementList
+	 * @param treeItem
+	 */
+	private void recursiveCheckDelete(List<com.clustercontrol.utility.settings.platform.xml.ScopeInfo> xmlElementList, FacilityTreeItemResponse treeItem) {
+		FacilityInfoResponse scopeInfo = treeItem.getData();
 		
-		if(subList == null || subList.size() <= 0){
+		if (scopeInfo.getFacilityType() != FacilityInfoResponse.FacilityTypeEnum.SCOPE
+				&& scopeInfo.getFacilityType() !=  FacilityInfoResponse.FacilityTypeEnum.COMPOSITE) {
+			return;
+		}
+		if (RepositoryConv.checkInternalScope(scopeInfo.getFacilityId())) {
 			return;
 		}
 		
-		List<ScopeInfo> xmlElementList = new ArrayList<>(Arrays.asList(xmlElements.getScopeInfo()));
-		for(com.clustercontrol.ws.repository.FacilityInfo mgrInfo: new ArrayList<>(subList)){
-			if(!RepositoryConv.checkInternalScope(mgrInfo.getFacilityId())){
-				for(ScopeInfo xmlElement: new ArrayList<>(xmlElementList)){
-					if(mgrInfo.getFacilityId().equals(xmlElement.getFacilityId())){
-						subList.remove(mgrInfo);
-						xmlElementList.remove(xmlElement);
-						break;
-					}
+		if (scopeInfo.getFacilityType() ==  FacilityInfoResponse.FacilityTypeEnum.SCOPE) {
+			boolean delete = true;
+			for(com.clustercontrol.utility.settings.platform.xml.ScopeInfo xmlElement: new ArrayList<>(xmlElementList)){
+				if(scopeInfo.getFacilityId().equals(xmlElement.getFacilityId())){
+					delete = false;
+					xmlElementList.remove(xmlElement);
+					break;
 				}
-			} else {
-				subList.remove(mgrInfo);
 			}
-		}
-		
-		if(subList.size() > 0){
-			for(com.clustercontrol.ws.repository.FacilityInfo info: subList){
+			if (delete) {
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
-					String[] args = {info.getFacilityId()};
+					String[] args = {scopeInfo.getFacilityId()};
 					DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 							null, Messages.getString("message.delete.confirm4", args));
 					DeleteProcessMode.setProcesstype(dialog.open());
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
-			    
-			    if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
-			    	try {
-			    		List<String> args = new ArrayList<>();
-			    		args.add(info.getFacilityId());
-			    		RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteScope(args);
-			    		logger.info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getFacilityId());
-					} catch (Exception e1) {
-						logger.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
+				
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
+					try {
+						List<String> args = new ArrayList<>();
+						args.add(scopeInfo.getFacilityId());
+						RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteScope(String.join(",",args));
+						logger.info(Messages.getString("SettingTools.SubSucceeded.Delete") + "(Scope) : " + scopeInfo.getFacilityId());
+						// 成功した場合はリターン、それ以外は子供を探索
+						return;
+					} catch (InvalidRole | InvalidUserPass | UsedFacility e) {
+						logger.warn(Messages.getString("SettingTools.ClearFailed") + "(Scope) : " + scopeInfo.getFacilityId() + ", " + HinemosMessage.replace(e.getMessage()));
+					} catch (Exception e) {
+						logger.error(Messages.getString("SettingTools.ClearFailed") + "(Scope) : " + scopeInfo.getFacilityId() + ", " + HinemosMessage.replace(e.getMessage()));
 					}
-			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-			    	logger.info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getFacilityId());
-			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-			    	logger.info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
-			    	return;
-			    }
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
+					logger.info(Messages.getString("SettingTools.SubSucceeded.Skip") + "(Scope) : " + scopeInfo.getFacilityId());
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
+					logger.info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
+					return;
+				}
 			}
 		}
+		// 子供を探索
+		for (FacilityTreeItemResponse childItem : treeItem.getChildren()) {
+			recursiveCheckDelete(xmlElementList, childItem);
+			if (DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+				// キャンセルの場合は終了
+				break;
+			}
+		}
+		return;
 	}
 	
 	/**

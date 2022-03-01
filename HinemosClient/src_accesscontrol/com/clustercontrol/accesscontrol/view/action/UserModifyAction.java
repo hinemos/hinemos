@@ -27,16 +27,15 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.UserInfoResponse;
 
 import com.clustercontrol.accesscontrol.action.GetUserListTableDefine;
 import com.clustercontrol.accesscontrol.dialog.UserDialog;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.accesscontrol.view.RoleSettingTreeView;
 import com.clustercontrol.accesscontrol.view.UserListView;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.UserInfo;
 
 /**
  * アクセス[ユーザ]ビューの「変更」のアクションクラス<BR>
@@ -109,11 +108,11 @@ public class UserModifyAction extends AbstractHandler implements IElementUpdater
 
 		if (uid != null) {
 			// ユーザIDが指定されている場合、その情報を初期化する。
-			UserInfo info = null;
+			UserInfoResponse info = null;
 			try {
-				AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+				AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getUserInfo(uid);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
 				return null;
@@ -121,7 +120,7 @@ public class UserModifyAction extends AbstractHandler implements IElementUpdater
 				MessageDialog.openError(
 						null,
 						Messages.getString("failed"),
-						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+						Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 				return null;
 			}
 			

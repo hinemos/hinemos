@@ -18,16 +18,16 @@ import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.HinemosPropertyResponse;
+import org.openapitools.client.model.HinemosPropertyResponse.TypeEnum;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
-import com.clustercontrol.maintenance.HinemosPropertyTypeConstant;
 import com.clustercontrol.maintenance.HinemosPropertyTypeMessage;
 import com.clustercontrol.maintenance.action.GetHinemosPropertyTableDefine;
 import com.clustercontrol.maintenance.composite.HinemosPropertyComposite;
 import com.clustercontrol.maintenance.dialog.HinemosPropertyDialog;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.maintenance.HinemosPropertyInfo;
 
 /**
  * メンテナンス[共通設定]ビュー用のテーブルビューア用のDoubleClickListenerクラスです。
@@ -69,9 +69,10 @@ public class HinemosPropertyDoubleClickListener implements IDoubleClickListener 
 	public void doubleClick(DoubleClickEvent event) {
 
 		ArrayList list;
-		HinemosPropertyInfo info = new HinemosPropertyInfo();
+		HinemosPropertyResponse info = new HinemosPropertyResponse();
 		String managerName = null;
-		int valueType = 0;
+		String valueTypeStr = null;
+		TypeEnum valueType = null;
 
 		//共通設定情報を取得
 		if (((StructuredSelection) event.getSelection()).getFirstElement() != null) {
@@ -82,19 +83,22 @@ public class HinemosPropertyDoubleClickListener implements IDoubleClickListener 
 
 		info.setKey((String)list.get(GetHinemosPropertyTableDefine.KEY));
 		managerName = (String)list.get(GetHinemosPropertyTableDefine.MANAGER_NAME);
-		valueType = HinemosPropertyTypeMessage.stringToType((String)list.get(GetHinemosPropertyTableDefine.VALUE_TYPE));
-		info.setValueType(valueType);
+		valueTypeStr = (String)list.get(GetHinemosPropertyTableDefine.VALUE_TYPE);
+		valueType = HinemosPropertyTypeMessage.stringToType(valueTypeStr);
 
-		if (valueType == HinemosPropertyTypeConstant.TYPE_STRING) {
+		info.setType(valueType);
+
+		if (TypeEnum.STRING.equals(valueType)) {
 			String value = (String)list.get(GetHinemosPropertyTableDefine.VALUE);
-			info.setValueString(value);
-		} else if (valueType == HinemosPropertyTypeConstant.TYPE_NUMERIC) {
+			info.setValue(value);
+		} else if (TypeEnum.NUMERIC.equals(valueType)) {
 			Object val = list.get(GetHinemosPropertyTableDefine.VALUE);
 			try {
 				if (val != null) {
-					info.setValueNumeric(Long.parseLong(val.toString()));
+					Long value = Long.parseLong(val.toString());
+					info.setValue(String.valueOf(value));
 				} else {
-					info.setValueNumeric(null);
+					info.setValue(null);
 				}
 			} catch (NumberFormatException e) {
 				m_log.info("run() setValueNumeric(), " + e.getMessage());
@@ -106,7 +110,7 @@ public class HinemosPropertyDoubleClickListener implements IDoubleClickListener 
 			}
 		} else {
 			boolean value = Boolean.parseBoolean((String)list.get(GetHinemosPropertyTableDefine.VALUE));
-			info.setValueBoolean(value);
+			info.setValue(String.valueOf(value));
 		}
 		info.setDescription((String)list.get(GetHinemosPropertyTableDefine.DESCRIPTION));
 

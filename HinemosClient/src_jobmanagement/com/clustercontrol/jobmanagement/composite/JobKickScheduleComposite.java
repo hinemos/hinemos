@@ -9,6 +9,7 @@
 package com.clustercontrol.jobmanagement.composite;
 
 import java.text.DecimalFormat;
+import java.util.Objects;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -22,12 +23,15 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.JobKickResponse;
 
 import com.clustercontrol.bean.DayOfWeekConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
-import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.composite.action.ComboModifyListener;
 import com.clustercontrol.composite.action.NumberKeyListener;
+import com.clustercontrol.composite.action.PositiveNumberVerifyListener;
+import com.clustercontrol.jobmanagement.bean.JobInfoParameterConstant;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
@@ -58,11 +62,22 @@ public class JobKickScheduleComposite extends Composite {
 
 	/** スケジュール設定：毎時：ラジオボタン */
 	private Button m_btnScheduleType_Hour = null;
-	/** スケジュール設定：毎時：分Fromラジオボタン */
+	/** スケジュール設定：毎時：分Fromコンボボックス */
 	private Combo m_cmbFromXminutes_Hour = null;
-	/** スケジュール設定：毎時：分Everyラジオボタン */
+	/** スケジュール設定：毎時：分Everyコンボボックス */
 	private Combo m_cmbEveryXminutes_Hour = null;
 
+	/** スケジュール設定：一定間隔：ラジオボタン */
+	private Button m_btnScheduleType_Interval = null;
+	/** スケジュール設定：一定間隔：時コンボボックス */
+	private Combo m_cmbHour_Interval = null;
+	/** スケジュール設定：一定間隔：分コンボボックス */
+	private Combo m_cmbMinute_Interval = null;
+	/** スケジュール設定：一定間隔：分Everyテキストボックス */
+	private Text m_txtEveryXminutes_Interval = null;
+
+	/** ジョブセッション事前生成Composite */
+	private JobKickSessionPremakeComposite m_sessionPremakeComposite = null;
 
 	/**
 	 * コンストラクタ
@@ -403,6 +418,117 @@ public class JobKickScheduleComposite extends Composite {
 		gridData.grabExcessHorizontalSpace = true;
 		label.setLayoutData(gridData);
 
+		// 一定間隔（ラジオボタン）
+		this.m_btnScheduleType_Interval = new Button(composite, SWT.RADIO);
+		gridData = new GridData();
+		gridData.horizontalSpan = 5;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		this.m_btnScheduleType_Interval.setLayoutData(gridData);
+		this.m_btnScheduleType_Interval.setText(Messages.getString("regular.interval"));
+		this.m_btnScheduleType_Interval.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				update();
+			}
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+
+		// 一定間隔：時（コンボボックス）
+		this.m_cmbHour_Interval = new Combo(composite, SWT.READ_ONLY | SWT.NONE);
+		gridData = new GridData();
+		gridData.horizontalSpan = 2;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		this.m_cmbHour_Interval.setLayoutData(gridData);
+		this.m_cmbHour_Interval.setTextLimit(2);
+		this.m_cmbHour_Interval.setVisibleItemCount(10);
+		this.m_cmbHour_Interval.addKeyListener(new NumberKeyListener());
+		this.m_cmbHour_Interval.addModifyListener(new ComboModifyListener());
+		for (int hour = 0; hour <= 48; hour++) {
+			this.m_cmbHour_Interval.add(format.format(hour));
+		}
+		this.m_cmbHour_Interval.select(0);
+		this.m_cmbHour_Interval.addModifyListener(new ModifyListener(){
+			@Override
+			public void modifyText(ModifyEvent arg0) {
+				update();
+			}
+		});
+
+		// 一定間隔：時（ラベル）
+		label = new Label(composite, SWT.NONE);
+		label.setText(Messages.getString("hr"));
+		gridData = new GridData();
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		label.setLayoutData(gridData);
+
+		// 一定間隔：分（コンボボックス）
+		this.m_cmbMinute_Interval = new Combo(composite, SWT.READ_ONLY | SWT.NONE);
+		gridData = new GridData();
+		gridData.horizontalSpan = 2;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		this.m_cmbMinute_Interval.setLayoutData(gridData);
+		this.m_cmbMinute_Interval.setTextLimit(2);
+		this.m_cmbMinute_Interval.setVisibleItemCount(10);
+		this.m_cmbMinute_Interval.addKeyListener(new NumberKeyListener());
+		this.m_cmbMinute_Interval.addModifyListener(new ComboModifyListener());
+		for (int minutes = 0; minutes < 60; minutes++) {
+			this.m_cmbMinute_Interval.add(format.format(minutes));
+		}
+		this.m_cmbMinute_Interval.select(0);
+		this.m_cmbMinute_Interval.addModifyListener(new ModifyListener(){
+			@Override
+			public void modifyText(ModifyEvent arg0) {
+				update();
+			}
+		});
+
+		// 一定間隔：分（ラベル）
+		label = new Label(composite, SWT.NONE);
+		label.setText(Messages.getString("schedule.min.start.time"));
+		gridData = new GridData();
+		gridData.horizontalSpan = 4;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		label.setLayoutData(gridData);
+
+		new Label(composite, SWT.NONE);
+		new Label(composite, SWT.NONE);
+		new Label(composite, SWT.NONE);
+		new Label(composite, SWT.NONE);
+		new Label(composite, SWT.NONE);
+
+		// 一定間隔：分Every（テキストボックス）
+		this.m_txtEveryXminutes_Interval = new Text(composite, SWT.BORDER);
+		gridData = new GridData();
+		gridData.horizontalSpan = 2;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		this.m_txtEveryXminutes_Interval.setLayoutData(gridData);
+		this.m_txtEveryXminutes_Interval.setTextLimit(4);
+		this.m_txtEveryXminutes_Interval.addVerifyListener(
+				new PositiveNumberVerifyListener(1, JobInfoParameterConstant.JOBSCHEDULE_INTERVAL_EVERY_MINUTES_MAX));
+		this.m_txtEveryXminutes_Interval.addModifyListener(new ModifyListener(){
+			@Override
+			public void modifyText(ModifyEvent arg0) {
+				update();
+			}
+		});
+
+		// 一定間隔：分Every（ラベル）
+		label = new Label(composite, SWT.NONE);
+		label.setText(Messages.getString("schedule.min.execution.interval"));
+		gridData = new GridData();
+		gridData.horizontalSpan = 4;
+		gridData.horizontalAlignment = GridData.FILL;
+		gridData.grabExcessHorizontalSpace = true;
+		label.setLayoutData(gridData);
+
 		// 初期設定
 		this.m_btnScheduleType_Day.setSelection(true);
 		this.m_cmbHour_Day.setEnabled(true);
@@ -412,6 +538,10 @@ public class JobKickScheduleComposite extends Composite {
 		this.m_cmbMinute_Week.setEnabled(false);
 		this.m_cmbFromXminutes_Hour.setEnabled(false);
 		this.m_cmbEveryXminutes_Hour.setEnabled(false);
+		this.m_cmbHour_Interval.setEnabled(false);
+		this.m_cmbMinute_Interval.setEnabled(false);
+		this.m_txtEveryXminutes_Interval.setEditable(false);
+
 	}
 
 	/**
@@ -449,6 +579,23 @@ public class JobKickScheduleComposite extends Composite {
 			this.m_cmbEveryXminutes_Hour.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
 
+		
+		if(this.m_cmbHour_Interval.getEnabled() && "".equals(this.m_cmbHour_Interval.getText())){
+			this.m_cmbHour_Interval.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		}else{
+			this.m_cmbHour_Interval.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		}
+		if(this.m_cmbMinute_Interval.getEnabled() && "".equals(this.m_cmbMinute_Interval.getText())){
+			this.m_cmbMinute_Interval.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		}else{
+			this.m_cmbMinute_Interval.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		}
+		if(this.m_txtEveryXminutes_Interval.getEditable() && "".equals(this.m_txtEveryXminutes_Interval.getText())){
+			this.m_txtEveryXminutes_Interval.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		}else{
+			this.m_txtEveryXminutes_Interval.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		}
+
 		this.m_cmbHour_Day.setEnabled(this.m_btnScheduleType_Day.getSelection());
 		this.m_cmbMinute_Day.setEnabled(this.m_btnScheduleType_Day.getSelection());
 		this.m_cmbWeek_Week.setEnabled(this.m_btnScheduleType_Week.getSelection());
@@ -456,6 +603,14 @@ public class JobKickScheduleComposite extends Composite {
 		this.m_cmbMinute_Week.setEnabled(this.m_btnScheduleType_Week.getSelection());
 		this.m_cmbFromXminutes_Hour.setEnabled(this.m_btnScheduleType_Hour.getSelection());
 		this.m_cmbEveryXminutes_Hour.setEnabled(this.m_btnScheduleType_Hour.getSelection());
+		this.m_cmbHour_Interval.setEnabled(this.m_btnScheduleType_Interval.getSelection());
+		this.m_cmbMinute_Interval.setEnabled(this.m_btnScheduleType_Interval.getSelection());
+		this.m_txtEveryXminutes_Interval.setEditable(this.m_btnScheduleType_Interval.getSelection());
+
+		if (this.m_sessionPremakeComposite != null) {
+			this.m_sessionPremakeComposite.setSessionPremakeEnabled(
+					!this.m_btnScheduleType_Interval.getSelection());
+		}
 	}
 
 	/**
@@ -469,7 +624,7 @@ public class JobKickScheduleComposite extends Composite {
 	 * @param everyXminutes
 	 */
 	public void setJobSchedule(
-			Integer scheduleType,
+			JobKickResponse.ScheduleTypeEnum scheduleType,
 			Integer week,
 			Integer hour,
 			Integer minute,
@@ -478,11 +633,15 @@ public class JobKickScheduleComposite extends Composite {
 		
 		//日時を設定
 		DecimalFormat format = new DecimalFormat("00");
-		if(scheduleType == ScheduleConstant.TYPE_DAY){
+		if(Objects.isNull(scheduleType)){
+			scheduleType = JobKickResponse.ScheduleTypeEnum.DAY ;
+		}
+		if(scheduleType == JobKickResponse.ScheduleTypeEnum.DAY){
 			// スケジュール設定「毎日」
 			this.m_btnScheduleType_Day.setSelection(true);
 			this.m_btnScheduleType_Week.setSelection(false);
 			this.m_btnScheduleType_Hour.setSelection(false);
+			this.m_btnScheduleType_Interval.setSelection(false);
 			if(hour != null){
 				//時を設定
 				this.m_cmbHour_Day.select(0);
@@ -505,11 +664,12 @@ public class JobKickScheduleComposite extends Composite {
 					}
 				}
 			}
-		} else if(scheduleType == ScheduleConstant.TYPE_WEEK){
+		} else if (scheduleType == JobKickResponse.ScheduleTypeEnum.WEEK) {
 			// スケジュール設定「毎週」
 			this.m_btnScheduleType_Day.setSelection(false);
 			this.m_btnScheduleType_Week.setSelection(true);
 			this.m_btnScheduleType_Hour.setSelection(false);
+			this.m_btnScheduleType_Interval.setSelection(false);
 			//曜日を設定
 			this.m_cmbWeek_Week.select(0);
 			for (int i = 0; i < this.m_cmbWeek_Week.getItemCount(); i++) {
@@ -544,11 +704,12 @@ public class JobKickScheduleComposite extends Composite {
 					}
 				}
 			}
-		} else if(scheduleType == ScheduleConstant.TYPE_REPEAT){
+		} else if(scheduleType == JobKickResponse.ScheduleTypeEnum.REPEAT){
 			// スケジュール設定「毎時」
 			this.m_btnScheduleType_Day.setSelection(false);
 			this.m_btnScheduleType_Week.setSelection(false);
 			this.m_btnScheduleType_Hour.setSelection(true);
+			this.m_btnScheduleType_Interval.setSelection(false);
 			
 			// XXX
 			// 「everyXminutes分毎」が設定された後に一度「cmbFromXminutes_Hour」をリセットするため、
@@ -576,6 +737,38 @@ public class JobKickScheduleComposite extends Composite {
 					}
 				}
 			}
+		} else if(scheduleType == JobKickResponse.ScheduleTypeEnum.INTERVAL){
+				// スケジュール設定「一定間隔」
+				this.m_btnScheduleType_Day.setSelection(false);
+				this.m_btnScheduleType_Week.setSelection(false);
+				this.m_btnScheduleType_Hour.setSelection(false);
+				this.m_btnScheduleType_Interval.setSelection(true);
+				if(hour != null){
+					//時を設定
+					this.m_cmbHour_Interval.select(0);
+					for (int i = 0; i < this.m_cmbHour_Interval.getItemCount(); i++) {
+						String hours = format.format(hour);
+						if (hours.equals(this.m_cmbHour_Interval.getItem(i))) {
+							this.m_cmbHour_Interval.select(i);
+							break;
+						}
+					}
+				}
+				if(minute != null){
+					//分を設定
+					this.m_cmbMinute_Interval.select(0);
+					for (int i = 0; i < this.m_cmbMinute_Interval.getItemCount(); i++) {
+						String minutes = format.format(minute);
+						if (minutes.equals(this.m_cmbMinute_Interval.getItem(i))) {
+							this.m_cmbMinute_Interval.select(i);
+							break;
+						}
+					}
+				}
+				//「everyXminutes分毎」を設定
+				if(everyXminutes != null){
+					this.m_txtEveryXminutes_Interval.setText(String.valueOf(everyXminutes));
+				}
 		}
 	}
 
@@ -583,17 +776,20 @@ public class JobKickScheduleComposite extends Composite {
 	 * スケジュール設定：種別を戻します。
 	 * @return スケジュール種別
 	 */
-	public Integer getScheduleType() {
-		Integer result = null;
+	public JobKickResponse.ScheduleTypeEnum getScheduleType() {
+		JobKickResponse.ScheduleTypeEnum result = null;
 		if(this.m_btnScheduleType_Day.getSelection()){
 			// スケジュール設定「毎日」
-			result = ScheduleConstant.TYPE_DAY;
+			result = JobKickResponse.ScheduleTypeEnum.DAY;
 		} else if(this.m_btnScheduleType_Week.getSelection()){
 			// スケジュール設定「毎週」
-			result = ScheduleConstant.TYPE_WEEK;
+			result = JobKickResponse.ScheduleTypeEnum.WEEK;
 		} else if (this.m_btnScheduleType_Hour.getSelection()){
 			// スケジュール設定「毎時」
-			result = ScheduleConstant.TYPE_REPEAT;
+			result =JobKickResponse.ScheduleTypeEnum.REPEAT;
+		} else if (this.m_btnScheduleType_Interval.getSelection()){
+			// スケジュール設定「毎時」
+			result =JobKickResponse.ScheduleTypeEnum.INTERVAL;
 		}
 		return result;
 	}
@@ -632,6 +828,11 @@ public class JobKickScheduleComposite extends Composite {
 					&& !this.m_cmbHour_Week.getText().equals("*")){
 				result = Integer.valueOf(this.m_cmbHour_Week.getText());
 			}
+		} else if(this.m_btnScheduleType_Interval.getSelection()){
+			//スケジュール設定「一定間隔」
+			if(this.m_cmbHour_Interval.getText().length() > 0){
+				result = Integer.valueOf(this.m_cmbHour_Interval.getText());
+			}
 		}
 		return result;
 	}
@@ -651,6 +852,11 @@ public class JobKickScheduleComposite extends Composite {
 			//スケジュール設定「曜日」
 			if(this.m_cmbMinute_Week.getText().length() > 0){
 				result = Integer.valueOf(this.m_cmbMinute_Week.getText());
+			}
+		} else if(this.m_btnScheduleType_Interval.getSelection()){
+			//スケジュール設定「一定間隔」
+			if(this.m_cmbMinute_Interval.getText().length() > 0){
+				result = Integer.valueOf(this.m_cmbMinute_Interval.getText());
 			}
 		}
 		return result;
@@ -682,7 +888,45 @@ public class JobKickScheduleComposite extends Composite {
 			if(this.m_cmbEveryXminutes_Hour.getText().length() > 0){
 				result = Integer.valueOf(this.m_cmbEveryXminutes_Hour.getText());
 			}
+		} else if (this.m_btnScheduleType_Interval.getSelection()){
+				// スケジュール設定「一定間隔」
+				if(this.m_txtEveryXminutes_Interval.getText().length() > 0){
+					result = Integer.valueOf(this.m_txtEveryXminutes_Interval.getText());
+				}
 		}
 		return result;
+	}
+
+	/**
+	 * ジョブセッション事前生成Compositeを設定します
+	 * 
+	 * @param sessionPremakeComposite ジョブセッション事前生成Composite
+	 */
+	public void setSessionPremakeComposite(JobKickSessionPremakeComposite sessionPremakeComposite) {
+		this.m_sessionPremakeComposite = sessionPremakeComposite;
+	}
+
+	/**
+	 * 一定間隔の活性／非活性を設定します
+	 * 
+	 * @param enabled true:活性 / false:非活性
+	 */
+	public void setIntervalEnabled(boolean enabled) {
+		if (this.m_btnScheduleType_Interval != null) {
+			this.m_btnScheduleType_Interval.setEnabled(enabled);
+		}
+	}
+
+	/**
+	 * スケジュール設定：一定間隔：ラジオボタンの値を戻します
+	 * 
+	 * @return スケジュール設定：一定間隔
+	 */
+	public boolean getScheduleTypeInterval() {
+		if (this.m_btnScheduleType_Interval != null) {
+			return this.m_btnScheduleType_Interval.getSelection();
+		} else {
+			return false;
+		}
 	}
 }

@@ -8,14 +8,16 @@
 
 package com.clustercontrol.repository.util;
 
+import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,6 +27,8 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.Ipv6Util;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.QueryExecutor;
+import com.clustercontrol.commons.util.QueryDivergence;
 import com.clustercontrol.fault.AutoRegisterNodeSettingNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosDbTimeout;
@@ -32,7 +36,6 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.NodeConfigSettingNotFound;
 import com.clustercontrol.fault.NodeHistoryNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
-import com.clustercontrol.platform.QueryExecutor;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.NodeConfigFilterComparisonMethod;
 import com.clustercontrol.repository.bean.NodeConfigFilterDataType;
@@ -1350,7 +1353,36 @@ public class QueryUtil {
 		}
 	}
 
-	public static int deleteNodeHistoryByRegDate(String roleId, Long regDate) {
+	public static List<Date> selectTargetDateNodeHistoryByRegDate(String roleId, Long regDate) {
+		StringBuilder sbJpql = new StringBuilder();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			if (roleId != null && !"".equals(roleId)) {
+				sbJpql.append("SELECT a.id.regDate FROM NodeHistory a");
+				sbJpql.append(" WHERE a.id.facilityId IN (");
+				sbJpql.append(" SELECT b.facilityId FROM FacilityInfo b");
+				sbJpql.append(" WHERE b.ownerRoleId = :roleId");
+				sbJpql.append(" )");
+				sbJpql.append(" AND a.id.regDate < :regDate");
+				sbJpql.append(" GROUP BY a.id.regDate ORDER BY a.id.regDate");
+				List<Long> list = em.createQuery(sbJpql.toString(), Long.class)
+						.setParameter("roleId", roleId)
+						.setParameter("regDate", regDate)
+						.getResultList();
+				return getTargetDateListByUnixTimeLsit(list);
+			} else {
+				sbJpql.append("SELECT a.id.regDate FROM NodeHistory a");
+				sbJpql.append(" WHERE a.id.regDate < :regDate");
+				sbJpql.append(" GROUP BY a.id.regDate ORDER BY a.id.regDate");
+				List<Long> list = em.createQuery(sbJpql.toString(), Long.class)
+						.setParameter("regDate", regDate)
+						.getResultList();
+				return getTargetDateListByUnixTimeLsit(list);
+			}
+		}
+	}
+
+	public static int deleteNodeHistoryByRegDate(String roleId, Date targetDate) {
 		StringBuilder sbJpql = new StringBuilder();
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -1363,21 +1395,52 @@ public class QueryUtil {
 				sbJpql.append(" AND a.id.regDate < :regDate");
 				return em.createQuery(sbJpql.toString(), Integer.class)
 						.setParameter("roleId", roleId)
-						.setParameter("regDate", regDate)
+						.setParameter("regDate", parseTargetDateToTargetUnixTime(targetDate))
 						.executeUpdate();
 			} else {
 				sbJpql.append("DELETE FROM NodeHistory a");
 				sbJpql.append(" WHERE a.id.regDate < :regDate");
 				return em.createQuery(sbJpql.toString(), Integer.class)
-						.setParameter("regDate", regDate)
+						.setParameter("regDate", parseTargetDateToTargetUnixTime(targetDate))
 						.executeUpdate();
 			}
 		}
 	}
 
-	public static int deleteNodeHistoryDetailByRegDateTo(
+	public static List<Date> selectTargetDateNodeHistoryDetailByRegDateTo(
 			Class<? extends NodeHistoryDetail> historyDetailClass, String roleId, Long regDateTo) {
 		StringBuilder sbJpql = new StringBuilder();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			if (roleId != null && !"".equals(roleId)) {
+				sbJpql.append(String.format("SELECT a.regDateTo FROM %s a", historyDetailClass.getSimpleName()));
+				sbJpql.append(" WHERE a.id.facilityId IN (");
+				sbJpql.append(" SELECT b.facilityId FROM FacilityInfo b");
+				sbJpql.append(" WHERE b.ownerRoleId = :roleId");
+				sbJpql.append(" )");
+				sbJpql.append(" AND a.regDateTo < :regDateTo");
+				sbJpql.append(" GROUP BY a.regDateTo ORDER BY a.regDateTo");
+				List<Long> list = em.createQuery(sbJpql.toString(), Long.class)
+						.setParameter("roleId", roleId)
+						.setParameter("regDateTo", regDateTo)
+						.getResultList();
+				return getTargetDateListByUnixTimeLsit(list);
+			} else {
+				sbJpql.append(String.format("SELECT a.regDateTo FROM %s a", historyDetailClass.getSimpleName()));
+				sbJpql.append(" WHERE a.regDateTo < :regDateTo");
+				sbJpql.append(" GROUP BY a.regDateTo ORDER BY a.regDateTo");
+				List<Long> list = em.createQuery(sbJpql.toString(), Long.class)
+						.setParameter("regDateTo", regDateTo)
+						.getResultList();
+				return getTargetDateListByUnixTimeLsit(list);
+			}
+		}
+	}
+
+	public static int deleteNodeHistoryDetailByRegDateTo(
+			Class<? extends NodeHistoryDetail> historyDetailClass, String roleId, Date targetDate) {
+		StringBuilder sbJpql = new StringBuilder();
+		Long regDate = parseTargetDateToTargetUnixTime(targetDate);
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			if (roleId != null && !"".equals(roleId)) {
@@ -1389,13 +1452,13 @@ public class QueryUtil {
 				sbJpql.append(" AND a.regDateTo < :regDateTo");
 				return em.createQuery(sbJpql.toString(), Integer.class)
 						.setParameter("roleId", roleId)
-						.setParameter("regDateTo", regDateTo)
+						.setParameter("regDateTo", regDate)
 						.executeUpdate();
 			} else {
 				sbJpql.append(String.format("DELETE FROM %s a", historyDetailClass.getSimpleName()));
 				sbJpql.append(" WHERE a.regDateTo < :regDateTo");
 				return em.createQuery(sbJpql.toString(), Integer.class)
-						.setParameter("regDateTo", regDateTo)
+						.setParameter("regDateTo", regDate)
 						.executeUpdate();
 			}
 		}
@@ -1788,7 +1851,8 @@ public class QueryUtil {
 							continue;
 						}
 						if (itemInfo.getItem().dataType() == NodeConfigFilterDataType.STRING_ONLYEQUAL) {
-							parameters.put(itemInfo.getItem().name(), (String)itemInfo.getItemValue() + "%");
+							parameters.put(itemInfo.getItem().name(), 
+									QueryDivergence.escapeConditionNodeMap((String)itemInfo.getItemValue()) + "%");
 						} else {
 							parameters.put(itemInfo.getItem().name(), itemInfo.getItemValue());
 						}
@@ -1842,7 +1906,8 @@ public class QueryUtil {
 							continue;
 						}
 						if (itemInfo.getItem().dataType() == NodeConfigFilterDataType.STRING_ONLYEQUAL) { 
-							parameters.put(itemInfo.getItem().name(), (String)itemInfo.getItemValue() + "%");
+							parameters.put(itemInfo.getItem().name(),
+									QueryDivergence.escapeConditionNodeMap((String)itemInfo.getItemValue()) + "%");
 						} else {
 							parameters.put(itemInfo.getItem().name(), itemInfo.getItemValue());
 						}
@@ -1939,7 +2004,8 @@ public class QueryUtil {
 							continue;
 						}
 						if (itemInfo.getItem().dataType() == NodeConfigFilterDataType.STRING_ONLYEQUAL) { 
-							parameters.put(itemInfo.getItem().name(), (String)itemInfo.getItemValue() + "%");
+							parameters.put(itemInfo.getItem().name(),
+									QueryDivergence.escapeConditionNodeMap((String)itemInfo.getItemValue()) + "%");
 						} else {
 							parameters.put(itemInfo.getItem().name(), itemInfo.getItemValue());
 						}
@@ -1978,7 +2044,8 @@ public class QueryUtil {
 							continue;
 						}
 						if (itemInfo.getItem().dataType() == NodeConfigFilterDataType.STRING_ONLYEQUAL) { 
-							parameters.put(itemInfo.getItem().name(), (String)itemInfo.getItemValue() + "%");
+							parameters.put(itemInfo.getItem().name(),
+									QueryDivergence.escapeConditionNodeMap((String)itemInfo.getItemValue()) + "%");
 						} else {
 							parameters.put(itemInfo.getItem().name(), itemInfo.getItemValue());
 						}
@@ -2063,7 +2130,8 @@ public class QueryUtil {
 
 				for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
 					if (itemInfo.getItem().dataType() == NodeConfigFilterDataType.STRING_ONLYEQUAL) { 
-						parameters.put(itemInfo.getItem().name(), (String)itemInfo.getItemValue() + "%");
+						parameters.put(itemInfo.getItem().name(),
+								QueryDivergence.escapeConditionNodeMap((String)itemInfo.getItemValue()) + "%");
 					} else {
 						parameters.put(itemInfo.getItem().name(), itemInfo.getItemValue());
 					}
@@ -2476,7 +2544,8 @@ public class QueryUtil {
 
 				for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
 					if (itemInfo.getItem().dataType() == NodeConfigFilterDataType.STRING_ONLYEQUAL) { 
-						parameters.put(itemInfo.getItem().name(), (String)itemInfo.getItemValue() + "%");
+						parameters.put(itemInfo.getItem().name(),
+								QueryDivergence.escapeConditionNodeMap((String)itemInfo.getItemValue()) + "%");
 					} else {
 						parameters.put(itemInfo.getItem().name(), itemInfo.getItemValue());
 					}
@@ -2495,5 +2564,52 @@ public class QueryUtil {
 		}
 		m_log.debug("getNodeFacilityIdByNodeConfig() : end");
 		return rtnList;
+	}
+	
+	public static List<FacilityInfo> getAllFacility() {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<FacilityInfo> resultList
+			= em.createNamedQuery("FacilityEntity.findAll", FacilityInfo.class)
+			.getResultList();
+			return resultList;
+		}
+	}
+	
+	/**
+	 * UnixTime(ミリ秒)のリストから、Date型の日付重複のないリストを取得する
+	 * 
+	 * @param unixTimeList
+	 * @return 処理対象となる日付のリスト
+	 */
+	private static List<Date> getTargetDateListByUnixTimeLsit(List<Long> unixTimeList){
+		List<Date> ret = new ArrayList<Date>();
+		Calendar calendar = Calendar.getInstance();
+		for(long unixTime : unixTimeList){
+			calendar.setTimeInMillis(unixTime);
+			calendar.set(Calendar.HOUR_OF_DAY, 0);
+			calendar.set(Calendar.MINUTE, 0);
+			calendar.set(Calendar.SECOND, 0);
+			calendar.set(Calendar.MILLISECOND, 0);
+			Date date = new Date(calendar.getTime().getTime());
+			if(!ret.contains(date)){
+				ret.add(date);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * 削除対象の日付(Date)をDBに合わせてUnixTime(ミリ秒)に変換する
+	 * ※その際、削除は渡したUnixTime未満で行われるため、削除対象の日付を削除するために＋1日してからUnixTimeに変換する
+	 * 
+	 * @param targetDate 削除対象日付
+	 * @return 削除対象日付＋1日のUnixTime
+	 */
+	private static long parseTargetDateToTargetUnixTime(Date targetDate){
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(targetDate);
+		calendar.add(Calendar.DAY_OF_MONTH, 1);
+		return calendar.getTimeInMillis();
 	}
 }

@@ -7,6 +7,8 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
+import org.openapitools.client.model.ExtendedPropertyResponse;
+
 import com.clustercontrol.xcloud.model.base.Element;
 
 public class ExtendedProperty extends Element implements IExtendedProperty{
@@ -29,12 +31,12 @@ public class ExtendedProperty extends Element implements IExtendedProperty{
 		internalSetProperty(p.value, value, ()->this.value, (s)->this.value=s);
 	}
 	
-	protected void update(com.clustercontrol.ws.xcloud.ExtendedProperty source) {
+	protected void update(ExtendedPropertyResponse source) {
 		setName(source.getName());
 		setValue(source.getValue());
 	}
 	
-	public static ExtendedProperty convert(com.clustercontrol.ws.xcloud.ExtendedProperty source) {
+	public static ExtendedProperty convert(ExtendedPropertyResponse source) {
 		ExtendedProperty storage = new ExtendedProperty();
 		storage.update(source);
 		return storage;

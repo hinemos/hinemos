@@ -58,20 +58,22 @@ import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.NodeLicenseInfo;
 import com.clustercontrol.repository.model.NodeLicenseInfoPK;
 import com.clustercontrol.repository.model.NodeMemoryInfo;
-import com.clustercontrol.repository.model.NodeProductInfo;
-import com.clustercontrol.repository.model.NodeProductInfoPK;
 import com.clustercontrol.repository.model.NodeNetstatInfo;
 import com.clustercontrol.repository.model.NodeNetstatInfoPK;
 import com.clustercontrol.repository.model.NodeNetworkInterfaceInfo;
+import com.clustercontrol.repository.model.NodeNoteInfo;
 import com.clustercontrol.repository.model.NodeOsInfo;
 import com.clustercontrol.repository.model.NodePackageInfo;
 import com.clustercontrol.repository.model.NodePackageInfoPK;
 import com.clustercontrol.repository.model.NodeProcessInfo;
 import com.clustercontrol.repository.model.NodeProcessInfoPK;
+import com.clustercontrol.repository.model.NodeProductInfo;
+import com.clustercontrol.repository.model.NodeProductInfoPK;
 import com.clustercontrol.repository.model.NodeVariableInfo;
 import com.clustercontrol.repository.model.NodeVariableInfoPK;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.Singletons;
 
 /**
  * リポジトリ管理の入力チェッククラス
@@ -106,8 +108,8 @@ public class RepositoryValidator {
 				throw e;
 			}
 		}
-		
 	}
+
 	public static void validateNodeInfo(NodeInfo nodeInfo) throws InvalidSetting{
 		validateNodeInfo(nodeInfo, false);
 	}
@@ -129,6 +131,15 @@ public class RepositoryValidator {
 			throw new InvalidSetting("platform " + nodeInfo.getPlatformFamily() + " does not exist!");
 		}
 
+		// サブプラットフォームのチェック
+		if(nodeInfo.getSubPlatformFamily() != null && !"".equals(nodeInfo.getSubPlatformFamily())){
+			try {
+				QueryUtil.getCollectorSubPlatformMstPK(nodeInfo.getSubPlatformFamily());
+			} catch (FacilityNotFound e) {
+				throw new InvalidSetting("Subplatform " + nodeInfo.getSubPlatformFamily() + " does not exist!");
+			}
+		}
+		
 		// facilityType
 		if(nodeInfo.getFacilityType() != FacilityConstant.TYPE_NODE){
 			InvalidSetting e = new InvalidSetting("Node FacilityType is  " + FacilityConstant.TYPE_NODE);
@@ -145,6 +156,7 @@ public class RepositoryValidator {
 			throw e;
 		}
 		int ipaddressVersion = nodeInfo.getIpAddressVersion().intValue();
+		InetAddress ipAddress = null;
 		if(ipaddressVersion == 4){
 			//versionが空か4の場合には、
 			if(nodeInfo.getIpAddressV4() == null || "".equals(nodeInfo.getIpAddressV4())){
@@ -156,8 +168,8 @@ public class RepositoryValidator {
 
 			// ipv4形式チェック
 			try{
-				InetAddress address = InetAddress.getByName(nodeInfo.getIpAddressV4());
-				if (address instanceof Inet4Address){
+				ipAddress = InetAddress.getByName(nodeInfo.getIpAddressV4());
+				if (ipAddress instanceof Inet4Address){
 					//IPv4の場合はさらにStringをチェック
 					validateIpv4(nodeInfo.getIpAddressV4());
 				} else{
@@ -184,8 +196,8 @@ public class RepositoryValidator {
 
 			// ipv6形式チェック
 			try{
-				InetAddress address = InetAddress.getByName(nodeInfo.getIpAddressV6());
-				if (address instanceof Inet6Address){
+				ipAddress = InetAddress.getByName(nodeInfo.getIpAddressV6());
+				if (ipAddress instanceof Inet6Address){
 				} else{
 					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_IPV6_CORRECT_FORMAT.getMessage() + "(" + nodeInfo.getIpAddressV6() + ")");
 					m_log.info("validateNodeInfo() : "
@@ -206,12 +218,28 @@ public class RepositoryValidator {
 			throw e;
 		}
 
+		// マルチテナント制御
+		// - 制御有効時、オーナーロールに対応したテナントのアドレスグループに含まれない場合はエラー
+		if (ipAddress != null) {
+			MultiTenantSupport multiTenantSupport = Singletons.get(MultiTenantSupport.class);
+			if (multiTenantSupport.isEnabled()) {
+				if (!multiTenantSupport.containsAddressGroup(nodeInfo.getOwnerRoleId(), ipAddress.getAddress())) {
+					m_log.info("validateNodeInfo: Out of the tenant address group, ownerRoleId = "
+								+ nodeInfo.getOwnerRoleId());
+					throw new InvalidSetting(MessageConstant.MESSAGE_MULTI_TENANT_IPADDRESS_OUT_OF_BOUNDS.getMessage());
+				}
+			}
+		}
+		
 		//ノード名の入力チェック
 		if(auto){
-			CommonValidator.validateString(MessageConstant.NODE_NAME.getMessage(), nodeInfo.getNodeName(), false, 0, 128);
+			CommonValidator.validateString(MessageConstant.NODE_NAME.getMessage(), nodeInfo.getNodeName(), false, 0, RepositoryUtil.NODE_NODE_NAME_MAX_BYTE);
 		} else{
-			CommonValidator.validateString(MessageConstant.NODE_NAME.getMessage(), nodeInfo.getNodeName(), true, 1, 128);
+			CommonValidator.validateString(MessageConstant.NODE_NAME.getMessage(), nodeInfo.getNodeName(), true, 1, RepositoryUtil.NODE_NODE_NAME_MAX_BYTE);
 		}
+
+		// Hinemosエージェント 即時反映ポート
+		CommonValidator.validateInt(MessageConstant.AGENT_AWAKE_PORT.getMessage(), nodeInfo.getAgentAwakePort(), 0, 65535);
 
 		// クラウド管理->クラウドサービス
 		CommonValidator.validateString(MessageConstant.CLOUD_SERVICE.getMessage(), nodeInfo.getCloudService(), false, 0, 64);
@@ -220,15 +248,21 @@ public class RepositoryValidator {
 		// クラウド管理->クラウドリソースタイプ
 		CommonValidator.validateString(MessageConstant.CLOUD_RESOURCE_TYPE.getMessage(), nodeInfo.getCloudResourceType(), false, 0, 64);
 		// クラウド管理->クラウドリソースID
-		CommonValidator.validateString(MessageConstant.CLOUD_RESOURCE_ID.getMessage(), nodeInfo.getCloudResourceId(), false, 0, 64);
+		CommonValidator.validateString(MessageConstant.CLOUD_RESOURCE_ID.getMessage(), nodeInfo.getCloudResourceId(), false, 0, 256);
 		// クラウド管理->クラウドリソース名
-		CommonValidator.validateString(MessageConstant.CLOUD_RESOURCE_NAME.getMessage(), nodeInfo.getCloudResourceName(), false, 0, 64);
+		CommonValidator.validateString(MessageConstant.CLOUD_RESOURCE_NAME.getMessage(), nodeInfo.getCloudResourceName(), false, 0,
+				RepositoryUtil.NODE_CLOUD_RESOURCE_NAME_MAX_BYTE);
 		// クラウド管理->クラウドロケーション
 		CommonValidator.validateString(MessageConstant.CLOUD_LOCATION.getMessage(), nodeInfo.getCloudLocation(), false, 0, 64);
+		// クラウド管理->クラウドログ優先度
+		CommonValidator.validateInt(MessageConstant.CLOUDLOG_PRIORITY.getMessage(), nodeInfo.getCloudLogPriority(), 0, Integer.MAX_VALUE);
 
 		// 入力チェック (OS情報)
 		validateNodeOsInfo(nodeInfo.getNodeOsInfo());
 		
+		// ジョブ
+		validateJob(nodeInfo);
+
 		//デバイスの入力チェック
 		if(nodeInfo.getNodeCpuInfo() != null){
 			List<NodeDeviceInfoPK> pkList = new ArrayList<NodeDeviceInfoPK>();
@@ -358,6 +392,9 @@ public class RepositoryValidator {
 				CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_TYPE.getMessage() + "]", info.getDeviceType(), true, 1, 32);
 				CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_DISPLAY_NAME.getMessage() + "]", info.getDeviceDisplayName(), true, 1, 256);
 				CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_INDEX.getMessage() + "]", info.getDeviceIndex(), 0, Integer.MAX_VALUE);
+				CommonValidator.validateLong(MessageConstant.DEVICE_SIZE.getMessage(), info.getDeviceSize(), 0, Long.MAX_VALUE);
+				CommonValidator.validateString(MessageConstant.DEVICE_SIZE_UNIT.getMessage(), info.getDeviceSizeUnit(), false, 0, 64);
+				CommonValidator.validateString(MessageConstant.DESCRIPTION.getMessage(), info.getDeviceDescription(), false, 0, 1024);
 
 				// 重複チェック
 				// JPAリレーションでのDeleteInsertがうまくいかないので、
@@ -403,11 +440,15 @@ public class RepositoryValidator {
 		}
 		if(nodeInfo.getNodeVariableInfo() != null){
 			List<NodeVariableInfoPK> pkList = new ArrayList<NodeVariableInfoPK>();
-			for(NodeVariableInfo variable : nodeInfo.getNodeVariableInfo()){
-				if (variable.getNodeVariableName() == null || variable.getNodeVariableName().equals("")) {
+			Iterator<NodeVariableInfo> iter = nodeInfo.getNodeVariableInfo().iterator();
+			while(iter.hasNext()) {
+				NodeVariableInfo variable = iter.next();
+				// ノード変数名、ノード変数値が未設定もしくは空文字の場合、作成しない
+				if ((variable.getNodeVariableName() == null || variable.getNodeVariableName().equals("")) &&
+					(variable.getNodeVariableValue() == null || variable.getNodeVariableValue().equals(""))) {
+					iter.remove();
 					continue;
 				}
-
 				// 入力チェック (ノード変数情報)
 				validateNodeVariableInfo(variable);
 
@@ -593,6 +634,30 @@ public class RepositoryValidator {
 				nodeInfo.getSnmpRetryCount(), 1, 10);
 		CommonValidator.validateInt(MessageConstant.SNMP_TIMEOUT.getMessage(),
 				nodeInfo.getSnmpTimeout(), 1, Integer.MAX_VALUE);
+		CommonValidator.validateInt(MessageConstant.SNMP_PORT.getMessage(),
+				nodeInfo.getSnmpPort(), 0, 65535);
+
+		// 認証プロトコル 存在チェック
+		if( !nodeInfo.getSnmpAuthProtocol().equals("") ){
+			if( SnmpProtocolConstant.getAuthProtocol().contains(nodeInfo.getSnmpAuthProtocol())){
+			} else {
+				InvalidSetting e1 = new InvalidSetting("SnmppAuthProtocol does not exist! SnmppAuthProtocol = " + nodeInfo.getSnmpAuthProtocol());
+				m_log.info("validateNodeInfo() : "
+						+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
+				throw e1;
+			}
+		}
+
+		// 暗号プロトコル 存在チェック
+		if( !nodeInfo.getSnmpPrivProtocol().equals("") ){
+			if( SnmpProtocolConstant.getPrivProtocol().contains(nodeInfo.getSnmpPrivProtocol())){
+			} else {
+				InvalidSetting e1 = new InvalidSetting("SnmpPrivProtocoll does not exist! SnmpPrivProtocol = " + nodeInfo.getSnmpPrivProtocol());
+				m_log.info("validateNodeInfo() : "
+						+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
+				throw e1;
+			}
+		}
 
 		//サービスのチェック(WBEM)
 		if(nodeInfo.getWbemProtocol() == null
@@ -612,6 +677,8 @@ public class RepositoryValidator {
 				nodeInfo.getWbemRetryCount(), 1, 10);
 		CommonValidator.validateInt(MessageConstant.WBEM_TIMEOUT.getMessage(),
 				nodeInfo.getWbemTimeout(), 1, Integer.MAX_VALUE);
+		CommonValidator.validateInt(MessageConstant.WBEM_PORT.getMessage(),
+				nodeInfo.getWbemPort(), 0, 65535);
 
 		//サービスのチェック(IPMI)
 		CommonValidator.validateString(MessageConstant.IPMI_PROTOCOL.getMessage(), nodeInfo.getIpmiProtocol(), false, 0, 32);
@@ -624,6 +691,10 @@ public class RepositoryValidator {
 				nodeInfo.getIpmiRetries(), 1, 10);
 		CommonValidator.validateInt(MessageConstant.IPMI_TIMEOUT.getMessage(),
 				nodeInfo.getIpmiTimeout(), 1, Integer.MAX_VALUE);
+		CommonValidator.validateString(MessageConstant.IPMI_IPADDRESS.getMessage(),
+				nodeInfo.getIpmiIpAddress(), false, 0, 64);
+		CommonValidator.validateInt(MessageConstant.IPMI_PORT.getMessage(),
+				nodeInfo.getIpmiPort(), 0, 65535);
 
 		//サービスのチェック(WinRM)
 		if(nodeInfo.getWinrmProtocol() == null
@@ -643,10 +714,27 @@ public class RepositoryValidator {
 				nodeInfo.getWinrmRetries(), 1, 10);
 		CommonValidator.validateInt(MessageConstant.WINRM_TIMEOUT.getMessage(),
 				nodeInfo.getWinrmTimeout(), 1, Integer.MAX_VALUE);
+		CommonValidator.validateString(MessageConstant.WINRM_VERSION.getMessage(),
+				nodeInfo.getWinrmVersion(), false, 0, 64);
+		CommonValidator.validateInt(MessageConstant.WINRM_PORT.getMessage(),
+				nodeInfo.getWinrmPort(), 0, 65535);
+
+		//サービスのチェック(SSH)
+		validateSSH(nodeInfo);
 
 		// administrator
 		CommonValidator.validateString(MessageConstant.ADMINISTRATOR.getMessage(), nodeInfo.getAdministrator(), false, 0, 256);
 
+		// Contact
+		CommonValidator.validateString(MessageConstant.CONTACT.getMessage(), nodeInfo.getContact(), false, 0, 1024);
+
+		// Note（備考）
+		if (nodeInfo.getNodeNoteInfo() != null && nodeInfo.getNodeNoteInfo().size() > 0){
+			for(NodeNoteInfo info : nodeInfo.getNodeNoteInfo()) {
+				CommonValidator.validateString(MessageConstant.NOTE.getMessage(), info.getNote(), false, 0, 1024);
+			}
+		}
+		
 	}
 
 	/**
@@ -903,7 +991,7 @@ public class RepositoryValidator {
 			throw e;
 		}
 		// facilityName
-		CommonValidator.validateString(MessageConstant.FACILITY_NAME.getMessage(), facilityInfo.getFacilityName(), true, 1, 128);
+		CommonValidator.validateString(MessageConstant.FACILITY_NAME.getMessage(), facilityInfo.getFacilityName(), true, 1, RepositoryUtil.NODE_FACILITY_NAME_MAX_BYTE);
 
 		// description
 		CommonValidator.validateString(MessageConstant.DESCRIPTION.getMessage(), facilityInfo.getDescription(), false, 0, 256);
@@ -961,10 +1049,11 @@ public class RepositoryValidator {
 	 * 対象構成情報のValidateチェック
 	 * 
 	 * @param info 対象構成情報
+	 * @param addFlg 追加かどうかのフラグ
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public static void validateNodeConfigSettingInfo(NodeConfigSettingInfo info)
+	public static void validateNodeConfigSettingInfo(NodeConfigSettingInfo info, boolean addFlg)
 			throws InvalidSetting, InvalidRole {
 
 		// settingId
@@ -1084,8 +1173,10 @@ public class RepositoryValidator {
 		}
 
 		// ownerRoleId
-		CommonValidator.validateOwnerRoleId(info.getOwnerRoleId(), true,
-				info.getSettingId(), HinemosModuleConstant.NODE_CONFIG_SETTING);
+		if (addFlg) {
+			CommonValidator.validateOwnerRoleId(info.getOwnerRoleId(), true, info.getSettingId(),
+					HinemosModuleConstant.NODE_CONFIG_SETTING);
+		}
 	}
 
 	/**
@@ -1558,7 +1649,7 @@ public class RepositoryValidator {
 		CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_INDEX.getMessage() + "]", info.getDeviceIndex(), 0, Integer.MAX_VALUE);
 		// 付属情報
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_DISPLAY_NAME.getMessage() + "]", info.getDeviceDisplayName(), true, 1, 256);
-		CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE.getMessage() + "]", info.getDeviceSize(), 0, Integer.MAX_VALUE);
+		CommonValidator.validateLong(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE.getMessage() + "]", info.getDeviceSize(), 0, Long.MAX_VALUE);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE_UNIT.getMessage() + "]", info.getDeviceSizeUnit(), false, 0, 64);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DESCRIPTION.getMessage() + "]", info.getDeviceDescription(), false, 0, 1024);
 		if (info.getCoreCount() != null) {
@@ -1585,9 +1676,10 @@ public class RepositoryValidator {
 		CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_INDEX.getMessage() + "]", info.getDeviceIndex(), 0, Integer.MAX_VALUE);
 		// 付属情報
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_DISPLAY_NAME.getMessage() + "]", info.getDeviceDisplayName(), true, 1, 256);
-		CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE.getMessage() + "]", info.getDeviceSize(), 0, Integer.MAX_VALUE);
+		CommonValidator.validateLong(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE.getMessage() + "]", info.getDeviceSize(), 0, Long.MAX_VALUE);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE_UNIT.getMessage() + "]", info.getDeviceSizeUnit(), false, 0, 64);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DESCRIPTION.getMessage() + "]", info.getDeviceDescription(), false, 0, 1024);
+		CommonValidator.validateInt(MessageConstant.DISK_RPM.getMessage(), info.getDiskRpm(), 0, Integer.MAX_VALUE);
 	}
 
 	/**
@@ -1603,7 +1695,7 @@ public class RepositoryValidator {
 		CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_INDEX.getMessage() + "]", info.getDeviceIndex(), 0, Integer.MAX_VALUE);
 		// 付属情報
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_DISPLAY_NAME.getMessage() + "]", info.getDeviceDisplayName(), true, 1, 256);
-		CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE.getMessage() + "]", info.getDeviceSize(), 0, Integer.MAX_VALUE);
+		CommonValidator.validateLong(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE.getMessage() + "]", info.getDeviceSize(), 0, Long.MAX_VALUE);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE_UNIT.getMessage() + "]", info.getDeviceSizeUnit(), false, 0, 64);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DESCRIPTION.getMessage() + "]", info.getDeviceDescription(), false, 0, 1024);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.FILE_SYSTEM_TYPE.getMessage() + "]", info.getFilesystemType(), false, 0, 1024);
@@ -1618,7 +1710,7 @@ public class RepositoryValidator {
 		// キー情報
 		CommonValidator.validateString(MessageConstant.NODE_VARIABLE_NAME.getMessage(), info.getNodeVariableName(), true, 1, 128);
 		// 付属情報
-		CommonValidator.validateString(MessageConstant.NODE_VARIABLE_VALUE.getMessage(), info.getNodeVariableValue(), false, 1, 1024);
+		CommonValidator.validateString(MessageConstant.NODE_VARIABLE_VALUE.getMessage(), info.getNodeVariableValue(), true, 1, 1024);
 	}
 
 	/**
@@ -1644,7 +1736,7 @@ public class RepositoryValidator {
 		CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_INDEX.getMessage() + "]", info.getDeviceIndex(), 0, Integer.MAX_VALUE);
 		// 付属情報
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_DISPLAY_NAME.getMessage() + "]", info.getDeviceDisplayName(), true, 1, 256);
-		CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE.getMessage() + "]", info.getDeviceSize(), 0, Integer.MAX_VALUE);
+		CommonValidator.validateLong(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE.getMessage() + "]", info.getDeviceSize(), 0, Long.MAX_VALUE);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE_UNIT.getMessage() + "]", info.getDeviceSizeUnit(), false, 0, 64);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DESCRIPTION.getMessage() + "]", info.getDeviceDescription(), false, 0, 1024);
 	}
@@ -1662,7 +1754,7 @@ public class RepositoryValidator {
 		CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_INDEX.getMessage() + "]", info.getDeviceIndex(), 0, Integer.MAX_VALUE);
 		// 付属情報
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_DISPLAY_NAME.getMessage() + "]", info.getDeviceDisplayName(), true, 1, 256);
-		CommonValidator.validateInt(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE.getMessage() + "]", info.getDeviceSize(), 0, Integer.MAX_VALUE);
+		CommonValidator.validateLong(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE.getMessage() + "]", info.getDeviceSize(), 0, Long.MAX_VALUE);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DEVICE_SIZE_UNIT.getMessage() + "]", info.getDeviceSizeUnit(), false, 0, 64);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.DESCRIPTION.getMessage() + "]", info.getDeviceDescription(), false, 0, 1024);
 		CommonValidator.validateString(DeviceTypeName + "[" + MessageConstant.NIC_IP_ADDRESS.getMessage() + "]", info.getNicIpAddress(), false, 0, 1024);
@@ -1784,6 +1876,28 @@ public class RepositoryValidator {
 		CommonValidator.validateString(MessageConstant.SETTING_CUSTOM_NAME.getMessage(), info.getDisplayName(), true, 1, 128);
 		CommonValidator.validateString(MessageConstant.COMMAND.getMessage(), info.getCommand(), true, 1, 1024);
 		CommonValidator.validateString(MessageConstant.VALUE.getMessage(), info.getValue(), true, 0, Integer.MAX_VALUE);
+	}
+	
+	/**
+	 * ノード情報 (ジョブ優先度・多重度)の入力チェック
+	 * 
+	 * @param info ノード情報 (ジョブ優先度・多重度)
+	 */
+	private static void validateJob(NodeInfo info) throws InvalidSetting {
+		CommonValidator.validateInt(MessageConstant.JOB_PRIORITY.getMessage(), info.getJobPriority(),0,Integer.MAX_VALUE);
+		CommonValidator.validateInt(MessageConstant.JOB_MULTIPLICITY.getMessage(), info.getJobMultiplicity(), 0, Integer.MAX_VALUE);
+	}
+	
+	/**
+	 * ノード情報 (SSH)の入力チェック
+	 * 
+	 * @param info ノード情報 (SSH)
+	 */
+	private static void validateSSH(NodeInfo info) throws InvalidSetting {
+		CommonValidator.validateString(MessageConstant.SSH_USER.getMessage(), info.getSshUser(), false, 0, 64);
+		CommonValidator.validateString(MessageConstant.SSH_PRIVATE_KEY_FILEPATH.getMessage(), info.getSshPrivateKeyFilepath(), false, 0, 1024);
+		CommonValidator.validateInt(MessageConstant.SSH_PORT.getMessage(), info.getSshPort(), 0, 65535);
+		CommonValidator.validateInt(MessageConstant.SSH_TIMEOUT.getMessage(), info.getSshTimeout(), 0, Integer.MAX_VALUE);
 	}
 	
 }

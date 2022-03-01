@@ -16,31 +16,22 @@
 	<property name="build.template.dir" value="./build/reporting/template" />
 	<path id="HinemosWorkers.classpath">
 		<pathelement location="bin"/>
-		<pathelement location="${HinemosCommon.location}/commonlib/commons-logging-1.2.jar"/>
-		<pathelement location="${HinemosCommon.location}/commonlib/log4j-1.2.17.jar"/>
-		<pathelement location="${HinemosCommon.location}/commonlib/commons-codec-1.10.jar"/>
 		<pathelement location="${HinemosCommon.location}/build/jar/HinemosCommon.jar"/>
-		<pathelement location="${HinemosManager.location}/lib/eclipselink.jar"/>
-		<pathelement location="${HinemosManager.location}/lib/jpasecurity-core-0.4.0.jar"/>
-		<pathelement location="${HinemosManager.location}/lib/javax.persistence_2.1.1.v201509150925.jar"/>
-		<pathelement location="${HinemosManager.location}/lib/postgresql-9.4.1209.jar"/>
-		<pathelement location="${HinemosManager.location}/build/jar/HinemosModel.jar" />
+		<fileset dir="${HinemosManager.location}/commonlib/">
+			<exclude name="**/*sources.jar" />
+			<include name="**/*.jar" />
+		</fileset>
+		<fileset dir="${HinemosManager.location}/lib/">
+			<exclude name="**/*sources.jar" />
+			<include name="**/*.jar" />
+		</fileset>
 		<pathelement location="${HinemosManager.location}/build/jar/HinemosManager.jar"/>
 		<pathelement location="${HinemosManager.location}/build/jar/HinemosManagerRhel.jar"/>
 		<pathelement location="${HinemosManager.location}/build/jar/HinemosManagerWin.jar"/>
-		<pathelement location="lib_reporting/commons-beanutils-1.9.3.jar" />
-		<pathelement location="lib_reporting/commons-collections-3.2.1.jar" />
-		<pathelement location="lib_reporting/commons-digester-2.1.jar" />
-		<pathelement location="lib_reporting/iText-2.1.7.js2.jar" />
-		<pathelement location="lib_reporting/iTextAsian.jar" />
-		<pathelement location="lib_reporting/iTextAsianCmaps.jar" />
-		<pathelement location="lib_reporting/jasperreports-6.3.1.jar" />
-		<pathelement location="lib_reporting/jasperreports-fonts-6.3.1.jar" />
-		<pathelement location="lib_reporting/jasperreports-functions-6.3.1.jar" />
-		<pathelement location="lib_reporting/jcommon-1.0.15.jar" />
-		<pathelement location="lib_reporting/ecj-4.6.1.jar" />
-		<pathelement location="lib_reporting/jfreechart-1.0.12.jar" />
-		<pathelement location="lib_reporting/poi-3.12-20150511.jar" />
+		<fileset dir="./lib_reporting">
+			<exclude name="**/*sources.jar" />
+			<include name="**/*.jar" />
+		</fileset>
 	</path>
 
 	<target name="init">
@@ -84,7 +75,6 @@
 				<include name="**/*.*" />
 				<include name="**/ent/**/*.*" />
 				<exclude name="**/platform/**" />
-				<exclude name="**/orm_reporting_data_diff.xml" />
 			</fileset>
 		</jar>
 	</target>
@@ -93,7 +83,6 @@
 		<jar destfile="build/jar/HinemosReporting${jar.platform}.jar" manifest="${build.dir}/MANIFEST.MF">
 			<fileset dir="./build/reporting/bin">
 				<include name="**/platform/**"/>
-				<include name="**/orm_reporting_data_diff.xml"/>
 				<exclude name="**/ent/**"/>
 			</fileset>
 		</jar>

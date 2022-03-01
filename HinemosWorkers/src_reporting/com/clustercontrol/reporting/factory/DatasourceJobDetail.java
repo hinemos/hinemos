@@ -50,7 +50,7 @@ public class DatasourceJobDetail extends DatasourceBase {
 	protected static final String JOB_ID_REGEX_EXC = "job.id.exc";
 
 	protected int m_daySec = 1000*24*60*60;
-	protected String m_ownerRoleId;
+	protected String m_ownerRoleId = null;
 
 	public DatasourceJobDetail() {
 		if (!"ADMINISTRATORS".equals(ReportUtil.getOwnerRoleId())) {
@@ -177,21 +177,21 @@ public class DatasourceJobDetail extends DatasourceBase {
 			return children;
 		}
 
-		String getCsvLine(int maxLabelLength) {
+		String getCsvLine(String sessionId, int maxLabelLength) {
 			String indent = "                    ".substring(0, (level > MAX_JOBID_INDENT_LEVEL ? MAX_JOBID_INDENT_LEVEL : level) * 2);
 			String jobLabel = indent + jobId + " (" + job_name + ")";
 			jobLabel = (jobLabel.length() <= maxLabelLength ? jobLabel :
 				jobLabel.substring(0, maxLabelLength) + "...");
-			jobLabel = '"' + jobLabel.replace("\"", "\"\"") + '"';
 
 			String endStatusStr = end_status == null ? "" : ReportUtil.getEndStatusString(end_status);
 			String statusStr = status == null ? "" : Messages.getString(ReportUtil.getStatusString(status));
 
-			return (jobId + ","
-					 + (start_date == null ? "" : start_date) + "," + (end_date == null ? "" : end_date) + ","
-					 + trigger_type + "," + trigger_info + "," + (end_status == null ? "" : end_status) + "," + job_series + ","
-					 + (elapsed_time == null ? "" : elapsed_time) + ","
-					 + status + "," + endStatusStr + "," + statusStr + "," + schedule_date + "," + jobLabel);
+			String[] data = { sessionId, jobId, (start_date == null ? "" : start_date.toString()),
+					(end_date == null ? "" : end_date.toString()), Integer.toString(trigger_type), trigger_info,
+					(end_status == null ? "" : end_status.toString()), job_series,
+					(elapsed_time == null ? "" : elapsed_time), (status == null ? "" : Integer.toString(status)),
+					endStatusStr, statusStr, schedule_date.toString(), jobLabel };
+			return ReportUtil.joinStringsToCsv(data);
 		}
 	}
 
@@ -206,7 +206,7 @@ public class DatasourceJobDetail extends DatasourceBase {
 			throw new ReportingPropertyNotFound(SUFFIX_KEY_VALUE+"."+num + " is not defined.");
 		}
 		String suffix = m_propertiesMap.get(SUFFIX_KEY_VALUE+"."+num);
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 
 		String jobUnitRegex = isDefine(JOB_UNIT_REGEX+"."+num, "%%");		
 		String jobIdRegex = isDefine(JOB_ID_REGEX+"."+num, "%%");
@@ -220,7 +220,7 @@ public class DatasourceJobDetail extends DatasourceBase {
 				"trigger_type", "trigger_info", "end_status", "job_series", "elapsed_time",
 				"status", "end_status_str", "status_str",
 				"schedule_date", "job_label" };
-		String columnsStr = ReportUtil.joinStrings(columns, ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 
 		// get data from Hinemos DB
 		BufferedWriter bw = null;
@@ -243,61 +243,58 @@ public class DatasourceJobDetail extends DatasourceBase {
 				List<JobSessionJobEntity> rootJobSessionJobList = controller.getRootJobSessionJobByParentJobunitId(rootparentUnitJobId, m_startDate.getTime(), m_startDate.getTime() + m_daySec);
 				for (JobSessionJobEntity rootJobSessionJobEntity : rootJobSessionJobList) {
 					if (rootJobSessionJobEntity != null) {
-						for (JobSessionJobEntity rootJobSessionJob : rootJobSessionJobList) {
-							List<JobSessionJobEntity> jobSessionList = controller.getReportingJobDetailList(rootJobSessionJob.getId().getSessionId(), jobUnitRegex, jobIdRegex, jobIdRegexExc, m_ownerRoleId);
-							for (JobSessionJobEntity entity : jobSessionList) {
-								String sessionId = entity.getId().getSessionId();
-								String jobId = entity.getId().getJobId();
-								String parentJobId = entity.getParentJobId();
-								JobNode job = new JobNode(jobId, parentJobId);
-								JobSessionEntity jobSessionEntity = entity.getJobSessionEntity();
-								JobInfoEntity jobInfo = entity.getJobInfoEntity();
-								if (jobSessionEntity == null || jobInfo == null) {
-									throw new HinemosUnknown("job info is null." + entity.getId().toString());
-								}
-								job.job_name = jobInfo.getJobName();
-								if (entity.getStartDate() != null) {
-									job.start_date = new Timestamp(entity.getStartDate());
-									job.start_date.setNanos(0);
-								} else {
-									job.start_date = null;
-								}
-								if (entity.getEndDate() != null) {
-									job.end_date = new Timestamp(entity.getEndDate());
-									job.end_date.setNanos(0);
-								} else {
-									job.end_date = null;
-								}
-								if (jobSessionEntity.getTriggerType() != null) {
-									job.trigger_type = jobSessionEntity.getTriggerType();
-								} else {
-									throw new HinemosUnknown("triggerType is null");
-								}
-								String trigger_info = jobSessionEntity.getTriggerInfo();
-								job.trigger_info = '"' + trigger_info.replace("\"", "\"\"") + '"';
-								job.end_status = entity.getEndStatus();
-								job.job_series = "job1";
-								Long elapsedTime = null;
-								if (entity.getEndDate() != null && entity.getStartDate() != null) {
-									elapsedTime = TimeUnit.MILLISECONDS.toSeconds(entity.getEndDate()) - TimeUnit.MILLISECONDS.toSeconds(entity.getStartDate());
-								}
-								job.elapsed_time = millsecToTime(elapsedTime, jobId);
-								job.status = entity.getStatus();
-								job.schedule_date = new Timestamp(jobSessionEntity.getScheduleDate());
-								job.schedule_date.setNanos(0);
-								job.parentJobId = entity.getParentJobId();
-
-								JobSession jobSession = sessionMap.get(sessionId);
-
-								if (jobSession == null) {
-									jobSession = new JobSession(sessionId);
-									sessionMap.put(sessionId, jobSession);
-								}
-								if ("TOP".equals(parentJobId)) {
-									jobSession.setRootJob(job);
-								}
-								jobSession.addJob(job);
+						List<JobSessionJobEntity> jobSessionList = controller.getReportingJobDetailList(rootJobSessionJobEntity.getId().getSessionId(), jobUnitRegex, jobIdRegex, jobIdRegexExc, m_ownerRoleId);
+						for (JobSessionJobEntity entity : jobSessionList) {
+							String sessionId = entity.getId().getSessionId();
+							String jobId = entity.getId().getJobId();
+							String parentJobId = entity.getParentJobId();
+							JobNode job = new JobNode(jobId, parentJobId);
+							JobSessionEntity jobSessionEntity = entity.getJobSessionEntity();
+							JobInfoEntity jobInfo = entity.getJobInfoEntity();
+							if (jobSessionEntity == null || jobInfo == null) {
+								throw new HinemosUnknown("job info is null." + entity.getId().toString());
 							}
+							job.job_name = jobInfo.getJobName();
+							if (entity.getStartDate() != null) {
+								job.start_date = new Timestamp(entity.getStartDate());
+								job.start_date.setNanos(0);
+							} else {
+								job.start_date = null;
+							}
+							if (entity.getEndDate() != null) {
+								job.end_date = new Timestamp(entity.getEndDate());
+								job.end_date.setNanos(0);
+							} else {
+								job.end_date = null;
+							}
+							if (jobSessionEntity.getTriggerType() != null) {
+								job.trigger_type = jobSessionEntity.getTriggerType();
+							} else {
+								throw new HinemosUnknown("triggerType is null");
+							}
+							job.trigger_info = jobSessionEntity.getTriggerInfo();
+							job.end_status = entity.getEndStatus();
+							job.job_series = "job1";
+							Long elapsedTime = null;
+							if (entity.getEndDate() != null && entity.getStartDate() != null) {
+								elapsedTime = TimeUnit.MILLISECONDS.toSeconds(entity.getEndDate()) - TimeUnit.MILLISECONDS.toSeconds(entity.getStartDate());
+							}
+							job.elapsed_time = millsecToTime(elapsedTime, jobId);
+							job.status = entity.getStatus();
+							job.schedule_date = new Timestamp(jobSessionEntity.getScheduleDate());
+							job.schedule_date.setNanos(0);
+							job.parentJobId = entity.getParentJobId();
+
+							JobSession jobSession = sessionMap.get(sessionId);
+
+							if (jobSession == null) {
+								jobSession = new JobSession(sessionId);
+								sessionMap.put(sessionId, jobSession);
+							}
+							if ("TOP".equals(parentJobId)) {
+								jobSession.setRootJob(job);
+							}
+							jobSession.addJob(job);
 						}
 					}
 				}
@@ -307,7 +304,7 @@ public class DatasourceJobDetail extends DatasourceBase {
 						JobSession session = entry.getValue();
 						List<JobNode> jobList = session.getJobTreeList();
 						for (JobNode node : jobList) {
-							bw.write(session.sessionId + "," + node.getCsvLine(maxLength));
+							bw.write(node.getCsvLine(session.sessionId, maxLength));
 							bw.newLine();
 						}
 					}

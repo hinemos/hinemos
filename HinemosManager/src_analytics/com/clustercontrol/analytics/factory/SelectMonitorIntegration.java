@@ -15,6 +15,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.analytics.bean.IntegrationComparisonMethod;
+import com.clustercontrol.analytics.bean.MonitorIntegrationConstant;
 import com.clustercontrol.analytics.model.IntegrationConditionInfo;
 import com.clustercontrol.analytics.util.AnalyticsUtil;
 import com.clustercontrol.bean.HinemosModuleConstant;
@@ -122,13 +123,18 @@ public class SelectMonitorIntegration extends SelectMonitor {
 
 		Double dblValue = null;
 		// 比較値が不正な場合は処理終了
-		try {
-			dblValue = Double.parseDouble(condition.getComparisonValue());
-		} catch (NumberFormatException e) {
-			String message = "getCollectDataForNumeric() : comparisonValue is invalid. comparisonMethod=" 
-					+ condition.getComparisonValue();
-				m_log.info(message);
-				throw new HinemosUnknown(message);
+		if (MonitorIntegrationConstant.NUMBER_NAN.equals(condition.getComparisonValue())
+			&& IntegrationComparisonMethod.EQ.symbol().equals(condition.getComparisonMethod())) {
+			// 比較値NaNのため何もしない
+		} else {
+			try {
+				dblValue = Double.parseDouble(condition.getComparisonValue());
+			} catch (NumberFormatException e) {
+				String message = "getCollectDataForNumeric() : comparisonValue is invalid. comparisonMethod=" 
+						+ condition.getComparisonValue();
+					m_log.info(message);
+					throw new HinemosUnknown(message);
+			}
 		}
 		// 収集データを取得する
 		list = com.clustercontrol.collect.util.QueryUtil.getCollectDataListByCondition(

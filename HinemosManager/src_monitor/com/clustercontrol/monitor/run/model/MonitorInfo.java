@@ -14,19 +14,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.PrimaryKeyJoinColumn;
-import javax.persistence.Table;
-import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -59,11 +46,27 @@ import com.clustercontrol.ping.model.PingCheckInfo;
 import com.clustercontrol.port.model.PortCheckInfo;
 import com.clustercontrol.process.model.ProcessCheckInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.rpa.monitor.model.RpaLogFileCheckInfo;
+import com.clustercontrol.rpa.monitor.model.RpaManagementToolServiceCheckInfo;
 import com.clustercontrol.snmp.model.SnmpCheckInfo;
 import com.clustercontrol.snmptrap.model.TrapCheckInfo;
 import com.clustercontrol.sql.model.SqlCheckInfo;
 import com.clustercontrol.winevent.model.WinEventCheckInfo;
 import com.clustercontrol.winservice.model.WinServiceCheckInfo;
+
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 
 /**
@@ -99,9 +102,9 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	private String triggerType;
 	private Long updateDate;
 	private String updateUser;
-	private CustomCheckInfo monitorCustomInfoEntity;
-	private CustomTrapCheckInfo monitorCustomTrapInfoEntity;
-	private HttpCheckInfo monitorHttpInfoEntity;
+	private CustomCheckInfo customCheckInfo;
+	private CustomTrapCheckInfo customTrapCheckInfo;
+	private HttpCheckInfo httpCheckInfo;
 	private String calendarId;
 	private String logFormatId;
 	private String facilityId;
@@ -113,28 +116,31 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	private Boolean changeFlg;
 	private Integer changeAnalysysRange;
 	private String changeApplication;
-	private List<MonitorNumericValueInfo> monitorNumericValueInfoEntities = new ArrayList<>();
-	private PerfCheckInfo monitorPerfInfoEntity;
-	private PingCheckInfo monitorPingInfoEntity;
-	private PortCheckInfo monitorPortInfoEntity;
-	private ProcessCheckInfo monitorProcessInfoEntity;
-	private SnmpCheckInfo monitorSnmpInfoEntity;
-	private SqlCheckInfo monitorSqlInfoEntity;
-	private TrapCheckInfo monitorTrapInfoEntity;
-	private WinServiceCheckInfo monitorWinserviceInfoEntity;
-	private WinEventCheckInfo monitorWinEventInfoEntity;
-	private LogfileCheckInfo monitorLogfileInfoEntity;
-	private BinaryCheckInfo monitorBinaryInfoEntity;
-	private PacketCheckInfo monitorPacketInfoEntity;
-	private PluginCheckInfo monitorPluginInfoEntity;
-	private HttpScenarioCheckInfo monitorHttpScenarioInfoEntity;
-	private JmxCheckInfo monitorJmxInfoEntity;
-	private LogcountCheckInfo monitorLogcountInfoEntity;
-	private CorrelationCheckInfo monitorCorrelationInfoEntity;
-	private IntegrationCheckInfo monitorIntegrationInfoEntity;
-	private List<MonitorStringValueInfo> monitorStringValueInfoEntities = new ArrayList<>();
-	private List<BinaryPatternInfo> binaryPatternInfoEntities = new ArrayList<>();
-	private List<MonitorTruthValueInfo> monitorTruthValueInfoEntities = new ArrayList<>();
+	private String sdmlMonitorTypeId;
+	private List<MonitorNumericValueInfo> numericValueInfo = new ArrayList<>();
+	private PerfCheckInfo perfCheckInfo;
+	private PingCheckInfo pingCheckInfo;
+	private PortCheckInfo portCheckInfo;
+	private ProcessCheckInfo processCheckInfo;
+	private SnmpCheckInfo snmpCheckInfo;
+	private SqlCheckInfo sqlCheckInfo;
+	private TrapCheckInfo trapCheckInfo;
+	private WinServiceCheckInfo winServiceCheckInfo;
+	private WinEventCheckInfo winEventCheckInfo;
+	private LogfileCheckInfo logfileCheckInfo;
+	private BinaryCheckInfo binaryCheckInfo;
+	private PacketCheckInfo packetCheckInfo;
+	private PluginCheckInfo pluginCheckInfo;
+	private HttpScenarioCheckInfo httpScenarioCheckInfo;
+	private JmxCheckInfo jmxCheckInfo;
+	private LogcountCheckInfo logcountCheckInfo;
+	private CorrelationCheckInfo correlationCheckInfo;
+	private IntegrationCheckInfo integrationCheckInfo;
+	private RpaLogFileCheckInfo rpaLogFileCheckInfo;
+	private RpaManagementToolServiceCheckInfo rpaManagementToolServiceCheckInfo;
+	private List<MonitorStringValueInfo> stringValueInfo = new ArrayList<>();
+	private List<BinaryPatternInfo> binaryPatternInfo = new ArrayList<>();
+	private List<MonitorTruthValueInfo> truthValueInfo = new ArrayList<>();
 	private LogFormat logformat;
 	
 	private String scope;
@@ -142,14 +148,21 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	private CalendarInfo calendar;
 
 	/** 通知 */
-	private List<NotifyRelationInfo> m_notifyRelationList;
+	private List<NotifyRelationInfo> notifyRelationList;
 
 	/** 通知(将来予測用) */
-	private List<NotifyRelationInfo> m_predictionNotifyRelationList;
+	private List<NotifyRelationInfo> predictionNotifyRelationList;
 
 	/** 通知(変化点監視用) */
-	private List<NotifyRelationInfo> m_changeNotifyRelationList;
+	private List<NotifyRelationInfo> changeNotifyRelationList;
 
+	/** 判定による重要度変化のタイプ */
+	private Integer priorityChangeJudgmentType;
+
+	/** 取得失敗による重要度変化のタイプ */
+	private Integer priorityChangeFailureType;
+
+	
 	public MonitorInfo() {
 		super();
 	}
@@ -337,30 +350,30 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	//bi-directional one-to-one association to MonitorCustomInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public CustomCheckInfo getCustomCheckInfo() {
-		return this.monitorCustomInfoEntity;
+		return this.customCheckInfo;
 	}
 
-	public void setCustomCheckInfo(CustomCheckInfo monitorCustomInfoEntity) {
-		this.monitorCustomInfoEntity = monitorCustomInfoEntity;
+	public void setCustomCheckInfo(CustomCheckInfo customCheckInfo) {
+		this.customCheckInfo = customCheckInfo;
 	}
 
 	//bi-directional one-to-one association to MonitorCustomTrapInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public CustomTrapCheckInfo getCustomTrapCheckInfo() {
-		return this.monitorCustomTrapInfoEntity;
+		return this.customTrapCheckInfo;
 	}
 
-	public void setCustomTrapCheckInfo(CustomTrapCheckInfo monitorCustomTrapInfoEntity) {
-		this.monitorCustomTrapInfoEntity = monitorCustomTrapInfoEntity;
+	public void setCustomTrapCheckInfo(CustomTrapCheckInfo customTrapCheckInfo) {
+		this.customTrapCheckInfo = customTrapCheckInfo;
 	}
 	//bi-directional one-to-one association to MonitorHttpInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public HttpCheckInfo getHttpCheckInfo() {
-		return this.monitorHttpInfoEntity;
+		return this.httpCheckInfo;
 	}
 
-	public void setHttpCheckInfo(HttpCheckInfo monitorHttpInfoEntity) {
-		this.monitorHttpInfoEntity = monitorHttpInfoEntity;
+	public void setHttpCheckInfo(HttpCheckInfo httpCheckInfo) {
+		this.httpCheckInfo = httpCheckInfo;
 	}
 
 
@@ -471,257 +484,303 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 		this.changeApplication = changeApplication;
 	}
 
+	@Column(name="sdml_monitor_type_id")
+	@XmlTransient
+	public String getSdmlMonitorTypeId() {
+		return sdmlMonitorTypeId;
+	}
+
+	public void setSdmlMonitorTypeId(String sdmlMonitorTypeId) {
+		this.sdmlMonitorTypeId = sdmlMonitorTypeId;
+	}
+
+	@XmlTransient
+	@Column(name="priority_change_judgment_type")
+	public Integer getPriorityChangeJudgmentType() {
+		return priorityChangeJudgmentType;
+	}
+
+	public void setPriorityChangeJudgmentType(Integer priorityChangeJudgmentType) {
+		this.priorityChangeJudgmentType = priorityChangeJudgmentType;
+	}
+
+	@XmlTransient
+	@Column(name="priority_change_failure_type")
+	public Integer getPriorityChangeFailureType() {
+		return priorityChangeFailureType;
+	}
+
+	public void setPriorityChangeFailureType(Integer priorityChangeFailureType) {
+		this.priorityChangeFailureType = priorityChangeFailureType;
+	}
 
 	//bi-directional many-to-one association to MonitorNumericValueInfoEntity
 	@OneToMany(mappedBy="monitorInfo", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public List<MonitorNumericValueInfo> getNumericValueInfo() {
-		return this.monitorNumericValueInfoEntities;
+		return this.numericValueInfo;
 	}
 
-	public void setNumericValueInfo(List<MonitorNumericValueInfo> monitorNumericValueInfoEntities) {
-		this.monitorNumericValueInfoEntities = monitorNumericValueInfoEntities;
+	public void setNumericValueInfo(List<MonitorNumericValueInfo> numericValueInfo) {
+		this.numericValueInfo = numericValueInfo;
 	}
 
 
 	//bi-directional one-to-one association to MonitorPerfInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public PerfCheckInfo getPerfCheckInfo() {
-		return this.monitorPerfInfoEntity;
+		return this.perfCheckInfo;
 	}
 
-	public void setPerfCheckInfo(PerfCheckInfo monitorPerfInfoEntity) {
-		this.monitorPerfInfoEntity = monitorPerfInfoEntity;
+	public void setPerfCheckInfo(PerfCheckInfo perfCheckInfo) {
+		this.perfCheckInfo = perfCheckInfo;
 	}
 
 
 	//bi-directional one-to-one association to MonitorPingInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public PingCheckInfo getPingCheckInfo() {
-		return this.monitorPingInfoEntity;
+		return this.pingCheckInfo;
 	}
 
-	public void setPingCheckInfo(PingCheckInfo monitorPingInfoEntity) {
-		this.monitorPingInfoEntity = monitorPingInfoEntity;
+	public void setPingCheckInfo(PingCheckInfo pingCheckInfo) {
+		this.pingCheckInfo = pingCheckInfo;
 	}
 
 
 	//bi-directional one-to-one association to MonitorPortInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public PortCheckInfo getPortCheckInfo() {
-		return this.monitorPortInfoEntity;
+		return this.portCheckInfo;
 	}
 
-	public void setPortCheckInfo(PortCheckInfo monitorPortInfoEntity) {
-		this.monitorPortInfoEntity = monitorPortInfoEntity;
+	public void setPortCheckInfo(PortCheckInfo portCheckInfo) {
+		this.portCheckInfo = portCheckInfo;
 	}
 
 
 	//bi-directional one-to-one association to MonitorProcessInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public ProcessCheckInfo getProcessCheckInfo() {
-		return this.monitorProcessInfoEntity;
+		return this.processCheckInfo;
 	}
 
-	public void setProcessCheckInfo(ProcessCheckInfo monitorProcessInfoEntity) {
-		this.monitorProcessInfoEntity = monitorProcessInfoEntity;
+	public void setProcessCheckInfo(ProcessCheckInfo processCheckInfo) {
+		this.processCheckInfo = processCheckInfo;
 	}
 
 
 	//bi-directional one-to-one association to MonitorSnmpInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public SnmpCheckInfo getSnmpCheckInfo() {
-		return this.monitorSnmpInfoEntity;
+		return this.snmpCheckInfo;
 	}
 
-	public void setSnmpCheckInfo(SnmpCheckInfo monitorSnmpInfoEntity) {
-		this.monitorSnmpInfoEntity = monitorSnmpInfoEntity;
+	public void setSnmpCheckInfo(SnmpCheckInfo snmpCheckInfo) {
+		this.snmpCheckInfo = snmpCheckInfo;
 	}
 
 
 	//bi-directional one-to-one association to MonitorSqlInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public SqlCheckInfo getSqlCheckInfo() {
-		return this.monitorSqlInfoEntity;
+		return this.sqlCheckInfo;
 	}
 
-	public void setSqlCheckInfo(SqlCheckInfo monitorSqlInfoEntity) {
-		this.monitorSqlInfoEntity = monitorSqlInfoEntity;
+	public void setSqlCheckInfo(SqlCheckInfo sqlCheckInfo) {
+		this.sqlCheckInfo = sqlCheckInfo;
 	}
 
 
 	//bi-directional one-to-one association to MonitorTrapInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public TrapCheckInfo getTrapCheckInfo() {
-		return this.monitorTrapInfoEntity;
+		return this.trapCheckInfo;
 	}
 
-	public void setTrapCheckInfo(TrapCheckInfo monitorTrapInfoEntity) {
-		this.monitorTrapInfoEntity = monitorTrapInfoEntity;
+	public void setTrapCheckInfo(TrapCheckInfo trapCheckInfo) {
+		this.trapCheckInfo = trapCheckInfo;
 	}
 
 
 	//bi-directional one-to-one association to MonitorWinEventInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public WinEventCheckInfo getWinEventCheckInfo() {
-		return this.monitorWinEventInfoEntity;
+		return this.winEventCheckInfo;
 	}
 
-	public void setWinEventCheckInfo(WinEventCheckInfo monitorWinEventInfoEntity) {
-		this.monitorWinEventInfoEntity = monitorWinEventInfoEntity;
+	public void setWinEventCheckInfo(WinEventCheckInfo winEventCheckInfo) {
+		this.winEventCheckInfo = winEventCheckInfo;
 	}
 
 	//bi-directional one-to-one association to MonitorWinserviceInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public WinServiceCheckInfo getWinServiceCheckInfo() {
-		return this.monitorWinserviceInfoEntity;
+		return this.winServiceCheckInfo;
 	}
 
-	public void setWinServiceCheckInfo(WinServiceCheckInfo monitorWinserviceInfoEntity) {
-		this.monitorWinserviceInfoEntity = monitorWinserviceInfoEntity;
+	public void setWinServiceCheckInfo(WinServiceCheckInfo winServiceCheckInfo) {
+		this.winServiceCheckInfo = winServiceCheckInfo;
 	}
 
 
 	//bi-directional one-to-one association to MonitorLogfileInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public LogfileCheckInfo getLogfileCheckInfo() {
-		return this.monitorLogfileInfoEntity;
+		return this.logfileCheckInfo;
 	}
 
-	public void setLogfileCheckInfo(LogfileCheckInfo monitorLogfileInfoEntity) {
-		this.monitorLogfileInfoEntity = monitorLogfileInfoEntity;
+	public void setLogfileCheckInfo(LogfileCheckInfo logfileCheckInfo) {
+		this.logfileCheckInfo = logfileCheckInfo;
 	}
 
 	//bi-directional one-to-one association to MonitorBinaryInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public BinaryCheckInfo getBinaryCheckInfo() {
-		return this.monitorBinaryInfoEntity;
+		return this.binaryCheckInfo;
 	}
 
-	public void setBinaryCheckInfo(BinaryCheckInfo monitorBinaryInfoEntity) {
-		this.monitorBinaryInfoEntity = monitorBinaryInfoEntity;
+	public void setBinaryCheckInfo(BinaryCheckInfo binaryCheckInfo) {
+		this.binaryCheckInfo = binaryCheckInfo;
 	}
 
 	//bi-directional one-to-one association to MonitorPacketInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public PacketCheckInfo getPacketCheckInfo() {
-		return this.monitorPacketInfoEntity;
+		return this.packetCheckInfo;
 	}
 
-	public void setPacketCheckInfo(PacketCheckInfo monitorPacketInfoEntity) {
-		this.monitorPacketInfoEntity = monitorPacketInfoEntity;
+	public void setPacketCheckInfo(PacketCheckInfo packetCheckInfo) {
+		this.packetCheckInfo = packetCheckInfo;
 	}
 
 	//bi-directional one-to-one association to MonitorHttpScenarioInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public HttpScenarioCheckInfo getHttpScenarioCheckInfo() {
-		return monitorHttpScenarioInfoEntity;
+		return httpScenarioCheckInfo;
 	}
 
 	public void setHttpScenarioCheckInfo(
-			HttpScenarioCheckInfo monitorHttpScenarioInfoEntity) {
-		this.monitorHttpScenarioInfoEntity = monitorHttpScenarioInfoEntity;
+			HttpScenarioCheckInfo httpScenarioCheckInfo) {
+		this.httpScenarioCheckInfo = httpScenarioCheckInfo;
 	}
 
 	//bi-directional one-to-one association to MonitorJmxInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public JmxCheckInfo getJmxCheckInfo() {
-		return monitorJmxInfoEntity;
+		return jmxCheckInfo;
 	}
 
 	public void setJmxCheckInfo(
-			JmxCheckInfo monitorJmxInfoEntity) {
-		this.monitorJmxInfoEntity = monitorJmxInfoEntity;
+			JmxCheckInfo jmxCheckInfo) {
+		this.jmxCheckInfo = jmxCheckInfo;
 	}
 
 	//bi-directional one-to-one association to MonitorLogcountInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public LogcountCheckInfo getLogcountCheckInfo() {
-		return monitorLogcountInfoEntity;
+		return logcountCheckInfo;
 	}
 
-	public void setLogcountCheckInfo(
-			LogcountCheckInfo monitorLogcountInfoEntity) {
-		this.monitorLogcountInfoEntity = monitorLogcountInfoEntity;
+	public void setLogcountCheckInfo(LogcountCheckInfo logcountCheckInfo) {
+		this.logcountCheckInfo = logcountCheckInfo;
 	}
 
 	//bi-directional one-to-one association to MonitorCorrelationInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public CorrelationCheckInfo getCorrelationCheckInfo() {
-		return monitorCorrelationInfoEntity;
+		return correlationCheckInfo;
 	}
 
-	public void setCorrelationCheckInfo(
-			CorrelationCheckInfo monitorCorrelationInfoEntity) {
-		this.monitorCorrelationInfoEntity = monitorCorrelationInfoEntity;
+	public void setCorrelationCheckInfo(CorrelationCheckInfo correlationCheckInfo) {
+		this.correlationCheckInfo = correlationCheckInfo;
 	}
 
 	//bi-directional one-to-one association to MonitorIntegrationInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public IntegrationCheckInfo getIntegrationCheckInfo() {
-		return monitorIntegrationInfoEntity;
+		return integrationCheckInfo;
 	}
 
-	public void setIntegrationCheckInfo(
-			IntegrationCheckInfo monitorIntegrationInfoEntity) {
-		this.monitorIntegrationInfoEntity = monitorIntegrationInfoEntity;
+	public void setIntegrationCheckInfo(IntegrationCheckInfo integrationCheckInfo) {
+		this.integrationCheckInfo = integrationCheckInfo;
 	}
 
 
 	//bi-directional one-to-one association to MonitorLogfileInfoEntity
 	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
-	public PluginCheckInfo getPluginCheckInfo() {
-		return this.monitorPluginInfoEntity;
+	public RpaLogFileCheckInfo getRpaLogFileCheckInfo() {
+		return rpaLogFileCheckInfo;
 	}
 
-	public void setPluginCheckInfo(PluginCheckInfo monitorPluginInfoEntity) {
-		this.monitorPluginInfoEntity = monitorPluginInfoEntity;
+	public void setRpaLogFileCheckInfo(RpaLogFileCheckInfo rPALogFileCheckInfo) {
+		this.rpaLogFileCheckInfo = rPALogFileCheckInfo;
+	}
+
+	//bi-directional one-to-one association to MonitorLogfileInfoEntity
+	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+	public RpaManagementToolServiceCheckInfo getRpaManagementToolServiceCheckInfo() {
+		return rpaManagementToolServiceCheckInfo;
+	}
+
+	public void setRpaManagementToolServiceCheckInfo(RpaManagementToolServiceCheckInfo rpaManagementToolServiceCheckInfo) {
+		this.rpaManagementToolServiceCheckInfo = rpaManagementToolServiceCheckInfo;
+	}
+
+	//bi-directional one-to-one association to MonitorLogfileInfoEntity
+	@OneToOne(mappedBy="monitorInfo", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+	public PluginCheckInfo getPluginCheckInfo() {
+		return this.pluginCheckInfo;
+	}
+
+	public void setPluginCheckInfo(PluginCheckInfo pluginCheckInfo) {
+		this.pluginCheckInfo = pluginCheckInfo;
 	}
 
 
 	//bi-directional many-to-one association to MonitorStringValueInfoEntity
 	@OneToMany(mappedBy="monitorInfo", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public List<MonitorStringValueInfo> getStringValueInfo() {
-		return this.monitorStringValueInfoEntities;
+		return this.stringValueInfo;
 	}
 
-	public void setStringValueInfo(List<MonitorStringValueInfo> monitorStringValueInfoEntities) {
-		if (monitorStringValueInfoEntities != null && monitorStringValueInfoEntities.size() > 0) {
-			Collections.sort(monitorStringValueInfoEntities, new Comparator<MonitorStringValueInfo>() {
+	public void setStringValueInfo(List<MonitorStringValueInfo> stringValueInfo) {
+		if (stringValueInfo != null && stringValueInfo.size() > 0) {
+			Collections.sort(stringValueInfo, new Comparator<MonitorStringValueInfo>() {
 				@Override
 				public int compare(MonitorStringValueInfo o1, MonitorStringValueInfo o2) {
 					return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
 				}
 			});
 		}
-		this.monitorStringValueInfoEntities = monitorStringValueInfoEntities;
+		this.stringValueInfo = stringValueInfo;
 	}
 
 	//bi-directional many-to-one association to BinaryPatternInfoEntity
 	@OneToMany(mappedBy="monitorInfo", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public List<BinaryPatternInfo> getBinaryPatternInfo() {
-		return this.binaryPatternInfoEntities;
+		return this.binaryPatternInfo;
 	}
 
-	public void setBinaryPatternInfo(List<BinaryPatternInfo> binaryPatternInfoEntities) {
-		if (binaryPatternInfoEntities != null && binaryPatternInfoEntities.size() > 0) {
-			Collections.sort(binaryPatternInfoEntities, new Comparator<BinaryPatternInfo>() {
+	public void setBinaryPatternInfo(List<BinaryPatternInfo> binaryPatternInfo) {
+		if (binaryPatternInfo != null && binaryPatternInfo.size() > 0) {
+			Collections.sort(binaryPatternInfo, new Comparator<BinaryPatternInfo>() {
 				@Override
 				public int compare(BinaryPatternInfo o1, BinaryPatternInfo o2) {
 					return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
 				}
 			});
 		}
-		this.binaryPatternInfoEntities = binaryPatternInfoEntities;
+		this.binaryPatternInfo = binaryPatternInfo;
 	}
 
 	//bi-directional many-to-one association to MonitorTruthValueInfoEntity
 	@OneToMany(mappedBy="monitorInfo", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public List<MonitorTruthValueInfo> getTruthValueInfo() {
-		return this.monitorTruthValueInfoEntities;
+		return this.truthValueInfo;
 	}
 
-	public void setTruthValueInfo(List<MonitorTruthValueInfo> monitorTruthValueInfoEntities) {
-		this.monitorTruthValueInfoEntities = monitorTruthValueInfoEntities;
+	public void setTruthValueInfo(List<MonitorTruthValueInfo> truthValueInfo) {
+		this.truthValueInfo = truthValueInfo;
 	}
 
 	/**
@@ -816,16 +875,16 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	 */
 	@Transient
 	public List<NotifyRelationInfo> getNotifyRelationList(){
-		return this.m_notifyRelationList;
+		return this.notifyRelationList;
 	}
 
 	/**
 	 * 通知情報リストを設定します。
 	 * 
-	 * @param m_notifyRelationList 通知情報リスト
+	 * @param notifyRelationList 通知情報リスト
 	 */
-	public void setNotifyRelationList(List<NotifyRelationInfo> m_notifyRelationList ){
-		this.m_notifyRelationList = m_notifyRelationList;
+	public void setNotifyRelationList(List<NotifyRelationInfo> notifyRelationList ){
+		this.notifyRelationList = notifyRelationList;
 	}
 
 	/**
@@ -835,16 +894,16 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	 */
 	@Transient
 	public List<NotifyRelationInfo> getPredictionNotifyRelationList(){
-		return this.m_predictionNotifyRelationList;
+		return this.predictionNotifyRelationList;
 	}
 
 	/**
 	 * 通知情報リスト（将来通知用）を設定します。
 	 * 
-	 * @param m_predictionNotifyRelationList 通知情報リスト（将来通知用）
+	 * @param predictionNotifyRelationList 通知情報リスト（将来通知用）
 	 */
-	public void setPredictionNotifyRelationList(List<NotifyRelationInfo> m_predictionNotifyRelationList ){
-		this.m_predictionNotifyRelationList = m_predictionNotifyRelationList;
+	public void setPredictionNotifyRelationList(List<NotifyRelationInfo> predictionNotifyRelationList ){
+		this.predictionNotifyRelationList = predictionNotifyRelationList;
 	}
 
 	/**
@@ -854,16 +913,16 @@ public class MonitorInfo extends ObjectPrivilegeTargetInfo {
 	 */
 	@Transient
 	public List<NotifyRelationInfo> getChangeNotifyRelationList(){
-		return this.m_changeNotifyRelationList;
+		return this.changeNotifyRelationList;
 	}
 
 	/**
 	 * 通知情報リスト（変化点監視用）を設定します。
 	 * 
-	 * @param m_changeNotifyRelationList 通知情報リスト（変化点監視用）
+	 * @param changeNotifyRelationList 通知情報リスト（変化点監視用）
 	 */
-	public void setChangeNotifyRelationList(List<NotifyRelationInfo> m_changeNotifyRelationList ){
-		this.m_changeNotifyRelationList = m_changeNotifyRelationList;
+	public void setChangeNotifyRelationList(List<NotifyRelationInfo> changeNotifyRelationList ){
+		this.changeNotifyRelationList = changeNotifyRelationList;
 	}
 
 	@Transient

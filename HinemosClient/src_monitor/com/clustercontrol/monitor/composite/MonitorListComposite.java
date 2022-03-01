@@ -8,10 +8,13 @@
 
 package com.clustercontrol.monitor.composite;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
@@ -26,26 +29,29 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.GetMonitorBeanListRequest;
+import org.openapitools.client.model.MonitorFilterInfoRequest;
+import org.openapitools.client.model.MonitorInfoBeanResponse;
 
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.bean.RunInterval;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.monitor.run.action.GetMonitorListTableDefine;
 import com.clustercontrol.monitor.run.bean.MonitorTypeMessage;
 import com.clustercontrol.monitor.util.MonitorFilterPropertyUtil;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.monitor.view.action.MonitorModifyAction;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.sdml.util.SdmlClientUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorFilterInfo;
-import com.clustercontrol.ws.monitor.MonitorInfoBean;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 
 /**
  * 監視設定一覧のコンポジットクラス<BR>
@@ -191,29 +197,33 @@ public class MonitorListComposite extends Composite {
 		Map<String, String> errMsgs = new ConcurrentHashMap<>();
 
 		// データ取得
-		Map<String, List<MonitorInfoBean>> dispDataMap= new ConcurrentHashMap<>();
+		Map<String, List<MonitorInfoBeanResponse>> dispDataMap= new ConcurrentHashMap<>();
 
 		String conditionManager = null;
-		if(condition != null) {
-			conditionManager = JobPropertyUtil.getManagerName(condition);
-		}
-
-		if(conditionManager == null || conditionManager.equals("")) {
-			if (this.condition == null) {
-				this.statuslabel.setText("");
-				for(String managerName : EndpointManager.getActiveManagerSet()) {
-					getMonitorList(managerName, dispDataMap, errMsgs);
-				}
-			} else {
-				this.statuslabel.setText(Messages.getString("filtered.list"));
-				PropertyUtil.deletePropertyDefine(this.condition);
-				MonitorFilterInfo filter = MonitorFilterPropertyUtil.property2dto(this.condition);
-				for (String managerName : EndpointManager.getActiveManagerSet()) {
-					getMonitorListWithCondition(managerName, filter, dispDataMap, errMsgs);
-				}
+		if(this.condition == null) {
+			this.statuslabel.setText("");
+			
+			for (String managerName : RestConnectManager.getActiveManagerSet()) {
+				getMonitorList(managerName, dispDataMap, errMsgs);
 			}
 		} else {
-			getMonitorList(conditionManager, dispDataMap, errMsgs);
+			this.statuslabel.setText(Messages.getString("filtered.list"));
+			
+			conditionManager = JobPropertyUtil.getManagerName(this.condition);
+			PropertyUtil.deletePropertyDefine(this.condition);
+			MonitorFilterInfoRequest filter = MonitorFilterPropertyUtil.property2dto(this.condition);
+			Set<String> managerSet = null;
+			if (conditionManager == null || conditionManager.equals("")) {
+				managerSet = RestConnectManager.getActiveManagerSet();
+			
+			} else {
+				managerSet = new HashSet<String>() ;
+				managerSet.add(conditionManager);
+			}
+			
+			for (String managerName : managerSet) {
+				getMonitorListWithCondition(managerName, filter, dispDataMap, errMsgs);
+			}
 		}
 
 		// Show message box
@@ -224,25 +234,73 @@ public class MonitorListComposite extends Composite {
 		// MonitorInfo を tableViewer にセットするための詰め替え
 		ArrayList<Object> listInput = new ArrayList<Object>();
 
-		for( Map.Entry<String, List<MonitorInfoBean>> e: dispDataMap.entrySet() ){
-			for (MonitorInfoBean monitorBean : e.getValue()) {
+		for( Map.Entry<String, List<MonitorInfoBeanResponse>> e: dispDataMap.entrySet() ){
+			for (MonitorInfoBeanResponse monitorBean : e.getValue()) {
 				ArrayList<Object> a = new ArrayList<Object>();
 				a.add(e.getKey());
 				a.add(monitorBean.getMonitorId());
-				a.add(monitorBean.getMonitorTypeId());
-				a.add(MonitorTypeMessage.typeToString(monitorBean.getMonitorType()));
+				if (SdmlClientUtil.isCreatedBySdml(monitorBean)) {
+					// SDMLによって自動作成された監視の場合
+					String pluginId = SdmlClientUtil.getPluginId(e.getKey(), monitorBean);
+					if (pluginId != null && !pluginId.isEmpty()) {
+						// プラグインIDにSDML監視種別のプラグインIDを表示する
+						a.add(pluginId);
+					} else {
+						// 取得できなかった場合は通常通り
+						a.add(monitorBean.getMonitorTypeId());
+					}
+				} else {
+					a.add(monitorBean.getMonitorTypeId());
+				}
+				a.add(MonitorTypeMessage.codeToString(monitorBean.getMonitorType().toString()));
 				a.add(monitorBean.getDescription());
 				a.add(monitorBean.getFacilityId());
 				a.add(HinemosMessage.replace(monitorBean.getScope()));
 				a.add(monitorBean.getCalendarId());
-				a.add(monitorBean.getRunInterval());
-				a.add(monitorBean.isMonitorFlg());
-				a.add(monitorBean.isCollectorFlg());
+				Integer runInterval = 0;
+				switch (monitorBean.getRunInterval()) {
+				case SEC_30:
+					runInterval = RunInterval.TYPE_SEC_30.toSec();
+					break;
+				case MIN_01:
+					runInterval = RunInterval.TYPE_MIN_01.toSec();
+					break;
+				case MIN_05:
+					runInterval = RunInterval.TYPE_MIN_05.toSec();
+					break;
+				case MIN_10:
+					runInterval = RunInterval.TYPE_MIN_10.toSec();
+					break;
+				case MIN_30:
+					runInterval = RunInterval.TYPE_MIN_30.toSec();
+					break;
+				case MIN_60:
+					runInterval = RunInterval.TYPE_MIN_60.toSec();
+					break;
+				case NONE:
+					runInterval = 0;
+					break;
+				}
+				a.add(runInterval);
+				a.add(monitorBean.getMonitorFlg());
+				a.add(monitorBean.getCollectorFlg());
 				a.add(monitorBean.getOwnerRoleId());
 				a.add(monitorBean.getRegUser());
-				a.add(new Date(monitorBean.getRegDate()));
+				Date regDate = null;
+				try {
+					regDate = TimezoneUtil.getSimpleDateFormat().parse(monitorBean.getRegDate());
+				} catch (ParseException ex) {
+					// 何もしない
+				}
+				a.add(regDate);
 				a.add(monitorBean.getUpdateUser());
-				a.add(new Date(monitorBean.getUpdateDate()));
+				Date updateDate = null;
+				try {
+					updateDate = TimezoneUtil.getSimpleDateFormat().parse(monitorBean.getUpdateDate());
+				} catch (ParseException ex) {
+					// 何もしない
+				}
+				a.add(updateDate);
 				a.add(null);
 
 				listInput.add(a);
@@ -295,41 +353,41 @@ public class MonitorListComposite extends Composite {
 	}
 
 	private void getMonitorList(String managerName,
-			Map<String, List<MonitorInfoBean>> dispDataMap,
+			Map<String, List<MonitorInfoBeanResponse>> dispDataMap,
 			Map<String, String> errorMsgs) {
 		try {
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			List<MonitorInfoBean> list = wrapper.getMonitorBeanList();
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
+			List<MonitorInfoBeanResponse> list = wrapper.getMonitorBeanList();
 			
 			if( null != list ){
 				dispDataMap.put(managerName, list);
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
-		} catch (MonitorNotFound_Exception | HinemosUnknown_Exception e) {
-			errorMsgs.put( managerName, Messages.getString("message.monitor.67") + ", " + HinemosMessage.replace(e.getMessage()));
+		} catch (HinemosUnknown e) {			errorMsgs.put( managerName, Messages.getString("message.monitor.67") + ", " + HinemosMessage.replace(e.getMessage()));
 		} catch (Exception e) {
 			m_log.warn("update() getMonitorList, " + HinemosMessage.replace(e.getMessage()), e);
 			errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 		}
 	}
 
-	private void getMonitorListWithCondition(String managerName, MonitorFilterInfo filter,
-			Map<String, List<MonitorInfoBean>> dispDataMap,
+	private void getMonitorListWithCondition(String managerName, MonitorFilterInfoRequest filter,
+			Map<String, List<MonitorInfoBeanResponse>> dispDataMap,
 			Map<String, String> errorMsgs) {
 		try {
 			// マネージャにアクセス
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			List<MonitorInfoBean> list = wrapper.getMonitorBeanListByCondition(filter);
+			GetMonitorBeanListRequest info = new GetMonitorBeanListRequest();
+			info.setMonitorFilterInfo(filter);
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
+			List<MonitorInfoBeanResponse> list = wrapper.getMonitorBeanListByCondition(info);
 			if( null != list ){
 				dispDataMap.put(managerName, list);
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
-		} catch (MonitorNotFound_Exception | HinemosUnknown_Exception e) {
-			errorMsgs.put( managerName, Messages.getString("message.monitor.67") + ", " + HinemosMessage.replace(e.getMessage()));
+		} catch (HinemosUnknown e) {			errorMsgs.put( managerName, Messages.getString("message.monitor.67") + ", " + HinemosMessage.replace(e.getMessage()));
 		} catch (Exception e) {
 			m_log.warn("update() getMonitorListByCondition, " + e.getMessage(), e);
 			errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));

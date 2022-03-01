@@ -8,7 +8,6 @@
 
 package com.clustercontrol.notify.composite;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -27,11 +26,11 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
 import com.clustercontrol.notify.dialog.NotifyListDialog;
 import com.clustercontrol.notify.util.NotifyTypeUtil;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 
 
@@ -67,7 +66,7 @@ public class NotifyIdListComposite extends Composite {
 	private Button m_buttonRefer = null;
 
 	/**　通知ID一覧　フィールド*/
-	private List<NotifyRelationInfo> notify ;
+	private List<NotifyRelationInfoResponse> notify ;
 
 	private String m_ownerRoleId = null;
 
@@ -257,7 +256,7 @@ public class NotifyIdListComposite extends Composite {
 	 *
 	 * @see org.eclipse.swt.widgets.Combo#getText()
 	 */
-	public List<NotifyRelationInfo> getNotify() {
+	public List<NotifyRelationInfoResponse> getNotify() {
 		return notify;
 	}
 
@@ -268,7 +267,7 @@ public class NotifyIdListComposite extends Composite {
 	 *
 	 * @see org.eclipse.swt.widgets.Combo#setText(java.lang.String)
 	 */
-	public void setNotify(List<NotifyRelationInfo> notifyList) {
+	public void setNotify(List<NotifyRelationInfoResponse> notifyList) {
 
 		//フィールドに追加
 		this.notify = notifyList;
@@ -277,37 +276,18 @@ public class NotifyIdListComposite extends Composite {
 
 		// 表示に追加
 		m_log.info("notifyList.size=" + notifyList.size());
-		for (NotifyRelationInfo notify : notifyList) {
-			m_log.info("notify=" + notify.getNotifyGroupId() + ", " + notify.getNotifyId() + ", " + notify.getNotifyType());
+		for (NotifyRelationInfoResponse notify : notifyList) {
+			m_log.info("notify=" + notify.getNotifyId() + ", " + notify.getNotifyType());
 			TableItem ti = new TableItem(m_NotifyIdTable, 0);
 			WidgetTestUtil.setTestId(this, null, ti);
-			String notifyType = NotifyTypeUtil.typeToString(notify.getNotifyType());
+			String notifyType = NotifyTypeUtil.typeToString(
+					NotifyTypeUtil.enumToType(notify.getNotifyType(), NotifyRelationInfoResponse.NotifyTypeEnum.class));
 
 			String[] repData = { notify.getNotifyId(), notifyType };
 
 			ti.setText(repData);
 		}
 		m_NotifyIdTable.update();
-	}
-
-	/**
-	 * 通知グループIDを設定します。
-	 *
-	 * @param string
-	 */
-	public boolean setNotifyGroupId(String string){
-
-		if(notify != null && notify.size() != 0) {
-			NotifyRelationInfo nri ;
-
-			for(int i = 0; i < notify.size(); i++){
-				nri =((ArrayList<NotifyRelationInfo>)notify).get(i);
-				nri.setNotifyGroupId(string);
-			}
-			return true;
-		}
-
-		return false;
 	}
 
 	public String getOwnerRoleId() {

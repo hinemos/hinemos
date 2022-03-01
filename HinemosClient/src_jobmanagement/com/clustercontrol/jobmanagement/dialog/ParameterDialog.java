@@ -21,6 +21,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
+import org.openapitools.client.model.JobParameterInfoResponse;
 
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
@@ -28,7 +29,6 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.action.GetParameterTableDefine;
 import com.clustercontrol.jobmanagement.action.ParameterProperty;
-import com.clustercontrol.jobmanagement.bean.JobParamTypeConstant;
 import com.clustercontrol.jobmanagement.bean.JobParamTypeMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
@@ -100,9 +100,9 @@ public class ParameterDialog extends CommonDialog {
 		m_viewer = new PropertySheet(tree);
 		m_viewer.setSize(100, 150);
 
-		int type = JobParamTypeConstant.TYPE_USER;
+		JobParameterInfoResponse.TypeEnum type =JobParameterInfoResponse.TypeEnum.USER;
 		if (m_parameter != null) {
-			type = (Integer) m_parameter.get(GetParameterTableDefine.TYPE);
+			type = (JobParameterInfoResponse.TypeEnum) m_parameter.get(GetParameterTableDefine.TYPE);
 		}
 		m_viewer.setInput(new ParameterProperty().getProperty(type));
 		m_viewer.expandAll();
@@ -141,12 +141,12 @@ public class ParameterDialog extends CommonDialog {
 
 		if (m_parameter != null) {
 			//パラメータを設定
-			Integer type = (Integer) m_parameter.get(
+			 JobParameterInfoResponse.TypeEnum type = ( JobParameterInfoResponse.TypeEnum) m_parameter.get(
 					GetParameterTableDefine.TYPE);
 
-			if (type == JobParamTypeConstant.TYPE_USER) {
+			if (type == JobParameterInfoResponse.TypeEnum.USER) {
 				//種別がユーザの場合
-				property = new ParameterProperty().getProperty(JobParamTypeConstant.TYPE_USER);
+				property = new ParameterProperty().getProperty(JobParameterInfoResponse.TypeEnum.USER);
 				ArrayList<?> propertyList = PropertyUtil.getProperty(property,
 						ParameterProperty.ID_TYPE);
 				Property paramType = (Property) propertyList.get(0);
@@ -222,7 +222,7 @@ public class ParameterDialog extends CommonDialog {
 			m_parameter.add(paramId);
 
 			//種別
-			m_parameter.add(JobParamTypeConstant.TYPE_USER);
+			m_parameter.add(JobParameterInfoResponse.TypeEnum.USER);	
 
 			//値
 			values = PropertyUtil.getPropertyValue(property,

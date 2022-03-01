@@ -23,15 +23,13 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
+import org.openapitools.client.model.StatusFilterBaseRequest;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.repository.FacilityPath;
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.repository.util.ScopePropertyUtil;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
+import com.clustercontrol.filtersetting.util.StatusFilterHelper;
 import com.clustercontrol.monitor.composite.StatusListComposite;
 import com.clustercontrol.monitor.composite.action.StatusListSelectionChangedListener;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
@@ -40,16 +38,17 @@ import com.clustercontrol.monitor.view.action.ScopeShowActionStatus;
 import com.clustercontrol.monitor.view.action.StatusDeleteAction;
 import com.clustercontrol.monitor.view.action.StatusModifyMonitorSettingAction;
 import com.clustercontrol.monitor.view.action.StatusOpenJobHistoryAction;
+import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.ScopeListBaseView;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 監視[ステータス]ビュークラス<BR>
  *
- * @version 5.0.0
- * @since 1.0.0
  */
 public class StatusView extends ScopeListBaseView {
 	private static Log m_log = LogFactory.getLog(StatusView.class);
@@ -60,8 +59,11 @@ public class StatusView extends ScopeListBaseView {
 	/** ステータス情報一覧コンポジット */
 	private StatusListComposite tableComposite = null;
 
-	/** 検索条件 */
-	private Property condition = null;
+	/** フィルタ条件 */
+	private StatusFilterBaseRequest filter = StatusFilterHelper.createDefaultFilter(null);
+	
+	/** フィルタが有効な場合は true */
+	private boolean filterEnabled = false;
 
 	/** 選択レコード数 */
 	private int rowNum = 0;
@@ -69,6 +71,9 @@ public class StatusView extends ScopeListBaseView {
 	/** プラグインID */
 	private String pluginId;
 
+	private String selectedScopeLabel;
+
+	@Override
 	protected String getViewName() {
 		return this.getClass().getName();
 	}
@@ -138,8 +143,13 @@ public class StatusView extends ScopeListBaseView {
 	 * @see #update()
 	 */
 	@Override
-	protected void doSelectTreeItem(FacilityTreeItem item) {
+	protected void doSelectTreeItem(FacilityTreeItemResponse item) {
 		this.update(false);
+
+		// 更新に失敗している場合は自動更新を停止する
+		if (!this.tableComposite.isUpdateSuccess()) {
+			this.stopAutoReload();
+		}
 	}
 
 	/**
@@ -157,109 +167,89 @@ public class StatusView extends ScopeListBaseView {
 
 	/**
 	 * ビューを更新します。<BR>
-	 * <p>
-	 * <ol>
-	 * <li>スコープツリーで選択されているアイテムを取得します。</li>
-	 * <li>アイテムより、ファシリティIDを取得します。</li>
-	 * <li>ファシリティIDをキーに、ステータス情報を更新します。
-	 *     検索条件が<code>null</code>ではない場合は、検索条件も指定します。</li>
-	 * </ol>
-	 *
-	 * @see com.clustercontrol.composite.FacilityTreeComposite#getSelectItem()
-	 * @see com.clustercontrol.bean.FacilityInfo#getFacilityId()
-	 * @see com.clustercontrol.monitor.composite.StatusListComposite#update(String)
-	 * @see com.clustercontrol.monitor.composite.StatusListComposite#update(String, Property)
 	 */
 	@Override
 	public void update(boolean refreshFlag) {
 		@SuppressWarnings("unchecked")
-		List<FacilityTreeItem> itemList = (List<FacilityTreeItem>) getScopeTreeComposite().getSelectionList();
-		String facilityId = null;
-		int type = 0;
-		String label = null;
-		
-		FacilityTreeItem top = (FacilityTreeItem) getScopeTreeComposite().getTree().getItem(0).getData();
-		
+		List<FacilityTreeItemResponse> itemList = (List<FacilityTreeItemResponse>) getScopeTreeComposite().getSelectionList();
+		FacilityTreeItemResponse top = (FacilityTreeItemResponse) getScopeTreeComposite().getTree().getItem(0).getData();
+
 		// 何も選択していない場合は、最上位を選択したこととする。
 		if (itemList == null || itemList.size() == 0) {
-			itemList = new ArrayList<FacilityTreeItem>();
+			itemList = new ArrayList<FacilityTreeItemResponse>();
 			itemList.add(top);
 		}
-		
+
 		tableComposite.resetDisp();
-		for (FacilityTreeItem item : itemList) {
-			List<String> managerList = new ArrayList<String>();
+		selectedScopeLabel = "";
+
+		for (FacilityTreeItemResponse item : itemList) {
 			// Select root if nothing selected
-			if( item == null && 0 < getScopeTreeComposite().getTree().getItemCount() ){
+			if (item == null && 0 < getScopeTreeComposite().getTree().getItemCount()) { // これありうる？
 				item = top;
 			}
-	
-			if( item != null ){
-				FacilityInfo itemData = item.getData();
-	
-				if(itemData.getFacilityType() == FacilityConstant.TYPE_COMPOSITE){
-					type = FacilityConstant.TYPE_COMPOSITE;
-					managerList = EndpointManager.getActiveManagerNameList();
-				} else if(itemData.getFacilityType() == FacilityConstant.TYPE_MANAGER) {
-					String managerName = itemData.getFacilityId();
-					type = FacilityConstant.TYPE_MANAGER;
-					managerList.add(managerName);
-				} else {
-					type = FacilityConstant.TYPE_SCOPE;
-					facilityId = item.getData().getFacilityId();
-					FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
-					String managerName = manager.getData().getFacilityId();
-					managerList.add(managerName);
-				}
-			}
-	
-			m_log.debug("facilityId=" + facilityId);
-			
-			if (this.condition == null) {
-				// スコープツリーでアイテムが選択されていない場合
-				if (label == null){
-					label = Messages.getString("scope") + ": ";
-				}
-				if (facilityId != null) {
-					FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
-					label += path.getPath(item) + " ";
-				}
-				if(type == FacilityConstant.TYPE_COMPOSITE){
-					//スコープが選択された
-					this.tableComposite.setDisp(null, null, managerList);
-				} else if (type == FacilityConstant.TYPE_MANAGER) {
-					//マネージャが選択された
-					this.tableComposite.setDisp(null, null, managerList);
-				} else {
-					//それ以外
-					this.tableComposite.setDisp(facilityId, null, managerList);
-				}
+			if (item == null) continue;
+
+			// 検索対象のマネージャとファシリティIDを決定
+			List<String> managerList = new ArrayList<String>();
+			String facilityId;
+			FacilityInfoResponse itemData = item.getData();
+			if (itemData.getFacilityType() == FacilityTypeEnum.COMPOSITE) {
+				managerList = RestConnectManager.getActiveManagerNameList();
+				facilityId = null;
+			} else if (itemData.getFacilityType() == FacilityTypeEnum.MANAGER) {
+				managerList.add(itemData.getFacilityId());
+				facilityId = null;
 			} else {
-				if (label == null){
-					label = Messages.getString("filtered.list") + ": ";
-				}
-				if (facilityId != null) {
-					FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
-					label += path.getPath(item) + " ";
-				}
-				this.tableComposite.setDisp(facilityId, this.condition, managerList);
+				managerList.add(ScopePropertyUtil.getManager(item).getData().getFacilityId());
+				facilityId = item.getData().getFacilityId();
+			}
+			m_log.debug("update: facilityId=" + facilityId + ", managerList=" + managerList);
+
+			// パス表示
+			if (facilityId != null) {
+				FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
+				selectedScopeLabel += path.getPath(item) + " ";
+			}
+
+			// 検索
+			if (filterEnabled) {
+				StatusFilterBaseRequest filter = StatusFilterHelper.duplicate(this.filter);
+				filter.setFacilityId(facilityId);
+				tableComposite.setDisp(filter, managerList);
+			} else {
+				tableComposite.setDisp(StatusFilterHelper.createDefaultFilter(facilityId), managerList);
 			}
 		}
+
 		tableComposite.updateDisp(refreshFlag);
+
+		String label = Messages.getString(filterEnabled ? "filtered.list" : "scope") + ": ";
+		if (selectedScopeLabel.length() > 0) {
+			label += selectedScopeLabel;
+		}
 		setPathLabel(label);
+		m_log.debug("update() : label=" + label);
 	}
 
-	/**
-	 * 検索条件を設定します。
-	 * <p>
-	 *
-	 * 設定後のupdateは、この検索条件の結果が表示されます。
-	 *
-	 * @param condition
-	 *            検索条件
-	 */
-	public void setCondition(Property condition) {
-		this.condition = condition;
+	public StatusFilterBaseRequest getFilter() {
+		return filter;
+	}
+
+	public void setFilter(StatusFilterBaseRequest filter) {
+		this.filter = filter;
+	}
+
+	public boolean isFilterEnabled() {
+		return filterEnabled;
+	}
+
+	public void setFilterEnabled(boolean filterEnabled) {
+		this.filterEnabled = filterEnabled;
+	}
+
+	public String getSelectedScopeLabel() {
+		return selectedScopeLabel;
 	}
 
 	/**
@@ -268,8 +258,6 @@ public class StatusView extends ScopeListBaseView {
 	@Override
 	public void dispose() {
 		super.dispose();
-
-		this.setCondition(null);
 	}
 
 	/**
@@ -321,5 +309,13 @@ public class StatusView extends ScopeListBaseView {
 	@Override
 	public boolean isDefaultLayoutView() {
 		return true;
+	}
+
+	/**
+	 * 更新成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isUpdateSuccess() {
+		return this.tableComposite.isUpdateSuccess();
 	}
 }

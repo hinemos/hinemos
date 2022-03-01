@@ -26,12 +26,12 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.jobmap.view.JobMapImageListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
 
 /**
  * ジョブマップ用イメージファイルの削除を行うクライアント側アクションクラス<BR>
@@ -113,7 +113,7 @@ public class JobMapImageDeleteAction extends AbstractHandler implements IElement
 						JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();
 						iconCache.deleteJobmapIconImage(managerName, entry.getValue());
 					} catch (Exception e) {
-						if (e instanceof InvalidRole_Exception) {
+						if (e instanceof InvalidRole) {
 							// 権限なし
 							errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
 						} else {

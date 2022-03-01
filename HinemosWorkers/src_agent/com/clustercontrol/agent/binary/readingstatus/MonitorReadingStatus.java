@@ -152,6 +152,27 @@ public class MonitorReadingStatus {
 			}
 		}
 		this.storeDir = storeDir;
+
+		// 監視種別を判定するためのディレクトリと空ファイルを用意
+		try {
+			File monTypeDir = new File(this.storeDir, RootReadingStatus.monitor_type_dir);
+			if (!monTypeDir.exists()) {
+				if (!monTypeDir.mkdir()) {
+					log.warn(methodName + DELIMITER  + monTypeDir.getPath() + " is not created.");
+					return;
+				}
+			}
+			File monTypeFile = new File(monTypeDir, RootReadingStatus.monitor_type);
+			if (!monTypeFile.exists()) {
+				if (!monTypeFile.createNewFile()) {
+					log.warn(methodName + DELIMITER  + monTypeFile.getPath() + " is not created.");
+					return;
+				}
+			}
+		} catch (IOException e) {
+			log.warn(methodName + DELIMITER  + e.getMessage(), e);
+			return;
+		}
 	}
 
 	/**

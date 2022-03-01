@@ -28,23 +28,25 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddMailTemplateRequest;
+import org.openapitools.client.model.MailTemplateInfoResponse;
+import org.openapitools.client.model.ModifyMailTemplateRequest;
 
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.common.util.CommonRestClientWrapper;
 import com.clustercontrol.composite.ManagerListComposite;
 import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.composite.TextWithParameterComposite;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.notify.mail.util.MailTemplateEndpointWrapper;
-import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.mailtemplate.InvalidRole_Exception;
-import com.clustercontrol.ws.mailtemplate.MailTemplateDuplicate_Exception;
-import com.clustercontrol.ws.mailtemplate.MailTemplateInfo;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MailTemplateDuplicate;
+import com.clustercontrol.notify.mail.util.MailBeanUtil;import com.clustercontrol.util.Messages;
 
 /**
  * メールテンプレートID作成・変更ダイアログクラス<BR>
@@ -55,10 +57,10 @@ import com.clustercontrol.ws.mailtemplate.MailTemplateInfo;
 public class MailTemplateCreateDialog extends CommonDialog {
 
 	// ログ
-	private static Log m_log = LogFactory.getLog( MailTemplateCreateDialog.class );
+	private static Log m_log = LogFactory.getLog(MailTemplateCreateDialog.class);
 
 	/** カラム数 */
-	public static final int WIDTH	 = 15;
+	public static final int WIDTH = 15;
 
 	/** カラム数（ラベル）。 */
 	public static final int WIDTH_LABEL = 4;
@@ -67,7 +69,7 @@ public class MailTemplateCreateDialog extends CommonDialog {
 	public static final int WIDTH_TEXT = 10;
 
 	/** 入力値を保持するオブジェクト。 */
-	private MailTemplateInfo inputData = null;
+	private MailTemplateInfoResponse inputData = null;
 
 	/** 入力値の正当性を保持するオブジェクト。 */
 	protected ValidateResult validateResult = null;
@@ -102,9 +104,12 @@ public class MailTemplateCreateDialog extends CommonDialog {
 	/**
 	 * 変更用ダイアログのインスタンスを返します。
 	 *
-	 * @param parent 親のシェルオブジェクト
-	 * @param mailTemplateId 変更するメールテンプレート情報のメールテンプレートID
-	 * @param dataOperationType データ処理タイプ
+	 * @param parent
+	 *            親のシェルオブジェクト
+	 * @param mailTemplateId
+	 *            変更するメールテンプレート情報のメールテンプレートID
+	 * @param dataOperationType
+	 *            データ処理タイプ
 	 */
 	public MailTemplateCreateDialog(Shell parent, String managerName, String mailTemplateId, int mode) {
 		super(parent);
@@ -117,7 +122,8 @@ public class MailTemplateCreateDialog extends CommonDialog {
 	/**
 	 * ダイアログエリアを生成します。
 	 *
-	 * @param parent 親のコンポジット
+	 * @param parent
+	 *            親のコンポジット
 	 *
 	 * @see com.clustercontrol.notify.mail.action.GetMailTemplate#getMailTemplate(String)
 	 * @see #setInputData(MailTemplateInfoData)
@@ -164,7 +170,7 @@ public class MailTemplateCreateDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_managerComposite.setLayoutData(gridData);
 		this.m_managerComposite.setText(this.managerName);
-		if(this.mode != PropertyDefineConstant.MODE_MODIFY && this.mode != PropertyDefineConstant.MODE_SHOW) {
+		if (this.mode != PropertyDefineConstant.MODE_MODIFY && this.mode != PropertyDefineConstant.MODE_SHOW) {
 			this.m_managerComposite.getComboManagerName().addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
@@ -194,11 +200,10 @@ public class MailTemplateCreateDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.textMailTemplateId.setLayoutData(gridData);
-		if(this.mode == PropertyDefineConstant.MODE_SHOW
-				|| this.mode == PropertyDefineConstant.MODE_MODIFY){
+		if (this.mode == PropertyDefineConstant.MODE_SHOW || this.mode == PropertyDefineConstant.MODE_MODIFY) {
 			this.textMailTemplateId.setEnabled(false);
 		}
-		this.textMailTemplateId.addModifyListener(new ModifyListener(){
+		this.textMailTemplateId.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
@@ -288,11 +293,12 @@ public class MailTemplateCreateDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.textSubject.setLayoutData(gridData);
-		String tooltipText = Messages.getString("notify.parameter.tooltip") + Messages.getString("replace.parameter.notify") + Messages.getString("replace.parameter.node");
+		String tooltipText = Messages.getString("notify.parameter.tooltip")
+				+ Messages.getString("replace.parameter.notify") + Messages.getString("replace.parameter.node");
 		this.textSubject.setToolTipText(tooltipText);
 		this.textSubject.setColor(new Color(groupMailTemplate.getDisplay(), new RGB(0, 0, 255)));
 		this.textSubject.setInputUpper(DataRangeConstant.VARCHAR_256);
-		this.textSubject.addModifyListener(new ModifyListener(){
+		this.textSubject.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
@@ -312,7 +318,8 @@ public class MailTemplateCreateDialog extends CommonDialog {
 		label.setLayoutData(gridData);
 		label.setText(Messages.getString("response.body") + " : ");
 		// テキスト
-		this.textBody = new TextWithParameterComposite(groupMailTemplate, SWT.MULTI | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.LEFT);
+		this.textBody = new TextWithParameterComposite(groupMailTemplate,
+				SWT.MULTI | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "body", textBody);
 		gridData = new GridData();
 		gridData.horizontalSpan = WIDTH;
@@ -322,7 +329,8 @@ public class MailTemplateCreateDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.grabExcessVerticalSpace = true;
 		this.textBody.setLayoutData(gridData);
-		String tooletipText = Messages.getString("notify.parameter.tooltip") + Messages.getString("replace.parameter.notify") + Messages.getString("replace.parameter.node");
+		String tooletipText = Messages.getString("notify.parameter.tooltip")
+				+ Messages.getString("replace.parameter.notify") + Messages.getString("replace.parameter.node");
 		this.textBody.setToolTipText(tooletipText);
 		this.textBody.setColor(new Color(groupMailTemplate.getDisplay(), new RGB(0, 0, 255)));
 
@@ -346,26 +354,24 @@ public class MailTemplateCreateDialog extends CommonDialog {
 				(display.getBounds().height - shell.getSize().y) / 2);
 
 		// メールテンプレートIDが指定されている場合、その情報を初期表示する。
-		MailTemplateInfo info = null;
-		if(this.mailTemplateId != null){
+		MailTemplateInfoResponse info = null;
+		if (this.mailTemplateId != null) {
 			try {
-				MailTemplateEndpointWrapper wrapper = MailTemplateEndpointWrapper.getWrapper(this.managerName);
+				CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(this.managerName);
 				info = wrapper.getMailTemplateInfo(this.mailTemplateId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
 				return;
 			} catch (Exception e) {
 				m_log.warn("customizeDialog() getMailTemplateInfo, " + HinemosMessage.replace(e.getMessage()), e);
-				MessageDialog.openError(
-						null,
-						Messages.getString("failed"),
-						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+				MessageDialog.openError(null, Messages.getString("failed"),
+						Messages.getString("message.hinemos.failure.unexpected") + ", "
+								+ HinemosMessage.replace(e.getMessage()));
 				return;
 			}
-		}
-		else{
-			info = new MailTemplateInfo();
+		} else {
+			info = new MailTemplateInfoResponse();
 		}
 		this.setInputData(info);
 	}
@@ -374,15 +380,15 @@ public class MailTemplateCreateDialog extends CommonDialog {
 	 * 更新処理
 	 *
 	 */
-	public void update(){
-		if("".equals(this.textMailTemplateId.getText())){
+	public void update() {
+		if ("".equals(this.textMailTemplateId.getText())) {
 			this.textMailTemplateId.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-		}else{
+		} else {
 			this.textMailTemplateId.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
-		if("".equals(this.textSubject.getText())){
+		if ("".equals(this.textSubject.getText())) {
 			this.textSubject.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-		}else{
+		} else {
 			this.textSubject.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
 	}
@@ -392,16 +398,17 @@ public class MailTemplateCreateDialog extends CommonDialog {
 	 *
 	 * @return メールテンプレート情報
 	 */
-	public MailTemplateInfo getInputData() {
+	public MailTemplateInfoResponse getInputData() {
 		return this.inputData;
 	}
 
 	/**
 	 * 引数で指定されたメールテンプレート情報の値を、各項目に設定します。
 	 *
-	 * @param mailTemplate 設定値として用いるメールテンプレート情報
+	 * @param mailTemplate
+	 *            設定値として用いるメールテンプレート情報
 	 */
-	protected void setInputData(MailTemplateInfo mailTemplate) {
+	protected void setInputData(MailTemplateInfoResponse mailTemplate) {
 
 		this.inputData = mailTemplate;
 
@@ -429,7 +436,7 @@ public class MailTemplateCreateDialog extends CommonDialog {
 		}
 
 		// 入力制御
-		if(this.mode == PropertyDefineConstant.MODE_SHOW){
+		if (this.mode == PropertyDefineConstant.MODE_SHOW) {
 			this.textMailTemplateId.setEnabled(false);
 			this.textDescription.setEnabled(false);
 			this.textSubject.setEnabled(false);
@@ -446,27 +453,23 @@ public class MailTemplateCreateDialog extends CommonDialog {
 	 *
 	 * @return メールテンプレート情報
 	 */
-	private MailTemplateInfo createInputData() {
-		MailTemplateInfo info = new MailTemplateInfo();
+	private MailTemplateInfoResponse createInputData() {
+		MailTemplateInfoResponse info = new MailTemplateInfoResponse();
 
-		if (this.textMailTemplateId.getText() != null
-				&& !"".equals((this.textMailTemplateId.getText()).trim())) {
+		if (this.textMailTemplateId.getText() != null && !"".equals((this.textMailTemplateId.getText()).trim())) {
 			info.setMailTemplateId(this.textMailTemplateId.getText());
 		}
-		if (this.textDescription.getText() != null
-				&& !"".equals((this.textDescription.getText()).trim())) {
+		if (this.textDescription.getText() != null && !"".equals((this.textDescription.getText()).trim())) {
 			info.setDescription(this.textDescription.getText());
 		}
-		if (this.textSubject.getText() != null
-				&& !"".equals((this.textSubject.getText()).trim())) {
+		if (this.textSubject.getText() != null && !"".equals((this.textSubject.getText()).trim())) {
 			info.setSubject(this.textSubject.getText());
 		}
-		if (this.textBody.getText() != null
-				&& !"".equals((this.textBody.getText()).trim())) {
+		if (this.textBody.getText() != null && !"".equals((this.textBody.getText()).trim())) {
 			info.setBody(this.textBody.getText());
 		}
 
-		//オーナーロールID
+		// オーナーロールID
 		if (this.m_ownerRoleId.getText().length() > 0) {
 			info.setOwnerRoleId(this.m_ownerRoleId.getText());
 		}
@@ -497,66 +500,55 @@ public class MailTemplateCreateDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MailTemplateInfo info = this.getInputData();
-		if(info != null){
+		MailTemplateInfoResponse info = this.inputData;
+		if (info != null) {
 			String errMessage = "";
 			String managerName = m_managerComposite.getText();
-			String[] args = {info.getMailTemplateId(), managerName};
-			MailTemplateEndpointWrapper wrapper = MailTemplateEndpointWrapper.getWrapper(managerName);
-			if(this.mode == PropertyDefineConstant.MODE_ADD){
+			String[] args = { info.getMailTemplateId(), managerName };
+			CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(managerName);
+			if (this.mode == PropertyDefineConstant.MODE_ADD) {
 				// 作成の場合
 				try {
-					result = wrapper.addMailTemplate(info);
+					AddMailTemplateRequest request = MailBeanUtil.convertToAddMailTemplateRequest(info);
+					wrapper.addMailTemplate(request);
+					result = true;
 
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("successful"),
+					MessageDialog.openInformation(null, Messages.getString("successful"),
 							Messages.getString("message.notify.mail.1", args));
 
-				} catch (MailTemplateDuplicate_Exception e) {
+				} catch (MailTemplateDuplicate e) {
 					// メールテンプレートIDが重複している場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
+					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.notify.mail.10", args));
 				} catch (Exception e) {
-					if (e instanceof InvalidRole_Exception) {
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("message"),
+					if (e instanceof InvalidRole) {
+						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
 					} else {
 						errMessage = ", " + HinemosMessage.replace(e.getMessage());
 					}
-					MessageDialog.openError(
-							null,
-							Messages.getString("failed"),
+					MessageDialog.openError(null, Messages.getString("failed"),
 							Messages.getString("message.notify.mail.2", args) + errMessage);
 				}
-			}
-			else if (this.mode == PropertyDefineConstant.MODE_MODIFY) {
+			} else if (this.mode == PropertyDefineConstant.MODE_MODIFY) {
 				// 変更の場合
 				try {
-					result = wrapper.modifyMailTemplate(info);
+					ModifyMailTemplateRequest request = MailBeanUtil.convertToModifyMailTemplateRequest(info);
+					wrapper.modifyMailTemplate(info.getMailTemplateId(), request);
+					result = true;
 
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("successful"),
+					MessageDialog.openInformation(null, Messages.getString("successful"),
 							Messages.getString("message.notify.mail.3", args));
 
 				} catch (Exception e) {
-					if (e instanceof InvalidRole_Exception) {
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("message"),
+					if (e instanceof InvalidRole) {
+						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
 					} else {
 						errMessage = ", " + HinemosMessage.replace(e.getMessage());
 					}
 
-					MessageDialog.openError(
-							null,
-							Messages.getString("failed"),
+					MessageDialog.openError(null, Messages.getString("failed"),
 							Messages.getString("message.notify.mail.4", args) + errMessage);
 				}
 			}
@@ -587,18 +579,20 @@ public class MailTemplateCreateDialog extends CommonDialog {
 
 	/**
 	 * ボタンを生成します。<BR>
-	 * 参照フラグが<code> true </code>の場合は閉じるボタンを生成し、<code> false </code>の場合は、デフォルトのボタンを生成します。
+	 * 参照フラグが<code> true </code>の場合は閉じるボタンを生成し、<code> false </code>
+	 * の場合は、デフォルトのボタンを生成します。
 	 *
-	 * @param parent ボタンバーコンポジット
+	 * @param parent
+	 *            ボタンバーコンポジット
 	 *
 	 * @see #createButtonsForButtonBar(Composite)
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
 
-		if(this.mode != PropertyDefineConstant.MODE_SHOW){
+		if (this.mode != PropertyDefineConstant.MODE_SHOW) {
 			super.createButtonsForButtonBar(parent);
-		}else{
+		} else {
 			// 閉じるボタン
 			this.createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false);
 		}

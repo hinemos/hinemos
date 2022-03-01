@@ -21,8 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -46,27 +44,46 @@ import com.clustercontrol.jobmanagement.bean.JobCommandParam;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JobEndStatusInfo;
 import com.clustercontrol.jobmanagement.bean.JobEnvVariableInfo;
+import com.clustercontrol.jobmanagement.bean.JobFileCheckInfo;
 import com.clustercontrol.jobmanagement.bean.JobFileInfo;
 import com.clustercontrol.jobmanagement.bean.JobInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkExpInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkInheritInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkRcvInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkSendInfo;
 import com.clustercontrol.jobmanagement.bean.JobNextJobOrderInfo;
+import com.clustercontrol.jobmanagement.bean.JobObjectGroupInfo;
 import com.clustercontrol.jobmanagement.bean.JobObjectInfo;
+import com.clustercontrol.jobmanagement.bean.JobOutputInfo;
+import com.clustercontrol.jobmanagement.bean.JobOutputType;
 import com.clustercontrol.jobmanagement.bean.JobParameterInfo;
 import com.clustercontrol.jobmanagement.bean.JobTreeItem;
 import com.clustercontrol.jobmanagement.bean.JobWaitRuleInfo;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
 import com.clustercontrol.jobmanagement.bean.MonitorJobInfo;
+import com.clustercontrol.jobmanagement.bean.ResourceJobInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobCheckEndValueInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobEndValueConditionInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobOptionInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobRunParamInfo;
 import com.clustercontrol.jobmanagement.model.JobCommandParamMstEntity;
 import com.clustercontrol.jobmanagement.model.JobEnvVariableMstEntity;
+import com.clustercontrol.jobmanagement.model.JobLinkInheritMstEntity;
+import com.clustercontrol.jobmanagement.model.JobLinkJobExpMstEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.model.JobNextJobOrderMstEntity;
+import com.clustercontrol.jobmanagement.model.JobOutputMstEntity;
 import com.clustercontrol.jobmanagement.model.JobParamMstEntity;
-import com.clustercontrol.jobmanagement.model.JobStartJobMstEntity;
-import com.clustercontrol.jobmanagement.model.JobStartParamMstEntity;
+import com.clustercontrol.jobmanagement.model.JobWaitGroupMstEntity;
+import com.clustercontrol.jobmanagement.model.JobWaitMstEntity;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.repository.factory.FacilitySelector;
 import com.clustercontrol.util.HinemosTime;
+
+import jakarta.persistence.EntityManager;
 
 /**
  * ジョブ情報を検索するクラスです。
@@ -165,29 +182,25 @@ public class FullJob {
 			
 			List<JobParamMstEntity> paramList = ((HinemosEntityManager)em).createNamedQuery("JobParamMstEntity.findAll", 
 					JobParamMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
-			List<JobStartJobMstEntity> startJobList = ((HinemosEntityManager)em).createNamedQuery("JobStartJobMstEntity.findAll", 
-					JobStartJobMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
+			List<JobWaitGroupMstEntity> waitGroupList = ((HinemosEntityManager)em).createNamedQuery("JobWaitGroupMstEntity.findAll", 
+					JobWaitGroupMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
 			List<JobCommandParamMstEntity> commandParamList = ((HinemosEntityManager)em).createNamedQuery("JobCommandParamMstEntity.findAll", 
 					JobCommandParamMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
 			List<JobEnvVariableMstEntity> envVariableList = ((HinemosEntityManager)em).createNamedQuery("JobEnvVariableMstEntity.findAll", 
 					JobEnvVariableMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
-			List<JobStartParamMstEntity> startParamList = ((HinemosEntityManager)em).createNamedQuery("JobStartParamMstEntity.findAll", 
-					JobStartParamMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
 			List<JobNextJobOrderMstEntity> nextJobOrderList = ((HinemosEntityManager)em).createNamedQuery("JobNextJobOrderMstEntity.findAll", 
 					JobNextJobOrderMstEntity.class, ObjectPrivilegeMode.NONE).getResultList();
 			
 			// ジョブ変数を保持するマップ <jobunitId, <jobId, List<JobParamMstEntity>>>
 			Map<String, Map<String, List<JobParamMstEntity>>> paramMap = new HashMap<String, Map<String, List<JobParamMstEntity>>>();
 			// 待ち条件を保持するマップ <jobunitId, <jobId, List<JobStartJobMstEntity>>>
-			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobMap = new HashMap<String, Map<String, List<JobStartJobMstEntity>>>();
+			Map<String, Map<String, List<JobWaitGroupMstEntity>>> waitGroupMap = new HashMap<String, Map<String, List<JobWaitGroupMstEntity>>>();
 			// 待ち条件を保持するマップ(ターゲットジョブがキー) <targetJobunitId, <targetJobId, List<JobStartJobMstEntity>>>
-			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobTargetJobMap = new HashMap<String, Map<String, List<JobStartJobMstEntity>>>();
+			Map<String, Map<String, List<JobWaitMstEntity>>> waitTargetJobMap = new HashMap<String, Map<String, List<JobWaitMstEntity>>>();
 			// ジョブ終了時の変数設定を保持するマップ <jobunitId, <jobId, List<JobCommandParamMstEntity>>>
 			Map<String, Map<String, List<JobCommandParamMstEntity>>> commandParamMap = new HashMap<String, Map<String, List<JobCommandParamMstEntity>>>();
 			// 環境変数を保持するマップ <jobunitId, <jobId, List<JobEnvVariableMstEntity>>>
 			Map<String, Map<String, List<JobEnvVariableMstEntity>>> envVariableMap = new HashMap<String, Map<String, List<JobEnvVariableMstEntity>>>();
-			// 待ち条件(ジョブ変数)を保持するマップ <jobunitId, <jobId, List<JobStartParamMstEntity>>>
-			Map<String, Map<String, List<JobStartParamMstEntity>>> startParamMap = new HashMap<String, Map<String, List<JobStartParamMstEntity>>>();
 			// 後続ジョブ実行設定を保持するマップ <jobunitId, <jobId, List<JobNextJobOrderMstEntity>>>
 			Map<String, Map<String, List<JobNextJobOrderMstEntity>>> nextJobOrderMap = new HashMap<String, Map<String, List<JobNextJobOrderMstEntity>>>();
 			// 通知グループを保持するマップ <notifyGroupId, List<NotifyRelationInfo>>
@@ -197,19 +210,16 @@ public class FullJob {
 			createParamMap(paramList, paramMap);
 			
 			// 待ち条件マップの作成
-			createStartJobMap(startJobList, startJobMap);
+			createWaitGroupMap(waitGroupList, waitGroupMap);
 			
 			// 待ち条件マップの作成(ターゲットジョブがキー)
-			createStartJobTargetJobMap(startJobList, startJobTargetJobMap);
+			createWaitTargetJobMap(waitGroupList, waitTargetJobMap);
 			
 			// ジョブ終了時の変数設定マップの作成
 			createCommandParamMap(commandParamList, commandParamMap);
 			
 			// 環境変数マップの作成
 			createEnvVariableMap(envVariableList, envVariableMap);
-			
-			// 待ち条件(ジョブ変数)マップの作成
-			createStartParamMap(startParamList, startParamMap);
 			
 			// 後続ジョブ実行設定マップの作成
 			createNextJobOrderMap(nextJobOrderList, nextJobOrderMap);
@@ -225,7 +235,7 @@ public class FullJob {
 				for(Map.Entry<String, JobMstEntity> jobEntry : jobunitEntry.getValue().entrySet()) {
 					String jobId = jobEntry.getKey();
 					try {
-						jobunitMap.put(jobId, createJobInfo(jobEntry.getValue(), paramMap, startJobMap, startJobTargetJobMap, commandParamMap, envVariableMap, startParamMap, nextJobOrderMap, notifyRelMap));
+						jobunitMap.put(jobId, createJobInfo(jobEntry.getValue(), paramMap, waitGroupMap, waitTargetJobMap, commandParamMap, envVariableMap, nextJobOrderMap, notifyRelMap));
 					} catch (InvalidRole | JobMasterNotFound | HinemosUnknown e) {
 						m_log.warn("failed initCache jobunitId=" + jobunitId + " jobId=" + jobId + ". " 
 									+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -255,13 +265,13 @@ public class FullJob {
 	private static HashMap<String, Map<String, JobInfo>> getJobInfoCache() {
 		ICacheManager cm = CacheManagerFactory.instance().create();
 		Serializable cache = cm.get(AbstractCacheManager.KEY_JOB_INFO);
-		if (m_log.isDebugEnabled()) m_log.debug("get cache " + AbstractCacheManager.KEY_JOB_INFO + " : " + cache);
+		if (m_log.isTraceEnabled()) m_log.trace("get cache " + AbstractCacheManager.KEY_JOB_INFO + " : " + cache);
 		return cache == null ? null : (HashMap<String, Map<String, JobInfo>>)cache;
 	}
 	
 	private static void storeJobInfoCache(HashMap<String, Map<String, JobInfo>> newCache) {
 		ICacheManager cm = CacheManagerFactory.instance().create();
-		if (m_log.isDebugEnabled()) m_log.debug("store cache " + AbstractCacheManager.KEY_JOB_INFO + " : " + newCache);
+		if (m_log.isTraceEnabled()) m_log.trace("store cache " + AbstractCacheManager.KEY_JOB_INFO + " : " + newCache);
 		cm.store(AbstractCacheManager.KEY_JOB_INFO, newCache);
 	}
 	
@@ -269,7 +279,7 @@ public class FullJob {
 	private static HashMap<String, Map<String, JobMstEntity>> getJobMstCache() {
 		ICacheManager cm = CacheManagerFactory.instance().create();
 		Serializable cache = cm.get(AbstractCacheManager.KEY_JOB_MST);
-		if (m_log.isDebugEnabled()) m_log.debug("get cache " + AbstractCacheManager.KEY_JOB_MST + " : " + cache);
+		if (m_log.isTraceEnabled()) m_log.trace("get cache " + AbstractCacheManager.KEY_JOB_MST + " : " + cache);
 		return cache == null ? null : (HashMap<String, Map<String, JobMstEntity>>)cache;
 	}
 	
@@ -282,13 +292,13 @@ public class FullJob {
 	
 	private static void storeJobMstCache(HashMap<String, Map<String, JobMstEntity>> newCache) {
 		ICacheManager cm = CacheManagerFactory.instance().create();
-		if (m_log.isDebugEnabled()) m_log.debug("store cache " + AbstractCacheManager.KEY_JOB_MST + " : " + newCache);
+		if (m_log.isTraceEnabled()) m_log.trace("store cache " + AbstractCacheManager.KEY_JOB_MST + " : " + newCache);
 		cm.store(AbstractCacheManager.KEY_JOB_MST, newCache);
 	}
 
 	// deleteJobunitから呼ばれる
 	public static void removeCache(String jobunitId) {
-		m_log.debug("removeCache " + jobunitId);
+		m_log.trace("removeCache " + jobunitId);
 		
 		try {
 			_lock.writeLock();
@@ -309,7 +319,7 @@ public class FullJob {
 
 	// registerJobunitから呼ばれる。
 	public static void updateCache(String jobunitId) {
-		m_log.debug("updateCache " + jobunitId);
+		m_log.trace("updateCache " + jobunitId);
 		long start = HinemosTime.currentTimeMillis();
 		
 		try {
@@ -329,8 +339,8 @@ public class FullJob {
 						JobParamMstEntity.class, ObjectPrivilegeMode.NONE)
 						.setParameter("jobunitId", jobunitId)
 						.getResultList();
-				List<JobStartJobMstEntity> startJobList = ((HinemosEntityManager)em).createNamedQuery("JobStartJobMstEntity.findByJobunitId", 
-						JobStartJobMstEntity.class, ObjectPrivilegeMode.NONE)
+				List<JobWaitGroupMstEntity> waitGroupList = ((HinemosEntityManager)em).createNamedQuery("JobWaitGroupMstEntity.findByJobunitId", 
+						JobWaitGroupMstEntity.class, ObjectPrivilegeMode.NONE)
 						.setParameter("jobunitId", jobunitId)
 						.getResultList();
 				List<JobCommandParamMstEntity> commandParamList = ((HinemosEntityManager)em).createNamedQuery("JobCommandParamMstEntity.findByJobunitId", 
@@ -341,10 +351,6 @@ public class FullJob {
 						JobEnvVariableMstEntity.class, ObjectPrivilegeMode.NONE)
 						.setParameter("jobunitId", jobunitId)
 						.getResultList();
-				List<JobStartParamMstEntity> startParamList = ((HinemosEntityManager)em).createNamedQuery("JobStartParamMstEntity.findByJobunitId", 
-						JobStartParamMstEntity.class, ObjectPrivilegeMode.NONE)
-						.setParameter("jobunitId", jobunitId)
-						.getResultList();
 				List<JobNextJobOrderMstEntity> nextJobOrderList = ((HinemosEntityManager)em).createNamedQuery("JobNextJobOrderMstEntity.findByJobunitId", 
 						JobNextJobOrderMstEntity.class, ObjectPrivilegeMode.NONE)
 						.setParameter("jobunitId", jobunitId)
@@ -352,16 +358,14 @@ public class FullJob {
 				
 				// ジョブ変数を保持するマップ <jobunitId, <jobId, List<JobParamMstEntity>>>
 				Map<String, Map<String, List<JobParamMstEntity>>> paramMap = new HashMap<String, Map<String, List<JobParamMstEntity>>>();
-				// 待ち条件を保持するマップ <jobunitId, <jobId, List<JobStartJobMstEntity>>>
-				Map<String, Map<String, List<JobStartJobMstEntity>>> startJobMap = new HashMap<String, Map<String, List<JobStartJobMstEntity>>>();
-				// 待ち条件を保持するマップ(ターゲットジョブがキー) <targetJobunitId, <targetJobId, List<JobStartJobMstEntity>>>
-				Map<String, Map<String, List<JobStartJobMstEntity>>> startJobTargetJobMap = new HashMap<String, Map<String, List<JobStartJobMstEntity>>>();
+				// 待ち条件を保持するマップ <jobunitId, <jobId, List<JobWaitGroupMstEntity>>>
+				Map<String, Map<String, List<JobWaitGroupMstEntity>>> waitGroupMap = new HashMap<String, Map<String, List<JobWaitGroupMstEntity>>>();
+				// 待ち条件を保持するマップ(ターゲットジョブがキー) <targetJobunitId, <targetJobId, List<JobWaitMstEntity>>>
+				Map<String, Map<String, List<JobWaitMstEntity>>> waitTargetJobMap = new HashMap<String, Map<String, List<JobWaitMstEntity>>>();
 				// ジョブ終了時の変数設定を保持するマップ <jobunitId, <jobId, List<JobCommandParamMstEntity>>>
 				Map<String, Map<String, List<JobCommandParamMstEntity>>> commandParamMap = new HashMap<String, Map<String, List<JobCommandParamMstEntity>>>();
 				// 環境変数を保持するマップ <jobunitId, <jobId, List<JobEnvVariableMstEntity>>>
 				Map<String, Map<String, List<JobEnvVariableMstEntity>>> envVariableMap = new HashMap<String, Map<String, List<JobEnvVariableMstEntity>>>();
-				// 待ち条件(ジョブ変数)を保持するマップ <jobunitId, <jobId, List<JobStartParamMstEntity>>>
-				Map<String, Map<String, List<JobStartParamMstEntity>>> startParamMap = new HashMap<String, Map<String, List<JobStartParamMstEntity>>>();
 				// 後続ジョブ実行設定を保持するマップ <jobunitId, <jobId, List<JobNextJobOrderMstEntity>>>
 				Map<String, Map<String, List<JobNextJobOrderMstEntity>>> nextJobOrderMap = new HashMap<String, Map<String, List<JobNextJobOrderMstEntity>>>();
 				// 通知グループを保持するマップ <notifyGroupId, List<NotifyRelationInfo>>
@@ -371,19 +375,16 @@ public class FullJob {
 				createParamMap(paramList, paramMap);
 				
 				// 待ち条件マップの作成
-				createStartJobMap(startJobList, startJobMap);
+				createWaitGroupMap(waitGroupList, waitGroupMap);
 				
 				// 待ち条件マップの作成(ターゲットジョブがキー)
-				createStartJobTargetJobMap(startJobList, startJobTargetJobMap);
+				createWaitTargetJobMap(waitGroupList, waitTargetJobMap);
 				
 				// ジョブ終了時の変数設定マップの作成
 				createCommandParamMap(commandParamList, commandParamMap);
 				
 				// 環境変数マップの作成
 				createEnvVariableMap(envVariableList, envVariableMap);
-				
-				// 待ち条件(ジョブ変数)マップの作成
-				createStartParamMap(startParamList, startParamMap);
 				
 				// 後続ジョブ実行設定マップの作成
 				createNextJobOrderMap(nextJobOrderList, nextJobOrderMap);
@@ -396,7 +397,7 @@ public class FullJob {
 					String jobId = job.getId().getJobId();
 					try {
 						jobunitMstMap.put(jobId, job);
-						jobunitInfoMap.put(jobId, createJobInfo(job, paramMap, startJobMap, startJobTargetJobMap, commandParamMap, envVariableMap, startParamMap, nextJobOrderMap, notifyRelMap));
+						jobunitInfoMap.put(jobId, createJobInfo(job, paramMap, waitGroupMap, waitTargetJobMap, commandParamMap, envVariableMap, nextJobOrderMap, notifyRelMap));
 					} catch (InvalidRole | JobMasterNotFound | HinemosUnknown e) {
 						m_log.warn("failed initCache jobunitId=" + jobunitId + " jobId=" + jobId + ". " 
 								+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -445,6 +446,22 @@ public class FullJob {
 						facilityId = job.getFile().getDestFacilityID();
 						job.getFile().setDestScope(FacilitySelector.getNodeScopePath(null,facilityId));
 						break;
+					case JobConstant.TYPE_JOBLINKRCVJOB:
+						facilityId = job.getJobLinkRcv().getFacilityID();
+						job.getJobLinkRcv().setScope(FacilitySelector.getNodeScopePath(null,facilityId));
+						break;
+					case JobConstant.TYPE_FILECHECKJOB:
+						facilityId = job.getJobFileCheck().getFacilityID();
+						job.getJobFileCheck().setScope(FacilitySelector.getNodeScopePath(null,facilityId));
+						break;
+					case JobConstant.TYPE_RESOURCEJOB:
+						facilityId = job.getResource().getResourceNotifyScope();
+						job.getResource().setResourceNotifyScopePath(FacilitySelector.getNodeScopePath(null, facilityId));
+						break;
+					case JobConstant.TYPE_RPAJOB:
+						facilityId = job.getRpa().getFacilityID();
+						job.getRpa().setScope(FacilitySelector.getNodeScopePath(null,facilityId));
+						break;
 					default:
 						/* NOP */
 						break;
@@ -474,7 +491,7 @@ public class FullJob {
 	public static JobInfo getJobFull(JobInfo jobInfo) throws HinemosUnknown, JobMasterNotFound, UserNotFound, InvalidRole {
 		// TODO: UserNotFound は投げないように見える。
 		// 発見したのは新機能追加作業中のため修正は避けておく。どこかのメンテナンスコミットで削除すべき。
-		m_log.debug("createJobData() : " + jobInfo.getJobunitId() + ", " + jobInfo.getId() + "," + jobInfo.isPropertyFull());
+		m_log.trace("createJobData() : " + jobInfo.getJobunitId() + ", " + jobInfo.getId() + "," + jobInfo.isPropertyFull());
 		if (jobInfo.isPropertyFull()) {
 			return jobInfo;
 		}
@@ -491,17 +508,17 @@ public class FullJob {
 			if (jobInfoUnitCache != null) {
 				JobInfo ret = jobInfoUnitCache.get(jobId);
 				if (ret != null) {
-					m_log.debug("cache hit " + jobunitId + "," + jobId + ", hit=" + jobInfoUnitCache.size());
+					m_log.trace("cache hit " + jobunitId + "," + jobId + ", hit=" + jobInfoUnitCache.size());
 					return ret;
 				}
 			} else {
-				m_log.debug("cache didn't hit " + jobunitId + "," + jobId);
+				m_log.trace("cache didn't hit " + jobunitId + "," + jobId);
 			}
 		} finally {
 			_lock.readUnlock();
 		}
 		
-		m_log.debug("createJobData() : " + jobunitId + ", " + jobId);
+		m_log.trace("createJobData() : " + jobunitId + ", " + jobId);
 		JobMstEntity jobMstEntity = null;
 		try {
 			_lock.readLock();
@@ -513,9 +530,143 @@ public class FullJob {
 			_lock.readUnlock();
 		}
 		
-		jobInfo = createJobInfo(jobMstEntity, null, null, null, null, null, null, null, null);
+		jobInfo = createJobInfo(jobMstEntity, null, null, null, null, null, null, null);
 		
 		return jobInfo;
+	}
+
+	/**
+	 * ジョブ情報{@link com.clustercontrol.jobmanagement.bean.JobInfo}を作成します。<BR>
+	 *
+	 * @param jobunitId ジョブユニットID
+	 * @param jobId ジョブID
+	 * @return ジョブ情報
+	 * @throws HinemosUnknown
+	 * @throws JobMasterNotFound
+	 * @throws UserNotFound
+	 * @throws InvalidRole
+	 */
+	public static JobInfo getJobFull(String jobunitId, String jobId) throws HinemosUnknown, JobMasterNotFound, InvalidRole {
+		// TODO: UserNotFound は投げないように見える。
+		// 発見したのは新機能追加作業中のため修正は避けておく。どこかのメンテナンスコミットで削除すべき。
+		m_log.trace("getJobFull() : " + jobunitId + ", " + jobId);
+		JobInfo jobInfo = null;
+		
+		try {
+			_lock.readLock();
+			
+			Map<String, Map<String,JobInfo>> jobInfoCache = getJobInfoCache();
+			Map<String, JobInfo> jobInfoUnitCache = jobInfoCache.get(jobunitId);
+			if (jobInfoUnitCache != null) {
+				JobInfo ret = jobInfoUnitCache.get(jobId);
+				if (ret != null) {
+					m_log.trace("cache hit " + jobunitId + "," + jobId + ", hit=" + jobInfoUnitCache.size());
+					return ret;
+				}
+			} else {
+				m_log.trace("cache didn't hit " + jobunitId + "," + jobId);
+			}
+		} finally {
+			_lock.readUnlock();
+		}
+		
+		m_log.trace("createJobData() : " + jobunitId + ", " + jobId);
+		JobMstEntity jobMstEntity = null;
+		try {
+			_lock.readLock();
+			jobMstEntity = getJobMstEntityFromLocal(jobunitId, jobId);
+			if (jobMstEntity == null) {
+				jobMstEntity = QueryUtil.getJobMstPK(jobunitId, jobId);
+			}
+		} finally {
+			_lock.readUnlock();
+		}
+		
+		jobInfo = createJobInfo(jobMstEntity, null, null, null, null, null, null, null);
+		
+		return jobInfo;
+	}
+
+	/**
+	 * ジョブ情報{@link com.clustercontrol.jobmanagement.bean.JobInfo}を作成します。<BR>
+	 * キャッシュからのみ取得します。
+	 *
+	 * @param jobunitId ジョブユニットID
+	 * @param jobId ジョブID
+	 * @return ジョブ情報
+	 */
+	public static JobInfo getJobFullFromCache(String jobunitId, String jobId) {
+		m_log.trace("getJobFullFromCache() : " + jobunitId + ", " + jobId);
+
+		try {
+			_lock.readLock();
+
+			Map<String, Map<String,JobInfo>> jobInfoCache = getJobInfoCache();
+			Map<String, JobInfo> jobInfoUnitCache = jobInfoCache.get(jobunitId);
+			if (jobInfoUnitCache == null) {
+				m_log.trace("cache didn't hit " + jobunitId + "," + jobId);
+				return null;
+			}
+			JobInfo ret = jobInfoUnitCache.get(jobId);
+			if (ret == null) {
+				m_log.trace("cache didn't hit " + jobunitId + "," + jobId);
+			} else {
+				m_log.trace("cache hit " + jobunitId + "," + jobId + ", hit=" + jobInfoUnitCache.size());
+			}
+			return ret;
+		} finally {
+			_lock.readUnlock();
+		}
+	}	
+	
+	/**
+	 * ロックし、ローカルからジョブの情報を読み込む。
+	 * 該当ジョブユニットのJobMstEntityのリストを返す。
+	 * 
+	 * @param jobunitId
+	 * @param jobId
+	 * @return ジョブマスタのリスト
+	 */
+	public static List<JobMstEntity> getJobMstEntity(String jobunitId) {
+		try {
+			_lock.readLock();
+
+			Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCache();
+			Map<String, JobMstEntity> jobMstUnitCache = jobMstCache.get(jobunitId);
+			if (jobMstUnitCache == null) {
+				return null;
+			}
+			return new ArrayList<>(jobMstUnitCache.values());
+		} finally {
+			_lock.readUnlock();
+		}
+	}
+
+	/**
+	 * ロックし、ローカルからジョブの情報を読み込む。
+	 * 該当するものがキャッシュ煮ない場合、DBからは再取得する。
+	 * 
+	 * @param jobunitId
+	 * @param jobId
+	 * @return ジョブマスタ
+	 * @throws InvalidRole 
+	 * @throws JobMasterNotFound 
+	 */
+	public static JobMstEntity getJobMstEntity(String jobunitId, String jobId) throws JobMasterNotFound, InvalidRole {
+		JobMstEntity jobMstEntity = null;
+		try {
+			_lock.readLock();
+
+			jobMstEntity = getJobMstEntityFromLocal(jobunitId, jobId);
+		} finally {
+			_lock.readUnlock();
+		}
+		
+		if (jobMstEntity == null) {
+			jobMstEntity = QueryUtil.getJobMstPK(jobunitId, jobId);
+		}
+
+		return jobMstEntity;
 	}
 
 	/**
@@ -545,10 +696,10 @@ public class FullJob {
 		
 		Collection<JobParamMstEntity> params = null;
 		if(paramMap == null) {
-			m_log.debug("params get Entities");
+			m_log.trace("params get Entities");
 			params = jobMstEntity.getJobParamMstEntities();
 		} else {
-			m_log.debug("params get map");
+			m_log.trace("params get map");
 			if(paramMap.get(jobMstEntity.getId().getJobunitId()) != null) {
 				params = paramMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
 			}
@@ -576,21 +727,21 @@ public class FullJob {
 	 * 新規に追加された後続ジョブの優先度はジョブIDの昇順で既存の優先度設定の後に追加する。
 	 * @param jobInfo
 	 * @param jobMstEntit
-	 * @param startJobTargetJobMap
+	 * @param waitTargetJobMap
 	 * @param nextJobOrderMap
 	 */
 	private static void setJobNextJobOrder(JobInfo jobInfo, JobMstEntity jobMstEntity, 
-			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobTargetJobMap,
+			Map<String, Map<String, List<JobWaitMstEntity>>> waitTargetJobMap,
 			Map<String, Map<String, List<JobNextJobOrderMstEntity>>> nextJobOrderMap) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 
 			ArrayList<JobNextJobOrderInfo> nextJobOrderList = new ArrayList<JobNextJobOrderInfo>();	
 			List<JobNextJobOrderMstEntity> orderMstList = null;
 			if(nextJobOrderMap == null) {
-				m_log.debug("orderMstList get Entities");
+				m_log.trace("orderMstList get Entities");
 				orderMstList = jobMstEntity.getJobNextJobOrderMstEntities();
 			} else {
-				m_log.debug("orderMstList get map");
+				m_log.trace("orderMstList get map");
 				if(nextJobOrderMap.get(jobMstEntity.getId().getJobunitId()) != null) {
 					orderMstList = nextJobOrderMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
 				}
@@ -611,11 +762,11 @@ public class FullJob {
 
 			//優先度がまだ未設定の後続ジョブも合わせて取得する
 			//優先度設定がない後続ジョブもクライアント側で表示したいため
-			List<JobStartJobMstEntity> nextJobList = null;
-			if(startJobTargetJobMap != null) {
-				m_log.debug("nextJobList get map");
-				if(startJobTargetJobMap.get(jobMstEntity.getId().getJobunitId()) != null) {
-					nextJobList = startJobTargetJobMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
+			List<JobWaitMstEntity> nextJobList = null;
+			if(waitTargetJobMap != null) {
+				m_log.trace("nextJobList get map");
+				if(waitTargetJobMap.get(jobMstEntity.getId().getJobunitId()) != null) {
+					nextJobList = waitTargetJobMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
 				}
 			}
 			
@@ -707,10 +858,10 @@ public class FullJob {
 		//通知情報の取得
 		List<NotifyRelationInfo> nriList = null;
 		if(notifyRelMap == null) {
-			m_log.debug("nriList get database");
+			m_log.trace("nriList get database");
 			nriList = new NotifyControllerBean().getNotifyRelation(jobMstEntity.getNotifyGroupId());
 		} else {
-			m_log.debug("nriList get map");
+			m_log.trace("nriList get map");
 			nriList = notifyRelMap.get(jobMstEntity.getNotifyGroupId());
 		}
 		if (nriList != null) {
@@ -742,9 +893,6 @@ public class FullJob {
 		fileInfo.setMessageRetry(jobMstEntity.getMessageRetry());
 		fileInfo.setMessageRetryEndFlg(jobMstEntity.getMessageRetryEndFlg());
 		fileInfo.setMessageRetryEndValue(jobMstEntity.getMessageRetryEndValue());
-		fileInfo.setCommandRetry(jobMstEntity.getCommandRetry());
-		fileInfo.setCommandRetryFlg(jobMstEntity.getCommandRetryFlg());
-		fileInfo.setCommandRetryEndStatus(jobMstEntity.getCommandRetryEndStatus());
 		//ファシリティパスを取得
 		fileInfo.setSrcScope(FacilitySelector.getNodeScopePath(null, jobMstEntity.getSrcFacilityId()));
 		fileInfo.setDestScope(FacilitySelector.getNodeScopePath(null, jobMstEntity.getDestFacilityId()));
@@ -781,10 +929,10 @@ public class FullJob {
 		ArrayList<JobCommandParam> jobCommandParamList = new ArrayList<>();
 		List<JobCommandParamMstEntity> commandParams = null;
 		if(commandParamMap == null) {
-			m_log.debug("commandParams get Entities");
+			m_log.trace("commandParams get Entities");
 			commandParams = jobMstEntity.getJobCommandParamEntities();
 		} else {
-			m_log.debug("commandParams get map");
+			m_log.trace("commandParams get map");
 			if(commandParamMap.get(jobMstEntity.getId().getJobunitId()) != null) {
 				commandParams = commandParamMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
 			}
@@ -809,10 +957,10 @@ public class FullJob {
 		List<JobEnvVariableInfo> envVariableList = new ArrayList<JobEnvVariableInfo>();
 		List<JobEnvVariableMstEntity> envVariables = null;
 		if(envVariableMap == null) {
-			m_log.debug("envVariables get Entities");
+			m_log.trace("envVariables get Entities");
 			envVariables = jobMstEntity.getJobEnvVariableMstEntities();
 		} else {
-			m_log.debug("envVariables get map");
+			m_log.trace("envVariables get map");
 			if(envVariableMap.get(jobMstEntity.getId().getJobunitId()) != null) {
 				envVariables = envVariableMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
 			}
@@ -829,7 +977,30 @@ public class FullJob {
 			Collections.sort(envVariableList);
 		}
 		commandInfo.setEnvVariableInfo(envVariableList);
-		
+
+		// 標準出力のファイル出力
+		if (jobMstEntity.getJobOutputMstEntities() != null) {
+			for (JobOutputMstEntity output : jobMstEntity.getJobOutputMstEntities()) {
+				JobOutputInfo outputInfo = new JobOutputInfo();
+				outputInfo.setSameNormalFlg(output.getSameNormalFlg());
+				outputInfo.setDirectory(output.getDirectory());
+				outputInfo.setFileName(output.getFileName());
+				outputInfo.setAppendFlg(output.getAppendFlg());
+				outputInfo.setFailureOperationFlg(output.getFailureOperationFlg());
+				outputInfo.setFailureOperationType(output.getFailureOperationType());
+				outputInfo.setFailureOperationEndStatus(output.getFailureOperationEndStatus());
+				outputInfo.setFailureOperationEndValue(output.getFailureOperationEndValue());
+				outputInfo.setFailureNotifyFlg(output.getFailureNotifyFlg());
+				outputInfo.setFailureNotifyPriority(output.getFailureNotifyPriority());
+				outputInfo.setValid(output.getValid());
+				if (JobOutputType.STDOUT.getCode().equals(output.getId().getOutputType())) {
+					commandInfo.setNormalJobOutputInfo(outputInfo);
+				} else if (JobOutputType.STDERR.getCode().equals(output.getId().getOutputType())) {
+					commandInfo.setErrorJobOutputInfo(outputInfo);
+				}
+			}
+		}
+
 		//ファシリティパスを取得
 		commandInfo.setScope(FacilitySelector.getNodeScopePath(null, jobMstEntity.getFacilityId()));
 		jobInfo.setCommand(commandInfo);
@@ -848,7 +1019,6 @@ public class FullJob {
 		//ファシリティパスを取得
 		monitorJobInfo.setScope(FacilitySelector.getNodeScopePath(null, jobMstEntity.getFacilityId()));
 		monitorJobInfo.setProcessingMethod(jobMstEntity.getProcessMode());
-		monitorJobInfo.setCommandRetryFlg(jobMstEntity.getCommandRetryFlg());
 		monitorJobInfo.setMonitorId(jobMstEntity.getMonitorId());
 		monitorJobInfo.setMonitorInfoEndValue(jobMstEntity.getMonitorInfoEndValue());
 		monitorJobInfo.setMonitorWarnEndValue(jobMstEntity.getMonitorWarnEndValue());
@@ -856,23 +1026,269 @@ public class FullJob {
 		monitorJobInfo.setMonitorUnknownEndValue(jobMstEntity.getMonitorUnknownEndValue());
 		monitorJobInfo.setMonitorWaitTime(jobMstEntity.getMonitorWaitTime());
 		monitorJobInfo.setMonitorWaitEndValue(jobMstEntity.getMonitorWaitEndValue());
-		monitorJobInfo.setCommandRetry(jobMstEntity.getCommandRetry());
-		monitorJobInfo.setCommandRetryFlg(jobMstEntity.getCommandRetryFlg());
 		jobInfo.setMonitor(monitorJobInfo);
+	}
+	
+	/**
+	 * jobMstEntityの情報に基づき、JobのRPAシナリオジョブ情報をjobInfoに設定する。
+	 * @param jobInfo
+	 * @param jobMstEntity
+	 */
+	private static void setRpaJob(JobInfo jobInfo, JobMstEntity jobMstEntity) {
+		RpaJobInfo rpaJobInfo = new RpaJobInfo();
+		rpaJobInfo.setRpaJobType(jobMstEntity.getRpaJobType());
+		// 直接実行
+		rpaJobInfo.setFacilityID(jobMstEntity.getFacilityId());
+		rpaJobInfo.setScope(FacilitySelector.getNodeScopePath(null, jobMstEntity.getFacilityId()));
+		rpaJobInfo.setProcessingMethod(jobMstEntity.getProcessMode());
+		rpaJobInfo.setRpaToolId(jobMstEntity.getRpaToolId());
+		rpaJobInfo.setRpaExeFilepath(jobMstEntity.getRpaExeFilepath());
+		rpaJobInfo.setRpaScenarioFilepath(jobMstEntity.getRpaScenarioFilepath());
+		rpaJobInfo.setRpaLogDirectory(jobMstEntity.getRpaLogDirectory());
+		rpaJobInfo.setRpaLogFileName(jobMstEntity.getRpaLogFileName());
+		rpaJobInfo.setRpaLogEncoding(jobMstEntity.getRpaLogEncoding());
+		rpaJobInfo.setRpaLogReturnCode(jobMstEntity.getRpaLogReturnCode());
+		rpaJobInfo.setRpaLogPatternHead(jobMstEntity.getRpaLogPatternHead());
+		rpaJobInfo.setRpaLogPatternTail(jobMstEntity.getRpaLogPatternTail());
+		rpaJobInfo.setRpaLogMaxBytes(jobMstEntity.getRpaLogMaxBytes());
+		rpaJobInfo.setRpaDefaultEndValue(jobMstEntity.getRpaDefaultEndValue());
+		rpaJobInfo.setRpaLoginFlg(jobMstEntity.getRpaLoginFlg());
+		rpaJobInfo.setRpaLoginUserId(jobMstEntity.getRpaLoginUserId());
+		rpaJobInfo.setRpaLoginPassword(jobMstEntity.getRpaLoginPassword());
+		rpaJobInfo.setRpaLoginRetry(jobMstEntity.getRpaLoginRetry());
+		rpaJobInfo.setRpaLoginEndValue(jobMstEntity.getRpaLoginEndValue());
+		rpaJobInfo.setRpaLoginResolution(jobMstEntity.getRpaLoginResolution());
+		rpaJobInfo.setRpaLogoutFlg(jobMstEntity.getRpaLogoutFlg());
+		rpaJobInfo.setRpaScreenshotEndDelayFlg(jobMstEntity.getRpaScreenshotEndDelayFlg());
+		rpaJobInfo.setRpaScreenshotEndValueFlg(jobMstEntity.getRpaScreenshotEndValueFlg());
+		rpaJobInfo.setRpaScreenshotEndValue(jobMstEntity.getRpaScreenshotEndValue());
+		rpaJobInfo.setRpaScreenshotEndValueCondition(jobMstEntity.getRpaScreenshotEndValueCondition());
+		rpaJobInfo.setRpaNotLoginNotify(jobMstEntity.getRpaNotLoginNotify());
+		rpaJobInfo.setRpaNotLoginNotifyPriority(jobMstEntity.getRpaNotLoginNotifyPriority());
+		rpaJobInfo.setRpaNotLoginEndValue(jobMstEntity.getRpaNotLoginEndValue());
+		rpaJobInfo.setRpaAlreadyRunningNotify(jobMstEntity.getRpaAlreadyRunningNotify());
+		rpaJobInfo.setRpaAlreadyRunningNotifyPriority(jobMstEntity.getRpaAlreadyRunningNotifyPriority());
+		rpaJobInfo.setRpaAlreadyRunningEndValue(jobMstEntity.getRpaAlreadyRunningEndValue());
+		rpaJobInfo.setRpaAbnormalExitNotify(jobMstEntity.getRpaAbnormalExitNotify());
+		rpaJobInfo.setRpaAbnormalExitNotifyPriority(jobMstEntity.getRpaAbnormalExitNotifyPriority());
+		rpaJobInfo.setRpaAbnormalExitEndValue(jobMstEntity.getRpaAbnormalExitEndValue());
+		rpaJobInfo.setRpaJobOptionInfos(new ArrayList<>());
+		jobMstEntity.getJobRpaOptionMstEntities().forEach( e -> {
+			RpaJobOptionInfo optionInfo = new RpaJobOptionInfo();
+			optionInfo.setOrderNo(e.getId().getOrderNo());
+			optionInfo.setOption(e.getOption());
+			optionInfo.setDescription(e.getDescription());
+			rpaJobInfo.getRpaJobOptionInfos().add(optionInfo);
+		}); 
+		rpaJobInfo.setRpaJobEndValueConditionInfos(new ArrayList<>());
+		jobMstEntity.getJobRpaEndValueConditionMstEntities().forEach( e -> {
+			RpaJobEndValueConditionInfo endValueInfo = new RpaJobEndValueConditionInfo();
+			endValueInfo.setOrderNo(e.getId().getOrderNo());
+			endValueInfo.setConditionType(e.getConditionType());
+			endValueInfo.setPattern(e.getPattern());
+			endValueInfo.setCaseSensitivityFlg(e.getCaseSensitivityFlg());
+			endValueInfo.setProcessType(e.getProcessType());
+			endValueInfo.setReturnCode(e.getReturnCode());
+			endValueInfo.setReturnCodeCondition(e.getReturnCodeCondition());
+			endValueInfo.setUseCommandReturnCodeFlg(e.getUseCommandReturnCodeFlg());
+			endValueInfo.setEndValue(e.getEndValue());
+			endValueInfo.setDescription(e.getDescription());
+			rpaJobInfo.getRpaJobEndValueConditionInfos().add(endValueInfo);
+		});
+		// 間接実行
+		rpaJobInfo.setRpaScopeId(jobMstEntity.getRpaScopeId());
+		rpaJobInfo.setRpaRunType(jobMstEntity.getRpaRunType());
+		rpaJobInfo.setRpaScenarioParam(jobMstEntity.getRpaScenarioParam());
+		rpaJobInfo.setRpaStopType(jobMstEntity.getRpaStopType());
+		rpaJobInfo.setRpaStopMode(jobMstEntity.getRpaStopMode());
+		rpaJobInfo.setRpaRunConnectTimeout(jobMstEntity.getRpaRunConnectTimeout());
+		rpaJobInfo.setRpaRunRequestTimeout(jobMstEntity.getRpaRunRequestTimeout());
+		rpaJobInfo.setRpaRunEndFlg(jobMstEntity.getRpaRunEndFlg());
+		rpaJobInfo.setRpaRunRetry(jobMstEntity.getRpaRunRetry());
+		rpaJobInfo.setRpaRunEndValue(jobMstEntity.getRpaRunEndValue());
+		rpaJobInfo.setRpaCheckConnectTimeout(jobMstEntity.getRpaCheckConnectTimeout());
+		rpaJobInfo.setRpaCheckRequestTimeout(jobMstEntity.getRpaCheckRequestTimeout());
+		rpaJobInfo.setRpaCheckEndFlg(jobMstEntity.getRpaCheckEndFlg());
+		rpaJobInfo.setRpaCheckRetry(jobMstEntity.getRpaCheckRetry());
+		rpaJobInfo.setRpaCheckEndValue(jobMstEntity.getRpaCheckEndValue());
+		rpaJobInfo.setRpaJobRunParamInfos(new ArrayList<>());
+		jobMstEntity.getJobRpaRunParamMstEntities().forEach(e -> {
+			RpaJobRunParamInfo runParamInfo = new RpaJobRunParamInfo();
+			runParamInfo.setParamId(e.getId().getParamId());
+			runParamInfo.setParamValue(e.getParamValue());
+			rpaJobInfo.getRpaJobRunParamInfos().add(runParamInfo);
+		});
+		rpaJobInfo.setRpaJobCheckEndValueInfos(new ArrayList<>());
+		jobMstEntity.getJobRpaCheckEndValueMstEntities().forEach(e -> {
+			RpaJobCheckEndValueInfo checkEndValueInfo = new RpaJobCheckEndValueInfo();
+			checkEndValueInfo.setEndStatusId(e.getId().getEndStatusId());
+			checkEndValueInfo.setEndValue(e.getEndValue());
+			rpaJobInfo.getRpaJobCheckEndValueInfos().add(checkEndValueInfo);
+		});
+		// 直接実行・間接実行共通
+		rpaJobInfo.setMessageRetry(jobMstEntity.getMessageRetry());
+		rpaJobInfo.setMessageRetryEndFlg(jobMstEntity.getMessageRetryEndFlg());
+		rpaJobInfo.setMessageRetryEndValue(jobMstEntity.getMessageRetryEndValue());
+		rpaJobInfo.setCommandRetry(jobMstEntity.getCommandRetry());
+		rpaJobInfo.setCommandRetryFlg(jobMstEntity.getCommandRetryFlg());
+		rpaJobInfo.setCommandRetryEndStatus(jobMstEntity.getCommandRetryEndStatus());
+		jobInfo.setRpa(rpaJobInfo);
+		
+	}
+
+	/**
+	 * jobMstEntityの情報に基づき、Jobのジョブ連携送信ジョブ情報をjobInfoに設定する。
+	 * @param jobInfo
+	 * @param jobMstEntity
+	 * @throws HinemosUnknown
+	 */
+	private static void setJobLinkSendJob(JobInfo jobInfo, JobMstEntity jobMstEntity)
+			throws HinemosUnknown {
+		JobLinkSendInfo jobLinkSendInfo = new JobLinkSendInfo();
+		jobLinkSendInfo.setRetryFlg(jobMstEntity.getRetryFlg());
+		jobLinkSendInfo.setRetryCount(jobMstEntity.getRetryCount());
+		jobLinkSendInfo.setFailureOperation(jobMstEntity.getFailureOperation());
+		jobLinkSendInfo.setFailureEndStatus(jobMstEntity.getFailureEndStatus());
+		jobLinkSendInfo.setJoblinkMessageId(jobMstEntity.getJoblinkMessageId());
+		jobLinkSendInfo.setPriority(jobMstEntity.getPriority());
+		jobLinkSendInfo.setMessage(jobMstEntity.getMessage());
+		jobLinkSendInfo.setSuccessEndValue(jobMstEntity.getSuccessEndValue());
+		jobLinkSendInfo.setFailureEndValue(jobMstEntity.getFailureEndValue());
+		jobLinkSendInfo.setJoblinkSendSettingId(jobMstEntity.getJoblinkSendSettingId());
+		if (jobMstEntity.getJobLinkJobExpMstEntities() != null) {
+			jobLinkSendInfo.setJobLinkExpList(new ArrayList<>());
+			for (JobLinkJobExpMstEntity entity : jobMstEntity.getJobLinkJobExpMstEntities()) {
+				JobLinkExpInfo info = new JobLinkExpInfo();
+				info.setKey(entity.getId().getKey());
+				info.setValue(entity.getValue());
+				jobLinkSendInfo.getJobLinkExpList().add(info);
+			}
+		}
+		jobInfo.setJobLinkSend(jobLinkSendInfo);
+	}
+
+	/**
+	 * jobMstEntityの情報に基づき、Jobのジョブ連携待機ジョブ情報をjobInfoに設定する。
+	 * @param jobInfo
+	 * @param jobMstEntity
+	 * @throws HinemosUnknown
+	 */
+	private static void setJobLinkRcvJob(JobInfo jobInfo, JobMstEntity jobMstEntity)
+			throws HinemosUnknown {
+		JobLinkRcvInfo jobLinkRcvInfo = new JobLinkRcvInfo();
+		jobLinkRcvInfo.setFacilityID(jobMstEntity.getFacilityId());
+		//ファシリティパスを取得
+		jobLinkRcvInfo.setScope(FacilitySelector.getNodeScopePath(null, jobMstEntity.getFacilityId()));
+		jobLinkRcvInfo.setMonitorInfoEndValue(jobMstEntity.getMonitorInfoEndValue());
+		jobLinkRcvInfo.setMonitorWarnEndValue(jobMstEntity.getMonitorWarnEndValue());
+		jobLinkRcvInfo.setMonitorCriticalEndValue(jobMstEntity.getMonitorCriticalEndValue());
+		jobLinkRcvInfo.setMonitorUnknownEndValue(jobMstEntity.getMonitorUnknownEndValue());
+		jobLinkRcvInfo.setFailureEndFlg(jobMstEntity.getFailureEndFlg());
+		jobLinkRcvInfo.setMonitorWaitTime(jobMstEntity.getMonitorWaitTime());
+		jobLinkRcvInfo.setMonitorWaitEndValue(jobMstEntity.getMonitorWaitEndValue());
+		jobLinkRcvInfo.setJoblinkMessageId(jobMstEntity.getJoblinkMessageId());
+		jobLinkRcvInfo.setMessage(jobMstEntity.getMessage());
+		jobLinkRcvInfo.setPastFlg(jobMstEntity.getPastFlg());
+		jobLinkRcvInfo.setPastMin(jobMstEntity.getPastMin());
+		jobLinkRcvInfo.setInfoValidFlg(jobMstEntity.getInfoValidFlg());
+		jobLinkRcvInfo.setWarnValidFlg(jobMstEntity.getWarnValidFlg());
+		jobLinkRcvInfo.setCriticalValidFlg(jobMstEntity.getCriticalValidFlg());
+		jobLinkRcvInfo.setUnknownValidFlg(jobMstEntity.getUnknownValidFlg());
+		jobLinkRcvInfo.setApplicationFlg(jobMstEntity.getApplicationFlg());
+		jobLinkRcvInfo.setApplication(jobMstEntity.getApplication());
+		jobLinkRcvInfo.setMonitorDetailIdFlg(jobMstEntity.getMonitorDetailIdFlg());
+		jobLinkRcvInfo.setMonitorDetailId(jobMstEntity.getMonitorDetailId());
+		jobLinkRcvInfo.setMessageFlg(jobMstEntity.getMessageFlg());
+		jobLinkRcvInfo.setExpFlg(jobMstEntity.getExpFlg());
+		jobLinkRcvInfo.setMonitorAllEndValueFlg(jobMstEntity.getMonitorAllEndValueFlg());
+		jobLinkRcvInfo.setMonitorAllEndValue(jobMstEntity.getMonitorAllEndValue());
+		if (jobMstEntity.getJobLinkJobExpMstEntities() != null) {
+			jobLinkRcvInfo.setJobLinkExpList(new ArrayList<>());
+			for (JobLinkJobExpMstEntity entity : jobMstEntity.getJobLinkJobExpMstEntities()) {
+				JobLinkExpInfo info = new JobLinkExpInfo();
+				info.setKey(entity.getId().getKey());
+				info.setValue(entity.getValue());
+				jobLinkRcvInfo.getJobLinkExpList().add(info);
+			}
+		}
+		if (jobMstEntity.getJobLinkInheritMstEntities() != null) {
+			jobLinkRcvInfo.setJobLinkInheritList(new ArrayList<>());
+			for (JobLinkInheritMstEntity entity : jobMstEntity.getJobLinkInheritMstEntities()) {
+				JobLinkInheritInfo info = new JobLinkInheritInfo();
+				info.setParamId(entity.getId().getParamId());
+				info.setKeyInfo(entity.getKeyInfo());
+				info.setExpKey(entity.getExpKey());
+				jobLinkRcvInfo.getJobLinkInheritList().add(info);
+			}
+		}
+		jobInfo.setJobLinkRcv(jobLinkRcvInfo);
+	}
+
+	/**
+	 * jobMstEntityの情報に基づき、Jobのファイルチェックジョブ情報をjobInfoに設定する。
+	 * @param jobInfo
+	 * @param jobMstEntity
+	 * @throws HinemosUnknown
+	 */
+	private static void setFileCheckJob(JobInfo jobInfo, JobMstEntity jobMstEntity)
+			throws HinemosUnknown {
+		JobFileCheckInfo jobFileCheckInfo = new JobFileCheckInfo();
+		jobFileCheckInfo.setFacilityID(jobMstEntity.getFacilityId());
+		//ファシリティパスを取得
+		jobFileCheckInfo.setScope(FacilitySelector.getNodeScopePath(null, jobMstEntity.getFacilityId()));
+		jobFileCheckInfo.setProcessingMethod(jobMstEntity.getProcessMode());
+		jobFileCheckInfo.setSuccessEndValue(jobMstEntity.getSuccessEndValue());
+		jobFileCheckInfo.setFailureEndFlg(jobMstEntity.getFailureEndFlg());
+		jobFileCheckInfo.setFailureWaitTime(jobMstEntity.getFailureWaitTime());
+		jobFileCheckInfo.setFailureEndValue(jobMstEntity.getFailureEndValue());
+		jobFileCheckInfo.setDirectory(jobMstEntity.getDirectory());
+		jobFileCheckInfo.setFileName(jobMstEntity.getFileName());
+		jobFileCheckInfo.setCreateValidFlg(jobMstEntity.getCreateValidFlg());
+		jobFileCheckInfo.setCreateBeforeJobStartFlg(jobMstEntity.getCreateBeforeJobStartFlg());
+		jobFileCheckInfo.setDeleteValidFlg(jobMstEntity.getDeleteValidFlg());
+		jobFileCheckInfo.setModifyValidFlg(jobMstEntity.getModifyValidFlg());
+		jobFileCheckInfo.setModifyType(jobMstEntity.getModifyType());
+		jobFileCheckInfo.setNotJudgeFileInUseFlg(jobMstEntity.getNotJudgeFileInUseFlg());
+		jobFileCheckInfo.setMessageRetry(jobMstEntity.getMessageRetry());
+		jobFileCheckInfo.setMessageRetryEndFlg(jobMstEntity.getMessageRetryEndFlg());
+		jobFileCheckInfo.setMessageRetryEndValue(jobMstEntity.getMessageRetryEndValue());
+		jobInfo.setJobFileCheck(jobFileCheckInfo);
+	}
+
+	/**
+	 * jobMstEntityの情報に基づき、Jobのリソース制御ジョブ情報をjobInfoに設定する。
+	 * @param jobInfo
+	 * @param jobMstEntity
+	 */
+	private static void setResourceJob(JobInfo jobInfo, JobMstEntity jobMstEntity) {
+		ResourceJobInfo resourceJobInfo = new ResourceJobInfo();
+		resourceJobInfo.setResourceType(jobMstEntity.getResourceType());
+		resourceJobInfo.setResourceCloudScopeId(jobMstEntity.getResourceCloudScopeId());
+		resourceJobInfo.setResourceLocationId(jobMstEntity.getResourceLocationId());
+		resourceJobInfo.setResourceTargetId(jobMstEntity.getResourceTargetId());
+		resourceJobInfo.setResourceAction(jobMstEntity.getResourceAction());
+		resourceJobInfo.setResourceStatusConfirmTime(jobMstEntity.getResourceStatusConfirmTime());
+		resourceJobInfo.setResourceStatusConfirmInterval(jobMstEntity.getResourceStatusConfirmInterval());
+		resourceJobInfo.setResourceAttachNode(jobMstEntity.getResourceAttachNode());
+		resourceJobInfo.setResourceAttachDevice(jobMstEntity.getResourceAttachDevice());
+		resourceJobInfo.setResourceNotifyScope(jobMstEntity.getFacilityId());
+		// ファシリティパスを取得
+		resourceJobInfo.setResourceNotifyScopePath(FacilitySelector.getNodeScopePath(null, jobMstEntity.getFacilityId()));
+		resourceJobInfo.setResourceSuccessValue(jobMstEntity.getResourceSuccessValue());
+		resourceJobInfo.setResourceFailureValue(jobMstEntity.getResourceFailureValue());
+		jobInfo.setResource(resourceJobInfo);
 	}
 
 	/**
 	 * jobMstEntityの情報に基づき、Jobの待ち条件をjobInfoに設定する。
 	 * @param jobInfo
 	 * @param jobMstEntity
-	 * @param startJobMap
-	 * @param startParamMap
+	 * @param waitGroupMap
 	 * @throws JobMasterNotFound
 	 * @throws InvalidRole
 	 */
 	private static void setJobWaitRule(JobInfo jobInfo, JobMstEntity jobMstEntity, 
-			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobMap,
-			Map<String, Map<String, List<JobStartParamMstEntity>>> startParamMap)
+			Map<String, Map<String, List<JobWaitGroupMstEntity>>> waitGroupMap)
 			throws JobMasterNotFound, InvalidRole {
 		//待ち条件を取得
 		JobWaitRuleInfo waitRule = null;
@@ -886,7 +1302,12 @@ public class FullJob {
 				jobMstEntity.getJobType() == JobConstant.TYPE_APPROVALJOB ||
 				jobMstEntity.getJobType() == JobConstant.TYPE_REFERJOBNET ||
 				jobMstEntity.getJobType() == JobConstant.TYPE_REFERJOB ||
-				jobMstEntity.getJobType() == JobConstant.TYPE_MONITORJOB){
+				jobMstEntity.getJobType() == JobConstant.TYPE_MONITORJOB ||
+				jobMstEntity.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB ||
+				jobMstEntity.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB ||
+				jobMstEntity.getJobType() == JobConstant.TYPE_FILECHECKJOB ||
+				jobMstEntity.getJobType() == JobConstant.TYPE_RESOURCEJOB ||
+				jobMstEntity.getJobType() == JobConstant.TYPE_RPAJOB){
 			waitRule.setSuspend(jobMstEntity.getSuspend());
 			waitRule.setCondition(jobMstEntity.getConditionType());
 			waitRule.setEndCondition(jobMstEntity.getUnmatchEndFlg());
@@ -904,6 +1325,7 @@ public class FullJob {
 			waitRule.setCalendarEndValue(jobMstEntity.getCalendarEndValue());
 			waitRule.setJobRetryFlg(jobMstEntity.getJobRetryFlg());
 			waitRule.setJobRetry(jobMstEntity.getJobRetry());
+			waitRule.setJobRetryInterval(jobMstEntity.getJobRetryInterval());
 			waitRule.setJobRetryEndStatus(jobMstEntity.getJobRetryEndStatus());
 
 			waitRule.setStart_delay(jobMstEntity.getStartDelay());
@@ -947,115 +1369,111 @@ public class FullJob {
 			waitRule.setQueueId(jobMstEntity.getQueueId());
 		}
 
-		//待ち条件（ジョブ）を取得
-		Collection<JobStartJobMstEntity> startJobList = null;
-		if(startJobMap == null) {
-			m_log.debug("startJobList get Entities");
-			startJobList = jobMstEntity.getJobStartJobMstEntities();
+		//待ち条件を取得
+		Collection<JobWaitGroupMstEntity> waitGroupList = null;
+		if(waitGroupMap == null) {
+			m_log.trace("waitGroupList get Entities");
+			waitGroupList = jobMstEntity.getJobWaitGroupMstEntities();
 		} else {
-			m_log.debug("startJobList get map");
-			if(startJobMap.get(jobMstEntity.getId().getJobunitId()) != null) {
-				startJobList = startJobMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
+			m_log.trace("waitGroupList get map");
+			if(waitGroupMap.get(jobMstEntity.getId().getJobunitId()) != null) {
+				waitGroupList = waitGroupMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
 			}
 		}
-		ArrayList<JobObjectInfo> objectList = new ArrayList<JobObjectInfo>();
-		if(startJobList != null && startJobList.size() > 0){
-			for (JobStartJobMstEntity startJob : startJobList){
-				if(startJob != null){
+		ArrayList<JobObjectGroupInfo> objectGroupList = new ArrayList<>();
+		if(waitGroupList != null && waitGroupList.size() > 0){
+			for (JobWaitGroupMstEntity waitGroup : waitGroupList){
+				if(waitGroup == null){
+					continue;
+				}
+				JobObjectGroupInfo objectGroupInfo = new JobObjectGroupInfo();
+				objectGroupInfo.setOrderNo(waitGroup.getId().getOrderNo());
+				objectGroupInfo.setConditionType(waitGroup.getConditionType());
+				objectGroupInfo.setIsGroup(waitGroup.getIsGroup());
+				ArrayList<JobObjectInfo> objectList = new ArrayList<>();
+				for (JobWaitMstEntity wait : waitGroup.getJobWaitMstEntities()) {
 					JobObjectInfo objectInfo = new JobObjectInfo();
-					objectInfo.setJobId(startJob.getId().getTargetJobId());
-					// ジョブ名格納用
-					String jobName = "";
-					//対象ジョブを取得
-					Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCacheWithoutDebugLog();
-					if (jobMstCache.get(startJob.getId().getTargetJobunitId()) != null
-							&& jobMstCache.get(startJob.getId().getTargetJobunitId()).get(startJob.getId().getTargetJobId()) != null) {
-						// キャッシュが存在し、ジョブ名が取得できるならキャッシュから取得
-						JobMstEntity targetJob = jobMstCache.get(startJob.getId().getTargetJobunitId()).get(startJob.getId().getTargetJobId());
-						jobName = targetJob.getJobName();
-					} else {
-						// ジョブ名をSQLで取得する
-						try {
-							JobMstEntity targetJob= QueryUtil.getJobMstPK(startJob.getId().getTargetJobunitId(), startJob.getId().getTargetJobId());
+					if (wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_TIME
+							&& wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_START_MINUTE
+							&& wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_JOB_PARAMETER) {
+						// ジョブ名格納用
+						String jobName = "";
+						//対象ジョブを取得
+						Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCacheWithoutDebugLog();
+						if (jobMstCache.get(wait.getId().getTargetJobunitId()) != null
+								&& jobMstCache.get(wait.getId().getTargetJobunitId()).get(wait.getId().getTargetJobId()) != null) {
+							// キャッシュが存在し、ジョブ名が取得できるならキャッシュから取得
+							JobMstEntity targetJob = jobMstCache.get(wait.getId().getTargetJobunitId()).get(wait.getId().getTargetJobId());
 							jobName = targetJob.getJobName();
-						} catch(JobMasterNotFound e) {
-							m_log.error("targetJob Not Found : " + e.getMessage());
-							jobName = "";
+						} else {
+							// ジョブ名をSQLで取得する
+							try {
+								JobMstEntity targetJob= QueryUtil.getJobMstPK(wait.getId().getTargetJobunitId(), wait.getId().getTargetJobId());
+								jobName = targetJob.getJobName();
+							} catch(JobMasterNotFound e) {
+								m_log.error("targetJob Not Found : " + e.getMessage());
+								jobName = "";
+							}
 						}
+						objectInfo.setJobId(wait.getId().getTargetJobId());
+						objectInfo.setJobName(jobName);
 					}
-					objectInfo.setJobName(jobName);
-					objectInfo.setType(startJob.getId().getTargetJobType());
-					objectInfo.setValue(startJob.getId().getTargetJobEndValue());
-					objectInfo.setCrossSessionRange(startJob.getTargetJobCrossSessionRange());
-					objectInfo.setDescription(startJob.getTargetJobDescription());
-					m_log.debug("getTargetJobType = " + startJob.getId().getTargetJobType());
-					m_log.debug("getTargetJobId = " + startJob.getId().getTargetJobId());
-					m_log.debug("getTargetJobEndValue = " + startJob.getId().getTargetJobEndValue());
-					m_log.debug("getTargetJobCrossSessionRange = " + startJob.getTargetJobCrossSessionRange());
-					m_log.debug("getTargetJobDescription = " + startJob.getTargetJobDescription());
+					objectInfo.setType(wait.getId().getTargetJobType());
+					switch (objectInfo.getType()) {
+					case JudgmentObjectConstant.TYPE_JOB_END_STATUS:
+						/** ジョブ終了状態 */
+						objectInfo.setStatus(wait.getId().getTargetInt1());
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_END_VALUE:
+						/** ジョブ終了値 */
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						break;
+					case JudgmentObjectConstant.TYPE_TIME:
+						/** 時刻 */
+						objectInfo.setTime(wait.getId().getTargetLong());
+						break;
+					case JudgmentObjectConstant.TYPE_START_MINUTE:
+						/** セッション開始時の時間（分）  */
+						objectInfo.setStartMinute(wait.getId().getTargetInt1());
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_PARAMETER:
+						/** ジョブ変数 */
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setDecisionValue(wait.getId().getTargetStr1());
+						objectInfo.setValue(wait.getId().getTargetStr2());
+						break;
+					case JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS:
+						/** セッション横断ジョブ終了状態 */
+						objectInfo.setStatus(wait.getId().getTargetInt1());
+						objectInfo.setCrossSessionRange(wait.getId().getTargetInt2());
+						break;
+					case JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE:
+						/** セッション横断ジョブ終了値 */
+						objectInfo.setCrossSessionRange(wait.getId().getTargetInt2());
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_RETURN_VALUE:
+						/** ジョブ戻り値 */
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						break;
+					default:
+						break;
+					}
+					objectInfo.setDescription(wait.getDescription());
 					objectList.add(objectInfo);
 				}
-			}
-		}
-
-		//待ち条件（時刻）を取得
-		if (jobMstEntity.getStartTime() != null) {
-			JobObjectInfo objectInfo = new JobObjectInfo();
-			objectInfo.setType(JudgmentObjectConstant.TYPE_TIME);
-			objectInfo.setTime(jobMstEntity.getStartTime());
-			objectInfo.setDescription(jobMstEntity.getStartTimeDescription());
-			m_log.debug("getType = " + JudgmentObjectConstant.TYPE_TIME);
-			m_log.debug("getTime = " + jobMstEntity.getStartTime());
-			m_log.debug("getStartTimeDescription= " + jobMstEntity.getStartTimeDescription());
-			objectList.add(objectInfo);
-		}
-		m_log.debug("job.getStartMinute() = " + jobMstEntity.getStartMinute());
-		//待ち条件（セッション開始時の時間（分））を取得
-		if (jobMstEntity.getStartMinute() != null) {
-			JobObjectInfo objectInfo = new JobObjectInfo();
-			objectInfo.setType(JudgmentObjectConstant.TYPE_START_MINUTE);
-			objectInfo.setStartMinute(jobMstEntity.getStartMinute());
-			objectInfo.setDescription(jobMstEntity.getStartMinuteDescription());
-			m_log.debug("getType = " + JudgmentObjectConstant.TYPE_START_MINUTE);
-			m_log.debug("getStartMinute = " + jobMstEntity.getStartMinute());
-			m_log.debug("getStartMinuteDescription= " + jobMstEntity.getStartMinuteDescription());
-			objectList.add(objectInfo);
-		}
-
-		// 待ち条件（ジョブ変数）を取得
-		List<JobStartParamMstEntity> decisionList = null;
-		if(startParamMap == null) {
-			m_log.debug("decisionList get Entities");
-			decisionList = jobMstEntity.getJobStartParamMstEntities();
-		} else {
-			m_log.debug("decisionList get map");
-			if(startParamMap.get(jobMstEntity.getId().getJobunitId()) != null) {
-				decisionList = startParamMap.get(jobMstEntity.getId().getJobunitId()).get(jobMstEntity.getId().getJobId());
-			}
-		}
-		if (decisionList != null && decisionList.size() != 0) {
-			for (JobStartParamMstEntity decision : decisionList) {
-				if (decision != null) {
-					JobObjectInfo objectInfo = new JobObjectInfo();
-					objectInfo.setType(decision.getId().getTargetJobType());
-					objectInfo.setDecisionValue01(decision.getId().getStartDecisionValue01());
-					objectInfo.setDecisionCondition(decision.getId().getStartDecisionCondition());
-					objectInfo.setDecisionValue02(decision.getId().getStartDecisionValue02());
-					objectInfo.setDescription(decision.getDecisionDescription());
-					m_log.debug("getTargetJobType = " + decision.getId().getTargetJobType());
-					m_log.debug("getStartDecisionValue01 = " + decision.getId().getStartDecisionValue01());
-					m_log.debug("getStartDecisionCondition = " + decision.getId().getStartDecisionCondition());
-					m_log.debug("getStartDecisionValue02 = " + decision.getId().getStartDecisionValue02());
-					m_log.debug("getDecisionDescription = " + decision.getDecisionDescription());
-					objectList.add(objectInfo);
-				}
+				objectGroupInfo.setJobObjectList(objectList);
+				objectGroupList.add(objectGroupInfo);
 			}
 		}
 		/*
 		 * ソート処理
 		 */
-		Collections.sort(objectList);
-		waitRule.setObject(objectList);
+		Collections.sort(objectGroupList);
+		waitRule.setObjectGroup(objectGroupList);
 		jobInfo.setWaitRule(waitRule);
 	}
 
@@ -1071,8 +1489,34 @@ public class FullJob {
 	public static void setJobTreeFull (JobTreeItem job)
 			throws JobMasterNotFound, NotifyNotFound, UserNotFound, InvalidRole, HinemosUnknown {
 		JobInfo jobInfo = job.getData();
-		if (!jobInfo.isPropertyFull()) {
-			job.setData(getJobFull(jobInfo));
+		if (jobInfo.isPropertyFull() != null && !jobInfo.isPropertyFull()) {
+			JobInfo oldJob = getJobFull(jobInfo);
+			JobInfo clonedOldJob = null;
+			try {
+				clonedOldJob = (JobInfo) oldJob.cloneDeepWaitRuleOnly();
+			} catch (Exception e) {
+				m_log.warn("setJobTreeFull() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				throw new HinemosUnknown(e.getMessage(), e);
+			}
+			if (jobInfo.isWaitRuleChanged() && jobInfo.getWaitRule() != null) {
+				// 待ち条件が更新されている場合
+				m_log.info("Job wait rule changed with propertyFull=false for jobId=" + job.getData().getId());
+				JobWaitRuleInfo newWaitRule = jobInfo.getWaitRule();
+				clonedOldJob.getWaitRule()
+						.setExclusiveBranchNextJobOrderList(newWaitRule.getExclusiveBranchNextJobOrderList());
+				clonedOldJob.getWaitRule().setObjectGroup(newWaitRule.getObjectGroup());
+			}
+			if (jobInfo.isReferJobChanged()) {
+				// 参照ジョブ情報が更新されている場合
+				m_log.info("Job reference changed with propertyFull=false for jobId=" + job.getData().getId());
+				String newReferJobUnitId = jobInfo.getReferJobUnitId();
+				String newReferJobId = jobInfo.getReferJobId();
+				Integer newReferSelectType = jobInfo.getReferJobSelectType();
+				clonedOldJob.setReferJobUnitId(newReferJobUnitId);
+				clonedOldJob.setReferJobId(newReferJobId);
+				clonedOldJob.setReferJobSelectType(newReferSelectType);
+			}
+			job.setData(clonedOldJob);
 		}
 		if (job.getChildren() == null) {
 			return;
@@ -1109,11 +1553,10 @@ public class FullJob {
 	// マップがnullでない場合はジョブ変数、待ち条件、ジョブ終了時の変数設定、環境変数、待ち条件(ジョブ変数)を引数のマップから取得する
 	private static JobInfo createJobInfo(JobMstEntity jobMstEntity,
 			Map<String, Map<String, List<JobParamMstEntity>>> paramMap,
-			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobMap,
-			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobTargetJobMap,
+			Map<String, Map<String, List<JobWaitGroupMstEntity>>> waitGroupMap,
+			Map<String, Map<String, List<JobWaitMstEntity>>> waitTargetJobMap,
 			Map<String, Map<String, List<JobCommandParamMstEntity>>> commandParamMap,
 			Map<String, Map<String, List<JobEnvVariableMstEntity>>> envVariableMap,
-			Map<String, Map<String, List<JobStartParamMstEntity>>> startParamMap,
 			Map<String, Map<String, List<JobNextJobOrderMstEntity>>> nextJobOrderMap,
 			Map<String, List<NotifyRelationInfo>> notifyRelMap) 
 					throws InvalidRole, JobMasterNotFound, HinemosUnknown {
@@ -1122,12 +1565,11 @@ public class FullJob {
 		jobInfo.setDescription(jobMstEntity.getDescription());
 		jobInfo.setIconId(jobMstEntity.getIconId());
 		if (jobMstEntity.getJobType() == JobConstant.TYPE_JOBUNIT) {
-			jobInfo.setOwnerRoleId(jobMstEntity.getOwnerRoleId());
-		} else {
-			//ジョブユニット以外はオーナーロールIDをnullにする
-			jobInfo.setOwnerRoleId(null);
+			// jobMstEntityではジョブユニットの値のみ使用する
+			jobInfo.setExpNodeRuntimeFlg(jobMstEntity.getExpNodeRuntimeFlg());
 		}
-			jobInfo.setRegisteredModule(jobMstEntity.isRegisteredModule());
+		jobInfo.setOwnerRoleId(jobMstEntity.getOwnerRoleId());
+		jobInfo.setRegisteredModule(jobMstEntity.isRegisteredModule());
 
 		if (jobMstEntity.getRegDate() != null) {
 			jobInfo.setCreateTime(jobMstEntity.getRegDate());
@@ -1140,8 +1582,8 @@ public class FullJob {
 
 		jobInfo.setIconId(jobMstEntity.getIconId());
 
-		setJobWaitRule(jobInfo, jobMstEntity, startJobMap, startParamMap);
-		setJobNextJobOrder(jobInfo, jobMstEntity, startJobTargetJobMap, nextJobOrderMap);
+		setJobWaitRule(jobInfo, jobMstEntity, waitGroupMap);
+		setJobNextJobOrder(jobInfo, jobMstEntity, waitTargetJobMap, nextJobOrderMap);
 
 		switch (jobMstEntity.getJobType()) {
 		case JobConstant.TYPE_JOB:
@@ -1169,6 +1611,21 @@ public class FullJob {
 			break;
 		case JobConstant.TYPE_MONITORJOB:
 			setMonitorJob(jobInfo, jobMstEntity);
+			break;
+		case JobConstant.TYPE_JOBLINKSENDJOB:
+			setJobLinkSendJob(jobInfo, jobMstEntity);
+			break;
+		case JobConstant.TYPE_JOBLINKRCVJOB:
+			setJobLinkRcvJob(jobInfo, jobMstEntity);
+			break;
+		case JobConstant.TYPE_FILECHECKJOB:
+			setFileCheckJob(jobInfo, jobMstEntity);
+			break;
+		case JobConstant.TYPE_RESOURCEJOB:
+			setResourceJob(jobInfo, jobMstEntity);
+			break;
+		case JobConstant.TYPE_RPAJOB:
+			setRpaJob(jobInfo, jobMstEntity);
 			break;
 		default:
 			break;
@@ -1206,52 +1663,57 @@ public class FullJob {
 		m_log.debug("paramMap size=" + paramMap.size());
 	}
 	
-	private static void createStartJobMap(List<JobStartJobMstEntity> startJobList, 
-			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobMap) {
+	private static void createWaitGroupMap(List<JobWaitGroupMstEntity> waitGroupList, 
+			Map<String, Map<String, List<JobWaitGroupMstEntity>>> waitGroupMap) {
 		
-		for(JobStartJobMstEntity startJob : startJobList) {
-			String jobunitId = startJob.getId().getJobunitId();
-			String jobId = startJob.getId().getJobId();
+		for(JobWaitGroupMstEntity waitGroup : waitGroupList) {
+			String jobunitId = waitGroup.getId().getJobunitId();
+			String jobId = waitGroup.getId().getJobId();
 			
-			Map<String, List<JobStartJobMstEntity>> map = startJobMap.get(jobunitId);
+			Map<String, List<JobWaitGroupMstEntity>> map = waitGroupMap.get(jobunitId);
 			if(map == null) {
-				map = new HashMap<String, List<JobStartJobMstEntity>>();
+				map = new HashMap<String, List<JobWaitGroupMstEntity>>();
 			}
 			
-			List<JobStartJobMstEntity> list = map.get(jobId);
+			List<JobWaitGroupMstEntity> list = map.get(jobId);
 			if(list == null) {
-				list = new ArrayList<JobStartJobMstEntity>();
+				list = new ArrayList<JobWaitGroupMstEntity>();
 			}
 		
-			list.add(startJob);
+			list.add(waitGroup);
 			map.put(jobId, list);
-			startJobMap.put(jobunitId, map);
+			waitGroupMap.put(jobunitId, map);
 		}
-		m_log.debug("startJobMap size=" + startJobMap.size());
+		m_log.debug("waitGroupMap size=" + waitGroupMap.size());
 	}
 	
-	private static void createStartJobTargetJobMap(List<JobStartJobMstEntity> startJobList, 
-			Map<String, Map<String, List<JobStartJobMstEntity>>> startJobTargetJobMap) {
+	private static void createWaitTargetJobMap(List<JobWaitGroupMstEntity> waitGroupList, 
+			Map<String, Map<String, List<JobWaitMstEntity>>> waitJobTargetJobMap) {
 		
-		for(JobStartJobMstEntity startJob : startJobList) {
-			String targetJobunitId = startJob.getId().getTargetJobunitId();
-			String targetJobId = startJob.getId().getTargetJobId();
-			
-			Map<String, List<JobStartJobMstEntity>> map = startJobTargetJobMap.get(targetJobunitId);
-			if(map == null) {
-				map = new HashMap<String, List<JobStartJobMstEntity>>();
+		for(JobWaitGroupMstEntity waitGroup : waitGroupList) {
+			if (waitGroup.getJobWaitMstEntities() == null) {
+				continue;
 			}
+			for (JobWaitMstEntity wait : waitGroup.getJobWaitMstEntities()) {
+				String targetJobunitId = wait.getId().getTargetJobunitId();
+				String targetJobId = wait.getId().getTargetJobId();
+				
+				Map<String, List<JobWaitMstEntity>> map = waitJobTargetJobMap.get(targetJobunitId);
+				if(map == null) {
+					map = new HashMap<String, List<JobWaitMstEntity>>();
+				}
+				
+				List<JobWaitMstEntity> list = map.get(targetJobId);
+				if(list == null) {
+					list = new ArrayList<JobWaitMstEntity>();
+				}
 			
-			List<JobStartJobMstEntity> list = map.get(targetJobId);
-			if(list == null) {
-				list = new ArrayList<JobStartJobMstEntity>();
+				list.add(wait);
+				map.put(targetJobId, list);
+				waitJobTargetJobMap.put(targetJobunitId, map);
 			}
-		
-			list.add(startJob);
-			map.put(targetJobId, list);
-			startJobTargetJobMap.put(targetJobunitId, map);
 		}
-		m_log.debug("startJobTargetJobMap size=" + startJobTargetJobMap.size());
+		m_log.debug("startJobTargetJobMap size=" + waitJobTargetJobMap.size());
 	}
 
 	private static void createCommandParamMap(List<JobCommandParamMstEntity> commandParamList, 
@@ -1300,30 +1762,6 @@ public class FullJob {
 			envVariableMap.put(jobunitId, map);
 		}
 		m_log.debug("envVariableMap size=" + envVariableMap.size());
-	}
-
-	private static void createStartParamMap(List<JobStartParamMstEntity> startParamList, 
-			Map<String, Map<String, List<JobStartParamMstEntity>>> startParamMap) {
-		
-		for(JobStartParamMstEntity startParam : startParamList) {
-			String jobunitId = startParam.getId().getJobunitId();
-			String jobId = startParam.getId().getJobId();
-			
-			Map<String, List<JobStartParamMstEntity>> map = startParamMap.get(jobunitId);
-			if(map == null) {
-				map = new HashMap<String, List<JobStartParamMstEntity>>();
-			}
-			
-			List<JobStartParamMstEntity> list = map.get(jobId);
-			if(list == null) {
-				list = new ArrayList<JobStartParamMstEntity>();
-			}
-		
-			list.add(startParam);
-			map.put(jobId, list);
-			startParamMap.put(jobunitId, map);
-		}
-		m_log.debug("startParamMap size=" + startParamMap.size());
 	}
 	
 	private static void createNextJobOrderMap(List<JobNextJobOrderMstEntity> nextJobOrderList,
@@ -1385,12 +1823,12 @@ public class FullJob {
 			_lock.readLock();
 			//キャッシュ内のユニット毎にチェック処理
 			Map<String, Map<String, JobInfo>> jobInfoCache = getJobInfoCache();
-			for (String keyUnitId : jobInfoCache.keySet()) {
+			for ( Map.Entry<String,Map<String,JobInfo>> unitEntry : jobInfoCache.entrySet()) {
 				//ユニット毎の全ジョブ定義について、指定の通知IDが含まれていないか検索
-				Map<String, JobInfo> unitInfoMap = jobInfoCache.get(keyUnitId);
+				Map<String, JobInfo> unitInfoMap = unitEntry.getValue();
 				boolean isNeedUpdate = false;
 				if (m_log.isDebugEnabled()) {
-					m_log.debug("getContainJobUnitFromCache() searchUnitId=" + keyUnitId);
+					m_log.debug("getContainJobUnitFromCache() searchUnitId=" + unitEntry.getKey());
 				}
 				for (JobInfo jobInfo : unitInfoMap.values()) {
 					if (jobInfo == null || jobInfo.getNotifyRelationInfos() == null) {
@@ -1410,7 +1848,7 @@ public class FullJob {
 						}
 					}
 					if (isNeedUpdate) {
-						updateIDSet.add(keyUnitId);
+						updateIDSet.add(unitEntry.getKey());
 						break;
 					}
 				}
@@ -1421,5 +1859,4 @@ public class FullJob {
 		return updateIDSet;
 		
 	}
-	
 }

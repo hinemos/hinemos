@@ -15,7 +15,7 @@ import java.util.List;
 import com.clustercontrol.collect.model.CollectDataPK;
 import com.clustercontrol.collect.model.SummaryDay;
 import com.clustercontrol.commons.util.JdbcBatchQuery;
-import com.clustercontrol.platform.collect.JdbcBatchUpsertUtil;
+import com.clustercontrol.commons.util.JdbcBatchUpsertUtil;
 
 /**
  *  SummaryDayにマッピングするテーブルにデータを登録するクラス

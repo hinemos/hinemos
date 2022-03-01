@@ -19,11 +19,10 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmap.composite.JobMapTreeComposite;
 import com.clustercontrol.jobmap.view.JobTreeView;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブツリービューの「表示」のクライアント側アクションクラス<BR>
@@ -38,12 +37,12 @@ public class OpenJobMapAction extends BaseAction {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		super.execute(event);
 		
-		List<JobTreeItem> itemList = m_jobTreeItemList;
+		List<JobTreeItemWrapper> itemList = m_jobTreeItemList;
 		
 		if (itemList == null || itemList.size() != 1) {
 			return null;
 		}
-		JobTreeItem item = itemList.get(0);
+		JobTreeItemWrapper item = itemList.get(0);
 		
 		//ジョブ[登録]ビューのインスタンスを取得
 		IWorkbenchPage page = PlatformUI.getWorkbench()
@@ -61,7 +60,7 @@ public class OpenJobMapAction extends BaseAction {
 				tree.setSelectItem(itemList);
 				
 				// ログインユーザで参照可能なジョブユニットかどうかチェックする
-				if (item.getData().getType() == JobConstant.TYPE_JOBUNIT) {
+				if (item.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 					view.setEnabledActionAll(true);
 					view.setEnabledAction(item.getData().getType(), item.getData().getJobunitId(), new StructuredSelection(item));
 					tree.updateJobMapEditor(item);
@@ -87,18 +86,23 @@ public class OpenJobMapAction extends BaseAction {
 			return;
 		}
 		
-		JobInfo info = m_jobTreeItem.getData();
-		Integer type = info.getType();
+		JobInfoWrapper info = m_jobTreeItem.getData();
+		JobInfoWrapper.TypeEnum type = info.getType();
 
 		this.setBaseEnabled(
-				(type == JobConstant.TYPE_JOBUNIT || 
-				type == JobConstant.TYPE_JOBNET ||
-				type == JobConstant.TYPE_JOB ||
-				type == JobConstant.TYPE_FILEJOB ||
-				type == JobConstant.TYPE_APPROVALJOB ||
-				type == JobConstant.TYPE_MONITORJOB ||
-				type == JobConstant.TYPE_REFERJOBNET ||
-				type == JobConstant.TYPE_REFERJOB
+				(type == JobInfoWrapper.TypeEnum.JOBUNIT || 
+				type == JobInfoWrapper.TypeEnum.JOBNET ||
+				type == JobInfoWrapper.TypeEnum.JOB ||
+				type == JobInfoWrapper.TypeEnum.FILEJOB ||
+				type == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+				type == JobInfoWrapper.TypeEnum.MONITORJOB ||
+				type == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+				type == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+				type == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+				type == JobInfoWrapper.TypeEnum.REFERJOBNET ||
+				type == JobInfoWrapper.TypeEnum.REFERJOB ||
+				type == JobInfoWrapper.TypeEnum.RESOURCEJOB ||
+				type == JobInfoWrapper.TypeEnum.RPAJOB
 				));
 	}
 

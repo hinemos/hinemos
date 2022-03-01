@@ -8,29 +8,34 @@
 
 package com.clustercontrol.utility.settings.monitor.action;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import org.openapitools.client.model.HttpScenarioMonitorInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.HttpScenarioConv;
 import com.clustercontrol.utility.settings.monitor.xml.HttpScenarioMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.HttpScenarioMonitors;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 
 /**
  * HTTP 監視(シナリオ)設定情報を取得、設定、削除します。<br>
  * XMLファイルに定義された HTTP 監視(シナリオ)情報をマネージャに反映させるクラス<br>
- * ただし、すでに登録されている HTTP 監視(シナリオ)情報と重複する場合はスキップされる。
+ * ただし、すでに登録されている HTTP 監視(シナリオ)情報と重複した場合はダイアログにて上書き/スキップをユーザに選択させる。
  *
  * @version 6.1.0
  * @since 5.0.a
@@ -57,23 +62,25 @@ public class HttpScenarioAction extends AbstractMonitorAction<HttpScenarioMonito
 	}
 
 	@Override
-	public List<MonitorInfo> createMonitorInfoList(HttpScenarioMonitors object) throws ConvertorException {
+	public List<MonitorInfoResponse> createMonitorInfoList(HttpScenarioMonitors object) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
 		return HttpScenarioConv.createMonitorInfoList(object);
 	}
 
 	@Override
-	protected List<MonitorInfo> getFilterdMonitorList() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
-		List<MonitorInfo> tmpList = MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getHttpList();
-		for(MonitorInfo info: new ArrayList<>(tmpList)){
-			if(info.getMonitorType() != MonitorTypeConstant.TYPE_SCENARIO){
-				tmpList.remove(info);
-			}
+	protected List<MonitorInfoResponse> getFilterdMonitorList() throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed {
+		List<HttpScenarioMonitorInfoResponse>  httpScenarioList = MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getHttpScenarioList(null);
+		List<MonitorInfoResponse>  tmpList = new ArrayList<MonitorInfoResponse>();
+		MonitorInfoResponse monitorInfoResponse = null;
+		for(HttpScenarioMonitorInfoResponse info:httpScenarioList){
+			monitorInfoResponse = new MonitorInfoResponse();
+			RestClientBeanUtil.convertBean(info, monitorInfoResponse);
+			tmpList.add(monitorInfoResponse);
 		}
 		return tmpList;
 	}
 
 	@Override
-	protected HttpScenarioMonitors createCastorData(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	protected HttpScenarioMonitors createCastorData(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		return HttpScenarioConv.createHttpScenarioMonitors(monitorInfoList);
 	}
 

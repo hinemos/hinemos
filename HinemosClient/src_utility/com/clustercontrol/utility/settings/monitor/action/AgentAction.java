@@ -8,22 +8,30 @@
 
 package com.clustercontrol.utility.settings.monitor.action;
 
+import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import org.openapitools.client.model.AgentMonitorInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.AgentConv;
 import com.clustercontrol.utility.settings.monitor.xml.AgentMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.AgentMonitors;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 
 /**
  * AGENT監視設定情報を取得、設定、削除します。<br>
@@ -39,6 +47,7 @@ public class AgentAction extends AbstractMonitorAction<AgentMonitors> {
 
 	public AgentAction() throws ConvertorException {
 		super();
+		this.targetTitle = Messages.getString("monitor.agent");
 	}
 
 	@Override
@@ -55,22 +64,26 @@ public class AgentAction extends AbstractMonitorAction<AgentMonitors> {
 	}
 
 	@Override
-	protected List<MonitorInfo> createMonitorInfoList(AgentMonitors object) throws ConvertorException {
+	protected List<MonitorInfoResponse> createMonitorInfoList(AgentMonitors object) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
 		return AgentConv.createMonitorInfoList(object);
 	}
 
 	@Override
-	protected List<MonitorInfo> getFilterdMonitorList()
-			throws com.clustercontrol.ws.monitor.HinemosUnknown_Exception,
-			com.clustercontrol.ws.monitor.InvalidRole_Exception,
-			com.clustercontrol.ws.monitor.InvalidUserPass_Exception,
-			MonitorNotFound_Exception {
-		return MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getAgentList();
+	protected List<MonitorInfoResponse> getFilterdMonitorList()
+			throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed {
+		List<AgentMonitorInfoResponse> resDtoList = MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getAgentList(null);
+		List<MonitorInfoResponse> retList = new ArrayList<MonitorInfoResponse>();
+		for(AgentMonitorInfoResponse recSrc :resDtoList){
+			MonitorInfoResponse recDest = new MonitorInfoResponse();
+			RestClientBeanUtil.convertBean(recSrc, recDest);
+			retList.add(recDest);
+		}
+		return retList;
 	}
 
 	@Override
 	protected AgentMonitors createCastorData(
-			List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+			List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		return AgentConv.createAgentMonitors(monitorInfoList);
 	}
 

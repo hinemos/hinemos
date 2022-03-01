@@ -68,8 +68,7 @@ public class OperateStartOfJob {
 	 * @throws FacilityNotFound 
 	 */
 	public void startNode(String sessionId, String jobunitId, String jobId, String facilityId) throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound {
-
-		m_log.debug("startJob() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId);
+		m_log.debug("startNode() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId);
 
 		startJobPre(sessionId, jobunitId, jobId, facilityId);
 
@@ -166,7 +165,12 @@ public class OperateStartOfJob {
 
 		if(job.getJobType() == JobConstant.TYPE_JOB
 				|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
-				|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
+				|| job.getJobType() == JobConstant.TYPE_MONITORJOB
+				|| job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB
+				|| job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB
+				|| job.getJobType() == JobConstant.TYPE_FILECHECKJOB
+				|| job.getJobType() == JobConstant.TYPE_RESOURCEJOB
+				|| job.getJobType() == JobConstant.TYPE_RPAJOB){
 			//ジョブの場合
 			List<JobSessionNodeEntity> nodeEntityList;
 			if(facilityId != null && facilityId.length() > 0){
@@ -262,7 +266,12 @@ public class OperateStartOfJob {
 
 			if(job.getJobType() != JobConstant.TYPE_JOB
 					&& job.getJobType() != JobConstant.TYPE_APPROVALJOB
-					&& job.getJobType() != JobConstant.TYPE_MONITORJOB){
+					&& job.getJobType() != JobConstant.TYPE_MONITORJOB
+					&& job.getJobType() != JobConstant.TYPE_JOBLINKSENDJOB
+					&& job.getJobType() != JobConstant.TYPE_JOBLINKRCVJOB
+					&& job.getJobType() != JobConstant.TYPE_FILECHECKJOB
+					&& job.getJobType() != JobConstant.TYPE_RESOURCEJOB
+					&& job.getJobType() != JobConstant.TYPE_RPAJOB){
 				//ジョブ以外の場合
 
 				//セッションIDとジョブIDから、直下のジョブを取得

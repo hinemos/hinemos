@@ -65,6 +65,10 @@ public class AsyncTaskPersistentConfig {
 			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_correlation.getBooleanValue();
 		} else if ( HinemosModuleConstant.MONITOR_INTEGRATION.equals(typeId) ) {
 			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_integration.getBooleanValue();
+		} else if (HinemosModuleConstant.MONITOR_RPA_LOGFILE.equals(typeId)) {
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_rpalogfile.getBooleanValue();
+		} else if (HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE.equals(typeId)) {
+			ret = HinemosPropertyCommon.worker_async_task_persist_monitor_rpamanagementtoolservice.getBooleanValue();
 		}
 
 		return ret;

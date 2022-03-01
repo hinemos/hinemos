@@ -7,7 +7,8 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
-import com.clustercontrol.ws.monitor.MonitorInfo;
+import org.openapitools.client.model.MonitorInfoResponse;
+
 import com.clustercontrol.xcloud.model.base.CollectionObserver;
 import com.clustercontrol.xcloud.model.base.IElement;
 import com.clustercontrol.xcloud.model.base.PropertyId;
@@ -15,10 +16,10 @@ import com.clustercontrol.xcloud.model.base.PropertyId;
 public interface IBillingMonitor extends IElement {
 	// プロパティの Id
 	public interface p {
-		static final PropertyId<CollectionObserver<MonitorInfo>> billingMonitor = new PropertyId<CollectionObserver<MonitorInfo>>("billingMonitor"){};
+		static final PropertyId<CollectionObserver<MonitorInfoResponse>> billingMonitor = new PropertyId<CollectionObserver<MonitorInfoResponse>>("billingMonitor"){};
 	}
 
 	IBillingMonitors getBillingMonitors();
 
-	MonitorInfo getMonitorInfo();
+	MonitorInfoResponse getMonitorInfo();
 }

@@ -16,7 +16,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.activation.DataHandler;
@@ -32,11 +34,9 @@ import com.clustercontrol.binary.bean.BinaryResultDTO;
 import com.clustercontrol.binary.factory.DownloadBinary;
 import com.clustercontrol.binary.factory.RunMonitorBinary;
 import com.clustercontrol.binary.model.BinaryCheckInfo;
-import com.clustercontrol.binary.util.BinaryManagerUtil;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.collect.util.ZipCompressor;
-import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
@@ -63,6 +63,9 @@ import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.rest.util.RestDownloadFile;
+import com.clustercontrol.rest.util.RestTempFileType;
+import com.clustercontrol.rest.util.RestTempFileUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -165,26 +168,8 @@ public class BinaryControllerBean {
 
 			for (MonitorInfo monitorInfo : monitorList) {
 				String scope = monitorInfo.getFacilityId();
-				ArrayList<String> facilityIdList = new RepositoryControllerBean().getExecTargetFacilityIdList(scope,
-						monitorInfo.getOwnerRoleId());
 
-				StringBuilder facilityIdSb = new StringBuilder();
-				if (m_log.isDebugEnabled()) {
-					if (facilityIdList != null && !facilityIdList.isEmpty()) {
-						facilityIdSb.append("[");
-						boolean isTop = true;
-						for (String facilityIdString : facilityIdList) {
-							if (!isTop) {
-								facilityIdSb.append(",");
-							}
-							facilityIdSb.append(facilityIdString);
-						}
-						facilityIdSb.append("]");
-					} else {
-						facilityIdSb.append("null");
-					}
-				}
-				if (facilityIdList != null && facilityIdList.contains(facilityId)) {
+				if (new RepositoryControllerBean().containsFacilityIdWithoutList(scope, facilityId, monitorInfo.getOwnerRoleId())) {
 					if (withCalendar) {
 						String calendarId = monitorInfo.getCalendarId();
 						try {
@@ -200,15 +185,15 @@ public class BinaryControllerBean {
 					m_log.debug(methodName + DELIMITER
 							+ String.format(
 									"added binary monitor list for agent."
-											+ " monitorId=%s, facilityId(Agent)=%s, scope(Monitor)=%s, facilityList(Monitor)=%s",
-									monitorInfo.getMonitorId(), facilityId, scope, facilityIdSb));
+											+ " monitorId=%s, facilityId(Agent)=%s, scope(Monitor)=%s",
+									monitorInfo.getMonitorId(), facilityId, scope));
 
 				} else {
 					m_log.debug(methodName + DELIMITER
 							+ String.format(
 									"skip to add binary monitor list for agent."
-											+ " monitorId=%s, facilityId(Agent)=%s, scope(Monitor)=%s, facilityList(Monitor)=%s",
-									monitorInfo.getMonitorId(), facilityId, scope, facilityIdSb));
+											+ " monitorId=%s, facilityId(Agent)=%s, scope(Monitor)=%s",
+									monitorInfo.getMonitorId(), facilityId, scope));
 				}
 			}
 
@@ -410,15 +395,31 @@ public class BinaryControllerBean {
 		// 監視ジョブEndNode処理.
 		try {
 			if (monitorJobEndNodeList != null && monitorJobEndNodeList.size() > 0) {
+				/* 
+				 * 監視ジョブの対象はMonitorJobWorker.monitorJobMapに含まれるもの。
+				 * また、MonitorJobWorker.endMonitorJob()では、MonitorJobWorker.monitorJobMapから
+				 * 対象を削除しているため、
+				 * MonitorJobWorker.monitorJobMap()のキーであるMonitorJobWorker.getKey()が
+				 * 一致する情報は複数回実行する必要はない。
+				 */
+				HashMap<String, MonitorJobEndNode> endMonitorJobEndNodes = new HashMap<>();
 				for (MonitorJobEndNode monitorJobEndNode : monitorJobEndNodeList) {
-					MonitorJobWorker.endMonitorJob(monitorJobEndNode.getRunInstructionInfo(),
-							monitorJobEndNode.getMonitorTypeId(), monitorJobEndNode.getMessage(),
-							monitorJobEndNode.getErrorMessage(), monitorJobEndNode.getStatus(),
-							monitorJobEndNode.getEndValue());
+					String monitorJobKey = MonitorJobWorker.getKey(monitorJobEndNode.getRunInstructionInfo());
+					m_log.trace("run() : endMonitorJob before check=" + monitorJobKey);
+					if (!endMonitorJobEndNodes.containsKey(monitorJobKey)) {
+						m_log.debug("run() : endMonitorJob target=" + monitorJobKey);
+						endMonitorJobEndNodes.put(monitorJobKey, monitorJobEndNode);
+					}
 				}
-				// 接続中のHinemosAgentに対する更新通知
-				SettingUpdateInfo.getInstance().setLogFileMonitorUpdateTime(HinemosTime.currentTimeMillis());
-				BinaryManagerUtil.broadcastConfigured();
+				for (Map.Entry<String, MonitorJobEndNode> entry : endMonitorJobEndNodes.entrySet()) {
+					MonitorJobWorker.endMonitorJob(
+							entry.getValue().getRunInstructionInfo(),
+							entry.getValue().getMonitorTypeId(),
+							entry.getValue().getMessage(),
+							entry.getValue().getErrorMessage(),
+							entry.getValue().getStatus(),
+							entry.getValue().getEndValue());
+				}
 			}
 		} catch (Exception e) {
 			m_log.warn(methodName + DELIMITER + "MonitorJobWorker.endMonitorJob() : " + e.getClass().getSimpleName()
@@ -449,8 +450,8 @@ public class BinaryControllerBean {
 	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public DataHandler downloadBinaryRecord(BinaryQueryInfo queryInfo, CollectStringDataPK primaryKey, String filename,
-			String clientName) throws HinemosDbTimeout, BinaryRecordNotFound, InvalidSetting, HinemosUnknown {
+	public RestDownloadFile downloadBinaryRecord(BinaryQueryInfo queryInfo, CollectStringDataPK primaryKey, String filename,
+			String tempDir) throws HinemosDbTimeout, BinaryRecordNotFound, InvalidSetting, HinemosUnknown {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		long beforeMsec = HinemosTime.getDateInstance().getTime();
 		long processMsec = 0;
@@ -464,7 +465,6 @@ public class BinaryControllerBean {
 		}
 
 		JpaTransactionManager jtm = null;
-		DataHandler dh = null;
 		DownloadBinary download = new DownloadBinary(queryInfo);
 		try {
 			// トランザクション制御開始.
@@ -482,7 +482,8 @@ public class BinaryControllerBean {
 			if (BinaryConstant.COLLECT_TYPE_WHOLE_FILE.equals(download.getCollectType())) {
 				download.getDataIds();
 			}
-			download.createTemporaryFile(filename, clientName);
+			
+			download.createTemporaryFile(filename, tempDir);
 			// コミット処理.
 			jtm.commit();
 		} catch (HinemosDbTimeout e) {
@@ -531,7 +532,7 @@ public class BinaryControllerBean {
 					}
 					// エクセプション発生した場合は書込み途中のファイルを削除する.
 					if (download.getTmpFile().exists()) {
-						this.deleteDownloadedBinaryRecord(download.getFileName(), clientName);
+						this.deleteDownloadedBinaryRecord(download.getFileName(), tempDir);
 					}
 					throw e;
 				} catch (RuntimeException e) {
@@ -540,7 +541,7 @@ public class BinaryControllerBean {
 					}
 					// エクセプション発生した場合は書込み途中のファイルを削除する.
 					if (download.getTmpFile().exists()) {
-						this.deleteDownloadedBinaryRecord(download.getFileName(), clientName);
+						this.deleteDownloadedBinaryRecord(download.getFileName(), tempDir);
 					}
 					m_log.warn(e.getMessage(), e);
 					throw new HinemosUnknown(e.getMessage(), e);
@@ -576,7 +577,7 @@ public class BinaryControllerBean {
 				}
 				// エクセプション発生した場合は書込み途中のファイルを削除する.
 				if (download.getTmpFile().exists()) {
-					this.deleteDownloadedBinaryRecord(download.getFileName(), clientName);
+					this.deleteDownloadedBinaryRecord(download.getFileName(), tempDir);
 				}
 				throw e;
 			} catch (RuntimeException e) {
@@ -585,7 +586,7 @@ public class BinaryControllerBean {
 				}
 				// エクセプション発生した場合は書込み途中のファイルを削除する.
 				if (download.getTmpFile().exists()) {
-					this.deleteDownloadedBinaryRecord(download.getFileName(), clientName);
+					this.deleteDownloadedBinaryRecord(download.getFileName(), tempDir);
 				}
 				m_log.warn(e.getMessage(), e);
 				throw new HinemosUnknown(e.getMessage(), e);
@@ -603,39 +604,7 @@ public class BinaryControllerBean {
 			m_log.debug(methodName + DELIMITER + String.format("outputTmpFile. processing time=%dmsec", processMsec));
 		}
 
-		try {
-			// トランザクション制御開始.
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-
-			// 一時出力ファイルを添付ファイルに変換する.
-			FileDataSource fileData = new FileDataSource(download.getTmpFile().getAbsolutePath());
-			dh = new DataHandler(fileData);
-			m_log.debug(methodName + DELIMITER
-					+ String.format("create the DataHandler for [%s].", download.getTmpFile().getAbsolutePath()));
-
-			// コミット処理.
-			jtm.commit();
-		} catch (RuntimeException e) {
-			m_log.warn(methodName + DELIMITER + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null) {
-				// トランザクション境界ここまで.
-				jtm.close();
-			}
-		}
-
-		if (m_log.isDebugEnabled()) {
-			processMsec = HinemosTime.getDateInstance().getTime() - beforeMsec;
-			beforeMsec = HinemosTime.getDateInstance().getTime();
-			m_log.debug(
-					methodName + DELIMITER + String.format("cleateDataSource. processing time=%dmsec", processMsec));
-		}
-
-		return dh;
+		return new RestDownloadFile(download.getTmpFile(), download.getFileName());
 
 	}
 
@@ -658,7 +627,7 @@ public class BinaryControllerBean {
 	 * @throws HinemosUnknown
 	 */
 	public ArrayList<String> createTmpRecords(BinaryQueryInfo queryInfo, CollectStringDataPK primaryKey,
-			ArrayList<String> intoZipList, String clientName)
+			ArrayList<String> intoZipList, String tempDir)
 			throws BinaryRecordNotFound, HinemosDbTimeout, InvalidSetting, HinemosUnknown {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		m_log.debug(methodName + DELIMITER + "start.");
@@ -682,7 +651,8 @@ public class BinaryControllerBean {
 			if (BinaryConstant.COLLECT_TYPE_WHOLE_FILE.equals(download.getCollectType())) {
 				download.getDataIds();
 			}
-			download.createTemporaryFile(null, clientName);
+			
+			download.createTemporaryFile(null, tempDir);
 			// コミット処理.
 			jtm.commit();
 		} catch (HinemosDbTimeout e) {
@@ -723,7 +693,7 @@ public class BinaryControllerBean {
 					}
 					// エクセプション発生した場合は書込み途中のファイルを削除する.
 					if (download.getTmpFile().exists()) {
-						this.deleteDownloadedBinaryRecord(download.getFileName(), clientName);
+						this.deleteDownloadedBinaryRecord(download.getFileName(), tempDir);
 					}
 					throw e;
 				} catch (RuntimeException e) {
@@ -732,7 +702,7 @@ public class BinaryControllerBean {
 					}
 					// エクセプション発生した場合は書込み途中のファイルを削除する.
 					if (download.getTmpFile().exists()) {
-						this.deleteDownloadedBinaryRecord(download.getFileName(), clientName);
+						this.deleteDownloadedBinaryRecord(download.getFileName(), tempDir);
 					}
 					m_log.warn(e.getMessage(), e);
 					throw new HinemosUnknown(e.getMessage(), e);
@@ -761,7 +731,7 @@ public class BinaryControllerBean {
 					jtm.rollback();
 				// エクセプション発生した場合は書込み途中のファイルを削除する.
 				if (download.getTmpFile().exists()) {
-					this.deleteDownloadedBinaryRecord(download.getFileName(), clientName);
+					this.deleteDownloadedBinaryRecord(download.getFileName(), tempDir);
 				}
 				throw e;
 			} catch (RuntimeException e) {
@@ -769,7 +739,7 @@ public class BinaryControllerBean {
 					jtm.rollback();
 				// エクセプション発生した場合は書込み途中のファイルを削除する.
 				if (download.getTmpFile().exists()) {
-					this.deleteDownloadedBinaryRecord(download.getFileName(), clientName);
+					this.deleteDownloadedBinaryRecord(download.getFileName(), tempDir);
 				}
 				m_log.warn(e.getMessage(), e);
 				throw new HinemosUnknown(e.getMessage(), e);
@@ -830,18 +800,16 @@ public class BinaryControllerBean {
 	 * @return 作成したZIPの添付ファイル
 	 * @throws HinemosUnknown
 	 */
-	public DataHandler createZipHandler(ArrayList<String> intoZipList, String ouputZipName, String clientName)
+	public RestDownloadFile createZipHandler(ArrayList<String> intoZipList, String tempDir, String ouputZipName)
 			throws HinemosUnknown {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		m_log.debug(methodName + DELIMITER + "start.");
+		m_log.debug(String.format("intoZipList=[%s], tempDir=[%s], ouputZipName=[%s]", intoZipList, tempDir, ouputZipName));
 
 		// マネージャーの出力先ファイルを生成.
-		String dirName = HinemosPropertyDefault.binary_export_dir.getStringValue();
-		File directory = new File(dirName, clientName);
-		dirName = directory.getAbsolutePath();
-		File ouputZip = new File(dirName, ouputZipName);
+		File ouputZip = new File(tempDir, ouputZipName);
 		m_log.debug(methodName + DELIMITER
-				+ String.format("create file object to outpu zip. directory=[%s], file=[%s]", dirName, ouputZipName));
+				+ String.format("create file object to outpu zip. file=[%s]", ouputZip.getAbsolutePath()));
 
 		try {
 			// ZIP形式に圧縮.
@@ -851,7 +819,7 @@ public class BinaryControllerBean {
 		} catch (HinemosUnknown e) {
 			if (ouputZip.exists()) {
 				// zipファイル生成済の場合削除.
-				this.deleteDownloadedBinaryRecord(ouputZipName, clientName);
+				this.deleteDownloadedBinaryRecord(ouputZipName, tempDir);
 			}
 			m_log.warn(methodName + DELIMITER + String.format("faild to create the zip. file=[%s], message=%s",
 					ouputZip.getAbsolutePath(), e.getMessage()), e);
@@ -860,16 +828,14 @@ public class BinaryControllerBean {
 			// 圧縮前のファイルを削除.
 			for (String intoZipFile : intoZipList) {
 				String fileName = new File(intoZipFile).getName();
-				this.deleteDownloadedBinaryRecord(fileName, clientName);
+				this.deleteDownloadedBinaryRecord(fileName, tempDir);
 			}
 		}
 
-		// 変換した添付ファイルをリストに設定.
-		FileDataSource fileData = new FileDataSource(ouputZip.getAbsolutePath());
-		DataHandler result = new DataHandler(fileData);
 		m_log.debug(
 				methodName + DELIMITER + String.format("return the DataHandler for [%s].", ouputZip.getAbsolutePath()));
-		return result;
+
+		return new RestDownloadFile(ouputZip, ouputZipName);
 	}
 
 	/**
@@ -877,14 +843,13 @@ public class BinaryControllerBean {
 	 * 
 	 * @param fileName
 	 *            削除対象ファイル名(絶対パスではないので注意).
-	 * @param clientName
+	 * @param tempDir
 	 *            クライアント名(一時ファイル出力先フォルダ名特定用).
 	 */
-	public void deleteDownloadedBinaryRecord(String fileName, String clientName) {
+	public void deleteDownloadedBinaryRecord(String fileName, String tempDir) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
-		String dirName = HinemosPropertyDefault.binary_export_dir.getStringValue();
-		File directory = new File(dirName, clientName);
-		dirName = directory.getAbsolutePath();
+		File directory = new File(tempDir);
+		String dirName = directory.getAbsolutePath();
 		File file = new File(dirName, fileName);
 		if (!file.delete()) {
 			m_log.warn(methodName + DELIMITER + String.format("Fail to delete file[%s].", file.getAbsolutePath()));

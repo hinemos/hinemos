@@ -27,17 +27,16 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.dialog.JobTreeDialog;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * 参照タブ用のコンポジットクラスです。
@@ -66,7 +65,7 @@ public class ReferComposite extends Composite {
 	private String m_referJobId = null;
 
 	/** ジョブツリー情報*/
-	private JobTreeItem m_jobTreeItem = null;
+	private JobTreeItemWrapper m_jobTreeItem = null;
 
 	/** ジョブツリー用コンポジット */
 	private JobTreeComposite m_jobTreeComposite = null;
@@ -75,7 +74,7 @@ public class ReferComposite extends Composite {
 	private String m_ownerRoleId = null;
 
 	/** 参照ジョブ種別 */
-	private int m_referJobType = JobConstant.TYPE_REFERJOB;
+	private JobInfoWrapper.TypeEnum m_referJobType = JobInfoWrapper.TypeEnum.REFERJOB;
 	
 
 	/*
@@ -83,7 +82,7 @@ public class ReferComposite extends Composite {
 	 * 0 : ジョブツリーからの選択
 	 * 1 : 登録済みモジュールからの選択
 	 */
-	private Integer m_selectType = null;
+	private JobInfoWrapper.ReferJobSelectTypeEnum  m_selectType = null;
 	
 	/** 「ジョブツリーからの選択」のラジオボタン */
 	private Button m_selectFromJobTreeRadio = null;
@@ -95,7 +94,7 @@ public class ReferComposite extends Composite {
 	private Combo m_ComboRegisteredModuleCombo = null;
 	
 	/** 登録済みモジュールのジョブリスト */
-	List<JobInfo> registeredJobList= null;
+	List<JobInfoWrapper> registeredJobList= null;
 	
 	
 	/**
@@ -179,16 +178,16 @@ public class ReferComposite extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				// ジョブツリーダイアログ表示
-				JobTreeDialog dialog = new JobTreeDialog(m_shell, m_ownerRoleId, m_jobTreeItem, JobConstant.TYPE_REFERJOB);
+				JobTreeDialog dialog = new JobTreeDialog(m_shell, m_ownerRoleId, m_jobTreeItem, JobInfoWrapper.TypeEnum.REFERJOB, null);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					JobTreeItem selectItem = dialog.getSelectItem().isEmpty() ? null : dialog.getSelectItem().get(0);
-					if (selectItem != null && selectItem.getData().getType() != JobConstant.TYPE_COMPOSITE) {
+					JobTreeItemWrapper selectItem = dialog.getSelectItem().isEmpty() ? null : dialog.getSelectItem().get(0);
+					if (selectItem != null && selectItem.getData().getType() != JobInfoWrapper.TypeEnum.COMPOSITE) {
 						m_textJobId.setText(selectItem.getData().getId());
 						m_textJobunitId.setText(selectItem.getData().getJobunitId());
-						if(selectItem.getData().getType() == JobConstant.TYPE_JOBNET){
-							m_referJobType = JobConstant.TYPE_REFERJOBNET;
+						if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
+							m_referJobType = JobInfoWrapper.TypeEnum.REFERJOBNET;
 						} else {
-							m_referJobType = JobConstant.TYPE_REFERJOB;
+							m_referJobType = JobInfoWrapper.TypeEnum.REFERJOB;
 						}
 					} else {
 						m_textJobId.setText("");
@@ -234,11 +233,11 @@ public class ReferComposite extends Composite {
 				update();
 				if (m_ComboRegisteredModuleCombo.getText() != null
 						&& !"".equals(m_ComboRegisteredModuleCombo.getText().trim())) {
-					JobInfo info = registeredJobList.get(m_ComboRegisteredModuleCombo.getSelectionIndex());
-					if(info.getType() == JobConstant.TYPE_JOBNET){
-						m_referJobType = JobConstant.TYPE_REFERJOBNET;
+					JobInfoWrapper info = registeredJobList.get(m_ComboRegisteredModuleCombo.getSelectionIndex());
+					if(info.getType() == JobInfoWrapper.TypeEnum.JOBNET){
+						m_referJobType = JobInfoWrapper.TypeEnum.REFERJOBNET;
 					} else {
-						m_referJobType = JobConstant.TYPE_REFERJOB;
+						m_referJobType = JobInfoWrapper.TypeEnum.REFERJOB;
 					}
 				}
 			}
@@ -255,7 +254,7 @@ public class ReferComposite extends Composite {
 	public void update(){
 		//「ジョブツリーから選択」の場合
 		if(m_selectFromJobTreeRadio.getSelection()){
-			m_selectType = 0;
+			m_selectType = JobInfoWrapper.ReferJobSelectTypeEnum.JOB_TREE;
 			m_textJobunitId.setEnabled(true);
 			m_textJobId.setEnabled(true);
 			m_buttonRefer.setEnabled(true);
@@ -276,7 +275,7 @@ public class ReferComposite extends Composite {
 			
 		//「登録済みモジュールから選択」の場合
 		} else if(m_selectFromRegisteredModuleRadio.getSelection()){
-			m_selectType = 1;
+			m_selectType = JobInfoWrapper.ReferJobSelectTypeEnum .REGISTERED_MODULE;
 			m_textJobunitId.setEnabled(false);
 			m_textJobId.setEnabled(false);
 			m_buttonRefer.setEnabled(false);
@@ -326,35 +325,35 @@ public class ReferComposite extends Composite {
 	 * 参照ジョブ種別を返す。<BR>
 	 * @return ジョブ種別(参照ジョブまたは参照ジョブネット)
 	 */
-	public int getReferJobType() {
+	public JobInfoWrapper.TypeEnum getReferJobType() {
 		return m_referJobType;
 	}
 	/**
 	 * 参照ジョブ種別を設定する。<BR>
 	 * @param referJobType ジョブ種別(参照ジョブまたは参照ジョブネット)
 	 */
-	public void setReferJobType(int referJobType) {
+	public void setReferJobType(JobInfoWrapper.TypeEnum referJobType) {
 		m_referJobType = referJobType;
 	}
 	/**
 	 * 参照ジョブ選択種別を返す。<BR>
 	 * @return 参照ジョブ選択種別
 	 */
-	public Integer getReferJobSelectType() {
+	public JobInfoWrapper.ReferJobSelectTypeEnum  getReferJobSelectType() {
 		return m_selectType;
 	}
 	/**
 	 * 参照ジョブ選択種別を設定する。<BR>
 	 * @param selectType 参照ジョブ選択種別
 	 */
-	public void setReferJobSelectType(Integer selectType) {
+	public void setReferJobSelectType(JobInfoWrapper.ReferJobSelectTypeEnum selectType) {
 		m_selectType = selectType;
 	}
 	/**
 	 * ジョブツリーアイテムを設定する。<BR>
 	 * @param jobTreeItem
 	 */
-	public void setJobTreeItem(JobTreeItem jobTreeItem) {
+	public void setJobTreeItem(JobTreeItemWrapper jobTreeItem) {
 		m_jobTreeItem = jobTreeItem;
 	}
 
@@ -374,7 +373,7 @@ public class ReferComposite extends Composite {
 	 */
 	public void reflectReferInfo() {
 		//ラジオボタン設定
-		if(m_selectType != null && m_selectType == 1){
+		if(m_selectType != null && m_selectType == JobInfoWrapper.ReferJobSelectTypeEnum .REGISTERED_MODULE){
 			this.m_selectFromJobTreeRadio.setSelection(false);
 			this.m_selectFromRegisteredModuleRadio.setSelection(true);
 		}else{
@@ -385,7 +384,7 @@ public class ReferComposite extends Composite {
 		if(m_jobTreeItem != null){
 			registeredJobList = getRegisteredModule(m_jobTreeItem);
 			if(registeredJobList != null && !registeredJobList.isEmpty()){
-				for(JobInfo info : registeredJobList){
+				for(JobInfoWrapper info : registeredJobList){
 					//コンボリストにジョブID設定(コンボリスト順とジョブリスト順は同期させる)
 					this.m_ComboRegisteredModuleCombo.add(info.getName() + "(" + info.getId() + ")");
 				}
@@ -451,7 +450,7 @@ public class ReferComposite extends Composite {
 		else if(m_selectFromRegisteredModuleRadio.getSelection()){
 			if (m_ComboRegisteredModuleCombo.getText() != null
 					&& !"".equals(m_ComboRegisteredModuleCombo.getText().trim())) {
-				JobInfo info = registeredJobList.get(m_ComboRegisteredModuleCombo.getSelectionIndex());
+				JobInfoWrapper info = registeredJobList.get(m_ComboRegisteredModuleCombo.getSelectionIndex());
 				this.setReferJobId(info.getId());
 				this.setReferJobUnitId(info.getJobunitId());
 			}else {
@@ -496,11 +495,11 @@ public class ReferComposite extends Composite {
 	 * @param JobTreeItem ジョブ情報
 	 * @return
 	 */
-	private List<JobInfo> getRegisteredModule(JobTreeItem item){
-		List<JobInfo> jobList = new ArrayList<JobInfo>();
+	private List<JobInfoWrapper> getRegisteredModule(JobTreeItemWrapper item){
+		List<JobInfoWrapper> jobList = new ArrayList<JobInfoWrapper>();
 		
 		//自身が所属するジョブユニット配下のJobTreeItemを取得する。
-		JobTreeItem tree = m_jobTreeComposite.getJobTreeOneUnit(item);
+		JobTreeItemWrapper tree = m_jobTreeComposite.getJobTreeOneUnit(item);
 		//ジョブユニット配下のJobTreeからモジュール登録済みのジョブ情報を取得する。
 		JobUtil.getRegisteredJob(tree, jobList);
 		

@@ -10,14 +10,14 @@ package com.clustercontrol.sql.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToOne;
-import javax.persistence.PrimaryKeyJoinColumn;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -36,9 +36,9 @@ import com.clustercontrol.monitor.run.model.MonitorInfo;
 @Cacheable(true)
 public class SqlCheckInfo extends MonitorCheckInfo implements Serializable {
 	private static final long serialVersionUID = 1L;
-	private String connectionPassword;
+	private String password;
 	private String connectionUrl;
-	private String connectionUser;
+	private String user;
 	private String jdbcDriver;
 	private String query;
 	private MonitorInfo monitorInfo;
@@ -51,17 +51,17 @@ public class SqlCheckInfo extends MonitorCheckInfo implements Serializable {
 		return CryptUtil.decrypt(getPasswordCrypt());
 	}
 
-	public void setPassword(String connectionPassword) {
-		setPasswordCrypt(CryptUtil.encrypt(connectionPassword));
+	public void setPassword(String password) {
+		setPasswordCrypt(CryptUtil.encrypt(password));
 	}
 
 	@Column(name="connection_password")
 	public String getPasswordCrypt() {
-		return this.connectionPassword;
+		return this.password;
 	}
 
-	public void setPasswordCrypt(String connectionPassword) {
-		this.connectionPassword = connectionPassword;
+	public void setPasswordCrypt(String password) {
+		this.password = password;
 	}
 
 
@@ -77,11 +77,11 @@ public class SqlCheckInfo extends MonitorCheckInfo implements Serializable {
 
 	@Column(name="connection_user")
 	public String getUser() {
-		return this.connectionUser;
+		return this.user;
 	}
 
-	public void setUser(String connectionUser) {
-		this.connectionUser = connectionUser;
+	public void setUser(String user) {
+		this.user = user;
 	}
 
 

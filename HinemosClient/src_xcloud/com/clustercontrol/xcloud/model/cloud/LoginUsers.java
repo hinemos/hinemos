@@ -10,13 +10,17 @@ package com.clustercontrol.xcloud.model.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudLoginUser;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import org.openapitools.client.model.CloudLoginUserInfoResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 
 public class LoginUsers extends Element implements ILoginUsers {
@@ -54,31 +58,31 @@ public class LoginUsers extends Element implements ILoginUsers {
 		return cloudScope;
 	}
 	
-	private CloudEndpoint getEndpoint(){
-		return getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
+	private CloudRestClientWrapper getWrapper(){
+		return getCloudScope().getCloudScopes().getHinemosManager().getWrapper();
 	}
 
 	@Override
 	public void update() {
-		List<CloudLoginUser> users;
+		List<CloudLoginUserInfoResponse> users;
 		try {
-			users = getEndpoint().getAllCloudLoginUsers(getCloudScope().getId());
-		} catch (InvalidRole_Exception | InvalidUserPass_Exception | CloudManagerException e) {
+			users = getWrapper().getAllCloudLoginUsers(getCloudScope().getId());
+		} catch (CloudManagerException | InvalidUserPass | InvalidRole | InvalidSetting | RestConnectFailed | HinemosUnknown e) {
 			throw new CloudModelException(e);
 		}
 		
 		update(users);
 	}
 
-	public void update(List<CloudLoginUser> users) {
+	public void update(List<CloudLoginUserInfoResponse> users) {
 		if (loginUsers == null)
 			loginUsers = new ArrayList<>();
 		
-		CollectionComparator.compareCollection(loginUsers, users, new CollectionComparator.Comparator<LoginUser, CloudLoginUser>() {
-			@Override public boolean match(LoginUser o1, CloudLoginUser o2) {return o1.getId().equals(o2.getId());}
-			@Override public void matched(LoginUser o1, CloudLoginUser o2) {o1.overwrite(o2);}
+		CollectionComparator.compareCollection(loginUsers, users, new CollectionComparator.Comparator<LoginUser, CloudLoginUserInfoResponse>() {
+			@Override public boolean match(LoginUser o1, CloudLoginUserInfoResponse o2) {return o1.getId().equals(o2.getEntity().getLoginUserId());}
+			@Override public void matched(LoginUser o1, CloudLoginUserInfoResponse o2) {o1.overwrite(o2);}
 			@Override public void afterO1(LoginUser o1) {loginUsers.remove(o1); firePropertyRemoved(p.loginUsers, o1);}
-			@Override public void afterO2(CloudLoginUser o2) {
+			@Override public void afterO2(CloudLoginUserInfoResponse o2) {
 				LoginUser u = new LoginUser(LoginUsers.this);
 				u.overwrite(o2);
 				loginUsers.add(u);

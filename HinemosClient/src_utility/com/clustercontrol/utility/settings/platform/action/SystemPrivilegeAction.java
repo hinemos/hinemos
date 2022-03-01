@@ -24,14 +24,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.ImportSystemPrivilegeInfoRecordRequest;
+import org.openapitools.client.model.RecordRegistrationResponse;
+
+import org.openapitools.client.model.ImportSystemPrivilegeInfoRequest;
+import org.openapitools.client.model.ImportSystemPrivilegeInfoResponse;
+import org.openapitools.client.model.ReplaceSystemPrivilegeWithRoleRequest;
+import org.openapitools.client.model.RoleInfoResponse;
+import org.openapitools.client.model.SystemPrivilegeInfoRequestP1;
+import org.openapitools.client.model.SystemPrivilegeInfoResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
 import com.clustercontrol.accesscontrol.bean.FunctionConstant;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.UnEditableRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffUtil;
 import com.clustercontrol.utility.difference.ResultA;
@@ -52,13 +67,12 @@ import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.access.HinemosUnknown_Exception;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.InvalidSetting_Exception;
-import com.clustercontrol.ws.access.InvalidUserPass_Exception;
-import com.clustercontrol.ws.access.UnEditableRole_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * ユーザ定義情報をインポート・エクスポート・削除するアクションクラス<br>
@@ -85,11 +99,11 @@ public class SystemPrivilegeAction {
 
 		log.debug("Start Clear PlatformSystemPrivilege ");
 		int ret = 0;
-		List<com.clustercontrol.ws.access.RoleInfo> roleList = null;
+		List<RoleInfoResponse> roleList = null;
 		
 		// ロール情報一覧の取得
 		try {
-			roleList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList();
+			roleList = AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList();
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret=SettingConstants.ERROR_INPROCESS;
@@ -102,19 +116,19 @@ public class SystemPrivilegeAction {
 		for (int i = 0; i < roleList.size(); i++) {
 			roleId = roleList.get(i).getRoleId();
 			try {
-				List<com.clustercontrol.ws.access.SystemPrivilegeInfo> infos =
-						new ArrayList<com.clustercontrol.ws.access.SystemPrivilegeInfo>();
-				com.clustercontrol.ws.access.SystemPrivilegeInfo info =
-						new com.clustercontrol.ws.access.SystemPrivilegeInfo();
-				info.setSystemFunction(FunctionConstant.REPOSITORY);
-				info.setSystemPrivilege("READ");
+				List<SystemPrivilegeInfoRequestP1> infos = new ArrayList<SystemPrivilegeInfoRequestP1>();
+				SystemPrivilegeInfoRequestP1 info = new SystemPrivilegeInfoRequestP1();
+				info.setSystemFunction(SystemPrivilegeInfoRequestP1.SystemFunctionEnum.REPOSITORY );
+				info.setSystemPrivilege(SystemPrivilegeInfoRequestP1.SystemPrivilegeEnum.READ);
 				infos.add(info);
-				AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, infos);
+				ReplaceSystemPrivilegeWithRoleRequest reqDto = new ReplaceSystemPrivilegeWithRoleRequest();
+				reqDto.setSystemPrivilegeList(infos);
+				AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceSystemPrivilegeWithRole(roleId, reqDto);
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + roleId);
-			} catch (UnEditableRole_Exception e) {
+			} catch (UnEditableRole e) {
 				// 編集不可なロールはスキップする
 				log.info(Messages.getString("SettingTools.SkipSystemRole") + " : " + roleId);
-			} catch (WebServiceException e) {
+			} catch (RestConnectFailed e) {
 				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 				break;
@@ -146,17 +160,17 @@ public class SystemPrivilegeAction {
 		log.debug("Start Export PlatformSystemPrivilege ");
 		
 		int ret = 0;
-		List<com.clustercontrol.ws.access.RoleInfo> roleList = null;
-		List<com.clustercontrol.ws.access.SystemPrivilegeInfo> systemPrivilegeList = null;
+		List<RoleInfoResponse> roleList = null;
+		List<SystemPrivilegeInfoResponse> systemPrivilegeList = null;
 		
 		// ロール情報一覧の取得
 		try {
-			roleList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList();
-			Collections.sort(roleList, new Comparator<com.clustercontrol.ws.access.RoleInfo>() {
+			roleList = AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList();
+			Collections.sort(roleList, new Comparator<RoleInfoResponse>() {
 				@Override
 				public int compare(
-						com.clustercontrol.ws.access.RoleInfo info1,
-						com.clustercontrol.ws.access.RoleInfo info2) {
+						RoleInfoResponse info1,
+						RoleInfoResponse info2) {
 					return info1.getRoleId().compareTo(info2.getRoleId());
 				}
 			});
@@ -171,26 +185,30 @@ public class SystemPrivilegeAction {
 		
 		// ロール情報の取得
 		for (int i = 0; i < roleList.size(); i++) {
-			com.clustercontrol.ws.access.RoleInfo roleInfo = roleList.get(i);
+			RoleInfoResponse roleInfo = roleList.get(i);
 			try {
 				// システム権限情報一覧の取得
 				try {
-					systemPrivilegeList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(roleInfo.getRoleId());
-					Collections.sort(systemPrivilegeList, new Comparator<com.clustercontrol.ws.access.SystemPrivilegeInfo>() {
+					systemPrivilegeList = AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(roleInfo.getRoleId());
+					Collections.sort(systemPrivilegeList, new Comparator<SystemPrivilegeInfoResponse>() {
 						@Override
 						public int compare(
-								com.clustercontrol.ws.access.SystemPrivilegeInfo info1,
-								com.clustercontrol.ws.access.SystemPrivilegeInfo info2) {
-							int ret = info1.getSystemFunction().compareTo(info2.getSystemFunction());
+								SystemPrivilegeInfoResponse info1,
+								SystemPrivilegeInfoResponse info2) {
+							String info1SysFunction = OpenApiEnumConverter.enumToString(info1.getSystemFunction());
+							String info2SysFunction = OpenApiEnumConverter.enumToString(info2.getSystemFunction());
+							int ret = info1SysFunction.compareTo(info2SysFunction);
 							if(ret != 0){
 								return ret;
 							} else {
-								return info1.getSystemPrivilege().compareTo(info2.getSystemPrivilege());
+								String info1SysPrivilege = OpenApiEnumConverter.enumToString(info1.getSystemPrivilege());
+								String info2SysPrivilege = OpenApiEnumConverter.enumToString(info2.getSystemPrivilege());
+								return info1SysPrivilege.compareTo(info2SysPrivilege);
 							}
 						}
 					});
 					for (int j = 0; j < systemPrivilegeList.size(); j++) {
-						com.clustercontrol.ws.access.SystemPrivilegeInfo privilegeInfo = systemPrivilegeList.get(j);
+						SystemPrivilegeInfoResponse privilegeInfo = systemPrivilegeList.get(j);
 						try {
 							systemPrivilege.addSystemPrivilegeInfo(SystemPrivilegeConv.convSystemPrivilegeDto2Xml(roleInfo.getRoleId(), privilegeInfo));
 							log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + roleInfo.getRoleId());
@@ -259,7 +277,7 @@ public class SystemPrivilegeAction {
 
 		// システム権限情報をXMLファイルからの読み込み
 		try {
-			systemPrivilege = SystemPrivilege.unmarshal(
+			systemPrivilege = XmlMarshallUtil.unmarshall(SystemPrivilege.class,
 					new InputStreamReader(new FileInputStream(xmlSystemPrivilege), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
@@ -275,76 +293,89 @@ public class SystemPrivilegeAction {
 		}
 
 		// システム権限情報の登録. Key = [roldId> SystemFunction]
-		Map<String, Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>>> sysPrivMapXML = new LinkedHashMap<>();
-		for (int i = 0; i < systemPrivilege.getSystemPrivilegeInfoCount(); i++) {
-			SystemPrivilegeInfo privilegeInfo = systemPrivilege.getSystemPrivilegeInfo(i);
-			com.clustercontrol.ws.access.SystemPrivilegeInfo dto = SystemPrivilegeConv.convSystemPrivilegeXml2Dto(privilegeInfo);
-			
-			Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> subMap;
-			subMap = sysPrivMapXML.get(privilegeInfo.getRoleId());
-			if(null == subMap){
-				subMap = new LinkedHashMap<>();
-
-				List<com.clustercontrol.ws.access.SystemPrivilegeInfo> list = new ArrayList<com.clustercontrol.ws.access.SystemPrivilegeInfo>();
-				list.add(dto);
-
-				subMap.put(privilegeInfo.getSystemFunction(), list);
-				sysPrivMapXML.put(privilegeInfo.getRoleId(), subMap);
-			}else{
-				List<com.clustercontrol.ws.access.SystemPrivilegeInfo> list = subMap.get(privilegeInfo.getSystemFunction());
-				if(null == list){
-					list = new ArrayList<com.clustercontrol.ws.access.SystemPrivilegeInfo>();
+		Map<String, Map<String, List<SystemPrivilegeInfoResponse>>> sysPrivMapXML = new LinkedHashMap<>();
+		try {
+			for (int i = 0; i < systemPrivilege.getSystemPrivilegeInfoCount(); i++) {
+				SystemPrivilegeInfo privilegeInfo = systemPrivilege.getSystemPrivilegeInfo(i);
+				SystemPrivilegeInfoResponse dto = SystemPrivilegeConv.convSystemPrivilegeXml2Dto(privilegeInfo);
+				
+				Map<String, List<SystemPrivilegeInfoResponse>> subMap;
+				subMap = sysPrivMapXML.get(privilegeInfo.getRoleId());
+				if(null == subMap){
+					subMap = new LinkedHashMap<>();
+	
+					List<SystemPrivilegeInfoResponse> list = new ArrayList<SystemPrivilegeInfoResponse>();
+					list.add(dto);
+	
 					subMap.put(privilegeInfo.getSystemFunction(), list);
+					sysPrivMapXML.put(privilegeInfo.getRoleId(), subMap);
+				}else{
+					List<SystemPrivilegeInfoResponse> list = subMap.get(privilegeInfo.getSystemFunction());
+					if(null == list){
+						list = new ArrayList<SystemPrivilegeInfoResponse>();
+						subMap.put(privilegeInfo.getSystemFunction(), list);
+					}
+					list.add(dto);
 				}
-				list.add(dto);
 			}
+		} catch (Exception e) {
+			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
+			ret=SettingConstants.ERROR_INPROCESS;
+			log.debug("End Import PlatformSystemPrivilege (Error)");
+			return ret;
 		}
 
+		//[ロールID+機能] 毎 の 重複確認 とDto変換
+		Map<String,List<String>> resultMessageMap = new HashMap<String,List<String>>();
+		List<ImportSystemPrivilegeInfoRecordRequest> dtoList = new ArrayList<ImportSystemPrivilegeInfoRecordRequest>(); 
 		boolean isBorken = false; // loop control
-		for(Entry<String, Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>>> entryByRole : sysPrivMapXML.entrySet()){
+		for(Entry<String, Map<String, List<SystemPrivilegeInfoResponse>>> entryByRole : sysPrivMapXML.entrySet()){
 			String roleId = entryByRole.getKey();
+			List<SystemPrivilegeInfoResponse> sysPrivLstByRole = null;
+			//ロールID毎の情報を取得
 			try {
-				List<com.clustercontrol.ws.access.SystemPrivilegeInfo> sysPrivLstByRole = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(roleId);
-
+				sysPrivLstByRole = AccessRestClientWrapper
+						.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(roleId);
+				
+				ImportSystemPrivilegeInfoRecordRequest dtoRec = new ImportSystemPrivilegeInfoRecordRequest();
+				dtoRec.setImportData(new ReplaceSystemPrivilegeWithRoleRequest());
+				dtoRec.setRoleId(roleId);
+				dtoRec.setImportKeyValue(roleId);
+				
 				if(null == sysPrivLstByRole || 0 == sysPrivLstByRole.size()){
-					// Add if not found
-
+					// 該当のロールIDのシステム権限が存在しないので すべて追加
+					dtoRec.getImportData().setSystemPrivilegeList(getImportRecData(entryByRole.getValue()));
+					dtoList.add(dtoRec);
 					List<String> resultMsgs = new ArrayList<>();
-					List<com.clustercontrol.ws.access.SystemPrivilegeInfo> fullList = new ArrayList<>();
-					for(Entry<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> entry : entryByRole.getValue().entrySet()){
+					for(Entry<String, List<SystemPrivilegeInfoResponse>> entry : entryByRole.getValue().entrySet()){
 						String sysFunc = entry.getKey();
-						resultMsgs.add( roleId + " " + sysFunc );
-
-						fullList.addAll( entry.getValue());
+						resultMsgs.add( Messages.getString("SettingTools.ImportSucceeded") + " : " +  roleId + " " + sysFunc );
 					}
-					AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, fullList);
-
-					for(String msg : resultMsgs){
-						log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + msg);
-					}
-				}else{
-					// Get difference between DB
-
+					resultMessageMap.put(roleId,resultMsgs);
+				}
+				else{
+					// 該当のロールIDのシステム権限について 機能毎で重複確認
+	
 					// First, reform to map
-					Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> subMapDB = new HashMap<>();
-					for(com.clustercontrol.ws.access.SystemPrivilegeInfo info : sysPrivLstByRole){
-						List<com.clustercontrol.ws.access.SystemPrivilegeInfo> list = subMapDB.get(info.getSystemFunction());
-
+					Map<String, List<SystemPrivilegeInfoResponse>> subMapDB = new HashMap<>();
+					for(SystemPrivilegeInfoResponse info : sysPrivLstByRole){
+						String sysFunc = OpenApiEnumConverter.enumToString(info.getSystemFunction());
+						List<SystemPrivilegeInfoResponse> list = subMapDB.get(sysFunc);
 						if(null == list){
 							list = new ArrayList<>();
-							subMapDB.put(info.getSystemFunction(), list);
+							subMapDB.put(sysFunc, list);
 						}
 						//リポジトリ - 参照 はインポート対象外とする
-						if(!(info.getSystemFunction().equals(FunctionConstant.REPOSITORY) && 
-								info.getSystemPrivilege().equals("READ")))
+						if(!(sysFunc.equals(FunctionConstant.REPOSITORY) && 
+								info.getSystemPrivilege().equals(SystemPrivilegeInfoResponse.SystemPrivilegeEnum.READ)))
 							list.add(info);
 					}
-
+	
 					List<String> resultMsgs = new ArrayList<>();
 					boolean updated = false;
-					for(Entry<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> entry : entryByRole.getValue().entrySet()){
+					for(Entry<String, List<SystemPrivilegeInfoResponse>> entry : entryByRole.getValue().entrySet()){
 						String sysFunc = entry.getKey();
-
+	
 						if(null == subMapDB.get(sysFunc) || 0 == subMapDB.get(sysFunc).size()){
 							// Append if not found in DB
 							subMapDB.put( sysFunc, entry.getValue() );
@@ -366,7 +397,6 @@ public class SystemPrivilegeAction {
 							} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 								resultMsgs.add(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + roleId + " " + sysFunc);
 							} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-								resultMsgs.add(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 								ret = SettingConstants.ERROR_INPROCESS;
 								isBorken = true;
 								break;
@@ -374,38 +404,25 @@ public class SystemPrivilegeAction {
 						}
 					}
 					if(updated){
-						// Convert to a full list and replace by roleId
-						List<com.clustercontrol.ws.access.SystemPrivilegeInfo> fullList = new ArrayList<>();
-						for(Entry<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> entry : subMapDB.entrySet()){
-							fullList.addAll( entry.getValue());
-						}
-						AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, fullList);
+						dtoRec.getImportData().setSystemPrivilegeList(getImportRecData(subMapDB));
+						dtoList.add(dtoRec);
+						resultMessageMap.put(roleId,resultMsgs);
 					}
-					for(String msg : resultMsgs){
-						log.info(msg);
-					}
-
 					// Break again after all
 					if(isBorken){
 						break;
 					}
 				}
-			} catch (UnEditableRole_Exception e) {
-				// 編集不可なロールはスキップする
-				log.info(Messages.getString("SettingTools.SkipSystemRole") + " : " + roleId);
-			} catch (HinemosUnknown_Exception e) {
+			} catch (HinemosUnknown e) {
 				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
+			} catch (InvalidUserPass e) {
 				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidSetting_Exception e) {
-				log.warn(Messages.getString("SettingTools.InvalidSetting") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (WebServiceException e) {
+			} catch (RestConnectFailed e) {
 				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 			} catch (Exception e) {
@@ -413,7 +430,86 @@ public class SystemPrivilegeAction {
 				ret = SettingConstants.ERROR_INPROCESS;
 			}
 		}
+				
+		// 更新単位の件数毎にインポートメソッドを呼び出し、結果をログ出力
+		// API異常発生時はそこで中断、レコード個別の異常発生時はユーザ選択次第で続行
+		ImportClientController<ImportSystemPrivilegeInfoRecordRequest, ImportSystemPrivilegeInfoResponse, RecordRegistrationResponse> importController = new ImportClientController<ImportSystemPrivilegeInfoRecordRequest, ImportSystemPrivilegeInfoResponse, RecordRegistrationResponse>(
+				log, Messages.getString("platform.accesscontrol.system.privilege"),dtoList,true) {
+			@Override
+			protected List<RecordRegistrationResponse> getResRecList(ImportSystemPrivilegeInfoResponse importResponse) {
+				return importResponse.getResultList();
+			};
+			@Override
+			protected Boolean getOccurException(ImportSystemPrivilegeInfoResponse importResponse) {
+				return importResponse.getIsOccurException();
+			};
+			@Override
+			protected String getReqKeyValue(ImportSystemPrivilegeInfoRecordRequest importRec) {
+				return importRec.getImportKeyValue();
+			};
+			@Override
+			protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+				return responseRec.getImportKeyValue();
+			};
+			@Override
+			protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+				return (responseRec.getResult() == ResultEnum.NORMAL) ;
+			};
+			@Override
+			protected ImportSystemPrivilegeInfoResponse callImportWrapper(List<ImportSystemPrivilegeInfoRecordRequest> importRecList)
+					throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+				ImportSystemPrivilegeInfoRequest reqDto = new ImportSystemPrivilegeInfoRequest();
+				reqDto.setRecordList(importRecList);
+				reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+				return UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importSystemPrivilegeInfo(reqDto);
+			}
+			@Override
+			protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+				if (responseRec.getExceptionInfo() != null) {
+					return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+				}
+				return null;
+			};
+			@Override
+			protected boolean isResSkip( RecordRegistrationResponse responseRec ){
+				if ( responseRec.getExceptionInfo() != null) {
+					if( responseRec.getExceptionInfo().getException().equals(UnEditableRole.class.getName()) ){
+						//編集不可によるエラーはskip扱いとする。
+						return true;
+					} 
+				}
+				return false;
+			}
+			@Override
+			protected void setResultLog( RecordRegistrationResponse responseRec ){
+				if ( responseRec.getExceptionInfo() != null) {
+					if( responseRec.getExceptionInfo().getException().equals(UnEditableRole.class.getName()) ){
+						//編集不可によるエラーは専用のログを出力する。
+						log.info(Messages.getString("SettingTools.SkipSystemRole") + " : " + this.importInfoName + ":"
+								+ responseRec.getImportKeyValue());
+						return;
+					}
+				}
+				String keyValue = getResKeyValue(responseRec);
+				if ( isResNormal(responseRec) ) {
+					//正常終了時は重複確認時の選択に戻づくメッセージを出力
+					for (String message : resultMessageMap.get(keyValue)) {
+						log.info(message);
+					}
+				} else {
+					log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + this.importInfoName + ":" + keyValue + " : "
+							+ HinemosMessage.replace(getRestExceptionMessage(responseRec)));
+				}
+			}
+		};
+		ret = importController.importExecute();
 
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		
 		checkDelete(sysPrivMapXML);
 
 		// 処理の終了
@@ -464,9 +560,9 @@ public class SystemPrivilegeAction {
 		SystemPrivilege systemPrivilege1 = null;
 		SystemPrivilege systemPrivilege2 = null;
 		try {
-			systemPrivilege1 = SystemPrivilege.unmarshal(
+			systemPrivilege1 = XmlMarshallUtil.unmarshall(SystemPrivilege.class,
 					new InputStreamReader(new FileInputStream(xmlSystemPrivilege1), "UTF-8"));
-			systemPrivilege2 = SystemPrivilege.unmarshal(
+			systemPrivilege2 = XmlMarshallUtil.unmarshall(SystemPrivilege.class,
 					new InputStreamReader(new FileInputStream(xmlSystemPrivilege2), "UTF-8"));
 			sort(systemPrivilege1);
 			sort(systemPrivilege2);
@@ -562,27 +658,27 @@ public class SystemPrivilegeAction {
 	public Logger getLogger() {
 		return log;
 	}
-	protected void checkDelete(Map<String, Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>>> sysPrivMapXML){
+	protected void checkDelete(Map<String, Map<String, List<SystemPrivilegeInfoResponse>>> sysPrivMapXML){
 		// Get システム権限情報 from DB. Key = [roldId > SystemFunction]
-		Map<String, Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>>> sysPrivMapDB = new LinkedHashMap<>();
+		Map<String, Map<String, List<SystemPrivilegeInfoResponse>>> sysPrivMapDB = new LinkedHashMap<>();
 		try {
-			for(com.clustercontrol.ws.access.RoleInfo role: AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList()){
-				for(com.clustercontrol.ws.access.SystemPrivilegeInfo info: AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(role.getRoleId())){
-					Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> subMap;
+			for(RoleInfoResponse role: AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getRoleInfoList()){
+				for(SystemPrivilegeInfoResponse info: AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getSystemPrivilegeInfoListByRoleId(role.getRoleId())){
+					Map<String, List<SystemPrivilegeInfoResponse>> subMap;
 					subMap = sysPrivMapDB.get(role.getRoleId());
 					if(null == subMap){
 						subMap = new LinkedHashMap<>();
 		
-						List<com.clustercontrol.ws.access.SystemPrivilegeInfo> list = new ArrayList<com.clustercontrol.ws.access.SystemPrivilegeInfo>();
+						List<SystemPrivilegeInfoResponse> list = new ArrayList<SystemPrivilegeInfoResponse>();
 						list.add(info);
 		
-						subMap.put(info.getSystemFunction(), list);
+						subMap.put(OpenApiEnumConverter.enumToString(info.getSystemFunction()), list);
 						sysPrivMapDB.put(role.getRoleId(), subMap);
 					}else{
-						List<com.clustercontrol.ws.access.SystemPrivilegeInfo> list = subMap.get(info.getSystemFunction());
+						List<SystemPrivilegeInfoResponse> list = subMap.get(OpenApiEnumConverter.enumToString(info.getSystemFunction()));
 						if(null == list){
-							list = new ArrayList<com.clustercontrol.ws.access.SystemPrivilegeInfo>();
-							subMap.put(info.getSystemFunction(), list);
+							list = new ArrayList<SystemPrivilegeInfoResponse>();
+							subMap.put(OpenApiEnumConverter.enumToString(info.getSystemFunction()), list);
 						}
 						list.add(info);
 					}
@@ -598,12 +694,12 @@ public class SystemPrivilegeAction {
 		}
 
 		// Check difference and delete if confirmed
-		for(Entry<String, Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>>> entryByRole : sysPrivMapDB.entrySet()){
+		for(Entry<String, Map<String, List<SystemPrivilegeInfoResponse>>> entryByRole : sysPrivMapDB.entrySet()){
 			String roleId = entryByRole.getKey();
 
 			boolean allNotFound = !sysPrivMapXML.containsKey(roleId);
 
-			Map<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> subMap = entryByRole.getValue();
+			Map<String, List<SystemPrivilegeInfoResponse>> subMap = entryByRole.getValue();
 			String[] sysFuncLst = subMap.keySet().toArray(new String[]{});
 			for(String sysFunc: sysFuncLst){
 				boolean notFound;
@@ -627,14 +723,24 @@ public class SystemPrivilegeAction {
 							subMap.remove( sysFunc );
 
 							// Convert to a full list and replace by roleId
-							List<com.clustercontrol.ws.access.SystemPrivilegeInfo> fullList = new ArrayList<>();
-							for(Entry<String, List<com.clustercontrol.ws.access.SystemPrivilegeInfo>> entry : subMap.entrySet()){
+							List<SystemPrivilegeInfoResponse> fullList = new ArrayList<>();
+							for(Entry<String, List<SystemPrivilegeInfoResponse>> entry : subMap.entrySet()){
 								fullList.addAll( entry.getValue());
 							}
-							AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceSystemPrivilegeRole(roleId, fullList);
+
+							List<SystemPrivilegeInfoRequestP1> infos = new ArrayList<SystemPrivilegeInfoRequestP1>();
+							for ( SystemPrivilegeInfoResponse recOrg : fullList  ){
+								SystemPrivilegeInfoRequestP1  rec = new SystemPrivilegeInfoRequestP1();
+								RestClientBeanUtil.convertBean(recOrg, rec);
+								infos.add(rec);
+							}
+							ReplaceSystemPrivilegeWithRoleRequest reqDto = new ReplaceSystemPrivilegeWithRoleRequest();
+							reqDto.setSystemPrivilegeList(infos);
+							
+							AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceSystemPrivilegeWithRole(roleId, reqDto);
 							getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + roleId + " " + sysFunc);
 						} catch (Exception e1) {
-							getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
+							getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + roleId + " " + sysFunc + ":" + HinemosMessage.replace(e1.getMessage()));
 						}
 					} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + roleId + " " + sysFunc);
@@ -645,5 +751,20 @@ public class SystemPrivilegeAction {
 				}
 			}
 		}
+	}
+	private List<SystemPrivilegeInfoRequestP1> getImportRecData( Map<String, List<SystemPrivilegeInfoResponse>> srcData) {
+		List<SystemPrivilegeInfoRequestP1> ret = new ArrayList<SystemPrivilegeInfoRequestP1>();
+		for( Entry<String, List<SystemPrivilegeInfoResponse>> entFunc : srcData.entrySet() ){
+			for(SystemPrivilegeInfoResponse entPrivilege : entFunc.getValue()){
+				SystemPrivilegeInfoRequestP1 dtoPrivilege = new SystemPrivilegeInfoRequestP1();
+				try {
+					RestClientBeanUtil.convertBean(entPrivilege, dtoPrivilege);
+				} catch (HinemosUnknown e) {
+					
+				}
+				ret.add(dtoPrivilege);
+			}
+		}
+		return ret;
 	}
 }

@@ -13,11 +13,11 @@ import java.util.List;
 import org.eclipse.jface.dialogs.MessageDialog;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.UsedFacility_Exception;
 
 /**
  * スコープを削除するクライアント側アクションクラス<BR>
@@ -37,8 +37,8 @@ public class DeleteScopeProperty {
 	public void delete(String managerName, List<String> facilityIdList) {
 
 		try {
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-			wrapper.deleteScope(facilityIdList);
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+			wrapper.deleteScope(String.join(",", facilityIdList));
 
 			// リポジトリキャッシュの更新
 			ClientSession.doCheck();
@@ -52,21 +52,21 @@ public class DeleteScopeProperty {
 
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
 						Messages.getString("message"),
-						Messages.getString("message.accesscontrol.16"));
+						Messages.getString("message.accesscontrol.16") + "(" + managerName + ")");
 
-			} else if (e instanceof UsedFacility_Exception) {
+			} else if (e instanceof UsedFacility) {
 				// ファシリティが使用されている場合のエラーダイアログを表示する
-				Object[] args ={facilityIdList,
-						HinemosMessage.replace(((UsedFacility_Exception)e).getMessage())};
+				Object[] args ={facilityIdList + "(" + managerName + ")",
+						HinemosMessage.replace(((UsedFacility)e).getMessage())};
 				MessageDialog.openInformation(
 						null,
 						Messages.getString("message"),
-						Messages.getString("message.repository.27", args));
+						Messages.getString("message.repository.29", args));
 			} else {
 				errMessage = ", " + HinemosMessage.replace(e.getMessage());
 			}
@@ -75,7 +75,7 @@ public class DeleteScopeProperty {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.repository.17") + errMessage);
+					Messages.getString("message.repository.17") + "(" + managerName + ") " + errMessage);
 		}
 
 		return;

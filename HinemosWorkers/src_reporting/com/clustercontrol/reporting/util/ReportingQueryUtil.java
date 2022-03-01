@@ -13,14 +13,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.model.CollectData;
 import com.clustercontrol.collect.model.CollectDataPK;
@@ -32,6 +31,7 @@ import com.clustercontrol.collect.model.SummaryMonth;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.QueryExecutor;
 import com.clustercontrol.fault.CollectKeyNotFound;
 import com.clustercontrol.fault.CollectorNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
@@ -47,8 +47,6 @@ import com.clustercontrol.jobmanagement.queue.internal.JobQueueTx;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.performance.monitor.model.CollectorItemCodeMstEntity;
-import com.clustercontrol.platform.QueryExecutor;
-import com.clustercontrol.platform.util.reporting.PriorityQueryUtil;
 import com.clustercontrol.reporting.ReportUtil;
 import com.clustercontrol.reporting.session.ReportingCollectControllerBean;
 import com.clustercontrol.repository.model.FacilityInfo;
@@ -57,6 +55,9 @@ import com.clustercontrol.repository.model.NodeCustomHistoryDetail;
 import com.clustercontrol.repository.model.NodeDeviceHistoryDetail;
 import com.clustercontrol.repository.model.NodeHistoryDetail;
 import com.clustercontrol.repository.model.NodePackageHistoryDetail;
+
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 
 public class ReportingQueryUtil {
 	/** ログ出力のインスタンス */
@@ -136,8 +137,47 @@ public class ReportingQueryUtil {
 		return list;
 	}
 	
-	public static List<Object[]> getCollectDataList(String facilityId, Long fromTime, Long toTime, String monitorId, String displayName, String itemCode) 
-			throws HinemosDbTimeout {
+	public static List<CollectData> getCollectDataList(List<Integer> idList, Long fromTime, Long toTime,
+			String ownerRoleId) throws HinemosDbTimeout {
+		StringBuilder query = new StringBuilder();
+		query.append("SELECT a FROM CollectData a");
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			query.append(" JOIN CollectKeyInfo b ON b.collectorid = a.id.collectorid");
+			query.append(" JOIN MonitorInfo c ON c.monitorId = b.id.monitorId");
+		}
+		query.append(" WHERE a.id.time >= :fromTime AND a.id.time <= :toTime AND a.id.collectorid IN :collectoridList");
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			query.append(" AND (c.ownerRoleId = :ownerRoleId");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT d FROM ObjectPrivilegeInfo d");
+			query.append(" WHERE d.id.objectType = :objectType");
+			query.append(" AND d.id.objectId = c.monitorId");
+			query.append(" AND d.id.roleId = :ownerRoleId");
+			query.append(" AND d.id.objectPrivilege = :objectPrivilege");
+			query.append(" )");
+			query.append(" )");
+		}
+		query.append(" ORDER BY a.id.time");
+
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		parameters.put("collectoridList", idList);
+		parameters.put("fromTime", fromTime);
+		parameters.put("toTime", toTime);
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
+
+		return QueryExecutor.getListByJpqlWithTimeout(query.toString(), CollectData.class, parameters,
+				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
+	}
+	
+	public static List<Object[]> getCollectDataList(String facilityId, Long fromTime, Long toTime, String monitorId,
+			String displayName, String itemCode, String ownerRoleId) throws HinemosDbTimeout {
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		parameters.put("facilityId", facilityId);
 		parameters.put("fromTime", fromTime);
@@ -149,8 +189,16 @@ public class ReportingQueryUtil {
 			parameters.put("displayName", displayName);
 		}
 		parameters.put("itemCode", itemCode);
-
-		return QueryExecutor.getListByJpqlWithTimeout(PriorityQueryUtil.getCollectDataListQuery(displayName), Object[].class, parameters, 
+		
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
+		
+		return QueryExecutor.getListByJpqlWithTimeout(
+				PriorityQueryUtil.getCollectDataListQuery(displayName, ownerRoleId), Object[].class, parameters,
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
 	}
 	
@@ -177,20 +225,67 @@ public class ReportingQueryUtil {
 		return list;
 	}
 	
-	public static List<Object[]> getSummaryHourList(String facilityId, Long fromTime, Long toTime, String monitorId, String displayName, String itemCode) 
-			throws HinemosDbTimeout {
+	public static List<SummaryHour> getSummaryHourList(List<Integer> idList, Long fromTime, Long toTime,
+			String ownerRoleId) throws HinemosDbTimeout {
+		StringBuilder query = new StringBuilder();
+		query.append("SELECT a FROM SummaryHour a");
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			query.append(" JOIN CollectKeyInfo b ON b.collectorid = a.id.collectorid");
+			query.append(" JOIN MonitorInfo c ON c.monitorId = b.id.monitorId");
+		}
+		query.append(" WHERE a.id.time >= :fromTime AND a.id.time <= :toTime AND a.id.collectorid IN :collectoridList");
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			query.append(" AND (c.ownerRoleId = :ownerRoleId");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT d FROM ObjectPrivilegeInfo d");
+			query.append(" WHERE d.id.objectType = :objectType");
+			query.append(" AND d.id.objectId = c.monitorId");
+			query.append(" AND d.id.roleId = :ownerRoleId");
+			query.append(" AND d.id.objectPrivilege = :objectPrivilege");
+			query.append(" )");
+			query.append(" )");
+		}
+		query.append(" ORDER BY a.id.time");
+
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		parameters.put("collectoridList", idList);
+		parameters.put("fromTime", fromTime);
+		parameters.put("toTime", toTime);
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
+
+		return QueryExecutor.getListByJpqlWithTimeout(query.toString(), SummaryHour.class, parameters,
+				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
+	}
+	
+	public static List<Object[]> getSummaryHourList(String facilityId, Long fromTime, Long toTime, String monitorId,
+			String displayName, String itemCode, String ownerRoleId) throws HinemosDbTimeout {
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		parameters.put("facilityId", facilityId);
 		parameters.put("fromTime", fromTime);
 		parameters.put("toTime", toTime);
 		parameters.put("monitorId", monitorId);
+		
 		// displayName
 		if (displayName != null && !"".equals(displayName)) {
 			parameters.put("displayName", displayName);
 		}
 		parameters.put("itemCode", itemCode);
+		
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
 
-		return QueryExecutor.getListByJpqlWithTimeout(PriorityQueryUtil.getSummaryHourListQuery(displayName), Object[].class, parameters, 
+		return QueryExecutor.getListByJpqlWithTimeout(
+				PriorityQueryUtil.getSummaryHourListQuery(displayName, ownerRoleId), Object[].class, parameters,
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
 	}
 	
@@ -216,20 +311,67 @@ public class ReportingQueryUtil {
 		return list;
 	}
 	
-	public static List<Object[]> getSummaryDayList(String facilityId, Long fromTime, Long toTime, String monitorId, String displayName, String itemCode) 
+	public static List<SummaryDay> getSummaryDayList(List<Integer> collectidList, Long fromTime, Long toTime,
+			String ownerRoleId) throws HinemosDbTimeout {
+		StringBuilder query = new StringBuilder();
+		query.append("SELECT a FROM SummaryDay a");
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			query.append(" JOIN CollectKeyInfo b ON b.collectorid = a.id.collectorid");
+			query.append(" JOIN MonitorInfo c ON c.monitorId = b.id.monitorId");
+		}
+		query.append(" WHERE a.id.time >= :fromTime AND a.id.time <= :toTime AND a.id.collectorid IN :collectoridList");
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			query.append(" AND (c.ownerRoleId = :ownerRoleId");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT d FROM ObjectPrivilegeInfo d");
+			query.append(" WHERE d.id.objectType = :objectType");
+			query.append(" AND d.id.objectId = c.monitorId");
+			query.append(" AND d.id.roleId = :ownerRoleId");
+			query.append(" AND d.id.objectPrivilege = :objectPrivilege");
+			query.append(" )");
+			query.append(" )");
+		}
+		query.append(" ORDER BY a.id.time");
+
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		parameters.put("collectoridList", collectidList);
+		parameters.put("fromTime", fromTime);
+		parameters.put("toTime", toTime);
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
+
+		return QueryExecutor.getListByJpqlWithTimeout(query.toString(), SummaryDay.class, parameters,
+				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
+	}
+	
+	public static List<Object[]> getSummaryDayList(String facilityId, Long fromTime, Long toTime, String monitorId, String displayName, String itemCode, String ownerRoleId) 
 			throws HinemosDbTimeout {
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		parameters.put("facilityId", facilityId);
 		parameters.put("fromTime", fromTime);
 		parameters.put("toTime", toTime);
 		parameters.put("monitorId", monitorId);
+		
 		// displayName
 		if (displayName != null && !"".equals(displayName)) {
 			parameters.put("displayName", displayName);
 		}
 		parameters.put("itemCode", itemCode);
+		
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
 
-		return QueryExecutor.getListByJpqlWithTimeout(PriorityQueryUtil.getSummaryDayListQuery(displayName), Object[].class, parameters, 
+		return QueryExecutor.getListByJpqlWithTimeout(
+				PriorityQueryUtil.getSummaryDayListQuery(displayName, ownerRoleId), Object[].class, parameters,
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
 	}
 	
@@ -257,20 +399,67 @@ public class ReportingQueryUtil {
 		return list;
 	}
 	
-	public static List<Object[]> getSummaryMonthList(String facilityId, Long fromTime, Long toTime, String monitorId, String displayName, String itemCode) 
-			throws HinemosDbTimeout {
+	public static List<SummaryMonth> getSummaryMonthList(List<Integer> idList, Long fromTime, Long toTime,
+			String ownerRoleId) throws HinemosDbTimeout {
+		StringBuilder query = new StringBuilder();
+		query.append("SELECT a FROM SummaryMonth a");
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			query.append(" JOIN CollectKeyInfo b ON b.collectorid = a.id.collectorid");
+			query.append(" JOIN MonitorInfo c ON c.monitorId = b.id.monitorId");
+		}
+		query.append(" WHERE a.id.time >= :fromTime AND a.id.time <= :toTime AND a.id.collectorid IN :collectoridList");
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			query.append(" AND (c.ownerRoleId = :ownerRoleId");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT d FROM ObjectPrivilegeInfo d");
+			query.append(" WHERE d.id.objectType = :objectType");
+			query.append(" AND d.id.objectId = c.monitorId");
+			query.append(" AND d.id.roleId = :ownerRoleId");
+			query.append(" AND d.id.objectPrivilege = :objectPrivilege");
+			query.append(" )");
+			query.append(" )");
+		}
+		query.append(" ORDER BY a.id.time");
+
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		parameters.put("collectoridList", idList);
+		parameters.put("fromTime", fromTime);
+		parameters.put("toTime", toTime);
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
+
+		return QueryExecutor.getListByJpqlWithTimeout(query.toString(), SummaryMonth.class, parameters,
+				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
+	}
+	
+	public static List<Object[]> getSummaryMonthList(String facilityId, Long fromTime, Long toTime, String monitorId,
+			String displayName, String itemCode, String ownerRoleId) throws HinemosDbTimeout {
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		parameters.put("facilityId", facilityId);
 		parameters.put("fromTime", fromTime);
 		parameters.put("toTime", toTime);
 		parameters.put("monitorId", monitorId);
+		
 		// displayName
 		if (displayName != null && !"".equals(displayName)) {
 			parameters.put("displayName", displayName);
 		}
 		parameters.put("itemCode", itemCode);
+		
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
 
-		return QueryExecutor.getListByJpqlWithTimeout(PriorityQueryUtil.getSummaryMonthListQuery(displayName), Object[].class, parameters, 
+		return QueryExecutor.getListByJpqlWithTimeout(
+				PriorityQueryUtil.getSummaryMonthListQuery(displayName, ownerRoleId), Object[].class, parameters,
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
 	}
 	
@@ -383,7 +572,15 @@ public class ReportingQueryUtil {
 		query.append(" ) AS ids");
 		query.append(" LEFT OUTER JOIN setting.cc_monitor_info d ON (ids.monitor_id = d.monitor_id) ");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" WHERE d.owner_role_id = ?5 ");
+			query.append(" WHERE (d.owner_role_id = ?5 ");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT e FROM setting.cc_object_privilege e");
+			query.append(" WHERE e.object_type = ?6");
+			query.append(" AND e.object_id = d.monitor_id");
+			query.append(" AND e.role_id = ?5");
+			query.append(" AND e.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.item_code, ids.display_name, d.run_interval");
 		
@@ -399,6 +596,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -420,7 +619,15 @@ public class ReportingQueryUtil {
 		query.append(" ) AS ids");
 		query.append(" JOIN setting.cc_monitor_info d ON (ids.monitor_id = d.monitor_id)");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" WHERE d.owner_role_id = ?5 ");
+			query.append(" WHERE (d.owner_role_id = ?5 ");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT e FROM setting.cc_object_privilege e");
+			query.append(" WHERE e.object_type = ?6");
+			query.append(" AND e.object_id = d.monitor_id");
+			query.append(" AND e.role_id = ?5");
+			query.append(" AND e.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.item_code, ids.display_name, d.run_interval");
 
@@ -436,6 +643,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -456,7 +665,15 @@ public class ReportingQueryUtil {
 		query.append(" ) AS ids");
 		query.append(" LEFT OUTER JOIN setting.cc_monitor_info d ON (ids.monitor_id = d.monitor_id)");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" WHERE owner_role_id = ?5");
+			query.append(" WHERE (owner_role_id = ?5");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT e FROM setting.cc_object_privilege e");
+			query.append(" WHERE e.object_type = ?6");
+			query.append(" AND e.object_id = d.monitor_id");
+			query.append(" AND e.role_id = ?5");
+			query.append(" AND e.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY item_code, display_name, run_interval");
 		
@@ -472,6 +689,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -491,7 +710,15 @@ public class ReportingQueryUtil {
 		query.append(" GROUP BY a.monitor_id, c.item_code, a.display_name, c.breakdown_flg) AS ids");
 		query.append(" LEFT OUTER JOIN setting.cc_monitor_info d ON (ids.monitor_id = d.monitor_id)");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" WHERE d.owner_role_id = ?5");
+			query.append(" WHERE (d.owner_role_id = ?5");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT e FROM setting.cc_object_privilege e");
+			query.append(" WHERE e.object_type = ?6");
+			query.append(" AND e.object_id = d.monitor_id");
+			query.append(" AND e.role_id = ?5");
+			query.append(" AND e.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.item_code, ids.display_name, d.run_interval");
 		
@@ -507,6 +734,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -531,7 +760,15 @@ public class ReportingQueryUtil {
 		query.append(" WHERE d.monitor_type_id != 'MON_PRF_N'");
 		query.append(" AND d.monitor_type_id NOT LIKE 'MON_CLOUD%'");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" AND d.owner_role_id = ?5");
+			query.append(" AND (d.owner_role_id = ?5");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT e FROM setting.cc_object_privilege e");
+			query.append(" WHERE e.object_type = ?6");
+			query.append(" AND e.object_id = d.monitor_id");
+			query.append(" AND e.role_id = ?5");
+			query.append(" AND e.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.monitor_id,d.item_name,ids.display_name,d.run_interval");
 			
@@ -548,6 +785,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -579,7 +818,15 @@ public class ReportingQueryUtil {
 		query.append(" GROUP BY a.monitor_id, a.display_name) AS ids ");
 		query.append(" LEFT OUTER JOIN setting.cc_monitor_info c ON (c.monitor_id = ids.monitor_id) ");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" WHERE c.owner_role_id = ?5 ");
+			query.append(" WHERE (c.owner_role_id = ?5 ");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT d FROM setting.cc_object_privilege d");
+			query.append(" WHERE d.object_type = ?6");
+			query.append(" AND d.object_id = c.monitor_id");
+			query.append(" AND d.role_id = ?5");
+			query.append(" AND d.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.monitor_id, c.item_name, ids.display_name, c.run_interval");
 			
@@ -597,6 +844,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -622,7 +871,15 @@ public class ReportingQueryUtil {
 		query.append(" WHERE d.monitor_type_id != 'MON_PRF_N'");
 		query.append(" AND d.monitor_type_id NOT LIKE 'MON_CLOUD%'");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" AND d.owner_role_id = ?5");
+			query.append(" AND (d.owner_role_id = ?5");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT e FROM setting.cc_object_privilege e");
+			query.append(" WHERE e.object_type = ?6");
+			query.append(" AND e.object_id = d.monitor_id");
+			query.append(" AND e.role_id = ?5");
+			query.append(" AND e.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.monitor_id, d.item_name, ids.display_name, d.run_interval");
 		
@@ -640,6 +897,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -671,7 +930,15 @@ public class ReportingQueryUtil {
 		query.append(" GROUP BY a.monitor_id, a.display_name) AS ids ");
 		query.append(" LEFT OUTER JOIN setting.cc_monitor_info c ON (c.monitor_id = ids.monitor_id) ");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" WHERE c.owner_role_id = ?5 ");
+			query.append(" WHERE (c.owner_role_id = ?5 ");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT d FROM setting.cc_object_privilege d");
+			query.append(" WHERE d.object_type = ?6");
+			query.append(" AND d.object_id = c.monitor_id");
+			query.append(" AND d.role_id = ?5");
+			query.append(" AND d.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.monitor_id, c.item_name, ids.display_name, c.run_interval");
 		
@@ -689,6 +956,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -714,7 +983,15 @@ public class ReportingQueryUtil {
 		query.append(" WHERE d.monitor_type_id != 'MON_PRF_N'");
 		query.append(" AND d.monitor_type_id NOT LIKE 'MON_CLOUD%'");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" AND d.owner_role_id = ?5");
+			query.append(" AND (d.owner_role_id = ?5");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT e FROM setting.cc_object_privilege e");
+			query.append(" WHERE e.object_type = ?6");
+			query.append(" AND e.object_id = d.monitor_id");
+			query.append(" AND e.role_id = ?5");
+			query.append(" AND e.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.monitor_id, d.item_name, ids.display_name, d.run_interval");
 			
@@ -730,7 +1007,9 @@ public class ReportingQueryUtil {
 		
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			parameters.put(5, toTime);
+			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -762,7 +1041,15 @@ public class ReportingQueryUtil {
 		query.append(" GROUP BY a.monitor_id, a.display_name) AS ids ");
 		query.append(" LEFT OUTER JOIN setting.cc_monitor_info c ON (c.monitor_id = ids.monitor_id) ");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" WHERE c.owner_role_id = ?5 ");
+			query.append(" WHERE (c.owner_role_id = ?5 ");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT d FROM setting.cc_object_privilege d");
+			query.append(" WHERE d.object_type = ?6");
+			query.append(" AND d.object_id = c.monitor_id");
+			query.append(" AND d.role_id = ?5");
+			query.append(" AND d.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.monitor_id, c.item_name, ids.display_name, c.run_interval");
 		
@@ -781,6 +1068,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -806,7 +1095,15 @@ public class ReportingQueryUtil {
 		query.append(" WHERE d.monitor_type_id != 'MON_PRF_N'");
 		query.append(" AND d.monitor_type_id NOT LIKE 'MON_CLOUD%'");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" AND d.owner_role_id = ?5");
+			query.append(" AND (d.owner_role_id = ?5");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT e FROM setting.cc_object_privilege e");
+			query.append(" WHERE e.object_type = ?6");
+			query.append(" AND e.object_id = d.monitor_id");
+			query.append(" AND e.role_id = ?5");
+			query.append(" AND e.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.monitor_id, d.item_name, ids.display_name, d.run_interval");
 		
@@ -823,6 +1120,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -854,7 +1153,15 @@ public class ReportingQueryUtil {
 		query.append(" GROUP BY a.monitor_id, a.display_name) AS ids ");
 		query.append(" LEFT OUTER JOIN setting.cc_monitor_info c ON (c.monitor_id = ids.monitor_id) ");
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			query.append(" WHERE c.owner_role_id = ?5 ");
+			query.append(" WHERE (c.owner_role_id = ?5 ");
+			query.append(" OR EXISTS (");
+			query.append(" SELECT d FROM setting.cc_object_privilege d");
+			query.append(" WHERE d.object_type = ?6");
+			query.append(" AND d.object_id = c.monitor_id");
+			query.append(" AND d.role_id = ?5");
+			query.append(" AND d.object_privilege = ?7");
+			query.append(" )");
+			query.append(" )");
 		}
 		query.append(" ORDER BY ids.monitor_id, c.item_name, ids.display_name, c.run_interval");
 			
@@ -872,6 +1179,8 @@ public class ReportingQueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put(5, ownerRoleId);
+			parameters.put(6, HinemosModuleConstant.MONITOR);
+			parameters.put(7, ObjectPrivilegeMode.READ.name());
 		}
 		return QueryExecutor.getListByNativeQueryWithTimeout(query.toString(), parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -965,11 +1274,21 @@ public class ReportingQueryUtil {
 					+ " AND a.scheduleDate < :toTime)"
 					+ " OR (b.endDate >= :fromTime"
 					+ " AND b.endDate < :toTime))");
+			jquery.append(" AND b.status IN :statusList");
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-				jquery.append(" AND b.ownerRoleId = :ownerRoleId");
+				jquery.append(" AND (b.ownerRoleId = :ownerRoleId");
+				jquery.append(" OR EXISTS (");
+				jquery.append(" SELECT c FROM ObjectPrivilegeInfo c");
+				jquery.append(" WHERE c.id.objectType = :objectType");
+				jquery.append(" AND c.id.objectId = b.id.jobunitId");
+				jquery.append(" AND c.id.roleId = :ownerRoleId");
+				jquery.append(" AND c.id.objectPrivilege = :objectPrivilege");
+				jquery.append(" )");
+				jquery.append(" )");
 			}
 			jquery.append(" ORDER BY a.scheduleDate");
+			
 			typedQuery = em.createQuery(jquery.toString(), JobSessionEntity.class);
 			typedQuery.setParameter("parentJobunitId", parentJobunitId);
 			typedQuery.setParameter("jobunitId", jobunitId);
@@ -977,9 +1296,13 @@ public class ReportingQueryUtil {
 			typedQuery.setParameter("excJobId", excJobId);
 			typedQuery.setParameter("fromTime", fromTime);
 			typedQuery.setParameter("toTime", toTime);
+			List<Integer> statusList = getStatusList();
+			typedQuery.setParameter("statusList", statusList);
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 				typedQuery.setParameter("ownerRoleId", ownerRoleId);
+				typedQuery.setParameter("objectType", HinemosModuleConstant.JOB);
+				typedQuery.setParameter("objectPrivilege", ObjectPrivilegeMode.READ.name());
 			}
 			
 			list = typedQuery.getResultList();
@@ -1012,12 +1335,21 @@ public class ReportingQueryUtil {
 			jquery.append(" AND a.id.jobunitId like :jobunitId");
 			jquery.append(" AND a.id.jobId like :jobId");
 			jquery.append(" AND a.id.jobId not like :excJobId");
-			
+			jquery.append(" AND b.status IN :statusList");
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-				jquery.append(" AND b.ownerRoleId = :ownerRoleId");
+				jquery.append(" AND (b.ownerRoleId = :ownerRoleId");
+				jquery.append(" OR EXISTS (");
+				jquery.append(" SELECT e FROM ObjectPrivilegeInfo e");
+				jquery.append(" WHERE e.id.objectType = :objectType");
+				jquery.append(" AND e.id.objectId = b.id.jobunitId");
+				jquery.append(" AND e.id.roleId = :ownerRoleId");
+				jquery.append(" AND e.id.objectPrivilege = :objectPrivilege");
+				jquery.append(" )");
+				jquery.append(" )");
 			}
 			jquery.append(" ORDER BY a.startDate");
+			
 			typedQuery = em.createQuery(jquery.toString(), JobSessionNodeEntity.class);
 			typedQuery.setParameter("facilityId", facilityId);
 			typedQuery.setParameter("jobunitId", jobunitId);
@@ -1025,9 +1357,13 @@ public class ReportingQueryUtil {
 			typedQuery.setParameter("excJobId", excJobId);
 			typedQuery.setParameter("fromTime", fromTime);
 			typedQuery.setParameter("toTime", toTime);
+			List<Integer> statusList = getStatusList();
+			typedQuery.setParameter("statusList", statusList);
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 				typedQuery.setParameter("ownerRoleId", ownerRoleId);
+				typedQuery.setParameter("objectType", HinemosModuleConstant.JOB);
+				typedQuery.setParameter("objectPrivilege", ObjectPrivilegeMode.READ.name());
 			}
 			
 			list = typedQuery.getResultList();
@@ -1042,7 +1378,8 @@ public class ReportingQueryUtil {
 			String sessionId,
 			String jobunitId,
 			String jobId,
-			String excJobId, String ownerRoleId) {
+			String excJobId,
+			String ownerRoleId) {
 		List<JobSessionJobEntity> list = null;
 		TypedQuery<JobSessionJobEntity> typedQuery = null;
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
@@ -1058,9 +1395,18 @@ public class ReportingQueryUtil {
 			jquery.append(" AND a.id.jobId not like :excJobId");
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-				jquery.append(" AND a.ownerRoleId = :ownerRoleId");
+				jquery.append(" AND (a.ownerRoleId = :ownerRoleId");
+				jquery.append(" OR EXISTS (");
+				jquery.append(" SELECT d FROM ObjectPrivilegeInfo d");
+				jquery.append(" WHERE d.id.objectType = :objectType");
+				jquery.append(" AND d.id.objectId = a.id.jobunitId");
+				jquery.append(" AND d.id.roleId = :ownerRoleId");
+				jquery.append(" AND d.id.objectPrivilege = :objectPrivilege");
+				jquery.append(" )");
+				jquery.append(" )");
 			}
 			jquery.append(" ORDER BY b.scheduleDate, a.startDate");
+			
 			typedQuery = em.createQuery(jquery.toString(), JobSessionJobEntity.class);
 			typedQuery.setParameter("sessionId", sessionId);
 			typedQuery.setParameter("jobunitId", jobunitId);
@@ -1069,6 +1415,8 @@ public class ReportingQueryUtil {
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 				typedQuery.setParameter("ownerRoleId", ownerRoleId);
+				typedQuery.setParameter("objectType", HinemosModuleConstant.JOB);
+				typedQuery.setParameter("objectPrivilege", ObjectPrivilegeMode.READ.name());
 			}
 			
 			list = typedQuery.getResultList();
@@ -1099,12 +1447,20 @@ public class ReportingQueryUtil {
 			jquery.append(" AND a.id.jobunitId like :jobunitId");
 			jquery.append(" AND a.id.jobId like :jobId");
 			jquery.append(" AND a.id.jobId not like :excJobId");
-
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-				jquery.append(" AND a.ownerRoleId = :ownerRoleId");
+				jquery.append(" AND (a.ownerRoleId = :ownerRoleId");
+				jquery.append(" OR EXISTS (");
+				jquery.append(" SELECT d FROM ObjectPrivilegeInfo d");
+				jquery.append(" WHERE d.id.objectType = :objectType");
+				jquery.append(" AND d.id.objectId = a.id.jobunitId");
+				jquery.append(" AND d.id.roleId = :ownerRoleId");
+				jquery.append(" AND d.id.objectPrivilege = :objectPrivilege");
+				jquery.append(" )");
+				jquery.append(" )");
 			}
 			jquery.append(" ORDER BY a.startDate");
+			
 			typedQuery = em.createQuery(jquery.toString(), JobSessionJobEntity.class);
 			typedQuery.setParameter("queueId", queueId);
 			typedQuery.setParameter("jobunitId", jobunitId);
@@ -1115,6 +1471,8 @@ public class ReportingQueryUtil {
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 				typedQuery.setParameter("ownerRoleId", ownerRoleId);
+				typedQuery.setParameter("objectType", HinemosModuleConstant.JOB);
+				typedQuery.setParameter("objectPrivilege", ObjectPrivilegeMode.READ.name());
 			}
 			
 			list = typedQuery.getResultList();
@@ -1167,13 +1525,21 @@ public class ReportingQueryUtil {
 			StringBuilder query = new StringBuilder();
 			query.append("WITH nums AS ");
 			query.append(" (");
-			query.append(" SELECT priority, count(*) AS count1");
-			query.append(" FROM log.cc_event_log ");
-			query.append(" WHERE facility_id = ?1 ");
-			query.append(" AND generation_date >= ?2 ");
-			query.append(" AND generation_date < ?3 ");
+			query.append(" SELECT a.priority, count(*) AS count1");
+			query.append(" FROM log.cc_event_log a ");
+			query.append(" WHERE a.facility_id = ?1 ");
+			query.append(" AND a.generation_date >= ?2 ");
+			query.append(" AND a.generation_date < ?3 ");
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-				query.append(" AND owner_role_id = ?4 ");
+				query.append(" AND (a.owner_role_id = ?4 ");
+				query.append(" OR EXISTS (");
+				query.append(" SELECT b FROM setting.cc_object_privilege b");
+				query.append(" WHERE b.object_type = ?5");
+				query.append(" AND b.object_id = a.monitor_id");
+				query.append(" AND b.role_id = ?4");
+				query.append(" AND b.object_privilege = ?6");
+				query.append(" ) ");
+				query.append(" ) ");
 			}
 			query.append(" GROUP BY priority");
 			query.append(" ), ");
@@ -1193,6 +1559,8 @@ public class ReportingQueryUtil {
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 				typedQuery.setParameter(4, ownerRoleId);
+				typedQuery.setParameter(5, HinemosModuleConstant.MONITOR);
+				typedQuery.setParameter(6, ObjectPrivilegeMode.READ.name());
 			}
 			
 			list = (List<Object[]>)typedQuery.getResultList();
@@ -1218,7 +1586,15 @@ public class ReportingQueryUtil {
 			jquery.append(" AND a.generationDate >= :fromTime AND a.generationDate < :toTime");
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-				jquery.append(" AND a.ownerRoleId = :ownerRoleId");
+				jquery.append(" AND (a.ownerRoleId = :ownerRoleId");
+				jquery.append(" OR EXISTS (");
+				jquery.append(" SELECT b FROM ObjectPrivilegeInfo b");
+				jquery.append(" WHERE b.id.objectType = :objectType");
+				jquery.append(" AND b.id.objectId = a.id.monitorId");
+				jquery.append(" AND b.id.roleId = :ownerRoleId");
+				jquery.append(" AND b.id.objectPrivilege = :objectPrivilege");
+				jquery.append(" )");
+				jquery.append(" )");
 			}
 			jquery.append(" ORDER BY a.generationDate, a.priority, a.id.monitorId, a.id.pluginId");
 			
@@ -1229,6 +1605,8 @@ public class ReportingQueryUtil {
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 				typedQuery.setParameter("ownerRoleId", ownerRoleId);
+				typedQuery.setParameter("objectType", HinemosModuleConstant.MONITOR);
+				typedQuery.setParameter("objectPrivilege", ObjectPrivilegeMode.READ.name());
 			}
 			
 			list = typedQuery.getResultList();
@@ -1357,4 +1735,16 @@ public class ReportingQueryUtil {
 		return true;
 	}
 
+	private static List<Integer> getStatusList() {
+		List<Integer> statusList = StatusConstant.getStatusList();
+		for (int i=0;i < statusList.size(); i++) {
+			if (statusList.get(i) == StatusConstant.TYPE_SCHEDULED) {
+				// ステータス「実行予定」は出力対象外とする。
+				statusList.remove(i);
+				break;
+			}
+		}
+		m_log.debug("getStatusList : " + statusList);
+		return statusList;
+	}
 }

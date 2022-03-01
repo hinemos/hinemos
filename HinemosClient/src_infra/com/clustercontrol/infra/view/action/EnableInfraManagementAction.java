@@ -27,20 +27,24 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.ModifyInfraManagementRequest;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementDuplicate;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NotifyDuplicate;
+import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.action.GetInfraManagementTableDefine;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraDtoConverter;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.InfraManagementView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraManagementDuplicate_Exception;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidSetting_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyDuplicate_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 public class EnableInfraManagementAction extends AbstractHandler  implements IElementUpdater {
 	// ログ
@@ -135,20 +139,25 @@ public class EnableInfraManagementAction extends AbstractHandler  implements IEl
 		StringBuffer failManagementIds = new StringBuffer();
 		for(Map.Entry<String, List<String>> entry : managementIdMap.entrySet()) {
 			String managerName = entry.getKey();
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 			for (String managementId : entry.getValue()) {
 				try {
-					InfraManagementInfo info = wrapper.getInfraManagement(managementId);
+					InfraManagementInfoResponse info = wrapper.getInfraManagement(managementId);
 					info.setValidFlg(true);
 					try {
-						wrapper.modifyInfraManagement(info);
+						ModifyInfraManagementRequest dtoReq = new ModifyInfraManagementRequest();
+						RestClientBeanUtil.convertBean(info, dtoReq);
+						InfraDtoConverter.convertInfoToDto(info, dtoReq);
+						wrapper.modifyInfraManagement(managementId, dtoReq);
 						sucManagementIds.append(managementId + "(" + managerName +")" + ", ");
 					}
-					catch (InvalidSetting_Exception | NotifyDuplicate_Exception | HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | InfraManagementNotFound_Exception | InfraManagementDuplicate_Exception e) {
+					catch (RestConnectFailed | NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidUserPass | InvalidRole
+							| InvalidSetting | InfraManagementNotFound | InfraManagementDuplicate e) {
 						m_log.debug("execute modifyInfraManagement, " + e.getMessage());
 						failManagementIds.append(managementId + ", ");
 					}
-				} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception e) {
+				} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | InfraManagementNotFound
+						| InvalidSetting e) {
 					m_log.debug("execute getInfraManagement, " + e.getMessage());
 					failManagementIds.append(managementId + ", ");
 				}

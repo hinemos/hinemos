@@ -9,6 +9,7 @@
 package com.clustercontrol.plugin.impl;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -31,9 +32,11 @@ import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.notify.message.util.HinemosMessageManager;
 import com.clustercontrol.plugin.api.AsyncTaskFactory;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.plugin.util.TaskExecutionAfterCommitCallback;
+import com.clustercontrol.util.HinemosTime;
 
 /**
  * 通知処理などの非同期処理の実行制御や永続化制御を管理するプラグインサービス<br/>
@@ -59,7 +62,8 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 	private static final Map<String, Long> _shutdownTimeoutMap = new ConcurrentHashMap<String, Long>();
 	// 各Workerに対応する払い出し処理IDの一覧
 	private static final Map<String, Long> _nextTaskIdMap = new ConcurrentHashMap<String, Long>();
-
+	// 各Workerに対応するログ出力時の経過時間
+	private static Map<String, Long> timeMap = new ConcurrentHashMap<String, Long>();
 	// 排他制御用のLockオブジェクト
 	private static final CountDownLatch _initializedLatch = new CountDownLatch(1);
 	private static final Map<String, Object> _executorLock = new ConcurrentHashMap<String, Object>();
@@ -74,9 +78,14 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 	public static final String NOTIFY_EVENT_TASK_FACTORY = "NotifyEventTaskFactory";
 	public static final String CREATE_JOB_SESSION_TASK_FACTORY = "CreateJobSessionTaskFactory";
 	public static final String NOTIFY_INFRA_TASK_FACTORY = "NotifyInfraTaskFactory";
+	public static final String NOTIFY_REST_TASK_FACTORY = "NotifyRestTaskFactory";
+	public static final String NOTIFY_CLOUD_TASK_FACTORY = "NotifyCloudTaskFactory";
+	public static final String NOTIFY_MESSAGE_TASK_FACTORY = "NotifyMessageTaskFactory";
 	public static final String AGENT_RESTART_TASK_FACTORY = "AgentRestartTaskFactory";
 	public static final String AGENT_UPDATE_TASK_FACTORY = "AgentUpdateTaskFactory";
-	
+	public static final String AGENT_BROADCAST_AWAKE_TASK_FACTORY = "AgentBroadcastAwakeTaskFactory" ;
+	public static final String AGENT_MESSAGE_LOGGER_TASK_FACTORY = "AgentMessageLoggerTaskFactory";
+
 	static {
 		String workerList = HinemosPropertyCommon.worker_list.getStringValue();
 		workers = workerList.split(",");
@@ -113,7 +122,8 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 				if (worker.equals(CREATE_JOB_SESSION_TASK_FACTORY)) {
 					className = HinemosPropertyCommon.worker_$_factoryclass.getStringValue(worker,
 							"com.clustercontrol.jobmanagement.factory." + worker);
-				} else if (worker.equals(AGENT_RESTART_TASK_FACTORY) || worker.equals(AGENT_UPDATE_TASK_FACTORY)) {
+				} else if (worker.equals(AGENT_RESTART_TASK_FACTORY) || worker.equals(AGENT_UPDATE_TASK_FACTORY)
+						|| worker.equals(AGENT_BROADCAST_AWAKE_TASK_FACTORY)) {
 					className = HinemosPropertyCommon.worker_$_factoryclass.getStringValue(worker,
 							"com.clustercontrol.hinemosagent.factory." + worker);
 				} else {
@@ -152,7 +162,8 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 						|| worker.equals(CREATE_JOB_SESSION_TASK_FACTORY)
 						|| worker.equals(NOTIFY_EVENT_TASK_FACTORY)
 						|| worker.equals(AGENT_RESTART_TASK_FACTORY)
-						|| worker.equals(AGENT_UPDATE_TASK_FACTORY)) {
+						|| worker.equals(AGENT_UPDATE_TASK_FACTORY)
+						|| worker.equals(AGENT_BROADCAST_AWAKE_TASK_FACTORY)) {
 					threadSize = HinemosPropertyCommon.worker_$_thread_size.getIntegerValue(worker, Long.valueOf(_threadSizeDefault));
 				} else {
 					threadSize = HinemosPropertyCommon.worker_$_thread_size.getIntegerValue(worker, Long.valueOf(8));
@@ -208,6 +219,9 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 		if (workers != null) {
 			for (String worker : workers) {
 				log.info("stopping asynchronous worker. (worker = " + worker + ")");
+				if (worker.equals(NOTIFY_MESSAGE_TASK_FACTORY)) {
+					HinemosMessageManager.forceSendMessage();
+				}
 				_executorMap.get(worker).shutdown();
 				try {
 					if (! _executorMap.get(worker).awaitTermination(_shutdownTimeoutMap.get(worker), TimeUnit.MILLISECONDS)) {
@@ -265,8 +279,14 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 			long taskId = _nextTaskIdMap.get(worker);
 			_nextTaskIdMap.put(worker, Long.MAX_VALUE - taskId < HinemosManagerMain._instanceCount ? 
 					HinemosManagerMain._instanceId: taskId + HinemosManagerMain._instanceCount);
+			long elapsedTime = 0L;
+			if(timeMap.get(worker) == null){
+				timeMap.put(worker, HinemosTime.currentTimeMillis());
+			}
 			if ((taskId - HinemosManagerMain._instanceId) % 1000 == 0) {
-				log.info("asynchronomous worker statistics (worker = " + worker + ", count = " + taskId + ")");
+				elapsedTime = HinemosTime.currentTimeMillis() - timeMap.get(worker);
+				log.info("asynchronomous worker statistics (worker = " + worker + ", count = " + taskId + ", elapsed time = "  + elapsedTime + "(ms) " + ")");
+				timeMap.replace(worker, HinemosTime.currentTimeMillis());
 			}
 			return taskId;
 		}

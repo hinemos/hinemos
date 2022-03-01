@@ -8,13 +8,14 @@
 
 package com.clustercontrol.snmptrap.composite;
 
+import org.openapitools.client.model.VarBindPatternResponse;
+
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.ProcessMessage;
 import com.clustercontrol.bean.ValidMessage;
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
 import com.clustercontrol.monitor.run.viewer.CommonTableLabelProvider;
 import com.clustercontrol.snmptrap.action.GetVarBindPatternTableDefine;
-import com.clustercontrol.ws.monitor.VarBindPattern;
 
 /**
  * 文字列監視の判定情報一覧のラベルプロバイダークラス<BR>
@@ -22,9 +23,9 @@ import com.clustercontrol.ws.monitor.VarBindPattern;
  * @version 5.0.0
  * @since 5.0.0
  */
-public class VarBindPatternTableLabelProvider extends CommonTableLabelProvider<VarBindPattern> {
+public class VarBindPatternTableLabelProvider extends CommonTableLabelProvider<VarBindPatternResponse> {
 
-	public VarBindPatternTableLabelProvider(ITableItemCompositeDefine<VarBindPattern> define) {
+	public VarBindPatternTableLabelProvider(ITableItemCompositeDefine<VarBindPatternResponse> define) {
 		super(define);
 	}
 
@@ -37,14 +38,14 @@ public class VarBindPatternTableLabelProvider extends CommonTableLabelProvider<V
 	@Override
 	public String getColumnText(Object element, int columnIndex) {
 
-		if (element instanceof VarBindPattern) {
-			VarBindPattern pattern = (VarBindPattern) element;
+		if (element instanceof VarBindPatternResponse) {
+			VarBindPatternResponse pattern = (VarBindPatternResponse) element;
 			if (columnIndex == GetVarBindPatternTableDefine.ORDER_NO) {
 				return String.valueOf(indexOf(pattern) + 1);
 			} else if (columnIndex == GetVarBindPatternTableDefine.PROCESS_TYPE) {
-				return ProcessMessage.typeToString(pattern.isProcessType());
+				return ProcessMessage.typeToString(pattern.getProcessType());
 			} else if (columnIndex == GetVarBindPatternTableDefine.PRIORITY) {
-				return PriorityMessage.typeToString(pattern.getPriority());
+				return PriorityMessage.codeToString(pattern.getPriority().toString());
 			} else if (columnIndex == GetVarBindPatternTableDefine.PATTERN_STRING) {
 				if (pattern.getPattern() != null) {
 					return pattern.getPattern();
@@ -54,7 +55,7 @@ public class VarBindPatternTableLabelProvider extends CommonTableLabelProvider<V
 					return pattern.getDescription();
 				}
 			} else if (columnIndex == GetVarBindPatternTableDefine.VALID_FLG) {
-				return ValidMessage.typeToString(pattern.isValidFlg());
+				return ValidMessage.typeToString(pattern.getValidFlg());
 			}
 		}
 		return "";

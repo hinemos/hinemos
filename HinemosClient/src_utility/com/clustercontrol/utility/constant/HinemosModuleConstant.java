@@ -25,6 +25,8 @@ public class HinemosModuleConstant {
 	public static final String PLATFORM_NOTIFY = "PLT_NTF";
 	/** メールテンプレート*/
 	public static final String PLATFORM_MAIL_TEMPLATE = "PLT_MIL_TMP";
+	/** RESTアクセス */
+	public static final String PLATFORM_REST_ACCESS = com.clustercontrol.bean.HinemosModuleConstant.PLATFORM_REST_ACCESS;
 	/** ログフォーマット*/
 	public static final String PLATFORM_LOG_FORMAT = "HUB_LF";
 	/** 転送設定 */
@@ -50,6 +52,15 @@ public class HinemosModuleConstant {
 	
 	/** Hinemosプロパティ */
 	public static final String PLATFORM_HINEMOS_PROPERTY = "PLT_HIN_PROP";
+	
+	/** フィルタ設定 */
+	public static final String FILTER_SETTING = "FILTER_SETTING";
+	/** 監視履歴[イベント] */
+	public static final String FILTER_SETTING_MONITOR_HISTORY_EVENT = "FILTER_SETTING_MONITOR_HISTORY_EVENT";
+	/** 監視履歴[ステータス] */
+	public static final String FILTER_SETTING_MONITOR_HISTORY_STATUS = "FILTER_SETTING_MONITOR_HISTORY_STATUS";
+	/** ジョブ履歴[一覧] */
+	public static final String FILTER_SETTING_JOB_HISTORY = "FILTER_SETTING_JOB_HISTORY";
 	
 	/** HTTP監視 */
 	public static final String MONITOR_HTTP = "MON_HTP";
@@ -139,6 +150,9 @@ public class HinemosModuleConstant {
 	/** メール */
 	public static final String STRING_PLATFORM_MAIL_TEMPLATE = Messages.getString("platform.mailtemplate");
 
+	/** RESTアクセス */
+	public static final String STRING_PLATFORM_REST_ACCESS = Messages.getString("platform.restaccess");
+
 	/** ログフォーマット */
 	public static final String STRING_PLATFORM_LOG_FORMAT = Messages.getString("platform.logformat");
 
@@ -161,6 +175,15 @@ public class HinemosModuleConstant {
 	/** 通知 */
 	public static final String STRING_PLATFORM_NOTIFY = Messages.getString("platform.notify");
 
+	/** フィルタ設定 */
+	public static final String STRING_FILTER_SETTING = Messages.getString("filtersetting");
+	/** 監視履歴[イベント] */
+	public static final String STRING_FILTER_SETTING_MONITOR_HISTORY_EVENT = Messages.getString("filtersetting.monitor.history.event");
+	/** 監視履歴[ステータス] */
+	public static final String STRING_FILTER_SETTING_MONITOR_HISTORY_STATUS = Messages.getString("filtersetting.monitor.history.status");
+	/** ジョブ履歴[一覧] */
+	public static final String STRING_FILTER_SETTING_JOB_HISTORY = Messages.getString("filtersetting.job.history");
+	
 	/** 監視管理 */
 	public static final String STRING_MONITOR = Messages.getString("monitorsetting");
 	/** Hinemosエージェント監視 */
@@ -193,6 +216,10 @@ public class HinemosModuleConstant {
 	public static final String STRING_MONITOR_WINEVENT = Messages.getString("monitor.winevent");
 	/** カスタムトラップ監視 */
 	public static final String STRING_MONITOR_CUSTOMTRAP = Messages.getString("monitor.customtrap");
+	/** RPAログファイル監視 */
+	public static final String STRING_MONITOR_RPA_LOGFILE = Messages.getString("rpa.monitor.display");
+	/** RPA管理ツール監視 */
+	public static final String STRING_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE = Messages.getString("rpa.service.monitor.display");
 
 	/** HTTP監視（シナリオ） */
 	public static final String STRING_MONITOR_HTTP_SCENARIO = Messages.getString("monitor.http.scenario");
@@ -209,6 +236,8 @@ public class HinemosModuleConstant {
 	public static final String STRING_JOB_SCHEDULE= Messages.getString("job.management.schedule");
 	/** ジョブ管理 */
 	public static final String STRING_JOB_FILECHECK= Messages.getString("job.management.filecheck");
+	/** ジョブ管理 */
+	public static final String STRING_JOB_JOBLINKRCV= Messages.getString("job.management.joblinkrcv");
 	/** ジョブ管理 */
 	public static final String STRING_JOB_MANUAL= Messages.getString("job.management.manual");
 	
@@ -277,6 +306,21 @@ public class HinemosModuleConstant {
 	public static final String JOB_MAP_IMAGE = "JMP_IMAGE";
 	public static final String STRING_JOB_MAP_IMAGE = Messages.getString("jobmap.icon");
 	
+	/** RPA管理 */
+	public static final String STRING_RPA = Messages.getString("rpa");
+	/** RPA シナリオタグ */
+	public static final String RPA_SCENARIO_TAG = "RPA_SCENARIO_TAG";
+	public static final String STRING_RPA_SCENARIO_TAG = Messages.getString("rpa.scenario.tag");
+	/** RPA シナリオ実績作成設定*/
+	public static final String RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING = "RPA_SCENARIO_CREATE";
+	public static final String STRING_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING = Messages.getString("rpa.scenario.operation.result.create.setting");
+	/** RPA 管理ツールアカウント*/
+	public static final String RPA_MANAGEMENT_TOOL_ACCOUNT = "RPA_MANAGEMENT_TOOL_ACCOUNT";
+	public static final String STRING_RPA_MANAGEMENT_TOOL_ACCOUNT = Messages.getString("rpa.management.tool.account");
+	/** RPA 自動化効果計算マスタ*/
+	public static final String RPA_SCENARIO_COEFFICIENT_PATTERN = "MST_RPA_SCENARIO_COEFFICIENT_PATTERN";
+	public static final String STRING_RPA_SCENARIO_COEFFICIENT_PATTERN = Messages.getString("master.rpa.scenario.coefficient.pattern");
+	
 	/** バックアップ */
 	public static final String STRING_BACKUP_IMPORT = Messages.getString("backup.import");
 	public static final String STRING_BACKUP_EXPORT = Messages.getString("backup.export");
@@ -289,11 +333,11 @@ public class HinemosModuleConstant {
 	public static final String STRING_CLOUD_USER = Messages.getString("cloud.user");
 
 	/** 仮想化　サービス 監視*/
-	public static final String CLOUD_MONITOR_SERVICE = "MON_CLOUD_SERVICE_CONDITION";
 	public static final String STRING_CLOUD_MONITOR_SERVICE = Messages.getString("cloud.mon.service");
 	/** 仮想化　課金 監視*/
-	public static final String CLOUD_MONITOR_BILLING = "MON_CLOUD_SERVICE_BILLING";
 	public static final String STRING_CLOUD_MONITOR_BILLING = Messages.getString("cloud.mon.billing");
+	/** 仮想化　ログ 監視*/
+	public static final String STRING_CLOUD_MONITOR_LOG = Messages.getString("cloud.mon.log");
 	
 	/** ログ件数監視*/
 	public static final String STRING_MONITOR_LOGCOUNT = Messages.getString("logcount.monitor");
@@ -313,6 +357,13 @@ public class HinemosModuleConstant {
 	/** 同時実行制御キュー*/
 	public static final String JOB_QUEUE  = "JOB_QUEUE";
 	public static final String STRING_JOB_QUEUE = Messages.getString("jobqueue");
-	
+
+	/** ジョブ連携送信設定*/
+	public static final String JOBLINK_SEND_SETTING  = "JOBLINK_SEND_SETTING";
+	public static final String STRING_JOBLINK_SEND_SETTING = Messages.getString("joblink.send.setting");
+
+	/** メッセージフィルタ */
+	public static final String MSGFILTER_MFPROPERTY = "MSGFILTER_MFPROPERTY";
+	public static final String STRING_MSGFILTER_MFPROPERTY = Messages.getString("msgfilter.mfproperty");
 
 }

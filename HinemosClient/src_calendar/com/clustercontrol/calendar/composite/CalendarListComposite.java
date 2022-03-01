@@ -9,7 +9,6 @@
 package com.clustercontrol.calendar.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,20 +22,20 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.CalendarInfoResponse;
 
 import com.clustercontrol.calendar.action.GetCalendarListTableDefine;
 import com.clustercontrol.calendar.composite.action.CalendarDoubleClickListener;
 import com.clustercontrol.calendar.composite.action.CalendarSelectionChangedListener;
 import com.clustercontrol.calendar.composite.action.VerticalBarSelectionListener;
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.calendar.CalendarInfo;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
 
 /**
  * カレンダ一覧コンポジットクラス<BR>
@@ -156,16 +155,16 @@ public class CalendarListComposite extends Composite {
 	 */
 	@Override
 	public void update() {
-		List<CalendarInfo> list = null;
+		List<CalendarInfoResponse> list = null;
 
 		//カレンダ一覧情報取得
-		Map<String, List<CalendarInfo>> dispDataMap= new ConcurrentHashMap<String, List<CalendarInfo>>();
+		Map<String, List<CalendarInfoResponse>> dispDataMap= new ConcurrentHashMap<String, List<CalendarInfoResponse>>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
-			CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
+			CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
 			try {
-				list = wrapper.getAllCalendarList();
-			} catch (InvalidRole_Exception e) {
+				list = wrapper.getCalendarList(null);
+			} catch (InvalidRole e) {
 				// 権限なし
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
@@ -174,7 +173,7 @@ public class CalendarListComposite extends Composite {
 				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 			}
 			if(list == null){
-				list = new ArrayList<CalendarInfo>();
+				list = new ArrayList<CalendarInfoResponse>();
 			}
 
 			dispDataMap.put(managerName, list);
@@ -186,20 +185,20 @@ public class CalendarListComposite extends Composite {
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<CalendarInfo>> map: dispDataMap.entrySet()) {
-			for (CalendarInfo info : map.getValue()) {
+		for(Map.Entry<String, List<CalendarInfoResponse>> map: dispDataMap.entrySet()) {
+			for (CalendarInfoResponse info : map.getValue()) {
 				ArrayList<Object> obj = new ArrayList<Object>();
 				obj.add(map.getKey());
 				obj.add(info.getCalendarId());
 				obj.add(info.getCalendarName());
-				obj.add(new Date(info.getValidTimeFrom()));
-				obj.add(new Date(info.getValidTimeTo()));
+				obj.add(info.getValidTimeFrom());
+				obj.add(info.getValidTimeTo());
 				obj.add(info.getDescription());
 				obj.add(info.getOwnerRoleId());
 				obj.add(info.getRegUser());
-				obj.add(new Date(info.getRegDate()));
+				obj.add(info.getRegDate());
 				obj.add(info.getUpdateUser());
-				obj.add(new Date(info.getUpdateDate()));
+				obj.add(info.getUpdateDate());
 				obj.add(null);
 				listInput.add(obj);
 			}

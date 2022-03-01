@@ -19,6 +19,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.analytics.bean.MonitorIntegrationConstant;
 import com.clustercontrol.analytics.model.IntegrationCheckInfo;
 import com.clustercontrol.analytics.model.IntegrationConditionInfo;
 import com.clustercontrol.analytics.util.AnalyticsUtil;
@@ -26,6 +27,7 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.collect.model.CollectData;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.QueryExecutor;
 import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -45,7 +47,6 @@ import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.bean.TruthConstant;
 import com.clustercontrol.monitor.run.factory.RunMonitorTruthValueType;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
-import com.clustercontrol.platform.QueryExecutor;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -97,6 +98,8 @@ public class RunMonitorIntegration extends RunMonitorTruthValueType {
 	 */
 	@Override
 	public boolean collect(String facilityId) throws InvalidSetting, HinemosUnknown, HinemosDbTimeout {
+		m_log.debug("collect(" + facilityId + ")");
+
 		boolean rtn = true;
 		m_value = false;
 
@@ -113,14 +116,16 @@ public class RunMonitorIntegration extends RunMonitorTruthValueType {
 		// 判定処理
 		// 処理結果
 		boolean tmpValue = true;
-		// 収集間隔(監視間隔×2)
-		long analysysRange =  m_monitor.getRunInterval().longValue() * 2 * 1000;
 		// タイムアウト
 		long timeout = m_integration.getTimeout().longValue() * 60 * 1000;
 		// 収集日時(From)
-		long startDate = m_nodeDate - analysysRange;
+		long startDate = m_nodeDate - gatAnalysysRange() * 1000;
 		// 収集日時(To)
 		long endDate = m_nodeDate;
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("timeout: " + timeout + ", startDate: " + startDate + "(" + sdf.format(new Date(startDate)) + "), endDate: " + endDate + "(" + sdf.format(new Date(endDate)) + ")");
+		}
+
 		// 「順序を考慮しない場合」の判定に使用
 		List<Long> dateList = new ArrayList<>();
 		//
@@ -210,9 +215,9 @@ public class RunMonitorIntegration extends RunMonitorTruthValueType {
 								+ ", nodeDate=" + sdf.format(new Date(m_nodeDate)));
 						for (int j = 0; j < stringQueryResult.getDataList().size(); j++) {
 							m_log.debug("collect() get collect data : "
-									+ " list_order=" + i
-									+ " time=" + sdf.format(new Date(stringQueryResult.getDataList().get(i).getTime())) 
-									+ ", value=" + stringQueryResult.getDataList().get(i).getData());
+									+ " list_order=" + j
+									+ " time=" + sdf.format(new Date(stringQueryResult.getDataList().get(j).getTime())) 
+									+ ", value=" + stringQueryResult.getDataList().get(j).getData());
 						}
 					}
 					tmpDataValue = stringQueryResult.getDataList().get(0).getData();
@@ -403,11 +408,13 @@ public class RunMonitorIntegration extends RunMonitorTruthValueType {
 				|| m_monitor.getIntegrationCheckInfo().getConditionList() == null) {
 			return "";
 		}
-		Integer analysysRange = m_monitor.getRunInterval() * 2 / 60;
+		// 収集期間（分）
+		double analysysRange = gatAnalysysRange() / 60.0;
+
 		StringBuilder sb = new StringBuilder();
 		sb.append(MessageConstant.MESSAGE_MONITOR_ORGMSG_INTEGRATION.getMessage(
 				new String[]{
-				analysysRange.toString(),
+				String.format("%.1f", analysysRange),
 				m_integration.getTimeout().toString(),
 				m_monitor.getFacilityId(),
 				m_integration.getNotOrder().toString()}));
@@ -421,6 +428,11 @@ public class RunMonitorIntegration extends RunMonitorTruthValueType {
 				nodeName = condition.getTargetFacilityId();
 			}
 			String judgment = condition.getComparisonMethod() + " " + condition.getComparisonValue();
+			if (condition.getComparisonValue() != null && !condition.getComparisonValue().isEmpty()) {
+				judgment = condition.getComparisonMethod() + " " + condition.getComparisonValue();
+			} else {
+				judgment = condition.getComparisonMethod() + " " + MonitorIntegrationConstant.NUMBER_NAN;
+			}
 			String collectTime = "";
 			String collectValue = MessageConstant.MESSAGE_COULD_NOT_GET_VALUE_ANALYTICS.getMessage();
 			if (m_resultDataList.size() > i) {
@@ -569,7 +581,7 @@ public class RunMonitorIntegration extends RunMonitorTruthValueType {
 								throw new InvalidSetting(MessageConstant.MESSAGE_HUB_SEARCH_KEYWORD_INVALID.getMessage());
 							}
 							conditionValueBuffer
-								.append(String.format("EXISTS(SELECT t FROM d.tagList t WHERE t.value <> '%s')", token.word.substring(1)));
+								.append(String.format("NOT EXISTS(SELECT t FROM d.tagList t WHERE t.value = '%s')", token.word));
 						} else {
 							conditionValueBuffer
 								.append(String.format("EXISTS(SELECT t FROM d.tagList t WHERE t.value = '%s')", token.word));
@@ -673,5 +685,23 @@ public class RunMonitorIntegration extends RunMonitorTruthValueType {
 			
 			return result;
 		}
+	}
+
+	/**
+	 * 収集期間（秒）を取得する
+	 * @return
+	 */
+	private long gatAnalysysRange() {
+		// タイムアウト（分→秒）
+		long timeout = m_integration.getTimeout().longValue() * 60;
+
+		// 監視間隔（秒）
+		long interval = m_monitor.getRunInterval().longValue();
+
+		// 収集期間(タイムアウト + (監視間隔 - タイムアウト % 監視間隔))
+		long analysysRange = timeout + (interval - timeout % interval);
+
+		m_log.trace("gatAnalysysRange(): timeout=" + timeout + ", interval=" + interval + ", analysysRange=" + analysysRange);
+		return analysysRange;
 	}
 }

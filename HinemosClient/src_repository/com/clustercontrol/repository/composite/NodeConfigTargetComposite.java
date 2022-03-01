@@ -18,12 +18,13 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse;
+import org.openapitools.client.model.NodeConfigSettingItemInfoRequest.SettingItemIdEnum;
+import org.openapitools.client.model.NodeConfigSettingItemInfoResponse;
 
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.repository.bean.NodeConfigSettingItem;
-import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
-import com.clustercontrol.ws.repository.NodeConfigSettingItemInfo;
 
 /**
  * 構成情報収集条件コンポジットクラス<BR>
@@ -224,7 +225,7 @@ public class NodeConfigTargetComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.calendar.composite.CalendarIdListComposite#setText(String)
 	 */
-	public void setInputData(NodeConfigSettingInfo info) {
+	public void setInputData(NodeConfigSettingInfoResponse info) {
 
 		m_checkTargetConfigHostname.setSelection(false);
 		m_checkTargetConfigOs.setSelection(false);
@@ -239,37 +240,37 @@ public class NodeConfigTargetComposite extends Composite {
 
 		if(info != null && info.getNodeConfigSettingItemList() != null){
 			
-			List<NodeConfigSettingItemInfo> items = info.getNodeConfigSettingItemList();
+			List<NodeConfigSettingItemInfoResponse> items = info.getNodeConfigSettingItemList();
 
-			for (NodeConfigSettingItemInfo it : items){
-				if (it.getSettingItemId().equals(NodeConfigSettingItem.HOSTNAME.name())) {
+			for (NodeConfigSettingItemInfoResponse it : items){
+				if (it.getSettingItemId() == org.openapitools.client.model.NodeConfigSettingItemInfoResponse.SettingItemIdEnum.HOSTNAME) {
 					this.m_checkTargetConfigHostname.setSelection(true);
 				
-				} else if (it.getSettingItemId().equals(NodeConfigSettingItem.OS.name())) {
+				} else if (it.getSettingItemId() == org.openapitools.client.model.NodeConfigSettingItemInfoResponse.SettingItemIdEnum.OS) {
 					this.m_checkTargetConfigOs.setSelection(true);
 
-				} else if (it.getSettingItemId().equals(NodeConfigSettingItem.HW_CPU.name())) {
+				} else if (it.getSettingItemId() == org.openapitools.client.model.NodeConfigSettingItemInfoResponse.SettingItemIdEnum.HW_CPU) {
 					this.m_checkTargetConfigHwCpu.setSelection(true);
 
-				} else if (it.getSettingItemId().equals(NodeConfigSettingItem.HW_MEMORY.name())) {
+				} else if (it.getSettingItemId() == org.openapitools.client.model.NodeConfigSettingItemInfoResponse.SettingItemIdEnum.HW_MEMORY) {
 					this.m_checkTargetConfigHwMemory.setSelection(true);
 				
-				} else if (it.getSettingItemId().equals(NodeConfigSettingItem.HW_NIC.name())) {
+				} else if (it.getSettingItemId() == org.openapitools.client.model.NodeConfigSettingItemInfoResponse.SettingItemIdEnum.HW_NIC) {
 					this.m_checkTargetConfigHwNic.setSelection(true);
 				
-				} else if (it.getSettingItemId().equals(NodeConfigSettingItem.HW_DISK.name())) {
+				} else if (it.getSettingItemId() == org.openapitools.client.model.NodeConfigSettingItemInfoResponse.SettingItemIdEnum.HW_DISK) {
 					this.m_checkTargetConfigHwDisk.setSelection(true);
 				
-				} else if (it.getSettingItemId().equals(NodeConfigSettingItem.HW_FILESYSTEM.name())) {
+				} else if (it.getSettingItemId() == org.openapitools.client.model.NodeConfigSettingItemInfoResponse.SettingItemIdEnum.HW_FILESYSTEM) {
 					this.m_checkTargetConfigHwFilesystem.setSelection(true);
 				
-				} else if (it.getSettingItemId().equals(NodeConfigSettingItem.NETSTAT.name())) {
+				} else if (it.getSettingItemId() == org.openapitools.client.model.NodeConfigSettingItemInfoResponse.SettingItemIdEnum.NETSTAT) {
 					this.m_checkTargetConfigNetstat.setSelection(true);
 				
-				} else if (it.getSettingItemId().equals(NodeConfigSettingItem.PROCESS.name())) {
+				} else if (it.getSettingItemId() == org.openapitools.client.model.NodeConfigSettingItemInfoResponse.SettingItemIdEnum.PROCESS) {
 					this.m_checkTargetConfigProcess.setSelection(true);
 				
-				} else if (it.getSettingItemId().equals(NodeConfigSettingItem.PACKAGE.name())) {
+				} else if (it.getSettingItemId() == org.openapitools.client.model.NodeConfigSettingItemInfoResponse.SettingItemIdEnum.PACKAGE) {
 					this.m_checkTargetConfigPackage.setSelection(true);
 					
 				}
@@ -316,38 +317,38 @@ public class NodeConfigTargetComposite extends Composite {
 	 * 構成情報取得対象のリストを取得します。
 	 * @return 
 	 */
-	public List<Object> getTarget() {
-		List<Object> targetList = new ArrayList<Object>();
+	public List<SettingItemIdEnum> getTarget() {
+		List<SettingItemIdEnum> targetList = new ArrayList<>();
 
 		if (this.m_checkTargetConfigHostname.getSelection()) {
-			targetList.add(NodeConfigSettingItem.HOSTNAME);
+			targetList.add(SettingItemIdEnum.HOSTNAME);
 		}
 		if (this.m_checkTargetConfigOs.getSelection()) {
-			targetList.add(NodeConfigSettingItem.OS);
+			targetList.add(SettingItemIdEnum.OS);
 		}
 		if (this.m_checkTargetConfigHwCpu.getSelection()) {
-			targetList.add(NodeConfigSettingItem.HW_CPU);
+			targetList.add(SettingItemIdEnum.HW_CPU);
 		}
 		if (this.m_checkTargetConfigHwMemory.getSelection()) {
-			targetList.add(NodeConfigSettingItem.HW_MEMORY);
+			targetList.add(SettingItemIdEnum.HW_MEMORY);
 		}
 		if (this.m_checkTargetConfigHwNic.getSelection()) {
-			targetList.add(NodeConfigSettingItem.HW_NIC);
+			targetList.add(SettingItemIdEnum.HW_NIC);
 		}
 		if (this.m_checkTargetConfigHwDisk.getSelection()) {
-			targetList.add(NodeConfigSettingItem.HW_DISK);
+			targetList.add(SettingItemIdEnum.HW_DISK);
 		}
 		if (this.m_checkTargetConfigHwFilesystem.getSelection()) {
-			targetList.add(NodeConfigSettingItem.HW_FILESYSTEM);
+			targetList.add(SettingItemIdEnum.HW_FILESYSTEM);
 		}
 		if (this.m_checkTargetConfigNetstat.getSelection()) {
-			targetList.add(NodeConfigSettingItem.NETSTAT);
+			targetList.add(SettingItemIdEnum.NETSTAT);
 		}
 		if (this.m_checkTargetConfigPackage.getSelection()) {
-			targetList.add(NodeConfigSettingItem.PACKAGE);
+			targetList.add(SettingItemIdEnum.PACKAGE);
 		}
 		if (this.m_checkTargetConfigProcess.getSelection()) {
-			targetList.add(NodeConfigSettingItem.PROCESS);
+			targetList.add(SettingItemIdEnum.PROCESS);
 		}
 		return targetList;
 	}

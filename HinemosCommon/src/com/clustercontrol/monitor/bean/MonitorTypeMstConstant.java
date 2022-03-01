@@ -133,7 +133,15 @@ public class MonitorTypeMstConstant {
 		list = new ArrayList<Object>();
 		list.add(HinemosModuleConstant.MONITOR_PCAP_BIN);
 		list.add(MonitorTypeConstant.TYPE_BINARY);
-		monitorTypeMst.add(list);	
+		monitorTypeMst.add(list);
+		list = new ArrayList<Object>();
+		list.add(HinemosModuleConstant.MONITOR_RPA_LOGFILE);
+		list.add(MonitorTypeConstant.TYPE_STRING);
+		monitorTypeMst.add(list);
+		list = new ArrayList<Object>();
+		list.add(HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE);
+		list.add(MonitorTypeConstant.TYPE_TRUTH);
+		monitorTypeMst.add(list);
 	}
 
 	public static ArrayList<ArrayList<Object>> getListAll() {

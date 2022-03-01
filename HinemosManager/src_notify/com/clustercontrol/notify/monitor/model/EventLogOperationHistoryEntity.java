@@ -10,10 +10,11 @@ package com.clustercontrol.notify.monitor.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
 /**
@@ -44,6 +45,7 @@ public class EventLogOperationHistoryEntity implements Serializable {
 		this.setId(pk);
 	}
 
+	@XmlTransient
 	@EmbeddedId
 	public EventLogOperationHistoryPK getId() {
 		return this.id;

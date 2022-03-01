@@ -25,14 +25,14 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.MailTemplateInfoResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
+import com.clustercontrol.common.util.CommonRestClientWrapper;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.notify.mail.dialog.MailTemplateCreateDialog;
-import com.clustercontrol.notify.mail.util.MailTemplateEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.mailtemplate.InvalidRole_Exception;
-import com.clustercontrol.ws.mailtemplate.MailTemplateInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 
 
@@ -83,10 +83,9 @@ public class MailTemplateIdListComposite extends Composite {
 	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
 	 * @see #initialize(Composite, boolean)
 	 */
-	public MailTemplateIdListComposite(Composite parent, int style, String managerName, boolean labelFlg) {
+	public MailTemplateIdListComposite(Composite parent, int style, boolean labelFlg) {
 		super(parent, style);
 		m_text = Messages.getString("mail.template.id");
-		this.managerName = managerName;
 
 		this.initialize(parent, labelFlg);
 	}
@@ -211,7 +210,7 @@ public class MailTemplateIdListComposite extends Composite {
 	 *
 	 * @param ownerRoleId
 	 */
-	public void update(String ownerRoleId) {
+	public void setOwnerRoleId(String ownerRoleId) {
 		// 初期化
 		this.m_comboMailTemplateId.removeAll();
 
@@ -222,13 +221,13 @@ public class MailTemplateIdListComposite extends Composite {
 		List<String> list = null;
 
 		try {
-			MailTemplateEndpointWrapper wrapper = MailTemplateEndpointWrapper.getWrapper(this.managerName);
-			List<MailTemplateInfo> listTmp = wrapper.getMailTemplateListByOwnerRole(ownerRoleId);
+			CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(this.managerName);
+			List<MailTemplateInfoResponse> listTmp = wrapper.getMailTemplateList(ownerRoleId);
 			list = new ArrayList<String>();
-			for (MailTemplateInfo info : listTmp) {
+			for (MailTemplateInfoResponse info : listTmp) {
 				list.add(info.getMailTemplateId());
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 		} catch (Exception e) {

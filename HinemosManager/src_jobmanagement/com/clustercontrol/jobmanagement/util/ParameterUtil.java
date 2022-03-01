@@ -31,12 +31,19 @@ import com.clustercontrol.commons.util.ObjectValidator;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.JobInfoNotFound;
+import com.clustercontrol.jobmanagement.bean.FileCheckConstant;
+import com.clustercontrol.jobmanagement.bean.JobParamTypeConstant;
 import com.clustercontrol.jobmanagement.bean.JobTriggerInfo;
 import com.clustercontrol.jobmanagement.bean.JobTriggerTypeConstant;
+import com.clustercontrol.jobmanagement.bean.RunInstructionFileCheckInfo;
+import com.clustercontrol.jobmanagement.bean.RunResultFileCheckInfo;
 import com.clustercontrol.jobmanagement.bean.SystemParameterConstant;
+import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobParamInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
+import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyUtil;
@@ -44,10 +51,13 @@ import com.clustercontrol.repository.factory.FacilitySelector;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.repository.util.RepositoryUtil;
+import com.clustercontrol.util.DateUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.StringBinder;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * ジョブ変数ユーティリティクラス<BR>
@@ -58,99 +68,292 @@ import com.clustercontrol.util.StringBinder;
 public class ParameterUtil {
 	/** ログ出力のインスタンス */
 	private static Log m_log = LogFactory.getLog( ParameterUtil.class );
-	
+
+	public static final String REGEX_RETURN = "#\\[RETURN:([^:]*):([^:]*)\\]";
+	public static final String REGEX_END_NUM = "#\\[END_NUM:([^:]*)\\]";
+
 	/**
-	 * 監視管理の情報をログ出力情報から取得します。
+	 * 監視結果情報、ジョブ契機（ファイルチェック情報）を取得します。
 	 * ジョブセッション作成時に、ジョブ変数に対応する値を取得するために使用します。
 	 *
-	 * @param info ログ出力情報
+	 * @param outputBasicInfo 監視結果情報
+	 * @param jobTriggerInfo ジョブ契機（ファイルチェック）情報
 	 * @return 値
 	 */
-	public static Map<String, String> createParamInfo(OutputBasicInfo info) {
+	public static Map<String, String> createParamInfo(OutputBasicInfo outputBasicInfo, JobTriggerInfo jobTriggerInfo) {
 		// 戻り値
 		Map<String, String> params = new HashMap<String, String>();
 		// 無効なシステムジョブ変数
 		String[] disableStrAry = null;
 		
-		// ログ出力情報が存在しない場合、処理終了
-		if(info == null) {
-			return params;
-		}
-		
-		Locale locale = NotifyUtil.getNotifyLocale();
-		
-		// ファシリティID
-		if (!ObjectValidator.isEmptyString(info.getFacilityId()) && !disableParam(SystemParameterConstant.FACILITY_ID, disableStrAry)) {
-			params.put(SystemParameterConstant.FACILITY_ID, info.getFacilityId());
-		}
-		
-		// プラグインID
-		if (!ObjectValidator.isEmptyString(info.getPluginId()) && !disableParam(SystemParameterConstant.PLUGIN_ID, disableStrAry)) {
-			params.put(SystemParameterConstant.PLUGIN_ID, info.getPluginId());
-		}
-		
-		// 監視項目ID
-		if (!ObjectValidator.isEmptyString(info.getMonitorId()) && !disableParam(SystemParameterConstant.MONITOR_ID, disableStrAry)) {
-			params.put(SystemParameterConstant.MONITOR_ID, info.getMonitorId());
-		}
-		
-		// 監視詳細
-		if (!ObjectValidator.isEmptyString(info.getSubKey()) && !disableParam(SystemParameterConstant.MONITOR_DETAIL_ID, disableStrAry)) {
-			params.put(SystemParameterConstant.MONITOR_DETAIL_ID, info.getSubKey());
-		}
-		
-		// アプリケーション
-		if (!ObjectValidator.isEmptyString(info.getApplication()) && !disableParam(SystemParameterConstant.APPLICATION, disableStrAry)) {
-			params.put(SystemParameterConstant.APPLICATION, info.getApplication());
-		}
-		
-		// 重要度
-		if (!disableParam(SystemParameterConstant.PRIORITY, disableStrAry)) { 
-			params.put(SystemParameterConstant.PRIORITY, String.valueOf(info.getPriority()));
+		/**
+		 * 監視管理の情報をログ出力情報から取得します。
+		 * ジョブセッション作成時に、ジョブ変数に対応する値を取得するために使用します。
+		 */
+		// ログ出力情報が存在する場合
+		if(outputBasicInfo != null) {
+			Locale locale = NotifyUtil.getNotifyLocale();
+			
+			// ファシリティID
+			if (!ObjectValidator.isEmptyString(outputBasicInfo.getFacilityId()) && !disableParam(SystemParameterConstant.FACILITY_ID, disableStrAry)) {
+				params.put(SystemParameterConstant.FACILITY_ID, outputBasicInfo.getFacilityId());
+			}
+			
+			// プラグインID
+			if (!ObjectValidator.isEmptyString(outputBasicInfo.getPluginId()) && !disableParam(SystemParameterConstant.PLUGIN_ID, disableStrAry)) {
+				params.put(SystemParameterConstant.PLUGIN_ID, outputBasicInfo.getPluginId());
+			}
+			
+			// 監視項目ID
+			if (!ObjectValidator.isEmptyString(outputBasicInfo.getMonitorId()) && !disableParam(SystemParameterConstant.MONITOR_ID, disableStrAry)) {
+				params.put(SystemParameterConstant.MONITOR_ID, outputBasicInfo.getMonitorId());
+			}
+			
+			// 監視詳細
+			if (!ObjectValidator.isEmptyString(outputBasicInfo.getSubKey()) && !disableParam(SystemParameterConstant.MONITOR_DETAIL_ID, disableStrAry)) {
+				params.put(SystemParameterConstant.MONITOR_DETAIL_ID, outputBasicInfo.getSubKey());
+			}
+			
+			// アプリケーション
+			if (!ObjectValidator.isEmptyString(outputBasicInfo.getApplication()) && !disableParam(SystemParameterConstant.APPLICATION, disableStrAry)) {
+				params.put(SystemParameterConstant.APPLICATION, outputBasicInfo.getApplication());
+			}
+			
+			// 重要度
+			if (!disableParam(SystemParameterConstant.PRIORITY, disableStrAry)) { 
+				params.put(SystemParameterConstant.PRIORITY, String.valueOf(outputBasicInfo.getPriority()));
+			}
+	
+			// メッセージ
+			if (!ObjectValidator.isEmptyString(outputBasicInfo.getMessage()) && !disableParam(SystemParameterConstant.MESSAGE, disableStrAry)) {
+				params.put(SystemParameterConstant.MESSAGE, HinemosMessage.replace(outputBasicInfo.getMessage(), locale));
+			}
+			
+			// オリジナルメッセージ
+			if (!ObjectValidator.isEmptyString(outputBasicInfo.getMessageOrg()) && !disableParam(SystemParameterConstant.ORG_MESSAGE, disableStrAry)) {
+				params.put(SystemParameterConstant.ORG_MESSAGE, HinemosMessage.replace(outputBasicInfo.getMessageOrg(), locale));
+			}
 		}
 
-		// メッセージ
-		if (!ObjectValidator.isEmptyString(info.getMessage()) && !disableParam(SystemParameterConstant.MESSAGE, disableStrAry)) {
-			params.put(SystemParameterConstant.MESSAGE, HinemosMessage.replace(info.getMessage(), locale));
-		}
-		
-		// オリジナルメッセージ
-		if (!ObjectValidator.isEmptyString(info.getMessageOrg()) && !disableParam(SystemParameterConstant.ORG_MESSAGE, disableStrAry)) {
-			params.put(SystemParameterConstant.ORG_MESSAGE, HinemosMessage.replace(info.getMessageOrg(), locale));
+		/**
+		 * ジョブ契機（ファイルチェック）情報を設定します。
+		 * ジョブセッション作成時に、ジョブ変数に対応する値を取得するために使用します。
+		 */
+		// ジョブ契機（ファイルチェック）情報が存在する場合
+		if(jobTriggerInfo != null) {
+			// ファイル名
+			if (!ObjectValidator.isEmptyString(jobTriggerInfo.getFilename()) && !disableParam(SystemParameterConstant.FILENAME, disableStrAry)) {
+				params.put(SystemParameterConstant.FILENAME, jobTriggerInfo.getFilename());
+			}
+			
+			// ディレクトリ
+			if (!ObjectValidator.isEmptyString(jobTriggerInfo.getDirectory()) && !disableParam(SystemParameterConstant.DIRECTORY, disableStrAry)) {
+				params.put(SystemParameterConstant.DIRECTORY, jobTriggerInfo.getDirectory());
+			}
 		}
 
 		return params;
 	}
 
 	/**
-	 * ジョブ契機（ファイルチェック）情報を設定します。
-	 * ジョブセッション作成時に、ジョブ変数に対応する値を取得するために使用します。
-	 *
-	 * @param info ログ出力情報
-	 * @return 値
+	 * ファイルチェックジョブの実行指示情報からシステムジョブ変数に格納する情報を取得します。<BR>
+	 * 
+	 * @param info
+	 * @param jobId
+	 * @return
 	 */
-	public static Map<String, String> createParamInfo(JobTriggerInfo info) {
+	public static Map<String, String> createParamInfo(RunInstructionFileCheckInfo info, String jobId) {
 		// 戻り値
-		Map<String, String> params = new HashMap<String, String>();
+		Map<String, String> params = new HashMap<>();
 		// 無効なシステムジョブ変数
 		String[] disableStrAry = null;
 
-		// ジョブ契機（ファイルチェック）情報が存在しない場合、処理終了
-		if(info == null) {
+		// 実行指示情報が存在しない場合、処理終了
+		if (info == null) {
+			// 通常到達しない
+			m_log.error("createParamInfo() : RunInstructionFileCheckInfo is null." + " jobId=" + jobId);
 			return params;
 		}
-		
-		// ファイル名
-		if (!ObjectValidator.isEmptyString(info.getFilename()) && !disableParam(SystemParameterConstant.FILENAME, disableStrAry)) {
-			params.put(SystemParameterConstant.FILENAME, info.getFilename());
-		}
-		
+
 		// ディレクトリ
-		if (!ObjectValidator.isEmptyString(info.getDirectory()) && !disableParam(SystemParameterConstant.DIRECTORY, disableStrAry)) {
-			params.put(SystemParameterConstant.DIRECTORY, info.getDirectory());
+		if (!ObjectValidator.isEmptyString(info.getDirectory())
+				&& !disableParam(SystemParameterConstant.FDIRECTORY, disableStrAry)) {
+			params.put(createParamIdFrom(SystemParameterConstant.FDIRECTORY, jobId), info.getDirectory());
+		}
+		// ファイルチェックが開始しているか（ジョブ開始時点では"false"）
+		if (!disableParam(SystemParameterConstant.FCISSTART, disableStrAry)) {
+			params.put(createParamIdFrom(SystemParameterConstant.FCISSTART, jobId), "false");
 		}
 
 		return params;
+	}
+
+	/**
+	 * ファイルチェックジョブの開始時点でシステムジョブ変数に格納する情報を取得します。<BR>
+	 * 
+	 * @param jobId
+	 * @return
+	 */
+	public static Map<String, String> createParamInfoFcStart(String jobId) {
+		// 戻り値
+		Map<String, String> params = new HashMap<>();
+		// 無効なシステムジョブ変数
+		String[] disableStrAry = null;
+
+		// ファイルチェックが開始しているか（エージェントから開始の応答があったら"true"）
+		if (!disableParam(SystemParameterConstant.FCISSTART, disableStrAry)) {
+			params.put(createParamIdFrom(SystemParameterConstant.FCISSTART, jobId), "true");
+		}
+
+		return params;
+	}
+
+	/**
+	 * ファイルチェックジョブの実行結果情報からシステムジョブ変数に格納する情報を取得します。<BR>
+	 * [全てのノード]で条件を満たした場合を考慮し、facilityIdを必要とします。
+	 * 
+	 * @param info
+	 * @param jobId
+	 * @return
+	 */
+	public static Map<String, String> createParamInfo(RunResultFileCheckInfo info, String jobId, String facilityId) {
+		// 戻り値
+		Map<String, String> params = new HashMap<>();
+		// 無効なシステムジョブ変数
+		String[] disableStrAry = null;
+
+		// 実行結果情報が存在しない場合、処理終了
+		if (info == null) {
+			// タイムアウトの場合はnullになる
+			m_log.info("createParamInfo() : RunResultFileCheckInfo is null." + " jobId=" + jobId);
+			return params;
+		}
+
+		// ファイル名
+		if (!ObjectValidator.isEmptyString(info.getFileName())
+				&& !disableParam(SystemParameterConstant.FFILENAME, disableStrAry)) {
+			params.put(createParamIdFrom(SystemParameterConstant.FFILENAME, jobId, facilityId), info.getFileName());
+		}
+		// チェック種別
+		if (!ObjectValidator.isEmptyString(info.getPassedEventType())
+				&& !disableParam(SystemParameterConstant.FCHECKCOND, disableStrAry)) {
+			params.put(createParamIdFrom(SystemParameterConstant.FCHECKCOND, jobId, facilityId),
+					info.getPassedEventType().toString());
+		}
+		// 条件に一致したファイルのファイル更新日時
+		if (info.getPassedEventType() == FileCheckConstant.RESULT_MODIFY_TIMESTAMP) {
+			if (!ObjectValidator.isEmptyString(info.getFileTimestamp())
+					&& !disableParam(SystemParameterConstant.FTIMESTAMP, disableStrAry)) {
+				try {
+					String formatted = DateUtil.millisToString(info.getFileTimestamp(),
+							HinemosPropertyCommon.job_filecheck_replace_date_format.getStringValue());
+					params.put(createParamIdFrom(SystemParameterConstant.FTIMESTAMP, jobId, facilityId), formatted);
+				} catch (InvalidSetting e) {
+					// フォーマットによる変換に失敗した場合はそのまま格納する
+					params.put(createParamIdFrom(SystemParameterConstant.FTIMESTAMP, jobId, facilityId),
+							info.getFileTimestamp().toString());
+				}
+			}
+		}
+		// 条件に一致したファイルのファイルサイズ
+		if (info.getPassedEventType() == FileCheckConstant.RESULT_MODIFY_FILESIZE) {
+			if (!ObjectValidator.isEmptyString(info.getFileSize())
+					&& !disableParam(SystemParameterConstant.FILESIZE, disableStrAry)) {
+				params.put(createParamIdFrom(SystemParameterConstant.FILESIZE, jobId, facilityId),
+						info.getFileSize().toString());
+			}
+		}
+
+		return params;
+	}
+
+	/**
+	 * 重複を考慮してシステムジョブ変数を登録します。
+	 * 
+	 * @param sessionJob
+	 * @param paramMap
+	 * @param update true:既に存在した場合値を更新する, false:更新しない
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 */
+	public static void registerSystemJobParamInfo(JobSessionJobEntity sessionJob, Map<String, String> paramMap,
+			boolean update) throws JobInfoNotFound, InvalidRole {
+		if (paramMap == null || paramMap.isEmpty()) {
+			return;
+		}
+		// ジョブセッションのジョブIDから親のジョブセッションジョブを取得
+		JobSessionJobEntity rootSessionJob = QueryUtil.getJobSessionJobPK(sessionJob.getId().getSessionId(),
+				sessionJob.getId().getJobunitId(), sessionJob.getJobSessionEntity().getJobId());
+		// システムジョブ変数の紐づけ先はセッションの親のジョブになる
+		JobInfoEntity job = rootSessionJob.getJobInfoEntity();
+
+		for (Map.Entry<String, String> entry : paramMap.entrySet()) {
+			registerParamInfo(job, entry.getKey(), entry.getValue(), null, JobParamTypeConstant.TYPE_SYSTEM_JOB, update);
+		}
+	}
+
+	/**
+	 * 重複を考慮してジョブ変数を登録します。
+	 * 
+	 * @param job
+	 * @param paramId
+	 * @param value
+	 * @param description
+	 * @param paramType
+	 * @param update true:既に存在した場合値を更新する, false:更新しない
+	 */
+	public static void registerParamInfo(JobInfoEntity job, String paramId, String value, String description, int paramType,
+			boolean update) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
+			JobParamInfoEntity jobParamInfoEntity = new JobParamInfoEntity(job, paramId);
+
+			// 重複チェック
+			JobParamInfoEntity existingEntity = null;
+			for (JobParamInfoEntity jobParamInfo : job.getJobParamInfoEntities()) {
+				if (jobParamInfo.getId().equals(jobParamInfoEntity.getId())) {
+					existingEntity = jobParamInfo;
+					break;
+				}
+			}
+			if (existingEntity == null) {
+				// JPAのキャッシュと乖離がある可能性があるため、最新のDBの状態でも重複がないか確認する
+				try {
+					jtm.checkEntityExists(JobParamInfoEntity.class, jobParamInfoEntity.getId());
+				} catch (EntityExistsException e) {
+					m_log.debug("registerParamInfo() : " + e.getClass().getSimpleName() + ", "
+							+ jobParamInfoEntity.getId().toString());
+					// checkEntityExistsでリフレッシュしているため通常のfindで取得
+					existingEntity = em.find(JobParamInfoEntity.class, jobParamInfoEntity.getId(),
+							ObjectPrivilegeMode.NONE);
+					if (existingEntity == null) {
+						// リフレッシュしてから取得しているため通常起こらない想定
+						m_log.error("registerParamInfo() : JobParamInfoEntity is null.");
+						return;
+					}
+				}
+			}
+			if (existingEntity != null) {
+				// 既にエンティティが存在する場合
+				m_log.debug("registerParamInfo() : exists. " + jobParamInfoEntity.getId().toString());
+				if (update) {
+					// 更新が必要な場合は値を更新する
+					existingEntity.setValue(value);
+					existingEntity.setDescription(description);
+					m_log.debug("registerParamInfo() : update. value=" + existingEntity.getValue());
+				}
+				return;
+			}
+			// 新規登録
+			jobParamInfoEntity.setValue(value);
+			jobParamInfoEntity.setDescription(description);
+			jobParamInfoEntity.setParamType(paramType);
+			em.persist(jobParamInfoEntity);
+			jobParamInfoEntity.relateToJobInfoEntity(job);
+			m_log.debug("registerParamInfo() : registered. " + jobParamInfoEntity.getId().toString() + ", value="
+					+ jobParamInfoEntity.getValue());
+		}
 	}
 
 	/**
@@ -159,7 +362,7 @@ public class ParameterUtil {
 	 * @param sessionId ジョブセッションID
 	 * @return 置換文字列用Map
 	 */
-	public static Map<String, String> getJobSessionParamsMap(String sessionId) throws JobInfoNotFound {
+	private static Map<String, String> getJobSessionParamsMap(String sessionId) throws JobInfoNotFound {
 		Map<String, String> jobSessionParams = new HashMap<String, String>();
 		
 		Collection<JobParamInfoEntity> collection = null;
@@ -205,13 +408,13 @@ public class ParameterUtil {
 		DateFormat df = DateFormat.getDateTimeInstance();
 		df.setTimeZone(HinemosTime.getTimeZone());
 		
-		if (isContainParamOrParamOrg(paramIdList, SystemParameterConstant.SESSION_ID)) {
+		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.SESSION_ID)) {
 			params.put(SystemParameterConstant.SESSION_ID, sessionId);
 		}
 		
-		if (isContainParamOrParamOrg(paramIdList, SystemParameterConstant.START_DATE) ||
-				isContainParamOrParamOrg(paramIdList, SystemParameterConstant.TRIGGER_TYPE) ||
-				isContainParamOrParamOrg(paramIdList, SystemParameterConstant.TRIGGER_INFO)) {
+		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.START_DATE) ||
+				StringBinder.containsParam(paramIdList, SystemParameterConstant.TRIGGER_TYPE) ||
+				StringBinder.containsParam(paramIdList, SystemParameterConstant.TRIGGER_INFO)) {
 			//DBへのアクセス回数を極力少なくするため、パラメータがある場合のみ、ジョブセッションを取得する
 			try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 				HinemosEntityManager em = jtm.getEntityManager();
@@ -227,28 +430,17 @@ public class ParameterUtil {
 			}
 		}
 		
-		if (isContainParamOrParamOrg(paramIdList, SystemParameterConstant.START_DATE)) {
+		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.START_DATE)) {
 			params.put(SystemParameterConstant.START_DATE, df.format(jobSessionEntity.getScheduleDate()));
 		}
-		if (isContainParamOrParamOrg(paramIdList, SystemParameterConstant.TRIGGER_TYPE)) {
+		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.TRIGGER_TYPE)) {
 			params.put(SystemParameterConstant.TRIGGER_TYPE, Messages.getString(JobTriggerTypeConstant.typeToMessageCode(jobSessionEntity.getTriggerType()), locale));
 		}
 		
-		if (isContainParamOrParamOrg(paramIdList, SystemParameterConstant.TRIGGER_INFO)) {
+		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.TRIGGER_INFO)) {
 			params.put(SystemParameterConstant.TRIGGER_INFO, jobSessionEntity.getTriggerInfo());
 		}
 		return params;
-	}
-
-	private static boolean isContainParamOrParamOrg(List<String> paramIdList, String paramName) {
-		if (paramIdList.contains(paramName)) {
-			return true;
-		}
-		if (paramIdList.contains(paramName + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE) ) {
-			return true;
-		}
-		
-		return false;
 	}
 
 	/**
@@ -259,7 +451,7 @@ public class ParameterUtil {
 	 * @param isEscape エスケープするか
 	 * @return
 	 */
-	public static String getReplacedValue(String paramId, Map<String, String> paramMap, boolean isEscape) {
+	private static String getReplacedValue(String paramId, Map<String, String> paramMap, boolean isEscape) {
 		String ret = null;
 		
 		if (paramId == null || paramMap == null) {
@@ -267,23 +459,49 @@ public class ParameterUtil {
 		}
 		
 		if (isEscape) {
-			ret = paramMap.get(paramId);
-			
-			if (ret != null) {
-				return StringBinder.escapeStr(ret);
+			if (paramMap.containsKey(paramId)) {
+				ret = paramMap.get(paramId);
+				if (ret == null) {
+					return "";
+				} else {
+					return StringBinder.escapeStr(ret);
+				}
 			}
 			
 			String notOrignalParamId = SystemParameterConstant.getNotOriginalParam(paramId);
 			
 			if (notOrignalParamId != null) {
-				ret = paramMap.get(notOrignalParamId);
+				if (paramMap.containsKey(notOrignalParamId)) {
+					ret = paramMap.get(notOrignalParamId);
+					if (ret == null) {
+						return "";
+					} else {
+						return ret;
+					}
+				} else {
+					return null;
+				}
 			}
 		} else {
-			ret = paramMap.get(paramId);
-			
-			if (ret != null) {
-				return ret;
+			if (paramMap.containsKey(paramId)) {
+				ret = paramMap.get(paramId);
+				if (ret == null) {
+					return "";
+				} else {
+					return ret;
+				}
 			}
+		}
+		
+		// :quoteSh, :escapeCmdが付与されている場合はisEscape(プロパティ)に関わらず置換を行う。
+		String[] splitedId = StringBinder.splitPostfix(paramId);
+		String opt  = splitedId[1];
+		if (paramMap.containsKey(splitedId[0])) {
+			String param = paramMap.get(splitedId[0]);
+			if (param == null) {
+				param =  "";
+			}
+			return StringBinder.escapeShell(param, opt);
 		}
 		
 		return ret;
@@ -297,6 +515,13 @@ public class ParameterUtil {
 				//末尾が:orignalのparamIdはorignalの前にfalicrtyIdを結合
 				return notOrignalParamId + ":" + nodeFacilityId + SystemParameterConstant.NOT_REPLACE_TO_ESCAPE;
 			} 
+		}
+		
+		// :quoteSh, :escapeCmdが付与されている場合はisEscape(プロパティ)に関わらず結合する。
+		String[] splitedId = StringBinder.splitPostfix(paramId);
+		if (splitedId[0] != null) {
+			//:originalと同様、前にfalicrtyIdを結合
+			return splitedId[0] + ":" + nodeFacilityId  + splitedId[1];			
 		}
 		
 		return paramId + ":" + nodeFacilityId;
@@ -370,6 +595,41 @@ public class ParameterUtil {
 		}
 		
 		return rtn;
+	}
+
+	/**
+	 * 引数で指定された文字列からパラメータIDを取得し、<BR>
+	 * セッションからパラメータIDに対応する値を取得します。<BR>
+	 * 引数で指定された文字列のパラメータIDを値で置き換えます。
+	 * 
+	 * 以下の順に処理を行う。
+	 * 1. ジョブ変数
+	 * 2. 変数#[END_NUM:jobId]
+	 * 2. 変数#[RETURN:jobId:facilityId]
+	 *
+	 * @param sessionId セッションID
+	 * @param jobunitId ジョブユニットID
+	 * @param facilityId ファシリティID
+	 * @param source 置き換え対象文字列
+	 * @return 置き換え後の文字列
+	 * @throws JobInfoNotFound
+	 * @throws HinemosUnknown
+	 * @throws FacilityNotFound 
+	 */
+	public static String replaceAllSessionParameterValue(String sessionId, String jobunitId, String facilityId, String source) 
+			throws JobInfoNotFound, HinemosUnknown, FacilityNotFound, InvalidRole {
+		String commandConv = source;	// 変換後文字列
+		// ジョブ変数
+		commandConv = ParameterUtil.replaceSessionParameterValue(sessionId, facilityId, commandConv);
+		try {
+			// 変数#[END_NUM:jobId]
+			commandConv = ParameterUtil.replaceEndNumParameter(sessionId, jobunitId, commandConv, false);
+			// 変数#[RETURN:jobId:facilityId]
+			commandConv = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, commandConv, false);
+		} catch (JobInfoNotFound e) {
+			// ここは通らない
+		}
+		return commandConv;
 	}
 
 	/**
@@ -475,7 +735,7 @@ public class ParameterUtil {
 	 * @param nodeFacilityId ファシリティID
 	 * @return 置換後のパラメータ（置換できなかった場合はnull）
 	 */
-	public static String getJobSessionParamValue(String paramId, Map<String, String> jobSessionParamsMap, String nodeFacilityId) {
+	private static String getJobSessionParamValue(String paramId, Map<String, String> jobSessionParamsMap, String nodeFacilityId) {
 		boolean isEscapeNotify = HinemosPropertyCommon.job_param_notify_escape.getBooleanValue();
 		boolean isEscapeRunjob = HinemosPropertyCommon.job_param_runjob_escape.getBooleanValue();
 		boolean isEscape = false;
@@ -507,6 +767,11 @@ public class ParameterUtil {
 		
 		if (paramValue != null) {
 			return paramValue;
+		} else {
+			if (SystemParameterConstant.isFilecheckJobParam(paramId)) {
+				// ファイルチェックジョブの変数の場合存在しなかったら空白を返す
+				return "";
+			}
 		}
 		// 存在しない場合はパラメタIDにファシリティIDを結合して再度検索を行う。
 		
@@ -534,17 +799,42 @@ public class ParameterUtil {
 		
 		return paramValue;
 	}
+
+	/**
+	 * ファシリティIDにジョブ変数が指定されている場合に置換する。
+	 * 
+	 * @param sessionId
+	 * @param facilityId
+	 * @return 置換された文字列
+	 * @throws JobInfoNotFound
+	 */
+	public static String replaceFacilityId(String sessionId, String facilityId) throws JobInfoNotFound {
+		if (!SystemParameterConstant.isParamFormat(facilityId)){
+			return facilityId;
+		}
 	
+		Map<String, String> jobSessionParamsMap = getJobSessionParamsMap(sessionId);
+		String paramValue = ParameterUtil.getJobSessionParamValue(
+			SystemParameterConstant.getParamId(facilityId), jobSessionParamsMap, sessionId);
+		if (paramValue != null) {
+			return paramValue;
+		} else {
+			return facilityId;
+		}
+	}
+
 	/**
 	 * 変数#[RETURN:jobId:facilityId]を置換する。
 	 * @param sessionId
 	 * @param jobunitId
 	 * @param jobId
 	 * @param source
+	 * @param throwException true:先行ジョブが存在しない場合に例外を発生させる false:発生させない
 	 * @return
 	 */
-	public static String replaceReturnCodeParameter(String sessionId, String jobunitId, String source) {
-		String regex = "#\\[RETURN:([^:]*):([^:]*)\\]";
+	public static String replaceReturnCodeParameter(String sessionId, String jobunitId, String source, boolean throwException)
+		throws JobInfoNotFound {
+		String regex = REGEX_RETURN;
 		Pattern pattern = Pattern.compile(regex);
 		String ret = source;
 		for (int i = 0; i < 100; i ++) { //無限ループにならないように、上限を定める。
@@ -559,13 +849,21 @@ public class ParameterUtil {
 						ret = ret.replaceFirst(regex, endValue.toString());
 					} else {
 						// 先行ジョブが終了していない。
-						ret = ret.replaceFirst(regex, "null");
+						if (throwException) {
+							throw new JobInfoNotFound();
+						} else {
+							ret = ret.replaceFirst(regex, "null");
+						}
 					}
 				} catch (JobInfoNotFound e) {
 					m_log.warn("replaceReturnCodeParameter : jobId=" + rJobId +
 							", facilityId=" + rFacilityId);
 					// ジョブ、ファシリティIDが存在しない。
-					ret = ret.replaceFirst(regex, "null");
+					if (throwException) {
+						throw new JobInfoNotFound();
+					} else {
+						ret = ret.replaceFirst(regex, "null");
+					}
 				}
 				/*
 				 * for test
@@ -577,6 +875,73 @@ public class ParameterUtil {
 			}
 		}
 		return ret;
+	}
+
+	/**
+	 * 変数#[RPA_EXEC_ENVID:facilityId]を置換する。
+	 * @param source
+	 * @return
+	 * @throws HinemosUnknown 
+	 * @throws InvalidRole 
+	 * @throws FacilityNotFound 
+	 */
+	public static String replaceNodeRpaEnvIdParameter(String source) 
+			throws FacilityNotFound, InvalidRole, HinemosUnknown {
+		String paramId = SystemParameterConstant.RPA_EXEC_ENV_ID;
+		ArrayList<String> inKeyList = new ArrayList<>();
+		inKeyList.add(paramId);
+		String regex = "#\\[" + paramId + ":([^:]*)\\]";
+		Pattern pattern = Pattern.compile(regex);
+		String ret = source;
+		Matcher matcher = pattern.matcher(ret);
+		if (matcher.find()) {
+			String rFacilityId = matcher.group(1);
+			String paramValue = getNodeValue(paramId, rFacilityId, inKeyList);
+			if (paramValue != null) {
+				// パラメータ値がnull以外の場合に置換処理を行う。
+				ret = ret.replaceFirst(regex, paramValue);
+				m_log.debug("replaceNodeRpaEnvIdParameter() : source=" + source + ", ret=" + ret);
+			} else {
+				m_log.warn("replaceNodeRpaEnvIdParameter() : paramValue is null");
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * RPAシナリオジョブ（直接実行）のシナリオ実行コマンドの変数を置換します。
+	 * 変数#[RPA_TOOL_EXE_FILEPATH]/#[RPA_TOOL_SCENARIO_FILEPATH]/#[RPA_TOOL_OPTIONS]
+	 * @param source
+	 * @return
+	 * @throws HinemosUnknown 
+	 * @throws InvalidRole 
+	 * @throws FacilityNotFound 
+	 */
+	public static String replaceRpaToolExecCommandParameter(String source, String exeFilepath, String scenarioFilepath, String options) 
+			throws FacilityNotFound, InvalidRole, HinemosUnknown {
+		String exeFilepathRegex = "#\\[" + SystemParameterConstant.RPA_TOOL_EXE_FILEPATH + "\\]";
+		String scenarioFilepathRegex = "#\\[" + SystemParameterConstant.RPA_TOOL_SCENARIO_FILEPATH + "\\]";
+		String optionRegex = "#\\[" + SystemParameterConstant.RPA_TOOL_OPTIONS + "\\]";
+		// ファイルパスの"\"をエスケープ
+		return source.replaceAll(exeFilepathRegex, StringBinder.escapeStr(exeFilepath))
+				.replaceAll(scenarioFilepathRegex, StringBinder.escapeStr(scenarioFilepath))
+				.replaceAll(optionRegex, StringBinder.escapeStr(options));
+	}
+
+	/**
+	 * RPAシナリオジョブ（直接実行）のプロセス終了コマンドの変数を置換します。
+	 * 変数#[RPA_TOOL_EXE_FILENAME]
+	 * @param source
+	 * @return
+	 * @throws HinemosUnknown 
+	 * @throws InvalidRole 
+	 * @throws FacilityNotFound 
+	 */
+	public static String replaceRpaToolDestroyCommandParameter(String source, String exeFilename) 
+			throws FacilityNotFound, InvalidRole, HinemosUnknown {
+		String exeFilenameRegex = "#\\[" + SystemParameterConstant.RPA_TOOL_EXE_FILENAME + "\\]";
+		// ファイルパスの"\"をエスケープ
+		return source.replaceAll(exeFilenameRegex, StringBinder.escapeStr(exeFilename));
 	}
 
 	/**
@@ -600,11 +965,80 @@ public class ParameterUtil {
 		return SystemParameterConstant.getParamId(paramText);
 	}
 
+	/**
+	 * 変数#[END_NUM:jobId]を置換する。
+	 * @param sessionId
+	 * @param jobunitId
+	 * @param jobId
+	 * @param source
+	 * @param throwException true:先行ジョブが存在しない場合に例外を発生させる false:発生させない
+	 * @return
+	 */
+	public static String replaceEndNumParameter(String sessionId, String jobunitId, String source, boolean throwException)
+			throws JobInfoNotFound {
+		String regex = REGEX_END_NUM;
+		Pattern pattern = Pattern.compile(regex);
+		String ret = source;
+		for (int i = 0; i < 100; i ++) { //無限ループにならないように、上限を定める。
+			Matcher matcher = pattern.matcher(ret);
+			if (matcher.find()) {
+				String rJobId = matcher.group(1);
+				try {
+					JobSessionJobEntity job = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, rJobId);
+					Integer endValue = job.getEndValue();
+					if (endValue != null) {
+						ret = ret.replaceFirst(regex, endValue.toString());
+					} else {
+						// 先行ジョブが終了していない。
+						if (throwException) {
+							throw new JobInfoNotFound();
+						} else {
+							ret = ret.replaceFirst(regex, "null");
+						}
+					}
+				} catch (JobInfoNotFound | InvalidRole e) {
+					m_log.warn("replaceEndNumParameter : jobId=" + rJobId);
+					// 同ジョブユニット配下なのでInvaliedRole対応は不要。
+					// ジョブが存在しない。
+					if (throwException) {
+						throw new JobInfoNotFound();
+					} else {
+						ret = ret.replaceFirst(regex, "null");
+					}
+				}
+			} else {
+				break;
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * 引数で受け取った文字列の配列に区切り文字を単純に結合してジョブ変数IDを返却します<BR>
+	 * 
+	 * @param args
+	 * @return
+	 */
+	public static String createParamIdFrom(String... args) {
+		StringBuilder sb = new StringBuilder();
+		String deli = "";
+		for (String str : args) {
+			sb.append(deli);
+			sb.append(str);
+			deli = SystemParameterConstant.KEY_SEPARATOR;
+		}
+		return sb.toString();
+	}
+
 	public static void main(String args[]) {
 		String source = "";
 		// source = "ls #[RETURN:jobId1:facilityId1]a";
 		source = "ls #[RETURN:jobId1:facilityId1]a -l#[RETURN:jobId2:facilityId2]a";
 		System.out.println("source=" + source);
-		System.out.println("replace=" + replaceReturnCodeParameter(null, null, source));
+		try {
+			System.out.println("replace=" + replaceReturnCodeParameter(null, null, source, false));
+		} catch (JobInfoNotFound e) {
+			// ここは通らない
+		}
 	}
 }

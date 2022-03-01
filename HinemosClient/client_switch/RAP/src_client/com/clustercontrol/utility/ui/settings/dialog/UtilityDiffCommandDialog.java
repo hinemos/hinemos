@@ -152,6 +152,12 @@ public class UtilityDiffCommandDialog extends CommonDialog {
 					Messages.getString("message.infra.specify.item",
 							new Object[]{Messages.getString("string.diff") + Messages.getString("file.name")}));
 		}
+		if (!xmlUploadComponent.isReady()) {
+			return createValidateResult(Messages.getString("upload"), Messages.getString("upload.busy.message"));
+		}
+		if (!diffUploadComponent.isReady()) {
+			return createValidateResult(Messages.getString("upload"), Messages.getString("upload.busy.message"));
+		}
 		
 		return super.validate();
 	}

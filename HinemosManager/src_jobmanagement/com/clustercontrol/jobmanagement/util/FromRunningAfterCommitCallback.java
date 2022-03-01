@@ -21,7 +21,7 @@ public class FromRunningAfterCommitCallback implements JpaTransactionCallback {
 	private JobSessionNodeEntityPK pk;
 	
 	public FromRunningAfterCommitCallback(JobSessionNodeEntityPK pk) {
-		this.pk = pk;
+		this.pk = pk.clone();
 	}
 	
 	@Override

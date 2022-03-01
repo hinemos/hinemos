@@ -13,6 +13,7 @@ import org.eclipse.ui.IPageLayout;
 
 import com.clustercontrol.ClusterControlPerspectiveBase;
 import com.clustercontrol.jobmanagement.view.ForwardFileView;
+import com.clustercontrol.jobmanagement.view.JobLinkMessageView;
 import com.clustercontrol.jobmanagement.view.JobNodeDetailView;
 import com.clustercontrol.jobmanagement.view.JobQueueActivityView;
 import com.clustercontrol.jobmanagement.view.JobQueueContentsView;
@@ -25,6 +26,9 @@ import com.clustercontrol.jobmap.view.JobMapHistoryView;
  * @since 1.0.0
  */
 public class JobMapHistoryPerspective extends ClusterControlPerspectiveBase {
+
+	public static final String ID = "com.clustercontrol.enterprise.jobmap.JobMapHistoryPerspective";
+
 	@Override
 	public void createInitialLayout(IPageLayout layout) {
 		super.createInitialLayout(layout);
@@ -35,6 +39,7 @@ public class JobMapHistoryPerspective extends ClusterControlPerspectiveBase {
 		IFolderLayout top = layout.createFolder("top", IPageLayout.TOP, 0.30f, editorArea);
 		top.addView(JobHistoryViewM.ID);
 		top.addView(JobQueueActivityView.ID);
+		top.addView(JobLinkMessageView.ID);
 
 		IFolderLayout bottom = layout.createFolder("bottom", IPageLayout.BOTTOM, 0.70f, editorArea);
 		bottom.addView(JobMapHistoryView.ID);

@@ -14,16 +14,8 @@ import java.net.DatagramSocket;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.systemlog.util.Counter;
 import com.clustercontrol.systemlog.util.ResponseHandler;
@@ -39,7 +31,6 @@ public class SyslogService {
 	
 	private SyslogTcpReceiver tcpReceiver;
 	private SyslogUdpReceiver udpReceiver;
-	private ThreadPoolExecutor worker;
 	
 	public void start(SyslogHandler handler) throws IOException {
 		// 論理 CPU 数 でプールを作成。
@@ -49,52 +40,13 @@ public class SyslogService {
 		Long defaultThreadNum = Long.valueOf(Math.max(procNum, 1));
 		int threadNum = HinemosPropertyCommon.monitor_systemlog_worker_thread_max_size.getIntegerValue("", defaultThreadNum);
 		log.info(String.format("thread pool : coreSize=%d, maxSize=%d", procNum, Math.max(procNum, threadNum)));
-		
-		// スレッドプール作成。
-		// java 既定の動作だと、コアサイズより多いリクエストは、先にキューに格納されるので、
-		// 先に最大サイズまでスレッドを消費するよう以下で動作を修正。最大スレッドを超えるリクエストは、キューに保存。
-		LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>() {
-			private static final long serialVersionUID = -6903933921423432194L;
-			@Override
-			public boolean offer(Runnable e) {
-				// 原則、false を返すように変更。
-				// この関数で false を返すと、スレッドプールは、キューにタスクを追加できない。
-				if (size() == 0) {
-					return super.offer(e);
-				} else {
-					return false;
-				}
-			}
-		};
-		
-		worker = new ThreadPoolExecutor(procNum, Math.max(procNum, threadNum),
-				HinemosPropertyCommon.monitor_sytemslog_worker_thread_keepalive_timeout.getNumericValue(), TimeUnit.MILLISECONDS,
-				queue,
-				new ThreadFactory() {
-					private AtomicInteger index = new AtomicInteger();
-					@Override
-					public Thread newThread(Runnable r) {
-						return new Thread(r, String.format("Thread-SyslogWorker-%d", index.incrementAndGet()));
-					}
-				}) {
-					@Override
-					protected void terminated() {
-						super.terminated();
-						//sender.close();
-					}
-			};
-		
-		worker.setRejectedExecutionHandler(new RejectedExecutionHandler() {
-				@Override
-				public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-					try {
-						// キューの修正により、追加できなかったタスクを以下で追加。
-						executor.getQueue().put(r);
-					} catch (InterruptedException e) {
-						log.warn("accept() : rejected from worker-thread-pool. " + e.getMessage());
-					}
-				}
-			});
+		//SyslogReceiver用の各種プロパティを取得
+		int maxConnSize = HinemosPropertyCommon.monitor_systemlog_receive_tcp_max_connection.getIntegerValue();
+		boolean tcpKeepAlive = HinemosPropertyCommon.monitor_systemlog_receive_tcp_keepAlive.getBooleanValue();
+		int tcpBacklog = HinemosPropertyCommon.monitor_systemlog_receive_tcp_backlog.getIntegerValue();
+		boolean enableReadTimeout = HinemosPropertyCommon.monitor_systemlog_receive_tcp_read_timeout_enable.getBooleanValue();
+		long keepAliveTime = HinemosPropertyCommon.monitor_sytemslog_worker_thread_keepalive_timeout.getNumericValue();
+		int recvQueueSize = HinemosPropertyCommon.monitor_systemlog_filter_queue_size.getIntegerValue();
 		
 		// ヘッダー用文字セット
 		Charset headerCharset = Charset.forName(HinemosPropertyCommon.monitor_systemlog_header_charset.getStringValue());
@@ -114,7 +66,8 @@ public class SyslogService {
 			Counter counter = new Counter("The number of received TCP syslog");
 			@SuppressWarnings("unchecked")
 			ResponseHandler<byte[]> _handler = (ResponseHandler<byte[]>)handler;
-			tcpReceiver = SyslogTcpReceiver.build(address, port, counter, _handler, worker);
+			tcpReceiver = SyslogTcpReceiver.build(address, port, counter, _handler, maxConnSize, threadNum, tcpKeepAlive, tcpBacklog);
+
 			
 			// セパレーターを取得。
 			String[] sepString = HinemosPropertyCommon.monitor_systemlog_split_code.getStringValue().split(",");
@@ -125,6 +78,7 @@ public class SyslogService {
 			tcpReceiver.setDelimiteres(seps);
 			
 			// 読み取りのタイムアウトを設定
+			tcpReceiver.enableReadTimeout(enableReadTimeout);
 			tcpReceiver.setReadTimeout(HinemosPropertyCommon.monitor_systemlog_receive_tcp_read_timeout.getIntegerValue());
 			
 			// 読み取り最大サイズを設定
@@ -152,7 +106,7 @@ public class SyslogService {
 			@SuppressWarnings("unchecked")
 			ResponseHandler<byte[]> _handler = (ResponseHandler<byte[]>)handler;
 			// 受信内容の処理方法を決定。
-			udpReceiver = SyslogUdpReceiver.build("0.0.0.0", port, counter, _handler, worker);
+			udpReceiver = SyslogUdpReceiver.build(address, port, counter, _handler, recvQueueSize, threadNum, keepAliveTime);
 			
 			// UDP の受信バッファーサイズを変更して、ドロップ率を調整。
 			udpReceiver.setServerDecorator(new UdpSocketDecorator() {
@@ -182,9 +136,6 @@ public class SyslogService {
 			udpReceiver.stop();
 		}
 		
-		if(worker != null){
-			worker.shutdown();
-		}
 	}
 	
 	public void join() {
@@ -206,14 +157,5 @@ public class SyslogService {
 			}
 		}
 		
-
-		if(worker != null){
-			try {
-				worker.awaitTermination(waitForTermination, TimeUnit.MILLISECONDS);
-				log.info("terminated thread-pool.");
-			} catch(InterruptedException e) {
-				log.warn(e.getMessage(), e);
-			}
-		}
 	}
 }

@@ -8,13 +8,23 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorTruthValueInfoResponse;
+import org.openapitools.client.model.WinServiceCheckInfoResponse;
 
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
@@ -23,13 +33,6 @@ import com.clustercontrol.utility.settings.monitor.xml.WinServiceInfo;
 import com.clustercontrol.utility.settings.monitor.xml.WinServiceMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.WinServiceMonitors;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorTruthValueInfo;
-import com.clustercontrol.ws.monitor.WinServiceCheckInfo;
 
 /**
  * Windows サービス 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -43,7 +46,7 @@ public class WinServiceConv {
 
 	static private String SCHEMA_TYPE = "H";
 	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "2";
+	static private String SCHEMA_REVISION = "3";
 
 	/**
 	 * <BR>
@@ -76,29 +79,31 @@ public class WinServiceConv {
 	 * <BR>
 	 *
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static WinServiceMonitors createWinServiceMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static WinServiceMonitors createWinServiceMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		WinServiceMonitors winServiceMonitors = new WinServiceMonitors();
 
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			WinServiceMonitor winServiceMonitor = new WinServiceMonitor();
 			winServiceMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 
-			for (MonitorTruthValueInfo truthValueInfo : monitorInfo.getTruthValueInfo()) {
-				winServiceMonitor.addTruthValue(MonitorConv.createTruthValue(truthValueInfo));
+			for (MonitorTruthValueInfoResponse truthValueInfo : monitorInfo.getTruthValueInfo()) {
+				winServiceMonitor.addTruthValue(MonitorConv.createTruthValue(monitorInfo.getMonitorId(),truthValueInfo));
 			}
 
-			winServiceMonitor.setWinServiceInfo(createWinServiceInfo(monitorInfo.getWinServiceCheckInfo()));
+			winServiceMonitor.setWinServiceInfo(createWinServiceInfo(monitorInfo));
 			winServiceMonitors.addWinServiceMonitor(winServiceMonitor);
 		}
 
@@ -108,13 +113,13 @@ public class WinServiceConv {
 		return winServiceMonitors;
 	}
 
-	public static List<MonitorInfo> createMonitorInfoList(WinServiceMonitors winServiceMonitors) throws ConvertorException {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(WinServiceMonitors winServiceMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 
 		for (WinServiceMonitor winServiceMonitor : winServiceMonitors.getWinServiceMonitor()) {
 			logger.debug("Monitor Id : " + winServiceMonitor.getMonitor().getMonitorId());
 
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(winServiceMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(winServiceMonitor.getMonitor());
 			for (TruthValue truthValue : winServiceMonitor.getTruthValue()) {
 				monitorInfo.getTruthValueInfo().add(MonitorConv.createTruthValue(truthValue));
 			}
@@ -131,12 +136,12 @@ public class WinServiceConv {
 	 *
 	 * @return
 	 */
-	private static WinServiceInfo createWinServiceInfo(WinServiceCheckInfo winServiceCheckInfo) {
+	private static WinServiceInfo createWinServiceInfo(MonitorInfoResponse  monitorInfo) {
 		WinServiceInfo winServiceInfo = new WinServiceInfo();
 		winServiceInfo.setMonitorTypeId("");
 
-		winServiceInfo.setMonitorId(winServiceCheckInfo.getMonitorId());
-		winServiceInfo.setServiceName(winServiceCheckInfo.getServiceName());
+		winServiceInfo.setMonitorId(monitorInfo.getMonitorId());
+		winServiceInfo.setServiceName(monitorInfo.getWinServiceCheckInfo().getServiceName());
 
 		return winServiceInfo;
 	}
@@ -146,11 +151,9 @@ public class WinServiceConv {
 	 *
 	 * @return
 	 */
-	private static WinServiceCheckInfo createWinServiceCheckInfo(WinServiceInfo winServiceInfo) {
-		WinServiceCheckInfo winServiceCheckInfo = new WinServiceCheckInfo();
-		winServiceCheckInfo.setMonitorTypeId("");
+	private static WinServiceCheckInfoResponse  createWinServiceCheckInfo(WinServiceInfo winServiceInfo) {
+		WinServiceCheckInfoResponse  winServiceCheckInfo = new WinServiceCheckInfoResponse ();
 
-		winServiceCheckInfo.setMonitorId(winServiceInfo.getMonitorId());
 		winServiceCheckInfo.setServiceName(winServiceInfo.getServiceName());
 
 		return winServiceCheckInfo;

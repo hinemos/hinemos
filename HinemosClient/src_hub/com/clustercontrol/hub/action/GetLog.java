@@ -10,11 +10,11 @@ package com.clustercontrol.hub.action;
 
 import org.apache.log4j.Logger;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.LogFormatResponse;
+import org.openapitools.client.model.TransferInfoResponse;
 
-import com.clustercontrol.hub.util.HubEndpointWrapper;
+import com.clustercontrol.hub.util.HubRestClientWrapper;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.hub.LogFormat;
-import com.clustercontrol.ws.hub.TransferInfo;
 
 public class GetLog {
 	
@@ -28,9 +28,9 @@ public class GetLog {
 	 * @param formatId
 	 * @return
 	 */
-	public LogFormat getLogFormat(String managerName, String formatId){
+	public LogFormatResponse getLogFormat(String managerName, String formatId){
 		try {
-			HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
+			HubRestClientWrapper wrapper = HubRestClientWrapper.getWrapper(managerName);
 			return wrapper.getLogFormat(formatId);
 		} catch (Exception e) {
 			// 上記以外の例外
@@ -48,9 +48,9 @@ public class GetLog {
 	 * @param transferId
 	 * @return
 	 */
-	public TransferInfo getLogTransfer(String managerName, String transferId){
+	public TransferInfoResponse getLogTransfer(String managerName, String transferId){
 		try {
-			HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
+			HubRestClientWrapper wrapper = HubRestClientWrapper.getWrapper(managerName);
 			return wrapper.getTransferInfo(transferId);
 		} catch (Exception e) {
 			// 上記以外の例外

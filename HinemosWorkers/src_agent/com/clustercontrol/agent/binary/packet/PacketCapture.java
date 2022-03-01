@@ -19,9 +19,9 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
-import org.pcap4j.core.BpfProgram.BpfCompileMode;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.pcap4j.core.BpfProgram.BpfCompileMode;
 import org.pcap4j.core.NotOpenException;
 import org.pcap4j.core.PcapHandle;
 import org.pcap4j.core.PcapNativeException;
@@ -52,9 +52,9 @@ public class PacketCapture {
 	 * 引数で渡した監視設定に紐づくパケットキャプチャ制御用オブジェクトを生成する.
 	 * 
 	 * @param m_wrapper
-	 *            監視設定
+	 *			  監視設定
 	 * @param host
-	 *            エージェントホスト名/IPv4/IPv6
+	 *			  エージェントホスト名/IPv4/IPv6
 	 * 
 	 * @return パケットキャプチャー制御用オブジェクト.
 	 */
@@ -79,7 +79,7 @@ public class PacketCapture {
 
 			// 監視設定等からパケットキャプチャの設定取得.
 			int snaplen = BinaryMonitorConfig.getSnapLength();
-			boolean promodeFlg = m_wrapper.monitorInfo.getPacketCheckInfo().isPromiscuousMode();
+			boolean promodeFlg = m_wrapper.monitorInfo.getPacketCheckInfo().getPromiscuousMode().booleanValue();
 			PromiscuousMode promode = PacketCaptureUtil.getPromiscuousMode(promodeFlg);
 			int timeoutMillis = BinaryMonitorConfig.getTimeoutMillis();
 
@@ -116,7 +116,7 @@ public class PacketCapture {
 			// 監視履歴に通知.
 			BinaryMonitorManager.sendMessage(PriorityConstant.TYPE_CRITICAL, MessageConstant.AGENT.getMessage(),
 					MessageConstant.MESSAGE_PCAP_INSTALL.getMessage(), e.getMessage(),
-					m_wrapper.monitorInfo.getMonitorId(), m_wrapper.runInstructionInfo,
+					m_wrapper.monitorInfo.getMonitorId(), m_wrapper.runInstructionInfoReq,
 					m_wrapper.monitorInfo.getMonitorTypeId());
 		} catch (NotOpenException e) {
 			// PcapHandleがクローズされている場合.
@@ -144,7 +144,7 @@ public class PacketCapture {
 				String[] args = { userFilter };
 				BinaryMonitorManager.sendMessage(PriorityConstant.TYPE_CRITICAL, MessageConstant.AGENT.getMessage(),
 						MessageConstant.MESSAGE_PCAP_FILTER.getMessage(args), errorMessage,
-						m_wrapper.monitorInfo.getMonitorId(), m_wrapper.runInstructionInfo,
+						m_wrapper.monitorInfo.getMonitorId(), m_wrapper.runInstructionInfoReq,
 						m_wrapper.monitorInfo.getMonitorTypeId());
 			} else {
 				m_log.warn(methodName + DELIMITER + "failure in native code for packet capture : " + e.getMessage(), e);
@@ -206,7 +206,7 @@ public class PacketCapture {
 							+ String.format("set host name of agent from system. name=%s", agentHost));
 				} catch (UnknownHostException e) {
 					// AgentInfoから取得(ダミーホスト名が設定されている場合はパケットキャプチャ不可)
-					agentHost = Agent.getAgentInfo().getHostname();
+					agentHost = Agent.getAgentInfoRequest().getHostname();
 					m_log.info(methodName + DELIMITER
 							+ String.format("set host name of agent from AgentInfo. name=%s", agentHost), e);
 				}
@@ -280,11 +280,11 @@ public class PacketCapture {
 	 * 引数で渡した監視設定に基づいてキャプチャしたパケットをファイル出力するリスナーを作成する.
 	 * 
 	 * @param host
-	 *            キャプチャ対象 Network Interface のIPアドレス(出力ファイル名の識別用)
+	 *			  キャプチャ対象 Network Interface のIPアドレス(出力ファイル名の識別用)
 	 * @param m_wrapper
-	 *            監視設定
+	 *			  監視設定
 	 * @param handle
-	 *            パケットキャプチャ制御オブジェクト
+	 *			  パケットキャプチャ制御オブジェクト
 	 * 
 	 * @return パケット出力リスナー.
 	 */

@@ -11,7 +11,8 @@ package com.clustercontrol.monitor.run.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 
 /**
  * The primary key class for the cc_monitor_string_value_info database table.
@@ -80,7 +81,7 @@ public class MonitorStringValueInfoPK implements Serializable {
 		};
 		String[] values = {
 				this.monitorId,
-				this.orderNo.toString()
+				String.valueOf(this.orderNo)
 		};
 		return Arrays.toString(names) + " = " + Arrays.toString(values);
 	}

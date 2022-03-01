@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+
+  <named-query name="FilterConditionEntity.find">
+    <query>
+      <![CDATA[
+        SELECT a FROM FilterConditionEntity a
+                WHERE a.id.filterCategory = :filterCategory
+                  AND a.id.filterOwner = :filterOwner
+                  AND a.id.filterId = :filterId
+                ORDER BY a.id.conditionIdx
+      ]]>
+    </query>
+  </named-query>
+
+  <named-query name="FilterConditionEntity.remove">
+    <query>
+      <![CDATA[
+        DELETE FROM FilterConditionEntity a
+                WHERE a.id.filterCategory = :filterCategory
+                  AND a.id.filterOwner = :filterOwner
+                  AND a.id.filterId = :filterId
+      ]]>
+    </query>
+  </named-query>
+
+  <named-query name="FilterConditionItemEntity.find">
+    <query>
+      <![CDATA[
+        SELECT a FROM FilterConditionItemEntity a
+                WHERE a.id.filterCategory = :filterCategory
+                  AND a.id.filterOwner = :filterOwner
+                  AND a.id.filterId = :filterId
+                ORDER BY a.id.conditionIdx, a.id.itemType
+      ]]>
+    </query>
+  </named-query>
+
+  <named-query name="FilterConditionItemEntity.remove">
+    <query>
+      <![CDATA[
+        DELETE FROM FilterConditionItemEntity a
+                WHERE a.id.filterCategory = :filterCategory
+                  AND a.id.filterOwner = :filterOwner
+                  AND a.id.filterId = :filterId
+      ]]>
+    </query>
+  </named-query>
+
+  <named-query name="FilterEntity.search">
+    <query>
+      <![CDATA[
+        SELECT a FROM FilterEntity a
+                WHERE a.id.filterCategory = :filterCategory
+                  AND a.id.filterOwner = :filterOwner
+                  AND (
+                    a.id.filterId LIKE :pattern
+                    OR a.filterName LIKE :pattern
+                  )
+                ORDER BY a.id.filterId
+      ]]>
+    </query>
+  </named-query>
+
+  <named-query name="FilterEntity.searchNot">
+    <query>
+      <![CDATA[
+        SELECT a FROM FilterEntity a
+                WHERE a.id.filterCategory = :filterCategory
+                  AND a.id.filterOwner = :filterOwner
+                  AND NOT (
+                    a.id.filterId LIKE :pattern
+                    OR a.filterName LIKE :pattern
+                  )
+                ORDER BY a.id.filterId
+      ]]>
+    </query>
+  </named-query>
+
+  <named-query name="FilterEntity.searchAllUsers">
+    <query>
+      <![CDATA[
+        SELECT a FROM FilterEntity a
+                WHERE a.id.filterCategory = :filterCategory
+                  AND a.id.filterOwner <> :filterOwnerCommon
+                  AND (
+                    a.id.filterId LIKE :pattern
+                    OR a.filterName LIKE :pattern
+                  )
+                ORDER BY a.id.filterOwner, a.id.filterId
+      ]]>
+    </query>
+  </named-query>
+
+  <named-query name="FilterEntity.searchAllUsersNot">
+    <query>
+      <![CDATA[
+        SELECT a FROM FilterEntity a
+                WHERE a.id.filterCategory = :filterCategory
+                  AND a.id.filterOwner <> :filterOwnerCommon
+                  AND NOT (
+                    a.id.filterId LIKE :pattern
+                    OR a.filterName LIKE :pattern
+                  )
+                ORDER BY a.id.filterOwner, a.id.filterId
+      ]]>
+    </query>
+  </named-query>
+
+  <named-query name="FilterEntity.searchByOwner">
+    <query>
+      <![CDATA[
+        SELECT a FROM FilterEntity a
+                WHERE a.id.filterOwner = :filterOwner
+                ORDER BY a.id.filterCategory, a.id.filterId
+      ]]>
+    </query>
+  </named-query>
+
+</entity-mappings>

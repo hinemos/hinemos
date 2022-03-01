@@ -61,24 +61,24 @@
           <xs:documentation>通知グループID</xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
-        <xs:annotation>
-          <xs:documentation>通知IDのコレクション</xs:documentation>
-        </xs:annotation>
-      </xs:element>
       <xs:element name="infraModuleInfo" type="InfraModuleInfo" minOccurs="0" maxOccurs="unbounded">
         <xs:annotation>
           <xs:documentation>モジュール設定の配列です。</xs:documentation>
         </xs:annotation>
       </xs:element>
-    <xs:element name="infraManagementParam" type="InfraManagementParam" minOccurs="0" maxOccurs="unbounded">
-      <xs:annotation>
-        <xs:documentation>
-          環境構築設定の環境変数設定です。
-        </xs:documentation>
-      </xs:annotation>
-    </xs:element>
-  </xs:sequence>
+      <xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation>通知IDのコレクション</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="infraManagementParam" type="InfraManagementParam" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation>
+            環境構築設定の環境変数設定です。
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
     <xs:attribute name="managementId" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation>構築IDです。</xs:documentation>

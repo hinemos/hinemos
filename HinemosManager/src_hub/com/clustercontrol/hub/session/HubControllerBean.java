@@ -19,8 +19,6 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import javax.persistence.EntityManager;
-
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.util.RoleValidator;
@@ -31,6 +29,8 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.QueryDivergence;
+import com.clustercontrol.commons.util.QueryExecutor;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosDbTimeout;
@@ -68,13 +68,16 @@ import com.clustercontrol.hub.util.QueryUtil;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
-import com.clustercontrol.platform.QueryExecutor;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.sdml.util.SdmlUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.StringBinder;
+import com.clustercontrol.xcloud.common.CloudConstants;
+
+import jakarta.persistence.EntityManager;
 
 /**
  * 収集蓄積機能の制御クラス
@@ -119,6 +122,11 @@ public class HubControllerBean {
 	 * キー指定のセパレータ
 	 */
 	private static final char SEPARATE_CHAR = '=';
+
+	/*
+	 * シングルクォーテーション
+	 */
+	private static final char SINGLE_QUATATION_CHAR = '\'';
 
 	/*
 	 * 転送用プラグインのプロパティを変数バインドするクラス
@@ -304,7 +312,7 @@ public class HubControllerBean {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public LogFormat getLogFormat(String id) throws InvalidRole, HinemosUnknown {
+	public LogFormat getLogFormat(String id) throws LogFormatNotFound, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		LogFormat format = null;
 
@@ -313,11 +321,11 @@ public class HubControllerBean {
 			jtm.begin();
 			format = new SelectLogFormat().getLogFormat(id);
 			jtm.commit();
-		} catch (ObjectPrivilege_InvalidRole e) {
+		} catch (InvalidRole | LogFormatNotFound | HinemosUnknown e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
-			throw new InvalidRole(e.getMessage(), e);
+			throw e;
 		} catch (Exception e) {
 			logger.warn("getLogFormat() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -444,15 +452,17 @@ public class HubControllerBean {
 	 * @throws  
 	 * @throws InvalidSetting 
 	 */
-	public void addLogFormat(LogFormat format) throws LogFormatDuplicate, LogFormatKeyPatternDuplicate, InvalidRole, HinemosUnknown, InvalidSetting {
+	public LogFormat addLogFormat(LogFormat format) throws LogFormatDuplicate, LogFormatKeyPatternDuplicate, InvalidRole, HinemosUnknown, InvalidSetting {
 		JpaTransactionManager jtm = null;
+		LogFormat ret = null;
 		try{
 			jtm = new JpaTransactionManager();
 
 			jtm.begin();
 
 			//入力チェック
-			HubValidator.validateLogFormat(format);
+			// リクエストDTOにアノテーションでバリデーション実装済
+			HubValidator.validateLogFormat(format, false);
 			
 			//ユーザがオーナーロールIDに所属しているかチェック
 			RoleValidator.validateUserBelongRole(format.getOwnerRoleId(),
@@ -463,8 +473,9 @@ public class HubControllerBean {
 			new ModifyLogFormat().add(format, loginUser);
 
 			jtm.commit();
+			ret = new SelectLogFormat().getLogFormat(format.getLogFormatId());
 
-		} catch (LogFormatDuplicate | LogFormatKeyPatternDuplicate | HinemosUnknown | InvalidSetting e) {
+		} catch (LogFormatDuplicate | LogFormatKeyPatternDuplicate | HinemosUnknown | InvalidSetting | InvalidRole e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
@@ -473,7 +484,7 @@ public class HubControllerBean {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		} catch(RuntimeException e){
+		} catch (Exception e){
 			logger.warn("addLogFormat() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null) {
@@ -486,6 +497,7 @@ public class HubControllerBean {
 				jtm.close();
 			}
 		}
+		return ret;
 	}
 
 	/**
@@ -497,29 +509,34 @@ public class HubControllerBean {
 	 * @throws LogFormatDuplicate 
 	 * @throws InvalidSetting 
 	 */
-	public void modifyLogFormat(LogFormat format) throws LogFormatNotFound, LogFormatKeyPatternDuplicate, InvalidRole, HinemosUnknown, InvalidSetting {
+	public LogFormat modifyLogFormat(LogFormat format) throws LogFormatNotFound, LogFormatKeyPatternDuplicate, InvalidRole, HinemosUnknown, InvalidSetting {
 		JpaTransactionManager jtm = null;
+		LogFormat ret = null;
 
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			//入力チェック
-			HubValidator.validateLogFormat(format);
+			// リクエストDTOにアノテーションでバリデーション実装済
+			HubValidator.validateLogFormat(format, true);
 
 			String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 			new ModifyLogFormat().modify(format, loginUser);
 
 			jtm.commit();
+			ret = new SelectLogFormat().getLogFormat(format.getLogFormatId());
+		} catch (LogFormatNotFound | LogFormatKeyPatternDuplicate | InvalidRole | InvalidSetting | HinemosUnknown e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (InvalidSetting e) {
-			jtm.rollback();
-			throw e;
-		} catch (RuntimeException e) {
+		} catch (Exception e) {
 			logger.warn("modifyLogFormat() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null) {
@@ -530,6 +547,7 @@ public class HubControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -543,13 +561,16 @@ public class HubControllerBean {
 	 * @throws LogformatUsed 
 	 * @throws  
 	 */
-	public void deleteLogFormat(List<String> delFormatId) throws LogFormatNotFound, LogFormatUsed, HinemosUnknown, InvalidRole {
+	public List<LogFormat> deleteLogFormat(List<String> delFormatId) throws LogFormatNotFound, LogFormatUsed, HinemosUnknown, InvalidRole {
 		JpaTransactionManager jtm = null;
+		List<LogFormat> retList = new ArrayList<>();
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			for(String id : delFormatId) {
+				retList.add(new SelectLogFormat().getLogFormat(id));
+				// 名前はvalidateだが、設定使用中のチェックをしてるメソッド
 				HubValidator.validateDeleteLogFormat(id);
 				new ModifyLogFormat().delete(id);
 			}
@@ -559,11 +580,7 @@ public class HubControllerBean {
 				jtm.rollback();
 			}
 			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
-		} catch (RuntimeException e) {
+		} catch (Exception e) {
 			logger.warn("deleteLogFormat() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null) {
@@ -575,6 +592,8 @@ public class HubControllerBean {
 				jtm.close();
 			}
 		}
+
+		return retList;
 	}
 	/**
 	 * 指定した受け渡し設定IDの受け渡し設定情報を取得します。
@@ -584,7 +603,7 @@ public class HubControllerBean {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public TransferInfo getTransferInfo(String id) throws InvalidRole, HinemosUnknown {
+	public TransferInfo getTransferInfo(String id) throws LogTransferNotFound, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		TransferInfo export = null;
 
@@ -593,11 +612,11 @@ public class HubControllerBean {
 			jtm.begin();
 			export = new SelectTransfer().getTransferInfo(id);
 			jtm.commit();
-		} catch (ObjectPrivilege_InvalidRole e) {
+		} catch (LogTransferNotFound |InvalidRole e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
-			throw new InvalidRole(e.getMessage(), e);
+			throw e;
 		} catch (Exception e) {
 			logger.warn("getLogTransfer() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -719,20 +738,23 @@ public class HubControllerBean {
 	 * 転送設定情報を追加します。<BR>
 	 * 
 	 * @param transferInfo
+	 * @return 
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * @throws  
 	 * @throws InvalidSetting 
 	 */
-	public void addTransferInfo(TransferInfo transferInfo) throws LogTransferDuplicate, InvalidRole, HinemosUnknown, InvalidSetting {
+	public TransferInfo addTransferInfo(TransferInfo transferInfo) throws LogTransferDuplicate, InvalidRole, HinemosUnknown, InvalidSetting {
 		JpaTransactionManager jtm = null;
+		TransferInfo ret = null;
 		try{
 			jtm = new JpaTransactionManager();
 
 			jtm.begin();
 
 			//入力チェック
-			HubValidator.validateTransferInfo(transferInfo);
+			// リクエストDTOにアノテーションでバリデーション実装済
+			HubValidator.validateTransferInfo(transferInfo, false);
 			
 			//ユーザがオーナーロールIDに所属しているかチェック
 			RoleValidator.validateUserBelongRole(transferInfo.getOwnerRoleId(),
@@ -748,7 +770,9 @@ public class HubControllerBean {
 			
 			jtm.commit();
 			
-		} catch (LogTransferDuplicate | HinemosUnknown e) {
+			ret = new SelectTransfer().getTransferInfo(transferInfo.getTransferId());
+			
+		} catch (LogTransferDuplicate | InvalidSetting | InvalidRole | HinemosUnknown e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
@@ -757,7 +781,7 @@ public class HubControllerBean {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		} catch(RuntimeException e){
+		} catch(Exception e){
 			logger.warn("addLogTransfer() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null) {
@@ -770,26 +794,30 @@ public class HubControllerBean {
 				jtm.close();
 			}
 		}
+		return ret;
 	}
 
 	/**
 	 * 転送設定情報を変更します。<BR>
 	 * 
 	 * @param transferInfo
+	 * @return 
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * @throws LogFormatDuplicate 
 	 * @throws InvalidSetting 
 	 */
-	public void modifyTransferInfo(TransferInfo transferInfo) throws LogTransferNotFound, InvalidRole, HinemosUnknown, InvalidSetting {
+	public TransferInfo modifyTransferInfo(TransferInfo transferInfo) throws LogTransferNotFound, InvalidRole, HinemosUnknown, InvalidSetting {
 		JpaTransactionManager jtm = null;
-
+		TransferInfo ret = null;
+		
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			//入力チェック
-			HubValidator.validateTransferInfo(transferInfo);
+			// リクエストDTOにアノテーションでバリデーション実装済
+			HubValidator.validateTransferInfo(transferInfo, true);
 
 			String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 			new ModifyTransfer().modify(transferInfo, loginUser);
@@ -797,12 +825,19 @@ public class HubControllerBean {
 			new ModifySchedule().updateSchedule(transferInfo, loginUser);
 			
 			jtm.commit();
+			
+			ret = new SelectTransfer().getTransferInfo(transferInfo.getTransferId());
+		} catch (LogTransferNotFound | InvalidSetting | InvalidRole | HinemosUnknown e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;			
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (RuntimeException e) {
+		} catch (Exception e) {
 			logger.warn("modifyLogTransfer() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null) {
@@ -813,9 +848,12 @@ public class HubControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		
+		return ret;
 	}
 
 	/**
+	 * @return 
 	 * 転送設定情報を削除します。<BR>
 	 * 
 	 * @param delFormatId
@@ -826,13 +864,15 @@ public class HubControllerBean {
 	 * @throws LogformatUsed 
 	 * @throws  
 	 */
-	public void deleteTransferInfo(List<String> delTransferId) throws LogTransferNotFound, HinemosUnknown, InvalidRole {
+	public List<TransferInfo> deleteTransferInfo(List<String> delTransferId) throws LogTransferNotFound, HinemosUnknown, InvalidRole {
 		JpaTransactionManager jtm = null;
+		List<TransferInfo> ret = new ArrayList<>();
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			for(String id : delTransferId) {
+				ret.add(new SelectTransfer().getTransferInfo(id));
 				new ModifyTransfer().delete(id);
 				// スケジューラから転送設定を削除
 				new ModifySchedule().deleteSchedule(id);
@@ -847,7 +887,7 @@ public class HubControllerBean {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (RuntimeException e) {
+		} catch (Exception e) {
 			logger.warn("deleteLogTransfer() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null) {
@@ -859,6 +899,8 @@ public class HubControllerBean {
 				jtm.close();
 			}
 		}
+		
+		return ret;
 	}
 
 	/**
@@ -892,6 +934,46 @@ public class HubControllerBean {
 				jtm.close();
 			}
 		}
+	}
+	
+	public static List<TransferInfo> setTransferValid(List<String> transferIdList, Boolean flg) throws LogTransferNotFound, InvalidRole, HinemosUnknown{
+		JpaTransactionManager jtm = null;
+		List<TransferInfo> ret = new ArrayList<>();
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+			
+			for (String transferId : transferIdList){
+				TransferInfo transferInfo = new SelectTransfer().getTransferInfo(transferId);
+				transferInfo.setValidFlg(flg);
+				new ModifyTransfer().modify(transferInfo, loginUser);
+				new ModifySchedule().updateSchedule(transferInfo, loginUser);
+				ret.add(transferInfo);
+			}
+
+			jtm.commit();
+			
+		} catch (LogTransferNotFound | InvalidRole | HinemosUnknown e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			logger.warn("setTransferValid() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+				
+		return ret;
 	}
 	
 	/**
@@ -1170,10 +1252,23 @@ public class HubControllerBean {
 							if (repositoryCtrl.isNode(queryInfo.getFacilityId())){
 								facilityIds.add(queryInfo.getFacilityId());
 							} else {
-								List<NodeInfo> nodeinfoList = repositoryCtrl.getNodeList(queryInfo.getFacilityId(), 0);
-								if (!nodeinfoList.isEmpty()) {
-									for (NodeInfo node: nodeinfoList) {
-										facilityIds.add(node.getFacilityId());
+								// 検索対象がパブリッククラウドスコープ配下(自身を含む)の場合、
+								// クラウドログ監視の結果はスコープに紐づくので、配下のスコープのファシリティIDを
+								// 含めて検索する
+								if (queryInfo.getFacilityId().equals(CloudConstants.publicRootId)
+										|| queryInfo.getFacilityId().startsWith("_AWS_")
+										|| queryInfo.getFacilityId().startsWith("_AZURE_")) {
+
+									List<String> facilityList = repositoryCtrl
+											.getFacilityIdList(queryInfo.getFacilityId(), 0);
+									facilityIds.addAll(facilityList);
+								} else {
+									List<NodeInfo> nodeinfoList = repositoryCtrl.getNodeList(queryInfo.getFacilityId(),
+											0);
+									if (!nodeinfoList.isEmpty()) {
+										for (NodeInfo node : nodeinfoList) {
+											facilityIds.add(node.getFacilityId());
+										}
 									}
 								}
 							}
@@ -1209,6 +1304,8 @@ public class HubControllerBean {
 					whereStr.append("k.id.monitorId IN :monitorIds");
 					
 					monitorIds = new MonitorSettingControllerBean().getMonitorIdList(null);
+					// SDML制御設定のアプリケーションIDの一覧も追加する
+					monitorIds.addAll(SdmlUtil.getApplicationIdList());
 				}
 
 				if (whereStr.length() != 0) {
@@ -1303,24 +1400,32 @@ public class HubControllerBean {
 								}
 								conditionValueBuffer
 									.append("(")
-									.append(String.format("d.value NOT LIKE '%s'", token.word.substring(1)))
-									.append(" OR ")
-									.append(String.format("EXISTS(SELECT t FROM IN(d.tagList) t WHERE t.value NOT LIKE '%s')", token.word.substring(1)))
+									.append(String.format("d.value NOT LIKE '%s'",
+											 QueryDivergence.escapeLikeCondition(token.word)))
+									.append(" AND ")
+									.append(String.format("NOT EXISTS(SELECT t FROM IN(d.tagList) t WHERE t.value LIKE '%s')",
+											QueryDivergence.escapeLikeCondition(token.word)))
 									.append(")");
 							} else {
 								conditionValueBuffer
 									.append("(")
-									.append(String.format("d.value LIKE '%s'", token.word))
+									.append(String.format("d.value LIKE '%s'",
+											QueryDivergence.escapeLikeCondition(token.word)))
 									.append(" OR ")
-									.append(String.format("EXISTS(SELECT t FROM IN(d.tagList) t WHERE t.value LIKE '%s')", token.word))
+									.append(String.format("EXISTS(SELECT t FROM IN(d.tagList) t WHERE t.value LIKE '%s')",
+											QueryDivergence.escapeLikeCondition(token.word)))
 									.append(")");
 							}
 						} else {
 							// タグ指定の場合
 							if (token.negate){
-								conditionValueBuffer.append(String.format("EXISTS(SELECT t FROM IN(d.tagList) t WHERE (t.key LIKE '%s' AND t.value NOT LIKE '%s'))", token.key, token.word));
+								conditionValueBuffer.append(String.format("EXISTS(SELECT t FROM IN(d.tagList) t WHERE (t.key LIKE '%s' AND t.value NOT LIKE '%s'))",
+										QueryDivergence.escapeLikeCondition(token.key),
+										QueryDivergence.escapeLikeCondition(token.word)));
 							}else{
-								conditionValueBuffer.append(String.format("EXISTS(SELECT t FROM IN(d.tagList) t WHERE (t.key LIKE '%s' AND t.value LIKE '%s'))", token.key, token.word));
+								conditionValueBuffer.append(String.format("EXISTS(SELECT t FROM IN(d.tagList) t WHERE (t.key LIKE '%s' AND t.value LIKE '%s'))",
+										QueryDivergence.escapeLikeCondition(token.key),
+										QueryDivergence.escapeLikeCondition(token.word)));
 							}
 						}
 					}
@@ -1580,38 +1685,48 @@ public class HubControllerBean {
 						if (key != null) {
 							// 抽出された文字列を追加。
 							if (buf.length() != 0) {
+								logger.debug("parseKeywords() : inQuote=" + inQuote + ", key=" + key + ", buf=" + buf.toString() + ", inNegate=" + inNegate);
 								tokens.add(new Token(key, buf.toString(), inNegate));
 								key = null;
 								buf = new StringBuilder();
 							} else {
+								logger.debug("parseKeywords() : inQuote=" + inQuote + ", key=" + key + ", buf=" + buf.toString() + ", inNegate=" + inNegate);
 								tokens.add(new Token(key, inNegate));
 								key = null;
 							}
+							logger.debug("parseKeywords() : inQuote=" + inQuote + ", buf=" + buf.toString() + ", inNegate=" + inNegate);
 							inNegate = false;
 						} else {
 							// タグ検索の可能性があるので、クォートされた文字列を一旦退避。
 							// 次の文字でタグ検索のキーにする判断。
+							logger.debug("parseKeywords() : inQuote=" + inQuote + ", buf=" + buf.toString() + ", inNegate=" + inNegate);
 							qoutedString = buf.toString();
 							buf = new StringBuilder();
 						}
 						inQuote = false;
+						logger.debug("parseKeywords() : inQuote=" + inQuote + ", key=" + key + ", buf=" + buf.toString() + ", inNegate=" + inNegate);
 					} else {
 						if (key == null) {
 							// 追加するワードがあるか？
 							if (buf.length() != 0) {
+								logger.debug("parseKeywords() : inQuote=" + inQuote + ", buf=" + buf.toString() + ", inNegate=" + inNegate);
 								tokens.add(new Token(buf.toString(), inNegate));
 								buf = new StringBuilder();
+								inNegate = false;
 							}
-							inNegate = false;
+							logger.debug("parseKeywords() : inQuote=" + inQuote + ", buf=" + buf.toString() + ", inNegate=" + inNegate);
 						} else {
 							if (buf.length() != 0) {
+								logger.debug("parseKeywords() : inQuote=" + inQuote + ", key=" + key + ", buf=" + buf.toString() + ", inNegate=" + inNegate);
 								tokens.add(new Token(key, buf.toString(), inNegate));
 								key = null;
 								buf = new StringBuilder();
 								inNegate = false;
 							}
+							logger.debug("parseKeywords() : inQuote=" + inQuote + ", key=" + key + ", buf=" + buf.toString() + ", inNegate=" + inNegate);
 						}
 						inQuote = true;
+						logger.debug("parseKeywords() : inQuote=" + inQuote + ", key=" + key + ", buf=" + buf.toString() + ", inNegate=" + inNegate);
 					}
 				}
 			} else if (SEPARATE_CHAR == c) {
@@ -1654,6 +1769,11 @@ public class HubControllerBean {
 				} else {
 					buf.append(c);
 				}
+				inEscape = false;
+			} else if (SINGLE_QUATATION_CHAR == c) {
+				// 二つ重ねてエスケープする（クエリ文向けのエスケープ）
+				buf.append(c);
+				buf.append(c);
 				inEscape = false;
 			} else {
 				// クォートされた文字列があれば、抽出文字列として追加。

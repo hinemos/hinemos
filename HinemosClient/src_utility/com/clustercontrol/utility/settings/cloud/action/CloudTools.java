@@ -25,9 +25,8 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.util.EndpointUnit;
-import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.xcloud.model.cloud.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.RestConnectUnit;
 import com.clustercontrol.xcloud.model.cloud.HinemosManager;
 import com.clustercontrol.xcloud.model.cloud.ICloudScopes;
 import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
@@ -37,23 +36,18 @@ public class CloudTools {
 	/* ロガー */
 	protected static Logger log = Logger.getLogger(CloudTools.class);
 	
-	public static <T> T getEndpoint(Class<T> clazz) {
-		EndpointManager endpointManager = new EndpointManager(UtilityManagerUtil.getCurrentManagerName());
-		return endpointManager.getEndpoint(clazz);
-	}
-	
 	private static List<IHinemosManager> getHinemosManagers(){
-		Map<EndpointUnit, IHinemosManager> hinemosManagers = new HashMap<>();
-		List<EndpointUnit> newEndpoints = com.clustercontrol.util.EndpointManager.getActiveManagerList();
-		Set<EndpointUnit> oldEndpoints = hinemosManagers.keySet();
+		Map<RestConnectUnit, IHinemosManager> hinemosManagers = new HashMap<>();
+		List<RestConnectUnit> newEndpoints = RestConnectManager.getActiveManagerList();
+		Set<RestConnectUnit> oldEndpoints = hinemosManagers.keySet();
 		
-		CollectionComparator.compareCollection(newEndpoints, oldEndpoints, new CollectionComparator.Comparator<EndpointUnit, EndpointUnit>() {
+		CollectionComparator.compareCollection(newEndpoints, oldEndpoints, new CollectionComparator.Comparator<RestConnectUnit, RestConnectUnit>() {
 			@Override
-			public boolean match(EndpointUnit o1, EndpointUnit o2) {return o1 == o2;}
+			public boolean match(RestConnectUnit o1, RestConnectUnit o2) {return o1 == o2;}
 			@Override
-			public void afterO1(EndpointUnit o1) {hinemosManagers.put(o1, new HinemosManager(o1.getManagerName(), o1.getUrlListStr()));}
+			public void afterO1(RestConnectUnit o1) {hinemosManagers.put(o1, new HinemosManager(o1.getManagerName(), o1.getUrlListStr()));}
 			@Override
-			public void afterO2(EndpointUnit o2) {hinemosManagers.remove(o2);}
+			public void afterO2(RestConnectUnit o2) {hinemosManagers.remove(o2);}
 		});
 		
 		return new ArrayList<>(hinemosManagers.values());
@@ -96,6 +90,31 @@ public class CloudTools {
 			}
 		});
 		return roots;
+	}
+
+	/**
+	 * 指定されたIDのクラウドスコープを取得します。
+	 * 該当するクラウドスコープが見つからなければ例外を投げます。
+	 * 
+	 * @throws IllegalArgumentException
+	 */
+	public static com.clustercontrol.xcloud.model.cloud.ICloudScope getCloudScope(String cloudScopeId) {
+		com.clustercontrol.xcloud.model.cloud.ICloudScope r = getCloudScopeOrNull(cloudScopeId);
+		if (r == null) {
+			throw new IllegalArgumentException("CloudScope '" + cloudScopeId + "' not found");
+		}
+		return r;
+	}
+
+	/**
+	 * 指定されたIDのクラウドスコープを取得します。
+	 * 該当するクラウドスコープが見つからなければ null を返します。
+	 */
+	public static com.clustercontrol.xcloud.model.cloud.ICloudScope getCloudScopeOrNull(String cloudScopeId) {
+		for (com.clustercontrol.xcloud.model.cloud.ICloudScope iCloudScope : CloudTools.getCloudScopeList()){
+			if (iCloudScope.getId().equals(cloudScopeId)) return iCloudScope;
+		}
+		return null;
 	}
 	
 	public static List<String> getValidPlatfomIdList() {

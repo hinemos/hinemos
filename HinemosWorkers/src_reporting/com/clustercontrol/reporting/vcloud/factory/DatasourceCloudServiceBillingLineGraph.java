@@ -85,7 +85,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 	 * ver.4.1のレポーティングオプションと同様にfacilityIdと関連付いている監視情報を取得する
 	 */
 	private HashMap<String, Object> createDataSourceAuto(int num) throws ReportingPropertyNotFound {
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 
 		m_log.info("createDataSourceAuto() : facility_id : " + m_facilityId);
 		try {
@@ -110,7 +110,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 			throw new ReportingPropertyNotFound(MONITOR_ID_KEY_VALUE+"."+num + " is not defined.");
 		}
 		String monitorId = m_propertiesMap.get(MONITOR_ID_KEY_VALUE+"."+num);
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		try {
 			m_log.info("createDataSourceManual() : facility_id : " + m_facilityId + ", monitor_id : " + monitorId);
 			String csvFileName = getCsvFromDB(dayString, m_facilityId, monitorId);
@@ -135,7 +135,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 	 */
 	private String getCsvFromDB(String dayString, String facilityId, String monitorId) {
 		String[] columns = { "collectorid", "display_name", "date_time","facilityid", "value"};
-		String columnsStr = ReportUtil.joinStrings(columns,  ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 
 		int divider = Integer.parseInt(isDefine(m_propertiesMap.get(DIVIDER_KEY_VALUE+"."+m_num), "1"));
 		String labelName = m_propertiesMap.get(LABEL_NAME_KEY_VALUE+"."+m_num);
@@ -192,7 +192,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 
 					if (!resultList.isEmpty()) {
 						for (String[] results : resultList) {
-							bw.write(ReportUtil.joinStrings(results, ","));
+							bw.write(ReportUtil.joinStringsToCsv(results));
 							bw.newLine();
 						}
 					}
@@ -218,6 +218,13 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 
 	private List<String[]> getResultList(List<Integer> idList, String[] columns, int divider, Map<Integer, Object[]> itemDataMap) {
 		List<String[]> resultList = new ArrayList<String[]>();
+
+		// オーナーロールID取得
+		String ownerRoleId = null;
+		if (!"ADMINISTRATORS".equals(ReportUtil.getOwnerRoleId())) {
+			ownerRoleId = ReportUtil.getOwnerRoleId();
+		}
+
 		ReportingCollectControllerBean controller = new ReportingCollectControllerBean();
 		// サマリデータ、または収集データ(raw)のタイプでスイッチ
 		int summaryType = ReportUtil.getSummaryType(m_startDate.getTime(), m_endDate.getTime());
@@ -225,7 +232,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 		case SummaryTypeConstant.TYPE_AVG_HOUR:
 			List<SummaryHour> summaryHList = null;
 			try {
-				summaryHList = controller.getSummaryHourList(idList, m_startDate.getTime(), m_endDate.getTime());
+				summaryHList = controller.getSummaryHourList(idList, m_startDate.getTime(), m_endDate.getTime(), ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -244,8 +251,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 				//"value" :収集してきたデータをそのまま出力する,
 				//"facilityid" :レポートの設定値から入力されたデータ
 				results[0] = keyInfo.getMonitorId();
-				String itemName = HinemosMessage.replace(keyObj[1].toString());
-				results[1] = '"' + itemName.replace("\"", "\"\"") + '"';
+				results[1] = HinemosMessage.replace(keyObj[1].toString());
 				Timestamp time = new Timestamp(summaryHour.getTime());
 				results[2] = time.toString();
 				results[3] = keyInfo.getFacilityid();
@@ -263,7 +269,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 		case SummaryTypeConstant.TYPE_AVG_DAY:
 			List<SummaryDay> summaryDList = null;
 			try {
-				summaryDList = controller.getSummaryDayList(idList, m_startDate.getTime(), m_endDate.getTime());
+				summaryDList = controller.getSummaryDayList(idList, m_startDate.getTime(), m_endDate.getTime(), ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -282,8 +288,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 				//"value" :収集してきたデータをそのまま出力する,
 				//"facilityid" :レポートの設定値から入力されたデータ
 				results[0] = keyInfo.getMonitorId();
-				String itemName = HinemosMessage.replace(keyObj[1].toString());
-				results[1] = '"' + itemName.replace("\"", "\"\"") + '"';
+				results[1] = HinemosMessage.replace(keyObj[1].toString());
 				Timestamp time = new Timestamp(summaryDay.getTime());
 				results[2] = time.toString();
 				results[3] = keyInfo.getFacilityid();
@@ -301,7 +306,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 		case SummaryTypeConstant.TYPE_AVG_MONTH:
 			List<SummaryMonth> summaryMList = null;
 			try {
-				summaryMList = controller.getSummaryMonthList(idList, m_startDate.getTime(), m_endDate.getTime());
+				summaryMList = controller.getSummaryMonthList(idList, m_startDate.getTime(), m_endDate.getTime(), ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -320,8 +325,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 				//"value" :収集してきたデータをそのまま出力する,
 				//"facilityid" :レポートの設定値から入力されたデータ
 				results[0] = keyInfo.getMonitorId();
-				String itemName = HinemosMessage.replace(keyObj[1].toString());
-				results[1] = '"' + itemName.replace("\"", "\"\"") + '"';
+				results[1] = HinemosMessage.replace(keyObj[1].toString());
 				Timestamp time = new Timestamp(summaryMonth.getTime());
 				results[2] = time.toString();
 				results[3] = keyInfo.getFacilityid();
@@ -339,7 +343,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 		default: // defaultはRAWとする
 			List<CollectData> summaryList = null;
 			try {
-				summaryList = controller.getCollectDataList(idList, m_startDate.getTime(), m_endDate.getTime());
+				summaryList = controller.getCollectDataList(idList, m_startDate.getTime(), m_endDate.getTime(), ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -358,8 +362,7 @@ public class DatasourceCloudServiceBillingLineGraph extends DatasourceBase {
 				//"value" :収集してきたデータをそのまま出力する,
 				//"facilityid" :レポートの設定値から入力されたデータ
 				results[0] = keyInfo.getMonitorId();
-				String itemName = HinemosMessage.replace(keyObj[1].toString());
-				results[1] = '"' + itemName.replace("\"", "\"\"") + '"';
+				results[1] = HinemosMessage.replace(keyObj[1].toString());
 				Timestamp time = new Timestamp(data.getTime());
 				results[2] = time.toString();
 				results[3] = keyInfo.getFacilityid();

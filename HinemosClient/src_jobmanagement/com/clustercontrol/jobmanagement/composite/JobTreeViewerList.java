@@ -15,8 +15,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.SingletonUtil;
 
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.viewer.JobTreeViewer;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブツリーデータ<BR>
@@ -39,7 +39,7 @@ public class JobTreeViewerList {
 	}
 
 	/**  Set input object */
-	public static void setInput( final JobTreeViewer currentViewer, JobTreeItem jobTree ){
+	public static void setInput( final JobTreeViewer currentViewer, JobTreeItemWrapper jobTree ){
 		JobTreeViewerList jobTreeViewerList = getInstance();
 		// ビューを更新した場合は、開いているジョブツリーの情報を全て更新する
 		for( JobTreeViewer viewer : jobTreeViewerList.jobTreeViewers ){

@@ -40,6 +40,13 @@
 			{"value":"0", "name":"name_filecheck_modify_type_timestamp"},
 			{"value":"1", "name":"name_filecheck_modify_type_filesize"}
 		]}
+	]},
+	
+	{
+	"propName":"carryOverJudgmentFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"FileCheckData_carryOverJudgmentFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
 	]}
 ]
 }

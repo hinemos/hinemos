@@ -9,7 +9,6 @@
 package com.clustercontrol.jobmap.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,20 +31,21 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.JobmapIconImageInfoResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmap.action.GetJobMapImageListTableDefine;
 import com.clustercontrol.jobmap.dialog.JobMapImageDialog;
+import com.clustercontrol.jobmap.util.JobmapIconImageCacheEntry;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.jobmap.view.JobMapImageListView;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobmapIconImage;
 
 /**
  * ジョブマップ用イメージファイル一覧コンポジットクラス<BR>
@@ -213,15 +213,15 @@ public class JobMapImageListComposite extends Composite {
 	 */
 	@Override
 	public void update() {
-		List<JobmapIconImage> list = null;
+		List<JobmapIconImageCacheEntry> list = null;
 
 		// ジョブマップ用アイコンファイル一覧情報取得
-		Map<String, List<JobmapIconImage>> dispDataMap= new ConcurrentHashMap<>();
+		Map<String, List<JobmapIconImageCacheEntry>> dispDataMap= new ConcurrentHashMap<>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
 				list = JobmapImageCacheUtil.getJobmapIconImageList(managerName);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// 権限なし
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
@@ -242,18 +242,19 @@ public class JobMapImageListComposite extends Composite {
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<JobmapIconImage>> map: dispDataMap.entrySet()) {
-			for (JobmapIconImage info : map.getValue()) {
+		for(Map.Entry<String, List<JobmapIconImageCacheEntry>> map: dispDataMap.entrySet()) {
+			for (JobmapIconImageCacheEntry entry : map.getValue()) {
+				JobmapIconImageInfoResponse info = entry.getJobmapIconImage();
 				ArrayList<Object> obj = new ArrayList<Object>();
-				obj.add(info.getFiledata());
+				obj.add(entry.getFiledata());
 				obj.add(map.getKey());
 				obj.add(info.getIconId());
 				obj.add(info.getDescription());
 				obj.add(info.getOwnerRoleId());
 				obj.add(info.getCreateUser());
-				obj.add(new Date(info.getCreateTime()));
+				obj.add(info.getCreateTime());
 				obj.add(info.getUpdateUser());
-				obj.add(new Date(info.getUpdateTime()));
+				obj.add(info.getUpdateTime());
 				obj.add(null);
 				listInput.add(obj);
 			}

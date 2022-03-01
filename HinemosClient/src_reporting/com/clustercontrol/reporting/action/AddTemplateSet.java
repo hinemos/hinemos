@@ -9,14 +9,14 @@
 package com.clustercontrol.reporting.action;
 
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.AddTemplateSetRequest;
 
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.ReportingDuplicate;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.reporting.HinemosUnknown_Exception;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.ReportingDuplicate_Exception;
-import com.clustercontrol.ws.reporting.TemplateSetInfo;
 
 /**
  * 
@@ -34,31 +34,31 @@ public class AddTemplateSet {
 	 * @param テンプレートセット情報
 	 * @return 成功時 true 失敗時 false
 	 */
-	public boolean add(String managerName, TemplateSetInfo info) {
+	public boolean add(String managerName, AddTemplateSetRequest info) {
 		boolean ret = false;
 
 		String[] args = { info.getTemplateSetId(), managerName };
 		try {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-			ret = wrapper.addTemplateSet(info);
+			ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(managerName);
+			wrapper.addTemplateSet(info);
 			ret = true;
 			
 			MessageDialog.openInformation(null,
 					Messages.getString("successful"),
 					Messages.getString("message.reporting.34", args));
-		} catch (ReportingDuplicate_Exception e) {
+		} catch (ReportingDuplicate e) {
 			// スケジュールIDが重複している場合、エラーダイアログを表示する
 			MessageDialog.openInformation(null, 
 					Messages.getString("message"), 
 					Messages.getString("message.reporting.36", args));
-		} catch (HinemosUnknown_Exception e) {
+		} catch (HinemosUnknown e) {
 			String errMessage = HinemosMessage.replace(e.getMessage());
 			MessageDialog.openError(null, Messages.getString("failed"),
 					Messages.getString("message.reporting.35", args)
 							+ ", " + errMessage);
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				MessageDialog.openInformation(null,
 						Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));

@@ -25,15 +25,15 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
+import org.openapitools.client.model.JobRuntimeParamDetailResponse;
+import org.openapitools.client.model.JobRuntimeParamResponse;
+
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.jobmanagement.bean.JobRuntimeParamTypeConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.SizeConstantsWrapper;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobRuntimeParam;
-import com.clustercontrol.ws.jobmanagement.JobRuntimeParamDetail;
 
 /**
  * ジョブ実行契機のランタイム変数入力用コンポジットクラスです。
@@ -43,7 +43,7 @@ import com.clustercontrol.ws.jobmanagement.JobRuntimeParamDetail;
 public class JobKickInputParamComposite extends Composite {
 
 	/** ランタイムジョブ変数情報 */
-	private JobRuntimeParam m_jobRuntimeParam = null;
+	private JobRuntimeParamResponse m_jobRuntimeParam = null;
 
 	/** 入力・固定値用テキスト */
 	private Text m_valueText = null;
@@ -75,7 +75,7 @@ public class JobKickInputParamComposite extends Composite {
 	public JobKickInputParamComposite(
 			Composite parent,
 			int style,
-			JobRuntimeParam jobRuntimeParam) {
+			JobRuntimeParamResponse jobRuntimeParam) {
 		super(parent, style);
 		this.m_jobRuntimeParam = jobRuntimeParam;
 		initialize();
@@ -96,7 +96,7 @@ public class JobKickInputParamComposite extends Composite {
 		// グループ（Composite）
 		Group group = new Group(this, SWT.NONE);
 		group.setText(this.m_jobRuntimeParam.getParamId()
-				+ (this.m_jobRuntimeParam.isRequiredFlg()?" (*)":""));
+				+ (this.m_jobRuntimeParam.getRequiredFlg()?" (*)":""));
 		group.setLayout(new RowLayout(SWT.VERTICAL));
 		group.setLayoutData(new RowData());
 		((RowData)group.getLayoutData()).width = 570;
@@ -116,8 +116,8 @@ public class JobKickInputParamComposite extends Composite {
 		label.setLayoutData(new RowData(520, labelWidth));
 
 		// コントロール
-		if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_INPUT
-				|| this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_FIXED) {
+		if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.INPUT
+				|| this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.FIXED) {
 			// 「入力」「固定値」の場合
 			this.m_valueText = new Text(group, SWT.BORDER);
 			WidgetTestUtil.setTestId(this, "m_valueText", this.m_valueText);
@@ -126,7 +126,7 @@ public class JobKickInputParamComposite extends Composite {
 				this.m_valueText.setText(this.m_jobRuntimeParam.getValue());
 			}
 			this.m_valueText.setLayoutData(new RowData(350, SizeConstant.SIZE_TEXT_HEIGHT));
-			if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_FIXED) {
+			if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.FIXED) {
 				this.m_valueText.setEditable(false);
 			}
 			this.m_valueText.addModifyListener(new ModifyListener(){
@@ -136,10 +136,10 @@ public class JobKickInputParamComposite extends Composite {
 				}
 			});
 
-		} else if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_RADIO) {
+		} else if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.RADIO) {
 			// 「選択（ラジオボタン）」の場合
 			if (this.m_jobRuntimeParam.getJobRuntimeParamDetailList() != null) {
-				for (JobRuntimeParamDetail jobRuntimeParamDetail 
+				for (JobRuntimeParamDetailResponse jobRuntimeParamDetail 
 						: this.m_jobRuntimeParam.getJobRuntimeParamDetailList()) {
 					Button valueRadio = new Button(group, SWT.RADIO | SWT.WRAP);
 					WidgetTestUtil.setTestId(this, "valueRadio", valueRadio);
@@ -166,7 +166,7 @@ public class JobKickInputParamComposite extends Composite {
 				}
 			}
 
-		} else if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_COMBO) {
+		} else if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.COMBO) {
 			// 「選択（コンボボックス）」の場合
 			this.m_valueComboValueList = new ArrayList<>();
 			this.m_valueCombo = new Combo(group, SWT.DROP_DOWN | SWT.READ_ONLY);
@@ -183,7 +183,7 @@ public class JobKickInputParamComposite extends Composite {
 					this.m_valueComboValueList.add(rowcnt, "");
 					rowcnt++;
 				}
-				for (JobRuntimeParamDetail jobRuntimeParamDetail 
+				for (JobRuntimeParamDetailResponse jobRuntimeParamDetail 
 						: this.m_jobRuntimeParam.getJobRuntimeParamDetailList()) {
 					String text = String.format("%s(%s)", 
 							jobRuntimeParamDetail.getDescription(), 
@@ -214,8 +214,8 @@ public class JobKickInputParamComposite extends Composite {
 		ValidateResult result = null;
 
 		// 「入力」もしくは「選択（コンボボックス）」の場合
-		if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_INPUT
-				&& this.m_jobRuntimeParam.isRequiredFlg()
+		if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.INPUT
+				&& this.m_jobRuntimeParam.getRequiredFlg()
 				&& "".equals(this.m_valueText.getText())) {
 			result = new ValidateResult();
 			result.setValid(false);
@@ -223,8 +223,8 @@ public class JobKickInputParamComposite extends Composite {
 			result.setMessage(Messages.getString("message.job.135"
 					,new Object[]{this.m_jobRuntimeParam.getParamId()}));
 			return result;
-		} else if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_COMBO
-				&& this.m_jobRuntimeParam.isRequiredFlg()
+		} else if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.COMBO
+				&& this.m_jobRuntimeParam.getRequiredFlg()
 				&& "".equals(this.m_valueCombo.getText())) {
 			result = new ValidateResult();
 			result.setValid(false);
@@ -244,8 +244,8 @@ public class JobKickInputParamComposite extends Composite {
 	@Override
 	public void update(){
 		if (this.m_valueText != null) {
-			if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_INPUT
-				&& this.m_jobRuntimeParam.isRequiredFlg()
+			if (this.m_jobRuntimeParam.getParamType() ==JobRuntimeParamResponse.ParamTypeEnum.INPUT
+				&& this.m_jobRuntimeParam.getRequiredFlg()
 				&& "".equals(this.m_valueText.getText())) {
 				// 必須項目を明示
 				this.m_valueText.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
@@ -261,17 +261,17 @@ public class JobKickInputParamComposite extends Composite {
 	 */
 	public String getValue() {
 		String result = null;
-		if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_INPUT
-				|| this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_FIXED) {
+		if (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.INPUT
+				|| this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.FIXED) {
 			result = this.m_valueText.getText();
-		} else if (m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_RADIO) {
+		} else if (m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.RADIO) {
 			for (Button button : this.m_valueRadioList) {
 				if (button.getSelection()) {
 					result = (String)button.getData();
 					break;
 				}
 			}
-		} else if (m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_COMBO) {
+		} else if (m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.COMBO) {
 			result = this.m_valueComboValueList.get(this.m_valueCombo.getSelectionIndex());
 		}
 		return result;

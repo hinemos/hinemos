@@ -24,28 +24,28 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.CommandModuleInfoResponse;
+import org.openapitools.client.model.FileTransferModuleInfoResponse;
+import org.openapitools.client.model.FileTransferModuleInfoResponse.SendMethodTypeEnum;
+import org.openapitools.client.model.InfraCheckResultResponse;
+import org.openapitools.client.model.InfraCheckResultResponse.ResultEnum;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.ReferManagementModuleInfoResponse;
 
 import com.clustercontrol.bean.ValidMessage;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.action.GetInfraModuleTableDefine;
-import com.clustercontrol.infra.bean.OkNgConstant;
-import com.clustercontrol.infra.bean.SendMethodConstant;
 import com.clustercontrol.infra.composite.action.InfraModuleDoubleClickListener;
 import com.clustercontrol.infra.composite.action.InfraModuleSelectionChangedListener;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.infra.CommandModuleInfo;
-import com.clustercontrol.ws.infra.FileTransferModuleInfo;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraCheckResult;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleInfo;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
-import com.clustercontrol.ws.infra.ReferManagementModuleInfo;
 
 /**
  * 環境構築[モジュール]ビュー用のコンポジットクラスです。
@@ -158,11 +158,11 @@ public class InfraModuleComposite extends Composite {
 		}
 
 		//環境構築設定情報取得
-		InfraManagementInfo info = null;
-		InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+		InfraManagementInfoResponse info = null;
+		InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 		try {
 			info = wrapper.getInfraManagement(managementId);
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | InfraManagementNotFound | InvalidSetting e) {
 			m_log.warn("update() getInfraManagement, " + e.getMessage());
 		}
 
@@ -177,41 +177,47 @@ public class InfraModuleComposite extends Composite {
 
 		HashMap<String, String> map = getStatusString(managerName, managementId);
 
-		int order = 0;
-		for (InfraModuleInfo moduleInfo : info.getModuleList()) {
-			order++;
+		for(CommandModuleInfoResponse moduleInfo : info.getCommandModuleInfoList()) {
 			ArrayList<Object> a = new ArrayList<Object>();
-			a.add(order);
+			a.add(moduleInfo.getOrderNo() + 1);
 			a.add(moduleInfo.getModuleId());
 			a.add(moduleInfo.getName());
-			if(moduleInfo instanceof FileTransferModuleInfo){
-				a.add(Messages.getString("infra.module.transfer"));
-			} else if(moduleInfo instanceof CommandModuleInfo){
-				a.add(Messages.getString("infra.module.command"));
-			} else if(moduleInfo instanceof ReferManagementModuleInfo){
-				a.add(Messages.getString("infra.module.refer.management"));
-			}
-			a.add(ValidMessage.typeToString(moduleInfo.isValidFlg()));
-			if(moduleInfo instanceof FileTransferModuleInfo){
-				FileTransferModuleInfo fileModInfo = (FileTransferModuleInfo) moduleInfo;
-				String str = fileModInfo.getFileId();
-				if (fileModInfo.getSendMethodType() == SendMethodConstant.TYPE_SCP) {
-					str += " " + (fileModInfo.getDestOwner() == null ? "" : fileModInfo.getDestOwner());
-					str += "," + (fileModInfo.getDestAttribute() == null ? "" : fileModInfo.getDestAttribute());
-				}
-				a.add(str);
-			} else if (moduleInfo instanceof CommandModuleInfo) {
-				CommandModuleInfo commandModuleInfo = (CommandModuleInfo) moduleInfo;
-				a.add(commandModuleInfo.getExecCommand());
-			} else if (moduleInfo instanceof ReferManagementModuleInfo) {
-				ReferManagementModuleInfo referManagementModuleInfo = (ReferManagementModuleInfo) moduleInfo;
-				a.add(referManagementModuleInfo.getReferManagementId());
-			} else {
-				a.add("");
-			}
+			a.add(Messages.getString("infra.module.command"));
+			a.add(ValidMessage.typeToString(moduleInfo.getValidFlg()));
+			a.add(moduleInfo.getExecCommand());
 			a.add(map.get(moduleInfo.getModuleId()));
 			a.add("");
-
+			listInput.add(a);
+		}
+		
+		for(FileTransferModuleInfoResponse moduleInfo : info.getFileTransferModuleInfoList()) {
+			ArrayList<Object> a = new ArrayList<Object>();
+			a.add(moduleInfo.getOrderNo() + 1);
+			a.add(moduleInfo.getModuleId());
+			a.add(moduleInfo.getName());
+			a.add(Messages.getString("infra.module.transfer"));
+			a.add(ValidMessage.typeToString(moduleInfo.getValidFlg()));
+			String str = moduleInfo.getFileId();
+			if (moduleInfo.getSendMethodType() == SendMethodTypeEnum.SCP) {
+				str += " " + (moduleInfo.getDestOwner() == null ? "" : moduleInfo.getDestOwner());
+				str += "," + (moduleInfo.getDestAttribute() == null ? "" : moduleInfo.getDestAttribute());
+			}
+			a.add(str);
+			a.add(map.get(moduleInfo.getModuleId()));
+			a.add("");
+			listInput.add(a);
+		}
+		
+		for(ReferManagementModuleInfoResponse moduleInfo : info.getReferManagementModuleInfoList()) {
+			ArrayList<Object> a = new ArrayList<Object>();
+			a.add(moduleInfo.getOrderNo() + 1);
+			a.add(moduleInfo.getModuleId());
+			a.add(moduleInfo.getName());
+			a.add(Messages.getString("infra.module.refer.management"));
+			a.add(ValidMessage.typeToString(moduleInfo.getValidFlg()));
+			a.add(moduleInfo.getReferManagementId());
+			a.add(map.get(moduleInfo.getModuleId()));
+			a.add("");
 			listInput.add(a);
 		}
 
@@ -258,36 +264,36 @@ public class InfraModuleComposite extends Composite {
 
 	private HashMap<String, String> getStatusString(String managerName, String managementId) {
 		HashMap<String, String> ret = new HashMap<>();
-		List<InfraCheckResult> resultList = null;
+		List<InfraCheckResultResponse> resultList = null;
 		try {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 			resultList = wrapper.getCheckResultList(managementId);
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | InvalidSetting e) {
 			m_log.error("getStatusString() getCheckResultList, " + e.getMessage());
 		}
 		if(resultList == null){
 			return ret;
 		}
 
-		HashMap<String, List<InfraCheckResult>> checkResultMap = new HashMap<>();
-		for (InfraCheckResult result : resultList) {
+		HashMap<String, List<InfraCheckResultResponse>> checkResultMap = new HashMap<>();
+		for (InfraCheckResultResponse result : resultList) {
 			String moduleId = result.getModuleId();
-			List<InfraCheckResult> list = checkResultMap.get(moduleId);
+			List<InfraCheckResultResponse> list = checkResultMap.get(moduleId);
 			if (list == null) {
-				list = new ArrayList<InfraCheckResult>();
+				list = new ArrayList<InfraCheckResultResponse>();
 				checkResultMap.put(moduleId, list);
 			}
 			m_log.debug("moduleId=" + moduleId + ", facilityId=" + result.getNodeId() + ", " + result.getResult());
 			list.add(result);
 		}
-		for (Entry<String, List<InfraCheckResult>> resultEntry : checkResultMap.entrySet()) {
-			List<InfraCheckResult> list = resultEntry.getValue();
+		for (Entry<String, List<InfraCheckResultResponse>> resultEntry : checkResultMap.entrySet()) {
+			List<InfraCheckResultResponse> list = resultEntry.getValue();
 			List<String> okList = new ArrayList<>();
 			List<String> ngList = new ArrayList<>();
-			for (InfraCheckResult result : list) {
-				if(result.getResult() == OkNgConstant.TYPE_OK){
+			for (InfraCheckResultResponse result : list) {
+				if(result.getResult() == ResultEnum.OK){
 					okList.add(result.getNodeId());
-				} else if (result.getResult() == OkNgConstant.TYPE_NG){
+				} else if (result.getResult() == ResultEnum.NG){
 					ngList.add(result.getNodeId());
 				} else {
 					m_log.warn("getStatusString : " + result.getNodeId() + ", " + result.getResult()); // ここには到達しないはず。

@@ -10,13 +10,13 @@ package com.clustercontrol.http.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToOne;
-import javax.persistence.PrimaryKeyJoinColumn;
-import javax.persistence.Table;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -33,6 +33,12 @@ import com.clustercontrol.monitor.run.model.MonitorInfo;
 @Entity
 @Table(name="cc_monitor_http_info", schema="setting")
 @Cacheable(true)
+/**
+ * Http監視設定の情報を扱うクラス
+ * 
+ * メンバ変数proxyHost、proxyPort、proxySet、urlReplaceは現在使われていないが、
+ * 後々プロキシ対応が必要になった時のためdb、Entity共に残しておく。
+ */
 public class HttpCheckInfo extends MonitorCheckInfo implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private String proxyHost;

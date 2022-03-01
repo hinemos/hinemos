@@ -13,22 +13,27 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.ws.WebServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.CloudLoginUserInfoResponse;
+import org.openapitools.client.model.CloudPlatformInfoResponse;
+import org.openapitools.client.model.HRepositoryResponse;
+import org.openapitools.client.model.InstanceBackupResponse;
+import org.openapitools.client.model.InstanceInfoResponse;
+import org.openapitools.client.model.StorageBackupInfoResponse;
+import org.openapitools.client.model.StorageInfoResponse;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudLoginUser;
-import com.clustercontrol.ws.xcloud.HRepository;
-import com.clustercontrol.ws.xcloud.InstanceBackup;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
 import com.clustercontrol.xcloud.model.repository.CloudRepository;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 
 public class HinemosManager extends Element implements IHinemosManager {
@@ -40,8 +45,6 @@ public class HinemosManager extends Element implements IHinemosManager {
 	
 	private boolean Initialized;
 
-	private EndpointManager endpointManager;
-	
 	private ElementBaseModeWatch modelWatcher;
 	
 	private List<CloudPlatform> cloudPlatforms;
@@ -55,18 +58,18 @@ public class HinemosManager extends Element implements IHinemosManager {
 	public HinemosManager(String managerName, String url){
 		this.url = url;
 		this.managerName = managerName;
-		this.endpointManager = new EndpointManager(managerName);
 		this.cloudRepository = new CloudRepository(this);
 		this.billingAlarms = new BillingMonitors(this);
 	}
 
-	public <T> T getEndpoint(Class<T> clazz) {
-		return endpointManager.getEndpoint(clazz);
+	@Override
+	public CloudRestClientWrapper getWrapper() {
+		return CloudRestClientWrapper.getWrapper(managerName);
 	}
 
 	@Override
 	public String getAccountName() {
-		return endpointManager.getAccountName();
+		return RestConnectManager.get(managerName).getUserId();
 	}
 
 	@Override
@@ -104,19 +107,25 @@ public class HinemosManager extends Element implements IHinemosManager {
 		long start1 = System.currentTimeMillis();
 		
 		try {
-			CloudEndpoint endpoint = getEndpoint(CloudEndpoint.class);
+			CloudRestClientWrapper wrapper = getWrapper();
 			
 			// 起動キーチェック処理
 			try {
 				if(!expirationDialog) {
 					expirationDialog = true;
-					endpoint.getVersion();
+					wrapper.checkPublish();
 				}
-			} catch (WebServiceException e) {
+			} catch (HinemosUnknown e) {
 				//マルチマネージャ接続時にクラウド/ＶＭが有効になってないマネージャの混在がありえる。
 				//バージョンが取得できない（endpoint通信で異常が出る）なら クラウド/ＶＭが有効になってないマネージャとみなす。
 				//運用上は想定内の状況なので、警告ログのみ出力して処理は続行する。
-				logger.warn("update(): endpoint.getVersion() : WebServiceException. managerName=" + managerName );
+				if(UrlNotFound.class.equals(e.getCause().getClass())) {
+					logger.warn("update(): checkPublish() : UrlNotFound. managerName=" + managerName);
+				} else {
+					MessageDialog.openWarning(null, 
+							Messages.getString("warning"), 
+							CloudConstants.bundle_messages.getString("message.expiration.term.invalid"));
+				}
 			} catch (Throwable e) {
 				// 起動キーが有効期限切れの場合
 				MessageDialog.openWarning(null, 
@@ -125,8 +134,8 @@ public class HinemosManager extends Element implements IHinemosManager {
 			}
 
 			long start2 = System.currentTimeMillis();
-			HRepository repository = endpoint.getRepository();
-			logger.debug(String.format("CloudEndpoint.getRepository : elapsed time=%dms", System.currentTimeMillis() - start2));
+			HRepositoryResponse repository = wrapper.getRepository(null);
+			logger.debug(String.format("CloudRestEndpoint.getRepository : elapsed time=%dms", System.currentTimeMillis() - start2));
 
 			updateCloudPlatforms(repository.getPlatforms());
 
@@ -135,17 +144,17 @@ public class HinemosManager extends Element implements IHinemosManager {
 			updateCloudRepository(repository);
 			
 			{
-				Map<String, List<CloudLoginUser>> userMap = new HashMap<>();
-				for (CloudLoginUser user: repository.getLoginUsers()) {
-					List<CloudLoginUser> users = userMap.get(user.getCloudScopeId());
+				Map<String, List<CloudLoginUserInfoResponse>> userMap = new HashMap<>();
+				for (CloudLoginUserInfoResponse user: repository.getLoginUsers()) {
+					List<CloudLoginUserInfoResponse> users = userMap.get(user.getEntity().getCloudScopeId());
 					if (users == null) {
 						users = new ArrayList<>();
-						userMap.put(user.getCloudScopeId(), users);
+						userMap.put(user.getEntity().getCloudScopeId(), users);
 					}
 					users.add(user);
 				}
 				for (CloudScope scope: getCloudScopes().getCloudScopes()) {
-					List<CloudLoginUser> users = userMap.get(scope.getId());
+					List<CloudLoginUserInfoResponse> users = userMap.get(scope.getId());
 					if (users != null)
 						scope.getLoginUsers().update(users);
 				}
@@ -154,20 +163,23 @@ public class HinemosManager extends Element implements IHinemosManager {
 			logger.debug(String.format("HinemosManager.update : elapsed time=%dms", System.currentTimeMillis() - start1));
 			
 			Initialized = true;
+		} catch (RuntimeException e) {
+			// findbugs対応 RuntimeExceptionのcatch を明示化
+			throw new CloudModelException(e.getMessage(), e);
 		} catch (Exception e) {
 			throw new CloudModelException(e.getMessage(), e);
 		}
 	}
 	
-	public void updateCloudPlatforms(List<com.clustercontrol.ws.xcloud.CloudPlatform> wsCloudPlatforms) {
+	public void updateCloudPlatforms(List<CloudPlatformInfoResponse> CloudPlatforms) {
 		if (cloudPlatforms == null)
 			cloudPlatforms = new ArrayList<>();
 
-		CollectionComparator.compareCollection(cloudPlatforms, wsCloudPlatforms, new CollectionComparator.Comparator<CloudPlatform, com.clustercontrol.ws.xcloud.CloudPlatform>() {
-			public boolean match(CloudPlatform o1, com.clustercontrol.ws.xcloud.CloudPlatform o2) {return o1.equalValues(o2);}
-			public void matched(CloudPlatform o1, com.clustercontrol.ws.xcloud.CloudPlatform o2) {o1.update(o2);}
+		CollectionComparator.compareCollection(cloudPlatforms, CloudPlatforms, new CollectionComparator.Comparator<CloudPlatform, CloudPlatformInfoResponse>() {
+			public boolean match(CloudPlatform o1, CloudPlatformInfoResponse o2) {return o1.equalValues(o2);}
+			public void matched(CloudPlatform o1, CloudPlatformInfoResponse o2) {o1.update(o2);}
 			public void afterO1(CloudPlatform o1) {cloudPlatforms.remove(o1);}
-			public void afterO2(com.clustercontrol.ws.xcloud.CloudPlatform o2) {
+			public void afterO2(CloudPlatformInfoResponse o2) {
 				CloudPlatform newCloudPlatform = CloudPlatform.convert(HinemosManager.this, o2);
 				cloudPlatforms.add(newCloudPlatform);
 			}
@@ -176,47 +188,47 @@ public class HinemosManager extends Element implements IHinemosManager {
 
 	@Override
 	public void updateLocation(final ILocation location) {
-		CloudEndpoint endpoint = getEndpoint(CloudEndpoint.class);
+		CloudRestClientWrapper wrapper = getWrapper();
 		
-		HRepository repository;
+		HRepositoryResponse repository;
 		try {
-			repository = endpoint.updateLocationRepository(location.getCloudScope().getId(), location.getId());
+			repository = wrapper.updateLocationRepository(location.getCloudScope().getId(), location.getId());
 		} catch (Exception e) {
 			throw new CloudModelException(e.getMessage(), e);
 		}
 		
 		ComputeResources resources = getCloudScopes().getCloudScope(location.getCloudScope().getId()).getLocation(location.getId()).getComputeResources();
 
-		List<com.clustercontrol.ws.xcloud.Instance> instances = new ArrayList<>(repository.getInstances());
-		Iterator<com.clustercontrol.ws.xcloud.Instance> iter = instances.iterator();
+		List<InstanceInfoResponse> instances = new ArrayList<>(repository.getInstances());
+		Iterator<InstanceInfoResponse> iter = instances.iterator();
 		while (iter.hasNext()) {
-			com.clustercontrol.ws.xcloud.Instance instance = iter.next();
+			InstanceInfoResponse instance = iter.next();
 			if (!(instance.getCloudScopeId().equals(location.getCloudScope().getId()) && instance.getLocationId().equals(location.getId()))) {
 				iter.remove();
 			}
 		}
 		resources.updateInstances(instances);
 		
-		Map<String, InstanceBackup> instanceBackupMap = new HashMap<>();
-		for (InstanceBackup backup: repository.getInstanceBackups()) {
+		Map<String, InstanceBackupResponse> instanceBackupMap = new HashMap<>();
+		for (InstanceBackupResponse backup: repository.getInstanceBackups()) {
 			instanceBackupMap.put(backup.getInstanceId(), backup);
 		}
 		for (Instance i: resources.getInstances()) {
 			i.getBackup().update(instanceBackupMap.get(i.getId()));
 		}
 		
-		List<com.clustercontrol.ws.xcloud.Storage> storages = new ArrayList<>(repository.getStorages());
-		Iterator<com.clustercontrol.ws.xcloud.Storage> storageIter = storages.iterator();
+		List<StorageInfoResponse> storages = new ArrayList<>(repository.getStorages());
+		Iterator<StorageInfoResponse> storageIter = storages.iterator();
 		while (storageIter.hasNext()) {
-			com.clustercontrol.ws.xcloud.Storage storage = storageIter.next();
+			StorageInfoResponse storage = storageIter.next();
 			if (!(storage.getCloudScopeId().equals(location.getCloudScope().getId()) && storage.getLocationId().equals(location.getId()))) {
 				iter.remove();
 			}
 		}
 		resources.updateStorages(storages);
 		
-		Map<String, com.clustercontrol.ws.xcloud.StorageBackup> storageBackupMap = new HashMap<>();
-		for (com.clustercontrol.ws.xcloud.StorageBackup backup: repository.getStorageBackups()) {
+		Map<String, StorageBackupInfoResponse> storageBackupMap = new HashMap<>();
+		for (StorageBackupInfoResponse backup: repository.getStorageBackups()) {
 			storageBackupMap.put(backup.getStorageId(), backup);
 		}
 		for (Storage s: resources.getStorages()) {
@@ -226,7 +238,7 @@ public class HinemosManager extends Element implements IHinemosManager {
 		getCloudRepository().updateLocation(location, repository);
 	}
 	
-	public void updateCloudScopes(HRepository repository) {
+	public void updateCloudScopes(HRepositoryResponse repository) {
 		getCloudScopes().updateCloudScopes(repository);
 	}
 	
@@ -236,7 +248,7 @@ public class HinemosManager extends Element implements IHinemosManager {
 		}
 	}
 	
-	public void updateCloudRepository(HRepository repository) {
+	public void updateCloudRepository(HRepositoryResponse repository) {
 		getCloudRepository().update(repository);
 	}
 	

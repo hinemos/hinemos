@@ -193,6 +193,32 @@
 	"propName":"ownerRoleId",
 	"annotations":[
 		{"type":"Column", "columnName":"MonitorInfo_ownerRoleId"}
+	]},
+
+	{
+	"propName":"priorityChangeJudgmentType",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_priorityChangeJudgmentType"},
+		{
+			"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_notPriorityChange"},
+				{"value":"1", "name":"name_acrossMonitorDetailId"}
+			]
+		}
+	]},
+
+	{
+	"propName":"priorityChangeFailureType",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorInfo_priorityChangeFailureType"},
+		{
+			"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_notPriorityChange"},
+				{"value":"1", "name":"name_priorityChange"}
+			]
+		}
 	]}
 ]
 }

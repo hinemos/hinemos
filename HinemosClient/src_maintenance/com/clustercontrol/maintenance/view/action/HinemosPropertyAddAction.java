@@ -18,7 +18,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.clustercontrol.maintenance.dialog.HinemosPropertyTypeDialog;
 import com.clustercontrol.maintenance.view.HinemosPropertyView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * メンテナンス[共通設定]ビューの作成アクションクラス<BR>
@@ -64,7 +64,7 @@ public class HinemosPropertyAddAction extends AbstractHandler {
 			return null;
 		}
 
-		String manageName = EndpointManager.getActiveManagerNameList().get(0);
+		String manageName = RestConnectManager.getActiveManagerNameList().get(0);
 		HinemosPropertyTypeDialog dialog = new HinemosPropertyTypeDialog(this.viewPart.getSite().getShell(), view, manageName);
 		dialog.open();
 		return null;

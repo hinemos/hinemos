@@ -30,12 +30,14 @@ public class ModifyMonitorPluginNumeric extends ModifyMonitorNumericValueType {
 	@Override
 	protected boolean addCheckInfo() throws MonitorNotFound, HinemosUnknown,
 			InvalidRole {
+		m_monitorInfo.getPluginCheckInfo().setMonitorId(m_monitorInfo.getMonitorId());
 		return (new PluginCheckInfoUtil()).addCheckInfo(m_monitorInfo.getPluginCheckInfo());
 	}
 	
 	@Override
 	protected boolean modifyCheckInfo() throws MonitorNotFound, InvalidRole,
 			HinemosUnknown {
+		m_monitorInfo.getPluginCheckInfo().setMonitorId(m_monitorInfo.getMonitorId());
 		return (new PluginCheckInfoUtil()).modifyCheckInfo(m_monitorInfo.getPluginCheckInfo());
 	}
 }

@@ -16,7 +16,16 @@ import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.CalendarDetailInfoResponse;
+import org.openapitools.client.model.CalendarDetailInfoResponse.DayTypeEnum;
+import org.openapitools.client.model.CalendarDetailInfoResponse.WeekNoEnum;
+import org.openapitools.client.model.CalendarDetailInfoResponse.WeekXthEnum;
+import org.openapitools.client.model.CalendarInfoResponse;
+import org.openapitools.client.model.CalendarPatternInfoResponse;
+import org.openapitools.client.model.YMDResponse;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -25,8 +34,7 @@ import com.clustercontrol.utility.settings.platform.xml.CalendarInfo;
 import com.clustercontrol.utility.settings.platform.xml.CalendarPatternDetailInfo;
 import com.clustercontrol.utility.settings.platform.xml.CalendarPatternInfo;
 import com.clustercontrol.utility.util.Config;
-import com.clustercontrol.utility.util.DateUtil;
-import com.clustercontrol.utility.util.TimeTo48hConverter;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 
 /**
  * カレンダー情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -77,10 +85,12 @@ public class CalendarConv {
 	 *            カレンダ定義 XML Bean
 	 * @return カレンダ定義 Hinemos Bean
 	 * @throws ParseException
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	public static com.clustercontrol.ws.calendar.CalendarInfo getCalendarInfoDto(CalendarInfo info) throws ParseException {
+	public static CalendarInfoResponse getCalendarInfoDto(CalendarInfo info) throws ParseException, InvalidSetting, HinemosUnknown {
 		
-		com.clustercontrol.ws.calendar.CalendarInfo ret = new com.clustercontrol.ws.calendar.CalendarInfo();
+		CalendarInfoResponse ret = new CalendarInfoResponse();
 		
 
 		// 登録日時、更新日時に利用する日時（実行日時とする）
@@ -100,12 +110,8 @@ public class CalendarConv {
 			return null;
 		}
 		
-		SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
-		sdf.setTimeZone(TimezoneUtil.getTimeZone());
-		Date date = sdf.parse(info.getValidTimeFrom());
-		ret.setValidTimeFrom(date.getTime());
-		date = sdf.parse(info.getValidTimeTo());
-		ret.setValidTimeTo(date.getTime());
+		ret.setValidTimeFrom(info.getValidTimeFrom());
+		ret.setValidTimeTo(info.getValidTimeTo());
 		
 		if(info.getDescription() != null){
 			ret.setDescription(info.getDescription());
@@ -119,16 +125,19 @@ public class CalendarConv {
 			}
 		});
 		for (CalendarDetailInfo detail : details) {
-			com.clustercontrol.ws.calendar.CalendarDetailInfo retDetail =
+			CalendarDetailInfoResponse retDetail =
 					getCalendarDetailInfoDto(info.getCalendarId(), detail);
 			ret.getCalendarDetailList().add(retDetail);
 		}
 		
 		ret.setOwnerRoleId(info.getOwnerRoleId());
 		
-		ret.setRegDate(now);
+		SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+		sdf.setTimeZone(TimezoneUtil.getTimeZone());
+		String strDate = sdf.format(now);
+		ret.setRegDate(strDate);
 		ret.setRegUser(Config.getConfig("Login.USER"));
-		ret.setUpdateDate(now);
+		ret.setUpdateDate(strDate);
 		ret.setUpdateUser(Config.getConfig("Login.USER"));
 
 		return ret;
@@ -141,40 +150,54 @@ public class CalendarConv {
 	 * @param info カレンダ詳細定義 XML Bean
 	 * @return カレンダ詳細定義 Hinemos Bean
 	 * @throws ParseException
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	private static com.clustercontrol.ws.calendar.CalendarDetailInfo getCalendarDetailInfoDto(String calenderId, CalendarDetailInfo info) throws ParseException {
-		com.clustercontrol.ws.calendar.CalendarDetailInfo ret = null;
-
-		ret = new com.clustercontrol.ws.calendar.CalendarDetailInfo();
-
-		ret.setDescription(info.getDescription());
-		ret.setYear(info.getYearNo());
-		ret.setMonth(info.getMonthNo());
-
-		ret.setDayType(info.getDayType());
-
-		ret.setDayOfWeekInMonth(info.getWeekXth());
-		ret.setDayOfWeek(info.getWeekNo());
-
-		ret.setDate(info.getDayNo());
+	private static CalendarDetailInfoResponse getCalendarDetailInfoDto(String calenderId, CalendarDetailInfo info) throws ParseException, InvalidSetting, HinemosUnknown {
+		CalendarDetailInfoResponse ret = new CalendarDetailInfoResponse();
 		
-		if (info.getCalendarPatternId() != null && !info.getCalendarPatternId().isEmpty()) {
+		ret.setDescription(info.getDescription());
+		ret.setYearNo(info.getYearNo());
+		ret.setMonthNo(info.getMonthNo());
+		
+		DayTypeEnum dayTypeEnum = OpenApiEnumConverter.integerToEnum(info.getDayType(), DayTypeEnum.class);
+		ret.setDayType(dayTypeEnum);
+		
+		WeekXthEnum weekXthEnum = OpenApiEnumConverter.integerToEnum(info.getWeekXth(), WeekXthEnum.class); 
+		ret.setWeekXth(weekXthEnum);
+		
+		WeekNoEnum weekNoEnum = null;
+		if(info.getWeekNo() == 0){
+			ret.setWeekNo(null);
+		} else {
+			weekNoEnum = OpenApiEnumConverter.integerToEnum(info.getWeekNo(), WeekNoEnum.class);
+			ret.setWeekNo(weekNoEnum);
+		}
+		
+		if(info.getDayNo() == 0){
+			ret.setDayNo(null);
+		} else {
+			ret.setDayNo(info.getDayNo());
+		}
+		
+		if (info.getCalendarPatternId() != null && !info.getCalendarPatternId().isEmpty() && info.getDayType() == 3) {
 			ret.setCalPatternId(info.getCalendarPatternId());
 		}
 		else {
 			ret.setCalPatternId(null);
 		}
-
-		ret.setAfterday(info.getAfterDay());
 		
-		ret.setTimeFrom(DateUtil.convTimeString2Epoch(info.getStartTime()));
-		ret.setTimeTo(DateUtil.convTimeString2Epoch(info.getEndTime()));
+		ret.setAfterDay(info.getAfterDay());
 		
-		ret.setOperateFlg(info.getExecuteFlg());
-
+		ret.setStartTime(info.getStartTime());
+		ret.setEndTime(info.getEndTime());
+		
+		ret.setExecuteFlg(info.getExecuteFlg());
+		
 		ret.setSubstituteFlg(info.getSubstituteFlg());
 		ret.setSubstituteLimit(info.getSubstituteLimit());
 		ret.setSubstituteTime(info.getSubstituteTime());
+		ret.setOrderNo(info.getOrderNo());
 
 		return ret;
 	}
@@ -188,22 +211,20 @@ public class CalendarConv {
 	 * @throws ParseException
 	 * @throws IndexOutOfBoundsException
 	 */
-	public static CalendarInfo getCalendarInfo(com.clustercontrol.ws.calendar.CalendarInfo calendar) throws IndexOutOfBoundsException, ParseException {
+	public static CalendarInfo getCalendarInfo(CalendarInfoResponse calendar) throws IndexOutOfBoundsException, ParseException {
 		CalendarInfo ret = new CalendarInfo();
 
 		ret.setCalendarId(calendar.getCalendarId());
 		ret.setCalendarName(calendar.getCalendarName());
 	
-		SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
-		sdf.setTimeZone(TimezoneUtil.getTimeZone());
-		ret.setValidTimeFrom( sdf.format(calendar.getValidTimeFrom()));
-		ret.setValidTimeTo(sdf.format(calendar.getValidTimeTo()));
+		ret.setValidTimeFrom(calendar.getValidTimeFrom());
+		ret.setValidTimeTo(calendar.getValidTimeTo());
 
 		ret.setDescription(calendar.getDescription());
 		ret.setOwnerRoleId(calendar.getOwnerRoleId());
 
 		int oderNo = 1;
-		for (com.clustercontrol.ws.calendar.CalendarDetailInfo detail : calendar.getCalendarDetailList()) {
+		for (CalendarDetailInfoResponse  detail : calendar.getCalendarDetailList()) {
 			CalendarDetailInfo retDetail = getCalendarDetailInfo(detail);
 			retDetail.setOrderNo(oderNo);
 			ret.addCalendarDetailInfo(retDetail);
@@ -221,33 +242,39 @@ public class CalendarConv {
 	 * @return カレンダ詳細定義 XML Bean
 	 * @throws ParseException
 	 */
-	private static CalendarDetailInfo getCalendarDetailInfo(com.clustercontrol.ws.calendar.CalendarDetailInfo info) throws ParseException {
+	private static CalendarDetailInfo getCalendarDetailInfo(CalendarDetailInfoResponse info) throws ParseException {
 		CalendarDetailInfo ret = new CalendarDetailInfo();
 
 		ret.setDescription(info.getDescription());
-		ret.setYearNo(info.getYear());
-		ret.setMonthNo(info.getMonth());
-		ret.setDayType(info.getDayType());
-		if(info.getDayType() == 1){
-			ret.setWeekXth(info.getDayOfWeekInMonth());
-			ret.setWeekNo(info.getDayOfWeek());
-			ret.setAfterDay(info.getAfterday());
+		ret.setYearNo(info.getYearNo());
+		ret.setMonthNo(info.getMonthNo());
+		
+		int DayTypeInt = OpenApiEnumConverter.enumToInteger(info.getDayType());
+		ret.setDayType(DayTypeInt);
+		if(DayTypeInt == 1){
+			int weekXthInt = OpenApiEnumConverter.enumToInteger(info.getWeekXth());
+			ret.setWeekXth(weekXthInt);
+			
+			int weekNoInt = OpenApiEnumConverter.enumToInteger(info.getWeekNo());
+			ret.setWeekNo(weekNoInt);
+			
+			ret.setAfterDay(info.getAfterDay());
 		}
-		else if(info.getDayType() == 2){
-			ret.setDayNo(info.getDate());
-			ret.setAfterDay(info.getAfterday());
+		else if(DayTypeInt == 2){
+			ret.setDayNo(info.getDayNo());
+			ret.setAfterDay(info.getAfterDay());
 		}
-		else if(info.getDayType() == 3){
+		else if(DayTypeInt == 3){
 			if (info.getCalPatternId() != null && !info.getCalPatternId().isEmpty()) {
 				ret.setCalendarPatternId(info.getCalPatternId());
 			}
-			ret.setAfterDay(info.getAfterday());
+			ret.setAfterDay(info.getAfterDay());
 		}
-		ret.setStartTime(TimeTo48hConverter.dateTo48hms(info.getTimeFrom()));
-		ret.setEndTime(TimeTo48hConverter.dateTo48hms(info.getTimeTo()));
-		ret.setExecuteFlg(info.isOperateFlg());
+		ret.setStartTime(info.getStartTime());
+		ret.setEndTime(info.getEndTime());
+		ret.setExecuteFlg(info.getExecuteFlg());
 
-		ret.setSubstituteFlg(info.isSubstituteFlg());
+		ret.setSubstituteFlg(info.getSubstituteFlg());
 		ret.setSubstituteLimit(info.getSubstituteLimit());
 		ret.setSubstituteTime(info.getSubstituteTime());
 
@@ -262,23 +289,23 @@ public class CalendarConv {
 	 * @return カレンダパターン定義 Hinemos Bean
 	 * @throws ParseException
 	 */
-	public static com.clustercontrol.ws.calendar.CalendarPatternInfo getCalendarPatternInfoDto(CalendarPatternInfo info) throws ParseException {
+	public static CalendarPatternInfoResponse getCalendarPatternInfoDto(CalendarPatternInfo info) throws ParseException {
 		
-		com.clustercontrol.ws.calendar.CalendarPatternInfo ret = new com.clustercontrol.ws.calendar.CalendarPatternInfo();
+		CalendarPatternInfoResponse ret = new CalendarPatternInfoResponse();
 		
 		try {
 			// 登録日時、更新日時に利用する日時（実行日時とする）
 			long now = new Date().getTime();
 
 			if(info.getCalendarPatternId() != null){
-				ret.setCalPatternId(info.getCalendarPatternId());
+				ret.setCalendarPatternId(info.getCalendarPatternId());
 			}else{
 				log.warn(Messages.getString("SettingTools.EssentialValueInvalid") + "(CalendarPatternId) : " + info.toString());
 				return null;
 			}
 			
 			if(info.getCalendarPatternName() != null){
-				ret.setCalPatternName(info.getCalendarPatternName());
+				ret.setCalendarPatternName(info.getCalendarPatternName());
 			}else{
 				log.warn(Messages.getString("SettingTools.EssentialValueInvalid") + "(CalendarPatternName) : " + info.getCalendarPatternId());
 				return null;
@@ -292,13 +319,15 @@ public class CalendarConv {
 			}
 					
 			for (CalendarPatternDetailInfo detail : info.getCalendarPatternDetailInfo()) {
-				com.clustercontrol.ws.calendar.Ymd retDetail = getCalendarPatternDetailInfoDto(info.getCalendarPatternId(), detail);
-				ret.getYmd().add(retDetail);
+				YMDResponse  retDetail = getCalendarPatternDetailInfoDto(info.getCalendarPatternId(), detail);
+				ret.getCalPatternDetailInfoEntities().add(retDetail);
 			}
 			
-			ret.setRegDate(now);
+			SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+			String strDate = sdf.format(now);
+			ret.setRegDate(strDate);
 			ret.setRegUser(Config.getConfig("Login.USER"));
-			ret.setUpdateDate(now);
+			ret.setUpdateDate(strDate);
 			ret.setUpdateUser(Config.getConfig("Login.USER"));
 
 		} catch (Exception e) {
@@ -316,15 +345,15 @@ public class CalendarConv {
 	 * @return カレンダパターン詳細定義 Hinemos Bean
 	 * @throws ParseException
 	 */
-	private static com.clustercontrol.ws.calendar.Ymd getCalendarPatternDetailInfoDto(String calenderPatternId, CalendarPatternDetailInfo info) throws ParseException {
-		com.clustercontrol.ws.calendar.Ymd ret = null;
+	private static YMDResponse getCalendarPatternDetailInfoDto(String calenderPatternId, CalendarPatternDetailInfo info) throws ParseException {
+		YMDResponse ret = null;
 
 		try {
-			ret = new com.clustercontrol.ws.calendar.Ymd();
+			ret = new YMDResponse();
 
-			ret.setYear(info.getYearNo());
-			ret.setMonth(info.getMonthNo());
-			ret.setDay(info.getDayNo());
+			ret.setYearNo(info.getYearNo());
+			ret.setMonthNo(info.getMonthNo());
+			ret.setDayNo(info.getDayNo());
 		} catch (Exception e) {
 			log.error(e);
 		}
@@ -341,14 +370,14 @@ public class CalendarConv {
 	 * @throws ParseException
 	 * @throws IndexOutOfBoundsException
 	 */
-	public static CalendarPatternInfo getCalendarPatternInfo(com.clustercontrol.ws.calendar.CalendarPatternInfo calendarPattern) throws IndexOutOfBoundsException, ParseException {
+	public static CalendarPatternInfo getCalendarPatternInfo(CalendarPatternInfoResponse calendarPattern) throws IndexOutOfBoundsException, ParseException {
 		CalendarPatternInfo ret = new CalendarPatternInfo();
 
-		ret.setCalendarPatternId(calendarPattern.getCalPatternId());
-		ret.setCalendarPatternName(calendarPattern.getCalPatternName());
+		ret.setCalendarPatternId(calendarPattern.getCalendarPatternId());
+		ret.setCalendarPatternName(calendarPattern.getCalendarPatternName());
 		ret.setOwnerRoleId(calendarPattern.getOwnerRoleId());
 
-		for (com.clustercontrol.ws.calendar.Ymd ymd : calendarPattern.getYmd()) {
+		for (YMDResponse ymd : calendarPattern.getCalPatternDetailInfoEntities()) {
 			CalendarPatternDetailInfo retDetail = getCalendarPatternDetailInfo(ymd);
 			ret.addCalendarPatternDetailInfo(retDetail);
 		}
@@ -364,12 +393,12 @@ public class CalendarConv {
 	 * @return カレンダパターン詳細定義 XML Bean
 	 * @throws ParseException
 	 */
-	private static CalendarPatternDetailInfo getCalendarPatternDetailInfo(com.clustercontrol.ws.calendar.Ymd ymd) throws ParseException {
+	private static CalendarPatternDetailInfo getCalendarPatternDetailInfo(YMDResponse ymd) throws ParseException {
 		CalendarPatternDetailInfo ret = new CalendarPatternDetailInfo();
 
-		ret.setYearNo(ymd.getYear());
-		ret.setMonthNo(ymd.getMonth());
-		ret.setDayNo(ymd.getDay());
+		ret.setYearNo(ymd.getYearNo());
+		ret.setMonthNo(ymd.getMonthNo());
+		ret.setDayNo(ymd.getDayNo());
 
 		return ret;
 	}

@@ -22,13 +22,13 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.MaintenanceTypeInfoResponse;
 
-import com.clustercontrol.maintenance.util.MaintenanceEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.maintenance.util.MaintenanceRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.maintenance.InvalidRole_Exception;
-import com.clustercontrol.ws.maintenance.MaintenanceTypeMst;
 import com.clustercontrol.util.WidgetTestUtil;
 
 
@@ -55,7 +55,7 @@ public class MaintenanceTypeListComposite extends Composite {
 	private Combo comboMaintenanceType = null;
 
 	/** メンテナンス種別一覧リスト */
-	ConcurrentHashMap<String, List<MaintenanceTypeMst>> dispDataMap= new ConcurrentHashMap<String, List<MaintenanceTypeMst>>();
+	ConcurrentHashMap<String, List<MaintenanceTypeInfoResponse>> dispDataMap= new ConcurrentHashMap<String, List<MaintenanceTypeInfoResponse>>();
 
 	/** マネージャ名 */
 	private String managerName = null;
@@ -141,8 +141,8 @@ public class MaintenanceTypeListComposite extends Composite {
 
 		this.comboMaintenanceType.removeAll();
 		// メンテナンス種別プルダウンメニューの作成
-		for(Map.Entry<String, List<MaintenanceTypeMst>> map : dispDataMap.entrySet()) {
-			for(MaintenanceTypeMst type : map.getValue()){
+		for(Map.Entry<String, List<MaintenanceTypeInfoResponse>> map : dispDataMap.entrySet()) {
+			for(MaintenanceTypeInfoResponse type : map.getValue()){
 				this.comboMaintenanceType.add(Messages.getString(type.getNameId()));
 				this.comboMaintenanceType.setData(Messages.getString(type.getNameId()), type);
 			}
@@ -163,8 +163,8 @@ public class MaintenanceTypeListComposite extends Composite {
 	 * @return
 	 */
 	public String getSelectionTypeId() {
-		MaintenanceTypeMst mst = (MaintenanceTypeMst)this.comboMaintenanceType.getData(this.comboMaintenanceType.getText());
-		String typeId = mst.getTypeId();
+		MaintenanceTypeInfoResponse mst = (MaintenanceTypeInfoResponse)this.comboMaintenanceType.getData(this.comboMaintenanceType.getText());
+		String typeId = mst.getTypeId().getValue();
 		return typeId;
 	}
 
@@ -182,9 +182,9 @@ public class MaintenanceTypeListComposite extends Composite {
 		}
 
 		// メンテナンス種別IDよりメンテナンス種別名を取得
-		List<MaintenanceTypeMst> list = dispDataMap.get(managerName);
-		for(MaintenanceTypeMst type : list){
-			if((type.getTypeId()).equals(type_id)){
+		List<MaintenanceTypeInfoResponse> list = dispDataMap.get(managerName);
+		for(MaintenanceTypeInfoResponse type : list){
+			if((type.getTypeId().getValue()).equals(type_id)){
 				name = Messages.getString(type.getNameId());
 				break;
 			}
@@ -199,13 +199,13 @@ public class MaintenanceTypeListComposite extends Composite {
 	private void getMaintenanceTypeList(String managerName){
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 
-		List<MaintenanceTypeMst> mst = null;
+		List<MaintenanceTypeInfoResponse> mst = null;
 		dispDataMap.clear();
 		try {
-			MaintenanceEndpointWrapper wrapper = MaintenanceEndpointWrapper.getWrapper(managerName);
+			MaintenanceRestClientWrapper wrapper = MaintenanceRestClientWrapper.getWrapper(managerName);
 			mst = wrapper.getMaintenanceTypeList();
 			dispDataMap.put(managerName, mst);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 		} catch (Exception e) {
 			m_log.warn("getMaintenanceTypeList(), " + e.getMessage(), e);

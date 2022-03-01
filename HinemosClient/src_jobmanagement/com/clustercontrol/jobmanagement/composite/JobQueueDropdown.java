@@ -20,12 +20,11 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.openapitools.client.model.JobQueueResponse;
 
 import com.clustercontrol.dialog.ApiResultDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
-import com.clustercontrol.util.LogUtil;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobQueueSetting;
 
 
 /**
@@ -93,14 +92,14 @@ public class JobQueueDropdown extends Composite {
 		combo.removeAll();
 
 		// 一覧情報を取得
-		List<JobQueueSetting> list = null;
+		List<JobQueueResponse> list = null;
 		ApiResultDialog errorDialog = new ApiResultDialog();
 		try {
-			JobEndpointWrapper ep = JobEndpointWrapper.getWrapper(managerName);
-			list = ep.getJobQueueList(roleId);
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			list = wrapper.getJobQueueList(roleId);
 		} catch (Throwable t) {
 			errorDialog.addFailure(managerName, t, "");
-			log.warn(LogUtil.filterWebFault("setupList: ", t));
+			log.warn("setupList: " + t.getClass().getName() + ", " + t.getMessage());
 		}
 
 		// エラーメッセージ表示(エラーがあれば)
@@ -109,7 +108,7 @@ public class JobQueueDropdown extends Composite {
 		// コンボボックスの選択肢を設定する
 		combo.add("");  // 無選択用の空欄
 		if (list != null) {
-			for (JobQueueSetting item : list) {
+			for (JobQueueResponse item : list) {
 				String id = item.getQueueId();
 				String name = item.getName();
 				if (name.length() > MAX_NAME_LENGTH) {

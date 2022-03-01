@@ -22,8 +22,9 @@ import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
+import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.bean.RetryWaitStatusConstant;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
-import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 
 public class JobSessionImpl {
@@ -34,18 +35,22 @@ public class JobSessionImpl {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			ArrayList<String> list = new ArrayList<String>();
-			Collection<JobSessionEntity> collection = null;
-			collection = em.createNamedQuery("JobSessionEntity.findUnendSessions", JobSessionEntity.class).getResultList();
+
+			Collection<JobSessionJobEntity> collection = null;
+			collection = em.createNamedQuery("JobSessionJobEntity.findUnendSessions", JobSessionJobEntity.class)
+					.setParameter("statuses", StatusConstant.getUnendList())
+					.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID)
+					.getResultList();
 			if (collection == null) {
-				JobInfoNotFound je = new JobInfoNotFound("JobSessionEntity.findUnendSessions");
+				JobInfoNotFound je = new JobInfoNotFound("JobSessionJobEntity.findUnendSessions");
 				m_log.info("getUnendSessionList() "
 						+ je.getClass().getSimpleName() + ", " + je.getMessage());
 				throw je;
 			}
 
-			for (JobSessionEntity session : collection) {
-				m_log.debug("getUnendSessionList() target sessionid is " + session.getSessionId());
-				list.add(session.getSessionId());
+			for (JobSessionJobEntity session : collection) {
+				m_log.debug("getUnendSessionList() target sessionid is " + session.getId().getSessionId());
+				list.add(session.getId().getSessionId());
 			}
 			return list;
 		}
@@ -114,5 +119,76 @@ public class JobSessionImpl {
 			m_log.debug("waitingCheck() target : sessionId = " + sessionId + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
 			jobImpl.startJob(sessionId, jobunitId, jobId);
 		}
+	}
+
+	/**
+	 * リトライ待ち中のジョブに対して、待ち時間経過したかを定期的にチェック
+	 * @param sessionId
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 * @throws FacilityNotFound
+	 * @throws HinemosUnknown
+	 */
+	public void retryWaitingCheck(String sessionId) throws JobInfoNotFound, InvalidRole, FacilityNotFound, HinemosUnknown {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
+			// リトライ待ち中候補のジョブを取得（実行中のもの）
+			Collection<JobSessionJobEntity> collection = null;
+			collection = em.createNamedQuery("JobSessionJobEntity.findByJobSessionIdAndStatus", JobSessionJobEntity.class)
+					.setParameter("sessionId", sessionId)
+					.setParameter("status", StatusConstant.TYPE_RUNNING)
+					.getResultList();
+
+			// リトライ待ち中のジョブの終了処理を再開
+			// 判定は JobSessionJobImpl#endJob()メソッドの「繰り返し実行判定」にまかせる
+			for (JobSessionJobEntity sessionJob : collection) {
+				String jobunitId = sessionJob.getId().getJobunitId();
+				String jobId = sessionJob.getId().getJobId();
+				if (sessionJob.getRetryWaitStatus().equals(RetryWaitStatusConstant.WAIT)) {
+					new JobSessionJobImpl().endJob(sessionId, jobunitId, jobId, sessionJob.getResult(), false);
+				}
+			}
+		}
+	}
+
+	/**
+	 * ジョブのタイムアウトを定期的にチェックする<BR>
+	 * 
+	 * @param sessionId
+	 * @return チェックを実施したジョブの件数
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 * @throws FacilityNotFound
+	 * @throws HinemosUnknown
+	 */
+	public int jobTimeoutCheck(String sessionId) throws JobInfoNotFound, InvalidRole, FacilityNotFound, HinemosUnknown {
+		m_log.debug("timeoutCheck() start : sessionid = " + sessionId);
+		int jobCount = 0;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			// 現時点では実行中のジョブのみが対象
+			List<Integer> statuses = new ArrayList<Integer>();
+			statuses.add(StatusConstant.TYPE_RUNNING);
+			// この時点でタイムアウトチェックが必要な特定のジョブ種別に絞る
+			List<Integer> jobTypes = new ArrayList<Integer>();
+			jobTypes.add(JobConstant.TYPE_FILECHECKJOB);
+
+			Collection<JobSessionJobEntity> collection = em
+					.createNamedQuery("JobSessionJobEntity.findBySessionStatusesAndJobTypes", JobSessionJobEntity.class)
+					.setParameter("sessionId", sessionId)
+					.setParameter("statuses", statuses)
+					.setParameter("jobTypes", jobTypes)
+					.getResultList();
+			for (JobSessionJobEntity sessionJob : collection) {
+				if (sessionJob.getStartDate() == null){
+					// ジョブ繰り返し実行の待機中など、ジョブが開始されていない場合は対象外
+					continue;
+				}
+				jobCount++;
+				new JobSessionJobImpl().checkJobTimeout(sessionJob.getId());
+			}
+		}
+		return jobCount;
 	}
 }

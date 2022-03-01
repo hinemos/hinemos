@@ -11,7 +11,8 @@ package com.clustercontrol.nodemap.dialog;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
@@ -22,18 +23,20 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.MapBgImageInfoResponse;
+import org.openapitools.client.model.MapIconImageInfoResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.nodemap.editpart.MapViewController;
 import com.clustercontrol.nodemap.figure.BgFigure;
 import com.clustercontrol.nodemap.figure.FileImageFigure;
 import com.clustercontrol.nodemap.figure.NodeFigure;
 import com.clustercontrol.nodemap.figure.ScopeFigure;
-import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
+import com.clustercontrol.nodemap.util.NodeMapRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.nodemap.InvalidRole_Exception;
 
 /**
  * 画像ファイル変更用ダイアログ
@@ -120,7 +123,7 @@ public class RegisterImageDialog extends CommonDialog {
 
 		int counter = 0;
 		m_log.debug("make Composite 151 " + m_iconFlag);
-		Collection<String> filenameArray = null;
+		List<String> filenameArray = new ArrayList<String>();
 		if (m_figure == null) {
 			m_log.debug("m_figure is null");
 			return;
@@ -131,19 +134,21 @@ public class RegisterImageDialog extends CommonDialog {
 				", class=" + m_figure.getClass().getSimpleName());
 
 		try {
-			NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(m_manager);
+			NodeMapRestClientWrapper wrapper = NodeMapRestClientWrapper.getWrapper(m_manager);
 			if (m_iconFlag) {
-				filenameArray = wrapper.getIconImagePK();
+				List<MapIconImageInfoResponse> dtoResList = wrapper.getIconImageFilename();
+				dtoResList.forEach(dtoRes -> filenameArray.add(dtoRes.getFilename()));
 				if (figureFilename == null) {
 					figureFilename = "node";
 				}
 			} else {
-				filenameArray = wrapper.getBgImagePK();
+				List<MapBgImageInfoResponse> dtoResList = wrapper.getBgImageFilename();
+				dtoResList.forEach(dtoRes -> filenameArray.add(dtoRes.getFilename()));
 				if (figureFilename == null) {
 					figureFilename = "default";
 				}
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
@@ -216,15 +221,17 @@ public class RegisterImageDialog extends CommonDialog {
 				if (m_figure instanceof NodeFigure || m_figure instanceof ScopeFigure) {
 					m_controller.setIconName(m_figure.getFacilityId(), filename);
 					m_figure.imageDraw(filename);
+					m_figure.setFilename(filename);
 				}
 			} else {
 				m_log.debug("filename(bg) = " + filename);
 				if (m_figure instanceof BgFigure) {
 					m_controller.setBgName(filename);
 					m_figure.imageDraw(filename);
+					m_figure.setFilename(filename);
 				}
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,

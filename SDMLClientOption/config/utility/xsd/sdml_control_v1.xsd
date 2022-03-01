@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_notify_relation.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="K">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="sdmlControlV1" type="SdmlControlV1List">
+		<xs:annotation>
+			<xs:documentation>SDML制御設定(1.x)のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
+	<xs:complexType name="SdmlControlV1List">
+		<xs:annotation>
+			<xs:documentation>SDML制御設定(1.x)のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="sdmlControlInfoV1" type="SdmlControlInfoV1Type" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>SDML制御設定(1.x)の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="SdmlControlInfoV1Type">
+		<xs:annotation>
+			<xs:documentation>SDML制御設定(1.x)</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="applicationId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>アプリケーションID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ownerRoleId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>オーナーロールID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="facilityId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						対象のファシリティID
+						リポジトリに登録されているものを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="scope" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						表示されるスコープ名
+						通常はリポジトリに既に登録されている情報が格納されるため、本項目への入力はマネージャへの登録時には無視されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="validFlg" type="xs:boolean" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>設定の有効フラグ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="controlLogDirectory" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>SDML制御ログのディレクトリ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="controlLogFilename" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>SDML制御ログのファイル名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="controlLogCollectFlg" type="xs:boolean" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>SDML制御ログの収集の有効フラグ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>通知IDのコレクション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="application" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>アプリケーション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="autoMonitorDeleteFlg" type="xs:boolean" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>アプリケーション停止時に監視設定を削除するの有効フラグ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="autoMonitorCalendarId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>自動作成監視設定のカレンダID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="autoMonitorCommonNotifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>自動作成監視設定の種別共通通知IDのコレクション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorNotifyRelationList" type="MonitorNotifyRelation" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>自動作成監視設定の個別通知設定のコレクション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="earlyStopThresholdSecond" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>起動から停止までの時間が短い場合の通知の時間（秒）</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="earlyStopNotifyPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						起動から停止までの時間が短い場合の通知の重要度
+						{危険(0)、不明(1)、警告(2)、情報(3)、なし(4)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="autoCreateSuccessPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定制御時の通知の作成完了の重要度
+						{危険(0)、不明(1)、警告(2)、情報(3)、なし(4)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="autoEnableSuccessPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定制御時の通知の有効化完了の重要度
+						{危険(0)、不明(1)、警告(2)、情報(3)、なし(4)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="autoDisableSuccessPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定制御時の通知の無効化完了の重要度
+						{危険(0)、不明(1)、警告(2)、情報(3)、なし(4)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="autoUpdateSuccessPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定制御時の通知の更新完了の重要度
+						{危険(0)、不明(1)、警告(2)、情報(3)、なし(4)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="autoControlFailedPriority" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定制御時の通知の異常時の重要度
+						{危険(0)、不明(1)、警告(2)、情報(3)、なし(4)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="MonitorNotifyRelation">
+		<xs:annotation>
+			<xs:documentation>自動作成監視設定用の個別通知設定情報です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="sdmlMonitorTypeId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>SDML監視種別ID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>個別通知設定の通知IDのコレクション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

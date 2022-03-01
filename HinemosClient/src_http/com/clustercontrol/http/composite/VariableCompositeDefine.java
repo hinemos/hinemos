@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.VariableResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.http.dialog.VariableCreateDialog;
@@ -20,18 +21,17 @@ import com.clustercontrol.http.viewer.VariableTableLabelProvider;
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
 import com.clustercontrol.monitor.run.util.TableItemManager;
 import com.clustercontrol.monitor.run.viewer.CommonTableLabelProvider;
-import com.clustercontrol.ws.monitor.Variable;
 
-public class VariableCompositeDefine implements ITableItemCompositeDefine<Variable> {
+public class VariableCompositeDefine implements ITableItemCompositeDefine<VariableResponse> {
 
 	/** 現在有効なダイアログ */
 	private VariableCreateDialog dialog = null;
 
 	/** テーブルアイテムの管理クラス */
-	private TableItemManager<Variable> manager = null;
+	private TableItemManager<VariableResponse> manager = null;
 
 	@Override
-	public Variable getCurrentCreatedItem() {
+	public VariableResponse getCurrentCreatedItem() {
 		if(dialog != null){
 			return dialog.getInputData();
 		}
@@ -46,7 +46,7 @@ public class VariableCompositeDefine implements ITableItemCompositeDefine<Variab
 	}
 
 	@Override
-	public CommonDialog createDialog(Shell shell, Variable item) {
+	public CommonDialog createDialog(Shell shell, VariableResponse item) {
 		dialog = new VariableCreateDialog(shell, item);
 		return dialog;
 	}
@@ -57,7 +57,7 @@ public class VariableCompositeDefine implements ITableItemCompositeDefine<Variab
 	}
 
 	@Override
-	public TableItemManager<Variable> getTableItemInfoManager() {
+	public TableItemManager<VariableResponse> getTableItemInfoManager() {
 		return manager;
 	}
 
@@ -67,7 +67,7 @@ public class VariableCompositeDefine implements ITableItemCompositeDefine<Variab
 	}
 
 	@Override
-	public void initTableItemInfoManager(List<Variable> items) {
+	public void initTableItemInfoManager(List<VariableResponse> items) {
 		manager = new TableItemManager<>(items);
 	}
 
@@ -77,17 +77,17 @@ public class VariableCompositeDefine implements ITableItemCompositeDefine<Variab
 	}
 
 	@Override
-	public String getItemsIdentifier(Variable item) {
+	public String getItemsIdentifier(VariableResponse item) {
 		return item.getName();
 	}
 
 	@Override
-	public CommonTableLabelProvider<Variable> getLabelProvider() {
+	public CommonTableLabelProvider<VariableResponse> getLabelProvider() {
 		return new VariableTableLabelProvider(this);
 	}
 
 	@Override
-	public int indexOf(Variable item) {
+	public int indexOf(VariableResponse item) {
 		if(this.manager != null){
 			return this.manager.indexOf(item);
 		}

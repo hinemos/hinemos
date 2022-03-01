@@ -10,24 +10,24 @@ package com.clustercontrol.agent.repository;
 
 import java.util.List;
 
-import javax.xml.ws.WebServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtNodeNetworkInterfaceInfoRequest;
+import org.openapitools.client.model.RegisterNodeRequest;
+import org.openapitools.client.model.RegisterNodeResponse;
+import org.openapitools.client.model.RegisterNodeResponse.ResultStatusEnum;
 
 import com.clustercontrol.agent.Agent;
-import com.clustercontrol.agent.AgentNodeConfigEndPointWrapper;
+import com.clustercontrol.agent.AgentNodeConfigRestClientWrapper;
 import com.clustercontrol.agent.repository.NodeConfigConstant.Function;
 import com.clustercontrol.agent.util.AgentProperties;
+import com.clustercontrol.fault.HinemosDbTimeout;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.repository.util.RepositoryBeanUtil;
-import com.clustercontrol.ws.agentnodeconfig.AutoRegisterStatus;
-import com.clustercontrol.ws.agentnodeconfig.HinemosDbTimeout_Exception;
-import com.clustercontrol.ws.agentnodeconfig.HinemosUnknown_Exception;
-import com.clustercontrol.ws.agentnodeconfig.InvalidRole_Exception;
-import com.clustercontrol.ws.agentnodeconfig.InvalidSetting_Exception;
-import com.clustercontrol.ws.agentnodeconfig.InvalidUserPass_Exception;
-import com.clustercontrol.ws.agentnodeconfig.NodeNetworkInterfaceInfo;
-import com.clustercontrol.ws.repository.AutoRegisterResult;
 
 /**
  * ノード自動登録<BR>
@@ -51,8 +51,8 @@ public class NodeRegister {
 	 * 登録済かどうかの識別用にMACアドレスを取得してManagerの自動登録処理を呼び出す.
 	 * 
 	 * @return 再試行が必要かどうか<br>
-	 *         true:Manager接続失敗(Manager接続以外のエラー含む)<br>
-	 *         false: 自動登録成功もしくは登録不要
+	 *		   true:Manager接続失敗(Manager接続以外のエラー含む)<br>
+	 *		   false: 自動登録成功もしくは登録不要
 	 */
 	public static boolean callRegister() {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
@@ -83,7 +83,7 @@ public class NodeRegister {
 		String platform = RepositoryBeanUtil.getPlatform(osName, true);
 
 		// NICの主キー・MACアドレスを取得する.
-		List<NodeNetworkInterfaceInfo> nodeNifList = new NodeConfigCollector(Function.NODE_REGISTER).getNICList();
+		List<AgtNodeNetworkInterfaceInfoRequest> nodeNifList = new NodeConfigCollector(Function.NODE_REGISTER).getNICList();
 		if (nodeNifList == null || nodeNifList.isEmpty()) {
 			m_log.warn(methodName + DELIMITER
 					+ "failed to get NIC by script to register node automatically. check out logs and settings.");
@@ -96,7 +96,7 @@ public class NodeRegister {
 			if (!nodeNifList.isEmpty()) {
 				StringBuilder sb = new StringBuilder();
 				boolean top = true;
-				for (NodeNetworkInterfaceInfo nif : nodeNifList) {
+				for (AgtNodeNetworkInterfaceInfoRequest nif : nodeNifList) {
 					if (!top) {
 						sb.append(",");
 					}
@@ -139,15 +139,17 @@ public class NodeRegister {
 		}
 
 		// Managerの自動登録処理を呼び出す.
-		AutoRegisterResult registerResult = null;
+		RegisterNodeResponse registerResult;
 		try {
-			registerResult = AgentNodeConfigEndPointWrapper.registerNode(platform, nodeNifList);
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidSetting_Exception | InvalidUserPass_Exception
-				| HinemosDbTimeout_Exception e) {
+			RegisterNodeRequest req = new RegisterNodeRequest();
+			req.setPlatform(platform);
+			req.setNodeNifList(nodeNifList);
+			registerResult = AgentNodeConfigRestClientWrapper.registerNode(req);
+		} catch (HinemosUnknown | InvalidRole | InvalidSetting | InvalidUserPass | HinemosDbTimeout e) {
 			m_log.warn(methodName + DELIMITER + "failed to register this node automatically."
 					+ " for more information, see 'hinemos_manager.log'.", e);
 			return true;
-		} catch (WebServiceException e) {
+		} catch (RestConnectFailed e) {
 			m_log.info(methodName + DELIMITER + "failed to register this node automatically, to retry.");
 			return true;
 		}
@@ -183,10 +185,10 @@ public class NodeRegister {
 		}
 
 		// Agent.propertiesファイルに登録されているファシリティIDを取得する.
-		String agentId = Agent.getAgentInfo().getFacilityId();
+		String agentId = Agent.getAgentInfoRequest().getFacilityId();
 		String facilityIdKey = "facilityId";
 		if (agentId != null && !agentId.isEmpty()) {
-			if (AutoRegisterStatus.EXIST.equals(registerResult.getResultStatus())
+			if (registerResult.getResultStatus() == ResultStatusEnum.EXIST
 					&& agentId.equals(registerResult.getFacilityId())) {
 				// Manager登録済・かつFacilityIDがちゃんとAgent.propertiesに反映されている場合.
 				m_log.debug(methodName + DELIMITER
@@ -204,7 +206,7 @@ public class NodeRegister {
 		AgentProperties.updateProperty(facilityIdKey, registeredId);
 		m_log.info(methodName + DELIMITER + "succeded to register this node automatically.");
 		// 更新されたプロパティをメモリ上にも反映.
-		Agent.getAgentInfo().setFacilityId(registeredId);
+		Agent.getAgentInfoRequest().setFacilityId(registeredId);
 		return false;
 	}
 

@@ -22,10 +22,10 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
+import com.clustercontrol.common.util.CommonRestClientWrapper;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.composite.ScriptComponent;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 
@@ -294,9 +294,10 @@ public class ManagerDistributionDialog extends CommonDialog {
 	private int getScriptContentMaxSize() {
 		int maxsize = 8192;
 		
-		JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(m_manager);
+		CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(m_manager);
 		try {
-			maxsize = wrapper.getScriptContentMaxSize();
+			String value = wrapper.getScriptContentMaxSize().getValue();
+			maxsize = Integer.parseInt(value);
 		} catch (Exception e) {
 			m_log.warn("getScriptContentMaxSize() getHinemosProperty, " + e.getClass().getSimpleName() + ", " + e.getMessage());
 		}

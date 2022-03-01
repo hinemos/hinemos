@@ -1,0 +1,30 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"JobLinkSendList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"JoblinkSendSettingId",
+			"OwnerRoleId",
+			"Description",
+			"FacilityId",
+			"ProcessMode",
+			"Protocol",
+			"Port",
+			"HinemosUserId",
+			"HinemosPassword",
+			"ProxyFlg",
+			"ProxyHost",
+			"ProxyPort",
+			"ProxyUser",
+			"ProxyPassword"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"JobLinkSendInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

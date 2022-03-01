@@ -11,7 +11,7 @@ package com.clustercontrol.fault;
 /**
  * システム権限・オブジェクト権限が存在しない場合に利用するException
  */
-public class PrivilegeNotFound extends HinemosException {
+public class PrivilegeNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = 1L;
 	// オブジェクト権限のPK

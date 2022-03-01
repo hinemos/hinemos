@@ -21,7 +21,10 @@ public class ToRunningAfterCommitCallback implements JpaTransactionCallback {
 	private JobSessionNodeEntityPK pk;
 	
 	public ToRunningAfterCommitCallback(JobSessionNodeEntityPK pk) {
-		this.pk = pk;
+		this.pk = pk.clone();
+		
+		// 実行予定キャッシュに登録
+		JobMultiplicityCache.storeGoingToRun(pk);
 	}
 	
 	@Override
@@ -36,6 +39,10 @@ public class ToRunningAfterCommitCallback implements JpaTransactionCallback {
 	@Override
 	public void postCommit() {
 		m_log.debug("call postCommit(toRunning) : " + pk);
+		
+		// 実行予定キャッシュから削除する
+		JobMultiplicityCache.removeGoingToRun(pk);
+		
 		JobMultiplicityCache.toRunning(pk);
 	}
 
@@ -43,7 +50,12 @@ public class ToRunningAfterCommitCallback implements JpaTransactionCallback {
 	public void preRollback() {}
 
 	@Override
-	public void postRollback() {}
+	public void postRollback() {
+		m_log.debug("call postRollback(toRunning) : " + pk);
+		
+		// 実行予定キャッシュから削除する
+		JobMultiplicityCache.removeGoingToRun(pk);
+	}
 
 	@Override
 	public void preClose() {}

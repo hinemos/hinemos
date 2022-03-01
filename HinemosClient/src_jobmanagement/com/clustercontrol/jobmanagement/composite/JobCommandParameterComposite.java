@@ -27,6 +27,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.JobCommandParamResponse;
 
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.dialog.ValidateResult;
@@ -36,7 +37,6 @@ import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.JobCommandParam;
 
 /**
  * ジョブコマンド変数のコンポジットクラスです。
@@ -54,7 +54,7 @@ public class JobCommandParameterComposite extends Composite {
 	/** ジョブ変数 削除用ボタン */
 	private Button m_btnDelete = null;
 	/** ジョブ変数情報 */
-	private Map<String, JobCommandParam> m_jobCommandParamMap = new HashMap<>();
+	private Map<String, JobCommandParamResponse> m_jobCommandParamMap = new HashMap<>();
 	/** シェル */
 	private Shell m_shell = null;
 	/** 選択アイテム */
@@ -109,16 +109,30 @@ public class JobCommandParameterComposite extends Composite {
 				JobCommandParameterDialog dialog 
 					= new JobCommandParameterDialog(m_shell);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					if (isParameterDuplicate(dialog.getInputData().getParamId())){
-						// 変数名の重複エラー
-						MessageDialog.openWarning(
-								null,
-								Messages.getString("warning"),
-								Messages.getString("message.job.134"));
+					// ジョブ変数
+					JobCommandParamResponse info = dialog.getInputData();
+					@SuppressWarnings("unchecked")
+					ArrayList<Object> list = (ArrayList<Object>) m_viewer.getInput();
+					
+					if (list == null) {
+						list = new ArrayList<Object>();
 					} else {
-						m_jobCommandParamMap.put(dialog.getInputData().getParamId(), dialog.getInputData());
-						reflectParamInfo();
+						String paramId = info.getParamId();
+						for (Object one : list) {
+							@SuppressWarnings("unchecked")
+							String name = (String) ((ArrayList<Object>) one).get(0);
+							if (paramId.equals(name)) {
+								// 変数名の重複エラー
+								MessageDialog.openWarning(null, Messages.getString("warning"),
+										Messages.getString("message.job.134"));
+								return;
+							}
+						}
+						
+						ArrayList<Object> tableLineData = converJobCommandParam(info);
+						list.add(tableLineData);
 					}
+					m_viewer.setInput(list);
 				}
 			}
 		});
@@ -133,13 +147,19 @@ public class JobCommandParameterComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				int order = m_viewer.getTable().getSelectionIndex();
 				if (order >= 0) {
-					String paramId = (String)((ArrayList<?>)m_viewer.getTable()
-							.getSelection()[0].getData()).get(0);
 					JobCommandParameterDialog dialog 
-						= new JobCommandParameterDialog(m_shell, m_jobCommandParamMap.get(paramId));
+						= new JobCommandParameterDialog(m_shell, createJobCommandParam());
+					@SuppressWarnings("unchecked")
+					ArrayList<Object> objList = (ArrayList<Object>) m_viewer.getTable().getSelection()[0].getData();
 					if (dialog.open() == IDialogConstants.OK_ID) {
-						m_jobCommandParamMap.put(paramId, (JobCommandParam)dialog.getInputData());
-						reflectParamInfo();
+							@SuppressWarnings("unchecked")
+							ArrayList<Object> list = (ArrayList<Object>) m_viewer.getInput();
+							ArrayList<Object> info = converJobCommandParam(dialog.getInputData());
+							list.remove(objList);
+							list.add(info);
+	
+							m_selectItem = null;
+							m_viewer.setInput(list);
 					}
 				} else {
 					MessageDialog.openWarning(
@@ -160,19 +180,21 @@ public class JobCommandParameterComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				int order = m_viewer.getTable().getSelectionIndex();
 				if (order >= 0) {
-					String paramId = (String)((ArrayList<?>)m_viewer.getTable()
-							.getSelection()[0].getData()).get(0);
-					if (paramId == null) {
-						paramId = "";
-					}
-					m_jobCommandParamMap.remove(paramId);
-					reflectParamInfo();
-				} else{
+					@SuppressWarnings("unchecked")
+					ArrayList<Object> objList = (ArrayList<Object>) m_viewer.getTable().getSelection()[0].getData();
+					@SuppressWarnings("unchecked")
+					ArrayList<Object> list = (ArrayList<Object>) m_viewer.getInput();
+					list.remove(objList);
+
+					m_selectItem = null;
+					m_viewer.setInput(list);
+				} else {
 					MessageDialog.openWarning(
 							null,
 							Messages.getString("warning"),
 							Messages.getString("message.job.129"));
 				}
+				
 			}
 		});
 
@@ -186,13 +208,20 @@ public class JobCommandParameterComposite extends Composite {
 				if (m_btnAdd.isEnabled()) {
 					int order = m_viewer.getTable().getSelectionIndex();
 					if (order >= 0) {
-						String paramId = (String)((ArrayList<?>)m_viewer.getTable()
-								.getSelection()[0].getData()).get(0);
+						
 						JobCommandParameterDialog dialog 
-							= new JobCommandParameterDialog(m_shell, m_jobCommandParamMap.get(paramId));
+							= new JobCommandParameterDialog(m_shell, createJobCommandParam());
+						@SuppressWarnings("unchecked")
+						ArrayList<Object> objList = (ArrayList<Object>) m_viewer.getTable().getSelection()[0].getData();
 						if (dialog.open() == IDialogConstants.OK_ID) {
-							m_jobCommandParamMap.put(paramId, dialog.getInputData());
-							reflectParamInfo();
+								@SuppressWarnings("unchecked")
+								ArrayList<Object> list = (ArrayList<Object>) m_viewer.getInput();
+								ArrayList<Object> info = converJobCommandParam(dialog.getInputData());
+								list.remove(objList);
+								list.add(info);
+		
+								m_selectItem = null;
+								m_viewer.setInput(list);
 						}
 					} else {
 						MessageDialog.openWarning(
@@ -213,11 +242,11 @@ public class JobCommandParameterComposite extends Composite {
 		if (this.m_jobCommandParamMap != null) {
 			// ジョブ変数
 			ArrayList<ArrayList<?>> tableData = new ArrayList<ArrayList<?>>();
-			for (JobCommandParam jobCommandParam : this.m_jobCommandParamMap.values()) {
+			for (JobCommandParamResponse jobCommandParam : this.m_jobCommandParamMap.values()) {
 				ArrayList<Object> tableLineData = new ArrayList<Object>();
 				tableLineData.add(jobCommandParam.getParamId());
 				tableLineData.add(jobCommandParam.getValue());
-				if (jobCommandParam.isJobStandardOutputFlg()) {
+				if (jobCommandParam.getJobStandardOutputFlg()) {
 					tableLineData.add(Messages.getString("monitor.http.scenario.page.obtain.from.current.page.valid"));
 				} else {
 					tableLineData.add(Messages.getString("monitor.http.scenario.page.obtain.from.current.page.invalid"));
@@ -235,9 +264,37 @@ public class JobCommandParameterComposite extends Composite {
 	 */
 	public ValidateResult validateJobCommandParam() {
 
-		reflectParamInfo();
+		reflectJobParamMap();
 
 		return null;
+	}
+
+	/**
+	 * コンポジットの情報から、ジョブ変数情報を作成します。
+	 *
+	 * @return 入力値の検証結果
+	 *
+	 * @see com.clustercontrol.jobmanagement.bean.JobParameterInfo
+	 */
+	public void reflectJobParamMap() {
+
+		m_jobCommandParamMap =  new HashMap<>();
+		
+		//パラメータ取得
+		ArrayList<?> tableData = (ArrayList<?>) m_viewer.getInput();
+		if (tableData != null) {
+			for (int i = 0; i < tableData.size(); i++) {
+				ArrayList<?> tableLineData = (ArrayList<?>) tableData.get(i);
+				JobCommandParamResponse info = new JobCommandParamResponse();
+				info.setParamId((String)tableLineData.get(
+						GetCommandParameterTableDefine.PARAM_ID));
+				info.setValue((String)tableLineData.get(
+						GetCommandParameterTableDefine.VALUE));
+				info.setJobStandardOutputFlg(Messages.getString("monitor.http.scenario.page.obtain.from.current.page.valid").equals((String)tableLineData.get(
+						GetCommandParameterTableDefine.JOB_STANDARD_OUTPUT)));
+				this.m_jobCommandParamMap.put(info.getParamId(), info);
+			}
+		}
 	}
 
 	/**
@@ -245,7 +302,7 @@ public class JobCommandParameterComposite extends Composite {
 	 *
 	 * @param paramList ジョブ変数情報のリスト
 	 */
-	public void setJobCommandParamMap(Map<String, JobCommandParam> jobCommandParamMap) {
+	public void setJobCommandParamMap(Map<String, JobCommandParamResponse> jobCommandParamMap) {
 		m_jobCommandParamMap = jobCommandParamMap;
 	}
 
@@ -254,7 +311,7 @@ public class JobCommandParameterComposite extends Composite {
 	 *
 	 * @return ジョブ変数情報のリスト
 	 */
-	public Map<String, JobCommandParam> getJobCommandParamMap() {
+	public Map<String, JobCommandParamResponse> getJobCommandParamMap() {
 		return m_jobCommandParamMap;
 	}
 
@@ -287,18 +344,45 @@ public class JobCommandParameterComposite extends Composite {
 	}
 
 	/**
-	 * パラメータ情報に重複した値が設定されているか
+	 * ジョブ変数情報をコンポジット向けの情報に変換する。
 	 * 
-	 * @param paramId
-	 * @return true:重複あり, false:重複なし
+	 * @param info ジョブ変数情報
+	 * @return コンポジット向けデータ
 	 */
-	private boolean isParameterDuplicate(String paramId) {
-		boolean result = false;
-		if (this.m_viewer != null
-			&& this.m_jobCommandParamMap.containsKey(paramId)) {
-				result = true;
+	private ArrayList<Object> converJobCommandParam(JobCommandParamResponse info) {
+		ArrayList<Object> tableLineData = new ArrayList<Object>();
+		tableLineData.add(info.getParamId());
+		tableLineData.add(info.getValue());
+		if (info.getJobStandardOutputFlg()) {
+			tableLineData.add(
+					Messages.getString("monitor.http.scenario.page.obtain.from.current.page.valid"));
+		} else {
+			tableLineData.add(
+					Messages.getString("monitor.http.scenario.page.obtain.from.current.page.invalid"));
 		}
-		return result;
+		return tableLineData;
 	}
 
+	
+	/**
+	 * コンポジットの情報から、ジョブ変数情報を作成します。
+	 *
+	 * @return ジョブ変数情報
+	 */
+	private JobCommandParamResponse createJobCommandParam() {
+
+		//パラメータ取得
+		ArrayList<?> tableLineData = ((ArrayList<?>)m_viewer.getTable()
+				.getSelection()[0].getData());
+		
+		JobCommandParamResponse info = new JobCommandParamResponse();
+		if (tableLineData != null) {
+			info.setParamId((String) tableLineData.get(GetCommandParameterTableDefine.PARAM_ID));
+			info.setValue((String) tableLineData.get(GetCommandParameterTableDefine.VALUE));
+			info.setJobStandardOutputFlg(Messages.getString("monitor.http.scenario.page.obtain.from.current.page.valid")
+					.equals((String) tableLineData.get(GetCommandParameterTableDefine.JOB_STANDARD_OUTPUT)));
+		}
+
+		return info;
+	}
 }

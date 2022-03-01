@@ -8,6 +8,7 @@
 
 package com.clustercontrol.monitor.run.dialog;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
@@ -26,12 +27,15 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.MonitorNumericTypeEnum;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.monitor.run.bean.MonitorNumericType;
-import com.clustercontrol.monitor.run.bean.MonitorPredictionMethodConstant;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
+import com.clustercontrol.monitor.run.bean.MonitorPredictionMethod;
 import com.clustercontrol.monitor.run.composite.MonitorBasicScopeComposite;
 import com.clustercontrol.monitor.run.composite.MonitorRuleComposite;
 import com.clustercontrol.monitor.run.composite.NumericValueInfoComposite;
@@ -39,8 +43,6 @@ import com.clustercontrol.notify.composite.NotifyInfoComposite;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
 
 /**
  * 数値系監視設定共通ダイアログクラス<BR>
@@ -324,7 +326,7 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		groupNotifyAttribute.setLayoutData(gridData);
 		groupNotifyAttribute.setText(Messages.getString("notify.attribute"));
-		this.m_notifyInfo = new NotifyInfoComposite(groupNotifyAttribute, SWT.NONE);
+		this.m_notifyInfo = new NotifyInfoComposite(groupNotifyAttribute, SWT.NONE,priorityChangeJudgeSelect ,priorityChangeFailSelect);
 		this.m_notifyInfo.setManagerName(getManagerName());
 		WidgetTestUtil.setTestId(this, "notifyinfo", m_notifyInfo);
 		gridData = new GridData();
@@ -604,7 +606,7 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 				Messages.getString("greater"),
 				Messages.getString("less"),
 				NumericValueInfoComposite.INPUT_VERIFICATION_REAL_NUMBER,
-				MonitorNumericType.TYPE_CHANGE.getType());
+				MonitorNumericTypeEnum.CHANGE);
 		m_changeNumericValueInfo.setInfoWarnText("-1", "1", "-2", "2");
 		WidgetTestUtil.setTestId(this, "numericvalue", m_changeNumericValueInfo);
 
@@ -831,11 +833,11 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 	 * @param monitor 設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		// 収集
-		if (monitor.isCollectorFlg()) {
+		if (monitor.getCollectorFlg()) {
 			this.confirmCollectValid.setSelection(true);
 		}else{
 			this.setCollectorEnabled(false);
@@ -853,12 +855,12 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 		
 		// 閾値情報
 		if (this.m_MonitorNumericValueInfo != null) {
-			List<MonitorNumericValueInfo> monitorNumericValueInfo = monitor.getNumericValueInfo();
-			for (MonitorNumericValueInfo valueInfo : monitorNumericValueInfo) {
-				if (!MonitorNumericType.TYPE_BASIC.getType().equals(valueInfo.getMonitorNumericType())) {
+			List<MonitorNumericValueInfoResponse> monitorNumericValueInfo = monitor.getNumericValueInfo();
+			for (MonitorNumericValueInfoResponse valueInfo : monitorNumericValueInfo) {
+				if (!MonitorNumericTypeEnum.BASIC.equals(valueInfo.getMonitorNumericType())) {
 					continue;
 				}
-				for (MonitorNumericValueInfo mValueInfo : m_MonitorNumericValueInfo) {
+				for (MonitorNumericValueInfoResponse mValueInfo : m_MonitorNumericValueInfo) {
 					if (valueInfo.getPriority().equals(mValueInfo.getPriority())) {
 						if (monitor.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_PING)) {
 							valueInfo.setThresholdLowerLimit(mValueInfo.getThresholdUpperLimit());
@@ -872,7 +874,7 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 		}
 
 		// 将来予測
-		if (monitor.isPredictionFlg()) {
+		if (monitor.getPredictionFlg()) {
 			this.m_confirmPredictionValid.setSelection(true);
 		}else{
 			this.setPredictionEnabled(false);
@@ -881,7 +883,14 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 		// 将来予測－通知情報
 		if(monitor.getPredictionNotifyRelationList() != null
 				&& monitor.getPredictionNotifyRelationList().size() > 0){
-			this.m_predictionNotifyInfo.setNotify(monitor.getPredictionNotifyRelationList());
+			List<NotifyRelationInfoResponse> notifyList = new ArrayList<>();
+			for (NotifyRelationInfoResponse monitorNotify : monitor.getPredictionNotifyRelationList()) {
+				NotifyRelationInfoResponse notify = new NotifyRelationInfoResponse();
+				notify.setNotifyId(monitorNotify.getNotifyId());
+				notify.setNotifyType(monitorNotify.getNotifyType());
+				notifyList.add(notify);
+			}
+			this.m_predictionNotifyInfo.setNotify(notifyList);
 		}
 
 		// 将来予測－アプリケーション
@@ -890,15 +899,16 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 		}
 
 		// 将来予測－予測方法
-		for (String type : MonitorPredictionMethodConstant.types()) {
-			this.m_comboPredictionMethod.add(HinemosMessage.replace(MonitorPredictionMethodConstant.typeToMessage(type)));
-			this.m_comboPredictionMethod.setData(HinemosMessage.replace(MonitorPredictionMethodConstant.typeToMessage(type)), type);
+		for (String type : MonitorPredictionMethod.types()) {
+			this.m_comboPredictionMethod.add(HinemosMessage.replace(MonitorPredictionMethod.typeToMessage(type)));
+			this.m_comboPredictionMethod.setData(HinemosMessage.replace(MonitorPredictionMethod.typeToMessage(type)), type);
 		}
-		String predictionMethod = monitor.getPredictionMethod();
-		if(predictionMethod == null || predictionMethod.isEmpty()){
-			predictionMethod = MonitorPredictionMethodConstant.DEFALUT;
+		MonitorInfoResponse.PredictionMethodEnum predictionMethod = monitor.getPredictionMethod();
+		if (predictionMethod == null) {
+			predictionMethod = MonitorInfoResponse.PredictionMethodEnum._1;
 		}
-		this.m_comboPredictionMethod.setText(HinemosMessage.replace(MonitorPredictionMethodConstant.typeToMessage(predictionMethod)));
+		this.m_comboPredictionMethod.setText(HinemosMessage.replace(
+				MonitorPredictionMethod.enumToMessage(predictionMethod, MonitorInfoResponse.PredictionMethodEnum.class)));
 
 		// 将来予測－対象収集期間
 		if (monitor.getPredictionAnalysysRange() != null){
@@ -911,7 +921,7 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 		}
 
 		// 変化点
-		if (monitor.isChangeFlg()) {
+		if (monitor.getChangeFlg()) {
 			this.m_confirmChangeValid.setSelection(true);
 		}else{
 			this.setChangeEnabled(false);
@@ -920,7 +930,14 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 		//　変化点－通知情報
 		if(monitor.getChangeNotifyRelationList() != null
 				&& monitor.getChangeNotifyRelationList().size() > 0){
-			this.m_changeNotifyInfo.setNotify(monitor.getChangeNotifyRelationList());
+			List<NotifyRelationInfoResponse> notifyList = new ArrayList<>();
+			for (NotifyRelationInfoResponse monitorNotify : monitor.getChangeNotifyRelationList()) {
+				NotifyRelationInfoResponse notify = new NotifyRelationInfoResponse();
+				notify.setNotifyId(monitorNotify.getNotifyId());
+				notify.setNotifyType(monitorNotify.getNotifyType());
+				notifyList.add(notify);
+			}
+			this.m_changeNotifyInfo.setNotify(notifyList);
 		}
 
 		//　変化点－アプリケーション
@@ -943,7 +960,7 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
@@ -977,7 +994,8 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 		monitorInfo.setPredictionFlg(this.m_confirmPredictionValid.getSelection());
 
 		// 将来予測－予測方法
-		monitorInfo.setPredictionMethod((String)this.m_comboPredictionMethod.getData(this.m_comboPredictionMethod.getText()));
+		monitorInfo.setPredictionMethod(MonitorInfoResponse.PredictionMethodEnum.fromValue(
+				(String)this.m_comboPredictionMethod.getData(this.m_comboPredictionMethod.getText())));
 
 		// 将来予測－対象収集期間
 		if(this.m_predictionAnalysysRange.getText() != null && this.m_predictionAnalysysRange.getText().length() > 0){
@@ -1059,7 +1077,7 @@ public class CommonMonitorNumericDialog extends CommonMonitorDialog {
 		}
 
 		// 監視種別を数値に設定する
-		monitorInfo.setMonitorType(MonitorTypeConstant.TYPE_NUMERIC);
+		monitorInfo.setMonitorType(MonitorInfoResponse.MonitorTypeEnum.NUMERIC);
 
 		return monitorInfo;
 	}

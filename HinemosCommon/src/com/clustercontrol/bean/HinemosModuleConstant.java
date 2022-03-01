@@ -28,6 +28,8 @@ public class HinemosModuleConstant {
 	public static final String PLATFORM_NOTIFY = "PLT_NTF";
 	/** メールテンプレート*/
 	public static final String PLATFORM_MAIL_TEMPLATE = "PLT_MIL_TMP";
+	/** コマンド通知テンプレート*/
+	public static final String PLATFORM_COMMAND_TEMPLATE = "PLT_CMD_TMP";
 	/** カレンダ */
 	public static final String PLATFORM_CALENDAR = "PLT_CAL";
 	/** カレンダパターン */
@@ -44,6 +46,8 @@ public class HinemosModuleConstant {
 	public static final String PLATFORM_REPSITORY_SCOPE = "PLT_REP_SCP";
 	/** リポジトリ[自動登録] */
 	public static final String PLATFORM_REPSITORY_AUTO_REGISTER = "PLT_REP_AREG";
+	/** RESTアクセス */
+	public static final String PLATFORM_REST_ACCESS = "PLT_RES_ACS";
 
 	/** 監視設定 */
 	public static final String MONITOR = "MON";
@@ -52,7 +56,7 @@ public class HinemosModuleConstant {
 	/** カスタム監視 （数値）*/
 	public static final String MONITOR_CUSTOM_N = "MON_CUSTOM_N";
 	/** カスタム監視 （文字列） */
-	public static final String MONITOR_CUSTOM_S = "MON_CUSTOM_S";	
+	public static final String MONITOR_CUSTOM_S = "MON_CUSTOM_S";
 	/** HTTP監視（数値） */
 	public static final String MONITOR_HTTP_N = "MON_HTP_N";
 	/** HTTP監視（文字列） */
@@ -67,6 +71,10 @@ public class HinemosModuleConstant {
 	public static final String MONITOR_PORT = "MON_PRT_N";
 	/** プロセス監視 */
 	public static final String MONITOR_PROCESS = "MON_PRC_N";
+	/** RPA管理ツールサービス監視 */
+	public static final String MONITOR_RPA_MGMT_TOOL_SERVICE = "MON_RPA_MGMT_TOOL_SERVICE_B";
+	/** RPAログファイル監視 */
+	public static final String MONITOR_RPA_LOGFILE = "MON_RPA_LOGFILE_S";
 	/** SNMP監視（数値） */
 	public static final String MONITOR_SNMP_N = "MON_SNMP_N";
 	/** SNMP監視（文字列） */
@@ -96,9 +104,17 @@ public class HinemosModuleConstant {
 	/** 収集値統合監視(真偽値) */
 	public static final String MONITOR_INTEGRATION = "MON_COMPOUND_B";
 	/** バイナリファイル監視 （バイナリ） */
-	public static final String MONITOR_BINARYFILE_BIN = "MON_BINARYFILE_BIN";	
+	public static final String MONITOR_BINARYFILE_BIN = "MON_BINARYFILE_BIN";
 	/** パケットキャプチャ （バイナリ） */
-	public static final String MONITOR_PCAP_BIN = "MON_PCAP_BIN";	
+	public static final String MONITOR_PCAP_BIN = "MON_PCAP_BIN";
+	/** クラウドサービス監視 */
+	public static final String MONITOR_CLOUD_SERVICE_CONDITION = "MON_CLOUD_SERVICE_CONDITION";
+	/** クラウド課金監視 */
+	public static final String MONITOR_CLOUD_SERVICE_BILLING = "MON_CLOUD_SERVICE_BILLING";
+	/** クラウド課金詳細監視 */
+	public static final String MONITOR_CLOUD_SERVICE_BILLING_DETAIL = "MON_CLOUD_SERVICE_BILLING_DETAIL";
+	/** クラウドログ監視 */
+	public static final String MONITOR_CLOUD_LOG = "MON_CLOUD_LOG";
 	/** スコープ */
 	public static final String MONITOR_SCOPE = "MON_SCP";
 	/** ステータス */
@@ -107,12 +123,12 @@ public class HinemosModuleConstant {
 	public static final String MONITOR_EVENT = "MON_EVT";
 	/** JMX */
 	public static final String MONITOR_JMX = "MON_JMX_N";
-	
+
 	/** ログフォーマット */
 	public static final String HUB_LOGFORMAT = "HUB_LF";
 	/** 収集蓄積 転送 */
 	public static final String HUB_TRANSFER = "HUB_TRF";
-	
+
 	/** 性能管理 */
 	public static final String PERFORMANCE = "PRF";
 	/** 性能管理 */
@@ -136,12 +152,28 @@ public class HinemosModuleConstant {
 	public static final String JOB_SCHEDULE_RUN_DETAIL  = "JOB_SCH_RUN_DTL";
 	/** ジョブ管理 */
 	public static final String JOB_SESSION_FILE = "JOB_SES_FIL";
-	/** ジョブ管理 */
+	/** ジョブ管理 ジョブ実行契機 */
 	public static final String JOB_KICK  = "JOB_KICK";
 	/** ジョブ管理:同時実行制御キュー */
 	public static final String JOB_QUEUE  = "JOB_QUEUE";
-	/** ジョブ管理 */
+	/** ジョブ管理 ジョブマップ */
 	public static final String JOBMAP_IMAGE_FILE  = "JOBMAP_IMAGE_FILE";
+	/** ジョブ管理 ジョブ連携送信設定 */
+	public static final String JOB_LINK_SEND  = "JOB_LINK_SEND";
+	/** ジョブ管理 ジョブ-開始 */
+	public static final String JOB_START = "JOB_START";
+	/** ジョブ管理 ジョブ-終了 */
+	public static final String JOB_END = "JOB_END";
+	/** ジョブ管理 ジョブ-開始遅延 */
+	public static final String JOB_START_DELAY = "JOB_START_DELAY";
+	/** ジョブ管理 ジョブ-終了遅延 */
+	public static final String JOB_END_DELAY = "JOB_END_DELAY";
+	/** ジョブ管理 ジョブ-同時実行制御待ち開始 */
+	public static final String JOB_QUEUE_START = "JOB_QUEUE_START";
+	/** ジョブ管理 ジョブ-同時実行待ち終了 */
+	public static final String JOB_QUEUE_END = "JOB_QUEUE_END";
+	/** ジョブ管理 ジョブ-多重度超過 */
+	public static final String JOB_EXCEEDED_MULTIPLICITY = "JOB_EXCEEDED_MULTIPLICITY";
 
 	/** 自動デバイスサーチ */
 	public static final String REPOSITORY_DEVICE_SEARCH = "REP_DS";
@@ -161,19 +193,39 @@ public class HinemosModuleConstant {
 	/** 環境構築 */
 	public static final String INFRA = "INFRA";
 	public static final String INFRA_FILE = "INFRA_FILE";
+	public static final String INFRA_RUN_START = "RUN_START";
+	public static final String INFRA_RUN_END = "RUN_END";
+	public static final String INFRA_CHECK_START = "CHECK_START";
+	public static final String INFRA_CHECK_END = "CHECK_END";
 
 	/** レポーティング */
-	public static final String REPORTING = "REPORTING"; 
+	public static final String REPORTING = "REPORTING";
 
-	/** 遠隔管理 */
-	public static final String INQUIRY = "INQUIRY"; 
-	
 	/** REST-API*/
 	public static final String REST_API = "REST_API";
+
+	/** RPA管理 */
+	public static final String RPA = "RPA";
+	public static final String RPA_ACCOUNT = "RPA_ACCOUNT";
+	public static final String RPA_SCENARIO_TAG = "RPA_SCENARIO_TAG";
+	public static final String RPA_SCENARIO = "RPA_SCENARIO";
+	public static final String RPA_SCENARIO_CREATE = "RPA_SCENARIO_CREATE";
+	public static final String RPA_SCENARIO_CORRECT = "RPA_SCENARIO_CORRECT";
 	
 	/** クラウド仮想化管理*/
 	public static final String XCLOUD = "CLOUD";
-	
+	/** クラウドサービス監視*/
+	public static final String CLOUD_MONITOR_SERVICE = "MON_CLOUD_SERVICE_CONDITION";
+
+	/** マルチテナント制御 */
+	public static final String MULTI_TENANT = "MULTI_TENANT";
+
+	/** フィルタ設定 */
+	public static final String FILTER_SETTING = "FILTER_SETTING";
+
+	/** SDML制御設定 */
+	public static final String SDML_CONTROL = "SDML_CONTROL";
+
 	/** マネージャ操作ログタイトル */
 	/** リポジトリ */
 	public static final String LOG_PREFIX_REPOSITORY = "[Repository]";
@@ -229,7 +281,7 @@ public class HinemosModuleConstant {
 	public static final String LOG_PREFIX_MONITOR_BINARY_FILE = "[BinaryFile]";
 	/** パケットキャプチャ監視 */
 	public static final String LOG_PREFIX_MONITOR_PCAP = "[PcketCapture]";
-	/** JMX */	
+	/** JMX */
 	public static final String LOG_PREFIX_MONITOR_JMX = "[Jmx]";
 	/** 性能管理 */
 	public static final String LOG_PREFIX_PERFORMANCE = "[Collector]";
@@ -244,11 +296,9 @@ public class HinemosModuleConstant {
 	/** 仮想化管理 */
 	public static final String LOG_PREFIX_VM = "[VM]";
 	/** レポーティング */
-	public static final String LOG_PREFIX_REPORTING = "[Reporting]"; 
+	public static final String LOG_PREFIX_REPORTING = "[Reporting]";
 	/** 収集蓄積 */
 	public static final String LOG_PREFIX_HUB = "[Hub]";
-	/** 遠隔管理 */
-	public static final String LOG_PREFIX_INQUIRY = "[Inquiry]";
 
 	private static List<ExtensionType> extensionTypeList = new ArrayList<ExtensionType>();
 
@@ -334,6 +384,8 @@ public class HinemosModuleConstant {
 				typeId.equals(MONITOR_INTEGRATION) ||
 				typeId.equals(MONITOR_BINARYFILE_BIN) ||
 				typeId.equals(MONITOR_PCAP_BIN) ||
+				typeId.equals(MONITOR_RPA_MGMT_TOOL_SERVICE) ||
+				typeId.equals(MONITOR_RPA_LOGFILE) ||
 				typeId.equals(NODE_CONFIG_SETTING) ||
 				typeId.equals(HUB_LOGFORMAT) ||
 				typeId.equals(HUB_TRANSFER) ||
@@ -349,6 +401,7 @@ public class HinemosModuleConstant {
 				typeId.equals(JOB_QUEUE) ||
 				typeId.equals(JOB_SCHEDULE_RUN_DETAIL) ||
 				typeId.equals(JOB_SESSION_FILE ) ||
+				typeId.equals(SDML_CONTROL) ||
 				typeId.equals(SYSYTEM ) ||
 				typeId.equals(SYSYTEM_MAINTENANCE) ||
 				typeId.equals(SYSYTEM_SELFCHECK) ||
@@ -356,7 +409,12 @@ public class HinemosModuleConstant {
 				typeId.equals(INFRA_FILE) ||
 				typeId.equals(REPORTING) ||
 				typeId.equals(REST_API) ||
-				typeId.equals(XCLOUD)){
+				typeId.equals(RPA_ACCOUNT) ||
+				typeId.equals(RPA_SCENARIO_TAG) ||
+				typeId.equals(RPA_SCENARIO) ||
+				typeId.equals(XCLOUD) ||
+				typeId.equals(MULTI_TENANT) ||
+				typeId.equals(FILTER_SETTING)) {
 
 			return true;
 		} else if(!extensionTypeList.isEmpty()){
@@ -369,7 +427,7 @@ public class HinemosModuleConstant {
 
 		return false;
 	}
-	
+
 	public static String nameToMessageCode(String string) {
 		if (string.equals(PLATFORM_ACCESS)) {
 			return "ACCESSCONTROL";
@@ -386,6 +444,10 @@ public class HinemosModuleConstant {
 			return "NOTIFY";
 		} else if (string.equals(PLATFORM_MAIL_TEMPLATE)) {
 			return "MAIL_TEMPLATE";
+		} else if (string.equals(PLATFORM_COMMAND_TEMPLATE)) {
+			return "COMMAND_TEMPLATE";
+		} else if (string.equals(PLATFORM_REST_ACCESS)) {
+			return "REST_ACCESS_INFO";
 		} else if (string.equals(MONITOR)) {
 			return "MONITOR_SETTING";
 		} else if (string.equals(MONITOR_AGENT)) {
@@ -438,6 +500,10 @@ public class HinemosModuleConstant {
 			return "COLLECT_MONITOR";
 		} else if (string.equals(MONITOR_INTEGRATION)) {
 			return "INTEGRATION_MONITOR";
+		} else if (string.equals(MONITOR_RPA_LOGFILE)) {
+			return "RPA_LOGFILE_MONITOR";
+		} else if (string.equals(MONITOR_RPA_MGMT_TOOL_SERVICE)) {
+			return "RPA_MANAGEMENT_TOOL_SERVICE_MONITOR";
 		} else if (string.equals(PERFORMANCE)) {
 			return "PERFORMANCE";
 		} else if (string.equals(JOB)) {
@@ -448,6 +514,10 @@ public class HinemosModuleConstant {
 			return "JOB_KICK";
 		} else if (string.equals(JOB_QUEUE)) {
 			return "JOB_QUEUE";
+		} else if (string.equals(JOB_LINK_SEND)) {
+			return "JOBLINK_SEND_SETTING";
+		} else if (string.equals(JOBMAP_IMAGE_FILE)) {
+			return "JOBMAP_ICON_IMAGE";
 		} else if (string.equals(SYSYTEM_MAINTENANCE)) {
 			return "MAINTENANCE_NAME";
 		} else if (string.equals(SYSYTEM_SELFCHECK)) {
@@ -472,8 +542,23 @@ public class HinemosModuleConstant {
 			return "NODE_CONFIG_SETTING";
 		}  else if (string.equals(REST_API)) {
 			return "REST_API";
+		} else if (string.equals(RPA_SCENARIO)){
+			return "RPA_SCENARIO";
+		} else if (string.equals(RPA_SCENARIO_CREATE)){
+			return "RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING";
+		} else if (string.equals(RPA_SCENARIO_CORRECT)){
+			return "RPA_SCENARIO_OPERATION_RESULT_UPDATE_APPLICATION";
 		} else if (string.equals(XCLOUD)){
 			return "XCLOUD";
+		} else if (string.equals(SDML_CONTROL)) {
+			return "SDML_CONTROL_SETTING";
+		}  else if (string.equals(REST_API)) {
+		} else if (string.equals(MULTI_TENANT)){
+			return "MULTI_TENANT_CONTROL";
+		} else if (string.equals(FILTER_SETTING)) {
+			return "FILTER_SETTING";
+		} else if (string.equals(RPA)){
+			return "RPA";
 		} else if(!extensionTypeList.isEmpty()){
 			for(ExtensionType extensionType: extensionTypeList){
 				if(string.equals(extensionType.getTypeId())){

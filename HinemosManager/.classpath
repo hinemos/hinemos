@@ -11,11 +11,12 @@
 	<classpathentry kind="src" path="src_commons"/>
 	<classpathentry kind="src" path="src_custom"/>
 	<classpathentry kind="src" path="src_customtrap"/>
+	<classpathentry kind="src" path="src_filtersetting"/>
+	<classpathentry kind="src" path="src_grafana"/>
 	<classpathentry kind="src" path="src_hinemosagent"/>
 	<classpathentry kind="src" path="src_http"/>
 	<classpathentry kind="src" path="src_hub"/>
 	<classpathentry kind="src" path="src_infra"/>
-	<classpathentry kind="src" path="src_inquiry"/>
 	<classpathentry kind="src" path="src_jmx"/>
 	<classpathentry kind="src" path="src_jobmanagement"/>
 	<classpathentry kind="src" path="src_logfile"/>
@@ -31,6 +32,9 @@
 	<classpathentry kind="src" path="src_process"/>
 	<classpathentry kind="src" path="src_reporting"/>
 	<classpathentry kind="src" path="src_repository"/>
+	<classpathentry kind="src" path="src_rest"/>
+	<classpathentry kind="src" path="src_rpa"/>
+	<classpathentry kind="src" path="src_sdml"/>
 	<classpathentry kind="src" path="src_selfcheck"/>
 	<classpathentry kind="src" path="src_snmp"/>
 	<classpathentry kind="src" path="src_snmptrap"/>
@@ -47,49 +51,73 @@
 	<classpathentry kind="lib" path="/HinemosCommon/build/jar/HinemosCommon.jar"/>
 	<classpathentry kind="lib" path="lib/sblim-cim-client-1.3.9.3.jar"/>
 	<classpathentry kind="lib" path="lib/intel-wsman-1.0.1-mod.jar"/>
-	<classpathentry kind="lib" path="lib/httpclient-4.5.2.jar"/>
-	<classpathentry kind="lib" path="lib/httpclient-cache-4.5.2.jar"/>
-	<classpathentry kind="lib" path="lib/httpcore-4.4.5.jar"/>
-	<classpathentry kind="lib" path="lib/httpmime-4.5.2.jar"/>
-	<classpathentry kind="lib" path="lib/eclipselink.jar" sourcepath="lib/eclipselink-src.jar"/>
 	<classpathentry kind="lib" path="lib/jpasecurity-core-0.4.0.jar"/>
-	<classpathentry kind="lib" path="lib/javax.persistence_2.1.1.v201509150925.jar" sourcepath="lib/javax.persistence.source_2.1.1.v201509150925.jar"/>
-	<classpathentry kind="lib" path="lib/postgresql-9.4.1209.jar"/>
-	<classpathentry kind="lib" path="lib/jsch-0.1.53.jar"/>
-	<classpathentry kind="lib" path="/HinemosCommon/commonlib/commons-codec-1.10.jar"/>
-	<classpathentry kind="lib" path="/HinemosCommon/commonlib/commons-logging-1.2.jar"/>
-	<classpathentry kind="lib" path="/HinemosCommon/commonlib/log4j-1.2.17.jar"/>
-	<classpathentry kind="lib" path="lib/javax.mail-1.5.5.jar"/>
-	<classpathentry kind="lib" path="lib/commons-net-3.5.jar"/>
-	<classpathentry kind="lib" path="lib/joda-time-2.9.1.jar"/>
-	<classpathentry kind="lib" path="lib/snmp4j-2.3.1.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-annotations-2.8.0.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-core-2.8.2.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-databind-2.8.2.jar"/>
-	<classpathentry kind="lib" path="lib/mssql-jdbc-6.2.2.jre8.jar"/>
-	<classpathentry kind="lib" path="lib/commons-math3-3.6.1.jar"/>
-	<classpathentry kind="lib" path="platform_switch/lib_platform_win/jna-platform.jar"/>
-	<classpathentry kind="lib" path="platform_switch/lib_platform_win/jna.jar"/>
-	<classpathentry kind="lib" path="lib_rest/grizzly-framework-2.4.3.jar" sourcepath="lib_rest/grizzly-framework-2.4.3-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/grizzly-http-2.4.3.jar" sourcepath="lib_rest/grizzly-http-2.4.3-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/grizzly-http-server-2.4.3.jar" sourcepath="lib_rest/grizzly-http-server-2.4.3-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/hk2-api-2.5.0-b61.jar" sourcepath="lib_rest/hk2-api-2.5.0-b61-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/hk2-locator-2.5.0-b61.jar" sourcepath="lib_rest/hk2-locator-2.5.0-b61-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/hk2-utils-2.5.0-b61.jar" sourcepath="lib_rest/hk2-utils-2.5.0-b61-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jackson-jaxrs-base-2.9.5.jar" sourcepath="lib_rest/jackson-jaxrs-base-2.9.5-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jackson-jaxrs-json-provider-2.9.5.jar" sourcepath="lib_rest/jackson-jaxrs-json-provider-2.9.5-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jackson-module-jaxb-annotations-2.9.6.jar" sourcepath="lib_rest/jackson-module-jaxb-annotations-2.9.6-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/javax.annotation-api-1.3.2.jar" sourcepath="lib_rest/javax.annotation-api-1.3.2-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/javax.inject-1.jar" sourcepath="lib_rest/javax.inject-1-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/javax.ws.rs-api-2.1.jar" sourcepath="lib_rest/javax.ws.rs-api-2.1-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jersey-client-2.27.jar" sourcepath="lib_rest/jersey-client-2.27-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jersey-common-2.27.jar" sourcepath="lib_rest/jersey-common-2.27-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jersey-container-grizzly2-http-2.27.jar" sourcepath="lib_rest/jersey-container-grizzly2-http-2.27-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jersey-entity-filtering-2.27.jar" sourcepath="lib_rest/jersey-entity-filtering-2.27-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jersey-guava-2.25.1.jar" sourcepath="lib_rest/jersey-guava-2.25.1-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jersey-hk2-2.27.jar" sourcepath="lib_rest/jersey-hk2-2.27-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jersey-media-json-jackson-2.27.jar" sourcepath="lib_rest/jersey-media-json-jackson-2.27-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jersey-server-2.27.jar" sourcepath="lib_rest/jersey-server-2.27-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/validation-api-2.0.1.Final.jar" sourcepath="lib_rest/validation-api-2.0.1.Final-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/commons-logging-1.2.jar" sourcepath="/HinemosCommon/commonlib/commons-logging-1.2-sources.jar"/>
+	<classpathentry kind="lib" path="lib/commons-math3-3.6.1.jar" sourcepath="lib/commons-math3-3.6.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jakarta.inject-2.6.1.jar" sourcepath="lib_rest/jakarta.inject-2.6.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/javassist-3.27.0-GA.jar" sourcepath="lib_rest/javassist-3.27.0-GA-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/mimepull-1.9.13.jar" sourcepath="lib_rest/mimepull-1.9.13-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/osgi-resource-locator-1.0.3.jar" sourcepath="lib_rest/osgi-resource-locator-1.0.3-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/log4j-1.2-api-2.17.1.jar" sourcepath="/HinemosCommon/commonlib/log4j-1.2-api-2.17.1-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/log4j-api-2.17.1.jar" sourcepath="/HinemosCommon/commonlib/log4j-api-2.17.1-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/log4j-core-2.17.1.jar" sourcepath="/HinemosCommon/commonlib/log4j-core-2.17.1-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/log4j-jcl-2.17.1.jar" sourcepath="/HinemosCommon/commonlib/log4j-jcl-2.17.1-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/commons-codec-1.15.jar" sourcepath="/HinemosCommon/commonlib/commons-codec-1.15-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/httpclient5-5.0.3.jar" sourcepath="/HinemosCommon/commonlib/httpclient5-5.0.3-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/httpcore5-5.0.3.jar" sourcepath="/HinemosCommon/commonlib/httpcore5-5.0.3-sources.jar"/>
+	<classpathentry kind="lib" path="lib/commons-net-3.7.2.jar" sourcepath="lib/commons-net-3.7.2-sources.jar"/>
+	<classpathentry kind="lib" path="lib/jakarta.persistence-api-3.0.0.jar" sourcepath="lib/jakarta.persistence-api-3.0.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib/joda-time-2.10.8.jar" sourcepath="lib/joda-time-2.10.8-sources.jar"/>
+	<classpathentry kind="lib" path="lib/jsch-0.1.55.jar" sourcepath="lib/jsch-0.1.55-sources.jar"/>
+	<classpathentry kind="lib" path="lib/postgresql-42.2.19.jar" sourcepath="lib/postgresql-42.2.19-sources.jar"/>
+	<classpathentry kind="lib" path="lib/snmp4j-2.8.6.jar" sourcepath="lib/snmp4j-2.8.6-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/aspectjweaver-1.9.6.jar" sourcepath="lib_rest/aspectjweaver-1.9.6-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jackson-module-jaxb-annotations-2.12.0.jar" sourcepath="lib_rest/jackson-module-jaxb-annotations-2.12.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/org.osgi.annotation.versioning-1.1.1.jar" sourcepath="lib_rest/org.osgi.annotation.versioning-1.1.1-sources.jar"/>
+	<classpathentry kind="lib" path="platform_switch/commonlib_platform_win/jna-5.6.0.jar" sourcepath="/HinemosCommon/commonlib/jna-5.6.0-sources.jar"/>
+	<classpathentry kind="lib" path="platform_switch/commonlib_platform_win/jna-platform-5.6.0.jar" sourcepath="/HinemosCommon/commonlib/jna-platform-5.6.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib/eclipselink-3.0.0.jar" sourcepath="lib/eclipselink-3.0.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib/snmp4j-log4j-2.8.2.jar" sourcepath="lib/snmp4j-log4j-2.8.2-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/aopalliance-repackaged-2.6.1.jar" sourcepath="lib_rest/aopalliance-repackaged-2.6.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/grizzly-framework-2.4.4.jar" sourcepath="lib_rest/grizzly-framework-2.4.4-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/grizzly-http-2.4.4.jar" sourcepath="lib_rest/grizzly-http-2.4.4-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/grizzly-http-server-2.4.4.jar" sourcepath="lib_rest/grizzly-http-server-2.4.4-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/hk2-api-2.6.1.jar" sourcepath="lib_rest/hk2-api-2.6.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/hk2-locator-2.6.1.jar" sourcepath="lib_rest/hk2-locator-2.6.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/hk2-utils-2.6.1.jar" sourcepath="lib_rest/hk2-utils-2.6.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jakarta.activation-api-1.2.2.jar" sourcepath="lib_rest/jakarta.activation-api-1.2.2-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jakarta.validation-api-2.0.2.jar" sourcepath="lib_rest/jakarta.validation-api-2.0.2-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jakarta.ws.rs-api-2.1.6.jar" sourcepath="lib_rest/jakarta.ws.rs-api-2.1.6-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jakarta.xml.bind-api-2.3.3.jar" sourcepath="lib_rest/jakarta.xml.bind-api-2.3.3-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jersey-client-2.32.jar" sourcepath="lib_rest/jersey-client-2.32-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jersey-common-2.32.jar" sourcepath="lib_rest/jersey-common-2.32-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jersey-container-grizzly2-http-2.32.jar" sourcepath="lib_rest/jersey-container-grizzly2-http-2.32-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jersey-entity-filtering-2.32.jar" sourcepath="lib_rest/jersey-entity-filtering-2.32-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jersey-hk2-2.32.jar" sourcepath="lib_rest/jersey-hk2-2.32-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jersey-media-jaxb-2.32.jar" sourcepath="lib_rest/jersey-media-jaxb-2.32-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jersey-media-json-jackson-2.32.jar" sourcepath="lib_rest/jersey-media-json-jackson-2.32-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jersey-media-multipart-2.32.jar" sourcepath="lib_rest/jersey-media-multipart-2.32-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jersey-server-2.32.jar" sourcepath="lib_rest/jersey-server-2.32-sources.jar"/>
+	<classpathentry kind="lib" path="lib/jakarta.mail-2.0.0.jar" sourcepath="lib/jakarta.mail-2.0.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib/jakarta.activation-2.0.0.jar" sourcepath="lib/jakarta.activation-2.0.0-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/jackson-annotations-2.12.0.jar" sourcepath="/HinemosCommon/commonlib/jackson-annotations-2.12.0-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/jackson-core-2.12.0.jar" sourcepath="/HinemosCommon/commonlib/jackson-core-2.12.0-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/jackson-databind-2.12.0.jar" sourcepath="/HinemosCommon/commonlib/jackson-databind-2.12.0-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib_rest/jakarta.annotation-api-1.3.5.jar" sourcepath="/HinemosCommon/commonlib/jakarta.annotation-api-1.3.5-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/microprofile-openapi-api-2.0.jar" sourcepath="lib_rest/microprofile-openapi-api-2.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib/openapi-java-client.jar" sourcepath="lib/openapi-java-client-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/httpcore5-h2-5.0.3.jar" sourcepath="/HinemosCommon/commonlib/httpcore5-h2-5.0.3-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/slf4j-api-1.7.30.jar" sourcepath="/HinemosCommon/commonlib/slf4j-api-1.7.30-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/gson-2.8.6.jar" sourcepath="/HinemosCommon/commonlib/gson-2.8.6-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/gson-fire-1.8.5.jar" sourcepath="/HinemosCommon/commonlib/gson-fire-1.8.5-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/hamcrest-core-1.3.jar" sourcepath="/HinemosCommon/commonlib/hamcrest-core-1.3-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/jsr305-3.0.2.jar" sourcepath="/HinemosCommon/commonlib/jsr305-3.0.2-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/logging-interceptor-3.14.9.jar" sourcepath="/HinemosCommon/commonlib/logging-interceptor-3.14.9-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/okhttp-3.14.9.jar" sourcepath="/HinemosCommon/commonlib/okhttp-3.14.9-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/okhttp-digest-1.20.jar" sourcepath="/HinemosCommon/commonlib/okhttp-digest-1.20-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/okio-1.17.5.jar" sourcepath="/HinemosCommon/commonlib/okio-1.17.5-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/swagger-annotations-1.6.2.jar" sourcepath="/HinemosCommon/commonlib/swagger-annotations-1.6.2-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/threetenbp-1.5.0.jar" sourcepath="/HinemosCommon/commonlib/threetenbp-1.5.0-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/commons-lang3-3.11.jar" sourcepath="/HinemosCommon/commonlib/commons-lang3-3.11-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

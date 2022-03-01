@@ -8,6 +8,7 @@
 
 package com.clustercontrol.hub.composite;
 
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
@@ -53,34 +54,33 @@ import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.MonitorInfoBeanResponse;
+import org.openapitools.client.model.QueryCollectBinaryDataRequest;
+import org.openapitools.client.model.QueryCollectStringDataRequest;
+import org.openapitools.client.model.QueryCollectStringDataRequest.OperatorEnum;
+import org.openapitools.client.model.TagResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.binary.util.BinaryEndpointWrapper;
+import com.clustercontrol.collect.util.CollectRestClientWrapper;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.hub.action.DownloadCollectedData;
 import com.clustercontrol.hub.commons.LogSearchPeriodConstants;
 import com.clustercontrol.hub.dialog.RecordInfoDialog;
+import com.clustercontrol.hub.dto.DataResponse;
+import com.clustercontrol.hub.dto.QueryResultResponse;
 import com.clustercontrol.hub.preference.HubPreferencePage;
-import com.clustercontrol.hub.util.HubEndpointWrapper;
 import com.clustercontrol.hub.util.TableViewerSorter;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.sdml.util.SdmlClientUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.viewer.CommonTableViewerSorter;
-import com.clustercontrol.ws.hub.BinaryQueryInfo;
-import com.clustercontrol.ws.hub.InvalidRole_Exception;
-import com.clustercontrol.ws.hub.InvalidSetting_Exception;
-import com.clustercontrol.ws.hub.Operator;
-import com.clustercontrol.ws.hub.StringData;
-import com.clustercontrol.ws.hub.StringQueryInfo;
-import com.clustercontrol.ws.hub.StringQueryResult;
-import com.clustercontrol.ws.hub.Tag;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfoBean;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 
 /**
  * ログ検索画面クラス<br/>
@@ -100,7 +100,7 @@ public class LogSearchComposite extends Composite {
 			new ColumnLabelProvider() {
 				@Override
 				public String getText(Object element) {
-					StringData stringData = (StringData) element;
+					DataResponse stringData = (DataResponse) element;
 					Date date=new Date(stringData.getTime());
 					SimpleDateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 					return df.format(date);
@@ -110,7 +110,7 @@ public class LogSearchComposite extends Composite {
 			new ColumnLabelProvider() {
 				@Override
 				public String getText(Object element) {
-					StringData stringData = (StringData) element;
+					DataResponse stringData = (DataResponse) element;
 					return stringData.getFacilityId();
 				}
 			}), 
@@ -118,7 +118,7 @@ public class LogSearchComposite extends Composite {
 				new ColumnLabelProvider() {
 					@Override
 					public String getText(Object element) {
-						StringData stringData = (StringData) element;
+						DataResponse stringData = (DataResponse) element;
 						return stringData.getMonitorId();
 					}
 				}), 
@@ -126,7 +126,7 @@ public class LogSearchComposite extends Composite {
 				new ColumnPixelData(370, true, true), new ColumnLabelProvider() {
 				@Override
 				public String getText(Object element) {
-					StringData stringData = (StringData) element;
+					DataResponse stringData = (DataResponse) element;
 					return HinemosMessage.replace(stringData.getData());
 				}
 
@@ -159,10 +159,10 @@ public class LogSearchComposite extends Composite {
 			new ColumnPixelData(370, true, true), new ColumnLabelProvider() {
 				@Override
 				public String getText(Object element) {
-					StringData stringData = (StringData) element;
+					DataResponse stringData = (DataResponse) element;
 					final StringBuffer label=new StringBuffer();
-					List<Tag> tags = stringData.getTagList();
-					for (Tag tag : tags){
+					List<TagResponse> tags = stringData.getTagList();
+					for (TagResponse tag : tags){
 						if (label.length()>0){
 							label.append(",");
 						}
@@ -206,7 +206,7 @@ public class LogSearchComposite extends Composite {
 	private Long to;
 	private String monitorId;
 	private String keywords;
-	private Operator ope;
+	private OperatorEnum ope;
 
 	private Text txtKeywords;
 	private Combo cmbMonitorId;
@@ -463,17 +463,17 @@ public class LogSearchComposite extends Composite {
 				// 入力値チェック.
 				ValidateResult result = checkInputForSearch();
 				if (result == null || result.isValid()) {
-					StringQueryInfo query = null;
-					BinaryQueryInfo binaryQuery = null;
+					QueryCollectStringDataRequest query = null;
+					QueryCollectBinaryDataRequest binaryQuery = null;
 					Boolean isNeedCount = null;
 					if (btnText.getSelection()) {
 						query = makeNewQuery();
-						isNeedCount = query.isNeedCount();
+						isNeedCount = query.getNeedCount();
 					} else {
 						binaryQuery = makeNewBinaryQuery();
-						isNeedCount = binaryQuery.isNeedCount();
+						isNeedCount = binaryQuery.getNeedCount();
 					}
-					StringQueryResult stringQueryResult = getQueryExecute(manager, query, binaryQuery);
+					QueryResultResponse stringQueryResult = getQueryExecute(manager, query, binaryQuery);
 					updateResultComposite(isNeedCount, stringQueryResult);
 				} else {
 					// クライアントにエラーダイアログ表示.
@@ -493,11 +493,14 @@ public class LogSearchComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				// 表示されているレコードを全件取得(ページ外除く).
 				@SuppressWarnings("unchecked")
-				List<StringData> dataList = (List<StringData>) tableViewer.getInput();
+				List<DataResponse> dataList = (List<DataResponse>) tableViewer.getInput();
 				DownloadCollectedData downloadLog = new DownloadCollectedData();
 				if (btnBinary.getSelection()) {
 					// バイナリデータを複数ダウンロード.
-					downloadLog.executeBinaryRecords(m_shell, manager, dataList);
+					try {
+						downloadLog.executeBinaryRecords(m_shell, manager, dataList);
+					} catch (UnknownHostException ue) {
+					}
 				}
 				if (btnText.getSelection()) {
 					// オリジナルメッセージをファイルとして出力.
@@ -534,7 +537,7 @@ public class LogSearchComposite extends Composite {
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				// 選択アイテムを取得する
-				StringData selectStringData = (StringData) ((StructuredSelection) event.getSelection())
+				DataResponse selectStringData = (DataResponse) ((StructuredSelection) event.getSelection())
 						.getFirstElement();
 				RecordInfoDialog dialog = new RecordInfoDialog(m_shell, manager, selectStringData,
 						btnBinary.getSelection());
@@ -601,17 +604,17 @@ public class LogSearchComposite extends Composite {
 		btnTop.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				StringQueryInfo query = null;
-				BinaryQueryInfo binaryQuery = null;
+				QueryCollectStringDataRequest query = null;
+				QueryCollectBinaryDataRequest binaryQuery = null;
 				Boolean isNeedCount = null;
 				if (btnText.getSelection()) {
 					query = makeContinuousQuery(0, getDataCountPerPage(getTable()));
-					isNeedCount = query.isNeedCount();
+					isNeedCount = query.getNeedCount();
 				} else {
 					binaryQuery = makeContinuousBinaryQuery(0, getDataCountPerPage(getTable()));
-					isNeedCount = binaryQuery.isNeedCount();
+					isNeedCount = binaryQuery.getNeedCount();
 				}
-				StringQueryResult stringQueryResult = getQueryExecute(manager, query, binaryQuery);
+				QueryResultResponse stringQueryResult = getQueryExecute(manager, query, binaryQuery);
 				updateResultComposite(isNeedCount, stringQueryResult);
 			}
 		});
@@ -624,17 +627,17 @@ public class LogSearchComposite extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				int offset = Math.max(0,dispOffset-getDataCountPerPage(getTable()));
-				StringQueryInfo query = null;
-				BinaryQueryInfo binaryQuery = null;
+				QueryCollectStringDataRequest query = null;
+				QueryCollectBinaryDataRequest binaryQuery = null;
 				Boolean isNeedCount = null;
 				if (btnText.getSelection()) {
 					query = makeContinuousQuery(offset, getDataCountPerPage(getTable()));
-					isNeedCount = query.isNeedCount();
+					isNeedCount = query.getNeedCount();
 				} else {
 					binaryQuery = makeContinuousBinaryQuery(offset, getDataCountPerPage(getTable()));
-					isNeedCount = binaryQuery.isNeedCount();
+					isNeedCount = binaryQuery.getNeedCount();
 				}
-				StringQueryResult stringQueryResult = getQueryExecute(manager, query, binaryQuery);
+				QueryResultResponse stringQueryResult = getQueryExecute(manager, query, binaryQuery);
 				updateResultComposite(isNeedCount, stringQueryResult);
 			}
 		});
@@ -659,17 +662,17 @@ public class LogSearchComposite extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				int offset = dispOffset+dispSize;
-				StringQueryInfo query = null;
-				BinaryQueryInfo binaryQuery = null;
+				QueryCollectStringDataRequest query = null;
+				QueryCollectBinaryDataRequest binaryQuery = null;
 				Boolean isNeedCount = null;
 				if (btnText.getSelection()) {
 					query = makeContinuousQuery(offset, getDataCountPerPage(getTable()));
-					isNeedCount = query.isNeedCount();
+					isNeedCount = query.getNeedCount();
 				} else {
 					binaryQuery = makeContinuousBinaryQuery(offset, getDataCountPerPage(getTable()));
-					isNeedCount = binaryQuery.isNeedCount();
+					isNeedCount = binaryQuery.getNeedCount();
 				}
-				StringQueryResult stringQueryResult = getQueryExecute(manager, query, binaryQuery);
+				QueryResultResponse stringQueryResult = getQueryExecute(manager, query, binaryQuery);
 				// 追加データがなかった
 				if (0 == stringQueryResult.getSize()){
 					return;
@@ -689,17 +692,17 @@ public class LogSearchComposite extends Composite {
 				int pageCount = dataCount / dataCountPerPage;
 				pageCount = (dataCount % dataCountPerPage) ==0 ? pageCount-1:pageCount;
 				int offset = pageCount * dataCountPerPage;
-				StringQueryInfo query = null;
-				BinaryQueryInfo binaryQuery = null;
+				QueryCollectStringDataRequest query = null;
+				QueryCollectBinaryDataRequest binaryQuery = null;
 				Boolean isNeedCount = null;
 				if (btnText.getSelection()) {
 					query = makeContinuousQuery(offset, getDataCountPerPage(getTable()));
-					isNeedCount = query.isNeedCount();
+					isNeedCount = query.getNeedCount();
 				} else {
 					binaryQuery = makeContinuousBinaryQuery(offset, getDataCountPerPage(getTable()));
-					isNeedCount = binaryQuery.isNeedCount();
+					isNeedCount = binaryQuery.getNeedCount();
 				}
-				StringQueryResult stringQueryResult = getQueryExecute(manager, query, binaryQuery);
+				QueryResultResponse stringQueryResult = getQueryExecute(manager, query, binaryQuery);
 				// 追加データがなかった
 				if (0 == stringQueryResult.getSize()){
 					return;
@@ -765,8 +768,8 @@ public class LogSearchComposite extends Composite {
 	/**
 	 * 検索条件の作成.
 	 */
-	private StringQueryInfo makeNewQuery() {
-		ope = btnAnd.getSelection()? Operator.AND: Operator.OR;
+	private QueryCollectStringDataRequest makeNewQuery() {
+		ope = btnAnd.getSelection()? OperatorEnum.AND: OperatorEnum.OR;
 		if (cmbMonitorId.getText().isEmpty()){
 			monitorId = null;
 		} else {
@@ -797,9 +800,9 @@ public class LogSearchComposite extends Composite {
 	/**
 	 * バイナリ検索条件の作成.
 	 */
-	private BinaryQueryInfo makeNewBinaryQuery() {
-		StringQueryInfo stringQueryInfo = makeNewQuery();
-		BinaryQueryInfo binaryQueryInfo = this.getBinaryQueryInfo(stringQueryInfo);
+	private QueryCollectBinaryDataRequest makeNewBinaryQuery() {
+		QueryCollectStringDataRequest stringQueryInfo = makeNewQuery();
+		QueryCollectBinaryDataRequest binaryQueryInfo = this.getBinaryQueryInfo(stringQueryInfo);
 		return binaryQueryInfo;
 	}
 
@@ -809,19 +812,25 @@ public class LogSearchComposite extends Composite {
 	 * @param stringQueryInfo
 	 *            生成済の親の検索条件.
 	 */
-	private BinaryQueryInfo getBinaryQueryInfo(StringQueryInfo stringQueryInfo) {
+	private QueryCollectBinaryDataRequest getBinaryQueryInfo(QueryCollectStringDataRequest stringQueryInfo) {
 
-		BinaryQueryInfo binaryQueryInfo = new BinaryQueryInfo();
+		QueryCollectBinaryDataRequest binaryQueryInfo = new QueryCollectBinaryDataRequest();
 		// 親クラスの検索条件設定.
 		binaryQueryInfo.setFrom(stringQueryInfo.getFrom());
 		binaryQueryInfo.setTo(stringQueryInfo.getTo());
 		binaryQueryInfo.setMonitorId(stringQueryInfo.getMonitorId());
 		binaryQueryInfo.setFacilityId(stringQueryInfo.getFacilityId());
 		binaryQueryInfo.setKeywords(stringQueryInfo.getKeywords());
-		binaryQueryInfo.setOperator(stringQueryInfo.getOperator());
+		
+		if(stringQueryInfo.getOperator().toString().equals("AND")){
+			binaryQueryInfo.setOperator(QueryCollectBinaryDataRequest.OperatorEnum.AND);
+		}else{
+			binaryQueryInfo.setOperator(QueryCollectBinaryDataRequest.OperatorEnum.OR);
+		}
+
 		binaryQueryInfo.setOffset(stringQueryInfo.getOffset());
 		binaryQueryInfo.setSize(stringQueryInfo.getSize());
-		binaryQueryInfo.setNeedCount(stringQueryInfo.isNeedCount());
+		binaryQueryInfo.setNeedCount(stringQueryInfo.getNeedCount());
 
 		// バイナリの検索条件設定.
 		if (txtEncoding.getText() != null && !txtEncoding.getText().isEmpty()) {
@@ -834,7 +843,7 @@ public class LogSearchComposite extends Composite {
 	/**
 	 * 表示範囲指定して検索条件生成.
 	 */
-	private StringQueryInfo makeContinuousQuery(int dispOffset, int dispSize) {
+	private QueryCollectStringDataRequest makeContinuousQuery(int dispOffset, int dispSize) {
 		return makeQuery(
 				from,
 				to,
@@ -850,27 +859,36 @@ public class LogSearchComposite extends Composite {
 	/**
 	 * 表示範囲指定してバイナリ検索条件生成.
 	 */
-	private BinaryQueryInfo makeContinuousBinaryQuery(int dispOffset, int dispSize) {
-		StringQueryInfo stringQueryInfo = makeContinuousQuery(dispOffset, dispSize);
-		BinaryQueryInfo binaryQueryInfo = this.getBinaryQueryInfo(stringQueryInfo);
+	private QueryCollectBinaryDataRequest makeContinuousBinaryQuery(int dispOffset, int dispSize) {
+		QueryCollectStringDataRequest stringQueryInfo = makeContinuousQuery(dispOffset, dispSize);
+		QueryCollectBinaryDataRequest binaryQueryInfo = this.getBinaryQueryInfo(stringQueryInfo);
 		return binaryQueryInfo;
 	}
 
 	/**
 	 * クエリの生成.
 	 */
-	private StringQueryInfo makeQuery(Long from, Long to, String monitorId, String keywords, Operator ope, int dispOffset, int dispSize, boolean firstQuery){
-		StringQueryInfo query = new StringQueryInfo();
+	private QueryCollectStringDataRequest makeQuery(Long from, Long to, String monitorId, String keywords, OperatorEnum ope, int dispOffset, int dispSize, boolean firstQuery){
+		QueryCollectStringDataRequest query = new QueryCollectStringDataRequest();
 		query.setFacilityId(facilityId);
-		query.setOperator(ope);
-		
+		if(ope.toString().equals("AND")){
+			query.setOperator(QueryCollectStringDataRequest.OperatorEnum.AND);
+		}else{
+			query.setOperator(QueryCollectStringDataRequest.OperatorEnum.OR);
+		}
+
 		query.setMonitorId(monitorId);
 		
 		query.setOffset(dispOffset);
 		query.setSize(dispSize);
 		
-		query.setFrom(from);
-		query.setTo(to);
+		
+		if(from != null) {
+			query.setFrom(TimezoneUtil.getSimpleDateFormat().format(new Date(from)));
+		}
+		if(to != null) {
+			query.setTo(TimezoneUtil.getSimpleDateFormat().format(new Date(to)));
+		}
 		
 		query.setKeywords(keywords);
 		query.setNeedCount(firstQuery);
@@ -896,25 +914,45 @@ public class LogSearchComposite extends Composite {
 	}
 
 	/**
-	 * 転送データ種別一覧の取得
+	 * 文字列収集情報・バイナリ収集情報の取得
 	 * @param managerName マネージャ名
 	 */
-	private StringQueryResult getQueryExecute(String managerName, StringQueryInfo query, BinaryQueryInfo binaryQuery) {
+	private QueryResultResponse getQueryExecute(String managerName, QueryCollectStringDataRequest query, QueryCollectBinaryDataRequest binaryQuery) {
 		Map<String, String> errorMsgs = new HashMap<>();
 
-		StringQueryResult stringQueryResult=null;
+		QueryResultResponse stringQueryResult=null; 
+		QueryResultResponse queryResultResponse = null;
+
 		try {
-			HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
-			BinaryEndpointWrapper binaryWrapper = BinaryEndpointWrapper.getWrapper(managerName);
+			CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
+
 			if (this.btnText.getSelection()) {
-				stringQueryResult = wrapper.queryCollectStringData(query);
+				queryResultResponse = QueryResultResponse.convertFromStringQueryResultResponse(wrapper.queryCollectStringData(query));
+				stringQueryResult = new QueryResultResponse();
+				RestClientBeanUtil.convertBean(queryResultResponse, stringQueryResult);
+				if(stringQueryResult.getOffset() == null){
+					stringQueryResult.setOffset(0);
+				}
+				if(stringQueryResult.getSize() == null){
+					stringQueryResult.setSize(0);
+				}
+				if(stringQueryResult.getTime() == null){
+					stringQueryResult.setTime(0L);
+				}
 			} else {
-				stringQueryResult = binaryWrapper.queryCollectBinaryData(binaryQuery);
+				queryResultResponse = QueryResultResponse.convertFromBinaryQueryResultResponse(wrapper.queryCollectBinaryData(binaryQuery));
+				stringQueryResult = new QueryResultResponse();
+				RestClientBeanUtil.convertBean(queryResultResponse, stringQueryResult);
+				if(stringQueryResult.getOffset() == null){
+					stringQueryResult.setOffset(0);
+				}
+				if(stringQueryResult.getSize() == null){
+					stringQueryResult.setSize(0);
+				}
+				if(stringQueryResult.getTime() == null){
+					stringQueryResult.setTime(0L);
+				}
 			}
-		} catch (InvalidSetting_Exception e){
-			errorMsgs.put(managerName, Messages.getString(HinemosMessage.replace(e.getMessage())));
-		} catch (InvalidRole_Exception e) {
-			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 		} catch (Exception e) {
 			Logger.getLogger(this.getClass()).warn("getLogTransferDestTypeMstList(), " + e.getMessage(), e);
 			errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
@@ -928,7 +966,7 @@ public class LogSearchComposite extends Composite {
 		return stringQueryResult;
 	}
 	
-	private void updateResultComposite(Boolean isNeedCount, StringQueryResult result) {
+	private void updateResultComposite(Boolean isNeedCount, QueryResultResponse result) {
 		if (result == null) {
 			return;
 		}
@@ -1000,8 +1038,8 @@ public class LogSearchComposite extends Composite {
 				new Object[] { dataCount, dataFrom, dispOffset + dispSize, new DecimalFormat("#.##").format((0) / 1000)}));
 		lblPage.setText(currentPage + " / "+ allPage);
 		
-		tableViewer.setInput(new ArrayList<StringData>());
-		updateSourceView(new ArrayList<StringData>());
+		tableViewer.setInput(new ArrayList<DataResponse>());
+		updateSourceView(new ArrayList<DataResponse>());
 		
 		btnPerv.setEnabled(currentPage > 1);
 		btnNext.setEnabled(currentPage < allPage);
@@ -1020,12 +1058,12 @@ public class LogSearchComposite extends Composite {
 	/**
 	 * オリジナルメッセージ欄の表示内容更新.
 	 */
-	private void updateSourceView(List<StringData> stringDataList){
+	private void updateSourceView(List<DataResponse> stringDataList){
 		if (null == stringDataList){
 			return;
 		}
 		StringBuffer sb = new StringBuffer();
-		for (StringData stringData: stringDataList){
+		for (DataResponse stringData: stringDataList){
 			sb.append(stringData.getData()).append("\n");
 		}
 		
@@ -1057,9 +1095,9 @@ public class LogSearchComposite extends Composite {
 		Map<String, String> errMsgs = new ConcurrentHashMap<>();
 
 		// データ取得
-		Map<String, List<MonitorInfoBean>> dispDataMap= new ConcurrentHashMap<>();
+		Map<String, List<MonitorInfoBeanResponse>> dispDataMap= new ConcurrentHashMap<>();
 
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
 			getMonitorList(managerName, dispDataMap, errMsgs);
 		}
 
@@ -1070,15 +1108,22 @@ public class LogSearchComposite extends Composite {
 
 		this.cmbMonitorId.removeAll();
 		this.cmbMonitorId.add("");
-		for( Map.Entry<String, List<MonitorInfoBean>> e: dispDataMap.entrySet() ){
+		for( Map.Entry<String, List<MonitorInfoBeanResponse>> e: dispDataMap.entrySet() ){
 			if (e.getKey().equals(this.manager)) {
-				for (MonitorInfoBean monitorBean : e.getValue()) {
+				for (MonitorInfoBeanResponse monitorBean : e.getValue()) {
 					if (isCollectableMonitor(monitorBean.getMonitorType())){
 						this.cmbMonitorId.add(monitorBean.getMonitorId());
 					}
 				}
 			}
 		}
+		if (this.btnText.getSelection()) {
+			// 文字列検索の場合はSDML制御設定のアプリケーションIDもコンボに加える
+			for (String applicationId : SdmlClientUtil.getAllApplicationIdList(this.manager)) {
+				this.cmbMonitorId.add(applicationId);
+			}
+		}
+
 		this.cmbMonitorId.select(0);
 	}
 	
@@ -1089,16 +1134,16 @@ public class LogSearchComposite extends Composite {
 	 *            判定対象の監視種別
 	 * @return true:収集向け監視対象,false:対象外
 	 */
-	private boolean isCollectableMonitor(Integer monitorType){
+	private boolean isCollectableMonitor(MonitorInfoBeanResponse.MonitorTypeEnum monitorType){
 		boolean ret = false;
 		if (this.btnText.getSelection()) {
 			// 文字列検索の場合は文字列・トラップ.
-			if (MonitorTypeConstant.TYPE_STRING == monitorType || MonitorTypeConstant.TYPE_TRAP == monitorType) {
+			if (monitorType == MonitorInfoBeanResponse.MonitorTypeEnum.STRING || monitorType == MonitorInfoBeanResponse.MonitorTypeEnum.TRAP) {
 				ret = true;
 			}
 		} else {
 			// バイナリ検索の場合.
-			if (MonitorTypeConstant.TYPE_BINARY == monitorType) {
+			if (monitorType == MonitorInfoBeanResponse.MonitorTypeEnum.BINARY) {
 				ret = true;
 			}
 		}
@@ -1106,18 +1151,18 @@ public class LogSearchComposite extends Composite {
 	}
 	
 	private void getMonitorList(String managerName,
-			Map<String, List<MonitorInfoBean>> dispDataMap,
+			Map<String, List<MonitorInfoBeanResponse>> dispDataMap,
 			Map<String, String> errorMsgs) {
 		try {
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			List<MonitorInfoBean> list = wrapper.getMonitorBeanList();
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
+			List<MonitorInfoBeanResponse> list = wrapper.getMonitorBeanList();
 			if( null != list ){
 				dispDataMap.put(managerName, list);
 			}
-		} catch (MonitorNotFound_Exception | HinemosUnknown_Exception e) {
+		} catch (HinemosUnknown e) {
 			errorMsgs.put( managerName, Messages.getString("message.monitor.67") + ", " + HinemosMessage.replace(e.getMessage()));
 		} catch (Exception e) {
-			if (e instanceof com.clustercontrol.ws.monitor.InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				// 権限なし
 				logger.warn("update() getMonitorList, " + HinemosMessage.replace(e.getMessage()), e);
 				errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));

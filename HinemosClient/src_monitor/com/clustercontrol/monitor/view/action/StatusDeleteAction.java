@@ -26,20 +26,24 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.DeleteStatusRequest;
+
+import org.openapitools.client.model.StatusDataInfoRequestP1;
+import org.openapitools.client.model.StatusInfoResponse;
 
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.action.GetStatusListTableDefine;
 import com.clustercontrol.monitor.composite.StatusListComposite;
 import com.clustercontrol.monitor.util.ConvertListUtil;
-import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorResultRestClientWrapper;
 import com.clustercontrol.monitor.view.StatusView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.StatusDataInfo;
 
 /**
  * 監視[ステータス]ビューの削除アクションによるステータスの削除処理を行うクライアント側アクションクラス<BR>
@@ -134,24 +138,35 @@ public class StatusDeleteAction extends AbstractHandler implements IElementUpdat
 
 		for(Map.Entry<String, List<List<String>>> entry : map.entrySet()) {
 			String managerName = entry.getKey();
-			MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
+
+			MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(managerName);
 			List<?> records = entry.getValue();
 
 			// 選択しているステータス情報を削除して、再描画します。
-			ArrayList<StatusDataInfo> statusList = ConvertListUtil.listToStatusInfoDataList(records);
+			ArrayList<StatusInfoResponse> statusList = ConvertListUtil.listToStatusInfoDataList(records);
 			
 			ConcurrentHashMap<String, String>errMsg = new ConcurrentHashMap<>();
 
 			if (statusList != null && statusList.size()>0) {
 				try {
-					wrapper.deleteStatus(statusList);
+					//Request
+					DeleteStatusRequest deleteStatusRequest = new DeleteStatusRequest();
+					List<StatusDataInfoRequestP1> statusDataInfoRequestP1List = new ArrayList<StatusDataInfoRequestP1>(1);
+					for(StatusInfoResponse tmp : statusList){
+						StatusDataInfoRequestP1 statusDataInfoRequestP1 = new StatusDataInfoRequestP1();
+						statusDataInfoRequestP1.setFacilityId(tmp.getFacilityId());
+						statusDataInfoRequestP1.setMonitorDetailId(tmp.getMonitorDetailId());
+						statusDataInfoRequestP1.setMonitorId(tmp.getMonitorId());
+						statusDataInfoRequestP1.setPluginId(tmp.getPluginId());
+						statusDataInfoRequestP1List.add(statusDataInfoRequestP1);
+					}
+					deleteStatusRequest.setStatusDataInfoRequestlist(statusDataInfoRequestP1List);
+					wrapper.deleteStatus(deleteStatusRequest);
 					statusView.update(false);
-				} catch (InvalidRole_Exception e) {
+				} catch (InvalidRole e) {
 					// アクセス権なしの場合、エラーダイアログを表示する
 					errMsg.put(managerName, Messages.getString("message.accesscontrol.16"));
-				} catch (MonitorNotFound_Exception e) {
-					errMsg.put(managerName, Messages.getString("message.monitor.61") + ", " + HinemosMessage.replace(e.getMessage()));
-				} catch (HinemosUnknown_Exception e) {
+				} catch (HinemosUnknown e) {
 					errMsg.put(managerName, Messages.getString("message.monitor.61") + ", " + HinemosMessage.replace(e.getMessage()));
 				} catch (Exception e) {
 					m_log.warn("run(), " + e.getMessage(), e);

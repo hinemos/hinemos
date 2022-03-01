@@ -30,13 +30,14 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.NodeInfoResponse;
 
 import com.clustercontrol.nodemap.etc.action.NodeListTableDefine;
 import com.clustercontrol.nodemap.view.NodeListView;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.repository.NodeInfo;
 
 /**
  * ノード一覧コンポジットクラス<BR>
@@ -166,7 +167,7 @@ public class NodeListComposite extends Composite{
 	 * @param _nodeListMap ノード一覧
 	 * @param targetDatetime 対象日時
 	 */
-	public void setTableList(ConcurrentHashMap<String, List<NodeInfo>> _nodeListMap, Long targetDatetime) {
+	public void setTableList(ConcurrentHashMap<String, List<NodeInfoResponse>> _nodeListMap, Long targetDatetime) {
 		if(_nodeListMap == null) {
 			_nodeListMap = new ConcurrentHashMap<>();
 		}
@@ -178,11 +179,11 @@ public class NodeListComposite extends Composite{
 		int nodeN = 0;
 
 		// 一覧表示
-		for (Map.Entry<String, List<NodeInfo>> entry : _nodeListMap.entrySet()) {
+		for (Map.Entry<String, List<NodeInfoResponse>> entry : _nodeListMap.entrySet()) {
 			if (entry.getValue() == null) {
 				continue;
 			}
-			for (NodeInfo nodeInfo : entry.getValue()) {
+			for (NodeInfoResponse nodeInfo : entry.getValue()) {
 				ArrayList<Object> a = new ArrayList<Object>();
 				a.add(entry.getKey());
 				a.add(nodeInfo.getFacilityId());
@@ -192,12 +193,18 @@ public class NodeListComposite extends Composite{
 				if (nodeInfo.getCreateDatetime() == null) {
 					a.add(null);
 				} else {
-					a.add(new Date(nodeInfo.getCreateDatetime()));
+					try {
+						a.add(TimezoneUtil.getSimpleDateFormat().parse(nodeInfo.getCreateDatetime()));
+					} catch (Exception e) {
+					}
 				}
 				if (nodeInfo.getModifyDatetime() == null) {
 					a.add(null);
 				} else {
-					a.add(new Date(nodeInfo.getModifyDatetime()));
+					try {
+						a.add(TimezoneUtil.getSimpleDateFormat().parse(nodeInfo.getModifyDatetime()));
+					} catch (Exception e) {
+					}
 				}
 				listInput.add(a);
 				nodeN++;

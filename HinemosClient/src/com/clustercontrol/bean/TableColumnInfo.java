@@ -40,29 +40,32 @@ public class TableColumnInfo implements Serializable {
 	/** 開始条件値(データタイプの種別) */
 	public static final int WAIT_RULE_VALUE = 6;
 
+	/** 開始条件状態(データタイプの種別) */
+	public static final int WAIT_RULE_STATUS = 7;
+
 	/** スケジュール(データタイプの種別) */
-	public static final int SCHEDULE = 7;
+	public static final int SCHEDULE = 8;
 
 	/** 確認/未確認(データタイプの種別) */
-	public static final int CONFIRM = 8;
+	public static final int CONFIRM = 9;
 
 	/** 待ち条件(データタイプの種別) */
-	public static final int WAIT_RULE = 9;
+	public static final int WAIT_RULE = 10;
 
 	/** 処理(データタイプの種別) */
-	public static final int PROCESS = 10;
+	public static final int PROCESS = 11;
 
 	/** 終了状態(データタイプの種別) */
-	public static final int END_STATUS = 11;
+	public static final int END_STATUS = 12;
 
 	/** なし(データタイプの種別) */
 	public static final int NONE = -1;
 
 	/** ファシリティID(データタイプの種別) */
-	public static final int FACILITY_ID = 12;
+	public static final int FACILITY_ID = 13;
 
 	/** ファシリティ名(データタイプの種別) */
-	public static final int FACILITY_NAME = 13;
+	public static final int FACILITY_NAME = 14;
 
 	/** チェックボックス(データタイプの種別) */
 	public static final int CHECKBOX = 15;
@@ -120,6 +123,13 @@ public class TableColumnInfo implements Serializable {
 
 	/** チェックボックス(データタイプの種別) */
 	public static final int RADIO_BUTTON = 33;
+	
+	/** RPAシナリオジョブ 判定対象 */
+	public static final int RPA_JUDGMENT_TYPE = 34;
+
+	/** RPAシナリオジョブ 判定条件 */
+	public static final int RPA_JUDGMENT_CONDITION = 35;
+	
 	
 	/** カラム名 */
 	private String m_name = null;

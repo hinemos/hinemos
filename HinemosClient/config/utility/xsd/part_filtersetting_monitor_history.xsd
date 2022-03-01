@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: part_monitor_check.xsd 124 2013-05-13 16:00:00Z sekiyaman $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:annotation>
+		<xs:documentation>個別フィルタ設定（監視履歴）項目情報の基底クラスです。</xs:documentation>
+	</xs:annotation>
+	<xs:complexType name="FilterSettingMonitorHistoryInfo" abstract="true">
+		<xs:annotation>
+			<xs:documentation>個別フィルタ設定項目の基底クラス情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="facilityId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						フィルタ設定が対象とするノードやスコープのファシリティIDです。
+						リポジトリに登録されているものを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="scope" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ファシリティIDに付けられたファシリティ名です。
+						通常はリポジトリに既に登録されている情報が格納されるため、本項目への入力はマネージャへの登録時には無視されます。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="facilityTarget" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						フィルタ対象のスコープの範囲です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+</xs:schema>

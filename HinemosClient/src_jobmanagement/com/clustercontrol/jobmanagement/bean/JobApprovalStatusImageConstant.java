@@ -10,6 +10,7 @@ package com.clustercontrol.jobmanagement.bean;
 
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
+import com.clustercontrol.approval.util.JobApprovalInfoWrapper;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.JobApprovalStatusConstant;
@@ -62,6 +63,44 @@ public class JobApprovalStatusImageConstant extends JobApprovalStatusConstant {
 						ClusterControlPlugin.IMG_STATUS_YELLOW).createImage();
 			return suspend;
 		} else if (type == TYPE_STOP) {
+			if (stop == null)
+				stop = registry.getDescriptor(
+						ClusterControlPlugin.IMG_STATUS_RED).createImage();
+			return stop;
+		}
+		return null;
+	}
+
+	/**
+	 * EnumからImageに変換
+	 * @param type
+	 * @return
+	 */
+	public static Image typeEnumToImage(JobApprovalInfoWrapper.StatusEnum type) {
+		ImageRegistry registry = ClusterControlPlugin.getDefault()
+				.getImageRegistry();
+
+		if (type == JobApprovalInfoWrapper.StatusEnum.FINISHED) {
+			if (finished == null)
+				finished = registry.getDescriptor(
+						ClusterControlPlugin.IMG_STATUS_GREEN).createImage();
+			return finished;
+		} else if (type == JobApprovalInfoWrapper.StatusEnum.PENDING) {
+			if (pending == null)
+				pending = registry.getDescriptor(
+						ClusterControlPlugin.IMG_STATUS_BLUE).createImage();
+			return pending;
+		} else if (type == JobApprovalInfoWrapper.StatusEnum.STILL) {
+			if (still == null)
+				still = registry.getDescriptor(
+						ClusterControlPlugin.IMG_STATUS_WHITE).createImage();
+			return still;
+		} else if (type == JobApprovalInfoWrapper.StatusEnum.SUSPEND) {
+			if (suspend == null)
+				suspend = registry.getDescriptor(
+						ClusterControlPlugin.IMG_STATUS_YELLOW).createImage();
+			return suspend;
+		} else if (type == JobApprovalInfoWrapper.StatusEnum.STOP) {
 			if (stop == null)
 				stop = registry.getDescriptor(
 						ClusterControlPlugin.IMG_STATUS_RED).createImage();

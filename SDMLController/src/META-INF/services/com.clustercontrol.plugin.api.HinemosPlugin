@@ -1,0 +1,3 @@
+com.clustercontrol.sdml.plugin.SdmlControllerService
+com.clustercontrol.sdml.plugin.SdmlRestServiceAgentPlugin
+com.clustercontrol.sdml.plugin.SdmlRestServiceClientPlugin

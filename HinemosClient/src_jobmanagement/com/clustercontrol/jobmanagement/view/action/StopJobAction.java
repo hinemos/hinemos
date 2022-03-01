@@ -28,28 +28,31 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.JobOperationPropResponse;
+import org.openapitools.client.model.JobOperationPropResponse.AvailableOperationListEnum;
+import org.openapitools.client.model.JobOperationRequest.EndStatusEnum;
 
+import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.DataRangeConstant;
-import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.EndStatusMessage;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.OperationMessage;
 import com.clustercontrol.jobmanagement.action.OperationJob;
 import com.clustercontrol.jobmanagement.bean.JobOperationConstant;
-import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.composite.DetailComposite;
 import com.clustercontrol.jobmanagement.composite.HistoryComposite;
 import com.clustercontrol.jobmanagement.composite.NodeDetailComposite;
 import com.clustercontrol.jobmanagement.dialog.JobOperationDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.preference.JobManagementPreferencePage;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.view.JobDetailView;
 import com.clustercontrol.jobmanagement.view.JobHistoryView;
 import com.clustercontrol.jobmanagement.view.JobNodeDetailView;
 import com.clustercontrol.jobmanagement.view.JobQueueContentsView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
 
 /**
  * ジョブ[履歴]・ジョブ[ジョブ詳細]・ジョブ[ノード詳細]・ジョブ[同時実行制御状況]ビューの「停止」のクライアント側アクションクラス<BR>
@@ -89,7 +92,7 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 	 * @return ジョブ停止操作用プロパティ
 	 *
 	 */
-	private Property getStopProperty(String managerName, String sessionId, String jobunitId, String jobId, String facilityId) {
+	private Property getStopProperty(String managerName, String sessionId, String jobunitId, String jobId, String jobName, String facilityId) {
 		Locale locale = Locale.getDefault();
 
 		//セッションID
@@ -101,6 +104,11 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 		Property jobUnit =
 				new Property(JobOperationConstant.JOB_UNIT, Messages.getString("jobunit.id", locale), PropertyDefineConstant.EDITOR_TEXT);
 		jobUnit.setValue(jobunitId);
+
+		//ジョブ名
+		Property name =
+				new Property(JobOperationConstant.JOB_NAME, Messages.getString("job.name", locale), PropertyDefineConstant.EDITOR_TEXT);
+		name.setValue(jobName);
 
 		//ジョブID
 		Property job =
@@ -123,7 +131,7 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 			endStatus = new Property(JobOperationConstant.END_STATUS, Messages.getString("end.status", locale), PropertyDefineConstant.EDITOR_SELECT);
 			Object endStatusList[][] = {
 					{"", EndStatusMessage.STRING_NORMAL, EndStatusMessage.STRING_WARNING, EndStatusMessage.STRING_ABNORMAL},
-					{"", EndStatusConstant.TYPE_NORMAL, EndStatusConstant.TYPE_WARNING, EndStatusConstant.TYPE_ABNORMAL}
+					{"", EndStatusEnum.NORMAL, EndStatusEnum.WARNING, EndStatusEnum.ABNORMAL}
 			};
 			endStatus.setSelectValues(endStatusList);
 			endStatus.setValue("");
@@ -146,11 +154,18 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 		HashMap<String, Object> forceEndMap = new HashMap<String, Object>();
 		forceEndMap.put("value", OperationMessage.STRING_STOP_FORCE);
 		forceEndMap.put("property", endList);
-		List<Integer> values1 = null;
+		List<AvailableOperationListEnum> values1 = null;
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-			values1 = wrapper.getAvailableStopOperation(sessionId, jobunitId, jobId, facilityId);
-		} catch (InvalidRole_Exception e) {
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			JobOperationPropResponse response = new JobOperationPropResponse();
+			if(facilityId == null){
+				response = wrapper.getAvailableStopOperationSessionJob(sessionId, jobunitId, jobId);
+				values1 = response.getAvailableOperationList();
+			} else {
+				response = wrapper.getAvailableStopOperationSessionNode(sessionId, jobunitId, jobId, facilityId);
+				values1 = response.getAvailableOperationList();
+			}
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 			throw new InternalError("values1 is null");
@@ -163,28 +178,28 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 			throw new InternalError("values1 is null");
 		}
 		ArrayList<Object> values2 = new ArrayList<Object>();
-		if(values1.contains(OperationConstant.TYPE_STOP_AT_ONCE)) {
+		if(values1.contains(AvailableOperationListEnum.STOP_AT_ONCE)) {
 			values2.add(OperationMessage.STRING_STOP_AT_ONCE);
 		}
-		if(values1.contains(OperationConstant.TYPE_STOP_SUSPEND)){
+		if(values1.contains(AvailableOperationListEnum.STOP_SUSPEND)){
 			values2.add(OperationMessage.STRING_STOP_SUSPEND);
 		}
-		if(values1.contains(OperationConstant.TYPE_STOP_WAIT)){
+		if(values1.contains(AvailableOperationListEnum.STOP_WAIT)){
 			values2.add(OperationMessage.STRING_STOP_WAIT);
 		}
-		if(values1.contains(OperationConstant.TYPE_STOP_SKIP)) {
+		if(values1.contains(AvailableOperationListEnum.STOP_SKIP)) {
 			values2.add(OperationMessage.STRING_STOP_SKIP);
 		}
-		if(values1.contains(OperationConstant.TYPE_STOP_MAINTENANCE)) {
+		if(values1.contains(AvailableOperationListEnum.STOP_MAINTENANCE)) {
 			values2.add(mainteEndMap);
 		}
-		if(values1.contains(OperationConstant.TYPE_STOP_FORCE)) {
+		if(values1.contains(AvailableOperationListEnum.STOP_FORCE)) {
 			values2.add(forceEndMap);
 		}
 		
 		List<String> stringValues = new ArrayList<String>();
-		for (Integer type : values1) {
-			stringValues.add(OperationMessage.typeToString(type));
+		for (AvailableOperationListEnum type : values1) {
+			stringValues.add(OperationMessage.enumToString(type));
 		}
 		Object controlValues[][] = {stringValues.toArray(), values2.toArray()};
 		control.setSelectValues(controlValues);
@@ -198,6 +213,7 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 		session.setModify(PropertyDefineConstant.MODIFY_NG);
 		jobUnit.setModify(PropertyDefineConstant.MODIFY_NG);
 		job.setModify(PropertyDefineConstant.MODIFY_NG);
+		name.setModify(PropertyDefineConstant.MODIFY_NG);
 		facility.setModify(PropertyDefineConstant.MODIFY_NG);
 		control.setModify(PropertyDefineConstant.MODIFY_OK);
 		if (endStatus != null) {
@@ -211,6 +227,7 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 		property.addChildren(session);
 		property.addChildren(jobUnit);
 		property.addChildren(job);
+		property.addChildren(name);
 		if(facilityId != null){
 			property.addChildren(facility);
 		}
@@ -253,6 +270,7 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 		String sessionId = null;
 		String jobunitId = null;
 		String jobId = null;
+		String jobName = null;
 		String facilityId = null;
 
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
@@ -286,6 +304,8 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 				jobunitId = historyComposite.getJobunitId();
 				//ジョブID取得
 				jobId = historyComposite.getJobId();
+				//ジョブ名取得
+				jobName = historyComposite.getJobName();
 			}
 		} else if (viewPart instanceof JobDetailView) { // ボタンが押された場合
 			JobDetailView JobDetailView = null;
@@ -309,6 +329,8 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 				jobunitId = detailComposite.getJobunitId();
 				//ジョブID取得
 				jobId = detailComposite.getJobId();
+				//ジョブ名取得
+				jobName = detailComposite.getJobName();
 			}
 		} else if (viewPart instanceof JobNodeDetailView) { // ボタンが押された場合
 			JobNodeDetailView jobNodeDetailView = null;
@@ -332,6 +354,8 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 				jobunitId = nodeDetailComposite.getJobunitId();
 				//ジョブID取得
 				jobId = nodeDetailComposite.getJobId();
+				//ジョブ名取得
+				jobName = nodeDetailComposite.getJobName();
 				//ファシリティID取得
 				facilityId = nodeDetailComposite.getFacilityId();
 				if (facilityId == null) {
@@ -357,6 +381,7 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 				sessionId = view.getSelectedSessionId();
 				jobunitId = view.getSelectedJobunitId();
 				jobId = view.getSelectedJobId();
+				jobName = view.getSelectedJobName();
 			}
 		}
 
@@ -367,12 +392,27 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 			JobOperationDialog dialog = new JobOperationDialog(this.window.getShell());
 
 			//プロパティ設定
-			dialog.setProperty(getStopProperty(managerName, sessionId, jobunitId, jobId, facilityId));
+			dialog.setProperty(getStopProperty(managerName, sessionId, jobunitId, jobId, jobName, facilityId));
 			dialog.setTitleText(Messages.getString("job") + "["
 					+ Messages.getString("stop") + "]");
 
 			//ダイアログ表示
 			if (dialog.open() == IDialogConstants.OK_ID) {
+				// 確認ダイアログを表示するかどうかのフラグをPreferenceから取得
+				if (ClusterControlPlugin.getDefault().getPreferenceStore().getBoolean(JobManagementPreferencePage.P_HISTORY_CONFIRM_DIALOG_FLG)) {
+					StringBuffer jobListMessage = new StringBuffer(); 
+					jobListMessage.append(Messages.getString("dialog.job.stop.confirm")); 
+					jobListMessage.append("\n");
+					Object[] args1 = { managerName, jobName, jobId, jobunitId, sessionId };
+					jobListMessage.append(Messages.getString(Messages.getString("dialog.job.confirm.name"), args1));
+					if(!MessageDialog.openConfirm(
+						null,
+						Messages.getString("confirmed"),
+						jobListMessage.toString())) {
+						// OKが押されない場合は処理しない
+						return null;
+					}
+				}
 				//ジョブ停止
 				OperationJob operation = new OperationJob();
 				operation.operationJob(managerName, dialog.getProperty());

@@ -25,19 +25,21 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.ReplaceNodeVariableRequest;
+import org.openapitools.client.model.ReplaceNodeVariableResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.action.GetNodeListTableDefine;
 import com.clustercontrol.repository.preference.RepositoryPreferencePage;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.repository.view.NodeListView;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandCreator.PlatformType;
 import com.clustercontrol.util.CommandExecutor;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
 
 /**
  * プログラム実行を行うクライアント側アクションクラス<BR>
@@ -120,9 +122,13 @@ public class ProgramExecutionAction extends AbstractHandler implements IElementU
 		if (execProg.indexOf("#") != -1) {
 			try {
 				// マネージャへ文字列を送り置換したもので置き換える
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-				execProg = wrapper.replaceNodeVariable(facilityId, execProg);
-			} catch (InvalidRole_Exception e) {
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+				ReplaceNodeVariableRequest requestDto = new ReplaceNodeVariableRequest();
+				requestDto.setFacilityId(facilityId);
+				requestDto.setReplaceObject(execProg);
+				ReplaceNodeVariableResponse response = wrapper.replaceNodeVariable(requestDto);
+				execProg = response.getReplaceStr();
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,

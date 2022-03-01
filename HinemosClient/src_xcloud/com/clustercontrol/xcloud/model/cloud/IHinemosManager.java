@@ -12,6 +12,7 @@ import com.clustercontrol.xcloud.model.base.IElement;
 import com.clustercontrol.xcloud.model.base.PropertyId;
 import com.clustercontrol.xcloud.model.base.ValueObserver;
 import com.clustercontrol.xcloud.model.repository.ICloudRepository;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 public interface IHinemosManager extends IElement {
 	// プロパティの Id
@@ -36,7 +37,7 @@ public interface IHinemosManager extends IElement {
 	
 	IBillingMonitors getBillingAlarms();
 
-	<T> T getEndpoint(Class<T> endpointClass);
+	CloudRestClientWrapper getWrapper();
 	
 	ElementBaseModeWatch getModelWatch();
 	

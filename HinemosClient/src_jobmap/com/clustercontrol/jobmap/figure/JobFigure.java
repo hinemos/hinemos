@@ -8,9 +8,7 @@
 
 package com.clustercontrol.jobmap.figure;
 
-import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -42,37 +40,37 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
+import org.openapitools.client.model.JobDetailInfoResponse;
+import org.openapitools.client.model.JobObjectGroupInfoResponse;
+import org.openapitools.client.model.JobObjectInfoResponse;
+import org.openapitools.client.model.JobWaitRuleInfoResponse;
+import org.openapitools.client.model.JobmapIconImageInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.bean.EndStatusConstant;
+import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.bean.EndStatusImageConstant;
 import com.clustercontrol.bean.EndStatusMessage;
 import com.clustercontrol.bean.SizeConstant;
-import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.bean.StatusMessage;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.IconFileNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.jobmanagement.bean.StatusImageConstant;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobmapIconImageUtil;
 import com.clustercontrol.jobmap.composite.JobMapComposite;
 import com.clustercontrol.jobmap.editpart.MapViewController;
+import com.clustercontrol.jobmap.util.JobmapIconImageCacheEntry;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.util.TimeStringConverter;
-import com.clustercontrol.ws.jobmanagement.IconFileNotFound_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidSetting_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidUserPass_Exception;
-import com.clustercontrol.ws.jobmanagement.JobDetailInfo;
-import com.clustercontrol.ws.jobmanagement.JobObjectInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobWaitRuleInfo;
-import com.clustercontrol.ws.jobmanagement.JobmapIconImage;
 
 /**
  * アイコン(ノード)画像のクラス
@@ -83,7 +81,7 @@ public class JobFigure extends Figure implements ISelection {
 	// ログ
 	private static Log m_log = LogFactory.getLog( JobFigure.class );
 
-	private JobTreeItem m_jobTreeItem;
+	private JobTreeItemWrapper m_jobTreeItem;
 	public static final int textHeight = 35;
 	public static final int jobnetBorder = 10;
 	public static final int lineWidth = 2;
@@ -110,6 +108,8 @@ public class JobFigure extends Figure implements ISelection {
 	private static Image waitDoubleImage;
 	// 待ち条件の横断ジョブアイコンイメージ
 	private static Image waitCrossingJobImage;
+	// 待ち条件群のアイコンイメージ
+	private static Image waitGroupImage;
 
 	private ImageFigure m_collapseExpandImageFigure;
 
@@ -131,7 +131,7 @@ public class JobFigure extends Figure implements ISelection {
 
 	private JobmapImageCacheUtil m_iconCache;
 
-	public JobFigure(String managerName, JobTreeItem item, JobMapEditorView editorView, JobMapComposite jobMapComposite, boolean collapse){
+	public JobFigure(String managerName, JobTreeItemWrapper item, JobMapEditorView editorView, JobMapComposite jobMapComposite, boolean collapse){
 		this.setFocusTraversable(true);
 		this.setRequestFocusEnabled(true);
 		// 背景色を白に設定する
@@ -154,7 +154,7 @@ public class JobFigure extends Figure implements ISelection {
 		updateIconImage();
 	}
 
-	public void setJob(JobTreeItem item){
+	public void setJob(JobTreeItemWrapper item){
 		m_jobTreeItem = item;
 	}
 
@@ -164,99 +164,147 @@ public class JobFigure extends Figure implements ISelection {
 	public void updateIconImage() {
 
 		if (isIconImageJob()) {
-			JobmapIconImage jobmapIconImage = null;
+			JobmapIconImageCacheEntry cacheEntry = null;
+			JobmapIconImageInfoResponse jobmapIconImage = null;
+			byte[] filedata = null;
 			if (this.m_jobTreeItem.getData().getIconId() != null
 					&& !this.m_jobTreeItem.getData().getIconId().equals("")) {
 				try {
-					jobmapIconImage
-						= m_iconCache.getJobmapIconImage(this.m_managerName, this.m_jobTreeItem.getData().getIconId());
-				} catch (IconFileNotFound_Exception e) {
+					cacheEntry
+						= m_iconCache.getJobmapIconImageCacheEntry(this.m_managerName, this.m_jobTreeItem.getData().getIconId());
+					jobmapIconImage = cacheEntry.getJobmapIconImage();
+					filedata = cacheEntry.getFiledata();
+				} catch (IconFileNotFound e) {
 					jobmapIconImage = null;
-				} catch (InvalidRole_Exception e) {
+				} catch (InvalidRole e) {
 					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
+					if (ClientSession.isDialogFree()) {
+						ClientSession.occupyDialog();
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+						ClientSession.freeDialog();
+					}
 					return;
-				} catch (InvalidUserPass_Exception e) {
-					MessageDialog.openError(
-							null,
-							Messages.getString("failed"),
-							Messages.getString("message.job.140") + " " + HinemosMessage.replace(e.getMessage()));
+				} catch (InvalidUserPass e) {
+					if (ClientSession.isDialogFree()) {
+						ClientSession.occupyDialog();
+						MessageDialog.openError(
+								null,
+								Messages.getString("failed"),
+								Messages.getString("message.job.140") + " " + HinemosMessage.replace(e.getMessage()));
+						ClientSession.freeDialog();
+					}
 					return;
-				} catch (InvalidSetting_Exception e) {
-					MessageDialog.openError(
-							null,
-							Messages.getString("failed"),
-							Messages.getString("message.job.140") + " " + HinemosMessage.replace(e.getMessage()));
+				} catch (InvalidSetting e) {
+					if (ClientSession.isDialogFree()) {
+						ClientSession.occupyDialog();
+						MessageDialog.openError(
+								null,
+								Messages.getString("failed"),
+								Messages.getString("message.job.140") + " " + HinemosMessage.replace(e.getMessage()));
+						ClientSession.freeDialog();
+					}
 					return;
 				} catch (Exception e) {
 					m_log.warn("action(), " + HinemosMessage.replace(e.getMessage()), e);
-					MessageDialog.openError(
-							null,
-							Messages.getString("failed"),
-							Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					if (ClientSession.isDialogFree()) {
+						ClientSession.occupyDialog();
+						MessageDialog.openError(
+								null,
+								Messages.getString("failed"),
+								Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+						ClientSession.freeDialog();
+					}
 					return;
 				}
 			}
 			
 			// iconIdが未指定または指定されたiconIdの画像が存在しなかった場合はデフォルトアイコンで表示する
 			if (jobmapIconImage == null) {
-				if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_JOBNET
-						|| this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_REFERJOBNET) {
-					jobmapIconImage 
+				if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET
+						|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOBNET) {
+					cacheEntry 
 						= m_iconCache.getJobmapIconImageDefaultJobnet(this.m_managerName);
-				} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_APPROVALJOB) {
-					jobmapIconImage = m_iconCache.getJobmapIconImageDefaultApproval(this.m_managerName);
-				} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_MONITORJOB) {
-					jobmapIconImage = m_iconCache.getJobmapIconImageDefaultMonitor(this.m_managerName);
-				} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_FILEJOB) {
-					jobmapIconImage = m_iconCache.getJobmapIconImageDefaultFile(this.m_managerName);
+				} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.APPROVALJOB) {
+					cacheEntry = m_iconCache.getJobmapIconImageDefaultApproval(this.m_managerName);
+				} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.MONITORJOB) {
+					cacheEntry = m_iconCache.getJobmapIconImageDefaultMonitor(this.m_managerName);
+				} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.FILEJOB) {
+					cacheEntry = m_iconCache.getJobmapIconImageDefaultFile(this.m_managerName);
+				} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.FILECHECKJOB) {
+					cacheEntry = m_iconCache.getJobmapIconImageDefaultFileCheck(this.m_managerName);
+				} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB) {
+					cacheEntry = m_iconCache.getJobmapIconImageDefaultResource(this.m_managerName);
+				} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB) {
+					cacheEntry = m_iconCache.getJobmapIconImageDefaultJobLinkSend(this.m_managerName);
+				} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB) {
+					cacheEntry = m_iconCache.getJobmapIconImageDefaultJobLinkRcv(this.m_managerName);
+				} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.RPAJOB) {
+					cacheEntry = m_iconCache.getJobmapIconImageDefaultRpa(this.m_managerName);
 				} else {
-					jobmapIconImage 
+					cacheEntry 
 						= m_iconCache.getJobmapIconImageDefaultJob(this.m_managerName);
+				}
+				if (cacheEntry != null) {
+					jobmapIconImage = cacheEntry.getJobmapIconImage();
+					filedata = cacheEntry.getFiledata();
 				}
 			}
 			if (jobmapIconImage == null) {
-				String iconId = "";
-				if (this.m_jobTreeItem.getData().getIconId() == null
-						|| this.m_jobTreeItem.getData().getIconId().equals("")) {
-					if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_JOBNET
-							|| this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_REFERJOBNET) {
-						iconId = m_iconCache.getJobmapIconIdDefaultJobnet(this.m_managerName);
-					} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_APPROVALJOB) {
-						iconId = m_iconCache.getJobmapIconIdDefaultApproval(this.m_managerName);
-					} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_MONITORJOB) {
-						iconId = m_iconCache.getJobmapIconIdDefaultMonitor(this.m_managerName);
-					} else if (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_FILEJOB) {
-						iconId = m_iconCache.getJobmapIconIdDefaultFile(this.m_managerName);
+				if (ClientSession.isDialogFree()) {
+					ClientSession.occupyDialog();
+					String iconId = "";
+					if (this.m_jobTreeItem.getData().getIconId() == null
+							|| this.m_jobTreeItem.getData().getIconId().equals("")) {
+						if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET
+								|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOBNET) {
+							iconId = m_iconCache.getJobmapIconIdDefaultJobnet(this.m_managerName);
+						} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.APPROVALJOB) {
+							iconId = m_iconCache.getJobmapIconIdDefaultApproval(this.m_managerName);
+						} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.MONITORJOB) {
+							iconId = m_iconCache.getJobmapIconIdDefaultMonitor(this.m_managerName);
+						} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.FILEJOB) {
+							iconId = m_iconCache.getJobmapIconIdDefaultFile(this.m_managerName);
+						} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.FILECHECKJOB) {
+							iconId = m_iconCache.getJobmapIconIdDefaultFileCheck(this.m_managerName);
+						} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB) {
+							iconId = m_iconCache.getJobmapIconIdDefaultResource(this.m_managerName);
+						} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB) {
+							iconId = m_iconCache.getJobmapIconIdDefaultJobLinkSend(this.m_managerName);
+						} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB) {
+							iconId = m_iconCache.getJobmapIconIdDefaultJobLinkRcv(this.m_managerName);
+						} else if (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.RPAJOB) {
+							iconId = m_iconCache.getJobmapIconIdDefaultRpa(this.m_managerName);
+						} else {
+							iconId
+								= m_iconCache.getJobmapIconIdDefaultJob(this.m_managerName);
+						}
 					} else {
-						iconId
-							= m_iconCache.getJobmapIconIdDefaultJob(this.m_managerName);
+						iconId = this.m_jobTreeItem.getData().getIconId();
 					}
-				} else {
-					iconId = this.m_jobTreeItem.getData().getIconId();
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.job.148", new String[]{iconId}));
+					ClientSession.freeDialog();
 				}
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("message"),
-						Messages.getString("message.job.148", new String[]{iconId}));
 				return;
 			}
-			m_iconImageFigure = new ImageFigure(m_iconCache.loadGraphicImage(jobmapIconImage));
+			m_iconImageFigure = new ImageFigure(m_iconCache.loadGraphicImage(jobmapIconImage, filedata));
 		}
 	}
 
 	/**
 	 * 配下の階層数を返す。
 	 */
-	public static int getDepth(JobTreeItem item) {
+	public static int getDepth(JobTreeItemWrapper item) {
 		int ret = 0;
 		if (item.getChildren() == null || item.getChildren().size() == 0) {
 			return ret;
 		}
-		for (JobTreeItem child : item.getChildren()) {
+		for (JobTreeItemWrapper child : item.getChildren()) {
 			int childDepth = getDepth(child);
 			if (ret < childDepth) {
 				ret = childDepth;
@@ -269,7 +317,7 @@ public class JobFigure extends Figure implements ISelection {
 	/**
 	 * ジョブ情報の描画
 	 */
-	public void draw() {
+	public void draw() throws HinemosUnknown {
 		// 上書きのため、一度全部消す。
 		this.removeAll();
 
@@ -281,6 +329,13 @@ public class JobFigure extends Figure implements ISelection {
 
 		// 背景を作成する
 		if (isIconImageJob()) {
+		
+			if(m_iconImageFigure==null){
+				//アイコン情報が取得できていない場合、HinemosUnknownとする
+				m_log.warn("draw() . m_iconImageFigure is null. can't execute for draw ");
+				throw new HinemosUnknown(com.clustercontrol.jobmap.messages.Messages.getString("message.icon.notfound.error"));
+			}
+
 			// 最上位レイヤー
 			m_baseLayer = new Layer();
 			m_baseLayer.setLayoutManager(new FlowLayout(false));
@@ -298,8 +353,8 @@ public class JobFigure extends Figure implements ISelection {
 			// ジョブイメージ
 			layerStack.add(m_iconImageFigure);
 			// 参照ジョブ・参照ジョブネット
-			if (m_jobTreeItem.getData().getType() == JobConstant.TYPE_REFERJOB
-					|| m_jobTreeItem.getData().getType() == JobConstant.TYPE_REFERJOBNET) {
+			if (m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOB
+					|| m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOBNET) {
 				ImageFigure referImageFigure = new ImageFigure(ClusterControlPlugin.getDefault().getImageRegistry().get(ClusterControlPlugin.IMG_REFER)
 						, PositionConstants.SOUTH_WEST);
 				layerStack.add(referImageFigure);
@@ -313,7 +368,7 @@ public class JobFigure extends Figure implements ISelection {
 				}
 			}
 			// ジョブネット
-			if (m_jobTreeItem.getData().getType() == JobConstant.TYPE_JOBNET) {
+			if (m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET) {
 				Layer layerTitle = new Layer();
 				layerTitle.setLayoutManager(new BorderLayout());
 
@@ -460,58 +515,75 @@ public class JobFigure extends Figure implements ISelection {
 	}
 
 	private boolean isIconImageJob() {
-		return (this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_JOBNET
+		return (this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET
 				&& this.m_collapse)
-				|| this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_REFERJOBNET
-				|| this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_JOB
-				|| this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_FILEJOB
-				|| this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_REFERJOB
-				|| this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_APPROVALJOB
-				|| this.m_jobTreeItem.getData().getType() == JobConstant.TYPE_MONITORJOB;
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOBNET
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOB
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.FILEJOB
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOB
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.APPROVALJOB
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.MONITORJOB
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.FILECHECKJOB
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB
+				|| this.m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.RPAJOB;
 	}
 
 	private ImageFigure getWaitingIcon() {
-		JobWaitRuleInfo waitRule = m_jobTreeItem.getData().getWaitRule();
+		JobWaitRuleInfoResponse waitRule = m_jobTreeItem.getData().getWaitRule();
 		if (waitRule == null) {
 			return null;
 		}
-		List<JobObjectInfo> list = waitRule.getObject();
-		if (list == null) {
+
+		List<JobObjectGroupInfoResponse> listGroup = waitRule.getObjectGroup();
+		if(listGroup == null || listGroup.isEmpty()){
 			return null;
 		}
 		boolean isTimeWaiting =false;
 		boolean isCrossingJobWaiting =false;
-		Date date = null;
+		String date = null;
 		Integer minute = null;
-		ArrayList<JobObjectInfo> crossingJobList = new ArrayList<JobObjectInfo>();
+		ArrayList<JobObjectInfoResponse> crossingJobList = new ArrayList<JobObjectInfoResponse>();
 		//待ち条件 確認
-		for (JobObjectInfo jobObjectInfo : list) {
-			if (jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_TIME) {
-				if (jobObjectInfo.getTime() != null) {
-					date = new Date(jobObjectInfo.getTime());
-					isTimeWaiting = true;
+		ImageFigure waitImageFigure ;
+		for(JobObjectGroupInfoResponse waitGroup : listGroup){
+			if(waitGroup.getJobObjectList().size() > 1){
+				if (waitGroupImage == null) {
+					waitGroupImage = ClusterControlPlugin.getDefault().getImageRegistry().get(ClusterControlPlugin.IMG_WAIT_GROUP);
 				}
-			} else if (jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_START_MINUTE) {
-				if (jobObjectInfo.getStartMinute() != null) {
-					minute = jobObjectInfo.getStartMinute();
-					isTimeWaiting = true;
-				}
-			} else if (jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS) {
-				if (jobObjectInfo.getValue() != null) {
-					crossingJobList.add(jobObjectInfo);
-					isCrossingJobWaiting = true;
-				}
-			} else if (jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE) {
-				if (jobObjectInfo.getValue() != null) {
-					crossingJobList.add(jobObjectInfo);
-					isCrossingJobWaiting = true;
+				waitImageFigure = new ImageFigure(waitGroupImage);
+				return waitImageFigure;
+			} else {
+				List<JobObjectInfoResponse> list = waitGroup.getJobObjectList();
+				for (JobObjectInfoResponse jobObjectInfo : list) {
+					if (jobObjectInfo.getType() == JobObjectInfoResponse.TypeEnum.TIME) {
+						if (jobObjectInfo.getTime() != null) {
+							date = jobObjectInfo.getTime();
+							isTimeWaiting = true;
+						}
+					} else if (jobObjectInfo.getType() == JobObjectInfoResponse.TypeEnum.START_MINUTE) {
+						if (jobObjectInfo.getStartMinute() != null) {
+							minute = jobObjectInfo.getStartMinute();
+							isTimeWaiting = true;
+						}
+					} else if (jobObjectInfo.getType() == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_STATUS) {
+						if (jobObjectInfo.getStatus() != null) {
+							crossingJobList.add(jobObjectInfo);
+							isCrossingJobWaiting = true;
+						}
+					} else if (jobObjectInfo.getType() == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_VALUE) {
+						if (jobObjectInfo.getValue() != null) {
+							crossingJobList.add(jobObjectInfo);
+							isCrossingJobWaiting = true;
+						}
+					}
 				}
 			}
 		}
-		if (isTimeWaiting ==false  && isCrossingJobWaiting == false) {
+		if (isTimeWaiting == false && isCrossingJobWaiting == false) {
 			return null;
 		}
-		ImageFigure waitImageFigure ;
 		//アイコン割付
 		if( isTimeWaiting && isCrossingJobWaiting){
 			// 両方
@@ -535,20 +607,20 @@ public class JobFigure extends Figure implements ISelection {
 		//ツールチップメッセージ作成（RAPでの初回描画のみ、表示ラベル横幅不足となるケースあり。調整用空白パディングを設定）
 		ArrayList<String> messageArray = new ArrayList<String>();
 		if (date != null) {
-			messageArray.add(Messages.getString("timestamp") + ":" + TimeStringConverter.formatTime(date) + "   ");
+			messageArray.add(Messages.getString("timestamp") + ":" + date + "   ");
 		}
 		if (minute != null) {
 			messageArray.add((Messages.getString("time.after.session.start") + ":" + minute) + "   ");
 		}
-		for ( JobObjectInfo targetWait :  crossingJobList){
+		for ( JobObjectInfoResponse targetWait :  crossingJobList){
 			StringBuilder message = new StringBuilder() ;
 			//セッション横断条件名称
 			message.append(Messages.getString("wait.rule.cross.session")+ " " + Messages.getString("wait.rule") +":"+ "   ");
 			//セッション横断ジョブ依存関係
 			message.append( "\n" + targetWait.getJobId() +"->" + m_jobTreeItem.getData().getId());
 			//セッション横断条件値
-			if (targetWait.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS) {
-				message.append("\n" + Messages.getString("end.status")  + "," + EndStatusMessage.typeToString(targetWait.getValue()));
+			if (targetWait.getType() == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_STATUS) {
+				message.append("\n" + Messages.getString("end.status")  + "," + EndStatusMessage.typeEnumValueToString(targetWait.getStatus().getValue()));
 			}
 			else {
 				message.append("\n" + Messages.getString("end.value")  + "," + targetWait.getValue());
@@ -571,10 +643,10 @@ public class JobFigure extends Figure implements ISelection {
 	}
 
 	private ImageFigure getQueueIcon() {
-		JobWaitRuleInfo waitRule = m_jobTreeItem.getData().getWaitRule();
+		JobWaitRuleInfoResponse waitRule = m_jobTreeItem.getData().getWaitRule();
 		if (waitRule == null) return null;
 
-		Boolean queueFlg = waitRule.isQueueFlg();
+		Boolean queueFlg = waitRule.getQueueFlg();
 		if (queueFlg == null || !queueFlg.booleanValue()) return null;
 
 		// アイコンイメージ
@@ -671,23 +743,23 @@ public class JobFigure extends Figure implements ISelection {
 
 		Color backColor = null;
 		Color foreColor = null;
-		JobDetailInfo detail = m_jobTreeItem.getDetail();
-		Integer endStatus = null;
-		Integer status = null;
+		JobDetailInfoResponse detail = m_jobTreeItem.getDetail();
+		JobDetailInfoResponse.EndStatusEnum endStatus = null;
+		JobDetailInfoResponse.StatusEnum status = null;
 		if (detail != null) {
 			endStatus = detail.getEndStatus();
 			status = detail.getStatus();
 		}
 		backColor = JobMapColor.lightgray;
 		if (endStatus != null) {
-			switch (endStatus) {
-			case EndStatusConstant.TYPE_NORMAL:
+			switch ( endStatus ) {
+			case NORMAL:
 				backColor = JobMapColor.green;
 				break;
-			case EndStatusConstant.TYPE_ABNORMAL:
+			case ABNORMAL:
 				backColor = JobMapColor.red;
 				break;
-			case EndStatusConstant.TYPE_WARNING:
+			case WARNING:
 				backColor = JobMapColor.yellow;
 				break;
 			default:
@@ -695,40 +767,40 @@ public class JobFigure extends Figure implements ISelection {
 			}
 		} else if (status != null) {
 			switch (status) {
-			case StatusConstant.TYPE_RESERVING: // 保留
+			case RESERVING: // 保留
 				backColor = JobMapColor.yellow;
 				break;
-			case StatusConstant.TYPE_SKIP: // スキップ
+			case SKIP: // スキップ
 				backColor = JobMapColor.yellow;
 				break;
-			case StatusConstant.TYPE_RUNNING: // 実行中
+			case RUNNING: // 実行中
 				backColor = JobMapColor.blue;
 				break;
-			case StatusConstant.TYPE_STOPPING: // 停止処理中
+			case STOPPING: // 停止処理中
 				backColor = JobMapColor.blue;
 				break;
-			case StatusConstant.TYPE_SUSPEND: // 中断
+			case SUSPEND: // 中断
 				backColor = JobMapColor.yellow;
 				break;
-			case StatusConstant.TYPE_STOP: // コマンド停止
+			case STOP: // コマンド停止
 				backColor = JobMapColor.red;
 				break;
-			case StatusConstant.TYPE_MODIFIED: // 変更済み
+			case MODIFIED: // 変更済み
 				backColor = JobMapColor.green;
 				break;
-			case StatusConstant.TYPE_END: // 終了
+			case END: // 終了
 				backColor = JobMapColor.green;
 				break;
-			case StatusConstant.TYPE_ERROR:
+			case ERROR:
 				backColor = JobMapColor.red;
 				break;
-			case StatusConstant.TYPE_WAIT:
+			case WAIT:
 				backColor = JobMapColor.lightgray;
 				break;
-			case StatusConstant.TYPE_RUNNING_QUEUE: // 実行中(キュー待機)
+			case RUNNING_QUEUE: // 実行中(キュー待機)
 				backColor = JobMapColor.blue;
 				break;
-			case StatusConstant.TYPE_SUSPEND_QUEUE: // 中断(キュー待機)
+			case SUSPEND_QUEUE: // 中断(キュー待機)
 				backColor = JobMapColor.yellow;
 				break;
 			default:
@@ -794,32 +866,32 @@ public class JobFigure extends Figure implements ISelection {
 				&& !m_jobTreeItem.getData().getDescription().equals("")) {
 			tooltip.add(new Label(m_jobTreeItem.getData().getDescription()));
 		}
-
-		JobDetailInfo detail = m_jobTreeItem.getDetail();
+		
+		JobDetailInfoResponse detail = m_jobTreeItem.getDetail();
 		// ジョブマップ[設定]の場合は実行状態等はなし。
 		if (detail == null) {
 			if( m_jobTreeItem.getData().getWaitRule() != null ){
 				//ループジョブ設定があればツールチップに設定
-				if(m_jobTreeItem.getData().getWaitRule().isJobRetryFlg()){
+				if(m_jobTreeItem.getData().getWaitRule().getJobRetryFlg()){
 					StringBuilder messageBuilder = new StringBuilder();
 					messageBuilder.append (Messages.getString("job.retry.count") + ":" + m_jobTreeItem.getData().getWaitRule().getJobRetry());
 					if( m_jobTreeItem.getData().getWaitRule().getJobRetryEndStatus() != null ){
 						messageBuilder.append("\n");
-						messageBuilder.append(Messages.getString("job.retry.end.status")  + ":" +  EndStatusMessage.typeToString(m_jobTreeItem.getData().getWaitRule().getJobRetryEndStatus()));
+						messageBuilder.append(Messages.getString("job.retry.end.status")  + ":" +  EndStatusMessage.typeEnumValueToString(m_jobTreeItem.getData().getWaitRule().getJobRetryEndStatus().getValue()));
 					}
 					tooltip.add(new Label(messageBuilder.toString()));
 				}
 				//保留設定があればツールチップに設定
-				if(m_jobTreeItem.getData().getWaitRule().isSuspend()){
+				if(m_jobTreeItem.getData().getWaitRule().getSuspend()){
 					tooltip.add(new Label(Messages.getString("reserve") ));
 				}
 				//スキップ設定があればツールチップに設定
-				if(m_jobTreeItem.getData().getWaitRule().isSkip()){
+				if(m_jobTreeItem.getData().getWaitRule().getSkip()){
 					StringBuilder messageBuilder = new StringBuilder();
 					messageBuilder.append(Messages.getString("skip"));
 					if( m_jobTreeItem.getData().getWaitRule().getSkipEndStatus() != null ){
 						messageBuilder.append("\n");
-						messageBuilder.append(Messages.getString("end.status")  + ":" +  EndStatusMessage.typeToString(m_jobTreeItem.getData().getWaitRule().getSkipEndStatus()));
+						messageBuilder.append(Messages.getString("end.status")  + ":" +  EndStatusMessage.typeEnumValueToString(m_jobTreeItem.getData().getWaitRule().getSkipEndStatus().getValue()));
 					}
 					if( m_jobTreeItem.getData().getWaitRule().getSkipEndValue() != null ){
 						messageBuilder.append("\n");
@@ -836,11 +908,12 @@ public class JobFigure extends Figure implements ISelection {
 		subPanel = new Panel();
 		subPanel.setLayoutManager(new FlowLayout(true));
 		subPanel.add(new Label(Messages.getString("run.status") + " : "));
-		Integer status = null;
+		JobDetailInfoResponse.StatusEnum status = null;
 		status = m_jobTreeItem.getDetail().getStatus();
 		if (status != null) {
-			subPanel.add(new ImageFigure(StatusImageConstant.typeToImage(status)));
-			subPanel.add(new Label(StatusMessage.typeToString(status)));
+			subPanel.add(new ImageFigure(StatusImageConstant.typeEnumValueToImage(status.getValue())));
+			
+			subPanel.add(new Label(StatusMessage.typeEnumValueToString(status.getValue())));
 		}
 		tooltip.add(subPanel);
 
@@ -848,11 +921,11 @@ public class JobFigure extends Figure implements ISelection {
 		subPanel = new Panel();
 		subPanel.setLayoutManager(new FlowLayout(true));
 		subPanel.add(new Label(Messages.getString("end.status") + " : "));
-		Integer endStatus = null;
+		JobDetailInfoResponse.EndStatusEnum endStatus = null;
 		endStatus = m_jobTreeItem.getDetail().getEndStatus();
 		if (endStatus != null) {
-			subPanel.add(new ImageFigure(EndStatusImageConstant.typeToImage(endStatus)));
-			subPanel.add(new Label(EndStatusMessage.typeToString(endStatus)));
+			subPanel.add(new ImageFigure(EndStatusImageConstant.typeEnumValueToImage(endStatus.getValue())));
+			subPanel.add(new Label(EndStatusMessage.typeEnumValueToString(endStatus.getValue())));
 		}
 		tooltip.add(subPanel);
 
@@ -869,30 +942,20 @@ public class JobFigure extends Figure implements ISelection {
 
 		// 開始・再実行時刻
 		String dateStr = "";
-		Date date = null;
 		if (m_jobTreeItem.getDetail().getStartDate() != null) {
-			date = new Date(m_jobTreeItem.getDetail().getStartDate());
-		}
-		if (date != null) {
-			DateFormat df = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM);
-			dateStr = df.format(date);
+			dateStr = m_jobTreeItem.getDetail().getStartDate();
 		}
 		tooltip.add(new Label(Messages.getString("start.rerun.time") + " : " + dateStr));
 
 		// 終了・中断時刻
 		dateStr = "";
-		date = null;
 		if (m_jobTreeItem.getDetail().getEndDate() != null) {
-			date = new Date(m_jobTreeItem.getDetail().getEndDate());
-		}
-		if (date != null) {
-			DateFormat df = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM);
-			dateStr = df.format(date);
+			dateStr = m_jobTreeItem.getDetail().getEndDate();
 		}
 		tooltip.add(new Label(Messages.getString("end.suspend.time") + " : " + dateStr));
 
 		//ループジョブ設定があればツールチップに実行回数を設定
-		if( m_jobTreeItem.getData().getWaitRule() != null && m_jobTreeItem.getData().getWaitRule().isJobRetryFlg() && m_jobTreeItem.getDetail().getRunCount() != null ){
+		if( m_jobTreeItem.getData().getWaitRule() != null && m_jobTreeItem.getData().getWaitRule().getJobRetryFlg() && m_jobTreeItem.getDetail().getRunCount() != null ){
 			tooltip.add(new Label(Messages.getString("job.run.count") + " : " + m_jobTreeItem.getDetail().getRunCount()));
 		}
 
@@ -927,7 +990,7 @@ public class JobFigure extends Figure implements ISelection {
 		return m_layerXY;
 	}
 
-	public JobTreeItem getJobTreeItem() {
+	public JobTreeItemWrapper getJobTreeItem() {
 		return m_jobTreeItem;
 	}
 	

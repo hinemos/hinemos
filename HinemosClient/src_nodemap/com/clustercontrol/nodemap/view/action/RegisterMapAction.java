@@ -24,9 +24,9 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.nodemap.InvalidRole_Exception;
 
 /**
  * ビューの更新を行うクライアント側アクションクラス<BR>
@@ -68,7 +68,7 @@ public class RegisterMapAction extends AbstractHandler implements IElementUpdate
 					null,
 					Messages.getString("message"),
 					com.clustercontrol.nodemap.messages.Messages.getString("regist.success"));
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,

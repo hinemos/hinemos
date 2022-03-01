@@ -11,12 +11,12 @@ package com.clustercontrol.repository.factory;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.bean.FunctionPrefixEnum;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
@@ -34,6 +34,8 @@ import com.clustercontrol.repository.model.NodeConfigSettingItemInfo;
 import com.clustercontrol.repository.model.NodeConfigSettingItemInfoPK;
 import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * 対象構成情報の更新処理を実装したクラス<BR>
@@ -76,9 +78,10 @@ public class NodeConfigSettingModifier {
 					&& info.getNotifyRelationList().size() > 0) {
 				for (NotifyRelationInfo notifyRelationInfo : info.getNotifyRelationList()) {
 					notifyRelationInfo.setNotifyGroupId(info.getNotifyGroupId());
+					notifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.NODE_CONFIG_SETTING.name());
 				}
 				// 通知情報を登録
-				new ModifyNotifyRelation().add(info.getNotifyRelationList());
+				new ModifyNotifyRelation().add(info.getNotifyRelationList(), info.getOwnerRoleId());
 			}
 			
 			// 対象情報を設定
@@ -150,10 +153,11 @@ public class NodeConfigSettingModifier {
 					&& info.getNotifyRelationList().size() > 0) {
 				for (NotifyRelationInfo notifyRelationInfo : info.getNotifyRelationList()) {
 					notifyRelationInfo.setNotifyGroupId(entity.getNotifyGroupId());
+					notifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.NODE_CONFIG_SETTING.name());
 				}
 			}
 			new NotifyControllerBean().modifyNotifyRelation(
-					info.getNotifyRelationList(), entity.getNotifyGroupId());
+					info.getNotifyRelationList(), entity.getNotifyGroupId(), entity.getOwnerRoleId());
 
 			// 収集対象の更新
 			if (info.getNodeConfigSettingItemList() != null) {
@@ -236,6 +240,9 @@ public class NodeConfigSettingModifier {
 
 			// 対象構成情報を削除
 			em.remove(entity);
+
+			// 通知履歴情報を削除
+			new NotifyControllerBean().deleteNotifyHistory(HinemosModuleConstant.NODE_CONFIG_SETTING, settingId);
 		}
 	}
 }

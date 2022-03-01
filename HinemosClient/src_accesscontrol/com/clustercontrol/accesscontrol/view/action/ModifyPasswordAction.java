@@ -8,11 +8,9 @@
 
 package com.clustercontrol.accesscontrol.view.action;
 
-import java.security.MessageDigest;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.commands.AbstractHandler;
@@ -28,16 +26,17 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.ChangeOwnPasswordRequest;
+import org.openapitools.client.model.ChangePasswordRequest;
 
 import com.clustercontrol.accesscontrol.action.GetUserListTableDefine;
 import com.clustercontrol.accesscontrol.dialog.ModifyPasswordDialog;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.accesscontrol.view.UserListView;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.LoginManager;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.RestLoginManager;
 
 /**
  * アクセス[ユーザ]ビューの「パスワード変更」のアクションクラス
@@ -119,15 +118,18 @@ public class ModifyPasswordAction extends AbstractHandler implements IElementUpd
 
 				// 自分自身のユーザパスワードは変更可能とする
 				try {
-					boolean isLoginUser = EndpointManager.hasLoginUser(managerName, uid);
+					boolean isLoginUser = RestConnectManager.hasLoginUser(managerName, uid);
 
-					//String passwordHash = CryptoUtil.createPasswordHash("MD5", CryptoUtil.BASE64_ENCODING, null, uid, password);
-					String passwordHash = Base64.encodeBase64String(MessageDigest.getInstance("MD5").digest(password.getBytes()));
-					AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+					AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
+
 					if( isLoginUser ){
-						wrapper.changeOwnPassword(passwordHash);
+						ChangeOwnPasswordRequest upd = new ChangeOwnPasswordRequest();
+						upd.setPassword(password);
+						wrapper.changeOwnPassword(upd);
 					}else{
-						wrapper.changePassword(uid, passwordHash);
+						ChangePasswordRequest upd =  new ChangePasswordRequest();
+						upd.setPassword(password);
+						wrapper.changePassword(uid,upd);
 					}
 
 					Object[] arg = {managerName};
@@ -144,18 +146,18 @@ public class ModifyPasswordAction extends AbstractHandler implements IElementUpd
 								Messages.getString("info"),
 								Messages.getString("message.accesscontrol.25", arg));
 
-						LoginManager.disconnect(managerName);
+						RestLoginManager.disconnect(managerName);
 						return null;
 					}
 
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// 権限なし
 						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
 					} else {
-						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+						errMessage = ", " + e.getMessage();
 					}
 					// 失敗報告ダイアログを生成
 					MessageDialog.openError(

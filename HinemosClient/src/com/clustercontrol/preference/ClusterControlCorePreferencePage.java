@@ -25,10 +25,10 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.bean.DataRangeConstant;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.LoginManager;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PasswordFieldEditor;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.RestLoginManager;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -42,22 +42,22 @@ public class ClusterControlCorePreferencePage extends FieldEditorPreferencePage 
 	private static Log m_log = LogFactory.getLog( ClusterControlCorePreferencePage.class );
 
 	/** 接続先URL */
-	public static final String URL = LoginManager.KEY_URL;
+	public static final String URL = RestLoginManager.KEY_URL;
 
 	/** 接続の死活監視間隔 */
-	public static final String KEY_INTERVAL = LoginManager.KEY_INTERVAL;
-	public static final String KEY_HTTP_REQUEST_TIMEOUT = LoginManager.KEY_HTTP_REQUEST_TIMEOUT;
+	public static final String KEY_INTERVAL = RestLoginManager.KEY_INTERVAL;
+	public static final String KEY_HTTP_REQUEST_TIMEOUT = RestLoginManager.KEY_HTTP_REQUEST_TIMEOUT;
 	public static final int VALUE_INTERVAL_MAX = 60;
 	public static final int VALUE_INTERVAL_MIN = 1;
 	public static final int VALUE_HTTP_TIMEOUT_MAX = 600000; // ms = 600 s
 	public static final int VALUE_HTTP_TIMEOUT_MIN = 1; // ms = 1 s
 
 	/** Proxy */
-	public static final String KEY_PROXY_ENABLE = LoginManager.KEY_PROXY_ENABLE;
-	public static final String KEY_PROXY_HOST = LoginManager.KEY_PROXY_HOST;
-	public static final String KEY_PROXY_PORT = LoginManager.KEY_PROXY_PORT;
-	public static final String KEY_PROXY_USER = LoginManager.KEY_PROXY_USER;
-	public static final String KEY_PROXY_PASSWORD = LoginManager.KEY_PROXY_PASSWORD;
+	public static final String KEY_PROXY_ENABLE = RestLoginManager.KEY_PROXY_ENABLE;
+	public static final String KEY_PROXY_HOST = RestLoginManager.KEY_PROXY_HOST;
+	public static final String KEY_PROXY_PORT = RestLoginManager.KEY_PROXY_PORT;
+	public static final String KEY_PROXY_USER = RestLoginManager.KEY_PROXY_USER;
+	public static final String KEY_PROXY_PASSWORD = RestLoginManager.KEY_PROXY_PASSWORD;
 	public static final int VALUE_PROXY_PORT_MAX = 65535;
 	public static final int VALUE_PROXY_PORT_MIN = 0;
 
@@ -195,8 +195,10 @@ public class ClusterControlCorePreferencePage extends FieldEditorPreferencePage 
 		ClientSession.restartChecktask(managerPollingInterval.getIntValue());
 
 		// JAX-WSタイムアウト値の更新
-		EndpointManager.setHttpRequestTimeout( httpRequestTimeout.getIntValue() );
-		m_log.info("request.timeout=" + EndpointManager.getHttpRequestTimeout());
+		RestConnectManager.setHttpRequestTimeout( httpRequestTimeout.getIntValue() );
+		m_log.info("request.timeout=" + RestConnectManager.getHttpRequestTimeout());
+
+		RestConnectManager.setSetupExecuteTime(System.currentTimeMillis());
 
 		boolean result = super.performOk();
 
@@ -204,7 +206,7 @@ public class ClusterControlCorePreferencePage extends FieldEditorPreferencePage 
 		IPreferenceStore store = this.getPreferenceStore();
 		store.getString(URL);
 
-		LoginManager.setup();
+		RestLoginManager.setup();
 		return result;
 	}
 }

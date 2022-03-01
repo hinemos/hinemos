@@ -60,7 +60,10 @@ public class OperatorChangeUtil {
 		}
 		try {
 			if (standardDeviation.doubleValue() == 0D) {
-				if (value.doubleValue() == average.doubleValue()) {
+				// 算出された平均値及びキャッシュのvalueはfloatで管理されているので、比較はfloatで行う
+				// TODO 本対応は収集値や平均値等がrealとしてDBに登録およびキャッシュで保持されるための対処
+				// 改善チケット1135 の対応がされた場合は、doubleで比較が必要となる。
+				if (value.floatValue() == average.floatValue()) {
 					rtn = 0D;
 				}
 			} else {

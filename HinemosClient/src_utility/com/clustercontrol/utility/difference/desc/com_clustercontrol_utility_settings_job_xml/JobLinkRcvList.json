@@ -1,0 +1,46 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"JobLinkRcvList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"Name",
+			"OwnerRoleId",
+			"JobunitId",
+			"JobId",
+			"CalId",
+			"ValidFlg",
+			"JobLinkRcvData.FacilityId",
+			"JobLinkRcvData.Scope",
+			"JobLinkRcvData.FileName",
+			"JobLinkRcvData.JoblinkMessageId",
+			"JobLinkRcvData.InfoValidFlg",
+			"JobLinkRcvData.WarnValidFlg",
+			"JobLinkRcvData.CriticalValidFlg",
+			"JobLinkRcvData.UnknownValidFlg",
+			"JobLinkRcvData.ApplicationFlg",
+			"JobLinkRcvData.Application",
+			"JobLinkRcvData.MonitorDetailIdFlg",
+			"JobLinkRcvData.MonitorDetailId",
+			"JobLinkRcvData.MessageFlg",
+			"JobLinkRcvData.Message",
+			"JobLinkRcvData.ExpFlg",
+			"JobLinkExpInfo.Key",
+			"JobLinkExpInfo.Value",
+			"JobRuntimeInfo",
+			"JobRuntimeInfo.ParamType",
+			"JobRuntimeInfo.Description",
+			"JobRuntimeInfo.DefaultValue",
+			"JobRuntimeInfo.RequiredFlg",
+			"JobRuntimeInfo.JobRuntimeDetailInfo",
+			"JobRuntimeInfo.JobRuntimeDetailInfo.*"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"JobLinkRcvInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

@@ -17,6 +17,7 @@ public class HLocationScope extends HScope {
 	private List<HInstanceNode> instanceNodes = new ArrayList<>();
 	
 	public HLocationScope() {
+		super(FacilityType.Location);
 	}
 	
 	public Location getLocation() {

@@ -1,0 +1,115 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"outputType",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+	
+	{
+	"propName":"validFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_validFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"sameNormalFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_sameNormalFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+
+	{
+	"propName":"directory",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_directory"}
+	]},
+	
+	{
+	"propName":"fileName",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_fileName"}
+	]},
+	
+	{
+	"propName":"appendFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_appendFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"failureOperationFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_failureOperationFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"failureOperationType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_failureOperationType"},
+		{"type":"Translate", "values":[
+			{"value":"2", "name":"name_job_failureOperationType_stopSuspend"},
+			{"value":"10", "name":"name_job_failureOperationType_stopSetEndValue"}
+		]}
+	]},
+	
+	{
+	"propName":"failureOperationEndStatus",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_failureOperationEndStatus"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_normal"},
+			{"value":"1", "name":"name_warning"},
+			{"value":"2", "name":"name_abnormal"}
+		]}
+	]},
+	
+	{
+	"propName":"failureOperationEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_failureOperationEndValue"}
+	]},
+	
+	{
+	"propName":"failureNotifyFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_failureNotifyFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"failureNotifyPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"JobOutputInfo_failureNotifyPriority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]}
+]
+}

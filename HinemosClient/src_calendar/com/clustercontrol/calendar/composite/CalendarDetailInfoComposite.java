@@ -10,6 +10,7 @@ package com.clustercontrol.calendar.composite;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -22,12 +23,12 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.CalendarDetailInfoResponse;
 
 import com.clustercontrol.calendar.dialog.CalendarDetailDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.calendar.CalendarDetailInfo;
 
 /**
  * カレンダ詳細情報グループのコンポジットクラス<BR>
@@ -266,14 +267,14 @@ public class CalendarDetailInfoComposite extends Composite {
 	 *
 	 * @return
 	 */
-	public ArrayList<CalendarDetailInfo> getDetailList(){
+	public List<CalendarDetailInfoResponse> getDetailList(){
 		return this.calInfoListComposite.getDetailList();
 	}
 	/**
 	 * カレンダ詳細情報をコンポジット内リストに反映させる
 	 * @param detailList
 	 */
-	public void setDetailList(ArrayList<CalendarDetailInfo> detailList){
+	public void setDetailList(ArrayList<CalendarDetailInfoResponse> detailList){
 		if (detailList != null) {
 			this.calInfoListComposite.setDetailList(detailList);
 		}
@@ -344,11 +345,10 @@ public class CalendarDetailInfoComposite extends Composite {
 				|| !ownerRoleId.equals(this.calInfoListComposite.getOwnerRoleId())) {
 
 			//Iterator<CalendarDetailInfo> iter = m_info.getCalendarDetailList().iterator();
-			Iterator<CalendarDetailInfo> iter = calInfoListComposite.getDetailList().iterator();
+			Iterator<CalendarDetailInfoResponse> iter = calInfoListComposite.getDetailList().iterator();
 			while (iter.hasNext()) {
-				CalendarDetailInfo composite = iter.next();
+				CalendarDetailInfoResponse composite = iter.next();
 				composite.setCalPatternId(null);
-				composite.setCalPatternInfo(null);
 			}
 			this.calInfoListComposite.update();
 		}
@@ -363,11 +363,10 @@ public class CalendarDetailInfoComposite extends Composite {
 		if (managerName == null
 				|| !managerName.equals(this.calInfoListComposite.getManagerName())) {
 
-			Iterator<CalendarDetailInfo> iter = calInfoListComposite.getDetailList().iterator();
+			Iterator<CalendarDetailInfoResponse> iter = calInfoListComposite.getDetailList().iterator();
 			while (iter.hasNext() && clear) {
-				CalendarDetailInfo composite = iter.next();
+				CalendarDetailInfoResponse composite = iter.next();
 				composite.setCalPatternId(null);
-				composite.setCalPatternInfo(null);
 			}
 			this.calInfoListComposite.update();
 		}

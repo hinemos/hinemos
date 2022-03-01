@@ -18,7 +18,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.part.ViewPart;
 
-import com.clustercontrol.util.LoginManager;
+import com.clustercontrol.util.RestLoginManager;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
 import com.clustercontrol.xcloud.model.base.IElement;
@@ -84,10 +84,10 @@ public abstract class AbstractCloudViewPart extends ViewPart {
 	public abstract String getId();
 	
 	public AbstractCloudViewPart() {
-		if (0 < LoginManager.getLoginAttempts()) {
-			if(!LoginManager.isLogin()){
+		if (0 < RestLoginManager.getLoginAttempts()) {
+			if(!RestLoginManager.isLogin()){
 				// TODO whey need to login again here?
-				LoginManager.login(getViewSite().getWorkbenchWindow());
+				RestLoginManager.login(getViewSite().getWorkbenchWindow());
 			}
 		}
 	}

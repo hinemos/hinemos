@@ -11,17 +11,10 @@ package com.clustercontrol.utility.settings.model;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
-import javax.xml.ws.WebServiceException;
-
-//import org.apache.commons.logging.Log;
-//import org.apache.commons.logging.LogFactory;
-
 
 import org.apache.log4j.Logger;
 
@@ -50,7 +43,6 @@ import com.clustercontrol.utility.util.UtilityDialogConstant;
 public abstract class BaseAction<D, E, T> {
 
 	protected Logger log = Logger.getLogger(this.getClass());
-	
 	public BaseAction() throws ConvertorException {
 		super();
 	}
@@ -85,10 +77,6 @@ public abstract class BaseAction<D, E, T> {
 			try {
 				deleteInfo(info);
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + getKeyInfoD(info));
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-				break;
 			} catch (Exception e) {
 				log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
@@ -203,34 +191,20 @@ public abstract class BaseAction<D, E, T> {
 		preCheckDuplicate();
 		
 		// 定義の登録
-		List<E> objectIdList = new ArrayList<E>();
-		for (E info : getElements(xmlInfo)) {
-			try {
-				int tmpRet = 0;
-				tmpRet = registElement(info);
-				if(tmpRet == -1){
-					ret = SettingConstants.ERROR_INPROCESS;
-					break;
-				} else if(tmpRet == 9){
-					ret = SettingConstants.ERROR_INPROCESS;
-					continue;
-				}
-				objectIdList.add(info);
-				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + getKeyInfoE(info));
-			} catch (Exception e) {
-				log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-				continue;
-			}
-		}
+		ret = registElements(xmlInfo);
 		
 		//オブジェクト権限同時インポート
 		try {
+			List<String> objectIdList = getImportObjects();
 			importObjectPrivilege(objectIdList);
 		} catch (Exception e) {
 			log.warn(e.getMessage(), e);
 		}
-		
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
+		}
 		//差分削除
 		try {
 			checkDelete(xmlInfo);
@@ -298,7 +272,7 @@ public abstract class BaseAction<D, E, T> {
 		try {
 			ResultA resultA = new ResultA();
 			//比較処理に渡す
-			boolean diff = DiffUtil.diffCheck2(xmlInfo1, xmlInfo2, xmlInfo1.getClass(), resultA);
+			boolean diff = diffCheck(xmlInfo1, xmlInfo2, resultA);
 			assert resultA.getResultBs().size() == 1;
 			
 			if(diff){
@@ -344,6 +318,10 @@ public abstract class BaseAction<D, E, T> {
 	}
 	
 
+	protected boolean diffCheck(T xmlInfo1, T xmlInfo2, ResultA resultA) {
+		return DiffUtil.diffCheck2(xmlInfo1, xmlInfo2, xmlInfo1.getClass(), resultA);
+	}
+
 	private class InfoComparator implements Comparator<D> {
 		@Override
 		public int compare(
@@ -371,7 +349,7 @@ public abstract class BaseAction<D, E, T> {
 	// 対象となるレコードのリストをマネージャから取得します
 	protected abstract List<D> getList() throws Exception;
 	// レコードをマネージャから削除します
-	protected abstract void deleteInfo(D info) throws WebServiceException, Exception;
+	protected abstract void deleteInfo(D info) throws Exception;
 	// DTOのキー情報をStringで取得します
 	protected abstract String getKeyInfoD(D info);
 	// XmlRootオブジェクトを作成します
@@ -383,7 +361,9 @@ public abstract class BaseAction<D, E, T> {
 	// XmlRootオブジェクトからエレメントのリストを取得します
 	protected abstract List<E> getElements(T xmlInfo);
 	// エレメントをマネージャに登録します
-	protected abstract int registElement(E element) throws Exception;
+	protected abstract int registElements(T xmlInfo) throws Exception;
+	// オブジェクト権限のimport対象を取得します(本メソッドの実行はregistElementsの直後です)
+	protected abstract List<String> getImportObjects();
 	// エレメントのキー情報をStringで取得します
 	protected abstract String getKeyInfoE(E info);
 	// XmlRootオブジェクトをXMLから取得します
@@ -401,7 +381,7 @@ public abstract class BaseAction<D, E, T> {
 	// 差分削除確認処理
 	protected abstract void checkDelete(T xmlInfo) throws Exception;
 	//オブジェクト権限同時インポート
-	protected abstract void importObjectPrivilege(List<E> objectList) throws Exception;
+	protected abstract void importObjectPrivilege(List<String> objectList) throws Exception;
 	
 	//差分削除
 	// 重複確認用の事前メソッド、オーバライド前提

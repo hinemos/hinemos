@@ -10,8 +10,8 @@ package com.clustercontrol.jobmanagement.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 
 /**
  * The primary key class for the cc_job_info database table.

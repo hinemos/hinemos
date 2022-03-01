@@ -65,6 +65,9 @@ import com.clustercontrol.util.HinemosTime;
  */
 public class NodeConfigRegisterUtil {
 
+	/** 監視対象外設定向けのコード */
+	public static final String IGNORE_MONITOR = "@IGNORE_MONITOR";
+
 	private static Log m_log = LogFactory.getLog( NodeConfigRegisterUtil.class );
 	/**
 	 * OS情報の登録処理を行う。
@@ -247,10 +250,11 @@ public class NodeConfigRegisterUtil {
 						entity = QueryUtil.getNodeCpuEntityPkForNodeConfigSetting(entityPk);
 
 						// 差分確認
+						//DeviceDescriptionについては IgnoreMonフラグを考慮して一致を確認する。
 						if (entity.getDeviceDisplayName().equals(info.getDeviceDisplayName())
 								&& entity.getDeviceSize().equals(info.getDeviceSize())
 								&& entity.getDeviceSizeUnit().equals(info.getDeviceSizeUnit())
-								&& entity.getDeviceDescription().equals(info.getDeviceDescription())
+								&& checkDescriptonDiff(isCollect,entity.getDeviceDescription(),info.getDeviceDescription())
 								&& entity.getCoreCount().equals(info.getCoreCount())
 								&& entity.getThreadCount().equals(info.getThreadCount())
 								&& entity.getClockCount().equals(info.getClockCount())) {
@@ -263,6 +267,11 @@ public class NodeConfigRegisterUtil {
 							= QueryUtil.getNodeCpuHistoryDetailByRegDateTo(entityPk, NodeConfigSettingConstant.REG_DATE_TO_DEFAULT_VALUE);
 						if (oldHistoryDetail != null) {
 							oldHistoryDetail.setRegDateTo(registerDatetime);
+						}
+
+						// 構成情報管理による変更なら、元々、末尾に@IGNORE_MONITORがついていた場合は変更後も残るようにする。
+						if ( isCollect && chkIgnoreMonitorCode(entity.getDeviceDescription()) && !( chkIgnoreMonitorCode(info.getDeviceDescription()) ) ) {
+							info.setDeviceDescription(addIgnoreMonitorCode(info.getDeviceDescription()));
 						}
 
 						// 変更情報
@@ -509,14 +518,20 @@ public class NodeConfigRegisterUtil {
 						entity = QueryUtil.getNodeNetworkInterfaceEntityPkForNodeConfigSetting(entityPk);
 
 						// 差分確認
+						//DeviceDescriptionについては IgnoreMonフラグを考慮して一致を確認する。
 						if (entity.getDeviceDisplayName().equals(info.getDeviceDisplayName())
 								&& entity.getDeviceSize().equals(info.getDeviceSize())
 								&& entity.getDeviceSizeUnit().equals(info.getDeviceSizeUnit())
-								&& entity.getDeviceDescription().equals(info.getDeviceDescription())
+								&& checkDescriptonDiff(isCollect,entity.getDeviceDescription(),info.getDeviceDescription())
 								&& entity.getNicIpAddress().equals(info.getNicIpAddress())
 								&& entity.getNicMacAddress().equals(info.getNicMacAddress())) {
 							// 差分がなければ何もしない
 							continue;
+						}
+
+						// 構成情報管理による変更なら、元々、末尾に@IGNORE_MONITORがついていた場合は変更後も残るようにする。
+						if ( isCollect && chkIgnoreMonitorCode(entity.getDeviceDescription()) && !( chkIgnoreMonitorCode(info.getDeviceDescription()) ) ) {
+							info.setDeviceDescription(addIgnoreMonitorCode(info.getDeviceDescription()));
 						}
 
 						// NodeNetworkInterfaceHistoryDetail更新
@@ -648,13 +663,19 @@ public class NodeConfigRegisterUtil {
 						}
 
 						// 差分確認
+						//DeviceDescriptionについては IgnoreMonフラグを考慮して一致を確認する。
 						if (entity.getDeviceDisplayName().equals(info.getDeviceDisplayName())
 								&& entity.getDeviceSize().equals(info.getDeviceSize())
 								&& entity.getDeviceSizeUnit().equals(info.getDeviceSizeUnit())
-								&& entity.getDeviceDescription().equals(info.getDeviceDescription())
+								&& checkDescriptonDiff(isCollect,entity.getDeviceDescription(),info.getDeviceDescription())
 								&& entity.getDiskRpm().equals(info.getDiskRpm())) {
 							// 差分がなければ何もしない
 							continue;
+						}
+
+						// 構成情報管理による変更なら、元々、末尾に@IGNORE_MONITORがついていた場合は変更後も残るようにする。
+						if ( isCollect && chkIgnoreMonitorCode(entity.getDeviceDescription()) && !( chkIgnoreMonitorCode(info.getDeviceDescription()) ) ) {
+							info.setDeviceDescription(addIgnoreMonitorCode(info.getDeviceDescription()));
 						}
 
 						// NodeDiskHistoryDetail更新
@@ -779,13 +800,19 @@ public class NodeConfigRegisterUtil {
 						entity = QueryUtil.getNodeFilesystemEntityPkForNodeConfigSetting(entityPk);
 
 						// 差分確認
+						//DeviceDescriptionについては IgnoreMonフラグを考慮して一致を確認する。
 						if (entity.getDeviceDisplayName().equals(info.getDeviceDisplayName())
 								&& entity.getDeviceSize().equals(info.getDeviceSize())
 								&& entity.getDeviceSizeUnit().equals(info.getDeviceSizeUnit())
-								&& entity.getDeviceDescription().equals(info.getDeviceDescription())
+								&& checkDescriptonDiff(isCollect,entity.getDeviceDescription(),info.getDeviceDescription())
 								&& entity.getFilesystemType().equals(info.getFilesystemType())) {
 							// 差分がなければ何もしない
 							continue;
+						}
+
+						// 構成情報管理による変更なら、元々、末尾に@IGNORE_MONITORがついていた場合は変更後も残るようにする。
+						if ( isCollect && chkIgnoreMonitorCode(entity.getDeviceDescription()) && !( chkIgnoreMonitorCode(info.getDeviceDescription()) ) ) {
+							info.setDeviceDescription(addIgnoreMonitorCode(info.getDeviceDescription()));
 						}
 
 						// NodeFilesystemHistoryDetail更新
@@ -1968,5 +1995,61 @@ public class NodeConfigRegisterUtil {
 		public void addDelObj(Object obj) {
 			this.delObj.add(obj);
 		}
+	}
+
+	/**
+	 * チェック対象文字列の末尾に@IGNORE_MONITORがある場合はTRUEを返す。
+	 * @param str
+	 * @return IGNORE_MONITORの有無
+	 */
+	public static boolean chkIgnoreMonitorCode(String str) {
+		boolean chk = false;
+		if (str.trim().endsWith(IGNORE_MONITOR)) {
+			chk = true;
+		}
+		
+		return chk;
+	}
+
+	/**
+	 * 末尾の@IGNORE_MONITORの有無を考慮して Descriptonの 差分をチェックする
+	 * 
+	 * @param isCollect 構成情報収集であるかどうか
+	 * @param oldDesc 旧Descripton
+	 * @param newDesc 新Descripton
+	 * @return 差分の有無
+	 */
+	private static boolean checkDescriptonDiff(boolean isCollect ,String oldDesc, String newDesc) {
+		boolean chk = false;
+		if ( isCollect ) {
+			//構成情報収集による呼び出しの場合は 末尾の@IGNORE_MONITORは 差分判定に含めない
+			chk = rmIgnoreMonitorCode(oldDesc).equals(newDesc);
+		} else {
+			//構成情報収集以外による呼び出しの場合は通常の比較を行う。
+			chk = oldDesc.equals(newDesc);
+		}
+		return chk;
+	}
+
+
+	/**
+	 * 末尾の@IGNORE_MONITORを取り除く
+	 * @param str
+	 * @return
+	 */
+	private static String rmIgnoreMonitorCode(String str) {
+		if (str.trim().endsWith(IGNORE_MONITOR)) {
+			str = str.substring(0, str.length() - IGNORE_MONITOR.length());
+		}
+		return str;
+	}
+	
+	/**
+	 * 末尾に@IGNORE_MONITORを追記する
+	 * @param str
+	 * @return
+	 */
+	private static String addIgnoreMonitorCode( String str ) {
+		return str + IGNORE_MONITOR;
 	}
 }

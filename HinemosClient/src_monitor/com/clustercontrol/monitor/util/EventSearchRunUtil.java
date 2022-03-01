@@ -20,17 +20,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.internal.service.ContextProvider;
 import org.eclipse.rap.rwt.internal.service.ServiceContext;
+import org.openapitools.client.model.EventFilterBaseRequest;
+import org.openapitools.client.model.GetEventListRequest;
+import org.openapitools.client.model.GetEventListResponse;
 
+import com.clustercontrol.accesscontrol.util.ClientSession;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.MultiManagerRunUtil;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.monitor.EventFilterInfo;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.ViewListInfo;
-
 
 /**
  * イベント情報取得の実行管理を行う Session Bean クラス<BR>
@@ -39,9 +39,11 @@ import com.clustercontrol.ws.monitor.ViewListInfo;
 public class EventSearchRunUtil extends MultiManagerRunUtil{
 	/** ログ出力のインスタンス<BR> */
 	private static Log m_log = LogFactory.getLog(EventSearchRunUtil.class);
+	/** 検索成功可否フラグ */
+	private boolean m_searchSuccess = true;
 
-	public Map<String, ViewListInfo> searchInfo(List<String> managerList, String facilityId, EventFilterInfo filter, int messages) {
-		Map<String, ViewListInfo> dispDataMap = new ConcurrentHashMap<>();
+	public Map<String, GetEventListResponse> searchInfo(List<String> managerList, EventFilterBaseRequest filter, int messages) {
+		Map<String, GetEventListResponse> dispDataMap = new ConcurrentHashMap<>();
 		Map<String, String> errMsgs = new ConcurrentHashMap<>();
 		long start = System.currentTimeMillis();
 		
@@ -54,7 +56,7 @@ public class EventSearchRunUtil extends MultiManagerRunUtil{
 			List<EventSearchTask> searchList = new ArrayList<EventSearchTask>();
 			for (String managerName : managerList) {
 				EventSearchTask task = null;
-				task = new EventSearchTask(threadName, managerName, facilityId, filter, messages, ContextProvider.getContext());
+				task = new EventSearchTask(threadName, managerName, filter, messages, ContextProvider.getContext());
 				searchList.add(task);
 			}
 			
@@ -69,8 +71,8 @@ public class EventSearchRunUtil extends MultiManagerRunUtil{
 					//必ず1回でループを抜ける
 					String managerName = entry.getKey();
 					List<?> ret = entry.getValue();
-					if (ret.get(POS_INFO) != null && ret.get(POS_INFO) instanceof ViewListInfo) {
-						ViewListInfo infoList = (ViewListInfo)ret.get(POS_INFO);
+					if (ret.get(POS_INFO) != null && ret.get(POS_INFO) instanceof GetEventListResponse) {
+						GetEventListResponse infoList = (GetEventListResponse)ret.get(POS_INFO);
 						dispDataMap.put(managerName, infoList);
 					}
 					if (ret.get(POS_ERROR) != null && ret.get(POS_ERROR) instanceof String) {
@@ -86,8 +88,11 @@ public class EventSearchRunUtil extends MultiManagerRunUtil{
 		}
 
 		//メッセージ表示
-		if( 0 < errMsgs.size() ){
+		if( 0 < errMsgs.size() && ClientSession.isDialogFree()){
+			ClientSession.occupyDialog();
+			m_searchSuccess = false;
 			UIManager.showMessageBox(errMsgs, true);
+			ClientSession.freeDialog();
 		}
 
 		long end = System.currentTimeMillis();
@@ -95,27 +100,34 @@ public class EventSearchRunUtil extends MultiManagerRunUtil{
 		return dispDataMap;
 	}
 
+	/**
+	 * 検索成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isSearchSuccess() {
+		return this.m_searchSuccess;
+	}
+
 	public class EventSearchTask implements Callable<Map<String, List<?>>>{
 
 		private String threadName = null;
 		private String managerName = null;
-		private String facilityId = null;
-		private EventFilterInfo filter = null;
+		private EventFilterBaseRequest filter = null;
 		private int messages = 0;
 		private ServiceContext context = null;
-		private Log m_log = LogFactory.getLog(EventSearchTask.class);
+		private Log m_log2 = LogFactory.getLog(EventSearchTask.class);
 
-		public EventSearchTask(String threadName, String managerName, String facilityId, EventFilterInfo filter, int messages, ServiceContext context) {
+		public EventSearchTask(String threadName, String managerName, EventFilterBaseRequest filter, int messages, ServiceContext context) {
 			this.threadName = threadName;
 			this.managerName = managerName;
-			this.facilityId = facilityId;
 			this.filter = filter;
 			this.messages = messages;
 			this.context = context;
 		}
 
+		@Override
 		public Map<String, List<?>> call() throws Exception {
-			ViewListInfo records = null;
+			GetEventListResponse records = null;
 			Map<String, List<?>> dispDataMap= new ConcurrentHashMap<>();
 			String errMsgs = null;
 
@@ -124,17 +136,21 @@ public class EventSearchRunUtil extends MultiManagerRunUtil{
 			ContextProvider.setContext(context);
 
 			try {
-				MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(this.managerName);
-				ViewListInfo infoList = wrapper.getEventList(facilityId, filter, messages);
+				MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(this.managerName);
+				GetEventListRequest getEventListRequest = new GetEventListRequest();
+				getEventListRequest.setFilter(filter);
+				getEventListRequest.setSize(messages);
+				GetEventListResponse infoList = wrapper.getEventList(getEventListRequest);
+						
 				infoList = infoList == null ? setDefaultInfoList(null) : infoList;
 				records = infoList;
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				errMsgs = Messages.getString("message.accesscontrol.16");
-			} catch (MonitorNotFound_Exception | HinemosUnknown_Exception e) {
+			} catch (HinemosUnknown e) {
 				errMsgs = Messages.getString("message.monitor.67") + ", " + HinemosMessage.replace(e.getMessage());
 			} catch (Exception e) {
-				m_log.warn("MonitorSearchTask(), " + e.getMessage(), e);
+				m_log2.warn("MonitorSearchTask(), " + e.getMessage(), e);
 				errMsgs = Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage());
 			}
 			List<Object> list = new ArrayList<Object>();
@@ -145,8 +161,8 @@ public class EventSearchRunUtil extends MultiManagerRunUtil{
 			return dispDataMap;
 		}
 
-		private ViewListInfo setDefaultInfoList(ViewListInfo infoList) {
-			infoList = new ViewListInfo();
+		private GetEventListResponse setDefaultInfoList(GetEventListResponse infoList) {
+			infoList = new GetEventListResponse();
 			infoList.setTotal(0);
 			infoList.setCritical(0);
 			infoList.setWarning(0);

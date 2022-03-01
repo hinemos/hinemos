@@ -13,15 +13,18 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.AddAgentMonitorRequest;
+import org.openapitools.client.model.ModifyAgentMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorTruthValueInfoRequest;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorTruthDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * Hinemosエージェント監視作成・変更ダイアログクラス<BR>
@@ -81,19 +84,19 @@ public class AgentCreateDialog extends CommonMonitorTruthDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 			this.setInputData(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getMonitor(this.monitorId);
 				this.setInputData(info);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -119,7 +122,7 @@ public class AgentCreateDialog extends CommonMonitorTruthDialog {
 	 *            設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
@@ -134,14 +137,11 @@ public class AgentCreateDialog extends CommonMonitorTruthDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
-
-		// エージェント監視固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_AGENT);
 
 		validateResult = m_truthValueInfo.createInputData(monitorInfo);
 		if(validateResult != null){
@@ -177,28 +177,31 @@ public class AgentCreateDialog extends CommonMonitorTruthDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-		MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-		if(info != null){
-			String[] args = { info.getMonitorId(), managerName };
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if(result){
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddAgentMonitorRequest info = new AddAgentMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddAgentMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getTruthValueInfo() != null
+							&& this.inputData.getTruthValueInfo() != null) {
+						for (int i = 0; i < info.getTruthValueInfo().size(); i++) {
+							info.getTruthValueInfo().get(i).setPriority(MonitorTruthValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getTruthValueInfo().get(i).getPriority().getValue()));
+							info.getTruthValueInfo().get(i).setTruthValue(MonitorTruthValueInfoRequest.TruthValueEnum.fromValue(
+									this.inputData.getTruthValueInfo().get(i).getTruthValue().getValue()));
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					wrapper.addAgentMonitor(info);
+					result = true;
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -207,7 +210,7 @@ public class AgentCreateDialog extends CommonMonitorTruthDialog {
 
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(
 								null,
@@ -224,25 +227,36 @@ public class AgentCreateDialog extends CommonMonitorTruthDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if(result) {
+					ModifyAgentMonitorRequest info = new ModifyAgentMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyAgentMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getTruthValueInfo() != null
+							&& this.inputData.getTruthValueInfo() != null) {
+						for (int i = 0; i < info.getTruthValueInfo().size(); i++) {
+							info.getTruthValueInfo().get(i).setPriority(MonitorTruthValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getTruthValueInfo().get(i).getPriority().getValue()));
+							info.getTruthValueInfo().get(i).setTruthValue(MonitorTruthValueInfoRequest.TruthValueEnum.fromValue(
+									this.inputData.getTruthValueInfo().get(i).getTruthValue().getValue()));
+						}
+					}
+					wrapper.modifyAgentMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),

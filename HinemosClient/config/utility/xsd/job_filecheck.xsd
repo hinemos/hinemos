@@ -144,7 +144,13 @@
 					<xs:documentation>変更種別(0:タイムスタンプ,1:ファイルサイズ)</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			
+			<xs:attribute name="carryOverJudgmentFlg" type="xs:boolean" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						ファイルが使用されている場合の判定の持ち越しの有効/無効フラグです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
 		</xs:complexType>
 	</xs:element>
 </xs:schema>

@@ -8,11 +8,11 @@
 
 package com.clustercontrol.repository.model;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlType;
 
 import com.clustercontrol.util.HinemosTime;
@@ -27,7 +27,7 @@ import com.clustercontrol.util.HinemosTime;
 @Cacheable(false)
 public class NodeFilesystemInfo extends NodeDeviceInfo {
 	private static final long serialVersionUID = 1L;
-	private String deviceFilesystemType			= "";
+	private String filesystemType			= "";
 	private Long regDate = HinemosTime.currentTimeMillis();
 	private String regUser = "";
 	private Long updateDate = HinemosTime.currentTimeMillis();
@@ -55,11 +55,11 @@ public class NodeFilesystemInfo extends NodeDeviceInfo {
 	
 	@Column(name="device_filesystem_type")
 	public String getFilesystemType() {
-		return this.deviceFilesystemType;
+		return this.filesystemType;
 	}
 
-	public void setFilesystemType(String deviceFilesystemType) {
-		this.deviceFilesystemType = deviceFilesystemType;
+	public void setFilesystemType(String filesystemType) {
+		this.filesystemType = filesystemType;
 	}
 
 	@Column(name="reg_date")
@@ -106,7 +106,7 @@ public class NodeFilesystemInfo extends NodeDeviceInfo {
 	@Override
 	public NodeFilesystemInfo clone() {
 		NodeFilesystemInfo cloneInfo = (NodeFilesystemInfo)super.clone();
-		cloneInfo.deviceFilesystemType = this.deviceFilesystemType;
+		cloneInfo.filesystemType = this.filesystemType;
 		cloneInfo.regDate = this.regDate;
 		cloneInfo.regUser = this.regUser;
 		cloneInfo.updateDate = this.updateDate;
@@ -119,7 +119,7 @@ public class NodeFilesystemInfo extends NodeDeviceInfo {
 	public String toString() {
 		return "NodeFilesystemInfo ["
 				+ super.toString()
-				+ ", deviceFilesystemType=" + deviceFilesystemType
+				+ ", deviceFilesystemType=" + filesystemType
 				+ ", regDate=" + regDate
 				+ ", regUser=" + regUser
 				+ ", updateDate=" + updateDate

@@ -8,11 +8,11 @@
 
 package com.clustercontrol.repository.model;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import com.clustercontrol.util.HinemosTime;
 
@@ -25,8 +25,8 @@ import com.clustercontrol.util.HinemosTime;
 @Cacheable(false)
 public class NodeNetworkInterfaceInfo extends NodeDeviceInfo {
 	private static final long serialVersionUID = 1L;
-	private String deviceNicIpAddress = "";
-	private String deviceNicMacAddress = "";
+	private String nicIpAddress = "";
+	private String nicMacAddress = "";
 	private Long regDate = HinemosTime.currentTimeMillis();
 	private String regUser = "";
 	private Long updateDate = HinemosTime.currentTimeMillis();
@@ -53,21 +53,21 @@ public class NodeNetworkInterfaceInfo extends NodeDeviceInfo {
 	
 	@Column(name="device_nic_ip_address")
 	public String getNicIpAddress() {
-		return this.deviceNicIpAddress;
+		return this.nicIpAddress;
 	}
 
-	public void setNicIpAddress(String deviceNicIpAddress) {
-		this.deviceNicIpAddress = deviceNicIpAddress;
+	public void setNicIpAddress(String nicIpAddress) {
+		this.nicIpAddress = nicIpAddress;
 	}
 
 
 	@Column(name="device_nic_mac_address")
 	public String getNicMacAddress() {
-		return this.deviceNicMacAddress;
+		return this.nicMacAddress;
 	}
 
-	public void setNicMacAddress(String deviceNicMacAddress) {
-		this.deviceNicMacAddress = deviceNicMacAddress;
+	public void setNicMacAddress(String nicMacAddress) {
+		this.nicMacAddress = nicMacAddress;
 	}
 
 	@Column(name="reg_date")
@@ -113,9 +113,9 @@ public class NodeNetworkInterfaceInfo extends NodeDeviceInfo {
 
 	@Override
 	public NodeNetworkInterfaceInfo clone() {
-		NodeNetworkInterfaceInfo cloneInfo = (NodeNetworkInterfaceInfo)super.clone();
-		cloneInfo.deviceNicIpAddress = this.deviceNicIpAddress;
-		cloneInfo.deviceNicMacAddress = this.deviceNicMacAddress;
+		NodeNetworkInterfaceInfo cloneInfo = (NodeNetworkInterfaceInfo) super.clone();
+		cloneInfo.nicIpAddress = this.nicIpAddress;
+		cloneInfo.nicMacAddress = this.nicMacAddress;
 		cloneInfo.regDate = this.regDate;
 		cloneInfo.regUser = this.regUser;
 		cloneInfo.updateDate = this.updateDate;
@@ -128,8 +128,8 @@ public class NodeNetworkInterfaceInfo extends NodeDeviceInfo {
 	public String toString() {
 		return "NodeNetworkInterfaceInfo ["
 				+ super.toString()
-				+ ", deviceNicIpAddress=" + deviceNicIpAddress
-				+ ", deviceNicMacAddress=" + deviceNicMacAddress
+				+ ", deviceNicIpAddress=" + nicIpAddress
+				+ ", deviceNicMacAddress=" + nicMacAddress
 				+ ", regDate=" + regDate
 				+ ", regUser=" + regUser
 				+ ", updateDate=" + updateDate

@@ -8,11 +8,11 @@
 
 package com.clustercontrol.repository.model;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlType;
 
 import com.clustercontrol.util.HinemosTime;
@@ -27,7 +27,7 @@ import com.clustercontrol.util.HinemosTime;
 @Cacheable(false)
 public class NodeDiskInfo extends NodeDeviceInfo {
 	private static final long serialVersionUID = 1L;
-	private Integer deviceDiskRpm = 0;
+	private Integer diskRpm = 0;
 	private Long regDate = HinemosTime.currentTimeMillis();
 	private String regUser = "";
 	private Long updateDate = HinemosTime.currentTimeMillis();
@@ -55,11 +55,11 @@ public class NodeDiskInfo extends NodeDeviceInfo {
 
 	@Column(name="device_disk_rpm")
 	public Integer getDiskRpm() {
-		return this.deviceDiskRpm;
+		return this.diskRpm;
 	}
 
-	public void setDiskRpm(Integer deviceDiskRpm) {
-		this.deviceDiskRpm = deviceDiskRpm;
+	public void setDiskRpm(Integer diskRpm) {
+		this.diskRpm = diskRpm;
 	}
 
 	@Column(name="reg_date")
@@ -106,7 +106,7 @@ public class NodeDiskInfo extends NodeDeviceInfo {
 	@Override
 	public NodeDiskInfo clone() {
 		NodeDiskInfo cloneInfo = (NodeDiskInfo)super.clone();
-		cloneInfo.deviceDiskRpm = this.deviceDiskRpm;
+		cloneInfo.diskRpm = this.diskRpm;
 		cloneInfo.regDate = this.regDate;
 		cloneInfo.regUser = this.regUser;
 		cloneInfo.updateDate = this.updateDate;
@@ -119,7 +119,7 @@ public class NodeDiskInfo extends NodeDeviceInfo {
 	public String toString() {
 		return "NodeDiskInfo ["
 				+ super.toString()
-				+ ", deviceDiskRpm=" + deviceDiskRpm 
+				+ ", deviceDiskRpm=" + diskRpm 
 				+ ", regDate=" + regDate 
 				+ ", regUser=" + regUser
 				+ ", updateDate=" + updateDate 

@@ -11,10 +11,11 @@ package com.clustercontrol.calendar.viewer;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;
+import org.openapitools.client.model.CalendarDetailInfoResponse;
+import org.openapitools.client.model.CalendarDetailInfoResponse.DayTypeEnum;
 
 import com.clustercontrol.calendar.action.GetCalendarDetailTableDefine;
 import com.clustercontrol.calendar.bean.OperateConstant;
-import com.clustercontrol.ws.calendar.CalendarDetailInfo;
 
 /**
  * カレンダ情報設定ダイアログ内
@@ -34,22 +35,22 @@ public class CalendarDetailListTableLabelProvider extends LabelProvider implemen
 	@Override
 	public String getColumnText(Object element, int columnIndex) {
 
-		if (element instanceof CalendarDetailInfo) {
-			CalendarDetailInfo detailInfo = (CalendarDetailInfo) element;
+		if (element instanceof CalendarDetailInfoResponse) {
+			CalendarDetailInfoResponse detailInfo = (CalendarDetailInfoResponse) element;
 
 			if (columnIndex == GetCalendarDetailTableDefine.RULE) {
-				if(detailInfo.getMonth() != null){
-					return Integer.toString(detailInfo.getMonth());
+				if(detailInfo.getMonthNo() != null){
+					return Integer.toString(detailInfo.getMonthNo());
 				}
 			}
 			else if (columnIndex == GetCalendarDetailTableDefine.TIME){
 				if(detailInfo.getDayType() != null){
-					return Integer.toString(detailInfo.getDayType());
+					return Integer.toString(getDayTypeToInt(detailInfo.getDayType()));
 				}
 			}
 			else if (columnIndex == GetCalendarDetailTableDefine.OPERATE_FLG){
-				if(detailInfo.isOperateFlg() != null){
-					return OperateConstant.typeToString(OperateConstant.booleanToType(detailInfo.isOperateFlg()));
+				if(detailInfo.getExecuteFlg() != null){
+					return OperateConstant.typeToString(OperateConstant.booleanToType(detailInfo.getExecuteFlg()));
 				}
 			}
 			else if (columnIndex == GetCalendarDetailTableDefine.DESCRIPTION){
@@ -70,5 +71,23 @@ public class CalendarDetailListTableLabelProvider extends LabelProvider implemen
 	@Override
 	public Image getColumnImage(Object element, int columnIndex) {
 		return null;
+	}
+	
+	/**
+	 *  Enum から数値を得る
+	 */
+	private int getDayTypeToInt(DayTypeEnum e) {
+		switch (e) {
+		case ALL_DAY:
+			return 0;
+		case DAY_OF_WEEK:
+			return 1;
+		case DAY:
+			return 2;
+		case CALENDAR_PATTERN:
+			return 3;
+		default:
+			return 0;
+		}
 	}
 }

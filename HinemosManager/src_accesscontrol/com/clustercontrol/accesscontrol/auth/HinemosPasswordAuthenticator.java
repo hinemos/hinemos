@@ -13,6 +13,7 @@ import java.security.MessageDigest;
 import org.apache.commons.codec.binary.Base64;
 
 import com.clustercontrol.accesscontrol.model.UserInfo;
+import com.clustercontrol.accesscontrol.util.PasswordHashUtil;
 
 /**
  * Hinemos標準のパスワード認証(内部DBに保存されたパスワードを使用した認証)を行います。
@@ -31,7 +32,7 @@ public class HinemosPasswordAuthenticator implements Authenticator {
 
 	@Override
 	public boolean execute(AuthenticationParams params, UserInfo userInfo) throws Exception {
-		MessageDigest md = MessageDigest.getInstance("MD5");
+		MessageDigest md = MessageDigest.getInstance(PasswordHashUtil.getPasswordHash());
 		String hashedPassword = Base64.encodeBase64String(md.digest(params.getPassword().getBytes()));
 		return hashedPassword.equals(userInfo.getPassword());
 	}

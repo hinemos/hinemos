@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * facilityIDが重複している場合に利用するException
  * @version 3.2.0
  */
-public class MonitorDuplicate extends HinemosException {
+public class MonitorDuplicate extends HinemosDuplicate {
 
 	private static final long serialVersionUID = -2752389198258965994L;
 

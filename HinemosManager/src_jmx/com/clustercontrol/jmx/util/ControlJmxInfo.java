@@ -44,6 +44,7 @@ public class ControlJmxInfo {
 		entity.setPort(jmx.getPort());
 		entity.setMasterId(jmx.getMasterId());
 		entity.setConvertFlg(jmx.getConvertFlg());
+		entity.setUrlFormatName(jmx.getUrlFormatName());
 		monitorEntity.setJmxCheckInfo(entity);
 
 		return true;

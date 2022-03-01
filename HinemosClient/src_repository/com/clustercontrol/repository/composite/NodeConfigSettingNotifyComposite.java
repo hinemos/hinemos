@@ -12,11 +12,13 @@ import java.util.List;
 
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.notify.composite.NotifyIdListComposite;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
-import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 
 /**
@@ -105,19 +107,28 @@ public class NodeConfigSettingNotifyComposite extends NotifyIdListComposite {
 	 * @param info	構成情報収集設定
 	 * @return	検証結果
 	 */
-	public ValidateResult createInputData(NodeConfigSettingInfo info){
+	public ValidateResult createInputData(NodeConfigSettingInfoResponse info){
 
 		this.validateResult = null;
 		if(info != null){
 			if(getNotify() != null && getNotify().size() != 0){
 				//コンポジットから通知情報を取得します。
-				List<NotifyRelationInfo> notifyRelationInfoList = null;
+				List<NotifyRelationInfoResponse> notifyRelationInfoList = null;
 				
 				notifyRelationInfoList = info.getNotifyRelationList();
 				
 				notifyRelationInfoList.clear();
 				if (this.getNotify() != null) {
-					notifyRelationInfoList.addAll(this.getNotify());
+					List<NotifyRelationInfoResponse> notifyList = this.getNotify();
+					for (NotifyRelationInfoResponse notify : notifyList) {
+						NotifyRelationInfoResponse dto = new NotifyRelationInfoResponse();
+						try {
+							RestClientBeanUtil.convertBean(notify, dto);
+						} catch (HinemosUnknown e) {
+							// TODO エラー処理
+						}
+						notifyRelationInfoList.add(dto);
+					}
 				}
 			}
 

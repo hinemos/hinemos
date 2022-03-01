@@ -2,8 +2,15 @@
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="commonlib/commons-logging-1.2.jar"/>
-	<classpathentry kind="lib" path="commonlib/log4j-1.2.17.jar"/>
-	<classpathentry kind="lib" path="commonlib/commons-codec-1.10.jar"/>
+	<classpathentry kind="lib" path="commonlib/commons-logging-1.2.jar" sourcepath="commonlib/commons-logging-1.2-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/log4j-api-2.17.1.jar" sourcepath="commonlib/log4j-api-2.17.1-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/log4j-core-2.17.1.jar" sourcepath="commonlib/log4j-core-2.17.1-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/log4j-jcl-2.17.1.jar" sourcepath="commonlib/log4j-jcl-2.17.1-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/log4j-1.2-api-2.17.1.jar" sourcepath="commonlib/log4j-1.2-api-2.17.1-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/commons-codec-1.15.jar" sourcepath="commonlib/commons-codec-1.15-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/commons-text-1.9.jar" sourcepath="commonlib/commons-text-1.9-sources.jar" />
+	<classpathentry kind="lib" path="commonlib/jackson-annotations-2.12.0.jar"/>
+	<classpathentry kind="lib" path="commonlib/jackson-core-2.12.0.jar"/>
+	<classpathentry kind="lib" path="commonlib/jackson-databind-2.12.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

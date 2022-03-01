@@ -53,9 +53,9 @@
 	{
 	"propName":"trapValueInfos",
 	"annotations":[
-		{"type":"Array", "idType":"prop", "propName":"uei"},
+		{"type":"Array", "idType":"props", "props":["mib", "trapOid", "genericId", "specificId"]},
 		{"type":"Column", "columnName":"TrapValueInfo_trapValueInfos"},
-		{"type":"Ignore", "propNames":["uei"]}
+		{"type":"Ignore", "propNames":["mib", "trapOid", "genericId", "specificId"]}
 	]}
 ]
 }

@@ -31,12 +31,25 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddFileCheckRequest;
+import org.openapitools.client.model.AddJobLinkRcvRequest;
+import org.openapitools.client.model.AddScheduleRequest;
+import org.openapitools.client.model.AddJobManualRequest;
+import org.openapitools.client.model.JobFileCheckResponse;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import org.openapitools.client.model.JobKickResponse;
+import org.openapitools.client.model.JobLinkRcvResponse;
+import org.openapitools.client.model.JobManualResponse;
+import org.openapitools.client.model.JobScheduleResponse;
+import org.openapitools.client.model.ModifyScheduleRequest;
+import org.openapitools.client.model.ModifyFileCheckRequest;
+import org.openapitools.client.model.ModifyJobLinkRcvRequest;
+import org.openapitools.client.model.ModifyJobManualRequest;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
-import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.bean.ValidMessage;
 import com.clustercontrol.calendar.composite.CalendarIdListComposite;
@@ -46,25 +59,24 @@ import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.JobKickDuplicate;
 import com.clustercontrol.jobmanagement.action.GetJobKick;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.jobmanagement.bean.JobKickConstant;
 import com.clustercontrol.jobmanagement.composite.JobKickFileCheckComposite;
+import com.clustercontrol.jobmanagement.composite.JobKickJobLinkRcvComposite;
 import com.clustercontrol.jobmanagement.composite.JobKickParamComposite;
 import com.clustercontrol.jobmanagement.composite.JobKickScheduleComposite;
+import com.clustercontrol.jobmanagement.composite.JobKickSessionPremakeComposite;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobKickBeanUtil;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidSetting_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidUserPass_Exception;
-import com.clustercontrol.ws.jobmanagement.JobFileCheck;
-import com.clustercontrol.ws.jobmanagement.JobKick;
-import com.clustercontrol.ws.jobmanagement.JobKickDuplicate_Exception;
-import com.clustercontrol.ws.jobmanagement.JobSchedule;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[ジョブ実行契機の作成・変更]ダイアログクラスです。
@@ -77,7 +89,7 @@ public class JobKickDialog extends CommonDialog {
 	private static Log m_log = LogFactory.getLog( JobKickDialog.class );
 
 	/** ジョブ実行契機情報 */
-	private JobKick m_jobKick;
+	private JobKickResponse m_jobKick;
 
 	/** 
 	 * ジョブ実行契機共通
@@ -121,13 +133,22 @@ public class JobKickDialog extends CommonDialog {
 	private String m_managerName;
 
 	/** 実行契機種別 */
-	private int m_jobkickType = JobKickConstant.TYPE_FILECHECK;
+	private JobKickResponse.TypeEnum m_jobkickType = JobKickResponse.TypeEnum.FILECHECK;
 	
 	/** タブフォルダ */
 	private TabFolder m_tabFolder = null;
 
-	/** 詳細情報（Composite） */
-	private Composite m_detailComposite = null;
+	/** ファイルチェック設定情報（Composite） */
+	private JobKickFileCheckComposite m_fileCheckComposite = null;
+
+	/** スケジュール設定情報（Composite） */
+	private JobKickScheduleComposite m_scheduleComposite = null;
+
+	/** ジョブセッション事前生成設定情報（Composite） */
+	private JobKickSessionPremakeComposite m_sessionPremakeComposite = null;
+
+	/** ジョブ連携受信実行契機設定情報（Composite） */
+	private JobKickJobLinkRcvComposite m_jobLinkRcvComposite = null;
 
 	/** ランタイムジョブ変数情報（Composite） */
 	private JobKickParamComposite m_jobKickParamComposite = null;
@@ -138,7 +159,7 @@ public class JobKickDialog extends CommonDialog {
 	 * @param parent
 	 * @param jobkickId
 	 */
-	public JobKickDialog(Shell parent, String managerName, String jobkickId, int jobkickType, int mode){
+	public JobKickDialog(Shell parent, String managerName, String jobkickId, JobKickResponse.TypeEnum jobkickType, int mode){
 		super(parent);
 		this.m_managerName = managerName;
 		this.m_jobkickId = jobkickId;
@@ -158,12 +179,14 @@ public class JobKickDialog extends CommonDialog {
 		Label label = null;
 
 		String title = "";
-		if (this.m_jobkickType == JobKickConstant.TYPE_SCHEDULE) {
+		if (this.m_jobkickType == JobKickResponse.TypeEnum.SCHEDULE) {
 			title = Messages.getString("dialog.job.add.modify.schedule");
-		} else if (this.m_jobkickType == JobKickConstant.TYPE_FILECHECK) {
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.FILECHECK) {
 			title = Messages.getString("dialog.job.add.modify.filecheck");
-		} else if (this.m_jobkickType == JobKickConstant.TYPE_MANUAL) {
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.MANUAL) {
 			title = Messages.getString("dialog.job.add.modify.manual");
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.JOBLINKRCV) {
+			title = Messages.getString("dialog.job.add.modify.joblinkrcv");
 		}
 		parent.getShell().setText(title);
 
@@ -208,10 +231,17 @@ public class JobKickDialog extends CommonDialog {
 				public void widgetSelected(SelectionEvent e) {
 					String managerName = m_managerComposite.getText();
 					m_cmpOwnerRoleId.createRoleIdList(managerName);
-					if (m_jobkickType != JobKickConstant.TYPE_MANUAL) {
-						updateCalendarId();
-						if (m_jobkickType == JobKickConstant.TYPE_FILECHECK) {
-							((JobKickFileCheckComposite)m_detailComposite).setOwnerRoleId(
+					if (m_jobkickType != JobKickResponse.TypeEnum.MANUAL) {
+						m_cmpCalendarId.createCalIdCombo(
+								m_managerComposite.getText(), m_cmpOwnerRoleId.getText());
+						m_txtJobId.setText("");
+						m_txtJobName.setText("");
+						setJobunitId(null);
+						if (m_jobkickType == JobKickResponse.TypeEnum.FILECHECK) {
+							m_fileCheckComposite.setOwnerRoleId(
+									m_managerComposite.getText(), m_cmpOwnerRoleId.getText());
+						} else if (m_jobkickType == JobKickResponse.TypeEnum.JOBLINKRCV) {
+							m_jobLinkRcvComposite.setOwnerRoleId(
 									m_managerComposite.getText(), m_cmpOwnerRoleId.getText());
 						}
 					}
@@ -278,14 +308,18 @@ public class JobKickDialog extends CommonDialog {
 			this.m_cmpOwnerRoleId.getComboRoleId().addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					if (m_jobkickType != JobKickConstant.TYPE_MANUAL) {
-						m_cmpCalendarId.createCalIdCombo(m_managerName, m_cmpOwnerRoleId.getText());
+					if (m_jobkickType != JobKickResponse.TypeEnum.MANUAL) {
+						m_cmpCalendarId.createCalIdCombo(
+								m_managerComposite.getText(), m_cmpOwnerRoleId.getText());
 						m_txtJobId.setText("");
 						m_txtJobName.setText("");
 						setJobunitId(null);
 						// ファイルチェック設定への反映
-						if (m_jobkickType == JobKickConstant.TYPE_FILECHECK) {
-							((JobKickFileCheckComposite)m_detailComposite).setOwnerRoleId(
+						if (m_jobkickType == JobKickResponse.TypeEnum.FILECHECK) {
+							m_fileCheckComposite.setOwnerRoleId(
+									m_managerComposite.getText(), m_cmpOwnerRoleId.getText());
+						} else if (m_jobkickType == JobKickResponse.TypeEnum.JOBLINKRCV) {
+							m_jobLinkRcvComposite.setOwnerRoleId(
 									m_managerComposite.getText(), m_cmpOwnerRoleId.getText());
 						}
 					}
@@ -330,8 +364,8 @@ public class JobKickDialog extends CommonDialog {
 			public void widgetSelected(SelectionEvent e) {
 				JobTreeDialog dialog = new JobTreeDialog(m_shell, m_managerComposite.getText(), m_cmpOwnerRoleId.getText(), true);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					JobTreeItem selectItem = dialog.getSelectItem().isEmpty() ? null : dialog.getSelectItem().get(0);
-					if (selectItem != null && selectItem.getData().getType() != JobConstant.TYPE_COMPOSITE) {
+					JobTreeItemWrapper selectItem = dialog.getSelectItem().isEmpty() ? null : dialog.getSelectItem().get(0);
+					if (selectItem != null && selectItem.getData().getType() != JobInfoWrapper.TypeEnum.COMPOSITE) {
 						m_txtJobId.setText(selectItem.getData().getId());
 						m_txtJobName.setText(selectItem.getData().getName());
 						setJobunitId(selectItem.getData().getJobunitId());
@@ -359,7 +393,7 @@ public class JobKickDialog extends CommonDialog {
 		// dummy
 		new Label(jobKickComposite, SWT.NONE);
 
-		if (m_jobkickType != JobKickConstant.TYPE_MANUAL) {
+		if (m_jobkickType != JobKickResponse.TypeEnum.MANUAL) {
 			// カレンダID（ラベル）
 			label = new Label(jobKickComposite, SWT.LEFT);
 			label.setText(Messages.getString("calendar.id") + " : ");
@@ -382,21 +416,37 @@ public class JobKickDialog extends CommonDialog {
 		// タブ
 		this.m_tabFolder = new TabFolder(parent, SWT.NONE);
 
-		if (this.m_jobkickType == JobKickConstant.TYPE_SCHEDULE) {
+		if (this.m_jobkickType == JobKickResponse.TypeEnum.SCHEDULE) {
 			// ジョブスケジュール
-			this.m_detailComposite = new JobKickScheduleComposite(this.m_tabFolder, SWT.NONE);
-			TabItem scheduleTabItem = new TabItem(this.m_tabFolder, SWT.NONE);
-			WidgetTestUtil.setTestId(this, "scheduleTabItem", scheduleTabItem);
-			scheduleTabItem.setText(Messages.getString("schedule.setting"));
-			scheduleTabItem.setControl(this.m_detailComposite);
-		} else if (this.m_jobkickType == JobKickConstant.TYPE_FILECHECK) {
+			this.m_scheduleComposite = new JobKickScheduleComposite(this.m_tabFolder, SWT.NONE);
+			TabItem scheduleTabItem1 = new TabItem(this.m_tabFolder, SWT.NONE);
+			WidgetTestUtil.setTestId(this, "scheduleTabItem", scheduleTabItem1);
+			scheduleTabItem1.setText(Messages.getString("schedule.setting"));
+			scheduleTabItem1.setControl(this.m_scheduleComposite);
+			// ジョブセッション事前生成
+			this.m_sessionPremakeComposite = new JobKickSessionPremakeComposite(this.m_tabFolder, SWT.NONE);
+			TabItem scheduleTabItem2 = new TabItem(this.m_tabFolder, SWT.NONE);
+			scheduleTabItem2.setText(Messages.getString("job.sessionpremake.setting"));
+			scheduleTabItem2.setControl(this.m_sessionPremakeComposite);
+
+			// スケジュール情報（一定間隔）、ジョブセッション事前生成情報の制御用
+			this.m_scheduleComposite.setSessionPremakeComposite(this.m_sessionPremakeComposite);
+			this.m_sessionPremakeComposite.setScheduleComposite(this.m_scheduleComposite);
+
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.FILECHECK) {
 			// ファイルチェック
-			this.m_detailComposite = new JobKickFileCheckComposite(this.m_tabFolder, SWT.NONE);
+			this.m_fileCheckComposite = new JobKickFileCheckComposite(this.m_tabFolder, SWT.NONE);
 			TabItem fileTabItem = new TabItem(this.m_tabFolder, SWT.NONE);
 			WidgetTestUtil.setTestId(this, "fileTabItem", fileTabItem);
 			fileTabItem.setText(Messages.getString("file.check.setting"));
-			fileTabItem.setControl(this.m_detailComposite);
-		} else if (this.m_jobkickType == JobKickConstant.TYPE_MANUAL) {
+			fileTabItem.setControl(this.m_fileCheckComposite);
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.JOBLINKRCV) {
+			// ジョブ連携受信実行契機
+			this.m_jobLinkRcvComposite = new JobKickJobLinkRcvComposite(this.m_tabFolder, SWT.NONE);
+			TabItem fileTabItem = new TabItem(this.m_tabFolder, SWT.NONE);
+			fileTabItem.setText(Messages.getString("joblink.rcv.jobkick.setting"));
+			fileTabItem.setControl(this.m_jobLinkRcvComposite);
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.MANUAL) {
 			// マニュアル実行契機
 		} else {
 			// 該当なし
@@ -408,7 +458,7 @@ public class JobKickDialog extends CommonDialog {
 		paramTabItem.setText(Messages.getString("job.parameter"));
 		paramTabItem.setControl(this.m_jobKickParamComposite);
 
-		if (this.m_jobkickType != JobKickConstant.TYPE_MANUAL) {
+		if (this.m_jobkickType != JobKickResponse.TypeEnum.MANUAL) {
 			// separator
 			JobDialogUtil.getSeparator(parent);
 	
@@ -435,11 +485,13 @@ public class JobKickDialog extends CommonDialog {
 		this.adjustDialog();
 
 		//スケジュール情報反映
-		if (this.m_jobkickType == JobKickConstant.TYPE_SCHEDULE) {
+		if (this.m_jobkickType == JobKickResponse.TypeEnum.SCHEDULE) {
 			reflectJobSchedule();
-		} else if (this.m_jobkickType == JobKickConstant.TYPE_FILECHECK) {
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.FILECHECK) {
 			reflectJobFileCheck();
-		} else if (this.m_jobkickType == JobKickConstant.TYPE_MANUAL) {
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.JOBLINKRCV) {
+			reflectJobLinkRcv();
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.MANUAL) {
 			reflectJobManual();
 		}
 
@@ -455,7 +507,7 @@ public class JobKickDialog extends CommonDialog {
 		// サイズを最適化
 		// グリッドレイアウトを用いた場合、こうしないと横幅が画面いっぱいになります。
 		this.m_shell.pack();
-		this.m_shell.setSize(new Point(590, m_shell.getSize().y));
+		this.m_shell.setSize(new Point(640, m_shell.getSize().y));
 
 		// 画面中央に配置
 		Display display = this.m_shell.getDisplay();
@@ -486,8 +538,17 @@ public class JobKickDialog extends CommonDialog {
 		}
 
 		// 詳細情報更新
-		if (this.m_detailComposite != null) { 
-			this.m_detailComposite.update();
+		if (this.m_fileCheckComposite != null) { 
+			this.m_fileCheckComposite.update();
+		}
+		if (this.m_scheduleComposite != null) { 
+			this.m_scheduleComposite.update();
+		}
+		if (this.m_sessionPremakeComposite != null) { 
+			this.m_sessionPremakeComposite.update();
+		}
+		if (this.m_jobLinkRcvComposite != null) { 
+			this.m_jobLinkRcvComposite.update();
 		}
 	}
 
@@ -502,7 +563,7 @@ public class JobKickDialog extends CommonDialog {
 			this.m_cmpOwnerRoleId.setText(this.m_jobKick.getOwnerRoleId());
 		}
 		// 他CompositeへのオーナーロールIDの設定
-		if (m_jobkickType != JobKickConstant.TYPE_MANUAL) {
+		if (m_jobkickType != JobKickResponse.TypeEnum.MANUAL) {
 			this.m_cmpCalendarId.createCalIdCombo(this.m_managerComposite.getText(), this.m_cmpOwnerRoleId.getText());
 		}
 
@@ -511,7 +572,7 @@ public class JobKickDialog extends CommonDialog {
 			this.m_txtJobKickId.setText(this.m_jobKick.getId());
 			this.m_jobkickId = this.m_jobKick.getId();
 			if(this.m_mode == PropertyDefineConstant.MODE_MODIFY){
-				//ファイルチェック変更時、ファイルチェックIDは変更不可とする
+				// 変更時、実行契機IDは変更不可とする
 				this.m_txtJobKickId.setEditable(false);
 			}
 		}
@@ -532,15 +593,14 @@ public class JobKickDialog extends CommonDialog {
 			String jobunitId = this.m_jobKick.getJobunitId();
 			this.setJobunitId(jobunitId);
 		}
-		if (this.m_jobkickType != JobKickConstant.TYPE_MANUAL) {
+		if (this.m_jobkickType != JobKickResponse.TypeEnum.MANUAL) {
 			//カレンダIDを設定
 			if (this.m_jobKick.getCalendarId() != null) {
 				this.m_cmpCalendarId.setText(this.m_jobKick.getCalendarId());
 			}
-			
-			if(this.m_jobKick.isValid() != null){
+			if(this.m_jobKick.getValid() != null){
 				//有効/無効設定
-				Boolean effective = this.m_jobKick.isValid();
+				Boolean effective = this.m_jobKick.getValid();
 				this.m_btnValid.setSelection(effective.booleanValue());
 				this.m_btnInvalid.setSelection(!effective.booleanValue());
 			}
@@ -559,9 +619,17 @@ public class JobKickDialog extends CommonDialog {
 		//マネージャより実行契機情報を取得する
 		if(this.m_mode == PropertyDefineConstant.MODE_MODIFY
 				|| this.m_mode == PropertyDefineConstant.MODE_COPY){
-			this.m_jobKick = GetJobKick.getJobSchedule(this.m_managerName, this.m_jobkickId);
+			this.m_jobKick = new JobKickResponse();
+			JobScheduleResponse jobScheduleResponse = GetJobKick.getJobSchedule(this.m_managerName, this.m_jobkickId);
+			try{
+				RestClientBeanUtil.convertBean(jobScheduleResponse, this.m_jobKick);
+				this.m_jobKick.setType(JobKickResponse.TypeEnum.SCHEDULE);
+			}
+			catch (Exception e){
+				m_log.error("reflectJobSchedule() : logical error");
+			}
 		}else {
-			this.m_jobKick = new JobSchedule();
+			this.m_jobKick = new JobKickResponse();
 		}
 		if (this.m_jobKick == null) {
 			throw new InternalError("JobSchedule is null");
@@ -571,16 +639,31 @@ public class JobKickDialog extends CommonDialog {
 		reflectJobKick();
 
 		// スケジュール情報の反映
-		JobKickScheduleComposite jobKickScheduleComposite 
-			= (JobKickScheduleComposite)this.m_detailComposite;
-		JobSchedule jobSchedule = (JobSchedule)this.m_jobKick;
-		jobKickScheduleComposite.setJobSchedule(
-				jobSchedule.getScheduleType(),
-				jobSchedule.getWeek(),
-				jobSchedule.getHour(),
-				jobSchedule.getMinute(),
-				jobSchedule.getFromXminutes(),
-				jobSchedule.getEveryXminutes());
+		m_scheduleComposite.setJobSchedule(
+				this.m_jobKick.getScheduleType(),
+				this.m_jobKick.getWeek(),
+				this.m_jobKick.getHour(),
+				this.m_jobKick.getMinute(),
+				this.m_jobKick.getFromXminutes(),
+				this.m_jobKick.getEveryXminutes());
+
+		// ジョブセッション事前生成情報の反映
+		m_sessionPremakeComposite.setSessionPremake(
+				this.m_jobKick.getSessionPremakeFlg(),
+				this.m_jobKick.getSessionPremakeScheduleType(),
+				this.m_jobKick.getSessionPremakeWeek(),
+				this.m_jobKick.getSessionPremakeHour(),
+				this.m_jobKick.getSessionPremakeMinute(),
+				this.m_jobKick.getSessionPremakeEveryXHour(),
+				this.m_jobKick.getSessionPremakeDate(),
+				this.m_jobKick.getSessionPremakeToDate(),
+				this.m_jobKick.getSessionPremakeInternalFlg());
+
+		// スケジュール情報（一定間隔）、ジョブセッション事前生成情報の制御
+		this.m_scheduleComposite.setIntervalEnabled(
+				!this.m_sessionPremakeComposite.getSessionPremake());
+		this.m_sessionPremakeComposite.setSessionPremakeEnabled(
+				!this.m_scheduleComposite.getScheduleTypeInterval());
 	}
 
 	/**
@@ -592,9 +675,17 @@ public class JobKickDialog extends CommonDialog {
 		//マネージャより実行契機情報を取得する
 		if(this.m_mode == PropertyDefineConstant.MODE_MODIFY
 				|| this.m_mode == PropertyDefineConstant.MODE_COPY){
-			this.m_jobKick = GetJobKick.getJobFileCheck(this.m_managerName, this.m_jobkickId);
+			this.m_jobKick = new JobKickResponse();
+			JobFileCheckResponse jobFileCheckResponse = GetJobKick.getJobFileCheck(this.m_managerName, this.m_jobkickId);
+			try{
+				RestClientBeanUtil.convertBean(jobFileCheckResponse, this.m_jobKick);
+				this.m_jobKick.setType(JobKickResponse.TypeEnum.FILECHECK);
+			}
+			catch (Exception e){
+				m_log.error("reflectJobFileCheck : logical error");
+			}
 		}else {
-			this.m_jobKick = new JobFileCheck();
+			this.m_jobKick = new JobKickResponse();
 		}
 		if (this.m_jobKick == null) {
 			throw new InternalError("JobFileCheck is null");
@@ -604,18 +695,49 @@ public class JobKickDialog extends CommonDialog {
 		reflectJobKick();
 
 		// ファイルチェック情報の反映
-		JobKickFileCheckComposite jobKickFileCheckComposite
-			= (JobKickFileCheckComposite)this.m_detailComposite;
-		JobFileCheck jobFileCheck = (JobFileCheck)this.m_jobKick;
-		jobKickFileCheckComposite.setJobFileCheck(
+		m_fileCheckComposite.setJobFileCheck(
 				this.m_managerName, 
-				jobFileCheck.getOwnerRoleId(), 
-				jobFileCheck.getFacilityId(), 
-				jobFileCheck.getScope(), 
-				jobFileCheck.getDirectory(), 
-				jobFileCheck.getFileName(), 
-				jobFileCheck.getEventType(), 
-				jobFileCheck.getModifyType());
+				this.m_cmpOwnerRoleId.getText(), 
+				this.m_jobKick.getFacilityId(), 
+				this.m_jobKick.getScope(), 
+				this.m_jobKick.getDirectory(), 
+				this.m_jobKick.getFileName(), 
+				this.m_jobKick.getEventType(), 
+				this.m_jobKick.getModifyType(),
+				this.m_jobKick.getCarryOverJudgmentFlg());
+	}
+
+	/**
+	 * ダイアログにジョブ連携受信実行契機情報を反映します。
+	 *
+	 */
+	private void reflectJobLinkRcv() {
+
+		//マネージャより実行契機情報を取得する
+		if(this.m_mode == PropertyDefineConstant.MODE_MODIFY
+				|| this.m_mode == PropertyDefineConstant.MODE_COPY){
+			this.m_jobKick = new JobKickResponse();
+			JobLinkRcvResponse jobLinkRcvResponse = GetJobKick.getJobLinkRcv(this.m_managerName, this.m_jobkickId);
+			try{
+				RestClientBeanUtil.convertBean(jobLinkRcvResponse, this.m_jobKick);
+				this.m_jobKick.setType(JobKickResponse.TypeEnum.JOBLINKRCV);
+			}
+			catch (Exception e){
+				m_log.error("reflectJobLinkRcv : logical error");
+			}
+		}else {
+			this.m_jobKick = new JobKickResponse();
+			this.m_jobKick.setOwnerRoleId(this.m_cmpOwnerRoleId.getText());
+		}
+		if (this.m_jobKick == null) {
+			throw new InternalError("JobLinkRcv is null");
+		}
+
+		// 実行契機情報の反映
+		reflectJobKick();
+
+		// ジョブ連携受信実行契機情報の反映
+		m_jobLinkRcvComposite.setJobLinkRcv(this.m_managerName, this.m_jobKick); 
 	}
 
 	/**
@@ -627,9 +749,17 @@ public class JobKickDialog extends CommonDialog {
 		//マネージャより実行契機情報を取得する
 		if(this.m_mode == PropertyDefineConstant.MODE_MODIFY
 				|| this.m_mode == PropertyDefineConstant.MODE_COPY){
-			this.m_jobKick = GetJobKick.getJobManual(this.m_managerName, this.m_jobkickId);
+			JobManualResponse jobManual = GetJobKick.getJobManual(this.m_managerName, this.m_jobkickId);
+			try{
+				this.m_jobKick = new JobKickResponse();
+				RestClientBeanUtil.convertBean(jobManual, this.m_jobKick);
+				this.m_jobKick.setType(JobKickResponse.TypeEnum.MANUAL);
+			}
+			catch (Exception e){
+				m_log.error("reflectJobFileCheck : logical error");
+			}
 		}else {
-			this.m_jobKick = new JobKick();
+			this.m_jobKick = new JobKickResponse();
 		}
 		if (this.m_jobKick == null) {
 			throw new InternalError("JobManual is null");
@@ -703,7 +833,7 @@ public class JobKickDialog extends CommonDialog {
 		}
 
 		//カレンダID
-		if (this.m_jobkickType != JobKickConstant.TYPE_MANUAL 
+		if (this.m_jobkickType != JobKickResponse.TypeEnum.MANUAL 
 				&& this.m_cmpCalendarId.getText().length() > 0) {
 			this.m_jobKick.setCalendarId(this.m_cmpCalendarId.getText());
 		} else{
@@ -711,7 +841,7 @@ public class JobKickDialog extends CommonDialog {
 		}
 
 		//有効/無効取得
-		if (this.m_jobkickType != JobKickConstant.TYPE_MANUAL) {
+		if (this.m_jobkickType != JobKickResponse.TypeEnum.MANUAL) {
 			this.m_jobKick.setValid(this.m_btnValid.getSelection());
 		} else{
 			this.m_jobKick.setValid(true);
@@ -719,8 +849,7 @@ public class JobKickDialog extends CommonDialog {
 
 		// ランタイムジョブ変数情報
 		if (this.m_jobKickParamComposite.getJobRuntimeParamList() != null) {
-			this.m_jobKick.getJobRuntimeParamList().addAll(
-					this.m_jobKickParamComposite.getJobRuntimeParamList());
+			this.m_jobKick.getJobRuntimeParamList().addAll(this.m_jobKickParamComposite.getJobRuntimeParamList());
 		}
 		
 		return result;
@@ -735,7 +864,7 @@ public class JobKickDialog extends CommonDialog {
 	private ValidateResult createJobSchedule() {
 		ValidateResult result = null;
 
-		this.m_jobKick = new JobSchedule();
+		this.m_jobKick = new JobKickResponse();
 
 		// ジョブ実行契機共通処理
 		result = createJobKick();
@@ -743,27 +872,24 @@ public class JobKickDialog extends CommonDialog {
 			return result;
 		}
 
-		// スケジュール情報
-		JobSchedule jobSchedule = (JobSchedule)this.m_jobKick;
-		// Composite（スケジュール）
-		JobKickScheduleComposite jobKickScheduleComposite 
-			= (JobKickScheduleComposite)this.m_detailComposite;
-		
-		// スケジュール種別
-		jobSchedule.setScheduleType(jobKickScheduleComposite.getScheduleType());
+		JobKickResponse jobKickResponse = this.m_jobKick;
 
-		if (jobKickScheduleComposite.getScheduleType() == ScheduleConstant.TYPE_DAY) {
+		/** スケジュール情報 */ 
+		// スケジュール種別
+		jobKickResponse.setScheduleType(this.m_scheduleComposite.getScheduleType());
+
+		if (this.m_scheduleComposite.getScheduleType() == JobKickResponse.ScheduleTypeEnum.DAY) {
 			// スケジュール設定「毎日」
 			// 時
-			jobSchedule.setHour(jobKickScheduleComposite.getHour());
+			jobKickResponse.setHour(this.m_scheduleComposite.getHour());
 			// 分
-			jobSchedule.setMinute(jobKickScheduleComposite.getMinute());
+			jobKickResponse.setMinute(this.m_scheduleComposite.getMinute());
 
-		} else if (jobKickScheduleComposite.getScheduleType() == ScheduleConstant.TYPE_WEEK) {
+		} else if (this.m_scheduleComposite.getScheduleType() == JobKickResponse.ScheduleTypeEnum.WEEK) {
 			//スケジュール設定「曜日」
 			// 曜日
-			if (jobKickScheduleComposite.getWeek() != null) {
-				jobSchedule.setWeek(jobKickScheduleComposite.getWeek());
+			if (this.m_scheduleComposite.getWeek() != null) {
+				jobKickResponse.setWeek(this.m_scheduleComposite.getWeek());
 			} else {
 				result = new ValidateResult();
 				result.setValid(false);
@@ -772,16 +898,38 @@ public class JobKickDialog extends CommonDialog {
 				return result;
 			}
 			// 時
-			jobSchedule.setHour(jobKickScheduleComposite.getHour());
+			jobKickResponse.setHour(this.m_scheduleComposite.getHour());
 			// 分
-			jobSchedule.setMinute(jobKickScheduleComposite.getMinute());
+			jobKickResponse.setMinute(this.m_scheduleComposite.getMinute());
 
-		} else if (jobKickScheduleComposite.getScheduleType() == ScheduleConstant.TYPE_REPEAT) {
+		} else if (this.m_scheduleComposite.getScheduleType() == JobKickResponse.ScheduleTypeEnum.REPEAT) {
+			// スケジュール設定「毎時」
 			// 開始（分）
-			jobSchedule.setFromXminutes(jobKickScheduleComposite.getFromXminutes());
+			jobKickResponse.setFromXminutes(this.m_scheduleComposite.getFromXminutes());
 			// 間隔（分）
-			jobSchedule.setEveryXminutes(jobKickScheduleComposite.getEveryXminutes());
+			jobKickResponse.setEveryXminutes(this.m_scheduleComposite.getEveryXminutes());
+
+		} else if (this.m_scheduleComposite.getScheduleType() == JobKickResponse.ScheduleTypeEnum.INTERVAL) {
+				// スケジュール設定「一定間隔」
+				// 時
+				jobKickResponse.setHour(this.m_scheduleComposite.getHour());
+				// 分
+				jobKickResponse.setMinute(this.m_scheduleComposite.getMinute());
+				// 間隔（分）
+				jobKickResponse.setEveryXminutes(this.m_scheduleComposite.getEveryXminutes());
 		}
+
+
+		/** ジョブセッション事前生成情報 */ 
+		jobKickResponse.setSessionPremakeFlg(this.m_sessionPremakeComposite.getFlg());
+		jobKickResponse.setSessionPremakeScheduleType(this.m_sessionPremakeComposite.getType());
+		jobKickResponse.setSessionPremakeHour(this.m_sessionPremakeComposite.getHour());
+		jobKickResponse.setSessionPremakeMinute(this.m_sessionPremakeComposite.getMinute());
+		jobKickResponse.setSessionPremakeWeek(this.m_sessionPremakeComposite.getWeek());
+		jobKickResponse.setSessionPremakeEveryXHour(this.m_sessionPremakeComposite.getEveryXHour());
+		jobKickResponse.setSessionPremakeDate(this.m_sessionPremakeComposite.getDate());
+		jobKickResponse.setSessionPremakeToDate(this.m_sessionPremakeComposite.getDateTo());
+		jobKickResponse.setSessionPremakeInternalFlg(this.m_sessionPremakeComposite.getInternalFlg());
 
 		return result;
 	}
@@ -794,7 +942,7 @@ public class JobKickDialog extends CommonDialog {
 	private ValidateResult createFileCheck() {
 		ValidateResult result = null;
 
-		this.m_jobKick = new JobFileCheck();
+		this.m_jobKick = new JobKickResponse();
 
 		// ジョブ実行契機共通処理
 		result = createJobKick();
@@ -803,15 +951,11 @@ public class JobKickDialog extends CommonDialog {
 		}
 
 		// ファイルチェック情報
-		JobFileCheck jobFileCheck = (JobFileCheck)this.m_jobKick;
-		// Composite（スケジュール）
-		JobKickFileCheckComposite jobKickFileCheckComposite 
-			= (JobKickFileCheckComposite)this.m_detailComposite;
-
+		JobKickResponse jobKickResponse = this.m_jobKick;
 		// ファシリティID・スコープ
-		if(jobKickFileCheckComposite.getFacilityId() != null){
-			jobFileCheck.setFacilityId(jobKickFileCheckComposite.getFacilityId());
-			jobFileCheck.setScope(jobKickFileCheckComposite.getScope());
+		if(this.m_fileCheckComposite.getFacilityId() != null){
+			jobKickResponse.setFacilityId(this.m_fileCheckComposite.getFacilityId());
+			jobKickResponse.setScope(this.m_fileCheckComposite.getScope());
 		} else {
 			result = new ValidateResult();
 			result.setValid(false);
@@ -821,8 +965,8 @@ public class JobKickDialog extends CommonDialog {
 		}
 
 		// ディレクトリ
-		if(jobKickFileCheckComposite.getDirectory() != null){
-			jobFileCheck.setDirectory(jobKickFileCheckComposite.getDirectory());
+		if(this.m_fileCheckComposite.getDirectory() != null){
+			jobKickResponse.setDirectory(this.m_fileCheckComposite.getDirectory());
 		}else {
 			result = new ValidateResult();
 			result.setValid(false);
@@ -832,8 +976,8 @@ public class JobKickDialog extends CommonDialog {
 		}
 
 		// ファイル名
-		if(jobKickFileCheckComposite.getFileName() != null){
-			jobFileCheck.setFileName(jobKickFileCheckComposite.getFileName());
+		if(this.m_fileCheckComposite.getFileName() != null){
+			jobKickResponse.setFileName(this.m_fileCheckComposite.getFileName());
 		}else {
 			result = new ValidateResult();
 			result.setValid(false);
@@ -843,9 +987,33 @@ public class JobKickDialog extends CommonDialog {
 		}
 
 		// ファイルチェック種別
-		jobFileCheck.setEventType(jobKickFileCheckComposite.getEventType());
+		jobKickResponse.setEventType(this.m_fileCheckComposite.getEventType());
 		// 変更種別
-		jobFileCheck.setModifyType(jobKickFileCheckComposite.getModifyType());
+		jobKickResponse.setModifyType(this.m_fileCheckComposite.getModifyType());
+
+		// ファイルが使用されている場合判定を持ち越す
+		jobKickResponse.setCarryOverJudgmentFlg(this.m_fileCheckComposite.getCarryOverJudgment());
+		return result;
+	}
+
+	/**
+	 * ダイアログの情報からジョブ連携受信実行契機情報を作成します。
+	 *
+	 * @return 入力値の検証結果
+	 */
+	private ValidateResult createJobLinkRcv() {
+		ValidateResult result = null;
+
+		this.m_jobKick = new JobKickResponse();
+
+		// ジョブ実行契機共通処理
+		result = createJobKick();
+		if (result != null) {
+			return result;
+		}
+
+		// ジョブ連携受信実行契機情報
+		result = this.m_jobLinkRcvComposite.createJobLinkRcvInfo(this.m_jobKick);
 
 		return result;
 	}
@@ -858,7 +1026,7 @@ public class JobKickDialog extends CommonDialog {
 	private ValidateResult createManual() {
 		ValidateResult result = null;
 
-		this.m_jobKick = new JobFileCheck();
+		this.m_jobKick = new JobKickResponse();
 
 		// ジョブ実行契機共通処理
 		result = createJobKick();
@@ -899,19 +1067,25 @@ public class JobKickDialog extends CommonDialog {
 		ValidateResult result = null;
 
 		// ジョブ実行契機情報
-		if (this.m_jobkickType == JobKickConstant.TYPE_SCHEDULE) {
+		if (this.m_jobkickType == JobKickResponse.TypeEnum.SCHEDULE) {
 			// スケジュール
 			result = createJobSchedule();
 			if (result != null) {
 				return result;
 			}
-		} else if (this.m_jobkickType == JobKickConstant.TYPE_FILECHECK) {
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.FILECHECK) {
 			// ファイルチェック
 			result = createFileCheck();
 			if (result != null) {
 				return result;
 			}
-		} else if (this.m_jobkickType == JobKickConstant.TYPE_MANUAL) {
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.JOBLINKRCV) {
+			// ジョブ連携受信実行契機
+			result = createJobLinkRcv();
+			if (result != null) {
+				return result;
+			}
+		} else if (this.m_jobkickType == JobKickResponse.TypeEnum.MANUAL) {
 			// マニュアル実行契機
 			result = createManual();
 			if (result != null) {
@@ -943,27 +1117,38 @@ public class JobKickDialog extends CommonDialog {
 		boolean result = false;
 		try {
 			String managerName = this.m_managerComposite.getText();
-
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
 			if(this.m_mode == PropertyDefineConstant.MODE_MODIFY){
-				if (this.m_jobkickType == JobKickConstant.TYPE_SCHEDULE) {
-					wrapper.modifySchedule((JobSchedule)this.m_jobKick);
-				} else if (this.m_jobkickType == JobKickConstant.TYPE_FILECHECK) {
-					wrapper.modifyFileCheck((JobFileCheck)this.m_jobKick);
-				} else if (this.m_jobkickType == JobKickConstant.TYPE_MANUAL) {
-					wrapper.modifyJobManual(this.m_jobKick);
+				if (this.m_jobkickType == JobKickResponse.TypeEnum.SCHEDULE) {
+					ModifyScheduleRequest modifyScheduleRequest = JobKickBeanUtil.convertToModifyScheduleRequest(this.m_jobKick);
+					wrapper.modifySchedule(m_jobkickId, modifyScheduleRequest);
+				} else if (this.m_jobkickType == JobKickResponse.TypeEnum.FILECHECK) {
+					ModifyFileCheckRequest modifyFileCheckRequest = JobKickBeanUtil.convertToModifyFileCheckRequest(this.m_jobKick);
+					wrapper.modifyFileCheck(m_jobkickId, modifyFileCheckRequest);
+				} else if (this.m_jobkickType == JobKickResponse.TypeEnum.JOBLINKRCV) {
+					ModifyJobLinkRcvRequest modifyJobLinkRcvRequest = JobKickBeanUtil.convertToModifyJobLinkRcvRequest(this.m_jobKick);
+					wrapper.modifyJobLinkRcv(m_jobkickId, modifyJobLinkRcvRequest);
+				} else if (this.m_jobkickType == JobKickResponse.TypeEnum.MANUAL) {
+					ModifyJobManualRequest modifyJobManualRequest = JobKickBeanUtil.convertToModifyJobManualRequest(this.m_jobKick);
+					wrapper.modifyJobManual(m_jobkickId, modifyJobManualRequest);
 				}
 				Object[] arg = {managerName};
 				MessageDialog.openInformation(null, Messages.getString("successful"),
 						Messages.getString("message.job.77", arg));
 			}
 			else {//
-				if (this.m_jobkickType == JobKickConstant.TYPE_SCHEDULE) {
-					wrapper.addSchedule((JobSchedule)this.m_jobKick);
-				} else if (this.m_jobkickType == JobKickConstant.TYPE_FILECHECK) {
-					wrapper.addFileCheck((JobFileCheck)this.m_jobKick);
-				} else if (this.m_jobkickType == JobKickConstant.TYPE_MANUAL) {
-					wrapper.addJobManual(this.m_jobKick);
+				if (this.m_jobkickType == JobKickResponse.TypeEnum.SCHEDULE) {
+					AddScheduleRequest addScheduleRequest = JobKickBeanUtil.convertToAddScheduleRequest(this.m_jobKick);
+					wrapper.addSchedule(addScheduleRequest);
+				} else if (this.m_jobkickType == JobKickResponse.TypeEnum.FILECHECK) {
+					AddFileCheckRequest addFileCheckRequest = JobKickBeanUtil.convertToAddFileCheckRequest(this.m_jobKick);
+					wrapper.addFileCheck(addFileCheckRequest);
+				} else if (this.m_jobkickType == JobKickResponse.TypeEnum.JOBLINKRCV) {
+					AddJobLinkRcvRequest addJobLinkRcvRequest = JobKickBeanUtil.convertToAddJobLinkRcvRequest(this.m_jobKick);
+					wrapper.addJobLinkRcv(addJobLinkRcvRequest);
+				} else if (this.m_jobkickType == JobKickResponse.TypeEnum.MANUAL) {
+					AddJobManualRequest addFileCheckRequest = JobKickBeanUtil.convertToAddJobManualRequest(this.m_jobKick);
+					wrapper.addJobManual(addFileCheckRequest);
 				}
 
 				Object[] arg = {managerName};
@@ -971,24 +1156,24 @@ public class JobKickDialog extends CommonDialog {
 						Messages.getString("message.job.79", arg));
 			}
 			result = true;
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (JobKickDuplicate_Exception e) {
+		} catch (JobKickDuplicate e) {
 			String[] args = {this.m_jobKick.getId()};
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
 					Messages.getString("message.job.83",args) + " " + HinemosMessage.replace(e.getMessage()));
-		} catch (InvalidUserPass_Exception e) {
+		} catch (InvalidUserPass e) {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
 					Messages.getString("message.job.74") + " " + HinemosMessage.replace(e.getMessage()));
-		} catch (InvalidSetting_Exception e) {
+		} catch (InvalidSetting e) {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
@@ -1001,12 +1186,5 @@ public class JobKickDialog extends CommonDialog {
 					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 		}
 		return result;
-	}
-
-	private void updateCalendarId() {
-		this.m_cmpCalendarId.createCalIdCombo(this.m_managerComposite.getText(), this.m_cmpOwnerRoleId.getText());
-		this.m_txtJobId.setText("");
-		this.m_txtJobName.setText("");
-		setJobunitId(null);
 	}
 }

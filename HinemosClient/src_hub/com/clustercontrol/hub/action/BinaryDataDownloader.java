@@ -11,22 +11,27 @@ package com.clustercontrol.hub.action;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.activation.DataHandler;
+import javax.activation.FileDataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.internal.service.ContextProvider;
 import org.eclipse.rap.rwt.internal.service.ServiceContext;
+import org.openapitools.client.model.DownloadBinaryRecordKeyRequest;
+import org.openapitools.client.model.DownloadBinaryRecordRequest;
+import org.openapitools.client.model.DownloadBinaryRecordsKeyRequest;
+import org.openapitools.client.model.DownloadBinaryRecordsRequest;
+import org.openapitools.client.model.QueryCollectBinaryDataRequest;
 
-import com.clustercontrol.binary.util.BinaryEndpointWrapper;
+import com.clustercontrol.collect.util.CollectRestClientWrapper;
+import com.clustercontrol.hub.dto.DataResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.hub.BinaryDownloadDTO;
-import com.clustercontrol.ws.hub.BinaryQueryInfo;
-import com.clustercontrol.ws.hub.StringData;
 
 /**
  * 選択したバイナリレコードのダウンロードスレッド.
@@ -53,8 +58,6 @@ public class BinaryDataDownloader implements Runnable {
 	private String cancelMessage = null;
 
 	// BinaryDataDownloader独自フィールド.
-	/** クライアント名(マネージャ出力一時ファイル管理用) */
-	private String clientName;
 	/** 単ファイルダウンロードフラグ(true:単ファイル,false複数ファイル) */
 	private boolean singleFile;
 	/** マネージャー */
@@ -67,10 +70,10 @@ public class BinaryDataDownloader implements Runnable {
 	private String selectedFilePath;
 	// 単ファイル向けフィールド.
 	/** 選択データ */
-	private StringData selectBinaryData;
+	private DataResponse selectBinaryData;
 	// 複数ファイル向けフィールド
 	/** 選択データに紐づくダウンロード条件リスト */
-	private List<BinaryDownloadDTO> binaryDownloadList;
+	private DownloadBinaryRecordsRequest binaryDownloadList;
 
 	/**
 	 * 単ファイルダウンロード向けコンストラクタ
@@ -90,9 +93,8 @@ public class BinaryDataDownloader implements Runnable {
 	 * @param recordKey
 	 *            選択データのレコードキー
 	 */
-	public BinaryDataDownloader(String clientName, String manager, long startMsec, String fileName,
-			String selectedFilePath, StringData selectBinaryData) {
-		this.clientName = clientName;
+	public BinaryDataDownloader(String manager, long startMsec, String fileName,
+			String selectedFilePath, DataResponse selectBinaryData) {
 		this.singleFile = true;
 		this.manager = manager;
 		this.startMsec = startMsec;
@@ -115,9 +117,8 @@ public class BinaryDataDownloader implements Runnable {
 	 * @param selectedFilePath
 	 *            ファイル選択ダイアログ選択ファイルパス
 	 */
-	public BinaryDataDownloader(String clientName, String manager, long startMsec, String fileName,
-			String selectedFilePath, List<BinaryDownloadDTO> binaryDownloadList) {
-		this.clientName = clientName;
+	public BinaryDataDownloader(String manager, long startMsec, String fileName,
+			String selectedFilePath, DownloadBinaryRecordsRequest binaryDownloadList) {
 		this.singleFile = false;
 		this.manager = manager;
 		this.startMsec = startMsec;
@@ -154,27 +155,49 @@ public class BinaryDataDownloader implements Runnable {
 	private void singleFileDownload() {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		m_log.debug(methodName + DELIMITER + "start.");
-
-		BinaryEndpointWrapper wrapper = BinaryEndpointWrapper.getWrapper(manager);
+		
+		// File
+		File file = new File( this.selectedFilePath );
 		FileOutputStream fos = null;
+
+		CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(manager);
+		
 		String action = Messages.getString("download");
 		try {
-			// キー情報をセット.
-			BinaryQueryInfo queryInfo = new BinaryQueryInfo();
-			queryInfo.setFacilityId(selectBinaryData.getFacilityId());
-			queryInfo.setMonitorId(selectBinaryData.getMonitorId());
+			fos = new FileOutputStream(file);
+
+			// バイナリ収集の検索条件をセット.
+			List<QueryCollectBinaryDataRequest> queryCollectBinaryDataRequestList = new ArrayList<>();
+			QueryCollectBinaryDataRequest queryCollectBinaryDataRequest = new QueryCollectBinaryDataRequest();
+			queryCollectBinaryDataRequest.setFacilityId(selectBinaryData.getFacilityId());
+			queryCollectBinaryDataRequest.setMonitorId(selectBinaryData.getMonitorId());
+			queryCollectBinaryDataRequestList.add(queryCollectBinaryDataRequest);
+			
+			//Request
+			DownloadBinaryRecordRequest downloadBinaryRecordRequest = new DownloadBinaryRecordRequest();
+			downloadBinaryRecordRequest.setQueryCollectBinaryDataRequest(queryCollectBinaryDataRequestList);
+			downloadBinaryRecordRequest.setFilename(this.fileName);
+			
+			// キー情報セット
+			List<DownloadBinaryRecordKeyRequest> recordList = new ArrayList<>();
+			DownloadBinaryRecordKeyRequest record = new DownloadBinaryRecordKeyRequest();
+			record.setCollectId(selectBinaryData.getCollectId());
+			record.setDataId(selectBinaryData.getDataId());
+			recordList.add(record);
+			downloadBinaryRecordRequest.setRecords(recordList);
+
 			this.progress = 10; // マネージャ送信前(10%)
 
-			DataHandler dh = wrapper.downloadBinaryRecord(queryInfo, selectBinaryData.getPrimaryKey(), fileName,
-					clientName);
+			File downloadFile = wrapper.downloadBinaryRecord(downloadBinaryRecordRequest);
+			FileDataSource source = new FileDataSource(downloadFile);
+			DataHandler dh = new DataHandler(source);
+
 			this.progress = 40; // マネージャサイドの動作完了(40%)
 
-			fos = new FileOutputStream(new File(selectedFilePath));
 			dh.writeTo(fos);
+
 			this.progress = 90; // クライアントにダウンロード完了(90%)
 
-			// マネージャーの一時保存ファイルを削除.
-			wrapper.deleteDownloadedBinaryRecord(fileName, clientName);
 			this.progress = 100; // マネージャー一時ファイル削除完了(100%)
 
 			// 性能測定結果の出力.
@@ -184,6 +207,15 @@ public class BinaryDataDownloader implements Runnable {
 						"end download a single record. processing time=%d, facilityId=%s, monitorId=%s, fileName=[%s]",
 						downloadMsec, selectBinaryData.getFacilityId(), selectBinaryData.getMonitorId(), fileName));
 			}
+		} catch (RuntimeException e) {
+			// findbugs対応 RuntimeExceptionのcatchを明示化
+			m_log.warn(e);
+			Object[] args = new Object[] { Messages.getString("file"), action, Messages.getString("failed"),
+					HinemosMessage.replace(e.getMessage()) };
+			this.cancelMessage = Messages.getString("message.infra.action.result", args);
+			this.canceled = true;
+			this.progress = 100;
+			return;
 		} catch (Exception e) {
 			m_log.warn(e);
 			Object[] args = new Object[] { Messages.getString("file"), action, Messages.getString("failed"),
@@ -209,35 +241,32 @@ public class BinaryDataDownloader implements Runnable {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		m_log.debug(methodName + DELIMITER + "start.");
 
+		// File
+		File file = new File( this.selectedFilePath );
+		// 書込みストリーム生成.
 		FileOutputStream fos = null;
 		String action = Messages.getString("download");
 
 		try {
-			BinaryEndpointWrapper wrapper = BinaryEndpointWrapper.getWrapper(manager);
+			fos = new FileOutputStream(file);
+			
+			CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(manager);
+			
+			DownloadBinaryRecordsRequest downloadBinaryRecordsRequest = binaryDownloadList;
+			downloadBinaryRecordsRequest.setFilename(fileName);
+			
 			this.progress = 10; // マネージャ送信前(10%)
 
-			DataHandler dh = wrapper.downloadBinaryRecords(fileName, binaryDownloadList, clientName);
+			File downloadFile = wrapper.downloadBinaryRecords(downloadBinaryRecordsRequest);
+			
+			FileDataSource source = new FileDataSource(downloadFile);
+			DataHandler dh = new DataHandler(source);
+
 			this.progress = 40; // マネージャサイドの動作完了(40%)
 
-			// データハンドラー取得エラー.
-			if (dh == null) {
-				String errorMessage = "failed to get DataHandler.";
-				// データ不正.
-				Object[] args = new Object[] { Messages.getString("file"), action, Messages.getString("failed"),
-						errorMessage };
-				this.cancelMessage = Messages.getString("message.infra.action.result", args);
-				this.canceled = true;
-				this.progress = 100;
-				return;
-			}
-
-			// 書込みストリーム生成.
-			fos = new FileOutputStream(new File(selectedFilePath));
 			dh.writeTo(fos);
 			this.progress = 90; // クライアントにダウンロード完了(90%)
 
-			// 書込み完了したファイル削除.
-			wrapper.deleteDownloadedBinaryRecord(fileName, clientName);
 			this.progress = 100; // マネージャー一時ファイル削除完了(100%)
 
 			// 性能測定結果ログ出力.

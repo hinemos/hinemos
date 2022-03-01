@@ -13,6 +13,7 @@ public abstract class AbstractCacheManager implements ICacheManager {
 	public static final String KEY_ACCESS_ROLE_USER = "ACCESS_ROLE_USER";
 	public static final String KEY_ACCESS_USER_ROLE = "ACCESS_USER_ROLE";
 	public static final String KEY_ACCESS_ROLE_SYSTEMPRIVILEGE = "ACCESS_ROLE_SYSTEMPRIVILEGE";
+	public static final String KEY_ACCESS_TOKEN_VALUE = "ACCESS_TOKEN_VALUE";
 	
 	public static final String KEY_BINARY = "BINARY";
 	
@@ -28,6 +29,7 @@ public abstract class AbstractCacheManager implements ICacheManager {
 	
 	public static final String KEY_AGENT = "AGENT";
 	public static final String KEY_AGENT_TOPIC = "AGENT_TOPIC";
+	public static final String KEY_AGENT_AWAKE_REQUSET = "AGENT_AWAKE_REQUSET";
 	public static final String KEY_AGENT_LIBMD5 = "AGENT_LIBMD5";
 	
 	public static final String KEY_JOB_INFO = "JOB_INFO";
@@ -35,9 +37,15 @@ public abstract class AbstractCacheManager implements ICacheManager {
 	public static final String KEY_JOB_KICK = "JOB_KICK";
 	public static final String KEY_JOB_WAITING = "JOB_WAITING";
 	public static final String KEY_JOB_RUNNING = "JOB_RUNNING";
+	public static final String KEY_JOB_GOING = "JOB_GOING";
+	public static final String KEY_JOB_RUNNING_RPA = "JOB_RUNNING_RPA";
 	public static final String KEY_JOB_FORCE_CHECK = "JOB_FORCE_CHECK";
 	
 	public static final String KEY_LOGFILE = "LOGFILE";
+
+	public static final String KEY_RPA_LOGFILE = "RPA_LOGFILE";
+	
+	public static final String KEY_XCLOUD_LOGFILE = "XCLOUD_LOGFILE";
 	
 	public static final String KEY_COMMON_PROPERTY = "COMMON_PROPERTY";
 	public static final String KEY_COMMON_SETTING_UPDATE = "COMMON_SETTING_UPDATE";
@@ -62,8 +70,10 @@ public abstract class AbstractCacheManager implements ICacheManager {
 	public static final String KEY_REPOSITORY_TREE_ITEM = "REPOSITORY_TREE_ITEM";
 	public static final String KEY_REPOSITORY_HOSTNAME_IPADDR_FACILITYID = "REPOSITORY_HOSTNAME_IPADDR_FACILITYID";
 	public static final String KEY_REPOSITORY_NODENAME_FACILITYID = "REPOSITORY_NODENAME_FACILITYID";
+	public static final String KEY_REPOSITORY_NODENAME_FACILITYID_ALL = "REPOSITORY_NODENAME_FACILITYID_ALL";
 	public static final String KEY_REPOSITORY_HOSTNAME_FACILITYID = "REPOSITORY_HOSTNAME_FACILITYID";
 	public static final String KEY_REPOSITORY_IPADDR_FACILITYID = "REPOSITORY_IPADDR_FACILITYID";
+	public static final String KEY_REPOSITORY_IPADDR_FACILITYID_ALL = "REPOSITORY_IPADDR_FACILITYID_ALL";
 	public static final String KEY_REPOSITORY_SCOPE_NODE_FACILITYID = "REPOSITORY_SCOPE_NODE_FACILITYID";
 	
 	public static final String KEY_SNMP_VALUE = "SNMP_VALUE";
@@ -74,5 +84,7 @@ public abstract class AbstractCacheManager implements ICacheManager {
 	public static final String KEY_JOB_SESSION_CHANGE_DATA = "JOB_SESSION_CHANGE_DATA";
 
 	public static final String KEY_WINEVENT = "WINEVENT";
-	
+
+	public static final String KEY_SDML_CONTROL_SETTING = "SDML_CONTROL_SETTING";
+	public static final String KEY_AWS_RSS_INFO = "AWSRSSINFO";
 }

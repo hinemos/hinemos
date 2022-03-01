@@ -9,9 +9,9 @@
 package com.clustercontrol.jobmanagement.util;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,21 +19,21 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.EditLockResponse;
+import org.openapitools.client.model.GetEditLockRequest;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import org.openapitools.client.model.JobNextJobOrderInfoResponse;
+import org.openapitools.client.model.JobObjectGroupInfoResponse;
+import org.openapitools.client.model.JobObjectInfoResponse;
+import org.openapitools.client.model.JobWaitRuleInfoResponse;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInvalid;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
+import com.clustercontrol.fault.OtherUserGetLock;
+import com.clustercontrol.fault.UpdateTimeNotLatest;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobInvalid_Exception;
-import com.clustercontrol.ws.jobmanagement.JobNextJobOrderInfo;
-import com.clustercontrol.ws.jobmanagement.JobObjectInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobWaitRuleInfo;
-import com.clustercontrol.ws.jobmanagement.OtherUserGetLock_Exception;
-import com.clustercontrol.ws.jobmanagement.UpdateTimeNotLatest_Exception;
+import com.clustercontrol.util.TimezoneUtil;
 
 /**
  * ジョブユーティリティクラス
@@ -61,8 +61,8 @@ public class JobUtil {
 	 * @param original コピー元ジョブツリーアイテム
 	 * @return コピーとして作成されたジョブツリーアイテム
 	 */
-	private static JobTreeItem copy(JobTreeItem original) {
-		JobTreeItem clone = null;
+	private static JobTreeItemWrapper copy(JobTreeItemWrapper original) {
+		JobTreeItemWrapper clone = null;
 		if(original != null){
 			clone = JobTreeItemUtil.clone(original, null);
 			// 新規登録の判定のため、createTimeをクリアする
@@ -77,8 +77,8 @@ public class JobUtil {
 	 * @param top コピー元ジョブツリーアイテム
 	 * @return コピーとして作成されたジョブツリーアイテム
 	 */
-	public static JobTreeItem copy(JobTreeItem original, JobTreeItem top, String jobunitId, String ownerRoleId) {
-		JobTreeItem clone = copy(original);
+	public static JobTreeItemWrapper copy(JobTreeItemWrapper original, JobTreeItemWrapper top, String jobunitId, String ownerRoleId) {
+		JobTreeItemWrapper clone = copy(original);
 		clone.getData().setJobunitId(jobunitId);
 		clone.getData().setOwnerRoleId(ownerRoleId);
 
@@ -92,7 +92,7 @@ public class JobUtil {
 		modifyWaitRule(clone, jobIdMap);
 		
 		//ジョブユニットのコピー　または　ジョブユニットの異なる参照ジョブのコピーの場合は参照を消す
-		if (original.getData().getType() == JobConstant.TYPE_JOBUNIT ||
+		if (original.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
 				!jobunitId.equals(original.getData().getJobunitId())) {
 			modifyReferJob(clone);
 		}
@@ -137,10 +137,10 @@ public class JobUtil {
 	 * @param ownerRoleId
 	 * @return
 	 */
-	private static JobTreeItem changeOwnerRoleId(JobTreeItem clone, String ownerRoleId){
+	private static JobTreeItemWrapper changeOwnerRoleId(JobTreeItemWrapper clone, String ownerRoleId){
 		//子JobTreeItemを取得
-		List<JobTreeItem> childrens = clone.getChildren();
-		for (JobTreeItem children : new ArrayList<JobTreeItem>(childrens)) {
+		List<JobTreeItemWrapper> childrens = clone.getChildren();
+		for (JobTreeItemWrapper children : new ArrayList<JobTreeItemWrapper>(childrens)) {
 			children.getData().setOwnerRoleId(ownerRoleId);
 			children = changeOwnerRoleId(children,ownerRoleId);
 		}
@@ -157,14 +157,14 @@ public class JobUtil {
 	 * @param top ジョブIDの重複チェック対象のジョブツリーアイテム
 	 * @param clone ジョブIDの重複チェック対象のジョブツリーアイテム
 	 */
-	private static HashMap<String, String> changeJobId(JobTreeItem item, JobTreeItem top, JobTreeItem clone) {
+	private static HashMap<String, String> changeJobId(JobTreeItemWrapper item, JobTreeItemWrapper top, JobTreeItemWrapper clone) {
 		if(item == null || top == null)
 			return null;
 
 		HashMap<String, String> jobIdMap = new HashMap<String, String>();
 
 		//ジョブIDを変更
-		JobInfo info = item.getData();
+		JobInfoWrapper info = item.getData();
 		if(info != null){
 			int count = 0;
 			String jobId = "";
@@ -195,7 +195,7 @@ public class JobUtil {
 			info.setId(jobId);
 
 			// ジョブユニットの場合のみジョブユニットIDを上書き
-			if (info.getType() == JobConstant.TYPE_JOBUNIT) {
+			if (info.getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 				info.setJobunitId(jobId.toString());
 				m_log.trace("changeJobId() setJobunitId = " + jobId.toString());
 			}
@@ -205,7 +205,7 @@ public class JobUtil {
 		}
 
 		//子JobTreeItemを取得
-		List<JobTreeItem> childrens = item.getChildren();
+		List<JobTreeItemWrapper> childrens = item.getChildren();
 		for(int i = 0; i < childrens.size(); i++){
 			childrens.get(i).getData().setJobunitId(info.getJobunitId());
 			m_log.trace("changeJobId() set childrens[i] " + info.getJobunitId());
@@ -222,46 +222,57 @@ public class JobUtil {
 	 *
 	 * @param item ジョブ待ち条件情報を修正するジョブツリーアイテム
 	 */
-	private static void modifyWaitRule(JobTreeItem item, HashMap<String, String>jobIdMap) {
+	private static void modifyWaitRule(JobTreeItemWrapper item, HashMap<String, String>jobIdMap) {
 		if(item == null)
 			return;
 
-		JobInfo info = item.getData();
+		JobInfoWrapper info = item.getData();
 		if(info != null){
 			//待ち条件となるジョブがコピー元に存在する場合には、コピー先のジョブIDに修正する
 			//存在しない場合には、削除する
 			//時刻待ち条件の場合には、そのままコピー先にコピーする
-			JobWaitRuleInfo waitRule = info.getWaitRule();
-			if(waitRule != null && waitRule.getObject() != null){
-				ArrayList<JobObjectInfo> list = new ArrayList<JobObjectInfo>();
-				for (JobObjectInfo jobObjectInfo : waitRule.getObject()) {
-					String jobId = jobIdMap.get(jobObjectInfo.getJobId());
-					if (jobId != null) {
-						jobObjectInfo.setJobId(jobId);
-						list.add(jobObjectInfo);
-					} else if (jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_TIME ||
-							jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_START_MINUTE ||
-							jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_JOB_PARAMETER) {
-						list.add(jobObjectInfo);
-					} else if (jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS ||
-							jobObjectInfo.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE) {
-						//セッション横断待ち条件の場合、待ち条件のジョブIDはそのままコピーします
+			JobWaitRuleInfoResponse waitRule = info.getWaitRule();
+			if(waitRule != null && waitRule.getObjectGroup() != null){
+				ArrayList<JobObjectGroupInfoResponse> groupList = new ArrayList<>();
+				for (JobObjectGroupInfoResponse jobObjectGroupInfo : waitRule.getObjectGroup()) {
+					if(jobObjectGroupInfo == null || jobObjectGroupInfo.getJobObjectList() == null){
+						continue;
+					}
+					boolean isDelete = false;
+					ArrayList<JobObjectInfoResponse> list = new ArrayList<JobObjectInfoResponse>();
+					for (JobObjectInfoResponse jobObjectInfo : jobObjectGroupInfo.getJobObjectList()) {
+						if (jobObjectInfo.getType() == JobObjectInfoResponse.TypeEnum.JOB_END_STATUS ||
+							jobObjectInfo.getType() == JobObjectInfoResponse.TypeEnum.JOB_END_VALUE ||
+							jobObjectInfo.getType() == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_STATUS ||
+							jobObjectInfo.getType() == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_VALUE ||
+							jobObjectInfo.getType() == JobObjectInfoResponse.TypeEnum.JOB_RETURN_VALUE) {
+							String jobId = jobIdMap.get(jobObjectInfo.getJobId());
+							if (jobId == null) {
+								isDelete = true;
+								break;
+							}
+							jobObjectInfo.setJobId(jobId);
+						}
 						list.add(jobObjectInfo);
 					}
+					if (!isDelete) {
+						jobObjectGroupInfo.setJobObjectList(list);
+						groupList.add(jobObjectGroupInfo);
+					}
 				}
-				waitRule.getObject().clear();
-				waitRule.getObject().addAll(list);
+				waitRule.getObjectGroup().clear();
+				waitRule.getObjectGroup().addAll(groupList);
 			}
 			//後続ジョブ優先度設定がある場合、合わせてコピーする
 			if (waitRule != null) {
-				if (waitRule.isExclusiveBranch() != null && waitRule.isExclusiveBranch()) {
-					List<JobNextJobOrderInfo> nextJobOrderList = waitRule.getExclusiveBranchNextJobOrderList();
-					List<JobNextJobOrderInfo> list = new ArrayList<JobNextJobOrderInfo>();
-					for (JobNextJobOrderInfo nextJobOrder: nextJobOrderList) {
+				if (waitRule.getExclusiveBranch() != null && waitRule.getExclusiveBranch()) {
+					List<JobNextJobOrderInfoResponse> nextJobOrderList = waitRule.getExclusiveBranchNextJobOrderList();
+					List<JobNextJobOrderInfoResponse> list = new ArrayList<JobNextJobOrderInfoResponse>();
+					for (JobNextJobOrderInfoResponse nextJobOrder: nextJobOrderList) {
 						String jobId = jobIdMap.get(nextJobOrder.getJobId());
 						String nextJobId = jobIdMap.get(nextJobOrder.getNextJobId());
 						if (jobId != null && nextJobId != null) {
-							JobNextJobOrderInfo newNextJobOrder = new JobNextJobOrderInfo();
+							JobNextJobOrderInfoResponse newNextJobOrder = new JobNextJobOrderInfoResponse();
 							newNextJobOrder.setJobunitId(item.getData().getJobunitId());
 							newNextJobOrder.setJobId(jobId);
 							newNextJobOrder.setNextJobId(nextJobId);
@@ -281,7 +292,7 @@ public class JobUtil {
 		}
 
 		//子JobTreeItemを取得
-		List<JobTreeItem> childrens = item.getChildren();
+		List<JobTreeItemWrapper> childrens = item.getChildren();
 		for(int i = 0; i < childrens.size(); i++){
 			modifyWaitRule(childrens.get(i), jobIdMap);
 		}
@@ -293,15 +304,15 @@ public class JobUtil {
 	 *
 	 * @param item ジョブ待ち条件情報を修正するジョブツリーアイテム
 	 */
-	private static void modifyReferJob(JobTreeItem item) {
-		JobInfo cloneInfo = item.getData();
-		if (cloneInfo.getType() == JobConstant.TYPE_REFERJOB || cloneInfo.getType() == JobConstant.TYPE_REFERJOBNET) {
+	private static void modifyReferJob(JobTreeItemWrapper item) {
+		JobInfoWrapper cloneInfo = item.getData();
+		if (cloneInfo.getType() == JobInfoWrapper.TypeEnum.REFERJOB || cloneInfo.getType() == JobInfoWrapper.TypeEnum.REFERJOBNET) {
 			cloneInfo.setReferJobId("");
 			cloneInfo.setReferJobUnitId("");
 		}
 		
 		//子JobTreeItemを取得
-		List<JobTreeItem> childrens = item.getChildren();
+		List<JobTreeItemWrapper> childrens = item.getChildren();
 		for (int i = 0; i < childrens.size(); i++) {
 			modifyReferJob(childrens.get(i));
 		}
@@ -315,11 +326,11 @@ public class JobUtil {
 	 * @param item ジョブツリーアイテム
 	 * @return ジョブIDが一致するジョブツリーアイテムがあればtrue、なければfalse。
 	 */
-	public static boolean findJobId(String jobId, JobTreeItem item) {
+	public static boolean findJobId(String jobId, JobTreeItemWrapper item) {
 		boolean find = false;
 
 		//ジョブIDをチェック
-		JobInfo info = item.getData();
+		JobInfoWrapper info = item.getData();
 		if(info != null){
 			if(jobId.compareTo(info.getId()) == 0){
 				find = true;
@@ -328,7 +339,7 @@ public class JobUtil {
 		}
 
 		//子JobTreeItemを取得
-		List<JobTreeItem> childrens = item.getChildren();
+		List<JobTreeItemWrapper> childrens = item.getChildren();
 		for(int i = 0; i < childrens.size(); i++){
 			find = findJobId(jobId, childrens.get(i));
 			if(find){
@@ -347,7 +358,7 @@ public class JobUtil {
 	 * @return ジョブIDが一致するジョブ/ネット/ユニットが存在すればtrue、なければfalse。
 	 * @throws JobInvalid
 	 */
-	public static void findDuplicateJobId(JobTreeItem item, boolean isTop) throws JobInvalid{
+	public static void findDuplicateJobId(JobTreeItemWrapper item, boolean isTop) throws JobInvalid{
 		m_log.debug("findDuplicateJobId() start : isTop = " + isTop);
 
 		// 自身がtopの場合は何もしない
@@ -358,8 +369,8 @@ public class JobUtil {
 				String jobId = item.getData().getId();
 				m_log.debug("findDuplicateJobId() jobId = " + jobId);
 
-				List<JobTreeItem> children = item.getChildren();
-				for (JobTreeItem child : children) {
+				List<JobTreeItemWrapper> children = item.getChildren();
+				for (JobTreeItemWrapper child : children) {
 					m_log.debug("findDuplicateJobId() child = " + child.getData().getId());
 
 					// 配下のツリーにトップのジョブIDが含まれるか？
@@ -376,8 +387,8 @@ public class JobUtil {
 			}
 		}
 
-		List<JobTreeItem> children = item.getChildren();
-		for (JobTreeItem child : children) {
+		List<JobTreeItemWrapper> children = item.getChildren();
+		for (JobTreeItemWrapper child : children) {
 			m_log.debug("findDuplicateJobId() call child " + child.getData().getId());
 			findDuplicateJobId(child, false);
 		}
@@ -392,14 +403,14 @@ public class JobUtil {
 	 * @return ジョブユニットIDが一致するユニットが存在すればtrue、なければfalse。
 	 * @throws JobInvalid
 	 */
-	public static void findDuplicateJobunitId(JobTreeItem item) throws JobInvalid{
+	public static void findDuplicateJobunitId(JobTreeItemWrapper item) throws JobInvalid{
 		m_log.debug("findDuplicateJobunitId() start " + JobTreeItemUtil.getPath(item));
 
-		JobTreeItem top = item.getChildren().get(0);
-		List<JobTreeItem> jobunits = top.getChildren();
+		JobTreeItemWrapper top = item.getChildren().get(0);
+		List<JobTreeItemWrapper> jobunits = top.getChildren();
 
 		HashSet<String> set = new HashSet<String>();
-		for (JobTreeItem jobunit : jobunits) {
+		for (JobTreeItemWrapper jobunit : jobunits) {
 			// ジョブユニットID
 			String jobunitId = jobunit.getData().getJobunitId();
 			m_log.debug("findDuplicateJobunitId() jobunitId = " + jobunitId);
@@ -423,12 +434,12 @@ public class JobUtil {
 	 * @param item ジョブツリーアイテム
 	 * @return 最上位のジョブツリーアイテム
 	 */
-	public static JobTreeItem getTopJobTreeItem(JobTreeItem item) {
+	public static JobTreeItemWrapper getTopJobTreeItem(JobTreeItemWrapper item) {
 		if(item == null)
 			return null;
 
 		while (item.getParent() != null) {
-			if(item.getParent().getData().getType() == JobConstant.TYPE_COMPOSITE){
+			if(item.getParent().getData().getType() == JobInfoWrapper.TypeEnum.COMPOSITE){
 				item = item.getParent();
 				break;
 			}
@@ -446,17 +457,17 @@ public class JobUtil {
 	 * @param item ジョブツリーアイテム
 	 * @return 付属するジョブユニットのジョブツリーアイテム
 	 */
-	public static JobTreeItem getTopJobUnitTreeItem(JobTreeItem item) {
+	public static JobTreeItemWrapper getTopJobUnitTreeItem(JobTreeItemWrapper item) {
 		if(item == null)
 			return null;
 
 		while (item.getParent() != null) {
 			m_log.trace("getTopJobUnitTreeItem() " + item.getParent().getData().getJobunitId() + "." + item.getParent().getData().getId());
-			if(item.getParent().getData().getType() == JobConstant.TYPE_JOBUNIT){
+			if(item.getParent().getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT){
 				item = item.getParent();
 				break;
 			}
-			else if(item.getData().getType() == JobConstant.TYPE_JOBUNIT){
+			else if(item.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT){
 				break;
 			}
 			else{
@@ -474,7 +485,7 @@ public class JobUtil {
 	 * @param jobId ジョブID
 	 * @return ジョブIDに一致するジョブ情報（JobTreeItem）
 	 */
-	public static JobTreeItem getJobTreeItem(JobTreeItem jobTreeItem, String jobId) {
+	public static JobTreeItemWrapper getJobTreeItem(JobTreeItemWrapper jobTreeItem, String jobId) {
 
 		if(jobTreeItem == null 
 				|| jobId == null
@@ -487,75 +498,14 @@ public class JobUtil {
 		}
 
 		// 子TreeItemも検索する
-		for (JobTreeItem childJobTreeItem : jobTreeItem.getChildren()) {
-			JobTreeItem resultJobTreeItem = getJobTreeItem(childJobTreeItem, jobId);
+		for (JobTreeItemWrapper childJobTreeItem : jobTreeItem.getChildren()) {
+			JobTreeItemWrapper resultJobTreeItem = getJobTreeItem(childJobTreeItem, jobId);
 			if (resultJobTreeItem != null) {
 				return resultJobTreeItem;
 			}
 		}
 
 		return null;
-	}
-
-	/**
-	 * ジョブツリーアイテムのジョブ待ち条件情報をチェックする
-	 *
-	 * @param item ジョブ待ち条件情報をチェックするジョブツリーアイテム
-	 */
-	public static boolean checkWaitRule(JobTreeItem item) throws JobInvalid{
-		boolean check = true;
-
-		if(item == null)
-			return check;
-
-		if(item.getData() != null){
-			//ジョブID取得
-			String jobId = item.getData().getId();
-
-			//待ち条件情報を取得する
-			JobWaitRuleInfo waitRule = item.getData().getWaitRule();
-			if(waitRule != null &&
-					waitRule.getObject() != null && waitRule.getObject().size() > 0){
-
-				Iterator<JobObjectInfo> itr = waitRule.getObject().iterator();
-				while(itr.hasNext()) {
-					//判定対象を取得
-					JobObjectInfo objectInfo = itr.next();
-					if(objectInfo.getType() != JudgmentObjectConstant.TYPE_TIME){
-						//判定対象のジョブIDが同一階層に存在するかチェック
-						boolean find = false;
-						String targetJobId = objectInfo.getJobId();
-						List<JobTreeItem> childrens = item.getParent().getChildren();
-						for(int i = 0; i < childrens.size(); i++){
-							//ジョブIDをチェック
-							JobInfo childInfo = childrens.get(i).getData();
-							if(childInfo != null &&
-									!jobId.equals(childInfo.getId())){
-								if(targetJobId.compareTo(childInfo.getId()) == 0){
-									find = true;
-									break;
-								}
-							}
-						}
-						if(!find){
-							String args[] = {jobId, targetJobId};
-							throw new JobInvalid(Messages.getString("message.job.59", args));
-						}
-					}
-				}
-			}
-		}
-
-		//子JobTreeItemを取得
-		List<JobTreeItem> childrens = item.getChildren();
-		for(int i = 0; i < childrens.size(); i++){
-			check = checkWaitRule(childrens.get(i));
-			if(!check){
-				break;
-			}
-		}
-
-		return check;
 	}
 
 	/**
@@ -567,20 +517,26 @@ public class JobUtil {
 	 * @return
 	 * @throws OtherUserGetLock_Exception
 	 */
-	public static Integer getEditLock(String managerName, String jobunitId, Long updateTime, boolean forceFlag) throws OtherUserGetLock_Exception {
+	public static Integer getEditLock(String managerName, String jobunitId, Long updateTime, boolean forceFlag) throws OtherUserGetLock {
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-			return wrapper.getEditLock(jobunitId, updateTime, forceFlag);
-		} catch (OtherUserGetLock_Exception e) {
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			GetEditLockRequest req = new GetEditLockRequest(); 
+			req.setForceFlag(forceFlag);
+			if(updateTime != null){
+				req.setUpdateTime(TimezoneUtil.getSimpleDateFormat().format(new Date( updateTime)));
+			}
+			EditLockResponse ret = wrapper.getEditLock(jobunitId, req);
+			return ret.getEditSession();
+		} catch (OtherUserGetLock e) {
 			throw e;
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (UpdateTimeNotLatest_Exception e) {
+		} catch (UpdateTimeNotLatest e) {
 			// 保持しているジョブツリーが最新でない
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					HinemosMessage.replace(e.getMessage()));
-		} catch (JobInvalid_Exception e) {
+		} catch (JobInvalid e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					HinemosMessage.replace(e.getMessage()));
 		} catch (Exception e) {
@@ -599,15 +555,15 @@ public class JobUtil {
 	 * @param item ジョブツリーアイテム
 	 * @param jobunitID ジョブユニットID
 	 */
-	public static void setJobunitIdAll(JobTreeItem item, String jobunitId) {
+	public static void setJobunitIdAll(JobTreeItemWrapper item, String jobunitId) {
 		if (item == null)
 			return;
 		
-		JobInfo jobInfo = item.getData();
+		JobInfoWrapper jobInfo = item.getData();
 		if (jobInfo == null)
 			return;
 
-		if (jobInfo.getType() == JobConstant.TYPE_JOBUNIT) {
+		if (jobInfo.getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 			jobunitId = jobInfo.getJobunitId();
 		}
 
@@ -619,12 +575,12 @@ public class JobUtil {
 		jobInfo.setJobunitId(jobunitId);
 
 		// 参照ジョブの場合は参照先のジョブユニットIDを変更する
-		if (jobInfo.getType() == JobConstant.TYPE_REFERJOB || jobInfo.getType() == JobConstant.TYPE_REFERJOBNET) {
+		if (jobInfo.getType() == JobInfoWrapper.TypeEnum.REFERJOB || jobInfo.getType() == JobInfoWrapper.TypeEnum.REFERJOBNET) {
 			jobInfo.setReferJobUnitId(jobunitId);
 		}
 
 		// 子のジョブツリーアイテムを再帰的に呼び出す
-		for (JobTreeItem child : item.getChildren()) {
+		for (JobTreeItemWrapper child : item.getChildren()) {
 			setJobunitIdAll(child, jobunitId);
 		}
 	}
@@ -637,7 +593,7 @@ public class JobUtil {
 	 * @param jobInfo ジョブID変更対象のジョブ
 	 * @param top ジョブIDの重複チェック対象のジョブツリーアイテム
 	 */
-	public static void setReferJobId(JobInfo jobInfo, JobTreeItem top) {
+	public static void setReferJobId(JobInfoWrapper jobInfo, JobTreeItemWrapper top) {
 		if(jobInfo == null || top == null)
 			return;
 
@@ -676,16 +632,16 @@ public class JobUtil {
 	 * @param item テーブルツリーアイテム
 	 * @param jobList ジョブ情報一覧
 	 */
-	public static void getRegisteredJob(JobTreeItem item, List<JobInfo> jobList) {
+	public static void getRegisteredJob(JobTreeItemWrapper item, List<JobInfoWrapper> jobList) {
 		
-		JobInfo info = item.getData();
+		JobInfoWrapper info = item.getData();
 		if (info != null) {
-			if (info.isRegisteredModule() == true) {
+			if (info.getRegistered() == true) {
 				jobList.add(info);
 			}
 			
 			for (int i = 0; i < item.getChildren().size(); i++) {
-				JobTreeItem children = item.getChildren().get(i);
+				JobTreeItemWrapper children = item.getChildren().get(i);
 				getRegisteredJob(children, jobList);
 			}
 		}

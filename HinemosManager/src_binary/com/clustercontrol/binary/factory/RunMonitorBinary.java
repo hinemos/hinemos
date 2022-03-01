@@ -18,8 +18,6 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.binary.bean.BinaryConstant;
 import com.clustercontrol.binary.bean.BinaryRecordDTO;
 import com.clustercontrol.binary.bean.BinaryResultDTO;
@@ -32,6 +30,7 @@ import com.clustercontrol.binary.util.BinaryRecordUtil;
 import com.clustercontrol.binary.util.CollectBinaryDataJdbcBatchInsert;
 import com.clustercontrol.binary.util.CollectBinaryTagJdbcBatchInsert;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JdbcBatchExecutor;
 import com.clustercontrol.commons.util.JdbcBatchQuery;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -44,10 +43,12 @@ import com.clustercontrol.hub.model.CollectStringDataPK;
 import com.clustercontrol.hub.util.CollectStringDataUtil;
 import com.clustercontrol.hub.util.DataId.GeneratorFor;
 import com.clustercontrol.hub.util.DataIdGenerator;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -294,8 +295,7 @@ public class RunMonitorBinary {
 		// データIDの設定(テーブル単位で自動生成).
 		Long dataId = DataIdGenerator.getNext(GeneratorFor.BINARY);
 		if (dataId == DataIdGenerator.getMax() / 2) {
-			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.HUB_TRANSFER,
-					MessageConstant.MESSAGE_HUB_COLLECT_NUMBERING_OVER_INTERMEDIATE, new String[] {},
+			AplLogger.put(InternalIdCommon.HUB_TRF_SYS_001, new String[] {},
 					String.format("current=%d, max=%d", dataId, DataIdGenerator.getMax()));
 		}
 
@@ -371,6 +371,8 @@ public class RunMonitorBinary {
 			m_log.debug(methodName + DELIMITER + String.format(
 					"prepared to add messages for only incremental. collectType=%s", binCheckInfo.getCollectType()));
 			for (BinaryRecordDTO record : result.binaryRecords) {
+				m_log.debug(methodName + DELIMITER
+						+ String.format("matchBinaryProvision=%s", record.getMatchBinaryProvision()));
 				if (record.getMatchBinaryProvision() != null) {
 					rtn.add(this.createOutputBasicInfo(facilityId, result, record));
 				}
@@ -418,6 +420,8 @@ public class RunMonitorBinary {
 
 		// 通知グループID
 		output.setNotifyGroupId(NotifyGroupIdGenerator.generate(result.monitorInfo));
+		output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR,
+				result.monitorInfo.getMonitorTypeId(), record.getMatchBinaryProvision().getMonitorId()));
 		// 通知出力メッセージの設定.
 		String filePath = MessageConstant.LOGFILE_FILENAME.getMessage() + "="
 				+ result.monitorInfo.getBinaryCheckInfo().getBinaryfile() + "\n";

@@ -19,8 +19,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import javax.persistence.TypedQuery;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -39,13 +37,17 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.QueryDivergence;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.UserNotFound;
+import com.clustercontrol.filtersetting.bean.JobHistoryFilterBaseInfo;
+import com.clustercontrol.filtersetting.bean.JobHistoryFilterConditionCriteria;
 import com.clustercontrol.jobmanagement.bean.JobApprovalFilter;
 import com.clustercontrol.jobmanagement.bean.JobApprovalInfo;
 import com.clustercontrol.jobmanagement.bean.JobCommandInfo;
@@ -54,31 +56,51 @@ import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JobDetailInfo;
 import com.clustercontrol.jobmanagement.bean.JobEndStatusInfo;
 import com.clustercontrol.jobmanagement.bean.JobEnvVariableInfo;
+import com.clustercontrol.jobmanagement.bean.JobFileCheckInfo;
 import com.clustercontrol.jobmanagement.bean.JobFileInfo;
 import com.clustercontrol.jobmanagement.bean.JobForwardFile;
 import com.clustercontrol.jobmanagement.bean.JobHistory;
-import com.clustercontrol.jobmanagement.bean.JobHistoryFilter;
 import com.clustercontrol.jobmanagement.bean.JobHistoryList;
 import com.clustercontrol.jobmanagement.bean.JobInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkExpInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkInheritInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkRcvInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkSendInfo;
 import com.clustercontrol.jobmanagement.bean.JobNextJobOrderInfo;
 import com.clustercontrol.jobmanagement.bean.JobNodeDetail;
+import com.clustercontrol.jobmanagement.bean.JobObjectGroupInfo;
 import com.clustercontrol.jobmanagement.bean.JobObjectInfo;
+import com.clustercontrol.jobmanagement.bean.JobOutputInfo;
+import com.clustercontrol.jobmanagement.bean.JobOutputType;
 import com.clustercontrol.jobmanagement.bean.JobParameterInfo;
 import com.clustercontrol.jobmanagement.bean.JobTreeItem;
 import com.clustercontrol.jobmanagement.bean.JobWaitRuleInfo;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
 import com.clustercontrol.jobmanagement.bean.MonitorJobInfo;
+import com.clustercontrol.jobmanagement.bean.ResourceJobInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobCheckEndValueInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobEndValueConditionInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobOptionInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobRunParamInfo;
+import com.clustercontrol.jobmanagement.bean.RpaJobScreenshot;
 import com.clustercontrol.jobmanagement.model.JobCommandParamInfoEntity;
-import com.clustercontrol.jobmanagement.model.JobStartParamInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobEnvVariableInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobLinkInheritInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobLinkJobExpInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.model.JobNextJobOrderInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobOutputInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobParamInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobRpaLoginResolutionMstEntity;
+import com.clustercontrol.jobmanagement.model.JobRpaScreenshotEntity;
+import com.clustercontrol.jobmanagement.model.JobRpaScreenshotEntityPK;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
-import com.clustercontrol.jobmanagement.model.JobStartJobInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobWaitGroupInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobWaitInfoEntity;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
@@ -88,6 +110,7 @@ import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
+import jakarta.persistence.TypedQuery;
 import net.sf.jpasecurity.jpql.parser.JpqlBrackets;
 import net.sf.jpasecurity.jpql.parser.JpqlEquals;
 import net.sf.jpasecurity.jpql.parser.JpqlExists;
@@ -113,6 +136,34 @@ public class SelectJob {
 	private static Log m_log = LogFactory.getLog( SelectJob.class );
 	/** 最大表示数 */
 	private final static int MAX_DISPLAY_NUMBER = 500;
+
+	/** テスト時に置換可能な外部依存処理 */
+	public interface External {
+		List<String> getRoleIdList(String userId);
+	}
+
+	/** デフォルトの外部依存処理実装 */
+	private static final External defaultExternal = new External() {
+		@Override
+		public List<String> getRoleIdList(String userId) {
+			return UserRoleCache.getRoleIdList(userId);
+		}
+	};
+
+	/** デフォルトの外部依存処理実装を返します。 */
+	public static External getDefaultExternal() {
+		return defaultExternal;
+	}
+
+	private final External external;
+
+	public SelectJob() {
+		this(getDefaultExternal());
+	}
+
+	public SelectJob(External external) {
+		this.external = external;
+	}
 
 	/**
 	 * ジョブツリー情報を取得します。
@@ -179,6 +230,67 @@ public class SelectJob {
 		}
 	}
 
+	/**
+	 * ジョブツリー情報を取得します。
+	 * <P>
+	 * <ol>
+	 * <li>のインスタンスを作成します。</li>
+	 * <li>ジョブリレーションマスタを親ジョブIDが"TOP"となっているレコードについて、指定ジョブユニットを検索します。</li>
+	 * <li>取得したジョブリレーションマスタの数、以下の処理を行います。</li>
+	 *   <ol>
+	 *   <li>ジョブリレーションマスタからジョブマスタを取得します。</li>
+	 *   <li>ジョブマスタとジョブツリー情報のルートを渡して、ジョブツリー情報の作成を行います。</li>
+	 *   </ol>
+	 * </ol>
+	 *
+	 * @param treeOnly true=ジョブ情報を含まない, false=ジョブ情報含む
+	 * @param locale ロケール情報
+	 * @param userId ログインユーザのユーザID
+	 * @return ジョブツリー情報{@link com.clustercontrol.jobmanagement.bean.JobTreeItem}の階層オブジェクト
+	 * @throws NotifyNotFound
+	 * @throws JobMasterNotFound
+	 * @throws UserNotFound
+	 *
+	 * @see com.clustercontrol.bean.JobConstant
+	 * @see com.clustercontrol.jobmanagement.factory.SelectJob#createJobTree(JobMasterLocal, JobTreeItem, boolean)
+	 */
+	public JobTreeItem getJobunitTree(String jobunitId,String ownerRoleId, boolean treeOnly, Locale locale, String userId) throws NotifyNotFound, JobMasterNotFound, UserNotFound {
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
+			//親ジョブIDが"TOP"のジョブリレーションを取得
+			Collection<JobMstEntity> ct = null;
+			if (ownerRoleId != null && !ownerRoleId.isEmpty()) {
+				ct = em.createNamedQuery_OR("JobMstEntity.findByParentJobunitIdAndJobId", JobMstEntity.class, ownerRoleId)
+						.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID)
+						.setParameter("parentJobId", CreateJobSession.TOP_JOB_ID)
+						.getResultList();
+			} else {
+				ct = em.createNamedQuery("JobMstEntity.findByParentJobunitIdAndJobId", JobMstEntity.class)
+						.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID)
+						.setParameter("parentJobId", CreateJobSession.TOP_JOB_ID)
+						.getResultList();
+			}
+
+			//指定ジョブユニットIDのレコードを取得後、ツリー化して返却
+			for (JobMstEntity childJob : ct) {
+				if( childJob.getId().getJobunitId().equals(jobunitId)){
+					JobTreeItem item = new JobTreeItem(null, new JobInfo("", "", "", JobConstant.TYPE_COMPOSITE));
+					HashMap<String, ArrayList<JobMstEntity>> map = getJobunitMap(jobunitId);
+					createJobTree(childJob, item, treeOnly, map);
+					return item.getChildren(0);
+				}
+			}
+
+			//該当なしならNULLを返却
+			return null;
+
+		}
+	}
+
+	
+	
 	/**
 	 *  ジョブユニットごとのジョブ一覧を取得する。(高速化のため)
 	 * @param jobunitId
@@ -271,11 +383,27 @@ public class SelectJob {
 		m_log.debug("createJobData() : " + job.getId().getJobunitId() + ", " + job.getId().getJobId());
 		m_log.debug("createJobData() : " + info.getJobunitId() + ", " + info.getId());
 
+		JobInfo rules = null;
+		try {
+			rules = FullJob.getJobFull(info);
+		} catch (JobMasterNotFound | UserNotFound | InvalidRole | HinemosUnknown e) {
+			e.printStackTrace();
+		}
 		info.setPropertyFull(false);
 		info.setDescription(job.getDescription());
 		info.setIconId(job.getIconId());
 		info.setOwnerRoleId(job.getOwnerRoleId());
-
+		info.setUpdateTime(job.getUpdateDate());
+		if (job.getExpNodeRuntimeFlg() != null) {
+			info.setExpNodeRuntimeFlg(job.getExpNodeRuntimeFlg());
+		}
+		// 待ち案件と参照ジョブの情報をセット（findbugs 対応にて nullチェック追加）
+		if (rules != null) {
+			info.setWaitRule(rules.getWaitRule());
+			info.setReferJobId(rules.getReferJobId());
+			info.setReferJobSelectType(rules.getReferJobSelectType());
+			info.setReferJobUnitId(rules.getReferJobUnitId());
+		}
 		return info;
 	}
 
@@ -289,177 +417,143 @@ public class SelectJob {
 	 *  <ol>
 	 *  <li>セッションからセッションジョブを取得します。</li>
 	 *  <li>セッションジョブからジョブ情報を取得します。</li>
-	 *  <li>1セッションの情報をテーブルのカラム順（{@link com.clustercontrol.jobmanagement.bean.HistoryTableDefine}）に、リスト（{@link ArrayList}）にセットします。</li>
-	 *   <dl>
-	 *   <dt>履歴情報一覧（Objectの2次元配列）</dt>
-	 *   <dd>{ 履歴情報1 {カラム1の値, カラム2の値, … }, 履歴情報2{カラム1の値, カラム2の値, …}, … }</dd>
-	 *  </dl>
+	 *  <li>1セッションの情報をリストにセットします。</li>
 	 *  </ol>
-	 *  <li>履歴情報一覧，全履歴数を、ビュー一覧情報（{@link com.clustercontrol.jobmanagement.bean.JobHistoryList}）にセットし返します。</li>
+	 *  <li>履歴情報一覧，全履歴数を、ビュー一覧情報（{@link JobHistoryList}）にセットし返します。</li>
 	 * </ol>
 	 *
-	 * @param userId ログインユーザのユーザID
-	 * @param property 検索条件
+	 * @param filter 検索条件、nullなら条件なし。
 	 * @param histories 表示履歴数
 	 * @return ジョブ履歴一覧情報
-	 * @throws JobInfoNotFound
-	 *
-	 * @see com.clustercontrol.bean.JobConstant
 	 */
-	public JobHistoryList getHistoryList(String userId, JobHistoryFilter property, int histories) throws JobInfoNotFound {
+	public JobHistoryList getHistoryList(JobHistoryFilterBaseInfo filter, int histories) {
+		m_log.debug("getHistoryList() start : histories = " + histories);
 
-		m_log.debug("getHistoryList() start : userId = " + userId + ", histories = " + histories);
+		if (filter == null) {
+			filter = JobHistoryFilterBaseInfo.ofAllHistories();
+		}
 
-		Long startFromDate = null;
-		Long startToDate = null;
-		Long endFromDate = null;
-		Long endToDate = null;
-		String jobId = null;
-		Integer status = null;
-		Integer endStatus = null;
-		Integer triggerType = null;
-		String triggerInfo = null;
-		String ownerRoleId = null;
+		if (histories <= 0) {
+			histories = MAX_DISPLAY_NUMBER;
+		}
 
-		if (property != null) {
-			if (property.getStartFromDate() != null) {
-				startFromDate = property.getStartFromDate();
-			}
-			if (property.getStartToDate() != null) {
-				startToDate = property.getStartToDate();
-			}
-			if (property.getEndFromDate() != null) {
-				endFromDate = property.getEndFromDate();
-			}
-			if (property.getEndToDate() != null) {
-				endToDate = property.getEndToDate();
-			}
-			jobId = property.getJobId();
-			status = property.getStatus();
-			endStatus = property.getEndStatus();
-			triggerType = property.getTriggerType();
-			triggerInfo = property.getTriggerInfo();
-			ownerRoleId = property.getOwnerRoleId();
+		// 検索条件に該当するセッションを取得
+		TypedQuery<JobSessionJobEntity> typedQuery = createFilterQueryForList(filter);
+		typedQuery = typedQuery.setMaxResults(histories + 1); // 指定件数より多くのデータがあるかを判断するため+1する
 
-			m_log.debug("getHistoryList() property" +
-					" startFromDate = " + startFromDate + ", startToDate = " + startToDate +
-					", endFromDate = " + endFromDate + ", endToDate = " + endToDate +
-					", jobId = " + jobId + ", status = " + status + ", endStatus = " + endStatus +
-					", triggerType = " + triggerType + ", triggerInfo = " + triggerInfo +
-					", ownerRoleId = " + ownerRoleId);
+		List<JobSessionJobEntity> sessionJobList = typedQuery.getResultList();
+
+		// 履歴数をカウント
+		int total = 0;
+		if (sessionJobList.size() > histories) {
+			// 最大表示件数より大きい場合、別クエリで総件数をカウント
+			TypedQuery<Long> countTypedQuery = createFilterQueryForCount(filter);
+			total = countTypedQuery.getSingleResult().intValue();
 		} else {
-			m_log.debug("getHistoryList() property is null");
+			total = sessionJobList.size();
+		}
+		m_log.debug("getHistoryList() total = " + total);
+
+		// EntityをDTOへ変換
+		ArrayList<JobHistory> historyList = new ArrayList<JobHistory>();
+		for (JobSessionJobEntity sessionJob : sessionJobList) {
+			JobSessionEntity session = sessionJob.getJobSessionEntity();
+			JobInfoEntity jobInfo = sessionJob.getJobInfoEntity();
+
+			JobHistory info = new JobHistory();
+
+			info.setStatus(sessionJob.getStatus());
+			info.setEndStatus(sessionJob.getEndStatus());
+			info.setEndValue(sessionJob.getEndValue());
+			info.setSessionId(sessionJob.getId().getSessionId());
+			info.setJobId(sessionJob.getId().getJobId());
+			info.setJobunitId(sessionJob.getId().getJobunitId());
+			info.setJobName(jobInfo.getJobName());
+			info.setJobType(jobInfo.getJobType());
+			if (sessionJob.hasSessionNode()) {
+				info.setFacilityId(jobInfo.getFacilityId());
+				info.setScope(sessionJob.getScopeText());
+			}
+			info.setOwnerRoleId(sessionJob.getOwnerRoleId());
+			info.setScheduleDate(session.getScheduleDate());
+			info.setStartDate(sessionJob.getStartDate());
+			info.setEndDate(sessionJob.getEndDate());
+			if (session.getTriggerInfo() != null && !session.getTriggerInfo().equals("")) {
+				info.setJobTriggerType(session.getTriggerType());
+				info.setTriggerInfo(session.getTriggerInfo());
+			}
+
+			historyList.add(info);
+
+			//取得した履歴を最大表示件数まで格納したら終了
+			if (historyList.size() >= histories) break;
 		}
 
 		JobHistoryList list = new JobHistoryList();
-		ArrayList<JobHistory> historyList = new ArrayList<JobHistory>();
-		int total = 0;
-
-		if(histories <= 0){
-			histories = MAX_DISPLAY_NUMBER;
-		}
-		Integer limit = histories + 1;
-
-		//検索条件に該当するセッションを取得
-		TypedQuery<?> typedQuery
-		= getHistoryFilterQuery(
-				startFromDate,
-				startToDate,
-				endFromDate,
-				endToDate,
-				jobId,
-				status,
-				endStatus,
-				triggerType,
-				triggerInfo,
-				ownerRoleId,
-				false);
-		if(limit != null){
-			typedQuery = typedQuery.setMaxResults(limit);
-		}
-
-		@SuppressWarnings("unchecked")
-		List<JobSessionJobEntity> sessionJobList = (List<JobSessionJobEntity>)typedQuery.getResultList();
-
-		if (sessionJobList == null) {
-			JobInfoNotFound je = new JobInfoNotFound();
-			je.setJobId(jobId);
-			m_log.info("getHistoryList() : "
-					+ je.getClass().getSimpleName() + ", " + je.getMessage());
-		}
-		m_log.debug("getHistoryList() target sessionList exist");
-
-		if(sessionJobList != null){
-
-			//履歴数をカウント
-			if(sessionJobList.size() > histories){
-				//最大表示件数より大きい場合
-				TypedQuery<?> countTypedQuery
-				= getHistoryFilterQuery(
-						startFromDate,
-						startToDate,
-						endFromDate,
-						endToDate,
-						jobId,
-						status,
-						endStatus,
-						triggerType,
-						triggerInfo,
-						ownerRoleId,
-						true);
-				total = (int)((Long)countTypedQuery.getSingleResult()).longValue();
-			}
-			else{
-				total = sessionJobList.size();
-			}
-			m_log.debug("getHistoryList() total = " + total);
-
-			for(JobSessionJobEntity sessionJob : sessionJobList) {
-				// JobSessionを取得
-				JobSessionEntity session = sessionJob.getJobSessionEntity();
-				// JobInfoEntityを取得
-				JobInfoEntity jobInfo = sessionJob.getJobInfoEntity();
-				//履歴一覧の１行を作成
-				JobHistory info = new JobHistory();
-				info.setStatus(sessionJob.getStatus());
-				info.setEndStatus(sessionJob.getEndStatus());
-				info.setEndValue(sessionJob.getEndValue());
-				info.setSessionId(sessionJob.getId().getSessionId());
-				info.setJobId(sessionJob.getId().getJobId());
-				info.setJobunitId(sessionJob.getId().getJobunitId());
-				info.setJobName(jobInfo.getJobName());
-				info.setJobType(jobInfo.getJobType());
-				if(jobInfo.getJobType() == JobConstant.TYPE_JOB
-						|| jobInfo.getJobType() == JobConstant.TYPE_APPROVALJOB
-						|| jobInfo.getJobType() == JobConstant.TYPE_MONITORJOB){
-					info.setFacilityId(jobInfo.getFacilityId());
-					info.setScope(sessionJob.getScopeText());
-				}
-				info.setOwnerRoleId(sessionJob.getOwnerRoleId());
-				if (session.getScheduleDate() != null){
-					info.setScheduleDate(session.getScheduleDate());
-				}
-				if (sessionJob.getStartDate() != null){
-					info.setStartDate(sessionJob.getStartDate());
-				}
-				if (sessionJob.getEndDate() != null){
-					info.setEndDate(sessionJob.getEndDate());
-				}
-				if (session.getTriggerInfo() != null && !session.getTriggerInfo().equals("")) {
-					info.setJobTriggerType(session.getTriggerType());
-					info.setTriggerInfo(session.getTriggerInfo());
-				}
-				historyList.add(info);
-
-				//取得した履歴を最大表示件数まで格納したら終了
-				if(historyList.size() >= histories)
-					break;
-			}
-		}
 		list.setTotal(total);
 		list.setList(historyList);
 
 		return list;
+	}
+
+	private TypedQuery<JobSessionJobEntity> createFilterQueryForList(JobHistoryFilterBaseInfo filter) {
+		return createFilterQuery0(filter, JobSessionJobEntity.class);
+	}
+
+	private TypedQuery<Long> createFilterQueryForCount(JobHistoryFilterBaseInfo filter) {
+		return createFilterQuery0(filter, Long.class);
+	}
+
+	private <T> TypedQuery<T> createFilterQuery0(JobHistoryFilterBaseInfo filter, Class<T> resultClass) {
+		boolean forCount = resultClass == Long.class;
+	
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+	
+			StringBuffer sbJpql = new StringBuffer();
+			sbJpql.append("SELECT");
+			if (forCount) {
+				sbJpql.append(" COUNT(a)");
+			} else {
+				sbJpql.append(" a");
+			}
+			sbJpql.append(" FROM JobSessionJobEntity a JOIN a.jobSessionEntity b");
+			sbJpql.append(" WHERE a.id.jobunitId = b.jobunitId");
+			sbJpql.append(" AND a.id.jobId = b.jobId");
+	
+			// フィルタ条件のSQLを追記
+			List<JobHistoryFilterConditionCriteria> criteriaList = filter.createConditionsCriteria("a", "b");
+
+			sbJpql.append(" AND (");
+			String delim = "";
+			for (JobHistoryFilterConditionCriteria crt : criteriaList) {
+				sbJpql.append(delim).append("(").append(crt.buildExpressions()).append(")");
+				delim = " OR ";
+			}
+			sbJpql.append(")");
+	
+			// オブジェクト権限チェックのSQLを追記
+			sbJpql = getJpql(sbJpql);
+	
+			// リスト取得クエリの場合はorder-byを追記
+			if (!forCount) {
+				sbJpql.append(" ORDER BY a.id.sessionId DESC");
+			}
+	
+			// SQLからTypedQueryを生成
+			m_log.debug("createFilterQuery0: jpql = " + sbJpql.toString());
+			TypedQuery<T> typedQuery = em.createQuery(sbJpql.toString(), resultClass, JobSessionJobEntity.class);
+	
+			// フィルタ条件のパラメータをセット
+			for (JobHistoryFilterConditionCriteria crt : criteriaList) {
+				crt.submitParameters(typedQuery);
+			}
+	
+			// オブジェクト権限チェックのパラメータをセット
+			typedQuery = setObjectPrivilegeParameter(typedQuery);
+	
+			return typedQuery;
+		}
 	}
 
 	/**
@@ -638,18 +732,26 @@ public class SelectJob {
 				jobInfo.getJobType() == JobConstant.TYPE_JOB ||
 				jobInfo.getJobType() == JobConstant.TYPE_FILEJOB ||
 				jobInfo.getJobType() == JobConstant.TYPE_APPROVALJOB ||
-				jobInfo.getJobType() == JobConstant.TYPE_MONITORJOB){
+				jobInfo.getJobType() == JobConstant.TYPE_MONITORJOB ||
+				jobInfo.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB ||
+				jobInfo.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB ||
+				jobInfo.getJobType() == JobConstant.TYPE_FILECHECKJOB ||
+				jobInfo.getJobType() == JobConstant.TYPE_RESOURCEJOB ||
+				jobInfo.getJobType() == JobConstant.TYPE_RPAJOB){
 			detail.setFacilityId(jobInfo.getFacilityId());
 			detail.setScope(sessionJob.getScopeText());
-			if(jobInfo.getStartTime() != null){
-				detail.setWaitRuleTime(jobInfo.getStartTime());
-			}
-			//待ち条件（セッション開始時の時間（分））を取得
-			m_log.debug("createJobDetail >>>>>>>>>>>>>>>>>>>>> jobInfo.getStartDelaySession = " + jobInfo.getStartDelaySession());
-			if (jobInfo.getStartMinute() != null) {
-				detail.setStartMinute(jobInfo.getStartMinute());
-			}
 		}
+		List<Long> timeList = new ArrayList<Long>();
+		List<JobWaitInfoEntity> waitList = QueryUtil.getJobWaitInfoByTypeJobId(
+				sessionJob.getId().getSessionId(), sessionJob.getId().getJobunitId(), sessionJob.getId().getJobId(),
+				JudgmentObjectConstant.TYPE_TIME);
+		for (JobWaitInfoEntity wait : waitList) {
+			if(wait.getTime() == null){
+				continue;
+			}
+			timeList.add(wait.getTime());
+		}
+		detail.setWaitRuleTimeList(timeList);
 		if (sessionJob.getStartDate() != null){
 			detail.setStartDate(sessionJob.getStartDate());
 		}
@@ -657,6 +759,7 @@ public class SelectJob {
 			detail.setEndDate(sessionJob.getEndDate());
 		}
 		detail.setRunCount(sessionJob.getRunCount());
+		detail.setSkip(jobInfo.getSkip());
 
 		return detail;
 	}
@@ -682,6 +785,9 @@ public class SelectJob {
 		info.setType(jobInfo.getJobType());
 		info.setRegisteredModule(jobInfo.isRegisteredModule());
 		info.setDescription(jobInfo.getDescription());
+		if (sessionJob.getJobSessionEntity() != null) {
+			info.setExpNodeRuntimeFlg(sessionJob.getJobSessionEntity().getExpNodeRuntimeFlg());
+		}
 
 		//待ち条件を取得 (待ち条件はジョブマップで利用。)
 		JobWaitRuleInfo waitRule = null;
@@ -691,7 +797,12 @@ public class SelectJob {
 				jobInfo.getJobType() == JobConstant.TYPE_JOB||
 				jobInfo.getJobType() == JobConstant.TYPE_FILEJOB ||
 				jobInfo.getJobType() == JobConstant.TYPE_APPROVALJOB ||
-				jobInfo.getJobType() == JobConstant.TYPE_MONITORJOB){
+				jobInfo.getJobType() == JobConstant.TYPE_MONITORJOB ||
+				jobInfo.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB ||
+				jobInfo.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB ||
+				jobInfo.getJobType() == JobConstant.TYPE_FILECHECKJOB ||
+				jobInfo.getJobType() == JobConstant.TYPE_RESOURCEJOB ||
+				jobInfo.getJobType() == JobConstant.TYPE_RPAJOB){
 			waitRule.setSuspend(jobInfo.getSuspend());
 			waitRule.setCondition(jobInfo.getConditionType());
 			waitRule.setEndCondition(jobInfo.getUnmatchEndFlg());
@@ -709,6 +820,7 @@ public class SelectJob {
 			waitRule.setCalendarEndValue(jobInfo.getCalendarEndValue());
 			waitRule.setJobRetryFlg(jobInfo.getJobRetryFlg());
 			waitRule.setJobRetry(jobInfo.getJobRetry());
+			waitRule.setJobRetryInterval(jobInfo.getJobRetryInterval());
 			waitRule.setJobRetryEndStatus(jobInfo.getJobRetryEndStatus());
 
 			waitRule.setStart_delay(jobInfo.getStartDelay());
@@ -752,88 +864,89 @@ public class SelectJob {
 			waitRule.setQueueId(jobInfo.getQueueId());
 		}
 
-
-		//待ち条件（ジョブ）を取得
-		Collection<JobStartJobInfoEntity> startJobList = jobInfo.getJobStartJobInfoEntities();
-		ArrayList<JobObjectInfo> objectList = new ArrayList<JobObjectInfo>();
-		if(startJobList != null && startJobList.size() > 0){
-			Iterator<JobStartJobInfoEntity> itr = startJobList.iterator();
-			while(itr.hasNext()){
-				JobStartJobInfoEntity startJob = itr.next();
-				if(startJob != null){
+		//待ち条件を取得
+		List<JobWaitGroupInfoEntity> waitGroupList = jobInfo.getJobWaitGroupInfoEntities();
+		ArrayList<JobObjectGroupInfo> objectGroupList = new ArrayList<>();
+		if(waitGroupList != null && waitGroupList.size() > 0){
+			for (JobWaitGroupInfoEntity waitGroup : waitGroupList){
+				if(waitGroup == null){
+					continue;
+				}
+				JobObjectGroupInfo objectGroupInfo = new JobObjectGroupInfo();
+				objectGroupInfo.setOrderNo(waitGroup.getId().getOrderNo());
+				objectGroupInfo.setConditionType(waitGroup.getConditionType());
+				objectGroupInfo.setIsGroup(waitGroup.getIsGroup());
+				objectGroupInfo.setIsGroup(false);
+				ArrayList<JobObjectInfo> objectList = new ArrayList<JobObjectInfo>();
+				for (JobWaitInfoEntity wait : waitGroup.getJobWaitInfoEntities()) {
 					JobObjectInfo objectInfo = new JobObjectInfo();
-					objectInfo.setJobId(startJob.getId().getTargetJobId());
-					//対象ジョブを取得
-					JobInfoEntity targetJob = null;
-					JobSessionJobEntity targetSessionJob = null;
-					try {
-						targetSessionJob = QueryUtil.getJobSessionJobPK(sessionJob.getId().getSessionId(), startJob.getId().getTargetJobunitId(), startJob.getId().getTargetJobId());
-						targetJob = targetSessionJob.getJobInfoEntity();
-					} catch (JobInfoNotFound | InvalidRole | RuntimeException e) {
-						continue;
+					if (wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_TIME
+							&& wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_START_MINUTE
+							&& wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_JOB_PARAMETER) {
+						//対象ジョブを取得
+						JobInfoEntity targetJob = null;
+						JobSessionJobEntity targetSessionJob = null;
+						try {
+							targetSessionJob = QueryUtil.getJobSessionJobPK(sessionJob.getId().getSessionId(), wait.getTargetJobunitId(), wait.getTargetJobId());
+							targetJob = targetSessionJob.getJobInfoEntity();
+						} catch (JobInfoNotFound | InvalidRole | RuntimeException e) {
+							continue;
+						}
+						objectInfo.setJobId(wait.getTargetJobId());
+						objectInfo.setJobName(targetJob.getJobName());	
 					}
-					
-					objectInfo.setJobName(targetJob.getJobName());
-					objectInfo.setType(startJob.getId().getTargetJobType());
-					objectInfo.setValue(startJob.getId().getTargetJobEndValue());
-					objectInfo.setDescription(startJob.getTargetJobDescription());
-					objectInfo.setCrossSessionRange(startJob.getTargetJobCrossSessionRange());
-					m_log.debug("getTargetJobType = " + startJob.getId().getTargetJobType());
-					m_log.debug("getTargetJobId = " + startJob.getId().getTargetJobId());
-					m_log.debug("getTargetJobEndValue = " + startJob.getId().getTargetJobEndValue());
-					m_log.debug("getTargetJobCrossSessionRange = " + startJob.getTargetJobCrossSessionRange());
-					m_log.debug("getTargetJobDescription = " + startJob.getTargetJobDescription());
+					objectInfo.setType(wait.getId().getTargetJobType());
+					switch (objectInfo.getType()) {
+					case JudgmentObjectConstant.TYPE_JOB_END_STATUS:
+						/** ジョブ終了状態 */
+						objectInfo.setStatus(wait.getId().getTargetInt1());
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_END_VALUE:
+						/** ジョブ終了値 */
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						break;
+					case JudgmentObjectConstant.TYPE_TIME:
+						/** 時刻 */
+						objectInfo.setTime(wait.getId().getTargetLong());
+						break;
+					case JudgmentObjectConstant.TYPE_START_MINUTE:
+						/** セッション開始時の時間（分）  */
+						objectInfo.setStartMinute(wait.getId().getTargetInt1());
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_PARAMETER:
+						/** ジョブ変数 */
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setDecisionValue(wait.getId().getTargetStr1());
+						objectInfo.setValue(wait.getId().getTargetStr2());
+						break;
+					case JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS:
+						/** セッション横断ジョブ終了状態 */
+						objectInfo.setStatus(wait.getId().getTargetInt1());
+						objectInfo.setCrossSessionRange(wait.getId().getTargetInt2());
+						break;
+					case JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE:
+						/** セッション横断ジョブ終了値 */
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setCrossSessionRange(wait.getId().getTargetInt2());
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_RETURN_VALUE:
+						/** ジョブ戻り値 */
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						break;
+					default:
+						break;
+					}
+					objectInfo.setDescription(wait.getDescription());
 					objectList.add(objectInfo);
 				}
+				objectGroupInfo.setJobObjectList(objectList);
+				objectGroupList.add(objectGroupInfo);
 			}
 		}
-
-		//待ち条件（時刻）を取得
-		if (jobInfo.getStartTime() != null) {
-			JobObjectInfo objectInfo = new JobObjectInfo();
-			objectInfo.setType(JudgmentObjectConstant.TYPE_TIME);
-			objectInfo.setTime(jobInfo.getStartTime());
-			objectInfo.setDescription(jobInfo.getStartTimeDescription());
-			m_log.debug("getType = " + JudgmentObjectConstant.TYPE_TIME);
-			m_log.debug("getTime = " + jobInfo.getStartTime());
-			m_log.debug("getStartTimeDescription= " + jobInfo.getStartTimeDescription());
-			objectList.add(objectInfo);
-		}
-
-		//待ち条件（セッション開始時の時間（分））を取得
-		m_log.debug("createJobInfo job.getStartMinute() = " + jobInfo.getStartMinute());
-		if (jobInfo.getStartMinute() != null) {
-			JobObjectInfo objectInfo = new JobObjectInfo();
-			objectInfo.setType(JudgmentObjectConstant.TYPE_START_MINUTE);
-			objectInfo.setStartMinute(jobInfo.getStartMinute());
-			objectInfo.setDescription(jobInfo.getStartMinuteDescription());
-			m_log.debug("getType = " + JudgmentObjectConstant.TYPE_START_MINUTE);
-			m_log.debug("getStartMinute = " + jobInfo.getStartMinute());
-			m_log.debug("getStartMinuteDescription= " + jobInfo.getStartMinuteDescription());
-			m_log.debug("objectList = " + objectList);
-			objectList.add(objectInfo);
-		}
-
-		// 待ち条件（ジョブ変数）を取得
-		List<JobStartParamInfoEntity> jobStartParamInfoList = jobInfo.getJobStartParamInfoEntities();
-		if (jobStartParamInfoList != null && jobStartParamInfoList.size() > 0) {
-			for (JobStartParamInfoEntity jobStartParamInfo : jobStartParamInfoList) {
-				if (jobStartParamInfo != null) {
-					JobObjectInfo objectInfo = new JobObjectInfo();
-					objectInfo.setType(jobStartParamInfo.getId().getTargetJobType());
-					objectInfo.setDecisionValue01(jobStartParamInfo.getId().getStartDecisionValue01());
-					objectInfo.setDecisionCondition(jobStartParamInfo.getId().getStartDecisionCondition());
-					objectInfo.setDecisionValue02(jobStartParamInfo.getId().getStartDecisionValue02());
-					objectInfo.setDescription(jobStartParamInfo.getDecisionDescription());
-					m_log.debug("getTargetJobType = " + jobStartParamInfo.getId().getTargetJobType());
-					m_log.debug("getStartDecisionValue01 = " + jobStartParamInfo.getId().getStartDecisionValue01());
-					m_log.debug("getStartDecisionCondition= " + jobStartParamInfo.getId().getStartDecisionCondition());
-					m_log.debug("getStartDecisionValue02 = " + jobStartParamInfo.getId().getStartDecisionValue02());
-					m_log.debug("getDecisionDescription = " + jobStartParamInfo.getDecisionDescription());
-					objectList.add(objectInfo);
-				}
-			}
-		}
+		waitRule.setObjectGroup(objectGroupList);
 
 		// 排他分岐後続ジョブ優先度設定
 		List<JobNextJobOrderInfoEntity> nextJobOrderEntityList = jobInfo.getJobNextJobOrderInfoEntities();
@@ -851,7 +964,6 @@ public class SelectJob {
 			}
 		}
 
-		waitRule.setObject(objectList);
 		waitRule.setExclusiveBranchNextJobOrderList(nextJobOrderList);
 		info.setWaitRule(waitRule);
 		
@@ -908,7 +1020,12 @@ public class SelectJob {
 			JobInfoEntity job = sessionjob.getJobInfoEntity();
 			if(job.getJobType() == JobConstant.TYPE_JOB
 					|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
-					|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
+					|| job.getJobType() == JobConstant.TYPE_MONITORJOB
+					|| job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB
+					|| job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB
+					|| job.getJobType() == JobConstant.TYPE_FILECHECKJOB
+					|| job.getJobType() == JobConstant.TYPE_RESOURCEJOB
+					|| job.getJobType() == JobConstant.TYPE_RPAJOB){
 				//ジョブの場合
 
 				//セッションジョブに関連するセッションノードを取得
@@ -1038,7 +1155,12 @@ public class SelectJob {
 							locale));
 				nodeDetail.add(info);
 			} else if (childJob.getJobType() == JobConstant.TYPE_JOB
-					|| childJob.getJobType() == JobConstant.TYPE_MONITORJOB){
+					|| childJob.getJobType() == JobConstant.TYPE_MONITORJOB
+					|| childJob.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB
+					|| childJob.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB
+					|| childJob.getJobType() == JobConstant.TYPE_FILECHECKJOB
+					|| childJob.getJobType() == JobConstant.TYPE_RESOURCEJOB
+					|| childJob.getJobType() == JobConstant.TYPE_RPAJOB){
 				for (JobSessionNodeEntity sessionNode : childSessionJob.getJobSessionNodeEntities()) {
 					if (sessionNode.getEndValue() != null && sessionNode.getEndValue() == -1) {
 						// ファイルリストに失敗したときだけノード詳細ビューに表示
@@ -1730,6 +1852,10 @@ public class SelectJob {
 		info.setOwnerRoleId(job.getJobSessionJobEntity().getOwnerRoleId());
 		info.setRegisteredModule(job.isRegisteredModule());
 		info.setIconId(job.getIconId());
+		if (job.getJobSessionJobEntity() != null
+				&& job.getJobSessionJobEntity().getJobSessionEntity() != null) {
+			info.setExpNodeRuntimeFlg(job.getJobSessionJobEntity().getJobSessionEntity().getExpNodeRuntimeFlg());
+		}
 
 		if (job.getRegDate() != null) {
 			info.setCreateTime(job.getRegDate());
@@ -1739,7 +1865,6 @@ public class SelectJob {
 		}
 		info.setCreateUser(job.getRegUser());
 		info.setUpdateUser(job.getUpdateUser());
-		info.setIconId(job.getIconId());
 
 		//待ち条件を取得
 		JobWaitRuleInfo waitRule = null;
@@ -1749,7 +1874,12 @@ public class SelectJob {
 				job.getJobType() == JobConstant.TYPE_JOB||
 				job.getJobType() == JobConstant.TYPE_FILEJOB ||
 				job.getJobType() == JobConstant.TYPE_APPROVALJOB ||
-				job.getJobType() == JobConstant.TYPE_MONITORJOB) {
+				job.getJobType() == JobConstant.TYPE_MONITORJOB ||
+				job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB ||
+				job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB ||
+				job.getJobType() == JobConstant.TYPE_FILECHECKJOB ||
+				job.getJobType() == JobConstant.TYPE_RESOURCEJOB ||
+				job.getJobType() == JobConstant.TYPE_RPAJOB) {
 			waitRule.setSuspend(job.getSuspend());
 			waitRule.setCondition(job.getConditionType());
 			waitRule.setEndCondition(job.getUnmatchEndFlg());
@@ -1767,6 +1897,7 @@ public class SelectJob {
 			waitRule.setCalendarEndValue(job.getCalendarEndValue());
 			waitRule.setJobRetryFlg(job.getJobRetryFlg());
 			waitRule.setJobRetry(job.getJobRetry());
+			waitRule.setJobRetryInterval(job.getJobRetryInterval());
 			waitRule.setJobRetryEndStatus(job.getJobRetryEndStatus());
 
 			waitRule.setStart_delay(job.getStartDelay());
@@ -1810,100 +1941,100 @@ public class SelectJob {
 			waitRule.setQueueId(job.getQueueId());
 		}
 
-
-		//待ち条件（ジョブ）を取得
-		Collection<JobStartJobInfoEntity> startJobList = job.getJobStartJobInfoEntities();
-		ArrayList<JobObjectInfo> objectList = new ArrayList<JobObjectInfo>();
-		if(startJobList != null && startJobList.size() > 0){
-			Iterator<JobStartJobInfoEntity> itr = startJobList.iterator();
-			while(itr.hasNext()){
-				JobStartJobInfoEntity startJob = itr.next();
-				if(startJob != null){
+		//待ち条件(ジョブ)を取得
+		List<JobWaitGroupInfoEntity> waitGroupList = job.getJobWaitGroupInfoEntities();
+		ArrayList<JobObjectGroupInfo> objectGroupList = new ArrayList<>();
+		if(waitGroupList != null && waitGroupList.size() > 0){
+			for (JobWaitGroupInfoEntity waitGroup : waitGroupList){
+				if(waitGroup == null){
+					continue;
+				}
+				JobObjectGroupInfo objectGroupInfo = new JobObjectGroupInfo();
+				objectGroupInfo.setOrderNo(waitGroup.getId().getOrderNo());
+				objectGroupInfo.setConditionType(waitGroup.getConditionType());
+				objectGroupInfo.setIsGroup(waitGroup.getIsGroup());
+				objectGroupInfo.setIsGroup(false);
+				ArrayList<JobObjectInfo> objectList = new ArrayList<JobObjectInfo>();
+				for (JobWaitInfoEntity wait : waitGroup.getJobWaitInfoEntities()) {
 					JobObjectInfo objectInfo = new JobObjectInfo();
-					objectInfo.setJobId(startJob.getId().getTargetJobId());
-
-					//対象ジョブを取得
-					String jobName;
-					try {
-						JobSessionJobEntity targetJobSessionJob = QueryUtil.getJobSessionJobPK(startJob.getId().getSessionId(),
-								startJob.getId().getJobunitId(),
-								startJob.getId().getTargetJobId());
-						JobInfoEntity targetJob = targetJobSessionJob.getJobInfoEntity();
-						jobName = targetJob.getJobName();
-					} catch (JobInfoNotFound e) {
-						jobName = "";
-					}
-
-					if (jobName.equals("") && (startJob.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS ||
-						startJob.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE)) {
-						//セッション横断待ち条件の場合JobSessionJobEntitiyが見つからない場合がある。
-						//その場合、JobMstEntitiyから待ち合わせジョブ名を取得する。
+					if (wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_TIME
+							&& wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_START_MINUTE
+							&& wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_JOB_PARAMETER) {
+						//対象ジョブを取得
+						String jobName;
 						try {
-							JobMstEntity targetJob= QueryUtil.getJobMstPK(startJob.getId().getJobunitId(), startJob.getId().getJobId());
+							JobSessionJobEntity targetJobSessionJob = QueryUtil.getJobSessionJobPK(wait.getId().getSessionId(),
+									wait.getId().getJobunitId(),
+									wait.getId().getTargetJobId());
+							JobInfoEntity targetJob = targetJobSessionJob.getJobInfoEntity();
 							jobName = targetJob.getJobName();
-						} catch(JobMasterNotFound e) {
+						} catch (JobInfoNotFound | InvalidRole | RuntimeException e) {
 							jobName = "";
 						}
+
+						if (jobName.equals("") && (wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS ||
+							wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE)) {
+							//セッション横断待ち条件の場合JobSessionJobEntitiyが見つからない場合がある。
+							//その場合、JobMstEntitiyから待ち合わせジョブ名を取得する。
+							try {
+								JobMstEntity targetJob= QueryUtil.getJobMstPK(wait.getId().getJobunitId(), wait.getId().getJobId());
+								jobName = targetJob.getJobName();
+							} catch(JobMasterNotFound e) {
+								jobName = "";
+							}
+						}
+						objectInfo.setJobId(wait.getId().getTargetJobId());
+						objectInfo.setJobName(jobName);
 					}
-
-					objectInfo.setJobName(jobName);
-					objectInfo.setType(startJob.getId().getTargetJobType());
-					objectInfo.setValue(startJob.getId().getTargetJobEndValue());
-					objectInfo.setDescription(startJob.getTargetJobDescription());
-					objectInfo.setCrossSessionRange(startJob.getTargetJobCrossSessionRange());
-					m_log.debug("getTargetJobType = " + startJob.getId().getTargetJobType());
-					m_log.debug("getTargetJobId = " + startJob.getId().getTargetJobId());
-					m_log.debug("getTargetJobEndValue = " + startJob.getId().getTargetJobEndValue());
-					m_log.debug("getTargetJobCrossSessionRange = " + startJob.getTargetJobCrossSessionRange());
-					m_log.debug("getTargetJobDescription = " + startJob.getTargetJobDescription());
+					objectInfo.setType(wait.getId().getTargetJobType());
+					switch (objectInfo.getType()) {
+					case JudgmentObjectConstant.TYPE_JOB_END_STATUS:
+						/** ジョブ終了状態 */
+						objectInfo.setStatus(wait.getId().getTargetInt1());
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_END_VALUE:
+						/** ジョブ終了値 */
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						break;
+					case JudgmentObjectConstant.TYPE_TIME:
+						/** 時刻 */
+						objectInfo.setTime(wait.getId().getTargetLong());
+						break;
+					case JudgmentObjectConstant.TYPE_START_MINUTE:
+						/** セッション開始時の時間（分）  */
+						objectInfo.setStartMinute(wait.getId().getTargetInt1());
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_PARAMETER:
+						/** ジョブ変数 */
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setDecisionValue(wait.getId().getTargetStr1());
+						objectInfo.setValue(wait.getId().getTargetStr2());
+						break;
+					case JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS:
+						/** セッション横断ジョブ終了状態 */
+						objectInfo.setStatus(wait.getId().getTargetInt1());
+						objectInfo.setCrossSessionRange(wait.getId().getTargetInt2());
+						break;
+					case JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE:
+						/** セッション横断ジョブ終了値 */
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setCrossSessionRange(wait.getId().getTargetInt2());
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_RETURN_VALUE:
+						/** ジョブ戻り値 */
+						objectInfo.setDecisionCondition(wait.getId().getTargetInt1());
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						break;
+					default:
+						break;
+					}
+					objectInfo.setDescription(wait.getDescription());
 					objectList.add(objectInfo);
 				}
-			}
-		}
-
-		//待ち条件（時刻）を取得
-		if (job.getStartTime() != null) {
-			JobObjectInfo objectInfo = new JobObjectInfo();
-			objectInfo.setType(JudgmentObjectConstant.TYPE_TIME);
-			objectInfo.setTime(job.getStartTime());
-			objectInfo.setDescription(job.getStartTimeDescription());
-			m_log.debug("getType = " + JudgmentObjectConstant.TYPE_TIME);
-			m_log.debug("getTime = " + job.getStartTime());
-			m_log.debug("getStartTimeDescription= " + job.getStartTimeDescription());
-			objectList.add(objectInfo);
-		}
-
-		//待ち条件（セッション開始時の時間（分））を取得
-		m_log.debug("createSessionJobData job.getStartMinute() = " + job.getStartMinute() );
-		if (job.getStartMinute() != null) {
-			JobObjectInfo objectInfo = new JobObjectInfo();
-			objectInfo.setType(JudgmentObjectConstant.TYPE_START_MINUTE);
-			objectInfo.setStartMinute(job.getStartMinute());
-			objectInfo.setDescription(job.getStartMinuteDescription());
-			m_log.debug("getType = " + JudgmentObjectConstant.TYPE_START_MINUTE);
-			m_log.debug("getStartMinute = " + job.getStartMinute());
-			m_log.debug("getStartMinuteDescription= " + job.getStartMinuteDescription());
-			objectList.add(objectInfo);
-		}
-
-		// 待ち条件（ジョブ変数）を取得
-		List<JobStartParamInfoEntity> jobStartParamInfoList = job.getJobStartParamInfoEntities();
-		if (jobStartParamInfoList != null && jobStartParamInfoList.size() > 0) {
-			for (JobStartParamInfoEntity jobStartParamInfo : jobStartParamInfoList) {
-				if (jobStartParamInfo != null) {
-					JobObjectInfo objectInfo = new JobObjectInfo();
-					objectInfo.setType(jobStartParamInfo.getId().getTargetJobType());
-					objectInfo.setDecisionValue01(jobStartParamInfo.getId().getStartDecisionValue01());
-					objectInfo.setDecisionCondition(jobStartParamInfo.getId().getStartDecisionCondition());
-					objectInfo.setDecisionValue02(jobStartParamInfo.getId().getStartDecisionValue02());
-					objectInfo.setDescription(jobStartParamInfo.getDecisionDescription());
-					m_log.debug("getTargetJobType = " + jobStartParamInfo.getId().getTargetJobType());
-					m_log.debug("getStartDecisionValue01 = " + jobStartParamInfo.getId().getStartDecisionValue01());
-					m_log.debug("getStartDecisionCondition= " + jobStartParamInfo.getId().getStartDecisionCondition());
-					m_log.debug("getStartDecisionValue02 = " + jobStartParamInfo.getId().getStartDecisionValue02());
-					m_log.debug("getDecisionDescription = " + jobStartParamInfo.getDecisionDescription());
-					objectList.add(objectInfo);
-				}
+				objectGroupInfo.setJobObjectList(objectList);
+				objectGroupList.add(objectGroupInfo);
 			}
 		}
 
@@ -1926,8 +2057,8 @@ public class SelectJob {
 		/*
 		 * ソート処理
 		 */
-		Collections.sort(objectList);
-		waitRule.setObject(objectList);
+		Collections.sort(objectGroupList);
+		waitRule.setObjectGroup(objectGroupList);
 		waitRule.setExclusiveBranchNextJobOrderList(nextJobOrderList);
 		info.setWaitRule(waitRule);
 
@@ -1973,6 +2104,29 @@ public class SelectJob {
 				envList.add(envInfo);
 			}
 			commandInfo.setEnvVariableInfo(envList);
+			// 標準出力のファイル出力情報
+			if (job.getJobOutputInfoEntities() != null) {
+				for (JobOutputInfoEntity entity : job.getJobOutputInfoEntities()) {
+					JobOutputInfo outputInfo = new JobOutputInfo();
+					outputInfo.setSameNormalFlg(entity.getSameNormalFlg());
+					outputInfo.setDirectory(entity.getDirectory());
+					outputInfo.setFileName(entity.getFileName());
+					outputInfo.setAppendFlg(entity.getAppendFlg());
+					outputInfo.setFailureOperationFlg(entity.getFailureOperationFlg());
+					outputInfo.setFailureOperationType(entity.getFailureOperationType());
+					outputInfo.setFailureOperationEndStatus(entity.getFailureOperationEndStatus());
+					outputInfo.setFailureOperationEndValue(entity.getFailureOperationEndValue());
+					outputInfo.setFailureNotifyFlg(entity.getFailureNotifyFlg());
+					outputInfo.setFailureNotifyPriority(entity.getFailureNotifyPriority());
+					outputInfo.setValid(entity.getValid());
+					if (JobOutputType.STDOUT.getCode().equals(entity.getId().getOutputType())) {
+						commandInfo.setNormalJobOutputInfo(outputInfo);
+					} else if (JobOutputType.STDERR.getCode().equals(entity.getId().getOutputType())) {
+						commandInfo.setErrorJobOutputInfo(outputInfo);
+					}
+				}
+			}
+			
 			try {
 				//ファシリティパスを取得
 				commandInfo.setScope(new RepositoryControllerBean().getFacilityPath(job.getFacilityId(), null));
@@ -2003,8 +2157,6 @@ public class SelectJob {
 			fileInfo.setMessageRetry(job.getMessageRetry());
 			fileInfo.setMessageRetryEndFlg(job.getMessageRetryEndFlg());
 			fileInfo.setMessageRetryEndValue(job.getMessageRetryEndValue());
-			fileInfo.setCommandRetry(job.getCommandRetry());
-			fileInfo.setCommandRetryFlg(job.getCommandRetryFlg());
 			try {
 				//ファシリティパスを取得
 				fileInfo.setSrcScope(new RepositoryControllerBean().getFacilityPath(job.getSrcFacilityId(), null));
@@ -2069,8 +2221,6 @@ public class SelectJob {
 			MonitorJobInfo monitorInfo = new MonitorJobInfo();
 			monitorInfo.setFacilityID(job.getFacilityId());
 			monitorInfo.setProcessingMethod(job.getProcessMode());
-			monitorInfo.setCommandRetryFlg(job.getCommandRetryFlg());
-			monitorInfo.setCommandRetry(job.getCommandRetry());
 			try {
 				//ファシリティパスを取得
 				monitorInfo.setScope(new RepositoryControllerBean().getFacilityPath(job.getFacilityId(), null));
@@ -2088,6 +2238,277 @@ public class SelectJob {
 			monitorInfo.setMonitorWaitTime(job.getMonitorWaitTime());
 			monitorInfo.setMonitorWarnEndValue(job.getMonitorWarnEndValue());
 			info.setMonitor(monitorInfo);
+		}
+		//ジョブ連携送信ジョブ
+		if (job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB) {
+			JobLinkSendInfo jobLinkSendInfo = new JobLinkSendInfo();
+			jobLinkSendInfo.setRetryFlg(job.getRetryFlg());
+			jobLinkSendInfo.setRetryCount(job.getRetryCount());
+			jobLinkSendInfo.setFailureOperation(job.getFailureOperation());
+			jobLinkSendInfo.setFailureEndStatus(job.getFailureEndStatus());
+			jobLinkSendInfo.setJoblinkMessageId(job.getJoblinkMessageId());
+			jobLinkSendInfo.setPriority(job.getPriority());
+			jobLinkSendInfo.setMessage(job.getMessage());
+			jobLinkSendInfo.setSuccessEndValue(job.getSuccessEndValue());
+			jobLinkSendInfo.setFailureEndValue(job.getFailureEndValue());
+			jobLinkSendInfo.setJoblinkSendSettingId(job.getJoblinkSendSettingId());
+			jobLinkSendInfo.setFacilityID(job.getFacilityId());
+			jobLinkSendInfo.setProcessingMethod(job.getProcessMode());
+			try {
+				//ファシリティパスを取得
+				jobLinkSendInfo.setScope(new RepositoryControllerBean().getFacilityPath(job.getFacilityId(), null));
+			} catch (HinemosUnknown e) {
+				m_log.debug(e.getMessage(), e);
+			} catch (Exception e) {
+				m_log.warn("createSessionJobData() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			}
+			jobLinkSendInfo.setProtocol(job.getProtocol());
+			jobLinkSendInfo.setPort(job.getPort());
+			jobLinkSendInfo.setHinemosUserId(job.getHinemosUserId());
+			jobLinkSendInfo.setHinemosPassword(job.getHinemosPassword());
+			jobLinkSendInfo.setProxyFlg(job.getProxyFlg());
+			jobLinkSendInfo.setProxyHost(job.getProxyHost());
+			jobLinkSendInfo.setProxyPort(job.getProxyPort()); 
+			jobLinkSendInfo.setProxyUser(job.getProxyUser());
+			jobLinkSendInfo.setProxyPassword(job.getProxyPassword());
+
+			if (job.getJobLinkJobExpInfoEntities() != null) {
+				jobLinkSendInfo.setJobLinkExpList(new ArrayList<>());
+				for (JobLinkJobExpInfoEntity entity : job.getJobLinkJobExpInfoEntities()) {
+					JobLinkExpInfo jobLinkExpInfo = new JobLinkExpInfo();
+					jobLinkExpInfo.setKey(entity.getId().getKey());
+					jobLinkExpInfo.setValue(entity.getValue());
+					jobLinkSendInfo.getJobLinkExpList().add(jobLinkExpInfo);
+				}
+			}
+
+			info.setJobLinkSend(jobLinkSendInfo);
+		}
+		//ジョブ連携待機ジョブ
+		if (job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB) {
+			JobLinkRcvInfo jobLinkRcvInfo = new JobLinkRcvInfo();
+			jobLinkRcvInfo.setFacilityID(job.getFacilityId());
+			try {
+				//ファシリティパスを取得
+				jobLinkRcvInfo.setScope(new RepositoryControllerBean().getFacilityPath(job.getFacilityId(), null));
+			} catch (HinemosUnknown e) {
+				m_log.debug(e.getMessage(), e);
+			} catch (Exception e) {
+				m_log.warn("createSessionJobData() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			}
+			jobLinkRcvInfo.setMonitorInfoEndValue(job.getMonitorInfoEndValue());
+			jobLinkRcvInfo.setMonitorWarnEndValue(job.getMonitorWarnEndValue());
+			jobLinkRcvInfo.setMonitorCriticalEndValue(job.getMonitorCriticalEndValue());
+			jobLinkRcvInfo.setMonitorUnknownEndValue(job.getMonitorUnknownEndValue());
+			jobLinkRcvInfo.setFailureEndFlg(job.getFailureEndFlg());
+			jobLinkRcvInfo.setMonitorWaitTime(job.getMonitorWaitTime());
+			jobLinkRcvInfo.setMonitorWaitEndValue(job.getMonitorWaitEndValue());
+			jobLinkRcvInfo.setJoblinkMessageId(job.getJoblinkMessageId());
+			jobLinkRcvInfo.setMessage(job.getMessage());
+			jobLinkRcvInfo.setPastFlg(job.getPastFlg());
+			jobLinkRcvInfo.setPastMin(job.getPastMin());
+			jobLinkRcvInfo.setInfoValidFlg(job.getInfoValidFlg());
+			jobLinkRcvInfo.setWarnValidFlg(job.getWarnValidFlg());
+			jobLinkRcvInfo.setCriticalValidFlg(job.getCriticalValidFlg());
+			jobLinkRcvInfo.setUnknownValidFlg(job.getUnknownValidFlg());
+			jobLinkRcvInfo.setApplicationFlg(job.getApplicationFlg());
+			jobLinkRcvInfo.setApplication(job.getApplication());
+			jobLinkRcvInfo.setMonitorDetailIdFlg(job.getMonitorDetailIdFlg());
+			jobLinkRcvInfo.setMonitorDetailId(job.getMonitorDetailId());
+			jobLinkRcvInfo.setMessageFlg(job.getMessageFlg());
+			jobLinkRcvInfo.setExpFlg(job.getExpFlg());
+			jobLinkRcvInfo.setMonitorAllEndValueFlg(job.getMonitorAllEndValueFlg());
+			jobLinkRcvInfo.setMonitorAllEndValue(job.getMonitorAllEndValue());
+			if (job.getJobLinkJobExpInfoEntities() != null) {
+				jobLinkRcvInfo.setJobLinkExpList(new ArrayList<>());
+				for (JobLinkJobExpInfoEntity entity : job.getJobLinkJobExpInfoEntities()) {
+					JobLinkExpInfo jobLinkExpInfo = new JobLinkExpInfo();
+					jobLinkExpInfo.setKey(entity.getId().getKey());
+					jobLinkExpInfo.setValue(entity.getValue());
+					jobLinkRcvInfo.getJobLinkExpList().add(jobLinkExpInfo);
+				}
+			}
+			if (job.getJobLinkInheritInfoEntities() != null) {
+				jobLinkRcvInfo.setJobLinkInheritList(new ArrayList<>());
+				for (JobLinkInheritInfoEntity entity : job.getJobLinkInheritInfoEntities()) {
+					JobLinkInheritInfo jobLinkInheritInfo = new JobLinkInheritInfo();
+					jobLinkInheritInfo.setParamId(entity.getId().getParamId());
+					jobLinkInheritInfo.setKeyInfo(entity.getKeyInfo());
+					jobLinkInheritInfo.setExpKey(entity.getExpKey());
+					jobLinkRcvInfo.getJobLinkInheritList().add(jobLinkInheritInfo);
+				}
+			}
+
+			info.setJobLinkRcv(jobLinkRcvInfo);
+		}
+		//ファイルチェックジョブ
+		if (job.getJobType() == JobConstant.TYPE_FILECHECKJOB) {
+			JobFileCheckInfo jobFileCheckInfo = new JobFileCheckInfo();
+			jobFileCheckInfo.setFacilityID(job.getFacilityId());
+			try {
+				//ファシリティパスを取得
+				jobFileCheckInfo.setScope(new RepositoryControllerBean().getFacilityPath(job.getFacilityId(), null));
+			} catch (HinemosUnknown e) {
+				m_log.debug(e.getMessage(), e);
+			} catch (Exception e) {
+				m_log.warn("createSessionJobData() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			}
+			jobFileCheckInfo.setProcessingMethod(job.getProcessMode());
+			jobFileCheckInfo.setSuccessEndValue(job.getSuccessEndValue());
+			jobFileCheckInfo.setFailureEndFlg(job.getFailureEndFlg());
+			jobFileCheckInfo.setFailureWaitTime(job.getFailureWaitTime());
+			jobFileCheckInfo.setFailureEndValue(job.getFailureEndValue());
+			jobFileCheckInfo.setDirectory(job.getDirectory());
+			jobFileCheckInfo.setFileName(job.getFileName());
+			jobFileCheckInfo.setCreateValidFlg(job.getCreateValidFlg());
+			jobFileCheckInfo.setCreateBeforeJobStartFlg(job.getCreateBeforeJobStartFlg());
+			jobFileCheckInfo.setDeleteValidFlg(job.getDeleteValidFlg());
+			jobFileCheckInfo.setModifyValidFlg(job.getModifyValidFlg());
+			jobFileCheckInfo.setModifyType(job.getModifyType());
+			jobFileCheckInfo.setNotJudgeFileInUseFlg(job.getNotJudgeFileInUseFlg());
+			jobFileCheckInfo.setMessageRetry(job.getMessageRetry());
+			jobFileCheckInfo.setMessageRetryEndFlg(job.getMessageRetryEndFlg());
+			jobFileCheckInfo.setMessageRetryEndValue(job.getMessageRetryEndValue());
+			info.setJobFileCheck(jobFileCheckInfo);
+		}
+		// リソース制御ジョブ
+		if (job.getJobType() == JobConstant.TYPE_RESOURCEJOB) {
+			ResourceJobInfo resourceInfo = new ResourceJobInfo();
+			resourceInfo.setResourceCloudScopeId(job.getResourceCloudScopeId());
+			resourceInfo.setResourceLocationId(job.getResourceLocationId());
+			resourceInfo.setResourceType(job.getResourceType());
+			resourceInfo.setResourceAction(job.getResourceAction());
+			resourceInfo.setResourceTargetId(job.getResourceTargetId());
+			resourceInfo.setResourceStatusConfirmTime(job.getResourceStatusConfirmTime());
+			resourceInfo.setResourceStatusConfirmInterval(job.getResourceStatusConfirmInterval());
+			resourceInfo.setResourceAttachNode(job.getResourceAttachNode());
+			resourceInfo.setResourceAttachDevice(job.getResourceAttachDevice());
+			resourceInfo.setResourceNotifyScope(job.getFacilityId());
+			//ファシリティパスを取得
+			try {
+				resourceInfo.setResourceNotifyScopePath(
+					new RepositoryControllerBean().getFacilityPath(job.getFacilityId(), null));
+				} catch (HinemosUnknown e) {
+					m_log.debug(e.getMessage(), e);
+				} catch (Exception e) {
+					m_log.warn("createSessionJobData() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
+				resourceInfo.setResourceSuccessValue(job.getResourceSuccessValue());
+				resourceInfo.setResourceFailureValue(job.getResourceFailureValue());
+				info.setResource(resourceInfo);
+		}
+		// RPAシナリオジョブ
+		if (job.getJobType() == JobConstant.TYPE_RPAJOB) {
+			RpaJobInfo rpaJobInfo = new RpaJobInfo();
+			rpaJobInfo.setRpaJobType(job.getRpaJobType());
+			// 直接実行
+			rpaJobInfo.setFacilityID(job.getFacilityId());
+			try {
+				//ファシリティパスを取得
+				rpaJobInfo.setScope(new RepositoryControllerBean().getFacilityPath(job.getFacilityId(), null));
+			} catch (HinemosUnknown e) {
+				m_log.debug(e.getMessage(), e);
+			} catch (Exception e) {
+				m_log.warn("createSessionJobData() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			}
+			rpaJobInfo.setProcessingMethod(job.getProcessMode());
+			rpaJobInfo.setRpaToolId(job.getRpaToolId());
+			rpaJobInfo.setRpaExeFilepath(job.getRpaExeFilepath());
+			rpaJobInfo.setRpaScenarioFilepath(job.getRpaScenarioFilepath());
+			rpaJobInfo.setRpaLogDirectory(job.getRpaLogDirectory());
+			rpaJobInfo.setRpaLogFileName(job.getRpaLogFileName());
+			rpaJobInfo.setRpaLogEncoding(job.getRpaLogEncoding());
+			rpaJobInfo.setRpaLogReturnCode(job.getRpaLogReturnCode());
+			rpaJobInfo.setRpaLogPatternHead(job.getRpaLogPatternHead());
+			rpaJobInfo.setRpaLogPatternTail(job.getRpaLogPatternTail());
+			rpaJobInfo.setRpaLogMaxBytes(job.getRpaLogMaxBytes());
+			rpaJobInfo.setRpaDefaultEndValue(job.getRpaDefaultEndValue());
+			rpaJobInfo.setRpaLoginFlg(job.getRpaLoginFlg());
+			rpaJobInfo.setRpaLoginUserId(job.getRpaLoginUserId());
+			rpaJobInfo.setRpaLoginPassword(job.getRpaLoginPassword());
+			rpaJobInfo.setRpaLoginRetry(job.getRpaLoginRetry());
+			rpaJobInfo.setRpaLoginEndValue(job.getRpaLoginEndValue());
+			rpaJobInfo.setRpaLoginResolution(job.getRpaLoginResolution());
+			rpaJobInfo.setRpaLogoutFlg(job.getRpaLogoutFlg());
+			rpaJobInfo.setRpaScreenshotEndDelayFlg(job.getRpaScreenshotEndDelayFlg());
+			rpaJobInfo.setRpaScreenshotEndValueFlg(job.getRpaScreenshotEndValueFlg());
+			rpaJobInfo.setRpaScreenshotEndValue(job.getRpaScreenshotEndValue());
+			rpaJobInfo.setRpaScreenshotEndValueCondition(job.getRpaScreenshotEndValueCondition());
+			rpaJobInfo.setRpaNotLoginNotify(job.getRpaNotLoginNotify());
+			rpaJobInfo.setRpaNotLoginNotifyPriority(job.getRpaNotLoginNotifyPriority());
+			rpaJobInfo.setRpaNotLoginEndValue(job.getRpaNotLoginEndValue());
+			rpaJobInfo.setRpaAlreadyRunningNotify(job.getRpaAlreadyRunningNotify());
+			rpaJobInfo.setRpaAlreadyRunningNotifyPriority(job.getRpaAlreadyRunningNotifyPriority());
+			rpaJobInfo.setRpaAlreadyRunningEndValue(job.getRpaAlreadyRunningEndValue());
+			rpaJobInfo.setRpaAbnormalExitNotify(job.getRpaAbnormalExitNotify());
+			rpaJobInfo.setRpaAbnormalExitNotifyPriority(job.getRpaAbnormalExitNotifyPriority());
+			rpaJobInfo.setRpaAbnormalExitEndValue(job.getRpaAbnormalExitEndValue());
+			rpaJobInfo.setRpaJobOptionInfos(new ArrayList<>());
+			job.getJobRpaOptionInfoEntities().forEach( e -> {
+				RpaJobOptionInfo optionInfo = new RpaJobOptionInfo();
+				optionInfo.setOrderNo(e.getId().getOrderNo());
+				optionInfo.setOption(e.getOption());
+				optionInfo.setDescription(e.getDescription());
+				rpaJobInfo.getRpaJobOptionInfos().add(optionInfo);
+			}); 
+			rpaJobInfo.setRpaJobEndValueConditionInfos(new ArrayList<>());
+			job.getJobRpaEndValueConditionInfoEntities().forEach( e -> {
+				RpaJobEndValueConditionInfo endValueInfo = new RpaJobEndValueConditionInfo();
+				endValueInfo.setOrderNo(e.getId().getOrderNo());
+				endValueInfo.setConditionType(e.getConditionType());
+				endValueInfo.setPattern(e.getPattern());
+				endValueInfo.setCaseSensitivityFlg(e.getCaseSensitivityFlg());
+				endValueInfo.setProcessType(e.getProcessType());
+				endValueInfo.setReturnCode(e.getReturnCode());
+				endValueInfo.setReturnCodeCondition(e.getReturnCodeCondition());
+				endValueInfo.setUseCommandReturnCodeFlg(e.getUseCommandReturnCodeFlg());
+				endValueInfo.setEndValue(e.getEndValue());
+				endValueInfo.setDescription(e.getDescription());
+				rpaJobInfo.getRpaJobEndValueConditionInfos().add(endValueInfo);
+			});
+			// 間接実行
+			rpaJobInfo.setRpaScopeId(job.getRpaScopeId());
+			rpaJobInfo.setRpaRunType(job.getRpaRunType());
+			rpaJobInfo.setRpaScenarioParam(job.getRpaScenarioParam());
+			rpaJobInfo.setRpaStopType(job.getRpaStopType());
+			rpaJobInfo.setRpaStopMode(job.getRpaStopMode());
+			rpaJobInfo.setRpaRunConnectTimeout(job.getRpaRunConnectTimeout());
+			rpaJobInfo.setRpaRunRequestTimeout(job.getRpaRunRequestTimeout());
+			rpaJobInfo.setRpaRunEndFlg(job.getRpaRunEndFlg());
+			rpaJobInfo.setRpaRunRetry(job.getRpaRunRetry());
+			rpaJobInfo.setRpaRunEndValue(job.getRpaRunEndValue());
+			rpaJobInfo.setRpaCheckConnectTimeout(job.getRpaCheckConnectTimeout());
+			rpaJobInfo.setRpaCheckRequestTimeout(job.getRpaCheckRequestTimeout());
+			rpaJobInfo.setRpaCheckEndFlg(job.getRpaCheckEndFlg());
+			rpaJobInfo.setRpaCheckRetry(job.getRpaCheckRetry());
+			rpaJobInfo.setRpaCheckEndValue(job.getRpaCheckEndValue());
+			rpaJobInfo.setRpaJobRunParamInfos(new ArrayList<>());
+			job.getJobRpaRunParamInfoEntities().forEach(e -> {
+				RpaJobRunParamInfo runParamInfo = new RpaJobRunParamInfo();
+				runParamInfo.setParamId(e.getId().getParamId());
+				runParamInfo.setParamValue(e.getParamValue());
+				rpaJobInfo.getRpaJobRunParamInfos().add(runParamInfo);
+			});
+			rpaJobInfo.setRpaJobCheckEndValueInfos(new ArrayList<>());
+			job.getJobRpaCheckEndValueInfoEntities().forEach(e -> {
+				RpaJobCheckEndValueInfo checkEndValueInfo = new RpaJobCheckEndValueInfo();
+				checkEndValueInfo.setEndStatusId(e.getId().getEndStatusId());
+				checkEndValueInfo.setEndValue(e.getEndValue());
+				rpaJobInfo.getRpaJobCheckEndValueInfos().add(checkEndValueInfo);
+			});
+			// 直接実行・間接実行共通
+			rpaJobInfo.setMessageRetry(job.getMessageRetry());
+			rpaJobInfo.setMessageRetryEndFlg(job.getMessageRetryEndFlg());
+			rpaJobInfo.setMessageRetryEndValue(job.getMessageRetryEndValue());
+			rpaJobInfo.setCommandRetry(job.getCommandRetry());
+			rpaJobInfo.setCommandRetryFlg(job.getCommandRetryFlg());
+			rpaJobInfo.setCommandRetryEndStatus(job.getCommandRetryEndStatus());
+			info.setRpa(rpaJobInfo);
 		}
 
 		//パラメータを取得
@@ -2116,180 +2537,6 @@ public class SelectJob {
 		return info;
 	}
 
-	/**
-	 * TypedQuery作成
-	 *
-	 * @param startFromDate
-	 * @param startToDate
-	 * @param endFromDate
-	 * @param endToDate
-	 * @param jobId
-	 * @param status
-	 * @param triggerType
-	 * @param triggerInfo
-	 * @param isCount true:件数を取得する
-	 *
-	 * @return typedQuery
-	 */
-	private TypedQuery<?> getHistoryFilterQuery(
-			Long startFromDate,
-			Long startToDate,
-			Long endFromDate,
-			Long endToDate,
-			String jobId,
-			Integer status,
-			Integer endStatus,
-			Integer triggerType,
-			String triggerInfo,
-			String ownerRoleId,
-			boolean isCount) {
-
-		m_log.debug("getHistoryFilterQuery() : "
-				+ ", [startFromDate"
-				+ ", startToDate"
-				+ ", endFromDate"
-				+ ", endToDate"
-				+ ", jobId"
-				+ ", status"
-				+ ", endStatus"
-				+ ", triggerType"
-				+ ", triggerInfo"
-				+ ", ownerRoleId"
-				+ ", isCount] = "
-				+ "[" + startFromDate
-				+ ", " + startToDate
-				+ ", " + endFromDate
-				+ ", " + endToDate
-				+ ", " + jobId
-				+ ", " + status
-				+ ", " + endStatus
-				+ ", " + triggerType
-				+ ", " + triggerInfo
-				+ ", " + ownerRoleId
-				+ ", " + isCount + "]");
-
-		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-			HinemosEntityManager em = jtm.getEntityManager();
-
-			// 「含まない」検索を行うかの判断に使う値
-			String notInclude = "NOT:";
-
-			StringBuffer sbJpql = new StringBuffer();
-			sbJpql.append("SELECT");
-			if (isCount) {
-				sbJpql.append(" COUNT(a)");
-			} else {
-				sbJpql.append(" a");
-			}
-			sbJpql.append(" FROM JobSessionJobEntity a JOIN a.jobSessionEntity b");
-			sbJpql.append(" WHERE a.id.jobunitId = b.jobunitId");
-			sbJpql.append(" AND a.id.jobId = b.jobId");
-			if(startFromDate != null) {
-				sbJpql.append(" AND a.startDate >= :startFromDate");
-			}
-			if(startToDate != null) {
-				sbJpql.append(" AND a.startDate <= :startToDate");
-			}
-			if(endFromDate != null) {
-				sbJpql.append(" AND a.endDate >= :endFromDate");
-			}
-			if(endToDate != null) {
-				sbJpql.append(" AND a.endDate <= :endToDate");
-			}
-			if(jobId != null && jobId.length() > 0) {
-				if(!jobId.startsWith(notInclude)) {
-					sbJpql.append(" AND a.id.jobId like :jobId");
-				}else {
-					sbJpql.append(" AND a.id.jobId not like :jobId");
-				}
-			}
-			if(status != null && status != -1) {
-				sbJpql.append(" AND a.status = :status");
-			}
-			if(endStatus != null && endStatus != -1) {
-				sbJpql.append(" AND a.endStatus = :endStatus");
-			}
-			if(ownerRoleId != null && ownerRoleId.length() > 0) {
-				if(!ownerRoleId.startsWith(notInclude)) {
-					sbJpql.append(" AND a.ownerRoleId like :ownerRoleId");
-				}else {
-					sbJpql.append(" AND a.ownerRoleId not like :ownerRoleId");
-				}
-			}
-			if(triggerType != null && triggerType != -1) {
-				sbJpql.append(" AND b.triggerType = :triggerType");
-			}
-			if(triggerInfo != null && triggerInfo.length() > 0) {
-				if(!triggerInfo.startsWith(notInclude)) {
-					sbJpql.append(" AND b.triggerInfo like :triggerInfo");
-				}else {
-					sbJpql.append(" AND b.triggerInfo not like :triggerInfo");
-				}
-			}
-
-			// オブジェクト権限チェック
-			sbJpql = getJpql(sbJpql);
-
-			TypedQuery<?> typedQuery = null;
-			m_log.debug("getHistoryFilterQuery() jpql = " + sbJpql.toString());
-			if (isCount) {
-				typedQuery = em.createQuery(sbJpql.toString(), Long.class, JobSessionJobEntity.class);
-			} else {
-				sbJpql.append(" ORDER BY a.id.sessionId DESC");
-				typedQuery = em.createQuery(sbJpql.toString(), JobSessionJobEntity.class);
-			}
-
-			if(startFromDate != null) {
-				typedQuery = typedQuery.setParameter("startFromDate", startFromDate);
-			}
-			if(startToDate != null) {
-				typedQuery = typedQuery.setParameter("startToDate", startToDate);
-			}
-			if(endFromDate != null) {
-				typedQuery = typedQuery.setParameter("endFromDate", endFromDate);
-			}
-			if(endToDate != null) {
-				typedQuery = typedQuery.setParameter("endToDate", endToDate);
-			}
-			if(jobId != null && jobId.length() > 0) {
-				if(!jobId.startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("jobId", jobId);
-				}else{
-					typedQuery = typedQuery.setParameter("jobId", jobId.substring(notInclude.length()));
-				}
-			}
-			if(status != null && status != -1) {
-				typedQuery = typedQuery.setParameter("status", status);
-			}
-			if(endStatus != null && endStatus != -1) {
-				typedQuery = typedQuery.setParameter("endStatus", endStatus);
-			}
-			if(ownerRoleId != null && ownerRoleId.length() > 0) {
-				if(!ownerRoleId.startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("ownerRoleId", ownerRoleId);
-				}else{
-					typedQuery = typedQuery.setParameter("ownerRoleId", ownerRoleId.substring(notInclude.length()));
-				}
-			}
-			if(triggerType != null && triggerType != -1) {
-				typedQuery = typedQuery.setParameter("triggerType", triggerType);
-			}
-			if(triggerInfo != null && triggerInfo.length() > 0) {
-				if(!triggerInfo.startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("triggerInfo", triggerInfo);
-				}else{
-					typedQuery = typedQuery.setParameter("triggerInfo", triggerInfo.substring(notInclude.length()));
-				}
-			}
-	
-			// オブジェクト権限チェック
-			typedQuery = setObjectPrivilegeParameter(typedQuery);
-	
-			return typedQuery;
-		}
-	}
-
-
 	private StringBuffer getJpql(StringBuffer sbJpql){
 
 		// ADMINISTRATORSロールに所属している場合はオブジェクト権限チェックはしない
@@ -2307,13 +2554,13 @@ public class SelectJob {
 
 		// オブジェクト権限チェックを含むJPQLに変換
 		String afterJpql = getObjectPrivilegeJPQL(sbJpql.toString(), HinemosModuleConstant.JOB, ObjectPrivilegeMode.READ);
-		List<String> roleIds = UserRoleCache.getRoleIdList(loginUser);
+		List<String> roleIds = external.getRoleIdList(loginUser);
 		afterJpql = afterJpql.replaceAll(":roleIds", HinemosEntityManager.getParamNameString("roleId", roleIds.toArray(new String[roleIds.size()])));
 
 		return new StringBuffer(afterJpql);
 	}
 
-	private TypedQuery<?> setObjectPrivilegeParameter(TypedQuery<?> typedQuery) {
+	private <T> TypedQuery<T> setObjectPrivilegeParameter(TypedQuery<T> typedQuery) {
 
 		// ADMINISTRATORSロールに所属している場合はオブジェクト権限チェックはしない
 		Boolean isAdministrator = (Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR);
@@ -2328,7 +2575,7 @@ public class SelectJob {
 			return typedQuery;
 		}
 
-		List<String> roleIds = UserRoleCache.getRoleIdList(loginUser);
+		List<String> roleIds = external.getRoleIdList(loginUser);
 		return HinemosEntityManager.appendParam(typedQuery, "roleId", roleIds.toArray(new String[roleIds.size()]));
 	}
 
@@ -2413,19 +2660,27 @@ public class SelectJob {
 		JpqlEquals equals2 = QueryPreparator.createEquals(QueryPreparator.createPath(privilegeAlias + ".id.objectType"), QueryPreparator.createStringLiteral(objectType));
 		JpqlEquals equals3 = QueryPreparator.createEquals(QueryPreparator.createPath(privilegeAlias + ".id.objectPrivilege"), QueryPreparator.createStringLiteral(mode.name()));
 		JpqlIn in = QueryPreparator.createIn(QueryPreparator.createPath(privilegeAlias + ".id.roleId"), QueryPreparator.createNamedParameter("roleIds"));
-		JpqlExists node1 = QueryPreparator.createExists(
-				QueryPreparator.createSubselect(
-										QueryPreparator.createSelectClause(privilegeAlias),
-										QueryPreparator.createFrom(ObjectPrivilegeInfo.class.getSimpleName(), privilegeAlias),
-										QueryPreparator.createWhere(QueryPreparator.createAnd(QueryPreparator.createAnd(QueryPreparator.createAnd(equals1, equals2), equals3), in))));
-
-		JpqlIn node2 = QueryPreparator.createIn(QueryPreparator.createPath(objectAlias + ".ownerRoleId"), QueryPreparator.createNamedParameter("roleIds"));
 		Node node = null;
 		if (objectType.equals(HinemosModuleConstant.JOB_MST)) {
+			JpqlExists node1 = QueryPreparator.createExists(
+					QueryPreparator.createSubselect(
+							QueryPreparator.createSelectClause(privilegeAlias),
+							QueryPreparator.createFrom(ObjectPrivilegeInfo.class.getSimpleName(), privilegeAlias),
+							QueryPreparator.createWhere(QueryPreparator.createAnd(QueryPreparator.createAnd(QueryPreparator.createAnd(equals1, equals2), equals3), in))));
+
+			JpqlIn node2 = QueryPreparator.createIn(QueryPreparator.createPath(objectAlias + ".ownerRoleId"), QueryPreparator.createNamedParameter("roleIds"));
+
 			JpqlEquals equals7 = QueryPreparator.createEquals(QueryPreparator.createPath(objectAlias + ".id.jobunitId"), QueryPreparator.createStringLiteral(CreateJobSession.TOP_JOBUNIT_ID));
 			node = QueryPreparator.createBrackets(QueryPreparator.createOr(QueryPreparator.createOr(node1, node2), equals7));
 		} else {
-			node = QueryPreparator.createBrackets(QueryPreparator.createOr(node1, node2));
+			JpqlExists node1 = QueryPreparator.createExists(
+					QueryPreparator.createSubselect(
+							QueryPreparator.createSelectClause(privilegeAlias),
+							QueryPreparator.createFrom(ObjectPrivilegeInfo.class.getSimpleName(),privilegeAlias),
+							QueryPreparator.createWhere(QueryPreparator.createOr(QueryPreparator.createAnd(QueryPreparator.createAnd(QueryPreparator.createAnd(equals1, equals2), equals3), in),
+									QueryPreparator.createIn(QueryPreparator.createPath(objectAlias + ".ownerRoleId"),QueryPreparator.createNamedParameter("roleIds"))))));
+			
+			node = QueryPreparator.createBrackets(node1);
 		}
 		return node;
 	}
@@ -2499,7 +2754,7 @@ public class SelectJob {
 		Boolean isAdministrator = (Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR);
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 		boolean isApprovalPrivilege = UserRoleCache.isSystemPrivilege(loginUser, new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.APPROVAL));
-		roleIdList = UserRoleCache.getRoleIdList(loginUser);
+		roleIdList = external.getRoleIdList(loginUser);
 		if(m_log.isDebugEnabled()){
 			if(roleIdList != null && !roleIdList.isEmpty()){
 				for(String role : roleIdList) {
@@ -2570,7 +2825,7 @@ public class SelectJob {
 		
 		for (JobInfoEntity job : joblist) {
 			
-			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(job.getId().getSessionId(), job.getId().getJobunitId(), job.getId().getJobId());
+			JobSessionJobEntity sessionJob = job.getJobSessionJobEntity();
 			//セッションジョブに関連するセッションノードを取得
 			List<JobSessionNodeEntity> nodeList = sessionJob.getJobSessionNodeEntities();
 			JobSessionNodeEntity sessionNode =null;
@@ -2595,7 +2850,7 @@ public class SelectJob {
 					status = JobApprovalStatusConstant.TYPE_STILL;
 				}
 			}
-			
+
 			if(m_log.isDebugEnabled()){
 				m_log.debug("jobinfo:" + job.getId().getSessionId() +" "+ job.getId().getJobunitId() +" "+ job.getId().getJobId());
 				m_log.debug("appreqinfo:" + job.getApprovalReqRoleId() +" "+ job.getApprovalReqUserId() + " status:" + status);
@@ -2840,58 +3095,74 @@ public class SelectJob {
 			}
 			if(property.getSessionId() != null && property.getSessionId().length() > 0) {
 				if(!property.getSessionId().startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("sessionId", property.getSessionId());
+					typedQuery = typedQuery.setParameter("sessionId",
+							QueryDivergence.escapeLikeCondition(property.getSessionId()));
 				}else{
-					typedQuery = typedQuery.setParameter("sessionId", property.getSessionId().substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("sessionId",
+							QueryDivergence.escapeLikeCondition(property.getSessionId().substring(notInclude.length())));
 				}
 			}
 			if(property.getJobunitId() != null && property.getJobunitId().length() > 0) {
 				if(!property.getJobunitId().startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("jobunitId", property.getJobunitId());
+					typedQuery = typedQuery.setParameter("jobunitId",
+							QueryDivergence.escapeLikeCondition(property.getJobunitId()));
 				}else{
-					typedQuery = typedQuery.setParameter("jobunitId", property.getJobunitId().substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("jobunitId",
+							QueryDivergence.escapeLikeCondition(property.getJobunitId().substring(notInclude.length())));
 				}
 			}
 			if(property.getJobId() != null && property.getJobId().length() > 0) {
 				if(!property.getJobId().startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("jobId", property.getJobId());
+					typedQuery = typedQuery.setParameter("jobId",
+							QueryDivergence.escapeLikeCondition(property.getJobId()));
 				}else{
-					typedQuery = typedQuery.setParameter("jobId", property.getJobId().substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("jobId",
+							QueryDivergence.escapeLikeCondition(property.getJobId().substring(notInclude.length())));
 				}
 			}
 			if(property.getJobName() != null && property.getJobName().length() > 0) {
 				if(!property.getJobName().startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("jobName", property.getJobName());
+					typedQuery = typedQuery.setParameter("jobName",
+							QueryDivergence.escapeLikeCondition(property.getJobName()));
 				}else{
-					typedQuery = typedQuery.setParameter("jobName", property.getJobName().substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("jobName",
+							QueryDivergence.escapeLikeCondition(property.getJobName().substring(notInclude.length())));
 				}
 			}
 			if(property.getRequestUser() != null && property.getRequestUser().length() > 0) {
 				if(!property.getRequestUser().startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("approvalRequestUser", property.getRequestUser());
+					typedQuery = typedQuery.setParameter("approvalRequestUser",
+							QueryDivergence.escapeLikeCondition(property.getRequestUser()));
 				}else{
-					typedQuery = typedQuery.setParameter("approvalRequestUser", property.getRequestUser().substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("approvalRequestUser",
+							QueryDivergence.escapeLikeCondition(property.getRequestUser().substring(notInclude.length())));
 				}
 			}
 			if(property.getApprovalUser() != null && property.getApprovalUser().length() > 0) {
 				if(!property.getApprovalUser().startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("approvalUser", property.getApprovalUser());
+					typedQuery = typedQuery.setParameter("approvalUser",
+							QueryDivergence.escapeLikeCondition(property.getApprovalUser()));
 				}else{
-					typedQuery = typedQuery.setParameter("approvalUser", property.getApprovalUser().substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("approvalUser",
+							QueryDivergence.escapeLikeCondition(property.getApprovalUser().substring(notInclude.length())));
 				}
 			}
 			if(property.getRequestSentence() != null && property.getRequestSentence().length() > 0) {
 				if(!property.getRequestSentence().startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("approvalReqSentence", property.getRequestSentence());
+					typedQuery = typedQuery.setParameter("approvalReqSentence",
+							QueryDivergence.escapeLikeCondition(property.getRequestSentence()));
 				}else{
-					typedQuery = typedQuery.setParameter("approvalReqSentence", property.getRequestSentence().substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("approvalReqSentence",
+							QueryDivergence.escapeLikeCondition(property.getRequestSentence().substring(notInclude.length())));
 				}
 			}
 			if(property.getComment() != null && property.getComment().length() > 0) {
 				if(!property.getComment().startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("approvalComment", property.getComment());
+					typedQuery = typedQuery.setParameter("approvalComment",
+							QueryDivergence.escapeLikeCondition(property.getComment()));
 				}else{
-					typedQuery = typedQuery.setParameter("approvalComment", property.getComment().substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("approvalComment",
+							QueryDivergence.escapeLikeCondition(property.getComment().substring(notInclude.length())));
 				}
 			}
 			
@@ -2903,6 +3174,80 @@ public class SelectJob {
 			}
 			
 			return typedQuery;
+		}
+	}
+	
+	/**
+	 * RPAシナリオジョブ（直接実行）のログイン解像度一覧を取得します。
+	 * 
+	 * @return ログイン解像度のリスト
+	 */
+	public List<JobRpaLoginResolutionMstEntity> getRpaLoginResolutionList() {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			return QueryUtil.getJobRpaLoginResolution();
+		}
+	}
+
+	/**
+	 * RPAシナリオジョブのスクリーンショットを検索します。
+	 * ファイルデータは含まれません。
+	 * 
+	 * @return スクリーンショット情報
+	 * @throws JobMasterNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public List<RpaJobScreenshot> getRpaScreenshotList(String sessionId, String jobunitId, String jobId, String facilityId) throws ObjectPrivilege_InvalidRole {
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			m_log.debug("getRpaScreenshot() sessionId=" + sessionId
+					+ ", jobunitId=" + jobunitId 
+					+ ", jobId=" + jobId 
+					+ ", facilityId=" + facilityId);
+
+			List<JobRpaScreenshotEntity> entities = QueryUtil.getJobRpaScreenshot(sessionId, jobunitId, jobId, facilityId);
+			List<RpaJobScreenshot> dtoList = new ArrayList<>();
+			for (JobRpaScreenshotEntity entity : entities) {
+				RpaJobScreenshot dto = new RpaJobScreenshot();
+				dto.setSessionId(entity.getId().getSessionId());
+				dto.setJobunitId(entity.getId().getJobunitId());
+				dto.setJobId(entity.getId().getJobId());
+				dto.setFacilityId(entity.getId().getFacilityId());
+				dto.setOutputDate(entity.getId().getOutputDate());
+				dto.setDescription(entity.getDescription());
+				// ファイルデータは含まない
+				dtoList.add(dto);
+			}
+			return dtoList;
+		}
+	}
+
+	/**
+	 * RPAシナリオジョブのスクリーンショットを検索します。
+	 * 
+	 * @return スクリーンショット情報
+	 * @throws JobMasterNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public RpaJobScreenshot getRpaScreenshot(String sessionId, String jobunitId, String jobId, String facilityId, Long regDate) throws ObjectPrivilege_InvalidRole {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			m_log.debug("getRpaScreenshot() sessionId=" + sessionId
+					+ ", jobunitId=" + jobunitId 
+					+ ", jobId=" + jobId 
+					+ ", facilityId=" + facilityId);
+			HinemosEntityManager em = jtm.getEntityManager();
+			JobRpaScreenshotEntity entity = em.find(JobRpaScreenshotEntity.class,
+					new JobRpaScreenshotEntityPK(sessionId, jobunitId, jobId, facilityId, regDate), ObjectPrivilegeMode.READ);
+			RpaJobScreenshot dto = new RpaJobScreenshot();
+			dto.setSessionId(entity.getId().getSessionId());
+			dto.setJobunitId(entity.getId().getJobunitId());
+			dto.setJobId(entity.getId().getJobId());
+			dto.setFacilityId(entity.getId().getFacilityId());
+			dto.setOutputDate(entity.getId().getOutputDate());
+			dto.setFiledata(entity.getFiledata());
+			dto.setDescription(entity.getDescription());
+			return dto;
 		}
 	}
 }

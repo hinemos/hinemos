@@ -26,15 +26,15 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.repository.action.DeleteScopeProperty;
 import com.clustercontrol.repository.action.GetScopeListTableDefine;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.repository.view.ScopeListView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * スコープの削除を行うクライアント側アクションクラス<BR>
@@ -91,9 +91,9 @@ public class ScopeDeleteAction extends AbstractHandler implements IElementUpdate
 		List<String> facilityNameList = new ArrayList<String>();
 
 		for (Object obj : selectionList) {
-			if  (obj instanceof FacilityTreeItem) {
-				FacilityTreeItem item= (FacilityTreeItem)obj;
-				FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
+			if  (obj instanceof FacilityTreeItemResponse) {
+				FacilityTreeItemResponse item= (FacilityTreeItemResponse)obj;
+				FacilityTreeItemResponse manager = ScopePropertyUtil.getManager(item);
 				String managerName = null;
 				if(manager == null) {
 					managerName = item.getChildren().get(0).getData().getFacilityId();
@@ -116,16 +116,16 @@ public class ScopeDeleteAction extends AbstractHandler implements IElementUpdate
 		String facilityId = null;
 		for (Object obj : selectionList) {
 			String managerName = null;
-			if  (obj instanceof FacilityTreeItem) {
-				FacilityTreeItem item= (FacilityTreeItem)obj;
+			if  (obj instanceof FacilityTreeItemResponse) {
+				FacilityTreeItemResponse item= (FacilityTreeItemResponse)obj;
 				// コンポジット・ノードを選択している場合は、処理終了
-				FacilityInfo info = item.getData();
-				if (info.getFacilityType() == FacilityConstant.TYPE_COMPOSITE
-						|| info.getFacilityType() == FacilityConstant.TYPE_NODE) {
+				FacilityInfoResponse info = item.getData();
+				if (info.getFacilityType() == FacilityTypeEnum.COMPOSITE
+						|| info.getFacilityType() == FacilityTypeEnum.NODE) {
 					continue;
 				}
 
-				FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
+				FacilityTreeItemResponse manager = ScopePropertyUtil.getManager(item);
 				if(manager == null) {
 					managerName = item.getChildren().get(0).getData().getFacilityId();
 				} else {
@@ -143,10 +143,10 @@ public class ScopeDeleteAction extends AbstractHandler implements IElementUpdate
 					// コンポジット・ノードを選択している場合は、無視
 					boolean isTargetType = false;
 					facilityId = (String) sList.get(GetScopeListTableDefine.FACILITY_ID);
-					for( FacilityTreeItem checkItem :scopeListView.getComposite().getFacilityTreeItem().getChildren()){
+					for( FacilityTreeItemResponse checkItem :scopeListView.getComposite().getFacilityTreeItem().getChildren()){
 						if(checkItem.getData().getFacilityId().equals(facilityId)  ){
-							if (checkItem.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE
-									|| checkItem.getData().getFacilityType() == FacilityConstant.TYPE_NODE) {
+							if (checkItem.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE
+									|| checkItem.getData().getFacilityType() == FacilityTypeEnum.NODE) {
 								isTargetType=false;
 							}else{
 								isTargetType=true;
@@ -221,12 +221,12 @@ public class ScopeDeleteAction extends AbstractHandler implements IElementUpdate
 							view.getComposite().getTable().isFocusControl())) {
 
 						switch(view.getType()) {
-							case FacilityConstant.TYPE_COMPOSITE:
+							case COMPOSITE:
 								break;
-							case FacilityConstant.TYPE_SCOPE:
+							case SCOPE:
 								editEnable = !view.getNotReferFlg();
 								break;
-							case FacilityConstant.TYPE_NODE:
+							case NODE:
 								break;
 							default: // 既定の対処はスルー。
 								break;

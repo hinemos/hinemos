@@ -20,13 +20,14 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.FacilityInfoResponseP1;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.action.GetNodeScopeTableDefine;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -128,13 +129,16 @@ public class NodeScopeComposite extends Composite {
 	 *            ファシリティ名
 	 */
 	public void update(String managerName, String facilityId, String facilityName) {
-		List<String> data = null;
+		List<String> data = new ArrayList<>();
 
 		if (facilityId != null) {
 			try {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-				data = wrapper.getNodeScopeList(facilityId);
-			} catch (InvalidRole_Exception e) {
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+				List<FacilityInfoResponseP1> dtoList = wrapper.getNodeScopeList(facilityId);
+				for (FacilityInfoResponseP1 dto : dtoList) {
+					data.add(dto.getFacilityId());
+				}
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
@@ -161,9 +165,6 @@ public class NodeScopeComposite extends Composite {
 					+ " : ");
 		}
 
-		if(data == null) {
-			data = new ArrayList<String>();
-		}
 		ArrayList<ArrayList<String>> dataInput = new ArrayList<ArrayList<String>>();
 		for (String path : data) {
 			ArrayList<String> a = new ArrayList<String>();

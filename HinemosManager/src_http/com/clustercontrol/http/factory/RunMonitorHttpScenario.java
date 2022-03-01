@@ -28,9 +28,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import javax.persistence.EntityExistsException;
-
-import org.apache.http.Header;
+import org.apache.hc.core5.http.Header;
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.bean.PriorityConstant;
@@ -60,6 +58,8 @@ import com.clustercontrol.repository.util.RepositoryUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.StringBinder;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * HTTPシナリオ監視を実行するクラス<BR>
@@ -462,18 +462,22 @@ public class RunMonitorHttpScenario extends RunMonitor {
 				List<String> rurls = new ArrayList<>();
 				String nextUrl = url;
 				String nextPost = post;
+				String redirectOrignalUrl = null;
 				while (true) {
 					m_request.execute(nextUrl, nextPost);
 					response = new PageResponse(page, m_request.getResult());
-
+					if (redirectOrignalUrl != null) {
+						// リダイレクト先に書き換わるため、最初のURLを入れる
+						response.response.url = redirectOrignalUrl; 
+						m_log.trace("set original url. response.response.url=" + response.response.url);
+					}
 					if (response.response.exception == null) {
 						// リダイレクトをする必要があるか確認。
-						if (
-							response.response.statusCode == 301 ||
-							response.response.statusCode == 302 ||
-							response.response.statusCode == 303 ||
-							response.response.statusCode == 307
-							) {
+						if (response.response.statusCode == 308) {
+							// 最初のURLを保持する
+							redirectOrignalUrl = url;
+							m_log.trace("redirectOrignalUrl=" + redirectOrignalUrl);
+							
 							for (Header h: response.response.headers) {
 								if (h.getName().equals("Location")) {
 									nextUrl = h.getValue();

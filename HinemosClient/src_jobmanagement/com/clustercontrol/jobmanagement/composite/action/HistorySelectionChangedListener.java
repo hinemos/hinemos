@@ -26,7 +26,6 @@ import com.clustercontrol.jobmanagement.composite.HistoryComposite;
 import com.clustercontrol.jobmanagement.view.JobDetailView;
 import com.clustercontrol.jobmanagement.view.JobHistoryView;
 import com.clustercontrol.jobmanagement.view.JobMapViewIF;
-import com.clustercontrol.util.ViewUtil;
 
 /**
  * ジョブ[履歴]ビューのテーブルビューア用のSelectionChangedListenerです。
@@ -72,6 +71,7 @@ public class HistorySelectionChangedListener implements ISelectionChangedListene
 		String sessionId = null;
 		String jobunitId = null;
 		String jobId = null;
+		String jobName = null;
 
 		//セッションIDを取得
 		if (((StructuredSelection) event.getSelection()).getFirstElement() != null) {
@@ -81,12 +81,15 @@ public class HistorySelectionChangedListener implements ISelectionChangedListene
 			sessionId = (String) info.get(GetHistoryTableDefine.SESSION_ID);
 			jobunitId = (String) info.get(GetHistoryTableDefine.JOBUNIT_ID);
 			jobId = (String) info.get(GetHistoryTableDefine.JOB_ID);
+			jobName = (String) info.get(GetHistoryTableDefine.JOB_NAME);
 			//マネージャ名を設定
 			m_composite.setManagerName(managerName);
 			//セッションIDを設定
 			m_composite.setSessionId(sessionId);
 			//ジョブIDを設定
 			m_composite.setJobId(jobId);
+			//ジョブ名を設定
+			m_composite.setJobName(jobName);
 			//ジョブユニットIDを設定
 			m_composite.setJobunitId(jobunitId);
 		}
@@ -96,6 +99,7 @@ public class HistorySelectionChangedListener implements ISelectionChangedListene
 		IWorkbenchPage page = PlatformUI.getWorkbench()
 				.getActiveWorkbenchWindow().getActivePage();
 		if (JobHistoryView.class.getSimpleName().equals(viewClass)) {
+			//自動更新によりジョブ[履歴]ビューがアクティブでない場合にも呼ばれる可能性があるので注意
 			//ジョブ[詳細]ビューを更新する
 			m_log.debug("selectionChanged() : job detail update");
 			IViewPart viewPartDetail = page.findView(JobDetailView.ID);
@@ -107,10 +111,6 @@ public class HistorySelectionChangedListener implements ISelectionChangedListene
 					return;
 				}
 				view.update(managerName, sessionId, jobunitId);
-				// 同時実行制御ビューに隠れている可能性があるのでアクティブ化が必要
-				ViewUtil.activate(JobDetailView.class);
-				// アクティブなビューを戻しておかないと、その後の処理に影響がある
-				ViewUtil.activate(JobHistoryView.class);
 			}
 		} else {
 			//ジョブマップ[履歴]ビューを更新する

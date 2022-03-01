@@ -20,17 +20,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.internal.service.ContextProvider;
 import org.eclipse.rap.rwt.internal.service.ServiceContext;
+import org.openapitools.client.model.GetStatusListRequest;
+import org.openapitools.client.model.StatusFilterBaseRequest;
+import org.openapitools.client.model.StatusInfoResponse;
 
+import com.clustercontrol.accesscontrol.util.ClientSession;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.MultiManagerRunUtil;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.StatusDataInfo;
-import com.clustercontrol.ws.monitor.StatusFilterInfo;
-
 
 /**
  * ステータス情報取得の実行管理を行う Session Bean クラス<BR>
@@ -39,9 +39,11 @@ import com.clustercontrol.ws.monitor.StatusFilterInfo;
 public class StatusSearchRunUtil extends MultiManagerRunUtil{
 	/** ログ出力のインスタンス<BR> */
 	private static Log m_log = LogFactory.getLog(StatusSearchRunUtil.class);
+	/** 検索成功可否フラグ */
+	private boolean m_searchSuccess = true;
 
 	@SuppressWarnings("unchecked")
-	public Map<String, ArrayList<ArrayList<Object>>> searchInfo(List<String> managerList, String facilityId, StatusFilterInfo filter) {
+	public Map<String, ArrayList<ArrayList<Object>>> searchInfo(List<String> managerList, StatusFilterBaseRequest filter) {
 
 		Map<String, ArrayList<ArrayList<Object>>> dispDataMap= new ConcurrentHashMap<>();
 		Map<String, String> errMsgs = new ConcurrentHashMap<>();
@@ -52,7 +54,7 @@ public class StatusSearchRunUtil extends MultiManagerRunUtil{
 			List<StatusSearchTask> searchList = new ArrayList<StatusSearchTask>();
 			for (String managerName : managerList) {
 				StatusSearchTask task = null;
-				task = new StatusSearchTask(threadName, managerName, facilityId, filter, ContextProvider.getContext());
+				task = new StatusSearchTask(threadName, managerName, filter, ContextProvider.getContext());
 				searchList.add(task);
 			}
 
@@ -85,8 +87,11 @@ public class StatusSearchRunUtil extends MultiManagerRunUtil{
 		}
 
 		//メッセージ表示
-		if( 0 < errMsgs.size() ){
+		if( 0 < errMsgs.size() && ClientSession.isDialogFree()) {
+			ClientSession.occupyDialog();
+			m_searchSuccess = false;
 			UIManager.showMessageBox(errMsgs, true);
+			ClientSession.freeDialog();
 		}
 
 		long end = System.currentTimeMillis();
@@ -94,19 +99,25 @@ public class StatusSearchRunUtil extends MultiManagerRunUtil{
 		return dispDataMap;
 	}
 
-	public class StatusSearchTask implements Callable<Map<String, List<?>>>{
+	/**
+	 * 検索成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isSearchSuccess() {
+		return this.m_searchSuccess;
+	}
+
+	public static class StatusSearchTask implements Callable<Map<String, List<?>>>{
+		private static final Log m_log2 = LogFactory.getLog(StatusSearchTask.class);
 
 		private String threadName = null;
 		private String managerName = null;
-		private String facilityId = null;
-		private StatusFilterInfo filter = null;
+		private StatusFilterBaseRequest filter = null;
 		private ServiceContext context = null;
-		private Log m_log = LogFactory.getLog(StatusSearchTask.class);
 
-		public StatusSearchTask(String threadName, String managerName, String facilityId, StatusFilterInfo filter, ServiceContext context) {
+		public StatusSearchTask(String threadName, String managerName, StatusFilterBaseRequest filter, ServiceContext context) {
 			this.threadName = threadName;
 			this.managerName = managerName;
-			this.facilityId = facilityId;
 			this.filter = filter;
 			this.context = context;
 		}
@@ -122,16 +133,20 @@ public class StatusSearchRunUtil extends MultiManagerRunUtil{
 			ContextProvider.setContext(context);
 
 			try {
-				MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(this.managerName);
-				List<StatusDataInfo> records = wrapper.getStatusList(facilityId, filter);
+				MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(this.managerName);
+
+				GetStatusListRequest getStatusListRequest = new GetStatusListRequest();
+				getStatusListRequest.setFilter(filter);
+				List<StatusInfoResponse> records = wrapper.getStatusList(getStatusListRequest);
+
 				infoList = ConvertListUtil.statusInfoDataListToArrayList(this.managerName, records);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				errMsgs = Messages.getString("message.accesscontrol.16");
-			} catch (MonitorNotFound_Exception | HinemosUnknown_Exception e) {
+			} catch (HinemosUnknown e) {
 				errMsgs = Messages.getString("message.monitor.67") + ", " + HinemosMessage.replace(e.getMessage());
 			} catch (Exception e) {
-				m_log.warn("MonitorSearchTask(), " + e.getMessage(), e);
+				m_log2.warn("call: " + e.getMessage(), e);
 				errMsgs = Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage());
 			}
 			List<Object> list = new ArrayList<Object>();

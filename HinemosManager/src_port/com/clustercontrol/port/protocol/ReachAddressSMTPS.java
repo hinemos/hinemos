@@ -65,12 +65,19 @@ public class ReachAddressSMTPS extends ReachAddressProtocol {
 					+ hostname + "[" + address.getHostAddress()
 					+ "]:" + m_portNo + ".\n\n");
 
-			SMTPSClient client = new SMTPSClient(true);
+			SMTPSClient client = new SMTPSClient(true) {
+				@Override
+				protected void _connectAction_() throws IOException {
+					setSoTimeout(m_timeout);
+					super._connectAction_();
+				}
+			};
 
 			for (int i = 0; i < m_sentCount && retry; i++) {
 				try {
 					bufferOrg.append(HinemosTime.getDateString() + " Tried to Connect: ");
 					client.setDefaultTimeout(m_timeout);
+					client.setConnectTimeout(m_timeout);
 
 					start = HinemosTime.currentTimeMillis();
 					client.connect(address, m_portNo);

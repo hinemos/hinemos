@@ -10,10 +10,10 @@ package com.clustercontrol.monitor.run.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Transient;
+import jakarta.persistence.Column;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlType;
 
 /**
@@ -33,10 +33,10 @@ public class MonitorCheckInfo implements Serializable {
 	private static final long serialVersionUID = 2945451890219694984L;
 
 	/** 監視項目ID */
-	private String m_monitorId;
+	private String monitorId;
 
 	/** 監視対象ID */
-	private String m_monitorTypeId;
+	private String monitorTypeId;
 
 	/**
 	 * コンストラクタ。
@@ -47,17 +47,17 @@ public class MonitorCheckInfo implements Serializable {
 	@Id
 	@Column(name="monitor_id")
 	public String getMonitorId(){
-		return this.m_monitorId;
+		return this.monitorId;
 	}
 	public void setMonitorId(String monitorId){
-		this.m_monitorId = monitorId;
+		this.monitorId = monitorId;
 	}
 	
 	@Transient
 	public String getMonitorTypeId(){
-		return this.m_monitorTypeId;
+		return this.monitorTypeId;
 	}
 	public void setMonitorTypeId(String monitorTypeId){
-		this.m_monitorTypeId = monitorTypeId;
+		this.monitorTypeId = monitorTypeId;
 	}
 }

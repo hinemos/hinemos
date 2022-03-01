@@ -24,8 +24,8 @@ import org.eclipse.swt.widgets.Text;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.ui.settings.composite.UtilityUploadComponent;
@@ -115,7 +115,7 @@ public class UtilityImportCommandDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		text.setLayoutData(gridData);
-		text.setText(UtilityManagerUtil.getCurrentManagerName() + " ( " + EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr() + " )");
+		text.setText(UtilityManagerUtil.getCurrentManagerName() + " ( " + RestConnectManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr() + " )");
 
 		uploadComponent = new UtilityUploadComponent( infoComposite, Messages.getString("string.import") + Messages.getString("file.name") + " : ", TITLE_WIDTH, FORM_WIDTH);
 
@@ -164,6 +164,9 @@ public class UtilityImportCommandDialog extends CommonDialog {
 			return createValidateResult(Messages.getString("message.hinemos.1"),
 					Messages.getString("message.infra.specify.item",
 							new Object[]{Messages.getString("string.import") + Messages.getString("file.name")}));
+		}
+		if (!uploadComponent.isReady()) {
+			return createValidateResult(Messages.getString("upload"), Messages.getString("upload.busy.message"));
 		}
 
 		return super.validate();

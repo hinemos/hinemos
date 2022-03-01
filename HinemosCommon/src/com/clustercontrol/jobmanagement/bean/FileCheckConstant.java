@@ -8,6 +8,8 @@
 
 package com.clustercontrol.jobmanagement.bean;
 
+import com.clustercontrol.util.MessageConstant;
+
 /**
  * ファイルチェックの種別定数クラス<BR>
  * 
@@ -25,4 +27,37 @@ public class FileCheckConstant {
 	public static final int TYPE_MODIFY_TIMESTAMP = 0;
 	/** 変更 - ファイルサイズの場合 */
 	public static final int TYPE_MODIFY_FILESIZE = 1;
+
+	// --- 結果を1列で判定する用（ジョブ変数などに利用される）
+	/** 存在 */
+	public static final int RESULT_EXIST = 1;
+	/** 作成 */
+	public static final int RESULT_CREATE = 2;
+	/** 削除 */
+	public static final int RESULT_DELETE = 3;
+	/** タイムスタンプ変更 */
+	public static final int RESULT_MODIFY_TIMESTAMP = 4;
+	/** ファイルサイズ変更 */
+	public static final int RESULT_MODIFY_FILESIZE = 5;
+
+	/**
+	 * 結果用の種別を文字列に変換します。
+	 * 
+	 * @param type
+	 * @return
+	 */
+	public static String resultTypeToMessage(int type) {
+		if (type == RESULT_EXIST) {
+			return MessageConstant.EXISTS.getMessage();
+		} else if (type == RESULT_CREATE) {
+			return MessageConstant.CREATE.getMessage();
+		} else if (type == RESULT_DELETE) {
+			return MessageConstant.DELETE.getMessage();
+		} else if (type == RESULT_MODIFY_TIMESTAMP) {
+			return MessageConstant.TIMESTAMP_MODIFY.getMessage();
+		} else if (type == RESULT_MODIFY_FILESIZE) {
+			return MessageConstant.FILE_SIZE_MODIFY.getMessage();
+		}
+		return "";
+	}
 }

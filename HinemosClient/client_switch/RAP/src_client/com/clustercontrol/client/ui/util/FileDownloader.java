@@ -14,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 import javax.servlet.ServletException;
@@ -115,7 +116,17 @@ public class FileDownloader {
 		final StringBuilder url = new StringBuilder();
 		url.append(RWT.getServiceManager().getServiceHandlerUrl( DOWNLOAD_HANDLER) );
 		url.append("&").append(FILENAME_PARAM).append("=");
-		url.append(filename);
+
+		// filename Encode to UTF-8
+		String filename_utf8 = filename;
+		try {
+			filename_utf8 = URLEncoder.encode(filename, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			Logger.getLogger(FileDownloader.class)
+					.error("failed to encode filename to UTF-8. " + e.getClass().getName() + ":" + e.getMessage());
+		}
+		url.append(filename_utf8);
+
 		RWT.getUISession().setAttribute(filename, tmpFile);
 
 		url.append("&nocache=").append(System.currentTimeMillis());

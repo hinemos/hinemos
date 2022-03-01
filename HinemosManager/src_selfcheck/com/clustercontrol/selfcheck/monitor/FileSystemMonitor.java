@@ -17,12 +17,11 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.selfcheck.FileSystemUsageConfig;
 import com.clustercontrol.selfcheck.util.FileSystemPoller;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -132,7 +131,7 @@ public class FileSystemMonitor extends SelfCheckMonitorBase {
 				continue;
 			} 
 			String[] msgAttr1 = { mountPoint.replace(":\\", ":/"), String.format("%.2f", fileSystemUsagePer), Integer.toString(thresholdPer)};
-			AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_002_SYS_SFC, msgAttr1,
+			AplLogger.put(InternalIdCommon.SYS_SFC_SYS_002, msgAttr1,
 					"usage of filesystem(" +
 							mountPoint +
 							") is too high (" +

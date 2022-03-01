@@ -7,11 +7,12 @@
  */
 package com.clustercontrol.xcloud.platform.rap;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import javax.activation.DataHandler;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
 
@@ -22,8 +23,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.BillingResultResponse.TypeEnum;
 
-import com.clustercontrol.ws.xcloud.TargetType;
 import com.clustercontrol.xcloud.platform.PlatformDependent;
 import com.clustercontrol.xcloud.ui.dialogs.DetailDialog;
 
@@ -60,7 +61,7 @@ public class RAPPlatformDependent extends PlatformDependent {
 	}
 
 	@Override
-	public void downloadBillingDetail(Shell parent, final TargetType type, final String targetId, final int year, final int month, final DataHandler handler) throws Exception {
+	public void downloadBillingDetail(Shell parent, final TypeEnum type, final String targetId, final int year, final int month, final File file) throws Exception {
 		Downloader.download(parent, new Downloader.DownloadHandler() {
 			@Override
 			public void download(HttpServletResponse response) throws ServletException, IOException {
@@ -69,17 +70,16 @@ public class RAPPlatformDependent extends PlatformDependent {
 				case FACILITY:
 					filename = String.format("hinemos_cloud_billing_detail_facility_%s_%04d%02d.csv.zip", targetId, year, month);
 					break;
-				case CLOUD_SCOPE:
+				case CLOUDSCOPE:
 					filename = String.format("hinemos_cloud_billing_detail_account_%s_%04d%02d.csv.zip", targetId, year, month);
 					break;
 				}
 				
 				response.setContentType("application/octet-stream");
-//				response.setContentLength( (int)file.length() );
 				response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
 				
 				try (OutputStream os = response.getOutputStream()) {
-					try (InputStream is = handler.getInputStream()) {
+					try (InputStream is = new FileInputStream(file)) {
 						int len = 0;
 						byte[] buffer = new byte[1024];
 						while ((len = is.read(buffer)) >= 0) {

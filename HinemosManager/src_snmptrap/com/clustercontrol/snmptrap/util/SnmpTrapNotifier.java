@@ -19,10 +19,12 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -83,6 +85,8 @@ public class SnmpTrapNotifier {
 				OutputBasicInfo output = new OutputBasicInfo();
 
 				output.setNotifyGroupId(monitor.getNotifyGroupId());
+				output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR,
+						HinemosModuleConstant.MONITOR_SNMPTRAP, monitor.getMonitorId()));
 				output.setMonitorId(monitor.getMonitorId());
 				output.setPluginId(HinemosModuleConstant.MONITOR_SNMPTRAP);
 

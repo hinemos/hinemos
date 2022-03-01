@@ -1,0 +1,152 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_facilityId"}
+	]},
+	
+	{
+	"propName":"platformType",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_platformType"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_aws"},
+				{"value":"1", "name":"name_azure"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"infoEventBus",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_infoEventBus"}
+	]},
+	
+	{
+	"propName":"infoDetailType",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_infoDetailType"}
+	]},
+	
+	{
+	"propName":"infoSource",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_infoSource"}
+	]},
+	
+	{
+	"propName":"infoDataVersion",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_infoDataVersion"}
+	]},
+	
+	{
+	"propName":"infoAccessKey",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_infoAccessKey"}
+	]},
+	
+	{
+	"propName":"keyValueData",
+	"annotations":[
+		{"type":"Array", "idType":"props", "props":["priority", "name"]},
+		{"type":"Column", "columnName":"NotifyCloudInfoType_keyValueData"},
+		{"type":"Ignore", "propNames":["priority", "name"]}
+	]},
+
+	{
+	"propName":"warnEventBus",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_warnEventBus"}
+	]},
+	
+	{
+	"propName":"warnDetailType",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_warnDetailType"}
+	]},
+	
+	{
+	"propName":"warnSource",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_warnSource"}
+	]},
+	
+	{
+	"propName":"warnDataVersion",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_warnDataVersion"}
+	]},
+	
+	{
+	"propName":"warnAccessKey",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_warnAccessKey"}
+	]},
+
+	{
+	"propName":"critEventBus",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_critEventBus"}
+	]},
+	
+	{
+	"propName":"critDetailType",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_critDetailType"}
+	]},
+	
+	{
+	"propName":"critSource",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_critSource"}
+	]},
+	
+	{
+	"propName":"critDataVersion",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_critDataVersion"}
+	]},
+	
+	{
+	"propName":"critAccessKey",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_critAccessKey"}
+	]},
+	
+	{
+	"propName":"unkEventBus",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_unkEventBus"}
+	]},
+	
+	{
+	"propName":"unkDetailType",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_unkDetailType"}
+	]},
+	
+	{
+	"propName":"unkSource",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_unkSource"}
+	]},
+	
+	{
+	"propName":"unkDataVersion",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_unkDataVersion"}
+	]},
+	
+	{
+	"propName":"unkAccessKey",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyCloudInfoType_unkAccessKey"}
+	]}
+]
+}

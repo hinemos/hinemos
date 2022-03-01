@@ -238,7 +238,7 @@ public class JobSessionChangeDataCache {
 
 		boolean rtn = false;
 
-		// 対象（ジョブネット、コマンドジョブ、ファイル転送ジョブ、承認ジョブ、監視ジョブ）以外は処理終了
+		// 対象（ジョブネット、コマンドジョブ、ファイル転送ジョブ、承認ジョブ、監視ジョブ、ジョブ連携送信ジョブ、ジョブ連携待機ジョブ、ファイルチェックジョブ、リソース制御ジョブ）以外は処理終了
 		if (jobSessionJobEntity.getJobInfoEntity() == null) {
 			// JobInfoEntityが設定されていない場合は処理終了
 			return rtn;
@@ -247,7 +247,12 @@ public class JobSessionChangeDataCache {
 			&& jobSessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_JOB
 			&& jobSessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_FILEJOB
 			&& jobSessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_APPROVALJOB
-			&& jobSessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_MONITORJOB) {
+			&& jobSessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_MONITORJOB
+			&& jobSessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_JOBLINKSENDJOB
+			&& jobSessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_JOBLINKRCVJOB
+			&& jobSessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_FILECHECKJOB
+			&& jobSessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_RESOURCEJOB
+			&& jobSessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_RPAJOB) {
 			// 対象外のジョブの場合は処理終了
 			return rtn;
 		}
@@ -331,8 +336,27 @@ public class JobSessionChangeDataCache {
 			return;
 		}
 
+		// 終了遅延で「実行履歴からの変化量」を使用していない場合は、キャッシュを作成しない
+		if (!jobSessionJobEntity.getJobInfoEntity().getEndDelay()
+				|| !jobSessionJobEntity.getJobInfoEntity().getEndDelayChangeMount()) {
+			m_log.debug(
+					String.format("add(): Do not create cache [JobUnitID:%s, JobID:%s, endDelay:%s endDelayChangeMount:%s]",
+							jobSessionJobEntity.getId().getJobunitId(), jobSessionJobEntity.getId().getJobId(),
+							jobSessionJobEntity.getJobInfoEntity().getEndDelay(),
+							jobSessionJobEntity.getJobInfoEntity().getEndDelayChangeMount()));
+			removeSpecificCache(jobSessionJobEntity);
+			return;
+		}
+		
+		m_log.debug(String.format("add(): Create cache [JobUnitID:%s, JobID:%s, endDelay:%s endDelayChangeMount:%s]",
+							jobSessionJobEntity.getId().getJobunitId(), jobSessionJobEntity.getId().getJobId(),
+							jobSessionJobEntity.getJobInfoEntity().getEndDelay(),
+							jobSessionJobEntity.getJobInfoEntity().getEndDelayChangeMount()));
+		
 		// キャッシュをUpdateする（データ存在チェックはupdate()で行っている。
 		// 対象外の場合は処理終了
+		// ジョブ作成後に「実行履歴からの変化量」を有効に変更した場合など、過去のキャッシュが存在しない場合は、
+		// updateCacheでキャッシュの作成が行われる
 		if (!updateCache(jobSessionJobEntity)) {
 			return;
 		}
@@ -370,6 +394,8 @@ public class JobSessionChangeDataCache {
 				}
 				cache.put(jobSessionChangeDataPk, jobSessionChangeDataInfo);
 				storeCache(cache);
+				// 該当のジョブに対してキャッシュで保持している履歴の数を出力
+				m_log.debug("add(): Current jobSessionChangeDataInfoList size: "+jobSessionChangeDataInfo.getJobSessionChangeDataList().size());
 			}
 
 		} catch (Exception e) {
@@ -517,5 +543,56 @@ public class JobSessionChangeDataCache {
 		} finally {
 			_lock.writeUnlock();
 		}
+	}
+	
+	/**
+	 * 特定のジョブに紐づくキャッシュを削除する
+	 */
+	private static void removeSpecificCache(JobSessionJobEntity jobSessionJobEntity){
+		
+		JobSessionChangeDataPK jobSessionChangeDataPk = new JobSessionChangeDataPK(
+				jobSessionJobEntity.getId().getJobunitId(), jobSessionJobEntity.getId().getJobId());
+		
+		ConcurrentHashMap<JobSessionChangeDataPK, JobSessionChangeDataInfo> cache = getCache();
+
+		// 削除対象のキャッシュがあるかを確認
+		try {
+			_lock.readLock();
+			if (!cache.containsKey(jobSessionChangeDataPk)) {
+				m_log.debug("removeSpecificCache(): No cache to delete " + jobSessionChangeDataPk);
+				return;
+			}
+			
+		} catch (Exception e) {
+			m_log.warn("removeSpacificCache() readLock: "
+					+ ", jobunitId=" + jobSessionJobEntity.getId().getJobunitId()
+					+ ", jobId=" + jobSessionJobEntity.getId().getJobId()
+					+ ", sessionId=" + jobSessionJobEntity.getId().getSessionId()
+					+ ", " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+		} finally {
+			_lock.readUnlock();
+		}
+
+		// 削除対象のキャッシュがある場合、削除
+		try {
+			_lock.writeLock();
+			cache.remove(jobSessionChangeDataPk);
+			storeCache(cache);
+			
+		} catch (Exception e) {
+			m_log.warn("removeSpecificCache() writeLock: "
+					+ ", jobunitId=" + jobSessionJobEntity.getId().getJobunitId()
+					+ ", jobId=" + jobSessionJobEntity.getId().getJobId()
+					+ ", sessionId=" + jobSessionJobEntity.getId().getSessionId()
+					+ ", " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+		} finally {
+			_lock.writeUnlock();
+			m_log.debug("removeSpecificCache() removed: "
+					+ ", jobunitId=" + jobSessionJobEntity.getId().getJobunitId()
+					+ ", jobId=" + jobSessionJobEntity.getId().getJobId()
+					+ ", sessionId=" + jobSessionJobEntity.getId().getSessionId()
+					+ ", cachesize=" + getCache().size());
+		}
+		
 	}
 }

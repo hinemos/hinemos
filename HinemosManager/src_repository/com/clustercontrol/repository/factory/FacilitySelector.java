@@ -16,6 +16,7 @@ import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,14 +30,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import javax.activation.DataHandler;
-import javax.activation.FileDataSource;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
-import com.clustercontrol.accesscontrol.util.ObjectPrivilegeUtil;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
@@ -72,18 +69,21 @@ import com.clustercontrol.repository.model.NodeHostnameInfo;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.NodeLicenseInfo;
 import com.clustercontrol.repository.model.NodeMemoryInfo;
-import com.clustercontrol.repository.model.NodeProductInfo;
 import com.clustercontrol.repository.model.NodeNetstatInfo;
 import com.clustercontrol.repository.model.NodeNetworkInterfaceInfo;
 import com.clustercontrol.repository.model.NodeOsInfo;
 import com.clustercontrol.repository.model.NodePackageInfo;
 import com.clustercontrol.repository.model.NodeProcessInfo;
+import com.clustercontrol.repository.model.NodeProductInfo;
 import com.clustercontrol.repository.model.NodeVariableInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.FacilityUtil;
 import com.clustercontrol.repository.util.QueryUtil;
+import com.clustercontrol.rest.util.RestTempFileType;
+import com.clustercontrol.rest.util.RestTempFileUtil;
+import com.clustercontrol.rpa.util.RpaConstants;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
@@ -178,7 +178,22 @@ public class FacilitySelector {
 		if (m_log.isDebugEnabled()) m_log.debug("store cache " + AbstractCacheManager.KEY_REPOSITORY_NODENAME_FACILITYID + " : " + newCache);
 		cm.store(AbstractCacheManager.KEY_REPOSITORY_NODENAME_FACILITYID, newCache);
 	}
+
+	// <小文字ノード名, ファシリティIDのセット>（監視対象外となっているものも含む。）
+	@SuppressWarnings("unchecked")
+	private static HashMap<String, HashSet<String>> getNodenameFacilityIdAllCache() {
+		ICacheManager cm = CacheManagerFactory.instance().create();
+		Serializable cache = cm.get(AbstractCacheManager.KEY_REPOSITORY_NODENAME_FACILITYID_ALL);
+		if (m_log.isDebugEnabled()) m_log.debug("get cache " + AbstractCacheManager.KEY_REPOSITORY_NODENAME_FACILITYID_ALL + " : " + cache);
+		return cache == null ? null : (HashMap<String, HashSet<String>>)cache;
+	}
 	
+	private static void storeNodenameFacilityIdAllCache(HashMap<String, HashSet<String>> newCache) {
+		ICacheManager cm = CacheManagerFactory.instance().create();
+		if (m_log.isDebugEnabled()) m_log.debug("store cache " + AbstractCacheManager.KEY_REPOSITORY_NODENAME_FACILITYID_ALL + " : " + newCache);
+		cm.store(AbstractCacheManager.KEY_REPOSITORY_NODENAME_FACILITYID_ALL, newCache);
+	}
+
 	// <IPアドレス, ファシリティIDのセット>（監視対象外となっているものは含まない。）
 	@SuppressWarnings("unchecked")
 	private static HashMap<InetAddress, HashSet<String>> getIpaddrFacilityIdCache() {
@@ -193,6 +208,22 @@ public class FacilitySelector {
 		if (m_log.isDebugEnabled()) m_log.debug("store cache " + AbstractCacheManager.KEY_REPOSITORY_IPADDR_FACILITYID + " : " + newCache);
 		cm.store(AbstractCacheManager.KEY_REPOSITORY_IPADDR_FACILITYID, newCache);
 	}
+
+	// <IPアドレス, ファシリティIDのセット>(管理対象外のノード含む) 
+	@SuppressWarnings("unchecked")
+	private static HashMap<InetAddress, HashSet<String>> getIpaddrFacilityIdAllCache() {
+		ICacheManager cm = CacheManagerFactory.instance().create();
+		Serializable cache = cm.get(AbstractCacheManager.KEY_REPOSITORY_IPADDR_FACILITYID_ALL);
+		if (m_log.isDebugEnabled()) m_log.debug("get cache " + AbstractCacheManager.KEY_REPOSITORY_IPADDR_FACILITYID_ALL + " : " + cache);
+		return cache == null ? null : (HashMap<InetAddress, HashSet<String>>)cache;
+	}
+	
+	private static void storeIpaddrFacilityIdAllCache(HashMap<InetAddress, HashSet<String>> newCache) {
+		ICacheManager cm = CacheManagerFactory.instance().create();
+		if (m_log.isDebugEnabled()) m_log.debug("store cache " + AbstractCacheManager.KEY_REPOSITORY_IPADDR_FACILITYID_ALL + " : " + newCache);
+		cm.store(AbstractCacheManager.KEY_REPOSITORY_IPADDR_FACILITYID_ALL, newCache);
+	}
+
 
 	// <ホスト名, ファシリティIDのセット>（監視対象外となっているものは含まない。）
 	@SuppressWarnings("unchecked")
@@ -682,6 +713,27 @@ public class FacilitySelector {
 			_hostnameIpaddrFacilityIdCacheLock.writeUnlock();
 		}
 	}
+	
+	/**
+	 * ホスト名を指定して、該当するノード一覧を取得する。<BR>
+	 * 管理対象フラグOFFのノード含めて取得する(getNodeListByNodenameとは異なる)
+	 * 
+	 * @param hostname ホスト名
+	 * @return ファシリティIDの配列
+	 */
+	public static List<NodeInfo> getNodeByNodeName(String hostname) throws HinemosUnknown {
+		m_log.debug("getNodeByNodeName() start : hostname = " + hostname);
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+				// hostname変数のNodeプロパティのnodename(必須項目)をLowerCaseで検索
+			List<NodeInfo> nodes = QueryUtil.getNodeByNodename(hostname);
+			return nodes;
+		} catch (Exception e) {
+			m_log.warn("unexpected internal error. (hostname = " + hostname + ") : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown("unexpected internal error. (hostname = " + hostname + ")", e);
+		}
+	}
+
 	
 	/**
 	 * ホスト名とIPv4アドレスを指定して、該当するノードのファシリティIDの一覧を取得する。<BR>
@@ -1574,6 +1626,11 @@ public class FacilitySelector {
 		buildInScopeFacilityIdSet.add(FacilityTreeAttributeConstant.OS_PARENT_SCOPE);
 		buildInScopeFacilityIdSet.add(FacilityTreeAttributeConstant.NODE_CONFIGURATION_SCOPE);
 		
+		// アクティベーションした場合、RPAスコープがビルトインになる
+		buildInScopeFacilityIdSet.add(RpaConstants.RPA);
+		buildInScopeFacilityIdSet.add(RpaConstants.RPA_NO_MGR_WINACTOR);
+		buildInScopeFacilityIdSet.add(RpaConstants.RPA_NO_MGR_UIPATH);
+		
 		// クラウドのルートスコープは、初期は存在しないが、作成されるとビルトインになる。
 		buildInScopeFacilityIdSet.add(CloudConstants.privateRootId);
 		buildInScopeFacilityIdSet.add(CloudConstants.publicRootId);
@@ -1611,6 +1668,24 @@ public class FacilitySelector {
 	}
 
 	/**
+	 * ファシリティがスコープかどうかを確認する。<BR>
+	 * 
+	 * @param facilityId ファシリティID
+	 * @return スコープの場合はtrue, それ以外の場合はfalse
+	 * @throws FacilityNotFound
+	 */
+	public static boolean isScope(String facilityId) throws FacilityNotFound {
+
+		/** メイン処理 */
+		m_log.debug("isScope() : checking whether a facility is scope...");
+
+		FacilityInfo facility = QueryUtil.getFacilityPK_NONE(facilityId);
+
+		m_log.debug("isScope() : successful in checking whether a facility is scope or not.");
+		return FacilityUtil.isScope(facility);
+	}
+
+	/**
 	 * 指定のノード名で登録されているノードのファシリティIDを返す。
 	 * 管理対象フラグ「無効」となっているものは含まない。
 	 * よって、指定のノード名で登録されているノードがリポジトリに存在しているが、
@@ -1627,12 +1702,27 @@ public class FacilitySelector {
 	}
 
 	/**
+	 * 指定のノード名で登録されている全ノードのファシリティIDを返す。
+	 * 管理対象フラグ「無効」となっているものも含む
+	 * 
+	 * @param nodename ノード名
+	 * @return ファシリティIDのセット。存在しない場合はnullを返す。
+	 */
+	public static Set<String> getNodeListAllByNodename(String nodename){
+		// 並列してキャッシュ更新処理が実行されている場合、更新処理完了を待機しない（更新前・後のどちらが取得されるか保証されない）
+		// (部分書き換えでなく全置換えのキャッシュ更新特性、ロックに伴う処理コストの観点から参照ロックは意図的に取得しない)
+		HashMap<String, HashSet<String>> cache = getNodenameFacilityIdAllCache();
+		return cache.get(nodename.toLowerCase());
+	}
+
+	/**
 	 * getNodeListByNodenameで利用するキャッシュを現在のDBに基づき再構成する。<br/>
 	 */
 	private static void refreshNodenameFacilityIdCache() {
 		long start = HinemosTime.currentTimeMillis();
 		
 		HashMap<String, HashSet<String>> nodenameFacilityIdMap = new HashMap<String, HashSet<String>>();
+		HashMap<String, HashSet<String>> nodenameFacilityIdAllMap = new HashMap<String, HashSet<String>>();
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			_nodenameFacilityIdCacheLock.writeLock();
@@ -1652,15 +1742,25 @@ public class FacilitySelector {
 					nodenameFacilityIdMap.put(checkNodename, nodenameFacilityIdSet);
 				}
 
+				HashSet<String> nodenameFacilityIdAllSet = nodenameFacilityIdAllMap.get(checkNodename);
+				if(nodenameFacilityIdAllSet == null){
+					nodenameFacilityIdAllSet = new HashSet<String>();
+					nodenameFacilityIdAllMap.put(checkNodename, nodenameFacilityIdAllSet);
+				}
+
 				// 管理対象フラグ「有効」のノードのみセットに追加する。管理対象フラグ「無効」のノードはセットに追加しない。
 				// よって、最終的にノード名でnodenameFacilityIdSetから取得したファシリティのセットは存在するが、
 				// その中にエンティティが含まれない場合は、該当ノード名のノードは存在するが、全て無効だったことなる。
 				if(node.getValid()){
 					nodenameFacilityIdSet.add(facilityId);
 				}
+				// 全ノードをnodenameFacilityIdAllから引けるようにする。
+				nodenameFacilityIdAllSet.add(facilityId);
+
 			}
 			
 			storeNodenameFacilityIdCache(nodenameFacilityIdMap);
+			storeNodenameFacilityIdAllCache(nodenameFacilityIdAllMap);
 		} finally {
 			_nodenameFacilityIdCacheLock.writeUnlock();
 			
@@ -1687,12 +1787,28 @@ public class FacilitySelector {
 	}
 
 	/**
+	 * 指定のIPアドレスで登録されている全ノードのファシリティIDのセットを返す。
+	 * 管理対象フラグ「無効」となっているノードも含む。
+	 * 
+	 * @param ipAddress IPアドレス
+	 * @return ファシリティIDのセット。存在しない場合はnullを返す。
+	 * 
+	 **/
+	public static Set<String> getNodeListAllByIpAddress(InetAddress ipAddress){
+		// 並列してキャッシュ更新処理が実行されている場合、更新処理完了を待機しない（更新前・後のどちらが取得されるか保証されない）
+		// (部分書き換えでなく全置換えのキャッシュ更新特性、ロックに伴う処理コストの観点から参照ロックは意図的に取得しない)
+		HashMap<InetAddress, HashSet<String>> cache = getIpaddrFacilityIdAllCache();
+		return cache.get(ipAddress);
+	}
+
+	/**
 	 * getNodeListByIpAddressのためのキャッシュを現在のDBから再構成する。<br/>
 	 */
 	private static void refreshIpaddrFacilityIdCache() {
 		long start = HinemosTime.currentTimeMillis();
 		
 		HashMap<InetAddress, HashSet<String>> inetAddressFacilityIdMap = new HashMap<InetAddress, HashSet<String>>();
+		HashMap<InetAddress, HashSet<String>> inetAddressFacilityIdAllMap = new HashMap<InetAddress, HashSet<String>>();
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			_ipaddrFacilityIdCacheLock.writeLock();
@@ -1720,15 +1836,25 @@ public class FacilitySelector {
 					inetAddressFacilityIdMap.put(checkIpAddress, inetAddressFacilityIdSet);
 				}
 
+				HashSet<String> inetAddressFacilityIdAllSet = inetAddressFacilityIdAllMap.get(checkIpAddress);
+				if(inetAddressFacilityIdAllSet == null){
+					inetAddressFacilityIdAllSet = new HashSet<String>();
+					inetAddressFacilityIdAllMap.put(checkIpAddress, inetAddressFacilityIdAllSet);
+				}
+
+
 				// 管理対象フラグ「有効」のノードのみセットに追加する。管理対象フラグ「無効」のノードはセットに追加しない。
 				// よって、最終的にIPアドレスでinetAddressFacilityIdMapから取得したファシリティのセットは存在するが、
 				// その中にエンティティが含まれない場合は、該当IPアドレスのノードは存在するが、全て無効だったことなる。
 				if(node.getValid()){
 					inetAddressFacilityIdSet.add(facilityId);
 				}
+				// 全ノードをipaddrFacilityIdAllから引けるようにする。
+				inetAddressFacilityIdAllSet.add(facilityId);
 			}
 			
 			storeIpaddrFacilityIdCache(inetAddressFacilityIdMap);
+			storeIpaddrFacilityIdAllCache(inetAddressFacilityIdAllMap);
 		} catch (Exception e) {
 			m_log.warn("refreshIpaddrFacilityIdCache() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -1859,24 +1985,50 @@ public class FacilitySelector {
 		}
 	}
 
+	/**
+	 * 指定のノードが、指定スコープ配下に含まれているかチェックする
+	 * 性能改善のためリストを使用せず、直接ツリーを探索する
+	 * 
+	 * @param scopeFacilityId
+	 * @param nodeFacilityId
+	 * @param ownerRoleId
+	 * @return
+	 */
+	public static boolean containsFacilityIdWithoutList(String scopeFacilityId, String nodeFacilityId, String ownerRoleId) {
+		if (scopeFacilityId == null) {
+			m_log.warn("containsFacilityIdWithoutList() : scopeFacilityId is null."); 
+			return false;
+		}
+		FacilityTreeItem allFacilityTree = FacilityTreeCache.getAllFacilityTree();
+		FacilityTreeItem parentItem = getTopFacilityRecursive(allFacilityTree, scopeFacilityId);
+		if (parentItem == null) {
+			m_log.warn("containsFacilityIdWithoutList() : " + scopeFacilityId + " was not found in tree."); 
+			return false;
+		}
+
+		// 監視設定のスコープがノード指定の場合は、権限チェックをしない。
+		if (!scopeFacilityId.equals(nodeFacilityId)){
+			// 参照不可のスコープの場合はfalseを返す
+			if (parentItem.getAuthorizedRoleIdSet() == null || !parentItem.getAuthorizedRoleIdSet().contains(ownerRoleId)) {
+				return false;
+			}
+		}
+
+		// スコープに含まれているか判定
+		return parentItem.isContained(nodeFacilityId, false, true);
+	}
 
 	/**
-	 * 構成情報ヘッダーファイルを返します。
-	 *
-	 * @param conditionStr 検索対象
-	 * @param filename ファイル名
-	 * @param username ユーザ名
-	 * @param locale ロケール
-	 * @return 帳票出力用構成情報一覧
-	 * @throws HinemosUnknown
+	 * 構成情報ヘッダーをファイルに書き出します。
+	 * 
+	 * @param conditionStr
+	 * @param username
+	 * @param locale
+	 * @param file
 	 * @throws IOException
 	 */
-	public DataHandler getNodeConfigInfoFileHeader(	String conditionStr, String filename, String username, Locale locale)
-			throws HinemosUnknown, IOException {
-
-		String exportDirectory = HinemosPropertyDefault.node_config_export_dir.getStringValue();
-		String filepath = exportDirectory + "/" + filename;
-		File file = new File(filepath);
+	private void writeNodeConfigInfoFileHeader(String conditionStr, String username, Locale locale, File file)
+			throws IOException {
 		boolean UTF8_BOM = HinemosPropertyCommon.node_config_report_bom.getBooleanValue();
 		if (UTF8_BOM) {
 			FileOutputStream fos = new FileOutputStream(file);
@@ -1886,8 +2038,8 @@ public class FacilitySelector {
 			fos.close();
 		}
 		FileWriter filewriter = new FileWriter(file, true);
-
-		try {
+		
+		try { 
 
 			String SEPARATOR = HinemosPropertyCommon.node_config_report_separator.getStringValue();
 			String DATE_FORMAT = HinemosPropertyCommon.node_config_report_format.getStringValue();
@@ -1905,62 +2057,61 @@ public class FacilitySelector {
 			filewriter.write("" + "\n");
 				
 			// 出力処理
-			filewriter.write(
-					Messages.getString(MessageConstant.MANAGER_NAME.name(), locale) + SEPARATOR + 				// マネージャ名
-					Messages.getString(MessageConstant.FACILITY_ID.name(), locale) + SEPARATOR + 				// ファシリティID
-					Messages.getString(MessageConstant.TYPE.name(), locale) + SEPARATOR + 						// 種別
-					Messages.getString(MessageConstant.NAME.name(), locale) + SEPARATOR + 						// 名前
-					Messages.getString(MessageConstant.SUB_NAME.name(), locale) + SEPARATOR +					// 名前（サブ）
-					Messages.getString(MessageConstant.DEVICE_INDEX.name(), locale) + SEPARATOR +				// インデックス
-					Messages.getString(MessageConstant.DEVICE_DISPLAY_NAME.name(), locale) + SEPARATOR +		// 表示名
-					Messages.getString(MessageConstant.DEVICE_SIZE.name(), locale) + SEPARATOR +			// サイズ
-					Messages.getString(MessageConstant.DEVICE_SIZE_UNIT.name(), locale) + SEPARATOR +		// サイズ単位
-					Messages.getString(MessageConstant.DESCRIPTION.name(), locale) + SEPARATOR +			// 説明
-					Messages.getString(MessageConstant.VERSION.name(), locale) + SEPARATOR +				// バージョン
-					Messages.getString(MessageConstant.RELEASE.name(), locale) + SEPARATOR +				// リリース
-					Messages.getString(MessageConstant.STARTUP_DATE_TIME.name(), locale) + SEPARATOR +		// 起動日時
-					Messages.getString(MessageConstant.INSTALL_DATE.name(), locale) + SEPARATOR +			// インストール日時
-					Messages.getString(MessageConstant.VALUE.name(), locale) + SEPARATOR +					// 値
-					Messages.getString(MessageConstant.CPU_CORE_COUNT.name(), locale) + SEPARATOR +		// コア数
-					Messages.getString(MessageConstant.CPU_THREAD_COUNT.name(), locale) + SEPARATOR +		// スレッド数
-					Messages.getString(MessageConstant.CPU_CLOCK_COUNT.name(), locale) + SEPARATOR +		// クロック数
-					Messages.getString(MessageConstant.NIC_IP_ADDRESS.name(), locale) + SEPARATOR +		// IPアドレス
-					Messages.getString(MessageConstant.NIC_MAC_ADDRESS.name(), locale) + SEPARATOR +		// MACアドレス
-					Messages.getString(MessageConstant.DISK_RPM.name(), locale) + SEPARATOR +				// ディスク回転数
-					Messages.getString(MessageConstant.FILE_SYSTEM_TYPE.name(), locale) + SEPARATOR +		// ファイルシステム種別
-					Messages.getString(MessageConstant.CHARACTER_SET.name(), locale) + SEPARATOR +			// 文字セット
-					Messages.getString(MessageConstant.NODE_NETSTAT_PROTOCOL.name(), locale) + SEPARATOR +	// プロトコル
-					Messages.getString(MessageConstant.NODE_NETSTAT_LOCAL_IP_ADDRESS.name(), locale) + SEPARATOR +	// ローカルIPアドレス
-					Messages.getString(MessageConstant.NODE_NETSTAT_LOCAL_PORT.name(), locale) + SEPARATOR +	// ローカルポート
-					Messages.getString(MessageConstant.NODE_NETSTAT_FOREIGN_IP_ADDRESS.name(), locale) + SEPARATOR +	// 外部IPアドレス
-					Messages.getString(MessageConstant.NODE_NETSTAT_FOREIGN_PORT.name(), locale) + SEPARATOR +	// 外部ポート
-					Messages.getString(MessageConstant.NODE_NETSTAT_PROCESS_NAME.name(), locale) + SEPARATOR +	// プロセス名
-					Messages.getString(MessageConstant.NODE_NETSTAT_PID.name(), locale) + SEPARATOR +	// PID
-					Messages.getString(MessageConstant.NODE_NETSTAT_STATUS.name(), locale) + SEPARATOR +	// ステータス
-					Messages.getString(MessageConstant.NODE_PROCESS_PATH.name(), locale) + SEPARATOR +	// フルパス
-					Messages.getString(MessageConstant.NODE_PROCESS_EXEC_USER.name(), locale) + SEPARATOR +	// 実行ユーザ
-					Messages.getString(MessageConstant.NODE_PACKAGE_VENDOR.name(), locale) + SEPARATOR +	// ベンダー
-					Messages.getString(MessageConstant.NODE_PACKAGE_ARCHITECTURE.name(), locale) + SEPARATOR +		// アーキテクチャ
-					Messages.getString(MessageConstant.COMMAND.name(), locale) + SEPARATOR +		// コマンド
-					Messages.getString(MessageConstant.NODE_LICENSE_VENDOR_CONTACT.name(), locale) + SEPARATOR +	// ベンダー連絡先
-					Messages.getString(MessageConstant.NODE_LICENSE_SERIAL_NUMBER.name(), locale) + SEPARATOR +	// シリアルナンバー
-					Messages.getString(MessageConstant.NODE_LICENSE_COUNT.name(), locale) + SEPARATOR +	// 数量
-					Messages.getString(MessageConstant.NODE_LICENSE_EXPIRATION_DATE.name(), locale) + SEPARATOR +	// 有効期限
-					Messages.getString(MessageConstant.REG_DATE.name(), locale) + SEPARATOR +		// 作成日時
-					Messages.getString(MessageConstant.REG_USER.name(), locale) + SEPARATOR +		// 作成ユーザ
-					Messages.getString(MessageConstant.UPDATE_DATE.name(), locale) + SEPARATOR +		// 更新日時
-					Messages.getString(MessageConstant.UPDATE_USER.name(), locale) +		// 更新ユーザ
-					"\n");
+			StringBuilder writeInfos = new StringBuilder();
+			writeInfos.append(Messages.getString(MessageConstant.MANAGER_NAME.name(), locale) + SEPARATOR);				// マネージャ名
+			writeInfos.append(Messages.getString(MessageConstant.FACILITY_ID.name(), locale) + SEPARATOR);				// ファシリティID
+			if (HinemosPropertyCommon.node_config_report_expansion.getBooleanValue()) {
+				writeInfos.append(Messages.getString(MessageConstant.FACILITY_NAME.name(), locale) + SEPARATOR);				// ファシリティ名
+			}
+			writeInfos.append(Messages.getString(MessageConstant.TYPE.name(), locale) + SEPARATOR);						// 種別
+			writeInfos.append(Messages.getString(MessageConstant.NAME.name(), locale) + SEPARATOR);						// 名前
+			writeInfos.append(Messages.getString(MessageConstant.SUB_NAME.name(), locale) + SEPARATOR);					// 名前（サブ）
+			writeInfos.append(Messages.getString(MessageConstant.DEVICE_INDEX.name(), locale) + SEPARATOR);				// インデックス
+			writeInfos.append(Messages.getString(MessageConstant.DEVICE_DISPLAY_NAME.name(), locale) + SEPARATOR);		// 表示名
+			writeInfos.append(Messages.getString(MessageConstant.DEVICE_SIZE.name(), locale) + SEPARATOR);			// サイズ
+			writeInfos.append(Messages.getString(MessageConstant.DEVICE_SIZE_UNIT.name(), locale) + SEPARATOR);		// サイズ単位
+			writeInfos.append(Messages.getString(MessageConstant.DESCRIPTION.name(), locale) + SEPARATOR);			// 説明
+			writeInfos.append(Messages.getString(MessageConstant.VERSION.name(), locale) + SEPARATOR);				// バージョン
+			writeInfos.append(Messages.getString(MessageConstant.RELEASE.name(), locale) + SEPARATOR);				// リリース
+			writeInfos.append(Messages.getString(MessageConstant.STARTUP_DATE_TIME.name(), locale) + SEPARATOR);		// 起動日時
+			writeInfos.append(Messages.getString(MessageConstant.INSTALL_DATE.name(), locale) + SEPARATOR);			// インストール日時
+			writeInfos.append(Messages.getString(MessageConstant.VALUE.name(), locale) + SEPARATOR);					// 値
+			writeInfos.append(Messages.getString(MessageConstant.CPU_CORE_COUNT.name(), locale) + SEPARATOR);		// コア数
+			writeInfos.append(Messages.getString(MessageConstant.CPU_THREAD_COUNT.name(), locale) + SEPARATOR);		// スレッド数
+			writeInfos.append(Messages.getString(MessageConstant.CPU_CLOCK_COUNT.name(), locale) + SEPARATOR);		// クロック数
+			writeInfos.append(Messages.getString(MessageConstant.NIC_IP_ADDRESS.name(), locale) + SEPARATOR);		// IPアドレス
+			writeInfos.append(Messages.getString(MessageConstant.NIC_MAC_ADDRESS.name(), locale) + SEPARATOR);		// MACアドレス
+			writeInfos.append(Messages.getString(MessageConstant.DISK_RPM.name(), locale) + SEPARATOR);				// ディスク回転数
+			writeInfos.append(Messages.getString(MessageConstant.FILE_SYSTEM_TYPE.name(), locale) + SEPARATOR);		// ファイルシステム種別
+			writeInfos.append(Messages.getString(MessageConstant.CHARACTER_SET.name(), locale) + SEPARATOR);			// 文字セット
+			writeInfos.append(Messages.getString(MessageConstant.NODE_NETSTAT_PROTOCOL.name(), locale) + SEPARATOR);	// プロトコル
+			writeInfos.append(Messages.getString(MessageConstant.NODE_NETSTAT_LOCAL_IP_ADDRESS.name(), locale) + SEPARATOR);	// ローカルIPアドレス
+			writeInfos.append(Messages.getString(MessageConstant.NODE_NETSTAT_LOCAL_PORT.name(), locale) + SEPARATOR);	// ローカルポート
+			writeInfos.append(Messages.getString(MessageConstant.NODE_NETSTAT_FOREIGN_IP_ADDRESS.name(), locale) + SEPARATOR);	// 外部IPアドレス
+			writeInfos.append(Messages.getString(MessageConstant.NODE_NETSTAT_FOREIGN_PORT.name(), locale) + SEPARATOR);	// 外部ポート
+			writeInfos.append(Messages.getString(MessageConstant.NODE_NETSTAT_PROCESS_NAME.name(), locale) + SEPARATOR);	// プロセス名
+			writeInfos.append(Messages.getString(MessageConstant.NODE_NETSTAT_PID.name(), locale) + SEPARATOR);	// PID
+			writeInfos.append(Messages.getString(MessageConstant.NODE_NETSTAT_STATUS.name(), locale) + SEPARATOR);	// ステータス
+			writeInfos.append(Messages.getString(MessageConstant.NODE_PROCESS_PATH.name(), locale) + SEPARATOR);	// フルパス
+			writeInfos.append(Messages.getString(MessageConstant.NODE_PROCESS_EXEC_USER.name(), locale) + SEPARATOR);	// 実行ユーザ
+			writeInfos.append(Messages.getString(MessageConstant.NODE_PACKAGE_VENDOR.name(), locale) + SEPARATOR);	// ベンダー
+			writeInfos.append(Messages.getString(MessageConstant.NODE_PACKAGE_ARCHITECTURE.name(), locale) + SEPARATOR);		// アーキテクチャ
+			writeInfos.append(Messages.getString(MessageConstant.COMMAND.name(), locale) + SEPARATOR);		// コマンド
+			writeInfos.append(Messages.getString(MessageConstant.NODE_LICENSE_VENDOR_CONTACT.name(), locale) + SEPARATOR);	// ベンダー連絡先
+			writeInfos.append(Messages.getString(MessageConstant.NODE_LICENSE_SERIAL_NUMBER.name(), locale) + SEPARATOR);	// シリアルナンバー
+			writeInfos.append(Messages.getString(MessageConstant.NODE_LICENSE_COUNT.name(), locale) + SEPARATOR);	// 数量
+			writeInfos.append(Messages.getString(MessageConstant.NODE_LICENSE_EXPIRATION_DATE.name(), locale) + SEPARATOR);	// 有効期限
+			writeInfos.append(Messages.getString(MessageConstant.REG_DATE.name(), locale) + SEPARATOR);		// 作成日時
+			writeInfos.append(Messages.getString(MessageConstant.REG_USER.name(), locale) + SEPARATOR);		// 作成ユーザ
+			writeInfos.append(Messages.getString(MessageConstant.UPDATE_DATE.name(), locale) + SEPARATOR);		// 更新日時
+			writeInfos.append(Messages.getString(MessageConstant.UPDATE_USER.name(), locale));		// 更新ユーザ
+			writeInfos.append("\n");
+			
+			filewriter.write(writeInfos.toString());
 
 		} finally {
 			filewriter.close();
 		}
-
-		// リストをファイルに書き出し。
-		FileDataSource source = new FileDataSource(file);
-		DataHandler handler = new DataHandler(source);
-
-		return handler;
 	}
 
 	/**
@@ -1976,17 +2127,18 @@ public class FacilitySelector {
 	 * @throws HinemosUnknown
 	 * @throws IOException
 	 */
-	public DataHandler getNodeConfigInfoFile(
-			List<String> facilityIdList, Long targetDatetime, String filename, Locale locale, 
-			String managerName, List<NodeConfigSettingItem> nodeConfigSettingItemList)
+	public File getNodeConfigInfoFile(
+			List<String> facilityIdList, Long targetDatetime, String conditionStr, String username, Locale locale, 
+			String managerName, List<NodeConfigSettingItem> nodeConfigSettingItemList, boolean needHeaderInfo)
 			throws HinemosUnknown, IOException {
 
-		String exportDirectory = HinemosPropertyDefault.node_config_export_dir.getStringValue();
-		String filepath = exportDirectory + "/" + filename;
-		File file = new File(filepath);
-		FileWriter filewriter = new FileWriter(file, true);
+		Path tempFile = RestTempFileUtil.createTempFile(RestTempFileType.NODEMAP_NODECONFIG);
+		FileWriter filewriter = new FileWriter(tempFile.toFile(), true);
 
 		try {
+			if (needHeaderInfo) {
+				writeNodeConfigInfoFileHeader(conditionStr, username, locale, tempFile.toFile());
+			}
 			// 対象ファシリティのファシリティIDを取得
 			Collections.sort(facilityIdList);
 			for (int i = 0; i < facilityIdList.size(); i++) {
@@ -2015,10 +2167,7 @@ public class FacilitySelector {
 					m_log.warn("getNodeConfigInfoFile() : node info is not found. facilityId=" + facilityId);
 					continue;
 				}
-				if (nodeInfo == null) {
-					m_log.warn("getNodeConfigInfoFile() : node info is null. facilityId=" + facilityId);
-					continue;
-				}
+				//findbugs対応 nodeInfoのNULLはあり得ないのでチェックを削除
 
 				// 帳票出力用に変換
 				nodeConfigToFile(nodeInfo, filewriter, locale, managerName, nodeConfigSettingItemList);
@@ -2028,11 +2177,7 @@ public class FacilitySelector {
 			filewriter.close();
 		}
 
-		// リストをファイルに書き出し。
-		FileDataSource source = new FileDataSource(file);
-		DataHandler handler = new DataHandler(source);
-
-		return handler;
+		return tempFile.toFile();
 	}
 
 	/**
@@ -2060,6 +2205,26 @@ public class FacilitySelector {
 	}
 
 	/**
+	 * ファシリティ情報の配列を取得する。<BR>
+	 * 
+	 * @return ファシリティ情報の配列
+	 */
+	public static ArrayList<FacilityInfo> getFacilityList() {
+
+		/** ローカル変数 */
+		ArrayList<FacilityInfo> resultList = null;
+
+		/** メイン処理 */
+		resultList = new ArrayList<FacilityInfo>();
+		List<FacilityInfo> facilityList = QueryUtil.getAllFacility();
+		for (FacilityInfo facility : facilityList) {
+			resultList.add(facility);
+		}
+
+		return resultList;
+	}
+
+	/**
 	 * DBより取得した構成情報をFileWriterに出力します。
 	 *
 	 * @param managerName マネージャ名
@@ -2079,7 +2244,7 @@ public class FacilitySelector {
 		// OS情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.OS) && nodeInfo.getNodeOsInfo() != null) {
 			NodeOsInfo nodeDetailInfo = nodeInfo.getNodeOsInfo();
-			NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.OS);
+			NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.OS);
 			info.name = nodeDetailInfo.getOsName();
 			info.version = nodeDetailInfo.getOsVersion();
 			info.release = nodeDetailInfo.getOsRelease();
@@ -2094,7 +2259,7 @@ public class FacilitySelector {
 		// CPU情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HW_CPU) && nodeInfo.getNodeCpuInfo() != null) {
 			for (NodeCpuInfo nodeDetailInfo : nodeInfo.getNodeCpuInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HW_CPU);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.HW_CPU);
 				info.name = nodeDetailInfo.getDeviceName();
 				info.index = nodeDetailInfo.getDeviceIndex();
 				info.displayName = nodeDetailInfo.getDeviceDisplayName();
@@ -2114,7 +2279,7 @@ public class FacilitySelector {
 		// メモリ情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HW_MEMORY) && nodeInfo.getNodeMemoryInfo() != null) {
 			for (NodeMemoryInfo nodeDetailInfo : nodeInfo.getNodeMemoryInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HW_MEMORY);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.HW_MEMORY);
 				info.name = nodeDetailInfo.getDeviceName();
 				info.index = nodeDetailInfo.getDeviceIndex();
 				info.displayName = nodeDetailInfo.getDeviceDisplayName();
@@ -2131,7 +2296,7 @@ public class FacilitySelector {
 		// NIC情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HW_NIC) && nodeInfo.getNodeNetworkInterfaceInfo() != null) {
 			for (NodeNetworkInterfaceInfo nodeDetailInfo : nodeInfo.getNodeNetworkInterfaceInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HW_NIC);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.HW_NIC);
 				info.name = nodeDetailInfo.getDeviceName();
 				info.index = nodeDetailInfo.getDeviceIndex();
 				info.displayName = nodeDetailInfo.getDeviceDisplayName();
@@ -2150,7 +2315,7 @@ public class FacilitySelector {
 		// ディスク情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HW_DISK) && nodeInfo.getNodeDiskInfo() != null) {
 			for (NodeDiskInfo nodeDetailInfo : nodeInfo.getNodeDiskInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HW_DISK);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.HW_DISK);
 				info.name = nodeDetailInfo.getDeviceName();
 				info.index = nodeDetailInfo.getDeviceIndex();
 				info.displayName = nodeDetailInfo.getDeviceDisplayName();
@@ -2168,7 +2333,7 @@ public class FacilitySelector {
 		// ファイルシステム情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HW_FILESYSTEM) && nodeInfo.getNodeFilesystemInfo() != null) {
 			for (NodeFilesystemInfo nodeDetailInfo : nodeInfo.getNodeFilesystemInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HW_FILESYSTEM);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.HW_FILESYSTEM);
 				info.name = nodeDetailInfo.getDeviceName();
 				info.index = nodeDetailInfo.getDeviceIndex();
 				info.displayName = nodeDetailInfo.getDeviceDisplayName();
@@ -2186,7 +2351,7 @@ public class FacilitySelector {
 		// ホスト名情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.HOSTNAME) && nodeInfo.getNodeHostnameInfo() != null) {
 			for (NodeHostnameInfo nodeDetailInfo : nodeInfo.getNodeHostnameInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.HOSTNAME);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.HOSTNAME);
 				info.name = nodeDetailInfo.getHostname();
 				info.regDate = nodeDetailInfo.getRegDate();
 				info.regUser = nodeDetailInfo.getRegUser();
@@ -2196,7 +2361,7 @@ public class FacilitySelector {
 		// ネットワーク接続情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.NETSTAT) && nodeInfo.getNodeNetstatInfo() != null) {
 			for (NodeNetstatInfo nodeDetailInfo : nodeInfo.getNodeNetstatInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.NETSTAT);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.NETSTAT);
 				info.protocol = nodeDetailInfo.getProtocol();
 				info.localIpAddress = nodeDetailInfo.getLocalIpAddress();
 				info.localPort = nodeDetailInfo.getLocalPort();
@@ -2215,7 +2380,7 @@ public class FacilitySelector {
 		// プロセス情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.PROCESS) && nodeInfo.getNodeProcessInfo() != null) {
 			for (NodeProcessInfo nodeDetailInfo : nodeInfo.getNodeProcessInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.PROCESS);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.PROCESS);
 				info.name = nodeDetailInfo.getProcessName();
 				info.startupDateTime = nodeDetailInfo.getStartupDateTime();
 				info.pid = nodeDetailInfo.getPid();
@@ -2229,7 +2394,7 @@ public class FacilitySelector {
 		// パッケージ情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.PACKAGE) && nodeInfo.getNodePackageInfo() != null) {
 			for (NodePackageInfo nodeDetailInfo : nodeInfo.getNodePackageInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.PACKAGE);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.PACKAGE);
 				info.name = nodeDetailInfo.getPackageName();
 				info.displayName = nodeDetailInfo.getPackageId();
 				info.version = nodeDetailInfo.getVersion();
@@ -2247,7 +2412,7 @@ public class FacilitySelector {
 		// ノード変数情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.NODE_VARIABLE) && nodeInfo.getNodeVariableInfo() != null) {
 			for (NodeVariableInfo nodeDetailInfo : nodeInfo.getNodeVariableInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.NODE_VARIABLE);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.NODE_VARIABLE);
 				info.name = nodeDetailInfo.getNodeVariableName();
 				info.value = nodeDetailInfo.getNodeVariableValue();
 				info.regDate = nodeDetailInfo.getRegDate();
@@ -2260,7 +2425,7 @@ public class FacilitySelector {
 		// 個別導入製品情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.PRODUCT) && nodeInfo.getNodeProductInfo() != null) {
 			for (NodeProductInfo nodeDetailInfo : nodeInfo.getNodeProductInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.PRODUCT);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.PRODUCT);
 				info.name = nodeDetailInfo.getProductName();
 				info.version = nodeDetailInfo.getVersion();
 				info.path = nodeDetailInfo.getPath();
@@ -2274,7 +2439,7 @@ public class FacilitySelector {
 		// ライセンス情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.LICENSE) && nodeInfo.getNodeLicenseInfo() != null) {
 			for (NodeLicenseInfo nodeDetailInfo : nodeInfo.getNodeLicenseInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.LICENSE);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.LICENSE);
 				info.name = nodeDetailInfo.getProductName();
 				info.vendor = nodeDetailInfo.getVendor();
 				info.vendorContact = nodeDetailInfo.getVendorContact();
@@ -2291,7 +2456,7 @@ public class FacilitySelector {
 		// ユーザ任意情報
 		if (nodeConfigSettingItemList.contains(NodeConfigSettingItem.CUSTOM) && nodeInfo.getNodeCustomInfo() != null) {
 			for (NodeCustomInfo nodeDetailInfo : nodeInfo.getNodeCustomInfo()) {
-				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo.getFacilityId(), NodeConfigSettingItem.CUSTOM);
+				NodeConfigFileInfo info = new NodeConfigFileInfo(managerName, nodeInfo, NodeConfigSettingItem.CUSTOM);
 				info.name = nodeDetailInfo.getSettingId();
 				info.subName = nodeDetailInfo.getSettingCustomId();
 				info.displayName = nodeDetailInfo.getDisplayName();
@@ -2320,52 +2485,57 @@ public class FacilitySelector {
 		if (info == null) {
 			return;
 		}
-		filewriter.write(
-				getDoubleQuote(info.managerName) + nodeConfigSeparator +
-				getDoubleQuote(info.facilityId) + nodeConfigSeparator +
-				getDoubleQuote(info.type.typeName()) + nodeConfigSeparator +
-				getDoubleQuote(info.name) + nodeConfigSeparator +
-				getDoubleQuote(info.subName) + nodeConfigSeparator +
-				getDoubleQuote(info.index) + nodeConfigSeparator +
-				getDoubleQuote(info.displayName) + nodeConfigSeparator +
-				getDoubleQuote(info.size) + nodeConfigSeparator +
-				getDoubleQuote(info.sizeUnit) + nodeConfigSeparator +
-				getDoubleQuote(info.description) + nodeConfigSeparator +
-				getDoubleQuote(info.version) + nodeConfigSeparator +
-				getDoubleQuote(info.release) + nodeConfigSeparator +
-				getDoubleQuote(l2s(info.startupDateTime)) + nodeConfigSeparator +
-				getDoubleQuote(l2s(info.installDate)) + nodeConfigSeparator +
-				getDoubleQuote(info.value) + nodeConfigSeparator +
-				getDoubleQuote(info.coreCount) + nodeConfigSeparator +
-				getDoubleQuote(info.threadCount) + nodeConfigSeparator +
-				getDoubleQuote(info.clockCount) + nodeConfigSeparator +
-				getDoubleQuote(info.ipAddress) + nodeConfigSeparator +
-				getDoubleQuote(info.macAddress) + nodeConfigSeparator +
-				getDoubleQuote(info.diskRpm) + nodeConfigSeparator +
-				getDoubleQuote(info.fileSystemType) + nodeConfigSeparator +
-				getDoubleQuote(info.characterSet) + nodeConfigSeparator +
-				getDoubleQuote(info.protocol) + nodeConfigSeparator +
-				getDoubleQuote(info.localIpAddress) + nodeConfigSeparator +
-				getDoubleQuote(info.localPort) + nodeConfigSeparator +
-				getDoubleQuote(info.foreignIpAddress) + nodeConfigSeparator +
-				getDoubleQuote(info.foreignPort) + nodeConfigSeparator +
-				getDoubleQuote(info.processName) + nodeConfigSeparator +
-				getDoubleQuote(info.pid) + nodeConfigSeparator +
-				getDoubleQuote(info.status) + nodeConfigSeparator +
-				getDoubleQuote(info.path) + nodeConfigSeparator +
-				getDoubleQuote(info.execUser) + nodeConfigSeparator +
-				getDoubleQuote(info.vendor) + nodeConfigSeparator +
-				getDoubleQuote(info.architecture) + nodeConfigSeparator +
-				getDoubleQuote(info.command) + nodeConfigSeparator +
-				getDoubleQuote(info.vendorContact) + nodeConfigSeparator +
-				getDoubleQuote(info.serialNumber) + nodeConfigSeparator +
-				getDoubleQuote(info.count) + nodeConfigSeparator +
-				getDoubleQuote(l2s(info.expirationDate)) + nodeConfigSeparator +
-				getDoubleQuote(l2s(info.regDate)) + nodeConfigSeparator +
-				getDoubleQuote(info.regUser) + nodeConfigSeparator +
-				getDoubleQuote(l2s(info.updateDate)) + nodeConfigSeparator +
-				getDoubleQuote(info.updateUser) +
-				"\n");
+		StringBuilder writeInfos = new StringBuilder();
+		writeInfos.append(getDoubleQuote(info.managerName) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.facilityId) + nodeConfigSeparator);
+		if (HinemosPropertyCommon.node_config_report_expansion.getBooleanValue()) {
+			writeInfos.append(getDoubleQuote(info.facilityName) + nodeConfigSeparator);
+		}
+		writeInfos.append(getDoubleQuote(info.type.typeName()) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.name) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.subName) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.index) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.displayName) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.size) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.sizeUnit) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.description) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.version) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.release) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(l2s(info.startupDateTime)) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(l2s(info.installDate)) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.value) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.coreCount) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.threadCount) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.clockCount) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.ipAddress) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.macAddress) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.diskRpm) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.fileSystemType) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.characterSet) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.protocol) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.localIpAddress) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.localPort) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.foreignIpAddress) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.foreignPort) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.processName) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.pid) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.status) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.path) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.execUser) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.vendor) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.architecture) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.command) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.vendorContact) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.serialNumber) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.count) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(l2s(info.expirationDate)) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(l2s(info.regDate)) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.regUser) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(l2s(info.updateDate)) + nodeConfigSeparator);
+		writeInfos.append(getDoubleQuote(info.updateUser));
+		writeInfos.append("\n");
+		
+		filewriter.write(writeInfos.toString());
 	}
 
 	/**
@@ -2379,7 +2549,7 @@ public class FacilitySelector {
 		String subName = "";				// 名前（サブ）
 		Integer index = null;				// インデックス
 		String displayName = "";			// 表示名
-		Integer size = null;				// サイズ
+		Long size = null;					// サイズ
 		String sizeUnit = "";				// サイズ単位
 		String description = "";			// 説明
 		String version = "";				// バージョン
@@ -2417,9 +2587,13 @@ public class FacilitySelector {
 		Long updateDate = null;				// 更新日時
 		String updateUser = "";				// 更新ユーザ
 
-		NodeConfigFileInfo (String managerName, String facilityId, NodeConfigSettingItem type){
+		// 追加出力項目
+		String facilityName = "";			// ファシリティ名
+
+		NodeConfigFileInfo (String managerName, NodeInfo nodeInfo, NodeConfigSettingItem type){
 			this.managerName = managerName;
-			this.facilityId = facilityId;
+			this.facilityId = nodeInfo.getFacilityId();
+			this.facilityName = nodeInfo.getFacilityName();
 			this.type = type;
 		}
 	}
@@ -2458,6 +2632,18 @@ public class FacilitySelector {
 	 * 改行等が含まれる可能性のある箇所は下記を利用すること。
 	 */
 	private String getDoubleQuote(Integer in) {
+		if (in == null) {
+			return "\"\"";
+		}
+		return "\"" + in.toString().replace("\"", "\"\"") + "\"";
+	}
+	
+	/**
+	 * メッセージやオリジナルメッセージに改行が含まれている場合や、
+	 * 「"」が含まれている場合はMS Excelで読もうとするとおかしくなる。
+	 * 改行等が含まれる可能性のある箇所は下記を利用すること。
+	 */
+	private String getDoubleQuote(Long in) {
 		if (in == null) {
 			return "\"\"";
 		}

@@ -9,10 +9,9 @@
 package com.clustercontrol.infra.view.action;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import javax.activation.DataHandler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -21,15 +20,16 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.FileDialog;
+import org.openapitools.client.model.InfraFileInfoResponse;
+
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.client.ui.util.FileDownloader;
 import com.clustercontrol.infra.action.GetInfraFileManagerTableDefine;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
 import com.clustercontrol.infra.util.InfraFileUtil;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.InfraFileManagerView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.InfraFileInfo;
 
 
 public class DownloadInfraFileAction extends InfraFileManagerBaseAction {
@@ -47,7 +47,7 @@ public class DownloadInfraFileAction extends InfraFileManagerBaseAction {
 			return null;
 		}
 
-		InfraFileInfo info = InfraFileUtil.getSelectedInfraFileInfo(view);
+		InfraFileInfoResponse info = InfraFileUtil.getSelectedInfraFileInfo(view);
 		if (info == null) {
 			return null;
 		}
@@ -76,28 +76,21 @@ public class DownloadInfraFileAction extends InfraFileManagerBaseAction {
 			if(selection != null && selection.isEmpty() == false){
 				managerName = (String)((ArrayList<?>)selection.getFirstElement()).get(GetInfraFileManagerTableDefine.MANAGER_NAME);
 			}
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
-			FileOutputStream fos = null;
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 			try {
-				DataHandler dh = wrapper.downloadInfraFile(info.getFileId(), fileName);
-				fos = new FileOutputStream(new File(selectedFilePath));
-				dh.writeTo(fos);
+				File downloadFile = wrapper.downloadInfraFile(info.getFileId());
+				File file = new File(selectedFilePath);
+				Files.move(downloadFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				if( ClusterControlPlugin.isRAP() ){
 					FileDownloader.openBrowser(window.getShell(), selectedFilePath, fileName);
 				}else{
 					InfraFileUtil.showSuccessDialog(action, info.getFileId());
 				}
-				wrapper.deleteDownloadedInfraFile(fileName);
 			} catch (Exception e) {
 				m_log.error(e);
 				InfraFileUtil.showFailureDialog(action, HinemosMessage.replace(e.getMessage()));
 			} finally {
-				if (fos != null) {
-					try {
-						fos.close();
-					} catch (IOException e) {
-					}
-				}
+				
 			}
 		}
 

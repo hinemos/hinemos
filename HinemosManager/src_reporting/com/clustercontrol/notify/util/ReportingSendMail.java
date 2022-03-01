@@ -9,55 +9,51 @@
 package com.clustercontrol.notify.util;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.Locale;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
-import javax.activation.DataHandler;
-import javax.activation.FileDataSource;
-import javax.mail.AuthenticationFailedException;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeUtility;
 import javax.naming.NamingException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
-import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.commons.util.InternalIdCommon;
+import com.clustercontrol.commons.util.MailServerSettings;
+import com.clustercontrol.commons.util.MultiSmtpServerUtil;
+import com.clustercontrol.commons.util.OAuthException;
+import com.clustercontrol.commons.util.SendOAuthMail;
 import com.clustercontrol.fault.InvalidRole;
-import com.clustercontrol.fault.MailTemplateNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
-import com.clustercontrol.maintenance.HinemosPropertyTypeConstant;
 import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.mail.model.MailTemplateInfo;
-import com.clustercontrol.notify.mail.session.MailTemplateControllerBean;
 import com.clustercontrol.notify.model.NotifyInfo;
 import com.clustercontrol.notify.model.NotifyMailInfo;
-import com.clustercontrol.util.MessageConstant;
-import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.StringBinder;
 import com.clustercontrol.util.apllog.AplLogger;
 import com.sun.mail.smtp.SMTPAddressFailedException;
+
+import jakarta.activation.DataHandler;
+import jakarta.activation.FileDataSource;
+import jakarta.mail.AuthenticationFailedException;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.internet.MimeUtility;
 
 /**
  * メールを送信するクラス(レポーティングオプション用)<BR>
@@ -70,12 +66,6 @@ public class ReportingSendMail extends SendMail {
 	/** ログ出力のインスタンス。 */
 	private static Log m_log = LogFactory.getLog(ReportingSendMail.class);
 
-	/** 日時フォーマット。 */
-	private static final String SUBJECT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-
-	/** ロケール情報。 */
-	private static Locale m_local = Locale.getDefault();
-	
 	// メール通知で添付有無を決めるマジックワード
 	private static final String NOT_ATTACHED = "\\[NOT_ATTACHED\\]";
 
@@ -95,13 +85,13 @@ public class ReportingSendMail extends SendMail {
 	 *
 	 */
 	private void sendMail(OutputBasicInfo outputInfo, String notifyId) {
-		
+
 		boolean attachedFlg = true;
-		
-		m_log.info("SendMai() " + outputInfo);
-		
+
+		m_log.info("SendMail() " + outputInfo);
+
 		try {
-			
+
 			NotifyInfo notifyInfo = QueryUtil.getNotifyInfoPK(notifyId);
 			NotifyMailInfo mailInfo = QueryUtil.getNotifyMailInfoPK(notifyId);
 
@@ -110,14 +100,31 @@ public class ReportingSendMail extends SendMail {
 
 			// メールの内容を指定
 			String content = getContent(outputInfo, mailInfo);
-			
+
 			// 添付有無の確認
-			if(notifyInfo.getDescription() != null) {
-				if(notifyInfo.getDescription().matches(".*" + NOT_ATTACHED + ".*")) {
+			if (notifyInfo.getDescription() != null) {
+				if (notifyInfo.getDescription().matches(".*" + NOT_ATTACHED + ".*")) {
 					attachedFlg = false;
 				}
 			}
-			
+
+			// オーナーロールIDを取得
+			String ownerRoleId = mailInfo.getNotifyInfoEntity().getOwnerRoleId();
+
+			// オーナーロールIDから送信先SMTPサーバを決定する
+			List<Integer> serverList = MultiSmtpServerUtil.getRoleServerList(ownerRoleId);
+			if (serverList == null) {
+				serverList = new ArrayList<Integer>();
+			}
+
+			/*
+			 * オーナーロールIDがどのmail.X.ownerRoleID.listにも含まれない場合、デフォルトSMTPサーバに送る
+			 */
+			if (serverList.isEmpty() || "".equals(ownerRoleId) || ownerRoleId == null) {
+				serverList.add(0);
+			}
+			m_log.debug("sendMail() : using server is " + serverList);
+
 			/**
 			 * メール送信
 			 */
@@ -155,8 +162,7 @@ public class ReportingSendMail extends SendMail {
 				StringBinder binder = new StringBinder(param);
 				changeAddress = binder.bindParam(address);
 			} catch (Exception e) {
-				m_log.warn("sendMail() : "
-						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				m_log.warn("sendMail() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 				changeAddress = address;
 			}
 			StringTokenizer t = new StringTokenizer(changeAddress, ";");
@@ -183,62 +189,122 @@ public class ReportingSendMail extends SendMail {
 				return;
 			}
 
-			if(attachedFlg) {
-				if(outputInfo.getSubKey() != null && !outputInfo.getSubKey().isEmpty()) {
-					String attachedFilePath = outputInfo.getSubKey();
-					this.sendMailAttach(
-							toAddress,
-							ccAddressList.toArray(new String[0]), 
-							bccAddressList.toArray(new String[0]), 
-							subject,
-							content,
-							attachedFilePath);
-				}
-				// 添付ファイルに関する情報が空だったとき
-				else {
-					this.sendMailAttach(
-							toAddress,
-							ccAddressList.toArray(new String[0]), 
-							bccAddressList.toArray(new String[0]), 
-							subject,
-							content,
-							null);
+			String attachedFilePath = null;
+			// 添付ファイルの情報を確認
+			// メール通知の説明欄に添付しない（[NOT_ATTACHED]）が含まれていない、かつ
+			// 添付ファイルに関する情報が空でない
+			if (attachedFlg && outputInfo.getSubKey() != null && !outputInfo.getSubKey().isEmpty()) {
+				attachedFilePath = outputInfo.getSubKey();
+			}
+
+			int successCount = 0;
+
+			for (int i : serverList) {
+				try {
+					boolean isThisServerEnabled = true;
+
+					if (i == 0) {
+						// デフォルトのSMTPサーバの場合、常に使用する
+						isThisServerEnabled = true;
+					} else {
+						// マルチSMTPサーバで設定されたSMTPサーバの場合、
+						// Hinemosプロパティから有効・無効を判断する
+						isThisServerEnabled = HinemosPropertyCommon.mail_$_server_enable
+								.getBooleanValue(Integer.toString(i));
+					}
+
+					if (isThisServerEnabled == false) {
+						m_log.info("sendMail() : Server " + i
+								+ " is not used because it is disabled by Hinemos property.");
+						// 無効であった場合は最終失敗時刻をクリアしておく
+						MultiSmtpServerUtil.clearLastFailureTime(i);
+						m_log.debug("sendMail() : Server " + i + " lastFailreTime is set as"
+								+ MultiSmtpServerUtil.getLastFailureTime(i));
+
+						continue;
+					}
+
+					// 前回の送信失敗から一定期間経っていない場合は送信をスキップする
+					if (MultiSmtpServerUtil.isInCooltime(i)) {
+						String detailMsg = "Server " + i + " is skipped because cooltime("
+								+ MultiSmtpServerUtil.getFailureCooltime(i)
+								+ "[msec]) has not passed from last failure. "
+								+ MultiSmtpServerUtil.getLastFailureTime(i);
+						m_log.info("sendMail() : " + detailMsg);
+
+						continue;
+					}
+
+					try {
+						this.sendMailAttach(toAddress, ccAddressList.toArray(new String[0]),
+								bccAddressList.toArray(new String[0]), subject, content, attachedFilePath, i);
+						successCount++;
+
+						// クールタイム明けで送信に成功した場合は最終失敗時刻をクリアし、インターナルイベントを通知する
+						if (MultiSmtpServerUtil.getLastFailureTime(i) != null) {
+							Date failureDate = MultiSmtpServerUtil.getLastFailureTime(i);
+							String detailMsg = "reopened Server " + i + " and succeed to send mail. (Last Failure "
+									+ failureDate + ")";
+							MultiSmtpServerUtil.clearLastFailureTime(i);
+							String[] args = { failureDate.toString(), String.valueOf(i) };
+							AplLogger.put(InternalIdCommon.PLT_NTF_SYS_012, args, detailMsg);
+						}
+
+						/*
+						 * 全てのサーバで送信を実施する設定でない場合は、 どれか一つのSMTPサーバで送信成功した時点で終了する
+						 */
+						if (!MultiSmtpServerUtil.isSendAll()) {
+							m_log.info("sendMail() : Send mode is any one. Ignore the rest of serverList");
+							break;
+						}
+
+					} catch (Exception e) {
+						m_log.warn("sendMail() : Server " + i + " encountered errors while sending mail. ");
+						MultiSmtpServerUtil.setLastFailureTime(i, HinemosTime.getDateInstance());
+						throw e;
+					}
+
+				} catch (AuthenticationFailedException e) {
+					String detailMsg = "cannot connect to the mail server due to an Authentication Failure";
+					m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + " : " + e.getClass().getSimpleName()
+							+ ", " + e.getMessage());
+					internalErrorNotifyMailSendFailed(notifyId, outputInfo, detailMsg);
+				} catch (SMTPAddressFailedException e) {
+					String detailMsg = e.getMessage() + "(SMTPAddressFailedException)";
+					m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + " : " + e.getClass().getSimpleName()
+							+ ", " + e.getMessage());
+					internalErrorNotifyMailSendFailed(notifyId, outputInfo, detailMsg);
+				} catch (MessagingException e) {
+					String detailMsg = e.getCause() != null ? e.getMessage() + " Cause : " + e.getCause().getMessage()
+							: e.getMessage();
+					m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + " : " + e.getClass().getSimpleName()
+							+ ", " + e.getMessage());
+					internalErrorNotifyMailSendFailed(notifyId, outputInfo, detailMsg);
+				} catch (UnsupportedEncodingException e) {
+					String detailMsg = e.getCause() != null ? e.getMessage() + " Cause : " + e.getCause().getMessage()
+							: e.getMessage();
+					m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + detailMsg + " : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+					internalErrorNotifyMailSendFailed(notifyId, outputInfo, detailMsg);
 				}
 			}
-			// メール通知の説明欄に添付しない（[NOT_ATTACHED]）が含まれていた場合
-			else {
-				this.sendMailAttach(
-						toAddress,
-						ccAddressList.toArray(new String[0]), 
-						bccAddressList.toArray(new String[0]), 
-						subject,
-						content,
-						null);
+
+			if (successCount == 0) {
+				String detailMsg = "failed to send mail on all servers available for " + ownerRoleId;
+				m_log.warn("sendMail() " + detailMsg);
+				String[] args = { notifyId };
+				AplLogger.put(InternalIdCommon.PLT_NTF_SYS_011, args, detailMsg);
 			}
-		} catch (AuthenticationFailedException e) {
-			String detailMsg = "cannot connect to the mail server due to an Authentication Failure";
-			m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + " : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			internalErrorNotify(PriorityConstant.TYPE_CRITICAL, notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, detailMsg);
-		} catch (SMTPAddressFailedException e) {
-			String detailMsg = e.getMessage() + "(SMTPAddressFailedException)";
-			m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + " : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			internalErrorNotify(PriorityConstant.TYPE_CRITICAL, notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, detailMsg);
-		} catch (MessagingException|UnsupportedEncodingException | NotifyNotFound | InvalidRole e) {
-			String detailMsg = e.getCause() != null ? e.getMessage() + "\nCause : " + e.getCause().getMessage() : e.getMessage();
-			m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + " : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			internalErrorNotify(PriorityConstant.TYPE_CRITICAL, notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, detailMsg);
-		} catch (Exception e){
-			String detailMsg = e.getCause() != null ? e.getMessage() + "\nCause : " + e.getCause().getMessage() : e.getMessage();
-			m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + detailMsg + " : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			internalErrorNotify(PriorityConstant.TYPE_CRITICAL, notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, detailMsg);
+
+		} catch (RuntimeException | NotifyNotFound | InvalidRole | OAuthException e1) {
+			String detailMsg = e1.getCause() != null ? e1.getMessage() + " Cause : " + e1.getCause().getMessage()
+					: e1.getMessage();
+			m_log.warn("sendMail() " + e1.getMessage() + " : " + detailMsg + detailMsg + " : "
+					+ e1.getClass().getSimpleName() + ", " + e1.getMessage(), e1);
+			internalErrorNotifyMailSendFailed(notifyId, outputInfo, detailMsg);
 		}
 	}
 
-	
 	/**
 	 * メールを送信します。(このルートは通らない)
 	 *
@@ -263,108 +329,50 @@ public class ReportingSendMail extends SendMail {
 	 * @throws UnsupportedEncodingException
 	 */
 	public void sendMail(String[] toAddressStr, String subject, String content)
-			throws MessagingException, UnsupportedEncodingException {
+			throws MessagingException, UnsupportedEncodingException, OAuthException {
 		sendMail(toAddressStr, null, null, subject, content);
 	}
-	
-	public void sendMailAttach(String[] toAddressStr, String[] ccAddressStr, String[] bccAddressStr, String subject, String content, String attachedFilePath)
-			throws MessagingException, UnsupportedEncodingException {
-		
+
+	public void sendMailAttach(String[] toAddressStr, String[] ccAddressStr, String[] bccAddressStr, String subject,
+			String content, String attachedFilePath) throws MessagingException, UnsupportedEncodingException, OAuthException {
+		sendMailAttach(toAddressStr, ccAddressStr, bccAddressStr, subject, content, attachedFilePath, -1);
+	}
+
+	public void sendMailAttach(String[] toAddressStr, String[] ccAddressStr, String[] bccAddressStr, String subject,
+			String content, String attachedFilePath, int slot) throws MessagingException, UnsupportedEncodingException, OAuthException {
+
 		if (toAddressStr == null || toAddressStr.length <= 0) {
 			// 何もせず終了
 			return;
 		}
 
-		/*
-		 *  https://javamail.java.net/nonav/docs/api/com/sun/mail/smtp/package-summary.html
-		 */
-		Properties _properties = new Properties();
-		_properties.setProperty("mail.debug", Boolean.toString(HinemosPropertyCommon.mail_debug.getBooleanValue()));
-		_properties.setProperty("mail.store.protocol", HinemosPropertyCommon.mail_store_protocol.getStringValue());
-		String protocol = HinemosPropertyCommon.mail_transport_protocol.getStringValue();
-		_properties.setProperty("mail.transport.protocol", protocol);
-		_properties.put("mail.smtp.socketFactory", javax.net.SocketFactory.getDefault());
-		_properties.put("mail.smtp.ssl.socketFactory", javax.net.ssl.SSLSocketFactory.getDefault());
-		
-		setProperties(_properties, HinemosPropertyCommon.mail_$_user, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_host, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_port, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_connectiontimeout, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_timeout, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_writetimeout, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_from, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_localhost, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_localaddress, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_localport, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_ehlo, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_auth, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_mechanisms, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_login_disable, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_plain_disable, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_digest_md5_disable, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_ntlm_disable, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_ntlm_domain, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_auth_ntlm_flags, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_submitter, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_dsn_notify, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_dsn_ret, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_allow8bitmime, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_sendpartial, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_sasl_enable, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_sasl_mechanisms, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_sasl_authorizationid, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_sasl_realm, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_sasl_usecanonicalhostname, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_quitwait, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_reportsuccess, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_socketFactory_class, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_socketFactory_fallback, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_socketFactory_port, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_starttls_enable, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_starttls_required, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_socks_host, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_socks_port, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_mailextension, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_userset, protocol);
-		setProperties(_properties, HinemosPropertyCommon.mail_$_noop_strict, protocol);
-		
-		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_enable, "");
-		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_checkserveridentity, "");
-		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_trust, "");
-		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_socketFactory_class, "");
-		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_socketFactory_port, "");
-		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_protocols, "");
-		setProperties(_properties, HinemosPropertyCommon.mail_smtp_ssl_ciphersuites, "");
+		MailServerSettings mailServerSettings;
+		if (slot > 0 && slot < 11) {
+			mailServerSettings = MultiSmtpServerUtil.getMailServerSettings(slot);
+		} else {
+			mailServerSettings = new MailServerSettings();
+		}
 
-		/**
-		 * メールの設定をDBから取得
-		 */
-		String _loginUser = HinemosPropertyCommon.mail_transport_user.getStringValue();
-		String _loginPassword = HinemosPropertyCommon.mail_transport_password.getStringValue();
-		String _fromAddress = HinemosPropertyCommon.mail_from_address.getStringValue();
-		String _fromPersonalName = HinemosPropertyCommon.mail_from_personal_name.getStringValue();
-		_fromPersonalName = convertNativeToAscii(_fromPersonalName);
-		
-		String _replyToAddress = HinemosPropertyCommon.mail_reply_to_address.getStringValue();
-		String _replyToPersonalName =HinemosPropertyCommon.mail_reply_personal_name.getStringValue();
-		_replyToPersonalName = convertNativeToAscii(_replyToPersonalName);
-		
-		String _errorsToAddress = HinemosPropertyCommon.mail_errors_to_address.getStringValue();
+		Properties _properties = mailServerSettings.getProperties();
+		String _loginUser = mailServerSettings.getLoginUser();
+		String _loginPassword = mailServerSettings.getLoginPassword();
+		String _fromAddress = mailServerSettings.getFromAddress();
+		String _fromPersonalName = mailServerSettings.getFromPersonalName();
+		String _replyToAddress = mailServerSettings.getReplyToAddress();
+		String _replyToPersonalName = mailServerSettings.getReplyToPersonalName();
+		String _errorsToAddress = mailServerSettings.getErrorsToAddress();
+		int _transportTries = mailServerSettings.getTransportTries();
+		int _transportTriesInterval = mailServerSettings.getTransportTriesInterval();
+		String _charsetAddress = mailServerSettings.getCharsetAddress();
+		String _charsetSubject = mailServerSettings.getCharsetSubject();
+		String _charsetContent = mailServerSettings.getCharsetContent();
+		String _authMechanisms = mailServerSettings.getAuthMechanisms();
 
-		int _transportTries = HinemosPropertyCommon.mail_transport_tries.getIntegerValue();
-		int _transportTriesInterval = HinemosPropertyCommon.mail_transport_tries_interval.getIntegerValue();
-
-		String _charsetAddress = HinemosPropertyCommon.mail_charset_address.getStringValue();
-		String _charsetSubject = HinemosPropertyCommon.mail_charset_subject.getStringValue();
-		String _charsetContent = HinemosPropertyCommon.mail_charset_content.getStringValue();
-
-		m_log.debug("initialized mail sender : from_address = " + _fromAddress
-				+ ", From = " + _fromPersonalName + " <" + _replyToAddress + ">"
-				+ ", Reply-To = " + _replyToPersonalName + " <" + _replyToAddress + ">"
-				+ ", Errors-To = " + _errorsToAddress
-				+ ", tries = " + _transportTries
-				+ ", tries-interval = " + _transportTriesInterval
-				+ ", Charset [address:subject:content] = [" + _charsetAddress + ":" + _charsetSubject + ":" + _charsetContent + "]");
+		m_log.debug("initialized mail sender : from_address = " + _fromAddress + ", From = " + _fromPersonalName + " <"
+				+ _replyToAddress + ">" + ", Reply-To = " + _replyToPersonalName + " <" + _replyToAddress + ">"
+				+ ", Errors-To = " + _errorsToAddress + ", tries = " + _transportTries + ", tries-interval = "
+				+ _transportTriesInterval + ", Charset [address:subject:content] = [" + _charsetAddress + ":"
+				+ _charsetSubject + ":" + _charsetContent + "]");
 
 		// JavaMail Sessionリソース検索
 		Session session = Session.getInstance(_properties);
@@ -377,7 +385,7 @@ public class ReportingSendMail extends SendMail {
 		}
 		// REPLY-TOを指定
 		if (_replyToAddress != null) {
-			InternetAddress[] reply = {new InternetAddress(_replyToAddress, _replyToPersonalName, _charsetAddress)};
+			InternetAddress[] reply = { new InternetAddress(_replyToAddress, _replyToPersonalName, _charsetAddress) };
 			mineMsg.setReplyTo(reply);
 			mineMsg.reply(true);
 		}
@@ -391,7 +399,7 @@ public class ReportingSendMail extends SendMail {
 		// TO
 		InternetAddress[] toAddress = this.getAddress(toAddressStr);
 		if (toAddress != null && toAddress.length > 0) {
-			mineMsg.setRecipients(javax.mail.Message.RecipientType.TO, toAddress);
+			mineMsg.setRecipients(Message.RecipientType.TO, toAddress);
 		} else {
 			return; // TOは必須
 		}
@@ -399,18 +407,18 @@ public class ReportingSendMail extends SendMail {
 		if (ccAddressStr != null) {
 			InternetAddress[] ccAddress = this.getAddress(ccAddressStr);
 			if (ccAddress != null && ccAddress.length > 0) {
-				mineMsg.setRecipients(javax.mail.Message.RecipientType.CC, ccAddress);
+				mineMsg.setRecipients(Message.RecipientType.CC, ccAddress);
 			}
 		}
 		// BCC
 		if (bccAddressStr != null) {
 			InternetAddress[] bccAddress = this.getAddress(bccAddressStr);
 			if (bccAddress != null && bccAddress.length > 0) {
-				mineMsg.setRecipients(javax.mail.Message.RecipientType.BCC, bccAddress);
+				mineMsg.setRecipients(Message.RecipientType.BCC, bccAddress);
 			}
 		}
-		String message = "";
-		message += "TO=" + Arrays.asList(toAddressStr);
+
+		String message = "TO=" + Arrays.asList(toAddressStr);
 		if (ccAddressStr != null) {
 			message += ", CC=" + Arrays.asList(ccAddressStr);
 		}
@@ -421,33 +429,35 @@ public class ReportingSendMail extends SendMail {
 
 		// メールの件名を指定
 		mineMsg.setSubject(MimeUtility.encodeText(subject, _charsetSubject, "B"));
-		
+
 		// メールの内容を指定(添付ファイルの処理を追加)
-		if(attachedFilePath == null || attachedFilePath.equals("")) {
+		if (attachedFilePath == null || attachedFilePath.equals("")) {
 			mineMsg.setContent(content, "text/plain; charset=" + _charsetContent);
-		}
-		else {
-			MimeMultipart multipart = new MimeMultipart(); 
-			
-			// パート1に本文を設定 
-			MimeBodyPart bodyPart = new MimeBodyPart(); 
+		} else {
+			MimeMultipart multipart = new MimeMultipart();
+
+			// パート1に本文を設定
+			MimeBodyPart bodyPart = new MimeBodyPart();
 			bodyPart.setContent(content, "text/plain; charset=" + _charsetContent);
-			multipart.addBodyPart(bodyPart);  // マルチパートに本文を追加 
-			
-			// パート2に添付ファイルを設定 
-			MimeBodyPart attachPart = new MimeBodyPart(); 
-			FileDataSource fds=new FileDataSource(attachedFilePath); 
-			attachPart.setDataHandler(new DataHandler(fds)); 
+			multipart.addBodyPart(bodyPart); // マルチパートに本文を追加
+
+			// パート2に添付ファイルを設定
+			MimeBodyPart attachPart = new MimeBodyPart();
+			FileDataSource fds = new FileDataSource(attachedFilePath);
+			attachPart.setDataHandler(new DataHandler(fds));
 			attachPart.setFileName(fds.getName());
-			
-			multipart.addBodyPart(attachPart);  // マルチパートに添付ファイルを追加 
-			
-			// メールにマルチパートを設定 
+
+			multipart.addBodyPart(attachPart); // マルチパートに添付ファイルを追加
+
+			// メールにマルチパートを設定
 			mineMsg.setContent(multipart);
 		}
-		
+
 		// 送信日付を指定
-		mineMsg.setSentDate(new Date());
+		mineMsg.setSentDate(HinemosTime.getDateInstance());
+
+		// OAuth認証で送信するためのクラス
+		SendOAuthMail sendOAuthMail = null;
 
 		// 再送信フラグがtrueかつ再送回数以内の場合
 		for (int i = 0; i < _transportTries; i++) {
@@ -455,27 +465,31 @@ public class ReportingSendMail extends SendMail {
 			try {
 				// メール送信
 				transport = session.getTransport();
-				boolean flag = HinemosPropertyCommon.mail_$_auth.getBooleanValue(protocol, false);
-				if(flag) {
-					transport.connect(_loginUser, _loginPassword);
+				boolean flag = mailServerSettings.getAuthFlag();
+				if (SendOAuthMail.STRING_AOUTH_MECHANISMS_XOAUTH2.equals(_authMechanisms) && flag) {
+					if (sendOAuthMail == null) {
+						sendOAuthMail = new SendOAuthMail();
+					}
+					sendOAuthMail.sendOAuthMail(transport, mailServerSettings, mineMsg);
 				} else {
-					transport.connect();
+					if (flag) {
+						transport.connect(_loginUser, _loginPassword);
+					} else {
+						transport.connect();
+					}
+					transport.sendMessage(mineMsg, mineMsg.getAllRecipients());
 				}
-				transport.sendMessage(mineMsg, mineMsg.getAllRecipients());
 				break;
-			} catch (AuthenticationFailedException e) {
-				throw e;
-			} catch (SMTPAddressFailedException e) {
-				throw e;
 			} catch (MessagingException me) {
-				//_transportTries中はsleep待ちのみ 
-				if (i < (_transportTries - 1)) { 
+				if (i < (_transportTries - 1)) {
+					// _transportTries中はsleep待ちのみ
 					m_log.info("sendMail() : retry sendmail. " + me.getMessage());
 					try {
 						Thread.sleep(_transportTriesInterval);
-					} catch (InterruptedException e) { }
-				//_transportTriesの最後はINTERNALイベントの通知のためExceptionをthrow 
+					} catch (InterruptedException e) {
+					}
 				} else {
+					// _transportTriesの最後はINTERNALイベントの通知のためExceptionをthrow
 					throw me;
 				}
 			} finally {
@@ -484,21 +498,6 @@ public class ReportingSendMail extends SendMail {
 				}
 			}
 		}
-	}
-	
-	private String convertNativeToAscii(String nativeStr) {
-		final CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder();
-		final StringBuilder asciiStr = new StringBuilder();
-	    for (final Character character : nativeStr.toCharArray()) {
-	        if (asciiEncoder.canEncode(character)) {
-	            asciiStr.append(character);
-	        } else {
-	            asciiStr.append("\\u");
-	            asciiStr.append(Integer.toHexString(0x10000 | character).substring(1));
-	        }
-	    }
-		
-		return asciiStr.toString();
 	}
 
 	/**
@@ -516,10 +515,8 @@ public class ReportingSendMail extends SendMail {
 				try {
 					list.add(new InternetAddress(address));
 				} catch (AddressException e) {
-					m_log.info("getAddress() : "
-							+ e.getClass().getSimpleName() + ", "
-							+ address + ", "
-							+ e.getMessage());
+					m_log.info(
+							"getAddress() : " + e.getClass().getSimpleName() + ", " + address + ", " + e.getMessage());
 				}
 			}
 			if (list.size() > 0) {
@@ -531,141 +528,10 @@ public class ReportingSendMail extends SendMail {
 	}
 
 	/**
-	 * メール件名を返します。
-	 *
-	 * @param source
-	 *            出力内容
-	 * @param mailInfo
-	 *            通知内容
-	 * @return メール件名
-	 */
-	public String getSubject(OutputBasicInfo source,
-			NotifyMailInfo mailInfo) {
-
-		String subject = null;
-		try {
-			if (mailInfo != null
-					&& mailInfo.getMailTemplateInfoEntity() != null
-					&& mailInfo.getMailTemplateInfoEntity().getMailTemplateId() != null) {
-				MailTemplateInfo templateData
-				= new MailTemplateControllerBean().getMailTemplateInfo(
-						mailInfo.getMailTemplateInfoEntity().getMailTemplateId());
-				int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
-				String origin = templateData.getSubject();
-				ArrayList<String> inKeyList = StringBinder.getKeyList(origin, maxReplaceWord);
-				Map<String, String> param = NotifyUtil.createParameter(source, mailInfo.getNotifyInfoEntity(), inKeyList);
-				StringBinder binder = new StringBinder(param);
-				subject = binder.bindParam(origin);
-			} else {
-				subject = Messages.getString("mail.subject", m_local) + "("
-						+ PriorityConstant.typeToMessageCode(source.getPriority())
-						+ ")";
-			}
-		} catch (Exception e) {
-			m_log.warn("getSubject() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			// 例外発生時のメールサブジェクト
-			return "Hinemos Notification";
-		}
-
-		return subject;
-	}
-
-	/**
-	 * メール本文を返します。
-	 *
-	 * @param source
-	 *            出力内容
-	 * @param mailInfo
-	 *            通知内容
-	 * @return メール本文
-	 */
-	public String getContent(OutputBasicInfo source, NotifyMailInfo mailInfo) {
-
-		StringBuffer buf = new StringBuffer();
-		SimpleDateFormat sdf = new SimpleDateFormat(SUBJECT_DATE_FORMAT);
-
-		try {
-			if (mailInfo != null
-					&& mailInfo.getMailTemplateInfoEntity() != null
-					&& mailInfo.getMailTemplateInfoEntity().getMailTemplateId() != null) {
-				MailTemplateInfo mailData
-				= new MailTemplateControllerBean().getMailTemplateInfo(
-						mailInfo.getMailTemplateInfoEntity().getMailTemplateId());
-				int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
-				String origin = mailData.getBody();
-				ArrayList<String> inKeyList = StringBinder.getKeyList(origin, maxReplaceWord);
-				Map<String, String> param = NotifyUtil.createParameter(source,
-						mailInfo.getNotifyInfoEntity(), inKeyList);
-				StringBinder binder = new StringBinder(param);
-				buf.append(binder.bindParam(origin + "\n"));
-			} else {
-				buf.append(Messages.getString("generation.time", m_local)
-						+ " : "
-						+ sdf.format(source.getGenerationDate()) + "\n");
-				buf.append(Messages.getString("application", m_local) + " : "
-						+ source.getApplication() + "\n");
-				buf.append(Messages.getString("priority", m_local) + " : "
-						+ PriorityConstant.typeToMessageCode(source.getPriority())
-						+ "\n");
-				buf.append(Messages.getString("message", m_local) + " : "
-						+ source.getMessage() + "\n");
-				buf.append(Messages.getString("scope", m_local) + " : "
-						+ source.getScopeText() + "\n");
-			}
-		} catch (HinemosUnknown | MailTemplateNotFound | InvalidRole e) {
-			m_log.warn("getContent() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			// 例外発生時のメール本文
-			return "An error occurred creating message.";
-		} catch (Exception e) {
-			m_log.error("getContent() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			// 例外発生時のメール本文
-			return "An error occurred creating message.";
-		}
-
-		// 改行コードをLFからCRLFに変更する。
-		// 本来はJavaMailが変換するはずだが、変換されないこともあるので、
-		// 予め変更しておく。
-		String ret = buf.toString().replaceAll("\r\n", "\n").replaceAll("\n", "\r\n");
-
-		return ret;
-	}
-
-	/**
 	 * 通知失敗時の内部エラー通知を定義します
 	 */
-	@Override
-	public void internalErrorNotify(int priority, String notifyId, MessageConstant msgCode, String detailMsg) {
-		String[] args = { notifyId };
-		// 通知失敗メッセージを出力
-		AplLogger.put(priority, HinemosModuleConstant.SYSYTEM,  msgCode, args, detailMsg);
-	}
-
-	private void setProperties(Properties prop, HinemosPropertyCommon hinemosPropertyCommon, String replaceStr) {
-		switch (hinemosPropertyCommon.getBean().getType()) {
-		case HinemosPropertyTypeConstant.TYPE_STRING:
-			String strVal = hinemosPropertyCommon.getStringValue(replaceStr, null);
-			if (strVal != null) {
-				prop.setProperty(hinemosPropertyCommon.getReplaceKey(replaceStr), strVal);
-			}
-			break;
-		case HinemosPropertyTypeConstant.TYPE_NUMERIC:
-			Long longVal = hinemosPropertyCommon.getNumericValue(replaceStr, null);
-			if (longVal != null) {
-				prop.setProperty(hinemosPropertyCommon.getReplaceKey(replaceStr), longVal.toString());
-			}
-			break;
-		case HinemosPropertyTypeConstant.TYPE_TRUTH:
-			Boolean boolVal = hinemosPropertyCommon.getBooleanValue(replaceStr, null);
-			if (boolVal != null) {
-				prop.setProperty(hinemosPropertyCommon.getReplaceKey(replaceStr), boolVal.toString());
-			}
-			break;
-		default:
-			//上記以外はなにもしない
-			break;
-		}
+	private void internalErrorNotifyMailSendFailed(String notifyId, OutputBasicInfo source, String detailMsg) {
+		String[] args = { notifyId, source.getMonitorId() };
+		AplLogger.put(InternalIdCommon.PLT_NTF_SYS_018, args, detailMsg);
 	}
 }

@@ -14,6 +14,8 @@ import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import com.clustercontrol.util.TimezoneUtil;
 /**
  * 
  * epochを表示形式HH:MM:SSに対応させるクラス
@@ -27,11 +29,7 @@ public class TimeTo48hConverter {
     private static long utcOffset;
     
     static {
-    	try {
-    		utcOffset =  ((new SimpleDateFormat("yyyy/MM/dd HH:mm:ss")).parse("1970/01/01 00:00:00")).getTime();
-    	} catch (ParseException e) {
-    		log.error(e);
-    	}
+    	utcOffset = TimezoneUtil.getTimeZoneOffset();
     }
 	/**
 	 * epochを表示形式HH:MM:SSに変換。
@@ -44,7 +42,7 @@ public class TimeTo48hConverter {
 
 		StringBuilder dateValue = new StringBuilder(); ;
 		long epoch_abs;
-		epoch = epoch - utcOffset ;
+		epoch = epoch + utcOffset ;
 		if(epoch < 0){
 			epoch_abs = -epoch;
 			dateValue.append("-");

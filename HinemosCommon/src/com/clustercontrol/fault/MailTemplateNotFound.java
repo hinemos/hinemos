@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * メールテンプレートが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class MailTemplateNotFound extends HinemosException {
+public class MailTemplateNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = 7178896192545432794L;
 	private String m_mailTemplateId = null;

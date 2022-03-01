@@ -15,12 +15,12 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.SingletonUtil;
+import org.openapitools.client.model.CollectorItemCodeMstDataResponse;
+import org.openapitools.client.model.CollectorItemInfoResponse;
+import org.openapitools.client.model.CollectorItemTreeItemResponse;
 
 import com.clustercontrol.performance.action.RecordController;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.CollectorItemCodeMstData;
-import com.clustercontrol.ws.monitor.CollectorItemInfo;
-import com.clustercontrol.ws.monitor.CollectorItemTreeItem;
 
 /**
  * 収集項目コードの情報を生成するファクトリクラス
@@ -31,7 +31,7 @@ import com.clustercontrol.ws.monitor.CollectorItemTreeItem;
 public class CollectorItemCodeFactory {
 	private static Log log = LogFactory.getLog(CollectorItemCodeFactory.class);
 
-	private Map<String, CollectorItemTreeItem> m_codeTable = null; // 収集項目コードがキー
+	private Map<String, CollectorItemTreeItemResponse> m_codeTable = null; // 収集項目コードがキー
 
 	/**
 	 * コンストラクター
@@ -64,11 +64,11 @@ public class CollectorItemCodeFactory {
 	public static String getItemName(String managerName, String itemCode) {
 		init(managerName);
 		log.trace("managerName" + managerName + ", itemCode=" + itemCode);
-		CollectorItemTreeItem item = getInstance().m_codeTable.get(itemCode);
+		CollectorItemTreeItemResponse item = getInstance().m_codeTable.get(itemCode);
 		if (item == null) {
 			return itemCode;
 		}
-		CollectorItemCodeMstData data = item.getItemCodeData();
+		CollectorItemCodeMstDataResponse data = item.getItemCodeData();
 		if(data == null){
 			return itemCode;
 		}
@@ -103,7 +103,7 @@ public class CollectorItemCodeFactory {
 	 * @param collectorItemInfo 収集項目情報
 	 * @return 指定収集項目コードの項目名
 	 */
-	public static String getFullItemName(String managerName, CollectorItemInfo collectorItemInfo) {
+	public static String getFullItemName(String managerName, CollectorItemInfoResponse collectorItemInfo) {
 		init(managerName);
 
 		String itemCode = collectorItemInfo.getItemCode();
@@ -144,7 +144,7 @@ public class CollectorItemCodeFactory {
 	public static boolean isDeviceSupport(String managerName, String itemCode) {
 		init(managerName);
 		if(getInstance().m_codeTable.get(itemCode).getItemCodeData() != null){
-			return getInstance().m_codeTable.get(itemCode).getItemCodeData().isDeviceSupport().booleanValue();
+			return getInstance().m_codeTable.get(itemCode).getItemCodeData().getDeviceSupport().booleanValue();
 		}
 		else{
 			return false;
@@ -163,11 +163,11 @@ public class CollectorItemCodeFactory {
 		ArrayList<String> itemCodeList = new ArrayList<String>();
 
 		// 指定の収集コードに対応する収集項目ツリーの要素を取得
-		CollectorItemTreeItem treeItem = getInstance().m_codeTable.get(itemCode);
+		CollectorItemTreeItemResponse treeItem = getInstance().m_codeTable.get(itemCode);
 
 		// 子項目を取得
 		String subItemCode = null;
-		for(CollectorItemTreeItem item : treeItem.getChildren()){
+		for(CollectorItemTreeItemResponse item : treeItem.getChildren()){
 			if(item.getItemCodeData() != null){
 				subItemCode = item.getItemCodeData().getItemCode();
 			}

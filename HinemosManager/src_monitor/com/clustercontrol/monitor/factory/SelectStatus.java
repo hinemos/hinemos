@@ -14,14 +14,12 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.filtersetting.bean.StatusFilterBaseInfo;
 import com.clustercontrol.monitor.bean.StatusDataInfo;
-import com.clustercontrol.monitor.bean.StatusFilterInfo;
 import com.clustercontrol.monitor.session.MonitorControllerBean;
 import com.clustercontrol.notify.monitor.model.StatusInfoEntity;
 import com.clustercontrol.notify.monitor.util.QueryUtil;
-import com.clustercontrol.repository.bean.FacilityTargetConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 
 /**
@@ -34,144 +32,17 @@ public class SelectStatus {
 
 	/**
 	 * 引数で指定された条件に一致するステータス一覧情報を返します。
-	 * <p>
-	 * <ol>
-	 * <li>引数で指定されたプロパティに格納された検索条件を、プロパティユーティリティ（{@link com.clustercontrol.util.PropertyUtil}）を使用して取得します。</li>
-	 * <li>引数で指定されたファシリティ配下のファシリティと検索条件を基に、ステータス情報を取得します。</li>
-	 * <li>１ステータス情報をテーブルのカラム順（{@link com.clustercontrol.monitor.bean.StatusTabelDefine}）に、リスト（{@link ArrayList}）にセットします。</li>
-	 * <li>１ステータス情報をStatusInfoDataとして、ステータス情報一覧を保持するリスト（{@link ArrayList}）に格納し返します。<BR>
-	 * </li>
-	 * </ol>
 	 * 
-	 * @param facilityId 取得対象の親ファシリティID
-	 * @param property 検索条件
+	 * @param filter 検索条件
 	 * @return ステータス情報一覧（StatusInfoDataが格納されたList）
-	 * @throws HinemosUnknown
-	 * 
-	 * @see com.clustercontrol.monitor.bean.StatusInfoData
-	 * @see com.clustercontrol.util.PropertyUtil#getPropertyValue(com.clustercontrol.bean.Property, java.lang.String)
-	 * @see com.clustercontrol.repository.session.RepositoryControllerBean#getFacilityIdList(String, int)
-	 * @see com.clustercontrol.monitor.ejb.entity.StatusInfoBean#ejbFindStatus(String[], Integer, Timestamp, Timestamp, Timestamp, Timestamp, String, String)
-	 * @see com.clustercontrol.monitor.bean.StatusTabelDefine
 	 */
-	public ArrayList<StatusDataInfo> getStatusList(String facilityId, StatusFilterInfo filter)
-			throws HinemosUnknown {
-		ArrayList<StatusDataInfo> list = null;
-
-		Integer[] priorityList = null;
-		Long outputFromDate = null;
-		Long outputToDate = null;
-		Long generationFromDate = null;
-		Long generationToDate = null;
-		String monitorId = null;
-		String monitorDetailId = null;
-		int facilityType = 0;
-		String application = null;
-		String message = null;
-		String ownerRoleId = null;
-
-		String[] facilityIds = null;
-
-		Collection<StatusInfoEntity> ct = null;
-
-		if(filter != null){
-			//重要度取得
-			if (filter.getPriorityList() != null && filter.getPriorityList().length>0) {
-				priorityList = filter.getPriorityList();
-			}
-
-			//更新日時（自）取得
-			if(filter.getOutputDateFrom() != null){
-				outputFromDate = filter.getOutputDateFrom();
-				outputFromDate -= (outputFromDate % 1000);	//ミリ秒の桁を0にする
-			}
-
-			//更新日時（至）取得
-			if(filter.getOutputDateTo() != null){
-				outputToDate = filter.getOutputDateTo();
-				outputToDate += (999 - (outputToDate % 1000));	//ミリ秒の桁を999にする
-			}
-
-			//出力日時（自）取得
-			if(filter.getGenerationDateFrom() != null){
-				generationFromDate = filter.getGenerationDateFrom();
-				generationFromDate -= (generationFromDate % 1000);	//ミリ秒の桁を0にする
-			}
-
-			//出力日時（至）取得
-			if(filter.getGenerationDateTo() != null){
-				generationToDate = filter.getGenerationDateTo();
-				generationToDate += (999 - (generationToDate % 1000));	//ミリ秒の桁を999にする
-			}
-
-			//監視項目ID取得
-			if (!"".equals(filter.getMonitorId())) {
-				monitorId = filter.getMonitorId();
-			}
-
-			//監視詳細取得
-			if (!"".equals(filter.getMonitorDetailId())) {
-				monitorDetailId = filter.getMonitorDetailId();
-			}
-
-			//対象ファシリティ種別取得
-			if(filter.getFacilityType() != null){
-				facilityType = filter.getFacilityType();
-			}
-
-			//アプリケーション取得
-			if(!"".equals(filter.getApplication())){
-				application = filter.getApplication();
-			}
-
-			//メッセージ取得
-			if(!"".equals(filter.getMessage())){
-				message = filter.getMessage();
-			}
-
-			//オーナーロールID取得
-			if(!"".equals(filter.getOwnerRoleId())){
-				ownerRoleId = filter.getOwnerRoleId();
-			}
-		}
-
-		// 対象ファシリティのファシリティIDを取得
-		int level = RepositoryControllerBean.ALL;
-		if(FacilityTargetConstant.TYPE_BENEATH == facilityType){
-			level = RepositoryControllerBean.ONE_LEVEL;
-		}
-		ArrayList<String> facilityIdList = new RepositoryControllerBean().getFacilityIdList(facilityId, level);
-
-		if(facilityIdList != null && facilityIdList.size() > 0){
-			// スコープの場合
-			if (facilityId.equals(RoleSettingTreeConstant.ROOT_ID)) {
-				facilityIdList.add("");
-			}
-			facilityIds = new String[facilityIdList.size()];
-			facilityIdList.toArray(facilityIds);
-		}
-		else{
-			// ノードの場合
-			facilityIds = new String[1];
-			facilityIds[0] = facilityId;
-		}
+	public ArrayList<StatusDataInfo> getStatusList(StatusFilterBaseInfo filter) throws HinemosUnknown {
 
 		// ステータス情報一覧を、検索条件を指定して取得
-		ct = QueryUtil.getStatusInfoByFilter(
-				facilityIds,
-				priorityList,
-				outputFromDate,
-				outputToDate,
-				generationFromDate,
-				generationToDate,
-				monitorId,
-				monitorDetailId,
-				application,
-				message,
-				ownerRoleId);
+		Collection<StatusInfoEntity> ct = QueryUtil.getStatusInfoByFilter(filter);
 
 		// 2次元配列に変換
-		list = this.collectionToArray(facilityId, ct);
+		ArrayList<StatusDataInfo> list = collectionToArray(filter.getFacilityId(), ct);
 
 		return list;
 	}

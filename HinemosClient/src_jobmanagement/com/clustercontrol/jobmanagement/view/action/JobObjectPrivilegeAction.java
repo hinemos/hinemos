@@ -23,10 +23,11 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+
 import com.clustercontrol.accesscontrol.dialog.ObjectPrivilegeEditDialog;
 import com.clustercontrol.accesscontrol.dialog.ObjectPrivilegeListDialog;
 import com.clustercontrol.accesscontrol.util.ObjectBean;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.view.ObjectPrivilegeTargetListView;
 import com.clustercontrol.view.action.ObjectPrivilegeAction;
@@ -113,7 +114,7 @@ public class JobObjectPrivilegeAction extends ObjectPrivilegeAction {
 
 					int size = view.getJobTreeComposite().getSelectItemList().size();
 					if(size == 1) {
-						if(view.getDataType() == JobConstant.TYPE_JOBUNIT){
+						if(view.getDataType() == JobInfoWrapper.TypeEnum.JOBUNIT){
 							editEnable = !view.getEditEnable();
 						}
 					}

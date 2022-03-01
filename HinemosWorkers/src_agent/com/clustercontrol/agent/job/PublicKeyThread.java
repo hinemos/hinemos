@@ -26,15 +26,16 @@ import java.util.StringTokenizer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtRunInstructionInfoResponse;
+import org.openapitools.client.model.SetJobResultRequest;
 
 import com.clustercontrol.agent.SendQueue;
+import com.clustercontrol.agent.SendQueue.JobResultSendableObject;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.jobmanagement.bean.CommandConstant;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
-import com.clustercontrol.ws.jobmanagement.RunResultInfo;
 
 /**
  * 公開鍵操作用のスレッドクラス<BR>
@@ -50,6 +51,7 @@ public class PublicKeyThread extends AgentThread {
 	private static Log m_log = LogFactory.getLog(PublicKeyThread.class);
 
 	private static final String PUBLIC_KEY = ".public.key";
+	private static final int PUBLIC_KEY_MAX_SIZE = 1024;
 	private static final String AUTHORIZED_KEY_PATH = ".authorized.keys.path";
 
 	private String execUser;
@@ -110,7 +112,7 @@ public class PublicKeyThread extends AgentThread {
 	 * @param props
 	 */
 	public PublicKeyThread(
-			RunInstructionInfo info,
+			AgtRunInstructionInfoResponse info,
 			SendQueue sendQueue) {
 		super(info, sendQueue);
 	}
@@ -136,25 +138,26 @@ public class PublicKeyThread extends AgentThread {
 		//---------------------------
 
 		//メッセージ作成
-		RunResultInfo info = new RunResultInfo();
-		info.setSessionId(m_info.getSessionId());
-		info.setJobunitId(m_info.getJobunitId());
-		info.setJobId(m_info.getJobId());
-		info.setFacilityId(m_info.getFacilityId());
-		info.setCommand(m_info.getCommand());
-		info.setCommandType(m_info.getCommandType());
-		info.setStopType(m_info.getStopType());
-		info.setSpecifyUser(m_info.isSpecifyUser());
-		info.setUser(m_info.getUser());
-		info.setStatus(RunStatusConstant.START);
-		info.setTime(startDate.getTime());
+		JobResultSendableObject sendme = new JobResultSendableObject();
+		sendme.sessionId = m_info.getSessionId();
+		sendme.jobunitId = m_info.getJobunitId();
+		sendme.jobId = m_info.getJobId();
+		sendme.facilityId = m_info.getFacilityId();
+		sendme.body = new SetJobResultRequest();
+		sendme.body.setCommand(m_info.getCommand());
+		sendme.body.setCommandType(m_info.getCommandType());
+		sendme.body.setStopType(m_info.getStopType());
+		sendme.body.setSpecifyUser(m_info.getSpecifyUser());
+		sendme.body.setUser(m_info.getUser());
+		sendme.body.setStatus(RunStatusConstant.START);
+		sendme.body.setTime(startDate.getTime());
 
 		m_log.info("run SessionID=" + m_info.getSessionId() + ", JobID=" + m_info.getJobId());
 
 		//送信
-		m_sendQueue.put(info);
+		m_sendQueue.put(sendme);
 
-		if (m_info.isSpecifyUser().booleanValue()) {
+		if (m_info.getSpecifyUser().booleanValue()) {
 			// ユーザを指定する場合
 			execUser = m_info.getUser();
 		} else {
@@ -163,70 +166,71 @@ public class PublicKeyThread extends AgentThread {
 		}
 
 		if(m_info.getCommand().equals(CommandConstant.GET_PUBLIC_KEY)){
-			//公開鍵をagent.propertiesから取得します。
-			String key = AgentProperties.getProperty(execUser.toLowerCase() + PUBLIC_KEY);
+			// 公開鍵をagent.propertiesから取得し、コメントにsessionIdを追記します。
+			String key = AgentProperties.getProperty(execUser.toLowerCase() + PUBLIC_KEY) + " " + m_info.getSessionId();
 			m_log.debug("key:" + key);
-			if(key != null && key.length() > 0){
-				info.setStatus(RunStatusConstant.END);
-				info.setPublicKey(key);
-				info.setTime(HinemosTime.getDateInstance().getTime());
-				info.setErrorMessage("");
-				info.setMessage("");
-				info.setEndValue(0);
+			int keySize = key.length();
+			if(key != null && keySize > 0 && keySize <= PUBLIC_KEY_MAX_SIZE){
+				sendme.body.setStatus(RunStatusConstant.END);
+				sendme.body.setPublicKey(key);
+				sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+				sendme.body.setErrorMessage("");
+				sendme.body.setMessage("");
+				sendme.body.setEndValue(0);
 			}
 			else{
 				String message = "GET_PUBLIC_KEY is failure. " +
 						"key=" + key + ", pub=" + execUser.toLowerCase() + PUBLIC_KEY;
 				m_log.warn(message);
-				info.setStatus(RunStatusConstant.ERROR);
-				info.setPublicKey("");
-				info.setTime(HinemosTime.getDateInstance().getTime());
-				info.setErrorMessage("");
-				info.setMessage(message);
-				info.setEndValue(-1);
+				sendme.body.setStatus(RunStatusConstant.ERROR);
+				sendme.body.setPublicKey("");
+				sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+				sendme.body.setErrorMessage("");
+				sendme.body.setMessage(message);
+				sendme.body.setEndValue(-1);
 			}
 		}
 		else if(m_info.getCommand().equals(CommandConstant.ADD_PUBLIC_KEY)){
 			//公開鍵設定
 			if(addKey(m_info.getPublicKey())){
-				info.setStatus(RunStatusConstant.END);
-				info.setTime(HinemosTime.getDateInstance().getTime());
-				info.setErrorMessage("");
-				info.setMessage("");
-				info.setEndValue(0);
+				sendme.body.setStatus(RunStatusConstant.END);
+				sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+				sendme.body.setErrorMessage("");
+				sendme.body.setMessage("");
+				sendme.body.setEndValue(0);
 			}
 			else{
 				String message = "ADD_PUBLIC_KEY is falure.";
 				m_log.warn(message);
-				info.setStatus(RunStatusConstant.ERROR);
-				info.setTime(HinemosTime.getDateInstance().getTime());
-				info.setErrorMessage("");
-				info.setMessage(message);
-				info.setEndValue(-1);
+				sendme.body.setStatus(RunStatusConstant.ERROR);
+				sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+				sendme.body.setErrorMessage("");
+				sendme.body.setMessage(message);
+				sendme.body.setEndValue(-1);
 			}
 		}
 		else if(m_info.getCommand().equals(CommandConstant.DELETE_PUBLIC_KEY)){
 			//公開鍵削除
 			if(deleteKey(m_info.getPublicKey())){
-				info.setStatus(RunStatusConstant.END);
-				info.setTime(HinemosTime.getDateInstance().getTime());
-				info.setErrorMessage("");
-				info.setMessage("");
-				info.setEndValue(0);
+				sendme.body.setStatus(RunStatusConstant.END);
+				sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+				sendme.body.setErrorMessage("");
+				sendme.body.setMessage("");
+				sendme.body.setEndValue(0);
 			}
 			else{
 				String message = "DELETE_PUBLIC_KEY is falure.";
 				m_log.warn(message);
-				info.setStatus(RunStatusConstant.ERROR);
-				info.setTime(HinemosTime.getDateInstance().getTime());
-				info.setErrorMessage("");
-				info.setMessage(message);
-				info.setEndValue(-1);
+				sendme.body.setStatus(RunStatusConstant.ERROR);
+				sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+				sendme.body.setErrorMessage("");
+				sendme.body.setMessage(message);
+				sendme.body.setEndValue(-1);
 			}
 		}
 
 		//送信
-		m_sendQueue.put(info);
+		m_sendQueue.put(sendme);
 
 		//実行履歴から削除
 		RunHistoryUtil.delRunHistory(m_info);
@@ -293,6 +297,33 @@ public class PublicKeyThread extends AgentThread {
 
 			// ファイルロック(スレッド間の排他制御)
 			synchronized (authKeyLock) {
+				Charset charset = Charset.forName("UTF-8");
+				CharsetDecoder decoder = charset.newDecoder();
+				// バッファを作成
+				ByteBuffer readBuffer = ByteBuffer.allocate((int) channel.size());
+
+				// ファイル読み込み
+				channel.read(readBuffer);
+
+				// リミットの値を現在位置の値と等しくし、位置を0に設定
+				readBuffer.flip();
+
+				// 文字列に変換
+				String contents = decoder.decode(readBuffer).toString();
+				// 公開鍵を取得
+				List<String> keyCheck = new ArrayList<>();
+				StringTokenizer tokenizer = new StringTokenizer(contents, "\n");
+				while (tokenizer.hasMoreTokens()) {
+					keyCheck.add(tokenizer.nextToken());
+				}
+
+				// 追加するpublicKeyがコメント含め既に登録済みか検証し、登録済みであれば追加しない。
+				int s = keyCheck.lastIndexOf(publicKey);
+				if (s != -1) {
+					m_log.info("Duplicate publicKey. Skipped appending publicKey.");
+					return true;
+				}
+
 				//ファイルポジションを最後に移動
 				channel.position(channel.size());
 
@@ -302,7 +333,8 @@ public class PublicKeyThread extends AgentThread {
 				m_log.debug("add key : " + writeData);
 
 				//書き込み用バッファを作成
-				ByteBuffer buffer = ByteBuffer.allocate(512);
+				int bufferSize = writeData.getBytes().length;
+				ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
 
 				//書き込み
 				buffer.clear();
@@ -334,7 +366,7 @@ public class PublicKeyThread extends AgentThread {
 	}
 
 	/**
-	 *  公開鍵をAuthorized_keyから削除します。<BR>
+	 *	公開鍵をAuthorized_keyから削除します。<BR>
 	 * 
 	 * @param publicKey
 	 * @return true : 成功　false:失敗

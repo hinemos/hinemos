@@ -10,19 +10,24 @@ package com.clustercontrol.jobmanagement.model;
 
 import java.util.List;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.CryptUtil;
+import com.clustercontrol.rpa.model.RpaManagementToolAccount;
+
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 
 
@@ -97,6 +102,7 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	private Integer messageRetry;
 	private Integer commandRetry;
 	private Integer jobRetry;
+	private Integer jobRetryInterval;
 	private Boolean skip;
 	private Integer skipEndStatus;
 	private Integer skipEndValue;
@@ -129,11 +135,6 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	private String srcWorkDir;
 	private String srcFacilityId;
 	private String destFacilityId;
-	// cc_job_start_time_mst
-	private Long startTime;
-	private String startTimeDescription;
-	private Integer startMinute;
-	private String startMinuteDescription;
 
 	//ジョブ通知関連
 	private String notifyGroupId;
@@ -154,11 +155,13 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	private Integer abnormalEndValueTo;
 
 	private List<JobParamMstEntity> jobParamMstEntities;
-	private List<JobStartJobMstEntity> jobStartJobMstEntities;
 	private List<JobCommandParamMstEntity> jobCommandParamEntities;
 	private List<JobEnvVariableMstEntity> jobEnvVariableMstEntities;
-	private List<JobStartParamMstEntity> jobStartParamMstEntities;
 	private List<JobNextJobOrderMstEntity> jobNextJobOrderMstEntities;
+	private List<JobRpaOptionMstEntity> jobRpaOptionMstEntities;
+	private List<JobRpaEndValueConditionMstEntity> jobRpaEndValueConditionMstEntities;
+	private List<JobRpaRunParamMstEntity> jobRpaRunParamMstEntities;
+	private List<JobRpaCheckEndValueMstEntity> jobRpaCheckEndValueMstEntities;
 	private String parentJobunitId;
 	private String parentJobId;
 
@@ -183,10 +186,208 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	private Integer monitorWaitTime;
 	private Integer monitorWaitEndValue;
 
+	// リソース制御ジョブ情報
+	private String resourceCloudScopeId;
+	private String resourceLocationId;
+	private Integer resourceType;
+	private Integer resourceAction;
+	private String resourceTargetId;
+	private Integer resourceStatusConfirmTime;
+	private Integer resourceStatusConfirmInterval;
+	private String resourceAttachNode;
+	private String resourceAttachDevice;
+	private Integer resourceSuccessValue;
+	private Integer resourceFailureValue;
+
 	// ジョブ同時実行制御キュー
 	private Boolean queueFlg;
 	private String queueId;
+
+	// ジョブセッション事前生成
+	private Boolean expNodeRuntimeFlg;
+
+	// 失敗した場合再実行する
+	private Boolean retryFlg;
+	// 再実行回数
+	private Integer retryCount;
+	// 失敗時の操作
+	private Integer failureOperation;
+	// ジョブ連携メッセージID
+	private String joblinkMessageId;
+	// 重要度
+	private Integer priority;
+	// メッセージ
+	private String message;
+	// 確認期間フラグ
+	private Boolean pastFlg;
+	// 確認期間（分）
+	private Integer pastMin;
+	// 重要度（情報）有効/無効
+	private Boolean infoValidFlg;
+	// 重要度（警告）有効/無効
+	private Boolean warnValidFlg;
+	// 重要度（危険）有効/無効
+	private Boolean criticalValidFlg;
+	// 重要度（不明）有効/無効
+	private Boolean unknownValidFlg;
+	// アプリケーションフラグ
+	private Boolean applicationFlg;
+	// アプリケーション
+	private String application;
+	// 監視詳細フラグ
+	private Boolean monitorDetailIdFlg;
+	// 監視詳細
+	private String monitorDetailId;
+	// メッセージフラグ
+	private Boolean messageFlg;
+	// 拡張情報フラグ
+	private Boolean expFlg;
+	// 終了値 - 「常に」フラグ
+	private Boolean monitorAllEndValueFlg;
+	// 終了値 - 「常に」
+	private Integer monitorAllEndValue;
+	// 条件を満たした場合の終了値
+	private Integer successEndValue;
+	// 条件を満たさない場合に終了するか
+	private Boolean failureEndFlg;
+	// タイムアウト（分）
+	private Integer failureWaitTime;
+	// 条件を満たさない場合の終了値
+	private Integer failureEndValue;
+	// ディレクトリ
+	private String directory;
+	// ファイル名（正規表現）
+	private String fileName;
+	// チェック種別 - 作成
+	private Boolean createValidFlg;
+	// ジョブ開始前に作成されたファイルも対象とする
+	private Boolean createBeforeJobStartFlg;
+	// チェック種別 - 削除
+	private Boolean deleteValidFlg;
+	// チェック種別 - 変更
+	private Boolean modifyValidFlg;
+	// 変更判定（タイムスタンプ変更/ファイルサイズ変更）
+	private Integer modifyType;
+	// ファイルの使用中は判定しないか
+	private Boolean notJudgeFileInUseFlg;
+	// ジョブ連携送信設定ID
+	private String joblinkSendSettingId;
+	// 失敗時の終了状態
+	private Integer failureEndStatus;
+
+	// ジョブ連携の引継ぎ設定
+	private List<JobLinkInheritMstEntity> jobLinkInheritMstEntities;
+
+	// ジョブ連携メッセージの拡張情報設定
+	private List<JobLinkJobExpMstEntity> jobLinkJobExpMstEntities;
+
+	// 標準出力ファイル情報
+	private List<JobOutputMstEntity> jobOutputMstEntities;
+
+	// 待ち条件グループ情報
+	private List<JobWaitGroupMstEntity> jobWaitGroupMstEntities;
+
+	// RPAシナリオジョブ
+	// RPAシナリオジョブ種別（直接実行/間接実行）
+	private Integer rpaJobType;
+	// 直接実行
+	// RPAツール種別（RPAツールID）
+	private String rpaToolId;
+	// 実行ファイルパス
+	private String rpaExeFilepath;
+	// シナリオファイルパス
+	private String rpaScenarioFilepath;
+	// RPAツールログファイルディレクトリ
+	private String rpaLogDirectory;
+	// RPAツールログファイル名
+	private String rpaLogFileName;
+	// RPAツールログファイルエンコーディング
+	private String rpaLogEncoding;
+	// RPAツールログファイル改行コード
+	private String rpaLogReturnCode;
+	// RPAツールログファイル先頭パターン
+	private String rpaLogPatternHead; 
+	// RPAツールログファイル終端パターン
+	private String rpaLogPatternTail; 
+	// RPAツールログファイル最大読み取り文字数
+	private Integer rpaLogMaxBytes;
+	// いずれの条件にも一致しなかった場合の終了値
+	private Integer rpaDefaultEndValue;
+	// シナリオの実行前後でログインする
+	private Boolean rpaLoginFlg;
+	// ログインユーザID
+	private String rpaLoginUserId;
+	// ログインパスワード
+	private String rpaLoginPassword;
+	// ログインできない場合のリトライ回数
+	private Integer rpaLoginRetry;
+	// ログインできない場合の終了値
+	private Integer rpaLoginEndValue;
+	// ログイン解像度
+	private String rpaLoginResolution;
+	// 異常発生時もログアウトする
+	private Boolean rpaLogoutFlg;
+	// 終了遅延発生時にスクリーンショットを取得する
+	private Boolean rpaScreenshotEndDelayFlg;
+	// 終了値が条件を満たした場合にスクリーンショットを取得する
+	private Boolean rpaScreenshotEndValueFlg;
+	// スクリーンショットを取得する終了値
+	private String rpaScreenshotEndValue;
+	// スクリーンショットを取得する終了値判定条件
+	private Integer rpaScreenshotEndValueCondition;
+	// ログインできない場合に通知する
+	private Boolean rpaNotLoginNotify;
+	// ログインできない場合の通知重要度
+	private Integer rpaNotLoginNotifyPriority;
+	// ログインできない場合の終了値
+	private Integer rpaNotLoginEndValue;
+	// RPAツールが既に起動している場合に通知する
+	private Boolean rpaAlreadyRunningNotify;
+	// RPAツールが既に起動している場合の通知重要度
+	private Integer rpaAlreadyRunningNotifyPriority;
+	// RPAツールが既に起動している場合の終了値
+	private Integer rpaAlreadyRunningEndValue;
+	// RPAツールが異常終了した場合に通知する
+	private Boolean rpaAbnormalExitNotify;
+	// RPAツールが異常終了した場合の通知重要度
+	private Integer rpaAbnormalExitNotifyPriority;
+	// RPAツールが異常終了した場合の終了値
+	private Integer rpaAbnormalExitEndValue;
+	// 間接実行
+	// RPA管理ツールアカウント（RPAスコープID）
+	private String rpaScopeId;
+	// RPA管理ツール実行種別
+	private Integer rpaRunType;
+	// シナリオ入力パラメータ
+	private String rpaScenarioParam;
+	// 停止種別（シナリオを終了する/シナリオは終了せず、ジョブのみ終了する）
+	private Integer rpaStopType;
+	// 停止方法
+	private Integer rpaStopMode;
+	// コネクションタイムアウト
+	private Integer rpaRunConnectTimeout;
+	// リクエストタイムアウト
+	private Integer rpaRunRequestTimeout;
+	// 実行できない場合に終了する
+	private Boolean rpaRunEndFlg;
+	// 実行できない場合のリトライ回数
+	private Integer rpaRunRetry;
+	// 実行できない場合の終了値
+	private Integer rpaRunEndValue;
+	// 結果が確認できない場合に終了する
+	private Integer rpaCheckConnectTimeout;
+	// 結果が確認できない場合のリトライ回数
+	private Integer rpaCheckRequestTimeout;
+	// 結果が確認できない場合の終了値
+	private Boolean rpaCheckEndFlg;
+	// 結果が確認できない場合のリトライ回数
+	private Integer rpaCheckRetry;
+	// 結果が確認できない場合の終了値
+	private Integer rpaCheckEndValue;
+	// RPA管理ツールアカウント
+	private RpaManagementToolAccount rpaManagementToolAccount;
 	
+
 	@Deprecated
 	public JobMstEntity() {
 	}
@@ -1040,44 +1241,6 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 		this.destFacilityId = destFacilityId;
 	}
 
-
-	// cc_job_start_time_mst
-	@Column(name="start_time")
-	public Long getStartTime() {
-		return this.startTime;
-	}
-
-	public void setStartTime(Long startTime) {
-		this.startTime = startTime;
-	}
-
-	@Column(name="start_time_description")
-	public String getStartTimeDescription() {
-		return this.startTimeDescription;
-	}
-
-	public void setStartTimeDescription(String description) {
-		this.startTimeDescription = description;
-	}
-
-	@Column(name="start_minute")
-	public Integer getStartMinute() {
-		return this.startMinute;
-	}
-
-	public void setStartMinute(Integer startMinute) {
-		this.startMinute = startMinute;
-	}
-
-	@Column(name="start_minute_description")
-	public String getStartMinuteDescription() {
-		return this.startMinuteDescription;
-	}
-
-	public void setStartMinuteDescription(String description) {
-		this.startMinuteDescription = description;
-	}
-
 	@Column(name="parent_jobunit_id")
 	public String getParentJobunitId() {
 		return parentJobunitId;
@@ -1375,6 +1538,105 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 		this.monitorWaitEndValue = monitorWaitEndValue;
 	}
 
+	@Column(name="resource_cloud_scope_id")
+	public String getResourceCloudScopeId() {
+		return resourceCloudScopeId;
+	}
+
+	public void setResourceCloudScopeId(String resourceCloudScopeId) {
+		this.resourceCloudScopeId = resourceCloudScopeId;
+	}
+
+	@Column(name="resource_location_id")
+	public String getResourceLocationId() {
+		return resourceLocationId;
+	}
+
+	public void setResourceLocationId(String resourceLocationId) {
+		this.resourceLocationId = resourceLocationId;
+	}
+
+	@Column(name="resource_type")
+	public Integer getResourceType() {
+		return resourceType;
+	}
+
+	public void setResourceType(Integer resourceType) {
+		this.resourceType = resourceType;
+	}
+
+	@Column(name="resource_action")
+	public Integer getResourceAction() {
+		return resourceAction;
+	}
+
+	public void setResourceAction(Integer resourceAction) {
+		this.resourceAction = resourceAction;
+	}
+
+	@Column(name="resource_target_id")
+	public String getResourceTargetId() {
+		return resourceTargetId;
+	}
+
+	public void setResourceTargetId(String resourceTargetId) {
+		this.resourceTargetId = resourceTargetId;
+	}
+
+	@Column(name="resource_status_confirm_time")
+	public Integer getResourceStatusConfirmTime() {
+		return resourceStatusConfirmTime;
+	}
+
+	public void setResourceStatusConfirmTime(Integer resourceStatusConfirmTime) {
+		this.resourceStatusConfirmTime = resourceStatusConfirmTime;
+	}
+
+	@Column(name="resource_status_confirm_interval")
+	public Integer getResourceStatusConfirmInterval() {
+		return resourceStatusConfirmInterval;
+	}
+
+	public void setResourceStatusConfirmInterval(Integer resourceStatusConfirmInterval) {
+		this.resourceStatusConfirmInterval = resourceStatusConfirmInterval;
+	}
+
+	@Column(name="resource_attach_node")
+	public String getResourceAttachNode() {
+		return resourceAttachNode;
+	}
+
+	public void setResourceAttachNode(String resourceAttachNode) {
+		this.resourceAttachNode = resourceAttachNode;
+	}
+
+	@Column(name="resource_attach_device")
+	public String getResourceAttachDevice() {
+		return resourceAttachDevice;
+	}
+
+	public void setResourceAttachDevice(String resourceAttachDevice) {
+		this.resourceAttachDevice = resourceAttachDevice;
+	}
+
+	@Column(name="resource_success_value")
+	public Integer getResourceSuccessValue() {
+		return resourceSuccessValue;
+	}
+
+	public void setResourceSuccessValue(Integer resourceSuccessValue) {
+		this.resourceSuccessValue = resourceSuccessValue;
+	}
+
+	@Column(name="resource_failure_value")
+	public Integer getResourceFailureValue() {
+		return resourceFailureValue;
+	}
+
+	public void setResourceFailureValue(Integer resourceFailureValue) {
+		this.resourceFailureValue = resourceFailureValue;
+	}
+
 	@Column(name="queue_flg")
 	public Boolean getQueueFlg() {
 		return queueFlg;
@@ -1390,6 +1652,726 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 	}
 	public void setQueueId(String queueId) {
 		this.queueId = queueId;
+	}
+
+	@Column(name="exp_node_runtime_flg")
+	public Boolean getExpNodeRuntimeFlg() {
+		return expNodeRuntimeFlg;
+	}
+	public void setExpNodeRuntimeFlg(Boolean expNodeRuntimeFlg) {
+		this.expNodeRuntimeFlg = expNodeRuntimeFlg;
+	}
+
+	@Column(name="job_retry_interval")
+	public Integer getJobRetryInterval() {
+		return jobRetryInterval;
+	}
+	public void setJobRetryInterval(Integer jobRetryInterval) {
+		this.jobRetryInterval = jobRetryInterval;
+	}
+
+	@Column(name="retry_flg")
+	public Boolean getRetryFlg() {
+		return retryFlg;
+	}
+	public void setRetryFlg(Boolean retryFlg) {
+		this.retryFlg = retryFlg;
+	}
+
+	@Column(name="retry_count")
+	public Integer getRetryCount() {
+		return retryCount;
+	}
+	public void setRetryCount(Integer retryCount) {
+		this.retryCount = retryCount;
+	}
+
+	@Column(name="failure_operation")
+	public Integer getFailureOperation() {
+		return failureOperation;
+	}
+	public void setFailureOperation(Integer failureOperation) {
+		this.failureOperation = failureOperation;
+	}
+
+	@Column(name="joblink_message_id")
+	public String getJoblinkMessageId() {
+		return joblinkMessageId;
+	}
+	public void setJoblinkMessageId(String joblinkMessageId) {
+		this.joblinkMessageId = joblinkMessageId;
+	}
+
+	@Column(name="priority")
+	public Integer getPriority() {
+		return priority;
+	}
+	public void setPriority(Integer priority) {
+		this.priority = priority;
+	}
+
+	@Column(name="message")
+	public String getMessage() {
+		return message;
+	}
+	public void setMessage(String message) {
+		this.message = message;
+	}
+
+	@Column(name="past_flg")
+	public Boolean getPastFlg() {
+		return pastFlg;
+	}
+	public void setPastFlg(Boolean pastFlg) {
+		this.pastFlg = pastFlg;
+	}
+
+	@Column(name="past_min")
+	public Integer getPastMin() {
+		return pastMin;
+	}
+	public void setPastMin(Integer pastMin) {
+		this.pastMin = pastMin;
+	}
+
+	@Column(name="info_valid_flg")
+	public Boolean getInfoValidFlg() {
+		return infoValidFlg;
+	}
+	public void setInfoValidFlg(Boolean infoValidFlg) {
+		this.infoValidFlg = infoValidFlg;
+	}
+
+	@Column(name="warn_valid_flg")
+	public Boolean getWarnValidFlg() {
+		return warnValidFlg;
+	}
+	public void setWarnValidFlg(Boolean warnValidFlg) {
+		this.warnValidFlg = warnValidFlg;
+	}
+
+	@Column(name="critical_valid_flg")
+	public Boolean getCriticalValidFlg() {
+		return criticalValidFlg;
+	}
+	public void setCriticalValidFlg(Boolean criticalValidFlg) {
+		this.criticalValidFlg = criticalValidFlg;
+	}
+
+	@Column(name="unknown_valid_flg")
+	public Boolean getUnknownValidFlg() {
+		return unknownValidFlg;
+	}
+	public void setUnknownValidFlg(Boolean unknownValidFlg) {
+		this.unknownValidFlg = unknownValidFlg;
+	}
+
+	@Column(name="application_flg")
+	public Boolean getApplicationFlg() {
+		return applicationFlg;
+	}
+	public void setApplicationFlg(Boolean applicationFlg) {
+		this.applicationFlg = applicationFlg;
+	}
+
+	@Column(name="application")
+	public String getApplication() {
+		return application;
+	}
+	public void setApplication(String application) {
+		this.application = application;
+	}
+
+	@Column(name="monitor_detail_id_flg")
+	public Boolean getMonitorDetailIdFlg() {
+		return monitorDetailIdFlg;
+	}
+	public void setMonitorDetailIdFlg(Boolean monitorDetailIdFlg) {
+		this.monitorDetailIdFlg = monitorDetailIdFlg;
+	}
+
+	@Column(name="monitor_detail_id")
+	public String getMonitorDetailId() {
+		return monitorDetailId;
+	}
+	public void setMonitorDetailId(String monitorDetailId) {
+		this.monitorDetailId = monitorDetailId;
+	}
+
+	@Column(name="message_flg")
+	public Boolean getMessageFlg() {
+		return messageFlg;
+	}
+	public void setMessageFlg(Boolean messageFlg) {
+		this.messageFlg = messageFlg;
+	}
+
+	@Column(name="exp_flg")
+	public Boolean getExpFlg() {
+		return expFlg;
+	}
+	public void setExpFlg(Boolean expFlg) {
+		this.expFlg = expFlg;
+	}
+
+	@Column(name="monitor_all_end_value_flg")
+	public Boolean getMonitorAllEndValueFlg() {
+		return monitorAllEndValueFlg;
+	}
+	public void setMonitorAllEndValueFlg(Boolean monitorAllEndValueFlg) {
+		this.monitorAllEndValueFlg = monitorAllEndValueFlg;
+	}
+
+	@Column(name="monitor_all_end_value")
+	public Integer getMonitorAllEndValue() {
+		return monitorAllEndValue;
+	}
+	public void setMonitorAllEndValue(Integer monitorAllEndValue) {
+		this.monitorAllEndValue = monitorAllEndValue;
+	}
+
+	@Column(name="success_end_value")
+	public Integer getSuccessEndValue() {
+		return successEndValue;
+	}
+	public void setSuccessEndValue(Integer successEndValue) {
+		this.successEndValue = successEndValue;
+	}
+
+	@Column(name="failure_end_flg")
+	public Boolean getFailureEndFlg() {
+		return failureEndFlg;
+	}
+	public void setFailureEndFlg(Boolean failureEndFlg) {
+		this.failureEndFlg = failureEndFlg;
+	}
+
+	@Column(name="failure_wait_time")
+	public Integer getFailureWaitTime() {
+		return failureWaitTime;
+	}
+	public void setFailureWaitTime(Integer failureWaitTime) {
+		this.failureWaitTime = failureWaitTime;
+	}
+
+	@Column(name="failure_end_value")
+	public Integer getFailureEndValue() {
+		return failureEndValue;
+	}
+	public void setFailureEndValue(Integer failureEndValue) {
+		this.failureEndValue = failureEndValue;
+	}
+
+	@Column(name="directory")
+	public String getDirectory() {
+		return directory;
+	}
+	public void setDirectory(String directory) {
+		this.directory = directory;
+	}
+
+	@Column(name="file_name")
+	public String getFileName() {
+		return fileName;
+	}
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
+	@Column(name="create_valid_flg")
+	public Boolean getCreateValidFlg() {
+		return createValidFlg;
+	}
+	public void setCreateValidFlg(Boolean createValidFlg) {
+		this.createValidFlg = createValidFlg;
+	}
+
+	@Column(name="create_before_job_start_flg")
+	public Boolean getCreateBeforeJobStartFlg() {
+		return createBeforeJobStartFlg;
+	}
+	public void setCreateBeforeJobStartFlg(Boolean createBeforeJobStartFlg) {
+		this.createBeforeJobStartFlg = createBeforeJobStartFlg;
+	}
+
+	@Column(name="delete_valid_flg")
+	public Boolean getDeleteValidFlg() {
+		return deleteValidFlg;
+	}
+	public void setDeleteValidFlg(Boolean deleteValidFlg) {
+		this.deleteValidFlg = deleteValidFlg;
+	}
+
+	@Column(name="modify_valid_flg")
+	public Boolean getModifyValidFlg() {
+		return modifyValidFlg;
+	}
+	public void setModifyValidFlg(Boolean modifyValidFlg) {
+		this.modifyValidFlg = modifyValidFlg;
+	}
+
+	@Column(name="modify_type")
+	public Integer getModifyType() {
+		return modifyType;
+	}
+	public void setModifyType(Integer modifyType) {
+		this.modifyType = modifyType;
+	}
+
+	@Column(name="not_judge_file_in_use_flg")
+	public Boolean getNotJudgeFileInUseFlg() {
+		return notJudgeFileInUseFlg;
+	}
+	public void setNotJudgeFileInUseFlg(Boolean notJudgeFileInUseFlg) {
+		this.notJudgeFileInUseFlg = notJudgeFileInUseFlg;
+	}
+
+	@Column(name="joblink_send_setting_id")
+	public String getJoblinkSendSettingId() {
+		return joblinkSendSettingId;
+	}
+	public void setJoblinkSendSettingId(String joblinkSendSettingId) {
+		this.joblinkSendSettingId = joblinkSendSettingId;
+	}
+
+	@Column(name="failure_end_status")
+	public Integer getFailureEndStatus() {
+		return failureEndStatus;
+	}
+	public void setFailureEndStatus(Integer failureEndStatus) {
+		this.failureEndStatus = failureEndStatus;
+	}
+
+	@Column(name="rpa_job_type")
+	public Integer getRpaJobType() {
+		return rpaJobType;
+	}
+
+	public void setRpaJobType(Integer rpaJobType) {
+		this.rpaJobType = rpaJobType;
+	}
+
+	@Column(name="rpa_tool_id")
+	public String getRpaToolId() {
+		return rpaToolId;
+	}
+
+	public void setRpaToolId(String rpaToolId) {
+		this.rpaToolId = rpaToolId;
+	}
+
+	@Column(name="rpa_exe_filepath")
+	public String getRpaExeFilepath() {
+		return rpaExeFilepath;
+	}
+
+	public void setRpaExeFilepath(String rpaExeFilepath) {
+		this.rpaExeFilepath = rpaExeFilepath;
+	}
+
+	@Column(name="rpa_scenario_filepath")
+	public String getRpaScenarioFilepath() {
+		return rpaScenarioFilepath;
+	}
+
+	public void setRpaScenarioFilepath(String rpaScenarioFilepath) {
+		this.rpaScenarioFilepath = rpaScenarioFilepath;
+	}
+
+	@Column(name="rpa_log_directory")
+	public String getRpaLogDirectory() {
+		return rpaLogDirectory;
+	}
+
+	public void setRpaLogDirectory(String rpaLogDirectory) {
+		this.rpaLogDirectory = rpaLogDirectory;
+	}
+
+	@Column(name="rpa_log_file_name")
+	public String getRpaLogFileName() {
+		return rpaLogFileName;
+	}
+
+	public void setRpaLogFileName(String rpaLogFileName) {
+		this.rpaLogFileName = rpaLogFileName;
+	}
+
+	@Column(name="rpa_log_encoding")
+	public String getRpaLogEncoding() {
+		return rpaLogEncoding;
+	}
+
+	public void setRpaLogEncoding(String rpaLogEncoding) {
+		this.rpaLogEncoding = rpaLogEncoding;
+	}
+
+	@Column(name="rpa_log_return_code")
+	public String getRpaLogReturnCode() {
+		return rpaLogReturnCode;
+	}
+
+	public void setRpaLogReturnCode(String rpaLogReturnCode) {
+		this.rpaLogReturnCode = rpaLogReturnCode;
+	}
+
+	@Column(name="rpa_log_pattern_head")
+	public String getRpaLogPatternHead() {
+		return rpaLogPatternHead;
+	}
+
+	public void setRpaLogPatternHead(String rpaLogPatternHead) {
+		this.rpaLogPatternHead = rpaLogPatternHead;
+	}
+
+	@Column(name="rpa_log_pattern_tail")
+	public String getRpaLogPatternTail() {
+		return rpaLogPatternTail;
+	}
+
+	public void setRpaLogPatternTail(String rpaLogPatternTail) {
+		this.rpaLogPatternTail = rpaLogPatternTail;
+	}
+
+	@Column(name="rpa_log_max_bytes")
+	public Integer getRpaLogMaxBytes() {
+		return rpaLogMaxBytes;
+	}
+
+	public void setRpaLogMaxBytes(Integer rpaLogMaxBytes) {
+		this.rpaLogMaxBytes = rpaLogMaxBytes;
+	}
+
+	@Column(name="rpa_default_end_value")
+	public Integer getRpaDefaultEndValue() {
+		return rpaDefaultEndValue;
+	}
+
+	public void setRpaDefaultEndValue(Integer rpaDefaultEndValue) {
+		this.rpaDefaultEndValue = rpaDefaultEndValue;
+	}
+
+	@Column(name="rpa_login_flg")
+	public Boolean getRpaLoginFlg() {
+		return rpaLoginFlg;
+	}
+
+	public void setRpaLoginFlg(Boolean rpaLoginFlg) {
+		this.rpaLoginFlg = rpaLoginFlg;
+	}
+
+	@Column(name="rpa_login_user_id")
+	public String getRpaLoginUserId() {
+		return rpaLoginUserId;
+	}
+
+	public void setRpaLoginUserId(String rpaLoginUserId) {
+		this.rpaLoginUserId = rpaLoginUserId;
+	}
+
+	@Transient
+	public String getRpaLoginPassword() {
+		return CryptUtil.decrypt(getRpaLoginPasswordCrypt());
+	}
+
+	public void setRpaLoginPassword(String rpaLoginPassword) {
+		setRpaLoginPasswordCrypt(CryptUtil.encrypt(rpaLoginPassword));
+	}
+
+	@Column(name="rpa_login_password")
+	public String getRpaLoginPasswordCrypt() {
+		return rpaLoginPassword;
+	}
+
+	public void setRpaLoginPasswordCrypt(String rpaLoginPassword) {
+		this.rpaLoginPassword = rpaLoginPassword;
+	}
+
+	@Column(name="rpa_login_retry")
+	public Integer getRpaLoginRetry() {
+		return rpaLoginRetry;
+	}
+
+	public void setRpaLoginRetry(Integer rpaLoginRetry) {
+		this.rpaLoginRetry = rpaLoginRetry;
+	}
+
+	@Column(name="rpa_login_end_value")
+	public Integer getRpaLoginEndValue() {
+		return rpaLoginEndValue;
+	}
+
+	public void setRpaLoginEndValue(Integer rpaLoginEndValue) {
+		this.rpaLoginEndValue = rpaLoginEndValue;
+	}
+
+	@Column(name="rpa_login_resolution")
+	public String getRpaLoginResolution() {
+		return rpaLoginResolution;
+	}
+
+	public void setRpaLoginResolution(String rpaLoginResolution) {
+		this.rpaLoginResolution = rpaLoginResolution;
+	}
+
+	@Column(name="rpa_logout_flg")
+	public Boolean getRpaLogoutFlg() {
+		return rpaLogoutFlg;
+	}
+
+	public void setRpaLogoutFlg(Boolean rpaLogoutFlg) {
+		this.rpaLogoutFlg = rpaLogoutFlg;
+	}
+
+	@Column(name="rpa_screenshot_end_delay_flg")
+	public Boolean getRpaScreenshotEndDelayFlg() {
+		return rpaScreenshotEndDelayFlg;
+	}
+
+	public void setRpaScreenshotEndDelayFlg(Boolean rpaScreenshotEndDelayFlg) {
+		this.rpaScreenshotEndDelayFlg = rpaScreenshotEndDelayFlg;
+	}
+
+	@Column(name="rpa_screenshot_end_value_flg")
+	public Boolean getRpaScreenshotEndValueFlg() {
+		return rpaScreenshotEndValueFlg;
+	}
+
+	public void setRpaScreenshotEndValueFlg(Boolean rpaScrlenshotEndValueFlg) {
+		this.rpaScreenshotEndValueFlg = rpaScrlenshotEndValueFlg;
+	}
+
+	@Column(name="rpa_screenshot_end_value")
+	public String getRpaScreenshotEndValue() {
+		return rpaScreenshotEndValue;
+	}
+
+	public void setRpaScreenshotEndValue(String rpaScreenshotEndValue) {
+		this.rpaScreenshotEndValue = rpaScreenshotEndValue;
+	}
+
+	@Column(name="rpa_screenshot_end_value_condition")
+	public Integer getRpaScreenshotEndValueCondition() {
+		return rpaScreenshotEndValueCondition;
+	}
+
+	public void setRpaScreenshotEndValueCondition(Integer rpaScreenshotEndValueCondition) {
+		this.rpaScreenshotEndValueCondition = rpaScreenshotEndValueCondition;
+	}
+
+	@Column(name="rpa_not_login_notify")
+	public Boolean getRpaNotLoginNotify() {
+		return rpaNotLoginNotify;
+	}
+
+	public void setRpaNotLoginNotify(Boolean rpaNotLoginNotify) {
+		this.rpaNotLoginNotify = rpaNotLoginNotify;
+	}
+
+	@Column(name="rpa_not_login_notify_priority")
+	public Integer getRpaNotLoginNotifyPriority() {
+		return rpaNotLoginNotifyPriority;
+	}
+
+	public void setRpaNotLoginNotifyPriority(Integer rpaNotLoginNotifyPriority) {
+		this.rpaNotLoginNotifyPriority = rpaNotLoginNotifyPriority;
+	}
+
+	@Column(name="rpa_not_login_end_value")
+	public Integer getRpaNotLoginEndValue() {
+		return rpaNotLoginEndValue;
+	}
+
+	public void setRpaNotLoginEndValue(Integer rpaNotLoginEndValue) {
+		this.rpaNotLoginEndValue = rpaNotLoginEndValue;
+	}
+
+	@Column(name="rpa_already_running_notify")
+	public Boolean getRpaAlreadyRunningNotify() {
+		return rpaAlreadyRunningNotify;
+	}
+
+	public void setRpaAlreadyRunningNotify(Boolean rpaAlreadyRunningNotify) {
+		this.rpaAlreadyRunningNotify = rpaAlreadyRunningNotify;
+	}
+
+	@Column(name="rpa_already_running_notify_priority")
+	public Integer getRpaAlreadyRunningNotifyPriority() {
+		return rpaAlreadyRunningNotifyPriority;
+	}
+
+	public void setRpaAlreadyRunningNotifyPriority(Integer rpaAlreadyRunningNotifyPriority) {
+		this.rpaAlreadyRunningNotifyPriority = rpaAlreadyRunningNotifyPriority;
+	}
+
+	@Column(name="rpa_already_running_end_value")
+	public Integer getRpaAlreadyRunningEndValue() {
+		return rpaAlreadyRunningEndValue;
+	}
+
+	public void setRpaAlreadyRunningEndValue(Integer rpaAlreadyRunningEndValue) {
+		this.rpaAlreadyRunningEndValue = rpaAlreadyRunningEndValue;
+	}
+
+	@Column(name="rpa_abnormal_exit_notify")
+	public Boolean getRpaAbnormalExitNotify() {
+		return rpaAbnormalExitNotify;
+	}
+
+	public void setRpaAbnormalExitNotify(Boolean rpaAbnormalExitNotify) {
+		this.rpaAbnormalExitNotify = rpaAbnormalExitNotify;
+	}
+
+	@Column(name="rpa_abnormal_exit_notify_priority")
+	public Integer getRpaAbnormalExitNotifyPriority() {
+		return rpaAbnormalExitNotifyPriority;
+	}
+
+	public void setRpaAbnormalExitNotifyPriority(Integer rpaAbnormalExitNotifyPriority) {
+		this.rpaAbnormalExitNotifyPriority = rpaAbnormalExitNotifyPriority;
+	}
+
+	@Column(name="rpa_abnormal_exit_end_value")
+	public Integer getRpaAbnormalExitEndValue() {
+		return rpaAbnormalExitEndValue;
+	}
+
+	public void setRpaAbnormalExitEndValue(Integer rpaAbnormalExitEndValue) {
+		this.rpaAbnormalExitEndValue = rpaAbnormalExitEndValue;
+	}
+
+	@Column(name="rpa_scope_id")
+	public String getRpaScopeId() {
+		return rpaScopeId;
+	}
+
+	public void setRpaScopeId(String rpaScopeId) {
+		this.rpaScopeId = rpaScopeId;
+	}
+
+	@Column(name="rpa_run_type")
+	public Integer getRpaRunType() {
+		return rpaRunType;
+	}
+
+	public void setRpaRunType(Integer rpaRunType) {
+		this.rpaRunType = rpaRunType;
+	}
+
+	@Column(name="rpa_scenario_param")
+	public String getRpaScenarioParam() {
+		return rpaScenarioParam;
+	}
+
+	public void setRpaScenarioParam(String rpaScenarioParam) {
+		this.rpaScenarioParam = rpaScenarioParam;
+	}
+
+	@Column(name="rpa_stop_type")
+	public Integer getRpaStopType() {
+		return this.rpaStopType;
+	}
+
+	public void setRpaStopType(Integer rpaStopType) {
+		this.rpaStopType = rpaStopType;
+	}
+
+	@Column(name="rpa_stop_mode")
+	public Integer getRpaStopMode() {
+		return this.rpaStopMode;
+	}
+
+	public void setRpaStopMode(Integer rpaStopMode) {
+		this.rpaStopMode = rpaStopMode;
+	}
+
+	@Column(name="rpa_run_connect_timeout")
+	public Integer getRpaRunConnectTimeout() {
+		return rpaRunConnectTimeout;
+	}
+
+	public void setRpaRunConnectTimeout(Integer rpaRunConnectTimeout) {
+		this.rpaRunConnectTimeout = rpaRunConnectTimeout;
+	}
+
+	@Column(name="rpa_run_request_timeout")
+	public Integer getRpaRunRequestTimeout() {
+		return rpaRunRequestTimeout;
+	}
+
+	public void setRpaRunRequestTimeout(Integer rpaRunRequestTimeout) {
+		this.rpaRunRequestTimeout = rpaRunRequestTimeout;
+	}
+
+	@Column(name="rpa_run_end_flg")
+	public Boolean getRpaRunEndFlg() {
+		return rpaRunEndFlg;
+	}
+
+	public void setRpaRunEndFlg(Boolean rpaRunEndFlg) {
+		this.rpaRunEndFlg = rpaRunEndFlg;
+	}
+
+	@Column(name="rpa_run_retry")
+	public Integer getRpaRunRetry() {
+		return rpaRunRetry;
+	}
+
+	public void setRpaRunRetry(Integer rpaRunRetry) {
+		this.rpaRunRetry = rpaRunRetry;
+	}
+
+	@Column(name="rpa_run_end_value")
+	public Integer getRpaRunEndValue() {
+		return rpaRunEndValue;
+	}
+
+	public void setRpaRunEndValue(Integer rpaRunEndValue) {
+		this.rpaRunEndValue = rpaRunEndValue;
+	}
+
+	@Column(name="rpa_check_connect_timeout")
+	public Integer getRpaCheckConnectTimeout() {
+		return rpaCheckConnectTimeout;
+	}
+
+	public void setRpaCheckConnectTimeout(Integer rpaCheckConnectTimeout) {
+		this.rpaCheckConnectTimeout = rpaCheckConnectTimeout;
+	}
+
+	@Column(name="rpa_check_request_timeout")
+	public Integer getRpaCheckRequestTimeout() {
+		return rpaCheckRequestTimeout;
+	}
+
+	public void setRpaCheckRequestTimeout(Integer rpaCheckRequestTimeout) {
+		this.rpaCheckRequestTimeout = rpaCheckRequestTimeout;
+	}
+
+	@Column(name="rpa_check_end_flg")
+	public Boolean getRpaCheckEndFlg() {
+		return rpaCheckEndFlg;
+	}
+
+	public void setRpaCheckEndFlg(Boolean rpaCheckEndFlg) {
+		this.rpaCheckEndFlg = rpaCheckEndFlg;
+	}
+
+	@Column(name="rpa_check_retry")
+	public Integer getRpaCheckRetry() {
+		return rpaCheckRetry;
+	}
+
+	public void setRpaCheckRetry(Integer rpaCheckRetry) {
+		this.rpaCheckRetry = rpaCheckRetry;
+	}
+
+	@Column(name="rpa_check_end_value")
+	public Integer getRpaCheckEndValue() {
+		return rpaCheckEndValue;
+	}
+
+	public void setRpaCheckEndValue(Integer rpaCheckEndValue) {
+		this.rpaCheckEndValue = rpaCheckEndValue;
 	}
 
 	//bi-directional many-to-one association to JobParamMstEntity
@@ -1412,16 +2394,6 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 		this.jobEnvVariableMstEntities = jobEnvVariableMstEntities;
 	}
 
-	//bi-directional many-to-one association to JobStartJobMstEntity
-	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
-	public List<JobStartJobMstEntity> getJobStartJobMstEntities() {
-		return this.jobStartJobMstEntities;
-	}
-
-	public void setJobStartJobMstEntities(List<JobStartJobMstEntity> jobStartJobMstEntities) {
-		this.jobStartJobMstEntities = jobStartJobMstEntities;
-	}
-
 	//bi-directional many-to-one association to JobCommandParamMstEntity
 	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public List<JobCommandParamMstEntity> getJobCommandParamEntities() {
@@ -1432,16 +2404,6 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 		this.jobCommandParamEntities = jobCommandParamEntities;
 	}
 
-	//bi-directional many-to-one association to JobStartParamMstEntity
-	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
-	public List<JobStartParamMstEntity> getJobStartParamMstEntities() {
-		return this.jobStartParamMstEntities;
-	}
-
-	public void setJobStartParamMstEntities(List<JobStartParamMstEntity> jobStartParamMstEntities) {
-		this.jobStartParamMstEntities = jobStartParamMstEntities;
-	}
-
 	//bi-directional many-to-one association to JobNextJobOrderMstEntity
 	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public List<JobNextJobOrderMstEntity> getJobNextJobOrderMstEntities() {
@@ -1450,5 +2412,96 @@ public class JobMstEntity extends ObjectPrivilegeTargetInfo {
 
 	public void setJobNextJobOrderMstEntities(List<JobNextJobOrderMstEntity> jobNextJobOrderMstEntities) {
 		this.jobNextJobOrderMstEntities = jobNextJobOrderMstEntities;
+	}
+
+	//bi-directional many-to-one association to JobLinkInheritMstEntity
+	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<JobLinkInheritMstEntity> getJobLinkInheritMstEntities() {
+		return this.jobLinkInheritMstEntities;
+	}
+
+	public void setJobLinkInheritMstEntities(List<JobLinkInheritMstEntity> jobLinkInheritMstEntities) {
+		this.jobLinkInheritMstEntities = jobLinkInheritMstEntities;
+	}
+
+	//bi-directional many-to-one association to JobLinkJobExpMstEntity
+	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<JobLinkJobExpMstEntity> getJobLinkJobExpMstEntities() {
+		return this.jobLinkJobExpMstEntities;
+	}
+
+	public void setJobLinkJobExpMstEntities(List<JobLinkJobExpMstEntity> jobLinkJobExpMstEntities) {
+		this.jobLinkJobExpMstEntities = jobLinkJobExpMstEntities;
+	}
+
+	//bi-directional many-to-one association to JobOutputMstEntity
+	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<JobOutputMstEntity> getJobOutputMstEntities() {
+		return this.jobOutputMstEntities;
+	}
+
+	public void setJobOutputMstEntities(List<JobOutputMstEntity> jobOutputMstEntities) {
+		this.jobOutputMstEntities = jobOutputMstEntities;
+	}
+
+	//bi-directional many-to-one association to JobWaitGroupMstEntity
+	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<JobWaitGroupMstEntity> getJobWaitGroupMstEntities() {
+		return this.jobWaitGroupMstEntities;
+	}
+
+	public void setJobWaitGroupMstEntities(List<JobWaitGroupMstEntity> jobWaitGroupMstEntities) {
+		this.jobWaitGroupMstEntities = jobWaitGroupMstEntities;
+	}
+
+	//bi-directional many-to-one association to JobRpaOptionMstEntity
+	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<JobRpaOptionMstEntity> getJobRpaOptionMstEntities() {
+		return this.jobRpaOptionMstEntities;
+	}
+
+	public void setJobRpaOptionMstEntities(List<JobRpaOptionMstEntity> jobRpaOptionMstEntities) {
+		this.jobRpaOptionMstEntities = jobRpaOptionMstEntities;
+	}
+
+	//bi-directional many-to-one association to JobRpaEndValueMstEntity
+	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<JobRpaEndValueConditionMstEntity> getJobRpaEndValueConditionMstEntities() {
+		return this.jobRpaEndValueConditionMstEntities;
+	}
+
+	public void setJobRpaEndValueConditionMstEntities(List<JobRpaEndValueConditionMstEntity> jobRpaEndValueConditionMstEntities) {
+		this.jobRpaEndValueConditionMstEntities = jobRpaEndValueConditionMstEntities;
+	}
+
+	//bi-directional many-to-one association to JobRpaRunParamMstEntity
+	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<JobRpaRunParamMstEntity> getJobRpaRunParamMstEntities() {
+		return this.jobRpaRunParamMstEntities;
+	}
+
+	public void setJobRpaRunParamMstEntities(List<JobRpaRunParamMstEntity> jobRpaRunParamMstEntities) {
+		this.jobRpaRunParamMstEntities = jobRpaRunParamMstEntities;
+	}
+
+	//bi-directional many-to-one association to JobRpaCheckEndValueMstEntity
+	@OneToMany(mappedBy="jobMstEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
+	public List<JobRpaCheckEndValueMstEntity> getJobRpaCheckEndValueMstEntities() {
+		return this.jobRpaCheckEndValueMstEntities;
+	}
+
+	public void setJobRpaCheckEndValueMstEntities(List<JobRpaCheckEndValueMstEntity> jobRpaCheckEndValueMstEntities) {
+		this.jobRpaCheckEndValueMstEntities = jobRpaCheckEndValueMstEntities;
+	}
+
+	//uni-directional many-to-one association to RpaManagementToolAccount
+	@ManyToOne(fetch=FetchType.LAZY)
+	@JoinColumn(name="rpa_scope_id", referencedColumnName = "rpa_scope_id", insertable = false, updatable = false)
+	public RpaManagementToolAccount getRpaManagementToolAccount() {
+		return rpaManagementToolAccount;
+	}
+
+	public void setRpaManagementToolAccount(RpaManagementToolAccount rpaManagementToolAccount) {
+		this.rpaManagementToolAccount = rpaManagementToolAccount;
 	}
 }

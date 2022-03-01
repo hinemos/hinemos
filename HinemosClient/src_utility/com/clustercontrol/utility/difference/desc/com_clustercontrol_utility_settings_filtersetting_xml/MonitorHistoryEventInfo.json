@@ -1,0 +1,21 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"entire",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorHistoryEventInfo_entire"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"monitorHistoryEventConditions",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"conditionIdx"},
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryEventInfo_monitorHistoryEventConditions"},
+		{"type":"Ignore", "propNames":["conditionIdx"]}
+	]}
+]
+}

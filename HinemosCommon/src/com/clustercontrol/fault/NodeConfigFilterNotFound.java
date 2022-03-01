@@ -13,7 +13,7 @@ package com.clustercontrol.fault;
  * 
  * @version 6.2.0
  */
-public class NodeConfigFilterNotFound extends HinemosException {
+public class NodeConfigFilterNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = 836935854066835493L;
 

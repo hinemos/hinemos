@@ -47,7 +47,7 @@ public class ReportingValidator {
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public static void validateReportingInfo(ReportingInfo reportingInfo) throws InvalidSetting, InvalidRole {
+	public static void validateReportingInfo(ReportingInfo reportingInfo, boolean isModify) throws InvalidSetting, InvalidRole {
 
 		// reportId
 		if (reportingInfo.getReportScheduleId() == null ||
@@ -58,10 +58,11 @@ public class ReportingValidator {
 			throw e;
 		}
 		CommonValidator.validateId(Messages.getString("SCHEDULE_ID"), reportingInfo.getReportScheduleId(), 64);
-
-		// ownerRoleId
-		CommonValidator.validateString(Messages.getString("OWNER_ROLE_ID"), reportingInfo.getOwnerRoleId(), true, 1, 64);
-
+		
+		if (!isModify) {
+			// ownerRoleId
+			CommonValidator.validateString(Messages.getString("OWNER_ROLE_ID"), reportingInfo.getOwnerRoleId(), true, 1, 64);
+		}
 		// templateSetId
 		CommonValidator.validateString(Messages.getString("TEMPLATE_SET_ID"), reportingInfo.getTemplateSetId(), true, 1, 64);
 		
@@ -72,8 +73,8 @@ public class ReportingValidator {
 		CommonValidator.validateCalenderId(reportingInfo.getCalendarId(), false, reportingInfo.getOwnerRoleId());
 		
 		// notifyId
-		if(reportingInfo.getNotifyId() != null){
-			for(NotifyRelationInfo notifyRelationInfo : reportingInfo.getNotifyId()){
+		if(reportingInfo.getNotifyRelationList() != null){
+			for(NotifyRelationInfo notifyRelationInfo : reportingInfo.getNotifyRelationList()){
 				CommonValidator.validateNotifyId(notifyRelationInfo.getNotifyId(), true, reportingInfo.getOwnerRoleId());
 			}
 		}
@@ -165,8 +166,9 @@ public class ReportingValidator {
 			}
 
 			if(detailInfo.getTemplateId() == null || detailInfo.getTemplateId().isEmpty()) {
+				String[] args ={ String.valueOf(detailInfo.getOrderNo()) };
 				InvalidSetting e = new InvalidSetting(
-						Messages.getString("MESSAGE_REPORTING_33", String.valueOf(detailInfo.getOrderNo())));
+						Messages.getString("MESSAGE_REPORTING_33", args));
 				m_log.info("validateTemplateSetInfo() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;

@@ -200,6 +200,7 @@ public class TemplateGeneralPageEachResourceGroupeByScope extends TemplateBase {
 		Map<String, Object> params = new HashMap<>();
 		params.putAll(m_propertiesMap);
 		m_log.debug("createJPReport: resouce: ");
+		m_log.debug("page=" + page);
 
 		if(null == page){
 			return params;
@@ -209,6 +210,7 @@ public class TemplateGeneralPageEachResourceGroupeByScope extends TemplateBase {
 			int chartIndex = 0;
 			for (ResourceChart chart: page.getChartList()) {
 				chartIndex++;
+				m_log.debug("chartIndex=" + chartIndex);
 				Map<String, Object> dsMap = ds.createDataSource(chart, chartIndex);
 				if(dsMap != null) {
 					params.putAll(dsMap);

@@ -11,7 +11,9 @@ package com.clustercontrol.util.apllog;
 
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,10 +24,14 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosException;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.jobmanagement.bean.JobLinkConstant;
+import com.clustercontrol.jobmanagement.bean.JobLinkExpInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.monitor.bean.EventConfirmConstant;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
@@ -40,7 +46,7 @@ import com.clustercontrol.util.CommandExecutor;
 import com.clustercontrol.util.CommandExecutor.CommandResult;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.InternalIdAbstract;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.StringBinder;
 
@@ -70,40 +76,71 @@ public class AplLogger {
 	 *
 	 * ログを出力します。<BR>
 	 * 
-	 * @param priority		優先度
-	 * @param pluginId		プラグインID
+	 * @param internalId	INTERNALイベント情報
 	 * @param msgArgs		メッセージ置換項目
-	 * @since
 	 */
-	public static void put(Integer priority, String pluginId, MessageConstant msgCode, Object[] msgArgs) {
-		put(priority, pluginId, msgCode, msgArgs, null);
+	public static void put(InternalIdAbstract internalId, String[] msgArgs) {
+		put(internalId, msgArgs, null);
 	}
 
 	/**
 	 *
 	 * ログを出力します。<BR>
 	 *
+	 * @param internalId	INTERNALイベント情報
+	 * @param msgArgs		メッセージ置換項目
+	 * @param detailMsg		詳細メッセージ
+	 */
+	public static void put(InternalIdAbstract internalId, String[] msgArgs, String detailMsg) {
+		put(internalId, internalId.getPriority(), internalId.getPluginId(), internalId.getMessage(msgArgs), detailMsg);
+	}
+
+	/**
+	 *
+	 * ログを出力します。(重要度が動的に変更される場合想定)<BR>
+	 *
+	 * @param internalId	INTERNALイベント情報
+	 * @param priority		重要度（INTERNALイベント情報に含まれていない場合設定可能）
+	 * @param msgArgs		メッセージ置換項目
+	 * @param detailMsg		詳細メッセージ
+	 */
+	public static void put(InternalIdAbstract internalId, Integer priority, String[] msgArgs, String detailMsg) {
+		if (internalId.getPriority() == null) {
+			if (priority != null) {
+				put(internalId, priority, internalId.getPluginId(), internalId.getMessage(msgArgs), detailMsg);
+			} else {
+				put(internalId, PriorityConstant.TYPE_CRITICAL, internalId.getPluginId(), internalId.getMessage(msgArgs), detailMsg);
+			}
+		} else {
+			put(internalId, internalId.getPriority(), internalId.getPluginId(), internalId.getMessage(msgArgs), detailMsg);
+		}
+	}
+
+	/**
+	 *
+	 * ログを出力します。(クラウドからの呼び出し想定)<BR>
+	 *
+	 * @param internalId	INTERNALイベント情報
+	 * @param message		メッセージ
+	 * @param detailMsg		詳細メッセージ
+	 */
+	public static void put(InternalIdAbstract internalId, String message, String detailMsg) {
+		put(internalId, internalId.getPriority(), internalId.getPluginId(), message, detailMsg);
+	}
+
+	/**
+	 *
+	 * ログを出力します。<BR>
+	 * ※INTERNALイベント出力対象はInternalIdAbstractで管理しているため、このメソッドは外部から直接呼び出さないこと。
+	 *
+	 * @param internalId	INTERNALイベント情報
 	 * @param priority		優先度
 	 * @param pluginId		プラグインID
 	 * @param message		メッセージ
 	 * @param detailMsg		詳細メッセージ
 	 * @since
 	 */
-	public static void put(Integer priority, String pluginId, MessageConstant msgCode, Object[] msgArgs, String detailMsg) {
-		put(priority, pluginId, msgCode.getMessage((String[]) msgArgs), detailMsg);
-	}
-	
-	/**
-	 *
-	 * ログを出力します。<BR>
-	 *
-	 * @param priority		優先度
-	 * @param pluginId		プラグインID
-	 * @param msgArgs		メッセージ置換項目
-	 * @param detailMsg		詳細メッセージ
-	 * @since
-	 */
-	public static void put(Integer priority, String pluginId, String message, String detailMsg) {
+	private static void put(InternalIdAbstract internalId, Integer priority, String pluginId, String message, String detailMsg) {
 		// 既にINTERNALモードに入っている場合はこれ以上出力しない
 		Boolean isInternalMode = m_isInternalMode.get(Thread.currentThread().getId());
 		if(isInternalMode != null && isInternalMode){
@@ -178,6 +215,25 @@ public class AplLogger {
 
 			if (isCommand && isOutput(commandLevel, priority)) {
 				putCommand(output);
+			}
+
+			/////
+			// 設定値取得(internal.job(ジョブ連携メッセージ送信))
+			////
+			boolean isJoblinkMessage = false;
+			String joblinkMesForwardSettingId = HinemosPropertyCommon.internal_joblinkmes_forward_setting.getStringValue();
+			if (joblinkMesForwardSettingId != null && !joblinkMesForwardSettingId.trim().isEmpty()) {
+				if (internalId == InternalIdCommon.PLT_NTF_SYS_019 || internalId == InternalIdCommon.PLT_NTF_SYS_020) {
+					// ジョブ連携に関連したINTERNALイベントは対象外
+					log.info("put() : " + internalId.getInternalId() + " is not output as a Job Link Message.");
+				} else {
+					isJoblinkMessage = true;
+				}
+			}
+			int joblinkMesLevel = getPriority(HinemosPropertyCommon.internal_joblinkmes_forward_priority.getStringValue());
+
+			if (isJoblinkMessage && isOutput(joblinkMesLevel, priority)) {
+				putJobLinkMessage(output, internalId);
 			}
 
 			/////
@@ -324,6 +380,40 @@ public class AplLogger {
 		} catch (HinemosException | RuntimeException e) {
 			log.warn("fail putCommand monitorId=" + notifyInfo.getMonitorId() + ", message=" + notifyInfo.getMessage(), e);
 			return;
+		}
+	}
+
+	private static void putJobLinkMessage(OutputBasicInfo notifyInfo, InternalIdAbstract internalId) {
+		// ジョブ通知 (ジョブ連携メッセージ送信)
+
+		// ジョブ連携メッセージID設定
+		notifyInfo.setJoblinkMessageId(JobLinkMessageId.getIdForInternal());
+
+		List<JobLinkExpInfo> expList = new ArrayList<>();
+		JobLinkExpInfo expInfo = new JobLinkExpInfo();
+		expInfo.setKey(JobLinkConstant.EXP_KEY_INTERNAL_ID);
+		expInfo.setValue(internalId.getInternalId());
+		expList.add(expInfo);
+
+		JpaTransactionManager jtm = null;
+		
+		try {
+			// rollbackするとイベントが出力されなくなるため、rollback用のコールバックメソッドを登録する 
+			jtm = new JpaTransactionManager(); 
+			jtm.begin(); 
+			
+			jtm.addCallback(new AplLoggerPutJobLinkMessageAfterRollbackCallback(notifyInfo, expList)); 
+			
+			jtm.commit(); 
+			
+			new NotifyControllerBean().sendJobLinkMessage(notifyInfo, expList);
+		} catch (HinemosUnknown e) {
+			log.warn("fail putJobLinkMessage monitorId=" + notifyInfo.getMonitorId() + ", message=" + notifyInfo.getMessage());
+		} catch (InvalidRole e) {
+			log.warn("fail putJobLinkMessage monitorId=" + notifyInfo.getMonitorId() + ", message=" + notifyInfo.getMessage());
+		} finally {
+			if (jtm != null)
+				jtm.close();
 		}
 	}
 

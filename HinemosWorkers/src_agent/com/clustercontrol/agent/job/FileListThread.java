@@ -9,18 +9,20 @@
 package com.clustercontrol.agent.job;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtRunInstructionInfoResponse;
+import org.openapitools.client.model.SetJobResultRequest;
 
 import com.clustercontrol.agent.SendQueue;
+import com.clustercontrol.agent.SendQueue.JobResultSendableObject;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
-import com.clustercontrol.ws.jobmanagement.RunResultInfo;
 
 /**
  * ファイル転送ジョブ用ファイルリスト取得スレッドクラス<BR>
@@ -44,7 +46,7 @@ public class FileListThread extends AgentThread {
 	 * @param props
 	 */
 	public FileListThread(
-			RunInstructionInfo info,
+			AgtRunInstructionInfoResponse info,
 			SendQueue sendQueue) {
 		super(info, sendQueue);
 	}
@@ -72,43 +74,44 @@ public class FileListThread extends AgentThread {
 		//---------------------------
 
 		//メッセージ作成
-		RunResultInfo info = new RunResultInfo();
-		info.setSessionId(m_info.getSessionId());
-		info.setJobunitId(m_info.getJobunitId());
-		info.setJobId(m_info.getJobId());
-		info.setFacilityId(m_info.getFacilityId());
-		info.setCommand(m_info.getCommand());
-		info.setCommandType(m_info.getCommandType());
-		info.setStopType(m_info.getStopType());
-		info.setStatus(RunStatusConstant.START);
-		info.setTime(startDate.getTime());
+		JobResultSendableObject sendme = new JobResultSendableObject();
+		sendme.sessionId = m_info.getSessionId();
+		sendme.jobunitId = m_info.getJobunitId();
+		sendme.jobId = m_info.getJobId();
+		sendme.facilityId = m_info.getFacilityId();
+		sendme.body = new SetJobResultRequest();
+		sendme.body.setCommand(m_info.getCommand());
+		sendme.body.setCommandType(m_info.getCommandType());
+		sendme.body.setStopType(m_info.getStopType());
+		sendme.body.setStatus(RunStatusConstant.START);
+		sendme.body.setTime(startDate.getTime());
 
 		m_log.info("run SessionID=" + m_info.getSessionId() + ", JobID=" + m_info.getJobId());
 
 		//送信
-		m_sendQueue.put(info);
+		m_sendQueue.put(sendme);
 
 		//ファイルリスト取得
 		List<String> fileList = getFileList(m_info.getFilePath());
 		if (fileList.size() > 0){
-			info.setStatus(RunStatusConstant.END);
-			info.getFileList().addAll(fileList);
-			info.setTime(HinemosTime.getDateInstance().getTime());
-			info.setErrorMessage("");
-			info.setMessage("");
-			info.setEndValue(0);
+			sendme.body.setStatus(RunStatusConstant.END);
+			sendme.body.getFileList().addAll(fileList);
+			sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+			sendme.body.setErrorMessage("");
+			sendme.body.setMessage("");
+			sendme.body.setEndValue(0);
 		} else {
 			m_log.info("filelist.size()=0");
-			info.setStatus(RunStatusConstant.END);
-			info.getFileList().addAll(fileList);
-			info.setTime(HinemosTime.getDateInstance().getTime());
-			info.setErrorMessage("");
-			info.setMessage("file not found");
-			info.setEndValue(1);
+			sendme.body.setStatus(RunStatusConstant.END);
+			sendme.body.getFileList().addAll(fileList);
+			sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+			sendme.body.setErrorMessage("");
+			sendme.body.setMessage("file not found");
+			sendme.body.setEndValue(1);
 		}
 
 		//送信
-		m_sendQueue.put(info);
+		m_sendQueue.put(sendme);
 
 		//実行履歴から削除
 		RunHistoryUtil.delRunHistory(m_info);
@@ -132,19 +135,27 @@ public class FileListThread extends AgentThread {
 			String fileName = path.substring(path.lastIndexOf("/") + 1);
 			fileName = fileName.replaceAll("[.]", "[.]");
 			fileName = fileName.replaceAll("[*]", ".*");
-			if(fileName.length() == 0)
+			if(fileName.length() == 0) {
 				fileName = ".*";
+			}
 
 			//Fileを指定パスで作成
 			File fi = new File(dir);
 
-			File[] files = fi.listFiles();
+			final String filterFileName = fileName;
+			// ファイルのフィルタ条件
+			FileFilter fileFilter = new FileFilter() {
+				@Override
+				public boolean accept(File f) {
+					// ファイル、隠しファイル以外、ファイル名でフィルタリングする
+					return f.isFile() && !f.isHidden() && f.getName().matches(filterFileName);
+				}
+			};
+
+			File[] files = fi.listFiles(fileFilter);
 			if (files != null) {
 				for(int i = 0; i < files.length; i++){
-					if(files[i].isFile() && !files[i].isHidden()){
-						if(files[i].getName().matches(fileName))
-							fileList.add(files[i].getCanonicalPath());
-					}
+					fileList.add(files[i].getCanonicalPath());
 				}
 			} else {
 				m_log.warn(dir +" is not directory or does not have a reference permission");

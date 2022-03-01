@@ -7,7 +7,6 @@
  */
 package com.clustercontrol.xcloud.ui.views;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,11 +38,13 @@ import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPart;
+import org.openapitools.client.model.MonitorInfoResponse;
 
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
+import com.clustercontrol.bean.RunInterval;
+import com.clustercontrol.monitor.run.bean.MonitorTypeMessage;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.MonitorInfo;
+import com.clustercontrol.util.TableViewerSorter;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
@@ -51,7 +52,6 @@ import com.clustercontrol.xcloud.model.base.IElement;
 import com.clustercontrol.xcloud.model.cloud.BillingMonitor;
 import com.clustercontrol.xcloud.model.cloud.IBillingMonitors;
 import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
-import com.clustercontrol.xcloud.util.TableViewerSorter;
 
 /**
  */
@@ -86,45 +86,6 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 	
 	private IBillingMonitors currentBillingAlarms;
 	 
-	public static class MonitorTypeToString{
-		/** 真偽値（文字列）。 */
-		public static final String STRING_TRUTH = Messages.getString("truth");
-
-		/** 数値（文字列）。 */
-		public static final String STRING_NUMERIC = Messages.getString("numeric");
-
-		/** 文字列（文字列）。 */
-		public static final String STRING_STRING = Messages.getString("string");
-
-		/** トラップ（文字列）。 */
-		public static final String STRING_TRAP = Messages.getString("trap");
-
-		/** シナリオ（文字列）。 */
-		public static final String STRING_SCENARIO = Messages.getString("scenario");
-		
-		/**
-		 * 種別から文字列に変換します。
-		 * 
-		 * @param type 種別
-		 * @return 文字列
-		 */
-		public static String typeToString(int type) {
-			if (type == MonitorTypeConstant.TYPE_TRUTH) {
-				return STRING_TRUTH;
-			} else if (type == MonitorTypeConstant.TYPE_NUMERIC) {
-				return STRING_NUMERIC;
-			} else if (type == MonitorTypeConstant.TYPE_STRING) {
-				return STRING_STRING;
-			} else if (type == MonitorTypeConstant.TYPE_TRAP) {
-				return STRING_TRAP;
-			} else if (type == MonitorTypeConstant.TYPE_SCENARIO) {
-				return STRING_SCENARIO;
-			}
-			return "";
-		}
-	}
-	
-//	private String footerTitle = bundle_messages.getString("word.view_item_count") + bundle_messages.getString("caption.title_separator");
 
 	private enum ViewColumn{
 		manager_name(
@@ -163,8 +124,8 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 			new ColumnLabelProvider(){
 				@Override
 				public String getText(Object element) {
-					int type = ((BillingMonitor)element).getMonitorInfo().getMonitorType();
-					return MonitorTypeToString.typeToString(type);
+					String code = ((BillingMonitor)element).getMonitorInfo().getMonitorType().toString();
+					return MonitorTypeMessage.codeToString(code);
 				}
 			}
 		),
@@ -184,12 +145,6 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 			new ColumnLabelProvider(){
 				@Override
 				public String getText(Object element) {
-//					switch (((MonitorInfo)element).getMonitorKind()) {
-//					case DELTA:
-//						return bundle_messages.getString("word.delta");
-//					case SUM:
-//						return bundle_messages.getString("word.sum");
-//					}
 					return ((BillingMonitor)element).getMonitorInfo().getFacilityId();
 				}
 			}
@@ -210,7 +165,11 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 			new ColumnLabelProvider(){
 				@Override
 				public String getText(Object element) {
-					return ((BillingMonitor)element).getMonitorInfo().getCalendarId();
+					if (((BillingMonitor)element).getMonitorInfo().getCalendarId() != null) {
+						return ((BillingMonitor)element).getMonitorInfo().getCalendarId();
+					} else {
+						return "";
+					}
 				}
 			}
 		),
@@ -220,12 +179,9 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 			new ColumnLabelProvider(){
 				@Override
 				public String getText(Object element) {
-					MonitorInfo info = (MonitorInfo)((BillingMonitor)element).getMonitorInfo();
-					if (info.getRunInterval() == 0) {
-						return "-";
-					} else {
-						return info.getRunInterval() / 60 + Messages.getString("minute");
-					}
+					MonitorInfoResponse info = (MonitorInfoResponse)((BillingMonitor)element).getMonitorInfo();
+					return RunInterval.enumToString(
+							info.getRunInterval(), MonitorInfoResponse.RunIntervalEnum.class);
 				}
 			}
 		),
@@ -235,7 +191,7 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 			new ColumnLabelProvider(){
 				@Override
 				public String getText(Object element) {
-					if (((BillingMonitor)element).getMonitorInfo().isMonitorFlg()) {
+					if (((BillingMonitor)element).getMonitorInfo().getMonitorFlg()) {
 						return Messages.getString("valid");
 					} else {
 						return Messages.getString("invalid");
@@ -249,7 +205,7 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 			new ColumnLabelProvider(){
 				@Override
 				public String getText(Object element) {
-					if (((BillingMonitor)element).getMonitorInfo().isCollectorFlg()) {
+					if (((BillingMonitor)element).getMonitorInfo().getCollectorFlg()) {
 						return Messages.getString("valid");
 					} else {
 						return Messages.getString("invalid");
@@ -274,7 +230,7 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 				@Override
 				public String getText(Object element) {
 					if(((BillingMonitor)element).getMonitorInfo().getRegDate() != null){
-						return format.format(((BillingMonitor)element).getMonitorInfo().getRegDate());
+						return ((BillingMonitor)element).getMonitorInfo().getRegDate();
 					}
 					return "----/--/--";
 				}
@@ -297,7 +253,7 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 				@Override
 				public String getText(Object element) {
 					if(((BillingMonitor)element).getMonitorInfo().getUpdateDate() != null){
-						return format.format(((BillingMonitor)element).getMonitorInfo().getUpdateDate());
+						return ((BillingMonitor)element).getMonitorInfo().getUpdateDate();
 					}
 					return "----/--/--";
 				}
@@ -317,7 +273,6 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 		private String label;
 		private ColumnLabelProvider provider;
 		private ColumnPixelData pixelData;
-		private static SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd H:mm:ss");
 		
 		ViewColumn(String label, ColumnPixelData pixelData, ColumnLabelProvider provider){
 			this.label = label;
@@ -394,7 +349,11 @@ public class BillingAlarmsView extends AbstractCloudViewPart {
 		tableViewer.setComparator(new ViewerComparator(){
 			// Set sorting key by element type
 			private String getSortingKey(Object element){
-				return (element instanceof MonitorInfo)? ((MonitorInfo)element).getMonitorId(): "";
+				if (element instanceof MonitorInfoResponse) {
+					return ((MonitorInfoResponse)element).getMonitorId();
+				} else {
+					return "";
+				}
 			}
 
 			@Override

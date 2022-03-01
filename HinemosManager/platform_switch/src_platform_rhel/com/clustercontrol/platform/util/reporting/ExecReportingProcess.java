@@ -8,12 +8,23 @@
 
 package com.clustercontrol.platform.util.reporting;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+import java.lang.reflect.Field;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.StringJoiner;
@@ -21,18 +32,19 @@ import java.util.StringJoiner;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.platform.HinemosPropertyDefault;
-import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.bean.ReportingInfo;
+import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.factory.Notice;
+import com.clustercontrol.reporting.util.ReportFileFailureListManager;
+import com.clustercontrol.rest.endpoint.reporting.dto.CreateReportingFileRequest;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandExecutor;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.CommandExecutor.CommandResult;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -56,6 +68,18 @@ public class ExecReportingProcess {
 	 * @return レポートファイルを出力するディレクトリのパス
 	 */
 	public static String getBasePath() {
+		// ベースディレクトリの確認
+		if (!Files.exists(Paths.get(basePath))) {
+			try {
+				Files.createDirectory(Paths.get(basePath));
+				m_log.info("create directory=" + basePath);
+			} catch (FileAlreadyExistsException e) {
+				m_log.info("already created directory=" + basePath);
+			} catch (IOException e) {
+				//ここには入らないはず
+				m_log.warn("create failed=" + basePath+", "+e.getMessage());
+			}
+		}
 		return basePath;
 	}
 
@@ -70,10 +94,10 @@ public class ExecReportingProcess {
 
 	/**
 	 * @param info
-	 * @param tmpReportingInfo
+	 * @param dtoReq
 	 * @return 作成されるレポートファイル名のリスト
 	 */
-	public static synchronized List<String> execute(ReportingInfo info, ReportingInfo tmpReportingInfo) {
+	public static synchronized List<String> execute(ReportingInfo info, CreateReportingFileRequest dtoReq) {
 
 		List<String> fileList = null;
 		String reportId = null;
@@ -112,7 +136,7 @@ public class ExecReportingProcess {
 					" -Dhinemos.manager.log.dir=" + System.getProperty("hinemos.manager.log.dir", "/opt/hinemos/var/log") +
 					" " + HinemosPropertyDefault.reporting_heap_size.getStringValue() +
 					" -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=" + System.getProperty("hinemos.manager.log.dir", "/opt/hinemos/var/log") + 
-					" -javaagent:" + System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") + "/lib/eclipselink.jar";
+					" -javaagent:" + System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") + "/lib/eclipselink-3.0.0.jar";
 					
 			// OSがWindows以外の場合、OOMの情報出力する
 			String osName = System.getProperty("os.name");
@@ -124,15 +148,15 @@ public class ExecReportingProcess {
 			}
 			
 			String addOpts = "";
-			if (tmpReportingInfo != null &&
-					tmpReportingInfo.getOutputPeriodType() != null &&
-					tmpReportingInfo.getOutputPeriodBefore() != null &&
-					tmpReportingInfo.getOutputPeriodFor() != null) {
+			if (dtoReq != null &&
+					dtoReq.getOutputPeriodType() != null &&
+					dtoReq.getOutputPeriodBefore() != null &&
+					dtoReq.getOutputPeriodFor() != null) {
 				// 即時実行では期間のみ変更可能
 				StringBuilder builder = new StringBuilder("");
-				builder.append(" -Dhinemos.reporting.output.period.type=" + tmpReportingInfo.getOutputPeriodType());
-				builder.append(" -Dhinemos.reporting.output.period.before=" + tmpReportingInfo.getOutputPeriodBefore());
-				builder.append(" -Dhinemos.reporting.output.period.for=" + tmpReportingInfo.getOutputPeriodFor());
+				builder.append(" -Dhinemos.reporting.output.period.type=" + dtoReq.getOutputPeriodType().getCode());
+				builder.append(" -Dhinemos.reporting.output.period.before=" + dtoReq.getOutputPeriodBefore());
+				builder.append(" -Dhinemos.reporting.output.period.for=" + dtoReq.getOutputPeriodFor());
 				addOpts = builder.toString();
 			}
 
@@ -160,9 +184,9 @@ public class ExecReportingProcess {
 			}
 			
 			//レポート作成に必要なjarファイルが配置されているか確認
-			String[] jarFileList = {"commons-beanutils-", "commons-collections-", "commons-digester-", 
-					"ecj-", "iText-", "iTextAsian", "iTextAsianCmaps", "jasperreports-functions-",
-					"jasperreports-fonts-", "jasperreports-", "jcommon-", "jfreechart-", "poi-"};
+			String[] jarFileList = {"castor-core-", "castor-xml-", "commons-beanutils-", "commons-collections-", "commons-collections4-", "commons-digester-", "commons-lang3-", 
+					"ecj-", "itext-", "iTextAsian", "iTextAsianCmaps", "jakarta.inject-api-", "jasperreports-functions-", "jasperreports-fonts-", "jasperreports-", 
+					"jcommon-", "jfreechart-", "poi-", "SparseBitSet-"};
 			int countJars = 0;
 			if (libFileList != null) {
 				for(String libFile: libFileList) {
@@ -174,8 +198,7 @@ public class ExecReportingProcess {
 					}
 				}
 				if(countJars != jarFileList.length){
-					AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.REPORTING,
-							MessageConstant.MESSAGE_REPORTING_JARFILES_NOT_FOUND, 
+					AplLogger.put(InternalIdCommon.REPORTING_SYS_001, 
 							new String[] {info.getReportScheduleId()});
 					return fileList;
 				}
@@ -197,12 +220,53 @@ public class ExecReportingProcess {
 
 			// 即時実行時は通知の選択可
 			boolean notify = true;
-			if (tmpReportingInfo != null &&
-					(tmpReportingInfo.getNotifyGroupId() == null || tmpReportingInfo.getNotifyGroupId().isEmpty())) {
+			if (dtoReq != null && !dtoReq.getNotifyFlg()) {
 				notify = false;
 			}
 
+			String threadName = "createReportFileTaskThread";
+			int numMultiplicityLimit = HinemosPropertyDefault.reporting_create_process_multiplicity_limit.getIntegerValue();
+
+			m_log.info("Property reporting.createReportFileTask.multipicity.limit : " + numMultiplicityLimit + " .");
+			if (numMultiplicityLimit == 0) {
+				m_log.info(threadName + " multiplicity control is disable.");
+			} else if (numMultiplicityLimit < 0 || numMultiplicityLimit > 1024) {
+				m_log.warn("Invalid value of property.");
+				m_log.info(threadName + " multiplicity control is disable.");
+			} else {
+				int numFileTaskRunnning = 0;
+				m_log.info(threadName + " multiplicity control is enable.");
+
+				/* 実行中のCreateReportFileTaskの数をカウントする */
+				m_log.debug("count " + threadName + " start.");
+
+				ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+				long[] threadIds = threadBean.getAllThreadIds();
+				m_log.debug("There are " + threadIds.length + " threads in Manager.");
+				ThreadInfo[] threadInfoList = threadBean.getThreadInfo(threadIds, 0);
+
+				for (ThreadInfo threadInfo : threadInfoList) {
+					if (threadInfo != null && threadName.equals(threadInfo.getThreadName())) {
+						m_log.debug(threadName + " found, " + String.format("%#016x", threadInfo.getThreadId()));
+						numFileTaskRunnning++;
+					}
+				}
+				m_log.debug("count " + threadName + " end.");
+				m_log.info("running " + threadName + " : " + numFileTaskRunnning);
+
+				/* プロパティでの多重度制限を超えたら実行せずに終了 */
+				if (numFileTaskRunnning < numMultiplicityLimit) {
+					m_log.debug(threadName + " is going to run.");
+				} else {
+					m_log.warn(threadName + " multiplicity exceeded.");
+					AplLogger.put(InternalIdCommon.REPORTING_SYS_002,
+							new String[] { info.getReportScheduleId() });
+					return fileList;
+				}
+			}
+
 			Thread thread = new Thread(new CreateReportFileTask(info, command, fileList, notify));
+			thread.setName(threadName);
 			// Manager終了時にこのスレッドの終了を待たない
 			thread.setDaemon(true);
 			thread.start();
@@ -247,14 +311,25 @@ public class ExecReportingProcess {
 				int returnValue = -1;
 				String[] cmd = CommandCreator.createCommand(null, m_command, _modeType, false);
 				CommandExecutor executor = new CommandExecutor(cmd, timeout * 1000);
-				executor.execute();
-				CommandResult result = executor.getResult();
+				Process process = executor.execute();
 
+				// タイムアウトした場合に終了させるため、子プロセスのpidを取得しておく
+				List<Integer> childrenPid = getChildrenPid(getPid(process));
+
+				CommandResult result = executor.getResult();
 				if (result == null) {
+					// タイムアウト等
 					m_log.warn("run() failed. (command = " + m_command + ")");
 					if (m_notify) {
 						notifyInfo = new Notice().createOutputBasicInfo(m_reportId, null, PriorityConstant.TYPE_CRITICAL, returnValue);
 					}
+					// 親プロセスだけが終了し、子プロセスが残るため、子プロセスを終了させる
+					killProcesses(childrenPid);
+					// 一応、親プロセス終了
+					process.destroy();
+					
+					// コマンド失敗は一覧に登録
+					ReportFileFailureListManager.regist(m_fileList.get(0));
 				} else {
 					m_log.info("run() executed command. (exitCode = " + result.exitCode + ", command = " + m_command + ")");
 					returnValue = result.exitCode;
@@ -263,6 +338,8 @@ public class ExecReportingProcess {
 						if (m_notify) {
 							notifyInfo = new Notice().createOutputBasicInfo(m_reportId, null, PriorityConstant.TYPE_CRITICAL, returnValue);
 						}
+						// コマンド失敗は一覧に登録
+						ReportFileFailureListManager.regist(m_fileList.get(0));
 					} else {
 						String outFile = getBasePath() + File.separator + m_fileList.get(0);
 						m_log.debug("outFile = " + outFile);
@@ -281,7 +358,9 @@ public class ExecReportingProcess {
 				}
 
 				// 通知設定
-				jtm.addCallback(new NotifyCallback(notifyInfo));
+				if (m_notify) {
+					jtm.addCallback(new NotifyCallback(notifyInfo));
+				}
 
 				// 終了処理
 				jtm.commit();
@@ -294,6 +373,119 @@ public class ExecReportingProcess {
 				if (jtm != null)
 					jtm.close();
 			}
+		}
+
+		/**
+		 * プロセスIDを取得します。
+		 * 
+		 * @param process
+		 *            プロセス
+		 * @return プロセスID、取得に失敗した場合は-1
+		 */
+		private int getPid(Process process) {
+			m_log.debug("getPid(" + process + ")");
+
+			int pid = -1;
+			try {
+				Field f = process.getClass().getDeclaredField("pid");
+				f.setAccessible(true);
+				pid = (int) f.get(process);
+			} catch (NoSuchFieldException | IllegalAccessException e) {
+				m_log.warn("fail to get pid. " + e);
+			}
+
+			m_log.trace("pid=" + pid);
+			return pid;
+		}
+
+		/**
+		 * 子プロセスのプロセスIDを取得します。
+		 * 
+		 * @param pid
+		 *            親プロセスID
+		 * @return 子プロセスIDリスト、取得できない場合はnull
+		 */
+		private List<Integer> getChildrenPid(int pid) {
+			m_log.debug("getChildrenPid(" + pid + ")");
+
+			if (pid < 0) {
+				return null;
+			}
+
+			// 子プロセスID取得
+			Process psCommand = null;
+			int exitValue = 1;
+			try {
+				String command = "ps --ppid " + pid + " -o pid --no-heading";
+				m_log.debug("get children pid, command=" + command);
+				psCommand = Runtime.getRuntime().exec(command);
+				exitValue = psCommand.waitFor();
+			} catch (IOException | InterruptedException e) {
+				m_log.warn("fail to exec command. " + e);
+				return null;
+			}
+			// 正常終了（戻り値が0）をチェック
+			m_log.trace("exitValue=" + exitValue);
+			if (exitValue != 0) {
+				m_log.warn("ps command abnormal exit. exit code=" + exitValue);
+				return null;
+			}
+
+			List<Integer> childrenPidList = new ArrayList<>();
+			try (InputStream is = psCommand.getInputStream();
+					BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+				String childPid = "";
+				while ((childPid = br.readLine()) != null) {
+					m_log.trace("childPid=" + childPid);
+					if (childPid.equals("")) {
+						continue;
+					}
+					childrenPidList.add(Integer.parseInt(childPid.trim()));
+				}
+			} catch (NumberFormatException | IOException e) {
+				m_log.warn("fail to read pid. " + e);
+				return null;
+			}
+
+			m_log.trace("childrenPidList=" + Arrays.toString(childrenPidList.toArray()));
+			return childrenPidList;
+		}
+
+		/**
+		 * プロセスを終了させます。
+		 * 
+		 * @param pidList
+		 *            プロセスIDのリスト
+		 * @return 1つでも正しく終了できなかった場合false、それ以外はtrue、ただし引数がnullや空の場合はtrue
+		 *         現状、戻り値を使用していないが、将来の拡張性のために設定している。
+		 */
+		private boolean killProcesses(List<Integer> pidList) {
+			if (pidList == null || pidList.size() <= 0) {
+				return true;
+			}
+			m_log.debug("killProcesses(" + Arrays.toString(pidList.toArray()) + ")");
+
+			boolean normalExit = true;
+			try {
+				for (Integer pid : pidList) {
+					// プロセスにシグナル送信（15、SIGTERM、終了）
+					String command = "kill -15 " + pid;
+					m_log.info("kill process, command=" + command);
+					Process killCommand = Runtime.getRuntime().exec(command);
+					int exitValue = killCommand.waitFor();
+					m_log.trace("exitValue=" + exitValue);
+					// 正常終了（戻り値が0）をチェック
+					if (exitValue != 0) {
+						normalExit = false;
+					}
+				}
+			} catch (IOException | InterruptedException e) {
+				m_log.warn("fail to exec command. " + e);
+				return false;
+			}
+
+			m_log.trace("normalExit=" + normalExit);
+			return normalExit;
 		}
 	}
 }

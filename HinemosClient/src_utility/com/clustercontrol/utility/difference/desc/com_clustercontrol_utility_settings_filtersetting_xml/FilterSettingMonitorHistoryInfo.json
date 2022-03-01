@@ -1,0 +1,30 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingMonitorHistoryInfo_facilityId"}
+	]},
+	
+	{
+	"propName":"scope",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingMonitorHistoryInfo_scope"}
+	]},
+
+	{
+	"propName":"facilityTarget",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingMonitorHistoryInfo_facilityTarget"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_FilterSettingMonitorHistoryInfo_oneLevel"},
+				{"value":"1", "name":"name_FilterSettingMonitorHistoryInfo_all"}
+			]
+		}
+	]}
+]
+}

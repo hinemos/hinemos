@@ -10,6 +10,7 @@ package com.clustercontrol.nodemap.composite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,12 @@ import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.AssignNodeScopeRequest;
+import org.openapitools.client.model.FacilityElementResponse;
+import org.openapitools.client.model.MapAssociationInfoResponse;
+import org.openapitools.client.model.NodeInfoResponse;
+import org.openapitools.client.model.PingResultResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.dialog.ObjectPrivilegeListDialog;
@@ -64,7 +71,7 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.collect.view.CollectGraphView;
 import com.clustercontrol.dialog.TextAreaDialog;
-import com.clustercontrol.nodemap.bean.AssociationConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.nodemap.dialog.RegisterImageDialog;
 import com.clustercontrol.nodemap.editpart.MapViewController;
@@ -74,7 +81,6 @@ import com.clustercontrol.nodemap.figure.FileImageFigure;
 import com.clustercontrol.nodemap.figure.NodeFigure;
 import com.clustercontrol.nodemap.figure.ScopeFigure;
 import com.clustercontrol.nodemap.preference.NodeMapPreferencePage;
-import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
 import com.clustercontrol.nodemap.util.RelationViewController;
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.nodemap.view.NodeMapView.Mode;
@@ -86,14 +92,10 @@ import com.clustercontrol.repository.dialog.NodeAssignDialog;
 import com.clustercontrol.repository.dialog.NodeCreateDialog;
 import com.clustercontrol.repository.dialog.NodeReleaseDialog;
 import com.clustercontrol.repository.dialog.ScopeCreateDialog;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.nodemap.Association;
-import com.clustercontrol.ws.nodemap.FacilityElement;
-import com.clustercontrol.ws.nodemap.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
-import com.clustercontrol.ws.repository.NodeInfo;
 
 public class NodeMapCanvasComposite extends Composite{
 
@@ -243,11 +245,13 @@ public class NodeMapCanvasComposite extends Composite{
 				m_log.debug(String.format("Drop node %s to scope %s", nodeId, scopeId));
 				m_log.debug(String.format("Drop x=%d, y=%d", event.x, event.y));
 				
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(m_managerName);
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(m_managerName);
 				List<String> nodeIdList = new ArrayList<String>();
 				nodeIdList.add(nodeId);
 				try {
-					wrapper.assignNodeScope(scopeId, nodeIdList);
+					AssignNodeScopeRequest assignNodeScopeRequest = new AssignNodeScopeRequest();
+					assignNodeScopeRequest.setFacilityIdList(nodeIdList);
+					wrapper.assignNodeScope(scopeId, assignNodeScopeRequest);
 				} catch (Exception e) {
 					m_log.error(e);
 					MessageDialog.openError(
@@ -297,7 +301,7 @@ public class NodeMapCanvasComposite extends Composite{
 		gridWidth = store.getInt(NodeMapPreferencePage.P_GRID_WIDTH);
 	}
 
-	public void drawFigure(FacilityElement element) throws Exception {
+	public void drawFigure(FacilityElementResponse element) throws Exception {
 		// 図を生成する
 		FacilityFigure figure = null;
 		if(FacilityConstant.TYPE_SCOPE_STRING.equals(element.getTypeName())) {  // スコープの場合
@@ -362,7 +366,7 @@ public class NodeMapCanvasComposite extends Composite{
 
 	}
 
-	public void drawConnection(Association association) {
+	public void drawConnection(MapAssociationInfoResponse association) {
 		FacilityFigure source = m_controller.getFacilityFigure(association.getSource());
 		FacilityFigure target = m_controller.getFacilityFigure(association.getTarget());
 
@@ -375,13 +379,13 @@ public class NodeMapCanvasComposite extends Composite{
 		Color color = new Color(null, 120, 120, 120);
 		int width;
 		switch (association.getType()) {
-		case AssociationConstant.NORMAL:
+		case NORMAL:
 			width = 3;
 			break;
-		case AssociationConstant.NEW:
+		case NEW:
 			width = 6;
 			break;
-		case AssociationConstant.REMOVE:
+		case REMOVE:
 			width = 1;
 			break;
 		default:
@@ -396,7 +400,7 @@ public class NodeMapCanvasComposite extends Composite{
 		m_controller.putConnection(association, connection);
 	}
 
-	public void removeConnection(Association association) {
+	public void removeConnection(MapAssociationInfoResponse association) {
 		// モデルに該当するコネクションを取得
 		PolylineConnection connection = m_controller.getConnection(association);
 
@@ -436,6 +440,27 @@ public class NodeMapCanvasComposite extends Composite{
 		m_layer.removeAll();
 	}
 
+	// 個別に設定したメニューが残っている場合があるのでその場合は消しておく
+	public void setEnabled(boolean enable) {
+		Menu menu = m_canvas.getMenu();
+
+		if (menu != null) {
+			MenuItem[] menuItems = menu.getItems();
+
+			for (MenuItem item : menuItems) {
+				if (item.getText()
+						.equals(com.clustercontrol.nodemap.messages.Messages
+								.getString("select.contextmenu.collectgraph"))
+						|| item.getText().equals(
+								com.clustercontrol.nodemap.messages.Messages.getString("select.contextmenu.ping"))) {
+					item.setEnabled(true);
+				} else {
+					item.setEnabled(enable);
+				}
+			}
+		}
+	}
+
 	public void setCanvasFocus() {
 		if(m_controller != null){
 			m_log.debug("call setFocus() " + m_controller.getCurrentScope());
@@ -456,12 +481,12 @@ public class NodeMapCanvasComposite extends Composite{
 		// マウス操作の状態を保持
 		private Status status = Status.NOT_SELECTED;
 
-		private FacilityElement element;
+		private FacilityElementResponse element;
 
 		// 図を移動させる際のマウスポインタと図の座標の差分
 		private Dimension delta = null;
 
-		public MouseEventListener(FacilityElement element){
+		public MouseEventListener(FacilityElementResponse element){
 			this.element = element;
 		}
 
@@ -731,11 +756,13 @@ public class NodeMapCanvasComposite extends Composite{
 										com.clustercontrol.nodemap.messages.Messages.getString("node.assign.title"),
 										com.clustercontrol.nodemap.messages.Messages.getString("node.assign.question"))) {
 							try {
-								NodeInfo nodeInfo = dialog.getNodeInfo();
+								NodeInfoResponse nodeInfo = dialog.getNodeInfo();
 								List<String> nodeFacilityIds = new ArrayList<String>();
 								nodeFacilityIds.add(nodeInfo.getFacilityId());
-								RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(m_managerName);
-								wrapper.assignNodeScope(scopeFacilityId, nodeFacilityIds);
+								RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(m_managerName);
+								AssignNodeScopeRequest request = new AssignNodeScopeRequest();
+								request.setFacilityIdList(nodeFacilityIds);
+								wrapper.assignNodeScope(scopeFacilityId, request);
 								// 成功報告ダイアログを生成
 								Object[] arg = {getManagerName()};
 								MessageDialog.openInformation(
@@ -745,7 +772,7 @@ public class NodeMapCanvasComposite extends Composite{
 								_view.reload();
 							} catch (Exception e) {
 								String errMessage = "";
-								if (e instanceof InvalidRole_Exception) {
+								if (e instanceof InvalidRole) {
 									// アクセス権なしの場合、エラーダイアログを表示する
 									MessageDialog.openInformation(
 											null,
@@ -870,11 +897,13 @@ public class NodeMapCanvasComposite extends Composite{
 											com.clustercontrol.nodemap.messages.Messages.getString("node.assign.title"),
 											com.clustercontrol.nodemap.messages.Messages.getString("node.assign.question"))) {
 								try {
-									NodeInfo nodeInfo = dialog.getNodeInfo();
+									NodeInfoResponse nodeInfo = dialog.getNodeInfo();
 									List<String> nodeFacilityIds = new ArrayList<String>();
 									nodeFacilityIds.add(nodeInfo.getFacilityId());
-									RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(m_managerName);
-									wrapper.assignNodeScope(scopeFacilityId, nodeFacilityIds);
+									RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(m_managerName);
+									AssignNodeScopeRequest request = new AssignNodeScopeRequest();
+									request.setFacilityIdList(nodeFacilityIds);
+									wrapper.assignNodeScope(scopeFacilityId, request);
 									// 成功報告ダイアログを生成
 									Object[] arg = {getManagerName()};
 									MessageDialog.openInformation(
@@ -884,7 +913,7 @@ public class NodeMapCanvasComposite extends Composite{
 									_view.reload();
 								} catch (Exception e) {
 									String errMessage = "";
-									if (e instanceof InvalidRole_Exception) {
+									if (e instanceof InvalidRole) {
 										// アクセス権なしの場合、エラーダイアログを表示する
 										MessageDialog.openInformation(
 												null,
@@ -1198,8 +1227,8 @@ public class NodeMapCanvasComposite extends Composite{
 						}
 						// ここからpingする
 						m_log.debug("ping start. facilityId:" + facilityId);
-						NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(m_managerName);
-						List<String> pingResultList = wrapper.ping(facilityId);
+						RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(m_managerName);
+						List<PingResultResponse> pingResultList = wrapper.ping(facilityId);
 						if (pingResultList == null || pingResultList.size() == 0) {
 							m_log.debug("pingResultList is empty");
 							MessageDialog.openInformation(
@@ -1209,9 +1238,14 @@ public class NodeMapCanvasComposite extends Composite{
 							return;
 						} else {
 							StringBuilder sb = new StringBuilder();
-							Collections.sort(pingResultList);
-							for (String ret : pingResultList) {
-								sb.append(ret+ "\n--------------\n");
+							Collections.sort(pingResultList, new Comparator<PingResultResponse>() {
+								@Override
+								public int compare(PingResultResponse o1, PingResultResponse o2) {
+									return o1.getResult().compareTo(o2.getResult());
+								}
+							});
+							for (PingResultResponse ret : pingResultList) {
+								sb.append(ret.getResult()+ "\n--------------\n");
 							}
 							m_log.debug("ping finish. facilityId:" + facilityId + ", pingResultList.size:" + pingResultList.size());
 							TextAreaDialog textDialog = new TextAreaDialog(null, 
@@ -1223,7 +1257,7 @@ public class NodeMapCanvasComposite extends Composite{
 						}
 					} catch (Exception ex) {
 						String errMessage = "";
-						if (ex instanceof InvalidRole_Exception) {
+						if (ex instanceof InvalidRole) {
 							// アクセス権なしの場合、エラーダイアログを表示する
 							MessageDialog.openError(
 									null,
@@ -1537,19 +1571,19 @@ public class NodeMapCanvasComposite extends Composite{
 	private void openCollectPerspective(FileImageFigure figure) {
 		String facilityId = figure.getFacilityId();
 		m_log.debug("managername:" + m_managerName + ", currentScop:" + m_controller.getCurrentScope() + ", facilityId:" + facilityId);
-		FacilityTreeItem targetTreeItem = RelationViewController.getScopeTreeView(m_controller.getCurrentScope(), facilityId);
+		FacilityTreeItemResponse targetTreeItem = RelationViewController.getScopeTreeView(m_controller.getCurrentScope(), facilityId);
 		String path = m_managerName + SEPARATOR_HASH_EX_HASH;
 		
 		if (m_controller.getCurrentScope().equals(ReservedFacilityIdConstant.ROOT_SCOPE)) {
 			path += facilityId + SEPARATOR_HASH_EX_HASH + FacilityConstant.TYPE_SCOPE;
-		} else if (targetTreeItem.getData().getFacilityType().equals(FacilityConstant.TYPE_NODE)) {
+		} else if (targetTreeItem.getData().getFacilityType().equals(FacilityTypeEnum.NODE)) {
 			path += targetTreeItem.getParent().getData().getFacilityId() 
 					+ SEPARATOR_HASH_EX_HASH + targetTreeItem.getData().getFacilityId() 
-					+ SEPARATOR_HASH_EX_HASH + targetTreeItem.getData().getFacilityType();
+					+ SEPARATOR_HASH_EX_HASH + FacilityConstant.TYPE_NODE;
 
-		} else if (targetTreeItem.getData().getFacilityType().equals(FacilityConstant.TYPE_SCOPE)) {
+		} else if (targetTreeItem.getData().getFacilityType().equals(FacilityTypeEnum.SCOPE)) {
 			path += targetTreeItem.getData().getFacilityId() 
-					+ SEPARATOR_HASH_EX_HASH + targetTreeItem.getData().getFacilityType();
+					+ SEPARATOR_HASH_EX_HASH + FacilityConstant.TYPE_SCOPE;
 		}
 		m_log.debug("path:" + path);
 		

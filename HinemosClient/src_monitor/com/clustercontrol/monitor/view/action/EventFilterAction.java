@@ -23,13 +23,12 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.handlers.RegistryToggleState;
+import org.openapitools.client.model.EventFilterBaseRequest;
 
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.filtersetting.bean.EventFilterContext;
 import com.clustercontrol.monitor.dialog.EventFilterDialog;
 import com.clustercontrol.monitor.view.EventView;
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.repository.util.ScopePropertyUtil;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 監視[イベントのフィルタ処理]ダイアログによるイベントの取得処理を行うクライアント側アクションクラス<BR>
@@ -96,27 +95,35 @@ public class EventFilterAction extends AbstractHandler {
 		boolean isChecked = !HandlerUtil.toggleCommandState(command);
 
 		if (isChecked) {
-			//スコープツリーで選択されているマネージャを取得する
-			//(ユーザ拡張イベント項目の制御に使用)
-			String managerName = getScopeTreeSelectManagerName(view);
-			
 			// ダイアログを生成
-			EventFilterDialog dialog = new EventFilterDialog(this.viewPart.getSite().getShell(), managerName, view.getEventDspSetting());
+			EventFilterContext context = new EventFilterContext(
+					view.getFilter(),
+					view.getSingleSelectedManagerName(),
+					view.getSelectedScopeLabel(),
+					view.getEventDspSetting());
+			EventFilterDialog dialog = new EventFilterDialog(
+					this.viewPart.getSite().getShell(),
+					context);
 
 			// ダイアログにて検索が選択された場合、検索結果をビューに表示
 			if (dialog.open() == IDialogConstants.OK_ID) {
-
-				Property condition = dialog.getInputData();
-
-				view.setCondition(condition);
+				EventFilterBaseRequest filter = context.getFilter();
+				if (filter.getFacilityId() != null) {
+					// フィルタ設定固有のスコープが指定されているのでスコープツリーへ反映
+					view.selectScope(context.getManagerName(), filter.getFacilityId());
+					filter.setFacilityId(null); // 後でスコープツリーの選択から再設定するのでリセットしておく
+				}
+				// ビューにフィルタ情報を反映
+				view.setFilter(filter);
+				view.setFilterEnabled(true);
 				view.update(false);
 			} else {
 				State state = command.getState(RegistryToggleState.STATE_ID);
 				state.setValue(false);
 			}
 		} else {
-			// 検索条件クリア
-			view.setCondition(null);
+			// フィルタ無効化
+			view.setFilterEnabled(false);
 			// スコープツリーのアイテムを再選択(スコープパス文字列の再表示のため)
 			TreeViewer tree = view.getScopeTreeComposite().getTreeViewer();
 
@@ -130,30 +137,5 @@ public class EventFilterAction extends AbstractHandler {
 			}
 		}
 		return null;
-	}
-	
-	/**
-	 * 
-	 * スコープツリーで選択されているマネージャ名を取得する
-	 * 
-	 * @param view イベントビュー
-	 * @return 選択されているマネージャ名　マネージャが選択されていない場合はnull
-	 */
-	private String getScopeTreeSelectManagerName(EventView view) {
-		String managerName = null;
-		
-		FacilityTreeItem item = view.getScopeTreeComposite().getSelectItem();
-		if( null == item || item.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE ){
-			return null;
-		}
-
-		
-		if ( item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER ) {
-			managerName = item.getData().getFacilityId();
-		} else {
-			FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
-			managerName = manager.getData().getFacilityId();
-		}
-		return managerName; 
 	}
 }

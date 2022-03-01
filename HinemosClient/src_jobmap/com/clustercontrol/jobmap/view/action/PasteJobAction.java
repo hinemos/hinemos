@@ -17,22 +17,22 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.menus.UIElement;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.fault.OtherUserGetLock;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmap.composite.JobMapTreeComposite;
 import com.clustercontrol.jobmap.util.JobMapActionUtil;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.jobmap.view.JobTreeView;
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.OtherUserGetLock_Exception;
 
 /**
  * ジョブ貼り付けするクライアント側アクションクラス<BR>
@@ -46,7 +46,7 @@ public class PasteJobAction extends BaseAction {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		super.execute(event);
 		
-		JobTreeItem selectItem = null;
+		JobTreeItemWrapper selectItem = null;
 		if (viewPart instanceof JobTreeView) {
 			selectItem = ((JobTreeView)viewPart).getSelectJobTreeItem();
 		} else if (viewPart instanceof JobMapEditorView) {
@@ -58,54 +58,78 @@ public class PasteJobAction extends BaseAction {
 			return null;
 		}
 
-		JobTreeItem sourceItem = view.getCopyJobTreeItem();
+		JobTreeItemWrapper sourceItem = view.getCopyJobTreeItem();
 		if(selectItem != null && sourceItem != null){
 
 			boolean copy = false;
-			if(sourceItem.getData().getType() == JobConstant.TYPE_JOBUNIT){
-				if(selectItem.getData().getType() == JobConstant.TYPE_MANAGER){
+			if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.MANAGER){
 					copy = true;
 				}
 			}
-			else if(sourceItem.getData().getType() == JobConstant.TYPE_JOBNET){
-				if(selectItem.getData().getType() == JobConstant.TYPE_JOBUNIT ||
-						selectItem.getData().getType() == JobConstant.TYPE_JOBNET){
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+						selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
 					copy = true;
 				}
 			}
-			else if(sourceItem.getData().getType() == JobConstant.TYPE_JOB){
-				if(selectItem.getData().getType() == JobConstant.TYPE_JOBUNIT ||
-						selectItem.getData().getType() == JobConstant.TYPE_JOBNET){
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.JOB){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+						selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
 					copy = true;
 				}
 			}
-			else if(sourceItem.getData().getType() == JobConstant.TYPE_FILEJOB){
-				if(selectItem.getData().getType() == JobConstant.TYPE_JOBUNIT ||
-						selectItem.getData().getType() == JobConstant.TYPE_JOBNET){
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.FILEJOB){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+						selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
 					copy = true;
 				}
 			}
-			else if(sourceItem.getData().getType() == JobConstant.TYPE_APPROVALJOB){
-				if(selectItem.getData().getType() == JobConstant.TYPE_JOBUNIT ||
-					selectItem.getData().getType() == JobConstant.TYPE_JOBNET){
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.APPROVALJOB){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+					selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
 					copy = true;
 				}
 			}
-			else if(sourceItem.getData().getType() == JobConstant.TYPE_MONITORJOB){
-				if(selectItem.getData().getType() == JobConstant.TYPE_JOBUNIT ||
-					selectItem.getData().getType() == JobConstant.TYPE_JOBNET){
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.MONITORJOB){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+					selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
+					copy = true;
+				}
+			}
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.FILECHECKJOB){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+					selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
+					copy = true;
+				}
+			}
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+					selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
+					copy = true;
+				}
+			}
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+					selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
 					copy = true;
 				}
 			}//参照ジョブ
-			else if(sourceItem.getData().getType() == JobConstant.TYPE_REFERJOB){
-				if(selectItem.getData().getType() == JobConstant.TYPE_JOBUNIT ||
-						selectItem.getData().getType() == JobConstant.TYPE_JOBNET){
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOB){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+						selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
 					copy = true;
 				}
 			}//参照ジョブネット
-			else if(sourceItem.getData().getType() == JobConstant.TYPE_REFERJOBNET){
-				if(selectItem.getData().getType() == JobConstant.TYPE_JOBUNIT ||
-						selectItem.getData().getType() == JobConstant.TYPE_JOBNET){
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOBNET){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+						selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
+					copy = true;
+				}
+			}//リソース制御ジョブ
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+					selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
 					copy = true;
 				}
 			}
@@ -117,25 +141,26 @@ public class PasteJobAction extends BaseAction {
 				}
 				
 				JobMapTreeComposite tree = view.getJobMapTreeComposite();
-				JobTreeItem top = (JobTreeItem)tree.getTreeViewer().getInput();
+				JobTreeItemWrapper top = (JobTreeItemWrapper)tree.getTreeViewer().getInput();
 				m_log.trace("run() setJobunitId = " + selectItem.getData().getJobunitId());
-				JobTreeItem copyItem = null;
+				JobTreeItemWrapper copyItem = null;
 
 				// コピー元のジョブツリーのプロパティーがFullでない場合があるので、
 				// ここでコピーしておく。
-				JobTreeItem manager = JobTreeItemUtil.getManager(sourceItem);
+				JobTreeItemWrapper manager = JobTreeItemUtil.getManager(sourceItem);
 				JobPropertyUtil.setJobFullTree(manager.getData().getName(), sourceItem);
-				JobInfo info = manager.getData();
+				JobInfoWrapper info = manager.getData();
 				String managerName = info.getId();
 				JobEditState editState = JobEditStateUtil.getJobEditState(managerName);
-				if(sourceItem.getData().getType() == JobConstant.TYPE_JOBUNIT){
+				if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT){
 					copyItem = JobUtil.copy(sourceItem, top, sourceItem.getData().getId(), sourceItem.getData().getOwnerRoleId());
 					Integer result = null;
 					try {
 						result =JobUtil.getEditLock(managerName, copyItem.getData().getJobunitId(), null, false);
-					} catch (OtherUserGetLock_Exception e) {
+					} catch (OtherUserGetLock e) {
 						// 他のユーザがロックを取得している
-						String message = HinemosMessage.replace(e.getMessage());
+						String message = e.getMessage() + "\n"
+								+ HinemosMessage.replace(MessageConstant.MESSAGE_WANT_TO_GET_LOCK.getMessage());
 						if (MessageDialog.openQuestion(
 								null,
 								Messages.getString("confirmed"),
@@ -178,18 +203,18 @@ public class PasteJobAction extends BaseAction {
 			return;
 		}
 		
-		JobInfo info = m_jobTreeItem.getData();
-		Integer type = info.getType();
+		JobInfoWrapper info = m_jobTreeItem.getData();
+		JobInfoWrapper.TypeEnum type = info.getType();
 		String managerName = JobTreeItemUtil.getManagerName(m_jobTreeItem);
 		
 		boolean enable = false;
-		if (type == JobConstant.TYPE_MANAGER) {
+		if (type == JobInfoWrapper.TypeEnum.MANAGER) {
 			enable = true;
 		} else if (managerName != null) {
 			JobEditState editState = JobEditStateUtil.getJobEditState(managerName);
 			enable = editState.isLockedJobunitId(info.getJobunitId()) && 
-					(type == JobConstant.TYPE_JOBUNIT || 
-					type == JobConstant.TYPE_JOBNET);
+					(type == JobInfoWrapper.TypeEnum.JOBUNIT || 
+					type == JobInfoWrapper.TypeEnum.JOBNET);
 		}
 				
 		this.setBaseEnabled(enable);

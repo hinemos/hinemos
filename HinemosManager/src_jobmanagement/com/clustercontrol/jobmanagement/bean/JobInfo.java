@@ -26,7 +26,7 @@ import com.clustercontrol.notify.model.NotifyRelationInfo;
  * @since 1.0.0
  */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobInfo implements Serializable {
+public class JobInfo implements Serializable, Cloneable {
 
 	/** ログ出力のインスタンス<BR> */
 	private static Log m_log = LogFactory.getLog( JobInfo.class );
@@ -38,104 +38,128 @@ public class JobInfo implements Serializable {
 	 * ジョブツリーの情報だけの場合はfalse
 	 * 全てのプロパティ値が入っている場合はtrue
 	 **/
-	private boolean propertyFull = false;
+	private Boolean propertyFull = false;
 
 	/** 所属ジョブユニットのジョブID */
-	private String m_jobunitId;
+	private String jobunitId;
 
 	/** ジョブID */
-	private String m_id;
+	private String id;
 
 	/**
 	 * 親ジョブID
 	 * ModifyJob.java内部でのみ利用する。
 	 * それ以外では利用しないこと。
+	 * 個々のジョブのadd、modifyからも使用する。
 	 **/
-	private String m_parentId;
+	private String parentId;
 
 	/** ジョブ名 */
-	private String m_name;
+	private String name;
 
 	/** ジョブ種別 com.clustercontrol.bean.JobConstant */
-	private Integer m_type = 0;
+	private Integer type = 0;
 
 	/** ジョブ待ち条件情報 */
-	private JobWaitRuleInfo m_waitRule;
+	private JobWaitRuleInfo waitRule;
 
 	/** ジョブコマンド情報 */
-	private JobCommandInfo m_command;
+	private JobCommandInfo command;
 
 	/** ジョブファイル転送情報 */
-	private JobFileInfo m_file;
+	private JobFileInfo file;
 
-	/** 監視ジョブコ情報 */
-	private MonitorJobInfo m_monitor;
+	/** 監視ジョブ情報 */
+	private MonitorJobInfo monitor;
+
+	/** ジョブ連携送信ジョブ情報 */
+	private JobLinkSendInfo jobLinkSend;
+
+	/** ジョブ連携待機ジョブ情報 */
+	private JobLinkRcvInfo jobLinkRcv;
+
+	/** ファイルチェックジョブ情報 */
+	private JobFileCheckInfo jobFileCheck;
+
+	/** リソース制御ジョブ情報 */
+	private ResourceJobInfo resource;
+
+	/** RPAシナリオジョブ情報 */
+	private RpaJobInfo rpa;
 
 	/** ジョブ終了状態情報 */
-	private ArrayList<JobEndStatusInfo> m_endStatus;
+	private ArrayList<JobEndStatusInfo> endStatus;
 
 	/** ジョブ変数情報 */
-	private ArrayList<JobParameterInfo> m_param;
+	private ArrayList<JobParameterInfo> param;
 
 	/** 参照先ジョブユニットID */
-	private String m_referJobUnitId;
+	private String referJobUnitId;
 
 	/** 参照先ジョブID */
-	private String m_referJobId;
+	private String referJobId;
 
 	/** アイコンID */
-	private String m_iconId;
+	private String iconId;
 
 	/** 参照ジョブ選択種別 */
-	private Integer m_referJobSelectType = 0;
+	private Integer referJobSelectType = 0;
 
 	/** 作成日時 */
-	private Long m_createTime;
+	private Long createTime;
 
 	/** 最終更新日時 */
-	private Long m_updateTime;
+	private Long updateTime;
 
 	/** 新規作成ユーザ */
-	private String m_createUser;
+	private String createUser;
 
 	/** 最終更新ユーザ */
-	private String m_updateUser;
+	private String updateUser;
 
 	/** 説明 */
-	private String m_description = "";
+	private String description = "";
 
 	/** オーナーロールID */
-	private String m_ownerRoleId = "";
+	private String ownerRoleId = "";
 	
 	/** モジュール登録済フラグ */
-	private boolean m_registered = false;
+	private boolean registered = false;
 	
 	/** 承認依頼先ロールID */
-	private String m_approvalReqRoleId = "";
+	private String approvalReqRoleId = "";
 	
 	/** 承認依頼先ユーザID */
-	private String m_approvalReqUserId = "";
+	private String approvalReqUserId = "";
 	
 	/** 承認依頼文 */
-	private String m_approvalReqSentence = "";
+	private String approvalReqSentence = "";
 	
 	/** 承認依頼メール件名 */
-	private String m_approvalReqMailTitle = "";
+	private String approvalReqMailTitle = "";
 	
 	/** 承認依頼メール本文 */
-	private String m_approvalReqMailBody = "";
+	private String approvalReqMailBody = "";
 	
 	/** 承認依頼文の利用有無フラグ */
-	private boolean m_isUseApprovalReqSentence = false;
-	
+	private boolean isUseApprovalReqSentence = false;
+
+	/** 実行対象ノードの決定タイミング */
+	private boolean expNodeRuntimeFlg = false;
+
 	//ジョブ通知関連
 	private Integer beginPriority = 0;
 	private Integer normalPriority = 0;
 	private Integer warnPriority = 0;
 	private Integer abnormalPriority = 0;
 	/** 通知ID**/
-	private ArrayList<NotifyRelationInfo> m_notifyRelationInfos;
+	private ArrayList<NotifyRelationInfo> notifyRelationInfos;
 
+	/** ジョブ待ち条件情報が変更したか */
+	private Boolean isWaitRuleChanged = false;
+
+	/** 参照先ジョブ情報が変更したか */
+	private Boolean isReferJobChanged = false;
 
 	public JobInfo() {}
 
@@ -158,11 +182,11 @@ public class JobInfo implements Serializable {
 	 * ジョブプロパティ値
 	 * @return
 	 */
-	public boolean isPropertyFull() {
+	public Boolean isPropertyFull() {
 		return propertyFull;
 	}
 
-	public void setPropertyFull(boolean propertyFull) {
+	public void setPropertyFull(Boolean propertyFull) {
 		this.propertyFull = propertyFull;
 	}
 
@@ -173,7 +197,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobEndStatusInfo
 	 */
 	public ArrayList<JobEndStatusInfo> getEndStatus() {
-		return m_endStatus;
+		return endStatus;
 
 	}
 
@@ -184,7 +208,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobEndStatusInfo
 	 */
 	public void setEndStatus(ArrayList<JobEndStatusInfo> endStatus) {
-		this.m_endStatus = endStatus;
+		this.endStatus = endStatus;
 	}
 
 	/**
@@ -194,7 +218,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobCommandInfo
 	 */
 	public JobCommandInfo getCommand() {
-		return m_command;
+		return command;
 	}
 
 	/**
@@ -204,7 +228,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobCommandInfo
 	 */
 	public void setCommand(JobCommandInfo command) {
-		this.m_command = command;
+		this.command = command;
 	}
 
 	/**
@@ -214,7 +238,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobFileInfo
 	 */
 	public JobFileInfo getFile() {
-		return m_file;
+		return file;
 	}
 
 	/**
@@ -224,7 +248,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobFileInfo
 	 */
 	public void setFile(JobFileInfo file) {
-		this.m_file = file;
+		this.file = file;
 	}
 
 	/**
@@ -234,7 +258,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.MonitorJobInfo
 	 */
 	public MonitorJobInfo getMonitor() {
-		return m_monitor;
+		return monitor;
 	}
 
 	/**
@@ -244,9 +268,106 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.MonitorJobInfo
 	 */
 	public void setMonitor(MonitorJobInfo monitor) {
-		this.m_monitor = monitor;
+		this.monitor = monitor;
 	}
 
+	/**
+	 * ジョブ連携送信ジョブ情報を返す。<BR>
+	 * 
+	 * @return ジョブ連携送信ジョブ情報
+	 * @see com.clustercontrol.jobmanagement.bean.JobLinkSendInfo
+	 */
+	public JobLinkSendInfo getJobLinkSend() {
+		return jobLinkSend;
+	}
+
+	/**
+	 * ジョブ連携送信ジョブ情報を設定する。<BR>
+	 * 
+	 * @param jobLinkSend ジョブ連携送信ジョブ情報
+	 * @see com.clustercontrol.jobmanagement.bean.JobLinkSendInfo
+	 */
+	public void setJobLinkSend(JobLinkSendInfo jobLinkSend) {
+		this.jobLinkSend = jobLinkSend;
+	}
+
+	/**
+	 * ジョブ連携待機ジョブ情報を返す。<BR>
+	 * 
+	 * @return ジョブ連携待機ジョブ情報
+	 * @see com.clustercontrol.jobmanagement.bean.JobLinkRcvInfo
+	 */
+	public JobLinkRcvInfo getJobLinkRcv() {
+		return jobLinkRcv;
+	}
+
+	/**
+	 * ジョブ連携待機ジョブ情報を設定する。<BR>
+	 * 
+	 * @param jobLinkRcv ジョブ連携待機ジョブ情報
+	 * @see com.clustercontrol.jobmanagement.bean.JobLinkRcvInfo
+	 */
+	public void setJobLinkRcv(JobLinkRcvInfo jobLinkRcv) {
+		this.jobLinkRcv = jobLinkRcv;
+	}
+
+	/**
+	 * ファイルチェックジョブ情報を返す。<BR>
+	 * 
+	 * @return ファイルチェックジョブ情報
+	 * @see com.clustercontrol.jobmanagement.bean.JobFileCheckInfo
+	 */
+	public JobFileCheckInfo getJobFileCheck() {
+		return jobFileCheck;
+	}
+
+	/**
+	 * ファイルチェックジョブ情報を設定する。<BR>
+	 * 
+	 * @param jobFileCheck ファイルチェックジョブ情報
+	 * @see com.clustercontrol.jobmanagement.bean.JobFileCheckInfo
+	 */
+	public void setJobFileCheck(JobFileCheckInfo jobFileCheck) {
+		this.jobFileCheck = jobFileCheck;
+	}
+
+	/**
+	 * リソース制御ジョブ情報を返す。<BR>
+	 * 
+	 * @return リソース制御ジョブ情報
+	 * @see com.clustercontrol.jobmanagement.bean.ResourceJobInfo
+	 */
+	public ResourceJobInfo getResource() {
+		return resource;
+	}
+
+	/**
+	 * リソース制御ジョブ情報を設定する。<BR>
+	 * 
+	 * @param resource リソース制御ジョブ情報
+	 * @see com.clustercontrol.jobmanagement.bean.ResourceJobInfo
+	 */
+	public void setResource(ResourceJobInfo resource) {
+		this.resource = resource;
+	}
+
+	/**
+	 * RPAシナリオジョブ情報を返す。<BR>
+	 * @return RPAシナリオジョブ情報
+	 * @see com.clustercontrol.jobmanagement.bean.RpaJobInfo
+	 */
+	public RpaJobInfo getRpa() {
+		return rpa;
+	}
+
+	/**
+	 * RPAシナリオジョブ情報を設定する。<BR>
+	 * @param rpa RPAシナリオジョブ情報
+	 * @see com.clustercontrol.jobmanagement.bean.RpaJobInfo
+	 */
+	public void setRpa(RpaJobInfo rpa) {
+		this.rpa = rpa;
+	}
 
 	/**
 	 * 所属ジョブユニットのジョブIDを返す。
@@ -254,7 +375,7 @@ public class JobInfo implements Serializable {
 	 * @return 所属ジョブユニットのジョブID
 	 */
 	public String getJobunitId() {
-		return m_jobunitId;
+		return jobunitId;
 	}
 
 	/**
@@ -263,7 +384,7 @@ public class JobInfo implements Serializable {
 	 * @param jobunitId 所属ジョブユニットのジョブID
 	 */
 	public void setJobunitId(String jobunitId) {
-		m_jobunitId = jobunitId;
+		this.jobunitId = jobunitId;
 	}
 
 	/**
@@ -272,7 +393,7 @@ public class JobInfo implements Serializable {
 	 * @return ジョブID
 	 */
 	public String getId() {
-		return m_id;
+		return this.id;
 	}
 
 	/**
@@ -281,7 +402,7 @@ public class JobInfo implements Serializable {
 	 * @param id ジョブID
 	 */
 	public void setId(String id) {
-		this.m_id = id;
+		this.id = id;
 	}
 
 	/**
@@ -290,7 +411,7 @@ public class JobInfo implements Serializable {
 	 * @return 親ジョブID
 	 */
 	public String getParentId() {
-		return m_parentId;
+		return parentId;
 	}
 
 	/**
@@ -299,7 +420,7 @@ public class JobInfo implements Serializable {
 	 * @param id 親ジョブID
 	 */
 	public void setParentId(String parentId) {
-		this.m_parentId = parentId;
+		this.parentId = parentId;
 	}
 
 	/**
@@ -309,7 +430,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobParameterInfo
 	 */
 	public ArrayList<JobParameterInfo> getParam() {
-		return m_param;
+		return param;
 	}
 
 	/**
@@ -319,7 +440,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobParameterInfo
 	 */
 	public void setParam(ArrayList<JobParameterInfo> param) {
-		this.m_param = param;
+		this.param = param;
 	}
 
 	/**
@@ -328,7 +449,7 @@ public class JobInfo implements Serializable {
 	 * @return ジョブ名
 	 */
 	public String getName() {
-		return m_name;
+		return name;
 	}
 
 	/**
@@ -337,7 +458,7 @@ public class JobInfo implements Serializable {
 	 * @param name ジョブ名
 	 */
 	public void setName(String name) {
-		this.m_name = name;
+		this.name = name;
 	}
 
 	/**
@@ -346,7 +467,7 @@ public class JobInfo implements Serializable {
 	 * @return モジュール登録済フラグ
 	 */
 	public boolean isRegisteredModule() {
-		return m_registered;
+		return registered;
 	}
 
 	/**
@@ -355,7 +476,7 @@ public class JobInfo implements Serializable {
 	 * @param regist モジュール登録済フラグ
 	 */
 	public void setRegisteredModule(boolean regist) {
-		this.m_registered = regist;
+		this.registered = regist;
 	}
 	
 	/**
@@ -365,7 +486,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobWaitRuleInfo
 	 */
 	public JobWaitRuleInfo getWaitRule() {
-		return m_waitRule;
+		return waitRule;
 	}
 
 	/**
@@ -375,7 +496,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.JobWaitRuleInfo
 	 */
 	public void setWaitRule(JobWaitRuleInfo waitRule) {
-		this.m_waitRule = waitRule;
+		this.waitRule = waitRule;
 	}
 
 	/**
@@ -385,7 +506,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.bean.JobConstant
 	 */
 	public Integer getType() {
-		return m_type;
+		return type;
 	}
 
 	/**
@@ -395,7 +516,7 @@ public class JobInfo implements Serializable {
 	 * @see com.clustercontrol.bean.JobConstant
 	 */
 	public void setType(Integer type) {
-		this.m_type = type;
+		this.type = type;
 	}
 
 	/**
@@ -403,28 +524,28 @@ public class JobInfo implements Serializable {
 	 * @return 参照先ジョブユニットID
 	 */
 	public String getReferJobUnitId() {
-		return m_referJobUnitId;
+		return referJobUnitId;
 	}
 	/**
 	 * 参照先ジョブユニットIDを設定する。<BR>
 	 * @param referJobUnitId 参照先ジョブユニットID
 	 */
 	public void setReferJobUnitId(String referJobUnitId) {
-		this.m_referJobUnitId = referJobUnitId;
+		this.referJobUnitId = referJobUnitId;
 	}
 	/**
 	 * 参照先ジョブIDを返す。<BR>
 	 * @return 参照先ジョブID
 	 */
 	public String getReferJobId() {
-		return m_referJobId;
+		return referJobId;
 	}
 	/**
 	 * 参照先ジョブIDを設定する。<BR>
 	 * @param referJobId 参照先ジョブID
 	 */
 	public void setReferJobId(String referJobId) {
-		this.m_referJobId = referJobId;
+		this.referJobId = referJobId;
 	}
 
 	/**
@@ -432,14 +553,14 @@ public class JobInfo implements Serializable {
 	 * @return アイコンID
 	 */
 	public String getIconId() {
-		return m_iconId;
+		return iconId;
 	}
 	/**
 	 * アイコンIDを設定する。<BR>
 	 * @param iconId アイコンID
 	 */
 	public void setIconId(String iconId) {
-		this.m_iconId = iconId;
+		this.iconId = iconId;
 	}
 
 	/**
@@ -447,14 +568,14 @@ public class JobInfo implements Serializable {
 	 * @return 参照ジョブ選択種別
 	 */
 	public Integer getReferJobSelectType() {
-		return m_referJobSelectType;
+		return referJobSelectType;
 	}
 	/**
 	 * 参照ジョブ選択種別を設定する。<BR>
 	 * @param selectType 参照ジョブ選択種別
 	 */
 	public void setReferJobSelectType(Integer selectType) {
-		this.m_referJobSelectType = selectType;
+		this.referJobSelectType = selectType;
 	}
 
 	/**
@@ -462,7 +583,7 @@ public class JobInfo implements Serializable {
 	 * @return 作成日時
 	 */
 	public Long getCreateTime() {
-		return m_createTime;
+		return createTime;
 	}
 
 	/**
@@ -470,7 +591,7 @@ public class JobInfo implements Serializable {
 	 * @param createTime 作成日時
 	 */
 	public void setCreateTime(Long createTime) {
-		this.m_createTime = createTime;
+		this.createTime = createTime;
 	}
 
 	/**
@@ -478,7 +599,7 @@ public class JobInfo implements Serializable {
 	 * @return 最終更新日時
 	 */
 	public Long getUpdateTime() {
-		return m_updateTime;
+		return updateTime;
 	}
 
 	/**
@@ -486,7 +607,7 @@ public class JobInfo implements Serializable {
 	 * @param updateTime 最終更新日時
 	 */
 	public void setUpdateTime(Long updateTime) {
-		this.m_updateTime = updateTime;
+		this.updateTime = updateTime;
 	}
 
 	/**
@@ -494,7 +615,7 @@ public class JobInfo implements Serializable {
 	 * @return 新規作成ユーザ
 	 */
 	public String getCreateUser() {
-		return m_createUser;
+		return createUser;
 	}
 
 	/**
@@ -502,7 +623,7 @@ public class JobInfo implements Serializable {
 	 * @param createUser 新規作成ユーザ
 	 */
 	public void setCreateUser(String createUser) {
-		this.m_createUser = createUser;
+		this.createUser = createUser;
 	}
 
 	/**
@@ -510,7 +631,7 @@ public class JobInfo implements Serializable {
 	 * @return 最終更新ユーザ
 	 */
 	public String getUpdateUser() {
-		return m_updateUser;
+		return updateUser;
 	}
 
 	/**
@@ -518,7 +639,7 @@ public class JobInfo implements Serializable {
 	 * @param updateUser 最終更新ユーザ
 	 */
 	public void setUpdateUser(String updateUser) {
-		this.m_updateUser = updateUser;
+		this.updateUser = updateUser;
 	}
 
 	/**
@@ -526,7 +647,7 @@ public class JobInfo implements Serializable {
 	 * @return 説明
 	 */
 	public String getDescription() {
-		return m_description;
+		return description;
 	}
 
 	/**
@@ -534,7 +655,7 @@ public class JobInfo implements Serializable {
 	 * @param description 説明
 	 */
 	public void setDescription(String description) {
-		this.m_description = description;
+		this.description = description;
 	}
 
 	/**
@@ -542,7 +663,7 @@ public class JobInfo implements Serializable {
 	 * @return オーナーロールID
 	 */
 	public String getOwnerRoleId() {
-		return m_ownerRoleId;
+		return ownerRoleId;
 	}
 
 	/**
@@ -550,7 +671,7 @@ public class JobInfo implements Serializable {
 	 * @param ownerRoleId オーナーロールID
 	 */
 	public void setOwnerRoleId(String ownerRoleId) {
-		this.m_ownerRoleId = ownerRoleId;
+		this.ownerRoleId = ownerRoleId;
 	}
 
 	/**
@@ -559,7 +680,7 @@ public class JobInfo implements Serializable {
 	 * @return 承認依頼先ロールID
 	 */
 	public String getApprovalReqRoleId() {
-		return m_approvalReqRoleId;
+		return approvalReqRoleId;
 	}
 
 	/**
@@ -568,7 +689,7 @@ public class JobInfo implements Serializable {
 	 * @param approvalReqSentence 承認依頼先ロールID
 	 */
 	public void setApprovalReqRoleId(String approvalReqRoleId) {
-		this.m_approvalReqRoleId = approvalReqRoleId;
+		this.approvalReqRoleId = approvalReqRoleId;
 	}
 
 	/**
@@ -577,7 +698,7 @@ public class JobInfo implements Serializable {
 	 * @return 承認依頼先ユーザID
 	 */
 	public String getApprovalReqUserId() {
-		return m_approvalReqUserId;
+		return approvalReqUserId;
 	}
 
 	/**
@@ -586,7 +707,7 @@ public class JobInfo implements Serializable {
 	 * @param approvalReqSentence 承認依頼先ユーザID
 	 */
 	public void setApprovalReqUserId(String approvalReqUserId) {
-		this.m_approvalReqUserId = approvalReqUserId;
+		this.approvalReqUserId = approvalReqUserId;
 	}
 
 	/**
@@ -595,7 +716,7 @@ public class JobInfo implements Serializable {
 	 * @return 承認依頼文
 	 */
 	public String getApprovalReqSentence() {
-		return m_approvalReqSentence;
+		return approvalReqSentence;
 	}
 
 	/**
@@ -604,7 +725,7 @@ public class JobInfo implements Serializable {
 	 * @param approvalReqSentence 承認依頼文
 	 */
 	public void setApprovalReqSentence(String approvalReqSentence) {
-		this.m_approvalReqSentence = approvalReqSentence;
+		this.approvalReqSentence = approvalReqSentence;
 	}
 
 	/**
@@ -613,7 +734,7 @@ public class JobInfo implements Serializable {
 	 * @return 承認依頼メール件名
 	 */
 	public String getApprovalReqMailTitle() {
-		return m_approvalReqMailTitle;
+		return approvalReqMailTitle;
 	}
 
 	/**
@@ -622,7 +743,7 @@ public class JobInfo implements Serializable {
 	 * @param approvalReqMailTitle 承認依頼メール件名
 	 */
 	public void setApprovalReqMailTitle(String approvalReqMailTitle) {
-		this.m_approvalReqMailTitle = approvalReqMailTitle;
+		this.approvalReqMailTitle = approvalReqMailTitle;
 	}
 
 	/**
@@ -631,7 +752,7 @@ public class JobInfo implements Serializable {
 	 * @return 承認依頼メール本文
 	 */
 	public String getApprovalReqMailBody() {
-		return m_approvalReqMailBody;
+		return approvalReqMailBody;
 	}
 
 	/**
@@ -640,7 +761,7 @@ public class JobInfo implements Serializable {
 	 * @param approvalRequesMailBody 承認依頼メール本文
 	 */
 	public void setApprovalReqMailBody(String approvalReqMailBody) {
-		this.m_approvalReqMailBody = approvalReqMailBody;
+		this.approvalReqMailBody = approvalReqMailBody;
 	}
 
 	/**
@@ -649,7 +770,7 @@ public class JobInfo implements Serializable {
 	 * @return 承認依頼文の利用有無フラグ
 	 */
 	public boolean isUseApprovalReqSentence() {
-		return m_isUseApprovalReqSentence;
+		return isUseApprovalReqSentence;
 	}
 
 	/**
@@ -658,7 +779,25 @@ public class JobInfo implements Serializable {
 	 * @param isUseRequestSentence 承認依頼文の利用有無フラグ
 	 */
 	public void setUseApprovalReqSentence(boolean isUseApprovalReqSentence) {
-		this.m_isUseApprovalReqSentence = isUseApprovalReqSentence;
+		this.isUseApprovalReqSentence = isUseApprovalReqSentence;
+	}
+
+	/**
+	 * 実行対象ノードの決定タイミングを返す。
+	 * 
+	 * @return 実行対象ノードの決定タイミング
+	 */
+	public boolean getExpNodeRuntimeFlg() {
+		return expNodeRuntimeFlg;
+	}
+
+	/**
+	 * 実行対象ノードの決定タイミングを設定する。
+	 * 
+	 * @param expNodeRuntimeFlg 実行対象ノードの決定タイミング
+	 */
+	public void setExpNodeRuntimeFlg(boolean expNodeRuntimeFlg) {
+		this.expNodeRuntimeFlg = expNodeRuntimeFlg;
 	}
 
 	public Integer getBeginPriority() {
@@ -698,7 +837,7 @@ public class JobInfo implements Serializable {
 	 * @return　通知IDのコレクション
 	 */
 	public ArrayList<NotifyRelationInfo> getNotifyRelationInfos() {
-		return m_notifyRelationInfos;
+		return notifyRelationInfos;
 	}
 
 	/**
@@ -707,16 +846,31 @@ public class JobInfo implements Serializable {
 	 * @param notifyRelationInfos
 	 */
 	public void setNotifyRelationInfos(ArrayList<NotifyRelationInfo> notifyRelationInfos) {
-		this.m_notifyRelationInfos = notifyRelationInfos;
+		this.notifyRelationInfos = notifyRelationInfos;
 	}
 
+	public Boolean isWaitRuleChanged() {
+		return isWaitRuleChanged;
+	}
+
+	public void setWaitRuleChanged(Boolean isWaitRuleChanged) {
+		this.isWaitRuleChanged = isWaitRuleChanged;
+	}
+
+	public Boolean isReferJobChanged() {
+		return isReferJobChanged;
+	}
+
+	public void setReferJobChanged(Boolean isReferJobChanged) {
+		this.isReferJobChanged = isReferJobChanged;
+	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int hash = 0;
-		hash = hash * prime + this.m_id.hashCode();
-		hash = hash * prime + this.m_name.hashCode();
+		hash = hash * prime + this.id.hashCode();
+		hash = hash * prime + this.name.hashCode();
 		return hash;
 	}
 
@@ -735,6 +889,11 @@ public class JobInfo implements Serializable {
 				equalsSub(o1.getDescription(), o2.getDescription()) &&
 				equalsSub(o1.getFile(), o2.getFile()) &&
 				equalsSub(o1.getMonitor(), o2.getMonitor()) &&
+				equalsSub(o1.getJobLinkSend(), o2.getJobLinkSend()) &&
+				equalsSub(o1.getJobLinkRcv(), o2.getJobLinkRcv()) &&
+				equalsSub(o1.getJobFileCheck(), o2.getJobFileCheck()) &&
+				equalsSub(o1.getResource(), o2.getResource()) &&
+				equalsSub(o1.getRpa(), o2.getRpa()) &&
 				equalsSub(o1.getJobunitId(), o2.getJobunitId()) &&
 				equalsSub(o1.getParentId(), o2.getParentId()) &&
 				equalsSub(o1.getName(), o2.getName()) &&
@@ -754,6 +913,7 @@ public class JobInfo implements Serializable {
 				equalsSub(o1.getApprovalReqMailTitle(), o2.getApprovalReqMailTitle()) &&
 				equalsSub(o1.getApprovalReqMailBody(), o2.getApprovalReqMailBody()) &&
 				equalsSub(o1.isUseApprovalReqSentence(), o2.isUseApprovalReqSentence()) &&
+				equalsSub(o1.getExpNodeRuntimeFlg(), o2.getExpNodeRuntimeFlg()) &&
 				equalsSub(o1.getBeginPriority(), o2.getBeginPriority()) &&
 				equalsSub(o1.getNormalPriority(), o2.getNormalPriority()) &&
 				equalsSub(o1.getWarnPriority(), o2.getWarnPriority()) &&
@@ -986,6 +1146,7 @@ public class JobInfo implements Serializable {
 		info1.setJobRetryFlg(false);
 		info1.setJobRetryEndStatus(0);
 		info1.setJobRetry(0);
+		info1.setJobRetryInterval(0);
 
 		info1.setCondition(0);
 		ArrayList<JobObjectInfo> objList = new ArrayList<JobObjectInfo>();
@@ -994,12 +1155,17 @@ public class JobInfo implements Serializable {
 			objInfo.setType(0);
 			objInfo.setJobId("jobId");
 			objInfo.setJobName("jobName");
-			objInfo.setValue(0);
+			objInfo.setStatus(0);
 			objInfo.setTime(0L);
 			objInfo.setDescription("description");
 			objList.add(objInfo);
 		}
-		info1.setObject(objList);
+		ArrayList<JobObjectGroupInfo> objGroupList = new ArrayList<>();
+		JobObjectGroupInfo groupInfo = new JobObjectGroupInfo();
+		groupInfo.setOrderNo(0);
+		groupInfo.setJobObjectList(objList);
+		objGroupList.add(groupInfo);
+		info1.setObjectGroup(objGroupList);
 		info1.setEndCondition(false);
 		info1.setEndStatus(0);
 		info1.setEndValue(0);
@@ -1074,5 +1240,13 @@ public class JobInfo implements Serializable {
 		info1.setExclusiveBranchNextJobOrderList(nextJobOrderInfos);
 
 		return info1;
+	}
+
+	public Object cloneDeepWaitRuleOnly() throws CloneNotSupportedException {
+		JobInfo jobInfo = (JobInfo) super.clone();
+		if (this.waitRule != null) {
+			jobInfo.waitRule = (JobWaitRuleInfo) this.waitRule.clone();
+		}
+		return jobInfo;
 	}
 }

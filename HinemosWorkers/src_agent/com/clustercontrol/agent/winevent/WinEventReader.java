@@ -98,28 +98,28 @@ public class WinEventReader {
 		public static final int EvtRenderContextUser = 2;
 
 		//EVT_CHANNEL_CONFIG_PROPERTY_ID
-		//public static final int EvtChannelConfigEnabled                = 0;
-		//public static final int EvtChannelConfigIsolation              = 1;
-		//public static final int EvtChannelConfigType                   = 2;
-		//public static final int EvtChannelConfigOwningPublisher        = 3;
-		//public static final int EvtChannelConfigClassicEventlog        = 4,
-		//public static final int EvtChannelConfigAccess                 = 5,
-		//public static final int EvtChannelLoggingConfigRetention       = 6,
+		//public static final int EvtChannelConfigEnabled				 = 0;
+		//public static final int EvtChannelConfigIsolation				 = 1;
+		//public static final int EvtChannelConfigType					 = 2;
+		//public static final int EvtChannelConfigOwningPublisher		 = 3;
+		//public static final int EvtChannelConfigClassicEventlog		 = 4,
+		//public static final int EvtChannelConfigAccess				 = 5,
+		//public static final int EvtChannelLoggingConfigRetention		 = 6,
 		public static final int EvtChannelLoggingConfigAutoBackup = 7;
-		//public static final int EvtChannelLoggingConfigMaxSize         = 8;
+		//public static final int EvtChannelLoggingConfigMaxSize		 = 8;
 		public static final int EvtChannelLoggingConfigLogFilePath = 9;
-		//public static final int EvtChannelPublishingConfigLevel        = 10;
-		//public static final int EvtChannelPublishingConfigKeywords     = 11;
-		//public static final int EvtChannelPublishingConfigControlGuid  = 12;
-		//public static final int EvtChannelPublishingConfigBufferSize   = 13;
-		//public static final int EvtChannelPublishingConfigMinBuffers   = 14;
-		//public static final int EvtChannelPublishingConfigMaxBuffers   = 15;
-		//public static final int EvtChannelPublishingConfigLatency      = 16;
-		//public static final int EvtChannelPublishingConfigClockType    = 17;
-		//public static final int EvtChannelPublishingConfigSidType      = 18;
-		//public static final int EvtChannelPublisherList                = 19;
-		//public static final int EvtChannelPublishingConfigFileMax      = 20;
-		//public static final int EvtChannelConfigPropertyIdEND          = 21;
+		//public static final int EvtChannelPublishingConfigLevel		 = 10;
+		//public static final int EvtChannelPublishingConfigKeywords	 = 11;
+		//public static final int EvtChannelPublishingConfigControlGuid	 = 12;
+		//public static final int EvtChannelPublishingConfigBufferSize	 = 13;
+		//public static final int EvtChannelPublishingConfigMinBuffers	 = 14;
+		//public static final int EvtChannelPublishingConfigMaxBuffers	 = 15;
+		//public static final int EvtChannelPublishingConfigLatency		 = 16;
+		//public static final int EvtChannelPublishingConfigClockType	 = 17;
+		//public static final int EvtChannelPublishingConfigSidType		 = 18;
+		//public static final int EvtChannelPublisherList				 = 19;
+		//public static final int EvtChannelPublishingConfigFileMax		 = 20;
+		//public static final int EvtChannelConfigPropertyIdEND			 = 21;
 		
 		public static final int INFINITE = -1;
 		
@@ -220,20 +220,20 @@ public class WinEventReader {
 		boolean EvtClose(HANDLE Object);
 		
 		//EVT_HANDLE WINAPI EvtOpenChannelConfig(
-		//  _In_ EVT_HANDLE Session,
-		//  _In_ LPCWSTR    ChannelPath,
-		//  _In_ DWORD      Flags
+		//	_In_ EVT_HANDLE Session,
+		//	_In_ LPCWSTR	ChannelPath,
+		//	_In_ DWORD		Flags
 		//);
 		
 		HANDLE EvtOpenChannelConfig(HANDLE Session, WString ChannelPath, int Flags);
 		
 		//BOOL WINAPI EvtGetChannelConfigProperty(
-		//  _In_  EVT_HANDLE                     ChannelConfig,
-		//  _In_  EVT_CHANNEL_CONFIG_PROPERTY_ID PropertyId,
-		//  _In_  DWORD                          Flags,
-		//  _In_  DWORD                          PropertyValueBufferSize,
-		//  _In_  PEVT_VARIANT                   PropertyValueBuffer,
-		//  _Out_ PDWORD                         PropertyValueBufferUsed
+		//	_In_  EVT_HANDLE					 ChannelConfig,
+		//	_In_  EVT_CHANNEL_CONFIG_PROPERTY_ID PropertyId,
+		//	_In_  DWORD							 Flags,
+		//	_In_  DWORD							 PropertyValueBufferSize,
+		//	_In_  PEVT_VARIANT					 PropertyValueBuffer,
+		//	_Out_ PDWORD						 PropertyValueBufferUsed
 		//);
 		
 		boolean EvtGetChannelConfigProperty(HANDLE ChannelConfig, int PropertyId, int Flags,
@@ -259,9 +259,9 @@ public class WinEventReader {
 	 * 引数のチャネルの最後のEventRecordIDでブックマークファイルを作成する
 	 * 
 	 * @param bookmarkFileName
-	 *            ブックマークファイル名
+	 *			  ブックマークファイル名
 	 * @param logName
-	 *            チャネル名
+	 *			  チャネル名
 	 */
 	public void updateBookmark(String bookmarkFileName, String logName) throws Win32Exception, IOException {
 		String saveBookmarkString = getBookmarkUpdateString(bookmarkFileName,logName);
@@ -274,13 +274,13 @@ public class WinEventReader {
 	 * 引数のチャネルの最後のEventRecordIDでブックマークファイルの更新用文字列を生成する。
 	 * 
 	 * @param bookmarkFileName
-	 *            ブックマークファイル名
+	 *			  ブックマークファイル名
 	 * @param logName
-	 *            チャネル名
+	 *			  チャネル名
 	 * @return ブックマーク作成用文字列（nullなら作成不要）
 	 * 
 	 */
-	private String getBookmarkUpdateString(String bookmarkFileName, String logName) throws Win32Exception, IOException {
+	private String getBookmarkUpdateString(String bookmarkFileName, String logName) throws Win32Exception {
 		String query = "<QueryList><Query><Select Path='" + WinEventMonitor.pergeEventLogNameEnclosure(logName) + "'>*</Select></Query></QueryList>";
 		
 		HANDLE hResult = null;
@@ -352,20 +352,20 @@ public class WinEventReader {
 	 * イベントログの取得、および、取得した最後のEventRecordIDをブックマークファイルへ保存する。
 	 * 
 	 * @param bookmarkFileName
-	 *            ブックマークファイル名
+	 *			  ブックマークファイル名
 	 * @param query
-	 *            クエリ
+	 *			  クエリ
 	 * @param maxEvents
-	 *            イベントログの読み込み件数
+	 *			  イベントログの読み込み件数
 	 * @param timeout
-	 *            EvtNext関数のタイムアウト
+	 *			  EvtNext関数のタイムアウト
 	 * @param logName
-	 *            チャネル名
+	 *			  チャネル名
 	 * @param lastMonitorDate
-	 *            前回監視終了時刻
-	 *            
+	 *			  前回監視終了時刻
+	 *			  
 	 * @return 取得したイベントログを連結した文字列とレンダリングに失敗したイベントログがあるかどうかを格納した配列
-	 *          (インデックス 0：イベントログ、インデックス 1：レンダリングに失敗したかどうか)
+	 *			(インデックス 0：イベントログ、インデックス 1：レンダリングに失敗したかどうか)
 	 */
 	public String[] readEventLog(String bookmarkFileName, String query, int maxEvents, long timeout, String logName, Date lastMonitorDate) throws Win32Exception, IOException {
 		String bookmarkString = getBookmartString(bookmarkFileName);

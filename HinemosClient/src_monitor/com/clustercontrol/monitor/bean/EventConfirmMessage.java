@@ -29,6 +29,15 @@ public class EventConfirmMessage {
 	/** 破棄（文字列）。 */
 	public static final String STRING_DESTRUCTION = Messages.getString("notify.event.destruction");
 
+	/** 確認済（Enum判定用のName）。 */
+	private static final String ENUM_NAME_CONFIRMED = "CONFIRMED";
+
+	/** 確認中（Enum判定用のName）。 */
+	private static final String ENUM_NAME_CONFIRMING = "CONFIRMING";
+
+	/** 未確認（Enum判定用のName）。 */
+	private static final String ENUM_NAME_UNCONFIRMED = "UNCONFIRMED";
+
 	/**
 	 * 種別から文字列に変換します。<BR>
 	 * 
@@ -63,4 +72,45 @@ public class EventConfirmMessage {
 		return -1;
 	}
 
+	/**
+	 * Enumから文字列に変換します。<BR>
+	 * ※Enumの型は引数で指定できますが、列挙子のNameは統一されている必要があります。<BR>
+	 * 
+	 * @param value 変換するEnum
+	 * @param enumType Enumの型
+	 * @return 文字列
+	 */
+	public static <T extends Enum<T>> String enumToString(T value, Class<T> enumType) {
+		String name = value.name();
+		if (name.equals(ENUM_NAME_CONFIRMED)) {
+			return STRING_CONFIRMED;
+		} else if (name.equals(ENUM_NAME_UNCONFIRMED)) {
+			return STRING_UNCONFIRMED;
+		} else if (name.equals(ENUM_NAME_CONFIRMING)) {
+			return STRING_CONFIRMING;
+		}
+		return "";
+	}
+
+	/**
+	 * 文字列からEnumに変換します。<BR>
+	 * ※Enumの型は引数で指定できますが、列挙子のNameは統一されている必要があります。<BR>
+	 * 
+	 * @param string 文字列
+	 * @param enumType Enumの型
+	 * @return 種別
+	 */
+	public static <T extends Enum<T>> T stringToEnum(String string, Class<T> enumType) {
+		String name = "";
+		if (string.equals(STRING_CONFIRMED)) {
+			name = ENUM_NAME_CONFIRMED;
+		} else if (string.equals(STRING_UNCONFIRMED)) {
+			name = ENUM_NAME_UNCONFIRMED;
+		} else if (string.equals(STRING_CONFIRMING)) {
+			name = ENUM_NAME_CONFIRMING;
+		} else {
+			return null;
+		}
+		return Enum.valueOf(enumType, name);
+	}
 }

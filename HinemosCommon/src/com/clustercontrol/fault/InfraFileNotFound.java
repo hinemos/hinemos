@@ -13,8 +13,15 @@ package com.clustercontrol.fault;
  * @version 5.0.0
  * @since 5.0.0
  */
-public class InfraFileNotFound extends HinemosException {
+public class InfraFileNotFound extends HinemosNotFound {
 	private static final long serialVersionUID = -8657399129165860039L;
+
+	/**
+	 * コンストラクタ
+	 */
+	public InfraFileNotFound() {
+		super();
+	}
 
 	/**
 	 * コンストラクタ

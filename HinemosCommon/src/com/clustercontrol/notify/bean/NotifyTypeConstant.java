@@ -21,6 +21,9 @@ public class NotifyTypeConstant {
 	public static final int TYPE_LOG_ESCALATE=4;
 	public static final int TYPE_COMMAND=5;
 	public static final int TYPE_INFRA = 6;
+	public static final int TYPE_REST = 7;
+	public static final int TYPE_CLOUD = 8;
+	public static final int TYPE_MESSAGE = 9;
 
 	/** 通知ID種別 */
 	public static final int NOTIFY_ID_TYPE_DEFAULT = 0;
@@ -48,6 +51,12 @@ public class NotifyTypeConstant {
 			return 6;
 		case NotifyTypeConstant.TYPE_INFRA:
 			return 7;
+		case NotifyTypeConstant.TYPE_REST:
+			return 8;
+		case NotifyTypeConstant.TYPE_CLOUD:
+			return 9;
+		case NotifyTypeConstant.TYPE_MESSAGE:
+			return 10;
 		default:
 			return 100;
 		}
@@ -63,6 +72,9 @@ public class NotifyTypeConstant {
 		types.add(TYPE_LOG_ESCALATE);
 		types.add(TYPE_COMMAND);
 		types.add(TYPE_INFRA);
+		types.add(TYPE_REST);
+		types.add(TYPE_CLOUD);
+		types.add(TYPE_MESSAGE);
 
 		return types;
 	}

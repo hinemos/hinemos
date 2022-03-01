@@ -10,14 +10,14 @@ package com.clustercontrol.jmx.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToOne;
-import javax.persistence.PrimaryKeyJoinColumn;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -43,6 +43,7 @@ public class JmxCheckInfo extends MonitorCheckInfo implements Serializable {
 	private Integer port;
 	private MonitorInfo monitorInfo;
 	private Integer convertFlg;
+	private String urlFormatName;
 
 	private String masterId;
 
@@ -102,6 +103,15 @@ public class JmxCheckInfo extends MonitorCheckInfo implements Serializable {
 
 	public void setConvertFlg(Integer convertFlg) {
 		this.convertFlg = convertFlg;
+	}
+	
+	@Column(name="url_format_name")
+	public String getUrlFormatName() {
+		return this.urlFormatName;
+	}
+	
+	public void setUrlFormatName(String name) {
+		this.urlFormatName = name;
 	}
 
 	//bi-directional one-to-one association to MonitorInfo

@@ -15,10 +15,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.RollbackException;
+import jakarta.persistence.RollbackException;
 
 import org.apache.log4j.Logger;
 
+import com.clustercontrol.commons.util.EmptyJpaTransactionCallback;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionCallback;
@@ -125,7 +126,6 @@ public class Session {
 	
 	private interface TransactionCore {
 		void store();
-		boolean isPostCommitting();
 		void restore();
 		HinemosEntityManager getEntityManagerEx();
 		void beginTransaction();
@@ -150,17 +150,11 @@ public class Session {
 		
 		private TransactionOperator operator;
 		
-		private List<PreCommitAction> preCommitActions = new ArrayList<>();
-		private List<PostCommitAction> postCommitActions = new ArrayList<>();
-		private List<RolebackAction> rollbackActions = new ArrayList<>();
-		
 		private JpaTransactionManager hinemosTM;
 		
 		private HinemosEntityManager backupedEm;
 		private List<JpaTransactionCallback> backupedCallbacks;
 		
-		private boolean isPostCommitting = false;
-
 		public Primary() {
 		}
 		protected JpaTransactionManager getJpaTransactionManager() {
@@ -183,9 +177,6 @@ public class Session {
 				operator = new TransactionOperator() {
 					@Override
 					public void beginTransaction() {
-						preCommitActions.clear();
-						postCommitActions.clear();
-						rollbackActions.clear();
 						getJpaTransactionManager().begin();
 					}
 					@Override
@@ -193,13 +184,6 @@ public class Session {
 						if (getJpaTransactionManager().getEntityManager().getTransaction().isActive()) {
 							try {
 								try {
-									for (PreCommitAction action: preCommitActions) {
-										RolebackAction rollback = action.preCommit();
-										if (rollback != null) {
-											// 最後に実行したコミット操作を先にロールバックするので先頭へ追加。
-											rollbackActions.add(0, rollback);
-										}
-									}
 									getJpaTransactionManager().commit();
 								} catch (Exception e1) {
 									if (!(e1 instanceof RollbackException)) {
@@ -209,31 +193,9 @@ public class Session {
 											Logger.getLogger(this.getClass()).error(e2.getMessage(), e2);
 										}
 									}
-
-									for (RolebackAction action: rollbackActions) {
-										try {
-											action.rollback();
-										} catch (Exception e2) {
-											Logger.getLogger(this.getClass()).error(e2.getMessage(), e2);
-										}
-									}
 									throw e1;
 								}
-
-								// 以下の処理で DB への処理を含めると、例外がでた場合、DB の論理整合が壊れる可能性がある。
-								isPostCommitting = true;
-								for (PostCommitAction action: postCommitActions) {
-									try {
-										action.postCommit();
-									} catch(Exception e) {
-										Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
-									}
-								}
 							} finally {
-								isPostCommitting = false;
-								preCommitActions.clear();
-								postCommitActions.clear();
-								rollbackActions.clear();
 //								hinemosTM.close();
 //								hinemosTM = null;
 							}
@@ -246,16 +208,6 @@ public class Session {
 								getJpaTransactionManager().rollback();
 							}
 							finally {
-								for (RolebackAction action: rollbackActions) {
-									try {
-										action.rollback();
-									} catch (Exception e2) {
-										Logger.getLogger(this.getClass()).error(e2.getMessage(), e2);
-									}
-								}
-								preCommitActions.clear();
-								postCommitActions.clear();
-								rollbackActions.clear();
 //								hinemosTM.close();
 //								hinemosTM = null;
 							}
@@ -268,19 +220,9 @@ public class Session {
 								getJpaTransactionManager().flush();
 							} catch (Exception e1) {
 								try {
-									for (RolebackAction action: rollbackActions) {
-										try {
-											action.rollback();
-										} catch (Exception e2) {
-											Logger.getLogger(this.getClass()).error(e2.getMessage(), e2);
-										}
-									}
 									throw e1;
 									
 								} finally {
-									preCommitActions.clear();
-									postCommitActions.clear();
-									rollbackActions.clear();
 //									hinemosTM.close();
 //									hinemosTM = null;
 								}
@@ -337,22 +279,35 @@ public class Session {
 		public void addPreCommitAction(final PreCommitAction action) {
 			if (!isTransaction())
 				throw new UnsupportedOperationException();
-			
-			preCommitActions.add(action);
+			getJpaTransactionManager().addCallback(new EmptyJpaTransactionCallback() {
+				@Override
+				public void preCommit() {
+					action.preCommit();
+				}			
+			});
 		}
 		@Override
 		public void addPostCommitAction(final PostCommitAction action) {
 			if (!isTransaction())
 				throw new UnsupportedOperationException();
-
-			postCommitActions.add(action);
+			getJpaTransactionManager().addCallback(new EmptyJpaTransactionCallback() {
+				@Override
+				public void postCommit() {
+					action.postCommit();
+				}
+			});
 		}
 		@Override
 		public void addRollbackAction(final RolebackAction action) {
 			if (!isTransaction())
 				throw new UnsupportedOperationException();
 
-			rollbackActions.add(0, action);
+			getJpaTransactionManager().addCallback(new EmptyJpaTransactionCallback() {
+				@Override
+				public void postRollback() {
+					action.rollback();;
+				}
+			});
 		}
 		@SuppressWarnings("unchecked")
 		@Override
@@ -370,10 +325,6 @@ public class Session {
 		@Override
 		public boolean isTransactionInitiate() {
 			return operator != null ? isTransaction(): false;
-		}
-		@Override
-		public boolean isPostCommitting() {
-			return isPostCommitting;
 		}
 	}
 	
@@ -536,10 +487,6 @@ public class Session {
 	public boolean isState(Object key) {
 		Boolean state = states.get(key);
 		return state != null ? state: false;
-	}
-
-	public boolean isPostCommitting() {
-		return getTransactionCore().isPostCommitting();
 	}
 
 	public Map<Object, Boolean> getStates() {

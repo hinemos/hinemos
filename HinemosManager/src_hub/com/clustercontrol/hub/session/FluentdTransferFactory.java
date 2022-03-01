@@ -20,29 +20,30 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.http.Header;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpStatus;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.config.RequestConfig.Builder;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.protocol.HTTP;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsStore;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.config.RequestConfig.Builder;
+import org.apache.hc.client5.http.cookie.StandardCookieSpec;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpHeaders;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.http.message.StatusLine;
+import org.apache.hc.core5.util.Timeout;
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.hub.model.CollectDataTag;
 import com.clustercontrol.hub.model.TransferDestProp;
@@ -53,9 +54,9 @@ import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
 import com.clustercontrol.monitor.run.util.EventUtil;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
+import com.clustercontrol.util.DateUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -90,6 +91,10 @@ public class FluentdTransferFactory implements TransferFactory {
 	public static final String prop_request_timeout = "fluentd.request_timeout";
 
 	private boolean keepAlive = true;
+	
+	private static final String EPOCH_NANOS = "epoch_nanos";
+	private static final String EPOCH_MILLIS = "epoch_millis";
+	private static final String EPOCH_SECONDS = "epoch_seconds";
 	
 	public FluentdTransferFactory() {
 	}
@@ -184,6 +189,7 @@ public class FluentdTransferFactory implements TransferFactory {
 			 */
 			@Override
 			public TransferNumericData transferNumerics(Iterable<TransferNumericData> numerics, TrasferCallback<TransferNumericData> callback) throws TransferException {
+				String dateFormat = HinemosPropertyCommon.hub_transfer_fluentd_date_format.getStringValue();
 				TransferNumericData lastPosition = null;
 				for (TransferNumericData numeric: numerics) {
 					ObjectNode root = JsonNodeFactory.instance.objectNode();
@@ -191,7 +197,20 @@ public class FluentdTransferFactory implements TransferFactory {
 					root.put("display_name", numeric.key.getDisplayName());
 					root.put("monitor_id", numeric.key.getMonitorId());
 					root.put("facility_id", numeric.key.getFacilityid());
-					root.put("time", numeric.data.getTime());
+					// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+					if (isEmpty(dateFormat)) {
+						// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+						root.put("time", numeric.data.getTime());
+					} else if(isPutKeyAndValue(dateFormat, root, "time", numeric.data.getTime())) {
+						logger.debug("transferNumerics() : 'time' is converted ");
+					} else {
+						try {
+							root.put("time", convMillisToString(numeric.data.getTime(), dateFormat));
+						} catch (InvalidSetting e) {
+							// エラーが発生した場合はエポックミリ秒を設定
+							root.put("time", numeric.data.getTime());
+						}
+					}
 					if (numeric.data.getValue().isNaN()) {
 						root.putNull("value");
 					} else {
@@ -222,6 +241,7 @@ public class FluentdTransferFactory implements TransferFactory {
 			 */
 			@Override
 			public TransferStringData transferStrings(Iterable<TransferStringData> strings, TrasferCallback<TransferStringData> callback) throws TransferException {
+				String dateFormat = HinemosPropertyCommon.hub_transfer_fluentd_date_format.getStringValue();
 				TransferStringData lastPosition = null;
 				for (TransferStringData string: strings) {
 					ObjectNode root = JsonNodeFactory.instance.objectNode();
@@ -229,7 +249,20 @@ public class FluentdTransferFactory implements TransferFactory {
 					root.put("monitor_id", string.key.getMonitorId());
 					root.put("facility_id", string.key.getFacilityId());
 					root.put("log_format_id", string.data.getLogformatId());
-					root.put("time", string.data.getTime());
+					// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+					if (isEmpty(dateFormat)) {
+						// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+						root.put("time", string.data.getTime());
+					} else  if(isPutKeyAndValue(dateFormat, root, "time", string.data.getTime())) {
+						logger.debug("transferStrings() : 'time' is converted ");
+					} else {
+						try {
+							root.put("time", convMillisToString(string.data.getTime(), dateFormat));
+						} catch (InvalidSetting e) {
+							// エラーが発生した場合はエポックミリ秒を設定
+							root.put("time", string.data.getTime());
+						}
+					}
 					root.put("source", HinemosMessage.replace(string.data.getValue(), locale));
 					
 					for (CollectDataTag t: string.data.getTagList()) {
@@ -261,13 +294,27 @@ public class FluentdTransferFactory implements TransferFactory {
 			 */
 			@Override
 			public JobSessionEntity transferJobs(Iterable<JobSessionEntity> sessions, TrasferCallback<JobSessionEntity> callback) throws TransferException {
+				String dateFormat = HinemosPropertyCommon.hub_transfer_fluentd_date_format.getStringValue();
 				JobSessionEntity lastPosition = null;
 				for (JobSessionEntity session: sessions) {
 					ObjectNode sessionNode = JsonNodeFactory.instance.objectNode();
 					sessionNode.put("ssession_id", session.getSessionId());
 					sessionNode.put("job_id", session.getJobId());
 					sessionNode.put("jobunit_id", session.getJobunitId());
-					sessionNode.put("schedule_date", session.getScheduleDate());
+					// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+					if (isEmpty(dateFormat)) {
+						// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+						sessionNode.put("schedule_date", session.getScheduleDate());
+					} else if(isPutKeyAndValue(dateFormat, sessionNode, "schedule_date",session.getScheduleDate())) {
+						logger.debug("transferJobs() : 'schedule_date' is converted ");
+					} else {
+						try {
+							sessionNode.put("schedule_date", convMillisToString(session.getScheduleDate(), dateFormat));
+						} catch (InvalidSetting e) {
+							// エラーが発生した場合はエポックミリ秒を設定
+							sessionNode.put("schedule_date", session.getScheduleDate());
+						}
+					}
 					sessionNode.put("position", session.getPosition());
 					
 					ArrayNode jobArray = sessionNode.putArray("jobs");
@@ -279,10 +326,38 @@ public class FluentdTransferFactory implements TransferFactory {
 							jobNode.put("scope_text", HinemosMessage.replace(job.getScopeText(), locale));
 						if (job.getStatus() != null)
 							jobNode.put("status", job.getStatus());
-						if (job.getStartDate() != null)
-							jobNode.put("start_date", job.getStartDate());
-						if (job.getEndDate() != null)
-							jobNode.put("end_date", job.getEndDate());
+						if (job.getStartDate() != null) {
+							// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+							if (isEmpty(dateFormat)) {
+								// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+								jobNode.put("start_date", job.getStartDate());
+							} else if(isPutKeyAndValue(dateFormat, jobNode, "start_date", job.getStartDate())) {
+								logger.debug("transferJobs() : 'start_date' is converted ");
+							} else {
+								try {
+									jobNode.put("start_date", convMillisToString(job.getStartDate(), dateFormat));
+								} catch (InvalidSetting e) {
+									// エラーが発生した場合はエポックミリ秒を設定
+									jobNode.put("start_date", job.getStartDate());
+								}
+							}
+						}
+						if (job.getEndDate() != null) {
+							// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+							if (isEmpty(dateFormat)) {
+								// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+								jobNode.put("end_date", job.getEndDate());
+							} else if(isPutKeyAndValue(dateFormat, jobNode, "end_date", job.getEndDate())) {
+								logger.debug("transferJobs() : 'end_date' is converted ");
+							} else {
+								try {
+									jobNode.put("end_date", convMillisToString(job.getEndDate(), dateFormat));
+								} catch (InvalidSetting e) {
+									// エラーが発生した場合はエポックミリ秒を設定
+									jobNode.put("end_date", job.getEndDate());
+								}
+							}
+						}
 						if (job.getEndValue() != null)
 							jobNode.put("end_value", job.getEndValue());
 						if (job.getEndStatus() != null)
@@ -299,12 +374,51 @@ public class FluentdTransferFactory implements TransferFactory {
 								nodeNode.put("facility_id", node.getId().getFacilityId());
 								nodeNode.put("node_name", node.getNodeName());
 								nodeNode.put("status", node.getStatus());
-								nodeNode.put("start_date", node.getStartDate());
-								nodeNode.put("end_date", node.getEndDate());
+								// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+								if (isEmpty(dateFormat)) {
+									// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+									nodeNode.put("start_date", node.getStartDate());
+								} else 	if(isPutKeyAndValue(dateFormat, nodeNode, "start_date", node.getStartDate())) {
+									logger.debug("transferJobs() : 'start_date' is converted ");
+								} else {
+									try {
+										nodeNode.put("start_date", convMillisToString(node.getStartDate(), dateFormat));
+									} catch (InvalidSetting e) {
+										// エラーが発生した場合はエポックミリ秒を設定
+										nodeNode.put("start_date", node.getStartDate());
+									}
+								}
+								// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+								if (isEmpty(dateFormat)) {
+									// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+									nodeNode.put("end_date", node.getEndDate());
+								} else if(isPutKeyAndValue(dateFormat, nodeNode, "end_date", node.getEndDate())) {
+									logger.debug("transferJobs() : 'end_date' is converted ");
+								} else {
+									try {
+										nodeNode.put("end_date", convMillisToString(node.getEndDate(), dateFormat));
+									} catch (InvalidSetting e) {
+										// エラーが発生した場合はエポックミリ秒を設定
+										nodeNode.put("end_date", node.getEndDate());
+									}
+								}
 								nodeNode.put("end_value", node.getEndValue());
 								nodeNode.put("message", HinemosMessage.replace(node.getMessage(), locale));
 								nodeNode.put("result", node.getResult());
-								nodeNode.put("startup_time", node.getStartupTime());
+								// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+								if (isEmpty(dateFormat)) {
+									// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+									nodeNode.put("startup_time", node.getStartupTime());
+								} else if(isPutKeyAndValue(dateFormat, nodeNode, "startup_time", node.getStartupTime())) {
+									logger.debug("transferJobs() : 'startup_time' is converted ");
+								} else {
+									try {
+										nodeNode.put("startup_time", convMillisToString(node.getStartupTime(), dateFormat));
+									} catch (InvalidSetting e) {
+										// エラーが発生した場合はエポックミリ秒を設定
+										nodeNode.put("startup_time", node.getStartupTime());
+									}
+								}
 								nodeNode.put("instance_id", node.getInstanceId());
 							}
 						}
@@ -333,13 +447,27 @@ public class FluentdTransferFactory implements TransferFactory {
 			 */
 			@Override
 			public EventLogEntity transferEvents(Iterable<EventLogEntity> events, TrasferCallback<EventLogEntity> callback) throws TransferException {
+				String dateFormat = HinemosPropertyCommon.hub_transfer_fluentd_date_format.getStringValue();
 				EventLogEntity lastPosition = null;
 				for (EventLogEntity event: events) {
 					ObjectNode eventNode = JsonNodeFactory.instance.objectNode();
 					eventNode.put("monitor_id", event.getId().getMonitorId());
 					eventNode.put("monitor_detail_id", event.getId().getMonitorDetailId());
 					eventNode.put("plugin_id", event.getId().getPluginId());
-					eventNode.put("generation_date", event.getGenerationDate());
+					// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+					if (isEmpty(dateFormat)) {
+						// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+						eventNode.put("generation_date", event.getGenerationDate());
+					} else if(isPutKeyAndValue(dateFormat, eventNode, "generation_date", event.getGenerationDate())) {
+						logger.debug("transferEvents() : 'generation_date' is converted ");
+					} else {
+						try {
+							eventNode.put("generation_date", convMillisToString(event.getGenerationDate(), dateFormat));
+						} catch (InvalidSetting e) {
+							// エラーが発生した場合はエポックミリ秒を設定
+							eventNode.put("generation_date", event.getGenerationDate());
+						}
+					}
 					eventNode.put("facility_id", event.getId().getFacilityId());
 					eventNode.put("scope_text", event.getScopeText());
 					eventNode.put("application", event.getApplication());
@@ -347,12 +475,51 @@ public class FluentdTransferFactory implements TransferFactory {
 					eventNode.put("message_org", HinemosMessage.replace(event.getMessageOrg(), locale));
 					eventNode.put("priority", event.getPriority());
 					eventNode.put("confirm_flg", event.getConfirmFlg());
-					eventNode.put("confirm_date", event.getCommentDate());
+					// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+					if (isEmpty(dateFormat)) {
+						// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+						eventNode.put("confirm_date", event.getConfirmDate());
+					} else 	if(isPutKeyAndValue(dateFormat, eventNode, "confirm_date", event.getConfirmDate())) {
+						logger.debug("transferEvents() : 'confirm_date' is converted ");
+					} else {
+						try {
+							eventNode.put("confirm_date", convMillisToString(event.getConfirmDate(), dateFormat));
+						} catch (InvalidSetting e) {
+							// エラーが発生した場合はエポックミリ秒を設定
+							eventNode.put("confirm_date", event.getConfirmDate());
+						}
+					}
 					eventNode.put("confirm_user", event.getCommentUser());
 					eventNode.put("duplication_count", event.getDuplicationCount());
-					eventNode.put("output_date", event.getId().getOutputDate());
+					// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+					if (isEmpty(dateFormat)) {
+						// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+						eventNode.put("output_date", event.getId().getOutputDate());
+					} else if(isPutKeyAndValue(dateFormat, eventNode, "output_date", event.getId().getOutputDate())) {
+						logger.debug("transferEvents() : 'output_date' is converted ");
+					} else {
+						try {
+							eventNode.put("output_date", convMillisToString(event.getId().getOutputDate(), dateFormat));
+						} catch (InvalidSetting e) {
+							// エラーが発生した場合はエポックミリ秒を設定
+							eventNode.put("output_date", event.getId().getOutputDate());
+						}
+					}
 					eventNode.put("inhibited_flg", event.getInhibitedFlg());
-					eventNode.put("comment_date", event.getCommentDate());
+					// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+					if (isEmpty(dateFormat)) {
+						// フォーマットが設定されていない場合はデフォルトのエポックミリ秒を設定
+						eventNode.put("comment_date", event.getCommentDate());
+					} else if(isPutKeyAndValue(dateFormat, eventNode, "comment_date", event.getCommentDate())) {
+						logger.debug("transferEvents() : 'output_date' is converted ");
+					} else {
+						try {
+							eventNode.put("comment_date", convMillisToString(event.getCommentDate(), dateFormat));
+						} catch (InvalidSetting e) {
+							// エラーが発生した場合はエポックミリ秒を設定
+							eventNode.put("comment_date", event.getCommentDate());
+						}
+					}
 					eventNode.put("comment_user", event.getCommentUser());
 					eventNode.put("comment", event.getComment());
 					eventNode.put("position", event.getPosition());
@@ -361,6 +528,7 @@ public class FluentdTransferFactory implements TransferFactory {
 					for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
 						eventNode.put(String.format(userItemFormat, i), EventUtil.getUserItemValue(event, i));
 					}
+					eventNode.put("notify_uuid", event.getNotifyUUID());
 					
 					String url = binder.bind(event, urlStr);
 					String data = eventNode.toString();
@@ -407,7 +575,7 @@ public class FluentdTransferFactory implements TransferFactory {
 			private CloseableHttpClient createHttpClient() {
 				String proxyHost = null;
 				Integer proxyPort = null;
-				CredentialsProvider cledentialProvider = null;
+				CredentialsStore cledentialProvider = null;
 				List<String> ignoreHostList = new ArrayList<>();
 				
 				try {
@@ -430,7 +598,7 @@ public class FluentdTransferFactory implements TransferFactory {
 						
 						if (proxyUser != null && proxyPassword != null) {
 							cledentialProvider = new BasicCredentialsProvider();
-							cledentialProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUser, proxyPassword));
+							cledentialProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUser, proxyPassword.toCharArray()));
 						}
 					}
 				} catch (Throwable t) {
@@ -446,11 +614,11 @@ public class FluentdTransferFactory implements TransferFactory {
 						.setDefaultCredentialsProvider(cledentialProvider)
 						.setDefaultHeaders(headers);
 				
-				Builder requestBuilder = RequestConfig.custom().setCookieSpec(CookieSpecs.DEFAULT);
+				Builder requestBuilder = RequestConfig.custom().setCookieSpec(StandardCookieSpec.RELAXED);
 				if (connectTimeout != null)
-					requestBuilder.setConnectTimeout(connectTimeout);
+					requestBuilder.setConnectTimeout(Timeout.ofMilliseconds(connectTimeout));
 				if (connectTimeout != null)
-					requestBuilder.setSocketTimeout(requestTimeout);
+					requestBuilder.setResponseTimeout(Timeout.ofMilliseconds(requestTimeout));
 				
 				builder.setDefaultRequestConfig(requestBuilder.build());
 				
@@ -472,15 +640,15 @@ public class FluentdTransferFactory implements TransferFactory {
 					}
 					
 					if (!ignore) {
-						HttpHost proxy = new HttpHost(proxyHost, proxyPort, "http");
+						HttpHost proxy = new HttpHost("http", proxyHost, proxyPort);
 						builder.setProxy(proxy);
 					}
 				}
 				
 				if (keepAlive) {
-					headers.add(new BasicHeader(HTTP.CONN_DIRECTIVE, HTTP.CONN_KEEP_ALIVE));
+					headers.add(new BasicHeader(HttpHeaders.CONNECTION, HttpHeaders.KEEP_ALIVE));
 				} else {
-					headers.add(new BasicHeader(HTTP.CONN_DIRECTIVE, HTTP.CONN_CLOSE));
+					headers.add(new BasicHeader(HttpHeaders.CONNECTION, "Close"));
 				}
 				return builder.build();
 			}
@@ -526,37 +694,35 @@ public class FluentdTransferFactory implements TransferFactory {
 				int maxTryCount = HinemosPropertyCommon.hub_transfer_max_try_count.getIntegerValue();
 				
 				while(count < maxTryCount) {
+					long start = HinemosTime.currentTimeMillis();
+					CloseableHttpResponse response = getHttpClient().execute(requestPost);
 					try {
-						long start = HinemosTime.currentTimeMillis();
-						try (CloseableHttpResponse response = getHttpClient().execute(requestPost)) {
-							long responseTime = HinemosTime.currentTimeMillis() -start;
-							logger.debug(String.format("send() : url=%s, responseTime=%d", url, responseTime));
-							
-							int statusCode = response.getStatusLine().getStatusCode();
-							logger.debug(String.format("send() : url=%s, code=%d", url, statusCode));
-							if (statusCode == HttpStatus.SC_OK) {
-								logger.debug(String.format("send() : url=%s, success=%s", url, response.getStatusLine().toString()));
-								if (logger.isDebugEnabled()) {
-									ByteArrayOutputStream out = new ByteArrayOutputStream();
-									try (InputStream in = response.getEntity().getContent()) {
-										byte [] buffer = new byte[BUFF_SIZE];
-										while(out.size() < BODY_MAX_SIZE) {
-											int len = in.read(buffer);
-											if(len < 0) {
-												break;
-											}
-											out.write(buffer, 0, len);
+						long responseTime = HinemosTime.currentTimeMillis() - start;
+						logger.debug(String.format("send() : url=%s, responseTime=%d", url, responseTime));
+						
+						int statusCode = response.getCode();
+						logger.debug(String.format("send() : url=%s, code=%d", url, statusCode));
+						if (statusCode == HttpStatus.SC_OK) {
+							logger.debug(String.format("send() : url=%s, success=%s", url, new StatusLine(response).toString()));
+							if (logger.isDebugEnabled()) {
+								ByteArrayOutputStream out = new ByteArrayOutputStream();
+								try (InputStream in = response.getEntity().getContent()) {
+									byte [] buffer = new byte[BUFF_SIZE];
+									while(out.size() < BODY_MAX_SIZE) {
+										int len = in.read(buffer);
+										if(len < 0) {
+											break;
 										}
+										out.write(buffer, 0, len);
 									}
-									String res = new String(out.toByteArray(), "UTF-8");
-									if (!res.isEmpty())
-										logger.debug(String.format("send() : url=%s, response=%s", url, res));
 								}
-							} else{
-								throw new RuntimeException(String.format("http status code isn't 200. code=%d, message=%s", statusCode, response.getStatusLine().toString()));
+								String res = new String(out.toByteArray(), "UTF-8");
+								if (!res.isEmpty())
+									logger.debug(String.format("send() : url=%s, response=%s", url, res));
 							}
+						} else{
+							throw new RuntimeException(String.format("http status code isn't 200. code=%d, message=%s", statusCode, new StatusLine(response).toString()));
 						}
-
 						logger.debug(String.format("send() : success. url=%s, count=%d", url, count));
 						break;
 					} catch (RuntimeException e) {
@@ -573,6 +739,8 @@ public class FluentdTransferFactory implements TransferFactory {
 						} else {
 							throw new TransferException(String.format("send() : fail to send. url=%s, retry count=%d, error=\"%s\"", url, count, e.getMessage()));
 						}
+					} finally {
+						response.close();
 					}
 				}
 			}
@@ -588,7 +756,7 @@ public class FluentdTransferFactory implements TransferFactory {
 			}
 
 			private void internalError_session(String sessionId, String data, String error, String url) {
-				AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.HUB_TRANSFER, MessageConstant.MESSAGE_HUB_DATA_TRANSFER_FAILED, new String[]{info.getTransferId()},
+				AplLogger.put(InternalIdCommon.HUB_TRF_SYS_002, new String[]{info.getTransferId()},
 						String.format("error=%s%ntransferId=%s%ndestTypeId=%s%nsessionId=%s%ndata=%s%nurl=%s", error, info.getTransferId(), info.getDestTypeId(), sessionId, data, url));
 			}
 
@@ -597,7 +765,7 @@ public class FluentdTransferFactory implements TransferFactory {
 			}
 
 			private void internalError_monitor(String monitorId, String data, String error, String url) {
-				AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.HUB_TRANSFER, MessageConstant.MESSAGE_HUB_DATA_TRANSFER_FAILED, new String[]{info.getTransferId()},
+				AplLogger.put(InternalIdCommon.HUB_TRF_SYS_002, new String[]{info.getTransferId()},
 						String.format("error=%s%ntransferId=%s%ndestTypeId=%s%nmonitorId=%s%ndata=%s%nurl=%s", error, info.getTransferId(), info.getDestTypeId(), monitorId, data, url));
 			}
 		};
@@ -687,5 +855,80 @@ public class FluentdTransferFactory implements TransferFactory {
 	@Override
 	public String getDescription() {
 		return "fluentd.description";
+	}
+
+	/**
+	 * エポックミリ秒をナノ、ミリ、秒へ変換した上でノードに設定します。
+	 * @param dateFormat 日付フォーマット
+	 * @param node 格納先ノード
+	 * @param key 設定項目
+	 * @param value 設定値
+	 * @return 変換成功可否
+	 */
+	private boolean isPutKeyAndValue(String dateFormat, ObjectNode node, String key, Long value) {
+		boolean putFlg = false;
+		// 初期値のエポックミリ秒をHinemosプロパティで設定した値に変換
+		if(dateFormat.equals(EPOCH_NANOS)) {
+			node.put(key, convMillisToNano(value));
+			putFlg = true;
+		} else 	if(dateFormat.equals(EPOCH_MILLIS)) {
+			node.put(key, value);
+			putFlg = true;
+		} else 	if(dateFormat.equals(EPOCH_SECONDS)) {
+			node.put(key, convMillisToSecond(value));
+			putFlg = true;
+		}
+		return putFlg;
+	}
+	
+	/**
+	 * エポックミリ秒をエポックナノ秒に変換します。
+	 * @param millis エポックミリ秒
+	 * @return エポックナノ秒
+	 */
+	private Long convMillisToNano(Long millis) {
+		if (millis == null) {
+			return null;
+		}
+		return millis*1000000;
+	}
+
+	/**
+	 * エポックミリ秒をエポック秒に変換します。
+	 * @param millis エポックミリ秒
+	 * @return エポック秒
+	 */
+	private Long convMillisToSecond(Long  millis) {
+		if (millis == null) {
+			return null;
+		}
+		return millis/1000;
+	}
+
+	/**
+	 * エポックミリ秒を日付型に変換します。
+	 * @param millis エポックミリ秒
+	 * @param dateFormat フォーマット
+	 * @return 日付型 
+	 * @throws InvalidSetting フォーマット不正
+	 */
+	private String convMillisToString(Long millis, String dateFormat)  throws InvalidSetting {
+		if (millis == null) {
+			return null;
+		}
+		String date = DateUtil.millisToString(millis, dateFormat);
+		if (date == null) {
+			logger.warn("the format of date defined as Hinemos-property is invalid. format = "
+					+ dateFormat);
+			throw new InvalidSetting();
+		}
+		return date;
+	}
+	
+	private boolean isEmpty(String str) {
+		if(str == null || str.isEmpty()) {
+			return true;
+		}
+		return false;
 	}
 }

@@ -10,6 +10,7 @@ package com.clustercontrol.http.dialog;
 
 import java.util.List;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -24,27 +25,30 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddHttpScenarioMonitorRequest;
+import org.openapitools.client.model.HttpScenarioCheckInfoResponse;
+import org.openapitools.client.model.ModifyHttpScenarioMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.PageRequest;
+import org.openapitools.client.model.PageResponse;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.http.action.AddHttp;
-import com.clustercontrol.http.action.GetHttp;
-import com.clustercontrol.http.action.ModifyHttp;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
 import com.clustercontrol.http.composite.PageCompositeDefine;
 import com.clustercontrol.monitor.bean.HttpAuthTypeConstant;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.composite.MonitorBasicScopeComposite;
 import com.clustercontrol.monitor.run.composite.MonitorRuleComposite;
 import com.clustercontrol.monitor.run.composite.TableItemInfoComposite;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.notify.bean.PriChangeJudgeSelectTypeConstant;
 import com.clustercontrol.notify.composite.NotifyInfoComposite;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.HttpScenarioCheckInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.Page;
-import com.clustercontrol.ws.monitor.PagePK;
 
 /**
  * Http監視（シナリオ）作成・変更ダイアログクラス<BR>
@@ -98,7 +102,7 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 	private Button m_chkbxCollectEachPage = null;
 
 	/** ページリストコンポジット */
-	private TableItemInfoComposite<Page> m_pageInfoComposite = null;
+	private TableItemInfoComposite<PageResponse> m_pageInfoComposite = null;
 
 	/** 収集グループ */
 	private Group groupCollect = null;
@@ -123,6 +127,7 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 	 */
 	public HttpScenarioCreateDialog(Shell parent) {
 		super(parent, null);
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PAGE ;
 	}
 
 	/**
@@ -133,6 +138,7 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 	 */
 	public HttpScenarioCreateDialog(Shell parent, String managerName, int monitorType) {
 		super(parent, managerName);
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PAGE ;
 	}
 
 	/**
@@ -147,6 +153,7 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 
 		this.monitorId = monitorId;
 		this.updateFlg = updateFlg;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PAGE ;
 	}
 
 	// ----- instance メソッド ----- //
@@ -271,13 +278,13 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		groupNotifyAttribute.setLayoutData(gridData);
 		groupNotifyAttribute.setText(Messages.getString("notify.attribute"));
-		this.m_notifyInfo = new NotifyInfoComposite(groupNotifyAttribute, SWT.NONE, 60);
+		this.m_notifyInfo = new NotifyInfoComposite(groupNotifyAttribute, SWT.NONE, 80, this.priorityChangeJudgeSelect,this.priorityChangeFailSelect);
 		WidgetTestUtil.setTestId(this, "notifyinfo", m_notifyInfo);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
-		gridData.heightHint = 110;
+		gridData.heightHint = 130;
 		this.m_notifyInfo.setLayoutData(gridData);
 
 		// ラインを引く
@@ -819,15 +826,31 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
-		}
-		else{
+		} else {
 			// 変更の場合、情報取得
-			info = new GetHttp().getHttp(this.managerName, this.monitorId);
+			try {
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
+				info = wrapper.getMonitor(this.monitorId);
+			} catch (InvalidRole e) {
+				// アクセス権なしの場合、エラーダイアログを表示する
+				MessageDialog.openInformation(
+						null,
+						Messages.getString("message"),
+						Messages.getString("message.accesscontrol.16"));
+				throw new InternalError(e.getMessage());
+			} catch (Exception e) {
+				// 上記以外の例外
+				MessageDialog.openInformation(
+						null,
+						Messages.getString("message"),
+						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+				throw new InternalError(e.getMessage());
+			}
 		}
 		this.setInputData(info);
 
@@ -890,6 +913,20 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 		}else{
 			this.m_textProxyPort.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
+
+		// 収集値項目名
+		if(this.itemName.getEnabled() && "".equals(this.itemName.getText())){
+			this.itemName.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		}else{
+			this.itemName.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		}
+
+		// 収集値単位
+		if(this.measure.getEnabled() && "".equals(this.measure.getText())){
+			this.measure.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		}else{
+			this.measure.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		}
 	}
 
 	/**
@@ -898,7 +935,7 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 	 * @param monitor 設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 
 		super.setInputData(monitor);
 
@@ -921,7 +958,7 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 		}
 		this.m_textProxyUrl.setText(monitor.getHttpScenarioCheckInfo().getProxyUrl());
 
-		if(monitor.getHttpScenarioCheckInfo().isProxyFlg()){
+		if(monitor.getHttpScenarioCheckInfo().getProxyFlg()){
 			this.m_chkbxProxy.setSelection(true);
 		}
 		if(monitor.getHttpScenarioCheckInfo().getProxyPort() != null) {
@@ -934,14 +971,14 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 			this.m_textProxyPassword.setText(monitor.getHttpScenarioCheckInfo().getProxyPassword());
 		}
 
-		this.m_chkbxCollectEachPage.setSelection(monitor.getHttpScenarioCheckInfo().isMonitoringPerPageFlg());
+		this.m_chkbxCollectEachPage.setSelection(monitor.getHttpScenarioCheckInfo().getMonitoringPerPageFlg());
 
 		if(monitor.getHttpScenarioCheckInfo().getPages() != null){
 			this.m_pageInfoComposite.setInputData(monitor.getHttpScenarioCheckInfo().getPages());
 		}
 
 		// 収集
-		if (monitor.isCollectorFlg()) {
+		if (monitor.getCollectorFlg()) {
 			this.confirmCollectValid.setSelection(true);
 		}else{
 			this.setCollectorEnabled(false);
@@ -971,20 +1008,14 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		// HttpScenario監視（文字列）固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_HTTP_SCENARIO);
-		monitorInfo.setMonitorType(MonitorTypeConstant.TYPE_SCENARIO);
-
 		// 監視条件 HttpScenario監視情報
-		HttpScenarioCheckInfo httpScenarioCheckInfo = new HttpScenarioCheckInfo();
-		httpScenarioCheckInfo.setMonitorTypeId(monitorInfo.getMonitorTypeId());
-		httpScenarioCheckInfo.setMonitorId(monitorInfo.getMonitorId());
+		HttpScenarioCheckInfoResponse httpScenarioCheckInfo = new HttpScenarioCheckInfoResponse();
 
 		httpScenarioCheckInfo.setUserAgent(this.m_textUserAgent.getText());
 
@@ -1013,14 +1044,11 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 
 		httpScenarioCheckInfo.setMonitoringPerPageFlg(this.m_chkbxCollectEachPage.getSelection());
 
-		List<Page> pages = httpScenarioCheckInfo.getPages();
+		List<PageResponse> pages = httpScenarioCheckInfo.getPages();
 		pages.clear();
 		int count = 0;
-		for (Page page : this.m_pageInfoComposite.getItems()) {
-			PagePK pagePK = new PagePK();
-			pagePK.setMonitorId(monitorInfo.getMonitorId());
-			pagePK.setPageOrderNo(count);
-			page.setId(pagePK);
+		for (PageResponse page : this.m_pageInfoComposite.getItems()) {
+			page.setPageOrderNo(count);
 			count++;
 			// Patternにはクライアント側ではkeyがないので設定なし
 		}
@@ -1067,16 +1095,98 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		if(info != null){
-			String managerName = this.getManagerName();
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
-				result = new AddHttp().add(managerName, info);
-			}
-			else{
+				try {
+					AddHttpScenarioMonitorRequest info = new AddHttpScenarioMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddHttpScenarioMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+
+					if (info.getHttpScenarioCheckInfo() != null
+							&& info.getHttpScenarioCheckInfo().getPages() != null
+							&& this.inputData.getHttpScenarioCheckInfo() != null
+							&& this.inputData.getHttpScenarioCheckInfo().getPages() != null) {
+
+						List<PageRequest> destPageList = info.getHttpScenarioCheckInfo().getPages();
+						List<PageResponse> srcPageList = this.inputData.getHttpScenarioCheckInfo().getPages();
+						for (int i = 0; i < destPageList.size(); i++) {
+							destPageList.get(i).setPriority(
+									PageRequest.PriorityEnum.fromValue(srcPageList.get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.addHttpScenarioMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorDuplicate e) {
+					// 監視項目IDが重複している場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.53", args));
+
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.34", args) + errMessage);
+				}
+			} else{
 				// 変更の場合
-				result = new ModifyHttp().modify(managerName, info);
+				try {
+					ModifyHttpScenarioMonitorRequest info = new ModifyHttpScenarioMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyHttpScenarioMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+
+					if (info.getHttpScenarioCheckInfo() != null
+							&& info.getHttpScenarioCheckInfo().getPages() != null
+							&& this.inputData.getHttpScenarioCheckInfo() != null
+							&& this.inputData.getHttpScenarioCheckInfo().getPages() != null) {
+
+						List<PageRequest> destPageList = info.getHttpScenarioCheckInfo().getPages();
+						List<PageResponse> srcPageList = this.inputData.getHttpScenarioCheckInfo().getPages();
+						for (int i = 0; i < destPageList.size(); i++) {
+							destPageList.get(i).setPriority(
+									PageRequest.PriorityEnum.fromValue(srcPageList.get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.modifyHttpScenarioMonitor(this.inputData.getMonitorId(), info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.35", args));
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.36", args) + errMessage);
+				}
 			}
 		}
 
@@ -1089,11 +1199,11 @@ public class HttpScenarioCreateDialog extends CommonMonitorDialog {
 	 * @see com.clustercontrol.dialog.CommonMonitorDialog#setInfoInitialValue()
 	 */
 	@Override
-	protected void setInfoInitialValue(MonitorInfo monitor) {
+	protected void setInfoInitialValue(MonitorInfoResponse monitor) {
 
 		super.setInfoInitialValue(monitor);
 
-		HttpScenarioCheckInfo httpScenarioCheckInfo = new HttpScenarioCheckInfo();
+		HttpScenarioCheckInfoResponse httpScenarioCheckInfo = new HttpScenarioCheckInfoResponse();
 		// URL置換
 		httpScenarioCheckInfo.setUserAgent(DEFAULT_USER_AGENT);
 		// コネクションタイムアウト（ミリ秒）

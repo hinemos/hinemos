@@ -13,7 +13,7 @@ package com.clustercontrol.fault;
  * 
  * @version 4.1.0
  */
-public class JobMasterDuplicate extends HinemosException {
+public class JobMasterDuplicate extends HinemosDuplicate {
 
 	private static final long serialVersionUID = 4861893779155148491L;
 	private String m_id = null;

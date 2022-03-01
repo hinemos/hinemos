@@ -24,6 +24,11 @@ public class ImportProcessMode {
 	private boolean sameObjectPrivilege = false;
 	private String xmlObjectPrivilege = "";
 	private int processType = 0;
+	private Integer importUnitNum = null;
+	private boolean isRollbackIfAbnormal = false;
+	private boolean sameRollbackIfAbnormal = false;
+	private boolean isCancelForAbend = false;
+	private boolean sameCancelForAbend = false;
 	
 	private ImportProcessMode() {
 
@@ -64,4 +69,48 @@ public class ImportProcessMode {
 	public static void setXmlObjectPrivilege(String xmlObjectPrivilege) {
 		getInstance().xmlObjectPrivilege = xmlObjectPrivilege;
 	}
+	
+	public static Integer getImportUnitNum() {
+		return getInstance().importUnitNum;
+	}
+
+	public static void setImportUnitNum(Integer importUnitNum) {
+		getInstance().importUnitNum = importUnitNum;
+	}
+	
+	public static boolean isRollbackIfAbnormal() {
+//		return getInstance().isRollbackIfAbnormal;
+		// TODO 6612対応 7.0.1リリース時には一時変更を戻す
+		return false;
+	}
+
+	public static void setRollbackIfAbnormal(boolean isRollbackIfAbnormal) {
+		getInstance().isRollbackIfAbnormal = isRollbackIfAbnormal;
+	}
+	
+	public static boolean isSameRollbackIfAbnormal() {
+		return getInstance().sameRollbackIfAbnormal;
+	}
+
+	public static void setSameRollbackIfAbnormal(boolean sameRollbackIfAbnormal) {
+		getInstance().sameRollbackIfAbnormal = sameRollbackIfAbnormal;
+	}
+
+	public static boolean isCancelForAbend() {
+		return getInstance().isCancelForAbend;
+	}
+
+	public static void setCancelForAbend(boolean isCancelForAbend) {
+		getInstance().isCancelForAbend = isCancelForAbend;
+	}
+	
+	public static boolean isSameCancelForAbend() {
+		return getInstance().sameCancelForAbend;
+	}
+
+	public static void setSameCancelForAbend(boolean sameCancelForAbend) {
+		getInstance().sameCancelForAbend = sameCancelForAbend;
+	}
+
+	
 }

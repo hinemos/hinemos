@@ -19,15 +19,14 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.MonitorInfoResponse;
 
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.binary.action.GetBinaryFilterTableDefine;
 import com.clustercontrol.binary.composite.BinaryPatternInfoComposite;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * バイナリ監視設定共通ダイアログクラス<BR>
@@ -138,7 +137,7 @@ public class CommonMonitorBinaryDialog extends CommonMonitorDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 
 		if (validateResult != null) {
@@ -149,7 +148,7 @@ public class CommonMonitorBinaryDialog extends CommonMonitorDialog {
 		monitorInfo.setCollectorFlg(this.confirmCollectValid.getSelection());
 
 		// 監視種別を文字列に設定する
-		monitorInfo.setMonitorType(MonitorTypeConstant.TYPE_STRING);
+		monitorInfo.setMonitorType(MonitorInfoResponse.MonitorTypeEnum.STRING);
 
 		return monitorInfo;
 	}
@@ -170,11 +169,11 @@ public class CommonMonitorBinaryDialog extends CommonMonitorDialog {
 	 *            設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		// 収集
-		if (monitor.isCollectorFlg()) {
+		if (monitor.getCollectorFlg()) {
 			this.confirmCollectValid.setSelection(true);
 		} else {
 			this.setCollectorEnabled(false);

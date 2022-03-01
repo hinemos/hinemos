@@ -8,19 +8,31 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.GetPlatformServiceForLoginUserResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.MonitorPluginStringInfoResponse;
+import org.openapitools.client.model.PlatformServicesResponse;
+import org.openapitools.client.model.PluginCheckInfoResponse;
 
 import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ConvertorException;
-import com.clustercontrol.utility.settings.cloud.action.CloudTools;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.monitor.xml.BillingMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.BillingMonitors;
@@ -29,18 +41,11 @@ import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.PluginStringValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.FacilityNotFound_Exception;
-import com.clustercontrol.ws.xcloud.PlatformServices;
 import com.clustercontrol.xcloud.plugin.monitor.CreateBillingDetailMonitorDialog.MonitorKind;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.plugin.monitor.PlatformServiceBillingDetailMonitorPlugin;
 import com.clustercontrol.xcloud.plugin.monitor.PlatformServiceBillingMonitorPlugin;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 /**
  * 課金監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -55,7 +60,7 @@ public class BillingConv {
 
 	private final static String SCHEMA_TYPE = "I";
 	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "1";
+	private final static String SCHEMA_REVISION = "2";
 
 	private final static int PLUGIN_STRINGVALUE_INFO_SIZE = 2;
 	
@@ -101,15 +106,17 @@ public class BillingConv {
 	 * @param
 	 * @return
 	 * @throws ConvertorException
+	 * @throws ParseException 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
+	 * @throws RestConnectFailed 
 	 */
-	public static List<com.clustercontrol.ws.monitor.MonitorInfo> createMonitorInfoList(BillingMonitors billingMonitors)
-			throws ConvertorException {
-		List<com.clustercontrol.ws.monitor.MonitorInfo> monitorInfoList =
-				new LinkedList<com.clustercontrol.ws.monitor.MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(BillingMonitors billingMonitors)
+			throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException, RestConnectFailed {
+		List<MonitorInfoResponse> monitorInfoList =
+				new LinkedList<MonitorInfoResponse>();
 		
-		com.clustercontrol.ws.xcloud.CloudEndpoint endpoint = 
-				CloudTools.getEndpoint(com.clustercontrol.ws.xcloud.CloudEndpoint.class);
-
+		CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		for (BillingMonitor billingMonitor : billingMonitors.getBillingMonitor()) {
 			logger.debug("Monitor Id : " + billingMonitor.getMonitor().getMonitorId());
 			boolean matched = false;
@@ -122,23 +129,21 @@ public class BillingConv {
 				value2 = getPluginStringValue(KEY_SERVICE, billingMonitor.getBillingInfo().getPluginStringValue());
 				if(!value1.isEmpty() && !value2.isEmpty()){
 					try {
-						List<PlatformServices> billingServices = endpoint.getAvailablePlatformServices(
+						
+						GetPlatformServiceForLoginUserResponse billingServices = endpoint.getPlatformServiceForLoginUser(
 								billingMonitor.getMonitor().getFacilityId(),
 								billingMonitor.getMonitor().getOwnerRoleId());
-						for(PlatformServices service: billingServices){
-							if (value1.equals(service.getPlatformId()) && 
-									value2.equals(service.getServiceId())){
-								matched=true;
+						
+						for (PlatformServicesResponse service : billingServices.getPlatiformServices()) {
+							if (value1.equals(service.getPlatformId()) && value2.equals(service.getServiceId())) {
+								matched = true;
 								break;
 							}
 						}
 						if(!matched){
 							errMessage = Messages.getString("SettingTools.EssentialValueInvalid") + " Target = " + value1 + " : " + value2;
 						}
-					} catch (CloudManagerException | FacilityNotFound_Exception
-							| com.clustercontrol.ws.xcloud.HinemosUnknown_Exception
-							| com.clustercontrol.ws.xcloud.InvalidRole_Exception
-							| com.clustercontrol.ws.xcloud.InvalidUserPass_Exception e) {
+					} catch (HinemosUnknown | CloudManagerException | InvalidRole | InvalidUserPass e) {
 						errMessage = Messages.getString(HinemosMessage.replace(e.getMessage()));
 					}
 				}
@@ -159,12 +164,12 @@ public class BillingConv {
 			}
 			
 			if (!matched){
-				MonitorInfo erroMonitor = MonitorConv.makeErrorMonitor(
+				MonitorInfoResponse erroMonitor = MonitorConv.makeErrorMonitor(
 						billingMonitor.getMonitor().getMonitorId(), errMessage);
 				monitorInfoList.add(erroMonitor);
 			}
 			else{
-				com.clustercontrol.ws.monitor.MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(billingMonitor.getMonitor());
+				MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(billingMonitor.getMonitor());
 	
 				for (NumericValue numericValue : billingMonitor.getNumericValue()) {
 					if(numericValue.getPriority() == PriorityConstant.TYPE_INFO ||
@@ -183,41 +188,37 @@ public class BillingConv {
 						monitorInfo.getNumericValueInfo().add(MonitorConv.createMonitorNumericValueInfo(changeValue));
 					}
 				}
-				com.clustercontrol.ws.monitor.MonitorNumericValueInfo monitorNumericValueInfo =
-						new com.clustercontrol.ws.monitor.MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+				MonitorNumericValueInfoResponse monitorNumericValueInfo =
+						new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericValueInfoResponse.MonitorNumericTypeEnum.BASIC);
+				monitorNumericValueInfo.setPriority(MonitorNumericValueInfoResponse.PriorityEnum.CRITICAL);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 	
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericValueInfoResponse.MonitorNumericTypeEnum.BASIC);
+				monitorNumericValueInfo.setPriority(MonitorNumericValueInfoResponse.PriorityEnum.UNKNOWN);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 	
 				// 変化量監視が無効の場合、関連閾値が未入力なら、画面デフォルト値にて補完
-				if( monitorInfo.isChangeFlg() ==false && billingMonitor.getNumericChangeAmount().length == 0 ){
+				if( monitorInfo.getChangeFlg() ==false && billingMonitor.getNumericChangeAmount().length == 0 ){
 					MonitorConv.setMonitorChangeAmountDefault(monitorInfo);
 				}
 				
 				// 変化量についても閾値判定と同様にTYPE_CRITICALとTYPE_UNKNOWNを定義する
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericValueInfoResponse.MonitorNumericTypeEnum.CHANGE);
+				monitorNumericValueInfo.setPriority(MonitorNumericValueInfoResponse.PriorityEnum.CRITICAL);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 				
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericValueInfoResponse.MonitorNumericTypeEnum.CHANGE);
+				monitorNumericValueInfo.setPriority(MonitorNumericValueInfoResponse.PriorityEnum.UNKNOWN);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
@@ -236,40 +237,42 @@ public class BillingConv {
 	 *
 	 * @param
 	 * @return
-	 * @throws MonitorNotFound_Exception
-	 * @throws InvalidUserPass_Exception
-	 * @throws InvalidRole_Exception
-	 * @throws HinemosUnknown_Exception
+	 * @throws MonitorNotFound
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 */
 	public static com.clustercontrol.utility.settings.monitor.xml.BillingMonitors
-		createBillingMonitors(List<com.clustercontrol.ws.monitor.MonitorInfo> monitorInfoList)
-			throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+		createBillingMonitors(List<MonitorInfoResponse> monitorInfoList)
+			throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		
 		com.clustercontrol.utility.settings.monitor.xml.BillingMonitors billingMonitors = new com.clustercontrol.utility.settings.monitor.xml.BillingMonitors();
 
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			BillingMonitor billingMonitor = new BillingMonitor();
 			billingMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 
-			for (MonitorNumericValueInfo numericValueInfo : monitorInfo.getNumericValueInfo()) {
-				if(numericValueInfo.getPriority() == PriorityConstant.TYPE_INFO ||
-						numericValueInfo.getPriority() == PriorityConstant.TYPE_WARNING){
-					if(numericValueInfo.getMonitorNumericType().contains("CHANGE")) {
-						billingMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(numericValueInfo));
+			for (MonitorNumericValueInfoResponse numericValueInfo : monitorInfo.getNumericValueInfo()) {
+				if(numericValueInfo.getPriority() ==  MonitorNumericValueInfoResponse.PriorityEnum.INFO ||
+						numericValueInfo.getPriority() == MonitorNumericValueInfoResponse.PriorityEnum.WARNING){
+					if(numericValueInfo.getMonitorNumericType().equals(MonitorNumericValueInfoResponse.MonitorNumericTypeEnum.CHANGE)) {
+						billingMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 					else{
-						billingMonitor.addNumericValue(MonitorConv.createNumericValue(numericValueInfo));
+						billingMonitor.addNumericValue(MonitorConv.createNumericValue(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 				}
 			}
 
-			billingMonitor.setBillingInfo(createPluginCheckInfo(monitorInfo.getPluginCheckInfo()));
+			billingMonitor.setBillingInfo(createPluginCheckInfo(monitorInfo.getMonitorId(),monitorInfo.getPluginCheckInfo()));
 			billingMonitors.addBillingMonitor(billingMonitor);
 		}
 		billingMonitors.setCommon(MonitorConv.versionDto2Xml());
@@ -285,14 +288,14 @@ public class BillingConv {
 	 */
 	
 	private static com.clustercontrol.utility.settings.monitor.xml.BillingInfo
-		createPluginCheckInfo(com.clustercontrol.ws.monitor.PluginCheckInfo pluginCheckInfo) {
+		createPluginCheckInfo(String monitorId, PluginCheckInfoResponse pluginCheckInfo) {
 
 		com.clustercontrol.utility.settings.monitor.xml.BillingInfo billingInfo =
 				new com.clustercontrol.utility.settings.monitor.xml.BillingInfo();
 		billingInfo.setMonitorTypeId("");
-		billingInfo.setMonitorId(pluginCheckInfo.getMonitorId());
+		billingInfo.setMonitorId(monitorId);
 
-		List<com.clustercontrol.ws.monitor.MonitorPluginStringInfo> monitorPluginStringInfo =
+		List<MonitorPluginStringInfoResponse> monitorPluginStringInfo =
 				pluginCheckInfo.getMonitorPluginStringInfoList();
 		
 		com.clustercontrol.utility.settings.monitor.xml.PluginStringValue[] pluginStringValueArray
@@ -300,7 +303,7 @@ public class BillingConv {
 		for (int i=0;i<PLUGIN_STRINGVALUE_INFO_SIZE ;i++){
 			pluginStringValueArray[i] = new PluginStringValue();
 			pluginStringValueArray[i].setKey(monitorPluginStringInfo.get(i).getKey());
-			pluginStringValueArray[i].setMonitorId(monitorPluginStringInfo.get(i).getMonitorId());
+			pluginStringValueArray[i].setMonitorId(monitorId);
 			pluginStringValueArray[i].setValue(monitorPluginStringInfo.get(i).getValue());
 		}
 		billingInfo.setPluginStringValue(pluginStringValueArray);
@@ -313,18 +316,15 @@ public class BillingConv {
 	 * @return
 	 */
 
-	private static com.clustercontrol.ws.monitor.PluginCheckInfo
+	private static PluginCheckInfoResponse
 			createBillingCheckInfo(com.clustercontrol.utility.settings.monitor.xml.BillingInfo billingInfo) {
-		com.clustercontrol.ws.monitor.PluginCheckInfo pluginCheckInfo = new com.clustercontrol.ws.monitor.PluginCheckInfo();
-		pluginCheckInfo.setMonitorTypeId(billingInfo.getMonitorTypeId());
-		pluginCheckInfo.setMonitorId(billingInfo.getMonitorId());
+		PluginCheckInfoResponse pluginCheckInfo = new PluginCheckInfoResponse();
 		
 		PluginStringValue[] pluginStringValue = billingInfo.getPluginStringValue();
-		com.clustercontrol.ws.monitor.MonitorPluginStringInfo info = null;
+		MonitorPluginStringInfoResponse info = null;
 		for (int i = 0;i< PLUGIN_STRINGVALUE_INFO_SIZE; i++){
-			info = new com.clustercontrol.ws.monitor.MonitorPluginStringInfo();
+			info = new MonitorPluginStringInfoResponse();
 			info.setKey(pluginStringValue[i].getKey());
-			info.setMonitorId(pluginStringValue[i].getMonitorId());
 			info.setValue(pluginStringValue[i].getValue());
 			pluginCheckInfo.getMonitorPluginStringInfoList().add(info);
 		}

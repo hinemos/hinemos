@@ -9,14 +9,17 @@
 package com.clustercontrol.dialog;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jface.dialogs.MessageDialog;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
 
 /**
  * API呼び出しの結果(成功・失敗)を表示するための汎用メッセージダイアログです。
@@ -24,18 +27,36 @@ import com.clustercontrol.ws.access.InvalidRole_Exception;
  * @since 6.2.0
  */
 public class ApiResultDialog {
-	
+
 	private List<Item> successList;
 	private List<Item> failureList;
+
+	private Map<Pattern, String> errorMessageMap;
 
 	private static class Item {
 		String managerName;
 		String message;
 	}
-	
+
+	/**
+	 * このダイアログが表示する形式でマネージャ名とメッセージをフォーマットして返します。
+	 */
+	public static String formatMessage(String managerName, String message) {
+		return managerName + " : " + message;
+	}
+
 	public ApiResultDialog() {
 		successList = new ArrayList<>();
 		failureList = new ArrayList<>();
+		errorMessageMap = new HashMap<>();
+
+		errorMessageMap.put(
+				Pattern.compile(".*\\." + InvalidRole.class.getSimpleName()),
+				Messages.get("message.accesscontrol.16"));
+	}
+
+	public void overrideErrorMessage(String exceptionClassNameRegex, String message) {
+		errorMessageMap.put(Pattern.compile(exceptionClassNameRegex), message);
 	}
 
 	/**
@@ -61,13 +82,11 @@ public class ApiResultDialog {
 			if (sb.length() > 0) {
 				sb.append("\n");
 			}
-			sb.append(it.managerName);
-			sb.append(" : ");
-			sb.append(it.message);
+			sb.append(formatMessage(it.managerName, it.message));
 		}
 		return sb.toString();
 	}
-	
+
 	/**
 	 * 成功メッセージを追加します。
 	 * 
@@ -88,28 +107,77 @@ public class ApiResultDialog {
 	 * 
 	 * @param managerName マネージャ名。
 	 * @param throwable APIから返された例外。
+	 * @peram 
+	 * @return このインスタンス自身を返します。
+	 */
+	public ApiResultDialog addFailure(String managerName, Throwable throwable, String preMessage, String postMessage) {
+		Item item = new Item();
+		item.managerName = managerName;
+
+		StringBuilder buff = new StringBuilder();
+		if (preMessage != null) {
+			buff.append(preMessage);
+		}
+
+		// オーバーライド指定があるならそちらのメッセージを、そうでなければ例外が保持しているメッセージを取得
+		String msg = null;
+		for (Entry<Pattern, String> entry : errorMessageMap.entrySet()) {
+			if (entry.getKey().matcher(throwable.getClass().getName()).matches()) {
+				msg = entry.getValue();
+				break;
+			}
+		}
+		if (msg == null) {
+			msg = HinemosMessage.replace(throwable.getMessage());
+		}
+		buff.append(msg);
+
+		if (postMessage != null) {
+			buff.append(postMessage);
+		}
+		item.message = buff.toString();
+
+		failureList.add(item);
+		return this;
+	}
+
+	/**
+	 * 失敗メッセージを追加します。
+	 * 
+	 * @param managerName マネージャ名。
+	 * @param throwable APIから返された例外。
 	 * @param idMessage APIの操作対象を明示するためにメッセージ末尾に付与する文字列。
 	 *                  「(SomeID=xxxx)」という書式を想定しています。
 	 *                  汎用のメッセージリソースしか持っていないアクセス権限エラーの場合のみ使用します。
 	 * @return このインスタンス自身を返します。
 	 */
 	public ApiResultDialog addFailure(String managerName, Throwable throwable, String idMessage) {
-		Item item = new Item();
-		item.managerName = managerName;
-
-		// 権限エラーのみ特定メッセージ固定、他のエラーは例外が保持しているメッセージを元にする。
-		// WSの名前空間ごとにクラスが作成されるので、simple名で比較する。
-		if (throwable.getClass().getSimpleName().equals(InvalidRole_Exception.class.getSimpleName())) {
-			if (StringUtils.isEmpty(idMessage)) {
-				item.message = Messages.get("message.accesscontrol.16");
-			} else {
-				item.message = Messages.get("message.accesscontrol.16") + " " + idMessage;
-			}
-		} else {
-			item.message = HinemosMessage.replace(throwable.getMessage());
-		}
-
-		failureList.add(item);
-		return this;
+		return addFailure(managerName, throwable, null, " " + idMessage);
 	}
+
+	/**
+	 * 失敗メッセージを追加します。
+	 * 
+	 * @param managerName マネージャ名。
+	 * @param throwable APIから返された例外。
+	 * @return このインスタンス自身を返します。
+	 */
+	public ApiResultDialog addFailure(String managerName, Throwable throwable) {
+		return addFailure(managerName, throwable, null, null);
+	}
+
+	/**
+	 * 保持している成功メッセージ数を返します。
+	 */
+	public int getSuccessCount() {
+		return successList.size();
+	}
+
+	/**
+	 * 保持している失敗メッセージ数を返します。
+	 */
+	public int getFailureCount() {
+		return failureList.size();
+	}
+
 }

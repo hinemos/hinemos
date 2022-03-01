@@ -25,22 +25,27 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddServiceportMonitorRequest;
+import org.openapitools.client.model.ModifyServiceportMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.PortCheckInfoResponse;
+import org.openapitools.client.model.PortCheckInfoResponse.ServiceIdEnum;
+import org.openapitools.client.model.MonitorNumericValueInfoRequest;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorNumericDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.port.bean.PortRunCountConstant;
 import com.clustercontrol.port.bean.PortRunIntervalConstant;
 import com.clustercontrol.port.bean.ProtocolConstant;
 import com.clustercontrol.port.bean.ProtocolMessage;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.PortCheckInfo;
 
 /**
  * サービス･ポート監視作成・変更ダイアログクラスです。
@@ -365,17 +370,17 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getMonitor(monitorId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -428,14 +433,14 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 	 *            設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
 
 		// 監視条件 port監視情報
-		PortCheckInfo portInfo = monitor.getPortCheckInfo();
-		if (portInfo.getServiceId() == null || portInfo.getServiceId().equals(ProtocolConstant.TYPE_PROTOCOL_TCP)) {
+		PortCheckInfoResponse portInfo = monitor.getPortCheckInfo();
+		if (portInfo.getServiceId() == null || portInfo.getServiceId().equals(ServiceIdEnum.TCP)) {
 			this.m_radioTCP.setSelection(true);
 			this.m_radioService.setSelection(false);
 			setEnabledComboService(m_radioService.getSelection());
@@ -469,21 +474,18 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		// port監視固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_PORT);
-
 		// 監視条件 port監視情報
-		PortCheckInfo portInfo = new PortCheckInfo();
+		PortCheckInfoResponse portInfo = new PortCheckInfoResponse();
 
 		/** 監視サービスの選択 */
 		if (this.m_radioTCP.getSelection()) {
-			portInfo.setServiceId(ProtocolConstant.TYPE_PROTOCOL_TCP);
+			portInfo.setServiceId(ServiceIdEnum.TCP);
 		} else if (this.m_radioService.getSelection()) {/* サービスプロトコル選択時の処理 */
 			if (this.m_comboService.getText() != null && !"".equals((this.m_comboService.getText()).trim())) {
 				portInfo.setServiceId(ProtocolMessage.stringToType(this.m_comboService.getText()));
@@ -575,27 +577,44 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		if(info != null){
-			String[] args = { info.getMonitorId(), getManagerName() };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(getManagerName());
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if(result){
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddServiceportMonitorRequest info = new AddServiceportMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddServiceportMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getPortCheckInfo() != null
+							&& info.getPortCheckInfo().getServiceId() != null 
+							&& this.inputData.getPortCheckInfo() != null) {
+						info.getPortCheckInfo()
+								.setServiceId(org.openapitools.client.model.PortCheckInfoRequest.ServiceIdEnum
+										.fromValue(this.inputData.getPortCheckInfo().getServiceId().getValue()));
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(AddServiceportMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.addServiceportMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorIdInvalid e) {
+					// 監視項目IDが不適切な場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.97", args));
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -603,7 +622,7 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 							Messages.getString("message.monitor.53", args));
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(
 								null,
@@ -612,7 +631,6 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 					} else {
 						errMessage = ", " + HinemosMessage.replace(e.getMessage());
 					}
-
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
@@ -620,25 +638,43 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if(result){
+					ModifyServiceportMonitorRequest info = new ModifyServiceportMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyServiceportMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getPortCheckInfo() != null
+							&& info.getPortCheckInfo().getServiceId() != null 
+							&& this.inputData.getPortCheckInfo() != null) {
+						info.getPortCheckInfo()
+								.setServiceId(org.openapitools.client.model.PortCheckInfoRequest.ServiceIdEnum
+										.fromValue(this.inputData.getPortCheckInfo().getServiceId().getValue()));
+					}
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(ModifyServiceportMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.modifyServiceportMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
@@ -656,11 +692,11 @@ public class PortCreateDialog extends CommonMonitorNumericDialog {
 	 * @see com.clustercontrol.dialog.CommonMonitorDialog#setInfoInitialValue()
 	 */
 	@Override
-	protected void setInfoInitialValue(MonitorInfo monitor) {
+	protected void setInfoInitialValue(MonitorInfoResponse monitor) {
 
 		super.setInfoInitialValue(monitor);
 
-		PortCheckInfo portCheckInfo = new PortCheckInfo();
+		PortCheckInfoResponse portCheckInfo = new PortCheckInfoResponse();
 		// ポート番号
 		portCheckInfo.setPortNo(ProtocolConstant.DEFAULT_PORT_NUM_PROTOCOL_TCP);
 		// リトライ回数（回）

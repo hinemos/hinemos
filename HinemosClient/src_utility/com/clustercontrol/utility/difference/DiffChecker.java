@@ -142,16 +142,18 @@ public class DiffChecker {
 			logger.debug("compare: " + entry.getKey());
 
 			ResultC resultC = new ResultC(entry.getKey());
-			currentResultB.getResultCs().add(resultC);
+			boolean diffAsElem = false;
 
 			// XML1 側のみに存在する。
 			if (entry.getValue().dto1 == null) {
 				diff = true;
+				diffAsElem = true;
 				logger.debug("only dto1");
 				resultC.setResultType(ResultC.ResultType.only2);
 			// XML2 側のみに存在する。
 			} else if (entry.getValue().dto2 == null) {
 				diff = true;
+				diffAsElem = true;
 				logger.debug("only dto2");
 				resultC.setResultType(ResultC.ResultType.only1);
 			// 両者に存在する。
@@ -162,6 +164,7 @@ public class DiffChecker {
 				PropComparator pc = new PropComparator(entry.getValue().clazz, null, null, null);
 				if (pc.compareProperties(entry.getValue().dto1, entry.getValue().dto2)) {
 					diff = true;
+					diffAsElem = true;
 					logger.debug(entry.getKey() + ": " + "diff");
 					currentResultC.setResultType(ResultC.ResultType.diff);
 				}
@@ -169,6 +172,10 @@ public class DiffChecker {
 					logger.debug(entry.getKey() + ": " + "equal");
 					currentResultC.setResultType(ResultC.ResultType.equal);
 				}
+			}
+			// 差分チェック結果の出力可否を判断
+			if (DiffUtil.isAll() || diffAsElem) {
+				currentResultB.getResultCs().add(resultC);
 			}
 		}
 

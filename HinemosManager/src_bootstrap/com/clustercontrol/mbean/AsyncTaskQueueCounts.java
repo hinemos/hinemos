@@ -19,12 +19,29 @@ public class AsyncTaskQueueCounts {
 	private int notifyJobTaskFactory;
 	private int createJobSessionTaskFactory;
 	private int notifyInfraTaskFactory;
+	private int notifyRestTaskFactory;
+	private int notifyCloudTaskFactory;
 	private int agentRestartTaskFactory;
 	private int agentUpdateTaskFactory;
-
-	@ConstructorProperties({"notifyStatusTaskFactory", "notifyEventTaskFactory", "notifyMailTaskFactory", 
-		"notifyCommandTaskFactory", "notifyLogEscalationTaskFactory", "notifyJobTaskFactory", "createJobSessionTaskFactory", 
-		"notifyInfraTaskFactory", "agentRestartTaskFactory", "agentUpdateTaskFactory"})
+	private int agentBroadcastAwakeTaskFactory;
+	private int notifyMessageTaskFactory;
+	
+	@ConstructorProperties({
+			"notifyStatusTaskFactory",
+			"notifyEventTaskFactory",
+			"notifyMailTaskFactory",
+			"notifyCommandTaskFactory",
+			"notifyLogEscalationTaskFactory",
+			"notifyJobTaskFactory",
+			"createJobSessionTaskFactory",
+			"notifyInfraTaskFactory",
+			"notifyRestTaskFactory",
+			"notifyCloudTaskFactory",
+			"agentRestartTaskFactory",
+			"agentUpdateTaskFactory",
+			"agentBroadcastAwakeTaskFactory",
+			"notifyMessageTaskFactory"
+			})
 	public AsyncTaskQueueCounts(
 			int notifyStatusTaskFactory,
 			int notifyEventTaskFactory,
@@ -34,8 +51,12 @@ public class AsyncTaskQueueCounts {
 			int notifyJobTaskFactory,
 			int createJobSessionTaskFactory,
 			int notifyInfraTaskFactory,
+			int notifyRestTaskFactory,
+			int notifyCloudTaskFactory,
 			int agentRestartTaskFactory,
-			int agentUpdateTaskFactory
+			int agentUpdateTaskFactory,
+			int agentBroadcastAwakeTaskFactory,
+			int notifyMessageTaskFactory
 			) {
 		this.notifyStatusTaskFactory = notifyStatusTaskFactory;
 		this.notifyEventTaskFactory = notifyEventTaskFactory;
@@ -45,8 +66,12 @@ public class AsyncTaskQueueCounts {
 		this.notifyJobTaskFactory = notifyJobTaskFactory;
 		this.createJobSessionTaskFactory = createJobSessionTaskFactory;
 		this.notifyInfraTaskFactory = notifyInfraTaskFactory;
+		this.notifyRestTaskFactory = notifyRestTaskFactory;
+		this.notifyCloudTaskFactory = notifyCloudTaskFactory;
 		this.agentRestartTaskFactory = agentRestartTaskFactory;
 		this.agentUpdateTaskFactory = agentUpdateTaskFactory;
+		this.agentBroadcastAwakeTaskFactory = agentBroadcastAwakeTaskFactory;
+		this.notifyMessageTaskFactory = notifyMessageTaskFactory;
 	}
 
 	/**
@@ -106,6 +131,20 @@ public class AsyncTaskQueueCounts {
 	}
 
 	/**
+	 * @return the notifyRestTaskFactory
+	 */
+	public int getNotifyRestTaskFactory() {
+		return notifyRestTaskFactory;
+	}
+
+	/**
+	 * @return the notifyCloudTaskFactory
+	 */
+	public int getNotifyCloudTaskFactory() {
+		return notifyCloudTaskFactory;
+	}
+
+	/**
 	 * @return the agentRestartTaskFactory
 	 */
 	public int getAgentRestartTaskFactory() {
@@ -117,5 +156,19 @@ public class AsyncTaskQueueCounts {
 	 */
 	public int getAgentUpdateTaskFactory() {
 		return agentUpdateTaskFactory;
+	}
+	
+	/**
+	 * @return the agentBroadcastAwakeTaskFactory
+	 */
+	public int getAgentBroadcastAwakeTaskFactory() {
+		return agentBroadcastAwakeTaskFactory;
+	}
+
+	/**
+	 * @return the notifyMessageTaskFactory
+	 */
+	public int getNotifyMessageTaskFactory() {
+		return notifyMessageTaskFactory;
 	}
 }

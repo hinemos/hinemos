@@ -9,6 +9,8 @@
 package com.clustercontrol.binary.factory;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,14 +24,13 @@ import com.clustercontrol.binary.model.BinaryCheckInfo;
 import com.clustercontrol.binary.model.CollectBinaryData;
 import com.clustercontrol.binary.model.CollectBinaryDataTag;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.QueryExecutor;
 import com.clustercontrol.fault.BinaryRecordNotFound;
 import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.hub.model.CollectStringDataPK;
 import com.clustercontrol.monitor.run.util.QueryUtil;
-import com.clustercontrol.platform.HinemosPropertyDefault;
-import com.clustercontrol.platform.QueryExecutor;
 import com.clustercontrol.util.BinaryUtil;
 import com.clustercontrol.util.FileUtil;
 
@@ -139,6 +140,12 @@ public class DownloadBinary {
 			// 1件のみ取得想定なので先頭のみをセット.
 			this.outEntity = outEntities.get(0);
 
+			// レコードの収集時刻をセット
+			if (this.outEntity.getTime() != null) {
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+				this.recordTimeStr = sdf.format(new Date(this.outEntity.getTime().longValue()));
+			}
+
 			// タグの値取得.
 			for (CollectBinaryDataTag tag : outEntity.getTagList()) {
 				if (BinaryTagConstant.CommonTagName.FILE_NAME.equals(tag.getKey())) {
@@ -173,13 +180,14 @@ public class DownloadBinary {
 		try {
 			// 任意バイナリファイルの場合は同一ファイルのレコードのDataIDを全量取得.
 			String key = this.outEntity.getFileKey();
-			String fileIdQueryStr = String.format("SELECT DISTINCT d.id " + "FROM CollectBinaryData d "
-					+ "WHERE d.fileKey='%s' " + "ORDER BY d.recordKey ASC", key);
+			String fileIdQueryStr = "SELECT DISTINCT d.id " + "FROM CollectBinaryData d "
+					+ "WHERE d.fileKey=:fileKey " + "ORDER BY d.recordKey ASC";
 			m_log.debug(methodName + DELIMITER
 					+ String.format("query data to get data IDs of file. queryStr=%s.", fileIdQueryStr));
 
 			// SQLパラメータセット.
 			Map<String, Object> parameters = new HashMap<String, Object>();
+			parameters.put("fileKey", key);
 			// DBアクセスして取得.
 			this.pkList = QueryExecutor.getListByJpqlWithTimeout(fileIdQueryStr, CollectStringDataPK.class, parameters,
 					this.searchTimeout);
@@ -209,12 +217,12 @@ public class DownloadBinary {
 	 * 
 	 * @param fileName
 	 *            クライアント設定のファイル名(ユーザー設定).
-	 * @param clientName
+	 * @param tempDir
 	 *            クライアント識別名(マネージャ一時ファイル出力先フォルダ作成用)
 	 * 
 	 * @throws HinemosUnknown
 	 */
-	public void createTemporaryFile(String clientFileName, String clientName) throws HinemosUnknown {
+	public void createTemporaryFile(String clientFileName, String tempDir) throws HinemosUnknown {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		m_log.debug(methodName + DELIMITER + String.format("start."));
 
@@ -235,21 +243,9 @@ public class DownloadBinary {
 			this.fileName = clientFileName;
 		}
 
-		// 一時出力先のディレクトリ生成.
-		String binaryExportDir = HinemosPropertyDefault.binary_export_dir.getStringValue();
-		File tmpDirectory = new File(binaryExportDir, clientName);
+		// 一時出力先のディレクトリ情報の保持
+		File tmpDirectory = new File(tempDir);
 		this.dirName = tmpDirectory.getAbsolutePath();
-		if (!tmpDirectory.exists()) {
-			if (!tmpDirectory.mkdir()) {
-				String errorMessage = String.format("failed to make temporary directory on manager. directory=[%s]",
-						this.dirName);
-				m_log.warn(methodName + DELIMITER + errorMessage);
-				throw new HinemosUnknown(errorMessage);
-			} else {
-				m_log.debug(methodName + DELIMITER + String
-						.format("successed to make temporary directory on manager. directory=[%s]", this.dirName));
-			}
-		}
 
 		// 一時出力先のファイルオブジェクト生成.
 		this.tmpFile = new File(this.dirName, this.fileName);

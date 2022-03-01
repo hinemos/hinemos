@@ -9,11 +9,15 @@
 package com.clustercontrol.calendar.session;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.calendar.factory.ModifyCalendar;
 import com.clustercontrol.calendar.factory.SelectCalendar;
@@ -24,6 +28,7 @@ import com.clustercontrol.calendar.util.CalendarCacheManagementCallback;
 import com.clustercontrol.calendar.util.CalendarChangedNotificationCallback;
 import com.clustercontrol.calendar.util.CalendarPatternCacheManagementCallback;
 import com.clustercontrol.calendar.util.CalendarValidator;
+import com.clustercontrol.calendar.util.QueryUtil;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CalendarDuplicate;
@@ -32,6 +37,8 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 
 /**
  *
@@ -60,7 +67,9 @@ public class CalendarControllerBean {
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			m_log.info("getAllCalendarList() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(),e);
 		} catch (Exception e){
 			m_log.warn("getAllCalendarList() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -94,12 +103,15 @@ public class CalendarControllerBean {
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			m_log.info("getCalendarList() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(), e);
 		} catch (Exception e){
-			m_log.warn("getCalendarList() : "
+			m_log.warn("getCalendarList() :"
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
 				jtm.rollback();
+			
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
 			if (jtm != null)
@@ -164,15 +176,15 @@ public class CalendarControllerBean {
 			SelectCalendar select = new SelectCalendar();
 			info = select.getCalendar(id);
 			jtm.commit();
-		} catch (CalendarNotFound | InvalidRole e) {
+		} catch (CalendarNotFound e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new CalendarNotFound(MessageConstant.MESSAGE_CALENDAR_ID_NOT_EXIST.getMessage(id) , e);
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("getCalendar() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -245,15 +257,15 @@ public class CalendarControllerBean {
 			SelectCalendar select = new SelectCalendar();
 			list = select.getCalendarPatternList(ownerRoleId);
 			jtm.commit();
-		} catch (CalendarNotFound | InvalidRole e) {
+		} catch (CalendarNotFound e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new CalendarNotFound(MessageConstant.MESSAGE_CALENDAR_PATTERN_ID_NOT_EXIST.getMessage() ,e);
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(), e);
 		} catch (Exception e){
 			m_log.warn("getCalendarPatternList() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -285,15 +297,15 @@ public class CalendarControllerBean {
 			SelectCalendar select = new SelectCalendar();
 			info = select.getCalendarPattern(id);
 			jtm.commit();
-		} catch (CalendarNotFound | InvalidRole e) {
+		} catch (CalendarNotFound e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new CalendarNotFound(MessageConstant.MESSAGE_CALENDAR_PATTERN_ID_NOT_EXIST.getMessage(id), e);
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("getCalendarPattern() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -319,9 +331,11 @@ public class CalendarControllerBean {
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public void addCalendar(CalendarInfo info)
+	public CalendarInfo addCalendar(CalendarInfo info)
 			throws CalendarDuplicate, HinemosUnknown, InvalidSetting, InvalidRole {
 		JpaTransactionManager jtm = null;
+		//findbugs対応 ret は nullで初期化とする
+		CalendarInfo ret = null;
 		try{
 			jtm = new JpaTransactionManager();
 
@@ -340,19 +354,26 @@ public class CalendarControllerBean {
 			ModifyCalendar modify = new ModifyCalendar();
 			modify.addCalendar(info, loginUser);
 
+			jtm.addCallback(new CalendarCacheManagementCallback(info.getCalendarId()));
 			jtm.addCallback(new CalendarChangedNotificationCallback());
 			jtm.commit();
-		} catch (CalendarDuplicate | HinemosUnknown | InvalidRole | InvalidSetting e) {
+			
+			ret = new SelectCalendar().getCalendar(info.getCalendarId());
+		} catch (CalendarDuplicate e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new CalendarDuplicate(MessageConstant.MESSAGE_CALENDAR_ID_IS_ALREADY_REGISTERED.getMessage(info.getCalendarId()),e);
+		} catch (InvalidSetting e){
+			throw e; // validate内でメッセージをセット済みのため new しない
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			m_log.info("addCalendar() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(), e);
 		} catch(Exception e){
-			m_log.warn("addCalendar() : "
+			m_log.info("addCalendar() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
 				jtm.rollback();
@@ -362,6 +383,7 @@ public class CalendarControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -376,13 +398,17 @@ public class CalendarControllerBean {
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public void modifyCalendar(CalendarInfo info) throws CalendarNotFound, HinemosUnknown, InvalidSetting, InvalidRole {
+	public CalendarInfo modifyCalendar(CalendarInfo info) throws CalendarNotFound, HinemosUnknown, InvalidSetting, InvalidRole {
 		JpaTransactionManager jtm = null;
+		CalendarInfo ret = null; 
 
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
+			String ownerRoleId = QueryUtil.getCalInfoPK(info.getCalendarId()).getOwnerRoleId();
+			info.setOwnerRoleId(ownerRoleId);
+			
 			//入力チェック
 			CalendarValidator.validateCalendarInfo(info);
 
@@ -394,15 +420,24 @@ public class CalendarControllerBean {
 			jtm.addCallback(new CalendarChangedNotificationCallback());
 			
 			jtm.commit();
-		} catch (InvalidSetting | InvalidRole | HinemosUnknown e) {
+			
+			ret = new SelectCalendar().getCalendar(info.getCalendarId());
+		} catch (CalendarNotFound e){
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw new CalendarNotFound(MessageConstant.MESSAGE_CALENDAR_ID_NOT_EXIST.getMessage(info.getCalendarId()), e);
+		} catch (InvalidSetting  e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
+			m_log.warn("modifyCalendar() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("modifyCalendar() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -413,6 +448,7 @@ public class CalendarControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -426,14 +462,21 @@ public class CalendarControllerBean {
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
 	 */
-	public void deleteCalendar(List<String> idList) throws CalendarNotFound, HinemosUnknown, InvalidRole, InvalidSetting {
+	public List<CalendarInfo> deleteCalendar(List<String> idList) throws CalendarNotFound, HinemosUnknown, InvalidRole, InvalidSetting {
 		JpaTransactionManager jtm = null;
+		List<CalendarInfo> ret = new ArrayList<>();
+		String calId = null; // 例外メッセージ用
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			for(String id : idList) {
+				calId = id;
 				CalendarValidator.valideDeleteCalendar(id);
+				
+				SelectCalendar select = new SelectCalendar();
+				CalendarInfo info = select.getCalendar(id);
+				ret.add(info);
 
 				ModifyCalendar modify = new ModifyCalendar();
 				modify.deleteCalendar(id);
@@ -446,15 +489,20 @@ public class CalendarControllerBean {
 			
 			jtm.commit();
 
-		} catch (CalendarNotFound | HinemosUnknown | InvalidRole | InvalidSetting e) {
+		} catch (CalendarNotFound e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new CalendarNotFound(MessageConstant.MESSAGE_CALENDAR_ID_NOT_EXIST.getMessage(calId) , e);
+		}catch (InvalidSetting e){
 			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("deleteCalendar() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -465,13 +513,18 @@ public class CalendarControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
 	 * カレンダ[カレンダパターン]情報を登録します。<BR>
 	 *
-	 * 引数のDTOの内容をマネージャに登録します。
-	 *
+	 * 引数のDTOの内容をマネージャに登録します。<BR>
+	 * 
+	 * 本メソッドは呼び出し元側にてトランザクション制御されるケースがある。（ImportCalendarPatternControllerから）
+	 * 上記の場合に 本メソッド内でSelectCalendar.getCalendarPattern(String)を呼出しても
+	 * em.refresh(pattern) の影響でメソッドが正常に動作しないので、本メソッドでは結果エンテイティの返却は行わない。
+	 * 
 	 * @param info カレンダ[カレンダパターン]情報
 	 * @return
 	 * @throws CalendarDuplicate
@@ -500,17 +553,23 @@ public class CalendarControllerBean {
 			ModifyCalendar modify = new ModifyCalendar();
 			modify.addCalendarPattern(info, loginUser);
 
+			jtm.addCallback(new CalendarPatternCacheManagementCallback(info.getCalPatternId()));
 			jtm.addCallback(new CalendarChangedNotificationCallback());
 			jtm.commit();
-		} catch (CalendarDuplicate | HinemosUnknown | InvalidSetting | InvalidRole e) {
+		} catch (CalendarDuplicate e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new CalendarDuplicate(MessageConstant.MESSAGE_CALENDAR_PATTERN_ID_IS_ALREADY_REGISTERED.getMessage(info.getCalPatternId()), e);
+		} catch (InvalidSetting e){
 			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("addCalendarPattern() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -522,13 +581,18 @@ public class CalendarControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return;
 	}
 
 	/**
 	 * カレンダ[カレンダパターン]情報を変更します。<BR>
 	 *
-	 * 引数のプロパティの内容で更新します。
+	 * 引数のプロパティの内容で更新します。<BR>
 	 *
+	 * 本メソッドは呼び出し元側にてトランザクション制御されるケースがある。（ImportCalendarPatternControllerから）
+	 * 上記の場合に 本メソッド内でSelectCalendar.getCalendarPattern(String)を呼出しても
+	 * em.refresh(pattern) の影響でメソッドが正常に動作しないので、本メソッドでは結果エンテイティの返却は行わない。
+	 * 
 	 * @param info
 	 * @return
 	 * @throws CalendarNotFound
@@ -539,11 +603,15 @@ public class CalendarControllerBean {
 	public void modifyCalendarPattern(CalendarPatternInfo info)
 			throws CalendarNotFound, HinemosUnknown, InvalidSetting, InvalidRole {
 		JpaTransactionManager jtm = null;
-
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
+			CalendarPatternInfo entity = QueryUtil.getCalPatternInfoPK(info.getCalPatternId(), ObjectPrivilegeMode.NONE);
+			jtm.getEntityManager().detach(entity);
+			String ownerRoleId = entity.getOwnerRoleId();
+			info.setOwnerRoleId(ownerRoleId);
+			
 			//入力チェック
 			CalendarValidator.validateCalendarPatternInfo(info);
 
@@ -555,15 +623,20 @@ public class CalendarControllerBean {
 			jtm.addCallback(new CalendarChangedNotificationCallback());
 			
 			jtm.commit();
-		} catch (InvalidSetting | HinemosUnknown | InvalidRole e) {
+		} catch (CalendarNotFound e){
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw new CalendarNotFound(MessageConstant.MESSAGE_CALENDAR_PATTERN_ID_NOT_EXIST.getMessage(info.getCalPatternId()), e);
+		} catch (InvalidSetting e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("modifyCalendarPattern() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -574,6 +647,7 @@ public class CalendarControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return;
 	}
 
 	/**
@@ -587,8 +661,9 @@ public class CalendarControllerBean {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public void deleteCalendarPattern(List<String> idList) throws CalendarNotFound, InvalidRole, HinemosUnknown  {
+	public List<CalendarPatternInfo> deleteCalendarPattern(List<String> idList) throws CalendarNotFound, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
+		List<CalendarPatternInfo> ret = new ArrayList<CalendarPatternInfo>();
 
 		try {
 			jtm = new JpaTransactionManager();
@@ -596,6 +671,10 @@ public class CalendarControllerBean {
 
 			for(String id : idList) {
 				CalendarValidator.valideDeleteCalendarPattern(id);
+
+				SelectCalendar select = new SelectCalendar();
+				CalendarPatternInfo info = select.getCalendarPattern(id);
+				ret.add(info);
 
 				ModifyCalendar modify = new ModifyCalendar();
 				modify.deleteCalendarPattern(id);
@@ -607,12 +686,12 @@ public class CalendarControllerBean {
 			jtm.addCallback(new CalendarChangedNotificationCallback());
 			
 			jtm.commit();
-		} catch (CalendarNotFound | HinemosUnknown | InvalidRole e) {
+		} catch (CalendarNotFound e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new CalendarNotFound(MessageConstant.MESSAGE_CALENDAR_PATTERN_ID_NOT_EXIST.getMessage(idList.toArray(new String[idList.size()])), e);
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
@@ -626,6 +705,7 @@ public class CalendarControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -639,13 +719,13 @@ public class CalendarControllerBean {
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
 	 */
-	public ArrayList<Integer> getCalendarMonth(String id, Integer year, Integer month) throws CalendarNotFound, HinemosUnknown, InvalidRole {
+	public Map<Integer, Integer> getCalendarMonth(String id, Integer year, Integer month) throws CalendarNotFound, HinemosUnknown, InvalidRole {
 		JpaTransactionManager jtm = null;
-		ArrayList<Integer> ret = null;
+		Map<Integer, Integer> ret = null;
 
 		//カレンダ一覧を指定してないときに操作した場合、空のリストを返す
 		if (id == null || year <= 0 || month <= 0) {
-			return new ArrayList<Integer>();
+			return new HashMap<Integer, Integer>();
 		}
 		try {
 			jtm = new JpaTransactionManager();
@@ -655,15 +735,11 @@ public class CalendarControllerBean {
 			jtm.commit();
 		} catch (CalendarNotFound e) {
 			jtm.rollback();
-			throw e;
-		} catch (InvalidRole e) {
+			throw new CalendarNotFound(MessageConstant.MESSAGE_CALENDAR_ID_NOT_EXIST.getMessage(id), e);
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("getCalendarMonthInfo() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -690,23 +766,48 @@ public class CalendarControllerBean {
 	 */
 	public ArrayList<CalendarDetailInfo> getCalendarWeek(String id, Integer year, Integer month, Integer day) throws CalendarNotFound, HinemosUnknown, InvalidRole {
 		JpaTransactionManager jtm = null;
-		ArrayList<CalendarDetailInfo> ret = null;
+		ArrayList<CalendarDetailInfo> ret = new ArrayList<>();
 
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SelectCalendar select = new SelectCalendar();
-			ret = select.getCalendarWeek(id, year, month, day);
+			for (int i = 0; i < 7; i++) {
+				List<CalendarDetailInfo> list =  select.getCalendarWeek(id, year, month, day);
+				if (list != null) {
+					for (CalendarDetailInfo info : list) {
+						info.setYear(year);
+						info.setMonth(month);
+						info.setDate(day);
+					}
+					ret.addAll(list);
+				}
+
+				Calendar now = Calendar.getInstance((HinemosTime.getTimeZone()));
+				// 月の変わり目判定
+				if (day + 1 > now.getActualMaximum(Calendar.DAY_OF_MONTH)) {
+					// 年の変わり目判定
+					if (month == 12) {
+						year++;
+						month = 1;
+					} else {
+						month++;
+					}
+					day = 1;
+				} else {
+					day++;
+				}
+			}
 			jtm.commit();
-		} catch (CalendarNotFound | InvalidRole e) {
+		} catch (CalendarNotFound e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new CalendarNotFound(MessageConstant.MESSAGE_CALENDAR_ID_NOT_EXIST.getMessage(id), e);
+		} catch (ObjectPrivilege_InvalidRole | InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
+			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage(),e);
 		} catch (Exception e) {
 			m_log.warn("getCalendarDisp() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);

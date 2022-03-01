@@ -35,6 +35,7 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 
+import com.clustercontrol.util.TableViewerSorter;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
@@ -42,7 +43,6 @@ import com.clustercontrol.xcloud.model.base.IElement;
 import com.clustercontrol.xcloud.model.cloud.IStorage;
 import com.clustercontrol.xcloud.model.cloud.IStorageBackupEntry;
 import com.clustercontrol.xcloud.util.ControlUtil;
-import com.clustercontrol.xcloud.util.TableViewerSorter;
 
 /**
  */

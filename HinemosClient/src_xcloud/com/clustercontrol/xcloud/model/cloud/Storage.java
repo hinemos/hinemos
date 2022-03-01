@@ -7,10 +7,19 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.StorageInfoResponse;
+
+import com.clustercontrol.util.TimezoneUtil;
+
 public class Storage extends Resource implements IStorage {
+	private static Log m_log = LogFactory.getLog(Storage.class);
+
 	protected Integer deviceIndex;
 	protected String deviceName;
 	protected String deviceType;
@@ -107,34 +116,44 @@ public class Storage extends Resource implements IStorage {
 	@Override
 	public ComputeResources getCloudComputeManager() {return (ComputeResources)getOwner();}
 
-	public boolean equalValues(com.clustercontrol.ws.xcloud.Storage source) {
+	public boolean equalValues(StorageInfoResponse source) {
 		return getId().equals(source.getId());
 	}
 
-	public static Storage convert(com.clustercontrol.ws.xcloud.Storage source) {
+	public static Storage convert(StorageInfoResponse source) {
 		Storage storage = new Storage();
 		storage.update(source);
 		return storage;
 	}
 
-	protected void update(com.clustercontrol.ws.xcloud.Storage source) {
+	protected void update(StorageInfoResponse source) {
 		setId(source.getId());
 		setName(source.getName());
-		setStatus(source.getStorageStatus().value());
-		setFacilityId(source.getTargetFacilityId());
-		setDeviceIndex(source.getDeviceIndex());
-		setDeviceName(source.getDeviceName());
-		setDeviceType(source.getDeviceType());
+		setStatus(source.getEntity().getStorageStatus().getValue());
+		setFacilityId(source.getEntity().getTargetFacilityId());
+		setDeviceIndex(source.getEntity().getDeviceIndex());
+		setDeviceName(source.getEntity().getDeviceName());
+		setDeviceType(source.getEntity().getDeviceType());
 		setLocationId(source.getLocationId());
-		setSize(source.getSize());
-		setNativeStatus(source.getStorageStatusAsPlatform());
+		setSize(source.getEntity().getSize());
+		setNativeStatus(source.getEntity().getStorageStatusAsPlatform());
 		setCloudScopeId(source.getCloudScopeId());
-		setRegDate(source.getRegDate());
-		setRegUser(source.getRegUser());
-		setUpdateDate(source.getUpdateDate());
-		setUpdateUser(source.getUpdateUser());
-		setTargetInstanceId(source.getTargetInstanceId());
-		setStorageType(source.getStorageType());
+		try {
+			setRegDate(TimezoneUtil.getSimpleDateFormat().parse(source.getEntity().getRegDate()).getTime());
+		} catch (ParseException e) {
+			// ここには入らない想定
+			m_log.warn("invalid regTime.", e);
+		}
+		setRegUser(source.getEntity().getRegUser());
+		try {
+			setUpdateDate(TimezoneUtil.getSimpleDateFormat().parse(source.getEntity().getUpdateDate()).getTime());
+		} catch (ParseException e) {
+			// ここには入らない想定
+			m_log.warn("invalid updateTime.", e);
+		}
+		setUpdateUser(source.getEntity().getUpdateUser());
+		setTargetInstanceId(source.getEntity().getTargetInstanceId());
+		setStorageType(source.getEntity().getStorageType());
 		updateExtendedProperties(source.getExtendedProperties());
 	}
 

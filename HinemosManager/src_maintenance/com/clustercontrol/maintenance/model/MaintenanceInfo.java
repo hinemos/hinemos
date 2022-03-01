@@ -9,21 +9,20 @@
 package com.clustercontrol.maintenance.model;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -66,7 +65,7 @@ public class MaintenanceInfo extends ObjectPrivilegeTargetInfo {
 	private Schedule schedule;
 	
 	/**通知*/
-	private Collection<NotifyRelationInfo> notifyId;
+	private List<NotifyRelationInfo> notifyId;
 
 	private String typeId;
 
@@ -207,11 +206,11 @@ public class MaintenanceInfo extends ObjectPrivilegeTargetInfo {
 	}
 	
 	@Transient
-	public Collection<NotifyRelationInfo> getNotifyId() {
+	public List<NotifyRelationInfo> getNotifyId() {
 		return notifyId;
 	}
 
-	public void setNotifyId(Collection<NotifyRelationInfo> notifyId) {
+	public void setNotifyId(List<NotifyRelationInfo> notifyId) {
 		this.notifyId = notifyId;
 	}
 	

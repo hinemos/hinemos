@@ -1,0 +1,5 @@
+<aspectj>
+  <aspects>
+    <aspect name="com.clustercontrol.rest.util.RestAspectDefine"/>
+  </aspects>
+</aspectj>

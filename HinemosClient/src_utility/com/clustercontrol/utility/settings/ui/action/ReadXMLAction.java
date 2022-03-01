@@ -27,8 +27,10 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import com.clustercontrol.sdml.bean.SdmlXmlFileName;
+import com.clustercontrol.sdml.util.SdmlUtilityInterface;
 import com.clustercontrol.ui.util.OptionUtil;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.settings.ui.constant.XMLConstant;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
@@ -74,6 +76,11 @@ public class ReadXMLAction {
 		PLATFORM_MAIL_TEMPLATE(XMLConstant.DEFAULT_XML_PLATFORM_MAIL_TEMPLATE, HinemosModuleConstant.STRING_PLATFORM_MAIL_TEMPLATE, true),
 		PLATFORM_LOG_FORMAT(XMLConstant.DEFAULT_XML_PLATFORM_LOG_FORMAT, HinemosModuleConstant.STRING_PLATFORM_LOG_FORMAT, true),
 		PLATFORM_HINEMOS_PROPERTY(XMLConstant.DEFAULT_XML_PLATFORM_HINEMOS_PROPERTY, HinemosModuleConstant.STRING_PLATFORM_HINEMOS_PROPERTY, true),
+		PLATFORM_REST_ACCESS(XMLConstant.DEFAULT_XML_PLATFORM_REST_ACCESS, HinemosModuleConstant.STRING_PLATFORM_REST_ACCESS, true),
+		FILTER_SETTING_MONITOR_HISTORY_EVENT(XMLConstant.DEFAULT_XML_FILTER_SETTING_MONITOR_HISTORY_EVENT, HinemosModuleConstant.STRING_FILTER_SETTING_MONITOR_HISTORY_EVENT, true),
+		FILTER_SETTING_MONITOR_HISTORY_STATUS(XMLConstant.DEFAULT_XML_FILTER_SETTING_MONITOR_HISTORY_STATUS, HinemosModuleConstant.STRING_FILTER_SETTING_MONITOR_HISTORY_STATUS, true),
+		FILTER_SETTING_JOB_HISTORY(XMLConstant.DEFAULT_XML_FILTER_SETTING_JOB_HISTORY, HinemosModuleConstant.STRING_FILTER_SETTING_JOB_HISTORY, true),
+		
 		MONITOR_AGENT(XMLConstant.DEFAULT_XML_MONITOR_AGENT, HinemosModuleConstant.STRING_MONITOR_AGENT, true),
 		MONITOR_HTTP(XMLConstant.DEFAULT_XML_MONITOR_HTTP, HinemosModuleConstant.STRING_MONITOR_HTTP, true),
 		MONITOR_HTTP_SCENARIO(XMLConstant.DEFAULT_XML_MONITOR_HTTP_SCENARIO, HinemosModuleConstant.STRING_MONITOR_HTTP_SCENARIO, true),
@@ -100,7 +107,9 @@ public class ReadXMLAction {
 		JOB_SCHEDULE(XMLConstant.DEFAULT_XML_JOB_SCHEDULE, HinemosModuleConstant.STRING_JOB_SCHEDULE, true),
 		JOB_FILECHECK(XMLConstant.DEFAULT_XML_JOB_FILECHECK, HinemosModuleConstant.STRING_JOB_FILECHECK, true),
 		JOB_MANUAL(XMLConstant.DEFAULT_XML_JOB_MANUAL, HinemosModuleConstant.STRING_JOB_MANUAL, true),
+		JOB_JOBLINKRCV(XMLConstant.DEFAULT_XML_JOB_JOBLINKRCV, HinemosModuleConstant.STRING_JOB_JOBLINKRCV, true),
 		JOB_QUEUE(XMLConstant.DEFAULT_XML_JOB_QUEUE, HinemosModuleConstant.STRING_JOB_QUEUE, true),
+		JOBLINK_SEND_SETTING(XMLConstant.DEFAULT_XML_JOB_JOBLINKSEND, HinemosModuleConstant.STRING_JOBLINK_SEND_SETTING, true),
 		SYSYTEM_MAINTENANCE(XMLConstant.DEFAULT_XML_SYSYTEM_MAINTENANCE, HinemosModuleConstant.STRING_SYSYTEM_MAINTENANCE, true),
 		// 以下マスター関連情報
 		MASTER_PLATFORM(XMLConstant.DEFAULT_XML_MASTER_PLATFORM, HinemosModuleConstant.STRING_MASTER_PLATFORM, true),
@@ -117,10 +126,19 @@ public class ReadXMLAction {
 		REPORT_SCHEDULE(XMLConstant.DEFAULT_XML_REPORT_SCHEDULE, HinemosModuleConstant.STRING_REPORT_SCHEDULE, true, OptionUtil.TYPE_ENTERPRISE),
 		REPORT_TEMPLATE(XMLConstant.DEFAULT_XML_REPORT_TEMPLATE, HinemosModuleConstant.STRING_REPORT_TEMPLATE, true, OptionUtil.TYPE_ENTERPRISE),
 		JOB_MAP_IMAGE(XMLConstant.DEFAULT_XML_JOBMAP_IMAGE, HinemosModuleConstant.STRING_JOB_MAP_IMAGE, true, OptionUtil.TYPE_ENTERPRISE),
+		
+		RPA_SCENARIO_TAG(XMLConstant.DEFAULT_XML_RPA_SCENARIO_TAG, HinemosModuleConstant.STRING_RPA_SCENARIO_TAG, true, OptionUtil.TYPE_ENTERPRISE),
+		RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING(XMLConstant.DEFAULT_XML_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+				HinemosModuleConstant.STRING_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING, true, OptionUtil.TYPE_ENTERPRISE),
+		RPA_MANAGEMENT_TOOL_ACCOUNT(XMLConstant.DEFAULT_XML_RPA_MANAGEMENT_TOOL_ACCOUNT, HinemosModuleConstant.STRING_RPA_MANAGEMENT_TOOL_ACCOUNT, true, OptionUtil.TYPE_ENTERPRISE),
+		RPA_SCENARIO_COEFFICIENT_PATTERN(XMLConstant.DEFAULT_XML_RPA_SCENARIO_COEFFICIENT_PATTERN, HinemosModuleConstant.STRING_RPA_SCENARIO_COEFFICIENT_PATTERN, true, OptionUtil.TYPE_ENTERPRISE),
+		MONITOR_RPA_LOGFILE(XMLConstant.DEFAULT_XML_MONITOR_RPA_LOGFILE, HinemosModuleConstant.STRING_MONITOR_RPA_LOGFILE, true, OptionUtil.TYPE_ENTERPRISE),
+		MONITOR_RPA_MANAGEMENT_TOOL_SERVICE(XMLConstant.DEFAULT_XML_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE, HinemosModuleConstant.STRING_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE, true, OptionUtil.TYPE_ENTERPRISE),
 
 		// Cloud
 		CLOUD_USER(XMLConstant.DEFAULT_XML_CLOUD_USER, HinemosModuleConstant.STRING_CLOUD_USER, true, OptionUtil.TYPE_XCLOUD),
 		CLOUD_MONITOR_SERVICE(XMLConstant.DEFAULT_XML_CLOUD_MON_SERVICE, HinemosModuleConstant.STRING_CLOUD_MONITOR_SERVICE, true, OptionUtil.TYPE_XCLOUD),
+		CLOUD_MONITOR_LOG(XMLConstant.DEFAULT_XML_CLOUD_MON_LOG, HinemosModuleConstant.STRING_CLOUD_MONITOR_LOG, true, OptionUtil.TYPE_XCLOUD),
 		CLOUD_MONITOR_BILLING(XMLConstant.DEFAULT_XML_CLOUD_MON_BILLING, HinemosModuleConstant.STRING_CLOUD_MONITOR_BILLING, true, OptionUtil.TYPE_XCLOUD);
 		
 		private String xmlDefaultName;
@@ -177,7 +195,7 @@ public class ReadXMLAction {
 		}
 
 		// 所持のOptionを取得
-		Set<String> options = EndpointManager.getAllOptions();
+		Set<String> options = RestConnectManager.getAllOptions();
 		
 		List<List<String>> table_value = new ArrayList<>();
 		for (XMLFileName fileProps : XMLFileName.values()) {
@@ -185,6 +203,17 @@ public class ReadXMLAction {
 			if (fileProps.checkOption(options)) {
 				List<String> xmlProps = readHeaderSub(fileProps.getFilePath() , fileProps.getFuncName(), fileProps.getFileName());
 				if(xmlProps != null){
+					table_value.add(xmlProps);
+				}
+			}
+		}
+		for (SdmlXmlFileName fileProps : SdmlUtilityInterface.getXmlFileList()) {
+			log.debug("File Read (SDML): " + fileProps.getFilePath() + " " + fileProps.getFuncName() + ", option"
+					+ fileProps.checkOption(options));
+			if (fileProps.checkOption(options)) {
+				List<String> xmlProps = readHeaderSub(fileProps.getFilePath(), fileProps.getFuncName(),
+						fileProps.getFileName());
+				if (xmlProps != null) {
 					table_value.add(xmlProps);
 				}
 			}
@@ -328,6 +357,11 @@ public class ReadXMLAction {
 		for (XMLFileName xml : XMLFileName.values()) {
 			if (xml.getFileName().equals(fileName)) {
 				return xml.isRequired;
+			}
+		}
+		for (SdmlXmlFileName xml : SdmlUtilityInterface.getXmlFileList()) {
+			if (xml.getFileName().equals(fileName)) {
+				return xml.isRequired();
 			}
 		}
 

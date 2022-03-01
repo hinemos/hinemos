@@ -11,6 +11,7 @@ package com.clustercontrol.jobmanagement.bean;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlType;
@@ -29,7 +30,7 @@ import com.clustercontrol.bean.StatusConstant;
  * @since 1.0.0
  */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobWaitRuleInfo implements Serializable {
+public class JobWaitRuleInfo implements Serializable, Cloneable {
 	/** シリアライズ可能クラスに定義するUID */
 	private static final long serialVersionUID = -6362706494732152461L;
 
@@ -52,7 +53,7 @@ public class JobWaitRuleInfo implements Serializable {
 	private Integer condition = ConditionTypeConstant.TYPE_AND;
 
 	/** ジョブ判定対象情報 */
-	private ArrayList<JobObjectInfo> object;
+	private ArrayList<JobObjectGroupInfo> objectGroup;
 
 	/** 条件を満たさなければ終了する */
 	private Boolean endCondition = false;
@@ -96,95 +97,98 @@ public class JobWaitRuleInfo implements Serializable {
 	/** 繰り返し回数 */
 	private Integer jobRetry = 10;
 
+	/** 試行間隔（分） */
+	private Integer jobRetryInterval = 0;
+
 	/** 開始遅延 */
-	private Boolean start_delay = false;
+	private Boolean startDelay = false;
 
 	/** 開始遅延セッション開始後の時間 */
-	private Boolean start_delay_session = false;
+	private Boolean startDelaySession = false;
 
 	/** 開始遅延セッション開始後の時間の値 */
-	private Integer start_delay_session_value = 1;
+	private Integer startDelaySessionValue = 1;
 
 	/** 開始遅延時刻 */
-	private Boolean start_delay_time = false;
+	private Boolean startDelayTime = false;
 
 	/** 開始遅延時刻の値 */
-	private Long start_delay_time_value = 0l;
+	private Long startDelayTimeValue = 0l;
 
 	/** 開始遅延判定対象の条件関係 */
-	private Integer start_delay_condition_type = ConditionTypeConstant.TYPE_AND;
+	private Integer startDelayConditionType = ConditionTypeConstant.TYPE_AND;
 
 	/** 開始遅延通知 */
-	private Boolean start_delay_notify = false;
+	private Boolean startDelayNotify = false;
 
 	/** 開始遅延通知重要度 */
-	private Integer start_delay_notify_priority = 0;
+	private Integer startDelayNotifyPriority = 0;
 
 	/** 開始遅延操作 */
-	private Boolean start_delay_operation = false;
+	private Boolean startDelayOperation = false;
 
 	/** 開始遅延操作種別 */
-	private Integer start_delay_operation_type = OperationConstant.TYPE_STOP_SKIP;
+	private Integer startDelayOperationType = OperationConstant.TYPE_STOP_SKIP;
 
 	/** 開始遅延操作終了状態 */
-	private Integer start_delay_operation_end_status = EndStatusConstant.INITIAL_VALUE_ABNORMAL;
+	private Integer startDelayOperationEndStatus = EndStatusConstant.INITIAL_VALUE_ABNORMAL;
 
 	/** 開始遅延操作終了値 */
-	private Integer start_delay_operation_end_value = EndStatusConstant.INITIAL_VALUE_NORMAL;
+	private Integer startDelayOperationEndValue = EndStatusConstant.INITIAL_VALUE_NORMAL;
 
 	/** 終了遅延 */
-	private Boolean end_delay = false;
+	private Boolean endDelay = false;
 
 	/** 終了遅延セッション開始後の時間 */
-	private Boolean end_delay_session = false;
+	private Boolean endDelaySession = false;
 
 	/** 終了遅延セッション開始後の時間の値 */
-	private Integer end_delay_session_value = 1;
+	private Integer endDelaySessionValue = 1;
 
 	/** 終了遅延ジョブ開始後の時間 */
-	private Boolean end_delay_job = false;
+	private Boolean endDelayJob = false;
 
 	/** 終了遅延ジョブ開始後の時間の値 */
-	private Integer end_delay_job_value = 1;
+	private Integer endDelayJobValue = 1;
 
 	/** 終了遅延時刻 */
-	private Boolean end_delay_time = false;
+	private Boolean endDelayTime = false;
 
 	/** 終了遅延時刻の値 */
-	private Long end_delay_time_value;
+	private Long endDelayTimeValue;
 
 	/** 終了遅延判定対象の条件関係 */
-	private Integer end_delay_condition_type = ConditionTypeConstant.TYPE_AND;
+	private Integer endDelayConditionType = ConditionTypeConstant.TYPE_AND;
 
 	/** 終了遅延通知 */
-	private Boolean end_delay_notify = false;
+	private Boolean endDelayNotify = false;
 
 	/** 終了遅延通知重要度 */
-	private Integer end_delay_notify_priority = 0;
+	private Integer endDelayNotifyPriority = 0;
 
 	/** 終了遅延操作 */
-	private Boolean end_delay_operation = false;
+	private Boolean endDelayOperation = false;
 
 	/** 終了遅延操作種別 */
-	private Integer end_delay_operation_type = OperationConstant.TYPE_STOP_AT_ONCE;
+	private Integer endDelayOperationType = OperationConstant.TYPE_STOP_AT_ONCE;
 
 	/** 終了遅延操作終了状態 */
-	private Integer end_delay_operation_end_status = EndStatusConstant.INITIAL_VALUE_ABNORMAL;
+	private Integer endDelayOperationEndStatus = EndStatusConstant.INITIAL_VALUE_ABNORMAL;
 
 	/** 終了遅延操作終了値 */
-	private Integer end_delay_operation_end_value = EndStatusConstant.INITIAL_VALUE_NORMAL;
+	private Integer endDelayOperationEndValue = EndStatusConstant.INITIAL_VALUE_NORMAL;
 
 	/** 終了遅延実行履歴からの変化量 */
-	private Boolean end_delay_change_mount = false;
+	private Boolean endDelayChangeMount = false;
 
 	/** 終了遅延実行履歴からの変化量の値 */
-	private Double end_delay_change_mount_value = 1D;
+	private Double endDelayChangeMountValue = 1D;
 
 	/** 多重度 */
-	private Boolean multiplicity_notify = true;
-	private Integer multiplicity_notify_priority = PriorityConstant.TYPE_WARNING;
-	private Integer multiplicity_operation = StatusConstant.TYPE_WAIT;
-	private Integer multiplicity_end_value = -1;
+	private Boolean multiplicityNotify = true;
+	private Integer multiplicityNotifyPriority = PriorityConstant.TYPE_WARNING;
+	private Integer multiplicityOperation = StatusConstant.TYPE_WAIT;
+	private Integer multiplicityEndValue = -1;
 	
 	/** 同時実行制御キュー */
 	private Boolean queueFlg = false;
@@ -295,19 +299,19 @@ public class JobWaitRuleInfo implements Serializable {
 	/**
 	 * ジョブ判定対象情報を返す。<BR>
 	 * @return ジョブ判定対象情報のリスト
-	 * @see com.clustercontrol.jobmanagement.bean.JobObjectInfo
+	 * @see com.clustercontrol.jobmanagement.bean.JobObjectGroupInfo
 	 */
-	public ArrayList<JobObjectInfo> getObject() {
-		return object;
+	public ArrayList<JobObjectGroupInfo> getObjectGroup() {
+		return objectGroup;
 	}
 
 	/**
 	 * ジョブ判定対象情報を設定する。<BR>
 	 * @param object ジョブ判定対象情報のリスト
-	 * @see com.clustercontrol.jobmanagement.bean.JobObjectInfo
+	 * @see com.clustercontrol.jobmanagement.bean.JobObjectGroupInfo
 	 */
-	public void setObject(ArrayList<JobObjectInfo> object) {
-		this.object = object;
+	public void setObjectGroup(ArrayList<JobObjectGroupInfo> objectGroup) {
+		this.objectGroup = objectGroup;
 	}
 
 	/**
@@ -527,11 +531,27 @@ public class JobWaitRuleInfo implements Serializable {
 	}
 
 	/**
+	 * 繰り返し試行間隔（分）を返す。<BR>
+	 * @return 繰り返し試行間隔（分）
+	 */
+	public Integer getJobRetryInterval() {
+		return jobRetryInterval;
+	}
+
+	/**
+	 * 繰り返し試行間隔（分）を設定する。<BR>
+	 * @param jobRetry 繰り返し試行間隔（分）
+	 */
+	public void setJobRetryInterval(Integer jobRetryInterval) {
+		this.jobRetryInterval = jobRetryInterval;
+	}
+
+	/**
 	 * 終了遅延を監視するかどうかを返す。<BR>
 	 * @return 終了遅延を監視するかどうか
 	 */
 	public Boolean isEnd_delay() {
-		return end_delay;
+		return endDelay;
 	}
 
 	/**
@@ -539,7 +559,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay 終了遅延を監視するかどうか
 	 */
 	public void setEnd_delay(Boolean end_delay) {
-		this.end_delay = end_delay;
+		this.endDelay = end_delay;
 	}
 
 	/**
@@ -548,7 +568,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.ConditionTypeConstant
 	 */
 	public Integer getEnd_delay_condition_type() {
-		return end_delay_condition_type;
+		return endDelayConditionType;
 	}
 
 	/**
@@ -557,7 +577,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.ConditionTypeConstant
 	 */
 	public void setEnd_delay_condition_type(Integer end_delay_condition_type) {
-		this.end_delay_condition_type = end_delay_condition_type;
+		this.endDelayConditionType = end_delay_condition_type;
 	}
 
 	/**
@@ -566,7 +586,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return ジョブ開始後の時間で終了遅延監視を行うかどうか
 	 */
 	public Boolean isEnd_delay_job() {
-		return end_delay_job;
+		return endDelayJob;
 	}
 
 	/**
@@ -575,7 +595,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_job ジョブ開始後の時間で終了遅延監視を行うかどうか
 	 */
 	public void setEnd_delay_job(Boolean end_delay_job) {
-		this.end_delay_job = end_delay_job;
+		this.endDelayJob = end_delay_job;
 	}
 
 	/**
@@ -585,7 +605,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 終了遅延ジョブ開始後の時間の値
 	 */
 	public Integer getEnd_delay_job_value() {
-		return end_delay_job_value;
+		return endDelayJobValue;
 	}
 
 	/**
@@ -595,7 +615,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_job_value 終了遅延ジョブ開始後の時間の値
 	 */
 	public void setEnd_delay_job_value(Integer end_delay_job_value) {
-		this.end_delay_job_value = end_delay_job_value;
+		this.endDelayJobValue = end_delay_job_value;
 	}
 
 	/**
@@ -603,7 +623,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 終了遅延を通知するかどうか
 	 */
 	public Boolean isEnd_delay_notify() {
-		return end_delay_notify;
+		return endDelayNotify;
 	}
 
 	/**
@@ -611,7 +631,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_notify 終了遅延を通知するかどうか
 	 */
 	public void setEnd_delay_notify(Boolean end_delay_notify) {
-		this.end_delay_notify = end_delay_notify;
+		this.endDelayNotify = end_delay_notify;
 	}
 
 	/**
@@ -620,7 +640,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.bean.PriorityConstant
 	 */
 	public Integer getEnd_delay_notify_priority() {
-		return end_delay_notify_priority;
+		return endDelayNotifyPriority;
 	}
 
 	/**
@@ -629,7 +649,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.bean.PriorityConstant
 	 */
 	public void setEnd_delay_notify_priority(Integer end_delay_notify_priority) {
-		this.end_delay_notify_priority = end_delay_notify_priority;
+		this.endDelayNotifyPriority = end_delay_notify_priority;
 	}
 
 	/**
@@ -637,7 +657,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 終了遅延時に操作するかどうか
 	 */
 	public Boolean isEnd_delay_operation() {
-		return end_delay_operation;
+		return endDelayOperation;
 	}
 
 	/**
@@ -645,7 +665,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_operation 終了遅延時に操作するかどうか
 	 */
 	public void setEnd_delay_operation(Boolean end_delay_operation) {
-		this.end_delay_operation = end_delay_operation;
+		this.endDelayOperation = end_delay_operation;
 	}
 
 	/**
@@ -653,15 +673,15 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 終了遅延時に操作する場合の終了状態
 	 */
 	public Integer getEnd_delay_operation_end_status() {
-		return end_delay_operation_end_status;
+		return endDelayOperationEndStatus;
 	}
 
 	/**
 	 * 終了遅延時に操作する場合の終了状態を設定する。<BR>
-	 * @param end_delay_operation_end_value 終了遅延時に操作する場合の終了状態
+	 * @param endDelayOperationEndValue 終了遅延時に操作する場合の終了状態
 	 */
 	public void setEnd_delay_operation_end_status(Integer end_delay_operation_end_status) {
-		this.end_delay_operation_end_status = end_delay_operation_end_status;
+		this.endDelayOperationEndStatus = end_delay_operation_end_status;
 	}
 
 	/**
@@ -669,7 +689,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 終了遅延時に操作する場合の終了値
 	 */
 	public Integer getEnd_delay_operation_end_value() {
-		return end_delay_operation_end_value;
+		return endDelayOperationEndValue;
 	}
 
 	/**
@@ -677,7 +697,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_operation_end_value 終了遅延時に操作する場合の終了値
 	 */
 	public void setEnd_delay_operation_end_value(Integer end_delay_operation_end_value) {
-		this.end_delay_operation_end_value = end_delay_operation_end_value;
+		this.endDelayOperationEndValue = end_delay_operation_end_value;
 	}
 
 	/**
@@ -686,7 +706,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.OperationConstant
 	 */
 	public Integer getEnd_delay_operation_type() {
-		return end_delay_operation_type;
+		return endDelayOperationType;
 	}
 
 	/**
@@ -695,7 +715,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.OperationConstant
 	 */
 	public void setEnd_delay_operation_type(Integer end_delay_operation_type) {
-		this.end_delay_operation_type = end_delay_operation_type;
+		this.endDelayOperationType = end_delay_operation_type;
 	}
 
 	/**
@@ -704,7 +724,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return セッション開始後の時間で終了遅延監視を行うかどうか
 	 */
 	public Boolean isEnd_delay_session() {
-		return end_delay_session;
+		return endDelaySession;
 	}
 
 	/**
@@ -713,7 +733,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_session セッション開始後の時間で終了遅延監視を行うかどうか
 	 */
 	public void setEnd_delay_session(Boolean end_delay_session) {
-		this.end_delay_session = end_delay_session;
+		this.endDelaySession = end_delay_session;
 	}
 
 	/**
@@ -723,7 +743,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 終了遅延セッション開始後の時間の値
 	 */
 	public Integer getEnd_delay_session_value() {
-		return end_delay_session_value;
+		return endDelaySessionValue;
 	}
 
 	/**
@@ -733,7 +753,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_session_value 終了遅延セッション開始後の時間の値
 	 */
 	public void setEnd_delay_session_value(Integer end_delay_session_value) {
-		this.end_delay_session_value = end_delay_session_value;
+		this.endDelaySessionValue = end_delay_session_value;
 	}
 
 	/**
@@ -742,7 +762,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 終了遅延時刻
 	 */
 	public Boolean isEnd_delay_time() {
-		return end_delay_time;
+		return endDelayTime;
 	}
 
 	/**
@@ -751,7 +771,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_time 終了遅延時刻
 	 */
 	public void setEnd_delay_time(Boolean end_delay_time) {
-		this.end_delay_time = end_delay_time;
+		this.endDelayTime = end_delay_time;
 	}
 
 	/**
@@ -760,7 +780,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 終了遅延時刻の値
 	 */
 	public Long getEnd_delay_time_value() {
-		return end_delay_time_value;
+		return endDelayTimeValue;
 	}
 
 	/**
@@ -769,7 +789,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_time_value 終了遅延時刻の値
 	 */
 	public void setEnd_delay_time_value(Long end_delay_time_value) {
-		this.end_delay_time_value = end_delay_time_value;
+		this.endDelayTimeValue = end_delay_time_value;
 	}
 
 	/**
@@ -778,7 +798,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 実行履歴の変化量で判定するか
 	 */
 	public Boolean isEnd_delay_change_mount() {
-		return end_delay_change_mount;
+		return endDelayChangeMount;
 	}
 
 	/**
@@ -787,7 +807,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_change_mount 実行履歴の変化量で判定するか
 	 */
 	public void setEnd_delay_change_mount(Boolean end_delay_change_mount) {
-		this.end_delay_change_mount = end_delay_change_mount;
+		this.endDelayChangeMount = end_delay_change_mount;
 	}
 
 	/**
@@ -796,7 +816,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 実行履歴の変化量の値
 	 */
 	public Double getEnd_delay_change_mount_value() {
-		return end_delay_change_mount_value;
+		return endDelayChangeMountValue;
 	}
 
 	/**
@@ -805,7 +825,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param end_delay_change_mount_value 実行履歴の変化量の値
 	 */
 	public void setEnd_delay_change_mount_value(Double end_delay_change_mount_value) {
-		this.end_delay_change_mount_value = end_delay_change_mount_value;
+		this.endDelayChangeMountValue = end_delay_change_mount_value;
 	}
 
 	/**
@@ -813,7 +833,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 開始遅延を監視するかどうか
 	 */
 	public Boolean isStart_delay() {
-		return start_delay;
+		return startDelay;
 	}
 
 	/**
@@ -821,7 +841,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param start_delay 開始遅延を監視するかどうか
 	 */
 	public void setStart_delay(Boolean start_delay) {
-		this.start_delay = start_delay;
+		this.startDelay = start_delay;
 	}
 
 	/**
@@ -830,7 +850,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.ConditionTypeConstant
 	 */
 	public Integer getStart_delay_condition_type() {
-		return start_delay_condition_type;
+		return startDelayConditionType;
 	}
 
 	/**
@@ -839,7 +859,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.ConditionTypeConstant
 	 */
 	public void setStart_delay_condition_type(Integer start_delay_condition_type) {
-		this.start_delay_condition_type = start_delay_condition_type;
+		this.startDelayConditionType = start_delay_condition_type;
 	}
 
 	/**
@@ -847,7 +867,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 開始遅延を通知するかどうか
 	 */
 	public Boolean isStart_delay_notify() {
-		return start_delay_notify;
+		return startDelayNotify;
 	}
 
 	/**
@@ -855,7 +875,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param start_delay_notify 開始遅延通知
 	 */
 	public void setStart_delay_notify(Boolean start_delay_notify) {
-		this.start_delay_notify = start_delay_notify;
+		this.startDelayNotify = start_delay_notify;
 	}
 
 	/**
@@ -864,7 +884,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.bean.PriorityConstant
 	 */
 	public Integer getStart_delay_notify_priority() {
-		return start_delay_notify_priority;
+		return startDelayNotifyPriority;
 	}
 
 	/**
@@ -873,7 +893,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.bean.PriorityConstant
 	 */
 	public void setStart_delay_notify_priority(Integer start_delay_notify_priority) {
-		this.start_delay_notify_priority = start_delay_notify_priority;
+		this.startDelayNotifyPriority = start_delay_notify_priority;
 	}
 
 	/**
@@ -881,7 +901,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 開始遅延時に操作するかどうか
 	 */
 	public Boolean isStart_delay_operation() {
-		return start_delay_operation;
+		return startDelayOperation;
 	}
 
 	/**
@@ -889,7 +909,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param start_delay_operation 開始遅延時に操作するかどうか
 	 */
 	public void setStart_delay_operation(Boolean start_delay_operation) {
-		this.start_delay_operation = start_delay_operation;
+		this.startDelayOperation = start_delay_operation;
 	}
 
 	/**
@@ -897,16 +917,16 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 開始遅延時に操作する場合の終了状態
 	 */
 	public Integer getStart_delay_operation_end_status() {
-		return start_delay_operation_end_status;
+		return startDelayOperationEndStatus;
 	}
 
 	/**
 	 * 開始遅延時に操作する場合の終了状態を設定する。<BR>
-	 * @param start_delay_operation_end_value 開始遅延時に操作する場合の終了状態
+	 * @param startDelayOperationEndValue 開始遅延時に操作する場合の終了状態
 	 */
 	public void setStart_delay_operation_end_status(
 			Integer start_delay_operation_end_status) {
-		this.start_delay_operation_end_status = start_delay_operation_end_status;
+		this.startDelayOperationEndStatus = start_delay_operation_end_status;
 	}
 
 	/**
@@ -914,7 +934,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 開始遅延時に操作する場合の終了値
 	 */
 	public Integer getStart_delay_operation_end_value() {
-		return start_delay_operation_end_value;
+		return startDelayOperationEndValue;
 	}
 
 	/**
@@ -923,7 +943,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 */
 	public void setStart_delay_operation_end_value(
 			Integer start_delay_operation_end_value) {
-		this.start_delay_operation_end_value = start_delay_operation_end_value;
+		this.startDelayOperationEndValue = start_delay_operation_end_value;
 	}
 
 	/**
@@ -932,7 +952,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.OperationConstant
 	 */
 	public Integer getStart_delay_operation_type() {
-		return start_delay_operation_type;
+		return startDelayOperationType;
 	}
 
 	/**
@@ -941,7 +961,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @see com.clustercontrol.jobmanagement.bean.OperationConstant
 	 */
 	public void setStart_delay_operation_type(Integer start_delay_operation_type) {
-		this.start_delay_operation_type = start_delay_operation_type;
+		this.startDelayOperationType = start_delay_operation_type;
 	}
 
 	/**
@@ -950,7 +970,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 開始遅延セッション開始後の時間で判定するかどうか
 	 */
 	public Boolean isStart_delay_session() {
-		return start_delay_session;
+		return startDelaySession;
 	}
 
 	/**
@@ -959,7 +979,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param start_delay_session 開始遅延セッション開始後の時間で判定するどうか
 	 */
 	public void setStart_delay_session(Boolean start_delay_session) {
-		this.start_delay_session = start_delay_session;
+		this.startDelaySession = start_delay_session;
 	}
 
 	/**
@@ -969,7 +989,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 開始遅延セッション開始後の時間の値
 	 */
 	public Integer getStart_delay_session_value() {
-		return start_delay_session_value;
+		return startDelaySessionValue;
 	}
 
 	/**
@@ -979,7 +999,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param start_delay_session_value 開始遅延セッション開始後の時間の値
 	 */
 	public void setStart_delay_session_value(Integer start_delay_session_value) {
-		this.start_delay_session_value = start_delay_session_value;
+		this.startDelaySessionValue = start_delay_session_value;
 	}
 
 	/**
@@ -988,7 +1008,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 開始遅延時刻で判定するかどうか
 	 */
 	public Boolean isStart_delay_time() {
-		return start_delay_time;
+		return startDelayTime;
 	}
 
 	/**
@@ -997,7 +1017,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param start_delay_time 開始遅延時刻で判定するかどうか
 	 */
 	public void setStart_delay_time(Boolean start_delay_time) {
-		this.start_delay_time = start_delay_time;
+		this.startDelayTime = start_delay_time;
 	}
 
 	/**
@@ -1006,7 +1026,7 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @return 開始遅延時刻の値
 	 */
 	public Long getStart_delay_time_value() {
-		return start_delay_time_value;
+		return startDelayTimeValue;
 	}
 
 	/**
@@ -1015,39 +1035,39 @@ public class JobWaitRuleInfo implements Serializable {
 	 * @param start_delay_time_value 開始遅延時刻の値
 	 */
 	public void setStart_delay_time_value(Long start_delay_time_value) {
-		this.start_delay_time_value = start_delay_time_value;
+		this.startDelayTimeValue = start_delay_time_value;
 	}
 
 	public Boolean isMultiplicityNotify() {
-		return this.multiplicity_notify;
+		return this.multiplicityNotify;
 	}
 
 	public void setMultiplicityNotify(Boolean multiplicity_notify) {
-		this.multiplicity_notify = multiplicity_notify;
+		this.multiplicityNotify = multiplicity_notify;
 	}
 
 	public Integer getMultiplicityNotifyPriority() {
-		return this.multiplicity_notify_priority;
+		return this.multiplicityNotifyPriority;
 	}
 
 	public void setMultiplicityNotifyPriority(Integer multiplicity_notify_priority) {
-		this.multiplicity_notify_priority = multiplicity_notify_priority;
+		this.multiplicityNotifyPriority = multiplicity_notify_priority;
 	}
 
 	public Integer getMultiplicityOperation() {
-		return this.multiplicity_operation;
+		return this.multiplicityOperation;
 	}
 
 	public void setMultiplicityOperation(Integer multiplicity_operation) {
-		this.multiplicity_operation = multiplicity_operation;
+		this.multiplicityOperation = multiplicity_operation;
 	}
 
 	public Integer getMultiplicityEndValue() {
-		return this.multiplicity_end_value;
+		return this.multiplicityEndValue;
 	}
 
 	public void setMultiplicityEndValue(Integer multiplicity_end_value) {
-		this.multiplicity_end_value = multiplicity_end_value;
+		this.multiplicityEndValue = multiplicity_end_value;
 	}
 
 	public Boolean getQueueFlg() {
@@ -1098,71 +1118,75 @@ public class JobWaitRuleInfo implements Serializable {
 		result = prime * result
 				+ ((exclusiveBranchNextJobOrderList == null) ? 0 : exclusiveBranchNextJobOrderList.hashCode());
 		result = prime * result
-				+ ((end_delay == null) ? 0 : end_delay.hashCode());
-		result = prime
-				* result
-				+ ((end_delay_condition_type == null) ? 0
-						: end_delay_condition_type.hashCode());
+				+ ((endDelay == null) ? 0 : endDelay.hashCode());
 		result = prime * result
-				+ ((end_delay_job == null) ? 0 : end_delay_job.hashCode());
-		result = prime
-				* result
-				+ ((end_delay_job_value == null) ? 0 : end_delay_job_value
-						.hashCode());
-		result = prime
-				* result
-				+ ((end_delay_notify == null) ? 0 : end_delay_notify.hashCode());
-		result = prime
-				* result
-				+ ((end_delay_notify_priority == null) ? 0
-						: end_delay_notify_priority.hashCode());
-		result = prime
-				* result
-				+ ((end_delay_operation == null) ? 0 : end_delay_operation
-						.hashCode());
-		result = prime
-				* result
-				+ ((end_delay_operation_end_status == null) ? 0
-						: end_delay_operation_end_status.hashCode());
-		result = prime
-				* result
-				+ ((end_delay_operation_end_value == null) ? 0
-						: end_delay_operation_end_value.hashCode());
-		result = prime
-				* result
-				+ ((end_delay_operation_type == null) ? 0
-						: end_delay_operation_type.hashCode());
-		result = prime
-				* result
-				+ ((end_delay_session == null) ? 0 : end_delay_session
-						.hashCode());
-		result = prime
-				* result
-				+ ((end_delay_session_value == null) ? 0
-						: end_delay_session_value.hashCode());
+				+ ((endDelayChangeMount == null) ? 0 : endDelayChangeMount.hashCode());
 		result = prime * result
-				+ ((end_delay_time == null) ? 0 : end_delay_time.hashCode());
+				+ ((endDelayChangeMountValue == null) ? 0 : endDelayChangeMountValue.hashCode());
 		result = prime
 				* result
-				+ ((end_delay_time_value == null) ? 0 : end_delay_time_value
+				+ ((endDelayConditionType == null) ? 0
+						: endDelayConditionType.hashCode());
+		result = prime * result
+				+ ((endDelayJob == null) ? 0 : endDelayJob.hashCode());
+		result = prime
+				* result
+				+ ((endDelayJobValue == null) ? 0 : endDelayJobValue
 						.hashCode());
 		result = prime
 				* result
-				+ ((multiplicity_end_value == null) ? 0
-						: multiplicity_end_value.hashCode());
+				+ ((endDelayNotify == null) ? 0 : endDelayNotify.hashCode());
 		result = prime
 				* result
-				+ ((multiplicity_notify == null) ? 0 : multiplicity_notify
+				+ ((endDelayNotifyPriority == null) ? 0
+						: endDelayNotifyPriority.hashCode());
+		result = prime
+				* result
+				+ ((endDelayOperation == null) ? 0 : endDelayOperation
 						.hashCode());
 		result = prime
 				* result
-				+ ((multiplicity_notify_priority == null) ? 0
-						: multiplicity_notify_priority.hashCode());
+				+ ((endDelayOperationEndStatus == null) ? 0
+						: endDelayOperationEndStatus.hashCode());
 		result = prime
 				* result
-				+ ((multiplicity_operation == null) ? 0
-						: multiplicity_operation.hashCode());
-		result = prime * result + ((object == null) ? 0 : object.hashCode());
+				+ ((endDelayOperationEndValue == null) ? 0
+						: endDelayOperationEndValue.hashCode());
+		result = prime
+				* result
+				+ ((endDelayOperationType == null) ? 0
+						: endDelayOperationType.hashCode());
+		result = prime
+				* result
+				+ ((endDelaySession == null) ? 0 : endDelaySession
+						.hashCode());
+		result = prime
+				* result
+				+ ((endDelaySessionValue == null) ? 0
+						: endDelaySessionValue.hashCode());
+		result = prime * result
+				+ ((endDelayTime == null) ? 0 : endDelayTime.hashCode());
+		result = prime
+				* result
+				+ ((endDelayTimeValue == null) ? 0 : endDelayTimeValue
+						.hashCode());
+		result = prime
+				* result
+				+ ((multiplicityEndValue == null) ? 0
+						: multiplicityEndValue.hashCode());
+		result = prime
+				* result
+				+ ((multiplicityNotify == null) ? 0 : multiplicityNotify
+						.hashCode());
+		result = prime
+				* result
+				+ ((multiplicityNotifyPriority == null) ? 0
+						: multiplicityNotifyPriority.hashCode());
+		result = prime
+				* result
+				+ ((multiplicityOperation == null) ? 0
+						: multiplicityOperation.hashCode());
+		result = prime * result + ((objectGroup == null) ? 0 : objectGroup.hashCode());
 		result = prime * result + ((skip == null) ? 0 : skip.hashCode());
 		result = prime * result
 				+ ((skipEndStatus == null) ? 0 : skipEndStatus.hashCode());
@@ -1174,50 +1198,52 @@ public class JobWaitRuleInfo implements Serializable {
 		result = prime * result
 				+ ((jobRetry== null) ? 0 : jobRetry.hashCode());
 		result = prime * result
-				+ ((start_delay == null) ? 0 : start_delay.hashCode());
+				+ ((jobRetryInterval == null) ? 0 : jobRetryInterval.hashCode());
+		result = prime * result
+				+ ((startDelay == null) ? 0 : startDelay.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_condition_type == null) ? 0
-						: start_delay_condition_type.hashCode());
+				+ ((startDelayConditionType == null) ? 0
+						: startDelayConditionType.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_notify == null) ? 0 : start_delay_notify
+				+ ((startDelayNotify == null) ? 0 : startDelayNotify
 						.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_notify_priority == null) ? 0
-						: start_delay_notify_priority.hashCode());
+				+ ((startDelayNotifyPriority == null) ? 0
+						: startDelayNotifyPriority.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_operation == null) ? 0 : start_delay_operation
+				+ ((startDelayOperation == null) ? 0 : startDelayOperation
 						.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_operation_end_status == null) ? 0
-						: start_delay_operation_end_status.hashCode());
+				+ ((startDelayOperationEndStatus == null) ? 0
+						: startDelayOperationEndStatus.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_operation_end_value == null) ? 0
-						: start_delay_operation_end_value.hashCode());
+				+ ((startDelayOperationEndValue == null) ? 0
+						: startDelayOperationEndValue.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_operation_type == null) ? 0
-						: start_delay_operation_type.hashCode());
+				+ ((startDelayOperationType == null) ? 0
+						: startDelayOperationType.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_session == null) ? 0 : start_delay_session
+				+ ((startDelaySession == null) ? 0 : startDelaySession
 						.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_session_value == null) ? 0
-						: start_delay_session_value.hashCode());
+				+ ((startDelaySessionValue == null) ? 0
+						: startDelaySessionValue.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_time == null) ? 0 : start_delay_time.hashCode());
+				+ ((startDelayTime == null) ? 0 : startDelayTime.hashCode());
 		result = prime
 				* result
-				+ ((start_delay_time_value == null) ? 0
-						: start_delay_time_value.hashCode());
+				+ ((startDelayTimeValue == null) ? 0
+						: startDelayTimeValue.hashCode());
 		result = prime * result + ((suspend == null) ? 0 : suspend.hashCode());
 		result = prime * result + ((queueFlg == null) ? 0 : queueFlg.hashCode());
 		result = prime * result + ((queueId == null) ? 0 : queueId.hashCode());
@@ -1240,8 +1266,9 @@ public class JobWaitRuleInfo implements Serializable {
 				equalsSub(o1.getJobRetryFlg(), o2.getJobRetryFlg()) &&
 				equalsSub(o1.getJobRetryEndStatus(), o2.getJobRetryEndStatus()) &&
 				equalsSub(o1.getJobRetry(), o2.getJobRetry()) &&
+				equalsSub(o1.getJobRetryInterval(), o2.getJobRetryInterval()) &&
 				equalsSub(o1.getCondition(), o2.getCondition()) &&
-				equalsComparable(o1.getObject(), o2.getObject()) &&
+				equalsComparable(o1.getObjectGroup(), o2.getObjectGroup()) &&
 				equalsSub(o1.isEndCondition(), o2.isEndCondition()) &&
 				equalsSub(o1.getEndStatus(), o2.getEndStatus()) &&
 				equalsSub(o1.getEndValue(), o2.getEndValue()) &&
@@ -1312,7 +1339,7 @@ public class JobWaitRuleInfo implements Serializable {
 		}
 		return ret;
 	}
-	
+
 	private <T> boolean equalsList(List<T> list1, List<T> list2) {
 		if (list1 != null && !list1.isEmpty()) {
 			if (list2 != null && list1.size() == list2.size()) {
@@ -1351,5 +1378,25 @@ public class JobWaitRuleInfo implements Serializable {
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+		JobWaitRuleInfo jobWaitRuleInfo = (JobWaitRuleInfo) super.clone();
+		if (this.objectGroup != null) {
+			jobWaitRuleInfo.objectGroup = new ArrayList<JobObjectGroupInfo>();
+			Iterator<JobObjectGroupInfo> iterator = this.objectGroup.iterator();
+			while (iterator.hasNext()) {
+				jobWaitRuleInfo.objectGroup.add((JobObjectGroupInfo) iterator.next().clone());
+			}
+		}
+		if (this.exclusiveBranchNextJobOrderList != null) {
+			jobWaitRuleInfo.exclusiveBranchNextJobOrderList = new ArrayList<JobNextJobOrderInfo>();
+			Iterator<JobNextJobOrderInfo> iterator = this.exclusiveBranchNextJobOrderList.iterator();
+			while (iterator.hasNext()) {
+				jobWaitRuleInfo.exclusiveBranchNextJobOrderList.add((JobNextJobOrderInfo) iterator.next().clone());
+			}
+		}
+		return jobWaitRuleInfo;
 	}
 }

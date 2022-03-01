@@ -8,10 +8,7 @@
 
 package com.clustercontrol.calendar.composite;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -30,15 +27,16 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
+import org.openapitools.client.model.CalendarDetailInfoResponseP1;
 
+import com.clustercontrol.bean.DateTimeFormatConstant;
 import com.clustercontrol.bean.DayOfWeekConstant;
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
+import com.clustercontrol.fault.CalendarNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
-import com.clustercontrol.ws.calendar.CalendarDetailInfo;
-import com.clustercontrol.ws.calendar.CalendarNotFound_Exception;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
 
 /**
  * カレンダ[週間予定]ビューコンポジットクラス<BR>
@@ -167,7 +165,7 @@ public class CalendarWeekComposite extends Composite {
 		createPanel();
 
 		int period = 7;
-		//指定年月日の曜日を取得
+		//指定年月日の曜日を取得 
 		Calendar now = Calendar.getInstance(TimezoneUtil.getTimeZone());
 		now.set(year, month-1, day);
 		int dayOfWeek = now.get(Calendar.DAY_OF_WEEK);
@@ -180,60 +178,45 @@ public class CalendarWeekComposite extends Composite {
 			bar.getInitBar().setBackgroundColor(ColorConstantsWrapper.red());
 		}
 		try {
+			//選択された年月日の稼動時間を取得
+			CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
+			List<CalendarDetailInfoResponseP1> detailList =
+					wrapper.getCalendarWeek(calendarId, year, month, day);
+			
 			for(int i = 0; i < period; i++){
-				//選択された年月日の稼動時間を取得
-				CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
-				List<CalendarDetailInfo> detailList =
-						wrapper.getCalendarWeek(calendarId, year, month, day);
+				
 				m_log.trace("detailList.size=" + detailList.size() + ", " +
 						year + "/" + month + "/" + day);
-				//稼働の有無を判別し、稼動時間をバーに描画
-				ArrayList<CalendarDetailInfo> detailListOrder = new ArrayList<CalendarDetailInfo>();
-				while(detailList.size() > 0) {
-					int size = detailList.size();
-					detailListOrder.add(detailList.get(size - 1));
-					detailList.remove(size - 1);
+				
+				for(CalendarDetailInfoResponseP1 detail : detailList){
+					year = now.get(Calendar.YEAR);
+					month = now.get(Calendar.MONTH) + 1;
+					day = now.get(Calendar.DAY_OF_MONTH);
+					//日付が一致するかどうかチェック 
+					if(now.get(Calendar.DATE) == detail.getDayNo()){
+						addScheduleBar(m_panel,dayOfWeek,detail.getStartTime(),detail.getEndTime(),detail.getExecuteFlg());
+					}
 				}
-				for(CalendarDetailInfo detail : detailListOrder){
-					addScheduleBar(m_panel,dayOfWeek,detail.getTimeFrom(),detail.getTimeTo(),detail.isOperateFlg());
-				}
-				//年月日ラベル更新
-				m_labelMatrix[i].setText(
-						String.format("%02d/%02d/%02d", year, month, day)
+				m_labelMatrix[i].setText(String.format("%02d/%02d/%02d", year, month, day)
 						+ " ( " + DayOfWeekConstant.typeToString(dayOfWeek) + " )");
-				//月の変わり目判定
-				if(day + 1 > now.getActualMaximum(Calendar.DAY_OF_MONTH)){
-					//年の変わり目判定
-					if(month == 12){
-						year++;
-						month = 1;
-					}
-					else {
-						month++;
-					}
-					day = 1;
-				}
-				else {
-					day++;
-				}
 				//指定年月日の曜日を再取得
-				now.set(year, month-1, day);
+				now.add(Calendar.DAY_OF_MONTH, 1);
 				dayOfWeek = now.get(Calendar.DAY_OF_WEEK);
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.accesscontrol.16"));
-		} catch (CalendarNotFound_Exception e) {
+					e.getMessage());
+		} catch (CalendarNotFound e) {
 			// カレンダを削除した際などは、ここを通る。
-			m_log.info("update(), " + HinemosMessage.replace(e.getMessage()));
+			m_log.info("update(), " + e.getMessage());
 		} catch (Exception e) {
 			// 上記以外の例外
-			m_log.warn("update(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("update(), " + e.getMessage(), e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					Messages.getString(e.getMessage()));
 		}
 		//カレンダラベルの更新
 		if(calendarId.length() > 0){
@@ -252,14 +235,16 @@ public class CalendarWeekComposite extends Composite {
 	 * さらに、新たにバーを生成し、空のスケジュールバーに被さるように配置する
 	 * @param panel
 	 * @param dayOfWeek
-	 * @param from
-	 * @param to
+	 * @param fromStr
+	 * @param toStr
 	 */
-	private void addScheduleBar(Panel panel,int dayOfWeek,long from,long to, boolean operationFlg){
-		m_log.trace("dayofweek:" + dayOfWeek + ", from:" + from + ", to:" + to + ", operationflg:" + operationFlg);
-		int timeZoneOffset = TimezoneUtil.getTimeZoneOffset();
-		int fromBar = (int) (MAX_BAR_LENGTH * ((float)(from + timeZoneOffset) / DAY24));
-		int toBar = (int) (MAX_BAR_LENGTH * ((float)(to + timeZoneOffset) / DAY24));
+	private void addScheduleBar(Panel panel,int dayOfWeek,String fromStr,String toStr, boolean operationFlg){
+		m_log.trace("dayofweek:" + dayOfWeek + ", from:" + fromStr + ", to:" + toStr + ", operationflg:" + operationFlg);
+		long from = DateTimeStringConverter.convertDateStringWithoutOffset(fromStr, DateTimeFormatConstant.COMMON_TIME);
+		long to = DateTimeStringConverter.convertDateStringWithoutOffset(toStr, DateTimeFormatConstant.COMMON_TIME);
+
+		int fromBar = (int) (MAX_BAR_LENGTH * ((float)from / DAY24));
+		int toBar = (int) (MAX_BAR_LENGTH * ((float)to / DAY24));
 
 		ScheduleBar scheduleBar = null;
 		//スケジュールバーは、GUIカレンダの選択した日時が一番上に表示されるため、識別判定
@@ -293,17 +278,15 @@ public class CalendarWeekComposite extends Composite {
 	 * @param chkPointlbl
 	 */
 	private void addCheckPoint(long key, int y, boolean endFlag) {
-		int timeZoneOffset = TimezoneUtil.getTimeZoneOffset();
-		long time = key + timeZoneOffset;
+		long time = key;
 
 		if (time == 0 || time == DAY24) {
 			return;
 		}
 		//時間ラベル
-		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-		sdf.setTimeZone(TimezoneUtil.getTimeZone());
+		String strTime = DateTimeStringConverter.formatLongDateWithoutOffset(time, DateTimeFormatConstant.HR_MIN);
 
-		Label label = new Label(sdf.format(new Date(key)));
+		Label label = new Label(strTime);
 		label.setVisible(true);
 		m_panel.add(label);
 		Dimension dimension = new Dimension(-1,-1);

@@ -8,6 +8,7 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -16,9 +17,19 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.IntegrationCheckInfoResponse;
+import org.openapitools.client.model.IntegrationConditionInfoResponse;
+import org.openapitools.client.model.IntegrationConditionInfoResponse.TargetMonitorTypeEnum;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorTruthValueInfoResponse;
 
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.monitor.xml.ConditionValue;
@@ -27,15 +38,8 @@ import com.clustercontrol.utility.settings.monitor.xml.IntegrationMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.IntegrationMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.TruthValue;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.IntegrationCheckInfo;
-import com.clustercontrol.ws.monitor.IntegrationConditionInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorTruthValueInfo;
 
 /**
  * 収集値統合 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -50,7 +54,7 @@ public class IntegrationConv {
 
 	private final static String SCHEMA_TYPE = "I";
 	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "1";
+	private final static String SCHEMA_REVISION = "2";
 
 	/**
 	 * <BR>
@@ -89,14 +93,17 @@ public class IntegrationConv {
 	 * @param
 	 * @return
 	 * @throws ConvertorException
+	 * @throws ParseException 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	public static List<MonitorInfo> createMonitorInfoList(IntegrationMonitors integrationMonitors) throws ConvertorException {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(IntegrationMonitors integrationMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 
 		for (IntegrationMonitor integrationMonitor : integrationMonitors.getIntegrationMonitor()) {
 			logger.debug("Monitor Id : " + integrationMonitor.getMonitor().getMonitorId());
 
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(integrationMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(integrationMonitor.getMonitor());
 			for (TruthValue truthValue : integrationMonitor.getTruthValue()) {
 				monitorInfo.getTruthValueInfo().add(MonitorConv.createTruthValue(truthValue));
 			}
@@ -113,29 +120,31 @@ public class IntegrationConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static IntegrationMonitors createIntegrationMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static IntegrationMonitors createIntegrationMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		IntegrationMonitors integrationMonitors = new IntegrationMonitors();
 
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			IntegrationMonitor integrationMonitor = new IntegrationMonitor();
 			integrationMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 
-			for (MonitorTruthValueInfo truthValueInfo : monitorInfo.getTruthValueInfo()) {
-				integrationMonitor.addTruthValue(MonitorConv.createTruthValue(truthValueInfo));
+			for (MonitorTruthValueInfoResponse truthValueInfo : monitorInfo.getTruthValueInfo()) {
+				integrationMonitor.addTruthValue(MonitorConv.createTruthValue(monitorInfo.getMonitorId(),truthValueInfo));
 			}
 
-			integrationMonitor.setIntegrationInfo(createIntegrationInfo(monitorInfo.getIntegrationCheckInfo()));
+			integrationMonitor.setIntegrationInfo(createIntegrationInfo(monitorInfo));
 			integrationMonitors.addIntegrationMonitor(integrationMonitor);
 		}
 
@@ -150,14 +159,14 @@ public class IntegrationConv {
 	 *
 	 * @return
 	 */
-	private static IntegrationInfo createIntegrationInfo(IntegrationCheckInfo integrationCheckInfo) {
+	private static IntegrationInfo createIntegrationInfo(MonitorInfoResponse monitorInfo) {
 		IntegrationInfo integrationInfo = new IntegrationInfo();
 		integrationInfo.setMonitorTypeId("");
-		integrationInfo.setMonitorId(integrationCheckInfo.getMonitorId());
+		integrationInfo.setMonitorId(monitorInfo.getMonitorId());
 		
 		List<ConditionValue> infos = new ArrayList<>();
 		int orderNo = 0;
-		for (IntegrationConditionInfo info : integrationCheckInfo.getConditionList()) {
+		for (IntegrationConditionInfoResponse info : monitorInfo.getIntegrationCheckInfo().getConditionList()) {
 			ConditionValue condition = new ConditionValue();
 			condition.setDescription(info.getDescription());
 			condition.setComparisonMethod(info.getComparisonMethod());
@@ -165,12 +174,13 @@ public class IntegrationConv {
 			condition.setTargetDisplayName(info.getTargetDisplayName());
 			condition.setTargetItemName(info.getTargetItemName());
 			condition.setTargetMonitorId(info.getTargetMonitorId());
-			condition.setTargetMonitorType(info.getTargetMonitorType());
-			if (info.getTargetMonitorType() == MonitorTypeConstant.TYPE_STRING)
-				condition.setIsAnd(info.isIsAnd());
+			int targetMonitroId = OpenApiEnumConverter.enumToInteger(info.getTargetMonitorType());
+			condition.setTargetMonitorType(targetMonitroId);
+			if (info.getTargetMonitorType() == TargetMonitorTypeEnum.STRING)
+				condition.setIsAnd(info.getIsAnd());
 
-			condition.setMonitorNode(info.isMonitorNode());
-			if (!info.isMonitorNode())
+			condition.setMonitorNode(info.getMonitorNode());
+			if (!info.getMonitorNode())
 				condition.setTargetFacilityId(info.getTargetFacilityId());
 			
 			condition.setOrderNo(++orderNo);
@@ -179,10 +189,10 @@ public class IntegrationConv {
 		}
 		integrationInfo.setConditionValue(infos.toArray(new ConditionValue[0]));
 		
-		integrationInfo.setMessageOk(integrationCheckInfo.getMessageOk());
-		integrationInfo.setMessageNg(integrationCheckInfo.getMessageNg());
-		integrationInfo.setNotOrder(integrationCheckInfo.isNotOrder());
-		integrationInfo.setTimeout(integrationCheckInfo.getTimeout());
+		integrationInfo.setMessageOk(monitorInfo.getIntegrationCheckInfo().getMessageOk());
+		integrationInfo.setMessageNg(monitorInfo.getIntegrationCheckInfo().getMessageNg());
+		integrationInfo.setNotOrder(monitorInfo.getIntegrationCheckInfo().getNotOrder());
+		integrationInfo.setTimeout(monitorInfo.getIntegrationCheckInfo().getTimeout());
 
 		return integrationInfo;
 	}
@@ -192,15 +202,13 @@ public class IntegrationConv {
 	 *
 	 * @return
 	 */
-	private static IntegrationCheckInfo createIntegrationCheckInfo(IntegrationInfo integrationInfo) {
-		IntegrationCheckInfo integrationCheckInfo = new IntegrationCheckInfo();
-		integrationCheckInfo.setMonitorTypeId(integrationInfo.getMonitorTypeId());
-		integrationCheckInfo.setMonitorId(integrationInfo.getMonitorId());
+	private static IntegrationCheckInfoResponse createIntegrationCheckInfo(IntegrationInfo integrationInfo) {
+		IntegrationCheckInfoResponse integrationCheckInfo = new IntegrationCheckInfoResponse();
 		
 		ConditionValue[] conditions = integrationInfo.getConditionValue();
 		sort(conditions);
 		for (ConditionValue condition : conditions) {
-			IntegrationConditionInfo info = new IntegrationConditionInfo();
+			IntegrationConditionInfoResponse info = new IntegrationConditionInfoResponse();
 			info.setDescription(condition.getDescription());
 			info.setComparisonMethod(condition.getComparisonMethod());
 			info.setComparisonValue(condition.getComparisonValue());

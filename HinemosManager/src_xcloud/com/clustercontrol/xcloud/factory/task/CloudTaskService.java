@@ -10,6 +10,7 @@ package com.clustercontrol.xcloud.factory.task;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -240,7 +241,7 @@ public class CloudTaskService {
 	protected Map<String, TaskEntry> workerMap = new HashMap<String, TaskEntry>();
 	
 	public void runTask(
-			final String key,
+			final String id,
 			String cloudScopeId,
 			String className,
 			String initialData,
@@ -248,6 +249,7 @@ public class CloudTaskService {
 			boolean optionDependent) {
 		try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.Required)) {
 			CloudTaskEntity entity = new CloudTaskEntity();
+			String key = UUID.nameUUIDFromBytes(id.getBytes()).toString();
 			entity.setKey(key);
 			entity.setCloudScopeId(cloudScopeId);
 			entity.setClassName(className);

@@ -26,12 +26,12 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
 import com.clustercontrol.calendar.view.CalendarListView;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
 
 /**
  * カレンダの削除を行うクライアント側アクションクラス<BR>
@@ -108,15 +108,15 @@ public class CalendarDeleteAction extends AbstractHandler implements IElementUpd
 					Messages.getString(msg, args))) {
 				for(Map.Entry<String, List<String>> entry : map.entrySet()) {
 					String managerName = entry.getKey();
-					CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
+					CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
 					if(i > 0) {
 						messageArg.append(", ");
 					}
 					messageArg.append(managerName);
 					try {
-						wrapper.deleteCalendar(entry.getValue());
+						wrapper.deleteCalendar(String.join(",", entry.getValue()));
 					} catch (Exception e) {
-						if (e instanceof InvalidRole_Exception) {
+						if (e instanceof InvalidRole) {
 							// 権限なし
 							errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
 						} else {

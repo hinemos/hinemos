@@ -20,12 +20,12 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.openapitools.client.model.CalendarInfoResponse;
 
 import com.clustercontrol.calendar.composite.CalendarIdListComposite;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.calendar.CalendarInfo;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
 
 public class CalendarIdListCombo extends Composite{
 	
@@ -102,14 +102,14 @@ public class CalendarIdListCombo extends Composite{
 		// 空欄
 		putMap("", "");
 
-		List<CalendarInfo> calList = null;
+		List<CalendarInfoResponse> calList = null;
 		// データ取得
 		try {
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-				CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
+				CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
 				calList = wrapper.getCalendarList(ownerRoleId);
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
@@ -126,7 +126,7 @@ public class CalendarIdListCombo extends Composite{
 
 		if(calList != null){
 			// カレンダIDリスト
-			for(CalendarInfo info : calList){
+			for(CalendarInfoResponse info : calList){
 				putMap(info.getCalendarId(), info.getCalendarName());
 			}
 		}

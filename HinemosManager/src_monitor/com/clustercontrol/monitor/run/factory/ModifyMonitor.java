@@ -9,15 +9,13 @@
 package com.clustercontrol.monitor.run.factory;
 
 import java.util.Calendar;
-import java.util.List;
 import java.util.Random;
-
-import javax.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.bean.FunctionPrefixEnum;
 import com.clustercontrol.commons.scheduler.TriggerSchedulerException;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -25,6 +23,7 @@ import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
@@ -34,13 +33,12 @@ import com.clustercontrol.monitor.run.util.MonitorCollectDataCache;
 import com.clustercontrol.monitor.run.util.MonitorJudgementInfoCacheRemoveCallback;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.factory.ModifyNotifyRelation;
-import com.clustercontrol.notify.model.MonitorStatusEntity;
-import com.clustercontrol.notify.model.NotifyHistoryEntity;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
-import com.clustercontrol.notify.util.MonitorStatusCache;
 import com.clustercontrol.plugin.impl.SchedulerPlugin.TriggerType;
 import com.clustercontrol.util.HinemosTime;
+
+import jakarta.persistence.EntityExistsException;
 
 
 /**
@@ -55,6 +53,12 @@ abstract public class ModifyMonitor {
 	/** ログ出力のインスタンス。 */
 	private static Log m_log = LogFactory.getLog( ModifyMonitor.class );
 
+	/**
+	 * 監視項目IDとして不適切な文字列
+	 * 収集値がジョブ実行履歴かどうか判定する際に"JOB"という文字列を使用しているため、監視項目としては除外する。
+	 */
+	private static final String INVALID_MONITOR_ID = "JOB";
+
 	/** 監視情報のエンティティ */
 	protected MonitorInfo m_monitor;
 
@@ -68,8 +72,11 @@ abstract public class ModifyMonitor {
 	private boolean m_isModifyRunInterval = false;
 
 	/** 有効への変更フラグ。 */
-	private boolean m_isModifyEnableFlg = false;
+	protected boolean m_isModifyEnableFlg = false;
 
+	/** 無効への変更フラグ。 */
+	protected boolean m_isModifyDisableFlg = false;
+	
 	/** 監視対象ID */
 	private String m_monitorTypeId;
 
@@ -92,6 +99,7 @@ abstract public class ModifyMonitor {
 	 * @param info 監視情報
 	 * @param user 新規作成ユーザ
 	 * @return 作成に成功した場合、</code> true </code>
+	 * @throws MonitorIdInvalid 数値監視の場合のみ
 	 * @throws MonitorNotFound
 	 * @throws MonitorDuplicate
 	 * @throws TriggerSchedulerException
@@ -100,7 +108,8 @@ abstract public class ModifyMonitor {
 	 * 
 	 * @see #addMonitorInfo(String)
 	 */
-	public boolean add(MonitorInfo info, String user) throws MonitorNotFound, MonitorDuplicate, TriggerSchedulerException, HinemosUnknown, InvalidRole {
+	public boolean add(MonitorInfo info, String user) throws MonitorIdInvalid, MonitorIdInvalid, MonitorNotFound,
+			MonitorDuplicate, TriggerSchedulerException, HinemosUnknown, InvalidRole {
 
 		m_monitorInfo = info;
 
@@ -135,6 +144,7 @@ abstract public class ModifyMonitor {
 	 * 
 	 * @param user 新規作成ユーザ
 	 * @return 作成に成功した場合、</code> true </code>
+	 * @throws MonitorIdInvalid 数値監視の場合のみ
 	 * @throws MonitorNotFound
 	 * @throws TriggerSchedulerException
 	 * @throws EntityExistsException
@@ -146,11 +156,17 @@ abstract public class ModifyMonitor {
 	 * @see #addCheckInfo()
 	 * @see com.clustercontrol.monitor.run.factory.ModifySchedule#addSchedule(MonitorInfo, String, Calendar)
 	 */
-	protected boolean addMonitorInfo(String user) throws MonitorNotFound, TriggerSchedulerException, EntityExistsException, HinemosUnknown, InvalidRole {
+	protected boolean addMonitorInfo(String user) throws MonitorIdInvalid, MonitorNotFound, TriggerSchedulerException, EntityExistsException, HinemosUnknown, InvalidRole {
 		long now = HinemosTime.currentTimeMillis();
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
+
+			// 数値監視のみ、NGワードチェック
+			if (this instanceof ModifyMonitorNumericValueType
+					&& m_monitorInfo.getMonitorId().equals(INVALID_MONITOR_ID)) {
+				throw new MonitorIdInvalid("MonitorId: " + m_monitorInfo.getMonitorId() + " is invalid.");
+			}
 
 			// 重複チェック
 			jtm.checkEntityExists(MonitorInfo.class, m_monitorInfo.getMonitorId());
@@ -172,9 +188,10 @@ abstract public class ModifyMonitor {
 					&& m_monitorInfo.getNotifyRelationList().size() > 0) {
 				for (NotifyRelationInfo notifyRelationInfo : m_monitorInfo.getNotifyRelationList()) {
 					notifyRelationInfo.setNotifyGroupId(notifyGroupId);
+					notifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.MONITOR.name());
 				}
 				// 通知情報を登録
-				new ModifyNotifyRelation().add(m_monitorInfo.getNotifyRelationList());
+				new ModifyNotifyRelation().add(m_monitorInfo.getNotifyRelationList(), m_monitorInfo.getOwnerRoleId());
 			}
 
 			// 判定情報を設定
@@ -297,7 +314,6 @@ abstract public class ModifyMonitor {
 		long now = HinemosTime.currentTimeMillis();
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-			HinemosEntityManager em = jtm.getEntityManager();
 			// 監視情報を設定
 			m_monitor = QueryUtil.getMonitorInfoPK(m_monitorInfo.getMonitorId(), ObjectPrivilegeMode.MODIFY);
 
@@ -320,10 +336,22 @@ abstract public class ModifyMonitor {
 							|| m_monitorInfo.getChangeFlg())){
 				m_isModifyEnableFlg = true;
 			}
+			// 監視/収集有効からすべて無効に変更されているか
+			if((m_monitor.getMonitorFlg() ||
+					m_monitor.getCollectorFlg() ||
+					m_monitor.getPredictionFlg() ||
+					m_monitor.getChangeFlg()) &&
+					(!m_monitorInfo.getMonitorFlg() 
+							&& !m_monitorInfo.getCollectorFlg()
+							&& !m_monitorInfo.getPredictionFlg()
+							&& !m_monitorInfo.getChangeFlg())){
+				m_isModifyDisableFlg = true;
+			}
 			m_log.debug("modifyMonitorInfo() m_isModifyFacilityId = " + m_isModifyFacilityId
 					+ ", m_isModifyRunInterval = " + m_isModifyRunInterval
-					+ ", m_isModifyEnableFlg = " + m_isModifyEnableFlg);
-
+					+ ", m_isModifyEnableFlg = " + m_isModifyEnableFlg
+					+ ", m_isModifyDisableFlg = " + m_isModifyDisableFlg);
+			
 			m_monitor.setDescription(m_monitorInfo.getDescription());
 			if(m_isModifyFacilityId)
 				m_monitor.setFacilityId(m_monitorInfo.getFacilityId());
@@ -340,16 +368,21 @@ abstract public class ModifyMonitor {
 					&& m_monitorInfo.getNotifyRelationList().size() > 0) {
 				for (NotifyRelationInfo notifyRelationInfo : m_monitorInfo.getNotifyRelationList()) {
 					notifyRelationInfo.setNotifyGroupId(m_monitor.getNotifyGroupId());
+					notifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.MONITOR.name());
 				}
 			}
 			new NotifyControllerBean().modifyNotifyRelation(
-					m_monitorInfo.getNotifyRelationList(), m_monitor.getNotifyGroupId());
+					m_monitorInfo.getNotifyRelationList(), m_monitor.getNotifyGroupId(), m_monitor.getOwnerRoleId());
 
 			m_monitor.setMonitorFlg(m_monitorInfo.getMonitorFlg());
 			m_monitor.setCollectorFlg(m_monitorInfo.getCollectorFlg());
 			m_monitor.setLogFormatId(m_monitorInfo.getLogFormatId());
 			m_monitor.setItemName(m_monitorInfo.getItemName());
 			m_monitor.setMeasure(m_monitorInfo.getMeasure());
+			
+			m_monitor.setPriorityChangeJudgmentType(m_monitorInfo.getPriorityChangeJudgmentType());
+			m_monitor.setPriorityChangeFailureType(m_monitorInfo.getPriorityChangeFailureType());
+
 			m_monitor.setOwnerRoleId(m_monitorInfo.getOwnerRoleId());
 			m_monitor.setUpdateDate(now);
 			m_monitor.setUpdateUser(user);
@@ -363,19 +396,8 @@ abstract public class ModifyMonitor {
 					// Quartzの登録情報を変更
 					new ModifySchedule().updateSchedule(m_monitorInfo.getMonitorId());
 
-					// この監視設定の監視結果状態を削除する
-					List<MonitorStatusEntity> statusList
-						= MonitorStatusCache.getByPluginIdAndMonitorId(m_monitor.getMonitorTypeId(), m_monitor.getMonitorId());
-					for(MonitorStatusEntity status : statusList){
-						MonitorStatusCache.remove(status);
-					}
-
-					// この監視設定の結果として通知された通知履歴を削除する
-					List<NotifyHistoryEntity> historyList
-					= com.clustercontrol.notify.util.QueryUtil.getNotifyHistoryByPluginIdAndMonitorId(m_monitor.getMonitorTypeId(), m_monitor.getMonitorId());
-					for(NotifyHistoryEntity history : historyList){
-						em.remove(history);
-					}
+					// 通知履歴情報を削除する
+					new NotifyControllerBean().deleteNotifyHistory(m_monitor.getMonitorTypeId(), m_monitor.getMonitorId());
 
 					return true;
 				}
@@ -480,20 +502,8 @@ abstract public class ModifyMonitor {
 				// 監視情報を削除
 				em.remove(m_monitor);
 
-				// この監視設定の監視結果状態を削除する
-				List<MonitorStatusEntity> statusList =
-						MonitorStatusCache.getByPluginIdAndMonitorId(m_monitorTypeId, m_monitorId);
-
-				for(MonitorStatusEntity status : statusList){
-					MonitorStatusCache.remove(status);
-				}
-
-				// この監視設定の結果として通知された通知履歴を削除する
-				List<NotifyHistoryEntity> historyList =
-						com.clustercontrol.notify.util.QueryUtil.getNotifyHistoryByPluginIdAndMonitorId(m_monitorTypeId, m_monitorId);
-				for(NotifyHistoryEntity history : historyList){
-					em.remove(history);
-				}
+				// 通知履歴情報を削除する
+				new NotifyControllerBean().deleteNotifyHistory(m_monitorTypeId, m_monitorId);
 
 				return true;
 			}

@@ -23,9 +23,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.StringJoiner;
 
-import javax.activation.DataHandler;
-import javax.activation.FileDataSource;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
@@ -36,14 +33,15 @@ import com.clustercontrol.fault.EventLogNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.filtersetting.bean.EventFilterBaseInfo;
+import com.clustercontrol.filtersetting.bean.EventFilterConditionInfo;
 import com.clustercontrol.monitor.bean.CollectGraphFlgConstant;
 import com.clustercontrol.monitor.bean.ConfirmConstant;
 import com.clustercontrol.monitor.bean.EventDataInfo;
-import com.clustercontrol.monitor.bean.EventFilterInfo;
 import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
 import com.clustercontrol.monitor.bean.EventNoDisplayInfo;
+import com.clustercontrol.monitor.bean.EventSelectionInfo;
 import com.clustercontrol.monitor.bean.EventUserExtensionItemInfo;
-import com.clustercontrol.monitor.bean.GetEventFilterInternal;
 import com.clustercontrol.monitor.bean.ViewListInfo;
 import com.clustercontrol.monitor.run.bean.CollectMonitorDisplayNameConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
@@ -165,6 +163,7 @@ public class SelectEvent {
 		for (int i = 0; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
 			EventUtil.setUserItemValue(info, i, EventUtil.getUserItemValue(event, i));
 		}
+		info.setNotifyUUID(event.getNotifyUUID());
 		info.setPosition(event.getPosition());
 		info.setEventLogHitory(history);
 	}
@@ -175,7 +174,6 @@ public class SelectEvent {
 	 * 各イベント情報は、EventLogDataインスタンスとして保持されます。<BR>
 	 * 戻り値のViewListInfoは、クライアントにて表示用の形式に変換されます。
 	 *
-	 * @param facilityId 取得対象の親ファシリティID
 	 * @param filter 検索条件
 	 * @param messages 表示イベント数
 	 * @return ビュー一覧情報
@@ -184,18 +182,14 @@ public class SelectEvent {
 	 * @see com.clustercontrol.monitor.bean.EventDataInfo
 	 * @see com.clustercontrol.repository.session.RepositoryControllerBean#getFacilityIdList(String, int)
 	 */
-	public ViewListInfo getEventList(String facilityId, EventFilterInfo filter, int messages)
+	public ViewListInfo getEventList(EventFilterBaseInfo filter, int messages)
 			throws HinemosUnknown {
 
 		ViewListInfo ret = null;
-		
-		GetEventFilterInternal filterInternal = new GetEventFilterInternal();
-		
-		if (filter != null) {
-			filterInternal.setFilter(facilityId, filter);
-		} else {
-			//画面の初期表示　／コマンドラインツールから実行された時
-			filterInternal.setFilterDefaultGetEventList(facilityId);
+
+		// 現在の呼び出し階層では null が渡ることはないはずだが念のため
+		if (filter == null) {
+			filter = EventFilterBaseInfo.ofClientViewDefault();
 		}
 		
 		if(messages <= 0){
@@ -207,22 +201,20 @@ public class SelectEvent {
 		List<EventLogEntity> sqlList = null;
 		List<EventLogEntity> cacheList = null;
 		
-		boolean allSearch = false;
-		if (filter != null && filter.getAllSearch() != null) {
-			allSearch = filter.getAllSearch();
-		}
+		boolean allSearch = filter.getEntire().booleanValue();
 		String debugMessage = "allSearch=" + allSearch;
+
 		// SQLでログ取得（試験時にキャッシュとSQLの比較をする場合もここを通る。）
 		if (allSearch || HinemosPropertyCommon.notify_event_diff.getBooleanValue()) {
 			start = HinemosTime.currentTimeMillis();
 			List<EventLogEntity> tmp = QueryUtil.getEventLogByFilter(
-				filterInternal,
+				filter,
 				false,
 				Integer.valueOf(messages + 1));
 			debugMessage += ", sql-search=" + (HinemosTime.currentTimeMillis() - start) +"[ms]";
 			sqlList = new ArrayList<>();
 			for (EventLogEntity e : tmp) {
-				sqlList.add(EventCache.cloneWithoutOrg(e));
+				sqlList.add(EventCache.cloneEntity(e));
 			}
 			
 		}
@@ -230,7 +222,7 @@ public class SelectEvent {
 		// キャッシュからログ取得
 		if (!allSearch || HinemosPropertyCommon.notify_event_diff.getBooleanValue()) {
 			start = HinemosTime.currentTimeMillis();
-			cacheList = EventCache.getEventListByCache(filterInternal, false, Integer.valueOf(messages + 1));
+			cacheList = EventCache.getEventListByCache(filter, false, Integer.valueOf(messages + 1));
 			debugMessage += ", cache-search=" + (HinemosTime.currentTimeMillis() - start) + "[ms]";
 		}
 		m_log.debug(debugMessage); // debug
@@ -249,7 +241,7 @@ public class SelectEvent {
 		return ret;
 	}
 
-	private static void diffEventList(List<EventLogEntity> cacheList, List<EventLogEntity> sqlList) throws HinemosUnknown {
+	private static void diffEventList(List<EventLogEntity> cacheList, List<EventLogEntity> sqlList) {
 		if (cacheList == null || sqlList == null) {
 			return;
 		}
@@ -384,23 +376,16 @@ public class SelectEvent {
 	 * <li>出力したファイルのデータハンドラを返します。<BR>
 	 * </ol>
 	 *
-	 * @param facilityId 取得対象の親ファシリティID
-	 * @param filter 検索条件
+	 * @param filter 検索条件 (選択されているイベントがある場合は無視)
+	 * @param selectedEvents 選択されているイベント(null なら無選択)
 	 * @param filename 出力ファイル名
 	 * @param username ユーザID
 	 * @param locale ロケール
 	 * 
 	 * @return 出力ファイルのデータハンドラ
-	 * @throws HinemosUnknown
-	 * @throws IOException
-	 *
-	 * @since 2.1.0
-	 *
-	 * @see com.clustercontrol.util.PropertyUtil#getPropertyValue(com.clustercontrol.bean.Property, java.lang.String)
-	 * @see com.clustercontrol.repository.session.RepositoryControllerBean#getFacilityIdList(String, int)
 	 */
-	public DataHandler getEventFile(String facilityId, EventFilterInfo filter, String filename, String username, Locale locale)
-			throws HinemosUnknown, IOException {
+	public File getEventFile(EventFilterBaseInfo filter, List<EventSelectionInfo> selectedEvents, String filename, String username, Locale locale)
+			throws IOException {
 
 		String exportDirectory = HinemosPropertyDefault.performance_export_dir.getStringValue();
 		String filepath = exportDirectory + "/" + filename;
@@ -414,52 +399,38 @@ public class SelectEvent {
 			fos.close();
 		}
 		FileWriter filewriter = new FileWriter(file, true);
-		GetEventFilterInternal filterInternal = new GetEventFilterInternal();
-		
-		Map<Integer, EventUserExtensionItemInfo> userItemMap = SelectEventHinemosProperty.getEventUserExtensionItemInfo();
-		EventNoDisplayInfo eventNoInfo = SelectEventHinemosProperty.geEventNoDisplayInfo();
-		
+
 		try {
-			if (filter != null) {
-				filterInternal.setFilter(facilityId, filter);
-			} else {
-				//デフォルト値をセット
-				//コマンドラインツールから実行された時が該当
-				filterInternal.setFilterDefaultGetEventFile(facilityId);
-				
-			}
-			
-			boolean isSelectEvent = false;
-			
-			if (filter != null 
-					&& filter.getSelectedEventList() != null
-					&& filter.getSelectedEventList().size() > 0) {
-				isSelectEvent = true;
-			} 
-			
-			//ヘッダ情報を追記
-			headerToFile(filewriter, filterInternal, username, isSelectEvent, locale, userItemMap, eventNoInfo);
+			Map<Integer, EventUserExtensionItemInfo> userItemMap = SelectEventHinemosProperty.getEventUserExtensionItemInfo();
+			EventNoDisplayInfo eventNoInfo = SelectEventHinemosProperty.geEventNoDisplayInfo();
+		
+			boolean isSelectionAvailable = selectedEvents != null && selectedEvents.size() > 0;
 			
 			// 全範囲検索はCSVファイル出力の場合は加味せずDBより全件取得する。
 			List<EventLogEntity> ct = null;
-			if (!isSelectEvent) {
-				//フィルタで検索の時
+			if (!isSelectionAvailable) {
+				// --- フィルタで検索の時
+				if (filter == null) {
+					filter = EventFilterBaseInfo.ofDownloadDefault();
+				}
+				// ヘッダ情報を出力
+				headerToFile(filewriter, filter, username, isSelectionAvailable, locale, userItemMap, eventNoInfo);
+				// イベント履歴をクエリして取得
 				ct = QueryUtil.getEventLogByFilter(
-						filterInternal,
+						filter,
 						true,
 						HinemosPropertyCommon.monitor_common_report_event_count.getIntegerValue());
 			} else {
-				//選択したイベントの時
-				
+				// --- 選択したイベントの時
+				// ヘッダ情報を出力
+				headerToFile(filewriter, null, username, isSelectionAvailable, locale, userItemMap, eventNoInfo);
+				// 選択されているイベント履歴の詳細をひとつひとつ取得
 				ct = new ArrayList<>();
-					
-				EventLogEntity event = null;
-				
-				for (EventDataInfo info : filter.getSelectedEventList()) {
+				for (EventSelectionInfo key : selectedEvents) {
 					try {
-						event = QueryUtil.getEventLogPK(
-									info.getMonitorId(), info.getMonitorDetailId(),
-									info.getPluginId(), info.getOutputDate(), info.getFacilityId());
+						EventLogEntity event = QueryUtil.getEventLogPK(
+									key.getMonitorId(), key.getMonitorDetailId(),
+									key.getPluginId(), key.getOutputDate(), key.getFacilityId());
 						ct.add(event);
 					} catch (EventLogNotFound e) {
 						//実行前と、実行時点でイベントの状態に変更があった場合なので、エラーにしない
@@ -470,6 +441,7 @@ public class SelectEvent {
 					}
 				}
 			}
+
 			// 帳票出力用に変換
 			collectionToFile(ct, filewriter, locale, userItemMap, eventNoInfo);
 
@@ -477,11 +449,7 @@ public class SelectEvent {
 			filewriter.close();
 		}
 
-		// リストをファイルに書き出し。
-		FileDataSource source = new FileDataSource(file);
-		DataHandler handler = new DataHandler(source);
-
-		return handler;
+		return file;
 	}
 	
 	private static String convObject(Object obj) {
@@ -604,7 +572,7 @@ public class SelectEvent {
 	 * @param eventNoInfo
 	 * @throws IOException
 	 */
-	private void headerToFile(FileWriter filewriter, GetEventFilterInternal filter, 
+	private void headerToFile(FileWriter filewriter, EventFilterBaseInfo filter2, 
 			String username, boolean isSelectEvent, Locale locale,
 			Map<Integer, EventUserExtensionItemInfo> userItemMap, EventNoDisplayInfo eventNoInfo
 			) throws IOException {
@@ -641,6 +609,7 @@ public class SelectEvent {
 		csvData.add(Messages.getString("COMMENT_USER", locale));
 		csvData.add(Messages.getString("COLLECT_GRAPH_FLG", locale));
 		csvData.add(Messages.getString("OWNER_ROLE_ID", locale));
+		csvData.add(Messages.getString("NOTIFY_UUID", locale));
 		for (int i = 1 ; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
 			if (userItemMap.get(i).getDisplayEnable()) {
 				csvData.add(EventHinemosPropertyUtil.getDisplayName(userItemMap.get(i).getDisplayName(), i));
@@ -654,66 +623,63 @@ public class SelectEvent {
 		filewriter.write(csvData.toString() + CR);
 		
 		// フィルタ情報(フィルタ内容)
-		csvData = new StringJoiner(SEPARATOR);
-		
-		// 重要度リストの文字列化
-		StringBuilder priorityMsg = new StringBuilder();
-		if (filter.getPriorityList() != null) {
-			for(Integer priority : filter.getPriorityList()) {
-				priorityMsg.append(
-						Messages.getString(PriorityConstant.typeToMessageCode(priority), locale) + " ");
+		if (filter2 != null) {
+			for (EventFilterConditionInfo filter : filter2.getConditions()) {
+				csvData = new StringJoiner(SEPARATOR);
+
+				// 重要度リストの文字列化
+				StringBuilder priorityMsg = new StringBuilder();
+				for (Integer priority : filter.getPriorityCodes()) {
+					priorityMsg.append(
+							Messages.getString(PriorityConstant.typeToMessageCode(priority), locale) + " ");
+				}
+				// 確認リストの文字列化
+				StringBuilder confirmMsg = new StringBuilder();
+				for (Integer conirmFlg : filter.getConfirmFlagCodes()) {
+					confirmMsg.append(
+							Messages.getString(ConfirmConstant.typeToMessageCode(conirmFlg), locale) + " ");
+				}
+
+				//性能グラフの文字列化
+				String collectGraphStr = "";
+				if (filter.getGraphFlag() != null) {
+					collectGraphStr = Messages.getString(CollectGraphFlgConstant.typeToMessageCode(filter.getGraphFlag()), locale);
+				}
+
+				int facilityType = 0;
+				String facilityTypeStr = "";
+				//対象ファシリティ種別取得
+				if (filter2.getFacilityTarget() != null) {
+					facilityType = filter2.getFacilityTarget().getCode();
+					facilityTypeStr = Messages.getString(FacilityTargetConstant.typeToMessageCode(facilityType), locale);
+				}
+
+				csvData.add(priorityMsg);
+				csvData.add(l2s(filter.getOutputDateFrom()) + " - " + l2s(filter.getOutputDateTo()));
+				csvData.add(l2s(filter.getGenerationDateFrom()) + " - " + l2s(filter.getGenerationDateTo()));
+				csvData.add(convObject(filter.getMonitorId()));
+				csvData.add(convObject(filter.getMonitorDetail()));
+				csvData.add(facilityTypeStr);
+				csvData.add(convObject(filter.getApplication()));
+				csvData.add(confirmMsg);
+				csvData.add(convObject(filter.getConfirmUser()));
+				csvData.add(convObject(filter.getMessage()));
+				csvData.add(convObject(filter.getComment()));
+				csvData.add(convObject(filter.getCommentUser()));
+				csvData.add(collectGraphStr);
+				csvData.add(convObject(filter.getOwnerRoleId()));
+				csvData.add(convObject(filter.getNotifyUUID()));
+				for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
+					if (userItemMap.get(i).getDisplayEnable()) {
+						csvData.add(convObject(filter.getUserItem(i)));
+					}
+				}
+				if (eventNoInfo.getDisplayEnable()) {
+					csvData.add(convObject(filter.getPositionFrom()) + " - " + convObject(filter.getPositionTo()));
+				}
+				filewriter.write(csvData.toString() + CR);
 			}
 		}
-		// 確認リストの文字列化
-		StringBuilder confirmMsg = new StringBuilder();
-		if (filter.getConfirmFlgList() != null) {
-			for(Integer conirmFlg : filter.getConfirmFlgList()) {
-				confirmMsg.append(
-						Messages.getString(ConfirmConstant.typeToMessageCode(conirmFlg), locale) + " ");
-			}
-		}
-		
-		//性能グラフの文字列化
-		String collectGraphStr = ""; 
-		if (filter.getCollectGraphFlg() != null) {
-			collectGraphStr = Messages.getString(CollectGraphFlgConstant.typeToMessageCode(filter.getCollectGraphFlg()), locale);
-		}
-		
-		int facilityType = 0;
-		String facilityTypeStr = "";
-		//対象ファシリティ種別取得
-		if (filter.getFacilityType() != null) {
-			facilityType = filter.getFacilityType();
-		}
-		facilityTypeStr = Messages.getString(FacilityTargetConstant.typeToMessageCode(facilityType), locale);
-		
-		csvData.add(priorityMsg);
-		csvData.add(l2s(filter.getOutputFromDate()) + " - " +
-				l2s(filter.getOutputToDate()));
-		csvData.add(l2s(filter.getGenerationFromDate()) + " - " +
-				l2s(filter.getGenerationToDate()));
-		csvData.add(convObject(filter.getMonitorId()));
-		csvData.add(convObject(filter.getMonitorDetailId()));
-		csvData.add(facilityTypeStr);
-		csvData.add(convObject(filter.getApplication()));
-		csvData.add(confirmMsg);
-		csvData.add(convObject(filter.getConfirmUser()));
-		csvData.add(convObject(filter.getMessage()));
-		csvData.add(convObject(filter.getComment()));
-		csvData.add(convObject(filter.getCommentUser()));
-		csvData.add(collectGraphStr);
-		csvData.add(convObject(filter.getOwnerRoleId()));
-		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
-			if (userItemMap.get(i).getDisplayEnable()) {
-				csvData.add(convObject(EventUtil.getUserItemValue(filter, i)));
-			}
-		}
-		
-		if (eventNoInfo.getDisplayEnable()) {
-			csvData.add(convObject(filter.getPositionFrom()) + " - " +
-				convObject(filter.getPositionTo()));
-		}
-		filewriter.write(csvData.toString() + CR);
 
 		// イベント情報リストのヘッダ情報
 		csvData = new StringJoiner(SEPARATOR);
@@ -737,6 +703,7 @@ public class SelectEvent {
 		csvData.add(Messages.getString("MESSAGE", locale));
 		csvData.add(Messages.getString("MESSAGE_ORG", locale));
 		csvData.add(Messages.getString("COLLECT_GRAPH_FLG", locale));
+		csvData.add(Messages.getString("NOTIFY_UUID", locale));
 		
 		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
 			if (userItemMap.get(i).getExportEnable()) {
@@ -798,13 +765,14 @@ public class SelectEvent {
 			csvData.add(getDoubleQuote(HinemosMessage.replace(event.getMessage(), locale)) );
 			csvData.add(getDoubleQuote(HinemosMessage.replace(event.getMessageOrg(), locale)) );
 			csvData.add(getDoubleQuote(Messages.getString(CollectGraphFlgConstant.typeToMessageCode(event.getCollectGraphFlg()), locale)) );
+			csvData.add(getDoubleQuote(event.getNotifyUUID()));
 			
 			for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
 				if (userItemMap.get(i).getExportEnable()) {
 					csvData.add(getDoubleQuote(EventUtil.getUserItemValue(event, i)));
 				}
 			}
-			
+
 			if (eventNoInfo.getExportEnable()) {
 				csvData.add(getDoubleQuote(convObject(event.getPosition())));
 			}

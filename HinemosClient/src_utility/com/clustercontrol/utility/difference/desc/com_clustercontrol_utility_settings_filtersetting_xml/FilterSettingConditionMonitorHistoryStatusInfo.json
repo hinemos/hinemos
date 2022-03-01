@@ -1,0 +1,88 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"priorityCritical",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_priorityCritical"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"priorityWarning",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_priorityWarning"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"priorityInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_priorityInfo"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"priorityUnknown",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_priorityUnknown"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"generationDateFrom",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_generationDateFrom"}
+	]},
+	
+	{
+	"propName":"generationDateTo",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_generationDateTo"}
+	]},
+	
+	{
+	"propName":"outputDateFrom",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_outputDateFrom"}
+	]},
+	
+	{
+	"propName":"outputDateTo",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_outputDateTo"}
+	]},
+	
+	{
+	"propName":"monitorId",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_monitorId"}
+	]},
+	
+	{
+	"propName":"monitorDetail",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_monitorDetail"}
+	]},
+	
+	{
+	"propName":"application",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_application"}
+	]},
+	
+	{
+	"propName":"message",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_message"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_ownerRoleId"}
+	]}
+]
+}

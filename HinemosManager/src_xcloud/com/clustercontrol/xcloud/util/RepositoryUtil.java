@@ -11,8 +11,8 @@ import static com.clustercontrol.xcloud.common.CloudConstants.Node_CloudScope;
 import static com.clustercontrol.xcloud.common.CloudConstants.Scope_All_Node;
 import static com.clustercontrol.xcloud.common.CloudConstants.Scope_CloudScope;
 import static com.clustercontrol.xcloud.common.CloudConstants.Scope_Location;
-import static com.clustercontrol.xcloud.common.CloudConstants.Scope_Public_Root;
 import static com.clustercontrol.xcloud.common.CloudConstants.Scope_Private_Root;
+import static com.clustercontrol.xcloud.common.CloudConstants.Scope_Public_Root;
 import static com.clustercontrol.xcloud.common.CloudConstants.privateRootId;
 import static com.clustercontrol.xcloud.common.CloudConstants.publicRootId;
 
@@ -24,9 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
 
 import org.apache.log4j.Logger;
 
@@ -52,6 +49,7 @@ import com.clustercontrol.xcloud.Session.PostCommitAction;
 import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.common.CloudMessageConstant;
 import com.clustercontrol.xcloud.common.ErrorCode;
+import com.clustercontrol.xcloud.common.InternalIdCloud;
 import com.clustercontrol.xcloud.factory.ActionMode;
 import com.clustercontrol.xcloud.factory.AddedEventNotifier;
 import com.clustercontrol.xcloud.factory.CloudManager;
@@ -71,7 +69,10 @@ import com.clustercontrol.xcloud.persistence.PersistenceUtil.TransactionScope;
 import com.clustercontrol.xcloud.persistence.TransactionException;
 import com.clustercontrol.xcloud.persistence.Transactional;
 import com.clustercontrol.xcloud.persistence.Transactional.TransactionOption;
-import com.clustercontrol.xcloud.util.CloudUtil.Priority;
+
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.NonUniqueResultException;
+import jakarta.persistence.TypedQuery;
 
 public class RepositoryUtil {
 	public static class Tracer {
@@ -164,6 +165,11 @@ public class RepositoryUtil {
 					result = query.getSingleResult();
 				} catch (NoResultException e) {
 					throw ErrorCode.HINEMOS_SCOPE_DUPLICATED.cloudManagerFault(cloudScopeId);
+				} catch (NonUniqueResultException  e) {
+					// クラウドスコープ配下のスコープが複数の親を持つことはない
+					// そのため、ここにたどり着く場合、クラウドスコープ（もしくは配下のスコープ）と
+					// 重複するファシリティIDを持つファシリティが既に存在することを示す。
+					throw ErrorCode.SCOPE_FACILITY_DUPLICATE.cloudManagerFault(cloudScopeId);
 				}
 
 				if (!parentId.equals(result)) {
@@ -194,6 +200,7 @@ public class RepositoryUtil {
 	}
 	public static ScopeInfo createPublicRootScope(RepositoryUtil.Tracer tracer) throws CloudManagerException {
 		String facilityName = CloudMessageConstant.PUBLIC_CLOUDROOT_SCOPE_NAME.getMessage();
+		// マネージャ起動時のCloudManagerServiceの有効化処理で生成するため基本的に既に存在するはず
 		ScopeInfo scope = createScopeIfNotExist(Scope_Public_Root, null, publicRootId, facilityName, RoleIdConstant.ADMINISTRATORS, true, 
 			s->{
 				AccessControllerBean access = new AccessControllerBean();
@@ -218,6 +225,7 @@ public class RepositoryUtil {
 	}
 	public static ScopeInfo createPrivateRootScope(RepositoryUtil.Tracer tracer) throws CloudManagerException {
 		String facilityName = CloudMessageConstant.PRIVATE_CLOUDROOT_SCOPE_NAME.getMessage();
+		// マネージャ起動時のCloudManagerServiceの有効化処理で生成するため基本的に既に存在するはず
 		ScopeInfo scope = createScopeIfNotExist(Scope_Private_Root, null, privateRootId, facilityName, RoleIdConstant.ADMINISTRATORS, true,
 			s->{
 				AccessControllerBean access = new AccessControllerBean();
@@ -576,12 +584,11 @@ public class RepositoryUtil {
 					} catch (FacilityNotFound e) {
 						Logger logger = Logger.getLogger(RepositoryUtil.class);
 						logger.warn(String.format("Not found scope to relate to nodes. scopeId=%s,nodeIds=%s", entry.getKey(), entry.getValue()));
-						
+						String[] args = {entry.getValue().toString(),entry.getKey()};
 						//internal event notify
 						CloudUtil.notifyInternalMessage(
-								Priority.WARNING,
-								CloudMessageUtil.pluginId_cloud,
-								CloudMessageConstant.VALIDATION_SCOPE_NOT_FOUND.getMessage(entry.getValue().toString(),entry.getKey()),
+								InternalIdCloud.CLOUD_SYS_002,
+								args,
 								""
 								);
 						continue;
@@ -609,9 +616,7 @@ public class RepositoryUtil {
 								Logger logger = Logger.getLogger(this.getClass());
 								logger.error(e.getMessage(), e);
 								CloudUtil.notifyInternalMessage(
-										CloudUtil.Priority.WARNING,
-										CloudMessageUtil.pluginId_cloud,
-										CloudMessageConstant.AUTOUPDATE_ERROR.getMessage(),
+										InternalIdCloud.CLOUD_SYS_001,
 										CloudMessageUtil.getExceptionStackTrace(e)
 								);
 							}
@@ -620,9 +625,7 @@ public class RepositoryUtil {
 				} catch (HinemosUnknown | InvalidRole e) {
 					Logger.getLogger(RepositoryUtil.class).warn(e.getMessage(), e);
 					CloudUtil.notifyInternalMessage(
-							CloudUtil.Priority.WARNING,
-							CloudMessageUtil.pluginId_cloud,
-							CloudMessageConstant.AUTOUPDATE_ERROR.getMessage(),
+							InternalIdCloud.CLOUD_SYS_001,
 							CloudMessageUtil.getExceptionStackTrace(e)
 					);
 				}

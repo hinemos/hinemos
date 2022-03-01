@@ -9,14 +9,11 @@
 package com.clustercontrol.infra.session;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import javax.activation.DataHandler;
-import javax.activation.FileDataSource;
-import javax.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -47,6 +44,7 @@ import com.clustercontrol.infra.bean.AccessInfo;
 import com.clustercontrol.infra.bean.InfraNodeInputConstant;
 import com.clustercontrol.infra.bean.ModuleResult;
 import com.clustercontrol.infra.factory.AsyncModuleWorker;
+import com.clustercontrol.infra.factory.AsyncModuleWorker.SessionInfo;
 import com.clustercontrol.infra.factory.DownloadInfraFile;
 import com.clustercontrol.infra.factory.ModifyInfraFile;
 import com.clustercontrol.infra.factory.ModifyInfraManagement;
@@ -55,11 +53,16 @@ import com.clustercontrol.infra.factory.SelectInfraManagement;
 import com.clustercontrol.infra.model.InfraCheckResult;
 import com.clustercontrol.infra.model.InfraFileInfo;
 import com.clustercontrol.infra.model.InfraManagementInfo;
+import com.clustercontrol.infra.util.InfraManagementChangeCallback;
 import com.clustercontrol.infra.util.InfraManagementValidator;
 import com.clustercontrol.infra.util.QueryUtil;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.platform.HinemosPropertyDefault;
+import com.clustercontrol.rest.util.RestDownloadFile;
 import com.clustercontrol.util.MessageConstant;
+
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.PersistenceException;
 
 /**
  * 環境構築機能の管理を行う Session Bean です。<BR>
@@ -78,10 +81,11 @@ public class InfraControllerBean implements CheckFacility {
 	 * @throws InfraManagementDuplicate 
 	 *
 	 */
-	public boolean addInfraManagement(InfraManagementInfo info) 
+	public InfraManagementInfo addInfraManagement(InfraManagementInfo info) 
 			throws NotifyDuplicate, InvalidSetting, InvalidRole, HinemosUnknown, InfraManagementDuplicate, InfraManagementNotFound {
 		JpaTransactionManager jtm = null;
 
+		InfraManagementInfo ret = new InfraManagementInfo();
 		// 通知情報を登録
 		boolean flag;
 		try {
@@ -98,11 +102,15 @@ public class InfraControllerBean implements CheckFacility {
 
 			ModifyInfraManagement proc = new ModifyInfraManagement();
 			flag = proc.add(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+			if(flag){
+				ret = new SelectInfraManagement().get(info.getManagementId(), null, ObjectPrivilegeMode.READ);
+			}
+
+			// コミット後にNotifyRelationCacheを更新
+			jtm.addCallback(new InfraManagementChangeCallback());
 
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
 		} catch (InfraManagementNotFound | NotifyDuplicate | HinemosUnknown | InvalidSetting e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -127,7 +135,7 @@ public class InfraControllerBean implements CheckFacility {
 				jtm.close();
 		}
 
-		return  flag;
+		return ret;
 	}
 
 	/**
@@ -135,8 +143,10 @@ public class InfraControllerBean implements CheckFacility {
 	 * @throws InfraManagementDuplicate 
 	 *
 	 */
-	public boolean modifyInfraManagement(InfraManagementInfo info) throws InfraManagementNotFound, NotifyDuplicate, NotifyNotFound, InvalidRole, HinemosUnknown, InvalidSetting, InfraManagementDuplicate {
+	public InfraManagementInfo modifyInfraManagement(InfraManagementInfo info) throws InfraManagementNotFound, NotifyDuplicate, NotifyNotFound, InvalidRole, HinemosUnknown, InvalidSetting, InfraManagementDuplicate {
 		JpaTransactionManager jtm = null;
+		
+		InfraManagementInfo ret = new InfraManagementInfo();
 
 		// 通知情報を更新
 		boolean flag;
@@ -144,17 +154,36 @@ public class InfraControllerBean implements CheckFacility {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
+			String ownerRoleId = QueryUtil.getInfraManagementInfoPK(info.getManagementId(), ObjectPrivilegeMode.READ).getOwnerRoleId();
+			info.setOwnerRoleId(ownerRoleId);
+			
 			//入力チェック
 			InfraManagementValidator.validateInfraManagementInfo(info);
 
 			ModifyInfraManagement proc = new ModifyInfraManagement();
 			flag = proc.modify(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+			if(flag){
+				ret = new SelectInfraManagement().get(info.getManagementId(), null, ObjectPrivilegeMode.READ);
+			}
+
+			// コミット後にNotifyRelationCacheを更新
+			jtm.addCallback(new InfraManagementChangeCallback());
 
 			jtm.commit();
 
 			// コミット後にキャッシュクリア
 			NotifyRelationCache.refresh();
-		} catch (NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidRole | InfraManagementNotFound | InvalidSetting e ){
+		} catch (HinemosUnknown e) {
+			if (jtm != null)
+				jtm.rollback();
+			if (e.getCause() instanceof PersistenceException) {
+				// PersistenceExceptionの場合はSQLエラーがメッセージに含まれてしまうため、
+				// メッセージを置き換えて再度例外を投げる
+				throw new HinemosUnknown("InfraControllerBean.modifyInfraManagement, managementId = " + info.getManagementId(), e.getCause());
+			} else {
+				throw e;
+			}
+		} catch (NotifyDuplicate | NotifyNotFound | InvalidRole | InfraManagementNotFound | InvalidSetting e ){
 			if (jtm != null){
 				jtm.rollback();
 			}
@@ -163,6 +192,12 @@ public class InfraControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InfraManagementDuplicate(e.getMessage(), e);
+		} catch (PersistenceException e) {
+			m_log.warn("modifyInfraManagement() : " + e.getClass().getSimpleName() +
+					", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown("InfraControllerBean.modifyInfraManagement, managementId = " + info.getManagementId(), e);
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
@@ -177,14 +212,16 @@ public class InfraControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.close();
 		}
-		return flag;
+		return ret;
 	}
 
 	/**
 	 */
-	public boolean deleteInfraManagement(String[] infraManagementIds) throws InfraManagementNotFound, InvalidSetting, InvalidRole, HinemosUnknown {
+	public List<InfraManagementInfo> deleteInfraManagement(String[] infraManagementIds) throws InfraManagementNotFound, InvalidSetting, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
+		List<InfraManagementInfo> ret = new ArrayList<InfraManagementInfo>();
+		SelectInfraManagement select = new SelectInfraManagement();
 		// 通知情報を削除
 		ModifyInfraManagement proc = new ModifyInfraManagement();
 		boolean flag = true;
@@ -193,13 +230,18 @@ public class InfraControllerBean implements CheckFacility {
 			jtm.begin();
 
 			for (String infraManagementId: infraManagementIds) {
+				InfraManagementInfo info = select.get(infraManagementId, null, ObjectPrivilegeMode.READ); 
 				flag = flag && proc.delete(infraManagementId);
+				if(flag){
+					ret.add(info);
+				}
 			}
+
+			// コミット後にNotifyRelationCacheを更新
+			jtm.addCallback(new InfraManagementChangeCallback());
 
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
 		} catch(HinemosUnknown | InvalidSetting | InvalidRole | InfraManagementNotFound e){
 			if (jtm != null){
 				jtm.rollback();
@@ -219,7 +261,7 @@ public class InfraControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.close();
 		}
-		return flag;
+		return ret;
 	}
 
 	/**
@@ -335,15 +377,22 @@ public class InfraControllerBean implements CheckFacility {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public List<String> getReferManagementIdList(String ownerRoleId) throws InvalidRole, HinemosUnknown {
+	public List<InfraManagementInfo> getReferManagementList(String ownerRoleId) throws InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
+		SelectInfraManagement select = new SelectInfraManagement();
 
 		List<String> list = null;
+		List<InfraManagementInfo> infoList = new ArrayList<>();
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			list = new SelectInfraManagement().getReferManagementIdList(ownerRoleId);
+			for(String managementId : list){
+				InfraManagementInfo info = select.get(managementId, null, ObjectPrivilegeMode.READ);
+				infoList.add(info);
+			}
+			
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
@@ -360,7 +409,7 @@ public class InfraControllerBean implements CheckFacility {
 				jtm.close();
 		}
 
-		return list;
+		return infoList;
 	}
 
 	/**
@@ -457,7 +506,7 @@ public class InfraControllerBean implements CheckFacility {
 	 * @throws HinemosUnknown
 	 * @throws InfraManagementNotFound
 	 */
-	public String createSession(String infraManagementId, List<String> moduleIdList, Integer nodeInputType, List<AccessInfo> accessList)
+	public SessionInfo createSession(String infraManagementId, List<String> moduleIdList, Integer nodeInputType, List<AccessInfo> accessList)
 			throws InfraManagementNotFound, InfraModuleNotFound, InfraManagementInvalid, InvalidRole, HinemosUnknown, FacilityNotFound, InvalidSetting {
 
 		// モジュール件数の確認
@@ -478,8 +527,14 @@ public class InfraControllerBean implements CheckFacility {
 		return AsyncModuleWorker.createSession(infraManagementId, moduleIdList, accessList);
 	}
 
-	public boolean deleteSession(String sessionId) throws InfraManagementNotFound, InvalidRole, HinemosUnknown {
-		return AsyncModuleWorker.deleteSession(sessionId);
+	public SessionInfo deleteSession(String sessionId) throws InfraManagementNotFound, InvalidRole, HinemosUnknown, SessionNotFound {
+		SessionInfo session = AsyncModuleWorker.deleteSession(sessionId);
+		
+		if(session == null) {
+			throw new SessionNotFound(sessionId);
+		}
+		
+		return session;
 	}
 	
 	/**
@@ -545,7 +600,7 @@ public class InfraControllerBean implements CheckFacility {
 	}
 	
 
-	public List<InfraCheckResult> getCheckResultList(String managementId) throws HinemosUnknown, InvalidRole {
+	public List<InfraCheckResult> getCheckResultList(String managementId) throws InfraManagementNotFound, HinemosUnknown, InvalidRole {
 		JpaTransactionManager jtm = null;
 
 		SelectInfraCheckResult select = new SelectInfraCheckResult();
@@ -556,15 +611,11 @@ public class InfraControllerBean implements CheckFacility {
 
 			resultList = select.getListByManagementId(managementId);
 			jtm.commit();
-		} catch (HinemosUnknown | InvalidRole e){
+		} catch (InfraManagementNotFound | HinemosUnknown | InvalidRole e){
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("getCheckResultList() : " + e.getClass().getSimpleName() +
 					", " + e.getMessage(), e);
@@ -579,8 +630,9 @@ public class InfraControllerBean implements CheckFacility {
 		return resultList;
 	}
 
-	public void addInfraFile(InfraFileInfo fileInfo, DataHandler fileContent) throws InvalidRole, HinemosUnknown, InfraFileTooLarge, InfraManagementDuplicate {
+	public InfraFileInfo addInfraFile(InfraFileInfo fileInfo, DataHandler fileContent) throws InvalidRole, HinemosUnknown, InfraFileTooLarge, InfraManagementDuplicate {
 		synchronized (LOCK) {
+			InfraFileInfo ret = null;
 			JpaTransactionManager jtm = null;
 			try {
 				jtm = new JpaTransactionManager();
@@ -605,6 +657,8 @@ public class InfraControllerBean implements CheckFacility {
 				new ModifyInfraFile().add(fileInfo, fileContent, userId);
 	
 				jtm.commit();
+				
+				ret = QueryUtil.getInfraFileInfoPK(fileInfo.getFileId(), ObjectPrivilegeMode.READ);
 			} catch (EntityExistsException e) {
 				if (jtm != null)
 					jtm.rollback();
@@ -634,6 +688,8 @@ public class InfraControllerBean implements CheckFacility {
 					jtm.close();
 				}
 			}
+			
+			return ret;
 		}
 	}
 
@@ -675,8 +731,9 @@ public class InfraControllerBean implements CheckFacility {
 		return list;
 	}
 
-	public void deleteInfraFileList(List<String> fileIdList) throws InvalidRole, HinemosUnknown, InfraFileNotFound, InfraFileBeingUsed {
+	public List<InfraFileInfo> deleteInfraFileList(List<String> fileIdList) throws InvalidRole, HinemosUnknown, InfraFileNotFound, InfraFileBeingUsed, InfraManagementNotFound {
 		JpaTransactionManager jtm = null;
+		List<InfraFileInfo> ret = new ArrayList<>();
 		ModifyInfraFile proc = new ModifyInfraFile();
 		
 		try {
@@ -684,6 +741,8 @@ public class InfraControllerBean implements CheckFacility {
 			jtm.begin();
 			
 			for (String fileId : fileIdList) {
+				InfraFileInfo info  = QueryUtil.getInfraFileInfoPK(fileId, ObjectPrivilegeMode.READ);
+				ret.add(info);
 				proc.delete(fileId);
 			}
 			
@@ -692,12 +751,15 @@ public class InfraControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
-	public DataHandler downloadInfraFile(String fileId, String fileName) throws InvalidSetting, InfraFileNotFound, HinemosUnknown, IOException {
+	public RestDownloadFile downloadInfraFile(String fileId) throws InvalidSetting, InfraFileNotFound, HinemosUnknown {
+		
 		synchronized (LOCK) {
-			DataHandler dh = null;
 			JpaTransactionManager jtm = null;
+			File file = null;
+			String fileName = "";
 			try {
 				jtm = new JpaTransactionManager();
 				jtm.begin();
@@ -710,8 +772,14 @@ public class InfraControllerBean implements CheckFacility {
 					throw e;
 				}
 				
-				dh = new DownloadInfraFile().download(fileId, fileName);
-	
+				List<InfraFileInfo> infoList = getInfraFileList();
+				for(InfraFileInfo info : infoList){
+					if(info.getFileId().equals(fileId)){
+						fileName = info.getFileName();
+						break;
+					}
+				}
+				file = new DownloadInfraFile().download(fileId);
 				jtm.commit();
 			} finally {
 				if (jtm != null) {
@@ -719,7 +787,7 @@ public class InfraControllerBean implements CheckFacility {
 				}
 			}
 			
-			return dh;
+			return new RestDownloadFile(file, fileName);
 		}
 	}
 	
@@ -730,18 +798,29 @@ public class InfraControllerBean implements CheckFacility {
 			m_log.debug("Fail to delete " + file.getAbsolutePath());
 	}
 
-	public void modifyInfraFile(InfraFileInfo fileInfo, DataHandler fileContent) throws InvalidRole, HinemosUnknown, InfraFileTooLarge {
+	public InfraFileInfo modifyInfraFile(InfraFileInfo fileInfo, DataHandler fileContent) throws InvalidRole, HinemosUnknown, InfraFileTooLarge {
 		synchronized (LOCK) {
 			JpaTransactionManager jtm = null;
+			InfraFileInfo ret = new InfraFileInfo();
 			try {
 				jtm = new JpaTransactionManager();
 				jtm.begin();
+				
+				String ownerRoleId = QueryUtil.getInfraFileInfoPK(fileInfo.getFileId(), ObjectPrivilegeMode.READ).getOwnerRoleId();
+				fileInfo.setOwnerRoleId(ownerRoleId);
 				
 				//入力チェック
 				InfraManagementValidator.validateInfraFileInfo(fileInfo);
 				
 				String userId = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 				new ModifyInfraFile().modify(fileInfo, fileContent, userId);
+				List<InfraFileInfo> infoList = QueryUtil.getAllInfraFile();
+				for(InfraFileInfo info : infoList){
+					if(info.getFileId().equals(fileInfo.getFileId())){
+						ret = info;
+						break;
+					}
+				}
 	
 				jtm.commit();
 			} catch (ObjectPrivilege_InvalidRole e) {
@@ -769,14 +848,15 @@ public class InfraControllerBean implements CheckFacility {
 					jtm.close();
 				}
 			}
+			return ret;
 		}
 	}
 
-	public DataHandler downloadTransferFile(String fileName) {
-		m_log.info("downloadTransferFile fileName="+fileName);
+	public RestDownloadFile downloadTransferFile(String fileId) {
+		m_log.info("downloadTransferFile fileName="+fileId);
 		String infraDirectory = HinemosPropertyDefault.infra_transfer_dir.getStringValue()
 				+ File.separator + "send" + File.separator;
-		FileDataSource fileData = new FileDataSource(infraDirectory + fileName);
-		return new DataHandler(fileData);
+		File file = new File(infraDirectory + fileId);
+		return new RestDownloadFile(file, fileId);
 	}
 }

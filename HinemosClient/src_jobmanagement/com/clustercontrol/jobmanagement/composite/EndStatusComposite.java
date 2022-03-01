@@ -19,6 +19,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.JobEndStatusInfoResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.EndStatusColorConstant;
@@ -31,7 +32,6 @@ import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobEndStatusInfo;
 
 /**
  * 終了状態タブ用のコンポジットクラスです。
@@ -55,7 +55,7 @@ public class EndStatusComposite extends Composite {
 	/** 異常終了値 */
 	private Text m_abnormalValue = null;
 	/** ジョブ終了値情報のリスト */
-	private List<JobEndStatusInfo> m_end = null;
+	private List<JobEndStatusInfoResponse> m_end = null;
 
 	/**
 	 * コンストラクタ
@@ -301,16 +301,16 @@ public class EndStatusComposite extends Composite {
 				.valueOf(EndStatusConstant.INITIAL_VALUE_ABNORMAL));
 
 		if (m_end != null) {
-			JobEndStatusInfo infoNormal = null;
-			JobEndStatusInfo infoWarning = null;
-			JobEndStatusInfo infoAbnormal = null;
+			JobEndStatusInfoResponse infoNormal = null;
+			JobEndStatusInfoResponse infoWarning = null;
+			JobEndStatusInfoResponse infoAbnormal = null;
 
 			for (int i = 0; i < m_end.size(); i++) {
-				if (m_end.get(i).getType() == EndStatusConstant.TYPE_NORMAL) {
+				if (m_end.get(i).getType() ==  JobEndStatusInfoResponse.TypeEnum.NORMAL) {
 					infoNormal = m_end.get(i);
-				} else if (m_end.get(i).getType() == EndStatusConstant.TYPE_WARNING) {
+				} else if (m_end.get(i).getType() ==  JobEndStatusInfoResponse.TypeEnum.WARNING) {
 					infoWarning = m_end.get(i);
-				} else if (m_end.get(i).getType() == EndStatusConstant.TYPE_ABNORMAL) {
+				} else if (m_end.get(i).getType() ==  JobEndStatusInfoResponse.TypeEnum.ABNORMAL) {
 					infoAbnormal = m_end.get(i);
 				}
 			}
@@ -353,7 +353,7 @@ public class EndStatusComposite extends Composite {
 	 *
 	 * @param end ジョブ終了状態情報のリスト
 	 */
-	public void setEndInfo(List<JobEndStatusInfo> end) {
+	public void setEndInfo(List<JobEndStatusInfoResponse> end) {
 		m_end = end;
 	}
 
@@ -362,7 +362,7 @@ public class EndStatusComposite extends Composite {
 	 *
 	 * @return ジョブ終了状態情報のリスト
 	 */
-	public List<JobEndStatusInfo> getEndInfo() {
+	public List<JobEndStatusInfoResponse> getEndInfo() {
 		return m_end;
 	}
 
@@ -376,20 +376,20 @@ public class EndStatusComposite extends Composite {
 	public ValidateResult createEndInfo() {
 		ValidateResult result = null;
 
-		JobEndStatusInfo infoNormal = null;
-		JobEndStatusInfo infoWarning = null;
-		JobEndStatusInfo infoAbnormal = null;
+		JobEndStatusInfoResponse infoNormal = null;
+		JobEndStatusInfoResponse infoWarning = null;
+		JobEndStatusInfoResponse infoAbnormal = null;
 
 		//終了状態定義情報クラスのインスタンスを作成・取得
-		m_end = new ArrayList<JobEndStatusInfo>();
-		infoNormal = new JobEndStatusInfo();
-		infoNormal.setType(EndStatusConstant.TYPE_NORMAL);
+		m_end = new ArrayList<JobEndStatusInfoResponse>();
+		infoNormal = new JobEndStatusInfoResponse();
+		infoNormal.setType(JobEndStatusInfoResponse.TypeEnum.NORMAL);
 		m_end.add(infoNormal);
-		infoWarning = new JobEndStatusInfo();
-		infoWarning.setType(EndStatusConstant.TYPE_WARNING);
+		infoWarning = new JobEndStatusInfoResponse();
+		infoWarning.setType(JobEndStatusInfoResponse.TypeEnum.WARNING);
 		m_end.add(infoWarning);
-		infoAbnormal = new JobEndStatusInfo();
-		infoAbnormal.setType(EndStatusConstant.TYPE_ABNORMAL);
+		infoAbnormal = new JobEndStatusInfoResponse();
+		infoAbnormal.setType(JobEndStatusInfoResponse.TypeEnum.ABNORMAL);
 		m_end.add(infoAbnormal);
 
 		try {

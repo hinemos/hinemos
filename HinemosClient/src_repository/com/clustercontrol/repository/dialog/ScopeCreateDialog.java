@@ -26,6 +26,10 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
+import org.openapitools.client.model.AddScopeRequest;
+import org.openapitools.client.model.ModifyScopeRequest;
+import org.openapitools.client.model.ScopeInfoRequest;
+import org.openapitools.client.model.ScopeInfoResponseP1;
 
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.accesscontrol.util.ClientSession;
@@ -37,17 +41,17 @@ import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.FacilityDuplicate;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.bean.ScopeConstant;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.viewer.PropertySheet;
-import com.clustercontrol.ws.repository.FacilityDuplicate_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.ScopeInfo;
 
 /**
  * スコープの作成・変更ダイアログクラス<BR>
@@ -193,10 +197,10 @@ public class ScopeCreateDialog extends CommonDialog {
 
 		// プロパティ取得及び設定
 		Property property = null;
-		RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(this.managerName);
+		RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.managerName);
 		if (this.isModifyDialog) {
 			try {
-				ScopeInfo scopeInfo = wrapper.getScope(this.facilityId);
+				ScopeInfoResponseP1 scopeInfo = wrapper.getScope(this.facilityId);
 				if (scopeInfo == null)
 					throw new HinemosUnknown("ScopeInfo is null, facilityId : " + this.facilityId);
 				
@@ -205,7 +209,7 @@ public class ScopeCreateDialog extends CommonDialog {
 					m_ownerRoleId.setText(scopeInfo.getOwnerRoleId());
 				}
 				property = getScopeProperty(scopeInfo, PropertyDefineConstant.MODE_MODIFY);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
@@ -218,7 +222,7 @@ public class ScopeCreateDialog extends CommonDialog {
 			}
 		} else {
 			try {
-				ScopeInfo scopeInfo = wrapper.getScope(null);
+				ScopeInfoResponseP1 scopeInfo = wrapper.getScopeDefault();
 				// オーナーロールID取得
 				if (scopeInfo == null)
 					throw new HinemosUnknown("ScopeInfo is null");
@@ -227,7 +231,7 @@ public class ScopeCreateDialog extends CommonDialog {
 					m_ownerRoleId.setText(scopeInfo.getOwnerRoleId());
 				}
 				property = getScopeProperty(scopeInfo, PropertyDefineConstant.MODE_ADD);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
@@ -335,16 +339,19 @@ public class ScopeCreateDialog extends CommonDialog {
 			String errMessage = "";
 			Property copy = PropertyUtil.copy(property);
 			PropertyUtil.deletePropertyDefine(copy);
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(this.managerName);
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.managerName);
 			Object[] arg = {this.managerName};
 			if(!this.isModifyDialog()){
 				// 作成の場合
 				try {
-					ScopeInfo scopeinfo = ScopePropertyUtil.property2scope(copy);
+					ScopeInfoRequest scopeinfo = ScopePropertyUtil.property2scope(copy);
 					if (m_ownerRoleId.getText().length() > 0) {
 						scopeinfo.setOwnerRoleId(m_ownerRoleId.getText());
 					}
-					wrapper.addScope(parentFacilityId, scopeinfo);
+					AddScopeRequest requestDto = new AddScopeRequest();
+					requestDto.setParentFacilityId(parentFacilityId);
+					requestDto.setScopeInfo(scopeinfo);
+					wrapper.addScope(requestDto);
 
 					// リポジトリキャッシュの更新
 					ClientSession.doCheck();
@@ -356,7 +363,7 @@ public class ScopeCreateDialog extends CommonDialog {
 
 					result = true;
 
-				} catch (FacilityDuplicate_Exception e) {
+				} catch (FacilityDuplicate e) {
 					//ファシリティID取得
 					ArrayList<?> values = PropertyUtil.getPropertyValue(copy, ScopeConstant.FACILITY_ID);
 					String args[] = { (String)values.get(0) };
@@ -368,7 +375,7 @@ public class ScopeCreateDialog extends CommonDialog {
 							Messages.getString("message.repository.26", args));
 
 				} catch (Exception e) {
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
@@ -383,11 +390,13 @@ public class ScopeCreateDialog extends CommonDialog {
 			} else {
 				// 変更の場合
 				try {
-					ScopeInfo scopeInfo = ScopePropertyUtil.property2scope(copy);
+					ScopeInfoRequest scopeInfo = ScopePropertyUtil.property2scope(copy);
 					if (m_ownerRoleId.getText().length() > 0) {
 						scopeInfo.setOwnerRoleId(m_ownerRoleId.getText());
 					}
-					wrapper.modifyScope(scopeInfo);
+					ModifyScopeRequest requestDto = new ModifyScopeRequest();
+					RestClientBeanUtil.convertBean(scopeInfo, requestDto);
+					wrapper.modifyScope(scopeInfo.getFacilityId(), requestDto);
 
 					// リポジトリキャッシュの更新
 					ClientSession.doCheck();
@@ -400,7 +409,7 @@ public class ScopeCreateDialog extends CommonDialog {
 					result = true;
 
 				} catch (Exception e) {
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
@@ -482,7 +491,7 @@ public class ScopeCreateDialog extends CommonDialog {
 	 * @param property
 	 * @return スコープ属性情報
 	 */
-	private static Property getScopeProperty(ScopeInfo scopeInfo, int mode) {
+	private static Property getScopeProperty(ScopeInfoResponseP1 scopeInfo, int mode) {
 
 		Property property = ScopePropertyUtil.scope2property(scopeInfo, mode, Locale.getDefault());
 		return property;

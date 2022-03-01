@@ -18,8 +18,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.EventLogNotFound;
 import com.clustercontrol.fault.InvalidRole;
@@ -181,6 +180,9 @@ public class EventCustomCommandTask implements Runnable {
 			}
 			
 			this.result.setCommandEndTime(HinemosTime.currentTimeMillis());
+		} catch (RuntimeException e) {
+			//findbugs対応 RuntimeException のキャッチを明示化
+			m_log.warn(e);
 		} catch (Exception e) {
 			m_log.warn(e);
 		}
@@ -203,8 +205,7 @@ public class EventCustomCommandTask implements Runnable {
 				this.operationUser,
 				new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date(this.commandKickTime))};
 		
-		AplLogger.put(PriorityConstant.TYPE_INFO, HinemosModuleConstant.MONITOR_EVENT, 
-				MessageConstant.MESSAGE_EVENT_CUSTOM_COMMAND_FAILURE_NOTIFY, msgArgs);
+		AplLogger.put(InternalIdCommon.MON_EVT_SYS_001, msgArgs);
 	}
 	
 	/**

@@ -8,7 +8,6 @@
 
 package com.clustercontrol.utility.settings.nodemap.action;
 
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -20,11 +19,18 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.xml.ws.WebServiceException;
-
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.AddBgImageRequest;
+import org.openapitools.client.model.AddIconImageRequest;
+import org.openapitools.client.model.MapBgImageInfoResponse;
+import org.openapitools.client.model.MapIconImageInfoResponse;
 
-import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+
+import com.clustercontrol.nodemap.util.NodeMapRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.difference.CSVUtil;
@@ -53,11 +59,7 @@ import com.clustercontrol.utility.util.Config;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.nodemap.BgFileNotFound_Exception;
-import com.clustercontrol.ws.nodemap.HinemosUnknown_Exception;
-import com.clustercontrol.ws.nodemap.IconFileNotFound_Exception;
-import com.clustercontrol.ws.nodemap.InvalidRole_Exception;
-import com.clustercontrol.ws.nodemap.InvalidUserPass_Exception;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * 
@@ -70,7 +72,6 @@ import com.clustercontrol.ws.nodemap.InvalidUserPass_Exception;
  */
 public class NodeMapImageAction {
 
-	private static final int MAX_FILESIZE = 256*1024;
 	/* ロガー */
 	protected static Logger log = Logger.getLogger(NodeMapImageAction.class);
 
@@ -97,23 +98,30 @@ public class NodeMapImageAction {
 	/**
 	 * 定義情報をマネージャから読み出します。
 	 * @return
+	 * @throws Exception 
 	 */
 	@ExportMethod
-	public int exportNodeMap(String imageFile, String iconFile){
-		log.debug("Start Import exportNodeMap Image:" + imageFile);
+	public int exportNodeMap(String imageFile, String iconFile) throws Exception{
+		log.debug("Start Export NodeMap Image:" + imageFile);
 		int ret =0;
-		boolean backup = imageFile.contains(BackupUtil.getBackupFolder());
+		
+		boolean backup = false;
+		String directoryPath = MultiManagerPathUtil.getDirectoryPath(SettingToolsXMLPreferencePage.KEY_XML);
+		if (directoryPath != null && (imageFile.length() > directoryPath.length())) {
+			backup = imageFile.substring(directoryPath.length()).contains(BackupUtil.getBackupFolder());
+		}
+
 		log.debug("imageFile : " + new File(imageFile).getAbsolutePath());
 		log.debug("iconFile : " + new File(iconFile).getAbsolutePath());
 
-		NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+		NodeMapRestClientWrapper wrapper = NodeMapRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 
-		List<String> bigImageNames = null;
-		List<String> iconNames = null;
+		List<MapBgImageInfoResponse>  bigImageNames = null;
+		List<MapIconImageInfoResponse> iconNames = null;
 		try {
-			bigImageNames = wrapper.getBgImagePK();
-			iconNames = wrapper.getIconImagePK();
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			bigImageNames = wrapper.getBgImageFilename();
+			iconNames = wrapper.getIconImageFilename();
+		} catch (HinemosUnknown | InvalidRole | InvalidUserPass | RestConnectFailed e) {
 			log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 			return ret;
@@ -122,19 +130,16 @@ public class NodeMapImageAction {
 		//XML作成
 		// ImageFile
 		NodeMapBgImage NodeMapBgImage = new NodeMapBgImage();
-		for (String  bigImageName : bigImageNames) {
+		for (MapBgImageInfoResponse  bigImageName : bigImageNames) {
 			try{
 				
 				NodeMapBgImageInfo vNodeMapBgImageInfo = new NodeMapBgImageInfo();
-				vNodeMapBgImageInfo.setFileName(bigImageName);
+				vNodeMapBgImageInfo.setFileName(bigImageName.getFilename());
 				NodeMapBgImage.addNodeMapBgImageInfo(vNodeMapBgImageInfo);
-				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + bigImageName);
+				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + bigImageName.getFilename());
 			
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
 			} catch (Exception e) {
-				log.warn(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+				log.warn(Messages.getString("SettingTools.ExportFailed") + " : " + bigImageName.getFilename() + " : "+ HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 			}
 		}
@@ -154,12 +159,9 @@ public class NodeMapImageAction {
 		
 		// Icon
 		NodemapIconImageInfo nodeMapIconImage = new NodemapIconImageInfo();
-		for (String  iconName : iconNames) {
+		for (MapIconImageInfoResponse  iconName : iconNames) {
 			try{
-				nodeMapIconImage.setIconId(iconName);
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + iconName,e);
-				ret = SettingConstants.ERROR_INPROCESS;
+				nodeMapIconImage.setIconId(iconName.getFilename());
 			} catch (Exception e) {
 				log.warn(Messages.getString("SettingTools.ExportFailed") + " : " + iconName,e);
 				ret = SettingConstants.ERROR_INPROCESS;
@@ -167,18 +169,15 @@ public class NodeMapImageAction {
 		}
 		
 		NodemapIconImage nodemapIconImage = new NodemapIconImage();
-		for (String  iconName : iconNames) {
+		for (MapIconImageInfoResponse  iconName : iconNames) {
 			try{
 				
 				NodemapIconImageInfo vNodemapIconImageInfo = new NodemapIconImageInfo();
-				vNodemapIconImageInfo.setIconId(iconName);
+				vNodemapIconImageInfo.setIconId(iconName.getFilename());
 				nodemapIconImage.addNodemapIconImageInfo(vNodemapIconImageInfo);
-				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + iconName);
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + iconName,e);
-				ret = SettingConstants.ERROR_INPROCESS;
+				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + iconName.getFilename());
 			} catch (Exception e) {
-				log.warn(Messages.getString("SettingTools.ExportFailed") + " : " + iconName,e);
+				log.warn(Messages.getString("SettingTools.ExportFailed") + " : " + iconName.getFilename(),e);
 				ret = SettingConstants.ERROR_INPROCESS;
 			}
 		}
@@ -199,13 +198,16 @@ public class NodeMapImageAction {
 		
 		// データ保存
 		byte[] fileData=null;
-		
 		try {
 			String bgFolderPath = getFolderPath(SettingToolsXMLPreferencePage.VALUE_NODEMAP_BG_FOLDER,backup);
 			// ImageFile保存
-			for (String bigImageName : bigImageNames){
-				fileData = wrapper.getBgImage(bigImageName);
-				String path = getFilePath(bigImageName, bgFolderPath);
+			for (MapBgImageInfoResponse bigImageName : bigImageNames){
+				log.debug("bigImageName = " + bigImageName.getFilename());
+			}
+			for (MapBgImageInfoResponse bigImageName : bigImageNames){
+				File file = wrapper.downloadBgImage(bigImageName.getFilename());
+				fileData= getFileData(file);
+				String path = getFilePath(bigImageName.getFilename(), bgFolderPath);
 				log.debug("path = " + path);
 				FileOutputStream fileOutStm = null;
 				try {
@@ -215,7 +217,9 @@ public class NodeMapImageAction {
 					log.error(Messages.getString("NodeMapImage.ExportFailed") + " FilePath=" + path,e);//処理続行
 				}finally{
 					try {
-						fileOutStm.close();
+						if (fileOutStm != null) {
+							fileOutStm.close();
+						}
 					} catch (IOException e) {
 					}
 					fileOutStm = null;
@@ -224,9 +228,13 @@ public class NodeMapImageAction {
 			
 			String iconFolderPath = getFolderPath(SettingToolsXMLPreferencePage.VALUE_NODEMAP_ICON_FOLDER,backup);
 			// Icon保存
-			for (String iconName : iconNames){
-				fileData = wrapper.getIconImage(iconName);
-				String path = getFilePath(iconName, iconFolderPath);
+			for (MapIconImageInfoResponse iconName : iconNames){
+				log.debug("iconName = " + iconName.getFilename());
+			}
+			for (MapIconImageInfoResponse iconName : iconNames){
+				File file = wrapper.downloadIconImage(iconName.getFilename());
+				fileData= getFileData(file);
+				String path = getFilePath(iconName.getFilename(), iconFolderPath);
 				log.debug("path = " + path);
 				FileOutputStream fileOutStm = null;
 				try {
@@ -236,19 +244,20 @@ public class NodeMapImageAction {
 					log.error(Messages.getString("NodeMapImage.ExportFailed") + " FilePath=" + path,e);//処理続行
 				}finally{
 					try {
-						fileOutStm.close();
+						if (fileOutStm != null) {
+							fileOutStm.close();
+						}
 					} catch (IOException e) {
 					}
 					fileOutStm = null;
 				}
 			}
-			
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | IconFileNotFound_Exception | BgFileNotFound_Exception e) {
-			log.error(e);
+		} catch (Exception e) {
+			log.warn(Messages.getString("SettingTools.ExportFailed") );
 			ret = SettingConstants.ERROR_INPROCESS;
 			return ret;
 		}
-		
+			
 		// 処理の終了
 		if (ret == 0) {
 			log.info(Messages.getString("SettingTools.ExportCompleted"));
@@ -286,7 +295,7 @@ public class NodeMapImageAction {
 		NodeMapIconImageType nodeMapIconImageInfo = null;
 		// BbImage
 		try {
-			nodeMapBgImage =  NodeMapBgImage.unmarshal(new InputStreamReader(new FileInputStream(imageXml), "UTF-8"));
+			nodeMapBgImage =  XmlMarshallUtil.unmarshall(NodeMapBgImageType.class,new InputStreamReader(new FileInputStream(imageXml), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"),e);
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -298,10 +307,10 @@ public class NodeMapImageAction {
 			ret=SettingConstants.ERROR_SCHEMA_VERSION;
 			return ret;
 		}
-
+		
 		// IconImage
 		try {
-			nodeMapIconImageInfo =  NodemapIconImage.unmarshal(new InputStreamReader(new FileInputStream(iconXml), "UTF-8"));
+			nodeMapIconImageInfo = XmlMarshallUtil.unmarshall(NodeMapIconImageType.class,new InputStreamReader(new FileInputStream(iconXml), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"),e);
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -314,7 +323,7 @@ public class NodeMapImageAction {
 			return ret;
 		}
 		
-		NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+		NodeMapRestClientWrapper wrapper = NodeMapRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		// インポート
 		// BGFile
 		String bgFolderPath = getFolderPath(SettingToolsXMLPreferencePage.VALUE_NODEMAP_BG_FOLDER, false);
@@ -322,8 +331,7 @@ public class NodeMapImageAction {
 			try {
 				// ファイルデータ取得
 				String path = getFilePath(bgImageInfo.getFileName(), bgFolderPath);
-				byte[] filedata = getFileData(path);
-				if (wrapper.isBgImage(bgImageInfo.getFileName())){
+				if (wrapper.existBgImage(bgImageInfo.getFileName()).getExist()){
 					if(!ImportProcessMode.isSameprocess()){
 						String[] args = {bgImageInfo.getFileName()};
 						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
@@ -332,7 +340,10 @@ public class NodeMapImageAction {
 						ImportProcessMode.setSameprocess(dialog.getToggleState());
 					}
 					if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-						wrapper.setBgImage(bgImageInfo.getFileName(), filedata);
+						AddBgImageRequest  addBgImageRequest = new  AddBgImageRequest();
+						addBgImageRequest.setFilename(bgImageInfo.getFileName());
+						File file = new File(path);
+						wrapper.addBgImage(file, addBgImageRequest);
 						log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + bgImageInfo.getFileName());
 					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + bgImageInfo.getFileName());
@@ -340,18 +351,20 @@ public class NodeMapImageAction {
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 						return ret;
 					}
-				}
-				else{
-					wrapper.setBgImage(bgImageInfo.getFileName(), filedata);
+				} else{
+					AddBgImageRequest  addBgImageRequest = new  AddBgImageRequest();
+					addBgImageRequest.setFilename(bgImageInfo.getFileName());
+					File file = new File(path);
+					wrapper.addBgImage(file, addBgImageRequest);
 					log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + bgImageInfo.getFileName());
 				}
-			} catch (HinemosUnknown_Exception e) {
+			} catch (HinemosUnknown e) {
 				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
+			} catch (InvalidUserPass e) {
 				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 			} catch (Exception e) {
@@ -366,9 +379,8 @@ public class NodeMapImageAction {
 			try {
 				// ファイルデータ取得
 				String path = getFilePath(iconImageInfo.getIconId(), iconFolderPath);
-				byte[] filedata = getFileData(path);
 				
-				if (wrapper.isIconImage(iconImageInfo.getIconId())){
+				if (wrapper.existIconImage(iconImageInfo.getIconId()).getExist()){
 					if(!ImportProcessMode.isSameprocess()){
 						String[] args = {iconImageInfo.getIconId()};
 						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
@@ -377,7 +389,10 @@ public class NodeMapImageAction {
 						ImportProcessMode.setSameprocess(dialog.getToggleState());
 					}
 					if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-						wrapper.setIconImage(iconImageInfo.getIconId(), filedata);
+						AddIconImageRequest addIconImageRequest = new AddIconImageRequest();
+						addIconImageRequest.setFilename(iconImageInfo.getIconId());
+						File file = new File(path);
+						wrapper.addIconImage(file, addIconImageRequest);
 						log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + iconImageInfo.getIconId());
 					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
 						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + iconImageInfo.getIconId());
@@ -387,16 +402,19 @@ public class NodeMapImageAction {
 					}
 				}
 				else{
-					wrapper.setIconImage(iconImageInfo.getIconId(), filedata);
+					AddIconImageRequest addIconImageRequest = new AddIconImageRequest();
+					addIconImageRequest.setFilename(iconImageInfo.getIconId());
+					File file = new File(path);
+					wrapper.addIconImage(file, addIconImageRequest);
 					log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + iconImageInfo.getIconId());
 				}
-			} catch (HinemosUnknown_Exception e) {
+			} catch (HinemosUnknown e) {
 				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
+			} catch (InvalidUserPass e) {
 				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 			} catch (Exception e) {
@@ -433,14 +451,10 @@ public class NodeMapImageAction {
 	 * @param filepath
 	 * @throws Exception
 	 */
-	private static byte[] getFileData(String filepath) throws Exception {
-		File file = new File(filepath);
+	private static byte[] getFileData(File file) throws Exception {
+
 		String filename = file.getName();
 		int filesize = (int)file.length();
-		if (filesize > MAX_FILESIZE) {
-			log.warn("getFileData(), file size is too large");
-			throw new Exception(Messages.getString("file.too.large"));
-		}
 		byte[] filedata = null;
 
 		/*
@@ -448,11 +462,11 @@ public class NodeMapImageAction {
 		 */
 		FileInputStream stream = null;
 		try {
-			stream = new FileInputStream(filepath);
+			stream = new FileInputStream(file.getPath());
 			filedata = new byte[filesize];
 			int readsize = stream.read(filedata, 0, filesize);
 			log.debug("UploadImage readsize = " + readsize + ", filesize = " + filesize);
-			log.debug("path=" + filepath + ", name=" + filename);
+			log.debug("path=" + file.getPath() + ", name=" + filename);
 		} catch (FileNotFoundException e) {
 			log.warn("getFileData(), " + e.getMessage(), e);
 			throw new Exception(Messages.getString("file.not.found"), e);
@@ -472,7 +486,6 @@ public class NodeMapImageAction {
 		return filedata;
 	}
 	
-	
 	@DiffMethod
 	public int diffXml(String xmlPgImage1, String xmlIcon1, String xmlPgImage2, String xmlIcon2) throws ConvertorException {
 		
@@ -486,10 +499,10 @@ public class NodeMapImageAction {
 		NodeMapIconImageType nodeMapIconImage2 = null;
 		
 		try {
-			NodeMapBgImage1 = NodeMapBgImage.unmarshal(new InputStreamReader(new FileInputStream(xmlPgImage1), "UTF-8"));
-			NodeMapBgImage2 = NodeMapBgImage.unmarshal(new InputStreamReader(new FileInputStream(xmlPgImage2), "UTF-8"));
-			nodeMapIconImage1 = NodemapIconImage.unmarshal(new InputStreamReader(new FileInputStream(xmlIcon1), "UTF-8"));
-			nodeMapIconImage2 = NodemapIconImage.unmarshal(new InputStreamReader(new FileInputStream(xmlIcon2), "UTF-8"));
+			NodeMapBgImage1 = XmlMarshallUtil.unmarshall(NodeMapBgImageType.class,new InputStreamReader(new FileInputStream(xmlPgImage1), "UTF-8"));
+			NodeMapBgImage2 = XmlMarshallUtil.unmarshall(NodeMapBgImageType.class,new InputStreamReader(new FileInputStream(xmlPgImage2), "UTF-8"));
+			nodeMapIconImage1 = XmlMarshallUtil.unmarshall(NodeMapIconImageType.class,new InputStreamReader(new FileInputStream(xmlIcon1), "UTF-8"));
+			nodeMapIconImage2 = XmlMarshallUtil.unmarshall(NodeMapIconImageType.class,new InputStreamReader(new FileInputStream(xmlIcon2), "UTF-8"));
 			
 			sort(NodeMapBgImage1);
 			sort(NodeMapBgImage2);

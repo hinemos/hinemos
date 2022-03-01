@@ -12,15 +12,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
 import com.clustercontrol.bean.JobImageConstant;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブツリー用コンポジットのツリービューア用のLabelProviderクラスです。
@@ -53,23 +52,23 @@ public class JobTreeLabelProvider extends LabelProvider {
 	 */
 	@Override
 	public String getText(Object element) {
-		JobTreeItem item = (JobTreeItem) element;
-		JobInfo info = item.getData();
-		int type = info.getType();
+		JobTreeItemWrapper item = (JobTreeItemWrapper) element;
+		JobInfoWrapper info = item.getData();
+		JobInfoWrapper.TypeEnum type = info.getType();
 
 		String editable = "";
-		if (printEditable && type == JobConstant.TYPE_JOBUNIT ){
+		if (printEditable && type == JobInfoWrapper.TypeEnum.JOBUNIT ){
 			String managerName = JobTreeItemUtil.getManagerName(item);
 			if( JobEditStateUtil.getJobEditState(managerName).isLockedJobunitId(info.getJobunitId())) {
 				editable = " ["+Messages.getString("edit.mode") + "]";
 			}
 		}
 
-		if (type == JobConstant.TYPE_COMPOSITE) {
+		if (type == JobInfoWrapper.TypeEnum.COMPOSITE) {
 			m_log.debug("TYPE_COMPOSITE name=" + info.getName());
 			info.setName(HinemosMessage.replace(info.getName()));
 			return info.getName(); 
-		} else if (type == JobConstant.TYPE_MANAGER) {
+		} else if (type == JobInfoWrapper.TypeEnum.MANAGER) {
 			return Messages.getString("facility.manager") + " (" + info.getName() + ")";
 		} else {
 			return info.getName() + " (" + info.getId() + ")" + editable;
@@ -86,8 +85,8 @@ public class JobTreeLabelProvider extends LabelProvider {
 	 */
 	@Override
 	public Image getImage(Object element) {
-		JobTreeItem item = (JobTreeItem) element;
-		int type = item.getData().getType();
-		return JobImageConstant.typeToImage(type);
+		JobTreeItemWrapper item = (JobTreeItemWrapper) element;
+		JobInfoWrapper.TypeEnum type = item.getData().getType();
+		return JobImageConstant.typeEnumValueToImage(type.getValue());
 	}
 }

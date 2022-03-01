@@ -10,12 +10,12 @@ package com.clustercontrol.jobmanagement.view;
 
 import org.eclipse.ui.IViewPart;
 
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 
 /**
  * ジョブマップ用のinterfaceです。
  * 
  */
 public interface JobMapViewIF extends IViewPart {
-	public void update(String managerName, String sessionId, JobTreeItem jobTreeItem);
+	public void update(String managerName, String sessionId, JobTreeItemWrapper jobTreeItem);
 }

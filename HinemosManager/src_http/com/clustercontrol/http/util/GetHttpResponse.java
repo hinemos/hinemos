@@ -16,7 +16,9 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -39,35 +41,38 @@ import javax.swing.text.html.parser.ParserDelegator;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.http.Consts;
-import org.apache.http.Header;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
-import org.apache.http.auth.NTCredentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.protocol.HTTP;
-import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.hc.client5.http.ClientProtocolException;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.Credentials;
+import org.apache.hc.client5.http.auth.CredentialsStore;
+import org.apache.hc.client5.http.auth.NTCredentials;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.cookie.StandardCookieSpec;
+import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpHeaders;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.http.message.BasicNameValuePair;
+import org.apache.hc.core5.http.message.StatusLine;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.apache.hc.core5.ssl.TrustStrategy;
+import org.apache.hc.core5.util.Timeout;
 
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.util.HinemosTime;
@@ -297,7 +302,7 @@ public class GetHttpResponse implements Closeable {
 
 	private CloseableHttpClient m_client;
 
-	private CredentialsProvider m_cledentialProvider = new BasicCredentialsProvider();
+	private CredentialsStore m_cledentialProvider = new BasicCredentialsProvider();
 
 	/** 認証種別 */
 	private AuthType m_authType;
@@ -408,21 +413,21 @@ public class GetHttpResponse implements Closeable {
 
 			result.url = url;
 			if (m_authType != null && !AuthType.NONE.equals(m_authType)) {
-				URI uri = new URI(url);
+				URL uri = new URL(url);
 
 				Credentials credential = null;
 				String authSchema = null;
 				switch (m_authType) {
 				case BASIC:
-					credential = new UsernamePasswordCredentials(m_authUser, m_authPassword);
+					credential = new UsernamePasswordCredentials(m_authUser, m_authPassword.toCharArray());
 					authSchema = "basic";
 					break;
 				case NTLM:
-					credential = new NTCredentials(m_authUser, m_authPassword, null, null);
+					credential = new NTCredentials(m_authUser, m_authPassword.toCharArray(), null, null);
 					authSchema = "ntlm";
 					break;
 				case DIGEST:
-					credential = new UsernamePasswordCredentials(m_authUser, m_authPassword);
+					credential = new UsernamePasswordCredentials(m_authUser, m_authPassword.toCharArray());
 					authSchema = "digest";
 					break;
 				default:
@@ -430,14 +435,14 @@ public class GetHttpResponse implements Closeable {
 				}
 
 				if (credential != null) {
-					AuthScope scope = new AuthScope(uri.getHost(), uri.getPort(), AuthScope.ANY_REALM, authSchema);
-					if (m_cledentialProvider.getCredentials(scope) == null) {
+					AuthScope scope = new AuthScope(uri.getProtocol(), uri.getHost(), uri.getPort(), null, authSchema);
+					if (m_cledentialProvider.getCredentials(scope, null) == null) {
 						m_cledentialProvider.setCredentials(scope, credential);
 					}
 				}
 			}
 
-			HttpRequestBase request = null;
+			HttpUriRequestBase request = null;
 			if (post != null && !post.isEmpty()) {
 				List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
 				
@@ -453,14 +458,14 @@ public class GetHttpResponse implements Closeable {
 				}
 				
 				HttpPost requestPost = new HttpPost(url);
-				Charset charset = Consts.UTF_8;
+				Charset charset = StandardCharsets.UTF_8;
 				try {
 					charset = Charset.forName(HinemosPropertyCommon.monitor_http_post_charset.getStringValue());
 				} catch (UnsupportedCharsetException e){
 					m_log.warn("UnsupportedCharsetException " + e.getMessage());
 				}
 				requestPost.setEntity(new UrlEncodedFormEntity(urlParameters, charset));
-				requestPost.addHeader(HTTP.CONTENT_TYPE, "application/x-www-form-urlencoded");
+				requestPost.addHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				request = requestPost;
 			}
 			else {
@@ -470,13 +475,13 @@ public class GetHttpResponse implements Closeable {
 			// Execute the method.
 			try {
 				long start = HinemosTime.currentTimeMillis();
-				HttpResponse response = client.execute(request);
+				CloseableHttpResponse response = client.execute(request);
 				result.responseTime = HinemosTime.currentTimeMillis() -start;
 
-				result.statusCode = response.getStatusLine().getStatusCode();
+				result.statusCode = response.getCode();
 
 				// Header
-				Header[] headers = response.getAllHeaders();
+				Header[] headers = response.getHeaders();
 				if (headers != null && headers.length > 0) {
 					StringBuffer header = new StringBuffer();
 					for (int i = 0; i < headers.length; i++) {
@@ -490,7 +495,7 @@ public class GetHttpResponse implements Closeable {
 					result.success = true;
 
 					// Content-Typeがtext文書の場合のみ、Bodyを取得
-					Header header = response.getFirstHeader(HTTP.CONTENT_TYPE);
+					Header header = response.getFirstHeader(HttpHeaders.CONTENT_TYPE);
 					
 					boolean contentTypeFlag = false;
 					String[] contentTypes = HinemosPropertyCommon.monitor_http_content_type.getStringValue().split(",");
@@ -570,11 +575,11 @@ public class GetHttpResponse implements Closeable {
 					}
 				}
 				else{
-					result.errorMessage = response.getStatusLine().toString();
+					result.errorMessage = new StatusLine(response).toString();
 				}
 			}
 			finally {
-				request.releaseConnection();
+				request.reset();
 			}
 		}
 		catch (UnsupportedEncodingException e) {
@@ -618,6 +623,7 @@ public class GetHttpResponse implements Closeable {
 	private CloseableHttpClient getHttpClient() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
 		if (m_client == null) {
 			List<Header> headers = new ArrayList<>();
+			PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder = PoolingHttpClientConnectionManagerBuilder.create();
 
 			HttpClientBuilder builder = HttpClients.custom()
 					.setDefaultCredentialsProvider(m_cledentialProvider)
@@ -631,26 +637,32 @@ public class GetHttpResponse implements Closeable {
 						return true;
 					}
 				};
-				builder.setSSLSocketFactory(
+				connectionManagerBuilder.setSSLSocketFactory(
 						new SSLConnectionSocketFactory(new SSLContextBuilder().loadTrustMaterial(null, trustStrategy).build(),
 						new NoopHostnameVerifier()));
 			}
 			RequestConfig requestConfig = RequestConfig.custom()
-					.setCookieSpec(CookieSpecs.DEFAULT)
-					.setConnectTimeout(m_connectTimeout)
-					.setSocketTimeout(m_requestTimeout).build();
+					.setCookieSpec(StandardCookieSpec.RELAXED)
+					.setConnectTimeout(Timeout.ofMilliseconds(m_connectTimeout))
+					.setResponseTimeout(Timeout.ofMilliseconds(m_requestTimeout))
+					.build();
 			builder.setDefaultRequestConfig(requestConfig);
+		
+			//デフォルトだと無限待ちの場合があるので、ソケットのブロッキング待ちタイムアウト時間をリクエスト待ちと合わせる
+			SocketConfig socketConfig = SocketConfig.custom()
+					.setSoTimeout(Timeout.ofMilliseconds(m_requestTimeout)).build();
+			connectionManagerBuilder.setDefaultSocketConfig(socketConfig);
 
 			if (m_proxyHost != null) {
-				HttpHost proxy = new HttpHost(m_proxyHost, m_proxyPort, m_proxyScheme == null ? "https": m_proxyScheme);
+				HttpHost proxy = new HttpHost(m_proxyScheme == null ? "https": m_proxyScheme, m_proxyHost, m_proxyPort);
 				if (m_proxyUser != null && m_proxyPassword != null) {
-					m_cledentialProvider.setCredentials(new AuthScope(proxy.getHostName(), proxy.getPort()), new UsernamePasswordCredentials(m_proxyUser, m_proxyPassword));
+					m_cledentialProvider.setCredentials(new AuthScope(proxy.getHostName(), proxy.getPort()), new UsernamePasswordCredentials(m_proxyUser, m_proxyPassword.toCharArray()));
 				}
 				builder.setProxy(proxy);
 			}
 
 			if (m_userAgent != null) {
-				headers.add(new BasicHeader(HTTP.USER_AGENT, m_userAgent));
+				headers.add(new BasicHeader(HttpHeaders.USER_AGENT, m_userAgent));
 			}
 
 			if (m_cancelProxyCache) {
@@ -661,12 +673,12 @@ public class GetHttpResponse implements Closeable {
 			}
 
 			if (keepAlive) {
-				headers.add(new BasicHeader(HTTP.CONN_DIRECTIVE, HTTP.CONN_KEEP_ALIVE));
+				headers.add(new BasicHeader(HttpHeaders.CONNECTION, HttpHeaders.KEEP_ALIVE));
 			}
 			else {
-				headers.add(new BasicHeader(HTTP.CONN_DIRECTIVE, HTTP.CONN_CLOSE));
+				headers.add(new BasicHeader(HttpHeaders.CONNECTION, "Close"));
 			}
-			m_client = builder.build();
+			m_client = builder.setConnectionManager(connectionManagerBuilder.build()).build();
 		}
 
 		return m_client;

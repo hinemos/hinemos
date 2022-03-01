@@ -21,15 +21,16 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.ReleaseNodeScopeRequest;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.composite.NodeFilterComposite;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -208,8 +209,10 @@ public class NodeReleaseDialog extends CommonDialog {
 
 		// 登録
 		try {
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(this.managerName);
-			wrapper.releaseNodeScope(facilityId, this.filterItems);
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.managerName);
+			ReleaseNodeScopeRequest requestDto = new ReleaseNodeScopeRequest();
+			requestDto.setFacilityIdList(this.filterItems);
+			wrapper.releaseNodeScope(facilityId, requestDto);
 
 			// リポジトリキャッシュの更新
 			ClientSession.doCheck();
@@ -225,7 +228,7 @@ public class NodeReleaseDialog extends CommonDialog {
 
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,

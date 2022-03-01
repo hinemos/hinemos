@@ -9,17 +9,25 @@
 package com.clustercontrol.utility.settings.hub.conv;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AddTransferInfoRequest;
+import org.openapitools.client.model.AddTransferInfoRequest.IntervalEnum;
+import org.openapitools.client.model.AddTransferInfoRequest.TransTypeEnum;
+import org.openapitools.client.model.TransferDestPropRequest;
+import org.openapitools.client.model.TransferDestPropResponse;
+import org.openapitools.client.model.TransferInfoResponse;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.hub.xml.TransferDestProp;
 import com.clustercontrol.utility.settings.hub.xml.TransferInfo;
 import com.clustercontrol.utility.settings.model.BaseConv;
-import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
+import com.clustercontrol.utility.util.StringUtil;
 
 
 /**
@@ -69,12 +77,11 @@ public class HubTransferConv {
 	 *
 	 * @param notifyInfo 転送設定定義 XML Bean
 	 * @return 転送設定定義 Hinemos Bean
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	public static com.clustercontrol.ws.hub.TransferInfo getTransferData(TransferInfo transferInfo) {
-		com.clustercontrol.ws.hub.TransferInfo ret = new com.clustercontrol.ws.hub.TransferInfo();
-
-		// 登録日時、更新日時に利用する日時（実行日時とする）
-		long now = new Date().getTime();
+	public static AddTransferInfoRequest getTransferData(TransferInfo transferInfo) throws InvalidSetting, HinemosUnknown {
+		AddTransferInfoRequest ret = new AddTransferInfoRequest();
 
 		// TransferId
 		if(transferInfo.getTransferId() != null &&
@@ -91,9 +98,9 @@ public class HubTransferConv {
 			ret.setDescription(transferInfo.getDescription());
 		}
 
-		com.clustercontrol.ws.hub.TransferDestProp transferDestProp = null;
+		TransferDestPropRequest transferDestProp = null;
 		for (TransferDestProp prop : transferInfo.getTransferDestProp()) {
-			transferDestProp = new com.clustercontrol.ws.hub.TransferDestProp();
+			transferDestProp = new TransferDestPropRequest();
 			transferDestProp.setName(prop.getName());
 			transferDestProp.setValue(prop.getValue());
 			ret.getDestProps().add(transferDestProp);
@@ -101,36 +108,29 @@ public class HubTransferConv {
 		ret.setOwnerRoleId(transferInfo.getOwnerRoleId());
 
 		//DataType
-		com.clustercontrol.ws.hub.DataType[] values = com.clustercontrol.ws.hub.DataType.values();
-		com.clustercontrol.ws.hub.DataType dataType = values[transferInfo.getDataType()];
+		AddTransferInfoRequest.DataTypeEnum[] values = AddTransferInfoRequest.DataTypeEnum.values();
+		AddTransferInfoRequest.DataTypeEnum dataType = values[transferInfo.getDataType()];
 		ret.setDataType(dataType);
 
 		// DestType
 		ret.setDestTypeId(transferInfo.getDestTypeID());
 
 		// TransType
-		ret.setTransType(getEnum(transferInfo.getTransType()));
-		ret.setInterval(transferInfo.getInterval());
+		if (!StringUtil.isNullOrEmpty(transferInfo.getTransType())) {
+			TransTypeEnum transTypeEum = TransTypeEnum.valueOf(transferInfo.getTransType());
+			ret.setTransType(transTypeEum);
+		}
+		IntervalEnum intervalEnum = null;
+		// XMLにinterval項目がなかったら、対応DTOメンバに 0 が設定されることを考慮（nullとみなす）
+		if (transferInfo.getInterval() != 0) {
+			intervalEnum = OpenApiEnumConverter.integerToEnum(transferInfo.getInterval(), IntervalEnum.class);
+		}
+		ret.setInterval(intervalEnum);
 		ret.setCalendarId(transferInfo.getCalendarId());
 
-		ret.setRegDate(now);
-		ret.setUpdateDate(now);
-		ret.setRegUser(Config.getConfig("Login.USER"));
-		ret.setUpdateUser(Config.getConfig("Login.USER"));
 		ret.setValidFlg(transferInfo.getValidFlg());
 		return ret;
 	}
-
-	private static com.clustercontrol.ws.hub.TransferType getEnum(String str) {
-		com.clustercontrol.ws.hub.TransferType[] enumArray = com.clustercontrol.ws.hub.TransferType.values();
-		for(com.clustercontrol.ws.hub.TransferType enumStr : enumArray) {
-			if (str.equals(enumStr.name().toString())){
-				return enumStr;
-			}
-		}
-		return null;
-	}
-
 
 	/**
 	 * 転送設定定義に関して、Hinemos BeanからXML Beanへ変換する。
@@ -138,14 +138,14 @@ public class HubTransferConv {
 	 * @param mailTemplateInfo 転送設定定義 Hinemos Bean
 	 * @return 転送設定定義 XML Bean
 	 */
-	public static TransferInfo getTransferInfo(com.clustercontrol.ws.hub.TransferInfo transferInfo) {
+	public static TransferInfo getTransferInfo(TransferInfoResponse transferInfo) {
 		TransferInfo ret = new TransferInfo();
 
 		ret.setTransferId(transferInfo.getTransferId());
 
 		List<TransferDestProp> transferDestPropList = new ArrayList<TransferDestProp>();
 		TransferDestProp transferDestProp = null;
-		for (com.clustercontrol.ws.hub.TransferDestProp prop : transferInfo.getDestProps()) {
+		for (TransferDestPropResponse prop : transferInfo.getDestProps()) {
 			transferDestProp = new TransferDestProp();
 			transferDestProp.setName(prop.getName());
 			transferDestProp.setValue(prop.getValue());
@@ -159,10 +159,11 @@ public class HubTransferConv {
 		ret.setDestTypeID(transferInfo.getDestTypeId());
 		ret.setTransType(transferInfo.getTransType().name());
 		if (null != transferInfo.getInterval()){
-			ret.setInterval(transferInfo.getInterval());
+			int interval = OpenApiEnumConverter.enumToInteger(transferInfo.getInterval());
+			ret.setInterval(interval);
 		}
 		ret.setCalendarId(transferInfo.getCalendarId());
-		ret.setValidFlg(transferInfo.isValidFlg());
+		ret.setValidFlg(transferInfo.getValidFlg());
 		return ret;
 	}
 }

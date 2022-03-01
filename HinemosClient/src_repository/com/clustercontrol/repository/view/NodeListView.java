@@ -19,6 +19,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.repository.bean.NodeFilterConstant;
 import com.clustercontrol.repository.composite.NodeListComposite;
 import com.clustercontrol.repository.composite.action.NodeListSelectionChangedListener;
 import com.clustercontrol.repository.view.action.NodeCopyAction;
@@ -27,6 +28,7 @@ import com.clustercontrol.repository.view.action.NodeFilterAction;
 import com.clustercontrol.repository.view.action.NodeModifyAction;
 import com.clustercontrol.repository.view.action.ProgramExecutionAction;
 import com.clustercontrol.repository.view.action.RefreshAction;
+import com.clustercontrol.util.FilterPropertyUpdater;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
 
@@ -129,6 +131,8 @@ public class NodeListView extends CommonViewPart {
 	 *            検索条件
 	 */
 	public void update(Property condition) {
+		FilterPropertyUpdater.getInstance().addFilterProperty(getClass(), condition,
+				NodeFilterConstant.MANAGER);
 		this.condition = condition;
 
 		this.update();

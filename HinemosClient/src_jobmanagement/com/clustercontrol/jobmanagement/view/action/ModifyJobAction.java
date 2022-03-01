@@ -25,16 +25,17 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+
 import com.clustercontrol.jobmanagement.composite.JobListComposite;
 import com.clustercontrol.jobmanagement.composite.JobTreeComposite;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.view.JobListView;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[一覧]ビューの「変更」のクライアント側アクションクラス<BR>
@@ -105,15 +106,15 @@ public class ModifyJobAction extends AbstractHandler implements IElementUpdater 
 			return null;
 		}
 
-		JobTreeItem item = jobListView.getSelectJobTreeItemList().get(0);
+		JobTreeItemWrapper item = jobListView.getSelectJobTreeItemList().get(0);
 		if (null == item) {
 			return null;
 		}
 
-		JobTreeItem parent = item.getParent();
+		JobTreeItemWrapper parent = item.getParent();
 		if (null != parent) {
 			String managerName = null;
-			JobTreeItem mgrTree = JobTreeItemUtil.getManager(parent);
+			JobTreeItemWrapper mgrTree = JobTreeItemUtil.getManager(parent);
 			if(mgrTree == null) {
 				managerName = parent.getChildren().get(0).getData().getId();
 			} else {
@@ -131,7 +132,7 @@ public class ModifyJobAction extends AbstractHandler implements IElementUpdater 
 				if (jobEditState.isLockedJobunitId(item.getData().getJobunitId())) {
 					// 編集モードのジョブが更新された場合(ダイアログで編集モードになったものを含む）
 					jobEditState.addEditedJobunit(item);
-					if (item.getData().getType() == JobConstant.TYPE_JOBUNIT) {
+					if (item.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 						JobUtil.setJobunitIdAll(item, item.getData().getJobunitId());
 					}
 				}
@@ -168,14 +169,19 @@ public class ModifyJobAction extends AbstractHandler implements IElementUpdater 
 						size = view.getJobListComposite().getSelectItemList().size();
 					}
 					if(size == 1) {
-						if(view.getDataType() == JobConstant.TYPE_JOBUNIT ||
-								view.getDataType() == JobConstant.TYPE_JOBNET ||
-								view.getDataType() == JobConstant.TYPE_JOB ||
-								view.getDataType() == JobConstant.TYPE_FILEJOB ||
-								view.getDataType() == JobConstant.TYPE_APPROVALJOB ||
-								view.getDataType() == JobConstant.TYPE_MONITORJOB ||
-								view.getDataType() == JobConstant.TYPE_REFERJOBNET ||
-								view.getDataType() == JobConstant.TYPE_REFERJOB){
+						if(view.getDataType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.JOBNET ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.JOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.FILEJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.MONITORJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.RPAJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.REFERJOBNET ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.REFERJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.RESOURCEJOB){
 							editEnable = true;
 						}
 					}

@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * NodeMapが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class NodeMapNotFound extends HinemosException {
+public class NodeMapNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = -4012154669374250146L;
 

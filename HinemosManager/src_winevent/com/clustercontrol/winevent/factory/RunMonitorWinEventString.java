@@ -20,12 +20,18 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.hinemosagent.util.AgentVersionManager;
 import com.clustercontrol.hub.bean.StringSample;
 import com.clustercontrol.hub.util.CollectStringDataUtil;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
+import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -56,6 +62,8 @@ public class RunMonitorWinEventString {
 		rtn = new OutputBasicInfo();
 
 		rtn.setNotifyGroupId(NotifyGroupIdGenerator.generate(result.monitorInfo));
+		rtn.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, HinemosModuleConstant.MONITOR_WINEVENT,
+				result.monitorStrValueInfo.getMonitorId()));
 		rtn.setMonitorId(result.monitorStrValueInfo.getMonitorId());
 		rtn.setFacilityId(facilityId);
 		rtn.setPluginId(HinemosModuleConstant.MONITOR_WINEVENT);
@@ -86,6 +94,31 @@ public class RunMonitorWinEventString {
 		
 		rtn.setMultiId(HinemosPropertyCommon.monitor_systemlog_receiverid.getStringValue());
 		
+		if (result.monitorInfo.getPriorityChangeJudgmentType() == null
+				&& result.monitorInfo.getPriorityChangeFailureType() == null) {
+			// 重要度変化関連の設定は、監視対象がWS接続（非REST）エージェントの場合
+			// エージェント送信値から取得できないのでマネージャ側の設定値を参照する
+			if (!(AgentVersionManager.isRestConnetctAgent(facilityId))) {
+				try {
+					if(_log.isTraceEnabled()){
+						_log.trace("run() : isRestConnetctAgent(" + facilityId + ") = false");
+					}
+					MonitorInfo monitor = new MonitorInfo();
+					monitor = new MonitorSettingControllerBean().getMonitor(result.monitorInfo.getMonitorId());
+					rtn.setPriorityChangeJudgmentType(monitor.getPriorityChangeJudgmentType());
+					rtn.setPriorityChangeFailureType(monitor.getPriorityChangeFailureType());
+				} catch (MonitorNotFound | InvalidRole e) {
+					// レコードないなら設定不要
+				}
+			}
+		} else {
+			if(_log.isTraceEnabled()){
+				_log.trace("run() : PriorityChangeJudgmentType or getPriorityChangeFailureType of result is not null ");
+			}
+			rtn.setPriorityChangeJudgmentType(result.monitorInfo.getPriorityChangeJudgmentType());
+			rtn.setPriorityChangeFailureType(result.monitorInfo.getPriorityChangeFailureType());
+		}
+
 		if (result.runInstructionInfo == null) {
 			// 監視ジョブ以外
 			return rtn;

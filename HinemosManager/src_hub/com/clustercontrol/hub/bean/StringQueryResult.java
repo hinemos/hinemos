@@ -24,6 +24,10 @@ public class StringQueryResult {
 	private List<StringData> dataList;
 
 	private Map<String, Integer> tagCountMap;
+	
+	private Map<String, List<Long>> collectDataMap;
+	
+	private List<Long> collectDataList;
 
 	/**
 	 * 検索結果数取得。
@@ -132,6 +136,39 @@ public class StringQueryResult {
 	 */
 	public void setTagCountMap(Map<String, Integer> tagCountMap) {
 		this.tagCountMap = tagCountMap;
+	}
+	
+	/**
+	 * 検索結果取得。
+	 * タグの値ごとの収集日時のリストを返す。
+	 * 
+	 * @return the collectDataMap
+	 */
+	public Map<String, List<Long>> getCollectDataMap() {
+		return collectDataMap;
+	}
+	
+	/**
+	 * 検索結果設定。
+	 * 
+	 * @param collectDataMap the collectDataMap to set
+	 */
+	public void setCollectDataMap(Map<String, List<Long>> collectDataMap) {
+		this.collectDataMap = collectDataMap;
+	}
+
+	/**
+	 * 検索結果取得。
+	 * 収集日時のリストを返す。
+	 * 
+	 * @return the collectDataMap
+	 */
+	public List<Long> getCollectDataList() {
+		return collectDataList;
+	}
+	
+	public void setCollectDataList(List<Long> collectDataList) {
+		this.collectDataList = collectDataList;
 	}
 
 	/* (non-Javadoc)

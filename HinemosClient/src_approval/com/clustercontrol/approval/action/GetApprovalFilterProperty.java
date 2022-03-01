@@ -15,8 +15,8 @@ import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.jobmanagement.bean.JobApprovalResultMessage;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * 承認ビューのフィルタ用プロパティを取得するクライアント側アクションクラス<BR>
@@ -123,7 +123,7 @@ public class GetApprovalFilterProperty {
 						PropertyDefineConstant.EDITOR_TEXT);
 		
 		
-		Object[] obj = EndpointManager.getActiveManagerSet().toArray();
+		Object[] obj = RestConnectManager.getActiveManagerSet().toArray();
 		Object[] val = new Object[obj.length + 1];
 		val[0] = "";
 		for(int i = 0; i<obj.length; i++) {

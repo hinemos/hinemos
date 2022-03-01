@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * DbmsSchedulerが存在しない場合に利用するException
  * @version 5.1.0
  */
-public class DbmsSchedulerNotFound extends HinemosException {
+public class DbmsSchedulerNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = -1L;
 

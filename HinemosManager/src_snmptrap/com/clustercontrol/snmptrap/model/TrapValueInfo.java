@@ -15,17 +15,17 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -54,7 +54,7 @@ public class TrapValueInfo implements Serializable {
 	private Boolean validFlg;
 	private TrapCheckInfo monitorTrapInfoEntity;
 
-	private List<VarBindPattern> monitorTrapVarbindPatternInfoEntities = new ArrayList<>();
+	private List<VarBindPattern> varBindPatterns = new ArrayList<>();
 
 	public TrapValueInfo() {
 	}
@@ -191,19 +191,19 @@ public class TrapValueInfo implements Serializable {
 
 	@OneToMany(mappedBy="monitorTrapValueInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public List<VarBindPattern> getVarBindPatterns() {
-		return this.monitorTrapVarbindPatternInfoEntities;
+		return this.varBindPatterns;
 	}
 
-	public void setVarBindPatterns(List<VarBindPattern> monitorTrapVarbindPatternInfoEntities) {
-		if (monitorTrapVarbindPatternInfoEntities != null && monitorTrapVarbindPatternInfoEntities.size() > 0) {
-			Collections.sort(monitorTrapVarbindPatternInfoEntities, new Comparator<VarBindPattern>() {
+	public void setVarBindPatterns(List<VarBindPattern> varBindPatterns) {
+		if (varBindPatterns != null && varBindPatterns.size() > 0) {
+			Collections.sort(varBindPatterns, new Comparator<VarBindPattern>() {
 				@Override
 				public int compare(VarBindPattern o1, VarBindPattern o2) {
 					return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
 				}
 			});
 		}
-		this.monitorTrapVarbindPatternInfoEntities = monitorTrapVarbindPatternInfoEntities;
+		this.varBindPatterns = varBindPatterns;
 	}
 
 	@Override
@@ -214,8 +214,8 @@ public class TrapValueInfo implements Serializable {
 				+ procVarbindSpecified + ", procVarbindSpecified="
 				+ priorityAnyVarBind + ", formatVarBind=" + formatVarBinds
 				+ ", validFlg=" + validFlg
-				+ ", monitorTrapVarbindPatternInfoEntities="
-				+ monitorTrapVarbindPatternInfoEntities + "]";
+				+ ", varBindPatterns="
+				+ varBindPatterns + "]";
 	}
 	
 	//bi-directional many-to-one association to MonitorTrapInfoEntity

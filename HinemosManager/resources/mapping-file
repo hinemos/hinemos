@@ -6,7 +6,6 @@
 		<mapping-file>META-INF/orm_jobmanagement.xml</mapping-file>
 		<mapping-file>META-INF/orm_logfile.xml</mapping-file>
 		<mapping-file>META-INF/orm_maintenance.xml</mapping-file>
-		<mapping-file>META-INF/orm_maintenance_diff.xml</mapping-file>
 		<mapping-file>META-INF/orm_monitor.xml</mapping-file>
 		<mapping-file>META-INF/orm_nodemap.xml</mapping-file>
 		<mapping-file>META-INF/orm_notify.xml</mapping-file>
@@ -29,4 +28,7 @@
 		<mapping-file>META-INF/orm_hub.xml</mapping-file>
 		<mapping-file>META-INF/orm_reporting.xml</mapping-file>
 		<mapping-file>META-INF/orm_reporting_data.xml</mapping-file>
-		<mapping-file>META-INF/orm_reporting_data_diff.xml</mapping-file>
+		<mapping-file>META-INF/orm_rest.xml</mapping-file>
+		<mapping-file>META-INF/orm_filtersetting.xml</mapping-file>
+		<mapping-file>META-INF/orm_sdml.xml</mapping-file>
+		<mapping-file>META-INF/orm_rpa.xml</mapping-file>

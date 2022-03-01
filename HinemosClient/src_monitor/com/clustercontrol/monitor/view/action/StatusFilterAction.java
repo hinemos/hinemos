@@ -23,8 +23,11 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.handlers.RegistryToggleState;
+import org.openapitools.client.model.StatusFilterBaseRequest;
 
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.filtersetting.bean.StatusFilterContext;
+import com.clustercontrol.filtersetting.util.StatusFilterHelper;
 import com.clustercontrol.monitor.dialog.StatusFilterDialog;
 import com.clustercontrol.monitor.view.StatusView;
 
@@ -77,18 +80,18 @@ public class StatusFilterAction extends AbstractHandler {
 		if( null == this.window || !isEnabled() ){
 			return null;
 		}
-
+		
 		// 選択アイテムの取得
 		this.viewPart = HandlerUtil.getActivePart(event);
-		StatusView statusView = null;
+		StatusView view = null;
 		try {
-			statusView = (StatusView) this.viewPart.getAdapter(StatusView.class);
+			view = (StatusView) this.viewPart.getAdapter(StatusView.class);
 		} catch (Exception e) { 
 			m_log.info("execute " + e.getMessage()); 
 			return null; 
 		}
 		
-		if (statusView == null) {
+		if (view == null) {
 			m_log.info("execute: view is null"); 
 			return null;
 		}
@@ -99,25 +102,35 @@ public class StatusFilterAction extends AbstractHandler {
 
 		if (isChecked) {
 			// ダイアログを生成
-			StatusFilterDialog dialog = new StatusFilterDialog(this.viewPart
-					.getSite().getShell());
+			StatusFilterContext context = new StatusFilterContext(
+					StatusFilterHelper.duplicate(view.getFilter()), // ダイアログ側の処理の影響を受けないように複製する
+					view.getSingleSelectedManagerName(),
+					view.getSelectedScopeLabel());
+			StatusFilterDialog dialog = new StatusFilterDialog(
+					this.viewPart.getSite().getShell(),
+					context);
 
 			// ダイアログにて検索が選択された場合、検索結果をビューに表示
 			if (dialog.open() == IDialogConstants.OK_ID) {
-				Property condition = dialog.getInputData();
-
-				statusView.setCondition(condition);
-				statusView.update(false);
+				StatusFilterBaseRequest filter = context.getFilter();
+				if (filter.getFacilityId() != null) {
+					// フィルタ設定固有のスコープが指定されているのでスコープツリーへ反映
+					view.selectScope(context.getManagerName(), filter.getFacilityId());
+					filter.setFacilityId(null); // 後でスコープツリーの選択から再設定するのでリセットしておく
+				}
+				// ビューにフィルタ情報を反映
+				view.setFilter(filter);
+				view.setFilterEnabled(true);
+				view.update(false);
 			} else {
 				State state = command.getState(RegistryToggleState.STATE_ID);
 				state.setValue(false);
 			}
 		} else {
-			// 検索条件クリア
-			statusView.setCondition(null);
-
+			// フィルタ無効化
+			view.setFilterEnabled(false);
 			// スコープツリーのアイテムを再選択(スコープパス文字列の再表示のため)
-			TreeViewer tree = statusView.getScopeTreeComposite().getTreeViewer();
+			TreeViewer tree = view.getScopeTreeComposite().getTreeViewer();
 
 			// スコープツリーのアイテムが選択されていた場合
 			if (((StructuredSelection) tree.getSelection()).getFirstElement() != null) {
@@ -125,7 +138,7 @@ public class StatusFilterAction extends AbstractHandler {
 			}
 			// スコープツリーのアイテムが選択されていない場合
 			else {
-				statusView.update(false);
+				view.update(false);
 			}
 		}
 		return null;

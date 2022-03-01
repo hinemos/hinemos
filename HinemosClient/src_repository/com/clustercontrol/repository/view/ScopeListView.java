@@ -24,6 +24,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
@@ -33,11 +35,11 @@ import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.composite.FacilityTreeComposite;
 import com.clustercontrol.repository.FacilityPath;
-import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.composite.ScopeListComposite;
 import com.clustercontrol.repository.composite.action.FacilityTreeSelectionChangedListener;
 import com.clustercontrol.repository.composite.action.ScopeListSelectionChangedListener;
 import com.clustercontrol.repository.dialog.ScopeCreateDialog;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.repository.view.action.NodeAssignAction;
 import com.clustercontrol.repository.view.action.NodeReleaseAction;
@@ -49,8 +51,6 @@ import com.clustercontrol.repository.view.action.ScopeObjectPrivilegeAction;
 import com.clustercontrol.repository.view.action.ScopeShowAction;
 import com.clustercontrol.view.ObjectPrivilegeTargetListView;
 import com.clustercontrol.view.ScopeListBaseView;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * スコープ登録ビュークラス<BR>
@@ -73,7 +73,7 @@ public class ScopeListView extends ScopeListBaseView implements ObjectPrivilegeT
 	private boolean builtin;
 
 	/** スコープとノードの種別 */
-	private int type;
+	private FacilityTypeEnum type;
 
 	/** ボタン（アクション）を有効にするための情報 */
 	private boolean notReferFlg;
@@ -122,7 +122,7 @@ public class ScopeListView extends ScopeListBaseView implements ObjectPrivilegeT
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				StructuredSelection selection = (StructuredSelection) event.getSelection();
-				FacilityTreeItem item = (FacilityTreeItem) selection.getFirstElement();
+				FacilityTreeItemResponse item = (FacilityTreeItemResponse) selection.getFirstElement();
 				
 				// 未選択の場合は、処理終了
 				if( null == item ){
@@ -130,9 +130,9 @@ public class ScopeListView extends ScopeListBaseView implements ObjectPrivilegeT
 				}
 
 				// スコープかつビルトインでない場合のみ処理
-				FacilityInfo info = item.getData();
-				if (info.getFacilityType() == FacilityConstant.TYPE_SCOPE && !info.isBuiltInFlg()) {
-					FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
+				FacilityInfoResponse info = item.getData();
+				if (info.getFacilityType() == FacilityTypeEnum.SCOPE && !info.getBuiltInFlg()) {
+					FacilityTreeItemResponse manager = ScopePropertyUtil.getManager(item);
 					String managerName = manager.getData().getFacilityId();
 	
 					// ダイアログを生成
@@ -175,7 +175,7 @@ public class ScopeListView extends ScopeListBaseView implements ObjectPrivilegeT
 	 *            ツリーアイテム
 	 */
 	@Override
-	protected void doSelectTreeItem(FacilityTreeItem selectItem) {
+	protected void doSelectTreeItem(FacilityTreeItemResponse selectItem) {
 		FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
 		setPathLabel(Messages.getString("scope") + " : "  + path.getPath(selectItem));
 
@@ -216,7 +216,7 @@ public class ScopeListView extends ScopeListBaseView implements ObjectPrivilegeT
 		return this.builtin;
 	}
 
-	public int getType() {
+	public FacilityTypeEnum getType() {
 		return this.type;
 	}
 
@@ -231,7 +231,7 @@ public class ScopeListView extends ScopeListBaseView implements ObjectPrivilegeT
 	 *
 	 * @see com.clustercontrol.bean.FacilityConstant
 	 */
-	public void setEnabledAction(boolean builtin,int type, ISelection selection, boolean notReferFlg) {
+	public void setEnabledAction(boolean builtin, FacilityTypeEnum type, ISelection selection, boolean notReferFlg) {
 		this.builtin = builtin;
 		this.type = type;
 		this.notReferFlg = notReferFlg;
@@ -259,12 +259,12 @@ public class ScopeListView extends ScopeListBaseView implements ObjectPrivilegeT
 	public List<ObjectBean> getSelectedObjectBeans() {
 
 		// 選択されているスコープを取得する
-		FacilityTreeItem item = getSelectedScopeItem();
+		FacilityTreeItemResponse item = getSelectedScopeItem();
 
 		// 選択されており、スコープの場合は値を返す
 		List<ObjectBean> objectBeans = new ArrayList<ObjectBean>();
 		if (item != null) {
-			FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
+			FacilityTreeItemResponse manager = ScopePropertyUtil.getManager(item);
 			String managerName = manager == null ? item.getData().getFacilityId() : manager.getData().getFacilityId();
 			String objectId = item.getData().getFacilityId();
 			String objectType = HinemosModuleConstant.PLATFORM_REPOSITORY;
@@ -278,7 +278,7 @@ public class ScopeListView extends ScopeListBaseView implements ObjectPrivilegeT
 	public String getSelectedOwnerRoleId() {
 
 		// 選択されているスコープを取得する
-		FacilityTreeItem item = getSelectedScopeItem();
+		FacilityTreeItemResponse item = getSelectedScopeItem();
 
 		// 選択されており、スコープの場合は値を返す
 		String ownerRoleId = null;
@@ -288,12 +288,12 @@ public class ScopeListView extends ScopeListBaseView implements ObjectPrivilegeT
 		return ownerRoleId;
 	}
 
-	public FacilityTreeItem getSelectedScopeItem() {
+	public FacilityTreeItemResponse getSelectedScopeItem() {
 		FacilityTreeComposite tree = this.getScopeTreeComposite();
 		ScopeListComposite list = (ScopeListComposite) this.getListComposite();
 
 		// tree.getTree().isFocusControl() is not working under RAP because of Toolbar focus
-		FacilityTreeItem item = null;
+		FacilityTreeItemResponse item = null;
 		if( this.lastFocusComposite instanceof FacilityTreeComposite ){
 			item = tree.getSelectItem();
 		}else if( this.lastFocusComposite instanceof ScopeListComposite ){

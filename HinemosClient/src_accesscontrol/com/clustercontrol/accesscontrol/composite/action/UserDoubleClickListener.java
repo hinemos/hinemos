@@ -20,17 +20,17 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.UserInfoResponse;
 
 import com.clustercontrol.accesscontrol.action.GetUserListTableDefine;
 import com.clustercontrol.accesscontrol.composite.UserListComposite;
 import com.clustercontrol.accesscontrol.dialog.UserDialog;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.accesscontrol.view.RoleSettingTreeView;
 import com.clustercontrol.accesscontrol.view.UserListView;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.UserInfo;
 
 /**
  * アクセス[ユーザ]ビュー用のテーブルビューア用のDoubleClickListenerクラスです。
@@ -82,11 +82,11 @@ public class UserDoubleClickListener implements IDoubleClickListener {
 
 		if(uid != null){
 			// ダイアログを生成
-			UserInfo info = null;
+			UserInfoResponse info = null;
 			try {
-				AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+				AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getUserInfo(uid);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
 				return;
@@ -94,7 +94,7 @@ public class UserDoubleClickListener implements IDoubleClickListener {
 				MessageDialog.openError(
 						null,
 						Messages.getString("failed"),
-						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+						Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 				return;
 			}
 			

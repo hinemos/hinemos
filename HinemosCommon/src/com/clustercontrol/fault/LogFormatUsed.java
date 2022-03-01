@@ -8,7 +8,7 @@
 
 package com.clustercontrol.fault;
 
-public class LogFormatUsed extends HinemosException {
+public class LogFormatUsed extends HinemosUsed {
 
 	/**
 	 * 

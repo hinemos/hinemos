@@ -22,21 +22,24 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddRoleInfoRequest;
+import org.openapitools.client.model.ModifyRoleInfoRequest;
+import org.openapitools.client.model.RoleInfoResponse;
 
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.composite.ManagerListComposite;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.FacilityDuplicate;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.RoleDuplicate;
+import com.clustercontrol.fault.UnEditableRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.access.FacilityDuplicate_Exception;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.RoleDuplicate_Exception;
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.access.UnEditableRole_Exception;
 
 /**
  * アカウント[ロールの作成・変更]ダイアログクラスです。
@@ -77,7 +80,7 @@ public class RoleDialog extends CommonDialog {
 	public static final int WIDTH_TEXT = 10;
 
 	/** 入力値を保持するオブジェクト。 */
-	private RoleInfo inputData = null;
+	private RoleInfoResponse inputData = null;
 
 	private boolean permission = false;		// 現在のユーザが変更権限をもつか否か
 
@@ -267,24 +270,24 @@ public class RoleDialog extends CommonDialog {
 				(display.getBounds().height - shell.getSize().y) / 2);
 
 		// ロールIDが指定されている場合、その情報を初期化する。
-		RoleInfo info = null;
+		RoleInfoResponse info = null;
 		if (this.roleId != null) {
 			try {
-				AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(m_managerComposite.getText());
+				AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(m_managerComposite.getText());
 				info = wrapper.getRoleInfo(this.roleId);
 				this.setInputData(info);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
 			} catch (Exception e) {
-				m_log.warn("customizeDialog(), " + HinemosMessage.replace(e.getMessage()), e);
+				m_log.warn("customizeDialog(), " +e.getMessage(), e);
 				MessageDialog.openError(
 						null,
 						Messages.getString("failed"),
-						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+						Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 			}
 		} else {
-			info = new RoleInfo();
+			info = new RoleInfoResponse();
 			this.setInputData(info);
 		}
 	}
@@ -314,16 +317,18 @@ public class RoleDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		RoleInfo roleInfo = this.inputData;
+		RoleInfoResponse roleInfo = this.inputData;
 		if(roleInfo == null){
 			return result;
 		}
 
-		AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(this.m_managerComposite.getText());
+		AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(this.m_managerComposite.getText());
 		if(!this.isModifyDialog){
 			// 作成の場合
 			try {
-				wrapper.addRoleInfo(roleInfo);
+				AddRoleInfoRequest add = new AddRoleInfoRequest();
+				RestClientBeanUtil.convertBean(roleInfo, add);
+				wrapper.addRoleInfo(add);
 				result = true;
 
 				Object[] arg = {this.m_managerComposite.getText()};
@@ -333,7 +338,7 @@ public class RoleDialog extends CommonDialog {
 						Messages.getString("successful"),
 						Messages.getString("message.accesscontrol.26", arg));
 
-			} catch (RoleDuplicate_Exception e) {
+			} catch (RoleDuplicate e) {
 				//ロールID取得
 				String args[] = { roleInfo.getRoleId() };
 
@@ -342,7 +347,7 @@ public class RoleDialog extends CommonDialog {
 						null,
 						Messages.getString("message"),
 						Messages.getString("message.accesscontrol.33", args));
-			} catch (FacilityDuplicate_Exception e) {
+			} catch (FacilityDuplicate e) {
 				//ロールID取得
 				String args[] = { roleInfo.getRoleId() };
 
@@ -353,12 +358,12 @@ public class RoleDialog extends CommonDialog {
 						Messages.getString("message.repository.26", args));
 			} catch (Exception e) {
 				String errMessage = "";
-				if (e instanceof InvalidRole_Exception) {
+				if (e instanceof InvalidRole) {
 					// 権限なし
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.accesscontrol.16"));
 				} else {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					errMessage = ", " + e.getMessage();
 				}
 				MessageDialog.openError(
 						null,
@@ -369,7 +374,9 @@ public class RoleDialog extends CommonDialog {
 		} else{
 			// 変更の場合
 			try {
-				wrapper.modifyRoleInfo(roleInfo);
+				ModifyRoleInfoRequest upd = new ModifyRoleInfoRequest();
+				RestClientBeanUtil.convertBean(roleInfo, upd);
+				wrapper.modifyRoleInfo(roleInfo.getRoleId(),upd);
 				result = true;
 
 				Object[] arg = {this.m_managerComposite.getText()};
@@ -381,16 +388,16 @@ public class RoleDialog extends CommonDialog {
 
 			} catch (Exception e) {
 				String errMessage = "";
-				if (e instanceof InvalidRole_Exception) {
+				if (e instanceof InvalidRole) {
 					// 権限なし
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.accesscontrol.16"));
-				} else if (e instanceof UnEditableRole_Exception) {
+				} else if (e instanceof UnEditableRole) {
 					//　変更不可なロールの場合はエラー（システムロール、内部モジュール用ロール）
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.accesscontrol.40"));
 				} else {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					errMessage = ", " + e.getMessage();
 				}
 				MessageDialog.openError(
 						null,
@@ -429,7 +436,7 @@ public class RoleDialog extends CommonDialog {
 	 *
 	 * @param roleInfo 設定値として用いるロール情報
 	 */
-	protected void setInputData(RoleInfo roleInfo) {
+	protected void setInputData(RoleInfoResponse roleInfo) {
 
 		this.inputData = roleInfo;
 
@@ -464,8 +471,8 @@ public class RoleDialog extends CommonDialog {
 	 *
 	 * @return ロール情報
 	 */
-	private RoleInfo createInputData() {
-		final RoleInfo info = new RoleInfo();
+	private RoleInfoResponse createInputData() {
+		final RoleInfoResponse info = new RoleInfoResponse();
 		info.setRoleId(this.textRoleId.getText());
 		info.setRoleName(this.textRoleName.getText());
 		info.setDescription(this.textDescription.getText());

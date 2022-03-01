@@ -10,10 +10,10 @@ package com.clustercontrol.agent.job;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtRunInstructionInfoResponse;
 
 import com.clustercontrol.agent.SendQueue;
 import com.clustercontrol.agent.util.AgentProperties;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
 
 /**
  * エージェントスレッドクラス<BR>
@@ -25,7 +25,7 @@ import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
 public abstract class AgentThread extends Thread {
 	private static Log m_log = LogFactory.getLog(AgentThread.class);
 
-	protected RunInstructionInfo m_info = null;
+	protected AgtRunInstructionInfoResponse m_info = null;
 	protected SendQueue m_sendQueue = null;
 
 	//オリジナルメッセージのサイズ上限（Byte）
@@ -46,7 +46,7 @@ public abstract class AgentThread extends Thread {
 	 * @param runHistory
 	 * @param props
 	 */
-	public AgentThread(RunInstructionInfo info, SendQueue sendQueue) {
+	public AgentThread(AgtRunInstructionInfoResponse info, SendQueue sendQueue) {
 		m_info = info;
 		m_sendQueue = sendQueue;
 

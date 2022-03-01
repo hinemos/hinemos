@@ -16,15 +16,15 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.poller.bean.PollerProtocolConstant;
 import com.clustercontrol.poller.impl.Snmp4jPollerImpl;
 import com.clustercontrol.poller.util.DataTable;
 import com.clustercontrol.poller.util.TableEntry;
+import com.clustercontrol.util.EnvUtil;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -88,6 +88,13 @@ public class RAMSwapOutMonitor extends SelfCheckMonitorBase {
 			m_log.debug("skip");
 			return;
 		}
+		
+		// Windows版マネージャの場合は利用できない旨のINTERNALイベントを出力
+		if (EnvUtil.isWindows()) {
+			AplLogger.put(InternalIdCommon.SYS_SFC_SYS_018, new String[]{});
+			m_log.warn("selfcheck monitoring swapout is unavailable on Windows Manager, skip");
+			return;
+		}
 
 		/** ローカル変数 */
 		long swapOutSize = 0;
@@ -128,7 +135,7 @@ public class RAMSwapOutMonitor extends SelfCheckMonitorBase {
 			return;
 		}
 		String[] msgAttr1 = { Long.toString(swapOutSize) };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_005_SYS_SFC, msgAttr1,
+		AplLogger.put(InternalIdCommon.SYS_SFC_SYS_005, msgAttr1,
 				"ram swap-out(" +
 						swapOutSize +
 						" [blocks]) occurred since " +

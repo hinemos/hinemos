@@ -33,6 +33,10 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.GetApprovalJobListRequest;
+import org.openapitools.client.model.JobApprovalInfoResponse;
+
+import com.clustercontrol.approval.util.JobApprovalInfoWrapper;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.util.ClientSession;
@@ -41,20 +45,19 @@ import com.clustercontrol.approval.bean.ApprovalFilterPropertyConstant;
 import com.clustercontrol.approval.dialog.ApprovalDetailDialog;
 import com.clustercontrol.approval.preference.ApprovalPreferencePage;
 import com.clustercontrol.approval.view.ApprovalView;
-import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.bean.JobApprovalResultMessage;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobApprovalFilter;
-import com.clustercontrol.ws.jobmanagement.JobApprovalInfo;
 
 /**
  * 承認一覧コンポジットクラス<BR>
@@ -173,12 +176,12 @@ public class ApprovalComposite extends Composite implements ISelectionChangedLis
 	public void update(Property property) {
 		condition = property;
 		
-		List<JobApprovalInfo> infoList = null;
-		Map<String, List<JobApprovalInfo>> dispDataMap= new ConcurrentHashMap<String, List<JobApprovalInfo>>();
+		List<JobApprovalInfoWrapper> infoList = null;
+		Map<String, List<JobApprovalInfoWrapper>> dispDataMap= new ConcurrentHashMap<String, List<JobApprovalInfoWrapper>>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 		
 		String conditionManager = null;
-		JobApprovalFilter filter = null;
+		GetApprovalJobListRequest filter = null;
 		
 		int total = 0;
 		int limit = ClusterControlPlugin.getDefault().getPreferenceStore().getInt(
@@ -187,22 +190,33 @@ public class ApprovalComposite extends Composite implements ISelectionChangedLis
 		if(condition != null) {
 			conditionManager = getManagerName(condition);
 			filter = property2jobApprovalFilter(condition);
+			filter.setSize(limit);
 		} else {
 			// フィルタ無しの場合はデフォルトとして承認待状態のみ表示の条件とする
-			filter = new JobApprovalFilter();
-			filter.getStatusList().add(JobApprovalStatusConstant.TYPE_PENDING);
+			filter = new GetApprovalJobListRequest();
+			filter.getTargetStatusList().add(GetApprovalJobListRequest.TargetStatusListEnum.PENDING);
+			filter.setSize(limit);
 		}
 		
 		// 承認一覧情報取得
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
 				if(conditionManager != null && !conditionManager.equals(managerName)){
 					continue;
 				}
 				
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-				infoList = wrapper.getApprovalJobList(filter, limit);
-			} catch (InvalidRole_Exception e) {
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+				List<JobApprovalInfoResponse> infoListRes = wrapper.getApprovalJobList(filter);
+				if( infoListRes != null ){
+					infoList = new ArrayList<JobApprovalInfoWrapper>();
+					for(JobApprovalInfoResponse dtoRec : infoListRes){
+						JobApprovalInfoWrapper wrapperRec = new JobApprovalInfoWrapper();
+						RestClientBeanUtil.convertBean(dtoRec, wrapperRec);
+						infoList.add(wrapperRec);
+					}
+				}
+				
+			} catch (InvalidRole e) {
 				// 権限なし
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 
@@ -243,13 +257,13 @@ public class ApprovalComposite extends Composite implements ISelectionChangedLis
 		}
 		
 		//複数マネージャ分をマージしてソート
-		List<JobApprovalInfo> infolist = dispDataMap2SortedList(dispDataMap, limit);
+		List<JobApprovalInfoWrapper> infolist = dispDataMap2SortedList(dispDataMap, limit);
 		
 		// JobApprovalInfo を tableViewer にセットするための詰め替え
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for (JobApprovalInfo info : infolist) {
+		for (JobApprovalInfoWrapper info : infolist) {
 			ArrayList<Object> obj = new ArrayList<Object>();
-			obj.add(info.getMangerName()); 
+			obj.add(info.getManagerName()); 
 			obj.add(info.getStatus());
 			obj.add(info.getResult());
 			obj.add(info.getSessionId());
@@ -258,8 +272,16 @@ public class ApprovalComposite extends Composite implements ISelectionChangedLis
 			obj.add(info.getJobName());
 			obj.add(info.getRequestUser());
 			obj.add(info.getApprovalUser());
-			obj.add(info.getStartDate() == null ? "": new Date(info.getStartDate()));
-			obj.add(info.getEndDate() == null ? "": new Date(info.getEndDate()));
+			try {
+				obj.add(info.getStartDate() == null ? "": TimezoneUtil.getSimpleDateFormat().parse(info.getStartDate()));
+			} catch (Exception e) {
+				//日付変換失敗は何もしない
+			}
+			try {
+				obj.add(info.getEndDate() == null ? "": TimezoneUtil.getSimpleDateFormat().parse(info.getEndDate()));
+			} catch (Exception e) {
+				//日付変換失敗は何もしない
+			}
 			obj.add(info.getRequestSentence());
 			obj.add(info.getComment());
 			obj.add(null);
@@ -282,20 +304,20 @@ public class ApprovalComposite extends Composite implements ISelectionChangedLis
 		}
 	}
 
-	private List<JobApprovalInfo> dispDataMap2SortedList(Map<String, List<JobApprovalInfo>> dispDataMap, int limit) {
-		List<JobApprovalInfo> ret = new ArrayList<JobApprovalInfo>();
+	private List<JobApprovalInfoWrapper> dispDataMap2SortedList(Map<String, List<JobApprovalInfoWrapper>> dispDataMap, int limit) {
+		List<JobApprovalInfoWrapper> ret = new ArrayList<JobApprovalInfoWrapper>();
 		
-		for(Map.Entry<String, List<JobApprovalInfo>> map : dispDataMap.entrySet()){
-			for (JobApprovalInfo info : map.getValue()) {
-				info.setMangerName(map.getKey());
+		for(Map.Entry<String, List<JobApprovalInfoWrapper>> map : dispDataMap.entrySet()){
+			for (JobApprovalInfoWrapper info : map.getValue()) {
+				info.setManagerName(map.getKey());
 				ret.add(info);
 			}
 		}
 		
 		// Sort - approvalStatus, 降順で並べ替え
-		Collections.sort(ret, new Comparator<JobApprovalInfo>() {
+		Collections.sort(ret, new Comparator<JobApprovalInfoWrapper>() {
 			@Override
-			public int compare(JobApprovalInfo o1, JobApprovalInfo o2) {
+			public int compare(JobApprovalInfoWrapper o1, JobApprovalInfoWrapper o2) {
 				return o2.getSessionId().compareTo(o1.getSessionId());
 			}
 		});
@@ -322,29 +344,29 @@ public class ApprovalComposite extends Composite implements ISelectionChangedLis
 		return managerName;
 	}
 
-	private JobApprovalFilter property2jobApprovalFilter (Property property) {
-		JobApprovalFilter filter = new JobApprovalFilter();
+	private GetApprovalJobListRequest property2jobApprovalFilter (Property property) {
+		GetApprovalJobListRequest filter = new GetApprovalJobListRequest();
 		ArrayList<?> values = null;
 
 		//承認依頼日時（開始）取得
 		values = PropertyUtil.getPropertyValue(property, ApprovalFilterPropertyConstant.START_FROM_DATE);
 		if(values.get(0) != null && values.get(0) instanceof Date){
-			filter.setStartFromDate(((Date)values.get(0)).getTime());
+			filter.setStartFromDate(TimezoneUtil.getSimpleDateFormat().format((Date)values.get(0)));
 		}
 		//承認依頼日時（終了）取得
 		values = PropertyUtil.getPropertyValue(property, ApprovalFilterPropertyConstant.START_TO_DATE);
 		if(values.get(0) != null && values.get(0) instanceof Date){
-			filter.setStartToDate(((Date)values.get(0)).getTime());
+			filter.setStartToDate(TimezoneUtil.getSimpleDateFormat().format((Date)values.get(0)));
 		}
 		//承認完了日時（開始）取得
 		values = PropertyUtil.getPropertyValue(property, ApprovalFilterPropertyConstant.END_FROM_DATE);
 		if(values.get(0) != null && values.get(0) instanceof Date){
-			filter.setEndFromDate(((Date)values.get(0)).getTime());
+			filter.setEndFromDate(TimezoneUtil.getSimpleDateFormat().format((Date)values.get(0)));
 		}
 		//承認完了日時（終了）取得
 		values = PropertyUtil.getPropertyValue(property, ApprovalFilterPropertyConstant.END_TO_DATE);
 		if(values.get(0) != null && values.get(0) instanceof Date){
-			filter.setEndToDate(((Date)values.get(0)).getTime());
+			filter.setEndToDate(TimezoneUtil.getSimpleDateFormat().format((Date)values.get(0)));
 		}
 
 		//承認状態取得
@@ -352,44 +374,44 @@ public class ApprovalComposite extends Composite implements ISelectionChangedLis
 		values = PropertyUtil.getPropertyValue(property, ApprovalFilterPropertyConstant.APPROVAL_STATUS_PENDING);
 		if (!"".equals(values.get(0))) {
 			if ((Boolean)values.get(0)) {
-				filter.getStatusList().add(JobApprovalStatusConstant.TYPE_PENDING);
+				filter.getTargetStatusList().add(GetApprovalJobListRequest.TargetStatusListEnum.PENDING);
 			}
 		}
 		//未承認
 		values = PropertyUtil.getPropertyValue(property, ApprovalFilterPropertyConstant.APPROVAL_STATUS_STILL);
 		if (!"".equals(values.get(0))) {
 			if ((Boolean)values.get(0)) {
-				filter.getStatusList().add(JobApprovalStatusConstant.TYPE_STILL);
+				filter.getTargetStatusList().add(GetApprovalJobListRequest.TargetStatusListEnum.STILL);
 			}
 		}
 		//中断中
 		values = PropertyUtil.getPropertyValue(property, ApprovalFilterPropertyConstant.APPROVAL_STATUS_SUSPEND);
 		if (!"".equals(values.get(0))) {
 			if ((Boolean)values.get(0)) {
-				filter.getStatusList().add(JobApprovalStatusConstant.TYPE_SUSPEND);
+				filter.getTargetStatusList().add(GetApprovalJobListRequest.TargetStatusListEnum.SUSPEND);
 			}
 		}
 		//停止(取り下げ)
 		values = PropertyUtil.getPropertyValue(property, ApprovalFilterPropertyConstant.APPROVAL_STATUS_STOP);
 		if (!"".equals(values.get(0))) {
 			if ((Boolean)values.get(0)) {
-				filter.getStatusList().add(JobApprovalStatusConstant.TYPE_STOP);
+				filter.getTargetStatusList().add(GetApprovalJobListRequest.TargetStatusListEnum.STOP);
 			}
 		}
 		//承認済
 		values = PropertyUtil.getPropertyValue(property, ApprovalFilterPropertyConstant.APPROVAL_STATUS_FINISHED);
 		if (!"".equals(values.get(0))) {
 			if ((Boolean)values.get(0)) {
-				filter.getStatusList().add(JobApprovalStatusConstant.TYPE_FINISHED);
+				filter.getTargetStatusList().add(GetApprovalJobListRequest.TargetStatusListEnum.FINISHED);
 			}
 		}
 		
 		//承認結果取得
 		values = PropertyUtil.getPropertyValue(property, ApprovalFilterPropertyConstant.APPROVAL_RESULT);
-		Integer result = null;
+		GetApprovalJobListRequest.ResultEnum result = null;
 		if(values.get(0) instanceof String){
 			String resultString = (String)values.get(0);
-			result = Integer.valueOf(JobApprovalResultMessage.stringToType(resultString));
+			result = JobApprovalResultMessage.stringToEnum(resultString);
 			filter.setResult(result);
 		}
 
@@ -516,16 +538,16 @@ public class ApprovalComposite extends Composite implements ISelectionChangedLis
 	 *
 	 * @return 承認ジョブ情報
 	 */
-	public JobApprovalInfo getSelectedApprovalInfo() {
-		JobApprovalInfo info = null;
+	public JobApprovalInfoWrapper getSelectedApprovalInfo() {
+		JobApprovalInfoWrapper info = null;
 		
 		StructuredSelection selection = (StructuredSelection) tableViewer.getSelection();
 		ArrayList<?> itemList = (ArrayList<?>) selection.getFirstElement();
 		if(itemList != null){
-			info = new JobApprovalInfo();
-			info.setMangerName((String) itemList.get(GetApprovalTableDefine.MANAGER_NAME));
-			info.setStatus((Integer) itemList.get(GetApprovalTableDefine.APPROVAL_STATUS));
-			info.setResult((Integer) itemList.get(GetApprovalTableDefine.APPROVAL_RESULT));
+			info = new JobApprovalInfoWrapper();
+			info.setManagerName((String) itemList.get(GetApprovalTableDefine.MANAGER_NAME));
+			info.setStatus((JobApprovalInfoResponse.StatusEnum) itemList.get(GetApprovalTableDefine.APPROVAL_STATUS));
+			info.setResult((JobApprovalInfoResponse.ResultEnum) itemList.get(GetApprovalTableDefine.APPROVAL_RESULT));
 			info.setSessionId((String) itemList.get(GetApprovalTableDefine.SESSION_ID));
 			info.setJobunitId((String) itemList.get(GetApprovalTableDefine.JOBUNIT_ID));
 			info.setJobId((String) itemList.get(GetApprovalTableDefine.JOB_ID));
@@ -534,11 +556,11 @@ public class ApprovalComposite extends Composite implements ISelectionChangedLis
 			info.setApprovalUser((String) itemList.get(GetApprovalTableDefine.APPROVAL_USER));
 			if(itemList.get(GetApprovalTableDefine.APPROVAL_REQUEST_TIME) instanceof Date){
 				Date start = (Date) itemList.get(GetApprovalTableDefine.APPROVAL_REQUEST_TIME);
-				info.setStartDate(start.getTime());
+				info.setStartDate(TimezoneUtil.getSimpleDateFormat().format(new Date(start.getTime())));
 			}
 			if(itemList.get(GetApprovalTableDefine.APPROVAL_COMPLETION_TIME) instanceof Date){
 				Date end = (Date) itemList.get(GetApprovalTableDefine.APPROVAL_COMPLETION_TIME);
-				info.setEndDate(end.getTime());
+				info.setEndDate(TimezoneUtil.getSimpleDateFormat().format(new Date(end.getTime())));
 			}
 			info.setRequestSentence((String) itemList.get(GetApprovalTableDefine.APPROVAL_REQUEST_SENTENCE));
 			info.setComment((String) itemList.get(GetApprovalTableDefine.COMMENT));

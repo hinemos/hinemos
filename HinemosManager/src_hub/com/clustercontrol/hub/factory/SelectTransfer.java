@@ -68,7 +68,11 @@ public class SelectTransfer {
 	 */
 	public List<TransferInfo> getTransferListByOwnerRole(String ownerRoleId) {
 		logger.debug("getLogTransferListByOwnerRole");
-		return QueryUtil.getTransferInfoList_OR(ownerRoleId);
+		if (ownerRoleId != null) {
+			return QueryUtil.getTransferInfoList_OR(ownerRoleId);
+		} else {
+			return QueryUtil.getTransferInfoList();
+		}
 	}
 
 	/**

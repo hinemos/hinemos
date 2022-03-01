@@ -7,6 +7,7 @@
  */
 package com.clustercontrol.xcloud.factory;
 
+import java.io.File;
 import java.util.List;
 
 import javax.activation.DataHandler;
@@ -53,6 +54,10 @@ public interface IBillings {
 	DataHandler downloadBillingDetailsByCloudScope(String cloudScopeId, Integer year, Integer month) throws CloudManagerException, InvalidRole;
 	DataHandler downloadBillingDetailsByFacility(String facilityId, Integer year, Integer month) throws CloudManagerException, InvalidRole;
 	
+	String writeBillingDetailsByCloudScope(String cloudScopeId, Integer year, Integer month, File tempFile) throws CloudManagerException, InvalidRole;
+
+	String writeBillingDetailsByFacility(String facilityId, Integer year, Integer month, File tempFile) throws CloudManagerException, InvalidRole;
+
 	void refreshBillingDetails(String cloudScopeId) throws CloudManagerException, InvalidRole;
 	
 	List<String> getPlatformServices(String cloudScopeId) throws CloudManagerException, InvalidRole;

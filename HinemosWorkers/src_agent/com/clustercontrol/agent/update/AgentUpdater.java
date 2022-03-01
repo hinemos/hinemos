@@ -11,6 +11,8 @@ package com.clustercontrol.agent.update;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,18 +35,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.activation.DataHandler;
-
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.DownLoadAgentLibRequest;
+import org.openapitools.client.model.GetAgentLibMapResponse;
+import org.openapitools.client.model.SetAgentProfileRequest;
 
 import com.clustercontrol.agent.Agent;
-import com.clustercontrol.agent.AgentEndPointWrapper;
+import com.clustercontrol.agent.AgentRestClientWrapper;
+import com.clustercontrol.fault.AgentLibFileNotFound;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.ws.agent.HinemosUnknown_Exception;
-import com.clustercontrol.ws.agent.InvalidRole_Exception;
-import com.clustercontrol.ws.agent.InvalidUserPass_Exception;
 
 /**
  * リモートアップデートを実行するためのクラスです。
@@ -102,24 +109,38 @@ public class AgentUpdater {
 		}
 		
 		void sendAgentProfile(Map<String, String> agentMap)
-				throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
-			AgentEndPointWrapper.setAgentProfile(agentMap);
+				throws InvalidRole, InvalidUserPass, InvalidSetting, RestConnectFailed, HinemosUnknown {
+			SetAgentProfileRequest req = new SetAgentProfileRequest();
+			req.setAgentInfo(Agent.getAgentInfoRequest());
+			req.setJavaInfo(Agent.getJavaInfo());
+			req.setMd5Map(agentMap);
+			AgentRestClientWrapper.setAgentProfile(req);
 		}
 		
 		Map<String, String> getAgentLibMap()
-				throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
-			return AgentEndPointWrapper.getAgentLibMap();
+				throws InvalidRole, InvalidUserPass, InvalidSetting, RestConnectFailed, HinemosUnknown {
+			GetAgentLibMapResponse res = AgentRestClientWrapper.getAgentLibMap(Agent.getAgentInfoRequest());
+			return res.getMd5Map();
 		}
 	
-		DataHandler downloadAgentLib(String path)
-				throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, IOException {
-			return AgentEndPointWrapper.downloadAgentLib(path);
+		InputStream downloadAgentLib(String path)
+				throws InvalidRole, InvalidUserPass, InvalidSetting, AgentLibFileNotFound,
+				RestConnectFailed, HinemosUnknown, FileNotFoundException {
+			DownLoadAgentLibRequest req = new DownLoadAgentLibRequest();
+			req.setAgentInfo(Agent.getAgentInfoRequest());
+			req.setLibPath(path);
+			File res = AgentRestClientWrapper.downloadAgentLib(req);
+			return new FileInputStream(res);
+		}
+
+		void pipeStream(InputStream inp, OutputStream out) throws IOException {
+			IOUtils.copy(inp, out);
 		}
 
 		void createDirectories(Path dir) throws IOException {
 			Files.createDirectories(dir);
 		}
-		
+
 		OutputStream newOutputStream(Path path) throws IOException {
 			return new BufferedOutputStream(Files.newOutputStream(path));
 		}
@@ -205,7 +226,7 @@ public class AgentUpdater {
 	 * ライブラリファイルのMD5一覧を返します。
 	 * 
 	 * @return キーがファイルパス(libディレクトリをルートとする相対、セパレータはOS依存)、値がMD5である、Map。
-	 *         返却したMapへの変更は、本インスタンスの内部情報に反映されます。
+	 *		   返却したMapへの変更は、本インスタンスの内部情報に反映されます。
 	 */
 	public Map<String, String> getLibMap() {
 		return agentMap;
@@ -251,22 +272,17 @@ public class AgentUpdater {
 				continue;
 			}
 
-			DataHandler handler = external.downloadAgentLib(mgrPath);
-			// マネージャ側にファイルが存在しないなら、マネージャ側とファイル一覧の不一致が発生しているということなので、
-			// 例外を投げてアップデートを中止する。
-			if (handler == null) {
-				throw new IllegalStateException("Manager doesn't have file=" + mgrPath);
-			}
-
+			// ダウンロードして、セーブ領域へファイル作成
 			Path savefile = downloadPath.resolve(agtPath);
 			Path saveDir = savefile.getParent();
-			if (saveDir == null) {
-				// ありえないが、FindBugsが検知してしまうので…
+			if (saveDir == null) { // ありえないが、FindBugsが検知してしまうので…
 				throw new IllegalStateException(savefile.toString());
 			}
-			external.createDirectories(saveDir);
-			try (OutputStream os = external.newOutputStream(savefile)) {
-				handler.writeTo(os);
+			try (InputStream inpStream = external.downloadAgentLib(mgrPath)) {
+				external.createDirectories(saveDir);
+				try (OutputStream outStream = external.newOutputStream(savefile)) {
+					external.pipeStream(inpStream, outStream);
+				}
 			}
 			downloadedFiles.add(savefile);
 			log.info("download: - Downloaded.");
@@ -336,8 +352,8 @@ public class AgentUpdater {
 		// 辞書順にソートして実行する。
 		// (PathのcompareToは実装依存なのでtoStringしている。)
 		// 例えば、以下の2つのファイルはこの記載順に展開される。
-		//  1. test-LINUX.x86_64.tar.gz
-		//  2. test_patch20181016-LINUX.x86_64.tar.gz
+		//	1. test-LINUX.x86_64.tar.gz
+		//	2. test_patch20181016-LINUX.x86_64.tar.gz
 		Collections.sort(paths, new Comparator<Path>() {
 			@Override
 			public int compare(Path o1, Path o2) {

@@ -15,11 +15,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.snmp4j.smi.SMIConstants;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.factory.RunMonitorNumericValueType;
+import com.clustercontrol.performance.operator.Operator.InvalidOverValueException;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.monitor.bean.ConvertValueConstant;
@@ -170,6 +172,7 @@ public class RunMonitorSnmp extends RunMonitorNumericValueType {
 			if(m_convertFlg == ConvertValueConstant.TYPE_NO){
 				m_value = value;
 				m_nodeDate = date;
+				m_message = MessageConstant.SELECT_VALUE.getMessage() + " : " + m_value;
 			}
 			// 差分をとる場合
 			else if(m_convertFlg == ConvertValueConstant.TYPE_DELTA){
@@ -198,12 +201,20 @@ public class RunMonitorSnmp extends RunMonitorNumericValueType {
 					}
 				}
 
+				// reboot、上限を超えた値を不正とみなすフラグ
+				boolean isInvalid32 = HinemosPropertyCommon.monitor_snmp_invalid_over_value_32.getBooleanValue();
+				boolean isInvalid64 = HinemosPropertyCommon.monitor_snmp_invalid_over_value_64.getBooleanValue();
+
 				if (prevValue != null) {
 					if (prevValue > value) {
 						if (m_request.getType() == SMIConstants.SYNTAX_COUNTER32) {
-							value += ((double)Integer.MAX_VALUE + 1) * 2;
+							if (!isInvalid32) {
+								value += ((double)Integer.MAX_VALUE + 1) * 2;
+							} 
 						} else if (m_request.getType() == SMIConstants.SYNTAX_COUNTER64) {
-							value += ((double)Long.MAX_VALUE + 1) * 2;
+							if (!isInvalid64) {
+								value += ((double)Long.MAX_VALUE + 1) * 2;
+							}
 						}
 					}
 				}
@@ -228,7 +239,23 @@ public class RunMonitorSnmp extends RunMonitorNumericValueType {
 							return false;
 						}
 
-						m_value = value - prevValue;
+						Double diff = value -prevValue;
+						if (diff < 0) {
+							// 差分が負の値の場合、且つreboot、上限超えを許容しない場合不正値とする
+							if (m_request.getType() == SMIConstants.SYNTAX_COUNTER32 && isInvalid32) {
+								double invalidValue = value +(((double)Integer.MAX_VALUE + 1) * 2);
+								m_log.info("collect() :  difference data is invalid(" + invalidValue + ")");
+								m_message = MessageConstant.MESSAGE_COULD_NOT_GET_INVALID_VALUE.getMessage() + " : " + invalidValue;
+								return false;
+							} else if (m_request.getType() == SMIConstants.SYNTAX_COUNTER64 && isInvalid64) {
+								double invalidValue = value + (((double)Long.MAX_VALUE + 1) * 2);
+								m_log.info("collect() :  difference data is invalid(" + invalidValue + ")");
+								m_message = MessageConstant.MESSAGE_COULD_NOT_GET_INVALID_VALUE.getMessage() + " : " + invalidValue;
+								return false;
+							}
+						}
+
+						m_value = diff;
 						m_nodeDate = m_request.getDate();
 					}
 					else{
@@ -249,9 +276,8 @@ public class RunMonitorSnmp extends RunMonitorNumericValueType {
 					m_nodeDate = m_request.getDate();
 					m_curData = valueEntity;
 				}
-
+				m_message = MessageConstant.SELECT_VALUE.getMessage() + " : " + m_value;
 			}
-			m_message = MessageConstant.SELECT_VALUE.getMessage() + " : " + m_value;
 		}
 		else{
 			m_message = m_request.getMessage();

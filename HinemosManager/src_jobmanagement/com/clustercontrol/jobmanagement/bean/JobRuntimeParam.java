@@ -27,69 +27,69 @@ public class JobRuntimeParam implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/** 名前 */
-	private String m_paramId;
+	private String paramId;
 	/** 種別 */
-	private Integer m_paramType;
+	private Integer paramType;
 	/** 値（デフォルト値） */
-	private String m_value;
+	private String value;
 	/** 説明 */
-	private String m_description;
+	private String description;
 	/** 必須フラグ */
-	private Boolean m_requiredFlg = false;
+	private Boolean requiredFlg = false;
 	/** ランタイムジョブ変数詳細情報 */
-	private ArrayList<JobRuntimeParamDetail> m_jobRuntimeParamDetailList;
+	private ArrayList<JobRuntimeParamDetail> jobRuntimeParamDetailList;
 
 
 	public String getParamId() {
-		return m_paramId;
+		return paramId;
 	}
 	public void setParamId(String paramId) {
-		this.m_paramId = paramId;
+		this.paramId = paramId;
 	}
 
 	public Integer getParamType() {
-		return m_paramType;
+		return paramType;
 	}
 	public void setParamType(Integer paramType) {
-		this.m_paramType = paramType;
+		this.paramType = paramType;
 	}
 
 	public String getValue() {
-		return m_value;
+		return value;
 	}
 	public void setValue(String value) {
-		this.m_value = value;
+		this.value = value;
 	}
 
 	public String getDescription() {
-		return m_description;
+		return description;
 	}
 	public void setDescription(String description) {
-		this.m_description = description;
+		this.description = description;
 	}
 
 	public Boolean getRequiredFlg() {
-		return m_requiredFlg;
+		return requiredFlg;
 	}
 	public void setRequiredFlg(Boolean requiredFlg) {
-		this.m_requiredFlg = requiredFlg;
+		this.requiredFlg = requiredFlg;
 	}
 
 	public ArrayList<JobRuntimeParamDetail> getJobRuntimeParamDetailList() {
-		return m_jobRuntimeParamDetailList;
+		return jobRuntimeParamDetailList;
 	}
 	public void setJobRuntimeParamDetailList(ArrayList<JobRuntimeParamDetail> jobRuntimeParamDetailList) {
-		this.m_jobRuntimeParamDetailList = jobRuntimeParamDetailList;
+		this.jobRuntimeParamDetailList = jobRuntimeParamDetailList;
 	}
 
 	@Override
 	public String toString() {
 		String str = null;
-		str += "m_paramId=" + m_paramId;
-		str += "m_paramType=" + m_paramType;
-		str += " ,m_value=" + m_value;
-		str += " ,m_description=" + m_description;
-		str += " ,m_requiredFlg=" + m_requiredFlg;
+		str += "paramId=" + paramId;
+		str += "paramType=" + paramType;
+		str += " ,value=" + value;
+		str += " ,description=" + description;
+		str += " ,requiredFlg=" + requiredFlg;
 		return str;
 	}
 }

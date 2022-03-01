@@ -7,6 +7,8 @@
  */
 package com.clustercontrol.xcloud.model.repository;
 
+import org.openapitools.client.model.HFacilityResponse;
+
 import com.clustercontrol.xcloud.model.cloud.HinemosManager;
 
 
@@ -42,7 +44,7 @@ public class Node extends Facility implements INode {
 		return parent.getHinemosManager();
 	}
 	
-	public static Node convert(com.clustercontrol.ws.xcloud.HNode source) {
+	public static Node convert(HFacilityResponse source) {
 		Node node = new Node();
 		node.update(source);
 		return node;

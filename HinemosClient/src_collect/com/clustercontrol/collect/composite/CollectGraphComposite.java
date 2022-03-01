@@ -32,31 +32,34 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.CollectKeyInfoResponseP1;
+import org.openapitools.client.model.FacilityInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.bean.SummaryTypeMessage;
 import com.clustercontrol.collect.preference.PerformancePreferencePage;
 import com.clustercontrol.collect.util.CollectGraphUtil;
+
 import com.clustercontrol.collect.view.CollectGraphView;
+import com.clustercontrol.fault.HinemosDbTimeout;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
 import com.clustercontrol.monitor.dialog.EventInfoDialog;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.monitor.util.EventDisplaySettingGetUtil;
 import com.clustercontrol.monitor.view.action.MonitorModifyAction;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.EndpointUnit;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HtmlLoaderUtil;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.RestConnectUnit;
 import com.clustercontrol.util.TimezoneUtil;
-import com.clustercontrol.ws.collect.CollectKeyInfoPK;
-import com.clustercontrol.ws.collect.HinemosDbTimeout_Exception;
-import com.clustercontrol.ws.collect.HinemosUnknown_Exception;
-import com.clustercontrol.ws.collect.InvalidRole_Exception;
-import com.clustercontrol.ws.collect.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
 
 /**
  * 性能グラフを表示するコンポジットクラス<BR>
@@ -161,7 +164,7 @@ public class CollectGraphComposite extends Composite {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		settingLabel.setLayoutData(gridData);
-		setSettingLabel(-1, new ArrayList<CollectKeyInfoPK>());
+		setSettingLabel(-1, new ArrayList<CollectKeyInfoResponseP1>());
 		
 		try {
 			m_browserSlider = new Browser(this, SWT.NONE);
@@ -287,15 +290,15 @@ public class CollectGraphComposite extends Composite {
 			Object retObj = null;
 			try {
 				retObj = executeFromJavascript(arguments);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				m_log.error("function InvalidRole_Exception");
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
-			} catch (InvalidUserPass_Exception e) {
+			} catch (InvalidUserPass e) {
 				m_log.error("function InvalidUserPass_Exception");
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.45"));
-			} catch (HinemosDbTimeout_Exception e) {
+			} catch (HinemosDbTimeout e) {
 				String message = HinemosMessage.replace(e.getMessage());
 				m_log.error("グラフ描画時にエラーが発生 message=" + message, e);
 				MessageDialog.openError(
@@ -313,14 +316,14 @@ public class CollectGraphComposite extends Composite {
 		}
 		
 		private Object executeFromJavascript(Object[] arguments) 
-				throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+				throws HinemosDbTimeout, InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
 			SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
 			dateFormat.setTimeZone(TimezoneUtil.getTimeZone());
 			
+			boolean isAutoGragh = false;		
 			String ret = (String)arguments[0];
 			m_log.debug("wow!called from javascript!" + ret);
 			m_log.info("javascript call:" + ret);
-
 			// jsonの解析、<key, value>にする
 			ret = ret.replaceAll("\\{", "").replaceAll("\\}", "").replaceAll("\"", "");
 			String rets[] = ret.split(",");
@@ -331,12 +334,13 @@ public class CollectGraphComposite extends Composite {
 					scriptMap.put(ret1s[0], ret1s[1]);
 				}
 				else if (ret1s.length > 2){
-					String value = ret1s[1];
+					// findbugs対応 文字列の連結方式をStringBuilderを利用する方法に変更
+					StringBuilder value = new StringBuilder(ret1s[1]);
 					for (int i = 2; i < ret1s.length; i++) {
-					value += ":" + ret1s[i];
+						value.append(":" + ret1s[i]);
 					}
-					scriptMap.put(ret1s[0], value);
-					}
+					scriptMap.put(ret1s[0], value.toString());
+				}
 			}
 			
 			String methodName = scriptMap.get("method_name");
@@ -392,7 +396,7 @@ public class CollectGraphComposite extends Composite {
 				String pluginId = scriptMap.get("pluginid");
 
 				// 閾値情報クラスのリストを作成する
-				List<MonitorNumericValueInfo> numericValueInfo = CollectGraphUtil.createMonitorNumericValueInfoList(
+				List<MonitorNumericValueInfoResponse> numericValueInfo = CollectGraphUtil.createMonitorNumericValueInfoList(
 						infoMinValue, infoMaxValue, warnMinValue, warnMaxValue);
 				MonitorModifyAction mmAction = new MonitorModifyAction();
 				if (pluginId.endsWith(SUFFIX_PLUGIN_ID_NUM)) {
@@ -448,7 +452,7 @@ public class CollectGraphComposite extends Composite {
 				list.add(GetEventListTableDefine.MONITOR_ID, monitorId);
 				list.add(GetEventListTableDefine.MONITOR_DETAIL_ID, monitorDetailId);
 				list.add(GetEventListTableDefine.FACILITY_ID, facilityId);
-				MultiManagerEventDisplaySettingInfo eventDspSetting = new EventDisplaySettingGetUtil().getEventDisplaySettingInfo(EndpointManager.getActiveManagerNameList());
+				MultiManagerEventDisplaySettingInfo eventDspSetting = new EventDisplaySettingGetUtil().getEventDisplaySettingInfo(RestConnectManager.getActiveManagerNameList());
 				EventInfoDialog dialog = new EventInfoDialog(m_collectGraphView.getSite().getShell(), list, eventDspSetting);
 				if (dialog.open() == IDialogConstants.OK_ID){
 					dialog.okButtonPress(managerName);
@@ -496,12 +500,18 @@ public class CollectGraphComposite extends Composite {
 			}
 			if (methodName.equals(CALL_METHOD_NAME_BRUSHEND) || methodName.equals(CALL_METHOD_NAME_INPUTDATE) 
 					|| methodName.equals(CALL_METHOD_NAME_NOTICESLIDER_BRUSHEND)) {
+				if (CollectGraphUtil.getBarFlg() && (CollectGraphUtil.getTargetConditionStartDate() < xaxis_min
+						|| CollectGraphUtil.getTargetConditionEndDate() > xaxis_max)) {
+					String removePointsScript = getHeadGraphClassName() + ".prototype.removePoints(" + xaxis_min + ", "
+							+ xaxis_max + ", " + false + ");";
+					executeScript(removePointsScript, m_browserGraph);
+				}
 				// すべてのグラフの表示期間(x軸のみ)を変更する
 				String script = getHeadControlClassName() + ".trimXAxis(" + xaxis_min + ", " + xaxis_max + ", null);";
 				executeScript(script, m_browserGraph);
-				
 			}
 			if (methodName.equals(CALL_METHOD_NAME_AUTODRAW)) {
+				isAutoGragh = true;
 				// 現在表示している期間の間隔で、現在時刻で最新情報を取得する
 				long term = xaxis_max - xaxis_min;
 				if (xaxis_max < new Date().getTime()) {
@@ -564,7 +574,7 @@ public class CollectGraphComposite extends Composite {
 				}
 			} else {
 				// 前側取りに行く
-				if (xaxis_min <= CollectGraphUtil.getTargetConditionStartDate() && xaxis_max >= CollectGraphUtil.getTargetConditionStartDate()) {
+				if (xaxis_min < CollectGraphUtil.getTargetConditionStartDate() && xaxis_max >= CollectGraphUtil.getTargetConditionStartDate()) {
 					m_log.debug("GET FRONT");
 					addGraphPlot(dbStartDate, CollectGraphUtil.getTargetConditionStartDate(), xaxis_min, xaxis_max, nowDate);
 				}
@@ -575,7 +585,11 @@ public class CollectGraphComposite extends Composite {
 						dbEndDate = nowDate;
 						m_log.debug("xaxis_max is now.:" + xaxis_max);
 					}
+					if (isAutoGragh){
+						CollectGraphUtil.setUseDrawnDateListFlg(true);
+					}
 					addGraphPlot(CollectGraphUtil.getTargetDBAccessDate() + 1, dbEndDate, xaxis_min, xaxis_max, nowDate);
+					CollectGraphUtil.setUseDrawnDateListFlg(false);
 				}
 			}
 			
@@ -608,6 +622,15 @@ public class CollectGraphComposite extends Composite {
 					script = getHeadGraphClassName() + ".prototype.removeStack("+ startdate + ", " + enddate + ");";
 				}
 				executeScript(script, m_browserGraph);
+				if(CollectGraphUtil.getTargetConditionStartDate() < startdate){
+					CollectGraphUtil.setTargetConditionStartDate(startdate);
+				}
+				if(CollectGraphUtil.getTargetDBAccessDate() > enddate){
+					CollectGraphUtil.setTargetDBAccessDate(enddate);
+				}
+				if(CollectGraphUtil.getTargetConditionEndDate() > enddate){
+					CollectGraphUtil.setTargetConditionEndDate(enddate);
+				}
 			}
 		}
 		
@@ -632,13 +655,15 @@ public class CollectGraphComposite extends Composite {
 	 * @param selectStartDate グラフの表示開始時刻
 	 * @param selectEndDate グラフの表示終了時刻
 	 * @param nowDate 現在日時
-	 * @throws HinemosDbTimeout_Exception 
-	 * @throws InvalidRole_Exception 
-	 * @throws HinemosUnknown_Exception 
-	 * @throws InvalidUserPass_Exception 
+	 * @throws RestConnectFailed 
+	 * @throws HinemosDbTimeout
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws InvalidUserPass
+	 * @throws InvalidSetting 
 	 */
 	private void addGraphPlot(Long startDate, Long endDate, Long selectStartDate, Long selectEndDate, Long nowDate) 
-			throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+			throws HinemosDbTimeout, InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
 		m_log.debug("addGraphPlot() start");
 		StringBuffer sb = CollectGraphUtil.getAddGraphPlotJson(startDate, endDate, selectStartDate, selectEndDate, nowDate);
 		if (sb == null) {
@@ -667,7 +692,7 @@ public class CollectGraphComposite extends Composite {
 		this.setLayout( layout );
 		
 		// メンバに抑えている情報をクリアする
-		CollectGraphUtil.init(false, false, new ArrayList<CollectKeyInfoPK>(), false, false, false, "");
+		CollectGraphUtil.init(false, false, new ArrayList<CollectKeyInfoResponseP1>(), false, false, false, "");
 	}
 
 	/**
@@ -676,10 +701,10 @@ public class CollectGraphComposite extends Composite {
 	 * @param summaryType
 	 * @param itemCodeList
 	 */
-	private void setSettingLabel (int summaryType, List<CollectKeyInfoPK> itemCodeList) {
+	private void setSettingLabel (int summaryType, List<CollectKeyInfoResponseP1> itemCodeList) {
 		ArrayList<String> itemCodeNameList = new ArrayList<>();
-		for(EndpointUnit unit : EndpointManager.getActiveManagerList()) {
-			for (CollectKeyInfoPK itemCode : itemCodeList) {
+		for(RestConnectUnit unit : RestConnectManager.getActiveManagerList()) {
+			for (CollectKeyInfoResponseP1 itemCode : itemCodeList) {
 				String displayName = itemCode.getDisplayName();
 				String itemName = itemCode.getItemName();
 				if (!displayName.equals("") && !itemName.endsWith("[" + displayName + "]")) {
@@ -732,16 +757,17 @@ public class CollectGraphComposite extends Composite {
 	 * @param summaryCode
 	 * @param facilityInfoMap マネージャ名、FacilityInfoのマップ
 	 * @param returnFlg 折り返し有無
-	 * @throws HinemosDbTimeout_Exception 
-	 * @throws InvalidRole_Exception 
-	 * @throws HinemosUnknown_Exception 
-	 * @throws InvalidUserPass_Exception 
-	 * @throws Exception 
+	 * @throws RestConnectFailed 
+	 * @throws HinemosDbTimeout
+	 * @throws InvalidRole 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidUserPass
+	 * @throws InvalidSetting 
 	 */
-	public void drawGraphs(List<CollectKeyInfoPK> collectKeyInfoList, String selectInfoStr, int summaryType, Map<String, List<FacilityInfo>> facilityInfoMap, 
+	public void drawGraphs(List<CollectKeyInfoResponseP1> collectKeyInfoList, String selectInfoStr, int summaryType, Map<String, List<FacilityInfoResponse>> facilityInfoMap, 
 			boolean returnFlg, boolean returnKindFlg, boolean totalFlg, boolean stackflg, boolean appflg, 
 			boolean threflg, boolean pieflg, boolean scatterflg, boolean legendFlg, boolean sigmaFlg, boolean barFlg) 
-					throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+					throws HinemosDbTimeout, InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
 		SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
 		dateFormat.setTimeZone(TimezoneUtil.getTimeZone());
 		
@@ -769,9 +795,9 @@ public class CollectGraphComposite extends Composite {
 		
 		int facilitySize = 0;
 		int graphSize = 0;
-		for (Map.Entry<String, List<FacilityInfo>> entry : facilityInfoMap.entrySet()) {
+		for (Map.Entry<String, List<FacilityInfoResponse>> entry : facilityInfoMap.entrySet()) {
 			if (entry.getValue() != null) {
-				for (FacilityInfo info : entry.getValue()) {
+				for (FacilityInfoResponse info : entry.getValue()) {
 					// マネージャ名とファシリティ名のマップを作成する
 					facilitySize = CollectGraphUtil.sortManagerNameFacilityIdMap(entry.getKey(), info, facilitySize);
 				}
@@ -817,6 +843,25 @@ public class CollectGraphComposite extends Composite {
 		String preferenceZoom = ClusterControlPlugin.getDefault().getPreferenceStore().getString(CollectSettingComposite.P_COLLECT_GRAPH_ZOOM_LEVEL);
 		CollectGraphUtil.setGraphZoomSize(preferenceZoom);
 		params = "initZoom(\'" + CollectGraphUtil.getGraphZoomSize() + "\', " + returnFlg + ", " + CollectGraphUtil.getScreenWidth() +");";
+		executeScript(params, m_browserGraph);
+
+		// hinemos_web.cfgから取得したインターバルを設定する(空白、null、0以下の値は修正前のデフォルトの7000で置き換え)
+		String zipfileCreateInterval = System.getProperty("graph.zipfile.create.interval");
+		String interval = "7000";
+		if("".equals(zipfileCreateInterval) || zipfileCreateInterval == null){
+			zipfileCreateInterval = interval;
+		}else{
+			boolean isNum = zipfileCreateInterval.matches("[0-9]+[\\.]?[0-9]*");
+			if(!isNum){
+				zipfileCreateInterval = interval;
+			}else{
+				if(Long.parseLong(zipfileCreateInterval) < 1){
+					zipfileCreateInterval = interval;
+				}
+			}
+		}
+		m_log.info("start set zipfile interval=" + zipfileCreateInterval);
+		params = "initZipfileCreateInterval(" + zipfileCreateInterval + ");";
 		executeScript(params, m_browserGraph);
 		
 		// スライダーの削除 -> 作成

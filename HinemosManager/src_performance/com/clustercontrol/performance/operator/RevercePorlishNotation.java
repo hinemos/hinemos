@@ -76,8 +76,17 @@ public class RevercePorlishNotation extends Operator {
 
 	/**
 	 * 定数・変数判定
+	 *
+	 * @param obj
+	 * @param currentTable  現在値
+	 * @param previousTable 前回値
+	 * @param deviceName    デバイス名
+	 * @return 計算結果
+	 * @throws CollectedDataNotFoundException
+	 * @throws InvalidValueException
+	 * @throws InvalidOverValueException
 	 */
-	private double getVal(Object obj, DataTable currentTable, DataTable previousTable, String deviceName) throws CollectedDataNotFoundException, InvalidValueException {
+	private double getVal(Object obj, DataTable currentTable, DataTable previousTable, String deviceName) throws CollectedDataNotFoundException, InvalidValueException, InvalidOverValueException {
 		double result = 0D;
 
 		if (obj instanceof Double) {
@@ -100,9 +109,18 @@ public class RevercePorlishNotation extends Operator {
 
 	/**
 	 * 計算処理
+	 *
+	 * @param obj
+	 * @param currentTable  現在値
+	 * @param previousTable 前回値
+	 * @param deviceName    デバイス名
+	 * @return 計算結果
+	 * @throws CollectedDataNotFoundException
+	 * @throws InvalidValueException
+	 * @throws InvalidOverValueException
 	 */
 	@Override
-	public double calc(DataTable currentTable, DataTable previousTable, String deviceName) throws CollectedDataNotFoundException, InvalidValueException{
+	public double calc(DataTable currentTable, DataTable previousTable, String deviceName) throws CollectedDataNotFoundException, InvalidValueException, InvalidOverValueException {
 		double right = 0D;
 		double left = 0D;
 		double result = 0D;
@@ -140,7 +158,7 @@ public class RevercePorlishNotation extends Operator {
 					} else {
 						_stack.push(getVal(expArray[i], currentTable, previousTable, deviceName));
 					}
-				} catch (CollectedDataNotFoundWithNoPollingException e) {
+				} catch (CollectedDataNotFoundWithNoPollingException |InvalidOverValueException e) {
 					throw e;
 				} catch (CollectedDataNotFoundException | IllegalStateException | EmptyStackException e) {
 					log.warn("calc [" + expression + "], " + e.getClass().getName() + ", " + e.getMessage());

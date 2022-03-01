@@ -8,6 +8,10 @@
 
 package com.clustercontrol.reporting.bean;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -77,5 +81,23 @@ public class OutputMonitorInfo implements java.io.Serializable {
 	public void setMaxValue(double maxValue) {
 		this.maxValue = maxValue;
 	}
-	
+
+	/**
+	 * 監視設定情報のコレクションを、監視間隔の短 -> 長 の順番にソートして返します。
+	 */
+	public static List<OutputMonitorInfo> sortByRunInterval(Collection<OutputMonitorInfo> monitorInfos) {
+		List<OutputMonitorInfo> sorted = new ArrayList<>(monitorInfos);
+		Collections.sort(sorted, new Comparator<OutputMonitorInfo>() {
+			@Override
+			public int compare(OutputMonitorInfo o1, OutputMonitorInfo o2) {
+				// o1 の監視間隔が o2 より短い場合は、負の値(＝o1 は o2 より小さい)
+				int cmp = o1.getRunInterval() - o2.getRunInterval();
+				if (cmp != 0) return cmp;
+				// 監視間隔が同じなら 監視項目 ID 昇順
+				return o1.getMonitorId().compareTo(o2.getMonitorId());
+			}
+		});
+		return sorted;
+	}
+
 }

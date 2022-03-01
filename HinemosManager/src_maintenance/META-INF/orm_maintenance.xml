@@ -5,6 +5,138 @@
 	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
 
 	<!-- SelectMaintenanceInfo -->
+	<named-native-query name="JobCompletedSessionsEntity.selectOldestStartDate">
+		<query>
+			<![CDATA[
+			SELECT start_date
+				FROM log.cc_job_session_job AS j
+					INNER JOIN log.cc_job_session AS s
+						ON s.jobunit_id = j.jobunit_id
+							AND s.job_id = j.job_id
+							AND s.session_id = j.session_id
+							AND j.start_date < ?1
+				ORDER BY start_date
+				LIMIT 1
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.selectOldestScheduleDate">
+		<query>
+			<![CDATA[
+			SELECT schedule_date
+				FROM log.cc_job_session AS s
+					INNER JOIN log.cc_job_session_job AS j
+						ON j.jobunit_id = s.jobunit_id
+							AND j.job_id = s.job_id
+							AND j.session_id = s.session_id
+							AND j.start_date IS NULL
+							AND s.schedule_date < ?1
+				ORDER BY s.schedule_date
+				LIMIT 1
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.selectOldestStartDateByStatus">
+		<query>
+			<![CDATA[
+			SELECT start_date
+				FROM log.cc_job_session_job AS j
+					INNER JOIN log.cc_job_session AS s
+						ON s.jobunit_id = j.jobunit_id
+							AND s.job_id = j.job_id
+							AND s.session_id = j.session_id
+							AND j.start_date < ?1
+							AND (j.status = 300 OR j.status = 301)
+				ORDER BY start_date
+				LIMIT 1
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.selectOldestScheduleDateByStatus">
+		<query>
+			<![CDATA[
+			SELECT schedule_date
+				FROM log.cc_job_session AS s
+					INNER JOIN log.cc_job_session_job AS j
+						ON j.jobunit_id = s.jobunit_id
+							AND j.job_id = s.job_id
+							AND j.session_id = s.session_id
+							AND j.start_date IS NULL
+							AND s.schedule_date < ?1
+							AND (j.status = 300 OR j.status = 301)
+				ORDER BY s.schedule_date
+				LIMIT 1
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.selectOldestStartDateByOwnerRoleId">
+		<query>
+			<![CDATA[
+			SELECT start_date
+				FROM log.cc_job_session_job AS j
+					INNER JOIN log.cc_job_session AS s
+						ON s.jobunit_id = j.jobunit_id
+							AND s.job_id = j.job_id
+							AND s.session_id = j.session_id
+							AND j.start_date < ?1
+							AND j.owner_role_id = ?2
+				ORDER BY start_date
+				LIMIT 1
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.selectOldestScheduleDateByOwnerRoleId">
+		<query>
+			<![CDATA[
+			SELECT schedule_date
+				FROM log.cc_job_session AS s
+					INNER JOIN log.cc_job_session_job AS j
+						ON j.jobunit_id = s.jobunit_id
+							AND j.job_id = s.job_id
+							AND j.session_id = s.session_id
+							AND j.start_date IS NULL
+							AND s.schedule_date < ?1
+							AND j.owner_role_id = ?2
+				ORDER BY s.schedule_date
+				LIMIT 1
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.selectOldestStartDateByStatusAndOwnerRoleId">
+		<query>
+			<![CDATA[
+			SELECT start_date
+				FROM log.cc_job_session_job AS j
+					INNER JOIN log.cc_job_session AS s
+						ON s.jobunit_id = j.jobunit_id
+							AND s.job_id = j.job_id
+							AND s.session_id = j.session_id
+							AND j.start_date < ?1
+							AND (j.status = 300 OR j.status = 301)
+							AND j.owner_role_id = ?2
+				ORDER BY start_date
+				LIMIT 1
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.selectOldestScheduleDateByStatusAndOwnerRoleId">
+		<query>
+			<![CDATA[
+			SELECT schedule_date
+				FROM log.cc_job_session AS s
+					INNER JOIN log.cc_job_session_job AS j
+						ON j.jobunit_id = s.jobunit_id
+							AND j.job_id = s.job_id
+							AND j.session_id = s.session_id
+							AND j.start_date IS NULL
+							AND s.schedule_date < ?1
+							AND (j.status = 300 OR j.status = 301)
+							AND j.owner_role_id = ?2
+				ORDER BY s.schedule_date
+				LIMIT 1
+			]]>
+		</query>
+	</named-native-query>
 	<named-query name="MaintenanceInfoEntity.findAllOrderByMaintenanceId">
 		<query>
 			<![CDATA[
@@ -32,6 +164,15 @@
 	</named-query>
 
 	<!-- MaintenanceEvent -->
+	<named-query name="EventLogEntity.selectTargetDateByGenerationDate">
+		<query>
+			<![CDATA[
+				SELECT c.generationDate FROM EventLogEntity c
+				WHERE c.generationDate < :generationDate
+				GROUP BY c.generationDate ORDER BY c.generationDate
+			]]>
+		</query>
+	</named-query>
 	<named-query name="EventLogEntity.deleteByGenerationDate">
 		<query>
 			<![CDATA[
@@ -53,6 +194,15 @@
 					AND   a.id.outputDate = c.outputDate
 					AND   a.id.facilityId = c.facilityId
 				)
+			]]>
+		</query>
+	</named-query>
+	<named-query name="EventLogEntity.selectTargetDateByGenerationDateConfigFlg">
+		<query>
+			<![CDATA[
+				SELECT c.generationDate FROM EventLogEntity c
+				WHERE c.generationDate < :generationDate AND c.confirmFlg='1'
+				GROUP BY c.generationDate ORDER BY c.generationDate
 			]]>
 		</query>
 	</named-query>
@@ -81,6 +231,15 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="EventLogEntity.selectTargetDateByGenerationDateAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT c.generationDate FROM EventLogEntity c
+				WHERE c.generationDate < :generationDate AND c.ownerRoleId = :ownerRoleId
+				GROUP BY c.generationDate ORDER BY c.generationDate
+			]]>
+		</query>
+	</named-query>
 	<named-query name="EventLogEntity.deleteByGenerationDateAndOwnerRoleId">
 		<query>
 			<![CDATA[
@@ -103,6 +262,15 @@
 					AND   a.id.outputDate = c.outputDate
 					AND   a.id.facilityId = c.facilityId
 				)
+			]]>
+		</query>
+	</named-query>
+	<named-query name="EventLogEntity.selectTargetDateByGenerationDateConfigFlgAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT c.generationDate FROM EventLogEntity c
+				WHERE c.generationDate < :generationDate AND c.confirmFlg='1' AND c.ownerRoleId = :ownerRoleId
+				GROUP BY c.generationDate ORDER BY c.generationDate
 			]]>
 		</query>
 	</named-query>
@@ -152,11 +320,28 @@
 	</named-query>
 	
 	<!-- MaintenanceCollectData -->
+	<named-query name="CollectData.selectTargetDateByDateTimeAndMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a.id.time FROM CollectData a WHERE a.id.time < :dateTime
+					AND a.id.collectorid IN (SELECT c.collectorid FROM CollectKeyInfo c WHERE c.id.monitorId = :monitorId)
+				GROUP BY a.id.time ORDER BY a.id.time
+			]]>
+		</query>
+	</named-query>
 	<named-query name="CollectData.deleteByDateTimeAndMonitorId">
 		<query>
 			<![CDATA[
 				DELETE FROM CollectData a WHERE a.id.time < :dateTime
 					AND a.id.collectorid IN (SELECT c.collectorid FROM CollectKeyInfo c WHERE c.id.monitorId = :monitorId)
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectData.selectTargetDateByDateTime">
+		<query>
+			<![CDATA[
+				SELECT a.id.time FROM CollectData a WHERE a.id.time < :dateTime
+				GROUP BY a.id.time ORDER BY a.id.time
 			]]>
 		</query>
 	</named-query>
@@ -170,7 +355,7 @@
 	<named-query name="CollectKeyInfo.getCollectorIdByMonitorId">
 		<query>
 			<![CDATA[
-				SELECT a.collectorid FROM CollectKeyInfo a WHERE a.id.monitorId IN :monitorIdList
+				SELECT a.collectorid FROM CollectKeyInfo a WHERE a.id.monitorId = :monitorId
 			]]>
 		</query>
 	</named-query>
@@ -178,6 +363,15 @@
 		<query>
 			<![CDATA[
 				DELETE FROM CollectData a WHERE a.id.time < :dateTime AND a.id.collectorid = :collectorid
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SummaryHour.selectTargetDateByDateTimeAndMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a.id.time FROM SummaryHour a WHERE a.id.time < :dateTime
+					AND a.id.collectorid IN (SELECT c.collectorid FROM CollectKeyInfo c WHERE c.id.monitorId = :monitorId)
+				GROUP BY a.id.time ORDER BY a.id.time
 			]]>
 		</query>
 	</named-query>
@@ -189,10 +383,27 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="SummaryHour.selectTargetDateByDateTime">
+		<query>
+			<![CDATA[
+				SELECT a.id.time FROM SummaryHour a WHERE a.id.time < :dateTime
+				GROUP BY a.id.time ORDER BY a.id.time
+			]]>
+		</query>
+	</named-query>
 	<named-query name="SummaryHour.deleteByDateTime">
 		<query>
 			<![CDATA[
 				DELETE FROM SummaryHour a WHERE a.id.time < :dateTime
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SummaryDay.selectTargetDateByDateTimeAndMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a.id.time FROM SummaryDay a WHERE a.id.time < :dateTime
+					AND a.id.collectorid IN (SELECT c.collectorid FROM CollectKeyInfo c WHERE c.id.monitorId = :monitorId)
+				GROUP BY a.id.time ORDER BY a.id.time
 			]]>
 		</query>
 	</named-query>
@@ -204,10 +415,27 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="SummaryDay.selectTargetDateByDateTime">
+		<query>
+			<![CDATA[
+				SELECT a.id.time  FROM SummaryDay a WHERE a.id.time < :dateTime
+				GROUP BY a.id.time ORDER BY a.id.time
+			]]>
+		</query>
+	</named-query>
 	<named-query name="SummaryDay.deleteByDateTime">
 		<query>
 			<![CDATA[
 				DELETE FROM SummaryDay a WHERE a.id.time < :dateTime
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SummaryMonth.selectTargetDateByDateTimeAndMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a.id.time FROM SummaryMonth a WHERE a.id.time < :dateTime
+					AND a.id.collectorid IN (SELECT c.collectorid FROM CollectKeyInfo c WHERE c.id.monitorId = :monitorId)
+				GROUP BY a.id.time ORDER BY a.id.time
 			]]>
 		</query>
 	</named-query>
@@ -219,10 +447,27 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="SummaryMonth.selectTargetDateByDateTime">
+		<query>
+			<![CDATA[
+				SELECT a.id.time FROM SummaryMonth a WHERE a.id.time < :dateTime
+				GROUP BY a.id.time ORDER BY a.id.time
+			]]>
+		</query>
+	</named-query>
 	<named-query name="SummaryMonth.deleteByDateTime">
 		<query>
 			<![CDATA[
 				DELETE FROM SummaryMonth a WHERE a.id.time < :dateTime
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectStringData.selectTargetDateByDateTimeAndMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a.time FROM CollectStringData a WHERE a.time < :dateTime
+					AND a.id.collectId IN (SELECT c.collectId FROM CollectStringKeyInfo c WHERE c.id.monitorId = :monitorId)
+				GROUP BY a.time ORDER BY a.time
 			]]>
 		</query>
 	</named-query>
@@ -234,10 +479,27 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="CollectStringData.selectTargetDateDateTime">
+		<query>
+			<![CDATA[
+				SELECT a.time  FROM CollectStringData a WHERE a.time < :dateTime
+				GROUP BY a.time ORDER BY a.time
+			]]>
+		</query>
+	</named-query>
 	<named-query name="CollectStringData.deleteByDateTime">
 		<query>
 			<![CDATA[
 				DELETE FROM CollectStringData a WHERE a.time < :dateTime
+			]]>
+		</query>
+	</named-query>
+	<named-query name="CollectBinaryData.selectTargetDateByDateTimeAndMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a.time FROM CollectBinaryData a WHERE a.time < :dateTime
+					AND a.id.collectId IN (SELECT c.collectId FROM CollectStringKeyInfo c WHERE c.id.monitorId = :monitorId)
+				GROUP BY a.time ORDER BY a.time
 			]]>
 		</query>
 	</named-query>
@@ -249,6 +511,14 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="CollectBinaryData.selectTargetDateByDateTime">
+		<query>
+			<![CDATA[
+				SELECT a.time FROM CollectBinaryData a WHERE a.time < :dateTime
+				GROUP BY a.time ORDER BY a.time
+			]]>
+		</query>
+	</named-query>
 	<named-query name="CollectBinaryData.deleteByDateTime">
 		<query>
 			<![CDATA[
@@ -256,4 +526,371 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="RpaScenarioOperationResult.selectTargetDateByDateTimeAndScenarioId">
+		<query>
+			<![CDATA[
+				SELECT a.startDate FROM RpaScenarioOperationResult a
+				WHERE a.startDate < :dateTime AND a.scenarioId = :scenarioId
+				GROUP BY a.startDate ORDER BY a.startDate
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.deleteByDateTimeAndScenarioId">
+		<query>
+			<![CDATA[
+				DELETE FROM RpaScenarioOperationResult a WHERE a.startDate < :dateTime AND a.scenarioId = :scenarioId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.selectTargetDateByDateTime">
+		<query>
+			<![CDATA[
+				SELECT a.startDate FROM RpaScenarioOperationResult a WHERE a.startDate < :dateTime
+				GROUP BY a.startDate ORDER BY a.startDate
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.deleteByDateTime">
+		<query>
+			<![CDATA[
+				DELETE FROM RpaScenarioOperationResult a WHERE a.startDate < :dateTime
+			]]>
+		</query>
+	</named-query>
+	<!-- MaintenanceJob -->
+	<named-native-query name="JobCompletedSessionsEntity.selectTargetDateForCompletedSessionsJob">
+		<query>
+			<![CDATA[
+				SELECT DATE(TO_TIMESTAMP(jsj.start_date / 1000)) as target_date
+				FROM log.cc_job_session_job AS jsj
+				INNER JOIN (
+					SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+					INNER JOIN log.cc_job_session AS s
+						ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+							j.start_date < ?1
+				) AS t
+				ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id
+				GROUP BY target_date ORDER BY target_date;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.selectTargetDateForCompletedSessionsJobByStatus">
+		<query>
+			<![CDATA[
+				SELECT DATE(TO_TIMESTAMP(jsj.start_date / 1000)) as target_date
+				FROM log.cc_job_session_job AS jsj
+				INNER JOIN (
+					SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+					INNER JOIN log.cc_job_session AS s
+						ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+							(j.status='300' OR j.status='301') AND j.start_date < ?1
+				) AS t
+				ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id
+				GROUP BY target_date ORDER BY target_date;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.selectTargetDateForCompletedSessionsJobByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT DATE(TO_TIMESTAMP(jsj.start_date / 1000)) as target_date
+				FROM log.cc_job_session_job AS jsj
+				INNER JOIN (
+					SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+					INNER JOIN log.cc_job_session AS s
+						ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+							j.start_date < ?1 AND j.owner_role_id = ?2
+				) AS t
+				ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id
+				GROUP BY target_date ORDER BY target_date;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.selectTargetDateForCompletedSessionsJobByStatusAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT DATE(TO_TIMESTAMP(jsj.start_date / 1000)) as target_date
+				FROM log.cc_job_session_job AS jsj
+				INNER JOIN (
+					SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+					INNER JOIN log.cc_job_session AS s
+						ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+							(j.status='300' OR j.status='301') AND j.start_date < ?1 AND j.owner_role_id = ?2
+				) AS t
+				ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id
+				GROUP BY target_date ORDER BY target_date;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.createTable">
+		<query>
+			<![CDATA[
+				CREATE TEMPORARY TABLE cc_job_completed_sessions AS SELECT session_id, notify_group_id FROM log.cc_job_session, setting.cc_notify_relation_info LIMIT 0;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.dropTable">
+		<query>
+			<![CDATA[
+				DROP TABLE cc_job_completed_sessions
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobSessionJob">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								?1 <= j.start_date AND j.start_date < ?2
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobCompletedAndInterruptedSessionJob">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						(SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								?1 <= j.start_date AND j.start_date < ?2
+						) UNION ALL (
+						SELECT j2.session_id, j2.jobunit_id FROM log.cc_job_session_job AS j2
+						INNER JOIN log.cc_job_session AS s2
+							ON s2.jobunit_id = j2.jobunit_id AND s2.job_id = j2.job_id AND s2.session_id = j2.session_id AND
+								j2.start_date IS NULL AND ?3 <= s2.schedule_date AND s2.schedule_date < ?4)
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobInterruptedSessionJob">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								j.start_date IS NULL AND ?1 <= s.schedule_date AND s.schedule_date < ?2
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobSessionJobByStatus">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								?1 <= j.start_date AND j.start_date < ?2 AND
+								(j.status = 300 OR j.status = 301)
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobCompletedAndInterruptedSessionJobByStatus">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						(SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								?1 <= j.start_date AND j.start_date < ?2 AND
+								(j.status = 300 OR j.status = 301)
+						) UNION ALL (
+						SELECT j2.session_id, j2.jobunit_id FROM log.cc_job_session_job AS j2
+						INNER JOIN log.cc_job_session AS s2
+							ON s2.jobunit_id = j2.jobunit_id AND s2.job_id = j2.job_id AND s2.session_id = j2.session_id AND
+								j2.start_date IS NULL AND ?3 <= s2.schedule_date AND s2.schedule_date < ?4 AND
+								(j2.status = 300 OR j2.status = 301))
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobInterruptedSessionJobByStatus">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+							j.start_date IS NULL AND ?1 <= s.schedule_date AND s.schedule_date < ?2 AND
+							(j.status = 300 OR j.status = 301)
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobSessionJobByOwnerRoleId">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								?1 <= j.start_date AND j.start_date < ?2 AND
+								j.owner_role_id = ?3
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobCompletedAndInterruptedSessionJobByOwnerRoleId">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						(SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								?1 <= j.start_date AND j.start_date < ?2 AND
+								j.owner_role_id = ?5
+						) UNION ALL (
+						SELECT j2.session_id, j2.jobunit_id FROM log.cc_job_session_job AS j2
+						INNER JOIN log.cc_job_session AS s2
+							ON s2.jobunit_id = j2.jobunit_id AND s2.job_id = j2.job_id AND s2.session_id = j2.session_id AND
+								j2.start_date IS NULL AND ?3 <= s2.schedule_date AND s2.schedule_date < ?4 AND
+								j2.owner_role_id = ?5
+						)
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobInterruptedSessionJobByOwnerRoleId">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								j.start_date IS NULL AND ?1 <= s.schedule_date AND s.schedule_date < ?2 AND 
+								j.owner_role_id = ?3
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobSessionJobByStatusAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								?1 <= j.start_date AND j.start_date < ?2 AND
+								(j.status = 300 OR j.status = 301) AND
+								j.owner_role_id = ?3
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobCompletedAndInterruptedSessionJobByStatusAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						(SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								?1 <= j.start_date AND j.start_date < ?2 AND
+								(j.status = 300 OR j.status = 301) AND
+								j.owner_role_id = ?5
+						) UNION ALL (
+						SELECT j2.session_id, j2.jobunit_id FROM log.cc_job_session_job AS j2
+						INNER JOIN log.cc_job_session AS s2
+							ON s2.jobunit_id = j2.jobunit_id AND s2.job_id = j2.job_id AND s2.session_id = j2.session_id AND
+								j2.start_date IS NULL AND ?3 <= s2.schedule_date AND s2.schedule_date < ?4 AND
+								(j2.status = 300 OR j2.status = 301) AND
+								j2.owner_role_id = ?5)
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobCompletedSessionsEntity.insertJobInterruptedSessionJobByStatusAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				INSERT INTO cc_job_completed_sessions(session_id, notify_group_id)
+					SELECT jsj.session_id, CONCAT('JOB_SES-', jsj.session_id, '-', jsj.jobunit_id, '-', jsj.job_id, '-0') AS notify_group_id
+					FROM log.cc_job_session_job AS jsj
+					INNER JOIN (
+						SELECT j.session_id, j.jobunit_id FROM log.cc_job_session_job AS j
+						INNER JOIN log.cc_job_session AS s
+							ON s.jobunit_id = j.jobunit_id AND s.job_id = j.job_id AND s.session_id = j.session_id AND
+								j.start_date IS NULL AND ?1 <= s.schedule_date AND s.schedule_date < ?2 AND
+								(j.status = 300 OR j.status = 301) AND 
+								j.owner_role_id = ?3
+					) AS t
+					ON t.session_id = jsj.session_id AND t.jobunit_id = jsj.jobunit_id;
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="JobSessionEntity.deleteByJobCompletedSessions">
+		<query>
+			<![CDATA[
+				DELETE FROM log.cc_job_session WHERE session_id IN (SELECT session_id FROM cc_job_completed_sessions)
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="NotifyRelationInfoEntity.deleteByJobCompletedSessions">
+		<query>
+			<![CDATA[
+				DELETE FROM setting.cc_notify_relation_info WHERE notify_group_id IN (SELECT notify_group_id FROM cc_job_completed_sessions)
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="MonitorStatusEntity.deleteByJobCompletedSessions">
+		<query>
+			<![CDATA[
+				DELETE FROM setting.cc_monitor_status WHERE plugin_id='JOB' AND monitor_id IN (SELECT session_id FROM cc_job_completed_sessions)
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="NotifyHistoryEntity.deleteByJobCompletedSessions">
+		<query>
+			<![CDATA[
+				DELETE FROM setting.cc_notify_history WHERE plugin_id='JOB' AND monitor_id IN (SELECT session_id FROM cc_job_completed_sessions)
+			]]>
+		</query>
+	</named-native-query>
 </entity-mappings>

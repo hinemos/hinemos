@@ -20,6 +20,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.MonitorInfoResponse;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.composite.ManagerListComposite;
@@ -28,8 +29,6 @@ import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -122,7 +121,7 @@ public class MonitorBasicComposite extends Composite {
 			this.m_managerComposite.getComboManagerName().addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					parentDialog.getNotifyInfo().setNotify(new ArrayList<NotifyRelationInfo>());
+					parentDialog.getNotifyInfo().setNotify(new ArrayList<>());
 					updateManagerName();
 				}
 			});
@@ -273,7 +272,7 @@ public class MonitorBasicComposite extends Composite {
 	 * @param info 設定値として用いる監視情報
 	 * @param udpateFlg 更新するか否か（true：更新する）
 	 */
-	public void setInputData(MonitorInfo info, boolean updateFlg) {
+	public void setInputData(MonitorInfoResponse info, boolean updateFlg) {
 
 		if(info != null){
 			// 監視項目ＩＤ
@@ -312,7 +311,7 @@ public class MonitorBasicComposite extends Composite {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	public ValidateResult createInputData(MonitorInfo info) {
+	public ValidateResult createInputData(MonitorInfoResponse info) {
 
 		if(info != null){
 			// 監視項目ID

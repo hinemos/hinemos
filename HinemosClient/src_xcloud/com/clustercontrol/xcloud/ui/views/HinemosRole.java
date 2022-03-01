@@ -7,12 +7,13 @@
  */
 package com.clustercontrol.xcloud.ui.views;
 
-import com.clustercontrol.ws.access.RoleInfo;
+import org.openapitools.client.model.RoleInfoResponse;
+
 import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
 
 public class HinemosRole {
 	IHinemosManager manager;
-	RoleInfo roleInfo;
+	RoleInfoResponse roleInfo;
 	
 	public IHinemosManager getManager() {
 		return manager;
@@ -21,10 +22,10 @@ public class HinemosRole {
 		this.manager = manager;
 	}
 	
-	public RoleInfo getRoleInfo() {
+	public RoleInfoResponse getRoleInfo() {
 		return roleInfo;
 	}
-	public void setRoleInfo(RoleInfo roleInfo) {
+	public void setRoleInfo(RoleInfoResponse roleInfo) {
 		this.roleInfo = roleInfo;
 	}
 }

@@ -8,11 +8,10 @@
 
 package com.clustercontrol.maintenance.factory;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosPropertyNotFound;
@@ -23,6 +22,8 @@ import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.maintenance.model.HinemosPropertyInfo;
 import com.clustercontrol.maintenance.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
+
+import jakarta.persistence.EntityExistsException;
 
 
 /**
@@ -41,11 +42,10 @@ public class ModifyHinemosProperty {
 	 *
 	 * @param info 共通設定情報
 	 * @param loginUser ログインユーザー名
-	 * @return
 	 * @throws EntityExistsException
 	 * @throws HinemosUnknown
 	 */
-	public boolean addHinemosProperty(HinemosPropertyInfo info, String loginUser)
+	public void addHinemosProperty(HinemosPropertyInfo info, String loginUser)
 			throws EntityExistsException, InvalidRole, HinemosUnknown {
 
 		// Entityクラスのインスタンス生成
@@ -58,6 +58,7 @@ public class ModifyHinemosProperty {
 			
 			long now = HinemosTime.currentTimeMillis();
 			
+			info.setOwnerRoleId(RoleIdConstant.ADMINISTRATORS);
 			info.setCreateUserId(loginUser);
 			info.setCreateDatetime(now);
 			info.setModifyUserId(loginUser);
@@ -67,8 +68,6 @@ public class ModifyHinemosProperty {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw e;
 		}
-
-		return true;
 	}
 	
 	/**
@@ -76,13 +75,12 @@ public class ModifyHinemosProperty {
 	 *
 	 * @param info 共通設定情報
 	 * @param loginUser ログインユーザー名
-	 * @return
 	 * @throws HinemosPropertyNotFound
 	 * @throws NotifyNotFound
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public boolean modifyHinemosProperty(HinemosPropertyInfo info, String loginUser)
+	public void modifyHinemosProperty(HinemosPropertyInfo info, String loginUser)
 			throws HinemosPropertyNotFound, NotifyNotFound, InvalidRole, HinemosUnknown {
 
 		//共通設定情報を取得
@@ -98,19 +96,17 @@ public class ModifyHinemosProperty {
 		entity.setModifyUserId(loginUser);
 		entity.setModifyDatetime(HinemosTime.currentTimeMillis());
 
-		return true;
 	}
 	
 	/**
 	 * 共通設定情報を削除します。
 	 * 
 	 * @param key
-	 * @return
 	 * @throws MaintenanceNotFound
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public boolean deleteHinemosProperty(String key)
+	public void deleteHinemosProperty(String key)
 			throws HinemosPropertyNotFound, InvalidRole, HinemosUnknown {
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
@@ -122,7 +118,6 @@ public class ModifyHinemosProperty {
 			//共通設定情報の削除
 			em.remove(entity);
 
-			return true;
 		}
 	}
 }

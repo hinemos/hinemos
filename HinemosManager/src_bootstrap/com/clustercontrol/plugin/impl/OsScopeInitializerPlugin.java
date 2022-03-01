@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,13 +26,13 @@ import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
 import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.repository.model.FacilityRelationEntity;
 import com.clustercontrol.repository.model.ScopeInfo;
-import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.repository.util.FacilityTreeCache;
+import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
 
 public class OsScopeInitializerPlugin implements HinemosPlugin {
 	public static final Log log = LogFactory.getLog(OsScopeInitializerPlugin.class);
-	private static Set<String> osScopeIdSet = new HashSet<String>();
+	private static Set<String> osScopeIdSet = new CopyOnWriteArraySet<>();
 
 	@Override
 	public Set<String> getDependency() {

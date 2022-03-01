@@ -12,6 +12,8 @@ public interface ILockManager {
 	
 	ILock create(String key);
 	
+	ILock get(String key);
+	
 	boolean delete(String key);
 	
 }

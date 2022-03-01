@@ -79,6 +79,7 @@ public class ControlHttpScenarioInfo {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			MonitorInfo monitorInfo = com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK(m_monitorId);
+			http.setMonitorId(m_monitorId);
 			em.persist(http);
 			http.relateToMonitorInfo(monitorInfo);
 			

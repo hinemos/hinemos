@@ -8,17 +8,20 @@
 
 package com.clustercontrol.jobmanagement.view;
 
+import java.util.Collection;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.openapitools.client.model.GetPlanListRequest;
 
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.jobmanagement.composite.JobPlanComposite;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.view.CommonViewPart;
-import com.clustercontrol.ws.jobmanagement.JobPlanFilter;
 
 /**
  * ジョブ[スケジュール予定]ビュークラスです。
@@ -36,7 +39,7 @@ public class JobPlanListView extends CommonViewPart {
 	/** ジョブ[スケジュール予定]ビュー用のコンポジット */
 	private JobPlanComposite m_plan = null;
 	/** フィルタ条件 */
-	private JobPlanFilter m_filter = null;
+	private GetPlanListRequest m_filter = null;
 	private String m_managerName = null;
 
 	protected String getViewName() {
@@ -80,7 +83,7 @@ public class JobPlanListView extends CommonViewPart {
 	 *
 	 * @param condition フィルタ条件
 	 */
-	public void setFilterCondition(String managerName, JobPlanFilter filter) {
+	public void setFilterCondition(String managerName, GetPlanListRequest filter) {
 		m_managerName = managerName;
 		m_filter = filter;
 	}
@@ -96,6 +99,10 @@ public class JobPlanListView extends CommonViewPart {
 			if (m_filter == null) {
 				m_plan.update(null, null);
 			} else {
+				Collection<String> activemanagerNames = RestConnectManager.getActiveManagerSet();
+				if(!activemanagerNames.contains(m_managerName)){
+					m_managerName = "";
+				}
 				m_plan.update(m_managerName, m_filter);
 			}
 		} catch (Exception e) {

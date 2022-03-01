@@ -20,15 +20,15 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.MonitorNumericTypeEnum;
 
 import com.clustercontrol.bean.PriorityColorConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.run.bean.MonitorNumericType;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -96,7 +96,7 @@ public class NumericValueInfoComposite extends Composite {
 	protected Text m_textValue2Warn = null;
 
 	/** 数値監視モード  */
-	private String m_monitorNumericType = MonitorNumericType.TYPE_BASIC.getType();
+	private MonitorNumericTypeEnum m_monitorNumericType = MonitorNumericTypeEnum.BASIC;
 
 	/**
 	 * インスタンスを返します。
@@ -281,7 +281,7 @@ public class NumericValueInfoComposite extends Composite {
 			String criterion1,
 			String criterion2,
 			int inputVerifyType,
-			String monitorNumericType) {
+			MonitorNumericTypeEnum monitorNumericType) {
 
 		super(parent, style);
 
@@ -693,18 +693,18 @@ public class NumericValueInfoComposite extends Composite {
 	 *
 	 * @param info 設定値として用いる監視情報
 	 */
-	public void setInputData(MonitorInfo info) {
+	public void setInputData(MonitorInfoResponse info) {
 
 		if(info != null){
 
-			List<MonitorNumericValueInfo> list = info.getNumericValueInfo();
+			List<MonitorNumericValueInfoResponse> list = info.getNumericValueInfo();
 			if(list != null){
 				for(int index=0; index<list.size(); index++){
-					MonitorNumericValueInfo numericValueInfo = list.get(index);
+					MonitorNumericValueInfoResponse numericValueInfo = list.get(index);
 					if (numericValueInfo == null || !numericValueInfo.getMonitorNumericType().equals(m_monitorNumericType)) {
 						continue;
 					}
-					if(PriorityConstant.TYPE_INFO ==  numericValueInfo.getPriority()){
+					if(MonitorNumericValueInfoResponse.PriorityEnum.INFO ==  numericValueInfo.getPriority()){
 						String lower = "";
 						String upper = "";
 						if(m_inputVerifyType1  == INPUT_VERIFICATION_INTEGER_NUMBER ||
@@ -723,7 +723,7 @@ public class NumericValueInfoComposite extends Composite {
 						}
 						this.m_textValue1Info.setText(lower);
 						this.m_textValue2Info.setText(upper);
-					} else if(PriorityConstant.TYPE_WARNING ==  numericValueInfo.getPriority()){
+					} else if(MonitorNumericValueInfoResponse.PriorityEnum.WARNING ==  numericValueInfo.getPriority()){
 						String lower = "";
 						String upper = "";
 						if(m_inputVerifyType1  == INPUT_VERIFICATION_INTEGER_NUMBER ||
@@ -762,9 +762,9 @@ public class NumericValueInfoComposite extends Composite {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	public ValidateResult createInputData(MonitorInfo info) {
+	public ValidateResult createInputData(MonitorInfoResponse info) {
 
-		List<MonitorNumericValueInfo> valueList = new ArrayList<MonitorNumericValueInfo>();
+		List<MonitorNumericValueInfoResponse> valueList = new ArrayList<>();
 
 		String lowerText = null;
 		String upperText = null;
@@ -772,7 +772,7 @@ public class NumericValueInfoComposite extends Composite {
 		Double upper = null;
 
 		// 重要度：情報
-		MonitorNumericValueInfo valueInfo = getDefaultValueInfo(info, PriorityConstant.TYPE_INFO);
+		MonitorNumericValueInfoResponse valueInfo = getDefaultValueInfo(info, MonitorNumericValueInfoResponse.PriorityEnum.INFO);
 
 		lowerText = this.m_textValue1Info.getText();
 		upperText = this.m_textValue2Info.getText();
@@ -800,7 +800,7 @@ public class NumericValueInfoComposite extends Composite {
 		valueList.add(valueInfo);
 
 		// 重要度：警告
-		MonitorNumericValueInfo valueWarn = getDefaultValueInfo(info, PriorityConstant.TYPE_WARNING);
+		MonitorNumericValueInfoResponse valueWarn = getDefaultValueInfo(info, MonitorNumericValueInfoResponse.PriorityEnum.WARNING);
 
 		lowerText = this.m_textValue1Warn.getText();
 		upperText = this.m_textValue2Warn.getText();
@@ -830,18 +830,18 @@ public class NumericValueInfoComposite extends Composite {
 		valueList.add(valueWarn);
 
 		// 重要度：危険
-		MonitorNumericValueInfo valueCritical = getDefaultValueInfo(info, PriorityConstant.TYPE_CRITICAL);
+		MonitorNumericValueInfoResponse valueCritical = getDefaultValueInfo(info, MonitorNumericValueInfoResponse.PriorityEnum.CRITICAL);
 		valueCritical.setThresholdLowerLimit(Double.valueOf(0));
 		valueCritical.setThresholdUpperLimit(Double.valueOf(0));
 		valueList.add(valueCritical);
 
 		// 重要度：不明
-		MonitorNumericValueInfo valueUnknown = getDefaultValueInfo(info, PriorityConstant.TYPE_UNKNOWN);
+		MonitorNumericValueInfoResponse valueUnknown = getDefaultValueInfo(info, MonitorNumericValueInfoResponse.PriorityEnum.UNKNOWN);
 		valueUnknown.setThresholdLowerLimit(Double.valueOf(0));
 		valueUnknown.setThresholdUpperLimit(Double.valueOf(0));
 		valueList.add(valueUnknown);
 
-		List<MonitorNumericValueInfo> valueInfoList = info.getNumericValueInfo();
+		List<MonitorNumericValueInfoResponse> valueInfoList = info.getNumericValueInfo();
 		valueInfoList.addAll(valueList);
 
 		return null;
@@ -912,12 +912,11 @@ public class NumericValueInfoComposite extends Composite {
 	 * @param priority 重要度
 	 * @return 数値監視の判定情報
 	 */
-	private MonitorNumericValueInfo getDefaultValueInfo(MonitorInfo info, int priority) {
+	private MonitorNumericValueInfoResponse getDefaultValueInfo(MonitorInfoResponse info, MonitorNumericValueInfoResponse.PriorityEnum priority) {
 
-		MonitorNumericValueInfo value = new MonitorNumericValueInfo();
-		value.setMonitorId(info.getMonitorId());
+		MonitorNumericValueInfoResponse value = new MonitorNumericValueInfoResponse();
 		value.setMonitorNumericType(m_monitorNumericType);
-		value.setPriority(Integer.valueOf(priority));
+		value.setPriority(priority);
 
 		return value;
 	}

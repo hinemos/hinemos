@@ -8,6 +8,8 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import org.openapitools.client.model.JmxMasterInfoResponse;
+
 import com.clustercontrol.utility.settings.master.xml.JmxMasterInfo;
 import com.clustercontrol.utility.settings.model.BaseConv;
 
@@ -36,7 +38,7 @@ public class JmxMasterConv extends BaseConv{
 	 * @return
 	 * @throws Exception
 	 */
-	public JmxMasterInfo getXmlInfo(com.clustercontrol.ws.monitor.JmxMasterInfo info) throws Exception {
+	public JmxMasterInfo getXmlInfo(JmxMasterInfoResponse info) throws Exception {
 		JmxMasterInfo ret = new JmxMasterInfo();
 
 		//情報のセット(主部分)
@@ -51,9 +53,9 @@ public class JmxMasterConv extends BaseConv{
 		return ret;
 	}
 
-	public com.clustercontrol.ws.monitor.JmxMasterInfo getDTO(JmxMasterInfo info) throws Exception {
+	public JmxMasterInfoResponse getDTO(JmxMasterInfo info) throws Exception {
 		
-		com.clustercontrol.ws.monitor.JmxMasterInfo ret = new com.clustercontrol.ws.monitor.JmxMasterInfo();
+		JmxMasterInfoResponse ret = new JmxMasterInfoResponse();
 
 		//情報のセット(主部分)
 		ret.setId(info.getMasterId());

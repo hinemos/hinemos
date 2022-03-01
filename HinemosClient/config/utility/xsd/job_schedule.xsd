@@ -122,7 +122,7 @@
 		<xs:complexType>
 			<xs:attribute name="scheduleType" type="xs:int" use="required">
 				<xs:annotation>
-					<xs:documentation>スケジュール種別{毎日(1),曜日(2),繰り返し実行(3)}</xs:documentation>
+					<xs:documentation>スケジュール種別{毎日(1),毎週(2),毎時(3),一定間隔(4)}</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 			<xs:attribute name="week" type="xs:nonNegativeInteger" use="required">
@@ -145,9 +145,63 @@
 					<xs:documentation>X分から{0,1,2,3,4}</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="everyXminutes" type="xs:int" use="required">
+			<xs:attribute name="everyXminutes_Hour" type="xs:int" use="required">
 				<xs:annotation>
 					<xs:documentation>X分ごとに繰り返し実行{1,2,3,5,10,15,20,30}</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="everyXminutes_Interval" type="xs:int" use="required">
+				<xs:annotation>
+					<xs:documentation>一定間隔で繰り返し実行</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sessionPremakeFlg" type="xs:boolean" use="required">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブセッション事前生成の有効/無効フラグです。 
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sessionPremakeScheduleType" type="xs:int" use="optional">
+				<xs:annotation>
+					<xs:documentation>ジョブセッション事前生成種別{毎日(0),毎週(1),時間(2),日時(3)}</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sessionPremakeWeek" type="xs:int" use="optional">
+				<xs:annotation>
+					<xs:documentation>ジョブセッション事前生成-曜日{日(1),月(2),火(3),水(4),木(5),金(6),土(7)}</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sessionPremakeHour" type="xs:int" use="optional">
+				<xs:annotation>
+					<xs:documentation>ジョブセッション事前生成-時</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sessionPremakeMinute" type="xs:int" use="optional">
+				<xs:annotation>
+					<xs:documentation>ジョブセッション事前生成-分</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sessionPremakeEveryXHour" type="xs:int" use="optional">
+				<xs:annotation>
+					<xs:documentation>ジョブセッション事前生成-x時間毎に繰り返し</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sessionPremakeDate" type="xs:string" use="optional">
+				<xs:annotation>
+					<xs:documentation>ジョブセッション事前生成-日時(から)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sessionPremakeToDate" type="xs:string" use="optional">
+				<xs:annotation>
+					<xs:documentation>ジョブセッション事前生成-日時(実行分まで)</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="sessionPremakeInternalFlg" type="xs:boolean" use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						ジョブセッション事前生成-事前生成完了時にINTERNALイベント出力の有効/無効フラグです。 
+					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 		</xs:complexType>

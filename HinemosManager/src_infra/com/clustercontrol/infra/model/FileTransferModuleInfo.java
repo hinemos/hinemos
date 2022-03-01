@@ -28,15 +28,15 @@ import java.util.Map;
 
 import javax.activation.DataHandler;
 import javax.activation.FileDataSource;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Inheritance;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import javax.xml.bind.annotation.XmlType;
 
 import org.apache.log4j.Logger;
@@ -252,10 +252,11 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		}
 	}
 	
+	private String tempFile = null;
 	@Override
 	public void beforeRun(String sessionId) throws HinemosUnknown {
 		// 送信するファイルの元になるファイルを作成
-		InfraJdbcExecutor.selectFileContent(getFileId(), sessionId + "-" + getModuleId());
+		tempFile = InfraJdbcExecutor.selectFileContent(getFileId());
 	}
 	
 	@Override
@@ -297,7 +298,7 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		String srcDir = infraDirectory + SEPARATOR;
 		String srcFile = fileName;
 		
-		File orgFile = new File(createTempFilePath(sessionId));
+		File orgFile = new File(tempFile);
 
 		// 配置パスの置換
 		String bindDestPath;
@@ -369,7 +370,7 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		String sendMd5 = null;
 		File file = null;
 		
-		File orgFile = new File(createTempFilePath(sessionId));
+		File orgFile = new File(tempFile);
 		long fileSize = orgFile.length();
 		boolean isDiscarded = false;
 
@@ -544,12 +545,27 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 		OutputStream os = null;
 		FileInputStream fis = null;
 		Logger.getLogger(FileTransferModuleInfo.class).info("replaceFile : " + dstFilepath + ", os.size=" + orgFile.length());
+		long maxSize = HinemosPropertyCommon.infra_replace_max_line_size.getNumericValue().longValue();
+		
 		try {
 			fis = new FileInputStream(orgFile);
 			os = Files.newOutputStream(Paths.get(dstFilepath));
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			ByteArrayOutputStream bos1 = new ByteArrayOutputStream();
-			byte[] buf = new byte[1024*1024];
+
+			byte[] buf = new byte[1024 * 1024];
+			/*
+			 * メモリの使用量を考慮し、以下の処理では
+			 * 次の流れで置換処理が行われる
+			 * 
+			 * 1．ファイルを1MBのバッファに読み込む
+			 * 2a．1バイトずつ読み込み、改行文字に当たったら置換処理
+			 * 2b．改行文字がない場合は、読み込んだバイト数がinfra_replace_max_line_sizeを超えたら置換処理
+			 * 3．ファイルの読み込みが完了していない場合は1に戻る
+			 * 4．ファイルの読み込みが完了したら、2aもしくは2bで置換処理されなかったあまりのバイト列を置換処理
+			 * 
+			 * 注意：1行のサイズがinfra_replace_max_line_sizeを超える場合、置換処理が正常に行われない可能性がある
+			 */
 			while (true) {
 				int read = fis.read(buf);
 				if (read < 0) {
@@ -559,34 +575,35 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 					byte b = buf[i];
 					if (b == '\r' || b == '\n') {
 						if (bos.size() > 0) {
-							byte[] byteArray = bos.toByteArray();
-							bos.reset();
-		
-							//replace
-							for (FileInfo info : list) {
-								byteArray = replace(byteArray, info.getName(), info.getValue());
-							}
-							bos1.write(byteArray);
+							//perform replace
+							bos1.write(getReplacedByteArray(bos, list));
 						}
-	
+						
 						//write \r or \n
 						bos1.write(b);
 					} else {
+						//if the bos size exceeds the infra_replace_max_line_size, perform replace
+						if (bos.size() >= maxSize) {
+							Logger.getLogger(FileTransferModuleInfo.class)
+									.warn("replaceFile(): Line BoS reached " + maxSize +"bytes. Force replace.\nBoS size: "
+											+ bos.size());
+							//perform replace
+							bos1.write(getReplacedByteArray(bos, list));
+						}
 						bos.write(b);
 					}
 				}
-				if(bos1.size() > 0) {
+				if (bos1.size() > 0) {
 					os.write(bos1.toByteArray());
 					bos1.reset();
 				}
-				if(bos.size() > 0) {
-					byte[] byteArray = bos.toByteArray();
-					for (FileInfo info : list) {
-						byteArray = replace(byteArray, info.getName(), info.getValue());
-					}
-					os.write(byteArray);
-					bos.reset();
-				}
+			}
+			//if there is any non-processed bos remains, perform replace
+			if (bos.size() > 0) {
+				Logger.getLogger(FileTransferModuleInfo.class)
+						.debug("replaceFile(): perform replace for the rest. \nBoS size: " + bos.size());
+				//perform replace and write to file
+				os.write(getReplacedByteArray(bos, list));
 			}
 		} catch (IOException e) {
 			HinemosUnknown exception = new HinemosUnknown("createFile " + e.getClass().getName() + ", " + e.getMessage(), e);
@@ -606,6 +623,26 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 				}
 			}
 		}
+	}
+	
+	/**
+	 * 置換処理後のbyteArrayを返却するメソッド
+	 * 
+	 * @param ByteArrayOutputStream bos
+	 * @param List<FileInfo> list
+	 * @return byteArray
+	 * @throws IOException
+	 */
+	private static byte[] getReplacedByteArray(ByteArrayOutputStream bos, List<FileInfo> list) throws IOException {
+		byte[] byteArray = bos.toByteArray();
+		bos.reset();
+
+		for (FileInfo info : list) {
+			byteArray = replace(byteArray, info.getName(), info.getValue());
+		}
+
+		return byteArray;
+
 	}
 	
 	private static byte[] replace(byte[] byteArray, String name, String value) throws IOException {

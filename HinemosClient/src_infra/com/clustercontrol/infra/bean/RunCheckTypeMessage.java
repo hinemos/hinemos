@@ -8,6 +8,8 @@
 
 package com.clustercontrol.infra.bean;
 
+import org.openapitools.client.model.ModuleNodeResultResponse.RunCheckTypeEnum;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -57,4 +59,14 @@ public class RunCheckTypeMessage {
 		return -1;
 	}
 	
+	public static String enumToString(RunCheckTypeEnum type) {
+		if (type == RunCheckTypeEnum.RUN) {
+			return STRING_RUN;
+		} else if (type == RunCheckTypeEnum.CHECK) {
+			return STRING_CHECK;
+		} else if (type == RunCheckTypeEnum.PRECHECK) {
+			return STRING_PRECHECK;
+		}
+		return "";
+	}
 }

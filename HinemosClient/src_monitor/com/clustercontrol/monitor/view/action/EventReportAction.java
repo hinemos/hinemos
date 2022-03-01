@@ -22,19 +22,21 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.EventLogInfoRequest;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.filtersetting.bean.EventFilterContext;
+import com.clustercontrol.filtersetting.util.EventFilterHelper;
 import com.clustercontrol.monitor.composite.EventListComposite;
-import com.clustercontrol.monitor.dialog.EventReportDialog;
+import com.clustercontrol.monitor.dialog.EventDownloadDialog;
 import com.clustercontrol.monitor.util.ConvertListUtil;
 import com.clustercontrol.monitor.view.EventView;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 監視[イベントのダウンロード]ダイアログによるイベントの帳票出力処理を行うクライアント側アクションクラス<BR>
@@ -103,8 +105,8 @@ public class EventReportAction extends AbstractHandler {
 			return null;
 		}
 
-		FacilityTreeItem item = view.getScopeTreeComposite().getSelectItem();
-		if( null == item || item.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE ){
+		FacilityTreeItemResponse item = view.getScopeTreeComposite().getSelectItem();
+		if( null == item || item.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE ){
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
@@ -114,49 +116,49 @@ public class EventReportAction extends AbstractHandler {
 
 		String managerName;
 		String facilityId;
-		if( item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER ){
+		if( item.getData().getFacilityType() == FacilityTypeEnum.MANAGER ){
 			facilityId = RoleSettingTreeConstant.ROOT_ID;
 			managerName = item.getData().getFacilityId();
 		}else{
 			facilityId = item.getData().getFacilityId();
-			FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
+			FacilityTreeItemResponse manager = ScopePropertyUtil.getManager(item);
 			managerName = manager.getData().getFacilityId();
 		}
 
 		//選択イベントをセット
-		ArrayList<EventDataInfo> selectEventList = null;
-		
-		EventListComposite composite =
-				(EventListComposite)view.getListComposite();
-
-		StructuredSelection selection =
-				(StructuredSelection)composite.getTableViewer().getSelection();
-
+		EventListComposite composite = (EventListComposite) view.getListComposite();
+		StructuredSelection selection = (StructuredSelection) composite.getTableViewer().getSelection();
 		List<?> selectionList = (List<?>) selection.toList();
-		
-		selectEventList = ConvertListUtil.listToEventLogDataList(selectionList);
-		
-				
-		// ダイアログを生成
-		EventReportDialog dialog = new EventReportDialog( this.viewPart.getSite().getShell(), managerName, facilityId, selectEventList, view.getEventDspSetting());
+		List<EventLogInfoRequest> selectEventList = ConvertListUtil.listToEventLogDataList(selectionList);
 
-		// ダイアログにて出力が選択された場合、帳票出力
+		// ダイアログを生成
+		EventDownloadDialog dialog = new EventDownloadDialog(
+				this.viewPart.getSite().getShell(),
+				new EventFilterContext(
+						// 元のフィルタ設定は壊さないように複製
+						EventFilterHelper.duplicate(view.getFilter()),
+						managerName,
+						view.getSelectedScopeLabel(),
+						view.getEventDspSetting()),
+				selectEventList,
+				facilityId);
+
 		int btnId = dialog.open();
-		if( btnId == IDialogConstants.OK_ID ) {
-			m_log.debug( dialog.getFilePath() + " exported" );
-			if( !ClusterControlPlugin.isRAP() ){
+		if (btnId == IDialogConstants.OK_ID) {
+			m_log.debug(dialog.getFilePath() + " exported");
+			if (!ClusterControlPlugin.isRAP()) {
 				MessageDialog.openInformation(
 						null,
 						Messages.getString("successful"),
-						Messages.getString("message.monitor.45", new String[]{ dialog.getFileName(), managerName }));
+						Messages.getString("message.monitor.45", new String[] { dialog.getFileName(), managerName }));
 			}
-		} else if( btnId == IDialogConstants.CANCEL_ID ) {
+		} else if (btnId == IDialogConstants.CANCEL_ID) {
 			// Do nothing
 		} else {
 			MessageDialog.openError(
-				null,
-				Messages.getString("failed"),
-				Messages.getString("message.monitor.46"));
+					null,
+					Messages.getString("failed"),
+					Messages.getString("message.monitor.46"));
 		}
 		return null;
 	}

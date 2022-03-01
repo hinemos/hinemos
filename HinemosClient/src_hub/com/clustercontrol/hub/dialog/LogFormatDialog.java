@@ -8,6 +8,8 @@
 
 package com.clustercontrol.hub.dialog;
 
+import java.util.ArrayList;
+
 import org.apache.log4j.Logger;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -25,6 +27,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.LogFormatKeyResponse;
+import org.openapitools.client.model.LogFormatResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -38,8 +42,6 @@ import com.clustercontrol.hub.action.GetLog;
 import com.clustercontrol.hub.action.ModifyLog;
 import com.clustercontrol.hub.composite.LogFormatKeyListComposite;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.hub.LogFormat;
-import com.clustercontrol.ws.hub.LogFormatKey;
 
 /**
  * 
@@ -71,7 +73,7 @@ public class LogFormatDialog extends CommonDialog {
 
 	private int mode;
 	private String managerName;
-	private LogFormat m_LogFormat;
+	private LogFormatResponse m_LogFormat;
 	
 	/**
 	 * @wbp.parser.constructor
@@ -208,7 +210,6 @@ public class LogFormatDialog extends CommonDialog {
 
 		Label lblTimestampRegex = new Label(timestampLayout, SWT.NONE);
 		GridData gd_lblTimestampRegex = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
-		gd_lblTimestampRegex.widthHint = 144;
 		lblTimestampRegex.setLayoutData(gd_lblTimestampRegex);
 		lblTimestampRegex.setText(Messages.getString("dialog.hub.log.format.date.extraction.pattern"));
 
@@ -219,7 +220,6 @@ public class LogFormatDialog extends CommonDialog {
 
 		 Label lblTimestampFormat = new Label(timestampLayout, SWT.NONE);
 		GridData gd_lblTimestampFormat = new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1);
-		gd_lblTimestampFormat.widthHint = 113;
 		lblTimestampFormat.setLayoutData(gd_lblTimestampFormat);
 		lblTimestampFormat.setText(Messages.getString("dialog.hub.log.format.date.extraction.format"));
 
@@ -281,7 +281,7 @@ public class LogFormatDialog extends CommonDialog {
 				// シェルを取得
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 				//キーをもとに、LogFormatKey情報をコンポジットのリストから検索する
-				LogFormatKey logFormatKey = logFormatKeyListComposite.getLogFormatKeyListByKey(order);
+				LogFormatKeyResponse logFormatKey = logFormatKeyListComposite.getLogFormatKeyListByKey(order);
 
 				if (logFormatKey != null) {
 					LogKeyPatternDialog dialog = new LogKeyPatternDialog(shell, 
@@ -312,7 +312,7 @@ public class LogFormatDialog extends CommonDialog {
 				//選択したテーブルのキーを取得
 				String order = logFormatKeyListComposite.getSelectionLogFormatKey();
 				//キーをもとに、LogFormatKey情報をコンポジットのリストから検索する
-				LogFormatKey logFormatKey = logFormatKeyListComposite.getLogFormatKeyListByKey(order);
+				LogFormatKeyResponse logFormatKey = logFormatKeyListComposite.getLogFormatKeyListByKey(order);
 				String[] args = new String[1];
 				args[0] = order;
 				if (logFormatKey != null) {
@@ -345,7 +345,7 @@ public class LogFormatDialog extends CommonDialog {
 					// シェルを取得
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 					//キーをもとに、LogFormatKey情報をコンポジットのリストから検索する
-					LogFormatKey logFormatKey = logFormatKeyListComposite.getLogFormatKeyListByKey(order);
+					LogFormatKeyResponse logFormatKey = logFormatKeyListComposite.getLogFormatKeyListByKey(order);
 
 					if (logFormatKey != null) {
 						LogKeyPatternDialog dialog = new LogKeyPatternDialog(shell, 
@@ -425,7 +425,7 @@ public class LogFormatDialog extends CommonDialog {
 	private void reflectLogFormat() {
 		// 初期表示
 		
-		LogFormat format = null;
+		LogFormatResponse format = null;
 		
 		if (mode == PropertyDefineConstant.MODE_MODIFY
 				|| mode == PropertyDefineConstant.MODE_COPY) {
@@ -433,7 +433,7 @@ public class LogFormatDialog extends CommonDialog {
 			format = new GetLog().getLogFormat(this.managerName, this.formatId);
 		} else {
 			// 作成の場合
-			format = new LogFormat();
+			format = new LogFormatResponse();
 		}
 		
 		this.m_LogFormat = format;
@@ -477,7 +477,7 @@ public class LogFormatDialog extends CommonDialog {
 	 * @see
 	 */
 	private void createLogFormat() {
-		this.m_LogFormat = new LogFormat();
+		this.m_LogFormat = new LogFormatResponse();
 		this.m_LogFormat.setLogFormatId(this.txtFormatId.getText());
 		this.m_LogFormat.setDescription(this.txtDescription.getText());
 		this.m_LogFormat.setOwnerRoleId(this.roleIdListComposite.getText());
@@ -488,7 +488,8 @@ public class LogFormatDialog extends CommonDialog {
 		if (this.logFormatKeyListComposite.getLogFormatKeyList() != null) {
 			Logger.getLogger(this.getClass()).debug("Add LogCollectTarget : " +
 					this.logFormatKeyListComposite.getLogFormatKeyList().size());
-			for (LogFormatKey key : this.logFormatKeyListComposite.getLogFormatKeyList()) {
+			this.m_LogFormat.setKeyPatternList(new ArrayList<LogFormatKeyResponse>(this.logFormatKeyListComposite.getLogFormatKeyList().size()));
+			for (LogFormatKeyResponse key : this.logFormatKeyListComposite.getLogFormatKeyList()) {
 				this.m_LogFormat.getKeyPatternList().add(key);
 			}
 		}
@@ -506,7 +507,7 @@ public class LogFormatDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 		createLogFormat();
-		LogFormat format = this.m_LogFormat;
+		LogFormatResponse format = this.m_LogFormat;
 		String managerName = this.managerListComposite.getText();
 		
 		if(format != null){

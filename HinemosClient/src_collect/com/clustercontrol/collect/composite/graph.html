@@ -341,61 +341,57 @@ See the LICENSE file for licensing information.
 			var parseDate = d3.time.format('%Y%m%d%H%M%S');
 			var fileName = "";
 			var canvaslist = [];
-			for (key in targetgraph) {
-				var self = targetgraph[key];
-				fileName = getCaptureFileName(self);
-				// 画像からpngボタンを削除する
-				self.vis.selectAll(".download_rect")
-				.attr("fill", HINEMOS_COLLECT_CONST.CONST_COLOR_HINEMOS_BASE);
-				var target = document.getElementById(self.innerid).innerHTML;
-				target = target.replace(/xmlns=\"http:\/\/www\.w3\.org\/2000\/svg\"/, '');
-				var canvas_parent = document.getElementById('canvasArea');
-				// グラフ別にcanvasを作成する
-				var canvas_child = document.createElement('canvas');
-				canvas_child.id = "canvas_" + key;
-				canvas_parent.appendChild(canvas_child);
-				var canvas = document.getElementById('canvas_' + key);
-				canvg('canvas_'+key, target);
-				canvaslist[key] = canvas;
-				// IEか他ブラウザかの判定
-				if(window.navigator.msSaveBlob) {
-					// IEの場合
-					blobarr[fileName] = canvaslist[key].msToBlob();
-				} else {
-					// canvas-toBlob.js
-					var param = {};
-					param.canvas = canvaslist[key];
-					param.filename = fileName;
-					setTimeout(function(param) {
-						param.canvas.toBlob(
-							function(bblob2) {
-								blobarr[param.filename] = bblob2;
-							}, "image/png");
-					
-					}, 0, param);
-				}
-			}// end of loop
-			
-			// ie以外の場合
+			var interval = document.getElementById("zipfile_create_interval").innerHTML;
+
+			// IE以外の場合
 			if (!window.navigator.msSaveBlob) {
-				setTimeout(function() {
+				// 一括保存ボタンを非活性
+				document.getElementById("bulkpng").disabled = true;
+				// 出力する画像の作成
+				var promisemessage = new Promise(function(resolve, reject) {
+					for (key in targetgraph) {
+						var self = targetgraph[key];
+						fileName = getCaptureFileName(self);
+						canvaslist[key] = getCanvas(self, key);
+
+						// canvas-toBlob.js
+						var param = {};
+						param.canvas = canvaslist[key];
+						param.filename = fileName;
+						setTimeout(function(param) {
+							param.canvas.toBlob(
+								function(bblob2) {
+									blobarr[param.filename] = bblob2;
+								}, "image/png");
+						
+						}, 0, param);
+					}// end of loop
+					resolve(1);
+				});
+
+				// ファイル出力
+				promisemessage.then(setTimeout(function() {
 					var zip = new JSZip();
+					// 現在日時（Hinemosプロパティのcommon.timezoneの日時）
 					var nowDate = new Date();
-					var year = nowDate.getFullYear();
-					var month = nowDate.getMonth() + 1;
-					var day = nowDate.getDate();
-					var hour = nowDate.getHours();
-					var minute = nowDate.getMinutes();
-					var second = nowDate.getSeconds();
-					var millsecond = nowDate.getMilliseconds();
-					var dateStr = year + "-" + month + "-" + day + "T" + hour + ":" + minute + ":" + second + "." + millsecond;
-						for (key in blobarr) {
-							zip.file( key + ".png", blobarr[key], {date : new Date(dateStr)}); // <-- JSZip v3 accepts blob
-						}
+					// クライアントPCのタイムゾーンの日時
+					var localTimezoneOffset = - nowDate.localDate().getTimezoneOffset();
+					var localDate = new Date(localTimezoneOffset);
+					// zipファイル名は、クライアントPCのタイムゾーンの日時を元に作成する
+					var zipFileName = zipName + parseDate(localDate) + ".zip"
+					// 画像ファイルの作成日時
+					// タイムゾーンが考慮されないので、(UTC＋クライアントPCのタイムゾーン)の日時を設定する
+					var createdDate = new Date(
+							nowDate.getTime() + localTimezoneOffset * 1000 * 60,	// ローカル時間を取得設定 + 時差分
+							0);		// UTCのオフセット
+
+					for (key in blobarr) {
+						zip.file( key + ".png", blobarr[key], {date : createdDate}); // <-- JSZip v3 accepts blob
+					}
 
 					content = zip.generateAsync({type:"blob"}).then(
 					function (blob) {
-						saveAs(blob, zipName + parseDate(new Date()) + ".zip"); // <-- trigger the download
+						saveAs(blob, zipFileName); // <-- trigger the download
 					}, function (e) {
 						// callback関数なので、throwが出来ないためここからjavaに通知する
 						var param = {};
@@ -403,34 +399,48 @@ See the LICENSE file for licensing information.
 						param.exception = e;
 						callJavaMethod(param);
 					});
-					
+
 					var parentDiv = document.getElementById("canvasArea");
 					for (var i =parentDiv.childNodes.length-1; i>=0; i--) {
 						parentDiv.removeChild(parentDiv.childNodes[i]);
 					}
-				}, 1000);
-				// ie以外の場合はここで終了
+					// 一括保存ボタンを活性
+					document.getElementById("bulkpng").disabled = false;
+				}, interval));
+				// IE以外の場合はここで終了
 				return;
 			}
 
-			// ieの場合はこっち
+			// IEの場合はこっち
+			for (key in targetgraph) {
+				var self = targetgraph[key];
+				fileName = getCaptureFileName(self);
+				canvaslist[key] = getCanvas(self, key);
+
+				// IEの場合
+				blobarr[fileName] = canvaslist[key].msToBlob();
+			}// end of loop
+
 			var zip = new JSZip();
+			// 現在日時（Hinemosプロパティのcommon.timezoneの日時）
 			var nowDate = new Date();
-			var year = nowDate.getFullYear();
-			var month = nowDate.getMonth() + 1;
-			var day = nowDate.getDate();
-			var hour = nowDate.getHours();
-			var minute = nowDate.getMinutes();
-			var second = nowDate.getSeconds();
-			var millsecond = nowDate.getMilliseconds();
-			var dateStr = year + "-" + month + "-" + day + "T" + hour + ":" + minute + ":" + second + "." + millsecond;
+			// クライアントPCのタイムゾーンの日時
+			var localTimezoneOffset = - nowDate.localDate().getTimezoneOffset();
+			var localDate = new Date(localTimezoneOffset);
+			// zipファイル名は、クライアントPCのタイムゾーンの日時を元に作成する
+			var zipFileName = zipName + parseDate(localDate) + ".zip"
+			// 画像ファイルの作成日時
+			// タイムゾーンが考慮されないので、(UTC＋クライアントPCのタイムゾーン)の日時を設定する
+			var createdDate = new Date(
+					nowDate.getTime() + localTimezoneOffset * 1000 * 60,	// ローカル時間を取得設定 + 時差分
+					0);		// UTCのオフセット
 			for (key in blobarr) {
-				zip.file( key + ".png", blobarr[key], {date : new Date(dateStr)}); // <-- JSZip v3 accepts blob
+				zip.file( key + ".png", blobarr[key], {date : createdDate}); // <-- JSZip v3 accepts blob
 			}
 
 			content = zip.generateAsync({type:"blob"}).then(
 			function (blob) {
-				saveAs(blob, zipName + parseDate(new Date()) + ".zip"); // <-- trigger the download
+				saveAs(blob, zipFileName); // <-- trigger the download
 			}, function (e) {
 				// callback関数なので、throwが出来ないためここからjavaに通知する
 				var param = {};
@@ -514,13 +524,42 @@ See the LICENSE file for licensing information.
 				title = self.facilityid + "(" + self.managername + ")";
 			}
 			fileName = graphKind + itemName + "_" + itemName2 + title + "_" + xaxis_min + "_" + xaxis_max;
-			// [/]があるとフォルダができてしまうため置換する
-			fileName = fileName.replace(/\u002f/g, "");
+			// ファイル名として使用不可の記号を置換する
+			var marks=[/\u002f/g,/\\/g,/\*/g,/\*/g,/\:/g,/\"/g];
+			for(var i=0;i< marks.length;i++){
+				fileName = fileName.replace(marks[i], "");
+			}
+			
 		} catch (e) {
 			throw e;
 		}
 		return fileName;
 	}
+
+	// pngボタンを削除し、canvasを作成
+	// 一括共通使用関数です
+	function getCanvas(self, key) {
+
+		// 画像からpngボタンを削除する
+		self.vis.selectAll(".download_rect")
+		.attr("fill", HINEMOS_COLLECT_CONST.CONST_COLOR_HINEMOS_BASE);
+		var target = document.getElementById(self.innerid).innerHTML;
+		target = target.replace(/xmlns=\"http:\/\/www\.w3\.org\/2000\/svg\"/, '');
+		var canvas_parent = document.getElementById('canvasArea');
+
+		// グラフ別にcanvasを作成する
+		var canvas_child = document.createElement('canvas');
+		canvas_child.id = "canvas_" + key;
+		canvas_parent.appendChild(canvas_child);
+		var canvas = document.getElementById('canvas_' + key);
+		canvg('canvas_'+key, target);
+		return canvas;
+	}
+	
+	function initZipfileCreateInterval(interval){
+		document.getElementById("zipfile_create_interval").innerHTML = interval;
+	}
+	
 	</script>
 	
 	<style type="text/css">
@@ -667,5 +706,6 @@ See the LICENSE file for licensing information.
 	</div>
 	<div id="graph_config"></div>
 	<div id="graph_messages"></div>
+	<div id="zipfile_create_interval" style="display:none"></div>
 </body>
 </html>

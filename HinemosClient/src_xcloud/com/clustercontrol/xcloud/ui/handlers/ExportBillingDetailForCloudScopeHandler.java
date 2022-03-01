@@ -7,22 +7,21 @@
  */
 package com.clustercontrol.xcloud.ui.handlers;
 
+import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
-
-import javax.activation.DataHandler;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.BillingResultResponse.TypeEnum;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.TargetType;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.platform.PlatformDependent;
 import com.clustercontrol.xcloud.ui.views.BillingDetailsView;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 public class ExportBillingDetailForCloudScopeHandler extends AbstractCloudOptionHandler implements CloudStringConstants {
 	@Override
@@ -43,14 +42,15 @@ public class ExportBillingDetailForCloudScopeHandler extends AbstractCloudOption
 			}
 		}
 		// TODO Have better let user export all data instead of only monthly
-		DataHandler handler = cloudScope.getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class).downloadBillingDetailsByCloudScope(
+		String managerName = cloudScope.getCloudScopes().getHinemosManager().getManagerName();
+		CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
+		File handler = endpoint.downloadBillingDetailsByCloudScope(
 				cloudScope.getId(),
 				cal.get(Calendar.YEAR),
 				cal.get(Calendar.MONTH) + 1);
-
 		PlatformDependent.getPlatformDependent().downloadBillingDetail(
 				HandlerUtil.getActiveShell(event),
-				TargetType.CLOUD_SCOPE,
+				TypeEnum.CLOUDSCOPE,
 				cloudScope.getId(),
 				cal.get(Calendar.YEAR),
 				cal.get(Calendar.MONTH) + 1,

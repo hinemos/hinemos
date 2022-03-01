@@ -8,24 +8,40 @@
 
 package com.clustercontrol.utility.settings.report.action;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-
-import javax.xml.ws.WebServiceException;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.AddReportingScheduleRequest;
+import org.openapitools.client.model.ImportReportingInfoRecordRequest;
+import org.openapitools.client.model.ImportReportingInfoRequest;
+import org.openapitools.client.model.ImportReportingInfoResponse;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.ReportingScheduleResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.ReportingNotFound;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffUtil;
 import com.clustercontrol.utility.difference.ResultA;
@@ -41,18 +57,16 @@ import com.clustercontrol.utility.settings.report.xml.Reporting;
 import com.clustercontrol.utility.settings.report.xml.ReportingInfo;
 import com.clustercontrol.utility.settings.report.xml.ReportingType;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.reporting.HinemosUnknown_Exception;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.InvalidUserPass_Exception;
-import com.clustercontrol.ws.reporting.ReportingDuplicate_Exception;
-import com.clustercontrol.ws.reporting.ReportingNotFound_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * 
@@ -85,26 +99,25 @@ public class ReportScheduleAction {
 
 		int ret = 0;
 
-		List<com.clustercontrol.ws.reporting.ReportingInfo> reportingInfoList =null;
+		List<ReportingScheduleResponse> reportingInfoList =null;
 
 		try {
-			reportingInfoList = ReportingEndpointWrapper
+			reportingInfoList = ReportingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-					.getReportingList();
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception
-				| ReportingNotFound_Exception e) {
+					.getReportingScheduleList();
+		} catch (RestConnectFailed | HinemosUnknown | InvalidRole | InvalidUserPass | ReportingNotFound e) {
 			log.error(Messages.getString("ReportSchedule.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 			return ret;
 		}
 		
-		for (com.clustercontrol.ws.reporting.ReportingInfo reportingInfo:reportingInfoList){
+		for (ReportingScheduleResponse reportingInfo:reportingInfoList){
 			try {
-				ReportingEndpointWrapper
+				ReportingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-					.deleteReporting(reportingInfo.getReportScheduleId());
-			} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception
-					| ReportingNotFound_Exception e) {
+					.deleteReportingSchedule(reportingInfo.getReportScheduleId());
+				log.info(Messages.getString("SettingTools.ClearSucceeded") + " id:" +reportingInfo.getReportScheduleId());
+			} catch (RestConnectFailed | HinemosUnknown | InvalidRole | InvalidUserPass | ReportingNotFound e) {
 				log.error(Messages.getString("ReportSchedule.ClearFailed")
 						+ " cheduleId = " + reportingInfo.getReportScheduleId() + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
@@ -128,14 +141,13 @@ public class ReportScheduleAction {
 		log.debug("Start Export Reporting Schedule ");
 
 		int ret = 0;
-		List<com.clustercontrol.ws.reporting.ReportingInfo> reportingInfoList =null;
+		List<ReportingScheduleResponse> reportingInfoList =null;
 
 		try {
-			reportingInfoList = ReportingEndpointWrapper
+			reportingInfoList = ReportingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-					.getReportingList();
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception
-				| ReportingNotFound_Exception e) {
+					.getReportingScheduleList();
+		} catch (RestConnectFailed | HinemosUnknown | InvalidRole | InvalidUserPass | ReportingNotFound e) {
 			log.error(Messages.getString("ReportSchedule.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 			return ret;
@@ -143,14 +155,10 @@ public class ReportScheduleAction {
 
 		Reporting reporting = new Reporting();
 
-		for (com.clustercontrol.ws.reporting.ReportingInfo info : reportingInfoList) {
+		for (ReportingScheduleResponse info : reportingInfoList) {
 			try{
 				reporting.addReportingInfo(ReportScheduleConv.getReporting(info));
 				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + info.getReportScheduleId());
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-				break;
 			} catch (Exception e) {
 				log.warn(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
@@ -197,10 +205,31 @@ public class ReportScheduleAction {
 		
 		int ret = 0;
 		
+		// FIXME
+		// #5672 attibute である reportTitle に含まれる改行が半角スペースに変更されてしまう事象への暫定対処
+		// 本質的には reportTitle を attibute ではなく element として定義する必要があるが、
+		// マイナーバージョンでは修正前の XML が取り込めなくなってしまうため対応できない
+		// 次期メジャーバージョンでは element への変換を検討すること
+		StringBuffer sb = new StringBuffer();
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"))) {
+			String line = in.readLine();
+			while ((line = in.readLine()) != null) {
+				sb.append("&#xA;");
+				sb.append(line);
+			}
+		} catch (IOException e) {
+			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"),e);
+			ret = SettingConstants.ERROR_INPROCESS;
+			log.debug("End Import Report.Schedule (Error)");
+			return ret;
+		}
+		// XML宣言後の改行は元に戻す
+		String xml = sb.toString().replaceFirst("&#xA;", System.getProperty("line.separator"));
+		
 		// XMLファイルからの読み込み
 		ReportingType report = null;
 		try {
-			report = Reporting.unmarshal(new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
+			report = XmlMarshallUtil.unmarshall(Reporting.class,new StringReader(xml));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"),e);
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -213,59 +242,100 @@ public class ReportScheduleAction {
 			return ret;
 		}
 
-		for (ReportingInfo info : report.getReportingInfo()) {
-			com.clustercontrol.ws.reporting.ReportingInfo reportingInfo = null;
-			try {
-				reportingInfo = ReportScheduleConv.getReportingInfoDto(info);
-				ReportingEndpointWrapper
-					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-					.addReporting(reportingInfo);
-				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + info.getReportScheduleId());
-			} catch (ReportingDuplicate_Exception e) {
-				//重複時、インポート処理方法を確認する
-				if(!ImportProcessMode.isSameprocess()){
-					String[] args = {info.getReportScheduleId()};
-					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-							null, Messages.getString("message.import.confirm2", args));
-					ImportProcessMode.setProcesstype(dialog.open());
-					ImportProcessMode.setSameprocess(dialog.getToggleState());
-				}
-				
-				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-					try {
-						ReportingEndpointWrapper
-							.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-							.modifyReporting(reportingInfo);
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + info.getReportScheduleId());
-					} catch (Exception e1) {
-						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-						ret = SettingConstants.ERROR_INPROCESS;
-					}
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + info.getReportScheduleId());
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-					ret = SettingConstants.ERROR_INPROCESS;
-					return ret;
-				}
-			} catch (HinemosUnknown_Exception e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (javax.xml.ws.WebServiceException e){
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				throw e;//継続不可
-			} catch (Exception e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
+		// 定義の登録
+		ImportRecordConfirmer<ReportingInfo, ImportReportingInfoRecordRequest, String> confirmer = new ImportRecordConfirmer<ReportingInfo, ImportReportingInfoRecordRequest, String>(
+				log, report.getReportingInfo() ) {
+			@Override
+			protected ImportReportingInfoRecordRequest convertDtoXmlToRestReq(ReportingInfo xmlDto) throws InvalidSetting, HinemosUnknown {
+				ReportingScheduleResponse reportingInfo = ReportScheduleConv.getReportingInfoDto(xmlDto);
+				ImportReportingInfoRecordRequest dtoRec = new ImportReportingInfoRecordRequest();
+				dtoRec.setImportData(new AddReportingScheduleRequest());
+				RestClientBeanUtil.convertBean(reportingInfo, dtoRec.getImportData());
+				dtoRec.setImportKeyValue(dtoRec.getImportData().getReportScheduleId());
+				return dtoRec;
 			}
+			@Override
+			protected Set<String> getExistIdSet() throws Exception {
+				Set<String> retSet = new HashSet<String>();
+				List<ReportingScheduleResponse> infoList = ReportingRestClientWrapper
+						.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getReportingScheduleList();
+				for (ReportingScheduleResponse rec : infoList) {
+					retSet.add(rec.getReportScheduleId() );
+				}
+				return retSet;
+			}
+			@Override
+			protected boolean isLackRestReq(ImportReportingInfoRecordRequest restDto) {
+				return (restDto == null || restDto.getImportData().getReportScheduleId()  == null);
+			}
+			@Override
+			protected String getKeyValueXmlDto(ReportingInfo xmlDto) {
+				return xmlDto.getReportScheduleId();
+			}
+			@Override
+			protected String getId(ReportingInfo xmlDto) {
+				return xmlDto.getReportScheduleId();
+			}
+			@Override
+			protected void setNewRecordFlg(ImportReportingInfoRecordRequest restDto, boolean flag) {
+				restDto.setIsNewRecord(flag);
+			}
+		};
+		int confirmRet = confirmer.executeConfirm();
+		if( confirmRet != SettingConstants.SUCCESS && confirmRet != SettingConstants.ERROR_CANCEL ){
+			//変換エラーならUnmarshalXml扱いで処理打ち切り(キャンセルはキャンセル以前の選択結果を反映するので次に進む)
+			log.warn(Messages.getString("SettingTools.UnmarshalXmlFailed"));
+			return confirmRet;
 		}
 		
+		// 更新単位の件数毎にインポートメソッドを呼び出し、結果をログ出力
+		// API異常発生時はそこで中断、レコード個別の異常発生時はユーザ選択次第で続行
+		ImportClientController<ImportReportingInfoRecordRequest, ImportReportingInfoResponse, RecordRegistrationResponse> importController = new ImportClientController<ImportReportingInfoRecordRequest, ImportReportingInfoResponse, RecordRegistrationResponse>(
+				log, Messages.getString("report.schedule"), confirmer.getImportRecDtoList(),true) {
+			@Override
+			protected List<RecordRegistrationResponse> getResRecList(ImportReportingInfoResponse importResponse) {
+				return importResponse.getResultList();
+			};
+			@Override
+			protected Boolean getOccurException(ImportReportingInfoResponse importResponse) {
+				return importResponse.getIsOccurException();
+			};
+			@Override
+			protected String getReqKeyValue(ImportReportingInfoRecordRequest importRec) {
+				return importRec.getImportKeyValue();
+			};
+			@Override
+			protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+				return responseRec.getImportKeyValue();
+			};
+			@Override
+			protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+				return (responseRec.getResult() == ResultEnum.NORMAL) ;
+			};
+			@Override
+			protected ImportReportingInfoResponse callImportWrapper(List<ImportReportingInfoRecordRequest> importRecList)
+					throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+				ImportReportingInfoRequest reqDto = new ImportReportingInfoRequest();
+				reqDto.setRecordList(importRecList);
+				reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+				return UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importReportingInfo(reqDto) ;
+			}
+			@Override
+			protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+				if (responseRec.getExceptionInfo() != null) {
+					return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+				}
+				return null;
+			};
+		};
+		ret = importController.importExecute();
+
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
+		}
+
 		checkDelete(report);
 		
 		// 処理の終了
@@ -297,14 +367,13 @@ public class ReportScheduleAction {
 	
 	protected void checkDelete(ReportingType xmlElements){
 		
-		List<com.clustercontrol.ws.reporting.ReportingInfo> subList =null;
+		List<ReportingScheduleResponse> subList =null;
 
 		try {
-			subList = ReportingEndpointWrapper
+			subList = ReportingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-					.getReportingList();
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception
-				| ReportingNotFound_Exception e) {
+					.getReportingScheduleList();
+		} catch (RestConnectFailed | HinemosUnknown | InvalidRole | InvalidUserPass | ReportingNotFound e) {
 			log.error(Messages.getString("ReportSchedule.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			return ;
 		}
@@ -313,7 +382,7 @@ public class ReportScheduleAction {
 			return;
 		}
 		List<ReportingInfo> xmlElementList = new ArrayList<>(Arrays.asList(xmlElements.getReportingInfo()));
-		for(com.clustercontrol.ws.reporting.ReportingInfo mgrInfo: new ArrayList<>(subList)){
+		for(ReportingScheduleResponse mgrInfo: new ArrayList<>(subList)){
 			for(ReportingInfo xmlElement: new ArrayList<>(xmlElementList)){
 				if(mgrInfo.getReportScheduleId().equals(xmlElement.getReportScheduleId())){
 					subList.remove(mgrInfo);
@@ -324,7 +393,7 @@ public class ReportScheduleAction {
 		}
 
 		if(subList.size() > 0){
-			for(com.clustercontrol.ws.reporting.ReportingInfo info: subList){
+			for(ReportingScheduleResponse info: subList){
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getReportScheduleId()};
@@ -336,9 +405,9 @@ public class ReportScheduleAction {
 				
 				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
-						ReportingEndpointWrapper
+						ReportingRestClientWrapper
 							.getWrapper(UtilityManagerUtil.getCurrentManagerName())
-							.deleteReporting(info.getReportScheduleId());
+							.deleteReportingSchedule(info.getReportScheduleId());
 						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getReportScheduleId());
 					} catch (Exception e1) {
 						getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
@@ -373,8 +442,8 @@ public class ReportScheduleAction {
 		ReportingType report1 = null;
 		ReportingType report2 = null;
 		try {
-			report1 = Reporting.unmarshal(new InputStreamReader(new FileInputStream(xmlFile1), "UTF-8"));
-			report2 = Reporting.unmarshal(new InputStreamReader(new FileInputStream(xmlFile2), "UTF-8"));
+			report1 = XmlMarshallUtil.unmarshall(ReportingType.class,new InputStreamReader(new FileInputStream(xmlFile1), "UTF-8"));
+			report2 = XmlMarshallUtil.unmarshall(ReportingType.class,new InputStreamReader(new FileInputStream(xmlFile2), "UTF-8"));
 			sort(report1);
 			sort(report2);
 		} catch (Exception e) {

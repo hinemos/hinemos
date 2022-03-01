@@ -10,7 +10,8 @@
 		{"type":"Translate", "values":[
 			{"value":"1", "name":"name_schedule_type_everyday"},
 			{"value":"2", "name":"name_schedule_type_weekday"},
-			{"value":"3", "name":"name_schedule_type_repeat"}
+			{"value":"3", "name":"name_schedule_type_repeat"},
+			{"value":"4", "name":"name_schedule_type_interval"}
 		]}
 	]},
 	
@@ -55,9 +56,87 @@
 	]},
 	
 	{
-	"propName":"everyXminutes",
+	"propName":"everyXminutes_Hour",
 	"annotations":[
-		{"type":"Column", "columnName":"ScheduleData_everyXminutes"}
+		{"type":"Column", "columnName":"ScheduleData_everyXminutes_Hour"}
+	]},
+	
+	{
+	"propName":"everyXminutes_Interval",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_everyXminutes_Interval"}
+	]},
+	
+	{
+	"propName":"sessionPremakeFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_sessionPremakeFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"sessionPremakeScheduleType",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_sessionPremakeScheduleType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_schedule_type_everyday"},
+			{"value":"1", "name":"name_schedule_type_weekday"},
+			{"value":"2", "name":"name_schedule_type_time"},
+			{"value":"3", "name":"name_schedule_type_datetime"}
+		]}
+	]},
+	
+	{
+	"propName":"sessionPremakeWeek",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_sessionPremakeWeek"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":""},
+			{"value":"1", "name":"name_weekNo_sunday"},
+			{"value":"2", "name":"name_weekNo_monday"},
+			{"value":"3", "name":"name_weekNo_tuesday"},
+			{"value":"4", "name":"name_weekNo_wednesday"},
+			{"value":"5", "name":"name_weekNo_thursday"},
+			{"value":"6", "name":"name_weekNo_friday"},
+			{"value":"7", "name":"name_weekNo_Saturday"}
+		]}
+	]},
+	
+	{
+	"propName":"sessionPremakeHour",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_sessionPremakeHour"}
+	]},
+	
+	{
+	"propName":"sessionPremakeMinute",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_sessionPremakeMinute"}
+	]},
+	
+	{
+	"propName":"sessionPremakeEveryXHour",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_sessionPremakeEveryXHour"}
+	]},
+	
+	{
+	"propName":"sessionPremakeDate",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_sessionPremakeDate"}
+	]},
+	
+	{
+	"propName":"sessionPremakeToDate",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_sessionPremakeToDate"}
+	]},
+	
+	{
+	"propName":"sessionPremakeInternalFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"ScheduleData_sessionPremakeInternalFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
 	]}
 ]
 }

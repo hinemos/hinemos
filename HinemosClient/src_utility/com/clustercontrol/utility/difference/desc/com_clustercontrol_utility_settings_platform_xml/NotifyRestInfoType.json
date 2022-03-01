@@ -1,0 +1,30 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"infoRestAccessId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyRestInfoType_infoRestAccessId"}
+	]},
+
+	{
+	"propName":"warnRestAccessId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyRestInfoType_warnRestAccessId"}
+	]},
+
+	{
+	"propName":"criticalRestAccessId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyRestInfoType_criticalRestAccessId"}
+	]},
+
+	{
+	"propName":"unknownRestAccessId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyRestInfoType_unknownRestAccessId"}
+	]}
+]
+}

@@ -18,6 +18,7 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.JobNodeDetailResponse;
 
 import com.clustercontrol.jobmanagement.action.GetNodeDetailTableDefine;
 import com.clustercontrol.jobmanagement.composite.NodeDetailComposite;
@@ -49,7 +50,7 @@ public class NodeDetailSelectionChangedListener implements ISelectionChangedList
 	 * <P>
 	 * <ol>
 	 * <li>選択変更イベントから選択行を取得し、選択行からファシリティIDを取得します。</li>
-	 * <li>ファシリティIDをジョブ[ノード詳細]ビュー用のコンポジットに設定します。</li>
+	 * <li>ファシリティIDと実行状態をジョブ[ノード詳細]ビュー用のコンポジットに設定します。</li>
 	 * </ol>
 	 * 
 	 * @param event 選択変更イベント
@@ -59,6 +60,7 @@ public class NodeDetailSelectionChangedListener implements ISelectionChangedList
 	@Override
 	public void selectionChanged(SelectionChangedEvent event) {
 		String facilityId = null;
+		JobNodeDetailResponse.StatusEnum status = null;
 
 		//セッションIDを取得
 		if (((StructuredSelection) event.getSelection()).getFirstElement() != null) {
@@ -66,6 +68,7 @@ public class NodeDetailSelectionChangedListener implements ISelectionChangedList
 					.getSelection()).getFirstElement();
 
 			facilityId = (String) info.get(GetNodeDetailTableDefine.FACILITY_ID);
+			status = (JobNodeDetailResponse.StatusEnum) info.get(GetNodeDetailTableDefine.STATUS);
 		}
 
 		//アクティブページを手に入れる
@@ -83,6 +86,7 @@ public class NodeDetailSelectionChangedListener implements ISelectionChangedList
 		}
 
 		m_composite.setFacilityId(facilityId);
+		m_composite.setStatus(status);
 	}
 }
 

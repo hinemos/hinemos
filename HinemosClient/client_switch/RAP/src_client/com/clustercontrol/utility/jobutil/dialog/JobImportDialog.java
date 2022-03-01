@@ -23,10 +23,13 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.JobInfoResponse;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
 import com.clustercontrol.dialog.CommonDialog;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.jobutil.util.JobStringUtil;
 import com.clustercontrol.utility.settings.ui.constant.XMLConstant;
@@ -37,8 +40,6 @@ import com.clustercontrol.utility.util.FileUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.utility.util.ZipUtil;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブのインポートダイアログ
@@ -70,7 +71,7 @@ public class JobImportDialog extends CommonDialog {
 	private String fileName = MultiManagerPathUtil.getDirectoryPathTemporary(SettingToolsXMLPreferencePage.KEY_XML) +
 			File.separator +
 			MultiManagerPathUtil.getXMLFileName(XMLConstant.DEFAULT_XML_JOB_MST); 
-	private JobInfo item;
+	private JobInfoWrapper item;
 	
 	@Override
 	protected void customizeDialog(Composite parent) {
@@ -96,10 +97,10 @@ public class JobImportDialog extends CommonDialog {
 		grpJob.setLayout(new GridLayout(3, false));
 		grpJob.setLayoutData(new GridData(GridData.FILL, SWT.FILL, true, false, 3, 1));
 		grpJob.setText(Messages.getString("dialog.job.import.confirm",
-				new String[]{ JobStringUtil.toJobTypeString(item.getType()) }));
+				new String[]{ JobStringUtil.toJobTypeStringForEnum(item.getType()) }));
 		
 		Label lblJobId = new Label(grpJob, SWT.NONE);
-		lblJobId.setText(item.getType().equals(JobConstant.TYPE_MANAGER) ?
+		lblJobId.setText(item.getType().equals(JobInfoResponse.TypeEnum.MANAGER ) ?
 				com.clustercontrol.util.Messages.getString("facility.managername") + " : " :
 				com.clustercontrol.util.Messages.getString("job.id") + " : ");
 		lblJobId.setLayoutData(new GridData(GridData.FILL, SWT.CENTER, false, false, 1, 1));
@@ -109,7 +110,7 @@ public class JobImportDialog extends CommonDialog {
 		txtJobId.setText(item.getId() != null ? item.getId() : "---");
 		txtJobId.setEditable(false);
 		
-		if (!item.getType().equals(JobConstant.TYPE_MANAGER)) {
+		if (!item.getType().equals(JobInfoResponse.TypeEnum.MANAGER)) {
 			Label lblJobName = new Label(grpJob, SWT.NONE);
 			lblJobName.setText(com.clustercontrol.util.Messages.getString("job.name") + " : ");
 			lblJobName.setLayoutData(new GridData(GridData.FILL, SWT.CENTER, false, false, 1, 1));
@@ -225,8 +226,43 @@ public class JobImportDialog extends CommonDialog {
 		return Messages.getString("close");
 	}
 
-	public void setSelectJob(JobTreeItem item) {
+	public void setSelectJob(JobTreeItemWrapper item) {
 		this.item = item.getData();
 		UtilityManagerUtil.setCurrentManagerName(JobTreeItemUtil.getManager(item).getData().getName());
 	}
+	
+	/**
+	 * * 入力値チェックをします。
+	 *
+	 * @return 検証結果
+	 *
+	 * @see com.clustercontrol.dialog.CommonDialog#validate()
+	 */
+	@Override
+	protected ValidateResult validate() {
+		if ("".equals(uploadComponent.getFileName())) {
+			return createValidateResult(Messages.getString("message.hinemos.1"),
+					Messages.getString("message.infra.specify.item",
+							new Object[]{Messages.getString("string.import") + Messages.getString("file.name")}));
+		}
+		if (!uploadComponent.isReady()) {
+			return createValidateResult(Messages.getString("upload"), Messages.getString("upload.busy.message"));
+		}
+
+		return super.validate();
+	}
+
+	/**
+	 * 無効な入力値の情報を設定します
+	 *
+	 */
+	protected ValidateResult createValidateResult(String id, String message) {
+		ValidateResult validateResult = new ValidateResult();
+		validateResult.setValid(false);
+		validateResult.setID(id);
+		validateResult.setMessage(message);
+
+		return validateResult;
+	}
+	
 }

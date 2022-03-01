@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
@@ -1032,4 +1033,8 @@ public interface IResourceManagement {
 	Storage cloneBackupedStorage(StorageBackupEntryEntity entry, Map<String, String> backupedData, List<Option> options) throws CloudManagerException;
 	
 	List<Network> getNetworks() throws CloudManagerException;
+	
+	//クラウド通知(AWS,Azureのみ)
+	void execNotify(ConcurrentHashMap<String, Object> requestMap) throws CloudManagerException;
+
 }

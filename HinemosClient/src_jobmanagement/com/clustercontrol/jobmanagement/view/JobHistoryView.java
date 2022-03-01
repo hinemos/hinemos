@@ -20,10 +20,11 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
+import org.openapitools.client.model.JobHistoryFilterBaseRequest;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.bean.Property;
+import com.clustercontrol.filtersetting.util.FilterSettingManagerNameUpdater;
+import com.clustercontrol.filtersetting.util.JobHistoryFilterHelper;
 import com.clustercontrol.jobmanagement.composite.HistoryComposite;
 import com.clustercontrol.jobmanagement.composite.action.JobHistorySelectionChangedListener;
 import com.clustercontrol.jobmanagement.preference.JobManagementPreferencePage;
@@ -31,6 +32,8 @@ import com.clustercontrol.jobmanagement.view.action.HistoryFilterAction;
 import com.clustercontrol.jobmanagement.view.action.HistoryRefreshAction;
 import com.clustercontrol.jobmanagement.view.action.StartJobHistoryAction;
 import com.clustercontrol.jobmanagement.view.action.StopJobHistoryAction;
+import com.clustercontrol.util.ManagerTag;
+import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.AutoUpdateView;
 
 /**
@@ -48,8 +51,11 @@ public class JobHistoryView extends AutoUpdateView {
 	public static final String ID = JobHistoryView.class.getName();
 	/** ジョブ[履歴]ビュー用のコンポジット */
 	private HistoryComposite m_history = null;
+
 	/** フィルタ条件 */
-	private Property m_condition = null;
+	private JobHistoryFilterBaseRequest filter = JobHistoryFilterHelper.createDefaultFilter();
+	/** フィルタ true:On/false:Off */
+	private boolean filterEnabled = false;
 
 	/**
 	 * Number of selected items
@@ -63,6 +69,7 @@ public class JobHistoryView extends AutoUpdateView {
 		super();
 	}
 
+	@Override
 	protected String getViewName() {
 		return this.getClass().getName();
 	}
@@ -113,8 +120,10 @@ public class JobHistoryView extends AutoUpdateView {
 		this.setInterval(store
 				.getInt(JobManagementPreferencePage.P_HISTORY_UPDATE_CYCLE));
 
-		if (store.getBoolean(JobManagementPreferencePage.P_HISTORY_UPDATE_FLG)) {
+		if (store.getBoolean(JobManagementPreferencePage.P_HISTORY_UPDATE_FLG) && m_history.isUpdateSuccess()) {
 			this.startAutoReload();
+		} else {
+			this.stopAutoReload();
 		}
 	}
 
@@ -135,39 +144,60 @@ public class JobHistoryView extends AutoUpdateView {
 	}
 
 	/**
-	 * フィルタ条件を返します。
-	 *
-	 * @return フィルタ条件
+	 * フィルタ設定を返します。
+	 * 
+	 * @return
+	 * 		nullを返すことはありませんが、フィールド {@link ManagerTag#managerName}
+	 * 		は「全接続マネージャ」を意味するnullである可能性があります。
 	 */
-	public Property getFilterCondition() {
-		return m_condition;
+	public ManagerTag<JobHistoryFilterBaseRequest> getFilter() {
+		return new ManagerTag<JobHistoryFilterBaseRequest>(
+				FilterSettingManagerNameUpdater.getInstance().getFilterManagerName(ID), filter);
 	}
 
 	/**
 	 * フィルタ条件を設定します。
 	 *
-	 * @param condition フィルタ条件
+	 * @param managerName 検索対象のマネージャ名、nullなら全接続マネージャ 
+	 * @param filter フィルタ条件
 	 */
-	public void setFilterCondition(Property condition) {
-		m_condition = condition;
+	public void setFilter(String managerName, JobHistoryFilterBaseRequest filter) {
+		FilterSettingManagerNameUpdater.getInstance().setFilterManagerName(ID, managerName);
+		this.filter = filter;
+	}
+
+	public boolean isFilterEnabled() {
+		return filterEnabled;
+	}
+
+	public void setFilterEnabled(boolean filterEnabled) {
+		this.filterEnabled = filterEnabled;
+
+		if (!filterEnabled) {
+			// フィルタを無効にするため、ジョブ[履歴]ビューをリセットする
+			m_history.reset();
+		}
 	}
 
 	/**
 	 * ビューを更新します。
 	 *
-	 * @see com.clustercontrol.jobmanagement.composite.HistoryComposite#update()
-	 * @see com.clustercontrol.jobmanagement.composite.HistoryComposite#update(Property)
 	 */
 	@Override
 	public void update(boolean refreshFlag) {
 		try {
-			if (m_condition == null) {
+			if (!filterEnabled) {
 				m_history.update();
 			} else {
-				m_history.update(m_condition);
+				m_history.update(FilterSettingManagerNameUpdater.getInstance().getFilterManagerName(ID), filter);
 			}
 		} catch (Exception e) {
 			m_log.warn("update(), " + e.getMessage(), e);
+		}
+
+		// 更新に失敗している場合は自動更新を停止する
+		if (!m_history.isUpdateSuccess()) {
+			this.stopAutoReload();
 		}
 	}
 
@@ -210,5 +240,13 @@ public class JobHistoryView extends AutoUpdateView {
 			getViewSite().getActionBars().updateActionBars();
 			getViewSite().getActionBars().getToolBarManager().update(false);
 		}
+	}
+	
+	/**
+	 * 更新成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isUpdateSuccess() {
+		return this.m_history.isUpdateSuccess();
 	}
 }

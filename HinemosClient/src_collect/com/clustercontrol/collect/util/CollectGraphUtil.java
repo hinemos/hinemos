@@ -8,6 +8,7 @@
 
 package com.clustercontrol.collect.util;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,37 +21,44 @@ import java.util.TreeMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.SingletonUtil;
+import org.openapitools.client.model.ArrayListInfoResponse;
+import org.openapitools.client.model.CollectDataInfoResponse;
+import org.openapitools.client.model.CollectDataResponse;
+import org.openapitools.client.model.CollectKeyInfoResponseP1;
+import org.openapitools.client.model.CollectKeyResponseP1;
+import org.openapitools.client.model.CollectorItemCodeMstDataResponse;
+import org.openapitools.client.model.CollectorItemCodeMstInfoResponse;
+import org.openapitools.client.model.EventLogInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.GetCoefficientsRequest;
+import org.openapitools.client.model.GetCoefficientsResponse;
+import org.openapitools.client.model.GetEventDataMapResponse;
+import org.openapitools.client.model.MonitorInfoResponseP3;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.MonitorNumericTypeEnum;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.collect.bean.CollectConstant;
 import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.composite.CollectSettingComposite;
 import com.clustercontrol.collect.preference.PerformancePreferencePage;
-import com.clustercontrol.monitor.run.bean.MonitorNumericType;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosDbTimeout;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorResultRestClientWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.rest.endpoint.collect.dto.emuntype.SummaryTypeEnum;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
-import com.clustercontrol.ws.collect.CollectData;
-import com.clustercontrol.ws.collect.CollectKeyInfoPK;
-import com.clustercontrol.ws.collect.CollectorItemCodeMstData;
-import com.clustercontrol.ws.collect.HashMapInfo;
-import com.clustercontrol.ws.collect.HashMapInfo.Map3;
-import com.clustercontrol.ws.collect.HashMapInfo.Map4;
-import com.clustercontrol.ws.collect.HinemosDbTimeout_Exception;
-import com.clustercontrol.ws.collect.HinemosUnknown_Exception;
-import com.clustercontrol.ws.collect.InvalidRole_Exception;
-import com.clustercontrol.ws.collect.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
 
 /**
  * 性能グラフを表示する補助クラス<BR>
@@ -112,6 +120,16 @@ public class CollectGraphUtil {
 	private Long m_targetDBAccessDate = null;
 	
 	/**
+	 * 各描画済みグラフ上の最新時間
+	 */
+	private Map <String, Long> m_targetDrawnDateList = new HashMap<>();
+	
+	/**
+	 * 各描画済みグラフ上の最新時間をデータ取得の際に使用するかどうか
+	 */
+	private boolean useDrawnDateListFlg = false;
+	
+	/**
 	 * サマリータイプ
 	 */
 	private int m_summaryType = -1;
@@ -144,7 +162,7 @@ public class CollectGraphUtil {
 	/**
 	 * 画面左で選択されたもの(itemNameとmonitorIdが入ってる)
 	 */
-	private List<CollectKeyInfoPK> m_collectKeyInfoList = new ArrayList<>();
+	private List<CollectKeyInfoResponseP1> m_collectKeyInfoList = new ArrayList<>();
 	
 	/**
 	 * スライダーの全体開始時刻
@@ -209,13 +227,15 @@ public class CollectGraphUtil {
 	 * @param selectEndDate グラフの表示終了時刻
 	 * @param nowDate 現在日時
 	 * @return
-	 * @throws HinemosDbTimeout_Exception 
-	 * @throws InvalidRole_Exception 
-	 * @throws HinemosUnknown_Exception 
-	 * @throws InvalidUserPass_Exception 
+	 * @throws RestConnectFailed 
+	 * @throws HinemosDbTimeout 
+	 * @throws InvalidRole 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidUserPass 
+	 * @throws InvalidSetting 
 	 */
 	public static StringBuffer getAddGraphPlotJson(Long startDate, Long endDate, Long selectStartDate, Long selectEndDate, Long nowDate) 
-			throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+			throws HinemosDbTimeout, InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
 		m_log.debug("getAddGraphPlotJson() start");
 		StringBuffer sb = new StringBuffer();
 		int count = 0;
@@ -234,18 +254,25 @@ public class CollectGraphUtil {
 			setTargetDBAccessDate(now);
 		}
 
-		for (CollectKeyInfoPK collectKeyInfo : getInstance().m_collectKeyInfoList) {
+		for (CollectKeyInfoResponseP1 collectKeyInfo : getInstance().m_collectKeyInfoList) {
 			String itemNameCode = collectKeyInfo.getItemName();
 			String itemName = HinemosMessage.replace(itemNameCode);
 			String monitorId = collectKeyInfo.getMonitorId();
 			String displayName = collectKeyInfo.getDisplayName();
 			for (Map.Entry<String, TreeMap<String, List<Integer>>> entry : getInstance().m_targetManagerFacilityCollectMap.entrySet()) {
 				String managerName = entry.getKey();
-				Map<Integer, List<CollectData>> graphMap = getGraphDetailDataMap(managerName, monitorId, displayName, itemName, startDate, getTargetDBAccessDate());
+				String targetDrawnDateListKey = managerName + monitorId + itemName + displayName;
+				Long targetDrawnDate = getInstance().m_targetDrawnDateList.get(targetDrawnDateListKey);
+				
+				if ((getInstance().useDrawnDateListFlg) && (targetDrawnDate != null)){
+					startDate = targetDrawnDate;
+				}
+				
+				Map<Integer, List<CollectDataInfoResponse>> graphMap = getGraphDetailDataMap(managerName, monitorId, displayName, itemName, startDate, getTargetDBAccessDate());
 				String itemNameDisplayNameMonitorId = itemName + displayName + monitorId;
 				Map<String, Integer> collectIdMap = getFacilityCollectMap(itemNameDisplayNameMonitorId, managerName);
 				// plot文字列を取得
-				List<String> plotList = parseGraphData(collectIdMap, graphMap);
+				List<String> plotList = parseGraphData(collectIdMap, graphMap, targetDrawnDateListKey);
 				
 				if (plotList == null || plotList.isEmpty()) {
 					m_log.debug("getAddGraphPlotJson() plotDataList is Empty.");
@@ -441,7 +468,7 @@ public class CollectGraphUtil {
 	 * @param barFlg 初期値
 	 * @param selectInfoStr 初期値
 	 */
-	public static void init(boolean totalflg, boolean stackflg, List<CollectKeyInfoPK> collectKeyInfoList, 
+	public static void init(boolean totalflg, boolean stackflg, List<CollectKeyInfoResponseP1> collectKeyInfoList, 
 			boolean pieflg, boolean scatterflg, boolean barFlg, String selectInfoStr) {
 		m_log.debug("init()");
 		getInstance().totalFlg = totalflg;
@@ -456,6 +483,8 @@ public class CollectGraphUtil {
 		getInstance().scatterFlg = scatterflg;
 		getInstance().barFlg = barFlg;
 		getInstance().selectInfoStr = selectInfoStr;
+		getInstance().m_targetDrawnDateList.clear();
+		getInstance().useDrawnDateListFlg = false;
 	}
 
 	/**
@@ -464,7 +493,7 @@ public class CollectGraphUtil {
 	 * @param info ファシリティ情報
 	 * @param count
 	 */
-	public static int sortManagerNameFacilityIdMap(String managerName, FacilityInfo info, int count){
+	public static int sortManagerNameFacilityIdMap(String managerName, FacilityInfoResponse info, int count){
 		m_log.debug("sortManagerNameFacilityIdMap() managerName:" + managerName + 
 				", facilityId:" + info.getFacilityId() + ", facilityName:" + info.getFacilityName());
 		if (!getInstance().m_managerFacilityDataInfoMap.containsKey(managerName + SQUARE_SEPARATOR + info.getFacilityId())) {
@@ -600,7 +629,7 @@ public class CollectGraphUtil {
 		int dispCount = ClusterControlPlugin.getDefault().getPreferenceStore().getInt(PerformancePreferencePage.P_GRAPH_MAX);
 		boolean allbreak = false;
 		boolean itembreak = false;
-		for (CollectKeyInfoPK collectKeyInfoPK : getInstance().m_collectKeyInfoList) {
+		for (CollectKeyInfoResponseP1 collectKeyInfoPK : getInstance().m_collectKeyInfoList) {
 			// manager数分ループ
 			for (Map.Entry<String, TreeMap<String, List<Integer>>> entry : getInstance().m_targetManagerFacilityCollectMap.entrySet()) {
 				String managerName = entry.getKey();
@@ -669,7 +698,7 @@ public class CollectGraphUtil {
 		StringBuffer sb = new StringBuffer();
 		int count = 0;
 		for (String select : selectInfoArr) {
-			for (CollectKeyInfoPK collectInfo : getInstance().m_collectKeyInfoList) {
+			for (CollectKeyInfoResponseP1 collectInfo : getInstance().m_collectKeyInfoList) {
 				String itemNameLocale = HinemosMessage.replace(collectInfo.getItemName());
 				if (!collectInfo.getDisplayName().equals("") 
 						&& !itemNameLocale.endsWith("[" + collectInfo.getDisplayName() + "]")) {
@@ -705,19 +734,20 @@ public class CollectGraphUtil {
 	/**
 	 * collectIdの取得とメンバに保持
 	 * @param summaryType
-	 * @throws InvalidRole_Exception 
-	 * @throws HinemosUnknown_Exception 
-	 * @throws InvalidUserPass_Exception 
-	 * @throws Exception 
+	 * @throws RestConnectFailed 
+	 * @throws InvalidRole 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidUserPass 
+	 * @throws InvalidSetting 
 	 */
-	public static void collectCollectIdInfo(int summaryType) throws InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+	public static void collectCollectIdInfo(int summaryType) throws InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
 		long start2 = System.currentTimeMillis();
 
 		setSummaryType(summaryType);
 		int count = 0;
 		int dispCount = ClusterControlPlugin.getDefault().getPreferenceStore().getInt(PerformancePreferencePage.P_GRAPH_MAX);
 		// itemCode数分ループ
-		for (CollectKeyInfoPK collectKeyInfoPK : getInstance().m_collectKeyInfoList) {
+		for (CollectKeyInfoResponseP1 collectKeyInfoPK : getInstance().m_collectKeyInfoList) {
 			// manager数分ループ
 			for (Map.Entry<String, TreeMap<String, List<Integer>>> entry : getInstance().m_targetManagerFacilityCollectMap.entrySet()) {
 				Map<String, List<Integer>> facilityIdMap = entry.getValue();
@@ -754,18 +784,24 @@ public class CollectGraphUtil {
 	 * @param monitorId
 	 * @param managerName
 	 * @param facilityIdList
-	 * @throws InvalidRole_Exception 
-	 * @throws HinemosUnknown_Exception 
-	 * @throws InvalidUserPass_Exception 
-	 * @throws Exception 
+	 * @throws RestConnectFailed 
+	 * @throws InvalidRole 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidUserPass
+	 * @throws InvalidSetting 
 	 */
 	private static void getFacilityCollectIdMap(String itemName, String displayName, String monitorId, String managerName, List<String> facilityIdList)
-			throws InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+			throws InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
 		long start = System.currentTimeMillis();
 		String itemNameMess = HinemosMessage.replace(itemName);
-		CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
-		HashMapInfo mapInfo = wrapper.getCollectId(itemName, displayName, monitorId, facilityIdList);
-		Map4 map4 = mapInfo.getMap4();
+		CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
+		String str = String.join(",", facilityIdList);
+		List<CollectKeyResponseP1> res = wrapper.getCollectId(itemName, displayName, monitorId, str);
+		HashMap<String, Integer> map4 = new HashMap<>();
+
+		for(CollectKeyResponseP1 tmp:res){
+			map4.put(tmp.getFacilityId(), tmp.getId());
+		}
 
 		if (!getInstance().m_managerMonitorCollectIdMap.containsKey(managerName)) {
 			getInstance().m_managerMonitorCollectIdMap.put(managerName, new HashMap<String, List<Integer>>());
@@ -774,7 +810,7 @@ public class CollectGraphUtil {
 			getInstance().m_managerMonitorCollectIdMap.get(managerName).put(itemNameMess + displayName + monitorId, new ArrayList<Integer>());
 		}
 
-		for (com.clustercontrol.ws.collect.HashMapInfo.Map4.Entry entry4 : map4.getEntry()) {
+		for (Entry<String, Integer> entry4 : map4.entrySet()) {
 			String facilityId = entry4.getKey();
 			Integer collectId = entry4.getValue();
 			m_log.info("getFacilityCollectIdMap()  itemName:" + itemName + ", itemNameMess:"+ itemNameMess +", displayName:" + displayName 
@@ -804,19 +840,21 @@ public class CollectGraphUtil {
 	 * @param fromTime 開始時刻
 	 * @param toTime 終了時刻
 	 * @return key:collectId, value:CollectDataのリスト
-	 * @throws HinemosDbTimeout_Exception 
-	 * @throws InvalidRole_Exception 
-	 * @throws HinemosUnknown_Exception 
-	 * @throws InvalidUserPass_Exception 
+	 * @throws RestConnectFailed 
+	 * @throws HinemosDbTimeout
+	 * @throws InvalidRole 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidUserPass 
+	 * @throws InvalidSetting 
 	 */
-	private static Map<Integer, List<CollectData>> getGraphDetailDataMap(String managerName, String monitorId, String displayName, 
-			String itemName, Long fromTime, Long toTime) throws HinemosDbTimeout_Exception, InvalidUserPass_Exception, HinemosUnknown_Exception, InvalidRole_Exception {
+	private static Map<Integer, List<CollectDataInfoResponse>> getGraphDetailDataMap(String managerName, String monitorId, String displayName, 
+			String itemName, Long fromTime, Long toTime) throws HinemosDbTimeout, InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
 		long start = System.currentTimeMillis();
 		SimpleDateFormat DF = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
 		DF.setTimeZone(TimezoneUtil.getTimeZone());
 		m_log.info("getGraphDetailDataMap() managerName:" + managerName + ", monitorId:" + monitorId + ", displayName:" + displayName + ", itemName:" + itemName
 				+ ", fromTime:" + DF.format(new Date(fromTime)) + ", toTime:" + DF.format(new Date(toTime)) + ", summaryType:" + getSummaryType());
-		Map<Integer, List<CollectData>> map = new HashMap<>();
+		Map<Integer, List<CollectDataInfoResponse>> map = new HashMap<>();
 		List<Integer> collectIdList = null;
 		if (getInstance().m_managerMonitorCollectIdMap.get(managerName) == null) {
 			m_log.warn("No list for corresponding manager managerName" + managerName);
@@ -849,15 +887,43 @@ public class CollectGraphUtil {
 			toTime += MILLISECOND_MONTH;
 		}
 		m_log.debug("getGraphDetailDataMap() REAL fromTime:" + DF.format(new Date(fromTime)) + ", toTime:" + DF.format(new Date(toTime)));
-
-		CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
-		HashMapInfo mapInfo = wrapper.getCollectData(collectIdList, getSummaryType(), fromTime, toTime);
-		Map3 map3 = mapInfo.getMap3();
+		
+		// getCollectDataの引数となるcollectIdをカンマ区切りでセットする
+		// findbugs対応 文字列の連結方式をStringBuilderを利用する方法に変更
+		StringBuilder inCollectorId = new StringBuilder();
+		for(Integer tmp : collectIdList){
+			if (inCollectorId.length() != 0) {
+				inCollectorId.append("," + tmp.toString());
+			} else {
+				inCollectorId.append(tmp.toString());
+			}
+		}
+		
+		// getSummaryTypeに一致するインスタンスを探す
+		SummaryTypeEnum inSummarytype = null;
+		for(SummaryTypeEnum tmp:SummaryTypeEnum.values()){
+			if( tmp.getCode() == getSummaryType() ){
+				inSummarytype = tmp;
+			}
+		}
+		CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
+		String fromTimeStr = TimezoneUtil.getSimpleDateFormat().format(new Date(fromTime));
+		String toTimeStr = TimezoneUtil.getSimpleDateFormat().format(new Date(toTime));
+		List<CollectDataResponse> res = wrapper.getCollectData(inCollectorId.toString(), inSummarytype, fromTimeStr, toTimeStr);
+		
+		HashMap<Integer,ArrayListInfoResponse> resMap = new HashMap<>();
+		for(CollectDataResponse tmp:res){
+			// findbugs対応 arrayListInfoの変数のスコープを修正
+			ArrayListInfoResponse arrayListInfo = new ArrayListInfoResponse();
+			arrayListInfo.setList1(tmp.getArrayListInfoResponse().getList1());
+			resMap.put(tmp.getCollectId(), arrayListInfo);
+		}
+		
 		int count = 0;
-		for (com.clustercontrol.ws.collect.HashMapInfo.Map3.Entry entry3 : map3.getEntry()) {
+		for (Entry<Integer, ArrayListInfoResponse> entry3 : resMap.entrySet()) {
 			// keyがcollectId、valueは日時と測定値が入ったクラス(CollectData)のリスト
-			map.put(entry3.getKey(), entry3.getValue().getList());
-			count += entry3.getValue().getList().size();
+			map.put(entry3.getKey(),entry3.getValue().getList1());
+			count += entry3.getValue().getList1().size();
 		}
 		m_log.debug("getGraphDetailDataMap : monitorId=" + monitorId + ", size=" + count + ", collectIdList.size:" + collectIdList.size());
 		m_log.debug("getGraphDetailDataMap() DB time=" + (System.currentTimeMillis() - start) + "ms");
@@ -878,24 +944,34 @@ public class CollectGraphUtil {
 	 * @param collectIdMap
 	 * @param collectDataMap
 	 * @param managerName
+	 * @param drawnDateListKey
 	 * @return
 	 */
-	private static List<String> parseGraphData(Map<String, Integer> collectIdMap, Map<Integer, List<CollectData>> collectDataMap) {
+	private static List<String> parseGraphData(Map<String, Integer> collectIdMap, Map<Integer, List<CollectDataInfoResponse>> collectDataMap, String drawnDateListKey) {
 		List<String> plotDataList = new ArrayList<String>();
 		Long start = System.currentTimeMillis();
+		Long targetDrawnDate = null;
 		for (Map.Entry<String, Integer> entryFaci : collectIdMap.entrySet()) {
 			String facilityId = entryFaci.getKey();
 			Integer collectId = entryFaci.getValue();
+			Long targetDate = null;
 			StringBuffer sb = new StringBuffer();
 			if (collectId == null) {
 				// collectIdがnullになるのはまだ収集が行われていない場合など、その場合は空データを作成
 				m_log.debug("parseGraphData() collectId == null. facilityId:" + facilityId);
 			} else {
-				List<CollectData> dataList = collectDataMap.get(collectId);
+				List<CollectDataInfoResponse> dataList = collectDataMap.get(collectId);
 				if (dataList != null && !dataList.isEmpty()) {
 					m_log.info("parseGraphData() facilityId:" + facilityId + ", collectId:" + collectId + ", plotsize:" + dataList.size());
-					for (CollectData data : dataList) {
-						Long date = data.getTime();
+					for (CollectDataInfoResponse data : dataList) {
+						Long date = null;
+						try {
+							date = TimezoneUtil.getSimpleDateFormat().parse(data.getTime()).getTime();
+						} catch (ParseException e) { 
+							/**こないはず */
+							//findbugs対応 エラーは発生しない想定なので本来不要だが Exception無視と思われないようtraceログの出力を追加
+							m_log.trace("parseGraphData : exception occuered",e);
+						}
 						Float value = data.getValue();
 						Float average = data.getAverage();
 						Float standard = data.getStandardDeviation(); // 偏差
@@ -905,6 +981,13 @@ public class CollectGraphUtil {
 						}
 						// [日時,収集値,平均,偏差]
 						sb.append("[" + date + "," + value + "," + average + "," + standard + "],");
+						if (targetDate != null){
+							if (targetDate < date) {
+								targetDate = date;
+							}
+						} else {
+							targetDate = date;
+						}
 					}
 				} else {
 					// collectidはあるが、選択期間にデータがない場合
@@ -919,12 +1002,26 @@ public class CollectGraphUtil {
 				}
 				plotData = facilityId + SQUARE_SEPARATOR + collectId + SQUARE_SEPARATOR 
 						+ "[" + detaildata + "]";
+				
+				if (targetDate != null) {
+					if (targetDrawnDate == null) {
+						targetDrawnDate = targetDate;
+					} else if (targetDate < targetDrawnDate){
+						targetDrawnDate = targetDate;
+					}
+				}
 			} else {
 				// グラフ数制限のズレ対処のため、collectIdがない場合はデータなしでaddする
 				plotData = facilityId + SQUARE_SEPARATOR + "none" + SQUARE_SEPARATOR + "[]";// collectId=0はありえないパターン
 			}
 			// プロットデータと閾値データを入れる
 			plotDataList.add(plotData);
+		}
+		// グラフ上の最新日時を詰める
+		if(targetDrawnDate != null) {
+			getInstance().m_targetDrawnDateList.put(drawnDateListKey, targetDrawnDate);
+		} else if (getInstance().m_targetDrawnDateList.containsKey(drawnDateListKey)) {
+			getInstance().m_targetDrawnDateList.remove(drawnDateListKey);
 		}
 		m_log.debug("parseGraphData() time=" + (System.currentTimeMillis() - start) + "ms");
 		return plotDataList;
@@ -960,6 +1057,11 @@ public class CollectGraphUtil {
 		if (!monitorId.equals(CollectConstant.COLLECT_TYPE_JOB)) {
 			ylabel += "(" + monitorId + ")";
 		}
+		String isJob = Boolean.FALSE.toString();
+		if (monitorId.equals(CollectConstant.COLLECT_TYPE_JOB)) {
+			// ジョブ実行履歴のグラフかどうかを判定する
+			isJob = Boolean.TRUE.toString();
+		}
 		String param =
 				"{"
 				+ "\'managername\':\'" + escapeParam(managerDummyName) + "\', "// DUMMY
@@ -973,6 +1075,7 @@ public class CollectGraphUtil {
 				+ "\'ylabel\':\'" + escapeParam(ylabel) + "\', "
 				+ "\'id\':\'" + escapeParam(id) + "\', "
 				+ "\'summarytype\':" + getSummaryType() + ", "
+				+ "\'isjob\':" + isJob + ", "
 				+ "\'sliderstartdate\':" + getSliderStart() + ", " 
 				+ "\'sliderenddate\':" + getSliderEnd() + ", " 
 				+ "\'startdate\':" + getTargetConditionStartDate() + ", " 
@@ -1019,8 +1122,9 @@ public class CollectGraphUtil {
 	 * @param managerName
 	 * @param monitorId
 	 * @return
+	 * @throws RestConnectFailed 
 	 */
-	public static String getThresholdData(String managerName, String monitorId) {
+	public static String getThresholdData(String managerName, String monitorId) throws RestConnectFailed {
 		Double thresholdInfoMin = 0d;
 		Double thresholdInfoMax = 0d;
 		Double thresholdWarnMin = 0d;
@@ -1037,20 +1141,20 @@ public class CollectGraphUtil {
 				// ジョブ履歴の場合
 				measure = HinemosMessage.replace(MessageConstant.COLLECT_TYPE_JOB_EXECUTION_HISTORY_MEASURE.getMessage());
 			} else {
-				MonitorSettingEndpointWrapper monitorWrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-				MonitorInfo monitorInfo = monitorWrapper.getMonitor(monitorId);
+				MonitorsettingRestClientWrapper monitorWrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
+				MonitorInfoResponseP3 monitorInfo = monitorWrapper.getMonitorInfoForGraph(monitorId);
 				measure = HinemosMessage.replace(monitorInfo.getMeasure());
 				pluginId = monitorInfo.getMonitorTypeId();
 				predictionTarget = monitorInfo.getPredictionTarget();
 				predictionRange = monitorInfo.getPredictionAnalysysRange();
-				List<MonitorNumericValueInfo> thresholdValue = monitorInfo.getNumericValueInfo();
-				for (MonitorNumericValueInfo thresholdInfo : thresholdValue) {
-					if (thresholdInfo.getPriority().equals(PriorityConstant.TYPE_WARNING)
-							&& thresholdInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_BASIC.getType())) {
+				List<MonitorNumericValueInfoResponse> thresholdValue = monitorInfo.getNumericValueInfo();
+				for (MonitorNumericValueInfoResponse thresholdInfo : thresholdValue) {
+					if (thresholdInfo.getPriority().equals(MonitorNumericValueInfoResponse.PriorityEnum.WARNING)
+							&& thresholdInfo.getMonitorNumericType().equals(MonitorNumericTypeEnum.BASIC)) {
 						thresholdWarnMax = thresholdInfo.getThresholdUpperLimit();
 						thresholdWarnMin = thresholdInfo.getThresholdLowerLimit();
-					} else if (thresholdInfo.getPriority().equals(PriorityConstant.TYPE_INFO)
-							&& thresholdInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_BASIC.getType())) {
+					} else if (thresholdInfo.getPriority().equals(MonitorNumericValueInfoResponse.PriorityEnum.INFO)
+							&& thresholdInfo.getMonitorNumericType().equals(MonitorNumericTypeEnum.BASIC)) {
 						thresholdInfoMax = thresholdInfo.getThresholdUpperLimit();
 						thresholdInfoMin = thresholdInfo.getThresholdLowerLimit();
 					}
@@ -1073,12 +1177,10 @@ public class CollectGraphUtil {
 			}
 			thresholdStr = thresholdInfoMin + "," + thresholdInfoMax + "," + thresholdWarnMin + "," + thresholdWarnMax + ","
 			+ measure + "," + pluginId + "," + isGraphRange + "," + isHttpSce + "," + predictionTarget + "," + predictionRange;
-		} catch (com.clustercontrol.ws.monitor.HinemosUnknown_Exception 
-				| com.clustercontrol.ws.monitor.InvalidRole_Exception
-				| com.clustercontrol.ws.monitor.InvalidUserPass_Exception e) {
+		} catch (RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown e) {
 			m_log.error("getThresholdData : " + e.getMessage());
 			// nop
-		} catch (MonitorNotFound_Exception e) {
+		} catch (MonitorNotFound e) {
 			m_log.info("getThresholdData : " + e.getMessage());
 			// nop 複数マネージャで選択した収集値項目名がほかのマネージャに登録されている場合、ここを通る
 		}
@@ -1101,35 +1203,25 @@ public class CollectGraphUtil {
 		for (String managerName : managerList) {
 			Map<String, List<Integer>> facilityMap = getInstance().m_targetManagerFacilityCollectMap.get(managerName);
 			List<String> facilityIdList = new ArrayList<String>(facilityMap.keySet());
-			CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
-			Map<String, List<EventDataInfo>> mapInfo;
-				mapInfo = wrapper.getEventDataMap(facilityIdList);
-				for (Entry<String, List<EventDataInfo>> entry : mapInfo.entrySet()) {
-					List<EventDataInfo> eventInfoList = entry.getValue();
-					for (EventDataInfo eventInfo : eventInfoList) {
-//						String application = eventInfo.getApplication();
-//						Boolean collectGraphFlg = eventInfo.isCollectGraphFlg();
-//						String comment = eventInfo.getComment();
-//						Long commentDate = eventInfo.getCommentDate();
-//						String commentUser = eventInfo.getCommentUser();
-//						Long confirmDate = eventInfo.getConfirmDate();
-//						String confirmUser = eventInfo.getConfirmUser();
-//						Integer confirmed = eventInfo.getConfirmed();
-//						Integer duplicationCount = eventInfo.getDuplicationCount();
+			MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(managerName);
+			Map<String, List<EventLogInfoResponse>> mapInfo;
+				String facilityIdIn = String.join(",", facilityIdList);
+				GetEventDataMapResponse map = wrapper.getEventDataMap(facilityIdIn);
+				mapInfo =  map.getMap();
+				for (Entry<String, List<EventLogInfoResponse>> entry : mapInfo.entrySet()) {
+					List<EventLogInfoResponse> eventInfoList = entry.getValue();
+					for (EventLogInfoResponse eventInfo : eventInfoList) {
 						String facilityId = eventInfo.getFacilityId();
-						Long generationDate = eventInfo.getGenerationDate();
-						Long predictGenerationDate = eventInfo.getPredictGenerationDate(); 
-//						String managerName;
+						//
+						Long generationDate = MonitorResultRestClientWrapper.parseDate(eventInfo.getGenerationDate()).getTime();
+						Long predictGenerationDate = MonitorResultRestClientWrapper.parseDate(eventInfo.getPredictGenerationDate()).getTime();
 						String message = HinemosMessage.replace(eventInfo.getMessage());
-//						String messageOrg = eventInfo.getMessageOrg();
 						String monitorDetailId = eventInfo.getMonitorDetailId();
 						String parentMonitorDetailId = eventInfo.getParentMonitorDetailId();
 						String monitorId = eventInfo.getMonitorId();
-						Long outputDate = eventInfo.getOutputDate();
-//						String ownerRoleId = eventInfo.getOwnerRoleId();
+						Long outputDate = MonitorResultRestClientWrapper.parseDate(eventInfo.getOutputDate()).getTime();
 						String pluginId = eventInfo.getPluginId();
 						Integer priority = eventInfo.getPriority();
-//						String scopeText = eventInfo.getScopeText();
 						
 						String facilityName = getInstance().m_managerFacilityDataInfoMap.get(managerName + SQUARE_SEPARATOR + facilityId).getName();
 						String dummyFacilityId = getInstance().m_managerFacilityDataInfoMap.get(managerName + SQUARE_SEPARATOR + facilityId).getDummyName();
@@ -1157,7 +1249,12 @@ public class CollectGraphUtil {
 				}
 			
 			}
-		} catch (HinemosUnknown_Exception e) {
+		} catch (RuntimeException e) {
+			// findbugs対応 RuntimeExceptionのcatchを明示化
+			m_log.error(e.getMessage());
+			// sbを初期化しておく
+			sb.delete(0, sb.length());
+		} catch (Exception e) {
 			m_log.error(e.getMessage());
 			// sbを初期化しておく
 			sb.delete(0, sb.length());
@@ -1178,22 +1275,27 @@ public class CollectGraphUtil {
 	 * @param managerName
 	 * @param itemName
 	 * @return
+	 * @throws RestConnectFailed 
 	 */
-	private static boolean isGraphRangePercent(String managerName, String itemName) {
-		CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
+	private static boolean isGraphRangePercent(String managerName, String itemName) throws RestConnectFailed {
+
+		CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
 		try {
 			// ADMINISTRATORS権限がないと、invalidRoleになる
-			List<CollectorItemCodeMstData> collectorItemCodeMstDataList = wrapper.getCollectItemCodeMasterList();
-			
-			for (CollectorItemCodeMstData collectItem : collectorItemCodeMstDataList) {
+			List<CollectorItemCodeMstInfoResponse> res = wrapper.getCollectItemCodeMasterList();
+			List<CollectorItemCodeMstDataResponse> collectorItemCodeMstDataList = new ArrayList<>();
+			for(CollectorItemCodeMstDataResponse tmp : res.get(0).getCollectorItemCodeMstData())
+			{
+				collectorItemCodeMstDataList.add(tmp);
+			}
+
+			for (CollectorItemCodeMstDataResponse collectItem : collectorItemCodeMstDataList) {
 				if (collectItem.getItemName().equals(itemName)) {
 					m_log.debug("isGraphRangePercent 100% display target itemName:" + itemName);
-					return collectItem.isGraphRange();
+					return collectItem.getGraphRange();
 				}
 			}
-		} catch (HinemosUnknown_Exception
-				| InvalidRole_Exception
-				| InvalidUserPass_Exception e) {
+		} catch (HinemosUnknown | InvalidUserPass | InvalidRole e) {
 			m_log.error("isGraphRangePercent : " + e.getMessage());
 		}
 		m_log.debug("isGraphRangePercent 100% out of display target itemName:" + itemName);
@@ -1220,16 +1322,16 @@ public class CollectGraphUtil {
 	 * @param warnMaxValue
 	 * @return
 	 */
-	public static List<MonitorNumericValueInfo> createMonitorNumericValueInfoList(String infoMinValue, String infoMaxValue, 
+	public static List<MonitorNumericValueInfoResponse> createMonitorNumericValueInfoList(String infoMinValue, String infoMaxValue, 
 			String warnMinValue, String warnMaxValue) {
-		List<MonitorNumericValueInfo> monitorNumericValueInfoList = new ArrayList<>();
-		MonitorNumericValueInfo monitorNumericValue_info = new MonitorNumericValueInfo();
-		monitorNumericValue_info.setPriority(PriorityConstant.TYPE_INFO);
+		List<MonitorNumericValueInfoResponse> monitorNumericValueInfoList = new ArrayList<>();
+		MonitorNumericValueInfoResponse monitorNumericValue_info = new MonitorNumericValueInfoResponse();
+		monitorNumericValue_info.setPriority(MonitorNumericValueInfoResponse.PriorityEnum.INFO);
 		monitorNumericValue_info.setThresholdLowerLimit(Double.valueOf(infoMinValue));
 		monitorNumericValue_info.setThresholdUpperLimit(Double.valueOf(infoMaxValue));
 		
-		MonitorNumericValueInfo monitorNumericValue_warn = new MonitorNumericValueInfo();
-		monitorNumericValue_warn.setPriority(PriorityConstant.TYPE_WARNING);
+		MonitorNumericValueInfoResponse monitorNumericValue_warn = new MonitorNumericValueInfoResponse();
+		monitorNumericValue_warn.setPriority(MonitorNumericValueInfoResponse.PriorityEnum.WARNING);
 		monitorNumericValue_warn.setThresholdLowerLimit(Double.valueOf(warnMinValue));
 		monitorNumericValue_warn.setThresholdUpperLimit(Double.valueOf(warnMaxValue));
 
@@ -1258,19 +1360,24 @@ public class CollectGraphUtil {
 	 * @param displayName
 	 * @param itemName
 	 * @return
+	 * @throws RestConnectFailed 
 	 */
-	private static List<Double> getForecasts(String monitorId, String facilityId, String displayName, String itemName, String managerName) {
+	private static List<Double> getForecasts(String monitorId, String facilityId, String displayName, String itemName, String managerName) throws RestConnectFailed {
 		List<Double> ret = new ArrayList<>();
-		CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
+		CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
 		try {
-			ret = wrapper.getCoefficients(monitorId, facilityId, displayName, itemName);
+			GetCoefficientsRequest getCoefficientsRequest = new GetCoefficientsRequest();
+			getCoefficientsRequest.setMonitorId(monitorId);
+			getCoefficientsRequest.setFacilityId(facilityId);
+			getCoefficientsRequest.setDisplayName(displayName);
+			getCoefficientsRequest.setItemName(itemName);
+			GetCoefficientsResponse res = wrapper.getCoefficients(getCoefficientsRequest);
+			ret = res.getCoefficients();
 			// 配列のサイズはmax5なので、5に満たない場合は0を入れる
 			for (int i = ret.size(); i < 5; i++) {
 				ret.add(0d);
 			}
-		} catch (HinemosUnknown_Exception
-				| InvalidRole_Exception
-				| InvalidUserPass_Exception e) {
+		} catch (HinemosUnknown | InvalidSetting e) {
 			m_log.error("getForecasts : " + e.getMessage(), e);
 		}
 		m_log.debug("getForecasts() :" + monitorId + ", " + facilityId + ", " + displayName + ", " + itemName + "," + managerName + ", " + ret.toString()); 
@@ -1327,7 +1434,14 @@ public class CollectGraphUtil {
 	public static void setTargetDBAccessDate(Long targetDBAccessDate) {
 		getInstance().m_targetDBAccessDate = targetDBAccessDate;
 	}
-
+	/**
+	 * 
+	 * @param isUseDrawnDateList 各描画済みグラフ上の最新時間をデータ取得の際に使用するか否か<br>
+	 */
+	public static void setUseDrawnDateListFlg(boolean isUseDrawnDateList) {
+		getInstance().useDrawnDateListFlg = isUseDrawnDateList;
+	}
+	
 	public static void setSummaryType(int summaryType) {
 		getInstance().m_summaryType = summaryType;
 	}
@@ -1388,7 +1502,7 @@ public class CollectGraphUtil {
 	 * 画面左で選択されたもの(itemNameとmonitorIdが入ってる)を返します。
 	 * @return
 	 */
-	public static List<CollectKeyInfoPK> getCollectKeyInfoList() {
+	public static List<CollectKeyInfoResponseP1> getCollectKeyInfoList() {
 		return getInstance().m_collectKeyInfoList;
 	}
 

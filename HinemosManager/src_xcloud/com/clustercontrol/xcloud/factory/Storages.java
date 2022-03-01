@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.persistence.EntityExistsException;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,6 +30,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.repository.model.NodeDiskInfo;
@@ -48,7 +49,6 @@ import com.clustercontrol.xcloud.model.BackupedDataStore;
 import com.clustercontrol.xcloud.model.CloudLoginUserEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity.OptionCallable;
-import com.clustercontrol.xcloud.model.CloudScopeEntity.OptionExecutor;
 import com.clustercontrol.xcloud.model.ExtendedProperty;
 import com.clustercontrol.xcloud.model.InstanceEntity;
 import com.clustercontrol.xcloud.model.LocationEntity;
@@ -59,8 +59,8 @@ import com.clustercontrol.xcloud.model.StorageEntity;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil.TransactionScope;
 import com.clustercontrol.xcloud.persistence.Transactional;
-import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.CloudUtil;
+import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.NodeInfoCache;
 import com.clustercontrol.xcloud.util.NodeInfoCache.NodeInfoCacheScope;
 
@@ -76,11 +76,13 @@ public class Storages extends Resources implements IStorages {
 	}
 	
 	@Override
-	public void removeStorages(final List<String> storageIds) throws CloudManagerException {
-		getUser().getCloudScope().optionExecute(new CloudScopeEntity.OptionExecutor() {
+	public List<StorageEntity> removeStorages(final List<String> storageIds) throws CloudManagerException {
+		return getUser().getCloudScope().optionCall(new CloudScopeEntity.OptionCallable<List<StorageEntity>>() {
 			@Override
-			public void execute(CloudScopeEntity scope, ICloudOption option) throws CloudManagerException {
+			public List<StorageEntity> call(CloudScopeEntity scope, ICloudOption option) throws CloudManagerException {
+				List<StorageEntity> ret = getStorages(storageIds);
 				option.getResourceManagement(getLocation(), getUser()).removeStorages(storageIds);
+				return ret;
 			}
 		});
 	}
@@ -185,7 +187,7 @@ public class Storages extends Resources implements IStorages {
 					snapshotIds.add(entry.getEntryId());
 				}
 				if (!snapshotIds.isEmpty())
-					deletStorageSnapshots(storage.getResourceId(), snapshotIds);
+					deleteStorageSnapshots(storage.getResourceId(), snapshotIds);
 				em.remove(storage.getBackup());
 				em.remove(storage);
 				notifier.completed();
@@ -329,7 +331,7 @@ public class Storages extends Resources implements IStorages {
 						}
 					}
 					
-					nodeDiskInfo.setDeviceSize(storage.getSize());
+					nodeDiskInfo.setDeviceSize(storage.getSize().longValue());
 					nodeDiskInfo.setDeviceSizeUnit("Gib");
 					nodeDiskInfo.setDeviceDescription("");
 					nodeDiskInfo.setDeviceDisplayName(storage.getName() == null || storage.getName().isEmpty() ? platformStorage.getDeviceName(): storage.getName());
@@ -367,11 +369,12 @@ public class Storages extends Resources implements IStorages {
 
 					//nodeDiskInfo.setDeviceSize(storage.getSize());
 					if(
-						(nodeDiskInfo.getDeviceSize() != null && !nodeDiskInfo.getDeviceSize().equals(storage.getSize())) ||
-						(nodeDiskInfo.getDeviceSize() == null && storage.getSize() != null)
+						(nodeDiskInfo.getDeviceSize() != null && storage.getSize() == null) ||
+						(nodeDiskInfo.getDeviceSize() == null && storage.getSize() != null) ||
+						(nodeDiskInfo.getDeviceSize() != null && storage.getSize() != null && !(nodeDiskInfo.getDeviceSize().longValue() == storage.getSize().longValue()))
 						) {
 						changeLog.append("DeviceSize:").append(nodeDiskInfo.getDeviceSize()).append("->").append(storage.getSize()).append(";");
-						nodeDiskInfo.setDeviceSize(storage.getSize());
+						nodeDiskInfo.setDeviceSize(storage.getSize().longValue());
 					}
 
 					//nodeDiskInfo.setDeviceSizeUnit("Gib");
@@ -595,10 +598,10 @@ public class Storages extends Resources implements IStorages {
 	}
 
 	@Override
-	public void deletStorageSnapshots(final String storageId, final List<String> snapshotIds) throws CloudManagerException {
-		getCloudScope().optionExecute(new OptionExecutor() {
+	public List<StorageBackupEntryEntity> deleteStorageSnapshots(final String storageId, final List<String> snapshotIds) throws CloudManagerException {
+		return getCloudScope().optionCall(new OptionCallable<List<StorageBackupEntryEntity>>() {
 			@Override
-			public void execute(CloudScopeEntity scope, ICloudOption option) throws CloudManagerException {
+			public List<StorageBackupEntryEntity> call(CloudScopeEntity scope, ICloudOption option) throws CloudManagerException {
 				List<StorageEntity> storageEntities = getStorages(Arrays.asList(storageId));
 				
 				final StorageEntity storageEntity;
@@ -621,13 +624,14 @@ public class Storages extends Resources implements IStorages {
 						removed.add(o1);
 					}
 				});
-				
+
 				try {
 					IResourceManagement management = option.getResourceManagement(getLocation(), getUser());
 					management.deleteStorageSnapshots(removed);
 				} catch(CloudManagerException e) {
 					logger.warn(e.getMessage(), e);
 				}
+				return removed;
 			}
 		});
 	}
@@ -712,13 +716,44 @@ public class Storages extends Resources implements IStorages {
 	
 	@Override
 	public List<StorageEntity> updateStorages(List<String> storageIds) throws CloudManagerException {
-		return getUser().getCloudScope().optionCall(new CloudScopeEntity.OptionCallable<List<StorageEntity>>() {
+		List<StorageEntity> storages = null;	
+		ILock lock = CloudUtil.getLock(Storages.class.getName(), getCloudScope().getId(),
+				getLocation().getLocationId());
+		logger.debug(String.format("updateStorages(): getLock cloudScopeId=%s, locationId=%s", getCloudScope().getId(),
+				getLocation().getLocationId()));
+		storages = getUser().getCloudScope().optionCall(new CloudScopeEntity.OptionCallable<List<StorageEntity>>() {
 			@Override
 			public List<StorageEntity> call(CloudScopeEntity scope, ICloudOption option) throws CloudManagerException {
-				List<IResourceManagement.Storage> storages = getResourceManagement(option).getStorages(storageIds);
-				return internalUpdateStorages(getStorages(storageIds), storages);
+				IResourceManagement rm = getResourceManagement(option);
+				boolean getLock = false;
+				try {
+					// 同じ情報を重複してDBに書き込もうとしてEntityExistExceptionが発生する可能性があるので、
+					// ストレージの更新処理はクラウドスコープID単位で排他処理にする
+					// ただしキャッシュの更新の場合はロックは取得しない
+					if (rm instanceof CacheResourceManagement) {
+						logger.debug(String.format(
+								"updateStorages(): lock not acquired since its cached. cloudScopeId=%s, locationId=%s",
+								getCloudScope().getId(), getLocation().getLocationId()));
+					} else {
+						// クラウドスコープID単位で書き込みロックを取得
+						lock.writeLock();
+						getLock = true;
+						logger.debug(String.format("updateStorages(): writeLock cloudScopeId=%s, locationId=%s",
+								getCloudScope().getId(), getLocation().getLocationId()));
+					}
+					List<IResourceManagement.Storage> storages = getResourceManagement(option).getStorages(storageIds);
+					return internalUpdateStorages(getStorages(storageIds), storages);
+				} finally {
+					if (getLock) {
+						lock.writeUnlock();
+						logger.debug(String.format("updateStorages(): writeUnlock cloudScopeId=%s, locationId=%s",
+								getCloudScope().getId(), getLocation().getLocationId()));
+					}
+				}
 			}
 		});
+
+		return storages;
 	}
 
 	@Override
@@ -726,23 +761,17 @@ public class Storages extends Resources implements IStorages {
 		return getCloudScope().optionCall(new OptionCallable<List<StorageBackupEntity>>() {
 			@Override
 			public List<StorageBackupEntity> call(CloudScopeEntity scope, ICloudOption option) throws CloudManagerException {
-				List<String> queryStorageIds = storageIds;
-				if (queryStorageIds == null || queryStorageIds.isEmpty()) {
-					List<StorageEntity> storages = getStorages(CloudUtil.emptyList(String.class));
-					queryStorageIds = new ArrayList<>();
-					for (StorageEntity storage: storages) {
-						queryStorageIds.add(storage.getResourceId());
-					}
+				TypedQuery<StorageBackupEntity> query;
+				if (storageIds == null || storageIds.isEmpty()) {
+					query = Session.current().getEntityManager().createNamedQuery(StorageBackupEntity.findStorageBackups, StorageBackupEntity.class);
+					query.setParameter("cloudScopeId", getCloudScope().getId());
+					query.setParameter("locationId", getLocation().getLocationId());
+				} else {
+					query = Session.current().getEntityManager().createNamedQuery(StorageBackupEntity.findStorageBackupsByStorageIds, StorageBackupEntity.class);
+					query.setParameter("cloudScopeId", getCloudScope().getId());
+					query.setParameter("locationId", getLocation().getLocationId());
+					query.setParameter("storageIds", storageIds);
 				}
-				
-				if (queryStorageIds.isEmpty()) {
-					return CloudUtil.emptyList(StorageBackupEntity.class);
-				}
-				
-				TypedQuery<StorageBackupEntity> query = Session.current().getEntityManager().createNamedQuery(StorageBackupEntity.findStorageBackupsByStorageIds, StorageBackupEntity.class);
-				query.setParameter("cloudScopeId", getCloudScope().getId());
-				query.setParameter("locationId", getLocation().getLocationId());
-				query.setParameter("storageIds", queryStorageIds);
 				
 				List<StorageBackupEntryEntity> entries = new ArrayList<>();
 				List<StorageBackupEntity> backups = query.getResultList();
@@ -752,7 +781,13 @@ public class Storages extends Resources implements IStorages {
 					}
 				}
 				
-				List<IResourceManagement.StorageSnapshot> snapshots = getResourceManagement(option).getStorageSnapshots(entries);
+				List<IResourceManagement.StorageSnapshot> snapshots;
+				try {
+					snapshots = getResourceManagement(option).getStorageSnapshots(entries);
+				} catch (UnsupportedOperationException e) {
+					//Azure、Hyper-Vなどストレージの機能がないプラットファームの場合
+					return Collections.emptyList();
+				}
 				
 				for (StorageBackupEntity backup: backups) {
 					CollectionComparator.compare(backup.getEntries(), snapshots, new CollectionComparator.Comparator<StorageBackupEntryEntity, IResourceManagement.StorageSnapshot>() {

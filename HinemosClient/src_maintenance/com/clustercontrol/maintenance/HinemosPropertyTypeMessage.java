@@ -8,7 +8,9 @@
 
 package com.clustercontrol.maintenance;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+
+import org.openapitools.client.model.HinemosPropertyResponse.TypeEnum;
 
 import com.clustercontrol.util.Messages;
 
@@ -34,12 +36,12 @@ public class HinemosPropertyTypeMessage {
 	 * @param type 種別
 	 * @return 文字列
 	 */
-	public static String typeToString(int type) {
-		if (type == HinemosPropertyTypeConstant.TYPE_TRUTH) {
+	public static String typeToString(TypeEnum type) {
+		if (TypeEnum.BOOLEAN.equals(type)) {
 			return STRING_TRUTH;
-		} else if (type == HinemosPropertyTypeConstant.TYPE_NUMERIC) {
+		} else if (TypeEnum.NUMERIC.equals(type)) {
 			return STRING_NUMERIC;
-		} else if (type == HinemosPropertyTypeConstant.TYPE_STRING) {
+		} else if (TypeEnum.STRING.equals(type)) {
 			return STRING_STRING;
 		}
 		return "";
@@ -51,27 +53,27 @@ public class HinemosPropertyTypeMessage {
 	 * @param string 文字列
 	 * @return 種別
 	 */
-	public static int stringToType(String string) {
+	public static TypeEnum stringToType(String string) {
 		if (string.equals(STRING_TRUTH)) {
-			return HinemosPropertyTypeConstant.TYPE_TRUTH;
+			return TypeEnum.BOOLEAN;
 		} else if (string.equals(STRING_NUMERIC)) {
-			return HinemosPropertyTypeConstant.TYPE_NUMERIC;
+			return TypeEnum.NUMERIC;
 		} else if (string.equals(STRING_STRING)) {
-			return HinemosPropertyTypeConstant.TYPE_STRING;
+			return TypeEnum.STRING;
 		}
-		return -1;
+		return null;
 	}
 	
 	/**
 	 * 共通設定種別の一覧をMap形式で返します。
 	 * @return 種別一覧
 	 */
-	public static HashMap<Integer, String> getList() {
-		HashMap<Integer, String> map = new HashMap<Integer, String>();
+	public static LinkedHashMap<TypeEnum, String> getList() {
+		LinkedHashMap<TypeEnum, String> map = new LinkedHashMap<TypeEnum, String>();
 		
-		map.put(HinemosPropertyTypeConstant.TYPE_STRING, STRING_STRING);
-		map.put(HinemosPropertyTypeConstant.TYPE_NUMERIC, STRING_NUMERIC);
-		map.put(HinemosPropertyTypeConstant.TYPE_TRUTH, STRING_TRUTH);
+		map.put(TypeEnum.STRING, STRING_STRING);
+		map.put(TypeEnum.NUMERIC, STRING_NUMERIC);
+		map.put(TypeEnum.BOOLEAN, STRING_TRUTH);
 		
 		return map;
 	}

@@ -29,9 +29,9 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
 import com.clustercontrol.accesscontrol.util.ObjectBean;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.reporting.action.GetTemplateSetListTableDefine;
 import com.clustercontrol.reporting.composite.TemplateSetListComposite;
-import com.clustercontrol.reporting.util.ReportingUtil;
 import com.clustercontrol.reporting.view.action.TemplateSetCopyAction;
 import com.clustercontrol.reporting.view.action.TemplateSetDeleteAction;
 import com.clustercontrol.reporting.view.action.TemplateSetModifyAction;
@@ -229,7 +229,7 @@ public class ReportingTemplateSetView extends CommonViewPart implements ObjectPr
 		Object[] objs = selection.toArray();
 
 		String managerName = null;
-		String objectType = ReportingUtil.MODULE_CONSTANT_REPORTING;
+		String objectType = HinemosModuleConstant.REPORTING;
 		String objectId = null;
 		List<ObjectBean> objectBeans = new ArrayList<ObjectBean>();
 		for (Object obj : objs) {

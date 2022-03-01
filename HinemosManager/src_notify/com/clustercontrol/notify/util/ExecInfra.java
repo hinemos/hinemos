@@ -10,12 +10,13 @@ package com.clustercontrol.notify.util;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.NotifyNotFound;
@@ -30,7 +31,6 @@ import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.model.NotifyInfraInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -61,6 +61,8 @@ public class ExecInfra implements Notifier {
 			m_log.debug("notify() " + outputInfo);
 		}
 
+		InfraControllerBean bean = new InfraControllerBean();
+		String session = null;
 		// 該当する重要度の通知情報を取得する
 		try {
 			infraInfo = QueryUtil.getNotifyInfraInfoPK(notifyId);
@@ -72,10 +74,10 @@ public class ExecInfra implements Notifier {
 				// 参照権限がない場合
 				// 実行対象が存在しない場合の処理
 				int outputPriority = outputInfo.getPriority(); 
-				int failurePriority = getFailurePriority(infraInfo, outputPriority);
+				Integer failurePriority = getFailurePriority(infraInfo, outputPriority);
 
 				String[] args = { notifyId, outputInfo.getMonitorId(), getManagementId(infraInfo, outputInfo.getPriority()) };
-				AplLogger.put(failurePriority, HinemosModuleConstant.PLATFORM_NOTIFY, MessageConstant.MESSAGE_SYS_009_NOTIFY, args, null);
+				AplLogger.put(InternalIdCommon.PLT_NTF_SYS_009, failurePriority, args, null);
 				return;
 			}
 			
@@ -110,9 +112,8 @@ public class ExecInfra implements Notifier {
 			}
 			
 			// 環境構築設定を実行する
-			InfraControllerBean bean = new InfraControllerBean();
 			int nodeInputType = HinemosPropertyCommon.infra_management_access_input_type.getIntegerValue();
-			String session = bean.createSession(managementInfo.getManagementId(), moduleIdList, nodeInputType, accessList);
+			session = bean.createSession(managementInfo.getManagementId(), moduleIdList, nodeInputType, accessList).getSessionId();
 			
 			while (true) {
 				ModuleResult result = bean.runInfraModule(session);
@@ -123,16 +124,23 @@ public class ExecInfra implements Notifier {
 			
 		} catch (Exception e) {
 			m_log.warn("executionInfra() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			int priority;
+			Integer priority = null;
 			String message = "";
-			if (infraInfo == null) {
-				priority = PriorityConstant.TYPE_CRITICAL;
-			} else {
+			if (infraInfo != null) {
 				priority = getFailurePriority(infraInfo, outputInfo.getPriority());
 				message = " : infraManagementId=" + getManagementId(infraInfo, outputInfo.getPriority());
 			}
-			
-			internalErrorNotify(priority, notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, e.getMessage() + message);
+			String[] args = { notifyId };
+			AplLogger.put(InternalIdCommon.PLT_NTF_SYS_010, priority, args, e.getMessage() + message);
+		} finally {
+			if (session != null) {
+				try {
+					bean.deleteSession(session);
+					m_log.debug("executeInfra() : delete session, sessionId=" + session);
+				} catch (Exception e) {
+					m_log.warn("executeInfra() : delete session failed, sessionId=" + session, e);
+				}
+			}
 		}
 
 	}
@@ -152,7 +160,7 @@ public class ExecInfra implements Notifier {
 		return null;
 	}
 
-	private int getFailurePriority(NotifyInfraInfo infraInfo, int priority) {
+	private Integer getFailurePriority(NotifyInfraInfo infraInfo, int priority) {
 		switch(priority) {
 		case PriorityConstant.TYPE_INFO:
 			return infraInfo.getInfoInfraFailurePriority();
@@ -164,17 +172,6 @@ public class ExecInfra implements Notifier {
 			return infraInfo.getUnknownInfraFailurePriority();
 		}
 		
-		return -1;
-	}
-	
-	/**
-	 * 通知失敗時の内部エラー通知を定義します
-	 */
-	@Override
-	public void internalErrorNotify(int priority, String notifyId, MessageConstant msgCode, String detailMsg) {
-		String[] args = { notifyId };
-
-		// 通知失敗メッセージを出力
-		AplLogger.put(priority, HinemosModuleConstant.PLATFORM_NOTIFY, msgCode, args, detailMsg);
+		return null;
 	}
 }

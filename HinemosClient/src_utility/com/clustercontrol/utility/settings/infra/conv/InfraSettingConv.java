@@ -13,6 +13,16 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import org.openapitools.client.model.CommandModuleInfoResponse;
+import org.openapitools.client.model.FileTransferModuleInfoResponse;
+import org.openapitools.client.model.FileTransferVariableInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.InfraManagementParamInfoResponse;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
+import org.openapitools.client.model.ReferManagementModuleInfoResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.jobmanagement.bean.SystemParameterConstant;
 import com.clustercontrol.utility.settings.infra.xml.FileTransferVariable;
 import com.clustercontrol.utility.settings.infra.xml.InfraManagementInfo;
@@ -20,11 +30,7 @@ import com.clustercontrol.utility.settings.infra.xml.InfraManagementParam;
 import com.clustercontrol.utility.settings.infra.xml.InfraModuleInfo;
 import com.clustercontrol.utility.settings.infra.xml.NotifyId;
 import com.clustercontrol.utility.settings.model.BaseConv;
-import com.clustercontrol.utility.util.DateUtil;
-import com.clustercontrol.ws.infra.CommandModuleInfo;
-import com.clustercontrol.ws.infra.FileTransferModuleInfo;
-import com.clustercontrol.ws.infra.InfraManagementParamInfo;
-import com.clustercontrol.ws.infra.ReferManagementModuleInfo;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 
 /**
  * 環境構築設定情報をJavaBeanとXML(Bean)のbindingとの間でやりとりを
@@ -54,15 +60,15 @@ public class InfraSettingConv extends BaseConv {
 	 * @return
 	 * @throws Exception
 	 */
-	public InfraManagementInfo getXmlInfo(com.clustercontrol.ws.infra.InfraManagementInfo info) throws Exception {
+	public InfraManagementInfo getXmlInfo(InfraManagementInfoResponse info) throws Exception {
 
 		InfraManagementInfo ret = new InfraManagementInfo();
 
 		//情報のセット(主部分)
 		ret.setManagementId(info.getManagementId());
 
-		ret.setAbnormalPriorityCheck(info.getAbnormalPriorityCheck());
-		ret.setAbnormalPriorityRun(info.getAbnormalPriorityRun());
+		ret.setAbnormalPriorityCheck(OpenApiEnumConverter.enumToInteger(info.getAbnormalPriorityCheck()));
+		ret.setAbnormalPriorityRun(OpenApiEnumConverter.enumToInteger(info.getAbnormalPriorityRun()));
 		ret.setDescription(ifNull2Empty(info.getDescription()));
 		ret.setOwnerRoleId(ifNull2Empty(info.getOwnerRoleId()));
 		if(ifNull2Empty(info.getFacilityId()).isEmpty())
@@ -70,87 +76,111 @@ public class InfraSettingConv extends BaseConv {
 		else
 			ret.setFacilityId(ifNull2Empty(info.getFacilityId()));
 		ret.setName(ifNull2Empty(info.getName()));
-		ret.setNormalPriorityCheck(info.getNormalPriorityCheck());
-		ret.setNormalPriorityRun(info.getNormalPriorityRun());
+		ret.setNormalPriorityCheck(OpenApiEnumConverter.enumToInteger(info.getNormalPriorityCheck()));
+		ret.setNormalPriorityRun(OpenApiEnumConverter.enumToInteger(info.getNormalPriorityRun()));
 		
-		ret.setRegDate(DateUtil.convEpoch2DateString(info.getRegDate()));
+		ret.setRegDate(info.getRegDate());
 		ret.setRegUser(ifNull2Empty(info.getRegUser()));
-		ret.setUpdateDate(DateUtil.convEpoch2DateString(info.getUpdateDate()));
+		ret.setUpdateDate(info.getUpdateDate());
 		ret.setUpdateUser(ifNull2Empty(info.getUpdateUser()));
 		
-		ret.setStartPriority(info.getStartPriority());
+		ret.setStartPriority(OpenApiEnumConverter.enumToInteger(info.getStartPriority()));
 		ret.setScope(ifNull2Empty(info.getScope()));
-		ret.setValidFlg(info.isValidFlg());
+		ret.setValidFlg(info.getValidFlg());
 		
 		List<NotifyId> notifyIds = new ArrayList<>();
 		NotifyId notifyId = null;
-		for(com.clustercontrol.ws.notify.NotifyRelationInfo relInfo: info.getNotifyRelationList()){
+		for(NotifyRelationInfoResponse relInfo: info.getNotifyRelationList()){
 			notifyId = new NotifyId();
-			notifyId.setNotifyGroupId(relInfo.getNotifyGroupId());
 			notifyId.setNotifyId(relInfo.getNotifyId());
-			notifyId.setNotifyType(relInfo.getNotifyType());
+			notifyId.setNotifyType(OpenApiEnumConverter.enumToInteger(relInfo.getNotifyType()));
 			notifyIds.add(notifyId);
 		}
 		ret.setNotifyId(notifyIds.toArray(new NotifyId[0]));
 		
 		List<InfraModuleInfo> modules = new ArrayList<>();
 		InfraModuleInfo module = null;
-		int orderNo = 0;
-		for(com.clustercontrol.ws.infra.InfraModuleInfo modInfo: info.getModuleList()){
+		
+		//ファイル転送
+		for(FileTransferModuleInfoResponse modInfo: info.getFileTransferModuleInfoList()){
 			module = new InfraModuleInfo();
 			module.setModuleId(modInfo.getModuleId());
 			module.setName(ifNull2Empty(modInfo.getName()));
-			module.setOrderNo(++orderNo);
-			module.setValidFlg(modInfo.isValidFlg());
+			module.setOrderNo(modInfo.getOrderNo());
+			module.setValidFlg(modInfo.getValidFlg());
 
-			if(modInfo instanceof FileTransferModuleInfo){
-				module.setModuleType(FileTransferModule);
-				FileTransferModuleInfo filInfo = (FileTransferModuleInfo)modInfo;
-				module.setDestAttribute(ifNull2Empty(filInfo.getDestAttribute()));
-				module.setDestOwner(ifNull2Empty(filInfo.getDestOwner()));
-				module.setDestPath(ifNull2Empty(filInfo.getDestPath()));
-				module.setFileId(ifNull2Empty(filInfo.getFileId()));
-				module.setSendMethodType(filInfo.getSendMethodType());
-				module.setBackupIfExistFlg(filInfo.isBackupIfExistFlg());
-				module.setPrecheckFileFlg(filInfo.isPrecheckFlg());
-				module.setStopIfFailFileFlg(filInfo.isStopIfFailFlg());
-				
-				List<FileTransferVariable> variables = new ArrayList<>();
-				FileTransferVariable variable = null;
-				for(com.clustercontrol.ws.infra.FileTransferVariableInfo valInfo: filInfo.getFileTransferVariableList()){
-					variable = new FileTransferVariable();
-					variable.setName(valInfo.getName());
-					variable.setValue(valInfo.getValue());
-					variables.add(variable);
-				}
-				module.setExecReturnParamName(filInfo.getExecReturnParamName());
-				module.setFileTransferVariable(variables.toArray(new FileTransferVariable[0]));
-			} else
-			if(modInfo instanceof CommandModuleInfo){
-				module.setModuleType(ExecModule);
-				CommandModuleInfo comInfo = (CommandModuleInfo)modInfo;
-				module.setAccessMethodType(comInfo.getAccessMethodType());
-				module.setCheckCommand(comInfo.getCheckCommand());
-				module.setExecCommand(comInfo.getExecCommand());
-				module.setPrecheckCommandFlg(comInfo.isPrecheckFlg());
-				module.setStopIfFailCommandFlg(comInfo.isStopIfFailFlg());
-				module.setExecReturnParamName(comInfo.getExecReturnParamName());
-			} else if (modInfo instanceof ReferManagementModuleInfo) {
-				module.setModuleType(ReferModule);
-				ReferManagementModuleInfo refInfo = (ReferManagementModuleInfo) modInfo;
-				module.setReferManagementId(refInfo.getReferManagementId());
+			module.setModuleType(FileTransferModule);
+			module.setDestAttribute(ifNull2Empty(modInfo.getDestAttribute()));
+			module.setDestOwner(ifNull2Empty(modInfo.getDestOwner()));
+			module.setDestPath(ifNull2Empty(modInfo.getDestPath()));
+			module.setFileId(ifNull2Empty(modInfo.getFileId()));
+			module.setSendMethodType(OpenApiEnumConverter.enumToInteger(modInfo.getSendMethodType()));
+			module.setBackupIfExistFlg(modInfo.getBackupIfExistFlg());
+			module.setPrecheckFileFlg(modInfo.getPrecheckFlg());
+			module.setStopIfFailFileFlg(modInfo.getStopIfFailFlg());
+			
+			List<FileTransferVariable> variables = new ArrayList<>();
+			FileTransferVariable variable = null;
+			for(FileTransferVariableInfoResponse valInfo: modInfo.getFileTransferVariableInfoEntities() ){
+				variable = new FileTransferVariable();
+				variable.setName(valInfo.getName());
+				variable.setValue(valInfo.getValue());
+				variables.add(variable);
 			}
+			module.setExecReturnParamName(modInfo.getExecReturnParamName());
+			module.setFileTransferVariable(variables.toArray(new FileTransferVariable[0]));
+
 			modules.add(module);
 		}
-		ret.setInfraModuleInfo(modules.toArray(new InfraModuleInfo[0]));
+		
+		//コマンド
+		for(CommandModuleInfoResponse modInfo: info.getCommandModuleInfoList()){
+			module = new InfraModuleInfo();
+			module.setModuleId(modInfo.getModuleId());
+			module.setName(ifNull2Empty(modInfo.getName()));
+			module.setOrderNo(modInfo.getOrderNo());
+			module.setValidFlg(modInfo.getValidFlg());
+
+			module.setModuleType(ExecModule);
+			module.setAccessMethodType(OpenApiEnumConverter.enumToInteger(modInfo.getAccessMethodType()));
+			module.setCheckCommand(modInfo.getCheckCommand());
+			module.setExecCommand(modInfo.getExecCommand());
+			module.setPrecheckCommandFlg(modInfo.getPrecheckFlg());
+			module.setStopIfFailCommandFlg(modInfo.getStopIfFailFlg());
+			module.setExecReturnParamName(modInfo.getExecReturnParamName());
+
+			modules.add(module);
+		}
+		
+		//参照
+		for(ReferManagementModuleInfoResponse modInfo: info.getReferManagementModuleInfoList()){
+			module = new InfraModuleInfo();
+			module.setModuleId(modInfo.getModuleId());
+			module.setName(ifNull2Empty(modInfo.getName()));
+			module.setOrderNo(modInfo.getOrderNo());
+			module.setValidFlg(modInfo.getValidFlg());
+
+			module.setModuleType(ReferModule);
+			module.setReferManagementId(modInfo.getReferManagementId());
+
+			modules.add(module);
+		}
+		//モジュールの順番号を調整（DB上は0スタートの場合もあるので、無条件に1スタートに変更）
+		InfraModuleInfo[] moduleArray = modules.toArray(new InfraModuleInfo[0]);
+		sort(moduleArray);
+		for (int recCount = 0; recCount < moduleArray.length; recCount++) {
+			moduleArray[recCount].setOrderNo(recCount + 1);
+		}
+		
+		ret.setInfraModuleInfo(moduleArray);
 		
 		//環境変数
 		List<InfraManagementParam> params = new ArrayList<>();
-		for (InfraManagementParamInfo paramInfo : info.getInfraManagementParamList()) {
+		for (InfraManagementParamInfoResponse paramInfo : info.getInfraManagementParamInfoEntities() ) {
 			InfraManagementParam param = new InfraManagementParam();
 			param.setParamId(paramInfo.getParamId());
 			param.setDescription(paramInfo.getDescription());
-			param.setPasswordFlg(paramInfo.isPasswordFlg());
+			param.setPasswordFlg(paramInfo.getPasswordFlg());
 			param.setValue(paramInfo.getValue());
 			params.add(param);
 		}
@@ -159,14 +189,14 @@ public class InfraSettingConv extends BaseConv {
 		return ret;
 	}
 
-	public com.clustercontrol.ws.infra.InfraManagementInfo getDTO(InfraManagementInfo info) throws Exception {
-		com.clustercontrol.ws.infra.InfraManagementInfo ret = new com.clustercontrol.ws.infra.InfraManagementInfo();
+	public InfraManagementInfoResponse getDTO(InfraManagementInfo info) throws InvalidSetting, HinemosUnknown {
+		InfraManagementInfoResponse ret = new InfraManagementInfoResponse();
 
 		//情報のセット(主部分)
 		ret.setManagementId(info.getManagementId());
 		
-		ret.setAbnormalPriorityCheck(info.getAbnormalPriorityCheck());
-		ret.setAbnormalPriorityRun(info.getAbnormalPriorityRun());
+		ret.setAbnormalPriorityCheck(OpenApiEnumConverter.integerToEnum(info.getAbnormalPriorityCheck(), InfraManagementInfoResponse.AbnormalPriorityCheckEnum.class));
+		ret.setAbnormalPriorityRun(OpenApiEnumConverter.integerToEnum(info.getAbnormalPriorityRun() , InfraManagementInfoResponse.AbnormalPriorityRunEnum.class));
 		ret.setDescription(ifNull2Empty(info.getDescription()));
 		ret.setOwnerRoleId(ifNull2Empty(info.getOwnerRoleId()));
 		if(!SystemParameterConstant.isParam(
@@ -175,94 +205,104 @@ public class InfraSettingConv extends BaseConv {
 			ret.setFacilityId(info.getFacilityId());
 		
 		ret.setName(ifNull2Empty(info.getName()));
-		ret.setNormalPriorityCheck(info.getNormalPriorityCheck());
-		ret.setNormalPriorityRun(info.getNormalPriorityRun());
+		ret.setNormalPriorityCheck(OpenApiEnumConverter.integerToEnum(info.getNormalPriorityCheck(), InfraManagementInfoResponse.NormalPriorityCheckEnum.class));
+		ret.setNormalPriorityRun(OpenApiEnumConverter.integerToEnum(info.getNormalPriorityRun(), InfraManagementInfoResponse.NormalPriorityRunEnum.class));
 		
-		ret.setRegDate(DateUtil.convDateString2Epoch(info.getRegDate()));
+		ret.setRegDate(info.getRegDate());
 		ret.setRegUser(ifNull2Empty(info.getRegUser()));
-		ret.setUpdateDate(DateUtil.convDateString2Epoch(info.getUpdateDate()));
+		ret.setUpdateDate(info.getUpdateDate());
 		ret.setUpdateUser(ifNull2Empty(info.getUpdateUser()));
 		
-		ret.setStartPriority(info.getStartPriority());
+		ret.setStartPriority(OpenApiEnumConverter.integerToEnum(info.getStartPriority(), InfraManagementInfoResponse.StartPriorityEnum.class));
 		ret.setScope(ifNull2Empty(info.getScope()));
 		ret.setValidFlg(info.getValidFlg());
 		
-		List<com.clustercontrol.ws.notify.NotifyRelationInfo> notifyIds = new ArrayList<>();
-		com.clustercontrol.ws.notify.NotifyRelationInfo notifyId = null;
+		List<NotifyRelationInfoResponse> notifyIds = new ArrayList<>();
+		NotifyRelationInfoResponse notifyId = null;
 		for(NotifyId relInfo: info.getNotifyId()){
-			notifyId = new com.clustercontrol.ws.notify.NotifyRelationInfo();
-			notifyId.setNotifyGroupId(relInfo.getNotifyGroupId());
+			notifyId = new NotifyRelationInfoResponse();
 			notifyId.setNotifyId(relInfo.getNotifyId());
-			notifyId.setNotifyType(relInfo.getNotifyType());
+			notifyId.setNotifyType(OpenApiEnumConverter.integerToEnum((int)relInfo.getNotifyType(),NotifyRelationInfoResponse.NotifyTypeEnum.class));
 			notifyIds.add(notifyId);
 		}
 		ret.getNotifyRelationList().clear();
 		ret.getNotifyRelationList().addAll(notifyIds);
 		
-		List<com.clustercontrol.ws.infra.InfraModuleInfo> modules = new ArrayList<>();
-		com.clustercontrol.ws.infra.InfraModuleInfo module = null;
+		List<FileTransferModuleInfoResponse> fileModules = new ArrayList<>();
+		List<CommandModuleInfoResponse> commandModules = new ArrayList<>();
+		List<ReferManagementModuleInfoResponse> referModules = new ArrayList<>();
 		
 		InfraModuleInfo[] moduleInfos = info.getInfraModuleInfo();
 		sort(moduleInfos);
 		for(InfraModuleInfo modInfo: moduleInfos){
 			if(modInfo.getModuleType().equals(ExecModule)){
-				module = new CommandModuleInfo();
-				CommandModuleInfo comInfo = (CommandModuleInfo) module;
-				comInfo.setAccessMethodType(modInfo.getAccessMethodType());
-				comInfo.setCheckCommand(modInfo.getCheckCommand());
-				comInfo.setExecCommand(modInfo.getExecCommand());
-				comInfo.setPrecheckFlg(modInfo.getPrecheckCommandFlg());
-				comInfo.setStopIfFailFlg(modInfo.getStopIfFailCommandFlg());
-				comInfo.setExecReturnParamName(modInfo.getExecReturnParamName());
+				CommandModuleInfoResponse module = new CommandModuleInfoResponse();
+				module.setAccessMethodType(OpenApiEnumConverter.integerToEnum(modInfo.getAccessMethodType(),CommandModuleInfoResponse.AccessMethodTypeEnum.class));
+				module.setCheckCommand(modInfo.getCheckCommand());
+				module.setExecCommand(modInfo.getExecCommand());
+				module.setPrecheckFlg(modInfo.getPrecheckCommandFlg());
+				module.setStopIfFailFlg(modInfo.getStopIfFailCommandFlg());
+				module.setExecReturnParamName(modInfo.getExecReturnParamName());
+				module.setModuleId(modInfo.getModuleId());
+				module.setName(ifNull2Empty(modInfo.getName()));
+				module.setValidFlg(modInfo.getValidFlg());
+				module.setOrderNo(modInfo.getOrderNo());
+
+				commandModules.add(module);
 			} else
 			if(modInfo.getModuleType().equals(FileTransferModule)){
-				module = new FileTransferModuleInfo();
-				FileTransferModuleInfo filInfo = (FileTransferModuleInfo)module;
-				filInfo.setDestAttribute(ifNull2Empty(modInfo.getDestAttribute()));
-				filInfo.setDestOwner(ifNull2Empty(modInfo.getDestOwner()));
-				filInfo.setDestPath(ifNull2Empty(modInfo.getDestPath()));
-				filInfo.setFileId(ifNull2Empty(modInfo.getFileId()));
-				filInfo.setSendMethodType(modInfo.getSendMethodType());
-				filInfo.setBackupIfExistFlg(modInfo.getBackupIfExistFlg());
-				filInfo.setPrecheckFlg(modInfo.getPrecheckFileFlg());
-				filInfo.setStopIfFailFlg(modInfo.getStopIfFailFileFlg());
+				FileTransferModuleInfoResponse module = new FileTransferModuleInfoResponse();
+				module.setDestAttribute(ifEmpty2Null(modInfo.getDestAttribute()));
+				module.setDestOwner(ifEmpty2Null(modInfo.getDestOwner()));
+				module.setDestPath(ifNull2Empty(modInfo.getDestPath()));
+				module.setFileId(ifNull2Empty(modInfo.getFileId()));
+				module.setSendMethodType(OpenApiEnumConverter.integerToEnum(modInfo.getSendMethodType(),FileTransferModuleInfoResponse.SendMethodTypeEnum.class));
+				module.setBackupIfExistFlg(modInfo.getBackupIfExistFlg());
+				module.setPrecheckFlg(modInfo.getPrecheckFileFlg());
+				module.setStopIfFailFlg(modInfo.getStopIfFailFileFlg());
 				
-				List<com.clustercontrol.ws.infra.FileTransferVariableInfo> variables = new ArrayList<>();
-				com.clustercontrol.ws.infra.FileTransferVariableInfo variable = null;
+				List<FileTransferVariableInfoResponse> variables = new ArrayList<>();
 				for(FileTransferVariable valInfo: modInfo.getFileTransferVariable()){
-					variable = new com.clustercontrol.ws.infra.FileTransferVariableInfo();
+					FileTransferVariableInfoResponse variable = new FileTransferVariableInfoResponse();
 					variable.setName(valInfo.getName());
 					variable.setValue(valInfo.getValue());
 					variables.add(variable);
 				}
-				filInfo.getFileTransferVariableList().clear();
-				filInfo.getFileTransferVariableList().addAll(variables);
-				filInfo.setExecReturnParamName(modInfo.getExecReturnParamName());
+				module.setFileTransferVariableInfoEntities(variables);
+				module.setExecReturnParamName(modInfo.getExecReturnParamName());
+				module.setModuleId(modInfo.getModuleId());
+				module.setName(ifNull2Empty(modInfo.getName()));
+				module.setValidFlg(modInfo.getValidFlg());
+				module.setOrderNo(modInfo.getOrderNo());
+
+				fileModules.add(module);
 			} else if (modInfo.getModuleType().equals(ReferModule)) {
-				module = new ReferManagementModuleInfo();
-				ReferManagementModuleInfo refInfo = (ReferManagementModuleInfo) module;
-				refInfo.setReferManagementId(modInfo.getReferManagementId());
+				ReferManagementModuleInfoResponse module = new ReferManagementModuleInfoResponse();
+				module.setReferManagementId(modInfo.getReferManagementId());
+				module.setModuleId(modInfo.getModuleId());
+				module.setName(ifNull2Empty(modInfo.getName()));
+				module.setValidFlg(modInfo.getValidFlg());
+				module.setOrderNo(modInfo.getOrderNo());
+
+				referModules.add(module);
 			}
 			
-			module.setModuleId(modInfo.getModuleId());
-			module.setName(ifNull2Empty(modInfo.getName()));
-			module.setValidFlg(modInfo.getValidFlg());
-			module.setOrderNo(modInfo.getOrderNo());
-
-			modules.add(module);
 		}
-		ret.getModuleList().clear();
-		ret.getModuleList().addAll(modules);
+		ret.setFileTransferModuleInfoList(fileModules);
+		ret.setCommandModuleInfoList(commandModules);
+		ret.setReferManagementModuleInfoList(referModules);
 		
 		if (info.getInfraManagementParam() != null) {
+			List<InfraManagementParamInfoResponse> paramList = new ArrayList<InfraManagementParamInfoResponse>();
 			for (InfraManagementParam param : info.getInfraManagementParam()) {
-				InfraManagementParamInfo paramInfo = new InfraManagementParamInfo();
+				InfraManagementParamInfoResponse paramInfo = new InfraManagementParamInfoResponse();
 				paramInfo.setParamId(param.getParamId());
 				paramInfo.setDescription(param.getDescription());
 				paramInfo.setPasswordFlg(param.getPasswordFlg());
 				paramInfo.setValue(param.getValue());
-				ret.getInfraManagementParamList().add(paramInfo);
+				paramList.add(paramInfo);
 			}
+			ret.setInfraManagementParamInfoEntities(paramList);
 		}
 		return ret;
 	}
@@ -277,4 +317,5 @@ public class InfraSettingConv extends BaseConv {
 				}
 			});
 	}
+	
 }

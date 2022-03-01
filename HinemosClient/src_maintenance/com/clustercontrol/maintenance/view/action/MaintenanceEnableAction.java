@@ -27,13 +27,14 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.SetMaintenanceStatusRequest;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.maintenance.action.GetMaintenanceListTableDefine;
 import com.clustercontrol.maintenance.composite.MaintenanceListComposite;
-import com.clustercontrol.maintenance.util.MaintenanceEndpointWrapper;
+import com.clustercontrol.maintenance.util.MaintenanceRestClientWrapper;
 import com.clustercontrol.maintenance.view.MaintenanceListView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.maintenance.InvalidRole_Exception;
 
 /**
  * メンテナンス[一覧]ビューの[有効]アクションクラス<BR>
@@ -107,12 +108,6 @@ public class MaintenanceEnableAction extends AbstractHandler implements IElement
 			if(map.get(managerName) == null) {
 				map.put(managerName, new ArrayList<String>());
 			}
-		}
-		for (Object o : objs) {
-			if (targetList.length() != 0) {
-				targetList.append(", ");
-			}
-			String managerName = (String) ((ArrayList<?>)o).get(GetMaintenanceListTableDefine.MANAGER_NAME);
 			String maintenanceId = (String) ((ArrayList<?>)o).get(GetMaintenanceListTableDefine.MAINTENANCE_ID);
 			targetList.append(maintenanceId);
 			map.get(managerName).add(maintenanceId);
@@ -131,20 +126,21 @@ public class MaintenanceEnableAction extends AbstractHandler implements IElement
 		// 実行
 		for(Map.Entry<String, List<String>> entry : map.entrySet()) {
 			String managerName = entry.getKey();
-			MaintenanceEndpointWrapper wrapper = MaintenanceEndpointWrapper.getWrapper(managerName);
-			for(String maintenanceId : entry.getValue()){
-				try{
-					wrapper.setMaintenanceStatus(maintenanceId, true);
-					successList.append(maintenanceId + "(" + managerName + ")" + "\n");
-				} catch (InvalidRole_Exception e) {
-					failureList.append(maintenanceId + "\n");
-					m_log.warn("run() setMaintenanceStatus maintenanceId=" + maintenanceId + ", " + e.getMessage(), e);
+			MaintenanceRestClientWrapper wrapper = MaintenanceRestClientWrapper.getWrapper(managerName);
+			try{
+				SetMaintenanceStatusRequest req = new SetMaintenanceStatusRequest();
+				req.setMaintenanceIdList(entry.getValue());
+				req.setFlg(true);
+				wrapper.setMaintenanceStatus(req);
+				successList.append(String.join("(" + managerName + ")" + "\n", entry.getValue()) + "(" + managerName + ")" + "\n");
+				} catch (InvalidRole e) {
+					failureList.append(String.join("\n", entry.getValue()));
+					m_log.warn("run() setMaintenanceStatus maintenanceId=" + String.join(",", entry.getValue()) + ", " + e.getMessage(), e);
 					hasRole = false;
 				}catch (Exception e) {
-					failureList.append(maintenanceId + "\n");
-					m_log.warn("run() setMaintenanceStatus maintenanceId=" + maintenanceId + ", " + e.getMessage(), e);
+					failureList.append(String.join("\n", entry.getValue()));
+					m_log.warn("run() setMaintenanceStatus maintenanceId=" + String.join(",", entry.getValue()) + ", " + e.getMessage(), e);
 				}
-			}
 		}
 
 		if (!hasRole) {

@@ -8,7 +8,6 @@
 package com.clustercontrol.xcloud.factory;
 
 import java.util.List;
-
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.bean.Credential;
 import com.clustercontrol.xcloud.model.CloudScopeEntity;

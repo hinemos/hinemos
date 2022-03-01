@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id: monitor_check_logfile.xsd 295 2015-02-03 16:00:00Z kawamoto $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_filtersetting_master.xsd" />
+	<xs:include schemaLocation="part_filtersetting_monitor_history.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+	
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="H">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="filtersettingMonitorHistoryStatuses" type="FilterSettingMonitorHistoryStatusList">
+		<xs:annotation>
+			<xs:documentation>フィルタ設定（監視履歴[ステータス]）のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	
+	<xs:complexType name="FilterSettingMonitorHistoryStatusList">
+		<xs:annotation>
+			<xs:documentation>フィルタ設定（監視履歴[ステータス]）のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="filterMonitorHistoryStatus" type="FilterSettingMonitorHistoryStatus" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>フィルタ設定（監視履歴[ステータス]）</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="monitorHistoryStatus" type="FilterSettingMonitorHistoryStatus" />
+	<xs:complexType name="FilterSettingMonitorHistoryStatus">
+		<xs:annotation>
+			<xs:documentation>フィルタ設定（監視履歴[ステータス]）の1設定分です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="filtersetting" type="FilterSettingInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>フィルタ設定情報（共通）です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="monitorHistoryStatusInfo" type="MonitorHistoryStatusInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						フィルタ設定情報（監視履歴[ステータス]固有部分）です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="MonitorHistoryStatusInfo">
+		<xs:annotation>
+			<xs:documentation>フィルタ設定（監視履歴[ステータス]）情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="FilterSettingMonitorHistoryInfo">
+				<xs:sequence>
+					<xs:element name="monitorHistoryStatusConditions" type="FilterSettingConditionMonitorHistoryStatusInfo" minOccurs="0" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>フィルタ詳細情報リストです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:complexType name="FilterSettingConditionMonitorHistoryStatusInfo">
+		<xs:annotation>
+			<xs:documentation>フィルタ詳細（監視履歴[ステータス]）情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="FilterSettingConditionInfo">
+				<xs:sequence>
+					<xs:element name="priorityCritical" type="xs:boolean" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>重要度危険です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="priorityWarning" type="xs:boolean" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>重要度警告です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="priorityInfo" type="xs:boolean" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>重要度情報です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="priorityUnknown" type="xs:boolean" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>重要度不明です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="generationDateFrom" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>出力日時 開始です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="generationDateTo" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>出力日時 終了です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="outputDateFrom" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>最終変更日時 開始です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="outputDateTo" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>最終変更日時 終了です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="monitorId" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>監視項目IDです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="monitorDetail" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>監視詳細です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="application" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>アプリケーションです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="message" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>メッセージです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="ownerRoleId" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>オーナーロールIDです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

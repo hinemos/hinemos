@@ -11,12 +11,12 @@ package com.clustercontrol.utility.settings.job.conv;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openapitools.client.model.AddJobQueueRequest;
+import org.openapitools.client.model.JobQueueSettingViewInfoListItemResponse;
+import org.openapitools.client.model.JobQueueSettingViewInfoResponse;
+
 import com.clustercontrol.utility.settings.job.xml.JobQueueInfo;
-import com.clustercontrol.utility.settings.job.xml.JobQueueList;
 import com.clustercontrol.utility.settings.model.BaseConv;
-import com.clustercontrol.ws.jobmanagement.JobQueueSetting;
-import com.clustercontrol.ws.jobmanagement.JobQueueSettingViewInfo;
-import com.clustercontrol.ws.jobmanagement.JobQueueSettingViewInfoListItem;
 
 public class QueueConv {
 
@@ -50,18 +50,13 @@ public class QueueConv {
 	 * @param schedule XMLのBean
 	 * @return
 	 */
-	public List<JobQueueSetting> queueXml2Dto(JobQueueList queueList) {
-		List<JobQueueSetting> queueSettingList = new ArrayList<>();
-		for (int index = 0; index < queueList.getJobQueueInfo().length; index++) {
-			JobQueueInfo queue = queueList.getJobQueueInfo()[index];
-			JobQueueSetting info = new JobQueueSetting();
-			info.setQueueId(queue.getQueueId());
-			info.setName(queue.getName());
-			info.setConcurrency(queue.getConcurrency());
-			info.setOwnerRoleId(queue.getOwnerRoleId());
-			queueSettingList.add(info);
-		}
-		return queueSettingList;
+	public AddJobQueueRequest queueXml2Dto(JobQueueInfo queue) {
+		AddJobQueueRequest info = new AddJobQueueRequest();
+		info.setQueueId(queue.getQueueId());
+		info.setName(queue.getName());
+		info.setConcurrency(queue.getConcurrency());
+		info.setOwnerRoleId(queue.getOwnerRoleId());
+		return info;
 	}
 	
 	/**
@@ -69,15 +64,15 @@ public class QueueConv {
 	 * @param schedule XMLのBean
 	 * @return
 	 */
-	public JobQueueInfo[] view2queueXML(JobQueueSettingViewInfo view) {
+	public JobQueueInfo[] view2queueXML(JobQueueSettingViewInfoResponse view) {
 		List<JobQueueInfo> list = new ArrayList<>();
 		
-		for (JobQueueSettingViewInfoListItem item : view.getItems()) {
+		for(JobQueueSettingViewInfoListItemResponse tmp: view.getItems()){
 			JobQueueInfo info = new JobQueueInfo();
-			info.setQueueId(item.getQueueId());
-			info.setName(item.getName());
-			info.setConcurrency(item.getConcurrency());
-			info.setOwnerRoleId(item.getOwnerRoleId());
+			info.setQueueId(tmp.getQueueId());
+			info.setName(tmp.getName());
+			info.setConcurrency(tmp.getConcurrency());
+			info.setOwnerRoleId(tmp.getOwnerRoleId());
 			list.add(info);
 		}
 		return list.toArray(new JobQueueInfo[0]);

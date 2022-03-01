@@ -45,6 +45,7 @@ import com.clustercontrol.repository.model.NodeOsInfo;
 import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.repository.util.SearchDeviceProperties;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.XMLUtil;
 
 /**
  * SNMPでノードのデータを作成するクラス<BR>
@@ -77,12 +78,20 @@ public class SearchNodeBySNMP {
 	 * @param port
 	 * @param community
 	 * @param version
-	 * @param facilityId
+	 * @param securityLevel
+	 * @param user
+	 * @param authPass
+	 * @param privPass
+	 * @param authProtocol
+	 * @param privProtocol
 	 * @return
 	 * @throws UnknownHostException
+	 * @throws SnmpResponseError
+	 * @throws HinemosUnknown
+	 * @throws FacilityNotFound
 	 */
 	public static NodeInfo searchNode(String ipAddress, int port,
-			String community, int version, String facilityId,
+			String community, int version,
 			String securityLevel, String user, String authPass,
 			String privPass, String authProtocol, String privProtocol)
 			throws UnknownHostException, SnmpResponseError, HinemosUnknown,
@@ -236,7 +245,7 @@ public class SearchNodeBySNMP {
 		if(ret.getValue(getEntryKey(SearchDeviceProperties.getOidContact())) != null
 				&& ret.getValue(getEntryKey(SearchDeviceProperties.getOidContact())).getValue() != null){
 			if(((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidContact())).getValue()).length() != 0){
-				property.setAdministrator((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidContact())).getValue());
+				property.setAdministrator(XMLUtil.ignoreInvalidString((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidContact())).getValue()));
 			}
 		}
 
@@ -365,7 +374,7 @@ public class SearchNodeBySNMP {
 			}
 			m_log.debug("Find Nic : fullOid = " + fullOid);
 
-			deviceName = (String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidNicName() + "." + tmpIndex)).getValue();
+			deviceName = XMLUtil.ignoreInvalidString((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidNicName() + "." + tmpIndex)).getValue());
 
 			String nicMacAddress = "";
 			if (ret.getValue(getEntryKey(SearchDeviceProperties.getOidNicMacAddress() + "." + tmpIndex)) != null) {

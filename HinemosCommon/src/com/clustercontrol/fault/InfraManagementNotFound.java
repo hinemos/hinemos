@@ -13,20 +13,27 @@ package com.clustercontrol.fault;
  * @version 5.0.0
  * @since 5.0.0
  */
-public class InfraManagementNotFound extends HinemosException {
+public class InfraManagementNotFound extends HinemosNotFound {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 4547836044551428061L;
 	
 	private String managementId;
-	
+
+
 	/**
 	 * InfraManagementInfoNotFound コンストラクタ
 	 */
-	public InfraManagementNotFound(String managementId) {
+	public InfraManagementNotFound() {
 		super();
-		setManagementId(managementId);
+	}
+
+	/**
+	 * InfraManagementInfoNotFound コンストラクタ
+	 */
+	public InfraManagementNotFound(String messages) {
+		super(messages);
 	}
 
 	/**

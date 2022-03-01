@@ -9,6 +9,7 @@
 package com.clustercontrol.maintenance.dialog;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -29,12 +30,17 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddMaintenanceRequest;
+import org.openapitools.client.model.MaintenanceInfoResponse;
+import org.openapitools.client.model.MaintenanceInfoResponse.TypeIdEnum;
+import org.openapitools.client.model.MaintenanceScheduleRequest;
+import org.openapitools.client.model.MaintenanceScheduleResponse;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
 import com.clustercontrol.bean.DayOfWeekConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
-import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.calendar.composite.CalendarIdListComposite;
 import com.clustercontrol.composite.ManagerListComposite;
 import com.clustercontrol.composite.RoleIdListComposite;
@@ -43,20 +49,17 @@ import com.clustercontrol.composite.action.ComboModifyListener;
 import com.clustercontrol.composite.action.NumberKeyListener;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MaintenanceDuplicate;
 import com.clustercontrol.maintenance.action.GetMaintenance;
 import com.clustercontrol.maintenance.action.ModifyMaintenance;
 import com.clustercontrol.maintenance.composite.MaintenanceTypeListComposite;
-import com.clustercontrol.maintenance.util.MaintenanceEndpointWrapper;
-import com.clustercontrol.maintenance.util.MaintenanceUtil;
+import com.clustercontrol.maintenance.util.MaintenanceRestClientWrapper;
 import com.clustercontrol.notify.composite.NotifyInfoComposite;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.common.Schedule;
-import com.clustercontrol.ws.maintenance.InvalidRole_Exception;
-import com.clustercontrol.ws.maintenance.MaintenanceDuplicate_Exception;
-import com.clustercontrol.ws.maintenance.MaintenanceInfo;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
 
 /**
  * メンテナンス[メンテナンスの作成・変更]ダイアログクラスです。
@@ -108,7 +111,7 @@ public class MaintenanceDialog extends CommonDialog {
 	/** この設定を有効にする */
 	private Button confirmValid = null;
 
-	private MaintenanceInfo maintenanceInfo = null;
+	private MaintenanceInfoResponse maintenanceInfo = null;
 
 	/** マネージャ名コンボボックス用コンポジット */
 	private ManagerListComposite m_managerComposite = null;
@@ -423,7 +426,7 @@ public class MaintenanceDialog extends CommonDialog {
 
 
 		//最後に変更であれば情報を表示する
-		MaintenanceInfo info = null;
+		MaintenanceInfoResponse info = null;
 		if(this.maintenanceId != null){
 			info = new GetMaintenance().getMaintenanceInfo(this.m_managerComposite.getText(), this.maintenanceId);
 		}
@@ -822,11 +825,11 @@ public class MaintenanceDialog extends CommonDialog {
 		}else{
 			maintenanceInfo = new GetMaintenance().getMaintenanceInfo(this.m_managerComposite.getText(), maintenanceId);
 			//スケジュール設定
-			Schedule schedule = maintenanceInfo.getSchedule();
+			MaintenanceScheduleResponse schedule = maintenanceInfo.getSchedule();
 
 			DecimalFormat format = new DecimalFormat("00");
 			//日時を設定
-			if (schedule.getType() == ScheduleConstant.TYPE_DAY) {
+			if (MaintenanceScheduleResponse.TypeEnum.DAY.equals(schedule.getType())) {
 				m_comboMonth.select(0);
 				//月を設定
 				for (int i = 0; i < m_comboMonth.getItemCount(); i++) {
@@ -917,7 +920,7 @@ public class MaintenanceDialog extends CommonDialog {
 			}
 
 			//指定方式を設定
-			if (schedule.getType() == ScheduleConstant.TYPE_DAY) {
+			if (MaintenanceScheduleResponse.TypeEnum.DAY.equals(schedule.getType())) {
 				m_type1.setSelection(true);
 				m_comboMonth.setEnabled(true);
 				m_comboDay.setEnabled(true);
@@ -926,7 +929,7 @@ public class MaintenanceDialog extends CommonDialog {
 				m_comboDayOfWeek.setEnabled(false);
 				m_comboHours2.setEnabled(false);
 				m_comboMinutes2.setEnabled(false);
-			} else if (schedule.getType() == ScheduleConstant.TYPE_WEEK) {
+			} else if (MaintenanceScheduleResponse.TypeEnum.WEEK.equals(schedule.getType())) {
 				m_type2.setSelection(true);
 				m_comboMonth.setEnabled(false);
 				m_comboDay.setEnabled(false);
@@ -951,7 +954,7 @@ public class MaintenanceDialog extends CommonDialog {
 		ValidateResult result = null;
 
 		if (maintenanceInfo == null) {
-			maintenanceInfo = new MaintenanceInfo();
+			maintenanceInfo = new MaintenanceInfoResponse();
 		}
 
 		//メンテナンスID取得
@@ -969,7 +972,7 @@ public class MaintenanceDialog extends CommonDialog {
 
 		//種別
 		if(m_maintenance_type.getSelectionIndex() >= 0){
-			maintenanceInfo.setTypeId(m_maintenance_type.getSelectionTypeId());
+			maintenanceInfo.setTypeId(TypeIdEnum.fromValue(m_maintenance_type.getSelectionTypeId()));
 		}
 		//保存期間(日)となる期間を指定
 		if(m_textDataRetentionPeriod.getText().length() > 0){
@@ -995,7 +998,7 @@ public class MaintenanceDialog extends CommonDialog {
 		}
 
 		//条件設定
-		Schedule schedule = new Schedule();
+		MaintenanceScheduleResponse schedule = new MaintenanceScheduleResponse();
 		Integer month = null;
 		Integer day = null;
 		Integer hours = null;
@@ -1020,10 +1023,10 @@ public class MaintenanceDialog extends CommonDialog {
 			}
 
 			//スケジュール種別
-			schedule.setType(ScheduleConstant.TYPE_DAY);
+			schedule.setType(MaintenanceScheduleResponse.TypeEnum.DAY);
 
 		} else if (m_type2.getSelection()) {
-			schedule.setType(ScheduleConstant.TYPE_WEEK);
+			schedule.setType(MaintenanceScheduleResponse.TypeEnum.WEEK);
 
 			//曜日を取得
 			if (m_comboDayOfWeek.getText().length() > 0) {
@@ -1049,15 +1052,18 @@ public class MaintenanceDialog extends CommonDialog {
 		maintenanceInfo.setSchedule(schedule);
 
 		//通知関連情報の設定
-		//通知グループIDの設定
-		maintenanceInfo.setNotifyGroupId(MaintenanceUtil.createNotifyGroupIdMaintenance(maintenanceInfo.getMaintenanceId()));
-		//通知情報へのNotifyGroupIdのセット
-		this.notifyInfo.setNotifyGroupId(maintenanceInfo.getNotifyGroupId());
 		//コンポジットから通知情報を取得します。
-		List<NotifyRelationInfo> notifyRelationInfoList = maintenanceInfo.getNotifyId();
-		notifyRelationInfoList.clear();
+		List<NotifyRelationInfoResponse> notifyRelationInfoList = maintenanceInfo.getNotifyId();
+		if (notifyRelationInfoList != null) {
+			notifyRelationInfoList.clear();
+		}
 		if (this.notifyInfo.getNotify() != null) {
-			notifyRelationInfoList.addAll(this.notifyInfo.getNotify());
+			for (NotifyRelationInfoResponse notify : this.notifyInfo.getNotify()) {
+				NotifyRelationInfoResponse nottifyDto = new NotifyRelationInfoResponse();
+				nottifyDto.setNotifyId(notify.getNotifyId());
+				nottifyDto.setNotifyType(notify.getNotifyType());
+				notifyRelationInfoList.add(nottifyDto);
+			}
 		}
 
 		//アプリケーションを取得
@@ -1073,7 +1079,7 @@ public class MaintenanceDialog extends CommonDialog {
 		return result;
 	}
 
-	protected void setInputData(MaintenanceInfo info) {
+	protected void setInputData(MaintenanceInfoResponse info) {
 
 		// オーナーロールID設定
 		if (info != null && info.getOwnerRoleId() != null) {
@@ -1107,12 +1113,20 @@ public class MaintenanceDialog extends CommonDialog {
 				this.m_maintenance_type.setText(m_maintenance_type
 						.getMaintenanceTypeName(
 								this.m_managerComposite.getText(),
-								info.getTypeId()));
+								info.getTypeId().getValue()));
 			}
 
 			//通知情報の設定
-			if(info.getNotifyId() != null)
-				this.notifyInfo.setNotify(info.getNotifyId());
+			if(info.getNotifyId() != null) {
+				List<NotifyRelationInfoResponse> notifyIdList = new ArrayList<>();
+				for (NotifyRelationInfoResponse notify : info.getNotifyId()) {
+					NotifyRelationInfoResponse notifyInfo = new NotifyRelationInfoResponse();
+					notifyInfo.setNotifyId(notify.getNotifyId());
+					notifyInfo.setNotifyType(notify.getNotifyType());
+					notifyIdList.add(notifyInfo);
+				}
+				this.notifyInfo.setNotify(notifyIdList);
+			}
 
 
 			if (info.getApplication() != null) {
@@ -1120,8 +1134,8 @@ public class MaintenanceDialog extends CommonDialog {
 				this.notifyInfo.update();
 			}
 
-			if (info.isValidFlg() != null) {
-				this.confirmValid.setSelection(info.isValidFlg());
+			if (info.getValidFlg() != null) {
+				this.confirmValid.setSelection(info.getValidFlg());
 			}
 		}
 
@@ -1187,9 +1201,13 @@ public class MaintenanceDialog extends CommonDialog {
 				String managerName = this.m_managerComposite.getText();
 				String[] args = { maintenanceInfo.getMaintenanceId(), managerName };
 				try {
-					MaintenanceEndpointWrapper wrapper = MaintenanceEndpointWrapper
+					MaintenanceRestClientWrapper wrapper = MaintenanceRestClientWrapper
 							.getWrapper(managerName);
-					wrapper.addMaintenance(maintenanceInfo);
+					AddMaintenanceRequest add = new AddMaintenanceRequest();
+					RestClientBeanUtil.convertBean(maintenanceInfo, add);
+					add.setTypeId(AddMaintenanceRequest.TypeIdEnum.fromValue(maintenanceInfo.getTypeId().getValue()));
+					add.getSchedule().setType(MaintenanceScheduleRequest.TypeEnum.fromValue(maintenanceInfo.getSchedule().getType().getValue()));
+					wrapper.addMaintenance(add);
 
 					MessageDialog.openInformation(
 							null,
@@ -1198,7 +1216,7 @@ public class MaintenanceDialog extends CommonDialog {
 
 					result = true;
 
-				} catch (MaintenanceDuplicate_Exception e) {
+				} catch (MaintenanceDuplicate e) {
 					// メンテナンスIDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -1206,7 +1224,7 @@ public class MaintenanceDialog extends CommonDialog {
 							Messages.getString("message.maintenance.11", args));
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
 					} else {

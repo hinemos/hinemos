@@ -7,7 +7,7 @@
  */
 package com.clustercontrol.xcloud.model;
 
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass
 public abstract class CloudObjectEntity extends EntityBase {

@@ -10,8 +10,6 @@ package com.clustercontrol.reporting.dialog;
 
 import java.util.ArrayList;
 
-import javax.xml.ws.WebServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.SWT;
@@ -28,25 +26,30 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddTemplateSetRequest;
+import org.openapitools.client.model.ModifyTemplateSetRequest;
+import org.openapitools.client.model.TemplateSetDetailInfoResponse;
+import org.openapitools.client.model.TemplateSetInfoResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
-import com.clustercontrol.reporting.action.AddTemplateSet;
-import com.clustercontrol.reporting.action.GetTemplateSet;
-import com.clustercontrol.reporting.action.GetTemplateSetDetailTableDefine;
-import com.clustercontrol.reporting.action.ModifyTemplateSet;
-import com.clustercontrol.reporting.composite.TemplateSetDetailInfoComposite;
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
-import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.Messages;
-import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.reporting.TemplateSetDetailInfo;
-import com.clustercontrol.ws.reporting.TemplateSetInfo;
 import com.clustercontrol.composite.ManagerListComposite;
 import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.reporting.action.AddTemplateSet;
+import com.clustercontrol.reporting.action.GetTemplateSet;
+import com.clustercontrol.reporting.action.GetTemplateSetDetailTableDefine;
+import com.clustercontrol.reporting.action.ModifyTemplateSet;
+import com.clustercontrol.reporting.composite.TemplateSetDetailInfoComposite;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
+import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.ICheckPublishRestClientWrapper;
+import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * テンプレートセット設定作成・変更ダイアログクラス<BR>
@@ -67,7 +70,7 @@ public class TemplateSetDialog extends CommonDialog{
 	/** テンプレートセット名 */
 	private Text templateSetNameText = null;
 	/** 入力値を保持するオブジェクト */
-	private TemplateSetInfo inputData = null;
+	private TemplateSetInfoResponse inputData = null;
 	/** テンプレートセット詳細情報 */
 	private TemplateSetDetailInfoComposite templateSetDetailInfoComposite = null;
 	/** オーナーロールID用テキスト */
@@ -373,7 +376,8 @@ public class TemplateSetDialog extends CommonDialog{
 	private ValidateResult createTemplateSetInfo() {
 		ValidateResult result = null;
 
-		this.inputData = new TemplateSetInfo();
+		this.inputData = new TemplateSetInfoResponse();
+		this.inputData.setTemplateSetDetailInfoList(new ArrayList<TemplateSetDetailInfoResponse>());
 
 		//テンプレートセットID取得
 		if(templateSetIdText.getText().length() > 0){
@@ -411,7 +415,7 @@ public class TemplateSetDialog extends CommonDialog{
 			m_log.debug("Add TemplateSetDetailInfo : " +
 					this.templateSetDetailInfoComposite.getDetailList().size());
 
-			for (TemplateSetDetailInfo detailInfo : this.templateSetDetailInfoComposite.getDetailList()) {
+			for (TemplateSetDetailInfoResponse detailInfo : this.templateSetDetailInfoComposite.getDetailList()) {
 				this.inputData.getTemplateSetDetailInfoList().add(detailInfo);
 			}
 		}
@@ -436,7 +440,7 @@ public class TemplateSetDialog extends CommonDialog{
 	 */
 	private void reflectTemplateSet() {
 		// 初期表示
-		TemplateSetInfo templateSetInfo = null;
+		TemplateSetInfoResponse templateSetInfo = null;
 		if(mode == PropertyDefineConstant.MODE_MODIFY
 				|| mode == PropertyDefineConstant.MODE_COPY
 				|| mode == PropertyDefineConstant.MODE_SHOW){
@@ -444,7 +448,7 @@ public class TemplateSetDialog extends CommonDialog{
 			templateSetInfo = new GetTemplateSet().getTemplateSetInfo(this.managerName, this.templateSetId);
 		}else{
 			// 作成の場合
-			templateSetInfo = new TemplateSetInfo();
+			templateSetInfo = new TemplateSetInfoResponse();
 		}
 		this.inputData = templateSetInfo;
 		//テンプレートセット情報取得
@@ -466,7 +470,7 @@ public class TemplateSetDialog extends CommonDialog{
 			
 			// テンプレートセット詳細情報取得
 			templateSetDetailInfoComposite.setDetailList(
-					(ArrayList<TemplateSetDetailInfo>) templateSetInfo.getTemplateSetDetailInfoList());
+					(ArrayList<TemplateSetDetailInfoResponse>) templateSetInfo.getTemplateSetDetailInfoList());
 
 			// オーナーロールID取得
 			if (templateSetInfo.getOwnerRoleId() != null) {
@@ -500,24 +504,7 @@ public class TemplateSetDialog extends CommonDialog{
 	protected ValidateResult validate() {
 		ValidateResult result = null;
 
-		// 入力チェック
-		//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
-		//getVersionにて通信状況を確認し、異常の場合は ダイヤログを表示
-		try {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(this.m_managerComposite.getText());
-			wrapper.getVersion();
-		} catch (Exception e) {
-			String errMsg = HinemosMessage.replace(e.getMessage());
-			m_log.warn("getVersionError, " + errMsg);
-			result = new ValidateResult();
-			result.setValid(false);
-			result.setID(Messages.getString("message.hinemos.1"));
-			if ( e instanceof WebServiceException){
-				result.setMessage(Messages.getString("message.expiration.term")+":"+ this.m_managerComposite.getText());
-			}else{
-				result.setMessage(Messages.getString("message.hinemos.failure.unexpected")+":"+ this.m_managerComposite.getText()+ ", " + errMsg);
-			}
-		}
+		result = validateEndpoint(this.m_managerComposite.getText());
 		return result;
 	}
 	
@@ -533,28 +520,44 @@ public class TemplateSetDialog extends CommonDialog{
 	protected boolean action() {
 		boolean result = false;
 		createTemplateSetInfo();
-		TemplateSetInfo info = this.inputData;
+		TemplateSetInfoResponse info = this.inputData;
 		String managerName = this.m_managerComposite.getText();
 		if(info != null){
-			if(mode == PropertyDefineConstant.MODE_ADD){
-				// 作成の場合+
-				result = new AddTemplateSet().add(managerName, info);
-			} else if (mode == PropertyDefineConstant.MODE_MODIFY){
-				// 変更の場合
-				info.setTemplateSetId(templateSetIdText.getText());
-				result = new ModifyTemplateSet().modify(managerName, info);
-			} else if (mode == PropertyDefineConstant.MODE_COPY){
-				// コピーの場合
-				info.setTemplateSetId(templateSetIdText.getText());
-				
-				for(TemplateSetDetailInfo detailInfo : info.getTemplateSetDetailInfoList()) {
-					detailInfo.setTemplateSetId(templateSetIdText.getText());
+			try {
+				if(mode == PropertyDefineConstant.MODE_ADD){
+					// 作成の場合+
+					AddTemplateSetRequest addInfoReq = new AddTemplateSetRequest();
+					RestClientBeanUtil.convertBean(info, addInfoReq);
+					result = new AddTemplateSet().add(managerName, addInfoReq);
+				} else if (mode == PropertyDefineConstant.MODE_MODIFY){
+					// 変更の場合
+					info.setTemplateSetId(templateSetIdText.getText());
+					ModifyTemplateSetRequest modifyInfoReq = new ModifyTemplateSetRequest();
+					RestClientBeanUtil.convertBean(info, modifyInfoReq);
+					result = new ModifyTemplateSet().modify(managerName, info.getTemplateSetId(), modifyInfoReq);
+				} else if (mode == PropertyDefineConstant.MODE_COPY){
+					// コピーの場合
+					info.setTemplateSetId(templateSetIdText.getText());
+					
+					for(TemplateSetDetailInfoResponse detailInfo : info.getTemplateSetDetailInfoList()) {
+						detailInfo.setTemplateSetId(templateSetIdText.getText());
+					}
+					AddTemplateSetRequest addInfoReq = new AddTemplateSetRequest();
+					RestClientBeanUtil.convertBean(info, addInfoReq);
+					result = new AddTemplateSet().add(managerName, addInfoReq);
 				}
-				result = new AddTemplateSet().add(managerName, info);
+			}  catch (HinemosUnknown e) {
+				m_log.error("action() Failed to convert TemplateSetInfo");
 			}
 		} else {
 			m_log.error("action() TemplateSetinfo is null");
 		}
 		return result;
 	}
+
+	@Override
+	public ICheckPublishRestClientWrapper getCheckPublishWrapper(String managerName) {
+		return ReportingRestClientWrapper.getWrapper(managerName);
+	}
+	
 }

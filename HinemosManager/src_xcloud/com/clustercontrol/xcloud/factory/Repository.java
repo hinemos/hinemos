@@ -14,7 +14,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.log4j.Logger;
+
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.InternalManagerError;
@@ -48,12 +51,15 @@ import com.clustercontrol.xcloud.persistence.PersistenceUtil;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil.TransactionScope;
 import com.clustercontrol.xcloud.persistence.Transactional;
 import com.clustercontrol.xcloud.persistence.Transactional.TransactionOption;
+import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.FacilityIdUtil;
 import com.clustercontrol.xcloud.util.RepositoryUtil;
 
 @Transactional
 public class Repository implements IRepository {
+	private static final Logger logger = Logger.getLogger(Repository.class);
+	
 	public static class RepositoryVisitor {
 		public void visitCloudScopeRootScope(FacilityInfo root) throws CloudManagerException {}
 		public void visitCloudScopeScope(FacilityInfo parent, FacilityInfo facility, CloudScopeEntity cloudScope) throws CloudManagerException {}
@@ -256,7 +262,7 @@ public class Repository implements IRepository {
 			return hRepository;
 		}
 	};
-	
+
 	@Override
 	public HRepository getRepository() throws CloudManagerException {
 		HScopeRepositoryVisitor visitor = new HScopeRepositoryVisitor();
@@ -266,7 +272,14 @@ public class Repository implements IRepository {
 	
 	@Override
 	public HRepository updateLocationRepository(String cloudScopeId, String locationId) throws CloudManagerException {
-		return updateLocationRepository(cloudScopeId, locationId, null);
+		logger.debug(String.format("updateLocationRepository() start cloudScopeId=%s, locationId=%s",
+				cloudScopeId
+				, locationId));
+		HRepository hRepository = updateLocationRepository(cloudScopeId, locationId, null);
+		logger.debug(String.format("updateLocationRepository() end cloudScopeId=%s, locationId=%s",
+				cloudScopeId
+				, locationId));
+		return hRepository;
 	}
 
 	@Override
@@ -286,9 +299,13 @@ public class Repository implements IRepository {
 			user = CloudManager.singleton().getLoginUsers().getPrimaryCloudLoginUser(cloudScope.getCloudScopeId(), hinemosUser);
 		}
 		
- 		return user.getCloudScope().optionCall(new CloudScopeEntity.OptionCallable<HRepository>() {
+		return user.getCloudScope().optionCall(new CloudScopeEntity.OptionCallable<HRepository>() {
 			@Override
 			public HRepository call(CloudScopeEntity cloudScope, ICloudOption option) throws CloudManagerException {
+				logger.debug(String.format("updateLocationRepository() call start cloudScopeId=%s, locationId=%s",
+						cloudScopeId
+						, locationId));
+	
 				LocationEntity location = cloudScope.getLocation(locationId);
 				
 				// クラウド側からリソースツリーを取得。
@@ -296,28 +313,49 @@ public class Repository implements IRepository {
 				
 				List<InstanceEntity> instanceEntities;
 				List<EntityEntity> entityEntities;
-				try (TransactionScope scope = new TransactionScope(TransactionOption.RequiredNew)) {
-					// リソースの更新
-					instanceEntities = InstanceUpdater.updator().setCacheResourceManagement(Repository.this.cacheRm).transactionalUpdateInstanceEntities(
-							location, user,
-							PersistenceUtil.findByFilter(Session.current().getEntityManager(), InstanceEntity.class, Filter.apply("cloudScopeId", cloudScope.getId()), Filter.apply("locationId", location.getLocationId())),
-							platformLocation.getInstances());
+				
+				ILock lock = CloudUtil.getLock(Repository.class.getName(), cloudScope.getId(), location.getLocationId());
+				logger.debug(String.format("updateLocationRepository() getLock cloudScopeId=%s, locationId=%s",
+						cloudScope.getId()
+						, location.getLocationId()));
+				try {
+					// クラウドスコープID単位で書き込みロックを取得
+					lock.writeLock();
+					logger.debug(String.format("updateLocationRepository() writeLock cloudScopeId=%s, locationId=%s",
+							cloudScope.getId()
+							, location.getLocationId()));
 					
-					entityEntities = EntityUpdater.updator().setCacheResourceManagement(Repository.this.cacheRm).transactionalUpdateEntityEntities(
-							location,
-							PersistenceUtil.findByFilter(Session.current().getEntityManager(), EntityEntity.class, Filter.apply("cloudScopeId", cloudScope.getId()), Filter.apply("locationId", location.getLocationId())),
-							platformLocation.getEntities());
-					scope.complete();
-				} 
-				
-				// ツリーの更新
-				HScopeRepositoryVisitor visitor = new HScopeRepositoryVisitor();
-				LocationRepositoryUpdater.updateRepository(location, user, platformLocation, visitor);
-				
-				RepositoryUtil.autoAssgineNodesToScope(cloudScope, instanceEntities.stream().collect(Collectors.toList()));
-				RepositoryUtil.autoAssgineNodesToScope(cloudScope, entityEntities.stream().collect(Collectors.toList()));
-				
-				return visitor.getRepository();
+					try (TransactionScope scope = new TransactionScope(TransactionOption.RequiredNew)) {						
+						// リソースの更新
+						instanceEntities = InstanceUpdater.updator().setCacheResourceManagement(Repository.this.cacheRm).transactionalUpdateInstanceEntities(
+								location, user,
+								PersistenceUtil.findByFilter(Session.current().getEntityManager(), InstanceEntity.class, Filter.apply("cloudScopeId", cloudScope.getId()), Filter.apply("locationId", location.getLocationId())),
+								platformLocation.getInstances());
+						
+						entityEntities = EntityUpdater.updator().setCacheResourceManagement(Repository.this.cacheRm).transactionalUpdateEntityEntities(
+								location,
+								PersistenceUtil.findByFilter(Session.current().getEntityManager(), EntityEntity.class, Filter.apply("cloudScopeId", cloudScope.getId()), Filter.apply("locationId", location.getLocationId())),
+								platformLocation.getEntities());
+						scope.complete();
+					} 
+					
+					// ツリーの更新
+					HScopeRepositoryVisitor visitor = new HScopeRepositoryVisitor();
+					LocationRepositoryUpdater.updateRepository(location, user, platformLocation, visitor);
+					
+					RepositoryUtil.autoAssgineNodesToScope(cloudScope, instanceEntities.stream().collect(Collectors.toList()));
+					RepositoryUtil.autoAssgineNodesToScope(cloudScope, entityEntities.stream().collect(Collectors.toList()));
+					logger.debug(String.format("updateLocationRepository() call end cloudScopeId=%s, locationId=%s",
+							cloudScopeId
+							, locationId));
+					return visitor.getRepository();
+
+				} finally {
+					lock.writeUnlock();
+					logger.debug(String.format("updateLocationRepository() writeUnlock cloudScopeId=%s, locationId=%s",
+							cloudScope.getId()
+							, location.getLocationId()));
+				}
 			}
 		});
 	}

@@ -7,14 +7,13 @@
  */
 package com.clustercontrol.xcloud.platform;
 
+import java.io.File;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 
-import javax.activation.DataHandler;
-
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.BillingResultResponse.TypeEnum;
 
-import com.clustercontrol.ws.xcloud.TargetType;
 import com.clustercontrol.xcloud.ui.dialogs.DetailDialog;
 
 public abstract class PlatformDependent {
@@ -41,5 +40,5 @@ public abstract class PlatformDependent {
 
 	public abstract DetailDialog createDetailDialog(Shell parentShell, String dialogTitle);
 
-	public abstract void downloadBillingDetail(Shell parent, TargetType type, String targetId, int year, int month, DataHandler handler) throws Exception;
+	public abstract void downloadBillingDetail(Shell parent, TypeEnum type, String targetId, int year, int month, File file) throws Exception;
 }

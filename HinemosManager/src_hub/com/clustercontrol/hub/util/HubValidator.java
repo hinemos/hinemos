@@ -38,7 +38,7 @@ public class HubValidator {
 	 * @throws InvalidSetting
 	 * @throws LogIdDuplicate 
 	 */
-	public static void validateLogFormat(LogFormat format) throws InvalidSetting, LogFormatKeyPatternDuplicate {
+	public static void validateLogFormat(LogFormat format, boolean isModify) throws InvalidSetting, LogFormatKeyPatternDuplicate {
 		if(format == null){
 			InvalidSetting e = new InvalidSetting("LogFormat is not defined.");
 			m_log.info("validate() : "
@@ -50,8 +50,11 @@ public class HubValidator {
 		
 		//Description
 		CommonValidator.validateString(MessageConstant.DESCRIPTION.getMessage(), format.getDescription(), false, 0, 256);
-		//OwnerRoleId
-		CommonValidator.validateOwnerRoleId(format.getOwnerRoleId(), true, format.getLogFormatId(), HinemosModuleConstant.HUB_LOGFORMAT);
+		
+		if (!isModify) {
+			//OwnerRoleId
+			CommonValidator.validateOwnerRoleId(format.getOwnerRoleId(), true, format.getLogFormatId(), HinemosModuleConstant.HUB_LOGFORMAT);
+		}
 		//TimestampRegex
 		CommonValidator.validateRegex(MessageConstant.HUB_LOG_FORMAT_DATE_EXTRACTION_PATTERN.getMessage(), format.getTimestampRegex(), false);
 		//LogFormatKey
@@ -99,7 +102,7 @@ public class HubValidator {
 	 * @throws InvalidSetting
 	 * @throws LogIdDuplicate 
 	 */
-	public static void validateTransferInfo(TransferInfo transferInfo) throws InvalidSetting {
+	public static void validateTransferInfo(TransferInfo transferInfo, boolean isModify) throws InvalidSetting {
 		if (transferInfo == null)
 			throwInvalidSetting("Transfer setting is not defined.");
 		
@@ -107,8 +110,11 @@ public class HubValidator {
 		CommonValidator.validateId(MessageConstant.HUB_TRANSFER_ID.getMessage(), transferInfo.getTransferId(), 64);
 		//Description
 		CommonValidator.validateString(MessageConstant.DESCRIPTION.getMessage(), transferInfo.getDescription(), false, 0, 256);
-		//OwnerRoleId
-		CommonValidator.validateOwnerRoleId(transferInfo.getOwnerRoleId(), true, transferInfo.getTransferId(), HinemosModuleConstant.HUB_TRANSFER);
+		
+		if (!isModify) {
+			//OwnerRoleId
+			CommonValidator.validateOwnerRoleId(transferInfo.getOwnerRoleId(), true, transferInfo.getTransferId(), HinemosModuleConstant.HUB_TRANSFER);
+		}
 		
 		// 転送種別
 		if (transferInfo.getTransType() == null)

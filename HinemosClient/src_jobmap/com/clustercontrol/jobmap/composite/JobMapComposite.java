@@ -60,24 +60,27 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.JobObjectGroupInfoResponse;
+import org.openapitools.client.model.JobObjectInfoResponse;
+import org.openapitools.client.model.JobWaitRuleInfoResponse;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
-import com.clustercontrol.bean.EndStatusConstant;
-import com.clustercontrol.bean.EndStatusMessage;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
-import com.clustercontrol.jobmanagement.composite.WaitRuleComposite;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
 import com.clustercontrol.jobmanagement.dialog.WaitRuleDialog;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.view.ForwardFileView;
 import com.clustercontrol.jobmanagement.view.JobNodeDetailView;
 import com.clustercontrol.jobmanagement.viewer.JobTreeViewer;
 import com.clustercontrol.jobmap.bean.ColorfulAssociation;
+import com.clustercontrol.jobmap.dialog.WaitRuleListDialog;
 import com.clustercontrol.jobmap.editpart.MapViewController;
 import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.figure.JobFigureAnchor;
@@ -89,11 +92,6 @@ import com.clustercontrol.jobmap.view.JobMapHistoryView;
 import com.clustercontrol.jobmap.view.JobTreeView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobObjectInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobWaitRuleInfo;
 
 public class JobMapComposite extends Composite implements ISelectionProvider {
 
@@ -123,6 +121,10 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 	// 自動調整した端数
 	private double adjustDecimal = 0.0;
 
+	private boolean mousePressFigure = false;
+
+	/** 更新成功可否フラグ */
+	private boolean m_updateSuccess = true;
 	/**
 	 * マウス操作の状態
 	 */
@@ -196,6 +198,36 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 
 		});
 
+		//マウスリスナー設定（右クリックメニュー表示のクリア用）
+		m_canvas.addMouseListener(new org.eclipse.swt.events.MouseAdapter(){
+			@Override
+			public void mouseDown(org.eclipse.swt.events.MouseEvent event) {
+				//本イベントは各Figureに割り付けてるMouseListenerのmousePressedイベントより後に発動する前提で実装をしています
+				if(m_log.isDebugEnabled()){
+					m_log.debug("m_canvas#mouseDown: mousePressFigure ="+mousePressFigure);
+				}
+				if(	event.button == 3 && !(mousePressFigure) ){
+					//Figure（右クリックメニュー表示対象）以外を右クリックしたなら 設定済みのコンテキストメニューをクリアする
+					MenuManager menuManager = new MenuManager();
+					menuManager.setRemoveAllWhenShown(true);
+					if (m_editorView != null) {
+						m_canvas.setMenu(null);
+						m_editorView.getSite().registerContextMenu(menuManager, m_editorView.getCanvasComposite());
+						if(m_log.isDebugEnabled()){
+							m_log.debug("m_canvas#mouseDown: ContextMenu clear. m_editorView");
+						}
+					}else if (m_historyView != null) {
+						m_canvas.setMenu(null);
+						m_historyView.getSite().registerContextMenu(menuManager, m_historyView.getCanvasComposite());
+						if(m_log.isDebugEnabled()){
+							m_log.debug("m_canvas#mouseDown: ContextMenu clear. m_historyView"); 
+						}
+					}
+				}
+				mousePressFigure =false;//initialize
+			}
+		});
+
 		// スクロール可能なレイヤの作成
 		m_layer = new ScalableFreeformLayeredPane();
 		m_layer.setLayoutManager(new XYLayout());
@@ -217,7 +249,7 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 
 				m_log.debug("event.data:" + event.data.toString());
 				// 追加する先のジョブユニット・ジョブネット
-				JobTreeItem jobTreeItem = m_controller.getCurrentJobTreeItem();
+				JobTreeItemWrapper jobTreeItem = m_controller.getCurrentJobTreeItem();
 				if (!event.data.toString().split(",")[2].equals(JobTreeItemUtil.getManagerName(jobTreeItem)) 
 						|| (!event.data.toString().split(",")[0].equals(jobTreeItem.getData().getJobunitId()) && !m_controller.isDragdropId())) {
 					// 同マネージャでない場合は処理終了
@@ -234,8 +266,8 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 				if (m_controller.getFigureMap() != null) {
 					JobFigure targetFigure = null;
 					for (JobFigure figure : m_controller.getFigureMap().values()) {
-						if (figure.getJobTreeItem().getData().getType() == JobConstant.TYPE_JOBUNIT
-								|| figure.getJobTreeItem().getData().getType() == JobConstant.TYPE_JOBNET){
+						if (figure.getJobTreeItem().getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT
+								|| figure.getJobTreeItem().getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
 							Point figurePoint = figure.getLocation();
 							int startX = figurePoint.x;
 							int startY = figurePoint.y;
@@ -261,14 +293,14 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 					JobMapTreeComposite tree = view.getJobMapTreeComposite();
 
 					JobTreeViewer jobtree = tree.getTreeViewer();
-					JobTreeItem dragItem = JobMapTreeUtil.getTargetJobTreeItem(jobtree, event.data.toString().split(",")[2], 
+					JobTreeItemWrapper dragItem = JobMapTreeUtil.getTargetJobTreeItem(jobtree, event.data.toString().split(",")[2], 
 							event.data.toString().split(",")[0], event.data.toString().split(",")[1]);
 					
 					// 追加するジョブネット・ジョブ
-					JobTreeItem parentJobTreeItem = targetFigure.getJobTreeItem(); // 追加するところ
+					JobTreeItemWrapper parentJobTreeItem = targetFigure.getJobTreeItem(); // 追加するところ
 
-					if ((dragItem.getData().getType().equals(JobConstant.TYPE_REFERJOB) 
-							|| dragItem.getData().getType().equals(JobConstant.TYPE_REFERJOBNET)) 
+					if ((dragItem.getData().getType().equals(JobInfoWrapper.TypeEnum.REFERJOB) 
+							|| dragItem.getData().getType().equals(JobInfoWrapper.TypeEnum.REFERJOBNET)) 
 							&& !dragItem.getData().getJobunitId().equals(parentJobTreeItem.getData().getJobunitId())) {
 						// dropしたものが参照ジョブor参照ジョブネットで、ドロップしたものとドロップした先のjobunitIDが異なる場合はドロップ不可
 						m_log.debug("drop target jobtype:" + dragItem.getData().getType() 
@@ -276,39 +308,39 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 								+ ", disp jobitems jobunitid:" + parentJobTreeItem.getData().getJobunitId());
 						return;
 					}
-					if ((dragItem.getData().getType().equals(JobConstant.TYPE_REFERJOB) 
-							|| dragItem.getData().getType().equals(JobConstant.TYPE_REFERJOBNET)) && !m_controller.isDragdropId()) {
+					if ((dragItem.getData().getType().equals(JobInfoWrapper.TypeEnum.REFERJOB) 
+							|| dragItem.getData().getType().equals(JobInfoWrapper.TypeEnum.REFERJOBNET)) && !m_controller.isDragdropId()) {
 						// dropしたものが参照ジョブor参照ジョブネットで、ドロップ時の挙動が参照コピーの場合、ドロップ不可
 						m_log.debug("drop type is refer and copy type is refer return.");
 						return;
 					}
 					
-					JobTreeItem assignJobTreeItem = null;
+					JobTreeItemWrapper assignJobTreeItem = null;
 					// trueの場合はコピー、falseは参照
 					if (m_controller.isDragdropId()) {
 						
 						// コピー元のジョブツリーのプロパティーがFullでない場合があるので、
 						// ここでコピーしておく。
-						JobTreeItem referJobTreeItem = JobUtil.getJobTreeItem(dragItem, // 追加するJobTreeItem
+						JobTreeItemWrapper referJobTreeItem = JobUtil.getJobTreeItem(dragItem, // 追加するJobTreeItem
 						event.data.toString().split(",")[1]);
-						JobTreeItem manager = JobTreeItemUtil.getManager(referJobTreeItem);
+						JobTreeItemWrapper manager = JobTreeItemUtil.getManager(referJobTreeItem);
 						JobPropertyUtil.setJobFullTree(manager.getData().getName(), referJobTreeItem);
 						assignJobTreeItem = JobUtil.copy(referJobTreeItem, parentJobTreeItem, 
 								parentJobTreeItem.getData().getJobunitId(), referJobTreeItem.getData().getOwnerRoleId());
 					} else {
 						// 参照元ジョブネット・ジョブを検索する
-						JobTreeItem jobunitJobTreeItem  = JobUtil.getTopJobUnitTreeItem(jobTreeItem);// 追加するところのunit
-						JobTreeItem referJobTreeItem = JobUtil.getJobTreeItem(jobunitJobTreeItem, // 追加するJobTreeItem
+						JobTreeItemWrapper jobunitJobTreeItem  = JobUtil.getTopJobUnitTreeItem(jobTreeItem);// 追加するところのunit
+						JobTreeItemWrapper referJobTreeItem = JobUtil.getJobTreeItem(jobunitJobTreeItem, // 追加するJobTreeItem
 								event.data.toString().split(",")[1]);
-						Integer assingnJobType = null;
-						if (referJobTreeItem.getData().getType() == JobConstant.TYPE_JOBNET) {
+						 JobInfoWrapper.TypeEnum assingnJobType = null;
+						if (referJobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET) {
 							// 参照ジョブネットの作成
-							assingnJobType = JobConstant.TYPE_REFERJOBNET;
+							assingnJobType = JobInfoWrapper.TypeEnum.REFERJOBNET;
 						} else {
 							// 参照ジョブの作成
-							assingnJobType = JobConstant.TYPE_REFERJOB;
+							assingnJobType = JobInfoWrapper.TypeEnum.REFERJOB;
 						}
-						JobInfo assignJobInfo = JobTreeItemUtil.getNewJobInfo(
+						JobInfoWrapper assignJobInfo = JobTreeItemUtil.getNewJobInfo(
 								parentJobTreeItem.getData().getJobunitId(),
 								assingnJobType);
 						assignJobInfo.setId(referJobTreeItem.getData().getId());
@@ -320,15 +352,14 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 						// ジョブIDの名称を変更する
 						JobUtil.setReferJobId(assignJobInfo, jobTreeItem);
 
-						assignJobTreeItem = new JobTreeItem();
+						assignJobTreeItem = new JobTreeItemWrapper();
 						assignJobTreeItem.setData(assignJobInfo);
 					}
 
 					parentJobTreeItem.getChildren().add(0, assignJobTreeItem);
 					assignJobTreeItem.setParent(parentJobTreeItem);
-					
-					JobEditState editState = JobEditStateUtil.getJobEditState(JobTreeItemUtil.getManagerName(assignJobTreeItem));
-					editState.addEditedJobunit(assignJobTreeItem);
+
+					editedJobTree(assignJobTreeItem);
 
 					// 画面reload
 					tree.refresh(parentJobTreeItem);
@@ -358,10 +389,10 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 		m_layer.setScale(scale);
 	}
 
-	public JobFigure drawFigure(Layer layer, JobTreeItem jobTreeItem, int x, int y, boolean collapse) {
+	public JobFigure drawFigure(Layer layer, JobTreeItemWrapper jobTreeItem, int x, int y, boolean collapse) throws HinemosUnknown {
 		// 図を生成する
 		JobFigure figure = new JobFigure(this.m_managerName, jobTreeItem, m_editorView, this, collapse);
-		if(jobTreeItem.getData().getType() != JobConstant.TYPE_COMPOSITE) {
+		if(jobTreeItem.getData().getType() != JobInfoWrapper.TypeEnum.COMPOSITE) {
 			figure.setJob(jobTreeItem);
 			figure.draw();
 		}
@@ -493,6 +524,14 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 
 	public void clearCanvas(){
 		m_layer.removeAll();
+		//個別に設定したメニューが残っている場合があるのでその場合は消しておく
+		Menu menu = m_canvas.getMenu();
+		if (menu != null) {
+			MenuItem[] menuItems = menu.getItems();
+			for (MenuItem item : menuItems) {
+				item.dispose();
+			}
+		}
 	}
 
 	public void clearMapData() {
@@ -529,12 +568,12 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 				JobFigure jobFigure = (JobFigure)figure;
 				m_log.debug("! mouse double click  " + figure.toString() +
 						"," + jobFigure.getJobTreeItem().getData().getId());
-				JobTreeItem jobTreeItem = jobFigure.getJobTreeItem();
+				JobTreeItemWrapper jobTreeItem = jobFigure.getJobTreeItem();
 
 				// セッション情報を持っていない(ジョブマップ[設定])の場合
 				if (jobTreeItem.getDetail() == null) {
 					String managerName = null;
-					JobTreeItem mgrTree = JobTreeItemUtil.getManager(jobTreeItem);
+					JobTreeItemWrapper mgrTree = JobTreeItemUtil.getManager(jobTreeItem);
 					if(mgrTree == null) {
 						managerName = jobTreeItem.getChildren().get(0).getData().getId();
 					} else {
@@ -554,7 +593,7 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 						if (editState.isLockedJobunitId(jobTreeItem.getData().getJobunitId())) {
 							// 編集モードのジョブが更新された場合(ダイアログで編集モードになったものを含む）
 							editState.addEditedJobunit(jobTreeItem);
-							if (jobTreeItem.getData().getType() == JobConstant.TYPE_JOBUNIT) {
+							if (jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 								JobUtil.setJobunitIdAll(jobTreeItem, jobTreeItem.getData().getJobunitId());
 							}
 						}
@@ -567,13 +606,19 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 						tree.updateJobMapEditor(null);
 					}
 				} else {
-					int jobType = jobFigure.getJobTreeItem().getData().getType();
+					JobInfoWrapper.TypeEnum jobType = jobFigure.getJobTreeItem().getData().getType();
 					String sessionId = getSessionId();
 					String jobunitId = jobTreeItem.getData().getJobunitId();
 					String jobId = jobTreeItem.getData().getId();
-					if (jobType == JobConstant.TYPE_JOB ||
-							jobType == JobConstant.TYPE_APPROVALJOB ||
-							jobType == JobConstant.TYPE_MONITORJOB) {
+					String jobName = jobTreeItem.getData().getName();
+					if (jobType == JobInfoWrapper.TypeEnum.JOB ||
+							jobType == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+							jobType == JobInfoWrapper.TypeEnum.MONITORJOB ||
+							jobType == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+							jobType == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+							jobType == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+							jobType == JobInfoWrapper.TypeEnum.RESOURCEJOB ||
+							jobType == JobInfoWrapper.TypeEnum.RPAJOB) {
 						//アクティブページを手に入れる
 						IWorkbenchPage page = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getActivePage();
@@ -601,10 +646,10 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 						if (viewPartDetail != null) {
 							JobNodeDetailView view = (JobNodeDetailView) viewPartDetail
 							.getAdapter(JobNodeDetailView.class);
-							view.update(m_managerName, sessionId, jobunitId, jobId);
+							view.update(m_managerName, sessionId, jobunitId, jobId, jobName);
 							view.setFocus();
 						}
-					} else if (jobType == JobConstant.TYPE_FILEJOB){
+					} else if (jobType == JobInfoWrapper.TypeEnum.FILEJOB){
 						//アクティブページを手に入れる
 						IWorkbenchPage page = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getActivePage();
@@ -619,7 +664,7 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 						if (viewPartDetail != null) {
 							JobNodeDetailView view = (JobNodeDetailView) viewPartDetail
 							.getAdapter(JobNodeDetailView.class);
-							view.update(m_managerName, sessionId, jobunitId, jobId);
+							view.update(m_managerName, sessionId, jobunitId, jobId, jobName);
 							view.setFocus();
 						}
 						
@@ -648,6 +693,7 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 
 		@Override
 		public void mousePressed(MouseEvent me) {
+			mousePressFigure =true;
 			Figure figure = (Figure)me.getSource();
 			if (figure instanceof JobFigure) {
 				if(m_log.isDebugEnabled()){
@@ -801,12 +847,12 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 				 * コネクションを描く。
 				 */
 				// 先行ジョブ
-				JobTreeItem firstItem = jobFigure.getJobTreeItem();
+				JobTreeItemWrapper firstItem = jobFigure.getJobTreeItem();
 				String firstJobId = firstItem.getData().getId();
 				// 後続ジョブ
 				JobFigure secondFigure = m_controller.getJobFigure(mousePoint);
 				if (secondFigure != null) {
-					JobTreeItem secondItem = secondFigure.getJobTreeItem();
+					JobTreeItemWrapper secondItem = secondFigure.getJobTreeItem();
 					String secondJobId = secondItem.getData().getId();
 					m_log.debug("start=" + firstJobId + ", end=" + secondJobId);
 
@@ -814,7 +860,7 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 					boolean flag = false;
 					m_log.debug("secondItem=" + secondItem);
 					m_log.debug("secondItem=" + secondItem.getParent().getChildren());
-					for (JobTreeItem item : secondItem.getParent().getChildren()) {
+					for (JobTreeItemWrapper item : secondItem.getParent().getChildren()) {
 						if (secondJobId.equals(item.getData().getId())) {
 							continue;
 						}
@@ -823,67 +869,43 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 							break;
 						}
 					}
+
 					if (flag) {
+						// 待ち条件群追加確認ダイアログ
+						boolean isOkPush = MessageDialog.openQuestion(null, Messages.getString("confirmed"),
+								Messages.getString("message.job.107"));
+
 						// まずFullJobする(5.0.cの改善で表示されてもfullJobされてないケースがあるため)
 						JobPropertyUtil.setJobFull(m_managerName, secondItem.getData());
-						
-						WaitRuleDialog dialog = new WaitRuleDialog(shell, secondItem);
-						ArrayList<Object> list = new ArrayList<Object>();
-						list.add(JudgmentObjectConstant.TYPE_JOB_END_STATUS);
-						list.add(firstJobId);
-						list.add(EndStatusMessage.typeToString(EndStatusConstant.TYPE_NORMAL));
-						list.add("");
-						list.add("");
-						list.add("");
-						list.add("");
-						list.add("");
-						dialog.setInputData(list);
-						if (dialog.open() == IDialogConstants.OK_ID) {
-							JobWaitRuleInfo jobWaitRuleInfo = secondItem.getData().getWaitRule();
-							List<JobObjectInfo> infoList = jobWaitRuleInfo.getObject();
-							ArrayList<?> inputList = dialog.getInputData();
-							m_log.debug("0:" + inputList.get(0));
-							m_log.debug("1:" + inputList.get(1));
-							m_log.debug("2:" + inputList.get(2));
-
-							JobObjectInfo newInfo = WaitRuleComposite.array2JobObjectInfo(inputList);
-							m_log.debug("id=" + newInfo.getJobId() + "," + newInfo.getType() + "," +
-									newInfo.getValue());
-							for (JobObjectInfo i : infoList) {
-								m_log.debug("i " + i.getJobId() + "," + i.getType() + "," +
-										i.getValue());
-								// 待ち条件に複数の時刻は設定できない。
-								if (i.getJobId() == null && newInfo.getJobId() == null) {
-									MessageDialog.openInformation(null, Messages.getString("message"),
-											Messages.getString("message.job.61"));
-									return;
-								}
-								// 待ち条件が時刻の場合は、重複チェック対象としない。
-								if (i.getJobId() == null) {
-									continue;
-								}
-								if (!i.getJobId().equals(newInfo.getJobId())) {
-									continue;
-								}
-								if (!i.getType().equals(newInfo.getType())) {
-									continue;
-								}
-								if (!i.getValue().equals(newInfo.getValue())) {
-									continue;
-								}
-								// 重複した待ち条件は設定できない。
-								MessageDialog.openInformation(null, Messages.getString("message"),
-										com.clustercontrol.jobmap.messages.Messages.getString("wait.rule.duplicate"));
-								return;
+						if (isOkPush) {
+							WaitRuleListDialog dialog = new WaitRuleListDialog(shell, firstItem, secondItem);
+							if (dialog.open() == IDialogConstants.OK_ID) {
+								List<JobObjectGroupInfoResponse> groupList = dialog.getListData();
+								JobWaitRuleInfoResponse jobWaitRuleInfo = secondItem.getData().getWaitRule();
+								jobWaitRuleInfo.setObjectGroup(groupList);
+								editedJobTree(secondItem);
+								m_composite.update();
 							}
-							m_log.debug("new JobObjectInfo");
-							infoList.add(newInfo);
+						} else {
+							WaitRuleDialog dialog = new WaitRuleDialog(shell, secondItem, m_composite);
+							JobObjectGroupInfoResponse objectGroupInfo = new JobObjectGroupInfoResponse();
+							objectGroupInfo.setJobObjectList(new ArrayList<>());
 
-							// ジョブツリーに変更済みフラグを立てる。
-							JobEditState editState = JobEditStateUtil.getJobEditState(JobTreeItemUtil.getManagerName(secondItem));
-							editState.addEditedJobunit(secondItem);
-
-							m_composite.update();
+							JobObjectInfoResponse objectInfo = new JobObjectInfoResponse();
+							objectInfo.setType(JobObjectInfoResponse.TypeEnum.JOB_END_STATUS);
+							objectInfo.setJobId(firstJobId);
+							objectInfo.setStatus(JobObjectInfoResponse.StatusEnum.NORMAL);
+							objectInfo.setDescription("");
+							objectGroupInfo.getJobObjectList().add(objectInfo);
+							objectGroupInfo.setConditionType(JobObjectGroupInfoResponse.ConditionTypeEnum.AND);
+							dialog.setInputData(objectGroupInfo);
+							if (dialog.open() == IDialogConstants.OK_ID) {
+								JobObjectGroupInfoResponse inputGroup = dialog.getInputData();
+								JobWaitRuleInfoResponse jobWaitRuleInfo = secondItem.getData().getWaitRule();
+								jobWaitRuleInfo.addObjectGroupItem(inputGroup);
+								editedJobTree(secondItem);
+								m_composite.update();
+							}
 						}
 					}
 				}
@@ -900,7 +922,6 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 			// イベントを消費
 			me.consume();
 		}
-
 
 		// ドラッグ時に呼ばれる
 		@Override
@@ -971,6 +992,16 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 
 	}
 
+	/**
+	 * ジョブツリーに変更済みフラグを立てる。
+	 * 
+	 * @param secondItem
+	 */
+	private void editedJobTree(JobTreeItemWrapper treeItem) {
+		JobEditState editState = JobEditStateUtil.getJobEditState(JobTreeItemUtil.getManagerName(treeItem));
+		editState.addEditedJobunit(treeItem);
+	}
+
 	@Override
 	public void update() {
 		m_controller.updateMap();
@@ -980,15 +1011,24 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 		m_layer.setScale(scale);
 	}
 
-	public void update(String sessionId, JobTreeItem jobTreeItem) {
+	public void update(String sessionId, JobTreeItemWrapper jobTreeItem) {
 		if (m_controller == null) {
 			m_log.debug("update : m_controller is null");
 			return;
 		}
 		long start = new Date().getTime();
-		
+
+		String oldJobId = null;
+		String oldSessionId = null;
+		String oldManagerName = null;
+		if(focusJobFigure != null){
+			oldJobId = focusJobFigure.getJobTreeItem().getData().getId();
+			oldSessionId = this.getSessionId();
+			oldManagerName = m_managerName;
+		}
+
 		if (jobTreeItem != null) {
-			JobTreeItem mgrTree = JobTreeItemUtil.getManager(jobTreeItem);
+			JobTreeItemWrapper mgrTree = JobTreeItemUtil.getManager(jobTreeItem);
 			if(mgrTree == null) {
 				m_managerName = jobTreeItem.getChildren().get(0).getData().getId();
 			} else {
@@ -998,15 +1038,24 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 		
 		try {
 			m_controller.updateMap(m_managerName, sessionId, jobTreeItem);
-			focusJobFigure = m_controller.getRootJobFigure();
+
+			if (oldJobId != null && m_managerName != null && m_managerName.equals(oldManagerName)
+					&& getSessionId() != null && getSessionId().equals(oldSessionId)
+					&& m_controller.getJobFigure(oldJobId) != null) {
+				focusJobFigure = m_controller.getJobFigure(oldJobId);
+			} else {
+				focusJobFigure = m_controller.getRootJobFigure();
+			}
+
 			if (focusJobFigure != null) {
 				focusJobFigure.requestFocus();
 			}
 
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			m_log.error(HinemosMessage.replace(e.getMessage()), e);
 			if (ClientSession.isDialogFree()) {
 				ClientSession.occupyDialog();
+				m_updateSuccess = false;
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
@@ -1016,6 +1065,7 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 			m_log.error(HinemosMessage.replace(e.getMessage()), e);
 			if (ClientSession.isDialogFree()) {
 				ClientSession.occupyDialog();
+				m_updateSuccess = false;
 				MessageDialog.openInformation(null, Messages.getString("message"), HinemosMessage.replace(e.getMessage()));
 				ClientSession.freeDialog();
 			}
@@ -1100,7 +1150,7 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 	}
 
 	public void update(String managerName, String sessionId,
-			JobTreeItem jobTreeItem) {
+			JobTreeItemWrapper jobTreeItem) {
 		if (managerName != null) {
 			m_managerName = managerName;
 		}
@@ -1108,11 +1158,11 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 		update(sessionId, jobTreeItem);
 	}
 
-	public void addCollapseItem(JobTreeItem jobTreeItem) {
+	public void addCollapseItem(JobTreeItemWrapper jobTreeItem) {
 		m_controller.addCollapseItem(jobTreeItem);
 	}
 
-	public void removeCollapseItem(JobTreeItem jobTreeItem) {
+	public void removeCollapseItem(JobTreeItemWrapper jobTreeItem) {
 		m_controller.removeCollapseItem(jobTreeItem);
 	}
 
@@ -1170,7 +1220,7 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 	 * 対象Jobについて フォーカスして表示する
 	 * もし 折りたたみ表示の内部にある場合は 関連する部分は展開する
 	 */
-	private void displayTargetJob(JobTreeItem Item) {
+	private void displayTargetJob(JobTreeItemWrapper Item) {
 		boolean expandResult = m_controller.doExpandParentDispary(Item);
 		if(expandResult){
 			searchJob(Item.getData().getId());
@@ -1182,9 +1232,9 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 	/**
 	 * 指定されたジョブに隣接しているジョブをキーワード検索する
 	 */
-	private JobTreeItem searchNeighbors( JobTreeItem current, String keyword ){
-		JobTreeItem found;
-		JobTreeItem parent = current.getParent();
+	private JobTreeItemWrapper searchNeighbors( JobTreeItemWrapper current, String keyword ){
+		JobTreeItemWrapper found;
+		JobTreeItemWrapper parent = current.getParent();
 		//親がないか 表示の最上位なら取りやめ
 		if( null != parent &&  current.equals(m_controller.getCurrentJobTreeItem())==false) {
 			do{
@@ -1206,16 +1256,16 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 	/**
 	 * 指定されたジョブの子をキーワード検索する
 	 */
-	private JobTreeItem searchChildren( JobTreeItem parent, String keyword, int offset ){
-		List<JobTreeItem> children = parent.getChildren();
+	private JobTreeItemWrapper searchChildren( JobTreeItemWrapper parent, String keyword, int offset ){
+		List<JobTreeItemWrapper> children = parent.getChildren();
 		int len = children.size();
 		for( int i = offset; i<len; i++ ){
-			JobTreeItem child = children.get(i);
+			JobTreeItemWrapper child = children.get(i);
 
 			if( -1 != child.getData().getId().indexOf( keyword ) ){
 				return child;
 			}else{
-				JobTreeItem found = searchChildren( child, keyword, 0 );
+				JobTreeItemWrapper found = searchChildren( child, keyword, 0 );
 				if( null != found ){
 					return found;
 				}
@@ -1230,8 +1280,8 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 	 * 連続検索に対応している
      *
 	 */
-	private JobTreeItem searchItem( JobTreeItem currentItem, String keyword ){
-		JobTreeItem found;
+	private JobTreeItemWrapper searchItem( JobTreeItemWrapper currentItem, String keyword ){
+		JobTreeItemWrapper found;
 
 		// 1. If no current item ,  search root 
 		if( currentItem == null ){
@@ -1280,13 +1330,13 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 			return;
 		}
 		
-		JobTreeItem curItem = null;
+		JobTreeItemWrapper curItem = null;
 		if( null != focusJobFigure){ 
 			curItem = focusJobFigure.getJobTreeItem();
 		}else{
 			m_log.debug("doSearch . currnet nothing " );
 		}
-		JobTreeItem result = searchItem( curItem, keyword );
+		JobTreeItemWrapper result = searchItem( curItem, keyword );
 		if( null != result ){
 			displayTargetJob(result);
 		}else{
@@ -1299,7 +1349,7 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 					displayTargetJob(m_controller.getCurrentJobTreeItem());
 				}else{
 					//ビューワ向けロジック
-					List<JobTreeItem> topChildList = m_controller.getCurrentJobTreeItem().getChildren();
+					List<JobTreeItemWrapper> topChildList = m_controller.getCurrentJobTreeItem().getChildren();
 					if( topChildList.size() > 0 && topChildList.get(0).getData() != null ){
 						displayTargetJob(topChildList.get(0));
 					} 
@@ -1316,6 +1366,14 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 			setErrorMessage(Messages.getString( "jobmap.display.hint" ));
 		}
 		
+	}
+
+	/**
+	 * 更新成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isUpdateSuccess() {
+		return this.m_updateSuccess;
 	}	
 	
 }

@@ -43,10 +43,11 @@ public class JobDetailPage extends WizardPage implements CloudStringConstants {
 	 */
 	public void createControl(Composite parent) {
 		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.H_SCROLL | SWT.V_SCROLL);
+		scroll.setExpandVertical(true); 
+		scroll.setExpandHorizontal(true); 
 
 		Composite container = new Composite(scroll, SWT.NULL);
-		
-		setControl(scroll);
+
 		container.setLayout(new GridLayout(3, false));
 		
 		Label lblNewLabel = new Label(container, SWT.RIGHT);
@@ -74,12 +75,9 @@ public class JobDetailPage extends WizardPage implements CloudStringConstants {
 		txtJobName.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));
 		ControlUtil.setRequired(txtJobId, txtJobName);
 		
-		container.setSize(430, 64);
-		
-		scroll.setExpandHorizontal(true);
-		scroll.setExpandVertical(true);
+		scroll.setMinSize(520, 180);
 		scroll.setContent(container);
-		scroll.setMinSize(container.getSize().x, container.getSize().y);
+		setControl(scroll);
 	}
 	
 	public String getJobId() {

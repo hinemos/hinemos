@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * calendarIDが重複している場合に利用するException
  * @version 3.2.0
  */
-public class CalendarDuplicate extends HinemosException {
+public class CalendarDuplicate extends HinemosDuplicate {
 
 	private static final long serialVersionUID = -5612525221540116629L;
 	private String m_calendarId = null;

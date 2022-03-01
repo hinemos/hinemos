@@ -55,7 +55,7 @@ public class DatasourceJobSession extends DatasourceBase {
 			throw new ReportingPropertyNotFound(SUFFIX_KEY_VALUE+"."+num + " is not defined.");
 		}
 		String suffix = m_propertiesMap.get(SUFFIX_KEY_VALUE+"."+num);
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		
 		String jobUnitRegex = isDefine(JOB_UNIT_REGEX+"."+num, "%%");		
 		String jobIdRegex = isDefine(JOB_ID_REGEX+"."+num, "%%");
@@ -65,7 +65,7 @@ public class DatasourceJobSession extends DatasourceBase {
 		HashMap<String, Object> retMap = new HashMap<String, Object>();
 		
 		String[] columns = { "session_id", "job_id", "schedule_date", "end_date", "trigger_type", "trigger_info", "end_status", "elapsed_time", "job_label" };
-		String columnsStr = ReportUtil.joinStrings(columns, ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 		
 		// get data from Hinemos DB
 		try {
@@ -103,7 +103,6 @@ public class DatasourceJobSession extends DatasourceBase {
 						}
 						int triggerType = entity.getTriggerType();
 						String triggerInfo = entity.getTriggerInfo();
-						triggerInfo = '"' + triggerInfo.replace("\"", "\"\"") + '"';
 						Integer endStatus = jobSessionJob != null ? jobSessionJob.get(0).getEndStatus() : null;
 						String endStatusStr = endStatus == null ? "" : ReportUtil.getEndStatusString(endStatus);
 						Long elapsedDate = endDate != null ? TimeUnit.MILLISECONDS.toSeconds(jobSessionJob.get(0).getEndDate()) - TimeUnit.MILLISECONDS.toSeconds(jobSessionJob.get(0).getStartDate()) : null;
@@ -111,11 +110,11 @@ public class DatasourceJobSession extends DatasourceBase {
 						String jobLabel = jobId + " (" + jobName + ")";
 						jobLabel = (jobLabel.length() <= maxLength ? jobLabel :
 							jobLabel.substring(0, maxLength) + "...");
-						jobLabel = '"' + jobLabel.replace("\"", "\"\"") + '"';
-	
-						bw.write(sessionId + "," + jobId + "," + scheduleDate + "," + (endDate == null ? "" : endDate) + ","
-								 + triggerType + "," + triggerInfo + "," + endStatusStr + "," + elapsedTime
-								 + "," + jobLabel);
+						
+						String[] data = { sessionId, jobId, scheduleDate.toString(),
+								(endDate == null ? "" : endDate.toString()), Integer.toString(triggerType), triggerInfo,
+								endStatusStr, elapsedTime, jobLabel };
+						bw.write(ReportUtil.joinStringsToCsv(data));
 						bw.newLine();
 						
 					}

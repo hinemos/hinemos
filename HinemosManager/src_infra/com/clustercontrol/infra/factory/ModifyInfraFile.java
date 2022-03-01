@@ -11,7 +11,7 @@ package com.clustercontrol.infra.factory;
 import java.io.IOException;
 
 import javax.activation.DataHandler;
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import org.apache.log4j.Logger;
 

@@ -64,12 +64,19 @@ public class ReachAddressIMAPS extends ReachAddressProtocol {
 					+ hostname + "[" + address.getHostAddress()
 					+ "]:" + m_portNo + ".\n\n");
 
-			IMAPSClient client = new IMAPSClient(true);
+			IMAPSClient client = new IMAPSClient(true) {
+				@Override
+				protected void _connectAction_() throws IOException {
+					setSoTimeout(m_timeout);
+					super._connectAction_();
+				}
+			};
 
 			for (int i = 0; i < m_sentCount && retry; i++) {
 				try {
 					bufferOrg.append(HinemosTime.getDateString() + " Tried to Connect: ");
 					client.setDefaultTimeout(m_timeout);
+					client.setConnectTimeout(m_timeout);
 
 					start = HinemosTime.currentTimeMillis();
 					client.connect(address, m_portNo);

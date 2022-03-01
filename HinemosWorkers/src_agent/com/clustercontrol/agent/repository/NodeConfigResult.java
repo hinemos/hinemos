@@ -8,7 +8,7 @@
 
 package com.clustercontrol.agent.repository;
 
-import com.clustercontrol.ws.repository.NodeInfo;
+import org.openapitools.client.model.AgtNodeInfoRequest;
 
 public class NodeConfigResult {
 
@@ -16,9 +16,9 @@ public class NodeConfigResult {
 	private long aquireDate = 0;
 
 	/** 構成情報 */
-	private NodeInfo nodeInfo = null;
+	private AgtNodeInfoRequest nodeInfo = null;
 
-	public NodeConfigResult(long aquireDate, NodeInfo nodeInfo) {
+	public NodeConfigResult(long aquireDate, AgtNodeInfoRequest nodeInfo) {
 		this.aquireDate = aquireDate;
 		this.nodeInfo = nodeInfo;
 	}
@@ -34,12 +34,12 @@ public class NodeConfigResult {
 	}
 
 	/** 構成情報 */
-	public NodeInfo getNodeInfo() {
+	public AgtNodeInfoRequest getNodeInfo() {
 		return nodeInfo;
 	}
 
 	/** 構成情報 */
-	public void setNodeInfo(NodeInfo nodeInfo) {
+	public void setNodeInfo(AgtNodeInfoRequest nodeInfo) {
 		this.nodeInfo = nodeInfo;
 	}
 

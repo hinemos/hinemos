@@ -27,14 +27,15 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.SetStatusCollectorRequest;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.composite.MonitorListComposite;
 import com.clustercontrol.monitor.run.action.GetMonitorListTableDefine;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.monitor.view.MonitorListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 
 /**
  * 監視[一覧]ビューの収集無効アクションクラス<BR>
@@ -141,32 +142,34 @@ public class CollectorDisableAction extends AbstractHandler implements IElementU
 		// 実行
 		for(Map.Entry<String, List<String[]>> map : dataMap.entrySet()) {
 			String mgrName = map.getKey();
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(mgrName);
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(mgrName);
 
+			List<String> monitorIdList = new ArrayList<>();
 			for(String[] strArgs : map.getValue()) {
-				monitorId = strArgs[0];
-				monitorTypeId = strArgs[1];
-
-				try{
-					wrapper.setStatusCollector(monitorId, monitorTypeId, false);
-					if (successList.length() > 0) {
-						successList.append(", ");
-					}
-					successList.append(monitorId + "(" + mgrName + ")");
-				} catch (InvalidRole_Exception e) {
-					if (failureList.length() > 0) {
-						failureList.append(", ");
-					}
-					failureList.append(monitorId + "(" + HinemosMessage.replace(e.getMessage()) + ")");
-					m_log.warn("run() setStatusCollector monitorId=" + monitorId + ", " + e.getMessage(), e);
-					hasRole = false;
-				}catch (Exception e) {
-					if (failureList.length() > 0) {
-						failureList.append(", ");
-					}
-					failureList.append(monitorId + "(" + HinemosMessage.replace(e.getMessage()) + ")");
-					m_log.warn("run() setStatusCollector monitorId=" + monitorId + ", " + e.getMessage(), e);
+				monitorIdList.add(strArgs[0]);
+			}
+			try{
+				SetStatusCollectorRequest info = new SetStatusCollectorRequest();
+				info.setMonitorIds(monitorIdList);
+				info.setValidFlg(false);
+				wrapper.setStatusCollector(info);
+				if (successList.length() > 0) {
+					successList.append("\n");
 				}
+				successList.append(mgrName + " : " + String.join(", ", monitorIdList));
+			} catch (InvalidRole e) {
+				if (failureList.length() > 0) {
+					failureList.append("\n");
+				}
+				failureList.append(HinemosMessage.replace(e.getMessage()) + " : " + String.join(",", monitorIdList));
+				m_log.warn("run() setStatusCollector monitorId=" + String.join(",", monitorIdList) + ", " + e.getMessage(), e);
+				hasRole = false;
+			}catch (Exception e) {
+				if (failureList.length() > 0) {
+					failureList.append("\n");
+				}
+				failureList.append(HinemosMessage.replace(e.getMessage()) + " : " + String.join(",", monitorIdList));
+				m_log.warn("run() setStatusCollector monitorId=" + String.join(",", monitorIdList) + ", " + e.getMessage(), e);
 			}
 		}
 

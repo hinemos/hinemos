@@ -30,18 +30,17 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.accesscontrol.action.GetRoleListTableDefine;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.accesscontrol.view.RoleListView;
 import com.clustercontrol.accesscontrol.view.RoleSettingTreeView;
 import com.clustercontrol.bean.PluginMessage;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UnEditableRole;
+import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.fault.UsedOwnerRole;
+import com.clustercontrol.fault.UsedRole;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.UnEditableRole_Exception;
-import com.clustercontrol.ws.access.UsedFacility_Exception;
-import com.clustercontrol.ws.access.UsedOwnerRole_Exception;
-import com.clustercontrol.ws.access.UsedRole_Exception;
 
 /**
  * アクセス[ロール]ビューの「削除」のアクションクラス<BR>
@@ -145,43 +144,36 @@ public class RoleDeleteAction extends AbstractHandler implements IElementUpdater
 					continue;
 				}
 				String managerName = entry.getKey();
-				AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+				AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 				if (i > 0) {
 					messageArg.append(", ");
 				}
 				messageArg.append(managerName);
 				try {
 					// 削除処理
-					wrapper.deleteRoleInfo(roleIdList);
-				} catch (UsedFacility_Exception e) {
-					// TODO
-					// UsedFacilityのメンバ変数のfacilityIdを追加すること。
-					String roleId = roleIdList.get(0);
-
+					wrapper.deleteRoleInfo(String.join(",", roleIdList));
+				} catch (UsedFacility e) {
 					// ロールIDのスコープが使用されている場合のエラーダイアログを表示する
-					Object[] errorArgs = { roleId, PluginMessage.typeToString(e.getFaultInfo().getPlugin()) };
-
+					Object[] errorArgs = {roleIdList, e.getMessage()};
 					errorMsgs.put(managerName, Messages.getString("message.repository.27", errorArgs));
-				} catch (UsedOwnerRole_Exception e) {
-					String roleId = e.getFaultInfo().getRoleId();
-
+				} catch (UsedOwnerRole e) {
 					// ロールがオーナーロールとして使用されている場合はエラー
-					Object[] errorArgs = { roleId,
-							PluginMessage.typeToString(((UsedOwnerRole_Exception) e).getFaultInfo().getPlugin()) };
-					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.52", errorArgs));
+					Object[] errorArgs = {roleIdList, PluginMessage.typeToString(e.getPlugin())};
+					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.52", errorArgs)
+							+ "\n" + e.getMessage());
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// 権限なし
 						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
-					} else if (e instanceof UsedRole_Exception) {
+					} else if (e instanceof UsedRole) {
 						// ロールに所属するユーザが存在する場合はエラー
 						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.42"));
-					} else if (e instanceof UnEditableRole_Exception) {
+					} else if (e instanceof UnEditableRole) {
 						// 削除不可のロールを削除する場合はエラー（システムロール、内部モジュール用ロール）
 						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.41"));
 					} else {
-						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+						errMessage = ", " + e.getMessage();
 					}
 
 					// 上記以外の例外

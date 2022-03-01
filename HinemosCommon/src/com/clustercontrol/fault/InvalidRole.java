@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * 適切なroleを持っていない場合に利用するException
  * @version 3.2.0
  */
-public class InvalidRole extends HinemosException {
+public class InvalidRole extends HinemosInvalid {
 
 	private static final long serialVersionUID = 1636867491172325635L;
 

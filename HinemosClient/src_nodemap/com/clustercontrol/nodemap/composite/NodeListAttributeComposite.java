@@ -18,6 +18,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
+import org.openapitools.client.model.GetNodeListRequest;
 
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
@@ -25,7 +26,6 @@ import com.clustercontrol.bean.PropertyFieldColorConstant;
 import com.clustercontrol.repository.action.GetNodeProperty;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.viewer.PropertySheet;
-import com.clustercontrol.ws.repository.NodeInfo;
 
 /**
  * ノード属性一覧コンポジットクラス<BR>
@@ -119,7 +119,7 @@ public class NodeListAttributeComposite extends Composite {
 	 * @param targetDatetime 対象日時
 	 * @param facilityId ファシリティID
 	 */
-	public void update(String managerName, String facilityId, Long targetDatetime, NodeInfo nodeFilterInfo) {
+	public void update(String managerName, String facilityId, Long targetDatetime, GetNodeListRequest nodeFilterInfo) {
 		Property property = null;
 		GetNodeProperty getNodeProperty = new GetNodeProperty(managerName, facilityId,
 				PropertyDefineConstant.MODE_SHOW, targetDatetime, nodeFilterInfo);

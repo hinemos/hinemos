@@ -8,7 +8,6 @@
 package com.clustercontrol.xcloud.ui.handlers;
 
 import java.text.MessageFormat;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -20,14 +19,14 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.InstanceInfoResponse;
 
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.Instance;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.ICloudOptionHandler;
 import com.clustercontrol.xcloud.model.cloud.IInstance;
 import com.clustercontrol.xcloud.ui.dialogs.ModifyInstanceTagDialog;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.ControlUtil;
 
 public class ModifyInstanceTagsHandler implements ICloudOptionHandler, CloudStringConstants {
@@ -39,11 +38,11 @@ public class ModifyInstanceTagsHandler implements ICloudOptionHandler, CloudStri
 		IStructuredSelection selection = (IStructuredSelection)HandlerUtil.getCurrentSelection(event);
 		IInstance instance = (IInstance)selection.getFirstElement();
 		
-		CloudEndpoint endpoint = instance.getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-
-		List<Instance> webInstances;
+		String managerName = instance.getCloudScope().getCloudScopes().getHinemosManager().getManagerName();
+		CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
+		List<InstanceInfoResponse> webInstances;
 		try {
-			webInstances = endpoint.getInstances(instance.getCloudScope().getId(), instance.getLocation().getId(), Arrays.asList(instance.getId()));
+			webInstances = endpoint.getInstances(instance.getCloudScope().getId(), instance.getLocation().getId(), instance.getId());
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 
@@ -79,7 +78,7 @@ public class ModifyInstanceTagsHandler implements ICloudOptionHandler, CloudStri
 				MessageFormat.format(msgConfirmModifyComputeNode, instance.getName(), instance.getId()))) {
 				
 				try {
-					endpoint.modifyInstance(instance.getCloudScope().getId(), instance.getLocation().getId(), dialog.getOutput());
+					endpoint.modifyInstance(instance.getCloudScope().getId(), instance.getLocation().getId(), instance.getId(), dialog.getOutput());
 					
 					// 成功報告ダイアログを生成
 					MessageDialog.openInformation(

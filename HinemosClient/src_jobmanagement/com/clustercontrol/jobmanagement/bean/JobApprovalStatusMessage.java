@@ -8,6 +8,8 @@
 
 package com.clustercontrol.jobmanagement.bean;
 
+import com.clustercontrol.approval.util.JobApprovalInfoWrapper;
+
 import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.util.Messages;
 
@@ -70,5 +72,25 @@ public class JobApprovalStatusMessage {
 			return JobApprovalStatusConstant.TYPE_FINISHED;
 		}
 		return -1;
+	}
+
+	/**
+	 * EnumからStringに変換する
+	 * @param type
+	 * @return
+	 */
+	public static String typeEnumToString(JobApprovalInfoWrapper.StatusEnum type) {
+		if (type == JobApprovalInfoWrapper.StatusEnum.PENDING) {
+			return STRING_PENDING;
+		} else if (type == JobApprovalInfoWrapper.StatusEnum.STILL){
+			return STRING_STILL;
+		} else if (type == JobApprovalInfoWrapper.StatusEnum.SUSPEND){
+			return STRING_SUSPEND;
+		} else if (type == JobApprovalInfoWrapper.StatusEnum.STOP){
+			return STRING_STOP;
+		} else if (type == JobApprovalInfoWrapper.StatusEnum.FINISHED){
+			return STRING_FINISHED;
+		}
+		return "";
 	}
 }

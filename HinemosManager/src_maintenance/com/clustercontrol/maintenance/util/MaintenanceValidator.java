@@ -11,6 +11,7 @@ package com.clustercontrol.maintenance.util;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -37,7 +38,7 @@ public class MaintenanceValidator {
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public static void validateMaintenanceInfo(MaintenanceInfo maintenanceInfo) throws InvalidSetting, InvalidRole {
+	public static void validateMaintenanceInfo(MaintenanceInfo maintenanceInfo, boolean isModify) throws InvalidSetting, InvalidRole {
 
 		// maintenanceId
 		if (maintenanceInfo.getMaintenanceId() == null ||
@@ -50,7 +51,9 @@ public class MaintenanceValidator {
 		CommonValidator.validateId(MessageConstant.MAINTENANCE_ID.getMessage(), maintenanceInfo.getMaintenanceId(), 64);
 
 		// ownerRoleId
-		CommonValidator.validateString(MessageConstant.OWNER_ROLE_ID.getMessage(), maintenanceInfo.getOwnerRoleId(), true, 1, 64);
+		if(!isModify){
+			CommonValidator.validateString(MessageConstant.OWNER_ROLE_ID.getMessage(), maintenanceInfo.getOwnerRoleId(), true, 1, 64);	
+		} 
 
 		// schedule
 		CommonValidator.validateScheduleHour(maintenanceInfo.getSchedule());
@@ -103,7 +106,7 @@ public class MaintenanceValidator {
 			throw e;
 		}
 		CommonValidator.validateInt(MessageConstant.MAINTENANCE_RETENTION_PERIOD.getMessage(),
-				maintenanceInfo.getDataRetentionPeriod(), -32768, 32767);
+				maintenanceInfo.getDataRetentionPeriod(), 0, DataRangeConstant.SMALLINT_HIGH);
 
 		// description
 		CommonValidator.validateString(MessageConstant.DESCRIPTION.getMessage(),

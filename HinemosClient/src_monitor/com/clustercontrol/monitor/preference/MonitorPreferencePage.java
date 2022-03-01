@@ -68,6 +68,9 @@ IWorkbenchPreferencePage {
 	
 	/** 監視[ステータス]ビューの新規イベントフラグ */
 	public static final String P_EVENT_NEW_EVENT_FLG = "eventNewEventFlg";
+	
+	/** 監視[イベント]ビューで確認済/確認中/未確認に変更する際に確認ダイアログを表示するかどうかのフラグ */
+	public static final String P_EVENT_CONFIRM_DIALOG_FLG = "eventConfirmDialogtFlg";
 
 	/** SNMPTRAP[作成・変更]ダイアログのtrap_value_infoの表示件数 */
 	public static final String P_MAX_TRAP_OID = "maxTrapOid";
@@ -92,6 +95,9 @@ IWorkbenchPreferencePage {
 
 	private static final String MSG_NEW_EVENT_MESSAGE =
 			Messages.getString("new.event.message");
+
+	private static final String MSG_EVENT_CONFIRM_DIALOG_MESSAGE =
+			Messages.getString("event.confirm.dialog.message");
 	
 	public MonitorPreferencePage() {
 		super(GRID);
@@ -198,6 +204,15 @@ IWorkbenchPreferencePage {
 				Integer.toString(DataRangeConstant.MONITOR_EVENT_MAX) };
 		eventMax.setErrorMessage(Messages.getString("message.hinemos.8", argsEvent ));
 		this.addField(eventMax);
+		// 確認ダイアログ表示フラグ
+		BooleanFieldEditor eventConfirmDialogField = new BooleanFieldEditor(P_EVENT_CONFIRM_DIALOG_FLG, MSG_EVENT_CONFIRM_DIALOG_MESSAGE,
+				eventGroup);
+		String eventConfirmDialogEditable = System.getProperty("event.confirm.dialog.editable");
+		if (eventConfirmDialogEditable != null && eventConfirmDialogEditable.equals("false")) {
+			// 確認ダイアログを表示するかどうかをユーザが変更できない設定の場合
+			eventConfirmDialogField.setEnabled(false, eventGroup);
+		}
+		this.addField(eventConfirmDialogField);
 
 		// SNMPTRAP監視ビュー関連
 		Group trapGroup = new Group(parent, SWT.SHADOW_NONE);
@@ -258,7 +273,7 @@ IWorkbenchPreferencePage {
 				if (scopeView != null) {
 					int cycle = store.getInt(P_SCOPE_UPDATE_CYCLE);
 					scopeView.setInterval(cycle);
-					if (store.getBoolean(P_SCOPE_UPDATE_FLG)) {
+					if (store.getBoolean(P_SCOPE_UPDATE_FLG) && scopeView.isUpdateSuccess()) {
 						scopeView.startAutoReload();
 					} else {
 						scopeView.stopAutoReload();
@@ -270,7 +285,7 @@ IWorkbenchPreferencePage {
 				if (statusView != null) {
 					int cycle = store.getInt(P_STATUS_UPDATE_CYCLE);
 					statusView.setInterval(cycle);
-					if (store.getBoolean(P_STATUS_UPDATE_FLG)) {
+					if (store.getBoolean(P_STATUS_UPDATE_FLG) && statusView.isUpdateSuccess()) {
 						statusView.startAutoReload();
 					} else {
 						statusView.stopAutoReload();
@@ -282,7 +297,7 @@ IWorkbenchPreferencePage {
 				if (eventView != null) {
 					int cycle = store.getInt(P_EVENT_UPDATE_CYCLE);
 					eventView.setInterval(cycle);
-					if (store.getBoolean(P_EVENT_UPDATE_FLG)) {
+					if (store.getBoolean(P_EVENT_UPDATE_FLG) && eventView.isUpdateSuccess()) {
 						eventView.startAutoReload();
 					} else {
 						eventView.stopAutoReload();

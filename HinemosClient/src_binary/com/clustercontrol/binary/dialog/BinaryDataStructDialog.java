@@ -24,9 +24,11 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.BinaryCheckInfoResponse;
+import org.openapitools.client.model.BinaryCheckInfoResponse.LengthTypeEnum;
+import org.openapitools.client.model.BinaryCheckInfoResponse.TsTypeEnum;
 
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.BinaryCheckInfo;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.binary.bean.BinaryConstant;
 import com.clustercontrol.dialog.CommonDialog;
@@ -57,9 +59,9 @@ public class BinaryDataStructDialog extends CommonDialog {
 
 	// その他フィールド
 	/** デフォルト値保持用フィールド */
-	private BinaryCheckInfo m_inputDefault = null;
+	private BinaryCheckInfoResponse m_inputDefault = null;
 	/** 入力値保持用フィールド */
-	private BinaryCheckInfo m_inputResult = null;
+	private BinaryCheckInfoResponse m_inputResult = null;
 	/** 入力値チェック結果 */
 	private ValidateResult m_validateResult = null;
 
@@ -76,7 +78,7 @@ public class BinaryDataStructDialog extends CommonDialog {
 	 * @param parent
 	 *            親のシェルオブジェクト
 	 */
-	public BinaryDataStructDialog(Shell parent, String fileType, BinaryCheckInfo inputDefault) {
+	public BinaryDataStructDialog(Shell parent, String fileType, BinaryCheckInfoResponse inputDefault) {
 		super(parent);
 		setShellStyle(getShellStyle() | SWT.RESIZE | SWT.MAX);
 		this.presetName = fileType;
@@ -268,10 +270,10 @@ public class BinaryDataStructDialog extends CommonDialog {
 
 		// コンボボックス表示文字列と別に多言語対応文字列をデータとしてセット.
 		expressionStr = Messages.getString(BinaryConstant.TS_TYPE_ONLY_SEC);
-		this.m_tsType.setData(expressionStr, BinaryConstant.TS_TYPE_ONLY_SEC);
+		this.m_tsType.setData(expressionStr, TsTypeEnum.ONLY_SEC);
 		this.m_tsType.add(expressionStr);
 		expressionStr = Messages.getString(BinaryConstant.TS_TYPE_SEC_AND_USEC);
-		this.m_tsType.setData(expressionStr, BinaryConstant.TS_TYPE_SEC_AND_USEC);
+		this.m_tsType.setData(expressionStr, TsTypeEnum.SEC_AND_USEC);
 		this.m_tsType.add(expressionStr);
 		this.m_tsType.setText(Messages.getString(BinaryConstant.TS_TYPE_ONLY_SEC));
 
@@ -459,20 +461,20 @@ public class BinaryDataStructDialog extends CommonDialog {
 	 * @param info
 	 *            ダイアログ初期値.
 	 */
-	private void init(BinaryCheckInfo info) {
+	private void init(BinaryCheckInfoResponse info) {
 
 		// 引数にnull値が設定されていた場合は固定のデフォルト値をセット.
 		if (info == null) {
-			info = new BinaryCheckInfo();
-			info.setLengthType(BinaryConstant.LENGTH_TYPE_FIXED);
+			info = new BinaryCheckInfoResponse();
+			info.setLengthType(LengthTypeEnum.FIXED);
 			info.setHaveTs(false);
-			info.setFileHeadSize(0);
+			info.setFileHeadSize(0L);
 			info.setRecordSize(0);
 			info.setRecordHeadSize(0);
 			info.setSizePosition(0);
 			info.setSizeLength(0);
 			info.setTsPosition(0);
-			info.setTsType("");
+			info.setTsType(null);
 			info.setLittleEndian(true);
 		}
 
@@ -480,12 +482,12 @@ public class BinaryDataStructDialog extends CommonDialog {
 
 		// ファイルヘッダサイズ.
 		if (info.getFileHeadSize() < 0) {
-			info.setFileHeadSize(0);
+			info.setFileHeadSize(0L);
 		}
 		this.m_fileHeadBytes.setText(Long.toString(info.getFileHeadSize()));
 
 		// レコード長指定方法.
-		if (BinaryConstant.LENGTH_TYPE_VARIABLE.equals(info.getLengthType())) {
+		if (LengthTypeEnum.VARIABLE.equals(info.getLengthType())) {
 			this.m_recordVariable.setSelection(true);
 			this.m_recordFixed.setSelection(false);
 		} else {
@@ -518,7 +520,7 @@ public class BinaryDataStructDialog extends CommonDialog {
 		this.m_rsByteLength.setText(Integer.toString(info.getSizeLength()));
 
 		// タイムスタンプ.
-		if (info.isHaveTs()) {
+		if (info.getHaveTs()) {
 			this.m_haveTimeStamp.setSelection(true);
 		} else {
 			this.m_haveTimeStamp.setSelection(false);
@@ -532,13 +534,20 @@ public class BinaryDataStructDialog extends CommonDialog {
 
 		// タイムスタンプ種類.
 		if (info.getTsType() == null) {
-			info.setTsType(BinaryConstant.TS_TYPE_SEC_AND_USEC);
+			info.setTsType(TsTypeEnum.SEC_AND_USEC);
 		}
-		expressionStr = Messages.getString(info.getTsType());
+		switch(info.getTsType()){
+		case SEC_AND_USEC:
+			expressionStr = Messages.getString(BinaryConstant.TS_TYPE_SEC_AND_USEC);
+			break;
+		case ONLY_SEC:
+			expressionStr = Messages.getString(BinaryConstant.TS_TYPE_ONLY_SEC);
+			break;
+		}
 		this.m_tsType.setText(expressionStr);
 
 		// リトルエンディアン方式.
-		if (info.isLittleEndian()) {
+		if (info.getLittleEndian()) {
 			this.m_littleEndian.setSelection(true);
 		} else {
 			this.m_littleEndian.setSelection(false);
@@ -573,9 +582,9 @@ public class BinaryDataStructDialog extends CommonDialog {
 	 *
 	 * @return 入力値、チェック結果不正はnull.
 	 */
-	private BinaryCheckInfo getCheckedInputData() {
+	private BinaryCheckInfoResponse getCheckedInputData() {
 
-		BinaryCheckInfo info = new BinaryCheckInfo();
+		BinaryCheckInfoResponse info = new BinaryCheckInfoResponse();
 		String[] args = null;
 
 		long checkLong = 0;
@@ -594,14 +603,14 @@ public class BinaryDataStructDialog extends CommonDialog {
 			}
 			info.setFileHeadSize(checkLong);
 		} else {
-			info.setFileHeadSize(0);
+			info.setFileHeadSize(0L);
 		}
 
 		// レコード長タイプ.
 		if (this.m_recordVariable.getSelection()) {
-			info.setLengthType(BinaryConstant.LENGTH_TYPE_VARIABLE);
+			info.setLengthType(LengthTypeEnum.VARIABLE);
 		} else {
-			info.setLengthType(BinaryConstant.LENGTH_TYPE_FIXED);
+			info.setLengthType(LengthTypeEnum.FIXED);
 		}
 
 		// 固定長レコードサイズ.
@@ -762,8 +771,8 @@ public class BinaryDataStructDialog extends CommonDialog {
 		if (this.m_haveTimeStamp.getSelection()) {
 			if (this.m_tsType.getText() != null && !this.m_tsType.getText().isEmpty()
 					&& this.m_tsType.getData(this.m_tsType.getText()) != null
-					&& this.m_tsType.getData(this.m_tsType.getText()) instanceof String) {
-				info.setTsType((String) this.m_tsType.getData(this.m_tsType.getText()));
+					&& this.m_tsType.getData(this.m_tsType.getText()) instanceof TsTypeEnum) {
+				info.setTsType((TsTypeEnum) this.m_tsType.getData(this.m_tsType.getText()));
 			} else {
 				// 入力必須.
 				args = new String[] { Messages.getString("timestamp.type") };
@@ -772,7 +781,7 @@ public class BinaryDataStructDialog extends CommonDialog {
 				return null;
 			}
 		} else {
-			info.setTsType("");
+			info.setTsType(null);
 		}
 
 		// リトルエンディアン.
@@ -802,7 +811,7 @@ public class BinaryDataStructDialog extends CommonDialog {
 	 *
 	 * @return 入力値.
 	 */
-	public BinaryCheckInfo getInputResult() {
+	public BinaryCheckInfoResponse getInputResult() {
 		return this.m_inputResult;
 	}
 

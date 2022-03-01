@@ -12,9 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.EntityExistsException;
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.log4j.Logger;
 
@@ -120,7 +120,8 @@ public class EntityUpdater {
 				}
 				//nodeInfo.setCloudResourceName(entityEntity.getName());
 				oldValue = nodeInfo.getCloudResourceName();
-				newValue = entityEntity.getName();
+				// DBの桁数に合わせてカットする
+				newValue = CloudUtil.truncateString(entityEntity.getName(), com.clustercontrol.repository.util.RepositoryUtil.NODE_CLOUD_RESOURCE_NAME_MAX_BYTE);
 				if((null==oldValue && null!=newValue) || (null!=oldValue && !oldValue.equals(newValue))){
 					nodeInfo.setCloudResourceName(newValue);
 					changeLog.append("CloudResourceName:").append(oldValue).append("->").append(newValue).append(";");
@@ -259,7 +260,8 @@ public class EntityUpdater {
 		entityEntity.setLocationId(location.getLocationId());
 		entityEntity.setResourceId(FacilityIdUtil.nextId());
 		entityEntity.setPlatformEntityId(platformEntity.getResourceId());
-		entityEntity.setName(platformEntity.getName());
+		// DBの桁数に合わせてカットする
+		entityEntity.setName(CloudUtil.truncateString(platformEntity.getName(), CloudUtil.ENTITY_NAME_MAX_BYTE));
 		entityEntity.setEntityType(platformEntity.getResourceTypeAsPlatform());
 		entityEntity.setCloudScope(cloudScope);
 		
@@ -347,7 +349,14 @@ public class EntityUpdater {
 	}
 	
 	protected void updateWithPlatform(EntityEntity entityEntity, IResourceManagement.Entity platformEntity) throws CloudManagerException {
-		entityEntity.setName(platformEntity.getName() == null ? platformEntity.getResourceId(): platformEntity.getName());
+		String entityName = null;
+		if (platformEntity.getName() == null) {
+			entityName = platformEntity.getResourceId();
+		} else {
+			entityName = platformEntity.getName();
+		}
+		// DBの桁数に合わせてカットする
+		entityEntity.setName(CloudUtil.truncateString(entityName, CloudUtil.ENTITY_NAME_MAX_BYTE));
 	}
 	
 	public List<EntityEntity> transactionalUpdateEntityEntities(LocationEntity location, List<EntityEntity> entityEntities, List<IResourceManagement.Entity> platformEntities) throws CloudManagerException {
@@ -388,9 +397,9 @@ public class EntityUpdater {
 
 					//　EntityManager が切り替わっているので、再度取得。
 					EntityEntity entity = em.find(EntityEntity.class, o1.getId(), ObjectPrivilegeMode.READ);
-					
-					disableEntityEntity(entity);
-					
+					if (entity != null) {
+						disableEntityEntity(entity);
+					}
 					scope.complete();
 				} catch (CloudManagerException e) {
 					CloudMessageUtil.notify_AutoUpadate_Error_InstanceOperator(cloudScope.getCloudScopeId(), o1.getPlatformEntityId(), e);

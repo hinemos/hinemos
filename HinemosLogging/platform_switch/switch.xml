@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<!--
+   Copyright (c) 2021 NTT DATA INTELLILINK Corporation.
+   
+   Hinemos (http://www.hinemos.info/)
+ -->
+
+<!-- execute Ant (Run in the same JRE as the workspace -->
+
+<project name="HinemosLoggingPlatformSwitch" default="switch_to_jakartaee" basedir="../">
+	<!-- Common properties -->
+	<property name="project.name">HinemosLogging</property>
+	<property name="source.app">src_app</property>
+
+	<macrodef name="switch.mac">
+		<attribute name="src.dir" />
+		<attribute name="msg" />
+		<sequential>
+			<!-- src_appを削除 -->
+			<exec executable="CMD">
+				<arg line="/C rmdir ${source.app}" />
+			</exec>
+
+			<!-- META-INFを削除  -->
+			<exec executable="CMD">
+				<arg line="/C rmdir /S /Q resources\META-INF" />
+			</exec>
+
+			<!-- ソースをリンク -->
+			<exec executable="CMD">
+				<arg line="/C mklink /J ${source.app} platform_switch\@{src.dir}\${source.app}" />
+			</exec>
+
+			<!-- META-INFをリンク -->
+			<exec executable="CMD">
+				<arg line="/C mklink /J resources\META-INF platform_switch\@{src.dir}\META-INF" />
+			</exec>
+
+			<!-- Refresh -->
+			<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+					property="eclipse_jar_available"/>
+			<antcall target="refresh_src_app" />
+			<antcall target="refresh_notice" />
+
+			<!-- Notice -->
+			<echo>@{msg}</echo>
+		</sequential>
+	</macrodef>
+
+	<!-- Java EE -->
+	<target name="switch_to_javaee" description="Switch to Sources for Java EE">
+		<switch.mac src.dir="JavaEE" msg="Java EE環境に切り替えました。" />
+	</target>
+
+	<!-- Jakarta EE -->
+	<target name="switch_to_jakartaee" description="Switch to Sources for Jakarta EE">
+		<switch.mac src.dir="JakartaEE" msg="Jakarta EE環境に切り替えました。" />
+	</target>
+
+	<!-- Refresh source path -->
+	<target name="refresh_src_app" if="eclipse_jar_available">
+		<eclipse.refreshLocal resource="${project.name}/" depth="one" />
+		<eclipse.refreshLocal resource="${project.name}/${source.app}" depth="infinite" />
+		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
+	</target>
+
+	<!-- Notice for requiring manual refresh -->
+	<target name="refresh_notice" unless="eclipse_jar_available">
+		<echo>(!) RefreshLocalTaskが無効になっています。手動でRefreshしてください。</echo>
+	</target>
+
+</project>

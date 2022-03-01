@@ -15,7 +15,7 @@ import java.util.List;
 import com.clustercontrol.collect.model.CollectData;
 import com.clustercontrol.collect.model.CollectDataPK;
 import com.clustercontrol.commons.util.JdbcBatchQuery;
-import com.clustercontrol.platform.collect.JdbcBatchUpsertUtil;
+import com.clustercontrol.commons.util.JdbcBatchUpsertUtil;
 
 /**
  *  CollectDataにマッピングするテーブルにデータを登録するクラス(ジョブ履歴用)

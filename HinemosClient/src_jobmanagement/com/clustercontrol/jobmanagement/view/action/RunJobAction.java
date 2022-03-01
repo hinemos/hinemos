@@ -26,19 +26,21 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.jobmanagement.bean.JobTriggerTypeConstant;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import org.openapitools.client.model.RunJobRequest;
+import org.openapitools.client.model.RunJobRequest.TriggerTypeEnum;
+
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.dialog.JobRunConfirm;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobTriggerInfo;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * ジョブ[一覧]ビューの「実行」のクライアント側アクションクラス<BR>
@@ -51,7 +53,7 @@ public class RunJobAction extends AbstractHandler implements IElementUpdater {
 	// ログ
 	private static Log m_log = LogFactory.getLog( RunJobAction.class );
 
-	private JobTriggerInfo m_trigger = new JobTriggerInfo();
+	private RunJobRequest m_trigger = new RunJobRequest();
 
 	/** アクションID */
 	public static final String ID = RunJobAction.class.getName();
@@ -109,7 +111,7 @@ public class RunJobAction extends AbstractHandler implements IElementUpdater {
 			return null;
 		}
 
-		List<JobTreeItem> itemList = null; 
+		List<JobTreeItemWrapper> itemList = null;
 		itemList = view.getSelectJobTreeItemList();
 
 		// ジョブ実行確認ダイアログメッセージの生成 
@@ -117,12 +119,12 @@ public class RunJobAction extends AbstractHandler implements IElementUpdater {
 		jobListMessage.append(Messages.getString("message.job.125")); 
 		jobListMessage.append("\n");
 
-		for (JobTreeItem item : itemList) {
+		for (JobTreeItemWrapper item : itemList) {
 			String managerName = ""; 
 
 			// ジョブ実行前の状態確認 
-			if (item instanceof JobTreeItem) { 
-				JobTreeItem manager = JobTreeItemUtil.getManager(item); 
+			if (item instanceof JobTreeItemWrapper) { 
+				JobTreeItemWrapper manager = JobTreeItemUtil.getManager(item); 
 				managerName = manager.getData().getName(); 
 				JobEditState jobEditState = JobEditStateUtil.getJobEditState( managerName ); 
 				if(jobEditState.isEditing()){ 
@@ -150,27 +152,26 @@ public class RunJobAction extends AbstractHandler implements IElementUpdater {
 		if (dialog.open() == IDialogConstants.OK_ID) {
 			m_trigger = dialog.getInputData();
 			// 選択されているジョブの実行
-			for (JobTreeItem item : itemList) {
-				if (item instanceof JobTreeItem) {
-					JobTreeItem manager = JobTreeItemUtil.getManager(item);
+			for (JobTreeItemWrapper item : itemList) {
+				if (item instanceof JobTreeItemWrapper) {
+					JobTreeItemWrapper manager = JobTreeItemUtil.getManager(item);
 					String managerName = manager.getData().getName();
 					// ジョブ実行
 					try {
 						// 実行契機情報を登録
-						JobTriggerInfo triggerInfo = new JobTriggerInfo(); 
-						triggerInfo.setTriggerType(JobTriggerTypeConstant.TYPE_MANUAL); 
-						triggerInfo.setJobWaitTime(m_trigger.isJobWaitTime()); 
-						triggerInfo.setJobWaitMinute(m_trigger.isJobWaitMinute()); 
-						triggerInfo.setJobCommand(m_trigger.isJobCommand()); 
+						RunJobRequest triggerInfo = new RunJobRequest(); 
+						triggerInfo.setTriggerType(TriggerTypeEnum.MANUAL); 
+						triggerInfo.setJobWaitTime(m_trigger.getJobWaitTime()); 
+						triggerInfo.setJobWaitMinute(m_trigger.getJobWaitMinute()); 
+						triggerInfo.setJobCommand(m_trigger.getJobCommand()); 
 						triggerInfo.setJobCommandText(m_trigger.getJobCommandText()); 
 
-						JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName); 
-						wrapper.runJob( 
-								item.getData().getJobunitId(), 
-								item.getData().getId(), 
-								null, 
-								triggerInfo); 
-					} catch (InvalidRole_Exception e) { 
+						JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName); 
+						RunJobRequest request = new RunJobRequest();
+						RestClientBeanUtil.convertBean(triggerInfo, request);
+						
+						wrapper.runJob(item.getData().getJobunitId(), item.getData().getId(), request); 
+					} catch (InvalidRole e) { 
 						MessageDialog.openInformation(null, Messages.getString("message"), 
 								Messages.getString("message.accesscontrol.16")); 
 					} catch (Exception e) { 
@@ -199,21 +200,26 @@ public class RunJobAction extends AbstractHandler implements IElementUpdater {
 				if(part instanceof JobListView){
 					JobListView view = (JobListView)part;
 					// ジョブ設定パースペクティブのジョブリストのUIにあるツリービューとリストビューのうち、選択されているほうのJobTreeItemListを取得
-					List<JobTreeItem> itemList = view.getSelectJobTreeItemList();
-					for (JobTreeItem item : itemList) {
+					List<JobTreeItemWrapper> itemList = view.getSelectJobTreeItemList();
+					for (JobTreeItemWrapper item : itemList) {
 						// 選択されている項目をチェックし、ジョブ実行可能なものである場合にツールバーとコンテキストメニューの「実行」を活性化する
 						if (item == null || item.getData() == null) {
 							editEnable = false;
 							break;
 						}
-						if (item.getData().getType() == JobConstant.TYPE_JOBUNIT ||
-								item.getData().getType() == JobConstant.TYPE_JOBNET ||
-								item.getData().getType() == JobConstant.TYPE_JOB ||
-								item.getData().getType() == JobConstant.TYPE_FILEJOB ||
-								item.getData().getType() == JobConstant.TYPE_APPROVALJOB ||
-								item.getData().getType() == JobConstant.TYPE_MONITORJOB ||
-								item.getData().getType() == JobConstant.TYPE_REFERJOBNET ||
-								item.getData().getType() == JobConstant.TYPE_REFERJOB){
+						if (item.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.JOB ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.FILEJOB ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.MONITORJOB ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.RPAJOB ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOBNET ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOB ||
+								item.getData().getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB){
 							editEnable = true;
 						} else {
 							editEnable = false;

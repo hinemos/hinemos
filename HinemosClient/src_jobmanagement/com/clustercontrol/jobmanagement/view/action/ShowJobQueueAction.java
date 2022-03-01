@@ -18,15 +18,15 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.JobQueueResponse;
 
 import com.clustercontrol.dialog.ApiResultDialog;
 import com.clustercontrol.jobmanagement.dialog.JobQueueSettingDialog;
 import com.clustercontrol.jobmanagement.dialog.JobQueueSettingDialog.EditMode;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.view.action.JobQueueEditor.JobQueueEditTarget;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.ViewUtil;
-import com.clustercontrol.ws.jobmanagement.JobQueueSetting;
 
 /**
  * ジョブ同時実行制御キューの参照コマンドを実行します。
@@ -61,9 +61,9 @@ public class ShowJobQueueAction extends AbstractHandler implements IElementUpdat
 			if (target.isEmpty()) return;
 
 			// 設定情報を取得
-			JobQueueSetting setting;
+			JobQueueResponse setting;
 			try {
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(target.getManagerName());
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(target.getManagerName());
 				setting = wrapper.getJobQueue(target.getQueueId());
 			} catch (Throwable t) {
 				log.info("execute:", t);

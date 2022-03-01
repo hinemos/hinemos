@@ -20,23 +20,30 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
+import org.openapitools.client.model.JobTreeItem;
 
 import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmap.composite.JobMapTreeComposite;
 import com.clustercontrol.jobmap.util.JobMapActionUtil;
 import com.clustercontrol.jobmap.view.action.CopyJobAction;
 import com.clustercontrol.jobmap.view.action.CreateApprovalJobAction;
+import com.clustercontrol.jobmap.view.action.CreateFileCheckJobAction;
 import com.clustercontrol.jobmap.view.action.CreateFileJobAction;
 import com.clustercontrol.jobmap.view.action.CreateJobAction;
+import com.clustercontrol.jobmap.view.action.CreateJobLinkRcvJobAction;
+import com.clustercontrol.jobmap.view.action.CreateJobLinkSendJobAction;
 import com.clustercontrol.jobmap.view.action.CreateJobNetAction;
 import com.clustercontrol.jobmap.view.action.CreateJobUnitAction;
 import com.clustercontrol.jobmap.view.action.CreateMonitorJobAction;
 import com.clustercontrol.jobmap.view.action.CreateReferJobAction;
+import com.clustercontrol.jobmap.view.action.CreateResourceJobAction;
+import com.clustercontrol.jobmap.view.action.CreateRpaJobAction;
 import com.clustercontrol.jobmap.view.action.DeleteJobAction;
 import com.clustercontrol.jobmap.view.action.EditModeAction;
 import com.clustercontrol.jobmap.view.action.JobObjectPrivilegeAction;
@@ -47,7 +54,6 @@ import com.clustercontrol.jobmap.view.action.RunJobAction;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
 import com.clustercontrol.view.ObjectPrivilegeTargetListView;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[一覧]ビュークラスです。
@@ -62,11 +68,11 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 	/** ジョブツリー用コンポジット */
 	protected JobMapTreeComposite m_jobTree = null;
 	/** ジョブツリーアイテム */
-	protected JobTreeItem m_copyJobTreeItem = null;
+	protected JobTreeItemWrapper m_copyJobTreeItem = null;
 	/** 更新フラグ */
 	protected boolean m_update = false;
 
-	private int dataType;
+	private JobInfoWrapper.TypeEnum dataType;
 	private boolean editEnable;
 	
 	/**
@@ -132,8 +138,8 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 		m_jobTree.getTree().setMenu(treeMenu);
 		getSite().registerContextMenu( menuManager, this.m_jobTree.getTreeViewer() );
 
-		JobTreeItem select = getSelectJobTreeItem();
-		dataType = select == null ? JobConstant.TYPE_COMPOSITE : select.getData().getType();
+		JobTreeItemWrapper select = getSelectJobTreeItem();
+		dataType = select == null ? JobInfoWrapper.TypeEnum.COMPOSITE : select.getData().getType();
 	}
 
 
@@ -164,8 +170,18 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 	 * 
 	 * @see com.clustercontrol.bean.JobConstant
 	 */
-	public void setEnabledAction(int type, ISelection selection) {
+	public void setEnabledAction(JobInfoWrapper.TypeEnum type, ISelection selection) {
 		setEnabledAction(type, "", selection);
+	}
+	/**
+	 * ビューのアクション全無効を設定します。
+	 * 
+	 * @param selection ボタン（アクション）を有効にするための情報
+	 * 
+	 * @see com.clustercontrol.bean.JobConstant
+	 */
+	public void setDisabledAction( ISelection selection) {
+		setEnabledAction(null, "", selection);
 	}
 	
 	/**
@@ -176,13 +192,13 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 	 * 
 	 * @see com.clustercontrol.bean.JobConstant
 	 */
-	public void setEnabledAction(int type, String jobunitId, ISelection selection) {
+	public void setEnabledAction(JobInfoWrapper.TypeEnum type, String jobunitId, ISelection selection) {
 		this.dataType = type;
 
 		//ビューアクションの使用可/不可を設定
 		ICommandService service = (ICommandService) PlatformUI.getWorkbench().getService( ICommandService.class );
 		if( null != service ){
-			JobTreeItem item = getSelectJobTreeItem();
+			JobTreeItemWrapper item = getSelectJobTreeItem();
 			if (item == null) {
 				return;
 			}
@@ -202,6 +218,11 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 			service.refreshElements(CreateReferJobAction.ID, null);
 			service.refreshElements(CreateApprovalJobAction.ID, null);
 			service.refreshElements(CreateMonitorJobAction.ID, null);
+			service.refreshElements(CreateFileCheckJobAction.ID, null);
+			service.refreshElements(CreateJobLinkSendJobAction.ID, null);
+			service.refreshElements(CreateJobLinkRcvJobAction.ID, null);
+			service.refreshElements(CreateResourceJobAction.ID, null);
+			service.refreshElements(CreateRpaJobAction.ID, null);
 			service.refreshElements(DeleteJobAction.ID, null);
 			service.refreshElements(ModifyJobAction.ID, null);
 			service.refreshElements(JobObjectPrivilegeAction.ID, null);
@@ -222,7 +243,7 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 	 * データタイプを返します。
 	 * @return
 	 */
-	public int getDataType() {
+	public JobInfoWrapper.TypeEnum getDataType() {
 		return this.dataType;
 	}	
 	
@@ -251,9 +272,9 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 	 * 
 	 * @return JobTreeItem 選択されたジョブツリーアイテム
 	 */
-	public JobTreeItem getSelectJobTreeItem() {
-		JobTreeItem select = null;
-		List<JobTreeItem> selectItemList = m_jobTree.getSelectItemList();
+	public JobTreeItemWrapper getSelectJobTreeItem() {
+		JobTreeItemWrapper select = null;
+		List<JobTreeItemWrapper> selectItemList = m_jobTree.getSelectItemList();
 		if (selectItemList != null && !selectItemList.isEmpty()) {
 			select = selectItemList.get(0);
 		}
@@ -261,8 +282,8 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 		return select;
 	}
 	
-	public List<JobTreeItem> getSelectJobTreeItemList() {
-		List<JobTreeItem> selectItemList = m_jobTree.getSelectItemList();
+	public List<JobTreeItemWrapper> getSelectJobTreeItemList() {
+		List<JobTreeItemWrapper> selectItemList = m_jobTree.getSelectItemList();
 		return selectItemList;
 	}
 
@@ -271,7 +292,7 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 	 * 
 	 * @return コピー元ジョブツリーアイテム
 	 */
-	public JobTreeItem getCopyJobTreeItem() {
+	public JobTreeItemWrapper getCopyJobTreeItem() {
 		return m_copyJobTreeItem;
 	}
 
@@ -280,7 +301,7 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 	 * 
 	 * @param copy コピー元ジョブツリーアイテム
 	 */
-	public void setCopyJobTreeItem(JobTreeItem copy) {
+	public void setCopyJobTreeItem(JobTreeItemWrapper copy) {
 		m_copyJobTreeItem = copy;
 	}
 
@@ -306,7 +327,7 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 	public List<ObjectBean> getSelectedObjectBeans() {
 
 		// 選択されているスコープを取得する
-		JobTreeItem item = getSelectedJobunitItem();
+		JobTreeItemWrapper item = getSelectedJobunitItem();
 		
 		// 選択されており、スコープの場合は値を返す
 		List<ObjectBean> objectBeans = new ArrayList<ObjectBean>();
@@ -314,7 +335,7 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 			String objectId = item.getData().getJobunitId();
 			String objectType = HinemosModuleConstant.JOB;
 			
-			JobTreeItem manager = JobTreeItemUtil.getManager(item);
+			JobTreeItemWrapper manager = JobTreeItemUtil.getManager(item);
 			String managerName = manager.getData().getId();
 			
 			ObjectBean objectBean = new ObjectBean(managerName, objectType, objectId);
@@ -327,7 +348,7 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 	public String getSelectedOwnerRoleId() {
 
 		// 選択されているスコープを取得する
-		JobTreeItem item = getSelectedJobunitItem();
+		JobTreeItemWrapper item = getSelectedJobunitItem();
 
 		// 選択されており、スコープの場合は値を返す
 		String ownerRoleId = null;
@@ -337,13 +358,13 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 		return ownerRoleId;
 	}
 	
-	private JobTreeItem getSelectedJobunitItem() {
+	private JobTreeItemWrapper getSelectedJobunitItem() {
 		JobMapTreeComposite tree = getJobMapTreeComposite();
 		JobMapEditorView view = JobMapActionUtil.getJobMapEditorView();
 
-		JobTreeItem item = null;
+		JobTreeItemWrapper item = null;
 		if(tree.getTree().isFocusControl()){
-			List<JobTreeItem> selectItemList = tree.getSelectItemList();
+			List<JobTreeItemWrapper> selectItemList = tree.getSelectItemList();
 			if (selectItemList != null && !selectItemList.isEmpty()) {
 				item = selectItemList.get(0);
 			}
@@ -352,7 +373,7 @@ public class JobTreeView extends CommonViewPart  implements ObjectPrivilegeTarge
 		}
 
 		// 選択されており、ジョブユニットの場合は値を返す
-		if (item != null && item.getData().getType() == JobConstant.TYPE_JOBUNIT) {
+		if (item != null && item.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 			return item;
 		} else {
 			return null;

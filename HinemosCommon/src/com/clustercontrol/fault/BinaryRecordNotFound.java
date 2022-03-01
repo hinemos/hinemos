@@ -13,7 +13,7 @@ package com.clustercontrol.fault;
  * @version 6.1.0
  * @since 6.1.0
  */
-public class BinaryRecordNotFound extends HinemosException {
+public class BinaryRecordNotFound extends HinemosNotFound {
 	private static final long serialVersionUID = -8657399129165860039L;
 
 	/**

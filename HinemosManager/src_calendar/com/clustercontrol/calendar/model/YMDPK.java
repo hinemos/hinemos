@@ -12,7 +12,7 @@ package com.clustercontrol.calendar.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * The primary key class for the cc_cal_pattern_detail_info database table.

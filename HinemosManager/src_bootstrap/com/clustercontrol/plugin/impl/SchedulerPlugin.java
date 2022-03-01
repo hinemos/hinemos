@@ -36,7 +36,9 @@ import com.clustercontrol.HinemosManagerMain;
 import com.clustercontrol.HinemosManagerMain.StartupMode;
 import com.clustercontrol.HinemosManagerMain.StartupTask;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.jobmanagement.bean.QuartzConstant;
 import com.clustercontrol.jobmanagement.session.JobRunManagementBean;
+import com.clustercontrol.jobmanagement.util.JobLinkRcvJobWorker;
 import com.clustercontrol.monitor.run.factory.ModifySchedule;
 import com.clustercontrol.monitor.run.util.NodeMonitorPollerController;
 import com.clustercontrol.monitor.run.util.NodeToMonitorCache;
@@ -52,6 +54,7 @@ import com.clustercontrol.plugin.util.scheduler.JobBuilder;
 import com.clustercontrol.plugin.util.scheduler.JobDetail;
 import com.clustercontrol.plugin.util.scheduler.JobKey;
 import com.clustercontrol.plugin.util.scheduler.SchedulerException;
+import com.clustercontrol.plugin.util.scheduler.SimpleIntervalTriggerBuilder;
 import com.clustercontrol.plugin.util.scheduler.SimpleTriggerBuilder;
 import com.clustercontrol.plugin.util.scheduler.Trigger;
 import com.clustercontrol.plugin.util.scheduler.TriggerState;
@@ -66,8 +69,8 @@ public class SchedulerPlugin implements HinemosPlugin {
 
 	public static final Log log = LogFactory.getLog(SchedulerPlugin.class);
 
-	// スケジュール情報の登録方法(CRON : cronと同様の書式を指定, SIMPLE : INTERVALのみを指定, NONE : トリガーを登録しない )
-	public static enum TriggerType { CRON, SIMPLE, NONE };
+	// スケジュール情報の登録方法(CRON : cronと同様の書式を指定, SIMPLE : 開始時刻が起点のINTERVALのみを指定, SIMPLE2 : 毎実行時が起点のINTERVALのみを指定, NONE : トリガーを登録しない )
+	public static enum TriggerType { CRON, SIMPLE, SIMPLE2, NONE };
 
 	// スケジューラ情報の保持種別( RAM_MONITOR,RAM_JOB : オンメモリで管理、DBMS,DBMS_JOB,DBMS_DEL : DBで永続化管理)
 	public static enum SchedulerType {
@@ -324,6 +327,117 @@ public class SchedulerPlugin implements HinemosPlugin {
 			} catch (Exception e) {
 				log.error("scheduleSimpleJob() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				throw new HinemosUnknown("failed scheduling DBMS job. (name = " + name + ", group = " + group + ")", e);
+			}
+		} else {
+			// RAMスケジューラの場合は、存在有無に関わらず削除処理を呼ぶ
+			deleteJob(type, name, group);
+			// ジョブスケジューラを作成
+			try {
+				synchronized (_schedulerLock) {
+					log.debug("scheduleJob() name=" + name + ", group=" + group);
+					_scheduler.get(type).scheduleJob(job, trigger);
+				}
+			} catch (SchedulerException e) {
+				throw new HinemosUnknown("failed scheduling job. (name = " + name + ", group = " + group + ")", e);
+			}
+		}
+	}
+
+	/**
+	 * <pre>
+	 * 単に定期実行するだけのジョブをスケジューリングするためのメソッド。<br/>
+	 * scheduleSimpleJob()とは違い、毎回実行時を起点に次スケジュール日時を決定する。（マネージャを実行間隔時間以上停止した場合の動きが異なる）
+	 * ユーザは実行周期のみを定義可能であり、cronのように具体的な実行タイミングを定義できない。<br/>
+	 * </pre>
+	 *
+	 * @param type スケジューラ定義の保持型
+	 * @param name ジョブの名前
+	 * @param group ジョブのグループ名
+	 * @param startTimeMillis 実行開始日時
+	 * @param intervalSec 実行間隔[sec]
+	 * @param rstOnRestart JVM再起動時に実行開始日時をリセットする場合はtrue(Misfire時間内に実行予定となっていたジョブを繰り返し実行せずに、現在時刻以降の実行予定から開始する）
+	 * @param className ジョブが実装されたクラス名
+	 * @param methodName ジョブが実装されたメソッド名
+	 * @param argsType メソッドの引数型配列
+	 * @param args メソッドの引数配列
+	 * @throws HinemosUnknown
+	 */
+	public static void scheduleSimpleIntervalJob(SchedulerType type, String name, String group,
+			long startTimeMillis, int intervalSec, boolean rstOnRestart,
+			String className, String methodName, Class<? extends Serializable>[] argsType, Serializable[] args) throws HinemosUnknown {
+
+		log.debug("scheduleSimpleJob() name=" + name + ", group=" + group + ", startTime=" + startTimeMillis
+				+ ", rstOnRestart=" + rstOnRestart + ", className=" + className + ", methodName=" + methodName);
+
+		// ジョブ定義の作成
+		JobDetail job = JobBuilder.newJob(ReflectionInvokerJob.class)
+				.withIdentity(name, group)
+				.storeDurably(true)		// ジョブ完了時に削除されない設定を反映
+				.usingJobData(ReflectionInvokerJob.KEY_CLASS_NAME, className)	// ジョブから呼び出すクラス名を反映
+				.usingJobData(ReflectionInvokerJob.KEY_METHOD_NAME, methodName)	// ジョブから呼び出すメソッドを反映
+				.usingJobData(ReflectionInvokerJob.KEY_RESET_ON_RESTART, rstOnRestart)	// 再起動時にtriggerをリセット()するかどうかを反映
+				.build();
+
+		// [WARNING] job.getJobDataMap()ではなく、"trigger".getJobDataMap()に対して値を定義してはいけない。
+		// Quartz (JBoss EAP 5.1 Bundle) Bugにより、java.lang.StackOverflowErrorの発生を引き起こす。
+
+		// メソッドの引数を定義する（引数無は0-lengthの配列とする)
+		if (args == null) {
+			throw new NullPointerException("args must not be null. if not args, set 0-length list.");
+		}
+		if (argsType == null) {
+			throw new NullPointerException("argsType must not be null. if not args, set 0-length list.");
+		}
+		if (args.length != argsType.length) {
+			throw new IndexOutOfBoundsException("list's length is not same between args and argsType.");
+		}
+		if (args.length > 15) {
+			throw new IndexOutOfBoundsException("list's length is out of bounds.");
+		}
+		job.getJobDataMap().put(ReflectionInvokerJob.KEY_ARGS_TYPE, argsType);
+		job.getJobDataMap().put(ReflectionInvokerJob.KEY_ARGS, args);
+
+		// ジョブ実行定義となるtriggerを作成
+		SimpleIntervalTriggerBuilder triggerBuilder = SimpleIntervalTriggerBuilder.newTrigger().withIdentity(name, group);
+		if (rstOnRestart) {
+			log.debug("scheduleSimpleJob() name=" + name + ", misfireHandlingInstruction=DoNothing");
+			triggerBuilder.setPeriod(intervalSec * 1000).withMisfireHandlingInstructionDoNothing();
+		} else {
+			log.debug("scheduleSimpleJob() name=" + name + ", misfireHandlingInstruction=IgnoreMisfires");
+			triggerBuilder.setPeriod(intervalSec * 1000).withMisfireHandlingInstructionIgnoreMisfires();
+		}
+
+		Trigger trigger = triggerBuilder.startAt(startTimeMillis).build();
+
+		if (SchedulerPlugin.isDBMS(type)) {
+			// DBMSスケジューラの場合、存在チェックの上、DBへ登録または更新処理を呼ぶ
+			// 同じレコードへの削除/登録は1トランザクションでは連続で出来ないため
+			try {
+				ModifyDbmsScheduler dbms = new ModifyDbmsScheduler();
+				if (_scheduler.get(type).checkExists(new JobKey(name, group))) {
+					// 登録済みの場合は、DB側は更新処理を呼ぶ
+					log.trace("scheduleSimpleJob() : modifyDbmsScheduler() call.");
+					dbms.modifyDbmsScheduler(job, trigger);
+
+					synchronized (_schedulerLock) {
+						// rescheduleJob()ではTrigger情報のみしか更新しないため、RAM側は再登録処理が必要
+						_scheduler.get(type).deleteJob(new JobKey(name, group));
+						log.debug("scheduleJob() name=" + name + ", group=" + group);
+						_scheduler.get(type).scheduleJob(job, trigger);
+					}
+				} else {
+					// 未登録の場合は、DB登録処理を呼ぶ
+					log.trace("scheduleSimpleJob() : addDbmsScheduler() call.");
+					dbms.addDbmsScheduler(job, trigger);
+
+					synchronized (_schedulerLock) {
+						log.debug("scheduleJob() name=" + name + ", group=" + group);
+						_scheduler.get(type).scheduleJob(job, trigger);
+					}
+				}
+			} catch (Exception e) {
+				log.error("scheduleSimpleJob() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 				throw new HinemosUnknown("failed scheduling DBMS job. (name = " + name + ", group = " + group + ")", e);
 			}
 		} else {
@@ -683,8 +797,24 @@ public class SchedulerPlugin implements HinemosPlugin {
 					trigger = triggerBuilder.setPeriod(entity.getRepeatInterval()).startAt(entity.getStartTime()).endAt(entity.getEndTime()).build();
 					((AbstractTrigger)trigger).setNextFireTime(entity.getNextFireTime());
 					((AbstractTrigger)trigger).setPreviousFireTime(entity.getPrevFireTime());
+
+				} else if (entity.getTriggerType().equals(SchedulerPlugin.TriggerType.SIMPLE2.name())) {
+					SimpleIntervalTriggerBuilder triggerBuilder = SimpleIntervalTriggerBuilder.newTrigger().withIdentity(entity.getId().getJobId(), entity.getId().getJobGroup());
+					if (isMisfire) {
+						triggerBuilder.withMisfireHandlingInstructionDoNothing();
+					} else {
+						triggerBuilder.withMisfireHandlingInstructionIgnoreMisfires();
+					}
+					trigger = triggerBuilder.setPeriod(entity.getRepeatInterval()).startAt(entity.getStartTime()).endAt(entity.getEndTime()).build();
+					((AbstractTrigger)trigger).setNextFireTime(entity.getNextFireTime());
+					((AbstractTrigger)trigger).setPreviousFireTime(entity.getPrevFireTime());
 				}
 				
+				// ジョブ連携待機ジョブ情報作成
+				if(entity.getId().getJobGroup().equals(QuartzConstant.GROUP_NAME_FOR_JOBLINKRCVJOB)) {
+					JobLinkRcvJobWorker.createInfo((String)jdArgs[0]);
+				}
+
 				//収集蓄積機能の対応(転送設定に関するHinemosプロパティの情報を反映)
 				if(entity.getId().getJobGroup().equals(com.clustercontrol.hub.bean.QuartzConstant.GROUP_NAME)) {
 					//収集蓄積のDB設定情報を取得

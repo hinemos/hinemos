@@ -16,14 +16,18 @@ import java.util.Hashtable;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
+import org.openapitools.client.model.ReportingScheduleInfoResponse;
+import org.openapitools.client.model.ReportingScheduleResponse;
 
-import com.clustercontrol.reporting.util.ReportingUtil;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.report.xml.ReportingInfo;
 import com.clustercontrol.utility.util.Config;
-import com.clustercontrol.ws.common.Schedule;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 
 public class ReportScheduleConv {
 	
@@ -86,7 +90,7 @@ public class ReportScheduleConv {
 		return schema;
 	}
 	
-	public static ReportingInfo getReporting(com.clustercontrol.ws.reporting.ReportingInfo reporting)
+	public static ReportingInfo getReporting(ReportingScheduleResponse reporting)
 			throws IndexOutOfBoundsException, ParseException {
 		
 		ReportingInfo ret = new ReportingInfo();
@@ -96,21 +100,21 @@ public class ReportScheduleConv {
 		ret.setOwnerRoleId(reporting.getOwnerRoleId());
 		ret.setFacilityId(reporting.getFacilityId());
 		ret.setCalendarId(reporting.getCalendarId());
-		ret.setOutputPeriodType(reporting.getOutputPeriodType());
+		ret.setOutputPeriodType(OpenApiEnumConverter.enumToInteger(reporting.getOutputPeriodType()));
 		ret.setOutputPeriodBefore(reporting.getOutputPeriodBefore());
 		ret.setOutputPeriodFor(reporting.getOutputPeriodFor());
 		ret.setTemplateSetId(reporting.getTemplateSetId());
 		ret.setReportTitle(reporting.getReportTitle());
-		ret.setLogoValidFlg(reporting.isLogoValidFlg());
+		ret.setLogoValidFlg(reporting.getLogoValidFlg());
 		ret.setLogoFilename(reporting.getLogoFilename());
-		ret.setPageValidFlg(reporting.isPageValidFlg());
-		ret.setOutputType(reporting.getOutputType());
+		ret.setPageValidFlg(reporting.getPageValidFlg());
+		ret.setOutputType(OpenApiEnumConverter.enumToInteger(reporting.getOutputType()));
 		
 		
 		//・DTOのスケジュールタイプが「1」、日が未設定の場合 → XMLのスケジュールタイプは「毎日(0)」
 		//・DTOのスケジュールタイプが「2」の場合 → XMLのスケジュールタイプは「毎週(1)」
 		//・DTOのスケジュールタイプが「1」、日が設定済みの場合 → XMLのスケジュールタイプは「毎月(2)」
-		if (reporting.getSchedule().getType() == com.clustercontrol.bean.ScheduleConstant.TYPE_WEEK){
+		if (reporting.getSchedule().getScheduleType() == ReportingScheduleInfoResponse.ScheduleTypeEnum.WEEK ){
 			ret.setScheduleType(TYPE_EVERY_WEEK);
 		} else {
 			if (reporting.getSchedule().getDay() == null) {
@@ -130,33 +134,30 @@ public class ReportScheduleConv {
 		
 		ret.setHour(reporting.getSchedule().getHour());
 		ret.setMinute(reporting.getSchedule().getMinute());
-		ret.setNotifyGroupId(reporting.getNotifyGroupId());
 		
 		com.clustercontrol.utility.settings.report.xml.NotifyId[] notifyList =
-				new com.clustercontrol.utility.settings.report.xml.NotifyId[reporting.getNotifyId().size()];
+				new com.clustercontrol.utility.settings.report.xml.NotifyId[reporting.getNotifyRelationList().size() ];
 		int i=0;
-		for(com.clustercontrol.ws.notify.NotifyRelationInfo info : reporting.getNotifyId()){
+		for(NotifyRelationInfoResponse info : reporting.getNotifyRelationList()){
 			notifyList[i] = new com.clustercontrol.utility.settings.report.xml.NotifyId();
-			notifyList[i].setNotifyGroupId(info.getNotifyGroupId());
 			notifyList[i].setNotifyId(info.getNotifyId());
-			notifyList[i].setNotifyType(info.getNotifyType());
+			notifyList[i].setNotifyType(OpenApiEnumConverter.enumToInteger(info.getNotifyType()));
 			i++;
 		}
 		ret.setNotifyId(notifyList);
 		
-		ret.setValidFlg(reporting.isValidFlg());
+		ret.setValidFlg(reporting.getValidFlg());
 		
 		return ret;
 	}
-	public static com.clustercontrol.ws.reporting.ReportingInfo
-		getReportingInfoDto(ReportingInfo info) throws ParseException {
+	public static ReportingScheduleResponse
+		getReportingInfoDto(ReportingInfo info) {
 		
-		com.clustercontrol.ws.reporting.ReportingInfo ret =
-				new com.clustercontrol.ws.reporting.ReportingInfo();
+		ReportingScheduleResponse ret = new ReportingScheduleResponse();
 		
 		try {
 			// 登録日時、更新日時に利用する日時（実行日時とする）
-			long now = new Date().getTime();
+			String now = DateTimeStringConverter.formatLongDate(new Date().getTime());
 			
 			ret.setReportScheduleId(info.getReportScheduleId());
 			ret.setDescription(info.getDescription());
@@ -165,7 +166,8 @@ public class ReportScheduleConv {
 			if (info.getCalendarId() != null){
 				ret.setCalendarId(info.getCalendarId());
 			}
-			ret.setOutputPeriodType(info.getOutputPeriodType());
+			ret.setOutputPeriodType(OpenApiEnumConverter.integerToEnum(info.getOutputPeriodType(),
+					ReportingScheduleResponse.OutputPeriodTypeEnum.class));
 			ret.setOutputPeriodBefore(info.getOutputPeriodBefore());
 			ret.setOutputPeriodFor(info.getOutputPeriodFor());
 			ret.setTemplateSetId(info.getTemplateSetId());
@@ -178,8 +180,9 @@ public class ReportScheduleConv {
 			}
 			
 			ret.setPageValidFlg(info.getPageValidFlg());
-			ret.setOutputType(info.getOutputType());
-			Schedule schedule = new Schedule();
+			ret.setOutputType(OpenApiEnumConverter.integerToEnum(info.getOutputType(),
+					ReportingScheduleResponse.OutputTypeEnum.class));
+			ReportingScheduleInfoResponse schedule = new ReportingScheduleInfoResponse();
 			
 			// schedule.setType(info.getScheduleType());
 			// ・XMLのスケジュールタイプが「毎日(0)」 → DTOのスケジュールタイプは「1」、日は未設定
@@ -187,16 +190,16 @@ public class ReportScheduleConv {
 			// ・XMLのスケジュールタイプが「毎月(2)」 → DTOのスケジュールタイプは「1」、日を設定
 			switch (info.getScheduleType()) {
 			case TYPE_EVERY_DAY:
-				schedule.setType(com.clustercontrol.bean.ScheduleConstant.TYPE_DAY);
+				schedule.setScheduleType(ReportingScheduleInfoResponse.ScheduleTypeEnum.DAY);
 				break;
 			case TYPE_EVERY_WEEK:
-				schedule.setType(com.clustercontrol.bean.ScheduleConstant.TYPE_WEEK);
+				schedule.setScheduleType(ReportingScheduleInfoResponse.ScheduleTypeEnum.WEEK);
 				if (info.hasWeek()){
 					schedule.setWeek(info.getWeek());
 				}
 				break;
 			case TYPE_EVERY_MONTH:
-				schedule.setType(com.clustercontrol.bean.ScheduleConstant.TYPE_DAY);
+				schedule.setScheduleType(ReportingScheduleInfoResponse.ScheduleTypeEnum.DAY);
 				if (info.hasDay()){
 					schedule.setDay(info.getDay());
 				}
@@ -209,14 +212,12 @@ public class ReportScheduleConv {
 			schedule.setMinute(info.getMinute());
 			ret.setSchedule(schedule);
 
-			List<NotifyRelationInfo> notifyRelationInfoList = new ArrayList<NotifyRelationInfo>();
-			NotifyRelationInfo notifyRelationInfo = null;
+			List<NotifyRelationInfoResponse> notifyRelationInfoList = new ArrayList<NotifyRelationInfoResponse>();
+			NotifyRelationInfoResponse notifyRelationInfo = null;
 			com.clustercontrol.utility.settings.report.xml.NotifyId[] notifies = info.getNotifyId();
 			
-			String notifyGroupId = ReportingUtil.createNotifyGroupIdReporting(info.getReportScheduleId());
 			for (int i = 0; i < notifies.length; i++) {
-				notifyRelationInfo = new NotifyRelationInfo();
-				notifyRelationInfo.setNotifyGroupId(notifyGroupId);
+				notifyRelationInfo = new NotifyRelationInfoResponse();
 				if ( notifies[i].getNotifyId() != null && ! notifies[i].getNotifyId().equals("")) {
 					notifyRelationInfo.setNotifyId( notifies[i].getNotifyId());
 				}else{
@@ -224,13 +225,13 @@ public class ReportScheduleConv {
 							+ "(NotifyRelation-NotifyId) : " + info.getNotifyGroupId());
 					continue;
 				}
-				notifyRelationInfo.setNotifyType( notifies[i].getNotifyType());
+				notifyRelationInfo.setNotifyType(OpenApiEnumConverter.integerToEnum((int) notifies[i].getNotifyType(),
+						NotifyRelationInfoResponse.NotifyTypeEnum.class));
 				notifyRelationInfoList.add(notifyRelationInfo);
 			}
 			
-			ret.getNotifyId().clear();
-			ret.getNotifyId().addAll(notifyRelationInfoList);
-			ret.setNotifyGroupId(notifyGroupId);
+			ret.getNotifyRelationList().clear();
+			ret.getNotifyRelationList().addAll(notifyRelationInfoList);
 			
 			ret.setValidFlg(info.getValidFlg());
 			ret.setRegDate(now);
@@ -238,7 +239,7 @@ public class ReportScheduleConv {
 			ret.setUpdateDate(now);
 			ret.setUpdateUser(Config.getConfig("Login.USER"));
 
-		} catch (Exception e) {
+		} catch (HinemosUnknown | InvalidSetting e) {
 			log.error(e.getMessage(), e);
 		}
 

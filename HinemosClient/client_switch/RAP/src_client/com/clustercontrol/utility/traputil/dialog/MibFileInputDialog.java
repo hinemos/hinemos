@@ -211,6 +211,9 @@ public class MibFileInputDialog extends CommonDialog {
 			public void widgetSelected(SelectionEvent e) {
 				
 				UtilityFileUpload fileUpload = (UtilityFileUpload) e.widget;
+				if (fileUpload.getFileName() == null) {
+					return;
+				}
 				fileUpload.cleanup();
 				
 				m_textInputMIB.setText(fileUpload.getFileName());
@@ -245,6 +248,9 @@ public class MibFileInputDialog extends CommonDialog {
 				
 				// Cleanup the temporary file at first
 				UtilityFileUpload fileUpload = (UtilityFileUpload) e.widget;
+				if (fileUpload.getFileName() == null) {
+					return;
+				}
 				fileUpload.cleanup();
 				m_textInputMIB.setText(fileUpload.getFileName());
 
@@ -297,6 +303,9 @@ public class MibFileInputDialog extends CommonDialog {
 
 				// Cleanup the temporary file at first
 				UtilityFileUpload fileUpload = (UtilityFileUpload) e.widget;
+				if (fileUpload.getFileName() == null) {
+					return;
+				}
 				fileUpload.cleanup();
 				m_textSearchDir.setText(fileUpload.getFileName());
 
@@ -458,7 +467,11 @@ public class MibFileInputDialog extends CommonDialog {
 			} else {
 				try {
 					ClientPathUtil pathUtil = ClientPathUtil.getInstance();
-					pathUtil.lock(MIB_PATH);
+					if(!pathUtil.lock(MIB_PATH)){
+						// 通常時は通ることはない
+						pathUtil.unlock(MIB_PATH);
+						pathUtil.lock(MIB_PATH);
+					}
 					mibPath = MIB_PATH + File.separator + pathUtil.getTempPath(MIB_PATH);
 					ZipUtil.decompress(new File(m_buttonInputDir.getFilePath()), mibPath);
 					this.mibFile = mibPath;
@@ -505,6 +518,11 @@ public class MibFileInputDialog extends CommonDialog {
 		if(this.m_textSearchDir != null && !"".equals(this.m_textSearchDir.getText().trim())) {
 			try {
 				ClientPathUtil pathUtil = ClientPathUtil.getInstance();
+				if(!pathUtil.lock(MIB_SEARCH_PATH)){
+					// 通常時は通ることはない
+					pathUtil.unlock(MIB_SEARCH_PATH);
+					pathUtil.lock(MIB_SEARCH_PATH);
+				}
 				mibSearchPath = MIB_SEARCH_PATH + File.separator + pathUtil.getTempPath(MIB_SEARCH_PATH);
 				ZipUtil.decompress(new File(m_buttonInputSearchDir.getFilePath()), mibSearchPath);
 				this.searchPath = mibSearchPath;

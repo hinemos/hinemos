@@ -9,9 +9,6 @@
 package com.clustercontrol.notify.factory;
 
 import java.util.Collection;
-import java.util.List;
-
-import javax.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,19 +23,22 @@ import com.clustercontrol.fault.NotifyDuplicate;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.notify.bean.NotifyTypeConstant;
 import com.clustercontrol.notify.mail.model.MailTemplateInfo;
+import com.clustercontrol.notify.model.NotifyCloudInfo;
 import com.clustercontrol.notify.model.NotifyCommandInfo;
 import com.clustercontrol.notify.model.NotifyEventInfo;
-import com.clustercontrol.notify.model.NotifyHistoryEntity;
 import com.clustercontrol.notify.model.NotifyInfo;
 import com.clustercontrol.notify.model.NotifyInfraInfo;
 import com.clustercontrol.notify.model.NotifyJobInfo;
 import com.clustercontrol.notify.model.NotifyLogEscalateInfo;
 import com.clustercontrol.notify.model.NotifyMailInfo;
-import com.clustercontrol.notify.model.NotifyRelationInfo;
+import com.clustercontrol.notify.model.NotifyMessageInfo;
+import com.clustercontrol.notify.model.NotifyRestInfo;
 import com.clustercontrol.notify.model.NotifyStatusInfo;
 import com.clustercontrol.notify.util.NotifyUtil;
 import com.clustercontrol.notify.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * 通知情報を変更するクラスです。
@@ -79,7 +79,6 @@ public class ModifyNotify {
 
 			// 重複チェック
 			jtm.checkEntityExists(NotifyInfo.class, info.getNotifyId());
-			
 			info.setRegDate(now);
 			info.setRegUser(user);
 			info.setUpdateDate(now);
@@ -125,7 +124,6 @@ public class ModifyNotify {
 	public boolean modify(NotifyInfo info , String user) throws NotifyDuplicate, InvalidRole, HinemosUnknown {
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-			HinemosEntityManager em = jtm.getEntityManager();
 			long now = HinemosTime.currentTimeMillis();
 
 			// 通知情報を取得
@@ -141,24 +139,16 @@ public class ModifyNotify {
 			notify.setUpdateDate(now);
 			notify.setUpdateUser(user);
 			notify.setValidFlg(info.getValidFlg());
-			notify.setOwnerRoleId(info.getOwnerRoleId());
 			notify.setCalendarId(info.getCalendarId());
 
 			// 通知設定を無効に設定した場合は、関連する通知履歴を削除
 			if(!notify.getValidFlg().booleanValue()){
+				long start = HinemosTime.currentTimeMillis();
 				m_log.debug("remove NotifyHistory");
-				List<NotifyHistoryEntity> list = QueryUtil.getNotifyHistoryByNotifyId(notify.getNotifyId());
 
-				for(NotifyHistoryEntity history : list){
-					m_log.debug("remove NotifyHistory : " + history);
-
-					try {
-						em.remove(history);
-					} catch (Exception e) {
-						m_log.warn("modify() : "
-								+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-					}
-				}
+				QueryUtil.deleteNotifyHistoryByNotifyId(notify.getNotifyId());
+				long currentTime = HinemosTime.currentTimeMillis() - start;
+				m_log.info("_delete() : count, TIME = " + currentTime + "ms, notifyId = " + notify.getNotifyId());
 			}
 
 			// 通知詳細情報を変更
@@ -184,6 +174,20 @@ public class ModifyNotify {
 			case NotifyTypeConstant.TYPE_INFRA:
 				modifyNotifyInfra(info, notify);
 				break;
+			case NotifyTypeConstant.TYPE_REST:
+				modifyNotifyRest(info, notify);
+				break;
+			case NotifyTypeConstant.TYPE_CLOUD:
+				modifyNotifyCloud(info, notify);
+				break;
+			case NotifyTypeConstant.TYPE_MESSAGE:
+				modifyNotifyMessage(info, notify);
+				break;
+			default:
+				//NotifyTypeConstantが追加されない限り、ここには来ない想定
+				String message = "NotifyType is unknown. type = " + info.getNotifyType();
+				m_log.warn("modify() : " +  message);
+				throw new HinemosUnknown(message);
 			}
 
 		} catch (NotifyNotFound e) {
@@ -277,6 +281,33 @@ public class ModifyNotify {
 		return true;
 	}
 	
+	private boolean modifyNotifyRest(NotifyInfo info, NotifyInfo notify) throws NotifyNotFound {
+		NotifyRestInfo rest = info.getNotifyRestInfo();
+		if (rest != null) {
+			NotifyRestInfo entity = QueryUtil.getNotifyRestInfoPK(info.getNotifyId());
+			NotifyUtil.copyProperties(rest, entity);
+		}
+		return true;
+	}
+	
+	private boolean modifyNotifyCloud(NotifyInfo info, NotifyInfo notify) throws NotifyNotFound {
+		NotifyCloudInfo cloud = info.getNotifyCloudInfo();
+		if (cloud != null) {
+			NotifyCloudInfo entity = QueryUtil.getNotifyCloudInfoPK(info.getNotifyId());
+			NotifyUtil.copyProperties(cloud, entity);
+		}
+		return true;
+	}
+
+	private boolean modifyNotifyMessage(NotifyInfo info, NotifyInfo notify) throws NotifyNotFound {
+		NotifyMessageInfo message = info.getNotifyMessageInfo();
+		if (message != null) {
+			NotifyMessageInfo entity = QueryUtil.getNotifyMessageInfoPK(info.getNotifyId());
+			NotifyUtil.copyProperties(message, entity);
+		}
+		return true;
+	}
+
 	/**
 	 * 通知情報を削除します。
 	 * <p>
@@ -307,26 +338,19 @@ public class ModifyNotify {
 			notify = QueryUtil.getNotifyInfoPK(notifyId, ObjectPrivilegeMode.MODIFY);
 
 			// この通知設定の結果として通知された通知履歴を削除する
-			List<NotifyHistoryEntity> list = QueryUtil.getNotifyHistoryByNotifyId(notifyId);
-			for(NotifyHistoryEntity history : list){
-				try {
-					em.remove(history);
-				} catch (Exception e) {
-					m_log.warn("delete() : "
-							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-				}
-			}
+			long historyStart = HinemosTime.currentTimeMillis();
+			m_log.debug("remove NotifyHistory");
+
+			QueryUtil.deleteNotifyHistoryByNotifyId(notifyId);
+			m_log.info("NotifyRelationInfo_delete() : count, TIME = " + (HinemosTime.currentTimeMillis() - historyStart) + "ms, notifyId = " + notifyId);
 
 			// システム通知情報を削除
-			List<NotifyRelationInfo> relations = QueryUtil.getNotifyRelationInfoByNotifyId(notifyId);
-			for(NotifyRelationInfo relation : relations){
-				try {
-					em.remove(relation);
-				} catch (Exception e) {
-					m_log.warn("delete() : "
-							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-				}
-			}
+			long infoStart = HinemosTime.currentTimeMillis();
+			m_log.debug("remove NotifyRelationInfo");
+
+			QueryUtil.deleteNotifyRelationInfoByNotifyId(notifyId);
+
+			m_log.info("NotifyRelationInfo_delete() : count, TIME = " + (HinemosTime.currentTimeMillis() - infoStart) + "ms, notifyId = " + notifyId);
 
 			// 通知情報を削除
 			em.remove(notify);

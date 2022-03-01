@@ -9,11 +9,10 @@
 package com.clustercontrol.commons.util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-
-import javax.persistence.EntityExistsException;
-import javax.persistence.EntityTransaction;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -21,6 +20,9 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.ObjectPrivilegeCallback;
 import com.clustercontrol.fault.HinemosUnknown;
+
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityTransaction;
 /*
  * JPA用のトランザクション制御機能
  */
@@ -31,6 +33,8 @@ public class JpaTransactionManager implements AutoCloseable {
 	public final static String EM = "entityManager";
 	public final static String CALLBACKS = "callbackImpl";
 	public final static String IS_CALLBACKED = "isCallbacked";
+
+	private final static String PROP_SCOPED_MAP = "SCOPED_MAP";
 
 	// HinemosEntityManager
 	private HinemosEntityManager em = null;
@@ -75,7 +79,6 @@ public class JpaTransactionManager implements AutoCloseable {
 			addCallback(new ObjectPrivilegeCallback());
 			
 			tx.begin();
-			
 		} else {
 			if (abortIfTxBegined) {
 				HinemosUnknown e = new HinemosUnknown("transaction has already started.");
@@ -107,6 +110,7 @@ public class JpaTransactionManager implements AutoCloseable {
 		if (isGetTransaction) {
 			tx = em.getTransaction();
 		}
+		m_log.debug("commit() : nestedTx=" + nestedTx);
 		if (!nestedTx) {
 			if (! isCallbacked()) {
 				List<JpaTransactionCallback> callbacks = getCallbacks();
@@ -128,6 +132,7 @@ public class JpaTransactionManager implements AutoCloseable {
 			}
 
 			tx.commit();
+			removeScopedMap();
 			
 			if (! isCallbacked()) {
 				List<JpaTransactionCallback> callbacks = getCallbacks();
@@ -208,6 +213,7 @@ public class JpaTransactionManager implements AutoCloseable {
 	 * ロールバック処理
 	 */
 	public void rollback() {
+		m_log.debug("rollback() : nestedTx=" + nestedTx);
 		if (!nestedTx) {
 			if (tx != null && tx.isActive()) {
 				m_log.debug("session is rollback.");
@@ -231,6 +237,7 @@ public class JpaTransactionManager implements AutoCloseable {
 				}
 
 				tx.rollback();
+				removeScopedMap();
 				
 				if (! isCallbacked()) {
 					List<JpaTransactionCallback> callbacks = getCallbacks();
@@ -257,6 +264,7 @@ public class JpaTransactionManager implements AutoCloseable {
 	 * クローズ処理
 	 */
 	public void close() {
+		m_log.debug("close() start");
 		if(!nestedEm && em != null) {
 			if(em.isOpen()) {
 				try {
@@ -402,6 +410,13 @@ public class JpaTransactionManager implements AutoCloseable {
 	}
 
 	/**
+	 * トランザクションが既に開始されているか
+	 */
+	public boolean isNestedTx() {
+		return nestedTx;
+	}
+
+	/**
 	 * 重複チェック
 	 *   重複エラーの場合、EntityExistsException発生
 	 * 
@@ -450,6 +465,7 @@ public class JpaTransactionManager implements AutoCloseable {
 	 */
 	@SuppressWarnings("unchecked")
 	private void clearTransactionCallbacks() {
+		m_log.debug("clearTransactionCallbacks() start");
 		Object callbacksProp = em.getProperties().get(CALLBACKS);
 		if (callbacksProp != null) {
 			List<JpaTransactionCallback> callbacks = (List<JpaTransactionCallback>)callbacksProp;
@@ -468,6 +484,7 @@ public class JpaTransactionManager implements AutoCloseable {
 	 * EntityManagerとcallbackクラスの関連を消去する。<br/>
 	 */
 	private void clearCallbacks() {
+		m_log.debug("clearCallbacks() start");
 		em.setProperty(CALLBACKS, new ArrayList<JpaTransactionCallback>());
 	}
 	
@@ -498,7 +515,50 @@ public class JpaTransactionManager implements AutoCloseable {
 			return false;
 		}
 	}
+
+	private void removeScopedMap() {
+		em.setProperty(PROP_SCOPED_MAP, null);
+	}
 	
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> getScopedMap() {
+		Object o = em.getProperties().get(PROP_SCOPED_MAP);
+		if (o == null) {
+			Map<String, Object> map = new HashMap<>();
+			em.setProperty(PROP_SCOPED_MAP, map);
+			return map;
+		} else {
+			return (Map<String, Object>) o;
+		}
+	}
+
+	/**
+	 * トランザクション期間中のみ保持される値を返します。
+	 */
+	public Object getScopedValue(String key) {
+		return getScopedMap().get(key);
+	}
+
+	/**
+	 * トランザクション期間中のみ保持される値を返します。
+	 * 未設定の場合はデフォルト値を返します。
+	 */
+	public Object getScopedValue(String key, Object defaultValue) {
+		Object o = getScopedMap().get(key);
+		if (o == null) {
+			return defaultValue;
+		} else {
+			return o;
+		}
+	}
+
+	/**
+	 * トランザクション期間中のみ保持される値を設定します。
+	 */
+	public void setScopedValue(String key, Object value) {
+		getScopedMap().put(key, value);
+	}
+
 	/**
 	 * トランザクションAPIの前処理・後処理に関するcallbackクラスを追加する。<br />
 	 * 本メソッドにより追加された順序でcallbackクラスは実行される。<br />

@@ -10,21 +10,21 @@ package com.clustercontrol.agent.repository;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtNodeCpuInfoRequest;
+import org.openapitools.client.model.AgtNodeDiskInfoRequest;
+import org.openapitools.client.model.AgtNodeFilesystemInfoRequest;
+import org.openapitools.client.model.AgtNodeHostnameInfoRequest;
+import org.openapitools.client.model.AgtNodeMemoryInfoRequest;
+import org.openapitools.client.model.AgtNodeNetstatInfoRequest;
+import org.openapitools.client.model.AgtNodeNetworkInterfaceInfoRequest;
+import org.openapitools.client.model.AgtNodeOsInfoRequest;
+import org.openapitools.client.model.AgtNodePackageInfoRequest;
+import org.openapitools.client.model.AgtNodeProcessInfoRequest;
 
 import com.clustercontrol.bean.IpAddressInfo;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.util.NetworkInterfaceUtil;
-import com.clustercontrol.ws.agentnodeconfig.NodeNetworkInterfaceInfo;
-import com.clustercontrol.ws.repository.NodeCpuInfo;
-import com.clustercontrol.ws.repository.NodeDiskInfo;
-import com.clustercontrol.ws.repository.NodeFilesystemInfo;
-import com.clustercontrol.ws.repository.NodeHostnameInfo;
-import com.clustercontrol.ws.repository.NodeMemoryInfo;
-import com.clustercontrol.ws.repository.NodeNetstatInfo;
-import com.clustercontrol.ws.repository.NodeOsInfo;
-import com.clustercontrol.ws.repository.NodePackageInfo;
-import com.clustercontrol.ws.repository.NodeProcessInfo;
 
 public class NodeConfigTsvReplaser {
 
@@ -45,10 +45,10 @@ public class NodeConfigTsvReplaser {
 	 * @return CMDBRecordProcess
 	 * @throws HinemosUnknown
 	 */
-	protected NodeProcessInfo setRecordProcess(String[] token) throws HinemosUnknown {
+	protected AgtNodeProcessInfoRequest setRecordProcess(String[] token) throws HinemosUnknown {
 
 		// ■プロセス
-		NodeProcessInfo record_process = new NodeProcessInfo();
+		AgtNodeProcessInfoRequest record_process = new AgtNodeProcessInfoRequest();
 
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		try {
@@ -86,9 +86,9 @@ public class NodeConfigTsvReplaser {
 	 * @return CMDBRecordPackage
 	 * @throws HinemosUnknown
 	 */
-	protected NodePackageInfo setRecordPackage(String[] token) throws HinemosUnknown {
+	protected AgtNodePackageInfoRequest setRecordPackage(String[] token) throws HinemosUnknown {
 		// ■パッケージ
-		NodePackageInfo record_pkg = new NodePackageInfo();
+		AgtNodePackageInfoRequest record_pkg = new AgtNodePackageInfoRequest();
 
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		try {
@@ -135,9 +135,9 @@ public class NodeConfigTsvReplaser {
 	 * @return
 	 * @throws HinemosUnknown
 	 */
-	protected NodeNetworkInterfaceInfo setRecordNic(String[] token) throws HinemosUnknown {
+	protected AgtNodeNetworkInterfaceInfoRequest setRecordNic(String[] token) throws HinemosUnknown {
 		// NIC
-		NodeNetworkInterfaceInfo record_nic = new NodeNetworkInterfaceInfo();
+		AgtNodeNetworkInterfaceInfoRequest record_nic = new AgtNodeNetworkInterfaceInfoRequest();
 
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		try {
@@ -160,7 +160,7 @@ public class NodeConfigTsvReplaser {
 			// デバイスサイズ
 			String deviceSizeStr = getParam(NodeConfigConstant.NIC_DEVICE_SIZE, token);
 			if (!"".equals(deviceSizeStr)) {
-				record_nic.setDeviceSize(Integer.valueOf(deviceSizeStr));
+				record_nic.setDeviceSize(Long.valueOf(deviceSizeStr));
 			}
 			// デバイスサイズ単位
 			record_nic.setDeviceSizeUnit(getParam(NodeConfigConstant.NIC_DEVICE_SIZE_UNIT, token));
@@ -203,9 +203,9 @@ public class NodeConfigTsvReplaser {
 	 * @return
 	 * @throws HinemosUnknown
 	 */
-	protected NodeCpuInfo setRecordCpu(String[] token) throws HinemosUnknown {
+	protected AgtNodeCpuInfoRequest setRecordCpu(String[] token) throws HinemosUnknown {
 		// CPU
-		NodeCpuInfo recordCpu = new NodeCpuInfo();
+		AgtNodeCpuInfoRequest recordCpu = new AgtNodeCpuInfoRequest();
 
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		try {
@@ -223,7 +223,7 @@ public class NodeConfigTsvReplaser {
 			// デバイスサイズ
 			String tmpIntStr = getParam(NodeConfigConstant.CPU_DEVICE_SIZE, token);
 			if (!"".equals(tmpIntStr)) {
-				recordCpu.setDeviceSize(Integer.valueOf(tmpIntStr));
+				recordCpu.setDeviceSize(Long.valueOf(tmpIntStr));
 			}
 			// デバイスサイズ単位
 			recordCpu.setDeviceSizeUnit(getParam(NodeConfigConstant.CPU_DEVICE_SIZE_UNIT, token));
@@ -262,10 +262,10 @@ public class NodeConfigTsvReplaser {
 	 * @return
 	 * @throws HinemosUnknown
 	 */
-	protected NodeDiskInfo setRecordDisk(String[] token) throws HinemosUnknown {
+	protected AgtNodeDiskInfoRequest setRecordDisk(String[] token) throws HinemosUnknown {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
-		NodeDiskInfo record = new NodeDiskInfo();
+		AgtNodeDiskInfoRequest record = new AgtNodeDiskInfoRequest();
 		try {
 			// 表示名
 			record.setDeviceDisplayName(getParam(NodeConfigConstant.DISK_NAME, token));
@@ -281,7 +281,7 @@ public class NodeConfigTsvReplaser {
 			// デバイスサイズ
 			String tmpIntStr = getParam(NodeConfigConstant.DISK_DEVICE_SIZE, token);
 			if (!"".equals(tmpIntStr)) {
-				record.setDeviceSize(Integer.valueOf(tmpIntStr));
+				record.setDeviceSize(Long.valueOf(tmpIntStr));
 			}
 			// デバイスサイズ単位
 			record.setDeviceSizeUnit(getParam(NodeConfigConstant.DISK_DEVICE_SIZE_UNIT, token));
@@ -305,10 +305,10 @@ public class NodeConfigTsvReplaser {
 	 * @return
 	 * @throws HinemosUnknown
 	 */
-	protected NodeFilesystemInfo setRecordFsystem(String[] token) throws HinemosUnknown {
+	protected AgtNodeFilesystemInfoRequest setRecordFsystem(String[] token) throws HinemosUnknown {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
-		NodeFilesystemInfo record = new NodeFilesystemInfo();
+		AgtNodeFilesystemInfoRequest record = new AgtNodeFilesystemInfoRequest();
 		try {
 			// 表示名
 			record.setDeviceDisplayName(getParam(NodeConfigConstant.FSYSTEM_NAME, token));
@@ -324,7 +324,7 @@ public class NodeConfigTsvReplaser {
 			// デバイスサイズ
 			String tmpIntStr = getParam(NodeConfigConstant.FSYSTEM_DEVICE_SIZE, token);
 			if (!"".equals(tmpIntStr)) {
-				record.setDeviceSize(Integer.valueOf(tmpIntStr));
+				record.setDeviceSize(Long.valueOf(tmpIntStr));
 			}
 			// デバイスサイズ単位
 			record.setDeviceSizeUnit(getParam(NodeConfigConstant.FSYSTEM_DEVICE_SIZE_UNIT, token));
@@ -350,10 +350,10 @@ public class NodeConfigTsvReplaser {
 	 * @return
 	 * @throws HinemosUnknown
 	 */
-	protected NodeNetstatInfo setRecordNetstat(String[] token) throws HinemosUnknown {
+	protected AgtNodeNetstatInfoRequest setRecordNetstat(String[] token) throws HinemosUnknown {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
-		NodeNetstatInfo record = new NodeNetstatInfo();
+		AgtNodeNetstatInfoRequest record = new AgtNodeNetstatInfoRequest();
 		try {
 			// プロトコル.
 			String protocol = getParam(NodeConfigConstant.NETSTAT_PROTOCOL, token);
@@ -394,8 +394,8 @@ public class NodeConfigTsvReplaser {
 	 * @return
 	 * @throws HinemosUnknown
 	 */
-	protected NodeOsInfo setRecordOs(String[] token) throws HinemosUnknown {
-		NodeOsInfo returnInfo = new NodeOsInfo();
+	protected AgtNodeOsInfoRequest setRecordOs(String[] token) throws HinemosUnknown {
+		AgtNodeOsInfoRequest returnInfo = new AgtNodeOsInfoRequest();
 
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		try {
@@ -427,8 +427,8 @@ public class NodeConfigTsvReplaser {
 	 * @return
 	 * @throws HinemosUnknown
 	 */
-	protected NodeHostnameInfo setRecordHost(String[] token) throws HinemosUnknown {
-		NodeHostnameInfo returnInfo = new NodeHostnameInfo();
+	protected AgtNodeHostnameInfoRequest setRecordHost(String[] token) throws HinemosUnknown {
+		AgtNodeHostnameInfoRequest returnInfo = new AgtNodeHostnameInfoRequest();
 
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		try {
@@ -451,10 +451,10 @@ public class NodeConfigTsvReplaser {
 	 * @return
 	 * @throws HinemosUnknown
 	 */
-	protected NodeMemoryInfo setRecordMemory(String[] token) throws HinemosUnknown {
+	protected AgtNodeMemoryInfoRequest setRecordMemory(String[] token) throws HinemosUnknown {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
-		NodeMemoryInfo returnInfo = new NodeMemoryInfo();
+		AgtNodeMemoryInfoRequest returnInfo = new AgtNodeMemoryInfoRequest();
 		try {
 			// 表示名
 			returnInfo.setDeviceDisplayName(getParam(NodeConfigConstant.MEMORY_NAME, token));
@@ -470,7 +470,7 @@ public class NodeConfigTsvReplaser {
 			// デバイスサイズ
 			String tmpIntStr = getParam(NodeConfigConstant.MEMORY_DEVICE_SIZE, token);
 			if (!"".equals(tmpIntStr)) {
-				returnInfo.setDeviceSize(Integer.valueOf(tmpIntStr));
+				returnInfo.setDeviceSize(Long.valueOf(tmpIntStr));
 			}
 			// デバイスサイズ単位
 			returnInfo.setDeviceSizeUnit(getParam(NodeConfigConstant.MEMORY_DEVICE_SIZE_UNIT, token));

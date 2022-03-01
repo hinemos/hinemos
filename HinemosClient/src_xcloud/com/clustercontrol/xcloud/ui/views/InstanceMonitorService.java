@@ -20,11 +20,10 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.widgets.Display;
+import org.openapitools.client.model.CloudPlatformInfoResponse;
+import org.openapitools.client.model.HRepositoryResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudPlatform;
-import com.clustercontrol.ws.xcloud.HRepository;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.cloud.HinemosManager;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
@@ -32,6 +31,7 @@ import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
 import com.clustercontrol.xcloud.model.cloud.IInstance;
 import com.clustercontrol.xcloud.model.cloud.ILocation;
 import com.clustercontrol.xcloud.platform.PlatformDependent;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 /**
  * AWS へポーリングし、AWS のインスタンスを追跡する。
@@ -67,7 +67,7 @@ public class InstanceMonitorService {
 	 * 同時する必要あり。
 	 */
 	private Map<String, Map<String, InstanceIdentity>> stoppedStatusMap = Collections.synchronizedMap(new HashMap<String,  Map<String, InstanceIdentity>>());
-	private Map<String, CloudEndpoint> endpointMap = Collections.synchronizedMap(new HashMap<String, CloudEndpoint>());
+	private Map<String, CloudRestClientWrapper> wrapperMap = Collections.synchronizedMap(new HashMap<String, CloudRestClientWrapper>());
 	
 	/**
 	 * instanceMap に合わせて同期される。
@@ -94,7 +94,7 @@ public class InstanceMonitorService {
 	 * @param indtanecId
 	 * @param listener
 	 */
-	public void startMonitor(String managerName, String cloudScopeId, String locationId, String instanceId, String...stoppedStatus) {
+	public void startMonitor(String managerName, String cloudScopeId, String locationId, String instanceId, String... stoppedStatus) {
 		// RAP 上では、UI スレッドのみソケットアクセスが可能なため、マルチスレッドでソケットアクセスを行う以下の以降の処理は行わない。
 		if (PlatformDependent.getPlatformDependent().isRapPlatfome())
 			return;
@@ -106,8 +106,8 @@ public class InstanceMonitorService {
 				stoppedStatusMap.put(managerName, identities);
 				
 				IHinemosManager manager = ClusterControlPlugin.getDefault().getHinemosManager(managerName);
-				CloudEndpoint endpoint = manager.getEndpoint(CloudEndpoint.class);
-				endpointMap.put(managerName, endpoint);
+				CloudRestClientWrapper wrapper = manager.getWrapper();
+				wrapperMap.put(managerName, wrapper);
 			}
 			identities.put(instanceId, new InstanceIdentity(cloudScopeId, locationId, instanceId, stoppedStatus));
 			
@@ -118,11 +118,11 @@ public class InstanceMonitorService {
 						public void run() {
 							try {
 								// 既存のインスタンスの情報が取得できている場合、更新。
-								for (final String managerName: stoppedStatusMap.keySet()) {
-									CloudEndpoint endpoint = endpointMap.get(managerName);
-									final List<CloudPlatform> cloudPlatforms = endpoint.getAllCloudPlatforms();
-									final HRepository repository = endpoint.getRepository();
-									
+								for (final String managerName : stoppedStatusMap.keySet()) {
+									CloudRestClientWrapper wrapper = wrapperMap.get(managerName);
+									final List<CloudPlatformInfoResponse> cloudPlatforms = wrapper.getAllCloudPlatforms();
+									final HRepositoryResponse repository = wrapper.getRepository(null);
+
 									display.asyncExec(new Runnable() {
 										@Override
 										public void run() {

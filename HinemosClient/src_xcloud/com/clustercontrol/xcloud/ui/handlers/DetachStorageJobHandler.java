@@ -12,10 +12,11 @@ import java.text.MessageFormat;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.JobResourceInfoResponse.ResourceActionEnum;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
 import com.clustercontrol.xcloud.extensions.CloudOptionExtension;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
+import com.clustercontrol.xcloud.model.cloud.IResource;
 import com.clustercontrol.xcloud.model.cloud.IStorage;
 import com.clustercontrol.xcloud.util.CloudUtil;
 
@@ -34,11 +35,6 @@ public class DetachStorageJobHandler extends AbstaractCloudOptionJobHandler {
 	}
 
 	@Override
-	protected String getCommand(CloudEndpoint endpoint) throws Exception {
-		return endpoint.makeDetachStorageCommand(storage.getCloudScope().getId(), storage.getLocation().getId(), storage.getId());
-	}
-
-	@Override
 	protected String getJobName() {
 		return getJobId();
 	}
@@ -48,16 +44,18 @@ public class DetachStorageJobHandler extends AbstaractCloudOptionJobHandler {
 		String jobid = String.format("%s_%s_s-detach", storage.getLocation().getId(), storage.getId());
 		if (jobid.length() > CloudUtil.jobIdMaxLength) {
 			int diff = jobid.length() - CloudUtil.jobIdMaxLength;
-			if (diff > 0)
-				jobid = String.format("%s_%s_s-detach", storage.getLocation().getId(), storage.getId().substring(diff-1, storage.getId().length()));
+			jobid = String.format("%s_%s_s-detach", storage.getLocation().getId(), storage.getId().substring(diff, storage.getId().length()));
 		}
 		
 		return jobid;
 	}
 
 	@Override
-	protected String getMethodName() {
-		return "makeDetachStorageCommand";
+	protected String cutJobId(int num) {
+		String jobid = String.format("%s_%s_s-detach", storage.getLocation().getId(), storage.getId());
+		int diff = jobid.length() - CloudUtil.jobIdMaxLength;
+		jobid = String.format("%s_%s_s-detach", storage.getLocation().getId(), storage.getId().substring(diff + num, storage.getId().length()));
+		return jobid;
 	}
 
 	@Override
@@ -68,5 +66,15 @@ public class DetachStorageJobHandler extends AbstaractCloudOptionJobHandler {
 	@Override
 	protected String getErrorMessage() {
 		return msgErrorFinishCreateDetachStorageJob;
+	}
+
+	@Override
+	protected IResource getResource() {
+		return storage;
+	}
+
+	@Override
+	protected ResourceActionEnum getAction() {
+		return ResourceActionEnum.DETACH;
 	}
 }

@@ -10,9 +10,6 @@ package com.clustercontrol.hub.util;
 
 import java.util.List;
 
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
-
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
@@ -27,6 +24,9 @@ import com.clustercontrol.hub.model.CollectStringKeyInfoPK;
 import com.clustercontrol.hub.model.LogFormat;
 import com.clustercontrol.hub.model.TransferInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 
 public class QueryUtil {
 
@@ -198,7 +198,7 @@ public class QueryUtil {
 			return entity;
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @param transferId
@@ -262,6 +262,20 @@ public class QueryUtil {
 				= em.createNamedQuery_OR("TransferInfo.findAll", TransferInfo.class, ownerRoleId)
 				.getResultList();
 			return list;
+		}
+	}
+	/**
+	 * 
+	 * @param calendarId
+	 * @return
+	 */
+	public static List<TransferInfo> getTransferInfoFindByCalendarId_NONE(String calendarId){
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<TransferInfo> transferInfoList
+			= em.createNamedQuery("TransferInfo.findByCalendarId", TransferInfo.class, ObjectPrivilegeMode.NONE)
+			.setParameter("calendarId", calendarId).getResultList();
+			return transferInfoList;
 		}
 	}
 }

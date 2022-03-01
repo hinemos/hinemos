@@ -27,15 +27,16 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.SetReportingStatusRequest;
 
 import com.clustercontrol.reporting.view.action.ReportingEnableAction;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.reporting.action.GetReportingScheduleTableDefine;
 import com.clustercontrol.reporting.composite.ReportingScheduleListComposite;
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.reporting.view.ReportingScheduleView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
 
 /**
  * レポーティング[スケジュール]ビューの[有効]アクションクラス<BR>
@@ -126,21 +127,25 @@ public class ReportingEnableAction extends AbstractHandler implements IElementUp
 		// 実行
 		for(Map.Entry<String, List<String>> entry : map.entrySet()) {
 			String managerName = entry.getKey();
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-			for(String scheduleId : entry.getValue()) {
-				try {
-					wrapper.setReportingStatus(scheduleId, true);
-					successList.append(scheduleId + "(" + managerName + ")" + "\n");
-				} catch (InvalidRole_Exception e) {
-					String errMessage = HinemosMessage.replace(e.getMessage());
-					failureList.append(scheduleId + "\n");
-					m_log.warn("run() setReportingStatus scheduleId=" + scheduleId + ", " + errMessage, e);
-					hasRole = false;
-				} catch (Exception e) {
-					String errMessage = HinemosMessage.replace(e.getMessage());
-					failureList.append(scheduleId + "\n");
-					m_log.warn("run() setReportingStatus scheduleId=" + scheduleId + ", " + errMessage, e);
-				}
+			
+			ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(managerName);
+			SetReportingStatusRequest req = new SetReportingStatusRequest();
+			List<String> idList = entry.getValue();
+			req.setReportIdList(idList);
+			req.setValidFlg(true);
+			
+			try {
+				wrapper.setReportingScheduleStatus(req);
+				successList.append(idList + "(" + managerName + ")" + "\n");
+			} catch (InvalidRole e) {
+				String errMessage = HinemosMessage.replace(e.getMessage());
+				failureList.append(idList + "\n");
+				m_log.warn("run() setReportingStatus scheduleId=" + idList + ", " + errMessage, e);
+				hasRole = false;
+			} catch (Exception e) {
+				String errMessage = HinemosMessage.replace(e.getMessage());
+				failureList.append(idList + "\n");
+				m_log.warn("run() setReportingStatus scheduleId=" + idList + ", " + errMessage, e);
 			}
 		}
 

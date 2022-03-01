@@ -11,6 +11,8 @@ package com.clustercontrol.hub.composite;
 import java.util.Arrays;
 import java.util.List;
 
+import org.openapitools.client.model.TransferInfoResponse.IntervalEnum;
+
 /**
  * 収集蓄積[転送]機能の転送間隔に関する定数クラス
  *
@@ -88,12 +90,18 @@ public class TransferTransIntervalConstant {
 	/** 90日保存後に転送 */
 	public static final String STRING_DAYS_90 = STRING_DAYS + TYPE_DAYS_90;
 	
-	public static List<Integer> getRegularList() {
-		return Arrays.asList(TYPE_HOUR_1,TYPE_HOUR_3,TYPE_HOUR_6,TYPE_HOUR_12,TYPE_HOUR_24);
+	public static List<IntervalEnum> getRegularList() {
+		return Arrays.asList(
+				IntervalEnum.BATCH_HOUR_1,IntervalEnum.BATCH_HOUR_3,
+				IntervalEnum.BATCH_HOUR_6,IntervalEnum.BATCH_HOUR_12,
+				IntervalEnum.BATCH_HOUR_24);
 	}
 	
-	public static List<Integer> getLagList() {
-		return Arrays.asList(TYPE_DAYS_10, TYPE_DAYS_20,TYPE_DAYS_30,TYPE_DAYS_60,TYPE_DAYS_90);
+	public static List<IntervalEnum> getLagList() {
+		return Arrays.asList(
+				IntervalEnum.DELAY_DAY_10, IntervalEnum.DELAY_DAY_20,
+				IntervalEnum.DELAY_DAY_30,IntervalEnum.DELAY_DAY_60,
+				IntervalEnum.DELAY_DAY_90);
 	}
 	
 	/**
@@ -101,40 +109,41 @@ public class TransferTransIntervalConstant {
 	 * @param num
 	 * @return
 	 */
-	public static String typeToString(int num){
+	public static String typeToString(IntervalEnum type){
 		String str = null;
-		switch(num){
-			case TYPE_REALTIME:
-				str = STRING_REALTIME;
-				break;
-			case TYPE_HOUR_1:
+		if (type == null) {
+			return STRING_REALTIME;
+		}
+		
+		switch (type) {
+			case BATCH_HOUR_1:
 				str = STRING_HOUR_1;
 				break;
-			case TYPE_HOUR_3:
+			case BATCH_HOUR_3:
 				str = STRING_HOUR_3;
 				break;
-			case TYPE_HOUR_6:
+			case BATCH_HOUR_6:
 				str = STRING_HOUR_6;
 				break;
-			case TYPE_HOUR_12:
+			case BATCH_HOUR_12:
 				str = STRING_HOUR_12;
 				break;
-			case TYPE_HOUR_24:
+			case BATCH_HOUR_24:
 				str = STRING_HOUR_24;
 				break;
-			case TYPE_DAYS_10:
+			case DELAY_DAY_10:
 				str = STRING_DAYS_10;
 				break;
-			case TYPE_DAYS_20:
+			case DELAY_DAY_20:
 				str = STRING_DAYS_20;
 				break;
-			case TYPE_DAYS_30:
+			case DELAY_DAY_30:
 				str = STRING_DAYS_30;
 				break;
-			case TYPE_DAYS_60:
+			case DELAY_DAY_60:
 				str = STRING_DAYS_60;
 				break;
-			case TYPE_DAYS_90:
+			case DELAY_DAY_90:
 				str = STRING_DAYS_90;
 				break;
 			default:
@@ -148,49 +157,46 @@ public class TransferTransIntervalConstant {
 	 * @param str
 	 * @return
 	 */
-	public static int stringToType(String str){
-		int num = 0;
+	public static IntervalEnum stringToType(String str){
+		IntervalEnum ret = null;
 		
 		if (str == null) 
 			str = "";
 		
 		switch(str){
-			case STRING_REALTIME:
-				num = TYPE_REALTIME;
-				break;
 			case STRING_HOUR_1:
-				num = TYPE_HOUR_1;
+				ret = IntervalEnum.BATCH_HOUR_1;
 				break;
 			case STRING_HOUR_3:
-				num = TYPE_HOUR_3;
+				ret = IntervalEnum.BATCH_HOUR_3;
 				break;
 			case STRING_HOUR_6:
-				num = TYPE_HOUR_6;
+				ret = IntervalEnum.BATCH_HOUR_6;
 				break;
 			case STRING_HOUR_12:
-				num = TYPE_HOUR_12;
+				ret = IntervalEnum.BATCH_HOUR_12;
 				break;
 			case STRING_HOUR_24:
-				num = TYPE_HOUR_24;
+				ret = IntervalEnum.BATCH_HOUR_24;
 				break;
 			case STRING_DAYS_10:
-				num = TYPE_DAYS_10;
+				ret = IntervalEnum.DELAY_DAY_10;
 				break;
 			case STRING_DAYS_20:
-				num = TYPE_DAYS_20;
+				ret = IntervalEnum.DELAY_DAY_20;
 				break;
 			case STRING_DAYS_30:
-				num = TYPE_DAYS_30;
+				ret = IntervalEnum.DELAY_DAY_30;
 				break;
 			case STRING_DAYS_60:
-				num = TYPE_DAYS_60;
+				ret = IntervalEnum.DELAY_DAY_60;
 				break;
 			case STRING_DAYS_90:
-				num = TYPE_DAYS_90;
+				ret = IntervalEnum.DELAY_DAY_90;
 				break;
 			default:
-				num = 0;
+				break;
 		}
-		return num;
+		return ret;
 	}
 }

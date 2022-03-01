@@ -13,19 +13,22 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import org.openapitools.client.model.JobNextJobOrderInfoResponse;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.LoginManager;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestLoginManager;
 import com.clustercontrol.utility.settings.ExportMethod;
 import com.clustercontrol.utility.settings.ImportMethod;
 import com.clustercontrol.utility.settings.SettingConstants;
@@ -38,24 +41,22 @@ import com.clustercontrol.utility.settings.ui.action.CommandAction.AccountInfo;
 import com.clustercontrol.utility.util.Config;
 import com.clustercontrol.utility.util.IUtilityPreferenceStore;
 import com.clustercontrol.utility.util.UtilityPreferenceStore;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobNextJobOrderInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 public class JobConvert {
 	
 	public static Logger log = Logger.getLogger(JobConvert.class);
 
-	public static String preImportJobCheck(JobTreeItem selectJob, JobTreeItem importJob) {
+	public static String preImportJobCheck(JobTreeItemWrapper selectJob, JobTreeItemWrapper importJob) {
 		// インポート対象のジョブがジョブユニットの場合
-		if (importJob.getData().getType().equals(JobConstant.TYPE_JOBUNIT)) {
+		if (importJob.getData().getType().equals(JobInfoWrapper.TypeEnum.JOBUNIT)) {
 			// インポート先として選択している対象はマネージャだけOK
-			if (!selectJob.getData().getType().equals(JobConstant.TYPE_MANAGER)) {
+			if (!selectJob.getData().getType().equals(JobInfoWrapper.TypeEnum.MANAGER)) {
 				String errorMsg = Messages.getString("message.job.import.select.fail",
 						new String[]{
-								JobStringUtil.toJobTypeString(selectJob.getData().getType()),
+								JobStringUtil.toJobTypeStringForEnum(selectJob.getData().getType()),
 								selectJob.getData().getId(),
-								JobStringUtil.toJobTypeString(importJob.getData().getType()),
+								JobStringUtil.toJobTypeStringForEnum(importJob.getData().getType()),
 								importJob.getData().getId()});
 				
 				log.warn(errorMsg);
@@ -63,32 +64,82 @@ public class JobConvert {
 			}
 		// インポート対象のジョブがジョブユニット以外の場合
 		} else {
-			if (selectJob.getData().getType().equals(JobConstant.TYPE_MANAGER)) {
+			if (selectJob.getData().getType().equals(JobInfoWrapper.TypeEnum.MANAGER)) {
 				String errorMsg = Messages.getString("message.job.import.select.fail",
 						new String[]{
-								JobStringUtil.toJobTypeString(selectJob.getData().getType()),
+								JobStringUtil.toJobTypeStringForEnum(selectJob.getData().getType()),
 								selectJob.getData().getId(),
-								JobStringUtil.toJobTypeString(importJob.getData().getType()),
+								JobStringUtil.toJobTypeStringForEnum(importJob.getData().getType()),
 								importJob.getData().getId()});
 				
 				log.warn(errorMsg);
 				return errorMsg;
+			} else {
+				if (importJob.getData().getParam() != null && importJob.getData().getParam().size() != 0) {
+					String errorMsg = Messages.getString("message.job.import.select.fail",
+							new String[]{
+									JobStringUtil.toJobTypeStringForEnum(selectJob.getData().getType()),
+									selectJob.getData().getId(),
+									JobStringUtil.toJobTypeStringForEnum(importJob.getData().getType()),
+									importJob.getData().getId()});
+					
+					log.warn(errorMsg);
+					return errorMsg;
+				}
 			}
+		}
+		// ジョブ変数はジョブユニットに対してのみ設定可能
+		String errorMsg = checkChildParams(importJob);
+		if (errorMsg.equals("")) {
+			return errorMsg;
 		}
 		return "";
 	}
 	
+	/**
+	 * 親ジョブ配下の子ジョブにジョブ変数が設定されていないか</BR>
+	 * 再帰的にチェックする
+	 * 
+	 * @param importJob(親ジョブ)
+	 * @return チェック結果
+	 */
+	private static String checkChildParams(JobTreeItemWrapper importJob){
+			List<JobTreeItemWrapper> childJobsList = importJob.getChildren();
+			String errorMsg;
+			if (childJobsList != null && childJobsList.size() != 0) {
+				for (JobTreeItemWrapper childjob : childJobsList) {
+					if (childjob.getData().getParam() != null && childjob.getData().getParam().size() != 0) {
+						errorMsg = Messages.getString("message.job.import.select.fail",
+								new String[]{
+										JobStringUtil.toJobTypeStringForEnum(importJob.getData().getType()),
+										importJob.getData().getId(),
+										JobStringUtil.toJobTypeStringForEnum(childjob.getData().getType()),
+										childjob.getData().getId()});
+						
+						log.warn(errorMsg);
+						return errorMsg;
+					}else{
+						errorMsg=checkChildParams(childjob);
+						if (errorMsg.equals("")) {
+							return errorMsg;
+						}
+					}
+				}
+			}
+		return "";
+	}
+	
 	@ImportMethod
-	public static Integer importJob(JobTreeItem selection, JobTreeItem importJob) {
+	public static Integer importJob(JobTreeItemWrapper selection, JobTreeItemWrapper importJob) {
 		// インポート対象のジョブがジョブユニットの場合
-		if (importJob.getData().getType().equals(JobConstant.TYPE_JOBUNIT)) {
+		if (importJob.getData().getType().equals(JobInfoWrapper.TypeEnum.JOBUNIT)) {
 			// インポート先として選択している対象はマネージャだけOK
-			if (!selection.getData().getType().equals(JobConstant.TYPE_MANAGER)) {
+			if (!selection.getData().getType().equals(JobInfoWrapper.TypeEnum.MANAGER)) {
 				log.warn(Messages.getString("message.job.import.select.fail",
 						new String[]{
-								JobStringUtil.toJobTypeString(selection.getData().getType()),
+								JobStringUtil.toJobTypeStringForEnum(selection.getData().getType()),
 								selection.getData().getId(),
-								JobStringUtil.toJobTypeString(importJob.getData().getType()),
+								JobStringUtil.toJobTypeStringForEnum(importJob.getData().getType()),
 								importJob.getData().getId()}
 						));
 				return SettingConstants.ERROR_INPROCESS;
@@ -96,12 +147,12 @@ public class JobConvert {
 			setJobUnitId(importJob, importJob);
 			// インポート対象のジョブがジョブネットの場合
 		} else {
-			if (selection.getData().getType().equals(JobConstant.TYPE_MANAGER)) {
+			if (selection.getData().getType().equals(JobInfoWrapper.TypeEnum.MANAGER)) {
 				log.warn(Messages.getString("message.job.import.select.fail",
 						new String[]{
-								JobStringUtil.toJobTypeString(selection.getData().getType()),
+								JobStringUtil.toJobTypeStringForEnum(selection.getData().getType()),
 								selection.getData().getId(),
-								JobStringUtil.toJobTypeString(importJob.getData().getType()),
+								JobStringUtil.toJobTypeStringForEnum(importJob.getData().getType()),
 								importJob.getData().getId()}
 						));
 				return SettingConstants.ERROR_INPROCESS;
@@ -112,13 +163,13 @@ public class JobConvert {
 		return SettingConstants.SUCCESS;
 	}
 	
-	public static List<JobTreeItem> convertJobTreeItem(String fileName, boolean scope, boolean notify) {
-		JobTreeItem item;
+	public static List<JobTreeItemWrapper> convertJobTreeItem(String fileName, boolean scope, boolean notify) {
+		JobTreeItemWrapper item;
 		try {
 			JobMasterDataList jobXML;
 			try (FileInputStream input = new FileInputStream(fileName)) {
 				
-				jobXML = com.clustercontrol.utility.settings.job.xml.JobMasters.unmarshal(
+				jobXML = XmlMarshallUtil.unmarshall(JobMasterDataList.class,
 						new InputStreamReader(input, "UTF-8"));
 			} catch (Exception e) {
 				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -140,8 +191,8 @@ public class JobConvert {
 		log.debug("End Convert JobMaster : " + fileName);
 		
 		//設定書き換え
-		List<JobTreeItem> importTopJobs = new ArrayList<>();
-		for (JobTreeItem importTop : item.getChildren()) {
+		List<JobTreeItemWrapper> importTopJobs = new ArrayList<>();
+		for (JobTreeItemWrapper importTop : item.getChildren()) {
 			changeSetImportJob(importTop, scope, notify);
 			importTopJobs.add(importTop);
 		}
@@ -199,14 +250,14 @@ public class JobConvert {
 	 * @param parentJob 指定ジョブ
 	 * @param importJob 反映対象
 	 */
-	public static void setJobUnitId(JobTreeItem parentJob, JobTreeItem importJob) {
+	public static void setJobUnitId(JobTreeItemWrapper parentJob, JobTreeItemWrapper importJob) {
 		importJob.getData().setParentId(parentJob.getData().getId());
 		importJob.getData().setJobunitId(parentJob.getData().getJobunitId());
-		if (importJob.getData().getType() != JobConstant.TYPE_JOBUNIT)
+		if (importJob.getData().getType() != JobInfoWrapper.TypeEnum.JOBUNIT)
 			importJob.getData().setOwnerRoleId(null);
 		
 		if (importJob.getData().getWaitRule() != null && !importJob.getData().getWaitRule().getExclusiveBranchNextJobOrderList().isEmpty()) {
-			for (JobNextJobOrderInfo nextJob : importJob.getData().getWaitRule().getExclusiveBranchNextJobOrderList()) {
+			for (JobNextJobOrderInfoResponse nextJob : importJob.getData().getWaitRule().getExclusiveBranchNextJobOrderList()) {
 				nextJob.setJobunitId(parentJob.getData().getJobunitId());
 			}
 		}
@@ -214,16 +265,16 @@ public class JobConvert {
 		setChildJobUnitId(parentJob, importJob);
 	}
 	
-	private static void setChildJobUnitId(JobTreeItem parentJob, JobTreeItem importJob) {
-		for(JobTreeItem child : importJob.getChildren()){
+	private static void setChildJobUnitId(JobTreeItemWrapper parentJob, JobTreeItemWrapper importJob) {
+		for(JobTreeItemWrapper child : importJob.getChildren()){
 			child.getData().setJobunitId(parentJob.getData().getJobunitId());
 			child.setParent(importJob);
 			child.getData().setOwnerRoleId(null);
-			if (child.getData().getType().equals(JobConstant.TYPE_REFERJOB)) {
+			if (child.getData().getType().equals(JobInfoWrapper.TypeEnum.REFERJOB)) {
 				child.getData().setReferJobUnitId(parentJob.getData().getJobunitId());
 			}
 			if (child.getData().getWaitRule() != null && !child.getData().getWaitRule().getExclusiveBranchNextJobOrderList().isEmpty()) {
-				for (JobNextJobOrderInfo nextJob : child.getData().getWaitRule().getExclusiveBranchNextJobOrderList()) {
+				for (JobNextJobOrderInfoResponse nextJob : child.getData().getWaitRule().getExclusiveBranchNextJobOrderList()) {
 					nextJob.setJobunitId(parentJob.getData().getJobunitId());
 				}
 			}
@@ -231,18 +282,18 @@ public class JobConvert {
 		}
 	}
 	
-	public static com.clustercontrol.utility.settings.job.xml.JobMasters convertJobMastersXML(JobTreeItem jti, boolean scope, boolean notify) {
-		List<JobInfo> jobList = changeSetExportJob(jti, scope, notify);
+	public static com.clustercontrol.utility.settings.job.xml.JobMasters convertJobMastersXML(JobTreeItemWrapper jti, boolean scope, boolean notify) throws NullPointerException, ParseException {
+		List<JobInfoWrapper> jobList = changeSetExportJob(jti, scope, notify);
 		
-		AccountInfo accountInfo = CommandAction.getCurrentAccountInfo();
+		AccountInfo accountInfo = new CommandAction().getCurrentAccountInfo();
 		assert accountInfo != null : "unexpected";
 		log.debug(accountInfo.userid + ", " + accountInfo.url);
 		
 		Config.putConfig("Login.URL", accountInfo.url);
 		Config.putConfig("Login.USER", accountInfo.userid);
 		IUtilityPreferenceStore clientStore = UtilityPreferenceStore.get();
-		Config.putConfig("HTTP.CONNECT.TIMEOUT", Integer.toString(clientStore.getInt(LoginManager.KEY_HTTP_REQUEST_TIMEOUT)));
-		Config.putConfig("HTTP.REQUEST.TIMEOUT", Integer.toString(clientStore.getInt(LoginManager.KEY_HTTP_REQUEST_TIMEOUT)));
+		Config.putConfig("HTTP.CONNECT.TIMEOUT", Integer.toString(clientStore.getInt(RestLoginManager.KEY_HTTP_REQUEST_TIMEOUT)));
+		Config.putConfig("HTTP.REQUEST.TIMEOUT", Integer.toString(clientStore.getInt(RestLoginManager.KEY_HTTP_REQUEST_TIMEOUT)));
 		
 		com.clustercontrol.utility.settings.job.xml.JobMasters masterXML = new com.clustercontrol.utility.settings.job.xml.JobMasters();
 
@@ -258,25 +309,25 @@ public class JobConvert {
 	}
 
 
-	public static com.clustercontrol.utility.settings.job.xml.JobInfo[] convertJobInfoXMLs(List<JobInfo> jobList) {
+	public static com.clustercontrol.utility.settings.job.xml.JobInfo[] convertJobInfoXMLs(List<JobInfoWrapper> jobList) throws NullPointerException, ParseException {
 		com.clustercontrol.utility.settings.job.xml.JobInfo[] jobs =
 				new com.clustercontrol.utility.settings.job.xml.JobInfo[jobList.size()];
 
 		int i = 0;
-		for(JobInfo job : jobList){
+		for(JobInfoWrapper job : jobList){
 			//データを生成
 			jobs[i++] = MasterConv.setXMLJobData(job, job.getParentId());
 		}
 		return jobs;
 	}
 
-	public static List<JobInfo> changeSetExportJob(JobTreeItem topJob, boolean scope, boolean notify) {
-		List<JobInfo> jobList = new ArrayList<>();
+	public static List<JobInfoWrapper> changeSetExportJob(JobTreeItemWrapper topJob, boolean scope, boolean notify) {
+		List<JobInfoWrapper> jobList = new ArrayList<>();
 
-		JobInfo job = JobTreeItemUtil.clone(topJob, topJob).getData();
+		JobInfoWrapper job = JobTreeItemUtil.clone(topJob, topJob).getData();
 		//詳細情報が必要なのでsetJobFull実行
 		String managerName = null;
-		JobTreeItem mgrTree = JobTreeItemUtil.getManager(topJob);
+		JobTreeItemWrapper mgrTree = JobTreeItemUtil.getManager(topJob);
 		if(mgrTree == null) {
 			managerName = topJob.getChildren().get(0).getData().getId();
 		} else {
@@ -285,7 +336,7 @@ public class JobConvert {
 		JobPropertyUtil.setJobFull(managerName, job);
 		
 		// jobNet が先頭だったら、unit の情報を上書き、jobNet を TOP にする
-		if (topJob.getData().getType() != JobConstant.TYPE_JOBUNIT) {
+		if (topJob.getData().getType() != JobInfoWrapper.TypeEnum.JOBUNIT) {
 			job.setParentId("TOP");
 			job.setJobunitId(job.getId());
 			job.setOwnerRoleId(getJobUnit(topJob).getData().getOwnerRoleId());
@@ -295,7 +346,7 @@ public class JobConvert {
 		}
 		// 編集モード中に作成されたジョブネットは更新日時が入ってこないため、現時刻を入れておく
 		if (job.getUpdateTime() == null) {
-			job.setUpdateTime(new Date().getTime());
+			job.setUpdateTime(new Date().toString());
 		}
 		
 		jobList.add(job);
@@ -304,9 +355,9 @@ public class JobConvert {
 		return jobList;
 	}
 
-	private static void changeSetChildExportJob(List<JobInfo> jobList, String managerName, JobInfo topJob, JobTreeItem parentJob, boolean scope, boolean notify){
-		for (JobTreeItem child : parentJob.getChildren()) {
-			JobInfo job = JobTreeItemUtil.clone(child, parentJob).getData();
+	private static void changeSetChildExportJob(List<JobInfoWrapper> jobList, String managerName, JobInfoWrapper topJob, JobTreeItemWrapper parentJob, boolean scope, boolean notify){
+		for (JobTreeItemWrapper child : parentJob.getChildren()) {
+			JobInfoWrapper job = JobTreeItemUtil.clone(child, parentJob).getData();
 			//詳細情報が必要なのでsetJobFull実行
 			JobPropertyUtil.setJobFull(managerName, job);
 			
@@ -315,22 +366,22 @@ public class JobConvert {
 			job.setOwnerRoleId(topJob.getOwnerRoleId());
 			
 			if (scope) {
-				switch (job.getType()) {
-				case JobConstant.TYPE_MONITORJOB:
+				if( job.getType() == JobInfoWrapper.TypeEnum.MONITORJOB ){ 
 					job.getMonitor().setFacilityID("");
-					break;
-				case JobConstant.TYPE_JOB:
+				}else if(job.getType() == JobInfoWrapper.TypeEnum.JOB){
 					job.getCommand().setFacilityID("");
-					break;
-				case JobConstant.TYPE_FILEJOB:
+				}else if(job.getType() == JobInfoWrapper.TypeEnum.FILEJOB){
 					job.getFile().setSrcScope("");
 					job.getFile().setSrcFacilityID("");
 					job.getFile().setDestFacilityID("");
-					break;
-				case JobConstant.TYPE_APPROVALJOB:
-				case JobConstant.TYPE_REFERJOB:
-				default :
-					break;
+				}else if(job.getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB){
+					job.getResource().setResourceNotifyScope("");
+				}else if( job.getType() == JobInfoWrapper.TypeEnum.APPROVALJOB || job.getType() == JobInfoWrapper.TypeEnum.REFERJOB){
+					//処理なし
+					// findbugs対応 ログ出力を追加
+					log.trace("changeSetChildExportJob() : job.getType() = APPROVALJOB or REFERJOB");
+				}else{
+					//処理なし
 				}
 			}
 			if (notify) {
@@ -338,7 +389,7 @@ public class JobConvert {
 			}
 			// 編集モード中に作成されたジョブは更新日時が入ってこないため、現時刻を入れておく
 			if (job.getUpdateTime() == null) {
-				job.setUpdateTime(new Date().getTime());
+				job.setUpdateTime(new Date().toString());
 			}
 			jobList.add(job);
 
@@ -347,10 +398,10 @@ public class JobConvert {
 		}
 	}
 	
-	public static List<JobInfo> changeSetImportJob(JobTreeItem topJob, boolean scope, boolean notify) {
-		List<JobInfo> jobList = new ArrayList<>();
+	public static List<JobInfoWrapper> changeSetImportJob(JobTreeItemWrapper topJob, boolean scope, boolean notify) {
+		List<JobInfoWrapper> jobList = new ArrayList<>();
 
-		JobInfo job = topJob.getData();
+		JobInfoWrapper job = topJob.getData();
 		
 		if (notify) {
 			job.getNotifyRelationInfos().clear();
@@ -362,48 +413,48 @@ public class JobConvert {
 		return jobList;
 	}
 	
-	private static void changeSetChildImportJob(List<JobInfo> jobList, JobTreeItem topJob, JobTreeItem parentJob, boolean scope, boolean notify){
-		for (JobTreeItem child : parentJob.getChildren()) {
-			JobInfo job = child.getData();
+	private static void changeSetChildImportJob(List<JobInfoWrapper> jobList, JobTreeItemWrapper topJob, JobTreeItemWrapper parentJob, boolean scope, boolean notify){
+		for (JobTreeItemWrapper child : parentJob.getChildren()) {
+			JobInfoWrapper job = child.getData();
 			
 			job.setParentId(parentJob.getData().getId());
 			job.setJobunitId(topJob.getData().getId());
 			
 			if (scope) {
-				switch (job.getType()) {
-				case JobConstant.TYPE_MONITORJOB:
+				if( job.getType() == JobInfoWrapper.TypeEnum.MONITORJOB ){ 
 					job.getMonitor().setFacilityID("");
-					break;
-				case JobConstant.TYPE_JOB:
+				}else if(job.getType() == JobInfoWrapper.TypeEnum.JOB){
 					job.getCommand().setFacilityID("");
-					break;
-				case JobConstant.TYPE_FILEJOB:
+				}else if(job.getType() == JobInfoWrapper.TypeEnum.FILEJOB){
 					job.getFile().setSrcScope("");
 					job.getFile().setSrcFacilityID("");
 					job.getFile().setDestFacilityID("");
-					break;
-				case JobConstant.TYPE_APPROVALJOB:
-				case JobConstant.TYPE_REFERJOB:
-				default :
-					break;
+				}else if(job.getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB){
+					job.getResource().setResourceNotifyScope("");
+				}else if( job.getType() == JobInfoWrapper.TypeEnum.APPROVALJOB || job.getType() == JobInfoWrapper.TypeEnum.REFERJOB){
+					//処理なし
+					// findbugs対応 ログ出力を追加
+					log.trace("changeSetChildImportJob() : job.getType() = APPROVALJOB or REFERJOB");
+				}else{
+					//処理なし
 				}
 			} else {
 				Map<String, String> map = JobStringUtil.getScopeMap();
-				switch (job.getType()) {
-				case JobConstant.TYPE_MONITORJOB:
+				if( job.getType() == JobInfoWrapper.TypeEnum.MONITORJOB ){ 
 					job.getMonitor().setScope(map.get(job.getMonitor().getFacilityID()) != null ? map.get(job.getMonitor().getFacilityID()) : "");
-					break;
-				case JobConstant.TYPE_JOB:
+				}else if(job.getType() == JobInfoWrapper.TypeEnum.JOB){
 					job.getCommand().setScope(map.get(job.getCommand().getFacilityID()) != null ? map.get(job.getCommand().getFacilityID()) : "");
-					break;
-				case JobConstant.TYPE_FILEJOB:
+				}else if(job.getType() == JobInfoWrapper.TypeEnum.FILEJOB){
 					job.getFile().setSrcScope(map.get(job.getFile().getSrcFacilityID()) != null ? map.get(job.getFile().getSrcFacilityID()) : "");
 					job.getFile().setDestScope(map.get(job.getFile().getDestFacilityID()) != null ? map.get(job.getFile().getDestFacilityID()) : "");
-					break;
-				case JobConstant.TYPE_APPROVALJOB:
-				case JobConstant.TYPE_REFERJOB:
-				default :
-					break;
+				}else if(job.getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB){
+					job.getResource().setResourceNotifyScopePath(map.get(job.getResource().getResourceNotifyScope()) != null ? map.get(job.getResource().getResourceNotifyScope()) : "");
+				}else if( job.getType() == JobInfoWrapper.TypeEnum.APPROVALJOB || job.getType() == JobInfoWrapper.TypeEnum.REFERJOB){
+					//処理なし
+					// findbugs対応 ログ出力を追加
+					log.trace("changeSetChildImportJob() : job.getType() = APPROVALJOB or REFERJOB");
+				}else{
+					//処理なし
 				}
 			}
 			
@@ -431,8 +482,8 @@ public class JobConvert {
 		return list;
 	}
 	
-	public static JobTreeItem getJobUnit(JobTreeItem item) {
-		if (item.getData().getType().equals(JobConstant.TYPE_JOBUNIT))
+	public static JobTreeItemWrapper getJobUnit(JobTreeItemWrapper item) {
+		if (item.getData().getType().equals(JobInfoWrapper.TypeEnum.JOBUNIT))
 			return item;
 		
 		return getJobUnit(item.getParent());

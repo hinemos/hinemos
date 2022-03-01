@@ -18,18 +18,20 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.handlers.HandlerUtil;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.cloud.IInstance;
 import com.clustercontrol.xcloud.ui.views.InstanceMonitorService;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 public class SuspendInstanceHandler extends AbstractCloudOptionHandler implements CloudStringConstants {
 	@Override
-	public Object internalExecute(ExecutionEvent event) throws CloudManagerException, InvalidRole_Exception, InvalidUserPass_Exception {
+	public Object internalExecute(ExecutionEvent event) throws CloudManagerException, InvalidUserPass, InvalidRole, RestConnectFailed, HinemosUnknown {
 		IStructuredSelection selection = (IStructuredSelection)HandlerUtil.getActiveSite(event).getSelectionProvider().getSelection();
 		final IInstance instance = (IInstance)selection.getFirstElement();
 		final List<String> instanceIds = new ArrayList<>();
@@ -43,8 +45,9 @@ public class SuspendInstanceHandler extends AbstractCloudOptionHandler implement
 				instanceIds.size() > 1 ? MessageFormat.format(msgConfirmSuspendComputeNodeMulti, instanceIds.size()):
 					MessageFormat.format(msgConfirmSuspendComputeNode, instance.getName(), instance.getId()))) {
 
-			CloudEndpoint endpoint = instance.getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-			endpoint.suspendInstances(instance.getCloudScope().getId(), instance.getLocation().getId(), instanceIds);
+			String managerName = instance.getCloudScope().getCloudScopes().getHinemosManager().getManagerName();
+			CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
+			endpoint.suspendInstances(instance.getCloudScope().getId(), instance.getLocation().getId(), String.join(",", instanceIds));
 
 			// 成功報告ダイアログを生成
 			MessageDialog.openInformation(

@@ -28,6 +28,8 @@ import com.clustercontrol.binary.model.CollectBinaryDataTag;
 import com.clustercontrol.binary.util.BinaryBeanUtil;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.QueryDivergence;
+import com.clustercontrol.commons.util.QueryExecutor;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -42,7 +44,6 @@ import com.clustercontrol.hub.model.CollectStringKeyInfo;
 import com.clustercontrol.hub.session.HubControllerBean;
 import com.clustercontrol.hub.session.HubControllerBean.Token;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
-import com.clustercontrol.platform.QueryExecutor;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -113,10 +114,9 @@ public class BinaryHubController {
 			StringQueryResult result = new StringQueryResult();
 			result.setOffset(queryInfo.getOffset());
 
-			// データの取得件数を確認するためのクエリ生成.
-			String countQueryStr = String.format(
-					"SELECT COUNT(DISTINCT d) " + dataQueryStr.toString() + " AND d.filePosition='%s'",
-					BinaryConstant.FILE_POSISION_END);
+			// データの取得件数を確認するためのクエリ生成.（"%"が入る可能性があるためString.formatは使用しない）
+			String countQueryStr = "SELECT COUNT(DISTINCT d) " + dataQueryStr.toString() + " AND d.filePosition='"
+					+ BinaryConstant.FILE_POSISION_END + "'";
 			logger.debug(String.format(methodName + DELIMITER + "query count. queryStr=%s, query=%s", countQueryStr,
 					queryInfo));
 
@@ -143,9 +143,9 @@ public class BinaryHubController {
 				throw new InvalidSetting(MessageConstant.MESSAGE_HUB_BINARY_SEARCH_MAX_COUNT.getMessage());
 			}
 
-			// 収集蓄積バイナリデータ取得用クエリ生成.
-			String queryStr = String.format("SELECT DISTINCT d " + dataQueryStr.toString() + " AND d.filePosition='%s'"
-					+ " ORDER BY d.time DESC", BinaryConstant.FILE_POSISION_END);
+			// 収集蓄積バイナリデータ取得用クエリ生成.（"%"が入る可能性があるためString.formatは使用しない）
+			String queryStr = "SELECT DISTINCT d " + dataQueryStr.toString() + " AND d.filePosition='"
+					+ BinaryConstant.FILE_POSISION_END + "' ORDER BY d.time DESC";
 			logger.debug(
 					String.format(methodName + DELIMITER + "query data. queryStr=%s, query=%s", queryStr, queryInfo));
 
@@ -484,11 +484,13 @@ public class BinaryHubController {
 						if (token.negate) {
 							conditionValueBuffer.append(String.format(
 									"EXISTS(SELECT t FROM IN(d.tagList) t WHERE (t.key LIKE '%s' AND t.value NOT LIKE '%s'))",
-									token.key, token.word));
+									QueryDivergence.escapeLikeCondition(token.key),
+									QueryDivergence.escapeLikeCondition(token.word)));
 						} else {
 							conditionValueBuffer.append(String.format(
 									"EXISTS(SELECT t FROM IN(d.tagList) t WHERE (t.key LIKE '%s' AND t.value LIKE '%s'))",
-									token.key, token.word));
+									QueryDivergence.escapeLikeCondition(token.key),
+									QueryDivergence.escapeLikeCondition(token.word)));
 						}
 						isTop = false;
 					}
@@ -604,13 +606,14 @@ public class BinaryHubController {
 						+ String.format("prepared to check match. collectType=%s, key=%s", collectType, key));
 
 				// ファイル全体監視の場合はファイル単位でマッチするかチェックするため、とりあえず紐づくレコードの主キーを全件取得.
-				String queryStr = String.format("SELECT DISTINCT d.id " + "FROM CollectBinaryData d "
-						+ "WHERE d.fileKey='%s' " + "ORDER BY d.recordKey DESC", key);
+				String queryStr = "SELECT DISTINCT d.id " + "FROM CollectBinaryData d "
+						+ "WHERE d.fileKey=:fileKey " + "ORDER BY d.recordKey DESC";
 				logger.debug(methodName + DELIMITER
 						+ String.format("query data to get primary keys of a file. queryStr=%s.", queryStr));
 
 				// DBアクセスして取得.
 				Map<String, Object> parameters = new HashMap<String, Object>();
+				parameters.put("fileKey", key);
 				List<CollectStringDataPK> pkList = QueryExecutor.getListByJpqlWithTimeout(queryStr,
 						CollectStringDataPK.class, parameters, searchTimeout);
 				logger.debug(
@@ -630,6 +633,7 @@ public class BinaryHubController {
 					logger.debug(methodName + DELIMITER + String.format("query data. queryStr=%s.", queryStr));
 
 					// DBアクセスして実データ取得.
+					parameters = new HashMap<String, Object>();
 					List<CollectBinaryData> fileData = QueryExecutor.getListByJpqlWithTimeout(queryStr,
 							CollectBinaryData.class, parameters, searchTimeout);
 					logger.debug(
@@ -957,11 +961,13 @@ public class BinaryHubController {
 				if (tagToken.negate) {
 					querySb.append(String.format(
 							"AND (EXISTS (SELECT t FROM IN(d.tagList) t WHERE (t.key LIKE '%s' AND t.value NOT LIKE '%s')))",
-							tagToken.key, tagToken.word));
+							QueryDivergence.escapeLikeCondition(tagToken.key),
+							QueryDivergence.escapeLikeCondition(tagToken.word)));
 				} else {
 					querySb.append(String.format(
 							"AND (EXISTS (SELECT t FROM IN(d.tagList) t WHERE (t.key LIKE '%s' AND t.value LIKE '%s')))",
-							tagToken.key, tagToken.word));
+							QueryDivergence.escapeLikeCondition(tagToken.key),
+							QueryDivergence.escapeLikeCondition(tagToken.word)));
 				}
 				logger.debug(methodName + DELIMITER + String.format("query data. queryStr=%s.", querySb.toString()));
 
@@ -1252,14 +1258,15 @@ public class BinaryHubController {
 				}
 
 				// 先頭レコードをDBから取得.
-				String queryStr = String.format("SELECT DISTINCT d " + "FROM CollectBinaryData d "
-						+ "WHERE d.fileKey='%s'" + " AND d.filePosition='%s' ", data.getFileKey(),
-						BinaryConstant.FILE_POSISION_TOP);
+				String queryStr = "SELECT DISTINCT d " + "FROM CollectBinaryData d "
+						+ "WHERE d.fileKey=:fileKey AND d.filePosition=:filePosition ";
 				logger.debug(
 						methodName + DELIMITER + String.format("query data to get top record. queryStr=%s.", queryStr));
 
 				// DBアクセスして実データ取得.
 				Map<String, Object> parameters = new HashMap<String, Object>();
+				parameters.put("fileKey", data.getFileKey());
+				parameters.put("filePosition", BinaryConstant.FILE_POSISION_TOP);
 				List<CollectBinaryData> topRecord = QueryExecutor.getListByJpqlWithTimeout(queryStr,
 						CollectBinaryData.class, parameters, searchTimeout);
 				if (topRecord == null || topRecord.isEmpty()) {

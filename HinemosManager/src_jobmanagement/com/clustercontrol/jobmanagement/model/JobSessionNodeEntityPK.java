@@ -11,14 +11,14 @@ package com.clustercontrol.jobmanagement.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * The primary key class for the cc_job_session_node database table.
  * 
  */
 @Embeddable
-public class JobSessionNodeEntityPK implements Serializable {
+public class JobSessionNodeEntityPK implements Serializable, Cloneable {
 	//default serial version id, required for serializable classes.
 	private static final long serialVersionUID = 1L;
 	private String sessionId;
@@ -111,5 +111,21 @@ public class JobSessionNodeEntityPK implements Serializable {
 				this.facilityId
 		};
 		return Arrays.toString(names) + " = " + Arrays.toString(values);
+	}
+	
+	@Override
+	public JobSessionNodeEntityPK clone() {
+		//findbugs対応 super.cloneを利用する方式とした
+		try {
+			JobSessionNodeEntityPK clonePk = (JobSessionNodeEntityPK) super.clone();
+			clonePk.setJobId(this.jobId);
+			clonePk.setJobunitId(this.jobunitId);
+			clonePk.setFacilityId(this.facilityId);
+			clonePk.setSessionId(this.sessionId);
+			return clonePk;
+		} catch(CloneNotSupportedException e) {
+			throw new InternalError(e.toString());
+		}
+		
 	}
 }

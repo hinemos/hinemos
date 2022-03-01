@@ -177,6 +177,26 @@ public class ProxyManagerPlugin implements HinemosPlugin {
 		}
 	}
 
+	public static String getProxyHost() {
+		return _proxyHost;
+	}
+
+	public static Integer getProxyPort() {
+		return _port;
+	}
+
+	public static String getProxyUser() {
+		return _user;
+	}
+
+	public static String getProxyPassword() {
+		return _password;
+	}
+
+	public static List<String> getProxyIgnoreHostList() {
+		return _ignoreHostList;
+	}
+
 	@Override
 	public Set<String> getDependency() {
 		return new HashSet<String>();

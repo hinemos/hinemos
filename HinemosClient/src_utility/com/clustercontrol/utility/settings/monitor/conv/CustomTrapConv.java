@@ -8,15 +8,29 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.CustomTrapCheckInfoResponse;
+import org.openapitools.client.model.CustomTrapCheckInfoResponse.ConvertFlgEnum;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse.MonitorTypeEnum;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.MonitorNumericTypeEnum;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.PriorityEnum;
+import org.openapitools.client.model.MonitorStringValueInfoResponse;
 
 import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -27,15 +41,8 @@ import com.clustercontrol.utility.settings.monitor.xml.NumericChangeAmount;
 import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.CustomTrapCheckInfo;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
-import com.clustercontrol.ws.monitor.MonitorStringValueInfo;
 
 /**
  * カスタムトラップ監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -49,7 +56,7 @@ public class CustomTrapConv {
 	
 	static private String SCHEMA_TYPE = "I";
 	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "1";	
+	static private String SCHEMA_REVISION = "2";	
 	
 	/**
 	 * <BR>
@@ -83,41 +90,43 @@ public class CustomTrapConv {
 	 * 
 	 * @param 
 	 * @return 
+	 * @throws ParseException 
+	 * @throws RestConnectFailed 
 	 * @throws MonitorNotFound_Exception 
 	 * @throws InvalidUserPass_Exception 
 	 * @throws InvalidRole_Exception 
 	 * @throws HinemosUnknown_Exception 
 	 */
-	public static CustomTrapMonitors createCustomTrapMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static CustomTrapMonitors createCustomTrapMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, ParseException, RestConnectFailed {
 		CustomTrapMonitors customTrapMonitors = new CustomTrapMonitors();
 		
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
+			monitorInfo =  MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
 
 			CustomTrapMonitor customTrapMonitor = new CustomTrapMonitor();
 			customTrapMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 			
 			// カスタムトラップ監視（数値）を設定する。
-			for (MonitorNumericValueInfo numericValueInfo : monitorInfo.getNumericValueInfo()) {
-				if(numericValueInfo.getPriority() == PriorityConstant.TYPE_INFO ||
-						numericValueInfo.getPriority() == PriorityConstant.TYPE_WARNING){
-					if(numericValueInfo.getMonitorNumericType().contains("CHANGE")) {
-						customTrapMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(numericValueInfo));
+			for (MonitorNumericValueInfoResponse numericValueInfo : monitorInfo.getNumericValueInfo()) {
+				if(numericValueInfo.getPriority() == PriorityEnum.INFO ||
+						numericValueInfo.getPriority() == PriorityEnum.WARNING){
+					if(numericValueInfo.getMonitorNumericType().name().equals("CHANGE")) {
+						customTrapMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 					else{
-						customTrapMonitor.addNumericValue(MonitorConv.createNumericValue(numericValueInfo));
+						customTrapMonitor.addNumericValue(MonitorConv.createNumericValue(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 				}
 			}
 			// カスタムトラップ監視（文字列）を設定する。
 			int orderNo = 0;
-			for (MonitorStringValueInfo monitorStringValueInfo : monitorInfo.getStringValueInfo()     ) {
-				customTrapMonitor.addStringValue(MonitorConv.createStringValue(monitorStringValueInfo, ++orderNo));
+			for (MonitorStringValueInfoResponse monitorStringValueInfo : monitorInfo.getStringValueInfo()) {
+				customTrapMonitor.addStringValue(MonitorConv.createStringValue(monitorInfo.getMonitorId(),monitorStringValueInfo, ++orderNo));
 			}
 			
-			customTrapMonitor.setCustomTrapInfo(createCustomTrapInfo(monitorInfo.getCustomTrapCheckInfo()));
+			customTrapMonitor.setCustomTrapInfo(createCustomTrapInfo(monitorInfo));
 			customTrapMonitors.addCustomTrapMonitor(customTrapMonitor);
 		}
 
@@ -127,15 +136,15 @@ public class CustomTrapConv {
 		return customTrapMonitors;
 	}
 	
-	public static List<MonitorInfo> createMonitorInfoList(CustomTrapMonitors customTrapMonitors) throws ConvertorException {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(CustomTrapMonitors customTrapMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 		
 		for (CustomTrapMonitor customTrapMonitor : customTrapMonitors.getCustomTrapMonitor()) {
 			logger.debug("Monitor Id : " + customTrapMonitor.getMonitor().getMonitorId());
 
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(customTrapMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(customTrapMonitor.getMonitor());
 
-			if (monitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC) {
+			if (monitorInfo.getMonitorType() == MonitorTypeEnum.NUMERIC) {
 				for (NumericValue numericValue : customTrapMonitor.getNumericValue()) {
 					if (numericValue.getPriority() == PriorityConstant.TYPE_INFO
 							|| numericValue.getPriority() == PriorityConstant.TYPE_WARNING) {
@@ -153,40 +162,36 @@ public class CustomTrapConv {
 						monitorInfo.getNumericValueInfo().add(MonitorConv.createMonitorNumericValueInfo(changeValue));
 					}
 				}			
-				MonitorNumericValueInfo monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+				MonitorNumericValueInfoResponse monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(null);
+				monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(null);
+				monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
 				// 変化量監視が無効の場合、関連閾値が未入力なら、画面デフォルト値にて補完
-				if( monitorInfo.isChangeFlg() ==false && customTrapMonitor.getNumericChangeAmount().length == 0 ){
+				if( monitorInfo.getChangeFlg() ==false && customTrapMonitor.getNumericChangeAmount().length == 0 ){
 					MonitorConv.setMonitorChangeAmountDefault(monitorInfo);
 				}
 				
 				// 変化量についても閾値判定と同様にTYPE_CRITICALとTYPE_UNKNOWNを定義する
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericTypeEnum.CHANGE);
+				monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 				
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericTypeEnum.CHANGE);
+				monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
@@ -212,12 +217,13 @@ public class CustomTrapConv {
 	 * 
 	 * @return 
 	 */
-	private static CustomTrapInfo createCustomTrapInfo(CustomTrapCheckInfo customTrapCheckInfo) {
+	private static CustomTrapInfo createCustomTrapInfo(MonitorInfoResponse monitorInfo) {
 		CustomTrapInfo customTrapInfo = new CustomTrapInfo();
 		customTrapInfo.setMonitorTypeId("");
-		customTrapInfo.setMonitorId(customTrapCheckInfo.getMonitorId());
-		customTrapInfo.setConvertFlg(customTrapCheckInfo.getConvertFlg());
-		customTrapInfo.setTargetKey(customTrapCheckInfo.getTargetKey());
+		customTrapInfo.setMonitorId(monitorInfo.getMonitorId());
+		int convertFlgEnumInt = OpenApiEnumConverter.enumToInteger(monitorInfo.getCustomTrapCheckInfo().getConvertFlg());
+		customTrapInfo.setConvertFlg(convertFlgEnumInt);
+		customTrapInfo.setTargetKey(monitorInfo.getCustomTrapCheckInfo().getTargetKey());
 		
 		return customTrapInfo;
 	}
@@ -226,12 +232,14 @@ public class CustomTrapConv {
 	 * <BR>
 	 * 
 	 * @return 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	private static CustomTrapCheckInfo createCustomTrapCheckInfo(CustomTrapInfo customTrapInfo) {
-		CustomTrapCheckInfo customTrapCheckInfo = new CustomTrapCheckInfo();
-		customTrapCheckInfo.setMonitorId(customTrapInfo.getMonitorId());
+	private static CustomTrapCheckInfoResponse createCustomTrapCheckInfo(CustomTrapInfo customTrapInfo) throws InvalidSetting, HinemosUnknown {
+		CustomTrapCheckInfoResponse customTrapCheckInfo = new CustomTrapCheckInfoResponse();
 		customTrapCheckInfo.setTargetKey(customTrapInfo.getTargetKey());
-		customTrapCheckInfo.setConvertFlg(customTrapInfo.getConvertFlg());
+		ConvertFlgEnum convertFlgEnum = OpenApiEnumConverter.integerToEnum(customTrapInfo.getConvertFlg(), ConvertFlgEnum.class);
+		customTrapCheckInfo.setConvertFlg(convertFlgEnum);
 		
 		return customTrapCheckInfo;
 	}

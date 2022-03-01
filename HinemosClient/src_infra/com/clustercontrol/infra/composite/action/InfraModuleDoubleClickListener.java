@@ -15,25 +15,25 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.openapitools.client.model.CommandModuleInfoResponse;
+import org.openapitools.client.model.FileTransferModuleInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.ReferManagementModuleInfoResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.dialog.CommonDialog;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.action.GetInfraModuleTableDefine;
 import com.clustercontrol.infra.composite.InfraModuleComposite;
 import com.clustercontrol.infra.dialog.CommandModuleDialog;
 import com.clustercontrol.infra.dialog.FileTransferModuleDialog;
 import com.clustercontrol.infra.dialog.ReferManagementModuleDialog;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
-import com.clustercontrol.ws.infra.CommandModuleInfo;
-import com.clustercontrol.ws.infra.FileTransferModuleInfo;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleInfo;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
-import com.clustercontrol.ws.infra.ReferManagementModuleInfo;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 
 /**
  * 環境構築[構築・チェック]ビューまたは環境構築[モジュール]ビューのテーブルビューア用のDoubleClickListenerです。
@@ -84,46 +84,61 @@ public class InfraModuleDoubleClickListener implements IDoubleClickListener {
 
 			String managerName = m_composite.getManagerName();
 			String managementId = m_composite.getManagementId();
-			InfraManagementInfo info = null;
+			InfraManagementInfoResponse info = null;
 			try {
-				InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+				InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getInfraManagement(managementId);
-			} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception e) {
+			} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | InfraManagementNotFound
+					| InvalidSetting e) {
 				m_log.debug("doubleClick getInfraManagement, " + e.getMessage());
 			}
 
-			InfraModuleInfo module = null;
-
-			if(info != null && info.getModuleList() != null){
-				for(InfraModuleInfo tmpModule: info.getModuleList()){
-					if(tmpModule.getModuleId().equals(moduleId)){
-						module = tmpModule;
-						break;
+			if(info != null && info.getCommandModuleInfoList() != null) {
+				for(CommandModuleInfoResponse module: info.getCommandModuleInfoList()) {
+					if(module.getModuleId().equals(moduleId)){
+						CommonDialog dialog = new CommandModuleDialog(m_composite.getShell(),
+								managerName, managementId, moduleId,
+								PropertyDefineConstant.MODE_MODIFY);
+						
+						dialog.open();
+						m_composite.update(m_composite.getManagerName(), m_composite.getManagementId());
+						
+						return;
 					}
 				}
-
-				CommonDialog dialog = null;
-				if(module instanceof CommandModuleInfo){
-					dialog = new CommandModuleDialog(m_composite.getShell(),
-							managerName, managementId, moduleId,
-							PropertyDefineConstant.MODE_MODIFY);
-				} else if (module instanceof FileTransferModuleInfo) {
-					dialog = new FileTransferModuleDialog(
-							m_composite.getShell(), managerName,
-							managementId, moduleId,
-							PropertyDefineConstant.MODE_MODIFY);
-				} else if (module instanceof ReferManagementModuleInfo) {
-					dialog = new ReferManagementModuleDialog(
-							m_composite.getShell(), managerName,
-							managementId, moduleId,
-							PropertyDefineConstant.MODE_MODIFY);
-				} else {
-					throw new InternalError("dialog is null");
-				}
-				dialog.open();
-
-				m_composite.update(m_composite.getManagerName(), m_composite.getManagementId());
 			}
+			
+			if(info != null && info.getFileTransferModuleInfoList() != null) {
+				for(FileTransferModuleInfoResponse module: info.getFileTransferModuleInfoList()) {
+					if(module.getModuleId().equals(moduleId)){
+						CommonDialog dialog = new FileTransferModuleDialog(m_composite.getShell(),
+								managerName, managementId, moduleId,
+								PropertyDefineConstant.MODE_MODIFY);
+						
+						dialog.open();
+						m_composite.update(m_composite.getManagerName(), m_composite.getManagementId());
+						
+						return;
+					}
+				}
+			}
+			
+			if(info != null && info.getReferManagementModuleInfoList() != null) {
+				for(ReferManagementModuleInfoResponse module: info.getReferManagementModuleInfoList()) {
+					if(module.getModuleId().equals(moduleId)){
+						CommonDialog dialog = new ReferManagementModuleDialog(m_composite.getShell(),
+								managerName, managementId, moduleId,
+								PropertyDefineConstant.MODE_MODIFY);
+						
+						dialog.open();
+						m_composite.update(m_composite.getManagerName(), m_composite.getManagementId());
+						
+						return;
+					}
+				}
+			}
+			
+			throw new InternalError("dialog is null");
 		}
 	}
 }

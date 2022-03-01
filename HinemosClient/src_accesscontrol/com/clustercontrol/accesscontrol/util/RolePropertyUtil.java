@@ -9,15 +9,15 @@
 package com.clustercontrol.accesscontrol.util;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Locale;
+
+import org.openapitools.client.model.RoleInfoResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.ws.access.RoleInfo;
 
 /**
  * オブジェクト権限情報のDTOとロールごとのオブジェクト権限をまとめた Hashlist を相互変換するためのユーティリティクラスです。
@@ -40,10 +40,10 @@ public class RolePropertyUtil {
 	/** 最終更新日時 */
 	public static final String MODIFY_TIME = "modifyTime";
 
-	public static RoleInfo property2dto(Property property){
-		RoleInfo info = new RoleInfo();
-		info.setCreateDate(0L);
-		info.setModifyDate(0L);
+	public static RoleInfoResponse property2dto(Property property){
+		RoleInfoResponse info = new RoleInfoResponse();
+		info.setCreateDate("");
+		info.setModifyDate("");
 
 		ArrayList<?> object = null;
 
@@ -70,7 +70,7 @@ public class RolePropertyUtil {
 		//登録日時
 		object = PropertyUtil.getPropertyValue(property, RolePropertyUtil.CREATE_TIME);
 		if (object.size() > 0 && object.get(0) != null && !object.get(0).toString().equals("")) {
-			info.setCreateDate(((Date) (object.get(0))).getTime());
+			info.setCreateDate( (String) object.get(0) );
 		}
 		//更新者
 		object = PropertyUtil.getPropertyValue(property, RolePropertyUtil.MODIFIER_NAME);
@@ -80,7 +80,7 @@ public class RolePropertyUtil {
 		//更新日時
 		object = PropertyUtil.getPropertyValue(property, RolePropertyUtil.MODIFY_TIME);
 		if (object.size() > 0 && object.get(0) != null && !object.get(0).toString().equals("")) {
-			info.setModifyDate(((Date) (object.get(0))).getTime());
+			info.setModifyDate((String) object.get(0));
 		}
 		//		//所属Role
 		//		object = PropertyUtil.getProperty(property, RoleConstant.USER);
@@ -98,7 +98,7 @@ public class RolePropertyUtil {
 		return info;
 	}
 
-	public static Property dto2property(RoleInfo info, int mode, Locale locale){
+	public static Property dto2property(RoleInfoResponse info, int mode, Locale locale){
 		Property property = getProperty(mode, locale);
 		ArrayList<Property> propertyList = null;
 
@@ -124,7 +124,7 @@ public class RolePropertyUtil {
 			//登録日時
 			propertyList = PropertyUtil.getProperty(property, RolePropertyUtil.CREATE_TIME);
 			if(info.getCreateDate() != null){
-				((Property)propertyList.get(0)).setValue( new Date(info.getCreateDate()) );
+				((Property)propertyList.get(0)).setValue( info.getCreateDate());
 			}
 			//更新者
 			propertyList = PropertyUtil.getProperty(property, RolePropertyUtil.MODIFIER_NAME);
@@ -134,7 +134,7 @@ public class RolePropertyUtil {
 			//更新日時
 			propertyList = PropertyUtil.getProperty(property, RolePropertyUtil.MODIFY_TIME);
 			if(info.getModifyDate() != null){
-				((Property)propertyList.get(0)).setValue( new Date(info.getModifyDate()) );
+				((Property)propertyList.get(0)).setValue( info.getModifyDate()  );
 			}
 			//			//所属Role
 			//			for (String user : info.getUserList()) {

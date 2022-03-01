@@ -8,20 +8,26 @@
 
 package com.clustercontrol.repository.action;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.GetNodeFullByTargetDatetimeRequest;
+import org.openapitools.client.model.GetNodeListRequest;
+import org.openapitools.client.model.NodeInfoResponse;
 
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.util.NodePropertyUtil;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.FacilityNotFound_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.NodeInfo;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.TimezoneUtil;
 
 /**
  * ノード属性情報を取得するクライアント側アクションクラス<BR>
@@ -38,7 +44,7 @@ public class GetNodeProperty {
 	private String managerName = null;
 
 	// ノード情報
-	private NodeInfo nodeInfo = null;
+	private NodeInfoResponse nodeInfo = null;
 
 	// FacilityId
 	private String facilityId = null;
@@ -56,17 +62,17 @@ public class GetNodeProperty {
 		try {
 			if (managerName == null || managerName.length() == 0
 					|| this.facilityId == null || this.facilityId.length() == 0) {
-				this.nodeInfo = new NodeInfo();
+				this.nodeInfo = new NodeInfoResponse();
 				NodePropertyUtil.setDefaultNode(this.nodeInfo);
 			} else {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
 				this.nodeInfo = wrapper.getNodeFull(this.facilityId);
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (FacilityNotFound_Exception e) {
+		} catch (FacilityNotFound e) {
 			// 指定のファシリティがマネージャに存在しない。
 			// 何も表示しない。
 			e.printStackTrace();
@@ -80,7 +86,7 @@ public class GetNodeProperty {
 		}
 	}
 
-	public GetNodeProperty(String managerName, String facilityId, int mode, Long targetDatetime, NodeInfo nodeFilterInfo) {
+	public GetNodeProperty(String managerName, String facilityId, int mode, Long targetDatetime, GetNodeListRequest nodeFilterInfo) {
 		this.managerName = managerName;
 		this.facilityId = facilityId;
 		this.mode = mode;
@@ -88,17 +94,21 @@ public class GetNodeProperty {
 		try {
 			if (managerName == null || managerName.length() == 0
 					|| this.facilityId == null || this.facilityId.length() == 0) {
-				this.nodeInfo = new NodeInfo();
+				this.nodeInfo = new NodeInfoResponse();
 				NodePropertyUtil.setDefaultNode(this.nodeInfo);
 			} else {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-				this.nodeInfo = wrapper.getNodeFullByTargetDatetime(this.facilityId, this.targetDatetime, nodeFilterInfo);
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+				GetNodeFullByTargetDatetimeRequest requestDto = new GetNodeFullByTargetDatetimeRequest();
+				SimpleDateFormat format = TimezoneUtil.getSimpleDateFormat();
+				RestClientBeanUtil.convertBean(nodeFilterInfo, requestDto);
+				requestDto.setTargetDatetime(format.format(new Date(this.targetDatetime)));
+				this.nodeInfo = wrapper.getNodeFullByTargetDatetime(this.facilityId, requestDto);
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (FacilityNotFound_Exception e) {
+		} catch (FacilityNotFound e) {
 			// 指定のファシリティがマネージャに存在しない。
 			// 何も表示しない。
 			e.printStackTrace();
@@ -127,7 +137,7 @@ public class GetNodeProperty {
 	 *
 	 * @return ノード情報
 	 */
-	public NodeInfo getNodeInfo() {
+	public NodeInfoResponse getNodeInfo() {
 		return this.nodeInfo;
 	}
 }

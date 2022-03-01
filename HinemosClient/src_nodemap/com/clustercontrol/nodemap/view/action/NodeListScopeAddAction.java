@@ -24,16 +24,16 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.GetNodeListRequest;
 
 import com.clustercontrol.nodemap.dialog.NodeListScopeCreateDialog;
 import com.clustercontrol.nodemap.view.NodeListView;
 import com.clustercontrol.repository.bean.NodeConfigSettingConstant;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
-import com.clustercontrol.ws.repository.NodeInfo;
 
 /**
  * ノードマップ[ノード一覧]に表示されたノードを含むスコープを作成するアクションクラス<BR>
@@ -74,7 +74,7 @@ public class NodeListScopeAddAction extends AbstractHandler {
 			return null;
 		}
 
-		NodeInfo nodeFilterInfo = view.getNodeFilterInfo();
+		GetNodeListRequest nodeFilterInfo = view.getNodeFilterInfo();
 
 		// スコープのファシリティID生成
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -125,8 +125,8 @@ public class NodeListScopeAddAction extends AbstractHandler {
 				for (String rollbackManagerName : rollbackManagerNameList) {
 					try {
 						// スコープ削除処理
-						RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(rollbackManagerName);
-						wrapper.deleteScope(Arrays.asList(new String[]{scopeFacilityId}));
+						RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(rollbackManagerName);
+						wrapper.deleteScope(scopeFacilityId);
 					} catch (Exception ex) {
 						m_log.warn("execute() : Failed to delete scope. : " + e.getMessage());
 					}

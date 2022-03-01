@@ -67,9 +67,11 @@ public class ForwardFileView extends CommonViewPart {
 		gridData.grabExcessVerticalSpace = true;
 		m_composite.setLayoutData(gridData);
 
+		// タブ名の取得
+		orgViewName = this.getPartName();
+
 		//ビューの更新
 		this.update(null, null, null, null);
-		orgViewName = this.getPartName();
 	}
 
 	/**
@@ -83,11 +85,14 @@ public class ForwardFileView extends CommonViewPart {
 	 * @see com.clustercontrol.jobmanagement.composite.ForwardFileComposite#update(String, String, String)
 	 */
 	public void update(String managerName, String sessionId, String jobunitId, String jobId) {
+		String viewName = "";
 		if(managerName == null || managerName.equals("")) {
-			return;
+			m_composite.update(null, null, null, null);
+			viewName = orgViewName;
+		} else {
+			m_composite.update(managerName, sessionId, jobunitId, jobId);
+			viewName = orgViewName + "(" + managerName + ")";
 		}
-		m_composite.update(managerName, sessionId, jobunitId, jobId);
-		String viewName = orgViewName + "(" + managerName + ")";
 		setPartName(viewName);
 	}
 

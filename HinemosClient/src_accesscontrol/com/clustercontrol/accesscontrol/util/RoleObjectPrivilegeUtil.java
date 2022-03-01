@@ -16,13 +16,11 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.ObjectPrivilegeInfoResponse;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.ObjectPrivilegeFilterInfo;
-import com.clustercontrol.ws.access.ObjectPrivilegeInfo;
 
 /**
  * ロール情報のDTOとプロパティを相互変換するためのユーティリティクラスです。
@@ -52,14 +50,14 @@ public class RoleObjectPrivilegeUtil {
 	/**
 	 * ロールごとのオブジェクト権限をDB格納用の情報のリストに変換する(不要かも)
 	 */
-	public static List<ObjectPrivilegeInfo> beanList2dtoList(List<ObjectPrivilegeBean> beanList) {
+	public static List<ObjectPrivilegeInfoResponse> beanList2dtoList(List<ObjectPrivilegeBean> beanList) {
 
-		List<ObjectPrivilegeInfo> resultList = new ArrayList<ObjectPrivilegeInfo>();
+		List<ObjectPrivilegeInfoResponse> resultList = new ArrayList<ObjectPrivilegeInfoResponse>();
 
 		for(ObjectPrivilegeBean bean : beanList) {
 
 			// 権限情報毎に ObjectPrivilegeInfo を作成する
-			ObjectPrivilegeInfo info = null;
+			ObjectPrivilegeInfoResponse info = null;
 			// 参照権限が与えられている、もしくはオーナである場合
 			if(bean.getReadPrivilege() || bean.getOwnerFlag()){
 				info = getCommon(bean);
@@ -87,9 +85,9 @@ public class RoleObjectPrivilegeUtil {
 	/**
 	 * ロールごとのオブジェクト権限の情報をDB格納用の情報のリストに変換する
 	 */
-	public static List<ObjectPrivilegeInfo> beanMap2dtoList(HashMap<String, ObjectPrivilegeBean> beanMap) {
+	public static List<ObjectPrivilegeInfoResponse> beanMap2dtoList(HashMap<String, ObjectPrivilegeBean> beanMap) {
 
-		List<ObjectPrivilegeInfo> resultList = new ArrayList<ObjectPrivilegeInfo>();
+		List<ObjectPrivilegeInfoResponse> resultList = new ArrayList<ObjectPrivilegeInfoResponse>();
 		ObjectPrivilegeBean bean = null;
 
 		for(Map.Entry<String, ObjectPrivilegeBean> keyValue : beanMap.entrySet()) {
@@ -99,19 +97,19 @@ public class RoleObjectPrivilegeUtil {
 			// 権限情報毎に ObjectPrivilegeInfo を作成する
 			// 参照権限
 			if(bean.getReadPrivilege()){
-				ObjectPrivilegeInfo info = getCommon(bean);
+				ObjectPrivilegeInfoResponse info = getCommon(bean);
 				info.setObjectPrivilege(ObjectPrivilegeMode.READ.toString());
 				resultList.add(info);
 			}
 			// 更新権限
 			if(bean.getWritePrivilege()){
-				ObjectPrivilegeInfo info = getCommon(bean);
+				ObjectPrivilegeInfoResponse info = getCommon(bean);
 				info.setObjectPrivilege(ObjectPrivilegeMode.MODIFY.toString());
 				resultList.add(info);
 			}
 			// 実行権限
 			if(bean.getExecPrivilege()){
-				ObjectPrivilegeInfo info = getCommon(bean);
+				ObjectPrivilegeInfoResponse info = getCommon(bean);
 				info.setObjectPrivilege(ObjectPrivilegeMode.EXEC.toString());
 				resultList.add(info);
 			}
@@ -121,8 +119,8 @@ public class RoleObjectPrivilegeUtil {
 	}
 
 	// utilMap2dtoList() 内の共通操作を外だし
-	private static ObjectPrivilegeInfo getCommon(ObjectPrivilegeBean bean) {
-		ObjectPrivilegeInfo info = new ObjectPrivilegeInfo();
+	private static ObjectPrivilegeInfoResponse getCommon(ObjectPrivilegeBean bean) {
+		ObjectPrivilegeInfoResponse info = new ObjectPrivilegeInfoResponse();
 
 		// ロールID
 		info.setRoleId(bean.getRoleId());
@@ -133,7 +131,7 @@ public class RoleObjectPrivilegeUtil {
 	/**
 	 * DBのオブジェクト権限情報のリストをロール単位の情報(HashMap)に変換する
 	 */
-	public static HashMap<String, ObjectPrivilegeBean> dto2beanMap(List<ObjectPrivilegeInfo> infoList) {
+	public static HashMap<String, ObjectPrivilegeBean> dto2beanMap(List<ObjectPrivilegeInfoResponse> infoList) {
 
 		HashMap<String, ObjectPrivilegeBean> resultMap = new HashMap<String, ObjectPrivilegeBean>();
 		ObjectPrivilegeBean bean = null;
@@ -142,7 +140,7 @@ public class RoleObjectPrivilegeUtil {
 			return null;
 		}
 
-		for(ObjectPrivilegeInfo info : infoList) {
+		for(ObjectPrivilegeInfoResponse info : infoList) {
 
 			// ロールIDが初めて登場した場合の処理
 			if(resultMap.get(info.getRoleId()) == null) {
@@ -175,45 +173,26 @@ public class RoleObjectPrivilegeUtil {
 	public static HashMap<String, ObjectPrivilegeBean> dto2beanMap(String managerName, String objectId, String objectType) {
 
 		// オブジェクト権限一覧をマネージャから取得
-		List<ObjectPrivilegeInfo> objectPrivilegeList = null;
-
-		// フィルタ条件を設定
-		ObjectPrivilegeFilterInfo filter = new ObjectPrivilegeFilterInfo();
-		filter.setObjectId(objectId);
-		filter.setObjectType(objectType);
+		List<ObjectPrivilegeInfoResponse> objectPrivilegeList = null;
 
 		try {
-			AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
-			objectPrivilegeList = wrapper.getObjectPrivilegeInfoList(filter);
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
+			objectPrivilegeList = wrapper.getObjectPrivilegeInfoList(objectType, objectId, null, null);
 		}
-		catch (InvalidRole_Exception e) {
+		catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 
 		} catch (Exception e) {
 			// 上記以外の例外
-			m_log.warn("getOwnUserList(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("getOwnUserList(), " + e.getMessage(), e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 		}
 
 		return dto2beanMap(objectPrivilegeList);
 	}
-
-	//	/**
-	//	 * ObjectPrivilegeUtil のリストから DB に投入
-	//	 */
-	//	public void utilMap2dto(HashMap<String, ObjectPrivilegeUtil> utilMap) {
-	//
-	//		// 既存のデータから削除するリスト
-	//		List<ObjectPrivilegeUtil> delegeList = new ArrayList<ObjectPrivilegeUtil>();
-	//		// 既存のデータに挿入するリスト
-	//		List<ObjectPrivilegeUtil> insertList = new ArrayList<ObjectPrivilegeUtil>();
-	//
-	//
-	//
-	//	}
 }

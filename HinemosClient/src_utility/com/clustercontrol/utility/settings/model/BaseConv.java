@@ -89,6 +89,13 @@ public abstract class BaseConv {
 		}
 		return str;
 	}
+
+	protected String ifEmpty2Null(String str){
+		if (str != null && str.isEmpty()) {
+			return null;
+		}
+		return str;
+	}
 	
 	protected String ifNull2EmptyAndNonNull2String(Object obj){
 		if(obj == null){

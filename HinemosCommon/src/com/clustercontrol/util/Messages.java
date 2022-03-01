@@ -9,9 +9,11 @@
 package com.clustercontrol.util;
 
 import java.text.MessageFormat;
+import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
@@ -51,6 +53,7 @@ public class Messages {
 	private static Map<Locale, Set<String>> missing = new HashMap<Locale, Set<String>>();
 	private static boolean clientFlag = true;
 	private static boolean commonFlag = true;
+	private static List<Locale> availableLocaleList = Arrays.asList(NumberFormat.getAvailableLocales());
 
 	private Messages() {}
 
@@ -64,6 +67,17 @@ public class Messages {
 
 	public static String getString(String key, Locale locale) {
 		return getString(key, key, locale);
+	}
+
+	public static String getString(String key, List<Locale> localeList) {
+		for (Locale locale : localeList) {
+			if (availableLocaleList.contains(locale)) {
+				m_log.debug(locale.toString() + " is contained in availableLocaleList");
+				return getString(key, locale);
+			}
+		}
+		m_log.debug("No valid locale is included in the localeList.");
+		return getString(key);
 	}
 
 	/**

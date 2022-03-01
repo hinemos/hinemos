@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+<!-- 
+   Hinemos (http://www.hinemos.info/)
+
+   Copyright (c) 2021 NTT DATA INTELLILINK Corporation. All rights reserved.
+ -->
+<project name="HinemosLoggingBuild" default="all" basedir=".">
+	<import file="version_props.xml" />
+	<import file="platform_switch/switch.xml"/>
+
+	<property name="build.dir" value="build/" />
+	<property name="class.dir" value="bin" />
+	<property name="dest.dir" value="${build.dir}/${class.dir}" />
+	<property name="jar.dir.javaee" value="${build.dir}/jar/javaee" />
+	<property name="jar.dir.jakartaee" value="${build.dir}/jar/jakartaee" />
+	<property name="conf.dir" value="resources/configfile" />
+	<property name="package.dir" value="${build.dir}/package" />
+
+	<property name="jar.plugin" value="HinemosLogging-${option.version}.jar" />
+	<property name="package.prefix" value="hinemos_logging-${option.version}" />
+	<property name="refresh.project.name" value="HinemosLogging" />
+	<property name="compile.version" value="1.8" />
+	<property name="compile.encode" value="UTF-8" />
+
+	<path id="id.compile.sourcepath.local">
+		<pathelement path="src" />
+		<pathelement path="src_app" />
+		<pathelement path="src_standalone" />
+		<pathelement path="src_log" />
+	</path>
+
+	<!-- targets -->
+	<target name="all" depends="clean_all">
+		<!-- for Java EE -->
+		<antcall target="switch_to_javaee" />
+		<antcall target="jar_javaee" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask" property="eclipse_jar_available" />
+		<antcall target="package_javaee" />
+		<antcall target="refresh" />
+
+		<!-- for Jakarta EE -->
+		<antcall target="switch_to_jakartaee" />
+		<antcall target="jar_jakartaee" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask" property="eclipse_jar_available" />
+		<antcall target="package_jakartaee" />
+		<antcall target="refresh" />
+	</target>
+
+	<target name="build_javaee" depends="clean_all" description="Build and packaging for Java EE">
+		<antcall target="switch_to_javaee" />
+		<antcall target="jar_javaee" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask" property="eclipse_jar_available" />
+		<antcall target="package_javaee" />
+		<antcall target="refresh" />
+	</target>
+
+	<target name="build_jakartaee" depends="clean_all" description="Build and packaging for Jakarta EE">
+		<antcall target="switch_to_jakartaee" />
+		<antcall target="jar_jakartaee" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask" property="eclipse_jar_available" />
+		<antcall target="package_jakartaee" />
+		<antcall target="refresh" />
+	</target>
+
+	<target name="clean_all">
+		<delete dir="${build.dir}" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${dest.dir}" />
+	</target>
+
+	<target name="init_classpath">
+		<path id="id.compile.classpath.plugin">
+			<fileset dir="lib">
+				<include name="**/*.jar" />
+			</fileset>
+			<fileset dir="platform_switch/JavaEE/lib">
+				<include name="**/*.jar" />
+			</fileset>
+			<fileset dir="platform_switch/JakartaEE/lib">
+				<include name="**/*.jar" />
+			</fileset>
+		</path>
+	</target>
+
+	<target name="init" depends="clean,init_classpath">
+		<tstamp>
+			<format property="build.date" pattern="yyyy-MM-dd HH:mm:ss" />
+		</tstamp>
+
+		<path id="id.compile.classpath">
+			<path refid="id.compile.classpath.plugin" />
+		</path>
+
+		<mkdir dir="${build.dir}" />
+	</target>
+
+	<target name="compile" description="Compile Java sources" depends="init">
+		<javac.mac compile.dest.dir="${dest.dir}" compile.classpath="id.compile.classpath" />
+	</target>
+
+	<macrodef name="javac.mac">
+		<attribute name="compile.dest.dir" />
+		<attribute name="compile.classpath" />
+		<sequential>
+			<mkdir dir="@{compile.dest.dir}" />
+			<javac destdir="@{compile.dest.dir}" failonerror="true" classpathref="@{compile.classpath}" source="${compile.version}" target="${compile.version}" encoding="${compile.encode}" includeantruntime="false" debug="on">
+				<src path="src" />
+				<src path="src_app" />
+				<src path="src_standalone" />
+				<src path="src_log" />
+				<src path="resources" />
+				<compilerarg value="-XDignore.symbol.file" />
+			</javac>
+
+			<copy todir="@{compile.dest.dir}" failonerror="true" overwrite="true">
+				<fileset dir="resources">
+					<include name="**/*" />
+					<exclude name="configfile/**/*" />
+					<exclude name="configfile" />
+					<exclude name="LICENSE" />
+				</fileset>
+			</copy>
+
+		</sequential>
+	</macrodef>
+
+	<target name="jar_javaee" depends="compile" description="Generate JAR file for Java EE">
+		<jar.mac dir="${jar.dir.javaee}" />
+	</target>
+
+	<target name="jar_jakartaee" depends="compile" description="Generate JAR file for Jakarta EE">
+		<jar.mac dir="${jar.dir.jakartaee}" />
+	</target>
+
+	<macrodef name="jar.mac">
+		<attribute name="dir" />
+		<sequential>
+			<jar jarfile="@{dir}/${jar.plugin}">
+				<manifest>
+					<attribute name="Hinemos-Logging-Version" value="${option.version}" />
+					<attribute name="Build-Date" value="${build.date}" />
+					<attribute name="Premain-Class" value="com.clustercontrol.standalone.observer.LoggingPreMain" />
+				</manifest>
+	
+				<fileset dir="${dest.dir}">
+					<include name="**/*.*" />
+				</fileset>
+				<fileset dir="src">
+					<include name="**/*.java" />
+				</fileset>
+			</jar>
+		</sequential>
+	</macrodef>
+
+	<target name="package_javaee" description="Generate ZIP for Java EE">
+		<makezip.mac file.pre="${package.prefix}.javaee.el" jar.dir="${jar.dir.javaee}" config.os="linux" />
+		<makezip.mac file.pre="${package.prefix}.javaee.win" jar.dir="${jar.dir.javaee}" config.os="windows" />
+	</target>
+
+	<target name="package_jakartaee" description="Generate ZIP for Jakarta EE">
+		<makezip.mac file.pre="${package.prefix}.el" jar.dir="${jar.dir.jakartaee}" config.os="linux" />
+		<makezip.mac file.pre="${package.prefix}.win" jar.dir="${jar.dir.jakartaee}" config.os="windows" />
+	</target>
+
+	<macrodef name="makezip.mac">
+		<attribute name="file.pre" />
+		<attribute name="jar.dir" />
+		<attribute name="config.os" />
+		<sequential>
+			<mkdir dir="${package.dir}/@{file.pre}" />
+			<copy file="resources/LICENSE" todir="${package.dir}/@{file.pre}" />
+			<mkdir dir="${package.dir}/@{file.pre}/java" />
+			<copy todir="${package.dir}/@{file.pre}/java">
+				<fileset dir="@{jar.dir}">
+					<include name="**/*.*" />
+				</fileset>
+				<fileset dir="${conf.dir}/@{config.os}">
+					<include name="**/*.*" />
+				</fileset>
+			</copy>
+			<zip filesonly="true" destfile="${package.dir}/@{file.pre}.zip" basedir="${package.dir}/@{file.pre}" />
+		</sequential>
+	</macrodef>
+
+	<target name="refresh" if="eclipse_jar_available">
+		<eclipse.refreshLocal resource="${project.name}" depth="infinite" />
+		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
+	</target>
+</project>

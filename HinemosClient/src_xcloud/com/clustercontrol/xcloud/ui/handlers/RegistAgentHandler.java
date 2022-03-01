@@ -17,11 +17,12 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.handlers.HandlerUtil;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.cloud.CloudCommonEndpoint;
-import com.clustercontrol.ws.cloud.HinemosUnknown_Exception;
-import com.clustercontrol.ws.cloud.InvalidRole_Exception;
-import com.clustercontrol.ws.cloud.InvalidUserPass_Exception;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.cloud.IInstance;
 
@@ -30,7 +31,7 @@ public class RegistAgentHandler extends AbstractCloudOptionHandler implements Cl
 	private List<String> facilityIds;
 	
 	@Override
-	public Object internalExecute(ExecutionEvent event) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception {
+	public Object internalExecute(ExecutionEvent event) throws HinemosUnknown, InvalidRole, InvalidUserPass, RestConnectFailed {
 		IStructuredSelection selection = (IStructuredSelection)HandlerUtil.getActiveSite(event).getSelectionProvider().getSelection();
 		IInstance instance = (IInstance)selection.getFirstElement();
 
@@ -44,7 +45,8 @@ public class RegistAgentHandler extends AbstractCloudOptionHandler implements Cl
 				Messages.getString("confirmed"),
 				facilityIds.size() > 1 ? MessageFormat.format(msgConfirmAgentRegistMulti, facilityIds.size()):
 					MessageFormat.format(msgConfirmAgentRegist, instance.getName(), instance.getId()))) {
-			CloudCommonEndpoint endpoint = instance.getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudCommonEndpoint.class);
+			RepositoryRestClientWrapper endpoint = RepositoryRestClientWrapper
+					.getWrapper(instance.getCloudScope().getCloudScopes().getHinemosManager().getManagerName());
 
 			List<String> successful = new ArrayList<>();
 			List<String> failed = new ArrayList<>();

@@ -10,10 +10,10 @@ package com.clustercontrol.notify.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import javax.xml.bind.annotation.XmlType;
 
 
@@ -28,7 +28,6 @@ import javax.xml.bind.annotation.XmlType;
 public class NotifyCommandInfo extends NotifyInfoDetail implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private Integer commandTimeout;
-	private Boolean setEnvironment;
 
 	private String infoCommand;
 	private String warnCommand;
@@ -39,6 +38,8 @@ public class NotifyCommandInfo extends NotifyInfoDetail implements Serializable 
 	private String warnEffectiveUser;
 	private String criticalEffectiveUser;
 	private String unknownEffectiveUser;
+
+	private Integer commandSettingType;
 
 	public NotifyCommandInfo() {
 	}
@@ -129,14 +130,13 @@ public class NotifyCommandInfo extends NotifyInfoDetail implements Serializable 
 		this.commandTimeout = commandTimeout;
 	}
 
-
-	@Column(name="set_environment")
-	public Boolean getSetEnvironment() {
-		return this.setEnvironment;
+	@Column(name="command_setting_type")
+	public Integer getCommandSettingType() {
+		return commandSettingType;
 	}
 
-	public void setSetEnvironment(Boolean setEnvironment) {
-		this.setEnvironment = setEnvironment;
+	public void setCommandSettingType(Integer commandSettingType) {
+		this.commandSettingType = commandSettingType;
 	}
 
 	@Override

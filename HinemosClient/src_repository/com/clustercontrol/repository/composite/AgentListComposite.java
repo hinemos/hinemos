@@ -9,7 +9,6 @@
 package com.clustercontrol.repository.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,15 +22,16 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.AgentStatusInfoResponse;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.action.GetAgentListTableDefine;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.repository.AgentStatusInfo;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -151,16 +151,16 @@ public class AgentListComposite extends Composite {
 	@Override
 	public void update() {
 		// データ取得
-		List<AgentStatusInfo> list = null;
+		List<AgentStatusInfoResponse> list = null;
 		ArrayList<Object> listInput = new ArrayList<Object>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 		this.statuslabel.setText("");
 		int cnt = 0;
-		for (String managerName : EndpointManager.getActiveManagerSet()) {
+		for (String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
 				list = wrapper.getAgentStatusList();
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
@@ -171,19 +171,25 @@ public class AgentListComposite extends Composite {
 			}
 
 			if(list == null){
-				list = new ArrayList<AgentStatusInfo>();
+				list = new ArrayList<AgentStatusInfoResponse>();
 			}
 
-			for (AgentStatusInfo node : list) {
+			for (AgentStatusInfoResponse node : list) {
 				ArrayList<Object> aList = new ArrayList<Object>();
 				aList.add(managerName);
 				aList.add(node.getFacilityId());
 				aList.add(node.getFacilityName());
-				aList.add(new Date(node.getStartupTime()));
-				aList.add(new Date(node.getLastLogin()));
+				try {
+					aList.add(TimezoneUtil.getSimpleDateFormat().parse(node.getStartupTime()));
+				} catch (Exception e1) {
+				}
+				try {
+					aList.add(TimezoneUtil.getSimpleDateFormat().parse(node.getLastLogin()));
+				} catch (Exception e) {
+				}
 				aList.add(node.getMultiplicity());
 
-				switch (node.getUpdateStatus()) {
+				switch (node.getUpdateStatusCode()) {
 				case DONE:
 					aList.add(Messages.getString("repository.agent.update.done"));
 					break;

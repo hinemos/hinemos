@@ -8,16 +8,16 @@
 package com.clustercontrol.xcloud.ui.handlers;
 
 import java.text.MessageFormat;
-import java.util.Arrays;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.JobResourceInfoResponse.ResourceActionEnum;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
 import com.clustercontrol.xcloud.extensions.CloudOptionExtension;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.model.cloud.IInstance;
+import com.clustercontrol.xcloud.model.cloud.IResource;
 import com.clustercontrol.xcloud.util.CloudUtil;
 
 public class RebootInstanceJobHandler extends AbstaractCloudOptionJobHandler {
@@ -35,11 +35,6 @@ public class RebootInstanceJobHandler extends AbstaractCloudOptionJobHandler {
 	}
 
 	@Override
-	protected String getCommand(CloudEndpoint endpoint) throws Exception {
-		return endpoint.makeRebootInstancesCommand(instance.getCloudScope().getId(), instance.getLocation().getId(), Arrays.asList(instance.getId()));
-	}
-
-	@Override
 	protected String getJobName() {
 		return getJobId();
 	}
@@ -49,15 +44,18 @@ public class RebootInstanceJobHandler extends AbstaractCloudOptionJobHandler {
 		String jobid = String.format("%s_%s_i-reboot", instance.getLocation().getId(), instance.getId());
 		if (jobid.length() > CloudUtil.jobIdMaxLength) {
 			int diff = jobid.length() - CloudUtil.jobIdMaxLength;
-			jobid = String.format("%s_%s_i-reboot", instance.getLocation().getId(), instance.getId().substring(0, instance.getId().length() - diff - 1));
+			jobid = String.format("%s_%s_i-reboot", instance.getLocation().getId(), instance.getId().substring(diff, instance.getId().length()));
 		}
 		
 		return jobid;
 	}
-	
+
 	@Override
-	protected String getMethodName() {
-		return "makeRebootInstancesCommand";
+	protected String cutJobId(int num) {
+		String jobid = String.format("%s_%s_i-reboot", instance.getLocation().getId(), instance.getId());
+		int diff = jobid.length() - CloudUtil.jobIdMaxLength;
+		jobid = String.format("%s_%s_i-reboot", instance.getLocation().getId(), instance.getId().substring(diff + num, instance.getId().length()));
+		return jobid;
 	}
 
 	@Override
@@ -68,5 +66,15 @@ public class RebootInstanceJobHandler extends AbstaractCloudOptionJobHandler {
 	@Override
 	protected String getErrorMessage() {
 		return msgErrorFinishCreateRebootJob;
+	}
+
+	@Override
+	protected IResource getResource() {
+		return instance;
+	}
+
+	@Override
+	protected ResourceActionEnum getAction() {
+		return ResourceActionEnum.REBOOT;
 	}
 }

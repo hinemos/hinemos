@@ -83,14 +83,14 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 		m_log.info("create csv file. file name : " + csvFileName);
 
 		try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(csvFileName), false))) {
-			bw.write(ReportUtil.joinStrings(COLUMNS, ","));
+			bw.write(ReportUtil.joinStringsToCsv(COLUMNS));
 			bw.newLine();
 
 			for (DataKey dataKey : datakeys) {
 				List<String[]> dataLines = m_databaseMap.get(dataKey.getFacilityId()).get(dataKey.getDisplayName());
 				if (dataLines != null && !dataLines.isEmpty()) {
 					for (String[] line : dataLines) {
-						bw.write(ReportUtil.joinStrings(line, ","));
+						bw.write(ReportUtil.joinStringsToCsv(line));
 						bw.newLine();
 					}
 				}
@@ -122,6 +122,13 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 			Integer last) {
 		List<String[]> rawData = new ArrayList<>();
 		Map<String, List<String[]>> itemDataMap = new TreeMap<>();
+		String[] bkData = null;
+		
+		// オーナーロールID取得
+		String ownerRoleId = null;
+		if (!"ADMINISTRATORS".equals(ReportUtil.getOwnerRoleId())) {
+			ownerRoleId = ReportUtil.getOwnerRoleId();
+		}
 		
 		ReportingJmxControllerBean controller = new ReportingJmxControllerBean();
 		// サマリデータ、または収集データ(raw)のタイプでスイッチ
@@ -130,8 +137,8 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 		case SummaryTypeConstant.TYPE_AVG_HOUR:
 			List<Object[]> summaryHList = null;
 			try {
-				summaryHList = controller.getSummarySumAvgHour(facilityId, m_startDate.getTime(),
-						m_endDate.getTime(), itemCode);
+				summaryHList = controller.getSummarySumAvgHour(facilityId, m_startDate.getTime(), m_endDate.getTime(),
+						itemCode, ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getItemDataMap() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -182,20 +189,29 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						result[4] = value.toString();
 					}
 
+					// 項目コード・時間・ファシリティIDが同じデータが存在する場合は登録しない
+					if (bkData != null) {
+						if (bkData[0].equals(result[0]) && bkData[1].equals(result[1]) && bkData[3].equals(result[3])) {
+							continue;
+						}
+					}
+
 					if (this.maxval < Double.valueOf(result[4])) {
 						this.maxval = Double.valueOf(result[4]) + 1;
 					} else if (this.minval > Double.valueOf(result[4])) {
 						this.minval = Double.valueOf(result[4]);
 					}
 					itemDataMap.get(nextItemCode).add(result);
+					// 追加データをバックアップ
+					bkData = result;
 				}
 			}
 			break;
 		case SummaryTypeConstant.TYPE_AVG_DAY:
 			List<Object[]> summaryDList = null;
 			try {
-				summaryDList = controller.getSummarySumAvgDay(facilityId, m_startDate.getTime(),
-						m_endDate.getTime(), itemCode);
+				summaryDList = controller.getSummarySumAvgDay(facilityId, m_startDate.getTime(), m_endDate.getTime(),
+						itemCode, ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getItemDataMap() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -246,20 +262,29 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						result[4] = value.toString();
 					}
 
+					// 項目コード・時間・ファシリティIDが同じデータが存在する場合は登録しない
+					if (bkData != null) {
+						if (bkData[0].equals(result[0]) && bkData[1].equals(result[1]) && bkData[3].equals(result[3])) {
+							continue;
+						}
+					}
+
 					if (this.maxval < Double.valueOf(result[4])) {
 						this.maxval = Double.valueOf(result[4]) + 1;
 					} else if (this.minval > Double.valueOf(result[4])) {
 						this.minval = Double.valueOf(result[4]);
 					}
 					itemDataMap.get(nextItemCode).add(result);
+					// 追加データをバックアップ
+					bkData = result;
 				}
 			}
 			break;
 		case SummaryTypeConstant.TYPE_AVG_MONTH:
 			List<Object[]> summaryMList = null;
 			try {
-				summaryMList = controller.getSummaryJmxAvgMonth(facilityId, m_startDate.getTime(),
-						m_endDate.getTime(), itemCode);
+				summaryMList = controller.getSummaryJmxAvgMonth(facilityId, m_startDate.getTime(), m_endDate.getTime(),
+						itemCode, ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getItemDataMap() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -310,20 +335,29 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						result[4] = value.toString();
 					}
 
+					// 項目コード・時間・ファシリティIDが同じデータが存在する場合は登録しない
+					if (bkData != null) {
+						if (bkData[0].equals(result[0]) && bkData[1].equals(result[1]) && bkData[3].equals(result[3])) {
+							continue;
+						}
+					}
+
 					if (this.maxval < Double.valueOf(result[4])) {
 						this.maxval = Double.valueOf(result[4]) + 1;
 					} else if (this.minval > Double.valueOf(result[4])) {
 						this.minval = Double.valueOf(result[4]);
 					}
 					itemDataMap.get(nextItemCode).add(result);
+					// 追加データをバックアップ
+					bkData = result;
 				}
 			}
 			break;
 		default: // defaultはRAWとする
 			List<Object[]> summaryList = null;
 			try {
-				summaryList = controller.getSummarySumAvgData(facilityId, m_startDate.getTime(),
-						m_endDate.getTime(), itemCode);
+				summaryList = controller.getSummarySumAvgData(facilityId, m_startDate.getTime(), m_endDate.getTime(),
+						itemCode, ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getItemDataMap() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -374,12 +408,21 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						result[4] = value.toString();
 					}
 
+					// 項目コード・時間・ファシリティIDが同じデータが存在する場合は登録しない
+					if (bkData != null) {
+						if (bkData[0].equals(result[0]) && bkData[1].equals(result[1]) && bkData[3].equals(result[3])) {
+							continue;
+						}
+					}
+
 					if (this.maxval < Double.valueOf(result[4])) {
 						this.maxval = Double.valueOf(result[4]) + 1;
 					} else if (this.minval > Double.valueOf(result[4])) {
 						this.minval = Double.valueOf(result[4]);
 					}
 					itemDataMap.get(nextItemCode).add(result);
+					// 追加データをバックアップ
+					bkData = result;
 				}
 			}
 			break;
@@ -498,7 +541,7 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 	public Map<String, Object> createDataSource(ResourceChart chart, int chartNum) throws ReportingPropertyNotFound {
 		count++;
 		m_retMap = new HashMap<String, Object>();
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		String csvFileName = ReportUtil.getCsvFileNameForTemplateType(m_templateId,
 				m_suffix + count + "_" + chartNum + "_" + dayString);
 

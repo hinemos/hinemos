@@ -32,31 +32,31 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.openapitools.client.model.TagRequest;
+import org.openapitools.client.model.TagRequest.TagTypeEnum;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.Tag;
-import com.clustercontrol.ws.xcloud.TagType;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 
 public class TagEditor implements CloudStringConstants {
-	private static final Map<TagType, String> tagTypes = new HashMap<TagType, String>() {
+	private static final Map<TagTypeEnum, String> tagTypes = new HashMap<TagTypeEnum, String>() {
 		private static final long serialVersionUID = 1L;{
-			put(TagType.AUTO, strAuto);
-			put(TagType.CLOUD, strCloud);
-			put(TagType.LOCAL, strLocal);
+			put(TagTypeEnum.AUTO, strAuto);
+			put(TagTypeEnum.CLOUD, strCloud);
+			put(TagTypeEnum.LOCAL, strLocal);
 		}
 	};
 
 	protected TableViewer tableViewer;
 	protected Button btnNewTag;
 	protected Button btnDeleteTag;
-	protected List<Tag> editingTag = new ArrayList<>();
+	protected List<TagRequest> editingTag = new ArrayList<>();
 	
 	protected final int[] defaultColumnSizes = {80, 180, 180};
 	protected int[] actualColumnSizes;
 	
-	public TagEditor(TableViewer tableViewer, int[] columnSizes, Button btnNewTag, Button btnDeleteTag, List<Tag> editingTag) {
+	public TagEditor(TableViewer tableViewer, int[] columnSizes, Button btnNewTag, Button btnDeleteTag, List<TagRequest> editingTag) {
 		this.tableViewer = tableViewer;
 		this.btnNewTag = btnNewTag;
 		this.btnDeleteTag = btnDeleteTag;
@@ -77,8 +77,8 @@ public class TagEditor implements CloudStringConstants {
 					btnDeleteTag.setEnabled(false);
 					return;
 				}
-				Tag selected = (Tag)selection.getFirstElement();
-				btnDeleteTag.setEnabled(selected.getTagType() != TagType.AUTO);
+				TagRequest selected = (TagRequest)selection.getFirstElement();
+				btnDeleteTag.setEnabled(selected.getTagType() != TagTypeEnum.AUTO);
 			}
 		});
 		
@@ -87,16 +87,16 @@ public class TagEditor implements CloudStringConstants {
 		tblclmnNewColumn.setWidth(actualColumnSizes[0]);
 		tblclmnNewColumn.setText(strType);
 		tableViewerColumn.setLabelProvider(new ColumnLabelProvider() {
-			@Override public String getText(Object element) {return tagTypes.get(((Tag)element).getTagType());}
+			@Override public String getText(Object element) {return tagTypes.get(((TagRequest)element).getTagType());}
 		});
 		tableViewerColumn.setEditingSupport(new EditingSupport(tableViewer) {
-			String[] items = new String[]{tagTypes.get(TagType.CLOUD), tagTypes.get(TagType.LOCAL)};
-			@Override protected boolean canEdit(Object element) {return ((Tag)element).getTagType() != TagType.AUTO;}
+			String[] items = new String[]{tagTypes.get(TagTypeEnum.CLOUD), tagTypes.get(TagTypeEnum.LOCAL)};
+			@Override protected boolean canEdit(Object element) {return ((TagRequest)element).getTagType() != TagTypeEnum.AUTO;}
 			@Override protected CellEditor getCellEditor(Object element) {
 				return new ComboBoxCellEditor((Table)getViewer().getControl(), items, SWT.READ_ONLY);
 			}
 			@Override protected Object getValue(Object element) {
-				Tag t = (Tag)element;
+				TagRequest t = (TagRequest)element;
 				for (int i = 0; i < items.length; ++i) {
 					if (tagTypes.get(t.getTagType()).equals(items[i]))
 						return i;
@@ -109,9 +109,9 @@ public class TagEditor implements CloudStringConstants {
 				if (0 > index || index >= items.length)
 					return;
 				String selected = items[index];
-				for (Map.Entry<TagType, String> entry: tagTypes.entrySet()) {
+				for (Map.Entry<TagTypeEnum, String> entry: tagTypes.entrySet()) {
 					if (entry.getValue().equals(selected)) {
-						((Tag)element).setTagType(entry.getKey());
+						((TagRequest)element).setTagType(entry.getKey());
 						getViewer().refresh();
 						break;
 					}
@@ -124,25 +124,25 @@ public class TagEditor implements CloudStringConstants {
 		tblclmnNewColumn_1.setWidth(actualColumnSizes[1]);
 		tblclmnNewColumn_1.setText(strName);
 		tableViewerColumn_1.setLabelProvider(new ColumnLabelProvider() {
-			@Override public String getText(Object element) {return ((Tag)element).getKey();}
+			@Override public String getText(Object element) {return ((TagRequest)element).getKey();}
 			@Override public Color getBackground(Object element) {
-				Tag tag = (Tag)element;
+				TagRequest tag = (TagRequest)element;
 				return tag.getKey() == null || tag.getKey().isEmpty() ? RequiredFieldColorConstant.COLOR_REQUIRED: null;
 			}
 		});
 		tableViewerColumn_1.setEditingSupport(new EditingSupport(tableViewer) {
-			@Override protected boolean canEdit(Object element) {return ((Tag)element).getTagType() != TagType.AUTO;}
+			@Override protected boolean canEdit(Object element) {return ((TagRequest)element).getTagType() != TagTypeEnum.AUTO;}
 			@Override protected CellEditor getCellEditor(Object element) {
 				return new TextCellEditor((Table)getViewer().getControl());
 			}
-			@Override protected Object getValue(Object element) {return ((Tag)element).getKey();}
+			@Override protected Object getValue(Object element) {return ((TagRequest)element).getKey();}
 			@Override protected void setValue(Object element, Object value) {
 				if (value == null || value.toString().isEmpty()) {
 					MessageDialog.openError(null, Messages.getString("failed"), msgTagKeyFromOneChar);
 					return;
 				}
 				
-				for (Tag t: editingTag) {
+				for (TagRequest t: editingTag) {
 					if (t == element)
 						continue;
 					
@@ -151,7 +151,7 @@ public class TagEditor implements CloudStringConstants {
 						return;
 					}
 				}
-				((Tag)element).setKey(value.toString());
+				((TagRequest)element).setKey(value.toString());
 				getViewer().refresh();
 			}
 		});
@@ -161,18 +161,18 @@ public class TagEditor implements CloudStringConstants {
 		tblclmnNewColumn_2.setWidth(actualColumnSizes[2]);
 		tblclmnNewColumn_2.setText(strValue);
 		tableViewerColumn_2.setLabelProvider(new ColumnLabelProvider() {
-			@Override public String getText(Object element) {return ((Tag)element).getValue();}
+			@Override public String getText(Object element) {return ((TagRequest)element).getValue();}
 		});
 		tableViewerColumn_2.setEditingSupport(new EditingSupport(tableViewer) {
-			@Override protected boolean canEdit(Object element) {return ((Tag)element).getTagType() != TagType.AUTO;}
+			@Override protected boolean canEdit(Object element) {return ((TagRequest)element).getTagType() != TagTypeEnum.AUTO;}
 			@Override protected CellEditor getCellEditor(Object element) {
 				return new TextCellEditor((Table)getViewer().getControl());
 			}
 			@Override protected Object getValue(Object element) {
-				Tag tag = (Tag)element;
+				TagRequest tag = (TagRequest)element;
 				return tag.getValue() == null ? "": tag.getValue();
 			}
-			@Override protected void setValue(Object element, Object value) {((Tag)element).setValue(value.toString());getViewer().refresh();}
+			@Override protected void setValue(Object element, Object value) {((TagRequest)element).setValue(value.toString());getViewer().refresh();}
 		});
 		
 		tableViewer.setContentProvider(new ArrayContentProvider());
@@ -183,14 +183,14 @@ public class TagEditor implements CloudStringConstants {
 		btnNewTag.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				Tag nt = new Tag();
-				nt.setTagType(TagType.LOCAL);
+				TagRequest nt = new TagRequest();
+				nt.setTagType(TagTypeEnum.LOCAL);
 				
 				int i = 0;
 				while (true) {
 					boolean matched = false;
 					String key = String.format("key%d", i);
-					for (Tag t: editingTag) {
+					for (TagRequest t: editingTag) {
 						if (t.getKey().equals(key)) {
 							matched = true;
 							break;
@@ -220,7 +220,7 @@ public class TagEditor implements CloudStringConstants {
 					btnDeleteTag.setEnabled(false);
 					return;
 				}
-				Tag selected = (Tag)selection.getFirstElement();
+				TagRequest selected = (TagRequest)selection.getFirstElement();
 				editingTag.remove(selected);
 				tableViewer.refresh();
 			}
@@ -239,7 +239,7 @@ public class TagEditor implements CloudStringConstants {
 		return actualColumnSizes;
 	}
 	
-	public List<Tag> getTags() {
+	public List<TagRequest> getTags() {
 		return editingTag;
 	}
 }

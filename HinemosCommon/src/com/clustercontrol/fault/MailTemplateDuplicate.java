@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * mailTemplateIDが重複している場合に利用するException
  * @version 3.2.0
  */
-public class MailTemplateDuplicate extends HinemosException {
+public class MailTemplateDuplicate extends HinemosDuplicate {
 
 	private static final long serialVersionUID = -5612525221540116629L;
 	private String m_mailTemplateId = null;

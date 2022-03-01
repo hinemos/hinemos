@@ -94,8 +94,6 @@ public class DummyHttpSession implements HttpSession{
 
 	@Override
 	public void invalidate() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override

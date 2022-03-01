@@ -53,26 +53,31 @@ public class ModifyMonitorWinEvent extends ModifyMonitorStringValueType{
 			em.persist(checkInfo);
 			
 			for(MonitorWinEventLogInfoEntity logName : checkInfo.getMonitorWinEventLogInfoEntities()){
+				logName.getId().setMonitorId(m_monitorInfo.getMonitorId());
 				em.persist(logName);
 				logName.relateToMonitorWinEventInfoEntity(checkInfo);
 			}
 
 			for(MonitorWinEventSourceInfoEntity sourceName : checkInfo.getMonitorWinEventSourceInfoEntities()){
+				sourceName.getId().setMonitorId(m_monitorInfo.getMonitorId());
 				em.persist(sourceName);
 				sourceName.relateToMonitorWinEventInfoEntity(checkInfo);
 			}
 
 			for(MonitorWinEventIdInfoEntity eventId : checkInfo.getMonitorWinEventIdInfoEntities()){
+				eventId.getId().setMonitorId(m_monitorInfo.getMonitorId());
 				em.persist(eventId);
 				eventId.relateToMonitorWinEventInfoEntity(checkInfo);
 			}
 
 			for(MonitorWinEventCategoryInfoEntity categoryNumber : checkInfo.getMonitorWinEventCategoryInfoEntities()){
+				categoryNumber.getId().setMonitorId(m_monitorInfo.getMonitorId());
 				em.persist(categoryNumber);
 				categoryNumber.relateToMonitorWinEventInfoEntity(checkInfo);
 			}
 
 			for(MonitorWinEventKeywordInfoEntity keywordNumber : checkInfo.getMonitorWinEventKeywordInfoEntities()){
+				keywordNumber.getId().setMonitorId(m_monitorInfo.getMonitorId());
 				em.persist(keywordNumber);
 				keywordNumber.relateToMonitorWinEventInfoEntity(checkInfo);
 			}
@@ -89,6 +94,7 @@ public class ModifyMonitorWinEvent extends ModifyMonitorStringValueType{
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			WinEventCheckInfo checkInfo = m_monitorInfo.getWinEventCheckInfo();
+			checkInfo.setMonitorId(m_monitorInfo.getMonitorId());
 
 			// Windowsイベント監視設定を更新する
 			WinEventCheckInfo entity = com.clustercontrol.winevent.util.QueryUtil.getMonitorWinEventInfoPK(m_monitorInfo.getMonitorId());

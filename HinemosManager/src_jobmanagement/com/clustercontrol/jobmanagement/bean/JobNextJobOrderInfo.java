@@ -19,7 +19,7 @@ import javax.xml.bind.annotation.XmlType;
  * @since 6.1.0
  */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobNextJobOrderInfo implements Serializable {
+public class JobNextJobOrderInfo implements Serializable, Cloneable {
 	/** シリアライズ可能クラスに定義するUID */
 	private static final long serialVersionUID = 1L;
 
@@ -91,5 +91,11 @@ public class JobNextJobOrderInfo implements Serializable {
 		} else if (!next_job_id.equals(other.next_job_id))
 			return false;
 		return true;
+	}
+
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+		JobNextJobOrderInfo jobNextJobOrderInfo = (JobNextJobOrderInfo) super.clone();
+		return jobNextJobOrderInfo;
 	}
 }

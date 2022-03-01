@@ -32,11 +32,18 @@ public class PlatformDivergence {
 	
 	// コマンド実行時の自身のプラットフォーム種別
 	private static final PlatformType SELF_PLATFORM_TYPE = PlatformType.WINDOWS;
-	
+
+	// DBのSQLState値(PK重複エラー) log.cc_collext_data_rawへの登録時に使用
+	private static final String SQLSTATE_DUPLICATE = "23505";
+
 	public static PlatformType getPlatformType() {
 		return SELF_PLATFORM_TYPE;
 	}
-	
+
+	public static String getSQLStateDuplicate() {
+		return SQLSTATE_DUPLICATE;
+	}
+
 	public static void setupHostname() {
 		String hostname = null;
 		// hinemos.cfgより値を取得する。未設定ならhostnameを利用する。

@@ -10,7 +10,7 @@ package com.clustercontrol.notify.mail.factory;
 
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -47,12 +47,11 @@ public class ModifyMailTemplate {
 	 * 
 	 * @param info 作成対象のメールテンプレート情報
 	 * @param name メールテンプレート情報を作成したユーザ名
-	 * @return 作成に成功した場合、<code> true </code>
 	 * @throws MailTemplateDuplicate
 	 * 
 	 * @see com.clustercontrol.notify.ejb.entity.MailTemplateInfoBean
 	 */
-	public boolean add(MailTemplateInfo data, String name) throws MailTemplateDuplicate {
+	public void add(MailTemplateInfo data, String name) throws MailTemplateDuplicate {
 
 		long now = HinemosTime.currentTimeMillis();
 
@@ -72,8 +71,6 @@ public class ModifyMailTemplate {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw new MailTemplateDuplicate(e.getMessage(),e);
 		}
-
-		return true;
 	}
 	
 	/**
@@ -86,13 +83,12 @@ public class ModifyMailTemplate {
 	 * 
 	 * @param info 変更対象のメールテンプレート情報
 	 * @param name 変更したユーザ名
-	 * @return 変更に成功した場合、<code> true </code>
 	 * @throws MailTemplateNotFound
 	 * @throws InvalidRole
 	 * 
 	 * @see com.clustercontrol.notify.ejb.entity.MailTemplateInfoBean
 	 */
-	public boolean modify(MailTemplateInfo data, String name) throws MailTemplateNotFound, InvalidRole {
+	public void modify(MailTemplateInfo data, String name) throws MailTemplateNotFound, InvalidRole {
 
 		//メールテンプレート情報を取得
 		MailTemplateInfo mailTemplateInfo = QueryUtil.getMailTemplateInfoPK(data.getMailTemplateId(), ObjectPrivilegeMode.MODIFY);
@@ -101,11 +97,8 @@ public class ModifyMailTemplate {
 		mailTemplateInfo.setDescription(data.getDescription());
 		mailTemplateInfo.setSubject(data.getSubject());
 		mailTemplateInfo.setBody(data.getBody());
-		mailTemplateInfo.setOwnerRoleId(data.getOwnerRoleId());
 		mailTemplateInfo.setUpdateDate(HinemosTime.currentTimeMillis());
 		mailTemplateInfo.setUpdateUser(name);
-
-		return true;
 	}
 	
 	/**
@@ -117,11 +110,10 @@ public class ModifyMailTemplate {
 	 * </ol>
 	 * 
 	 * @param mailTemplateId 削除対象のメールテンプレートID
-	 * @return 削除に成功した場合、<code> true </code>
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public boolean delete(String mailTemplateId) throws InvalidRole, HinemosUnknown {
+	public void delete(String mailTemplateId) throws InvalidRole, HinemosUnknown {
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -152,7 +144,6 @@ public class ModifyMailTemplate {
 			//メールテンプレート情報を削除
 			em.remove(entity);
 
-			return true;
 		}
 	}
 }

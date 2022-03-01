@@ -22,7 +22,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.clustercontrol.accesscontrol.dialog.RoleDialog;
 import com.clustercontrol.accesscontrol.view.RoleListView;
 import com.clustercontrol.accesscontrol.view.RoleSettingTreeView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * アクセス[ロール]ビューの「作成」のアクションクラス
@@ -70,7 +70,7 @@ public class RoleAddAction extends AbstractHandler {
 			m_log.info("execute " + e.getMessage()); 
 			return null; 
 		}
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 
 		RoleDialog dialog = new RoleDialog(this.viewPart.getSite().getShell(),
 				managerName, null, false);

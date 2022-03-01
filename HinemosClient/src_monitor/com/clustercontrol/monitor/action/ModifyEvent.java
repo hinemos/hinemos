@@ -12,19 +12,22 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.EventLogInfoRequest;
+import org.openapitools.client.model.EventLogInfoResponse;
+import org.openapitools.client.model.ModifyEventInfoRequest;
 
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
 import com.clustercontrol.monitor.bean.EventInfoConstant;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo.UserItemDisplayInfo;
 import com.clustercontrol.monitor.util.EventUtil;
-import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorResultRestClientWrapper;
+import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 
 public class ModifyEvent {
 	
@@ -46,11 +49,11 @@ public class ModifyEvent {
 	 * @return 更新に成功した場合、</code> true </code>
 	 *
 	 */
-	public boolean updateModify(String managerName, EventDataInfo initEventInfo, Property property, MultiManagerEventDisplaySettingInfo eventDspSetting) {
+	public boolean updateModify(String managerName, EventLogInfoResponse initEventInfo, Property property, MultiManagerEventDisplaySettingInfo eventDspSetting) {
 
 		ArrayList<?> value = null;
 
-		EventDataInfo eventData = new EventDataInfo();
+		EventLogInfoRequest eventData = new EventLogInfoRequest();
 
 		value = PropertyUtil.getPropertyValue(property,
 				EventInfoConstant.MONITOR_ID);
@@ -79,7 +82,10 @@ public class ModifyEvent {
 		value = PropertyUtil.getPropertyValue(property,
 				EventInfoConstant.OUTPUT_DATE);
 		if (value.get(0) instanceof Date) {
-			eventData.setOutputDate(((Date) value.get(0)).getTime());
+			Long outputFromDateLong = ((Date) value.get(0)).getTime();
+			String outputDateString = DateTimeStringConverter.formatLongDate(outputFromDateLong,
+					MonitorResultRestClientWrapper.DATETIME_FORMAT);
+			eventData.setOutputDate(outputDateString);
 		}
 
 		value = PropertyUtil.getPropertyValue(property,
@@ -113,11 +119,14 @@ public class ModifyEvent {
 		}
 		
 		try {
-			MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
-			wrapper.modifyEventInfo(eventData);
+			MonitorResultRestClientWrapper wrapper =MonitorResultRestClientWrapper.getWrapper(managerName);
+			ModifyEventInfoRequest modifyEventInfoRequest = new ModifyEventInfoRequest();
+			modifyEventInfoRequest.setInfo(eventData);
+			wrapper.modifyEventInfo(modifyEventInfoRequest);
+
 			return true;
 
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));

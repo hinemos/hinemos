@@ -8,8 +8,10 @@
 
 package com.clustercontrol.utility.settings.collect.conv;
 
+import org.openapitools.client.model.AddCollectPlatformMasterRequest;
+import org.openapitools.client.model.CollectorPlatformInfoResponse;
+
 import com.clustercontrol.utility.settings.model.BaseConv;
-import com.clustercontrol.ws.collectmaster.CollectorPlatformMstData;
 
 /**
  * プラットフォーム情報のJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -55,9 +57,9 @@ public class PlatformMasterConv {
 	 * @param プラットフォーム XML Bean
 	 * @return  Hinemos Bean(DTO)
 	 */
-	public static CollectorPlatformMstData xml2dto(com.clustercontrol.utility.settings.master.xml.CollectorPlatforms xmlBean) {
+	public static AddCollectPlatformMasterRequest xml2dto(com.clustercontrol.utility.settings.master.xml.CollectorPlatforms xmlBean) {
 
-		CollectorPlatformMstData data = new CollectorPlatformMstData();
+		AddCollectPlatformMasterRequest data = new AddCollectPlatformMasterRequest();
 		
 		// プラットフォームID
 		if (xmlBean.getPlatformId() != null && !xmlBean.getPlatformId().equals("")) {
@@ -66,7 +68,7 @@ public class PlatformMasterConv {
 		// プラットフォーム名
 		data.setPlatformName(xmlBean.getPlatformName());
 		// オーダーナンバー
-		data.setOrderNo((short)xmlBean.getOrderNo());
+		data.setOrderNo(xmlBean.getOrderNo());
 		
 		return data;
 		
@@ -78,7 +80,7 @@ public class PlatformMasterConv {
 	 * @param Hinemos Bean(DTO)
 	 * @return プラットフォーム XML Bean
 	 */
-	public static com.clustercontrol.utility.settings.master.xml.CollectorPlatforms dto2Xml(CollectorPlatformMstData data) {
+	public static com.clustercontrol.utility.settings.master.xml.CollectorPlatforms dto2Xml(CollectorPlatformInfoResponse data) {
 
 		com.clustercontrol.utility.settings.master.xml.CollectorPlatforms ret =
 			new com.clustercontrol.utility.settings.master.xml.CollectorPlatforms();

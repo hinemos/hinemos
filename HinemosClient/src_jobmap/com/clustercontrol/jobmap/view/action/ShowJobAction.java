@@ -12,14 +12,17 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.JobTreeItemResponseP3;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+//import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmap.view.JobMapHistoryView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ貼り付けするクライアント側アクションクラス<BR>
@@ -44,14 +47,14 @@ public class ShowJobAction extends BaseAction {
 		JobMapHistoryView view = (JobMapHistoryView)viewPart;
 		String sessionId = view.getCanvasComposite().getSessionId();
 		String managerName = view.getCanvasComposite().getManagerName();
-		
 		if(sessionId != null && sessionId.length() > 0 &&
 				jobunitId != null && jobunitId.length() > 0 &&
 				jobId != null && jobId.length() > 0){
-			JobTreeItem item = null;
+			JobTreeItemWrapper item = null;
 			try {
-				item = JobEndpointWrapper.getWrapper(managerName).getSessionJobInfo(sessionId, jobunitId, jobId);
-			} catch (InvalidRole_Exception e) {
+				JobTreeItemResponseP3 res =JobRestClientWrapper.getWrapper(managerName).getSessionJobInfo(sessionId, jobunitId, jobId);
+				item = JobTreeItemUtil.getItemFromP3(res);
+			} catch (InvalidRole e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
 			} catch (Exception e) {

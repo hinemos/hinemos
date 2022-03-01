@@ -44,7 +44,7 @@ public class MonitorJmxCache {
 			
 			ConcurrentHashMap<MonitorJmxValuePK, MonitorJmxValue> cache = getCache();
 			if (cache == null) {	// not null when clustered
-				update(null, null, null);
+				update(null, null, null, null);
 			}
 		} finally {
 			_lock.writeUnlock();
@@ -96,10 +96,12 @@ public class MonitorJmxCache {
 
 		private String monitorId;
 		private String facilityId;
+		private String displayName;
 
-		public MonitorJmxValuePK(String monitorId, String facilityId) {
+		public MonitorJmxValuePK(String monitorId, String facilityId, String displayName) {
 			this.setMonitorId(monitorId);
 			this.setFacilityId(facilityId);
+			this.setDisplayName(displayName);
 		}
 
 		public void setMonitorId(String monitorId) {
@@ -108,6 +110,10 @@ public class MonitorJmxCache {
 
 		public void setFacilityId(String facilityId) {
 			this.facilityId = facilityId;
+		}
+
+		public void setDisplayName(String displayName) {
+			this.displayName = displayName;
 		}
 
 		@Override
@@ -121,7 +127,8 @@ public class MonitorJmxCache {
 			MonitorJmxValuePK castOther = (MonitorJmxValuePK)other;
 			return
 					this.monitorId.equals(castOther.monitorId)
-					&& this.facilityId.equals(castOther.facilityId);
+					&& this.facilityId.equals(castOther.facilityId)
+					&& this.displayName.equals(castOther.displayName);
 		}
 
 		@Override
@@ -130,6 +137,7 @@ public class MonitorJmxCache {
 			int hash = 17;
 			hash = hash * prime + this.monitorId.hashCode();
 			hash = hash * prime + this.facilityId.hashCode();
+			hash = hash * prime + this.displayName.hashCode();
 
 			return hash;
 		}
@@ -138,11 +146,13 @@ public class MonitorJmxCache {
 		public String toString() {
 			String[] names = {
 					"monitorId",
-					"facilityId"
+					"facilityId",
+					"displayName"
 			};
 			String[] values = {
 					this.monitorId,
-					this.facilityId
+					this.facilityId,
+					this.displayName
 			};
 			return Arrays.toString(names) + " = " + Arrays.toString(values);
 		}
@@ -166,16 +176,17 @@ public class MonitorJmxCache {
 	 * キャッシュの更新を行う。
 	 * @param m_monitorId 監視項目ID
 	 * @param facilityId ファシリティID
+	 * @param displayName 表示名称
 	 * @param valueEntity JMX監視結果情報
 	 */
-	public static void update(String m_monitorId, String facilityId, MonitorJmxValue valueEntity) {
+	public static void update(String m_monitorId, String facilityId, String displayName, MonitorJmxValue valueEntity) {
 		try {
 			_lock.writeLock();
 
 			ConcurrentHashMap<MonitorJmxValuePK, MonitorJmxValue> cache 
 				= new ConcurrentHashMap<MonitorJmxValuePK, MonitorJmxValue>();
 
-			MonitorJmxValuePK valueEntityPk = new MonitorJmxValuePK(m_monitorId, facilityId);
+			MonitorJmxValuePK valueEntityPk = new MonitorJmxValuePK(m_monitorId, facilityId, displayName);
 
 			if (valueEntityPk != null && getCache() != null) {
 				cache.putAll(getCache());
@@ -199,11 +210,12 @@ public class MonitorJmxCache {
 	 * キャッシュされているJmx監視結果を取得する。
 	 * @param m_monitorId 監視項目ID
 	 * @param facilityId ファシリティID
+	 * @param displayName 表示名称
 	 * @return JMX監視結果情報
 	 */
-	public static MonitorJmxValue getMonitorJmxValue(String m_monitorId, String facilityId) {
+	public static MonitorJmxValue getMonitorJmxValue(String m_monitorId, String facilityId, String displayName) {
 
-		MonitorJmxValuePK valueEntityPk = new MonitorJmxValuePK(m_monitorId, facilityId);
+		MonitorJmxValuePK valueEntityPk = new MonitorJmxValuePK(m_monitorId, facilityId, displayName);
 		ConcurrentHashMap<MonitorJmxValuePK, MonitorJmxValue> cache = getCache();
 		if (cache.get(valueEntityPk) == null) {
 			return new MonitorJmxValue(valueEntityPk);

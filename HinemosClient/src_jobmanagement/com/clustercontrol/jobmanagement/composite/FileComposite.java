@@ -25,6 +25,9 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.JobFileInfoResponse;
+
+import org.openapitools.client.model.FacilityInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.DataRangeConstant;
@@ -33,15 +36,12 @@ import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.jobmanagement.bean.ProcessingMethodConstant;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobFileInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * ファイル転送タブ用のコンポジットクラスです。
@@ -87,7 +87,7 @@ public class FileComposite extends Composite {
 	/** 受信ファシリティパス */
 	private String m_destFacilityPath = null;
 	/** ジョブファイル転送情報 */
-	private JobFileInfo m_jobFileInfo = null;
+	private JobFileInfoResponse m_jobFileInfo = null;
 	/** シェル */
 	private Shell m_shell = null;
 	/** オーナーロールID */
@@ -153,8 +153,8 @@ public class FileComposite extends Composite {
 				// ノードのみ選択可能とする。
 				dialog.setSelectNodeOnly(true);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem selectItem = dialog.getSelectItem();
-					FacilityInfo info = selectItem.getData();
+					FacilityTreeItemResponse selectItem = dialog.getSelectItem();
+					FacilityInfoResponse info = selectItem.getData();
 					FacilityPath path = new FacilityPath(
 							ClusterControlPlugin.getDefault()
 							.getSeparator());
@@ -217,8 +217,8 @@ public class FileComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				ScopeTreeDialog dialog = new ScopeTreeDialog(m_shell, m_managerName, m_ownerRoleId);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem selectItem = dialog.getSelectItem();
-					FacilityInfo info = selectItem.getData();
+					FacilityTreeItemResponse selectItem = dialog.getSelectItem();
+					FacilityInfoResponse info = selectItem.getData();
 					FacilityPath path = new FacilityPath(
 							ClusterControlPlugin.getDefault()
 							.getSeparator());
@@ -447,7 +447,7 @@ public class FileComposite extends Composite {
 				m_destDirectory.setText(m_jobFileInfo.getDestDirectory());
 			}
 			//処理方法設定
-			if (m_jobFileInfo.getProcessingMethod() == ProcessingMethodConstant.TYPE_ALL_NODE) {
+			if (m_jobFileInfo.getProcessingMethod() == JobFileInfoResponse.ProcessingMethodEnum.ALL_NODE) {
 				m_allNode.setSelection(true);
 				m_oneNode.setSelection(false);
 			} else {
@@ -455,11 +455,11 @@ public class FileComposite extends Composite {
 				m_oneNode.setSelection(true);
 			}
 			//ファイル圧縮
-			m_compressionCondition.setSelection(m_jobFileInfo.isCompressionFlg());
+			m_compressionCondition.setSelection(m_jobFileInfo.getCompressionFlg());
 			//整合性チェック
-			m_checkFileCondition.setSelection(m_jobFileInfo.isCheckFlg());
+			m_checkFileCondition.setSelection(m_jobFileInfo.getCheckFlg());
 			//ユーザー設定
-			if (m_jobFileInfo.isSpecifyUser().booleanValue()) {
+			if (m_jobFileInfo.getSpecifyUser().booleanValue()) {
 				m_specifyUser.setSelection(true);
 				m_agentUser.setSelection(false);
 				m_user.setEditable(true);
@@ -479,7 +479,7 @@ public class FileComposite extends Composite {
 	 *
 	 * @param jobFileInfo ジョブファイル転送情報
 	 */
-	public void setFileInfo(JobFileInfo jobFileInfo) {
+	public void setFileInfo(JobFileInfoResponse jobFileInfo) {
 		m_jobFileInfo = jobFileInfo;
 	}
 
@@ -488,7 +488,7 @@ public class FileComposite extends Composite {
 	 *
 	 * @return ジョブファイル転送情報
 	 */
-	public JobFileInfo getFileInfo() {
+	public JobFileInfoResponse getFileInfo() {
 		return m_jobFileInfo;
 	}
 
@@ -503,7 +503,7 @@ public class FileComposite extends Composite {
 		ValidateResult result = null;
 
 		//ファイル転送情報クラスのインスタンスを作成・取得
-		m_jobFileInfo = new JobFileInfo();
+		m_jobFileInfo = new JobFileInfoResponse();
 
 		//転送元スコープ取得
 		if (m_srcFacilityId != null && m_srcFacilityId.length() > 0) {
@@ -568,10 +568,10 @@ public class FileComposite extends Composite {
 		//処理方法取得
 		if (m_allNode.getSelection()) {
 			m_jobFileInfo.setProcessingMethod(
-					ProcessingMethodConstant.TYPE_ALL_NODE);
+					JobFileInfoResponse.ProcessingMethodEnum.ALL_NODE);
 		} else {
 			m_jobFileInfo.setProcessingMethod(
-					ProcessingMethodConstant.TYPE_RETRY);
+					JobFileInfoResponse.ProcessingMethodEnum.RETRY);
 		}
 
 		//ファイル圧縮

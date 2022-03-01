@@ -8,7 +8,7 @@
 
 package com.clustercontrol.jobmanagement.factory;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

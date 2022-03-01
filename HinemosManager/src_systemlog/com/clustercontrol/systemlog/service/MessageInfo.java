@@ -18,13 +18,13 @@ package com.clustercontrol.systemlog.service;
 public class MessageInfo {
 
 	/** ホスト名。 */
-	private String m_hostName;
+    private String hostName;
 
 	/** 発生日時。 */
-	private Long m_generationDate;
+    private Long generationDate;
 
 	/** メッセージ。 */
-	private String m_message;
+    private String message;
 
 
 	/**
@@ -33,7 +33,7 @@ public class MessageInfo {
 	 * @return 発生日時
 	 */
 	public Long getGenerationDate() {
-		return m_generationDate;
+        return generationDate;
 	}
 
 	/**
@@ -42,7 +42,7 @@ public class MessageInfo {
 	 * @param generationDate 発生日時
 	 */
 	public void setGenerationDate(Long generationDate) {
-		m_generationDate = generationDate;
+        this.generationDate = generationDate;
 	}
 
 	/**
@@ -51,7 +51,7 @@ public class MessageInfo {
 	 * @return ホスト名
 	 */
 	public String getHostName() {
-		return m_hostName;
+        return hostName;
 	}
 
 	/**
@@ -60,7 +60,7 @@ public class MessageInfo {
 	 * @param hostName ホスト名
 	 */
 	public void setHostName(String hostName) {
-		m_hostName = hostName;
+        this.hostName = hostName;
 	}
 
 	/**
@@ -69,7 +69,7 @@ public class MessageInfo {
 	 * @return メッセージ
 	 */
 	public String getMessage() {
-		return m_message;
+        return message;
 	}
 
 	/**
@@ -78,6 +78,6 @@ public class MessageInfo {
 	 * @param message メッセージ
 	 */
 	public void setMessage(String message) {
-		m_message = message;
+        this.message = message;
 	}
 }

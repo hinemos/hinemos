@@ -15,10 +15,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtRunInstructionInfoResponse;
 
 import com.clustercontrol.jobmanagement.bean.CommandStopTypeConstant;
 import com.clustercontrol.jobmanagement.bean.CommandTypeConstant;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
 
 /**
  * ジョブ実行履歴を管理するユーティリティクラス<BR>
@@ -31,23 +31,36 @@ public class RunHistoryUtil {
 
 	//ロガー
 	private static Log m_log = LogFactory.getLog(RunHistoryUtil.class);
-	private static ConcurrentHashMap<String, Process> runHistory = new ConcurrentHashMap<String, Process>();
+	private static ConcurrentHashMap<String, RunHistoryWrapper> runHistory = new ConcurrentHashMap<String, RunHistoryWrapper>();
 
 	/**
 	 * 実行履歴を追加します。<BR>
 	 * @param info
-	 * @param startDate
+	 * @param process
 	 */
-	public static void addRunHistory(RunInstructionInfo info, Process process) {
-		runHistory.put(getKey(info), process);
+	public static void addRunHistory(AgtRunInstructionInfoResponse info, Process process) {
+		runHistory.put(getKey(info), new RunHistoryWrapper(process));
+	}
+
+	/**
+	 * 実行履歴を追加します。<BR>
+	 * 
+	 * @param info
+	 * @param thread
+	 */
+	public static void addRunHistory(AgtRunInstructionInfoResponse info, AgentThread thread) {
+		runHistory.put(getKey(info), new RunHistoryWrapper(thread));
 	}
 
 	/**
 	 * 実行履歴を削除します。<BR>
 	 * @param info
 	 */
-	public static void delRunHistory(RunInstructionInfo info) {
-		runHistory.remove(getKey(info));
+	public static void delRunHistory(AgtRunInstructionInfoResponse info) {
+		RunHistoryWrapper result = runHistory.remove(getKey(info));
+		if (result == null) {
+			m_log.info("delRunHistory() : RunHistory is already removed. key=" + getKey(info));
+		}
 	}
 
 	/**
@@ -64,13 +77,42 @@ public class RunHistoryUtil {
 	}
 
 	/**
-	 * 実行履歴を検索します。<BR>
+	 * Processの実行履歴を検索します。<BR>
+	 * 
 	 * @param info
 	 * @return process
 	 */
-	public static Process findRunHistory(RunInstructionInfo info) {
-		Process process = runHistory.get(getKey(info));
-		return process;
+	public static Process findProcessRunHistory(AgtRunInstructionInfoResponse info) {
+		RunHistoryWrapper history = runHistory.get(getKey(info));
+		if (history != null && history.getProcess() != null) {
+			return history.getProcess();
+		}
+		return null;
+	}
+
+	/**
+	 * Threadの実行履歴を検索します。<BR>
+	 * 
+	 * @param info
+	 * @return AgentThread
+	 */
+	public static AgentThread findThreadRunHistory(AgtRunInstructionInfoResponse info) {
+		RunHistoryWrapper history = runHistory.get(getKey(info));
+		if (history != null && history.getThread() != null) {
+			return history.getThread();
+		}
+		return null;
+	}
+
+	/**
+	 * 実行履歴を検索します。<BR>
+	 * このメソッドはWrapperをそのまま返します。<BR>
+	 * 
+	 * @param info
+	 * @return RunHistoryWrapper
+	 */
+	public static RunHistoryWrapper findRunHistory(AgtRunInstructionInfoResponse info) {
+		return runHistory.get(getKey(info));
 	}
 
 	/**
@@ -92,7 +134,7 @@ public class RunHistoryUtil {
 	 * @param info
 	 * @return
 	 */
-	protected static String getKey(RunInstructionInfo info) {
+	public static String getKey(AgtRunInstructionInfoResponse info) {
 		// DESTROY_PROCESSでは、NORMALで実行したプロセスを取得する必要があるためCommandTypeを変換する
 		int commandType;
 		if (info.getCommandType() == CommandTypeConstant.STOP &&
@@ -110,7 +152,7 @@ public class RunHistoryUtil {
 	 * 実行履歴に入れるダミーのプロセスを生成します
 	 * @return process
 	 */
-	protected static Process dummyProcess() {
+	public static Process dummyProcess() {
 		return new Process() {
 
 			@Override
@@ -142,5 +184,41 @@ public class RunHistoryUtil {
 			public void destroy() {
 			}
 		};
+	}
+
+	/**
+	 * ジョブ実行履歴を管理するためのラッパークラス<BR>
+	 * 
+	 * Processに依存しないジョブのために、Threadクラスを利用した履歴管理も可能とする<BR>
+	 */
+	public static class RunHistoryWrapper {
+		private Process process = null;
+		private AgentThread thread = null;
+
+		/**
+		 * コンストラクタ
+		 * 
+		 * @param process
+		 */
+		public RunHistoryWrapper(Process process) {
+			this.process = process;
+		}
+
+		/**
+		 * コンストラクタ
+		 * 
+		 * @param thread
+		 */
+		public RunHistoryWrapper(AgentThread thread) {
+			this.thread = thread;
+		}
+
+		public Process getProcess() {
+			return process;
+		}
+
+		public AgentThread getThread() {
+			return thread;
+		}
 	}
 }

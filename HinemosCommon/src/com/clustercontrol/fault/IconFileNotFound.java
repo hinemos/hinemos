@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * ノードマップでアイコンファイルが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class IconFileNotFound extends HinemosException {
+public class IconFileNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = 5241727385182864490L;
 

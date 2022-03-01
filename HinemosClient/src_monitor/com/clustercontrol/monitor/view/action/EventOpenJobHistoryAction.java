@@ -15,6 +15,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.commands.AbstractHandler;
+import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -25,26 +26,31 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.JobHistoryFilterBaseRequest;
+import org.openapitools.client.model.JobHistoryFilterConditionRequest;
+import org.openapitools.client.model.JobTreeItemResponseP4;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.composite.DetailComposite;
 import com.clustercontrol.jobmanagement.composite.HistoryComposite;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobDetailView;
 import com.clustercontrol.jobmanagement.view.JobHistoryView;
+import com.clustercontrol.jobmanagement.view.action.HistoryFilterAction;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
 import com.clustercontrol.monitor.composite.EventListComposite;
 import com.clustercontrol.monitor.view.EventView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.view.ScopeListBaseView;
-import com.clustercontrol.ws.jobmanagement.JobInfoNotFound_Exception;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ履歴パースペクティブを開くクライアント側アクションクラス<BR>
@@ -73,8 +79,8 @@ public class EventOpenJobHistoryAction extends AbstractHandler implements IEleme
 		this.window = null;
 	}
 
-	private JobTreeItem getChild(JobTreeItem item) {
-		JobTreeItem child = item.getChildren().size() >0 ? item.getChildren().get(0) : null;
+	private JobTreeItemWrapper getChild(JobTreeItemWrapper item) {
+		JobTreeItemWrapper child = item.getChildren().size() >0 ? item.getChildren().get(0) : null;
 
 		if (child != null) {
 			child = getChild(child);
@@ -125,19 +131,20 @@ public class EventOpenJobHistoryAction extends AbstractHandler implements IEleme
 
 		List<?> list = (ArrayList<?>) selection.getFirstElement();
 
-		if (list == null){
+		if (list == null) {
 			return null;
 		}
 
-		JobTreeItem item;
+		JobTreeItemWrapper item;
 
 		//セッションID（監視ID）を取得
 		String monitorId = (String) list.get(GetEventListTableDefine.MONITOR_ID);
 		String managerName = (String) list.get(GetEventListTableDefine.MANAGER_NAME);
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-			item = wrapper.getJobDetailList(monitorId);
-		} catch (JobInfoNotFound_Exception e) {
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			JobTreeItemResponseP4 detail = wrapper.getJobDetailList(monitorId);
+			item = JobTreeItemUtil.getItemFromP4(detail);
+		} catch (JobInfoNotFound e) {
 			ClientSession.occupyDialog();
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.job.122"));
@@ -179,17 +186,33 @@ public class EventOpenJobHistoryAction extends AbstractHandler implements IEleme
 		}
 
 		//セッションID、ジョブIDをセット
+		historyCmp.setManagerName(managerName);
 		historyCmp.setSessionId(monitorId);
 		DetailComposite detailCmp = detailView.getComposite();
-		JobTreeItem child = getChild(item);
-
-		child.getData().getType().equals(JobConstant.TYPE_JOB);
+		JobTreeItemWrapper child = getChild(item);
 		String jobId = child.getData().getId();
 		String jobunitId = child.getData().getJobunitId();
 		detailCmp.setJobId(jobId);
 		detailCmp.setSessionId(monitorId);
 
-		//該当のレコードを選択
+		// フィルタボタン
+		ICommandService commandService = (ICommandService)window.getService(ICommandService.class);
+		Command command = commandService.getCommand(HistoryFilterAction.ID);
+		boolean isChecked = !HandlerUtil.toggleCommandState(command);
+		if (!isChecked) {
+			// チェック外れる場合はもう一度呼出し、チェックを入れる
+			HandlerUtil.toggleCommandState(command);
+		}
+
+		// セッションIDによるフィルタリング
+		JobHistoryFilterBaseRequest sessionIdFilter = new JobHistoryFilterBaseRequest();
+		JobHistoryFilterConditionRequest filterCondition = new JobHistoryFilterConditionRequest();
+		filterCondition.setSessionId(monitorId);
+		sessionIdFilter.addConditionsItem(filterCondition);
+		historyView.setFilter(managerName, sessionIdFilter);
+		historyView.setFilterEnabled(true);
+
+		// 画面更新、該当のジョブ詳細を選択
 		historyView.update(false);
 		detailCmp.setItem(managerName, monitorId, jobunitId, item);
 

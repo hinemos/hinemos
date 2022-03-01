@@ -10,8 +10,6 @@ package com.clustercontrol.repository.dialog;
 
 import java.util.List;
 
-import javax.xml.ws.WebServiceException;
-
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -25,6 +23,8 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.NodeInfoDeviceSearchResponse;
+import org.openapitools.client.model.SearchNodesBySNMPRequest;
 
 import com.clustercontrol.bean.SnmpProtocolConstant;
 import com.clustercontrol.bean.SnmpSecurityLevelConstant;
@@ -34,18 +34,17 @@ import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.FacilityDuplicate;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.repository.util.NodeSearchUtil;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.repository.FacilityDuplicate_Exception;
-import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.InvalidSetting_Exception;
-import com.clustercontrol.ws.repository.InvalidUserPass_Exception;
-import com.clustercontrol.ws.repository.NodeInfoDeviceSearch;
-import com.clustercontrol.ws.repository.SnmpResponseError_Exception;
 
 public class NodeSearchDialog extends CommonDialog {
 	/** マネージャ名コンボボックス用コンポジット */
@@ -487,6 +486,10 @@ public class NodeSearchDialog extends CommonDialog {
 		authProtocolBox.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		authProtocolBox.add(SnmpProtocolConstant.MD5, 0);
 		authProtocolBox.add(SnmpProtocolConstant.SHA, 1);
+		authProtocolBox.add(SnmpProtocolConstant.SHA224, 2);
+		authProtocolBox.add(SnmpProtocolConstant.SHA256, 3);
+		authProtocolBox.add(SnmpProtocolConstant.SHA384, 4);
+		authProtocolBox.add(SnmpProtocolConstant.SHA512, 5);
 
 		// デフォルトセット
 		authProtocolBox.select(0);
@@ -548,6 +551,8 @@ public class NodeSearchDialog extends CommonDialog {
 		privProtocolBox.setLayoutData(gridData);
 		privProtocolBox.add(SnmpProtocolConstant.DES, 0);
 		privProtocolBox.add(SnmpProtocolConstant.AES, 1);
+		privProtocolBox.add(SnmpProtocolConstant.AES192, 2);
+		privProtocolBox.add(SnmpProtocolConstant.AES256, 3);
 		// デフォルトセット
 		privProtocolBox.select(0);
 
@@ -587,10 +592,37 @@ public class NodeSearchDialog extends CommonDialog {
 					String privProtocol = privProtocolBox == null || privProtocolBox.isDisposed() ? null : privProtocolBox.getText();
 
 					String managerName = m_managerComposite.getText();
-					RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-					List<NodeInfoDeviceSearch> list = wrapper.searchNodesBySNMP(
-							ownerRoleId, ipAddressFrom, ipAddressTo, port, community, version, null, user,
-							securityLevel, authPass, privPass, authProtocol, privProtocol);
+					RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+
+					SearchNodesBySNMPRequest requestDto = new SearchNodesBySNMPRequest();
+					requestDto.setAuthPass(authPass);
+					requestDto.setAuthProtocol(authProtocol);
+					requestDto.setCommunity(community);
+					requestDto.setIpAddressFrom(ipAddressFrom);
+					requestDto.setIpAddressTo(ipAddressTo);
+					requestDto.setOwnerRoleId(ownerRoleId);
+					requestDto.setPort(port);
+					requestDto.setPrivPass(privPass);
+					requestDto.setPrivProtocol(privProtocol);
+					requestDto.setSecurityLevel(securityLevel);
+					requestDto.setUser(user);
+
+					switch (version) {
+					case SnmpVersionConstant.TYPE_V1:
+						requestDto.setVersion(SearchNodesBySNMPRequest.VersionEnum.V1);
+						break;
+					case SnmpVersionConstant.TYPE_V2:
+						requestDto.setVersion(SearchNodesBySNMPRequest.VersionEnum.V2);
+						break;
+					case SnmpVersionConstant.TYPE_V3:
+						requestDto.setVersion(SearchNodesBySNMPRequest.VersionEnum.V3);
+						break;
+					default:
+						// findbugs対応 デフォルト追加
+						break;
+					}
+
+					List<NodeInfoDeviceSearchResponse> list = wrapper.searchNodesBySNMP(requestDto);
 
 					StringBuffer buf = new StringBuffer();
 					Object[] arg = {list.size()};
@@ -601,7 +633,7 @@ public class NodeSearchDialog extends CommonDialog {
 					dialog.open();
 
 					boolean existsError = false;
-					for(NodeInfoDeviceSearch info : list) {
+					for(NodeInfoDeviceSearchResponse info : list) {
 						if (info.getErrorMessage() != null) {
 							existsError = true;
 							break;
@@ -616,37 +648,32 @@ public class NodeSearchDialog extends CommonDialog {
 							Messages.getString("failed"),
 							Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
 					return;
-				} catch (HinemosUnknown_Exception e) {
+				} catch (HinemosUnknown e) {
 					MessageDialog.openInformation(shell,
 							Messages.getString("message"),
 							HinemosMessage.replace(e.getMessage()));
 					return;
-				} catch (InvalidRole_Exception e) {
+				} catch (InvalidRole e) {
 					MessageDialog.openError(shell,
 							Messages.getString("failed"),
 							Messages.getString("message.accesscontrol.16"));
-				} catch (InvalidUserPass_Exception e) {
+				} catch (InvalidUserPass e) {
 					MessageDialog.openError(shell,
 							Messages.getString("failed"),
 							Messages.getString("message.accesscontrol.16"));
-				} catch (SnmpResponseError_Exception e) {
-					MessageDialog.openError(shell,
-							Messages.getString("failed"),
-							Messages.getString("message.snmp.12"));
-					return;
-				} catch (WebServiceException e) {
-					MessageDialog.openError(shell,
-							Messages.getString("failed"),
-							Messages.getString("message.process.8") + HinemosMessage.replace(e.getMessage()));
-				} catch (FacilityDuplicate_Exception e) {
-					Object[] arg = { e.getFaultInfo().getFacilityId() };
+				} catch (FacilityDuplicate e) {
+					Object[] arg = { e.getFacilityId() };
 					MessageDialog.openInformation(shell,
 							Messages.getString("message"),
 							Messages.getString("message.repository.26", arg) + System.lineSeparator() + HinemosMessage.replace(e.getMessage()));
-				} catch (InvalidSetting_Exception e) {
+				} catch (InvalidSetting e) {
 					MessageDialog.openError(shell,
 							Messages.getString("failed"),
 							Messages.getString("message.hinemos.failure.unexpected") + HinemosMessage.replace(e.getMessage()));
+				} catch (RestConnectFailed e) {
+					MessageDialog.openError(shell,
+							Messages.getString("failed"),
+							Messages.getString("message.process.8") + HinemosMessage.replace(e.getMessage()));
 				}
 				super.okPressed();
 			}

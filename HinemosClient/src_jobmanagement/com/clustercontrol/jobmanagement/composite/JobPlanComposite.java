@@ -25,21 +25,22 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.GetPlanListRequest;
+import org.openapitools.client.model.JobPlanResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.action.GetPlanTableDefine;
 import com.clustercontrol.jobmanagement.composite.action.SessionJobDoubleClickListener;
 import com.clustercontrol.jobmanagement.preference.JobManagementPreferencePage;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobPlan;
-import com.clustercontrol.ws.jobmanagement.JobPlanFilter;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -154,7 +155,7 @@ public class JobPlanComposite extends Composite {
 	 * @param condition 検索条件
 	 *
 	 */
-	public void update(String conditionManager, JobPlanFilter filter) {
+	public void update(String conditionManager, GetPlanListRequest filter) {
 		if (m_log.isDebugEnabled()) {
 			String str = "managerName=" + conditionManager;
 			if (filter == null) {
@@ -165,14 +166,14 @@ public class JobPlanComposite extends Composite {
 			m_log.debug(str);
 		}
 		
-		Map<String, List<JobPlan>> dispDataMap = new ConcurrentHashMap<String, List<JobPlan>>();
+		Map<String, List<JobPlanResponse>> dispDataMap = new ConcurrentHashMap<String, List<JobPlanResponse>>();
 		//ジョブ[スケジュール予定]情報取得
 		int plans = ClusterControlPlugin.getDefault().getPreferenceStore().getInt(
 				JobManagementPreferencePage.P_PLAN_MAX_SCHEDULE);
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 
 		if(conditionManager == null || conditionManager.equals("")) {
-			for(String managerName : EndpointManager.getActiveManagerSet()) {
+			for(String managerName : RestConnectManager.getActiveManagerSet()) {
 				getPlanList(managerName, filter, plans, dispDataMap, errorMsgs);
 			}
 		} else {
@@ -184,17 +185,16 @@ public class JobPlanComposite extends Composite {
 			UIManager.showMessageBox(errorMsgs, true);
 		}
 
-		List<JobPlan> planList = jobPlanDataMap2SortedList(dispDataMap);
+		List<JobPlanResponseEx> planList = jobPlanDataMap2SortedList(dispDataMap);
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
 		SimpleDateFormat sdfYmd = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		sdfYmd.setTimeZone(TimezoneUtil.getTimeZone());
 
-		for (JobPlan plan : planList) {
+		for (JobPlanResponseEx plan : planList) {
 			ArrayList<Object> a = new ArrayList<Object>();
 			a.add(plan.getManagerName());
-			String date = sdfYmd.format(plan.getDate());
-			a.add(date);
+			a.add(plan.getDate());
 			a.add(plan.getJobKickId());
 			a.add(plan.getJobKickName());
 			a.add(plan.getJobunitId());
@@ -224,21 +224,20 @@ public class JobPlanComposite extends Composite {
 		}
 	}
 
-	private List<JobPlan> jobPlanDataMap2SortedList(Map<String, List<JobPlan>> dispDataMap) {
-		List<JobPlan> ret = new ArrayList<JobPlan>();
+	private List<JobPlanResponseEx> jobPlanDataMap2SortedList(Map<String, List<JobPlanResponse>> dispDataMap) {
+		List<JobPlanResponseEx> ret = new ArrayList<JobPlanResponseEx>();
 		
-		for (Entry<String, List<JobPlan>> jobplanEntry : dispDataMap.entrySet()) {
-			List<JobPlan> list = jobplanEntry.getValue();
-			for (JobPlan plan : list) {
-				plan.setManagerName(jobplanEntry.getKey());
-				ret.add(plan);
+		for (Entry<String, List<JobPlanResponse>> jobplanEntry : dispDataMap.entrySet()) {
+			List<JobPlanResponse> list = jobplanEntry.getValue();
+			for (JobPlanResponse plan : list) {
+				ret.add(new JobPlanResponseEx(plan,jobplanEntry.getKey()));
 			}
 		}
 		
 		// Sort - OutputDate, 降順で並べ替え
-		Collections.sort(ret, new Comparator<JobPlan>() {
+		Collections.sort(ret, new Comparator<JobPlanResponseEx>() {
 			@Override
-			public int compare(JobPlan o1, JobPlan o2) {
+			public int compare(JobPlanResponseEx o1, JobPlanResponseEx o2) {
 				return o1.getDate().compareTo(o2.getDate());
 			}
 		});
@@ -253,17 +252,54 @@ public class JobPlanComposite extends Composite {
 	}
 
 	
-	private void getPlanList(String managerName, JobPlanFilter filter, int plans,
-			Map<String, List<JobPlan>> dispDataMap,
+	private void getPlanList(String managerName, GetPlanListRequest filter, int plans,
+			Map<String, List<JobPlanResponse>> dispDataMap,
 			Map<String, String> errorMsgs) {
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-			List<JobPlan> planList = wrapper.getPlanList(filter, plans);
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			if(filter == null){
+				filter = new GetPlanListRequest();
+			}
+			filter.setSize(plans);
+			List<JobPlanResponse> planList = wrapper.getPlanList(filter);
 			dispDataMap.put(managerName, planList);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 		} catch (Exception e) {
 			errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 		}
+	}
+	
+	/**
+	 * 表示順のソート処理の都合上、マネージャ名を付与したJobPlanResponse のListが必要なため
+	 * 独自拡張したデータクラス
+	 * 
+	 */
+	private static class JobPlanResponseEx extends JobPlanResponse{
+		String managerName ;
+		
+		public JobPlanResponseEx(JobPlanResponse org ,String managerName){
+			this.managerName = managerName;
+			try{
+				RestClientBeanUtil.convertBean(org, this);
+			}catch(Exception e){
+				//ここには来ない想定（拡張元クラスから拡張先へのデータ移動のため）
+				m_log.error("JobHistoryResponseEx init :"+e.getMessage(),e);
+			}
+		}
+		
+		public String getManagerName(){
+			return this.managerName;
+		}
+
+		@Override 
+		public boolean equals( Object target){
+			return super.equals(target);
+		}
+		@Override 
+		public int hashCode(){
+			return super.hashCode();
+		}
+
 	}
 }

@@ -11,8 +11,6 @@ package com.clustercontrol.performance.session;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -43,6 +41,8 @@ import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
 import com.clustercontrol.repository.model.CollectorSubPlatformMstEntity;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * 収集項目マスタ情報を制御するSession Bean <BR>
@@ -298,9 +298,10 @@ public class PerformanceCollectMasterControllerBean {
 	 * @return 登録に成功した場合、true
 	 * @throws HinemosUnknown
 	 */
-	public boolean addCollectPlatformMaster(CollectorPlatformMstData data) throws HinemosUnknown {
+	public List<CollectorPlatformMstData> addCollectPlatformMaster(CollectorPlatformMstData data) throws HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
+		List<CollectorPlatformMstData> retCollectorPlatformMstData = new ArrayList<>();
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
@@ -321,12 +322,13 @@ public class PerformanceCollectMasterControllerBean {
 			repositoryControllerBean.addScope(osParentFacilityId, scopeInfo, data.getOrderNo());
 
 			jtm.commit();
+			retCollectorPlatformMstData = getCollectPlatformMaster();
 		}catch(EntityExistsException e){
 			// プラットフォーム情報の追加に失敗した場合。
 			// 既にあるものは残したままで追加させるロジックのため、ロールバックはせず追加できなかったことをフラグで示す。
 			if (jtm != null)
 				jtm.rollback();
-			return false;
+			return retCollectorPlatformMstData;
 		}catch(Exception e){
 			m_log.warn("addCollectPlatformMaster() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -338,7 +340,7 @@ public class PerformanceCollectMasterControllerBean {
 				jtm.close();
 		}
 
-		return true;
+		return retCollectorPlatformMstData;
 
 	}
 
@@ -349,9 +351,10 @@ public class PerformanceCollectMasterControllerBean {
 	 * @return 登録に成功した場合、true
 	 * @throws HinemosUnknown
 	 */
-	public boolean addCollectSubPlatformMaster(CollectorSubPlatformMstData data) throws HinemosUnknown {
+	public List<CollectorSubPlatformMstData> addCollectSubPlatformMaster(CollectorSubPlatformMstData data) throws HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
+		List<CollectorSubPlatformMstData> retCollectorSubPlatformMstData = new ArrayList<>();
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
@@ -360,12 +363,13 @@ public class PerformanceCollectMasterControllerBean {
 			new RepositoryControllerBean().addCollectorSubPlatformMst(data);
 
 			jtm.commit();
+			retCollectorSubPlatformMstData = getCollectSubPlatformMaster();
 		}catch(EntityExistsException e){
 			// サブプラットフォーム情報の追加に失敗した場合。
 			// 既にあるものは残したままで追加させるロジックのため、ロールバックはせず追加できなかったことをフラグで示す。
 			if (jtm != null)
 				jtm.rollback();
-			return false;
+			return retCollectorSubPlatformMstData;
 		}catch(Exception e){
 			m_log.warn("addCollectSubPlatformMaster() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -377,7 +381,7 @@ public class PerformanceCollectMasterControllerBean {
 				jtm.close();
 		}
 
-		return true;
+		return retCollectorSubPlatformMstData;
 
 	}
 
@@ -387,9 +391,11 @@ public class PerformanceCollectMasterControllerBean {
 	 * @return 登録に成功した場合、true
 	 * @throws HinemosUnknown
 	 */
-	public boolean addCollectMaster(CollectMasterInfo collectMasterInfo) throws HinemosUnknown {
+	public CollectMasterInfo addCollectMaster(CollectMasterInfo collectMasterInfo) throws HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		boolean rtnFlg = true;
+		//findbugs対応 インスタンスではなく nullで初期化とする
+		CollectMasterInfo retCollectMasterInfo = null;
 
 		try {
 			jtm = new JpaTransactionManager();
@@ -421,6 +427,7 @@ public class PerformanceCollectMasterControllerBean {
 			}
 
 			jtm.commit();
+			retCollectMasterInfo = getCollectMasterInfo();
 		} catch (HinemosUnknown e) {
 			jtm.rollback();
 			rtnFlg = false;
@@ -437,7 +444,7 @@ public class PerformanceCollectMasterControllerBean {
 				jtm.close();
 		}
 
-		return rtnFlg;
+		return retCollectMasterInfo;
 	}
 
 	/**
@@ -895,28 +902,30 @@ public class PerformanceCollectMasterControllerBean {
 	/**
 	 * プラットフォーム定義を削除します。
 	 * 
-	 * @param platformId プラットフォームID
+	 * @param platformIdList プラットフォームID
 	 * @return 削除に成功した場合、true
+	 * @throws FacilityNotFound
 	 * @throws HinemosUnknown
 	 */
-	public boolean deleteCollectPlatformMaster(String platformId) throws HinemosUnknown {
+	public List<String> deleteCollectPlatformMaster(List<String> platformIdList) throws FacilityNotFound, HinemosUnknown {
 		JpaTransactionManager jtm = null;
-
+		
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
+			for(String platformId : platformIdList) {
 			// プラットフォーム定義情報を登録
-			RepositoryControllerBean repositoryControllerBean = new RepositoryControllerBean();
-			repositoryControllerBean.deleteCollectorPratformMst(platformId);
-			repositoryControllerBean.deleteScope(new String[] {platformId});
+				RepositoryControllerBean repositoryControllerBean = new RepositoryControllerBean();
+				repositoryControllerBean.deleteCollectorPratformMst(platformId);
+				repositoryControllerBean.deleteScope(new String[] {platformId});
+			}
 
 			jtm.commit();
-		}catch(FacilityNotFound e){
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
-		}catch(HinemosUnknown e){
-			jtm.rollback();
+		}catch(FacilityNotFound | HinemosUnknown e){
+			if (jtm != null) {
+				jtm.rollback();
+			}
 			throw e;
 		}catch(Exception e){
 			m_log.warn("deleteCollectPlatformMaster() : "
@@ -929,33 +938,35 @@ public class PerformanceCollectMasterControllerBean {
 				jtm.close();
 		}
 
-		return true;
+		return platformIdList;
 
 	}
 
 	/**
 	 * サブプラットフォーム定義を削除します。
 	 * 
-	 * @param subPlatformId サブプラットフォームID
+	 * @param subPlatformIdListList サブプラットフォームID
 	 * @return 削除に成功した場合、true
+	 * @throws FacilityNotFound
 	 * @throws HinemosUnknown
 	 */
-	public boolean deleteCollectSubPlatformMaster(String subPlatformId) throws HinemosUnknown {
+	public List<String> deleteCollectSubPlatformMaster(List<String> subPlatformIdList) throws FacilityNotFound, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
+			for(String subPlatformId : subPlatformIdList) {
 			// サブプラットフォーム定義情報を登録
-			new RepositoryControllerBean().deleteCollectorSubPratformMst(subPlatformId);
+				new RepositoryControllerBean().deleteCollectorSubPratformMst(subPlatformId);
+			}
 
 			jtm.commit();
-		}catch(FacilityNotFound e){
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
-		}catch(HinemosUnknown e){
-			jtm.rollback();
+		}catch(FacilityNotFound | HinemosUnknown e){
+			if (jtm != null) {
+				jtm.rollback();
+			}
 			throw e;
 		}catch(Exception e){
 			m_log.warn("deleteCollectSubPlatformMaster() : "
@@ -968,7 +979,7 @@ public class PerformanceCollectMasterControllerBean {
 				jtm.close();
 		}
 
-		return true;
+		return subPlatformIdList;
 
 	}
 
@@ -978,7 +989,7 @@ public class PerformanceCollectMasterControllerBean {
 	 * @return 削除に成功した場合、true
 	 * @throws HinemosUnknown
 	 */
-	public boolean deleteCollectMasterAll() throws HinemosUnknown {
+	public CollectMasterInfo deleteCollectMasterAll() throws HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		// 収集項目に関連する全てのマスタ情報を削除
@@ -990,6 +1001,8 @@ public class PerformanceCollectMasterControllerBean {
 		OperateCollectCalcMaster opeCalc = new OperateCollectCalcMaster();
 
 		boolean ret = false;
+		//findbugs 対応 インスタンスではなく nullで初期化とする
+		CollectMasterInfo retCollectMasterInfo = null;
 
 		try{
 			jtm = new JpaTransactionManager();
@@ -998,6 +1011,7 @@ public class PerformanceCollectMasterControllerBean {
 			ret = opeCategoryCollect.deleteAll() && opePolling.deleteAll() && opeItemCalc.deleteAll() && opeItemCode.deleteAll() && opeCategory.deleteAll() && opeCalc.deleteAll();
 
 			jtm.commit();
+			retCollectMasterInfo = getCollectMasterInfo();
 		}catch(Exception e){
 			m_log.warn("deleteCollectMasterAll() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -1009,7 +1023,7 @@ public class PerformanceCollectMasterControllerBean {
 				jtm.close();
 		}
 
-		return ret;
+		return retCollectMasterInfo;
 
 	}
 

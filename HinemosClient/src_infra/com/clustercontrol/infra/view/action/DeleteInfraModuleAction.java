@@ -26,22 +26,28 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.CommandModuleInfoResponse;
+import org.openapitools.client.model.FileTransferModuleInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.ModifyInfraManagementRequest;
+import org.openapitools.client.model.ReferManagementModuleInfoResponse;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementDuplicate;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NotifyDuplicate;
+import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.action.GetInfraModuleTableDefine;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraDtoConverter;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.InfraModuleView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraManagementDuplicate_Exception;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleInfo;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidSetting_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyDuplicate_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 public class DeleteInfraModuleAction extends AbstractHandler implements IElementUpdater {
 	// ログ
@@ -98,56 +104,107 @@ public class DeleteInfraModuleAction extends AbstractHandler implements IElement
 			strModuleIds.setLength(strModuleIds.length() - 2);
 		}
 
-		InfraManagementInfo info = null;
+		InfraManagementInfoResponse info = null;
+		String managerName = infraModuleView.getComposite().getManagerName();
 		try {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper
-					.getWrapper(infraModuleView.getComposite().getManagerName());
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper
+					.getWrapper(managerName);
 			info = wrapper.getInfraManagement(infraModuleView.getComposite().getManagementId());
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | InfraManagementNotFound
+				| InvalidSetting e) {
 			m_log.debug("execute getInfraManagement, " + e.getMessage());
 		}
 
-		List<InfraModuleInfo> tmpDeleteList = new ArrayList<InfraModuleInfo>();
-		if(info != null && info.getModuleList() != null){
+		List<CommandModuleInfoResponse> cmdList = null;
+		if (info != null) { // findbugs対応 nullチェック追加
+			cmdList = info.getCommandModuleInfoList();
+		}
+		List<CommandModuleInfoResponse> cmdDeleteList = new ArrayList<>();
+		if(info != null && cmdList != null){
 			for(String moduleId: moduleIds){
-				for(InfraModuleInfo module: info.getModuleList()){
+				for(CommandModuleInfoResponse module: cmdList){
 					if(module.getModuleId().equals(moduleId)){
-						tmpDeleteList.add(module);
+						cmdDeleteList.add(module);
 						break;
 					}
 				}
 			}
-
-			info.getModuleList().removeAll(tmpDeleteList);
-
+			cmdList.removeAll(cmdDeleteList);
+		}
+		
+		List<FileTransferModuleInfoResponse> fileList = null;
+		if (info != null) { // findbugs対応 nullチェック追加
+			fileList = info.getFileTransferModuleInfoList();
+		}
+		List<FileTransferModuleInfoResponse> fileDeleteList = new ArrayList<>();
+		if(info != null && fileList != null){
+			for(String moduleId: moduleIds){
+				for(FileTransferModuleInfoResponse module: fileList){
+					if(module.getModuleId().equals(moduleId)){
+						fileDeleteList.add(module);
+						break;
+					}
+				}
+			}
+			fileList.removeAll(fileDeleteList);
+		}
+		
+		List<ReferManagementModuleInfoResponse> referList = null;
+		if (info != null) { // findbugs対応 nullチェック追加
+			referList = info.getReferManagementModuleInfoList();
+		}
+		List<ReferManagementModuleInfoResponse> referDeleteList = new ArrayList<>();
+		if(info != null && fileList != null){
+			for(String moduleId: moduleIds){
+				for(ReferManagementModuleInfoResponse module: referList){
+					if(module.getModuleId().equals(moduleId)){
+						referDeleteList.add(module);
+						break;
+					}
+				}
+			}
+			referList.removeAll(referDeleteList);
+		}
+		
+		if(!cmdDeleteList.isEmpty() || !fileDeleteList.isEmpty() || !referDeleteList.isEmpty()) {
 			if (MessageDialog.openConfirm(
 					null,
 					Messages.getString("confirmed"),
 					Messages.getString("message.infra.confirm.action", new Object[]{Messages.getString("infra.module"), Messages.getString("delete"), strModuleIds})))
 			{
 				try {
-					InfraEndpointWrapper wrapper = InfraEndpointWrapper
-							.getWrapper(infraModuleView.getComposite().getManagerName());
-					wrapper.modifyInfraManagement(info);
+					InfraRestClientWrapper wrapper = InfraRestClientWrapper
+							.getWrapper(managerName);
+					String managementId = info.getManagementId();
+					ModifyInfraManagementRequest dtoReq = new ModifyInfraManagementRequest();
+					RestClientBeanUtil.convertBean(info, dtoReq);
+					InfraDtoConverter.convertInfoToDto(info, dtoReq);
+					wrapper.modifyInfraManagement(managementId, dtoReq);
 					MessageDialog.openInformation(null, Messages
 							.getString("successful"), Messages.getString(
 									"message.infra.action.result",
 									new Object[] {
 											Messages.getString("infra.module"),
-											Messages.getString("delete") + "(" + infraModuleView.getComposite().getManagerName() +")",
+											Messages.getString("delete") + "(" + managerName +")",
 											Messages.getString("successful"),
 											strModuleIds }));
-				} catch (InvalidRole_Exception e) {
+				} catch (InvalidRole e) {
 					// 権限なし
-					MessageDialog.openError(null, Messages.getString("failed"), Messages.getString("message.accesscontrol.16"));
+					MessageDialog.openError(null, Messages.getString("failed"), 
+							Messages.getString("message.accesscontrol.16") + "(" + managerName +")");
 					return null;
-				} catch (HinemosUnknown_Exception | InvalidUserPass_Exception | InvalidSetting_Exception | NotifyDuplicate_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception | InfraManagementDuplicate_Exception e) {
+				} catch (RestConnectFailed | NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidUserPass
+						| InvalidSetting | InfraManagementNotFound | InfraManagementDuplicate e) {
 					m_log.debug("execute modifyInfraManagement, " + e.getMessage());
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
-							Messages.getString("message.infra.action.result", new Object[]{Messages.getString("infra.modlue"), 
-									Messages.getString("delete"), Messages.getString("failed"), HinemosMessage.replace(e.getMessage())}));
+							Messages.getString("message.infra.action.result", 
+									new Object[]{
+											Messages.getString("infra.module"), 
+											Messages.getString("delete"), 
+											Messages.getString("failed"), 
+											managerName + " : " + HinemosMessage.replace(e.getMessage())}));
 					return null;
 				}
 

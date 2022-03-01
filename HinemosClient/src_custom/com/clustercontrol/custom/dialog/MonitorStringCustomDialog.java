@@ -29,28 +29,31 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.AddCustomStringMonitorRequest;
+import org.openapitools.client.model.CustomCheckInfoRequest;
+import org.openapitools.client.model.CustomCheckInfoResponse;
+import org.openapitools.client.model.MonitorStringValueInfoRequest;
+import org.openapitools.client.model.ModifyCustomStringMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.composite.TextWithParameterComposite;
 import com.clustercontrol.dialog.ScopeTreeDialog;
-import com.clustercontrol.monitor.bean.ConvertValueConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorStringDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.notify.bean.PriChangeFailSelectTypeConstant;
+import com.clustercontrol.notify.bean.PriChangeJudgeSelectTypeConstant;
 import com.clustercontrol.repository.FacilityPath;
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.CommandExecType;
-import com.clustercontrol.ws.monitor.CustomCheckInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * コマンド監視(文字列)の設定ダイアログクラス<br/>
@@ -86,6 +89,8 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 	public MonitorStringCustomDialog(Shell parent) {
 		super(parent, null);
 		logLineFlag = true;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
+		this.priorityChangeFailSelect = PriChangeFailSelectTypeConstant.TYPE_GET;
 	}
 
 	/**
@@ -102,6 +107,8 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 		this.managerName = managerName;
 		this.monitorId = monitorId;
 		this.updateFlg = updateFlg;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
+		this.priorityChangeFailSelect = PriChangeFailSelectTypeConstant.TYPE_GET;
 	}
 
 	/**
@@ -188,10 +195,10 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 				ScopeTreeDialog dialog = new ScopeTreeDialog(shell, managerName, getMonitorBasicScope().getOwnerRoleId(), false, false);
 				dialog.setSelectNodeOnly(true);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem item = dialog.getSelectItem();
-					FacilityInfo info = item.getData();
+					FacilityTreeItemResponse item = dialog.getSelectItem();
+					FacilityInfoResponse info = item.getData();
 					nodeFacilityId = info.getFacilityId();
-					if (info.getFacilityType() == FacilityConstant.TYPE_NODE) {
+					if (info.getFacilityType() == FacilityInfoResponse.FacilityTypeEnum.NODE) {
 						textNode.setText(info.getFacilityName());
 					} else {
 						FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
@@ -348,17 +355,17 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if (this.monitorId == null) {
 			// 新規作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getMonitor(this.monitorId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -423,15 +430,15 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 	 *			設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
 
 		// 監視条件コマンド監視情報
-		CustomCheckInfo customInfo = monitor.getCustomCheckInfo();
+		CustomCheckInfoResponse customInfo = monitor.getCustomCheckInfo();
 		if (customInfo == null) {
-			customInfo = new CustomCheckInfo();
+			customInfo = new CustomCheckInfoResponse();
 			customInfo.setTimeout(TIMEOUT_SEC_COMMAND);
 			this.checkSelected.setSelection(false);
 			this.textNode.setEnabled(false);
@@ -440,7 +447,7 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 			this.buttonSpecifyUser.setSelection(false);
 			this.textEffectiveUser.setEnabled(false);
 		} else {
-			if (customInfo.getCommandExecType() == CommandExecType.INDIVIDUAL) {
+			if (customInfo.getCommandExecTypeCode() == CustomCheckInfoResponse.CommandExecTypeCodeEnum.INDIVIDUAL) {
 				this.checkSelected.setSelection(false);
 			} else {
 				this.checkSelected.setSelection(true);
@@ -449,9 +456,9 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 				String facilityPath = null;
 				String managerName = this.getManagerName();
 				try {
-					RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-					facilityPath = wrapper.getFacilityPath(this.nodeFacilityId, null);
-				} catch (com.clustercontrol.ws.repository.InvalidRole_Exception e) {
+					RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+					facilityPath = wrapper.getFacilityPath(this.nodeFacilityId, null).getFacilityPath();
+				} catch (InvalidRole e) {
 					// アクセス権が付与されていないことを通知する
 					MessageDialog.openInformation(
 							null,
@@ -467,7 +474,7 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 				}
 				this.textNode.setText(facilityPath);
 			}
-			if (customInfo.isSpecifyUser().booleanValue()) {
+			if (customInfo.getSpecifyUser().booleanValue()) {
 				this.buttonAgentUser.setSelection(false);
 				this.buttonSpecifyUser.setSelection(true);
 				this.textEffectiveUser.setEnabled(true);
@@ -490,9 +497,9 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		// Local Variables
-		CustomCheckInfo customInfo = null;
+		CustomCheckInfoResponse customInfo = null;
 
 		// MAIN
 		super.createInputData();
@@ -500,22 +507,17 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 			return null;
 		}
 
-		// コマンド監視設置
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_CUSTOM_S);
-
 		// 監視条件コマンド監視情報
-		customInfo = new CustomCheckInfo();
+		customInfo = new CustomCheckInfoResponse();
 		customInfo.setTimeout(TIMEOUT_SEC_COMMAND);
-		customInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_CUSTOM_S);
-		customInfo.setConvertFlg(ConvertValueConstant.TYPE_NO);
-		customInfo.setMonitorId(monitorInfo.getMonitorId());
+		customInfo.setConvertFlg(CustomCheckInfoResponse.ConvertFlgEnum.NONE);
 		monitorInfo.setCustomCheckInfo(customInfo);
 
 		// コマンド実行種別の格納
 		if (! this.checkSelected.getSelection()) {
-			customInfo.setCommandExecType(CommandExecType.INDIVIDUAL);
+			customInfo.setCommandExecTypeCode(CustomCheckInfoResponse.CommandExecTypeCodeEnum.INDIVIDUAL);
 		} else {
-			customInfo.setCommandExecType(CommandExecType.SELECTED);
+			customInfo.setCommandExecTypeCode(CustomCheckInfoResponse.CommandExecTypeCodeEnum.SELECTED);
 			customInfo.setSelectedFacilityId(nodeFacilityId);
 		}
 
@@ -537,9 +539,6 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 			this.setValidateResult(Messages.getString("message.hinemos.1"),Messages.getString("message.monitor.custom.msg.timeout.invalid"));
 			return null;
 		}
-
-		// システムログ監視（文字列）固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_CUSTOM_S);
 
 		// 結果判定の定義
 		validateResult = m_stringValueInfo.createInputData(monitorInfo);
@@ -572,30 +571,37 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-		if (info != null) {
-			String[] args = { info.getMonitorId(), managerName };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+		if (this.inputData != null) {
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if (!this.updateFlg) {
 				// 新規作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if (result) {
-						// 登録が成功したことを通知する
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						// 登録が失敗したことを通知する
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddCustomStringMonitorRequest info = new AddCustomStringMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddCustomStringMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getCustomCheckInfo() != null && this.inputData.getCustomCheckInfo() != null) {
+						info.getCustomCheckInfo().setCommandExecTypeCode(
+								CustomCheckInfoRequest.CommandExecTypeCodeEnum.fromValue(
+										this.inputData.getCustomCheckInfo().getCommandExecTypeCode().getValue()));
+						info.getCustomCheckInfo().setConvertFlg(
+								CustomCheckInfoRequest.ConvertFlgEnum.fromValue(
+										this.inputData.getCustomCheckInfo().getConvertFlg().getValue()));
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.addCustomStringMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorDuplicate e) {
 					// 重複する監視項目IDが存在することを通知する
 					MessageDialog.openInformation(
 							null,
@@ -603,7 +609,7 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 							Messages.getString("message.monitor.53", args));
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権が付与されていないことを通知する
 						MessageDialog.openInformation(
 								null,
@@ -621,33 +627,46 @@ public class MonitorStringCustomDialog extends CommonMonitorStringDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権が付与されていないことを通知する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if (result) {
-					// 更新が成功したことを通知する
+					ModifyCustomStringMonitorRequest info = new ModifyCustomStringMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyCustomStringMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getCustomCheckInfo() != null && this.inputData.getCustomCheckInfo() != null) {
+						info.getCustomCheckInfo().setCommandExecTypeCode(
+								CustomCheckInfoRequest.CommandExecTypeCodeEnum.fromValue(
+										this.inputData.getCustomCheckInfo().getCommandExecTypeCode().getValue()));
+						info.getCustomCheckInfo().setConvertFlg(
+								CustomCheckInfoRequest.ConvertFlgEnum.fromValue(
+										this.inputData.getCustomCheckInfo().getConvertFlg().getValue()));
+					}
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.modifyCustomStringMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
-					// 更新が失敗したことを通知する
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
 							Messages.getString("message.monitor.36", args) + errMessage);
 				}
-
 			}
 		}
 

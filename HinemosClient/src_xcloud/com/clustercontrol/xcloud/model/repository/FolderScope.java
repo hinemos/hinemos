@@ -7,6 +7,7 @@
  */
 package com.clustercontrol.xcloud.model.repository;
 
+import org.openapitools.client.model.HFacilityResponse;
 
 public class FolderScope extends Scope implements IFolderScope {
 	private String folderType;
@@ -19,13 +20,13 @@ public class FolderScope extends Scope implements IFolderScope {
 		this.folderType = folderType;
 	}
 
-	public static FolderScope convert(com.clustercontrol.ws.xcloud.HFolder source) {
+	public static FolderScope convert(HFacilityResponse source) {
 		FolderScope scope = new FolderScope();
 		scope.update(source);
 		return scope;
 	}
 	
-	protected void update(com.clustercontrol.ws.xcloud.HFolder folder) {
+	protected void update(HFacilityResponse folder) {
 		super.update(folder);
 		setFolderType(folder.getFolderType());
 	}

@@ -22,12 +22,13 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.ReportingScheduleResponse;
+import org.openapitools.client.model.ReportingScheduleResponse.OutputPeriodTypeEnum;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.composite.action.ComboModifyListener;
 import com.clustercontrol.composite.action.NumberKeyListener;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.reporting.ReportingInfo;
 
 /**
  * レポーティング出力期間コンポジットクラス<BR>
@@ -552,11 +553,11 @@ public class OutputPeriodComposite extends Composite {
 	 * @param info
 	 *            レポーティング情報
 	 */
-	public void reflectReportingInfo(ReportingInfo info) {
+	public void reflectReportingSchedule(ReportingScheduleResponse info) {
 		DecimalFormat format = new DecimalFormat("0");
 
 		if (info != null) {
-			if (info.getOutputPeriodType() == OUTPUT_PERIOD_TYPE_DAY) {
+			if (info.getOutputPeriodType() == OutputPeriodTypeEnum.DAY) {
 				m_comboPeriodDayBefore.select(0);
 				for (int i = 0; i < m_comboPeriodDayBefore.getItemCount(); i++) {
 					if (info.getOutputPeriodBefore() == null) {
@@ -590,7 +591,7 @@ public class OutputPeriodComposite extends Composite {
 				m_comboPeriodYearBefore.setEnabled(false);
 				m_comboPeriodYearFor.setEnabled(false);
 
-			} else if (info.getOutputPeriodType() == OUTPUT_PERIOD_TYPE_MONTH) {
+			} else if (info.getOutputPeriodType() == OutputPeriodTypeEnum.MONTH) {
 				m_comboPeriodMonthBefore.select(0);
 				for (int i = 0; i < m_comboPeriodMonthBefore.getItemCount(); i++) {
 					if (info.getOutputPeriodBefore() == null) {
@@ -625,7 +626,7 @@ public class OutputPeriodComposite extends Composite {
 				m_comboPeriodYearBefore.setEnabled(false);
 				m_comboPeriodYearFor.setEnabled(false);
 
-			} else if (info.getOutputPeriodType() == OUTPUT_PERIOD_TYPE_YEAR) {
+			} else if (info.getOutputPeriodType() == OutputPeriodTypeEnum.YEAR) {
 				m_comboPeriodYearBefore.select(0);
 				for (int i = 0; i < m_comboPeriodYearBefore.getItemCount(); i++) {
 					if (info.getOutputPeriodBefore() == null) {
@@ -684,14 +685,14 @@ public class OutputPeriodComposite extends Composite {
 	 * 
 	 * @return 出力期間タイプ
 	 */
-	public Integer getOutputPeriodType() {
+	public OutputPeriodTypeEnum getOutputPeriodType() {
 		if (m_typePeriodDay.getSelection()) {
 
-			return OUTPUT_PERIOD_TYPE_DAY;
+			return OutputPeriodTypeEnum.DAY;
 		} else if (m_typePeriodMonth.getSelection()) {
-			return OUTPUT_PERIOD_TYPE_MONTH;
+			return OutputPeriodTypeEnum.MONTH;
 		} else if (m_typePeriodYear.getSelection()) {
-			return OUTPUT_PERIOD_TYPE_YEAR;
+			return OutputPeriodTypeEnum.YEAR;
 		} else {
 			return null;
 		}

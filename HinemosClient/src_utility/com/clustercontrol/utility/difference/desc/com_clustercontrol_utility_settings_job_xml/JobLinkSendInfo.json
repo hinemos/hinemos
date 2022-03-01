@@ -1,0 +1,104 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"joblinkSendSettingId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_ownerRoleId"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_description"}
+	]},
+
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_facilityId"}
+	]},
+
+	{
+	"propName":"processMode",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_processMode"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_all_nodes"},
+				{"value":"1", "name":"name_either_nodes"}
+			]
+		}
+	]},
+
+	{
+	"propName":"protocol",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_protocol"},
+		{"type":"Translate",
+			"values":[
+				{"value":"http", "name":"name_http"},
+				{"value":"https", "name":"name_https"}
+			]
+		}
+	]},
+
+	{
+	"propName":"port",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_port"}
+	]},
+
+	{
+	"propName":"hinemosUserId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_hinemosUserId"}
+	]},
+
+	{
+	"propName":"hinemosPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_hinemosPassword"}
+	]},
+
+	{
+	"propName":"proxyFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_proxyFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+
+	{
+	"propName":"proxyHost",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_proxyHost"}
+	]},
+
+	{
+	"propName":"proxyPort",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_proxyPort"}
+	]},
+
+	{
+	"propName":"proxyUser",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_proxyUser"}
+	]},
+
+	{
+	"propName":"proxyPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkSendInfo_proxyPassword"}
+	]}
+
+]
+}

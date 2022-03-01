@@ -14,7 +14,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,16 +26,17 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javax.persistence.EntityExistsException;
-import javax.persistence.NoResultException;
-import javax.persistence.NonUniqueResultException;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.NonUniqueResultException;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.collect.bean.Sample;
 import com.clustercontrol.collect.util.CollectDataUtil;
@@ -48,6 +48,7 @@ import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.monitor.plugin.model.MonitorPluginStringInfo;
 import com.clustercontrol.monitor.plugin.model.PluginCheckInfo;
 import com.clustercontrol.monitor.plugin.util.QueryUtil;
@@ -59,6 +60,7 @@ import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorJudgementInfo;
 import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil;
 import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil.CollectMonitorDataInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
@@ -79,8 +81,6 @@ import com.clustercontrol.xcloud.persistence.PersistenceUtil.TransactionScope;
 import com.clustercontrol.xcloud.util.CloudMessageUtil;
 import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.util.RepositoryControllerBeanWrapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 /**
  * クラウド課金詳細監視
@@ -89,7 +89,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 	/** ログ出力のインスタンス。 */
 	private static Log logger = LogFactory.getLog( CloudServiceBillingDetailRunMonitor.class );
 
-	public static final String monitorTypeId = "MON_CLOUD_SERVICE_BILLING_DETAIL";
+	public static final String monitorTypeId = HinemosModuleConstant.MONITOR_CLOUD_SERVICE_BILLING_DETAIL;
 	public static final int monitorType = MonitorTypeConstant.TYPE_NUMERIC;
 	public static final String STRING_CLOUD_SERVICE_BILLING_DETAIL = CloudMessageConstant.CLOUDSERVICE_BILLING_DETAIL_MONITOR.getMessage();
 	
@@ -174,7 +174,6 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 				HinemosSessionContext.instance().setProperty(HinemosSessionContext.IS_ADMINISTRATOR, new AccessControllerBean().isAdministrator());
 			} catch(Exception e) {
 				notifyException("", e);
-				collectErrorSample("", CloudUtil.Priority.FAILURE.type);
 				throw new HinemosUnknown(e);
 			}
 			
@@ -195,7 +194,6 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 				
 				String message = CloudMessageConstant.BILLINGALARM_NOTIFY_UNKNOWN_FACILITY_TYPE.getMessage(m_monitorId, facilityType);
 				notifyError(CloudUtil.Priority.FAILURE, null, message);
-				collectErrorSample(null, CollectedDataErrorTypeConstant.UNKNOWN);
 				throw new HinemosUnknown(message);
 			}
 			
@@ -204,12 +202,11 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 				
 				String message = CloudMessageConstant.BILLINGALARM_NOTIFY_UNKNOWN_KIND_TYPE.getMessage(m_monitorId, monitorKind);
 				notifyError(CloudUtil.Priority.FAILURE, null, message);
-				collectErrorSample(null, CollectedDataErrorTypeConstant.UNKNOWN);
 				throw new HinemosUnknown(message);
 			}
 
 			try (TransactionScope ts = new TransactionScope()) {
-				logger.debug("start checking" + m_monitorId + ".");
+				logger.debug("start checking : " + m_monitorId + ".");
 
 				// NotifyGroupId が無いと無効。スキップして処理継続。
 				if (m_monitor.getNotifyGroupId() == null || m_monitor.getNotifyGroupId().isEmpty()) {
@@ -244,11 +241,6 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 					if (m_monitor.getMonitorFlg())
 						notifyUnknown(m_monitor, e);
 					
-					if (m_monitor.getCollectorFlg()) {
-						Sample sample = new Sample(m_now, m_monitorId);
-						sample.set(m_facilityId, m_monitor.getItemName(), 0d, CollectedDataErrorTypeConstant.UNKNOWN);
-						CollectDataUtil.put(Arrays.asList(sample));
-					}
 					throw new HinemosUnknown(e);
 				}
 
@@ -258,6 +250,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 				switch (monitorKind) {
 				case sum:
 					{
+						logger.debug("case sum start : " + m_monitorId + ".");
 						// 月初の時刻を作成。
 						Calendar beginning = Calendar.getInstance();
 						beginning.setTime(m_now);
@@ -274,15 +267,28 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 							facilityIds.addAll(scopeIds);
 							
 							// 月初以降でノードに紐づいている観測データを取得。
-							TypedQuery<BillingDetailRelationEntity> query = em.createNamedQuery(BillingDetailRelationEntity.selectBillingDetailRelationEntityAfter, BillingDetailRelationEntity.class);
-							query.setParameter("facilityIds", facilityIds);
-							query.setParameter("beginningTime", beginningTime);
-							
+							List<BillingDetailRelationEntity> billingDetails = new ArrayList<>();
+							int start_idx = 0;
+							int end_idx = 0;
 							String unit = null;
 							double cost = 0;
 							Set<String> set = new LinkedHashSet<>();
 							try {
-								List<BillingDetailRelationEntity> billingDetails = query.getResultList();
+								while(start_idx < facilityIds.size()){
+									TypedQuery<BillingDetailRelationEntity> query = em.createNamedQuery(BillingDetailRelationEntity.selectBillingDetailRelationEntityAfter, BillingDetailRelationEntity.class);
+									query.setParameter("beginningTime", beginningTime);
+									
+									end_idx = start_idx + CloudUtil.SQL_PARAM_NUMBER_THRESHOLD;
+									if (end_idx > facilityIds.size()){
+										end_idx = facilityIds.size();
+									}
+									
+									List<String> subList = facilityIds.subList(start_idx, end_idx);
+									query.setParameter("facilityIds", subList);
+									billingDetails.addAll(query.getResultList());
+									start_idx = end_idx;
+								}
+
 								for(BillingDetailRelationEntity r: billingDetails){
 									unit = r.getBillingDetail().getUnit();
 									cost += r.getBillingDetail().getCost();
@@ -328,7 +334,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 								}
 								
 								if (m_monitor.getCollectorFlg()) {
-									Sample sample = new Sample(m_now, m_monitorId);
+									Sample sample = new Sample(HinemosTime.getDateInstance(), m_monitorId);
 									sample.set(m_facilityId, m_monitor.getItemName(), cost, 
 											average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
 									CollectDataUtil.put(Arrays.asList(sample));
@@ -338,13 +344,26 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 							Map<String, Double> costs = new HashMap<>();
 							Map<String, Set<String>> resouceLists = new HashMap<>();
 							String unit = null;
+							List<BillingDetailRelationEntity> billingDetails = new ArrayList<>();
+							int start_idx = 0;
+							int end_idx = 0;
 							if (!nodeIds.isEmpty()) {
-								TypedQuery<BillingDetailRelationEntity> query = em.createNamedQuery(BillingDetailRelationEntity.selectBillingDetailRelationEntityAfter, BillingDetailRelationEntity.class);
-								query.setParameter("facilityIds", nodeIds);
-								query.setParameter("beginningTime", beginningTime);
-								
 								try {
-									List<BillingDetailRelationEntity> billingDetails = query.getResultList();
+									while(start_idx < nodeIds.size()){
+										TypedQuery<BillingDetailRelationEntity> query = em.createNamedQuery(BillingDetailRelationEntity.selectBillingDetailRelationEntityAfter, BillingDetailRelationEntity.class);
+										query.setParameter("beginningTime", beginningTime);
+										query.setParameter("facilityIds", nodeIds);
+										
+										end_idx = start_idx + CloudUtil.SQL_PARAM_NUMBER_THRESHOLD;
+										if (end_idx > nodeIds.size()){
+											end_idx = nodeIds.size();
+										}
+										
+										List<String> subList = nodeIds.subList(start_idx, end_idx);
+										query.setParameter("facilityIds", subList);
+										billingDetails.addAll(query.getResultList());
+										start_idx = end_idx;
+									}
 									for (BillingDetailRelationEntity r: billingDetails) {
 										unit = r.getBillingDetail().getUnit();
 										if (r.getBillingDetail().getCost() == null) {
@@ -379,7 +398,6 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 							if (m_monitor.getCollectorFlg() 
 									|| m_monitor.getPredictionFlg() 
 									|| m_monitor.getChangeFlg()) {
-								Sample sample = new Sample(m_now, m_monitorId);
 								for (Map.Entry<String, Double> entry: costs.entrySet()) {
 
 									// 将来予測監視、変化量監視の処理を行う
@@ -407,12 +425,11 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 										standardDeviation = collectMonitorDataInfo.getStandardDeviation();
 									}
 									if (m_monitor.getCollectorFlg()) {
+										Sample sample = new Sample(HinemosTime.getDateInstance(), m_monitorId);
 										sample.set(entry.getKey(), m_monitor.getItemName(), entry.getValue(), 
 												average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
+										CollectDataUtil.put(Arrays.asList(sample));
 									}
-								}
-								if (m_monitor.getCollectorFlg()) {
-									CollectDataUtil.put(Arrays.asList(sample));
 								}
 							}
 						}
@@ -420,9 +437,11 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 					break;
 				case delta:
 					{
+						logger.debug("case delta start : " + m_monitorId + ".");
 						List<CloudScopeEntity> cloudScopes = PersistenceUtil.findAll(em, CloudScopeEntity.class);
 						if (cloudScopes.isEmpty()) {
 							// アカウントリソースがない場合は、スキップ。
+							logger.debug("Nothing resources : " + m_monitorId + " is skip.");
 							return ret;
 						}
 						
@@ -460,6 +479,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 						
 						// 監視対象となるクラウドスコープがないので監視終了
 						if (minNotifiedDate == null) {
+							logger.debug("Nothing scope : " + m_monitorId + " is skip.");
 							return ret;
 						}
 						
@@ -511,16 +531,30 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 						i.setTime(start.getTime());
 
 						if (PER_SCOPE.equals(facilityType)) {
+							logger.debug("case delta scope start : " + m_monitorId + ".");
 							List<String> facilityIds = new ArrayList<>();
 							facilityIds.addAll(nodeIds);
 							facilityIds.addAll(scopeIds);
 							
-							TypedQuery<BillingDetailEntity> q = em.createNamedQuery(BillingDetailEntity.selectBillingDetailEntityRange, BillingDetailEntity.class);
-							q.setParameter("facilityIds", facilityIds);
-							q.setParameter("start", start.getTime().getTime());
-							q.setParameter("end", end.getTime().getTime());
+							List<BillingDetailEntity> billingDetails = new ArrayList<>();
+							int start_idx = 0;
+							int end_idx = 0;
+							while(start_idx < facilityIds.size()){
+								TypedQuery<BillingDetailEntity> q = em.createNamedQuery(BillingDetailEntity.selectBillingDetailEntityRange, BillingDetailEntity.class);
+								q.setParameter("start", start.getTime().getTime());
+								q.setParameter("end", end.getTime().getTime());
 
-							List<BillingDetailEntity> billingDetails = q.getResultList();
+								end_idx = start_idx + CloudUtil.SQL_PARAM_NUMBER_THRESHOLD;
+								if (end_idx > facilityIds.size()){
+									end_idx = facilityIds.size();
+								}
+								
+								List<String> subList = facilityIds.subList(start_idx, end_idx);
+								q.setParameter("facilityIds", subList);
+								billingDetails.addAll(q.getResultList());
+								start_idx = end_idx;
+							}
+
 							for (; i.before(end); i.add(Calendar.DAY_OF_MONTH, 1)) {
 								Set<String> set = new LinkedHashSet<>();
 								double cost = 0;
@@ -574,7 +608,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 									}
 									
 									if (m_monitor.getCollectorFlg()) {
-										Sample sample = new Sample(m_now, m_monitorId);
+										Sample sample = new Sample(HinemosTime.getDateInstance(), m_monitorId);
 										sample.set(m_facilityId, m_monitor.getItemName(), cost, 
 												average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
 										CollectDataUtil.put(Arrays.asList(sample));
@@ -582,13 +616,26 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 								}
 							}
 						} else /*if (PER_NODE.equals(facilityType)) */{
-							List<BillingDetailEntity> billingDetails = Collections.emptyList();
+							logger.debug("case delta node start : " + m_monitorId + ".");
+							List<BillingDetailEntity> billingDetails = new ArrayList<>();
 							if (!nodeIds.isEmpty()) {
-								TypedQuery<BillingDetailEntity> q = em.createNamedQuery(BillingDetailEntity.selectBillingDetailEntityRange, BillingDetailEntity.class);
-								q.setParameter("facilityIds", nodeIds);
-								q.setParameter("start", start.getTime().getTime());
-								q.setParameter("end", end.getTime().getTime());
-								billingDetails = q.getResultList();
+								int start_idx = 0;
+								int end_idx = 0;
+								while(start_idx < nodeIds.size()){
+									TypedQuery<BillingDetailEntity> q = em.createNamedQuery(BillingDetailEntity.selectBillingDetailEntityRange, BillingDetailEntity.class);
+									q.setParameter("start", start.getTime().getTime());
+									q.setParameter("end", end.getTime().getTime());
+
+									end_idx = start_idx + CloudUtil.SQL_PARAM_NUMBER_THRESHOLD;
+									if (end_idx > nodeIds.size()){
+										end_idx = nodeIds.size();
+									}
+									
+									List<String> subList = nodeIds.subList(start_idx, end_idx);
+									q.setParameter("facilityIds", subList);
+									billingDetails.addAll(q.getResultList());
+									start_idx = end_idx;
+								}
 							}
 							
 							for (; i.before(end); i.add(Calendar.DAY_OF_MONTH, 1)) {
@@ -635,7 +682,6 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 								if (m_monitor.getCollectorFlg() 
 										|| m_monitor.getPredictionFlg() 
 										|| m_monitor.getChangeFlg()) {
-									Sample sample = new Sample(m_now, m_monitorId);
 									for (Map.Entry<String, Double> entry: costs.entrySet()) {
 
 										// 将来予測監視、変化量監視の処理を行う
@@ -663,12 +709,11 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 											standardDeviation = collectMonitorDataInfo.getStandardDeviation();
 										}
 										if (m_monitor.getCollectorFlg()) {
+											Sample sample = new Sample(HinemosTime.getDateInstance(), m_monitorId);
 											sample.set(entry.getKey(), m_monitor.getItemName(), entry.getValue(), 
 													average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
+											CollectDataUtil.put(Arrays.asList(sample));
 										}
-									}
-									if (m_monitor.getCollectorFlg()) {
-										CollectDataUtil.put(Arrays.asList(sample));
 									}
 								}
 							}
@@ -730,6 +775,13 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 		return m_message;
 	}
 	
+	/**
+	 * 通知実行
+	 * 
+	 * ※ジョブ連携メッセージIDは呼び出し元で設定すること
+	 * 
+	 * @param output
+	 */
 	protected void notify(OutputBasicInfo output) {
 		// 監視結果通知
 		if (logger.isDebugEnabled()) {
@@ -755,33 +807,14 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 		String messageOrg = CloudMessageConstant.MONITOR_PLATFORM_BILLING_SERVICE_NOTIFY_ORG_UNKNOWN.getMessage(format.format(m_now.getTime()), CloudMessageUtil.getExceptionStackTrace(exception));
 		OutputBasicInfo output = CloudUtil.createOutputBasicInfoEx(CloudUtil.Priority.UNKNOWN, monitorTypeId, m_monitorId,
 				target, m_monitor.getApplication(), m_facilityId, message, messageOrg, m_now.getTime());
+		output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, monitorTypeId, m_monitorId));
 		notify(output);
 	}
 	
 	protected void notifyError(CloudUtil.Priority priority, String subKey, String message) {
 		OutputBasicInfo output = CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId, subKey, m_monitor.getApplication(), m_facilityId, message, message, m_now.getTime());
+		output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, monitorTypeId, m_monitorId));
 		notify(output);
-	}
-	
-	protected void collectErrorSample(String target, int errorType) {
-		Sample sample = new Sample(HinemosTime.getDateInstance(),m_monitorId);
-		sample.set(m_facilityId, target, 0.0, errorType);
-		if (logger.isDebugEnabled()) {
-			ObjectMapper objectMapper = new ObjectMapper();
-			ObjectWriter writer = objectMapper.writerFor(Sample.class);
-			
-			try {
-				String sampleString = writer.writeValueAsString(sample);
-				logger.debug(String.format("collect : monitorTypeId = %s, monitorId = %s, facilityId = %s, sample = %s",
-						m_monitorTypeId, m_monitorId, m_facilityId, sampleString));
-			} catch(Exception e) {
-				logger.warn(e.getMessage(), e);
-			}
-		}
-
-		if (m_monitor.getCollectorFlg()) {
-			CollectDataUtil.put(Arrays.asList(sample));
-		}
 	}
 	
 	protected OutputBasicInfo createOutput(CloudUtil.Priority priority, String facilityId, String target, double value, Long generationDate) {
@@ -874,6 +907,7 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 				messageOrg
 				);
 		output.setNotifyGroupId(m_monitor.getNotifyGroupId());
+		output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, CloudServiceBillingDetailRunMonitor.monitorTypeId, ba.getMonitorId()));
 		return output;
 	}
 	
@@ -882,5 +916,5 @@ public class CloudServiceBillingDetailRunMonitor extends RunMonitorNumericValueT
 			return unit;
 		}
 		return "USD";
-	} 
+	}
 }

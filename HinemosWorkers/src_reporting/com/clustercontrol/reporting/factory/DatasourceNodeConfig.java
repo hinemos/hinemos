@@ -47,7 +47,7 @@ public class DatasourceNodeConfig extends DatasourceBase {
 		BufferedWriter bw;
 
 		public NodeConfigHistoryCSV(BufferedWriter bw) {
-			columnsStr = ReportUtil.joinStrings(columns, ",");
+			columnsStr = ReportUtil.joinStringsToCsv(columns);
 			this.bw = bw;
 		}
 
@@ -74,7 +74,7 @@ public class DatasourceNodeConfig extends DatasourceBase {
 		}
 	}
 
-	private class NodeConfigHistoryCsvRow implements Comparable<NodeConfigHistoryCsvRow> {
+	private static class NodeConfigHistoryCsvRow implements Comparable<NodeConfigHistoryCsvRow> {
 		String facilityId;
 		String facilityName;
 		Timestamp updateDateTime;
@@ -101,15 +101,73 @@ public class DatasourceNodeConfig extends DatasourceBase {
 
 		String getCSVLine() {
 			// NodeConfigHistoryCSVのcolumnsと並びを合わせる
-			return ((facilityName == null ? "" : facilityName) + "(" + (facilityId == null ? "" : facilityId) + ")"
-					+ "," + (updateDateTime == null ? "" : updateDateTime) + ","
-					+ (changeCategory == null ? "" : changeCategory) + "," + (name == null ? "" : name) + ","
-					+ (details == null ? "" : details));
+			String[] data = {
+					(facilityName == null ? "" : facilityName) + "(" + (facilityId == null ? "" : facilityId) + ")",
+					(updateDateTime == null ? "" : updateDateTime.toString()),
+					(changeCategory == null ? "" : changeCategory), (name == null ? "" : name),
+					(details == null ? "" : details) };
+			return ReportUtil.joinStringsToCsv(data);
 		}
 
 		@Override
 		public int compareTo(NodeConfigHistoryCsvRow o) {
 			return this.getUpdateDateTime().compareTo(o.getUpdateDateTime());
+		}
+		// findbugs対応 compareToによる EQ_COMPARETO_USE_OBJECT_EQUALS 向けに hashCodeメソッドを@Override(特に利用はされない)
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((changeCategory == null) ? 0 : changeCategory.hashCode());
+			result = prime * result + ((details == null) ? 0 : details.hashCode());
+			result = prime * result + ((facilityId == null) ? 0 : facilityId.hashCode());
+			result = prime * result + ((facilityName == null) ? 0 : facilityName.hashCode());
+			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			result = prime * result + ((updateDateTime == null) ? 0 : updateDateTime.hashCode());
+			return result;
+		}
+
+		// findbugs対応 compareToによる EQ_COMPARETO_USE_OBJECT_EQUALS 向けに equalsメソッドを@Override(特に利用はされない)
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			NodeConfigHistoryCsvRow other = (NodeConfigHistoryCsvRow) obj;
+			if (changeCategory == null) {
+				if (other.changeCategory != null)
+					return false;
+			} else if (!changeCategory.equals(other.changeCategory))
+				return false;
+			if (details == null) {
+				if (other.details != null)
+					return false;
+			} else if (!details.equals(other.details))
+				return false;
+			if (facilityId == null) {
+				if (other.facilityId != null)
+					return false;
+			} else if (!facilityId.equals(other.facilityId))
+				return false;
+			if (facilityName == null) {
+				if (other.facilityName != null)
+					return false;
+			} else if (!facilityName.equals(other.facilityName))
+				return false;
+			if (name == null) {
+				if (other.name != null)
+					return false;
+			} else if (!name.equals(other.name))
+				return false;
+			if (updateDateTime == null) {
+				if (other.updateDateTime != null)
+					return false;
+			} else if (!updateDateTime.equals(other.updateDateTime))
+				return false;
+			return true;
 		}
 	}
 
@@ -192,7 +250,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			}
 			// 詳細情報作成
 			StringBuilder historyDtlStr = new StringBuilder();
-			historyDtlStr.append("\"");
 			historyDtlStr.append(Messages.getString("OS_RELEASE") + "=" + nodeOsHistoryDetail.getOsRelease());
 			historyDtlStr.append("<br/>");
 			historyDtlStr.append(Messages.getString("OS_VERSION") + "=" + nodeOsHistoryDetail.getOsVersion());
@@ -205,7 +262,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 				startupDateTime.setNanos(0);
 			}
 			historyDtlStr.append(Messages.getString("NODE_OS_STARTUP_DATE_TIME") + "=" + startupDateTime);
-			historyDtlStr.append("\"");
 			//CSV行の追加
 			for (String changeCategory : changeCategoryList) {
 				NodeConfigHistoryCsvRow osHistoryRow = null;
@@ -245,7 +301,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			}
 			// 詳細情報作成
 			StringBuilder historyDtlStr = new StringBuilder();
-			historyDtlStr.append("\"");
 			historyDtlStr.append(Messages.getString("DEVICE_NAME") + "=" + nodeCpuHistoryDetail.getDeviceName());
 			historyDtlStr.append("<br/>");
 			historyDtlStr.append(Messages.getString("DEVICE_INDEX") + "=" + nodeCpuHistoryDetail.getDeviceIndex());
@@ -264,7 +319,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			historyDtlStr.append(Messages.getString("CPU_THREAD_COUNT") + "=" + nodeCpuHistoryDetail.getThreadCount());
 			historyDtlStr.append("<br/>");
 			historyDtlStr.append(Messages.getString("CPU_CLOCK_COUNT") + "=" + nodeCpuHistoryDetail.getClockCount());
-			historyDtlStr.append("\"");
 			//CSV行の追加
 			for (String changeCategory : changeCategoryList) {
 				NodeConfigHistoryCsvRow cpuHistoryRow = null;
@@ -304,7 +358,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			}
 			// 詳細情報作成
 			StringBuilder historyDtlStr = new StringBuilder();
-			historyDtlStr.append("\"");
 			historyDtlStr.append(Messages.getString("DEVICE_NAME") + "=" + nodeMemoryHistoryDetail.getDeviceName());
 			historyDtlStr.append("<br/>");
 			historyDtlStr.append(Messages.getString("DEVICE_INDEX") + "=" + nodeMemoryHistoryDetail.getDeviceIndex());
@@ -318,7 +371,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			historyDtlStr.append("<br/>");
 			historyDtlStr
 					.append(Messages.getString("DESCRIPTION") + "=" + nodeMemoryHistoryDetail.getDeviceDescription());
-			historyDtlStr.append("\"");
 			//CSV行の追加
 			for (String changeCategory : changeCategoryList) {
 				NodeConfigHistoryCsvRow memoryHistoryRow = null;
@@ -358,7 +410,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			}
 			// 詳細情報作成
 			StringBuilder historyDtlStr = new StringBuilder();
-			historyDtlStr.append("\"");
 			historyDtlStr.append(Messages.getString("DEVICE_NAME") + "=" + nodeNicHistoryDetail.getDeviceName());
 			historyDtlStr.append("<br/>");
 			historyDtlStr.append(Messages.getString("DEVICE_INDEX") + "=" + nodeNicHistoryDetail.getDeviceIndex());
@@ -375,7 +426,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			historyDtlStr.append(Messages.getString("NIC_IP_ADDRESS") + "=" + nodeNicHistoryDetail.getNicIpAddress());
 			historyDtlStr.append("<br/>");
 			historyDtlStr.append(Messages.getString("NIC_MAC_ADDRESS") + "=" + nodeNicHistoryDetail.getNicMacAddress());
-			historyDtlStr.append("\"");
 			//CSV行の追加
 			for (String changeCategory : changeCategoryList) {
 				NodeConfigHistoryCsvRow nicHistoryRow = null;
@@ -415,7 +465,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			}
 			// 詳細情報作成
 			StringBuilder historyDtlStr = new StringBuilder();
-			historyDtlStr.append("\"");
 			historyDtlStr.append(Messages.getString("DEVICE_NAME") + "=" + nodeDiskHistoryDetail.getDeviceName());
 			historyDtlStr.append("<br/>");
 			historyDtlStr.append(Messages.getString("DEVICE_INDEX") + "=" + nodeDiskHistoryDetail.getDeviceIndex());
@@ -431,7 +480,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 					.append(Messages.getString("DESCRIPTION") + "=" + nodeDiskHistoryDetail.getDeviceDescription());
 			historyDtlStr.append("<br/>");
 			historyDtlStr.append(Messages.getString("DISK_RPM") + "=" + nodeDiskHistoryDetail.getDiskRpm());
-			historyDtlStr.append("\"");
 			//CSV行の追加
 			for (String changeCategory : changeCategoryList) {
 				NodeConfigHistoryCsvRow diskHistoryRow = null;
@@ -471,7 +519,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			}
 			// 詳細情報作成
 			StringBuilder historyDtlStr = new StringBuilder();
-			historyDtlStr.append("\"");
 			historyDtlStr.append(Messages.getString("DEVICE_NAME") + "=" + nodeFileSystemHistoryDetail.getDeviceName());
 			historyDtlStr.append("<br/>");
 			historyDtlStr
@@ -486,7 +533,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			historyDtlStr.append("<br/>");
 			historyDtlStr.append(
 					Messages.getString("FILE_SYSTEM_TYPE") + "=" + nodeFileSystemHistoryDetail.getFilesystemType());
-			historyDtlStr.append("\"");
 			//CSV行の追加
 			for (String changeCategory : changeCategoryList) {
 				NodeConfigHistoryCsvRow fileSystemHistoryRow = null;
@@ -526,7 +572,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			}
 			// 詳細情報作成
 			StringBuilder historyDtlStr = new StringBuilder();
-			historyDtlStr.append("\"");
 			historyDtlStr.append(Messages.getString("NODE_PACKAGE_ID") + "=" + nodePackageHistoryDetail.getPackageId());
 			historyDtlStr.append("<br/>");
 			historyDtlStr
@@ -547,7 +592,6 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			historyDtlStr.append("<br/>");
 			historyDtlStr.append(
 					Messages.getString("NODE_PACKAGE_ARCHITECTURE") + "=" + nodePackageHistoryDetail.getArchitecture());
-			historyDtlStr.append("\"");
 			//CSV行の追加
 			for (String changeCategory : changeCategoryList) {
 				NodeConfigHistoryCsvRow packageHistoryRow = null;
@@ -587,9 +631,7 @@ public class DatasourceNodeConfig extends DatasourceBase {
 			}
 			// 詳細情報作成
 			StringBuilder historyDtlStr = new StringBuilder();
-			historyDtlStr.append("\"");
 			historyDtlStr.append(Messages.getString("VALUE") + "=" + nodeCustomHistoryDetail.getValue());
-			historyDtlStr.append("\"");
 			//CSV行の追加
 			for (String changeCategory : changeCategoryList) {
 				NodeConfigHistoryCsvRow customHistoryRow = null;
@@ -621,9 +663,9 @@ public class DatasourceNodeConfig extends DatasourceBase {
 		}
 
 		String suffix = m_propertiesMap.get(SUFFIX_KEY_VALUE + "." + num);
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 
-		String csvFileName = ReportUtil.getCsvFileNameForTemplateType(m_templateId, suffix + "_" + dayString);
+		String csvFileName = ReportUtil.getCsvFileNameForTemplateType(m_templateId, suffix + "_" + m_nodeConfigId + "_" + dayString);
 		HashMap<String, Object> retMap = new HashMap<String, Object>();
 
 		m_maxNodeHisorySize = Integer.parseInt(isDefine("node.config.history.max", "30"));

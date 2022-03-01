@@ -22,6 +22,7 @@ import com.clustercontrol.performance.monitor.model.CollectorItemCalcMethodMstEn
 import com.clustercontrol.performance.monitor.util.QueryUtil;
 import com.clustercontrol.performance.operator.Operator;
 import com.clustercontrol.performance.operator.Operator.CollectedDataNotFoundException;
+import com.clustercontrol.performance.operator.Operator.InvalidOverValueException;
 import com.clustercontrol.performance.operator.Operator.InvalidValueException;
 import com.clustercontrol.performance.operator.Undefined;
 import com.clustercontrol.poller.util.DataTable;
@@ -48,7 +49,7 @@ public final class CalculationMethod {
 			final CollectorItemInfo itemInfo,
 			final String deviceName,
 			final DataTable currentTable,
-			final DataTable previousTable) throws CollectedDataNotFoundException, InvalidValueException, IllegalStateException{
+			final DataTable previousTable) throws CollectedDataNotFoundException, InvalidValueException, IllegalStateException, InvalidOverValueException{
 
 		// 計算方法を取得
 		// ItemCodeからItemCodeMstのデータを取得

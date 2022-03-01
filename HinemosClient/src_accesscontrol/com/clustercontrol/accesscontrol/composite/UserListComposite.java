@@ -24,19 +24,19 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.UserInfoResponse;
 
 import com.clustercontrol.accesscontrol.action.GetUserListTableDefine;
 import com.clustercontrol.accesscontrol.composite.action.UserDoubleClickListener;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.bean.Property;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.UserInfo;
 
 /**
  * アクセス[ユーザ]ビュー用のコンポジットクラスです。
@@ -137,16 +137,16 @@ public class UserListComposite extends Composite {
 	public void update() {
 
 		//ジョブ履歴情報取得
-		List<UserInfo> infoList = null;
-		Map<String, List<UserInfo>> dispDataMap= new ConcurrentHashMap<String, List<UserInfo>>();
+		List<UserInfoResponse> infoList = null;
+		Map<String, List<UserInfoResponse>> dispDataMap= new ConcurrentHashMap<String, List<UserInfoResponse>>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 
 		//実行契機情報取得
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
-				AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+				AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 				infoList = wrapper.getUserInfoList();
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// 権限なし
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 
@@ -155,14 +155,14 @@ public class UserListComposite extends Composite {
 
 			} catch (Exception e) {
 				// 上記以外の例外
-				m_log.warn("update(), " + HinemosMessage.replace(e.getMessage()), e);
-				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+				m_log.warn("update(), " + e.getMessage(), e);
+				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " +e.getMessage());
 			}
 			
 			if (infoList == null) {
-				infoList = new ArrayList<UserInfo>();
+				infoList = new ArrayList<UserInfoResponse>();
 			}
-
+			
 			dispDataMap.put(managerName, infoList);
 		}
 
@@ -172,8 +172,9 @@ public class UserListComposite extends Composite {
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<UserInfo>> map : dispDataMap.entrySet()) {
-			for (UserInfo info : map.getValue()) {
+		for(Map.Entry<String, List<UserInfoResponse>> map : dispDataMap.entrySet()) {
+			List<UserInfoResponse> list = map.getValue();
+			for (UserInfoResponse info : list) {
 				ArrayList<Object> obj = new ArrayList<Object>();
 				obj.add(map.getKey());
 				obj.add(info.getUserId());
@@ -181,9 +182,9 @@ public class UserListComposite extends Composite {
 				obj.add(info.getDescription());
 				obj.add(info.getMailAddress());
 				obj.add(info.getCreateUserId());
-				obj.add(new Date(info.getCreateDate()));
+				obj.add(info.getCreateDate());
 				obj.add(info.getModifyUserId());
-				obj.add(new Date(info.getModifyDate()));
+				obj.add(info.getModifyDate());
 				obj.add(null);
 				listInput.add(obj);
 			}
@@ -250,31 +251,31 @@ public class UserListComposite extends Composite {
 	 *
 	 * @return ユーザ情報一覧
 	 */
-	public List<UserInfo> getOwnUserList(String managerName) {
+	public List<UserInfoResponse> getOwnUserList(String managerName) {
 
 		//ユーザ情報一覧
-		List<UserInfo> infoList = new ArrayList<UserInfo>();
-		UserInfo info = null;
+		List<UserInfoResponse> infoList = new ArrayList<UserInfoResponse>();
+		UserInfoResponse info = null;
 		try {
-			AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 			info = wrapper.getOwnUserInfo();
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 
 		} catch (Exception e) {
 			// 上記以外の例外
-			m_log.warn("getOwnUserList(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("getOwnUserList(), " + e.getMessage(), e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 		}
 		if(info == null){
-			info = new UserInfo();
-			info.setCreateDate(0L);
-			info.setModifyDate(0L);
+			info = new UserInfoResponse();
+			info.setCreateDate(TimezoneUtil.getSimpleDateFormat().format(new Date(0L)));
+			info.setModifyDate(TimezoneUtil.getSimpleDateFormat().format(new Date(0L)));
 		}
 		infoList.add(info);
 

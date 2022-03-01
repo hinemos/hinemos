@@ -13,15 +13,13 @@ import java.util.LinkedList;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
+import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.SessionEvent;
 import org.eclipse.persistence.sessions.SessionEventAdapter;
 import org.eclipse.persistence.sessions.server.ConnectionPool;
 import org.eclipse.persistence.sessions.server.ServerSession;
 
 import com.clustercontrol.commons.util.DBConnectionPoolStats;
-import com.clustercontrol.commons.util.HinemosEntityManager;
-import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -89,13 +87,13 @@ public class JpaSessionEventListener extends SessionEventAdapter {
 	public void preReleaseConnection(SessionEvent event) {
 		m_log.debug("Connection release to connection pool");
 		
-		HinemosEntityManager em = null;
-		em = (HinemosEntityManager)HinemosSessionContext.instance().getProperty(JpaTransactionManager.EM);
-		
-		if (em != null) {
+		// このイベント時点でHinemosEntityManagerはclose済みの場合があるので、
+		// SessionEventの内容から最小コネクション数を制御する
+		Session session = event.getSession();
+		if (session instanceof ServerSession) {
 			setMaxQueueSize(HinemosPropertyCommon.common_db_connectionpool_stats_threshold.getIntegerValue());
 			
-			ServerSession ss = em.unwrap(ServerSession.class);
+			ServerSession ss = (ServerSession)session;
 			// Hinemos 6.0時点ではデフォルトのコネクションプールしか使用しないが、読込専用プール等、
 			// 別のプールが追加された場合は、プール毎にデータ保持するように、別のキューを用意すべき。
 			for (ConnectionPool pool : ss.getConnectionPools().values()) {

@@ -23,8 +23,8 @@ import org.eclipse.ui.PlatformUI;
 
 import com.clustercontrol.repository.action.GetScopeListTableDefine;
 import com.clustercontrol.repository.composite.ScopeListComposite;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.view.ScopeListView;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * リポジトリ[スコープ]ビューのテーブルビューア用のSelectionChangedListenerクラス<BR>
@@ -65,7 +65,7 @@ public class ScopeListSelectionChangedListener implements ISelectionChangedListe
 	 */
 	@Override
 	public void selectionChanged(SelectionChangedEvent event) {
-		FacilityTreeItem selectFacilityTreeItem = null;
+		FacilityTreeItemResponse selectFacilityTreeItem = null;
 		ArrayList<?> item = null;
 
 		if (((StructuredSelection) event.getSelection()).getFirstElement() != null) {
@@ -95,7 +95,7 @@ public class ScopeListSelectionChangedListener implements ISelectionChangedListe
 				String facilityId = (String) item.get(GetScopeListTableDefine.FACILITY_ID);
 
 				if (m_list.getFacilityTreeItem() != null) {
-					List<FacilityTreeItem> items = m_list.getFacilityTreeItem().getChildren();
+					List<FacilityTreeItemResponse> items = m_list.getFacilityTreeItem().getChildren();
 
 					for(int i = 0; i < items.size(); i++){
 						if(facilityId.equals(items.get(i).getData().getFacilityId())){
@@ -111,7 +111,7 @@ public class ScopeListSelectionChangedListener implements ISelectionChangedListe
 				m_list.setSelectFacilityTreeItem(selectFacilityTreeItem);
 
 				//ビューのアクションの有効/無効を設定
-				view.setEnabledAction(selectFacilityTreeItem.getData().isBuiltInFlg(),selectFacilityTreeItem.getData().getFacilityType(), event.getSelection(), selectFacilityTreeItem.getData().isNotReferFlg());
+				view.setEnabledAction(selectFacilityTreeItem.getData().getBuiltInFlg(),selectFacilityTreeItem.getData().getFacilityType(), event.getSelection(), selectFacilityTreeItem.getData().getNotReferFlg());
 			} else {
 				//選択ツリーアイテムを設定
 				m_list.setSelectFacilityTreeItem(null);

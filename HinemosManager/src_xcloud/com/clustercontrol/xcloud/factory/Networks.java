@@ -10,7 +10,7 @@ package com.clustercontrol.xcloud.factory;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.xcloud.CloudManagerException;
@@ -19,6 +19,7 @@ import com.clustercontrol.xcloud.bean.ExtendedProperty;
 import com.clustercontrol.xcloud.bean.Network;
 import com.clustercontrol.xcloud.model.CloudScopeEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity.OptionCallable;
+import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.model.InstanceEntity;
 
 public class Networks extends Resources implements INetworks {
@@ -42,12 +43,26 @@ public class Networks extends Resources implements INetworks {
 					network.setResourceTypeAsPlatform(platformNetwork.getResourceTypeAsPlatform());
 					
 					if (!platformNetwork.getAttachedInstanceIds().isEmpty()) {
-						TypedQuery<InstanceEntity> query =  em.createNamedQuery(InstanceEntity.findInstancesByInstanceIds, InstanceEntity.class);
-						query.setParameter("cloudScopeId", getCloudScope().getId());
-						query.setParameter("locationId", getLocation().getLocationId());
-						query.setParameter("instanceIds", platformNetwork.getAttachedInstanceIds());
+						int start_idx = 0;
+						int end_idx = 0;
+						List<InstanceEntity> entities = new ArrayList<>();
+						List<String> queryInstanceIds = platformNetwork.getAttachedInstanceIds();
+						while(start_idx < queryInstanceIds.size()){
+							TypedQuery<InstanceEntity> query =  em.createNamedQuery(InstanceEntity.findInstancesByInstanceIds, InstanceEntity.class);
+							query.setParameter("cloudScopeId", getCloudScope().getId());
+							query.setParameter("locationId", getLocation().getLocationId());
+							end_idx = start_idx + CloudUtil.SQL_PARAM_NUMBER_THRESHOLD;
+							if (end_idx > queryInstanceIds.size()){
+								end_idx = queryInstanceIds.size();
+							}
 
-						for (InstanceEntity entity: query.getResultList()) {
+							List<String> subList = queryInstanceIds.subList(start_idx, end_idx);
+							query.setParameter("instanceIds", subList);
+							entities.addAll(query.getResultList());
+							start_idx = end_idx;
+						}
+
+						for (InstanceEntity entity: entities) {
 							network.getAttachedInstances().add(entity.getResourceId());
 						}
 					}

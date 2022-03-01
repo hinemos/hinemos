@@ -29,9 +29,9 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
 import com.clustercontrol.accesscontrol.util.ObjectBean;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.reporting.action.GetReportingScheduleTableDefine;
 import com.clustercontrol.reporting.composite.ReportingScheduleListComposite;
-import com.clustercontrol.reporting.util.ReportingUtil;
 import com.clustercontrol.reporting.view.action.ReportingCopyAction;
 import com.clustercontrol.reporting.view.action.ReportingDeleteAction;
 import com.clustercontrol.reporting.view.action.ReportingDisableAction;
@@ -233,7 +233,7 @@ public class ReportingScheduleView extends CommonViewPart implements ObjectPrivi
 		Object[] objs = selection.toArray();
 
 		String managerName = null;
-		String objectType = ReportingUtil.MODULE_CONSTANT_REPORTING;
+		String objectType = HinemosModuleConstant.REPORTING;
 		String objectId = null;
 		List<ObjectBean> objectBeans = new ArrayList<ObjectBean>();
 		for (Object obj : objs) {

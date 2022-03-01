@@ -8,6 +8,8 @@
 
 package com.clustercontrol.monitor.run.bean;
 
+import org.openapitools.client.model.MonitorInfoResponse;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -53,6 +55,29 @@ public class MonitorTypeMessage {
 		} else if (type == MonitorTypeConstant.TYPE_SCENARIO) {
 			return STRING_SCENARIO;
 		} else if (type == MonitorTypeConstant.TYPE_BINARY) {
+			return STRING_BINARY;
+		}
+		return "";
+	}
+
+	/**
+	 * 種別から文字列に変換します。
+	 * 
+	 * @param code MonitorTypeEnumのコード値
+	 * @return 文字列
+	 */
+	public static String codeToString(String code) {
+		if (code.equals(MonitorInfoResponse.MonitorTypeEnum.TRUTH.getValue())) {
+			return STRING_TRUTH;
+		} else if (code.equals(MonitorInfoResponse.MonitorTypeEnum.NUMERIC.getValue())) {
+			return STRING_NUMERIC;
+		} else if (code.equals(MonitorInfoResponse.MonitorTypeEnum.STRING.getValue())) {
+			return STRING_STRING;
+		} else if (code.equals(MonitorInfoResponse.MonitorTypeEnum.TRAP.getValue())) {
+			return STRING_TRAP;
+		} else if (code.equals(MonitorInfoResponse.MonitorTypeEnum.SCENARIO.getValue())) {
+			return STRING_SCENARIO;
+		} else if (code.equals(MonitorInfoResponse.MonitorTypeEnum.BINARY.getValue())) {
 			return STRING_BINARY;
 		}
 		return "";

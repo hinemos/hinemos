@@ -18,11 +18,11 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.ICloudOptionHandler;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.ui.dialogs.ModifyBillingSettingDialog;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.ControlUtil;
 
 public class ModifyBillingSettingHandler implements ICloudOptionHandler, CloudStringConstants {
@@ -52,14 +52,15 @@ public class ModifyBillingSettingHandler implements ICloudOptionHandler, CloudSt
 				break;
 			}
 			
+			
 			if (MessageDialog.openConfirm(
 				null,
 				Messages.getString("confirmed"),
 				msgConfirmModifyBillingSetting)) {
 				try {
-					CloudEndpoint endpoint = selectedScope.getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-					endpoint.modifyBillingSetting(dialog.getOutput());
-					
+					String managerName = selectedScope.getCloudScopes().getHinemosManager().getManagerName();
+					CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
+					endpoint.modifyBillingSetting(selectedScope.getId(), dialog.getOutput());
 					// 成功報告ダイアログを生成
 					MessageDialog.openInformation(
 						null,

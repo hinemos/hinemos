@@ -28,19 +28,17 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.notify.action.DeleteNotify;
-import com.clustercontrol.notify.action.GetNotify;
 import com.clustercontrol.notify.action.GetNotifyTableDefineCheckBox;
 import com.clustercontrol.notify.action.ModifyNotify;
 import com.clustercontrol.notify.composite.NotifyListComposite;
 import com.clustercontrol.notify.view.action.NotifyModifyAction;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.notify.NotifyInfo;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * 通知[一覧]ダイアログクラス<BR>
@@ -80,7 +78,7 @@ public class NotifyListDialog extends CommonDialog {
 	private String managerName = null;
 
 	/***/
-	List<NotifyRelationInfo> notify;
+	List<NotifyRelationInfoResponse> notify;
 
 	/**
 	 * ダイアログのインスタンスを返します。
@@ -151,7 +149,9 @@ public class NotifyListDialog extends CommonDialog {
 		this.notifyListComposite.update();
 		// アクセス権限がなく、通知一覧が取得できなかった場合は、本ダイアログを閉じる
 		if(!this.notifyListComposite.isShowFlg()) {
-			this.close();
+			// UIの不整合が起きないようダイアログを非表示にして初期化処理終了後にcloseが呼ばれるようにする
+			shell.setVisible(false);
+			shell.getDisplay().asyncExec(() -> this.close()); 
 			return ;
 		}
 
@@ -179,7 +179,9 @@ public class NotifyListDialog extends CommonDialog {
 		this.buttonAdd.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				NotifyTypeDialog dialog = new NotifyTypeDialog(getParentShell(), notifyListComposite, managerName);
+				List<String>managerList = new ArrayList<String>();
+				managerList.add(managerName);
+				NotifyTypeDialog dialog = new NotifyTypeDialog(getParentShell(), notifyListComposite, managerList);
 				dialog.open();
 			}
 		});
@@ -396,7 +398,7 @@ public class NotifyListDialog extends CommonDialog {
 	 *
 	 * @param notify
 	 */
-	public void setSelectNotify(List<NotifyRelationInfo> notify){
+	public void setSelectNotify(List<NotifyRelationInfoResponse> notify){
 
 		this.notify = notify;
 
@@ -405,7 +407,7 @@ public class NotifyListDialog extends CommonDialog {
 	/**
 	 *
 	 */
-	public List<NotifyRelationInfo> getSelectNotify(){
+	public List<NotifyRelationInfoResponse> getSelectNotify(){
 		return this.notifyListComposite.getSelectNotify();
 	}
 
@@ -467,20 +469,8 @@ public class NotifyListDialog extends CommonDialog {
 				return;
 			}
 
-			for(int i = 0; i < list.size(); i++){
-				String notifyId = list.get(i);
-
-				if(notifyId != null && !notifyId.equals("")){
-					//通知情報を取得
-					NotifyInfo info = new GetNotify().getNotify(this.managerName, notifyId);
-
-					//有効・無効を設定
-					info.setValidFlg(valid);
-
-					//通知情報を更新
-					new ModifyNotify().modify(this.managerName, info);
-				}
-			}
+			//通知情報を更新
+			new ModifyNotify().setNotifyValid(this.managerName, list, valid);
 
 			int selectIndex = notifyListComposite.getTableViewer().getTable().getSelectionIndex();
 			notifyListComposite.update();

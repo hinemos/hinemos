@@ -18,11 +18,11 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 
 import com.clustercontrol.jobmanagement.composite.DetailComposite;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.ForwardFileView;
 import com.clustercontrol.jobmanagement.view.JobDetailView;
 import com.clustercontrol.jobmanagement.view.JobNodeDetailView;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[ジョブ詳細]ビューのテーブルビューアのSelectionChangedListenerです。
@@ -68,19 +68,23 @@ public class JobDetailSelectionChangedListener implements ISelectionChangedListe
 		String sessionId = null;
 		String jobunitId = null;
 		String jobId = null;
+		String jobName = null;
 
 		//ジョブIDを取得
 		if (((StructuredSelection) event.getSelection()).getFirstElement() != null) {
-			JobTreeItem item = (JobTreeItem) ((StructuredSelection) event
+			JobTreeItemWrapper item = (JobTreeItemWrapper) ((StructuredSelection) event
 					.getSelection()).getFirstElement();
-			JobInfo info = item.getData();
+			JobInfoWrapper info = item.getData();
 			jobunitId = info.getJobunitId();
 			jobId = info.getId();
+			jobName = info.getName();
 
 			//ジョブユニットIDを設定
 			m_composite.setJobunitId(jobunitId);
 			//ジョブIDを設定
 			m_composite.setJobId(jobId);
+			//ジョブ名を設定
+			m_composite.setJobName(jobName);
 		}
 
 		managerName = m_composite.getManagerName();
@@ -99,7 +103,7 @@ public class JobDetailSelectionChangedListener implements ISelectionChangedListe
 			if (view == null) {
 				m_log.info("execute: job node detail view is null");
 			} else {
-				view.update(managerName, sessionId, jobunitId, jobId);
+				view.update(managerName, sessionId, jobunitId, jobId, jobName);
 			}
 		}
 

@@ -16,15 +16,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.collect.bean.Sample;
+import com.clustercontrol.collect.model.CollectData;
+import com.clustercontrol.collect.model.CollectKeyInfo;
 import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
@@ -34,6 +37,7 @@ import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.monitor.plugin.model.MonitorPluginStringInfo;
 import com.clustercontrol.monitor.plugin.model.PluginCheckInfo;
 import com.clustercontrol.monitor.plugin.util.QueryUtil;
@@ -44,6 +48,7 @@ import com.clustercontrol.monitor.run.factory.RunMonitorNumericValueType;
 import com.clustercontrol.monitor.run.model.MonitorJudgementInfo;
 import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil;
 import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil.CollectMonitorDataInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
@@ -72,7 +77,7 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 	/** ログ出力のインスタンス。 */
 	private static Log logger = LogFactory.getLog( CloudServiceBillingRunMonitor.class );
 
-	public static final String monitorTypeId = "MON_CLOUD_SERVICE_BILLING";
+	public static final String monitorTypeId = HinemosModuleConstant.MONITOR_CLOUD_SERVICE_BILLING;
 	public static final int monitorType = MonitorTypeConstant.TYPE_NUMERIC;
 	public static final String STRING_CLOUD_SERVICE_BILLING = CloudMessageConstant.CLOUDSERVICE_BILLING_MONITOR.getMessage();
 	
@@ -139,8 +144,7 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 			try {
 				HinemosSessionContext.instance().setProperty(HinemosSessionContext.IS_ADMINISTRATOR, new AccessControllerBean().isAdministrator());
 			} catch(Exception e) {
-				notifyException("", e);
-				collectErrorSample("", CloudUtil.Priority.FAILURE.type);
+				notifyException(m_facilityId, "", e);
 				throw new HinemosUnknown(e);
 			}
 			
@@ -159,11 +163,11 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 
 				String message = CloudMessageConstant.MONITOR_PLATFORM_SERVICE_BILLING_INVALID_TARGET.getMessage(m_monitorId);
 				notifyError(CloudUtil.Priority.FAILURE, null, message);
-				collectErrorSample(null, CollectedDataErrorTypeConstant.UNKNOWN);
 				throw new HinemosUnknown(message);
 			}
 			
 			String target = String.format("(%s) %s", platform,service);
+			String notifyFacilityId = m_facilityId;
 
 			// 新しいトランザクションとして作成。でないと、CollectDataUtil.put() > JdbcBatchExecutor.execute()における
 			// tm.getEntityManager().unwrap(Connection.class)でNullが返され、NPEとなる
@@ -181,6 +185,7 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 				CloudManager cManager = CloudManager.singleton();
 				HinemosEntityManager em = Session.current().getEntityManager();
 				for (String facilityId : nodeFacilities) {
+					notifyFacilityId = facilityId;
 					FacilityAdditionEntity facilityAdditionEntity = em.find(FacilityAdditionEntity.class, facilityId, ObjectPrivilegeMode.READ);
 					if (facilityAdditionEntity == null) {
 						logger.debug(String.format("not manage a node by xcloud : facilityId = %s", facilityId));
@@ -203,9 +208,10 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 				if (m_monitor.getCollectorFlg() || m_monitor.getPredictionFlg() || m_monitor.getChangeFlg()) {
 					for (Map.Entry<String, IBillings.PlatformServiceBilling> entry: billings.entrySet()) {
 
+						notifyFacilityId = entry.getKey();
 						// 将来予測監視、変化量監視の処理を行う
 						CollectMonitorDataInfo collectMonitorDataInfo
-							= CollectMonitorManagerUtil.calculateChangePredict(null, m_monitor, entry.getKey(),
+							= CollectMonitorManagerUtil.calculateChangePredict(null, m_monitor, notifyFacilityId,
 							null, m_monitor.getItemName(), entry.getValue().getUpdateDate(), entry.getValue().getPrice());
 
 						// 将来予測もしくは変更点監視が有効な場合、通知を行う
@@ -215,13 +221,13 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 							if (collectMonitorDataInfo.getChangeMonitorRunResultInfo() != null) {
 								// 変化量監視の通知
 								MonitorRunResultInfo collectResult = collectMonitorDataInfo.getChangeMonitorRunResultInfo();
-								ret.add(createOutputBasicInfo(true, entry.getKey(), collectResult.getCheckResult(), 
+								ret.add(createOutputBasicInfo(true, notifyFacilityId, collectResult.getCheckResult(), 
 										new Date(collectResult.getNodeDate()), collectResult, m_monitor));
 							}
 							if (collectMonitorDataInfo.getPredictionMonitorRunResultInfo() != null) {
 								// 将来予測監視の通知
 								MonitorRunResultInfo collectResult = collectMonitorDataInfo.getPredictionMonitorRunResultInfo();
-								ret.add(createOutputBasicInfo(true, entry.getKey(), collectResult.getCheckResult(), 
+								ret.add(createOutputBasicInfo(true, notifyFacilityId, collectResult.getCheckResult(), 
 										new Date(collectResult.getNodeDate()), collectResult, m_monitor));
 							}
 							average = collectMonitorDataInfo.getAverage();
@@ -230,18 +236,43 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 						logger.debug("average=" + average+ ", standardDeviation=" + standardDeviation);
 						
 						if (m_monitor.getCollectorFlg()) {
-							Sample sample = new Sample(new Date(entry.getValue().getUpdateDate()), m_monitorId);
-							sample.set(m_facilityId, m_monitor.getItemName(), entry.getValue().getPrice(), 
-									average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
-							CollectDataUtil.put(Arrays.asList(sample));
+							// 重複チェック用のフラグ
+							boolean isDuplicate = false;
+							Date targetDate = new Date(entry.getValue().getUpdateDate());
+							// 収集項目キーを取得
+							List<CollectKeyInfo> collectKeyInfoList = com.clustercontrol.collect.util.QueryUtil.getCollectKeyInfoListByMonitorId(m_monitor.getMonitorId());
+							
+							for (CollectKeyInfo collectKeyInfo : collectKeyInfoList) {
+								// 指定の日時の収集情報を探す。endTimeの比較が「<」なので+1しておく。
+								List<CollectData> collectData = com.clustercontrol.collect.util.QueryUtil.getCollectDataListOrderByTimeDesc(
+										collectKeyInfo.getCollectorid(),
+										entry.getValue().getUpdateDate(),
+										entry.getValue().getUpdateDate() + 1);
+								
+								if (collectData.size() > 0) {
+									// 重複データを確認
+									isDuplicate = true;
+									logger.debug("This key (id : " + collectKeyInfo.getCollectorid() + ", date : "
+											+ entry.getValue().getUpdateDate() + " ) exists. Not collect.");
+									break;
+								}
+							}
+							
+							// 重複していなかったらデータ投入
+							if (!isDuplicate) {
+								Sample sample = new Sample(targetDate, m_monitorId);
+								sample.set(notifyFacilityId, m_monitor.getItemName(), entry.getValue().getPrice(), 
+										average, standardDeviation,CollectedDataErrorTypeConstant.NOT_ERROR);
+								CollectDataUtil.put(Arrays.asList(sample));
+							}
 						}
 					}
 				}
 				
 				ts.complete();
 			} catch(RuntimeException | CloudManagerException | HinemosUnknown e) {
-				notifyException(target, e);
-				collectErrorSample(target, CloudUtil.Priority.UNKNOWN.type);
+				collectErrorSample(notifyFacilityId, m_monitor.getItemName(), CloudUtil.Priority.UNKNOWN.type);
+				notifyException(notifyFacilityId, target, e);
 				throw new HinemosUnknown(e);
 			}
 			return ret;
@@ -317,12 +348,19 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 		return m_message;
 	}
 	
+	/**
+	 * 通知実行
+	 * 
+	 * ※ジョブ連携メッセージIDは呼び出し元で設定すること
+	 * 
+	 * @param output
+	 */
 	protected void notify(OutputBasicInfo output) {
 		// 監視結果通知
 		if (logger.isDebugEnabled()) {
 			SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 			logger.debug(String.format("notify : monitorTypeId = %s, monitorId = %s, facilityId = %s, target = %s, priority = %s, message = %s, date = %s",
-					m_monitorTypeId, m_monitorId, m_facilityId, output.getSubKey(), PriorityConstant.typeToMessageCode(output.getPriority()), output.getMessageOrg(), format.format(output.getGenerationDate())));
+					m_monitorTypeId, m_monitorId, output.getFacilityId(), output.getSubKey(), PriorityConstant.typeToMessageCode(output.getPriority()), output.getMessageOrg(), format.format(output.getGenerationDate())));
 		}
 		
 		if (m_monitor.getMonitorFlg()) {
@@ -331,17 +369,18 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 				// 通知設定
 				jtm.addCallback(new NotifyCallback(output));
 			} catch (Exception e) {
-				notifyException(output.getSubKey(), e);
+				notifyException(output.getFacilityId(), output.getSubKey(), e);
 			}
 		}
 	}
 	
-	protected void notifyException(String target, Exception exception) {
+	protected void notifyException(String facilityId, String target, Exception exception) {
 		String message = CloudMessageConstant.MONITOR_PLATFORM_BILLING_SERVICE_NOTIFY_UNKNOWN.getMessage(exception.getMessage());
 		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		String messageOrg = CloudMessageConstant.MONITOR_PLATFORM_BILLING_SERVICE_NOTIFY_ORG_UNKNOWN.getMessage(format.format(m_now.getTime()), CloudMessageUtil.getExceptionStackTrace(exception));
 		OutputBasicInfo output = CloudUtil.createOutputBasicInfoEx(CloudUtil.Priority.UNKNOWN, monitorTypeId, m_monitorId,
-				target, m_monitor.getApplication(), m_facilityId, message, messageOrg, m_now.getTime());
+				target, m_monitor.getApplication(), facilityId, message, messageOrg, m_now.getTime());
+		output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, monitorTypeId, m_monitorId));
 		notify(output);
 	}
 	
@@ -371,6 +410,7 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 				break;
 			}}
 			output.setNotifyGroupId(m_monitor.getNotifyGroupId());
+			output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, monitorTypeId, m_monitorId));
 			ret.add(output);
 		}
 		return ret;
@@ -378,13 +418,33 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 	
 	protected void notifyError(CloudUtil.Priority priority, String subKey, String message) {
 		OutputBasicInfo output = CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId, subKey, m_monitor.getApplication(), m_facilityId, message, message, m_now.getTime());
+		output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, monitorTypeId, m_monitorId));
 		notify(output);
 	}
 	
-	protected void collectErrorSample(String target, int errorType) {
+	private void collectErrorSample(String facilityId, String target, int errorType) {
 		Sample sample = new Sample(HinemosTime.getDateInstance(), m_monitorId);
-		sample.set(m_facilityId, target, 0.0, errorType);
-		
+		sample.set(facilityId, target, null, errorType);
+
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			CollectDataUtil.put(Arrays.asList(sample));
+			jtm.commit();
+		} catch(Exception e) {
+			//findbugs 対応 nullチェック追加
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			logger.warn(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+
+		// debugログ出力
 		if (logger.isDebugEnabled()) {
 			ObjectMapper objectMapper = new ObjectMapper();
 			ObjectWriter writer = objectMapper.writerFor(Sample.class);
@@ -392,14 +452,10 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 			try {
 				String sampleString = writer.writeValueAsString(sample);
 				logger.debug(String.format("collect : monitorTypeId = %s, monitorId = %s, facilityId = %s, sample = %s",
-						m_monitorTypeId, m_monitorId, m_facilityId, sampleString));
+						m_monitorTypeId, m_monitorId, facilityId, sampleString));
 			} catch(Exception e) {
 				logger.warn(e.getMessage(), e);
 			}
-		}
-
-		if (m_monitor.getCollectorFlg()) {
-			CollectDataUtil.put(Arrays.asList(sample));
 		}
 	}
 }

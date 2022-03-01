@@ -1,0 +1,139 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"facilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_facilityId"}
+	]},
+
+	{
+	"propName":"joblinkMessageId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_joblinkMessageId"}
+	]},
+
+	{
+	"propName":"infoValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_infoValidFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"warnValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_warnValidFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"criticalValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_criticalValidFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"unknownValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_unknownValidFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"applicationFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_applicationFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"application",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_application"}
+	]},
+
+	{
+	"propName":"monitorDetailIdFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_monitorDetailIdFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"monitorDetailId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_monitorDetailId"}
+	]},
+
+	{
+	"propName":"messageFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_messageFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"message",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_message"}
+	]},
+
+	{
+	"propName":"expFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_expFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"jobLinkExpInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkRcvData_jobLinkExpInfo"},
+		{"type":"Array", "idType":"props", "props":["key", "value"]}
+	]}
+]
+}

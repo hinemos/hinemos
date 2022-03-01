@@ -7,10 +7,9 @@
  */
 package com.clustercontrol.xcloud.ui.handlers;
 
+import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
-
-import javax.activation.DataHandler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -20,13 +19,13 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.BillingResultResponse.TypeEnum;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.TargetType;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.cloud.BillingMonitor;
 import com.clustercontrol.xcloud.platform.PlatformDependent;
 import com.clustercontrol.xcloud.ui.views.BillingDetailsView;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.ControlUtil;
 
 public class ExportBillingDetailForFacilityHandler extends AbstractHandler implements CloudStringConstants {
@@ -53,14 +52,16 @@ public class ExportBillingDetailForFacilityHandler extends AbstractHandler imple
 			}
 		}
 		try {
-			DataHandler handler = billingMonitor.getBillingMonitors().getHinemosManager().getEndpoint(CloudEndpoint.class).downloadBillingDetailsByFacility(
+			String managerName = billingMonitor.getBillingMonitors().getHinemosManager().getManagerName();
+			CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
+			File handler = endpoint.downloadBillingDetailsByFacility(
 					billingMonitor.getMonitorInfo().getFacilityId(),
 					cal.get(Calendar.YEAR),
 					cal.get(Calendar.MONTH) + 1);
 
 			PlatformDependent.getPlatformDependent().downloadBillingDetail(
 					HandlerUtil.getActiveShell(event),
-					TargetType.FACILITY,
+					TypeEnum.FACILITY,
 					billingMonitor.getMonitorInfo().getFacilityId(),
 					cal.get(Calendar.YEAR),
 					cal.get(Calendar.MONTH) + 1,

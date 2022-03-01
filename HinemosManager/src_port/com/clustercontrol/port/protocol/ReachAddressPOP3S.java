@@ -63,12 +63,19 @@ public class ReachAddressPOP3S extends ReachAddressProtocol {
 					+ hostname + "[" + address.getHostAddress()
 					+ "]:" + m_portNo + ".\n\n");
 
-			POP3SClient client = new POP3SClient(true);
+			POP3SClient client = new POP3SClient(true) {
+				@Override
+				protected void _connectAction_() throws IOException {
+					setSoTimeout(m_timeout);
+					super._connectAction_();
+				}
+			};
 
 			for (int i = 0; i < m_sentCount && retry; i++) {
 				try {
 					bufferOrg.append(HinemosTime.getDateString() + " Tried to Connect: ");
 					client.setDefaultTimeout(m_timeout);
+					client.setConnectTimeout(m_timeout);
 
 					start = HinemosTime.currentTimeMillis();
 					client.connect(address, m_portNo);

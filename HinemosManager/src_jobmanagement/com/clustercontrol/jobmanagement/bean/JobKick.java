@@ -29,52 +29,52 @@ public class JobKick implements Serializable {
 	/**
 	 * 実行契機種別
 	 */
-	protected int m_type;
+	protected int type;
 
 	/** 実行契機ID */
-	private String m_id;
+	private String id;
 
 	/** 実行契機名 */
-	private String m_name;
+	private String name;
 
 	/** ジョブID */
-	private String m_jobId;
+	private String jobId;
 
 	/** ジョブ名 */
-	private String m_jobName;
+	private String jobName;
 
 	/** ジョブユニットID */
-	private String m_jobunitId;
+	private String jobunitId;
 
 	/** オーナーロールID */
-	private String m_ownerRoleId;
+	private String ownerRoleId;
 
 	/** 新規作成ユーザ */
-	private String m_createUser;
+	private String createUser;
 
 	/** 作成日時 */
-	private Long m_createTime;
+	private Long createTime;
 
 	/** 最新更新ユーザ */
-	private String m_updateUser;
+	private String updateUser;
 
 	/** 最新更新日時 */
-	private Long m_updateTime;
+	private Long updateTime;
 
 	/** 有効/無効 */
-	private Boolean m_valid = false;
+	private Boolean valid = false;
 
 	/** カレンダID */
-	private String m_calendarId;
+	private String calendarId;
 
 	/** カレンダ(エージェントに渡すとき以外はnull) */
-	private CalendarInfo m_calendarInfo;
+	private CalendarInfo calendarInfo;
 
 	/** ランタイムジョブ変数情報 */
-	private ArrayList<JobRuntimeParam> m_jobRuntimeParamList;
+	private ArrayList<JobRuntimeParam> jobRuntimeParamList;
 
 	public JobKick() {
-		this.m_type = JobKickConstant.TYPE_MANUAL;
+		this.type = JobKickConstant.TYPE_MANUAL;
 	}
 
 	/**
@@ -82,14 +82,14 @@ public class JobKick implements Serializable {
 	 * @return JobKickConstant.TYPE_****
 	 */
 	public int getType() {
-		return m_type;
+		return type;
 	}
 	/**
 	 * 実行契機種別を設定する<BR>
 	 * @param type
 	 */
 	public void setType(int type) {
-		this.m_type = type;
+		this.type = type;
 	}
 
 	/**
@@ -97,7 +97,7 @@ public class JobKick implements Serializable {
 	 * @return スケジュールID
 	 */
 	public String getId() {
-		return m_id;
+		return id;
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class JobKick implements Serializable {
 	 * @param id スケジュールID
 	 */
 	public void setId(String id) {
-		this.m_id = id;
+		this.id = id;
 	}
 
 	/**
@@ -113,7 +113,7 @@ public class JobKick implements Serializable {
 	 * @return ジョブID
 	 */
 	public String getJobId() {
-		return m_jobId;
+		return jobId;
 	}
 
 	/**
@@ -121,7 +121,7 @@ public class JobKick implements Serializable {
 	 * @param jobId ジョブID
 	 */
 	public void setJobId(String jobId) {
-		this.m_jobId = jobId;
+		this.jobId = jobId;
 	}
 
 	/**
@@ -129,7 +129,7 @@ public class JobKick implements Serializable {
 	 * @return ジョブ名
 	 */
 	public String getJobName() {
-		return m_jobName;
+		return jobName;
 	}
 
 	/**
@@ -137,7 +137,7 @@ public class JobKick implements Serializable {
 	 * @param jobName ジョブ名
 	 */
 	public void setJobName(String jobName) {
-		this.m_jobName = jobName;
+		this.jobName = jobName;
 	}
 
 	/**
@@ -145,7 +145,7 @@ public class JobKick implements Serializable {
 	 * @return スケジュール名
 	 */
 	public String getName() {
-		return m_name;
+		return name;
 	}
 
 	/**
@@ -153,7 +153,7 @@ public class JobKick implements Serializable {
 	 * @param name スケジュール名
 	 */
 	public void setName(String name) {
-		this.m_name = name;
+		this.name = name;
 	}
 
 	/**
@@ -161,7 +161,7 @@ public class JobKick implements Serializable {
 	 * @return 有効/無効
 	 */
 	public Boolean isValid() {
-		return m_valid;
+		return valid;
 	}
 
 	/**
@@ -169,7 +169,7 @@ public class JobKick implements Serializable {
 	 * @param valid 有効/無効
 	 */
 	public void setValid(Boolean valid) {
-		this.m_valid = valid;
+		this.valid = valid;
 	}
 
 	/**
@@ -177,7 +177,7 @@ public class JobKick implements Serializable {
 	 * @return カレンダID
 	 */
 	public String getCalendarId() {
-		return m_calendarId;
+		return calendarId;
 	}
 
 	/**
@@ -185,7 +185,7 @@ public class JobKick implements Serializable {
 	 * @param calendarId カレンダID
 	 */
 	public void setCalendarId(String calendarId) {
-		this.m_calendarId = calendarId;
+		this.calendarId = calendarId;
 	}
 
 	/**
@@ -193,7 +193,7 @@ public class JobKick implements Serializable {
 	 * @return カレンダ
 	 */
 	public CalendarInfo getCalendarInfo() {
-		return m_calendarInfo;
+		return calendarInfo;
 	}
 
 	/**
@@ -201,7 +201,7 @@ public class JobKick implements Serializable {
 	 * @param calendar カレンダ
 	 */
 	public void setCalendarInfo(CalendarInfo calendarInfo) {
-		this.m_calendarInfo = calendarInfo;
+		this.calendarInfo = calendarInfo;
 	}
 
 	/**
@@ -209,7 +209,7 @@ public class JobKick implements Serializable {
 	 * @return 作成日時
 	 */
 	public Long getCreateTime() {
-		return m_createTime;
+		return createTime;
 	}
 
 	/**
@@ -217,14 +217,14 @@ public class JobKick implements Serializable {
 	 * @param createTime 作成日時
 	 */
 	public void setCreateTime(Long createTime) {
-		this.m_createTime = createTime;
+		this.createTime = createTime;
 	}
 	/**
 	 * 最新更新日時を返す<BR>
 	 * @return 最新更新日時
 	 */
 	public Long getUpdateTime() {
-		return m_updateTime;
+		return updateTime;
 	}
 
 	/**
@@ -232,7 +232,7 @@ public class JobKick implements Serializable {
 	 * @param updateTime 最新更新日時
 	 */
 	public void setUpdateTime(Long updateTime) {
-		this.m_updateTime = updateTime;
+		this.updateTime = updateTime;
 	}
 
 	/**
@@ -240,7 +240,7 @@ public class JobKick implements Serializable {
 	 * @return 新規作成ユーザ
 	 */
 	public String getCreateUser() {
-		return m_createUser;
+		return createUser;
 	}
 
 	/**
@@ -248,7 +248,7 @@ public class JobKick implements Serializable {
 	 * @param createUser 新規作成ユーザ
 	 */
 	public void setCreateUser(String createUser) {
-		this.m_createUser = createUser;
+		this.createUser = createUser;
 	}
 
 	/**
@@ -256,7 +256,7 @@ public class JobKick implements Serializable {
 	 * @return 最新更新ユーザ
 	 */
 	public String getUpdateUser() {
-		return m_updateUser;
+		return updateUser;
 	}
 
 	/**
@@ -264,7 +264,7 @@ public class JobKick implements Serializable {
 	 * @param updateUser 最新更新ユーザ
 	 */
 	public void setUpdateUser(String updateUser) {
-		this.m_updateUser = updateUser;
+		this.updateUser = updateUser;
 	}
 
 	/**
@@ -272,7 +272,7 @@ public class JobKick implements Serializable {
 	 * @return 所属ジョブユニットのジョブID
 	 */
 	public String getJobunitId() {
-		return m_jobunitId;
+		return this.jobunitId;
 	}
 
 	/**
@@ -280,7 +280,7 @@ public class JobKick implements Serializable {
 	 * @param jobunitId 所属ジョブユニットのジョブID
 	 */
 	public void setJobunitId(String jobunitId) {
-		m_jobunitId = jobunitId;
+		this.jobunitId = jobunitId;
 	}
 
 	/**
@@ -288,7 +288,7 @@ public class JobKick implements Serializable {
 	 * @return オーナーロールID
 	 */
 	public String getOwnerRoleId() {
-		return m_ownerRoleId;
+		return ownerRoleId;
 	}
 
 	/**
@@ -296,14 +296,14 @@ public class JobKick implements Serializable {
 	 * @param ownerRoleId オーナーロールID
 	 */
 	public void setOwnerRoleId(String ownerRoleId) {
-		this.m_ownerRoleId = ownerRoleId;
+		this.ownerRoleId = ownerRoleId;
 	}
 
 	public ArrayList<JobRuntimeParam> getJobRuntimeParamList() {
-		return m_jobRuntimeParamList;
+		return jobRuntimeParamList;
 	}
 
 	public void setJobRuntimeParamList(ArrayList<JobRuntimeParam> jobRuntimeParamList) {
-		this.m_jobRuntimeParamList = jobRuntimeParamList;
+		this.jobRuntimeParamList = jobRuntimeParamList;
 	}
 }

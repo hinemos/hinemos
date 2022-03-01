@@ -204,6 +204,7 @@ public class OutputEvent implements DependDbNotifier {
 			entity.setPriority(output.getPriority());
 			entity.setScopeText(output.getScopeText());
 			entity.setCollectGraphFlg(false);
+			entity.setNotifyUUID(output.getNotifyUUID());
 			for (int i = 1 ; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
 				//指定された値 OR デフォルト値を設定
 				String setValue = getUserItemSetValue(NotifyUtil.getUserItemValue(output, i), userExtenstionItemInfoMap.get(i));
@@ -271,13 +272,7 @@ public class OutputEvent implements DependDbNotifier {
 		}
 		if (itemInfo.getRegistInitValue() != null && !"".equals(itemInfo.getRegistInitValue())) {
 			//初期値登録されている場合
-			final int userItemMaxLength = 128;
-			if (itemInfo.getRegistInitValue().length() > userItemMaxLength) {
-				//DB桁長より長い場合は末尾をカットする
-				return itemInfo.getRegistInitValue().substring(0, userItemMaxLength); 
-			} else {
-				return itemInfo.getRegistInitValue();
-			}
+			return itemInfo.getRegistInitValue();
 		}
 		return null;
 	}
@@ -357,14 +352,6 @@ public class OutputEvent implements DependDbNotifier {
 			returnString = targetString.substring(0, maxLen);
 		}
 		return returnString;
-	}
-
-	/**
-	 * 通知失敗時の内部エラー通知を定義します
-	 */
-	@Override
-	public void internalErrorNotify(int priority, String notifyId, MessageConstant msgCode, String detailMsg) throws Exception {
-		// 何もしない
 	}
 
 	public List<EventLogEntity> notify(List<NotifyRequestMessage> msgList) throws NotifyNotFound {

@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -21,17 +23,27 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgentInfoRequest;
+import org.openapitools.client.model.AgtNodeInfoRequest;
+import org.openapitools.client.model.RegisterNodeConfigInfoRequest;
 
 import com.clustercontrol.agent.Agent;
-import com.clustercontrol.agent.AgentNodeConfigEndPointWrapper;
+import com.clustercontrol.agent.AgentNodeConfigRestClientWrapper;
 import com.clustercontrol.agent.util.AgentProperties;
+import com.clustercontrol.agent.util.AgentRequestId;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.NodeConfigSettingNotFound;
+import com.clustercontrol.fault.NodeHistoryRegistered;
 import com.clustercontrol.util.MessageConstant;
-import com.clustercontrol.ws.agent.AgentInfo;
-import com.clustercontrol.ws.repository.NodeInfo;
 
+/**
+ * １件づつ送信し、送信失敗時は次のレコードの送信を優先します。<BR>
+ *  そのためBlockTransporterを使わずに独自実装しています。<BR>
+ *
+ */
 public class NodeConfigResultForwarder {
-	
 	
 	private static Log log = LogFactory.getLog(NodeConfigResultForwarder.class);
 
@@ -49,6 +61,8 @@ public class NodeConfigResultForwarder {
 	private AtomicInteger transportTries = new AtomicInteger(0);
 	
 	private List<NodeConfigResult> forwardList = new ArrayList<NodeConfigResult>();
+	
+	private Map<NodeConfigResult,AgentRequestId> requestIdMap = new ConcurrentHashMap<NodeConfigResult,AgentRequestId>();
 	
 	private NodeConfigResultForwarder() {
 		{
@@ -176,7 +190,7 @@ public class NodeConfigResultForwarder {
 				if(result.getNodeInfo() != null && result.getNodeInfo().getNodeConfigSettingId() != null){
 					settingId = result.getNodeInfo().getNodeConfigSettingId();
 				}
-				AgentInfo info = Agent.getAgentInfo();
+				AgentInfoRequest info = Agent.getAgentInfoRequest();
 				String[] args = new String[] { info.getFacilityId(), info.getHostname(), settingId, msg};
 				String originMsg = MessageConstant.MESSAGE_FAILED_TO_SEND_NODE_CONFIG_DETAIL.getMessage(args);
 				NodeConfigCollector.sendMessage(PriorityConstant.TYPE_WARNING, message, originMsg, settingId);
@@ -214,7 +228,9 @@ public class NodeConfigResultForwarder {
 				
 				List<NodeConfigResult> failedList = null;
 				try {
-					failedList = AgentNodeConfigEndPointWrapper.forwardNodeConfigSettingResult(forwardListPart);
+					failedList = forwardSub(forwardListPart);
+				} catch (FacilityNotFound e) {
+					log.warn("Not found list of facility-ID of node for a Connected Agent.");
 				} catch (Throwable t) {
 					String msg = String.format("[%d/%d] failed forwarding node config's result (%d of %d) : %s ...", 
 							transportTries.get(), _transportMaxTries, forwardListPart.size(), forwardList.size(), 
@@ -233,7 +249,7 @@ public class NodeConfigResultForwarder {
 						// Manager通知.
 						String message = MessageConstant.MESSAGE_FAILED_TO_SEND_NODE_CONFIG_OVER_RETRY_COUNT.getMessage();
 						String settingIdList = createSettingIdStr(forwardListPart);
-						AgentInfo info = Agent.getAgentInfo();
+						AgentInfoRequest info = Agent.getAgentInfoRequest();
 						String stackTrace = Arrays.toString(t.getStackTrace());
 						msg = msg + "\n" + t.getMessage() + "\n" + stackTrace;
 						String[] args = new String[] { info.getFacilityId(), info.getHostname(), settingIdList, msg};
@@ -251,6 +267,8 @@ public class NodeConfigResultForwarder {
 					for(NodeConfigResult sendInfo : forwardListPart){
 						if(!failedList.contains(sendInfo)){
 							successList.add(sendInfo);
+							// 成功分のリクエストID削除
+							requestIdMap.remove(sendInfo);
 						}
 					}
 					forwardList.removeAll(successList);
@@ -264,7 +282,7 @@ public class NodeConfigResultForwarder {
 						// Manager通知.
 						String message = MessageConstant.MESSAGE_FAILED_TO_SEND_NODE_CONFIG_OVER_RETRY_COUNT.getMessage();
 						String settingIdList = createSettingIdStr(failedList);
-						AgentInfo info = Agent.getAgentInfo();
+						AgentInfoRequest info = Agent.getAgentInfoRequest();
 						String[] args = new String[] { info.getFacilityId(), info.getHostname(), settingIdList, msg};
 						String originMsg = MessageConstant.MESSAGE_FAILED_TO_SEND_NODE_CONFIG_DETAIL.getMessage(args);
 						NodeConfigCollector.sendMessage(PriorityConstant.TYPE_WARNING, message, originMsg, "SYS");
@@ -282,6 +300,42 @@ public class NodeConfigResultForwarder {
 		} finally {
 			ForwardListLock.writeUnlock();
 		}
+	}
+
+	public List<NodeConfigResult> forwardSub(List<NodeConfigResult> resultList) throws FacilityNotFound {
+		List<NodeConfigResult> failedList = new ArrayList<NodeConfigResult>();
+		for (NodeConfigResult result : resultList) {
+			// 送信時に失敗しても次の結果を送信してやる.
+			try {
+				RegisterNodeConfigInfoRequest req = new RegisterNodeConfigInfoRequest();
+				req.setRegisterDatetime(result.getAquireDate());
+				req.setNodeInfo(result.getNodeInfo());
+				AgentRequestId agentRequestId = null;
+				// 最初の送信時はリクエストIDを設定
+				if(requestIdMap.get(result)==null){
+					agentRequestId = new AgentRequestId();
+					requestIdMap.put(result, agentRequestId);
+				}
+				AgentNodeConfigRestClientWrapper.registerNodeConfigInfo(req,requestIdMap.get(result).toRequestHeaderValue());
+			} catch (FacilityNotFound e) {
+				log.warn("forwardSub: FacilityNotFound: " + e.getMessage());
+				throw e;
+			} catch (InvalidSetting e) {
+				// 再送させない(エージェントから送ってる情報がおかしい、Manager側でInternalError通知されてる).
+				log.warn("forwardSub: InvalidSetting: " + e.getMessage());
+			} catch (NodeHistoryRegistered e) {
+				// 再送させない(SocketTimeOutException等で接続中断されたがManagerには登録完了している状態).
+				log.warn("forwardSub: NodeHistoryRegistered: " + e.getMessage());
+			} catch (NodeConfigSettingNotFound e) {
+				// 再送させない(構成情報取得設定が消されている).
+				log.warn("forwardSub: NodeConfigSettingNotFound: " + e.getMessage());
+			} catch (Exception e) {
+				// 再送する
+				log.warn("forwardSub: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+				failedList.add(result);
+			}
+		}
+		return failedList;
 	}
 	
 	private static class ScheduledTask implements Runnable {
@@ -357,7 +411,7 @@ public class NodeConfigResultForwarder {
 				continue;
 			}
 			
-			NodeInfo nodeInfo = result.getNodeInfo();
+			AgtNodeInfoRequest nodeInfo = result.getNodeInfo();
 			if(nodeInfo.getNodeConfigSettingId() == null){
 				continue;
 			}

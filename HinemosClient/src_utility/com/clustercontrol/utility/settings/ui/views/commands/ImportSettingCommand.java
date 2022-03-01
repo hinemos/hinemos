@@ -30,6 +30,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.window.Window;
@@ -40,18 +41,27 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.CheckPublishResponse;
 
 import com.clustercontrol.client.ui.util.FileDownloader;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TargetPlatformUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.settings.ui.action.CommandAction;
 import com.clustercontrol.utility.settings.ui.action.ReadXMLAction;
 import com.clustercontrol.utility.settings.ui.bean.FuncInfo;
+import com.clustercontrol.utility.settings.ui.dialog.FilterSettingDialog;
 import com.clustercontrol.utility.settings.ui.dialog.JobunitListDialog;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.settings.ui.util.BackupUtil;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
+import com.clustercontrol.utility.settings.ui.util.FilterSettingProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.settings.ui.views.ImportExportExecView;
 import com.clustercontrol.utility.ui.dialog.MessageDialogWithCheckbox;
@@ -59,13 +69,12 @@ import com.clustercontrol.utility.ui.settings.dialog.UtilityImportCommandDialog;
 import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.FileUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
+import com.clustercontrol.utility.util.SettingUtil;
+import com.clustercontrol.utility.util.StringUtil;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
-import com.clustercontrol.utility.util.UtilityEndpointWrapper;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
 import com.clustercontrol.utility.util.ZipUtil;
-import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
-import com.clustercontrol.ws.utility.InvalidRole_Exception;
-import com.clustercontrol.ws.utility.InvalidUserPass_Exception;
 
 /**
  * 情報を登録するクライアント側アクションクラス<BR>
@@ -102,25 +111,36 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 	private String m_failureList = "";
 	private CommandAction m_action = null;
 	
+	/** 一括インポート単位数のMAP */
+	private Map<String ,Integer> m_unitNumMap = null;
+	
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// keyチェック
 		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-			String version = wrapper.getVersion();
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							Messages.getString("message.expiration.term.invalid"));
-				}
+			UtilityRestClientWrapper wrapper = UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+			CheckPublishResponse response = wrapper.checkPublish();
+			boolean isPublish = response.getPublish();
+			if (!isPublish) {
+				MessageDialog.openWarning(
+						null,
+						Messages.getString("warning"),
+						Messages.getString("message.expiration.term.invalid"));
 			}
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (InvalidRole | InvalidUserPass e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					e.getMessage());
 			return null;
+		} catch (HinemosUnknown e) {
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						Messages.getString("message.expiration.term"));
+				return null;
+			} else {
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						e.getMessage());
+				return null;
+			}
 		} catch (Exception e) {
 			// キーファイルを確認できませんでした。処理を終了します。
 			// Key file not found. This process will be terminated.
@@ -145,10 +165,33 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 		// ビューで選択されたインポート対象のリスト
 		List<FuncInfo> checkedList = listView.getCheckedFunc();
 		
+		//インポート単位数の取得
+		List<String > funcIdList = new ArrayList<String>();
+		for( FuncInfo rec : checkedList){
+			funcIdList.add(rec.getId());
+		}
+		try {
+			m_unitNumMap =SettingUtil.getImportUnitNumList(funcIdList);
+		} catch (InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown e1) {
+			 MessageDialog.openError(null,
+					 Messages.getString("message.error"),
+					 Messages.getString("SettingTools.EndWithErrorCode") +" getImportUnitNumList message=" + e1.getMessage());
+			return null;
+		}
+		
 		// インポート対象リスト
 		// ジョブユニットを選択しなかった場合、このリストに追加しない
 		m_funcList = new ArrayList<FuncInfo>();
 
+		// リッチクライアントの場合ディレクトリの存在チェック
+		if (TargetPlatformUtil.isRCP() &&
+				!MultiManagerPathUtil.existsDirectory(SettingToolsXMLPreferencePage.KEY_XML)) {
+			MessageDialog.openWarning(
+					null,
+					Messages.getString("warning"),
+					Messages.getString("message.utility.preferences.common.error"));
+			return null;
+		}
 		String parentPath = MultiManagerPathUtil.getDirectoryPathTemporary(SettingToolsXMLPreferencePage.KEY_XML);
 		String tmpPath = null;
 
@@ -220,6 +263,8 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 			List<String> xmlFiles = null;
 			it = checkedList.iterator();
 			StringBuffer funcNameList = new StringBuffer();
+			StringBuffer addMessage = new StringBuffer();
+			FilterSettingProcessMode.init();
 			while(it.hasNext()) {
 				
 				// インポート対象を選択し、OKボタンを押したかどうかのフラグ
@@ -264,11 +309,58 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 					}
 				}
 				
+				//フィルタ設定の場合、出力内容を選択させる
+				if (info.isFilterSettingFunc()) {
+					String fileName = ReadXMLAction.getXMLFile(info.getDefaultXML()).get(0);
+					File xmlFile = new File(fileName);
+					if(!xmlFile.exists()) {
+						// 存在しないファイルがある場合
+						String[] args = { xmlFile.getName(), info.getName()};
+						MessageDialog.openError(
+								null,
+								Messages.getString("message.confirm"),
+								Messages.getString("message.import.error2",args));
+						if(tmpPath != null || ClientPathUtil.getInstance().isBussy(parentPath)){
+							ClientPathUtil.getInstance().unlock(parentPath);
+						}
+						return null;
+					}
+					
+					if(FilterSettingProcessMode.isSameNextChoice()){
+						// "同じ選択を次の設定にも適用" が 以前に選択されていたら それに従う。
+						FilterSettingProcessMode.setLastSelect(info.getActionClassName());
+					}else{
+						// 種別選択ダイアログを表示
+						FilterSettingDialog filtersettingDialog = new FilterSettingDialog(
+								PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), "import",info.getName());
+						// OKボタンが押下された際に選択されていた種別をセット
+						if (filtersettingDialog.open() == IDialogConstants.OK_ID) {
+							if (filtersettingDialog.getSelectionData() != null && filtersettingDialog.getSelectionData().size() != 0) {
+								filtersettingDialog.setFilterSettingProcessMode(info.getActionClassName());
+							} else {
+								isTargetSelected = false;
+							}
+						// キャンセルボタンが押下された場合は、対象のジョブユニットのジョブIDをセットしない
+						} else {
+							isTargetSelected = false;
+						}
+					}
+				}
+				
 				// 対象が選択されていた場合は、XMLを読み込む
 				if (isTargetSelected) {
 					funcNameList.append(" ");
 					funcNameList.append(info.getName());
 					funcNameList.append("\n");
+					
+					if ( info.getId().equals(HinemosModuleConstant.JOB_MST ) ) {
+						addMessage.append("\n"+Messages.getString("message.import.confirm9", new String[] { info.getName() }));
+					} else if (info.getId().equals(HinemosModuleConstant.JOB_MAP_IMAGE)
+							|| info.getId().equals(HinemosModuleConstant.NODE_MAP_IMAGE)
+							|| info.getId().equals(HinemosModuleConstant.INFRA_FILE)) {
+						// FIXME v.7.0時点では、isTargetSelectedがtrueになるのはジョブ設定のみでありこちらに行くことはない。
+						addMessage.append("\n"+Messages.getString("message.import.confirm10", new String[] { info.getName() }));
+					}
 					
 					// 処理対象としてリストに追加
 					m_funcList.add(info);
@@ -303,11 +395,15 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 			ImportProcessMode.setSameprocess(false);
 			ImportProcessMode.setObjectPrivilege(false);
 			ImportProcessMode.setXmlObjectPrivilege(objectPrivilegeXml);
+			ImportProcessMode.setRollbackIfAbnormal(false);
+			ImportProcessMode.setSameRollbackIfAbnormal(false);
+			ImportProcessMode.setCancelForAbend(false);
+			ImportProcessMode.setSameCancelForAbend(false);
 			DeleteProcessMode.setProcesstype(0);
 			DeleteProcessMode.setSameprocess(false);
 			IMPORT:if(m_funcList.size() != 0){
 				if (withObjectprivilege ){
-					int status = showComfirmWithObjectPrivilege(funcNameList.toString());
+					int status = showComfirmWithObjectPrivilege(funcNameList.toString(),addMessage.toString());
 					switch(status){
 					case CANCEL:
 						break IMPORT;
@@ -327,9 +423,10 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 						}
 						break;
 					}
-				}else if (!showComfirmDialog(funcNameList.toString())){
+				}else if (!showComfirmDialog(funcNameList.toString(),addMessage.toString())){
 					break IMPORT;
 				}
+				
 				// プログレスバーの表示
 				try {
 					IRunnableWithProgress op = new IRunnableWithProgress() {
@@ -376,6 +473,32 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 								FuncInfo info = importOrderList.get(i);
 								defaultFileList = info.getDefaultXML();
 								
+								// 異常時の処理方法を確認(Job、アップロード系、プラットフォームマスタ以外)
+								if ( !(info.getId().equals(HinemosModuleConstant.JOB_MST))
+									&& !(info.getId().equals(HinemosModuleConstant.JOB_MAP_IMAGE))
+									&& !(info.getId().equals(HinemosModuleConstant.NODE_MAP_IMAGE))
+									&& !(info.getId().equals(HinemosModuleConstant.INFRA_FILE))
+									&& !(info.getId().equals(HinemosModuleConstant.MASTER_PLATFORM))
+									&& !(info.getId().equals(HinemosModuleConstant.MASTER_COLLECT))
+										) {
+									if (ImportProcessMode.isSameRollbackIfAbnormal() == false
+											&& ImportProcessMode.getProcesstype() != UtilityDialogConstant.CANCEL) {
+										String[] dialogTitleArgs = new String[] { info.getName() };
+										MessageDialogWithToggle errorProcessDialog = createImportErrorProcessDialog(
+														Messages.getString("message.import.confirm5", dialogTitleArgs));
+										int retErrorProcess = errorProcessDialog.open();
+										ImportProcessMode.setSameRollbackIfAbnormal(errorProcessDialog.getToggleState());
+										switch (retErrorProcess) {
+										case UtilityDialogConstant.ROLLBACK:
+											ImportProcessMode.setRollbackIfAbnormal(true);
+											break;
+										case UtilityDialogConstant.SKIP:
+										default:
+											ImportProcessMode.setRollbackIfAbnormal(false);
+											break;
+										}
+									}
+								}
 								// XMLファイルのリスト作成
 								fileList = ReadXMLAction.getXMLFile(defaultFileList);
 								
@@ -410,6 +533,7 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 									}
 								}
 								
+								ImportProcessMode.setImportUnitNum(m_unitNumMap.get(info.getId()));
 								result = m_action.importCommand(info, fileList, info.getTargetIdList());
 								
 								if(result == 0) {
@@ -424,6 +548,7 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 							if(doJob && doNotify){
 								ImportProcessMode.setProcesstype(UtilityDialogConstant.SKIP);
 								ImportProcessMode.setSameprocess(true);
+								ImportProcessMode.setImportUnitNum(m_unitNumMap.get(notifyFuncInfo.getId()));
 								m_action.importCommand(notifyFuncInfo, notifyFileList, notifyFuncInfo.getTargetIdList());
 							}
 							
@@ -454,7 +579,8 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 					String resultMessage = m_action.getStdOut().replaceAll("\r\n", "\n");
 					String[] resultMessages = resultMessage.split("\n");
 					for(int i = 0; i < resultMessages.length; i++){
-						mStatus.add(new Status(IStatus.INFO, this.toString(), IStatus.OK, resultMessages[i], null));
+						mStatus.add(new Status(IStatus.INFO, this.toString(), IStatus.OK,
+								StringUtil.cutTailForStatus(resultMessages[i]), null));
 					}
 					ErrorDialog.openError(null, Messages.getString("message.confirm"), null, mStatus);
 				}
@@ -468,7 +594,8 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 					String resultMessage = m_action.getStdOut().replaceAll("\r\n", "\n") + m_action.getErrOut().replaceAll("\r\n", "\n");
 					String[] resultMessages = resultMessage.split("\n");
 					for(int i = 0; i < resultMessages.length; i++){
-						mStatus.add(new Status(IStatus.WARNING, this.toString(), IStatus.OK, resultMessages[i], null));
+						mStatus.add(new Status(IStatus.WARNING, this.toString(), IStatus.OK,
+								StringUtil.cutTailForStatus(resultMessages[i]), null));
 					}
 					
 					// 結果表示（失敗）
@@ -552,15 +679,18 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 	 * @param funcNameList
 	 * @return 状態（キャンセル(-1)、OKチェックボックスOFF（1）、OKチェックボックスOFF（2））
 	 */
-	private int showComfirmWithObjectPrivilege(String funcNameList){
+	private int showComfirmWithObjectPrivilege(String funcNameList, String addMessage){
 		String msg = Messages.getString("string.manager") + " :  " +
 				UtilityManagerUtil.getCurrentManagerName() +
 				" ( " +
-				EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr() +
+				RestConnectManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr() +
 				" )\n\n" +
 				Messages.getString("message.import.confirm1") +
 				"\n\n" +
 				funcNameList;
+		if(addMessage != null && !(addMessage.isEmpty()) ){
+			msg  = msg + addMessage;
+		}
 		MessageDialogWithCheckbox messageDialogWithCheckbox = new MessageDialogWithCheckbox(
 				msg,
 				Messages.getString("message.import.confirm.object.privilege")
@@ -577,11 +707,31 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 		}
 	}
 	
-	private boolean showComfirmDialog(String funcNameList){
+	private boolean showComfirmDialog(String funcNameList , String addMessage){
+		String msg = Messages.getString("string.manager") + " :  " + UtilityManagerUtil.getCurrentManagerName() + " ( " + RestConnectManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr() + " )\n\n" +
+				Messages.getString("message.import.confirm1") + "\n\n" + funcNameList;
+		if(addMessage != null && !(addMessage.isEmpty()) ){
+			msg  = msg + "\n" + addMessage;
+		}
+		
 		return MessageDialog.openQuestion(
 				null,
 				Messages.getString("message.confirm"),
-				Messages.getString("string.manager") + " :  " + UtilityManagerUtil.getCurrentManagerName() + " ( " + EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr() + " )\n\n" +
-				Messages.getString("message.import.confirm1") + "\n\n" + funcNameList);
+				msg);
+	}
+	
+	private MessageDialogWithToggle createImportErrorProcessDialog(String message){
+		return new MessageDialogWithToggle(null, 
+				  Messages.getString("message.confirm"), 
+				  null, 
+				  message, 
+				  MessageDialogWithToggle.QUESTION, 
+//				  new String[]{Messages.getString("message.import.error.rollback"),
+//							   Messages.getString("message.import.error.skip")},
+				  // TODO 6612対応 7.0.1リリース時には一時変更を戻す
+				  new String[]{Messages.getString("message.import.error.skip")}, 
+				  0,
+				  Messages.getString("message.import.confirm6"), 
+				  false);
 	}
 }

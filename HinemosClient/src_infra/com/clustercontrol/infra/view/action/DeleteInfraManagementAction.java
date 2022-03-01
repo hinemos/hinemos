@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -28,18 +29,18 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.action.GetInfraManagementTableDefine;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.InfraManagementView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidSetting_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
 
 public class DeleteInfraManagementAction extends AbstractHandler implements IElementUpdater {
 	// ログ
@@ -88,7 +89,7 @@ public class DeleteInfraManagementAction extends AbstractHandler implements IEle
 				String managerName = (String) ((ArrayList<?>)object).get(GetInfraManagementTableDefine.MANAGER_NAME);
 				tmpManagementId = (String) ((ArrayList<?>)object).get(GetInfraManagementTableDefine.MANAGEMENT_ID);
 				map.get(managerName).add(tmpManagementId);
-				strManagementIds.append(tmpManagementId + ", ");
+				strManagementIds.append(tmpManagementId + "(" + managerName + ")" + ", ");
 
 			}
 			strManagementIds.setLength(strManagementIds.length() - 2);
@@ -102,14 +103,14 @@ public class DeleteInfraManagementAction extends AbstractHandler implements IEle
 				Map<String, String> errMsg = new ConcurrentHashMap<String, String>();
 				for(Map.Entry<String, List<String>> entry : map.entrySet()) {
 					String managerName = entry.getKey();
-					InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+					InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 					List<String> managementIds = entry.getValue();
 					try {
-						wrapper.deleteInfraManagement(managementIds);
-					} catch (InvalidRole_Exception e){
+						wrapper.deleteInfraManagement(managementIds.stream().collect(Collectors.joining(",")));
+					} catch (InvalidRole e){
 						// 権限なし
 						errMsg.put(managerName, Messages.getString("message.accesscontrol.16"));
-					} catch (InfraManagementNotFound_Exception | HinemosUnknown_Exception | InvalidUserPass_Exception | InvalidSetting_Exception | NotifyNotFound_Exception e) {
+					} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidSetting | InfraManagementNotFound e) {
 						m_log.debug("execute() : " + e.getClass() + e.getMessage());
 						String arg = Messages.getString(
 								"message.infra.action.result",

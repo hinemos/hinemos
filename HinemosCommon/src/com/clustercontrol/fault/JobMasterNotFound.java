@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * ジョブマスタが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class JobMasterNotFound extends HinemosException {
+public class JobMasterNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = -8922714276557399736L;
 

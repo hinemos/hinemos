@@ -11,13 +11,15 @@ package com.clustercontrol.utility.jobutil.util;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.FacilityTreeCache;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 public class JobStringUtil {
 	public static final int ERROR_PRE_CHECK = -10;
@@ -43,21 +45,44 @@ public class JobStringUtil {
 		}
 		return String.valueOf(jobType);
 	}
+
+	public enum ItemTypeForEnum {
+		Manager(JobInfoWrapper.TypeEnum.MANAGER, Messages.getString("facility.manager")),
+		JobUnit(JobInfoWrapper.TypeEnum.JOBUNIT, Messages.getString("jobunit")),
+		JobNet(JobInfoWrapper.TypeEnum.JOBNET, Messages.getString("jobnet")),
+		Job(JobInfoWrapper.TypeEnum.JOB, Messages.getString("job"));
+		
+		private JobInfoWrapper.TypeEnum itemType;
+		private String itemTypeString;
+		ItemTypeForEnum(JobInfoWrapper.TypeEnum jobType, String jobTypeString) {
+			this.itemType = jobType;
+			this.itemTypeString = jobTypeString;
+		}
+	}
 	
+
+	public static String toJobTypeStringForEnum(JobInfoWrapper.TypeEnum jobTypeEnum) {
+		for (ItemTypeForEnum type : ItemTypeForEnum.values()) {
+			if (type.itemType.equals(jobTypeEnum))
+				return type.itemTypeString;
+		}
+		return String.valueOf(jobTypeEnum);
+	}
+
 	public static Map<String, String> getScopeMap() {
 		Map<String, String> map = new HashMap<>();
-		FacilityTreeItem tree = FacilityTreeCache.getTreeItem(UtilityManagerUtil.getCurrentManagerName());
+		FacilityTreeItemResponse tree = FacilityTreeCache.getTreeItem(UtilityManagerUtil.getCurrentManagerName());
 		FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
 
-		for (FacilityTreeItem item : tree.getChildren()) {
+		for (FacilityTreeItemResponse item : tree.getChildren()) {
 			map.put(item.getData().getFacilityId(), path.getPath(item));
 			childScopeMap(map, path, item);
 		}
 		return map;
 	}
 	
-	private static void childScopeMap(Map<String, String> map, FacilityPath path, FacilityTreeItem treeItem) {
-		for (FacilityTreeItem item : treeItem.getChildren()) {
+	private static void childScopeMap(Map<String, String> map, FacilityPath path, FacilityTreeItemResponse treeItem) {
+		for (FacilityTreeItemResponse item : treeItem.getChildren()) {
 			map.put(item.getData().getFacilityId(), path.getPath(item));
 			childScopeMap(map, path, item);
 		}

@@ -11,12 +11,10 @@ package com.clustercontrol.calendar.action;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
-
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
-import com.clustercontrol.util.HinemosMessage;
+import org.openapitools.client.model.CalendarInfoResponse;
+import org.openapitools.client.model.CalendarPatternInfoResponse;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.calendar.CalendarInfo;
-import com.clustercontrol.ws.calendar.CalendarPatternInfo;
 
 /**
  * カレンダ情報を取得するクライアント側アクションクラス<BR>
@@ -36,19 +34,19 @@ public class GetCalendar {
 	 * @param calendarId カレンダID
 	 * @return カレンダ情報
 	 */
-	public CalendarInfo getCalendar(String managerName, String calendarId) {
+	public CalendarInfoResponse getCalendar(String managerName, String calendarId) {
 
-		CalendarInfo info = null;
+		CalendarInfoResponse info = null;
 		try {
-			CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
-			info = wrapper.getCalendar(calendarId);
+			CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
+			info = wrapper.getCalendarInfo(calendarId);
 		} catch (Exception e) {
 			// 上記以外の例外
-			m_log.warn("getCalendar(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("getCalendar(), " + e.getMessage(), e);
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					e.getMessage());
 		}
 
 		return info;
@@ -59,18 +57,18 @@ public class GetCalendar {
 	 * @param id
 	 * @return
 	 */
-	public CalendarPatternInfo getCalendarPattern(String managerName, String id) {
-		CalendarPatternInfo info = null;
+	public CalendarPatternInfoResponse getCalendarPattern(String managerName, String id) {
+		CalendarPatternInfoResponse info = null;
 		try {
-			CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
+			CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
 			info = wrapper.getCalendarPattern(id);
 		} catch (Exception e) {
 			// 上記以外の例外
-			m_log.warn("getCalendarPattern(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("getCalendarPattern(), " + e.getMessage(), e);
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					e.getMessage());
 		}
 		return info;
 	}

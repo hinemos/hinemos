@@ -647,7 +647,7 @@ public class FPingUtils {
 	//for test
 	public static void main(String[] args) {
 		
-		PropertyConfigurator.configure("resource\\log4j.properties");
+		PropertyConfigurator.configure("resource\\log4j2.properties");
 		
 		while (true) {
 			for (int i = 0; i < 20; i++) {

@@ -53,7 +53,7 @@ public class DatasourceJobRunTimeOrder extends DatasourceBase {
 			throw new ReportingPropertyNotFound(SUFFIX_KEY_VALUE+"."+num + " is not defined.");
 		}
 		String suffix = m_propertiesMap.get(SUFFIX_KEY_VALUE+"."+num);
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		
 		String csvFileName = ReportUtil.getCsvFileNameForTemplateType(m_templateId, suffix + "_" + dayString);
 		HashMap<String, Object> retMap = new HashMap<String, Object>();
@@ -71,7 +71,7 @@ public class DatasourceJobRunTimeOrder extends DatasourceBase {
 
 		String[] columns = { "session_id", "job_id", "start_date", "end_date", "elapsed_time_max", "elapsed_time_avg", "elapsed_time_diff", "job_label" };
 
-		String columnsStr = ReportUtil.joinStrings(columns, ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 		
 		// get data from Hinemos DB
 		BufferedWriter bw = null;
@@ -133,11 +133,10 @@ public class DatasourceJobRunTimeOrder extends DatasourceBase {
 							String jobLabel = jobId + " (" + jobName + ")";
 							jobLabel = (jobLabel.length() <= maxLength ? jobLabel :
 								jobLabel.substring(0, maxLength) + "...");
-							jobLabel = '"' + jobLabel.replace("\"", "\"\"") + '"';
 		
-							bw.write(sessionId + "," + jobId + "," + startDate + "," + endDate + ","
-									 + elapsedTimeMax + "," + elapsedTimeAvg + "," + elapsedTimeDiff + ","
-									 + jobLabel);
+							String[] data = { sessionId, jobId, startDate.toString(), endDate.toString(),
+									elapsedTimeMax, elapsedTimeAvg, elapsedTimeDiff, jobLabel };
+							bw.write(ReportUtil.joinStringsToCsv(data));
 							bw.newLine();
 						}
 					}

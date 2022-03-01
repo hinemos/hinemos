@@ -13,7 +13,7 @@ package com.clustercontrol.fault;
  * 
  * @version 6.2.0
  */
-public class NodeConfigSettingDuplicate extends HinemosException {
+public class NodeConfigSettingDuplicate extends HinemosDuplicate {
 
 	private static final long serialVersionUID = -5612525221540116629L;
 	private String m_settingId = null;
