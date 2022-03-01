@@ -23,6 +23,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.NodeConfigCustomInfoResponse;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse;
 
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.dialog.ValidateResult;
@@ -30,8 +32,6 @@ import com.clustercontrol.repository.action.GetNodeCustomTableDefine;
 import com.clustercontrol.repository.dialog.NodeCustomInfoCreateDialog;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.repository.NodeConfigCustomInfo;
-import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
 
 /**
  * ユーザ任意情報一覧テーブル<BR>
@@ -48,7 +48,7 @@ public class NodeCustomListComposite extends Composite {
 	private ArrayList<TableColumnInfo> m_tableDefine = null;
 
 	/** ユーザ任意情報{@literal <ユーザ任意情報ID, ユーザ任意情報>}} */
-	private HashMap<String, NodeConfigCustomInfo> m_customInfoMap = null;
+	private HashMap<String, NodeConfigCustomInfoResponse> m_customInfoMap = null;
 
 	/** DB登録済ユーザ任意情報IDリスト */
 	private ArrayList<String> registeredCustomIdList = null;
@@ -108,7 +108,7 @@ public class NodeCustomListComposite extends Composite {
 		this.m_tableViewer.addDoubleClickListener(new IDoubleClickListener() {
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
-				NodeConfigCustomInfo info = getFilterItem();
+				NodeConfigCustomInfoResponse info = getFilterItem();
 				if (info != null) {
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 					NodeCustomInfoCreateDialog dialog = new NodeCustomInfoCreateDialog(shell, info, getCustomIdList(),
@@ -141,7 +141,7 @@ public class NodeCustomListComposite extends Composite {
 	 *
 	 * @return 選択アイテム
 	 */
-	public NodeConfigCustomInfo getFilterItem() {
+	public NodeConfigCustomInfoResponse getFilterItem() {
 		StructuredSelection selection = (StructuredSelection) this.m_tableViewer.getSelection();
 		if (selection == null) {
 			return null;
@@ -159,13 +159,13 @@ public class NodeCustomListComposite extends Composite {
 	 *            設定値として用いる監視情報
 	 */
 
-	public void setInputData(NodeConfigSettingInfo info) {
+	public void setInputData(NodeConfigSettingInfoResponse info) {
 
 		if (info != null && info.getNodeConfigCustomList() != null && !info.getNodeConfigCustomList().isEmpty()) {
 			// 設定
-			this.m_customInfoMap = new HashMap<String, NodeConfigCustomInfo>();
+			this.m_customInfoMap = new HashMap<String, NodeConfigCustomInfoResponse>();
 			this.registeredCustomIdList = new ArrayList<String>();
-			for (NodeConfigCustomInfo customInfo : info.getNodeConfigCustomList()) {
+			for (NodeConfigCustomInfoResponse customInfo : info.getNodeConfigCustomList()) {
 				this.m_customInfoMap.put(customInfo.getSettingCustomId(), customInfo);
 				this.registeredCustomIdList.add(customInfo.getSettingCustomId());
 			}
@@ -173,7 +173,7 @@ public class NodeCustomListComposite extends Composite {
 			// テーブル更新
 			update();
 		} else {
-			this.m_customInfoMap = new HashMap<String, NodeConfigCustomInfo>();
+			this.m_customInfoMap = new HashMap<String, NodeConfigCustomInfoResponse>();
 			this.registeredCustomIdList = null;
 		}
 	}
@@ -185,7 +185,7 @@ public class NodeCustomListComposite extends Composite {
 	public void update() {
 		// テーブル更新
 		ArrayList<Object> listAll = new ArrayList<Object>();
-		for (NodeConfigCustomInfo info : this.m_customInfoMap.values()) {
+		for (NodeConfigCustomInfoResponse info : this.m_customInfoMap.values()) {
 			ArrayList<Object> list = new ArrayList<Object>();
 
 			// ユーザ任意情報ID.
@@ -201,14 +201,14 @@ public class NodeCustomListComposite extends Composite {
 			list.add(info.getDescription());
 
 			// 実行ユーザ.
-			if (info.isSpecifyUser()) {
+			if (info.getSpecifyUser()) {
 				list.add(info.getEffectiveUser());
 			} else {
 				list.add(Messages.getString("agent.user"));
 			}
 
 			// 有効/無効
-			list.add(info.isValidFlg());
+			list.add(info.getValidFlg());
 			listAll.add(list);
 		}
 
@@ -226,15 +226,15 @@ public class NodeCustomListComposite extends Composite {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	public ValidateResult createInputData(NodeConfigSettingInfo nodeConfigInfo) {
+	public ValidateResult createInputData(NodeConfigSettingInfoResponse nodeConfigInfo) {
 
 		if (this.m_customInfoMap != null && !this.m_customInfoMap.isEmpty()) {
 			String settingId = nodeConfigInfo.getSettingId();
 
-			for (NodeConfigCustomInfo info : this.m_customInfoMap.values()) {
+			for (NodeConfigCustomInfoResponse info : this.m_customInfoMap.values()) {
 				info.setSettingCustomId(settingId);
 			}
-			List<NodeConfigCustomInfo> customInfoList = nodeConfigInfo.getNodeConfigCustomList();
+			List<NodeConfigCustomInfoResponse> customInfoList = nodeConfigInfo.getNodeConfigCustomList();
 			customInfoList.clear();
 			customInfoList.addAll(this.m_customInfoMap.values());
 		}
@@ -292,7 +292,7 @@ public class NodeCustomListComposite extends Composite {
 		calDetailListSetSelectionTable.setSelection(selectIndex);
 	}
 
-	public HashMap<String, NodeConfigCustomInfo> getNodeConfigCustomInfoMap() {
+	public HashMap<String, NodeConfigCustomInfoResponse> getNodeConfigCustomInfoMap() {
 		return this.m_customInfoMap;
 	}
 

@@ -30,6 +30,10 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.JobCommandInfoResponse;
+import org.openapitools.client.model.JobCommandParamResponse;
+import org.openapitools.client.model.JobEnvVariableInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.DataRangeConstant;
@@ -38,22 +42,17 @@ import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.jobmanagement.bean.CommandStopTypeConstant;
-import com.clustercontrol.jobmanagement.bean.ProcessingMethodConstant;
 import com.clustercontrol.jobmanagement.bean.SystemParameterConstant;
 import com.clustercontrol.jobmanagement.dialog.EnvVariableCompositeDialog;
 import com.clustercontrol.jobmanagement.dialog.JobCommandParameterCompositeDialog;
 import com.clustercontrol.jobmanagement.dialog.ManagerDistributionDialog;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobCommandInfo;
-import com.clustercontrol.ws.jobmanagement.JobCommandParam;
-import com.clustercontrol.ws.jobmanagement.JobEnvVariableInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * コマンドタブ用のコンポジットクラスです。
@@ -94,8 +93,10 @@ public class CommandComposite extends Composite {
 	private String m_facilityId = null;
 	/** スコープ */
 	private String m_facilityPath = null;
+	/** ファシリティID（固定値用） */
+	private String m_facilityIdFixed = null;
 	/** ジョブコマンド情報 */
-	private JobCommandInfo m_execute = null;
+	private JobCommandInfoResponse m_execute = null;
 	/** シェル */
 	private Shell m_shell = null;
 	/** オーナーロールID */
@@ -116,10 +117,10 @@ public class CommandComposite extends Composite {
 	private String m_scriptContent = null;
 
 	/** 環境変数 */
-	private List<JobEnvVariableInfo> m_jobEnvVariableInfo = new ArrayList<JobEnvVariableInfo>();
+	private List<JobEnvVariableInfoResponse> m_jobEnvVariableInfo = new ArrayList<JobEnvVariableInfoResponse>();
 
 	/** ジョブ変数情報 */
-	private Map<String, JobCommandParam> m_jobCommandParamMap = new HashMap<>();
+	private Map<String, JobCommandParamResponse> m_jobCommandParamMap = new HashMap<>();
 
 	/** 読み取り専用フラグ */
 	private boolean m_readOnly = false;
@@ -242,13 +243,13 @@ public class CommandComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				ScopeTreeDialog dialog = new ScopeTreeDialog(m_shell, m_managerName, m_ownerRoleId);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem selectItem = dialog.getSelectItem();
-					FacilityInfo info = selectItem.getData();
+					FacilityTreeItemResponse selectItem = dialog.getSelectItem();
+					FacilityInfoResponse info = selectItem.getData();
 					FacilityPath path = new FacilityPath(
 							ClusterControlPlugin.getDefault()
 							.getSeparator());
 					m_facilityPath = path.getPath(selectItem);
-					m_facilityId = info.getFacilityId();
+					m_facilityIdFixed = info.getFacilityId();
 					m_scopeFixedValueText.setText(m_facilityPath);
 					update();
 				}
@@ -272,7 +273,7 @@ public class CommandComposite extends Composite {
 		WidgetTestUtil.setTestId(this, "m_retry", this.m_retry);
 		this.m_retry.setText(Messages.getString("scope.process.retry.nodes"));
 		this.m_retry.setLayoutData(
-				new RowData(250, SizeConstant.SIZE_BUTTON_HEIGHT));
+				new RowData(450, SizeConstant.SIZE_BUTTON_HEIGHT));
 		
 		// スクリプト配布
 		Composite scriptDistributionComposite = new Composite(this, SWT.NONE);
@@ -341,7 +342,7 @@ public class CommandComposite extends Composite {
 		WidgetTestUtil.setTestId(this, "m_destroyProcess", this.m_destroyProcess);
 		this.m_destroyProcess.setText(Messages.getString("shutdown.process"));
 		this.m_destroyProcess.setLayoutData(
-				new RowData(120, SizeConstant.SIZE_BUTTON_HEIGHT));
+				new RowData(150, SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_destroyProcess.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -577,12 +578,13 @@ public class CommandComposite extends Composite {
 			else{
 				if (m_facilityPath != null && m_facilityPath.length() > 0) {
 					m_scopeFixedValueText.setText(m_facilityPath);
+					m_facilityIdFixed = m_facilityId;
 				}
 				m_scopeJobParamRadio.setSelection(false);
 				m_scopeFixedValueRadio.setSelection(true);
 			}
 			//処理方法設定
-			if (m_execute.getProcessingMethod() == ProcessingMethodConstant.TYPE_ALL_NODE) {
+			if (m_execute.getProcessingMethod() ==  JobCommandInfoResponse.ProcessingMethodEnum.ALL_NODE) {
 				m_allNode.setSelection(true);
 				m_retry.setSelection(false);
 			} else {
@@ -591,7 +593,7 @@ public class CommandComposite extends Composite {
 			}
 			
 			//スクリプト配布
-			m_managerDistribution = m_execute.isManagerDistribution();
+			m_managerDistribution = m_execute.getManagerDistribution();
 			m_scriptName = m_execute.getScriptName();
 			m_scriptEncoding = m_execute.getScriptEncoding();
 			m_scriptContent = m_execute.getScriptContent();
@@ -602,7 +604,7 @@ public class CommandComposite extends Composite {
 				m_startCommand.setText(m_execute.getStartCommand());
 			}
 			//停止コマンド設定
-			if (m_execute.getStopType() == CommandStopTypeConstant.DESTROY_PROCESS) {
+			if (m_execute.getStopType() == JobCommandInfoResponse.StopTypeEnum.DESTROY_PROCESS) {
 				m_destroyProcess.setSelection(true);
 				m_executeStopCommand.setSelection(false);
 			} else {
@@ -615,7 +617,7 @@ public class CommandComposite extends Composite {
 				m_stopCommand.setText(m_execute.getStopCommand());
 			}
 			//ユーザー設定
-			if (m_execute.isSpecifyUser().booleanValue()) {
+			if (m_execute.getSpecifyUser().booleanValue()) {
 				m_specifyUser.setSelection(true);
 				m_agentUser.setSelection(false);
 				m_user.setEditable(true);
@@ -630,13 +632,13 @@ public class CommandComposite extends Composite {
 
 			// コマンド終了時のジョブ変数
 			if (m_execute.getJobCommandParamList() != null) {
-				for (JobCommandParam jobCommandParam : m_execute.getJobCommandParamList()) {
+				for (JobCommandParamResponse jobCommandParam : m_execute.getJobCommandParamList()) {
 					this.m_jobCommandParamMap.put(jobCommandParam.getParamId(), jobCommandParam);
 				}
 				reflectParamInfo();
 			}
 			//環境変数
-			m_jobEnvVariableInfo.addAll(m_execute.getEnvVariableInfo());
+			m_jobEnvVariableInfo.addAll(m_execute.getEnvVariable());
 		}
 
 		//スコープ
@@ -652,7 +654,7 @@ public class CommandComposite extends Composite {
 	 *
 	 * @param execute ジョブコマンド情報
 	 */
-	public void setCommandInfo(JobCommandInfo execute) {
+	public void setCommandInfo(JobCommandInfoResponse execute) {
 		m_execute = execute;
 	}
 
@@ -661,7 +663,7 @@ public class CommandComposite extends Composite {
 	 *
 	 * @return ジョブコマンド情報
 	 */
-	public JobCommandInfo getCommandInfo() {
+	public JobCommandInfoResponse getCommandInfo() {
 		return m_execute;
 	}
 
@@ -676,7 +678,7 @@ public class CommandComposite extends Composite {
 		ValidateResult result = null;
 
 		//実行内容情報クラスのインスタンスを作成・取得
-		m_execute = new JobCommandInfo();
+		m_execute = JobTreeItemUtil.createJobCommandInfoResponse();
 
 		//スコープ取得
 		if(m_scopeJobParamRadio.getSelection()){
@@ -694,8 +696,8 @@ public class CommandComposite extends Composite {
 		}
 		else{
 			//固定値の場合
-			if (m_facilityId != null && m_facilityId.length() > 0){
-				m_execute.setFacilityID(m_facilityId);
+			if (m_facilityIdFixed != null && m_facilityIdFixed.length() > 0){
+				m_execute.setFacilityID(m_facilityIdFixed);
 				m_execute.setScope(m_facilityPath);
 			} else {
 				result = new ValidateResult();
@@ -709,9 +711,9 @@ public class CommandComposite extends Composite {
 		//処理方法取得
 		if (m_allNode.getSelection()) {
 			m_execute
-			.setProcessingMethod(ProcessingMethodConstant.TYPE_ALL_NODE);
+			.setProcessingMethod(JobCommandInfoResponse.ProcessingMethodEnum.ALL_NODE);
 		} else {
-			m_execute.setProcessingMethod(ProcessingMethodConstant.TYPE_RETRY);
+			m_execute.setProcessingMethod(JobCommandInfoResponse.ProcessingMethodEnum.RETRY);
 		}
 
 		//スクリプト配布
@@ -733,10 +735,10 @@ public class CommandComposite extends Composite {
 
 		//停止コマンド取得
 		if (m_destroyProcess.getSelection()) {
-			m_execute.setStopType(CommandStopTypeConstant.DESTROY_PROCESS);
+			m_execute.setStopType(JobCommandInfoResponse.StopTypeEnum.DESTROY_PROCESS);
 		} else {
 			if (m_stopCommand.getText().length() > 0) {
-				m_execute.setStopType(CommandStopTypeConstant.EXECUTE_COMMAND);
+				m_execute.setStopType(JobCommandInfoResponse.StopTypeEnum.EXECUTE_COMMAND);
 				m_execute.setStopCommand(m_stopCommand.getText());
 			} else {
 				result = new ValidateResult();
@@ -764,7 +766,7 @@ public class CommandComposite extends Composite {
 		}
 		
 		//環境変数
-		m_execute.getEnvVariableInfo().addAll(m_jobEnvVariableInfo);
+		m_execute.getEnvVariable().addAll(m_jobEnvVariableInfo);
 
 		// ジョブ変数
 		m_execute.getJobCommandParamList().addAll(m_jobCommandParamMap.values());

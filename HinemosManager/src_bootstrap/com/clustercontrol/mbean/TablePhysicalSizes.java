@@ -23,7 +23,7 @@ public class TablePhysicalSizes {
 	private long log_cc_job_session;
 	private long log_cc_job_session_job;
 	private long log_cc_job_session_node;
-	private long log_cc_job_start_job_info;
+	private long log_cc_job_wait_group_info;
 	private long log_cc_status_info;
 
 	@ConstructorProperties({
@@ -39,7 +39,7 @@ public class TablePhysicalSizes {
 		"log_cc_job_session",
 		"log_cc_job_session",
 		"log_cc_job_session_job",
-		"log_cc_job_start_job_info",
+		"log_cc_job_wait_group_info",
 		"log_cc_status_info"})
 	public TablePhysicalSizes(
 			long log_cc_collect_data_raw,
@@ -54,7 +54,7 @@ public class TablePhysicalSizes {
 			long log_cc_job_session,
 			long log_cc_job_session_job,
 			long log_cc_job_session_node,
-			long log_cc_job_start_job_info,
+			long log_cc_job_wait_group_info,
 			long log_cc_status_info
 			) {
 			this.log_cc_collect_data_raw = log_cc_collect_data_raw;
@@ -67,7 +67,7 @@ public class TablePhysicalSizes {
 			this.log_cc_job_session = log_cc_job_session;
 			this.log_cc_job_session_job = log_cc_job_session_job;
 			this.log_cc_job_session_node = log_cc_job_session_node;
-			this.log_cc_job_start_job_info = log_cc_job_start_job_info;
+			this.log_cc_job_wait_group_info = log_cc_job_wait_group_info;
 			this.log_cc_status_info = log_cc_status_info;
 	}
 
@@ -156,10 +156,10 @@ public class TablePhysicalSizes {
 	}
 
 	/**
-	 * @return the log_cc_job_start_job_info
+	 * @return the log_cc_job_wait_group_info
 	 */
-	public long getLog_cc_job_start_job_info() {
-		return log_cc_job_start_job_info;
+	public long getLog_cc_job_wait_group_info() {
+		return log_cc_job_wait_group_info;
 	}
 
 	/**

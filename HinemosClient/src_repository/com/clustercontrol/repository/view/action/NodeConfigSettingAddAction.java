@@ -20,7 +20,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.clustercontrol.repository.dialog.NodeConfigSettingCreateDialog;
 import com.clustercontrol.repository.view.NodeConfigSettingListView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * 構成情報取得設定の作成・変更ダイアログによる、構成情報取得設定を行うクライアント側アクションクラス<BR>
@@ -53,7 +53,7 @@ public class NodeConfigSettingAddAction extends AbstractHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		this.viewPart = HandlerUtil.getActivePart(event);
 
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 
 		// ダイアログを生成
 		NodeConfigSettingCreateDialog dialog = new NodeConfigSettingCreateDialog(this.viewPart.getSite().getShell(), managerName, null, false);

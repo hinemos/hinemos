@@ -13,6 +13,7 @@
 
 	<!-- パッケージの設定 -->
 	<property name="package.platform" value="com.clustercontrol.utility.settings.platform.xml" />
+	<property name="package.filtersetting" value="com.clustercontrol.utility.settings.filtersetting.xml" />
 	<property name="package.monitor" value="com.clustercontrol.utility.settings.monitor.xml" />
 	<property name="package.maintenance" value="com.clustercontrol.utility.settings.maintenance.xml" />
 	<property name="package.job" value="com.clustercontrol.utility.settings.job.xml" />
@@ -23,6 +24,7 @@
 	<property name="package.jobmap" value="com.clustercontrol.utility.settings.jobmap.xml" />
 	<property name="package.nodemap" value="com.clustercontrol.utility.settings.nodemap.xml" />
 	<property name="package.cloud" value="com.clustercontrol.utility.settings.cloud.xml" />
+	<property name="package.rpa" value="com.clustercontrol.utility.settings.rpa.xml" />
 
 	<property name="dir.xsd" value="config/utility/xsd" />
 	<property name="dir.lib" value="lib" />
@@ -33,10 +35,12 @@
 	<property name="dir.src.master" value="${dir.src_xmlschema}/com/clustercontrol/utility/settings/master/xml" />
 	<property name="dir.src.monitor" value="${dir.src_xmlschema}/com/clustercontrol/utility/settings/monitor/xml" />
 	<property name="dir.src.platform" value="${dir.src_xmlschema}/com/clustercontrol/utility/settings/platform/xml" />
+	<property name="dir.src.filtersetting" value="${dir.src_xmlschema}/com/clustercontrol/utility/settings/filtersetting/xml" />
 	<property name="dir.src.infra" value="${dir.src_xmlschema}/com/clustercontrol/utility/settings/infra/xml" />
 	<property name="dir.src.report" value="${dir.src_xmlschema}/com/clustercontrol/utility/settings/report/xml" />
 	<property name="dir.src.nodemap" value="${dir.src_xmlschema}/com/clustercontrol/utility/settings/nodemap/xml" />
 	<property name="dir.src.jobmap" value="${dir.src_xmlschema}/com/clustercontrol/utility/settings/jobmap/xml" />
+	<property name="dir.src.rpa" value="${dir.src_xmlschema}/com/clustercontrol/utility/settings/rpa/xml" />
 
 	<target name="all">
 		<!-- ドキュメント生成一括実行 -->
@@ -57,24 +61,32 @@
 		<mkdir dir="${dir.src.job}" />
 		<mkdir dir="${dir.src.maintenance}" />
 		<mkdir dir="${dir.src.platform}" />
+		<mkdir dir="${dir.src.filtersetting}" />
 		<mkdir dir="${dir.src.monitor}" />
 		<mkdir dir="${dir.src.master}" />
 		<mkdir dir="${dir.src.infra}" />
 		<mkdir dir="${dir.src.report}" />
 		<mkdir dir="${dir.src.nodemap}" />
 		<mkdir dir="${dir.src.jobmap}" />
+		<mkdir dir="${dir.src.rpa}" />
 
 		<!-- castorクラスパスの設定 -->
 		<path id="id.path.compile">
 			<fileset dir="${dir.lib}">
-				<include name="castor-1.0.1-xml.jar" />
-				<include name="xerces-J_1.4.0.jar" />
-				<include name="log4j-1.2.17.jar" />
+				<include name="castor-xml-1.4.1.jar" />
+				<include name="castor-core-1.4.1.jar" />
+				<include name="log4j-1.2-api-2.17.1.jar" />
+				<include name="log4j-api-2.17.1.jar" />
+				<include name="log4j-core-2.17.1.jar" />
+				<include name="log4j-jcl-2.17.1.jar" />
 				<include name="commons-logging-1.2.jar"/>
+				<include name="commons-lang3-3.11.jar"/>
 			</fileset>
 			<dirset dir=".">
 				<include name="lib" />
 			</dirset>
+			<pathelement path="lib_build/castor-codegen-1.4.1.jar"/>
+			<pathelement path="lib_build/castor-xml-schema-1.4.1.jar"/>
 		</path>
 
 		<!-- 共通機能 -->
@@ -88,6 +100,11 @@
 			<sysproperty key="file.encoding" value="UTF-8" />
 			<classpath refid="id.path.compile" />
 			<arg line="-f -i ${dir.xsd}/platform_mailtemplate.xsd -package ${package.platform} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+			<sysproperty key="file.encoding" value="UTF-8" />
+			<classpath refid="id.path.compile" />
+			<arg line="-f -i ${dir.xsd}/platform_restaccess.xsd -package ${package.platform} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
 		</java>
 		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
 			<sysproperty key="file.encoding" value="UTF-8" />
@@ -135,6 +152,24 @@
 			<arg line="-f -i ${dir.xsd}/platform_nodeconfig.xsd -package ${package.platform} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
 		</java>
 
+		<!-- フィルタ設定機能 -->
+		<echo message="Generating Java Bean for FilterSetting XML Schema..." />
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+			<sysproperty key="file.encoding" value="UTF-8" />
+			<classpath refid="id.path.compile" />
+			<arg line="-f -i ${dir.xsd}/filtersetting_monitor_history_event.xsd -package ${package.filtersetting} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+			<sysproperty key="file.encoding" value="UTF-8" />
+			<classpath refid="id.path.compile" />
+			<arg line="-f -i ${dir.xsd}/filtersetting_monitor_history_status.xsd -package ${package.filtersetting} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+			<sysproperty key="file.encoding" value="UTF-8" />
+			<classpath refid="id.path.compile" />
+			<arg line="-f -i ${dir.xsd}/filtersetting_job_history.xsd -package ${package.filtersetting} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		
 		<!-- メンテナンス機能 -->
 		<echo message="Generating Java Bean for Maintenance XML Schema..." />
 		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
@@ -269,6 +304,18 @@
 			<classpath refid="id.path.compile" />
 			<arg line="-f -i ${dir.xsd}/monitor_check_correlation.xsd -package ${package.monitor} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
 		</java>
+		
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+			<sysproperty key="file.encoding" value="UTF-8" />
+			<classpath refid="id.path.compile" />
+			<arg line="-f -i ${dir.xsd}/monitor_check_rpalogfile.xsd -package ${package.monitor} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+			<sysproperty key="file.encoding" value="UTF-8" />
+			<classpath refid="id.path.compile" />
+			<arg line="-f -i ${dir.xsd}/monitor_check_rpamanagementtoolservice.xsd -package ${package.monitor} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
 
 		<!-- ジョブ管理機能 -->
 		<echo message="Generating Java Bean for Job XML Schema..." />
@@ -291,6 +338,16 @@
 				<sysproperty key="file.encoding" value="UTF-8" />
 				<classpath refid="id.path.compile" />
 				<arg line="-f -i ${dir.xsd}/job_manual.xsd -package ${package.job} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+				<sysproperty key="file.encoding" value="UTF-8" />
+				<classpath refid="id.path.compile" />
+				<arg line="-f -i ${dir.xsd}/job_joblinkrcv.xsd -package ${package.job} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+				<sysproperty key="file.encoding" value="UTF-8" />
+				<classpath refid="id.path.compile" />
+				<arg line="-f -i ${dir.xsd}/job_joblinksend.xsd -package ${package.job} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
 		</java>
 		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
 				<sysproperty key="file.encoding" value="UTF-8" />
@@ -390,14 +447,32 @@
 				<arg line="-f -i ${dir.xsd}/monitor_check_cloudservice.xsd -package ${package.monitor} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
 		</java>
 		
-		<echo message="Adding SuppressWarnings for XML Schema..." />
-		<replace dir="${dir.src_xmlschema}" 
-		         summary="true" 
-		         includes="**/*.java">
-			<replacefilter token='public abstract class'
-			               value='@SuppressWarnings("all")&#x0d;&#x0a;public abstract class'/>
-			<replacefilter token="public class"
-			               value='@SuppressWarnings("all")&#x0d;&#x0a;public class'/>
-		</replace>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+				<sysproperty key="file.encoding" value="UTF-8" />
+				<classpath refid="id.path.compile" />
+				<arg line="-f -i ${dir.xsd}/monitor_check_cloudlog.xsd -package ${package.monitor} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		
+		<!-- RPA -->
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+				<sysproperty key="file.encoding" value="UTF-8" />
+				<classpath refid="id.path.compile" />
+				<arg line="-f -i ${dir.xsd}/rpa_scenariotag.xsd -package ${package.rpa} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+				<sysproperty key="file.encoding" value="UTF-8" />
+				<classpath refid="id.path.compile" />
+				<arg line="-f -i ${dir.xsd}/rpa_managementtoolaccount.xsd -package ${package.rpa} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+				<sysproperty key="file.encoding" value="UTF-8" />
+				<classpath refid="id.path.compile" />
+				<arg line="-f -i ${dir.xsd}/rpa_scenariocoefficientpattern.xsd -package ${package.rpa} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
+		<java classname="org.exolab.castor.builder.SourceGenerator" fork="yes">
+				<sysproperty key="file.encoding" value="UTF-8" />
+				<classpath refid="id.path.compile" />
+				<arg line="-f -i ${dir.xsd}/rpa_scenariooperationresultcreatesetting.xsd -package ${package.rpa} -dest ${dir.src_xmlschema} -generateImportedSchemas -types j2 -verbose" />
+		</java>
 	</target>
 </project>

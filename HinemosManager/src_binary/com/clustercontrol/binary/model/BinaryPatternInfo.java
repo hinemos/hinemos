@@ -13,20 +13,21 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfoPK;
+
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 /**
  * The persistent class for the cc_binary_pattern_info database table.<br>
@@ -276,6 +277,13 @@ public class BinaryPatternInfo implements Serializable {
 				}
 			}
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "BinaryPatternInfo [id=" + id + ", description=" + description + ", grepString=" + grepString
+				+ ", encoding=" + encoding + ", processType=" + processType + ", priority=" + priority + ", message="
+				+ message + ", validFlg=" + validFlg + ", monitorInfo=" + monitorInfo + "]";
 	}
 
 }

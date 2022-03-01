@@ -9,8 +9,9 @@ package com.clustercontrol.xcloud.factory;
 
 import java.util.Date;
 
+import org.apache.log4j.Logger;
+
 import com.clustercontrol.poller.IPoller;
-import com.clustercontrol.ws.xcloud.MethodRestriction;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.bean.AddCloudScopeRequest;
 import com.clustercontrol.xcloud.bean.ModifyCloudScopeRequest;
@@ -26,7 +27,7 @@ public interface ICloudOption {
 		warn,
 		abnormal,
 		unknown,
-		exception
+		exception;
 	}
 	
 	public interface ICloudScopeListener {
@@ -47,13 +48,25 @@ public interface ICloudOption {
 			return serviceId;
 		}
 		public void setServiceId(String serviceId) {
-			this.serviceId = serviceId;
+			// DBの桁数にあわせてカットする
+			if(serviceId.length() > 64) {
+				Logger.getLogger(ICloudOption.class).debug("Cut off for long messages. Original serviceId is " + serviceId);
+				this.serviceId = serviceId.substring(0, 64);
+			} else {
+				this.serviceId = serviceId;
+			}
 		}
 		public String getServiceName() {
 			return serviceName;
 		}
 		public void setServiceName(String serviceName) {
-			this.serviceName = serviceName;
+			// DBの桁数にあわせてカットする
+			if(serviceName.length() > 64) {
+				Logger.getLogger(ICloudOption.class).debug("Cut off for long messages. Original serviceName is " + serviceName);
+				this.serviceName = serviceName.substring(0, 64);
+			} else {
+				this.serviceName = serviceName;
+			}
 		}
 		
 		public PlatformServiceStatus getStatus() {
@@ -94,8 +107,6 @@ public interface ICloudOption {
 		T transform(IPrivateCloudOption cloudOption) throws CloudManagerException;
 		T transform(IPublicCloudOption cloudOption) throws CloudManagerException;
 	}
-	
-	MethodRestriction getMethodRestriction(Class<?> traget);
 	
 	CloudPlatformEntity getPlatform();
 

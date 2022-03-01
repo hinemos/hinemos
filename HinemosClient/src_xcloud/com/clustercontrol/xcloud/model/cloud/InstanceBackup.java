@@ -8,13 +8,17 @@
 package com.clustercontrol.xcloud.model.cloud;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import org.openapitools.client.model.InstanceBackupEntryResponse;
+import org.openapitools.client.model.InstanceBackupResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.util.CollectionComparator;
@@ -50,32 +54,32 @@ public class InstanceBackup extends Element implements IInstanceBackup {
 	public void update() {
 		try {
 			Instance instance = getInstance();
-			List<com.clustercontrol.ws.xcloud.InstanceBackup> backups = instance.getLocation().getEndpoint().getInstanceBackups(
+			List<InstanceBackupResponse> backups = instance.getLocation().getWrapper().getInstanceBackups(
 					instance.getCloudScope().getId(),
 					instance.getLocation().getId(),
-					Arrays.asList(instance.getId()));
+					instance.getId());
 			
 			if (!backups.isEmpty()) {
 				update(backups.get(0));
 			} else {
 				entries = Collections.emptyList();
 			}
-		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (CloudManagerException | InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown e) {
 			throw new CloudModelException(e);
 		}
 	}
 	
-	public void update(com.clustercontrol.ws.xcloud.InstanceBackup instanceBackup) {
+	public void update(InstanceBackupResponse instanceBackup) {
 		if (entries == null)
 			entries = new ArrayList<>();
 		
-		CollectionComparator.compareCollection(entries, instanceBackup.getEntries(), new CollectionComparator.Comparator<InstanceBackupEntry, com.clustercontrol.ws.xcloud.InstanceBackupEntry>() {
+		CollectionComparator.compareCollection(entries, instanceBackup.getEntries(), new CollectionComparator.Comparator<InstanceBackupEntry, InstanceBackupEntryResponse>() {
 			@Override
-			public boolean match(InstanceBackupEntry o1, com.clustercontrol.ws.xcloud.InstanceBackupEntry o2) {
+			public boolean match(InstanceBackupEntry o1, InstanceBackupEntryResponse o2) {
 				return o1.getId().equals(o2.getId());
 			}
 			@Override
-			public void matched(InstanceBackupEntry o1, com.clustercontrol.ws.xcloud.InstanceBackupEntry o2) {
+			public void matched(InstanceBackupEntry o1, InstanceBackupEntryResponse o2) {
 				o1.update(o2);
 			}
 			@Override
@@ -83,7 +87,7 @@ public class InstanceBackup extends Element implements IInstanceBackup {
 				internalRemoveProperty(p.entries, o1, entries);
 			}
 			@Override
-			public void afterO2(com.clustercontrol.ws.xcloud.InstanceBackupEntry o2) {
+			public void afterO2(InstanceBackupEntryResponse o2) {
 				internalAddProperty(p.entries, InstanceBackupEntry.convert(o2), entries);
 			}
 		});

@@ -30,20 +30,23 @@ import javax.xml.stream.XMLStreamReader;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtMonitorInfoResponse;
+import org.openapitools.client.model.AgtRunInstructionInfoRequest;
+import org.openapitools.client.model.AgtRunInstructionInfoResponse;
+import org.openapitools.client.model.AgtWinEventCheckInfoResponse;
 
 import com.clustercontrol.agent.Agent;
 import com.clustercontrol.agent.util.AgentProperties;
-import com.clustercontrol.agent.util.CalendarWSUtil;
 import com.clustercontrol.agent.util.MonitorStringUtil;
+import com.clustercontrol.agent.util.RestAgentBeanUtil;
+import com.clustercontrol.agent.util.RestCalendarUtil;
 import com.clustercontrol.bean.PluginConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.winevent.bean.WinEventConstant;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.WinEventCheckInfo;
 import com.sun.jna.platform.win32.Win32Exception;
 
 public class WinEventMonitor {
@@ -60,7 +63,7 @@ public class WinEventMonitor {
 	public static final String INVALID_FILE_CHARACTER = "[*|\\\\:\"<>?/]";
 	
 	// ファイル名として無効な文字の中で置き換えが必要な文字
-	private static final String LOG_NAME_REPLACE_CHARACTER  = "monitor.winevent.logname.replace.character";
+	private static final String LOG_NAME_REPLACE_CHARACTER	= "monitor.winevent.logname.replace.character";
 	// xxx:yyy の場合 xxx を yyy に置き換える。置き換えが複数ある場合は , で区切る。
 	private static final String REPLACE_CHARACTER = "/:%4";
 	
@@ -104,34 +107,43 @@ public class WinEventMonitor {
 	private static boolean renderFailedIsNotify = true;
 	
 	// Windowsイベント監視設定
-	private MonitorInfo monitorInfo;
+	private AgtMonitorInfoResponse monitorInfo;
 
-	private RunInstructionInfo runInstructionInfo = null;
+	private AgtRunInstructionInfoResponse runInstructionInfo;
+	private AgtRunInstructionInfoRequest runInstructionInfoReq;
 
 	private static String targetProperty;
 	
 	//監視の終了時刻
-	private Date lastMonitorDate = HinemosTime.getDateInstance();;
+	private Date lastMonitorDate = HinemosTime.getDateInstance();
 	
-	
-	public WinEventMonitor(final MonitorInfo monitorInfo, final RunInstructionInfo runInstructionInfo) {
-		this.monitorInfo = monitorInfo;
+	public WinEventMonitor(final AgtMonitorInfoResponse info, final AgtRunInstructionInfoResponse runInstructionInfo) {
+		this.monitorInfo = info;
 		this.runInstructionInfo = runInstructionInfo;
 
 		String key = "";
 		if (runInstructionInfo == null) {
 			// 監視ジョブ以外
-			key = monitorInfo.getMonitorId();
+			key = info.getMonitorId();
+
+			this.runInstructionInfoReq = null;
 		} else {
 			// 監視ジョブ
 			key = runInstructionInfo.getSessionId()
 					+ runInstructionInfo.getJobunitId()
 					+ runInstructionInfo.getJobId()
 					+ runInstructionInfo.getFacilityId()
-					+ monitorInfo.getMonitorId();
+					+ info.getMonitorId();
+
+			this.runInstructionInfoReq = new AgtRunInstructionInfoRequest();
+			try {
+				RestAgentBeanUtil.convertBean(runInstructionInfo, this.runInstructionInfoReq);
+			} catch (HinemosUnknown never) {
+				throw new RuntimeException(never); // 実装ミスの場合のみ
+			}
 		}
 		winEventReader = new WinEventReader();
-		for(String logName : monitorInfo.getWinEventCheckInfo().getLogName()) {
+		for (String logName : info.getWinEventCheckInfo().getLogName()) {
 			String bookmarkFileName = runPath + PREFIX + key + "-" + logNameReplaceCharacter(logName) + POSTFIX_BOOKMARK + ".xml";
 			bookmarkFileNameMap.put(logName, bookmarkFileName);
 			try {
@@ -219,7 +231,7 @@ public class WinEventMonitor {
 		long start = HinemosTime.currentTimeMillis(); // 計測開始
 			
 		// 監視設定無効時はイベントログを取得しない
-		if (runInstructionInfo == null && !monitorInfo.isMonitorFlg() && !monitorInfo.isCollectorFlg()) {
+		if (runInstructionInfo == null && !monitorInfo.getMonitorFlg() && !monitorInfo.getCollectorFlg()) {
 			m_log.debug("WinEventMonitorThread run is skipped because of monitor flg");
 			for(Map.Entry<String, String> entry : bookmarkFileNameMap.entrySet()) {
 				String logName = entry.getKey();
@@ -234,7 +246,7 @@ public class WinEventMonitor {
 			return;
 		}
 		// カレンダによる非稼動時はイベントログを取得しない
-		if (runInstructionInfo == null && monitorInfo.getCalendar() != null && ! CalendarWSUtil.isRun(monitorInfo.getCalendar())) {
+		if (runInstructionInfo == null && monitorInfo.getCalendar() != null && !RestCalendarUtil.isRun(monitorInfo.getCalendar())) {
 			m_log.debug("WinEventMonitorThread run is skipped because of calendar settings");
 			
 			for(Map.Entry<String, String> entry : bookmarkFileNameMap.entrySet()) {
@@ -332,16 +344,16 @@ public class WinEventMonitor {
 		lastMonitorDate = HinemosTime.getDateInstance();
 	}
 	
-	private String createQuery(WinEventCheckInfo checkInfo, String logName){
+	private String createQuery(AgtWinEventCheckInfoResponse checkInfo, String logName) {
 		m_log.debug("createQuery() start creating query for EvtQuery");
 		
 		String query = "<QueryList><Query><Select Path='" + pergeEventLogNameEnclosure(logName) + "'>*[System[";
 			
 		// ソース
-		if(checkInfo.getSource() != null && checkInfo.getSource().size() != 0){
+		if (checkInfo.getSource() != null && checkInfo.getSource().size() != 0) {
 			query += "Provider[";
 			StringBuffer sourceStr = new StringBuffer();
-			for(String sourceName : checkInfo.getSource()){
+			for (String sourceName : checkInfo.getSource()) {
 				sourceStr.append("@Name='");
 				sourceStr.append(sourceName);
 				sourceStr.append("' or ");
@@ -353,21 +365,21 @@ public class WinEventMonitor {
 			
 		// レベル
 		query += "(";
-		query += checkInfo.isLevelCritical() ? "Level=" + WinEventConstant.CRITICAL_LEVEL + " or " : "" ;
-		query += checkInfo.isLevelWarning() ? "Level=" + WinEventConstant.WARNING_LEVEL + " or " : "" ;
-		query += checkInfo.isLevelVerbose() ? "Level=" + WinEventConstant.VERBOSE_LEVEL + " or " : "" ;
-		query += checkInfo.isLevelError() ? "Level=" + WinEventConstant.ERROR_LEVEL + " or " : "" ;
-		query += checkInfo.isLevelInformational() ? "Level=" + WinEventConstant.INFORMATION_LEVEL0 
+		query += checkInfo.getLevelCritical() ? "Level=" + WinEventConstant.CRITICAL_LEVEL + " or " : "";
+		query += checkInfo.getLevelWarning() ? "Level=" + WinEventConstant.WARNING_LEVEL + " or " : "";
+		query += checkInfo.getLevelVerbose() ? "Level=" + WinEventConstant.VERBOSE_LEVEL + " or " : "";
+		query += checkInfo.getLevelError() ? "Level=" + WinEventConstant.ERROR_LEVEL + " or " : "";
+		query += checkInfo.getLevelInformational() ? "Level=" + WinEventConstant.INFORMATION_LEVEL0
 				+ " or Level=" + WinEventConstant.INFORMATION_LEVEL4 + " or " : "" ;
 			
 		query = query.replaceFirst(" or \\z", "");	// 末尾の"or"を削除
 		query += ") and ";
 		
 		// イベントID
-		if(checkInfo.getEventId() != null && checkInfo.getEventId().size() != 0){
+		if (checkInfo.getEventId() != null && checkInfo.getEventId().size() != 0) {
 			query += "(";
 			StringBuffer sourceStr = new StringBuffer();
-			for(Integer id : checkInfo.getEventId()){
+			for (Integer id : checkInfo.getEventId()) {
 				sourceStr.append("EventID=" + id + " or ");
 			}
 			query += sourceStr.toString();
@@ -376,10 +388,10 @@ public class WinEventMonitor {
 		}
 
 		// タスクの分類
-		if(checkInfo.getCategory() != null && checkInfo.getCategory().size() != 0){
+		if (checkInfo.getCategory() != null && checkInfo.getCategory().size() != 0) {
 			query += "(";
 			StringBuffer sourceStr = new StringBuffer();
-			for(Integer category : checkInfo.getCategory()){
+			for (Integer category : checkInfo.getCategory()) {
 				sourceStr.append("Task=" + category + " or ");
 			}
 			query += sourceStr.toString();
@@ -388,9 +400,9 @@ public class WinEventMonitor {
 		}
 			
 		// キーワード
-		if(checkInfo.getKeywords() != null && checkInfo.getKeywords().size() != 0){
+		if (checkInfo.getKeywords() != null && checkInfo.getKeywords().size() != 0) {
 			long targetKeyword = 0l;
-			for(Long keyword : checkInfo.getKeywords()){
+			for (Long keyword : checkInfo.getKeywords()) {
 				targetKeyword += keyword.longValue();
 			}
 			query += "(band(Keywords," + targetKeyword + "))";
@@ -598,11 +610,11 @@ public class WinEventMonitor {
 		
 	}
 	
-	public MonitorInfo getMonitorInfo() {
+	public AgtMonitorInfoResponse getMonitorInfo() {
 		return monitorInfo;
 	}
 
-	public void setMonitorInfo(MonitorInfo monitorInfo) {
+	public void setMonitorInfo(AgtMonitorInfoResponse monitorInfo) {
 		this.monitorInfo = monitorInfo;
 	}
 
@@ -614,7 +626,7 @@ public class WinEventMonitor {
 	 * @param messageOrg
 	 */
 	private void sendMessage(int priority, String message, String messageOrg) {
-		WinEventMonitorManager.sendMessage(priority, message, messageOrg, monitorInfo.getMonitorId(), runInstructionInfo);
+		WinEventMonitorManager.sendMessage(priority, message, messageOrg, monitorInfo.getMonitorId(), runInstructionInfoReq);
 	}
 
 	/**

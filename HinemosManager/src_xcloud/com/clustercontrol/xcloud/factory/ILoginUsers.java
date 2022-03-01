@@ -21,7 +21,7 @@ public interface ILoginUsers {
 	CloudLoginUserEntity addUser(AddCloudLoginUserRequest request) throws CloudManagerException;
 	CloudLoginUserEntity modifyCloudLoginUser(ModifyCloudLoginUserRequest request) throws CloudManagerException;
 	CloudLoginUserEntity modifyRoleRelation(String cloudScopeId, String loginUserId, List<RoleRelation> relations) throws CloudManagerException;
-	void removeCloudLoginUser(String cloudScopeId, String loginUserId) throws CloudManagerException;
+	CloudLoginUserEntity removeCloudLoginUser(String cloudScopeId, String loginUserId) throws CloudManagerException;
 
 	CloudLoginUserEntity getCloudLoginUser(String cloudScopeId, String loginUserId) throws CloudManagerException;
 	List<CloudLoginUserEntity> getCloudLoginUserByRole(String roleId) throws CloudManagerException;

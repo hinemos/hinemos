@@ -26,33 +26,38 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
-import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand;
-import com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand;
 import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.composite.JobListComposite;
 import com.clustercontrol.jobmanagement.composite.JobTreeComposite;
 import com.clustercontrol.jobmanagement.composite.action.JobListSelectionChangedListener;
 import com.clustercontrol.jobmanagement.composite.action.JobTreeSelectionChangedListener;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.action.CreateApprovalJobAction;
+import com.clustercontrol.jobmanagement.view.action.CreateFileCheckJobAction;
 import com.clustercontrol.jobmanagement.view.action.CreateFileJobAction;
 import com.clustercontrol.jobmanagement.view.action.CreateJobAction;
+import com.clustercontrol.jobmanagement.view.action.CreateJobLinkRcvJobAction;
+import com.clustercontrol.jobmanagement.view.action.CreateJobLinkSendJobAction;
 import com.clustercontrol.jobmanagement.view.action.CreateJobNetAction;
 import com.clustercontrol.jobmanagement.view.action.CreateJobUnitAction;
 import com.clustercontrol.jobmanagement.view.action.CreateMonitorJobAction;
 import com.clustercontrol.jobmanagement.view.action.CreateReferJobAction;
+import com.clustercontrol.jobmanagement.view.action.CreateResourceJobAction;
+import com.clustercontrol.jobmanagement.view.action.CreateRpaJobAction;
 import com.clustercontrol.jobmanagement.view.action.DeleteJobAction;
 import com.clustercontrol.jobmanagement.view.action.EditModeAction;
 import com.clustercontrol.jobmanagement.view.action.JobObjectPrivilegeAction;
 import com.clustercontrol.jobmanagement.view.action.ModifyJobAction;
 import com.clustercontrol.jobmanagement.view.action.RunJobAction;
+import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand;
+import com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand;
 import com.clustercontrol.view.CommonViewPart;
 import com.clustercontrol.view.ObjectPrivilegeTargetListView;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[一覧]ビュークラス<BR>
@@ -73,7 +78,7 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 	/** ジョブ[一覧]ビュー用のコンポジット */
 	private JobListComposite m_jobList = null;
 	/** ジョブツリーアイテム */
-	private JobTreeItem m_copyJobTreeItem = null;
+	private JobTreeItemWrapper m_copyJobTreeItem = null;
 
 	/** Last focus composite */
 	private Composite lastFocusComposite = null;
@@ -82,7 +87,7 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 	 * Number of selected items
 	 */
 	private int selectedNum;
-	private int dataType;
+	private JobInfoWrapper.TypeEnum dataType;
 	private boolean editEnable;
 
 	/**
@@ -141,8 +146,8 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 		createContextMenu();
 
 		// Initialize dataType
-		JobTreeItem select = getSelectJobTreeItemList().get(0);
-		dataType = select == null ? JobConstant.TYPE_COMPOSITE : select.getData().getType();
+		JobTreeItemWrapper select = getSelectJobTreeItemList().get(0);
+		dataType = select == null ? JobInfoWrapper.TypeEnum.COMPOSITE : select.getData().getType();
 
 		Long end = System.currentTimeMillis();
 
@@ -150,6 +155,7 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 
 		m_jobTree.addToTreeViewerList();
 	}
+
 
 	/**
 	 * コンテキストメニューを作成します。
@@ -171,10 +177,10 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 					// Do the same as JobTreeSelectionChangedListenser
 					Object selectObject = selection.getFirstElement();
 					List<?> list = selection.toList();
-					List<JobTreeItem> itemList = new ArrayList<JobTreeItem>();
+					List<JobTreeItemWrapper> itemList = new ArrayList<JobTreeItemWrapper>();
 					for(Object obj : list) {
-						if(obj instanceof JobTreeItem) {
-							itemList.add((JobTreeItem)obj);
+						if(obj instanceof JobTreeItemWrapper) {
+							itemList.add((JobTreeItemWrapper)obj);
 						}
 					}
 
@@ -202,7 +208,7 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 	 * データタイプを返します。
 	 * @return
 	 */
-	public int getDataType() {
+	public JobInfoWrapper.TypeEnum getDataType() {
 		return this.dataType;
 	}
 
@@ -219,8 +225,8 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 		JobEditStateUtil.releaseAll();
 
 		m_jobTree.update();
-		List<JobTreeItem> itemList = this.getJobTreeComposite().getSelectItemList();
-		for(JobTreeItem item : itemList) {
+		List<JobTreeItemWrapper> itemList = this.getJobTreeComposite().getSelectItemList();
+		for(JobTreeItemWrapper item : itemList) {
 			m_jobList.update(item);
 		}
 		Long end = System.currentTimeMillis();
@@ -255,17 +261,17 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 	 *
 	 * @see com.clustercontrol.bean.JobConstant
 	 */
-	public void setEnabledAction(Object selectObject, List<JobTreeItem> itemList, boolean updateList ){
-		if (selectObject instanceof JobTreeItem) {
-			JobTreeItem selectJobTreeItem = (JobTreeItem)selectObject;
+	public void setEnabledAction(Object selectObject, List<JobTreeItemWrapper> itemList, boolean updateList ){
+		if (selectObject instanceof JobTreeItemWrapper) {
+			JobTreeItemWrapper selectJobTreeItem = (JobTreeItemWrapper)selectObject;
 			// 選択ツリーアイテムを設定
 			getJobListComposite().setSelectJobTreeItemList( itemList );
 
-			int type = selectJobTreeItem.getData().getType();
+			JobInfoWrapper.TypeEnum type = selectJobTreeItem.getData().getType();
 			String jobunitId = selectJobTreeItem.getData().getJobunitId();
 
 			// ログインユーザで参照可能なジョブユニットかどうかチェックする
-			if( type == JobConstant.TYPE_JOBUNIT ){
+			if( type == JobInfoWrapper.TypeEnum.JOBUNIT ){
 				setEnabledActionAll( true );
 			}
 
@@ -282,20 +288,20 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 				getJobListComposite().update(null);
 			}
 
-			//ビューのアクションを全て無効に設定
-			setEnabledAction(-9, "");
+			//ビューのアクションを全て無効に設定(REST対応時に 設定値 null に変更）
+			setEnabledAction(null, "");
 		}
 	}
 
-	private void setEnabledAction( int type, String jobunitId ){
+	private void setEnabledAction( JobInfoWrapper.TypeEnum type, String jobunitId ){
 		this.dataType = type;
 
 		//ビューアクションの使用可/不可を設定
 		ICommandService service = (ICommandService) PlatformUI.getWorkbench().getService( ICommandService.class );
 		if( null != service ){
-			List<JobTreeItem> tree = getSelectJobTreeItemList();
+			List<JobTreeItemWrapper> tree = getSelectJobTreeItemList();
 			boolean isEditable = true;
-			for(JobTreeItem item : tree) {
+			for(JobTreeItemWrapper item : tree) {
 				if(item == null) {
 					isEditable = false;
 					break;
@@ -317,6 +323,11 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 			service.refreshElements(CreateReferJobAction.ID, null);
 			service.refreshElements(CreateApprovalJobAction.ID, null);
 			service.refreshElements(CreateMonitorJobAction.ID, null);
+			service.refreshElements(CreateFileCheckJobAction.ID, null);
+			service.refreshElements(CreateJobLinkSendJobAction.ID, null);
+			service.refreshElements(CreateJobLinkRcvJobAction.ID, null);
+			service.refreshElements(CreateResourceJobAction.ID, null);
+			service.refreshElements(CreateRpaJobAction.ID, null);
 			service.refreshElements(DeleteJobAction.ID, null);
 			service.refreshElements(ModifyJobAction.ID, null);
 			service.refreshElements(JobObjectPrivilegeAction.ID, null);
@@ -389,8 +400,8 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 	 *
 	 * @return JobTreeItem 選択されたジョブツリーアイテム
 	 */
-	public List<JobTreeItem> getSelectJobTreeItemList() {
-		List<JobTreeItem> items = new ArrayList<JobTreeItem>();
+	public List<JobTreeItemWrapper> getSelectJobTreeItemList() {
+		List<JobTreeItemWrapper> items = new ArrayList<JobTreeItemWrapper>();
 
 		if(this.lastFocusComposite instanceof JobTreeComposite) {
 			items = m_jobTree.getSelectItemList();
@@ -399,7 +410,7 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 		}
 
 		if(items.isEmpty()) {
-			items = new ArrayList<JobTreeItem>();
+			items = new ArrayList<JobTreeItemWrapper>();
 			items.add(null);
 		}
 
@@ -411,7 +422,7 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 	 *
 	 * @return コピー元ジョブツリーアイテム
 	 */
-	public JobTreeItem getCopyJobTreeItem() {
+	public JobTreeItemWrapper getCopyJobTreeItem() {
 		return m_copyJobTreeItem;
 	}
 
@@ -420,7 +431,7 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 	 *
 	 * @param copy コピー元ジョブツリーアイテム
 	 */
-	public void setCopyJobTreeItem(JobTreeItem copy) {
+	public void setCopyJobTreeItem(JobTreeItemWrapper copy) {
 		m_copyJobTreeItem = copy;
 	}
 
@@ -434,12 +445,12 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 	public List<ObjectBean> getSelectedObjectBeans() {
 
 		// 選択されているスコープを取得する
-		JobTreeItem item = getSelectedJobunitItem();
+		JobTreeItemWrapper item = getSelectedJobunitItem();
 
 		// 選択されており、スコープの場合は値を返す
 		List<ObjectBean> objectBeans = new ArrayList<ObjectBean>();
 		if (item != null) {
-			JobTreeItem manager = JobTreeItemUtil.getManager(item);
+			JobTreeItemWrapper manager = JobTreeItemUtil.getManager(item);
 			String managerName = manager.getData().getId();
 			String objectId = item.getData().getJobunitId();
 			String objectType = HinemosModuleConstant.JOB;
@@ -453,7 +464,7 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 	public String getSelectedOwnerRoleId() {
 
 		// 選択されているスコープを取得する
-		JobTreeItem item = getSelectedJobunitItem();
+		JobTreeItemWrapper item = getSelectedJobunitItem();
 
 		// 選択されており、スコープの場合は値を返す
 		String ownerRoleId = null;
@@ -463,13 +474,13 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 		return ownerRoleId;
 	}
 
-	private JobTreeItem getSelectedJobunitItem() {
+	private JobTreeItemWrapper getSelectedJobunitItem() {
 		JobTreeComposite tree = getJobTreeComposite();
 		WidgetTestUtil.setTestId(this, "tree", tree);
 		JobListComposite list = getJobListComposite();
 		WidgetTestUtil.setTestId(this, "list", list);
 
-		JobTreeItem item = null;
+		JobTreeItemWrapper item = null;
 		if(this.lastFocusComposite instanceof JobTreeComposite){
 			item = tree.getSelectItemList().get(0);
 		}else if(this.lastFocusComposite instanceof JobListComposite){
@@ -479,7 +490,7 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 		}
 
 		// 選択されており、ジョブユニットの場合は値を返す
-		if (item != null && item.getData().getType() == JobConstant.TYPE_JOBUNIT) {
+		if (item != null && item.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 			return item;
 		} else {
 			return null;

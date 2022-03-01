@@ -8,8 +8,6 @@
 
 package com.clustercontrol.utility.settings.platform.conv;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -17,10 +15,30 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
+import org.openapitools.client.model.NodeCpuInfoResponse;
+import org.openapitools.client.model.NodeDiskInfoResponse;
+import org.openapitools.client.model.NodeFilesystemInfoResponse;
+import org.openapitools.client.model.NodeGeneralDeviceInfoResponse;
+import org.openapitools.client.model.NodeHostnameInfoResponse;
+import org.openapitools.client.model.NodeInfoResponse;
+import org.openapitools.client.model.NodeLicenseInfoResponse;
+import org.openapitools.client.model.NodeMemoryInfoResponse;
+import org.openapitools.client.model.NodeNetstatInfoResponse;
+import org.openapitools.client.model.NodeNetworkInterfaceInfoResponse;
+import org.openapitools.client.model.NodeNoteInfoResponse;
+import org.openapitools.client.model.NodeOsInfoResponse;
+import org.openapitools.client.model.NodePackageInfoResponse;
+import org.openapitools.client.model.NodeProcessInfoResponse;
+import org.openapitools.client.model.NodeProductInfoResponse;
+import org.openapitools.client.model.NodeVariableInfoResponse;
 
-import com.clustercontrol.repository.bean.NodeRegisterFlagConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rpa.util.RpaConstants;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.model.BaseConv;
+import com.clustercontrol.utility.settings.platform.action.RepositoryNodeAction;
 import com.clustercontrol.utility.settings.platform.xml.CPUInfo;
 import com.clustercontrol.utility.settings.platform.xml.DeviceInfo;
 import com.clustercontrol.utility.settings.platform.xml.DiskInfo;
@@ -36,21 +54,7 @@ import com.clustercontrol.utility.settings.platform.xml.NoteInfo;
 import com.clustercontrol.utility.settings.platform.xml.PackageInfo;
 import com.clustercontrol.utility.settings.platform.xml.ProcessInfo;
 import com.clustercontrol.utility.settings.platform.xml.ProductInfo;
-import com.clustercontrol.ws.repository.NodeCpuInfo;
-import com.clustercontrol.ws.repository.NodeDeviceInfo;
-import com.clustercontrol.ws.repository.NodeDiskInfo;
-import com.clustercontrol.ws.repository.NodeFilesystemInfo;
-import com.clustercontrol.ws.repository.NodeGeneralDeviceInfo;
-import com.clustercontrol.ws.repository.NodeHostnameInfo;
-import com.clustercontrol.ws.repository.NodeLicenseInfo;
-import com.clustercontrol.ws.repository.NodeMemoryInfo;
-import com.clustercontrol.ws.repository.NodeNetstatInfo;
-import com.clustercontrol.ws.repository.NodeNetworkInterfaceInfo;
-import com.clustercontrol.ws.repository.NodeNoteInfo;
-import com.clustercontrol.ws.repository.NodeOsInfo;
-import com.clustercontrol.ws.repository.NodePackageInfo;
-import com.clustercontrol.ws.repository.NodeProcessInfo;
-import com.clustercontrol.ws.repository.NodeProductInfo;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 
 /**
  * リポジトリ情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -68,7 +72,7 @@ public class RepositoryConv {
 	
 	static final private String nodeSchemaType="I";
 	static final private String nodeSchemaVersion="1";
-	static final private String nodeSchemaRevision="1" ;
+	static final private String nodeSchemaRevision="2" ;
 	static private String schemaType="";
 	static private String schemaVersion="";
 	static private String schemaRevision="" ;
@@ -172,12 +176,12 @@ public class RepositoryConv {
 	 *            備考情報オブジェクト
 	 * @return ノードのプロパティオブジェクト
 	 */
-	public static com.clustercontrol.ws.repository.NodeInfo convNodeXml2Dto(
+	public static NodeInfoResponse convNodeXml2Dto(
 		NodeInfo xmlNodeInfo, HostnameInfo[] hostnameList, CPUInfo[] cpuList, MemoryInfo[] memoryList,
 		NetworkInterfaceInfo[] networkInterfaceList, DiskInfo[] diskList, FSInfo[] fsList, DeviceInfo[] deviceList,
-		NodeVariableInfo[] variableList, NoteInfo[] noteList) {
+		NodeVariableInfo[] variableList, NoteInfo[] noteList) throws InvalidSetting, HinemosUnknown {
 	
-		com.clustercontrol.ws.repository.NodeInfo dto = new com.clustercontrol.ws.repository.NodeInfo();
+		NodeInfoResponse  dto = new NodeInfoResponse();
 		
 		// 誤りがある場合の処理
 		
@@ -240,51 +244,34 @@ public class RepositoryConv {
 		}
 
 		// SNMP関連情報のセット
-		if(xmlNodeInfo.getSnmpPort() >= 1 && xmlNodeInfo.getSnmpPort() <=65767){
-			dto.setSnmpPort(xmlNodeInfo.getSnmpPort());
+		if(xmlNodeInfo.hasSnmpPort()){
+			dto.setSnmpPort((int)xmlNodeInfo.getSnmpPort());
 		}
 
-		if(xmlNodeInfo.getSnmpCommunity() != null){
-			dto.setSnmpCommunity(xmlNodeInfo.getSnmpCommunity());
-		}
-		dto.setSnmpVersion(xmlNodeInfo.getSnmpVersion());
-
-		if(xmlNodeInfo.getSnmpTimeout() >=1 ){
-			dto.setSnmpTimeout(xmlNodeInfo.getSnmpTimeout());
+		if(xmlNodeInfo.hasSnmpTimeout()){
+			dto.setSnmpTimeout((int)xmlNodeInfo.getSnmpTimeout());
 		}
 
-		if(xmlNodeInfo.getSnmpRetryCount() >=1){
-			dto.setSnmpRetryCount(xmlNodeInfo.getSnmpRetryCount());
+		if(xmlNodeInfo.hasSnmpRetryCount()){
+			dto.setSnmpRetryCount((int)xmlNodeInfo.getSnmpRetryCount());
 		}
 
 		// WBEM関連情報のセット
-		if(xmlNodeInfo.getWbemUser() != null && !"".equals(xmlNodeInfo.getWbemUser())){
-			dto.setWbemUser(xmlNodeInfo.getWbemUser());
+		if(xmlNodeInfo.hasWbemPort()){
+			dto.setWbemPort((int)xmlNodeInfo.getWbemPort());
 		}
 
-		if(xmlNodeInfo.getWbemUserPassword() != null ){
-			dto.setWbemUserPassword(xmlNodeInfo.getWbemUserPassword());
-		}
-
-		if(xmlNodeInfo.getWbemPort() >= 1 && xmlNodeInfo.getWbemPort() <=65767){
-			dto.setWbemPort(xmlNodeInfo.getWbemPort());
-		}
-
-		if(xmlNodeInfo.getWbemProtocol() != null){
-			dto.setWbemProtocol(xmlNodeInfo.getWbemProtocol());
+		if(xmlNodeInfo.hasWbemTimeout()){
+			dto.setWbemTimeout((int)xmlNodeInfo.getWbemTimeout());
 		}
 		
-		if(xmlNodeInfo.getWbemTimeout() >=1 ){
-			dto.setWbemTimeout(xmlNodeInfo.getWbemTimeout());
-		}
-		
-		if(xmlNodeInfo.getWbemRetryCount() >=1){
-			dto.setWbemRetryCount(xmlNodeInfo.getWbemRetryCount());
+		if(xmlNodeInfo.hasWbemRetryCount()){
+			dto.setWbemRetryCount((int)xmlNodeInfo.getWbemRetryCount());
 		}
 		
 		if (xmlNodeInfo.getIpAddressVersion() == 4
 				|| xmlNodeInfo.getIpAddressVersion() == 6) {
-			dto.setIpAddressVersion(xmlNodeInfo.getIpAddressVersion());
+			dto.setIpAddressVersion(OpenApiEnumConverter.integerToEnum((int)xmlNodeInfo.getIpAddressVersion(),NodeInfoResponse.IpAddressVersionEnum.class)) ;
 		}
 		
 		if(xmlNodeInfo.getIpAddressV4() != null
@@ -328,8 +315,8 @@ public class RepositoryConv {
 		}
 
 		if (dto.getNodeOsInfo() == null) {
-			dto.setNodeOsInfo(new NodeOsInfo());
-			dto.getNodeOsInfo().setFacilityId(dto.getFacilityId());
+			dto.setNodeOsInfo(new NodeOsInfoResponse());
+			//dto.getNodeOsInfo().setFacilityId(dto.getFacilityId());
 		}
 		if(xmlNodeInfo.getOsName() != null
 				&& !"".equals(xmlNodeInfo.getOsName())){
@@ -353,15 +340,7 @@ public class RepositoryConv {
 		
 		if(xmlNodeInfo.getStartupDateTime() != null
 				&& !"".equals(xmlNodeInfo.getStartupDateTime())){
-			try {
-				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-				dto.getNodeOsInfo().setStartupDateTime(dateFormat.parse(xmlNodeInfo.getStartupDateTime()).getTime());
-			} catch (NullPointerException | ParseException e) {
-				log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
-						+ "(StartupDateTime) : " + xmlNodeInfo.getFacilityId());
-				dto.setFacilityId("");
-				return dto;
-			}
+				dto.getNodeOsInfo().setStartupDateTime(xmlNodeInfo.getStartupDateTime());
 		}
 		
 		if(xmlNodeInfo.getAdministrator() != null
@@ -375,11 +354,17 @@ public class RepositoryConv {
 		}
 		
 		//Hinemosエージェント関連情報セット
-		dto.setAgentAwakePort(xmlNodeInfo.getAgentAwakePort());
+		if(xmlNodeInfo.hasAgentAwakePort()){
+			dto.setAgentAwakePort((int)xmlNodeInfo.getAgentAwakePort());
+		}
 		
 		//ジョブ関連情報のセット
-		dto.setJobMultiplicity(xmlNodeInfo.getJobMultiplicity());
-		dto.setJobPriority(xmlNodeInfo.getJobPriority());
+		if(xmlNodeInfo.hasJobMultiplicity()){
+			dto.setJobMultiplicity((int)xmlNodeInfo.getJobMultiplicity());
+		}
+		if(xmlNodeInfo.hasJobPriority()){
+			dto.setJobPriority((int)xmlNodeInfo.getJobPriority());
+		}
 		
 		/*ここ確認！*/
 		
@@ -390,24 +375,31 @@ public class RepositoryConv {
 			dto.setIpmiIpAddress(xmlNodeInfo.getIpmiIpAddress());
 		}
 		
-		if(xmlNodeInfo.getIpmiPort() >= 1 && xmlNodeInfo.getIpmiPort() <=65767){
-			dto.setIpmiPort(xmlNodeInfo.getIpmiPort());
+		if(xmlNodeInfo.hasIpmiPort()){
+			dto.setIpmiPort((int)xmlNodeInfo.getIpmiPort());
 		}
 		
-		if(xmlNodeInfo.getIpmiUser() != null && !"".equals(xmlNodeInfo.getIpmiUser())){
+		if(xmlNodeInfo.getIpmiUser() != null){
 			dto.setIpmiUser(xmlNodeInfo.getIpmiUser());
 		}
 		
 		if(xmlNodeInfo.getIpmiUserPassword() != null && !"".equals(xmlNodeInfo.getIpmiUserPassword())){
+			String name = Messages.getString("ipmi") +":"+ Messages.getString("ipmi.user.password");
+			String str = checkString(name, xmlNodeInfo.getIpmiUserPassword(), 64);
+			if(str == null){
+				//値に誤りがあることを示すためにFacilityIdに""をセット
+				dto.setFacilityId("");
+				return dto;
+			}
 			dto.setIpmiUserPassword(xmlNodeInfo.getIpmiUserPassword());
 		}
 		
-		if(xmlNodeInfo.getIpmiTimeout() >=1 ){
-			dto.setIpmiTimeout(xmlNodeInfo.getIpmiTimeout());
+		if(xmlNodeInfo.hasIpmiTimeout()){
+			dto.setIpmiTimeout((int)xmlNodeInfo.getIpmiTimeout());
 		}
 		
-		if(xmlNodeInfo.getIpmiRetryCount() >=1){
-			dto.setIpmiRetries(xmlNodeInfo.getIpmiRetryCount());
+		if(xmlNodeInfo.hasIpmiRetryCount()){
+			dto.setIpmiRetries((int)xmlNodeInfo.getIpmiRetryCount());
 		}
 		
 		if(xmlNodeInfo.getIpmiProtocol() != null){
@@ -419,11 +411,18 @@ public class RepositoryConv {
 		}
 		
 		/*WinRM関連情報のセット*/
-		if(xmlNodeInfo.getWinrmUser() != null && !"".equals(xmlNodeInfo.getWinrmUser())){
+		if(xmlNodeInfo.getWinrmUser() != null){
 			dto.setWinrmUser(xmlNodeInfo.getWinrmUser());
 		}
 		
 		if(xmlNodeInfo.getWinrmUserPassword() != null && !"".equals(xmlNodeInfo.getWinrmUserPassword())){
+			String name = Messages.getString("winrm") +":"+ Messages.getString("winrm.user.password");
+			String str = checkString(name, xmlNodeInfo.getWinrmUserPassword(), 64);
+			if(str == null){
+				//値に誤りがあることを示すためにFacilityIdに""をセット
+				dto.setFacilityId("");
+				return dto;
+			}
 			dto.setWinrmUserPassword(xmlNodeInfo.getWinrmUserPassword());
 		}
 		
@@ -431,61 +430,80 @@ public class RepositoryConv {
 			dto.setWinrmVersion(xmlNodeInfo.getWinrmVersion());
 		}
 
-		if(xmlNodeInfo.getWinrmPort() >= 1 && xmlNodeInfo.getWinrmPort() <=65767){
-			dto.setWinrmPort(xmlNodeInfo.getWinrmPort());
+		if(xmlNodeInfo.hasWinrmPort()){
+			dto.setWinrmPort((int)xmlNodeInfo.getWinrmPort());
 		}
 
 		if(xmlNodeInfo.getWinrmProtocol() != null){
-			dto.setWinrmProtocol(xmlNodeInfo.getWinrmProtocol());
+			dto.setWinrmProtocol(OpenApiEnumConverter.stringToEnum(xmlNodeInfo.getWinrmProtocol(),NodeInfoResponse.WinrmProtocolEnum .class));
 		}
 		
 
-		if(xmlNodeInfo.getWinrmTimeout() >=1 ){
-			dto.setWinrmTimeout(xmlNodeInfo.getWinrmTimeout());
+		if(xmlNodeInfo.hasWinrmTimeout()){
+			dto.setWinrmTimeout((int)xmlNodeInfo.getWinrmTimeout());
 		}
 		
-		if(xmlNodeInfo.getWinrmRetryCount() >=1){
-			dto.setWinrmRetries(xmlNodeInfo.getWinrmRetryCount());
+		if(xmlNodeInfo.hasWinrmRetryCount()){
+			dto.setWinrmRetries((int)xmlNodeInfo.getWinrmRetryCount());
 		}
 		
 		/*SNMP認証関連情報のセット*/
 		if(xmlNodeInfo.getSnmpAuthPassword() != null && !"".equals(xmlNodeInfo.getSnmpAuthPassword())){
+			String name = Messages.getString("snmp") +":"+ Messages.getString("snmp.auth.password");
+			String str = checkString(name, xmlNodeInfo.getSnmpAuthPassword(), 64);
+			if(str == null){
+				//値に誤りがあることを示すためにFacilityIdに""をセット
+				dto.setFacilityId("");
+				return dto;
+			}
 			dto.setSnmpAuthPassword(xmlNodeInfo.getSnmpAuthPassword());
 		}
 
 		if(null != xmlNodeInfo.getSnmpAuthProtocol()){
-			dto.setSnmpAuthProtocol(xmlNodeInfo.getSnmpAuthProtocol());
+			dto.setSnmpAuthProtocol(OpenApiEnumConverter.stringToEnum(xmlNodeInfo.getSnmpAuthProtocol(),NodeInfoResponse.SnmpAuthProtocolEnum .class));
 		}
 
-		if(xmlNodeInfo.getSnmpCommunity() != null && !"".equals(xmlNodeInfo.getSnmpAuthProtocol())){
-			dto.setSnmpAuthProtocol(xmlNodeInfo.getSnmpAuthProtocol());
+		if(xmlNodeInfo.getSnmpCommunity() != null){
+			dto.setSnmpCommunity(xmlNodeInfo.getSnmpCommunity());
 		}
 		
-		dto.setSnmpPort(xmlNodeInfo.getSnmpPort());
-		dto.setSnmpRetryCount(xmlNodeInfo.getSnmpRetryCount());
-		dto.setSnmpTimeout(xmlNodeInfo.getSnmpTimeout());
-		
 		if(xmlNodeInfo.getSnmpPrivPassword() != null && !"".equals(xmlNodeInfo.getSnmpPrivPassword())){
+			String name = Messages.getString("snmp") +":"+ Messages.getString("snmp.priv.password");
+			String str = checkString(name, xmlNodeInfo.getSnmpPrivPassword(), 64);
+			if(str == null){
+				//値に誤りがあることを示すためにFacilityIdに""をセット
+				dto.setFacilityId("");
+				return dto;
+			}
 			dto.setSnmpPrivPassword(xmlNodeInfo.getSnmpPrivPassword());
 		}
 		
 		if(null != xmlNodeInfo.getSnmpPrivProtocol()){
-			dto.setSnmpPrivProtocol(xmlNodeInfo.getSnmpPrivProtocol());
+			dto.setSnmpPrivProtocol(OpenApiEnumConverter.stringToEnum(xmlNodeInfo.getSnmpPrivProtocol(),NodeInfoResponse.SnmpPrivProtocolEnum .class));
 		}
 
 		if(null != xmlNodeInfo.getSnmpSecurityLevel()){
-			dto.setSnmpSecurityLevel(xmlNodeInfo.getSnmpSecurityLevel());
+			dto.setSnmpSecurityLevel(OpenApiEnumConverter.stringToEnum(xmlNodeInfo.getSnmpSecurityLevel(),NodeInfoResponse.SnmpSecurityLevelEnum .class));
 		}
 
 		if(xmlNodeInfo.getSnmpUser() != null && !"".equals(xmlNodeInfo.getSnmpUser())){
 			dto.setSnmpUser(xmlNodeInfo.getSnmpUser());
 		}
 		
-		dto.setSnmpVersion(xmlNodeInfo.getSnmpVersion());
+		if(xmlNodeInfo.hasSnmpVersion()){
+			dto.setSnmpVersion(OpenApiEnumConverter.integerToEnum((int)xmlNodeInfo.getSnmpVersion(),NodeInfoResponse.SnmpVersionEnum .class));
+		}
 		
 
 		/*SSH認証関連情報のセット*/
 		if(xmlNodeInfo.getSshUserPassword() != null && !"".equals(xmlNodeInfo.getSshUserPassword())){
+			String name = Messages.getString("ssh") +":"+ Messages.getString("ssh.user.password");
+			String str = checkString(name, xmlNodeInfo.getSshUserPassword(), 64);
+			if(str == null){
+				//値に誤りがあることを示すためにFacilityIdに""をセット
+				dto.setFacilityId("");
+				return dto;
+			}
 			dto.setSshUserPassword(xmlNodeInfo.getSshUserPassword());
 		}
 
@@ -494,30 +512,44 @@ public class RepositoryConv {
 		}
 		
 		if(xmlNodeInfo.getSshPrivateKeyPassphrase() != null && !"".equals(xmlNodeInfo.getSshPrivateKeyPassphrase())){
+			String name = Messages.getString("ssh") +":"+ Messages.getString("ssh.private.key.passphrase");
+			String str = checkString(name, xmlNodeInfo.getSshPrivateKeyPassphrase(), 1024);
+			if(str == null){
+				//値に誤りがあることを示すためにFacilityIdに""をセット
+				dto.setFacilityId("");
+				return dto;
+			}
 			dto.setSshPrivateKeyPassphrase(xmlNodeInfo.getSshPrivateKeyPassphrase());
 		}
 		
-		dto.setSshPort(xmlNodeInfo.getSshPort());
-		dto.setSshTimeout(xmlNodeInfo.getSshTimeout());
+		if(xmlNodeInfo.hasSshPort()){
+			dto.setSshPort((int)xmlNodeInfo.getSshPort());
+		}
+		if(xmlNodeInfo.hasSshTimeout()){
+			dto.setSshTimeout((int)xmlNodeInfo.getSshTimeout());
+		}
 
-		if(xmlNodeInfo.getSshUser() != null && !"".equals(xmlNodeInfo.getSshUser())){
+		if(xmlNodeInfo.getSshUser() != null){
 			dto.setSshUser(xmlNodeInfo.getSshUser());
 		}
 
 		/*WBEM認証関連情報のセット*/
 		if(xmlNodeInfo.getWbemUserPassword() != null && !"".equals(xmlNodeInfo.getWbemUserPassword())){
+			String name = Messages.getString("wbem") +":"+ Messages.getString("wbem.user.password");
+			String str = checkString(name, xmlNodeInfo.getWbemUserPassword(), 64);
+			if(str == null){
+				//値に誤りがあることを示すためにFacilityIdに""をセット
+				dto.setFacilityId("");
+				return dto;
+			}
 			dto.setWbemUserPassword(xmlNodeInfo.getWbemUserPassword());
 		}
 
-		if(xmlNodeInfo.getWbemProtocol() != null && !"".equals(xmlNodeInfo.getWbemProtocol())){
-			dto.setWbemProtocol(xmlNodeInfo.getWbemProtocol());
+		if(xmlNodeInfo.getWbemProtocol() != null){
+			dto.setWbemProtocol(OpenApiEnumConverter.stringToEnum(xmlNodeInfo.getWbemProtocol(),NodeInfoResponse.WbemProtocolEnum .class));
 		}
-		
-		dto.setWbemPort(xmlNodeInfo.getWbemPort());
-		dto.setWbemTimeout(xmlNodeInfo.getWbemTimeout());
-		dto.setWbemRetryCount(xmlNodeInfo.getWbemRetryCount());
 
-		if(xmlNodeInfo.getWbemUser() != null && !"".equals(xmlNodeInfo.getWbemUser())){
+		if(xmlNodeInfo.getWbemUser() != null){
 			dto.setWbemUser(xmlNodeInfo.getWbemUser());
 		}
 		
@@ -545,27 +577,32 @@ public class RepositoryConv {
 		if(xmlNodeInfo.getCloudResourceName() != null && !"".equals(xmlNodeInfo.getCloudResourceName())){
 			dto.setCloudResourceName(xmlNodeInfo.getCloudResourceName());
 		}
+		if(xmlNodeInfo.hasCloudLogPriority()){
+			dto.setCloudLogPriority((int)xmlNodeInfo.getCloudLogPriority());
+		}
 		
-		// パッケージ情報とプロセス情報、ネットワーク接続情報とライセンス情報と個別導入製品情報は更新しないフラグを設定する
-		dto.setNodePackageRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
-		dto.setNodeProcessRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
-		dto.setNodeProductRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
-		dto.setNodeLicenseRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
-		dto.setNodeNetstatRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
-		dto.setNodeCpuRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
-		dto.setNodeDiskRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
-		dto.setNodeFilesystemRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
-		dto.setNodeHostnameRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
-		dto.setNodeMemoryRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
-		dto.setNodeNetworkInterfaceRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
-		dto.setNodeOsRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
-		dto.setNodeVariableRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
+		/*RPA関連情報のセット*/
+		if(xmlNodeInfo.getRpaLogDir() != null && !"".equals(xmlNodeInfo.getRpaLogDir())){
+			dto.setRpaLogDir(xmlNodeInfo.getRpaLogDir());
+		}
+		if(xmlNodeInfo.getRpaManagementToolType() != null && !"".equals(xmlNodeInfo.getRpaManagementToolType())){
+			dto.setRpaManagementToolType(xmlNodeInfo.getRpaManagementToolType());
+		}
+		if(xmlNodeInfo.getRpaResourceId() != null && !"".equals(xmlNodeInfo.getRpaResourceId())){
+			dto.setRpaResourceId(xmlNodeInfo.getRpaResourceId());
+		}
+		if(xmlNodeInfo.getRpaUser() != null && !"".equals(xmlNodeInfo.getRpaUser())){
+			dto.setRpaUser(xmlNodeInfo.getRpaUser());
+		}
+		if(xmlNodeInfo.getRpaExecEnvId() != null && !"".equals(xmlNodeInfo.getRpaExecEnvId())){
+			dto.setRpaExecEnvId(xmlNodeInfo.getRpaExecEnvId());
+		}
 		
 		// ホスト名情報の格納
-		List<NodeHostnameInfo> nodeHostnameList = dto.getNodeHostnameInfo();
+		List<NodeHostnameInfoResponse> nodeHostnameList = dto.getNodeHostnameInfo();
 		for (int i = 0; i < hostnameList.length; i++) {
 			
-			NodeHostnameInfo nodeHostnameInfo = new NodeHostnameInfo();
+			NodeHostnameInfoResponse nodeHostnameInfo = new NodeHostnameInfoResponse();
 			
 			if (hostnameList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
 				
@@ -587,10 +624,10 @@ public class RepositoryConv {
 		
 
 		// CPU情報の格納
-		List<NodeCpuInfo> nodeCPUList = dto.getNodeCpuInfo();
+		List<NodeCpuInfoResponse> nodeCPUList = dto.getNodeCpuInfo();
 		for (int i = 0; i < cpuList.length; i++) {
 			
-			NodeCpuInfo nodeCpuInfo = new NodeCpuInfo();
+			NodeCpuInfoResponse nodeCpuInfo = new NodeCpuInfoResponse();
 			
 			if (cpuList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
 				
@@ -615,7 +652,7 @@ public class RepositoryConv {
 				}
 				
 				if(cpuList[i].getDeviceIndex() >= 0){
-					nodeCpuInfo.setDeviceIndex(cpuList[i].getDeviceIndex());
+					nodeCpuInfo.setDeviceIndex((int)cpuList[i].getDeviceIndex());
 				}else{
 					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
 							+ "(DeviceIndex) : " + xmlNodeInfo.getFacilityId());
@@ -650,15 +687,15 @@ public class RepositoryConv {
 				}
 				
 				if(cpuList[i].getCoreCount() >= 0) {
-					nodeCpuInfo.setCoreCount(cpuList[i].getCoreCount());
+					nodeCpuInfo.setCoreCount((int)cpuList[i].getCoreCount());
 				}
 				
 				if(cpuList[i].getThreadCount() >= 0) {
-					nodeCpuInfo.setThreadCount(cpuList[i].getThreadCount());
+					nodeCpuInfo.setThreadCount((int)cpuList[i].getThreadCount());
 				}
 		
 				if(cpuList[i].getClockCount() >= 0) {
-					nodeCpuInfo.setClockCount(cpuList[i].getClockCount());
+					nodeCpuInfo.setClockCount((int)cpuList[i].getClockCount());
 				}
 				nodeCPUList.add(nodeCpuInfo);
 				
@@ -667,10 +704,10 @@ public class RepositoryConv {
 		
 
 		// メモリ情報の格納
-		List<NodeMemoryInfo> nodeMemoryList = dto.getNodeMemoryInfo();
+		List<NodeMemoryInfoResponse> nodeMemoryList = dto.getNodeMemoryInfo();
 		for (int i = 0; i < memoryList.length; i++) {
 			
-			NodeMemoryInfo nodeMemoryInfo = new NodeMemoryInfo();
+			NodeMemoryInfoResponse nodeMemoryInfo = new NodeMemoryInfoResponse();
 			
 			if (memoryList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
 				
@@ -695,7 +732,7 @@ public class RepositoryConv {
 				}
 				
 				if(memoryList[i].getDeviceIndex() >= 0){
-					nodeMemoryInfo.setDeviceIndex(memoryList[i].getDeviceIndex());
+					nodeMemoryInfo.setDeviceIndex((int)memoryList[i].getDeviceIndex());
 				}else{
 					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
 							+ "(DeviceIndex) : " + xmlNodeInfo.getFacilityId());
@@ -736,10 +773,10 @@ public class RepositoryConv {
 		
 
 		// ネットワークインタフェース情報の格納
-		List<NodeNetworkInterfaceInfo> nodeNetworkInterfaceList = dto.getNodeNetworkInterfaceInfo();
+		List<NodeNetworkInterfaceInfoResponse> nodeNetworkInterfaceList = dto.getNodeNetworkInterfaceInfo();
 		for (int i = 0; i < networkInterfaceList.length; i++) {
 			
-			NodeNetworkInterfaceInfo nodeNetworkInterfaceInfo = new NodeNetworkInterfaceInfo();
+			NodeNetworkInterfaceInfoResponse nodeNetworkInterfaceInfo = new NodeNetworkInterfaceInfoResponse();
 			
 			if (networkInterfaceList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
 				
@@ -764,7 +801,7 @@ public class RepositoryConv {
 				}
 				
 				if(networkInterfaceList[i].getDeviceIndex() >= 0){
-					nodeNetworkInterfaceInfo.setDeviceIndex(networkInterfaceList[i].getDeviceIndex());
+					nodeNetworkInterfaceInfo.setDeviceIndex((int)networkInterfaceList[i].getDeviceIndex());
 				}else{
 					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
 							+ "(DeviceIndex) : " + xmlNodeInfo.getFacilityId());
@@ -818,10 +855,10 @@ public class RepositoryConv {
 		}
 		
 		// ディスク情報の格納
-		List<NodeDiskInfo> nodeDiskList = dto.getNodeDiskInfo();
+		List<NodeDiskInfoResponse> nodeDiskList = dto.getNodeDiskInfo();
 		for (int i = 0; i < diskList.length; i++) {
 			
-			NodeDiskInfo nodeDiskInfo = new NodeDiskInfo();
+			NodeDiskInfoResponse nodeDiskInfo = new NodeDiskInfoResponse();
 			
 			if (diskList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
 				
@@ -846,7 +883,7 @@ public class RepositoryConv {
 				}
 				
 				if(diskList[i].getDeviceIndex() >= 0){
-					nodeDiskInfo.setDeviceIndex(diskList[i].getDeviceIndex());
+					nodeDiskInfo.setDeviceIndex((int)diskList[i].getDeviceIndex());
 				}else{
 					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
 							+ "(DeviceIndex) : " + xmlNodeInfo.getFacilityId());
@@ -882,7 +919,7 @@ public class RepositoryConv {
 				
 				if(diskList[i].getDeviceDiskRpm() >= 0){
 					
-					nodeDiskInfo.setDiskRpm(diskList[i].getDeviceDiskRpm());
+					nodeDiskInfo.setDiskRpm((int)diskList[i].getDeviceDiskRpm());
 					
 				}else{
 					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
@@ -896,14 +933,14 @@ public class RepositoryConv {
 		
 
 		// ファイルシステム情報の格納
-		List<NodeFilesystemInfo> nodeFilesystemList = dto.getNodeFilesystemInfo();
+		List<NodeFilesystemInfoResponse> nodeFilesystemList = dto.getNodeFilesystemInfo();
 		for (int i = 0; i < fsList.length; i++) {
 			
-			NodeFilesystemInfo nodeFilesystemInfo = new NodeFilesystemInfo();
+			NodeFilesystemInfoResponse nodeFilesystemInfo = new NodeFilesystemInfoResponse();
 			
 			if (fsList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
 				if(fsList[i].getDeviceIndex() >= 0){
-					nodeFilesystemInfo.setDeviceIndex(fsList[i].getDeviceIndex());
+					nodeFilesystemInfo.setDeviceIndex((int)fsList[i].getDeviceIndex());
 				}else{
 					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
 							+ "(DeviceIndex) : " + xmlNodeInfo.getFacilityId());
@@ -969,10 +1006,10 @@ public class RepositoryConv {
 		}
 		
 		// 汎用デバイス情報の格納
-		List<NodeGeneralDeviceInfo> nodeDeviceList = dto.getNodeDeviceInfo();
+		List<NodeGeneralDeviceInfoResponse> nodeDeviceList = dto.getNodeDeviceInfo();
 		for (int i = 0; i < deviceList.length; i++) {
 			
-			NodeGeneralDeviceInfo nodeDeviceInfo = new NodeGeneralDeviceInfo();
+			NodeGeneralDeviceInfoResponse nodeDeviceInfo = new NodeGeneralDeviceInfoResponse();
 			
 			if (deviceList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
 				
@@ -999,7 +1036,7 @@ public class RepositoryConv {
 
 				if(deviceList[i].getDeviceIndex() >= 0 ){
 					
-					nodeDeviceInfo.setDeviceIndex(deviceList[i].getDeviceIndex());
+					nodeDeviceInfo.setDeviceIndex((int)deviceList[i].getDeviceIndex());
 					
 				}else{
 					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
@@ -1042,10 +1079,10 @@ public class RepositoryConv {
 		}
 		
 		// ノード変数情報の格納
-		List<com.clustercontrol.ws.repository.NodeVariableInfo> nodeVariableList = dto.getNodeVariableInfo();
+		List<NodeVariableInfoResponse> nodeVariableList = dto.getNodeVariableInfo();
 		for (int i = 0; i < variableList.length; i++) {
 			
-			com.clustercontrol.ws.repository.NodeVariableInfo nodeVariableInfo = new com.clustercontrol.ws.repository.NodeVariableInfo();
+			NodeVariableInfoResponse nodeVariableInfo = new NodeVariableInfoResponse();
 			
 			if (variableList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
 				
@@ -1067,16 +1104,16 @@ public class RepositoryConv {
 		}
 		
 		// 備考情報の格納
-		List<NodeNoteInfo> nodeNoteList = dto.getNodeNoteInfo();
+		List<NodeNoteInfoResponse> nodeNoteList = dto.getNodeNoteInfo();
 		for (int i = 0; i < noteList.length; i++) {
 			
-			NodeNoteInfo nodeNoteInfo = new NodeNoteInfo();
+			NodeNoteInfoResponse nodeNoteInfo = new NodeNoteInfoResponse();
 			
 			if (noteList[i].getFacilityId().equals(xmlNodeInfo.getFacilityId())) {
 				
 				if(noteList[i].getNoteId() >= 0){
 					
-					nodeNoteInfo.setNoteId(noteList[i].getNoteId());
+					nodeNoteInfo.setNoteId((int)noteList[i].getNoteId());
 
 				}else{
 					log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
@@ -1098,49 +1135,6 @@ public class RepositoryConv {
 	}
 
 	/**
-	 * XMLから生成したオブジェクト（スコープ情報）から、スコープのプロパティオブジェクトを生成する<br>
-	 * 
-	 * @param xmlScopeInfo
-	 *            スコープ情報オブジェクト
-	 * @return スコープのプロパティオブジェクト
-	 */
-	/*
-	public static com.clustercontrol.ws.repository.ScopeInfo convScopeXml2Dto(ScopeInfo xmlScopeInfo) {
-
-		com.clustercontrol.ws.repository.ScopeInfo dto = new com.clustercontrol.ws.repository.ScopeInfo();
-		
-		if(xmlScopeInfo.getFacilityId() != null
-				&& !"".equals(xmlScopeInfo.getFacilityId())){
-			
-			dto.setFacilityId(xmlScopeInfo.getFacilityId());
-			
-		}else{
-			log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
-					+ "(FileSystemMountPoint) : " + xmlScopeInfo.toString());
-			
-			return null;
-		}
-		
-		if(xmlScopeInfo.getFacilityName() != null
-				&& !"".equals(xmlScopeInfo.getFacilityName())){
-			dto.setFacilityName(xmlScopeInfo.getFacilityName());
-		}else{
-			log.warn(Messages.getString("SettingTools.EssentialValueInvalid")
-					+ "(FileSystemMountPoint) : " + xmlScopeInfo.toString());
-			return null;
-		}
-		
-		if(xmlScopeInfo.getDescription() != null
-				&& !"".equals(xmlScopeInfo.getDescription())){
-			dto.setDescription(xmlScopeInfo.getFacilityName());
-		}
-		
-		dto.setOwnerRoleId(xmlScopeInfo.getOwnerRoleId());
-
-		return dto;
-	}
-*/
-	/**
 	 * スコープ情報がHinemosのシステムスコープと重複しているかどうかを確認する<br>
 	 * 
 	 * @param scopeInfo
@@ -1156,6 +1150,9 @@ public class RepositoryConv {
 				facilityId.equals("OWNER") ||
 				facilityId.equals("_PRIVATE_CLOUD") ||
 				facilityId.equals("_PUBLIC_CLOUD") ||
+				facilityId.equals(RpaConstants.RPA) ||
+				facilityId.equals(RpaConstants.RPA_NO_MGR_UIPATH) ||
+				facilityId.equals(RpaConstants.RPA_NO_MGR_WINACTOR) ||
 				facilityId.equals("NODE_CONFIGURATION")) {
 			return true;
 		} else {
@@ -1165,7 +1162,7 @@ public class RepositoryConv {
 	}
 	
 	
-	public static void convDto2Xml(com.clustercontrol.ws.repository.NodeInfo dto , NodeInfo nodeInfo){
+	public static void convDto2Xml(NodeInfoResponse dto, NodeInfo nodeInfo) {
 
 		nodeInfo.setFacilityId(dto.getFacilityId());
 		nodeInfo.setFacilityName(dto.getFacilityName());
@@ -1174,7 +1171,7 @@ public class RepositoryConv {
 		nodeInfo.setOwnerRoleId(dto.getOwnerRoleId());
 		nodeInfo.setPlatformFamily(dto.getPlatformFamily());
 		nodeInfo.setSubPlatformFamily(dto.getSubPlatformFamily());
-		nodeInfo.setValidFlg(dto.isValid());
+		nodeInfo.setValidFlg(dto.getValid());
 		
 		if (dto.getIconImage()!= null) {
 			nodeInfo.setIconImage(dto.getIconImage());
@@ -1189,7 +1186,7 @@ public class RepositoryConv {
 			nodeInfo.setSnmpCommunity(dto.getSnmpCommunity());
 		}
 
-		nodeInfo.setSnmpVersion(dto.getSnmpVersion());
+		nodeInfo.setSnmpVersion(OpenApiEnumConverter.enumToInteger( dto.getSnmpVersion()));
 
 		if (dto.getSnmpRetryCount() != null && checkInteger(dto.getSnmpRetryCount()) != null) {
 			nodeInfo.setSnmpRetryCount(checkInteger(dto.getSnmpRetryCount()));
@@ -1212,7 +1209,7 @@ public class RepositoryConv {
 			nodeInfo.setWbemPort(checkInteger(dto.getWbemPort()));
 		}
 		if (dto.getWbemProtocol() != null) {
-			nodeInfo.setWbemProtocol(dto.getWbemProtocol());
+			nodeInfo.setWbemProtocol(OpenApiEnumConverter.enumToString(dto.getWbemProtocol()));
 		}
 		if (dto.getWbemTimeout() != null && checkInteger(dto.getWbemTimeout()) != null) {
 			nodeInfo.setWbemTimeout(checkInteger(dto.getWbemTimeout()));
@@ -1221,7 +1218,7 @@ public class RepositoryConv {
 			nodeInfo.setWbemRetryCount(checkInteger(dto.getWbemRetryCount()));
 		}
 		
-		nodeInfo.setIpAddressVersion(dto.getIpAddressVersion());
+		nodeInfo.setIpAddressVersion(OpenApiEnumConverter.enumToInteger(dto.getIpAddressVersion()));
 		nodeInfo.setIpAddressV4(dto.getIpAddressV4());
 		nodeInfo.setIpAddressV6(dto.getIpAddressV6());
 		nodeInfo.setNodeName(dto.getNodeName());
@@ -1233,7 +1230,7 @@ public class RepositoryConv {
 		String osRelease = null;
 		String osVersion = null;
 		String characterSet = null;
-		Long startupDateTime = 0L;
+		String startupDateTime = null;
 		if (dto.getNodeOsInfo() != null) {
 			osName = dto.getNodeOsInfo().getOsName();
 			osRelease = dto.getNodeOsInfo().getOsRelease();
@@ -1245,9 +1242,8 @@ public class RepositoryConv {
 		nodeInfo.setOsRelease(osRelease);
 		nodeInfo.setOsVersion(osVersion);
 		nodeInfo.setCharacterSet(characterSet);
-		if (startupDateTime > 0) {
-			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-			nodeInfo.setStartupDateTime(dateFormat.format(startupDateTime));
+		if (startupDateTime != null) {
+			nodeInfo.setStartupDateTime(startupDateTime);
 		}
 		
 		//Hinemosエージェント関連情報セット
@@ -1315,7 +1311,7 @@ public class RepositoryConv {
 		}
 
 		if (dto.getWinrmProtocol() != null) {
-			nodeInfo.setWinrmProtocol(dto.getWinrmProtocol());
+			nodeInfo.setWinrmProtocol(OpenApiEnumConverter.enumToString(dto.getWinrmProtocol()));
 		}
 		Integer winrmTimeout = dto.getWinrmTimeout();
 		if (checkInteger(winrmTimeout) != null) {
@@ -1327,7 +1323,7 @@ public class RepositoryConv {
 			nodeInfo.setWinrmRetryCount(winrmRetryCount.intValue());
 		}
 
-		nodeInfo.setAutoDeviceSearch(dto.isAutoDeviceSearch());
+		nodeInfo.setAutoDeviceSearch(dto.getAutoDeviceSearch());
 		
 		/*SNMP認証関連情報のセット*/
 		if(dto.getSnmpAuthPassword() != null){
@@ -1335,11 +1331,11 @@ public class RepositoryConv {
 		}
 
 		if(dto.getSnmpAuthProtocol() != null){
-			nodeInfo.setSnmpAuthProtocol(dto.getSnmpAuthProtocol());
+			nodeInfo.setSnmpAuthProtocol(OpenApiEnumConverter.enumToString(dto.getSnmpAuthProtocol()));
 		}
 		
 		if(dto.getSnmpCommunity() != null){
-			nodeInfo.setSnmpAuthProtocol(dto.getSnmpAuthProtocol());
+			nodeInfo.setSnmpAuthProtocol(OpenApiEnumConverter.enumToString(dto.getSnmpAuthProtocol()));
 		}
 		
 		nodeInfo.setSnmpPort(dto.getSnmpPort());
@@ -1351,11 +1347,11 @@ public class RepositoryConv {
 		}
 		
 		if(dto.getSnmpPrivProtocol() != null){
-			nodeInfo.setSnmpPrivProtocol(dto.getSnmpPrivProtocol());
+			nodeInfo.setSnmpPrivProtocol(OpenApiEnumConverter.enumToString(dto.getSnmpPrivProtocol()));
 		}
 		
 		if(dto.getSnmpSecurityLevel() != null){
-			nodeInfo.setSnmpSecurityLevel(dto.getSnmpSecurityLevel());
+			nodeInfo.setSnmpSecurityLevel(OpenApiEnumConverter.enumToString(dto.getSnmpSecurityLevel()));
 		}
 
 		if(dto.getSnmpUser() != null){
@@ -1363,7 +1359,7 @@ public class RepositoryConv {
 		}
 		
 		if(dto.getSnmpVersion() != null){
-			nodeInfo.setSnmpVersion(dto.getSnmpVersion());
+			nodeInfo.setSnmpVersion(OpenApiEnumConverter.enumToInteger(dto.getSnmpVersion()));
 		}
 		
 
@@ -1393,7 +1389,7 @@ public class RepositoryConv {
 		}
 
 		if(dto.getWbemProtocol() != null){
-			nodeInfo.setWbemProtocol(dto.getWbemProtocol());
+			nodeInfo.setWbemProtocol(OpenApiEnumConverter.enumToString(dto.getWbemProtocol()));
 		}
 		
 		nodeInfo.setWbemPort(dto.getWbemPort());
@@ -1428,20 +1424,39 @@ public class RepositoryConv {
 		if(dto.getCloudResourceName() != null){
 			nodeInfo.setCloudResourceName(dto.getCloudResourceName());
 		}
+		nodeInfo.setCloudLogPriority(dto.getCloudLogPriority());
+
+		/*RPA関連情報のセット*/
+		if(dto.getRpaLogDir() != null){
+			nodeInfo.setRpaLogDir(dto.getRpaLogDir());
+		}
+		if(dto.getRpaManagementToolType() != null){
+			nodeInfo.setRpaManagementToolType(dto.getRpaManagementToolType());
+		}
+		if(dto.getRpaResourceId() != null){
+			nodeInfo.setRpaResourceId(dto.getRpaResourceId());
+		}
+		if(dto.getRpaUser() != null){
+			nodeInfo.setRpaUser(dto.getRpaUser());
+		}
+		if(dto.getRpaExecEnvId() != null){
+			nodeInfo.setRpaExecEnvId(dto.getRpaExecEnvId());
+		}
+
 	}
 
-	public static Collection<HostnameInfo> convHostnameDto2Xml(com.clustercontrol.ws.repository.NodeInfo dto){
+	public static Collection<HostnameInfo> convHostnameDto2Xml(NodeInfoResponse dto){
 		
 		ArrayList<HostnameInfo> hostnameList = new ArrayList<HostnameInfo>();
 		
 		HostnameInfo xmlHostnameInfo = null;
 		
 		// ノード内ホスト名情報の取得
-		List<NodeHostnameInfo> nodeHostnameInfoList = dto.getNodeHostnameInfo();
-		Iterator<NodeHostnameInfo> itrNodeHostnameInfoList = nodeHostnameInfoList.iterator();
+		List<NodeHostnameInfoResponse> nodeHostnameInfoList = dto.getNodeHostnameInfo();
+		Iterator<NodeHostnameInfoResponse> itrNodeHostnameInfoList = nodeHostnameInfoList.iterator();
 		while (itrNodeHostnameInfoList.hasNext()) {
 
-			NodeHostnameInfo nodeHostnameInfo = itrNodeHostnameInfoList.next();
+			NodeHostnameInfoResponse nodeHostnameInfo = itrNodeHostnameInfoList.next();
 			
 			if (nodeHostnameInfo.getHostname() != null && !nodeHostnameInfo.getHostname().equals("")) {
 
@@ -1459,18 +1474,18 @@ public class RepositoryConv {
 		return hostnameList;
 	}
 
-	public static Collection<CPUInfo> convCPUDto2Xml(com.clustercontrol.ws.repository.NodeInfo dto){
+	public static Collection<CPUInfo> convCPUDto2Xml(NodeInfoResponse dto){
 		
 		ArrayList<CPUInfo> cpuList = new ArrayList<CPUInfo>();
 		
 		CPUInfo xmlCPUInfo = null;
 		
 		// ノード内CPU情報の取得
-		List<NodeCpuInfo> nodeCpuInfoList = dto.getNodeCpuInfo();
-		Iterator<NodeCpuInfo> itrNodeCpuInfoList = nodeCpuInfoList.iterator();
+		List<NodeCpuInfoResponse> nodeCpuInfoList = dto.getNodeCpuInfo();
+		Iterator<NodeCpuInfoResponse> itrNodeCpuInfoList = nodeCpuInfoList.iterator();
 		while (itrNodeCpuInfoList.hasNext()) {
 
-			NodeCpuInfo nodeCpuInfo = itrNodeCpuInfoList.next();
+			NodeCpuInfoResponse nodeCpuInfo = itrNodeCpuInfoList.next();
 			
 			if (nodeCpuInfo.getDeviceName() != null && !nodeCpuInfo.getDeviceName().equals("")) {
 				xmlCPUInfo = new CPUInfo();
@@ -1482,9 +1497,9 @@ public class RepositoryConv {
 					xmlCPUInfo.setDeviceIndex(deviceIndex.intValue());
 				}
 				xmlCPUInfo.setDeviceType(nodeCpuInfo.getDeviceType());
-				Integer deviceSize = nodeCpuInfo.getDeviceSize();
-				if (checkInteger(deviceSize) != null) {
-					xmlCPUInfo.setDeviceSize(deviceSize.intValue());
+				Long deviceSize = nodeCpuInfo.getDeviceSize();
+				if (checkLong(deviceSize) != null) {
+					xmlCPUInfo.setDeviceSize(deviceSize.longValue());
 				}
 				xmlCPUInfo.setDeviceSizeUnit(nodeCpuInfo.getDeviceSizeUnit());
 				xmlCPUInfo.setDeviceDescription(nodeCpuInfo.getDeviceDescription());
@@ -1499,18 +1514,18 @@ public class RepositoryConv {
 		return cpuList;
 	}
 
-	public static Collection<MemoryInfo> convMemoryDto2Xml(com.clustercontrol.ws.repository.NodeInfo dto){
+	public static Collection<MemoryInfo> convMemoryDto2Xml(NodeInfoResponse dto){
 		
 		ArrayList<MemoryInfo> memoryList = new ArrayList<MemoryInfo>();
 		
 		MemoryInfo xmlMemoryInfo = null;
 		
 		// ノード内メモリ情報の取得
-		List<NodeMemoryInfo> nodeMemoryInfoList = dto.getNodeMemoryInfo();
-		Iterator<NodeMemoryInfo> itrNodeMemoryInfoList = nodeMemoryInfoList.iterator();
+		List<NodeMemoryInfoResponse> nodeMemoryInfoList = dto.getNodeMemoryInfo();
+		Iterator<NodeMemoryInfoResponse> itrNodeMemoryInfoList = nodeMemoryInfoList.iterator();
 		while (itrNodeMemoryInfoList.hasNext()) {
 
-			NodeMemoryInfo nodeMemoryInfo = itrNodeMemoryInfoList.next();
+			NodeMemoryInfoResponse nodeMemoryInfo = itrNodeMemoryInfoList.next();
 			
 			if (nodeMemoryInfo.getDeviceName() != null && !nodeMemoryInfo.getDeviceName().equals("")) {
 				xmlMemoryInfo = new MemoryInfo();
@@ -1523,9 +1538,9 @@ public class RepositoryConv {
 					xmlMemoryInfo.setDeviceIndex(deviceIndex.intValue());
 				}
 				xmlMemoryInfo.setDeviceType(nodeMemoryInfo.getDeviceType());
-				Integer deviceSize = nodeMemoryInfo.getDeviceSize();
-				if (checkInteger(deviceSize) != null) {
-					xmlMemoryInfo.setDeviceSize(deviceSize.intValue());
+				Long deviceSize = nodeMemoryInfo.getDeviceSize();
+				if (checkLong(deviceSize) != null) {
+					xmlMemoryInfo.setDeviceSize(deviceSize.longValue());
 				}
 				xmlMemoryInfo.setDeviceSizeUnit(nodeMemoryInfo.getDeviceSizeUnit());
 				xmlMemoryInfo.setDeviceDescription(nodeMemoryInfo.getDeviceDescription());
@@ -1537,18 +1552,18 @@ public class RepositoryConv {
 		return memoryList;
 	}
 
-	public static Collection<NetworkInterfaceInfo> convNetworkInterfaceDto2Xml(com.clustercontrol.ws.repository.NodeInfo dto){
+	public static Collection<NetworkInterfaceInfo> convNetworkInterfaceDto2Xml(NodeInfoResponse dto){
 		
 		ArrayList<NetworkInterfaceInfo> networkInterfaceList = new ArrayList<NetworkInterfaceInfo>();
 		
 		NetworkInterfaceInfo xmlNetworkInterfaceInfo = null;
 		
 		// ノード内ネットワークインタフェース情報の取得
-		List<NodeNetworkInterfaceInfo> nodeNetworkInterfaceInfoList = dto.getNodeNetworkInterfaceInfo();
-		Iterator<NodeNetworkInterfaceInfo> itrNodeNetworkInterfaceInfoList = nodeNetworkInterfaceInfoList.iterator();
+		List<NodeNetworkInterfaceInfoResponse> nodeNetworkInterfaceInfoList = dto.getNodeNetworkInterfaceInfo();
+		Iterator<NodeNetworkInterfaceInfoResponse> itrNodeNetworkInterfaceInfoList = nodeNetworkInterfaceInfoList.iterator();
 		while (itrNodeNetworkInterfaceInfoList.hasNext()) {
 
-			NodeNetworkInterfaceInfo nodeNetworkInterfaceInfo = itrNodeNetworkInterfaceInfoList.next();
+			NodeNetworkInterfaceInfoResponse nodeNetworkInterfaceInfo = itrNodeNetworkInterfaceInfoList.next();
 			
 			if (nodeNetworkInterfaceInfo.getDeviceName() != null && !nodeNetworkInterfaceInfo.getDeviceName().equals("")) {
 				xmlNetworkInterfaceInfo = new NetworkInterfaceInfo();
@@ -1560,9 +1575,9 @@ public class RepositoryConv {
 					xmlNetworkInterfaceInfo.setDeviceIndex(deviceIndex.intValue());
 				}
 				xmlNetworkInterfaceInfo.setDeviceType(nodeNetworkInterfaceInfo.getDeviceType());
-				Integer deviceSize = nodeNetworkInterfaceInfo.getDeviceSize();
-				if (checkInteger(deviceSize) != null) {
-					xmlNetworkInterfaceInfo.setDeviceSize(deviceSize.intValue());
+				Long deviceSize = nodeNetworkInterfaceInfo.getDeviceSize();
+				if (checkLong(deviceSize) != null) {
+					xmlNetworkInterfaceInfo.setDeviceSize(deviceSize.longValue());
 				}
 				xmlNetworkInterfaceInfo.setDeviceSizeUnit(nodeNetworkInterfaceInfo.getDeviceSizeUnit());
 				xmlNetworkInterfaceInfo.setDeviceDescription(nodeNetworkInterfaceInfo.getDeviceDescription());
@@ -1576,18 +1591,18 @@ public class RepositoryConv {
 		return networkInterfaceList;
 	}
 
-	public static Collection<DiskInfo> convDiskDto2Xml(com.clustercontrol.ws.repository.NodeInfo dto){
+	public static Collection<DiskInfo> convDiskDto2Xml(NodeInfoResponse  dto){
 		
 		ArrayList<DiskInfo> diskList = new ArrayList<DiskInfo>();
 		
 		DiskInfo xmlDiskInfo = null;
 		
 		// ノード内ディスク情報の取得
-		List<NodeDiskInfo> nodeDiskInfoList = dto.getNodeDiskInfo();
-		Iterator<NodeDiskInfo> itrNodeDiskInfoList = nodeDiskInfoList.iterator();
+		List<NodeDiskInfoResponse> nodeDiskInfoList = dto.getNodeDiskInfo();
+		Iterator<NodeDiskInfoResponse> itrNodeDiskInfoList = nodeDiskInfoList.iterator();
 		while (itrNodeDiskInfoList.hasNext()) {
 
-			NodeDiskInfo nodeDiskInfo = itrNodeDiskInfoList.next();
+			NodeDiskInfoResponse nodeDiskInfo = itrNodeDiskInfoList.next();
 			
 			if (nodeDiskInfo.getDeviceName() != null && !nodeDiskInfo.getDeviceName().equals("")) {
 				xmlDiskInfo = new DiskInfo();
@@ -1596,9 +1611,9 @@ public class RepositoryConv {
 				xmlDiskInfo.setDeviceName(nodeDiskInfo.getDeviceName());
 				xmlDiskInfo.setDeviceIndex(nodeDiskInfo.getDeviceIndex());
 				xmlDiskInfo.setDeviceType(nodeDiskInfo.getDeviceType());
-				Integer deviceSize = nodeDiskInfo.getDeviceSize();
-				if (checkInteger(deviceSize) != null) {
-					xmlDiskInfo.setDeviceSize(deviceSize.intValue());
+				Long deviceSize = nodeDiskInfo.getDeviceSize();
+				if (checkLong(deviceSize) != null) {
+					xmlDiskInfo.setDeviceSize(deviceSize.longValue());
 				}
 				xmlDiskInfo.setDeviceSizeUnit(nodeDiskInfo.getDeviceSizeUnit());
 				xmlDiskInfo.setDeviceDescription(nodeDiskInfo.getDeviceDescription());
@@ -1615,17 +1630,17 @@ public class RepositoryConv {
 		return diskList;
 	}
 
-	public static Collection<FSInfo> convFSDto2Xml(com.clustercontrol.ws.repository.NodeInfo dto){
+	public static Collection<FSInfo> convFSDto2Xml(NodeInfoResponse  dto){
 		
 		ArrayList<FSInfo> fsList = new ArrayList<FSInfo>();
 		
 		FSInfo xmlFilesystemInfo = null;
 		
 		// ノード内ファイルシステム情報の取得
-		List<NodeFilesystemInfo> nodeFilesystemInfoList = dto.getNodeFilesystemInfo();
-		Iterator<NodeFilesystemInfo> itrNodeFilesystemInfoList = nodeFilesystemInfoList.iterator();
+		List<NodeFilesystemInfoResponse> nodeFilesystemInfoList = dto.getNodeFilesystemInfo();
+		Iterator<NodeFilesystemInfoResponse> itrNodeFilesystemInfoList = nodeFilesystemInfoList.iterator();
 		while (itrNodeFilesystemInfoList.hasNext()) {
-			NodeFilesystemInfo nodeFilesystemInfo = itrNodeFilesystemInfoList.next();
+			NodeFilesystemInfoResponse nodeFilesystemInfo = itrNodeFilesystemInfoList.next();
 			
 			if (nodeFilesystemInfo.getDeviceName() != null && !nodeFilesystemInfo.getDeviceName().equals("")) {
 				xmlFilesystemInfo = new FSInfo();
@@ -1638,9 +1653,9 @@ public class RepositoryConv {
 				xmlFilesystemInfo.setDeviceName(nodeFilesystemInfo.getDeviceName());
 				xmlFilesystemInfo.setDeviceDisplayName(nodeFilesystemInfo.getDeviceDisplayName());
 
-				Integer deviceSize = nodeFilesystemInfo.getDeviceSize();
-				if (checkInteger(deviceSize) != null) {
-					xmlFilesystemInfo.setDeviceSize(deviceSize.intValue());
+				Long deviceSize = nodeFilesystemInfo.getDeviceSize();
+				if (checkLong(deviceSize) != null) {
+					xmlFilesystemInfo.setDeviceSize(deviceSize.longValue());
 				}
 				xmlFilesystemInfo.setDeviceSizeUnit(nodeFilesystemInfo.getDeviceSizeUnit());
 				xmlFilesystemInfo.setDeviceDescription(nodeFilesystemInfo.getDeviceDescription());
@@ -1654,18 +1669,18 @@ public class RepositoryConv {
 	}
 	
 
-	public static Collection<DeviceInfo> convDeviceDto2Xml(com.clustercontrol.ws.repository.NodeInfo dto ){
+	public static Collection<DeviceInfo> convDeviceDto2Xml(NodeInfoResponse  dto ){
 		
 		ArrayList<DeviceInfo> deviceList = new ArrayList<DeviceInfo>();
 		
 		DeviceInfo xmlDeviceInfo = null;
 		
 		// ノード内汎用デバイス情報の取得
-		List<NodeGeneralDeviceInfo> nodeDeviceInfoList = dto.getNodeDeviceInfo();
-		Iterator<NodeGeneralDeviceInfo> itrNodeDeviceInfoList = nodeDeviceInfoList.iterator();
+		List<NodeGeneralDeviceInfoResponse> nodeDeviceInfoList = dto.getNodeDeviceInfo();
+		Iterator<NodeGeneralDeviceInfoResponse> itrNodeDeviceInfoList = nodeDeviceInfoList.iterator();
 		while (itrNodeDeviceInfoList.hasNext()) {
 			
-			NodeDeviceInfo nodeDeviceInfo = itrNodeDeviceInfoList.next();
+			NodeGeneralDeviceInfoResponse nodeDeviceInfo = itrNodeDeviceInfoList.next();
 			
 			if (nodeDeviceInfo.getDeviceName() != null && !nodeDeviceInfo.getDeviceName().equals("")) {
 				xmlDeviceInfo = new DeviceInfo();
@@ -1676,9 +1691,9 @@ public class RepositoryConv {
 				xmlDeviceInfo.setDeviceIndex(nodeDeviceInfo.getDeviceIndex());
 
 				xmlDeviceInfo.setDeviceType(nodeDeviceInfo.getDeviceType());
-				Integer deviceSize = nodeDeviceInfo.getDeviceSize();
-				if (checkInteger(deviceSize) != null) {
-					xmlDeviceInfo.setDeviceSize(deviceSize.intValue());
+				Long deviceSize = nodeDeviceInfo.getDeviceSize();
+				if (checkLong(deviceSize) != null) {
+					xmlDeviceInfo.setDeviceSize(deviceSize.longValue());
 				}
 				xmlDeviceInfo.setDeviceSizeUnit(nodeDeviceInfo.getDeviceSizeUnit());
 				xmlDeviceInfo.setDeviceType(nodeDeviceInfo.getDeviceType());
@@ -1689,18 +1704,18 @@ public class RepositoryConv {
 		return deviceList;
 	}
 	
-	public static Collection<NodeVariableInfo> convVariableDto2Xml(com.clustercontrol.ws.repository.NodeInfo dto){
+	public static Collection<NodeVariableInfo> convVariableDto2Xml(NodeInfoResponse  dto){
 		
 		ArrayList<NodeVariableInfo> variableList = new ArrayList<NodeVariableInfo>();
 		
 		NodeVariableInfo xmlVariableInfo = null;
 		
 		// ノード内ノード変数情報の取得
-		List<com.clustercontrol.ws.repository.NodeVariableInfo> nodeVariableInfoList = dto.getNodeVariableInfo();
-		Iterator<com.clustercontrol.ws.repository.NodeVariableInfo> itrNodeVariableInfoList = nodeVariableInfoList.iterator();
+		List<NodeVariableInfoResponse> nodeVariableInfoList = dto.getNodeVariableInfo();
+		Iterator<NodeVariableInfoResponse> itrNodeVariableInfoList = nodeVariableInfoList.iterator();
 		while (itrNodeVariableInfoList.hasNext()) {
 
-			com.clustercontrol.ws.repository.NodeVariableInfo nodeVariableInfo = itrNodeVariableInfoList.next();
+			NodeVariableInfoResponse nodeVariableInfo = itrNodeVariableInfoList.next();
 			
 			if (nodeVariableInfo.getNodeVariableName() != null && !nodeVariableInfo.getNodeVariableName().equals("")) {
 				xmlVariableInfo = new NodeVariableInfo();
@@ -1715,18 +1730,18 @@ public class RepositoryConv {
 		return variableList;
 	}
 
-	public static Collection<NoteInfo> convNoteDto2Xml(com.clustercontrol.ws.repository.NodeInfo dto){
+	public static Collection<NoteInfo> convNoteDto2Xml(NodeInfoResponse  dto){
 		
 		ArrayList<NoteInfo> noteList = new ArrayList<NoteInfo>();
 		
 		NoteInfo xmlNoteInfo = null;
 		
 		// ノード内備考情報の取得
-		List<NodeNoteInfo> nodeNoteInfoList = dto.getNodeNoteInfo();
-		Iterator<NodeNoteInfo> itrNodeNoteInfoList = nodeNoteInfoList.iterator();
+		List<NodeNoteInfoResponse> nodeNoteInfoList = dto.getNodeNoteInfo();
+		Iterator<NodeNoteInfoResponse> itrNodeNoteInfoList = nodeNoteInfoList.iterator();
 		while (itrNodeNoteInfoList.hasNext()) {
 
-			NodeNoteInfo nodeNoteInfo = itrNodeNoteInfoList.next();
+			NodeNoteInfoResponse nodeNoteInfo = itrNodeNoteInfoList.next();
 
 			xmlNoteInfo = new NoteInfo();
 			xmlNoteInfo.setFacilityId(dto.getFacilityId());
@@ -1739,11 +1754,11 @@ public class RepositoryConv {
 	}
 
 	public static List<NetstatInfo> convNetstatDto2Xml(
-			com.clustercontrol.ws.repository.NodeInfo dto) {
+			NodeInfoResponse  dto) {
 		List<NetstatInfo> netstatList = new ArrayList<NetstatInfo>();
 		
 		// ノード内ネットワーク接続情報の取得
-		for (NodeNetstatInfo nodeNetstatInfo : dto.getNodeNetstatInfo()) {
+		for (NodeNetstatInfoResponse nodeNetstatInfo : dto.getNodeNetstatInfo()) {
 			NetstatInfo xmlNetstatInfo = new NetstatInfo();
 			xmlNetstatInfo.setFacilityId(dto.getFacilityId());
 			xmlNetstatInfo.setProtocol(nodeNetstatInfo.getProtocol());
@@ -1763,18 +1778,17 @@ public class RepositoryConv {
 	}
 
 	public static List<PackageInfo> convPackageDto2Xml(
-			com.clustercontrol.ws.repository.NodeInfo dto) {
+			NodeInfoResponse  dto) {
 		List<PackageInfo> packageList = new ArrayList<>();
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		// ノード内パッケージ情報の取得
-		for (NodePackageInfo nodePackageInfo : dto.getNodePackageInfo()) {
+		for (NodePackageInfoResponse nodePackageInfo : dto.getNodePackageInfo()) {
 			PackageInfo xmlPakageInfo = new PackageInfo();
 			xmlPakageInfo.setFacilityId(dto.getFacilityId());
 			xmlPakageInfo.setPackageId(nodePackageInfo.getPackageId());
 			xmlPakageInfo.setPackageName(nodePackageInfo.getPackageName());
 			xmlPakageInfo.setVersion(nodePackageInfo.getVersion());
 			xmlPakageInfo.setRelease(nodePackageInfo.getRelease());
-			xmlPakageInfo.setInstallDate(dateFormat.format(nodePackageInfo.getInstallDate()));
+			xmlPakageInfo.setInstallDate(nodePackageInfo.getInstallDate());
 			xmlPakageInfo.setVendor(nodePackageInfo.getVendor());
 			xmlPakageInfo.setArchitecture(nodePackageInfo.getArchitecture());
 			packageList.add(xmlPakageInfo);
@@ -1783,10 +1797,10 @@ public class RepositoryConv {
 	}
 
 	public static List<ProductInfo> convProductDto2Xml(
-			com.clustercontrol.ws.repository.NodeInfo dto) {
+			NodeInfoResponse  dto) {
 		List<ProductInfo> productList = new ArrayList<>();
 		// ノード内個別導入製品情報の取得
-		for (NodeProductInfo nodeProductInfo : dto.getNodeProductInfo()) {
+		for (NodeProductInfoResponse nodeProductInfo : dto.getNodeProductInfo()) {
 			ProductInfo xmlProductInfo = new ProductInfo();
 			xmlProductInfo.setFacilityId(dto.getFacilityId());
 			xmlProductInfo.setProductName(nodeProductInfo.getProductName());
@@ -1798,11 +1812,10 @@ public class RepositoryConv {
 	}
 
 	public static List<LicenseInfo> convLicenseDto2Xml(
-			com.clustercontrol.ws.repository.NodeInfo dto) {
+			NodeInfoResponse  dto) {
 		List<LicenseInfo> lisenceList = new ArrayList<>();
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		// ノード内ライセンス情報の取得
-		for (NodeLicenseInfo nodeProductInfo : dto.getNodeLicenseInfo()) {
+		for (NodeLicenseInfoResponse nodeProductInfo : dto.getNodeLicenseInfo()) {
 			LicenseInfo xmlProductInfo = new LicenseInfo();
 			xmlProductInfo.setFacilityId(dto.getFacilityId());
 			xmlProductInfo.setProductName(nodeProductInfo.getProductName());
@@ -1810,25 +1823,24 @@ public class RepositoryConv {
 			xmlProductInfo.setVendorContact(nodeProductInfo.getVendorContact());
 			xmlProductInfo.setSerialNumber(nodeProductInfo.getSerialNumber());
 			xmlProductInfo.setCount(nodeProductInfo.getCount());
-			xmlProductInfo.setExpirationDate(dateFormat.format(nodeProductInfo.getExpirationDate()));
+			xmlProductInfo.setExpirationDate(nodeProductInfo.getExpirationDate());
 			lisenceList.add(xmlProductInfo);
 		}
 		return lisenceList;
 	}
 
 	public static List<ProcessInfo> convProcessDto2Xml(
-			com.clustercontrol.ws.repository.NodeInfo dto) {
+			NodeInfoResponse  dto) {
 		List<ProcessInfo> processList = new ArrayList<>();
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		// ノード内プロセス情報の取得
-		for (NodeProcessInfo nodeProcessInfo : dto.getNodeProcessInfo()) {
+		for (NodeProcessInfoResponse nodeProcessInfo : dto.getNodeProcessInfo()) {
 			ProcessInfo xmlProcessInfo = new ProcessInfo();
 			xmlProcessInfo.setFacilityId(dto.getFacilityId());
 			xmlProcessInfo.setProcessName(nodeProcessInfo.getProcessName());
 			xmlProcessInfo.setPid(nodeProcessInfo.getPid());
 			xmlProcessInfo.setExecUser(nodeProcessInfo.getExecUser());
 			xmlProcessInfo.setPath(nodeProcessInfo.getPath());
-			xmlProcessInfo.setStartupDateTime(dateFormat.format(nodeProcessInfo.getStartupDateTime()));
+			xmlProcessInfo.setStartupDateTime(nodeProcessInfo.getStartupDateTime());
 			processList.add(xmlProcessInfo);
 		}
 		return processList;
@@ -1846,5 +1858,37 @@ public class RepositoryConv {
 		} else {
 			return null;
 		}
+	}
+	
+	/**
+	 * Longのインスタンスかチェックし、違っていればnullを返す
+	 * 
+	 * @param value
+	 * @return
+	 */
+	protected static Long checkLong(Object value) {
+		if (value != null && value instanceof Long) {
+			return (Long) value;
+		} else {
+			return null;
+		}
+	}
+	
+	/**
+	 * 文字列の長さチェック
+	 * 
+	 * @param value
+	 * @return
+	 */
+	private static String checkString(String name, String str, int size){
+		// 設定インポート失敗時のエラーダイアログにおけるDetais表示にエラーの詳細を含めるために、
+		// クラス共通とは別途にloggerを取得（呼び出し元であるActionクラスのログのみがDetais表示の対象であるため）
+		Logger logger = Logger.getLogger(RepositoryNodeAction.class);
+		if(name != null && str!=null && str.length() > size){
+			logger.warn(Messages.getString("SettingTools.InvalidSetting") 
+					+ Messages.getString("validation.character_limit_max.message", new String[]{name, Integer.toString(size)}) );
+			return null;
+		}
+		return str;
 	}
 }

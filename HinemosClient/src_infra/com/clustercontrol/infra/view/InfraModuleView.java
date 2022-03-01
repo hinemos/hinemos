@@ -22,10 +22,26 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
+import org.openapitools.client.model.CommandModuleInfoResponse;
+import org.openapitools.client.model.FileTransferModuleInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.ModifyInfraManagementRequest;
+import org.openapitools.client.model.ReferManagementModuleInfoResponse;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementDuplicate;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NotifyDuplicate;
+import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.action.GetInfraModuleTableDefine;
 import com.clustercontrol.infra.composite.InfraModuleComposite;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraDtoConverter;
+//import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.action.AddInfraModuleAction;
 import com.clustercontrol.infra.view.action.CheckInfraModuleAction;
 import com.clustercontrol.infra.view.action.CopyInfraModuleAction;
@@ -33,23 +49,14 @@ import com.clustercontrol.infra.view.action.DeleteInfraModuleAction;
 import com.clustercontrol.infra.view.action.DisableInfraModuleAction;
 import com.clustercontrol.infra.view.action.DownOrderInfraModuleAction;
 import com.clustercontrol.infra.view.action.EnableInfraModuleAction;
+import com.clustercontrol.infra.view.action.ModifyInfraModuleAction;
 import com.clustercontrol.infra.view.action.ReviewCheckStatusAction;
 import com.clustercontrol.infra.view.action.RunInfraModuleAction;
-import com.clustercontrol.infra.view.action.ModifyInfraModuleAction;
 import com.clustercontrol.infra.view.action.UpOrderInfraModuleAction;
 import com.clustercontrol.infra.view.action.UseNodePropModuleAction;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraManagementDuplicate_Exception;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleInfo;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidSetting_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyDuplicate_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
 
 /**
  * 環境構築[モジュール]ビュークラスです。
@@ -211,50 +218,47 @@ public class InfraModuleView extends CommonViewPart {
 		if(selection != null){
 			moduleId = (String) ((ArrayList<?>)selection.getFirstElement()).get(GetInfraModuleTableDefine.MODULE_ID);
 		}
+		//findbugs対応 moduleId がnullなら処理を停止させる
+		if (moduleId == null ) {
+			m_log.warn("moveUp : It failed get moduleId .");
+			return;
+		}
 
 		int selectionIndex = getComposite().getTable().getSelectionIndex();
 		String managerName = getComposite().getManagerName();
 		String managementId= getComposite().getManagementId();
 
-		InfraManagementInfo management = null;
-		InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+		InfraManagementInfoResponse management = null;
+		InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 		try {
 			management = wrapper.getInfraManagement(managementId);
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | InfraManagementNotFound | InvalidSetting e) {
 			m_log.debug("execute getInfraManagement, " + e.getMessage());
 		}
-
-		InfraModuleInfo module = null;
-		if(management != null && management.getModuleList() != null){
-			for(InfraModuleInfo tmpModule: management.getModuleList()){
-				if(tmpModule.getModuleId().equals(moduleId)){
-					module = tmpModule;
-					break;
-				}
-			}
-
-			if(module != null){
-				int index = management.getModuleList().indexOf(module);
-				if( index > 0 ){
-					InfraModuleInfo tmpModule = management.getModuleList().get(index - 1);
-					management.getModuleList().set(index, tmpModule);
-					management.getModuleList().set(index - 1, module);
-
-					try {
-						wrapper.modifyInfraManagement(management);
-					} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | InvalidSetting_Exception | NotifyDuplicate_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception | InfraManagementDuplicate_Exception e) {
-						m_log.debug("execute modifyInfraManagement, " + e.getMessage());
-					}
-				}
-			}
-
-			update(managerName, managementId);
-
-			// 更新後に再度選択項目にフォーカスをあてる
-			selectItem(selectionIndex - 1);
+		//findbugs対応 managementがnullなら処理を停止させる（過去実装 参考）
+		if (management == null ) {
+			m_log.warn("moveUp : It failed getInfraManagement .id="+managementId);
+			return;
 		}
-	}
+			
+		int changeTargetOrderNo = minusOrderNoForMoveup(moduleId, management);
+		plusOrderNoForMoveup(moduleId, changeTargetOrderNo, management);
 
+		try {
+			ModifyInfraManagementRequest dtoReq = new ModifyInfraManagementRequest();
+			RestClientBeanUtil.convertBean(management, dtoReq);
+			InfraDtoConverter.convertInfoToDto(management, dtoReq);
+			wrapper.modifyInfraManagement(management.getManagementId(), dtoReq);
+		} catch (RestConnectFailed | NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidUserPass | InvalidRole
+				| InvalidSetting | InfraManagementNotFound | InfraManagementDuplicate e) {
+			m_log.debug("execute modifyInfraManagement, " + e.getMessage());
+		}
+		
+		update(managerName, managementId);
+		
+		// 更新後に再度選択項目にフォーカスをあてる
+		selectItem(selectionIndex - 1);
+	}
 	/**
 	 * Move an module order down
 	 */
@@ -270,47 +274,135 @@ public class InfraModuleView extends CommonViewPart {
 		if(selection != null){
 			moduleId = (String) ((ArrayList<?>)selection.getFirstElement()).get(GetInfraModuleTableDefine.MODULE_ID);
 		}
+		//findbugs対応 moduleId がnullなら処理を停止させる
+		if (moduleId == null ) {
+			m_log.warn("moveUp : It failed get moduleId .");
+			return;
+		}
 
 		int selectionIndex = getComposite().getTable().getSelectionIndex();
 		String managerName = getComposite().getManagerName();
 		String managementId= getComposite().getManagementId();
 
-		InfraManagementInfo management = null;
-		InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+		InfraManagementInfoResponse management = null;
+		InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 		try {
 			management = wrapper.getInfraManagement(managementId);
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | InfraManagementNotFound
+				| InvalidSetting e) {
 			m_log.debug("execute getInfraManagement, " + e.getMessage());
 		}
 
-		InfraModuleInfo module = null;
-		if(management != null && management.getModuleList() != null){
-			for(InfraModuleInfo tmpModule: management.getModuleList()){
-				if(tmpModule.getModuleId().equals(moduleId)){
-					module = tmpModule;
-					break;
-				}
+		//findbugs対応 managementがnullなら処理を停止させる（過去実装 参考）
+		if (management == null) {
+			m_log.warn("moveDown : It failed getInfraManagement .id="+managementId);
+			return;
+		}
+
+		int changeTargetOrderNo = plusOrderNoForMovedown(moduleId, management);
+		minusOrderNoForMovedown(moduleId, changeTargetOrderNo, management);
+
+		try {
+			ModifyInfraManagementRequest dtoReq = new ModifyInfraManagementRequest();
+			RestClientBeanUtil.convertBean(management, dtoReq);
+			InfraDtoConverter.convertInfoToDto(management, dtoReq);
+			wrapper.modifyInfraManagement(management.getManagementId(), dtoReq);
+		} catch (RestConnectFailed | NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidUserPass | InvalidRole
+				| InvalidSetting | InfraManagementNotFound | InfraManagementDuplicate e) {
+			m_log.debug("execute modifyInfraManagement, " + e.getMessage());
+		}
+	
+		update(managerName, managementId);
+		
+		// 更新後に再度選択項目にフォーカスをあてる
+		selectItem(selectionIndex + 1);
+	}
+
+	// 引数のモジュールIDの順序を -1 する
+	// 変更した順序番号を返却する(この順序を持つモジュールIDが +1 の対象となる)
+	private int minusOrderNoForMoveup(String moduleId, InfraManagementInfoResponse info) {
+		int ret = 0;
+		for(CommandModuleInfoResponse m : info.getCommandModuleInfoList()) {
+			if(m.getModuleId().equals(moduleId)) {
+				ret = m.getOrderNo() - 1;
+				m.setOrderNo(ret);
 			}
-
-			if(module != null){
-				int index = management.getModuleList().indexOf(module);
-				if(index < management.getModuleList().size() - 1){
-					InfraModuleInfo tmpModule = management.getModuleList().get(index + 1);
-					management.getModuleList().set(index, tmpModule);
-					management.getModuleList().set(index + 1, module);
-
-					try {
-						wrapper.modifyInfraManagement(management);
-					} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | InvalidSetting_Exception | NotifyDuplicate_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception | InfraManagementDuplicate_Exception e) {
-						m_log.debug("execute modifyInfraManagement, " + e.getMessage());
-					}
-				}
+		}
+		for(FileTransferModuleInfoResponse m : info.getFileTransferModuleInfoList()) {
+			if(m.getModuleId().equals(moduleId)) {
+				ret = m.getOrderNo() - 1;
+				m.setOrderNo(ret);
 			}
-
-			update(managerName, managementId);
-
-			// 更新後に再度選択項目にフォーカスをあてる
-			selectItem(selectionIndex + 1);
+		}
+		for(ReferManagementModuleInfoResponse m : info.getReferManagementModuleInfoList()) {
+			if(m.getModuleId().equals(moduleId)) {
+				ret = m.getOrderNo() - 1;
+				m.setOrderNo(ret);
+			}
+		}
+		return ret;
+	}
+	
+	// 引数のモジュールID以外で引数の順序を持つモジュールIDを +1 する
+	private void plusOrderNoForMoveup(String notTargetModuleId, int orderNo, InfraManagementInfoResponse info) {
+		for(CommandModuleInfoResponse m : info.getCommandModuleInfoList()) {
+			if(!m.getModuleId().equals(notTargetModuleId) && m.getOrderNo().equals(orderNo)) {
+				m.setOrderNo(orderNo + 1);
+			}
+		}
+		for(FileTransferModuleInfoResponse m : info.getFileTransferModuleInfoList()) {
+			if(!m.getModuleId().equals(notTargetModuleId) && m.getOrderNo().equals(orderNo)) {
+				m.setOrderNo(orderNo + 1);
+			}
+		}
+		for(ReferManagementModuleInfoResponse m : info.getReferManagementModuleInfoList()) {
+			if(!m.getModuleId().equals(notTargetModuleId) && m.getOrderNo().equals(orderNo)) {
+				m.setOrderNo(orderNo + 1);
+			}
+		}
+	}
+	
+	// 引数のモジュールIDの順序を +1 する
+	// 変更した順序番号を返却する(この順序を持つモジュールIDが -1 の対象となる)
+	private int plusOrderNoForMovedown(String moduleId, InfraManagementInfoResponse info) {
+		int ret = 0;
+		for(CommandModuleInfoResponse m : info.getCommandModuleInfoList()) {
+			if(m.getModuleId().equals(moduleId)) {
+				ret = m.getOrderNo() + 1;
+				m.setOrderNo(ret);
+			}
+		}
+		for(FileTransferModuleInfoResponse m : info.getFileTransferModuleInfoList()) {
+			if(m.getModuleId().equals(moduleId)) {
+				ret = m.getOrderNo() + 1;
+				m.setOrderNo(ret);
+			}
+		}
+		for(ReferManagementModuleInfoResponse m : info.getReferManagementModuleInfoList()) {
+			if(m.getModuleId().equals(moduleId)) {
+				ret = m.getOrderNo() + 1;
+				m.setOrderNo(ret);
+			}
+		}
+		return ret;
+	}
+	
+	// 引数のモジュールID以外で引数の順序を持つモジュールIDを -1 する
+	private void minusOrderNoForMovedown(String notTargetModuleId, int orderNo, InfraManagementInfoResponse info) {
+		for(CommandModuleInfoResponse m : info.getCommandModuleInfoList()) {
+			if(!m.getModuleId().equals(notTargetModuleId) && m.getOrderNo().equals(orderNo)) {
+				m.setOrderNo(orderNo - 1);
+			}
+		}
+		for(FileTransferModuleInfoResponse m : info.getFileTransferModuleInfoList()) {
+			if(!m.getModuleId().equals(notTargetModuleId) && m.getOrderNo().equals(orderNo)) {
+				m.setOrderNo(orderNo - 1);
+			}
+		}
+		for(ReferManagementModuleInfoResponse m : info.getReferManagementModuleInfoList()) {
+			if(!m.getModuleId().equals(notTargetModuleId) && m.getOrderNo().equals(orderNo)) {
+				m.setOrderNo(orderNo - 1);
+			}
 		}
 	}
 }

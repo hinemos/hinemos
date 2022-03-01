@@ -13,13 +13,20 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
+import com.clustercontrol.jobmap.view.action.CreateJobLinkRcvJobAction;
+import com.clustercontrol.jobmap.view.action.CreateJobLinkSendJobAction;
 import com.clustercontrol.jobmap.view.action.CreateApprovalJobAction;
+import com.clustercontrol.jobmap.view.action.CreateFileCheckJobAction;
 import com.clustercontrol.jobmap.view.action.CreateMonitorJobAction;
 import com.clustercontrol.jobmap.view.action.CreateFileJobAction;
 import com.clustercontrol.jobmap.view.action.CreateJobAction;
 import com.clustercontrol.jobmap.view.action.CreateJobNetAction;
 import com.clustercontrol.jobmap.view.action.CreateJobUnitAction;
+import com.clustercontrol.jobmap.view.action.CreateMonitorJobAction;
 import com.clustercontrol.jobmap.view.action.CreateReferJobAction;
+import com.clustercontrol.jobmap.view.action.CreateResourceJobAction;
+import com.clustercontrol.jobmap.view.action.CreateRpaJobAction;
 import com.clustercontrol.jobmap.view.action.DeleteJobAction;
 import com.clustercontrol.jobmap.view.action.EditModeAction;
 import com.clustercontrol.jobmap.view.action.JobObjectPrivilegeAction;
@@ -27,7 +34,6 @@ import com.clustercontrol.jobmap.view.action.ModifyJobAction;
 import com.clustercontrol.jobmap.view.action.RunJobAction;
 import com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand;
 import com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ノードマップビューを描画するためのクラス。
@@ -59,7 +65,7 @@ public class JobMapEditorView extends JobMapView {
 	 * 
 	 * @see com.clustercontrol.bean.JobConstant
 	 */
-	public void setEnabledAction(JobTreeItem jobTreeItem) {
+	public void setEnabledAction(JobTreeItemWrapper jobTreeItem) {
 		//ビューアクションの使用可/不可を設定
 		ICommandService service = (ICommandService) PlatformUI.getWorkbench().getService( ICommandService.class );
 		if( null != service ){
@@ -70,6 +76,11 @@ public class JobMapEditorView extends JobMapView {
 			service.refreshElements(CreateReferJobAction.ID, null);
 			service.refreshElements(CreateApprovalJobAction.ID, null);
 			service.refreshElements(CreateMonitorJobAction.ID, null);
+			service.refreshElements(CreateFileCheckJobAction.ID, null);
+			service.refreshElements(CreateJobLinkSendJobAction.ID, null);
+			service.refreshElements(CreateJobLinkRcvJobAction.ID, null);
+			service.refreshElements(CreateResourceJobAction.ID, null);
+			service.refreshElements(CreateRpaJobAction.ID, null);
 			service.refreshElements(DeleteJobAction.ID, null);
 			service.refreshElements(ModifyJobAction.ID, null);
 			service.refreshElements(JobObjectPrivilegeAction.ID, null);

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd" />
+	<xs:include schemaLocation="part_notify_relation.xsd" />
+		
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="K">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="rpaScenarioOperationResultCreateSettings" type="RpaScenarioOperationResultCreateSettingList">
+		<xs:annotation>
+			<xs:documentation>RPAシナリオ実績作成設定定義一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	
+	<xs:complexType name="RpaScenarioOperationResultCreateSettingList">
+		<xs:annotation>
+			<xs:documentation>RPAシナリオ実績作成設定定義一覧のデータ型です。</xs:documentation>
+		</xs:annotation>
+	
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RpaScenarioOperationResultCreateSetting" type="RpaScenarioOperationResultCreateSettingInfoType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						RPAシナリオ実績作成設定定義の配列です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="rpaScenarioOperationResultCreateSetting" type="RpaScenarioOperationResultCreateSettingInfoType" />
+	<xs:complexType name="RpaScenarioOperationResultCreateSettingInfoType">
+		<xs:annotation>
+			<xs:documentation>シナリオ実績作成設定定義の1設定分です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="rpaScenarioOperationResultCreateSettingInfo" type="RpaScenarioOperationResultCreateSettingInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>RPAシナリオタグ定義情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="RpaScenarioOperationResultCreateSettingInfo">
+		<xs:annotation>
+			<xs:documentation>シナリオ実績作成設定定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+		
+		<xs:sequence>
+			<xs:element name="notifyGroupId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						通知グループIDです。 
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定で用いる通知IDです。 複数の通知を併用する場合は併記します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+		
+		<xs:attribute name="rpaScenarioOperationResultCreateSettingId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>シナリオ実績作成設定ID</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="description" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>説明</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		
+		<xs:attribute name="ownerRoleId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>オーナーロールID</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="facilityId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					ファシリティID
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="interval" type="xs:integer" use="required">
+			<xs:annotation>
+				<xs:documentation>作成間隔</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="calendarId" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>カレンダーID</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="createFromDate" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					作成対象日時
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="validFlg" type="xs:boolean" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					有効フラグ
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		
+		<xs:attribute name="application" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>アプリケーション</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		
+	</xs:complexType>
+
+</xs:schema>

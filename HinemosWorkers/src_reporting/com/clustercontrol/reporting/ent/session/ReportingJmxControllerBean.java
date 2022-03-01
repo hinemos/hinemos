@@ -179,17 +179,19 @@ public class ReportingJmxControllerBean {
 	 * @param fromTime
 	 * @param toTime
 	 * @param masterId
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummarySumAvgData(String facilityId, Long fromTime, Long toTime, String masterId) throws HinemosDbTimeout {
+	public List<Object[]> getSummarySumAvgData(String facilityId, Long fromTime, Long toTime, String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
 		JpaTransactionManager jtm = null;
 		List<Object[]> list = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SelectReportingJmx select = new SelectReportingJmx();
-			list = select.getSummarySumAvgData(facilityId, fromTime, toTime, masterId);
+			list = select.getSummarySumAvgData(facilityId, fromTime, toTime, masterId, ownerRoleId);
 		} catch (HinemosDbTimeout e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -215,17 +217,19 @@ public class ReportingJmxControllerBean {
 	 * @param fromTime
 	 * @param toTime
 	 * @param masterId
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummarySumAvgHour(String facilityId, Long fromTime, Long toTime, String masterId) throws HinemosDbTimeout {
+	public List<Object[]> getSummarySumAvgHour(String facilityId, Long fromTime, Long toTime, String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
 		JpaTransactionManager jtm = null;
 		List<Object[]> list = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SelectReportingJmx select = new SelectReportingJmx();
-			list = select.getSummarySumAvgHour(facilityId, fromTime, toTime, masterId);
+			list = select.getSummarySumAvgHour(facilityId, fromTime, toTime, masterId, ownerRoleId);
 		} catch (HinemosDbTimeout e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -252,17 +256,19 @@ public class ReportingJmxControllerBean {
 	 * @param fromTime
 	 * @param toTime
 	 * @param masterId
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummarySumAvgDay(String facilityId, Long fromTime, Long toTime, String masterId) throws HinemosDbTimeout {
+	public List<Object[]> getSummarySumAvgDay(String facilityId, Long fromTime, Long toTime, String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
 		JpaTransactionManager jtm = null;
 		List<Object[]> list = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SelectReportingJmx select = new SelectReportingJmx();
-			list = select.getSummarySumAvgDay(facilityId, fromTime, toTime, masterId);
+			list = select.getSummarySumAvgDay(facilityId, fromTime, toTime, masterId, ownerRoleId);
 		} catch (HinemosDbTimeout e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -288,17 +294,19 @@ public class ReportingJmxControllerBean {
 	 * @param fromTime
 	 * @param toTime
 	 * @param masterId
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummaryJmxAvgMonth(String facilityId, Long fromTime, Long toTime, String masterId) throws HinemosDbTimeout {
+	public List<Object[]> getSummaryJmxAvgMonth(String facilityId, Long fromTime, Long toTime, String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
 		JpaTransactionManager jtm = null;
 		List<Object[]> list = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SelectReportingJmx select = new SelectReportingJmx();
-			list = select.getSummaryJmxAvgMonth(facilityId, fromTime, toTime, masterId);
+			list = select.getSummaryJmxAvgMonth(facilityId, fromTime, toTime, masterId, ownerRoleId);
 		} catch (HinemosDbTimeout e) {
 			if (jtm != null) {
 				jtm.rollback();

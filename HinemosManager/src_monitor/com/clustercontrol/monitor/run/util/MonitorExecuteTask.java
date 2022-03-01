@@ -23,6 +23,7 @@ import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.factory.RunMonitorStringValueType;
 import com.clustercontrol.monitor.bean.ConvertValueConstant;
+import com.clustercontrol.monitor.bean.MonitorJmxDisplayNameConstant;
 
 /**
  * 監視設定について、監視対象の個々のノードに並行で監視をおこなうためのTaskクラス。
@@ -119,6 +120,11 @@ public class MonitorExecuteTask implements Callable<MonitorRunResultInfo>{
 				if (ret && m_runMonitor.getNodeDate() == 0l && convertFlg == ConvertValueConstant.TYPE_DELTA) {
 					// 初回の監視情報取得と判断し、監視結果を通知しない。
 					info.setProcessType(false);
+				}
+				// JMX監視限定
+				if (m_runMonitor.getMonitorInfo().getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_JMX)) {
+					// JMX監視でDBMSかRAMの場合displayNameを求める。
+					info.setDisplayName(MonitorJmxDisplayNameConstant.getJmxDisplayName(m_runMonitor.getJmxKey()));
 				}
 			}
 

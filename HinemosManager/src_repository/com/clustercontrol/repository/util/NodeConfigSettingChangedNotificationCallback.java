@@ -29,7 +29,7 @@ public class NodeConfigSettingChangedNotificationCallback implements JpaTransact
 		SettingUpdateInfo.getInstance().setNodeConfigSettingUpdateTime(HinemosTime.currentTimeMillis());
 		
 		// 接続中のHinemosAgentに対する更新通知
-		NodeConfigSettingManagerUtil.broadcastConfigured();
+		NodeConfigSettingManagerUtil.broadcastConfiguredFlowControl();
 	}
 
 	@Override

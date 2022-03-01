@@ -113,32 +113,6 @@ public class ViewUtil {
 	}
 
 	/**
-	 * アクティブなページ上のビュー(複数の可能性があります)から、clazzのインスタンスを探して、
-	 * 前面表示します。
-	 * 
-	 * @param clazz 対象ビューを判別するためのクラスオブジェクト。
-	 */
-	public static void activate(Class<?> clazz) {
-		IWorkbenchPage page = findActivePage();
-		if (page == null) {
-			log.info("activate: Active page not found. part=" + clazz.getName());
-			return;
-		}
-
-		for (IViewReference viewref : page.getViewReferences()) {
-			// restore=false にすると起動直後のビューについてnullが返る。
-			IWorkbenchPart view = viewref.getPart(true);
-			if (view == null) {
-				log.info("activate: ViewReference return null. ID=" + viewref.getId());
-				continue;
-			}
-			if (clazz.isInstance(view)) {
-				page.activate(view);
-			}
-		}
-	}
-	
-	/**
 	 * アクティブなビューがclazzのインスタンスである場合は、consumerを呼びます。
 	 * 
 	 * @param clazz 対象ビューを判別するためのクラスオブジェクト。

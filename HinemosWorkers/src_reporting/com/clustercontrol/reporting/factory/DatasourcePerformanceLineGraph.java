@@ -12,13 +12,18 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Serializable;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,6 +39,8 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.reporting.ReportUtil;
 import com.clustercontrol.reporting.bean.ReportingConstant;
+import com.clustercontrol.reporting.ent.util.PropertiesConstant;
+import com.clustercontrol.reporting.ent.util.ReportingUtil;
 import com.clustercontrol.reporting.fault.ReportingPropertyNotFound;
 import com.clustercontrol.reporting.session.ReportingCollectControllerBean;
 import com.clustercontrol.reporting.session.ReportingMonitorControllerBean;
@@ -54,6 +61,8 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 	private static final String DEVICE_FLG_KEY_VALUE = "device.flg";
 	
 	private Map<List<String>, OptimalMonitorIdInfo> m_monitorIdMap = null;
+	
+	protected String m_ownerRoleId = null;
 	
 	private static class OptimalMonitorIdInfo {
 		String monitorId;
@@ -98,7 +107,7 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 		String[] items = itemCodes.split(",");
 		
 		String[] columns = { "collectorid", "item_code", "item_name", "display_name", "date_time", "facilityid", "value" };
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		
 		String csvFileName = ReportUtil.getCsvFileNameForTemplateType(m_templateId, m_facilityId + "_" + suffix + "_" + dayString);
 		HashMap<String, Object> retMap = new HashMap<String, Object>();
@@ -108,9 +117,70 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 			m_log.info("File : " + csvFileName + " is exists.");
 		} else {
 			// 「デバイス別」のグラフに関するデータ
-			if(deviceFlg) {
-				getCsvFromDBDevice(csvFileName, m_facilityId, items, columns, divider);
-			} 
+			if (deviceFlg) {
+				String sortCode = PropertiesConstant.DEVICE_SORT_TYPE_DEFAULT;
+				if ((m_propertiesMap.get(PropertiesConstant.DEVICE_SORT_TYPE_KEY + "." + num) != null)
+						&& !m_propertiesMap.get(PropertiesConstant.DEVICE_SORT_TYPE_KEY + "." + num).isEmpty()) {
+					sortCode = m_propertiesMap.get(PropertiesConstant.DEVICE_SORT_TYPE_KEY + "." + num);
+					if (!PropertiesConstant.DEVICE_SORT_TYPE_DEFAULT.equals(sortCode)
+							&& !PropertiesConstant.DEVICE_SORT_TYPE_ASC.equals(sortCode)
+							&& !PropertiesConstant.DEVICE_SORT_TYPE_DESC.equals(sortCode)) {
+						m_log.info("check your property. key: " + PropertiesConstant.DEVICE_SORT_TYPE_KEY + "." + num
+								+ " value : " + m_propertiesMap.get(PropertiesConstant.DEVICE_SORT_TYPE_KEY + "." + num));
+						sortCode = PropertiesConstant.DEVICE_SORT_TYPE_DEFAULT;
+					}
+				}
+
+				int maxDevice = 0;
+				if ((m_propertiesMap.get(PropertiesConstant.DEVICE_GRAPH_LINE_MAX_KEY + "." + num) != null)
+						&& !m_propertiesMap.get(PropertiesConstant.DEVICE_GRAPH_LINE_MAX_KEY + "." + num).isEmpty()) {
+					try {
+						maxDevice = Integer
+								.parseInt(m_propertiesMap.get(PropertiesConstant.DEVICE_GRAPH_LINE_MAX_KEY + "." + num));
+					} catch (NumberFormatException e) {
+						m_log.info("check your property. key: " + PropertiesConstant.DEVICE_GRAPH_LINE_MAX_KEY + "."
+								+ num + " value : "
+								+ m_propertiesMap.get(PropertiesConstant.DEVICE_GRAPH_LINE_MAX_KEY + "." + num));
+					}
+				}
+
+				boolean trimFlg = false;
+				int first = 0;
+				if ((m_propertiesMap.get(PropertiesConstant.DEVICE_TRIM_PREFIX_KEY + "." + num) != null)
+						&& !m_propertiesMap.get(PropertiesConstant.DEVICE_TRIM_PREFIX_KEY + "." + num).isEmpty()) {
+					try {
+						first = Integer
+								.parseInt(m_propertiesMap.get(PropertiesConstant.DEVICE_TRIM_PREFIX_KEY + "." + num));
+						if (first > 0) {
+							trimFlg = true;
+						}
+					} catch (NumberFormatException e) {
+						m_log.info("check your property. key: " + PropertiesConstant.DEVICE_TRIM_PREFIX_KEY + "." + num
+								+ " value : "
+								+ m_propertiesMap.get(PropertiesConstant.DEVICE_TRIM_PREFIX_KEY + "." + num));
+					}
+				}
+				int last = 0;
+				if ((m_propertiesMap.get(PropertiesConstant.DEVICE_TRIM_SUFFIX_KEY + "." + num) != null)
+						&& !m_propertiesMap.get(PropertiesConstant.DEVICE_TRIM_SUFFIX_KEY + "." + num).isEmpty()) {
+					try {
+						last = Integer
+								.parseInt(m_propertiesMap.get(PropertiesConstant.DEVICE_TRIM_SUFFIX_KEY + "." + num));
+						if (last > 0)
+							trimFlg = true;
+						else
+							trimFlg = false;
+					} catch (NumberFormatException e) {
+						m_log.info("check your property. key: " + PropertiesConstant.DEVICE_TRIM_SUFFIX_KEY + "." + num
+								+ " value : "
+								+ m_propertiesMap.get(PropertiesConstant.DEVICE_TRIM_SUFFIX_KEY + "." + num));
+						trimFlg = false;
+					}
+				}
+
+				getCsvFromDBDevice(csvFileName, m_facilityId, items, columns, divider, sortCode, maxDevice, trimFlg,
+						first, last);
+			}
 			// 「デバイス別」ではないグラフに関するデータ
 			else {
 				getCsvFromDB(csvFileName, m_facilityId, items, columns, divider);
@@ -133,8 +203,9 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 	/**
 	 * 「デバイス別」のリソース情報に関するCSVファイルを作成する
 	 */
-	private String getCsvFromDBDevice(String csvFileName, String facilityId, String[] items, String[] columns, int divider) {
-		String columnsStr = ReportUtil.joinStrings(columns,  ",");
+	private String getCsvFromDBDevice(String csvFileName, String facilityId, String[] items, String[] columns,
+			int divider, String sortCode, int maxDevice, boolean trimFlg, int first, int last) {
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 		m_log.info("output csv: " + csvFileName);
 
 		// get data from Hinemos DB
@@ -157,7 +228,8 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 							// 監視項目ID、収集項目、デバイス名ごとに算出情報を取得する
 							m_log.debug("display name = " + entry.getValue().displayName);
 							
-							resultList.addAll(this.getResultList(facilityId, entry.getValue().monitorId, entry.getValue().displayName, entry.getValue().itemCode, columns, divider));
+							resultList.addAll(this.getResultList(facilityId, entry.getValue().monitorId,
+									entry.getValue().displayName, entry.getValue().itemCode, columns, divider));
 						}
 					}
 				}
@@ -165,12 +237,18 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 			SimpleDateFormat fmt = new SimpleDateFormat("yyyy/M/d HH:mm:ss");
 			m_log.debug("start date : " + fmt.format(m_startDate));
 			m_log.debug("end date : " + fmt.format(m_endDate));
-			
+
+			// 収集値の総和で並び替え
+			List<String[]> outList = sortListByValue(resultList, sortCode, maxDevice);
+
+			// デバイス名をtrim
+			outList = trimDispNameAndBranchNumberAssignment(outList, trimFlg, first, last);
+
 			// 出力値をCSVファイルに書き込む
-			if (!resultList.isEmpty()) {
+			if (!outList.isEmpty()) {
 				// write to csv file
-				for (String[] results : resultList) {
-					bw.write(ReportUtil.joinStrings(results, ","));
+				for (String[] results : outList) {
+					bw.write(ReportUtil.joinStringsToCsv(results));
 					bw.newLine();
 				}
 			}
@@ -202,7 +280,7 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 	 * @return
 	 */
 	private String getCsvFromDB(String csvFileName, String facilityId, String[] items, String[] columns, int divider) {
-		String columnsStr = ReportUtil.joinStrings(columns,  ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 		m_log.info("output csv: " + csvFileName);
 
 		// get data from Hinemos DB
@@ -234,7 +312,7 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 			if (!resultList.isEmpty()) {
 				// write to csv file
 				for (String[] results : resultList) {
-					bw.write(ReportUtil.joinStrings(results, ","));
+					bw.write(ReportUtil.joinStringsToCsv(results));
 					bw.newLine();
 				}
 			}
@@ -260,14 +338,13 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 		m_log.info("getting optimal monitor_id for each item_code in " + facilityId);
 		
 		try {
-			String ownerRoleId = null;
 			if (!"ADMINISTRATORS".equals(ReportUtil.getOwnerRoleId())) {
-				ownerRoleId = ReportUtil.getOwnerRoleId();
+				m_ownerRoleId = ReportUtil.getOwnerRoleId();
 			}
 			
 			// レポート出力に使用する監視項目を収集項目を取得する。
 			ReportingMonitorControllerBean controller = new ReportingMonitorControllerBean();
-			List<Object[]> monitorInfoList = controller.getMonitorList(itemFilter, facilityId, m_startDate.getTime(), m_endDate.getTime(), ownerRoleId);
+			List<Object[]> monitorInfoList = controller.getMonitorList(itemFilter, facilityId, m_startDate.getTime(), m_endDate.getTime(), m_ownerRoleId);
 			
 			if (monitorInfoList != null) {
 				OptimalMonitorIdInfo info = null;
@@ -383,7 +460,8 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 		case SummaryTypeConstant.TYPE_AVG_HOUR:
 			List<Object[]> summaryHList = null;
 			try {
-				summaryHList = controller.getSummaryHourList(facilityId, m_startDate.getTime(), m_endDate.getTime(), monitorId, displayName, itemCode);
+				summaryHList = controller.getSummaryHourList(facilityId, m_startDate.getTime(), m_endDate.getTime(),
+						monitorId, displayName, itemCode, m_ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -414,7 +492,8 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 		case SummaryTypeConstant.TYPE_AVG_DAY:
 			List<Object[]> summaryDList = null;
 			try {
-				summaryDList = controller.getSummaryDayList(facilityId, m_startDate.getTime(), m_endDate.getTime(), monitorId, displayName, itemCode);
+				summaryDList = controller.getSummaryDayList(facilityId, m_startDate.getTime(), m_endDate.getTime(),
+						monitorId, displayName, itemCode, m_ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -445,7 +524,8 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 		case SummaryTypeConstant.TYPE_AVG_MONTH:
 			List<Object[]> summaryMList = null;
 			try {
-				summaryMList = controller.getSummaryMonthList(facilityId, m_startDate.getTime(), m_endDate.getTime(), monitorId, displayName, itemCode);
+				summaryMList = controller.getSummaryMonthList(facilityId, m_startDate.getTime(), m_endDate.getTime(),
+						monitorId, displayName, itemCode, m_ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -476,7 +556,8 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 		default: // defaultはRAWとする
 			List<Object[]> summaryList = null;
 			try {
-				summaryList = controller.getCollectDataList(facilityId, m_startDate.getTime(), m_endDate.getTime(), monitorId, displayName, itemCode);
+				summaryList = controller.getCollectDataList(facilityId, m_startDate.getTime(), m_endDate.getTime(),
+						monitorId, displayName, itemCode, m_ownerRoleId);
 			} catch (HinemosDbTimeout e) {
 				m_log.warn("getResultList() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			}
@@ -506,5 +587,158 @@ public class DatasourcePerformanceLineGraph extends DatasourceBase{
 			break;
 		}
 		return resultList;
+	}
+	
+	/**
+	 * 値の昇順でソートを行う。<BR>
+	 */
+	private static class AscListComparator implements Comparator<Entry<String, BigDecimal>>, Serializable {
+		private static final long serialVersionUID = 1L;
+
+		public int compare(Entry<String, BigDecimal> obj1, Entry<String, BigDecimal> obj2) {
+			return obj1.getValue().compareTo(obj2.getValue());
+		}
+	}
+	
+	/**
+	 * 値の降順でソートを行う。<BR>
+	 */
+	private static class DescListComparator implements Comparator<Entry<String, BigDecimal>>, Serializable {
+		private static final long serialVersionUID = 1L;
+
+		public int compare(Entry<String, BigDecimal> obj1, Entry<String, BigDecimal> obj2) {
+			return obj2.getValue().compareTo(obj1.getValue());
+		}
+	}
+	
+	/**
+	 * リストを値順に並び変え、デバイス数分のリストを返します。<BR>
+	 * 
+	 * @param list
+	 * @param sortCode
+	 * @param maxDevice
+	 * @return list
+	 */
+	private List<String[]> sortListByValue(List<String[]> list, String sortCode, int maxDevice) {
+		List<String[]> retList = new ArrayList<>();
+		List<String[]> sortList = new ArrayList<>();
+
+		if (PropertiesConstant.DEVICE_SORT_TYPE_DEFAULT.equals(sortCode)) {
+			sortList = list;
+		} else {
+			Map<String, BigDecimal> sumMap = new HashMap<>();
+			String dispNameBk = "";
+
+			// リスト内のデバイス別合計値を計算しソート
+			for (String[] data : list) {
+				if (dispNameBk.equals(data[3])) {
+					BigDecimal decimal = sumMap.get(dispNameBk).add(new BigDecimal(data[6]));
+					sumMap.put(data[3], decimal);
+				} else {
+					dispNameBk = data[3];
+					sumMap.put(data[3], new BigDecimal(data[6]));
+				}
+			}
+			List<Map.Entry<String, BigDecimal>> mapValue = new ArrayList<>(sumMap.entrySet());
+
+			if (PropertiesConstant.DEVICE_SORT_TYPE_ASC.equals(sortCode)) {
+				Collections.sort(mapValue, new AscListComparator());
+			} else if ( (PropertiesConstant.DEVICE_SORT_TYPE_DESC.equals(sortCode))) {
+				Collections.sort(mapValue, new DescListComparator());
+			}
+
+			// 合計値順にリストをソート
+			for (int cnt = 0; cnt < mapValue.size(); cnt++) {
+				String dispName = mapValue.get(cnt).getKey();
+				m_log.info(dispName + "," + mapValue.get(cnt).getValue());
+				for (String[] data : list) {
+					if (dispName.equals(data[3])) {
+						sortList.add(data);
+					}
+				}
+			}
+		}
+
+		if (maxDevice <= 0) {
+			// 制限数無しの場合
+			retList = sortList;
+		} else {
+			int deviceCnt = 0;
+			String dispNameBk = "";
+
+			// 制限数有りの場合
+			for (String[] data : sortList) {
+				if (dispNameBk.isEmpty() || !data[3].equals(dispNameBk)) {
+					dispNameBk = data[3];
+					deviceCnt++;
+				}
+				if (deviceCnt > maxDevice) {
+					break;
+				}
+				retList.add(data);
+			}
+		}
+
+		return retList;
+	}
+	
+	/**
+	 * item_nameのデバイス名とdisplay_nameをtrimし、trim後のdisplay_nameが重複する場合、末尾に枝番(#)を付与します。<BR>
+	 * 
+	 * @param list
+	 * @param headLength
+	 * @param tailLength
+	 * @param conjunction
+	 * @return list
+	 */
+	private List<String[]> trimDispNameAndBranchNumberAssignment(List<String[]> list, boolean trimFlg, int first,
+			int last) {
+		List<String[]> retList = new ArrayList<>();
+
+		if (trimFlg) {
+			boolean itemFlg = false;
+			boolean dispFlg = false;
+			String itemNameBk = "";
+			HashMap<String, Integer> dispMap = new HashMap<>();
+			for (String[] data : list) {
+				String itemName = data[2].substring(data[2].indexOf("[") + 1, data[2].lastIndexOf("]"));
+				if (itemNameBk.isEmpty() || !itemNameBk.equals(itemName)) {
+					itemNameBk = itemName;
+					itemFlg = false;
+					dispFlg = false;
+				} else {
+					itemFlg = true;
+				}
+
+				// itemNameのデバイス名をtrimする
+				if (data[2].contains("[")) {
+					String itemDisplay = data[2].substring(data[2].indexOf("[") + 1, data[2].lastIndexOf("]"));
+					data[2] = data[2].replace(itemDisplay, ReportingUtil.trimLegend(itemDisplay, first, last,
+							isDefine(PropertiesConstant.TRIM_STR_KEY, PropertiesConstant.TRIM_STR_DEFAULT)));
+				}
+				String displayName = ReportingUtil.trimLegend(data[3], first, last,
+						isDefine(PropertiesConstant.TRIM_STR_KEY, PropertiesConstant.TRIM_STR_DEFAULT));
+				if (dispMap.containsKey(displayName)) {
+					if (!itemFlg) {
+						dispMap.put(displayName, dispMap.get(displayName) + 1);
+					}
+					if (dispFlg) {
+						data[3] = displayName;
+					} else {
+						data[3] = displayName + "(" + dispMap.get(displayName) + ")";
+					}
+				} else {
+					data[3] = displayName;
+					dispMap.put(displayName, 0);
+					dispFlg = true;
+				}
+
+				retList.add(data);
+			}
+		} else {
+			retList = list;
+		}
+
+		return retList;
 	}
 }

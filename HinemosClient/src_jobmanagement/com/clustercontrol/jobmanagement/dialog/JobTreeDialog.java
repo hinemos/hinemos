@@ -19,13 +19,13 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.composite.JobTreeComposite;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * ジョブ選択ダイアログクラスです。
@@ -40,7 +40,7 @@ public class JobTreeDialog extends CommonDialog {
 	/** ツリーのみフラグ */
 	private boolean m_treeOnly = false;
 
-	private JobTreeItem m_jobTreeItem = null;
+	private JobTreeItemWrapper m_jobTreeItem = null;
 
 	/** オーナーロールID **/
 	private String ownerRoleId = null;
@@ -52,17 +52,26 @@ public class JobTreeDialog extends CommonDialog {
 	 * 表示ツリーの形式
 	 * 値として、JobConstantクラスで定義したものが入る
 	 * @see com.clustercontrol.jobmanagement.bean.JobConstant
-	 *  -1 : 未選択<BR>
-	 *  TYPE_REFERJOB,TYPE_REFERJOBNET以外	: 選択したユニット、ネットの子のみ表示する<BR>
-	 *  TYPE_REFERJOB,TYPE_REFERJOBNET		: 選択したユニット、ネットの所属するジョブユニット以下すべて表示する<BR>
+	 *  null : 選択したユニット、ネットの子のみ表示する
+	 *  TYPE_REFERJOB,TYPE_REFERJOBNET		: 選択したユニット、ネットの所属するジョブユニット以下すべて表示する
 	 */
-	private int mode = -1;
+	private JobInfoWrapper.TypeEnum m_mode = null;
+
+	/**
+	 * 表示するジョブ種別のリスト
+	 * 値として、JobConstantクラスで定義したものが入る
+	 * @see com.clustercontrol.jobmanagement.bean.JobConstant
+	 *  null : 全てのユニット、ネット
+	 */
+	private List<JobInfoWrapper.TypeEnum> m_targetJobTypeList = null;
 
 	/**
 	 * コンストラクタ
 	 *
-	 * @param parent 親シェル
-	 * @param treeOnly true：ツリーのみ、false：ジョブ情報を含む
+	 * @param parent
+	 *            親シェル
+	 * @param treeOnly
+	 *            true：ツリーのみ、false：ジョブ情報を含む
 	 */
 	public JobTreeDialog(Shell parent, String managerName, String ownerRoleId, boolean treeOnly) {
 		super(parent);
@@ -73,30 +82,23 @@ public class JobTreeDialog extends CommonDialog {
 
 	/**
 	 * コンストラクタ
-	 *
-	 * @param parent 親シェル
-	 * @param parentJobId 親ジョブID
-	 * @param jobId ジョブID
-	 */
-	public JobTreeDialog(Shell parent, String ownerRoleId, JobTreeItem jobTreeItem) {
-		super(parent);
-		this.ownerRoleId = ownerRoleId;
-		m_jobTreeItem = jobTreeItem;
-		m_treeOnly = true;
-	}
-
-	/**
-	 * コンストラクタ
-	 * @param parent 親シェル
+	 * 
+	 * @param parent
+	 *            親シェル
 	 * @param jobTreeItem
-	 * @param mode 表示ツリーの形式
+	 * @param mode
+	 *            表示元ジョブ種別
+	 * @param targetJobTypeList
+	 *            表示対象のジョブ種別
 	 */
-	public JobTreeDialog(Shell parent, String ownerRoleId, JobTreeItem jobTreeItem, int mode) {
+	public JobTreeDialog(Shell parent, String ownerRoleId, JobTreeItemWrapper jobTreeItem, JobInfoWrapper.TypeEnum mode,
+			List<JobInfoWrapper.TypeEnum> targetJobTypeList) {
 		super(parent);
 		this.ownerRoleId = ownerRoleId;
 		m_jobTreeItem = jobTreeItem;
 		m_treeOnly = true;
-		this.mode = mode;
+		m_mode = mode;
+		m_targetJobTypeList = targetJobTypeList;
 	}
 
 	/**
@@ -126,18 +128,22 @@ public class JobTreeDialog extends CommonDialog {
 		layout.marginHeight = 0;
 		layout.marginWidth = 0;
 
-		if (m_jobTreeItem == null) {
+		if(m_jobTreeItem == null){
 			treeComposite = new JobTreeComposite(parent, SWT.NONE, this.managerName, ownerRoleId, m_treeOnly, false);
 		}
-		//参照ジョブ/参照ジョブネットでは、選択したジョブネット、ジョブが所属するジョブユニット配下すべて表示させる
-		else if (this.mode == JobConstant.TYPE_REFERJOB || this.mode == JobConstant.TYPE_REFERJOBNET) {
-			treeComposite = new JobTreeComposite(parent, SWT.NONE, ownerRoleId, m_jobTreeItem, mode);
-		}
 		else {
-			treeComposite = new JobTreeComposite(parent, SWT.NONE, ownerRoleId, m_jobTreeItem);
+			treeComposite = new JobTreeComposite(parent, SWT.NONE, ownerRoleId, m_jobTreeItem, m_mode, m_targetJobTypeList);
 		}
 		WidgetTestUtil.setTestId(this, null, treeComposite);
 
+		createGridData();
+		addDoubleClick();
+	}
+
+	/**
+	 * グリッドデータを生成し、コンポジットにセットします
+	 */
+	private void createGridData() {
 		GridData gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.verticalAlignment = GridData.FILL;
@@ -145,8 +151,12 @@ public class JobTreeDialog extends CommonDialog {
 		gridData.grabExcessVerticalSpace = true;
 		gridData.horizontalSpan = 5;
 		treeComposite.setLayoutData(gridData);
+	}
 
-		// アイテムをダブルクリックした場合、それを選択したこととする。
+	/**
+	 * アイテムをダブルクリックした場合、それを選択したこととします
+	 */
+	private void addDoubleClick() {
 		treeComposite.getTreeViewer().addDoubleClickListener(
 				new IDoubleClickListener() {
 					@Override
@@ -161,7 +171,7 @@ public class JobTreeDialog extends CommonDialog {
 	 *
 	 * @return ジョブツリーアイテム
 	 */
-	public List<JobTreeItem> getSelectItem() {
+	public List<JobTreeItemWrapper> getSelectItem() {
 		return this.treeComposite.getSelectItemList();
 	}
 
@@ -176,18 +186,18 @@ public class JobTreeDialog extends CommonDialog {
 	protected ValidateResult validate() {
 		ValidateResult result = null;
 
-		JobTreeItem item = this.getSelectItem().isEmpty() ? null : this.getSelectItem().get(0);
+		JobTreeItemWrapper item = this.getSelectItem().isEmpty() ? null : this.getSelectItem().get(0);
 		if (item != null) {
-			if (item.getData().getType() == JobConstant.TYPE_COMPOSITE) {
+			if (item.getData().getType() == JobInfoWrapper.TypeEnum.COMPOSITE) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
 				result.setMessage(Messages.getString("message.job.1"));
 			}
 			//参照ジョブ/参照ジョブネットの場合、参照ジョブ/参照ジョブネットは選択不可
-			else if (mode == JobConstant.TYPE_REFERJOB) {
-				if (item.getData().getType() == JobConstant.TYPE_REFERJOB ||
-						item.getData().getType() == JobConstant.TYPE_REFERJOBNET) {
+			else if (m_mode == JobInfoWrapper.TypeEnum.REFERJOB) {
+				if (item.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOB ||
+						item.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOBNET) {
 					result = new ValidateResult();
 					result.setValid(false);
 					result.setID(Messages.getString("message.hinemos.1"));

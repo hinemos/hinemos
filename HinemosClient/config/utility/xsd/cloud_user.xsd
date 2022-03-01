@@ -165,7 +165,7 @@
 							<xs:documentation>AWSアクセスキーです。</xs:documentation>
 						</xs:annotation>
 					</xs:element>
-					<xs:element name="secretKey" type="xs:string">
+					<xs:element name="secretKey" type="xs:string" minOccurs="0">
 						<xs:annotation>
 							<xs:documentation>AWSシークレットキーです。</xs:documentation>
 						</xs:annotation>
@@ -214,7 +214,7 @@
 							<xs:documentation>VMwareユーザ名です。</xs:documentation>
 						</xs:annotation>
 					</xs:element>
-					<xs:element name="vmwarePassword" type="xs:string">
+					<xs:element name="vmwarePassword" type="xs:string" minOccurs="0">
 						<xs:annotation>
 							<xs:documentation>VMwareパスワードです。</xs:documentation>
 						</xs:annotation>
@@ -263,7 +263,7 @@
 							<xs:documentation>Hyper-VのWMI接続ユーザ名です。</xs:documentation>
 						</xs:annotation>
 					</xs:element>
-					<xs:element name="password" type="xs:string">
+					<xs:element name="password" type="xs:string" minOccurs="0">
 						<xs:annotation>
 							<xs:documentation>Hyper-VのWMI接続パスワードです。</xs:documentation>
 						</xs:annotation>
@@ -360,7 +360,7 @@
 							<xs:documentation>AzureのサブスクリプションIDです。</xs:documentation>
 						</xs:annotation>
 					</xs:element>
-					<xs:element name="secretKey" type="xs:string">
+					<xs:element name="secretKey" type="xs:string" minOccurs="0">
 						<xs:annotation>
 							<xs:documentation>AzureのアプリケーションにおけるKeyです。</xs:documentation>
 						</xs:annotation>

@@ -16,13 +16,13 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.JobCommandParamResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.composite.JobCommandParameterComposite;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobCommandParam;
 
 /**
  * ジョブ変数のコンポジットを表示するダイアログクラスです。
@@ -35,15 +35,15 @@ public class JobCommandParameterCompositeDialog extends CommonDialog {
 	private JobCommandParameterComposite m_jobCommandParameterComposite;
 
 	/** ジョブ変数情報 */
-	private Map<String, JobCommandParam> m_jobCommandParamMap = new HashMap<>();
+	private Map<String, JobCommandParamResponse> m_jobCommandParamMap = new HashMap<>();
 	
 	private boolean m_readOnly = false;
 	
-	public Map<String, JobCommandParam> getJobCommandParamMap() {
+	public Map<String, JobCommandParamResponse> getJobCommandParamMap() {
 		return m_jobCommandParamMap;
 	}
 
-	public void setJobCommandParamMap(Map<String, JobCommandParam> m_jobCommandParamMap) {
+	public void setJobCommandParamMap(Map<String, JobCommandParamResponse> m_jobCommandParamMap) {
 		this.m_jobCommandParamMap = m_jobCommandParamMap;
 	}
 

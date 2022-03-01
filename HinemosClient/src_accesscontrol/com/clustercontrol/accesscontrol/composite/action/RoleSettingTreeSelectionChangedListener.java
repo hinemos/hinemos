@@ -16,13 +16,13 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.RoleInfoResponse;
 
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
+import com.clustercontrol.accesscontrol.bean.RoleTreeItemWrapper;
 import com.clustercontrol.accesscontrol.composite.RoleSettingTreeComposite;
 import com.clustercontrol.accesscontrol.view.RoleSettingTreeView;
 import com.clustercontrol.accesscontrol.view.SystemPrivilegeListView;
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.accesscontrol.RoleTreeItem;
 
 /**
  * ロールツリービューア用のSelectionChangedListenerです。
@@ -58,7 +58,7 @@ public class RoleSettingTreeSelectionChangedListener implements ISelectionChange
 	 */
 	@Override
 	public void selectionChanged(SelectionChangedEvent event) {
-		RoleTreeItem selectItem = null;
+		RoleTreeItemWrapper selectItem = null;
 
 		// ロール設定ツリービューのインスタンスを取得
 		IWorkbenchPage page = PlatformUI.getWorkbench()
@@ -70,7 +70,7 @@ public class RoleSettingTreeSelectionChangedListener implements ISelectionChange
 
 		if (viewPart != null && selection != null) {
 			// 選択アイテムの情報を取得
-			selectItem = (RoleTreeItem) selection.getFirstElement();
+			selectItem = (RoleTreeItemWrapper) selection.getFirstElement();
 			RoleSettingTreeView view = (RoleSettingTreeView) viewPart.getAdapter(RoleSettingTreeView.class);
 			
 			if (view == null) {
@@ -112,17 +112,17 @@ public class RoleSettingTreeSelectionChangedListener implements ISelectionChange
 
 	}
 	
-	private static String getManager(RoleTreeItem item) {
+	private static String getManager(RoleTreeItemWrapper item) {
 		if(item == null) {
 			return null;
 		}
 
-		RoleTreeItem parent = item.getParent();
-		RoleInfo role = null;
+		RoleTreeItemWrapper parent = item.getParent();
+		RoleInfoResponse role = null;
 		if(parent == null || parent.getData() == null) {
 			return null;
-		} else if(parent.getData() instanceof RoleInfo) {
-			role = (RoleInfo)(parent.getData());
+		} else if(parent.getData() instanceof RoleInfoResponse) {
+			role = (RoleInfoResponse)(parent.getData());
 		} else {
 			return null;
 		}

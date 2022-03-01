@@ -18,28 +18,27 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.ws.WebServiceContext;
-import javax.xml.ws.WebServiceFeature;
-
 import org.apache.log4j.Logger;
+import org.glassfish.jersey.server.ResourceConfig;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.ObjectSharingService;
-import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
-import com.clustercontrol.ws.util.HttpAuthenticator;
-import com.clustercontrol.ws.xcloud.CloudEndpointImpl;
-import com.clustercontrol.ws.xcloud.IWebServiceBase;
-import com.clustercontrol.ws.xcloud.Publisher;
+import com.clustercontrol.rest.endpoint.cloud.CloudRestEndpoints;
+import com.clustercontrol.rest.endpoint.cloud.CloudRestFilterRegistration;
+import com.clustercontrol.rest.endpoint.cloud.Publisher;
+import com.clustercontrol.rest.exception.HinemosRestExceptionMapper;
+import com.clustercontrol.rest.filter.ClientSettingAcquisitionFilter;
+import com.clustercontrol.rest.filter.ClientVersionCheckFilter;
+import com.clustercontrol.rest.filter.CorsFilter;
+import com.clustercontrol.rest.filter.InitializeFilter;
 import com.clustercontrol.xcloud.CloudManagerException;
-import com.clustercontrol.xcloud.HinemosCredential;
 import com.clustercontrol.xcloud.InternalManagerError;
-import com.clustercontrol.xcloud.PluginException;
 import com.clustercontrol.xcloud.Session;
 import com.clustercontrol.xcloud.factory.monitors.BillingDetailMonitor;
 import com.clustercontrol.xcloud.factory.monitors.CloudServiceBillingDetailRunMonitor;
 import com.clustercontrol.xcloud.factory.monitors.CloudServiceBillingRunMonitor;
+import com.clustercontrol.xcloud.factory.monitors.MonitorCloudLogControllerBean;
 import com.clustercontrol.xcloud.factory.monitors.PlatformResourceMonitor;
 import com.clustercontrol.xcloud.factory.monitors.PlatformServiceConditionMonitor;
 import com.clustercontrol.xcloud.factory.monitors.PlatformServiceRunMonitor;
@@ -74,42 +73,12 @@ public class CloudManager {
 	
 	private CloudManager() {
 		publisher = new Publisher();
-		
-		Publisher.setContextListener(new Publisher.ContextListener() {
-			@Override
-			public void onUpdateContext(WebServiceContext wsctx) {
-				try {
-					String accountName = HttpAuthenticator.getAccount(wsctx).split(":")[0];
-					Session.current().setHinemosCredential(new HinemosCredential(accountName));
-				} catch (InvalidUserPass e) {
-					throw new InternalManagerError(e);
-				}
-			}
-		});
-
-		// Web サービスのリクエスト実行中に発生したエラーの最終処理を設定。
-		publisher.setUncaughtExceptionHandler(new Publisher.UncaughtExceptionHandler() {
-			@Override
-			public CloudManagerException uncaughtException(Throwable e) {
-				if (e instanceof CloudManagerException) {
-					return (CloudManagerException)e;
-				}
-				else if (e instanceof PluginException) {
-					return new CloudManagerException(e);
-				}
-				else {
-					return null;
-				}
-			}
-		});
 	}
 
-	public synchronized void publish(String postAddress, IWebServiceBase implementor, WebServiceFeature...features) {
-		String address = HinemosPropertyCommon.ws_client_address.getStringValue() + postAddress;
-		Logger.getLogger(this.getClass()).info("publish " + address);
-		publisher.publish(address, implementor, features);
+	public synchronized void publish(String resourceClassName, ResourceConfig config) {
+		publisher.publish(resourceClassName, config);
 	}
-
+	
 	public IRepository getRepository() {
 		return getObject(IRepository.class, Repository.class);
 	}
@@ -289,15 +258,14 @@ public class CloudManager {
 	}
 
 	public void open() {
-		// Webサービスの起動処理
-		IWebServiceBase mainEndpoint = ObjRegistry.reg().get(IWebServiceBase.class, Key_MainEndpoint);
-		// SEI を含んだ jar に、以下のコードを有効にして、CloudManagerWSFaetureFactory.java を jar に含めると(正確には、
-		// CloudManagerWSFaetureFactory の import 文があると)、wsgen が失敗します。
-		// おそらく java ランタイムの内部クラスを使用しているからだと思われます。
-		// 本リリースでは、以下のコードは必要ないので、無効とします。
-		// publish("/HinemosWS/CloudEndpoint", mainEndpoint == null ? new CloudEndpointImpl(): mainEndpoint, CloudManagerWSFaetureFactory.createWebServiceFeature());
-		publish("/HinemosWS/CloudEndpoint", mainEndpoint == null ? new CloudEndpointImpl(): mainEndpoint);
-
+		// REST API の publish処理
+		String cloudClassName = CloudRestEndpoints.class.getSimpleName();
+		ResourceConfig cloudResourceConfig = new ResourceConfig().registerClasses(
+				CloudRestEndpoints.class, CloudRestFilterRegistration.class, ClientSettingAcquisitionFilter.class,
+				HinemosRestExceptionMapper.class, ClientVersionCheckFilter.class, InitializeFilter.class,
+				CorsFilter.class);
+		publish(cloudClassName, cloudResourceConfig);
+		
 		PlatformResourceMonitor.start();
 		PlatformServiceConditionMonitor.start();
 		BillingDetailMonitor.start();
@@ -313,6 +281,12 @@ public class CloudManager {
 		// クラウド課金詳細監視を追加
 		HinemosModuleConstant.addExtensionType(new HinemosModuleConstant.ExtensionType(CloudServiceBillingDetailRunMonitor.monitorTypeId, CloudServiceBillingDetailRunMonitor.monitorType, CloudServiceBillingDetailRunMonitor.STRING_CLOUD_SERVICE_BILLING_DETAIL));
 		ObjectSharingService.objectRegistry().put(RunMonitor.class, CloudServiceBillingDetailRunMonitor.monitorTypeId + "." + CloudServiceBillingDetailRunMonitor.monitorType, CloudServiceBillingDetailRunMonitor.class);
+	
+		// クラウドログ監視を追加
+		// エージェントで実行する監視のため、ObjectSharingServiceへの登録は不要
+		HinemosModuleConstant.addExtensionType(new HinemosModuleConstant.ExtensionType(MonitorCloudLogControllerBean.monitorTypeId, MonitorCloudLogControllerBean.monitorType, MonitorCloudLogControllerBean.STRING_CLOUDSERVICE_LOG_MONITOR));
+
+	
 	}
 
 	public void close() {

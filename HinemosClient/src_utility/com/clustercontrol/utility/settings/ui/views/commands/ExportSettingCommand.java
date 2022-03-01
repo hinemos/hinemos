@@ -36,28 +36,34 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.CheckPublishResponse;
 
 import com.clustercontrol.client.ui.util.FileDownloader;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TargetPlatformUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.settings.ui.action.CommandAction;
 import com.clustercontrol.utility.settings.ui.action.ReadXMLAction;
 import com.clustercontrol.utility.settings.ui.bean.FuncInfo;
+import com.clustercontrol.utility.settings.ui.dialog.FilterSettingDialog;
 import com.clustercontrol.utility.settings.ui.dialog.JobunitListDialog;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.settings.ui.util.BackupUtil;
+import com.clustercontrol.utility.settings.ui.util.FilterSettingProcessMode;
 import com.clustercontrol.utility.settings.ui.views.ImportExportExecView;
 import com.clustercontrol.utility.ui.dialog.ErrorDialogWithScroll;
 import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.FileUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
-import com.clustercontrol.utility.util.UtilityEndpointWrapper;
+import com.clustercontrol.utility.util.StringUtil;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
 import com.clustercontrol.utility.util.ZipUtil;
-import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
-import com.clustercontrol.ws.utility.InvalidRole_Exception;
-import com.clustercontrol.ws.utility.InvalidUserPass_Exception;
 
 /**
  * 設定情報を取得するクライアント側アクションクラス<BR>
@@ -96,21 +102,29 @@ public class ExportSettingCommand extends AbstractHandler implements IElementUpd
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// keyチェック
 		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-			String version = wrapper.getVersion();
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							Messages.getString("message.expiration.term.invalid"));
-				}
+			UtilityRestClientWrapper wrapper = UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+			CheckPublishResponse response = wrapper.checkPublish();
+			boolean isPublish = response.getPublish();
+			if (!isPublish) {
+				MessageDialog.openWarning(
+						null,
+						Messages.getString("warning"),
+						Messages.getString("message.expiration.term.invalid"));
 			}
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (InvalidRole | InvalidUserPass e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					e.getMessage());
 			return null;
+		} catch (HinemosUnknown e) {
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						Messages.getString("message.expiration.term"));
+				return null;
+			} else {
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						e.getMessage());
+				return null;
+			}
 		} catch (Exception e) {
 			// キーファイルを確認できませんでした。処理を終了します。
 			// Key file not found. This process will be terminated.
@@ -136,6 +150,15 @@ public class ExportSettingCommand extends AbstractHandler implements IElementUpd
 		
 		m_funcList = new ArrayList<FuncInfo>();
 
+		// リッチクライアントの場合ディレクトリの存在チェック
+		if (TargetPlatformUtil.isRCP() &&
+				!MultiManagerPathUtil.existsDirectory(SettingToolsXMLPreferencePage.KEY_XML)) {
+			MessageDialog.openWarning(
+					null,
+					Messages.getString("warning"),
+					Messages.getString("message.utility.preferences.common.error"));
+			return null;
+		}
 		String parentPath = MultiManagerPathUtil.getDirectoryPathTemporary(SettingToolsXMLPreferencePage.KEY_XML);
 		
 		//空の場合エラーメッセージを表示する。
@@ -146,6 +169,7 @@ public class ExportSettingCommand extends AbstractHandler implements IElementUpd
 		} else {
 			StringBuffer funcs = new StringBuffer();
 			Iterator<FuncInfo> it = checkList.iterator();
+			FilterSettingProcessMode.init();
 			while (it.hasNext()) {
 				
 				// エクスポート対象を選択し、OKボタンを押したかどうかのフラグ
@@ -175,6 +199,28 @@ public class ExportSettingCommand extends AbstractHandler implements IElementUpd
 					}
 				}
 				
+				//フィルタ設定の場合、出力内容を選択させる
+				if (funcInfo.isFilterSettingFunc()) {
+					if(FilterSettingProcessMode.isSameNextChoice()){
+						// "同じ選択を次の設定にも適用" が 以前に選択されていたら それに従う。
+						FilterSettingProcessMode.setLastSelect(funcInfo.getActionClassName());
+					}else{
+						FilterSettingDialog filtersettingDialog = new FilterSettingDialog(
+								PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), "export",funcInfo.getName());
+						// OKボタンが押下された際に選択されていた種別をセット
+						if (filtersettingDialog.open() == IDialogConstants.OK_ID) {
+							if (filtersettingDialog.getSelectionData() != null && filtersettingDialog.getSelectionData().size() != 0) {
+								filtersettingDialog.setFilterSettingProcessMode(funcInfo.getActionClassName());
+							} else {
+								isTargetSelected = false;
+							}
+						// キャンセルボタンが押下された場合は、対象のジョブユニットのジョブIDをセットしない
+						} else {
+							isTargetSelected = false;
+						}
+					}
+				}
+				
 				// 対象が選択されている場合は、エクスポートリストに追加する
 				if (isTargetSelected) {
 					if(funcs.length() > 0){
@@ -195,7 +241,7 @@ public class ExportSettingCommand extends AbstractHandler implements IElementUpd
 							Messages.getString("message.confirm"),
 							Messages.getString("string.manager") + " : "
 									+ UtilityManagerUtil.getCurrentManagerName() + " ( "
-									+ EndpointManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr()
+									+ RestConnectManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr()
 									+ " )\n\n"
 									+ Messages.getString("message.export.confirm1") + " ( "
 									+ Messages.getString("records.mib", new String[] { String.valueOf(m_funcList.size()) })
@@ -299,7 +345,8 @@ public class ExportSettingCommand extends AbstractHandler implements IElementUpd
 					String resultMessage = m_action.getStdOut().replaceAll("\r\n", "\n");
 					String[] resultMessages = resultMessage.split("\n");
 					for(int i = 0; i < resultMessages.length; i++){
-						mStatus.add(new Status(IStatus.INFO, this.toString(), IStatus.OK, resultMessages[i], null));
+						mStatus.add(new Status(IStatus.INFO, this.toString(), IStatus.OK,
+								StringUtil.cutTailForStatus(resultMessages[i]), null));
 					}
 					ErrorDialogWithScroll.openError(null, Messages.getString("message.confirm"), null, mStatus);
 				}
@@ -313,7 +360,8 @@ public class ExportSettingCommand extends AbstractHandler implements IElementUpd
 					String resultMessage = m_action.getStdOut().replaceAll("\r\n", "\n") + m_action.getErrOut().replaceAll("\r\n", "\n");
 					String[] resultMessages = resultMessage.split("\n");
 					for(int i = 0; i < resultMessages.length; i++){
-						mStatus.add(new Status(IStatus.WARNING, this.toString(), IStatus.OK, resultMessages[i], null));
+						mStatus.add(new Status(IStatus.WARNING, this.toString(), IStatus.OK,
+								StringUtil.cutTailForStatus(resultMessages[i]), null));
 					}
 					// 結果表示（失敗）
 					ErrorDialogWithScroll.openError(null, Messages.getString("message.confirm"), null, mStatus);

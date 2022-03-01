@@ -8,11 +8,12 @@
 
 package com.clustercontrol.reporting.factory;
 
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
-import com.clustercontrol.reporting.fault.ReportingNotFound;
+import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
 import com.clustercontrol.notify.session.NotifyControllerBean;
@@ -46,6 +47,9 @@ public class DeleteReporting {
 
 			//レポーティング情報の削除
 			em.remove(entity);
+
+			// 通知履歴情報を削除する
+			new NotifyControllerBean().deleteNotifyHistory(HinemosModuleConstant.REPORTING, reportId);
 
 			return true;
 		}

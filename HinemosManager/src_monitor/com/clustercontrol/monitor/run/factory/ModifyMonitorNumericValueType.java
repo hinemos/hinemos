@@ -11,8 +11,7 @@ package com.clustercontrol.monitor.run.factory;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-
+import com.clustercontrol.bean.FunctionPrefixEnum;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -30,6 +29,8 @@ import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.factory.ModifyNotifyRelation;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * 数値監視の判定情報を変更する抽象クラス<BR>
@@ -56,6 +57,7 @@ abstract public class ModifyMonitorNumericValueType extends ModifyMonitor{
 					// 対象外データ
 					continue;
 				}
+				value.setMonitorId(m_monitorInfo.getMonitorId());
 				em.persist(value);
 				value.relateToMonitorInfo(m_monitorInfo);
 			}
@@ -70,9 +72,10 @@ abstract public class ModifyMonitorNumericValueType extends ModifyMonitor{
 				for (NotifyRelationInfo predictionNotifyRelationInfo : m_monitorInfo.getPredictionNotifyRelationList()) {
 					predictionNotifyRelationInfo.setNotifyGroupId(
 							CollectMonitorManagerUtil.getPredictionNotifyGroupId(m_monitorInfo.getNotifyGroupId()));
+					predictionNotifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.PREDICTION.name());
 				}
 				// 通知情報(将来予測用)を登録
-				new ModifyNotifyRelation().add(m_monitorInfo.getPredictionNotifyRelationList());
+				new ModifyNotifyRelation().add(m_monitorInfo.getPredictionNotifyRelationList(), m_monitorInfo.getOwnerRoleId());
 			}
 			// 通知情報（変化点用）の登録
 			if (m_monitorInfo.getChangeNotifyRelationList() != null
@@ -80,9 +83,10 @@ abstract public class ModifyMonitorNumericValueType extends ModifyMonitor{
 				for (NotifyRelationInfo changeNotifyRelationInfo : m_monitorInfo.getChangeNotifyRelationList()) {
 					changeNotifyRelationInfo.setNotifyGroupId(
 							CollectMonitorManagerUtil.getChangeNotifyGroupId(m_monitorInfo.getNotifyGroupId()));
+					changeNotifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.CHANGE.name());
 				}
 				// 通知情報(将来予測用)を登録
-				new ModifyNotifyRelation().add(m_monitorInfo.getChangeNotifyRelationList());
+				new ModifyNotifyRelation().add(m_monitorInfo.getChangeNotifyRelationList(), m_monitorInfo.getOwnerRoleId());
 			}
 			
 			
@@ -142,6 +146,7 @@ abstract public class ModifyMonitorNumericValueType extends ModifyMonitor{
 				} catch (MonitorNotFound e) {
 					// 新規登録
 					entity = value;
+					entity.setMonitorId(m_monitorInfo.getMonitorId());
 					em.persist(entity);
 					entity.relateToMonitorInfo(monitorInfo);
 				}
@@ -165,10 +170,11 @@ abstract public class ModifyMonitorNumericValueType extends ModifyMonitor{
 					for (NotifyRelationInfo predictionNotifyRelationInfo : m_monitorInfo.getPredictionNotifyRelationList()) {
 						predictionNotifyRelationInfo.setNotifyGroupId(
 								predictionNotifyGroupId);
+						predictionNotifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.PREDICTION.name());
 					}
 				}
 				new NotifyControllerBean().modifyNotifyRelation(
-						m_monitorInfo.getPredictionNotifyRelationList(), predictionNotifyGroupId);
+						m_monitorInfo.getPredictionNotifyRelationList(), predictionNotifyGroupId, m_monitorInfo.getOwnerRoleId());
 		
 				// 通知情報（変化点監視用）を更新
 				String changeNotifyGroupId = CollectMonitorManagerUtil.getChangeNotifyGroupId(m_monitor.getNotifyGroupId());
@@ -176,10 +182,11 @@ abstract public class ModifyMonitorNumericValueType extends ModifyMonitor{
 						&& m_monitorInfo.getChangeNotifyRelationList().size() > 0) {
 					for (NotifyRelationInfo changeNotifyRelationInfo : m_monitorInfo.getChangeNotifyRelationList()) {
 						changeNotifyRelationInfo.setNotifyGroupId(changeNotifyGroupId);
+						changeNotifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.CHANGE.name());
 					}
 				}
 				new NotifyControllerBean().modifyNotifyRelation(
-						m_monitorInfo.getChangeNotifyRelationList(), changeNotifyGroupId);
+						m_monitorInfo.getChangeNotifyRelationList(), changeNotifyGroupId, m_monitor.getOwnerRoleId());
 			} catch (NotifyNotFound e) {
 				throw new MonitorNotFound(e.getMessage(), e);
 			}

@@ -46,6 +46,7 @@ import com.clustercontrol.performance.monitor.util.QueryUtil;
 import com.clustercontrol.performance.operator.Operator;
 import com.clustercontrol.performance.operator.Operator.CollectedDataNotFoundException;
 import com.clustercontrol.performance.operator.Operator.CollectedDataNotFoundWithNoPollingException;
+import com.clustercontrol.performance.operator.Operator.InvalidOverValueException;
 import com.clustercontrol.performance.util.CalculationMethod;
 import com.clustercontrol.performance.util.PollingDataManager;
 import com.clustercontrol.performance.util.code.CollectorItemCodeTable;
@@ -57,6 +58,7 @@ import com.clustercontrol.poller.util.DataTable;
 import com.clustercontrol.repository.model.NodeDeviceInfo;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.repository.util.NodeConfigRegisterUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -481,6 +483,10 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 				// ターゲットのdisplayNameがALLの場合、全てのデバイスに対して処理する
 				if(m_perf.getDeviceDisplayName() != null && (PollingDataManager.ALL_DEVICE_NAME).equals(m_perf.getDeviceDisplayName())){
 					for (final NodeDeviceInfo deviceInfo : deviceList) {
+						if (NodeConfigRegisterUtil.chkIgnoreMonitorCode(deviceInfo.getDeviceDescription())) {
+							//Descriptionに監視対象外コードが設定されていたら処理をスキップ
+							continue;
+						}
 						m_deviceData = deviceInfo;
 						final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode, deviceInfo.getDeviceName(), deviceInfo.getDeviceDisplayName());
 						if (result != null) {
@@ -492,6 +498,10 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 				else if(m_perf.getDeviceDisplayName().length() > 0) {
 					for(NodeDeviceInfo deviceInfo : deviceList){
 						if(m_perf.getDeviceDisplayName().equals(deviceInfo.getDeviceDisplayName())){
+							if(NodeConfigRegisterUtil.chkIgnoreMonitorCode(deviceInfo.getDeviceDescription())){
+								//Descriptionに監視対象外コードが設定されていたら処理をスキップ
+								break;
+							}
 							m_deviceData = deviceInfo;
 							final MonitorRunResultInfo result = calcValue(facilityName, platform, subPlatform, itemCode, deviceInfo.getDeviceName(), deviceInfo.getDeviceDisplayName());
 							if (result != null) {
@@ -551,6 +561,7 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 			return null;
 		}
 		boolean ret;
+		boolean isInvalid = false;
 		try {
 			m_value = CalculationMethod.getPerformance(platform, subPlatform, itemInfo, deviceName, curTable, prvTable);
 			ret = true;
@@ -558,6 +569,10 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 			// DataTableを2回分取得できなかった場合にはnullを返す（何も通知しない）
 			m_log.info("calcValue() : previous polling have not done." + facilityName + ", " + itemCode + ", " + deviceName);
 			return null;
+		} catch (InvalidOverValueException e) {
+			m_value = 0D;
+			isInvalid = true;
+			m_errorMessage = e.getMessage();
 		} catch (CollectedDataNotFoundException | IllegalStateException | Operator.InvalidValueException e) {
 			m_value = Double.NaN;
 			m_errorMessage = e.getMessage();
@@ -569,7 +584,7 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 			m_errorMessage = e.getMessage();
 		}
 		
-		if(!Double.isNaN(m_value)){
+		if(!Double.isNaN(m_value) && !isInvalid){
 			ret = true;
 		} else {
 			ret = false;
@@ -589,8 +604,13 @@ public class RunMonitorPerformance extends RunMonitorNumericValueType {
 		if (m_now != null) {
 			result.setNodeDate(m_now.getTime());
 		}
-		result.setMessage(getMessage(checkResult));
-		result.setMessageOrg(getMessageOrg(checkResult));
+		if (isInvalid) {
+			result.setMessage(m_itemName + " : " +MessageConstant.MESSAGE_COULD_NOT_GET_INVALID_VALUE.getMessage());
+			result.setMessageOrg(m_itemName + " : \n " + m_errorMessage);
+		} else {
+			result.setMessage(getMessage(checkResult));
+			result.setMessageOrg(getMessageOrg(checkResult));
+		}
 		result.setPriority(checkResult);
 		result.setNotifyGroupId(getNotifyGroupId());
 		result.setItemCode(itemInfo.getItemCode());

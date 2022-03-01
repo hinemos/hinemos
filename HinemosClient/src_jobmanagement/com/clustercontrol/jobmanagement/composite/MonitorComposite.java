@@ -33,10 +33,11 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.JobMonitorInfoResponse;
+import org.openapitools.client.model.MonitorInfoBeanResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityColorConstant;
@@ -47,20 +48,18 @@ import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.composite.action.NumberVerifyListener;
 import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.bean.MonitorJobConstant;
-import com.clustercontrol.jobmanagement.bean.ProcessingMethodConstant;
 import com.clustercontrol.jobmanagement.bean.SystemParameterConstant;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
 import com.clustercontrol.monitor.run.bean.MonitorTypeMessage;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.monitor.view.action.MonitorModifyAction;
 import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.MonitorJobInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * 監視用のコンポジットクラスです。
@@ -89,7 +88,7 @@ public class MonitorComposite extends Composite {
 	/** 監視設定用コンボボックス */
 	private Combo m_monitorIdCombo = null;
 	/** 監視設定用マップ（監視設定ラベル、監視設定） */
-	private Map<String, MonitorInfo> m_monitorIdMap = null;
+	private Map<String, MonitorInfoBeanResponse> m_monitorIdMap = null;
 	/** 監視設定参照用ボタン */
 	private Button m_monitorReferBtn = null;
 	/** 戻り値（情報）用テキスト */
@@ -106,11 +105,13 @@ public class MonitorComposite extends Composite {
 	private Text m_waitEndValueText = null;
 
 	/** 監視ジョブ情報 */
-	private MonitorJobInfo m_monitor = null;
+	private JobMonitorInfoResponse m_monitor = null;
 	/** ファシリティID */
 	private String m_facilityId = null;
 	/** スコープ */
 	private String m_facilityPath = null;
+	/** ファシリティID（固定値用） */
+	private String m_facilityIdFixed = null;
 	/** シェル */
 	private Shell m_shell = null;
 	/** オーナーロールID */
@@ -163,6 +164,7 @@ public class MonitorComposite extends Composite {
 					m_scopeJobParamText.setEditable(true);
 					m_scopeFixedValue.setSelection(false);
 					m_scopeSelect.setEnabled(false);
+					m_facilityId = m_scopeJobParamText.getText();
 				}
 				update();
 			}
@@ -237,13 +239,13 @@ public class MonitorComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				ScopeTreeDialog dialog = new ScopeTreeDialog(m_shell, m_managerName, m_ownerRoleId);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem selectItem = dialog.getSelectItem();
-					FacilityInfo info = selectItem.getData();
+					FacilityTreeItemResponse selectItem = dialog.getSelectItem();
+					FacilityInfoResponse info = selectItem.getData();
 					FacilityPath path = new FacilityPath(
 							ClusterControlPlugin.getDefault()
 							.getSeparator());
 					m_facilityPath = path.getPath(selectItem);
-					m_facilityId = info.getFacilityId();
+					m_facilityIdFixed = info.getFacilityId();
 					m_scope.setText(m_facilityPath);
 					update();
 				}
@@ -301,7 +303,8 @@ public class MonitorComposite extends Composite {
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_WINEVENT)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
-					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S))) {
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CLOUD_LOG))) {
 					m_waitTimeText.setEditable(true);
 					m_waitEndValueText.setEditable(true);
 				} else {
@@ -517,7 +520,8 @@ public class MonitorComposite extends Composite {
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_WINEVENT)
 						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
-						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S));
+						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)
+						|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CLOUD_LOG));
 		if(isMonitorTrap && "".equals(this.m_waitEndValueText.getText())){
 			this.m_waitEndValueText.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
 		}else{
@@ -552,12 +556,12 @@ public class MonitorComposite extends Composite {
 		this.m_waitTimeText.setText(String.valueOf(MonitorJobConstant.INITIAL_WAIT_INTERVAL_MINUTE));
 
 		// 監視設定
-		List<MonitorInfo> monitorInfoList = null;
+		List<MonitorInfoBeanResponse> monitorInfoList = null;
 		this.m_monitorIdMap = new ConcurrentHashMap<>();
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(this.m_managerName);
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(this.m_managerName);
 			monitorInfoList = wrapper.getMonitorListForJobMonitor(this.m_ownerRoleId);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 		} catch (Exception e) {
@@ -569,7 +573,7 @@ public class MonitorComposite extends Composite {
 		}
 		String selectMonitorIdLabel = "";
 		if (monitorInfoList != null && monitorInfoList.size() > 0) {
-			for (MonitorInfo monitorInfo : monitorInfoList) {
+			for (MonitorInfoBeanResponse monitorInfo : monitorInfoList) {
 				String monitorIdLabel = getMonitorIdLabel(monitorInfo);
 				if (m_monitor != null && m_monitor.getMonitorId().equals(monitorInfo.getMonitorId())) {
 					selectMonitorIdLabel = monitorIdLabel;
@@ -596,12 +600,13 @@ public class MonitorComposite extends Composite {
 			} else{
 				if (this.m_facilityPath != null && this.m_facilityPath.length() > 0) {
 					this.m_scope.setText(this.m_facilityPath);
+					this.m_facilityIdFixed = this.m_facilityId;
 				}
 				this.m_scopeJobParam.setSelection(false);
 				this.m_scopeFixedValue.setSelection(true);
 			}
 			//処理方法設定
-			if (this.m_monitor.getProcessingMethod() == ProcessingMethodConstant.TYPE_ALL_NODE) {
+			if (this.m_monitor.getProcessingMethod() == JobMonitorInfoResponse.ProcessingMethodEnum.ALL_NODE) {
 				this.m_allNode.setSelection(true);
 				this.m_retry.setSelection(false);
 			} else {
@@ -653,7 +658,7 @@ public class MonitorComposite extends Composite {
 	 *
 	 * @param monitor 監視ジョブ情報
 	 */
-	public void setMonitorJobInfo(MonitorJobInfo monitor) {
+	public void setMonitorJobInfo(JobMonitorInfoResponse monitor) {
 		m_monitor = monitor;
 	}
 
@@ -662,7 +667,7 @@ public class MonitorComposite extends Composite {
 	 *
 	 * @return 監視ジョブ情報
 	 */
-	public MonitorJobInfo getMonitorJobInfo() {
+	public JobMonitorInfoResponse getMonitorJobInfo() {
 		return m_monitor;
 	}
 
@@ -677,7 +682,7 @@ public class MonitorComposite extends Composite {
 		ValidateResult result = null;
 
 		//監視情報クラスのインスタンスを作成・取得
-		m_monitor = new MonitorJobInfo();
+		m_monitor = new JobMonitorInfoResponse();
 
 		//スコープ取得
 		if(m_scopeJobParam.getSelection()){
@@ -696,8 +701,8 @@ public class MonitorComposite extends Composite {
 		}
 		else{
 			//固定値の場合
-			if (m_facilityId != null && m_facilityId.length() > 0){
-				m_monitor.setFacilityID(m_facilityId);
+			if (m_facilityIdFixed != null && m_facilityIdFixed.length() > 0){
+				m_monitor.setFacilityID(m_facilityIdFixed);
 				m_monitor.setScope(m_facilityPath);
 			} else {
 				result = new ValidateResult();
@@ -710,10 +715,9 @@ public class MonitorComposite extends Composite {
 
 		//処理方法取得
 		if (m_allNode.getSelection()) {
-			m_monitor
-			.setProcessingMethod(ProcessingMethodConstant.TYPE_ALL_NODE);
+			m_monitor.setProcessingMethod(JobMonitorInfoResponse.ProcessingMethodEnum.ALL_NODE);
 		} else {
-			m_monitor.setProcessingMethod(ProcessingMethodConstant.TYPE_RETRY);
+			m_monitor.setProcessingMethod(JobMonitorInfoResponse.ProcessingMethodEnum.RETRY);
 		}
 
 		// 監視項目ID
@@ -788,7 +792,8 @@ public class MonitorComposite extends Composite {
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_WINEVENT)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
-					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S))) {
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CLOUD_LOG))) {
 			try {
 				this.m_monitor.setMonitorWaitTime(Integer.parseInt(this.m_waitTimeText.getText()));
 			} catch (NumberFormatException e) {
@@ -845,7 +850,7 @@ public class MonitorComposite extends Composite {
 		if (monitorIdLabel == null || this.m_monitorIdMap == null) {
 			return null;
 		}
-		MonitorInfo monitorInfo = this.m_monitorIdMap.get(monitorIdLabel);
+		MonitorInfoBeanResponse monitorInfo = this.m_monitorIdMap.get(monitorIdLabel);
 		if (monitorInfo == null) {
 			return null;
 		} else {
@@ -860,7 +865,7 @@ public class MonitorComposite extends Composite {
 	 * @return 監視項目ID
 	 */
 	private String getMonitorId(String monitorIdLabel) {
-		MonitorInfo monitorInfo = this.m_monitorIdMap.get(monitorIdLabel);
+		MonitorInfoBeanResponse monitorInfo = this.m_monitorIdMap.get(monitorIdLabel);
 		if (monitorInfo == null) {
 			return null;
 		} else {
@@ -874,7 +879,7 @@ public class MonitorComposite extends Composite {
 	 * @param monitorInfo 監視情報
 	 * @return 監視設定文字列
 	 */
-	private String getMonitorIdLabel(MonitorInfo monitorInfo) {
+	private String getMonitorIdLabel(MonitorInfoBeanResponse monitorInfo) {
 		String pluginName = "";
 		if (monitorInfo == null || monitorInfo.getMonitorTypeId() == null) {
 			m_log.warn("monitorInfo=" + monitorInfo);
@@ -924,14 +929,16 @@ public class MonitorComposite extends Composite {
 		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
 				|| monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)) {
 			pluginName = Messages.getString("customtrap.monitor");
+		} else if (monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_CLOUD_LOG)) {
+			pluginName = Messages.getString("cloudlog.monitor");
 		} else {
-			pluginName = monitorInfo.getMonitorTypeId();
+			pluginName = Messages.getString(HinemosModuleConstant.nameToMessageCode(monitorInfo.getMonitorTypeId()));
 		}
 
 		return String.format("%s (%s[%s])", 
 				monitorInfo.getMonitorId(),
 				pluginName, 
-				MonitorTypeMessage.typeToString(monitorInfo.getMonitorType()));
+				MonitorTypeMessage.codeToString(monitorInfo.getMonitorType().getValue()));
 	}
 	/**
 	 * 読み込み専用時にグレーアウトします。
@@ -959,7 +966,8 @@ public class MonitorComposite extends Composite {
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_WINEVENT)
 					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
-					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S))) {
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)
+					|| monitorTypeId.equals(HinemosModuleConstant.MONITOR_CLOUD_LOG))) {
 			this.m_waitTimeText.setEditable(enabled);
 			this.m_waitEndValueText.setEditable(enabled);
 		} else {

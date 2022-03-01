@@ -18,6 +18,10 @@ import java.util.regex.Pattern;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
+import org.openapitools.client.model.JobDetailInfoResponse;
+import org.openapitools.client.model.JobHistoryResponse;
+import org.openapitools.client.model.JobObjectInfoResponse;
+import org.openapitools.client.model.JobParameterInfoResponse;
 
 import com.clustercontrol.bean.CheckBoxImageConstant;
 import com.clustercontrol.bean.DayOfWeekConstant;
@@ -27,29 +31,23 @@ import com.clustercontrol.bean.FacilityImageConstant;
 import com.clustercontrol.bean.JobImageConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.ProcessMessage;
-import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.bean.StatusMessage;
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.bean.ValidMessage;
 import com.clustercontrol.bean.YesNoMessage;
 import com.clustercontrol.jobmanagement.JobMessage;
-import com.clustercontrol.jobmanagement.action.GetJobDetailTableDefine;
 import com.clustercontrol.jobmanagement.bean.DecisionObjectMessage;
 import com.clustercontrol.jobmanagement.bean.JobParamTypeMessage;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectMessage;
 import com.clustercontrol.jobmanagement.bean.ScheduleOnOffImageConstant;
 import com.clustercontrol.jobmanagement.bean.StatusImageConstant;
-import com.clustercontrol.jobmanagement.util.TimeToANYhourConverter;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.monitor.bean.ConfirmMessage;
 import com.clustercontrol.notify.util.NotifyTypeUtil;
 import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimeStringConverter;
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.viewer.ICommonTableLabelProvider;
-import com.clustercontrol.ws.common.Schedule;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * CommonTableViewerクラス用のLabelProviderクラス<BR>
@@ -72,52 +70,6 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 		m_viewer = viewer;
 	}
 
-	private Object getValue(JobTreeItem item, int columnIndex) {
-
-		Object value = null;
-		if (columnIndex == GetJobDetailTableDefine.TREE) {
-			value = "";
-		} else if (columnIndex == GetJobDetailTableDefine.STATUS) {
-			value = item.getDetail().getStatus();
-		} else if (columnIndex == GetJobDetailTableDefine.END_STATUS) {
-			value = item.getDetail().getEndStatus();
-		} else if (columnIndex == GetJobDetailTableDefine.END_VALUE) {
-			value = item.getDetail().getEndValue();
-		} else if (columnIndex == GetJobDetailTableDefine.JOB_ID) {
-			value = item.getData().getId();
-		} else if (columnIndex == GetJobDetailTableDefine.JOB_NAME) {
-			value = item.getData().getName();
-		} else if (columnIndex == GetJobDetailTableDefine.JOBUNIT_ID) {
-			value = item.getData().getJobunitId();
-		} else if (columnIndex == GetJobDetailTableDefine.JOB_TYPE) {
-			value = item.getData().getType();
-		} else if (columnIndex == GetJobDetailTableDefine.FACILITY_ID) {
-			value = item.getDetail().getFacilityId();
-		} else if (columnIndex == GetJobDetailTableDefine.SCOPE) {
-			value = HinemosMessage.replace(item.getDetail().getScope());
-		} else if (columnIndex == GetJobDetailTableDefine.WAIT_RULE_TIME) {
-			value = item.getDetail().getWaitRuleTime();
-		} else if (columnIndex == GetJobDetailTableDefine.START_RERUN_TIME) {
-			if (item.getDetail().getStartDate() != null) {
-				value = new Date(item.getDetail().getStartDate());
-			} else {
-				value = "";
-			}
-		} else if (columnIndex == GetJobDetailTableDefine.END_SUSPEND_TIME) {
-			if (item.getDetail().getEndDate() != null) {
-				value = new Date(item.getDetail().getEndDate());
-			} else {
-				value = "";
-			}
-		} else if (columnIndex == GetJobDetailTableDefine.SESSION_TIME) {
-			value = TimeToANYhourConverter.toDiffTime(item.getDetail().getStartDate(), item.getDetail().getEndDate());
-		} else if (columnIndex == GetJobDetailTableDefine.RUN_COUNT) {
-			value = item.getDetail().getRunCount();
-		} else {
-			value = "";
-		}
-		return value;
-	}
 	/**
 	 * カラム文字列取得処理
 	 * 
@@ -126,12 +78,8 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 	 *      int)
 	 */
 	@Override
-	public String getColumnText(Object element, int columnIndex) {
+	public String getColumnText(Object value, int columnIndex) {
 		ArrayList<TableColumnInfo> tableColumnList = m_viewer.getTableColumnList();
-
-		JobTreeItem item = (JobTreeItem) element;
-		Object value = getValue(item, columnIndex);
-
 
 		TableColumnInfo tableColumn = tableColumnList.get(columnIndex);
 
@@ -141,9 +89,22 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 
 		if (tableColumn.getType() == TableColumnInfo.JOB) {
 			//データタイプが「ジョブ」の処理
+			if(value instanceof JobInfoWrapper.TypeEnum){
+				return JobMessage.typeEnumValueToString(((JobInfoWrapper.TypeEnum) value).getValue());
+			}
+			if(value instanceof JobHistoryResponse.JobTypeEnum){
+				return JobMessage.typeEnumValueToString(((JobHistoryResponse.JobTypeEnum) value).getValue());
+			}
 			return JobMessage.typeToString(((Number) value).intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.STATE) {
 			//データタイプが「状態」の処理
+			if (value instanceof JobHistoryResponse.StatusEnum) {
+				return StatusMessage.typeEnumValueToString(((JobHistoryResponse.StatusEnum) value).getValue());
+			}
+			if (value instanceof JobDetailInfoResponse.StatusEnum) {
+				return StatusMessage.typeEnumValueToString(((JobDetailInfoResponse.StatusEnum) value).getValue());
+			}
+			
 			return StatusMessage.typeToString(((Number) value).intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.PRIORITY) {
 			//データタイプが「重要度」の処理
@@ -153,7 +114,14 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 			return ValidMessage.typeToString(((Boolean) value).booleanValue());
 		} else if (tableColumn.getType() == TableColumnInfo.JUDGMENT_OBJECT) {
 			//データタイプが「判定対象」の処理
-			return JudgmentObjectMessage.typeToString(((Number) value).intValue());
+			if( value instanceof JobObjectInfoResponse.TypeEnum ){
+				return JudgmentObjectMessage.enumToString((JobObjectInfoResponse.TypeEnum) value);
+			} else if ( value instanceof String ){
+				// 待ち条件群タイトル
+				return (String)value;
+			} else {
+				return JudgmentObjectMessage.typeToString(((Number) value).intValue());
+			}
 		} else if (tableColumn.getType() == TableColumnInfo.NOTIFY_TYPE) {
 			//データタイプが「判定対象」の処理
 			return NotifyTypeUtil.typeToString(((Number) value).intValue());
@@ -172,32 +140,6 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 			} else if (itemClass.getSuperclass() == Number.class) {
 				return ((Number) value).toString();
 			}
-		} else if (tableColumn.getType() == TableColumnInfo.SCHEDULE) {
-			//データタイプが「スケジュール」の処理
-			Schedule schedule = (Schedule) value;
-
-			String scheduleString = null;
-			//データタイプが「スケジュール」の処理
-			if (schedule.getType() == ScheduleConstant.TYPE_DAY) {
-				if (schedule.getMonth() != null) {
-					scheduleString = schedule.getMonth() +
-							"/" + schedule.getDay() + " " +
-							schedule.getHour() + ":" + schedule.getMinute();
-				} else if (schedule.getDay() != null){
-					scheduleString = schedule.getDay() +
-							"'" + Messages.getString("monthday") + "'" +
-							schedule.getHour() + ":" + schedule.getMinute();
-				} else if (schedule.getHour() != null) {
-					scheduleString = schedule.getHour() + ":" + schedule.getMinute();
-				} else if (schedule.getMinute() != null) {
-					scheduleString = schedule.getMinute() + "'" +
-							Messages.getString("minute") + "'";
-				}
-			} else {
-				scheduleString = DayOfWeekConstant.typeToString(schedule.getWeek()) +
-						" " + schedule.getHour() + ":" + schedule.getMinute();
-			}
-			return scheduleString;
 		} else if (tableColumn.getType() == TableColumnInfo.CONFIRM) {
 			//データタイプが「確認/未確認」の処理
 			return ConfirmMessage.typeToString(((Number) value).intValue());
@@ -209,6 +151,12 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 			return ProcessMessage.typeToString(((Boolean) value).booleanValue());
 		} else if (tableColumn.getType() == TableColumnInfo.END_STATUS) {
 			//データタイプが「終了状態」の処理
+			if(value instanceof JobHistoryResponse.EndStatusEnum){
+				return EndStatusMessage.typeEnumValueToString(((JobHistoryResponse.EndStatusEnum) value).getValue() );
+			}
+			if(value instanceof JobDetailInfoResponse.EndStatusEnum){
+				return EndStatusMessage.typeEnumValueToString(((JobDetailInfoResponse.EndStatusEnum) value).getValue() );
+			}
 			return EndStatusMessage.typeToString(((Number) value).intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.CHECKBOX) {
 			//データタイプが「チェックボックス」の処理
@@ -221,10 +169,13 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 			return "";
 		} else if (tableColumn.getType() == TableColumnInfo.JOB_PARAM_TYPE) {
 			//データタイプが「ジョブパラメータ種別」の処理
+			if(value instanceof JobParameterInfoResponse.TypeEnum){
+				return JobParamTypeMessage.typeEnumToString((JobParameterInfoResponse.TypeEnum)value);
+			}
 			return JobParamTypeMessage.typeToString(((Number) value).intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.DECISION_CONDITION) {
 			//データタイプが「判定条件」の処理
-			return DecisionObjectMessage.typeToString(((Number) value).intValue());
+			return DecisionObjectMessage.typeEnumToString((JobObjectInfoResponse.DecisionConditionEnum) value);
 		} else {
 			//上記以外のデータタイプの処理
 			Class<?> itemClass = value.getClass();
@@ -252,12 +203,8 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 	 *      int)
 	 */
 	@Override
-	public Image getColumnImage(Object element, int columnIndex) {
+	public Image getColumnImage(Object value, int columnIndex) {
 		ArrayList<TableColumnInfo> tableColumnList = m_viewer.getTableColumnList();
-
-		JobTreeItem item = (JobTreeItem) element;
-		Object value = getValue(item, columnIndex);
-
 
 		TableColumnInfo tableColumn = tableColumnList
 				.get(columnIndex);
@@ -268,6 +215,12 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 
 		if (tableColumn.getType() == TableColumnInfo.JOB) {
 			//データタイプが「ジョブ」の処理
+			if(value instanceof JobInfoWrapper.TypeEnum){
+				return JobImageConstant.typeEnumValueToImage((((JobInfoWrapper.TypeEnum) value).getValue()));
+			}
+			if(value instanceof JobHistoryResponse.JobTypeEnum){
+				return JobImageConstant.typeEnumValueToImage((((JobHistoryResponse.JobTypeEnum) value).getValue()));
+			}
 			return JobImageConstant.typeToImage(((Number) value).intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.FACILITY) {
 			//データタイプが「ファシリティ」の処理
@@ -282,15 +235,26 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 			}
 		} else if (tableColumn.getType() == TableColumnInfo.STATE) {
 			//データタイプが「状態」の処理
+			if(value instanceof JobHistoryResponse.StatusEnum){
+				return StatusImageConstant.typeEnumValueToImage(((JobHistoryResponse.StatusEnum) value).getValue() );
+			}
+			if(value instanceof JobDetailInfoResponse.StatusEnum){
+				return StatusImageConstant.typeEnumValueToImage(((JobDetailInfoResponse.StatusEnum) value).getValue() );
+			}
 			return StatusImageConstant.typeToImage(((Number) value).intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.END_STATUS) {
 			//データタイプが「終了状態」の処理
+			if(value instanceof JobHistoryResponse.EndStatusEnum){
+				return EndStatusImageConstant.typeEnumValueToImage(((JobHistoryResponse.EndStatusEnum) value).getValue() );
+			}
+			if(value instanceof JobDetailInfoResponse.EndStatusEnum){
+				return EndStatusImageConstant.typeEnumValueToImage(((JobDetailInfoResponse.EndStatusEnum) value).getValue() );
+			}
 			return EndStatusImageConstant.typeToImage(((Number) value)
 					.intValue());
 		} else if (tableColumn.getType() == TableColumnInfo.CHECKBOX) {
 			//データタイプが「チェックボックス」の処理
-			return CheckBoxImageConstant.typeToImage(((Boolean) value)
-					.booleanValue());
+			return CheckBoxImageConstant.typeToImage(((Boolean) value));
 		} else if (tableColumn.getType() == TableColumnInfo.SCHEDULE_ON_OFF) {
 			//データタイプが「予定」の処理
 			return ScheduleOnOffImageConstant.dateToImage(((Date) value));

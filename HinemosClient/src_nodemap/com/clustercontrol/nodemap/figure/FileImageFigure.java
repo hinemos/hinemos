@@ -41,6 +41,10 @@ public abstract class FileImageFigure extends Figure {
 		return m_filename;
 	}
 
+	public void setFilename(String m_filename) {
+		this.m_filename = m_filename;
+	}
+
 	protected ImageFigure getImage(String managerName, String filename) throws Exception {
 		Image image = ImageManager.loadIcon(managerName, filename);
 		if (image == null) {

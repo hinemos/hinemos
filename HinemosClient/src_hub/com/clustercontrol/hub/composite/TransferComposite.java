@@ -8,13 +8,15 @@
 
 package com.clustercontrol.hub.composite;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.DoubleClickEvent;
@@ -32,26 +34,29 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.TransferInfoResponse;
+import org.openapitools.client.model.TransferInfoResponse.TransTypeEnum;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.hub.action.GetTransferTableDefine;
 import com.clustercontrol.hub.dialog.TransferInfoDialog;
-import com.clustercontrol.hub.util.HubEndpointWrapper;
+import com.clustercontrol.hub.util.HubRestClientWrapper;
 import com.clustercontrol.hub.view.TransferView;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.hub.InvalidRole_Exception;
-import com.clustercontrol.ws.hub.TransferInfo;
-import com.clustercontrol.ws.hub.TransferType;
 
 /**
  * 収集蓄積[転送]コンポジットクラス<BR>
  *
  */
 public class TransferComposite extends Composite {
+	private static Log m_log = LogFactory.getLog(TransferComposite.class);
+
 	/** テーブルビューア */
 	private CommonTableViewer m_viewer = null;
 	/** テーブル */
@@ -220,17 +225,17 @@ public class TransferComposite extends Composite {
 	 */
 	@Override
 	public void update() {
-		List<TransferInfo> list = null;
+		List<TransferInfoResponse> list = null;
 
 		//収集蓄積[転送]一覧情報取得
-		Map<String, List<TransferInfo>> dispDataMap = new ConcurrentHashMap<String, List<TransferInfo>>();
+		Map<String, List<TransferInfoResponse>> dispDataMap = new ConcurrentHashMap<String, List<TransferInfoResponse>>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
-			HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
+			HubRestClientWrapper wrapper = HubRestClientWrapper.getWrapper(managerName);
 			try {
-				list = wrapper.getTransferInfoList();
+				list = wrapper.getTransferListByOwnerRole(null);
 			} catch (Exception e) {
-				if (e instanceof InvalidRole_Exception) {
+				if (e instanceof InvalidRole) {
 					// 権限なし
 					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
 				} else {
@@ -252,8 +257,8 @@ public class TransferComposite extends Composite {
 		}
 
 		List<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<TransferInfo>> map: dispDataMap.entrySet()) {
-			for (TransferInfo export : map.getValue()) {
+		for(Map.Entry<String, List<TransferInfoResponse>> map: dispDataMap.entrySet()) {
+			for (TransferInfoResponse export : map.getValue()) {
 				List<Object> obj = new ArrayList<Object>();
 				obj.add(map.getKey());
 				obj.add(export.getTransferId());
@@ -262,17 +267,27 @@ public class TransferComposite extends Composite {
 				obj.add(export.getDestTypeId());
 				obj.add(Messages.getString(TransferTransTypeConstant.typeToString(export.getTransType())));
 				String str  = "";
-				if (export.getTransType() != TransferType.REALTIME && export.getInterval() != null) {
+				if (export.getTransType() != TransTypeEnum.REALTIME && export.getInterval() != null) {
 					str = Messages.getString(TransferTransIntervalConstant.typeToString(export.getInterval()));
 				}
 				obj.add(str);
 				obj.add(export.getCalendarId());
-				obj.add(Messages.getString(export.isValidFlg()? "valid":"invalid"));
+				obj.add(Messages.getString(export.getValidFlg() ? "valid":"invalid"));
 				obj.add(export.getOwnerRoleId());
 				obj.add(export.getRegUser());
-				obj.add(new Date(export.getRegDate()));
+				try {
+					obj.add(TimezoneUtil.getSimpleDateFormat().parse(export.getRegDate()));
+				} catch (ParseException e) {
+					// ここには入らない想定
+					m_log.warn("invalid regDate.", e);
+				}
 				obj.add(export.getUpdateUser());
-				obj.add(new Date(export.getUpdateDate()));
+				try {
+					obj.add(TimezoneUtil.getSimpleDateFormat().parse(export.getUpdateDate()));
+				} catch (ParseException e) {
+					// ここには入らない想定
+					m_log.warn("invalid updateDate.", e);
+				}
 				obj.add(null);				
 
 				listInput.add(obj);

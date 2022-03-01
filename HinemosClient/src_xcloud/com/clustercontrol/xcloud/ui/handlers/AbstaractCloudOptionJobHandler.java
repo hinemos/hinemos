@@ -15,18 +15,22 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.JobResourceInfoResponse;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
+import com.clustercontrol.xcloud.model.cloud.IResource;
 import com.clustercontrol.xcloud.ui.dialogs.job.CreateJobWizard;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 public abstract class AbstaractCloudOptionJobHandler extends AbstractCloudOptionHandler implements CloudStringConstants {
 	@Override
-	public Object internalExecute(ExecutionEvent event) throws ExecutionException, CloudManagerException, InvalidRole_Exception, InvalidUserPass_Exception {
+	public Object internalExecute(ExecutionEvent event) throws ExecutionException, CloudManagerException, InvalidRole, InvalidUserPass, RestConnectFailed, HinemosUnknown {
 		setup(event);
 		registJob(event);
 		return null;
@@ -36,21 +40,22 @@ public abstract class AbstaractCloudOptionJobHandler extends AbstractCloudOption
 
 	protected abstract ICloudScope getCloudScope();
 
-	protected abstract String getWizardTitle();
+	protected abstract IResource getResource();
 
-	protected abstract String getCommand(CloudEndpoint endpoint) throws Exception;
+	protected abstract JobResourceInfoResponse.ResourceActionEnum getAction();
+
+	protected abstract String getWizardTitle();
 
 	protected abstract String getJobName();
 
 	protected abstract String getJobId();
 
-	protected abstract String getMethodName();
+	protected abstract String cutJobId(int num);
 
-	protected void registJob(ExecutionEvent event) throws ExecutionException, CloudManagerException, InvalidRole_Exception, InvalidUserPass_Exception {
-		CloudEndpoint endpoint = getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-
-		endpoint.checkCallable(getCloudScope().getId(), getMethodName());
-
+	protected void registJob(ExecutionEvent event) throws ExecutionException, CloudManagerException, InvalidRole, InvalidUserPass, RestConnectFailed, HinemosUnknown {
+		String managerName =  getCloudScope().getCloudScopes().getHinemosManager().getManagerName();
+		CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
+		endpoint.checkPublish();
 
 		Font bannerFont = JFaceResources.getBannerFont();
 		Font dialogFont = JFaceResources.getDialogFont();
@@ -68,12 +73,20 @@ public abstract class AbstaractCloudOptionJobHandler extends AbstractCloudOption
 					return AbstaractCloudOptionJobHandler.this.getJobId();
 				}
 				@Override
-				public String getCommand(CloudEndpoint endpoint) throws Exception {
-					return AbstaractCloudOptionJobHandler.this.getCommand(endpoint);
+				public String cutJobId(int num) {
+					return AbstaractCloudOptionJobHandler.this.cutJobId(num);
 				}
 				@Override
 				public ICloudScope getCloudScope() {
 					return AbstaractCloudOptionJobHandler.this.getCloudScope();
+				}
+				@Override
+				public IResource getResource() {
+					return AbstaractCloudOptionJobHandler.this.getResource();
+				}
+				@Override
+				public JobResourceInfoResponse.ResourceActionEnum getAction() {
+					return AbstaractCloudOptionJobHandler.this.getAction();
 				}
 			});
 

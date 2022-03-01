@@ -10,14 +10,19 @@ package com.clustercontrol.xcloud.model.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
-import com.clustercontrol.ws.xcloud.PlatformServiceCondition;
+import org.openapitools.client.model.EndpointEntityResponse;
+import org.openapitools.client.model.LocationInfoResponse;
+import org.openapitools.client.model.PlatformServiceConditionResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.model.repository.IScope;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 
 public class Location extends Element implements ILocation {
@@ -35,7 +40,7 @@ public class Location extends Element implements ILocation {
 
 	private IScope counterSope;
 	
-	public static Location convert(CloudScope cloudScope, com.clustercontrol.ws.xcloud.Location source) {
+	public static Location convert(CloudScope cloudScope, LocationInfoResponse source) {
 		Location location = new Location(cloudScope);
 		location.update(source);
 		return location;
@@ -65,23 +70,23 @@ public class Location extends Element implements ILocation {
 	public String getLocationType() {return locationType;}
 	public void setLocationType(String locationType) {this.locationType = locationType;}
 	
-	public CloudEndpoint getEndpoint() {
-		return getCloudScope().getEndpoint();
+	public CloudRestClientWrapper getWrapper() {
+		return getCloudScope().getWrapper();
 	}
 	
-	public void update(com.clustercontrol.ws.xcloud.Location location) {
+	public void update(LocationInfoResponse location) {
 		setId(location.getId());
 		setName(location.getName());
 		setEntryType(location.getEntryType().name());
 		setLocationType(location.getLocationType());
 		
-		CollectionComparator.compareCollection(endpoints, location.getEndpoints(), new CollectionComparator.Comparator<Endpoint, com.clustercontrol.ws.xcloud.Endpoint>() {
+		CollectionComparator.compareCollection(endpoints, location.getEndpoints(), new CollectionComparator.Comparator<Endpoint, EndpointEntityResponse>() {
 			@Override
-			public boolean match(Endpoint o1, com.clustercontrol.ws.xcloud.Endpoint o2) {
-				return o1.getId().equals(o2.getId());
+			public boolean match(Endpoint o1, EndpointEntityResponse o2) {
+				return o1.getId().equals(o2.getEndpointId());
 			}
 			@Override
-			public void matched(Endpoint o1, com.clustercontrol.ws.xcloud.Endpoint o2) {
+			public void matched(Endpoint o1, EndpointEntityResponse o2) {
 				o1.update(Location.this, o2);
 			}
 			@Override
@@ -89,13 +94,13 @@ public class Location extends Element implements ILocation {
 				internalRemoveProperty(p.endpoints, o1, endpoints);
 			}
 			@Override
-			public void afterO2(com.clustercontrol.ws.xcloud.Endpoint o2) {
+			public void afterO2(EndpointEntityResponse o2) {
 				internalAddProperty(p.endpoints, Endpoint.convert(Location.this, o2), endpoints);
 			}
 		});
 	}
 	
-	public boolean equalValues(com.clustercontrol.ws.xcloud.Location source) {
+	public boolean equalValues(LocationInfoResponse source) {
 		assert source != null;
 		return this.getId().equals(source.getId());
 	}
@@ -130,13 +135,13 @@ public class Location extends Element implements ILocation {
 		if (serviceConditions == null) {
 			try {
 				serviceConditions = new ArrayList<>();
-				CloudEndpoint endpoint = getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
+				CloudRestClientWrapper wrapper = getCloudScope().getCloudScopes().getHinemosManager().getWrapper();
 				
-				List<PlatformServiceCondition> conditions = endpoint.getPlatformServiceConditionsByLocation(getCloudScope().getId(), getId());
-				for (PlatformServiceCondition condition: conditions) {
+				List<PlatformServiceConditionResponse> conditions = wrapper.getPlatformServiceConditions(getCloudScope().getId(), getId(), null);
+				for (PlatformServiceConditionResponse condition: conditions) {
 					internalAddProperty(p.serviceConditions, ServiceCondition.convert(condition), serviceConditions);
 				}
-			} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			} catch (CloudManagerException | InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown  e) {
 				throw new CloudModelException(e.getMessage(), e);
 			}
 		}
@@ -150,16 +155,16 @@ public class Location extends Element implements ILocation {
 			return;
 		} else {
 			try {
-				CloudEndpoint endpoint = getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-				List<PlatformServiceCondition> conditions = endpoint.getPlatformServiceConditionsByLocation(getCloudScope().getId(), getId());
+				CloudRestClientWrapper endpoint = getCloudScope().getCloudScopes().getHinemosManager().getWrapper();
+				List<PlatformServiceConditionResponse> conditions = endpoint.getPlatformServiceConditions(getCloudScope().getId(), getId(), null);
 				
-				CollectionComparator.compareCollection(serviceConditions, conditions, new CollectionComparator.Comparator<ServiceCondition, PlatformServiceCondition>() {
+				CollectionComparator.compareCollection(serviceConditions, conditions, new CollectionComparator.Comparator<ServiceCondition, PlatformServiceConditionResponse>() {
 					@Override
-					public boolean match(ServiceCondition o1, PlatformServiceCondition o2) {
+					public boolean match(ServiceCondition o1, PlatformServiceConditionResponse o2) {
 						return o1.getId().equals(o2.getId());
 					}
 					@Override
-					public void matched(ServiceCondition o1, PlatformServiceCondition o2) {
+					public void matched(ServiceCondition o1, PlatformServiceConditionResponse o2) {
 						o1.update(o2);
 					}
 					@Override
@@ -167,11 +172,17 @@ public class Location extends Element implements ILocation {
 						internalRemoveProperty(p.serviceConditions, o1, serviceConditions);
 					}
 					@Override
-					public void afterO2(PlatformServiceCondition o2) {
+					public void afterO2(PlatformServiceConditionResponse o2) {
 						internalAddProperty(p.serviceConditions, ServiceCondition.convert(o2), serviceConditions);
 					}
 				});
-			} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			} catch (CloudManagerException | InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown e) {
+				// 更新に失敗した場合は、過去の情報がクラウド[サービス状態]に表示されるのを防ぐため、
+				// 過去の情報を削除しておく
+				List<ServiceCondition> tmpCloneListForDelete = new ArrayList<>(serviceConditions);
+				for (ServiceCondition deleteCond : tmpCloneListForDelete) {
+					internalRemoveProperty(p.serviceConditions, deleteCond, serviceConditions);
+				}
 				throw new CloudModelException(e.getMessage(), e);
 			}
 		}

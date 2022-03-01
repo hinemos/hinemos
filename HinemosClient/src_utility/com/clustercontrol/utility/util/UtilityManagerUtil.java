@@ -14,7 +14,8 @@ import java.util.List;
 
 import org.eclipse.rap.rwt.SingletonUtil;
 
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
+
 
 
 /**
@@ -35,8 +36,8 @@ public class UtilityManagerUtil {
 		private String currentManagerName;
 
 		public String getCurrentManagerName() {
-			if (currentManagerName == null && EndpointManager.getActiveManagerNameList() != null) {
-				for (String name : EndpointManager.getActiveManagerNameList()) {
+			if (currentManagerName == null && RestConnectManager.getActiveManagerNameList() != null) {
+				for (String name : RestConnectManager.getActiveManagerNameList()) {
 					currentManagerName = name;
 					break;
 				}

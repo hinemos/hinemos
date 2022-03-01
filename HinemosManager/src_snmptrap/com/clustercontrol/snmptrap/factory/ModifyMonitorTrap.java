@@ -12,16 +12,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.commons.scheduler.TriggerSchedulerException;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.run.factory.ModifyMonitor;
 import com.clustercontrol.plugin.impl.SchedulerPlugin.TriggerType;
@@ -32,6 +32,8 @@ import com.clustercontrol.snmptrap.model.VarBindPattern;
 import com.clustercontrol.snmptrap.model.VarBindPatternPK;
 import com.clustercontrol.snmptrap.util.CharsetUtil;
 import com.clustercontrol.snmptrap.util.QueryUtil;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * SNMPTRAP監視情報を変更するクラス<BR>
@@ -46,7 +48,8 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 	 * SNMPトラップ監視設定の追加(追加時に文字コードをチェック)
 	 */
 	@Override
-	protected boolean addMonitorInfo(String user) throws MonitorNotFound, TriggerSchedulerException, EntityExistsException, HinemosUnknown, InvalidRole {
+	protected boolean addMonitorInfo(String user) throws MonitorIdInvalid, MonitorNotFound, TriggerSchedulerException,
+			EntityExistsException, HinemosUnknown, InvalidRole {
 		CharsetUtil.checkCharset(m_monitorInfo);
 
 		return super.addMonitorInfo(user);
@@ -66,7 +69,7 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 			
 			if(m_log.isDebugEnabled()){
 				m_log.debug("addCheckInfo() : " +
-						" MonitorId = " + trap.getMonitorId() +
+						" MonitorId = " + m_monitorInfo.getMonitorId() +
 						",CommunityName = " + trap.getCommunityName() +
 						",CommunityCheck = " + trap.getCommunityCheck() +
 						",CharsetConvert = " + trap.getCharsetConvert() +
@@ -78,11 +81,11 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 			}
 			
 			for (TrapValueInfo value: trap.getTrapValueInfos()) {
-				value.setMonitorId(trap.getMonitorId());
-				if (value.getGenericId() == null)
+				value.setMonitorId(m_monitorInfo.getMonitorId());
+				if (value.getVersion() == SnmpVersionConstant.TYPE_V2){
 					value.setGenericId(Integer.valueOf(0));
-				if (value.getSpecificId() == null)
 					value.setSpecificId(Integer.valueOf(0));
+				}
 				if (!value.getTrapOid().startsWith("."))
 					value.setTrapOid("." + value.getTrapOid());
 				em.persist(value);
@@ -94,7 +97,7 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 				
 				for (int i = 0; i < value.getVarBindPatterns().size(); ++i) {
 					VarBindPattern pattern = value.getVarBindPatterns().get(i);
-					pattern.setMonitorId(value.getMonitorId());
+					pattern.setMonitorId(m_monitorInfo.getMonitorId());
 					pattern.setMib(value.getMib());
 					pattern.setTrapOid(value.getTrapOid());
 					pattern.setGenericId(value.getGenericId() == null ? Integer.valueOf(0): value.getGenericId());
@@ -136,7 +139,7 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 			TrapCheckInfo checkInfo = m_monitorInfo.getTrapCheckInfo();
 			if(m_log.isDebugEnabled()){
 				m_log.debug("modifyCheckInfo() : " +
-						" MonitorId = " + checkInfo.getMonitorId() +
+						" MonitorId = " + m_monitorInfo.getMonitorId() +
 						",CommunityName = " + checkInfo.getCommunityName() +
 						",CommunityCheck = " + checkInfo.getCommunityCheck() +
 						",CharsetConvert = " + checkInfo.getCharsetConvert() +
@@ -149,7 +152,7 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 
 			TrapCheckInfo trapInfoEntity = QueryUtil.getMonitorTrapInfoPK(m_monitorInfo.getMonitorId());
 
-			trapInfoEntity.setMonitorId(checkInfo.getMonitorId());
+			trapInfoEntity.setMonitorId(m_monitorInfo.getMonitorId());
 			trapInfoEntity.setCharsetConvert(checkInfo.getCharsetConvert());
 			trapInfoEntity.setCharsetName(checkInfo.getCharsetName());
 			trapInfoEntity.setCommunityCheck(checkInfo.getCommunityCheck());
@@ -165,9 +168,13 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 					if (!trapValue.getTrapOid().startsWith(".")) {
 						trapValue.setTrapOid("." + trapValue.getTrapOid());
 					}
+					if (trapValue.getVersion() == SnmpVersionConstant.TYPE_V2){
+						trapValue.setGenericId(Integer.valueOf(0));
+						trapValue.setSpecificId(Integer.valueOf(0));
+					}
 					TrapValueInfo entity = null;
 					TrapValueInfoPK entityPk = new TrapValueInfoPK(
-							checkInfo.getMonitorId(),
+							m_monitorInfo.getMonitorId(),
 							trapValue.getMib(),
 							trapValue.getTrapOid(), 
 							trapValue.getGenericId() == null ? Integer.valueOf(0): trapValue.getGenericId(),
@@ -201,7 +208,7 @@ public class ModifyMonitorTrap extends ModifyMonitor {
 						if (varbind != null) {
 							VarBindPattern varbindEntity = null;
 							VarBindPatternPK varbindEntityPk = new VarBindPatternPK(
-									checkInfo.getMonitorId(),
+									m_monitorInfo.getMonitorId(),
 									trapValue.getMib(),
 									trapValue.getTrapOid(), 
 									trapValue.getGenericId() == null ? Integer.valueOf(0): trapValue.getGenericId(),

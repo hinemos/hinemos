@@ -23,6 +23,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.JobKickResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.jobmanagement.action.GetJobKickTableDefine;
@@ -106,8 +107,8 @@ public class CopyJobKickAction extends AbstractHandler implements IElementUpdate
 			String id = jobKickListView.getSelectedIdList().get(0);
 			String managerName = (String) item.get(GetJobKickTableDefine.MANAGER_NAME);
 			String type = (String) item.get(GetJobKickTableDefine.TYPE);
-			int TypeNum = JobKickTypeMessage.stringToType(type);
-
+			JobKickResponse.TypeEnum TypeNum = JobKickResponse.TypeEnum
+					.fromValue(JobKickTypeMessage.stringToTypeEnumValue(type));
 			IWorkbenchWindow window = HandlerUtil.getActiveWorkbenchWindow( event );
 			JobKickDialog dialog = new JobKickDialog(window.getShell(), managerName, id, 
 					TypeNum,PropertyDefineConstant.MODE_COPY);

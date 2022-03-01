@@ -30,48 +30,52 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtNodeConfigCustomInfoResponse;
+import org.openapitools.client.model.AgtNodeConfigSettingResponse;
+import org.openapitools.client.model.AgtNodeCpuInfoRequest;
+import org.openapitools.client.model.AgtNodeCustomInfoRequest;
+import org.openapitools.client.model.AgtNodeDiskInfoRequest;
+import org.openapitools.client.model.AgtNodeFilesystemInfoRequest;
+import org.openapitools.client.model.AgtNodeHostnameInfoRequest;
+import org.openapitools.client.model.AgtNodeInfoRequest;
+import org.openapitools.client.model.AgtNodeInfoResponse;
+import org.openapitools.client.model.AgtNodeMemoryInfoRequest;
+import org.openapitools.client.model.AgtNodeNetstatInfoRequest;
+import org.openapitools.client.model.AgtNodeNetworkInterfaceInfoRequest;
+import org.openapitools.client.model.AgtNodePackageInfoRequest;
+import org.openapitools.client.model.AgtNodeProcessInfoRequest;
+import org.openapitools.client.model.AgtOutputBasicInfoRequest;
+
 import com.clustercontrol.agent.Agent;
-import com.clustercontrol.agent.AgentNodeConfigEndPointWrapper;
+import com.clustercontrol.agent.AgentNodeConfigRestClientWrapper;
 import com.clustercontrol.agent.SendQueue;
+import com.clustercontrol.agent.SendQueue.MessageSendableObject;
 import com.clustercontrol.agent.repository.NodeConfigConstant.Function;
 import com.clustercontrol.agent.repository.NodeConfigConstant.Result;
 import com.clustercontrol.agent.util.AgentProperties;
-import com.clustercontrol.agent.util.CalendarWSUtil;
 import com.clustercontrol.agent.util.CollectorId;
 import com.clustercontrol.agent.util.CollectorTask;
+import com.clustercontrol.agent.util.RestCalendarUtil;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PluginConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.repository.bean.NodeRegisterFlagConstant;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandExecutor;
+import com.clustercontrol.util.CommandExecutor.CommandResult;
 import com.clustercontrol.util.DateUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
-import com.clustercontrol.util.CommandExecutor.CommandResult;
-import com.clustercontrol.ws.agent.OutputBasicInfo;
-import com.clustercontrol.ws.agentnodeconfig.FacilityNotFound_Exception;
-import com.clustercontrol.ws.agentnodeconfig.HinemosUnknown_Exception;
-import com.clustercontrol.ws.agentnodeconfig.InvalidRole_Exception;
-import com.clustercontrol.ws.agentnodeconfig.InvalidUserPass_Exception;
-import com.clustercontrol.ws.agentnodeconfig.NodeNetworkInterfaceInfo;
-import com.clustercontrol.ws.repository.NodeConfigCustomInfo;
-import com.clustercontrol.ws.repository.NodeConfigSetting;
-import com.clustercontrol.ws.repository.NodeCpuInfo;
-import com.clustercontrol.ws.repository.NodeCustomInfo;
-import com.clustercontrol.ws.repository.NodeDiskInfo;
-import com.clustercontrol.ws.repository.NodeFilesystemInfo;
-import com.clustercontrol.ws.repository.NodeHostnameInfo;
-import com.clustercontrol.ws.repository.NodeInfo;
-import com.clustercontrol.ws.repository.NodeMemoryInfo;
-import com.clustercontrol.ws.repository.NodeNetstatInfo;
-import com.clustercontrol.ws.repository.NodePackageInfo;
-import com.clustercontrol.ws.repository.NodeProcessInfo;
 
 /**
  * Collector using command (register one Collector against one Command
@@ -98,11 +102,11 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	// 開始時刻(出力日時計算用).
 	private long startedMillis = 0;
 
-	private NodeConfigSetting config;
+	private AgtNodeConfigSettingResponse config;
 
 	private final Function function;
 	
-	private List<NodeInfo> nodeInfoList;
+	private List<AgtNodeInfoResponse> nodeInfoList;
 
 	// Managerメッセージ通知用の送信Queue
 	private static SendQueue sendQueue;
@@ -129,7 +133,8 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		if (commandModeStr == null) {
 			log.info("repository.cmdb.command.mode uses default value " + _commandModeDefault);
 			commandModeStr = _commandModeDefault;
-		} else if (!("windows".equals(commandModeStr) || "unix".equals(commandModeStr) || "unix.su".equals(commandModeStr)
+		} else if (!("windows".equals(commandModeStr) || "windows.cmd".equals(commandModeStr)
+				|| "unix".equals(commandModeStr) || "unix.su".equals(commandModeStr)
 				|| "compatible".equals(commandModeStr) || "regacy".equals(commandModeStr)
 				|| "auto".equals(commandModeStr))) {
 			log.warn("repository.cmdb.command.mode uses " + _commandModeDefault + ". (" + commandModeStr + " is not collect)");
@@ -243,7 +248,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * <br>
 	 * CMDB収集設定が存在する場合はこちらを使うこと<br>
 	 */
-	public NodeConfigCollector(NodeConfigSetting config, Function function, List<NodeInfo> nodeInfoList) {
+	public NodeConfigCollector(AgtNodeConfigSettingResponse config, Function function, List<AgtNodeInfoResponse> nodeInfoList) {
 		this.config = config;
 		this.function = function;
 		this.nodeInfoList = nodeInfoList;
@@ -260,7 +265,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		this.function = function;
 		switch (function) {
 		case NODE_REGISTER:
-			NodeConfigSetting dto = new NodeConfigSetting();
+			AgtNodeConfigSettingResponse dto = new AgtNodeConfigSettingResponse();
 			dto.setSettingId("NodeRegister");
 			dto.setFacilityId("Agent");
 			this.config = dto;
@@ -445,16 +450,16 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 					+ " settingID=[" + this.config.getSettingId() + "]" // 設定ID.
 					+ ", startMillis=" + startMillis + "[msec]");// 現在時刻.
 		}
-		_scheduler.scheduleWithFixedDelay(this, startMillis, config.getRunInterval(), TimeUnit.MILLISECONDS);
+		_scheduler.scheduleAtFixedRate(this, startMillis, config.getRunInterval(), TimeUnit.MILLISECONDS);
 		this.startedMillis = startup;
 	}
 
 	/**
 	 * NIC情報のみ取得する
 	 * 
-	 * @return List<NodeNetworkInterfaceInfo>
+	 * @return
 	 */
-	public List<NodeNetworkInterfaceInfo> getNICList() {
+	public List<AgtNodeNetworkInterfaceInfoRequest> getNICList() {
 		if (log.isDebugEnabled()) {
 			log.debug("getNICList() : start");
 		}
@@ -463,8 +468,8 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		this.collectFlgMap.put(NodeConfigSettingItem.HW_NIC.name(), Boolean.TRUE);
 
 		// ■構成情報取);
-		NodeInfo nInfo = getRecord(new NodeInfo(), true);
-		List<NodeNetworkInterfaceInfo> nicInfoList = nInfo.getNodeNetworkInterfaceInfo();
+		AgtNodeInfoRequest nInfo = getRecord(new AgtNodeInfoRequest(), true);
+		List<AgtNodeNetworkInterfaceInfoRequest> nicInfoList = nInfo.getNodeNetworkInterfaceInfo();
 
 		if (log.isDebugEnabled()) {
 			log.debug("getNICList() : end");
@@ -477,9 +482,9 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * 即時実行用の開始メソッド.
 	 * 
 	 * @param instructedDate
-	 *            Managerが即時実行の指示を受けた日時
+	 *			  Managerが即時実行の指示を受けた日時
 	 * @param loadDistributionTime
-	 *            Manager負荷分散間隔
+	 *			  Manager負荷分散間隔
 	 **/
 	public void runCollect(Long instructedDate, Long loadDistributionTime) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
@@ -532,9 +537,9 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * 取得対象チェック
 	 * 
 	 * @param config
-	 *            Managerから渡された収集設定.
+	 *			  Managerから渡された収集設定.
 	 */
-	private void setTargetConfigFlg(NodeConfigSetting config) {
+	private void setTargetConfigFlg(AgtNodeConfigSettingResponse config) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
 		this.initializeColletFlgMap();
@@ -588,17 +593,17 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		setConfig(((NodeConfigCollector) task).getConfig(),((NodeConfigCollector) task).getNodeInfoList());
 	}
 
-	public synchronized NodeConfigSetting getConfig() {
+	public synchronized AgtNodeConfigSettingResponse getConfig() {
 		return config;
 	}
 	
-	public synchronized List<NodeInfo> getNodeInfoList(){
+	public synchronized List<AgtNodeInfoResponse> getNodeInfoList() {
 		return nodeInfoList;
 	}
 
-	public synchronized void setConfig(NodeConfigSetting newConfig, List<NodeInfo> nodeInfoList) {
+	public synchronized void setConfig(AgtNodeConfigSettingResponse newConfig, List<AgtNodeInfoResponse> nodeInfoList) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
-		NodeConfigSetting currentConfig = config;
+		AgtNodeConfigSettingResponse currentConfig = config;
 		this.config = newConfig;
 		this.nodeInfoList = nodeInfoList;
 		setTargetConfigFlg(config);
@@ -647,10 +652,8 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		// 即時実行の場合はManager側のステータスを変更する.
 		if (Function.RUN_COLLECT == this.function) {
 			try {
-				AgentNodeConfigEndPointWrapper.stopNodeConfigRunCollect();
-			} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
-				log.warn(methodName + DELIMITER + "failed to stop running.", e);
-			} catch (FacilityNotFound_Exception e) {
+				AgentNodeConfigRestClientWrapper.stopNodeConfigRunCollect(Agent.getAgentInfoRequest());
+			} catch (HinemosUnknown | InvalidRole | InvalidUserPass | InvalidSetting | RestConnectFailed | FacilityNotFound e) {
 				log.warn(methodName + DELIMITER + "failed to stop running. " + e.getMessage());
 			}
 		}
@@ -677,22 +680,9 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		log.debug(methodName + DELIMITER + "set date to aquire." // 取得日時を設定.
 				+ " settingID=[" + this.config.getSettingId() + "]" // 設定ID.
 				+ ", acquire=[" + aquireDateStr + "]"); // 日付.
-		if (!runOnce) {
-			long fromStarted = aquireDateMillis - this.startedMillis;
-			long surplus = fromStarted % this.config.getRunInterval();
-			aquireDateMillis = aquireDateMillis - surplus;
-			aquireDateObj = new Date(aquireDateMillis);
-			aquireDateStr = String.format("%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS", aquireDateObj);
-			log.debug(methodName + DELIMITER + "adjusted date to acquire according to interval on setting." // 設定間隔にあわせて取得日時を調整.
-					+ " settingID=[" + this.config.getSettingId() + "]" // 設定ID.
-					+ ", acquire(adjusted)=[" + aquireDateStr + "]" // 調整済の取得日時.
-					+ ", fromStarted=" + fromStarted + "[msec]" // 開始時刻からのミリ秒.
-					+ ", interval=" + this.config.getRunInterval() + "[msec]" // 取得間隔.
-					+ ", surplus=" + surplus + "[msec]"); // 半端なミリ秒.
-		}
 
 		// ■カレンダーチェック(即時実行は関係なく実行).
-		if (!this.runOnce && config.getCalendar() != null && !CalendarWSUtil.isRun(config.getCalendar())) {
+		if (!this.runOnce && config.getCalendar() != null && !RestCalendarUtil.isRun(config.getCalendar())) {
 			// do nothing because now is not allowed
 			if (log.isDebugEnabled()) {
 				log.debug(methodName + DELIMITER + "command execution is skipped because of calendar. ["
@@ -702,7 +692,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		}
 
 		// ■初期化
-		NodeInfo nInfo = new NodeInfo();
+		AgtNodeInfoRequest nInfo = new AgtNodeInfoRequest();
 		nInfo.setFacilityId(config.getFacilityId());
 		nInfo.setNodeConfigSettingId(config.getSettingId());
 		nInfo = initNodeInfo(nInfo);
@@ -710,8 +700,8 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		nInfo = getRecord(nInfo, false);
 
 		if (log.isDebugEnabled()) {
-			log.debug("call() nInfo.getNodeProcessInfo().size()          : " + nInfo.getNodeProcessInfo().size());
-			log.debug("call() nInfo.getNodePackageInfo().size()          : " + nInfo.getNodePackageInfo().size());
+			log.debug("call() nInfo.getNodeProcessInfo().size()			 : " + nInfo.getNodeProcessInfo().size());
+			log.debug("call() nInfo.getNodePackageInfo().size()			 : " + nInfo.getNodePackageInfo().size());
 			log.debug("call() nInfo.getNodeNetworkInterfaceInfo().size() : "
 					+ nInfo.getNodeNetworkInterfaceInfo().size());
 		}
@@ -758,7 +748,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * @param isAutoRegist ノード自動登録フラグ
 	 * @return
 	 */
-	private NodeInfo getRecord(NodeInfo nInfo, boolean isAutoRegist) {
+	private AgtNodeInfoRequest getRecord(AgtNodeInfoRequest nInfo, boolean isAutoRegist) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		long start = HinemosTime.currentTimeMillis();
 		log.info("run getRecord() : " + config.getSettingId());
@@ -819,12 +809,12 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 				scriptFileName = scriptName + NodeConfigConstant.SCRIPT_EXTENSION_LINUX;
 			}
 			//Agentが対応するNodeInfoの中から、今回実行対象となっているNodeInfoを抽出する
-			NodeInfo nodeInfo=null;
+			AgtNodeInfoResponse nodeInfo = null;
 			//ノード自動登録フラグ
 			if (nodeInfoList != null){
 				for(int i=0;i<nodeInfoList.size();i++){
 					if(nodeInfoList.get(i).getFacilityId().equals(config.getFacilityId())){
-						nodeInfo =nodeInfoList.get(i);
+						nodeInfo = nodeInfoList.get(i);
 						break;
 					}
 				}
@@ -857,7 +847,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 						+ String.format("no particular arguments. scriptFileName=[%s]", scriptFileName));
 			}
 			
-			log.debug("getRecord(): Script argument is:  "+args);
+			log.debug("getRecord(): Script argument is:	 "+args);
 			// コマンド実行.
 			boolean toRetry = this.executeCommand(args, nInfo, scriptFileName, tsvFileName, true);
 			// 特定のエラーコードに対して条件変更してコマンドリトライさせる.
@@ -868,7 +858,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 
 		// ユーザ任意コマンド実行.
 		if (nInfo != null) {
-			List<NodeCustomInfo> customResultList = this.executeCustomCommand();
+			List<AgtNodeCustomInfoRequest> customResultList = this.executeCustomCommand();
 			if(customResultList != null){
 				nInfo.getNodeCustomInfo().addAll(customResultList);
 			}else{
@@ -887,7 +877,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * @param int version
 	 * @return スクリプト引数
 	 */
-	private String getSnmpArgs(NodeInfo nodeInfo, boolean isAutoRegist){
+	private String getSnmpArgs(AgtNodeInfoResponse nodeInfo, boolean isAutoRegist) {
 		String args="";
 		//nullチェック
 		//ノード自動登録の場合もnullになる
@@ -919,6 +909,17 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 				args=args+" "+NodeConfigConstant.SNMP_COMMUNITY+" "+"public";
 				log.warn("getSnmpArgs(): No SNMP community defind. Use default value");
 			}
+			
+			// timeout
+			if(nodeInfo.getSnmpTimeout()!=null){
+				long t_sec = nodeInfo.getSnmpTimeout();
+				// タイムアウト時間の上限は32767 msのため、それ以上が指定された場合は32767 msで実行する(ISNMP::Open)
+				if (t_sec > 32767) {
+					t_sec = 32767;
+				}
+				args=args+" "+NodeConfigConstant.SNMP_TIMEOUT+" "+t_sec;
+			}
+
 		}else{
 			if(version==3){
 				//ver 3
@@ -982,15 +983,17 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 					log.warn("getSnmpArgs(): No SNMP community defind. Use default value");
 				}
 			}
+			// timeout
+			if(nodeInfo.getSnmpTimeout()!=null){
+				//snmpwalkのタイムアウト指定は秒のため、変換(小数点使用可)
+				double t_sec = (double) nodeInfo.getSnmpTimeout() / 1000;
+				args=args+" "+NodeConfigConstant.SNMP_TIMEOUT+" "+t_sec;
+			}
 		}
 		//version,platform共通
-		if(nodeInfo.getSnmpTimeout()!=null){
-			//snmpwalkのタイムアウト指定は秒のため、変換
-			long t_sec = TimeUnit.MILLISECONDS.toSeconds(nodeInfo.getSnmpTimeout());
-			args=args+" "+NodeConfigConstant.SNMP_TIMEOUT+" "+t_sec;
-		}
 		if(nodeInfo.getSnmpRetryCount()!=null){
-			args=args+" "+NodeConfigConstant.SNMP_RETRY+" "+nodeInfo.getSnmpRetryCount();
+			// リトライ回数 = (試行回数 - 1)を指定
+			args=args+" "+NodeConfigConstant.SNMP_RETRY+" "+(nodeInfo.getSnmpRetryCount() - 1);
 		}
 		
 		log.debug("getSnmpArgs(): SNMP args construction succeeded");
@@ -1001,18 +1004,18 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * コマンドを生成して実行する(スクリプト単位).
 	 * 
 	 * @param args
-	 *            コマンド引数.
+	 *			  コマンド引数.
 	 * @param nInfo
-	 *            実行結果を格納するノード情報オブジェクト.
+	 *			  実行結果を格納するノード情報オブジェクト.
 	 * @param scriptName
-	 *            実行対象のスクリプト名(パス無し・拡張子付き).
+	 *			  実行対象のスクリプト名(パス無し・拡張子付き).
 	 * @param fName
-	 *            コマンド実行後に生成するTSVファイル名(パス無し・拡張子付き).
+	 *			  コマンド実行後に生成するTSVファイル名(パス無し・拡張子付き).
 	 * @param firstTry
-	 *            初回実行フラグ(true:初回実行、false:リトライ).
+	 *			  初回実行フラグ(true:初回実行、false:リトライ).
 	 * @retrun リトライフラグ(true:要リトライ、false:リトライ対象外)
 	 */
-	private boolean executeCommand(String args, NodeInfo nInfo, String scriptName, String fName, boolean firstTry) {
+	private boolean executeCommand(String args, AgtNodeInfoRequest nInfo, String scriptName, String fName, boolean firstTry) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		// コマンドを設定
 		String commandBinded = commonPath + scriptName + args;
@@ -1161,13 +1164,13 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * スクリプトを判定して実行結果を適切なフィールドにセット.
 	 * 
 	 * @param scriptName
-	 *            実行対象のスクリプト名(拡張子込).
+	 *			  実行対象のスクリプト名(拡張子込).
 	 * @param result
-	 *            スクリプト実行結果.
+	 *			  スクリプト実行結果.
 	 * @param nInfo
-	 *            Manager返却用オブジェクト.
+	 *			  Manager返却用オブジェクト.
 	 */
-	private void setResult(String scriptName, Integer result, NodeInfo nInfo) {
+	private void setResult(String scriptName, Integer result, AgtNodeInfoRequest nInfo) {
 
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
@@ -1221,15 +1224,15 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * スクリプトが部分的に成功/失敗した場合にスクリプトの実行結果を判定して適切なフィールドにセットする.
 	 * 
 	 * @param scriptName
-	 *            実行対象のスクリプト名(拡張子込).
+	 *			  実行対象のスクリプト名(拡張子込).
 	 * @param nInfo
-	 *            Manager返却用オブジェクト.
+	 *			  Manager返却用オブジェクト.
 	 * @param exitCode
-	 *            スクリプトの実行結果.
+	 *			  スクリプトの実行結果.
 	 * @param readResult
-	 *            TSVファイルの読み込み結果.
+	 *			  TSVファイルの読み込み結果.
 	 */
-	private void setResultPartially(String scriptName, NodeInfo nInfo, int exitCode, int readResult) {
+	private void setResultPartially(String scriptName, AgtNodeInfoRequest nInfo, int exitCode, int readResult) {
 
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		log.debug(
@@ -1366,13 +1369,13 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * 収集対象外なのかどうかをチェックする
 	 * 
 	 * @param checkTargets
-	 *            チェック対象 .
+	 *			  チェック対象 .
 	 * @param nInfo
-	 *            Manager返却用オブジェクト.
+	 *			  Manager返却用オブジェクト.
 	 * 
 	 * @return チェック結果、true:収集対象外(一律失敗として登録)、 false:収集対象
 	 */
-	private boolean isntCollectTarget(List<String> checkTargets, NodeInfo nInfo) {
+	private boolean isntCollectTarget(List<String> checkTargets, AgtNodeInfoRequest nInfo) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
 		if (checkTargets == null || checkTargets.isEmpty()) {
@@ -1416,13 +1419,13 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * Agent収集結果をまとめて登録(複数実行スクリプト用).
 	 * 
 	 * @param targets
-	 *            登録対象.
+	 *			  登録対象.
 	 * @param nInfo
-	 *            Manager返却用オブジェクト.
+	 *			  Manager返却用オブジェクト.
 	 * @param exitCode
-	 *            スクリプトの実行結果.
+	 *			  スクリプトの実行結果.
 	 */
-	private void setRegisterFlags(List<String> targets, int registerStatus, NodeInfo nInfo) {
+	private void setRegisterFlags(List<String> targets, int registerStatus, AgtNodeInfoRequest nInfo) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
 		if (targets == null || targets.isEmpty()) {
@@ -1497,14 +1500,14 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * TSVファイルの読み込み
 	 * 
 	 * @param nInfo
-	 *            Manager返却用ノード情報オブジェクト.
+	 *			  Manager返却用ノード情報オブジェクト.
 	 * @param fName
 	 * @param winChk
-	 *            true:windows, false:windows以外
+	 *			  true:windows, false:windows以外
 	 * @return CMDBRecord
 	 * @throws HinemosUnknown
 	 */
-	private int readFile(NodeInfo nInfo, String fName) throws HinemosUnknown {
+	private int readFile(AgtNodeInfoRequest nInfo, String fName) throws HinemosUnknown {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		int readResult = NodeConfigConstant.EXCD_SUCCESS;
 		try {
@@ -1517,16 +1520,16 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			String line;
 			String[] token;
 
-			List<NodeProcessInfo> proList = nInfo.getNodeProcessInfo(); // プロセス
-			HashMap<String, NodePackageInfo> pkgMap = new HashMap<>(); // パッケージ一時格納用
-			List<NodePackageInfo> pkgList = nInfo.getNodePackageInfo(); // パッケージ
-			List<NodeNetworkInterfaceInfo> nicList = nInfo.getNodeNetworkInterfaceInfo(); // HW-NIC
-			List<NodeCpuInfo> cpuList = nInfo.getNodeCpuInfo(); // HW-CPU
-			List<NodeDiskInfo> diskList = nInfo.getNodeDiskInfo(); // HW-Disk
-			List<NodeFilesystemInfo> fsystemList = nInfo.getNodeFilesystemInfo(); // HW-ファイルシステム
-			List<NodeNetstatInfo> netstatList = nInfo.getNodeNetstatInfo(); // ネットワーク接続情報
-			List<NodeHostnameInfo> hostList = nInfo.getNodeHostnameInfo(); // HW-ホスト
-			List<NodeMemoryInfo> memoryList = nInfo.getNodeMemoryInfo(); // HW-メモリ
+			List<AgtNodeProcessInfoRequest> proList = nInfo.getNodeProcessInfo(); // プロセス
+			HashMap<String, AgtNodePackageInfoRequest> pkgMap = new HashMap<>(); // パッケージ一時格納用
+			List<AgtNodePackageInfoRequest> pkgList = nInfo.getNodePackageInfo(); // パッケージ
+			List<AgtNodeNetworkInterfaceInfoRequest> nicList = nInfo.getNodeNetworkInterfaceInfo(); // HW-NIC
+			List<AgtNodeCpuInfoRequest> cpuList = nInfo.getNodeCpuInfo(); // HW-CPU
+			List<AgtNodeDiskInfoRequest> diskList = nInfo.getNodeDiskInfo(); // HW-Disk
+			List<AgtNodeFilesystemInfoRequest> fsystemList = nInfo.getNodeFilesystemInfo(); // HW-ファイルシステム
+			List<AgtNodeNetstatInfoRequest> netstatList = nInfo.getNodeNetstatInfo(); // ネットワーク接続情報
+			List<AgtNodeHostnameInfoRequest> hostList = nInfo.getNodeHostnameInfo(); // HW-ホスト
+			List<AgtNodeMemoryInfoRequest> memoryList = nInfo.getNodeMemoryInfo(); // HW-メモリ
 
 			NodeConfigTsvReplaser replacer = new NodeConfigTsvReplaser(this.winFlg);
 			boolean isFirst = true;
@@ -1536,6 +1539,10 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 				log.trace(methodName + DELIMITER + String.format("to read this line. line=[%s]", line));
 				// 区切り文字"\t(タブ)"で分割する
 				token = line.split("\t",-1);
+				// trimする（取得した情報の末尾にNUL文字が含まれるケースが存在したため）
+				for (int i = 0; i < token.length; i++) {
+					token[i] = token[i].trim();
+				}
 				String head = token[0];
 
 				// プロセス情報.
@@ -1547,12 +1554,12 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 				// パッケージ情報取得フラグ、TSVの１列目がpackageかの判定
 				else if (this.collectFlgMap.get(NodeConfigSettingItem.PACKAGE.name()).booleanValue() //
 						&& 0 < token.length && NodeConfigConstant.LINE_HEADER_PACKAGE.equals(head)) {
-					NodePackageInfo pkg = null;
+					AgtNodePackageInfoRequest pkg = null;
 					pkg = replacer.setRecordPackage(token);
 
 					String pkgId = pkg.getPackageId();
 					if (pkgMap.containsKey(pkgId)) {
-						NodePackageInfo nowPkg = pkgMap.get(pkgId);
+						AgtNodePackageInfoRequest nowPkg = pkgMap.get(pkgId);
 						if (pkg.getInstallDate() > nowPkg.getInstallDate()) {
 							pkgMap.put(pkgId, pkg);
 						}
@@ -1664,11 +1671,11 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * 
 	 * @return コマンド実行結果.
 	 */
-	private List<NodeCustomInfo> executeCustomCommand() {
+	private List<AgtNodeCustomInfoRequest> executeCustomCommand() {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
 		// 実行対象なのにユーザ任意情報が存在しない.
-		List<NodeConfigCustomInfo> customSettingList = this.config.getNodeConfigSettingCustomList();
+		List<AgtNodeConfigCustomInfoResponse> customSettingList = this.config.getNodeConfigSettingCustomList();
 		if (customSettingList == null || customSettingList.isEmpty()) {
 			log.debug(methodName + DELIMITER + "customized settings are empty."//
 					+ " settingID=[" + this.config.getSettingId() + "]");
@@ -1676,8 +1683,8 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 		}
 
 		// ユーザ任意情報の設定単位でコマンド実行.
-		List<NodeCustomInfo> returnList = new LinkedList<NodeCustomInfo>();
-		for (NodeConfigCustomInfo customSetting : customSettingList) {
+		List<AgtNodeCustomInfoRequest> returnList = new LinkedList<AgtNodeCustomInfoRequest>();
+		for (AgtNodeConfigCustomInfoResponse customSetting : customSettingList) {
 			if (customSetting == null || customSetting.getSettingCustomId() == null) {
 				log.warn(methodName + DELIMITER + "required property ('customSetting' or 'settingCustomId') is null."//
 						+ " settingID=[" + this.config.getSettingId() + "]");
@@ -1685,7 +1692,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			}
 
 			// 失敗結果も格納.
-			NodeCustomInfo returnCustomInfo = new NodeCustomInfo();
+			AgtNodeCustomInfoRequest returnCustomInfo = new AgtNodeCustomInfoRequest();
 			String errorMsg = "";
 			returnCustomInfo.setSettingCustomId(customSetting.getSettingCustomId());
 			if (customSetting.getCommand() == null || customSetting.getCommand().isEmpty()
@@ -1704,7 +1711,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			returnCustomInfo.setCommand(customSetting.getCommand());
 			returnCustomInfo.setDisplayName(customSetting.getDisplayName());
 
-			if (customSetting.isValidFlg() == null) {
+			if (customSetting.getValidFlg() == null) {
 				errorMsg = "the setting is invalid. 'validFlg' is null or empty.";
 				log.warn(methodName + DELIMITER + errorMsg//
 						+ " settingID=[" + this.config.getSettingId() + "]"//
@@ -1716,7 +1723,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			}
 
 			// 有効な設定のみ実施.
-			if (!customSetting.isValidFlg().booleanValue()) {
+			if (!customSetting.getValidFlg().booleanValue()) {
 				log.trace(methodName + DELIMITER + "flag of customized settings is invalid."//
 						+ " settingID=[" + this.config.getSettingId() + "]"//
 						+ ", customID=[" + customSetting.getSettingCustomId() + "]");
@@ -1727,8 +1734,8 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			}
 
 			// ユーザチェック.
-			if (customSetting.isSpecifyUser() == null || //
-					(customSetting.isSpecifyUser().booleanValue() && //
+			if (customSetting.getSpecifyUser() == null || //
+					(customSetting.getSpecifyUser().booleanValue() && //
 							(customSetting.getEffectiveUser() == null || customSetting.getEffectiveUser().isEmpty()))) {
 				errorMsg = "the setting is invalid. 'specifyUser' or 'effectiveUser' in customized setting is null or empty.";
 				log.warn(methodName + DELIMITER + errorMsg//
@@ -1740,7 +1747,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 				continue;
 			}
 			String effectiveUser = "";
-			if (customSetting.isSpecifyUser().booleanValue()) {
+			if (customSetting.getSpecifyUser().booleanValue()) {
 				effectiveUser = customSetting.getEffectiveUser();
 			}
 
@@ -1749,7 +1756,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			try {
 				CommandCreator.PlatformType platform = CommandCreator.convertPlatform(_commandMode);
 				String[] command = CommandCreator.createCommand(effectiveUser, customSetting.getCommand(), platform,
-						customSetting.isSpecifyUser().booleanValue(), _commandLogin);
+						customSetting.getSpecifyUser().booleanValue(), _commandLogin);
 
 				// コマンド実行
 				CommandExecutor cmdExecutor = new CommandExecutor(command, _charset, _timeoutInterval,
@@ -1820,7 +1827,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * @param nInfo
 	 * @return
 	 */
-	private static NodeInfo initNodeInfo(NodeInfo nInfo) {
+	private static AgtNodeInfoRequest initNodeInfo(AgtNodeInfoRequest nInfo) {
 
 		// 初期化
 		// 登録フラグ
@@ -1842,23 +1849,24 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 	 * <br>
 	 * 
 	 * @param priority
-	 *            重要度
+	 *			  重要度
 	 * @param msg
-	 *            メッセージ
+	 *			  メッセージ
 	 * @param msgOrg
-	 *            オリジナルメッセージ
+	 *			  オリジナルメッセージ
 	 */
 	protected static void sendMessage(int priority, String msg, String msgOrg, String settingId) {
-		OutputBasicInfo output = new OutputBasicInfo();
-		output.setPluginId(HinemosModuleConstant.NODE_CONFIG_SETTING);
-		output.setPriority(priority);
-		output.setApplication(MessageConstant.AGENT.getMessage());
-		output.setMessage(msg);
-		output.setMessageOrg(msgOrg);
-		output.setGenerationDate(HinemosTime.getDateInstance().getTime());
-		output.setMonitorId(settingId);
-		output.setFacilityId(""); // マネージャがセット.
-		output.setScopeText(""); // マネージャがセット.
-		sendQueue.put(output);
+		MessageSendableObject sendme = new MessageSendableObject();
+		sendme.body = new AgtOutputBasicInfoRequest();
+		sendme.body.setPluginId(HinemosModuleConstant.NODE_CONFIG_SETTING);
+		sendme.body.setPriority(priority);
+		sendme.body.setApplication(MessageConstant.AGENT.getMessage());
+		sendme.body.setMessage(msg);
+		sendme.body.setMessageOrg(msgOrg);
+		sendme.body.setGenerationDate(HinemosTime.getDateInstance().getTime());
+		sendme.body.setMonitorId(settingId);
+		sendme.body.setFacilityId(""); // マネージャがセット.
+		sendme.body.setScopeText(""); // マネージャがセット.
+		sendQueue.put(sendme);
 	}
 }

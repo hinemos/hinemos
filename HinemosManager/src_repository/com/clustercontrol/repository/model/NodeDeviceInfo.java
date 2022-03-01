@@ -10,10 +10,10 @@ package com.clustercontrol.repository.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Transient;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -33,7 +33,7 @@ public abstract class NodeDeviceInfo implements Serializable, Cloneable {
 	/** メンバ変数 */
 	private NodeDeviceInfoPK id;
 	private String deviceDisplayName = "";
-	private Integer deviceSize = 0;
+	private Long deviceSize = 0L;
 	private String deviceSizeUnit = "";
 	private String deviceDescription = "";
 
@@ -75,7 +75,7 @@ public abstract class NodeDeviceInfo implements Serializable, Cloneable {
 	 */
 	public NodeDeviceInfo(String deviceType,
 			Integer deviceIndex, String deviceName,
-			String deviceDisplayName, Integer deviceSize,
+			String deviceDisplayName, Long deviceSize,
 			String deviceSizeUnit, String deviceDescription) {
 		setDeviceType(deviceType);
 		setDeviceIndex(deviceIndex);
@@ -176,7 +176,7 @@ public abstract class NodeDeviceInfo implements Serializable, Cloneable {
 	 * @return Integer
 	 */
 	@Column(name="device_size")
-	public Integer getDeviceSize() {
+	public Long getDeviceSize() {
 		return this.deviceSize;
 	}
 
@@ -185,7 +185,7 @@ public abstract class NodeDeviceInfo implements Serializable, Cloneable {
 	 * 
 	 * @param deviceSize
 	 */
-	public void setDeviceSize(Integer deviceSize) {
+	public void setDeviceSize(Long deviceSize) {
 		this.deviceSize = deviceSize;
 	}
 

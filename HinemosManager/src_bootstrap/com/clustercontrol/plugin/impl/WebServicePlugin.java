@@ -22,9 +22,9 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -45,8 +45,6 @@ import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.plugin.HinemosPluginService;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.util.KeyCheck;
-import com.clustercontrol.util.StringBinder;
-import com.clustercontrol.util.XMLUtil;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsServer;
 
@@ -58,7 +56,6 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 
 	public static final Log log = LogFactory.getLog(WebServicePlugin.class);
 
-	private static final ThreadPoolExecutor _threadPool;
 	private static final ArrayList<Endpoint> endpointList = new ArrayList<Endpoint>();
 
 	private static PluginStatus status = PluginStatus.NULL;
@@ -75,36 +72,6 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 	private static ConcurrentHashMap<String, HttpsServer> httpsServerMap =
 			new ConcurrentHashMap<String, HttpsServer>();
 
-	static {
-		int _threadPoolSize = HinemosPropertyCommon.ws_client_threadpool_size.getIntegerValue();
-		int _queueSize = HinemosPropertyCommon.ws_queue_size.getIntegerValue();
-
-		_threadPool = new MonitoredThreadPoolExecutor(_threadPoolSize, _threadPoolSize, 0L, TimeUnit.MICROSECONDS,
-				new LinkedBlockingQueue<Runnable>(_queueSize),
-				new ThreadFactory() {
-			private volatile int _count = 0;
-			@Override
-			public Thread newThread(Runnable r) {
-				return new Thread(r, "WebServiceWorkerForClient-" + _count++);
-			}
-		}, new ThreadPoolExecutor.AbortPolicy());
-
-
-		boolean invalidCharReplace = HinemosPropertyCommon.common_invalid_char_replace.getBooleanValue();
-		XMLUtil.setReplace(invalidCharReplace);
-		StringBinder.setReplace(invalidCharReplace);
-
-		String replaceChar = HinemosPropertyCommon.common_invalid_char_replace_to.getStringValue();
-		if(replaceChar != null){
-			XMLUtil.setReplaceChar(replaceChar);
-			StringBinder.setReplaceChar(replaceChar);
-		}
-	}
-
-	public static int getQueueSize() {
-		return _threadPool.getQueue().size();
-	}
-
 	/**
 	 * 特定のスレッドプールを使ってWebServiceを公開する関数（Agent用スレッドのみ別スレッドとするために作成）
 	 * @param addressPrefix 公開アドレスの 「http://x.x.x.x:xxxx」 の部分
@@ -117,6 +84,9 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 		try {
 			final URL urlPrefix = new URL(addressPrefix);
 			final String fulladdress = addressPrefix + addressBody;
+			if (log.isDebugEnabled()) {
+				log.debug("publish:HTTPS Server urlPrefix=" + urlPrefix.toString() + ",addressPrefix=" + addressPrefix + ",fulladdress=" + fulladdress);
+			}
 			HttpsServer httpsServer = null;
 			// プロトコルが HTTPSの場合には、まずHttpsServiceオブジェクトを作り、それをendpoit.publishに渡す必要がある。
 			// URLとポートがまったく同じHttpsServiceを複数作れないので、Hashmapにて重複管理し、もしもHashMapに
@@ -146,7 +116,12 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 					// 新規にHTTPSSeverを作って、Hashmapに登録する
 					httpsServer = HttpsServer.create(new InetSocketAddress(urlPrefix.getHost(), urlPrefix.getPort()), 0);
 					httpsServer.setHttpsConfigurator(configurator);
-					httpsServerMap.put(addressPrefix, httpsServer);
+					// HTTPSSeverにExchangeタスク向けのExecutorを割り付ける。
+					setHttpsExchangeExecuter(addressPrefix, httpsServer);
+					HttpsServer preSet = httpsServerMap.putIfAbsent(addressPrefix, httpsServer);
+					if (preSet != null) {
+						httpsServer = preSet;
+					}
 				}
 			}
 
@@ -167,54 +142,8 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 		}
 	}
 
-	/**
-	 * デフォルトのスレッドプールを使用してWebServiceを公開する関数
-	 * @param addressPrefix 公開アドレスの 「http://x.x.x.x:xxxx」 の部分
-	 * @param addressBody 公開アドレスのうち addressPrefix を除いた部分
-	 * @param endpointInstance
-	 */
-	protected void publish(String addressPrefix, String addressBody, Object endpointInstance) {
-		publish(addressPrefix, addressBody, endpointInstance, _threadPool);
-	}
-
 	@Override
 	public void deactivate() {
-		/**
-		 * webサービスの停止
-		 */
-		// 許容時間まで待ちリクエストを処理する
-		_threadPool.shutdown();
-		try {
-			long _shutdownTimeout = HinemosPropertyCommon.ws_client_shutdown_timeout.getNumericValue();
-
-			if (! _threadPool.awaitTermination(_shutdownTimeout, TimeUnit.MILLISECONDS)) {
-				List<Runnable> remained = _threadPool.shutdownNow();
-				if (remained != null) {
-					log.info("shutdown timeout. runnable remained. (size = " + remained.size() + ")");
-				}
-			}
-		} catch (InterruptedException e) {
-			_threadPool.shutdownNow();
-		}
-
-		for (Endpoint endpoint : endpointList) {
-			log.info("endpoint stop : " + endpoint.getImplementor().getClass().getSimpleName());
-			try {
-				/**
-				 * JAX-WSの不具合により、0.0.0.0でlistenしているwebサービスは
-				 * stop時にNullPointerExceptionが出て、stopできないようだ。
-				 * http://java.net/jira/browse/JAX_WS-941
-				 *
-				 * このため、JBoss終了時にwebサービスのアクセスがあると、
-				 * jboss.logに、エラーのスタックトレースが出力される。
-				 */
-				endpoint.stop();
-			} catch (NullPointerException e) {
-				log.info("stop endpoint :  " + e.getMessage());
-			} catch (Exception e) {
-				log.warn("stop endpoint : " + e.getMessage(), e);
-			}
-		}
 	}
 
 	@Override
@@ -243,15 +172,57 @@ public abstract class WebServicePlugin implements HinemosPlugin {
 	 * 必要なキーが存在するかどうかをチェックする
 	 */
 	protected boolean checkRequiredKeys() {
-		// nullの場合はチェック不要
-		if(null == getRequiredKeys())
-			return true;
-
+		// findbugs対応 getRequiredKeys()が nullの場合はチェック不要だが、現状nullはあり得ないのでチェック廃止
 		for(String key: getRequiredKeys()){
 			if(!KeyCheck.checkKey(key)){
 				return false;
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * HTTPSSeverにExchangeタスク向けのExecutorを割り付ける。<br>
+	 *  スレッド最大数とタスクキュー最大数はプロパティで調整可能。<br>
+	 *  
+	 *  HTTPSSeverではExchangeタスクがSSLハンドシェイク中にスレッドを長時間ロックするケースが有り、<br>
+	 *  その際に後続リクエストが滞留するので、対応としてExchangeタスクの担当Threadを別途Executor化（複数並列可）する。<br>
+	 *  
+	 *  Executorはセルフチェックにて監視される。（MonitoredThreadPoolExecutor）<br>
+	 *  
+	 *  タスクキューがあふれた場合には、警告ログを出力可能としておく。<br>
+	 *  
+	 * @param addressPrefix 待ち受けアドレス先頭部（https://xxxx.xxxxx.xxxx:nnnn まで）
+	 * @param httpsServer  Executorを設定するhttpsServerインスタンス
+	 */
+	static public void setHttpsExchangeExecuter(String addressPrefix, HttpsServer httpsServer) {
+
+		final int executorThreadSize = HinemosPropertyCommon.ws_https_request_exchange_thread_size.getNumericValue().intValue();
+		final int executorQueueSize = HinemosPropertyCommon.ws_https_request_exchange_queue_size.getNumericValue().intValue();
+		final String executerBaseName = "https-exchange-" + addressPrefix + "-";
+		final String rejectAddrName = addressPrefix;
+		if (log.isDebugEnabled()) {
+			log.debug("setHttpsExchangeExecuter: addressPrefix=" + addressPrefix + " executorThreadSize=" + executorThreadSize + " executorQueueSize=" + executorQueueSize);
+		}
+
+		Executor httpsExecutor = new MonitoredThreadPoolExecutor(executorThreadSize, executorThreadSize,
+				0L, TimeUnit.MICROSECONDS, new LinkedBlockingQueue<Runnable>(executorQueueSize),
+				new ThreadFactory() {
+					private volatile int _count = 0;
+					@Override
+					public Thread newThread(Runnable r) {
+						return new Thread(r, executerBaseName + _count++);
+					}
+				},
+				new ThreadPoolExecutor.DiscardPolicy(){
+					@Override
+					public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+						if (HinemosPropertyCommon.ws_https_request_exchange_reject_logging.getBooleanValue()) {
+							log.warn("too many demand. https request discarded : " + rejectAddrName + ":" + r.toString());
+						}
+					}
+				}
+		);
+		httpsServer.setExecutor(httpsExecutor);
 	}
 }

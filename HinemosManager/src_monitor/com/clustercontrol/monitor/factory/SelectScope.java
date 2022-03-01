@@ -14,8 +14,8 @@ import java.util.Date;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -27,7 +27,6 @@ import com.clustercontrol.notify.monitor.model.StatusInfoEntity;
 import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.repository.util.QueryUtil;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -196,11 +195,11 @@ public class SelectScope {
 			}
 		} catch (FacilityNotFound e) {
 			String[] args = {facilityId};
-			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_001_MON, args);
+			AplLogger.put(InternalIdCommon.MON_SYS_001, args);
 			throw new MonitorNotFound(e.getMessage(), e);
 		} catch (HinemosUnknown e) {
 			String[] args = {facilityId};
-			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_001_MON, args);
+			AplLogger.put(InternalIdCommon.MON_SYS_001, args);
 			throw e;
 		}
 		return list;

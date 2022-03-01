@@ -10,12 +10,12 @@ package com.clustercontrol.notify.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -30,6 +30,7 @@ import javax.xml.bind.annotation.XmlType;
 @Cacheable(true)
 public class NotifyRelationInfo implements Serializable, Comparable<NotifyRelationInfo> {
 	private static final long serialVersionUID = 1L;
+	private String functionPrefix;
 	private NotifyRelationInfoPK id;
 	private Integer notifyType;
 
@@ -80,7 +81,16 @@ public class NotifyRelationInfo implements Serializable, Comparable<NotifyRelati
 	public void setNotifyType(Integer notifyType) {
 		this.notifyType = notifyType;
 	}
-	
+
+	@Column(name="function_prefix")
+	public String getFunctionPrefix() {
+		return functionPrefix;
+	}
+
+	public void setFunctionPrefix(String functionPrefix) {
+		this.functionPrefix = functionPrefix;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;

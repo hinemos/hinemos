@@ -26,6 +26,8 @@ import com.clustercontrol.ClusterControlPerspectiveBase;
  */
 public class SettingToolsPerspective extends ClusterControlPerspectiveBase {
 
+	public static final String ID = "com.clustercontrol.enterprise.utility.SettingToolsPerspective";
+
 	/*
  	* (non-Javadoc)
  	* 

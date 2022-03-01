@@ -29,16 +29,16 @@ import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.dialog.CommonDialog;
+import com.clustercontrol.jobmanagement.bean.JobQueueActivityViewFilter;
 import com.clustercontrol.jobmanagement.bean.JobQueueConstant;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.jobmanagement.bean.JobQueueSettingViewFilter;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyBuilder;
 import com.clustercontrol.util.PropertyUtil;
 import com.clustercontrol.util.PropertyWrapper;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.PropertySheet;
-import com.clustercontrol.ws.jobmanagement.JobQueueActivityViewFilter;
-import com.clustercontrol.ws.jobmanagement.JobQueueSettingViewFilter;
 
 /**
  * ジョブキュー(同時実行制御キュー)の設定一覧、及び活動状況一覧のフィルタリング情報を入力するダイアログです。
@@ -185,7 +185,7 @@ public class JobQueueFilterDialog extends CommonDialog {
 
 		// マネージャ
 		List<Object> managerList = new ArrayList<>(Arrays.asList(""));
-		managerList.addAll(EndpointManager.getActiveManagerSet());
+		managerList.addAll(RestConnectManager.getActiveManagerSet());
 		property.addChildren(new PropertyBuilder(PROP_MANAGER, "facility.manager", PropertyDefineConstant.EDITOR_SELECT)
 				.setOptions(managerList.toArray()).setModifiable(true).setValue(managerFilter).build());
 		

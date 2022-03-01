@@ -25,12 +25,12 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.NodeConfigCustomInfoResponse;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.NodeConfigCustomInfo;
 
 /**
  * リポジトリ[ユーザ任意情報の作成・変更]ダイアログクラス<BR>
@@ -41,7 +41,7 @@ import com.clustercontrol.ws.repository.NodeConfigCustomInfo;
 public class NodeCustomInfoCreateDialog extends CommonDialog {
 
 	/** 入力値を保持するオブジェクト. */
-	private NodeConfigCustomInfo m_inputData = null;
+	private NodeConfigCustomInfoResponse m_inputData = null;
 
 	/** 入力値の正当性を保持するオブジェクト. */
 	private ValidateResult m_validateResult = null;
@@ -91,7 +91,7 @@ public class NodeCustomInfoCreateDialog extends CommonDialog {
 		super(parent);
 
 		// デフォルト値の設定
-		NodeConfigCustomInfo info = new NodeConfigCustomInfo();
+		NodeConfigCustomInfoResponse info = new NodeConfigCustomInfoResponse();
 		info.setSettingCustomId("");
 		info.setDisplayName("");
 		info.setDescription("");
@@ -120,21 +120,21 @@ public class NodeCustomInfoCreateDialog extends CommonDialog {
 	 *            true:コピー、false:変更.
 	 * 
 	 */
-	public NodeCustomInfoCreateDialog(Shell parent, NodeConfigCustomInfo info, ArrayList<String> registeredCustomIdList,
+	public NodeCustomInfoCreateDialog(Shell parent, NodeConfigCustomInfoResponse info, ArrayList<String> registeredCustomIdList,
 			boolean toCopy) {
 		super(parent);
 		this.toModify = !toCopy;
 		this.registeredCustomIdList = registeredCustomIdList;
 		if (toCopy) {
 			if (info != null) {
-				NodeConfigCustomInfo copyItem = new NodeConfigCustomInfo();
+				NodeConfigCustomInfoResponse copyItem = new NodeConfigCustomInfoResponse();
 				copyItem.setSettingCustomId(info.getSettingCustomId());
 				copyItem.setDisplayName(info.getDisplayName());
 				copyItem.setDescription(info.getDescription());
 				copyItem.setCommand(info.getCommand());
-				copyItem.setSpecifyUser(info.isSpecifyUser());
+				copyItem.setSpecifyUser(info.getSpecifyUser());
 				copyItem.setEffectiveUser(info.getEffectiveUser());
-				copyItem.setValidFlg(info.isValidFlg());
+				copyItem.setValidFlg(info.getValidFlg());
 				this.m_inputData = copyItem;
 			} else {
 				this.m_inputData = null;
@@ -421,7 +421,7 @@ public class NodeCustomInfoCreateDialog extends CommonDialog {
 	 *
 	 * @return 判定情報
 	 */
-	public NodeConfigCustomInfo getInputData() {
+	public NodeConfigCustomInfoResponse getInputData() {
 		return this.m_inputData;
 	}
 
@@ -454,7 +454,7 @@ public class NodeCustomInfoCreateDialog extends CommonDialog {
 		}
 
 		// ユーザ任意情報名.
-		if (this.m_inputData.isSpecifyUser()) {
+		if (this.m_inputData.getSpecifyUser()) {
 			this.m_userSpecify.setSelection(true);
 			this.m_userAgent.setSelection(false);
 		} else {
@@ -468,7 +468,7 @@ public class NodeCustomInfoCreateDialog extends CommonDialog {
 		}
 
 		// 有効／無効
-		if (this.m_inputData.isValidFlg()) {
+		if (this.m_inputData.getValidFlg()) {
 			this.m_buttonValid.setSelection(true);
 		} else {
 			this.m_buttonValid.setSelection(false);
@@ -490,8 +490,8 @@ public class NodeCustomInfoCreateDialog extends CommonDialog {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	private NodeConfigCustomInfo createInputData() {
-		NodeConfigCustomInfo info = new NodeConfigCustomInfo();
+	private NodeConfigCustomInfoResponse createInputData() {
+		NodeConfigCustomInfoResponse info = new NodeConfigCustomInfoResponse();
 		String[] args = null;
 
 		// カスタムID.
@@ -629,7 +629,7 @@ public class NodeCustomInfoCreateDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		NodeConfigCustomInfo info = this.m_inputData;
+		NodeConfigCustomInfoResponse info = this.m_inputData;
 		if (info != null) {
 			result = true;
 		}

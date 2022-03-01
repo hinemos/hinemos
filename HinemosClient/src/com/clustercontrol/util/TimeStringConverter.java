@@ -35,31 +35,31 @@ public class TimeStringConverter {
 		// 前々日の22:00は-26:00と表示する
 		if(timeValue != null){
 			
-			TimeZone timezone = TimezoneUtil.getTimeZone() ;
+			final TimeZone utc0 = TimeZone.getTimeZone("UTC");
 			SimpleDateFormat sdfHH = new SimpleDateFormat("HH");
-			sdfHH.setTimeZone(timezone);
+			sdfHH.setTimeZone(utc0);
 			SimpleDateFormat sdfMmSs = new SimpleDateFormat("mm:ss");
-			sdfMmSs.setTimeZone(timezone);
+			sdfMmSs.setTimeZone(utc0);
 			
 			long hour24 =  24 * 60 * 60 * 1000;
 			long msecTime = timeValue.getTime() + TimezoneUtil.getTimeZoneOffset();
 			
 			if(hour24 <= msecTime){
-				String strHH = sdfHH.format(timeValue.getTime());
+				String strHH = sdfHH.format(msecTime);
 				Long hh = Long.parseLong(strHH);
 				hh = hh + 24*(msecTime/hour24);
-				strTime = String.valueOf(hh) + ":" + sdfMmSs.format(timeValue.getTime());
+				strTime = String.valueOf(hh) + ":" + sdfMmSs.format(msecTime);
 			}else if(msecTime < 0){
 				long absTime = Math.abs(msecTime);
-				String strHH = sdfHH.format(absTime - TimezoneUtil.getTimeZoneOffset());
+				String strHH = sdfHH.format(absTime);
 				Long hh = Long.parseLong(strHH);
 				hh = hh + 24*(absTime/hour24);
 				strTime = "-" + String.format("%02d", hh) + ":" + sdfMmSs.format(absTime);
 			}else{
 				// 補正不要
 				SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-				sdf.setTimeZone(timezone);
-				strTime = sdf.format(timeValue);
+				sdf.setTimeZone(utc0);
+				strTime = sdf.format(msecTime);
 			}
 		}
 		return strTime;

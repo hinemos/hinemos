@@ -47,6 +47,7 @@ import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.jobmanagement.util.ForCollectPreCommitCallback;
 import com.clustercontrol.monitor.run.util.MonitorCollectDataCache;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.util.HinemosTime;
@@ -137,20 +138,9 @@ public class CollectDataUtil {
 				|| sessionJob.getId().getJobunitId() == null 
 				|| sessionJob.getId().getJobunitId().isEmpty()
 				|| sessionJob.getId().getJobId() == null 
-				|| sessionJob.getId().getJobId().isEmpty()
-				|| sessionJob.getStartDate() == null
-				|| sessionJob.getEndDate() == null) {
+				|| sessionJob.getId().getJobId().isEmpty()) {
 			// 値が設定されていないため処理終了
-			String strParam = "";
-			if (sessionJob != null) {
-				strParam = String.format("id=%s, startDate=%s, endDate=%s",
-						String.valueOf(sessionJob.getId()),
-						String.valueOf(sessionJob.getStartDate()),
-						String.valueOf(sessionJob.getEndDate()));
-			}
-			// FIXME: 開始遅延はstartDateがnullになるので、正常であるにも関わらず毎回WARNログが出てしまう。
-			// startDateのnullチェックは、ステータスの種類で弾いた後で実施すべき。
-			m_log.warn("put(sessionJob) : Information is insufficient. " + strParam);
+			m_log.warn("put(sessionJob) : Information is insufficient.");
 			return;
 		}
 
@@ -179,6 +169,17 @@ public class CollectDataUtil {
 			return;
 		}
 
+		if (sessionJob.getStartDate() == null
+				|| sessionJob.getEndDate() == null) {
+			// 値が設定されていないため処理終了
+			String strParam = String.format("id=%s, startDate=%s, endDate=%s",
+					String.valueOf(sessionJob.getId()),
+					String.valueOf(sessionJob.getStartDate()),
+					String.valueOf(sessionJob.getEndDate()));
+			m_log.warn("put(sessionJob) : Information is insufficient. " + strParam);
+			return;
+		}
+
 		List<Sample> sampleList = new ArrayList<>();
 		Sample sample = new Sample(new Date(sessionJob.getJobSessionEntity().getScheduleDate()), CollectConstant.COLLECT_TYPE_JOB);
 		sample.set(
@@ -188,7 +189,13 @@ public class CollectDataUtil {
 				CollectedDataErrorTypeConstant.NOT_ERROR, 
 				sessionJob.getId().getJobunitId() + CollectConstant.COLLECT_TYPE_JOB_DELIMITER + sessionJob.getId().getJobId());
 		sampleList.add(sample);
-		put(sampleList);
+		//ジョブ系集計はジョブ制御のデータ更新に干渉してデッドロックを引き起こす場合があるのでコミット直前に行う
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			if( m_log.isDebugEnabled()){
+				m_log.debug("put(sessionJob) : set ForCollectPreCommitCallback : sampleList.size=" + sampleList.size()+" id="+ sampleList );
+			}
+			jtm.addCallback(new ForCollectPreCommitCallback(sampleList));
+		}
 	}
 
 	/**
@@ -217,11 +224,14 @@ public class CollectDataUtil {
 			return;
 		}
 
-		// 対象（コマンドジョブ、ファイル転送ジョブ、参照ジョブ、監視ジョブ）以外は処理終了
+		// 対象（コマンドジョブ、参照ジョブ、監視ジョブ、ファイルチェックジョブ、リソース制御ジョブ、RPAシナリオジョブ）以外は処理終了
 		JobSessionJobEntity sessionJob = sessionNode.getJobSessionJobEntity();
 		if (sessionJob.getJobInfoEntity().getJobType() != JobConstant.TYPE_JOB
 				&& sessionJob.getJobInfoEntity().getJobType() != JobConstant.TYPE_REFERJOB
-				&& sessionJob.getJobInfoEntity().getJobType() != JobConstant.TYPE_MONITORJOB) {
+				&& sessionJob.getJobInfoEntity().getJobType() != JobConstant.TYPE_MONITORJOB
+				&& sessionJob.getJobInfoEntity().getJobType() != JobConstant.TYPE_FILECHECKJOB
+				&& sessionJob.getJobInfoEntity().getJobType() != JobConstant.TYPE_RESOURCEJOB
+				&& sessionJob.getJobInfoEntity().getJobType() != JobConstant.TYPE_RPAJOB) {
 			return;
 		}
 
@@ -252,7 +262,13 @@ public class CollectDataUtil {
 				CollectedDataErrorTypeConstant.NOT_ERROR, 
 				sessionNode.getId().getJobunitId() + CollectConstant.COLLECT_TYPE_JOB_DELIMITER + sessionNode.getId().getJobId());
 		sampleList.add(sample);
-		put(sampleList);
+		//ジョブ系集計はジョブ制御のデータ更新に干渉してデッドロックを引き起こす場合があるのでコミット直前に行う
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			if( m_log.isDebugEnabled()){
+				m_log.debug("put(sessionNode) : set ForCollectPreCommitCallback : sampleList.size=" + sampleList.size()+" id="+ sampleList );
+			}
+			jtm.addCallback(new ForCollectPreCommitCallback(sampleList));
+		}
 	}
 
 	/**

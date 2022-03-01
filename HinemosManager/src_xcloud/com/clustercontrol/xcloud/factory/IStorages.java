@@ -15,6 +15,7 @@ import com.clustercontrol.xcloud.bean.CloneBackupedStorageRequest;
 import com.clustercontrol.xcloud.bean.Option;
 import com.clustercontrol.xcloud.model.InstanceEntity;
 import com.clustercontrol.xcloud.model.StorageBackupEntity;
+import com.clustercontrol.xcloud.model.StorageBackupEntryEntity;
 import com.clustercontrol.xcloud.model.StorageEntity;
 
 
@@ -27,7 +28,7 @@ public interface IStorages extends IResources {
 
 	StorageEntity addStorage(AddStorageRequest request) throws CloudManagerException;
 	
-	void removeStorages(List<String> storageIds) throws CloudManagerException;
+	List<StorageEntity> removeStorages(List<String> storageIds) throws CloudManagerException;
 	
 	List<StorageEntity> getStorages(List<String> storageIds) throws CloudManagerException;
 	StorageEntity getStorage(String storageId) throws CloudManagerException;
@@ -38,7 +39,8 @@ public interface IStorages extends IResources {
 	void detachStorage(List<String> storageIds) throws CloudManagerException;
 
 	StorageBackupEntity takeStorageSnapshot(String storageId, String name, String description, List<Option> options) throws CloudManagerException;
-	void deletStorageSnapshots(String instanceId, List<String> snapshotIds) throws CloudManagerException;
+
+	List<StorageBackupEntryEntity> deleteStorageSnapshots(String instanceId, List<String> snapshotIds) throws CloudManagerException;
 	List<StorageBackupEntity> updateStorageBackups(List<String> storageIds) throws CloudManagerException;
 	StorageEntity cloneBackupedStorage(CloneBackupedStorageRequest request) throws CloudManagerException;
 	

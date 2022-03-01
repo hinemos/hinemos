@@ -14,7 +14,7 @@
    <w:Locale xml:lang="en-US" s:mustUnderstand="false" />
     <w:OptionSet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <w:Option Name="WINRS_NOPROFILE">TRUE</w:Option>
-      <w:Option Name="WINRS_CODEPAGE">437</w:Option>
+      <w:Option Name="WINRS_CODEPAGE">65001</w:Option>
     </w:OptionSet>
    <w:OperationTimeout>PT60.000S</w:OperationTimeout>
   </s:Header>

@@ -9,27 +9,31 @@
 package com.clustercontrol.hub.view;
 
 import org.apache.log4j.Logger;
+import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.composite.FacilityTreeComposite;
+import com.clustercontrol.hub.composite.ScopeComposite;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.AutoUpdateView;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 収集蓄積[スコープツリー]ビュークラス<BR>
@@ -45,7 +49,7 @@ public class LogScopeTreeView  extends AutoUpdateView {
 	// ----- instance フィールド ----- //
 
 	/** スコープツリーのコンポジット */
-	private FacilityTreeComposite scopeTreeComposite = null;
+	private ScopeComposite scopeTreeComposite = null;
 
 	/** パス文字列を表示するラベル */
 	private Label pathLabel = null;
@@ -59,8 +63,7 @@ public class LogScopeTreeView  extends AutoUpdateView {
 	/** 内部イベント　スコープをツリーに含めるか？**/
 	private boolean internal = true;
 
-	/** リポジトリ情報更新により、表示をリフレッシュするかどうか **/
-	private boolean topicRefresh = true;
+	
 	
 	// ----- コンストラクタ ----- //
 
@@ -73,7 +76,6 @@ public class LogScopeTreeView  extends AutoUpdateView {
 		this.scopeOnly = false;
 		this.unregistered = true;
 		this.internal = true;
-		this.topicRefresh = true;
 	}
 
 	/**
@@ -89,7 +91,6 @@ public class LogScopeTreeView  extends AutoUpdateView {
 		this.scopeOnly = scopeOnly;
 		this.unregistered = unregistered;
 		this.internal = internal;
-		this.topicRefresh = topicRefresh;
 	}
 
 	// ----- instance メソッド ----- //
@@ -109,7 +110,7 @@ public class LogScopeTreeView  extends AutoUpdateView {
 		layout.marginWidth = 0;
 
 		// スコープツリー作成
-		this.scopeTreeComposite = new FacilityTreeComposite(parent, SWT.NONE, null, this.scopeOnly, this.unregistered, this.internal, this.topicRefresh);
+		this.scopeTreeComposite = new ScopeComposite(parent, SWT.NONE, this.scopeOnly, this.unregistered, this.internal);
 		GridData gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.verticalAlignment = GridData.FILL;
@@ -118,30 +119,17 @@ public class LogScopeTreeView  extends AutoUpdateView {
 		gridData.horizontalSpan = 1;
 		this.scopeTreeComposite.setLayoutData(gridData);
 
-		// ツリーアイテム選択時のリスナー追加
-		this.scopeTreeComposite.getTreeViewer().addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
-			public void selectionChanged(SelectionChangedEvent event) {
-				// 選択アイテム取得(ツリー自体でも行っているが、念のため)
-				StructuredSelection selection = (StructuredSelection) event.getSelection();
-				FacilityTreeItem selectItem = (FacilityTreeItem) selection.getFirstElement();
-				if (selectItem != null) {
-					// イベントメソッド呼び出し
-					doSelectTreeItem(selectItem);
-				}
-			}
-		});
 		this.scopeTreeComposite.getTreeViewer().addDoubleClickListener(new IDoubleClickListener() {
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				// 選択アイテム取得(ツリー自体でも行っているが、念のため)
 				StructuredSelection selection = (StructuredSelection) event.getSelection();
-				FacilityTreeItem selectItem = (FacilityTreeItem) selection.getFirstElement();
+				FacilityTreeItemResponse selectItem = (FacilityTreeItemResponse) selection.getFirstElement();
 				if (selectItem != null) {
 					// ビューの作成
 					IWorkbenchWindow window = LogScopeTreeView.this.getSite().getWorkbenchWindow();
 					IWorkbenchPage page = window.getActivePage();
-					FacilityTreeItem managerTreeItem = ScopePropertyUtil.getManager(selectItem);
+					FacilityTreeItemResponse managerTreeItem = ScopePropertyUtil.getManager(selectItem);
 					//スコープツリーのTOPをダブルクリックした場合はなにもせずにreturn
 					if (managerTreeItem == null) {
 						return;
@@ -189,6 +177,20 @@ public class LogScopeTreeView  extends AutoUpdateView {
 				}
 			}
 		});
+		
+		createContextMenu();
+	}
+	
+	/**
+	 * ポップアップメニュー作成
+	 */
+	protected void createContextMenu() {
+		MenuManager menuManager = new MenuManager();
+		menuManager.setRemoveAllWhenShown(true);
+		Menu treeMenu = menuManager.createContextMenu(scopeTreeComposite.getTree());
+		WidgetTestUtil.setTestId(this, null, treeMenu);
+		scopeTreeComposite.getTree().setMenu(treeMenu);
+		getSite().registerContextMenu( menuManager, this.scopeTreeComposite.getTreeViewer() );
 	}
 	
 	/**
@@ -213,7 +215,7 @@ public class LogScopeTreeView  extends AutoUpdateView {
 	 * @param item
 	 *            スコープツリーアイテム
 	 */
-	protected void doSelectTreeItem(FacilityTreeItem item) {
+	protected void doSelectTreeItem(FacilityTreeItemResponse item) {
 
 	}
 
@@ -236,7 +238,7 @@ public class LogScopeTreeView  extends AutoUpdateView {
 	}
 
 	public void update() {
-		//this.scopeTreeComposite.update();
+		this.scopeTreeComposite.update();
 		ClientSession.doCheck();
 	}
 
@@ -247,5 +249,24 @@ public class LogScopeTreeView  extends AutoUpdateView {
 
 	@Override
 	public void update(boolean refreshFlag) {
+	}
+	
+	/**
+	 * ビューのアクションの有効/無効を設定します。
+	 * 
+	 * @param builtin 組み込みスコープかどうかのフラグ
+	 * @param type スコープとノードの種別
+	 * @param selection ボタン（アクション）を有効にするための情報
+	 * 
+	 * @see com.clustercontrol.bean.FacilityConstant
+	 */
+	public void setEnabledAction() {
+		ICommandService service = (ICommandService) PlatformUI.getWorkbench().getService( ICommandService.class );
+		if( null != service ){
+			// Update ToolBar after elements refreshed
+			// WARN : Both ToolBarManager must be updated after updateActionBars(), otherwise icon won't change.
+			getViewSite().getActionBars().updateActionBars();
+			getViewSite().getActionBars().getToolBarManager().update(false);
+		}
 	}
 }

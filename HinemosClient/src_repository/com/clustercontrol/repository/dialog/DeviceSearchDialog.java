@@ -26,11 +26,11 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.DeviceSearchMessageInfoResponse;
 
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.DeviceSearchMessageInfo;
 
 /**
  * リポジトリ[ノード]のDevice Serach実行結果ダイアログクラスです。
@@ -43,7 +43,7 @@ public class DeviceSearchDialog extends Dialog {
 	public static final int WIDTH_TITLE = 1;
 	public static final int WIDTH_TEXT = 9;
 
-	private List<DeviceSearchMessageInfo> msgList;
+	private List<DeviceSearchMessageInfoResponse> msgList;
 	private Shell shell;
 
 	/**
@@ -51,7 +51,7 @@ public class DeviceSearchDialog extends Dialog {
 	 *
 	 * @param parent 親シェル
 	 */
-	public DeviceSearchDialog(Shell parent, List<DeviceSearchMessageInfo> msgList) {
+	public DeviceSearchDialog(Shell parent, List<DeviceSearchMessageInfoResponse> msgList) {
 		super(parent);
 		this.msgList = msgList;
 	}
@@ -122,7 +122,7 @@ public class DeviceSearchDialog extends Dialog {
 		Composite fbrCmp = new Composite(sCmp, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "fbr", fbrCmp);
 		//取得した情報
-		for (DeviceSearchMessageInfo info : msgList) {
+		for (DeviceSearchMessageInfoResponse info : msgList) {
 			setDataGrid(fbrCmp, HinemosMessage.replace(info.getItemName()));
 			setDataGrid(fbrCmp, HinemosMessage.replace(info.getLastVal()));
 			setDataGrid(fbrCmp, HinemosMessage.replace(info.getThisVal()));

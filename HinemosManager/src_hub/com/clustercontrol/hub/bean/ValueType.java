@@ -8,12 +8,19 @@
 
 package com.clustercontrol.hub.bean;
 
+import com.clustercontrol.rest.dto.EnumDto;
+
 /**
  * ログフォーマットで抽出されるタグのデータ種別。
  *
  */
-public enum ValueType {
+public enum ValueType implements EnumDto<Integer> {
 	string,
 	number,
-	bool
+	bool;
+
+	@Override
+	public Integer getCode() {
+		return this.ordinal();
+	}
 }

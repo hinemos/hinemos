@@ -12,15 +12,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.TypedQuery;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.collect.model.CollectKeyInfo;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.QueryExecutor;
 import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.JobInfoNotFound;
@@ -32,8 +33,8 @@ import com.clustercontrol.jobmanagement.model.JobInfoEntityPK;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.performance.monitor.model.CollectorItemCodeMstEntity;
-import com.clustercontrol.commons.util.HinemosPropertyCommon;
-import com.clustercontrol.platform.QueryExecutor;
+
+import jakarta.persistence.TypedQuery;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */
@@ -157,23 +158,42 @@ public class QueryUtil {
 			String facilityId,
 			Long fromTime,
 			Long toTime,
-			String masterId) throws HinemosDbTimeout {
+			String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
 		StringBuilder jquery = new StringBuilder();
-		jquery.append("SELECT c.masterId, b.id.time, a.id.facilityid, SUM(b.value) FROM CollectKeyInfo a");
+		jquery.append("SELECT c.masterId, b.id.time, a.id.facilityid, b.value FROM CollectKeyInfo a");
 		jquery.append(" JOIN CollectData b ON a.collectorid = b.id.collectorid");
 		jquery.append(" JOIN JmxCheckInfo c ON a.id.monitorId = c.monitorId");
 		jquery.append(" JOIN JmxMasterInfo d ON c.masterId = d.id");
-		jquery.append(" WHERE a.id.facilityid like :facilityId");
+		jquery.append(" JOIN MonitorInfo e ON e.monitorId = a.id.monitorId");
+		jquery.append(" WHERE a.id.facilityid = :facilityId");
 		jquery.append(" AND b.id.time >= :fromTime AND b.id.time <= :toTime");
 		jquery.append(" AND c.masterId = :masterId");
-		jquery.append(" GROUP BY c.masterId, b.id.time, a.id.facilityid");
-		jquery.append(" ORDER BY b.id.time");
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			jquery.append(" AND (e.ownerRoleId = :ownerRoleId");
+			jquery.append(" OR EXISTS (");
+			jquery.append(" SELECT f FROM ObjectPrivilegeInfo f");
+			jquery.append(" WHERE f.id.objectType = :objectType");
+			jquery.append(" AND f.id.objectId = e.monitorId");
+			jquery.append(" AND f.id.roleId = :ownerRoleId");
+			jquery.append(" AND f.id.objectPrivilege = :objectPrivilege");
+			jquery.append(" )");
+			jquery.append(" )");
+		}
+		jquery.append(" ORDER BY c.masterId, b.id.time, a.id.facilityid, e.runInterval");
 
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		parameters.put("facilityId", facilityId);
 		parameters.put("fromTime", fromTime);
 		parameters.put("toTime", toTime);
 		parameters.put("masterId", masterId);
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
 
 		return QueryExecutor.getListByJpqlWithTimeout(jquery.toString(), Object[].class, parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -183,23 +203,42 @@ public class QueryUtil {
 			String facilityId,
 			Long fromTime,
 			Long toTime,
-			String masterId) throws HinemosDbTimeout {
+			String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
 		StringBuilder jquery = new StringBuilder();
-		jquery.append("SELECT c.masterId, b.id.time, a.id.facilityid, SUM(b.avg) FROM CollectKeyInfo a");
+		jquery.append("SELECT c.masterId, b.id.time, a.id.facilityid, b.avg FROM CollectKeyInfo a");
 		jquery.append(" JOIN SummaryHour b ON a.collectorid = b.id.collectorid");
 		jquery.append(" JOIN JmxCheckInfo c ON a.id.monitorId = c.monitorId");
 		jquery.append(" JOIN JmxMasterInfo d ON c.masterId = d.id");
-		jquery.append(" WHERE a.id.facilityid like :facilityId");
+		jquery.append(" JOIN MonitorInfo e ON e.monitorId = a.id.monitorId");
+		jquery.append(" WHERE a.id.facilityid = :facilityId");
 		jquery.append(" AND b.id.time >= :fromTime AND b.id.time <= :toTime");
 		jquery.append(" AND c.masterId = :masterId");
-		jquery.append(" GROUP BY c.masterId, b.id.time, a.id.facilityid");
-		jquery.append(" ORDER BY b.id.time");
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			jquery.append(" AND (e.ownerRoleId = :ownerRoleId");
+			jquery.append(" OR EXISTS (");
+			jquery.append(" SELECT f FROM ObjectPrivilegeInfo f");
+			jquery.append(" WHERE f.id.objectType = :objectType");
+			jquery.append(" AND f.id.objectId = e.monitorId");
+			jquery.append(" AND f.id.roleId = :ownerRoleId");
+			jquery.append(" AND f.id.objectPrivilege = :objectPrivilege");
+			jquery.append(" )");
+			jquery.append(" )");
+		}
+		jquery.append(" ORDER BY c.masterId, b.id.time, a.id.facilityid, e.runInterval");
 
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		parameters.put("facilityId", facilityId);
 		parameters.put("fromTime", fromTime);
 		parameters.put("toTime", toTime);
 		parameters.put("masterId", masterId);
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
 
 		return QueryExecutor.getListByJpqlWithTimeout(jquery.toString(), Object[].class, parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -209,23 +248,42 @@ public class QueryUtil {
 			String facilityId,
 			Long fromTime,
 			Long toTime,
-			String masterId) throws HinemosDbTimeout {
+			String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
 		StringBuilder jquery = new StringBuilder();
-		jquery.append("SELECT c.masterId, b.id.time, a.id.facilityid, SUM(b.avg) FROM CollectKeyInfo a");
+		jquery.append("SELECT c.masterId, b.id.time, a.id.facilityid, b.avg FROM CollectKeyInfo a");
 		jquery.append(" JOIN SummaryDay b ON a.collectorid = b.id.collectorid");
 		jquery.append(" JOIN JmxCheckInfo c ON a.id.monitorId = c.monitorId");
 		jquery.append(" JOIN JmxMasterInfo d ON c.masterId = d.id");
-		jquery.append(" WHERE a.id.facilityid like :facilityId");
+		jquery.append(" JOIN MonitorInfo e ON e.monitorId = a.id.monitorId");
+		jquery.append(" WHERE a.id.facilityid = :facilityId");
 		jquery.append(" AND b.id.time >= :fromTime AND b.id.time <= :toTime");
 		jquery.append(" AND c.masterId = :masterId");
-		jquery.append(" GROUP BY c.masterId, b.id.time, a.id.facilityid");
-		jquery.append(" ORDER BY b.id.time");
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			jquery.append(" AND (e.ownerRoleId = :ownerRoleId");
+			jquery.append(" OR EXISTS (");
+			jquery.append(" SELECT f FROM ObjectPrivilegeInfo f");
+			jquery.append(" WHERE f.id.objectType = :objectType");
+			jquery.append(" AND f.id.objectId = e.monitorId");
+			jquery.append(" AND f.id.roleId = :ownerRoleId");
+			jquery.append(" AND f.id.objectPrivilege = :objectPrivilege");
+			jquery.append(" )");
+			jquery.append(" )");
+		}
+		jquery.append(" ORDER BY c.masterId, b.id.time, a.id.facilityid, e.runInterval");
 
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		parameters.put("facilityId", facilityId);
 		parameters.put("fromTime", fromTime);
 		parameters.put("toTime", toTime);
 		parameters.put("masterId", masterId);
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
 
 		return QueryExecutor.getListByJpqlWithTimeout(jquery.toString(), Object[].class, parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
@@ -235,146 +293,45 @@ public class QueryUtil {
 			String facilityId,
 			Long fromTime,
 			Long toTime,
-			String masterId) throws HinemosDbTimeout {
+			String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
 		StringBuilder jquery = new StringBuilder();
-		jquery.append("SELECT c.masterId, b.id.time, a.id.facilityid, SUM(b.avg) FROM CollectKeyInfo a");
+		jquery.append("SELECT c.masterId, b.id.time, a.id.facilityid, b.avg FROM CollectKeyInfo a");
 		jquery.append(" JOIN SummaryMonth b ON a.collectorid = b.id.collectorid");
 		jquery.append(" JOIN JmxCheckInfo c ON a.id.monitorId = c.monitorId");
 		jquery.append(" JOIN JmxMasterInfo d ON c.masterId = d.id");
-		jquery.append(" WHERE a.id.facilityid like :facilityId");
+		jquery.append(" JOIN MonitorInfo e ON e.monitorId = a.id.monitorId");
+		jquery.append(" WHERE a.id.facilityid = :facilityId");
 		jquery.append(" AND b.id.time >= :fromTime AND b.id.time <= :toTime");
 		jquery.append(" AND c.masterId = :masterId");
-		jquery.append(" GROUP BY c.masterId, b.id.time, a.id.facilityid");
-		jquery.append(" ORDER BY b.id.time");
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			jquery.append(" AND (e.ownerRoleId = :ownerRoleId");
+			jquery.append(" OR EXISTS (");
+			jquery.append(" SELECT f FROM ObjectPrivilegeInfo f");
+			jquery.append(" WHERE f.id.objectType = :objectType");
+			jquery.append(" AND f.id.objectId = e.monitorId");
+			jquery.append(" AND f.id.roleId = :ownerRoleId");
+			jquery.append(" AND f.id.objectPrivilege = :objectPrivilege");
+			jquery.append(" )");
+			jquery.append(" )");
+		}
+		jquery.append(" ORDER BY c.masterId, b.id.time, a.id.facilityid, e.runInterval");
 
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		parameters.put("facilityId", facilityId);
 		parameters.put("fromTime", fromTime);
 		parameters.put("toTime", toTime);
 		parameters.put("masterId", masterId);
+		// ownerRoleId
+		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
+			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.MONITOR);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
+		}
 
 		return QueryExecutor.getListByJpqlWithTimeout(jquery.toString(), Object[].class, parameters, 
 				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
-	}
-	
-	public static List<Object[]> getSummaryPrefAvgData(
-			String facilityId,
-			Long fromTime,
-			Long toTime,
-			String monitorId,
-			List<String> itemCodeList) throws HinemosDbTimeout {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		parameters.put("facilityId", facilityId);
-		parameters.put("fromTime", fromTime);
-		parameters.put("toTime", toTime);
-		parameters.put("monitorId", monitorId);
-		parameters.put("itemCodeList", itemCodeList);
-
-		return QueryExecutor.getListByQueryNameWithTimeout("ReportingSummaryPerfAvg.getSummaryPrefAvgData", Object[].class, parameters, 
-				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
-	}
-	
-	public static List<Object[]> getSummaryPrefAvgHour(
-			String facilityId,
-			Long fromTime,
-			Long toTime,
-			String monitorId,
-			List<String> itemCodeList) throws HinemosDbTimeout {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		parameters.put("facilityId", facilityId);
-		parameters.put("fromTime", fromTime);
-		parameters.put("toTime", toTime);
-		parameters.put("monitorId", monitorId);
-		parameters.put("itemCodeList", itemCodeList);
-
-		return QueryExecutor.getListByQueryNameWithTimeout("ReportingSummaryPerfAvg.getSummaryPrefAvgHour", Object[].class, parameters, 
-				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
-	}
-	
-	public static List<Object[]> getSummaryPrefAvgDay(
-			String facilityId,
-			Long fromTime,
-			Long toTime,
-			String monitorId,
-			List<String> itemCodeList) throws HinemosDbTimeout {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		parameters.put("facilityId", facilityId);
-		parameters.put("fromTime", fromTime);
-		parameters.put("toTime", toTime);
-		parameters.put("monitorId", monitorId);
-		parameters.put("itemCodeList", itemCodeList);
-
-		return QueryExecutor.getListByQueryNameWithTimeout("ReportingSummaryPerfAvg.getSummaryPrefAvgDay", Object[].class, parameters, 
-				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
-	}
-	
-	public static List<Object[]> getSummaryPrefAvgMonth(
-			String facilityId,
-			Long fromTime,
-			Long toTime,
-			String monitorId,
-			List<String> itemCodeList) throws HinemosDbTimeout {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		parameters.put("facilityId", facilityId);
-		parameters.put("fromTime", fromTime);
-		parameters.put("toTime", toTime);
-		parameters.put("monitorId", monitorId);
-		parameters.put("itemCodeList", itemCodeList);
-
-		return QueryExecutor.getListByQueryNameWithTimeout("ReportingSummaryPerfAvg.getSummaryPrefAvgMonth", Object[].class, parameters, 
-				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
-	}
-	
-	public static List<Object[]> getCollectDataList(String facilityId, Long fromTime, Long toTime, String monitorId, List<String> itemCodeList) 
-		throws HinemosDbTimeout {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		parameters.put("facilityId", facilityId);
-		parameters.put("fromTime", fromTime);
-		parameters.put("toTime", toTime);
-		parameters.put("monitorId", monitorId);
-		parameters.put("itemCodeList", itemCodeList);
-		List<Object[]> list = QueryExecutor.getListByQueryNameWithTimeout("ReportingCollectData.findByTime", Object[].class, parameters, 
-				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
-		return list;
-	}
-	
-	public static List<Object[]> getSummaryHourList(String facilityId, Long fromTime, Long toTime, String monitorId, List<String> itemCodeList) 
-			throws HinemosDbTimeout {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		parameters.put("facilityId", facilityId);
-		parameters.put("fromTime", fromTime);
-		parameters.put("toTime", toTime);
-		parameters.put("monitorId", monitorId);
-		parameters.put("itemCodeList", itemCodeList);
-		List<Object[]> list = QueryExecutor.getListByQueryNameWithTimeout("ReportingSummaryHour.findByTime", Object[].class, parameters, 
-				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
-		return list;
-	}
-	
-	public static List<Object[]> getSummaryDayList(String facilityId, Long fromTime, Long toTime, String monitorId, List<String> itemCodeList) 
-			throws HinemosDbTimeout {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		parameters.put("facilityId", facilityId);
-		parameters.put("fromTime", fromTime);
-		parameters.put("toTime", toTime);
-		parameters.put("monitorId", monitorId);
-		parameters.put("itemCodeList", itemCodeList);
-		List<Object[]> list = QueryExecutor.getListByQueryNameWithTimeout("ReportingSummaryDay.findByTime", Object[].class, parameters, 
-				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
-		return list;
-	}
-	
-	public static List<Object[]> getSummaryMonthList(String facilityId, Long fromTime, Long toTime, String monitorId, List<String> itemCodeList) 
-			throws HinemosDbTimeout {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		parameters.put("facilityId", facilityId);
-		parameters.put("fromTime", fromTime);
-		parameters.put("toTime", toTime);
-		parameters.put("monitorId", monitorId);
-		parameters.put("itemCodeList", itemCodeList);
-		List<Object[]> list = QueryExecutor.getListByQueryNameWithTimeout("ReportingSummaryMonth.findByTime", Object[].class, parameters, 
-				HinemosPropertyCommon.collect_graph_timeout_reporting.getIntegerValue());
-		return list;
 	}
 	
 	public static JobInfoEntity getJobInfoEntityPK(String sessionId, String jobunitId, String jobId, ObjectPrivilegeMode privliegeMode) throws JobInfoNotFound {
@@ -421,7 +378,15 @@ public class QueryUtil {
 		jquery.append(" AND a.id.jobId not like :excJobId");
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-			jquery.append(" AND a.ownerRoleId = :ownerRoleId");
+			jquery.append(" AND (a.ownerRoleId = :ownerRoleId");
+			jquery.append(" OR EXISTS (");
+			jquery.append(" SELECT b FROM ObjectPrivilegeInfo b");
+			jquery.append(" WHERE b.id.objectType = :objectType");
+			jquery.append(" AND b.id.objectId = a.id.jobunitId");
+			jquery.append(" AND b.id.roleId = :ownerRoleId");
+			jquery.append(" AND b.id.objectPrivilege = :objectPrivilege");
+			jquery.append(" )");
+			jquery.append(" )");
 		}
 		jquery.append(" GROUP BY a.id.jobunitId, a.id.jobId");
 		switch (jobOrderKey) {
@@ -445,6 +410,8 @@ public class QueryUtil {
 		// ownerRoleId
 		if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 			parameters.put("ownerRoleId", ownerRoleId);
+			parameters.put("objectType", HinemosModuleConstant.JOB);
+			parameters.put("objectPrivilege", ObjectPrivilegeMode.READ.name());
 		}
 
 		return QueryExecutor.getListByJpqlWithTimeout(jquery.toString(), Object[].class, parameters, 
@@ -478,7 +445,15 @@ public class QueryUtil {
 			jquery.append(" AND a.id.jobId = :jobId");
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-				jquery.append(" AND a.ownerRoleId = :ownerRoleId");
+				jquery.append(" AND (a.ownerRoleId = :ownerRoleId");
+				jquery.append(" OR EXISTS (");
+				jquery.append(" SELECT b FROM ObjectPrivilegeInfo b");
+				jquery.append(" WHERE b.id.objectType = :objectType");
+				jquery.append(" AND b.id.objectId = a.id.jobunitId");
+				jquery.append(" AND b.id.roleId = :ownerRoleId");
+				jquery.append(" AND b.id.objectPrivilege = :objectPrivilege");
+				jquery.append(" )");
+				jquery.append(" )");
 			}
 			jquery.append(" ORDER BY a.startDate");
 
@@ -490,6 +465,8 @@ public class QueryUtil {
 			// ownerRoleId
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
 				typedQuery.setParameter("ownerRoleId", ownerRoleId);
+				typedQuery.setParameter("objectType", HinemosModuleConstant.JOB);
+				typedQuery.setParameter("objectPrivilege", ObjectPrivilegeMode.READ.name());
 			}
 			
 			list = (List<JobSessionJobEntity>)typedQuery.getResultList();

@@ -30,6 +30,10 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.IntegrationConditionInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponseP1;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.CollectKeyInfoResponseP1;
 
 import com.clustercontrol.analytics.bean.IntegrationComparisonMethod;
 import com.clustercontrol.analytics.util.AnalyticsUtil;
@@ -37,15 +41,10 @@ import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.collect.CollectKeyInfo;
-import com.clustercontrol.ws.monitor.IntegrationConditionInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 判定条件[作成・変更]ダイアログクラス<BR>
@@ -55,7 +54,7 @@ import com.clustercontrol.ws.repository.FacilityTreeItem;
 public class IntegrationConditionCreateDialog extends CommonDialog {
 
 	/** 入力値を保持するオブジェクト。 */
-	private IntegrationConditionInfo m_inputData = null;
+	private IntegrationConditionInfoResponse m_inputData = null;
 
 	/** 入力値の正当性を保持するオブジェクト。 */
 	private ValidateResult m_validateResult = null;
@@ -100,10 +99,10 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 	private Combo m_comboItemDisplayName = null;
 
 	/** 対象収集値表示名マップ_数値（表示名, キー) */
-	private Map<String, CollectKeyInfo> m_itemDisplayNameNumericMap = new HashMap<>();
+	private Map<String, CollectKeyInfoResponseP1> m_itemDisplayNameNumericMap = new HashMap<>();
 
 	/** 対象収集値表示名マップ_文字列（表示名, 監視設定情報) */
-	private Map<String, MonitorInfo> m_itemDisplayNameStringMap = new HashMap<>();
+	private Map<String, MonitorInfoResponseP1> m_itemDisplayNameStringMap = new HashMap<>();
 
 	/** 比較方法(コンボボックス) */
 	private Combo m_comboComparisonMethod = null;
@@ -132,7 +131,7 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 	 * @param info 判定条件情報
 	 */
 	public IntegrationConditionCreateDialog(Shell parent, String managerName, 
-			String ownerRoleId, String monitorFacilityId, IntegrationConditionInfo info) {
+			String ownerRoleId, String monitorFacilityId, IntegrationConditionInfoResponse info) {
 		super(parent);
 		this.m_managerName = managerName;
 		this.m_ownerRoleId = ownerRoleId;
@@ -256,8 +255,8 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 				ScopeTreeDialog dialog = new ScopeTreeDialog(shell, m_managerName, m_ownerRoleId, false, false);
 				dialog.setSelectNodeOnly(true);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem item = dialog.getSelectItem();
-					FacilityInfo info = item.getData();
+					FacilityTreeItemResponse item = dialog.getSelectItem();
+					FacilityInfoResponse info = item.getData();
 					m_textSettingNode.setText(info.getFacilityName());
 					m_settingFacilityId = info.getFacilityId();
 					m_targetFacilityId = m_settingFacilityId;
@@ -448,7 +447,7 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 	 *
 	 * @return 判定情報
 	 */
-	public IntegrationConditionInfo getInputData() {
+	public IntegrationConditionInfoResponse getInputData() {
 		return this.m_inputData;
 	}
 
@@ -462,21 +461,23 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 		}
 
 		// 対象ノード
-		if (m_inputData.isMonitorNode() == null) {
+		if (m_inputData.getMonitorNode() == null) {
 			m_inputData.setMonitorNode(true);
 		}
-		this.m_radioMonitorNode.setSelection(m_inputData.isMonitorNode());
-		this.m_radioSettingNode.setSelection(!m_inputData.isMonitorNode());
+		this.m_radioMonitorNode.setSelection(m_inputData.getMonitorNode());
+		this.m_radioSettingNode.setSelection(!m_inputData.getMonitorNode());
 		this.m_textSettingNode.setEnabled(this.m_radioSettingNode.getSelection());
 		this.m_buttonSettingNode.setEnabled(this.m_radioSettingNode.getSelection());
 
-		if (m_inputData.isMonitorNode()) {
+		if (m_inputData.getMonitorNode()) {
 			this.m_targetFacilityId = m_monitorFacilityId;
 		} else {
 			if (m_inputData.getTargetFacilityId() != null) {
 				try {
-					RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(this.m_managerName);
-					this.m_textSettingNode.setText(wrapper.getFacilityPath(m_inputData.getTargetFacilityId(), null));
+					RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.m_managerName);
+					this.m_textSettingNode.setText(wrapper.getFacilityPath(m_inputData.getTargetFacilityId(), null).getFacilityPath());
+				} catch (RuntimeException e) {
+					// findbugs対応 RuntimeExceptionのcatchを明示化
 				} catch (Exception e) {
 					// エラー時は何もしない
 				}
@@ -488,30 +489,30 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 		}
 		// 収集値種別
 		if (m_inputData.getTargetMonitorType() == null || 
-				m_inputData.getTargetMonitorType() == MonitorTypeConstant.TYPE_NUMERIC) {
+				m_inputData.getTargetMonitorType() == IntegrationConditionInfoResponse.TargetMonitorTypeEnum.NUMERIC) {
 			this.m_radioNumeric.setSelection(true);
 			this.m_radioString.setSelection(false);
-		} else if (m_inputData.getTargetMonitorType() == MonitorTypeConstant.TYPE_STRING) {
+		} else if (m_inputData.getTargetMonitorType() == IntegrationConditionInfoResponse.TargetMonitorTypeEnum.STRING) {
 			this.m_radioNumeric.setSelection(false);
 			this.m_radioString.setSelection(true);
 		}
 		// 文字列条件
-		if (m_inputData.isIsAnd() == null) {
+		if (m_inputData.getIsAnd() == null) {
 			m_inputData.setIsAnd(true);
 		}
-		this.m_radioAnd.setSelection(m_inputData.isIsAnd());
-		this.m_radioOr.setSelection(!m_inputData.isIsAnd());
+		this.m_radioAnd.setSelection(m_inputData.getIsAnd());
+		this.m_radioOr.setSelection(!m_inputData.getIsAnd());
 
 		// 収集値種別変更に伴う切り替え
 		changeMonitorType();
 
 		// 収集値表示名
 		if (m_inputData.getTargetMonitorType() == null || 
-				m_inputData.getTargetMonitorType() == MonitorTypeConstant.TYPE_NUMERIC) {
+				m_inputData.getTargetMonitorType() == IntegrationConditionInfoResponse.TargetMonitorTypeEnum.NUMERIC) {
 			this.m_comboItemDisplayName.setText(AnalyticsUtil.getComboItemNameForNumeric(
 					m_itemDisplayNameNumericMap, m_inputData.getTargetMonitorId(), 
 					m_inputData.getTargetDisplayName(), m_inputData.getTargetItemName()));
-		} else if (m_inputData.getTargetMonitorType() == MonitorTypeConstant.TYPE_STRING) {
+		} else if (m_inputData.getTargetMonitorType() == IntegrationConditionInfoResponse.TargetMonitorTypeEnum.STRING) {
 			this.m_comboItemDisplayName.setText(AnalyticsUtil.getComboItemNameForString(
 					m_itemDisplayNameStringMap, m_inputData.getTargetMonitorId()));
 		}
@@ -539,8 +540,8 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	private IntegrationConditionInfo createInputData() {
-		IntegrationConditionInfo info = new IntegrationConditionInfo();
+	private IntegrationConditionInfoResponse createInputData() {
+		IntegrationConditionInfoResponse info = new IntegrationConditionInfoResponse();
 
 		// 説明
 		if (this.m_textDescription.getText() != null
@@ -561,10 +562,10 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 		// 収集値種別による設定
 		if (this.m_radioNumeric.getSelection()) {
 			// 収集値種別
-			info.setTargetMonitorType(MonitorTypeConstant.TYPE_NUMERIC);
+			info.setTargetMonitorType(IntegrationConditionInfoResponse.TargetMonitorTypeEnum.NUMERIC);
 			// 収集項目名
 			if (this.m_comboItemDisplayName.getText() != null) {
-				CollectKeyInfo collectKeyInfo 
+				CollectKeyInfoResponseP1 collectKeyInfo 
 					= m_itemDisplayNameNumericMap.get(this.m_comboItemDisplayName.getText());
 				if (collectKeyInfo == null) {
 					this.setValidateResult(Messages.getString("message.hinemos.1"),
@@ -578,10 +579,10 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 			}
 		} else if (this.m_radioString.getSelection()) {
 			// 収集値種別
-			info.setTargetMonitorType(MonitorTypeConstant.TYPE_STRING);
+			info.setTargetMonitorType(IntegrationConditionInfoResponse.TargetMonitorTypeEnum.STRING);
 			// 収集項目名
 			if (this.m_comboItemDisplayName.getText() != null) {
-				MonitorInfo monitorInfo
+				MonitorInfoResponseP1 monitorInfo
 					= m_itemDisplayNameStringMap.get(this.m_comboItemDisplayName.getText());
 				if (monitorInfo == null) {
 					this.setValidateResult(Messages.getString("message.hinemos.1"),
@@ -685,7 +686,7 @@ public class IntegrationConditionCreateDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		IntegrationConditionInfo info = this.m_inputData;
+		IntegrationConditionInfoResponse info = this.m_inputData;
 		if(info != null){
 			result = true;
 		}

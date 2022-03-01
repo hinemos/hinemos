@@ -278,4 +278,28 @@ public class FacilityTreeItem implements Serializable, Cloneable {
 			completeParent(child);
 		}
 	}
+
+	/**
+	 * ファシリティが配下に含まれているかを再帰的に判定します
+	 * @param facilityId
+	 * @param scopeFlg スコープを判定の対象に含めるかどうか
+	 * @param validFlg 有効/無効
+	 * @return
+	 */
+	public boolean isContained(String facilityId, boolean scopeFlg, boolean validFlg) {
+		if (facilityId.equals(this.data.getFacilityId())) {
+			if (this.data.getFacilityType() == FacilityConstant.TYPE_NODE) {
+				return this.data.getValid() == validFlg;
+			} else if (scopeFlg) {
+				return true;
+			}
+			return false;
+		}
+		for (FacilityTreeItem child : this.children) {
+			if (child.isContained(facilityId, scopeFlg, validFlg)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

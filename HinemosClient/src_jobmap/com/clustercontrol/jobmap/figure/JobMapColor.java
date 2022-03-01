@@ -18,4 +18,5 @@ public class JobMapColor {
 	public static final Color yellow = new Color (null, 255, 255, tmpColor);
 	public static final Color lightgray = new Color ( null, 200, 200, 200);
 	public static final Color darkgray = new Color ( null, 110, 110, 110);
+	public static final Color black = new Color ( null, 0, 0, 0);
 }

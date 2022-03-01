@@ -14,14 +14,9 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -52,83 +47,9 @@ public class KeyCheck {
 	
 	private static final String ALGORITHM = "RSA";
 	public static final String PUBLIC_KEY_STR = 
-			"30819?300=06092:864886?70=010101050003818=00308189028181008?8=8?0037062==696>189>=09>404??810<4<2?>>9<52:5?2<97072438320?=1718>;4>9?140368:4>18425657:>94>7<;1<<>63>;75445<>;?4=>063>18;971747028>8:<<;1?1<579:921?5<??:>9><4>:9?;?8??;61:303?0394<351=79;36338><124;;38:>0220;37<66=6>2>?9>>41<4=2;0;833616?8===:09;0=<1=0203010001";
-	
+			"30819?300=06092:864886?70=010101050003818=0030818902818100;53399;<0><38<6809;2:?65;424>94?1087:6<;779>>==:90766<?<=625112:<1>909;680=?207:7>0:===7<38893=:01389:88?818>65<46?2=765:561>01:8=8;863;;:7?26435:;;866>;:0;??6:>73;=16>19?93397?774928?24974<0349:49<4=>25722851:858>7<9904;=0?;2;64561>=81?===8==27><?32>>;><30203010001";
 	private static Map<String, Integer> expireDateMap = new ConcurrentHashMap<>();
 	private static Map<String, String> filenameTypeMap = new ConcurrentHashMap<>();
-	
-	/**
-	 * 秘密鍵と公開鍵のチェックを行います。
-	 * 
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		PrivateKey privateKey = null;
-		PublicKey publicKey = null;
-		
-		/// 秘密鍵と公開鍵を生成済みの場合 true
-		/// 秘密鍵と公開鍵を生成したい場合 false (動作確認用)
-		boolean flag = false;
-		if (flag) {
-			try {
-				// 秘密鍵
-				privateKey = getPrivateKey("ここに秘密鍵の文字列を書く。privateKey.txtのファイルの中身。");
-		
-				// 公開鍵
-				publicKey = getPublicKey("ここに公開鍵の文字列を書く。");
-				// publicKey = getPublicKey(publicKeyStr);
-			} catch (Exception e) {
-				System.out.println("hoge" + e.getMessage());
-			}
-		} else {
-			KeyPairGenerator generator;
-			try {
-				generator = KeyPairGenerator.getInstance(ALGORITHM);
-				SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
-				// 公開鍵ビット長は 1024
-				generator.initialize(1024, random);
-				KeyPair keyPair = generator.generateKeyPair();
-				privateKey = keyPair.getPrivate();
-				publicKey = keyPair.getPublic();
-			} catch (NoSuchAlgorithmException ex) {
-				System.out.println(ex.getMessage());
-			}
-		}
-		
-		//
-		// 使用するキーペア
-		System.out.println("秘密鍵");
-		if (privateKey != null) {
-			System.out.println(byte2String(privateKey.getEncoded()));
-		}
-		System.out.println("公開鍵");
-		if (publicKey != null) {
-			System.out.println(byte2String(publicKey.getEncoded()));
-		}
-
-		// 暗号化したいデータをバイト列で用意
-		String string = "20140701_nttdata";
-		byte[] src = string.getBytes();
-		System.out.println("暗号化するデータ（String）");
-		System.out.println(string);
-		System.out.println("暗号化するデータ（byte）");
-		System.out.println(byte2String(src));
-
-		// 暗号化
-		try {
-			String encStr = encrypt(string, privateKey);
-			System.out.println("暗号化後データ");
-			System.out.println(encStr);
-	
-			// 復号
-			String decStr = decrypt(encStr, publicKey);
-			System.out.println("復号後データ");
-			System.out.println(decStr);
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-		}
-
-	}
 	
 	/**
 	 * キーの最終年月を取得します。
@@ -137,7 +58,7 @@ public class KeyCheck {
 	 * @return キーの最終年月
 	 */
 	private static synchronized Integer getLastestDate(String type){
-		Integer lastestDate = new Integer(0);
+		Integer lastestDate =Integer.valueOf(0);
 		String filenameType = null;
 		
 		String etcdir = System.getProperty("hinemos.manager.etc.dir");
@@ -157,12 +78,12 @@ public class KeyCheck {
 			});
 			if (files == null) {
 				m_log.warn(etcdir + " does not exist");
-				return new Integer(0);
+				return Integer.valueOf(0);
 			}
 			m_log.info("Found key files=" + files.length);
 		} catch (Exception e) {
 			m_log.warn(e.getMessage(), e);
-			return new Integer(0);
+			return Integer.valueOf(0);
 		}
 
 		Map<String, Integer> latestDateMap = new HashMap<>();
@@ -314,25 +235,6 @@ public class KeyCheck {
 	}
 
 	/**
-	 * 秘密鍵
-	 * com.clustercontrol.key.KeyGeneratorから参照されているため、publicにする。
-	 * @param str
-	 * @return
-	 * @throws HinemosUnknown
-	 */
-	public static PrivateKey getPrivateKey(String str) throws HinemosUnknown {
-		try {
-			KeyFactory keyFactory = KeyFactory.getInstance(ALGORITHM);
-			PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(string2Byte(str));
-			return keyFactory.generatePrivate(privateKeySpec);
-		} catch (InvalidKeySpecException e) {
-			throw new HinemosUnknown("getPrivateKey fail " + e.getMessage(), e);
-		} catch (NoSuchAlgorithmException e) {
-			throw new HinemosUnknown("getPrivateKey fail " + e.getMessage(), e);
-		}
-	}
-	
-	/**
 	 * 公開鍵
 	 * com.clustercontrol.key.KeyGeneratorから参照されているため、publicにする。
 	 * @param str
@@ -350,8 +252,14 @@ public class KeyCheck {
 			throw new HinemosUnknown("getPublicKey fail " + e.getMessage(), e);
 		}
 	}
-	
-	private static byte[] string2Byte(String str) {
+
+	/**
+	 * StringからByte配列に変換
+	 * com.clustercontrol.key.KeyGeneratorから参照されているため、publicにする。
+	 * @param str
+	 * @return byte[]
+	 */
+	public static byte[] string2Byte(String str) {
 		if(str.length() % 2 != 0) {
 			str = "0" + str;
 		}
@@ -360,17 +268,6 @@ public class KeyCheck {
 			bytes[i] = (byte)(((str.charAt(2 * i) - '0') << 4) + str.charAt(2 * i + 1) - '0');
 		}
 		return bytes;
-	}
-
-	private static String byte2String(byte[] bytes) {
-		int len = bytes.length;
-		byte[] data = new byte[len << 1];
-		for (int i = 0, j = 0; i < len; i++) {
-			int c = bytes[i];
-			data[j++] = (byte)(((c >> 4) & 0x0000000f) + '0');
-			data[j++] = (byte)((c & 0x0000000f) + '0');
-		}
-		return new String(data);
 	}
 	
 	/**
@@ -402,36 +299,6 @@ public class KeyCheck {
 			m_log.warn(ex.getMessage(), ex);
 		}
 		throw new HinemosUnknown("decrypt error");
-	}
-
-	/**
-	 * 秘密鍵で暗号化
-	 * com.clustercontrol.key.KeyGeneratorから参照されているため、publicにする。
-	 * @param source
-	 * @param privateKey
-	 * @return
-	 * @throws HinemosUnknown
-	 */
-	public static String encrypt(String source, PrivateKey privateKey) throws HinemosUnknown {
-		return byte2String(encrypt(source.getBytes(), privateKey));
-	}
-	private static byte[] encrypt(byte[] source, PrivateKey privateKey) throws HinemosUnknown{
-		try {
-			Cipher cipher = Cipher.getInstance(ALGORITHM);
-			cipher.init(Cipher.ENCRYPT_MODE, privateKey);
-			return cipher.doFinal(source);
-		} catch (IllegalBlockSizeException ex) {
-			m_log.warn(ex.getMessage(), ex);
-		} catch (BadPaddingException ex) {
-			m_log.warn(ex.getMessage(), ex);
-		} catch (InvalidKeyException ex) {
-			m_log.warn(ex.getMessage(), ex);
-		} catch (NoSuchAlgorithmException ex) {
-			m_log.warn(ex.getMessage(), ex);
-		} catch (NoSuchPaddingException ex) {
-			m_log.warn(ex.getMessage(), ex);
-		}
-		throw new HinemosUnknown("encrypt error");
 	}
 
 	/**

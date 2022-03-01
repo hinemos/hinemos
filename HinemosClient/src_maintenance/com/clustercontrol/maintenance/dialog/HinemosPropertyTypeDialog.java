@@ -21,6 +21,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.HinemosPropertyResponse.TypeEnum;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.dialog.CommonDialog;
@@ -110,7 +111,7 @@ public class HinemosPropertyTypeDialog extends CommonDialog {
 			}
 		});
 		// 共通設定タイプ定義のインスタンスを登録する
-		for (Map.Entry<Integer, String> entry : HinemosPropertyTypeMessage
+		for (Map.Entry<TypeEnum, String> entry : HinemosPropertyTypeMessage
 				.getList().entrySet()) {
 			HinemosPropertyTypeList.add(entry.getValue());
 		}
@@ -170,7 +171,7 @@ public class HinemosPropertyTypeDialog extends CommonDialog {
 		}
 
 		// 選択された値種別を取得する
-		int valueType = HinemosPropertyTypeMessage.stringToType(this
+		TypeEnum valueType = HinemosPropertyTypeMessage.stringToType(this
 				.getSelectItem());
 		// ダイアログの生成
 		HinemosPropertyDialog dialog = new HinemosPropertyDialog(

@@ -40,8 +40,13 @@ public class OperationConstant {
 	public static final int TYPE_STOP_MAINTENANCE = 8;
 	/** 停止[状態指定] */
 	public static final int TYPE_STOP_SET_END_VALUE = 10;
+	/** 停止[状態指定](強制) */
+	public static final int TYPE_STOP_SET_END_VALUE_FORCE = 13;
 	/** 停止[強制] */
 	public static final int TYPE_STOP_FORCE = 11;
+	
+	/** RPAシナリオジョブ スクリーンショット取得 */
+	public static final int TYPE_RPA_SCREENSHOT = 14;
 	
 	/**
 	 * 
@@ -71,8 +76,12 @@ public class OperationConstant {
 			return "JOB_STOP_MAINTENANCE";
 		} else if (type == TYPE_STOP_SET_END_VALUE) {
 			return "JOB_STOP_SET_END_VALUE";
+		} else if (type == TYPE_STOP_SET_END_VALUE_FORCE) {
+			return "JOB_STOP_SET_END_VALUE_FORCE";
 		} else if (type == TYPE_STOP_FORCE) {
 			return "JOB_STOP_FORCE";
+		} else if (type == TYPE_RPA_SCREENSHOT) {
+			return "JOB_RPA_SCREENSHOT";
 		}
 		return "";
 	}

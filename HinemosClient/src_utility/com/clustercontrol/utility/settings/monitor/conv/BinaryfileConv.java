@@ -8,15 +8,29 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.BinaryCheckInfoResponse;
+import org.openapitools.client.model.BinaryCheckInfoResponse.CollectTypeEnum;
+import org.openapitools.client.model.BinaryCheckInfoResponse.CutTypeEnum;
+import org.openapitools.client.model.BinaryCheckInfoResponse.LengthTypeEnum;
+import org.openapitools.client.model.BinaryCheckInfoResponse.TsTypeEnum;
+import org.openapitools.client.model.BinaryPatternInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
 
 import com.clustercontrol.binary.bean.BinaryConstant;
 import com.clustercontrol.binary.util.BinaryBeanUtil;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.monitor.xml.BinaryValue;
@@ -25,14 +39,8 @@ import com.clustercontrol.utility.settings.monitor.xml.BinaryfileMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.BinaryfileMonitorList;
 import com.clustercontrol.utility.settings.monitor.xml.BinaryfileMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.BinaryCheckInfo;
-import com.clustercontrol.ws.monitor.BinaryPatternInfo;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 
 /**
  * バイナリファイル 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -46,7 +54,7 @@ public class BinaryfileConv {
 
 	private final static String SCHEMA_TYPE = "I";
 	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "1";
+	private final static String SCHEMA_REVISION = "2";
 	
 	/**
 	 * <BR>
@@ -84,17 +92,19 @@ public class BinaryfileConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws ParseException 
+	 * @throws InvalidSetting 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static List<MonitorInfo> createMonitorInfoList(BinaryfileMonitorList binaryfileMonitors) throws ConvertorException, HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(BinaryfileMonitorList binaryfileMonitors) throws ConvertorException, HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, InvalidSetting, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 
 		for (BinaryfileMonitor binaryfileMonitor : binaryfileMonitors.getBinaryfileMonitor()) {
 			logger.debug("Monitor Id : " + binaryfileMonitor.getMonitor().getMonitorId());
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(binaryfileMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(binaryfileMonitor.getMonitor());
 
 			BinaryValue[] binaryVals = binaryfileMonitor.getBinaryValue();
 			MonitorConv.sort(binaryVals);
@@ -114,18 +124,20 @@ public class BinaryfileConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static BinaryfileMonitors createBinaryMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static BinaryfileMonitors createBinaryMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		BinaryfileMonitors binaryfileMonitors = new BinaryfileMonitors();
 
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
@@ -133,11 +145,11 @@ public class BinaryfileConv {
 			binaryfileMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 			
 			int orderNo = 0;
-			for (BinaryPatternInfo binaryPatternInfo : monitorInfo.getBinaryPatternInfo()) {
-				binaryfileMonitor.addBinaryValue(MonitorConv.createBinaryValue(binaryPatternInfo, ++orderNo));
+			for (BinaryPatternInfoResponse binaryPatternInfo : monitorInfo.getBinaryPatternInfo()) {
+				binaryfileMonitor.addBinaryValue(MonitorConv.createBinaryValue(monitorInfo.getMonitorId(),binaryPatternInfo, ++orderNo));
 			}
 
-			binaryfileMonitor.setBinaryfileInfo(createBinaryInfo(monitorInfo.getBinaryCheckInfo()));
+			binaryfileMonitor.setBinaryfileInfo(createBinaryInfo(monitorInfo));
 			binaryfileMonitors.addBinaryfileMonitor(binaryfileMonitor);
 		}
 
@@ -152,21 +164,23 @@ public class BinaryfileConv {
 	 *
 	 * @return
 	 */
-	private static BinaryfileInfo createBinaryInfo(BinaryCheckInfo binaryfileCheckInfo) {
+	private static BinaryfileInfo createBinaryInfo(MonitorInfoResponse monitorInfo) {
 		BinaryfileInfo binaryfileInfo = new BinaryfileInfo();
 		binaryfileInfo.setMonitorTypeId("");
-		binaryfileInfo.setMonitorId(binaryfileCheckInfo.getMonitorId());
+		binaryfileInfo.setMonitorId(monitorInfo.getMonitorId());
 		
-		binaryfileInfo.setDirectory(binaryfileCheckInfo.getDirectory());
-		binaryfileInfo.setFileName(binaryfileCheckInfo.getFileName());
+		binaryfileInfo.setDirectory(monitorInfo.getBinaryCheckInfo().getDirectory());
+		binaryfileInfo.setFileName(monitorInfo.getBinaryCheckInfo().getFileName());
 		
-		binaryfileInfo.setCollectType(binaryfileCheckInfo.getCollectType());
+		String collectType = OpenApiEnumConverter.enumToString(monitorInfo.getBinaryCheckInfo().getCollectType());
+		binaryfileInfo.setCollectType(collectType);
 
+		String cutType = OpenApiEnumConverter.enumToString(monitorInfo.getBinaryCheckInfo().getCutType());
 		// データ構造と詳細情報の設定.
 		BinaryConstant.DataArchType dataArchType = BinaryBeanUtil.getDataArchType(
-						binaryfileCheckInfo.getCollectType(),
-						binaryfileCheckInfo.getCutType(),
-						binaryfileCheckInfo.getTagType());
+				collectType,
+				cutType,
+				monitorInfo.getBinaryCheckInfo().getTagType());
 		switch (dataArchType) {
 
 		case INTERVAL:
@@ -177,17 +191,25 @@ public class BinaryfileConv {
 		case PRESET:
 		case CUSTOMIZE:
 			// プリセット指定あり・もしくは手入力の場合.
-			binaryfileInfo.setCutType(binaryfileCheckInfo.getTagType());
-			binaryfileInfo.setFileHeadSize(binaryfileCheckInfo.getFileHeadSize());
-			binaryfileInfo.setLengthType(binaryfileCheckInfo.getLengthType());
-			binaryfileInfo.setRecordSize(binaryfileCheckInfo.getRecordSize());
-			binaryfileInfo.setRecordHeadSize(binaryfileCheckInfo.getRecordHeadSize());
-			binaryfileInfo.setSizeLength(binaryfileCheckInfo.getSizeLength());
-			binaryfileInfo.setSizePosition(binaryfileCheckInfo.getSizePosition());
-			binaryfileInfo.setHaveTs(binaryfileCheckInfo.isHaveTs());
-			binaryfileInfo.setTsPosition(binaryfileCheckInfo.getTsPosition());
-			binaryfileInfo.setTsType(binaryfileCheckInfo.getTsType());
-			binaryfileInfo.setLittleEndian(binaryfileCheckInfo.isLittleEndian());
+			binaryfileInfo.setCutType(monitorInfo.getBinaryCheckInfo().getTagType());
+			binaryfileInfo.setFileHeadSize(monitorInfo.getBinaryCheckInfo().getFileHeadSize());
+			String lengthType = OpenApiEnumConverter.enumToString(monitorInfo.getBinaryCheckInfo().getLengthType());
+			binaryfileInfo.setLengthType(lengthType);
+			//レコードは固定長を選択される場合
+			if(LengthTypeEnum.FIXED == monitorInfo.getBinaryCheckInfo().getLengthType()){
+				binaryfileInfo.setRecordSize(binaryfileInfo.getRecordSize());
+			} else {
+				binaryfileInfo.setRecordSize(0);
+			}
+			binaryfileInfo.setRecordSize(monitorInfo.getBinaryCheckInfo().getRecordSize());
+			binaryfileInfo.setRecordHeadSize(monitorInfo.getBinaryCheckInfo().getRecordHeadSize());
+			binaryfileInfo.setSizeLength(monitorInfo.getBinaryCheckInfo().getSizeLength());
+			binaryfileInfo.setSizePosition(monitorInfo.getBinaryCheckInfo().getSizePosition());
+			binaryfileInfo.setHaveTs(monitorInfo.getBinaryCheckInfo().getHaveTs());
+			binaryfileInfo.setTsPosition(monitorInfo.getBinaryCheckInfo().getTsPosition());
+			String tsType = OpenApiEnumConverter.enumToString(monitorInfo.getBinaryCheckInfo().getTsType());
+			binaryfileInfo.setTsType(tsType);
+			binaryfileInfo.setLittleEndian(monitorInfo.getBinaryCheckInfo().getLittleEndian());
 			break;
 
 		case NONE:
@@ -204,16 +226,17 @@ public class BinaryfileConv {
 	 * <BR>
 	 *
 	 * @return
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	private static BinaryCheckInfo createBinaryCheckInfo(BinaryfileInfo binaryfileInfo) {
-		BinaryCheckInfo binaryfileCheckInfo = new BinaryCheckInfo();
-		binaryfileCheckInfo.setMonitorTypeId("");
-		binaryfileCheckInfo.setMonitorId(binaryfileInfo.getMonitorId());
-		
+	private static BinaryCheckInfoResponse  createBinaryCheckInfo(BinaryfileInfo binaryfileInfo) throws InvalidSetting, HinemosUnknown {
+		BinaryCheckInfoResponse binaryfileCheckInfo = new BinaryCheckInfoResponse();
+
 		binaryfileCheckInfo.setDirectory(binaryfileInfo.getDirectory());
 		binaryfileCheckInfo.setFileName(binaryfileInfo.getFileName());
 		
-		binaryfileCheckInfo.setCollectType(binaryfileInfo.getCollectType());
+		CollectTypeEnum collectTypeEnum = OpenApiEnumConverter.stringToEnum(binaryfileInfo.getCollectType(), CollectTypeEnum.class);
+		binaryfileCheckInfo.setCollectType(collectTypeEnum);
 
 		// データ構造と詳細情報の設定.
 		BinaryConstant.DataArchType dataArchType = BinaryBeanUtil.getDataArchType(
@@ -224,23 +247,32 @@ public class BinaryfileConv {
 
 		case INTERVAL:
 			// 時間区切り.
-			binaryfileCheckInfo.setCutType(BinaryConstant.CUT_TYPE_INTERVAL);
+			binaryfileCheckInfo.setCutType(CutTypeEnum.INTERVAL);
 			break;
 
 		case PRESET:
 		case CUSTOMIZE:
 			// プリセット指定あり・もしくは手入力の場合.
-			binaryfileCheckInfo.setCutType(BinaryConstant.CUT_TYPE_LENGTH);
+			binaryfileCheckInfo.setCutType(CutTypeEnum.LENGTH);
 			binaryfileCheckInfo.setTagType(binaryfileInfo.getCutType());
 			binaryfileCheckInfo.setFileHeadSize(binaryfileInfo.getFileHeadSize());
-			binaryfileCheckInfo.setLengthType(binaryfileInfo.getLengthType());
-			binaryfileCheckInfo.setRecordSize(binaryfileInfo.getRecordSize());
+
+			LengthTypeEnum lengthTypeEnum = OpenApiEnumConverter.stringToEnum(binaryfileInfo.getLengthType(), LengthTypeEnum.class);
+			binaryfileCheckInfo.setLengthType(lengthTypeEnum);
+			
+			//レコードは固定長を選択される場合
+			if(LengthTypeEnum.FIXED == lengthTypeEnum){
+				binaryfileCheckInfo.setRecordSize(binaryfileInfo.getRecordSize());
+			} else {
+				binaryfileCheckInfo.setRecordSize(0);
+			}
 			binaryfileCheckInfo.setRecordHeadSize(binaryfileInfo.getRecordHeadSize());
 			binaryfileCheckInfo.setSizeLength(binaryfileInfo.getSizeLength());
 			binaryfileCheckInfo.setSizePosition(binaryfileInfo.getSizePosition());
 			binaryfileCheckInfo.setHaveTs(binaryfileInfo.getHaveTs());
 			binaryfileCheckInfo.setTsPosition(binaryfileInfo.getTsPosition());
-			binaryfileCheckInfo.setTsType(binaryfileInfo.getTsType());
+			TsTypeEnum tstypeEnum = OpenApiEnumConverter.stringToEnum(binaryfileInfo.getTsType(), TsTypeEnum.class);
+			binaryfileCheckInfo.setTsType(tstypeEnum);
 			binaryfileCheckInfo.setLittleEndian(binaryfileInfo.getLittleEndian());
 			break;
 

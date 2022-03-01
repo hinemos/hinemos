@@ -79,7 +79,15 @@ public class ModifySchedule {
 							|| entity.getCollectorFlg()
 							|| entity.getPredictionFlg()
 							|| entity.getChangeFlg()){
-						updateSchedule(entity, true);
+						updateSchedule(
+								entity.getMonitorId(),
+								entity.getMonitorTypeId(),
+								entity.getMonitorType(),
+								entity.getTriggerType(),
+								entity.getRunInterval(),
+								entity.getDelayTime(),
+								true,
+								true);
 					}
 				} catch (Exception e) {
 					m_log.info("updateScheduleAll() scheduleJob : monitorId = " + entity.getMonitorId()
@@ -136,7 +144,15 @@ public class ModifySchedule {
 				@Override
 				public void postCommit() {
 					try {
-						updateSchedule(entityCopy, false);
+						updateSchedule(
+								entityCopy.getMonitorId(),
+								entityCopy.getMonitorTypeId(),
+								entityCopy.getMonitorType(),
+								entityCopy.getTriggerType(),
+								entityCopy.getRunInterval(),
+								entityCopy.getDelayTime(),
+								(entityCopy.getMonitorFlg() || entityCopy.getCollectorFlg() || entityCopy.getChangeFlg() || entityCopy.getPredictionFlg()),
+								false);
 					} catch (HinemosUnknown e) {
 						m_log.error(e);
 					}
@@ -145,13 +161,19 @@ public class ModifySchedule {
 		}
 	}
 
-	private void updateSchedule(MonitorInfo entity, boolean isInitManager) throws HinemosUnknown {
-		String monitorId = entity.getMonitorId();
-		String monitorTypeId = entity.getMonitorTypeId();
+	private void updateSchedule(
+			String monitorId,
+			String monitorTypeId,
+			Integer monitorType,
+			String triggerType,
+			Integer runInterval,
+			Integer delayTime,
+			Boolean scheduleFlag,
+			boolean isInitManager) throws HinemosUnknown {
 
 		TriggerType type = null;
 		try {
-			type = TriggerType.valueOf(entity.getTriggerType());
+			type = TriggerType.valueOf(triggerType);
 		} catch (IllegalArgumentException e) {
 			m_log.info("updateSchedule() Invalid TRIGGER_TYPE. monitorTypeId = " + monitorTypeId + ", + monitorId = " + monitorId);
 			return;
@@ -159,8 +181,6 @@ public class ModifySchedule {
 
 		switch (type) {
 		case SIMPLE :
-			int interval = entity.getRunInterval();
-
 			m_log.debug("Schedule SimpleTrigger. monitorId = " + monitorId);
 
 			switch (monitorTypeId) {
@@ -182,20 +202,17 @@ public class ModifySchedule {
 				jdArgs[1] = monitorId;
 				// 第3引数:監視判定タイプ
 				jdArgsType[2] = Integer.class;
-				jdArgs[2] = entity.getMonitorType();
+				jdArgs[2] = monitorType;
 				
 				// SimpleTrigger でジョブをスケジューリング登録
 				// 監視も収集も無効の場合、スケジューラには登録しない
-				if (entity.getMonitorFlg() 
-						|| entity.getCollectorFlg()
-						|| entity.getPredictionFlg()
-						|| entity.getChangeFlg()) {
+				if (scheduleFlag) {
 					SchedulerPlugin.scheduleSimpleJob(
 							SchedulerType.RAM_MONITOR,
 							monitorId,
 							monitorTypeId,
-							calcSimpleTriggerStartTime(interval, entity.getDelayTime(), isInitManager),
-							interval,
+							calcSimpleTriggerStartTime(runInterval, delayTime, isInitManager),
+							runInterval,
 							true,
 							MonitorRunManagementBean.class.getName(),
 							QuartzConstant.MONITOR_METHOD_MONITOR_AGGREGATED,
@@ -207,6 +224,9 @@ public class ModifySchedule {
 			break;
 		case CRON :
 			// CRON定義の監視は存在しない
+			throw new UnsupportedOperationException();
+		case SIMPLE2 :
+			// SIMPLE2定義の監視は存在しない
 			throw new UnsupportedOperationException();
 		case NONE :
 			// スケジュール登録しない

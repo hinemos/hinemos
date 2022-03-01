@@ -10,6 +10,7 @@ package com.clustercontrol.utility.settings.platform.conv;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.ObjectPrivilegeInfoResponse;
 
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -64,9 +65,9 @@ public class ObjectPrivilegeConv {
 	 *            XMLオブジェクト権限情報オブジェクト
 	 * @return Dtoオブジェクト権限情報オブジェクト
 	 */
-	public static com.clustercontrol.ws.access.ObjectPrivilegeInfo convObjectPrivilegeXml2Dto(ObjectPrivilegeInfo privilegeInfo) {
+	public static ObjectPrivilegeInfoResponse convObjectPrivilegeXml2Dto(ObjectPrivilegeInfo privilegeInfo) {
 
-		com.clustercontrol.ws.access.ObjectPrivilegeInfo dto = new com.clustercontrol.ws.access.ObjectPrivilegeInfo();
+		ObjectPrivilegeInfoResponse dto = new ObjectPrivilegeInfoResponse();
 
 		try {
 			if(privilegeInfo.getObjectId() != null
@@ -118,7 +119,7 @@ public class ObjectPrivilegeConv {
 	 *            DTOオブジェクト権限情報オブジェクト
 	 * @return XMLオブジェクト権限情報オブジェクト
 	 */
-	public static ObjectPrivilegeInfo convObjectPrivilegeDto2Xml(com.clustercontrol.ws.access.ObjectPrivilegeInfo dto) {
+	public static ObjectPrivilegeInfo convObjectPrivilegeDto2Xml(ObjectPrivilegeInfoResponse dto) {
 
 		ObjectPrivilegeInfo privilegeInfo = new ObjectPrivilegeInfo();
 

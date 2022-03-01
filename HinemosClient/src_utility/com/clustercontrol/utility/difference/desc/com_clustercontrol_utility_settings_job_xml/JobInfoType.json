@@ -61,6 +61,7 @@
 			{"value":"2", "name":"name_job_type_job"},
 			{"value":"3", "name":"name_job_type_file"},
 			{"value":"5", "name":"name_job_type_ref"},
+			{"value":"7", "name":"name_job_type_ref_net"},
 			{"value":"8", "name":"name_job_type_app"},
 			{"value":"9", "name":"name_job_type_monitor"}
 		]}
@@ -95,6 +96,16 @@
 		{"type":"Translate", "values":[
 			{"value":"false", "name":"name_dont"}, 
 			{"value":"true", "name":"name_do"}
+		]}
+	]},
+
+	{
+	"propName":"expNodeRuntimeFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_expNodeRuntimeFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_hyphen"}, 
+			{"value":"true", "name":"name_circle"}
 		]}
 	]},
 
@@ -648,11 +659,15 @@
 	]},
 	
 	{
-	"propName":"startJob",
+	"propName":"normalJobOutput",
 	"annotations":[
-		{"type":"Column", "columnName":"JobInfoType_startJobList"},
-		{"type":"Array", "idType":"props", "props":["targetJobType", "targetJobId", "targetJobEndValue"]},
-		{"type":"Array", "idType":"props", "props":["targetJobType", "startTime"]}
+		{"type":"Ignore", "propNames":["outputType"]}
+	]},
+	
+	{
+	"propName":"errorJobOutput",
+	"annotations":[
+		{"type":"Ignore", "propNames":["outputType"]}
 	]},
 	
 	{
@@ -721,6 +736,12 @@
 			{"value":"1", "name":"name_warning"},
 			{"value":"2", "name":"name_abnormal"}
 		]}
+	]},
+	
+	{
+	"propName":"jobRetryInterval",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_jobRetryInterval"}
 	]},
 	
 	{
@@ -906,6 +927,102 @@
 	"annotations":[
 		{"type":"Column", "columnName":"JobInfoType_MonitorWaitEndValue"}
 	]},
+	
+	{
+	"propName":"resourceCloudScopeId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceCloudScopeId"}
+	]},
+	
+	{
+	"propName":"resourceLocationId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceLocationId"}
+	]},
+	
+	{
+	"propName":"resourceType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_JobInfoType_scope"}, 
+			{"value":"1", "name":"name_JobInfoType_instance"}, 
+			{"value":"2", "name":"name_JobInfoType_storage"}
+		]}
+	]},
+	
+	{
+	"propName":"resourceAction",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceAction"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_JobInfoType_powerOn"}, 
+			{"value":"1", "name":"name_JobInfoType_powerOff"}, 
+			{"value":"2", "name":"name_JobInfoType_reboot"}, 
+			{"value":"3", "name":"name_JobInfoType_suspend"}, 
+			{"value":"4", "name":"name_JobInfoType_snapShot"}, 
+			{"value":"5", "name":"name_JobInfoType_attach"}, 
+			{"value":"6", "name":"name_JobInfoType_detach"}
+		]}
+	]},
+	
+	{
+	"propName":"resourceTargetFacilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceTargetFacilityId"}
+	]},
+	
+	{
+	"propName":"resourceTargetComputeId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceTargetComputeId"}
+	]},
+	{
+	"propName":"resourceTargetStorageId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceTargetStorageId"}
+	]},
+	{
+	"propName":"resourceStatusConfirmTime",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceStatusConfirmTime"}
+	]},
+	
+	{
+	"propName":"resourceStatusConfirmInterval",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceStatusConfirmInterval"}
+	]},
+	
+	{
+	"propName":"resourceNotifyScope",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceNotifyScope"}
+	]},
+	
+	{
+	"propName":"resourceSuccessEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_successEndValue"}
+	]},
+	
+	{
+	"propName":"resourceFailureEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_failureEndValue"}
+	]},
+	
+	{
+	"propName":"resourceAttachNode",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceAttachNode"}
+	]},
+	
+	{
+	"propName":"resourceAttachDevice",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_resourceAttachDevice"}
+	]},
 
 	{
 	"propName":"exclusiveBranch",
@@ -953,6 +1070,744 @@
 	"propName":"queueId",
 	"annotations":[
 		{"type":"Column", "columnName":"JobInfoType_queueId"}
+	]},
+	
+	{
+	"propName":"retryFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_retryFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"retryCount",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_retryCount"}
+	]},
+	
+	{
+	"propName":"failureOperation",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_failureOperation"},
+		{"type":"Translate", "values":[
+			{"value":"2", "name":"name_job_failureOperationType_stopSuspend"},
+			{"value":"10", "name":"name_job_failureOperationType_stopSetEndValue"}
+		]}
+	]},
+	
+	{
+	"propName":"failureEndStatus",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_failureEndStatus"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_normal"},
+			{"value":"1", "name":"name_warning"},
+			{"value":"2", "name":"name_abnormal"}
+		]}
+	]},
+	
+	{
+	"propName":"joblinkMessageId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_joblinkMessageId"}
+	]},
+	
+	{
+	"propName":"linkSendSuccessEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_successEndValue"}
+	]},
+	
+	{
+	"propName":"linkSendFailureEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_failureEndValue"}
+	]},
+	
+	{
+	"propName":"linkStandbyFacilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_facilityId"}
+	]},
+	
+	{
+	"propName":"priority",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_priority"},
+		{"type":"Translate",
+			"values":[
+				{"value":"0", "name":"name_rick"},
+				{"value":"1", "name":"name_unknown"},
+				{"value":"2", "name":"name_warning"},
+				{"value":"3", "name":"name_information"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"message",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_message"}
+	]},
+	
+	{
+	"propName":"pastFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_pastFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"pastMin",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_pastMin"}
+	]},
+	
+	{
+	"propName":"linkStandbyJoblinkMessageId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_joblinkMessageId"}
+	]},
+	
+	{
+	"propName":"infoValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_infoValidFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"warnValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_warnValidFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"criticalValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_criticalValidFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"unknownValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_unknownValidFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"applicationFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_applicationFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"application",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_application"}
+	]},
+	
+	{
+	"propName":"monitorDetailIdFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_monitorDetailIdFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"monitorDetailId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_monitorDetailId"}
+	]},
+	
+	{
+	"propName":"messageFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_messageFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"linkStandbyMessage",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_message"}
+	]},
+	
+	{
+	"propName":"expFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_expFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"monitorAllEndValueFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_monitorAllEndValueFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"monitorAllEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_monitorAllEndValue"}
+	]},
+	
+	{
+	"propName":"linkStandbyMonitorInfoEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_MonitorInfoEndValue"}
+	]},
+
+	{
+	"propName":"linkStandbyMonitorWarnEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_MonitorWarnEndValue"}
+	]},
+
+	{
+	"propName":"linkStandbyMonitorCriticalEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_MonitorCriticalEndValue"}
+	]},
+
+	{
+	"propName":"linkStandbyMonitorUnknownEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_MonitorUnknownEndValue"}
+	]},
+
+	{
+	"propName":"linkStandbyFailureEndFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_failureEndFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"linkStandbyMonitorWaitTime",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_MonitorWaitTime"}
+	]},
+
+	{
+	"propName":"linkStandbyMonitorWaitEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_MonitorWaitEndValue"}
+	]},
+	
+	{
+	"propName":"joblinkSendSettingId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_joblinkSendSettingId"}
+	]},
+	
+	{
+	"propName":"objectGroup",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_objectGroup"},
+		{"type":"Array", "idType":"props", "props":["orderNo"]},
+		{"type":"Ignore", "propNames":["orderNo"]}
+	]},
+	
+	{
+	"propName":"jobLinkExp",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_jobLinkExp"},
+		{"type":"Array", "idType":"props", "props":["key"]},
+		{"type":"Ignore", "propNames":["key"]}
+	]},
+	
+	{
+	"propName":"jobLinkInherit",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_jobLinkInherit"},
+		{"type":"Array", "idType":"props", "props":["paramId"]},
+		{"type":"Ignore", "propNames":["paramId"]}
+	]},
+	
+	{
+	"propName":"fileCheckFacilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_facilityId"}
+	]},
+	
+	{
+	"propName":"directory",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_directory"}
+	]},
+	
+	{
+	"propName":"fileName",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_fileName"}
+	]},
+	
+	{
+	"propName":"fileCheckProcessMode",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_processMode"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_job_process_mode_all"},
+			{"value":"2", "name":"name_job_process_mode_anyone"}
+		]}
+	]},
+	
+	{
+	"propName":"createValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_createValidFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"createBeforeJobStartFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_createBeforeJobStartFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"deleteValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_deleteValidFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"modifyValidFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_modifyValidFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"modifyType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_modifyType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_filecheck_modify_type_timestamp"},
+			{"value":"1", "name":"name_filecheck_modify_type_filesize"}
+		]}
+	]},
+	
+	{
+	"propName":"notJudgeFileInUseFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_notJudgeFileInUseFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"fileCheckSuccessEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_successEndValue"}
+	]},
+	
+	{
+	"propName":"fileCheckFailureEndFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_failureEndFlg"},
+		{"type":"Translate", "values":[{"value":"false", "name":"name_hyphen"}, {"value":"true", "name":"name_circle"}]}
+	]},
+	
+	{
+	"propName":"fileCheckFailureWaitTime",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_failureWaitTime"}
+	]},
+	
+	{
+	"propName":"fileCheckFailureEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_failureEndValue"}
+	]},
+	
+	{
+	"propName":"rpaJobType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaJobType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_job_rpa_direct"}, 
+			{"value":"1", "name":"name_job_rpa_indirect"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaScenarioFacilityId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_facilityId"}
+	]},
+	
+	{
+	"propName":"rpaProcessMode",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_processMode"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_job_process_mode_all"}, 
+			{"value":"2", "name":"name_job_process_mode_retry"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaToolId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaToolId"}
+	]},
+	
+	{
+	"propName":"rpaExeFilepath",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaExeFilepath"}
+	]},
+	
+	{
+	"propName":"rpaScenarioFilepath",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaScenarioFilepath"}
+	]},
+	
+	{
+	"propName":"rpaLogDirectory",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLogDirectory"}
+	]},
+	
+	{
+	"propName":"rpaLogFileName",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLogFileName"}
+	]},
+	
+	{
+	"propName":"rpaLogEncoding",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLogEncoding"}
+	]},
+	
+	{
+	"propName":"rpaLogReturnCode",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLogReturnCode"}
+	]},
+	
+	{
+	"propName":"rpaLogPatternHead",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLogPatternHead"}
+	]},
+	
+	{
+	"propName":"rpaLogPatternTail",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLogPatternTail"}
+	]},
+	
+	{
+	"propName":"rpaLogMaxBytes",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLogMaxBytes"}
+	]},
+	
+	{
+	"propName":"rpaDefaultEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaDefaultEndValue"}
+	]},
+	
+	{
+	"propName":"rpaLoginFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLoginFlg"}
+	]},
+	
+	{
+	"propName":"rpaLoginUserId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLoginUserId"}
+	]},
+	
+	{
+	"propName":"rpaLoginPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLoginPassword"}
+	]},
+	
+	{
+	"propName":"rpaLoginRetry",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLoginRetry"}
+	]},
+	
+	{
+	"propName":"rpaLoginEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLoginEndValue"}
+	]},
+	
+	{
+	"propName":"rpaLoginResolution",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLoginResolution"}
+	]},
+	
+	{
+	"propName":"rpaLogoutFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaLogoutFlg"}
+	]},
+	
+	{
+	"propName":"rpaScreenshotEndDelayFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaScreenshotEndDelayFlg"}
+	]},
+	
+	{
+	"propName":"rpaScreenshotEndValueFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaScreenshotEndValueFlg"}
+	]},
+	
+	{
+	"propName":"rpaScreenshotEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaScreenshotEndValue"}
+	]},
+	
+	{
+	"propName":"rpaScreenshotEndValueCondition",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaScreenshotEndValueCondition"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_equal_numeric"},
+			{"value":"1", "name":"name_not_equal_numeric"},
+			{"value":"2", "name":"name_greater_than"},
+			{"value":"3", "name":"name_greater_than_or_equal_to"},
+			{"value":"4", "name":"name_less_than"}, 
+			{"value":"5", "name":"name_less_than_or_equal_to"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaJobOptionInfos",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaJobOptionInfos"},
+		{"type":"Array", "idType":"props", "props":["orderNo"]}
+	]},
+	
+	{
+	"propName":"rpaJobEndValueConditionInfos",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaJobEndValueConditionInfos"},
+		{"type":"Array", "idType":"props", "props":["orderNo"]}
+	]},
+	
+	{
+	"propName":"rpaNotLoginNotify",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaNotLoginNotify"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaNotLoginNotifyPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaNotLoginNotifyPriority"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_rick"}, 
+			{"value":"1", "name":"name_unknown"},
+			{"value":"2", "name":"name_warning"},
+			{"value":"3", "name":"name_information"},
+			{"value":"4", "name":"name_Privilege_None"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaNotLoginEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaNotLoginEndValue"}
+	]},
+	
+	{
+	"propName":"rpaAlreadyRunningNotify",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaAlreadyRunningNotify"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaAlreadyRunningNotifyPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaAlreadyRunningNotifyPriority"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_rick"}, 
+			{"value":"1", "name":"name_unknown"},
+			{"value":"2", "name":"name_warning"},
+			{"value":"3", "name":"name_information"},
+			{"value":"4", "name":"name_Privilege_None"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaAlreadyRunningEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaAlreadyRunningEndValue"}
+	]},
+	
+	{
+	"propName":"rpaAbnormalExitNotify",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaAbnormalExitNotify"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaAbnormalExitNotifyPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaAbnormalExitNotifyPriority"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_rick"}, 
+			{"value":"1", "name":"name_unknown"},
+			{"value":"2", "name":"name_warning"},
+			{"value":"3", "name":"name_information"},
+			{"value":"4", "name":"name_Privilege_None"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaAbnormalExitEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaAbnormalExitEndValue"}
+	]},
+	
+	{
+	"propName":"rpaScopeId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaScopeId"}
+	]},
+	
+	{
+	"propName":"rpaRunType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaRunType"}
+	]},
+	
+	{
+	"propName":"rpaJobRunParamInfos",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaJobRunParamInfos"},
+		{"type":"Array", "idType":"props", "props":["paramId"]}
+	]},
+	
+	{
+	"propName":"rpaScenarioParam",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaScenarioParam"}
+	]},
+	
+	{
+	"propName":"rpaStopType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaStopType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_stop_scenario"}, 
+			{"value":"1", "name":"name_stop_job"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaStopMode",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaStopMode"}
+	]},
+	
+	{
+	"propName":"rpaRunConnectTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaRunConnectTimeout"}
+	]},
+	
+	{
+	"propName":"rpaRunRequestTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaRunRequestTimeout"}
+	]},
+	
+	{
+	"propName":"rpaRunEndFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaRunEndFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaRunRetry",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaRunRetry"}
+	]},
+	
+	{
+	"propName":"rpaRunEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaRunEndValue"}
+	]},
+	
+	{
+	"propName":"rpaCheckConnectTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaCheckConnectTimeout"}
+	]},
+	
+	{
+	"propName":"rpaCheckRequestTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaCheckRequestTimeout"}
+	]},
+	
+	{
+	"propName":"rpaCheckEndFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaCheckEndFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"rpaCheckRetry",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaCheckRetry"}
+	]},
+	
+	{
+	"propName":"rpaCheckEndValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaCheckEndValue"}
+	]},
+	
+	{
+	"propName":"rpaJobCheckEndValueInfos",
+	"annotations":[
+		{"type":"Column", "columnName":"JobInfoType_rpaJobCheckEndValueInfos"},
+		{"type":"Array", "idType":"props", "props":["endStatusId"]}
 	]}
 ]
 }

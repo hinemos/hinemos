@@ -8,9 +8,11 @@
 
 package com.clustercontrol.utility.settings.infra.conv;
 
+import org.openapitools.client.model.AddInfraFileRequest;
+import org.openapitools.client.model.InfraFileInfoResponse;
+
 import com.clustercontrol.utility.settings.infra.xml.InfraFileInfo;
 import com.clustercontrol.utility.settings.model.BaseConv;
-import com.clustercontrol.utility.util.DateUtil;
 
 /**
  * 環境構築ファイル定義情報をJavaBeanとXML(Bean)のbindingとの間でやりとりを
@@ -36,36 +38,28 @@ public class InfraFileConv extends BaseConv {
 	 * @return 
 	 * @throws Exception 
 	 */
-	public InfraFileInfo getXmlInfo(com.clustercontrol.ws.infra.InfraFileInfo info) throws Exception {
+	public InfraFileInfo getXmlInfo(InfraFileInfoResponse info) throws Exception {
 
 		InfraFileInfo ret = new InfraFileInfo();
 
 		//情報のセット(主部分)
-
 		ret.setFileId(info.getFileId());
-
 		ret.setFileName(ifNull2Empty(info.getFileName()));
-		ret.setCreateDatetime(DateUtil.convEpoch2DateString(info.getCreateDatetime()));
+		ret.setCreateDatetime(info.getCreateDatetime());
 		ret.setCreateUserId(ifNull2Empty(info.getCreateUserId()));
-		ret.setModifyDatetime(DateUtil.convEpoch2DateString(info.getModifyDatetime()));
+		ret.setModifyDatetime(info.getModifyDatetime());
 		ret.setModifyUserId(ifNull2Empty(info.getModifyUserId()));
 		ret.setOwnerRoleId(ifNull2Empty(info.getOwnerRoleId()));
 
 		return ret;
 	}
 
-	public com.clustercontrol.ws.infra.InfraFileInfo getDTO(InfraFileInfo info) throws Exception {
-		com.clustercontrol.ws.infra.InfraFileInfo ret = new com.clustercontrol.ws.infra.InfraFileInfo();
+	public AddInfraFileRequest getDTO(InfraFileInfo info) throws Exception {
+		AddInfraFileRequest ret = new AddInfraFileRequest();
 
 		//情報のセット(主部分)
-
 		ret.setFileId(info.getFileId());
-		
 		ret.setFileName(ifNull2Empty(info.getFileName()));
-		ret.setCreateDatetime(DateUtil.convDateString2Epoch(info.getCreateDatetime()));
-		ret.setCreateUserId(ifNull2Empty(info.getCreateUserId()));
-		ret.setModifyDatetime(DateUtil.convDateString2Epoch(info.getModifyDatetime()));
-		ret.setModifyUserId(ifNull2Empty(info.getModifyUserId()));
 		ret.setOwnerRoleId(ifNull2Empty(info.getOwnerRoleId()));
 
 		return ret;

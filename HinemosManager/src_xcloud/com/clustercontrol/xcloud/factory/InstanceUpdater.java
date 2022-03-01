@@ -10,6 +10,7 @@ package com.clustercontrol.xcloud.factory;
 import static com.clustercontrol.xcloud.common.CloudConstants.Event_Instance;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,9 +21,9 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.persistence.EntityExistsException;
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.log4j.Logger;
 
@@ -38,6 +39,7 @@ import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
 import com.clustercontrol.repository.model.NodeDiskInfo;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.NodeNetworkInterfaceInfo;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.InternalManagerError;
 import com.clustercontrol.xcloud.PluginException;
@@ -242,7 +244,8 @@ public class InstanceUpdater {
 		instanceEntity.setCloudScopeId(cloudScope.getId());
 		instanceEntity.setLocationId(location.getLocationId());
 		instanceEntity.setResourceId(platformInstance.getResourceId());
-		instanceEntity.setName(instanceName);
+		// DBの桁数に合わせてカットする
+		instanceEntity.setName(CloudUtil.truncateString(instanceName, CloudUtil.INSTANCE_NAME_MAX_BYTE));
 		instanceEntity.setInstanceStatus(platformInstance.getInstanceStatus());
 		instanceEntity.setCloudScope(cloudScope);
 		instanceEntity.setMemo(Session.current().get(ICloudOption.class).getCloudSpec().isInstanceMemoEnabled() ? platformInstance.getMemo(): memo);
@@ -399,7 +402,7 @@ public class InstanceUpdater {
 					ni.setDeviceIndex(o2.getDeviceIndex());
 				}
 				
-				ni.setDeviceSize(0);
+				ni.setDeviceSize(0L);
 				ni.setDeviceSizeUnit("");
 				
 				ni.setNicIpAddress(o2.getIpAddress() == null ? "": o2.getIpAddress());
@@ -427,7 +430,19 @@ public class InstanceUpdater {
 				AgentRegister.asyncRegistAgent(facilityId);
 		}
 	}
-	
+
+	/**
+	 * インスタンスに対応したノードを登録します。
+	 * 
+	 * @param location
+	 * @param instanceEntity インスタンスの情報。ノード登録に成功した場合はファシリティIDが設定されます。
+	 * @param platformInstance
+	 * @return 登録したノードの情報。 以下の想定済みの理由でノード登録できなかった場合は例外を投げずに null を返します。
+	 *         <ul>
+	 *           <li>自動登録時のマルチテナント制御によるIPアドレス制限
+	 *         </ul>
+	 * @throws CloudManagerException
+	 */
 	protected NodeInfo addHinemosNode(LocationEntity location, InstanceEntity instanceEntity, IResourceManagement.Instance platformInstance) throws CloudManagerException {
 		CloudScopeEntity cloudScope = Session.current().get(CloudScopeEntity.class);
 		
@@ -506,11 +521,13 @@ public class InstanceUpdater {
 					
 					notifier.setCompleted();
 				} catch (InvalidSetting | InvalidRole | FacilityNotFound | HinemosUnknown e1) {
-					logger.warn(String.format("addHinemosNode(%s, %s, %s, %s) %s", cloudScope.getCloudScopeId(), instanceEntity.getResourceId(), instanceEntity.getResourceType(), ActionMode.isAutoDetection(), e.getMessage()));
+					logger.warn(String.format("addHinemosNode[FD](%s, %s, %s, %s) %s", cloudScope.getCloudScopeId(), instanceEntity.getResourceId(), instanceEntity.getResourceType(), ActionMode.isAutoDetection(), e.getMessage()));
+					if (isContinuableViolation(e1)) return null;
 					throw ErrorCode.HINEMOS_MANAGER_ERROR.cloudManagerFault(e1);
 				}
 			} catch (InvalidSetting | HinemosUnknown e) {
 				logger.warn(String.format("addHinemosNode(%s, %s, %s, %s) %s", cloudScope.getCloudScopeId(), instanceEntity.getResourceId(), instanceEntity.getResourceType(), ActionMode.isAutoDetection(), e.getMessage()));
+				if (isContinuableViolation(e)) return null;
 				throw ErrorCode.HINEMOS_MANAGER_ERROR.cloudManagerFault(e);
 			}
 		}
@@ -521,9 +538,31 @@ public class InstanceUpdater {
 		return nodeInfo;
 	}
 	
+	/**
+	 * ノード登録時に生じた例外が、後続処理継続可能なものかどうかを判定して返します。
+	 */
+	static boolean isContinuableViolation(Exception e) {
+		// 自動登録時であること
+		if (!ActionMode.isAutoDetection()) return false;
+		// InvalidSettingであること
+		if (!(e instanceof InvalidSetting)) return false;
+		// メッセージ内容チェック
+		if (e.getMessage().startsWith("$[" + MessageConstant.MESSAGE_MULTI_TENANT_IPADDRESS_OUT_OF_BOUNDS.toString())) {
+			return true;
+		}
+		return false;
+	}
+	
 	public InstanceEntity updateInstanceEntity(LocationEntity location, InstanceEntity instanceEntity, IResourceManagement.Instance platformInstance) throws CloudManagerException {
 		// 登録済みの情報を更新。
-		instanceEntity.setName(platformInstance.getName() == null ? platformInstance.getResourceId(): platformInstance.getName());
+		String instanceName = null;
+		if (platformInstance.getName() == null) {
+			instanceName = platformInstance.getResourceId();
+		} else {
+			instanceName = platformInstance.getName();
+		}
+		// DBの桁数に合わせてカットする
+		instanceEntity.setName(CloudUtil.truncateString(instanceName, CloudUtil.INSTANCE_NAME_MAX_BYTE));
 		instanceEntity.setInstanceStatus(platformInstance.getInstanceStatus());
 		instanceEntity.setInstanceStatusAsPlatform(platformInstance.getInstanceStatusAsPlatform());
 		instanceEntity.setIpAddresses(platformInstance.getIpAddresses());
@@ -580,6 +619,8 @@ public class InstanceUpdater {
 		});
 		
 		String targetFacilityId = null;
+		String targetFacilityIpAddress = null;
+		Integer targetFacilityIpAddressVersion = null;
 		if (instanceEntity.getFacilityId() != null) {
 			try (NodeInfoCache.NodeInfoCacheScope scope = new NodeInfoCache.NodeInfoCacheScope(NodeInfoCache.SessoinType.RequiredNew)) {
 				
@@ -597,12 +638,13 @@ public class InstanceUpdater {
 					}
 				}
 				
+				String oldSubPlatformFamily = null;
 				if (HinemosPropertyCommon.xcloud_node_property_subplatformfamily_update.getBooleanValue()) {
-					String oldValue = nodeInfo.getSubPlatformFamily();
+					oldSubPlatformFamily = nodeInfo.getSubPlatformFamily();
 					String newValue = instanceEntity.getCloudScope().getPlatformId();
-					if((null==oldValue && null!=newValue) || (null!=oldValue && !oldValue.equals(newValue))){
+					if((null==oldSubPlatformFamily && null!=newValue) || (null!=oldSubPlatformFamily && !oldSubPlatformFamily.equals(newValue))){
+						// この時点では値のセットのみを行い、ログの追加は行わない
 						nodeInfo.setSubPlatformFamily(newValue);
-						changeLog.append("SubPlatformFamily:").append(oldValue).append("->").append(newValue).append(";");
 					}
 				}
 				
@@ -610,8 +652,31 @@ public class InstanceUpdater {
 					String oldValue = nodeInfo.getNodeName();
 					String newValue = platformInstance.getHostName() != null ? platformInstance.getHostName(): instanceEntity.getResourceId();
 					if((null==oldValue && null!=newValue) || (null!=oldValue && !oldValue.equals(newValue))){
-						nodeInfo.setNodeName(newValue);
-						changeLog.append("NodeName:").append(oldValue).append("->").append(newValue).append(";");
+
+						// ノード名更新の要否を判定(クラウド自動検知が優先、または対象ノードの自動デバイスサーチが無効の場合に更新する)
+						boolean isPropertyUpdate = false;
+						String pirorityName = HinemosPropertyCommon.repository_node_config_nodename_update_priority.getStringValue();
+						switch(pirorityName){
+						case "device_search":
+							isPropertyUpdate = false;
+							break;
+						case "xcloud_auto_detection":
+							isPropertyUpdate = true;
+							break;
+						default:
+							isPropertyUpdate = false;
+							logger.info("invalid property value. name = repository.node.config.nodename.update.priority, value = " + pirorityName);
+							break;
+						}
+						
+						if (isPropertyUpdate || // クラウド自動検知優先
+								HinemosPropertyCommon.repository_device_search_interval.getIntegerValue() <= 0 || // 自動デバイスサーチが無効
+								!HinemosPropertyCommon.repository_device_search_prop_basic_network.getBooleanValue() || // 自動デバイスサーチのネットワーク更新が無効
+								!nodeInfo.getAutoDeviceSearch()){ // 対象ノードの自動デバイスサーチが無効
+							
+							nodeInfo.setNodeName(newValue);
+							changeLog.append("NodeName:").append(oldValue).append("->").append(newValue).append(";");
+						}
 					}
 				}
 				
@@ -633,7 +698,8 @@ public class InstanceUpdater {
 				}
 				if (HinemosPropertyCommon.xcloud_node_property_cloud_resourcename_update.getBooleanValue()) {
 					String oldValue = nodeInfo.getCloudResourceName();
-					String newValue = platformInstance.getName();
+					// DBの桁数に合わせてカットする
+					String newValue = CloudUtil.truncateString(platformInstance.getName(), com.clustercontrol.repository.util.RepositoryUtil.NODE_CLOUD_RESOURCE_NAME_MAX_BYTE);
 					if((null==oldValue && null!=newValue) || (null!=oldValue && !oldValue.equals(newValue))){
 						nodeInfo.setCloudResourceName(newValue);
 						changeLog.append("CloudResourceName:").append(oldValue).append("->").append(newValue).append(";");
@@ -667,15 +733,20 @@ public class InstanceUpdater {
 				if (HinemosPropertyCommon.xcloud_node_property_cloud_ipaddress_update.getBooleanValue()) {
 					String oldValue = nodeInfo.getIpAddressV4();
 					String newValue = selectIp(instanceEntity.getIpAddresses());
-					if((null==oldValue && null!=newValue) || (null!=oldValue && !oldValue.equals(newValue))){
-						nodeInfo.setIpAddressV4(newValue);
-						changeLog.append("IpAddressV4:").append(oldValue).append("->").append(newValue).append(";");
-					}
-					
-					int newIpProto = 4; // Hard-code
-					if(newIpProto != nodeInfo.getIpAddressVersion()){
-						changeLog.append("IpAddressVersion:").append(nodeInfo.getIpAddressVersion()).append("->").append(newIpProto).append(";");
-						nodeInfo.setIpAddressVersion(newIpProto);
+					if (null==newValue || newValue.equals(HinemosPropertyCommon.xcloud_ipaddress_notavailable.getStringValue())) {
+						// この場合はIPアドレスを更新しない
+					} else {
+						// findbugs対応 不要なnullチェックを排除できる形に比較を修正（ここにくる時点でnewValueはnullではあり得ない）
+						if(!newValue.equals(oldValue)){
+							nodeInfo.setIpAddressV4(newValue);
+							changeLog.append("IpAddressV4:").append(oldValue).append("->").append(newValue).append(";");
+						}
+
+						int newIpProto = 4; // Hard-code
+						if(newIpProto != nodeInfo.getIpAddressVersion()){
+							changeLog.append("IpAddressVersion:").append(nodeInfo.getIpAddressVersion()).append("->").append(newIpProto).append(";");
+							nodeInfo.setIpAddressVersion(newIpProto);
+						}
 					}
 				}
 				
@@ -706,6 +777,16 @@ public class InstanceUpdater {
 				if (platformInstance.canDecorate())
 					platformInstance.decorate(nodeInfo);
 				
+				// AzureVMSSの場合はdecorate()内にてサブプラットフォームを再設定するため、decorate()後に処理開始前の値と比較する
+				if (HinemosPropertyCommon.xcloud_node_property_subplatformfamily_update.getBooleanValue()) {
+					String newValue = nodeInfo.getSubPlatformFamily();
+
+					if((null==oldSubPlatformFamily && null!=newValue) || (null!=oldSubPlatformFamily && !oldSubPlatformFamily.equals(newValue))){
+						// 値はセット済みなのでログの追加のみ行う
+						changeLog.append("SubPlatformFamily:").append(oldSubPlatformFamily).append("->").append(newValue).append(";");
+					}
+				}
+
 				if (0<changeLog.length()) {
 					logger.info(String.format("Update node properties. FacilityID=%s, InstanceId=%s, autoRegist=%b, log=%s", nodeInfo.getFacilityId(),
 							instanceEntity.getResourceId(), ActionMode.isAutoDetection(), changeLog.toString()));
@@ -729,12 +810,19 @@ public class InstanceUpdater {
 				});
 				// do
 				//対象としない場合は別に探さなくてもよい
-				if(nodeInfo.getValid())
+				if(nodeInfo.getValid()) {
 					targetFacilityId = nodeInfo.getFacilityId();
+					targetFacilityIpAddressVersion = nodeInfo.getIpAddressVersion();
+					targetFacilityIpAddress = nodeInfo.getAvailableIpAddress();
+				}
 			} catch (FacilityNotFound e) {
-				if (nodeRegist){
+				if (nodeRegist) {
 					NodeInfo nodeInfo = addHinemosNode(location, instanceEntity, platformInstance);
-					targetFacilityId = nodeInfo.getFacilityId();
+					if (nodeInfo != null) {
+						targetFacilityId = nodeInfo.getFacilityId();
+						targetFacilityIpAddressVersion = nodeInfo.getIpAddressVersion();
+						targetFacilityIpAddress = nodeInfo.getAvailableIpAddress();
+					}
  				} else {
  					instanceEntity.setFacilityId(null);
  				}
@@ -743,12 +831,40 @@ public class InstanceUpdater {
 			if (nodeAssign){
 				NodeInfo nodeInfo = addHinemosNode(location, instanceEntity, platformInstance);
 				targetFacilityId = nodeInfo.getFacilityId();
+				targetFacilityIpAddressVersion = nodeInfo.getIpAddressVersion();
+				targetFacilityIpAddress = nodeInfo.getAvailableIpAddress();
 			}
 		}
 		
 		// Try to fish agent
 		if(null!=targetFacilityId && HinemosPropertyCommon.xcloud_autoupdate_agent.getBooleanValue()){
-			if(!AgentConnectUtil.isValidAgent(targetFacilityId)){
+			// cidr filter
+			boolean isMatch = false;
+			String autoupdateAgentCidr = HinemosPropertyCommon.xcloud_autoupdate_agent_cidr.getStringValue();
+			if ("0.0.0.0/32".equals(autoupdateAgentCidr)) {
+				// 設定値が 0.0.0.0/32 の場合は全通し
+				isMatch = true;
+			} else if (targetFacilityIpAddressVersion != null && targetFacilityIpAddressVersion.intValue() == 6) {
+				// 対象がIPv6の場合は全通し
+				isMatch = true;
+			} else {
+				try {
+					List<String> cidrStrList = Arrays.asList(autoupdateAgentCidr.split(","));
+					
+					for (String cidrStr : cidrStrList) {
+						Cidr cidr = new Cidr(cidrStr);
+						isMatch = cidr.matches(targetFacilityIpAddress);
+						if (isMatch) {
+							break;
+						}
+					}
+				} catch (UnknownHostException e) {
+					// エラーの場合は警告ログを出力し、cidrによるフィルタは無効(マッチしたこと)にする
+					logger.warn(e);
+					isMatch = true;
+				}
+			}
+			if(isMatch && !AgentConnectUtil.isValidAgent(targetFacilityId)) {
 				try {
 					if(AgentConnectUtil.sendManagerDiscoveryInfo(targetFacilityId)){
 						logger.info("Found agent. facilityId=" + targetFacilityId);
@@ -825,12 +941,14 @@ public class InstanceUpdater {
 					
 					//　EntityManager が切り替わっているので、再度取得。
 					InstanceEntity instance = em.find(InstanceEntity.class, o1.getId(), ObjectPrivilegeMode.READ);
-					logger.debug("AfterO1 "+instance.getResourceId());
-					
-					InstanceEntity updated = disableInstanceEntity(location, user, instance);
-					if (updated != null)
-						updateds.add(updated.getId());
-					
+					if (instance != null) {
+						logger.debug("AfterO1 "+instance.getResourceId());
+						
+						InstanceEntity updated = disableInstanceEntity(location, user, instance);
+						if (updated != null) {
+							updateds.add(updated.getId());
+						}
+					}
 					scope.complete();
 				} catch (CloudManagerException e) {
 					CloudMessageUtil.notify_AutoUpadate_Error_InstanceOperator(Session.current().get(CloudScopeEntity.class).getCloudScopeId(), o1.getResourceId(), e);

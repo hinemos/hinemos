@@ -21,20 +21,20 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.RoleInfoResponse;
+import org.openapitools.client.model.SystemPrivilegeInfoResponse;
+import org.openapitools.client.model.SystemPrivilegeInfoResponseP1;
+import org.openapitools.client.model.UserInfoResponse;
 
 import com.clustercontrol.accesscontrol.action.GetSystemPrivilegeListTableDefine;
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.accesscontrol.util.SystemPrivilegePropertyUtil;
 import com.clustercontrol.bean.Property;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.access.SystemPrivilegeInfo;
-import com.clustercontrol.ws.access.UserInfo;
 
 /**
  * アカウント[システム権限]ビュー用のコンポジットクラスです。
@@ -145,20 +145,27 @@ public class SystemPrivilegeListComposite extends Composite {
 	public void update(String managerName, Object selectedInfo) {
 
 		//システム権限情報取得
-		List<SystemPrivilegeInfo> infoList = null;
+		List<SystemPrivilegeInfoResponse> infoList = null;
 		try {
 			if (selectedInfo != null) {
-				AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
-				if (selectedInfo instanceof RoleInfo) {
-					if (!((RoleInfo)selectedInfo).getRoleId().equals(RoleSettingTreeConstant.ROOT_ID) &&
-						!((RoleInfo)selectedInfo).getRoleId().equals(RoleSettingTreeConstant.MANAGER)) {
-						infoList = wrapper.getSystemPrivilegeInfoListByRoleId(((RoleInfo)selectedInfo).getRoleId());
+				AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
+				if (selectedInfo instanceof RoleInfoResponse) {
+					if (!((RoleInfoResponse)selectedInfo).getRoleId().equals(RoleSettingTreeConstant.ROOT_ID) &&
+						!((RoleInfoResponse)selectedInfo).getRoleId().equals(RoleSettingTreeConstant.MANAGER)) {
+						infoList = wrapper.getSystemPrivilegeInfoListByRoleId(((RoleInfoResponse)selectedInfo).getRoleId());
 					}
-				} else if (selectedInfo instanceof UserInfo) {
-					infoList = wrapper.getSystemPrivilegeInfoListByUserId(((UserInfo)selectedInfo).getUserId());
+				} else if (selectedInfo instanceof UserInfoResponse) {
+					infoList = new ArrayList<SystemPrivilegeInfoResponse>();
+					List<SystemPrivilegeInfoResponseP1> infoListP1 = wrapper.getSystemPrivilegeInfoListByUserId(((UserInfoResponse)selectedInfo).getUserId());
+					for( SystemPrivilegeInfoResponseP1 data :infoListP1){
+						SystemPrivilegeInfoResponse rec = new SystemPrivilegeInfoResponse();
+						rec.setSystemFunction(SystemPrivilegeInfoResponse.SystemFunctionEnum.fromValue(data.getSystemFunction().getValue()));
+						rec.setSystemPrivilege(SystemPrivilegeInfoResponse.SystemPrivilegeEnum.fromValue(data.getSystemPrivilege().getValue()));
+						infoList.add(rec);
+					}
 				}
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
@@ -169,16 +176,16 @@ public class SystemPrivilegeListComposite extends Composite {
 
 		} catch (Exception e) {
 			// 上記以外の例外
-			m_log.warn("update(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("update(), " + e.getMessage(), e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
 		if (selectedInfo != null && infoList != null) {
-			for (SystemPrivilegeInfo info : infoList) {
+			for (SystemPrivilegeInfoResponse info : infoList) {
 				ArrayList<Object> obj = new ArrayList<Object>();
 				obj.add(SystemPrivilegePropertyUtil.getSystemPrivilegeName(managerName, info));
 				obj.add(null);
@@ -193,17 +200,17 @@ public class SystemPrivilegeListComposite extends Composite {
 			m_labelType.setText("");
 			m_labelCount.setText(Messages.getString("records", args));
 		} else {
-			if (selectedInfo instanceof RoleInfo) {
-				if (((RoleInfo)selectedInfo).getRoleId().equals(RoleSettingTreeConstant.ROOT_ID)) {
+			if (selectedInfo instanceof RoleInfoResponse) {
+				if (((RoleInfoResponse)selectedInfo).getRoleId().equals(RoleSettingTreeConstant.ROOT_ID)) {
 					m_labelType.setText("");
 					m_labelCount.setText(Messages.getString("records", args));
 				} else {
-					RoleInfo roleInfo = (RoleInfo)selectedInfo;
+					RoleInfoResponse roleInfo = (RoleInfoResponse)selectedInfo;
 					m_labelType.setText(Messages.getString("role.name") + " : " + roleInfo.getRoleName() + "(" + roleInfo.getRoleId() + ")");
 					m_labelCount.setText(Messages.getString("filtered.records", args));
 				}
-			} else if (selectedInfo instanceof UserInfo) {
-				UserInfo userInfo = (UserInfo)selectedInfo;
+			} else if (selectedInfo instanceof UserInfoResponse) {
+				UserInfoResponse userInfo = (UserInfoResponse)selectedInfo;
 				m_labelType.setText(Messages.getString("user.name") + " : " + userInfo.getUserName() + "(" + userInfo.getUserId() + ")");
 				m_labelCount.setText(Messages.getString("filtered.records", args));
 			}

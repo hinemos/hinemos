@@ -22,7 +22,7 @@
 					<xs:documentation>データ型のバージョン</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="2">
 				<xs:annotation>
 					<xs:documentation>データ型のバージョン</xs:documentation>
 				</xs:annotation>
@@ -123,7 +123,12 @@
 								JMX_HINEMOS_JOB_RUN_SESSION_COUNT,
 								JMX_HINEMOS_JVM_HEAP_SIZE,
 								JMX_HINEMOS_SCHEDULER_DELAY_TIME_DBMS,
+								JMX_HINEMOS_SCHEDULER_DELAY_TIME_DBMS_JOB,
+								JMX_HINEMOS_SCHEDULER_DELAY_TIME_DBMS_DEL,
+								JMX_HINEMOS_SCHEDULER_DELAY_TIME_DBMS_ETC,
 								JMX_HINEMOS_SCHEDULER_DELAY_TIME_RAM,
+								JMX_HINEMOS_SCHEDULER_DELAY_TIME_RAM_MONITOR,
+								JMX_HINEMOS_SCHEDULER_DELAY_TIME_RAM_JOB,
 								JMX_HINEMOS_SNMP_TRAP_QUEUE_COUNT,
 								JMX_HINEMOS_SYSLOG_QUEUE_COUNT,
 								JMX_HINEMOS_TABLE_PHYSICAL_SIZE_LOG_CC_COLLECT_DATA_RAW,
@@ -136,7 +141,7 @@
 								JMX_HINEMOS_TABLE_PHYSICAL_SIZE_LOG_CC_JOB_SESSION,
 								JMX_HINEMOS_TABLE_PHYSICAL_SIZE_LOG_CC_JOB_SESSION_JOB,
 								JMX_HINEMOS_TABLE_PHYSICAL_SIZE_LOG_CC_JOB_SESSION_NODE,
-								JMX_HINEMOS_TABLE_PHYSICAL_SIZE_LOG_CC_JOB_START_JOB_INFO,
+								JMX_HINEMOS_TABLE_PHYSICAL_SIZE_LOG_CC_JOB_WAIT_GROUP_INFO,
 								JMX_HINEMOS_TABLE_PHYSICAL_SIZE_LOG_CC_STATUS_INFO,
 								JMX_HINEMOS_WEB_SERVICE_QUEUE_COUNT,
 								JMX_MEMEORY_OBJECT_PENDING_FINALIZATION_COUNT,
@@ -179,6 +184,14 @@
 						<xs:annotation>
 							<xs:documentation>
 								接続時に用いるパスワードです。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+
+					<xs:element name="urlFormatName" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								接続時に用いるURLフォーマット名です。
 							</xs:documentation>
 						</xs:annotation>
 					</xs:element>

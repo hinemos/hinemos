@@ -11,7 +11,7 @@ package com.clustercontrol.accesscontrol.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -21,6 +21,7 @@ import com.clustercontrol.accesscontrol.bean.RoleTypeConstant;
 import com.clustercontrol.accesscontrol.bean.UserTypeConstant;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfoPK;
+import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.accesscontrol.model.RoleInfo;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfoPK;
@@ -30,6 +31,8 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.PrivilegeNotFound;
 import com.clustercontrol.fault.RoleNotFound;
 import com.clustercontrol.fault.UserNotFound;
+import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.model.JobMstEntity;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */
@@ -238,4 +241,27 @@ public class QueryUtil {
 		}
 	}
 
+	/**
+	 * オーナーロールに指定されたロールが設定されている設定情報を取得する
+	 * 
+	 * @param targetInfoClass 設定情報クラス
+	 * @param roleId ロールID
+	 * @return objectIdのリスト
+	 */
+	public static List<String> getObjectPrivilegeIdsByOwnerRoleId_NONE(
+				Class<? extends ObjectPrivilegeTargetInfo> targetInfoClass, String roleId) {
+		StringBuilder sbJpql = new StringBuilder();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			sbJpql.append(String.format("SELECT a.objectId FROM %s a", targetInfoClass.getSimpleName()));
+			sbJpql.append(" WHERE a.ownerRoleId = :ownerRoleId");
+			if (targetInfoClass == JobMstEntity.class) {
+				sbJpql.append(" AND a.jobType = " + JobConstant.TYPE_JOBUNIT);
+			}
+			sbJpql.append(" ORDER BY a.objectId");
+			return em.createQuery(sbJpql.toString(), String.class, ObjectPrivilegeMode.NONE)
+					.setParameter("ownerRoleId", roleId)
+					.getResultList();
+		}
+	}
 }

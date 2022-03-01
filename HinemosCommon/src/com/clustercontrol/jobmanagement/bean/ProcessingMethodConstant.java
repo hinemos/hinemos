@@ -20,4 +20,7 @@ public class ProcessingMethodConstant {
 
 	/** 正常終了するまでノードを順次リトライ */
 	public static final int TYPE_RETRY = 1;
+
+	/** いずれかのノードで条件を満たしたら終了 */
+	public static final int TYPE_ANY_NODE = 2;
 }

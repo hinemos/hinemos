@@ -10,7 +10,7 @@ package com.clustercontrol.xcloud.model;
 
 public class EndpointEntity {
 	private LocationEntity location;
-	private String endpoinId;
+	private String endpointId;
 	private String url;
 
 	public EndpointEntity()	{
@@ -34,10 +34,10 @@ public class EndpointEntity {
 	}
 
 	public String getEndpointId() {
-		return endpoinId;
+		return endpointId;
 	}
 	public void setEndpoint(String id) {
-		this.endpoinId = id;
+		this.endpointId = id;
 	}
 	
 	public String getUrl() {

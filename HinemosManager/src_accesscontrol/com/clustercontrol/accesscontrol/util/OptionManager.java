@@ -47,6 +47,7 @@ public class OptionManager {
 	 *  ・nodemap<br>
 	 *  ・reporting<br>
 	 *  ・utility<br>
+	 *  ・rpa<br>
 	 * @return
 	 */
 	public static boolean checkEnterprise() {

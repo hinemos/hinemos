@@ -23,18 +23,18 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.CollectorItemCodeMstResponseP1;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
+import org.openapitools.client.model.CollectorItemInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.PerfCheckInfoResponse;
+
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.collect.util.CollectRestClientWrapper;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
 import com.clustercontrol.performance.util.CollectorItemCodeFactory;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.CollectorItemInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.PerfCheckInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -150,17 +150,13 @@ public class CollectorItemComboComposite extends Composite {
 	 */
 	public void setCollectorItemCombo(String managerName, String facilityId){
 		// 収集項目の一覧を生成
-		List<CollectorItemInfo> itemInfoList = null;
+		List<CollectorItemInfoResponse> itemInfoList = null;
 
 		try{
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			itemInfoList = wrapper.getAvailableCollectorItemList(facilityId);
-		} catch (InvalidRole_Exception e) {
-			// アクセス権なしの場合、エラーダイアログを表示する
-			MessageDialog.openInformation(
-					null,
-					Messages.getString("message"),
-					Messages.getString("message.accesscontrol.16"));
+			CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
+			CollectorItemCodeMstResponseP1 res = wrapper.getAvailableCollectorItemList(facilityId);
+			
+			itemInfoList = res.getAvailableCollectorItemList();
 		} catch (Exception e){
 			// 上記以外の例外
 			m_log.warn("setCollectorItemCombo() getAvailableCollectorItemList, " + e.getMessage(), e);
@@ -170,7 +166,7 @@ public class CollectorItemComboComposite extends Composite {
 					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 		}
 		if(itemInfoList == null){
-			itemInfoList = new ArrayList<CollectorItemInfo>();
+			itemInfoList = new ArrayList<CollectorItemInfoResponse>();
 		}
 
 		// 現在設定されている項目を全て消去
@@ -180,9 +176,9 @@ public class CollectorItemComboComposite extends Composite {
 		m_comboCollectorItem.add("");
 		m_comboCollectorItem.setData("", null);
 
-		Iterator<CollectorItemInfo> itr = itemInfoList.iterator();
+		Iterator<CollectorItemInfoResponse> itr = itemInfoList.iterator();
 		while(itr.hasNext()){
-			CollectorItemInfo itemInfo = itr.next();
+			CollectorItemInfoResponse itemInfo = itr.next();
 
 			String itemName = CollectorItemCodeFactory.getFullItemName(managerName, itemInfo);
 			itemName = HinemosMessage.replace(itemName);
@@ -195,9 +191,9 @@ public class CollectorItemComboComposite extends Composite {
 	 * 収集項目情報を取得します。
 	 * @return 収集項目情報
 	 */
-	public CollectorItemInfo getCollectorItem(){
+	public CollectorItemInfoResponse getCollectorItem(){
 		String itemName = m_comboCollectorItem.getText();
-		CollectorItemInfo itemInfo = (CollectorItemInfo)m_comboCollectorItem.getData(itemName);
+		CollectorItemInfoResponse itemInfo = (CollectorItemInfoResponse)m_comboCollectorItem.getData(itemName);
 		return itemInfo;
 	}
 
@@ -205,31 +201,24 @@ public class CollectorItemComboComposite extends Composite {
 	 * 監視設定から選択されている監視項目を設定する。
 	 * @param monitor
 	 */
-	public void select(String managerName, MonitorInfo monitor){
+	public void select(String managerName, MonitorInfoResponse monitor){
 		// 性能監視情報
-		PerfCheckInfo perfCheckInfo = monitor.getPerfCheckInfo();
-
+		PerfCheckInfoResponse perfCheckInfo = monitor.getPerfCheckInfo();
+		
 		// 監視対象の情報が設定されていない場合はなにもしない
 		if(perfCheckInfo == null){
 			return;
 		}
-
+		
 		String facilityId = monitor.getFacilityId();
-
 		setCollectorItemCombo(managerName, facilityId);
-
 		int index = 0;
-
-		List<CollectorItemInfo> itemInfoList = null;
+		
+		List<CollectorItemInfoResponse> itemInfoList = null;
 		try{
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			itemInfoList = wrapper.getAvailableCollectorItemList(facilityId);
-		} catch (InvalidRole_Exception e) {
-			// アクセス権なしの場合、エラーダイアログを表示する
-			MessageDialog.openInformation(
-					null,
-					Messages.getString("message"),
-					Messages.getString("message.accesscontrol.16"));
+			CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
+			CollectorItemCodeMstResponseP1 res = wrapper.getAvailableCollectorItemList(facilityId);
+			itemInfoList = res.getAvailableCollectorItemList();
 		} catch (Exception e){
 			// 上記以外の例外
 			m_log.warn("select() getAvailableCollectorItemList, " + e.getMessage(), e);
@@ -239,15 +228,15 @@ public class CollectorItemComboComposite extends Composite {
 					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 		}
 		if(itemInfoList == null){
-			itemInfoList = new ArrayList<CollectorItemInfo>();
+			itemInfoList = new ArrayList<CollectorItemInfoResponse>();
 		}
 
-		Iterator<CollectorItemInfo> itr = itemInfoList.iterator();
+		Iterator<CollectorItemInfoResponse> itr = itemInfoList.iterator();
 		// getAvailableCollectorItemListはCPU使用率から始まるが、
 		// 実際のコンボボックスは空行から始まるので、i=1からスタートさせる。
 		int i=1;
 		while(itr.hasNext()){
-			CollectorItemInfo itemInfo = itr.next();
+			CollectorItemInfoResponse itemInfo = itr.next();
 
 			if(itemInfo.getItemCode().equals(perfCheckInfo.getItemCode()) &&
 					itemInfo.getDisplayName().equals(perfCheckInfo.getDeviceDisplayName())){
@@ -265,18 +254,15 @@ public class CollectorItemComboComposite extends Composite {
 	 *
 	 * @return 検証結果
 	 */
-	public ValidateResult createInputData(MonitorInfo info) {
+	public ValidateResult createInputData(MonitorInfoResponse info) {
 		if(info != null){
 			// リソース監視情報
-			PerfCheckInfo perfCheckInfo = info.getPerfCheckInfo();
+			PerfCheckInfoResponse perfCheckInfo = info.getPerfCheckInfo();
 
 			if (this.m_comboCollectorItem.getText() != null
 					&& !"".equals((this.m_comboCollectorItem.getText()).trim())) {
 				String itemName = this.m_comboCollectorItem.getText();
-				CollectorItemInfo itemInfo = (CollectorItemInfo)m_comboCollectorItem.getData(itemName);
-
-				perfCheckInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_PERFORMANCE);
-				perfCheckInfo.setMonitorId(info.getMonitorId());
+				CollectorItemInfoResponse itemInfo = (CollectorItemInfoResponse)m_comboCollectorItem.getData(itemName);
 
 				perfCheckInfo.setItemCode(itemInfo.getItemCode());
 

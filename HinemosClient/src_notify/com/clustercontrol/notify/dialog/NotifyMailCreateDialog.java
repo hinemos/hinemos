@@ -27,6 +27,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.MailNotifyDetailInfoResponse;
 
 import com.clustercontrol.bean.PriorityColorConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -34,11 +35,10 @@ import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.notify.action.AddNotify;
 import com.clustercontrol.notify.action.GetNotify;
 import com.clustercontrol.notify.action.ModifyNotify;
+import com.clustercontrol.notify.dialog.bean.NotifyInfoInputData;
 import com.clustercontrol.notify.mail.composite.MailTemplateIdListComposite;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.notify.NotifyInfo;
-import com.clustercontrol.ws.notify.NotifyMailInfo;
 
 /**
  * 通知（メール）作成・変更ダイアログクラス<BR>
@@ -99,6 +99,7 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 	 */
 	public NotifyMailCreateDialog(Shell parent) {
 		super(parent);
+		parentDialog = this;
 	}
 
 	/**
@@ -111,6 +112,7 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 	 */
 	public NotifyMailCreateDialog(Shell parent, String managerName, String notifyId, boolean updateFlg) {
 		super(parent, managerName, notifyId, updateFlg);
+		parentDialog = this;
 	}
 
 	// ----- instance メソッド ----- //
@@ -122,43 +124,20 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 	 *
 	 * @see com.clustercontrol.notify.dialog.NotifyBasicCreateDialog#customizeDialog(Composite)
 	 * @see com.clustercontrol.notify.action.GetNotify#getNotify(String)
-	 * @see #setInputData(NotifyInfo)
+	 * @see #setInputData(NotifyInfoInputData)
 	 */
 	@Override
 	protected void customizeDialog(Composite parent) {
 		super.customizeDialog(parent);
 
-		m_log.debug("addSelectionListener");
-		if (this.m_notifyBasic.m_managerComposite.getComboManagerName() != null) {
-			this.m_notifyBasic.m_managerComposite.getComboManagerName().addSelectionListener(new SelectionAdapter() {	
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					m_log.debug("widgetSelected(managerComposite)");
-								String managerName = m_notifyBasic.m_managerComposite.getText();
-					m_compositeMailTemplateIdList.setManagerName(managerName);
-					m_compositeMailTemplateIdList.update(m_notifyBasic.m_ownerRoleId.getText());
-				}
-			});
-		}
-		if (this.m_notifyBasic.m_ownerRoleId.getComboRoleId() != null) {
-			this.m_notifyBasic.m_ownerRoleId.getComboRoleId().addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					m_log.debug("widgetSelected(ownerRoleId)");
-					m_compositeMailTemplateIdList.update(m_notifyBasic.m_ownerRoleId.getText());
-				}
-			});
-		}
-
 		// 通知IDが指定されている場合、その情報を初期表示する。
-		NotifyInfo info = null;
+		NotifyInfoInputData inputData;
 		if(this.notifyId != null){
-			info = new GetNotify().getNotify(this.managerName, this.notifyId);
+			inputData = new GetNotify().getMailNotify(this.managerName, this.notifyId);
+		} else {
+			inputData = new NotifyInfoInputData();
 		}
-		else{
-			info = new NotifyInfo();
-		}
-		this.setInputData(info);
+		this.setInputData(inputData);
 	}
 
 	/**
@@ -209,7 +188,7 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 		 * メールテンプレートIDの設定
 		 */
 		this.m_compositeMailTemplateIdList = new MailTemplateIdListComposite(
-				groupMail, SWT.NONE, this.m_notifyBasic.getManagerListComposite().getText(), true);
+				groupMail, SWT.NONE, true);
 		WidgetTestUtil.setTestId(this, "templateidlist", m_compositeMailTemplateIdList);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
@@ -390,7 +369,7 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 	 * @return 通知情報
 	 */
 	@Override
-	public NotifyInfo getInputData() {
+	public NotifyInfoInputData getInputData() {
 		return this.inputData;
 	}
 
@@ -400,16 +379,11 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 	 * @param notify 設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(NotifyInfo notify) {
-		// Add listener at first
-		this.setInputListeners();
+	protected void setInputData(NotifyInfoInputData notify) {
 		super.setInputData(notify);
 
-		// List mail template ID
-		m_compositeMailTemplateIdList.update(m_notifyBasic.getOwnerRoleId());
-
 		// コマンド情報
-		NotifyMailInfo info = notify.getNotifyMailInfo();
+		MailNotifyDetailInfoResponse info = notify.getNotifyMailInfo();
 		if (info != null) {
 			this.setInputData(info);
 		}
@@ -418,7 +392,7 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 		this.update();
 	}
 
-	private void setInputData(NotifyMailInfo mail) {
+	private void setInputData(MailNotifyDetailInfoResponse mail) {
 		if (mail.getMailTemplateId() != null) {
 			this.m_compositeMailTemplateIdList.setText(mail.getMailTemplateId());
 		}
@@ -463,21 +437,21 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 	 * @see #createInputDataForMail(ArrayList, int, Button, Text, Button)
 	 */
 	@Override
-	protected NotifyInfo createInputData() {
-		NotifyInfo info = super.createInputData();
+	protected NotifyInfoInputData createInputData() {
+		NotifyInfoInputData info = super.createInputData();
 
 		// 通知タイプの設定
 		info.setNotifyType(TYPE_MAIL);
 
 		// イベント情報
-		NotifyMailInfo mail = createNotifyInfoDetail();
+		MailNotifyDetailInfoResponse mail = createNotifyInfoDetail();
 		info.setNotifyMailInfo(mail);
 
 		return info;
 	}
 
-	private NotifyMailInfo createNotifyInfoDetail() {
-		NotifyMailInfo mail = new NotifyMailInfo();
+	private MailNotifyDetailInfoResponse createNotifyInfoDetail() {
+		MailNotifyDetailInfoResponse mail = new MailNotifyDetailInfoResponse();
 
 		// メール通知
 		mail.setInfoValidFlg(m_checkMailNormalInfo.getSelection());
@@ -533,15 +507,15 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		NotifyInfo info = this.getInputData();
+		NotifyInfoInputData info = this.getInputData();
 		if(info != null){
 			if (!this.updateFlg) {
 				// 作成の場合
-				result = new AddNotify().add(this.getInputManagerName(), info);
+				result = new AddNotify().addMailNotify(managerName, info);
 			}
 			else{
 				// 変更の場合
-				result = new ModifyNotify().modify(this.getInputManagerName(), info);
+				result = new ModifyNotify().modifyMailNotify(managerName, info);
 			}
 		}
 
@@ -679,14 +653,27 @@ public class NotifyMailCreateDialog extends NotifyBasicCreateDialog {
 		return text;
 	}
 
-	private void setInputListeners(){
-		if( !this.updateFlg ){
-			m_notifyBasic.getManagerListComposite().addModifyListener(new ModifyListener(){
-				@Override
-				public void modifyText(ModifyEvent e) {
-					// TODO Reload role ID list -> reload calendar list, mail template list
-				}
-			});
-		}
+	@Override
+	public void updateManagerName(String managerName) {
+		super.updateManagerName(managerName);
+		m_compositeMailTemplateIdList.setManagerName(this.managerName);
+		update();
+	}
+
+	@Override
+	public void updateOwnerRole(String ownerRoleId) {
+		super.updateOwnerRole(ownerRoleId);
+		m_compositeMailTemplateIdList.setOwnerRoleId(this.ownerRoleId);
+		update();
+	}
+
+	private Boolean[] getValidFlgs(MailNotifyDetailInfoResponse info) {
+		Boolean[] validFlgs = new Boolean[] {
+				info.getInfoValidFlg(),
+				info.getWarnValidFlg(),
+				info.getCriticalValidFlg(),
+				info.getUnknownValidFlg()
+		};
+		return validFlgs;
 	}
 }

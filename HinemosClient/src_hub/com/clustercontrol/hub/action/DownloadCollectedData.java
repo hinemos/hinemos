@@ -10,10 +10,8 @@ package com.clustercontrol.hub.action;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
-import java.net.InetAddress;
-import java.text.SimpleDateFormat;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -27,18 +25,20 @@ import org.eclipse.rap.rwt.internal.service.ServiceContext;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.DownloadBinaryRecordsKeyRequest;
+import org.openapitools.client.model.DownloadBinaryRecordsRequest;
+import org.openapitools.client.model.QueryCollectBinaryDataRequest;
+import org.openapitools.client.model.TagResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.binary.bean.BinaryTagConstant;
 import com.clustercontrol.client.ui.util.FileDownloader;
+import com.clustercontrol.hub.dto.DataResponse;
+import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.FileUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.hub.BinaryDownloadDTO;
-import com.clustercontrol.ws.hub.BinaryQueryInfo;
-import com.clustercontrol.ws.hub.StringData;
-import com.clustercontrol.ws.hub.Tag;
 
 /**
  * 収集蓄積データ(文字/バイナリ)をダウンロード.
@@ -53,24 +53,11 @@ public class DownloadCollectedData {
 	/** ログ出力区切り文字 */
 	private static final String DELIMITER = "() : ";
 
-	/** クライアント内連番(クライアントサーバー管理) */
-	private static int clientSequeance = 0;
-
-	/** クライアント内連番(インスタンス保持用) */
-	private int clientSeq = 0;
-
-	/**
-	 * クライアント内連番increment.
-	 */
-	private static synchronized int addSequeance() {
-		return clientSequeance++;
-	}
-
 	// バイナリデータのダウンロード(検索結果はbinary型で保持してないのでマネージャーから再取得が必要).
 	/**
 	 * 選択したBinaryレコードをファイルとしてダウンロード.
 	 */
-	public void executeBinaryRecord(Shell parent, String manager, StringData selectBinaryData) {
+	public void executeBinaryRecord(Shell parent, String manager, DataResponse selectBinaryData) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		m_log.debug(methodName + DELIMITER + "start.");
 
@@ -82,9 +69,9 @@ public class DownloadCollectedData {
 		FileDialog fd = new FileDialog(parent.getShell(), SWT.SAVE);
 
 		// タグから必要な値を取得.
-		List<Tag> tagList = selectBinaryData.getTagList();
+		List<TagResponse> tagList = selectBinaryData.getTagList();
 		String defaultFileName = null;
-		for (Tag tag : tagList) {
+		for (TagResponse tag : tagList) {
 			if (BinaryTagConstant.CommonTagName.FILE_NAME.equals(tag.getKey())) {
 				String filePath = tag.getValue();
 				defaultFileName = FileUtil.getFileName(filePath);
@@ -122,12 +109,8 @@ public class DownloadCollectedData {
 				} else {
 					fileName = new File(selectedFilePath).getName();
 				}
-				// マネージャ側で一時ファイルの出力先を識別するためクライアント名設定.
-				this.clientSeq = addSequeance();
-				String clientName = FileUtil.fittingFileName(InetAddress.getLocalHost().getHostName(), "-") + "_"
-						+ Integer.toString(this.clientSeq);
 				// 別スレッドでダウンロード処理走らせるためのオブジェクト生成.
-				BinaryDataDownloader downloader = new BinaryDataDownloader(clientName, manager, startMsec, fileName,
+				BinaryDataDownloader downloader = new BinaryDataDownloader(manager, startMsec, fileName,
 						selectedFilePath, selectBinaryData);
 				IRunnableWithProgress op = new IRunnableWithProgress() {
 					@Override
@@ -185,8 +168,9 @@ public class DownloadCollectedData {
 
 	/**
 	 * 複数のバイナリレコードをユーザー指定したフォルダにダウンロード.
+	 * @throws UnknownHostException 
 	 */
-	public void executeBinaryRecords(Shell parent, String manager, List<StringData> selectBinaryList) {
+	public void executeBinaryRecords(Shell parent, String manager, List<DataResponse> selectBinaryList) throws UnknownHostException {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		m_log.debug(methodName + DELIMITER + "start.");
 
@@ -196,13 +180,13 @@ public class DownloadCollectedData {
 		}
 
 		// 表示されているレコード毎にダウンロードに必要な情報をセット.
-		List<BinaryDownloadDTO> binaryDownloadList = new ArrayList<BinaryDownloadDTO>();
+		DownloadBinaryRecordsRequest binaryDownloadList = new DownloadBinaryRecordsRequest();
 		String fileName = null;
 		List<String> fileNameList = new ArrayList<String>();
-		for (StringData selectBinaryData : selectBinaryList) {
+		for (DataResponse selectBinaryData : selectBinaryList) {
 			// タグから必要な値を取得.
-			List<Tag> tagList = selectBinaryData.getTagList();
-			for (Tag tag : tagList) {
+			List<TagResponse> tagList = selectBinaryData.getTagList();
+			for (TagResponse tag : tagList) {
 				if (BinaryTagConstant.CommonTagName.FILE_NAME.equals(tag.getKey())) {
 					String filePath = tag.getValue();
 					fileName = FileUtil.getFileName(filePath);
@@ -210,14 +194,23 @@ public class DownloadCollectedData {
 				}
 			}
 			// ダウンロードに必要な情報をマップにセット.
-			BinaryQueryInfo queryInfo = new BinaryQueryInfo();
+			// バイナリ収集の検索条件のセット
+			QueryCollectBinaryDataRequest queryInfo = new QueryCollectBinaryDataRequest();
 			queryInfo.setFacilityId(selectBinaryData.getFacilityId());
 			queryInfo.setMonitorId(selectBinaryData.getMonitorId());
-			BinaryDownloadDTO tmpBinaryDownloadDTO = new BinaryDownloadDTO();
-			tmpBinaryDownloadDTO.setQueryInfo(queryInfo);
-			tmpBinaryDownloadDTO.setPrimaryKey(selectBinaryData.getPrimaryKey());
-			tmpBinaryDownloadDTO.setRecordKey(selectBinaryData.getRecordKey());
-			binaryDownloadList.add(tmpBinaryDownloadDTO);
+			binaryDownloadList.getQueryCollectBinaryDataRequest().add(queryInfo);
+			
+			// PKのセット
+			DownloadBinaryRecordsKeyRequest record = new DownloadBinaryRecordsKeyRequest();
+			record.setCollectId(selectBinaryData.getCollectId());
+			record.setDataId(selectBinaryData.getDataId());
+			// ソート用のキー
+			record.setRecordKey(selectBinaryData.getRecordKey());
+			binaryDownloadList.getRecords().add(record);
+			
+			// Filename
+			binaryDownloadList.setFilename(fileName);
+			
 			// ファイル名をリストに追加.
 			if (fileNameList.isEmpty() || !fileNameList.contains(fileName)) {
 				fileNameList.add(fileName);
@@ -249,8 +242,7 @@ public class DownloadCollectedData {
 			topFileName = topFileName.substring(0, extentionIndex);
 		}
 		// 対象ファイル名に含めるID(日付)を生成
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-		String defaultDateStr = sdf.format(new Date(System.currentTimeMillis()));
+		String defaultDateStr = DateTimeStringConverter.formatLongDate(System.currentTimeMillis(), "yyyyMMddHHmmss");
 		String defaultFileName = defaultDateStr + '_' + topFileName;
 		// ファイル名に空白があると+に置き換わってしまうため、空白を削除
 		defaultFileName = this.renameFileName(defaultFileName);
@@ -281,12 +273,8 @@ public class DownloadCollectedData {
 				} else {
 					fileName = new File(selectedFilePath).getName();
 				}
-				// マネージャ側で一時ファイルの出力先を識別するためクライアント名設定.
-				this.clientSeq = addSequeance();
-				String clientName = FileUtil.fittingFileName(InetAddress.getLocalHost().getHostName(), "-") + "_"
-						+ Integer.toString(this.clientSeq);
 				// 別スレッドでダウンロード処理走らせるためのオブジェクト生成.
-				BinaryDataDownloader downloader = new BinaryDataDownloader(clientName, manager, startMsec, fileName,
+				BinaryDataDownloader downloader = new BinaryDataDownloader(manager, startMsec, fileName,
 						selectedFilePath, binaryDownloadList);
 				IRunnableWithProgress op = new IRunnableWithProgress() {
 					@Override
@@ -346,7 +334,7 @@ public class DownloadCollectedData {
 	/**
 	 * 選択された1レコードを1ファイルとして出力.
 	 */
-	public void executeTextRecord(Shell parent, StringData selectTextData) {
+	public void executeTextRecord(Shell parent, DataResponse selectTextData) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		m_log.debug(methodName + DELIMITER + "start.");
 
@@ -358,11 +346,11 @@ public class DownloadCollectedData {
 		// デフォルトのファイル名を取得.
 		String defaultFileName = null;
 		// タグから必要な値を取得.
-		List<Tag> tagList = selectTextData.getTagList();
-		for (Tag tag : tagList) {
+		List<TagResponse> tagList = selectTextData.getTagList();
+		for (TagResponse tag : tagList) {
 			if ("filename".equals(tag.getKey())) {
 				String filePath = tag.getValue();
-				defaultFileName = new File(filePath).getName();
+				defaultFileName = FileUtil.getFileName(filePath);
 				break;
 			}
 		}
@@ -465,7 +453,7 @@ public class DownloadCollectedData {
 	/**
 	 * オリジナルメッセージ欄に表示されている文字列を1ファイルとして出力.
 	 */
-	public void executeTextRecordsToOne(String originMsg, List<StringData> selectTextDataList, Shell parent) {
+	public void executeTextRecordsToOne(String originMsg, List<DataResponse> selectTextDataList, Shell parent) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		m_log.debug(methodName + DELIMITER + "start.");
 
@@ -477,13 +465,13 @@ public class DownloadCollectedData {
 		// デフォルトのファイル名を取得.
 		String fileName = null;
 		boolean toBreak = false;
-		for (StringData selectTextData : selectTextDataList) {
+		for (DataResponse selectTextData : selectTextDataList) {
 			// タグから必要な値を取得.
-			List<Tag> tagList = selectTextData.getTagList();
-			for (Tag tag : tagList) {
+			List<TagResponse> tagList = selectTextData.getTagList();
+			for (TagResponse tag : tagList) {
 				if ("filename".equals(tag.getKey())) {
 					String filePath = tag.getValue();
-					fileName = new File(filePath).getName();
+					fileName = FileUtil.getFileName(filePath);
 					toBreak = true;
 					break;
 				}
@@ -507,8 +495,7 @@ public class DownloadCollectedData {
 		// ファイル選択用のダイアログ生成.
 		FileDialog saveDialog = new FileDialog(parent.getShell(), SWT.SAVE);
 		// 対象ファイル名に含めるID(日付)を生成
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-		String defaultDateStr = sdf.format(new Date(System.currentTimeMillis()));
+		String defaultDateStr = DateTimeStringConverter.formatLongDate(System.currentTimeMillis(), "yyyyMMddHHmmss");
 		String defaultFileName = defaultDateStr + '_' + fileName;
 		// soap通信エラーの原因になる文字をファイル名から削除.
 		defaultFileName = this.renameFileName(defaultFileName);

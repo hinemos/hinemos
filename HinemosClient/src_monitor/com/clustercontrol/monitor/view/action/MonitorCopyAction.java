@@ -53,6 +53,9 @@ import com.clustercontrol.performance.monitor.dialog.PerformanceCreateDialog;
 import com.clustercontrol.ping.dialog.PingCreateDialog;
 import com.clustercontrol.port.dialog.PortCreateDialog;
 import com.clustercontrol.process.dialog.ProcessCreateDialog;
+import com.clustercontrol.sdml.util.SdmlClientUtil;
+import com.clustercontrol.rpa.monitor.dialog.RpaLogfileStringCreateDialog;
+import com.clustercontrol.rpa.monitor.dialog.RpaManagementToolServiceCreateDialog;
 import com.clustercontrol.snmp.dialog.SnmpNumericCreateDialog;
 import com.clustercontrol.snmp.dialog.SnmpStringCreateDialog;
 import com.clustercontrol.snmptrap.dialog.SnmpTrapCreateDialog;
@@ -88,6 +91,10 @@ public class MonitorCopyAction extends AbstractHandler implements IElementUpdate
 
 	public int dialogOpen(Shell shell, String managerName, String pluginId, String monitorId, int monitorType) {
 		CommonMonitorDialog dialog = null;
+		if (SdmlClientUtil.isSdmlPluginId(managerName, pluginId)) {
+			// SDMLのプラグインIDをテーブルに表示していた場合は本来のプラグインIDに置き換える
+			pluginId = SdmlClientUtil.getActualPluginId(managerName, monitorId);
+		}
 		if (pluginId.equals(HinemosModuleConstant.MONITOR_AGENT)) {
 			dialog = new AgentCreateDialog(shell, managerName, monitorId, false);
 		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_HTTP_N)) {
@@ -142,6 +149,10 @@ public class MonitorCopyAction extends AbstractHandler implements IElementUpdate
 			dialog = new CorrelationCreateDialog(shell, managerName, monitorId, false);
 		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_INTEGRATION)) {
 			dialog = new IntegrationCreateDialog(shell, managerName, monitorId, false);
+		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_RPA_LOGFILE)) {
+			dialog = new RpaLogfileStringCreateDialog(shell, managerName, monitorId, false);
+		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE)) {
+			dialog = new RpaManagementToolServiceCreateDialog(shell, managerName, monitorId, false);
 		} else {
 			for(IMonitorPlugin extensionMonitor: LoadMonitorPlugin.getExtensionMonitorList()){
 				if(pluginId.equals(extensionMonitor.getMonitorPluginId())){

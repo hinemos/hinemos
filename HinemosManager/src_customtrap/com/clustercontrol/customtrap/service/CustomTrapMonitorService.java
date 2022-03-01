@@ -43,6 +43,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.apache.log4j.Logger;
 
+import com.clustercontrol.HinemosManagerMain;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.customtrap.bean.CustomTrap;
@@ -86,10 +87,12 @@ public class CustomTrapMonitorService {
 	 * CustomTrapMonitorService起動します。
 	 */
 	public void start() {
-		try {
-			serverProcess();
-		} catch (Exception e) {
-			logger.warn("CustomTrapMonitorService start Error ", e);
+		if (! HinemosManagerMain._isClustered) {
+			try {
+				serverProcess();
+			} catch (Exception e) {
+				logger.warn("CustomTrapMonitorService start Error ", e);
+			}
 		}
 	}
 
@@ -174,7 +177,7 @@ public class CustomTrapMonitorService {
 								}
 								
 								try {
-									CustomTraps receivedCustomTraps = parseCustomTrap(exchange, msgBody);
+									CustomTraps receivedCustomTraps = parseCustomTrap(exchange.getRemoteAddress().getHostName(), msgBody, null);
 									ReceivedCustomTrapFilter receivedCustomTrapFilter = new ReceivedCustomTrapFilter(receivedCustomTraps, notifier, defaultCharset);
 									receivedCustomTrapFilter.work();
 								} catch(JsonProcessingException | ParseException e) {
@@ -207,11 +210,12 @@ public class CustomTrapMonitorService {
 	 * 
 	 * @param exchange	HttpExchange
 	 * @param msgBody	受信データ
+	 * @param recvTimestamp	受信時刻（主にMCでの受信時刻を想定）
 	 * @return		パース後の受信データ配列
 	 * @throws JsonProcessingException
 	 * @throws ParseException
 	 */
-	private CustomTraps parseCustomTrap(HttpExchange exchange, String msgBody) throws JsonProcessingException, ParseException {
+	public CustomTraps parseCustomTrap(String agentAddr, String msgBody, Long recvTimestamp) throws JsonProcessingException, ParseException {
 
 		ObjectMapper mapper = new ObjectMapper();
 		// Jsonパース
@@ -228,7 +232,7 @@ public class CustomTrapMonitorService {
 		}
 		
 		parsedCustomTraps.setFacilityId(receivedCustomTraps.getFacilityId());
-		parsedCustomTraps.setAgentAddr(exchange.getRemoteAddress().getHostName());
+		parsedCustomTraps.setAgentAddr(agentAddr);
 		for (CustomTrap receivedCustomTrap : receivedCustomTraps.getCustomTraps()){
 			try {
 				// Dataチェック
@@ -238,7 +242,11 @@ public class CustomTrapMonitorService {
 					Date samplingDate = df.parse(receivedCustomTrap.getDate());
 					receivedCustomTrap.setSampledTime(samplingDate.getTime());
 				} else {
-					receivedCustomTrap.setSampledTime(HinemosTime.currentTimeMillis());
+					if (recvTimestamp != null) {
+						receivedCustomTrap.setSampledTime(recvTimestamp);
+					} else {
+						receivedCustomTrap.setSampledTime(HinemosTime.currentTimeMillis());
+					}
 				}
 				// Keyチェック
 				String key = receivedCustomTrap.getKey();
@@ -328,8 +336,10 @@ public class CustomTrapMonitorService {
 	 * シャットダウンします。
 	 */
 	public void shutdown() {
-		httpServer.stop(1);
-		httpPoolExecutor.shutdownNow();
+		if (! HinemosManagerMain._isClustered) {
+			httpServer.stop(1);
+			httpPoolExecutor.shutdownNow();
+		}
 	}
 
 	/**
@@ -386,5 +396,14 @@ public class CustomTrapMonitorService {
 	public CustomTrapMonitorService setBacklog(int backlog) {
 		this.backlog = backlog;
 		return this;
+	}
+	
+	/**
+	 * HAからのデータ受信時処理
+	 * @param custonTraps 受信したカスタムトラップ
+	 */
+	public void customtrapReceivedSync(CustomTraps custonTraps) {
+		ReceivedCustomTrapFilter receivedCustomTrapFilter = new ReceivedCustomTrapFilter(custonTraps, notifier, defaultCharset);
+		receivedCustomTrapFilter.work();
 	}
 }

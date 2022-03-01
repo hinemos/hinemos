@@ -12,8 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import com.clustercontrol.sdml.util.SdmlUtilityInterfaceNoEclipse;
 import com.clustercontrol.ui.util.OptionUtil;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.settings.ui.bean.FuncInfo;
 import com.clustercontrol.utility.settings.ui.bean.FuncTreeItem;
@@ -140,7 +141,7 @@ public class BuildFunctionTreeAction {
 				CommandConstant.WEIGHT_PLATFORM_NODECONFIG,
 				CommandConstant.ACTION_PLATFORM_NODECONFIG,
 				true,
-				HinemosModuleConstant.PLATFORM_NODECONFIG);
+				"");
 		funcTreeChild.setData(info);
 		funcTreePlatform.addChildren(funcTreeChild);
 
@@ -168,6 +169,18 @@ public class BuildFunctionTreeAction {
 		funcTreeChild.setData(info);
 		funcTreePlatform.addChildren(funcTreeChild);
 		
+		//RESTアクセス
+		funcTreeChild = new FuncTreeItem();
+		info = new FuncInfo(HinemosModuleConstant.PLATFORM_REST_ACCESS,
+				HinemosModuleConstant.STRING_PLATFORM_REST_ACCESS,
+				XMLConstant.DEFAULT_XML_PLATFORM_REST_ACCESS,
+				CommandConstant.WEIGHT_PLATFORM_REST_ACCESS,
+				CommandConstant.ACTION_PLATFORM_REST_ACCESS,
+				true,
+				HinemosModuleConstant.PLATFORM_REST_ACCESS);
+		funcTreeChild.setData(info);
+		funcTreePlatform.addChildren(funcTreeChild);
+
 		//カレンダ
 		//カレンダのXMLファイルは複数存在するためArrayListでセット
 		xmlFiles = new ArrayList<String>();
@@ -270,6 +283,56 @@ public class BuildFunctionTreeAction {
 		// 共通機能のツリーをベースの子供としてつなぐ
 		funcTreeSetting.addChildren(funcTreePlatform);
 
+		// フィルタ設定機能
+		FuncTreeItem funcTreeFilter = new FuncTreeItem();
+		info = new FuncInfo(HinemosModuleConstant.FILTER_SETTING,
+				HinemosModuleConstant.STRING_FILTER_SETTING,
+				"",
+				CommandConstant.WEIGHT_OTHER,
+				"",
+				false,
+				"");
+		funcTreeFilter.setData(info);
+		
+		// 監視履歴[イベント]
+		funcTreeChild = new FuncTreeItem();
+		info = new FuncInfo(HinemosModuleConstant.FILTER_SETTING_MONITOR_HISTORY_EVENT,
+				HinemosModuleConstant.STRING_FILTER_SETTING_MONITOR_HISTORY_EVENT,
+				XMLConstant.DEFAULT_XML_FILTER_SETTING_MONITOR_HISTORY_EVENT,
+				CommandConstant.WEIGHT_FILTER_SETTING_MONITOR_HISTORY_EVENT,
+				CommandConstant.ACTION_FILTER_SETTING_MONITOR_HISTORY_EVENT,
+				true,
+				HinemosModuleConstant.FILTER_SETTING);
+		funcTreeChild.setData(info);
+		funcTreeFilter.addChildren(funcTreeChild);
+		
+		// 監視履歴[ステータス]
+		funcTreeChild = new FuncTreeItem();
+		info = new FuncInfo(HinemosModuleConstant.FILTER_SETTING_MONITOR_HISTORY_STATUS,
+				HinemosModuleConstant.STRING_FILTER_SETTING_MONITOR_HISTORY_STATUS,
+				XMLConstant.DEFAULT_XML_FILTER_SETTING_MONITOR_HISTORY_STATUS,
+				CommandConstant.WEIGHT_FILTER_SETTING_MONITOR_HISTORY_STATUS,
+				CommandConstant.ACTION_FILTER_SETTING_MONITOR_HISTORY_STATUS,
+				true,
+				HinemosModuleConstant.FILTER_SETTING);
+		funcTreeChild.setData(info);
+		funcTreeFilter.addChildren(funcTreeChild);
+		
+		// ジョブ履歴[一覧]
+		funcTreeChild = new FuncTreeItem();
+		info = new FuncInfo(HinemosModuleConstant.FILTER_SETTING_JOB_HISTORY,
+				HinemosModuleConstant.STRING_FILTER_SETTING_JOB_HISTORY,
+				XMLConstant.DEFAULT_XML_FILTER_SETTING_JOB_HISTORY,
+				CommandConstant.WEIGHT_FILTER_SETTING_JOB_HISTORY,
+				CommandConstant.ACTION_FILTER_SETTING_JOB_HISTORY,
+				true,
+				HinemosModuleConstant.FILTER_SETTING);
+		funcTreeChild.setData(info);
+		funcTreeFilter.addChildren(funcTreeChild);
+		
+		// フィルタ設定機能のツリーをベースの子供としてつなぐ
+		funcTreeSetting.addChildren(funcTreeFilter);
+		
 		// 監視管理機能
 		FuncTreeItem funcTreeMonitor = new FuncTreeItem();
 		info = new FuncInfo(com.clustercontrol.bean.HinemosModuleConstant.MONITOR,
@@ -577,6 +640,7 @@ public class BuildFunctionTreeAction {
 		xmlFiles.add(XMLConstant.DEFAULT_XML_JOB_SCHEDULE);
 		xmlFiles.add(XMLConstant.DEFAULT_XML_JOB_FILECHECK);
 		xmlFiles.add(XMLConstant.DEFAULT_XML_JOB_MANUAL);
+		xmlFiles.add(XMLConstant.DEFAULT_XML_JOB_JOBLINKRCV);
 		objectTypes = new ArrayList<String>();
 		objectTypes.add(HinemosModuleConstant.JOB_KICK);
 		funcTreeChild = new FuncTreeItem();
@@ -597,6 +661,18 @@ public class BuildFunctionTreeAction {
 				XMLConstant.DEFAULT_XML_JOB_QUEUE,
 				CommandConstant.WEIGHT_JOB_QUEUE,
 				CommandConstant.ACTION_JOB_QUEUE,
+				true,
+				HinemosModuleConstant.JOB);
+		funcTreeChild.setData(info);
+		funcTreeJob.addChildren(funcTreeChild);
+
+		//ジョブ連携送信設定
+		funcTreeChild = new FuncTreeItem();
+		info = new FuncInfo(HinemosModuleConstant.JOBLINK_SEND_SETTING,
+				HinemosModuleConstant.STRING_JOBLINK_SEND_SETTING,
+				XMLConstant.DEFAULT_XML_JOB_JOBLINKSEND,
+				CommandConstant.WEIGHT_JOB_JOBLINKSEND,
+				CommandConstant.ACTION_JOB_JOBLINKSEND,
 				true,
 				HinemosModuleConstant.JOB);
 		funcTreeChild.setData(info);
@@ -670,6 +746,10 @@ public class BuildFunctionTreeAction {
 		// 環境構築のツリーをベースの子供としてつなぐ
 		funcTreeSetting.addChildren(funcTreeInfra);
 		// 環境構築ここまで
+
+		// SDMLは個別で対応
+		SdmlUtilityInterfaceNoEclipse.addSdmlFunction(funcTreeSetting);
+
 		// 設定ここまで
 		
 		// マスタここから
@@ -711,7 +791,7 @@ public class BuildFunctionTreeAction {
 		// マスタここまで
 
 		// 所持のOptionを取得
-		Set<String> options = EndpointManager.getAllOptions();
+		Set<String> options = RestConnectManager.getAllOptions();
 		if(options.contains(OptionUtil.TYPE_ENTERPRISE)){
 			// エンタプライズ
 			FuncTreeItem funcTreeEnterprise = new FuncTreeItem();
@@ -760,6 +840,18 @@ public class BuildFunctionTreeAction {
 					"");
 			funcReporting.setData(info);
 			funcTreeEnterprise.addChildren(funcReporting);
+			
+			// RPA
+			FuncTreeItem funcRpa = new FuncTreeItem();
+			info = new FuncInfo("",
+					HinemosModuleConstant.STRING_RPA,
+					"",
+					CommandConstant.WEIGHT_OTHER,
+					"",
+					false,
+					"");
+			funcRpa.setData(info);
+			funcTreeEnterprise.addChildren(funcRpa);
 
 
 			// ノードマップここから
@@ -832,6 +924,81 @@ public class BuildFunctionTreeAction {
 			funcJobmap.addChildren(funcTreeChild);
 			
 			// ジョブマップここまで
+			
+			// RPA管理ここから
+			// RPAシナリオタグ
+			funcTreeChild = new FuncTreeItem();
+			info = new FuncInfo(HinemosModuleConstant.RPA_SCENARIO_TAG,
+					HinemosModuleConstant.STRING_RPA_SCENARIO_TAG,
+					XMLConstant.DEFAULT_XML_RPA_SCENARIO_TAG,
+					CommandConstant.WEIGHT_RPA_SCENARIO_TAG,
+					CommandConstant.ACTION_RPA_SCENARIO_TAG,
+					true,
+					"");
+			funcTreeChild.setData(info);
+			funcRpa.addChildren(funcTreeChild);
+			
+			// RPAシナリオ実績作成設定
+			funcTreeChild = new FuncTreeItem();
+			info = new FuncInfo(HinemosModuleConstant.RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+					HinemosModuleConstant.STRING_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+					XMLConstant.DEFAULT_XML_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+					CommandConstant.WEIGHT_RPA_SCENARIO_OPE_RESULT_CREATE_SETTING,
+					CommandConstant.ACTION_RPA_SCENARIO_OPE_RESULT_CREATE_SETTING,
+					true,
+					com.clustercontrol.bean.HinemosModuleConstant.RPA_SCENARIO_CREATE);
+			funcTreeChild.setData(info);
+			funcRpa.addChildren(funcTreeChild);
+			
+			// RPA管理ツールアカウント
+			funcTreeChild = new FuncTreeItem();
+			info = new FuncInfo(HinemosModuleConstant.RPA_MANAGEMENT_TOOL_ACCOUNT,
+					HinemosModuleConstant.STRING_RPA_MANAGEMENT_TOOL_ACCOUNT,
+					XMLConstant.DEFAULT_XML_RPA_MANAGEMENT_TOOL_ACCOUNT,
+					CommandConstant.WEIGHT_RPA_MANAGEMENT_TOOL_ACCOUNT,
+					CommandConstant.ACTION_RPA_MANAGEMENT_TOOL_ACCOUNT,
+					true,
+					"");
+			funcTreeChild.setData(info);
+			funcRpa.addChildren(funcTreeChild);
+			
+			// RPA自動化効果計算
+			funcTreeChild = new FuncTreeItem();
+			info = new FuncInfo(HinemosModuleConstant.RPA_SCENARIO_COEFFICIENT_PATTERN,
+					HinemosModuleConstant.STRING_RPA_SCENARIO_COEFFICIENT_PATTERN,
+					XMLConstant.DEFAULT_XML_RPA_SCENARIO_COEFFICIENT_PATTERN,
+					CommandConstant.WEIGHT_RPA_SCENARIO_COEFFICIENT_PATTERN,
+					CommandConstant.ACTION_RPA_SCENARIO_COEFFICIENT_PATTERN,
+					true,
+					"");
+			funcTreeChild.setData(info);
+			funcRpa.addChildren(funcTreeChild);
+			
+			// RPAログファイル監視
+			funcTreeChild = new FuncTreeItem();
+			info = new FuncInfo(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_RPA_LOGFILE,
+					HinemosModuleConstant.STRING_MONITOR_RPA_LOGFILE,
+					XMLConstant.DEFAULT_XML_MONITOR_RPA_LOGFILE,
+					CommandConstant.WEIGHT_MONITOR_RPA_LOGFILE,
+					CommandConstant.ACTION_MONITOR_RPA_LOGFILE,
+					true,
+					com.clustercontrol.bean.HinemosModuleConstant.MONITOR);
+			funcTreeChild.setData(info);
+			funcRpa.addChildren(funcTreeChild);
+			
+			// RPA管理ツール監視
+			funcTreeChild = new FuncTreeItem();
+			info = new FuncInfo(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE,
+					HinemosModuleConstant.STRING_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+					XMLConstant.DEFAULT_XML_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+					CommandConstant.WEIGHT_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+					CommandConstant.ACTION_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+					true,
+					com.clustercontrol.bean.HinemosModuleConstant.MONITOR);
+			funcTreeChild.setData(info);
+			funcRpa.addChildren(funcTreeChild);
+			
+			// RPA管理ここまで
 		}
 
 		if(options.contains(OptionUtil.TYPE_XCLOUD)){
@@ -862,7 +1029,7 @@ public class BuildFunctionTreeAction {
 			
 			// CLOUD サービス監視
 			funcTreeChild = new FuncTreeItem();
-			info = new FuncInfo(HinemosModuleConstant.CLOUD_MONITOR_SERVICE,
+			info = new FuncInfo(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_CLOUD_SERVICE_CONDITION,
 					HinemosModuleConstant.STRING_CLOUD_MONITOR_SERVICE,
 					XMLConstant.DEFAULT_XML_CLOUD_MON_SERVICE,
 					CommandConstant.WEIGHT_CLOUD_MON_SERVICE,
@@ -874,11 +1041,23 @@ public class BuildFunctionTreeAction {
 			
 			// CLOUD 課金監視
 			funcTreeChild = new FuncTreeItem();
-			info = new FuncInfo(HinemosModuleConstant.CLOUD_MONITOR_BILLING,
+			info = new FuncInfo(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_CLOUD_SERVICE_BILLING,
 					HinemosModuleConstant.STRING_CLOUD_MONITOR_BILLING,
 					XMLConstant.DEFAULT_XML_CLOUD_MON_BILLING,
 					CommandConstant.WEIGHT_CLOUD_MON_BILLING,
 					CommandConstant.ACTION_CLOUD_MON_BILLING,
+					true,
+					com.clustercontrol.bean.HinemosModuleConstant.MONITOR);
+			funcTreeChild.setData(info);
+			funcCloud.addChildren(funcTreeChild);
+			
+			// CLOUD ログ監視
+			funcTreeChild = new FuncTreeItem();
+			info = new FuncInfo(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_CLOUD_LOG,
+					HinemosModuleConstant.STRING_CLOUD_MONITOR_LOG,
+					XMLConstant.DEFAULT_XML_CLOUD_MON_LOG,
+					CommandConstant.WEIGHT_CLOUD_MON_LOG,
+					CommandConstant.ACTION_CLOUD_MON_LOG,
 					true,
 					com.clustercontrol.bean.HinemosModuleConstant.MONITOR);
 			funcTreeChild.setData(info);

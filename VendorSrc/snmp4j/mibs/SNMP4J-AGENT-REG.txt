@@ -1,0 +1,33 @@
+SNMP4J-AGENT-REG DEFINITIONS ::= BEGIN
+
+IMPORTS
+	snmp4j
+		FROM AGENTPP-GLOBAL-REG
+	MODULE-IDENTITY
+		FROM SNMPv2-SMI;
+
+snmp4jAgentMIB MODULE-IDENTITY
+	LAST-UPDATED "200511120027Z"	-- Nov 12, 2005 12:27:00 AM
+	ORGANIZATION "SNMP4J.org"
+	CONTACT-INFO
+		"Frank Fock
+		Internet: http://www.snmp4j.org
+		Email:    fock@snmp4j.com"
+	DESCRIPTION
+		"This MIB specification is the global registration
+		module for SNMP4J-Agent related MIBs."
+	REVISION "200511120027Z"	-- Nov 12, 2005 12:27:00 AM
+	DESCRIPTION
+		"Initial version."
+	-- 1.3.6.1.4.1.4976.10.1
+	::= { snmp4j 1 }
+
+
+-- Scalars and Tables
+--
+
+snmp4jAgentModules OBJECT IDENTIFIER 
+	-- 1.3.6.1.4.1.4976.10.1.1
+	::= { snmp4jAgentMIB 1 }
+
+END

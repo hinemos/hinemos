@@ -50,6 +50,13 @@ public class UpwardAction extends AbstractHandler {
 		// 選択アイテムの取得
 		this.viewPart = HandlerUtil.getActivePart(event);
 		NodeMapView view = (NodeMapView) viewPart.getAdapter(NodeMapView.class);
+		if (view == null) {
+			MessageDialog.openInformation(
+					null,
+					Messages.getString("message"),
+					com.clustercontrol.nodemap.messages.Messages.getString("view.select.prompt"));
+			return null;
+		}
 		
 		try {
 			view.upward();

@@ -15,13 +15,14 @@ import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtRunInstructionInfoResponse;
+import org.openapitools.client.model.SetJobResultRequest;
 
 import com.clustercontrol.agent.SendQueue;
+import com.clustercontrol.agent.SendQueue.JobResultSendableObject;
 import com.clustercontrol.jobmanagement.bean.CommandConstant;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
-import com.clustercontrol.ws.jobmanagement.RunResultInfo;
 
 /**
  * チェックサムを行うスレッドクラス<BR>
@@ -40,7 +41,7 @@ public class CheckSumThread extends AgentThread {
 	 * @param props
 	 */
 	public CheckSumThread(
-			RunInstructionInfo info,
+			AgtRunInstructionInfoResponse info,
 			SendQueue sendQueue) {
 		super(info, sendQueue);
 	}
@@ -62,65 +63,66 @@ public class CheckSumThread extends AgentThread {
 		//---------------------------
 
 		//メッセージ作成
-		RunResultInfo info = new RunResultInfo();
-		info.setSessionId(m_info.getSessionId());
-		info.setJobunitId(m_info.getJobunitId());
-		info.setJobId(m_info.getJobId());
-		info.setFacilityId(m_info.getFacilityId());
-		info.setCommand(m_info.getCommand());
-		info.setCommandType(m_info.getCommandType());
-		info.setStopType(m_info.getStopType());
-		info.setStatus(RunStatusConstant.START);
-		info.setTime(startDate.getTime());
+		JobResultSendableObject sendme = new JobResultSendableObject();
+		sendme.sessionId = m_info.getSessionId();
+		sendme.jobunitId = m_info.getJobunitId();
+		sendme.jobId = m_info.getJobId();
+		sendme.facilityId = m_info.getFacilityId();
+		sendme.body = new SetJobResultRequest();
+		sendme.body.setCommand(m_info.getCommand());
+		sendme.body.setCommandType(m_info.getCommandType());
+		sendme.body.setStopType(m_info.getStopType());
+		sendme.body.setStatus(RunStatusConstant.START);
+		sendme.body.setTime(startDate.getTime());
 
 		m_log.info("run SessionID=" + m_info.getSessionId() + ", JobID=" + m_info.getJobId());
 
 		//送信
-		m_sendQueue.put(info);
+		m_sendQueue.put(sendme);
 
 		if(m_info.getCommand().equals(CommandConstant.GET_CHECKSUM)){
 			String checksum = getCheckSum(m_info.getFilePath());
 			if(checksum != null){
-				info.setStatus(RunStatusConstant.END);
-				info.setCheckSum(checksum);
-				info.setTime(HinemosTime.getDateInstance().getTime());
-				info.setErrorMessage("");
-				info.setMessage("");
-				info.setEndValue(0);
+				sendme.body.setStatus(RunStatusConstant.END);
+				sendme.body.setCheckSum(checksum);
+				sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+				sendme.body.setErrorMessage("");
+				sendme.body.setMessage("");
+				sendme.body.setEndValue(0);
 			}
 			else{
 				String message = "GET_CHECKSUM is failure";
 				m_log.warn(message);
-				info.setStatus(RunStatusConstant.ERROR);
-				info.setTime(HinemosTime.getDateInstance().getTime());
-				info.setErrorMessage("");
-				info.setMessage(message);
-				info.setEndValue(-1);
+				sendme.body.setStatus(RunStatusConstant.ERROR);
+				sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+				sendme.body.setErrorMessage("");
+				sendme.body.setMessage(message);
+				sendme.body.setEndValue(-1);
 			}
 		}
 		else if(m_info.getCommand().equals(CommandConstant.CHECK_CHECKSUM)){
 			String checksum = getCheckSum(m_info.getFilePath());
 			if(checksum.equals(m_info.getCheckSum())){
-				info.setStatus(RunStatusConstant.END);
-				info.setTime(HinemosTime.getDateInstance().getTime());
-				info.setErrorMessage("");
-				info.setMessage("");
-				info.setEndValue(0);
+				sendme.body.setStatus(RunStatusConstant.END);
+				sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+				sendme.body.setErrorMessage("");
+				sendme.body.setMessage("");
+				sendme.body.setEndValue(0);
 			}
 			else{
 				String message = "CHECK_CHECKSUM is failure." +
 						" from=" + m_info.getCheckSum() + ", to=" + checksum;
 				m_log.warn(message);
-				info.setStatus(RunStatusConstant.ERROR);
-				info.setTime(HinemosTime.getDateInstance().getTime());
-				info.setErrorMessage("");
-				info.setMessage(message);
-				info.setEndValue(-1);
+				sendme.body.setStatus(RunStatusConstant.ERROR);
+				sendme.body.setTime(HinemosTime.getDateInstance().getTime());
+				sendme.body.setErrorMessage("");
+				sendme.body.setMessage(message);
+				sendme.body.setEndValue(-1);
 			}
 		}
 
 		//送信
-		m_sendQueue.put(info);
+		m_sendQueue.put(sendme);
 
 		//実行履歴から削除
 		RunHistoryUtil.delRunHistory(m_info);

@@ -9,20 +9,20 @@
 package com.clustercontrol.accesscontrol.session;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-
-import javax.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.auth.Authentication;
 import com.clustercontrol.accesscontrol.auth.AuthenticationParams;
+import com.clustercontrol.accesscontrol.bean.FunctionConstant;
 import com.clustercontrol.accesscontrol.bean.ManagerInfo;
 import com.clustercontrol.accesscontrol.bean.ObjectPrivilegeFilterInfo;
-import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.bean.RoleTreeItem;
 import com.clustercontrol.accesscontrol.bean.RoleTypeConstant;
@@ -30,6 +30,7 @@ import com.clustercontrol.accesscontrol.factory.LoginUserModifier;
 import com.clustercontrol.accesscontrol.factory.LoginUserSelector;
 import com.clustercontrol.accesscontrol.factory.RoleModifier;
 import com.clustercontrol.accesscontrol.factory.RoleSelector;
+import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
 import com.clustercontrol.accesscontrol.model.RoleInfo;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.accesscontrol.model.UserInfo;
@@ -43,6 +44,7 @@ import com.clustercontrol.accesscontrol.util.UserRoleCacheRefreshCallback;
 import com.clustercontrol.accesscontrol.util.UserValidator;
 import com.clustercontrol.accesscontrol.util.VersionUtil;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityDuplicate;
@@ -65,10 +67,12 @@ import com.clustercontrol.fault.UsedRole;
 import com.clustercontrol.fault.UsedUser;
 import com.clustercontrol.fault.UserDuplicate;
 import com.clustercontrol.fault.UserNotFound;
+import com.clustercontrol.filtersetting.session.FilterSettingControllerBean;
 import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.FacilitySortOrderConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
+import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.factory.FacilityModifier;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -78,6 +82,12 @@ import com.clustercontrol.repository.util.RepositoryChangedNotificationCallback;
 import com.clustercontrol.repository.util.RepositoryValidator;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Singletons;
+import com.clustercontrol.xcloud.Session;
+import com.clustercontrol.xcloud.bean.AvailableRole;
+import com.clustercontrol.xcloud.model.CloudScopeEntity;
+
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.TypedQuery;
 
 /**
  * アカウント機能を実現するSession Bean<BR>
@@ -246,9 +256,10 @@ public class AccessControllerBean {
 	 *
 	 * @see com.clustercontrol.accesscontrol.factory.LoginUserModifier#addUser(Property, String, String)
 	 */
-	public void addUserInfo(UserInfo info) throws HinemosUnknown, UserDuplicate, InvalidSetting {
+	public UserInfo addUserInfo(UserInfo info) throws HinemosUnknown, UserDuplicate, InvalidSetting {
 		m_log.info("user=" + HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
+		UserInfo ret = null;
 		JpaTransactionManager jtm = null;
 		try {
 			jtm = new JpaTransactionManager();
@@ -261,6 +272,8 @@ public class AccessControllerBean {
 			
 			jtm.addCallback(new UserRoleCacheRefreshCallback());
 			jtm.commit();
+			
+			ret = LoginUserSelector.getUserInfo(info.getUserId());
 		} catch (UserDuplicate | HinemosUnknown | InvalidSetting e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -276,6 +289,7 @@ public class AccessControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 	
 	
@@ -310,8 +324,9 @@ public class AccessControllerBean {
 	 *
 	 * @see com.clustercontrol.accesscontrol.factory.LoginUserModifier#modifyUser(Property, String)
 	 */
-	public void modifyUserInfo(UserInfo info, boolean withHashedPassword) throws HinemosUnknown, UserNotFound, UnEditableUser, InvalidSetting {
+	public UserInfo modifyUserInfo(UserInfo info, boolean withHashedPassword) throws HinemosUnknown, UserNotFound, UnEditableUser, InvalidSetting {
 		m_log.info("user=" + HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+		UserInfo ret = null;
 		JpaTransactionManager jtm = null;
 
 		/** メイン処理 */
@@ -326,6 +341,8 @@ public class AccessControllerBean {
 			LoginUserModifier.modifyUserInfo(info, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID), false, withHashedPassword);
 
 			jtm.commit();
+			
+			ret = LoginUserSelector.getUserInfo(info.getUserId());
 		} catch (UserNotFound | UnEditableUser | InvalidSetting | HinemosUnknown e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -341,6 +358,7 @@ public class AccessControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -355,7 +373,8 @@ public class AccessControllerBean {
 	 *
 	 * @see com.clustercontrol.accesscontrol.factory.LoginUserModifier#deleteUser(String, String)
 	 */
-	public void deleteUserInfo(List<String> userIdList) throws HinemosUnknown, UserNotFound, UsedUser, UnEditableUser {
+	public List<UserInfo> deleteUserInfo(List<String> userIdList) throws HinemosUnknown, UserNotFound, UsedUser, UnEditableUser {
+		List<UserInfo> ret = new ArrayList<>();
 		JpaTransactionManager jtm = null;
 
 		/** メイン処理 */
@@ -364,11 +383,16 @@ public class AccessControllerBean {
 			jtm.begin();
 
 			for(String userId : userIdList) {
+				UserInfo info = LoginUserSelector.getUserInfo(userId);
+				ret.add(info);
 				LoginUserModifier.deleteUserInfo(userId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 			}
 
+			// ユーザに紐づくフィルタ設定も削除する
+			new FilterSettingControllerBean().deleteAllFilterSettingsOf(userIdList);
+
 			jtm.addCallback(new UserRoleCacheRefreshCallback());
-			
+
 			jtm.commit();
 		} catch (UserNotFound | UnEditableUser | UsedUser | HinemosUnknown e) {
 			if (jtm != null){
@@ -385,6 +409,7 @@ public class AccessControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -397,7 +422,8 @@ public class AccessControllerBean {
 	 * @throws UserNotFound
 	 *
 	 */
-	public void changeOwnPassword(String password) throws HinemosUnknown, UserNotFound {
+	public UserInfo changeOwnPassword(String password) throws HinemosUnknown, UserNotFound {
+		UserInfo ret = null;
 		m_log.debug("changeOwnPassword() password = " + password);
 
 		JpaTransactionManager jtm = null;
@@ -411,6 +437,8 @@ public class AccessControllerBean {
 			LoginUserModifier.modifyUserPassword(loginUser, password, loginUser);
 
 			jtm.commit();
+			
+			ret = LoginUserSelector.getUserInfo(loginUser);
 		} catch (UserNotFound | HinemosUnknown e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -426,6 +454,7 @@ public class AccessControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -439,7 +468,8 @@ public class AccessControllerBean {
 	 *
 	 * @see com.clustercontrol.accesscontrol.factory.LoginUserModifier#modifyUserPassword(String, String)
 	 */
-	public void changePassword(String userId, String password) throws HinemosUnknown, UserNotFound {
+	public UserInfo changePassword(String userId, String password) throws HinemosUnknown, UserNotFound {
+		UserInfo ret = null;
 		JpaTransactionManager jtm = null;
 
 		/** メイン処理 */
@@ -450,6 +480,8 @@ public class AccessControllerBean {
 			LoginUserModifier.modifyUserPassword(userId, password, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.commit();
+			
+			ret = LoginUserSelector.getUserInfo(userId);
 		} catch (UserNotFound | HinemosUnknown e){
 			if (jtm != null) {
 				jtm.rollback();
@@ -465,6 +497,7 @@ public class AccessControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -546,6 +579,50 @@ public class AccessControllerBean {
 		}
 		return rtn;
 	}
+
+	/**
+	 * ログインしているユーザが指定したユーザ権限を持っているかどうかを確認する。(ログイン認証向け)<BR>
+	 *
+	 *
+	 * @param systemPrivilegeList 必要な権限一覧
+	 * @return すべてのユーザ権限を保持していればtrue, そうでなければfalse
+	 * @throws HinemosUnknown
+	 */
+	public boolean isPermissions(List<SystemPrivilegeInfo> systemPrivilegeList) throws HinemosUnknown {
+		JpaTransactionManager jtm = null;
+
+		//一覧が空なら無条件にtrue
+		if (systemPrivilegeList == null || systemPrivilegeList.isEmpty() ){
+			return true;
+		}
+
+		boolean rtn = true;
+		String loginUserId = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+
+		/** メイン処理 */
+		try{
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			for ( SystemPrivilegeInfo target :systemPrivilegeList ){
+				if( !(UserRoleCache.isSystemPrivilege(loginUserId, target))  ) {
+					rtn = false;
+					break;
+				}
+			}
+			jtm.commit();
+		} catch (Exception e){
+			m_log.warn("isPermissions() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+		return rtn;
+	}
+
 
 	/**
 	 * ログインユーザのユーザ名を取得する。<BR>
@@ -712,10 +789,10 @@ public class AccessControllerBean {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public void addRoleInfo(RoleInfo roleInfo)
+	public RoleInfo addRoleInfo(RoleInfo roleInfo)
 			throws RoleDuplicate, FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
-
+		RoleInfo ret = null;
 		/** メイン処理 */
 		try {
 			jtm = new JpaTransactionManager();
@@ -737,7 +814,10 @@ public class AccessControllerBean {
 			scopeInfo.setOwnerRoleId(roleInfo.getRoleId());
 			String parentFacilityId = FacilityTreeAttributeConstant.OWNER_SCOPE;
 
-			// ロールスコープ入力チェック
+			//ファシリティIDとの重複チェック
+			jtm.checkEntityExists(FacilityInfo.class, roleInfo.getRoleId());
+			
+			// ロールスコープ入力チェック			
 			RepositoryValidator.validateScopeInfo(parentFacilityId, scopeInfo, false);
 
 			// ロールスコープ新規作成
@@ -753,6 +833,8 @@ public class AccessControllerBean {
 			jtm.addCallback(new RepositoryChangedNotificationCallback());
 			
 			jtm.commit();
+			
+			ret = RoleSelector.getRoleInfo(roleInfo.getRoleId());
 		} catch (RoleDuplicate | HinemosUnknown | InvalidSetting |InvalidRole e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -780,6 +862,7 @@ public class AccessControllerBean {
 				jtm.close();
 			}
 		}
+		return ret;
 	}
 
 	/**
@@ -794,9 +877,10 @@ public class AccessControllerBean {
 	 * @throws FacilityNotFound
 	 * @throws InvalidSetting
 	 */
-	public void modifyRoleInfo(RoleInfo roleInfo) throws InvalidSetting, InvalidRole, RoleNotFound, UnEditableRole, FacilityNotFound, HinemosUnknown {
+	public RoleInfo modifyRoleInfo(RoleInfo roleInfo) throws InvalidSetting, InvalidRole, RoleNotFound, UnEditableRole, FacilityNotFound, HinemosUnknown {
 		JpaTransactionManager jtm = null;
-
+		RoleInfo ret = null;
+		
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
@@ -828,6 +912,8 @@ public class AccessControllerBean {
 			jtm.addCallback(new RepositoryChangedNotificationCallback());
 			
 			jtm.commit();
+			
+			ret = RoleSelector.getRoleInfo(roleInfo.getRoleId());
 		} catch (InvalidSetting | RoleNotFound | UnEditableRole | FacilityNotFound | InvalidRole e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -847,6 +933,7 @@ public class AccessControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -865,25 +952,32 @@ public class AccessControllerBean {
 	 * @throws HinemosUnknown
 	 *
 	 */
-	public void deleteRoleInfo(List<String> roleIdList) throws UsedFacility, RoleNotFound, UnEditableRole, UsedRole, UsedOwnerRole, FacilityNotFound, InvalidRole, HinemosUnknown {
+	public List<RoleInfo> deleteRoleInfo(List<String> roleIdList) throws UsedFacility, RoleNotFound, UnEditableRole, UsedRole, UsedOwnerRole, FacilityNotFound, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
-
+		List<RoleInfo> retList = new ArrayList<>(); 
+		
 		/** メイン処理 */
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			for(String roleId : roleIdList) {
+				retList.add(RoleSelector.getRoleInfo(roleId));
+			}
+			
+			for(String roleId : roleIdList) {
 				// 組み込みスコープか確認
 				checkIsBuildInRole(roleId);
 
 				// ロールスコープが他機能で使用されているか確認
-				new RepositoryControllerBean().checkIsUseFacility(roleId);
+				new RepositoryControllerBean().checkIsUseFacilityWithChildren(roleId);
 				// ロールスコープ削除
 				FacilityModifier.deleteOwnerRoleScope(roleId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 				// ロールがオーナーロールとして使用されているか確認
 				RoleValidator.validateDeleteRole(roleId);
+				// オブジェクト権限で使用されているか確認
+				RoleValidator.checkHavingObjectPrivilege(roleId);
 				// ロール削除
 				RoleModifier.deleteRoleInfo(roleId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 			}
@@ -894,7 +988,7 @@ public class AccessControllerBean {
 			jtm.addCallback(new RepositoryChangedNotificationCallback());
 			
 			jtm.commit();
-		} catch (UsedFacility | FacilityNotFound | RoleNotFound | UnEditableRole | UsedRole | InvalidRole | UsedOwnerRole e) {
+		} catch (UsedFacility | FacilityNotFound | RoleNotFound | UnEditableRole | UsedRole | InvalidRole | UsedOwnerRole | HinemosUnknown e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
@@ -902,13 +996,16 @@ public class AccessControllerBean {
 		} catch (Exception e) {
 			m_log.warn("deleteScope() : "
 					+ e.getClass().getSimpleName() +", " + e.getMessage(), e);
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(),e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
 		}
+		return retList;
 	}
 
 	/**
@@ -1084,8 +1181,9 @@ public class AccessControllerBean {
 	 * @throws UnEditableRole
 	 * @throws HinemosUnknown
 	 */
-	public void assignUserRole(String roleId, String[] userIds)
+	public RoleInfo assignUserRole(String roleId, String[] userIds)
 			throws UnEditableRole, HinemosUnknown {
+		RoleInfo ret = null;
 		JpaTransactionManager jtm = null;
 
 		try{
@@ -1101,6 +1199,8 @@ public class AccessControllerBean {
 			jtm.addCallback(new RepositoryChangedNotificationCallback());
 			
 			jtm.commit();
+			
+			ret = RoleSelector.getRoleInfo(roleId);
 		} catch (UnEditableRole | HinemosUnknown e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -1119,6 +1219,7 @@ public class AccessControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -1128,11 +1229,27 @@ public class AccessControllerBean {
 	 * @param systemPrivileges 割り当てさせるシステム権限(群)
 	 * @throws UnEditableRole
 	 * @throws HinemosUnknown
+	 * @throws InvalidSetting 
 	 */
-	public void replaceSystemPrivilegeRole(String roleId, List<SystemPrivilegeInfo> systemPrivileges)
-			throws UnEditableRole, HinemosUnknown {
+	public List<SystemPrivilegeInfo> replaceSystemPrivilegeRole(String roleId, List<SystemPrivilegeInfo> systemPrivileges)
+			throws UnEditableRole, HinemosUnknown, InvalidSetting {
+		List<SystemPrivilegeInfo> ret = new ArrayList<>();
 		JpaTransactionManager jtm = null;
-		
+
+		// システム権限の中身チェック リポジトリの参照がない場合はInvalidSettingを返す
+		boolean isRepositoryRefer = false;
+		for (SystemPrivilegeInfo systemPrivilege : systemPrivileges) {
+			if(systemPrivilege.getSystemFunction().equals(FunctionConstant.REPOSITORY)
+					&& systemPrivilege.getSystemPrivilege().equals(SystemPrivilegeMode.READ.name())) {
+				isRepositoryRefer = true;
+				break;
+			}
+		}
+		if(!isRepositoryRefer) {
+			m_log.warn("replaceSystemPrivilegeRole() : Repository - Read not exists");
+			throw new InvalidSetting("replaceSystemPrivilegeRole() : Repository - Read not exists");
+		}
+
 		try{
 			// トランザクション開始
 			jtm = new JpaTransactionManager();
@@ -1144,6 +1261,11 @@ public class AccessControllerBean {
 			jtm.addCallback(new UserRoleCacheRefreshCallback());
 			
 			jtm.commit();
+			
+			for(SystemPrivilegeInfo info : systemPrivileges) {
+				ret.add(QueryUtil.getSystemPrivilegePK(info.getId()));
+				
+			}
 		} catch (UnEditableRole | HinemosUnknown e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -1162,6 +1284,7 @@ public class AccessControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
 	/**
@@ -1180,7 +1303,16 @@ public class AccessControllerBean {
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-			objectPrivilegeInfoList = RoleSelector.getObjectPrivilegeInfoList(filter);
+
+			objectPrivilegeInfoList = new ArrayList<>();
+			for (ObjectPrivilegeInfo objPriv : RoleSelector.getObjectPrivilegeInfoList(filter)) {
+				if (canUserRead(objPriv)) {
+					objectPrivilegeInfoList.add(objPriv);
+				} else {
+					m_log.debug("getObjectPrivilegeInfoList: Discard, " + objPriv.getId());
+				}
+			}
+
 			jtm.commit();
 		} catch (Exception e) {
 			m_log.warn("getObjectPrivilegeInfoList() : "
@@ -1194,7 +1326,6 @@ public class AccessControllerBean {
 		}
 		return objectPrivilegeInfoList;
 	}
-
 
 	/**
 	 * オブジェクト権限情報を取得する。<BR>
@@ -1210,27 +1341,59 @@ public class AccessControllerBean {
 	 */
 	public ObjectPrivilegeInfo getObjectPrivilegeInfo(
 			String objectType, String objectId, String roleId, String objectPrivilege) throws HinemosUnknown {
+
 		JpaTransactionManager jtm = null;
 		ObjectPrivilegeInfo objectPrivilegeInfo = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
+
 			objectPrivilegeInfo = RoleSelector.getObjectPrivilegeInfo(objectType, objectId, roleId, objectPrivilege);
+			if (!canUserRead(objectPrivilegeInfo)) {
+				m_log.debug("getObjectPrivilegeInfo: Discard, " + objectPrivilegeInfo.getId());
+				objectPrivilegeInfo = null;
+			}
+
 			jtm.commit();
 		} catch (HinemosUnknown e) {
-			jtm.rollback();
+			if (jtm != null)
+				jtm.rollback();
 			throw e;
 		} catch (Exception e) {
 			if (jtm != null)
 				jtm.rollback();
 			m_log.warn("getObjectPrivilegeInfo() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
 			if (jtm != null)
 				jtm.close();
 		}
 		return objectPrivilegeInfo;
+	}
+
+	/**
+	 * クライアントユーザが指定されたオブジェクト権限を参照可能な場合はtrueを返す。
+	 */
+	private boolean canUserRead(ObjectPrivilegeInfo objPriv) {
+		// 管理者なら常に参照可能
+		if (HinemosSessionContext.isAdministrator()) {
+			return true;
+		}
+		try {
+			// 例外が発生するかどうかのみ必要、戻り値は捨てる。
+			ObjectPrivilegeUtil.getObjectPrivilegeObject(objPriv.getObjectType(), objPriv.getObjectId(),
+					ObjectPrivilegeMode.READ);
+			return true;
+		} catch (JobMasterNotFound e) {
+			// 呼び出し階層を追ったところ、投げているメソッドが存在しないように見える。
+			// もし発生したらログへ記録し、処理は止めずに不許可扱いとする。
+			m_log.info("canUserRead: " ,e);
+			return false;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			// 不許可
+			return false;
+		}
 	}
 
 	/**
@@ -1245,14 +1408,18 @@ public class AccessControllerBean {
 	 * @throws InvalidRole
 	 *
 	 */
-	public void replaceObjectPrivilegeInfo(String objectType, String objectId, List<ObjectPrivilegeInfo> list)
+	public List<ObjectPrivilegeInfo> replaceObjectPrivilegeInfo(String objectType, String objectId, List<ObjectPrivilegeInfo> list)
 			throws PrivilegeDuplicate, UsedObjectPrivilege, HinemosUnknown, InvalidSetting, InvalidRole, JobMasterNotFound {
 		m_log.info("user=" + HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+		List<ObjectPrivilegeInfo> ret = new ArrayList<>();
 		JpaTransactionManager jtm = null;
 		/** メイン処理 */
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
+
+			//入力チェック
+			ObjectPrivilegeValidator.validateObjectPrivilegeInfo(objectType, objectId, list);
 
 			// JobMstEntityに対応したオブジェクト権限の編集は
 			// 該当データがDBに登録されていない場合は処理終了
@@ -1262,9 +1429,6 @@ public class AccessControllerBean {
 
 			// オブジェクトWRITE権限チェック
 			ObjectPrivilegeUtil.getObjectPrivilegeObject(objectType, objectId, ObjectPrivilegeMode.MODIFY);
-
-			//入力チェック
-			ObjectPrivilegeValidator.validateObjectPrivilegeInfo(objectType, objectId, list);
 
 			/** メイン処理 */
 			RoleModifier.replaceObjectPrivilegeInfo(objectType, objectId, list,
@@ -1278,6 +1442,9 @@ public class AccessControllerBean {
 			
 			jtm.commit();
 
+			for(ObjectPrivilegeInfo info : list) {
+				ret.add(getObjectPrivilegeInfo(objectType, objectId, info.getRoleId(), info.getObjectPrivilege()));
+			}
 		} catch (InvalidSetting | UsedObjectPrivilege | PrivilegeDuplicate | HinemosUnknown | JobMasterNotFound e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -1297,8 +1464,37 @@ public class AccessControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return ret;
 	}
 
+	/**
+	 * 利用可能なロールID,ロール名のリストを取得する(クラウドVM管理機能より利用される)
+	 * @return 利用可能なロールID,ロール名のリスト
+	 * @throws InvalidRole
+	 */
+	public List<AvailableRole> getAvailableRoles() throws InvalidRole {
+		TypedQuery<RoleInfo> query = null;
+		List<String> excludes = Arrays.asList(RoleIdConstant.INTERNAL, RoleIdConstant.HINEMOS_MODULE);
+		Boolean isAdministrator = (Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR);
+		if (isAdministrator == null || !isAdministrator) {
+			HinemosEntityManager em = Session.current().getEntityManager();
+			query = em.createNamedQuery(CloudScopeEntity.findAvailableRoles, RoleInfo.class);
+			query.setParameter("userId", Session.current().getHinemosCredential().getUserId());
+			query.setParameter("excludes", excludes);
+		} else {
+			HinemosEntityManager em = Session.current().getEntityManager();
+			query = em.createNamedQuery(CloudScopeEntity.findAvailableRolesAsAdmin, RoleInfo.class);
+			query.setParameter("excludes", excludes);
+		}
+		
+		List<AvailableRole> availableRoles = new ArrayList<>();
+		List<RoleInfo> roles = query.getResultList();
+		for (RoleInfo r: roles) {
+			availableRoles.add(new AvailableRole(r.getRoleId(), r.getRoleName()));
+		}
+		return availableRoles;
+	}
+	
 	/**
 	 * 引数で与えられたロールIDが組み込みスコープである場合には
 	 * HinemosUnknownを送出します。

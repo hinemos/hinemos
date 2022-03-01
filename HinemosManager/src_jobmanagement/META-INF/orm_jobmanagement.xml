@@ -60,7 +60,18 @@
 				WHERE a.facilityId = :facilityId
 				OR a.srcFacilityId = :facilityId
 				OR a.destFacilityId = :facilityId
+				OR (a.resourceTargetId = :facilityId
+				AND a.resourceType = 0)
 				ORDER BY a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
+
+	<named-query name="JobMstEntity.findByJoblinkSendSettingId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobMstEntity a
+				WHERE a.joblinkSendSettingId = :joblinkSendSettingId
 			]]>
 		</query>
 	</named-query>
@@ -161,41 +172,32 @@
 			]]>
 		</query>
 	</named-query>
-	<!-- JobStartJobInfoEntity -->
-	<named-query name="JobStartJobInfoEntity.findByTargetJobId">
+	<!-- JobWaitGroupInfoEntity -->
+	<named-query name="JobWaitGroupInfoEntity.findByTargetJobId">
 		<query>
 			<![CDATA[
-				SELECT a FROM JobStartJobInfoEntity a
+				SELECT DISTINCT a FROM JobWaitGroupInfoEntity a JOIN a.jobWaitInfoEntities b
 				WHERE a.id.sessionId = :sessionId
-				AND a.id.targetJobId = :targetJobId
-				AND a.id.targetJobType NOT IN :excludingTypes
-				ORDER BY a.id.sessionId, a.id.jobunitId, a.id.jobId, a.id.targetJobunitId, a.id.targetJobId, a.id.targetJobType, a.id.targetJobEndValue
+				AND b.id.targetJobId = :targetJobId
+				AND b.id.targetJobType NOT IN :excludingTypes
+				ORDER BY a.id.sessionId, a.id.jobunitId, a.id.jobId
 			]]>
 		</query>
 	</named-query>
-	<!-- JobStartJobMstEntity -->
-	<named-query name="JobStartJobMstEntity.findByTargetJobId">
+	<!-- JobWaitInfoEntity -->
+	<named-query name="JobWaitInfoEntity.findByTypeJobId">
 		<query>
 			<![CDATA[
-				SELECT a FROM JobStartJobMstEntity a
-				WHERE a.id.targetJobunitId = :targetJobunitId
-				AND a.id.targetJobId = :targetJobId
-				ORDER BY a.id.jobunitId, a.id.jobId, a.id.targetJobunitId, a.id.targetJobId, a.id.targetJobType, a.id.targetJobEndValue
+				SELECT a FROM JobWaitInfoEntity a
+				WHERE a.id.sessionId = :sessionId
+				AND a.id.jobunitId = :jobunitId
+				AND a.id.jobId = :jobId
+				AND a.id.targetJobType = :type
+				ORDER BY a.id.sessionId, a.id.jobunitId, a.id.jobId, a.id.orderNo 
 			]]>
 		</query>
 	</named-query>
 	<!-- JobSessionEntity -->
-	<named-query name="JobSessionEntity.findUnendSessions">
-		<query>
-			<![CDATA[
-				SELECT a FROM JobSessionEntity a JOIN a.jobSessionJobEntities b
-				WHERE a.jobId = b.id.jobId
-				AND a.jobunitId = b.id.jobunitId
-				AND b.status NOT IN (300,301)
-				ORDER BY b.startDate ASC
-			]]>
-		</query>
-	</named-query>
 	<named-query name="JobSessionEntity.findByTriggerInfo">
 		<query>
 			<![CDATA[
@@ -204,7 +206,110 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="JobSessionEntity.findBySessionIdJobkickIdAndStatus">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionEntity a
+				WHERE a.sessionGenerateJobkickId = :sessionGenerateJobkickId
+				AND a.sessionId LIKE :sessionId
+				AND EXISTS (
+					select 'X'
+					FROM JobSessionJobEntity b
+					WHERE b.id.sessionId = a.sessionId
+					AND   b.parentJobunitId = :parentJobunitId
+					AND   b.parentJobId = :parentJobId
+					AND   b.status = :status
+				)
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionEntity.findBySessionIdJobkickId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionEntity a
+				WHERE a.sessionGenerateJobkickId = :sessionGenerateJobkickId
+				AND a.sessionId LIKE :sessionId
+				AND EXISTS (
+					select 'X'
+					FROM JobSessionJobEntity b
+					WHERE b.id.sessionId = a.sessionId
+					AND   b.parentJobunitId = :parentJobunitId
+					AND   b.parentJobId = :parentJobId
+				)
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionEntity.findByJobkickIdAndStatus">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionEntity a
+				WHERE a.sessionGenerateJobkickId = :sessionGenerateJobkickId
+				AND EXISTS (
+					select 'X'
+					FROM JobSessionJobEntity b
+					WHERE b.id.sessionId = a.sessionId
+					AND   b.parentJobunitId = :parentJobunitId
+					AND   b.parentJobId = :parentJobId
+					AND   b.status = :status
+				)
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionEntity.findByScheduleDateAndStatus">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionEntity a
+				WHERE a.scheduleDate <= :scheduleDate
+				AND EXISTS (
+					select 'X'
+					FROM JobSessionJobEntity b
+					WHERE b.id.sessionId = a.sessionId
+					AND   b.parentJobunitId = :parentJobunitId
+					AND   b.parentJobId = :parentJobId
+					AND   b.status = :status
+				)
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionEntity.findByScheduleDateStatusAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionEntity a
+				WHERE a.scheduleDate <= :scheduleDate
+				AND EXISTS (
+					select 'X'
+					FROM JobSessionJobEntity b
+					WHERE b.id.sessionId = a.sessionId
+					AND   b.parentJobunitId = :parentJobunitId
+					AND   b.parentJobId = :parentJobId
+					AND   b.ownerRoleId = :ownerRoleId
+					AND   b.status = :status
+				)
+			]]>
+		</query>
+	</named-query>
+	
 	<!-- JobSessionJobEntity -->
+	<named-query name="JobSessionJobEntity.findUnendSessions">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionJobEntity a
+				WHERE a.status IN :statuses
+				AND a.parentJobunitId = :parentJobunitId
+				ORDER BY a.startDate ASC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionJobEntity.findAllChild">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionJobEntity a
+				WHERE a.id.sessionId = :sessionId
+				AND a.id.jobunitId = :jobunitId
+				ORDER BY a.id.sessionId, a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
 	<named-query name="JobSessionJobEntity.findChild">
 		<query>
 			<![CDATA[
@@ -231,6 +336,16 @@
 				SELECT a FROM JobSessionJobEntity a
 				WHERE a.status = :status
 				ORDER BY a.startDate ASC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionJobEntity.findByJobSessionIdAndStatus">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionJobEntity a
+				WHERE a.id.sessionId = :sessionId
+				AND a.status = :status
+				ORDER BY a.id.sessionId, a.id.jobunitId, a.id.jobId
 			]]>
 		</query>
 	</named-query>
@@ -290,6 +405,18 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="JobSessionJobEntity.findBySessionStatusesAndJobTypes">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionJobEntity a
+				JOIN a.jobInfoEntity b
+				WHERE a.id.sessionId = :sessionId
+				AND a.status IN :statuses
+				AND b.jobType IN :jobTypes
+				ORDER BY a.id.sessionId, a.id.jobunitId, a.id.jobId
+			]]>
+		</query>
+	</named-query>
 	<!-- JobSessionNodeEntity -->
 	<named-query name="JobSessionJobEntity.findByIdsDesc">
 		<query>
@@ -319,7 +446,7 @@
 		<query>
 			<![CDATA[
 				SELECT a FROM JobSessionNodeEntity a
-				WHERE a.status = :status
+				WHERE a.status IN :statusList
 				AND a.startDate IS NULL
 				ORDER BY a.id.sessionId, a.id.jobunitId, a.id.jobId, a.id.facilityId
 			]]>
@@ -338,7 +465,7 @@
 		<query>
 			<![CDATA[
 				SELECT a FROM JobSessionNodeEntity a
-				WHERE a.status = :status
+				WHERE a.status IN :statusList
 				AND a.id.facilityId = :facilityId
 				AND a.startupTime = :startupTime
 				AND a.instanceId = :instanceId
@@ -350,7 +477,7 @@
 		<query>
 			<![CDATA[
 				SELECT a FROM JobSessionNodeEntity a
-				WHERE a.status = :status
+				WHERE a.status IN :statusList
 				AND a.id.facilityId = :facilityId
 				AND a.startupTime != :startupTime
 				AND a.startupTime != 0
@@ -377,6 +504,15 @@
 			<![CDATA[
 				SELECT a FROM JobKickEntity a
 				WHERE a.calendarId = :calendarId
+				ORDER BY a.jobkickId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobKickEntity.findByFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobKickEntity a
+				WHERE a.facilityId = :facilityId
 				ORDER BY a.jobkickId
 			]]>
 		</query>
@@ -421,28 +557,10 @@
 			]]>
 		</query>
 	</named-query>
-	<named-query name="JobEditEntity.findByEditSession">
-		<query>
-			<![CDATA[
-				SELECT a FROM JobEditEntity a
-				WHERE a.editSession = :editSession
-				ORDER BY a.jobunitId
-			]]>
-		</query>
-	</named-query>
 	<named-query name="JobmapIconImageEntity.findAll">
 		<query>
 			<![CDATA[
 				SELECT a FROM JobmapIconImageEntity a
-				ORDER BY a.iconId
-			]]>
-		</query>
-	</named-query>
-	<named-query name="JobmapIconImageEntity.findAllIconIdExceptDefault">
-		<query>
-			<![CDATA[
-				SELECT a.iconId FROM JobmapIconImageEntity a
-				WHERE a.iconId NOT IN :defaultIconId
 				ORDER BY a.iconId
 			]]>
 		</query>
@@ -454,17 +572,17 @@
 			]]>
 		</query>
 	</named-query>
-	<named-query name="JobStartJobMstEntity.findAll">
+	<named-query name="JobWaitGroupMstEntity.findAll">
 		<query>
 			<![CDATA[
-				SELECT a FROM JobStartJobMstEntity a
+				SELECT a FROM JobWaitGroupMstEntity a
 			]]>
 		</query>
 	</named-query>
-	<named-query name="JobStartJobMstEntity.findByJobunitId">
+	<named-query name="JobWaitGroupMstEntity.findByJobunitId">
 		<query>
 			<![CDATA[
-				SELECT a FROM JobStartJobMstEntity a
+				SELECT a FROM JobWaitGroupMstEntity a
 				WHERE a.id.jobunitId = :jobunitId
 				ORDER BY a.id.jobunitId, a.id.jobId
 			]]>
@@ -497,22 +615,6 @@
 		<query>
 			<![CDATA[
 				SELECT a FROM JobEnvVariableMstEntity a
-				WHERE a.id.jobunitId = :jobunitId
-				ORDER BY a.id.jobunitId, a.id.jobId
-			]]>
-		</query>
-	</named-query>
-	<named-query name="JobStartParamMstEntity.findAll">
-		<query>
-			<![CDATA[
-				SELECT a FROM JobStartParamMstEntity a
-			]]>
-		</query>
-	</named-query>
-	<named-query name="JobStartParamMstEntity.findByJobunitId">
-		<query>
-			<![CDATA[
-				SELECT a FROM JobStartParamMstEntity a
 				WHERE a.id.jobunitId = :jobunitId
 				ORDER BY a.id.jobunitId, a.id.jobId
 			]]>
@@ -604,6 +706,60 @@
 				  SUM(CASE WHEN a.statusId = :statusId THEN 1 ELSE 0 END)
 				FROM JobQueueItemEntity a
 				GROUP BY a.id.queueId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobLinkSendSettingEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobLinkSendSettingEntity a
+				ORDER BY a.joblinkSendSettingId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobLinkSendSettingEntity.findByFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobLinkSendSettingEntity a
+				WHERE a.facilityId = :facilityId
+				ORDER BY a.joblinkSendSettingId
+			]]>
+		</query>
+	</named-query>
+	<!-- JobRpaLoginResolutionMstEntity -->
+	<named-query name="JobRpaLoginResolutionMstEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobRpaLoginResolutionMstEntity a
+				ORDER BY a.orderNo
+			]]>
+		</query>
+	</named-query>
+
+	<!-- JobRpaScreenshotEntity -->
+	<named-query name="JobRpaScreenshotEntity.findBySessionIdJobunitIdJobIdFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobRpaScreenshotEntity a
+				WHERE a.id.sessionId = :sessionId AND a.id.jobunitId = :jobunitId AND a.id.jobId = :jobId AND a.id.facilityId = :facilityId
+				ORDER BY a.id.outputDate DESC
+			]]>
+		</query>
+	</named-query>
+
+	<!-- JobRpaRunConditionEntity -->
+	<named-query name="JobRpaRunConditionEntity.findBySessionIdJobunitIdJobIdFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobRpaRunConditionEntity a 
+				WHERE a.id.sessionId = :sessionId AND a.id.jobunitId = :jobunitId AND a.id.jobId = :jobId AND a.id.facilityId = :facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobRpaRunConditionEntity.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobRpaRunConditionEntity a
 			]]>
 		</query>
 	</named-query>

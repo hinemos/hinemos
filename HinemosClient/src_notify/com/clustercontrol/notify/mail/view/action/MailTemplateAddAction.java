@@ -19,7 +19,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.notify.mail.dialog.MailTemplateCreateDialog;
 import com.clustercontrol.notify.mail.view.MailTemplateListView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * メールテンプレート[一覧]ビューの作成アクションクラス<BR>
@@ -51,7 +51,7 @@ public class MailTemplateAddAction extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		this.viewPart = HandlerUtil.getActivePart(event);
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 		MailTemplateCreateDialog dialog = new MailTemplateCreateDialog(this.viewPart.getSite().getShell(),
 				managerName, null, PropertyDefineConstant.MODE_ADD);
 		dialog.open();
@@ -68,7 +68,6 @@ public class MailTemplateAddAction extends AbstractHandler {
 			m_log.info("execute: view is null"); 
 			return null;
 		}
-
 		view.update();
 		return null;
 	}

@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"connectTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorRpaManagementToolServiceCheckInfo_connectTimeout"}
+	]},
+
+	{
+	"propName":"requestTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorRpaManagementToolServiceCheckInfo_requestTimeout"}
+	]}
+]
+}

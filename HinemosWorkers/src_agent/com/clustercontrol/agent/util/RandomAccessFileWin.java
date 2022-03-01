@@ -56,7 +56,7 @@ public class RandomAccessFileWin {
 
 		/*
 		VOID SetLastError(
-				  DWORD dwErrCode   // スレッドごとのエラーコード
+				  DWORD dwErrCode	// スレッドごとのエラーコード
 				);
 		 */
 		void SetLastError(
@@ -66,13 +66,13 @@ public class RandomAccessFileWin {
 
 		/*
 		HANDLE CreateFile(
-				  LPCTSTR lpFileName,                         // ファイル名
-				  DWORD dwDesiredAccess,                      // アクセスモード
-				  DWORD dwShareMode,                          // 共有モード
+				  LPCTSTR lpFileName,						  // ファイル名
+				  DWORD dwDesiredAccess,					  // アクセスモード
+				  DWORD dwShareMode,						  // 共有モード
 				  LPSECURITY_ATTRIBUTES lpSecurityAttributes, // セキュリティ記述子
-				  DWORD dwCreationDisposition,                // 作成方法
-				  DWORD dwFlagsAndAttributes,                 // ファイル属性
-				  HANDLE hTemplateFile                        // テンプレートファイルのハンドル
+				  DWORD dwCreationDisposition,				  // 作成方法
+				  DWORD dwFlagsAndAttributes,				  // ファイル属性
+				  HANDLE hTemplateFile						  // テンプレートファイルのハンドル
 				);
 		 */
 		HANDLE CreateFileA(
@@ -96,11 +96,11 @@ public class RandomAccessFileWin {
 
 		/*
 		BOOL ReadFile(
-		HANDLE hFile,                // ファイルのハンドル
-		LPVOID lpBuffer,             // データバッファ
-		DWORD nNumberOfBytesToRead,  // 読み取り対象のバイト数
+		HANDLE hFile,				 // ファイルのハンドル
+		LPVOID lpBuffer,			 // データバッファ
+		DWORD nNumberOfBytesToRead,	 // 読み取り対象のバイト数
 		LPDWORD lpNumberOfBytesRead, // 読み取ったバイト数
-		LPOVERLAPPED lpOverlapped    // オーバーラップ構造体のバッファ
+		LPOVERLAPPED lpOverlapped	 // オーバーラップ構造体のバッファ
 		);
 		 */
 		boolean ReadFile(
@@ -113,7 +113,7 @@ public class RandomAccessFileWin {
 
 		/*
 		DWORD GetFileSize(
-				  HANDLE hFile,           // ファイルのハンドル
+				  HANDLE hFile,			  // ファイルのハンドル
 				  LPDWORD lpFileSizeHigh  // ファイルサイズの上位ワード
 				);
 		 */
@@ -124,10 +124,10 @@ public class RandomAccessFileWin {
 
 		/*
 		DWORD SetFilePointer(
-				  HANDLE hFile,                // ファイルのハンドル
-				  LONG lDistanceToMove,        // ポインタを移動するべきバイト数
+				  HANDLE hFile,				   // ファイルのハンドル
+				  LONG lDistanceToMove,		   // ポインタを移動するべきバイト数
 				  PLONG lpDistanceToMoveHigh,  // ポインタを移動するべきバイト数
-				  DWORD dwMoveMethod           // 開始点
+				  DWORD dwMoveMethod		   // 開始点
 				);
 		 */
 		long SetFilePointer(
@@ -227,7 +227,7 @@ public class RandomAccessFileWin {
 		m_log.trace("seek nPos=" + nPos);
 	}
 
-	public long getFilePointer() throws IOException {
+	public long getFilePointer() {
 		/*
 		 * 環境によっては、SetFilePointerが正常に動作しない場合がある。
 		 * そのため、nPosを利用して、ポインタを保持する。

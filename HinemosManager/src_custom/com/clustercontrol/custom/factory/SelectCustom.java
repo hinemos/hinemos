@@ -44,6 +44,7 @@ import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
+import com.clustercontrol.monitor.bean.ConvertValueConstant;
 import com.clustercontrol.monitor.run.factory.SelectMonitor;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.repository.model.NodeInfo;
@@ -174,8 +175,7 @@ public class SelectCustom extends SelectMonitor {
 
 				if (cmdInfo.getCommandExecType() == CustomConstant.CommandExecType.INDIVIDUAL) {
 					// コマンド監視の対象スコープに含まれる有効ノードとして、問い合わせたエージェントが含まれるかどうか
-					facilityIds = repositoryCtrl.getNodeFacilityIdList(info.getFacilityId(), info.getOwnerRoleId(), RepositoryControllerBean.ALL, false, true);
-					if (! facilityIds.contains(requestedFacilityId)) {
+					if (!repositoryCtrl.containsFacilityIdWithoutList(info.getFacilityId(), requestedFacilityId, info.getOwnerRoleId())) {
 						if (m_log.isDebugEnabled())
 							m_log.debug("CommandExcecuteDTO is required from not-contained facility. (monitorId = " + info.getMonitorId() + ", facilityId = " + requestedFacilityId + ")");
 						continue;
@@ -303,8 +303,7 @@ public class SelectCustom extends SelectMonitor {
 	
 					if (cmdInfo.getCommandExecType() == CustomConstant.CommandExecType.INDIVIDUAL) {
 						// コマンド監視の対象スコープに含まれる有効ノードとして、問い合わせたエージェントが含まれるかどうか
-						facilityIds = repositoryCtrl.getNodeFacilityIdList(entry.getKey().getFacilityId(), sessionJob.getOwnerRoleId(), RepositoryControllerBean.ALL, false, true);
-						if (! facilityIds.contains(requestedFacilityId)) {
+						if (!repositoryCtrl.containsFacilityIdWithoutList(entry.getKey().getFacilityId(), requestedFacilityId, sessionJob.getOwnerRoleId())) {
 							continue;
 						}
 						facilityIds = new ArrayList<String>();
@@ -330,6 +329,12 @@ public class SelectCustom extends SelectMonitor {
 					}
 					
 					if (HinemosModuleConstant.MONITOR_CUSTOM_N.equals(entry.getValue().getMonitorTypeId())) {
+						Integer interval;
+						if(cmdInfo.getConvertFlg() == ConvertValueConstant.TYPE_DELTA) {
+							interval = RunInterval.TYPE_MIN_01.toSec() * 1000;
+						} else {
+							interval = cmdInfo.getTimeout();
+						}
 						dto = new CommandExecuteDTO(
 								entry.getValue().getMonitorId(),
 								requestedFacilityId,
@@ -337,7 +342,7 @@ public class SelectCustom extends SelectMonitor {
 								cmdInfo.getEffectiveUser(),
 								cmdInfo.getCommand(),
 								cmdInfo.getTimeout(),
-								RunInterval.TYPE_MIN_01.toSec() * 1000,
+								interval,
 								null,
 								variables,
 								entry.getKey(),
@@ -350,7 +355,7 @@ public class SelectCustom extends SelectMonitor {
 								cmdInfo.getEffectiveUser(),
 								cmdInfo.getCommand(),
 								cmdInfo.getTimeout(),
-								RunInterval.TYPE_MIN_01.toSec() * 1000,
+								cmdInfo.getTimeout(),
 								null,
 								variables,
 								entry.getKey(),
@@ -358,8 +363,6 @@ public class SelectCustom extends SelectMonitor {
 					}else{
 						m_log.warn("monitor type Error " + cmdInfo.getMonitorTypeId());
 					}
-					
-					
 					dtos.add(dto);
 	
 					m_log.debug("getCommandExecuteDTO() CommandExecuteDTO is retured to agent. (requestedFacilityId = " + requestedFacilityId + ", dto = " + dto + ")");

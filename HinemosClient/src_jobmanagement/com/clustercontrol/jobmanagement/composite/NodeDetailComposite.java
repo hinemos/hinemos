@@ -9,7 +9,6 @@
 package com.clustercontrol.jobmanagement.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -22,18 +21,21 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.JobInfoResponse;
+import org.openapitools.client.model.JobNodeDetailResponse;
+import org.openapitools.client.model.JobTreeItemResponseP3;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.action.GetNodeDetailTableDefine;
 import com.clustercontrol.jobmanagement.composite.action.NodeDetailSelectionChangedListener;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.jobmanagement.util.TimeToANYhourConverter;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobNodeDetail;
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.viewer.CommonTableViewer;
 
 /**
  * ジョブ[ノード詳細]ビュー用のコンポジットクラスです。
@@ -54,12 +56,18 @@ public class NodeDetailComposite extends Composite {
 	private String m_jobunitId = null;
 	/** ジョブID */
 	private String m_jobId = null;
+	/** ジョブ名 */
+	private String m_jobName = null;
 	/** ファシリティID */
 	private String m_facilityId = null;
 	/** ID用ラベル */
 	private Label m_idLabel = null;
 	/** マネージャ名 */
 	private String m_managerName = null;
+	/** ジョブ種別 */
+	private JobInfoResponse.TypeEnum m_jobType = null;
+	/** 実行状態 */
+	private JobNodeDetailResponse.StatusEnum m_status = null;
 
 	/**
 	 * コンストラクタ
@@ -139,15 +147,17 @@ public class NodeDetailComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.jobmanagement.action.GetNodeDetail#getNodeDetail(String, String)
 	 */
-	public void update(String managerName, String sessionId, String jobunitId, String jobId) {
-		List<JobNodeDetail> nodeDetailInfo = null;
+	public void update(String managerName, String sessionId, String jobunitId, String jobId, String jobName) {
+		List<JobNodeDetailResponse> nodeDetailInfo = null;
+		JobTreeItemResponseP3 jobInfo = null;
 
 		//ノード詳細情報取得
 		if (sessionId != null && jobId != null) {
 			try {
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
 				nodeDetailInfo = wrapper.getNodeDetailList(sessionId, jobunitId, jobId);
-			} catch (InvalidRole_Exception e) {
+				jobInfo = wrapper.getSessionJobInfo(sessionId, jobunitId, jobId);
+			} catch (InvalidRole e) {
 				if(ClientSession.isDialogFree()){
 					ClientSession.occupyDialog();
 					MessageDialog.openInformation(null, Messages.getString("message"),
@@ -167,19 +177,21 @@ public class NodeDetailComposite extends Composite {
 			}
 		}
 		if (nodeDetailInfo == null) {
-			nodeDetailInfo = new ArrayList<JobNodeDetail>();
+			nodeDetailInfo = new ArrayList<JobNodeDetailResponse>();
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for (JobNodeDetail info : nodeDetailInfo) {
+		for (JobNodeDetailResponse info : nodeDetailInfo) {
 			ArrayList<Object> a = new ArrayList<Object>();
 			a.add(info.getStatus());
 			a.add(info.getEndValue());
 			a.add(info.getFacilityId());
 			a.add(info.getNodeName());
-			a.add(info.getStartDate() == null ? "":new Date(info.getStartDate()));
-			a.add(info.getEndDate() == null ? "":new Date(info.getEndDate()));
-			a.add(TimeToANYhourConverter.toDiffTime(info.getStartDate(), info.getEndDate()));
+			a.add(info.getStartDate() == null ? "":info.getStartDate());
+			a.add(info.getEndDate() == null ? "":info.getEndDate());
+			a.add(TimeToANYhourConverter.toDiffTime(
+					JobTreeItemUtil.convertDtStringtoLong(info.getStartDate()),
+					JobTreeItemUtil.convertDtStringtoLong(info.getEndDate())));
 			a.add(HinemosMessage.replace(info.getMessage()));
 			listInput.add(a);
 		}
@@ -187,6 +199,7 @@ public class NodeDetailComposite extends Composite {
 		m_sessionId = sessionId;
 		m_jobunitId = jobunitId;
 		m_jobId = jobId;
+		m_jobName = jobName;
 		m_managerName = managerName;
 
 		//セッションID・ジョブIDを表示
@@ -197,6 +210,11 @@ public class NodeDetailComposite extends Composite {
 		} else {
 			m_idLabel.setText(Messages.getString("session.id") + " : " + ",   "
 					+ Messages.getString("job.id") + " : ");
+		}
+		
+		// ジョブ種別をアクションボタンの有効・無効の切り替えに使用する
+		if (jobInfo != null) {
+			m_jobType = jobInfo.getData().getType();
 		}
 	}
 
@@ -255,6 +273,24 @@ public class NodeDetailComposite extends Composite {
 	}
 
 	/**
+	 * ジョブ名を返します。
+	 *
+	 * @return ジョブ名
+	 */
+	public String getJobName() {
+		return m_jobName;
+	}
+
+	/**
+	 * ジョブ名を設定します。
+	 *
+	 * @param jobName ジョブ名
+	 */
+	public void setJobName(String jobName) {
+		m_jobName = jobName;
+	}
+
+	/**
 	 * ファシリティIDを返します。
 	 *
 	 * @return ファシリティID
@@ -303,5 +339,30 @@ public class NodeDetailComposite extends Composite {
 	public void setManagerName(String m_managerName) {
 		this.m_managerName = m_managerName;
 	}
-
+	
+	/**
+	 * ジョブ種別を返します。
+	 * 
+	 * @return ジョブ種別
+	 */
+	public JobInfoResponse.TypeEnum getJobType() {
+		return m_jobType;
+	}
+	
+	/**
+	 * 実行状態を設定します。
+	 * 
+	 * @param status 実行状態
+	 */
+	public void setStatus(JobNodeDetailResponse.StatusEnum status) {
+		this.m_status = status;
+	}
+	
+	/**
+	 * 実行状態を返します。
+	 * @return 実行状態
+	 */
+	public JobNodeDetailResponse.StatusEnum getStatus() {
+		return m_status;
+	}
 }

@@ -1,0 +1,150 @@
+
+Usage: SNMP4J [options] [transport:]address [OID[={type}value] ...]
+
+  -a  authProtocol      Sets the authentication protocol used to
+                        authenticate SNMPv3 messages. Valid values are
+                        MD5 and SHA.
+  -A  authPassphrase    Sets the authentication pass phrase for authenticated
+                        SNMPv3 messages.
+  -b  engineBootCount   Sets the engine boot count to the specified value
+                        greater or equal to zero. Default is zero.
+  -c  community         Sets the community for SNMPv1/v2c messages.
+  -Ca agentAddress      Sets the agent address field of a V1TRAP PDU.
+                        The default value is '0.0.0.0'.
+  -Cg genericID         Sets the generic ID for SNMPv1 TRAPs (V1TRAP).
+                        The default is 1 (coldStart).
+  -Ce enterpriseOID     Sets the enterprise OID field of a V1TRAP PDU.
+  -Cil lowerBoundIndex  Sets the lower bound index for TABLE operations.
+  -Ciu upperBoundIndex  Sets the upper bound index for TABLE operations.
+  -Cn non-repeaters     Sets  the  non-repeaters field for GETBULK PDUs.
+                        It specifies the number of supplied variables that
+                        should not be iterated over. The default is 0.
+  -Cr max-repetitions   Sets the max-repetitions field for GETBULK PDUs.
+                        This specifies the maximum number of iterations
+                        over the repeating variables. The default is 10.
+  -Cs specificID        Sets the specific ID for V1TRAP PDU. The default is 0.
+  -Ct trapOID           Sets the trapOID (1.3.6.1.6.3.1.1.4.1.0) of an INFORM
+                        or TRAP PDU. The default is 1.3.6.1.6.3.1.1.5.1.
+  -Cu upTime            Sets the sysUpTime field of an INFORM, TRAP, or
+                        V1TRAP PDU.
+  -d  debugLevel        Sets the global debug level for Log4J logging output.
+                        Valid values are OFF, ERROR, WARN, INFO, and DEBUG.
+  -e  engineID          Sets the authoritative engine ID of the command
+                        responder used for SNMPv3 request messages. If not
+                        supplied, the engine ID will be discovered.
+  -E  contextEngineID   Sets the context engine ID used for the SNMPv3 scoped
+                        PDU. The authoritative engine ID will be used for the
+                        context engine ID, if the latter is not specified.
+  -h                    Displays this message and then exits the application.
+  -l  localEngineID     Sets the local engine ID of the command generator
+                        and the notification receiver (thus this SNMP4J-Tool)
+                        used for SNMPv3 request messages. This option can be
+                        used to avoid engine ID clashes through duplicate IDs
+                        leading to usmStatsNotInTimeWindows reports.
+  -n  contextName       Sets the target context name for SNMPv3 messages. 
+                        Default is the empty string.
+  -m  maxSizeRespPDU    The maximum size of the response PDU in bytes.
+  -Ocs <file>           Same as -Ow except that the retrieved values are also
+                        written as a serialized ArrayList of VariableBinding
+                        instances to the specified file. The snapshot format
+                        can be read later by other applications, for example
+                        MIB Explorer Pro 2.2 or later. See also -Ods.
+  -Ods <file>           Reads the snapshot file and dumps its contents on
+                        standard out. No SNMP operation will be done.
+                        See also -Ocs.
+  -Ol                   Activates listen operation mode. In this mode, the
+                        application will listen for incoming TRAPs and INFORMs
+                        on the supplied address. Received request will be
+                        dumped to the console until the application is stopped.
+  -Ot                   Activates table operation mode. In this mode, the
+                        application receives tabular data from the column
+                        OIDs specified as parameters. The retrieved rows will
+                        be dumped to the console ordered by their index values.
+  -Otd                  Activates dense table operation mode. In this mode, the
+                        application receives tabular data from the column
+                        OIDs specified as parameters. The retrieved rows will
+                        be dumped to the console ordered by their index values.
+                        In contrast to -Ot this option must not be used with
+                        sparse tables. 
+  -OtCSV                Same as -Ot except that for each SNMP row received
+                        exactly one row of comma separated values will printed
+                        to the console where the first column contains the row
+                        index.
+  -OttCSV               Same as -OtCSV except that each row's first column
+                        will report the current time (millis after 1.1.1970)
+                        when the request has been sent.
+  -Ow                   Activates walk operation mode for GETNEXT and GETBULK
+                        PDUs. If activated, the GETNEXT and GETBULK operations
+                        will be repeated until all instances within the
+                        OID subtree of the supplied OID have been retrieved
+                        successfully or until an error occurred.
+  -p  pduType           Specifies the PDU type to be used for the message.
+                        Valid types are GET, GETNEXT, GETBULK (SNMPv2c/v3),
+                        SET, INFORM, TRAP, and V1TRAP (SNMPv1).
+  -P  privacyPassphrase Sets the privacy pass phrase for encrypted
+                        SNMPv3 messages (same as -X).
+  -r  retries           Sets the number of retries used for requests. A zero
+                        value will send out a request exactly once.
+                        Default is 1.
+  -t  timeout           Sets the timeout in milliseconds between retries.
+                        Default is 1000 milliseconds.
+  -u  securityName      Sets the security name for authenticated v3 messages.
+  -v  1|2c|3            Sets the SNMP protocol version to be used.
+                        Default is 3.
+  -V                    Displays version information and then exits.
+  -x  privacyProtocol   Sets the privacy protocol to be used to encrypt
+                        SNMPv3 messages. Valid values are DES, AES (AES128),
+                        AES192, AES256, and 3DES(DESEDE).
+  -X  privacyPassphrase Sets the privacy pass phrase for encrypted
+                        SNMPv3 messages (same as -P).
+
+The address of the target SNMP engine is parsed according to the
+specified <transport> selector (default selector is udp):
+
+  udp | tcp             hostname[/port]
+                        ipv4Address[/port]
+                        ipv6Address[/port]
+
+The OIDs have to be specified in numerical form where strings may beenclosed in single quotes ('), for example:
+  1.3.6.1.2.1.1.5.0  (which will return the sysName.0 instance with a GET)
+  1.3.6.1.6.3.16.1.2.1.3.2.6.'public'  (which will return the 
+    vacmGroupName.2.6.112.117.98.108.105.99 instance with a GET)
+To request multiple instances, add additional OIDs with a space as
+separator. For the last sub-identifier of a plain OID (without an assigned
+value) a range can be specified, for example '1.3.6.1.2.1.2.2.1-10' will
+has the same effect as enumerating all OIDs from '1.3.6.1.2.1.2.2.1' to
+'1.3.6.1.2.1.2.2.10'.
+For SET and INFORM request, you can specify a value for each OID by
+using the following form: OID={type}value where <type> is one of
+the following single characters enclosed by '{' and '}':
+  i                     Integer32
+  u                     UnsingedInteger32, Gauge32
+  s                     OCTET STRING
+  x                     OCTET STRING specified as hex string where
+                        bytes separated by colons (':').
+  d                     OCTET STRING specified as decimal string
+                        where bytes are separated by dots ('.').
+  n                     Null
+  o                     OBJECT IDENTIFIER
+  t                     TimeTicks
+  a                     IpAddress
+  b                     OCTET STRING specified as binary string where
+                        bytes are separated by spaces.
+
+An example for a complete SNMPv2c SET request to set sysName:
+ SNMP4J -c private -v 2c -p SET udp:localhost/161 "1.3.6.1.2.1.1.5.0={s}SNMP4J"
+
+To walk the whole MIB tree with GETBULK and using SNMPv3 MD5 authentication:
+ SNMP4J -a MD5 -A MD5UserAuthPassword -u MD5User -p GETBULK -Ow 127.0.0.1/161
+
+Listen for unauthenticated SNMPv3 INFORMs and TRAPs and all v1/v2c TRAPs:
+ SNMP4J -u aSecurityName -Ol 0.0.0.0/162
+
+Send an unauthenticated SNMPv3 notification (trap):
+ SNMP4J -p TRAP -v 3 -u aSecurityName 127.0.0.1/162 "1.3.6.1.2.1.1.3.0={t}0" \
+  "1.3.6.1.6.3.1.1.4.1.0={o}1.3.6.1.6.3.1.1.5.1" \
+  "1.3.6.1.2.1.1.1.0={s}System XYZ, Version N.M"
+Retrieve rows of the columnar objects ifDescr to ifInOctets and ifOutOctets:
+ SNMP4J -c public -v 2c -Ot localhost 1.3.6.1.2.1.2.2.1.2-10\
+  1.3.6.1.2.1.2.2.1.16
+

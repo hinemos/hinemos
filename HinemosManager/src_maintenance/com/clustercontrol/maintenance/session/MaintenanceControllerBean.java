@@ -9,18 +9,18 @@
 package com.clustercontrol.maintenance.session;
 
 import java.util.ArrayList;
-
-import javax.persistence.EntityExistsException;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.util.RoleValidator;
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.bean.FunctionPrefixEnum;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.commons.util.HinemosSessionContext;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -29,14 +29,17 @@ import com.clustercontrol.fault.MaintenanceDuplicate;
 import com.clustercontrol.fault.MaintenanceNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.maintenance.factory.MaintenanceCollectBinaryData;
+import com.clustercontrol.maintenance.factory.MaintenanceCollectDataRaw;
+import com.clustercontrol.maintenance.factory.MaintenanceCollectStringData;
 import com.clustercontrol.maintenance.factory.MaintenanceEvent;
 import com.clustercontrol.maintenance.factory.MaintenanceJob;
+import com.clustercontrol.maintenance.factory.MaintenanceJobLinkMessage;
 import com.clustercontrol.maintenance.factory.MaintenanceNodeConfigSettingHistory;
+import com.clustercontrol.maintenance.factory.MaintenanceRpaScenarioOperationResult;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryDay;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryHour;
 import com.clustercontrol.maintenance.factory.MaintenanceSummaryMonth;
-import com.clustercontrol.maintenance.factory.MaintenanceCollectBinaryData;
-import com.clustercontrol.maintenance.factory.MaintenanceCollectStringData;
 import com.clustercontrol.maintenance.factory.ModifyMaintenance;
 import com.clustercontrol.maintenance.factory.ModifySchedule;
 import com.clustercontrol.maintenance.factory.OperationMaintenance;
@@ -45,13 +48,15 @@ import com.clustercontrol.maintenance.factory.SelectMaintenanceTypeMst;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.model.MaintenanceTypeMst;
 import com.clustercontrol.maintenance.util.MaintenanceValidator;
+import com.clustercontrol.maintenance.util.QueryUtil;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.notify.util.NotifyCallback;
-import com.clustercontrol.notify.util.NotifyRelationCache;
-import com.clustercontrol.platform.maintenance.MaintenanceCollectDataRaw;
+import com.clustercontrol.notify.model.NotifyRelationInfo;
+import com.clustercontrol.notify.session.NotifyControllerBean;
+import com.clustercontrol.notify.util.NotifyRelationCacheRefreshCallback;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * 
@@ -71,7 +76,7 @@ public class MaintenanceControllerBean {
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public void addMaintenance(MaintenanceInfo maintenanceInfo)
+	public MaintenanceInfo addMaintenance(MaintenanceInfo maintenanceInfo)
 			throws HinemosUnknown, MaintenanceDuplicate, InvalidSetting, InvalidRole {
 		m_log.debug("addMaintenance");
 
@@ -83,8 +88,13 @@ public class MaintenanceControllerBean {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
+			maintenanceInfo.setNotifyGroupId(NotifyGroupIdGenerator.generate(maintenanceInfo));
+			for (NotifyRelationInfo notify : maintenanceInfo.getNotifyId()) {
+				notify.setNotifyGroupId(NotifyGroupIdGenerator.generate(maintenanceInfo));
+				notify.setFunctionPrefix(FunctionPrefixEnum.MAINTENANCE.name());
+			}
 			// 入力チェック
-			MaintenanceValidator.validateMaintenanceInfo(maintenanceInfo);
+			MaintenanceValidator.validateMaintenanceInfo(maintenanceInfo, false);
 			
 			//ユーザがオーナーロールIDに所属しているかチェック
 			RoleValidator.validateUserBelongRole(maintenanceInfo.getOwnerRoleId(),
@@ -99,10 +109,11 @@ public class MaintenanceControllerBean {
 			ModifySchedule modify = new ModifySchedule();
 			modify.addSchedule(maintenanceInfo, loginUser);
 
+			// コミット後にキャッシュクリアを行うコールバック
+			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
+			return getMaintenanceInfo(maintenanceInfo.getMaintenanceId());
 		} catch (HinemosUnknown | InvalidSetting | InvalidRole e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -137,7 +148,7 @@ public class MaintenanceControllerBean {
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public void modifyMaintenance(MaintenanceInfo maintenanceInfo) throws HinemosUnknown, NotifyNotFound, MaintenanceNotFound, InvalidSetting, InvalidRole {
+	public MaintenanceInfo modifyMaintenance(MaintenanceInfo maintenanceInfo) throws HinemosUnknown, NotifyNotFound, MaintenanceNotFound, InvalidSetting, InvalidRole {
 		m_log.debug("modifyMaintenance");
 
 		JpaTransactionManager jtm = null;
@@ -147,9 +158,19 @@ public class MaintenanceControllerBean {
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
+			
+			maintenanceInfo.setNotifyGroupId(NotifyGroupIdGenerator.generate(maintenanceInfo));
 
+			for (NotifyRelationInfo notify : maintenanceInfo.getNotifyId()) {
+				notify.setNotifyGroupId(NotifyGroupIdGenerator.generate(maintenanceInfo));
+				notify.setFunctionPrefix(FunctionPrefixEnum.MAINTENANCE.name());
+			}
+			
+			MaintenanceInfo entity = QueryUtil.getMaintenanceInfoPK(maintenanceInfo.getMaintenanceId());
+			maintenanceInfo.setOwnerRoleId(entity.getOwnerRoleId());
+			
 			// 入力チェック
-			MaintenanceValidator.validateMaintenanceInfo(maintenanceInfo);
+			MaintenanceValidator.validateMaintenanceInfo(maintenanceInfo, true);
 
 			// メンテナンス情報を登録
 			ModifyMaintenance maintenance = new ModifyMaintenance();
@@ -159,10 +180,12 @@ public class MaintenanceControllerBean {
 			ModifySchedule modifySchedule = new ModifySchedule();
 			modifySchedule.addSchedule(maintenanceInfo, loginUser);
 
+			// コミット後にキャッシュクリアを行うコールバック
+			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
+			
+			return getMaintenanceInfo(maintenanceInfo.getMaintenanceId());
 		} catch (InvalidSetting | MaintenanceNotFound | NotifyNotFound | InvalidRole | HinemosUnknown e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -191,26 +214,32 @@ public class MaintenanceControllerBean {
 	 * @throws InvalidRole
 	 * 
 	 */
-	public void deleteMaintenance(String maintenanceId) throws HinemosUnknown, MaintenanceNotFound, InvalidRole {
+	public List<MaintenanceInfo> deleteMaintenance(List<String> maintenanceIdList) throws HinemosUnknown, MaintenanceNotFound, InvalidRole {
 		m_log.debug("deleteMaintenance");
 
 		JpaTransactionManager jtm = null;
+		List<MaintenanceInfo> rtn = new ArrayList<>();
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			// メンテナンス情報を削除
-			ModifyMaintenance maintenance = new ModifyMaintenance();
-			maintenance.deleteMaintenance(maintenanceId);
+			
+			
+			for(String maintenanceId : maintenanceIdList) {
+				rtn.add(getMaintenanceInfo(maintenanceId));
+				// メンテナンス情報を削除
+				ModifyMaintenance maintenance = new ModifyMaintenance();
+				maintenance.deleteMaintenance(maintenanceId);
 
-			ModifySchedule modify = new ModifySchedule();
-			modify.deleteSchedule(maintenanceId);
-
+				ModifySchedule modify = new ModifySchedule();
+				modify.deleteSchedule(maintenanceId);
+			}
+			
+			// コミット後にキャッシュクリアを行うコールバック
+			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
-
+			
 		} catch (MaintenanceNotFound | InvalidRole | HinemosUnknown e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -230,6 +259,7 @@ public class MaintenanceControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return rtn;
 	}
 
 
@@ -371,7 +401,7 @@ public class MaintenanceControllerBean {
 	 * @throws NotifyNotFound
 	 * @throws InvalidRole
 	 */
-	public void setMaintenanceStatus(String maintenanceId, boolean validFlag) throws NotifyNotFound, MaintenanceNotFound, InvalidRole, HinemosUnknown{
+	public MaintenanceInfo setMaintenanceStatus(String maintenanceId, boolean validFlag) throws NotifyNotFound, MaintenanceNotFound, InvalidRole, HinemosUnknown{
 		m_log.debug("setMaintenanceStatus() : maintenanceId=" + maintenanceId + ", validFlag=" + validFlag);
 		// null check
 		if(maintenanceId == null || "".equals(maintenanceId)){
@@ -386,6 +416,7 @@ public class MaintenanceControllerBean {
 
 		try{
 			this.modifyMaintenance(info);
+			return getMaintenanceInfo(maintenanceId);
 		} catch (InvalidSetting  e) {
 			throw new HinemosUnknown(e.getMessage(), e);
 		}
@@ -397,38 +428,26 @@ public class MaintenanceControllerBean {
 	 * @param dataRetentionPeriod 保存期間(日)
 	 * @param status 削除対象のステータス(true=全イベント、false=確認済みイベント)
 	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
 	 * @return 削除件数
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * 
 	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
 	 */
-	public int deleteEventLog(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+	public int deleteEventLog(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("deleteEventLog() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
 
-		JpaTransactionManager jtm = null;
 		MaintenanceEvent event = new MaintenanceEvent();
 		int ret = 0;
 		try{
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-
-			ret = event.delete(dataRetentionPeriod, status, ownerRoleId);
-
-			jtm.commit();
+			ret = event.delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("deleteEventLog() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
 		}
 
 		return ret;
@@ -441,39 +460,28 @@ public class MaintenanceControllerBean {
 	 * @param dataRetentionPeriod 保存期間(日)
 	 * @param status 削除対象のステータス(true=全履歴、false=実行状態が「終了」または「変更済み」の履歴)
 	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
 	 * @return 削除件数
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * 
 	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
 	 */
-	public int deleteJobHistory(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+	public int deleteJobHistory(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("deleteJobHistory() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
 
-		JpaTransactionManager jtm = null;
 		MaintenanceJob job = new MaintenanceJob();
 		int ret = 0;
 
 		try{
-			jtm = new JpaTransactionManager();
-			jtm.begin();
+			ret = job.delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
 
-			ret = job.delete(dataRetentionPeriod, status, ownerRoleId);
-
-			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("deleteJobHistory() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
 		}
 
 		return ret;
@@ -485,6 +493,7 @@ public class MaintenanceControllerBean {
 	 * @param dataRetentionPeriod 保存期間(日)
 	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
 	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
 	 * @return 削除件数
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
@@ -492,32 +501,18 @@ public class MaintenanceControllerBean {
 	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
 	 * 
 	 */
-	public int deleteCollectData(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+	public int deleteCollectData(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("deleteCollectData() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
-		JpaTransactionManager jtm = null;
 		MaintenanceCollectDataRaw collectdata = new MaintenanceCollectDataRaw();
 		int ret = 0;
 		try{
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-			
-			
-			ret = collectdata.delete(dataRetentionPeriod, status, ownerRoleId);
-			
-			jtm.commit();
+			ret = collectdata.delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("deleteCollectData() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
 		}
 
 		return ret;
@@ -529,6 +524,7 @@ public class MaintenanceControllerBean {
 	 * @param dataRetentionPeriod 保存期間(日)
 	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
 	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
 	 * @return 削除件数
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
@@ -536,31 +532,18 @@ public class MaintenanceControllerBean {
 	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
 	 * 
 	 */
-	public int deleteSummaryHour(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+	public int deleteSummaryHour(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("deleteSummaryHour() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
-		JpaTransactionManager jtm = null;
 		MaintenanceSummaryHour summaryhour = new MaintenanceSummaryHour();
 		int ret = 0;
 		try{
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-			
-			ret = summaryhour.delete(dataRetentionPeriod, status, ownerRoleId);
-			
-			jtm.commit();
+			ret = summaryhour.delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("deleteSummaryHour() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
 		}
 
 		return ret;
@@ -573,6 +556,7 @@ public class MaintenanceControllerBean {
 	 * @param dataRetentionPeriod 保存期間(日)
 	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
 	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
 	 * @return 削除件数
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
@@ -580,31 +564,18 @@ public class MaintenanceControllerBean {
 	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
 	 * 
 	 */
-	public int deleteSummaryDay(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+	public int deleteSummaryDay(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("deleteSummaryDay() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
-		JpaTransactionManager jtm = null;
 		MaintenanceSummaryDay summaryday = new MaintenanceSummaryDay();
 		int ret = 0;
 		try{
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-			
-			ret = summaryday.delete(dataRetentionPeriod, status, ownerRoleId);
-			
-			jtm.commit();
+			ret = summaryday.delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("deleteSummaryDay() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
 		}
 
 		return ret;
@@ -617,6 +588,7 @@ public class MaintenanceControllerBean {
 	 * @param dataRetentionPeriod 保存期間(日)
 	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
 	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
 	 * @return 削除件数
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
@@ -624,37 +596,54 @@ public class MaintenanceControllerBean {
 	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
 	 * 
 	 */
-	public int deleteSummaryMonth(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+	public int deleteSummaryMonth(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("deleteSummaryMonth() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
-		JpaTransactionManager jtm = null;
 		MaintenanceSummaryMonth summarymonth = new MaintenanceSummaryMonth();
 		int ret = 0;
 		try{
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-			
-			ret = summarymonth.delete(dataRetentionPeriod, status, ownerRoleId);
-			
-			jtm.commit();
+			ret = summarymonth.delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("deleteSummaryMonth() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
 		}
 
 		return ret;
 	}
 	
-	
+	/**
+	 * RPAシナリオ実績を削除します。
+	 * 
+	 * @param dataRetentionPeriod 保存期間(日)
+	 * @param status 削除対象のステータス(シナリオ実績は常にtrue=全履歴)
+	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
+	 * @return 削除件数
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * 
+	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
+	 */
+	public int deleteRpaScenarioOperationResult(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
+		m_log.debug("deleteEventLog() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
+
+		MaintenanceRpaScenarioOperationResult result = new MaintenanceRpaScenarioOperationResult();
+		int ret = 0;
+		try{
+			ret = result.delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch(Exception e){
+			m_log.warn("deleteEventLog() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
+		}
+
+		return ret;
+	}
+
 	
 	
 
@@ -677,7 +666,10 @@ public class MaintenanceControllerBean {
 		try {
 			// トランザクションがすでに開始されている場合は処理終了
 			jtm = new JpaTransactionManager();
-			jtm.begin(true);
+			if (jtm.isNestedEm()) {
+				m_log.error("Transaction has already started.");
+				return;
+			}
 
 			//カレンダをチェック
 			boolean check = false;
@@ -699,24 +691,19 @@ public class MaintenanceControllerBean {
 
 			if (notifyInfo != null) {
 				// 通知設定
-				jtm.addCallback(new NotifyCallback(notifyInfo));
+				List<OutputBasicInfo> notifyInfoList = new ArrayList<>();
+				notifyInfoList.add(notifyInfo);
+				NotifyControllerBean.notify(notifyInfoList);
 			}
-			jtm.commit();
 		} catch (CalendarNotFound e) {
-			jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(),e);
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch (HinemosUnknown e) {
-			jtm.rollback();
 			throw e;
 		} catch(Exception e){
 			m_log.warn("scheduleRunMaintenance() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
 			if (jtm != null)
@@ -724,8 +711,7 @@ public class MaintenanceControllerBean {
 			if (notifyInfo == null) {
 				// AplLoggerによるINTERNALイベント
 				String[] args = {maintenanceId};
-				AplLogger.put(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.SYSYTEM_MAINTENANCE, 
-						MessageConstant.MESSAGE_MAINTENANCE_STOPPED_FAILED, args);
+				AplLogger.put(InternalIdCommon.MAINTENANCE_SYS_001, args);
 			}
 		}
 	}
@@ -742,30 +728,19 @@ public class MaintenanceControllerBean {
 	public OutputBasicInfo runMaintenance(String maintenanceId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("runMaintenance() : maintenanceId=" + maintenanceId);
 
-		JpaTransactionManager jtm = null;
 		OperationMaintenance operation = new OperationMaintenance();
 		OutputBasicInfo rtn = null;
 
 		try {
-			jtm = new JpaTransactionManager();
-			jtm.begin();
 
 			rtn = operation.runMaintenance(maintenanceId);
 
-			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("runMaintenance() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
 		}
 		return rtn;
 	}
@@ -778,6 +753,7 @@ public class MaintenanceControllerBean {
 	 * @param dataRetentionPeriod 保存期間(日)
 	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
 	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
 	 * @return 削除件数
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
@@ -785,31 +761,18 @@ public class MaintenanceControllerBean {
 	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
 	 * 
 	 */
-	public int deleteCollectStringData(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+	public int deleteCollectStringData(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("deleteCollectStringData() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
-		JpaTransactionManager jtm = null;
 		MaintenanceCollectStringData stringData = new MaintenanceCollectStringData();
 		int ret = 0;
 		try{
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-			
-			ret = stringData.delete(dataRetentionPeriod, status, ownerRoleId);
-			
-			jtm.commit();
+			ret = stringData.delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("deleteCollectStringData() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
 		}
 
 		return ret;
@@ -821,6 +784,7 @@ public class MaintenanceControllerBean {
 	 * @param dataRetentionPeriod 保存期間(日)
 	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
 	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
 	 * @return 削除件数
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
@@ -828,8 +792,8 @@ public class MaintenanceControllerBean {
 	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
 	 * 
 	 */
-	public int deleteCollectBinaryData(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
-		return deleteCollectBinaryData(dataRetentionPeriod, status, ownerRoleId, null);
+	public int deleteCollectBinaryData(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
+		return deleteCollectBinaryData(dataRetentionPeriod, status, ownerRoleId, maintenanceId, null);
 	}
 
 	/**
@@ -838,6 +802,7 @@ public class MaintenanceControllerBean {
 	 * @param dataRetentionPeriod 保存期間(日)
 	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
 	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
 	 * @param monitorTypeId 監視種別ID
 	 * @return 削除件数
 	 * @throws InvalidRole
@@ -846,9 +811,8 @@ public class MaintenanceControllerBean {
 	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
 	 * 
 	 */
-	public int deleteCollectBinaryData(int dataRetentionPeriod, boolean status, String ownerRoleId, String monitorTypeId) throws InvalidRole, HinemosUnknown {
+	public int deleteCollectBinaryData(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId, String monitorTypeId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("deleteCollectBinaryData() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId + ", monitorTypeId = " + monitorTypeId);
-		JpaTransactionManager jtm = null;
 		MaintenanceCollectBinaryData binData = null;
 		if (monitorTypeId == null) {
 			binData = new MaintenanceCollectBinaryData();
@@ -857,25 +821,13 @@ public class MaintenanceControllerBean {
 		}
 		int ret = 0;
 		try{
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-			
-			ret = binData.delete(dataRetentionPeriod, status, ownerRoleId);
-			
-			jtm.commit();
+			ret = binData.delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("deleteCollectStringData() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
 		}
 
 		return ret;
@@ -887,6 +839,7 @@ public class MaintenanceControllerBean {
 	 * @param dataRetentionPeriod 保存期間(日)
 	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
 	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
 	 * @return 削除件数
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
@@ -894,31 +847,47 @@ public class MaintenanceControllerBean {
 	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
 	 * 
 	 */
-	public int deleteNodeConfigSettingHistory(int dataRetentionPeriod, boolean status, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+	public int deleteNodeConfigSettingHistory(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
 		m_log.debug("deleteNodeConfigSettingHistory() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
-		JpaTransactionManager jtm = null;
 		int ret = 0;
 		try{
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-			
-			
-			ret = new MaintenanceNodeConfigSettingHistory().delete(dataRetentionPeriod, status, ownerRoleId);
-			
-			jtm.commit();
+			ret = new MaintenanceNodeConfigSettingHistory().delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("deleteNodeConfigSettingHistory() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null)
-				jtm.close();
+		}
+
+		return ret;
+	}
+
+	/**
+	 * ジョブ連携メッセージ情報を削除します。
+	 * 
+	 * @param dataRetentionPeriod 保存期間(日)
+	 * @param status 削除対象のステータス(性能実績は常にtrue=全履歴)
+	 * @param ownerRoleId オーナーロールID
+	 * @param maintenanceId メンテナンスID
+	 * @return 削除件数
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * 
+	 * 時間を要する処理のため、NotSupportedを採用してJTAの管理下から除外する
+	 * 
+	 */
+	public int deleteJobLinkMessage(int dataRetentionPeriod, boolean status, String ownerRoleId, String maintenanceId) throws InvalidRole, HinemosUnknown {
+		m_log.debug("deleteJobLinkMessage() : dataRetentionPeriod = " + dataRetentionPeriod + ", status = " + status + ", ownerRoleId = " + ownerRoleId);
+		int ret = 0;
+		try{
+			ret = new MaintenanceJobLinkMessage().delete(dataRetentionPeriod, status, ownerRoleId, maintenanceId);
+		} catch (ObjectPrivilege_InvalidRole e) {
+			throw new InvalidRole(e.getMessage(), e);
+		} catch(Exception e){
+			m_log.warn("deleteJobLinkMessage() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
 		}
 
 		return ret;

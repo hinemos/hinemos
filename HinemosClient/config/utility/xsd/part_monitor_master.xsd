@@ -112,10 +112,17 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+			<xs:element name="priorityChangeJudgmentType" type="xs:int" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>
-						監視設定で用いる通知IDです。 複数の通知を併用する場合は併記します。
+						判定による重要度変化のタイプです。通知抑止に関連します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="priorityChangeFailureType" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						取得失敗による重要度変化のタイプです。通知抑止に関連します。
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
@@ -200,13 +207,6 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="predictionNotifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
-				<xs:annotation>
-					<xs:documentation>
-						将来予測監視で用いる通知IDです。 複数の通知を併用する場合は併記します。
-					</xs:documentation>
-				</xs:annotation>
-			</xs:element>
 			<xs:element name="changeFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>
@@ -230,17 +230,31 @@
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>
-			<xs:element name="changeNotifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
-				<xs:annotation>
-					<xs:documentation>
-						変化量で用いる通知IDです。 複数の通知を併用する場合は併記します。
-					</xs:documentation>
-				</xs:annotation>
-			</xs:element>
 			<xs:element name="ownerRoleId" type="xs:string" minOccurs="0" maxOccurs="1">
 				<xs:annotation>
 					<xs:documentation>
 						オーナーロールIDです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定で用いる通知IDです。 複数の通知を併用する場合は併記します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="predictionNotifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						将来予測監視で用いる通知IDです。 複数の通知を併用する場合は併記します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="changeNotifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						変化量で用いる通知IDです。 複数の通知を併用する場合は併記します。
 					</xs:documentation>
 				</xs:annotation>
 			</xs:element>

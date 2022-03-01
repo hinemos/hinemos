@@ -8,11 +8,13 @@
 
 package com.clustercontrol.accesscontrol.factory;
 
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -21,8 +23,10 @@ import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.bean.UserTypeConstant;
 import com.clustercontrol.accesscontrol.model.RoleInfo;
 import com.clustercontrol.accesscontrol.model.UserInfo;
+import com.clustercontrol.accesscontrol.util.PasswordHashUtil;
 import com.clustercontrol.accesscontrol.util.QueryUtil;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.UnEditableUser;
@@ -200,7 +204,7 @@ public class LoginUserModifier {
 	 * ログインユーザに設定されたパスワードを変更する。<BR>
 	 * 
 	 * @param userId ユーザID
-	 * @param password 新しいパスワード文字列
+	 * @param password 新しいパスワード文字列(平文)
 	 * @param modifyUserId 作業ユーザID
 	 * @throws UserNotFound
 	 * @throws HinemosUnknown
@@ -221,8 +225,12 @@ public class LoginUserModifier {
 			// パスワード変更可能か？
 			Singletons.get(Authentication.class).checkInternalPasswordModification(user);
 
+			// パスワードのハッシュ値取得、およびお、Base64でエンコード
+			MessageDigest md = MessageDigest.getInstance(PasswordHashUtil.getPasswordHash());
+			String hashedPassword = Base64.encodeBase64String(md.digest(password.getBytes()));
+			
 			// パスワードを反映する
-			user.setPassword(password);
+			user.setPassword(hashedPassword);
 			user.setModifyUserId(modifyUserId);
 			user.setModifyDate(HinemosTime.currentTimeMillis());
 

@@ -8,8 +8,6 @@
 
 package com.clustercontrol.monitor.dialog;
 
-
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -21,7 +19,9 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
-
+import org.openapitools.client.model.EventCustomCommandInfoResponse;
+import org.openapitools.client.model.EventCustomCommandResultResponse;
+import org.openapitools.client.model.EventCustomCommandResultRootResponse;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.monitor.bean.EventCustomCommandStatusConstant;
@@ -29,10 +29,6 @@ import com.clustercontrol.monitor.composite.EventCustomCommandResultComposite;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.EventCustomCommandInfo;
-import com.clustercontrol.ws.monitor.EventCustomCommandResult;
-import com.clustercontrol.ws.monitor.EventCustomCommandResultRoot;
-
 /**
  * 監視履歴[イベント・カスタムコマンドの実行結果]ダイアログクラス<BR>
  */
@@ -42,8 +38,8 @@ public class EventCustomCommandResultDialog extends CommonDialog {
 	
 	private Shell shell;
 	private String managerName;
-	private EventCustomCommandInfo customCommnadInfo;
-	private EventCustomCommandResultRoot result;
+	private EventCustomCommandInfoResponse customCommnadInfo;
+	private EventCustomCommandResultRootResponse result;
 	private MultiManagerEventDisplaySettingInfo eventDspSettingInfo;
 	
 	/** 実行件数 */
@@ -70,7 +66,7 @@ public class EventCustomCommandResultDialog extends CommonDialog {
 	 * @param parent 親シェル
 	 */
 	public EventCustomCommandResultDialog(Shell parent, String managerName, 
-			EventCustomCommandInfo customCommnadInfo, EventCustomCommandResultRoot result,
+			EventCustomCommandInfoResponse customCommnadInfo, EventCustomCommandResultRootResponse result,
 			MultiManagerEventDisplaySettingInfo eventDspSettingInfo) {
 		super(parent);
 		this.managerName = managerName;
@@ -301,7 +297,7 @@ public class EventCustomCommandResultDialog extends CommonDialog {
 		int errorCnt = 0;
 		int cancelCnt = 0;
 		
-		for (EventCustomCommandResult res : this.result.getEventResultList()) {
+		for (EventCustomCommandResultResponse res : this.result.getEventResultList()) {
 			
 			switch (res.getStatus()) {
 			case EventCustomCommandStatusConstant.STATUS_NORMAL:
@@ -336,13 +332,13 @@ public class EventCustomCommandResultDialog extends CommonDialog {
 		cancelCount.setText(Messages.getString("dialog.monitor.events.customcommand.result.cancel",
 				new String[] {String.valueOf(cancelCnt)}));
 				
-		commandStartTime.setText(DateTimeStringConverter.formatLongDate(result.getCommandKickTime()));
+		commandStartTime.setText(result.getCommandKickTime());
 		
 		runTime.setText(
 				Messages.getString("dialog.monitor.events.customcommand.result.date.range" ,
 				new String[] {
-						DateTimeStringConverter.formatLongDate(result.getCommandStartTime()),
-						DateTimeStringConverter.formatLongDate(result.getCommandEndTime())
+						result.getCommandStartTime(),
+						result.getCommandEndTime()
 				}));
 		
 		this.tableComposite.updateDisp(this.result, this.managerName, this.eventDspSettingInfo);

@@ -22,12 +22,12 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.VariableResponse;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.Variable;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -45,7 +45,7 @@ public class VariableCreateDialog extends CommonDialog {
 	public static final int WIDTH_VALUE = 2;
 
 	/** 入力値を保持するオブジェクト。 */
-	private Variable m_inputData = null;
+	private VariableResponse m_inputData = null;
 
 	/** 入力値の正当性を保持するオブジェクト。 */
 	private ValidateResult m_validateResult = null;
@@ -74,7 +74,7 @@ public class VariableCreateDialog extends CommonDialog {
 	 * @param parent 親のシェルオブジェクト
 	 * @param identifier 変更する文字列監視の判定情報の識別キー
 	 */
-	public VariableCreateDialog(Shell parent, Variable variable) {
+	public VariableCreateDialog(Shell parent, VariableResponse variable) {
 		super(parent);
 
 		this.m_inputData = variable;
@@ -193,9 +193,9 @@ public class VariableCreateDialog extends CommonDialog {
 				(display.getBounds().height - shell.getSize().y) / 2);
 
 		// 識別子が指定されている場合、その情報を初期表示する。
-		Variable variable = this.m_inputData;
+		VariableResponse variable = this.m_inputData;
 		if (variable == null) {
-			variable = new Variable();
+			variable = new VariableResponse();
 			variable.setMatchingWithResponseFlg(false);
 		}
 
@@ -227,7 +227,7 @@ public class VariableCreateDialog extends CommonDialog {
 	 *
 	 * @return 判定情報
 	 */
-	public Variable getInputData() {
+	public VariableResponse getInputData() {
 		return this.m_inputData;
 	}
 
@@ -236,7 +236,7 @@ public class VariableCreateDialog extends CommonDialog {
 	 *
 	 * @param info 設定値として用いる判定情報
 	 */
-	protected void setInputData(Variable variable) {
+	protected void setInputData(VariableResponse variable) {
 
 		this.m_inputData = variable;
 
@@ -248,7 +248,7 @@ public class VariableCreateDialog extends CommonDialog {
 			this.m_textValue.setText(this.m_inputData.getValue());
 		}
 
-		this.m_buttonMatchingWithResponse.setSelection(this.m_inputData.isMatchingWithResponseFlg());
+		this.m_buttonMatchingWithResponse.setSelection(this.m_inputData.getMatchingWithResponseFlg());
 
 		// 必須項目を可視化
 		this.update();
@@ -264,8 +264,8 @@ public class VariableCreateDialog extends CommonDialog {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	private Variable createInputData() {
-		Variable info = new Variable();
+	private VariableResponse createInputData() {
+		VariableResponse info = new VariableResponse();
 
 		// 名前
 		if (this.m_textName.getText() != null
@@ -370,7 +370,7 @@ public class VariableCreateDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		Variable info = this.m_inputData;
+		VariableResponse info = this.m_inputData;
 		if(info != null){
 			result = true;
 		}

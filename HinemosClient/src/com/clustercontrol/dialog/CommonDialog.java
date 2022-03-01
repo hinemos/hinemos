@@ -23,7 +23,11 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.util.FocusUtil;
+import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.ICheckPublishRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 
@@ -287,11 +291,60 @@ public abstract class CommonDialog extends Dialog {
 		// グリッドレイアウトを用いた場合、こうしないと横幅が画面いっぱいになります。
 		Shell shell = getShell();
 		shell.pack();
-		shell.setSize(new Point(width, shell.getSize().y));
+		int w = width > 0 ? width : shell.getSize().x;
+		int h = shell.getSize().y;
+		shell.setSize(new Point(w, h));
 
 		// 画面中央に配置
 		Display display = shell.getDisplay();
-		shell.setLocation((display.getBounds().width - shell.getSize().x) / 2,
-				(display.getBounds().height - shell.getSize().y) / 2);
+		shell.setLocation((display.getBounds().width - w) / 2,
+				(display.getBounds().height - h) / 2);
 	}
+
+	protected void adjustPosition() {
+		adjustPosition(-1);
+	}
+	
+	/**
+	 * エンタープライズ機能 / クラウド・VM管理機能が有効になっているかどうかを確認します。
+	 * @param managerName
+	 * @return
+	 */
+	public ValidateResult validateEndpoint(String managerName) {
+		ValidateResult validateResult = null;
+		// マルチマネージャ接続時にエンタープライズ機能 / クラウド・VM管理機能が有効になってないマネージャが選択されていた場合、
+		// エラーダイアログを表示
+		if (getCheckPublishWrapper(managerName) != null) {
+			boolean isPublish;
+			try {
+				isPublish = getCheckPublishWrapper(managerName).checkPublish().getPublish();
+				if (!isPublish) {
+					// エンドポイントはPublishされているがキーファイルが期限切れの場合
+					throw new HinemosUnknown(Messages.getString("message.expiration.term.invalid"));
+				}
+			} catch (Exception e) {
+				validateResult = new ValidateResult();
+				validateResult.setValid(false);
+				validateResult.setID(Messages.getString("message.hinemos.1"));
+				// 原因例外UrlNotFoundの場合、エンドポイントがPublishされていないマネージャからのレスポンス
+				if ( (e instanceof HinemosUnknown) && UrlNotFound.class.equals(e.getCause().getClass())){
+					validateResult.setMessage(Messages.getString("message.expiration.term") + ":" + managerName);
+				}else{
+					String errMsg = HinemosMessage.replace(e.getMessage());
+					validateResult.setMessage(Messages.getString("message.hinemos.failure.unexpected") + ":" + managerName + ", " + errMsg);
+				}
+			}
+		}
+		return validateResult;
+	}
+	
+	/**
+	 * エンタープライズ機能 / クラウド・VM管理機能利用有無確認エンドポイントを返します。
+	 * @param managerName
+	 * @return
+	 */
+	public ICheckPublishRestClientWrapper getCheckPublishWrapper(String managerName) {
+		return null;
+	}
+
 }

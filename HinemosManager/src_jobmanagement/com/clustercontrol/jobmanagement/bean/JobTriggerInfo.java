@@ -69,6 +69,10 @@ public class JobTriggerInfo implements Serializable {
 	 */
 	private String jobkickId;
 
+	/**
+	 * ジョブ実行予定時間 (ジョブスケジュールで使用)
+	 */
+	private Long executeTime = 0L;
 
 	/** ランタイムジョブ変数情報 */
 	private ArrayList<JobRuntimeParam> jobRuntimeParamList;
@@ -220,4 +224,11 @@ public class JobTriggerInfo implements Serializable {
 		return jobkickId;
 	}
 
+	public Long getExecuteTime() {
+		return executeTime;
+	}
+
+	public void setExecuteTime(Long executeTime) {
+		this.executeTime = executeTime;
+	}
 }

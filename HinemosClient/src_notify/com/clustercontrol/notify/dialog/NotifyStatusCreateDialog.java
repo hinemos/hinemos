@@ -23,21 +23,21 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.StatusNotifyDetailInfoResponse;
+import org.openapitools.client.model.StatusNotifyDetailInfoResponse.StatusInvalidFlgEnum;
+import org.openapitools.client.model.StatusNotifyDetailInfoResponse.StatusUpdatePriorityEnum;
 
 import com.clustercontrol.bean.PriorityColorConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.monitor.bean.StatusExpirationConstant;
 import com.clustercontrol.monitor.bean.StatusValidPeriodConstant;
 import com.clustercontrol.monitor.bean.StatusValidPeriodMessage;
 import com.clustercontrol.notify.action.AddNotify;
 import com.clustercontrol.notify.action.GetNotify;
 import com.clustercontrol.notify.action.ModifyNotify;
+import com.clustercontrol.notify.dialog.bean.NotifyInfoInputData;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.notify.NotifyInfo;
-import com.clustercontrol.ws.notify.NotifyStatusInfo;
 
 /**
  * 通知（ステータス）作成・変更ダイアログクラス<BR>
@@ -98,6 +98,7 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 	 */
 	public NotifyStatusCreateDialog(Shell parent) {
 		super(parent);
+		parentDialog = this;
 	}
 
 	/**
@@ -110,6 +111,7 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 	 */
 	public NotifyStatusCreateDialog(Shell parent, String managerName, String notifyId, boolean updateFlg) {
 		super(parent, managerName, notifyId, updateFlg);
+		parentDialog = this;
 	}
 
 	// ----- instance メソッド ----- //
@@ -121,7 +123,7 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 	 *
 	 * @see com.clustercontrol.notify.dialog.NotifyBasicCreateDialog#customizeDialog(Composite)
 	 * @see com.clustercontrol.notify.action.GetNotify#getNotify(String)
-	 * @see #setInputData(NotifyInfo)
+	 * @see #setInputData(NotifyInfoInputData)
 	 */
 	@Override
 	protected void customizeDialog(Composite parent) {
@@ -129,14 +131,13 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 		super.customizeDialog(parent);
 
 		// 通知IDが指定されている場合、その情報を初期表示する。
-		NotifyInfo info = null;
+		NotifyInfoInputData inputData;
 		if(this.notifyId != null){
-			info = new GetNotify().getNotify(this.managerName, this.notifyId);
+			inputData = new GetNotify().getStatusNotify(this.managerName, this.notifyId);
+		} else {
+			inputData = new NotifyInfoInputData();
 		}
-		else{
-			info = new NotifyInfo();
-		}
-		this.setInputData(info);
+		this.setInputData(inputData);
 
 	}
 
@@ -444,7 +445,7 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 	 * @return 通知情報
 	 */
 	@Override
-	public NotifyInfo getInputData() {
+	public NotifyInfoInputData getInputData() {
 		return this.inputData;
 	}
 
@@ -454,11 +455,11 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 	 * @param notify 設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(NotifyInfo notify) {
+	protected void setInputData(NotifyInfoInputData notify) {
 		super.setInputData(notify);
 
 		// コマンド情報
-		NotifyStatusInfo info = notify.getNotifyStatusInfo();
+		StatusNotifyDetailInfoResponse info = notify.getNotifyStatusInfo();
 		if (info != null) {
 			this.setInputData(info);
 		} else {
@@ -468,16 +469,16 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 		this.m_comboStatusPriority.setEnabled(m_radioStatusUpdate.getSelection());
 	}
 
-	private void setInputData(NotifyStatusInfo status) {
+	private void setInputData(StatusNotifyDetailInfoResponse status) {
 		if (status.getStatusValidPeriod() != null) {
 			this.m_comboStatusValidPeriod.setText(StatusValidPeriodMessage.typeToString(status.getStatusValidPeriod().intValue()));
 		}
-		if (status.getStatusInvalidFlg() != null && status.getStatusInvalidFlg().intValue() == StatusExpirationConstant.TYPE_DELETE) {
+		if (status.getStatusInvalidFlg() != null && status.getStatusInvalidFlg() == StatusInvalidFlgEnum.DELETE) {
 			this.m_radioStatusDelete.setSelection(true);
 		} else {
 			this.m_radioStatusUpdate.setSelection(true);
 		}
-		this.m_comboStatusPriority.setText(PriorityMessage.typeToString(status.getStatusUpdatePriority().intValue()));
+		this.m_comboStatusPriority.setText(PriorityMessage.enumToString(status.getStatusUpdatePriority(), StatusUpdatePriorityEnum.class));
 
 		Button[] checkStatusNormals = new Button[] {
 				this.m_checkStatusNormalInfo,
@@ -503,7 +504,7 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 	 * @param checkStatusNormal 通知チェックボックス
 	 * @param checkStatusInhibition 抑制チェックボックス
 	 */
-	protected void setInputDataForStatus(NotifyStatusInfo info,
+	protected void setInputDataForStatus(StatusNotifyDetailInfoResponse info,
 			Button checkStatusNormal,
 			Button checkStatusInhibition
 			) {
@@ -518,24 +519,24 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 	 * @see #createInputDataForStatus(ArrayList, int, Button, Button)
 	 */
 	@Override
-	protected NotifyInfo createInputData() {
-		NotifyInfo info = super.createInputData();
+	protected NotifyInfoInputData createInputData() {
+		NotifyInfoInputData info = super.createInputData();
 
 		// 通知タイプの設定
 		info.setNotifyType(TYPE_STATUS);
 
 		// イベント情報
-		NotifyStatusInfo status = createNotifyInfoDetail();
+		StatusNotifyDetailInfoResponse status = createNotifyInfoDetail();
 		info.setNotifyStatusInfo(status);
 
 		return info;
 	}
 
-	private NotifyStatusInfo createNotifyInfoDetail() {
-		NotifyStatusInfo status = new NotifyStatusInfo();
+	private StatusNotifyDetailInfoResponse createNotifyInfoDetail() {
+		StatusNotifyDetailInfoResponse status = new StatusNotifyDetailInfoResponse();
 
-		status.setStatusInvalidFlg(StatusExpirationConstant.TYPE_DELETE);
-		status.setStatusUpdatePriority(PriorityConstant.TYPE_WARNING);
+		status.setStatusInvalidFlg(StatusInvalidFlgEnum.DELETE);
+		status.setStatusUpdatePriority(StatusUpdatePriorityEnum.WARNING);
 		status.setStatusValidPeriod(StatusValidPeriodConstant.TYPE_MIN_10);
 
 		// ステータス通知
@@ -552,14 +553,14 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 
 		// 存続期間経過後の処理
 		if (this.m_radioStatusDelete.getSelection()) {
-			status.setStatusInvalidFlg(StatusExpirationConstant.TYPE_DELETE);
+			status.setStatusInvalidFlg(StatusInvalidFlgEnum.DELETE);
 		} else {
-			status.setStatusInvalidFlg(StatusExpirationConstant.TYPE_UPDATE);
+			status.setStatusInvalidFlg(StatusInvalidFlgEnum.UPDATE);
 		}
 
 		// 更新されていない場合に通知する際の重要度
 		if (isNotNullAndBlank(this.m_comboStatusPriority.getText())) {
-			status.setStatusUpdatePriority(Integer.valueOf(PriorityMessage.stringToType(this.m_comboStatusPriority.getText())));
+			status.setStatusUpdatePriority(PriorityMessage.stringToEnum(this.m_comboStatusPriority.getText(), StatusUpdatePriorityEnum.class));
 		}
 
 		return status;
@@ -589,15 +590,15 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		NotifyInfo info = this.getInputData();
+		NotifyInfoInputData info = this.getInputData();
 		if(info != null){
 			if (!this.updateFlg) {
 				// 作成の場合
-				result = new AddNotify().add(this.getInputManagerName(), info);
+				result = new AddNotify().addStatusNotify(managerName, info);
 			}
 			else{
 				// 変更の場合
-				result = new ModifyNotify().modify(this.getInputManagerName(), info);
+				result = new ModifyNotify().modifyStatusNotify(managerName, info);
 			}
 		}
 
@@ -763,5 +764,15 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 		notifyStatusCreateNormalCheckbox.setLayoutData(gridData);
 
 		return notifyStatusCreateNormalCheckbox;
+	}
+
+	private Boolean[] getValidFlgs(StatusNotifyDetailInfoResponse info) {
+		Boolean[] validFlgs = new Boolean[] {
+				info.getInfoValidFlg(),
+				info.getWarnValidFlg(),
+				info.getCriticalValidFlg(),
+				info.getUnknownValidFlg()
+		};
+		return validFlgs;
 	}
 }

@@ -18,6 +18,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtBinaryCheckInfoResponse;
 
 import com.clustercontrol.agent.binary.readingstatus.FileReadingStatus;
 import com.clustercontrol.agent.binary.result.BinaryRecord;
@@ -25,7 +26,6 @@ import com.clustercontrol.binary.bean.BinaryConstant;
 import com.clustercontrol.util.BinaryUtil;
 import com.clustercontrol.util.FileUtil;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.ws.monitor.BinaryCheckInfo;
 
 public class BinarySeparator {
 
@@ -51,17 +51,17 @@ public class BinarySeparator {
 	 * レコード固定長のバイナリデータをタイムスタンプ毎もしくは指定サイズで分割する.
 	 * 
 	 * @param readedBinary
-	 *            分割対象のバイナリデータ
+	 *			  分割対象のバイナリデータ
 	 * @param binaryInfo
-	 *            監視設定の内バイナリ監視に関する情報<br>
+	 *			  監視設定の内バイナリ監視に関する情報<br>
 	 * @param byTimeStmp
-	 *            タイムスタンプ毎で区切る場合はtrue<br>
-	 *            <br>
+	 *			  タイムスタンプ毎で区切る場合はtrue<br>
+	 *			  <br>
 	 * @return レコード毎のタイムスタンプをキーにして格納したマップ.<br>
-	 *         設定不正の場合は引数のリストをそのまま格納して返却.
+	 *		   設定不正の場合は引数のリストをそのまま格納して返却.
 	 * 
 	 */
-	public List<BinaryRecord> separateFixed(String monitorId, List<Byte> readedBinary, BinaryCheckInfo binaryInfo,
+	public List<BinaryRecord> separateFixed(String monitorId, List<Byte> readedBinary, AgtBinaryCheckInfoResponse binaryInfo,
 			FileReadingStatus fileRs) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
@@ -70,7 +70,7 @@ public class BinarySeparator {
 		this.skippedSize = 0;
 
 		// 分割前チェック.
-		if (binaryInfo.isHaveTs()) {
+		if (binaryInfo.getHaveTs().booleanValue()) {
 			// タイムスタンプ毎の場合に必要な設定値.
 			if (binaryInfo.getTsPosition() <= 0 || binaryInfo.getTsType() == null || binaryInfo.getTsType().isEmpty()) {
 				String tsType = binaryInfo.getTsType();
@@ -81,7 +81,7 @@ public class BinarySeparator {
 						+ String.format(
 								"skipped to separate because of invalid arguments."
 										+ "monitorID=%s, lengthType=%s, haveTs=%b TsPosition=%d, TsType=%s",
-								monitorId, binaryInfo.getLengthType(), binaryInfo.isHaveTs(),
+								monitorId, binaryInfo.getLengthType(), binaryInfo.getHaveTs(),
 								binaryInfo.getTsPosition(), tsType));
 				tmpBinRecord.setAlldata(readedBinary);
 				returnList.add(tmpBinRecord);
@@ -105,7 +105,7 @@ public class BinarySeparator {
 		List<Byte> tmpList = new ArrayList<Byte>();
 		List<Byte> timeStampByte = new ArrayList<Byte>();
 		int tsSize = 0;
-		if (binaryInfo.isHaveTs()) {
+		if (binaryInfo.getHaveTs().booleanValue()) {
 			tsSize = BinaryConstant.TIMESTAMP_BYTE_MAP.get(binaryInfo.getTsType()).intValue();
 		}
 		int inRecordByte = 0;
@@ -119,7 +119,7 @@ public class BinarySeparator {
 		for (int i = 0; i < readedBinary.size(); i++) {
 			inRecordByte++;
 
-			if (binaryInfo.isHaveTs()) {
+			if (binaryInfo.getHaveTs().booleanValue()) {
 				// タイムスタンプ毎の場合はタイムスタンプ取得.
 				if (inRecordByte >= binaryInfo.getTsPosition()
 						&& inRecordByte < (binaryInfo.getTsPosition() + tsSize)) {
@@ -128,7 +128,7 @@ public class BinarySeparator {
 				}
 				if (inRecordByte == (binaryInfo.getTsPosition() + tsSize - 1)) {
 					// タイムスタンプをバイナリ⇒Timestamp型に変換.
-					ts = this.binaryToTs(timeStampByte, binaryInfo.getTsType(), binaryInfo.isLittleEndian());
+					ts = this.binaryToTs(timeStampByte, binaryInfo.getTsType(), binaryInfo.getLittleEndian().booleanValue());
 					tmpBinRecord.setTs(ts);
 					// タイムスタンプ毎の場合はキーにファイル名＋タイムスタンプ＋連番を付与.
 					sequential = FileUtil.paddingZero(count, keta);
@@ -140,12 +140,12 @@ public class BinarySeparator {
 			tmpList.add(readedBinary.get(i));
 
 			if (inRecordByte == binaryInfo.getRecordSize()) {
-				if (!binaryInfo.isHaveTs()) {
+				if (!binaryInfo.getHaveTs().booleanValue()) {
 					// ただの固定長の場合はレコードのキーにファイル名＋連番を付与.
 					sequential = FileUtil.paddingZero(count, keta);
 					tmpBinRecord.setKey(fileRs.getMonFileName() + sequential);
 				}
-				if (binaryInfo.isHaveTs() && !setTs) {
+				if (binaryInfo.getHaveTs().booleanValue() && !setTs) {
 					// 設定値不正等でタイムスタンプが設定できてない場合は現在時刻をセット.
 					ts = new Timestamp(HinemosTime.currentTimeMillis());
 					tmpBinRecord.setTs(ts);
@@ -192,15 +192,15 @@ public class BinarySeparator {
 	 * レコード可変長のバイナリデータをタイムスタンプ毎で分割する.
 	 * 
 	 * @param readedBinary
-	 *            分割対象のバイナリデータ
+	 *			  分割対象のバイナリデータ
 	 * @param binaryInfo
-	 *            監視設定の内バイナリ監視に関する情報<br>
+	 *			  監視設定の内バイナリ監視に関する情報<br>
 	 * @param byTimeStmp
-	 *            タイムスタンプ毎で切る場合はtrue<br>
-	 *            <br>
+	 *			  タイムスタンプ毎で切る場合はtrue<br>
+	 *			  <br>
 	 * @return レコード毎のタイムスタンプをキーにして格納したマップ
 	 */
-	public List<BinaryRecord> separateVariable(String monitorId, List<Byte> readedBinary, BinaryCheckInfo binaryInfo,
+	public List<BinaryRecord> separateVariable(String monitorId, List<Byte> readedBinary, AgtBinaryCheckInfoResponse binaryInfo,
 			FileReadingStatus fileRs) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
@@ -209,7 +209,7 @@ public class BinarySeparator {
 		this.skippedSize = 0;
 
 		// 分割前チェック.
-		if (binaryInfo.isHaveTs()) {
+		if (binaryInfo.getHaveTs().booleanValue()) {
 			// タイムスタンプ毎の場合に必要な設定値.
 			if (binaryInfo.getTsPosition() <= 0 || binaryInfo.getTsType() == null || binaryInfo.getTsType().isEmpty()) {
 				String tsType = binaryInfo.getTsType();
@@ -220,7 +220,7 @@ public class BinarySeparator {
 						+ String.format(
 								"skipped to separate because of invalid arguments."
 										+ " lengthType=%s, haveTs=%b TsPosition=%d, TsType=%s",
-								binaryInfo.getLengthType(), binaryInfo.isHaveTs(), binaryInfo.getTsPosition(), tsType));
+								binaryInfo.getLengthType(), binaryInfo.getHaveTs(), binaryInfo.getTsPosition(), tsType));
 				tmpBinRecord.setAlldata(readedBinary);
 				returnList.add(tmpBinRecord);
 				return returnList;
@@ -247,7 +247,7 @@ public class BinarySeparator {
 		List<Byte> timeStampByte = new ArrayList<Byte>();
 		List<Byte> recordSizeByte = new ArrayList<Byte>();
 		int tsSize = 0;
-		if (binaryInfo.isHaveTs()) {
+		if (binaryInfo.getHaveTs().booleanValue()) {
 			tsSize = BinaryConstant.TIMESTAMP_BYTE_MAP.get(binaryInfo.getTsType()).intValue();
 		}
 		int inRecordByte = 0;
@@ -269,7 +269,7 @@ public class BinarySeparator {
 			}
 			if (inRecordByte == (binaryInfo.getSizePosition() + binaryInfo.getSizeLength() - 1)) {
 				// レコードサイズをあらわすバイトの末尾なのでバイトサイズ取得.
-				if (binaryInfo.isLittleEndian()) {
+				if (binaryInfo.getLittleEndian().booleanValue()) {
 					// 逆順で格納されているバイナリの場合は逆順に修正.
 					Collections.reverse(recordSizeByte);
 				}
@@ -286,7 +286,7 @@ public class BinarySeparator {
 				tmpBinRecord.setSize(recordSize);
 			}
 
-			if (binaryInfo.isHaveTs()) {
+			if (binaryInfo.getHaveTs().booleanValue()) {
 				// タイムスタンプ区切りの場合はバイトからタイムスタンプ取得.
 				if (inRecordByte >= binaryInfo.getTsPosition()
 						&& inRecordByte < (binaryInfo.getTsPosition() + tsSize)) {
@@ -295,7 +295,7 @@ public class BinarySeparator {
 				}
 				if (inRecordByte == (binaryInfo.getTsPosition() + tsSize - 1)) {
 					// タイムスタンプをバイナリ⇒Timestamp型に変換.
-					ts = binaryToTs(timeStampByte, binaryInfo.getTsType(), binaryInfo.isLittleEndian());
+					ts = binaryToTs(timeStampByte, binaryInfo.getTsType(), binaryInfo.getLittleEndian().booleanValue());
 					tmpBinRecord.setTs(ts);
 					// タイムスタンプ毎の場合はキーにファイル名＋タイムスタンプ＋連番を付与.
 					sequential = FileUtil.paddingZero(count, keta);
@@ -305,7 +305,7 @@ public class BinarySeparator {
 						log.trace(methodName + DELIMITER
 								+ String.format(
 										"  getTimeStamp ."
-												+ "ts=%s  timeStampByte=%s  setTs=%b ",
+												+ "ts=%s  timeStampByte=%s	setTs=%b ",
 												ts,timeStampByte,setTs));
 					}
 				}
@@ -314,12 +314,12 @@ public class BinarySeparator {
 			tmpList.add(readedBinary.get(i));
 
 			if (inRecordByte == (binaryInfo.getRecordHeadSize() + recordSize)) {
-				if (!binaryInfo.isHaveTs()) {
+				if (!binaryInfo.getHaveTs().booleanValue()) {
 					// ただの固定長の場合はレコードのキーにファイル名と連番を付与.
 					sequential = FileUtil.paddingZero(count, keta);
 					tmpBinRecord.setKey(fileRs.getMonFileName() + sequential);
 				}
-				if (binaryInfo.isHaveTs() && !setTs) {
+				if (binaryInfo.getHaveTs().booleanValue() && !setTs) {
 					// 設定値不正等でタイムスタンプが設定できてない場合は現在時刻をセット.
 					ts = new Timestamp(HinemosTime.currentTimeMillis());
 					tmpBinRecord.setTs(ts);
@@ -366,13 +366,13 @@ public class BinarySeparator {
 	 * バイナリ⇒long値⇒Timestampクラスに変換.<br>
 	 * 
 	 * @param timeStamp
-	 *            読込済バイナリデータ
+	 *			  読込済バイナリデータ
 	 * @param tsType
-	 *            タイムスタンプ種類
+	 *			  タイムスタンプ種類
 	 * @param revertFlg
-	 *            バイナリ格納逆順フラグ <br>
-	 *            例)16進数表記00 05 08に対して、実際に格納されているバイト配列が08 05 00の場合、true <br>
-	 *            <br>
+	 *			  バイナリ格納逆順フラグ <br>
+	 *			  例)16進数表記00 05 08に対して、実際に格納されているバイト配列が08 05 00の場合、true <br>
+	 *			  <br>
 	 * @return 読込バイナリデータのサイズ
 	 */
 	private Timestamp binaryToTs(List<Byte> timeStamp, String tsType, boolean revertFlg) {
@@ -391,13 +391,13 @@ public class BinarySeparator {
 	 * グリニッジ標準時(1970/1/1 0:0:0)を起点としたミリ秒.<br>
 	 * 
 	 * @param timeStamp
-	 *            読込済バイナリデータ
+	 *			  読込済バイナリデータ
 	 * @param tsType
-	 *            タイムスタンプ種類
+	 *			  タイムスタンプ種類
 	 * @param revertFlg
-	 *            バイナリ格納逆順フラグ <br>
-	 *            例)16進数表記00 05 08に対して、実際に格納されているバイト配列が08 05 00の場合、true <br>
-	 *            <br>
+	 *			  バイナリ格納逆順フラグ <br>
+	 *			  例)16進数表記00 05 08に対して、実際に格納されているバイト配列が08 05 00の場合、true <br>
+	 *			  <br>
 	 * @return 読込バイナリデータのサイズ
 	 */
 	private long binaryToTsLong(List<Byte> timeStamp, String tsType, boolean revertFlg) {
@@ -453,13 +453,13 @@ public class BinarySeparator {
 	 * レコード追加判定.
 	 * 
 	 * @param index
-	 *            判定対象レコードの取得完了時のバイナリ配列内インデックス
+	 *			  判定対象レコードの取得完了時のバイナリ配列内インデックス
 	 * @param monitorId
-	 *            監視ID
+	 *			  監視ID
 	 * @param fileRs
-	 *            ファイルの読込みステータス
+	 *			  ファイルの読込みステータス
 	 * @param curRecSize
-	 *            判定対象レコードのデータサイズ（レコードヘッダ含む）※可変長の場合は注意
+	 *			  判定対象レコードのデータサイズ（レコードヘッダ含む）※可変長の場合は注意
 	 * @return true:追加する、false:追加スキップ
 	 */
 	private boolean checkAddRecord(int index, String monitorId, FileReadingStatus fileRs,int curRecSize) {
@@ -493,7 +493,7 @@ public class BinarySeparator {
 								+ String.format(
 										"skipped records. first record is  fragment data "
 												+ " monitorId=%s, file=[%s], fileRs.getPosition()=%d, nowRecStartPos=%d, getSkipSize=%d",
-												monitorId, fileRs.getMonFileName(),  fileRs.getPosition() ,nowRecStartPos ,fileRs.getSkipSize()));
+												monitorId, fileRs.getMonFileName(),	 fileRs.getPosition() ,nowRecStartPos ,fileRs.getSkipSize()));
 					}
 					// 半端なサイズの場合、このデータを含むレコードまでをスキップ済とする(skipSizeより大きくなる)
 					this.skippedSize = index + 1;
@@ -520,7 +520,7 @@ public class BinarySeparator {
 	 * 読込バイナリデータ長取得.<br>
 	 * 
 	 * @param readedMap
-	 *            読込済バイナリデータ
+	 *			  読込済バイナリデータ
 	 * @return 読込バイナリデータのサイズ
 	 */
 	public long getReadedSize(List<BinaryRecord> readedList) {
@@ -550,7 +550,7 @@ public class BinarySeparator {
 	 * ※厳密には複数レコード含むことになるため、タイムスタンプは先頭レコードの情報持たせる<br>
 	 * 
 	 * @param sendData
-	 *            同一ttyで統合したレコード.
+	 *			  同一ttyで統合したレコード.
 	 * @return
 	 */
 	public List<BinaryRecord> coordinateWtmp(List<BinaryRecord> sendData) {

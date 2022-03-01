@@ -17,17 +17,19 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.handlers.HandlerUtil;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.cloud.IStorage;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 public class DeleteStorageHandler extends AbstractCloudOptionHandler implements CloudStringConstants {
 	@Override
-	public Object internalExecute(ExecutionEvent event) throws CloudManagerException, InvalidRole_Exception, InvalidUserPass_Exception {
+	public Object internalExecute(ExecutionEvent event) throws CloudManagerException, InvalidUserPass, InvalidRole, RestConnectFailed, HinemosUnknown {
 		IStructuredSelection selection = (IStructuredSelection)HandlerUtil.getCurrentSelection(event);
 		final IStorage storage = (IStorage)selection.getFirstElement();
 		List<String> storageIds = new ArrayList<>();
@@ -42,11 +44,12 @@ public class DeleteStorageHandler extends AbstractCloudOptionHandler implements 
 						MessageFormat.format(msgConfirmDeleteStorageMulti, storageIds.size()):
 							MessageFormat.format(msgConfirmDeleteStorage, storage.getName(), storage.getId()))) {
 
-			CloudEndpoint endpoint = storage.getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-			endpoint.removeStorages(storage.getCloudScope().getId(), storage.getLocation().getId(), storageIds);
-
+			String managerName = storage.getCloudScope().getCloudScopes().getHinemosManager().getManagerName();
+			CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
+			endpoint.removeStorages(storage.getCloudScope().getId(), storage.getLocation().getId(), String.join(",", storageIds));
 			// 成功報告ダイアログを生成
 			MessageDialog.openInformation(
+					
 					null,
 					Messages.getString("successful"),
 					msgFinishDeleteStorage);

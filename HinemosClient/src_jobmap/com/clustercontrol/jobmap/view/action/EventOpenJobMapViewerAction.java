@@ -12,11 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.ws.WebServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.commands.AbstractHandler;
+import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -27,22 +26,31 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.JobHistoryFilterBaseRequest;
+import org.openapitools.client.model.JobHistoryFilterConditionRequest;
 
+import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.JobInfoNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.jobmanagement.composite.HistoryComposite;
-import com.clustercontrol.jobmap.util.JobMapEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.view.action.HistoryFilterAction;
+import com.clustercontrol.jobmap.util.JobMapRestClientWrapper;
 import com.clustercontrol.jobmap.view.JobHistoryViewM;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
 import com.clustercontrol.monitor.composite.EventListComposite;
 import com.clustercontrol.monitor.view.EventView;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.view.ScopeListBaseView;
-import com.clustercontrol.ws.jobmanagement.HinemosUnknown_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidUserPass_Exception;
 
 /**
  * 監視履歴[イベント]からジョブマップビューパースペクティブを開くクライアント側アクションクラス<BR>
@@ -129,22 +137,41 @@ public class EventOpenJobMapViewerAction extends AbstractHandler implements IEle
 			return null;
 		}
 		try {
-			JobMapEndpointWrapper wrapper = JobMapEndpointWrapper.getWrapper(managerName);
-			String version = wrapper.getVersion();
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							com.clustercontrol.jobmap.messages.Messages.getString("expiration.term.invalid"));
-				}
+			JobMapRestClientWrapper wrapper = JobMapRestClientWrapper.getWrapper(managerName);
+			boolean isPublish = wrapper.checkPublish().getPublish();
+			if (!isPublish) {
+				MessageDialog.openWarning(
+						null,
+						Messages.getString("warning"),
+						com.clustercontrol.jobmap.messages.Messages.getString("expiration.term.invalid"));
 			}
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | WebServiceException e) {
+		} catch (HinemosUnknown | InvalidRole | InvalidUserPass | RestConnectFailed e) {
 			// キーファイルを確認できませんでした。処理を終了します。
 			// Key file not found. This process will be terminated.
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					com.clustercontrol.jobmap.messages.Messages.getString("message.jobmapkeyfile.notfound.error"));
+			return null;
+		}
+		// 存在チェック
+		try {
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			wrapper.getJobDetailList(monitorId);
+		} catch (JobInfoNotFound e) {
+			ClientSession.occupyDialog();
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					Messages.getString("message.job.122"));
+			ClientSession.freeDialog();
+			return null;
+		} catch (Exception e) {
+			m_log.warn("run() getJobDetailList, " + e.getMessage(), e);
+			if(ClientSession.isDialogFree()){
+				ClientSession.occupyDialog();
+				MessageDialog.openError(
+						null,
+						Messages.getString("failed"),
+						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+				ClientSession.freeDialog();
+			}
 			return null;
 		}
 
@@ -167,8 +194,27 @@ public class EventOpenJobMapViewerAction extends AbstractHandler implements IEle
 		}
 
 		//セッションID、ジョブIDをセット
+		historyCmpM.setManagerName(managerName);
 		historyCmpM.setSessionId(monitorId);
 
+		// フィルタボタン
+		ICommandService commandService = (ICommandService)window.getService(ICommandService.class);
+		Command command = commandService.getCommand(HistoryFilterAction.ID);
+		boolean isChecked = !HandlerUtil.toggleCommandState(command);
+		if (!isChecked) {
+			// チェック外れる場合はもう一度呼出し、チェックを入れる
+			HandlerUtil.toggleCommandState(command);
+		}
+
+		// セッションIDによるフィルタリング
+		JobHistoryFilterBaseRequest sessionIdFilter = new JobHistoryFilterBaseRequest();
+		JobHistoryFilterConditionRequest filterCondition = new JobHistoryFilterConditionRequest();
+		filterCondition.setSessionId(monitorId);
+		sessionIdFilter.addConditionsItem(filterCondition);
+		historyViewM.setFilter(managerName, sessionIdFilter);
+		historyViewM.setFilterEnabled(true);
+
+		// 画面更新
 		historyViewM.update(false);
 
 		return null;

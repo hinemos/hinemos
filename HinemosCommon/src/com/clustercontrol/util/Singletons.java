@@ -9,8 +9,8 @@
 package com.clustercontrol.util;
 
 import java.lang.reflect.Constructor;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,7 +27,7 @@ import org.apache.commons.logging.LogFactory;
 public class Singletons {
 	private static final Log log = LogFactory.getLog(Singletons.class);
 	
-	private static Map<Class<?>, Object> instances;
+	private static ConcurrentMap<Class<?>, Object> instances;
 
 	static {
 		initialize();
@@ -107,5 +107,37 @@ public class Singletons {
 	 */
 	public static boolean has(Class<?> clazz) {
 		return instances.containsKey(clazz);
+	}
+	
+	/**
+	 * 指定したクラスのシングルトンを削除します。
+	 * 
+	 * @param clazz クラスオブジェクト。
+	 * @return 削除したインスタンス。存在していなければ null。
+	 */
+	public static <T> T remove(Class<T> clazz) {
+		@SuppressWarnings("unchecked")
+		T ret = (T) instances.remove(clazz);
+		log.info("remove : Class " + clazz.getName());
+		return ret;
+	}
+
+	/**
+	 * 指定したクラスのインスタンスが既に生成されている場合、新しく生成しなおします。
+	 * 未生成の場合は何もしません。
+	 * <p>
+	 * 本メソッドを呼ぶ直前に {@link #get(Class)} でインスタンスを取得したスレッドがあると、
+	 * 同じクラスのインスタンスが同時に2つ存在している状況となる可能性があります。
+	 * したがって、本メソッドを利用するクラスでは、そのような状況を考慮してください。
+	 * 
+	 * @param clazz クラスオブジェクト。
+	 * @return 既存のインスタンス。存在していなければ null。
+	 */
+	public static <T> T update(Class<T> clazz) {
+		T ret = remove(clazz);
+		if (ret != null) {
+			get(clazz);
+		}
+		return ret;
 	}
 }

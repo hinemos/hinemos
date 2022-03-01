@@ -22,8 +22,8 @@ import org.eclipse.ui.PlatformUI;
 
 import com.clustercontrol.jobmanagement.action.GetJobTableDefine;
 import com.clustercontrol.jobmanagement.composite.JobListComposite;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[一覧]ビューのテーブルビューア用のSelectionChangedListenerです。
@@ -85,17 +85,17 @@ public class JobListSelectionChangedListener implements ISelectionChangedListene
 				view.setLastFocusComposite( composite );
 			}
 
-			JobTreeItem selectJobTreeItem = null;
+			JobTreeItemWrapper selectJobTreeItem = null;
 
 			List<?> list = selection.toList();
-			List<JobTreeItem> itemList = new ArrayList<JobTreeItem>();
+			List<JobTreeItemWrapper> itemList = new ArrayList<JobTreeItemWrapper>();
 			for(Object obj : list) {
 				if (obj instanceof ArrayList) {
 					ArrayList<?> item = (ArrayList<?>)obj;
 					String jobId = (String) item.get(GetJobTableDefine.JOB_ID);
 
 					if (m_list.getJobTreeItem() != null) {
-						List<JobTreeItem> items = m_list.getJobTreeItem().getChildren();
+						List<JobTreeItemWrapper> items = m_list.getJobTreeItem().getChildren();
 
 						for (int i = 0; i < items.size(); i++) {
 							if (jobId.equals(items.get(i).getData().getId())) {

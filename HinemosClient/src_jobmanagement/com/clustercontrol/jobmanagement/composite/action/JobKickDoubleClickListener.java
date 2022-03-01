@@ -17,6 +17,7 @@ import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.JobKickResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.jobmanagement.action.GetJobKickTableDefine;
@@ -82,7 +83,8 @@ public class JobKickDoubleClickListener implements IDoubleClickListener {
 				ArrayList<?> list = (ArrayList<?>)item.get(0);
 				String managerName = (String) list.get(GetJobKickTableDefine.MANAGER_NAME);
 				String type = (String) list.get(GetJobKickTableDefine.TYPE);
-				int TypeNum = JobKickTypeMessage.stringToType(type);
+				JobKickResponse.TypeEnum TypeNum = JobKickResponse.TypeEnum
+						.fromValue(JobKickTypeMessage.stringToTypeEnumValue(type));
 				JobKickDialog dialog = new JobKickDialog(PlatformUI
 						.getWorkbench().getActiveWorkbenchWindow().getShell(), managerName, id, TypeNum, PropertyDefineConstant.MODE_MODIFY);
 				dialog.open();

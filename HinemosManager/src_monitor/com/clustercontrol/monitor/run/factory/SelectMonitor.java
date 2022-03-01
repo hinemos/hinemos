@@ -15,10 +15,9 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.binary.model.BinaryPatternInfo;
 import com.clustercontrol.binary.util.BinaryQueryUtil;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
@@ -39,9 +38,9 @@ import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.repository.factory.FacilitySelector;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.sdml.util.SdmlMonitorTypeUtil;
 import com.clustercontrol.snmptrap.model.TrapValueInfo;
 import com.clustercontrol.snmptrap.model.VarBindPattern;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -161,10 +160,12 @@ public class SelectMonitor {
 				}
 
 		} catch (MonitorNotFound e) {
-			outputLog(monitorTypeId, monitorId, PriorityConstant.TYPE_WARNING, MessageConstant.MESSAGE_SYS_010_MON);
+			String[] args = {monitorTypeId, monitorId };
+			AplLogger.put(InternalIdCommon.MON_SYS_010, args);
 			throw e;
 		} catch (InvalidRole e) {
-			outputLog(monitorTypeId, monitorId, PriorityConstant.TYPE_WARNING, MessageConstant.MESSAGE_SYS_010_MON);
+			String[] args = {monitorTypeId, monitorId };
+			AplLogger.put(InternalIdCommon.MON_SYS_010, args);
 			throw e;
 		}
 
@@ -275,7 +276,7 @@ public class SelectMonitor {
 				}
 			}
 		} catch (HinemosUnknown e) {
-			outputLog("", "", PriorityConstant.TYPE_WARNING, MessageConstant.MESSAGE_SYS_011_MON);
+			AplLogger.put(InternalIdCommon.MON_SYS_011, null);
 			throw e;
 		}
 
@@ -341,7 +342,7 @@ public class SelectMonitor {
 				}
 			}
 		} catch (HinemosUnknown e) {
-			outputLog("", "", PriorityConstant.TYPE_WARNING, MessageConstant.MESSAGE_SYS_011_MON);
+			AplLogger.put(InternalIdCommon.MON_SYS_011, null);
 			throw e;
 		}
 
@@ -386,6 +387,9 @@ public class SelectMonitor {
 			return filterList;
 		}
 
+		// SDML用のプラグインIDも検索対象とするため先に一致するSDML監視種別IDを取得しておく
+		List<String> sdmlMonTypeIdList = SdmlMonitorTypeUtil.getSdmlMonTypeIdList(condition.getMonitorTypeId());
+
 		// facilityId以外の条件で監視設定情報を取得
 		List<MonitorInfo> entityList = QueryUtil.getMonitorInfoByFilter(
 				condition.getMonitorId(),
@@ -400,7 +404,8 @@ public class SelectMonitor {
 				condition.getUpdateToDate(),
 				condition.getMonitorFlg(),
 				condition.getCollectorFlg(),
-				condition.getOwnerRoleId());
+				condition.getOwnerRoleId(),
+				sdmlMonTypeIdList);
 
 		// facilityIdのみJavaで抽出する。
 		for(MonitorInfo entity : entityList){
@@ -473,15 +478,5 @@ public class SelectMonitor {
 			}
 		}
 		return list;
-	}
-
-	/**
-	 * アプリケーションログにログを出力します。
-	 * 
-	 * @param index アプリケーションログのインデックス
-	 */
-	protected void outputLog(String monitorTypeId, String monitorId, int priority, MessageConstant msgCode) {
-		String[] args = {monitorTypeId, monitorId };
-		AplLogger.put(priority, HinemosModuleConstant.MONITOR, msgCode, args);
 	}
 }

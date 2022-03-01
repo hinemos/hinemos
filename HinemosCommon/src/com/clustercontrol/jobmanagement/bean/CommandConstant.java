@@ -32,5 +32,15 @@ public class CommandConstant {
 	public static final String DELETE_RUN_HISTORY = "deleteRunHistory";
 	/** 監視ジョブコマンド */
 	public static final String MONITOR = "monitor";
+	/** ファイルチェックジョブコマンド */
+	public static final String FILE_CHECK = "fileCheckJob";
+	/** リソース制御ジョブコマンド */
+	public static final String RESOURCE = "resource";
+	/** ジョブ連携送信ジョブコマンド */
+	public static final String JOB_LINK_SEND = "jobLinkSend";
+	/** ジョブ連携待機ジョブコマンド */
+	public static final String JOB_LINK_RCV = "jobLinkRcv";
+	/** RPAシナリオジョブコマンド */
+	public static final String RPA = "rpa";
 
 }

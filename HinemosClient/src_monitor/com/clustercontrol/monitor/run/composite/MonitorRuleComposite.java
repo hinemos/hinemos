@@ -14,6 +14,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.MonitorInfoResponse;
 
 import com.clustercontrol.bean.RunInterval;
 import com.clustercontrol.calendar.composite.CalendarIdListComposite;
@@ -21,7 +22,6 @@ import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * 監視条件コンポジットクラス<BR>
@@ -144,12 +144,13 @@ public class MonitorRuleComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.calendar.composite.CalendarIdListComposite#setText(String)
 	 */
-	public void setInputData(MonitorInfo info) {
+	public void setInputData(MonitorInfoResponse info) {
 
 		if(info != null){
 			// 監視間隔
 			if(this.m_comboRunInterval.isEnabled()){
-				this.m_comboRunInterval.setText(RunInterval.valueOf(info.getRunInterval()).toString());
+				this.m_comboRunInterval.setText(
+						RunInterval.enumToString(info.getRunInterval(), MonitorInfoResponse.RunIntervalEnum.class));
 			}else{
 				this.m_comboRunInterval.add("0");
 				this.m_comboRunInterval.setText("0");
@@ -174,15 +175,34 @@ public class MonitorRuleComposite extends Composite {
 	 * @see #setValidateResult(String, String)
 	 * @see com.clustercontrol.calendar.composite.CalendarIdListComposite#getText()
 	 */
-	public ValidateResult createInputData(MonitorInfo info) {
+	public ValidateResult createInputData(MonitorInfoResponse info) {
 
 		if(info != null){
 			if (this.m_comboRunInterval.getText() != null
 					&& !"".equals((this.m_comboRunInterval.getText()).trim())) {
 				if("0".equals(this.m_comboRunInterval.getText())){
-					info.setRunInterval(0);
-				}else{
-					info.setRunInterval(RunInterval.stringToType(this.m_comboRunInterval.getText()).toSec());
+					info.setRunInterval(MonitorInfoResponse.RunIntervalEnum.NONE);
+				} else {
+					switch (RunInterval.stringToType(this.m_comboRunInterval.getText())) {
+					case TYPE_SEC_30:
+						info.setRunInterval(MonitorInfoResponse.RunIntervalEnum.SEC_30);
+						break;
+					case TYPE_MIN_01:
+						info.setRunInterval(MonitorInfoResponse.RunIntervalEnum.MIN_01);
+						break;
+					case TYPE_MIN_05:
+						info.setRunInterval(MonitorInfoResponse.RunIntervalEnum.MIN_05);
+						break;
+					case TYPE_MIN_10:
+						info.setRunInterval(MonitorInfoResponse.RunIntervalEnum.MIN_10);
+						break;
+					case TYPE_MIN_30:
+						info.setRunInterval(MonitorInfoResponse.RunIntervalEnum.MIN_30);
+						break;
+					case TYPE_MIN_60:
+						info.setRunInterval(MonitorInfoResponse.RunIntervalEnum.MIN_60);
+						break;
+					}
 				}
 			}
 

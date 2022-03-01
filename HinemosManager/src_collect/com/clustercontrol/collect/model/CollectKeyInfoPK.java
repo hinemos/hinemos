@@ -11,16 +11,16 @@ package com.clustercontrol.collect.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Embeddable
 public class CollectKeyInfoPK implements Serializable {
 	//default serial version id, required for serializable classes.
 	private static final long serialVersionUID = 1L;
-	private String item_name;
-	private String display_name;
-	private String monitor_id;
-	private String facility_id;
+	private String itemName;
+	private String displayName;
+	private String monitorId;
+	private String facilityId;
 
 	public CollectKeyInfoPK() {
 	}
@@ -34,36 +34,36 @@ public class CollectKeyInfoPK implements Serializable {
 	
 	@Column(name="item_name")
 	public String getItemName() {
-		return item_name;
+		return this.itemName;
 	}
 	public void setItemName(String item_name) {
-		this.item_name = item_name;
+		this.itemName = item_name;
 	}
 	
 	@Column(name="display_name")
 	public String getDisplayName() {
-		return display_name;
+		return this.displayName;
 	}
 
 	public void setDisplayName(String display_name) {
-		this.display_name = display_name;
+		this.displayName = display_name;
 	}
 	
 	@Column(name="monitor_id")
 	public String getMonitorId() {
-		return monitor_id;
+		return this.monitorId;
 	}
 	public void setMonitorId(String monitor_id) {
-		this.monitor_id = monitor_id;
+		this.monitorId = monitor_id;
 	}
 
 	@Column(name="facility_id")
 	public String getFacilityid() {
-		return facility_id;
+		return this.facilityId;
 	}
 
 	public void setFacilityid(String facilityid) {
-		this.facility_id = facilityid;
+		this.facilityId = facilityid;
 	}
 
 	@Override
@@ -76,20 +76,20 @@ public class CollectKeyInfoPK implements Serializable {
 		}
 		CollectKeyInfoPK castOther = (CollectKeyInfoPK)other;
 		return
-				this.item_name.equals(castOther.item_name)
-				&& this.display_name.equals(castOther.display_name)
-				&& this.monitor_id.equals(castOther.monitor_id)
-				&& this.facility_id.equals(castOther.facility_id);
+				this.itemName.equals(castOther.itemName)
+				&& this.displayName.equals(castOther.displayName)
+				&& this.monitorId.equals(castOther.monitorId)
+				&& this.facilityId.equals(castOther.facilityId);
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int hash = 17;
-		hash = hash * prime + this.item_name.hashCode();
-		hash = hash * prime + this.display_name.hashCode();
-		hash = hash * prime + this.monitor_id.hashCode();
-		hash = hash * prime + this.facility_id.hashCode();
+		hash = hash * prime + this.itemName.hashCode();
+		hash = hash * prime + this.displayName.hashCode();
+		hash = hash * prime + this.monitorId.hashCode();
+		hash = hash * prime + this.facilityId.hashCode();
 		return hash;
 	}
 
@@ -102,10 +102,10 @@ public class CollectKeyInfoPK implements Serializable {
 				"facilityid"
 		};
 		String[] values = {
-				this.item_name,
-				this.display_name,
-				this.monitor_id,
-				this.facility_id
+				this.itemName,
+				this.displayName,
+				this.monitorId,
+				this.facilityId
 		};
 		return Arrays.toString(names) + " = " + Arrays.toString(values);
 	}

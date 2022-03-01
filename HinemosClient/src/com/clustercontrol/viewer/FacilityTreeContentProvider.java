@@ -11,7 +11,7 @@ package com.clustercontrol.viewer;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 
 /**
  * スコープツリー用のコンテンツプロバイダクラス<BR>
@@ -29,7 +29,7 @@ public class FacilityTreeContentProvider implements ITreeContentProvider {
 
 	@Override
 	public Object getParent(Object element) {
-		return ((FacilityTreeItem) element).getParent();
+		return ((FacilityTreeItemResponse) element).getParent();
 	}
 
 	@Override
@@ -39,12 +39,12 @@ public class FacilityTreeContentProvider implements ITreeContentProvider {
 
 	@Override
 	public Object[] getChildren(Object parentElement) {
-		return ((FacilityTreeItem) parentElement).getChildren().toArray();
+		return ((FacilityTreeItemResponse) parentElement).getChildren().toArray();
 	}
 
 	@Override
 	public boolean hasChildren(Object element) {
-		return ((FacilityTreeItem) element).getChildren().size() > 0;
+		return ((FacilityTreeItemResponse) element).getChildren().size() > 0;
 	}
 
 	@Override

@@ -11,26 +11,27 @@ package com.clustercontrol.hub.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import javax.xml.bind.annotation.XmlTransient;
 
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.rest.dto.EnumDto;
 
 /**
  * The persistent class for the cc_hub_transfer database table.
@@ -46,18 +47,28 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 column=@Column(name="transfer_id", insertable=false, updatable=false))
 public class TransferInfo extends ObjectPrivilegeTargetInfo {
 	
-	public static enum TransferType {
+	public static enum TransferType implements EnumDto<Integer> {
 		realtime,
 		batch,
-		delay
+		delay;
+
+		@Override
+		public Integer getCode() {
+			return this.ordinal();
+		}
 	}
 	
 	
-	public static enum DataType {
+	public static enum DataType implements EnumDto<Integer> {
 		job,
 		event,
 		numeric,
-		string
+		string;
+
+		@Override
+		public Integer getCode() {
+			return this.ordinal();
+		}
 	}
 	
 	
@@ -83,7 +94,6 @@ public class TransferInfo extends ObjectPrivilegeTargetInfo {
 	
 	private TransferInfoPosition position;
 	
-	@Deprecated
 	public TransferInfo(){
 	}
 	

@@ -11,7 +11,7 @@ package com.clustercontrol.hub.composite;
 import java.util.Arrays;
 import java.util.List;
 
-import com.clustercontrol.ws.hub.DataType;
+import org.openapitools.client.model.TransferInfoResponse.DataTypeEnum;
 
 /**
  * 収集蓄積[転送]機能の転送データ種別に関する定数クラス
@@ -51,7 +51,7 @@ public class TransferDataTypeConstant {
 	 * @param num
 	 * @return
 	 */
-	public static String typeToString(DataType type){
+	public static String typeToString(DataTypeEnum type){
 		
 		String str = null;
 		
@@ -79,19 +79,19 @@ public class TransferDataTypeConstant {
 	 * @param str
 	 * @return
 	 */
-	public static DataType stringToType(String str){
+	public static DataTypeEnum stringToType(String str){
 		if (str == null) 
 			str = "";
 		
 		switch(str){
 		case STRING_JOB:
-			return DataType.JOB;
+			return DataTypeEnum.JOB;
 		case STRING_EVENT:
-			return DataType.EVENT;
+			return DataTypeEnum.EVENT;
 		case STRING_NUMERIC:
-			return DataType.NUMERIC;
+			return DataTypeEnum.NUMERIC;
 		case STRING_STRING:
-			return DataType.STRING;
+			return DataTypeEnum.STRING;
 		default:
 			return null;
 		}

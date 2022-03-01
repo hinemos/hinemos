@@ -8,17 +8,11 @@
 
 package com.clustercontrol.jobmap.view.action;
 
-import java.util.Map;
-
+import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.menus.UIElement;
-
 import com.clustercontrol.jobmap.view.JobMapView;
 
 public class ZoomAdjustAction extends BaseAction {
@@ -27,31 +21,34 @@ public class ZoomAdjustAction extends BaseAction {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		super.execute(event);
-	
+
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
+
+		if (null == window || !isEnabled()) {
+			return null;
+		}
 		// 選択アイテムの取得
 		this.viewPart = HandlerUtil.getActivePart(event);
-		
-		JobMapView view = (JobMapView)viewPart;
 
-		view.setZoomAdjust(!view.isZoomAdjust());
+		JobMapView view = (JobMapView) viewPart;
+
+		if (view == null) {
+			return null;
+		}
+
+		ICommandService commandService = (ICommandService) window.getService(ICommandService.class);
+		Command command = commandService.getCommand(ID);
+		boolean isChecked = !HandlerUtil.toggleCommandState(command);
+
+		// 自動調整ボタンの有効・無効
+		if (isChecked) {
+			view.setZoomAdjust(true);
+		} else {
+			view.setZoomAdjust(false);
+		}
 		view.updateNotManagerAccess();
-		
+
 		return null;
 	}
-	
-	@Override
-	public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters) {
-		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		IWorkbenchPage page = window.getActivePage();
-		if (page == null) {
-			return;
-		}
-		
-		IWorkbenchPart viewPart = page.getActivePart();
-		
-		if (viewPart instanceof JobMapView) {
-			element.setChecked(((JobMapView)viewPart).isZoomAdjust());
-		}
-	}
+
 }

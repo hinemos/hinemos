@@ -13,11 +13,10 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.persistence.sessions.server.ConnectionPool;
 import org.eclipse.persistence.sessions.server.ServerSession;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -103,7 +102,7 @@ public class DBConnectionCountMonitor extends SelfCheckMonitorBase {
 
 				String[] msgAttr1 = { Integer.toString(count),
 						Integer.toString(threshold) };
-				AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_021_SYS_SFC, msgAttr1,
+				AplLogger.put(InternalIdCommon.SYS_SFC_SYS_021, msgAttr1,
 						"the number of database connection is too many (" +
 								count +
 								" > threshold " +

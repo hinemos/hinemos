@@ -1,0 +1,882 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+	<!-- RpaManagementToolAccount -->
+	<named-query name="RpaManagementToolAccount.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolAccount a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaManagementToolAccount.findByAccountIdAndUrl">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolAccount a
+				WHERE a.accountId = :accountId AND a.url = :url
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaManagementToolAccount.findByAccountIdAndUrlAndTenantName">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolAccount a
+				WHERE a.accountId = :accountId AND a.url = :url AND a.tenantName = :tenantName
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaManagementToolMst -->
+	<named-query name="RpaManagementToolMst.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolMst a
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaManagementToolTypeMst -->
+	<named-query name="RpaManagementToolTypeMst.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolTypeMst a
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaManagementToolRunTypeMst -->
+	<named-query name="RpaManagementToolRunTypeMst.findByRpaManagementToolId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolRunTypeMst a
+				WHERE a.id.rpaManagementToolId = :rpaManagementToolId
+				ORDER BY a.id.runType
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaManagementToolStopModeMst -->
+	<named-query name="RpaManagementToolStopModeMst.findByRpaManagementToolId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolStopModeMst a
+				WHERE a.id.rpaManagementToolId = :rpaManagementToolId
+				ORDER BY a.id.stopMode
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaManagementToolRunParamMst -->
+	<named-query name="RpaManagementToolRunParamMst.findByRpaManagementToolIdAndRunType">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolRunParamMst a
+				WHERE a.rpaManagementToolId = :rpaManagementToolId
+					AND a.runType = :runType
+					AND a.scenarioParamFlg = false
+				ORDER BY a.orderNo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaManagementToolRunParamMst.findRequiredParamByRpaManagementToolIdAndRunType">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolRunParamMst a
+				WHERE a.rpaManagementToolId = :rpaManagementToolId
+					AND a.runType = :runType
+					AND a.scenarioParamFlg = false
+					AND a.required = true
+				ORDER BY a.orderNo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaManagementToolRunParamMst.findFixedParamByRpaManagementToolIdAndRunType">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolRunParamMst a
+				WHERE a.rpaManagementToolId = :rpaManagementToolId
+					AND a.runType = :runType
+					AND a.scenarioParamFlg = false
+					AND a.editable = false
+				ORDER BY a.orderNo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaManagementToolRunParamMst.findScenarioParamNameByRpaManagementToolId">
+		<query>
+			<![CDATA[
+				SELECT a.paramName FROM RpaManagementToolRunParamMst a
+				WHERE a.rpaManagementToolId = :rpaManagementToolId
+					AND a.scenarioParamFlg = true
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaManagementToolEndStatusMst -->
+	<named-query name="RpaManagementToolEndStatusMst.findByRpaManagementToolId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaManagementToolEndStatusMst a
+				WHERE a.rpaManagementToolId = :rpaManagementToolId
+				ORDER BY a.orderNo
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaManagementToolEndStatusMst.findEndStatusByRpaManagementToolId">
+		<query>
+			<![CDATA[
+				SELECT a.endStatus FROM RpaManagementToolEndStatusMst a
+				WHERE a.rpaManagementToolId = :rpaManagementToolId
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaScenario -->
+	<named-query name="RpaScenario.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenario a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenario.findIdAll">
+		<query>
+			<![CDATA[
+				SELECT a.scenarioId FROM RpaScenario a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenario.findScenario">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenario a
+				JOIN a.execNodes n
+				WHERE a.scenarioOperationResultCreateSettingId = :scenarioOperationResultCreateSettingId
+				AND n.id.facilityId = :facilityId
+				AND a.scenarioIdentifyString = :scenarioIdentifyString
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenario.findCommonScenario">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenario a
+				WHERE a.scenarioOperationResultCreateSettingId = :scenarioOperationResultCreateSettingId
+				AND a.scenarioIdentifyString = :scenarioIdentifyString
+				AND a.commonNodeScenario = TRUE
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenario.findByScenarioIdOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenario a
+				WHERE a.scenarioId = :objectId
+				AND a.ownerRoleId = :ownerRoleId
+				ORDER BY a.scenarioId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenario.relationScenarioTagId">
+		<query>
+			<![CDATA[
+				SELECT DISTINCT b.id.tagId
+				FROM RpaScenario a 
+				JOIN RpaScenarioTagRelation b 
+				WHERE b.id.tagId IN :tagIds
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaScenarioOperationResult -->
+	<named-query name="RpaScenarioOperationResult.findByScenarioId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioOperationResult a
+				WHERE a.scenarioId = :scenarioId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.findRunningByFacilityAndScenarioOperationResultCreateSettingId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId 
+				WHERE (a.status = :NORMAL_RUNNING OR a.status = :ERROR_RUNNING)
+				AND b.scenarioOperationResultCreateSettingId = :scenarioOperationResultCreateSettingId
+				AND a.facilityId = :facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.errorsCount">
+		<query>
+			<![CDATA[
+				SELECT a.status, COUNT(a.status)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId 
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				GROUP BY a.status
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.errorsCountByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a.status, COUNT(a.status)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId 
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE (true = true) 
+				AND ( EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds ))
+				GROUP BY a.status
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.reductionCountAuto">
+		<query>
+			<![CDATA[
+				SELECT SUM(a.reductionTime), SUM(a.runTime)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :AUTO
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.reductionCountFixTime">
+		<query>
+			<![CDATA[
+				SELECT b.manualTime, a.runTime
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :FIX_TIME
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.reductionCountAutoByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT SUM(a.reductionTime), SUM(a.runTime)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :AUTO
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds )
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.reductionCountFixTimeByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT b.manualTime, a.runTime
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :FIX_TIME
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds )
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.dailyErrorsCount">
+		<query>
+			<![CDATA[
+				SELECT a.startDateOnly, a.status, COUNT(a.status)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				GROUP BY a.startDateOnly, a.status
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.dailyErrorsCountByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a.startDateOnly, a.status, COUNT(a.status)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE (true = true) 
+				AND ( EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds ))
+				GROUP BY a.startDateOnly, a.status
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.hourlyReductionCountAuto">
+		<query>
+			<![CDATA[
+				SELECT a.startHour, SUM(a.reductionTime), SUM(a.runTime)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :AUTO
+				GROUP BY a.startHour
+				ORDER BY a.startHour ASC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.hourlyReductionCountFixTime">
+		<query>
+			<![CDATA[
+				SELECT a.startHour, b.manualTime, a.runTime
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :FIX_TIME
+				ORDER BY a.startHour ASC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.hourlyReductionCountAutoByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a.startHour, SUM(a.reductionTime), SUM(a.runTime)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :AUTO
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds )
+				GROUP BY a.startHour
+				ORDER BY a.startHour ASC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.hourlyReductionCountFixTimeByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a.startHour, b.manualTime, a.runTime
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :FIX_TIME
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds )
+				ORDER BY a.startHour ASC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.scenarioErrorsCount">
+		<query>
+			<![CDATA[
+				SELECT a.scenarioId, a.status, COUNT(a.status)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				GROUP BY a.scenarioId, a.status
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.scenarioErrorsCountByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a.scenarioId, a.status, COUNT(a.status)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE (true = true) 
+				AND ( EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds ))
+				GROUP BY a.scenarioId, a.status
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.nodeErrorsCount">
+		<query>
+			<![CDATA[
+				SELECT a.facilityId, a.status, COUNT(a.status) 
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				GROUP BY a.facilityId, a.status
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.nodeErrorsCountByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a.facilityId, a.status, COUNT(a.status) 
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c
+				WHERE (true = true) 
+				AND ( EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds ))
+				GROUP BY a.facilityId, a.status
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.scenarioReductionCountAuto">
+		<query>
+			<![CDATA[
+				SELECT a.scenarioId, SUM(a.reductionTime) AS r, SUM(a.runTime)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :AUTO
+				GROUP BY a.scenarioId
+				ORDER BY r ASC, a.scenarioId DESC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.scenarioReductionCountFixTime">
+		<query>
+			<![CDATA[
+				SELECT a.scenarioId, b.manualTime AS r, a.runTime
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :FIX_TIME
+				ORDER BY r ASC, a.scenarioId DESC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.scenarioReductionCountAutoByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a.scenarioId, SUM(a.reductionTime) AS r, SUM(a.runTime)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :AUTO
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds )
+				GROUP BY a.scenarioId
+				ORDER BY r ASC, a.scenarioId DESC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.scenarioReductionCountFixTimeByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a.scenarioId, b.manualTime AS r, a.runTime
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :FIX_TIME
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds )
+				ORDER BY r ASC, a.scenarioId DESC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.nodeReductionCountAuto">
+		<query>
+			<![CDATA[
+				SELECT a.facilityId, SUM(a.reductionTime) AS r, SUM(a.runTime)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :AUTO
+				GROUP BY a.facilityId
+				ORDER BY r ASC, a.facilityId DESC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.nodeReductionCountFixTime">
+		<query>
+			<![CDATA[
+				SELECT a.facilityId, b.manualTime AS r, a.runTime
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :FIX_TIME
+				ORDER BY r ASC, a.facilityId DESC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.nodeReductionCountAutoByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a.facilityId, SUM(a.reductionTime) AS r, SUM(a.runTime)
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :AUTO
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c
+				WHERE EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds )
+				GROUP BY a.facilityId
+				ORDER BY r ASC, a.facilityId DESC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.nodeReductionCountFixTimeByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a.facilityId, b.manualTime AS r, a.runTime
+				FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE ( :startDateFrom <= a.startDate AND a.startDate < :startDateTo )
+				AND b.opeStartDate <= a.startDate
+				AND a.facilityId IN :facilityIds
+				AND a.status IN (:NORMAL_END, :ERROR_END)
+				AND b.manualTimeCulcType = :FIX_TIME
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = "RPA_SCENARIO" 
+				AND x.id.objectPrivilege = "READ" 
+				AND x.id.roleId IN :roleIds )
+				OR c.ownerRoleId IN :roleIds )
+				ORDER BY r ASC, a.facilityId DESC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.countUpdateTargetResults">
+		<query>
+			<![CDATA[
+				SELECT COUNT(a) FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE a.facilityId NOT IN (
+					SELECT n.id.facilityId FROM RpaScenarioExecNode n
+					WHERE n.id.scenarioId = b.scenarioId
+				)
+				AND b.scenarioIdentifyString = :scenarioIdentifyString
+				AND b.scenarioOperationResultCreateSettingId = :scenarioOperationResultCreateSettingId
+				AND :fromTime <= a.startDate AND a.startDate <= :toTime
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.countUpdateTargetResultsByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT COUNT(a) FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE a.facilityId NOT IN (
+					SELECT n.id.facilityId FROM RpaScenarioExecNode n
+					WHERE n.id.scenarioId = b.scenarioId
+				)
+				AND b.scenarioIdentifyString = :scenarioIdentifyString
+				AND b.scenarioOperationResultCreateSettingId = :scenarioOperationResultCreateSettingId
+				AND :fromTime <= a.startDate AND a.startDate <= :toTime
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE (true = true) 
+				AND ( EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = :RPA_SCENARIO
+				AND x.id.objectPrivilege = :MODIFY
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds ))
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.findUpdateTargetResults">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE a.facilityId NOT IN (
+					SELECT n.id.facilityId FROM RpaScenarioExecNode n
+					WHERE n.id.scenarioId = b.scenarioId
+				)
+				AND b.scenarioIdentifyString = :scenarioIdentifyString
+				AND b.scenarioOperationResultCreateSettingId = :scenarioOperationResultCreateSettingId
+				AND :fromTime <= a.startDate AND a.startDate <= :toTime
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResult.findUpdateTargetResultsByObjectPrivilege">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioOperationResult a
+				JOIN RpaScenario b ON a.scenarioId = b.scenarioId
+				WHERE a.facilityId NOT IN (
+					SELECT n.id.facilityId FROM RpaScenarioExecNode n
+					WHERE n.id.scenarioId = b.scenarioId
+				)
+				AND b.scenarioIdentifyString = :scenarioIdentifyString
+				AND b.scenarioOperationResultCreateSettingId = :scenarioOperationResultCreateSettingId
+				AND :fromTime <= a.startDate AND a.startDate <= :toTime
+				AND a.scenarioId IN ( SELECT DISTINCT c.scenarioId FROM RpaScenario c 
+				WHERE (true = true) 
+				AND ( EXISTS ( SELECT x FROM ObjectPrivilegeInfo x 
+				WHERE x.id.objectId = c.objectId 
+				AND x.id.objectType = :RPA_SCENARIO
+				AND x.id.objectPrivilege = :MODIFY
+				AND x.id.roleId IN :roleIds )  
+				OR c.ownerRoleId IN :roleIds ))
+			]]>
+		</query>
+	</named-query>
+	<!-- UpdateRpaScenarioOperationResultInfo -->
+	<named-query name="UpdateRpaScenarioOperationResultInfo.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM UpdateRpaScenarioOperationResultInfo a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="UpdateRpaScenarioOperationResultInfo.countTotalUpdatingOperationResults">
+		<query>
+			<![CDATA[
+				SELECT COALESCE(SUM(a.numberOfTargetRecords),0)
+				FROM UpdateRpaScenarioOperationResultInfo a
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaToolMst -->
+	<named-query name="RpaToolMst.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaToolMst a
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaToolEnvMst -->
+	<named-query name="RpaToolEnvMst.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaToolEnvMst a
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaToolRunCommandMst -->
+	<named-query name="RpaToolRunCommandMst.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaToolRunCommandMst a
+				ORDER BY a.orderNo
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaScenarioCoefficientPattern -->
+	<named-query name="RpaScenarioCoefficientPattern.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioCoefficientPattern a
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioCoefficientPattern.findByPK">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioCoefficientPattern a
+				WHERE a.id.rpaToolEnvId = :rpaToolEnvId 
+				AND a.id.orderNo = :orderNo
+			]]>
+		</query>
+	</named-query>
+	<!-- CollectStringData -->
+	<named-query name="CollectStringData.findStartPosition">
+		<query>
+			<![CDATA[
+				SELECT MAX(a.id.dataId) FROM CollectStringData a
+				WHERE a.time < :fromDate
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaScenarioTag -->
+	<named-query name="RpaScenarioTag.findIdAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioTag a
+				ORDER BY a.tagId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioTag.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioTag a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.tagId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioTagRelation.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioTagRelation a
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaScenarioOperationResultCreateSetting -->
+	<named-query name="RpaScenarioOperationResultCreateSetting.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioOperationResultCreateSetting a
+				ORDER BY a.scenarioOperationResultCreateSettingId ASC
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaScenarioExecNode -->
+	<named-query name="RpaScenarioExecNode.findByScenarioIdentifyStringAndCreateSettingId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioExecNode a
+				JOIN RpaScenario b ON b.scenarioId = a.id.scenarioId
+				WHERE a.id.scenarioIdentifyString = :scenarioIdentifyString
+				AND b.scenarioOperationResultCreateSettingId = :scenarioOperationResultCreateSettingId
+			]]>
+		</query>
+	</named-query>
+	<!-- RpaManagementToolRunParamMst -->
+	<named-query name="RpaManagementToolRunParamMst.findScenarioParamNameByRpaManagementToolId">
+		<query>
+			<![CDATA[
+				SELECT a.paramName FROM RpaManagementToolRunParamMst a
+				WHERE a.rpaManagementToolId = :rpaManagementToolId
+					AND a.scenarioParamFlg = true
+			]]>
+		</query>
+	</named-query>
+	<!-- TargetCollectStringId -->
+	<named-native-query name="TargetCollectorIds.createTable">
+		<query>
+			<![CDATA[
+				CREATE TEMPORARY TABLE cc_target_collector_ids (collect_id BIGINT NOT NULL)
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="TargetCollectorIds.dropTable">
+		<query>
+			<![CDATA[
+				DROP TABLE cc_target_collector_ids
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="CollectStringData.rpa" result-class="com.clustercontrol.hub.model.CollectStringData">
+		<query>
+			<![CDATA[
+				SELECT * FROM log.cc_collect_data_string
+				WHERE collect_id IN (SELECT collect_id FROM cc_target_collector_ids)
+				AND ?collectedDataId < data_id AND data_id <= ?currentDataId
+				AND time > ?createFromDate
+				ORDER BY data_id
+			]]>
+		</query>
+	</named-native-query>
+	<named-native-query name="CollectStringData.rpa.cycled" result-class="com.clustercontrol.hub.model.CollectStringData">
+		<query>
+			<![CDATA[
+				SELECT * FROM log.cc_collect_data_string
+				WHERE collect_id IN (SELECT collect_id FROM cc_target_collector_ids)
+				AND (?collectedDataId < data_id OR data_id <= ?currentDataId)
+				AND time > ?createFromDate
+				ORDER BY data_id
+			]]>
+		</query>
+	</named-native-query>
+</entity-mappings>

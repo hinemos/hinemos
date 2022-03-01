@@ -10,17 +10,14 @@ package com.clustercontrol.accesscontrol.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
-
-
-
 
 /**
  * The persistent class for the cc_object_privilege database table.
@@ -29,7 +26,7 @@ import javax.xml.bind.annotation.XmlType;
 @XmlType(namespace = "http://access.ws.clustercontrol.com")
 
 @Entity
-@Table(name="cc_object_privilege", schema="setting")
+@Table(name = "cc_object_privilege", schema = "setting")
 @Cacheable(true)
 public class ObjectPrivilegeInfo implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -62,35 +59,39 @@ public class ObjectPrivilegeInfo implements Serializable {
 	public String getRoleId() {
 		return getId().getRoleId();
 	}
+
 	public void setRoleId(String roleId) {
 		getId().setRoleId(roleId);
 	}
-	
+
 	@Transient
 	public String getObjectType() {
 		return getId().getObjectType();
 	}
+
 	public void setObjectType(String objectType) {
 		getId().setObjectType(objectType);
 	}
-	
+
 	@Transient
 	public String getObjectId() {
 		return getId().getObjectId();
 	}
+
 	public void setObjectId(String objectId) {
 		getId().setObjectId(objectId);
 	}
-	
+
 	@Transient
 	public String getObjectPrivilege() {
 		return getId().getObjectPrivilege();
 	}
+
 	public void setObjectPrivilege(String objectPrivilege) {
 		getId().setObjectPrivilege(objectPrivilege);
 	}
-	
-	@Column(name="create_datetime")
+
+	@Column(name = "create_datetime")
 	public Long getCreateDate() {
 		return this.createDate;
 	}
@@ -99,8 +100,7 @@ public class ObjectPrivilegeInfo implements Serializable {
 		this.createDate = createDatetime;
 	}
 
-
-	@Column(name="create_user_id")
+	@Column(name = "create_user_id")
 	public String getCreateUserId() {
 		return this.createUserId;
 	}
@@ -109,8 +109,7 @@ public class ObjectPrivilegeInfo implements Serializable {
 		this.createUserId = createUserId;
 	}
 
-
-	@Column(name="modify_datetime")
+	@Column(name = "modify_datetime")
 	public Long getModifyDate() {
 		return this.modifyDate;
 	}
@@ -119,8 +118,7 @@ public class ObjectPrivilegeInfo implements Serializable {
 		this.modifyDate = modifyDatetime;
 	}
 
-
-	@Column(name="modify_user_id")
+	@Column(name = "modify_user_id")
 	public String getModifyUserId() {
 		return this.modifyUserId;
 	}

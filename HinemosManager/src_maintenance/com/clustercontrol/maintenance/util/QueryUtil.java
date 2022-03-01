@@ -8,10 +8,10 @@
 
 package com.clustercontrol.maintenance.util;
 
+import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
-
-import javax.persistence.Query;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,6 +27,8 @@ import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.maintenance.model.HinemosPropertyInfo;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.model.MaintenanceTypeMst;
+
+import jakarta.persistence.Query;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */
@@ -105,26 +107,38 @@ public class QueryUtil {
 	/**
 	 * Windows用
 	 * 監視項目IDより収集項目IDのリストを取得する
-	 * @param monitorIdList
+	 * @param monitorId
 	 * @return
 	 */
-	public static List<Integer> getCollectoridByMonitorIdList(ArrayList<String> monitorIdList) {
+	public static List<Integer> getCollectoridByMonitorId(String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			List<Integer> list
 			= em.createNamedQuery("CollectKeyInfo.getCollectorIdByMonitorId"
 					,Integer.class, ObjectPrivilegeMode.NONE)
-					.setParameter("monitorIdList", monitorIdList)
+					.setParameter("monitorId", monitorId)
 					.getResultList();
 			return list;
 		}
 	}
+
+	public static List<Date> selectTargetDateCollectStringDataByDateTimeAndMonitorId(Long dateTime, String monitorId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("CollectStringData.selectTargetDateByDateTimeAndMonitorId",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.setParameter("monitorId", monitorId)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
 	
-	public static int deleteCollectStringDataByDateTimeAndMonitorId(Long dateTime, int timeout, String monitorId) {
+	public static int deleteCollectStringDataByDateTimeAndMonitorId(Date targetDate, int timeout, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("CollectStringData.deleteByDateTimeAndMonitorId")
-					.setParameter("dateTime", dateTime)
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate))
 					.setParameter("monitorId", monitorId);
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
@@ -133,11 +147,22 @@ public class QueryUtil {
 		}
 	}
 	
-	public static int deleteCollectStringDataByDateTime(Long dateTime, int timeout) {
+	public static List<Date> selectTargetDateCollectStringDataByDateTime(Long dateTime) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("CollectStringData.selectTargetDateDateTime",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteCollectStringDataByDateTime(Date targetDate, int timeout) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("CollectStringData.deleteByDateTime")
-					.setParameter("dateTime", dateTime);
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate));
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
 			}
@@ -146,19 +171,50 @@ public class QueryUtil {
 	}
 
 	/**
+	 * バイナリ収集テーブルから指定条件の削除対象の日付のリストを取得.
+	 * @return 削除対象の日付のリスト
+	 */
+	public static List<Date> selectTargetDateCollectBinaryDataByDateTimeAndMonitorId(Long dateTime, String monitorId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("CollectBinaryData.selectTargetDateByDateTimeAndMonitorId",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.setParameter("monitorId", monitorId)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+
+	/**
 	 * バイナリ収集テーブルから指定条件のデータを削除.
 	 * @return 削除件数.
 	 */
-	public static int deleteCollectBinaryDataByDateTimeAndMonitorId(Long dateTime, int timeout, String monitorId) {
+	public static int deleteCollectBinaryDataByDateTimeAndMonitorId(Date targetDate, int timeout, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("CollectBinaryData.deleteByDateTimeAndMonitorId")
-					.setParameter("dateTime", dateTime)
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate))
 					.setParameter("monitorId", monitorId);
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
 			}
 			return query.executeUpdate();
+		}
+	}
+	
+	/**
+	 * バイナリ収集テーブルから指定条件の削除対象の日付のリストを取得.
+	 * @return 削除対象の日付のリスト
+	 */
+	public static List<Date> selectTargetDateCollectBinaryDataByDateTime(Long dateTime) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("CollectBinaryData.selectTargetDateByDateTime",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
 		}
 	}
 
@@ -169,11 +225,11 @@ public class QueryUtil {
 	 * @param timeout
 	 * @return 削除件数.
 	 */
-	public static int deleteCollectBinaryDataByDateTime(Long dateTime, int timeout) {
+	public static int deleteCollectBinaryDataByDateTime(Date targetDate, int timeout) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("CollectBinaryData.deleteByDateTime")
-					.setParameter("dateTime", dateTime);
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate));
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
 			}
@@ -181,11 +237,23 @@ public class QueryUtil {
 		}
 	}
 
-	public static int deleteCollectDataByDateTimeAndMonitorId(Long dateTime, int timeout, String monitorId) {
+	public static List<Date> selectTargetDateCollectDataByDateTimeAndMonitorId(Long dateTime, String monitorId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("CollectData.selectTargetDateByDateTimeAndMonitorId",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.setParameter("monitorId", monitorId)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteCollectDataByDateTimeAndMonitorId(Date targetDate, int timeout, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("CollectData.deleteByDateTimeAndMonitorId")
-					.setParameter("dateTime", dateTime)
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate))
 					.setParameter("monitorId", monitorId);
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
@@ -193,12 +261,23 @@ public class QueryUtil {
 			return query.executeUpdate();
 		}
 	}
+
+	public static List<Date> selectTargetDateCollectDataByDateTime(Long dateTime) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("CollectData.selectTargetDateByDateTime",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
 	
-	public static int deleteCollectDataByDateTime(Long dateTime, int timeout) {
+	public static int deleteCollectDataByDateTime(Date targetDate, int timeout) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("CollectData.deleteByDateTime")
-					.setParameter("dateTime", dateTime);
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate));
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
 			}
@@ -227,11 +306,23 @@ public class QueryUtil {
 		}
 	}
 
-	public static int deleteSummaryHourByDateTimeAndMonitorId(Long dateTime, int timeout, String monitorId) {
+	public static List<Date> selectTargetDateSummaryHourByDateTimeAndMonitorId(Long dateTime, String monitorId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("SummaryHour.selectTargetDateByDateTimeAndMonitorId",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.setParameter("monitorId", monitorId)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteSummaryHourByDateTimeAndMonitorId(Date targetDate, int timeout, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("SummaryHour.deleteByDateTimeAndMonitorId")
-					.setParameter("dateTime", dateTime)
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate))
 					.setParameter("monitorId", monitorId);
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
@@ -240,11 +331,22 @@ public class QueryUtil {
 		}
 	}
 	
-	public static int deleteSummaryHourByDateTime(Long dateTime, int timeout) {
+	public static List<Date> selectTargetDateSummaryHourByDateTime(Long dateTime) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("SummaryHour.selectTargetDateByDateTime",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteSummaryHourByDateTime(Date targetDate, int timeout) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("SummaryHour.deleteByDateTime")
-					.setParameter("dateTime", dateTime);
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate));
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
 			}
@@ -252,11 +354,23 @@ public class QueryUtil {
 		}
 	}
 	
-	public static int deleteSummaryDayByDateTimeAndMonitorId(Long dateTime, int timeout, String monitorId) {
+	public static List<Date> selectTargetDateSummaryDayByDateTimeAndMonitorId(Long dateTime, String monitorId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("SummaryDay.selectTargetDateByDateTimeAndMonitorId",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.setParameter("monitorId", monitorId)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteSummaryDayByDateTimeAndMonitorId(Date targetDate, int timeout, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("SummaryDay.deleteByDateTimeAndMonitorId")
-					.setParameter("dateTime", dateTime)
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate))
 					.setParameter("monitorId", monitorId);
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
@@ -265,11 +379,22 @@ public class QueryUtil {
 		}
 	}
 	
-	public static int deleteSummaryDayByDateTime(Long dateTime, int timeout) {
+	public static List<Date> selectTargetDateSummaryDayByDateTime(Long dateTime) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("SummaryDay.selectTargetDateByDateTime",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteSummaryDayByDateTime(Date targetDate, int timeout) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("SummaryDay.deleteByDateTime")
-					.setParameter("dateTime", dateTime);
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate));
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
 			}
@@ -277,11 +402,23 @@ public class QueryUtil {
 		}
 	}
 	
-	public static int deleteSummaryMonthByDateTimeAndMonitorId(Long dateTime, int timeout, String monitorId) {
+	public static List<Date> selectTargetDateSummaryMonthByDateTimeAndMonitorId(Long dateTime, String monitorId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("SummaryMonth.selectTargetDateByDateTimeAndMonitorId",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.setParameter("monitorId", monitorId)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteSummaryMonthByDateTimeAndMonitorId(Date targetDate, int timeout, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("SummaryMonth.deleteByDateTimeAndMonitorId")
-					.setParameter("dateTime", dateTime)
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate))
 					.setParameter("monitorId", monitorId);
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
@@ -290,23 +427,22 @@ public class QueryUtil {
 		}
 	}
 	
-	public static int deleteSummaryMonthByDateTime(Long dateTime, int timeout) {
+	public static List<Date> selectTargetDateSummaryMonthByDateTime(Long dateTime) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			Query query = em.createNamedQuery("SummaryMonth.deleteByDateTime")
-					.setParameter("dateTime", dateTime);
-			if (timeout > 0) {
-				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
-			}
-			return query.executeUpdate();
+			List<Long> list = em.createNamedQuery("SummaryMonth.selectTargetDateByDateTime",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
 		}
 	}
 	
-	public static int deleteEventLogByGenerationDate(Long generationDate, int timeout) {
+	public static int deleteSummaryMonthByDateTime(Date targetDate, int timeout) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			Query query = em.createNamedQuery("EventLogEntity.deleteByGenerationDate")
-					.setParameter("generationDate", generationDate);
+			Query query = em.createNamedQuery("SummaryMonth.deleteByDateTime")
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate));
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
 			}
@@ -314,11 +450,45 @@ public class QueryUtil {
 		}
 	}
 
-	public static int deleteEventLogByGenerationDateConfigFlg(Long generationDate, int timeout) {
+	public static List<Date> selectTargetDateEventLogByGenerationDate(Long generationDate) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("EventLogEntity.selectTargetDateByGenerationDate",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("generationDate", generationDate)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteEventLogByGenerationDate(Date targetDate, int timeout) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Query query = em.createNamedQuery("EventLogEntity.deleteByGenerationDate")
+					.setParameter("generationDate", parseTargetDateToTargetUnixTime(targetDate));
+			if (timeout > 0) {
+				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
+			}
+			return query.executeUpdate();
+		}
+	}
+
+	public static List<Date> selectTargetDateEventLogByGenerationDateConfigFlg(Long generationDate) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("EventLogEntity.selectTargetDateByGenerationDateConfigFlg",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("generationDate", generationDate)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteEventLogByGenerationDateConfigFlg(Date targetDate, int timeout) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("EventLogEntity.deleteByGenerationDateConfigFlg")
-					.setParameter("generationDate", generationDate);
+					.setParameter("generationDate", parseTargetDateToTargetUnixTime(targetDate));
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
 			}
@@ -326,12 +496,24 @@ public class QueryUtil {
 		}
 	}
 	
-	public static int deleteEventLogByGenerationDateAndOwnerRoleId(Long generationDate, int timeout, String roleId) {
+	public static List<Date> selectTargetDateEventLogByGenerationDateAndOwnerRoleId(Long generationDate, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("EventLogEntity.selectTargetDateByGenerationDateAndOwnerRoleId",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("generationDate", generationDate)
+					.setParameter("ownerRoleId", roleId)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+
+	public static int deleteEventLogByGenerationDateAndOwnerRoleId(Date targetDate, int timeout, String roleId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			
 			Query query = em.createNamedQuery("EventLogEntity.deleteByGenerationDateAndOwnerRoleId")
-					.setParameter("generationDate", generationDate)
+					.setParameter("generationDate", parseTargetDateToTargetUnixTime(targetDate))
 					.setParameter("ownerRoleId", roleId);
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
@@ -340,11 +522,23 @@ public class QueryUtil {
 		}
 	}
 
-	public static int deleteEventLogByGenerationDateConfigFlgAndOwnerRoleId(Long generationDate, int timeout, String roleId) {
+	public static List<Date> selectTargetDateEventLogByGenerationDateConfigFlgAndOwnerRoleId(Long generationDate, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("EventLogEntity.selectTargetDateByGenerationDateConfigFlgAndOwnerRoleId",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("generationDate", generationDate)
+					.setParameter("ownerRoleId", roleId)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteEventLogByGenerationDateConfigFlgAndOwnerRoleId(Date targetDate, int timeout, String roleId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("EventLogEntity.deleteByGenerationDateConfigFlgAndOwnerRoleId")
-					.setParameter("generationDate", generationDate)
+					.setParameter("generationDate", parseTargetDateToTargetUnixTime(targetDate))
 					.setParameter("ownerRoleId", roleId);
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
@@ -353,11 +547,11 @@ public class QueryUtil {
 		}
 	}
 
-	public static int deleteEventLogOperationHistoryByGenerationDate(Long generationDate, int timeout) {
+	public static int deleteEventLogOperationHistoryByGenerationDate(Date targetDate, int timeout) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("EventLogOperationHistoryEntity.deleteByGenerationDate")
-					.setParameter("generationDate", generationDate);
+					.setParameter("generationDate", parseTargetDateToTargetUnixTime(targetDate));
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
 			}
@@ -365,11 +559,11 @@ public class QueryUtil {
 		}
 	}
 
-	public static int deleteEventLogOperationHistoryByGenerationDateConfigFlg(Long generationDate, int timeout) {
+	public static int deleteEventLogOperationHistoryByGenerationDateConfigFlg(Date targetDate, int timeout) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("EventLogOperationHistoryEntity.deleteByGenerationDateConfigFlg")
-					.setParameter("generationDate", generationDate);
+					.setParameter("generationDate", parseTargetDateToTargetUnixTime(targetDate));
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
 			}
@@ -377,12 +571,24 @@ public class QueryUtil {
 		}
 	}
 	
-	public static int deleteEventLogOperationHistoryByGenerationDateAndOwnerRoleId(Long generationDate, int timeout, String roleId) {
+	public static List<Date> selectTargetDateEventLogOperationHistoryByGenerationDateAndOwnerRoleId(Long generationDate, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Date> list =em.createNamedQuery("EventLogOperationHistoryEntity.selectTargetDateByGenerationDateAndOwnerRoleId",
+					Date.class, ObjectPrivilegeMode.NONE)
+					.setParameter("generationDate", generationDate)
+					.setParameter("ownerRoleId", roleId)
+					.getResultList();
+			return list;
+		}
+	}
+
+	public static int deleteEventLogOperationHistoryByGenerationDateAndOwnerRoleId(Date targetDate, int timeout, String roleId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			
 			Query query = em.createNamedQuery("EventLogOperationHistoryEntity.deleteByGenerationDateAndOwnerRoleId")
-					.setParameter("generationDate", generationDate)
+					.setParameter("generationDate", parseTargetDateToTargetUnixTime(targetDate))
 					.setParameter("ownerRoleId", roleId);
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
@@ -391,11 +597,11 @@ public class QueryUtil {
 		}
 	}
 
-	public static int deleteEventLogOperationHistoryByGenerationDateConfigFlgAndOwnerRoleId(Long generationDate, int timeout, String roleId) {
+	public static int deleteEventLogOperationHistoryByGenerationDateConfigFlgAndOwnerRoleId(Date targetDate, int timeout, String roleId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			Query query = em.createNamedQuery("EventLogOperationHistoryEntity.deleteByGenerationDateConfigFlgAndOwnerRoleId")
-					.setParameter("generationDate", generationDate)
+					.setParameter("generationDate", parseTargetDateToTargetUnixTime(targetDate))
 					.setParameter("ownerRoleId", roleId);
 			if (timeout > 0) {
 				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
@@ -412,23 +618,130 @@ public class QueryUtil {
 		}
 	}
 
-	public static int insertJobCompletedSessionsJobSessionJob(Long startDate) {
+	/**
+	 * 特定の開始・再実行日時の間のデータを削除対象のテンポラリテーブルへ登録します。
+	 * 
+	 * @param since 開始・再実行日時(00:00:00)
+	 * @param until 開始・再実行日時+1日(00:00:00)
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobCompletedSessionsJobSessionJob(Long since, Long until) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			int ret = em.createNamedQuery("JobCompletedSessionsEntity.insertJobSessionJob")
-					.setParameter(1, startDate)
-					.executeUpdate();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobSessionJob", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, since)
+				.setParameter(2, until)
+				.executeUpdate();
 			return ret;
 		}
 	}
-	
-	public static int insertJobCompletedSessionsJobSessionJobByOwnerRoleId(Long startDate, String roleId) {
+
+	/**
+	 * 特定の開始・再実行日時の間のデータと開始予定日時の間のデータを削除対象としてテンポラリテーブルへ登録します。
+	 * 
+	 * @param startDateSince 開始・再実行日時(00:00:00)
+	 * @param startDateUntil 開始・再実行日時+1日(00:00:00)
+	 * @param scheduleDateSince 開始予定日時(00:00:00)
+	 * @param scheduleDateUntil 開始予定日時+1日(00:00:00)
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobCompletedAndInterruptedSessionsJobSessionJob(Long startDateSince, Long startDateUntil, Long scheduleDateSince, Long scheduleDateUntil) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			int ret = em.createNamedQuery("JobCompletedSessionsEntity.insertJobSessionJobByOwnerRoleId")
-					.setParameter(1, startDate)
-					.setParameter(2, roleId)
-					.executeUpdate();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobCompletedAndInterruptedSessionJob", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, startDateSince)
+				.setParameter(2, startDateUntil)
+				.setParameter(3, scheduleDateSince)
+				.setParameter(4, scheduleDateUntil)
+				.executeUpdate();
+			return ret;
+		}
+	}
+
+	/**
+	 * 特定の開始予定日時の間のデータを削除対象としてテンポラリテーブルへ登録します。
+	 * 
+	 * @param scheduleDateSince 開始予定日時(00:00:00)
+	 * @param scheduleDateUntil 開始予定日時+1日(00:00:00)
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobInterruptedSessionsJobSessionJob(Long scheduleDateSince, Long scheduleDateUntil) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobInterruptedSessionJob", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, scheduleDateSince)
+				.setParameter(2, scheduleDateUntil)
+				.executeUpdate();
+			return ret;
+		}
+	}
+
+	/**
+	 * 特定の開始・再実行日時の間のデータを削除対象のテンポラリテーブルへ登録します。（オーナーロールID指定）
+	 * 
+	 * @param since 開始・再実行日時(00:00:00)
+	 * @param until 開始・再実行日時+1日(00:00:00)
+	 * @param roleId オーナーロールID
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobCompletedSessionsJobSessionJobByOwnerRoleId(Long since, Long until, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobSessionJobByOwnerRoleId", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, since)
+				.setParameter(2, until)
+				.setParameter(3, roleId)
+				.executeUpdate();
+			return ret;
+		}
+	}
+
+	/**
+	 * 特定の開始・再実行日時の間のデータと開始予定日時の間のデータを削除対象としてテンポラリテーブルへ登録します。（オーナーロールID指定）
+	 * 
+	 * @param startDateSince 開始・再実行日時(00:00:00)
+	 * @param startDateUntil 開始・再実行日時+1日(00:00:00)
+	 * @param scheduleDateSince 開始予定日時(00:00:00)
+	 * @param scheduleDateUntil 開始予定日時+1日(00:00:00)
+	 * @param roleId オーナーロールID
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobCompletedAndInterruptedSessionsJobSessionJobByOwnerRoleId(Long startDateSince, Long startDateUntil, Long scheduleDateSince, Long scheduleDateUntil, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobCompletedAndInterruptedSessionJobByOwnerRoleId", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, startDateSince)
+				.setParameter(2, startDateUntil)
+				.setParameter(3, scheduleDateSince)
+				.setParameter(4, scheduleDateUntil)
+				.setParameter(5, roleId)
+				.executeUpdate();
+			return ret;
+		}
+	}
+
+	/**
+	 * 特定の開始予定日時の間のデータを削除対象としてテンポラリテーブルへ登録します。（オーナーロールID指定）
+	 * 
+	 * @param scheduleDateSince 開始予定日時(00:00:00)
+	 * @param scheduleDateUntil 開始予定日時+1日(00:00:00)
+	 * @param roleId オーナーロールID
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobInterruptedSessionsJobSessionJobByOwnerRoleId(Long scheduleDateSince, Long scheduleDateUntil, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobInterruptedSessionJobByOwnerRoleId", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, scheduleDateSince)
+				.setParameter(2, scheduleDateUntil)
+				.setParameter(3, roleId)
+				.executeUpdate();
 			return ret;
 		}
 	}
@@ -441,23 +754,130 @@ public class QueryUtil {
 		}
 	}
 
-	public static int insertJobCompletedSessionsJobSessionJobByStatus(Long startDate) {
+	/**
+	 * 特定の開始・再実行日時の間のデータを削除対象(終了、変更済)のテンポラリテーブルへ登録します。
+	 * 
+	 * @param since 開始・再実行日時(00:00:00)
+	 * @param until 開始・再実行日時+1日(00:00:00)
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobCompletedSessionsJobSessionJobByStatus(Long since, Long until) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			int ret = em.createNamedQuery("JobCompletedSessionsEntity.insertJobSessionJobByStatus")
-					.setParameter(1, startDate)
-					.executeUpdate();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobSessionJobByStatus", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, since)
+				.setParameter(2, until)
+				.executeUpdate();
 			return ret;
 		}
 	}
 
-	public static int insertJobCompletedSessionsJobSessionJobByStatusAndOwnerRoleId(Long startDate, String roleId) {
+	/**
+	 * 特定の開始・再実行日時の間のデータを削除対象(終了、変更済)のテンポラリテーブルへ登録します。
+	 * 
+	 * @param startDateSince 開始・再実行日時(00:00:00)
+	 * @param startDateUntil 開始・再実行日時+1日(00:00:00)
+	 * @param scheduleDateSince 開始予定日時(00:00:00)
+	 * @param scheduleDateUntil 開始予定日時+1日(00:00:00)
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobCompletedAndInterruptedSessionsJobSessionJobByStatus(Long startDateSince, Long startDateUntil, Long scheduleDateSince, Long scheduleDateUntil) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			int ret = em.createNamedQuery("JobCompletedSessionsEntity.insertJobSessionJobByStatusAndOwnerRoleId")
-					.setParameter(1, startDate)
-					.setParameter(2, roleId)
-					.executeUpdate();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobCompletedAndInterruptedSessionJobByStatus", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, startDateSince)
+				.setParameter(2, startDateUntil)
+				.setParameter(3, scheduleDateSince)
+				.setParameter(4, scheduleDateUntil)
+				.executeUpdate();
+			return ret;
+		}
+	}
+
+	/**
+	 * 特定の開始予定日時の間のデータを削除対象(終了、変更済)としてテンポラリテーブルへ登録します。
+	 * 
+	 * @param scheduleDateSince 開始予定日時(00:00:00)
+	 * @param scheduleDateUntil 開始予定日時+1日(00:00:00)
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobInterruptedSessionsJobSessionJobByStatus(Long scheduleDateSince, Long scheduleDateUntil) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobInterruptedSessionJobByStatus", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, scheduleDateSince)
+				.setParameter(2, scheduleDateUntil)
+				.executeUpdate();
+			return ret;
+		}
+	}
+
+	/**
+	 * 特定の開始・再実行日時の間のデータを削除対象(終了、変更済)のテンポラリテーブルへ登録します。（オーナーロールID指定）
+	 * 
+	 * @param since 開始・再実行日時(00:00:00)
+	 * @param until 開始・再実行日時+1日(00:00:00)
+	 * @param roleId オーナーロールID
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobCompletedSessionsJobSessionJobByStatusAndOwnerRoleId(Long since, Long until, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobSessionJobByStatusAndOwnerRoleId", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, since)
+				.setParameter(2, until)
+				.setParameter(3, roleId)
+				.executeUpdate();
+			return ret;
+		}
+	}
+
+	/**
+	 * 特定の開始・再実行日時の間のデータと開始予定日時の間のデータを削除対象(終了、変更済)としてテンポラリテーブルへ登録します。（オーナーロールID指定）
+	 * 
+	 * @param startDateSince 開始・再実行日時(00:00:00)
+	 * @param startDateUntil 開始・再実行日時+1日(00:00:00)
+	 * @param scheduleDateSince 開始予定日時(00:00:00)
+	 * @param scheduleDateUntil 開始予定日時+1日(00:00:00)
+	 * @param roleId オーナーロールID
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobCompletedAndInterruptedSessionsJobSessionJobByStatusAndOwnerRoleId(Long startDateSince, Long startDateUntil, Long scheduleDateSince, Long scheduleDateUntil, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobCompletedAndInterruptedSessionJobByStatusAndOwnerRoleId", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, startDateSince)
+				.setParameter(2, startDateUntil)
+				.setParameter(3, scheduleDateSince)
+				.setParameter(4, scheduleDateUntil)
+				.setParameter(5, roleId)
+				.executeUpdate();
+			return ret;
+		}
+	}
+
+	/**
+	 * 特定の開始予定日時の間のデータを削除対象(終了、変更済)としてテンポラリテーブルへ登録します。（オーナーロールID指定）
+	 * 
+	 * @param scheduleDateSince 開始予定日時(00:00:00)
+	 * @param scheduleDateUntil 開始予定日時+1日(00:00:00)
+	 * @param roleId オーナーロールID
+	 * @return 削除対象レコード件数
+	 */
+	public static int insertJobInterruptedSessionsJobSessionJobByStatusAndOwnerRoleId(Long scheduleDateSince, Long scheduleDateUntil, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			int ret = em.createNamedQuery(
+					"JobCompletedSessionsEntity.insertJobInterruptedSessionJobByStatusAndOwnerRoleId", Integer.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, scheduleDateSince)
+				.setParameter(2, scheduleDateUntil)
+				.setParameter(3, roleId)
+				.executeUpdate();
 			return ret;
 		}
 	}
@@ -499,6 +919,182 @@ public class QueryUtil {
 	}
 
 	/**
+	 * 削除対象の中で最も過去のジョブ履歴の開始・再実行日時を取得します。
+	 * 
+	 * @param untilDate 指定日時(削除対象外の保存期間を差し引いた日時)
+	 * @return 最も過去のジョブ履歴の開始・再実行日時
+	 */
+	public static Long selectOldestStartDate(Long untilDate) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> results = em.createNamedQuery("JobCompletedSessionsEntity.selectOldestStartDate",
+					Long.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, untilDate)
+				.getResultList();
+			if (results.size() <= 0) {
+				return null;
+			} else {
+				return results.get(0);
+			}
+		}
+	}
+
+	/**
+	 * 削除対象の中で開始・再実行日時が存在しない、最も過去のジョブ履歴の開始予定日時を取得します。
+	 * 
+	 * @param untilDate 指定日時(削除対象外の保存期間を差し引いた日時)
+	 * @return 最も過去のジョブ履歴の開始予定日時
+	 */
+	public static Long selectOldestScheduleDate(Long untilDate) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> results = em.createNamedQuery("JobCompletedSessionsEntity.selectOldestScheduleDate",
+					Long.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, untilDate)
+				.getResultList();
+			if (results.size() <= 0) {
+				return null;
+			} else {
+				return results.get(0);
+			}
+		}
+	}
+
+	/**
+	 * 削除対象(終了、変更済)の中で最も過去のジョブ履歴の開始・再実行日時を取得します。
+	 * 
+	 * @param untilDate 指定日時(削除対象外の保存期間を差し引いた日時)
+	 * @return 最も過去のジョブ履歴の開始・再実行日時
+	 */
+	public static Long selectOldestStartDateByStatus(Long untilDate) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> results = em.createNamedQuery("JobCompletedSessionsEntity.selectOldestStartDateByStatus",
+					Long.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, untilDate)
+				.getResultList();
+			if (results.size() <= 0) {
+				return null;
+			} else {
+				return results.get(0);
+			}
+		}
+	}
+
+	/**
+	 * 削除対象(終了、変更済)の中で開始・再実行日時が存在しない、最も過去のジョブ履歴の開始・再実行日時を取得します。
+	 * 
+	 * @param untilDate 指定日時(削除対象外の保存期間を差し引いた日時)
+	 * @return 最も過去のジョブ履歴の開始・再実行日時
+	 */
+	public static Long selectOldestScheduleDateByStatus(Long untilDate) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> results = em.createNamedQuery("JobCompletedSessionsEntity.selectOldestScheduleDateByStatus",
+					Long.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, untilDate)
+				.getResultList();
+			if (results.size() <= 0) {
+				return null;
+			} else {
+				return results.get(0);
+			}
+		}
+	}
+
+	/**
+	 * 削除対象の中で最も過去のジョブ履歴の開始・再実行日時を取得します。（オーナーロールID指定）
+	 * 
+	 * @param untilDate 指定日時(削除対象外の保存期間を差し引いた日時)
+	 * @param roleId オーナーロールID
+	 * @return 最も過去のジョブ履歴の開始・再実行日時
+	 */
+	public static Long selectOldestStartDateByOwnerRoleId(Long untilDate, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> results = em.createNamedQuery("JobCompletedSessionsEntity.selectOldestStartDateByOwnerRoleId",
+					Long.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, untilDate)
+				.setParameter(2, roleId)
+				.getResultList();
+			if (results.size() <= 0) {
+				return null;
+			} else {
+				return results.get(0);
+			}
+		}
+	}
+
+	/**
+	 * 削除対象の中で開始・再実行日時が存在しない、最も過去のジョブ履歴の開始予定日時を取得します。（オーナーロールID指定）
+	 * 
+	 * @param untilDate 指定日時(削除対象外の保存期間を差し引いた日時)
+	 * @param roleId オーナーロールID
+	 * @return 最も過去のジョブ履歴の開始予定日時
+	 */
+	public static Long selectOldestScheduleDateByOwnerRoleId(Long untilDate, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> results = em.createNamedQuery("JobCompletedSessionsEntity.selectOldestScheduleDateByOwnerRoleId",
+					Long.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, untilDate)
+				.setParameter(2, roleId)
+				.getResultList();
+			if (results.size() <= 0) {
+				return null;
+			} else {
+				return results.get(0);
+			}
+		}
+	}
+
+	/**
+	 * 削除対象(終了、変更済)の中で最も過去のジョブ履歴の開始・再実行日時を取得します。（オーナーロールID指定）
+	 * 
+	 * @param untilDate 指定日時(削除対象外の保存期間を差し引いた日時)
+	 * @param roleId オーナーロールID
+	 * @return 最も過去のジョブ履歴の開始・再実行日時
+	 */
+	public static Long selectOldestStartDateByStatusAndOwnerRoleId(Long untilDate, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> results = em.createNamedQuery("JobCompletedSessionsEntity.selectOldestStartDateByStatusAndOwnerRoleId",
+					Long.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, untilDate)
+				.setParameter(2, roleId)
+				.getResultList();
+			if (results.size() <= 0) {
+				return null;
+			} else {
+				return results.get(0);
+			}
+		}
+	}
+
+	/**
+	 * 削除対象(終了、変更済)の中で開始・再実行日時が存在しない、最も過去のジョブ履歴の開始予定日時を取得します。（オーナーロールID指定）
+	 * 
+	 * @param untilDate 指定日時(削除対象外の保存期間を差し引いた日時)
+	 * @param roleId オーナーロールID
+	 * @return 最も過去のジョブ履歴の開始予定日時
+	 */
+	public static Long selectOldestScheduleDateByStatusAndOwnerRoleId(Long untilDate, String roleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> results = em.createNamedQuery("JobCompletedSessionsEntity.selectOldestScheduleDateByStatusAndOwnerRoleId",
+					Long.class, ObjectPrivilegeMode.NONE)
+				.setParameter(1, untilDate)
+				.setParameter(2, roleId)
+				.getResultList();
+			if (results.size() <= 0) {
+				return null;
+			} else {
+				return results.get(0);
+			}
+		}
+	}
+
+	/**
 	 * セッション一時テーブルからセッションIDを取得します。
 	 * @return セッションIDリスト
 	 */
@@ -514,6 +1110,55 @@ public class QueryUtil {
 			return sessionList;
 		}
 	}
+
+	public static List<Date> selectTargetDateRpaScenarioOperationResultByDateTimeAndScenarioId(Long dateTime, String scenarioId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("RpaScenarioOperationResult.selectTargetDateByDateTimeAndScenarioId",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.setParameter("scenarioId", scenarioId)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteRpaScenarioOperationResultByDateTimeAndScenarioId(Date targetDate, int timeout, String scenarioId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Query query = em.createNamedQuery("RpaScenarioOperationResult.deleteByDateTimeAndScenarioId")
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate))
+					.setParameter("scenarioId", scenarioId);
+			if (timeout > 0) {
+				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
+			}
+			return query.executeUpdate();
+		}
+	}
+	
+	public static List<Date> selectTargetDateRpaScenarioOperationResultByDateTime(Long dateTime) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<Long> list = em.createNamedQuery("RpaScenarioOperationResult.selectTargetDateByDateTime",
+					Long.class, ObjectPrivilegeMode.NONE)
+					.setParameter("dateTime", dateTime)
+					.getResultList();
+			return getTargetDateListByUnixTimeLsit(list);
+		}
+	}
+	
+	public static int deleteRpaScenarioOperationResultDataByDateTime(Date targetDate, int timeout) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			Query query = em.createNamedQuery("RpaScenarioOperationResult.deleteByDateTime")
+					.setParameter("dateTime", parseTargetDateToTargetUnixTime(targetDate));
+			if (timeout > 0) {
+				query = query.setHint(JpaPersistenceConfig.JPA_PARAM_QUERY_TIMEOUT, timeout * 1000);
+			}
+			return query.executeUpdate();
+		}
+	}
+
 
 	/**
 	 * 指定されたキーの共通設定情報を取得します。<br>
@@ -590,5 +1235,42 @@ public class QueryUtil {
 					.getResultList();
 			return list;
 		}
+	}
+	
+	/**
+	 * UnixTime(ミリ秒)のリストから、Date型の日付重複のないリストを取得する
+	 * 
+	 * @param unixTimeList
+	 * @return 処理対象となる日付のリスト
+	 */
+	private static List<Date> getTargetDateListByUnixTimeLsit(List<Long> unixTimeList){
+		List<Date> ret = new ArrayList<Date>();
+		Calendar calendar = Calendar.getInstance();
+		for(long unixTime : unixTimeList){
+			calendar.setTimeInMillis(unixTime);
+			calendar.set(Calendar.HOUR_OF_DAY, 0);
+			calendar.set(Calendar.MINUTE, 0);
+			calendar.set(Calendar.SECOND, 0);
+			calendar.set(Calendar.MILLISECOND, 0);
+			Date date = new Date(calendar.getTime().getTime());
+			if(!ret.contains(date)){
+				ret.add(date);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * 削除対象の日付(Date)をDBに合わせてUnixTime(ミリ秒)に変換する
+	 * ※その際、削除は渡したUnixTime未満で行われるため、削除対象の日付を削除するために＋1日してからUnixTimeに変換する
+	 * 
+	 * @param targetDate 削除対象日付
+	 * @return 削除対象日付＋1日のUnixTime
+	 */
+	public static long parseTargetDateToTargetUnixTime(Date targetDate){
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(targetDate);
+		calendar.add(Calendar.DAY_OF_MONTH, 1);
+		return calendar.getTimeInMillis();
 	}
 }

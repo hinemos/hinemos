@@ -27,6 +27,7 @@ import com.clustercontrol.utility.traputil.ui.views.commands.ImportCommand;
 import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.monitor.bean.MonitorFilterConstant;
 import com.clustercontrol.monitor.composite.MonitorListComposite;
 import com.clustercontrol.monitor.composite.action.MonitorListSelectionChangedListener;
 import com.clustercontrol.monitor.run.action.GetMonitorListTableDefine;
@@ -41,6 +42,7 @@ import com.clustercontrol.monitor.view.action.MonitorModifyAction;
 import com.clustercontrol.monitor.view.action.MonitorRefreshAction;
 import com.clustercontrol.monitor.view.action.MonitorSummaryAction;
 import com.clustercontrol.monitor.view.action.ObjectPrivilegeMonitorListAction;
+import com.clustercontrol.util.FilterPropertyUpdater;
 import com.clustercontrol.view.CommonViewPart;
 import com.clustercontrol.view.ObjectPrivilegeTargetListView;
 
@@ -56,10 +58,10 @@ public class MonitorListView extends CommonViewPart implements ObjectPrivilegeTa
 	public static final String ID = MonitorListView.class.getName();
 
 	/** 監視設定一覧コンポジット */
-	private MonitorListComposite composite = null;
+	protected MonitorListComposite composite = null;
 
 	/** 検索条件 */
-	private Property condition = null;
+	protected Property condition = null;
 
 	/** 選択レコード数 */
 	private int rowNum = 0;
@@ -104,8 +106,7 @@ public class MonitorListView extends CommonViewPart implements ObjectPrivilegeTa
 		createContextMenu();
 
 		// ボタン（アクション）を制御するリスナーを登録
-		this.composite.getTableViewer().addSelectionChangedListener(
-				new MonitorListSelectionChangedListener());
+		addSelectionChangedListener();
 
 		this.update();
 	}
@@ -127,6 +128,14 @@ public class MonitorListView extends CommonViewPart implements ObjectPrivilegeTa
 	}
 
 	/**
+	 * ボタン（アクション）を制御するリスナーを登録します
+	 */
+	protected void addSelectionChangedListener() {
+		this.composite.getTableViewer().addSelectionChangedListener(
+				new MonitorListSelectionChangedListener());
+	}
+
+	/**
 	 * 追加コンポジットを返します。
 	 *
 	 * @return 追加コンポジット
@@ -145,6 +154,8 @@ public class MonitorListView extends CommonViewPart implements ObjectPrivilegeTa
 	 *            検索条件
 	 */
 	public void update(Property condition) {
+		FilterPropertyUpdater.getInstance().addFilterProperty(getClass(), condition,
+				MonitorFilterConstant.MANAGER);
 		this.condition = condition;
 
 		this.update();

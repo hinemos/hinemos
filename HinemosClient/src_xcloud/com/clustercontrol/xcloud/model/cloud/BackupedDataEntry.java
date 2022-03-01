@@ -7,6 +7,8 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
+import org.openapitools.client.model.BackupedDataEntryResponse;
+
 import com.clustercontrol.xcloud.model.base.Element;
 
 public class BackupedDataEntry extends Element implements IBackupedDataEntry {
@@ -32,12 +34,12 @@ public class BackupedDataEntry extends Element implements IBackupedDataEntry {
 		internalSetProperty(p.value, value, ()->this.value, (s)->this.value=s);
 	}
 	
-	protected void update(com.clustercontrol.ws.xcloud.BackupedDataEntry source) {
+	protected void update(BackupedDataEntryResponse source) {
 		setName(source.getName());
 		setValue(source.getValue());
 	}
 	
-	public static BackupedDataEntry convert(com.clustercontrol.ws.xcloud.BackupedDataEntry source) {
+	public static BackupedDataEntry convert(BackupedDataEntryResponse source) {
 		BackupedDataEntry storage = new BackupedDataEntry();
 		storage.update(source);
 		return storage;

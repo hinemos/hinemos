@@ -12,7 +12,7 @@ package com.clustercontrol.plugin.factory;
 import java.io.InvalidClassException;
 import java.io.Serializable;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 import org.eclipse.persistence.exceptions.DatabaseException;
 
 import org.apache.commons.logging.Log;
@@ -30,6 +30,7 @@ import com.clustercontrol.plugin.model.DbmsSchedulerEntity;
 import com.clustercontrol.plugin.model.DbmsSchedulerEntityPK;
 import com.clustercontrol.plugin.util.QueryUtil;
 import com.clustercontrol.plugin.util.scheduler.JobDetail;
+import com.clustercontrol.plugin.util.scheduler.SimpleIntervalTrigger;
 import com.clustercontrol.plugin.util.scheduler.Trigger;
 import com.clustercontrol.plugin.util.scheduler.CronTrigger;
 import com.clustercontrol.plugin.util.scheduler.SimpleTrigger;
@@ -56,9 +57,15 @@ public class ModifyDbmsScheduler {
 		if(trigger instanceof CronTrigger){
 			entity.setTriggerType(SchedulerPlugin.TriggerType.CRON.name());
 			entity.setCronExpression(((CronTrigger)trigger).getCronExpression());
+			entity.setRepeatInterval(0);
 		} else if(trigger instanceof SimpleTrigger){
 			entity.setTriggerType(SchedulerPlugin.TriggerType.SIMPLE.name());
+			entity.setCronExpression(null);
 			entity.setRepeatInterval(((SimpleTrigger)trigger).getPeriod());
+		} else if(trigger instanceof SimpleIntervalTrigger){
+			entity.setTriggerType(SchedulerPlugin.TriggerType.SIMPLE2.name());
+			entity.setCronExpression(null);
+			entity.setRepeatInterval(((SimpleIntervalTrigger)trigger).getPeriod());
 		}
 		
 		entity.setTriggerState(TriggerState.VIRGIN.name());

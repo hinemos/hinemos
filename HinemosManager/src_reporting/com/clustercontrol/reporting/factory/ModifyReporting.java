@@ -10,14 +10,17 @@ package com.clustercontrol.reporting.factory;
 
 import java.util.Date;
 
+import com.clustercontrol.bean.FunctionPrefixEnum;
 import com.clustercontrol.bean.ScheduleConstant;
+import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.ReportingNotFound;
+import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.bean.ReportingInfo;
-import com.clustercontrol.reporting.fault.ReportingNotFound;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
 
@@ -38,8 +41,10 @@ public class ModifyReporting {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public boolean modifyReporting(ReportingInfo info, String name)
+	public ReportingInfo modifyReporting(ReportingInfo info, String name)
 			throws ReportingNotFound, NotifyNotFound, InvalidRole, HinemosUnknown {
+		ReportingInfo ret = null;
+		info.setNotifyGroupId(NotifyGroupIdGenerator.generate(info));
 
 		//レポーティング情報を取得
 		ReportingInfoEntity entity = QueryUtil.getReportingInfoPK(info.getReportScheduleId());
@@ -72,13 +77,20 @@ public class ModifyReporting {
 		entity.setReportTitle(info.getReportTitle());
 		entity.setValidFlg(info.getValidFlg());
 		entity.setOutputType(info.getOutputType());
-		entity.setOwnerRoleId(info.getOwnerRoleId());
 		entity.setUpdateUser(name);
 		entity.setUpdateDate(new Date().getTime());
+		
+		if (info.getNotifyRelationList() != null && info.getNotifyRelationList().size() > 0) {
+			for (NotifyRelationInfo notifyRelationInfo : info.getNotifyRelationList()) {
+				notifyRelationInfo.setNotifyGroupId(info.getNotifyGroupId());
+				notifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.REPORTING.name());
+			}
+		}
 
-		new NotifyControllerBean().modifyNotifyRelation(info.getNotifyId(), info.getNotifyGroupId());
+		new NotifyControllerBean().modifyNotifyRelation(info.getNotifyRelationList(), info.getNotifyGroupId(), info.getOwnerRoleId());
+		ret = new SelectReportingInfo().getReportingInfo(entity.getReportScheduleId());
 
-		return true;
+		return ret;
 	}
 
 }

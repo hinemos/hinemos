@@ -13,6 +13,7 @@ import java.io.Serializable;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
+import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.plugin.util.scheduler.Job;
 import com.clustercontrol.plugin.util.scheduler.JobDataMap;
 import com.clustercontrol.plugin.util.scheduler.JobDetail;
@@ -35,6 +36,17 @@ public class ReflectionInvokerJob implements Job {
 		@SuppressWarnings("unchecked")
 		Class<? extends Serializable>[] argsType = (Class<? extends Serializable>[])dmap.get(KEY_ARGS_TYPE);
 		Serializable[] args = (Serializable[])dmap.get(KEY_ARGS);
+		if (className.equals(JobControllerBean.class.getName())) {
+			if (methodName.equals(com.clustercontrol.jobmanagement.bean.QuartzConstant.METHOD_NAME)) {
+				args[com.clustercontrol.jobmanagement.bean.QuartzConstant.INDEX_EXECUTE_TIME] = jd.getExecuteTime();
+			} else if (methodName.equals(com.clustercontrol.jobmanagement.bean.QuartzConstant.METHOD_NAME_FOR_JOBPREMAKE)
+					|| methodName.equals(com.clustercontrol.jobmanagement.bean.QuartzConstant.METHOD_NAME_FOR_JOBPREMAKE_ONCE)) {
+				args[com.clustercontrol.jobmanagement.bean.QuartzConstant.INDEX_EXECUTE_TIME_FOR_JOBPREMAKE] = jd.getExecuteTime();
+			} else if (methodName.equals(com.clustercontrol.jobmanagement.bean.QuartzConstant.METHOD_NAME_FOR_JOBLINKRCV)) {
+				args[com.clustercontrol.jobmanagement.bean.QuartzConstant.INDEX_EXECUTE_TIME_FOR_JOBLINKRCV] = jd.getExecuteTime();
+				args[com.clustercontrol.jobmanagement.bean.QuartzConstant.INDEX_PREVIOUS_FIRE_TIME_FOR_JOBLINKRCV] = jd.getPreviousFireTime();
+			}
+		}
 
 		MonitoredThreadPoolExecutor.beginTask(Thread.currentThread(), className);
 

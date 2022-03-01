@@ -25,6 +25,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.LogFormatKeyResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.TableColumnInfo;
@@ -32,7 +33,6 @@ import com.clustercontrol.hub.dialog.LogKeyPatternDialog;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.hub.LogFormatKey;
 
 public class LogFormatKeyListComposite extends Composite {
 	
@@ -78,7 +78,7 @@ public class LogFormatKeyListComposite extends Composite {
 	/** テーブルビューアー。 */
 	private CommonTableViewer m_tableViewer = null;
 	/** ログ[フォーマット]キーの情報一覧 */
-	private List<LogFormatKey> m_keyList = null;
+	private List<LogFormatKeyResponse> m_keyList = null;
 	/** オーナーロールID */
 	private String m_ownerRoleId = null;
 	/** マネージャ名 */
@@ -97,8 +97,8 @@ public class LogFormatKeyListComposite extends Composite {
 	 * @param key
 	 * @return
 	 */
-	public LogFormatKey getLogFormatKeyListByKey(String key){
-		for (LogFormatKey logFormatKey : getLogFormatKeyList()) {
+	public LogFormatKeyResponse getLogFormatKeyListByKey(String key){
+		for (LogFormatKeyResponse logFormatKey : getLogFormatKeyList()) {
 			if (logFormatKey.getKey().equals(key)) {
 				return logFormatKey;
 			}
@@ -110,20 +110,20 @@ public class LogFormatKeyListComposite extends Composite {
 	 *
 	 * @return
 	 */
-	public List<LogFormatKey> getLogFormatKeyList(){
+	public List<LogFormatKeyResponse> getLogFormatKeyList(){
 		return this.m_keyList;
 	}
 	/**
 	 * 引数で指定されたログ[ターゲット]情報をコンポジット内リストに反映させる
 	 * @param keyList
 	 */
-	public void setLogFormatKeyList(List<LogFormatKey> keyList){
+	public void setLogFormatKeyList(List<LogFormatKeyResponse> keyList){
 		if (keyList != null) {
 			this.m_keyList = keyList;
 			this.update();
 		}
 	}
-	public void addLogFormatKeyList(LogFormatKey key){
+	public void addLogFormatKeyList(LogFormatKeyResponse key){
 		this.m_keyList.add(key);
 		}
 	/**
@@ -157,7 +157,7 @@ public class LogFormatKeyListComposite extends Composite {
 	public LogFormatKeyListComposite(Composite parent, int style, String managerName) {
 		super(parent, style);
 		this.m_managerName = managerName;
-		this.m_keyList = new ArrayList<LogFormatKey>();
+		this.m_keyList = new ArrayList<LogFormatKeyResponse>();
 		this.initialize();
 	}
 	
@@ -216,7 +216,7 @@ public class LogFormatKeyListComposite extends Composite {
 				// シェルを取得
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 				//キーをもとに、LogFormatKey情報をコンポジットのリストから検索する
-				LogFormatKey logFormatKey = getLogFormatKeyListByKey(order);
+				LogFormatKeyResponse logFormatKey = getLogFormatKeyListByKey(order);
 				
 				if (logFormatKey != null) {
 					LogKeyPatternDialog dialog = new LogKeyPatternDialog(shell, 
@@ -246,7 +246,7 @@ public class LogFormatKeyListComposite extends Composite {
 	public void update() {
 		// テーブル更新
 		ArrayList<Object> listAll = new ArrayList<Object>();
-		for (LogFormatKey key : getLogFormatKeyList()) {
+		for (LogFormatKeyResponse key : getLogFormatKeyList()) {
 			ArrayList<Object> list = new ArrayList<Object>();
 			list.add(key.getKey());
 			list.add(key.getDescription());

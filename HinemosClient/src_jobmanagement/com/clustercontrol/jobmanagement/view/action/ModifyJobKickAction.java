@@ -24,6 +24,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.JobKickResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.jobmanagement.action.GetJobKickTableDefine;
@@ -106,7 +107,8 @@ public class ModifyJobKickAction extends AbstractHandler implements IElementUpda
 				List<?> list = (ArrayList<?>)item.get(0);
 				String managerName = (String) list.get(GetJobKickTableDefine.MANAGER_NAME);
 				String type = (String) list.get(GetJobKickTableDefine.TYPE);
-				int TypeNum = JobKickTypeMessage.stringToType(type);
+				JobKickResponse.TypeEnum TypeNum = JobKickResponse.TypeEnum
+						.fromValue(JobKickTypeMessage.stringToTypeEnumValue(type));
 				JobKickDialog dialog = new JobKickDialog(this.window.getShell(), managerName, id, TypeNum, PropertyDefineConstant.MODE_MODIFY);
 				dialog.open();
 			}

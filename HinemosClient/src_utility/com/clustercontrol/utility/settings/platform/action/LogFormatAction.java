@@ -18,15 +18,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-
-import javax.xml.ws.WebServiceException;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.AddLogFormatRequest;
+import org.openapitools.client.model.ImportLogFormatRecordRequest;
+import org.openapitools.client.model.ImportLogFormatRequest;
+import org.openapitools.client.model.ImportLogFormatResponse;
+import org.openapitools.client.model.LogFormatResponse;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
-import com.clustercontrol.hub.util.HubEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.hub.util.HubRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffUtil;
@@ -44,19 +57,16 @@ import com.clustercontrol.utility.settings.platform.xml.LogFormat;
 import com.clustercontrol.utility.settings.platform.xml.LogFormatInfo;
 import com.clustercontrol.utility.settings.platform.xml.LogFormatType;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.hub.HinemosUnknown_Exception;
-import com.clustercontrol.ws.hub.InvalidRole_Exception;
-import com.clustercontrol.ws.hub.InvalidSetting_Exception;
-import com.clustercontrol.ws.hub.InvalidUserPass_Exception;
-//import com.clustercontrol.ws.hub.LogFormatDuplicate_Exception;
-import com.clustercontrol.ws.hub.LogFormatDuplicate_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 
 /**
@@ -88,10 +98,10 @@ public class LogFormatAction {
 		int ret = 0;
 
 		// ログフォーマット定義一覧の取得
-		List<com.clustercontrol.ws.hub.LogFormat> logformatList = null;
+		List<LogFormatResponse> logformatList = null;
 
 		try {
-			logformatList = HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getLogFormatList();
+			logformatList = HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getLogFormatListByOwnerRole(null);
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret=SettingConstants.ERROR_INPROCESS;
@@ -100,14 +110,10 @@ public class LogFormatAction {
 		}
 
 		// ログフォーマット定義の削除
-		for (com.clustercontrol.ws.hub.LogFormat logFormatInfo : logformatList) {
+		for (LogFormatResponse logFormatInfo : logformatList) {
 			try {
-				HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteLogFormat(Arrays.asList(logFormatInfo.getLogFormatId()));
+				HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteLogFormat(logFormatInfo.getLogFormatId());
 				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + logFormatInfo.getLogFormatId());
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-				break;
 			} catch (Exception e) {
 				log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
@@ -140,14 +146,14 @@ public class LogFormatAction {
 		int ret = 0;
 
 		// ログフォーマット定義一覧の取得
-		List<com.clustercontrol.ws.hub.LogFormat> logformatList = null;
+		List<LogFormatResponse> logformatList = null;
 		try {
-			logformatList = HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getLogFormatList();
-			Collections.sort(logformatList, new Comparator<com.clustercontrol.ws.hub.LogFormat>() {
+			logformatList = HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getLogFormatListByOwnerRole(null);
+			Collections.sort(logformatList, new Comparator<LogFormatResponse>() {
 				@Override
 				public int compare(
-						com.clustercontrol.ws.hub.LogFormat info1,
-						com.clustercontrol.ws.hub.LogFormat info2) {
+						LogFormatResponse info1,
+						LogFormatResponse info2) {
 					return info1.getLogFormatId().compareTo(info2.getLogFormatId());
 				}
 			});
@@ -160,7 +166,7 @@ public class LogFormatAction {
 
 		// ログフォーマット定義の取得
 		LogFormat logformat = new LogFormat();
-		for (com.clustercontrol.ws.hub.LogFormat logformat2 : logformatList) {
+		for (LogFormatResponse logformat2 : logformatList) {
 			try {
 				logformat.addLogFormatInfo(LogFormatConv.getLogFormat(logformat2));
 				log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + logformat2.getLogFormatId());
@@ -218,10 +224,10 @@ public class LogFormatAction {
 		}
 
 		LogFormatType logFormat = null;
-//
+
 		// XMLファイルからの読み込み
 		try {
-			logFormat = LogFormat.unmarshal(new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
+			logFormat = XmlMarshallUtil.unmarshall(LogFormatType.class,new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
 			ret=SettingConstants.ERROR_INPROCESS;
@@ -235,57 +241,30 @@ public class LogFormatAction {
 		}
 		// ログフォーマット定義の登録
 		List<String> objectIdList = new ArrayList<String>();
-		for (LogFormatInfo logFormatInfo : logFormat.getLogFormatInfo()) {
-			com.clustercontrol.ws.hub.LogFormat info = null;
-			try {
-				info = LogFormatConv.getLogFormatData(logFormatInfo);
-				HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addLogFormat(info);
-				objectIdList.add(logFormatInfo.getLogFormatId());
-				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + logFormatInfo.getLogFormatId());
-			} catch (LogFormatDuplicate_Exception e) {
-				//重複時、インポート処理方法を確認する
-				if(!ImportProcessMode.isSameprocess()){
-					String[] args = {logFormatInfo.getLogFormatId()};
-					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-							null, Messages.getString("message.import.confirm2", args));
-					ImportProcessMode.setProcesstype(dialog.open());
-					ImportProcessMode.setSameprocess(dialog.getToggleState());
-				}
-
-				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-					try {
-						HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyLogFormat(info);
-						objectIdList.add(logFormatInfo.getLogFormatId());
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + logFormatInfo.getLogFormatId());
-					} catch (Exception e1) {
-						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-						ret = SettingConstants.ERROR_INPROCESS;
-					}
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + logFormatInfo.getLogFormatId());
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-					break;
-				}
-			} catch (HinemosUnknown_Exception e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidSetting_Exception e) {
-				log.warn(Messages.getString("SettingTools.InvalidSetting") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (Exception e) {
-				log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
+		
+		ImportLogFormatRecordConfirmer logFormatConfirmer = 
+				new ImportLogFormatRecordConfirmer(log,logFormat.getLogFormatInfo());
+		int logFormatConfirmerRet = logFormatConfirmer.executeConfirm();
+		if (logFormatConfirmerRet != 0) {
+			ret = logFormatConfirmerRet;
+		}
+		
+		// レコードの登録（ログフォーマット）
+		if (!(logFormatConfirmer.getImportRecDtoList().isEmpty())) {
+			ImportLogFormatClientController logFormatController = new ImportLogFormatClientController(log,
+					Messages.getString("platform.logformat"), logFormatConfirmer.getImportRecDtoList(), true);
+			int logFormatControllerRet = logFormatController.importExecute();
+			for (RecordRegistrationResponse rec: logFormatController.getImportSuccessList() ){
+				objectIdList.add(rec.getImportKeyValue());
 			}
+			if (logFormatControllerRet != 0) {
+				ret = logFormatControllerRet;
+			}
+		}
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
 		}
 		
 		//オブジェクト権限同時インポート
@@ -346,8 +325,8 @@ public class LogFormatAction {
 
 		// XMLファイルからの読み込み
 		try {
-			logFormat1 = (LogFormat) LogFormat.unmarshal(new InputStreamReader(new FileInputStream(filePath1), "UTF-8"));
-			logFormat2 = (LogFormat) LogFormat.unmarshal(new InputStreamReader(new FileInputStream(filePath2), "UTF-8"));
+			logFormat1 = XmlMarshallUtil.unmarshall(LogFormat.class,new InputStreamReader(new FileInputStream(filePath1), "UTF-8"));
+			logFormat2 = XmlMarshallUtil.unmarshall(LogFormat.class,new InputStreamReader(new FileInputStream(filePath2), "UTF-8"));
 			sort(logFormat1);
 			sort(logFormat2);
 		} catch (Exception e) {
@@ -436,9 +415,9 @@ public class LogFormatAction {
 	}
 
 	protected void checkDelete(LogFormatType xmlElements){
-		List<com.clustercontrol.ws.hub.LogFormat> subList = null;
+		List<LogFormatResponse> subList = null;
 		try {
-			subList = HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getLogFormatList();
+			subList = HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getLogFormatListByOwnerRole(null);
 		}
 		catch (Exception e) {
 			getLogger().error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -450,7 +429,7 @@ public class LogFormatAction {
 		}
 
 		List<LogFormatInfo> xmlElementList = new ArrayList<>(Arrays.asList(xmlElements.getLogFormatInfo()));
-		for(com.clustercontrol.ws.hub.LogFormat mgrInfo: new ArrayList<>(subList)){
+		for(LogFormatResponse mgrInfo: new ArrayList<>(subList)){
 			for(LogFormatInfo xmlElement: new ArrayList<>(xmlElementList)){
 				if(mgrInfo.getLogFormatId().equals(xmlElement.getLogFormatId())){
 					subList.remove(mgrInfo);
@@ -461,7 +440,7 @@ public class LogFormatAction {
 		}
 
 		if(subList.size() > 0){
-			for(com.clustercontrol.ws.hub.LogFormat info: subList){
+			for(LogFormatResponse info: subList){
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getLogFormatId()};
@@ -473,7 +452,7 @@ public class LogFormatAction {
 
 				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
-						HubEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteLogFormat(Arrays.asList(info.getLogFormatId()));
+						HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteLogFormat(info.getLogFormatId());
 						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getLogFormatId());
 						} catch (Exception e1) {
 							getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
@@ -487,7 +466,128 @@ public class LogFormatAction {
 			}
 		}
 	}
+	
+	/**
+	 * ログフォーマット インポート向けのレコード確認用クラス
+	 * 
+	 */
+	protected static class ImportLogFormatRecordConfirmer extends ImportRecordConfirmer<LogFormatInfo, ImportLogFormatRecordRequest, String>{
+		
+		public ImportLogFormatRecordConfirmer(Logger logger, LogFormatInfo[] importRecDtoList) {
+			super(logger, importRecDtoList);
+		}
+		
+		@Override
+		protected ImportLogFormatRecordRequest convertDtoXmlToRestReq(LogFormatInfo xmlDto)
+				throws HinemosUnknown, InvalidSetting {
+			
+			AddLogFormatRequest dto = LogFormatConv.getLogFormatData(xmlDto);
+			ImportLogFormatRecordRequest dtoRec = new ImportLogFormatRecordRequest();
+			dtoRec.setImportData(dto);
+			RestClientBeanUtil.convertBean(dto, dtoRec.getImportData());
+			dtoRec.setImportKeyValue(dtoRec.getImportData().getLogFormatId());
+			
+			return dtoRec;
+		}
 
+		@Override
+		protected Set<String> getExistIdSet() throws Exception {
+			Set<String> retSet = new HashSet<String>();
+			List<LogFormatResponse> logformatList = HubRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getLogFormatListByOwnerRole(null);
+			for (LogFormatResponse rec : logformatList) {
+				retSet.add(rec.getLogFormatId());
+			}
+			return retSet;
+		}
+		@Override
+		protected boolean isLackRestReq(ImportLogFormatRecordRequest restDto) {
+			return (restDto == null || restDto.getImportData().getLogFormatId() == null || restDto.getImportData().getLogFormatId().equals(""));
+		}
+		@Override
+		protected String getKeyValueXmlDto(LogFormatInfo xmlDto) {
+			return xmlDto.getLogFormatId();
+		}
+		@Override
+		protected String getId(LogFormatInfo xmlDto) {
+			return xmlDto.getLogFormatId();
+		}
+		@Override
+		protected void setNewRecordFlg(ImportLogFormatRecordRequest restDto, boolean flag) {
+			restDto.setIsNewRecord(flag);
+		}
+	}
+	
+	/**
+	 * ログフォーマット インポート向けのレコード登録用クラス
+	 * 
+	 */
+	protected static class ImportLogFormatClientController extends ImportClientController<ImportLogFormatRecordRequest, ImportLogFormatResponse, RecordRegistrationResponse>{
+		
+		public ImportLogFormatClientController(Logger logger, String importInfoName, List<ImportLogFormatRecordRequest> importRecList ,boolean displayFailed) {
+			super(logger, importInfoName,importRecList,displayFailed);
+		}
+		@Override
+		protected List<RecordRegistrationResponse> getResRecList(ImportLogFormatResponse importResponse) {
+			return importResponse.getResultList();
+		};
+
+		@Override
+		protected Boolean getOccurException(ImportLogFormatResponse importResponse) {
+			return importResponse.getIsOccurException();
+		};
+
+		@Override
+		protected String getReqKeyValue(ImportLogFormatRecordRequest importRec) {
+			return importRec.getImportKeyValue();
+		};
+
+		@Override
+		protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+			return responseRec.getImportKeyValue();
+		};
+
+		@Override
+		protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+			return (responseRec.getResult() == ResultEnum.NORMAL) ;
+		};
+
+		@Override
+		protected boolean isResSkip(RecordRegistrationResponse responseRec) {
+			return (responseRec.getResult() == ResultEnum.SKIP) ;
+		};
+
+		@Override
+		protected ImportLogFormatResponse callImportWrapper(List<ImportLogFormatRecordRequest> importRecList)
+				throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+			ImportLogFormatRequest reqDto = new ImportLogFormatRequest();
+			reqDto.setRecordList(importRecList);
+			reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+			
+			return UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importLogFormat(reqDto);
+		}
+
+		@Override
+		protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+			if (responseRec.getExceptionInfo() != null) {
+				return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+			}
+			return null;
+		};
+
+		@Override
+		protected void setResultLog( RecordRegistrationResponse responseRec ){
+			String keyValue = getResKeyValue(responseRec);
+			if ( isResNormal(responseRec) ) {
+				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : "+ this.importInfoName + ":" + keyValue);
+			} else if(isResSkip(responseRec)){
+				log.info(Messages.getString("SettingTools.SkipSystemRole") + " : " + this.importInfoName + ":" + keyValue);
+			} else {
+				log.warn(Messages.getString("SettingTools.ImportFailed") + " : "+ this.importInfoName + ":" + keyValue + " : "
+						+ HinemosMessage.replace(getRestExceptionMessage(responseRec)));
+			}
+		}
+	}
+	
 	/**
 	 * オブジェクト権限同時インポート
 	 * 

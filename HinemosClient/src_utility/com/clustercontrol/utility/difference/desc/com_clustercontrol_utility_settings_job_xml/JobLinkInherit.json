@@ -1,0 +1,37 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"paramId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkInherit_paramId"}
+	]},
+	
+	{
+	"propName":"keyInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkInherit_keyInfo"},
+		{"type":"Translate",
+			"values":[
+				{"value":"SOURCE_FACILITY_ID", "name":"name_JobLinkInherit_sourceFacilityId"},
+				{"value":"SOURCE_IP_ADDRESS", "name":"name_JobLinkInherit_unknown_sourceIpAddress"},
+				{"value":"JOBLINK_MESSAGE_ID", "name":"name_JobLinkInherit_warning_joblinkMessageId"},
+				{"value":"MONITOR_DETAIL_ID", "name":"name_JobLinkInherit_information_monitorDetailId"},
+				{"value":"PRIORITY", "name":"name_JobLinkInherit_information_priority"},
+				{"value":"APPLICATION", "name":"name_JobLinkInherit_information_application"},
+				{"value":"MESSAGE", "name":"name_JobLinkInherit_information_message"},
+				{"value":"MESSAGE_ORG", "name":"name_JobLinkInherit_information_messageOrg"},
+				{"value":"EXP_INFO", "name":"name_JobLinkInherit_expInfo"}
+			]
+		}
+	]},
+	
+	{
+	"propName":"expKey",
+	"annotations":[
+		{"type":"Column", "columnName":"JobLinkInherit_expKey"}
+	]}
+]
+}

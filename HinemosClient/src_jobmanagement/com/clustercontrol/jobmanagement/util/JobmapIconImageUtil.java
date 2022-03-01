@@ -106,6 +106,22 @@ public class JobmapIconImageUtil {
 	}
 
 	/**
+	 * ファイルオブジェクト取得
+	 * @param filepath ファイルパス
+	 * @throws Exception
+	 */
+	public static File getFileObject(String filepath) throws Exception {
+		File file = new File(filepath);
+		//findbugs対応 参照されていない変数 nameを削除
+		int filesize = (int)file.length();
+		if (filesize > MAX_FILESIZE) {
+			m_log.warn("getFileData(), file size is too large");
+			throw new Exception(Messages.getString("message.job.143"));
+		}
+		return file;
+	}
+	
+	/**
 	 * イメージデータ取得
 	 * @param filedata
 	 */

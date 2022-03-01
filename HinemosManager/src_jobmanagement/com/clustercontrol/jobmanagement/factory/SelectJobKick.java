@@ -18,9 +18,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.commons.scheduler.QuartzUtil;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.fault.DbmsSchedulerNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -29,16 +31,21 @@ import com.clustercontrol.jobmanagement.bean.JobFileCheck;
 import com.clustercontrol.jobmanagement.bean.JobKick;
 import com.clustercontrol.jobmanagement.bean.JobKickConstant;
 import com.clustercontrol.jobmanagement.bean.JobKickFilterInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkExpInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkRcv;
 import com.clustercontrol.jobmanagement.bean.JobRuntimeParam;
 import com.clustercontrol.jobmanagement.bean.JobRuntimeParamDetail;
 import com.clustercontrol.jobmanagement.bean.JobPlan;
 import com.clustercontrol.jobmanagement.bean.JobPlanFilter;
 import com.clustercontrol.jobmanagement.bean.JobSchedule;
+import com.clustercontrol.jobmanagement.bean.QuartzConstant;
 import com.clustercontrol.jobmanagement.model.JobKickEntity;
+import com.clustercontrol.jobmanagement.model.JobLinkJobkickExpInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobRuntimeParamDetailEntity;
 import com.clustercontrol.jobmanagement.model.JobRuntimeParamEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
+import com.clustercontrol.plugin.model.DbmsSchedulerEntity;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 
@@ -51,6 +58,12 @@ import com.clustercontrol.util.HinemosTime;
  */
 public class SelectJobKick {
 	private static Log m_log = LogFactory.getLog( SelectJobKick.class );
+	
+	/**
+	 * ジョブ[スケジュール予定]ビューの表示イベント数。<BR>
+	 * getPlanListで件数0が指定された場合にこの件数で返す。
+	 */
+	private final static int PLAN_MAX_DISPLAY_NUMBER = 100;
 
 	/**
 	 * jobkickIdのジョブスケジュールを取得します
@@ -69,7 +82,7 @@ public class SelectJobKick {
 
 			JobKick jobKick = null;
 
-			m_log.debug("getJobSchedule() jobkickId = " + jobkickId + ", jobkickType = " + jobkickType);
+			m_log.debug("getJobKick() jobkickId = " + jobkickId + ", jobkickType = " + jobkickType);
 
 			JobKickEntity jobKickEntity = em.find(JobKickEntity.class, jobkickId, ObjectPrivilegeMode.READ);
 			if (jobKickEntity == null || (jobkickType != null && jobKickEntity.getJobkickType().intValue() != jobkickType.intValue())) {
@@ -86,7 +99,9 @@ public class SelectJobKick {
 			} else if (jobKickEntity.getJobkickType() == JobKickConstant.TYPE_FILECHECK) {
 				jobKick = createJobFileCheckInfo(jobKickEntity);
 			} else if (jobKickEntity.getJobkickType() == JobKickConstant.TYPE_MANUAL) {
-				 jobKick = createJobManual(jobKickEntity);
+				jobKick = createJobManual(jobKickEntity);
+			} else if (jobKickEntity.getJobkickType() == JobKickConstant.TYPE_JOBLINKRCV) {
+				jobKick = createJoblinkRcvInfo(jobKickEntity);
 			} else {
 				// 処理なし
 			}
@@ -128,6 +143,9 @@ public class SelectJobKick {
 				} else if (jobKickBean.getJobkickType() == JobKickConstant.TYPE_MANUAL) {
 					// マニュアル実行契機の場合は追加の取得は不要。
 					list.add(createJobManual(jobKickBean));
+				} else if (jobKickBean.getJobkickType() == JobKickConstant.TYPE_JOBLINKRCV) {
+					// ジョブ連携受信実行契機の場合は追加の取得は不要。
+					list.add(createJoblinkRcvInfo(jobKickBean));
 				}
 			}
 			return list;
@@ -203,6 +221,9 @@ public class SelectJobKick {
 			} else if (entity.getJobkickType() == JobKickConstant.TYPE_MANUAL) {
 				// マニュアル実行契機の場合は追加の取得は不要。
 				filterList.add(createJobManual(entity));
+			} else if (entity.getJobkickType() == JobKickConstant.TYPE_JOBLINKRCV) {
+				// ジョブ連携受信実行契機を取得する
+				filterList.add(createJoblinkRcvInfo(entity));
 			}
 		}
 		return filterList;
@@ -216,9 +237,9 @@ public class SelectJobKick {
 	 * @throws JobMasterNotFound
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
-	 * @throws
+	 * @throws DbmsSchedulerNotFound 
 	 */
-	public ArrayList<JobPlan> getPlanList(String userId, JobPlanFilter filter,int plans) throws JobMasterNotFound, InvalidSetting, InvalidRole, HinemosUnknown {
+	public ArrayList<JobPlan> getPlanList(String userId, JobPlanFilter filter,int plans) throws JobMasterNotFound, InvalidSetting, InvalidRole, HinemosUnknown, DbmsSchedulerNotFound {
 
 		m_log.debug("getPlanList()");
 
@@ -230,6 +251,10 @@ public class SelectJobKick {
 			throw je;
 		}
 
+		if (plans <= 0) {
+			plans = PLAN_MAX_DISPLAY_NUMBER;
+		}
+
 		//ジョブ[スケジュール予定]一覧表示に必要なものだけ抽出
 		ArrayList<JobPlan> planList = new ArrayList<JobPlan>();
 		for(JobKickEntity jobKickBean : jobKickList){
@@ -238,17 +263,36 @@ public class SelectJobKick {
 			if (!js.isValid().booleanValue()) {
 				continue;
 			}
-			String str = QuartzUtil.getCronString(js.getScheduleType(),
-					js.getWeek(),js.getHour(),js.getMinute(),
-					js.getFromXminutes(),js.getEveryXminutes());
-			m_log.debug("Cron =" + str);
-			//表示開始日時のデフォルトはマネージャへアクセスしたときの日時
-			Long startTime = HinemosTime.currentTimeMillis();
-			//フィルタの開始時間が設定されていたらこれを基準に表示
-			if(filter != null && filter.getFromDate() != null){
-				startTime = filter.getFromDate();
+
+			JobPlanSchedule planInfo;
+			if (js.getScheduleType() == ScheduleConstant.TYPE_INTERVAL) {
+
+				// 一覧表示の開始日時（フィルタの開始時間が設定されていたらこれを基準に表示）
+				long startTime = HinemosTime.currentTimeMillis();
+				if(filter != null && filter.getFromDate() != null){
+					startTime = filter.getFromDate();
+				}
+
+				// 繰り返し情報は cc_dbms_schedulerテーブルから取得する
+				DbmsSchedulerEntity entity = com.clustercontrol.plugin.util.QueryUtil.getDbmsSchedulerPK(js.getId(),
+						QuartzConstant.GROUP_NAME, ObjectPrivilegeMode.READ);
+
+				planInfo = new JobPlanSchedule(entity.getNextFireTime(), entity.getRepeatInterval(), startTime, js.getCalendarId());
+
+			} else {
+				String str = QuartzUtil.getCronString(js.getScheduleType(),
+						js.getWeek(),js.getHour(),js.getMinute(),
+						js.getFromXminutes(),js.getEveryXminutes());
+				m_log.debug("Cron =" + str);
+				//表示開始日時のデフォルトはマネージャへアクセスしたときの日時
+				Long startTime = HinemosTime.currentTimeMillis();
+				//フィルタの開始時間が設定されていたらこれを基準に表示
+				if(filter != null && filter.getFromDate() != null){
+					startTime = filter.getFromDate();
+				}
+				planInfo = new JobPlanSchedule(str, startTime, js.getCalendarId());
 			}
-			JobPlanSchedule planInfo = new JobPlanSchedule(str, startTime, js.getCalendarId());
+
 			//表示件数分繰り返す
 			int counter = 0;
 			while (counter < plans) {
@@ -318,6 +362,16 @@ public class SelectJobKick {
 		jobSchedule.setWeek(jobKickEntity.getWeek());
 		jobSchedule.setFromXminutes(jobKickEntity.getFromXMinutes());
 		jobSchedule.setEveryXminutes(jobKickEntity.getEveryXMinutes());
+		jobSchedule.setSessionPremakeFlg(jobKickEntity.getSessionPremakeFlg());
+		jobSchedule.setSessionPremakeScheduleType(jobKickEntity.getSessionPremakeScheduleType());
+		jobSchedule.setSessionPremakeWeek(jobKickEntity.getSessionPremakeWeek());
+		jobSchedule.setSessionPremakeHour(jobKickEntity.getSessionPremakeHour());
+		jobSchedule.setSessionPremakeMinute(jobKickEntity.getSessionPremakeMinute());
+		jobSchedule.setSessionPremakeEveryXHour(jobKickEntity.getSessionPremakeEveryXHour());
+		jobSchedule.setSessionPremakeDate(jobKickEntity.getSessionPremakeDate());
+		jobSchedule.setSessionPremakeToDate(jobKickEntity.getSessionPremakeToDate());
+		jobSchedule.setSessionPremakeInternalFlg(jobKickEntity.getSessionPremakeInternalFlg());
+
 		return jobSchedule;
 	}
 
@@ -349,6 +403,8 @@ public class SelectJobKick {
 		jobFileCheck.setEventType(jobKickEntity.getEventType());
 		//ファイルチェック種別が変更の場合 変更種別取得
 		jobFileCheck.setModifyType(jobKickEntity.getModifyType());
+		//ファイルが使用されている場合判定を持ち越す
+		jobFileCheck.setCarryOverJudgmentFlg(jobKickEntity.getCarryOverJudgementFlg());
 
 		return jobFileCheck;
 	}
@@ -367,6 +423,83 @@ public class SelectJobKick {
 		JobKick jobKick = new JobKick();
 		createJobKickInfo(jobKickEntity, jobKick);
 		return jobKick;
+	}
+
+	/**
+	 * JobKickEntityよりJoblinkRcvを作成するクラス
+	 * 
+	 * @param jobKickEntity
+	 * @return ジョブ連携受信情報
+	 * @throws JobMasterNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	private JobLinkRcv createJoblinkRcvInfo(JobKickEntity jobKickEntity) throws JobMasterNotFound, InvalidRole, HinemosUnknown {
+
+		JobLinkRcv jobLinkRcv = new JobLinkRcv();
+		createJobKickInfo(jobKickEntity, jobLinkRcv);
+
+
+		// 送信元ファシリティID取得
+		jobLinkRcv.setFacilityId(jobKickEntity.getFacilityId());
+
+		// 送信元ファシリティパス取得
+		String facilityId = jobKickEntity.getFacilityId();
+		String scopePath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
+		jobLinkRcv.setScope(scopePath);
+
+		// ジョブ連携メッセージID
+		jobLinkRcv.setJoblinkMessageId(jobKickEntity.getJoblinkMessageId());
+
+		// 重要度（情報）
+		jobLinkRcv.setInfoValidFlg(jobKickEntity.getInfoValidFlg());
+
+		// 重要度（警告）
+		jobLinkRcv.setWarnValidFlg(jobKickEntity.getWarnValidFlg());
+
+		// 重要度（危険）
+		jobLinkRcv.setCriticalValidFlg(jobKickEntity.getCriticalValidFlg());
+
+		// 重要度（不明）
+		jobLinkRcv.setUnknownValidFlg(jobKickEntity.getUnknownValidFlg());
+
+		// アプリケーションフラグ
+		jobLinkRcv.setApplicationFlg(jobKickEntity.getApplicationFlg());
+
+		// アプリケーション
+		jobLinkRcv.setApplication(jobKickEntity.getApplication());
+
+		// 監視詳細フラグ
+		jobLinkRcv.setMonitorDetailIdFlg(jobKickEntity.getMonitorDetailIdFlg());
+
+		// 監視詳細
+		jobLinkRcv.setMonitorDetailId(jobKickEntity.getMonitorDetailId());
+
+		// メッセージフラグ
+		jobLinkRcv.setMessageFlg(jobKickEntity.getMessageFlg());
+
+		// メッセージ
+		jobLinkRcv.setMessage(jobKickEntity.getMessage());
+
+		// 拡張情報フラグ
+		jobLinkRcv.setExpFlg(jobKickEntity.getExpFlg());
+
+		// ジョブ連携メッセージの拡張情報設定
+		jobLinkRcv.setJobLinkExpList(new ArrayList<>());
+		if (jobKickEntity.getJobLinkJobkickExpInfoEntities() != null) {
+			for (JobLinkJobkickExpInfoEntity expInfoEntity 
+					: jobKickEntity.getJobLinkJobkickExpInfoEntities()) {
+				JobLinkExpInfo expInfo = new JobLinkExpInfo();
+				expInfo.setKey(expInfoEntity.getId().getKey());
+				expInfo.setValue(expInfoEntity.getValue());
+				jobLinkRcv.getJobLinkExpList().add(expInfo);
+			}
+		}
+
+		// 確認済みメッセージ番号
+		jobLinkRcv.setJoblinkRcvCheckedPosition(jobKickEntity.getJoblinkRcvCheckedPosition());
+
+		return jobLinkRcv;
 	}
 
 	/**

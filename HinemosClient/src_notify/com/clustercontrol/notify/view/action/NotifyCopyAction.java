@@ -33,12 +33,15 @@ import com.clustercontrol.monitor.action.NotifyTableDefineNoCheckBox;
 import com.clustercontrol.notify.bean.NotifyTypeConstant;
 import com.clustercontrol.notify.composite.NotifyListComposite;
 import com.clustercontrol.notify.dialog.NotifyBasicCreateDialog;
+import com.clustercontrol.notify.dialog.NotifyCloudCreateDialog;
 import com.clustercontrol.notify.dialog.NotifyCommandCreateDialog;
 import com.clustercontrol.notify.dialog.NotifyEventCreateDialog;
 import com.clustercontrol.notify.dialog.NotifyInfraCreateDialog;
 import com.clustercontrol.notify.dialog.NotifyJobCreateDialog;
 import com.clustercontrol.notify.dialog.NotifyLogEscalateCreateDialog;
 import com.clustercontrol.notify.dialog.NotifyMailCreateDialog;
+import com.clustercontrol.notify.dialog.NotifyMessageCreateDialog;
+import com.clustercontrol.notify.dialog.NotifyRestCreateDialog;
 import com.clustercontrol.notify.dialog.NotifyStatusCreateDialog;
 import com.clustercontrol.notify.view.NotifyListView;
 import com.clustercontrol.util.Messages;
@@ -83,6 +86,12 @@ public class NotifyCopyAction extends AbstractHandler implements IElementUpdater
 			dialog = new NotifyCommandCreateDialog(shell, managerName, notifyId, false);
 		} else if (NotifyTypeConstant.TYPE_INFRA == notifyType) {
 			dialog = new NotifyInfraCreateDialog(shell, managerName, notifyId, false);
+		} else if (NotifyTypeConstant.TYPE_REST == notifyType) {
+			dialog = new NotifyRestCreateDialog(shell, managerName, notifyId, false);
+		} else if (NotifyTypeConstant.TYPE_CLOUD == notifyType) {
+			dialog = new NotifyCloudCreateDialog(shell, managerName, notifyId, false);
+		} else if (NotifyTypeConstant.TYPE_MESSAGE == notifyType) {
+			dialog = new NotifyMessageCreateDialog(shell, managerName, notifyId, false);
 		} else {
 			throw new InternalError("unknown notify type select");
 		}

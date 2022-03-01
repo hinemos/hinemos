@@ -13,11 +13,10 @@ import java.util.Date;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.bean.ThreadInfo;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -89,7 +88,7 @@ public class ThreadActivityMonitor extends SelfCheckMonitorBase {
 			return;
 		}
 		String[] msgAttr1 = { Long.toString(threadInfo.thread.getId()), threadInfo.thread.getName(), threadInfo.taskClassName, startTimeStr, Integer.toString(thresholdSec) };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_012_SYS_SFC, msgAttr1,
+		AplLogger.put(InternalIdCommon.SYS_SFC_SYS_012, msgAttr1,
 				"internal logic (tid " +
 						threadInfo.thread.getId() +
 						", thread name " +

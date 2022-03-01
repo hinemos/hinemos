@@ -10,9 +10,11 @@ package com.clustercontrol.utility.settings.platform.conv;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.SystemPrivilegeInfoResponse;
 
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.platform.xml.SystemPrivilegeInfo;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;
 
 /**
  * ユーザ情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -77,16 +79,17 @@ public class SystemPrivilegeConv {
 	 * @param privilegeInfo
 	 *            XMLシステム権限情報オブジェクト
 	 * @return Dtoシステム権限情報オブジェクト
+	 * @throws Exception 
 	 */
-	public static com.clustercontrol.ws.access.SystemPrivilegeInfo convSystemPrivilegeXml2Dto(SystemPrivilegeInfo privilegeInfo) {
+	public static SystemPrivilegeInfoResponse convSystemPrivilegeXml2Dto(SystemPrivilegeInfo privilegeInfo) throws Exception {
 
-		com.clustercontrol.ws.access.SystemPrivilegeInfo dto = new com.clustercontrol.ws.access.SystemPrivilegeInfo();
+		SystemPrivilegeInfoResponse dto = new SystemPrivilegeInfoResponse();
 
 		try {
 			if(privilegeInfo.getSystemFunction() != null
 					&& !"".equals(privilegeInfo.getSystemFunction())){
-				dto.setSystemFunction(privilegeInfo.getSystemFunction());
-				dto.setEditType("1");//1固定
+				dto.setSystemFunction(OpenApiEnumConverter.stringToEnum(privilegeInfo.getSystemFunction(), SystemPrivilegeInfoResponse.SystemFunctionEnum.class));
+				dto.setEditType(SystemPrivilegeInfoResponse.EditTypeEnum.DIALOG );//1固定
 			}else{
 				log.warn(Messages.getString("SettingTools.EssentialValueInvalid") 
 						+ "(SystemFunction) : " + privilegeInfo.toString());
@@ -95,7 +98,7 @@ public class SystemPrivilegeConv {
 
 			if(privilegeInfo.getSystemPrivilege() != null
 					&& !"".equals(privilegeInfo.getSystemPrivilege())){
-				dto.setSystemPrivilege(privilegeInfo.getSystemPrivilege());
+				dto.setSystemPrivilege(OpenApiEnumConverter.stringToEnum(privilegeInfo.getSystemPrivilege(), SystemPrivilegeInfoResponse.SystemPrivilegeEnum.class));
 			}else{
 				log.warn(Messages.getString("SettingTools.EssentialValueInvalid") 
 						+ "(SystemPrivilege) : " + privilegeInfo.toString());
@@ -103,6 +106,7 @@ public class SystemPrivilegeConv {
 			}
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
+			throw e;
 		}
 		
 		return dto;
@@ -121,13 +125,14 @@ public class SystemPrivilegeConv {
 	 * @param dto
 	 * @return
 	 */
-	public static SystemPrivilegeInfo convSystemPrivilegeDto2Xml(String roleId, com.clustercontrol.ws.access.SystemPrivilegeInfo dto) {
+	public static SystemPrivilegeInfo convSystemPrivilegeDto2Xml(String roleId, SystemPrivilegeInfoResponse dto) {
 
 		SystemPrivilegeInfo privilegeInfo = new SystemPrivilegeInfo();
 
 		privilegeInfo.setRoleId(roleId);
-		privilegeInfo.setSystemFunction(dto.getSystemFunction());
-		privilegeInfo.setSystemPrivilege(dto.getSystemPrivilege());
+		privilegeInfo.setSystemFunction(OpenApiEnumConverter.enumToString(dto.getSystemFunction()));
+		
+		privilegeInfo.setSystemPrivilege(OpenApiEnumConverter.enumToString(dto.getSystemPrivilege()));
 		//privilegeInfo.setEditType(dto.getEditType());
 
 		return privilegeInfo;

@@ -1,0 +1,24 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"RpaScenarioOperationResultCreateSettingList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"RpaScenarioOperationResultCreateSetting.facilityId",
+			"RpaScenarioOperationResultCreateSetting.description",
+			"RpaScenarioOperationResultCreateSetting.ownerRoleId",
+			"RpaScenarioOperationResultCreateSetting.interval",
+			"RpaScenarioOperationResultCreateSetting.calendarId",
+			"RpaScenarioOperationResultCreateSetting.createFromDate",
+			"RpaScenarioOperationResultCreateSetting.validFlg",
+			"RpaScenarioOperationResultCreateSetting.application"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"RpaScenarioOperationResultCreateSetting",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

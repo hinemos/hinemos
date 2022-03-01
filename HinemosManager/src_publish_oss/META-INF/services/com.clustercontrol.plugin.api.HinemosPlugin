@@ -1,4 +1,5 @@
 com.clustercontrol.plugin.impl.AsyncWorkerPlugin
+com.clustercontrol.plugin.impl.AuthenticationPlugin
 com.clustercontrol.plugin.impl.CacheInitializerPlugin
 com.clustercontrol.plugin.impl.Log4jReloadPlugin
 com.clustercontrol.plugin.impl.SummaryPlugin
@@ -10,10 +11,10 @@ com.clustercontrol.plugin.impl.SnmpTrapPlugin
 com.clustercontrol.plugin.impl.CustomTrapPlugin
 com.clustercontrol.plugin.impl.SystemLogPlugin
 com.clustercontrol.plugin.impl.WebServiceAgentPlugin
-com.clustercontrol.plugin.impl.WebServiceCorePlugin
 com.clustercontrol.plugin.impl.WebServiceStartHTTPSPlugin
 com.clustercontrol.plugin.impl.InfraPlugin
 com.clustercontrol.plugin.impl.ProxyManagerPlugin
 com.clustercontrol.plugin.impl.HubPlugin
-com.clustercontrol.plugin.impl.RestApiPlugin
 com.clustercontrol.plugin.impl.EventCustomCommandPlugin
+com.clustercontrol.plugin.impl.RestServiceClientPlugin
+com.clustercontrol.plugin.impl.RestServiceAgentPlugin

@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * Collectorが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class CollectorNotFound extends HinemosException {
+public class CollectorNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = 8373432999993350125L;
 

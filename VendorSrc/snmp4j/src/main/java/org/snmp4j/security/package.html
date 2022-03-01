@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>org.snmp4j.security</title>
+<!--
+
+/*_############################################################################
+  _##
+  _##  SNMP4J
+  _##
+  _##  Copyright 2003-2004  Frank Fock and Jochen Katz (SNMP4J.org)
+  _##
+  _##  Licensed under the Apache License, Version 2.0 (the "License");
+  _##  you may not use this file except in compliance with the License.
+  _##  You may obtain a copy of the License at
+  _##
+  _##      http://www.apache.org/licenses/LICENSE-2.0
+  _##
+  _##  Unless required by applicable law or agreed to in writing, software
+  _##  distributed under the License is distributed on an "AS IS" BASIS,
+  _##  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  _##  See the License for the specific language governing permissions and
+  _##  limitations under the License.
+  _##
+  _##########################################################################*/
+
+-->
+</head>
+<body bgcolor="white">
+
+Provides classes and interfaces for authentication and privacy of SNMP(v3)
+messages.
+<p>
+The <code>org.snmp4j.security</code> package contains three groups of
+classes and interfaces:
+</p>
+<ul>
+<li>The authentication protocols group contains interfaces and classes for
+  authentication of SNMP(v3) messages.
+</li>
+<li>The privacy protocols group contains interfaces and classes for encryption
+  and decryption of SNMP(v3) messages.
+</li>
+<li>The security model group combines authentication and privacy protocols
+  to provide security services to message processing models.
+</li>
+</ul>
+<p>
+  Authentication as well as privacy protocols are security protocols and
+  thus both are derived from the common interface <code>SecurityProtocol</code>.
+  In order to be able to use a security protocol with SNMP4J, the protocol
+  implementation class has to be registered with the
+  <code>SecurityProtocols</code> singleton, which provides access to
+  authentication and privacy protocols.
+</p>
+<h2>Authentication Protocols
+</h2>
+<p>
+All SNMP4J authentication protocol implementations have to implement the
+<code>AuthenticationProtocol</code> interface. SNMP4J provides implementation
+for the following authentication protocols:
+</p>
+<ul>
+  <li>MD5, which is implemented by <code>AuthMD5</code> and</li>
+  <li>SHA, which is implemented by <code>AuthSHA</code>.
+  </li>
+</ul>
+<h2>Privacy Protocols
+</h2>
+<p>
+  All SNMP4J privacy protocol implementations have to implement the
+<code>PrivacyProtocol</code> interface. SNMP4J provides implementation
+for the following privacy protocols:
+</p>
+<ul>
+  <li>DES in CBC mode, which is implemented by <code>PrivDES</code> and</li>
+  <li>AES with 128bit key, which is implemented by <code>PrivAES128</code>.
+  </li>
+  <li>AES with 192bit key, which is implemented by <code>PrivAES192</code>.
+  </li>
+  <li>AES with 256bit key, which is implemented by <code>PrivAES256</code>. In
+    order to be able to use 256bit strong encryption, the strong encryption
+    enhancement package has to be downloaded and installed.
+  </li>
+</ul>
+<h2>Security Models
+</h2>
+<p>
+All SNMP4J security models have to implement the <code>SecurityModel</code>
+interface. Before a security model can be used with SNMP4J, it has to be
+registered with the <code>SecurityModels</code> singleton which provides
+access to security models. SNMP4J implements a single security model, the
+<em>User Based Security Model (USM)</em>.
+</p>
+<p>
+  The <code>USM</code> class uses a user name table (which contains
+  user names) and a user table (which contains localized user information) to
+  store user information. A time table is used to store time information
+  about SNMP engines to protect SNMP communication against replay attacks
+  if the corresponding security level has chosen.
+</p>
+<p>
+  The following UML class diagram shows the most important classes of the
+  <code>org.snmp4j.security</code> package and their relationships
+  (relationships to other packages are not shown):
+</p>
+<img alt="UML Class Diagram security package"
+  src="doc-files/org_snmp4j_security.gif">
+</body>
+</html>

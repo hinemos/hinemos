@@ -39,7 +39,10 @@
 				{"value":"3", "name":"name_jobNotification"},
 				{"value":"4", "name":"name_logNotification"},
 				{"value":"5", "name":"name_commandNotification"},
-				{"value":"6", "name":"name_infraNotification"}
+				{"value":"6", "name":"name_infraNotification"},
+				{"value":"7", "name":"name_restNotification"},
+				{"value":"8", "name":"name_messageNotification"},
+				{"value":"9", "name":"name_cloudNotification"}
 			]
 		}
 	]},
@@ -125,6 +128,24 @@
 	
 	{
 	"propName":"notifyInfraInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]},
+
+	{
+	"propName":"notifyRestInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]},
+
+	{
+	"propName":"notifyMessageInfo",
+	"annotations":[
+		{"type":"Comparison"}
+	]},
+
+	{
+	"propName":"notifyCloudInfo",
 	"annotations":[
 		{"type":"Comparison"}
 	]}

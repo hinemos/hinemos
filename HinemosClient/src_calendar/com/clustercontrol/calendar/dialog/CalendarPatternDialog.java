@@ -15,6 +15,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -30,6 +32,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.CalendarPatternInfoResponse;
+import org.openapitools.client.model.YMDResponse;
 import org.vafada.swtcalendar.SWTCalendar;
 import org.vafada.swtcalendar.SWTCalendarEvent;
 import org.vafada.swtcalendar.SWTCalendarListener;
@@ -45,8 +49,6 @@ import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.calendar.CalendarPatternInfo;
-import com.clustercontrol.ws.calendar.Ymd;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -58,22 +60,22 @@ import com.clustercontrol.util.WidgetTestUtil;
 public class CalendarPatternDialog extends CommonDialog {
 	/** */
 	private Shell shell = null;
-	/** カレンダコンポジット*/
+	/** カレンダコンポジット */
 	private SWTCalendar calPatternCalendar = null;
-	/** ID*/
+	/** ID */
 	private Text calPatternIdText = null;
-	/** 名*/
+	/** 名 */
 	private Text calPatternNameText = null;
-	/** 選択した日付を表示するSWTリスト*/
+	/** 選択した日付を表示するSWTリスト */
 	private List calPatternList = null;
 
-	/** 選択した日付を保持するリスト*/
-	private ArrayList<Ymd> m_ymdList;
+	/** 選択した日付を保持するリスト */
+	private ArrayList<YMDResponse> m_ymdList;
 	/** */
-	private CalendarPatternInfo inputData = null;
-	/** ID*/
+	private CalendarPatternInfoResponse inputData = null;
+	/** ID */
 	private String id = "";
-	/** 作成 or 変更*/
+	/** 作成 or 変更 */
 	private int mode;
 
 	/** オーナーロールID用テキスト */
@@ -82,6 +84,8 @@ public class CalendarPatternDialog extends CommonDialog {
 	private String managerName = null;
 	/** マネージャ名コンボボックス用コンポジット */
 	private ManagerListComposite m_managerComposite = null;
+	/** ログ */
+	private static Log m_log = LogFactory.getLog( CalendarDetailDialog.class );
 
 	/**
 	 * コンストラクタ
@@ -89,7 +93,7 @@ public class CalendarPatternDialog extends CommonDialog {
 	 * @param parent
 	 * @since 1.0.0
 	 */
-	public CalendarPatternDialog(Shell parent, String managerName, String id,int mode) {
+	public CalendarPatternDialog(Shell parent, String managerName, String id, int mode) {
 		super(parent);
 
 		this.managerName = managerName;
@@ -129,7 +133,7 @@ public class CalendarPatternDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		labelManager.setLayoutData(gridData);
 		labelManager.setText(Messages.getString("facility.manager") + " : ");
-		if(this.mode == PropertyDefineConstant.MODE_MODIFY){
+		if (this.mode == PropertyDefineConstant.MODE_MODIFY) {
 			this.m_managerComposite = new ManagerListComposite(parent, SWT.NONE, false);
 		} else {
 			this.m_managerComposite = new ManagerListComposite(parent, SWT.NONE, true);
@@ -148,7 +152,7 @@ public class CalendarPatternDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_managerComposite.setLayoutData(gridData);
 
-		if(this.managerName != null) {
+		if (this.managerName != null) {
 			this.m_managerComposite.setText(this.managerName);
 		}
 
@@ -164,7 +168,7 @@ public class CalendarPatternDialog extends CommonDialog {
 		/*
 		 * カレンダパターンID
 		 */
-		//ラベル
+		// ラベル
 		Label lblId = new Label(parent, SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "id", lblId);
 		gridData = new GridData();
@@ -173,7 +177,7 @@ public class CalendarPatternDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		lblId.setLayoutData(gridData);
 		lblId.setText(Messages.getString("calendar.pattern.id") + " : ");
-		//テキスト
+		// テキスト
 		calPatternIdText = new Text(parent, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "id", calPatternIdText);
 		gridData = new GridData();
@@ -181,7 +185,7 @@ public class CalendarPatternDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		calPatternIdText.setLayoutData(gridData);
-		calPatternIdText.addModifyListener(new ModifyListener(){
+		calPatternIdText.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
@@ -200,7 +204,7 @@ public class CalendarPatternDialog extends CommonDialog {
 		/*
 		 * カレンダパターン名
 		 */
-		//ラベル
+		// ラベル
 		Label lblName = new Label(parent, SWT.LEFT);
 		WidgetTestUtil.setTestId(this, "name", lblName);
 		gridData = new GridData();
@@ -209,7 +213,7 @@ public class CalendarPatternDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		lblName.setLayoutData(gridData);
 		lblName.setText(Messages.getString("calendar.pattern.name") + " : ");
-		//テキスト
+		// テキスト
 		calPatternNameText = new Text(parent, SWT.BORDER);
 		WidgetTestUtil.setTestId(this, "name", calPatternNameText);
 		gridData = new GridData();
@@ -217,7 +221,7 @@ public class CalendarPatternDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		calPatternNameText.setLayoutData(gridData);
-		calPatternNameText.addModifyListener(new ModifyListener(){
+		calPatternNameText.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
@@ -244,13 +248,12 @@ public class CalendarPatternDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		labelRoleId.setLayoutData(gridData);
 		labelRoleId.setText(Messages.getString("owner.role.id") + " : ");
-		if (this.mode == PropertyDefineConstant.MODE_ADD
-				|| this.mode == PropertyDefineConstant.MODE_COPY) {
-			this.calPatternRoleIdListComposite = new RoleIdListComposite(
-					parent, SWT.NONE, this.managerName, true, Mode.OWNER_ROLE);
+		if (this.mode == PropertyDefineConstant.MODE_ADD || this.mode == PropertyDefineConstant.MODE_COPY) {
+			this.calPatternRoleIdListComposite = new RoleIdListComposite(parent, SWT.NONE, this.managerName, true,
+					Mode.OWNER_ROLE);
 		} else {
-			this.calPatternRoleIdListComposite = new RoleIdListComposite(
-					parent, SWT.NONE, this.managerName, false, Mode.OWNER_ROLE);
+			this.calPatternRoleIdListComposite = new RoleIdListComposite(parent, SWT.NONE, this.managerName, false,
+					Mode.OWNER_ROLE);
 		}
 		WidgetTestUtil.setTestId(this, "roleidlist", calPatternRoleIdListComposite);
 		gridData = new GridData();
@@ -290,62 +293,62 @@ public class CalendarPatternDialog extends CommonDialog {
 		gridData.verticalSpan = 2;
 
 		calPatternCalendar.setLayoutData(gridData);
-		//カレンダー日付変更時リスナー
-		calPatternCalendar.addSWTCalendarListener(new SWTCalendarListener(){
+		// カレンダー日付変更時リスナー
+		calPatternCalendar.addSWTCalendarListener(new SWTCalendarListener() {
 
 			@Override
 			public void dateChanged(SWTCalendarEvent event) {
 				Date dateBuffer = event.getCalendar().getTime();
 
-				//取得した日付をYmd型へ変換
+				// 取得した日付をYmd型へ変換
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-				//カレンダパターンの場合、タイムゾーンは反映しない(休日データ等はタイムゾーンによって日付前後させない)
+				// カレンダパターンの場合、タイムゾーンは反映しない(休日データ等はタイムゾーンによって日付前後させない)
 				String selectDate = sdf.format(dateBuffer);
 				String[] selectYmd = selectDate.split("/");
-				Ymd selectDay = new Ymd();
-				selectDay.setYear(Integer.parseInt(selectYmd[0]));
-				selectDay.setMonth(Integer.parseInt(selectYmd[1]));
-				selectDay.setDay(Integer.parseInt(selectYmd[2]));
+				YMDResponse selectDay = new YMDResponse();
+				selectDay.setYearNo(Integer.parseInt(selectYmd[0]));
+				selectDay.setMonthNo(Integer.parseInt(selectYmd[1]));
+				selectDay.setDayNo(Integer.parseInt(selectYmd[2]));
 
-				//登録の有無を確認する
+				// 登録の有無を確認する
 				Boolean flag = false;
-				Ymd delYMD = new Ymd();
-				for(Ymd ymd : m_ymdList){
-					if(equalsYmd(ymd,selectDay)){
+				YMDResponse delYMD = new YMDResponse();
+				for (YMDResponse ymd : m_ymdList) {
+					if (equalsYmd(ymd, selectDay)) {
 						flag = true;
 						delYMD = ymd;
 						break;
 					}
 				}
-				if(flag){
-					//登録済みTRUE の場合、リストから削除
+				if (flag) {
+					// 登録済みTRUE の場合、リストから削除
 					m_ymdList.remove(delYMD);
-				}else {
-					//未登録FALSE の場合、リストに追加
+				} else {
+					// 未登録FALSE の場合、リストに追加
 					m_ymdList.add(selectDay);
 				}
-				//昇順ソート
-				Collections.sort(m_ymdList, new Comparator<Ymd>(){
+				// 昇順ソート
+				Collections.sort(m_ymdList, new Comparator<YMDResponse>() {
 					@Override
-					public int compare(Ymd y1, Ymd y2) {
+					public int compare(YMDResponse y1, YMDResponse y2) {
 						Calendar ymd1 = Calendar.getInstance();
-						ymd1.set(y1.getYear(), y1.getMonth() - 1, y1.getDay());
+						ymd1.set(y1.getYearNo(), y1.getMonthNo() - 1, y1.getDayNo());
 						Calendar ymd2 = Calendar.getInstance();
-						ymd2.set(y2.getYear(), y2.getMonth() - 1, y2.getDay());
+						ymd2.set(y2.getYearNo(), y2.getMonthNo() - 1, y2.getDayNo());
 						return ymd1.getTime().compareTo(ymd2.getTime());
 					}
 				});
-				//表示用SWTリストリセット
+				// 表示用SWTリストリセット
 				calPatternList.removeAll();
-				for(Ymd ymd : m_ymdList){
-					//表示用リストに格納
+				for (YMDResponse ymd : m_ymdList) {
+					// 表示用リストに格納
 					calPatternList.add(yyyyMMdd(ymd));
 				}
 				update();
 			}
 		});
 		calPatternCalendar.updateCalendar(m_ymdList);
-		//ラベル
+		// ラベル
 		Label lbl = new Label(calPatternEtcGroup, SWT.CENTER);
 		WidgetTestUtil.setTestId(this, null, lbl);
 		gridData = new GridData();
@@ -353,7 +356,7 @@ public class CalendarPatternDialog extends CommonDialog {
 		gridData.verticalSpan = 1;
 		lbl.setLayoutData(gridData);
 		lbl.setText(" " + Messages.getString("calendar.pattern.record.date"));
-		calPatternList = new List(calPatternEtcGroup,SWT.MULTI|SWT.BORDER|SWT.V_SCROLL);
+		calPatternList = new List(calPatternEtcGroup, SWT.MULTI | SWT.BORDER | SWT.V_SCROLL);
 		WidgetTestUtil.setTestId(this, null, calPatternList);
 		gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
@@ -365,17 +368,18 @@ public class CalendarPatternDialog extends CommonDialog {
 		calPatternList.setLayoutData(gridData);
 		// ダイアログを調整
 		this.adjustDialog();
-		//ダイアログに情報反映
+		// ダイアログに情報反映
 		this.reflectCalendar();
 
-		//更新
+		// 更新
 		update();
 	}
+
 	/**
 	 * ダイアログエリアを調整します。
 	 *
 	 */
-	private void adjustDialog(){
+	private void adjustDialog() {
 		// サイズを最適化
 		// グリッドレイアウトを用いた場合、こうしないと横幅が画面いっぱいになります。
 		shell.pack();
@@ -386,93 +390,92 @@ public class CalendarPatternDialog extends CommonDialog {
 		shell.setLocation((calPatternAdjustDisplay.getBounds().width - shell.getSize().x) / 2,
 				(calPatternAdjustDisplay.getBounds().height - shell.getSize().y) / 2);
 	}
+
 	/**
 	 * ２つのYmd型が等しいか判定
+	 * 
 	 * @param y1
 	 * @param y2
 	 * @return 等しい true 等しくない false
 	 */
-	private boolean equalsYmd(Ymd y1, Ymd y2){
-		if(y1.getYear().equals(y2.getYear())){
-			if(y1.getMonth().equals(y2.getMonth())){
-				if(y1.getDay().equals(y2.getDay())){
+	private boolean equalsYmd(YMDResponse y1, YMDResponse y2) {
+		if (y1.getYearNo().equals(y2.getYearNo())) {
+			if (y1.getMonthNo().equals(y2.getMonthNo())) {
+				if (y1.getDayNo().equals(y2.getDayNo())) {
 					return true;
 				}
 			}
 		}
 		return false;
 	}
+
 	/**
-	 * Ymd(
-	 * Integer year
-	 * Integer month
-	 * Integer day
-	 * )をyyyy/MM/ddのString型へ変換する
+	 * Ymd( Integer year Integer month Integer day )をyyyy/MM/ddのString型へ変換する
+	 * 
 	 * @param ymd
 	 * @return
 	 */
-	private String yyyyMMdd(Ymd ymd){
-		return ymd.getYear() + "/" + ymd.getMonth() + "/" + ymd.getDay();
+	private String yyyyMMdd(YMDResponse ymd) {
+		return ymd.getYearNo() + "/" + ymd.getMonthNo() + "/" + ymd.getDayNo();
 	}
 
 	/**
 	 * 更新処理
 	 *
 	 */
-	private void update(){
+	private void update() {
 		// 必須項目を明示
 		// IDのインデックス：9
-		if("".equals(this.calPatternIdText.getText())){
+		if ("".equals(this.calPatternIdText.getText())) {
 			this.calPatternIdText.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-		}else{
+		} else {
 			this.calPatternIdText.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
 		// 名のインデックス：9
-		if("".equals(this.calPatternNameText.getText())){
+		if ("".equals(this.calPatternNameText.getText())) {
 			this.calPatternNameText.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-		}else{
+		} else {
 			this.calPatternNameText.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
-		//SWTカレンダ更新
+		// SWTカレンダ更新
 		calPatternCalendar.updateCalendar(m_ymdList);
 	}
+
 	/**
 	 * ダイアログにカレンダパターン情報を反映します。
 	 */
 	private void reflectCalendar() {
 		// 初期表示
-		if(mode == PropertyDefineConstant.MODE_MODIFY
-				|| mode == PropertyDefineConstant.MODE_COPY){
+		if (mode == PropertyDefineConstant.MODE_MODIFY || mode == PropertyDefineConstant.MODE_COPY) {
 			// 変更、コピーの場合、情報取得
 			inputData = new GetCalendar().getCalendarPattern(this.managerName, this.id);
-		}else{
+		} else {
 			// 作成の場合
-			inputData = new CalendarPatternInfo();
+			inputData = new CalendarPatternInfoResponse();
 		}
 		if (inputData == null)
 			throw new InternalError("CalendarPatternInfo is null");
 
-		this.m_ymdList = new ArrayList<Ymd>();
-		//カレンダ[カレンダパターン]情報取得
-		if (inputData.getCalPatternId() != null) {
-			this.id = inputData.getCalPatternId();
-			this.calPatternIdText.setText(inputData.getCalPatternId());
-			//カレンダパターン定義変更の際にはカレンダパターンIDは変更不可
+		this.m_ymdList = new ArrayList<YMDResponse>();
+		// カレンダ[カレンダパターン]情報取得
+		if (inputData.getCalendarPatternId() != null) {
+			this.id = inputData.getCalendarPatternId();
+			this.calPatternIdText.setText(inputData.getCalendarPatternId());
+			// カレンダパターン定義変更の際にはカレンダパターンIDは変更不可
 			if (this.mode == PropertyDefineConstant.MODE_MODIFY) {
 				this.calPatternIdText.setEnabled(false);
 			}
 		}
-		if(inputData.getCalPatternName() != null){
-			this.calPatternNameText.setText(inputData.getCalPatternName());
+		if (inputData.getCalendarPatternName() != null) {
+			this.calPatternNameText.setText(inputData.getCalendarPatternName());
 		}
-		if(inputData.getYmd() != null){
-			for(Ymd ymd : inputData.getYmd()){
-				m_ymdList = (ArrayList<Ymd>) inputData.getYmd();
+		if (inputData.getCalPatternDetailInfoEntities() != null) {
+			for (YMDResponse ymd : inputData.getCalPatternDetailInfoEntities()) {
+				m_ymdList = (ArrayList<YMDResponse>) inputData.getCalPatternDetailInfoEntities();
 				calPatternList.add(yyyyMMdd(ymd));
 			}
-		}
-		else {
-			m_ymdList = new ArrayList<Ymd>();
+		} else {
+			m_ymdList = new ArrayList<YMDResponse>();
 		}
 
 		// オーナーロールID取得
@@ -487,30 +490,36 @@ public class CalendarPatternDialog extends CommonDialog {
 	 * @return
 	 */
 	private void createCalendarIrregularInfo() {
-		Long regDate = inputData.getRegDate();
+		String regDate = inputData.getRegDate();
 		String regUser = inputData.getRegUser();
 
-		inputData = new CalendarPatternInfo();
-		//カレンダパターンID取得
-		if(calPatternIdText.getText().length() > 0){
-			inputData.setCalPatternId(calPatternIdText.getText());
+		inputData = new CalendarPatternInfoResponse();
+		// カレンダパターンID取得
+		if (calPatternIdText.getText().length() > 0) {
+			inputData.setCalendarPatternId(calPatternIdText.getText());
 		}
-		//カレンダパターン名取得
-		if(calPatternNameText.getText().length() > 0){
-			inputData.setCalPatternName(calPatternNameText.getText());
+		// カレンダパターン名取得
+		if (calPatternNameText.getText().length() > 0) {
+			inputData.setCalendarPatternName(calPatternNameText.getText());
 		}
-		//登録日取得
-		if(m_ymdList == null){
-			m_ymdList = new ArrayList<Ymd>();
+		// 登録日取得
+		if (m_ymdList == null) {
+			m_ymdList = new ArrayList<YMDResponse>();
 		}
-		for(Ymd ymd : m_ymdList){
-			inputData.getYmd().add(ymd);
+		
+		if(inputData.getCalPatternDetailInfoEntities() == null){
+			inputData.setCalPatternDetailInfoEntities(new ArrayList<YMDResponse>());
+		}
+		
+		
+		for (YMDResponse ymd : m_ymdList) {
+			
+			inputData.getCalPatternDetailInfoEntities().add(ymd);
 		}
 		inputData.setRegDate(regDate);
 		inputData.setRegUser(regUser);
 
-
-		//オーナーロールID
+		// オーナーロールID
 		if (calPatternRoleIdListComposite.getText().length() > 0) {
 			inputData.setOwnerRoleId(calPatternRoleIdListComposite.getText());
 		}
@@ -520,25 +529,26 @@ public class CalendarPatternDialog extends CommonDialog {
 	protected ValidateResult validate() {
 		return null;
 	}
+
 	@Override
 	protected boolean action() {
 		boolean result = false;
 		createCalendarIrregularInfo();
-		CalendarPatternInfo info = this.inputData;
 		String managerName = this.m_managerComposite.getText();
-		if(info != null){
-			if(mode == PropertyDefineConstant.MODE_ADD){
-				// 作成の場合+
-				info = this.inputData;
-				result = new AddCalendar().addCalendarPatternInfo(managerName, info);
-			} else if (mode == PropertyDefineConstant.MODE_MODIFY){
-				// 変更の場合
-				info.setCalPatternId(calPatternIdText.getText());
-				result = new ModifyCalendar().modifyPatternInfo(managerName, info);
-			} else if(mode == PropertyDefineConstant.MODE_COPY){
-				// コピーの場合
-				info.setCalPatternId(calPatternIdText.getText());
-				result = new AddCalendar().addCalendarPatternInfo(managerName, info);
+		if (this.inputData != null) {
+			try {
+				if (mode == PropertyDefineConstant.MODE_ADD) {
+					// 作成の場合
+					result = new AddCalendar().addCalendarPatternInfo(managerName, this.inputData);
+				} else if (mode == PropertyDefineConstant.MODE_MODIFY) {
+					// 変更の場合
+					result = new ModifyCalendar().modifyPatternInfo(managerName, this.inputData, calPatternIdText.getText());
+				} else if (mode == PropertyDefineConstant.MODE_COPY) {
+					// コピーの場合
+					result = new AddCalendar().addCalendarPatternInfo(managerName, this.inputData);
+				}
+			} catch (Exception e) {
+				m_log.error(e.getMessage());
 			}
 		}
 		return result;

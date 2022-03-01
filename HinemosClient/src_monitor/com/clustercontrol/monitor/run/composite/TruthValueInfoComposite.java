@@ -17,14 +17,14 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorTruthValueInfoResponse;
 
+import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.monitor.run.bean.TruthConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorTruthValueInfo;
 
 /**
  * 真偽値監視の判定情報（重要度）コンポジットクラス<BR>
@@ -213,20 +213,38 @@ public class TruthValueInfoComposite extends Composite {
 	 *
 	 * @param info 設定値として用いる監視情報
 	 */
-	public void setInputData(MonitorInfo info) {
+	public void setInputData(MonitorInfoResponse info) {
 
 		if(info != null){
 
-			List<MonitorTruthValueInfo> list = info.getTruthValueInfo();
+			List<MonitorTruthValueInfoResponse> list = info.getTruthValueInfo();
 			if(list != null){
 				for(int index=0; index<list.size(); index++){
-					MonitorTruthValueInfo truthValueInfo = list.get(index);
+					MonitorTruthValueInfoResponse truthValueInfo = list.get(index);
 					if(truthValueInfo != null){
-						if(truthValueInfo.getTruthValue() == TruthConstant.TYPE_TRUE){
-							this.m_comboTrue.setText(PriorityMessage.typeToString(truthValueInfo.getPriority()));
+						int priorityType = 0;
+						switch (truthValueInfo.getPriority()) {
+						case CRITICAL:
+							priorityType = PriorityConstant.TYPE_CRITICAL;
+							break;
+						case WARNING: 
+							priorityType = PriorityConstant.TYPE_WARNING;
+							break;
+						case INFO:
+							priorityType = PriorityConstant.TYPE_INFO;
+							break;
+						case UNKNOWN:
+							priorityType = PriorityConstant.TYPE_UNKNOWN;
+							break;
+						case NONE:
+							priorityType = PriorityConstant.TYPE_NONE;
+							break;
 						}
-						else if(truthValueInfo.getTruthValue() == TruthConstant.TYPE_FALSE){
-							this.m_comboFalse.setText(PriorityMessage.typeToString(truthValueInfo.getPriority()));
+						if(truthValueInfo.getTruthValue() == MonitorTruthValueInfoResponse.TruthValueEnum.TRUE_VALUE){
+							this.m_comboTrue.setText(PriorityMessage.typeToString(priorityType));
+						}
+						else if(truthValueInfo.getTruthValue() == MonitorTruthValueInfoResponse.TruthValueEnum.FALSE_VALUE){
+							this.m_comboFalse.setText(PriorityMessage.typeToString(priorityType));
 						}
 					}
 				}
@@ -240,26 +258,22 @@ public class TruthValueInfoComposite extends Composite {
 	 * @param info 入力値を設定する監視情報
 	 * @return 検証結果
 	 */
-	public ValidateResult createInputData(MonitorInfo info) {
+	public ValidateResult createInputData(MonitorInfoResponse info) {
 
-		ArrayList<MonitorTruthValueInfo> valueList = new ArrayList<MonitorTruthValueInfo>();
+		info.setTruthValueInfo(new ArrayList<>());
 
 		// 値がTrueの場合
-		MonitorTruthValueInfo valueInfo = new MonitorTruthValueInfo();
-		valueInfo.setMonitorId(info.getMonitorId());
-		valueInfo.setTruthValue(TruthConstant.TYPE_TRUE);
-		valueInfo.setPriority(PriorityMessage.stringToType(this.m_comboTrue.getText()));
-		valueList.add(valueInfo);
+		MonitorTruthValueInfoResponse valueInfo = new MonitorTruthValueInfoResponse();
+		valueInfo.setTruthValue(MonitorTruthValueInfoResponse.TruthValueEnum.TRUE_VALUE);
+		valueInfo.setPriority(PriorityMessage.stringToEnum(
+				this.m_comboTrue.getText(), MonitorTruthValueInfoResponse.PriorityEnum.class));
+		info.getTruthValueInfo().add(valueInfo);
 
-		valueInfo = new MonitorTruthValueInfo();
-		valueInfo.setMonitorId(info.getMonitorId());
-		valueInfo.setTruthValue(TruthConstant.TYPE_FALSE);
-		valueInfo.setPriority(PriorityMessage.stringToType(this.m_comboFalse.getText()));
-		valueList.add(valueInfo);
-
-		List<MonitorTruthValueInfo> monitorTruthValueInfoList = info.getTruthValueInfo();
-		monitorTruthValueInfoList.clear();
-		monitorTruthValueInfoList.addAll(valueList);
+		valueInfo = new MonitorTruthValueInfoResponse();
+		valueInfo.setTruthValue(MonitorTruthValueInfoResponse.TruthValueEnum.FALSE_VALUE);
+		valueInfo.setPriority(PriorityMessage.stringToEnum(
+				this.m_comboFalse.getText(), MonitorTruthValueInfoResponse.PriorityEnum.class));
+		info.getTruthValueInfo().add(valueInfo);
 
 		return null;
 	}

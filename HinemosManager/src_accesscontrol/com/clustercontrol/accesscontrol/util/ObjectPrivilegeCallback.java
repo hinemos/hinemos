@@ -82,6 +82,12 @@ public class ObjectPrivilegeCallback implements JpaTransactionCallback {
 							&& bean.getObjectId().equals(CreateJobSession.TOP_JOBUNIT_ID)) {
 						continue;
 					}
+
+					// ジョブエンティティの削除の場合、ModifyJob#deleteJobunit()で削除するため、チェック対象外
+					if (hinemosObjectPrivilege.objectType().equals(HinemosModuleConstant.JOB)
+							&& bean.isDeleteFlg()) {
+						continue;
+					}
 					
 					// オーナーロールスコープの削除の場合はチェック対象外
 					if (hinemosObjectPrivilege.objectType().equals(HinemosModuleConstant.PLATFORM_REPOSITORY)

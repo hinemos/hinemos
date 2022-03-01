@@ -23,13 +23,13 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.TemplateSetDetailInfoResponse;
 
 import com.clustercontrol.reporting.action.GetTemplateSetDetailTableDefine;
 import com.clustercontrol.reporting.dialog.TemplateSetDetailDialog;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.reporting.TemplateSetDetailInfo;
 
 /**
  * テンプレートセット詳細情報一覧コンポジットクラス<BR>
@@ -42,7 +42,7 @@ public class TemplateSetDetailListComposite extends Composite {
 	/** テーブルビューアー。 */
 	private CommonTableViewer m_tableViewer = null;
 	/** テンプレートセット詳細情報一覧 */
-	private ArrayList<TemplateSetDetailInfo> detailList = null;
+	private ArrayList<TemplateSetDetailInfoResponse> detailList = null;
 	/** オーナーロールID */
 	private String m_ownerRoleId = null;
 	/** マネージャ名 */
@@ -61,7 +61,7 @@ public class TemplateSetDetailListComposite extends Composite {
 	 */
 	public void setManagerName(String managerName) {
 		m_managerName = managerName;
-		detailList = new ArrayList<TemplateSetDetailInfo>();
+		detailList = new ArrayList<TemplateSetDetailInfoResponse>();
 		update();
 	}
 
@@ -69,7 +69,11 @@ public class TemplateSetDetailListComposite extends Composite {
 	 *
 	 * @return
 	 */
-	public ArrayList<TemplateSetDetailInfo> getDetailList(){
+	public ArrayList<TemplateSetDetailInfoResponse> getDetailList(){
+		int orderNo = 0;
+		for (TemplateSetDetailInfoResponse detail : this.detailList) {
+			detail.setOrderNo(++orderNo);
+		}
 		return this.detailList;
 	}
 	/**
@@ -103,6 +107,7 @@ public class TemplateSetDetailListComposite extends Composite {
 	public TemplateSetDetailListComposite(Composite parent, int style, String managerName) {
 		super(parent, style);
 		this.m_managerName = managerName;
+		detailList = new ArrayList<TemplateSetDetailInfoResponse>();
 		this.initialize();
 	}
 
@@ -114,13 +119,13 @@ public class TemplateSetDetailListComposite extends Composite {
 		ArrayList<?> list =  (ArrayList<?>) selection.getFirstElement();
 		//選択したテーブル行番号を取得
 		Integer order = (Integer) list.get(0);
-		List<TemplateSetDetailInfo> detailList = this.detailList;
+		List<TemplateSetDetailInfoResponse> detailList = this.detailList;
 
 		//orderは、テーブルカラム番号のため、1 ～ n listから値を取得する際は、 order - 1
 		order = order-1;
 		if(order > 0){
-			TemplateSetDetailInfo a = detailList.get(order);
-			TemplateSetDetailInfo b = detailList.get(order-1);
+			TemplateSetDetailInfoResponse a = detailList.get(order);
+			TemplateSetDetailInfoResponse b = detailList.get(order-1);
 			detailList.set(order, b);
 			detailList.set(order-1, a);
 		}
@@ -136,13 +141,13 @@ public class TemplateSetDetailListComposite extends Composite {
 		ArrayList<?> list =  (ArrayList<?>) selection.getFirstElement();
 		//選択したテーブル行番号を取得
 		Integer order = (Integer) list.get(0);
-		List<TemplateSetDetailInfo> detailList = this.detailList;
+		List<TemplateSetDetailInfoResponse> detailList = this.detailList;
 		//list内 order+1 の値を取得するため、
 		if(order < detailList.size()){
 			//orderは、テーブルカラム番号のため、1 ～ n listから値を取得する際は、 order - 1
 			order = order - 1;
-			TemplateSetDetailInfo a = detailList.get(order);
-			TemplateSetDetailInfo b = detailList.get(order + 1);
+			TemplateSetDetailInfoResponse a = detailList.get(order);
+			TemplateSetDetailInfoResponse b = detailList.get(order + 1);
 			detailList.set(order, b);
 			detailList.set(order+1, a);
 		}
@@ -198,7 +203,7 @@ public class TemplateSetDetailListComposite extends Composite {
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				Integer order = getSelection();
-				List<TemplateSetDetailInfo> detailList = getDetailList();
+				List<TemplateSetDetailInfoResponse> detailList = getDetailList();
 				if (order != null) {
 					// シェルを取得
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
@@ -241,13 +246,13 @@ public class TemplateSetDetailListComposite extends Composite {
 	 *
 	 * @return 選択アイテム
 	 */
-	public TemplateSetDetailInfo getFilterItem() {
+	public TemplateSetDetailInfoResponse getFilterItem() {
 		StructuredSelection selection = (StructuredSelection) m_tableViewer.getSelection();
 
 		if (selection == null) {
 			return null;
 		} else {
-			return (TemplateSetDetailInfo) selection.getFirstElement();
+			return (TemplateSetDetailInfoResponse) selection.getFirstElement();
 		}
 	}
 
@@ -255,7 +260,7 @@ public class TemplateSetDetailListComposite extends Composite {
 	 * 引数で指定されたテンプレートセット詳細情報をコンポジット内リストに反映させる
 	 * @param detailList
 	 */
-	public void setDetailList(ArrayList<TemplateSetDetailInfo> detailList){
+	public void setDetailList(ArrayList<TemplateSetDetailInfoResponse> detailList){
 		if (detailList != null) {
 			this.detailList = detailList;
 			this.update();
@@ -270,7 +275,7 @@ public class TemplateSetDetailListComposite extends Composite {
 		// テーブル更新
 		ArrayList<Object> listAll = new ArrayList<Object>();
 		int i = 1;
-		for (TemplateSetDetailInfo detail : getDetailList()) {
+		for (TemplateSetDetailInfoResponse detail : getDetailList()) {
 			ArrayList<Object> list = new ArrayList<Object>();
 			
 			//順序

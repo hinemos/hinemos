@@ -46,6 +46,13 @@ public class UpdateAction extends AbstractHandler {
 		this.viewPart = HandlerUtil.getActivePart(event);
 		
 		NodeMapView view = (NodeMapView) viewPart.getAdapter(NodeMapView.class);
+		if (view == null) {
+			MessageDialog.openInformation(
+					null,
+					Messages.getString("message"),
+					com.clustercontrol.nodemap.messages.Messages.getString("view.select.prompt"));
+			return null;
+		}
 		
 		// 編集中の情報を解除してよいか確認
 		if (view.isEditing()) {

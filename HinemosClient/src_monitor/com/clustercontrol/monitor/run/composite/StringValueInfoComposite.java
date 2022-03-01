@@ -23,6 +23,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.MonitorInfoResponse;
 
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.TableColumnInfo;
@@ -30,7 +31,6 @@ import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.monitor.run.dialog.StringValueInfoCreateDialog;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * 文字列監視の判定情報（重要度）コンポジットクラス<BR>
@@ -202,7 +202,7 @@ public class StringValueInfoComposite extends Composite {
 				int order = (Integer) ((ArrayList<?>) m_infoList.getTableViewer().getTable().getSelection()[0].getData()).get(0) - 1;
 
 				if (order >= 0) {
-					String detail = m_infoList.getFilterItem().getDescription();
+					String detail = m_infoList.getFilterItem().getPattern();
 					if (detail == null) {
 						detail = "";
 					}
@@ -302,7 +302,7 @@ public class StringValueInfoComposite extends Composite {
 	 *
 	 * @param info 設定値として用いる監視情報
 	 */
-	public void setInputData(MonitorInfo info) {
+	public void setInputData(MonitorInfoResponse info) {
 
 		if(info != null){
 			this.m_infoList.setInputData(info);
@@ -322,7 +322,7 @@ public class StringValueInfoComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.monitor.run.composite.StringValueListComposite#createInputData(MonitorInfo)
 	 */
-	public ValidateResult createInputData(MonitorInfo info) {
+	public ValidateResult createInputData(MonitorInfoResponse info) {
 
 		// 文字列監視判定情報
 		ValidateResult validateResult = m_infoList.createInputData(info);

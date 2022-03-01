@@ -8,9 +8,8 @@
 
 package com.clustercontrol.reporting.dialog;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import javax.xml.ws.WebServiceException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,6 +31,15 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.AddReportingScheduleRequest;
+import org.openapitools.client.model.AddReportingScheduleRequest.OutputPeriodTypeEnum;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
+import org.openapitools.client.model.ModifyReportingScheduleRequest;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
+import org.openapitools.client.model.ReportingScheduleInfoResponse;
+import org.openapitools.client.model.ReportingScheduleResponse;
+import org.openapitools.client.model.ReportingScheduleResponse.OutputTypeEnum;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PropertyDefineConstant;
@@ -43,6 +51,7 @@ import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.notify.composite.NotifyIdListComposite;
 import com.clustercontrol.reporting.action.AddReporting;
 import com.clustercontrol.reporting.action.GetReporting;
@@ -51,19 +60,14 @@ import com.clustercontrol.reporting.composite.OutputPeriodComposite;
 import com.clustercontrol.reporting.composite.ReportFormatComposite;
 import com.clustercontrol.reporting.composite.ScheduleComposite;
 import com.clustercontrol.reporting.composite.TemplateSetIdListComposite;
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
-import com.clustercontrol.reporting.util.ReportingUtil;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.repository.FacilityPath;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.ICheckPublishRestClientWrapper;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.common.Schedule;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.ReportingInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * レポーティング[スケジュールの作成・変更]ダイアログクラスです。
@@ -125,7 +129,7 @@ public class ReportingScheduleDialog extends CommonDialog {
 	private Button m_confirmValid = null;
 
 	/** レポーティング情報 */
-	private ReportingInfo m_reportingInfo = null;
+	private ReportingScheduleResponse m_reportingInfo = null;
 
 	/** ダイアログ表示時の処理タイプ */
 	private int m_mode;
@@ -382,10 +386,10 @@ public class ReportingScheduleDialog extends CommonDialog {
 				ScopeTreeDialog dialog = new ScopeTreeDialog(shell,
 						m_managerComposite.getText(), m_ownerRoleId.getText(), false, m_unregistered);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem item = dialog.getSelectItem();
-					FacilityInfo info = item.getData();
+					FacilityTreeItemResponse item = dialog.getSelectItem();
+					FacilityInfoResponse info = item.getData();
 					m_facilityId = info.getFacilityId();
-					if (info.getFacilityType() == FacilityConstant.TYPE_NODE) {
+					if (info.getFacilityType() == FacilityTypeEnum.NODE) {
 						m_textScope.setText(info.getFacilityName());
 					} else {
 						FacilityPath path = new FacilityPath(
@@ -438,7 +442,7 @@ public class ReportingScheduleDialog extends CommonDialog {
 		/*
 		 * 出力設定
 		 */
-		this.m_reportFormat = new ReportFormatComposite(parent, SWT.NONE, this.m_managerComposite.getText());
+		this.m_reportFormat = new ReportFormatComposite(parent, SWT.NONE);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
 		gridData.horizontalAlignment = GridData.FILL;
@@ -510,7 +514,7 @@ public class ReportingScheduleDialog extends CommonDialog {
 		// レポーティング情報の生成
 		if (m_scheduleId != null) {
 			this.m_reportingInfo = new GetReporting()
-					.getReportingInfo(this.m_managerComposite.getText(), m_scheduleId);
+					.getReportingSchedule(this.m_managerComposite.getText(), m_scheduleId);
 		}
 
 	}
@@ -562,8 +566,8 @@ public class ReportingScheduleDialog extends CommonDialog {
 			this.m_reportFormat.createOutputTypeStrList(this.m_managerComposite.getText());
 		} else {
 			// レポーティング情報を this.reportingInfo とは別のインスタンスとして取得
-			ReportingInfo info = new GetReporting()
-					.getReportingInfo(this.m_managerComposite.getText(), this.m_scheduleId);
+			ReportingScheduleResponse info = new GetReporting()
+					.getReportingSchedule(this.m_managerComposite.getText(), this.m_scheduleId);
 
 			if (info != null) {
 
@@ -590,8 +594,8 @@ public class ReportingScheduleDialog extends CommonDialog {
 				}
 
 				// スコープ
-				if (info.getScopeText() != null) {
-					this.m_textScope.setText(HinemosMessage.replace(info.getScopeText()));
+				if (info.getScope() != null) {
+					this.m_textScope.setText(HinemosMessage.replace(info.getScope()));
 				}
 
 				// ファシリティ
@@ -605,13 +609,19 @@ public class ReportingScheduleDialog extends CommonDialog {
 				}
 
 				// 通知情報の設定
-				if (info.getNotifyId() != null) {
-					this.m_notifyIdList.setNotify(info.getNotifyId());
+				if (info.getNotifyRelationList() != null) {
+					List<NotifyRelationInfoResponse> relationInfoList = new ArrayList<>();
+					if (info.getNotifyRelationList() != null && info.getNotifyRelationList().size() > 0) {
+						for (NotifyRelationInfoResponse infoRes : info.getNotifyRelationList()){
+							relationInfoList.add(infoRes);
+						}
+					}
+					this.m_notifyIdList.setNotify(relationInfoList);
 				}
 
 				// 有効/無効
-				if (info.isValidFlg() != null) {
-					this.m_confirmValid.setSelection(info.isValidFlg().booleanValue());
+				if (info.getValidFlg() != null) {
+					this.m_confirmValid.setSelection(info.getValidFlg().booleanValue());
 				}
 				
 				// テンプレートセットID
@@ -621,9 +631,9 @@ public class ReportingScheduleDialog extends CommonDialog {
 			}
 
 			// 出力期間
-			m_outputPeriod.reflectReportingInfo(info);
+			m_outputPeriod.reflectReportingSchedule(info);
 			// 出力設定
-			m_reportFormat.reflectReportingInfo(info);
+			m_reportFormat.reflectReportingSchedule(info);
 			// スケジュール
 			m_schedule.reflectReportingInfo(info);
 		}
@@ -642,13 +652,13 @@ public class ReportingScheduleDialog extends CommonDialog {
 		ValidateResult result = null;
 
 		// レポーティング情報が既に存在する場合は、作成者と作成日を取得する
-		Long regDate = null;
+		String regDate = null;
 		String regUser = null;
 		if (m_reportingInfo != null) {
 			regDate = m_reportingInfo.getRegDate();
 			regUser = m_reportingInfo.getRegUser();
 		}
-		m_reportingInfo = new ReportingInfo();
+		m_reportingInfo = new ReportingScheduleResponse();
 
 		// スケジュールID取得
 		if (m_textScheduleId.getText().length() > 0) {
@@ -694,13 +704,10 @@ public class ReportingScheduleDialog extends CommonDialog {
 		m_reportingInfo.setLogoFilename(m_reportFormat.getLogoFilename());
 		m_reportingInfo.setPageValidFlg(m_reportFormat.getPageValidFlg());
 		
-		try {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(this.m_managerComposite.getText());
-			m_reportingInfo.setOutputType(wrapper.outputStringToType(m_reportFormat.getOutputTypeStr()));
+		try 
+		{
+			m_reportingInfo.setOutputType(OutputTypeEnum.fromValue(m_reportFormat.getOutputTypeStr()));
 			
-		} catch (InvalidRole_Exception e) {
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.accesscontrol.16"));
 		} catch (Exception e) {
 			String errMessage = HinemosMessage.replace(e.getMessage());
 			m_log.warn("update() createReportingInfo, " + errMessage, e);
@@ -712,8 +719,8 @@ public class ReportingScheduleDialog extends CommonDialog {
 
 		// スケジュール設定
 
-		Schedule schedule = new Schedule();
-		schedule.setType(m_schedule.getType());
+		ReportingScheduleInfoResponse schedule = new ReportingScheduleInfoResponse();
+		schedule.setScheduleType(m_schedule.getType());
 		schedule.setDay(m_schedule.getDay());
 		schedule.setWeek(m_schedule.getWeek());
 		schedule.setHour(m_schedule.getHour());
@@ -721,17 +728,32 @@ public class ReportingScheduleDialog extends CommonDialog {
 		m_reportingInfo.setSchedule(schedule);
 
 		// 通知関連情報の設定
-		// 通知グループIDの生成
-		m_reportingInfo.setNotifyGroupId(ReportingUtil
-				.createNotifyGroupIdReporting(m_reportingInfo.getReportScheduleId()));
-		// コンポジット中の通知情報に通知グループIDを対応させる
-		this.m_notifyIdList.setNotifyGroupId(m_reportingInfo.getNotifyGroupId());
 		// 通知情報のリストを更新する
-		List<NotifyRelationInfo> notifyRelationInfoList = m_reportingInfo
-				.getNotifyId();
+		if (m_reportingInfo.getNotifyRelationList() == null) {
+			m_reportingInfo.setNotifyRelationList(new ArrayList<NotifyRelationInfoResponse>());
+		}
+		List<NotifyRelationInfoResponse> notifyRelationInfoList = m_reportingInfo.getNotifyRelationList();
+		
 		notifyRelationInfoList.clear();
 		if (this.m_notifyIdList.getNotify() != null) {
-			notifyRelationInfoList.addAll(this.m_notifyIdList.getNotify());
+			List<NotifyRelationInfoResponse> relationInfoResList = new ArrayList<>();
+			try {
+				if (this.m_notifyIdList.getNotify() != null && this.m_notifyIdList.getNotify().size() > 0) {
+					for (NotifyRelationInfoResponse info : this.m_notifyIdList.getNotify()){
+						NotifyRelationInfoResponse relationInfoRes = new NotifyRelationInfoResponse();
+						RestClientBeanUtil.convertBean(info, relationInfoRes);
+						relationInfoResList.add(relationInfoRes);
+					}
+				}
+			} catch (HinemosUnknown e) {
+				String errMessage = HinemosMessage.replace(e.getMessage());
+				m_log.warn("createReportingInfo(), " + errMessage, e);
+				MessageDialog.openError(null,
+						Messages.getString("failed"),
+						Messages.getString("message.accesscontrol.23")
+						+ ", " + errMessage);
+			}
+			notifyRelationInfoList.addAll(relationInfoResList);
 		}
 
 		// 有効/無効取得
@@ -783,23 +805,7 @@ public class ReportingScheduleDialog extends CommonDialog {
 	protected ValidateResult validate() {
 		ValidateResult result = null;
 
-		//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
-		//getVersionにて通信状況を確認し、異常の場合は ダイヤログを表示
-		try {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(this.m_managerComposite.getText());
-			wrapper.getVersion();
-		} catch (Exception e) {
-			String errMsg = HinemosMessage.replace(e.getMessage());
-			m_log.warn("getVersionError, " + errMsg);
-			result = new ValidateResult();
-			result.setValid(false);
-			result.setID(Messages.getString("message.hinemos.1"));
-			if ( e instanceof WebServiceException){
-				result.setMessage(Messages.getString("message.expiration.term")+":"+ this.m_managerComposite.getText());
-			}else{
-				result.setMessage(Messages.getString("message.hinemos.failure.unexpected")+":"+ this.m_managerComposite.getText()+ ", " + errMsg);
-			}
-		}
+		result = validateEndpoint(this.m_managerComposite.getText());
 		if( result != null ){
 			return result; 
 		}
@@ -828,28 +834,45 @@ public class ReportingScheduleDialog extends CommonDialog {
 	 * 
 	 * @see com.clustercontrol.dialog.CommonDialog#action()
 	 */
+	@SuppressWarnings("unused")
 	@Override
 	protected boolean action() {
 		boolean result = false;
 		createReportingInfo();
-		ReportingInfo info = this.m_reportingInfo;
-		String managerName = this.m_managerComposite.getText();
-		if (info != null) {
+		
+		AddReportingScheduleRequest addInfoReq = new AddReportingScheduleRequest();
+		try {
+			RestClientBeanUtil.convertBean(this.m_reportingInfo, addInfoReq);
+			addInfoReq.setOutputPeriodType(OutputPeriodTypeEnum.fromValue(this.m_reportingInfo.getOutputPeriodType().getValue()));
+			addInfoReq.setOutputType(org.openapitools.client.model.AddReportingScheduleRequest.OutputTypeEnum.fromValue(this.m_reportingInfo.getOutputType().getValue()));
+			addInfoReq.getSchedule().setScheduleType(org.openapitools.client.model.ReportingScheduleInfoRequest.ScheduleTypeEnum.fromValue(this.m_reportingInfo.getSchedule().getScheduleType().getValue()));
+			String managerName = this.m_managerComposite.getText();
+			// findbugs対応 不要なaddInfoReqのnullチェックを削除
 			if (this.m_mode == PropertyDefineConstant.MODE_ADD) {
 				// 作成の場合
-				result = new AddReporting().add(managerName, info);
+				result = new AddReporting().add(managerName, addInfoReq);
 			} else if (this.m_mode == PropertyDefineConstant.MODE_MODIFY) {
 				// 変更の場合
-				info.setReportScheduleId(m_textScheduleId.getText());
-				result = new ModifyReporting().modify(managerName, info);
+				ModifyReportingScheduleRequest modifyInfoReq = new ModifyReportingScheduleRequest();
+				RestClientBeanUtil.convertBean(this.m_reportingInfo, modifyInfoReq);
+				modifyInfoReq.setOutputPeriodType(org.openapitools.client.model.ModifyReportingScheduleRequest.OutputPeriodTypeEnum.fromValue(this.m_reportingInfo.getOutputPeriodType().getValue()));
+				modifyInfoReq.setOutputType(org.openapitools.client.model.ModifyReportingScheduleRequest.OutputTypeEnum.fromValue(this.m_reportingInfo.getOutputType().getValue()));
+				modifyInfoReq.getSchedule().setScheduleType(org.openapitools.client.model.ReportingScheduleInfoRequest.ScheduleTypeEnum.fromValue(this.m_reportingInfo.getSchedule().getScheduleType().getValue()));
+				result = new ModifyReporting().modify(managerName, m_textScheduleId.getText(), modifyInfoReq);
 			} else if (this.m_mode == PropertyDefineConstant.MODE_COPY) {
-				info.setReportScheduleId(m_textScheduleId.getText());
-				result = new AddReporting().add(managerName, info);
+				addInfoReq.setReportScheduleId(m_textScheduleId.getText());
+				result = new AddReporting().add(managerName, addInfoReq);
 			}
-		} else {
-			m_log.error("action() ReportingInfo is null");
+		} catch (HinemosUnknown e) {
+			m_log.error("action() Failed to convert ReportingInfo");
 		}
 
 		return result;
 	}
+
+	@Override
+	public ICheckPublishRestClientWrapper getCheckPublishWrapper(String managerName) {
+		return ReportingRestClientWrapper.getWrapper(managerName);
+	}
+	
 }

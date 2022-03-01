@@ -24,24 +24,28 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.ModifySnmptrapMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.TrapValueInfoRequest;
+import org.openapitools.client.model.TrapValueInfoRequest.PriorityAnyVarBindEnum;
 
 import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
-import com.clustercontrol.monitor.view.MonitorListView;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.UrlNotFound;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;import com.clustercontrol.monitor.view.MonitorListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.traputil.bean.SnmpTrapMasterInfo;
 import com.clustercontrol.utility.traputil.dialog.ImportDialog;
-import com.clustercontrol.utility.util.UtilityEndpointWrapper;
-import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidSetting_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.TrapValueInfo;
+import com.clustercontrol.utility.util.OpenApiEnumConverter;import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
 
 /**
  * SNMPTrapをインポートするダイアログを開くためのクライアント側アクションクラス<BR>
@@ -68,33 +72,6 @@ public class ImportCommand extends AbstractHandler implements IElementUpdater {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		// keyチェック
-		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-			String version = wrapper.getVersion();
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							Messages.getString("message.expiration.term.invalid"));
-				}
-			}
-		} catch (com.clustercontrol.ws.utility.HinemosUnknown_Exception |
-				com.clustercontrol.ws.utility.InvalidRole_Exception |
-				com.clustercontrol.ws.utility.InvalidUserPass_Exception e) {
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					e.getMessage());
-			return null;
-		} catch (Exception e) {
-			// キーファイルを確認できませんでした。処理を終了します。
-			// Key file not found. This process will be terminated.
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.expiration.term"));
-			return null;
-		}
-		
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
 		// In case this action has been disposed
 		if( null == this.window || !isEnabled() ){
@@ -108,10 +85,42 @@ public class ImportCommand extends AbstractHandler implements IElementUpdater {
 		if(view != null){
 			if (view.getSelectMonitorTypeId() != null && view.getSelectedNum() == 1 && view.getSelectMonitorTypeId().equals(HinemosModuleConstant.MONITOR_SNMPTRAP)) {
 				ObjectBean bean = view.getSelectedObjectBeans().get(0);
-				MonitorInfo info;
+				
 				try {
-					info = MonitorSettingEndpointWrapper.getWrapper(bean.getManagerName()).getMonitor(bean.getObjectId());
-				} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | MonitorNotFound_Exception e) {
+					UtilityRestClientWrapper wrapper = UtilityRestClientWrapper.getWrapper(bean.getManagerName());
+					boolean isPublish = wrapper.checkPublish().getPublish();
+					if (!isPublish) {
+						MessageDialog.openWarning(
+								null,
+								Messages.getString("warning"),
+								Messages.getString("message.expiration.term.invalid"));
+					}
+				} catch (InvalidRole | InvalidUserPass e) {
+					MessageDialog.openInformation(null, Messages.getString("message"),
+							e.getMessage());
+					return null;
+				} catch (HinemosUnknown e) {
+					if(UrlNotFound.class.equals(e.getCause().getClass())) {
+						MessageDialog.openInformation(null, Messages.getString("message"),
+								Messages.getString("message.expiration.term"));
+						return null;
+					} else {
+						MessageDialog.openInformation(null, Messages.getString("message"),
+								e.getMessage());
+						return null;
+					}
+				} catch (Exception e) {
+					// キーファイルを確認できませんでした。処理を終了します。
+					// Key file not found. This process will be terminated.
+					MessageDialog.openInformation(null, Messages.getString("message"),
+							Messages.getString("message.expiration.term"));
+					return null;
+				}
+				
+				MonitorInfoResponse info;
+				try {
+					info = MonitorsettingRestClientWrapper.getWrapper(bean.getManagerName()).getMonitor(bean.getObjectId());
+				} catch (HinemosUnknown | InvalidRole | InvalidUserPass | MonitorNotFound | RestConnectFailed e) {
 					MessageDialog.openError(null, com.clustercontrol.util.Messages.getString("failed"),
 							Messages.getString("message.traputil.25") + "\n\n" + HinemosMessage.replace(e.getMessage()));
 					return null;
@@ -122,30 +131,33 @@ public class ImportCommand extends AbstractHandler implements IElementUpdater {
 					dialog.setManagerName(bean.getManagerName());
 					dialog.setMonitorId(bean.getObjectId());
 					if(dialog.open() == Dialog.OK && dialog.getMibList() != null && !dialog.getMibList().isEmpty()){
-						List<TrapValueInfo> traps = new ArrayList<>();
-						TrapValueInfo trapInfo = null;
+						List<TrapValueInfoRequest> traps = new ArrayList<>();
+						TrapValueInfoRequest trapInfo = null;
 						for(SnmpTrapMasterInfo mib: dialog.getMibList()){
-							trapInfo = new TrapValueInfo();
+							trapInfo = new TrapValueInfoRequest();
 							trapInfo.setMib(mib.getMib());
 							trapInfo.setDescription(mib.getDescr());
 							trapInfo.setLogmsg(mib.getLogmsg());
 							trapInfo.setTrapOid(mib.getTrapOid());
 							trapInfo.setUei(mib.getUei());
 							trapInfo.setGenericId(mib.getGenericId());
-							trapInfo.setPriorityAnyVarbind(mib.getPriority());
+							PriorityAnyVarBindEnum priorityAnyVarBindEnum = OpenApiEnumConverter.integerToEnum(mib.getPriority(), PriorityAnyVarBindEnum.class);
+							trapInfo.setPriorityAnyVarBind(priorityAnyVarBindEnum);
 							trapInfo.setSpecificId(mib.getSpecificId());
 							trapInfo.setFormatVarBinds("");
-							trapInfo.setProcessingVarbindSpecified(false);
+							trapInfo.setProcVarbindSpecified(false);
 							trapInfo.setValidFlg(true);
-							trapInfo.setVersion(0);
+							trapInfo.setVersion(TrapValueInfoRequest.VersionEnum.V1);
 							traps.add(trapInfo);
 						}
-						info.getTrapCheckInfo().getTrapValueInfos().addAll(traps);
+						ModifySnmptrapMonitorRequest modifySnmptrapMonitorRequest = new ModifySnmptrapMonitorRequest();
+						RestClientBeanUtil.convertBean(info, modifySnmptrapMonitorRequest);
+						modifySnmptrapMonitorRequest.getTrapCheckInfo().getMonitorTrapValueInfoEntities().addAll(traps);
 						
-						MonitorSettingEndpointWrapper.getWrapper(bean.getManagerName()).modifyMonitor(info);
+						MonitorsettingRestClientWrapper.getWrapper(bean.getManagerName()).modifySnmptrapMonitor(info.getMonitorId(),modifySnmptrapMonitorRequest);
 					}
 					return true;
-				} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | MonitorNotFound_Exception | InvalidSetting_Exception e) {
+				} catch (HinemosUnknown | InvalidSetting | MonitorNotFound | InvalidUserPass | InvalidRole | RestConnectFailed e) {
 					MessageDialog.openError(null, com.clustercontrol.util.Messages.getString("failed"),
 							Messages.getString("message.traputil.5") + "\n\n" + HinemosMessage.replace(e.getMessage()));
 					return null;

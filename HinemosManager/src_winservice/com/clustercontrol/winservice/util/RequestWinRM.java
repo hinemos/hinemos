@@ -14,16 +14,18 @@ import java.net.UnknownHostException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+import java.util.List;
 
 import javax.net.ssl.X509TrustManager;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.HttpsSupport;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.plugin.impl.ProxyManagerPlugin;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -118,7 +120,29 @@ public class RequestWinRM {
 
 		// コネクションと認証の設定
 		m_con = WsmanConnection.createConnection(m_url);
-		m_con.setAuthenticationScheme("basic");
+		String authenticationScheme = HinemosPropertyCommon.monitor_winservice_authschema.getStringValue();
+		if ("NTLM".equals(authenticationScheme)) {
+			authenticationScheme = "ntlm";
+
+			// プロキシ設定
+			String proxyHost = ProxyManagerPlugin.getProxyHost();
+			Integer proxyPort = ProxyManagerPlugin.getProxyPort();
+			if (proxyHost != null && proxyPort != null) {
+				m_con.setProxyHost(proxyHost);
+				m_con.setProxyPort(proxyPort);
+				String proxyUser = ProxyManagerPlugin.getProxyUser();
+				String proxyPassword = ProxyManagerPlugin.getProxyPassword();
+				if (proxyUser != null && proxyPassword != null) {
+					m_con.setProxyUsername(proxyUser);
+					m_con.setProxyPassword(proxyPassword);
+				}
+				List<String> proxyIgnoreHostList = ProxyManagerPlugin.getProxyIgnoreHostList();
+				m_con.setProxyIgnoreHostList(proxyIgnoreHostList);
+			}
+		} else {
+			authenticationScheme = "basic";
+		}
+		m_con.setAuthenticationScheme(authenticationScheme);
 		m_con.setUsername(user);
 		m_con.setUserpassword(userPassword);
 		m_con.setTimeout(timeout);
@@ -146,7 +170,7 @@ public class RequestWinRM {
 			m_con.setHostnameVerifier(NoopHostnameVerifier.INSTANCE);
 		} else {
 			// HTTP監視で使用しているライブラリ common-httpclient の HostnameVerifier を使用する
-			m_con.setHostnameVerifier(SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+			m_con.setHostnameVerifier(HttpsSupport.getDefaultHostnameVerifier());
 		}
 
 		// URIの設定

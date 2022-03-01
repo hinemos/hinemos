@@ -33,9 +33,14 @@ import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
+import org.openapitools.client.model.MapAssociationInfoResponse;
+import org.openapitools.client.model.MapAssociationInfoResponse.TypeEnum;
+import org.openapitools.client.model.ScopeInfoResponseP1;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.nodemap.bean.AssociationConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.NodeMapElementNoPrivilege;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.nodemap.composite.NodeMapCanvasComposite;
 import com.clustercontrol.nodemap.composite.NodeMapListComposite;
@@ -51,14 +56,10 @@ import com.clustercontrol.nodemap.view.action.SetFloatingModeAction;
 import com.clustercontrol.nodemap.view.action.SetListModeAction;
 import com.clustercontrol.nodemap.view.action.UploadImageAction;
 import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.view.AutoUpdateView;
-import com.clustercontrol.ws.nodemap.Association;
-import com.clustercontrol.ws.nodemap.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.ScopeInfo;
-import com.sun.xml.internal.ws.client.ClientTransportException;
 
 /**
  * ノードマップビューを描画するためのクラス。
@@ -158,14 +159,14 @@ public class NodeMapView extends AutoUpdateView {
 				// クライアント側のキャッシュを有効にして選択したファシリティIDのマップを描画
 				// 選択されたファシリティIDのスコープに遷移
 				// スコープの存在確認
-				ScopeInfo scopeInfo = null;
+				ScopeInfoResponseP1 scopeInfo = null;
 				try {
-					RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(m_canvasComposite.getManagerName());
+					RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(m_canvasComposite.getManagerName());
 					scopeInfo = wrapper.getScope(facilityId);
 				} catch (Exception ex) {
 					// スコープ情報取得エラー
 					String errMessage = "";
-					if (ex instanceof InvalidRole_Exception) {
+					if (ex instanceof InvalidRole) {
 						errMessage = Messages.getString("message.accesscontrol.16");
 					} else {
 						errMessage = ex.getMessage();
@@ -454,20 +455,20 @@ public class NodeMapView extends AutoUpdateView {
 
 	public void registerNodeMap() throws Exception {
 		// 削除予定の関連を削除してからマネージャに登録する
-		List<Association> delAssoList = new ArrayList<Association>();
-		List<Association> addAssoList = new ArrayList<Association>();
-		for (Association asso : m_controller.getAssociation()) {
-			if (asso.getType() == AssociationConstant.REMOVE) {
+		List<MapAssociationInfoResponse> delAssoList = new ArrayList<MapAssociationInfoResponse>();
+		List<MapAssociationInfoResponse> addAssoList = new ArrayList<MapAssociationInfoResponse>();
+		for (MapAssociationInfoResponse asso : m_controller.getAssociation()) {
+			if (asso.getType() == TypeEnum.REMOVE) {
 				delAssoList.add(asso);
-			} else if (asso.getType() == AssociationConstant.NEW) {
+			} else if (asso.getType() == TypeEnum.NEW) {
 				delAssoList.add(asso);
 				addAssoList.add(asso);
 			}
 		}
-		for (Association asso : delAssoList) {
+		for (MapAssociationInfoResponse asso : delAssoList) {
 			m_controller.removeAssociation(asso);
 		}
-		for (Association asso : addAssoList) {
+		for (MapAssociationInfoResponse asso : addAssoList) {
 			m_controller.addAssociation(asso.getSource(), asso.getTarget());
 		}
 		m_controller.registerNodeMap();
@@ -505,7 +506,7 @@ public class NodeMapView extends AutoUpdateView {
 		long start = System.currentTimeMillis();
 		try {
 			m_controller.updateMap(statusFlg, eventFlg);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			String errMsg = Messages.getString("message.accesscontrol.16");
 			m_canvasComposite.clearCanvas();
@@ -514,9 +515,12 @@ public class NodeMapView extends AutoUpdateView {
 		} catch (Exception e) {
 			m_canvasComposite.clearCanvas();
 			String errMsg = "";
-			if (e instanceof ClientTransportException) {
+			if (e instanceof RestConnectFailed) {
 				m_log.debug("update() updateMap, " + e.getMessage());
 				errMsg = Messages.getString("message.hinemos.failure.transfer") + ", " + e.getMessage();
+			} else if (e instanceof NodeMapElementNoPrivilege) {
+				m_log.debug("update() updateMap, " + e.getMessage());
+				errMsg = Messages.getString("nodemap.element.noprivilege") + ", " + e.getMessage();
 			} else {
 				m_log.warn("update() updateMap, " + e.getMessage(), e);
 				errMsg = Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage();
@@ -617,5 +621,9 @@ public class NodeMapView extends AutoUpdateView {
 	 */
 	public MapViewController getController() {
 		return this.m_controller;
+	}
+
+	public void setEnabled(boolean enable) {
+		m_canvasComposite.setEnabled(enable);
 	}
 }

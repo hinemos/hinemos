@@ -22,15 +22,17 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import org.apache.log4j.Logger;
 
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.monitor.plugin.model.MonitorPluginStringInfo;
 import com.clustercontrol.monitor.plugin.model.PluginCheckInfo;
 import com.clustercontrol.monitor.plugin.util.QueryUtil;
@@ -39,6 +41,7 @@ import com.clustercontrol.monitor.run.bean.TruthConstant;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.factory.RunMonitorTruthValueType;
 import com.clustercontrol.monitor.run.model.MonitorJudgementInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.repository.bean.FacilityConstant;
@@ -65,7 +68,7 @@ import com.clustercontrol.xcloud.util.RepositoryControllerBeanWrapper;
 * @since 2.0.0
 */
 public class PlatformServiceRunMonitor extends RunMonitorTruthValueType {
-	public static final String monitorTypeId = "MON_CLOUD_SERVICE_CONDITION";
+	public static final String monitorTypeId = HinemosModuleConstant.MONITOR_CLOUD_SERVICE_CONDITION;
 	public static final int monitorType = MonitorTypeConstant.TYPE_TRUTH;
 	public static final String STRING_CLOUD_SERVICE_DONDITION = CloudMessageConstant.CLOUDSERVICE_CONDITION_MONITOR.getMessage();
 	
@@ -139,6 +142,8 @@ public class PlatformServiceRunMonitor extends RunMonitorTruthValueType {
 		if (m_monitor.getMonitorFlg()) {
 			for (OutputBasicInfo output: outputs) {
 				output.setNotifyGroupId(m_monitor.getNotifyGroupId());
+				output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, output.getPluginId(),
+						output.getMonitorId()));
 				// 通知設定
 				new JpaTransactionManager().addCallback(new NotifyCallback(output));
 			}
@@ -335,7 +340,10 @@ public class PlatformServiceRunMonitor extends RunMonitorTruthValueType {
 	}
 	
 	protected OutputBasicInfo createOutputBasicInfo(CloudUtil.Priority priority, String facilityId, String subKey, String message, String messageOrg, Long generationDate) {
-		return CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId, subKey, m_monitor.getApplication(), facilityId, message, messageOrg, generationDate);
+		OutputBasicInfo ret = CloudUtil.createOutputBasicInfoEx(priority, monitorTypeId, m_monitorId, subKey, m_monitor.getApplication(), facilityId, message, messageOrg, generationDate);
+		ret.setPriorityChangeJudgmentType(m_monitor.getPriorityChangeJudgmentType());
+		ret.setPriorityChangeFailureType(m_monitor.getPriorityChangeFailureType());
+		return ret;
 	}
 	
 	protected OutputBasicInfo createFailureOutputBasicInfo(String facilityId, String message, String messageOrg, Long generationDate) {

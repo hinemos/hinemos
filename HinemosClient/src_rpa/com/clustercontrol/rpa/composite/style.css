@@ -1,0 +1,38 @@
+@charset "UTF-8";
+/*
+ * Copyright (c) 2021 NTT DATA INTELLILINK Corporation. All rights reserved.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
+/*
+ *集計グラフのスタイルを定義しているcssです。
+ */
+
+
+body {
+	background-color:ghostwhite;
+}
+
+#LeftGraphs {
+	float: left;
+}
+
+#RightGraphs {
+	float: right;
+}
+
+#sample {
+	clear: both;
+}
+
+.axis path, .axis line {
+	fill: none;
+	stroke: black;
+}
+
+.axis text {
+	font-size: 10px;
+}

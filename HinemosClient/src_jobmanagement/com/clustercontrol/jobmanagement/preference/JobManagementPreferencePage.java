@@ -26,9 +26,10 @@ import org.eclipse.ui.IWorkbenchWindow;
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.jobmanagement.view.JobHistoryView;
+import com.clustercontrol.jobmap.view.JobMapView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.view.AutoUpdateView;
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.view.AutoUpdateView;
 
 /**
  * ジョブ管理機能の設定ページクラスです。
@@ -52,6 +53,9 @@ implements IWorkbenchPreferencePage {
 
 	/** ジョブ[履歴]ビューの表示履歴数 */
 	public static final String P_HISTORY_MAX_HISTORIES = "historyMaxHistories";
+
+	/** ジョブ[履歴]ビューでのジョブ実行/停止時に確認ダイアログを表示するかどうかのフラグ */
+	public static final String P_HISTORY_CONFIRM_DIALOG_FLG = "historyConfirmDialogFlg";
 
 	/** ジョブ[スケジュール予定]ビューの表示数*/
 	public static final String P_PLAN_MAX_SCHEDULE = "planMaxSchedule";
@@ -120,6 +124,16 @@ implements IWorkbenchPreferencePage {
 		histories.setValidRange(1, DataRangeConstant.SMALLINT_HIGH);
 		histories.setErrorMessage(Messages.getString("message.hinemos.8", args ));
 		this.addField(histories);
+
+		// 確認ダイアログフラグ
+		BooleanFieldEditor confirmDialogField = new BooleanFieldEditor(P_HISTORY_CONFIRM_DIALOG_FLG,
+				Messages.getString("job.operation.confirm.dialog.message"), group);
+		String confirmDialogEditable = System.getProperty("job.operation.confirm.dialog.editable");
+		if (confirmDialogEditable != null && confirmDialogEditable.equals("false")) {
+			// 確認ダイアログを表示するかどうかをユーザが変更できない設定の場合
+			confirmDialogField.setEnabled(false, group);
+		}
+		this.addField(confirmDialogField);
 
 		// ジョブ[スケジュール予定]ビュー関連
 		Group planGroup = new Group(parent, SWT.SHADOW_NONE);
@@ -204,7 +218,17 @@ implements IWorkbenchPreferencePage {
 		if (view != null) {
 			m_log.info("setUpdateSetting " + view.getTitle() + ", cycle=" + cycle + ", flag=" + flag);
 			view.setInterval(cycle);
-			if (flag) {
+			
+			boolean updateSuccess = true;
+			if (view instanceof JobHistoryView) {
+				JobHistoryView jobHistoryView = (JobHistoryView)view;
+				updateSuccess = jobHistoryView.isUpdateSuccess();
+			}
+			else if (view instanceof JobMapView) {
+				JobMapView jobMapView = (JobMapView)view;
+				updateSuccess = jobMapView.isUpdateSuccess();
+			}
+			if (flag && updateSuccess) {
 				view.startAutoReload();
 			} else {
 				view.stopAutoReload();

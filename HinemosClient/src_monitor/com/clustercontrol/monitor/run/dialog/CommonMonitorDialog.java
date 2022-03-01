@@ -8,6 +8,7 @@
 
 package com.clustercontrol.monitor.run.dialog;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
@@ -21,20 +22,17 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
-import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.bean.RunInterval;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.composite.MonitorBasicScopeComposite;
 import com.clustercontrol.monitor.run.composite.MonitorRuleComposite;
 import com.clustercontrol.notify.composite.NotifyInfoComposite;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
-
 /**
  * 監視設定共通ダイアログクラス
  *
@@ -66,7 +64,7 @@ public class CommonMonitorDialog extends CommonDialog {
 	// ----- instance フィールド ----- //
 
 	/** 入力値を保持するオブジェクト */
-	protected MonitorInfo inputData = null;
+	protected MonitorInfoResponse inputData = null;
 
 	/** 入力値の正当性を保持するオブジェクト */
 	protected ValidateResult validateResult = null;
@@ -76,6 +74,12 @@ public class CommonMonitorDialog extends CommonDialog {
 
 	/** 変更するかどうかのフラグ（true：変更する） modify、copy時に使用　 */
 	protected boolean updateFlg = false;
+	
+	/** 判定による重要度変化 の選択タイプ (nullなら非選択)　 */
+	protected Integer priorityChangeJudgeSelect = null;
+
+	/** 取得失敗による重要度変化 の選択タイプ (nullなら非選択)　 */
+	protected Integer priorityChangeFailSelect = null;
 
 	/** 監視基本情報 */
 	protected MonitorBasicScopeComposite m_monitorBasic = null;
@@ -90,7 +94,7 @@ public class CommonMonitorDialog extends CommonDialog {
 	protected Button confirmMonitorValid = null;
 
 	/** 入力値から生成する監視情報 **/
-	protected MonitorInfo monitorInfo = null;
+	protected MonitorInfoResponse monitorInfo = null;
 
 	/** 未登録ノード スコープを表示するかフラグ*/
 	protected boolean m_unregistered = false;
@@ -99,7 +103,7 @@ public class CommonMonitorDialog extends CommonDialog {
 	protected String managerName = null;
 	
 	/** グラフから閾値を変更した場合の情報 */
-	protected List<MonitorNumericValueInfo> m_MonitorNumericValueInfo = null;
+	protected List<MonitorNumericValueInfoResponse> m_MonitorNumericValueInfo = null;
 
 	// ----- 共通メンバ変数 ----- //
 	protected Shell shell = null;
@@ -253,7 +257,7 @@ public class CommonMonitorDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		groupNotifyAttribute.setLayoutData(gridData);
 		groupNotifyAttribute.setText(Messages.getString("notify.attribute"));
-		this.m_notifyInfo = new NotifyInfoComposite(groupNotifyAttribute, SWT.NONE);
+		this.m_notifyInfo = new NotifyInfoComposite(groupNotifyAttribute, SWT.NONE,priorityChangeJudgeSelect ,priorityChangeFailSelect);
 		this.m_notifyInfo.setManagerName(getManagerName());
 		WidgetTestUtil.setTestId(this, "notifyinfo", m_notifyInfo);
 		gridData = new GridData();
@@ -294,7 +298,7 @@ public class CommonMonitorDialog extends CommonDialog {
 	 *
 	 * @return 入力内容を保持した通知情報
 	 */
-	public MonitorInfo getInputData() {
+	public MonitorInfoResponse getInputData() {
 		return this.inputData;
 	}
 
@@ -319,7 +323,7 @@ public class CommonMonitorDialog extends CommonDialog {
 	 *
 	 * @param monitor 設定値として用いる監視情報
 	 */
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 
 		// 監視基本情報
 		m_monitorBasic.setInputData(monitor, this.updateFlg);
@@ -330,7 +334,14 @@ public class CommonMonitorDialog extends CommonDialog {
 		//通知情報の設定
 		if(monitor.getNotifyRelationList() != null
 				&& monitor.getNotifyRelationList().size() > 0){
-			this.m_notifyInfo.setNotify(monitor.getNotifyRelationList());
+			List<NotifyRelationInfoResponse> notifyList = new ArrayList<>();
+			for (NotifyRelationInfoResponse monitorNotify : monitor.getNotifyRelationList()) {
+				NotifyRelationInfoResponse notify = new NotifyRelationInfoResponse();
+				notify.setNotifyId(monitorNotify.getNotifyId());
+				notify.setNotifyType(monitorNotify.getNotifyType());
+				notifyList.add(notify);
+			}
+			this.m_notifyInfo.setNotify(notifyList);
 		}
 
 		if (monitor.getApplication() != null) {
@@ -338,8 +349,11 @@ public class CommonMonitorDialog extends CommonDialog {
 			this.m_notifyInfo.update();
 		}
 
+		m_notifyInfo.setPriorityChangeJudgeType(monitor.getPriorityChangeJudgmentType());
+		m_notifyInfo.setPriorityChangeFailType(monitor.getPriorityChangeFailureType());
+
 		// 監視
-		if (monitor.isMonitorFlg()) {
+		if (monitor.getMonitorFlg()) {
 			this.confirmMonitorValid.setSelection(true);
 		}else{
 			this.setMonitorEnabled(false);
@@ -353,8 +367,8 @@ public class CommonMonitorDialog extends CommonDialog {
 	 *
 	 * @return 入力値を保持した通知情報
 	 */
-	protected MonitorInfo createInputData() {
-		monitorInfo = new MonitorInfo();
+	protected MonitorInfoResponse createInputData() {
+		monitorInfo = new MonitorInfoResponse();
 		setInfoInitialValue(monitorInfo);
 
 		// 監視基本情報
@@ -384,6 +398,11 @@ public class CommonMonitorDialog extends CommonDialog {
 	 */
 	@Override
 	protected ValidateResult validate() {
+		validateResult = validateEndpoint(getManagerName());
+		if (validateResult != null) {
+			return validateResult;
+		}
+
 		// 入力値生成
 		this.inputData = this.createInputData();
 
@@ -430,14 +449,12 @@ public class CommonMonitorDialog extends CommonDialog {
 	 * MonitorInfoに初期値を設定します
 	 *
 	 */
-	protected void setInfoInitialValue(MonitorInfo monitor) {
+	protected void setInfoInitialValue(MonitorInfoResponse monitor) {
 
 		// 監視判定タイプ(真偽値/数値/文字列)
-		monitor.setMonitorType(MonitorTypeConstant.TYPE_TRUTH);
+		monitor.setMonitorType(MonitorInfoResponse.MonitorTypeEnum.TRUTH);
 		// 実行間隔（秒）
-		monitor.setRunInterval(RunInterval.TYPE_MIN_05.toSec());
-		// 値失敗時の重要度
-		monitor.setFailurePriority(PriorityConstant.TYPE_UNKNOWN);
+		monitor.setRunInterval(MonitorInfoResponse.RunIntervalEnum.MIN_05);
 		// 監視有効フラグ
 		monitor.setMonitorFlg(true);
 		// 収集有効フラグ
@@ -468,7 +485,7 @@ public class CommonMonitorDialog extends CommonDialog {
 		return this.getMonitorBasicScope().getManagerListComposite().getText();
 	}
 	
-	public void setGraphMonitorNumericValueInfo(List<MonitorNumericValueInfo> monitorNumericValueInfoList) {
+	public void setGraphMonitorNumericValueInfo(List<MonitorNumericValueInfoResponse> monitorNumericValueInfoList) {
 		this.m_MonitorNumericValueInfo = monitorNumericValueInfoList;
 	}
 

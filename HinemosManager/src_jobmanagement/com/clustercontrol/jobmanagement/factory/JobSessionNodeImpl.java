@@ -11,6 +11,7 @@ package com.clustercontrol.jobmanagement.factory;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,11 +19,11 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.persistence.EntityExistsException;
-
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -39,43 +40,75 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidApprovalStatus;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
-import com.clustercontrol.fault.JobMasterNotFound;
+import com.clustercontrol.fault.RpaToolMasterNotFound;
 import com.clustercontrol.hinemosagent.bean.AgentInfo;
 import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
+import com.clustercontrol.hinemosagent.util.AgentVersionManager;
 import com.clustercontrol.jobmanagement.bean.CommandConstant;
 import com.clustercontrol.jobmanagement.bean.CommandStopTypeConstant;
 import com.clustercontrol.jobmanagement.bean.CommandTypeConstant;
 import com.clustercontrol.jobmanagement.bean.DelayNotifyConstant;
+import com.clustercontrol.jobmanagement.bean.FileCheckConstant;
 import com.clustercontrol.jobmanagement.bean.JobApprovalInfo;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JobEnvVariableInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkExpInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkInheritKeyInfo;
+import com.clustercontrol.jobmanagement.bean.JobOutputInfo;
+import com.clustercontrol.jobmanagement.bean.JobOutputType;
 import com.clustercontrol.jobmanagement.bean.JobParamTypeConstant;
+import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.bean.ProcessingMethodConstant;
+import com.clustercontrol.jobmanagement.bean.RetryWaitStatusConstant;
+import com.clustercontrol.jobmanagement.bean.RpaJobEndValueConditionInfo;
+import com.clustercontrol.jobmanagement.bean.RpaStopTypeConstant;
+import com.clustercontrol.jobmanagement.bean.RunInstructionFileCheckInfo;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
+import com.clustercontrol.jobmanagement.bean.RunOutputResultInfo;
 import com.clustercontrol.jobmanagement.bean.RunResultInfo;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.model.JobCommandParamInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobEnvVariableInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobLinkInheritInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobOutputInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobParamInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobRpaEndValueConditionInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobRpaOptionInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntityPK;
+import com.clustercontrol.jobmanagement.rpa.bean.LoginParameter;
+import com.clustercontrol.jobmanagement.rpa.bean.RoboRunInfo;
+import com.clustercontrol.jobmanagement.rpa.bean.RpaJobEndValueConditionTypeConstant;
+import com.clustercontrol.jobmanagement.rpa.bean.RpaJobErrorTypeConstant;
+import com.clustercontrol.jobmanagement.rpa.bean.RpaJobReturnCodeConditionConstant;
+import com.clustercontrol.jobmanagement.rpa.bean.RpaJobTypeConstant;
 import com.clustercontrol.jobmanagement.util.FromRunningAfterCommitCallback;
+import com.clustercontrol.jobmanagement.util.JobLinkRcvJobWorker;
+import com.clustercontrol.jobmanagement.util.JobLinkSendJobWorker;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
-import com.clustercontrol.jobmanagement.util.JobSessionNodeRetryController;
 import com.clustercontrol.jobmanagement.util.JobSessionJobUtil;
+import com.clustercontrol.jobmanagement.util.JobSessionNodeRetryController;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.jobmanagement.util.ParameterUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
+import com.clustercontrol.jobmanagement.util.RpaJobLoginWorker;
+import com.clustercontrol.jobmanagement.util.RpaJobWorker;
 import com.clustercontrol.jobmanagement.util.RunHistoryUtil;
 import com.clustercontrol.jobmanagement.util.SendApprovalMail;
 import com.clustercontrol.jobmanagement.util.SendTopic;
 import com.clustercontrol.jobmanagement.util.ToRunningAfterCommitCallback;
 import com.clustercontrol.repository.factory.NodeProperty;
+import com.clustercontrol.repository.model.NodeInfo;
+import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.rpa.model.RpaToolRunCommandMst;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.xcloud.util.ResourceJobWorker;
+
+import jakarta.persistence.EntityExistsException;
 
 public class JobSessionNodeImpl {
 	/** ログ出力のインスタンス */
@@ -88,16 +121,26 @@ public class JobSessionNodeImpl {
 	 * @param sessionId セッションID
 	 * @param jobunitId ジョブユニットID
 	 * @param jobId ジョブID
+	 * @param isExpNode true:ノードを展開する（スコープ内のノード情報を取得しなおす）、false:展開しない
 	 * @return true：終了していた、false：実行された
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole
+	 * @throws HinemosUnknown
 	 */
-	public boolean startNode(String sessionId, String jobunitId, String jobId) throws JobInfoNotFound, InvalidRole {
-		m_log.debug("startNode() : sessionId=" + sessionId + ", jobId=" + jobId);
+	public boolean startNode(String sessionId, String jobunitId, String jobId, boolean isExpNode) throws JobInfoNotFound, InvalidRole, HinemosUnknown {
+		m_log.debug("startNode() : sessionId=" + sessionId + ", jobId=" + jobId + ", isExpNode=" + isExpNode);
 
 		//セッションIDとジョブIDから、セッションジョブを取得
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 		Collection<JobSessionNodeEntity> jobSessionNodeList = sessionJob.getJobSessionNodeEntities();
+
+		// ノード／スコープを含めた情報を登録
+		if((jobSessionNodeList == null || jobSessionNodeList.size() == 0)
+			&& (isExpNode && sessionJob.getJobSessionEntity().getExpNodeRuntimeFlg())){
+			CreateJobSession.createJobSessionNode(sessionJob.getJobInfoEntity());
+			// 再度ジョブセッションノードを検索
+			jobSessionNodeList = sessionJob.getJobSessionNodeEntities();
+		}
 		if(jobSessionNodeList == null || jobSessionNodeList.size() == 0){
 			//ジョブ終了時関連処理（再帰呼び出し）
 			try {
@@ -131,7 +174,12 @@ public class JobSessionNodeImpl {
 				// TYPE_RETRY(1つのノードで実行)であるにも関わらず、2つのノードが実行中となる恐れがある。
 				if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT
 						&& JobSessionNodeRetryController.isRegistered(sessionNode.getId())) {
-					m_log.debug("startNode() : Waiting to retry " + sessionNode.getId());
+					m_log.debug("startNode() : Waiting to retry. " + sessionNode.getId());
+					return false;
+				}
+				// waitingキューに入っている場合も実行中とみなす (#11132)
+				if (JobMultiplicityCache.existsInWaitingQueue(sessionNode.getId())) {
+					m_log.debug("startNode() : Waiting in the queue. " + sessionNode.getId());
 					return false;
 				}
 			}
@@ -197,7 +245,37 @@ public class JobSessionNodeImpl {
 			if (!jtm.getEntityManager().getTransaction().isActive()) {
 				// 例外を投げても良いくらいだが、万が一バグが紛れてしまった場合に過剰な影響が出るのを防ぐため、
 				// エラーログを記録してfalseを返すに留める。
-				m_log.error("runNode() : A transaction has not been begun. " + sessionNode.getId());
+				m_log.error("startNodeSub() : A transaction has not been begun. " + sessionNode.getId());
+				return false;
+			}
+			// ノードが管理対象でない場合は実行しない
+			if (sessionNode.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_JOBLINKRCVJOB
+					&& sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
+				// ジョブ連携待機ジョブは、セッションノードのスコープ（もしくはノード）の存在確認
+				boolean valid = false;
+				try {
+					valid = new RepositoryControllerBean().getFacilityEntityByPK(sessionNode.getId().getFacilityId()).getValid();
+				} catch (FacilityNotFound | InvalidRole e) {
+					m_log.warn("startNodeSub() : " + e.getMessage());
+					valid = false;
+				} catch (HinemosUnknown e) {
+					m_log.warn("startNodeSub() : " + e.getMessage());
+					valid = false;
+				}
+				if (!valid) {
+					m_log.debug("startNodeSub() : node is not managed. " + sessionNode.getId());
+					sessionNode.setStatus(StatusConstant.TYPE_NOT_MANAGED);
+				}
+			} else if (sessionNode.getJobSessionJobEntity().getJobInfoEntity().getJobType() != JobConstant.TYPE_APPROVALJOB
+					&& sessionNode.getJobSessionJobEntity().getJobInfoEntity().getJobType() != JobConstant.TYPE_RESOURCEJOB
+					&& !(sessionNode.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_RPAJOB
+						&& sessionNode.getJobSessionJobEntity().getJobInfoEntity().getRpaJobType() == RpaJobTypeConstant.INDIRECT)
+					&& sessionNode.getStatus() == StatusConstant.TYPE_WAIT
+					&& !checkManaged(sessionNode)) {
+				m_log.debug("startNodeSub() : node is not managed. " + sessionNode.getId());
+				sessionNode.setStatus(StatusConstant.TYPE_NOT_MANAGED);
+			}
+			if (sessionNode.getStatus() == StatusConstant.TYPE_NOT_MANAGED) {
 				return false;
 			}
 			if (!checkMultiplicity(sessionNode)) {
@@ -209,22 +287,43 @@ public class JobSessionNodeImpl {
 		}
 		return true;
 	}
+
+	/**
+	 * ノードが管理対象外でないか確認する
+	 * 
+	 * @param sessionNode セッションノード
+	 * @return true:管理対象、false:管理対象外、未存在
+	 */
+	private boolean checkManaged(JobSessionNodeEntity sessionNode) {
+		boolean valid = false;
+		try {
+			valid = new RepositoryControllerBean().getNode(sessionNode.getId().getFacilityId()).getValid();
+		} catch (FacilityNotFound e) {
+			m_log.warn("checkManaged() : " + e.getMessage());
+			valid = false;
+		} catch (HinemosUnknown e) {
+			m_log.warn("checkManaged() : " + e.getMessage());
+			valid = false;
+		}
+		return valid;
+	}
 	
 	private boolean checkMultiplicity(JobSessionNodeEntity sessionNode) {
 		boolean startFlag = false;
-		String facilityId = sessionNode.getId().getFacilityId();
 		String sessionId = sessionNode.getId().getSessionId();
 		String jobunitId = sessionNode.getId().getJobunitId();
 		String jobId = sessionNode.getId().getJobId();
 		if (sessionNode.getStatus() != StatusConstant.TYPE_WAIT) {
 			return false;
 		}
-		if (JobMultiplicityCache.isRunNow(facilityId)) {
-			return true;
-		}
 		try {
 			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 
+			 // 多重度の検証を行う
+		 	if (JobMultiplicityCache.isRunNowWithSession(sessionJob, sessionNode.getId().getFacilityId())) {
+		 		return true;
+		 	}
+			
 			if(sessionJob.getJobInfoEntity().getMultiplicityNotify() == null){
 				// ここは通らないはず
 				m_log.info("multiplicity notify is null");
@@ -342,7 +441,12 @@ public class JobSessionNodeImpl {
 			sessionNode.setApprovalStatus(JobApprovalStatusConstant.TYPE_PENDING);
 		}
 		if (sessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_MONITORJOB
-			&& sessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_APPROVALJOB) {
+			&& sessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_APPROVALJOB
+			&& sessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_RESOURCEJOB
+			&& sessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_JOBLINKSENDJOB
+			&& sessionJobEntity.getJobInfoEntity().getJobType() != JobConstant.TYPE_JOBLINKRCVJOB
+			&& ! (sessionJobEntity.getJobInfoEntity().getJobType() == JobConstant.TYPE_RPAJOB
+					&& sessionJobEntity.getJobInfoEntity().getRpaJobType() == RpaJobTypeConstant.INDIRECT)) {
 			setMessage(sessionNode, MessageConstant.WAIT_AGENT_RESPONSE.getMessage());
 		}
 
@@ -360,7 +464,7 @@ public class JobSessionNodeImpl {
 		return startCommand;
 	}
 
-	private void runJobSessionNode(String sessionId, String jobunitId, String jobId, String facilityId) throws JobInfoNotFound, InvalidRole, HinemosUnknown, JobMasterNotFound, FacilityNotFound {
+	private void runJobSessionNode(String sessionId, String jobunitId, String jobId, String facilityId) throws JobInfoNotFound, InvalidRole, HinemosUnknown, FacilityNotFound, RpaToolMasterNotFound {
 		m_log.debug("runJobSessionNode() : sessionId=" + sessionId + ", jobunitid=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId);
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 		JobInfoEntity job = sessionJob.getJobInfoEntity();
@@ -372,6 +476,44 @@ public class JobSessionNodeImpl {
 		instructionInfo.setJobunitId(sessionJob.getId().getJobunitId());
 		instructionInfo.setJobId(sessionJob.getId().getJobId());
 		instructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
+
+		//ソート
+		job.getJobOutputInfoEntities().sort(new Comparator<JobOutputInfoEntity>() {
+			@Override
+			public int compare(JobOutputInfoEntity info1, JobOutputInfoEntity info2) {
+				return info1.getId().getOutputType().compareTo(info2.getId().getOutputType());
+			}
+		});
+
+		//ファイル出力情報の設定
+		for (JobOutputInfoEntity outputInfoEntity : job.getJobOutputInfoEntities()) {
+			if (!outputInfoEntity.getValid()) {
+				continue;
+			}
+			JobOutputInfo outputInfo = new JobOutputInfo();
+			String directory;
+			String fileName;
+			if (outputInfoEntity.getSameNormalFlg() != null && outputInfoEntity.getSameNormalFlg()) {
+				JobOutputInfoEntity normalInfo = job.getJobOutputInfoEntities().get(JobOutputType.STDOUT.getCode());
+				directory = normalInfo.getDirectory();
+				fileName = normalInfo.getFileName();
+			} else {
+				directory = outputInfoEntity.getDirectory();
+				fileName = outputInfoEntity.getFileName();
+			}
+			directory = ParameterUtil.replaceSessionParameterValue(sessionId, facilityId, directory);
+			outputInfo.setDirectory(directory);
+			fileName = ParameterUtil.replaceSessionParameterValue(sessionId, facilityId, fileName);
+			outputInfo.setFileName(fileName);
+			outputInfo.setAppendFlg(outputInfoEntity.getAppendFlg());
+			outputInfo.setValid(outputInfoEntity.getValid());
+			if (JobOutputType.STDOUT.getCode().equals(outputInfoEntity.getId().getOutputType())) {
+				instructionInfo.setNormalJobOutputInfo(outputInfo);
+			} else if (JobOutputType.STDERR.getCode().equals(outputInfoEntity.getId().getOutputType())) {
+				instructionInfo.setErrorJobOutputInfo(outputInfo);
+			}
+		}
+
 		//環境変数情報の設定
 		List<JobEnvVariableInfo> envInfoList = new ArrayList<JobEnvVariableInfo>();
 		for(JobEnvVariableInfoEntity envEntity : job.getJobEnvVariableInfoEntities()) {
@@ -397,6 +539,45 @@ public class JobSessionNodeImpl {
 				m_log.warn("runJobSessionNode() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			}
+		} else if (job.getJobType() == JobConstant.TYPE_RESOURCEJOB) {
+			// リソース制御ジョブの実行ユーザはコマンドジョブ扱いだったときと同じく、ジョブ作成者
+			instructionInfo.setUser(job.getRegUser());
+			instructionInfo.setCommand(CommandConstant.RESOURCE);
+			instructionInfo.setCommandType(CommandTypeConstant.NORMAL);
+
+			// HinemosManager上でジョブ実行
+			try {
+				ResourceJobWorker.runJob(instructionInfo);
+				// セッションノードの開始日時をセット
+				sessionNode.setStartDate(HinemosTime.currentTimeMillis());
+			} catch (Exception e) {
+				m_log.warn("runJobSessionNode() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			}
+		} else if (job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB) {
+			instructionInfo.setCommand(CommandConstant.JOB_LINK_SEND);
+			instructionInfo.setCommandType(CommandTypeConstant.NORMAL);
+
+			try {
+				// HinemosManager上でジョブ実行
+				JobLinkSendJobWorker.runJob(instructionInfo);
+
+			} catch (Exception e) {
+				m_log.warn("runJobSessionNode() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			}
+		} else if (job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB) {
+			instructionInfo.setCommand(CommandConstant.JOB_LINK_RCV);
+			instructionInfo.setCommandType(CommandTypeConstant.NORMAL);
+
+			try {
+				// HinemosManager上でジョブ実行
+				JobLinkRcvJobWorker.runJob(instructionInfo);
+
+			} catch (Exception e) {
+				m_log.warn("runJobSessionNode() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			}
 		}else if (job.getJobType() == JobConstant.TYPE_APPROVALJOB) {
 			// 承認ジョブの場合、Topic送信せずに承認待ち状態へ
 			sessionNode.setStartDate(HinemosTime.currentTimeMillis());
@@ -404,46 +585,214 @@ public class JobSessionNodeImpl {
 			// ジョブ変数のパラメータを置き換える
 			// 承認依頼文
 			String reqSentence = job.getApprovalReqSentence();
-			reqSentence = ParameterUtil.replaceSessionParameterValue(
+			reqSentence = ParameterUtil.replaceAllSessionParameterValue(
 					sessionId,
+					jobunitId,
 					jobFacilityId,
 					reqSentence);
-			reqSentence = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, reqSentence);
 			job.setApprovalReqSentence(reqSentence);
 			
 			// 承認依頼メール件名
 			String mailTitle = job.getApprovalReqMailTitle();
-			mailTitle = ParameterUtil.replaceSessionParameterValue(
+			mailTitle = ParameterUtil.replaceAllSessionParameterValue(
 					sessionId,
+					jobunitId,
 					jobFacilityId,
 					mailTitle);
-			mailTitle = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, mailTitle);
 			job.setApprovalReqMailTitle(mailTitle);
 			
 			// 承認依頼メール本文
 			String mailBody = job.getApprovalReqMailBody();
-			mailBody = ParameterUtil.replaceSessionParameterValue(
+			mailBody = ParameterUtil.replaceAllSessionParameterValue(
 					sessionId,
+					jobunitId,
 					jobFacilityId,
 					mailBody);
-			mailBody = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, mailBody);
 			job.setApprovalReqMailBody(mailBody);
 
 			setMessage(sessionNode, MessageConstant.WAIT_APPROVAL.getMessage());
 			//メール送信
 			SendApprovalMail sendMail = new SendApprovalMail();
 			sendMail.sendRequest(job, sessionNode.getApprovalRequestUser());
+		} else if (job.getJobType() == JobConstant.TYPE_FILECHECKJOB) {
+			// ファイルチェックジョブの場合
+			instructionInfo.setCommand(CommandConstant.FILE_CHECK);
+			instructionInfo.setCommandType(CommandTypeConstant.NORMAL);
+			// ファイルチェックジョブの実行指示情報を作成
+			RunInstructionFileCheckInfo runFileCheckInfo = new RunInstructionFileCheckInfo();
+			runFileCheckInfo.setDirectory(job.getDirectory());
+			runFileCheckInfo.setFileName(job.getFileName());
+			runFileCheckInfo.setCreateValidFlg(job.getCreateValidFlg());
+			runFileCheckInfo.setCreateBeforeJobStartFlg(job.getCreateBeforeJobStartFlg());
+			runFileCheckInfo.setDeleteValidFlg(job.getDeleteValidFlg());
+			runFileCheckInfo.setModifyValidFlg(job.getModifyValidFlg());
+			runFileCheckInfo.setModifyType(job.getModifyType());
+			runFileCheckInfo.setNotJudgeFileInUseFlg(job.getNotJudgeFileInUseFlg());
+			runFileCheckInfo.setSuccessEndValue(job.getSuccessEndValue());
+			instructionInfo.setRunInstructionFileCheckInfo(runFileCheckInfo);
+
+			// ジョブ開始時のシステムジョブ変数を格納
+			ParameterUtil.registerSystemJobParamInfo(sessionJob, ParameterUtil.createParamInfo(
+					instructionInfo.getRunInstructionFileCheckInfo(), instructionInfo.getJobId()), false);
+
+			try {
+				// Topicに送信
+				SendTopic.put(instructionInfo, AgentVersionManager.VERSION_7_0);
+			} catch (Exception e) {
+				m_log.warn("runJobSessionNode() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			}
+
+		} else if (job.getJobType() == JobConstant.TYPE_RPAJOB) {
+			instructionInfo.setCommand(CommandConstant.RPA);
+			instructionInfo.setCommandType(CommandTypeConstant.NORMAL);
+			if (job.getRpaJobType() == RpaJobTypeConstant.DIRECT) {
+				// RPAシナリオジョブ（直接実行）
+				// ジョブ変数置換用
+				Function<String, String> replaceParam = source -> {
+					if (source != null) {
+						try {
+							return ParameterUtil.replaceAllSessionParameterValue(sessionId, jobunitId,
+									sessionNode.getId().getFacilityId(), source);
+						} catch (Exception e) {
+							m_log.warn("runJobSessionNode() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+						}
+					}
+					return source;
+				};
+				instructionInfo.setRpaLogDirectory(replaceParam.apply(job.getRpaLogDirectory()));
+				instructionInfo.setRpaLogFileName(replaceParam.apply(job.getRpaLogFileName()));
+				instructionInfo.setRpaLogFileEncoding(replaceParam.apply(job.getRpaLogEncoding()));
+				instructionInfo.setRpaLogFileReturnCode(replaceParam.apply(job.getRpaLogReturnCode()));
+				instructionInfo.setRpaLogPatternHead(replaceParam.apply(job.getRpaLogPatternHead()));
+				instructionInfo.setRpaLogPatternTail(replaceParam.apply(job.getRpaLogPatternTail()));
+				instructionInfo.setRpaLogMaxBytes(job.getRpaLogMaxBytes());
+				instructionInfo.setRpaDefaultEndValue(job.getRpaDefaultEndValue());
+				// マネージャからログインを行う場合はログイン完了までエージェントを待機させる時間を指定
+				Integer loginWaitMills = 0;
+				if (job.getRpaLoginFlg()) {
+					// ログインされるまで待機する時間[ms] = (コマンドのタイムアウト時間 + リトライ間隔) * リトライ回数
+					 loginWaitMills = (HinemosPropertyCommon.job_rpa_login_connection_timeout.getIntegerValue() 
+							+ HinemosPropertyCommon.job_rpa_login_retry_interval.getIntegerValue()) * job.getRpaLoginRetry();
+				}
+				instructionInfo.setRpaLoginWaitMills(loginWaitMills);
+				// スクリーンショット取得終了値条件
+				if (job.getRpaScreenshotEndValueFlg()) {
+					instructionInfo.setRpaScreenshotEndValue(job.getRpaScreenshotEndValue());
+					instructionInfo.setRpaScreenshotEndValueCondition(job.getRpaScreenshotEndValueCondition());
+				}
+				// 終了状態判定条件を設定（ログアウトするかどうかの判定で使用する）
+				instructionInfo.setRpaNormalEndValueFrom(job.getNormalEndValueFrom());
+				instructionInfo.setRpaNormalEndValueTo(job.getNormalEndValueTo());
+				instructionInfo.setRpaWarnEndValueFrom(job.getWarnEndValueFrom());
+				instructionInfo.setRpaWarnEndValueTo(job.getWarnEndValueTo());
+				// 実行ファイルパスから実行ファイル名を取得
+				String rpaExeName = StringUtils.substringAfterLast(replaceParam.apply(job.getRpaExeFilepath()), "\\");
+				// RPAシナリオ実行オプションをソートした上でひとつの文字列に結合する
+				List<JobRpaOptionInfoEntity> optionList = job.getJobRpaOptionInfoEntities();
+				optionList.sort(new Comparator<JobRpaOptionInfoEntity> () {
+					@Override
+					public int compare(JobRpaOptionInfoEntity o1, JobRpaOptionInfoEntity o2) {
+						return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
+					}
+				});
+				StringBuilder options = new StringBuilder();
+				for (JobRpaOptionInfoEntity option : optionList) {
+					options.append(option.getOption());
+					options.append(' ');
+				}
+				m_log.debug("rpaScenarioOptions=" + options.toString());
+				instructionInfo.setRpaExeName(rpaExeName);
+				// RPAツールエグゼキュータで実行するコマンドを取得
+				RpaToolRunCommandMst commandMst = com.clustercontrol.rpa.util.QueryUtil.getRpaToolRunCommandMstPK(job.getRpaToolId());
+				// シナリオ実行コマンドのパラメータを置換
+				String execCommand = ParameterUtil.replaceRpaToolExecCommandParameter(commandMst.getExecCommand(),
+						replaceParam.apply(job.getRpaExeFilepath()),
+						replaceParam.apply(job.getRpaScenarioFilepath()),
+						replaceParam.apply(options.toString()));
+				// プロセス終了コマンドのパラメータを置換
+				String destroyCommand = ParameterUtil.replaceRpaToolDestroyCommandParameter(commandMst.getDestroyCommand(), rpaExeName);
+				// RPAツールエグゼキューターシナリオ実行情報を設定
+				// プロセス終了を行うかどうかのフラグをHinemosプロパティから取得
+				RoboRunInfo roboRunInfo = new RoboRunInfo(HinemosTime.currentTimeMillis(),
+						job.getId().getSessionId(), job.getId().getJobunitId(), job.getId().getJobId(), facilityId,
+						execCommand, destroyCommand, job.getRpaLoginFlg(), job.getRpaLogoutFlg(), 
+						HinemosPropertyCommon.job_rpa_destroy_process.getBooleanValue());
+				m_log.debug("roboRunInfo=" + roboRunInfo);
+				instructionInfo.setRpaRoboRunInfo(roboRunInfo);
+				// RPAシナリオ終了値判定条件を設定
+				// orderNoの昇順でDTOをリストに格納する
+				List<JobRpaEndValueConditionInfoEntity> endValueConditionEntityList = job.getJobRpaEndValueConditionInfoEntities();
+				List<RpaJobEndValueConditionInfo> endValueConditionList = new ArrayList<>();
+				endValueConditionEntityList.sort(new Comparator<JobRpaEndValueConditionInfoEntity> () {
+					@Override
+					public int compare(JobRpaEndValueConditionInfoEntity o1, JobRpaEndValueConditionInfoEntity o2) {
+						return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
+					}
+				});
+				for (JobRpaEndValueConditionInfoEntity endValueConditionEntity : endValueConditionEntityList) {
+					RpaJobEndValueConditionInfo endValueCondition = new RpaJobEndValueConditionInfo();
+					endValueCondition.setOrderNo(endValueConditionEntity.getId().getOrderNo());
+					endValueCondition.setConditionType(endValueConditionEntity.getConditionType());
+					endValueCondition.setPattern(replaceParam.apply(endValueConditionEntity.getPattern()));
+					endValueCondition.setCaseSensitivityFlg(endValueConditionEntity.getCaseSensitivityFlg());
+					endValueCondition.setProcessType(endValueConditionEntity.getProcessType());
+					endValueCondition.setReturnCode(replaceParam.apply(endValueConditionEntity.getReturnCode()));
+					endValueCondition.setReturnCodeCondition(endValueConditionEntity.getReturnCodeCondition());
+					endValueCondition.setUseCommandReturnCodeFlg(endValueConditionEntity.getUseCommandReturnCodeFlg());
+					endValueCondition.setEndValue(endValueConditionEntity.getEndValue());
+					endValueCondition.setDescription(endValueConditionEntity.getDescription());
+					endValueConditionList.add(endValueCondition);
+				}
+				instructionInfo.setRpaEndValueConditionInfoList(endValueConditionList);
+				
+				// シナリオの実行前にOSへログインする
+				// ログアウトはシナリオ実行後にエージェント側でRPAツールエグゼキューターが行う
+				if (job.getRpaLoginFlg()) {
+					// 重複してログインが実行されることを防ぐため、履歴が無い場合のみログインを実行する
+					if (RunHistoryUtil.findRunHistory(instructionInfo) == null) {
+						NodeInfo info = NodeProperty.getProperty(facilityId);
+						String ipAddress = info.getAvailableIpAddress();
+						m_log.debug("runJobSessionNode() : Rpa Login, sessionId=" + instructionInfo.getSessionId() +
+								", jobunitId=" + instructionInfo.getJobunitId() +
+								", jobId=" + instructionInfo.getJobId() +
+								", facilityId=" + instructionInfo.getFacilityId() +
+								", ipAddress=" + ipAddress +
+								", userId=" + job.getRpaLoginUserId() +
+								", resolution=" + job.getRpaLoginResolution() +
+								", retry=" + job.getRpaLoginRetry()); 
+						setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_EXEC_LOGIN.getMessage());
+						RpaJobLoginWorker.run(instructionInfo,
+								new LoginParameter(ipAddress,
+										replaceParam.apply(job.getRpaLoginUserId()),
+										replaceParam.apply(job.getRpaLoginPassword()),
+										job.getRpaLoginResolution()),
+										job.getRpaLoginRetry());
+					}
+				}
+				RunHistoryUtil.addRunHistory(instructionInfo);
+				try {
+					//Topicに送信
+					SendTopic.put(instructionInfo, AgentVersionManager.VERSION_7_0);
+				} catch (Exception e) {
+					m_log.warn("runJobSessionNode() : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
+			} else {
+				// RPAシナリオジョブ（間接実行）
+				// 間接実行の場合、Topic送信せずにシナリオ実行完了待ち状態へ
+				RpaJobWorker.runJob(instructionInfo);
+				sessionNode.setStartDate(HinemosTime.currentTimeMillis());
+				setMessage(sessionNode, MessageConstant.WAIT_RPA_SCENARIO_END.getMessage());
+			}
 		} else {
 			String startCommand = job.getStartCommand();
 	
 			// ジョブ変数のパラメータを置き換える
-			startCommand = ParameterUtil.replaceSessionParameterValue(
+			startCommand = ParameterUtil.replaceAllSessionParameterValue(
 					sessionId,
+					jobunitId,
 					sessionNode.getId().getFacilityId(),
 					job.getStartCommand());
-			
-			//コマンド内のパラメータを置き換える(#[RETURN:jobid:facilityId])
-			startCommand = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, startCommand);
 			instructionInfo.setCommand(startCommand);
 			instructionInfo.setSpecifyUser(job.getSpecifyUser());
 			instructionInfo.setUser(job.getEffectiveUser());
@@ -518,6 +867,10 @@ public class JobSessionNodeImpl {
 	 * @throws InvalidRole
 	 */
 	public boolean endNode(RunResultInfo info) throws HinemosUnknown, JobInfoNotFound, EntityExistsException, FacilityNotFound, InvalidRole {
+		return endNode(info, null);
+	}
+	
+	public boolean endNode(RunResultInfo info, RunOutputResultInfo outputInfo) throws HinemosUnknown, JobInfoNotFound, EntityExistsException, FacilityNotFound, InvalidRole {
 		m_log.info("endNode() : sessionId=" + info.getSessionId() + ", jobunitId=" + info.getJobunitId() +
 				", jobId=" + info.getJobId() + ", facilityId=" + info.getFacilityId() + ", commandType=" + info.getCommandType());
 
@@ -537,8 +890,9 @@ public class JobSessionNodeImpl {
 			return false;
 		}
 
-		if(commandType == CommandTypeConstant.NORMAL || commandType == CommandTypeConstant.STOP){
-			if (!endNodeNormalStop(info)) {
+		if(commandType == CommandTypeConstant.NORMAL || commandType == CommandTypeConstant.STOP 
+				|| commandType == CommandTypeConstant.SCREENSHOT){
+			if (!endNodeNormalStop(info, outputInfo)) {
 				// ジョブの多重実行の場合はエージェントでジョブを実行させないようにfalseを返す
 				return false;
 			}
@@ -550,7 +904,7 @@ public class JobSessionNodeImpl {
 	}
 
 	// 	 * @return コマンドを実行してよい場合はtrue、コマンドを実行しないでほしい場合はfalseを返す
-	private boolean endNodeNormalStop(RunResultInfo info) throws JobInfoNotFound, InvalidRole {
+	private boolean endNodeNormalStop(RunResultInfo info, RunOutputResultInfo outputInfo) throws JobInfoNotFound, FacilityNotFound, InvalidRole, HinemosUnknown {
 		
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -568,15 +922,56 @@ public class JobSessionNodeImpl {
 
 			//実行状態で分岐
 			if(info.getStatus() == RunStatusConstant.START){
+
+				// RPAシナリオジョブのスクリーンショット取得
+				if(info.getCommandType() == CommandTypeConstant.SCREENSHOT) {
+					setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_START.getMessage());
+					return false;
+				}
+
 				//開始の場合
 
-				if(sessionNode.getStartDate() == null){
+				if(sessionNode.getStartDate() == null) {
 					//開始・再実行日時を設定
 					sessionNode.setStartDate(info.getTime());
-					if (job.getJobType() != JobConstant.TYPE_MONITORJOB) {
-						setMessage(sessionNode, MessageConstant.WAIT_COMMAND_END.getMessage());
-					} else {
+					if (job.getJobType() == JobConstant.TYPE_MONITORJOB) {
 						setMessage(sessionNode, MessageConstant.WAIT_MONITOR_RESPONSE.getMessage());
+					} else if (job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB) {
+						setMessage(sessionNode, MessageConstant.WAIT_JOBLINKSEND_END.getMessage());
+					} else if (job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB) {
+						setMessage(sessionNode, MessageConstant.WAIT_JOBLINKRCV_END.getMessage());
+						// 開始時に確認済みメッセージ番号をクリアする
+						sessionJob.setJoblinkRcvCheckedPosition(null);
+					} else if (job.getJobType() == JobConstant.TYPE_FILECHECKJOB) {
+						// ファイルチェックジョブの場合
+						List<String> validList = new ArrayList<>();
+						if (job.getCreateValidFlg()) {
+							if (job.getCreateBeforeJobStartFlg()) {
+								validList.add(MessageConstant.EXISTS.getMessage());
+							} else {
+								validList.add(MessageConstant.CREATE.getMessage());
+							}
+						}
+						if (job.getDeleteValidFlg()) {
+							validList.add(MessageConstant.DELETE.getMessage());
+						}
+						if (job.getModifyValidFlg()) {
+							if (job.getModifyType() == FileCheckConstant.TYPE_MODIFY_TIMESTAMP) {
+								validList.add(MessageConstant.TIMESTAMP_MODIFY.getMessage());
+							} else if (job.getModifyType() == FileCheckConstant.TYPE_MODIFY_FILESIZE) {
+								validList.add(MessageConstant.FILE_SIZE_MODIFY.getMessage());
+							}
+						}
+						setMessage(sessionNode, MessageConstant.FILE_CHECK_CHECKING
+								.getMessage(String.join(",", validList), job.getDirectory(), job.getFileName()));
+
+						// ファイルチェック開始時のシステムジョブ変数を格納
+						ParameterUtil.registerSystemJobParamInfo(sessionJob,
+								ParameterUtil.createParamInfoFcStart(info.getJobId()), true);
+					} else if (job.getJobType() == JobConstant.TYPE_RPAJOB) {
+						setMessage(sessionNode, MessageConstant.WAIT_RPA_SCENARIO_END.getMessage());
+					} else {
+						setMessage(sessionNode, MessageConstant.WAIT_COMMAND_END.getMessage());
 					}
 					
 					AgentInfo agentInfo = AgentConnectUtil.getAgentInfo(info.getFacilityId());
@@ -588,7 +983,7 @@ public class JobSessionNodeImpl {
 						}
 						sessionNode.setInstanceId(instanceId);
 					} else {
-						m_log.warn("agentInfo is null");
+						m_log.info("agentInfo is null");
 					}
 
 					//チェック中の場合
@@ -612,12 +1007,21 @@ public class JobSessionNodeImpl {
 					}
 				} else {
 					//エージェントタイムアウト等のエラーの場合こちらを通る
-					if (!job.getCommandRetryFlg().booleanValue()) {
+					if (AgentVersionManager.isUnsupportedVersionError(info)) {
+						// 対象外バージョンのエラーの場合は再実行しない
+						retryFlag = false;
+					} else if (!job.getCommandRetryFlg().booleanValue()) {
 						retryFlag = false;
 					}
 				}
 
 				if(info.getStatus() == RunStatusConstant.END){
+					// RPAシナリオジョブのスクリーンショット取得
+					if(info.getCommandType() == CommandTypeConstant.SCREENSHOT) {
+						setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_END.getMessage());
+						return false;
+				}
+
 					//終了の場合
 					if (retryFlag && retryJob(sessionNode, sessionJob, info, job.getCommandRetry())) {
 						//再実行あり
@@ -650,12 +1054,66 @@ public class JobSessionNodeImpl {
 							//承認ジョブの用のメッセージを設定
 							if (job.getJobType() == JobConstant.TYPE_APPROVALJOB) {
 								setMessage(sessionNode, info.getMessage());
-							}else
-							if (info.getCommandType() == CommandTypeConstant.STOP &&
+							//RPAシナリオジョブの場合
+							} else if (job.getJobType() == JobConstant.TYPE_RPAJOB) {
+								//直接実行の場合
+								if (job.getRpaJobType() == RpaJobTypeConstant.DIRECT) {
+									//メッセージを設定
+									if(info.getCommandType() == CommandTypeConstant.STOP){
+										setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_STOP_SCENARIO.getMessage());
+									} else {
+										// エージェントからのメッセージと共に終了値判定結果のメッセージを表示
+										setMessage(sessionNode, createRpaJobEndMessage(info));
+									}
+									// 実行履歴を削除
+									RunInstructionInfo history = RunHistoryUtil.findRunHistory(info.getSessionId(),
+											info.getJobunitId(), info.getJobId(), info.getFacilityId());
+									if (history != null) {
+										RunHistoryUtil.delRunHistory(history);
+										m_log.debug("endNodeNormalStop() : delRunHistory, jobType=" + job.getJobType() + 
+												", sessionId=" + info.getSessionId() +
+												", jobunitId=" + info.getJobunitId() +
+												", jobId=" + info.getJobId() +
+												", facilityId=" + info.getFacilityId());
+									}
+									if (job.getRpaLoginFlg()) {
+										// ログイン処理が継続中の場合は停止しておく
+										RpaJobLoginWorker.cancel(info);
+									}
+								//間接実行の場合
+								} else if (job.getRpaJobType() == RpaJobTypeConstant.INDIRECT){
+									//メッセージを設定
+									if(info.getCommandType() == CommandTypeConstant.STOP){
+										if (job.getRpaStopType() == RpaStopTypeConstant.STOP_SCENARIO) {
+											// シナリオを終了
+											setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_STOP_SCENARIO.getMessage());
+										} else {
+											// シナリオは終了せず、ジョブのみ終了
+											setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_STOP_JOB.getMessage());
+										}
+									} else {
+										setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_SCENARIO_COMPLETED.getMessage());
+									}
+								}
+							}
+							else if (info.getCommandType() == CommandTypeConstant.STOP &&
 									info.getStopType() == CommandStopTypeConstant.DESTROY_PROCESS) {
 								// プロセス終了の場合
 								//メッセージを設定
 								setMessage(sessionNode, MessageConstant.JOB_PROCESS_SHUTDOWN.getMessage());
+
+							} else if (job.getJobType() == JobConstant.TYPE_FILECHECKJOB) {
+								// ファイルチェックジョブの場合
+								// システムジョブ変数を格納
+								ParameterUtil.registerSystemJobParamInfo(sessionJob,
+										ParameterUtil.createParamInfo(info.getRunResultFileCheckInfo(), info.getJobId(),
+												info.getFacilityId()),
+										false);
+								// 格納されているメッセージをそのまま表示する
+								if (info.getMessage() != null && !info.getMessage().isEmpty()) {
+									setMessage(sessionNode, info.getMessage());
+								}
+
 							} else {
 								// プロセス終了以外の場合
 								// コマンド終了時のジョブ変数を格納する
@@ -716,6 +1174,91 @@ public class JobSessionNodeImpl {
 											// 固定値とした場合
 											value = jobCommandParamInfoEntity.getValue();
 										}
+										// 値へのジョブ変数適用
+										value = ParameterUtil.replaceAllSessionParameterValue(
+												job.getId().getSessionId(),
+												info.getJobunitId(),
+												info.getFacilityId(),
+												value);
+										// 重複チェック
+										boolean chkFlg = false;
+										for (JobParamInfoEntity jobParamInfo : jobParamInfoList) {
+											if (jobParamInfo.getId().getJobId().equals(job.getJobSessionJobEntity().getJobSessionEntity().getJobId())
+													&& jobParamInfo.getId().getJobunitId().equals(job.getId().getJobunitId())
+													&& jobParamInfo.getId().getSessionId().equals(job.getId().getSessionId())
+													&& jobParamInfo.getId().getParamId().equals(createParamId)) {
+												jobParamInfo.setValue(value);
+												chkFlg = true;
+												break;
+											}
+										}
+										// 重複していない場合は追加
+										if (!chkFlg) {
+											JobParamInfoEntity jobParamInfoEntity = new JobParamInfoEntity(job, createParamId);
+											// ジョブIDにセッションジョブIDを指定する。
+											jobParamInfoEntity.getId().setJobId(job.getJobSessionJobEntity().getJobSessionEntity().getJobId());
+											jobParamInfoEntity.setParamType(JobParamTypeConstant.TYPE_SYSTEM_JOB);
+											jobParamInfoEntity.setValue(value);
+											em.persist(jobParamInfoEntity);
+											jobParamInfoEntity.relateToJobInfoEntity(job);
+											jobParamInfoList.add(jobParamInfoEntity);
+											sessionJobEntity.getJobInfoEntity().setJobParamInfoEntities(jobParamInfoList);
+										}
+									}
+								}
+								// ジョブ連携待機ジョブの引継ぎ情報を格納する
+								if (job.getJobLinkInheritInfoEntities() != null
+										&& job.getJobLinkInheritInfoEntities().size() > 0) {
+									List<JobLinkInheritInfoEntity> jobLinkInheritInfoEntityList = job.getJobLinkInheritInfoEntities();
+									// セッションIDとセッションジョブIDから、ジョブ変数のリストを取得
+									JobSessionJobEntity sessionJobEntity = QueryUtil.getJobSessionJobPK(info.getSessionId(),
+											info.getJobunitId(),
+											job.getJobSessionJobEntity().getJobSessionEntity().getJobId());
+									List<JobParamInfoEntity> jobParamInfoList = sessionJobEntity.getJobInfoEntity().getJobParamInfoEntities();
+									
+									for (JobLinkInheritInfoEntity jobLinkInheritInfoEntity : jobLinkInheritInfoEntityList) {
+										String createParamId = jobLinkInheritInfoEntity.getId().getParamId();
+										String value = "";
+										if (info.getJobLinkMessageInfo() != null) {
+											JobLinkInheritKeyInfo keyInfo = JobLinkInheritKeyInfo.valueOf(jobLinkInheritInfoEntity.getKeyInfo());
+											if (keyInfo == JobLinkInheritKeyInfo.SOURCE_FACILITY_ID) {
+												// 送信元ファシリティID
+												value = info.getJobLinkMessageInfo().getFacilityId();
+											} else if (keyInfo == JobLinkInheritKeyInfo.SOURCE_IP_ADDRESS) {
+												// 送信元IPアドレス
+												value = info.getJobLinkMessageInfo().getIpAddress();
+											} else if (keyInfo == JobLinkInheritKeyInfo.JOBLINK_MESSAGE_ID) {
+												// ジョブ連携メッセージID
+												value = info.getJobLinkMessageInfo().getJoblinkMessageId();
+											} else if (keyInfo == JobLinkInheritKeyInfo.MONITOR_DETAIL_ID) {
+												// 監視詳細
+												value = info.getJobLinkMessageInfo().getMonitorDetailId();
+											} else if (keyInfo == JobLinkInheritKeyInfo.PRIORITY) {
+												// 重要度
+												value = String.valueOf(info.getJobLinkMessageInfo().getPriority());
+											} else if (keyInfo == JobLinkInheritKeyInfo.APPLICATION) {
+												// アプリケーション
+												value = info.getJobLinkMessageInfo().getApplication();
+											} else if (keyInfo == JobLinkInheritKeyInfo.MESSAGE) {
+												// メッセージ
+												value = info.getJobLinkMessageInfo().getMessage();
+											} else if (keyInfo == JobLinkInheritKeyInfo.MESSAGE_ORG) {
+												// オリジナルメッセージ
+												value = info.getJobLinkMessageInfo().getMessageOrg();
+											} else if (keyInfo == JobLinkInheritKeyInfo.EXP_INFO) {
+												// 拡張情報
+												if (info.getJobLinkMessageInfo().getJobLinkExpInfo() != null) {
+													for (JobLinkExpInfo expInfo : info.getJobLinkMessageInfo().getJobLinkExpInfo()) {
+														if (expInfo.getKey().equals(jobLinkInheritInfoEntity.getExpKey())) {
+															value = expInfo.getValue();
+															break;
+														}
+													}
+												}
+											}
+										}
+
+										// 値へのジョブ変数適用
 										// 重複チェック
 										boolean chkFlg = false;
 										for (JobParamInfoEntity jobParamInfo : jobParamInfoList) {
@@ -774,43 +1317,122 @@ public class JobSessionNodeImpl {
 								", facilityId=" + info.getFacilityId());
 					}
 				}else if(info.getStatus() == RunStatusConstant.ERROR){
+					// RPAシナリオジョブのスクリーンショット取得でエラーが発生
+					if(info.getCommandType() == CommandTypeConstant.SCREENSHOT) {
+						setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_FAIL.getMessage());
+						return false;
+					}
 					//失敗の場合
 					if (retryFlag && retryJob(sessionNode, sessionJob, info, job.getCommandRetry())) {
 						//再実行あり
 						return false;
 					}
 
-					//実行状態、終了値、終了・中断日時を設定
-					if(sessionNode.getStatus() == StatusConstant.TYPE_RUNNING){
-						//エラー時に終了にする
-						if(job.getMessageRetryEndFlg().booleanValue()){
-							//実行状態が実行中の場合、実行状態バッファに終了を設定
-							sessionNode.setStatus(StatusConstant.TYPE_END);
-
-							//終了・中断日時を設定
-							sessionNode.setEndDate(HinemosTime.currentTimeMillis());
-							//終了値を設定
-							sessionNode.setEndValue(job.getMessageRetryEndValue());
-							// 収集データ更新
-							CollectDataUtil.put(sessionNode);
-						}else{
-							//実行状態が実行中の場合、実行状態バッファに実行失敗を設定
-							sessionNode.setStatus(StatusConstant.TYPE_ERROR);
-						}
-					}else if(sessionNode.getStatus() == StatusConstant.TYPE_STOPPING){
-						//実行状態が停止処理中の場合、実行状態バッファにコマンド停止を設定
-						sessionNode.setStatus(StatusConstant.TYPE_STOP);
+					// RPAシナリオジョブ（直接実行）での異常発生時
+					if (job.getJobType() == JobConstant.TYPE_RPAJOB 
+							&& job.getRpaJobType() == RpaJobTypeConstant.DIRECT
+							&& info.getRpaJobErrorType() != null
+							&& sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
+						endAbnormalRpaJob(info, job, sessionNode);
+					// RPAシナリオジョブ（間接実行）での異常発生時
+					} else if (job.getJobType() == JobConstant.TYPE_RPAJOB 
+							&& job.getRpaJobType() == RpaJobTypeConstant.INDIRECT
+							&& sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
+						// ジョブを終了
+						sessionNode.setStatus(StatusConstant.TYPE_END);
+						//終了日時を設定
+						sessionNode.setEndDate(HinemosTime.currentTimeMillis());
+						//終了値を設定
 						sessionNode.setEndValue(info.getEndValue());
-					}
+						// 収集データ更新
+						CollectDataUtil.put(sessionNode);
+					} else {
+						//実行状態、終了値、終了・中断日時を設定
+						if(sessionNode.getStatus() == StatusConstant.TYPE_RUNNING){
+							//エラー時に終了にする
+							if(job.getMessageRetryEndFlg().booleanValue()){
+								//実行状態が実行中の場合、実行状態バッファに終了を設定
+								sessionNode.setStatus(StatusConstant.TYPE_END);
 
-					//メッセージを設定
-					setMessage(sessionNode, info.getMessage() + info.getErrorMessage());
+								//終了・中断日時を設定
+								sessionNode.setEndDate(HinemosTime.currentTimeMillis());
+								//終了値を設定
+								sessionNode.setEndValue(job.getMessageRetryEndValue());
+								// 収集データ更新
+								CollectDataUtil.put(sessionNode);
+							}else{
+								//実行状態が実行中の場合、実行状態バッファに実行失敗を設定
+								sessionNode.setStatus(StatusConstant.TYPE_ERROR);
+							}
+						}else if(sessionNode.getStatus() == StatusConstant.TYPE_STOPPING){
+							//実行状態が停止処理中の場合、実行状態バッファにコマンド停止を設定
+							sessionNode.setStatus(StatusConstant.TYPE_STOP);
+							sessionNode.setEndValue(info.getEndValue());
+						}
+						//メッセージを設定
+						setMessage(sessionNode, info.getMessage() + info.getErrorMessage());
+					}
 				}
 
 				if (sessionNode.getStartDate() == null) {
 					// ジョブ実行命令がノードに届いていない場合
 					m_log.debug("set status buffer : status=" + info.getStatus() +
 							", sessionId=" + info.getSessionId() + ", jobId=" + info.getJobId() + ", facilityId=" + info.getFacilityId());
+				}
+
+				//コマンドジョブのファイル出力設定の判定
+				if (outputInfo != null && !outputInfo.getErorrTargetTypeList().isEmpty()) {
+					for (JobOutputInfoEntity outputEnt : job.getJobOutputInfoEntities()) {
+						//ファイル出力設定が有効だった場合
+						Integer outputType = outputEnt.getId().getOutputType();
+						if (outputEnt.getValid() && outputInfo.getErorrTargetTypeList().contains(outputType)) {
+							String ssesionId = sessionJob.getId().getSessionId();
+							String jobId = job.getId().getJobId();
+							
+							String failureOperationType = "";
+							//失敗時状態遷移する場合
+							if (outputEnt.getFailureOperationFlg()) {
+								sessionJob.setEndDate(HinemosTime.currentTimeMillis());
+								failureOperationType = OperationConstant.typeToMessageCode(outputEnt.getFailureOperationType());
+								if (outputEnt.getFailureOperationType().equals(OperationConstant.TYPE_STOP_SET_END_VALUE) ||
+										outputEnt.getFailureOperationType().equals(OperationConstant.TYPE_STOP_SET_END_VALUE_FORCE)) {
+									sessionNode.setStatus(StatusConstant.TYPE_END_FAILED_OUTPUT);
+								} else if (outputEnt.getFailureOperationType().equals(OperationConstant.TYPE_STOP_SUSPEND)) {
+									sessionJob.setStatus(StatusConstant.TYPE_SUSPEND);
+								}
+							}
+							
+							String jobMessage;
+							if (JobOutputType.STDOUT.getCode().equals(outputType)) {
+								jobMessage = MessageConstant.MESSAGE_JOB_COMMAND_STDOUT_OUTPUT_FAILURE.getMessage()
+											+ System.lineSeparator() + outputInfo.getStdoutErrorMessage();
+							} else {
+								jobMessage = MessageConstant.MESSAGE_JOB_COMMAND_STDERR_OUTPUT_FAILURE.getMessage()
+											+ System.lineSeparator() + outputInfo.getStderrErrorMessage();
+							}
+							setMessage(sessionNode, jobMessage);
+
+							//失敗時通知する場合
+							if (outputEnt.getFailureNotifyFlg()) {
+								String message = MessageConstant.MESSAGE_JOB_COMMAND_OUTPUT_FAILURE.getMessage(
+										job.getId().getJobId(),
+										job.getJobName(),
+										sessionJob.getId().getSessionId());
+								String messageorg;
+								if (failureOperationType.isEmpty()) {
+									messageorg = MessageConstant.MESSAGE_JOB_COMMAND_OUTPUT_FAILURE_ORG.getMessage(
+											job.getId().getJobId(),
+											job.getJobName(),
+											sessionJob.getId().getSessionId(),
+											failureOperationType);
+								} else {
+									//失敗時状態遷移する場合、通知のメッセージとオリジナルメッセージは同じ内容
+									messageorg = message;
+								}
+								new Notice().notify(ssesionId, job.getId().getJobunitId(), jobId, outputEnt.getFailureNotifyPriority(), message, messageorg);
+							}
+						}
+					}
 				}
 
 				//他の状態に遷移した場合は、キャッシュを更新する。
@@ -830,15 +1452,8 @@ public class JobSessionNodeImpl {
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 		JobInfoEntity job = sessionJob.getJobInfoEntity();
 		JobSessionNodeEntity sessionNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
-		m_log.debug("endNodeFinish() : status=" + sessionNode.getStatus() +
-				", facilityId=" + sessionNode.getId().getFacilityId());
+		m_log.debug("endNodeFinish() : status=" + sessionNode.getStatus() + ", " + sessionNode.getId());
 
-		// 監視ジョブの場合、処理中のノード以外のノードのEclipseLinkのキャッシュを最新化する。
-		// そうしないとcheckAllNodeEndでの全ノード終了判定が正しく行えずジョブが実行中のままになる場合がある。
-		if (job.getJobType() == JobConstant.TYPE_MONITORJOB) {
-			refreshOtherSessionNodeCache(sessionNode);
-		}
-		
 		//実行状態チェック
 		if(sessionNode.getStatus() == StatusConstant.TYPE_STOP){
 			//実行状態がコマンド停止の場合
@@ -853,7 +1468,7 @@ public class JobSessionNodeImpl {
 				int flg = sessionJob.getDelayNotifyFlg();
 				//遅延通知状態から操作済みフラグを取得
 				int operationFlg = DelayNotifyConstant.getOperation(flg);
-				if(operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE){
+				if(operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE || operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE_FORCE){
 					//操作済みフラグが停止[状態指定]の場合、停止[状態変更]を行う
 					new OperateMaintenanceOfJob().maintenanceJob(
 							sessionId,
@@ -889,23 +1504,237 @@ public class JobSessionNodeImpl {
 					// 次のノードを実行させる。
 					startNode(sessionJob.getId().getSessionId(),
 							sessionJob.getId().getJobunitId(),
-							sessionJob.getId().getJobId());
+							sessionJob.getId().getJobId(),
+							false);
+				}
+			} else if (sessionJob.getJobInfoEntity().getProcessMode() == ProcessingMethodConstant.TYPE_ANY_NODE) {
+				// 実行状態が中断以外の場合
+				if (sessionJob.getStatus() == StatusConstant.TYPE_SUSPEND) {
+					return;
+				}
+				if (checkAllNodeEnd(sessionJob)) {
+					m_log.info("endNodeFinish() : all nodes end (type any node) " + facilityId);
+					if (sessionNode.getStatus().equals(StatusConstant.TYPE_END)
+							|| sessionNode.getStatus().equals(StatusConstant.TYPE_MODIFIED)) {
+						// 他のノードの停止処理を実行する
+						endNodeByOtherNode(sessionId, jobunitId, jobId, sessionNode);
+					}
+					// ジョブ終了時関連処理（再帰呼び出し）
+					new JobSessionJobImpl().endJob(sessionId, jobunitId, jobId, sessionNode.getResult(), true);
 				}
 			} else {
 				//実行状態がコマンド停止以外の場合
 				if(sessionJob.getStatus() != StatusConstant.TYPE_SUSPEND && checkAllNodeEnd(sessionJob)){
 					//ジョブ終了の場合
-					//ファイル転送ジョブ
+					//ファイル転送ジョブ(HULFT以外)
 					if(CommandConstant.GET_FILE_LIST.equals(command)){
 						new CreateFileJob().createFileJobNet(
 								sessionJob,
 								fileList);
+					} else if (sessionJob.getId().getJobId().endsWith(CreateHulftJob.UTILIUPDT_S)) {
+						JobInfoEntity parentJobInfo = QueryUtil.getJobInfoEntityPK(sessionId, jobunitId, sessionJob.getParentJobId());
+						if (parentJobInfo.getJobType() == JobConstant.TYPE_FILEJOB
+							&& sessionJob.getJobSessionEntity().getExpNodeRuntimeFlg()) {
+							new CreateHulftJob().createHulftFileJobNet(sessionId, jobunitId, sessionJob.getParentJobId());
+						}
 					}
 					//ジョブ終了時関連処理（再帰呼び出し）
 					new JobSessionJobImpl().endJob(sessionId, jobunitId, jobId, sessionNode.getResult(), true);
 				}
 			}
 		}
+	}
+
+	/**
+	 * 他のノードが条件を満たした場合にノードの停止処理を実行する
+	 * 
+	 * @param sessionId
+	 * @param jobunitId
+	 * @param jobId
+	 * @param endedNode
+	 *            条件を満たしたノード、nullの場合はこの処理内で条件を満たしたノードを探す
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 */
+	public void endNodeByOtherNode(String sessionId, String jobunitId, String jobId, JobSessionNodeEntity endedNode)
+			throws JobInfoNotFound, InvalidRole {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			// セッションIDとジョブIDから、セッションジョブを取得
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+
+			List<JobSessionNodeEntity> sessionNodeList = sessionJob.getJobSessionNodeEntities();
+			if (endedNode == null) {
+				// 引数がnullの場合は条件を満たしているノードを探す
+				// 複数ノードが条件を満たしている場合、ノードの優先度順に並び替えた最初のノードとする
+				Collections.sort(sessionNodeList, new JobPriorityComparator());
+				for (JobSessionNodeEntity sessionNode : sessionNodeList) {
+					if (sessionNode.getEndValue() == null) {
+						continue;
+					}
+					if (!sessionNode.getStatus().equals(StatusConstant.TYPE_END)
+							&& !sessionNode.getStatus().equals(StatusConstant.TYPE_MODIFIED)) {
+						continue;
+					}
+					if (JobSessionJobUtil.checkEndStatus(sessionJob,
+							sessionNode.getEndValue()) == EndStatusConstant.TYPE_NORMAL) {
+						endedNode = sessionNode;
+						break;
+					}
+				}
+				if (endedNode == null) {
+					// このメソッドを呼び出す前にcheckAllNodeEnd()を通過するはずなので通常到達しない
+					m_log.warn("endNodeByOtherNode() : endedNode is null. sessionId=" + sessionId + ", jobunitId="
+							+ jobunitId + ", jobId=" + jobId);
+					return;
+				}
+			}
+
+			m_log.debug("endNodeByOtherNode() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId
+					+ ", endedNode=" + endedNode.getId().getFacilityId());
+			for (JobSessionNodeEntity sessionNode : sessionNodeList) {
+				if (endedNode.getId().equals(sessionNode.getId())) {
+					continue;
+				}
+
+				// ノードの実行状態が｛実行中、待機、停止処理中｝でなければ、停止処理は実行しない
+				if (sessionNode.getStatus() != StatusConstant.TYPE_RUNNING
+						&& sessionNode.getStatus() != StatusConstant.TYPE_WAIT
+						&& sessionNode.getStatus() != StatusConstant.TYPE_STOPPING) {
+					m_log.debug("endNodeByOtherNode() : skip. " + sessionNode.getId().toString() + ", status="
+							+ StatusConstant.typeToMessageCode(sessionNode.getStatus()));
+					continue;
+				}
+
+				m_log.info("endNodeByOtherNode() : stop node. sessionId=" + sessionId + ", jobunitId=" + jobunitId
+						+ ", jobId=" + jobId + "facilityId=" + sessionNode.getId().getFacilityId());
+				JobInfoEntity job = sessionJob.getJobInfoEntity();
+				if (job.getJobType() == JobConstant.TYPE_FILECHECKJOB) {
+					// 実行中から他の状態に遷移する場合は、キャッシュを更新する。
+					if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
+						jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
+					} else if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
+						JobMultiplicityCache.removeWait(sessionNode.getId());
+					}
+
+					if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING && sessionNode.getStartDate() != null) {
+						// ノードが実行中の場合はエージェントに停止指示を送る
+						// 開始日時がない場合はエージェント応答待ちなので送らない
+
+						// 実行指示情報を作成
+						RunInstructionInfo instructionInfo = new RunInstructionInfo();
+						instructionInfo.setSessionId(sessionId);
+						instructionInfo.setJobunitId(jobunitId);
+						instructionInfo.setJobId(jobId);
+						instructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
+						instructionInfo.setSpecifyUser(job.getSpecifyUser());
+						instructionInfo.setUser(job.getEffectiveUser());
+						instructionInfo.setCommand(CommandConstant.FILE_CHECK);
+						instructionInfo.setCommandType(CommandTypeConstant.STOP);
+						instructionInfo.setStopType(job.getStopType()); // DESTROY_PROCESS固定の想定
+						// 環境変数情報は不要
+						instructionInfo.setJobEnvVariableInfoList(new ArrayList<>());
+
+						try {
+							// Topicに送信
+							SendTopic.put(instructionInfo);
+						} catch (Exception e) {
+							m_log.warn("endNodeByOtherNode() : RunInstructionInfo send error : "
+									+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+						}
+					}
+
+					// ノードの実行状態を終了に変更する
+					// エージェントの状態によってはジョブの終了が遅れる可能性があるため、
+					// エージェントの応答を待たずに終了し、エージェントから返ってきた停止の結果は無視する
+					// 停止処理中のノードに関しても何らかの理由で停止処理が遅延している可能性を考慮し終了とする
+					sessionNode.setStatus(StatusConstant.TYPE_END);
+					sessionNode.setEndDate(HinemosTime.currentTimeMillis());
+					sessionNode.setEndValue(job.getSuccessEndValue()); // 成功時の終了値
+					setMessage(sessionNode, MessageConstant.FILE_CHECK_FINISHED_OTHER_NODE
+							.getMessage(endedNode.getId().getFacilityId()));
+				}
+			}
+		}
+	}
+
+	/**
+	 * ジョブのタイムアウトによるノードの停止処理を実行します<BR>
+	 * 
+	 * @param sessionJob
+	 * @return true:全てのノードが終了済み、false:一つでも停止中のノードが存在する
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 */
+	public boolean endAllNodeByJobTimeout(JobSessionJobEntity sessionJob) throws JobInfoNotFound, InvalidRole {
+		m_log.debug("endAllNodeTimeout() : " + sessionJob.getId().toString());
+		boolean allNodeEnded = true;
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			Collection<JobSessionNodeEntity> sessionNodeList = sessionJob.getJobSessionNodeEntities();
+			for (JobSessionNodeEntity sessionNode : sessionNodeList) {
+				// ノードの実行状態が｛実行中、待機、停止処理中｝でなければ、停止処理は実行しない
+				if (sessionNode.getStatus() != StatusConstant.TYPE_RUNNING
+						&& sessionNode.getStatus() != StatusConstant.TYPE_WAIT
+						&& sessionNode.getStatus() != StatusConstant.TYPE_STOPPING) {
+					m_log.debug("endAllNodeTimeout() : skip. " + sessionNode.getId().toString() + ", status="
+							+ StatusConstant.typeToMessageCode(sessionNode.getStatus()));
+					if(!StatusConstant.isEndGroup(sessionNode.getStatus())) {
+						// 終了状態でなければフラグは折っておく
+						allNodeEnded = false;
+					}
+					continue;
+				}
+
+				JobInfoEntity job = sessionNode.getJobSessionJobEntity().getJobInfoEntity();
+				if (job.getJobType() == JobConstant.TYPE_FILECHECKJOB) {
+					// 実行中から他の状態に遷移する場合は、キャッシュを更新する。
+					if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING) {
+						jtm.addCallback(new FromRunningAfterCommitCallback(sessionNode.getId()));
+					} else if (sessionNode.getStatus() == StatusConstant.TYPE_WAIT) {
+						JobMultiplicityCache.removeWait(sessionNode.getId());
+					}
+
+					if (sessionNode.getStatus() == StatusConstant.TYPE_RUNNING && sessionNode.getStartDate() != null) {
+						// ノードが実行中の場合はエージェントに停止指示を送る
+						// 開始日時がない場合はエージェント応答待ちなので送らない
+
+						m_log.info("endAllNodeTimeout() : Stop node. " + sessionNode.getId().toString());
+						// 停止の実行指示情報を作成
+						RunInstructionInfo instructionInfo = new RunInstructionInfo();
+						instructionInfo.setSessionId(sessionNode.getId().getSessionId());
+						instructionInfo.setJobunitId(sessionNode.getId().getJobunitId());
+						instructionInfo.setJobId(sessionNode.getId().getJobId());
+						instructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
+						instructionInfo.setSpecifyUser(job.getSpecifyUser());
+						instructionInfo.setUser(job.getEffectiveUser());
+						instructionInfo.setCommand(CommandConstant.FILE_CHECK);
+						instructionInfo.setCommandType(CommandTypeConstant.STOP);
+						instructionInfo.setStopType(job.getStopType()); // DESTROY_PROCESS固定の想定
+						// 環境変数情報は不要
+						instructionInfo.setJobEnvVariableInfoList(new ArrayList<>());
+
+						try {
+							// Topicに送信
+							SendTopic.put(instructionInfo);
+						} catch (Exception e) {
+							m_log.warn("endAllNodeTimeout() : RunInstructionInfo send error : "
+									+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+						}
+					}
+
+					// ノードの実行状態を終了に変更する
+					// エージェントの応答は待たず、エージェントから返ってきた停止指示の結果は無視する
+					// 停止処理中のノードに関しても何らかの理由で停止処理が遅延している可能性を考慮し終了とする
+					sessionNode.setStatus(StatusConstant.TYPE_END);
+					sessionNode.setEndDate(HinemosTime.currentTimeMillis());
+					sessionNode.setEndValue(job.getFailureEndValue()); // タイムアウト時の終了値
+					// メッセージを設定する
+					setMessage(sessionNode,
+							MessageConstant.FILE_CHECK_TIMEOUT.getMessage(job.getFailureWaitTime().toString()));
+				}
+			}
+		}
+		return allNodeEnded;
 	}
 
 	/**
@@ -943,8 +1772,10 @@ public class JobSessionNodeImpl {
 		//終了フラグをfalseにする
 		boolean end = false;
 
-		if(sessionJob.getJobInfoEntity().getProcessMode() == ProcessingMethodConstant.TYPE_RETRY){
+		if(sessionJob.getJobInfoEntity().getProcessMode() == ProcessingMethodConstant.TYPE_RETRY ||
+				sessionJob.getJobInfoEntity().getProcessMode() == ProcessingMethodConstant.TYPE_ANY_NODE){
 			//順次リトライの場合は、実行状態が正常終了のものが一つあれば終了とみなす。
+			//いずれかのノードの場合も同様
 			Integer endStatus = null;
 			try {
 				endStatus = new JobSessionJobImpl().checkEndStatus(sessionJob.getId().getSessionId(),
@@ -976,12 +1807,15 @@ public class JobSessionNodeImpl {
 	/**
 	 * エージェントタイムアウトチェックを行います。
 	 */
-	public HashMap<String, List<JobSessionNodeEntityPK>> checkTimeoutAll() throws JobInfoNotFound {
+	public HashMap<String, List<JobSessionNodeEntityPK>> checkTimeoutAll() {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
+			List<Integer> statusList = Arrays.asList(new Integer[]{
+					StatusConstant.TYPE_RUNNING,
+					StatusConstant.TYPE_STOPPING});
 			Collection<JobSessionNodeEntity> collection = null;
 			collection = em.createNamedQuery("JobSessionNodeEntity.findByStatusStartIsNull", JobSessionNodeEntity.class)
-					.setParameter("status", StatusConstant.TYPE_RUNNING)
+					.setParameter("statusList", statusList)
 					.getResultList();
 
 			HashMap<String, List<JobSessionNodeEntityPK>> map = new HashMap<String, List<JobSessionNodeEntityPK>>();
@@ -1007,8 +1841,9 @@ public class JobSessionNodeImpl {
 	 * @param sessionId セッションID
 	 * @param jobId ジョブID
 	 * @throws JobInfoNotFound
+	 * @throws InvalidRole 
 	 */
-	public void checkTimeout(JobSessionNodeEntityPK pk) throws JobInfoNotFound {
+	public void checkTimeout(JobSessionNodeEntityPK pk) throws JobInfoNotFound, InvalidRole {
 		String sessionId = pk.getSessionId();
 		String jobunitId = pk.getJobunitId();
 		String jobId = pk.getJobId();
@@ -1021,8 +1856,24 @@ public class JobSessionNodeImpl {
 			m_log.debug("checkTimeout() : job_type is monitor_job");
 			return;
 		}
+		// リソース制御ジョブの場合はタイムアウトチェック対象外とする。
+		if (sessionNode.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_RESOURCEJOB) {
+			m_log.debug("checkTimeout() : job_type is resource_control_job");
+			return;
+		}
+		// ジョブ連携送信ジョブの場合はタイムアウトチェック対象外とする。
+		if (sessionNode.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_JOBLINKSENDJOB) {
+			m_log.debug("checkTimeout() : job_type is joblinksend_job");
+			return;
+		}
+		// ジョブ連携待機ジョブの場合はタイムアウトチェック対象外とする。
+		if (sessionNode.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_JOBLINKRCVJOB) {
+			m_log.debug("checkTimeout() : job_type is joblinkrcv_job");
+			return;
+		}
 		//待ち条件ジョブ判定
-		if(sessionNode.getStatus() != StatusConstant.TYPE_RUNNING){
+		if(sessionNode.getStatus() != StatusConstant.TYPE_RUNNING &&
+				sessionNode.getStatus() != StatusConstant.TYPE_STOPPING ){
 			// 1分に1回のタイムアウトチェック中にエージェントの応答があると、
 			// このルートを通る。
 			m_log.info("checkTimeout() : status is not running");
@@ -1035,10 +1886,28 @@ public class JobSessionNodeImpl {
 			m_log.info("checkTimeout() : startDate is not null");
 			return;
 		}
+
+		JobSessionJobEntity sessionJob = sessionNode.getJobSessionJobEntity();
+		if (sessionJob.getRetryWaitStatus().equals(RetryWaitStatusConstant.WAIT)
+				|| sessionJob.getRetryWaitStatus().equals(RetryWaitStatusConstant.PARENT_WAIT)) {
+			// セッションジョブがリトライ待ち中のとき、
+			// 1分に1回のcheckTimeoutが走った場合は、このルートを通る。
+			m_log.debug("checkTimeout() : sessionJob is retry waiting");
+			return;
+		}
 		int retry = sessionNode.getRetryCount();
 		int messageRetry = sessionNode.getJobSessionJobEntity().getJobInfoEntity().getMessageRetry();
 		if(retry >= messageRetry){
-			//リトライ上限を超えたときは、AgentTimeoutErrorとする。
+			//リトライ上限を超えたとき
+			// 停止[状態指定](強制)以外での停止処理中の場合、停止させず、一度のみAgentTimeoutErrorのメッセージを出力する
+			if (sessionNode.getStatus() == StatusConstant.TYPE_STOPPING &&
+					sessionNode.getJobSessionJobEntity().getDelayNotifyFlg() != DelayNotifyConstant.STOP_SET_END_VALUE_FORCE){
+				if (!sessionNode.getMessage().contains(MessageConstant.AGENT_TIMEOUT_ERROR.getMessage())){
+					new JobSessionNodeImpl().setMessage(sessionNode,MessageConstant.AGENT_TIMEOUT_ERROR.getMessage() + " (" + retry + ")");
+				}
+				return;
+			}
+			//その他は、AgentTimeoutErrorとする。
 
 			m_log.info("checkTimeout() : Agent Check NG : sessionId=" + sessionId + ", jobId=" + jobId + ", facilityId=" + facilityId);
 
@@ -1049,7 +1918,11 @@ public class JobSessionNodeImpl {
 			info.setJobId(jobId);
 			info.setFacilityId(facilityId);
 			info.setCommand("");
-			info.setCommandType(CommandTypeConstant.NORMAL);
+			int commandType = CommandTypeConstant.NORMAL;
+			if(sessionNode.getStatus() == StatusConstant.TYPE_STOPPING){
+				commandType = CommandTypeConstant.STOP;
+			}
+			info.setCommandType(commandType);
 			info.setStatus(RunStatusConstant.ERROR);
 			info.setMessage(MessageConstant.AGENT_TIMEOUT_ERROR.getMessage() + " (" + retry + ")");
 			info.setErrorMessage("");
@@ -1070,9 +1943,12 @@ public class JobSessionNodeImpl {
 				//Topicに送信
 				m_log.debug("checkTimeout() : send RunInstructionInfo() : sessionId=" + sessionId +
 						", jobId=" + jobId + ", facilityId=" + facilityId + ", retry=" + retryCount);
-
-				runJobSessionNode(sessionId, jobunitId, jobId, facilityId);
-			} catch (InvalidRole | HinemosUnknown | JobMasterNotFound | FacilityNotFound e) {
+				if(sessionNode.getStatus() == StatusConstant.TYPE_STOPPING){
+					new OperateStopOfJob().stopNode(sessionId, jobunitId, jobId, facilityId, true);
+				}else{
+					runJobSessionNode(sessionId, jobunitId, jobId, facilityId);
+				}
+			} catch (InvalidRole | HinemosUnknown | FacilityNotFound e) {
 				m_log.warn("checkTimeout() RunInstructionInfo() send error : sessionId=" + sessionId + ", jobId=" + jobId + ", facilityId=" + facilityId + " : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			} catch (Exception e) {
@@ -1100,8 +1976,7 @@ public class JobSessionNodeImpl {
 	 * @throws JobInfoNotFound
 	 * @throws InvalidRole 
 	 */
-	public void checkMonitorJobTimeout(JobSessionNodeEntity jobSessionNodeEntity, String monitorTypeId)
-			throws HinemosUnknown, JobInfoNotFound, InvalidRole {
+	public void checkMonitorJobTimeout(JobSessionNodeEntity jobSessionNodeEntity, String monitorTypeId) {
 		String sessionId = jobSessionNodeEntity.getId().getSessionId();
 		String jobunitId = jobSessionNodeEntity.getId().getJobunitId();
 		String jobId = jobSessionNodeEntity.getId().getJobId();
@@ -1119,7 +1994,8 @@ public class JobSessionNodeImpl {
 				&& !monitorTypeId.equals(HinemosModuleConstant.MONITOR_PCAP_BIN)
 				&& !monitorTypeId.equals(HinemosModuleConstant.MONITOR_WINEVENT)
 				&& !monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N)
-				&& !monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S))) {
+				&& !monitorTypeId.equals(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S)
+				&& !monitorTypeId.equals(HinemosModuleConstant.MONITOR_CLOUD_LOG))) {
 			return;
 		}
 
@@ -1168,6 +2044,70 @@ public class JobSessionNodeImpl {
 	}
 	
 	/**
+	 * ジョブ連携待機ジョブのタイムアウト可否を確認します。
+	 *
+	 * @param jobSessionNodeEntity ジョブセッションノード
+	 * @return
+	 * @throws HinemosUnknown
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole 
+	 */
+	public void checkJobLinkRcvJobTimeout(JobSessionNodeEntity jobSessionNodeEntity) {
+		String sessionId = jobSessionNodeEntity.getId().getSessionId();
+		String jobunitId = jobSessionNodeEntity.getId().getJobunitId();
+		String jobId = jobSessionNodeEntity.getId().getJobId();
+		String facilityId = jobSessionNodeEntity.getId().getFacilityId();
+		m_log.debug("checkJobLinkRcvJobTimeout() : sessionId=" + sessionId
+			+ ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId);
+
+		// ジョブ情報
+		JobInfoEntity jobInfoEntity = jobSessionNodeEntity.getJobSessionJobEntity().getJobInfoEntity();
+
+		if(!jobInfoEntity.getFailureEndFlg()) {
+			// タイムアウト時間が指定されていない場合は処理終了
+			return;
+		}
+
+		if (jobInfoEntity.getMonitorWaitTime() == null) {
+			// タイムアウト時間がnullの場合は0を設定
+			jobInfoEntity.setMonitorWaitTime(0);
+		}
+
+		// 終了処理
+		// ノードの開始日時を取得
+		long startDate = jobSessionNodeEntity.getStartDate();
+		Calendar work = HinemosTime.getCalendarInstance();
+		work.setTimeInMillis(startDate);
+		work.getTime();
+		work.add(Calendar.MINUTE, jobInfoEntity.getMonitorWaitTime());
+		Long check = work.getTimeInMillis();
+		if (check <= HinemosTime.currentTimeMillis()) {
+			// 処理終了
+			RunInstructionInfo runInstructionInfo = RunHistoryUtil.findRunHistory(
+					sessionId, jobunitId, jobId, jobSessionNodeEntity.getId().getFacilityId());
+			if (runInstructionInfo == null) {
+				//実行指示情報を作成
+				runInstructionInfo = new RunInstructionInfo();
+				runInstructionInfo.setSessionId(sessionId);
+				runInstructionInfo.setJobunitId(jobunitId);
+				runInstructionInfo.setJobId(jobId);
+				runInstructionInfo.setFacilityId(jobSessionNodeEntity.getId().getFacilityId());
+				runInstructionInfo.setSpecifyUser(jobInfoEntity.getSpecifyUser());
+				runInstructionInfo.setUser(jobInfoEntity.getEffectiveUser());
+				runInstructionInfo.setCommandType(CommandTypeConstant.NORMAL);
+				runInstructionInfo.setCommand(CommandConstant.JOB_LINK_RCV);
+				runInstructionInfo.setStopType(jobInfoEntity.getStopType());
+			}
+			JobLinkRcvJobWorker.endJobLinkRcvJob(
+				runInstructionInfo,
+				MessageConstant.MESSAGE_JOB_MONITOR_RESULT_NOT_FOUND.getMessage(),
+				RunStatusConstant.END,
+				jobInfoEntity.getMonitorWaitEndValue(),
+				null, false);
+		}
+	}
+
+	/**
 	 * コマンドを再実行するかどうかを終了状態から判定します。
 	 * コマンド実行回数からの判定はretryJob内で行っています。 
 	 * 
@@ -1194,6 +2134,9 @@ public class JobSessionNodeImpl {
 	}
 
 	private static class JobPriorityComparator implements Comparator<JobSessionNodeEntity>, Serializable {
+		/** ログ出力のインスタンス */
+		private static Log m_log = LogFactory.getLog( JobPriorityComparator.class );
+
 		/**
 		 * 
 		 */
@@ -1202,46 +2145,59 @@ public class JobSessionNodeImpl {
 		// 二つのJobSessionNodeEntityを受け取り、ノードのジョブ優先度を降順で比較する関数
 		@Override
 		public int compare(JobSessionNodeEntity s, JobSessionNodeEntity t) {
+			m_log.debug("compare() s: " + s.getId() + ", t: " + t.getId());
+
 			int ret = 0;
 			try {
 				String facilityId_s = s.getId().getFacilityId();
 				String facilityId_t = t.getId().getFacilityId();
 				
 				/*
-				 *  ノードの優先度
+				 * ノードの優先度
 				 * 優先度が高いほうが実行される。(tを実行したい場合は、「return 正の値」とする。)
 				 */
 				int priority_s = NodeProperty.getProperty(facilityId_s).getJobPriority();
 				int priority_t = NodeProperty.getProperty(facilityId_t).getJobPriority();
 				ret = priority_t - priority_s;
 				if (ret != 0){
+					m_log.debug("decided by node job priority, ret: " + ret);
 					return ret;
 				}
-				
+
 				/*
-				 * 多重率(run / wait)
+				 * 多重率（ジョブ実行数 / ジョブ多重度)
 				 * 多重率が低いほうが実行される。
 				 * 多重率が同じ場合は、多重度上限が高いほうで実行される。
-				 * return (rs / ms - rt / mt)
-				 * → return (rs * mt - rt * ms)
-				 *  =の場合はmtとmsを比較する。
 				 */
-				int run_s = JobMultiplicityCache.getRunningMultiplicity(facilityId_s); 
+				// 多重度
 				int multi_s = NodeProperty.getProperty(facilityId_s).getJobMultiplicity();
-				int run_t = JobMultiplicityCache.getRunningMultiplicity(facilityId_t); 
 				int multi_t = NodeProperty.getProperty(facilityId_t).getJobMultiplicity(); 
-				ret = run_s * multi_t - run_t * multi_s;
+				m_log.debug("job multiplicity. multi_s: " + multi_s + ", multi_t: " + multi_t);
+
+				// 実行数＋待ち数＋実行予定数のジョブ数
+				int count_s = JobMultiplicityCache.getMultiplicity(facilityId_s);
+				int count_t = JobMultiplicityCache.getMultiplicity(facilityId_t);
+				m_log.debug("job count. count_s: " + count_s + ", count_t: " + count_t);
+
+				// return (rs / ms - rt / mt) → return (rs * mt - rt * ms)
+				ret = count_s * multi_t - count_t * multi_s;
+				m_log.debug("calculate rate of multiplicity, ret: " + ret);
 				if (ret != 0) {
+					m_log.debug("decided by rate of multiplicity, ret: " + ret);
 					return ret;
 				}
+
+				// 多重度順
 				ret = multi_t - multi_s;
 				if (ret != 0) {
+					m_log.debug("decided by job multiplicity, ret: " + ret);
 					return ret;
 				}
-				
+
 				// facilityId
 				ret = facilityId_s.compareTo(facilityId_t);
 				if (ret != 0) {
+					m_log.debug("decided by facilityId, ret: " + ret);
 					return ret;
 				}
 			} catch (FacilityNotFound e) {
@@ -1362,14 +2318,35 @@ public class JobSessionNodeImpl {
 			
 			//実行中のジョブ情報を取得
 			List<JobSessionNodeEntity> list = null;
+			List<Integer> statusList = Arrays.asList(new Integer[]{
+					StatusConstant.TYPE_RUNNING,
+					StatusConstant.TYPE_STOPPING});
+			
 			list = em.createNamedQuery(queryName, JobSessionNodeEntity.class)
-					.setParameter("status", StatusConstant.TYPE_RUNNING)
+					.setParameter("statusList", statusList)
 					.setParameter("facilityId", facilityId)
 					.setParameter("startupTime", agentInfo.getStartupTime())
 					.setParameter("instanceId", instanceId)
 					.getResultList();
 
 			for (JobSessionNodeEntity entity : list) {
+				// 監視ジョブ、ジョブ連携送信ジョブの場合、終了させない
+				if (entity.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_MONITORJOB
+						|| entity.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_JOBLINKSENDJOB
+						|| entity.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_JOBLINKRCVJOB) {
+					m_log.info("endNodeByAgent() : Skip " + entity.getId().getSessionId());
+					continue;
+				}
+
+				// 停止[状態指定](強制)以外での停止処理中の場合、停止させず、一度のみエージェント停止のメッセージを出力する
+				if (entity.getStatus() == StatusConstant.TYPE_STOPPING && 
+						entity.getJobSessionJobEntity().getDelayNotifyFlg() != DelayNotifyConstant.STOP_SET_END_VALUE_FORCE){
+					if (!entity.getMessage().contains(MessageConstant.MESSAGE_AGENT_STOPPED.getMessage())){
+						new JobSessionNodeImpl().setMessage(entity, MessageConstant.MESSAGE_AGENT_STOPPED.getMessage());
+					}
+					continue;
+				}
+				
 				//実行結果情報を作成
 					RunResultInfo info = new RunResultInfo();
 					info.setSessionId(entity.getId().getSessionId());
@@ -1377,7 +2354,11 @@ public class JobSessionNodeImpl {
 					info.setJobId(entity.getId().getJobId());
 					info.setFacilityId(facilityId);
 					info.setCommand("");
-					info.setCommandType(CommandTypeConstant.NORMAL);
+					int commandType = CommandTypeConstant.NORMAL;
+					if(entity.getStatus() == StatusConstant.TYPE_STOPPING){
+						commandType = CommandTypeConstant.STOP;
+					}
+					info.setCommandType(commandType);
 					info.setStatus(RunStatusConstant.ERROR);
 					info.setMessage(MessageConstant.MESSAGE_AGENT_STOPPED.getMessage());
 					info.setErrorMessage("");
@@ -1477,28 +2458,170 @@ public class JobSessionNodeImpl {
 	}
 
 	/**
-	 * 他のノードの状態をDBから取得しEclipseLinkのキャッシュを最新化します。
-	 * @param currentNode
+	 * RPAシナリオジョブの終了メッセージを生成します。
+	 * 
+	 * @param info
+	 *            ジョブ実行結果情報
+	 * @return メッセージ
 	 */
-	private void refreshOtherSessionNodeCache(JobSessionNodeEntity currentNode) {
-		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-			HinemosEntityManager em = jtm.getEntityManager();
-			JobSessionJobEntity sessionJob = currentNode.getJobSessionJobEntity();
-			for (JobSessionNodeEntity sessionNode : sessionJob.getJobSessionNodeEntities()) {
-				String sessionId = sessionNode.getId().getSessionId();
-				String jobunitId = sessionNode.getId().getJobunitId();
-				String jobId = sessionNode.getId().getJobId();
-				String facilityId = sessionNode.getId().getFacilityId();
-				if (sessionId.equals(currentNode.getId().getSessionId()) && jobunitId.equals(currentNode.getId().getJobunitId()) &&
-						jobId.equals(currentNode.getId().getJobId()) && facilityId.equals(currentNode.getId().getFacilityId())) {
-					continue;
-				}
-				m_log.debug("refreshOtherSessionNodeCache() : current facilityId=" + currentNode.getId().getFacilityId() +  
-						", target facilityId=" + sessionNode.getId().getFacilityId() + ", status before=" + sessionNode.getStatus());
-				em.refresh(sessionNode);
-				m_log.debug("refreshOtherSessionNodeCache() : current facilityId=" + currentNode.getId().getFacilityId() +  
-						", target facilityId=" + sessionNode.getId().getFacilityId() + ", status after=" + sessionNode.getStatus());
+	private String createRpaJobEndMessage(RunResultInfo info) {
+		StringBuilder message = new StringBuilder();
+		message.append(MessageConstant.MESSAGE_JOB_RPA_SCENARIO_COMPLETED.getMessage()).append("\n");
+		// 終了値判定条件に関するメッセージ
+		if (info.getRpaJobEndValueConditionInfo() == null) {
+			// いずれの条件にも一致しなかった場合
+			message.append(MessageConstant.MESSAGE_JOB_RPA_NO_END_VALUE_CONDITION_MATCHED.getMessage());
+		} else {
+			message.append(MessageConstant.MESSAGE_JOB_RPA_END_VALUE_CONDITION_MATCHED.getMessage()).append("\n");
+			if (info.getRpaJobEndValueConditionInfo().getConditionType() == RpaJobEndValueConditionTypeConstant.LOG) {
+				// ログファイル判定条件が一致
+				message.append(String.join("=", MessageConstant.ORDER.getMessage(),
+						String.valueOf(info.getRpaJobEndValueConditionInfo().getOrderNo())))
+						.append("\n")
+						.append(String.join("=", MessageConstant.LOGFILE_FILENAME.getMessage(),
+								info.getRpaJobLogfileName()))
+						.append("\n")
+						.append(String.join("=", MessageConstant.LOGFILE_PATTERN.getMessage(),
+								info.getRpaJobEndValueConditionInfo().getPattern()))
+						.append("\n")
+						.append(String.join("=", MessageConstant.LOGFILE_LINE.getMessage(), info.getRpaJobLogMessage()));
+			} else if (info.getRpaJobEndValueConditionInfo()
+					.getConditionType() == RpaJobEndValueConditionTypeConstant.RETURN_CODE) {
+				// リターンコード判定条件が一致
+				message.append(String.join("=", MessageConstant.ORDER.getMessage(),
+						String.valueOf(info.getRpaJobEndValueConditionInfo().getOrderNo())))
+						.append("\n")
+						.append(String.join("=", MessageConstant.JUDGEMENT_VALUE.getMessage(),
+								info.getRpaJobEndValueConditionInfo().getReturnCode()))
+						.append("\n")
+						.append(String.join("=", MessageConstant.JUDGEMENT_CONDITION.getMessage(),
+								conditionConstantToMessage(
+										info.getRpaJobEndValueConditionInfo().getReturnCodeCondition())))
+						.append("\n").append(String.join("=", MessageConstant.RETURN_CODE.getMessage(),
+								String.valueOf(info.getRpaJobReturnCode())));
 			}
 		}
+		// エージェントから送信されたメッセージを表示
+		message.append("\n").append(info.getMessage());
+		m_log.debug("createRpaJobEndMessage() : message=" + message);
+		return message.toString();
+	}
+
+	/**
+	 * 判定条件の定数をメッセージに変換します。
+	 * 
+	 * @param constant
+	 *            判定条件のの定数
+	 * @return 判定条件のメッセージ
+	 */
+	private String conditionConstantToMessage(Integer constant) {
+		String message = "";
+		switch (constant) {
+		case (RpaJobReturnCodeConditionConstant.EQUAL_NUMERIC):
+			message = MessageConstant.EQUAL.getMessage();
+			break;
+		case (RpaJobReturnCodeConditionConstant.NOT_EQUAL_NUMERIC):
+			message = MessageConstant.NOT_EQUAL.getMessage();
+			break;
+		case (RpaJobReturnCodeConditionConstant.GREATER_THAN):
+			message = MessageConstant.GREATER_THAN.getMessage();
+			break;
+		case (RpaJobReturnCodeConditionConstant.GREATER_THAN_OR_EQUAL_TO):
+			message = MessageConstant.GREATER_THAN_OR_EQUAL_TO.getMessage();
+			break;
+		case (RpaJobReturnCodeConditionConstant.LESS_THAN):
+			message = MessageConstant.LESS_THAN.getMessage();
+			break;
+		case (RpaJobReturnCodeConditionConstant.LESS_THAN_OR_EQUAL_TO):
+		default:
+			message = MessageConstant.LESS_THAN_OR_EQUAL_TO.getMessage();
+			break;
+		}
+		message = "\"" + message + "\"";
+		m_log.debug("conditionConstantToMessage() : constant=" + constant + ", message=" + message);
+		return message;
+	}
+
+	/**
+	 * 異常が発生したRPAシナリオジョブについてノードの終了と通知処理を行います。
+	 * 
+	 * @param info
+	 *            ジョブ実行結果情報
+	 * @param job
+	 *            ジョブ情報
+	 * @param sessionNode
+	 *            ノード情報
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 */
+	private void endAbnormalRpaJob(RunResultInfo info, JobInfoEntity job, JobSessionNodeEntity sessionNode)
+			throws JobInfoNotFound, InvalidRole {
+		// ジョブを終了
+		sessionNode.setStatus(StatusConstant.TYPE_END);
+		//終了日時を設定
+		sessionNode.setEndDate(HinemosTime.currentTimeMillis());
+		// 収集データ更新
+		CollectDataUtil.put(sessionNode);
+		String sessionId = sessionNode.getId().getSessionId();
+		String jobunitId = sessionNode.getId().getJobunitId();
+		String jobId = sessionNode.getId().getJobId();
+		String message = "";
+		switch (info.getRpaJobErrorType()) {
+		case (RpaJobErrorTypeConstant.NOT_LOGIN):
+			// ログインされていない場合
+			message = MessageConstant.MESSAGE_JOB_RPA_NOT_LOGIN.getMessage();
+			if (job.getRpaNotLoginNotify()) {
+				// 通知する場合
+				new Notice().rpaErrorNotify(sessionId, jobunitId, jobId, RpaJobErrorTypeConstant.NOT_LOGIN);
+			}
+			// 終了値を設定
+			sessionNode.setEndValue(job.getRpaNotLoginEndValue());
+			m_log.debug("endAbnormalRpaJob() : not login, sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", notify=" + job.getRpaNotLoginNotify() + ", endValue="
+					+ job.getRpaNotLoginEndValue() + ", login=" + job.getRpaLoginFlg());
+			break;
+		case (RpaJobErrorTypeConstant.ALREADY_RUNNING):
+			// RPAツールが既に動作している場合
+			message = MessageConstant.MESSAGE_JOB_RPA_ALREADY_RUNNING.getMessage();
+			if (job.getRpaAlreadyRunningNotify()) {
+				// 通知する場合
+				new Notice().rpaErrorNotify(sessionId, jobunitId, jobId, RpaJobErrorTypeConstant.ALREADY_RUNNING);
+			}
+			// 終了値を設定
+			sessionNode.setEndValue(job.getRpaAlreadyRunningEndValue());
+			m_log.debug("endAbnormalRpaJob() : already running, sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", notify=" + job.getRpaAlreadyRunningNotify() + ", endValue="
+					+ job.getRpaAlreadyRunningEndValue() + ", login=" + job.getRpaLoginFlg());
+			break;
+		case (RpaJobErrorTypeConstant.ABNORMAL_EXIT):
+			// RPAツールが異常終了した場合
+			message = MessageConstant.MESSAGE_JOB_RPA_ABNORMAL_EXIT.getMessage();
+			if (job.getRpaAbnormalExitNotify()) {
+				// 通知する場合
+				new Notice().rpaErrorNotify(sessionId, jobunitId, jobId, RpaJobErrorTypeConstant.ABNORMAL_EXIT);
+			}
+			// 終了値を設定
+			sessionNode.setEndValue(job.getRpaAbnormalExitEndValue());
+			m_log.debug("endAbnormalRpaJob() : abnormal exit, sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", notify=" + job.getRpaAbnormalExitNotify() + ", endValue="
+					+ job.getRpaAbnormalExitEndValue() + ", login=" + job.getRpaLoginFlg());
+			break;
+		case (RpaJobErrorTypeConstant.OTHER):
+			// コマンドの起動失敗等のエラーの場合
+			message = info.getErrorMessage();
+			// 終了値を設定
+			sessionNode.setEndValue(info.getEndValue());
+			m_log.debug("endAbnormalRpaJob() : other error, sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", login=" + job.getRpaLoginFlg());
+			break;
+		default:
+			m_log.warn("endNodeNormalStop() : invalid RpaJobErrorTypeConstant=" + info.getRpaJobErrorType());
+		}
+		if (job.getRpaLoginFlg()) {
+			// ログイン処理が継続中の場合は停止しておく
+			RpaJobLoginWorker.cancel(info);
+		}
+		// メッセージを設定
+		setMessage(sessionNode, message);
 	}
 }

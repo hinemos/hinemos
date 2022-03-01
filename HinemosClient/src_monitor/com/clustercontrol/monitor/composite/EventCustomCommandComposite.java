@@ -21,11 +21,11 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
+import org.openapitools.client.model.EventCustomCommandInfoResponse;
 
 import com.clustercontrol.monitor.action.GetEventCustomCommandListTableDefine;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.monitor.EventCustomCommandInfo;
 
 /**
  * イベントカスタムコマンドのコンポジットクラス<BR>
@@ -137,12 +137,12 @@ public class EventCustomCommandComposite extends Composite {
 		return this.tableViewer.getTable();
 	}
 	
-	public void updateDisp(Map<Integer, EventCustomCommandInfo> customCommandInfoMap) {
+	public void updateDisp(Map<Integer, EventCustomCommandInfoResponse> customCommandInfoMap) {
 		super.update();
 
 		ArrayList<ArrayList<Object>> input = new ArrayList<ArrayList<Object>>();
-		for (Entry<Integer, EventCustomCommandInfo> info : customCommandInfoMap.entrySet()) {
-			if (!info.getValue().isEnable()) {
+		for (Entry<Integer, EventCustomCommandInfoResponse> info : customCommandInfoMap.entrySet()) {
+			if (!info.getValue().getEnable()) {
 				continue;
 			}
 			

@@ -80,10 +80,16 @@ public class ReportMain {
 			System.exit(1);
 		}
 		
+		m_log.debug("outFileName=" + outFileName);
 		if (outFileName == null || outFileName.isEmpty()) {
 			outFileName = ReportUtil.getReportFileName();
 		}
 		
+		if (ReportUtil.createOutPathDir() == false) {
+			m_log.error("createOutPathDir failed " + ReportUtil.getOutPath());
+			System.exit(1);
+		}
+
 		ReportUtil.removeExpiredDirectories();
 
 		// get target nodes

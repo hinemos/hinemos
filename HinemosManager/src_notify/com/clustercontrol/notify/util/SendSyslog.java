@@ -27,9 +27,9 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.notify.bean.ExecFacilityConstant;
@@ -45,7 +45,6 @@ import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.repository.util.FacilityUtil;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.StringBinder;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -138,7 +137,9 @@ public class SendSyslog implements Notifier {
 		if(ipAddresses == null){
 			String detailMsg = "IP Address is empty.";
 			m_log.info(detailMsg);
-			internalErrorNotify(PriorityConstant.TYPE_CRITICAL, notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, detailMsg);
+			String[] args = { notifyId };
+			AplLogger.put(InternalIdCommon.PLT_NTF_SYS_007, args, detailMsg);
+
 		}
 
 		// ヘッダー部分のTIMESTAMPを生成
@@ -152,6 +153,10 @@ public class SendSyslog implements Notifier {
 					", message = " + message);
 		}
 
+		if(ipAddresses == null){
+			//findbugs対応 nulpo防止
+			return;
+		}
 		for(InetAddress address : ipAddresses){
 			try {
 				sendMsgWithRetry(address, 
@@ -165,7 +170,9 @@ public class SendSyslog implements Notifier {
 				String detailMsg = e.getMessage() + " IP Address = " + address;
 				m_log.info("sendlog() " + detailMsg + " : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage());
-				internalErrorNotify(PriorityConstant.TYPE_CRITICAL, notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, detailMsg);
+				String[] args = { notifyId };
+				AplLogger.put(InternalIdCommon.PLT_NTF_SYS_007, args, detailMsg);
+
 				// 続けて次のIPを処理する
 			}
 		}
@@ -528,15 +535,5 @@ public class SendSyslog implements Notifier {
 				soc.close();
 			}
 		}
-	}
-
-	/**
-	 * 通知失敗時の内部エラー通知を定義します
-	 */
-	@Override
-	public void internalErrorNotify(int priority, String notifyId, MessageConstant msgCode, String detailMsg) {
-		String[] args = { notifyId };
-		// 通知失敗メッセージを出力
-		AplLogger.put(priority, HinemosModuleConstant.PLATFORM_NOTIFY, msgCode, args, detailMsg);
 	}
 }

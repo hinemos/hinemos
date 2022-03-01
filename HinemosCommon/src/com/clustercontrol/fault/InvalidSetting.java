@@ -8,7 +8,7 @@
 
 package com.clustercontrol.fault;
 
-public class InvalidSetting extends HinemosException {
+public class InvalidSetting extends HinemosInvalid {
 
 	/**
 	 * 

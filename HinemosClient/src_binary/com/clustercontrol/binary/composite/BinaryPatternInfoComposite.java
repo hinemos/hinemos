@@ -23,6 +23,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.BinaryPatternInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
 
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.TableColumnInfo;
@@ -30,8 +32,6 @@ import com.clustercontrol.binary.dialog.BinaryPatternInfoCreateDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.BinaryPatternInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * バイナリ列監視の判定情報（重要度）コンポジットクラス<BR>
@@ -189,7 +189,7 @@ public class BinaryPatternInfoComposite extends Composite {
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 
 					// 選択している行番号に紐づくフィルタ設定を取得.
-					BinaryPatternInfo binaryPatternInfo = m_infoList.getBinaryPatternInfoList().get(order);
+					BinaryPatternInfoResponse binaryPatternInfo = m_infoList.getBinaryPatternInfoList().get(order);
 
 					// フィルタ設定を元にダイアログ生成.
 					BinaryPatternInfoCreateDialog binaryDialog = new BinaryPatternInfoCreateDialog(shell,
@@ -219,7 +219,7 @@ public class BinaryPatternInfoComposite extends Composite {
 				int order = (Integer) ((ArrayList<?>) m_infoList.getTableViewer().getTable().getSelection()[0].getData()).get(0) - 1;
 
 				if (order >= 0) {
-					String detail = m_infoList.getFilterItemBinary().getDescription();
+					String detail = m_infoList.getFilterItemBinary().getGrepString();
 					if (detail == null) {
 						detail = "";
 					}
@@ -250,7 +250,7 @@ public class BinaryPatternInfoComposite extends Composite {
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 
 					// 選択している行番号に紐づくフィルタ設定を取得.
-					BinaryPatternInfo binaryPatternInfo = m_infoList.getBinaryPatternInfoList().get(order);
+					BinaryPatternInfoResponse binaryPatternInfo = m_infoList.getBinaryPatternInfoList().get(order);
 
 					// フィルタ設定を元にダイアログ生成.
 					BinaryPatternInfoCreateDialog binaryDialog = new BinaryPatternInfoCreateDialog(shell,
@@ -316,7 +316,7 @@ public class BinaryPatternInfoComposite extends Composite {
 	 * @param info
 	 *            設定値として用いる監視情報
 	 */
-	public void setInputData(MonitorInfo info) {
+	public void setInputData(MonitorInfoResponse info) {
 
 		if (info != null) {
 			this.m_infoList.setInputData(info);
@@ -336,7 +336,7 @@ public class BinaryPatternInfoComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.monitor.run.composite.StringValueListComposite#createInputData(MonitorInfo)
 	 */
-	public ValidateResult createInputData(MonitorInfo info) {
+	public ValidateResult createInputData(MonitorInfoResponse info) {
 
 		// 文字列監視判定情報
 		ValidateResult validateResult = m_infoList.createInputData(info);

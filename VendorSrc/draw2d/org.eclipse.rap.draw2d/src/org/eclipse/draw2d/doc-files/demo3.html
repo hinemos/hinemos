@@ -1,0 +1,126 @@
+<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.0//EN">
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+
+
+	<table>
+		<tr>
+			<td bgcolor="#000080" colspan="2"><b><font color="#FFFFFF">Example 3 
+			- Clicking and Scrolling</font></b></td>
+		</tr>
+		<tr>
+			<td valign="top">
+			<p>&nbsp;</p>
+			<p>In this example, a Button is used to create CheckBoxes inside a ScrollPane.</p>
+			<p>The button and scrollpane are placed absolutely inside the contents 
+			figure by simply setting their bounds; no layout manager is used there.&nbsp; 
+			However, the
+			<u onmouseout="view.style.border =&quot;&quot;;view.style.background=&quot;#FFFFFF&quot;" onmouseover="view.style.border =&quot;1px solid #000080&quot;;view.style.background=&quot;#BBBBFF&quot;">
+			view</u> must have a Layout, or its preferred size will not get calculated, 
+			and scrolling will not work correctly.</p>
+			<p>The button&#39;s action listener will get called each time the user clicks 
+			on the button.&nbsp; The
+			<u onmouseout="listener.style.border =&quot;&quot;;listener.style.background=&quot;#FFFFFF&quot;" onmouseover="listener.style.border =&quot;1px solid #000080&quot;;listener.style.background=&quot;#BBBBFF&quot;">
+			listener</u> will create a new CheckBox and add it to the view.  A vertical scrollbar will appear when the checkboxes cannot all be displayed at once in the pane.</p>
+			</td>
+			<td><img border="0" src="demo3.gif" width="263" height="330"></td>
+		</tr>
+	</table>
+	<table>
+		<tr>
+			<td valign="top">
+			<pre>01
+02
+03
+04
+05
+06
+07
+08
+09
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+</pre></td>
+<td valign="top">
+<pre><font color="#000084">import</font> org.eclipse.swt.widgets.Shell;
+<font color="#000084">import</font> org.eclipse.swt.widgets.Display;
+<font color="#000084">import</font> org.eclipse.draw2d.*;
+<font color="#000084">import</font> org.eclipse.swt.SWT;
+<font color="#000084">import</font> org.eclipse.draw2d.geometry.*;
+
+<font color="#000084">public</font> <font color="#000084">class</font> Demo3 {
+
+<font color="#000084">static int</font> count = 1;
+
+<font color="#000084">public static void</font> main(String args[]){
+	Shell shell = <font color="#000084">new</font> Shell();
+	shell.setSize(350,350);
+	shell.open();
+	shell.setText(<font color="#008484">&quot;Demo 3&quot;</font>);
+	LightweightSystem lws = <font color="#000084">new</font> LightweightSystem(shell);
+	IFigure panel = <font color="#000084">new</font> Figure();
+	lws.setContents(panel);
+	ScrollPane scrollpane = <font color="#000084">new</font> ScrollPane();
+	scrollpane.setBounds(<font color="#000084">new</font> Rectangle(30,30,210,200));
+	scrollpane.getViewport().setBorder(<font color="#000084">new</font> GroupBoxBorder(<font color="#008484">&quot;Viewport&quot;</font>));
+	scrollpane.setBorder(<font color="#000084">new</font> GroupBoxBorder(<font color="#008484">&quot;ScrollPane&quot;</font>));
+	<div id="view">	<font color="#000084">final</font> Figure view = <font color="#000084">new</font> Figure();
+	view.setBorder(<font color="#000084">new</font> GroupBoxBorder(<font color="#008484">&quot;The View&quot;</font>));
+	view.setLayoutManager(<font color="#000084">new</font> FlowLayout(FlowLayout.VERTICAL));
+	scrollpane.setView(view);</div>
+	Clickable button = <font color="#000084">new</font> Button(<font color="#008484">&quot;Create checkbox&quot;</font>);
+	button.setBounds(<font color="#000084">new</font> Rectangle(30,250,140,35));
+	<div id="listener">	button.addActionListener(<font color="#000084">new</font> ActionListener(){
+		<font color="#000084">public void</font> actionPerformed(ActionEvent e){
+			view.add(<font color="#000084">new</font> CheckBox(<font color="#008484">&quot;Checkbox &quot;</font>+count++));
+		}
+	});</div>
+	panel.add(button);
+	panel.add(scrollpane);
+	
+	Display display = Display.getDefault();
+	<font color="#000084">while</font> (!shell.isDisposed()) {
+		<font color="#000084">if</font> (!display.readAndDispatch())
+			display.sleep ();
+		}
+	}
+}</pre></td></tr></table>

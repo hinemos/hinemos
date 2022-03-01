@@ -48,7 +48,157 @@
 	</target>
 	
 	<target name="install">
+		<delete dir="../HinemosManager/commonlib" />
+		<copy file="commonlib/commons-logging-1.2.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/commons-lang3-3.11.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/log4j-1.2-api-2.17.1.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/log4j-api-2.17.1.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/log4j-core-2.17.1.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/log4j-jcl-2.17.1.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/commons-codec-1.15.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/commons-lang3-3.11.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/commons-text-1.9.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/httpclient5-5.0.3.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/httpcore5-5.0.3.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/httpcore5-h2-5.0.3.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/slf4j-api-1.7.30.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/jackson-annotations-2.12.0.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/jackson-core-2.12.0.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/jackson-databind-2.12.0.jar" todir="../HinemosManager/commonlib" />
+		
+		<delete dir="../HinemosManager/commonlib_rest" />
+		<copy file="commonlib/jakarta.annotation-api-1.3.5.jar" todir="../HinemosManager/commonlib_rest" />
+		
+		<delete dir="../HinemosManager/platform_switch/commonlib_platform_win" />
+		<copy file="commonlib/jna-5.6.0.jar" todir="../HinemosManager/platform_switch/commonlib_platform_win" />
+		<copy file="commonlib/jna-platform-5.6.0.jar" todir="../HinemosManager/platform_switch/commonlib_platform_win" />
+
+		<!-- REST Client -->
+		<copy file="commonlib/gson-2.8.6.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/gson-fire-1.8.5.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/hamcrest-core-1.3.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/jsr305-3.0.2.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/logging-interceptor-3.14.9.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/okhttp-3.14.9.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/okhttp-digest-1.20.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/okio-1.17.5.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/swagger-annotations-1.6.2.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/threetenbp-1.5.0.jar" todir="../HinemosManager/commonlib" />
+
+		<delete dir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/commons-logging-1.2.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/commons-codec-1.15.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/commons-lang3-3.11.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/commons-text-1.9.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/log4j-1.2-api-2.17.1.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/log4j-api-2.17.1.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/log4j-core-2.17.1.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/log4j-jcl-2.17.1.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/jna-5.6.0.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/jna-platform-5.6.0.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/httpclient5-5.0.3.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/httpcore5-5.0.3.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/httpcore5-h2-5.0.3.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/slf4j-api-1.7.30.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/httpclient-4.5.13.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/httpcore-4.4.14.jar" todir="../HinemosWorkers/commonlib" />
+
+		<!-- REST Client -->
+		<copy file="commonlib/gson-2.8.6.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/gson-fire-1.8.5.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/hamcrest-core-1.3.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/jackson-annotations-2.12.0.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/jackson-core-2.12.0.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/jackson-databind-2.12.0.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/jsr305-3.0.2.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/okio-1.17.5.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/swagger-annotations-1.6.2.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/threetenbp-1.5.0.jar" todir="../HinemosWorkers/commonlib" />
+
+		<copy file="commonlib/commons-lang3-3.11.jar" todir="../HinemosWorkers/commonlib_reporting" />
+		<copy file="commonlib/castor-xml-1.4.1.jar" todir="../HinemosWorkers/commonlib_reporting" />
+		<copy file="commonlib/castor-core-1.4.1.jar" todir="../HinemosWorkers/commonlib_reporting" />
+		<copy file="commonlib/jakarta.inject-api-1.0.3.jar" todir="../HinemosWorkers/commonlib_reporting" />
+
+		<delete>
+			<fileset dir="../HinemosClient/lib">
+				<include name="commons-logging-*.jar" />
+				<include name="log4j-*.jar" />
+				<include name="commons-codec-*.jar" />
+				<include name="commons-lang3-*.jar" />
+				<include name="commons-text-*.jar" />
+				<include name="httpcore5-*.jar" />
+				<include name="httpcore5-h2*.jar" />
+				<include name="httpclient5-*.jar" />
+				<include name="slf4j-api-*.jar" />
+				<include name="castor-core-*.jar" />
+				<include name="castor-xml-*.jar" />
+				<include name="jakarta.inject-api-*.jar" />
+				<include name="gson-*.jar" />
+				<include name="gson-fire-*.jar" />
+				<include name="hamcrest-core-*.jar" />
+				<include name="jackson-annotations-*.jar" />
+				<include name="jackson-core-*.jar" />
+				<include name="jackson-databind-*.jar" />
+				<include name="jakarta.annotation-api-*.jar" />
+				<include name="jsr305-*.jar" />
+				<include name="logging-interceptor-*.jar" />
+				<include name="okhttp-*.jar" />
+				<include name="okhttp-digest-*.jar" />
+				<include name="okio-*.jar" />
+				<include name="swagger-annotations-*.jar" />
+				<include name="threetenbp-*.jar" />
+			</fileset>
+		</delete>
+		
 		<copy file="${jar.dir}/${jar.file}" todir="../HinemosClient/lib" />
+		<copy file="commonlib/commons-logging-1.2.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/log4j-1.2-api-2.17.1.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/log4j-api-2.17.1.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/log4j-core-2.17.1.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/log4j-jcl-2.17.1.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/commons-codec-1.15.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/commons-lang3-3.11.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/commons-text-1.9.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/httpcore5-5.0.3.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/httpcore5-h2-5.0.3.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/httpclient5-5.0.3.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/castor-core-1.4.1.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/castor-xml-1.4.1.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/jakarta.inject-api-1.0.3.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/httpcore5-5.0.3.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/httpclient5-5.0.3.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/slf4j-api-1.7.30.jar" todir="../HinemosClient/lib" />
+
+		<!-- REST Client -->
+		<copy file="commonlib/gson-2.8.6.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/gson-fire-1.8.5.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/hamcrest-core-1.3.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/jackson-annotations-2.12.0.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/jackson-core-2.12.0.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/jackson-databind-2.12.0.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/jakarta.annotation-api-1.3.5.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/jsr305-3.0.2.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/logging-interceptor-3.14.9.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/okhttp-3.14.9.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/okhttp-digest-1.20.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/okio-1.17.5.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/swagger-annotations-1.6.2.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/threetenbp-1.5.0.jar" todir="../HinemosClient/lib" />
+
+		<!-- REST Client -->
+		<delete dir="../HinemosHA/clientlib" />
+		<copy file="commonlib/gson-2.8.6.jar" todir="../HinemosHA/clientlib" />
+		<copy file="commonlib/gson-fire-1.8.5.jar" todir="../HinemosHA/clientlib" />
+		<copy file="commonlib/hamcrest-core-1.3.jar" todir="../HinemosHA/clientlib" />
+		<copy file="commonlib/jakarta.annotation-api-1.3.5.jar" todir="../HinemosHA/clientlib" />
+		<copy file="commonlib/jsr305-3.0.2.jar" todir="../HinemosHA/clientlib" />
+		<copy file="commonlib/logging-interceptor-3.14.9.jar" todir="../HinemosHA/clientlib" />
+		<copy file="commonlib/okhttp-3.14.9.jar" todir="../HinemosHA/clientlib" />
+		<copy file="commonlib/okio-1.17.5.jar" todir="../HinemosHA/clientlib" />
+		<copy file="commonlib/swagger-annotations-1.6.2.jar" todir="../HinemosHA/clientlib" />
+		<copy file="commonlib/threetenbp-1.5.0.jar" todir="../HinemosHA/clientlib" />
+
 	</target>
 	
 	<target name="jar_common" depends="compile,manifest" description="Generate JAR file with Message File Copy">

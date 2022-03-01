@@ -8,6 +8,8 @@
 
 package com.clustercontrol.jobmanagement.bean;
 
+import org.openapitools.client.model.JobRuntimeParamResponse;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -63,4 +65,43 @@ public class JobRuntimeParamTypeMessage {
 		}
 		return -1;
 	}
+
+	/**
+	 * 種別から文字列に変換します。<BR>
+	 *
+	 * @param type
+	 * @return
+	 */
+	public static String typeEnumToString(JobRuntimeParamResponse.ParamTypeEnum type) {
+		if (type == JobRuntimeParamResponse.ParamTypeEnum.INPUT) {
+			return STRING_INPUT;
+		} else if (type == JobRuntimeParamResponse.ParamTypeEnum.RADIO) {
+			return STRING_RADIO;
+		} else if (type == JobRuntimeParamResponse.ParamTypeEnum.COMBO) {
+			return STRING_COMBO;
+		} else if (type == JobRuntimeParamResponse.ParamTypeEnum.FIXED) {
+			return STRING_FIXED;
+		}
+		return "";
+	}
+
+	/**
+	 * 文字列から種別に変換します。<BR>
+	 *
+	 * @param type
+	 * @return
+	 */
+	public static JobRuntimeParamResponse.ParamTypeEnum stringToTypeEnum(String string) {
+		if (string.equals(STRING_INPUT)) {
+			return JobRuntimeParamResponse.ParamTypeEnum.INPUT;
+		} else if (string.equals(STRING_RADIO)) {
+			return JobRuntimeParamResponse.ParamTypeEnum.RADIO;
+		} else if (string.equals(STRING_COMBO)) {
+			return JobRuntimeParamResponse.ParamTypeEnum.COMBO;
+		} else if (string.equals(STRING_FIXED)) {
+			return JobRuntimeParamResponse.ParamTypeEnum.FIXED;
+		}
+		return null;
+	}
+
 }

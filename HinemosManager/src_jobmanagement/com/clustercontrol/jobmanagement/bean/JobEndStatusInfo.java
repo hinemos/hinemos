@@ -30,23 +30,23 @@ public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusIn
 	private static Log m_log = LogFactory.getLog( JobEndStatusInfo.class );
 
 	/** 終了状態の種別 */
-	private Integer m_type = 0;
+	private Integer type = 0;
 
 	/** 終了状態の終了値 */
-	private Integer m_value = 0;
+	private Integer value = 0;
 
 	/** 終了値範囲(開始) */
-	private Integer m_startRangeValue = 0;
+	private Integer startRangeValue = 0;
 
 	/** 終了値範囲(終了) */
-	private Integer m_endRangeValue = 0;
+	private Integer endRangeValue = 0;
 
 	/**
 	 * 終了値範囲(終了)を返す
 	 * @return 終了値範囲(終了)
 	 */
 	public Integer getEndRangeValue() {
-		return m_endRangeValue;
+		return endRangeValue;
 	}
 
 	/**
@@ -54,7 +54,7 @@ public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusIn
 	 * @param endRangeValue 終了値範囲(終了)
 	 */
 	public void setEndRangeValue(Integer endRangeValue) {
-		this.m_endRangeValue = endRangeValue;
+		this.endRangeValue = endRangeValue;
 	}
 
 	/**
@@ -62,7 +62,7 @@ public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusIn
 	 * @return 終了値範囲(開始)
 	 */
 	public Integer getStartRangeValue() {
-		return m_startRangeValue;
+		return startRangeValue;
 	}
 
 	/**
@@ -70,7 +70,7 @@ public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusIn
 	 * @param startRangeValue 終了値範囲(開始)
 	 */
 	public void setStartRangeValue(Integer startRangeValue) {
-		this.m_startRangeValue = startRangeValue;
+		this.startRangeValue = startRangeValue;
 	}
 
 	/**
@@ -79,7 +79,7 @@ public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusIn
 	 * @see com.clustercontrol.bean.EndStatusConstant
 	 */
 	public Integer getType() {
-		return m_type;
+		return type;
 	}
 
 	/**
@@ -88,7 +88,7 @@ public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusIn
 	 * @see com.clustercontrol.bean.EndStatusConstant
 	 */
 	public void setType(Integer type) {
-		this.m_type = type;
+		this.type = type;
 	}
 
 	/**
@@ -96,7 +96,7 @@ public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusIn
 	 * @return 終了状態の終了値
 	 */
 	public Integer getValue() {
-		return m_value;
+		return value;
 	}
 
 	/**
@@ -104,7 +104,7 @@ public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusIn
 	 * @param value 終了状態の終了値
 	 */
 	public void setValue(Integer value) {
-		this.m_value = value;
+		this.value = value;
 	}
 
 	@Override
@@ -112,13 +112,13 @@ public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusIn
 		final int prime = 31;
 		int result = 1;
 		result = prime * result
-				+ ((m_endRangeValue == null) ? 0 : m_endRangeValue.hashCode());
+				+ ((endRangeValue == null) ? 0 : endRangeValue.hashCode());
 		result = prime
 				* result
-				+ ((m_startRangeValue == null) ? 0 : m_startRangeValue
+				+ ((startRangeValue == null) ? 0 : startRangeValue
 						.hashCode());
-		result = prime * result + ((m_type == null) ? 0 : m_type.hashCode());
-		result = prime * result + ((m_value == null) ? 0 : m_value.hashCode());
+		result = prime * result + ((type == null) ? 0 : type.hashCode());
+		result = prime * result + ((value == null) ? 0 : value.hashCode());
 		return result;
 	}
 

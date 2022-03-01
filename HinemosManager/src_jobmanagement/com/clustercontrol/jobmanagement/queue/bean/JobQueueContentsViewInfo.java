@@ -14,7 +14,6 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlType;
 
 import com.clustercontrol.jobmanagement.bean.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobEndpoint;
 
 /**
  * ジョブキュー(同時実行制御キュー)の内部状況(すなわちジョブ詳細単位の状態)を表示するビューのための情報です。

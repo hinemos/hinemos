@@ -10,6 +10,7 @@ package com.clustercontrol.sql.dialog;
 
 import java.util.List;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -23,19 +24,25 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddSqlStringMonitorRequest;
+import org.openapitools.client.model.ModifySqlStringMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.SqlCheckInfoResponse;
+import org.openapitools.client.model.MonitorStringValueInfoRequest;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.composite.TextWithParameterComposite;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorStringDialog;
-import com.clustercontrol.sql.action.AddSql;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.notify.bean.PriChangeFailSelectTypeConstant;
+import com.clustercontrol.notify.bean.PriChangeJudgeSelectTypeConstant;
 import com.clustercontrol.sql.action.GetJdbc;
-import com.clustercontrol.sql.action.GetSql;
-import com.clustercontrol.sql.action.ModifySql;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.SqlCheckInfo;
 
 /**
  * SQL監視（文字列）作成・変更ダイアログクラス<BR>
@@ -60,8 +67,6 @@ public class SqlStringCreateDialog extends CommonMonitorStringDialog {
 	/** クエリ */
 	private Text textQuery = null;
 
-	/** マネージャ名 */
-	private String managerName = null;
 	// ----- コンストラクタ ----- //
 
 	/**
@@ -71,6 +76,8 @@ public class SqlStringCreateDialog extends CommonMonitorStringDialog {
 	 */
 	public SqlStringCreateDialog(Shell parent) {
 		super(parent, null);
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
+		this.priorityChangeFailSelect = PriChangeFailSelectTypeConstant.TYPE_GET;
 	}
 
 	/**
@@ -87,6 +94,8 @@ public class SqlStringCreateDialog extends CommonMonitorStringDialog {
 		this.managerName = managerName;
 		this.monitorId = monitorId;
 		this.updateFlg = updateFlg;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
+		this.priorityChangeFailSelect = PriChangeFailSelectTypeConstant.TYPE_GET;
 	}
 
 	// ----- instance メソッド ----- //
@@ -315,15 +324,31 @@ public class SqlStringCreateDialog extends CommonMonitorStringDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
-		}
-		else{
+		} else {
 			// 変更の場合、情報取得
-			info = new GetSql().getSql(this.managerName, this.monitorId);
+			try {
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
+				info = wrapper.getMonitor(this.monitorId);
+			} catch (InvalidRole e) {
+				// アクセス権なしの場合、エラーダイアログを表示する
+				MessageDialog.openInformation(
+						null,
+						Messages.getString("message"),
+						Messages.getString("message.accesscontrol.16"));
+				throw new InternalError(e.getMessage());
+			} catch (Exception e) {
+				// 上記以外の例外
+				MessageDialog.openInformation(
+						null,
+						Messages.getString("message"),
+						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+				throw new InternalError(e.getMessage());
+			}
 		}
 		this.setInputData(info);
 
@@ -373,14 +398,14 @@ public class SqlStringCreateDialog extends CommonMonitorStringDialog {
 	 *            設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
 
 		// 監視条件 SQL監視情報
-		SqlCheckInfo sqlInfo = monitor.getSqlCheckInfo();
+		SqlCheckInfoResponse sqlInfo = monitor.getSqlCheckInfo();
 		if(sqlInfo != null){
 			if (sqlInfo.getConnectionUrl() != null) {
 				this.textUrl.setText(sqlInfo.getConnectionUrl());
@@ -423,19 +448,14 @@ public class SqlStringCreateDialog extends CommonMonitorStringDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		// SQL監視（文字列）固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_SQL_S);
-
 		// 監視条件 SQL監視情報
-		SqlCheckInfo sqlInfo = new SqlCheckInfo();
-		sqlInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_SQL_S);
-		sqlInfo.setMonitorId(monitorInfo.getMonitorId());
+		SqlCheckInfoResponse sqlInfo = new SqlCheckInfoResponse();
 
 		//接続先URL
 		if (this.textUrl.getText() != null
@@ -510,16 +530,87 @@ public class SqlStringCreateDialog extends CommonMonitorStringDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-		if(info != null){
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
-				result = new AddSql().add(managerName, info);
+				try {
+					AddSqlStringMonitorRequest info = new AddSqlStringMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddSqlStringMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.addSqlStringMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorDuplicate e) {
+					// 監視項目IDが重複している場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.53", args));
+
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.34", args) + errMessage);
+				}
 			}
 			else{
 				// 変更の場合
-				result = new ModifySql().modify(managerName, info);
+				try {
+					ModifySqlStringMonitorRequest info = new ModifySqlStringMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifySqlStringMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.modifySqlStringMonitor(this.inputData.getMonitorId(), info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.35", args));
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.36", args) + errMessage);
+				}
 			}
 		}
 

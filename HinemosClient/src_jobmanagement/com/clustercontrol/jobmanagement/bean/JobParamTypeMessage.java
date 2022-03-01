@@ -8,6 +8,8 @@
 
 package com.clustercontrol.jobmanagement.bean;
 
+import org.openapitools.client.model.JobParameterInfoResponse;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -57,4 +59,38 @@ public class JobParamTypeMessage {
 		}
 		return -1;
 	}
+	/**
+	 * 種別から文字列に変換します。<BR>
+	 *
+	 * @param type
+	 * @return
+	 */
+	public static String typeEnumToString(JobParameterInfoResponse.TypeEnum type) {
+		if (type == JobParameterInfoResponse.TypeEnum.USER) {
+			return STRING_USER;
+		} else if (type == JobParameterInfoResponse.TypeEnum.RUNTIME) {
+			return STRING_RUNTIME;
+		} else if (type == JobParameterInfoResponse.TypeEnum.SYSTEM_JOB) {
+			return STRING_SYSTEM_JOB;
+		}
+		return "";
+	}
+
+	/**
+	 * 文字列から種別に変換します。<BR>
+	 *
+	 * @param type
+	 * @return
+	 */
+	public static JobParameterInfoResponse.TypeEnum stringEnumToType(String string) {
+		if (string.equals(STRING_USER)) {
+			return JobParameterInfoResponse.TypeEnum.USER;
+		} else if (string.equals(STRING_RUNTIME)) {
+			return JobParameterInfoResponse.TypeEnum.RUNTIME;
+		} else if (string.equals(STRING_SYSTEM_JOB)) {
+			return JobParameterInfoResponse.TypeEnum.SYSTEM_JOB;
+		}
+		return null;
+	}
+
 }

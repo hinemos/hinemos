@@ -1,0 +1,108 @@
+<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.0//EN">
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+
+<div>
+	<table width="100%" style="border-collapse: collapse" bordercolor="#111111" cellpadding="0" cellspacing="0">
+		<tr>
+			<td bgcolor="#000080" colspan="2"><b><font color="#FFFFFF">Example 4 
+			- Connections and Anchors</font></b></td>
+		</tr>
+		<tr>
+			<td><br>
+			This example shows how to use Connections and ConnectionAnchors.&nbsp; 
+			A connection is a figure that visually connects two anchors.&nbsp; The 
+			anchors are usually places on figures which the connection is linking.<p>
+			The red and blue &quot;nodes&quot; can be dragged around with the mouse.&nbsp; 
+			The connection will re-route itself automatically.&nbsp; The connections 
+			children, the &quot;Midpoint&quot; label and the arrowhead, will also update.</p>
+			<p>The connection implementation used here is a PolylineConnection.&nbsp; 
+			This implementation supports decorations, such as arrowheads.&nbsp; 
+			PolygonDecorations added to the connection will be rotated correctly 
+			by a Locator.&nbsp; Other decorations can be added with their own locators, 
+			such as the &quot;Midpoint&quot; label in the demo.<br>
+&nbsp;</p>
+			</td>
+			<td><img border="0" src="demo4.gif" width="243" height="245"></td>
+		</tr>
+	</table>
+	<table width="100%" style="border-collapse: collapse" bordercolor="#111111" cellpadding="0" cellspacing="0">
+		<tr>
+			<td valign="top">
+			<pre><font size="2" color="#000084">import</font><font size="2"> org.eclipse.swt.SWT;</font><font size="2" color="#000084">
+import</font><font size="2"> org.eclipse.swt.widgets.Shell;
+</font><font size="2" color="#000084">import</font><font size="2"> org.eclipse.swt.widgets.Display;</font><font size="2" color="#000084">
+import</font><font size="2"> org.eclipse.draw2d.*;</font><font size="2" color="#000084">
+import</font><font size="2"> org.eclipse.draw2d.geometry.*;
+</font><font size="2" color="#000084">
+public</font><font size="2"> </font><font size="2" color="#000084">class</font><font size="2"> Demo4 {
+</font><font size="2" color="#000084">
+public</font><font size="2"> </font><font size="2" color="#000084">static</font><font size="2"> </font><font size="2" color="#000084">void</font><font size="2"> main(String args[]){
+      Shell shell = </font><font size="2" color="#000084">new</font><font size="2"> Shell();
+      shell.setSize(350,350);
+      shell.open();
+      shell.setText(</font><font size="2" color="#008484">&quot;Demo 4&quot;</font><font size="2">);
+      LightweightSystem lws = </font><font size="2" color="#000084">new</font><font size="2"> LightweightSystem(shell);
+      IFigure panel = </font><font size="2" color="#000084">new</font><font size="2"> Figure();
+      lws.setContents(panel);
+      RectangleFigure
+            node1 = </font><font size="2" color="#000084">new</font><font size="2"> RectangleFigure(),
+            node2 = </font><font size="2" color="#000084">new</font><font size="2"> RectangleFigure();
+      node1.setBackgroundColor(ColorConstants.red);
+      node1.setSize(64, 36);
+      node2.setBackgroundColor(ColorConstants.blue);
+      node2.setLocation(</font><font size="2" color="#000084">new</font><font size="2"> Rectangle(100, 100, 64, 36));
+
+      PolylineConnection conn = </font><font size="2" color="#000084">new</font><font size="2"> PolylineConnection();
+      conn.setSourceAnchor(</font><font size="2" color="#000084">new</font><font size="2"> ChopboxAnchor(node1));
+      conn.setTargetAnchor(</font><font size="2" color="#000084">new</font><font size="2"> ChopboxAnchor(node2));
+      conn.setTargetDecoration(</font><font size="2" color="#000084">new</font><font size="2"> PolygonDecoration());</font>
+
+<font size="2">      Label label = </font><font size="2" color="#000084">new</font><font size="2"> Label(</font><font size="2" color="#008484">&quot;Midpoint&quot;</font><font size="2">);
+      label.setOpaque(</font><font size="2" color="#000084">true</font><font size="2">);
+      label.setBackgroundColor(ColorConstants.buttonLightest);
+      label.setBorder(</font><font size="2" color="#000084">new</font><font size="2"> LineBorder());
+      conn.add(label, </font><font size="2" color="#000084">new</font><font size="2"> MidpointLocator(conn, 0));</font>
+
+      panel.add(node1);
+      panel.add(node2);
+      panel.add(conn);
+      <font size="2" color="#000084">new</font><font size="2"> Dragger(node1);
+      </font><font size="2" color="#000084">new</font><font size="2"> Dragger(node2);
+      Display display = Display.getDefault();
+      </font><font size="2" color="#000084">while</font><font size="2"> (!shell.isDisposed()) {
+            </font><font size="2" color="#000084">if</font><font size="2"> (!display.readAndDispatch())
+                  display.sleep ();
+}
+
+}
+</font><font size="2" color="#000084">static class</font><font size="2"> Dragger </font><font size="2" color="#000084">extends</font><font size="2"> MouseMotionListener.Stub </font><font size="2" color="#000084">implements</font><font size="2"> MouseListener {
+</font><font size="2" color="#000084">      public</font><font size="2"> Dragger(IFigure figure){
+            figure.addMouseMotionListener(</font><font size="2" color="#000084">this</font><font size="2">);
+            figure.addMouseListener(</font><font size="2" color="#000084">this</font><font size="2">);
+      }
+      Point last;
+      </font><font size="2" color="#000084">public void</font><font size="2"> mouseReleased(MouseEvent e){}
+      </font><font size="2" color="#000084">public void</font><font size="2"> mouseClicked(MouseEvent e){}
+      </font><font size="2" color="#000084">public void</font><font size="2"> mouseDoubleClicked(MouseEvent e){}
+      </font><font size="2" color="#000084">public void</font><font size="2"> mousePressed(MouseEvent e){
+            last = e.getLocation();
+      }
+      </font><font size="2" color="#000084">public void</font><font size="2"> mouseDragged(MouseEvent e){
+            Point p = e.getLocation();
+            Dimension delta = p.getDifference(last);
+            last = p;
+            Figure f = ((Figure)e.getSource());
+            f.setBounds(f.getBounds().getTranslated(delta.width, delta.height));
+      }
+};
+
+}</font></pre>
+			</td>
+		</tr>
+	</table>
+</div>
+&nbsp;

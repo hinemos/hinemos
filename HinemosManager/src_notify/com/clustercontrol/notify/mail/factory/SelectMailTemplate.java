@@ -16,13 +16,11 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MailTemplateNotFound;
 import com.clustercontrol.notify.mail.model.MailTemplateInfo;
 import com.clustercontrol.notify.mail.util.QueryUtil;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -53,11 +51,11 @@ public class SelectMailTemplate {
 			entity = QueryUtil.getMailTemplateInfoPK(mailTemplateId);
 		} catch (MailTemplateNotFound e) {
 			String[] args = { mailTemplateId };
-			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_MAIL_TEMPLATE, MessageConstant.MESSAGE_SYS_004_MAILTEMP, args);
+			AplLogger.put(InternalIdCommon.PLT_MIL_TMP_SYS_004, args);
 			throw e;
 		} catch (InvalidRole e) {
 			String[] args = { mailTemplateId };
-			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_MAIL_TEMPLATE, MessageConstant.MESSAGE_SYS_004_MAILTEMP, args);
+			AplLogger.put(InternalIdCommon.PLT_MIL_TMP_SYS_004, args);
 			throw e;
 		}
 		return entity;

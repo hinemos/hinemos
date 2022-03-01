@@ -24,18 +24,17 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.JobParameterInfoResponse;
 
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.action.GetParameterTableDefine;
-import com.clustercontrol.jobmanagement.bean.JobParamTypeConstant;
 import com.clustercontrol.jobmanagement.composite.action.ParameterSelectionChangedListener;
 import com.clustercontrol.jobmanagement.dialog.ParameterDialog;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.JobParameterInfo;
 
 /**
  * ジョブ変数タブ用のコンポジットクラスです。
@@ -53,7 +52,7 @@ public class ParameterComposite extends Composite {
 	/** 削除ボタン */
 	private Button m_deleteCondition = null;
 	/** ジョブ変数情報のリスト */
-	private List<JobParameterInfo> m_paramList = null;
+	private List<JobParameterInfoResponse> m_paramList = null;
 	/** シェル */
 	private Shell m_shell = null;
 	/** 選択アイテム */
@@ -223,8 +222,8 @@ public class ParameterComposite extends Composite {
 			//パラメータ設定
 			ArrayList<ArrayList<?>> tableData = new ArrayList<ArrayList<?>>();
 			for (int i = 0; i < m_paramList.size(); i++) {
-				JobParameterInfo info = m_paramList.get(i);
-				if (info.getType() == JobParamTypeConstant.TYPE_USER || callJobHystory) {
+				JobParameterInfoResponse info = m_paramList.get(i);
+				if (info.getType() ==  JobParameterInfoResponse.TypeEnum.USER || callJobHystory) {
 					ArrayList<Object> tableLineData = new ArrayList<Object>();
 					tableLineData.add(info.getParamId());
 					tableLineData.add(info.getType());
@@ -242,7 +241,7 @@ public class ParameterComposite extends Composite {
 	 *
 	 * @param paramList ジョブ変数情報のリスト
 	 */
-	public void setParamInfo(List<JobParameterInfo> paramList) {
+	public void setParamInfo(List<JobParameterInfoResponse> paramList) {
 		m_paramList = paramList;
 	}
 
@@ -251,7 +250,7 @@ public class ParameterComposite extends Composite {
 	 *
 	 * @return ジョブ変数情報のリスト
 	 */
-	public List<JobParameterInfo> getParamInfo() {
+	public List<JobParameterInfoResponse> getParamInfo() {
 		return m_paramList;
 	}
 
@@ -265,7 +264,7 @@ public class ParameterComposite extends Composite {
 	public ValidateResult createParamInfo() {
 
 		//パラメータ情報のインスタンスを作成・取得
-		m_paramList = new ArrayList<JobParameterInfo>();
+		m_paramList = new ArrayList<JobParameterInfoResponse>();
 
 		//パラメータ取得
 		ArrayList<?> tableData = (ArrayList<?>) m_viewer.getInput();
@@ -273,11 +272,11 @@ public class ParameterComposite extends Composite {
 		if (tableData != null) {
 			for (int i = 0; i < tableData.size(); i++) {
 				ArrayList<?> tableLineData = (ArrayList<?>) tableData.get(i);
-				JobParameterInfo info = new JobParameterInfo();
-				Integer type =
-						(Integer) tableLineData.get(GetParameterTableDefine.TYPE);
+				JobParameterInfoResponse info = new JobParameterInfoResponse();
+				JobParameterInfoResponse.TypeEnum type =
+						(JobParameterInfoResponse.TypeEnum) tableLineData.get(GetParameterTableDefine.TYPE);
 				info.setType(type);
-				if (info.getType() == JobParamTypeConstant.TYPE_USER) {
+				if (info.getType() == JobParameterInfoResponse.TypeEnum.USER) {
 					info.setParamId((String)tableLineData.get(
 							GetParameterTableDefine.PARAM_ID));
 					info.setValue((String)tableLineData.get(

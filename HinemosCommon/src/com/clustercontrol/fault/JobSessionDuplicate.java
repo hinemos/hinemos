@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * JobSessionIDが重複している場合に利用するException
  * @version 4.1.0
  */
-public class JobSessionDuplicate extends HinemosException {
+public class JobSessionDuplicate extends HinemosDuplicate {
 
 	private static final long serialVersionUID = -3292533279221432680L;
 	private String m_jobSessionId = null;

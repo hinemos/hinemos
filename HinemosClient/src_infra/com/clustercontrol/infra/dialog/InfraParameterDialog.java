@@ -25,6 +25,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.InfraManagementParamInfoResponse;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
@@ -32,7 +33,6 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.infra.InfraManagementParamInfo;
 
 /**
  * 環境構築変数ダイアログクラスです。
@@ -52,10 +52,10 @@ public class InfraParameterDialog extends CommonDialog {
 	private Button m_chkPasswordFlg = null;
 
 	/** 環境構築変数情報 */
-	private InfraManagementParamInfo m_infraManagementParamInfo = null;
+	private InfraManagementParamInfoResponse m_infraManagementParamInfo = null;
 
 	/** 環境構築変数リスト */
-	private Map<String, InfraManagementParamInfo> m_parentInfraManagementParamMap = new HashMap<>();
+	private Map<String, InfraManagementParamInfoResponse> m_parentInfraManagementParamMap = new HashMap<>();
 	
 	/**
 	 * コンストラクタ
@@ -64,8 +64,8 @@ public class InfraParameterDialog extends CommonDialog {
 	 * @param paramInfo
 	 * @param mode
 	 */
-	public InfraParameterDialog(Shell parent, Map<String, InfraManagementParamInfo> parentInfraManagementParamMap,
-			InfraManagementParamInfo infraManagementParamInfo){
+	public InfraParameterDialog(Shell parent, Map<String, InfraManagementParamInfoResponse> parentInfraManagementParamMap,
+			InfraManagementParamInfoResponse infraManagementParamInfo){
 		super(parent);
 		this.m_infraManagementParamInfo = infraManagementParamInfo;
 		this.m_parentInfraManagementParamMap = parentInfraManagementParamMap;
@@ -77,10 +77,10 @@ public class InfraParameterDialog extends CommonDialog {
 	 * @param parent
 	 */
 	public InfraParameterDialog(Shell parent,
-			Map<String, InfraManagementParamInfo> parentInfraManagementParamMap){
+			Map<String, InfraManagementParamInfoResponse> parentInfraManagementParamMap){
 		super(parent);
 		this.m_parentInfraManagementParamMap = parentInfraManagementParamMap;
-		this.m_infraManagementParamInfo = new InfraManagementParamInfo();
+		this.m_infraManagementParamInfo = new InfraManagementParamInfoResponse();
 	}
 
 	/**
@@ -232,9 +232,9 @@ public class InfraParameterDialog extends CommonDialog {
 				this.m_txtValue.setText(this.m_infraManagementParamInfo.getValue());
 			}
 			// パスワード表示
-			if (this.m_infraManagementParamInfo.isPasswordFlg() != null) {
-				this.m_chkPasswordFlg.setSelection(this.m_infraManagementParamInfo.isPasswordFlg());
-				if (this.m_infraManagementParamInfo.isPasswordFlg()) {
+			if (this.m_infraManagementParamInfo.getPasswordFlg() != null) {
+				this.m_chkPasswordFlg.setSelection(this.m_infraManagementParamInfo.getPasswordFlg());
+				if (this.m_infraManagementParamInfo.getPasswordFlg()) {
 					this.m_txtValue.setEchoChar('*');
 				}
 			}
@@ -293,7 +293,7 @@ public class InfraParameterDialog extends CommonDialog {
 
 		if (this.m_infraManagementParamInfo == null) {
 			// 新規作成
-			this.m_infraManagementParamInfo = new InfraManagementParamInfo();
+			this.m_infraManagementParamInfo = new InfraManagementParamInfoResponse();
 		}
 
 		// 変数名
@@ -343,7 +343,7 @@ public class InfraParameterDialog extends CommonDialog {
 	 *
 	 * @return 環境構築変数情報
 	 */
-	public InfraManagementParamInfo getInputData() {
+	public InfraManagementParamInfoResponse getInputData() {
 		return this.m_infraManagementParamInfo;
 	}
 
@@ -365,7 +365,7 @@ public class InfraParameterDialog extends CommonDialog {
 			// キーに変更がない場合は処理終了
 			return result;
 		}
-		for (Map.Entry<String, InfraManagementParamInfo> entry : m_parentInfraManagementParamMap.entrySet()) {
+		for (Map.Entry<String, InfraManagementParamInfoResponse> entry : m_parentInfraManagementParamMap.entrySet()) {
 			if (oldParamId != null && entry.getKey().equals(oldParamId)) {
 				continue;
 			}

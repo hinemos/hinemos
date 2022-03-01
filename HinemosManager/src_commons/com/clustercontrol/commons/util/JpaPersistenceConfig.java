@@ -11,10 +11,10 @@ package com.clustercontrol.commons.util;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-
 import org.eclipse.persistence.config.PersistenceUnitProperties;
+
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 /*
  * JPA用のConfig
@@ -22,7 +22,7 @@ import org.eclipse.persistence.config.PersistenceUnitProperties;
 public class JpaPersistenceConfig {
 
 	/** JPAのプロパティ名 */
-	public static final String JPA_PARAM_QUERY_TIMEOUT = "javax.persistence.query.timeout";
+	public static final String JPA_PARAM_QUERY_TIMEOUT = "jakarta.persistence.query.timeout";
 
 	/** 重複チェック（EntityExistsExceptionチェック）で使用するヒント */
 	public static final Map<String, Object> JPA_EXISTS_CHECK_HINT_MAP = new ConcurrentHashMap<String, Object>();
@@ -31,7 +31,7 @@ public class JpaPersistenceConfig {
 	private static EntityManagerFactory hinemosEMFactory = null;
 
 	static {
-		JPA_EXISTS_CHECK_HINT_MAP.put("javax.persistence.cache.storeMode","REFRESH");
+		JPA_EXISTS_CHECK_HINT_MAP.put("jakarta.persistence.cache.storeMode","REFRESH");
 	}
 	
 	private static Object lock = new Object();

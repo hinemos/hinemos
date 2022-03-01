@@ -30,5 +30,7 @@ public class MonitorPreferenceInitializer extends AbstractPreferenceInitializer 
 		store.setDefault(MonitorPreferencePage.P_EVENT_MAX, 100);
 		store.setDefault(MonitorPreferencePage.P_EVENT_NEW_EVENT_FLG, true);
 		store.setDefault(MonitorPreferencePage.P_MAX_TRAP_OID, 100);
+		store.setDefault(MonitorPreferencePage.P_EVENT_CONFIRM_DIALOG_FLG,
+				Boolean.valueOf(System.getProperty("event.confirm.dialog")));
 	}
 }

@@ -15,14 +15,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.MailTemplateInfoResponse;
 
-import com.clustercontrol.notify.mail.util.MailTemplateEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.common.util.CommonRestClientWrapper;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.mailtemplate.InvalidRole_Exception;
-import com.clustercontrol.ws.mailtemplate.MailTemplateInfo;
-
+import com.clustercontrol.util.RestConnectManager;
 /**
  * メールテンプレート情報を取得するクライアント側アクションクラス<BR>
  *
@@ -41,22 +40,22 @@ public class GetMailTemplate {
 	 * @return メールテンプレート情報一覧
 	 *
 	 */
-	public Map<String, List<MailTemplateInfo>> getMailTemplateList() {
+	public Map<String, List<MailTemplateInfoResponse>> getMailTemplateList() {
 
-		Map<String, List<MailTemplateInfo>> dispDataMap= new ConcurrentHashMap<>();
-		List<MailTemplateInfo> records = null;
-		for (String managerName : EndpointManager.getActiveManagerSet()) {
+		Map<String, List<MailTemplateInfoResponse>> dispDataMap= new ConcurrentHashMap<>();
+		List<MailTemplateInfoResponse> records = null;
+		for (String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
-				MailTemplateEndpointWrapper wrapper = MailTemplateEndpointWrapper.getWrapper(managerName);
-				records = wrapper.getMailTemplateList();
+				CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(managerName);
+				records = wrapper.getMailTemplateList(null);
 				dispDataMap.put(managerName, records);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				MessageDialog.openInformation(
 						null, 
 						Messages.getString("message"), 
 						Messages.getString("message.accesscontrol.16"));
 			} catch (Exception e) {
-				m_log.warn("getNotifyListByOwnerRole(), " + e.getMessage(), e);
+				m_log.warn("getMailTemplateList(), " + e.getMessage(), e);
 				MessageDialog.openError(
 						null, 
 						Messages.getString("failed"), 
@@ -75,13 +74,13 @@ public class GetMailTemplate {
 	 * @return メールテンプレート情報一覧
 	 *
 	 */
-	public List<MailTemplateInfo> getMailTemplateListByOwnerRole(String managerName, String ownerRoleId) {
+	public List<MailTemplateInfoResponse> getMailTemplateListByOwnerRole(String managerName, String ownerRoleId) {
 
-		List<MailTemplateInfo> records = null;
+		List<MailTemplateInfoResponse> records = null;
 		try {
-			MailTemplateEndpointWrapper wrapper = MailTemplateEndpointWrapper.getWrapper(managerName);
-			records = wrapper.getMailTemplateListByOwnerRole(ownerRoleId);
-		} catch (InvalidRole_Exception e) {
+			CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(managerName);
+			records = wrapper.getMailTemplateList(ownerRoleId);
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 		} catch (Exception e) {

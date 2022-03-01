@@ -23,21 +23,25 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
+import org.openapitools.client.model.JobKickFilterInfoRequest.JobkickTypeEnum;
+import org.openapitools.client.model.JobKickResponse;
 
 import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.jobmanagement.action.GetJobKickTableDefine;
-import com.clustercontrol.jobmanagement.bean.JobKickConstant;
+import com.clustercontrol.jobmanagement.bean.JobKickFilterConstant;
 import com.clustercontrol.jobmanagement.bean.JobKickTypeMessage;
 import com.clustercontrol.jobmanagement.composite.JobKickListComposite;
 import com.clustercontrol.jobmanagement.view.action.CopyJobKickAction;
 import com.clustercontrol.jobmanagement.view.action.DeleteJobKickAction;
+import com.clustercontrol.jobmanagement.view.action.DeletePremakeJobsessionAction;
 import com.clustercontrol.jobmanagement.view.action.DisableJobKickAction;
 import com.clustercontrol.jobmanagement.view.action.EnableJobKickAction;
 import com.clustercontrol.jobmanagement.view.action.ModifyJobKickAction;
 import com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobKickListAction;
 import com.clustercontrol.jobmanagement.view.action.RunJobKickAction;
+import com.clustercontrol.util.FilterPropertyUpdater;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
 import com.clustercontrol.view.ObjectPrivilegeTargetListView;
@@ -61,6 +65,10 @@ public class JobKickListView extends CommonViewPart implements ObjectPrivilegeTa
 	 * Number of selected items
 	 */
 	private int selectedNum;
+
+	/** 選択実行契機種別 */
+	private JobkickTypeEnum selectType = null;
+
 	/** フィルタ条件 */
 	private Property m_condition = null;
 
@@ -159,13 +167,23 @@ public class JobKickListView extends CommonViewPart implements ObjectPrivilegeTa
 	}
 
 	/**
+	 * 選択されている実行契機種別を返します。
+	 * @return selectType
+	 */
+	public JobkickTypeEnum getSelectType(){
+		return this.selectType;
+	}
+
+	/**
 	 * ビューのアクションの有効/無効を設定します。
 	 *
 	 * @param num 選択イベント数
+	 * @param type 選択実行契機種別
 	 * @param selection ボタン（アクション）を有効にするための情報
 	 */
-	public void setEnabledAction(int num, ISelection selection) {
+	public void setEnabledAction(int num, JobkickTypeEnum type, ISelection selection) {
 		this.selectedNum = num;
+		this.selectType = type;
 
 		//ビューアクションの使用可/不可を設定
 		ICommandService service = (ICommandService)PlatformUI.getWorkbench().getService(ICommandService.class);
@@ -177,6 +195,7 @@ public class JobKickListView extends CommonViewPart implements ObjectPrivilegeTa
 			service.refreshElements(DisableJobKickAction.ID, null);
 			service.refreshElements(ObjectPrivilegeJobKickListAction.ID, null);
 			service.refreshElements(RunJobKickAction.ID, null);
+			service.refreshElements(DeletePremakeJobsessionAction.ID, null);
 
 			// Update ToolBar after elements refreshed
 			// WARN : Both ToolBarManager must be updated after updateActionBars(), otherwise icon won't change.
@@ -228,12 +247,12 @@ public class JobKickListView extends CommonViewPart implements ObjectPrivilegeTa
 			objectId = (String) ((List<?>)obj).get(GetJobKickTableDefine.JOBKICK_ID);
 
 			String type = (String) ((List<?>)obj).get(GetJobKickTableDefine.TYPE);
-			int TypeNum = JobKickTypeMessage.stringToType(type);
-			if(TypeNum == JobKickConstant.TYPE_SCHEDULE){
-				objectType = HinemosModuleConstant.JOB_KICK;
-			} else if (TypeNum == JobKickConstant.TYPE_FILECHECK) {
-				objectType = HinemosModuleConstant.JOB_KICK;
-			} else if (TypeNum == JobKickConstant.TYPE_MANUAL) {
+			JobKickResponse.TypeEnum TypeNum = JobKickResponse.TypeEnum
+					.fromValue(JobKickTypeMessage.stringToTypeEnumValue(type));
+			if(TypeNum == JobKickResponse.TypeEnum.SCHEDULE
+				|| TypeNum ==JobKickResponse.TypeEnum.FILECHECK
+				|| TypeNum ==JobKickResponse.TypeEnum.JOBLINKRCV
+				|| TypeNum == JobKickResponse.TypeEnum.MANUAL) {
 				objectType = HinemosModuleConstant.JOB_KICK;
 			}
 
@@ -270,6 +289,8 @@ public class JobKickListView extends CommonViewPart implements ObjectPrivilegeTa
 	 * @param condition フィルタ条件
 	 */
 	public void setFilterCondition(Property condition) {
+		FilterPropertyUpdater.getInstance().addFilterProperty(getClass(), condition,
+				JobKickFilterConstant.MANAGER);
 		m_condition = condition;
 	}
 

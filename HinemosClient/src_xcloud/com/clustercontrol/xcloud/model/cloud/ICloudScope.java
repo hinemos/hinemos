@@ -9,7 +9,8 @@ package com.clustercontrol.xcloud.model.cloud;
 
 import java.util.List;
 
-import com.clustercontrol.ws.xcloud.PlatformUser;
+import org.openapitools.client.model.CloudScopeInfoResponseP1;
+
 import com.clustercontrol.xcloud.model.base.CollectionObserver;
 import com.clustercontrol.xcloud.model.base.IElement;
 import com.clustercontrol.xcloud.model.base.PropertyId;
@@ -66,7 +67,7 @@ public interface ICloudScope extends IElement {
 	
 	String getNodeId();
 	
-	List<PlatformUser> getUnassignedUsers();
+	List<CloudScopeInfoResponseP1> getUnassignedUsers();
 	
 	Integer getRetentionPeriod();
 	Boolean getBillingDetailCollectorFlg();

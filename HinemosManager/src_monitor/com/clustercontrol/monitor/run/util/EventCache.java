@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,11 +28,11 @@ import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.filtersetting.bean.EventFilterBaseCriteria;
+import com.clustercontrol.filtersetting.bean.EventFilterBaseInfo;
+import com.clustercontrol.filtersetting.bean.EventFilterConditionCriteria;
 import com.clustercontrol.monitor.bean.ConfirmConstant;
-import com.clustercontrol.monitor.bean.EventFilterInternal;
 import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
-import com.clustercontrol.monitor.bean.GetEventFilterInternal;
-import com.clustercontrol.monitor.bean.UpdateEventFilterInternal;
 import com.clustercontrol.monitor.bean.ViewListInfo;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.notify.monitor.util.QueryUtil;
@@ -51,16 +50,6 @@ public class EventCache {
 	private static ConcurrentSkipListSet<EventLogEntity> eventCache = null;
 	private static boolean eventCacheFull = false;
 	private static Object lock = new Object();
-	
-	/** 「含まない」検索を行うかの判断に使う値 */
-	private static final String SEARCH_PARAM_NOT_INCLUDE = "NOT:";
-	
-	/** 任意の文字列(何も無くても良い) */
-	private static final String SEARCH_PARAM_PART_MATCH = "%";
-	
-	/** 任意の一文字 */
-	private static final String SEARCH_PARAM_ONCE_MATCH = "_";
-
 	
 	public static void initEventCache() {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
@@ -97,14 +86,37 @@ public class EventCache {
 		return HinemosPropertyCommon.notify_event_cache_size.getIntegerValue();
 	}
 
-	public static EventLogEntity cloneWithoutOrg (EventLogEntity entity) {
+	public static EventLogEntity cloneEntity (EventLogEntity entity) {
 		EventLogEntity ret = entity.clone();
+		//キャッシュからオリジナルメッセージを除外する
 		ret.setMessageOrg(null);
+		//ユーザー拡張イベントのキャッシュサイズを調整する
+		adjustUserItemSize(ret);
+		
 		return ret;
 	}
+	
+	/**
+	 * Hinemosプロパティ"monitor.event.useritem.itemXX.cache.size"の設定値をもとに、
+	 * 各ユーザー拡張イベント(40項目)のキャッシュサイズを調整する
+	 * 
+	 * @param entity
+	 */
+	private static void adjustUserItemSize(EventLogEntity entity) {
+		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
+			String userItemValue = EventUtil.getUserItemValue(entity, i);
+			int cacheLength = HinemosPropertyCommon.monitor_event_useritem_item$_cache_size.getIntegerValue(String.format("%02d", i));
+			
+			if (userItemValue != null && userItemValue.length() > cacheLength) {
+				//ユーザ拡張イベントの文字列の長さがHinemosプロパティの設定値を超えている場合、
+				//Hinemosプロパティの設定値までをキャッシュとして保持する
+				EventUtil.setUserItemValue(entity, i, userItemValue.substring(0, cacheLength));
+			}
+		}
+	}
+
 	public static void addEventCache(EventLogEntity e) {
-		
-		eventCache.add(cloneWithoutOrg(e));
+		eventCache.add(cloneEntity(e));
 		m_log.trace("add=" + e.getId());
 		
 		synchronized (lock) {
@@ -128,7 +140,7 @@ public class EventCache {
 	}
 	
 	public static void modifyEventCache(EventLogEntity e) {
-		EventLogEntity newEntity = cloneWithoutOrg(e);
+		EventLogEntity newEntity = cloneEntity(e);
 		for (EventLogEntity entity : eventCache) {
 			if (entity.getId().equals(newEntity.getId())) {
 				eventCache.remove(entity);
@@ -176,13 +188,13 @@ public class EventCache {
 	 * @param confirmUser
 	 */
 	public static void confirmEventCache(
-			UpdateEventFilterInternal filter, Integer confirmFlg, Long confirmDate, String confirmUser) {
+			EventFilterBaseInfo filter, Integer confirmFlg, Long confirmDate, String confirmUser) {
+
+		EventFilterBaseCriteria base = filter.createCriteria(Integer.MAX_VALUE, "a").get(0);
+		List<EventFilterConditionCriteria> conds = filter.createConditionsCriteria("a");
+
 		for (EventLogEntity entity : eventCache) {
-			
-			if (!filterCheck(entity, filter)) {
-				//更新条件に一致したキャッシュであることをチェックする
-				continue;
-			}
+			if (!checkEntity(entity, base, conds)) continue;
 			
 			// 更新権限がない場合は処理をしない
 			try {
@@ -198,17 +210,18 @@ public class EventCache {
 			entity.setConfirmUser(confirmUser);
 		}
 	}
-	
+
 	public static List<EventLogEntity> getEventListByCache(
-			GetEventFilterInternal filter, Boolean orderByFlg,Integer limit) {
+			EventFilterBaseInfo filter, Boolean orderByFlg, Integer limit) {
 		ArrayList<EventLogEntity> ret = new ArrayList<>();
+
+		// クエリではなくJavaでの処理なので、ファシリティID分割は不要
+		EventFilterBaseCriteria base = filter.createCriteria(Integer.MAX_VALUE, "a").get(0);
+		List<EventFilterConditionCriteria> conds = filter.createConditionsCriteria("a");
+
 		for (EventLogEntity entity : eventCache) {
-			
-			if (!filterCheck(entity, filter)) {
-				continue;
-			}
-			
-			
+			if (!checkEntity(entity, base, conds)) continue;
+
 			ret.add(entity);
 			if (ret.size() == limit) {
 				break;
@@ -216,131 +229,14 @@ public class EventCache {
 		}
 		return ret;
 	}
-	
-	/**
-	 * フィルタ条件にマッチしていたら、trueを返す
-	 */
-	private static boolean filterCheck (
-			EventLogEntity entity,
-			EventFilterInternal<?> filter
-			) {
-		
-		if (!filterCheckCommon(entity, filter)) {
-			//Get/UPDATE共通のフィルタ内容をチェックする
-			return false;
+
+	private static boolean checkEntity(EventLogEntity entity, EventFilterBaseCriteria base, List<EventFilterConditionCriteria> conds) {
+		if (!base.matches(entity)) return false;
+		// ConditionCriteria はOR結合なので、どれか一つとマッチすればOK
+		for (EventFilterConditionCriteria cnd : conds) {
+			if (cnd.matches(entity) && checkAuthority(entity)) return true;
 		}
-		
-		if ((filter instanceof GetEventFilterInternal)) {
-			//Get固有のフィルタをチェックする
-			if (!filterCheckGet(entity, (GetEventFilterInternal) filter)) { 
-				return false;
-			}
-		}
-		
-		return checkAuthority(entity);
-	}
-	
-	private static boolean filterCheckCommon(EventLogEntity entity, EventFilterInternal<?> filter){
-		// ファシリティID
-		if (filter.getFacilityIdList() != null 
-				&& !filter.getFacilityIdList().contains(entity.getId().getFacilityId())) {
-			return false;
-		}
-		// 重要度
-		if (filter.getPriorityList() != null 
-				&& !filter.getPriorityList().contains(entity.getPriority())) {
-			return false;
-		}
-		// 受信日時（自）
-		if (isGreater(filter.getOutputFromDate(), entity.getId().getOutputDate())) {
-			return false;
-		}
-		// 受信日時（至）
-		if (isLess(filter.getOutputToDate() ,entity.getId().getOutputDate())) {
-			return false;
-		}
-		// 出力日時（自）
-		if (isGreater(filter.getGenerationFromDate(), entity.getGenerationDate())) {
-			return false;
-		}
-		// 出力日時（至）
-		if (isLess(filter.getGenerationToDate() , entity.getGenerationDate())) {
-			return false;
-		}
-		
-		// TODO QueryUtil.getEventLogByFilterと同じ実装にすること
-		// TODO LIKEと同じ処理を実装すること
-		
-		// 監視項目ID
-		if (!matchLike(filter.getMonitorId(), entity.getId().getMonitorId())) {
-			return false;
-		}
-		// 監視詳細
-		if (!matchLike(filter.getMonitorDetailId(), entity.getId().getMonitorDetailId())) {
-			return false;
-		}
-		// アプリケーション
-		if (!matchLike(filter.getApplication(), entity.getApplication())) {
-			return false;
-		}
-		// メッセージ
-		if (!matchLike(filter.getMessage(), entity.getMessage())) {
-			return false;
-		}
-		
-		// コメント
-		if (!matchLike(filter.getComment(), entity.getComment())) {
-			return false;
-		}
-		// コメントユーザ
-		if (!matchLike(filter.getCommentUser(), entity.getCommentUser())) {
-			return false;
-		}
-		
-		// 性能グラフ用フラグ(nullはすべて)
-		if (!matchBoolean(filter.getCollectGraphFlg(), entity.getCollectGraphFlg())) {
-			return false;
-		}
-		
-		return true;
-	}
-	
-	private static boolean filterCheckGet(EventLogEntity entity, GetEventFilterInternal filter){
-		
-		// イベント番号（自）
-		if (isGreater(filter.getPositionFrom(), entity.getPosition())) {
-			return false;
-		}
-		// イベント番号（至）
-		if (isLess(filter.getPositionTo() , entity.getPosition())) {
-			return false;
-		}
-		// 確認リスト
-		if (!matchList(filter.getConfirmFlgList(), entity.getConfirmFlg())) {
-			return false;
-		}
-		// 確認ユーザ
-		if (!matchLike(filter.getConfirmUser(), entity.getConfirmUser())) {
-			return false;
-		}
-		// オーナーロールID
-		if (!matchLike(filter.getOwnerRoleId(), entity.getOwnerRoleId())) {
-			return false;
-		}
-		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
-			//ユーザ項目
-			String filterValue = EventUtil.getUserItemValue(filter, i);
-			String entityValue = EventUtil.getUserItemValue(entity, i);
-			if (entityValue == null) {
-				entityValue = "";
-			}
-			
-			if (!matchLike(filterValue, entityValue)) {
-				return false;
-			}
-		}
-		
-		return true;
+		return false;
 	}
 	
 	//権限のチェック
@@ -395,93 +291,5 @@ public class EventCache {
 		} else {
 			ret.setToOutputDate(null);
 		}
-		
-	}
-
-	private static boolean isLess(Long filter, Long check) {
-		if (filter == null) {
-			return false;
-		}
-		if (filter < check) {
-			return true;
-		}
-		return false;
-	}
-	
-	private static boolean isGreater(Long filter, Long check) {
-		if (filter == null) {
-			return false;
-		}
-		if (filter > check) {
-			return true;
-		}
-		return false;
-	}
-	
-
-	
-	private static <T> boolean matchList(List<T> filter, T check) {
-		if (filter == null) {
-			return true;
-		}
-		return filter.contains(check);
-	}
-	
-	private static boolean matchBoolean(Boolean filter, Boolean check) {
-		if (filter == null) {
-			return true;
-		}
-		
-		return filter.equals(check);
-		
-	}
-	
-	/**
-	 * フィルターで指定された文言が一致するかどうかを返します。<br>
-	 * (SQLのlikeと同じ。[%」と「_」と「:NOT」に対応。)
-	 * 
-	 * @param filter
-	 * @param check
-	 * @return
-	 */
-	private static boolean matchLike(String filter, String check) {
-		if (filter == null){
-			//フィルタで指定がない場合、true
-			return true;
-		}
-		
-		String filter2 = filter;
-		boolean notInc = false;
-		if (filter2.startsWith(SEARCH_PARAM_NOT_INCLUDE)) {
-			notInc = true;
-			filter2 = filter2.substring(SEARCH_PARAM_NOT_INCLUDE.length(), filter2.length());
-		}
-		if (filter2.contains(SEARCH_PARAM_PART_MATCH) || filter2.contains(SEARCH_PARAM_ONCE_MATCH)) {
-			filter2 = Pattern.quote(filter2);
-			filter2 = filter2.replace(SEARCH_PARAM_PART_MATCH, "\\E" + SEARCH_PARAM_PART_MATCH + "\\Q");
-			filter2 = filter2.replace(SEARCH_PARAM_PART_MATCH, ".*");
-			filter2 = filter2.replace(SEARCH_PARAM_ONCE_MATCH, "\\E" + SEARCH_PARAM_ONCE_MATCH + "\\Q");
-			filter2 = filter2.replace(SEARCH_PARAM_ONCE_MATCH, ".");
-			if (check.matches(filter2)) {
-				if (notInc) {
-					return false;
-				}
-			} else {
-				if (!notInc) {
-					return false;
-				}
-			}
-		} else {
-			if (!filter2.equals(check)) {
-				if (!notInc) {
-					return false;
-				}
-			} else {
-				if (notInc) {
-					return false;
-				}
-			}
-		}
-		return true;
 	}
 }

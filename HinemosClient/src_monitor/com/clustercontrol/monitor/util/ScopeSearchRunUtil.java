@@ -20,16 +20,16 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.internal.service.ContextProvider;
 import org.eclipse.rap.rwt.internal.service.ServiceContext;
+import org.openapitools.client.model.ScopeDataInfoResponse;
 
+import com.clustercontrol.accesscontrol.util.ClientSession;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.MultiManagerRunUtil;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.ScopeDataInfo;
-
 
 /**
  * イベント情報取得の実行管理を行う Session Bean クラス<BR>
@@ -38,6 +38,8 @@ import com.clustercontrol.ws.monitor.ScopeDataInfo;
 public class ScopeSearchRunUtil extends MultiManagerRunUtil{
 	/** ログ出力のインスタンス<BR> */
 	private static Log m_log = LogFactory.getLog(ScopeSearchRunUtil.class);
+	/** 検索成功可否フラグ */
+	private boolean m_searchSuccess = true;
 
 	@SuppressWarnings("unchecked")
 	public ArrayList<ArrayList<Object>> searchInfo(List<String> managerList) {
@@ -86,13 +88,24 @@ public class ScopeSearchRunUtil extends MultiManagerRunUtil{
 		}
 
 		//メッセージ表示
-		if( 0 < errMsgs.size() ){
+		if( 0 < errMsgs.size() && ClientSession.isDialogFree()){
+			ClientSession.occupyDialog();
+			m_searchSuccess = false;
 			UIManager.showMessageBox(errMsgs, true);
+			ClientSession.freeDialog();
 		}
 
 		long end = System.currentTimeMillis();
 		m_log.debug("time=" + (end - start));
 		return dispList;
+	}
+
+	/**
+	 * 検索成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isSearchSuccess() {
+		return this.m_searchSuccess;
 	}
 
 	public class RepositorySearchTask implements Callable<Map<String, List<?>>>{
@@ -112,7 +125,7 @@ public class ScopeSearchRunUtil extends MultiManagerRunUtil{
 		public Map<String,List<?>> call() throws Exception {
 			Map<String, List<?>> dispDataMap= new ConcurrentHashMap<>();
 			String errMsgs = null;
-			List<ScopeDataInfo> records = null;
+			List<ScopeDataInfoResponse> records = null;
 			ArrayList<ArrayList<Object>> infoList = null;
 
 			Thread.currentThread().setName(threadName);
@@ -120,13 +133,14 @@ public class ScopeSearchRunUtil extends MultiManagerRunUtil{
 			ContextProvider.setContext(context);
 
 			try {
-				MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
-				records = wrapper.getScopeList("", true, true, false);
+				MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(managerName);
+				records = wrapper.getScopeList(ReservedFacilityIdConstant.ROOT_SCOPE, true, true, false);
+
 				infoList = ConvertListUtil.scopeInfoDataListToArrayList(managerName, records);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				errMsgs = Messages.getString("message.accesscontrol.16");
-			} catch (MonitorNotFound_Exception | HinemosUnknown_Exception e) {
+			} catch (HinemosUnknown e) {
 				errMsgs = Messages.getString("message.monitor.67") + ", " + HinemosMessage.replace(e.getMessage());
 			} catch (Exception e) {
 				m_log.warn("MonitorSearchTask(), " + e.getMessage(), e);

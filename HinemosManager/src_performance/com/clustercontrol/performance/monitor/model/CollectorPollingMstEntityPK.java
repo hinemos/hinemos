@@ -11,7 +11,7 @@ package com.clustercontrol.performance.monitor.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * The primary key class for the cc_collector_polling_mst database table.

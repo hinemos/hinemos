@@ -91,9 +91,9 @@ public class RepositoryView extends AbstractCloudViewPart {
 			for (IHinemosManager m: managers) {
 				try {
 					if (!initialize || (initialize && !m.isInitialized())){
-						//ƒ}ƒl[ƒWƒƒ–ˆ‚Éó‘ÔXV‚ğs‚Á‚Ä‚¢‚é‚ªA
-						//ƒ}ƒ‹ƒ`ƒ}ƒl[ƒWƒƒÚ‘±‚ÉƒNƒ‰ƒEƒh/‚u‚l‚ª—LŒø‚É‚È‚Á‚Ä‚È‚¢ƒ}ƒl[ƒWƒƒ‚Ì¬İ‚ª‚ ‚è‚¦‚éiendpoint’ÊM‚ÅˆÙí‚ªo‚éj‚Ì‚Å
-						//ˆÙí”­¶‚ÍŠY“–‚ÌŒxƒƒO‚Ì‚İ‚ğ•\¦‚·‚éB
+						//ãƒãƒãƒ¼ã‚¸ãƒ£æ¯ã«çŠ¶æ…‹æ›´æ–°ã‚’è¡Œã£ã¦ã„ã‚‹ãŒã€
+						//ãƒãƒ«ãƒãƒãƒãƒ¼ã‚¸ãƒ£æ¥ç¶šæ™‚ã«ã‚¯ãƒ©ã‚¦ãƒ‰/ï¼¶ï¼­ãŒæœ‰åŠ¹ã«ãªã£ã¦ãªã„ãƒãƒãƒ¼ã‚¸ãƒ£ã®æ··åœ¨ãŒã‚ã‚Šãˆã‚‹ï¼ˆendpointé€šä¿¡ã§ç•°å¸¸ãŒå‡ºã‚‹ï¼‰ã®ã§
+						//ç•°å¸¸ç™ºç”Ÿæ™‚ã¯è©²å½“ã®è­¦å‘Šãƒ­ã‚°ã®ã¿ã‚’è¡¨ç¤ºã™ã‚‹ã€‚
 						try{
 							m.update();
 						} catch(CloudModelException e) {
@@ -109,7 +109,14 @@ public class RepositoryView extends AbstractCloudViewPart {
 			CollectionComparator.compareCollection(repositories, newRepositories, new CollectionComparator.Comparator<ICloudRepository, ICloudRepository>() {
 				@Override
 				public boolean match(ICloudRepository o1, ICloudRepository o2) {
-					return o1.getHinemosManager().getManagerName().equals(o2.getHinemosManager().getManagerName());
+					if (o1.getHinemosManager().getManagerName()
+							.equals(o1.getHinemosManager().getManagerName())) {
+						return o1.getHinemosManager().getCloudScopes().getCloudScopes().length == o2
+								.getHinemosManager().getCloudScopes().getCloudScopes().length;
+					} else {
+						logger.info("update() : number of login managers changed.");
+					}
+					return false;
 				}
 				@Override
 				public void afterO1(ICloudRepository o1) {
@@ -240,9 +247,8 @@ public class RepositoryView extends AbstractCloudViewPart {
 				Image defaultImage = ClusterControlPlugin.getDefault().getImageRegistry().get("location");
 				String platformId = ((IFacility)element).getCloudScopeScope().getCloudScope().getPlatformId();
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return provider.getImage(element, defaultImage);
-				return defaultImage;
+				// findbugså¯¾å¿œ getModelContentProvider ã¯ nullã‚’æˆ»ã•ãªã„ã®ã§ provider ã® nullãƒã‚§ãƒƒã‚¯ã‚’å‰Šé™¤
+				return provider.getImage(element, defaultImage);
 			} else if (element instanceof IScope) {
 				Image defaultImage = FacilityImageConstant.typeToImage(FacilityConstant.TYPE_SCOPE, true);
 				String platformId = ((IFacility)element).getCloudScopeScope().getCloudScope().getPlatformId();
@@ -258,16 +264,14 @@ public class RepositoryView extends AbstractCloudViewPart {
 				
 				String platformId = instanceNode.getCloudScopeScope().getCloudScope().getPlatformId();
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return provider.getImage(element, defaultImage);
-				return defaultImage;
+				// findbugså¯¾å¿œ getModelContentProvider ã¯ nullã‚’æˆ»ã•ãªã„ã®ã§ provider ã® nullãƒã‚§ãƒƒã‚¯ã‚’å‰Šé™¤
+				return provider.getImage(element, defaultImage);
 			} else if (element instanceof INode) {
 				Image defaultImage = FacilityImageConstant.typeToImage(FacilityConstant.TYPE_NODE, true);
 				String platformId = ((IFacility)element).getCloudScopeScope().getCloudScope().getPlatformId();
 				ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(platformId);
-				if (provider != null)
-					return provider.getImage(element, defaultImage);
-				return defaultImage;
+				// findbugså¯¾å¿œ getModelContentProvider ã¯ nullã‚’æˆ»ã•ãªã„ã®ã§ provider ã® nullãƒã‚§ãƒƒã‚¯ã‚’å‰Šé™¤
+				return provider.getImage(element, defaultImage);
 			} else {
 				return FacilityImageConstant.typeToImage(FacilityConstant.TYPE_NODE, true);
 			}

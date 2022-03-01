@@ -24,6 +24,8 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.JobKickResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.DataRangeConstant;
@@ -31,14 +33,12 @@ import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.ScopeTreeDialog;
-import com.clustercontrol.jobmanagement.bean.FileCheckConstant;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * ジョブ実行契機の作成・変更ダイアログのスケジュールタブ用の
@@ -76,6 +76,8 @@ public class JobKickFileCheckComposite extends Composite {
 	private Button m_btnTypeTimeStamp = null;
 	/** 変更種別 - ファイルサイズ*/
 	private Button m_btnTypeFileSize = null;
+	/** ファイルが使用されている場合判定を持ち越す */
+	private Button m_btnCarryOverJudgment = null;
 
 
 	/**
@@ -135,8 +137,8 @@ public class JobKickFileCheckComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				ScopeTreeDialog dialog = new ScopeTreeDialog(m_shell, m_managerName, m_ownerRoleId);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem selectItem = dialog.getSelectItem();
-					FacilityInfo info = selectItem.getData();
+					FacilityTreeItemResponse selectItem = dialog.getSelectItem();
+					FacilityInfoResponse info = selectItem.getData();
 					FacilityPath path = new FacilityPath(
 							ClusterControlPlugin.getDefault()
 							.getSeparator());
@@ -311,9 +313,25 @@ public class JobKickFileCheckComposite extends Composite {
 			}
 		});
 
+		// ファイルが使用されている場合判定を持ち越す（チェックボックス）
+		this.m_btnCarryOverJudgment = new Button(composite, SWT.CHECK);
+		this.m_btnCarryOverJudgment.setText(Messages.getString("file.check.carry.over"));
+		this.m_btnCarryOverJudgment.setLayoutData(new GridData(300, SizeConstant.SIZE_BUTTON_HEIGHT));
+		((GridData)this.m_btnCarryOverJudgment.getLayoutData()).horizontalSpan = 3;
+		this.m_btnCarryOverJudgment.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				update();
+			}
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+
 		// 初期設定
 		this.m_btnTypeCreate.setSelection(true);
 		this.m_btnTypeTimeStamp.setSelection(true);
+		this.m_btnCarryOverJudgment.setSelection(false);
 	}
 
 	/**
@@ -365,9 +383,9 @@ public class JobKickFileCheckComposite extends Composite {
 			String scope,
 			String directory,
 			String fileName,
-			Integer eventType,
-			Integer modifyType
-			) {
+			JobKickResponse.EventTypeEnum eventType,
+			JobKickResponse.ModifyTypeEnum modifyType,
+			Boolean carryOverJudgmentFlg) {
 
 		// マネージャ名
 		this.m_managerName = managerName;
@@ -391,19 +409,19 @@ public class JobKickFileCheckComposite extends Composite {
 		//ファイルチェック種別
 		if(eventType != null){
 			switch(eventType){
-			case FileCheckConstant.TYPE_CREATE :
+			case CREATE :
 				//作成の場合
 				this.m_btnTypeCreate.setSelection(true);
 				this.m_btnTypeDelete.setSelection(false);
 				this.m_btnTypeModify.setSelection(false);
 				break;
-			case FileCheckConstant.TYPE_DELETE :
+			case DELETE :
 				//削除の場合
 				this.m_btnTypeCreate.setSelection(false);
 				this.m_btnTypeDelete.setSelection(true);
 				this.m_btnTypeModify.setSelection(false);
 				break;
-			case FileCheckConstant.TYPE_MODIFY :
+			case MODIFY :
 				//変更の場合
 				this.m_btnTypeCreate.setSelection(false);
 				this.m_btnTypeDelete.setSelection(false);
@@ -412,7 +430,7 @@ public class JobKickFileCheckComposite extends Composite {
 					break;
 				}
 				if(modifyType
-						== FileCheckConstant.TYPE_MODIFY_TIMESTAMP){
+						==JobKickResponse.ModifyTypeEnum.TIMESTAMP){
 					//変更 - タイムスタンプの場合
 					this.m_btnTypeTimeStamp.setSelection(true);
 					this.m_btnTypeFileSize.setSelection(false);
@@ -425,6 +443,13 @@ public class JobKickFileCheckComposite extends Composite {
 			default: // 既定の対処はスルー。
 				break;
 			}
+		}
+
+		// ファイルが使用されている場合判定を持ち越す
+		if (carryOverJudgmentFlg != null && carryOverJudgmentFlg.booleanValue()) {
+			this.m_btnCarryOverJudgment.setSelection(true);
+		} else {
+			this.m_btnCarryOverJudgment.setSelection(false);
 		}
 	}
 
@@ -492,14 +517,14 @@ public class JobKickFileCheckComposite extends Composite {
 	 * ファイルチェック種別を戻します。
 	 * @return チェック種別
 	 */
-	public Integer getEventType() {
-		Integer result = null;
+	public JobKickResponse.EventTypeEnum getEventType() {
+		JobKickResponse.EventTypeEnum result = null;
 		if(this.m_btnTypeCreate.getSelection()){
-			result = FileCheckConstant.TYPE_CREATE;
+			result = JobKickResponse.EventTypeEnum.CREATE;
 		} else if (this.m_btnTypeDelete.getSelection()){
-			result = FileCheckConstant.TYPE_DELETE;
+			result = JobKickResponse.EventTypeEnum.DELETE;
 		} else if (this.m_btnTypeModify.getSelection()) {
-			result = FileCheckConstant.TYPE_MODIFY;
+			result = JobKickResponse.EventTypeEnum.MODIFY;
 		}
 		return result;
 	}
@@ -508,15 +533,23 @@ public class JobKickFileCheckComposite extends Composite {
 	 * 変更種別を戻します。
 	 * @return 変更種別
 	 */
-	public Integer getModifyType() {
-		Integer result = null;
+	public JobKickResponse.ModifyTypeEnum getModifyType() {
+		JobKickResponse.ModifyTypeEnum result = null;
 		if (this.m_btnTypeModify.getSelection()) {
 			if (this.m_btnTypeTimeStamp.getSelection()) {
-				result = FileCheckConstant.TYPE_MODIFY_TIMESTAMP;
+				result = JobKickResponse.ModifyTypeEnum.TIMESTAMP;
 			} else if (this.m_btnTypeFileSize.getSelection()) {
-				result = FileCheckConstant.TYPE_MODIFY_FILESIZE;
+				result = JobKickResponse.ModifyTypeEnum.FILESIZE;
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * 「ファイルが使用されている場合判定を持ち越す」を戻します。
+	 * @return ファイルが使用されている場合判定を持ち越す
+	 */
+	public Boolean getCarryOverJudgment() {
+		return this.m_btnCarryOverJudgment.getSelection();
 	}
 }

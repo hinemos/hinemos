@@ -13,19 +13,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.commons.session.CheckFacility;
 import com.clustercontrol.commons.util.HinemosSessionContext;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosException;
@@ -40,7 +37,7 @@ import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.UsedFacility;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
-import com.clustercontrol.notify.util.NotifyRelationCache;
+import com.clustercontrol.notify.util.NotifyRelationCacheRefreshCallback;
 import com.clustercontrol.repository.bean.NodeConfigRunCollectInfo;
 import com.clustercontrol.repository.bean.NodeConfigSetting;
 import com.clustercontrol.repository.factory.NodeConfigRegister;
@@ -63,6 +60,8 @@ import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
+import jakarta.persistence.EntityExistsException;
+
 /**
  * 構成情報取得関連の管理を行う Session Bean <BR>
  * 他機能からの Entity Bean へのアクセスは、Session Bean を介して行う.
@@ -84,7 +83,7 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public void addNodeConfigSettingInfo(NodeConfigSettingInfo info)
+	public NodeConfigSettingInfo addNodeConfigSettingInfo(NodeConfigSettingInfo info)
 			throws NodeConfigSettingDuplicate, InvalidSetting, HinemosUnknown {
 		 JpaTransactionManager jtm = null;
 
@@ -93,7 +92,7 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 			jtm.begin();
 
 			// 入力チェック
-			RepositoryValidator.validateNodeConfigSettingInfo(info);
+			RepositoryValidator.validateNodeConfigSettingInfo(info, true);
 			
 			//ユーザがオーナーロールIDに所属しているかチェック
 			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
@@ -106,11 +105,12 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 					(String) HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.addCallback(new NodeConfigSettingChangedNotificationCallback());
+			// コミット後にリフレッシュする
+			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
+			return new NodeConfigSettingSelector().getNodeConfigSettingInfo(info.getSettingId());
 		} catch (EntityExistsException e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -141,18 +141,23 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 	 * @param info　更新する対象構成情報
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
+	 * @throws NodeConfigSettingNotFound
 	 * @throws HinemosUnknown
 	 */
-	public void modifyNodeConfigSettingInfo(NodeConfigSettingInfo info)
-			throws InvalidSetting, InvalidRole, HinemosUnknown {
+	public NodeConfigSettingInfo modifyNodeConfigSettingInfo(NodeConfigSettingInfo info)
+			throws InvalidSetting, InvalidRole, NodeConfigSettingNotFound, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
+			// クライアントからはオーナーロールIDが来ないので最新の情報から取得して設定(カレンダIdのバリデートで必要)
+			NodeConfigSettingInfo nodeConfigSettingInfoPK = QueryUtil.getNodeConfigSettingInfoPK(info.getSettingId(), ObjectPrivilegeMode.READ);
+			info.setOwnerRoleId(nodeConfigSettingInfoPK.getOwnerRoleId());
+
 			// 入力チェック
-			RepositoryValidator.validateNodeConfigSettingInfo(info);
+			RepositoryValidator.validateNodeConfigSettingInfo(info, false);
 
 			// 対象構成情報更新
 			NodeConfigSettingModifier.modifyNodeConfigSettingInfo(
@@ -160,21 +165,17 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.addCallback(new NodeConfigSettingChangedNotificationCallback());
+			// コミット後にリフレッシュする
+			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
-		} catch (InvalidSetting | InvalidRole e) {
+			return new NodeConfigSettingSelector().getNodeConfigSettingInfo(info.getSettingId());
+		} catch (InvalidSetting | InvalidRole | NodeConfigSettingNotFound e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
-		} catch (NodeConfigSettingNotFound e) {
-			if (jtm != null){
-				jtm.rollback();
-			}
-			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("modifyNodeConfigSettingInfo() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -196,35 +197,34 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public void deleteNodeConfigSettingInfo(String[] settingIds) throws InvalidRole, HinemosUnknown {
+	public List<NodeConfigSettingInfo> deleteNodeConfigSettingInfo(String[] settingIds) throws InvalidRole, NodeConfigSettingNotFound, HinemosUnknown {
 		JpaTransactionManager jtm = null;
+		List<NodeConfigSettingInfo> retList = new ArrayList<>();
 
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			for (String settingId : settingIds) {
+				NodeConfigSettingInfo ret = new NodeConfigSettingSelector().getNodeConfigSettingInfo(settingId);
+				retList.add(ret);
+
 				// 対象構成情報削除
 				NodeConfigSettingModifier.deleteNodeConfigSettingInfo(
 						settingId, 
 						(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 			}
 			jtm.addCallback(new NodeConfigSettingChangedNotificationCallback());
+			// コミット後にリフレッシュする
+			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
-		} catch (InvalidRole e) {
+		} catch (InvalidRole | NodeConfigSettingNotFound e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
-		} catch (NodeConfigSettingNotFound e) {
-			if (jtm != null){
-				jtm.rollback();
-			}
-			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (HinemosUnknown e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -242,6 +242,7 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 				jtm.close();
 			}
 		}
+		return retList;
 	}
 
 	/**
@@ -250,7 +251,7 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 	 * @param settingId　対象構成情報
 	 * @throws HinemosException 
 	 */
-	public void setStatusNodeConfigSetting(String settingId, boolean validFlag)
+	public NodeConfigSettingInfo setStatusNodeConfigSetting(String settingId, boolean validFlag)
 			throws InvalidSetting, InvalidRole, NodeConfigSettingNotFound, HinemosUnknown {
 		// null check
 		if(settingId == null || "".equals(settingId)){
@@ -259,7 +260,8 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
 		}
-		
+
+		NodeConfigSettingInfo retInfo = null;
 		NodeConfigSettingInfo info;
 		try{
 			// 通知情報を取得するためControllerBeanのメソッド利用して取得.
@@ -269,12 +271,12 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 			if(validFlag){
 				if(!info.getValidFlg()){
 					info.setValidFlg(true);
-					modifyNodeConfigSettingInfo(info);
+					retInfo = modifyNodeConfigSettingInfo(info);
 				}
 			} else{
 				if(info.getValidFlg()){
 					info.setValidFlg(false);
-					modifyNodeConfigSettingInfo(info);
+					retInfo = modifyNodeConfigSettingInfo(info);
 				}
 			}
 		} catch (InvalidSetting | InvalidRole | NodeConfigSettingNotFound e) {
@@ -284,6 +286,27 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw new HinemosUnknown(e.getMessage(), e);
 		}
+		return retInfo;
+	}
+
+	/**
+	 * 複数の対象構成情報の収集を有効化/無効化します。<BR>
+	 * @param settingIds 対象構成情報
+	 * @param validFlag 有効/無効フラグ
+	 * @return
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 * @throws NodeConfigSettingNotFound
+	 * @throws HinemosUnknown
+	 */
+	public List<NodeConfigSettingInfo> setStatusNodeConfigSetting(List<String> settingIds, boolean validFlag)
+			throws InvalidSetting, InvalidRole, NodeConfigSettingNotFound, HinemosUnknown {
+
+		List<NodeConfigSettingInfo> retList = new ArrayList<>();
+		for (String settingId : settingIds) {
+			retList.add(setStatusNodeConfigSetting(settingId, validFlag));
+		}
+		return retList;
 	}
 
 	/**
@@ -568,10 +591,8 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 			m_log.warn("registerNodeConfigInfo() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 
-			int priority = PriorityConstant.TYPE_CRITICAL;
 			String[] messageDetail = {};
-			AplLogger.put(priority, HinemosModuleConstant.NODE_CONFIG_SETTING, MessageConstant.MESSAGE_GET_NODE_CONFIG_SETTING_INFO_FAILURE_MSG, 
-					messageDetail, e.getMessage());
+			AplLogger.put(InternalIdCommon.NODE_CONFIG_SETTING_SYS_002, messageDetail, e.getMessage());
 
 			if (e instanceof EntityExistsException) {
 				if (jtm != null) {
@@ -659,7 +680,7 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 			
 			NodeConfigSettingInfo setting = new NodeConfigSettingControllerBean().getNodeConfigSettingInfo(settingId);
 			RepositoryControllerBean controller = new RepositoryControllerBean();
-			ArrayList<String> allFacilityIdList = controller.getFacilityIdList(setting.getFacilityId(), RepositoryControllerBean.ALL, false, false);
+			ArrayList<String> allFacilityIdList = controller.getExecTargetFacilityIdList(setting.getFacilityId(), setting.getOwnerRoleId());
 			List<String> runFacilityIdList = new ArrayList<String>();
 			for (String facilityId : allFacilityIdList) {
 				// オブジェクト権限を持っているFacilityIDのみに絞り込む.

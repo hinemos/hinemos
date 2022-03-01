@@ -14,17 +14,17 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EntityExistsException;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlType;
 
 import org.apache.log4j.Logger;
@@ -60,11 +60,11 @@ public class InfraManagementInfo extends ObjectPrivilegeTargetInfo {
 	private String notifyGroupId;
 	private Boolean validFlg;
 	
-	private int startPriority;
-	private int normalPriorityRun;
-	private int abnormalPriorityRun;
-	private int normalPriorityCheck;
-	private int abnormalPriorityCheck;
+	private Integer startPriority;
+	private Integer normalPriorityRun;
+	private Integer abnormalPriorityRun;
+	private Integer normalPriorityCheck;
+	private Integer abnormalPriorityCheck;
 	
 	private List<InfraModuleInfo<?>> infraModuleInfoEntities = new ArrayList<>();
 	
@@ -137,42 +137,42 @@ public class InfraManagementInfo extends ObjectPrivilegeTargetInfo {
 	}
 	
 	@Column(name="start_priority")
-	public int getStartPriority() {
+	public Integer getStartPriority() {
 		return startPriority;
 	}
-	public void setStartPriority(int startPriority) {
+	public void setStartPriority(Integer startPriority) {
 		this.startPriority = startPriority;
 	}
 	
 	@Column(name="normal_priority_run")
-	public int getNormalPriorityRun() {
+	public Integer getNormalPriorityRun() {
 		return normalPriorityRun;
 	}
-	public void setNormalPriorityRun(int normalPriorityRun) {
+	public void setNormalPriorityRun(Integer normalPriorityRun) {
 		this.normalPriorityRun = normalPriorityRun;
 	}
 	
 	@Column(name="abnormal_priority_run")
-	public int getAbnormalPriorityRun() {
+	public Integer getAbnormalPriorityRun() {
 		return abnormalPriorityRun;
 	}
-	public void setAbnormalPriorityRun(int abnormalPriorityRun) {
+	public void setAbnormalPriorityRun(Integer abnormalPriorityRun) {
 		this.abnormalPriorityRun = abnormalPriorityRun;
 	}
 	
 	@Column(name="normal_priority_check")
-	public int getNormalPriorityCheck() {
+	public Integer getNormalPriorityCheck() {
 		return normalPriorityCheck;
 	}
-	public void setNormalPriorityCheck(int normalPriorityCheck) {
+	public void setNormalPriorityCheck(Integer normalPriorityCheck) {
 		this.normalPriorityCheck = normalPriorityCheck;
 	}
 	
 	@Column(name="abnormal_priority_check")
-	public int getAbnormalPriorityCheck() {
+	public Integer getAbnormalPriorityCheck() {
 		return abnormalPriorityCheck;
 	}
-	public void setAbnormalPriorityCheck(int abnormalPriorityCheck) {
+	public void setAbnormalPriorityCheck(Integer abnormalPriorityCheck) {
 		this.abnormalPriorityCheck = abnormalPriorityCheck;
 	}
 

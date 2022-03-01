@@ -17,7 +17,7 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Tree;
 
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 
 public class JobTreeViewer extends TreeViewer{
 	// ログ
@@ -31,7 +31,7 @@ public class JobTreeViewer extends TreeViewer{
 		super(parent);
 	}
 
-	public void sort (JobTreeItem item) {
+	public void sort (JobTreeItemWrapper item) {
 		if (item == null) {
 			return;
 		}
@@ -39,14 +39,14 @@ public class JobTreeViewer extends TreeViewer{
 		Collections.sort(item.getChildren(), new DataComparator());
 	}
 
-	private static class DataComparator implements java.util.Comparator<JobTreeItem>, Serializable {
+	private static class DataComparator implements java.util.Comparator<JobTreeItemWrapper>, Serializable {
 		/**
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
 
 		@Override
-		public int compare(JobTreeItem o1, JobTreeItem o2){
+		public int compare(JobTreeItemWrapper o1, JobTreeItemWrapper o2){
 			String s1 = o1.getData().getId();
 			String s2 = o2.getData().getId();
 			m_log.debug("s1=" + s1 + ", s2=" + s2);

@@ -25,14 +25,14 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.RoleInfoResponse;
 
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
+import com.clustercontrol.accesscontrol.bean.RoleTreeItemWrapper;
 import com.clustercontrol.accesscontrol.dialog.SystemPrivilegeDialog;
 import com.clustercontrol.accesscontrol.view.RoleSettingTreeView;
 import com.clustercontrol.accesscontrol.view.SystemPrivilegeListView;
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.accesscontrol.RoleTreeItem;
 
 /**
  * アクセス権限[ロール設定]ビューの「システム権限の選択」のアクションクラス<BR>
@@ -86,21 +86,21 @@ public class RoleSettingAssignSystemPrivilegeAction extends AbstractHandler impl
 		StructuredSelection selection = (StructuredSelection) roleSettingTreeView
 				.getTreeComposite().getTreeViewer().getSelection();
 
-		RoleTreeItem item = (RoleTreeItem) selection.getFirstElement();
+		RoleTreeItemWrapper item = (RoleTreeItemWrapper) selection.getFirstElement();
 		Object data = item.getData();
-		RoleTreeItem manager = RoleSettingTreeView.getManager(item);
-		String managerName = ((RoleInfo)manager.getData()).getRoleName();
+		RoleTreeItemWrapper manager = RoleSettingTreeView.getManager(item);
+		String managerName = ((RoleInfoResponse)manager.getData()).getRoleName();
 
-		if (data instanceof RoleInfo
-				&& !((RoleInfo)data).getRoleId().equals(RoleSettingTreeConstant.ROOT_ID)
-				&& !((RoleInfo)data).getRoleId().equals(RoleSettingTreeConstant.MANAGER)) {
+		if (data instanceof RoleInfoResponse
+				&& !((RoleInfoResponse)data).getRoleId().equals(RoleSettingTreeConstant.ROOT_ID)
+				&& !((RoleInfoResponse)data).getRoleId().equals(RoleSettingTreeConstant.MANAGER)) {
 
 			IWorkbenchWindow window = HandlerUtil.getActiveWorkbenchWindow( event );
 
 			SystemPrivilegeDialog dialog = new SystemPrivilegeDialog(
 					window.getShell(),
 					managerName,
-					((RoleInfo)data).getRoleId());
+					((RoleInfoResponse)data).getRoleId());
 			//ダイアログ表示
 			if (dialog.open() == IDialogConstants.OK_ID) {
 				roleSettingTreeView.update();

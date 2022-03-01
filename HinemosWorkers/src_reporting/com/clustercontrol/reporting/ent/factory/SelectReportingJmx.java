@@ -83,11 +83,14 @@ public class SelectReportingJmx {
 	 * @param fromTime
 	 * @param toTime
 	 * @param masterId
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummarySumAvgData(String facilityId, Long fromTime, Long toTime, String masterId) throws HinemosDbTimeout {
-		return com.clustercontrol.reporting.ent.util.QueryUtil.getSummaryJmxAvgData(facilityId, fromTime, toTime, masterId);
+	public List<Object[]> getSummarySumAvgData(String facilityId, Long fromTime, Long toTime, String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
+		return com.clustercontrol.reporting.ent.util.QueryUtil.getSummaryJmxAvgData(facilityId, fromTime, toTime,
+				masterId, ownerRoleId);
 	}
 	
 	/**
@@ -97,11 +100,14 @@ public class SelectReportingJmx {
 	 * @param fromTime
 	 * @param toTime
 	 * @param masterId
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummarySumAvgHour(String facilityId, Long fromTime, Long toTime, String masterId) throws HinemosDbTimeout {
-		return com.clustercontrol.reporting.ent.util.QueryUtil.getSummaryJmxAvgHour(facilityId, fromTime, toTime, masterId);
+	public List<Object[]> getSummarySumAvgHour(String facilityId, Long fromTime, Long toTime, String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
+		return com.clustercontrol.reporting.ent.util.QueryUtil.getSummaryJmxAvgHour(facilityId, fromTime, toTime,
+				masterId, ownerRoleId);
 	}
 	
 	/**
@@ -111,11 +117,14 @@ public class SelectReportingJmx {
 	 * @param fromTime
 	 * @param toTime
 	 * @param masterId
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummarySumAvgDay(String facilityId, Long fromTime, Long toTime, String masterId) throws HinemosDbTimeout {
-		return com.clustercontrol.reporting.ent.util.QueryUtil.getSummaryJmxAvgDay(facilityId, fromTime, toTime, masterId);
+	public List<Object[]> getSummarySumAvgDay(String facilityId, Long fromTime, Long toTime, String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
+		return com.clustercontrol.reporting.ent.util.QueryUtil.getSummaryJmxAvgDay(facilityId, fromTime, toTime,
+				masterId, ownerRoleId);
 	}
 	
 	/**
@@ -125,10 +134,13 @@ public class SelectReportingJmx {
 	 * @param fromTime
 	 * @param toTime
 	 * @param masterId
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummaryJmxAvgMonth(String facilityId, Long fromTime, Long toTime, String masterId) throws HinemosDbTimeout {
-		return com.clustercontrol.reporting.ent.util.QueryUtil.getSummaryJmxAvgMonth(facilityId, fromTime, toTime, masterId);
+	public List<Object[]> getSummaryJmxAvgMonth(String facilityId, Long fromTime, Long toTime, String masterId,
+			String ownerRoleId) throws HinemosDbTimeout {
+		return com.clustercontrol.reporting.ent.util.QueryUtil.getSummaryJmxAvgMonth(facilityId, fromTime, toTime,
+				masterId, ownerRoleId);
 	}
 }

@@ -16,13 +16,14 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.composite.FacilityTreeComposite;
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 
 public class FacilityTreePage extends WizardPage implements CloudStringConstants{
@@ -53,28 +54,36 @@ public class FacilityTreePage extends WizardPage implements CloudStringConstants
 	 * @param parent
 	 */
 	public void createControl(Composite parent) {
-		container = new Composite(parent, SWT.NULL);
+		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.H_SCROLL | SWT.V_SCROLL);
+
+		container = new Composite(scroll, SWT.NULL);
 
 		setControl(container);
 		container.setLayout(new GridLayout(1, false));
 		
 		createTreeComposite();
+
+		scroll.setExpandHorizontal(true);
+		scroll.setExpandVertical(true);
+		scroll.setContent(container);
+		scroll.setMinSize(520, 180);
+		setControl(scroll);
 	}
 
 	@Override
 	public boolean isPageComplete() {
 		if (treeComposite.getSelectItem() != null) {
-			FacilityTreeItem selected = treeComposite.getSelectItem();
-			if (selected.getData().getFacilityType() == FacilityConstant.TYPE_SCOPE)
+			FacilityTreeItemResponse selected = treeComposite.getSelectItem();
+			if (selected.getData().getFacilityType() == FacilityTypeEnum.SCOPE)
 				return super.isPageComplete();
 		}
 		return false;
 	}
 	
-	public FacilityTreeItem getSelectedItem() {
+	public FacilityTreeItemResponse getSelectedItem() {
 		if (treeComposite.getSelectItem() != null) {
-			FacilityTreeItem selected = treeComposite.getSelectItem();
-			if (selected.getData().getFacilityType() == FacilityConstant.TYPE_SCOPE)
+			FacilityTreeItemResponse selected = treeComposite.getSelectItem();
+			if (selected.getData().getFacilityType() == FacilityTypeEnum.SCOPE)
 				return selected;
 		}
 		return null;

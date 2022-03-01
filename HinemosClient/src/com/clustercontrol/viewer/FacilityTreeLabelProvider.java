@@ -10,12 +10,13 @@ package com.clustercontrol.viewer;
 
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.bean.FacilityImageConstant;
 import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * スコープツリー用のラベルプロバイダクラス<BR>
@@ -27,12 +28,12 @@ public class FacilityTreeLabelProvider extends LabelProvider {
 
 	@Override
 	public String getText(Object element) {
-		FacilityInfo info = ((FacilityTreeItem) element).getData();
+		FacilityInfoResponse info = ((FacilityTreeItemResponse) element).getData();
 
-		int type = info.getFacilityType();
-		if (type == FacilityConstant.TYPE_COMPOSITE) {
+		FacilityTypeEnum type = info.getFacilityType();
+		if (type == FacilityTypeEnum.COMPOSITE) {
 			return info.getFacilityName();
-		} else if (type == FacilityConstant.TYPE_MANAGER) {
+		} else if (type == FacilityTypeEnum.MANAGER) {
 			return Messages.getString("facility.manager") + " (" + info.getFacilityId() + ")";
 		} else {
 			return info.getFacilityName() + " (" + info.getFacilityId() + ")";
@@ -41,25 +42,25 @@ public class FacilityTreeLabelProvider extends LabelProvider {
 
 	@Override
 	public Image getImage(Object element) {
-		FacilityInfo facilityInfo = ((FacilityTreeItem)element).getData();
+		FacilityInfoResponse facilityInfo = ((FacilityTreeItemResponse) element).getData();
 		boolean valid = true;
 
-		switch (facilityInfo.getFacilityType()) {
-		case FacilityConstant.TYPE_MANAGER:
+		FacilityTypeEnum facilityType = facilityInfo.getFacilityType();
+		if (facilityType == FacilityTypeEnum.MANAGER) {
 			return FacilityImageConstant.typeToImage(FacilityConstant.TYPE_COMPOSITE, valid);
-		case FacilityConstant.TYPE_COMPOSITE:
+		} else if (facilityType == FacilityTypeEnum.COMPOSITE) {
 			return FacilityImageConstant.typeToImage(FacilityConstant.TYPE_COMPOSITE, valid);
-		case FacilityConstant.TYPE_SCOPE:
-			if (facilityInfo.isNotReferFlg()) {
+		} else if (facilityType == FacilityTypeEnum.SCOPE) {
+			if (facilityInfo.getNotReferFlg()) {
 				valid = false;
 			}
 			return FacilityImageConstant.typeToImage(FacilityConstant.TYPE_SCOPE, valid);
-		case FacilityConstant.TYPE_NODE:
-			if (!facilityInfo.isValid()) {
+		} else if (facilityType == FacilityTypeEnum.NODE) {
+			if (!facilityInfo.getValid()) {
 				valid = false;
 			}
-		return FacilityImageConstant.typeToImage(FacilityConstant.TYPE_NODE, valid);
-		default:
+			return FacilityImageConstant.typeToImage(FacilityConstant.TYPE_NODE, valid);
+		} else {
 			return null;
 		}
 	}

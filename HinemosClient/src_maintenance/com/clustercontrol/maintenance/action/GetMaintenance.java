@@ -11,12 +11,13 @@ package com.clustercontrol.maintenance.action;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.MaintenanceInfoResponse;
 
-import com.clustercontrol.maintenance.util.MaintenanceEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+//import com.clustercontrol.maintenance.util.MaintenanceEndpointWrapper;
+import com.clustercontrol.maintenance.util.MaintenanceRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.maintenance.InvalidRole_Exception;
-import com.clustercontrol.ws.maintenance.MaintenanceInfo;
 
 /**
  * メンテナンス情報を取得するクライアント側アクションクラス<BR>
@@ -36,13 +37,13 @@ public class GetMaintenance {
 	 * @param maintenanceId
 	 * @return
 	 */
-	public MaintenanceInfo getMaintenanceInfo(String managerName, String maintenanceId) {
+	public MaintenanceInfoResponse getMaintenanceInfo(String managerName, String maintenanceId) {
 
-		MaintenanceInfo info = null;
+		MaintenanceInfoResponse info = null;
 		try {
-			MaintenanceEndpointWrapper wrapper = MaintenanceEndpointWrapper.getWrapper(managerName);
+			MaintenanceRestClientWrapper wrapper = MaintenanceRestClientWrapper.getWrapper(managerName);
 			info = wrapper.getMaintenanceInfo(maintenanceId);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 		} catch (Exception e) {

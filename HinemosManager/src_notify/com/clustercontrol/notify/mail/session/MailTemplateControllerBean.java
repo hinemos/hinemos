@@ -9,10 +9,12 @@
 package com.clustercontrol.notify.mail.session;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -25,6 +27,7 @@ import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.notify.mail.factory.ModifyMailTemplate;
 import com.clustercontrol.notify.mail.factory.SelectMailTemplate;
 import com.clustercontrol.notify.mail.model.MailTemplateInfo;
+import com.clustercontrol.notify.mail.util.QueryUtil;
 import com.clustercontrol.notify.util.NotifyValidator;
 
 /**
@@ -38,8 +41,8 @@ public class MailTemplateControllerBean {
 	/**
 	 * メールテンプレート情報をマネージャに登録します。<BR>
 	 * 
-	 * @param info 作成対象のメールテンプレート情報
-	 * @return 作成に成功した場合、<code> true </code>
+	 * @param MailTemplateInfo
+	 * @return MailTemplateInfo
 	 * @throws HinemosUnknown
 	 * @throws MailTemplateDuplicate
 	 * @throws InvalidSetting
@@ -47,19 +50,16 @@ public class MailTemplateControllerBean {
 	 * 
 	 * @see com.clustercontrol.notify.factory.AddMailTemplate#add(MailTemplateInfoData)
 	 */
-	public boolean addMailTemplate(MailTemplateInfo data) throws HinemosUnknown, MailTemplateDuplicate, InvalidSetting, InvalidRole {
-
+	public MailTemplateInfo addMailTemplate(MailTemplateInfo data) throws HinemosUnknown, MailTemplateDuplicate, InvalidSetting, InvalidRole {
+		MailTemplateInfo ret = null;
 		JpaTransactionManager jtm = null;
-
-		// メールテンプレート情報を登録
-		boolean ret = false;
 
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			//入力チェック
-			NotifyValidator.validateMailTemplateInfo(data);
+			NotifyValidator.validateMailTemplateInfo(data, true);
 			
 			//ユーザがオーナーロールIDに所属しているかチェック
 			RoleValidator.validateUserBelongRole(data.getOwnerRoleId(),
@@ -67,9 +67,10 @@ public class MailTemplateControllerBean {
 					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 
 			ModifyMailTemplate mailTemplate = new ModifyMailTemplate();
-			ret = mailTemplate.add(data, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+			mailTemplate.add(data, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.commit();
+			ret = new SelectMailTemplate().getMailTemplateInfo(data.getMailTemplateId());
 		} catch (MailTemplateDuplicate | InvalidSetting e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -96,8 +97,8 @@ public class MailTemplateControllerBean {
 	/**
 	 * マネージャ上のメールテンプレート情報を変更します。<BR>
 	 * 
-	 * @param info 変更対象のメールテンプレート情報
-	 * @return 変更に成功した場合、<code> true </code>
+	 * @param MailTemplateInfo
+	 * @return MailTemplateInfo
 	 * @throws HinemosUnknown
 	 * @throws MailTemplateNotFound
 	 * @throws InvalidSetting
@@ -106,24 +107,22 @@ public class MailTemplateControllerBean {
 	 * @see com.clustercontrol.notify.factory.ModifyMailTemplate#modify(MailTemplateInfoData)
 	 * @see com.clustercontrol.notify.bean.MailTemplateInfoData
 	 */
-	public boolean modifyMailTemplate(MailTemplateInfo data) throws HinemosUnknown, MailTemplateNotFound,InvalidSetting, InvalidRole {
-
+	public MailTemplateInfo modifyMailTemplate(MailTemplateInfo data) throws HinemosUnknown, MailTemplateNotFound,InvalidSetting, InvalidRole {
+		MailTemplateInfo ret = null;
 		JpaTransactionManager jtm = null;
-
-		// メールテンプレート情報を更新
-		boolean ret = false;
 
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			//入力チェック
-			NotifyValidator.validateMailTemplateInfo(data);
+			NotifyValidator.validateMailTemplateInfo(data, false);
 
 			ModifyMailTemplate mailTemplate = new ModifyMailTemplate();
-			ret = mailTemplate.modify(data, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+			mailTemplate.modify(data, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.commit();
+			ret = new SelectMailTemplate().getMailTemplateInfo(data.getMailTemplateId());
 		} catch (MailTemplateNotFound | InvalidSetting | InvalidRole e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -150,26 +149,29 @@ public class MailTemplateControllerBean {
 	 * メールテンプレート情報をマネージャから削除します。<BR>
 	 * 
 	 * @param mailTemplateId 削除対象のメールテンプレートID
-	 * @return 削除に成功した場合、<code> true </code>
+	 * @return List<MailTemplateInfo>
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
+	 * @throws MailTemplateNotFound 
 	 * 
 	 * @see com.clustercontrol.notify.factory.DeleteMailTemplate#delete(String)
 	 */
-	public boolean deleteMailTemplate(String mailTemplateId) throws InvalidRole, HinemosUnknown {
+	public List<MailTemplateInfo> deleteMailTemplate(List<String> mailTemplateIdList) throws InvalidRole, HinemosUnknown, MailTemplateNotFound {
+		m_log.debug("deleteMailTemplate");
 
 		JpaTransactionManager jtm = null;
-
-		// メールテンプレート情報を削除
-		ModifyMailTemplate mailTemplate = new ModifyMailTemplate();
-
-		boolean ret = false;
+		List<MailTemplateInfo> retList =  new ArrayList<>();
 
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			ret = mailTemplate.delete(mailTemplateId);
+			// メールテンプレート情報を削除
+			ModifyMailTemplate mailTemplate = new ModifyMailTemplate();
+			for(String mailTemplateId : mailTemplateIdList) {
+				retList.add(new SelectMailTemplate().getMailTemplateInfo(mailTemplateId));
+				mailTemplate.delete(mailTemplateId);
+			}
 
 			jtm.commit();
 		} catch (InvalidRole | HinemosUnknown e){
@@ -181,6 +183,11 @@ public class MailTemplateControllerBean {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
+		} catch (MailTemplateNotFound e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
 		} catch (Exception e) {
 			m_log.warn("deleteMailTemplate() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -192,14 +199,14 @@ public class MailTemplateControllerBean {
 				jtm.close();
 		}
 
-		return ret;
+		return retList;
 	}
 
 	/**
 	 * 引数で指定されたメールテンプレート情報を返します。
 	 * 
 	 * @param mailTemplateId 取得対象のメールテンプレートID
-	 * @return メールテンプレート情報
+	 * @return MailTemplateInfo
 	 * @throws HinemosUnknown
 	 * @throws MailTemplateNotFound
 	 * @throws InvalidRole
@@ -355,7 +362,11 @@ public class MailTemplateControllerBean {
 
 			// メールテンプレート一覧を取得
 			SelectMailTemplate mailTemplate = new SelectMailTemplate();
-			list = mailTemplate.getMailTemplateListByOwnerRole(ownerRoleId);
+			if (ownerRoleId != null) {
+				list = mailTemplate.getMailTemplateListByOwnerRole(ownerRoleId);
+			} else {
+				list = mailTemplate.getMailTemplateList();
+			}
 
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {

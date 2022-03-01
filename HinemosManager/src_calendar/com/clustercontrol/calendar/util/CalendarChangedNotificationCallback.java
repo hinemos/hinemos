@@ -24,7 +24,7 @@ public class CalendarChangedNotificationCallback implements JpaTransactionCallba
 	@Override
 	public void postCommit() {
 		// commit後に外部コンポーネントに通知する
-		CalendarManagerUtil.broadcastConfigured();
+		CalendarManagerUtil.broadcastConfiguredFlowControl();
 	}
 
 	@Override

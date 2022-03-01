@@ -10,7 +10,6 @@ package com.clustercontrol.jobmanagement.view;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -26,24 +25,23 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.JobInfoReferrerQueueResponse;
+import org.openapitools.client.model.JobQueueReferrerViewInfoListItemResponse;
+import org.openapitools.client.model.JobWaitRuleInfoResponse;
 
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.dialog.ApiResultDialog;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.LogUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.ViewUtil;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobQueueReferrerViewInfo;
-import com.clustercontrol.ws.jobmanagement.JobQueueReferrerViewInfoListItem;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobWaitRuleInfo;
 
 /**
  * ジョブ設定[同時実行制御ジョブ一覧]ビュークラスです。
@@ -74,7 +72,7 @@ public class JobQueueReferrerView extends CommonViewPart {
 
 	private String managerName;
 	private String queueId;
-	private JobQueueReferrerViewInfo viewInfo;
+	private JobInfoReferrerQueueResponse viewInfo;
 
 	public JobQueueReferrerView() {
 		super();
@@ -188,10 +186,10 @@ public class JobQueueReferrerView extends CommonViewPart {
 				// 選択されているジョブのJobInfoを取得してダイアログを表示する
 				String selectedJobunitId = (String) selectedRow.get(COLUMN_JOBUNIT_ID);
 				String selectedJobId = (String) selectedRow.get(COLUMN_JOB_ID);
-				JobInfo selectedJobInfo = null;
-				for (JobQueueReferrerViewInfoListItem item : viewInfo.getItems()) {
+				JobInfoWrapper selectedJobInfo = null;
+				for (JobQueueReferrerViewInfoListItemResponse item : viewInfo.getItems()) {
 					if (item.getJobunitId().equals(selectedJobunitId) && item.getJobId().equals(selectedJobId)) {
-						selectedJobInfo = item.getJobInfoWithOwnerRoleId();
+						selectedJobInfo = JobTreeItemUtil.getInfoFromDto(item.getJobInfoWithOwnerRoleId());
 						break;
 					}
 				}
@@ -203,7 +201,7 @@ public class JobQueueReferrerView extends CommonViewPart {
 				}
 
 				// parentItemをnullに設定したJobTreeItemをダイアログに渡すと、編集不可モードとなる。
-				JobTreeItem jobTreeItem = new JobTreeItem();
+				JobTreeItemWrapper jobTreeItem = new JobTreeItemWrapper();
 				jobTreeItem.setData(selectedJobInfo);
 
 				// 本ビューでは参照ジョブは表示対象にならないため、JobTreeCompsiteは渡さなくて良いはず。
@@ -246,10 +244,10 @@ public class JobQueueReferrerView extends CommonViewPart {
 		// 一覧情報を取得
 		ApiResultDialog errorDialog = new ApiResultDialog();
 		try {
-			JobEndpointWrapper ep = JobEndpointWrapper.getWrapper(managerName);
-			viewInfo = ep.getJobQueueReferrerViewInfo(queueId);
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			viewInfo = wrapper.getJobInfoReferrerQueue(queueId);
 		} catch (Throwable t) {
-			log.warn(LogUtil.filterWebFault("refresh: ", t));
+			log.warn("refresh: " + t.getClass().getName() + ", " + t.getMessage());
 			errorDialog.addFailure(managerName, t, "");
 		}
 		errorDialog.show(); // エラーメッセージ表示(エラーがあれば)
@@ -270,8 +268,8 @@ public class JobQueueReferrerView extends CommonViewPart {
 		// - 表示内容の加工に関しては、JobListCompositeに合わせてある。
 		// - ただし、オーナーロールIDのみ、サーバ側で再設定している。
 		List<List<Object>> table = new ArrayList<>();
-		for (JobQueueReferrerViewInfoListItem item : viewInfo.getItems()) {
-			JobInfo jobInfo = item.getJobInfoWithOwnerRoleId();
+		for (JobQueueReferrerViewInfoListItemResponse item : viewInfo.getItems()) {
+			JobInfoWrapper jobInfo = JobTreeItemUtil.getInfoFromDto(item.getJobInfoWithOwnerRoleId());
 
 			List<Object> row = new ArrayList<>();
 			row.add(managerName);
@@ -280,23 +278,31 @@ public class JobQueueReferrerView extends CommonViewPart {
 			row.add(jobInfo.getName());
 			row.add(jobInfo.getType());
 
-			switch (jobInfo.getType().intValue()) {
-			case JobConstant.TYPE_JOB:
+			switch (jobInfo.getType()) {
+			case JOB:
 				row.add(jobInfo.getCommand().getFacilityID());
 				row.add(HinemosMessage.replace(jobInfo.getCommand().getScope()));
 				break;
-			case JobConstant.TYPE_MONITORJOB:
+			case MONITORJOB:
 				row.add(jobInfo.getMonitor().getFacilityID());
 				row.add(HinemosMessage.replace(jobInfo.getMonitor().getScope()));
+				break;
+			case RESOURCEJOB:
+				row.add(jobInfo.getResource().getResourceNotifyScope());
+				row.add(HinemosMessage.replace(jobInfo.getResource().getResourceNotifyScopePath()));
+				break;
+			case RPAJOB:
+				row.add(jobInfo.getRpa().getFacilityID());
+				row.add(HinemosMessage.replace(jobInfo.getRpa().getScope()));
 				break;
 			default:
 				row.add(null);
 				row.add(null);
 			}
 
-			JobWaitRuleInfo waitRule = jobInfo.getWaitRule();
+			JobWaitRuleInfoResponse waitRule = jobInfo.getWaitRule();
 			if (waitRule != null) {
-				if (waitRule.getObject() != null && waitRule.getObject().size() > 0) {
+				if (waitRule.getObjectGroup() != null && waitRule.getObjectGroup().size() > 0) {
 					row.add(true);
 				} else {
 					row.add(false);
@@ -307,9 +313,9 @@ public class JobQueueReferrerView extends CommonViewPart {
 
 			row.add(jobInfo.getOwnerRoleId());
 			row.add(jobInfo.getCreateUser());
-			row.add(jobInfo.getCreateTime() == null ? null : new Date(jobInfo.getCreateTime()));
+			row.add(jobInfo.getCreateTime() == null ? null : jobInfo.getCreateTime());
 			row.add(jobInfo.getUpdateUser());
-			row.add(jobInfo.getUpdateTime() == null ? null : new Date(jobInfo.getUpdateTime()));
+			row.add(jobInfo.getUpdateTime() == null ? null : jobInfo.getUpdateTime());
 
 			table.add(row);
 		}

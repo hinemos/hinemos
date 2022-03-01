@@ -25,20 +25,25 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddWineventMonitorRequest;
+import org.openapitools.client.model.ModifyWineventMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.WinEventCheckInfoResponse;
+import org.openapitools.client.model.MonitorStringValueInfoRequest;
 
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorStringDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.notify.bean.PriChangeFailSelectTypeConstant;
+import com.clustercontrol.notify.bean.PriChangeJudgeSelectTypeConstant;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.winevent.util.WinEventUtil;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.WinEventCheckInfo;
 
 /**
  * Windowsイベント監視の設定ダイアログクラス<BR>
@@ -76,6 +81,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 	public WinEventDialog(Shell parent) {
 		super(parent, null);
 		logLineFlag = true;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
 	}
 
 	/**
@@ -93,6 +99,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 		this.managerName = managerName;
 		this.monitorId = monitorId;
 		this.updateFlg = updateFlg;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
 	}
 
 	// ----- instance メソッド ----- //
@@ -317,17 +324,17 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getMonitor(this.monitorId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -369,15 +376,15 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 	 * @param monitor 設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 
 		super.setInputData(monitor);
 		this.inputData = monitor;
 
 		// 監視条件 Windowsイベント監視情報
-		WinEventCheckInfo checkInfo = monitor.getWinEventCheckInfo();
+		WinEventCheckInfoResponse checkInfo = monitor.getWinEventCheckInfo();
 		if(checkInfo == null){
-			checkInfo = new WinEventCheckInfo();
+			checkInfo = new WinEventCheckInfoResponse();
 
 			// デフォルト設定
 			// イベントレベル：重大、エラー、警告
@@ -388,19 +395,30 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 			checkInfo.setLevelInformational(false);
 
 			// イベントログ：Application, System
+			checkInfo.setLogName(new ArrayList<>());
 			checkInfo.getLogName().add("Application");
 			checkInfo.getLogName().add("System");
 		}
-		this.levelCritical.setSelection(checkInfo.isLevelCritical());
-		this.levelWarning.setSelection(checkInfo.isLevelWarning());
-		this.levelVerbose.setSelection(checkInfo.isLevelVerbose());
-		this.levelError.setSelection(checkInfo.isLevelError());
-		this.levelInformational.setSelection(checkInfo.isLevelInformational());
-		if(checkInfo.getLogName() != null) this.logName.setText(listToCommaSeparatedString(checkInfo.getLogName()));
-		if(checkInfo.getSource() != null) this.source.setText(listToCommaSeparatedString(checkInfo.getSource()));
-		if(checkInfo.getEventId() != null) this.eventId.setText(listToCommaSeparatedString(checkInfo.getEventId()));
-		if(checkInfo.getCategory() != null) this.category.setText(listToCommaSeparatedString(checkInfo.getCategory()));
-		if(checkInfo.getKeywords() != null) this.keywords.setText(keywordLongToString(checkInfo.getKeywords()));
+		this.levelCritical.setSelection(checkInfo.getLevelCritical());
+		this.levelWarning.setSelection(checkInfo.getLevelWarning());
+		this.levelVerbose.setSelection(checkInfo.getLevelVerbose());
+		this.levelError.setSelection(checkInfo.getLevelError());
+		this.levelInformational.setSelection(checkInfo.getLevelInformational());
+		if(checkInfo.getLogName() != null) {
+			this.logName.setText(listToCommaSeparatedString(checkInfo.getLogName()));
+		}
+		if(checkInfo.getSource() != null) {
+			this.source.setText(listToCommaSeparatedString(checkInfo.getSource()));
+		}
+		if(checkInfo.getEventId() != null) {
+			this.eventId.setText(listToCommaSeparatedString(checkInfo.getEventId()));
+		}
+		if(checkInfo.getCategory() != null) {
+			this.category.setText(listToCommaSeparatedString(checkInfo.getCategory()));
+		}
+		if(checkInfo.getKeywords() != null) {
+			this.keywords.setText(keywordLongToString(checkInfo.getKeywords()));
+		}
 
 		m_stringValueInfo.setInputData(monitor);
 	}
@@ -411,34 +429,32 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		// Windowsイベント監視（文字列）固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_WINEVENT);
-
 		// 監視条件 Windowsイベント監視情報
-		WinEventCheckInfo winEventInfo = new WinEventCheckInfo();
-		winEventInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_WINEVENT);
-		winEventInfo.setMonitorId(monitorInfo.getMonitorId());
+		WinEventCheckInfoResponse winEventInfo = new WinEventCheckInfoResponse();
 		winEventInfo.setLevelCritical(this.levelCritical.getSelection());
 		winEventInfo.setLevelWarning(this.levelWarning.getSelection());
 		winEventInfo.setLevelVerbose(this.levelVerbose.getSelection());
 		winEventInfo.setLevelError(this.levelError.getSelection());
 		winEventInfo.setLevelInformational(this.levelInformational.getSelection());
 
+		winEventInfo.setLogName(new ArrayList<>());
 		for(String logName : commaSeparatedStringToStringList(this.logName.getText())){
 			winEventInfo.getLogName().add(logName);
 		}
 
+		winEventInfo.setSource(new ArrayList<>());
 		for(String source : commaSeparatedStringToStringList(this.source.getText())){
 			winEventInfo.getSource().add(source);
 		}
 
 		try {
+			winEventInfo.setEventId(new ArrayList<>());
 			for(Integer id : commaSeparatedStringToIntegerList(this.eventId.getText())){
 				winEventInfo.getEventId().add(id);
 			}
@@ -447,6 +463,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 		}
 
 		try {
+			winEventInfo.setCategory(new ArrayList<>());
 			for(Integer category : commaSeparatedStringToIntegerList(this.category.getText())){
 				winEventInfo.getCategory().add(category);
 			}
@@ -455,6 +472,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 		}
 
 		if(this.keywords.getText() != null && ! "".equals(this.keywords.getText())) {
+			winEventInfo.setKeywords(new ArrayList<>());
 			for(Long keyword : keywordStringToLongList(this.keywords.getText())){
 				winEventInfo.getKeywords().add(keyword);
 			}
@@ -500,29 +518,29 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-
-		if(info != null){
-			String[] args = { info.getMonitorId(), managerName };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if(result){
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddWineventMonitorRequest info = new AddWineventMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddWineventMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					wrapper.addWineventMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -531,7 +549,7 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
@@ -546,26 +564,34 @@ public class WinEventDialog extends CommonMonitorStringDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if(result){
+					ModifyWineventMonitorRequest info = new ModifyWineventMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyWineventMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.modifyWineventMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				}
-				else{
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),

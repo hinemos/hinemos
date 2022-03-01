@@ -16,10 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
-import javax.persistence.Table;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import jakarta.persistence.Table;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.log4j.Logger;
 
@@ -32,6 +32,7 @@ import com.clustercontrol.hub.model.CollectStringKeyInfo;
 import com.clustercontrol.hub.model.TransferInfo;
 import com.clustercontrol.hub.model.TransferInfo.TransferType;
 import com.clustercontrol.hub.util.StringDataIdGenerator;
+import com.clustercontrol.hub.util.HubQueryDivergence;
 import com.clustercontrol.jobmanagement.factory.CreateJobSession;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
@@ -39,7 +40,6 @@ import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
-import com.clustercontrol.platform.hub.HubQueryDivergence;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -50,6 +50,11 @@ import com.clustercontrol.util.HinemosTime;
  */
 public abstract class JpaQueryUtil<T, R> {
 	private static final Logger logger = Logger.getLogger(FluentdTransferFactory.class);
+
+	/**
+	 * クエリのパラメータ数制限(SQL ServerのIN句上限2100 もしく JDBCドライバのプレースホルダ上限32767 に抵触させないための閾値)
+	 */
+	private static final int SUBQUERY_SWITCH_THRESHOLD = HubQueryDivergence.getQueryWhereInParamThreashold();
 	
 	public static class RowPosision {
 		public final long last;
@@ -92,12 +97,20 @@ public abstract class JpaQueryUtil<T, R> {
 	protected abstract Class<T> getDataClass();
 
 	/**
-	 * シーケンステーブル名を返す。
+	 * pg_sequencesカタログ内のスキーマ名を返す。
 	 * 
 	 * @return
 	 */
-	protected abstract String getSequenceTableName();
+	protected abstract String getSequenceSchemaName();
 
+	/**
+	 * pg_sequencesカタログ内のシーケンス名を返す。
+	 * 
+	 * @return
+	 */
+	protected abstract String getSequenceName();
+
+	
 	/**
 	 * データを取得するクエリを作成する。
 	 * 
@@ -119,11 +132,12 @@ public abstract class JpaQueryUtil<T, R> {
 
 		String tableName = t.schema() + "." + t.name();
 		Query cycledPosQuery = em.createNativeQuery(
-				String.format(HubQueryDivergence.getSequenceMinPosSql(), tableName, getSequenceTableName(), getSequenceTableName()));
+				String.format(HubQueryDivergence.getSequenceMinPosSql(), tableName, getSequenceSchemaName(), getSequenceName(),
+						getSequenceSchemaName(), getSequenceName()));
 		Long cycled = (Long)cycledPosQuery.getSingleResult();
 		
 		// 位置情報の最新値と最大値を取得
-		Query posQuery = em.createNativeQuery(String.format(HubQueryDivergence.getSequenceSql(), getSequenceTableName()));
+		Query posQuery = em.createNativeQuery(String.format(HubQueryDivergence.getSequenceSql(), getSequenceSchemaName(), getSequenceName()));
 		Object[] data = (Object[])posQuery.getSingleResult();
 		if (data == null || data.length <= 0) {
 			HubControllerBean.logger.warn("Fatal Error");
@@ -163,7 +177,7 @@ public abstract class JpaQueryUtil<T, R> {
 		// JPA のキャッシュには、posision を指定していない状態で登録されるので、position が null となり、
 		// したがって、転送時に読み込む際もposition は、null のままとなる。
 		// 以下の設定でキャッシュを使用せず、position を DB から直接取得するようにする。
-		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		query.setHint("jakarta.persistence.cache.storeMode", "REFRESH");
 		
 		return query;
 	}
@@ -273,16 +287,26 @@ public abstract class JpaQueryUtil<T, R> {
 				switch (ti.getTransType()) {
 				case realtime:
 				case batch:
-					query = em.createNamedQuery(monitorIds.isEmpty() ? "EventLogEntity.transfer.only_ownerrole": "EventLogEntity.transfer", EventLogEntity.class);
+					if (monitorIds.size() < SUBQUERY_SWITCH_THRESHOLD){
+						query = em.createNamedQuery(monitorIds.isEmpty() ? "EventLogEntity.transfer.only_ownerrole": "EventLogEntity.transfer", EventLogEntity.class);
+					} else {
+						// パラメータ数が多いのでサブクエリを使用する。
+						query = em.createNamedQuery("EventLogEntity.transfer.subquery", EventLogEntity.class);
+					}
 					break;
 				case delay:
-					query = em.createNamedQuery(monitorIds.isEmpty() ? "EventLogEntity.transfer.delay.only_ownerrole": "EventLogEntity.transfer.delay", EventLogEntity.class);
+					if (monitorIds.size() < SUBQUERY_SWITCH_THRESHOLD) {
+						query = em.createNamedQuery(monitorIds.isEmpty() ? "EventLogEntity.transfer.delay.only_ownerrole": "EventLogEntity.transfer.delay", EventLogEntity.class);
+					} else {
+						// パラメータ数が多いのでサブクエリを使用する。
+						query = em.createNamedQuery("EventLogEntity.transfer.delay.subquery", EventLogEntity.class);						
+					}
 					break;
 				default:
 					throw new InternalError(String.format("createEventUtil() : unexpected value, value=%s", ti.getTransType()));
 				}
 				
-				if (monitorIds.isEmpty()) {
+				if (monitorIds.isEmpty() || monitorIds.size() >= SUBQUERY_SWITCH_THRESHOLD) {
 					query.setParameter("admin", RoleIdConstant.ADMINISTRATORS.equals(ti.getOwnerRoleId()) ? ti.getOwnerRoleId(): null);
 					query.setParameter("ownerRoleId", ti.getOwnerRoleId());
 				} else {
@@ -299,8 +323,13 @@ public abstract class JpaQueryUtil<T, R> {
 			}
 
 			@Override
-			protected String getSequenceTableName() {
-				return HubQueryDivergence.getSequenceTableNameEventLog();
+			protected String getSequenceSchemaName() {
+				return "log";
+			}
+			
+			@Override
+			protected String getSequenceName() {
+				return "cc_event_log_position_seq";
 			}
 		};
 	}
@@ -330,10 +359,20 @@ public abstract class JpaQueryUtil<T, R> {
 				switch (ti.getTransType()) {
 				case realtime:
 				case batch:
-					query = em.createNamedQuery(jobunitIds.isEmpty() ? "JobSessionEntity.transfer.only_ownerrole": "JobSessionEntity.transfer", JobSessionEntity.class);
+					if (jobunitIds.size() < SUBQUERY_SWITCH_THRESHOLD) {
+						query = em.createNamedQuery(jobunitIds.isEmpty() ? "JobSessionEntity.transfer.only_ownerrole": "JobSessionEntity.transfer", JobSessionEntity.class);
+					} else {
+						// パラメータ数が多いのでサブクエリを使用する。
+						query = em.createNamedQuery("JobSessionEntity.transfer.subquery", JobSessionEntity.class);
+					}
 					break;
 				case delay:
-					query = em.createNamedQuery(jobunitIds.isEmpty() ? "JobSessionEntity.transfer.delay.only_ownerrole": "JobSessionEntity.transfer.delay", JobSessionEntity.class);
+					if (jobunitIds.size() < SUBQUERY_SWITCH_THRESHOLD) {
+						query = em.createNamedQuery(jobunitIds.isEmpty() ? "JobSessionEntity.transfer.delay.only_ownerrole": "JobSessionEntity.transfer.delay", JobSessionEntity.class);
+					} else {
+						// パラメータ数が多いのでサブクエリを使用する。
+						query = em.createNamedQuery("JobSessionEntity.transfer.delay.subquery", JobSessionEntity.class);						
+					}
 					break;
 				default:
 					throw new InternalError(String.format("createEventUtil() : unexpected value, value=%s", ti.getTransType()));
@@ -343,11 +382,17 @@ public abstract class JpaQueryUtil<T, R> {
 					// オブジェクト権限を考慮しないクエリー
 					query.setParameter("admin", RoleIdConstant.ADMINISTRATORS.equals(ti.getOwnerRoleId()) ? ti.getOwnerRoleId(): null);
 					query.setParameter("ownerRoleId", ti.getOwnerRoleId());
-				} else {
+				} else if (jobunitIds.size() < SUBQUERY_SWITCH_THRESHOLD) {
 					// オブジェクト権限を考慮したクエリー
 					query.setParameter("jobunitIds", jobunitIds);
 					query.setParameter("admin", RoleIdConstant.ADMINISTRATORS.equals(ti.getOwnerRoleId()) ? ti.getOwnerRoleId(): null);
 					query.setParameter("ownerRoleId", ti.getOwnerRoleId());
+				} else {
+					// パラメータ数が多いのでサブクエリを使用する。
+					query.setParameter("admin", RoleIdConstant.ADMINISTRATORS.equals(ti.getOwnerRoleId()) ? ti.getOwnerRoleId(): null);
+					query.setParameter("ownerRoleId", ti.getOwnerRoleId());
+					query.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID);
+					query.setParameter("parentJobId", CreateJobSession.TOP_JOB_ID);
 				}
 
 				return query;
@@ -359,8 +404,13 @@ public abstract class JpaQueryUtil<T, R> {
 			}
 
 			@Override
-			protected String getSequenceTableName() {
-				return HubQueryDivergence.getSequenceTableNameJobSession();
+			protected String getSequenceSchemaName() {
+				return "log";
+			}
+			
+			@Override
+			protected String getSequenceName() {
+				return "cc_job_session_position_seq";
 			}
 		};
 	}
@@ -385,9 +435,16 @@ public abstract class JpaQueryUtil<T, R> {
 		}
 		
 		if (!monitorIds.isEmpty()) {
-			// 転送設定のオーナーロールでアクセスできる監視一覧から収集値のキーの一覧を取得。
-			TypedQuery<CollectKeyInfo> keyQuery = em.createNamedQuery("CollectKeyInfo.transfer", CollectKeyInfo.class);
-			keyQuery.setParameter("monitorIds", monitorIds);
+			TypedQuery<CollectKeyInfo> keyQuery = null;
+			if (monitorIds.size() < SUBQUERY_SWITCH_THRESHOLD) {
+				// 転送設定のオーナーロールでアクセスできる監視一覧から収集値のキーの一覧を取得。
+				keyQuery = em.createNamedQuery("CollectKeyInfo.transfer", CollectKeyInfo.class);
+				keyQuery.setParameter("monitorIds", monitorIds);
+			} else {
+				// パラメータ数が多いのでサブクエリを使用する
+				keyQuery = em.createNamedQuery("CollectKeyInfo.transfer.subquery", CollectKeyInfo.class);
+				keyQuery.setParameter("ownerRoleId", ti.getOwnerRoleId());
+			}
 			List<CollectKeyInfo> keys = keyQuery.getResultList();
 			
 			for (CollectKeyInfo key: keys) {
@@ -422,8 +479,8 @@ public abstract class JpaQueryUtil<T, R> {
 					throw new InternalError(String.format("createEventUtil() : unexpected value, value=%s", ti.getTransType()));
 				}
 				
-				// 取得する収集値をキーの一覧で制限する
-				query.setParameter("collectIds", collectIds);
+				// オーナーロールID
+				query.setParameter("ownerRoleId", ti.getOwnerRoleId());
 				
 				return query;
 			}
@@ -452,8 +509,13 @@ public abstract class JpaQueryUtil<T, R> {
 			}
 
 			@Override
-			protected String getSequenceTableName() {
-				return HubQueryDivergence.getSequenceTableNameCollectDataRaw();
+			protected String getSequenceSchemaName() {
+				return "log";
+			}
+			
+			@Override
+			protected String getSequenceName() {
+				return "cc_collect_data_raw_position_seq";
 			}
 		};
 	}
@@ -473,15 +535,23 @@ public abstract class JpaQueryUtil<T, R> {
 		List<String> monitorIds = new ArrayList<>();
 		List<MonitorInfo> monitors = QueryUtil.getMonitorInfoByOwnerRoleId_NONE(ti.getOwnerRoleId());
 		for (MonitorInfo mi: monitors) {
-			if (mi.getMonitorType() == MonitorTypeConstant.TYPE_STRING) {
+			if (mi.getMonitorType() == MonitorTypeConstant.TYPE_STRING
+					|| mi.getMonitorType() == MonitorTypeConstant.TYPE_TRAP ) {
 				monitorIds.add(mi.getMonitorId());
 			}
 		}
 		
 		if (!monitorIds.isEmpty()) {
 			// 転送設定のオーナーロールでアクセスできる監視一覧から収集値のキーの一覧を取得。
-			TypedQuery<CollectStringKeyInfo> keyQuery = em.createNamedQuery("CollectStringKeyInfo.transfer", CollectStringKeyInfo.class);
-			keyQuery.setParameter("monitorIds", monitorIds);
+			TypedQuery<CollectStringKeyInfo> keyQuery = null;
+			if (monitorIds.size() < SUBQUERY_SWITCH_THRESHOLD) {
+				keyQuery = em.createNamedQuery("CollectStringKeyInfo.transfer", CollectStringKeyInfo.class);
+				keyQuery.setParameter("monitorIds", monitorIds);
+			} else {
+				// パラメータ数が多いのでサブクエリを使用する。
+				keyQuery = em.createNamedQuery("CollectStringKeyInfo.transfer.subquery", CollectStringKeyInfo.class);
+				keyQuery.setParameter("ownerRoleId", ti.getOwnerRoleId());
+			}
 			List<CollectStringKeyInfo> keys = keyQuery.getResultList();
 			
 			for (CollectStringKeyInfo key: keys) {
@@ -510,8 +580,8 @@ public abstract class JpaQueryUtil<T, R> {
 					throw new InternalError(String.format("createEventUtil() : unexpected value, value=%s", ti.getTransType()));
 				}
 				
-				// 取得する収集値をキーの一覧で制限する
-				query.setParameter("collectIds", collectIds);
+				// オーナーロールID
+				query.setParameter("ownerRoleId", ti.getOwnerRoleId());
 				
 				return query;
 			}
@@ -540,7 +610,12 @@ public abstract class JpaQueryUtil<T, R> {
 			}
 
 			@Override
-			protected String getSequenceTableName() {
+			protected String getSequenceSchemaName() {
+				return null;
+			}
+			
+			@Override
+			protected String getSequenceName() {
 				return null;
 			}
 			

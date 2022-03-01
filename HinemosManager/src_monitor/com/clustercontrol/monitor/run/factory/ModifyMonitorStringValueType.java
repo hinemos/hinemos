@@ -11,7 +11,7 @@ package com.clustercontrol.monitor.run.factory;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -50,6 +50,7 @@ abstract public class ModifyMonitorStringValueType extends ModifyMonitor{
 			if (list != null) {
 				for(int index = 0; index < list.size(); index++){
 					MonitorStringValueInfo value = list.get(index);
+					value.setMonitorId(m_monitorInfo.getMonitorId());
 					value.setOrderNo(index + 1);
 					em.persist(value);
 					value.relateToMonitorInfo(m_monitorInfo);

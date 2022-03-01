@@ -22,18 +22,19 @@ import org.eclipse.rap.rwt.SingletonUtil;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
-
+import org.openapitools.client.model.EventCustomCommandInfoResponse;
+import org.openapitools.client.model.EventLogInfoRequest;
+import org.openapitools.client.model.EventLogInfoResponse;
+import org.openapitools.client.model.ExecEventCustomCommandRequest;
+import org.openapitools.client.model.ExecEventCustomCommandResponse;
+import org.openapitools.client.model.GetEventCustomCommandResultResponse;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.dialog.EventCustomCommandResultDialog;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.util.HinemosMessage;
 
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.EventCustomCommandInfo;
-import com.clustercontrol.ws.monitor.EventCustomCommandResultRoot;
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-
 /**
  * イベントカスタムコマンドの実行結果をポーリングし、コマンドが終了している場合、ダイアログを表示する<BR>
  * 
@@ -84,7 +85,7 @@ public class EventCustomCommandResultPoller {
 	 * 
 	 */
 	public boolean startEventCustomCommand(String managerName, int commandNo, 
-			EventCustomCommandInfo customCommnadInfo, List<EventDataInfo> eventList, MultiManagerEventDisplaySettingInfo eventDisplaySettingInfo) {
+			EventCustomCommandInfoResponse customCommnadInfo, List<EventLogInfoRequest> eventList, MultiManagerEventDisplaySettingInfo eventDisplaySettingInfo) {
 		
 		synchronized(this) {
 			//終了済みのタイマーを開放
@@ -106,10 +107,14 @@ public class EventCustomCommandResultPoller {
 		String resultId = null;
 		
 		try {
-			MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
-			resultId = wrapper.execEventCustomCommand(commandNo, eventList);
+			MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(managerName);
+			ExecEventCustomCommandRequest execEventCustomCommandRequest = new ExecEventCustomCommandRequest();
+			execEventCustomCommandRequest.setCommandNo(commandNo);
+			execEventCustomCommandRequest.setEventList(eventList);
+			ExecEventCustomCommandResponse res = wrapper.execEventCustomCommand(execEventCustomCommandRequest);
+			resultId = res.getCommandResultID();
 
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
@@ -146,7 +151,7 @@ public class EventCustomCommandResultPoller {
 	 */
 	public static class ResultPollingTimer {
 		private String managerName;
-		private EventCustomCommandInfo customCommnadInfo;
+		private EventCustomCommandInfoResponse customCommnadInfo;
 		private String resultId;
 		private Timer timer;
 		private boolean isTerminate = false; 
@@ -156,8 +161,8 @@ public class EventCustomCommandResultPoller {
 		public ResultPollingTimer(
 				String managerName,
 				int commandNo,
-				List<EventDataInfo> eventList,
-				EventCustomCommandInfo customCommnadInfo,
+				List<EventLogInfoRequest> eventList,
+				EventCustomCommandInfoResponse customCommnadInfo,
 				String resultId,
 				MultiManagerEventDisplaySettingInfo eventDspSettingInfo,
 				Display display
@@ -186,7 +191,6 @@ public class EventCustomCommandResultPoller {
 			//Endpoint実行、メッセージダイアログ表示、実行結果ダイアログ表示
 			display.syncExec(
 					new Runnable() {
-						
 						@Override
 						public void run() {
 							pollingResultImpl();
@@ -196,22 +200,21 @@ public class EventCustomCommandResultPoller {
 		}
 		
 		private void pollingResultImpl() {
-			EventCustomCommandResultRoot result = null;
+			GetEventCustomCommandResultResponse result = null;
 			
 			try {
-				MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
-				
+				MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(managerName);
 				result = wrapper.getEventCustomCommandResult(resultId);
-
+				
 				if (result == null) {
 					//コマンドが実行中の場合、何もしない
 					return;
 				}
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"), 
 						Messages.getString("message.accesscontrol.16"));
-			} catch (HinemosUnknown_Exception e) {
+			} catch (HinemosUnknown e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.monitor.customcommand.failure") + ", " + HinemosMessage.replace(e.getMessage()));
 			} catch (Exception e) {
@@ -229,7 +232,7 @@ public class EventCustomCommandResultPoller {
 			//結果が取得できた場合はダイアログを表示
 			Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 			EventCustomCommandResultDialog resultDialog = new EventCustomCommandResultDialog(
-				shell, managerName, customCommnadInfo, result, eventDspSettingInfo);
+				shell, managerName, customCommnadInfo, result.getEventCustomCommandResultRoot(), eventDspSettingInfo);
 			
 			resultDialog.open();
 		}

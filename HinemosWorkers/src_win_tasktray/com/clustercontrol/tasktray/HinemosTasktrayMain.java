@@ -21,6 +21,7 @@ public class HinemosTasktrayMain {
 	private static final String PID_FILE_NAME = "_pid_tasktray";
 
 	private static ServiceObserver observer;
+	private static LoginFileObserver loginObserver;
 	
 	private static File pidFile;
 
@@ -33,6 +34,8 @@ public class HinemosTasktrayMain {
 			
 			observer = new ServiceObserver();
 			observer.start();
+			loginObserver = new LoginFileObserver();
+			loginObserver.start();
 			
 			Runtime.getRuntime().addShutdownHook(
 					new Thread() {
@@ -40,6 +43,7 @@ public class HinemosTasktrayMain {
 						public void run() {
 							synchronized (shutdownLock) {
 								observer.shutdown();
+								loginObserver.shutdown();
 
 								shutdown = true;
 								shutdownLock.notify();

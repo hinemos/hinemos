@@ -14,14 +14,13 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.ScopeInfoResponseP1;
 
-import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.utility.settings.platform.xml.RepositoryScope;
 import com.clustercontrol.utility.settings.platform.xml.RepositoryScopeNode;
 import com.clustercontrol.utility.settings.platform.xml.ScopeNodeInfo;
 import com.clustercontrol.utility.util.Config;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.ScopeInfo;
 
 /**
  * リポジトリスコープ情報を取得、設定、削除するコマンドラインインターフェース<BR>
@@ -42,7 +41,7 @@ public class RepositoryScopeConv {
 	 */
 	public interface IFacilityTreeItem {
 	    public List<IFacilityTreeItem> getChildren() throws Exception;
-	    public FacilityInfo getData() throws Exception;
+	    public FacilityInfoResponse getData() throws Exception;
 	    public IFacilityTreeItem getParent();
 	}
 	
@@ -72,16 +71,15 @@ public class RepositoryScopeConv {
 			RepositoryScope repositoryScope,
 			com.clustercontrol.utility.settings.platform.xml.ScopeInfo parentScopeInfo
 			) throws Exception {
-		com.clustercontrol.ws.repository.FacilityInfo scopeInfo_ws = treeItem.getData();
-		
+		FacilityInfoResponse scopeInfo_ws = treeItem.getData();
 		if (
 			// ルートか確認。
-			scopeInfo_ws.getFacilityType() == FacilityConstant.TYPE_COMPOSITE ||
+			scopeInfo_ws.getFacilityType() == FacilityInfoResponse.FacilityTypeEnum.COMPOSITE ||
 			// インターナル以外のスコープか確認。
-			(scopeInfo_ws.getFacilityType() == FacilityConstant.TYPE_SCOPE && !RepositoryConv.checkInternalScope(scopeInfo_ws.getFacilityId()))
+			(scopeInfo_ws.getFacilityType() == FacilityInfoResponse.FacilityTypeEnum.SCOPE && !RepositoryConv.checkInternalScope(scopeInfo_ws.getFacilityId()))
 			) {
 			// コンポジット以外は、変換。
-			if (scopeInfo_ws.getFacilityType() != FacilityConstant.TYPE_COMPOSITE) {
+			if (scopeInfo_ws.getFacilityType() != FacilityInfoResponse.FacilityTypeEnum.COMPOSITE) {
 				logger.debug("ScopeID : " + scopeInfo_ws.getFacilityId());
 				
 				com.clustercontrol.utility.settings.platform.xml.ScopeInfo scopeInfo_cas = new com.clustercontrol.utility.settings.platform.xml.ScopeInfo();
@@ -186,11 +184,11 @@ public class RepositoryScopeConv {
 			IFacilityTreeItem treeItem,
 			RepositoryScopeNode repositoryScopeNode
 			) throws Exception {
-		com.clustercontrol.ws.repository.FacilityInfo facilityInfo = treeItem.getData();
+		FacilityInfoResponse facilityInfo = treeItem.getData();
 		
 		if (!RepositoryConv.checkInternalScope(treeItem.getData().getFacilityId())) {
 			// ノードが調査対象。
-			if (facilityInfo.getFacilityType() == FacilityConstant.TYPE_NODE) {
+			if (facilityInfo.getFacilityType() == FacilityInfoResponse.FacilityTypeEnum.NODE) {
 				logger.debug("NodeID ScopeID : " + treeItem.getParent().getData().getFacilityId() + " " +  facilityInfo.getFacilityId());
 				
 				ScopeNodeInfo scopeNodeInfo = new com.clustercontrol.utility.settings.platform.xml.ScopeNodeInfo();
@@ -217,18 +215,10 @@ public class RepositoryScopeConv {
 	 * @param
 	 * @return
 	 */
-	public static com.clustercontrol.ws.repository.ScopeInfo createScopeInfo_ws(
+	public static ScopeInfoResponseP1 createScopeInfo_ws(
 			com.clustercontrol.utility.settings.platform.xml.ScopeInfo scopeInfo_cas
 			) {
-		com.clustercontrol.ws.repository.ScopeInfo scopeInfo_ws = new com.clustercontrol.ws.repository.ScopeInfo();
-
-		ScopeInfo scopeInfo = new ScopeInfo();
-		scopeInfo.setFacilityType(FacilityConstant.TYPE_SCOPE);
-		scopeInfo.setDisplaySortOrder(100);
-		scopeInfo.setValid(true);
-		scopeInfo.setCreateDatetime(System.currentTimeMillis());
-		scopeInfo.setModifyDatetime(System.currentTimeMillis());
-		scopeInfo.setBuiltInFlg(false);
+		ScopeInfoResponseP1 scopeInfo_ws = new ScopeInfoResponseP1();
 
 		scopeInfo_ws.setFacilityId(scopeInfo_cas.getFacilityId());
 		scopeInfo_ws.setFacilityName(scopeInfo_cas.getFacilityName());

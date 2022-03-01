@@ -10,11 +10,11 @@ package com.clustercontrol.notify.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 
 
@@ -24,7 +24,7 @@ import javax.persistence.Table;
  */
 @Entity
 @Table(name="cc_monitor_status", schema="setting")
-@Cacheable(true)
+@Cacheable(false)
 public class MonitorStatusEntity implements Serializable, Cloneable {
 	private static final long serialVersionUID = 1L;
 	private MonitorStatusEntityPK id;

@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * facilityIDが監視等で利用されている場合に利用するException
  * @version 3.2.0
  */
-public class UsedFacility extends HinemosException {
+public class UsedFacility extends HinemosUsed {
 
 	private static final long serialVersionUID = 631321828052534786L;
 

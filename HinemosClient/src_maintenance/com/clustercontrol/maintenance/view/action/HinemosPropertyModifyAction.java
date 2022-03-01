@@ -27,9 +27,10 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.HinemosPropertyResponse;
+import org.openapitools.client.model.HinemosPropertyResponse.TypeEnum;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
-import com.clustercontrol.maintenance.HinemosPropertyTypeConstant;
 import com.clustercontrol.maintenance.HinemosPropertyTypeMessage;
 import com.clustercontrol.maintenance.action.GetHinemosPropertyTableDefine;
 import com.clustercontrol.maintenance.composite.HinemosPropertyComposite;
@@ -37,7 +38,6 @@ import com.clustercontrol.maintenance.dialog.HinemosPropertyDialog;
 import com.clustercontrol.maintenance.view.HinemosPropertyView;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.maintenance.HinemosPropertyInfo;
 
 /**
  * メンテナンス[共通設定]ビューの編集アクションクラス<BR>
@@ -48,7 +48,7 @@ import com.clustercontrol.ws.maintenance.HinemosPropertyInfo;
 public class HinemosPropertyModifyAction extends AbstractHandler implements IElementUpdater {
 
 	// ログ
-	private static Log m_log = LogFactory.getLog( HinemosPropertyModifyAction.class );
+	private static Log m_log = LogFactory.getLog(HinemosPropertyModifyAction.class);
 
 	/** アクションID */
 	public static final String ID = HinemosPropertyModifyAction.class.getName();
@@ -64,7 +64,9 @@ public class HinemosPropertyModifyAction extends AbstractHandler implements IEle
 		this.viewPart = null;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.eclipse.core.commands.IHandler#execute
 	 */
 	@Override
@@ -73,72 +75,60 @@ public class HinemosPropertyModifyAction extends AbstractHandler implements IEle
 		this.viewPart = HandlerUtil.getActivePart(event);
 		HinemosPropertyView view = null;
 		try {
-			view = (HinemosPropertyView)this.viewPart.getAdapter(HinemosPropertyView.class);
-		} catch (Exception e) { 
-			m_log.info("execute " + e.getMessage()); 
-			return null; 
-		}
-		
-		if (view == null) {
-			m_log.info("execute: view is null"); 
+			view = (HinemosPropertyView) this.viewPart.getAdapter(HinemosPropertyView.class);
+		} catch (Exception e) {
+			m_log.info("execute " + e.getMessage());
 			return null;
 		}
-		
+
+		if (view == null) {
+			m_log.info("execute: view is null");
+			return null;
+		}
+
 		HinemosPropertyComposite composite = (HinemosPropertyComposite) view.getComposite();
 		StructuredSelection selection = (StructuredSelection) composite.getTableViewer().getSelection();
 
 		@SuppressWarnings("rawtypes")
 		List<?> list = (List) selection.getFirstElement();
 		String key = null;
-		int valueType = 0;
 		String managerName = null;
-		if(list != null && list.size() > 0){
+		String valueTypeStr = null;
+		TypeEnum valueType = null;
+		if (list != null && list.size() > 0) {
 			key = (String) list.get(GetHinemosPropertyTableDefine.KEY);
-			managerName = (String)list.get(GetHinemosPropertyTableDefine.MANAGER_NAME);
-			String valueTypeStr = (String)list.get(GetHinemosPropertyTableDefine.VALUE_TYPE);
+			managerName = (String) list.get(GetHinemosPropertyTableDefine.MANAGER_NAME);
+			valueTypeStr = (String) list.get(GetHinemosPropertyTableDefine.VALUE_TYPE);
 			valueType = HinemosPropertyTypeMessage.stringToType(valueTypeStr);
 		}
 		Table table = composite.getTableViewer().getTable();
 		WidgetTestUtil.setTestId(this, null, table);
 
-		//選択アイテムがある場合に、編集ダイアログを表示する
-		if(key != null){
+		// 選択アイテムがある場合に、編集ダイアログを表示する
+		if (key != null) {
 
-			try{
-				HinemosPropertyInfo info = new HinemosPropertyInfo();
+			try {
+				HinemosPropertyResponse info = new HinemosPropertyResponse();
 				info.setKey(key);
-				info.setValueType(valueType);
-				if (valueType == HinemosPropertyTypeConstant.TYPE_STRING) {
-					String value = (String)list.get(GetHinemosPropertyTableDefine.VALUE);
-					info.setValueString(value);
-				} else if (valueType == HinemosPropertyTypeConstant.TYPE_NUMERIC) {
-					long value = (Long)list.get(GetHinemosPropertyTableDefine.VALUE);
-					info.setValueNumeric(value);
-				} else {
-					boolean value = Boolean.parseBoolean((String)list.get(GetHinemosPropertyTableDefine.VALUE));
-					info.setValueBoolean(value);
-				}
-				info.setDescription((String)list.get(GetHinemosPropertyTableDefine.DESCRIPTION));
+				info.setType(valueType);
+				String value = (String) list.get(GetHinemosPropertyTableDefine.VALUE);
+				info.setValue(value);
+				info.setDescription((String) list.get(GetHinemosPropertyTableDefine.DESCRIPTION));
 
 				// ダイアログを生成
-				HinemosPropertyDialog dialog = new HinemosPropertyDialog(
-						this.viewPart.getSite().getShell(), managerName, valueType,
-						PropertyDefineConstant.MODE_MODIFY, info);
+				HinemosPropertyDialog dialog = new HinemosPropertyDialog(this.viewPart.getSite().getShell(),
+						managerName, valueType, PropertyDefineConstant.MODE_MODIFY, info);
 				// ダイアログにて変更が選択された場合、入力内容をもって更新を行う。
 				if (dialog.open() == IDialogConstants.OK_ID) {
 					int selectIndex = table.getSelectionIndex();
 					view.update();
 					table.setSelection(selectIndex);
 				}
-			}
-			catch (Exception e1) {
+			} catch (Exception e1) {
 				m_log.warn("run(), " + e1.getMessage(), e1);
 			}
-		}
-		else{
-			MessageDialog.openWarning(
-					null,
-					Messages.getString("warning"),
+		} else {
+			MessageDialog.openWarning(null, Messages.getString("warning"),
 					Messages.getString("message.hinemos.property.11"));
 		}
 		return null;
@@ -148,17 +138,17 @@ public class HinemosPropertyModifyAction extends AbstractHandler implements IEle
 	public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters) {
 		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		// page may not start at state restoring
-		if( null != window ){
+		if (null != window) {
 			IWorkbenchPage page = window.getActivePage();
-			if( null != page ){
+			if (null != page) {
 				IWorkbenchPart part = page.getActivePart();
 
 				boolean editEnable = false;
-				if(part instanceof HinemosPropertyView){
+				if (part instanceof HinemosPropertyView) {
 					// Enable button when 1 item is selected
-					HinemosPropertyView view = (HinemosPropertyView)part;
+					HinemosPropertyView view = (HinemosPropertyView) part;
 
-					if(view.getSelectedNum() == 1) {
+					if (view.getSelectedNum() == 1) {
 						editEnable = true;
 					}
 				}
@@ -168,6 +158,5 @@ public class HinemosPropertyModifyAction extends AbstractHandler implements IEle
 			}
 		}
 	}
-
 
 }

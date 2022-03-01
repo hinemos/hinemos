@@ -8,16 +8,29 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.HttpCheckInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse.MonitorTypeEnum;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.MonitorNumericTypeEnum;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.PriorityEnum;
+import org.openapitools.client.model.MonitorStringValueInfoResponse;
 
 import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -29,14 +42,6 @@ import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.HttpCheckInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
-import com.clustercontrol.ws.monitor.MonitorStringValueInfo;
 
 /**
  * HTTP 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -51,7 +56,7 @@ public class HttpConv {
 	
 	static private String SCHEMA_TYPE = "I";
 	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "1";
+	static private String SCHEMA_REVISION = "2";
 	
 	/**
 	 * <BR>
@@ -84,40 +89,42 @@ public class HttpConv {
 	 * <BR>
 	 * 
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static HttpMonitors createHttpMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static HttpMonitors createHttpMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		HttpMonitors httpMonitors = new HttpMonitors();
 		
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo =  MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
+			monitorInfo =  MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorInfo.getMonitorId());
 
 			HttpMonitor httpMonitor = new HttpMonitor();
 			httpMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 			
-			for (MonitorNumericValueInfo numericValueInfo : monitorInfo.getNumericValueInfo()) {
-				if(numericValueInfo.getPriority() == PriorityConstant.TYPE_INFO ||
-						numericValueInfo.getPriority() == PriorityConstant.TYPE_WARNING){
-					if(numericValueInfo.getMonitorNumericType().contains("CHANGE")) {
-						httpMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(numericValueInfo));
+			for (MonitorNumericValueInfoResponse numericValueInfo : monitorInfo.getNumericValueInfo()) {
+				if(numericValueInfo.getPriority() == PriorityEnum.INFO ||
+						numericValueInfo.getPriority() == PriorityEnum.WARNING){
+					if(numericValueInfo.getMonitorNumericType().name().equals("CHANGE")) {
+						httpMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 					else{
-						httpMonitor.addNumericValue(MonitorConv.createNumericValue(numericValueInfo));
+						httpMonitor.addNumericValue(MonitorConv.createNumericValue(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 				}
 			}
 			
 			int orderNo = 0;
-			for (MonitorStringValueInfo monitorStringValueInfo : monitorInfo.getStringValueInfo()) {
-				httpMonitor.addStringValue(MonitorConv.createStringValue(monitorStringValueInfo, ++orderNo));
+			for (MonitorStringValueInfoResponse monitorStringValueInfo : monitorInfo.getStringValueInfo()) {
+				httpMonitor.addStringValue(MonitorConv.createStringValue(monitorInfo.getMonitorId(),monitorStringValueInfo, ++orderNo));
 			}
 
-			httpMonitor.setHttpInfo(createHttpInfo(monitorInfo.getHttpCheckInfo()));
+			httpMonitor.setHttpInfo(createHttpInfo(monitorInfo));
 			httpMonitors.addHttpMonitor(httpMonitor);
 		}
 		
@@ -127,15 +134,15 @@ public class HttpConv {
 		return httpMonitors;
 	}
 	
-	public static List<MonitorInfo> createMonitorInfoList(HttpMonitors httpMonitors) throws ConvertorException {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(HttpMonitors httpMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 		
 		for (HttpMonitor httpMonitor : httpMonitors.getHttpMonitor()) {
 			logger.debug("Monitor Id : " + httpMonitor.getMonitor().getMonitorId());
 
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(httpMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(httpMonitor.getMonitor());
 			
-			if(monitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC){
+			if(monitorInfo.getMonitorType() == MonitorTypeEnum.NUMERIC){
 				for (NumericValue numericValue : httpMonitor.getNumericValue()) {
 					if(numericValue.getPriority() == PriorityConstant.TYPE_INFO ||
 							numericValue.getPriority() == PriorityConstant.TYPE_WARNING){
@@ -154,40 +161,36 @@ public class HttpConv {
 						monitorInfo.getNumericValueInfo().add(MonitorConv.createMonitorNumericValueInfo(changeValue));
 					}
 				}				
-				MonitorNumericValueInfo monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+				MonitorNumericValueInfoResponse monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(null);
+				monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(null);
+				monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 				
 				// 変化量監視が無効の場合、関連閾値が未入力なら、画面デフォルト値にて補完
-				if( monitorInfo.isChangeFlg() ==false && httpMonitor.getNumericChangeAmount().length == 0 ){
+				if( monitorInfo.getChangeFlg() ==false && httpMonitor.getNumericChangeAmount().length == 0 ){
 					MonitorConv.setMonitorChangeAmountDefault(monitorInfo);
 				}
 				
 				// 変化量についても閾値判定と同様にTYPE_CRITICALとTYPE_UNKNOWNを定義する
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericTypeEnum.CHANGE);
+				monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 				
-				monitorNumericValueInfo = new MonitorNumericValueInfo();
-				monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-				monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-				monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+				monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+				monitorNumericValueInfo.setMonitorNumericType(MonitorNumericTypeEnum.CHANGE);
+				monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 				monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 				monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 				monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
@@ -212,18 +215,18 @@ public class HttpConv {
 	 * 
 	 * @return
 	 */
-	private static HttpInfo createHttpInfo(HttpCheckInfo httpCheckInfo) {
+	private static HttpInfo createHttpInfo(MonitorInfoResponse httpCheckInfo) {
 		HttpInfo httpInfo = new HttpInfo();
-		httpInfo.setMonitorTypeId("");
+		httpInfo.setMonitorTypeId(httpCheckInfo.getMonitorType().getValue());
 		httpInfo.setMonitorId(httpCheckInfo.getMonitorId());
-		httpInfo.setProxyHost(httpCheckInfo.getProxyHost());
+		httpInfo.setProxyHost(httpCheckInfo.getHttpCheckInfo().getProxyHost());
 
-		httpInfo.setProxyPort(Objects.isNull(httpCheckInfo.getProxyPort())?0:httpCheckInfo.getProxyPort());
-		httpInfo.setProxySet(Objects.isNull(httpCheckInfo.isProxySet())?false:httpCheckInfo.isProxySet());
-		httpInfo.setRequestUrl(httpCheckInfo.getRequestUrl());
-		httpInfo.setTimeout(httpCheckInfo.getTimeout());
+		httpInfo.setProxyPort(Objects.isNull(httpCheckInfo.getHttpCheckInfo().getProxyPort())?0:httpCheckInfo.getHttpCheckInfo().getProxyPort());
+		httpInfo.setProxySet(Objects.isNull(httpCheckInfo.getHttpCheckInfo().getProxySet())?false:httpCheckInfo.getHttpCheckInfo().getProxySet());
+		httpInfo.setRequestUrl(httpCheckInfo.getHttpCheckInfo().getRequestUrl());
+		httpInfo.setTimeout(httpCheckInfo.getHttpCheckInfo().getTimeout());
 
-		httpInfo.setUrlReplace(Objects.isNull(httpCheckInfo.isUrlReplace())?false:httpCheckInfo.isUrlReplace());
+		httpInfo.setUrlReplace(Objects.isNull(httpCheckInfo.getHttpCheckInfo().getUrlReplace())?false:httpCheckInfo.getHttpCheckInfo().getUrlReplace());
 
 		return httpInfo;
 	}
@@ -233,13 +236,13 @@ public class HttpConv {
 	 * 
 	 * @return
 	 */
-	private static HttpCheckInfo createHttpCheckInfo(HttpInfo httpInfo) {
-		HttpCheckInfo httpCheckInfo = new HttpCheckInfo();
-		httpCheckInfo.setMonitorId(httpInfo.getMonitorId());
-		httpCheckInfo.setMonitorTypeId(httpInfo.getMonitorTypeId());
-		httpCheckInfo.setProxyHost(httpInfo.getProxyHost());
-		httpCheckInfo.setProxyPort(httpInfo.getProxyPort());
+	private static HttpCheckInfoResponse createHttpCheckInfo(HttpInfo httpInfo) {
+		HttpCheckInfoResponse httpCheckInfo = new HttpCheckInfoResponse();
 		httpCheckInfo.setProxySet(httpInfo.getProxySet());
+		if(httpInfo.getProxySet()){
+			httpCheckInfo.setProxyHost(httpInfo.getProxyHost());
+			httpCheckInfo.setProxyPort(httpInfo.getProxyPort());
+		}
 		httpCheckInfo.setRequestUrl(httpInfo.getRequestUrl());
 		httpCheckInfo.setTimeout(httpInfo.getTimeout());
 		httpCheckInfo.setUrlReplace(httpInfo.getUrlReplace());

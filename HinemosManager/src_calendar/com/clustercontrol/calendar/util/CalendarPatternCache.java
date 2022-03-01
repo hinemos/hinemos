@@ -15,6 +15,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.calendar.model.CalendarPatternInfo;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
@@ -27,6 +28,11 @@ import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.InvalidRole;
 
+
+/**
+ * カレンダパターンのキャッシュを保持するクラス
+ * オーナーロールに寄らず、全てのカレンダパターンを保持します。
+ */
 public class CalendarPatternCache {
 
 	private static Log m_log = LogFactory.getLog( CalendarPatternCache.class );
@@ -101,6 +107,8 @@ public class CalendarPatternCache {
 	 * @throws InvalidRole
 	 */
 	public static CalendarPatternInfo getCalendarPatternInfo(String id) throws CalendarNotFound, InvalidRole {
+		m_log.debug("getCalendarPatternInfo(" + id + ")");
+		
 		try {
 			_lock.readLock();
 			
@@ -125,6 +133,7 @@ public class CalendarPatternCache {
 			cache.put(id, pattern);
 			storeCache(cache);
 			
+			m_log.trace("CalendarPatternInfo: " + pattern);
 			return pattern;
 		} finally {
 			_lock.writeUnlock();
@@ -132,60 +141,11 @@ public class CalendarPatternCache {
 	}
 
 	private static CalendarPatternInfo getCalendarPatternInfoDB(String id) throws CalendarNotFound, InvalidRole {
+		m_log.debug("getCalendarPatternInfoDB(" + id + ")");
+		
 		//カレンダ取得
-		CalendarPatternInfo entity = QueryUtil.getCalPatternInfoPK(id);
-
-//		//カレンダ情報のDTOを生成
-//		CalendarPatternInfo ret = new CalendarPatternInfo();
-//		//id
-//		ret.setId(entity.getCalPatternId());
-//		//名前
-//		ret.setName(entity.getCalPatternName());
-//		//オーナーロールID
-//		ret.setOwnerRoleId(entity.getOwnerRoleId());
-//
-//		//登録者
-//		ret.setRegUser(entity.getRegUser());
-//		//登録日時
-//		if (entity.getRegDate() != null) {
-//			ret.setRegDate(entity.getRegDate());
-//		}
-//		//更新者
-//		ret.setUpdateUser(entity.getUpdateUser());
-//		//更新日時
-//		if (entity.getUpdateDate() != null) {
-//			ret.setUpdateDate(entity.getUpdateDate());
-//		}
-//		//カレンダ詳細情報
-//		ArrayList<YMD> ymdList = getCalPatternDetailList(id);
-//		for(YMD ymd : ymdList){
-//			m_log.trace("YMD : " + ymd.yyyyMMdd());
-//		}
-//		ret.getYmd().addAll(ymdList);
+		CalendarPatternInfo entity = QueryUtil.getCalPatternInfoPK(id, ObjectPrivilegeMode.NONE);
+		
 		return entity;
 	}
-//	/**
-//	 * カレンダパターン詳細情報一覧を取得します。
-//	 * @param id
-//	 * @return カレンダパターン詳細情報のリスト
-//	 */
-//	private static ArrayList<YMD> getCalPatternDetailList(String id) {
-//		ArrayList<YMD> list = new ArrayList<YMD>();
-//
-//		//カレンダパターンID別の情報を取得
-//		List<CalendarPatternDetailInfo> ct = QueryUtil.getCalPatternDetailByCalPatternId(id);
-//		for (CalendarPatternDetailInfo cal : ct) {
-//			YMD info = new YMD();
-//			//年
-//			info.setYear(cal.getId().getYearNo());
-//			//月
-//			info.setMonth(cal.getId().getMonthNo());
-//			//日
-//			info.setDay(cal.getId().getDayNo());
-//			list.add(info);
-//		}
-//		//昇順ソート
-//		Collections.sort(list);
-//		return list;
-//	}
 }

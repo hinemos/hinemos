@@ -181,7 +181,14 @@ public class SearchConnectionExecutor {
 
 			for (String key : tmpTable.keySet()) {
 				// NW機器から取得したMACアドレスを大文字に変換したものを格納する
-				String macAddress = tmpTable.getValue(key).getValue().toString().toUpperCase();
+				String macAddress ="";
+				if (tmpTable.getValue(key).getValue() != null){
+					macAddress = tmpTable.getValue(key).getValue().toString().toUpperCase();
+				} else {
+					m_log.debug("call(): Polling target facilityID: [" + node.getFacilityId() + "] did not respond to OID: " + key);
+					continue;
+				}
+				
 				if (!macFacilityMap.containsKey(macAddress)) {
 					continue;
 				}

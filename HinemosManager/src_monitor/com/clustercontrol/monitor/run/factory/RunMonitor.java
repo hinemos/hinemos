@@ -25,8 +25,6 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -35,6 +33,7 @@ import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.collect.bean.Sample;
 import com.clustercontrol.collect.util.CollectDataUtil;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosDbTimeout;
@@ -44,18 +43,24 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.hub.bean.StringSample;
 import com.clustercontrol.hub.util.CollectStringDataUtil;
+import com.clustercontrol.jmx.model.JmxCheckInfo;
+import com.clustercontrol.jmx.model.JmxMasterInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
+import com.clustercontrol.monitor.bean.MonitorJmxDisplayNameConstant;
+import com.clustercontrol.monitor.bean.MonitorJmxKeyConstant;
 import com.clustercontrol.monitor.run.bean.MonitorNumericType;
 import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorJudgementInfo;
-import com.clustercontrol.monitor.run.util.MonitorExecuteTask;
 import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil;
 import com.clustercontrol.monitor.run.util.CollectMonitorManagerUtil.CollectMonitorDataInfo;
+import com.clustercontrol.monitor.run.util.MonitorExecuteTask;
 import com.clustercontrol.monitor.run.util.NodeMonitorPollerController;
 import com.clustercontrol.monitor.run.util.NodeToMonitorCache;
 import com.clustercontrol.monitor.run.util.ParallelExecution;
 import com.clustercontrol.monitor.run.util.QueryUtil;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.util.NotifyRelationCache;
@@ -65,6 +70,8 @@ import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * 監視を実行する抽象クラス<BR>
@@ -154,6 +161,9 @@ abstract public class RunMonitor {
 	/** 前回の実行結果（ジョブ監視で使用） */
 	protected Object m_prvData = null;
 
+	/** JMX監視対象のkey値 */
+	protected String m_jmxKey = null;
+
 	/**
 	 * 判定情報マップ。
 	 * <p>
@@ -201,7 +211,7 @@ abstract public class RunMonitor {
 			runMonitorInfo();
 		} catch (Exception e) {
 			String[] args = {m_monitorTypeId,m_monitorId};
-			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_012_MON, args);
+			AplLogger.put(InternalIdCommon.MON_SYS_012, args);
 			throw e;
 		} finally {
 			// 終了処理
@@ -237,7 +247,7 @@ abstract public class RunMonitor {
 			return runMonitorInfo();
 		} catch (Exception e) {
 				String[] args = {m_monitorTypeId,m_monitorId};
-				AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_012_MON, args);
+				AplLogger.put(InternalIdCommon.MON_SYS_012, args);
 				throw e;
 		} finally {
 			// 終了処理
@@ -306,6 +316,13 @@ abstract public class RunMonitor {
 			ExecutorCompletionService<MonitorRunResultInfo> ecs = new ExecutorCompletionService<MonitorRunResultInfo>(ParallelExecution.instance().getExecutorService());
 			int taskCount = 0;
 
+			JmxMasterInfo jmxMasterInfo = new JmxMasterInfo();
+			if (m_monitor.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_JMX)) {
+				// JMX監視の場合、JMX監視設定マスタよりJMX設定を取得
+				JmxCheckInfo jmx = com.clustercontrol.jmx.util.QueryUtil.getMonitorJmxInfoPK(m_monitorId);
+				jmxMasterInfo = com.clustercontrol.jmx.util.QueryUtil.getJmxMasterInfoPK(jmx.getMasterId());
+			}
+
 			if (!m_isMonitorJob) {
 				// 監視ジョブ以外の場合
 				// ファシリティIDの配下全ての一覧を取得
@@ -354,9 +371,79 @@ abstract public class RunMonitor {
 						runMonitor.setCheckInfo();
 						runMonitor.nodeInfo = this.nodeInfo;
 
-						ecs.submit(new MonitorExecuteTask(runMonitor, facilityId));
-						taskCount++;
-						
+						if (runMonitor.getMonitorInfo().getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_JMX)) {
+							// JMX監視の場合でkeysがdbms、もしくはramの場合、それぞれに紐づくkey数分、監視を行う。
+							if (MonitorJmxKeyConstant.isDbms(jmxMasterInfo.getKeys())) {
+								// dbms-job
+								runMonitor.m_jmxKey = MonitorJmxKeyConstant.SCHEDULER_TYPE_DBMS_JOB;
+								ecs.submit(new MonitorExecuteTask(runMonitor, facilityId));
+								taskCount++;
+								m_log.debug("runMonitorInfo() dbms_job: isMonitorJob= " + m_isMonitorJob + " : jmxKey=" + runMonitor.m_jmxKey);
+
+								// dbms-del
+								RunMonitor runMonitorDbmsDel = this.createMonitorInstance();
+								// 監視実行に必要な情報を再度セットする
+								runMonitorDbmsDel.m_monitorTypeId = this.m_monitorTypeId;
+								runMonitorDbmsDel.m_monitorId = this.m_monitorId;
+								runMonitorDbmsDel.m_now = this.m_now;
+								runMonitorDbmsDel.m_priorityMap = this.m_priorityMap;
+								runMonitorDbmsDel.setMonitorInfo(runMonitorDbmsDel.m_monitorTypeId, runMonitorDbmsDel.m_monitorId);
+								runMonitorDbmsDel.setJudgementInfo();
+								runMonitorDbmsDel.setCheckInfo();
+								runMonitorDbmsDel.nodeInfo = this.nodeInfo;
+								runMonitorDbmsDel.m_jmxKey = MonitorJmxKeyConstant.SCHEDULER_TYPE_DBMS_DEL;
+								ecs.submit(new MonitorExecuteTask(runMonitorDbmsDel, facilityId));
+								taskCount++;
+								m_log.debug("runMonitorInfo() dbms_del; isMonitorJob= " + m_isMonitorJob + " : jmxKey=" + runMonitorDbmsDel.m_jmxKey);
+
+								// dbms-trans
+								RunMonitor runMonitorDbmsEtc = this.createMonitorInstance();
+								// 監視実行に必要な情報を再度セットする
+								runMonitorDbmsEtc.m_monitorTypeId = this.m_monitorTypeId;
+								runMonitorDbmsEtc.m_monitorId = this.m_monitorId;
+								runMonitorDbmsEtc.m_now = this.m_now;
+								runMonitorDbmsEtc.m_priorityMap = this.m_priorityMap;
+								runMonitorDbmsEtc.setMonitorInfo(runMonitorDbmsEtc.m_monitorTypeId, runMonitorDbmsEtc.m_monitorId);
+								runMonitorDbmsEtc.setJudgementInfo();
+								runMonitorDbmsEtc.setCheckInfo();
+								runMonitorDbmsEtc.nodeInfo = this.nodeInfo;
+								runMonitorDbmsEtc.m_jmxKey = MonitorJmxKeyConstant.SCHEDULER_TYPE_DBMS_ETC;
+								ecs.submit(new MonitorExecuteTask(runMonitorDbmsEtc, facilityId));
+								taskCount++;
+								m_log.debug("runMonitorInfo() dbms_etc: isMonitorJob= " + m_isMonitorJob + " : jmxKey=" + runMonitorDbmsEtc.m_jmxKey);
+
+							} else if (MonitorJmxKeyConstant.isRam(jmxMasterInfo.getKeys())) {
+								// ram-monitor
+								runMonitor.m_jmxKey = MonitorJmxKeyConstant.SCHEDULER_TYPE_RAM_MONITOR;
+								ecs.submit(new MonitorExecuteTask(runMonitor, facilityId));
+								taskCount++;
+								m_log.debug("runMonitorInfo() ram-monitor: isMonitorJob= " + m_isMonitorJob + " : jmxKey=" + runMonitor.m_jmxKey);
+
+								// ram-job
+								RunMonitor runMonitorRamJob = this.createMonitorInstance();
+								// 監視実行に必要な情報を再度セットする
+								runMonitorRamJob.m_monitorTypeId = this.m_monitorTypeId;
+								runMonitorRamJob.m_monitorId = this.m_monitorId;
+								runMonitorRamJob.m_now = this.m_now;
+								runMonitorRamJob.m_priorityMap = this.m_priorityMap;
+								runMonitorRamJob.setMonitorInfo(runMonitorRamJob.m_monitorTypeId, runMonitorRamJob.m_monitorId);
+								runMonitorRamJob.setJudgementInfo();
+								runMonitorRamJob.setCheckInfo();
+								runMonitorRamJob.nodeInfo = this.nodeInfo;
+								runMonitorRamJob.m_jmxKey = MonitorJmxKeyConstant.SCHEDULER_TYPE_RAM_JOB;
+								ecs.submit(new MonitorExecuteTask(runMonitorRamJob, facilityId));
+								taskCount++;
+								m_log.debug("runMonitorInfo() ram-job: isMonitorJob= " + m_isMonitorJob + " : jmxKey=" + runMonitorRamJob.m_jmxKey);
+
+							} else {
+								ecs.submit(new MonitorExecuteTask(runMonitor, facilityId));
+								taskCount++;
+							}
+						} else {
+							ecs.submit(new MonitorExecuteTask(runMonitor, facilityId));
+							taskCount++;
+						}
+
 						if (m_log.isDebugEnabled()) {
 							m_log.debug("starting monitor result : monitorId = " + m_monitorId + ", facilityId = " + facilityId);
 						}
@@ -406,10 +493,89 @@ abstract public class RunMonitor {
 				runMonitor.setJudgementInfo();
 				runMonitor.setCheckInfo();
 				runMonitor.nodeInfo = this.nodeInfo;
-				runMonitor.m_prvData = this.m_prvData;
 
-				ecs.submit(new MonitorExecuteTask(runMonitor, m_facilityId));
-				taskCount++;
+				if (runMonitor.getMonitorInfo().getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_JMX)) {
+					// JMX監視の場合でkeysがdbms、もしくはramの場合、それぞれに紐づくkey数分、監視を行う。
+					if (MonitorJmxKeyConstant.isDbms(jmxMasterInfo.getKeys())) {
+						// dbms-job
+						runMonitor.m_prvData = this.m_prvData;
+						runMonitor.m_jmxKey = MonitorJmxKeyConstant.SCHEDULER_TYPE_DBMS_JOB;
+						ecs.submit(new MonitorExecuteTask(runMonitor, m_facilityId));
+						taskCount++;
+						m_log.debug("runMonitorInfo() dbms_job: isMonitorJob= " + m_isMonitorJob + " : jmxKey=" + runMonitor.m_jmxKey);
+
+						// dbms-del
+						RunMonitor runMonitorDbmsDel = this.createMonitorInstance();
+						// 監視実行に必要な情報を再度セットする
+						runMonitorDbmsDel.m_isMonitorJob = this.m_isMonitorJob;
+						runMonitorDbmsDel.m_monitorTypeId = this.m_monitorTypeId;
+						runMonitorDbmsDel.m_monitorId = this.m_monitorId;
+						runMonitorDbmsDel.m_now = this.m_now;
+						runMonitorDbmsDel.m_priorityMap = this.m_priorityMap;
+						runMonitorDbmsDel.setMonitorInfo(runMonitorDbmsDel.m_monitorTypeId, runMonitorDbmsDel.m_monitorId);
+						runMonitorDbmsDel.setJudgementInfo();
+						runMonitorDbmsDel.setCheckInfo();
+						runMonitorDbmsDel.nodeInfo = this.nodeInfo;
+						runMonitor.m_prvData = this.m_prvData;
+						runMonitorDbmsDel.m_jmxKey = MonitorJmxKeyConstant.SCHEDULER_TYPE_DBMS_DEL;
+						ecs.submit(new MonitorExecuteTask(runMonitorDbmsDel, m_facilityId));
+						taskCount++;
+						m_log.debug("runMonitorInfo() dbms_del; isMonitorJob= " + m_isMonitorJob + " : jmxKey=" + runMonitorDbmsDel.m_jmxKey);
+
+						// dbms-trans
+						RunMonitor runMonitorDbmsEtc = this.createMonitorInstance();
+						// 監視実行に必要な情報を再度セットする
+						runMonitorDbmsEtc.m_isMonitorJob = this.m_isMonitorJob;
+						runMonitorDbmsEtc.m_monitorTypeId = this.m_monitorTypeId;
+						runMonitorDbmsEtc.m_monitorId = this.m_monitorId;
+						runMonitorDbmsEtc.m_now = this.m_now;
+						runMonitorDbmsEtc.m_priorityMap = this.m_priorityMap;
+						runMonitorDbmsEtc.setMonitorInfo(runMonitorDbmsEtc.m_monitorTypeId, runMonitorDbmsEtc.m_monitorId);
+						runMonitorDbmsEtc.setJudgementInfo();
+						runMonitorDbmsEtc.setCheckInfo();
+						runMonitorDbmsEtc.nodeInfo = this.nodeInfo;
+						runMonitor.m_prvData = this.m_prvData;
+						runMonitorDbmsEtc.m_jmxKey = MonitorJmxKeyConstant.SCHEDULER_TYPE_DBMS_ETC;
+						ecs.submit(new MonitorExecuteTask(runMonitorDbmsEtc, m_facilityId));
+						taskCount++;
+						m_log.debug("runMonitorInfo() dbms_etc: isMonitorJob= " + m_isMonitorJob + " : jmxKey=" + runMonitorDbmsEtc.m_jmxKey);
+
+					} else if (MonitorJmxKeyConstant.isRam(jmxMasterInfo.getKeys())) {
+						// ram-monitor
+						runMonitor.m_prvData = this.m_prvData;
+						runMonitor.m_jmxKey = MonitorJmxKeyConstant.SCHEDULER_TYPE_RAM_MONITOR;
+						ecs.submit(new MonitorExecuteTask(runMonitor, m_facilityId));
+						taskCount++;
+						m_log.debug("runMonitorInfo() ram-monitor: isMonitorJob= " + m_isMonitorJob + " : jmxKey=" + runMonitor.m_jmxKey);
+
+						// ram-job
+						RunMonitor runMonitorRamJob = this.createMonitorInstance();
+						// 監視実行に必要な情報を再度セットする
+						runMonitorRamJob.m_isMonitorJob = this.m_isMonitorJob;
+						runMonitorRamJob.m_monitorTypeId = this.m_monitorTypeId;
+						runMonitorRamJob.m_monitorId = this.m_monitorId;
+						runMonitorRamJob.m_now = this.m_now;
+						runMonitorRamJob.m_priorityMap = this.m_priorityMap;
+						runMonitorRamJob.setMonitorInfo(runMonitorRamJob.m_monitorTypeId, runMonitorRamJob.m_monitorId);
+						runMonitorRamJob.setJudgementInfo();
+						runMonitorRamJob.setCheckInfo();
+						runMonitorRamJob.nodeInfo = this.nodeInfo;
+						runMonitor.m_prvData = this.m_prvData;
+						runMonitorRamJob.m_jmxKey = MonitorJmxKeyConstant.SCHEDULER_TYPE_RAM_JOB;
+						ecs.submit(new MonitorExecuteTask(runMonitorRamJob, m_facilityId));
+						taskCount++;
+						m_log.debug("runMonitorInfo() ram-job: isMonitorJob= " + m_isMonitorJob + " : jmxKey=" + runMonitorRamJob.m_jmxKey);
+
+					} else {
+						runMonitor.m_prvData = this.m_prvData;
+						ecs.submit(new MonitorExecuteTask(runMonitor, m_facilityId));
+						taskCount++;
+					}
+				} else {
+					runMonitor.m_prvData = this.m_prvData;
+					ecs.submit(new MonitorExecuteTask(runMonitor, m_facilityId));
+					taskCount++;
+				}
 
 				if (m_log.isDebugEnabled()) {
 					m_log.debug("starting monitor result : monitorId = " + m_monitorId + ", facilityId = " + m_facilityId);
@@ -433,11 +599,12 @@ abstract public class RunMonitor {
 				//収集 - 文字列
 				strSample = new StringSample(sampleTime, m_monitor.getMonitorId());
 			}
-			
+
 			for (int i = 0; i < taskCount; i++) {
 				Future<MonitorRunResultInfo> future = ecs.take();
 				result = future.get();	// 監視結果を取得
 				
+				m_log.debug("testDebug:::displayName = " + result.getDisplayName() + ":::itemName = " + result.getItemName());
 				String facilityId = result.getFacilityId();
 				m_nodeDate = result.getNodeDate();
 				
@@ -454,7 +621,7 @@ abstract public class RunMonitor {
 				}
 				
 				if (!m_isMonitorJob) {
-					// 処理する場合
+					// 監視ジョブ以外で処理する場合
 					if(result.getProcessType().booleanValue() && m_monitor.getMonitorFlg()){
 						// 監視結果を通知
 						ret.add(createOutputBasicInfo(true, facilityId, result.getCheckResult(), new Date(m_nodeDate), result, m_monitor));
@@ -462,6 +629,7 @@ abstract public class RunMonitor {
 
 					// 個々の収集値の登録
 					if (m_monitor.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC
+							&& result.getProcessType().booleanValue() 
 							&& (m_monitor.getCollectorFlg()
 							|| m_monitor.getPredictionFlg()
 							|| m_monitor.getChangeFlg())) {
@@ -500,12 +668,19 @@ abstract public class RunMonitor {
 							}else{
 								errorType = CollectedDataErrorTypeConstant.UNKNOWN;
 							}
-							sample.set(facilityId, m_monitor.getItemName(), result.getValue(), average, 
-									standardDeviation, errorType);
+							// displayNameが特定のJMX監視の物の場合
+							if (MonitorJmxDisplayNameConstant.isJmxDisplayName(result.getDisplayName())) {
+								sample.set(facilityId, m_monitor.getItemName(), result.getValue(), average, 
+										standardDeviation, errorType, result.getDisplayName());
+							} else {
+								sample.set(facilityId, m_monitor.getItemName(), result.getValue(), average, 
+										standardDeviation, errorType);
+							}
 							sampleList.add(sample);
 						}
 					}
 				} else {
+					// 監視ジョブの場合
 					m_monitorRunResultInfo = new MonitorRunResultInfo();
 					m_monitorRunResultInfo.setPriority(result.getPriority());
 					m_monitorRunResultInfo.setCheckResult(result.getCheckResult());
@@ -538,6 +713,8 @@ abstract public class RunMonitor {
 		} catch (FacilityNotFound e) {
 			throw e;
 		} catch (InterruptedException e) {
+			// 監視設定変更時のスケジューラ再登録にてキャンセルが呼ばれる際に発生する可能性がある
+			// この動作は問題のない動作である
 			m_log.info("runMonitorInfo() monitorTypeId = " + m_monitorTypeId + ", monitorId  = " + m_monitorId + " : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw new HinemosUnknown(e);
@@ -580,7 +757,7 @@ abstract public class RunMonitor {
 			ret = runMonitorInfoAggregateByNode();
 		} catch (Exception e) {
 			String[] args = {m_monitorTypeId,facilityId}; 
-			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_013_MON, args);
+			AplLogger.put(InternalIdCommon.MON_SYS_013, args);
 			throw e;
 		} finally {
 			// 終了処理
@@ -631,6 +808,8 @@ abstract public class RunMonitor {
 						OutputBasicInfo notifyInfo = new OutputBasicInfo();
 
 						notifyInfo.setNotifyGroupId(monitor.getNotifyGroupId());
+						notifyInfo.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, m_monitorTypeId,
+								monitor.getMonitorId()));
 						notifyInfo.setPluginId(m_monitorTypeId);
 						notifyInfo.setMonitorId(monitor.getMonitorId());
 						notifyInfo.setApplication(monitor.getApplication());
@@ -773,7 +952,7 @@ abstract public class RunMonitor {
 			runMonitorInfoAggregateByNode();
 		} catch (Exception e) {
 			String[] args = {m_monitorTypeId, m_facilityId}; 
-			AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.MONITOR, MessageConstant.MESSAGE_SYS_013_MON, args);
+			AplLogger.put(InternalIdCommon.MON_SYS_013, args);
 		} finally {
 			// 終了処理
 			this.terminate();
@@ -1259,6 +1438,20 @@ abstract public class RunMonitor {
 	}
 
 	/**
+	 * 監視情報設定を呼び出します。
+	 *
+	 * @param monitorTypeId 監視対象ID
+	 * @param monitorId 監視項目ID
+	 * @return 監視を実行する場合、</code> true </code>
+	 * @throws MonitorNotFound
+	 * @throws HinemosUnknown
+	 */
+	public boolean callSetMonitorInfo(String monitorTypeId, String monitorId) throws MonitorNotFound, HinemosUnknown {
+		// ※注意 #12387の修正からのみ呼び出すことを前提としたメソッドです。
+		return setMonitorInfo(monitorTypeId , monitorId);
+	}
+	
+	/**
 	 * 監視情報を設定します。
 	 * <p>
 	 * 引数で指定された監視対象と監視項目の監視情報を取得し、保持します。<BR>
@@ -1486,10 +1679,22 @@ abstract public class RunMonitor {
 		if (resultInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_BASIC)) {
 			// 通常
 			rtn.setNotifyGroupId(monitorInfo.getNotifyGroupId());
+			rtn.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR,
+					monitorInfo.getMonitorTypeId(), monitorInfo.getMonitorId()));
 		} else if (resultInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_CHANGE)
 				|| resultInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_PREDICTION)) {
 			// 変化量、将来予測
 			rtn.setNotifyGroupId(resultInfo.getNotifyGroupId());
+
+			if (resultInfo.getMonitorNumericType().equals(MonitorNumericType.TYPE_CHANGE)) {
+				// 変化量
+				rtn.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR_CHANGE,
+						monitorInfo.getMonitorTypeId(), monitorInfo.getMonitorId()));
+			} else {
+				// 将来予測
+				rtn.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR_PREDICTION,
+						monitorInfo.getMonitorTypeId(), monitorInfo.getMonitorId()));
+			}
 		}
 
 		// 通知情報を設定
@@ -1536,6 +1741,8 @@ abstract public class RunMonitor {
 		if (generationDate != null) {
 			rtn.setGenerationDate(generationDate.getTime());
 		}
+		rtn.setPriorityChangeJudgmentType(monitorInfo.getPriorityChangeJudgmentType());
+		rtn.setPriorityChangeFailureType(monitorInfo.getPriorityChangeFailureType());
 		// for debug
 		if (m_log.isDebugEnabled()) {
 			m_log.debug("notify() priority = " + priority
@@ -1596,6 +1803,7 @@ abstract public class RunMonitor {
 
 		// 通知情報を設定
 		rtn.setNotifyGroupId(getNotifyGroupId());
+		rtn.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, m_monitorTypeId, m_monitorId));
 		rtn.setPluginId(m_monitorTypeId);
 		rtn.setMonitorId(m_monitorId);
 		rtn.setApplication(m_monitor.getApplication());
@@ -1645,5 +1853,14 @@ abstract public class RunMonitor {
 		}
 
 		return rtn;
+	}
+
+	/**
+	 * JMX監視のkey値を返します。
+	 *
+	 * @return 監視値
+	 */
+	public String getJmxKey() {
+		return m_jmxKey;
 	}
 }

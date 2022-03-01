@@ -35,6 +35,7 @@ import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.internal.ErrorViewPart;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.composite.JobTreeComposite;
@@ -42,6 +43,7 @@ import com.clustercontrol.jobmanagement.composite.TreeSearchBarComposite;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobMapViewIF;
 import com.clustercontrol.jobmanagement.viewer.JobTreeContentProvider;
 import com.clustercontrol.jobmanagement.viewer.JobTreeLabelProvider;
@@ -52,8 +54,6 @@ import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.jobmap.view.JobModuleView;
 import com.clustercontrol.jobmap.view.JobTreeView;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブマップ用ジョブツリーコンポジットクラスです。
@@ -66,7 +66,7 @@ public class JobMapTreeComposite extends JobTreeComposite {
 	private static Log m_log = LogFactory.getLog( JobMapTreeComposite.class );
 
 	/** 選択アイテム */
-	private JobTreeItem m_selectItem = null;
+	private JobTreeItemWrapper m_selectItem = null;
 	private boolean isModuleOnly = false;
 
 	/**
@@ -146,12 +146,12 @@ public class JobMapTreeComposite extends JobTreeComposite {
 				m_selectItemList.addAll(selection.toList());
 
 				//選択アイテムを取得
-				m_selectItem = (JobTreeItem) selection.getFirstElement();
+				m_selectItem = (JobTreeItemWrapper) selection.getFirstElement();
 				List<?> list = selection.toList();
-				List<JobTreeItem> itemList = new ArrayList<JobTreeItem>();
+				List<JobTreeItemWrapper> itemList = new ArrayList<JobTreeItemWrapper>();
 				for(Object obj : list) {
-					if(obj instanceof JobTreeItem) {
-						itemList.add((JobTreeItem)obj);
+					if(obj instanceof JobTreeItemWrapper) {
+						itemList.add((JobTreeItemWrapper)obj);
 					}
 				}
 
@@ -160,14 +160,16 @@ public class JobMapTreeComposite extends JobTreeComposite {
 					// JobTreeの選択が変わったら、JobModuleTreeの表示を変える
 					JobModuleView moduleView = (JobModuleView)viewRegist.getAdapter(JobModuleView.class);
 					String managerName = JobTreeItemUtil.getManagerName(m_selectItem);
-					moduleView.getJobMapTreeComposite().removeModule(managerName);
+					if (moduleView.getJobMapTreeComposite() != null) {
+						moduleView.getJobMapTreeComposite().removeModule(managerName);
+					}
 				}
 				if (m_selectItem != null) {
 					//選択ツリーアイテムを設定
 					setSelectItem(itemList);
 
 					// ログインユーザで参照可能なジョブユニットかどうかチェックする
-					if (m_selectItem.getData().getType() == JobConstant.TYPE_JOBUNIT) {
+					if (m_selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 						view.setEnabledActionAll(true);
 						view.setEnabledAction(m_selectItem.getData().getType(), m_selectItem.getData().getJobunitId(), selection);
 					} else {
@@ -179,7 +181,7 @@ public class JobMapTreeComposite extends JobTreeComposite {
 					//選択ツリーアイテムを設定
 					setSelectItem(null);
 					//ビューのアクションを全て無効に設定
-					view.setEnabledAction(-9, selection);
+					view.setDisabledAction(selection);
 				}
 			}
 		});
@@ -200,12 +202,12 @@ public class JobMapTreeComposite extends JobTreeComposite {
 				IViewPart viewPart = page.findView(JobTreeView.ID);
 
 				if (viewPart != null) {
-					m_selectItem = (JobTreeItem) selection.getFirstElement();
+					m_selectItem = (JobTreeItemWrapper) selection.getFirstElement();
 					List<?> list = selection.toList();
-					List<JobTreeItem> itemList = new ArrayList<JobTreeItem>();
+					List<JobTreeItemWrapper> itemList = new ArrayList<JobTreeItemWrapper>();
 					for(Object obj : list) {
-						if(obj instanceof JobTreeItem) {
-							itemList.add((JobTreeItem)obj);
+						if(obj instanceof JobTreeItemWrapper) {
+							itemList.add((JobTreeItemWrapper)obj);
 						}
 					}
 					
@@ -215,13 +217,11 @@ public class JobMapTreeComposite extends JobTreeComposite {
 					JobTreeView view = (JobTreeView) viewPart.getAdapter(JobTreeView.class);
 
 					if (m_selectItem != null) {
-						updateJobMapEditor(m_selectItem);
-
 						//選択ツリーアイテムを設定
 						setSelectItem(itemList);
 
 						// ログインユーザで参照可能なジョブユニットかどうかチェックする
-						if (m_selectItem.getData().getType() == JobConstant.TYPE_JOBUNIT) {
+						if (m_selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT) {
 							view.setEnabledActionAll(true);
 							view.setEnabledAction(m_selectItem.getData().getType(), m_selectItem.getData().getJobunitId(), selection);
 							updateJobMapEditor(m_selectItem);
@@ -236,7 +236,7 @@ public class JobMapTreeComposite extends JobTreeComposite {
 						setSelectItem(null);
 
 						//ビューのアクションを全て無効に設定
-						view.setEnabledAction(-9, selection);
+						view.setDisabledAction(selection);
 					}
 				}
 			}
@@ -248,10 +248,10 @@ public class JobMapTreeComposite extends JobTreeComposite {
 			@Override
 			public void dragStart(DragSourceEvent event) {
 				JobMapEditorView editorView = JobMapActionUtil.getJobMapEditorView();
-				JobTreeItem dispItem = editorView.getFocusFigure().getJobTreeItem();
+				JobTreeItemWrapper dispItem = editorView.getFocusFigure().getJobTreeItem();
 				JobEditState jobEditState = JobEditStateUtil.getJobEditState(JobTreeItemUtil.getManagerName(dispItem));
 				boolean readOnly = jobEditState.isLockedJobunitId(dispItem.getData().getJobunitId());
-				if (m_selectItem.getData().getType() == JobConstant.TYPE_JOBUNIT
+				if (m_selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT
 						|| !readOnly) {
 					event.doit = false;
 				}
@@ -278,21 +278,21 @@ public class JobMapTreeComposite extends JobTreeComposite {
 			m_viewer.setInput(null);
 			return;
 		}
-		JobTreeItem treeTop = new JobTreeItem();
-		JobInfo treeInfo = new JobInfo();
+		JobTreeItemWrapper treeTop = new JobTreeItemWrapper();
+		JobInfoWrapper treeInfo = JobTreeItemUtil.createJobInfoWrapper();
 		treeInfo.setJobunitId("");
 		treeInfo.setId("");
 		treeInfo.setName(JobConstant.STRING_COMPOSITE);
-		treeInfo.setType(JobConstant.TYPE_COMPOSITE);
+		treeInfo.setType(JobInfoWrapper.TypeEnum.COMPOSITE);
 		treeTop.setData(treeInfo);
 		
-		List<JobTreeItem> jobTreeItemList = new ArrayList<>();
+		List<JobTreeItemWrapper> jobTreeItemList = new ArrayList<>();
 		JobTreeView jobTree = JobMapActionUtil.getJobTreeView();
 		TreeItem items[] = jobTree.getJobMapTreeComposite().getTree().getItems();
 //		TreeItem items[] = m_viewer.getTree().getItems();
 		for (int i = 0; i < items.length; i++) {
-			JobTreeItem jobItem = (JobTreeItem)items[i].getData();
-			JobTreeItem jobTreeItem = JobMapTreeUtil.deepCopy(jobItem, null);
+			JobTreeItemWrapper jobItem = (JobTreeItemWrapper)items[i].getData();
+			JobTreeItemWrapper jobTreeItem = JobMapTreeUtil.deepCopy(jobItem, null);
 			removeModuleTreeItem(jobTreeItem.getChildren(), jobTreeItemList, managerName);
 			jobTreeItem.setParent(treeTop);
 			treeTop.getChildren().add(jobTreeItem);
@@ -301,28 +301,28 @@ public class JobMapTreeComposite extends JobTreeComposite {
 		m_viewer.expandToLevel(3);
 	}
 	
-	private void removeModuleTreeItem(List<JobTreeItem> jobTreeList, List<JobTreeItem> jobList, String targetManagerName) {
-		Iterator<JobTreeItem> it = jobTreeList.iterator();
+	private void removeModuleTreeItem(List<JobTreeItemWrapper> jobTreeList, List<JobTreeItemWrapper> jobList, String targetManagerName) {
+		Iterator<JobTreeItemWrapper> it = jobTreeList.iterator();
 		while (it.hasNext()) {
-			JobTreeItem jobItem = it.next();
+			JobTreeItemWrapper jobItem = it.next();
 			if (jobItem.getChildren().size() > 0) {
 				removeModuleTreeItem(jobItem.getChildren(), jobList, targetManagerName);
 			}
-			if (jobItem.getData().getType() != JobConstant.TYPE_COMPOSITE 
+			if (jobItem.getData().getType() != JobInfoWrapper.TypeEnum.COMPOSITE 
 					&& !JobTreeItemUtil.getManagerName(jobItem).equals(targetManagerName)) {
 				it.remove();
 				continue;
 			}
-			if (jobItem.getData().getType() == JobConstant.TYPE_MANAGER) {
+			if (jobItem.getData().getType() == JobInfoWrapper.TypeEnum.MANAGER) {
 				jobItem.getChildren().clear();
-				for (JobTreeItem childItem : jobList) {
+				for (JobTreeItemWrapper childItem : jobList) {
 					childItem.setParent(jobItem);
 					jobItem.getChildren().add(childItem);
 				}
 				jobList.clear();
 				continue;
 			}
-			if (jobItem.getData().isRegisteredModule()) {
+			if (jobItem.getData().getRegistered()) {
 				jobItem.getChildren().clear();
 				jobList.add(jobItem);
 			} else {
@@ -331,7 +331,7 @@ public class JobMapTreeComposite extends JobTreeComposite {
 		}
 	}
 	
-	public void updateJobMapEditor(JobTreeItem jobTreeItem) {
+	public void updateJobMapEditor(JobTreeItemWrapper jobTreeItem) {
 
 		m_log.debug("updateJobMapEditor() : " + jobTreeItem);
 
@@ -349,7 +349,7 @@ public class JobMapTreeComposite extends JobTreeComposite {
 			JobMapViewIF view = (JobMapViewIF) viewPart;
 			
 			String managerName = null;
-			JobTreeItem mgrTree = JobTreeItemUtil.getManager(jobTreeItem);
+			JobTreeItemWrapper mgrTree = JobTreeItemUtil.getManager(jobTreeItem);
 			if(mgrTree == null) {
 				if (jobTreeItem != null) {
 					managerName = jobTreeItem.getChildren().get(0).getData().getId();

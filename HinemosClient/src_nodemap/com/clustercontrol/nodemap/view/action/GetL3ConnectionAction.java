@@ -24,13 +24,13 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.MapAssociationInfoResponse;
 
-import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
 import com.clustercontrol.nodemap.util.SecondaryIdMap;
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.nodemap.view.NodeMapView.Mode;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.nodemap.Association;
 
 /**
  * ビューをコネクション編集可能モードに変更するクライアント側アクションクラス<BR>
@@ -71,8 +71,8 @@ public class GetL3ConnectionAction extends AbstractHandler implements IElementUp
 		String facilityId = SecondaryIdMap.getFacilityId(secondaryId);
 		try {
 			long start = System.currentTimeMillis();
-			NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(view.getCanvasComposite().getManagerName());
-			List<Association> list = wrapper.getL3ConnectionMap(facilityId);
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(view.getCanvasComposite().getManagerName());
+			List<MapAssociationInfoResponse> list = wrapper.getL3ConnectionMap(facilityId);
 			view.getController().autoAssociation(list);
 			view.updateNotManagerAccess();
 			long end = System.currentTimeMillis();

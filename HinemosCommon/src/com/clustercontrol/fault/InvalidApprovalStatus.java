@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * 承認可能な状態ではない場合に利用するException
  * @version 6.0.0
  */
-public class InvalidApprovalStatus extends HinemosException {
+public class InvalidApprovalStatus extends HinemosInvalid {
 
 	private static final long serialVersionUID = -1L;
 

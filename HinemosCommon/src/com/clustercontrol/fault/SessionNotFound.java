@@ -11,7 +11,7 @@ package com.clustercontrol.fault;
 /**
  * 環境構築機能で、セッションが見つからない場合にthrowされる
  */
-public class SessionNotFound extends HinemosException {
+public class SessionNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = -9189072636555316265L;
 

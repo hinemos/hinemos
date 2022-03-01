@@ -40,7 +40,7 @@ public class DatasourceJobDetailByJobQueue extends DatasourceJobDetail {
 		String columnsStr;
 
 		JobQueueCSV() {
-			columnsStr = ReportUtil.joinStrings(columns, ",");
+			columnsStr = ReportUtil.joinStringsToCsv(columns);
 		}
 
 		void add(JobQueueCSVRow row) {
@@ -134,7 +134,6 @@ public class DatasourceJobDetailByJobQueue extends DatasourceJobDetail {
 			jobLabel = jobId + " (" + jobName + ")";
 			jobLabel = jobLabel.length() <= m_maxLabelLength ? jobLabel
 					: this.jobLabel.substring(0, m_maxLabelLength) + "...";
-			jobLabel = '"' + jobLabel.replace("\"", "\"\"") + '"';
 			statusStr = status == null ? "" : Messages.getString(ReportUtil.getStatusString(status));
 			endStatusStr = endStatus == null ? "" : ReportUtil.getEndStatusString(endStatus);
 			concurrency = 0;  // 同時実行数は0で初期化し、後の処理で算出
@@ -143,11 +142,12 @@ public class DatasourceJobDetailByJobQueue extends DatasourceJobDetail {
 
 		String getCSVLine() {
 			// JobQueueCSVのcolumnsと並びを合わせる
-			return ((startDateTime == null ? "" : startDateTime) + "," + (endDateTime == null ? "" : endDateTime) + ","
-					+ (scheduleDateTime == null ? "" : scheduleDateTime) + ","
-					+ (elapsedTime == null ? "" : elapsedTime) + "," + concurrency + "," + sessionId + ","
-					+ jobLabel + "," + (statusStr == null ? "" : statusStr) + ","
-					+ (endStatusStr == null ? "" : endStatusStr));
+			String[] data = { (startDateTime == null ? "" : startDateTime.toString()),
+					(endDateTime == null ? "" : endDateTime.toString()),
+					(scheduleDateTime == null ? "" : scheduleDateTime.toString()),
+					(elapsedTime == null ? "" : elapsedTime.toString()), Integer.toString(concurrency), sessionId,
+					jobLabel, (statusStr == null ? "" : statusStr), (endStatusStr == null ? "" : endStatusStr) };
+			return ReportUtil.joinStringsToCsv(data);
 		}
 
 	}
@@ -161,7 +161,7 @@ public class DatasourceJobDetailByJobQueue extends DatasourceJobDetail {
 		m_maxLabelLength = Integer.parseInt(isDefine("max.jobid.length", "65"));
 
 		String suffix = m_propertiesMap.get(SUFFIX_KEY_VALUE + "." + num);
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 
 		String jobUnitRegex = isDefine(JOB_UNIT_REGEX + "." + num, "%%");
 		String jobIdRegex = isDefine(JOB_ID_REGEX + "." + num, "%%");

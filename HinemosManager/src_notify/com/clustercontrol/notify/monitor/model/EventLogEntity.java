@@ -9,11 +9,11 @@
 package com.clustercontrol.notify.monitor.model;
 
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
@@ -92,6 +92,7 @@ public class EventLogEntity extends ObjectPrivilegeTargetInfo implements Cloneab
 	private String userItem38;
 	private String userItem39;
 	private String userItem40;
+	private String notifyUUID;
 	
 	@Deprecated
 	public EventLogEntity() {
@@ -626,7 +627,16 @@ public class EventLogEntity extends ObjectPrivilegeTargetInfo implements Cloneab
 	public void setUserItem40(String userItem40) {
 		this.userItem40 = userItem40;
 	}
-	
+
+	@Column(name="notify_uuid")
+	public String getNotifyUUID() {
+		return this.notifyUUID;
+	}
+
+	public void setNotifyUUID(String notifyUuid) {
+		this.notifyUUID = notifyUuid;
+	}
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
 	 */
@@ -813,6 +823,7 @@ public class EventLogEntity extends ObjectPrivilegeTargetInfo implements Cloneab
 			ret.priority = this.priority;
 			ret.scopeText = this.scopeText;
 			ret.collectGraphFlg = this.collectGraphFlg;
+			ret.notifyUUID = this.notifyUUID;
 			ret.position = this.position;
 			for (int i = 1 ; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
 				EventUtil.setUserItemValue(ret, i, EventUtil.getUserItemValue(this, i));

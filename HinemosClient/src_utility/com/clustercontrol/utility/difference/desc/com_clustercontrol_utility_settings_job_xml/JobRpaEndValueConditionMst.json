@@ -1,0 +1,90 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"orderNo",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+	
+	{
+	"propName":"conditionType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaEndValueConditionMst_conditionType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_log"}, 
+			{"value":"1", "name":"name_return_code"}
+		]}
+	]},
+	
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaEndValueConditionMst_description"}
+	]},
+	
+	{
+	"propName":"pattern",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaEndValueConditionMst_pattern"}
+	]},
+	
+	{
+	"propName":"caseSensitivityFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaEndValueConditionMst_caseSensitivityFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"processType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaEndValueConditionMst_processType"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"returnCode",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaEndValueConditionMst_returnCode"}
+	]},
+	
+	{
+	"propName":"returnCodeCondition",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaEndValueConditionMst_returnCodeCondition"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_equal_numeric"},
+			{"value":"1", "name":"name_not_equal_numeric"},
+			{"value":"2", "name":"name_greater_than"},
+			{"value":"3", "name":"name_greater_than_or_equal_to"},
+			{"value":"4", "name":"name_less_than"}, 
+			{"value":"5", "name":"name_less_than_or_equal_to"}
+		]}
+	]},
+	
+	{
+	"propName":"useCommandReturnCodeFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaEndValueConditionMst_useCommandReturnCodeFlg"},
+		{"type":"Translate", "values":[
+			{"value":"false", "name":"name_dont"}, 
+			{"value":"true", "name":"name_do"}
+		]}
+	]},
+	
+	{
+	"propName":"endValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaEndValueConditionMst_endValue"}
+	]}
+]
+}

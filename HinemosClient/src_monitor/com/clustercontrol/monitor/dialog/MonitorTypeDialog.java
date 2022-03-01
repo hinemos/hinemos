@@ -37,8 +37,9 @@ import com.clustercontrol.monitor.plugin.LoadMonitorPlugin;
 import com.clustercontrol.monitor.run.bean.MonitorTypeMessage;
 import com.clustercontrol.monitor.view.MonitorListView;
 import com.clustercontrol.monitor.view.action.MonitorModifyAction;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.ui.util.OptionUtil;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.WidgetTestUtil;
 /**
  * 監視種別一覧を表示するダイアログクラス<BR>
@@ -211,7 +212,7 @@ public class MonitorTypeDialog extends CommonDialog {
 		Map<ArrayList<Object>, String> monitorTypeMstMap = new HashMap<>();
 		if (monitorTypeMstList != null) {
 
-			Set<String> activeOptions = EndpointManager.getAllOptions();
+			Set<String> activeOptions = RestConnectManager.getAllOptions();
 
 			for (ArrayList<Object> monitorTypeMst : monitorTypeMstList) {
 				String label = "";
@@ -266,6 +267,18 @@ public class MonitorTypeDialog extends CommonDialog {
 					pluginName = Messages.getString("correlation.monitor");
 				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_INTEGRATION)) {
 					pluginName = Messages.getString("integration.monitor");
+				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_RPA_LOGFILE)) {
+					// RPAログファイル監視はエンタープライズ機能が有効な場合のみ表示する。
+					if (!activeOptions.contains(OptionUtil.TYPE_ENTERPRISE)) {
+						continue;
+					}
+					pluginName = Messages.getString("rpa.monitor");
+				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE)) {
+					// RPA管理ツール監視はエンタープライズ機能が有効な場合のみ表示する。
+					if (!activeOptions.contains(OptionUtil.TYPE_ENTERPRISE)) {
+						continue;
+					}
+					pluginName = Messages.getString("rpa.service.monitor");
 				} else {
 					// ExtensionMonitorはオプションによって追加される
 					String option = null;

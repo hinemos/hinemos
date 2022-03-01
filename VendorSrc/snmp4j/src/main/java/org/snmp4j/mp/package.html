@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>org.snmp4j.mp</title>
+<!--
+
+/*_############################################################################
+  _##
+  _##  SNMP4J
+  _##
+  _##  Copyright 2003-2004  Frank Fock and Jochen Katz (SNMP4J.org)
+  _##
+  _##  Licensed under the Apache License, Version 2.0 (the "License");
+  _##  you may not use this file except in compliance with the License.
+  _##  You may obtain a copy of the License at
+  _##
+  _##      http://www.apache.org/licenses/LICENSE-2.0
+  _##
+  _##  Unless required by applicable law or agreed to in writing, software
+  _##  distributed under the License is distributed on an "AS IS" BASIS,
+  _##  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  _##  See the License for the specific language governing permissions and
+  _##  limitations under the License.
+  _##
+  _##########################################################################*/
+
+-->
+</head>
+<body bgcolor="white">
+
+Provides classes and interfaces for the SNMP message processing.
+<p>
+The <code>org.snmp4j.mp</code> classes provide services to process SNMP
+messages. The services provided are defined in the
+<code>MessageProcessingModel</code> interface and include the following:
+</p>
+<ul>
+<li>Prepare data elements from an incoming SNMP message as described in
+  RFC3412 §7.2.
+</li>
+<li>Prepare a response message as defined in RFC3412 §7.1.
+</li>
+<li>Prepare an outgoing message as defined in RFC3412 §7.1.
+</li>
+</ul>
+<p>
+This interface is implemented
+by the message processing model classes for the SNMP versions 1, v2c, and v3:
+<code>MPv1</code>, <code>MPv2c</code>, and <code>MPv3</code>.
+</p>
+<p>
+The <code>MessageDispatcherImpl</code> chooses which message processing model
+it uses to process an outgoing or incoming SNMP message based on the SNMP
+version of the message. The SNMP version is either extracted from the message
+header (incoming message) or from the <code>Target</code> instance associated
+with the outgoing PDU (ougoing message).</p>
+<p>
+To be able to match requests and responses SNMP uses request IDs. Since request
+IDs are created by the command generator, the request IDs are unique within
+such a command generator only. SNMP4J therefore has to abstract from request IDs
+and uses <code>PduHandle</code> instances instead.
+</p>
+<p>
+  If a <code>PDU</code> is processed for sending by the SNMP4J
+  <code>MessageDispatcherImpl</code> and
+  the PDU's request ID is set to 0, then a SNMP4J application wide unique ID
+  is generated and set as request ID of the supplied PDU. In any case, the
+  PDU's request ID will be used as transaction ID of the outgoing message. The
+  transaction ID identifies a messages <code>PduHandle</code>.
+</p>
+<p>
+  If a <code>PDU</code> is received  by the SNMP4J
+  <code>MessageDispatcherImpl</code> a unique transaction ID is generated so
+  that command responders as well as the message processing model can match
+  requests and responses.
+</p>
+<p>
+  The following UML class diagram shows the most important classes of the
+  <code>org.snmp4j.mp</code> package and their relationships
+  (relationships to other packages are not shown):
+</p>
+<img alt="UML Class Diagram for MP Package" src="doc-files/org_snmp4j_mp.gif">
+
+</body>
+</html>

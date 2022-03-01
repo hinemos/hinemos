@@ -9,12 +9,8 @@
 package com.clustercontrol.monitor.dialog;
 
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.rap.rwt.RWT;
-import org.eclipse.rap.rwt.service.UISession;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -30,11 +26,14 @@ import org.eclipse.swt.widgets.Tree;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.monitor.bean.MonitorFilterConstant;
 import com.clustercontrol.monitor.util.MonitorFilterPropertyUtil;
+import com.clustercontrol.util.FilterPropertyCache;
+import com.clustercontrol.util.FilterPropertyUpdater;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.viewer.PropertySheet;
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.viewer.PropertySheet;
 
 /**
  * 監視[一覧]のフィルタ処理ダイアログクラス<BR>
@@ -51,9 +50,8 @@ public class MonitorFilterDialog extends CommonDialog {
 	private static final int sizeX = 500;
 	private static final int sizeY = 600;
 
-	/** Cache map of filter properties for each UI session */
-	private static Map<UISession, Property> filterPropertyCache = new ConcurrentHashMap<>();
-
+	/** プロパティのキャッシュ用クラス */
+	private static FilterPropertyCache filterPropertyCache = null;
 	/**
 	 * コンストラクタ
 	 * @param parent 親のシェルオブジェクト
@@ -206,7 +204,9 @@ public class MonitorFilterDialog extends CommonDialog {
 	 */
 	private Property initFilterProperty() {
 		Property property = MonitorFilterPropertyUtil.getProperty(Locale.getDefault());
-		filterPropertyCache.put(RWT.getUISession(), property);
+		FilterPropertyUpdater.getInstance().addFilterProperty(getClass(), property,
+				MonitorFilterConstant.MANAGER);
+		filterPropertyCache.initFilterPropertyCache(FilterPropertyCache.MONITOR_FILTER_DIALOG_PROPERTY,property);
 		return property;
 	}
 
@@ -215,10 +215,29 @@ public class MonitorFilterDialog extends CommonDialog {
 	 * or initialize one while not.
 	 */
 	private Property getOrInitFilterProperty() {
-		Property property = filterPropertyCache.get(RWT.getUISession());
-		if( null == property ){
+		Property property = null;
+		if( null == filterPropertyCache ){
+			filterPropertyCache = new FilterPropertyCache();
+		}
+		if( null == filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.MONITOR_FILTER_DIALOG_PROPERTY) ){
 			property = initFilterProperty();
+		} else {
+			property = (Property)filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.MONITOR_FILTER_DIALOG_PROPERTY);
 		}
 		return property;
+	}
+
+	/**
+	 * 外部からキャッシュにフィルタ設定を保存する
+	 * 
+	 * @param property
+	 */
+	public static void setProperty(Property property) {
+		// キャッシュがない、またはすでにプロパティが設定されている場合は再作成
+		if (filterPropertyCache == null || filterPropertyCache
+				.getFilterPropertyCache(FilterPropertyCache.MONITOR_FILTER_DIALOG_PROPERTY) != null) {
+			filterPropertyCache = new FilterPropertyCache();
+		}
+		filterPropertyCache.initFilterPropertyCache(FilterPropertyCache.MONITOR_FILTER_DIALOG_PROPERTY, property);
 	}
 }

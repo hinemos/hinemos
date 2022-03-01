@@ -19,16 +19,29 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
-import javax.xml.ws.WebServiceException;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.ImportObjectPrivilegeInfoRecordRequest;
+import org.openapitools.client.model.ImportObjectPrivilegeInfoRequest;
+import org.openapitools.client.model.ImportObjectPrivilegeInfoResponse;
+import org.openapitools.client.model.ObjectPrivilegeInfoRequestP1;
+import org.openapitools.client.model.ObjectPrivilegeInfoResponse;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.ReplaceObjectPrivilegeRequest;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.difference.CSVUtil;
@@ -46,18 +59,16 @@ import com.clustercontrol.utility.settings.platform.conv.ObjectPrivilegeConv;
 import com.clustercontrol.utility.settings.platform.xml.ObjectPrivilege;
 import com.clustercontrol.utility.settings.platform.xml.ObjectPrivilegeInfo;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.access.HinemosUnknown_Exception;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.InvalidSetting_Exception;
-import com.clustercontrol.ws.access.InvalidUserPass_Exception;
-import com.clustercontrol.ws.access.PrivilegeDuplicate_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * オブジェクト権限定義情報をインポート・エクスポート・削除するアクションクラス<br>
@@ -84,11 +95,11 @@ public class ObjectPrivilegeAction {
 
 		log.debug("Start Clear PlatformObjectPrivilege ");
 		int ret = 0;
-		List<com.clustercontrol.ws.access.ObjectPrivilegeInfo> objectPrivilegeList = null;
+		List<ObjectPrivilegeInfoResponse> objectPrivilegeList = null;
 		
 		// オブジェクト権限情報一覧の取得
 		try {
-			objectPrivilegeList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null);
+			objectPrivilegeList = AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null,null,null,null);
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret=SettingConstants.ERROR_INPROCESS;
@@ -97,46 +108,42 @@ public class ObjectPrivilegeAction {
 		}
 		
 		// オブジェクト権限情報の削除
-		HashMap<String, List<com.clustercontrol.ws.access.ObjectPrivilegeInfo>> mapObjectPrivilege =
-				new HashMap<String, List<com.clustercontrol.ws.access.ObjectPrivilegeInfo>>();
+		HashMap<String, List<ObjectPrivilegeInfoResponse>> mapObjectPrivilege =
+				new HashMap<String, List<ObjectPrivilegeInfoResponse>>();
 		for (int i = 0; i < objectPrivilegeList.size(); i++) {
-			com.clustercontrol.ws.access.ObjectPrivilegeInfo privilegeInfo = objectPrivilegeList.get(i);
-			List<com.clustercontrol.ws.access.ObjectPrivilegeInfo> list =
+			ObjectPrivilegeInfoResponse privilegeInfo = objectPrivilegeList.get(i);
+			List<ObjectPrivilegeInfoResponse> list =
 					mapObjectPrivilege.get(privilegeInfo.getObjectType() + ";" + privilegeInfo.getObjectId());
 			if(list == null)
-				list = new ArrayList<com.clustercontrol.ws.access.ObjectPrivilegeInfo>();
+				list = new ArrayList<ObjectPrivilegeInfoResponse>();
 			list.add(privilegeInfo);
 			mapObjectPrivilege.put(privilegeInfo.getObjectType() + ";" + privilegeInfo.getObjectId(), list);
 		}
 		
-		for(Entry<String, List<com.clustercontrol.ws.access.ObjectPrivilegeInfo>> entry : mapObjectPrivilege.entrySet()){
+		for(Entry<String, List<ObjectPrivilegeInfoResponse>> entry : mapObjectPrivilege.entrySet()){
 			String[] object = entry.getKey().split(";");
 			try {
-				AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilegeInfo(
-						object[0],
-						object[1],
-						new ArrayList<com.clustercontrol.ws.access.ObjectPrivilegeInfo>());
-				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + object[0] + "-" + object[1]);
-			} catch (HinemosUnknown_Exception e) {
+				ReplaceObjectPrivilegeRequest reqDto = new ReplaceObjectPrivilegeRequest();
+				reqDto.setObjectType(object[0]);
+				reqDto.setObjectId(object[1]);
+				reqDto.setObjectPrigilegeInfoList(new ArrayList<ObjectPrivilegeInfoRequestP1>());
+				AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilege(reqDto);
+				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + object[0] + " " + object[1]);
+			} catch (HinemosUnknown e) {
 				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-				break;
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-				break;
-			} catch (InvalidUserPass_Exception e) {
+			} catch (InvalidUserPass e) {
 				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-				break;
-			} catch (WebServiceException e) {
+			} catch (RestConnectFailed e) {
 				log.error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-				break;
 			} catch (Exception e) {
 				log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
-				continue;
 			}
 		}
 		
@@ -162,17 +169,17 @@ public class ObjectPrivilegeAction {
 		log.debug("Start Export PlatformObjectPrivilege ");
 
 		int ret = 0;
-		List<com.clustercontrol.ws.access.ObjectPrivilegeInfo> objectPrivilegeList = null;
+		List<ObjectPrivilegeInfoResponse> objectPrivilegeList = null;
 		ObjectPrivilege objectPrivilege = new ObjectPrivilege();
 
 		// オブジェクト権限情報一覧の取得
 		try {
-			objectPrivilegeList = AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null);
-			Collections.sort(objectPrivilegeList, new Comparator<com.clustercontrol.ws.access.ObjectPrivilegeInfo>() {
+			objectPrivilegeList = AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null,null,null,null);
+			Collections.sort(objectPrivilegeList, new Comparator<ObjectPrivilegeInfoResponse>() {
 				@Override
 				public int compare(
-						com.clustercontrol.ws.access.ObjectPrivilegeInfo info1,
-						com.clustercontrol.ws.access.ObjectPrivilegeInfo info2) {
+						ObjectPrivilegeInfoResponse info1,
+						ObjectPrivilegeInfoResponse info2) {
 					int ret = info1.getObjectType().compareTo(info2.getObjectType());
 					if(ret != 0){
 						return ret;
@@ -200,11 +207,11 @@ public class ObjectPrivilegeAction {
 		
 		// オブジェクト権限情報の取得
 		for (int j = 0; j < objectPrivilegeList.size(); j++) {
-			com.clustercontrol.ws.access.ObjectPrivilegeInfo privilegeInfo = objectPrivilegeList.get(j);
+			ObjectPrivilegeInfoResponse privilegeInfo = objectPrivilegeList.get(j);
 			try {
 				objectPrivilege.addObjectPrivilegeInfo(ObjectPrivilegeConv.convObjectPrivilegeDto2Xml(privilegeInfo));
 				log.info(Messages.getString(
-						"SettingTools.ExportSucceeded") + " : " + privilegeInfo.getObjectType() + "-" + privilegeInfo.getObjectId());
+						"SettingTools.ExportSucceeded") + " : " + privilegeInfo.getObjectType() + " " + privilegeInfo.getObjectId());
 			} catch (Exception e) {
 				log.error(Messages.getString(
 						"SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -259,7 +266,7 @@ public class ObjectPrivilegeAction {
 		
 		// オブジェクト権限情報をXMLファイルからの読み込み
 		try {
-			objectPrivilege = ObjectPrivilege.unmarshal(
+			objectPrivilege = XmlMarshallUtil.unmarshall(ObjectPrivilege.class,
 					new InputStreamReader(new FileInputStream(xmlObjectPrivilege), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
@@ -274,96 +281,93 @@ public class ObjectPrivilegeAction {
 		}
 		
 		// オブジェクト権限情報の登録
-		Map<List<String>, List<com.clustercontrol.ws.access.ObjectPrivilegeInfo>> objPrivilMapXML = new LinkedHashMap<>();
+		//  <ID,TYPE> 毎に リストを集約。
+		final Map<ObjectPrivilegeInfoKey, List<ObjectPrivilegeInfoResponse>> objPrivilMapXML = new LinkedHashMap<>();
 		for (int i = 0; i < objectPrivilege.getObjectPrivilegeInfoCount(); i++) {
 			ObjectPrivilegeInfo privilegeInfo = objectPrivilege.getObjectPrivilegeInfo(i);
-
-			List<String> key = new ArrayList<>(2);
-			key.add(privilegeInfo.getObjectId());
-			key.add(privilegeInfo.getObjectType());
-
-			List<com.clustercontrol.ws.access.ObjectPrivilegeInfo> list = objPrivilMapXML.get(key);
+			ObjectPrivilegeInfoKey key  = new ObjectPrivilegeInfoKey();
+			key.setObjectID(privilegeInfo.getObjectId());
+			key.setObjectType(privilegeInfo.getObjectType());
+			List<ObjectPrivilegeInfoResponse> list = objPrivilMapXML.get(key);
 			if(list == null){
-				list = new ArrayList<com.clustercontrol.ws.access.ObjectPrivilegeInfo>();
+				list = new ArrayList<ObjectPrivilegeInfoResponse>();
 			}
 			list.add(ObjectPrivilegeConv.convObjectPrivilegeXml2Dto(privilegeInfo));
 			objPrivilMapXML.put(key, list);
 		}
 
-		// Arrange conventional list as map with [objectId, objectType] as its keys for compare
-		Map<List<String>, List<com.clustercontrol.ws.access.ObjectPrivilegeInfo>> objPrivilMap = new HashMap<>();
-		try {
-			List<com.clustercontrol.ws.access.ObjectPrivilegeInfo> tmpObjList = null;
-			for(com.clustercontrol.ws.access.ObjectPrivilegeInfo objPrivil : AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null)){
-				// Arrange
-				List<String> key = new ArrayList<String>(3);
-				key.add(objPrivil.getObjectId());
-				key.add(objPrivil.getObjectType());
-				tmpObjList = objPrivilMap.get(key);
-				if(null == tmpObjList){
-					tmpObjList = new ArrayList<com.clustercontrol.ws.access.ObjectPrivilegeInfo>();
-					objPrivilMap.put( key, tmpObjList );
+		//  重複確認しつつDTO形式に変換
+		ImportRecordConfirmer<ObjectPrivilegeInfoKey, ImportObjectPrivilegeInfoRecordRequest, ObjectPrivilegeInfoKey> confirmer = new ImportRecordConfirmer<ObjectPrivilegeInfoKey, ImportObjectPrivilegeInfoRecordRequest, ObjectPrivilegeInfoKey >(
+				log , objPrivilMapXML.keySet().toArray( new ObjectPrivilegeInfoKey[0]) ) {
+			@Override
+			protected ImportObjectPrivilegeInfoRecordRequest convertDtoXmlToRestReq(ObjectPrivilegeInfoKey xmlDto ){
+				ImportObjectPrivilegeInfoRecordRequest dtoRec = new ImportObjectPrivilegeInfoRecordRequest();
+				dtoRec.setImportKeyValue(xmlDto.getObjectType() + " " + xmlDto.getObjectID());
+				dtoRec.setImportData(new ReplaceObjectPrivilegeRequest());
+				dtoRec.getImportData().setObjectId(xmlDto.getObjectID());
+				dtoRec.getImportData().setObjectType(xmlDto.getObjectType());
+				dtoRec.getImportData().setObjectPrigilegeInfoList(new ArrayList<ObjectPrivilegeInfoRequestP1>());
+				for( ObjectPrivilegeInfoResponse entryValueRec: objPrivilMapXML.get(xmlDto)){
+					ObjectPrivilegeInfoRequestP1 subListRec = new ObjectPrivilegeInfoRequestP1() ;
+					subListRec.setObjectPrivilege(entryValueRec.getObjectPrivilege());
+					subListRec.setRoleId(entryValueRec.getRoleId());
+					dtoRec.getImportData().getObjectPrigilegeInfoList().add(subListRec);
 				}
-				tmpObjList.add(objPrivil);
+				return dtoRec;
 			}
-		} catch (Exception e) {
-			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
-			log.debug(e.getMessage(), e);
+
+			@Override
+			protected Set<ObjectPrivilegeInfoKey> getExistIdSet() throws Exception {
+				Set<ObjectPrivilegeInfoKey> retSet = new HashSet<ObjectPrivilegeInfoKey>();
+				List<ObjectPrivilegeInfoResponse> objectPrivilegeList = AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null,null,null,null);
+				for (ObjectPrivilegeInfoResponse rec : objectPrivilegeList) {
+					ObjectPrivilegeInfoKey set = new ObjectPrivilegeInfoKey();
+					set.setObjectType(rec.getObjectType());
+					set.setObjectID(rec.getObjectId());
+					retSet.add(set);
+				}
+				return retSet;
+			}
+
+			@Override
+			protected boolean isLackRestReq(ImportObjectPrivilegeInfoRecordRequest restDto) {
+				return (restDto == null);
+			}
+
+			@Override
+			protected String getKeyValueXmlDto(ObjectPrivilegeInfoKey xmlDto) {
+				String ret = xmlDto.getObjectType() +" "+xmlDto.objectID;
+				return ret;
+			}
+
+			@Override
+			protected ObjectPrivilegeInfoKey getId(ObjectPrivilegeInfoKey xmlDto) {
+				return xmlDto;
+			}
+
+			@Override
+			protected void setNewRecordFlg(ImportObjectPrivilegeInfoRecordRequest restDto, boolean flag) {
+				restDto.setIsNewRecord(flag);
+			}
+
+		};
+		int confirmRet = confirmer.executeConfirm();
+		if (confirmRet != SettingConstants.SUCCESS && confirmRet != SettingConstants.ERROR_CANCEL) {
+			// 変換エラーならUnmarshalXml扱いで処理打ち切り(キャンセルはキャンセル以前の選択結果を反映するので次に進む)
+			log.warn(Messages.getString("SettingTools.UnmarshalXmlFailed"));
+			return confirmRet;
 		}
 
-		for(Entry<List<String>, List<com.clustercontrol.ws.access.ObjectPrivilegeInfo>> entry : objPrivilMapXML.entrySet()){
-			String objectType = entry.getKey().get(1);
-			String objectId = entry.getKey().get(0);
-			String key = objectType + " " + objectId;
-
-			try {
-				if(!objPrivilMap.containsKey( entry.getKey())){
-					// Insert as new
-					AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilegeInfo(objectType, objectId, entry.getValue());
-					log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + key);
-				}else{
-					// 重複時、インポート処理方法を確認する
-					if(!ImportProcessMode.isSameprocess()){
-						String[] args = {key};
-						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-								null, Messages.getString("message.import.confirm2", args));
-						ImportProcessMode.setProcesstype(dialog.open());
-						ImportProcessMode.setSameprocess(dialog.getToggleState());
-					}
-
-					if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-						AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilegeInfo(objectType, objectId, entry.getValue());
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + key + " :"  + entry.getValue().get(0).getRoleId());
-					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + key + " :"  + entry.getValue().get(0).getRoleId());
-					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-						ret = SettingConstants.ERROR_INPROCESS;
-						break;
-					}
-				}
-			} catch (HinemosUnknown_Exception e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidSetting_Exception e) {
-				log.warn(Messages.getString("SettingTools.InvalidSetting") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (PrivilegeDuplicate_Exception e) {
-				log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (Exception e) {
-				log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			}
+		//  DTOを元にインポート
+		ImportObjectPrivilegeInfoClientController importController =  new ImportObjectPrivilegeInfoClientController (log, Messages.getString("object.privilege"),confirmer.getImportRecDtoList(),true);
+		int controllRet = importController.importExecute();
+		if( controllRet != 0){
+			ret = controllRet;
+		}
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
 		}
 
 		checkDelete(objectPrivilege);
@@ -408,7 +412,7 @@ public class ObjectPrivilegeAction {
 		
 		// オブジェクト権限情報をXMLファイルからの読み込み
 		try {
-			objectPrivilege = ObjectPrivilege.unmarshal(
+			objectPrivilege = XmlMarshallUtil.unmarshall(ObjectPrivilege.class,
 					new InputStreamReader(new FileInputStream(xmlObjectPrivilege), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
@@ -423,55 +427,46 @@ public class ObjectPrivilegeAction {
 		}
 		
 		// オブジェクト権限情報の登録
-		Map<List<String>, List<com.clustercontrol.ws.access.ObjectPrivilegeInfo>> objPrivilMapXML = new LinkedHashMap<>();
+		//  <ID,TYPE> 毎に リストを集約。対象リスト（objectType objectIdList）との突合せもあわせて行う
+		Map<ObjectPrivilegeInfoKey, List<ObjectPrivilegeInfoResponse>> objPrivilMapXML = new LinkedHashMap<>();
 		for (int i = 0; i < objectPrivilege.getObjectPrivilegeInfoCount(); i++) {
 			ObjectPrivilegeInfo privilegeInfo = objectPrivilege.getObjectPrivilegeInfo(i);
 			if(objectIdList.contains(privilegeInfo.getObjectId()) && objectType.equals(privilegeInfo.getObjectType())){
-				List<String> key = new ArrayList<>(2);
-				key.add(privilegeInfo.getObjectId());
-				key.add(privilegeInfo.getObjectType());
-				List<com.clustercontrol.ws.access.ObjectPrivilegeInfo> list = objPrivilMapXML.get(key);
+				ObjectPrivilegeInfoKey key = new ObjectPrivilegeInfoKey();
+				key.setObjectID(privilegeInfo.getObjectId());
+				key.setObjectType(privilegeInfo.getObjectType());
+				List<ObjectPrivilegeInfoResponse> list = objPrivilMapXML.get(key);
 				if(list == null){
-					list = new ArrayList<com.clustercontrol.ws.access.ObjectPrivilegeInfo>();
+					list = new ArrayList<ObjectPrivilegeInfoResponse>();
 				}
 				list.add(ObjectPrivilegeConv.convObjectPrivilegeXml2Dto(privilegeInfo));
 				objPrivilMapXML.put(key, list);
 			}
 		}
-		
-		for(Entry<List<String>, List<com.clustercontrol.ws.access.ObjectPrivilegeInfo>> entry : objPrivilMapXML.entrySet()){
-			String targetObjectType = entry.getKey().get(1);
-			String targetObjectId = entry.getKey().get(0);
-			String key = targetObjectType + " " + targetObjectId;
 
-			try {
-				AccessEndpointWrapper.getWrapper(
-						UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilegeInfo(
-								targetObjectType, targetObjectId, entry.getValue());
-				log.info(Messages.getString("message.import.succeeded.object.privilege") + " : " + key);
-			} catch (HinemosUnknown_Exception e) {
-				log.error(Messages.getString("message.import.failed.object.privilege") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidSetting_Exception e) {
-				log.warn(Messages.getString("SettingTools.InvalidSetting") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (PrivilegeDuplicate_Exception e) {
-				log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (WebServiceException e) {
-				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (Exception e) {
-				log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
+		//  集約したデータをDTOに合わせた形に変換
+		List<ImportObjectPrivilegeInfoRecordRequest> reqList = new ArrayList<ImportObjectPrivilegeInfoRecordRequest>();
+		for (Entry<ObjectPrivilegeInfoKey, List<ObjectPrivilegeInfoResponse>> entry : objPrivilMapXML.entrySet()) {
+			ImportObjectPrivilegeInfoRecordRequest dtoRec = new ImportObjectPrivilegeInfoRecordRequest();
+			dtoRec.setImportKeyValue(entry.getKey().getObjectType() + " " + entry.getKey().getObjectID());
+			dtoRec.setIsNewRecord(false);
+			dtoRec.setImportData(new ReplaceObjectPrivilegeRequest());
+			dtoRec.getImportData().setObjectId(entry.getKey().getObjectID());
+			dtoRec.getImportData().setObjectType(entry.getKey().getObjectType());
+			dtoRec.getImportData().setObjectPrigilegeInfoList(new ArrayList<ObjectPrivilegeInfoRequestP1>());
+			for( ObjectPrivilegeInfoResponse entryValueRec: entry.getValue()){
+				ObjectPrivilegeInfoRequestP1 subListRec = new ObjectPrivilegeInfoRequestP1() ;
+				subListRec.setObjectPrivilege(entryValueRec.getObjectPrivilege());
+				subListRec.setRoleId(entryValueRec.getRoleId());
+				dtoRec.getImportData().getObjectPrigilegeInfoList().add(subListRec);
 			}
+			reqList.add(dtoRec);
 		}
+		
+		//  DTOを元にインポート
+		ImportObjectPrivilegeInfoClientController importController =  new ImportObjectPrivilegeInfoClientController (log, Messages.getString("object.privilege"),reqList,true);
+		ret = importController.importExecute();
+
 		log.debug("End Import PlatformObjectPrivilege ");
 		return ret;
 	}
@@ -498,9 +493,9 @@ public class ObjectPrivilegeAction {
 		ObjectPrivilege objectPrivilege1 = null;
 		ObjectPrivilege objectPrivilege2 = null;
 		try {
-			objectPrivilege1 = ObjectPrivilege.unmarshal(
+			objectPrivilege1 = XmlMarshallUtil.unmarshall(ObjectPrivilege.class,
 					new InputStreamReader(new FileInputStream(xmlObjectPrivilege1), "UTF-8"));
-			objectPrivilege2 = ObjectPrivilege.unmarshal(
+			objectPrivilege2 = XmlMarshallUtil.unmarshall(ObjectPrivilege.class,
 					new InputStreamReader(new FileInputStream(xmlObjectPrivilege2), "UTF-8"));
 			sort(objectPrivilege1);
 			sort(objectPrivilege2);
@@ -602,7 +597,7 @@ public class ObjectPrivilegeAction {
 		// Get key list from DB. Use list to keep the sorting order
 		List<List<String>> keysInDB = new ArrayList<>();
 		try {
-			for(com.clustercontrol.ws.access.ObjectPrivilegeInfo objPrivil : AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null)){
+			for(ObjectPrivilegeInfoResponse objPrivil : AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getObjectPrivilegeInfoList(null,null,null,null)){
 				// Array key pair
 				List<String> key = new ArrayList<String>(2);
 				key.add(objPrivil.getObjectId());   // [0]: objectId
@@ -652,7 +647,11 @@ public class ObjectPrivilegeAction {
 				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
 						// Replace with an empty one
-						AccessEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilegeInfo(objType, objId, new ArrayList<com.clustercontrol.ws.access.ObjectPrivilegeInfo>());
+						ReplaceObjectPrivilegeRequest reqDto = new ReplaceObjectPrivilegeRequest();
+						reqDto.setObjectType(objType);
+						reqDto.setObjectId(objId);
+						reqDto.setObjectPrigilegeInfoList(new ArrayList<ObjectPrivilegeInfoRequestP1>());
+						AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).replaceObjectPrivilege(reqDto);
 						log.info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + objType + " " + objId);
 					} catch (Exception e1) {
 						log.warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
@@ -668,5 +667,106 @@ public class ObjectPrivilegeAction {
 	}
 	public Logger getLogger() {
 		return log;
+	}
+
+	/**
+	 * ObjectPrivilegeInfoの集約キーを表すクラス
+	 * 
+	 * MapのKeyとして扱うので hashcode と equalsは メンバの値が同じなら、等価になるようにしておく
+	 */
+	private static class ObjectPrivilegeInfoKey {
+		private String objectType;
+		private String objectID;
+
+		public String getObjectType() {
+			return objectType;
+		}
+		public void setObjectType(String objectType) {
+			this.objectType = objectType;
+		}
+		public String getObjectID() {
+			return objectID;
+		}
+		public void setObjectID(String objectID) {
+			this.objectID = objectID;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((objectID == null) ? 0 : objectID.hashCode());
+			result = prime * result + ((objectType == null) ? 0 : objectType.hashCode());
+			return result;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ObjectPrivilegeInfoKey other = (ObjectPrivilegeInfoKey) obj;
+			if (objectID == null) {
+				if (other.objectID != null)
+					return false;
+			} else if (!objectID.equals(other.objectID))
+				return false;
+			if (objectType == null) {
+				if (other.objectType != null)
+					return false;
+			} else if (!objectType.equals(other.objectType))
+				return false;
+			return true;
+		}
+		
+		
+	}
+	
+	/**
+	 * インポート向けのレコード登録用クラス
+	 * 
+	 */
+	private static class ImportObjectPrivilegeInfoClientController extends ImportClientController<ImportObjectPrivilegeInfoRecordRequest, ImportObjectPrivilegeInfoResponse, RecordRegistrationResponse>{
+		public ImportObjectPrivilegeInfoClientController(Logger logger, String importInfoName, List<ImportObjectPrivilegeInfoRecordRequest> importRecList ,boolean displayFailed) {
+			super(logger, importInfoName,importRecList,displayFailed);			
+		}
+		@Override
+		protected List<RecordRegistrationResponse> getResRecList(ImportObjectPrivilegeInfoResponse importResponse) {
+			return importResponse.getResultList();
+		};
+		@Override
+		protected Boolean getOccurException(ImportObjectPrivilegeInfoResponse importResponse) {
+			return importResponse.getIsOccurException();
+		};
+		@Override
+		protected String getReqKeyValue(ImportObjectPrivilegeInfoRecordRequest importRec) {
+			return importRec.getImportKeyValue();
+		};
+		@Override
+		protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+			return responseRec.getImportKeyValue();
+		};
+		@Override
+		protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+			return (responseRec.getResult() == ResultEnum.NORMAL) ;
+		};
+		@Override
+		protected ImportObjectPrivilegeInfoResponse callImportWrapper(List<ImportObjectPrivilegeInfoRecordRequest> importRecList)
+				throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+			ImportObjectPrivilegeInfoRequest reqDto = new ImportObjectPrivilegeInfoRequest();
+			reqDto.setRecordList(importRecList);
+			reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+			UtilityRestClientWrapper utilityWrapper = UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+			return utilityWrapper.importObjectPrivilegeInfo(reqDto);
+		}
+		@Override
+		protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+			if (responseRec.getExceptionInfo() != null) {
+				return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+			}
+			return null;
+		};
 	}
 }

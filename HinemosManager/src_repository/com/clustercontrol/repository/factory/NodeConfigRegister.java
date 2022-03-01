@@ -25,11 +25,14 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.repository.bean.NodeRegisterFlagConstant;
@@ -613,6 +616,9 @@ public class NodeConfigRegister {
 						// cc_node_historyテーブルへの登録 
 						history.setPackageFlag(true);
 					}
+					
+					// パッケージ情報からRPAツールスコープへの登録判定
+					FacilityModifier.assinRpaScope(m_nodeInfo.getFacilityId(), m_nodeInfo.getNodePackageInfo(), m_modifyUserId);
 	
 				} else if (m_nodeInfo.getNodePackageRegisterFlag().intValue() == NodeRegisterFlagConstant.NOT_GET) {
 					// 対象外
@@ -834,8 +840,7 @@ public class NodeConfigRegister {
 				if (nodeInfo.getAutoDeviceSearch()) {
 					// INTERNALイベント通知
 					try {
-						AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.NODE_CONFIG_SETTING,
-								MessageConstant.MESSAGE_PLEASE_SET_NODE_CONFIG_AUTO_DEVICE_OFF, new String[] { facilityId });
+						AplLogger.put(InternalIdCommon.NODE_CONFIG_SETTING_SYS_001, new String[] { facilityId });
 					} catch (Exception e) {
 						// 通知に失敗したとしても終了処理を中止しないように、例外はここで抑える。
 						m_log.warn("exec(): Failed to notify InternalEvent.", e);
@@ -914,6 +919,9 @@ public class NodeConfigRegister {
 		OutputBasicInfo outputBasicInfo = new OutputBasicInfo();
 		// 通知グループID
 		outputBasicInfo.setNotifyGroupId(settingInfo.getNotifyGroupId());
+		// ジョブ連携メッセージID
+		outputBasicInfo.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.NODE_CONFIG_SETTING,
+				HinemosModuleConstant.NODE_CONFIG_SETTING, settingInfo.getSettingId()));
 		// プラグインID
 		outputBasicInfo.setPluginId(HinemosModuleConstant.NODE_CONFIG_SETTING);
 		// アプリケーション

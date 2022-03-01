@@ -21,7 +21,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.analytics.bean.IntegrationComparisonMethod;
+import com.clustercontrol.analytics.bean.MonitorIntegrationConstant;
 import com.clustercontrol.analytics.model.CorrelationCheckInfo;
 import com.clustercontrol.analytics.model.IntegrationCheckInfo;
 import com.clustercontrol.analytics.model.IntegrationConditionInfo;
@@ -41,7 +43,6 @@ import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.custom.bean.CustomConstant;
 import com.clustercontrol.custom.model.CustomCheckInfo;
 import com.clustercontrol.customtrap.model.CustomTrapCheckInfo;
-import com.clustercontrol.fault.CollectorNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -54,7 +55,9 @@ import com.clustercontrol.http.model.Variable;
 import com.clustercontrol.http.util.GetHttpResponse;
 import com.clustercontrol.jmx.model.JmxCheckInfo;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
+import com.clustercontrol.logfile.bean.LogfileLineSeparatorConstant;
 import com.clustercontrol.logfile.model.LogfileCheckInfo;
+import com.clustercontrol.monitor.plugin.model.MonitorPluginStringInfo;
 import com.clustercontrol.monitor.run.bean.MonitorNumericType;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
@@ -62,7 +65,9 @@ import com.clustercontrol.monitor.run.model.MonitorNumericValueInfo;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfo;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
+import com.clustercontrol.performance.bean.CollectorItemInfo;
 import com.clustercontrol.performance.monitor.model.PerfCheckInfo;
+import com.clustercontrol.performance.util.code.CollectorItemCodeTable;
 import com.clustercontrol.ping.model.PingCheckInfo;
 import com.clustercontrol.port.model.PortCheckInfo;
 import com.clustercontrol.process.model.ProcessCheckInfo;
@@ -73,10 +78,13 @@ import com.clustercontrol.snmptrap.model.TrapCheckInfo;
 import com.clustercontrol.snmptrap.model.TrapValueInfo;
 import com.clustercontrol.snmptrap.model.TrapValueInfoPK;
 import com.clustercontrol.snmptrap.model.VarBindPattern;
-import com.clustercontrol.sql.model.SqlCheckInfo;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.winevent.model.WinEventCheckInfo;
 import com.clustercontrol.winservice.model.WinServiceCheckInfo;
+import com.clustercontrol.xcloud.Session.SessionScope;
+import com.clustercontrol.xcloud.bean.CloudConstant;
+import com.clustercontrol.xcloud.factory.CloudManager;
+import com.clustercontrol.xcloud.model.CloudLoginUserEntity;
 
 /**
  * 監視設定チェッククラス
@@ -143,9 +151,9 @@ public class MonitorValidator {
 		}else if (HinemosModuleConstant.MONITOR_SNMP_S.equals(monitorTypeId)) {
 			validateSnmp(monitorInfo);
 		}else if (HinemosModuleConstant.MONITOR_SQL_N.equals(monitorTypeId)) {
-			validateSqlNumeric(monitorInfo);
+			validateNumeric(monitorInfo, -1);
 		}else if (HinemosModuleConstant.MONITOR_SQL_S.equals(monitorTypeId)) {
-			validateSql(monitorInfo);
+			// APIのDTOでチェック済
 		}else if(HinemosModuleConstant.MONITOR_SYSTEMLOG.equals(monitorTypeId)){
 			validateSystemlog(monitorInfo);
 		}else if(HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorTypeId)){
@@ -176,6 +184,8 @@ public class MonitorValidator {
 			validateBinaryContinuous(monitorInfo);
 		} else if (HinemosModuleConstant.MONITOR_PCAP_BIN.equals(monitorTypeId)) {
 			validatePcap(monitorInfo);
+		} else if (HinemosModuleConstant.MONITOR_CLOUD_LOG.equals(monitorTypeId)) {
+			validateCloudLogMonitor(monitorInfo);
 		}else {
 
 			// クラウド管理オプションの専用肝機能追加のため、本例外処理をコメントアプトする
@@ -277,6 +287,7 @@ public class MonitorValidator {
 			if(!HinemosModuleConstant.MONITOR_SNMPTRAP.equals(monitorInfo.getMonitorTypeId()) &&
 					!HinemosModuleConstant.MONITOR_SYSTEMLOG.equals(monitorInfo.getMonitorTypeId()) &&
 					!HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId()) &&
+					!HinemosModuleConstant.MONITOR_RPA_LOGFILE.equals(monitorInfo.getMonitorTypeId()) &&
 					!HinemosModuleConstant.MONITOR_WINEVENT.equals(monitorInfo.getMonitorTypeId()) && 
 					!HinemosModuleConstant.MONITOR_CUSTOMTRAP_N.equals(monitorInfo.getMonitorTypeId()) &&
 					!HinemosModuleConstant.MONITOR_CUSTOMTRAP_S.equals(monitorInfo.getMonitorTypeId()) &&
@@ -335,14 +346,13 @@ public class MonitorValidator {
 
 		// monitorFlg : not implemented
 		// collectorFlg
-		if(monitorInfo.getCollectorFlg()){
-			// 収集蓄積機能実装に伴い、文字列監視やトラップ監視も収集可能にする
-			if(monitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_TRUTH){
-				InvalidSetting e = new InvalidSetting("CollectorFlg is true. but this monitorType is truth.");
-				m_log.info("validateMonitorCommonSettings() : "
-						+ e.getClass().getSimpleName() + ", " + e.getMessage());
-				throw e;
-			}
+		if(monitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_TRUTH){
+			monitorInfo.setCollectorFlg(false);
+		}
+		// predictionFlg、changeFlg
+		if(monitorInfo.getMonitorType() != MonitorTypeConstant.TYPE_NUMERIC){
+			monitorInfo.setPredictionFlg(false);
+			monitorInfo.setChangeFlg(false);
 		}
 
 	}
@@ -710,10 +720,10 @@ public class MonitorValidator {
 		}
 		
 		// itemName
-		CommonValidator.validateCollect(MessageConstant.COLLECTION_DISPLAY_NAME.getMessage(), monitorInfo.getItemName(), 256);
+		CommonValidator.validateCollect(MessageConstant.COLLECTION_DISPLAY_NAME.getMessage(), monitorInfo.getItemName(), monitorInfo.getCollectorFlg(), 256);
 
 		// measure
-		CommonValidator.validateCollect(MessageConstant.COLLECTION_UNIT.getMessage(), monitorInfo.getMeasure(), 64);
+		CommonValidator.validateCollect(MessageConstant.COLLECTION_UNIT.getMessage(), monitorInfo.getMeasure(), monitorInfo.getCollectorFlg(), 64);
 
 		// prediction method
 		CommonValidator.validateString(MessageConstant.PREDICTION_METHOD.getMessage(), monitorInfo.getPredictionMethod(), true, 1, 64);
@@ -1062,7 +1072,13 @@ public class MonitorValidator {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
 		}
-		m_log.debug("validateHttp() monitorId = " + monitorInfo.getMonitorId());
+		m_log.debug("validateHttpScenario() monitorId = " + monitorInfo.getMonitorId());
+
+		// itemName
+		CommonValidator.validateCollect(MessageConstant.COLLECTION_DISPLAY_NAME.getMessage(), monitorInfo.getItemName(), monitorInfo.getCollectorFlg(), 256);
+
+		// measure
+		CommonValidator.validateCollect(MessageConstant.COLLECTION_UNIT.getMessage(), monitorInfo.getMeasure(), monitorInfo.getCollectorFlg(), 64);
 
 		// CheckInfo
 		HttpScenarioCheckInfo checkInfo = monitorInfo.getHttpScenarioCheckInfo();
@@ -1169,8 +1185,10 @@ public class MonitorValidator {
 			throw e;
 		}
 		else {
+			//Page value validity check
 			for (Page p: checkInfo.getPages()) {
-				if (p.getUrl() == null && "".equals(p.getUrl())){
+				//URL null check
+				if (p.getUrl() == null || "".equals(p.getUrl())){
 					InvalidSetting e = new InvalidSetting(MessageConstant.MONITOR_HTTP_SCENARIO_PAGE_URL.getMessage());
 					m_log.info("validateHttpScenario() : "
 							+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -1178,7 +1196,7 @@ public class MonitorValidator {
 				}
 				else {
 					String url = p.getUrl();
-					// format check
+					// URL format check
 					if (url.length() > 0 && (!url.startsWith("http://") && !url.startsWith("https://"))) {
 						InvalidSetting e = new InvalidSetting(MessageConstant.MONITOR_HTTP_SCENARIO_PAGE_URL.getMessage());
 						m_log.info("validateHttpScenario() : "
@@ -1192,8 +1210,19 @@ public class MonitorValidator {
 						throw e;
 					}
 				}
+				//Message null check
+				// ページチェックに失敗した時の通知重要度が設定されていればメッセージは入力必須
+				if (p.getPriority() != PriorityConstant.TYPE_NONE) {
+					if (p.getMessage() == null || "".equals(p.getMessage())){
+						InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE.getMessage());
+						m_log.info("validateHttpScenario() : "
+								+ e.getClass().getSimpleName() + ", " + e.getMessage());
+						throw e;
+					}
+				}
 				CommonValidator.validateString(MessageConstant.MONITOR_HTTP_SCENARIO_PAGE_URL.getMessage(), p.getUrl(), false, 0, 1024);
 				CommonValidator.validateString(MessageConstant.MONITOR_HTTP_SCENARIO_PAGE_DESCRIPTION.getMessage(), p.getDescription(), false, 0, 1024);
+				CommonValidator.validateString(MessageConstant.MESSAGE.getMessage(), p.getMessage(), false, 0, 256);
 				
 				// status code
 				CommonValidator.validateString(MessageConstant.MONITOR_HTTP_SCENARIO_PAGE_STATUSCODE.getMessage(), p.getStatusCode(), true, 3, 256);
@@ -1207,6 +1236,7 @@ public class MonitorValidator {
 
 				for (com.clustercontrol.http.model.Pattern pt: p.getPatterns()) {
 					CommonValidator.validateString(MessageConstant.MONITOR_HTTP_SCENARIO_PATTERN_PATTERN.getMessage(), pt.getPattern(), false, 0, 1024);
+					CommonValidator.validateRegex(MessageConstant.MONITOR_HTTP_SCENARIO_PATTERN_PATTERN.getMessage(), pt.getPattern(), false);
 					CommonValidator.validateString(MessageConstant.MONITOR_HTTP_SCENARIO_PATTERN_DESCRIPTION.getMessage(), pt.getDescription(), false, 0, 256);
 					// processType : not implemented pt.getProcessType();
 					// pt.getCaseSensitivityFlg();
@@ -1284,7 +1314,7 @@ public class MonitorValidator {
 			throw e;
 		}
 		//FileReturnCode
-		if(checkInfo.getFileReturnCode() == null || "".equals(checkInfo.getFileReturnCode())){
+		if(checkInfo.getFileReturnCode() == null || !LogfileLineSeparatorConstant.LIST.contains(checkInfo.getFileReturnCode())){
 			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_FILE_RETURNCODE.getMessage());
 			m_log.info("validateLogfile() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -1294,8 +1324,17 @@ public class MonitorValidator {
 		CommonValidator.validateString(MessageConstant.DIRECTORY.getMessage(), checkInfo.getDirectory(), true, 1, 1024);
 		CommonValidator.validateString(MessageConstant.FILE_NAME.getMessage(), checkInfo.getFileName(), true, 1, 1024);
 		CommonValidator.validateString(MessageConstant.FILE_ENCODING.getMessage(), checkInfo.getFileEncoding(), true, 1, 32);
-		CommonValidator.validateString(MessageConstant.FILE_RETURNCODE.getMessage(), checkInfo.getFileEncoding(), true, 1, 16);
-				
+		CommonValidator.validateString(MessageConstant.FILE_RETURNCODE.getMessage(), checkInfo.getFileReturnCode(), true, 1, 16);
+		if (checkInfo.getPatternHead() != null && !"".equals(checkInfo.getPatternHead())
+				&& checkInfo.getPatternTail() != null && !"".equals(checkInfo.getPatternTail())) {
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_FILE_PATTERN_HEAD_OR_TAIL.getMessage());
+			m_log.info("validateLogfile() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		CommonValidator.validateRegex(MessageConstant.FILE_PATTERN_HEAD.getMessage(), checkInfo.getPatternHead(), false);
+		CommonValidator.validateRegex(MessageConstant.FILE_PATTERN_TAIL.getMessage(), checkInfo.getPatternTail(), false);
+
 		if (checkInfo.getMaxBytes() != null && checkInfo.getMaxBytes() <= 0) {
 			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_MAX_READ_BYTE.getMessage());
 			m_log.info("validateLogfile() : "
@@ -1438,19 +1477,55 @@ public class MonitorValidator {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
 		}else{
+			boolean isExist = false;
 			try {
-				com.clustercontrol.performance.monitor.util.QueryUtil.getCollectorItemCodeMstPK(checkInfo.getItemCode());
-			} catch (CollectorNotFound e) {
+				List<CollectorItemInfo> list = CollectorItemCodeTable.getAvailableCollectorItemList(monitorInfo.getFacilityId());
+				for( CollectorItemInfo info : list ){
+					if( info.getItemCode().equals(checkInfo.getItemCode()) ){
+						isExist = true;
+						break;
+					}
+				}
+			} catch (Exception e) {
 				throw new InvalidSetting(e.getMessage(), e);
 			}
+			if( !(isExist) ){
+				InvalidSetting e = new InvalidSetting("Item code is invalide. monitorId = " + monitorInfo.getMonitorId() +", Item code = "+ checkInfo.getItemCode() );
+				m_log.info("validatePerformance() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
 		}
-
+		
+		
 		// deviceDisplayName : not implemented
 		if(checkInfo.getDeviceDisplayName() == null){
 			InvalidSetting e = new InvalidSetting("Target Display Name is not defined.");
 			m_log.info("validatePerformance() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
+		}
+		else{
+		// deviceDisplayName : check if it exists or not
+			boolean isMatch = false;
+			try {
+				List<CollectorItemInfo> list = CollectorItemCodeTable.getAvailableCollectorItemList(monitorInfo.getFacilityId());
+				for( CollectorItemInfo info : list ){
+					if(checkInfo.getDeviceDisplayName().equals(info.getDisplayName())){
+						isMatch = true;
+						break;
+					}
+				}
+			} catch (Exception e) {
+				throw new InvalidSetting(e.getMessage(), e);
+			}
+			// deviceDisplayName : does not exist
+			if(!(isMatch)){
+				InvalidSetting e = new InvalidSetting("Target Device Display Name does not match with the existing list.");
+				m_log.info("validatePerformance() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
 		}
 		// breakdownFlg : not implemented
 
@@ -1524,10 +1599,10 @@ public class MonitorValidator {
 		int interval = checkInfo.getRunInterval();
 		int timeout = checkInfo.getTimeout();
 
-		// 間隔よりチェック設定の「回数×タイムアウト＋間隔」が大きい場合
-		double total = runCount * ((double)timeout / 1000) + ((double)interval / 1000);
-		if (runInterval <= (int)total) {
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_VALUE_SMALLER_INTERVAL.getMessage());
+		// 間隔よりチェック設定の「(回数-1)×間隔＋タイムアウト」が大きい場合
+		int total = (runCount - 1) * interval + timeout;
+		if (runInterval * 1000 <= total) {
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_VALUE_SMALLER_INTERVAL_PING.getMessage());
 			m_log.info("validatePing() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
@@ -1638,10 +1713,10 @@ public class MonitorValidator {
 		int interval = checkInfo.getRunInterval();
 		int timeout = checkInfo.getTimeout();
 
-		// 間隔よりチェック設定の「回数×タイムアウト＋間隔」が大きい場合
-		double total = runCount * ((double)timeout / 1000) + ((double)interval / 1000);
-		if (runInterval <= (int)total) {
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_VALUE_SMALLER_INTERVAL.getMessage());
+		// 間隔よりチェック設定の「タイムアウト×回数＋間隔×(回数-1)」が大きい場合
+		int total = (timeout * runCount) + (interval * (runCount - 1));
+		if (runInterval * 1000 <= total) {
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_VALUE_SMALLER_INTERVAL_PORT.getMessage());
 			m_log.info("validatePort() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
@@ -1797,12 +1872,28 @@ public class MonitorValidator {
 			// GenericId
 			// SpecificId
 			// トラップ定義の重複チェック
+			String trapOid;
+			Integer genericId;
+			Integer specificId;
+			if (v.getTrapOid().startsWith(".")){
+				trapOid = v.getTrapOid();
+			} else {
+				trapOid = "." + v.getTrapOid();
+			}
+			if (v.getVersion() == SnmpVersionConstant.TYPE_V2){
+				genericId = 0;
+				specificId = 0;
+			} else {
+				genericId = v.getGenericId();
+				specificId = v.getSpecificId();
+			}
 			TrapValueInfoPK entityPk = new TrapValueInfoPK(
 					checkInfo.getMonitorId(), 
 					v.getMib(),
-					v.getTrapOid(), 
-					v.getGenericId(),
-					v.getSpecificId());
+					trapOid, 
+					genericId,
+					specificId);
+			
 			if (pkList.contains(entityPk)) {
 				String arg;
 				if (v.getVersion() == SnmpVersionConstant.TYPE_V1) {
@@ -1822,6 +1913,13 @@ public class MonitorValidator {
 			// Description : not implemented
 
 			if (v.getProcessingVarbindSpecified()) {
+				// FormatVarBinds の入力値チェック
+				if (v.getFormatVarBinds() == null || v.getFormatVarBinds().equals("")){
+					 String arg = MessageConstant.MONITOR_SNMPTRAP_VALUE_VARBINDPATTERN.getMessage() ;
+					 InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(new String[]{arg}));
+					 m_log.info("validateSnmptrap() : "+ e.getClass().getSimpleName() + ", " + e.getMessage());
+					 throw e;
+				}
 				if (v.getVarBindPatterns().isEmpty()) {
 					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_MUST_SET_MORE_THAN_ONE_PATTERN.getMessage());
 					m_log.info("validateSnmptrap() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -1832,6 +1930,7 @@ public class MonitorValidator {
 
 			for (VarBindPattern p: v.getVarBindPatterns()) {
 				CommonValidator.validateString(MessageConstant.PATTERN_MATCHING_EXPRESSION.getMessage(), p.getPattern(), false, 0, 1024);
+				CommonValidator.validateRegex(MessageConstant.PATTERN_MATCHING_EXPRESSION.getMessage(), p.getPattern(), false);
 				CommonValidator.validateString(MessageConstant.MONITOR_SNMPTRAP_VALUE_PATTERN_DESCRIPTION.getMessage(), p.getDescription(), false, 0, 256);
 				// processType : not implemented
 				// caseSensitivityFlg : not implemented
@@ -1919,110 +2018,6 @@ public class MonitorValidator {
 		// snmpPort : not implemented
 
 		// snmpVersion : not implemented
-	}
-
-	/**
-	 * SQL監視設定(MonitorInfo)の基本設定の妥当性チェック（関連テーブルへのリンク & NULL CHECK）
-	 * @param monitorInfo
-	 * @throws InvalidSetting
-	 */
-	private static void validateSqlNumeric(MonitorInfo monitorInfo) throws InvalidSetting {
-		validateSql(monitorInfo);
-
-		validateNumeric(monitorInfo, -1);
-	}
-
-	/**
-	 * SQL監視設定(MonitorInfo)の基本設定の妥当性チェック（関連テーブルへのリンク & NULL CHECK）
-	 * @param monitorInfo
-	 * @throws InvalidSetting
-	 */
-	private static void validateSql(MonitorInfo monitorInfo) throws InvalidSetting {
-		if(monitorInfo == null){
-			InvalidSetting e = new InvalidSetting("MonitorInfo is not defined.");
-			m_log.info("validateSql() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
-		m_log.debug("validateSql() monitorId = " + monitorInfo.getMonitorId());
-
-		// CheckInfo
-		SqlCheckInfo checkInfo = monitorInfo.getSqlCheckInfo();
-		if(checkInfo == null){
-			InvalidSetting e = new InvalidSetting("SQL Monitor Setting is not defined. monitorId = "
-					+ monitorInfo.getMonitorId());
-			m_log.info("validateSql() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
-
-		// monitorType
-		if (!HinemosModuleConstant.MONITOR_SQL_N.equals(monitorInfo.getMonitorTypeId())
-				&& !HinemosModuleConstant.MONITOR_SQL_S.equals(monitorInfo.getMonitorTypeId())) {
-			InvalidSetting e = new InvalidSetting("This is SQL Monitor Setting. But MonitorTypeId = "
-					+ monitorInfo.getMonitorTypeId());
-			m_log.info("validateSql() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
-
-		// connectionUrl
-		String url = checkInfo.getConnectionUrl();
-		if(url == null || "".equals(url) || url.length() < 6 ||
-				!url.startsWith("jdbc:")){
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CONNECTION_URL_CORRECT_FORMAT.getMessage());
-			m_log.info("validateSql() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
-		CommonValidator.validateString(MessageConstant.CONNECTION_URL.getMessage(),
-				checkInfo.getConnectionUrl(), true, 1, 256);
-
-		// user
-		if(checkInfo.getUser() == null || "".equals(checkInfo.getUser())){
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_USER_ID.getMessage());
-			m_log.info("validateSql() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
-		CommonValidator.validateString(MessageConstant.USER_ID.getMessage(),
-				checkInfo.getUser(), true, 1, 64);
-
-		// password
-		if(checkInfo.getPassword() == null || "".equals(checkInfo.getPassword())){
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_PASSWORD.getMessage());
-			m_log.info("validateSql() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
-		CommonValidator.validateString(MessageConstant.PASSWORD.getMessage(),
-				checkInfo.getPassword(), true, 1, 64);
-
-		// query
-		if(checkInfo.getQuery() == null || checkInfo.getQuery().length() < 7){
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_SELECT_STATEMENT_IN_SQL.getMessage());
-			m_log.info("validateSql() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}else {
-			String work = checkInfo.getQuery().substring(0, 6);
-			if(!work.equalsIgnoreCase("SELECT")){
-				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_SELECT_STATEMENT_IN_SQL.getMessage());
-				m_log.info("validateSql() : "
-						+ e.getClass().getSimpleName() + ", " + e.getMessage());
-				throw e;
-			}
-		}
-		CommonValidator.validateString(MessageConstant.SQL_STRING.getMessage(),
-				checkInfo.getQuery(), true, 1, 1024);
-
-		// jdbcDriver
-		if(checkInfo.getJdbcDriver() == null || "".equals(checkInfo.getJdbcDriver())){
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CONNECTION_URL.getMessage());
-			m_log.info("validateSql() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
 	}
 
 	/**
@@ -2722,6 +2717,15 @@ public class MonitorValidator {
 				m_log.info("validateIntegration() : " + ex.getClass().getSimpleName() + ", " + ex.getMessage());
 				throw ex;
 			}
+
+			// comparison_value
+			if (targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC
+					&& condition.getComparisonMethod().equals(IntegrationComparisonMethod.EQ.symbol())) {
+				CommonValidator.validateString(MessageConstant.COMPARISON_VALUE.getMessage(), condition.getComparisonValue(), false, 0, 1024);
+			} else {
+				CommonValidator.validateString(MessageConstant.COMPARISON_VALUE.getMessage(), condition.getComparisonValue(), true, 1, 1024);
+			}
+
 			if (targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC) {
 				if (!IntegrationComparisonMethod.symbols().contains(condition.getComparisonMethod())) {
 					String[] args = new String[]{String.format("monitorType:%s, comparisonMethod:%s", "TYPE_NUMERIC", condition.getComparisonMethod())};
@@ -2729,15 +2733,27 @@ public class MonitorValidator {
 					m_log.info("validateIntegration() : " + ex.getClass().getSimpleName() + ", " + ex.getMessage());
 					throw ex;
 				}
-				try {
-			        double comparisonValue = Double.parseDouble(condition.getComparisonValue());
-					CommonValidator.validateDouble(MessageConstant.COMPARISON_VALUE.getMessage(), comparisonValue, DataRangeConstant.DOUBLE_LOW, DataRangeConstant.DOUBLE_HIGH);
-			    } catch (NumberFormatException e) {
-						String[] args = new String[]{String.format("monitorType:%s, comparisonValue:%s", "TYPE_NUMERIC", condition.getComparisonValue())};
+				if (MonitorIntegrationConstant.NUMBER_NAN.equals(condition.getComparisonValue())) {
+					if (condition.getComparisonMethod().equals(IntegrationComparisonMethod.EQ.symbol())) {
+						// 数値監視で「=NaN」の比較は可能
+					} else {
+						String[] args = new String[]{String.format("monitorType:%s, comparisonMethod:%s, comparisonValue:%s", 
+								"TYPE_NUMERIC", condition.getComparisonMethod(), condition.getComparisonValue())};
 						InvalidSetting ex = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_COMPARISON_VALUE.getMessage(args));
-						m_log.info("validateIntegration() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+						m_log.info("validateIntegration() : Incorrect combination of comparison value and comparison method. ," + args[0]);
 						throw ex;
-			    }
+					}
+				} else {
+					try {
+						double comparisonValue = Double.parseDouble(condition.getComparisonValue());
+						CommonValidator.validateDouble(MessageConstant.COMPARISON_VALUE.getMessage(), comparisonValue, DataRangeConstant.DOUBLE_LOW, DataRangeConstant.DOUBLE_HIGH);
+				    } catch (NumberFormatException e) {
+							String[] args = new String[]{String.format("monitorType:%s, comparisonValue:%s", "TYPE_NUMERIC", condition.getComparisonValue())};
+							InvalidSetting ex = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_COMPARISON_VALUE.getMessage(args));
+							m_log.info("validateIntegration() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+							throw ex;
+				    }
+				}
 			}
 			if (targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_STRING
 					&& !IntegrationComparisonMethod.EQ.symbol().equals(condition.getComparisonMethod())) {
@@ -2747,6 +2763,166 @@ public class MonitorValidator {
 				throw ex;
 			}
 		}
+	}
+	
+	private static void validateCloudLogMonitor(MonitorInfo monitorInfo) throws InvalidSetting, InvalidRole {
+		if (monitorInfo == null) {
+			InvalidSetting e = new InvalidSetting("MonitorInfo is not defined.");
+			m_log.info("validateCloudLogMonitor() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		m_log.debug("validateCloudLogMonitor() monitorId = " + monitorInfo.getMonitorId());
+
+		// CheckInfo
+		List<MonitorPluginStringInfo> checkInfo = monitorInfo.getPluginCheckInfo().getMonitorPluginStringInfoList();
+		if (checkInfo == null || checkInfo.isEmpty()) {
+			InvalidSetting e = new InvalidSetting(
+					"MonitorPluginStringInfo is not defined. monitorId = " + monitorInfo.getMonitorId());
+			m_log.info("validateCloudLogMonitor() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+
+		// 対象サービス
+		String targetPlatform = getPluginInfoValue(CloudConstant.cloudLog_platform, monitorInfo);
+		if (!targetPlatform.equals(CloudConstant.platform_AWS)
+				&& !targetPlatform.equals(CloudConstant.platform_Azure)) {
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SELECT_PUBLIC_CLOUD.getMessage());
+			m_log.warn("validateCloudLogMonitor() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+
+		// コマンドラインツール、Utilityを考慮し、
+		// ここで厳密に指定されたFacilityIDがパブリッククラウドスコープ、
+		// かつオーナーロールから参照可能であるかを確認しておく
+		if (monitorInfo.getOwnerRoleId().equals(RoleIdConstant.ADMINISTRATORS)) {
+			// ADMINISTRATORの場合は何もしない
+		} else {
+			try (SessionScope sessionScope = SessionScope.open()) {
+				// cloudScopeIDの取得
+				String prefixRemoved = monitorInfo.getFacilityId().replaceFirst("_[A-Z]+_[A-Z]+_", "");
+				String cloudScopeId = prefixRemoved.substring(0, prefixRemoved.lastIndexOf("_"));
+				boolean found = false;
+				// オーナーロールに紐づくクラウドアカウントの取得
+				List<CloudLoginUserEntity> userList = null;
+				userList = CloudManager.singleton().getLoginUsers()
+						.getCloudLoginUserByRole(monitorInfo.getOwnerRoleId());
+				for (CloudLoginUserEntity e : userList) {
+					if (cloudScopeId.equals(e.getCloudScopeId())) {
+						if (e.getCloudScope().isPublic()) {
+							found = true;
+							break;
+						}
+					}
+				}
+
+				if (!found) {
+					m_log.warn("validateCloudLogMonitor(): CloudScope Not Found For FacilityID: "
+							+ monitorInfo.getFacilityId());
+					InvalidSetting e = new InvalidSetting(
+							MessageConstant.MESSAGE_PLEASE_SELECT_PUBLIC_CLOUD.getMessage());
+					throw e;
+				}
+
+			} catch (Exception e1) {
+				m_log.warn("validateCloudLogMonitor():", e1);
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SELECT_PUBLIC_CLOUD.getMessage());
+				throw e;
+			}
+		}
+
+
+		// 監視実行スコープ
+		String targetFacility = getPluginInfoValue(CloudConstant.cloudLog_targetScopeFacilityId, monitorInfo);
+		CommonValidator.validateString(MessageConstant.CLOUDLOG_TARGET_SCOPE.getMessage(), targetFacility, true, 1,
+				512);
+		try {
+			FacilityTreeCache.validateFacilityId(targetFacility, monitorInfo.getOwnerRoleId(), false);
+		} catch (FacilityNotFound e) {
+			throw new InvalidSetting(e.getMessage(), e);
+		}
+		// ロググループ/ワークスペース名
+		String targetName = "";
+		if (targetPlatform.equals(CloudConstant.platform_AWS)) {
+			targetName = MessageConstant.CLOUDLOG_LOGGROUP.getMessage();
+		} else {
+			targetName = MessageConstant.CLOUDLOG_WORKSPACE.getMessage();
+		}
+		String targetVal = getPluginInfoValue(CloudConstant.cloudLog_LogGroup, monitorInfo);
+		CommonValidator.validateString(targetName, targetVal, true, 1, Integer.MAX_VALUE);
+
+
+		// プリフィックス/ログ取得遅延（AWSのみ）
+		if (targetPlatform.equals(CloudConstant.platform_AWS)) {
+			targetName = MessageConstant.CLOUDLOG_PREFIX.getMessage();
+			targetVal = getPluginInfoValue(CloudConstant.cloudLog_isPrefix, monitorInfo);
+			CommonValidator.validateString(targetName, targetVal, true, 1, Integer.MAX_VALUE);
+
+			targetName = MessageConstant.CLOUDLOG_OFFSET.getMessage();
+			targetVal = getPluginInfoValue(CloudConstant.cloudLog_Offset, monitorInfo);
+			CommonValidator.validateIntegerString(targetName, targetVal, true, 0, 0, Integer.MAX_VALUE);
+		}
+		
+		// Azure固有項目
+		if (targetPlatform.equals(CloudConstant.platform_Azure)) {
+			// ワークスペース名（Azureのみ）
+			targetName = MessageConstant.CLOUDLOG_TABLE.getMessage();
+			targetVal = getPluginInfoValue(CloudConstant.cloudLog_LogStream, monitorInfo);
+			CommonValidator.validateString(targetName, targetVal, true, 1, Integer.MAX_VALUE);
+			
+			// カラム名（Azureのみ）
+			targetName = MessageConstant.CLOUDLOG_COL.getMessage();
+			targetVal = getPluginInfoValue(CloudConstant.cloudLog_Col, monitorInfo);
+			CommonValidator.validateString(targetName, targetVal, true, 1, Integer.MAX_VALUE);
+
+			// リソースグループ名（Azureのみ）
+			targetName = MessageConstant.CLOUDLOG_RESOURCE.getMessage();
+			targetVal = getPluginInfoValue(CloudConstant.cloudLog_ResourceGroup, monitorInfo);
+			CommonValidator.validateString(targetName, targetVal, true, 1, Integer.MAX_VALUE);
+		}
+		
+		//区切り条件
+		CommonValidator.validateString(MessageConstant.FILE_RETURNCODE.getMessage(), getPluginInfoValue(CloudConstant.cloudLog_ReturnCode, monitorInfo), true, 1, 16);
+		if (!getPluginInfoValue(CloudConstant.cloudLog_patternHead, monitorInfo).isEmpty()
+				&& !getPluginInfoValue(CloudConstant.cloudLog_patternTail, monitorInfo).isEmpty()) {
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_FILE_PATTERN_HEAD_OR_TAIL.getMessage());
+			m_log.info("validateLogfile() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		CommonValidator.validateRegex(MessageConstant.FILE_PATTERN_HEAD.getMessage(), getPluginInfoValue(CloudConstant.cloudLog_patternHead, monitorInfo), false);
+		CommonValidator.validateRegex(MessageConstant.FILE_PATTERN_TAIL.getMessage(), getPluginInfoValue(CloudConstant.cloudLog_patternTail, monitorInfo), false);
+
+		
+		String maxBytes = getPluginInfoValue(CloudConstant.cloudLog_maxBytes, monitorInfo);
+		try {
+			int bytes = Integer.parseInt(maxBytes);
+			if (bytes <= 0) {
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_MAX_READ_BYTE.getMessage());
+				m_log.info("validateLogfile() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		} catch (NumberFormatException e) {
+			//何もしない
+		}
+	
+	}
+	
+	private static String getPluginInfoValue(String key, MonitorInfo monitor){
+		for (MonitorPluginStringInfo s: monitor.getPluginCheckInfo().getMonitorPluginStringInfoList()) {
+			if (key.equals(s.getKey())) {
+				if (s.getValue()==null){
+					m_log.info("getPluginInfoValue(): value empty:"+key);
+					return "";
+				}else{
+					m_log.debug("getPluginInfoValue(): found key:"+key+" value:"+s.getValue());
+					return s.getValue();
+				}
+			}
+		}
+		
+		m_log.warn("getPluginInfoValue(): key not found:"+key);
+		
+		return "";
 	}
 
 	/**
@@ -2834,9 +3010,9 @@ public class MonitorValidator {
 		}
 		if (startDate >= endDate) {
 			m_log.warn("validateSummaryLogcount() " + MessageConstant.END.getMessage());
-			String[] args = { MessageConstant.TIME.getMessage() + "(" + MessageConstant.END.getMessage() + ")",
-					MessageConstant.TIME.getMessage() + "(" + MessageConstant.START.getMessage() + ")" };
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_LATER_DATE_AND_TIME.getMessage(args));
+			String[] args = { MessageConstant.MONITOR_COLLECT_START_TIME.getMessage(),
+					MessageConstant.CURRENT_DATETIME.getMessage() };
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_EARLIER_DATE_AND_TIME.getMessage(args));
 		}
 	}
 }

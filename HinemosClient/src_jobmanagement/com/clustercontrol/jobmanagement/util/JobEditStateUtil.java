@@ -16,16 +16,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.SingletonUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * JobEditStateユーティリティクラス
@@ -106,29 +105,29 @@ public class JobEditStateUtil{
 	 * 
 	 * @return JobTreeItem
 	 */
-	public static JobTreeItem getJobTreeItem(){
-		JobTreeItem tree = new JobTreeItem();
-		JobInfo treeInfo = new JobInfo();
+	public static JobTreeItemWrapper getJobTreeItem(){
+		JobTreeItemWrapper tree = new JobTreeItemWrapper();
+		JobInfoWrapper treeInfo = JobTreeItemUtil.createJobInfoWrapper();
 		treeInfo.setJobunitId( "" );
 		treeInfo.setId( "" );
 		treeInfo.setName( JobConstant.STRING_COMPOSITE );
-		treeInfo.setType( JobConstant.TYPE_COMPOSITE );
+		treeInfo.setType( JobInfoWrapper.TypeEnum.COMPOSITE);
 		tree.setData(treeInfo);
 		
 		// ジョブツリーのトップを生成
-		JobTreeItem top = new JobTreeItem();
-		JobInfo itemInfo = new JobInfo();
+		JobTreeItemWrapper top = new JobTreeItemWrapper();
+		JobInfoWrapper itemInfo = JobTreeItemUtil.createJobInfoWrapper();
 		itemInfo.setJobunitId("");
 		itemInfo.setId("");
 		itemInfo.setName(MessageConstant.JOB.getMessage());
-		itemInfo.setType(JobConstant.TYPE_COMPOSITE);
+		itemInfo.setType(JobInfoWrapper.TypeEnum.COMPOSITE);
 		top.setData(itemInfo);
 		top.setParent(tree);
 		tree.getChildren().add(top);
 		
 		boolean isAllNull = true; //すべてのマネージャのジョブツリーのキャッシュがないことを判定するフラグ
 		for( Entry<String, JobEditState> entry : getInstance().jobEditStateMap.entrySet() ){
-			JobTreeItem child = entry.getValue().getJobTree();
+			JobTreeItemWrapper child = entry.getValue().getJobTree();
 			if (child != null) {
 				isAllNull = false;
 				child.setParent(top);
@@ -149,13 +148,13 @@ public class JobEditStateUtil{
 	 * @param m_treeOnly
 	 * @return
 	 */
-	public static JobTreeItem updateJobTree( String ownerRoleId, boolean m_treeOnly ){
+	public static JobTreeItemWrapper updateJobTree( String ownerRoleId, boolean m_treeOnly ){
 		// Update sub trees
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		for( String managerName : EndpointManager.getActiveManagerSet() ){
+		for( String managerName : RestConnectManager.getActiveManagerSet() ){
 			try{
 				getJobEditState(managerName).updateJobTree(ownerRoleId, m_treeOnly);
-			} catch (InvalidRole_Exception e ){
+			} catch (InvalidRole e ){
 				// アクセス権なしの場合、エラーダイアログを表示する
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e ){
@@ -169,7 +168,7 @@ public class JobEditStateUtil{
 			UIManager.showMessageBox(errorMsgs, true);
 		}
 		
-		JobTreeItem tree = getJobTreeItem();
+		JobTreeItemWrapper tree = getJobTreeItem();
 		return tree;
 	}
 	

@@ -1,0 +1,96 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"rpaScopeId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"rpaScopeName",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_rpaScopeName"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_description"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"rpaManagementToolId",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_rpaManagementToolId"}
+	]},
+	
+	{
+	"propName":"url",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_url"}
+	]},
+	
+	{
+	"propName":"accountId",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_accountId"}
+	]},
+	
+	{
+	"propName":"password",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_password"}
+	]},
+	
+	{
+	"propName":"tenantName",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_tenantName"}
+	]},
+	
+	{
+	"propName":"displayName",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_displayName"}
+	]},
+	
+	{
+	"propName":"proxyFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_proxyFlg"}
+	]},
+	
+	{
+	"propName":"proxyUrl",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_proxyUrl"}
+	]},
+	
+	{
+	"propName":"proxyPort",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_proxyPort"}
+	]},
+	
+	{
+	"propName":"proxyUser",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_proxyUser"}
+	]},
+	
+	{
+	"propName":"proxyPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaManagementToolAccountInfo_proxyPassword"}
+	]}
+]
+}

@@ -33,11 +33,16 @@ import com.clustercontrol.calendar.view.CalendarPatternView;
 import com.clustercontrol.infra.view.InfraFileManagerView;
 import com.clustercontrol.infra.view.InfraManagementView;
 import com.clustercontrol.jobmanagement.view.JobKickListView;
+import com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView;
 import com.clustercontrol.jobmanagement.view.JobQueueSettingView;
 import com.clustercontrol.maintenance.view.MaintenanceListView;
 import com.clustercontrol.monitor.view.MonitorListView;
 import com.clustercontrol.notify.mail.view.MailTemplateListView;
+import com.clustercontrol.notify.view.CommandTemplateListView;
+import com.clustercontrol.notify.restaccess.view.RestAccessInfoListView;
 import com.clustercontrol.notify.view.NotifyListView;
+import com.clustercontrol.rpa.view.RpaScenarioListView;
+import com.clustercontrol.rpa.view.RpaScenarioOperationResultCreateSettingView;
 import com.clustercontrol.view.ObjectPrivilegeTargetListView;
 
 /**
@@ -83,7 +88,8 @@ public class ObjectPrivilegeAction extends AbstractHandler implements IElementUp
 				// ダイアログを生成
 				ObjectPrivilegeListDialog dialog = new ObjectPrivilegeListDialog(
 						this.viewPart.getSite().getShell(),objectBeans.get(0).getManagerName(),
-						objectBeans.get(0).getObjectId(), objectBeans.get(0).getObjectType(), view.getSelectedOwnerRoleId());
+						objectBeans.get(0).getObjectId(), objectBeans.get(0).getObjectType(), view.getSelectedOwnerRoleId(),
+						objectBeans.get(0).getObjectIdLabelForDisplay());
 				// ダイアログにて変更が選択された場合、入力内容をもって登録を行う。
 				if (dialog.open() == IDialogConstants.OK_ID) {
 					view.update();
@@ -141,6 +147,16 @@ public class ObjectPrivilegeAction extends AbstractHandler implements IElementUp
 					this.setBaseEnabled( 0 < ((InfraFileManagerView) part).getSelectedNum() );
 				}else if( part instanceof JobQueueSettingView ){ // 特定クラスとの密結合をどうにかすべき
 					this.setBaseEnabled( 0 < ((JobQueueSettingView) part).getSelectedJobQueueCount() );
+				}else if( part instanceof JobLinkSendSettingListView ){
+					this.setBaseEnabled( 0 < ((JobLinkSendSettingListView) part).getSelectedNum() );
+				}else if( part instanceof CommandTemplateListView ){
+					this.setBaseEnabled( 0 < ((CommandTemplateListView) part).getSelectedNum() );
+				}else if( part instanceof RestAccessInfoListView ){
+					this.setBaseEnabled( 0 < ((RestAccessInfoListView) part).getSelectedNum() );
+				}else if( part instanceof RpaScenarioListView ){
+					this.setBaseEnabled( 0 < ((RpaScenarioListView) part).getSelectedNum() );
+				}else if( part instanceof RpaScenarioOperationResultCreateSettingView ){
+					this.setBaseEnabled( 0 < ((RpaScenarioOperationResultCreateSettingView) part).getSelectedNum() );
 				}else{
 					this.setBaseEnabled( false );
 				}

@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * ロールがオーナーロールとして使用されている場合に利用するException
  * @version 4.1.0
  */
-public class UsedOwnerRole extends HinemosException {
+public class UsedOwnerRole extends HinemosUsed {
 
 	private static final long serialVersionUID = 1L;
 
@@ -60,6 +60,19 @@ public class UsedOwnerRole extends HinemosException {
 	 */
 	public UsedOwnerRole(int plugin, Throwable e) {
 		super(e);
+		this.plugin = plugin;
+	}
+
+	/**
+	 * UsedOwnerRoleコンストラクタ
+	 * 
+	 * @param plugin プラグイン(機能)
+	 * @param message メッセージ
+	 * 
+	 * @see com.clustercontrol.bean.PluginConstant
+	 */
+	public UsedOwnerRole(int plugin, String message) {
+		super(message);
 		this.plugin = plugin;
 	}
 

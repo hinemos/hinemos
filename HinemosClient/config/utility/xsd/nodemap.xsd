@@ -63,21 +63,21 @@
 		<xs:annotation>
 			<xs:documentation>ノードマップ一覧のデータ型です。</xs:documentation>
 		</xs:annotation>
-
+	
 		<xs:sequence>
-			<xs:element name="association" type="Association" minOccurs="0" maxOccurs="unbounded">
-				<xs:annotation>
-					<xs:documentation> Association定義の配列</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			
 			<xs:element name="contents" type="Contents" minOccurs="0" maxOccurs="unbounded">
 				<xs:annotation>
 					<xs:documentation>Contents定義の配列</xs:documentation>
 				</xs:annotation>
 			</xs:element>
+			
+			<xs:element name="association" type="Association" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation> Association定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
 		</xs:sequence>
-
+		
 		<xs:attribute name="mapId" type="xs:string" use="required">
 			<xs:annotation>
 				<xs:documentation>マップIDです。</xs:documentation>

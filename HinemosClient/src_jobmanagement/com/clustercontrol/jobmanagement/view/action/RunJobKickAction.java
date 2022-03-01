@@ -26,17 +26,18 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.RunJobRequest;
+import org.openapitools.client.model.RunJobRequest.TriggerTypeEnum;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.action.GetJobKickTableDefine;
-import com.clustercontrol.jobmanagement.bean.JobTriggerTypeConstant;
 import com.clustercontrol.jobmanagement.composite.JobKickListComposite;
 import com.clustercontrol.jobmanagement.dialog.JobKickRunConfirm;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.view.JobKickListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobTriggerInfo;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * ジョブ実行契機[一覧]ビューの「実行」のクライアント側アクションクラス<BR>
@@ -48,7 +49,7 @@ public class RunJobKickAction extends AbstractHandler implements IElementUpdater
 	// ログ
 	private static Log m_log = LogFactory.getLog( RunJobKickAction.class );
 
-	private JobTriggerInfo m_trigger = new JobTriggerInfo();
+	private RunJobRequest m_trigger = new RunJobRequest();
 
 	/** アクションID */
 	public static final String ID = RunJobKickAction.class.getName();
@@ -142,24 +143,23 @@ public class RunJobKickAction extends AbstractHandler implements IElementUpdater
 			m_trigger = dialog.getInputData();
 			try {
 				// 実行契機情報を登録
-				JobTriggerInfo triggerInfo = new JobTriggerInfo();
-				triggerInfo.setTriggerType(JobTriggerTypeConstant.TYPE_MANUAL);
-				triggerInfo.setJobWaitTime(m_trigger.isJobWaitTime());
-				triggerInfo.setJobWaitMinute(m_trigger.isJobWaitMinute()); 
-				triggerInfo.setJobCommand(m_trigger.isJobCommand()); 
+				RunJobRequest triggerInfo = new RunJobRequest();
+				triggerInfo.setTriggerType(TriggerTypeEnum.MANUAL);
+				triggerInfo.setJobWaitTime(m_trigger.getJobWaitTime());
+				triggerInfo.setJobWaitMinute(m_trigger.getJobWaitMinute()); 
+				triggerInfo.setJobCommand(m_trigger.getJobCommand()); 
 				triggerInfo.setJobCommandText(m_trigger.getJobCommandText());
 				// ランタイムジョブ変数
 				if (m_trigger.getJobRuntimeParamList() != null) {
 					triggerInfo.getJobRuntimeParamList().addAll(
 							m_trigger.getJobRuntimeParamList());
 				}
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName); 
-				wrapper.runJob( 
-					jobunitId, 
-					jobId, 
-					null, 
-					triggerInfo); 
-			} catch (InvalidRole_Exception e) { 
+				
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);  
+				RunJobRequest request = new RunJobRequest();
+				RestClientBeanUtil.convertBean(triggerInfo, request);
+				wrapper.runJob( jobunitId, jobId, request); 
+			} catch (InvalidRole e) { 
 				MessageDialog.openInformation(null, Messages.getString("message"), 
 						Messages.getString("message.accesscontrol.16")); 
 			} catch (Exception e) { 

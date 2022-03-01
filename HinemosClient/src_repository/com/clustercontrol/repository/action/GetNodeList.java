@@ -14,16 +14,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.GetFilterNodeListRequest;
+import org.openapitools.client.model.NodeInfoResponse;
+import org.openapitools.client.model.NodeInfoResponseP2;
+
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.util.NodePropertyUtil;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.NodeInfo;
 
 /**
  * 登録ノードのリストを取得するクライアント側アクションクラス<BR>
@@ -44,15 +48,15 @@ public class GetNodeList {
 	 * @param managerName マネージャ名
 	 * @return ノード一覧
 	 */
-	public List<NodeInfo> getAll(String managerName) {
+	public List<NodeInfoResponseP2> getAll(String managerName) {
 
-		List<NodeInfo> records = null;
+		List<NodeInfoResponseP2> records = null;
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 
 		try {
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
 			records = wrapper.getNodeListAll();
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 		} catch (Exception e) {
 			m_log.warn("getAll(), " + e.getMessage(), e);
@@ -73,17 +77,19 @@ public class GetNodeList {
 	 * @param property
 	 * @return ノード一覧
 	 */
-	public List<NodeInfo> get(String managerName, Property property) {
+	public List<NodeInfoResponseP2> get(String managerName, Property property) {
 		PropertyUtil.deletePropertyDefine(property);
 
-		List<NodeInfo> records = null;
+		List<NodeInfoResponseP2> records = null;
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 		try {
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-			NodeInfo nodeInfo = null;
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+			NodeInfoResponse nodeInfo = null;
 			nodeInfo = NodePropertyUtil.property2node(property);
-			records = wrapper.getFilterNodeList(nodeInfo);
-		} catch (InvalidRole_Exception e) {
+			GetFilterNodeListRequest requestDto = new GetFilterNodeListRequest();
+			RestClientBeanUtil.convertBean(nodeInfo, requestDto);
+			records = wrapper.getFilterNodeList(requestDto);
+		} catch (InvalidRole e) {
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 		} catch (Exception e) {
 			m_log.warn("getAll(), " + e.getMessage(), e);
@@ -102,17 +108,17 @@ public class GetNodeList {
 	 *
 	 * @return ノード一覧
 	 */
-	public Map<String, List<NodeInfo>> getAll() {
+	public Map<String, List<NodeInfoResponseP2>> getAll() {
 
-		Map<String, List<NodeInfo>> dispDataMap= new ConcurrentHashMap<>();
-		List<NodeInfo> records = null;
+		Map<String, List<NodeInfoResponseP2>> dispDataMap= new ConcurrentHashMap<>();
+		List<NodeInfoResponseP2> records = null;
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		for (String managerName : EndpointManager.getActiveManagerSet()) {
+		for (String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
 				records = wrapper.getNodeListAll();
 				dispDataMap.put(managerName, records);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
 				m_log.warn("getAll(), " + e.getMessage(), e);
@@ -132,20 +138,22 @@ public class GetNodeList {
 	 * @param property
 	 * @return ノード一覧
 	 */
-	public Map<String, List<NodeInfo>> get(Property property) {
+	public Map<String, List<NodeInfoResponseP2>> get(Property property) {
 		PropertyUtil.deletePropertyDefine(property);
 
-		Map<String, List<NodeInfo>> dispDataMap= new ConcurrentHashMap<>();
-		List<NodeInfo> records = null;
+		Map<String, List<NodeInfoResponseP2>> dispDataMap= new ConcurrentHashMap<>();
+		List<NodeInfoResponseP2> records = null;
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		for (String managerName : EndpointManager.getActiveManagerSet()) {
+		for (String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-				NodeInfo nodeInfo = null;
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+				NodeInfoResponse nodeInfo = null;
 				nodeInfo = NodePropertyUtil.property2node(property);
-				records = wrapper.getFilterNodeList(nodeInfo);
+				GetFilterNodeListRequest requestDto = new GetFilterNodeListRequest();
+				RestClientBeanUtil.convertBean(nodeInfo, requestDto);
+				records = wrapper.getFilterNodeList(requestDto);
 				dispDataMap.put(managerName, records);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
 				m_log.warn("getAll(), " + e.getMessage(), e);

@@ -37,6 +37,12 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
+import org.openapitools.client.model.AddNodeRequest;
+import org.openapitools.client.model.DeviceSearchMessageInfoResponse;
+import org.openapitools.client.model.GetNodesBySNMPRequest;
+import org.openapitools.client.model.ModifyNodeRequest;
+import org.openapitools.client.model.NodeInfoDeviceSearchResponse;
+import org.openapitools.client.model.NodeInfoResponse;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.bean.Property;
@@ -51,24 +57,22 @@ import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.FacilityDuplicate;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.SnmpResponseError;
 import com.clustercontrol.repository.action.GetNodeProperty;
 import com.clustercontrol.repository.bean.NodeConstant;
 import com.clustercontrol.repository.util.NodePropertyUtil;
 import com.clustercontrol.repository.util.NodeSearchUtil;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.PropertySheet;
-import com.clustercontrol.ws.repository.DeviceSearchMessageInfo;
-import com.clustercontrol.ws.repository.FacilityDuplicate_Exception;
-import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.InvalidSetting_Exception;
-import com.clustercontrol.ws.repository.NodeInfo;
-import com.clustercontrol.ws.repository.NodeInfoDeviceSearch;
-import com.clustercontrol.ws.repository.SnmpResponseError_Exception;
 
 /**
  * ノードの作成・変更ダイアログクラス<BR>
@@ -113,7 +117,7 @@ public class NodeCreateDialog extends CommonDialog {
 	private Property propertyOld = null;
 
 	/** 変更前のノード情報 */
-	private NodeInfo nodeInfoOld = null;
+	private NodeInfoResponse nodeInfoOld = null;
 
 	/** 変更用ダイアログ判別フラグ */
 	private boolean isModifyDialog = false;
@@ -155,7 +159,7 @@ public class NodeCreateDialog extends CommonDialog {
 	private Label    privProtocolText = null;
 	private Combo    privProtocolBox       = null;
 	private Tree tree = null;
-	private NodeInfo nodeInfo = null;
+	private NodeInfoResponse nodeInfo = null;
 
 	private Group groupAuto = null;
 	private Composite comp = null;
@@ -326,9 +330,9 @@ public class NodeCreateDialog extends CommonDialog {
 		// デフォルトをv2cとする
 		propertyChild = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.SNMP_VERSION).get(0);
 		String snmpVersion = propertyChild.getValue().toString();
-		if ("1".equals(snmpVersion)) {
+		if (SnmpVersionConstant.STRING_V1.equals(snmpVersion)) {
 			this.versionBox.select(INDEX_VERSION_BOX_0);
-		} else if ("2c".equals(snmpVersion)) {
+		} else if (SnmpVersionConstant.STRING_V2.equals(snmpVersion)) {
 			this.versionBox.select(INDEX_VERSION_BOX_1);
 		} else {
 			this.versionBox.select(INDEX_VERSION_BOX_2);
@@ -524,6 +528,11 @@ public class NodeCreateDialog extends CommonDialog {
 				try{
 					String ipAddressString = ipAddressBox.getText();
 
+					if (ipAddressString.contains("%")) {
+						MessageDialog.openWarning(getShell(), "Warning", Messages.getString("message.repository.37"));
+						return;
+					}
+
 					// IPアドレスチェック
 					InetAddress address = InetAddress.getByName(ipAddressString);
 
@@ -554,10 +563,10 @@ public class NodeCreateDialog extends CommonDialog {
 					String privProtocol = privProtocolBox == null || privProtocolBox.isDisposed() ? null : privProtocolBox.getText();
 
 					Property propertySNMP = null;
-					NodeInfo nodeInfo = null;
+					NodeInfoResponse nodeInfo = null;
 
 					if (isModifyDialog) {
-						NodeInfoDeviceSearch nodeSnmp = getNodeInfoBySNMP(
+						NodeInfoDeviceSearchResponse nodeSnmp = getNodeInfoBySNMP(
 								NodeCreateDialog.this.m_managerComposite.getText(),
 								ipAddress, port, community, version,
 								PropertyDefineConstant.MODE_MODIFY, facilityId,
@@ -568,7 +577,7 @@ public class NodeCreateDialog extends CommonDialog {
 							return;
 						}
 
-						List<DeviceSearchMessageInfo> list = nodeSnmp.getDeviceSearchMessageInfo();
+						List<DeviceSearchMessageInfoResponse> list = nodeSnmp.getDeviceSearchMessageInfo();
 						if (list != null && list.size() > 0) {
 							DeviceSearchDialog dialog = new DeviceSearchDialog(getShell(), list);
 							dialog.open();
@@ -584,7 +593,7 @@ public class NodeCreateDialog extends CommonDialog {
 						propertySheet.setInput(propertyOld);
 						
 					} else {
-						NodeInfoDeviceSearch nodeSnmp  = getNodeInfoBySNMP(
+						NodeInfoDeviceSearchResponse nodeSnmp  = getNodeInfoBySNMP(
 								NodeCreateDialog.this.m_managerComposite.getText(),
 								ipAddress, port, community, version,
 								PropertyDefineConstant.MODE_ADD, null, securityLevel, user, authPassword, privPassword, authProtocol, privProtocol);
@@ -624,7 +633,7 @@ public class NodeCreateDialog extends CommonDialog {
 	 * @return 
 	 * 			既存のノード情報をDevice Searchで取得した情報で更新したProperty
 	 */
-	private Property createProperty(NodeInfo nodeInfo){
+	private Property createProperty(NodeInfoResponse nodeInfo){
 		
 		if (nodeInfo == null){
 			return null;
@@ -842,7 +851,7 @@ public class NodeCreateDialog extends CommonDialog {
 		Property property = this.getInputData();
 		if(property != null){
 			String errMessage = "";
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(this.m_managerComposite.getText());
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.m_managerComposite.getText());
 			Object[] arg = {this.m_managerComposite.getText()};
 			if(!this.isModifyDialog()){
 				// 作成の場合
@@ -853,7 +862,33 @@ public class NodeCreateDialog extends CommonDialog {
 					if (m_ownerRoleId.getText().length() > 0) {
 						nodeInfo.setOwnerRoleId(m_ownerRoleId.getText());
 					}
-					wrapper.addNode(nodeInfo);
+					AddNodeRequest requestDto = new AddNodeRequest();
+					RestClientBeanUtil.convertBean(nodeInfo, requestDto);
+
+					//Enum値の入れる
+					if (nodeInfo.getIpAddressVersion() != null) {
+						requestDto.setIpAddressVersion(AddNodeRequest.IpAddressVersionEnum.fromValue(nodeInfo.getIpAddressVersion().getValue()));
+					}
+					if (nodeInfo.getSnmpVersion() != null) {
+						requestDto.setSnmpVersion(AddNodeRequest.SnmpVersionEnum.fromValue(nodeInfo.getSnmpVersion().getValue()));
+					}
+					if (nodeInfo.getSnmpSecurityLevel() != null) {
+						requestDto.setSnmpSecurityLevel(AddNodeRequest.SnmpSecurityLevelEnum.fromValue(nodeInfo.getSnmpSecurityLevel().getValue()));
+					}
+					if (nodeInfo.getSnmpAuthProtocol() != null) {
+						requestDto.setSnmpAuthProtocol(AddNodeRequest.SnmpAuthProtocolEnum.fromValue(nodeInfo.getSnmpAuthProtocol().getValue()));
+					}
+					if (nodeInfo.getSnmpPrivProtocol() != null) {
+						requestDto.setSnmpPrivProtocol(AddNodeRequest.SnmpPrivProtocolEnum.fromValue(nodeInfo.getSnmpPrivProtocol().getValue()));
+					}
+					if (nodeInfo.getWbemProtocol() != null) {
+						requestDto.setWbemProtocol(AddNodeRequest.WbemProtocolEnum.fromValue(nodeInfo.getWbemProtocol().getValue()));
+					}
+					if (nodeInfo.getWinrmProtocol() != null) {
+						requestDto.setWinrmProtocol(AddNodeRequest.WinrmProtocolEnum.fromValue(nodeInfo.getWinrmProtocol().getValue()));
+					}
+
+					wrapper.addNode(requestDto);
 
 					// リポジトリキャッシュの更新
 					ClientSession.doCheck();
@@ -865,7 +900,7 @@ public class NodeCreateDialog extends CommonDialog {
 
 					result = true;
 
-				} catch (FacilityDuplicate_Exception e) {
+				} catch (FacilityDuplicate e) {
 					// ファシリティIDが重複している場合、エラーダイアログを表示する
 					//ファシリティID取得
 					ArrayList<?> values = PropertyUtil.getPropertyValue(copy, NodeConstant.FACILITY_ID);
@@ -877,7 +912,7 @@ public class NodeCreateDialog extends CommonDialog {
 							Messages.getString("message.repository.26", args));
 
 				} catch (Exception e) {
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(
 								null,
@@ -885,7 +920,7 @@ public class NodeCreateDialog extends CommonDialog {
 								Messages.getString("message.accesscontrol.16"));
 					} else {
 						errMessage = ", " + HinemosMessage.replace(e.getMessage());
-						if (!(e instanceof InvalidSetting_Exception)) {
+						if (!(e instanceof InvalidSetting)) {
 							m_log.warn("action()", e);
 						} else {
 							m_log.info("action()" + errMessage);
@@ -905,7 +940,33 @@ public class NodeCreateDialog extends CommonDialog {
 					if (m_ownerRoleId.getText().length() > 0) {
 						nodeInfo.setOwnerRoleId(m_ownerRoleId.getText());
 					}
-					wrapper.modifyNode(nodeInfo);
+					ModifyNodeRequest requestDto = new ModifyNodeRequest();
+					RestClientBeanUtil.convertBean(nodeInfo, requestDto);
+
+					//Enum値の入れる
+					if (nodeInfo.getIpAddressVersion() != null) {
+						requestDto.setIpAddressVersion(ModifyNodeRequest.IpAddressVersionEnum.fromValue(nodeInfo.getIpAddressVersion().getValue()));
+					}
+					if (nodeInfo.getSnmpVersion() != null) {
+						requestDto.setSnmpVersion(ModifyNodeRequest.SnmpVersionEnum.fromValue(nodeInfo.getSnmpVersion().getValue()));
+					}
+					if (nodeInfo.getSnmpSecurityLevel() != null) {
+						requestDto.setSnmpSecurityLevel(ModifyNodeRequest.SnmpSecurityLevelEnum.fromValue(nodeInfo.getSnmpSecurityLevel().getValue()));
+					}
+					if (nodeInfo.getSnmpAuthProtocol() != null) {
+						requestDto.setSnmpAuthProtocol(ModifyNodeRequest.SnmpAuthProtocolEnum.fromValue(nodeInfo.getSnmpAuthProtocol().getValue()));
+					}
+					if (nodeInfo.getSnmpPrivProtocol() != null) {
+						requestDto.setSnmpPrivProtocol(ModifyNodeRequest.SnmpPrivProtocolEnum.fromValue(nodeInfo.getSnmpPrivProtocol().getValue()));
+					}
+					if (nodeInfo.getWbemProtocol() != null) {
+						requestDto.setWbemProtocol(ModifyNodeRequest.WbemProtocolEnum.fromValue(nodeInfo.getWbemProtocol().getValue()));
+					}
+					if (nodeInfo.getWinrmProtocol() != null) {
+						requestDto.setWinrmProtocol(ModifyNodeRequest.WinrmProtocolEnum.fromValue(nodeInfo.getWinrmProtocol().getValue()));
+					}
+
+					wrapper.modifyNode(nodeInfo.getFacilityId(), requestDto);
 
 					// リポジトリキャッシュの更新
 					ClientSession.doCheck();
@@ -918,7 +979,7 @@ public class NodeCreateDialog extends CommonDialog {
 					result = true;
 
 				} catch (Exception e) {
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(
 								null,
@@ -1012,7 +1073,7 @@ public class NodeCreateDialog extends CommonDialog {
 	 *
 	 * @return NodeInfo
 	 */
-	public NodeInfo getNodeInfo() {
+	public NodeInfoResponse getNodeInfo() {
 		return this.nodeInfo;
 	}
 
@@ -1023,29 +1084,54 @@ public class NodeCreateDialog extends CommonDialog {
 	 * @param mode 編集可否モード
 	 * @return ノード情報のプロパティ
 	 */
-	private static NodeInfoDeviceSearch getNodeInfoBySNMP(String managerName, String ipAddress,
+	private static NodeInfoDeviceSearchResponse getNodeInfoBySNMP(String managerName, String ipAddress,
 			int port, String community, int version, int mode,
 			String facilityID, String securityLevel, String user,
 			String authPassword, String privPassword, String authProtocol,
 			String privProtocol) {
 
 		try {
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-			NodeInfoDeviceSearch nodeSnmp = wrapper
-					.getNodePropertyBySNMP(ipAddress, port, community, version,
-							facilityID, securityLevel, user, authPassword,
-							privPassword, authProtocol, privProtocol);
-			NodeInfo nodeInfo = nodeSnmp.getNodeInfo();
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+
+			GetNodesBySNMPRequest requestDto = new GetNodesBySNMPRequest();
+			requestDto.setAuthPass(authPassword);
+			requestDto.setAuthProtocol(authProtocol);
+			requestDto.setCommunity(community);
+			requestDto.setFacilityID(facilityID);
+			requestDto.setIpAddress(ipAddress);
+			requestDto.setPort(port);
+			requestDto.setPrivPass(privPassword);
+			requestDto.setPrivProtocol(privProtocol);
+			requestDto.setSecurityLevel(securityLevel);
+			requestDto.setUser(user);
+
+			switch (version) {
+			case SnmpVersionConstant.TYPE_V1:
+				requestDto.setVersion(GetNodesBySNMPRequest.VersionEnum.V1);
+				break;
+			case SnmpVersionConstant.TYPE_V2:
+				requestDto.setVersion(GetNodesBySNMPRequest.VersionEnum.V2);
+				break;
+			case SnmpVersionConstant.TYPE_V3:
+				requestDto.setVersion(GetNodesBySNMPRequest.VersionEnum.V3);
+				break;
+			default:
+				// findbugs対応 デフォルト追加
+				break;
+			}
+
+			NodeInfoDeviceSearchResponse nodeSnmp = wrapper.getNodePropertyBySNMP(requestDto);
+			NodeInfoResponse nodeInfo = nodeSnmp.getNodeInfo();
 			m_log.info("snmp2 " + nodeInfo.getNodeFilesystemInfo().size());
 			NodePropertyUtil.setDefaultNode(nodeInfo);
 			return nodeSnmp;
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (SnmpResponseError_Exception e) {
+		} catch (SnmpResponseError e) {
 			MessageDialog.openWarning(null, Messages.getString("message"),
 					Messages.getString("message.snmp.12"));
-		} catch (HinemosUnknown_Exception e) {
+		} catch (HinemosUnknown e) {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
@@ -1155,16 +1241,39 @@ public class NodeCreateDialog extends CommonDialog {
 		authProtocolBox.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		authProtocolBox.add(SnmpProtocolConstant.MD5, 0);
 		authProtocolBox.add(SnmpProtocolConstant.SHA, 1);
+		authProtocolBox.add(SnmpProtocolConstant.SHA224, 2);
+		authProtocolBox.add(SnmpProtocolConstant.SHA256, 3);
+		authProtocolBox.add(SnmpProtocolConstant.SHA384, 4);
+		authProtocolBox.add(SnmpProtocolConstant.SHA512, 5);
 
 		// デフォルトセット
 		propertyChild = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.SNMP_AUTH_PROTOCOL).get(0);
-		String authProtocol = propertyChild.getValue().toString();
-		if (SnmpProtocolConstant.MD5.equals(authProtocol)) {
+		String authProtocol = "";
+		if (propertyChild.getValue() != null) {
+			authProtocol = propertyChild.getValue().toString();
+		}
+		switch (authProtocol) {
+		case SnmpProtocolConstant.MD5:
 			authProtocolBox.select(0);
-		} else if (SnmpProtocolConstant.SHA.equals(authProtocol)) {
+			break;
+		case SnmpProtocolConstant.SHA:
 			authProtocolBox.select(1);
-		} else {
+			break;
+		case SnmpProtocolConstant.SHA224:
+			authProtocolBox.select(2);
+			break;
+		case SnmpProtocolConstant.SHA256:
+			authProtocolBox.select(3);
+			break;
+		case SnmpProtocolConstant.SHA384:
+			authProtocolBox.select(4);
+			break;
+		case SnmpProtocolConstant.SHA512:
+			authProtocolBox.select(5);
+			break;
+		default:
 			authProtocolBox.select(0);
+			break;
 		}
 
 		// 改行のため、ダミーのラベルを挿入。
@@ -1200,15 +1309,30 @@ public class NodeCreateDialog extends CommonDialog {
 		privProtocolBox.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		privProtocolBox.add(SnmpProtocolConstant.DES, 0);
 		privProtocolBox.add(SnmpProtocolConstant.AES, 1);
+		privProtocolBox.add(SnmpProtocolConstant.AES192, 2);
+		privProtocolBox.add(SnmpProtocolConstant.AES256, 3);
 		// デフォルトセット
 		propertyChild = (Property)PropertyUtil.getProperty(propertyOld, NodeConstant.SNMP_PRIV_PROTOCOL).get(0);
-		String privProtocol = propertyChild.getValue().toString();
-		if (SnmpProtocolConstant.DES.equals(privProtocol)) {
+		String privProtocol = "";
+		if (propertyChild.getValue() != null) {
+			privProtocol = propertyChild.getValue().toString();
+		}
+		switch (privProtocol) {
+		case SnmpProtocolConstant.DES:
 			privProtocolBox.select(0);
-		} else if (SnmpProtocolConstant.AES.equals(privProtocol)) {
+			break;
+		case SnmpProtocolConstant.AES:
 			privProtocolBox.select(1);
-		} else {
+			break;
+		case SnmpProtocolConstant.AES192:
+			privProtocolBox.select(2);
+			break;
+		case SnmpProtocolConstant.AES256:
+			privProtocolBox.select(3);
+			break;
+		default:
 			privProtocolBox.select(0);
+			break;
 		}
 
 		setAutoButton();

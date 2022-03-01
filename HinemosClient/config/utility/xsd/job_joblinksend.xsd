@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="J">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- ROOTノード -->
+	<xs:element name="JobLinkSendList">
+		<xs:annotation>
+			<xs:documentation>ジョブ連携送信設定のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ジョブ連携送信設定のデータ型です。</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLに付与する一般情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>XMLスキーマ情報</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="JobLinkSendInfo" minOccurs="0" maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="JobLinkSendInfo">
+		<xs:complexType>
+			<xs:annotation>
+				<xs:documentation>ジョブ連携送信設定</xs:documentation>
+			</xs:annotation>
+			<xs:sequence>
+				<xs:element name="joblinkSendSettingId" type="xs:string" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>ジョブ連携送信設定ID</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="description" type="xs:string" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>説明</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="facilityId" type="xs:string" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>ファシリティID</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="processMode" type="xs:int" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>いずれかのノードに送信出来たら送信成功</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="protocol" type="xs:string" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>送信先プロトコル</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="port" type="xs:int" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>送信先ポート</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="hinemosUserId" type="xs:string" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>Hinemosログインユーザ</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="hinemosPassword" type="xs:string" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>Hinemosログインパスワード</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="proxyFlg" type="xs:boolean" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>HTTPプロキシフラグ</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="proxyHost" type="xs:string" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>HTTPプロキシプロキシホスト</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="proxyPort" type="xs:int" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>HTTPプロキシポート</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="proxyUser" type="xs:string" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>HTTPプロキシユーザ</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="proxyPassword" type="xs:string" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>HTTPプロキシパスワード</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="ownerRoleId" type="xs:string" minOccurs="1" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>オーナーロールID</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

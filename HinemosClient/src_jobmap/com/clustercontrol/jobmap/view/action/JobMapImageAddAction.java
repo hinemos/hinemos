@@ -19,8 +19,8 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.clustercontrol.jobmap.dialog.JobMapImageDialog;
 import com.clustercontrol.jobmap.view.JobMapImageListView;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * ジョブマップ用イメージファイル登録を行うクライアント側アクションクラス<BR>
@@ -55,7 +55,7 @@ public class JobMapImageAddAction extends AbstractHandler{
 			return null; 
 		}
 
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 
 		// ダイアログを生成
 		JobMapImageDialog dialog = new JobMapImageDialog(this.viewPart.getSite().getShell(), managerName);

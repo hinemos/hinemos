@@ -21,23 +21,24 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.RegistryToggleState;
 import org.eclipse.ui.menus.UIElement;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.OtherUserGetLock;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmap.composite.JobMapTreeComposite;
 import com.clustercontrol.jobmap.util.JobMapActionUtil;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.jobmap.view.JobTreeView;
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.OtherUserGetLock_Exception;
 
 /**
  * ジョブ[一覧]ビューの「編集モード」のクライアント側アクションクラス<BR>
@@ -53,8 +54,8 @@ public class EditModeAction extends BaseAction {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		super.execute(event);
 		
-		JobTreeItem item = JobUtil.getTopJobUnitTreeItem(m_jobTreeItem);
-		JobTreeItem parent = item.getParent();
+		JobTreeItemWrapper item = JobUtil.getTopJobUnitTreeItem(m_jobTreeItem);
+		JobTreeItemWrapper parent = item.getParent();
 		
 		JobTreeView view = JobMapActionUtil.getJobTreeView();
 		if (view == null) {
@@ -68,7 +69,7 @@ public class EditModeAction extends BaseAction {
 		String jobunitId = item.getData().getJobunitId();
 
 		String managerName = "";
-		JobTreeItem managerTree = JobTreeItemUtil.getManager(item);
+		JobTreeItemWrapper managerTree = JobTreeItemUtil.getManager(item);
 		if (managerTree == null) {
 			return null;
 		}
@@ -92,9 +93,10 @@ public class EditModeAction extends BaseAction {
 			Integer result = null;
 			try {
 				result =JobUtil.getEditLock(managerName, jobunitId, updateTime, false);
-			} catch (OtherUserGetLock_Exception e) {
+			} catch (OtherUserGetLock e) {
 				// 他のユーザがロックを取得している
-				String message = HinemosMessage.replace(e.getMessage());
+				String message = e.getMessage() + "\n"
+						+ HinemosMessage.replace(MessageConstant.MESSAGE_WANT_TO_GET_LOCK.getMessage());
 				if (MessageDialog.openQuestion(
 						null,
 						Messages.getString("confirmed"),
@@ -134,10 +136,10 @@ public class EditModeAction extends BaseAction {
 						Messages.getString("confirmed"),
 						Messages.getString("message.job.103"))) {
 					// 編集ロックの開放
-					JobEndpointWrapper.getWrapper(managerName).releaseEditLock(editState.getEditSession(item.getData()));
+					JobRestClientWrapper.getWrapper(managerName).releaseEditLock(item.getData().getJobunitId(), editState.getEditSession(item.getData()));
 					
 					//バックアップに切り戻す
-					JobTreeItem backup = editState.getLockedJobunitBackup(item.getData());
+					JobTreeItemWrapper backup = editState.getLockedJobunitBackup(item.getData());
 					JobTreeItemUtil.removeChildren(parent, item);
 					if (backup != null) {
 						JobPropertyUtil.setJobFullTree(managerName, backup);
@@ -160,7 +162,7 @@ public class EditModeAction extends BaseAction {
 					//編集ロックを開放しない
 					state.setValue(false);
 				}
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				m_log.warn("run() : " + HinemosMessage.replace(e.getMessage()), e);
 				MessageDialog.openInformation(
@@ -189,15 +191,20 @@ public class EditModeAction extends BaseAction {
 		
 		element.setChecked(JobMapActionUtil.getJobTreeView().getEditEnable());
 		
-		Integer type = m_jobTreeItem.getData().getType();
+		 JobInfoWrapper.TypeEnum type = m_jobTreeItem.getData().getType();
 		this.setBaseEnabled(
-				type == JobConstant.TYPE_JOBUNIT || 
-				type == JobConstant.TYPE_JOBNET ||
-				type == JobConstant.TYPE_JOB ||
-				type == JobConstant.TYPE_FILEJOB ||
-				type == JobConstant.TYPE_APPROVALJOB ||
-				type == JobConstant.TYPE_MONITORJOB ||
-				type == JobConstant.TYPE_REFERJOBNET ||
-				type == JobConstant.TYPE_REFERJOB);
+				type == JobInfoWrapper.TypeEnum.JOBUNIT || 
+				type == JobInfoWrapper.TypeEnum.JOBNET ||
+				type == JobInfoWrapper.TypeEnum.JOB ||
+				type == JobInfoWrapper.TypeEnum.FILEJOB ||
+				type == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+				type == JobInfoWrapper.TypeEnum.MONITORJOB ||
+				type == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+				type == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+				type == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+				type == JobInfoWrapper.TypeEnum.RPAJOB ||
+				type == JobInfoWrapper.TypeEnum.REFERJOBNET ||
+				type == JobInfoWrapper.TypeEnum.REFERJOB ||
+				type == JobInfoWrapper.TypeEnum.RESOURCEJOB);
 	}
 }

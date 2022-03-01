@@ -50,6 +50,12 @@ public class RunInfo implements Serializable {
 
 	/** 環境変数情報 */
 	private List<JobEnvVariableInfo> jobEnvVariableInfoList = new ArrayList<JobEnvVariableInfo>();
+
+	/** 標準出力のファイル出力情報 - 標準出力 */
+	private JobOutputInfo normalJobOutputInfo;
+
+	/** 標準出力のファイル出力情報 - 標準エラー出力 */
+	private JobOutputInfo errorJobOutputInfo;
 	
 	/**
 	 * コマンドを返します。
@@ -300,6 +306,11 @@ public class RunInfo implements Serializable {
 		result = prime * result + ((user == null) ? 0 : user.hashCode());
 		result = prime * result
 				+ ((jobEnvVariableInfoList == null) ? 0 : jobEnvVariableInfoList.hashCode());
+		result = prime * result
+				+ ((normalJobOutputInfo == null) ? 0 : normalJobOutputInfo.hashCode());
+		result = prime * result
+				+ ((errorJobOutputInfo == null) ? 0 : errorJobOutputInfo.hashCode());
+
 		return result;
 	}
 
@@ -372,6 +383,37 @@ public class RunInfo implements Serializable {
 				return false;
 		} else if (!jobEnvVariableInfoList.equals(other.jobEnvVariableInfoList))
 			return false;
+		if (normalJobOutputInfo == null) {
+			if (other.normalJobOutputInfo != null) {
+				return false;
+			}
+		} else if (!normalJobOutputInfo.equals(other.normalJobOutputInfo)) {
+			return false;
+		}
+		if (errorJobOutputInfo == null) {
+			if (other.errorJobOutputInfo != null) {
+				return false;
+			}
+		} else if (!errorJobOutputInfo.equals(other.errorJobOutputInfo)) {
+			return false;
+		}
+		
 		return true;
+	}
+
+	public JobOutputInfo getNormalJobOutputInfo() {
+		return normalJobOutputInfo;
+	}
+
+	public void setNormalJobOutputInfo(JobOutputInfo normalJobOutputInfo) {
+		this.normalJobOutputInfo = normalJobOutputInfo;
+	}
+
+	public JobOutputInfo getErrorJobOutputInfo() {
+		return errorJobOutputInfo;
+	}
+
+	public void setErrorJobOutputInfo(JobOutputInfo errorJobOutputInfo) {
+		this.errorJobOutputInfo = errorJobOutputInfo;
 	}
 }

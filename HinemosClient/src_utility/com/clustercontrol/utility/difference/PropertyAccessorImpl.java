@@ -129,6 +129,9 @@ public class PropertyAccessorImpl implements PropertyAccessor {
 			else if (String.class == c) {
 				value = v.value;
 			}
+			else if (long.class == c) {
+				value = v.value;
+			}
 			else {
 				throw new IllegalStateException("unexpected : Class=" + c);
 			}

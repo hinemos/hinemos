@@ -22,17 +22,19 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.NodeInfoResponseP2;
+import org.openapitools.client.model.NodeInfoResponseP2.IpAddressVersionEnum;
 
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.action.GetNodeList;
 import com.clustercontrol.repository.action.GetNodeListTableDefine;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
+import com.clustercontrol.rest.endpoint.repository.dto.enumtype.Level;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.NodeInfo;
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.viewer.CommonTableViewer;
 
 /**
  * 複数選択可能なノード一覧コンポジットクラス<BR>
@@ -161,11 +163,11 @@ public class NodeFilterComposite extends Composite {
 	@Override
 	public void update() {
 		// データ取得
-		List<NodeInfo> list = null;
+		List<NodeInfoResponseP2> list = null;
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 
 		if (assignFlag) {
-			List<NodeInfo> allList = null;
+			List<NodeInfoResponseP2> allList = null;
 			// 割り当て時
 
 			// 全ノードを取得
@@ -179,12 +181,12 @@ public class NodeFilterComposite extends Composite {
 
 			// 全ノードから既に割り当て済みのノードを取り除く。
 			try {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(this.managerName);
-				List<NodeInfo> assignedList = wrapper.getNodeList(this.scopeId, 1);
-				list = new ArrayList<NodeInfo>();
-				for (NodeInfo node : allList) {
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.managerName);
+				List<NodeInfoResponseP2> assignedList = wrapper.getNodeList(this.scopeId, Level.ONE_LEVEL.name());
+				list = new ArrayList<NodeInfoResponseP2>();
+				for (NodeInfoResponseP2 node : allList) {
 					boolean flag = true;
-					for (NodeInfo assignedNode : assignedList) {
+					for (NodeInfoResponseP2 assignedNode : assignedList) {
 						if (node.getFacilityId().equals(assignedNode.getFacilityId())) {
 							flag = false;
 							break;
@@ -194,7 +196,7 @@ public class NodeFilterComposite extends Composite {
 						list.add(node);
 					}
 				}
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
 				throw new InternalError(e.getMessage());
 			} catch (Exception e) {
@@ -205,12 +207,12 @@ public class NodeFilterComposite extends Composite {
 		} else {
 			// 割り当て解除時
 			this.statuslabel.setText("");
-			list = new ArrayList<NodeInfo>();
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(this.managerName);
+			list = new ArrayList<NodeInfoResponseP2>();
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.managerName);
 			try {
 				// RepositoryControllerBean.ONE_LEVEL = 1
-				list = wrapper.getNodeList(this.scopeId, 1);
-			} catch (InvalidRole_Exception e) {
+				list = wrapper.getNodeList(this.scopeId, Level.ONE_LEVEL.name());
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 				throw new InternalError(e.getMessage());
@@ -232,13 +234,13 @@ public class NodeFilterComposite extends Composite {
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for (NodeInfo node : list) {
+		for (NodeInfoResponseP2 node : list) {
 			ArrayList<Object> a = new ArrayList<Object>();
 			a.add(managerName);
 			a.add(node.getFacilityId());
 			a.add(node.getFacilityName());
 			a.add(node.getPlatformFamily());
-			if (node.getIpAddressVersion() == 6) {
+			if (node.getIpAddressVersion() == IpAddressVersionEnum.IPV6) {
 				a.add(node.getIpAddressV6());
 			} else {
 				a.add(node.getIpAddressV4());

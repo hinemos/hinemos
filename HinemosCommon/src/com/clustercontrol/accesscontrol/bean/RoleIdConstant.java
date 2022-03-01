@@ -28,10 +28,10 @@ public class RoleIdConstant {
 	/** 特権ロールか否かを返す */
 	public static final boolean isAdministratorRole(String roleId) {
 		
-		if (roleId.equals(ADMINISTRATORS)){
+		if (ADMINISTRATORS.equals(roleId)){
 			return true;
 		}
-		else if (roleId.equals(HINEMOS_MODULE)) {
+		else if (HINEMOS_MODULE.equals(roleId)) {
 			return true;
 		}
 		return false;

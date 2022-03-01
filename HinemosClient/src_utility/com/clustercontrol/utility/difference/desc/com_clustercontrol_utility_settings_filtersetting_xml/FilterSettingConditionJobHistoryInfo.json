@@ -1,0 +1,109 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"startDateFrom",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_startDateFrom"}
+	]},
+	
+	{
+	"propName":"startDateTo",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_startDateTo"}
+	]},
+	
+	{
+	"propName":"endDateFrom",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_endDateFrom"}
+	]},
+	
+	{
+	"propName":"endDateTo",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_endDateTo"}
+	]},
+
+	{
+	"propName":"sessionId",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_sessionId"}
+	]},
+	
+	{
+	"propName":"jobId",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_jobId"}
+	]},
+	
+	{
+	"propName":"status",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_status"},
+		{"type":"Translate", "values":[
+			{"value":"9", "name":"name_FilterSettingConditionJobHistoryInfo_status_schedule"},
+			{"value":"0", "name":"name_FilterSettingConditionJobHistoryInfo_status_wait"},
+			{"value":"1", "name":"name_FilterSettingConditionJobHistoryInfo_status_reserving"},
+			{"value":"2", "name":"name_FilterSettingConditionJobHistoryInfo_status_skip"},
+			{"value":"100", "name":"name_FilterSettingConditionJobHistoryInfo_status_running"},
+			{"value":"101", "name":"name_FilterSettingConditionJobHistoryInfo_status_stopping"},
+			{"value":"102", "name":"name_FilterSettingConditionJobHistoryInfo_status_runningQueue"},
+			{"value":"200", "name":"name_FilterSettingConditionJobHistoryInfo_status_suspend"},
+			{"value":"201", "name":"name_FilterSettingConditionJobHistoryInfo_status_stop"},
+			{"value":"202", "name":"name_FilterSettingConditionJobHistoryInfo_status_suspendQueue"},
+			{"value":"300", "name":"name_FilterSettingConditionJobHistoryInfo_status_end"},
+			{"value":"301", "name":"name_FilterSettingConditionJobHistoryInfo_status_modified"},
+			{"value":"302", "name":"name_FilterSettingConditionJobHistoryInfo_status_endUnmatch"},
+			{"value":"303", "name":"name_FilterSettingConditionJobHistoryInfo_status_endCalendar"},
+			{"value":"304", "name":"name_FilterSettingConditionJobHistoryInfo_status_endSkip"},
+			{"value":"305", "name":"name_FilterSettingConditionJobHistoryInfo_status_endStartDelay"},
+			{"value":"306", "name":"name_FilterSettingConditionJobHistoryInfo_status_endEndDelay"},
+			{"value":"307", "name":"name_FilterSettingConditionJobHistoryInfo_status_endExclusiveBranch"},
+			{"value":"308", "name":"name_FilterSettingConditionJobHistoryInfo_status_endQueueLimit"},
+			{"value":"400", "name":"name_FilterSettingConditionJobHistoryInfo_status_error"}
+		]}
+	]},
+	
+	{
+	"propName":"endStatus",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_endStatus"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_normal"},
+			{"value":"1", "name":"name_warning"},
+			{"value":"2", "name":"name_abnormal"},
+			{"value":"3", "name":"name_beginning"},
+			{"value":"4", "name":"name_any"}
+		]}
+	]},
+	
+	{
+	"propName":"triggerType",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_triggerType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_jobTriggerType_unknown"},
+			{"value":"1", "name":"name_jobTriggerType_schedule"},
+			{"value":"2", "name":"name_jobTriggerType_manual"},
+			{"value":"3", "name":"name_jobTriggerType_monitor"},
+			{"value":"4", "name":"name_jobTriggerType_filecheck"},
+			{"value":"6", "name":"name_jobTriggerType_joblinkkrcv"}
+		]}
+	]},
+	
+	{
+	"propName":"triggerInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_triggerInfo"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingConditionJobHistoryInfo_ownerRoleId"}
+	]}
+]
+}

@@ -1,0 +1,1269 @@
+
+CHANGE LOG OF SNMP4J
+====================
+
+[2020-11-12] Version 2.8.6:
+
+* Fixed [SFJ-235]: DefaultTcpTransportMapping and TLSTM leak sockets on a reconnect with race condition.
+
+[2020-10-01] Version 2.8.5:
+
+* Fixed [SFJ-231]: Fixed SNMP4J TcpTransportMappings leaked socket entries on IOExceptions like BrokenPipe.
+  Sockets are now removed and closed before TransportStateChangeEvent is fired to allow immediate reconnect.
+
+[2020-05-20] Version 2.8.4:
+
+* Fixed [SFJ-224]: MPv3.Header.decodeBER throws exception on PDU with long numeric BER value encoding and
+  if BER.isCheckSequenceLength() is true.
+* Fixed [SFJ-228]: DHOperations.deriveKeyPBKDF2 to fix DH kickstart in SNMP4J-Agent.
+* Added: DHGroups to provide DH group definitions; DHParameters.DEFAULT; Added DHOperationsTest.
+* Updated: Copyright header.
+
+[2020-03-10] Version 2.8.3:
+
+* Fixed SFJ-196: UsmUser got storage type from existing entry when the same user is loaded from persistent storage
+  which is incorrect for storage types less than permanent(4).
+
+[2020-01-02] Version 2.8.2:
+
+* Changed [SFJ-214]: Added Log4j 2.x support and removed log4j 1.2 dependency. Log4J 2.x support is
+  now available by a separate JAR module called snmp4j-log4j.
+
+[2019-12-06] Version 2.8.1:
+
+* Fixed [SFJ-212]: TLS SecurityNameMapping provides a fallback security name for non-standard mappings
+  which is not used.
+* Fixed [SFJ-213]: TimeTicks.setValue does not parse formatted strings without "days" correctly.
+
+[2019-08-15] Version 2.8.0:
+
+* Fixed: TLSTMExtendedTrustManager and TrustManager did not allow to fall back to Java Runtime certificate
+  path validation if provided security callback was not configured for validation.
+* Fixed: Removed debug output from TLSTMTest.
+* SECURITY: Due to necessary changes for SFJ-207, several security issues related to TLSTM and DTLSTM only
+  in SNMP4J 3.2.2 and 2.7.0 (and earlier respectively) have been identified and fixed:
+  - In previous releases, the connection establishment was not interrupted (canceled) on client and server side
+  if a fingerprint match of the provided certificate failed but the certificate was trusted by the Java Runtime.
+  - In addition, the fingerprint match worked on CA certificates too although this matching on CA level is not
+  mentioned in RFC6353. It has been removed in 3.3.0 and now a connection cannot be established if a fingerprint
+  is given but it does not match the provided certificate.
+  - In previous versions, if the identity specified in the security callback did not match the identity of
+  the certificate (i.e. subjectDN name), then connection could be still established if the Java Runtime trusted
+  the certificate. In SNMP4J 3.3.0 (and SNMP4J 2.8.0) later the connection will not be established if a mismatch
+  occurred.
+* Fixed [SFJ-207]: SNMP4J-Agent NotificationOriginatorImpl does not use snmpTlsAddrTable when sending TLS
+  notifications.
+* Added: TlsX509CertifiedTarget which can specify a TlsTmSecurityCallback<X509Certificate> to override the security
+  callback defined at TLSTM level as required to support RFC6353 regarding sending of TLS messages
+  based on SNMP-TARGET-MIB.
+* Improved [SFJ-208]: Performance of AuthGeneric.passwordToKey can be improved by using 1MB HMAC buffer instead
+  of 64 bytes.
+* Improved [SFJ-209]: Improve MPv3Cache performance for high load multi-threaded message processing. Cache now
+  scales with O(2) instead O(n) where n is the number of concurrently pending requests.
+* Improved [SFJ-205]: Added Target.duplicate
+* Fixed: Timeout settings for TLSTMTest.sendMessageWithPDU and .sendMessagesWithPDU.
+* Added: TLSv1.3 support in SnmpConfigurator's ArgumentParser.
+* Fixed [SFJ-202]: CertifiedTarget for SNMPv3 TLS notifications not handled in NotificationOriginatorImpl.
+  This includes fixes to the TlsTmMib regarding (D)TLS target resolving as well as fixes to the SNMP4J
+  MessageDispatcher and TransportMappings in order to be able to use a "client mode" transport mapping
+  with a different source port than the "server" mode TLS transport mapping that acts as command responder.
+* Fixed: The counter events created for the SnmpTlsTmMib 'snmpTsmUnknownPrefixes' and 'snmpTsmInvalidPrefixes'
+  have been changed to better match their specification.
+* Improved: Introduced Address class parameter to Target interface.
+* Improved [SFJ-184]: Add support for more than one address class per TransportMapping by new method
+  getSupportedAddressClasses(). MessageDispatcherImpl now maps those transport mappings with more than one
+  supported address class too. Which transport mapping is used, depends on the time of the registration at the
+  MessageDispatcher. Earlier registered mappings take precedence.
+
+[2018-11-24] Version 2.7.0:
+
+* Fixed [SFJ-182]: TLSTM does not send/receive SNMP messages longer than 16379 bytes.
+* Added: Support for trust stores for TLSTM (requires Java 7/8 or later).
+* Fixed: NullPointerException in Snmp.setLocalEngineID when no USM is added to this Snmp instance.
+* Changed: Required Java runtime raised to version 8 or later.
+* Fixed [SFJ-189]: Race condition in ThreadPool which could block task execution.
+* Fixed [SFJ-190]: DefaultUdpTransportMapping throws exception and blocks ListenThread shutdown on
+  incoming packet after shutdown.
+* Fixed [SFJ-191]: TLSTM does not reassemble TLS fragments sent as more than one TCP packet correctly
+  (i.e. SSLEngine BUFFER_UNDERFLOW not handled correctly)
+* Fixed [SFJ-192]: TLSTM is not able to parse fragmented TLS packets if two or more fragments are received
+  in one TCP packet.
+
+[2018-04-18] Version 2.6.3:
+
+* Fixed [SFJ-171]: Calling Snmp.close() on a Snmp instance without listeners leaks sockets.
+* Fixed [SFJ-172]: ThreadPool.execute(..) may throw IllegalStateException when all task
+  managers are busy and two additional tasks get into a race condition. (Regression since 2.5.7)
+
+[2018-04-12] Version 2.6.2:
+
+* Fixed [SJF-170]: Race condition in ThreadPool which could block task execution.
+  The race condition in ThreadPool can block message processing of incoming responses and/or traps when SNMP4J
+  is used with MultiThreadedMessageDispatcher or MultiThreadedTrapReceiver.
+  This is a regression from SFJ-147 (version 2.5.7).
+
+[2018-02-23] Version 2.6.0:
+
+* Added [SFJ-152]: Diffie Hellman key exchange support.
+* Improved: OID.hashCode() and OctetString.hashCode() now returns better hashes with less collisions.
+* Fixed [SFJ-164]: DefaultTcpTransportMapping fails to reconnect immediately to the same address and port.
+* Fixed: DefaultTcpTransportMapping and TLSTM returned port 0 by getListenAddress() if port 0 was given
+  to let the OS select a free port. Now, the selected port will be returned if a port is bound.
+* Improved [SFJ-165]: Improve extensibility of DefaultTcpTransportMapping for implementing non-SNMP
+  protocols with it.
+
+[2018-01-05] Version 2.5.11:
+
+* Improved [SFJ-162]: TableUtils now waits until three (3) primary lexicographic ordering errors
+  occurred and returns all rows until then. Rows that contain cell values based on incorrectly
+  order data will be returned now with status TableEvent.STATUS_WRONG_ORDER. That strate will be also
+  set in the finishing TableEvent then.
+
+[2018-01-05] Version 2.5.10:
+
+* Fixed [SFJ-161]: TableUtils does not check for lexicographic ordering in SNMP4J 2.5.9 which could
+  cause endless looping with incorrectly implemented agents. The ordering checking can be now disabled
+  but is enabled by default.
+
+[2018-01-04] Version 2.5.9:
+
+* Fixed [SFJ-160]: TableUtils returns a wrong order false positive error for single row tables when
+  using GETBULK with more than one repetition.
+
+[2017-09-06] Version 2.5.8:
+
+* Added [SFJ-149]: Added option to disable checking for BER encoding of OIDs have to start with a
+  sub-identifier of 0, 1, or 2 which had been introduced in SNMP4J 2.2.4.
+* Fixed [SFJ-150]: BERInputStream returned -1 on read with zero length which led to BER.decodeString
+  to throw an exception if the empty OCTET STRING is at the end of the underlying BER packet. This
+  was a regression in version 2.5.7.
+
+[2017-08-15] Version 2.5.7:
+
+* Fixed [SFJ-147]: Possible deadlock in ThreadPool if it is stopped while being completely busy.
+* Fixed [SFJ-143]: TableUtils may return two or more TableEvents for the same row index if
+  TableUtils is configured to request less columns in a PDU than provided for table retrieval and
+  the agent returns the later sent columns earlier than the first sent.
+* Added: Snmp.setMessageDispatcher(..).
+* Added: BER BigInteger encoding and decoding necessary to decode/encode Diffie-Hellman parameters.
+* Added: TLSTMExtendedTrustManager and corresponding Factory class.
+* Fixed: Source object for ResponseEvents propagated from the ReportHandler of Snmp
+  (was ReportHandler is now the Snmp class).
+* Improved: Defined constant for AuthMD5 key length.
+* Added: Supporting functions and constants for Diffie Hellman USM key exchange. DH key exchange
+  will be available in SNMP4J-Agent 3.0.
+* Improved: Performance of BER octet string decoding.
+
+[2017-03-06] Version 2.5.6:
+
+* Fixed: Default security protocol ID was missing for PrivAES192With3DESKeyExtension.java
+* Fixed: Possible NullPointerException in ArgumentParser.parse if not all format types have
+  been provided.
+* Improved: USM: security name in debug log is also printed in ASCII if printable (not only
+  always as hex string as before).
+
+[2017-02-06] Version 2.5.5:
+
+* Fixed [SFJ-141]: OID.nextPeer() throws a StackOverflowException on OIDs with 127 sub-identifiers or more.
+* Changed: Added SHA-224, and SHA-384 to the protocols added by SecurityProtocols.addDefaultProtocols().
+
+[2017-01-02] Version 2.5.4:
+
+* Fixed [SFJ-136]: SHA384 and SHA512 authentication protocols used block size of 64 instead 128
+  as required by RFC 6234, section 6.4, page 14.
+
+[2016-11-15] Version 2.5.3:
+
+* Fixed [SFJ-133]: DefaultUdpTransportMapping getListenAddress() does not return the local IP address.
+* Fixed [SFJ-132]: TableUtils is caught in a notify when agent does not return VBs in lexicographic order.
+* Fixed [SFJ-134]: DefaultUdpTransportMapping listen() fails to run if socket timeout is non-zero.
+
+[2016-09-10] Version 2.5.2:
+
+* Fixed: Java compiler/source version reset to 1.6 (instead 1.8 in 2.5.1).
+
+[2016-09-10] Version 2.5.1:
+
+* Improved: DefaultPDUFactory default constructor now sets context engine ID and name with default values.
+* Fixed [SFJ-130]: SNMP4J sends GETNEXT PDU with error-index == 1 when auto-converting GETBULK to GETNEXT.
+* Fixed: Many JavaDoc syntax errors reported by Java 9 by default.
+
+[2016-05-02] Version 2.5.0:
+
+* Added [SFJ-120]: Maven Central deployment support (refactored pom.xml).
+* Fixed [SFJ-118]: DefaultTcpTransportMapping: SocketEntry instances created for incoming TCP connections
+  are not immediately removed when connection is closed remotely.
+* Fixed [SFJ-119]: Snmp: NotificationListener cannot be registered with custom configured TransportMapping.
+* Fixed [SFJ-121]: DefaultPDUFactory.createPDU does not set contextName and contextEngineID on ScopedPDU
+  instances.
+* Fixed [SFJ-124]: ArgumentParser cannot parse formats with default values for parameters correctly.
+* Added: Added MaxAccess, SubIndexInfo, and SubIndexInfoImpl to better support MIB specification
+  based SNMP operations.
+* Improved: Added custom OID configuration support for non-standard security protocols in
+  SecurityProtocols.addDefaultProtocols.
+* Added PrivGeneric to reduce code size.
+* Added SecurityPrivacy.isSupported() to be able to test security protocol support by JVM.
+* Fixed return parameter type of ArgumentParser.parse(..).
+
+[2016-02-20] Version 2.4.3:
+
+* Fixed: Socket close after bind failure in DefaultTcpTransportMapping.
+* Changed: snmp4jStatsReqTableWaitTime now provides the peer Address instead of the target information
+  as index value to conform with other counters of the same table.
+* Added: RequestStatistics interface to support optional collection of statistic values during
+  message processing. The RequestStatistics will be returned by the Snmp class to CommandResponder listeners
+  via the CommandResponderEvent object's getPduHandle() method if the MessageDispatcher used created
+  a PduHandle that implements the RequestStatistics interface.
+* Improved: Initial msgID generation according to recommendation of RFC 3412 §6.2.
+* Added: Counter constants for message runtime measurement.
+
+[2016-01-25] Version 2.4.2:
+
+* Fixed: Removed System.out.println calls in TableUtils.
+* Fixed [SFJ-117]: DefaultTcpTransportMapping does not accept incoming messages if their SNMP header
+  (<= first 6 bytes) is fragmented.
+* Added: Support for table based Counters.
+* Added: Support for retry, timeout and waitTime counters in class Snmp based on the
+  SNMP4J-STATISTICS-MIB using the CounterSupport events.
+
+[2015-12-30] Version 2.4.1:
+
+* Fixed: SHA-2 authentication protocols used wrong MAC and key lengths (were switched accidentally
+  in version 2.4.0.
+* Fixed: Compilation warning in TransportMappings due to generic refactorings in version 2.4.0.
+
+[2015-12-21] Version 2.4.0:
+
+* Added [SFJ-112]: Added SHA-2 (SHA-224,-256,-384,-512) support to USM as defined by RFC 7630.
+* Fixed [SFJ-116]: Improve performance of TableUtils getTable methods for sparse tables.
+* Fixed [SFJ-115]: USM: Allow  adjustments of the local engine time.
+* Improved: TransportStateEvent now provides the messages that are being discarded due to an IO
+  issue with a TCP connection.
+* Improved: Time information is updated also from first response of an agent.
+* Improved: Engine ID caching for target addresses. Now only confirmed class PDUs are cache for
+  outgoing messages.
+* Improved: Removed adding of engine IDs from traps to local MPv3 engine ID cache.
+* Improved: Removed comments with obsolete code from the TLSTM.
+* Improved: Small refactoring in Snmp class.
+* Improved: Generics refactorings in MultiThreadedTrapReceiver and LogControl.
+  TransportMapping address parameter type (now with wildcard).
+
+[2015-07-18] Version 2.3.4:
+
+* Fixed [SFJ-110]: Security fix: SNMP4J MPv3 adds engine IDs to the local cache even if they are from a
+  non-authoritative source.
+* Improved: The local engine ID cache now has an upper limit of 50.000 by default. Additional
+  engine IDs for new addresses are rejected if this limit is reached. The limit can be changed and also
+  disabled by SNMP4JSettings.setMaxEngineIdCacheSize.
+* Added: MPv3.getEngineIdCacheSize() to be able to monitor the size of the MPv3 engine ID cache.
+* Added: USM error codes for too long engine ID and too long security name.
+* Fixed [SFJ-107]: Reusing a UDP socket after closing the DefaultUdpTransportMapping is not immediately
+  possible if no socket timeout (=0) is used.
+* Fixed [SFJ-103]: The DefaultUdpTransportMapping ListenThread does not exit if no socket timeout is set
+  and a socket exception is caught.
+* Improved: JavaDoc of Variable.clone() method.
+
+[2014-12-19] Version 2.3.3:
+
+* Fixed [SFJ-98]: Endless loop if thread of a ThreadPool is interrupted while its execute method is
+  being called.
+
+[2014-11-07] Version 2.3.2:
+
+* Fixed SFJ-97: Unhandled responses when using SNMPv3 and command responder answers
+  initial request after retry message has been sent.
+* Fixed SFJ-95: SNMP4J uses two request IDs per request/response pair although only one would be necessary.
+* Improved: Junit-Tests for message retries (v3 and v2c).
+* Added: JavaDoc to USM.getUsers method.
+
+[2014-07-31] Version 2.3.1:
+
+* Fixed: Missing engineID update in UsmMIB.setUsers if users contain localized users.
+* Fixed: Method processPending of DefaultTcpTransportMapping did not process all pending
+  keys in one go, instead the first was processed several times which could lead to
+  a blocked connection when another connection could not proceed (e.g. because of a half
+  closed TCP connection).
+* Fixed: OID.leftMostCompare can now also compare an OID with another whose length is less
+  than the first without throwing an exception.
+
+[2014-05-12] Version 2.3:
+
+* Improved: Performance of the SimpleOIDTextFormat.
+* Improved: Migrated to standard Maven src directory layout.
+* Improved: JavaDoc generation with specific stylesheet.
+* Fixed [JSF-90]: NullPointerException in TreeUtils if ignoreLexicographicOrdering is true.
+* Improved: Removed unchecked warnings for generics.
+* Improved: Relaxed type checking for constructor with variable bindings.
+* Improved: TLSTM exception logging and handling.
+
+[2014-02-11] Version 2.2.5:
+
+* Fixed: LogLevel handling of the ConsoleLogAdapter.
+* Added: SnmpConstants.MILLISECONDS_TO_NANOSECONDS constant needed by SNMP4J-Agent 2.1.1.
+
+[2014-01-24] Version 2.2.4:
+
+* Fixed: [SFJ-83] OID BER decoding error for OIDs with the first sub-identifier 2 and the second
+  greater or equal to 40.
+* Fixed: [SFJ-84] OID BER encoding error for OIDs starting with 2 and a second subidentifier greater
+  than 47.
+
+[2013-11-01] Version 2.2.3:
+
+* Added: Support for nonstandard AES 192 and 256 using 3DES key extend algorithm.
+* Improved: EngineID event firing to ignore already fired events.
+* Added: Option to deactivate GETBULK usage centrally in SNMP4JSettings.
+* Fixed: NPE in IpAddress toString() method.
+* Fixed [SFJ-80]: Race condition in Snmp.close() with PduHandleCallback.pduHandleAssigned(..).
+* Fixed [SFJ-77]: renewSocketAfterException now renews the listen socket with the configured local
+  IP address instead for all local interfaces.
+* Fixed [SFJ-78]: getListenAddress returns the actual listen address instead the configured listen
+  address.
+* Improved: Generics refactorings.
+* Fixed: Second constructor of ResponseEvent to take any object as source, not only the Snmp class.
+
+[2013-06-10] Version 2.2.2:
+
+* Fixed [SFJ-76]: Performance hotspot in encrypt and decrypt methods of the supported privacy 
+  protocol. Cipher instances are now reused up to the number of processors for each protocol
+  and each transformation direction (encrypt/decrypt).
+* Fixed [SFJ-75]: Order of time checks to allow greater time drifts of authoritative engine 
+  compared with local time as required by RFC 3414 section 3.2.7 b) 1-2.  
+* Improved: Socket renewal in DefaultUdpTransportMapping.
+* Fixed [SFJ-72]: Busy loop in DefaultUdpTransportMapping.ListenThread.run() when a 
+  SocketException occurs while forwarding of RuntimExceptions is disabled.
+* Improved [SFJ-73]: Concurrency bottleneck in the processPdu method of the 
+  Snmp.NotificationDispatcher inner class.
+* Fixed: Typo in method name SNMP4JSettings.isForwardRuntimeExceptions().
+
+[2013-04-04] Version 2.2.1:
+
+* Fixed [SFJ-70]: DefaultTcpTransportMapping does not cleanup its connections timely. This
+  is a regression caused by the SFJ-57 fix implemented for SNMP4J 2.1.0. In addition,
+  a theoretically possible NullPointerException has been fixed too (such a NPE was never
+  reported though).
+
+[2013-03-19] Version 2.2.0:
+
+* Added: Option in SNMP4Settings to allow parsing Counter64 variables in SNMPv1 PDUs
+  which is not allowed by SNMPv1 but a common bug in many devices.
+* Fixed [SFJ-69]: For the following report PDUs the securityLevel now is set to the same as
+  in the request (which is in SNMP4J 2.1 and prior not the case):
+  RFC3414 §3.2.3 Unkown engine ID.
+  RFC3414 §3.2.4 Unknown security name
+  RFC3414 §3.2.5 Unsupported security level
+  RFC3414 §3.2.6 Wrong digest -> authentication failure
+  The prior 2.2 behavior can be reactivated using SNMP4JSettings.setReportSecurityLevelStrategy(..).
+* Fixed Javadoc title tag.
+* Improved: Logging of USM time exceptions.
+* Fixed: Race condition in DummyTransport.
+* Added: New Constructor in VariableBinding to directly create a VB by parsing OID and variable from a string
+  in conjunction with SNMP4J-SMI.
+* Improved SMI formatting.
+* Fixed issue in TreeUtils in conjunction with SNMPv1, the end event was not properly called back.
+* Updated repository URLs in pom.xml.
+* Added: setSecurityModel and setSecurityLevel in Target interface.
+* Added: OIDTextFormat usage in OID class.
+* Added: contextEngineID support in SnmpURI and DefaultPDUFactory.
+* Fixed [SFJ-66]: Fixed lexicographic ordering check in TreeUtils for multiple root OIDs.
+* Improved: TimeTicks setValue from String and extended PDUFactory by GETBULK parameter handling.
+* Improved: TLS JavaDoc.
+* Added: Default target in SnmpURI.
+
+[2012-04-03] Version 2.1.0:
+
+* Added: org.snmp4j.uri package with SnmpURI class which supports RFC 4088.
+* Fixed: [SFJ-60] AuthenticationFailureEvent is not fired by MessageDispatcherImpl
+  in all authentication failure situations.
+* Fixed: [SFJ-57] Race condition in DefaultTcpTransportMapping when timeout occurs
+  while a new message is being sent out.
+* Added: Options to set security model to SnmpConfigurator.
+
+[2011-11-23] Version 2.0.3:
+
+* Fixed [SFJ-53]: Possible NullPointerException because of a race condition when closing
+  Snmp session immediately after sending sync request.
+* Improved: TLSTM configurability for TLS 1.1 and 1.2 support.
+* Added: TLS protocol & version can be configured now.
+
+[2011-09-09] Version 2.0.2:
+
+Improved [SFJ-49]: TTLSTM and DefaultTcoTransportMapping on AIX did
+caught in an endless loop because select() there returns a spurious
+read indication while write data is pending in fact.
+
+[2011-08-25] Version 2.0.1:
+
+* Fixed: [SFJ-44] Possible NullPointerException in DefaultTcpTransportMapping
+  when starting master agent.
+
+[2011-08-22] Version 2.0.0:
+
+* Added: Support of RFC 5343 (context engine ID discovery),
+  RFC 5590 (Transport Subsystem for the SNMP),
+  RFC 5591 (Transport Security Model for the SNMP - TSM),
+  RFC 5953 (Transport Layer Security (TLS) Transport Model for the SNMP - TLSTM)
+* Changed: Migrated code to use Java 1.6 Generics and System.nanoTime()
+  where appropriate.
+* Fixed: Priv3DES key extension.
+* Improved [SFJ-40]: Treating now characters 1C-1F as non-printable.
+* Fixed [SFJ-43]: Responses for requests were not accepted if a retry was sent out before the response has been received.
+* Fixed [SFJ-35]: SocketClosedException in DefaultUdpTransportMapping stops ListenThread.
+* Fixed: A couple of minor bug and performance fixes.
+* Improved: Address interface (removed Comparable and added AssignableFromByteArray).
+
+[2010-10-22] Version 1.11.2:
+
+* Added: USM.hasUser to easily check if an user already exists
+  in an USM.
+* Fixed: [SFJ-27] PduHandle was not serializable.
+* Fixed: [SFJ-28] Race condition in DefaultUdpTransportMapping
+  causing NullPointerException when closing socket while
+  message are being received.
+* Fixed: [SFJ-29] Too many open sockets created by
+  DefaultTcpTransportMapping if sendMessage is called often
+  while a new connection is being established but is not
+  connected yet.
+* Fixed: [SFJ-30] CounterSupport parameter ignored in MPv3 constructor.
+
+[2010-06-09] Version 1.11.1:
+
+* Fixed: [SJF-24] CPU usage problem in DefaultTcpTransportMapping
+  when using certain releases of Java 1.5.
+* Fixed: [SFJ-23] Race condition in DefaultUdpTransportMapping
+  close method which could cause a NullPointerException.
+
+[2010-02-20] Version 1.11:
+
+* Fixed: OID for AES128 encryption was 1.3.6.1.6.3.10.1.2.19
+  but is defined by RFC3826 as 1.3.6.1.6.3.10.1.2.4.
+* Fixed: snmpInvalidMsgs counter was not incremented for some
+  invalid incoming SNMP messages.
+* Improved: Made IpAddress implementing AssignableFromByteArray.
+* Improved: IpAddress throws RuntimeException with chained
+  UnknownHostException if IpAddress is invalid.
+* Fixed: JavaLogFactory.createLogger(Class c) used wrong class
+  for determining the logger name.
+* Added: OID.trim().
+* Fixed: [SFJ-22] Resource leak in DefaultTcpTransportMapping
+  when trying to connect to a non-existing (or connection refusing)
+  peer.
+
+[2009-10-22] Version 1.10.2:
+
+* Fixed: [SFJ-10] Snmp.discoverAuthoritativeEngineId sends second
+  GET request after receive of unknownEngineID report (which
+  already provided the requested engineID).
+* Added: IpAddress(byte[] addr) constructor.
+* Fixed: [SFJ-13] java.nio.ClosedChannelException in
+  DefaultTCPTransportMapping after java.net.ConnectExecption on
+  another target.
+* Fixed: [SFJ-14] Sync request could hang forever in a wait()
+  call if SyncResponseListener caught an unhandled runtime
+  exception.
+* Fixed: Possible NullPointerException in MPv3 if no Counter-
+  Support has been set.
+* Improved: [SFJ-16] By using a PDUFactory that creates a GETNEXT
+  PDU, TableUtils and TreeUtils can be forced to use GETNEXT PDUs
+  to retrieve their SNMP data for v2c and v3 too.
+* Improved: DefaultTCPTransportMapping performance.
+* Improved: MPv3/USM error message.
+* Improved: MultiThreadMessageDispatcher operate on a copy of the
+  message buffer supplied to its processMessage method to allow
+  parallel processing of incoming message by several TransportListeners.
+* Improved: Added a default thread join timeout to avoid hangs on
+  JDKs which do not properly interrupt/join threads waiting in IO
+  operation statements.
+  See also DefaultThreadFactory.setThreadJoinTimeout(..)
+* Improved: OID.append(..) now returns a pointer to itself to
+  allow chaining of OID modification operations.
+* Improved: Reduced synchronize usage on SocketEntry where it was
+  not necessary (i.e., when closing the socket of the entry).
+* Fixed: NPE in ArgumentParser.java when parsing empty command line.
+* Fixed: Error status texts for wrongLength(8) and wrongEncoding(9).
+
+[2009-07-27] Version 1.10.1:
+
+* Fixed: USM.setLocalTime(..) did not reset USM time table.
+* Fixed: ArgumentParser also accepts regex with comma.
+* Fixed: SnmpConfigurator parse exception when applying context
+  engine ID.
+* Fixed: Exception when encoding IpAddress with Inet6Address.
+* Fixed: Console tool did not use contextName and contextEngineID
+  parameters for walk operations.
+* Added: TreeUtils.setIgnoreLexicographicOrder to suppress errors
+  when the agent does not implement lexicographic ordering
+  correctly. Using this option can cause endless loops however!
+* Changed: Precompiled JAR has debug information turned on.
+
+[2009-04-30] Version 1.10:
+
+* Added: Tool to control log level of SNMP4J-Agent.
+* Improved: ArgumentParser to allow command oriented
+  command line parsing (i.e., different synopsis
+  depending on the chosen command).
+* Added: Hooks for custom OID and variable text formatters
+  to simplify integration of MIB information/parsers.
+* Added: VariableBinding.toValueString().
+* Fixed: MPv3 did return wrong stats counter if an unknown
+  engine ID had been received.
+* Added: Zoned IPv6 address support for TransportAddress
+  octet string mapping.
+* Fixed: NullPointerException in PendingRequest.pduHandleAssigned
+  when retry > 0.
+* Improved: Wrapped Object.wait() calls in loops as
+  suggested/needed by Java 1.6.
+* Improved: Log4LogAdapter now provides correct localization
+  information.
+* Fixed: If no Snmp.cancel is called before a request timed
+  out but at last one response has been received before, then
+  no timeout call to ResponseListener.onResponse was performed.
+* Improved: Added MPv3(USM usm) constructor to make it easier to
+  use multiple Snmp instances with dedicated USM/MPv3 combination
+  for each Snmp instance.
+* Fixed: RetrievalEvent.getErrorMessage() now also returns the
+  textual representation of the PDU error status instead of an
+  empty string.
+
+[2008-12-15] Version 1.9.3d:
+
+* Fixed: Possible OutOfMemory when sync request often
+  gets an IOException.
+* Fixed: Possible deadlock in sync TableUtils.getTable
+  method.
+* Fixed: "Hanging" TCP connection when connection closed
+  by timeout while messsage has been received in
+  DefaultTCPTransportMapping.
+
+[2008-08-29] Version 1.9.3c:
+
+* Fixed: DefaultTCPTransportMapping could not handle
+  source messages where a SNMP message was not sent
+  as complete TCP message by the source, but sent
+  in junks.
+
+[2008-08-11] Version 1.9.3b:
+
+* Fixed: NullPointerException when processing Report
+  (regression from 1.9.3).
+* Improved: InterruptedException is forwarded to calling
+  thread where appropriate.
+
+[2008-07-22] Version 1.9.3a:
+
+* Fixed: Regression when using null TransportMapping in
+  Snmp requests not returning a response when agent
+  does not respond in time on first retry.
+
+[2008-07-21] Version 1.9.3:
+
+* Improved: Removed creation of unnecessary Null istances.
+* Improved: Reduced object creation through OID and
+  VariableBinding classes.
+* Improved: Canceled TimerTasks free objects early to
+  reduce memory consumption, for example, when retries
+  are used with Snmp.
+
+[2008-06-30] Version 1.9.2a:
+
+* Fixed: Possible NPE in DefaultUdpTransportMapping.close()
+  and DefaultUdpTransportMapping.ListenThread.run().
+
+[2008-06-11] Version 1.9.2:
+
+* Improved: If no context engine ID is set for NOTIFICATION
+  and INFORM PDUs, SNMP4J now sets it to its local engine ID.
+  Prior to 1.9.2 that was the authoritative engine ID which
+  is the engine ID of the target in case of an INFORM PDU.
+* Fixed: Possible NullPointerException when sending async
+  request (regression from 1.9.1f).
+
+[2008-05-27] Version 1.9.1g:
+
+* Fixed: NullPointerException in Snmp.close() when
+  there has not been any confirmed request processed before.
+
+[2008-05-19] Version 1.9.1f:
+
+* Improved: Performance of PrivAES.extendShortKey.
+* Fixed: Inconsistent descriptions in org.snmp4j
+  package JavaDoc.
+* Improved: DefaultUDPTransportMapping can be now reused
+  after close() has been called by calling listen() again.
+* Improved: Exception handling of DefaultUDPTransportMapping.
+* Fixed: DefaultTCPTransportMapping blocked until an incoming
+  request had been received.
+* Fixed: ArgumentParser error handling and fixed bug
+  regarding default value recognition in conjunction with
+  regular expression.
+* Improved: Snmp can now be closed and reused
+  with listen() again. Internal timer is only
+  created when needed.
+
+[2008-04-22] Version 1.9.1e:
+
+* Improved: Exception handling when transport mapping
+  cannot be initialized due to IO exceptions.
+* Added: VersionInfo in org.snmp4j.version.
+
+[2008-04-09] Version 1.9.1d:
+
+* Improved: Asymmetric checking of SNMPv1 compatible
+  variable binding in PDUv1 removed.
+* Fixed: Transport not copied in Snmp.PendingRequest
+  which could cause wrong transport usage when processing
+  retries (was not fixed correctly in 1.9.1b).
+
+[2008-04-03] Version 1.9.1c:
+
+* Fixed: Missing PDUv1.clone() which could lead to wrong
+  SNMPv1 trap PDU encoding.
+* Fixed: Possible deadlock race condition when processing
+  sync requests with retry > 0.
+* Improved: Pending async requests will be removed after
+  timeout even if the response listener did not call
+  Snmp.cancel.
+* Fixed: TableUtils did not return all rows if request
+  PDUs had to be splitted because of too much columns.
+
+[2008-03-27] Version 1.9.1b:
+
+* Fixed: Transport not copied in Snmp.PendingRequest
+  which could cause wrong transport usage when processing
+  retries.
+
+[2008-03-25] Version 1.9.1a:
+
+* Fixed: Async request processing for broadcasts (regression
+  bug in 1.9.1 which prevented mutliple responses for a
+  single async request).
+
+[2008-03-18] Version 1.9.1:
+
+* Improved: OID parsing from string now supports embedded
+  string to OID conversion, for example the following OIDs
+  are equal:
+    a = new OID("1.3.6.2.1.5.'hal.'.'''.'lo'.1");
+    b = new OID("1.3.6.2.1.5.104.97.108.46.39.108.111.1");
+* Improved: Added factory pattern for creating PDU for
+  incoming messages parsed by message processing models.
+* Fixed: Null LogLevel returned by JavaLogAdapter.getLogLevel.
+* Fixed: With async request processing and retry>0 there
+  could have been a race condition where a response event
+  had been generated twice for a request.
+* Fixed: ArgumentParser option multi parameter support
+  which failed to parse options like "-option param1 param2"
+  correctly.
+* Changed: MessageDispatcherImpl can now be used to register
+  more than one transport mapping per address class (UDP/TCP).
+  Nevertheless, only the first registered one will be used
+  for sending SNMP messages if no specific transport mapping
+  is given.
+* Improved: Target is cloned when used internally by Snmp
+  instance to avoid errors through concurrent target usage.
+
+[2008-01-31] Version 1.9:
+
+* Improved: PDU.add(VariableBinding) no longer clones
+  VariableBindings while adding it if the contained variable
+  is dynamic. Instead VariableBinding.setVariable clones
+  the set variable always as well the oid set by setOid(OID).
+* Improved: Added factories for thread and timer instances
+  configurable through SNMP4JSettings class.
+* Improved: Created interfaces for ThreadPool (WorkerPool)
+  and thread of execution (WorkerTask) as well as Timer
+  (CommonTimer) for better Java EE intergration.
+* Added: ArgumentParser for simple command line parsing.
+* Fixed: Local engine ID could not be set for simple PDU
+  request for the command line tool.
+
+[2007-11-06] Version 1.9 RC2:
+
+* Fixed: Walk modus of console example.
+* Added: -Ocs and -Ods to create and dump subtree
+  snapshot files.
+
+[2007-10-18] Version 1.9 RC1:
+
+* Fixed: LogFactory.getLogFactory() returned null if
+  log factory has not been initialized yet. Now
+  a new instance of LogFactory is returned instead.
+* Fixed: Typo in Snmp JavaDoc (getPdu() -> getPDU()).
+* Added: Hook-up method in DefaultTCPTransportMapping
+  to allow setting socket options by extending the
+  class and overwriting the setSocketOptions method.
+* Added: TripleDES-EDE privacy protocol implementation.
+* Changed: SecurityProtocol interface to allow dynamic
+  key extension.
+* Fixed: Race condition in DefaultTCPTransportMapping.
+
+[2007-05-04] Version 1.8.2:
+
+* Fixed: Null.clone() did not copy/preserve syntax.
+* Fixed: MPv3.addEngineID added engine ID to the local cache
+  although if it matched the local engine ID.
+
+[2007-04-23] Version 1.8.1a:
+
+* Fixed: No error was reported by TableUtils when sending
+  of a request failed.
+* Fixed: MPv3.removeEngineID fired "engine ID added"
+  event.
+
+[2007-03-12] Version 1.8.1:
+
+* Fixed: Race condition in DefaultTCPTransportMapping
+  that could cause message loss because messages are
+  accidentially never send (because at the same time
+  another message came in).
+* Improved: Snmp.addNotificationListener(..) sets the
+  connection timeout to 0 for TCP transport mappings.
+* Fixed: Snmp.removeNotificationListener(..) caused
+  memory leak because it did not deregister the
+  notification transport mapping properly.
+* Fixed/Improved: Several code cosmetics and Serializable
+  issues.
+* Improved: REPORT messages are now sent over the same
+  transport mapping as the message reported on has been
+  received. This improves firewall interoperability.
+
+[2007-02-01] Version 1.8:
+
+* Fixed: Race condition with sync requests in Snmp.send
+  that could cause a deadlock.
+* Fixed: Added missing serialVersionUIDs.
+* Changed: PduHandleCallback.pduHandleAssigned(..) to
+  use Object as type of the PDU reference.
+
+[2007-01-08] Version 1.8 RC1:
+
+* Changed: Variable is now an interface and the former
+  abstract class implementation is now moved to
+  AbstractVariable. Serialized Variables from 1.7.x
+  or earliers released can be deserialized with 1.8
+  because the Variable interface defines the same
+  serialVersionUID as the former Variable abstract class.
+* Fixed: MessageDispatcherImpl.getMessageProcessingModel
+  no longer throws an ArrayIndexOutOfBoundsException
+  when the requested model is not known.
+* Added: GenericAddress constants for the default address
+  types "udp", "tcp", and "ip".
+* Fixed: OctetString.fromSubIndex for implied length values.
+* Added: Constants for default command responder and
+  notification receiver ports in SnmpConstants class.
+* Added: Append constructor for OID class, to facilitate
+  creating an instance OID from a class OID and an index
+  OID.
+* Improved: DefaultTcpTransportMapping can now also
+  reconnect if its connection is in state "unconnected".
+* Fixed: OctetString.startsWith did not work if prefix
+  length did not match the string's length.
+* Added: Option (-m) to set maxMessageResponseSize for
+  SNMPv3 requests in console example.
+* Improved: Clarified and implemented TODOs left from
+  earlier versions.
+* Fixed: IllegalStateException seldom occured in a race
+  condition while waiting for a sync response in
+  Snmp.send(..) or when canceled an async response while
+  a retry was started.
+* Improved: Performance of message sending and receiving
+  due to less (narrow) synchronization.
+* Added: -l option to SnmpRequest console example to
+  allow setting the local engine ID to avoid engine ID
+  conflicts.
+* Added: -b option to set the engine boots counter for the
+  console example (SnmpRequest).
+* Added: TreeUtils to conveniently walk sub-trees.
+* Fixed: Bug in LogLevel class causing incorrect log levels
+  to be used in some cases when converting from a levels
+  string representation.
+* Improved: JavaLogAdapter DEBUG level from SNMP4J (Log4J)
+  now maps to FINE in Java logging.
+* Added: LogFactory can now be configured through the
+  system property "snmp4j.LogFactory" with the factories
+  class name.
+* Added: LogProxy for implementing late logger binding.
+* Changed: BERSerializable no longer extends Serializable.
+* Added: Security check for transport not listening when
+  sending confirmed PDU.
+
+[2006-10-07] Version 1.7.6a:
+
+* Fixed: Possible deadlock in ThreadPool when
+  stopping a busy thread pool.
+
+* Added: SMIConstants.SYNTAX_BITS to map to
+  SMIConstants.SYNTAX_OCTET_STRING.
+* Added: TableUtils.destroyRow(..).
+* Fixed: Opaque.clone() was missing.
+
+[2006-09-04] Version 1.7.5:
+
+* Changed: VariableBinding(OID, Variable) now checks OID
+  for not being null.
+* Fixed: MessageDispatcherImpl.addAuthenticationFailureListener
+  did not work.
+* Fixed: OctetString.split(OctetString, OctetString).
+
+[2006-08-19] Version 1.7.4a:
+
+* Fixed: Concurrent access to the internal server
+  thread during close() calls does no longer cause
+  a NullPointerException. The synchronization that
+  caused a deadlock in 1.7.4 has been removed again.
+* Added: Support for the obsolete SMI type BIT STRING
+  for compatibility with very old SNMPv2 draft
+  implementations. In order to activate support for it
+  call SNMP4JSettings.setExtensibilityEnabled(true).
+  See also the org.snmp4j.smi.BitString class.
+
+[2006-08-03] Version 1.7.3:
+
+* Added: SnmpConstants.getTrapOID to convert a v1 trap info
+  to a v2/v3 notification OID.
+* Improved: PDU and PDUv1 now check against setting a wrong
+  PDU type for that PDU class (i.e. V1TRAP is not allowed
+  for PDU and ScopedPDU and NOTIFICATION is not allowed for
+  PDUv1).
+* Added: DefaultPDUFactory.createPDU(int targetVersion).
+* Changed: PDUv1.toString() to use PDU.toString() for all PDU
+  types other than PDU.V1TRAP.
+* Added: Constructor to DefaultUDPTransportMapping to create
+  a socket that reuses an address that is in timeout state
+  after a closed connection (TIME_WAIT).
+* Fixed: Fixed multi-threading issue in MPv3 where the incoming
+  request pdu handle was overwritten which caused state information
+  to get lost when more than one incoming request were processed
+  concurrently.
+
+[2006-05-29] Version 1.7.2:
+
+* Added: JavaLogFactory and JavaLogAdapter for Java logging.
+  This is now also the default logging for the SnmpRequest
+  tool.
+* Improved: OctetString.isPrintable to accept whitespaces as
+  printable characters.
+* Fixed: When connection closed remotely the corresponding
+  event has not been fired in all cases (DefaultTCPTransportMapping).
+
+[2006-04-24] Version 1.7.1:
+
+* Fixed: Stackoverflow in OID.nextPeer().
+* Added: ConnectionOrientedTransportMapping.close(Address peerAddress).
+* Improved: Reporting of RuntimeExceptions while handling retries.
+
+[2006-04-10] Version 1.7:
+
+* Improved: Logging interface enhanced.
+* Added: Variable.toInt() and Variable.toLong() to reduce
+  casting when converting to native integer or long values.
+* Fixed: OID.mask.
+* Added: When PDUv1 decodes a Counter64 object, a
+  MessageException is thrown.
+* Added: OID.nextPeer(), OID.successor(),
+  and OID.predecessor().
+* Fixed: ThreadPool.stop() blocked.
+* Fixed: Additional retries with sync requests when first
+  try failed and second (or second to last) succeeded.
+* Fixed: Possible NullPointerException when closing Snmp.
+* Improved: Closing UDP default transport mapping first
+  disconnects socket before closing it.
+* Fixed: Possible ConcurrentModificationException when using
+  List returned by sync TableUtils.getTable(..).
+* Added: OctetString.fromByteArray to create an OctetString
+  from a byte array.
+* Improved: OID.successor() to build correct successor for
+  128 subidentifier OIDs.
+* Added: OID.min(OID a, OID b) and OID.max(OID a, OID b)
+* Fixed: Handling of remote disconnect of TCP transport
+  mapping.
+* Added: ConnectionOrientedTransportMapping interface and
+  TransportStateListener event listener.
+* Added: Variable.getSyntaxString().
+* Fixed: Bug in Snmp.send(PDU pdu, Target target,
+  TransportMapping transport) which did not propagate the
+  transport mapping.
+* Added: UsignedInteger32(int) and UsignedInteger32(byte)
+  constructor.
+* Fixed: Set SnmpMessageLengthDecoder as default for
+  DefaultTCPTransportMapping.
+* Added sysOREntry OID constant in SnmpConstants.
+
+[2005-12-27] Version 1.6e:
+
+* Improved: Performance of TableUtils by using a better
+  end condition when traversing a table.
+
+[2005-12-06] Version 1.6d:
+
+* Fixed: SNMP4J did not detect USM out-of-time-window errors
+  when checking non-authoritative times.
+
+[2005-11-30] Version 1.6c:
+
+* Fixed: Sync requests were not removed from pending requests list
+  when a response has been received which resulted in additional
+  retries.
+
+[2005-11-23] Version 1.6b:
+
+* Fixed: Request ID handling for request IDs > 2^31.
+* Fixed: If request ID < 0 of a incoming request a different
+  request ID has been sent with the corresponding response.
+* Changed: To let SNMP4J generate a request ID it has to be
+  provided as 0 (negative request IDs will no longer result
+  in a new request ID being generated)
+* Fixed: Memory leak when sending synchronous requests introduced
+  in v1.6beta. The memory leak was caused because the pending
+  message is not removed when a response has been received which
+  also led SNMP4J send requests messages even though a response
+  had already been received.
+
+[2005-10-23] Version 1.6:
+
+* Fixed: Retry handling of Snmp.
+* Added: TaskScheduler and SchedulerTask.
+* Added: MessageDispatcher.getTransport(..) and made corresponding
+  private method in MessageDispatcherImpl public.
+
+[2005-10-13] Version 1.6 RC 1:
+
+* Fixed: Asynchronous Snmp.inform() used wrong PDU type (GETBULK
+  instead INFORM).
+* Fixed: MessageDispatcherImpl did not set peer transport mapping
+  in StateReference (needed to respond correctly if multiple TCP
+  transport mappings are used).
+* Fixed: IpAddress.equals(Object o) threw ClassCastException if
+  o was not an IpAddress.
+* Added: Static method PDUFactory.createPDU(..).
+* Improved: Made Target cloneable.
+* Fixed: Fixed execution of broadcast requests in Snmp.java.
+* Added: tryToExceute in ThreadPool and added two other methods
+  to better interrupt/cancel tasks.
+* Added: Interface for external handling of reports in Snmp.
+* Added: ConsoleLogAdapter and ConsoleLogFactory for console
+  logging.
+
+[2005-08-24] Version 1.6 beta 1:
+
+* Added: LogAdapter.fatal(..) methods.
+* Fixed: TransportIpAddress.parse did not parse IPv6 addresses
+  correctly.
+* Improved: Introduced TransportListener interface to clearly
+  separate TransportMappings from MessageDispatchers.
+* Fixed: BER length encoding of length > 2^31.
+* Added: TransportMapping.getListenAddress() returns the listen
+  address of transport mappings.
+* Fixed: Initialization of CommunityTarget SNMP version to 1
+  for constructor with address.
+* Fixed: MessageDispatcherImpl.getNextRequestID() did return 1
+  after max int has been reached for all negative integer values.
+* Fixed: Snmp.processReport(..) did not remove pending request
+  when a final report has been received.
+* Fixed: Counter64.getBERLength() [Thanks to Jim Doble].
+* Added: SnmpEngineEvent and Listener that provide a callback
+  hook for engine ID cache updates of the MPv3 local storage.
+* Changed: UsmUserTable.UsmUserKey is now public.
+* Improved: Hash code computation for UsmUserEntry.
+* Fixed: Snmp.send(PDU,Target,TransportMapping) did not pass
+  the transport mapping to the underlying calls.
+* Added: Support for localized USM users.
+* Fixed: Sometimes lost MPv3 cache information when processing
+  reports (out of time, etc.) due to garbage collection on
+  WeakHashMap.
+
+[2005-04-26] Version 1.5:
+
+* Fixed: Encoding of OIDs with sub-identifiers > 2^31.
+* Fixed: Counter64 encoding error for some values > 2^24.
+* Fixed: Timeout option descritpion of console tool.
+* Added: Some debug messages for notInTimeWindow exceptions.
+* Changed: Address is now an interface (was an abstract class).
+  An new abstract base class for IpAddress and TransportIpAddress
+  has been introduced which is called SMIAddress. Because of the
+  class type change of Address you will need to recompile your
+  application, when upgrading to SNMP4J 1.5.
+* Improved: UdpAddress and TcpAddress BER encoding routines
+  now encode the respective address as OCTET STRING according
+  to the TRANSPORT-ADDRESS-MIB.
+* Fixed: ThreadPool.stop did not notify TaskManagers which
+  could block the stop() method execution.
+* Improved: By default system properties are no longer used
+  to determine SNMP4J configuration, instead the configuration
+  (which transport protocols, security protocols, SMI syntaxes,
+  address types, etc. to use) is hard coded and contains all
+  available features. To add additional features without
+  changing SNMP4J classes/code, use the
+  SNMP4JSettings.setExtensibility method.
+  Consequently, SNMP4J can now be used with Applets.
+* Added: OID.mask(OctetString) to mask an OID by a bit string.
+* Added: TransportIpAddress.getValue() which returns the
+  address value as a byte array.
+* Fixed: Typo in -OtCSV options and description CVS changed into
+  CSV.
+* Added: snmpInPkts counter support.
+* Improved: Console example can now be extended more easily.
+* Changed: Made Snmp default constructor public.
+* Added: Snmp(MessageDispatcher).
+
+[2005-04-04] Version 1.2.1:
+
+* Changed: Due to incomplete state of Log4J 1.3-alpha6 and
+  for the sake of a more flexible logging interface the
+  new package org.snmp4j.log has been introduced. By default
+  SNMP4J does not use logging. To enable logging, for example
+  Log4J logging which is supported out-of-the-box, use
+  "static { LogFactory.setLogFactory(new Log4LogFactory());}"
+
+[2005-03-30] Version 1.2:
+
+* Improved: Replaced the log4j-1.3alpha-6.jar with a patched
+  version that does not print out Log4J internal messages.
+  These internal logging messages will be also removed from
+  the official log4j 1.3 version once it is released as beta.
+* Added: OctetString.startsWith(OctetString).
+
+* Changed: Logging API again back from JCL to Log4J-1.3's
+  UGLI independent logging interface.
+* Improved: Privacy protocols know also return their maximum
+  key length. Privacy keys now adhere to that maximum length
+  when keys are generated by passwordToKey.
+* Added: USM.getSecurityProtocols()
+* Added: OID.toByteArray() to simplify conversion of index OIDs
+  to SMI values.
+* Fixed: OctetString.compareTo function did not compare
+  byte values as unsigned causing wrong ordering of bytes > 127.
+* Added: OctetString.set(int, byte).
+
+* Changed: Target is now an interface (as an abstract
+  class). AbstractTarget has been introduced which
+  implements the same functionality as the former Target
+  object. CAUTION: v1.2 is therefore *not* binary compatible
+  with older versions. Please recompile your classes when
+  upgrading to v1.2!
+* Fixed: Snmp.trap threw always an exception.
+* Added: USM.updateUser(..) and new constructor that accepts
+  a custom SecurityProtocols set.
+* Added: zeroDotZero to SnmpConstants.
+* Changed: Log4J logging is now wrapped by the Apache
+  commons logging to be more independent regarding the
+  used logging framework.
+* Fixed: notInTimeWindow report was sent with wrong
+  securityLevel (should be authNoPriv - was noAuthNoPriv).
+* Improved: StateReference now also holds the TransportMapping
+  that was/should be used to communicate with the peer.
+* Fixed: Added missing clone() method to TimeTicks.
+* Added: Range option for plain OIDs for the command line
+  parsing of the SnmpRequest command line tool. The range
+  specification allows more convenient specification of the
+  columns of a table (for example '1.3.6.1.2.1.2.2.1-18').
+* Fixed: JavaDoc of Snmp class used deprecated methods.
+
+[2005-02-17] Version 1.1.1:
+
+* Fixed: BER decoding of zero Counter64 value and optimized
+  encoding of Counter64 values.
+* Added: -tCVS and -ttCVS operation modes to support
+  CVS dumps of tabular SNMP data with the console
+  example (SnmpRequest.java).
+
+[2005-02-04] Version 1.1a:
+
+* Added: UsmUser checks for minimum passphrase length (8).
+  See RFC3414 �11.2.
+* Fixed: TableUtils did not recognize SNMP exception VB
+  status and errors (SNMPv1) indicating table boundary.
+
+[2005-02-02] Version 1.1:
+
+* Improved: ResponseEvent now includes the peer address
+  of the response sending entity.
+* Added: PDU.toArray() and PDU.addAll(VariableBinding[]).
+* Added: OID.trim(int n) which removes the n rightmost
+  subidentifiers of an OID.
+* Changed: MessageDispatcherImpl.addTransportMapping
+  does not replace a transport mapping for the same
+  address class any more.
+* Changed: Snmp.sendPDU methods are now deprecated, because
+  they do not return the peer address. The new
+  Snmp.send methods return a ResponseEvent object that
+  provides this information.
+* Added: PDU type send methods that set the PDU type when
+  sending the PDU.
+* Added: Snmp.addNotificationListener() and related methods
+  to support simple (de)registration of inbound only transport
+  mappings.
+* Improved: Snmp's and DefaultTcpTransportMapping's threads
+  now run as daemon threads and thus no longer prevents an
+  application to exit. Nevertheless, it is strongly
+  recommended to call Snmp.close() before exiting to close
+  all ports nicely.
+* Improved: Removed redundant class UsmUserNameTable.
+* Added: Methods to extract and delete USM users (USM class).
+* Improved: MPv3.Cache entries are now removed even if the
+  target agent does not respond.
+* Changed: Made OctetString.isPrintable() public.
+* Added: TransportMapping.isListening().
+* Added: TransportMappings class which allows generic mapping
+  of address classes to transport mappings.
+* Fixed: TableUtils did not handle sparse tables correctly.
+* Fixed: MPv3.setLocalEngineID did not check parameter.
+* Fixed: DefaultPDUFactory did not create SNMPv3 ScopedPDUs.
+* Changed: Replaced -D option of console tool by -d to avoid
+  name clashes with JVM option -D.
+
+[2005-01-13] Version 1.0.4c:
+
+* Fixed: UsmUserKey.compareTo and UsmUserEntry.compareTo
+  methods did not compare classes engine ID correctly.
+
+[2004-11-22] Version 1.0.4b:
+
+* Fixed: In some situations an SNMPv3_USM_ERROR could
+  have returned when trying to send a request/response
+  PDU to a target for whose engine ID no engine time
+  notion has been stored in the local cache.
+
+[2004-11-18] Version 1.0.4a:
+
+* Fixed: TableUtils.getTable did not cancel requests
+  which caused a memory leak.
+* Fixed: UnsupportedOperationException was thrown in
+  TableUtils.getTable() when using it on a SNMPv1 target.
+* Fixed: Unclosed file handle when reading
+  smisyntax.properties.
+
+* Fixed: Memory leak when sending asynchronous requests.
+  When sending an async request do not forget to cancel
+  the request using Snmp.cancel(PDU, ReponseListener)
+  within the onResponse method of your listener!
+* Fixed: Unclosed file handles when reading
+  address.properties and SecurityProtocols.properties.
+* Added: Synchronous TableUtils.getTable() method.
+* Improved: TransportMapping inheritance regarding
+  asynchronous message processing support.
+* Added: DefaultPDUFactory implementation.
+* Fixed: PDU.isConfirmedPdu().
+
+[2004-11-04] Version 1.0.3c:
+
+* Added: The DefaultUdpTransportMapping and
+  DefaultTcpTransportMapping now by default support
+  asynchronous (i.e. multi-threaded) message processing.
+  For synchronous message processing the flag
+  asyncMsgProcessingSupported should be set to false, to
+  increase performance!
+
+[2004-10-30] Version 1.0.3b:
+
+* Fixed: TableUtils did use GETBULK PDU type also for
+  SNMPv1 targets.
+* Improved: By default, the MessageDispatcherImpl class
+  now checks for inconsistencies between PDU type and
+  used SNMP version.
+
+[2004-10-13] Version 1.0.3a:
+
+* Fixed: Race condition in Variable.registerSyntaxes().
+  In a multithreaded usage, this could have caused some
+  BER decoding failures.
+* Improved: Minor JavaDoc improvements.
+
+[2004-08-20] Version 1.0.3:
+
+* Added: Variable.isException().
+* Improved: DefaultUdpTransportMapping now closes socket
+  in close() even if listen() has not been called before.
+* Added: Variable.createVariableFromSyntax(int smiSyntax).
+* Fixed: Uncaught exception thrown by the Snmp class
+  because of an incomplete synchronization within the
+  retry processing.
+* Improved: Several JavaDoc improvements, for example added
+  documentation for the different PDU types.
+
+[2004-08-07] Version 1.0.2:
+
+* Improved: Added constants for exception Null variables and
+  Null constructor that takes an exception status syntax as
+  parameter.
+* Fixed: GenericAddress.parseAddress was not multi-threading
+  safe.
+* Added: Package org.snmp4j.util containing a ThreadPool
+  implementation and a MultiThreadedMessageDispatcher.
+* Added: TableUtils to retrieve a columns of one or more SNMP
+  tables effeciently and row oriented using GETBULK requests.
+* Added: OID(int[] rawOID, int offset, int length) constructor.
+
+[2004-07-02] Version 1.0.1a:
+
+* Fixed: Two regression issues that broke the TCP transport
+  mapping.
+* Fixed: TCP transport mapping left an unused timer thread
+  running when closed.
+
+[2004-06-26] Version 1.0.1:
+
+* Fixed: SNMPv3 trap sending did not use local engine ID
+  and time values (although it should have because the
+  sending engine is the authoritative).
+* Fixed: Context engine ID was not set to the local
+  engine ID when empty and the sent PDU was a unconfirmed one.
+* Added: DefaultCounterListener which implements SNMP error
+  counters in a generic way. It is not used by SNMP4J by
+  default.
+* Fixed: Incorrect usage description in SnmpRequest.
+* Fixed: clone() methods of Counter32 and Gauge32.
+* Added: clone() method to VariableBinding.
+* Added: Counter32.increment() and Counter64.increment() methods.
+
+[2004-06-21] Version 1.0a:
+
+* Fixed: Stack overflow when using PDUv1 for other PDU types
+  than PDU.V1TRAP (which is *not* recommended anyway!).
+* Improved: MessageDispatcherImpl.sendPdu throws now a
+  MessageException when USM fails to prepare the outgoing
+  message (instead of a NullPointerException).
+* Fixed: Two race conditions when creating Snmp instances
+  concurrently (two singleton factory methods needed to be
+  synchronized).
+* Improved: Console example returned "strange variable ..."
+  when reaching end of a subtree-walk.
+
+[2004-05-21] Version 1.0:
+
+* Fixed: Several small cosmetic fixes in code, build, and
+  JavaDoc.
+
+[2004-05-08] Version 1.0 RC2:
+
+* Fixed: SNMPv3 interoperability problems due to incorrect
+  (too long) Mesage Authentication Code length.
+* Fixed: Regression bug in the privacy module that has been
+  introduced by the optimization in the last version.
+* Fixed: The SNMP4J-Tool did not use supplied context and
+  contextEngineID parameters.
+
+[2004-04-20] Version 1.0 RC:
+
+* Fixed: Bug in Counter64.getBERLength() - length was too
+  short by one for very big counter values.
+* Improved: Performance of BER encoding and decoding because
+  less buffer copying is used now. There is still a small
+  optimization potential for SNMPv3 message handling. This
+  will be utilized in the final 1.0 release.
+* Improved: Report handling.
+* Improved: JavaDoc but package descriptions are still
+  incomplete.
+* Fixed: When Snmp.close() has been called all resources
+  are freed now - also the internal message processing
+  thread.
+
+[2004-04-07] Version 1.0beta(2):
+
+* Fixed: The dist/lib/SNMP4J.jar was not up-to-date
+  and contained a bug, the sources did not contain.
+  If you have downloaded the intial release you can
+  simply rebuild it using "ant". There is then no need
+  to download the beta(2) release.
+
+

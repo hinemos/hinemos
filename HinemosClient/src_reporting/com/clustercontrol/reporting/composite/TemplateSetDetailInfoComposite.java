@@ -22,12 +22,12 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.TemplateSetDetailInfoResponse;
 
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.reporting.dialog.TemplateSetDetailDialog;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.reporting.TemplateSetDetailInfo;
 
 /**
  * テンプレートセット詳細情報グループのコンポジットクラス<BR>
@@ -271,14 +271,14 @@ public class TemplateSetDetailInfoComposite extends Composite {
 	 *
 	 * @return
 	 */
-	public ArrayList<TemplateSetDetailInfo> getDetailList(){
+	public ArrayList<TemplateSetDetailInfoResponse> getDetailList(){
 		return this.templateSetDetailListComposite.getDetailList();
 	}
 	/**
 	 * カレンダ詳細情報をコンポジット内リストに反映させる
 	 * @param detailList
 	 */
-	public void setDetailList(ArrayList<TemplateSetDetailInfo> detailList){
+	public void setDetailList(ArrayList<TemplateSetDetailInfoResponse> detailList){
 		if (detailList != null) {
 			this.templateSetDetailListComposite.setDetailList(detailList);
 		}
@@ -346,9 +346,9 @@ public class TemplateSetDetailInfoComposite extends Composite {
 		if (ownerRoleId == null
 				|| !ownerRoleId.equals(this.templateSetDetailListComposite.getOwnerRoleId())) {
 			
-			Iterator<TemplateSetDetailInfo> iter = templateSetDetailListComposite.getDetailList().iterator();
+			Iterator<TemplateSetDetailInfoResponse> iter = templateSetDetailListComposite.getDetailList().iterator();
 			while (iter.hasNext()) {
-				TemplateSetDetailInfo composite = iter.next();
+				TemplateSetDetailInfoResponse composite = iter.next();
 				composite.setTemplateSetId(null);
 			}
 		}

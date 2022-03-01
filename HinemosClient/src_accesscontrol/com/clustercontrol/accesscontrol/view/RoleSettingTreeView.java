@@ -17,8 +17,10 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
+import org.openapitools.client.model.RoleInfoResponse;
 
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
+import com.clustercontrol.accesscontrol.bean.RoleTreeItemWrapper;
 import com.clustercontrol.accesscontrol.composite.RoleSettingTreeComposite;
 import com.clustercontrol.accesscontrol.composite.action.RoleSettingTreeSelectionChangedListener;
 import com.clustercontrol.accesscontrol.view.action.RoleSettingAssignSystemPrivilegeAction;
@@ -26,8 +28,6 @@ import com.clustercontrol.accesscontrol.view.action.RoleSettingAssignUserAction;
 import com.clustercontrol.accesscontrol.view.action.RoleSettingRefreshAction;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.accesscontrol.RoleTreeItem;
 
 /**
  * アカウント[ロール設定]ビュークラス<BR>
@@ -138,8 +138,8 @@ public class RoleSettingTreeView extends CommonViewPart {
 	 * @see com.clustercontrol.bean.JobConstant
 	 */
 	public void setEnabledAction(Object selectedInfo, ISelection selection) {
-		if(selectedInfo instanceof RoleInfo ) {
-			RoleInfo roleInfo = (RoleInfo)selectedInfo;
+		if(selectedInfo instanceof RoleInfoResponse ) {
+			RoleInfoResponse roleInfo = (RoleInfoResponse)selectedInfo;
 			if(RoleSettingTreeConstant.ROOT_ID.equals(roleInfo.getRoleId()) == false &&
 					RoleSettingTreeConstant.MANAGER.equals(roleInfo.getRoleId()) == false){
 				roleId = roleInfo.getRoleId();
@@ -178,15 +178,15 @@ public class RoleSettingTreeView extends CommonViewPart {
 	 *
 	 * @return RoleTreeItem 選択されたロールツリーアイテム
 	 */
-	public RoleTreeItem getSelectJobTreeItem() {
+	public RoleTreeItemWrapper getSelectJobTreeItem() {
 		return m_tree.getSelectItem();
 	}
 
-	public static RoleTreeItem getManager(RoleTreeItem item) {
+	public static RoleTreeItemWrapper getManager(RoleTreeItemWrapper item) {
 		if (item == null) {
 			return null;
-		} else if (item.getData() instanceof RoleInfo &&
-				((RoleInfo)item.getData()).getRoleId().equals(RoleSettingTreeConstant.MANAGER)) {
+		} else if (item.getData() instanceof RoleInfoResponse &&
+				((RoleInfoResponse)item.getData()).getRoleId().equals(RoleSettingTreeConstant.MANAGER)) {
 			return item;
 		}
 

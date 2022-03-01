@@ -330,6 +330,45 @@ public class NodeProperty {
 	}
 
 	/**
+	 * 与えられたファシリティIDに基づき、指定された条件の最新のノード情報を返す。(詳細情報を含む)<BR>
+	 *
+	 * @param facilityId ファシリティID
+	 * @param nodeFilterInfo 構成情報検索条件
+	 * @return ノード情報
+	 * @throws FacilityNotFound
+	 */
+	public static NodeInfo getPropertyFull(String facilityId, NodeInfo nodeFilterInfo) throws FacilityNotFound {
+		m_log.debug("getPropertyFull() : facilityId = " + facilityId );
+
+		if (facilityId == null || facilityId.compareTo("") == 0) {
+			return new NodeInfo();
+		}
+
+		NodeInfo tmpNodeInfo = getProperty(facilityId);
+		NodeInfo nodeInfo = tmpNodeInfo.clone();
+		
+		/** ネットワーク接続情報 */
+		nodeInfo.setNodeNetstatInfo(QueryUtil.getNodeNetstatInfoByFacilityId(facilityId));
+		/** プロセス情報 */
+		nodeInfo.getNodeProcessInfo().addAll(QueryUtil.getNodeProcessInfoByFacilityId(facilityId));
+		/** パッケージ情報 */
+		nodeInfo.setNodePackageInfo(QueryUtil.getNodePackageInfoByFacilityId(facilityId));
+		/** 個別導入製品情報 */
+		nodeInfo.setNodeProductInfo(QueryUtil.getNodeProductInfoByFacilityId(facilityId));
+		/** ライセンス情報 */
+		nodeInfo.setNodeLicenseInfo(QueryUtil.getNodeLicenseInfoByFacilityId(facilityId));
+		/** ユーザ任意情報 */
+		nodeInfo.setNodeCustomInfo(QueryUtil.getNodeCustomByFacilityId(facilityId));
+		
+		// 構成情報検索条件によるノード情報検索
+		nodeInfo = searchByNodeConfigFilterInfo(nodeInfo, nodeFilterInfo);
+
+		return nodeInfo;
+	}
+
+	
+	
+	/**
 	 * 与えられたファシリティIDに基づき、該当するノード情報を返す。(詳細情報指定)<BR>
 	 *
 	 * @param facilityId ファシリティID
@@ -400,28 +439,12 @@ public class NodeProperty {
 			return new NodeInfo();
 		}
 
-		// 検索条件が指定されている場合、強調表示設定をする
-		HashMap<NodeConfigSettingItem, List<NodeConfigFilterInfo>> nodeConfigFilterMap = new HashMap<>();
-		if (nodeFilterInfo != null 	&& nodeFilterInfo.getNodeConfigFilterList() != null) {
-			for (NodeConfigFilterInfo filterInfo : nodeFilterInfo.getNodeConfigFilterList()) {
-				if (!filterInfo.getExists()) {
-					continue;
-				}
-				if (!nodeConfigFilterMap.containsKey(filterInfo.getNodeConfigSettingItem())) {
-					nodeConfigFilterMap.put(filterInfo.getNodeConfigSettingItem(), new ArrayList<>());
-				}
-				nodeConfigFilterMap.get(filterInfo.getNodeConfigSettingItem()).add(filterInfo);
-			}
-		}
 		NodeInfo tmpNodeInfo = getProperty(facilityId);
-		if (tmpNodeInfo == null) {
-			return tmpNodeInfo;
-		}
 		NodeInfo nodeInfo = tmpNodeInfo.clone();
 		/** OS情報 */
 		List<NodeOsHistoryDetail> osHistoryList = QueryUtil.getNodeHistoryDetailByFacilityIdRegDate(NodeOsHistoryDetail.class, facilityId, targetDatetime);
 		// getProperty()で取得した情報を削除
-		nodeInfo.setNodeOsInfo(null);
+		nodeInfo.setNodeOsInfo(new NodeOsInfo());
 		if (osHistoryList.size() > 0) {
 			NodeOsInfo info = new NodeOsInfo(facilityId);
 			info.setOsName(osHistoryList.get(0).getOsName());
@@ -433,38 +456,7 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(osHistoryList.get(0).getRegDate());
 			info.setUpdateUser(osHistoryList.get(0).getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.OS);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.OS_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getOsName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.OS_RELEASE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getOsRelease());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.OS_VERSION) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getOsVersion());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.OS_CHARACTER_SET) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getCharacterSet());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.OS_STARTUP_DATE_TIME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getStartupDateTime());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.setNodeOsInfo(info);
-
 		} else {
 			// エラー
 			m_log.warn("NodeOsInfo is not found. : " + facilityId + "=" + facilityId);
@@ -487,42 +479,6 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HW_CPU);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.CPU_DEVICE_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_DEVICE_DISPLAY_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceDisplayName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_DEVICE_SIZE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceSize());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_DEVICE_SIZE_UNIT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceSizeUnit());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_DEVICE_DESCRIPTION) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceDescription());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_CORE_COUNT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getCoreCount());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_THREAD_COUNT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getThreadCount());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_CLOCK_COUNT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getClockCount());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeCpuInfo().add(info);
 		}
 
@@ -540,36 +496,6 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HW_MEMORY);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.MEMORY_DEVICE_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.MEMORY_DEVICE_DISPLAY_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceDisplayName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.MEMORY_DEVICE_SIZE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceSize());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.MEMORY_DEVICE_SIZE_UNIT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceSizeUnit());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.MEMORY_DEVICE_DESCRIPTION) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceDescription());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeMemoryInfo().add(info);
 		}
 
@@ -589,40 +515,6 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HW_NIC);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.NIC_DEVICE_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_DEVICE_DISPLAY_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceDisplayName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_DEVICE_SIZE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceSize());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_DEVICE_SIZE_UNIT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceSizeUnit());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_DEVICE_DESCRIPTION) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceDescription());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_IP_ADDRESS) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getNicIpAddress());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_MAC_ADDRESS) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getNicMacAddress());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeNetworkInterfaceInfo().add(info);
 		}
 
@@ -641,38 +533,6 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HW_DISK);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.DISK_DEVICE_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.DISK_DEVICE_DISPLAY_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceDisplayName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.DISK_DEVICE_SIZE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceSize());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.DISK_DEVICE_SIZE_UNIT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceSizeUnit());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.DISK_DEVICE_DESCRIPTION) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceDescription());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.DISK_RPM) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDiskRpm());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeDiskInfo().add(info);
 		}
 
@@ -691,38 +551,6 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HW_FILESYSTEM);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_DEVICE_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_DEVICE_DISPLAY_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceDisplayName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_DEVICE_SIZE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceSize());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_DEVICE_SIZE_UNIT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceSizeUnit());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_DEVICE_DESCRIPTION) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDeviceDescription());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_TYPE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getFilesystemType());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeFilesystemInfo().add(info);
 		}
 
@@ -734,28 +562,6 @@ public class NodeProperty {
 			NodeHostnameInfo info = new NodeHostnameInfo(facilityId, history.getHostname());
 			info.setRegDate(history.getRegDate());
 			info.setRegUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HOSTNAME);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.HOSTNAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getHostname());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeHostnameInfo().add(info);
 		}
 
@@ -770,30 +576,6 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.NODE_VARIABLE);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.NODE_VARIABLE_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getNodeVariableName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NODE_VARIABLE_VALUE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getNodeVariableValue());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeVariableInfo().add(info);
 		}
 
@@ -808,79 +590,11 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.NETSTAT);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_PROTOCOL) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getProtocol());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_LOCAL_IP_ADDRESS) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getLocalIpAddress());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_LOCAL_PORT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getLocalPort());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_FOREIGN_IP_ADDRESS) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getForeignIpAddress());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_FOREIGN_PORT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getForeignPort());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_PROCESS_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getProcessName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_PID) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getPid());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_STATUS) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getStatus());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeNetstatInfo().add(info);
 		}
 
 		/** プロセス情報 */
 		nodeInfo.getNodeProcessInfo().addAll(QueryUtil.getNodeProcessInfoByFacilityId(facilityId));
-		for (NodeProcessInfo info : nodeInfo.getNodeProcessInfo()) {
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.PROCESS);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.PROCESS_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getProcessName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PROCESS_PID) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getPid());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PROCESS_PATH) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getPath());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PROCESS_EXEC_USER) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getExecUser());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PROCESS_STARTUP_DATE_TIME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getStartupDateTime());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
-		}
 
 		/** パッケージ情報 */
 		List<NodePackageHistoryDetail> packageHistoryList = QueryUtil.getNodeHistoryDetailByFacilityIdRegDate(NodePackageHistoryDetail.class, facilityId, targetDatetime);
@@ -897,37 +611,6 @@ public class NodeProperty {
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
 
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.PACKAGE);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getPackageName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_VERSION) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getVersion());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_RELEASE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getRelease());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_INSTALL_DATE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getInstallDate());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_VENDOR) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getVendor());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_ARCHITECTURE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getArchitecture());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodePackageInfo().add(info);
 		}
 
@@ -941,32 +624,6 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.PRODUCT);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.PRODUCT_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getProductName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PRODUCT_VERSION) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getVersion());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.PRODUCT_PATH) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getPath());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeProductInfo().add(info);
 		}
 
@@ -983,38 +640,6 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.LICENSE);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_PRODUCT_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getProductName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_VENDOR) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getVendor());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_VENDOR_CONTACT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getVendorContact());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_SERIAL_NUMBER) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getSerialNumber());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_COUNT) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getCount());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_EXPIRATION_DATE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getExpirationDate());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeLicenseInfo().add(info);
 		}
 
@@ -1029,32 +654,12 @@ public class NodeProperty {
 			info.setRegUser(null);
 			info.setUpdateDate(history.getRegDate());
 			info.setUpdateUser(history.getRegUser());
-
-			List<NodeConfigFilterInfo> filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.CUSTOM);
-			if (filterList != null) {
-				for (NodeConfigFilterInfo filterInfo : filterList) {
-					boolean isSearch = false;
-					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
-						if (itemInfo.getItem() == NodeConfigFilterItem.CUSTOM_DISPLAY_NAME) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getDisplayName());
-						} else if (itemInfo.getItem() == NodeConfigFilterItem.CUSTOM_VALUE) {
-							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(), info.getValue());
-						} else {
-							// 通らない
-							isSearch = Boolean.FALSE;
-						}
-						if (!isSearch) {
-							break;
-						}
-					}
-					if (isSearch) {
-						info.setSearchTarget(true);
-						break;
-					}
-				}
-			}
 			nodeInfo.getNodeCustomInfo().add(info);
 		}
+
+		// 構成情報検索条件によるノード情報検索
+		nodeInfo = searchByNodeConfigFilterInfo(nodeInfo, nodeFilterInfo);
+
 		return nodeInfo;
 	}
 
@@ -1350,6 +955,592 @@ public class NodeProperty {
 		return list;
 	}
 	
+	/**
+	 * 構成情報検索条件と一致するノード情報を検索する<BR>
+	 *
+	 * @param nodeInfo ノード情報
+	 * @param nodeFilterInfo 構成情報検索条件
+	 * @return ノード情報（検索結果を設定）
+	 */
+	private static NodeInfo searchByNodeConfigFilterInfo(NodeInfo nodeInfo, NodeInfo nodeFilterInfo) {
+
+		// 検索条件が指定されている場合、強調表示設定をする
+		HashMap<NodeConfigSettingItem, List<NodeConfigFilterInfo>> nodeConfigFilterMap = new HashMap<>();
+		if (nodeFilterInfo != null && nodeFilterInfo.getNodeConfigFilterList() != null) {
+			for (NodeConfigFilterInfo filterInfo : nodeFilterInfo.getNodeConfigFilterList()) {
+				if (!filterInfo.getExists()) {
+					continue;
+				}
+				if (!nodeConfigFilterMap.containsKey(filterInfo.getNodeConfigSettingItem())) {
+					nodeConfigFilterMap.put(filterInfo.getNodeConfigSettingItem(), new ArrayList<>());
+				}
+				nodeConfigFilterMap.get(filterInfo.getNodeConfigSettingItem()).add(filterInfo);
+			}
+		}
+
+		// 構成情報検索条件
+		List<NodeConfigFilterInfo> filterList = null;
+
+		/** OS情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.OS);
+		if (filterList != null) {
+			NodeOsInfo osInfo = nodeInfo.getNodeOsInfo();
+			for (NodeConfigFilterInfo filterInfo : filterList) {
+				boolean isSearch = false;
+				for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+					if (itemInfo.getItem() == NodeConfigFilterItem.OS_NAME) {
+						isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(),
+								osInfo.getOsName());
+					} else if (itemInfo.getItem() == NodeConfigFilterItem.OS_RELEASE) {
+						isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(),
+								osInfo.getOsRelease());
+					} else if (itemInfo.getItem() == NodeConfigFilterItem.OS_VERSION) {
+						isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(),
+								osInfo.getOsVersion());
+					} else if (itemInfo.getItem() == NodeConfigFilterItem.OS_CHARACTER_SET) {
+						isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(),
+								osInfo.getCharacterSet());
+					} else if (itemInfo.getItem() == NodeConfigFilterItem.OS_STARTUP_DATE_TIME) {
+						isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(), itemInfo.getItemValue(),
+								osInfo.getStartupDateTime());
+					} else {
+						// 通らない
+						isSearch = Boolean.FALSE;
+					}
+					if (!isSearch) {
+						break;
+					}
+				}
+				if (isSearch) {
+					osInfo.setSearchTarget(true);
+					break;
+				}
+			}
+			nodeInfo.setNodeOsInfo(osInfo);
+		}
+
+		/** CPU情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HW_CPU);
+		if (filterList != null) {
+			List<NodeCpuInfo> cpuInfoList = nodeInfo.getNodeCpuInfo();
+			for (NodeCpuInfo info : cpuInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.CPU_DEVICE_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_DEVICE_DISPLAY_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceDisplayName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_DEVICE_SIZE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceSize());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_DEVICE_SIZE_UNIT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceSizeUnit());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_DEVICE_DESCRIPTION) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceDescription());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_CORE_COUNT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getCoreCount());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_THREAD_COUNT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getThreadCount());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.CPU_CLOCK_COUNT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getClockCount());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeCpuInfo(cpuInfoList);
+		}
+
+		/** メモリ情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HW_MEMORY);
+		if (filterList != null) {
+			List<NodeMemoryInfo> memoryInfoList = nodeInfo.getNodeMemoryInfo();
+			for (NodeMemoryInfo info : memoryInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.MEMORY_DEVICE_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.MEMORY_DEVICE_DISPLAY_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceDisplayName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.MEMORY_DEVICE_SIZE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceSize());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.MEMORY_DEVICE_SIZE_UNIT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceSizeUnit());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.MEMORY_DEVICE_DESCRIPTION) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceDescription());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeMemoryInfo(memoryInfoList);
+		}
+
+		/** NIC情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HW_NIC);
+		if (filterList != null) {
+			List<NodeNetworkInterfaceInfo> nicInfoList = nodeInfo.getNodeNetworkInterfaceInfo();
+			for (NodeNetworkInterfaceInfo info : nicInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.NIC_DEVICE_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_DEVICE_DISPLAY_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceDisplayName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_DEVICE_SIZE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceSize());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_DEVICE_SIZE_UNIT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceSizeUnit());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_DEVICE_DESCRIPTION) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceDescription());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_IP_ADDRESS) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getNicIpAddress());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NIC_MAC_ADDRESS) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getNicMacAddress());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeNetworkInterfaceInfo(nicInfoList);
+		}
+
+		/** ディスク情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HW_DISK);
+		if (filterList != null) {
+			List<NodeDiskInfo> diskInfoList = nodeInfo.getNodeDiskInfo();
+			for (NodeDiskInfo info : diskInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.DISK_DEVICE_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.DISK_DEVICE_DISPLAY_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceDisplayName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.DISK_DEVICE_SIZE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceSize());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.DISK_DEVICE_SIZE_UNIT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceSizeUnit());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.DISK_DEVICE_DESCRIPTION) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceDescription());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.DISK_RPM) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDiskRpm());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeDiskInfo(diskInfoList);
+		}
+
+		/** ファイルシステム情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HW_FILESYSTEM);
+		if (filterList != null) {
+			List<NodeFilesystemInfo> filesystemList = nodeInfo.getNodeFilesystemInfo();
+			for (NodeFilesystemInfo info : filesystemList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_DEVICE_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_DEVICE_DISPLAY_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceDisplayName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_DEVICE_SIZE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceSize());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_DEVICE_SIZE_UNIT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceSizeUnit());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_DEVICE_DESCRIPTION) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDeviceDescription());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.FILESYSTEM_TYPE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getFilesystemType());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeFilesystemInfo(filesystemList);
+		}
+
+		/** ホスト名情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.HOSTNAME);
+		if (filterList != null) {
+			List<NodeHostnameInfo> hostnameList = nodeInfo.getNodeHostnameInfo();
+			for (NodeHostnameInfo info : hostnameList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.HOSTNAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getHostname());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeHostnameInfo(hostnameList);
+		}
+
+		/** ノード変数情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.NODE_VARIABLE);
+		if (filterList != null) {
+			List<NodeVariableInfo> variableInfoList = nodeInfo.getNodeVariableInfo();
+			for (NodeVariableInfo info : variableInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.NODE_VARIABLE_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getNodeVariableName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NODE_VARIABLE_VALUE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getNodeVariableValue());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeVariableInfo(variableInfoList);
+		}
+
+		/** ネットワーク接続情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.NETSTAT);
+		if (filterList != null) {
+			List<NodeNetstatInfo> netstatInfoList = nodeInfo.getNodeNetstatInfo();
+			for (NodeNetstatInfo info : netstatInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_PROTOCOL) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getProtocol());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_LOCAL_IP_ADDRESS) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getLocalIpAddress());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_LOCAL_PORT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getLocalPort());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_FOREIGN_IP_ADDRESS) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getForeignIpAddress());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_FOREIGN_PORT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getForeignPort());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_PROCESS_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getProcessName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_PID) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getPid());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.NETSTAT_STATUS) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getStatus());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeNetstatInfo(netstatInfoList);
+		}
+
+		/** プロセス情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.PROCESS);
+		if (filterList != null) {
+			List<NodeProcessInfo> processInfoList = nodeInfo.getNodeProcessInfo();
+			for (NodeProcessInfo info : processInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.PROCESS_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getProcessName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PROCESS_PID) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getPid());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PROCESS_PATH) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getPath());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PROCESS_EXEC_USER) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getExecUser());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PROCESS_STARTUP_DATE_TIME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getStartupDateTime());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeProcessInfo(processInfoList);
+		}
+
+		/** パッケージ情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.PACKAGE);
+		if (filterList != null) {
+			List<NodePackageInfo> packageInfoList = nodeInfo.getNodePackageInfo();
+			for (NodePackageInfo info : packageInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getPackageName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_VERSION) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getVersion());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_RELEASE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getRelease());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_INSTALL_DATE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getInstallDate());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_VENDOR) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getVendor());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PACKAGE_ARCHITECTURE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getArchitecture());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodePackageInfo(packageInfoList);
+		}
+
+		/** 個別導入製品情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.PRODUCT);
+		if (filterList != null) {
+			List<NodeProductInfo> productInfoList = nodeInfo.getNodeProductInfo();
+			for (NodeProductInfo info : productInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.PRODUCT_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getProductName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PRODUCT_VERSION) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getVersion());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.PRODUCT_PATH) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getPath());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeProductInfo(productInfoList);
+		}
+
+		/** ライセンス情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.LICENSE);
+		if (filterList != null) {
+			List<NodeLicenseInfo> licenseInfoList = nodeInfo.getNodeLicenseInfo();
+			for (NodeLicenseInfo info : licenseInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_PRODUCT_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getProductName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_VENDOR) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getVendor());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_VENDOR_CONTACT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getVendorContact());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_SERIAL_NUMBER) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getSerialNumber());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_COUNT) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getCount());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.LICENSE_EXPIRATION_DATE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getExpirationDate());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeLicenseInfo(licenseInfoList);
+		}
+
+		/** ユーザ任意情報 */
+		filterList = nodeConfigFilterMap.get(NodeConfigSettingItem.CUSTOM);
+		if (filterList != null) {
+			List<NodeCustomInfo> customInfoList = nodeInfo.getNodeCustomInfo();
+			for (NodeCustomInfo info : customInfoList) {
+				for (NodeConfigFilterInfo filterInfo : filterList) {
+					boolean isSearch = false;
+					for (NodeConfigFilterItemInfo itemInfo : filterInfo.getItemList()) {
+						if (itemInfo.getItem() == NodeConfigFilterItem.CUSTOM_DISPLAY_NAME) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getDisplayName());
+						} else if (itemInfo.getItem() == NodeConfigFilterItem.CUSTOM_VALUE) {
+							isSearch = isSearchTarget(itemInfo.getItem(), itemInfo.getMethodType(),
+									itemInfo.getItemValue(), info.getValue());
+						} else {
+							// 通らない
+							isSearch = Boolean.FALSE;
+						}
+						if (!isSearch) {
+							break;
+						}
+					}
+					if (isSearch) {
+						info.setSearchTarget(true);
+						break;
+					}
+				}
+			}
+			nodeInfo.setNodeCustomInfo(customInfoList);
+		}
+
+		return nodeInfo;
+	}
 
 	/**
 	 * 検索条件をもとにした判定

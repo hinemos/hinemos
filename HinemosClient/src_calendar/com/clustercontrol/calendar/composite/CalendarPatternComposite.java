@@ -9,7 +9,6 @@
 package com.clustercontrol.calendar.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,21 +22,21 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.CalendarPatternInfoResponse;
+import org.openapitools.client.model.YMDResponse;
 
 import com.clustercontrol.calendar.action.GetCalendarPatternTableDefine;
 import com.clustercontrol.calendar.composite.action.CalendarPatternDoubleClickListener;
 import com.clustercontrol.calendar.composite.action.CalendarPatternSelectionChangedListener;
 import com.clustercontrol.calendar.composite.action.VerticalBarSelectionListener;
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.calendar.CalendarPatternInfo;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
-import com.clustercontrol.ws.calendar.Ymd;
 
 /**
  * カレンダ[カレンダパターン]ビューコンポジットクラス<BR>
@@ -156,25 +155,25 @@ public class CalendarPatternComposite extends Composite {
 	 */
 	@Override
 	public void update() {
-		List<CalendarPatternInfo> list = null;
+		List<CalendarPatternInfoResponse> list = null;
 
 		//カレンダ[カレンダパターン]情報取得
-		Map<String, List<CalendarPatternInfo>> dispDataMap= new ConcurrentHashMap<String, List<CalendarPatternInfo>>();
+		Map<String, List<CalendarPatternInfoResponse>> dispDataMap= new ConcurrentHashMap<String, List<CalendarPatternInfoResponse>>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
-				CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
+				CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
 				list = wrapper.getCalendarPatternList(null);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// 権限なし
-				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
+				errorMsgs.put( managerName, e.getMessage() );
 			} catch (Exception e) {
 				// 上記以外の例外
 				m_log.warn("update(), " + HinemosMessage.replace(e.getMessage()), e);
-				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+				errorMsgs.put( managerName, e.getMessage());
 			}
 			if(list == null){
-				list = new ArrayList<CalendarPatternInfo>();
+				list = new ArrayList<CalendarPatternInfoResponse>();
 			}
 			dispDataMap.put(managerName, list);
 		}
@@ -185,26 +184,26 @@ public class CalendarPatternComposite extends Composite {
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<CalendarPatternInfo>> map : dispDataMap.entrySet()) {
-			for (CalendarPatternInfo info : map.getValue()) {
+		for(Map.Entry<String, List<CalendarPatternInfoResponse>> map : dispDataMap.entrySet()) {
+			for (CalendarPatternInfoResponse info : map.getValue()) {
 				ArrayList<Object> obj = new ArrayList<Object>();
 				obj.add(map.getKey());
-				obj.add(info.getCalPatternId());
-				obj.add(info.getCalPatternName());
-				obj.add(info.getYmd().size());
-				if(info.getYmd() != null){
+				obj.add(info.getCalendarPatternId());
+				obj.add(info.getCalendarPatternName());
+				obj.add(info.getCalPatternDetailInfoEntities().size());
+				if(info.getCalPatternDetailInfoEntities() != null){
 					StringBuilder set = new StringBuilder();
-					for(int i = 0; i < info.getYmd().size(); i++){
+					for(int i = 0; i < info.getCalPatternDetailInfoEntities().size(); i++){
 						//設定値を超えたら省略...
 						if(i >= 5){
 							set.append("...");
 							break;
 						}
-						Ymd ymd = info.getYmd().get(i);
+						YMDResponse ymd = info.getCalPatternDetailInfoEntities().get(i);
 						set.append(
-								ymd.getYear() + "/"
-								+ ymd.getMonth() + "/"
-								+ ymd.getDay() + " , ");
+								ymd.getYearNo() + "/"
+								+ ymd.getMonthNo() + "/"
+								+ ymd.getDayNo() + " , ");
 					}
 					obj.add(set);
 				}
@@ -213,9 +212,9 @@ public class CalendarPatternComposite extends Composite {
 				}
 				obj.add(info.getOwnerRoleId());
 				obj.add(info.getRegUser());
-				obj.add(new Date(info.getRegDate()));
+				obj.add(info.getRegDate());
 				obj.add(info.getUpdateUser());
-				obj.add(new Date(info.getUpdateDate()));
+				obj.add(info.getUpdateDate());
 				obj.add(null);
 				listInput.add(obj);
 			}

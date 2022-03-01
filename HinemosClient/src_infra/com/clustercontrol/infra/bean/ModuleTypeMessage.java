@@ -11,6 +11,8 @@ package com.clustercontrol.infra.bean;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openapitools.client.model.ModuleResultResponse.ModuleTypeEnum;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -68,5 +70,16 @@ public class ModuleTypeMessage {
 		strings.add(STRING_REFERMANAGEMENT);
 		
 		return strings;
+	}
+	
+	public static String enumToString(ModuleTypeEnum type) {
+		if (type == ModuleTypeEnum.COMMAND) {
+			return STRING_COMMAND;
+		} else if (type ==  ModuleTypeEnum.FILETRANSFER) {
+			return STRING_FILETRANSFER;
+		} else if (type == ModuleTypeEnum.REFERMANAGEMENT) {
+			return STRING_REFERMANAGEMENT;
+		}
+		return "";
 	}
 }

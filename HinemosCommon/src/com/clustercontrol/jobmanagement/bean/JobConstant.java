@@ -49,6 +49,21 @@ public class JobConstant {
 	/** 監視ジョブ(ジョブの種別) */
 	public static final int TYPE_MONITORJOB = 9;
 
+	/** リソース制御ジョブ(ジョブの種別) */
+	public static final int TYPE_RESOURCEJOB = 10;
+
+	/** ジョブ連携送信ジョブ(ジョブの種別) */
+	public static final int TYPE_JOBLINKSENDJOB = 11;
+
+	/** ジョブ連携待機ジョブ(ジョブの種別) */
+	public static final int TYPE_JOBLINKRCVJOB = 12;
+
+	/** ファイルチェックジョブ(ジョブの種別) */
+	public static final int TYPE_FILECHECKJOB = 13;
+
+	/** RPAシナリオジョブ(ジョブの種別) */
+	public static final int TYPE_RPAJOB = 14;
+
 	/** ツリーのトップ */
 	public static final String STRING_COMPOSITE = "";
 	
@@ -76,6 +91,16 @@ public class JobConstant {
 			return "APPROVAL_JOB";
 		} else if (type == TYPE_MONITORJOB) {
 			return "MONITOR_JOB";
+		} else if (type == TYPE_RESOURCEJOB) {
+			return "RESOURCE_JOB";
+		} else if (type == TYPE_JOBLINKSENDJOB) {
+			return "JOBLINK_SEND_JOB";
+		} else if (type == TYPE_JOBLINKRCVJOB) {
+			return "JOBLINK_RCV_JOB";
+		} else if (type == TYPE_FILECHECKJOB) {
+			return "FILE_CHECK_JOB";
+		} else if (type == TYPE_RPAJOB) {
+			return "RPA_JOB";
 		}
 		return STRING_COMPOSITE;
 	}

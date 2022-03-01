@@ -8,6 +8,8 @@
 
 package com.clustercontrol.notify.view.action;
 
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.commands.AbstractHandler;
@@ -18,7 +20,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.clustercontrol.notify.dialog.NotifyTypeDialog;
 import com.clustercontrol.notify.view.NotifyListView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * 通知[一覧]ビューの作成アクションクラス<BR>
@@ -59,8 +61,8 @@ public class NotifyAddAction extends AbstractHandler {
 			return null; 
 		}	
 		if( view != null ){
-			String managerName = EndpointManager.getActiveManagerNameList().get(0);
-			new NotifyTypeDialog(this.viewPart.getSite().getShell(), ((NotifyListView)view).getListComposite(), managerName)
+			List<String>managerNames = RestConnectManager.getActiveManagerNameList();
+			new NotifyTypeDialog(this.viewPart.getSite().getShell(), ((NotifyListView)view).getListComposite(), managerNames)
 				.open();
 		} else {
 			m_log.info("execute: view is null");

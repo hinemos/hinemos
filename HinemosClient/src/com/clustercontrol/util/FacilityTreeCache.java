@@ -19,16 +19,18 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.SingletonUtil;
 import org.eclipse.swt.widgets.Composite;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.composite.FacilityTreeComposite;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
-import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.InvalidUserPass_Exception;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 
 /**
  * スコープツリーアイテムを取得するクライアント側のデータ<BR>
@@ -40,7 +42,7 @@ public class FacilityTreeCache {
 	private static Log m_log = LogFactory.getLog( FacilityTreeCache.class );
 
 	// ファシリティツリーのクライアント側ローカルキャッシュを保持
-	private FacilityTreeItem m_facilityTreeCache = null;
+	private FacilityTreeItemResponse m_facilityTreeCache = null;
 
 	// ファシリティツリーを表示しているビューComposite
 	private final Set<Composite> m_DisplayViewSet = new HashSet<Composite>();
@@ -61,7 +63,7 @@ public class FacilityTreeCache {
 	 *
 	 * @return スコープツリー構造
 	 */
-	public static FacilityTreeItem getTreeItem(String managerName) {
+	public static FacilityTreeItemResponse getTreeItem(String managerName) {
 		m_log.trace("FacilityTreeCache.getTreeItem() start ");
 
 		FacilityTreeCache facilityTree = getInstance();
@@ -70,18 +72,18 @@ public class FacilityTreeCache {
 			facilityTree.init();
 		}
 		// 要素を取得
-		FacilityTreeItem item = FacilityTreeItemUtil.deepCopy( facilityTree.m_facilityTreeCache, null );
+		FacilityTreeItemResponse item = FacilityTreeItemUtil.deepCopy( facilityTree.m_facilityTreeCache, null );
 
 		if(managerName == null) {
 			return item;
 		}
 
 		// マネージャが指定されている場合は絞り込み
-		FacilityTreeItem targetTree = new FacilityTreeItem();
+		FacilityTreeItemResponse targetTree = new FacilityTreeItemResponse();
 		targetTree.setData(item.getData());
-		targetTree.getChildren().add(new FacilityTreeItem());
+		targetTree.getChildren().add(new FacilityTreeItemResponse());
 		targetTree.getChildren().get(0).setData(item.getChildren().get(0).getData());
-		for(FacilityTreeItem tree : item.getChildren().get(0).getChildren()) {
+		for(FacilityTreeItemResponse tree : item.getChildren().get(0).getChildren()) {
 			if(tree.getData().getFacilityId().equals(managerName)) {
 				targetTree.getChildren().get(0).getChildren().add(tree);
 				break;
@@ -95,10 +97,10 @@ public class FacilityTreeCache {
 	public static void removeCache(String managerName) {
 		// キャッシュ情報を削除する
 		m_log.trace("FacilityTreeCache.clearCache() : clear cache " + managerName);
-		FacilityTreeItem cache = getInstance().m_facilityTreeCache;
+		FacilityTreeItemResponse cache = getInstance().m_facilityTreeCache;
 		if (cache != null) {
-			FacilityTreeItem tree = cache.getChildren().get(0);
-			for( FacilityTreeItem scope : tree.getChildren() ){
+			FacilityTreeItemResponse tree = cache.getChildren().get(0);
+			for( FacilityTreeItemResponse scope : tree.getChildren() ){
 				if( scope.getData().getFacilityId().equals(managerName) ){
 					m_log.debug("clear managerScope " + managerName);
 					tree.getChildren().remove(scope);
@@ -137,22 +139,22 @@ public class FacilityTreeCache {
 	private void init() {
 		m_log.debug("init()");
 		try {
-			FacilityTreeItem rootTree = new FacilityTreeItem();
+			FacilityTreeItemResponse rootTree = new FacilityTreeItemResponse();
 			
 			// 木構造最上位インスタンスの生成
-			FacilityInfo rootInfo = new FacilityInfo();
+			FacilityInfoResponse rootInfo = new FacilityInfoResponse();
 			rootInfo.setBuiltInFlg(true);
 			rootInfo.setFacilityName(FacilityConstant.STRING_COMPOSITE);
-			rootInfo.setFacilityType(FacilityConstant.TYPE_COMPOSITE);
+			rootInfo.setFacilityType(FacilityTypeEnum.COMPOSITE);
 			rootTree.setData(rootInfo);
 
 			// コンポジットアイテムの生成
-			FacilityTreeItem compositeTree = new FacilityTreeItem();
-			FacilityInfo compositeInfo = new FacilityInfo();
+			FacilityTreeItemResponse compositeTree = new FacilityTreeItemResponse();
+			FacilityInfoResponse compositeInfo = new FacilityInfoResponse();
 			compositeInfo.setBuiltInFlg(true);
 			compositeInfo.setFacilityId(ReservedFacilityIdConstant.ROOT_SCOPE);
 			compositeInfo.setFacilityName(Messages.getString("root"));
-			compositeInfo.setFacilityType(FacilityConstant.TYPE_COMPOSITE);
+			compositeInfo.setFacilityType(FacilityTypeEnum.COMPOSITE);
 			compositeInfo.setNotReferFlg(true);
 			compositeTree.setData(compositeInfo);
 			compositeTree.setParent(rootTree);
@@ -184,15 +186,15 @@ public class FacilityTreeCache {
 			cacheDate = new Date(0); // ConcurrentHashMapにnullが投入できないため。接続断のときに、ここを通る。
 		}
 		try {
-			FacilityTreeItem managerScope = null;
-			FacilityTreeItem newTree = null;
+			FacilityTreeItemResponse managerScope = null;
+			FacilityTreeItemResponse newTree = null;
 			if (cacheDate.getTime() != 0) {
 				long start = System.currentTimeMillis();
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
 				newTree = wrapper.getFacilityTree(null);
 				m_log.debug("getFacilityTree " + managerName + ", time=" + (System.currentTimeMillis() - start));
 			}
-			for( FacilityTreeItem scope : m_facilityTreeCache.getChildren().get(0).getChildren() ){
+			for( FacilityTreeItemResponse scope : m_facilityTreeCache.getChildren().get(0).getChildren() ){
 				if( scope.getData().getFacilityId().equals(managerName) ){
 					m_log.debug("clear managerScope " + managerName);
 					scope.getChildren().clear();
@@ -201,14 +203,14 @@ public class FacilityTreeCache {
 				}
 			}
 			if (managerScope == null) {
-				managerScope = new FacilityTreeItem();
+				managerScope = new FacilityTreeItemResponse();
 				managerScope.setParent(m_facilityTreeCache.getChildren().get(0));
-				FacilityInfo managerInfo = new FacilityInfo();
+				FacilityInfoResponse managerInfo = new FacilityInfoResponse();
 				managerScope.setData(managerInfo);
 				managerInfo.setFacilityId(managerName);
 				managerInfo.setFacilityName(managerName);
-				managerInfo.setFacilityType(FacilityConstant.TYPE_MANAGER);
-				managerInfo.setDisplaySortOrder(EndpointManager.getOrder(managerName));
+				managerInfo.setFacilityType(FacilityTypeEnum.MANAGER);
+				managerInfo.setDisplaySortOrder(RestConnectManager.getOrder(managerName));
 				managerInfo.setNotReferFlg(false);
 				
 				m_facilityTreeCache.getChildren().get(0).getChildren().add(managerScope);
@@ -220,7 +222,7 @@ public class FacilityTreeCache {
 			
 			m_log.debug("put cacheDate : managerName=" + managerName + ", cacheDate=" + cacheDate);
 			cacheDateMap.put(managerName, cacheDate);
-		} catch (RuntimeException | HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (RuntimeException | HinemosUnknown | InvalidRole | InvalidUserPass | RestConnectFailed e) {
 			m_log.warn("refreshCache(), " + e.getMessage(), e);
 			return;
 		}

@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.log4j.Logger;
 
@@ -34,7 +34,6 @@ import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.InternalManagerError;
 import com.clustercontrol.xcloud.Session;
-import com.clustercontrol.xcloud.Session.PostCommitAction;
 import com.clustercontrol.xcloud.common.ErrorCode;
 import com.clustercontrol.xcloud.factory.IResourceManagement.Entity;
 import com.clustercontrol.xcloud.factory.IResourceManagement.Folder;
@@ -50,7 +49,6 @@ import com.clustercontrol.xcloud.model.LocationEntity;
 import com.clustercontrol.xcloud.model.PrivateCloudScopeEntity;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil.TransactionScope;
-import com.clustercontrol.xcloud.persistence.TransactionException;
 import com.clustercontrol.xcloud.persistence.Transactional;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.FacilityIdUtil;
@@ -245,7 +243,7 @@ public class LocationRepositoryUpdater {
 				List<IResourceManagement.Resource> resources = new ArrayList<>();
 				resources.addAll(platformLocation.getInstances());
 				resources.addAll(platformLocation.getEntities());
-	
+
 				// エンティティーとインスタンスを "全ノード" スコープへ紐付け
 				// "全ノード" スコープ取得
 				List<FacilityTreeItem> treeItems = CloudUtil.collectScopes(treeItem, FacilityIdUtil.getAllNodeScopeId(cloudScope.getPlatformId(), cloudScope.getId()));
@@ -368,19 +366,14 @@ public class LocationRepositoryUpdater {
 							if (instanceEntity.getFacilityId() == null)
 								return;
 							final String nodeId = instanceEntity.getFacilityId();
-							// 新規作成のノードを同一トランザクションでスコープに紐付けられないのでコミット後に紐付け
-							Session.current().addPostCommitAction(new PostCommitAction() {
-								@Override
-								public void postCommit() throws TransactionException {
-									try {
-										RepositoryControllerBeanWrapper.bean().assignNodeScope(
-											FacilityIdUtil.getAllNodeScopeId(cloudScope.getPlatformId(), cloudScope.getId()),
-											new String[]{nodeId});
-									} catch (InvalidSetting | InvalidRole | HinemosUnknown e) {
-										Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
-									}
-								}
-							});
+							// 本セッションではAutoCommitがtrueのため、ノード登録と別トランザクションとなる
+							try {
+								RepositoryControllerBeanWrapper.bean().assignNodeScope(
+										FacilityIdUtil.getAllNodeScopeId(cloudScope.getPlatformId(), cloudScope.getId()),
+										new String[]{nodeId});
+							} catch (InvalidSetting | InvalidRole | HinemosUnknown e) {
+								Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
+							}
 						}
 						@Override
 						public void visit(Entity entity) throws CloudManagerException {
@@ -388,19 +381,14 @@ public class LocationRepositoryUpdater {
 							if (entityEntity.getFacilityId() == null)
 								return;
 							final String nodeId = entityEntity.getFacilityId();
-							// 新規作成のノードを同一トランザクションでスコープに紐付けられないのでコミット後に紐付け
-							Session.current().addPostCommitAction(new PostCommitAction() {
-								@Override
-								public void postCommit() throws TransactionException {
-									try {
-										RepositoryControllerBeanWrapper.bean().assignNodeScope(
-											FacilityIdUtil.getAllNodeScopeId(cloudScope.getPlatformId(), cloudScope.getId()),
-											new String[]{nodeId});
-									} catch (InvalidSetting | InvalidRole | HinemosUnknown e) {
-										Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
-									}
-								}
-							});
+							// 本セッションではAutoCommitがtrueのため、ノード登録と別トランザクションとなる
+							try {
+								RepositoryControllerBeanWrapper.bean().assignNodeScope(
+										FacilityIdUtil.getAllNodeScopeId(cloudScope.getPlatformId(), cloudScope.getId()),
+										new String[]{nodeId});
+							} catch (InvalidSetting | InvalidRole | HinemosUnknown e) {
+								Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
+							}
 						}
 					});
 				} catch (CloudManagerException e) {
@@ -506,17 +494,12 @@ public class LocationRepositoryUpdater {
 			
 			visitor.visitInstance(parentFacility, RepositoryControllerBeanWrapper.bean().getNode(instanceEntity.getFacilityId()), instanceEntity);
 			
-			// 新規作成のノードを同一トランザクションでスコープに紐付けられないのでコミット後に実行
-			Session.current().addPostCommitAction(new PostCommitAction() {
-				@Override
-				public void postCommit() throws TransactionException {
-					try {
-						RepositoryControllerBeanWrapper.bean().assignNodeScope(parentFacility.getFacilityId(), new String[]{instanceEntity.getFacilityId()});
-					} catch (InvalidSetting | InvalidRole | HinemosUnknown e) {
-						Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
-					}
-				}
-			});
+			// 本セッションではAutoCommitがtrueのため、ノード登録と別トランザクションとなる
+			try {
+				RepositoryControllerBeanWrapper.bean().assignNodeScope(parentFacility.getFacilityId(), new String[]{instanceEntity.getFacilityId()});
+			} catch (InvalidSetting | InvalidRole | HinemosUnknown e) {
+				Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
+			}
 		} catch (HinemosUnknown | FacilityNotFound e) {
 			Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
 		}
@@ -530,17 +513,12 @@ public class LocationRepositoryUpdater {
 			
 			visitor.visitEntity(parentFacility, RepositoryControllerBeanWrapper.bean().getNode(entityEntity.getFacilityId()), entityEntity);
 
-			// 新規作成のノードを同一トランザクションでスコープに紐付けられないのでコミット後に実行
-			Session.current().addPostCommitAction(new PostCommitAction() {
-				@Override
-				public void postCommit() throws TransactionException {
-					try {
-						RepositoryControllerBeanWrapper.bean().assignNodeScope(parentFacility.getFacilityId(), new String[]{entityEntity.getFacilityId()});
-					} catch (InvalidSetting | InvalidRole | HinemosUnknown e) {
-						Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
-					}
-				}
-			});
+			// 本セッションではAutoCommitがtrueのため、ノード登録と別トランザクションとなる
+			try {
+				RepositoryControllerBeanWrapper.bean().assignNodeScope(parentFacility.getFacilityId(), new String[]{entityEntity.getFacilityId()});
+			} catch (InvalidSetting | InvalidRole | HinemosUnknown e) {
+				Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
+			}
 		} catch (HinemosUnknown | FacilityNotFound e) {
 			Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
 		}

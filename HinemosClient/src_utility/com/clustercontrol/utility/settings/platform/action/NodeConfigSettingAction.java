@@ -20,15 +20,31 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.exolab.castor.xml.MarshalException;
+import org.exolab.castor.xml.Unmarshaller;
 import org.exolab.castor.xml.ValidationException;
+import org.openapitools.client.model.AddNodeConfigSettingInfoRequest;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
+import org.openapitools.client.model.ImportNodeConfigSettingRecordRequest;
+import org.openapitools.client.model.ImportNodeConfigSettingRequest;
+import org.openapitools.client.model.ImportNodeConfigSettingResponse;
 
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffUtil;
 import com.clustercontrol.utility.difference.ResultA;
@@ -44,19 +60,16 @@ import com.clustercontrol.utility.settings.platform.conv.NodeConfigSettingConv;
 import com.clustercontrol.utility.settings.platform.xml.NodeConfigInfo;
 import com.clustercontrol.utility.settings.platform.xml.NodeConfigList;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.InvalidSetting_Exception;
-import com.clustercontrol.ws.repository.InvalidUserPass_Exception;
-import com.clustercontrol.ws.repository.NodeConfigSettingDuplicate_Exception;
-import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * リポジトリ-構成情報取得設定をインポート・エクスポート・削除するアクションクラス<br>
@@ -91,12 +104,12 @@ public class NodeConfigSettingAction {
 
 		// 返り値変数(条件付き正常終了用）
 		int ret = SettingConstants.SUCCESS;
-		List<NodeConfigSettingInfo> nodeConfigList;
+		List<NodeConfigSettingInfoResponse> nodeConfigList;
 
 		// 構成情報収集設定一覧の取得
-		RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+		RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		try {
-			nodeConfigList = wrapper.getNodeConfigSettingListAll();
+			nodeConfigList = wrapper.getNodeConfigSettingList();
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -106,17 +119,18 @@ public class NodeConfigSettingAction {
 
 		// 構成情報収集設定の削除
 		List<String> ids = new ArrayList<>();
-		for (NodeConfigSettingInfo nodeConfig : nodeConfigList) {
+		for (NodeConfigSettingInfoResponse nodeConfig : nodeConfigList) {
 			ids.add(nodeConfig.getSettingId());
 		}
+		String idsString = String.join(",", ids);
 
 		try {
-			wrapper.deleteNodeConfigSetting(ids);
+			wrapper.deleteNodeConfigSettingInfo(idsString);
 			log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + ids.toString());
-		} catch (InvalidUserPass_Exception e) {
+		} catch (InvalidUserPass e) {
 			log.warn(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			log.warn(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 		} catch (Exception e) {
@@ -149,15 +163,15 @@ public class NodeConfigSettingAction {
 		// 返り値変数(条件付き正常終了用）
 		int ret = SettingConstants.SUCCESS;
 
-		List<NodeConfigSettingInfo> list;
+		List<NodeConfigSettingInfoResponse> list;
 		// 構成情報収集設定一覧の取得
 		try {
-			list = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeConfigSettingListAll();
-			Collections.sort(list, new Comparator<com.clustercontrol.ws.repository.NodeConfigSettingInfo>() {
+			list = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeConfigSettingList();
+			Collections.sort(list, new Comparator<NodeConfigSettingInfoResponse>() {
 				@Override
 				public int compare(
-						com.clustercontrol.ws.repository.NodeConfigSettingInfo info1,
-						com.clustercontrol.ws.repository.NodeConfigSettingInfo info2) {
+						NodeConfigSettingInfoResponse info1,
+						NodeConfigSettingInfoResponse info2) {
 					return info1.getSettingId().compareTo(info2.getSettingId());
 				}
 			});
@@ -202,9 +216,12 @@ public class NodeConfigSettingAction {
 	 *
 	 * @param 入力するXMLファイル
 	 * @return 終了コード
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
+	 * @throws RestConnectFailed 
 	 */
 	@ImportMethod
-	public int importNodeConfigSetting(String xmlNodeConfigSetting) {
+	public int importNodeConfigSetting(String xmlNodeConfigSetting) throws InvalidSetting, HinemosUnknown, RestConnectFailed {
 
 		log.debug("Start Import NodeConfigSetting ");
 
@@ -220,7 +237,8 @@ public class NodeConfigSettingAction {
 
 		// XMLファイルからの読み込み
 		try {
-			nodeConfig = NodeConfigList.unmarshal(new InputStreamReader(new FileInputStream(xmlNodeConfigSetting), "UTF-8"));
+			// 下位互換向けにXMLの内容確認（順番チェック）を緩くしておく
+			nodeConfig = XmlMarshallUtil.unmarshall(NodeConfigList.class,new InputStreamReader(new FileInputStream(xmlNodeConfigSetting), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -234,51 +252,29 @@ public class NodeConfigSettingAction {
 			return ret;
 		}
 
-		List<NodeConfigSettingInfo> nodeConfigSettingList = nodeConfigConv.convXml2Dto(nodeConfig);
-		RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-		for (NodeConfigSettingInfo nodeConfigSetting : nodeConfigSettingList) {
-
-			try {
-				// 構成情報収集設定の登録
-				wrapper.addNodeConfigSetting(nodeConfigSetting);
-			} catch (NodeConfigSettingDuplicate_Exception e) {
-				//重複時、インポート処理方法を確認する
-				if(!ImportProcessMode.isSameprocess()){
-					String[] args = {nodeConfigSetting.getSettingId()};
-					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-							null, Messages.getString("message.import.confirm2", args));
-					ImportProcessMode.setProcesstype(dialog.open());
-					ImportProcessMode.setSameprocess(dialog.getToggleState());
-				}
-
-				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-					try {
-						wrapper.modifyNodeConfigSetting(nodeConfigSetting);
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + nodeConfigSetting.getSettingId());
-					} catch (Exception e1) {
-						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-						ret = SettingConstants.ERROR_INPROCESS;
-					}
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + nodeConfigSetting.getSettingId());
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-					ret = SettingConstants.ERROR_INPROCESS;
-					break;
-				}
-			} catch (HinemosUnknown_Exception | InvalidSetting_Exception e) {
-				log.info(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidRole_Exception e) {
-				log.info(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
-				log.info(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
+		ImportNodeConfigSettingRecordConfirmer nodeConfifSettingConfirmer = new ImportNodeConfigSettingRecordConfirmer( log, nodeConfig.getNodeConfigInfo() );
+		int nodeConfigSettingConfirmerRet = nodeConfifSettingConfirmer.executeConfirm();
+		if (nodeConfigSettingConfirmerRet != 0) {
+			ret = nodeConfigSettingConfirmerRet;
+		}
+		
+		// レコードの登録（構成情報取得）
+		if (!(nodeConfifSettingConfirmer.getImportRecDtoList().isEmpty())) {
+			ImportNodeConfigSettingClientController nodeConfifSettingController = new ImportNodeConfigSettingClientController(log,
+					Messages.getString("node.config.setting"), nodeConfifSettingConfirmer.getImportRecDtoList(), true);
+			int nodeConfifSettingControllerRet = nodeConfifSettingController.importExecute();
+			if (nodeConfifSettingControllerRet != 0) {
+				ret = nodeConfifSettingControllerRet;
 			}
 		}
-		//差分削除
-		checkDelete(nodeConfigSettingList);
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		
+		// 差分削除
+		checkDelete(nodeConfifSettingConfirmer.getImportRecDtoList());
 
 		// 処理の終了
 		if (ret == SettingConstants.SUCCESS) {
@@ -332,8 +328,8 @@ public class NodeConfigSettingAction {
 
 		// XMLファイルからの読み込み
 		try {
-			nodeConfig1 = NodeConfigList.unmarshal(new InputStreamReader(new FileInputStream(xmlNodeConfig1), "UTF-8"));
-			nodeConfig2 = NodeConfigList.unmarshal(new InputStreamReader(new FileInputStream(xmlNodeConfig2), "UTF-8"));
+			nodeConfig1 = XmlMarshallUtil.unmarshall(NodeConfigList.class,new InputStreamReader(new FileInputStream(xmlNodeConfig1), "UTF-8"));
+			nodeConfig2 = XmlMarshallUtil.unmarshall(NodeConfigList.class,new InputStreamReader(new FileInputStream(xmlNodeConfig2), "UTF-8"));
 
 			sort(nodeConfig1);
 			sort(nodeConfig2);
@@ -430,11 +426,11 @@ public class NodeConfigSettingAction {
 		return log;
 	}
 
-	protected void checkDelete(List<NodeConfigSettingInfo> nodeList){
-		List<NodeConfigSettingInfo> subList = null;
-		RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+	protected void checkDelete(List<ImportNodeConfigSettingRecordRequest> nodeList){
+		List<NodeConfigSettingInfoResponse> subList = null;
+		RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		try {
-			subList = wrapper.getNodeConfigSettingListAll();
+			subList = wrapper.getNodeConfigSettingList();
 		}
 		catch (Exception e) {
 			getLogger().error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
@@ -445,9 +441,9 @@ public class NodeConfigSettingAction {
 			return;
 		}
 
-		for(NodeConfigSettingInfo mgrInfo: new ArrayList<>(subList)) {
-			for(NodeConfigSettingInfo xmlElement: new ArrayList<>(nodeList)) {
-				if(mgrInfo.getSettingId().equals(xmlElement.getSettingId())) {
+		for(NodeConfigSettingInfoResponse mgrInfo: new ArrayList<>(subList)) {
+			for(ImportNodeConfigSettingRecordRequest xmlElement: new ArrayList<>(nodeList)) {
+				if(mgrInfo.getSettingId().equals(xmlElement.getImportData().getSettingId())) {
 					subList.remove(mgrInfo);
 					nodeList.remove(xmlElement);
 					break;
@@ -455,7 +451,7 @@ public class NodeConfigSettingAction {
 			}
 		}
 
-		for(NodeConfigSettingInfo info: subList) {
+		for(NodeConfigSettingInfoResponse info: subList) {
 			//マネージャのみに存在するデータがあった場合の削除方法を確認する
 			if(!DeleteProcessMode.isSameprocess()) {
 				String[] args = {info.getSettingId()};
@@ -469,7 +465,8 @@ public class NodeConfigSettingAction {
 				try {
 					List<String> args = new ArrayList<>();
 					args.add(info.getSettingId());
-					wrapper.deleteNodeConfigSetting(args);
+					String argsStr = String.join(",", args);
+					wrapper.deleteNodeConfigSettingInfo(argsStr);
 					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getSettingId());
 				} catch (Exception e1) {
 					getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
@@ -482,4 +479,125 @@ public class NodeConfigSettingAction {
 			}
 		}
 	}
+	
+	/**
+	 * 構成情報取得 インポート向けのレコード確認用クラス
+	 * 
+	 */
+	protected class ImportNodeConfigSettingRecordConfirmer extends ImportRecordConfirmer<NodeConfigInfo, ImportNodeConfigSettingRecordRequest, String>{
+		
+		public ImportNodeConfigSettingRecordConfirmer(Logger logger, NodeConfigInfo[] importRecDtoList) {
+			super(logger, importRecDtoList);
+		}
+		
+		@Override
+		protected ImportNodeConfigSettingRecordRequest convertDtoXmlToRestReq(NodeConfigInfo xmlDto)
+				throws HinemosUnknown, InvalidSetting {
+			
+			AddNodeConfigSettingInfoRequest nodeConfigSettingList = nodeConfigConv.convXml2Dto(xmlDto);
+			ImportNodeConfigSettingRecordRequest dtoRec = new ImportNodeConfigSettingRecordRequest();
+			dtoRec.setImportData(new AddNodeConfigSettingInfoRequest());
+			RestClientBeanUtil.convertBean(nodeConfigSettingList, dtoRec.getImportData());
+			
+			dtoRec.setImportKeyValue(dtoRec.getImportData().getSettingId());
+			return dtoRec;
+		}
+
+		@Override
+		protected Set<String> getExistIdSet() throws Exception {
+			Set<String> retSet = new HashSet<String>();
+			List<NodeConfigSettingInfoResponse> nodeConfigSeeingList = RepositoryRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getNodeConfigSettingList();
+			for (NodeConfigSettingInfoResponse rec : nodeConfigSeeingList) {
+				retSet.add(rec.getSettingId());
+			}
+			return retSet;
+		}
+		@Override
+		protected boolean isLackRestReq(ImportNodeConfigSettingRecordRequest restDto) {
+			return (restDto == null || restDto.getImportData().getSettingId() == null || restDto.getImportData().getSettingId().equals(""));
+		}
+		@Override
+		protected String getKeyValueXmlDto(NodeConfigInfo xmlDto) {
+			return xmlDto.getSettingId();
+		}
+		@Override
+		protected String getId(NodeConfigInfo xmlDto) {
+			return xmlDto.getSettingId();
+		}
+		@Override
+		protected void setNewRecordFlg(ImportNodeConfigSettingRecordRequest restDto, boolean flag) {
+			restDto.setIsNewRecord(flag);
+		}
+	}
+	
+	/**
+	 * 構成情報取得 インポート向けのレコード登録用クラス
+	 * 
+	 */
+	protected static class ImportNodeConfigSettingClientController extends ImportClientController<ImportNodeConfigSettingRecordRequest, ImportNodeConfigSettingResponse, RecordRegistrationResponse>{
+		
+		public ImportNodeConfigSettingClientController(Logger logger, String importInfoName, List<ImportNodeConfigSettingRecordRequest> importRecList ,boolean displayFailed) {
+			super(logger, importInfoName,importRecList,displayFailed);
+		}
+		@Override
+		protected List<RecordRegistrationResponse> getResRecList(ImportNodeConfigSettingResponse importResponse) {
+			return importResponse.getResultList();
+		};
+
+		@Override
+		protected Boolean getOccurException(ImportNodeConfigSettingResponse importResponse) {
+			return importResponse.getIsOccurException();
+		};
+
+		@Override
+		protected String getReqKeyValue(ImportNodeConfigSettingRecordRequest importRec) {
+			return importRec.getImportKeyValue();
+		};
+
+		@Override
+		protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+			return responseRec.getImportKeyValue();
+		};
+
+		@Override
+		protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+			return (responseRec.getResult() == ResultEnum.NORMAL) ;
+		};
+
+		@Override
+		protected boolean isResSkip(RecordRegistrationResponse responseRec) {
+			return (responseRec.getResult() == ResultEnum.SKIP) ;
+		};
+
+		@Override
+		protected ImportNodeConfigSettingResponse callImportWrapper(List<ImportNodeConfigSettingRecordRequest> importRecList)
+				throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+			ImportNodeConfigSettingRequest reqDto = new ImportNodeConfigSettingRequest();
+			reqDto.setRecordList(importRecList);
+			reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+			return UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importNodeConfigSetting(reqDto);
+		}
+
+		@Override
+		protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+			if (responseRec.getExceptionInfo() != null) {
+				return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+			}
+			return null;
+		};
+
+		@Override
+		protected void setResultLog( RecordRegistrationResponse responseRec ){
+			String keyValue = getResKeyValue(responseRec);
+			if ( isResNormal(responseRec) ) {
+				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : "+ this.importInfoName + ":" + keyValue);
+			} else if(isResSkip(responseRec)){
+				log.info(Messages.getString("SettingTools.SkipSystemRole") + " : " + this.importInfoName + ":" + keyValue);
+			} else {
+				log.warn(Messages.getString("SettingTools.ImportFailed") + " : "+ this.importInfoName + ":" + keyValue + " : "
+						+ HinemosMessage.replace(getRestExceptionMessage(responseRec)));
+			}
+		}
+	}
+	
 }

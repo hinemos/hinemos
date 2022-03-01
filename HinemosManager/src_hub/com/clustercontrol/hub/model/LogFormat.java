@@ -11,15 +11,15 @@ package com.clustercontrol.hub.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Cacheable;
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.Table;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
 
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeTargetInfo;
@@ -52,9 +52,8 @@ public class LogFormat extends ObjectPrivilegeTargetInfo {
 	private String regUser;  
 	private String updateUser;
 	
-	private List<LogFormatKey> keys = new ArrayList<>();
+	private List<LogFormatKey> keyPatternList = new ArrayList<>();
 
-	@Deprecated
 	public LogFormat(){
 	}
 	
@@ -130,9 +129,9 @@ public class LogFormat extends ObjectPrivilegeTargetInfo {
 		joinColumns={@JoinColumn(name="log_format_id", referencedColumnName="log_format_id")}
 	)
 	public List<LogFormatKey> getKeyPatternList() {
-		return keys;
+		return keyPatternList;
 	}
 	public void setKeyPatternList(List<LogFormatKey> keys) {
-		this.keys = keys;
+		this.keyPatternList = keys;
 	}
 }

@@ -8,9 +8,9 @@
 
 package com.clustercontrol.hub.composite;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,19 +35,20 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.LogFormatKeyResponse;
+import org.openapitools.client.model.LogFormatResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.hub.action.GetLogFormatTableDefine;
 import com.clustercontrol.hub.dialog.LogFormatDialog;
-import com.clustercontrol.hub.util.HubEndpointWrapper;
+import com.clustercontrol.hub.util.HubRestClientWrapper;
 import com.clustercontrol.hub.view.LogFormatView;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.hub.InvalidRole_Exception;
-import com.clustercontrol.ws.hub.LogFormat;
-import com.clustercontrol.ws.hub.LogFormatKey;
 
 /**
  * ログフォーマットコンポジットクラス<BR>
@@ -228,15 +229,15 @@ public class LogFormatComposite extends Composite {
 	 */
 	@Override
 	public void update() {
-		List<LogFormat> list = null;
+		List<LogFormatResponse> list = null;
 
 		//ログフォーマット一覧情報取得
-		Map<String, List<LogFormat>> dispDataMap= new ConcurrentHashMap<String, List<LogFormat>>();
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
-			HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
+		Map<String, List<LogFormatResponse>> dispDataMap= new ConcurrentHashMap<String, List<LogFormatResponse>>();
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
+			HubRestClientWrapper wrapper = HubRestClientWrapper.getWrapper(managerName);
 			try {
-				list = wrapper.getLogFormatList();
-			} catch (InvalidRole_Exception e) {
+				list = wrapper.getLogFormatListByOwnerRole(null);
+			} catch (InvalidRole e) {
 				MessageDialog.openInformation(null, 
 						Messages.getString("message"), 
 						Messages.getString("message.accesscontrol.16"));
@@ -256,27 +257,38 @@ public class LogFormatComposite extends Composite {
 		}
 
 		List<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<LogFormat>> map: dispDataMap.entrySet()) {
-			for (LogFormat format : map.getValue()) {
+		for(Map.Entry<String, List<LogFormatResponse>> map: dispDataMap.entrySet()) {
+			for (LogFormatResponse format : map.getValue()) {
 				ArrayList<Object> obj = new ArrayList<Object>();
 				obj.add(map.getKey());
 				obj.add(format.getLogFormatId());
 				obj.add(format.getDescription());
 				
-				String formatKeys = "";
-				for (LogFormatKey key : format.getKeyPatternList()) {
-					formatKeys = formatKeys + key.getKey() + ", ";
+				// findbugs対応 文字列の連結方式をStringBuilderを利用する方法に変更
+				StringBuilder formatKeys = new StringBuilder("");
+				for (LogFormatKeyResponse key : format.getKeyPatternList()) {
+					formatKeys.append( key.getKey() + ", ");
 				}
 				//末尾の", "を削除
-				if (formatKeys.endsWith(", ")) {
-					formatKeys = formatKeys.substring(0, formatKeys.lastIndexOf(", "));
+				if (formatKeys.toString().endsWith(", ")) {
+					formatKeys.setLength(formatKeys.length() - 1);
 				}
-				obj.add(formatKeys);
+				obj.add(formatKeys.toString());
 				obj.add(format.getOwnerRoleId());
 				obj.add(format.getRegUser());
-				obj.add(new Date(format.getRegDate()));
+				try {
+					obj.add(TimezoneUtil.getSimpleDateFormat().parse(format.getRegDate()));
+				} catch (ParseException e) {
+					// ここには入らない想定
+					m_log.warn("invalid regDate.", e);
+				}
 				obj.add(format.getUpdateUser());
-				obj.add(new Date(format.getUpdateDate()));
+				try {
+					obj.add(TimezoneUtil.getSimpleDateFormat().parse(format.getUpdateDate()));
+				} catch (ParseException e) {
+					// ここには入らない想定
+					m_log.warn("invalid updateDate.", e);
+				}
 				obj.add(null);				
 
 				listInput.add(obj);

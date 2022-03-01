@@ -27,9 +27,13 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.JobOperationPropResponse;
+import org.openapitools.client.model.JobOperationPropResponse.AvailableOperationListEnum;
 
+import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.OperationMessage;
 import com.clustercontrol.jobmanagement.action.OperationJob;
 import com.clustercontrol.jobmanagement.bean.JobOperationConstant;
@@ -37,14 +41,14 @@ import com.clustercontrol.jobmanagement.composite.DetailComposite;
 import com.clustercontrol.jobmanagement.composite.HistoryComposite;
 import com.clustercontrol.jobmanagement.composite.NodeDetailComposite;
 import com.clustercontrol.jobmanagement.dialog.JobOperationDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.preference.JobManagementPreferencePage;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.view.JobDetailView;
 import com.clustercontrol.jobmanagement.view.JobHistoryView;
 import com.clustercontrol.jobmanagement.view.JobNodeDetailView;
 import com.clustercontrol.jobmanagement.view.JobQueueContentsView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
 
 /**
  * ジョブ[履歴]・ジョブ[ジョブ詳細]・ジョブ[ノード詳細]・ジョブ[同時実行制御状況]ビューの
@@ -83,7 +87,7 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 	 * @return ジョブ開始操作用プロパティ
 	 *
 	 */
-	private Property getStartProperty(String managerName, String sessionId, String jobunitId, String jobId, String facilityId) {
+	private Property getStartProperty(String managerName, String sessionId, String jobunitId, String jobId, String jobName, String facilityId) {
 		Locale locale = Locale.getDefault();
 		//セッションID
 		Property session =
@@ -94,6 +98,9 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 		//ジョブID
 		Property job =
 				new Property(JobOperationConstant.JOB, Messages.getString("job.id", locale), PropertyDefineConstant.EDITOR_TEXT);
+		//ジョブ名
+		Property name =
+				new Property(JobOperationConstant.JOB_NAME, Messages.getString("job.name", locale), PropertyDefineConstant.EDITOR_TEXT);
 		//ファシリティID
 		Property facility =
 				new Property(JobOperationConstant.FACILITY, Messages.getString("facility.id", locale), PropertyDefineConstant.EDITOR_TEXT);
@@ -101,11 +108,18 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 		Property control =
 				new Property(JobOperationConstant.CONTROL, Messages.getString("control", locale), PropertyDefineConstant.EDITOR_SELECT);
 
-		List<Integer> values = null;
+		List<AvailableOperationListEnum> values = null;
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-			values = wrapper.getAvailableStartOperation(sessionId, jobunitId, jobId, facilityId);
-		} catch (InvalidRole_Exception e) {
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			JobOperationPropResponse response = new JobOperationPropResponse();
+			if(facilityId == null){
+				response = wrapper.getAvailableStartOperationSessionJob(sessionId, jobunitId, jobId);
+				values = response.getAvailableOperationList();
+			} else {
+				response = wrapper.getAvailableStartOperationSessionNode(sessionId, jobunitId, jobId, facilityId);
+				values = response.getAvailableOperationList();
+			}
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 			throw new InternalError("values is null.");
@@ -120,8 +134,8 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 
 		// 値をtypeからStringに変換
 		List<String> valuesStr = new ArrayList<String>();
-		for (Integer controlType : values) {
-			valuesStr.add(OperationMessage.typeToString(controlType));
+		for (AvailableOperationListEnum controlType : values) {
+			valuesStr.add(OperationMessage.enumToString(controlType));
 		}
 		
 		//値を初期化
@@ -139,6 +153,7 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 		session.setValue(sessionId);
 		jobUnit.setValue(jobunitId);
 		job.setValue(jobId);
+		name.setValue(jobName);
 		if(facilityId != null && facilityId.length() > 0){
 			facility.setValue(facilityId);
 		}
@@ -150,6 +165,7 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 		session.setModify(PropertyDefineConstant.MODIFY_NG);
 		jobUnit.setModify(PropertyDefineConstant.MODIFY_NG);
 		job.setModify(PropertyDefineConstant.MODIFY_NG);
+		name.setModify(PropertyDefineConstant.MODIFY_NG);
 		facility.setModify(PropertyDefineConstant.MODIFY_NG);
 		control.setModify(PropertyDefineConstant.MODIFY_OK);
 
@@ -160,6 +176,7 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 		property.addChildren(session);
 		property.addChildren(jobUnit);
 		property.addChildren(job);
+		property.addChildren(name);
 		if(facilityId != null && facilityId.length() > 0){
 			property.addChildren(facility);
 		}
@@ -194,6 +211,7 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 		String sessionId = null;
 		String jobunitId = null;
 		String jobId = null;
+		String jobName = null;
 		String facilityId = null;
 
 		IWorkbenchWindow window = HandlerUtil.getActiveWorkbenchWindow( event );
@@ -223,6 +241,8 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 				jobunitId = historyComposite.getJobunitId();
 				//ジョブID取得
 				jobId = historyComposite.getJobId();
+				//ジョブID取得
+				jobName = historyComposite.getJobName();
 			}
 		} else if (viewPart instanceof JobDetailView) { // ボタンが押された場合
 			JobDetailView jobDetailView = null;
@@ -246,6 +266,8 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 				jobunitId = detailComposite.getJobunitId();
 				//ジョブID取得
 				jobId = detailComposite.getJobId();
+				//ジョブID取得
+				jobName = detailComposite.getJobName();
 			}
 		} else if (viewPart instanceof JobNodeDetailView) { // ボタンが押された場合
 			JobNodeDetailView jobNodeDetailView = null;
@@ -269,12 +291,15 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 				jobunitId = nodeDetailComposite.getJobunitId();
 				//ジョブID取得
 				jobId = nodeDetailComposite.getJobId();
+				//ジョブ名取得
+				jobName = nodeDetailComposite.getJobName();
 				//ファシリティID取得
 				facilityId = nodeDetailComposite.getFacilityId();
 				if (facilityId == null) {
 					sessionId = null;
 					jobunitId = null;
 					jobId = null;
+					jobName = null;
 				}
 			}
 		} else if (viewPart instanceof JobQueueContentsView) {
@@ -294,6 +319,7 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 				sessionId = view.getSelectedSessionId();
 				jobunitId = view.getSelectedJobunitId();
 				jobId = view.getSelectedJobId();
+				jobName = view.getSelectedJobName();
 			}
 		}
 
@@ -304,12 +330,27 @@ public abstract class StartJobAction extends AbstractHandler implements IElement
 			JobOperationDialog dialog = new JobOperationDialog(window.getShell());
 
 			//プロパティ設定
-			dialog.setProperty(getStartProperty(managerName, sessionId, jobunitId, jobId, facilityId));
+			dialog.setProperty(getStartProperty(managerName, sessionId, jobunitId, jobId, jobName, facilityId));
 			dialog.setTitleText(Messages.getString("job") + "["
 					+ Messages.getString("start") + "]");
 
 			//ダイアログ表示
 			if (dialog.open() == IDialogConstants.OK_ID) {
+				// 確認ダイアログを表示するかどうかのフラグをPreferenceから取得
+				if (ClusterControlPlugin.getDefault().getPreferenceStore().getBoolean(JobManagementPreferencePage.P_HISTORY_CONFIRM_DIALOG_FLG)) {
+					StringBuffer jobListMessage = new StringBuffer(); 
+					jobListMessage.append(Messages.getString("dialog.job.start.confirm")); 
+					jobListMessage.append("\n");
+					Object[] args1 = { managerName, jobName, jobId, jobunitId, sessionId };
+					jobListMessage.append(Messages.getString(Messages.getString("dialog.job.confirm.name"), args1));
+					if(!MessageDialog.openConfirm(
+						null,
+						Messages.getString("confirmed"),
+						jobListMessage.toString())) {
+						// OKが押されない場合は処理しない
+						return null;
+					}
+				}
 				//ジョブ開始
 				OperationJob operation = new OperationJob();
 				operation.operationJob(managerName, dialog.getProperty());

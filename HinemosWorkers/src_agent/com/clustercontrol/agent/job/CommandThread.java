@@ -12,23 +12,39 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtJobEnvVariableInfoResponse;
+import org.openapitools.client.model.AgtRunInstructionInfoResponse;
+import org.openapitools.client.model.GetScriptResponse;
+import org.openapitools.client.model.SetJobOutputResultRequest;
+import org.openapitools.client.model.SetJobResultRequest;
+import org.openapitools.client.model.SetJobStartRequest;
+import org.openapitools.client.model.SetJobStartResponse;
 
 import com.clustercontrol.agent.Agent;
-import com.clustercontrol.agent.AgentEndPointWrapper;
+import com.clustercontrol.agent.AgentRestClientWrapper;
+import com.clustercontrol.agent.ReceiveTopic;
 import com.clustercontrol.agent.SendQueue;
+import com.clustercontrol.agent.SendQueue.JobResultSendableObject;
 import com.clustercontrol.agent.util.AgentProperties;
+import com.clustercontrol.agent.util.AgentRequestId;
+import com.clustercontrol.agent.util.JobCommandExecutor;
+import com.clustercontrol.agent.util.JobCommandExecutor.CommandResult;
+import com.clustercontrol.agent.util.OutputString;
+import com.clustercontrol.agent.util.RestAgentBeanUtil;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.SessionIdLocked;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandExecutor;
-import com.clustercontrol.util.CommandExecutor.CommandResult;
 import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.ws.jobmanagement.JobEnvVariableInfo;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
-import com.clustercontrol.ws.jobmanagement.RunResultInfo;
 
 /**
  * コマンドを実行するスレッドクラス<BR>
@@ -41,20 +57,22 @@ public class CommandThread extends AgentThread {
 	// ロガー
 	static private Log m_log = LogFactory.getLog(CommandThread.class);
 
-
 	// ジョブ実行結果を受け取る際のエンコーディング
 	private String m_inputEncoding = null;
 	// ジョブ実行後のスクリプト削除有無
 	private boolean m_scriptDelete = false;
 
 	private Process process = null;
-	private CommandExecutor cmdExec = null;
-	private RunResultInfo resultInfo;
+	private JobCommandExecutor cmdExec = null;
+	private JobResultSendableObject jobResult;
 	private String scriptDir = Agent.getAgentHome() + "script/";;
 	private String scriptFile;
 	
 	private final String REPLACE_STARTCOMMAND = "#[SCRIPT]";
 	
+	// Hinemosマネージャに開始メッセージ送信のリトライ間隔(ミリ秒)
+	private long interval = Long.parseLong(AgentProperties.getProperty("job.reconnection.interval"));
+
 	/**
 	 * デバッグ用メイン処理
 	 * 
@@ -83,13 +101,13 @@ public class CommandThread extends AgentThread {
 	 * コンストラクタ
 	 * 
 	 * @param info
-	 *            実行指示
+	 *			  実行指示
 	 * @param sendQueue
-	 *            実行応答用メッセージ送信クラス
+	 *			  実行応答用メッセージ送信クラス
 	 * @param runHistory
-	 *            実行履歴
+	 *			  実行履歴
 	 */
-	public CommandThread(RunInstructionInfo info, SendQueue sendQueue) {
+	public CommandThread(AgtRunInstructionInfoResponse info, SendQueue sendQueue) {
 		super(info, sendQueue);
 
 		// ログファイルのエンコーディングを設定
@@ -106,62 +124,123 @@ public class CommandThread extends AgentThread {
 		// ---------------------------
 
 		// メッセージ作成
-		resultInfo = new RunResultInfo();
-		resultInfo.setSessionId(m_info.getSessionId());
-		resultInfo.setJobunitId(m_info.getJobunitId());
-		resultInfo.setJobId(m_info.getJobId());
-		resultInfo.setFacilityId(m_info.getFacilityId());
-		resultInfo.setCommand(m_info.getCommand());
-		resultInfo.setCommandType(m_info.getCommandType());
-		resultInfo.setStopType(m_info.getStopType());
-		resultInfo.setStatus(RunStatusConstant.START);
-		resultInfo.setTime(HinemosTime.getDateInstance().getTime());
-
-		m_log.info("run SessionID=" + m_info.getSessionId() + ", JobID="
-				+ m_info.getJobId());
-
-		// Hinemosマネージャに開始メッセージ送信
-		/* マネージャに開始メッセージが届く前にジョブのコマンドが実行されることと
-		VIPの切り替えが起こった場合に、ジョブが複数のエージェントで起動することを防ぐために
-		ジョブの開始報告は同期した動作とする*/
-		
+		jobResult = new JobResultSendableObject();
+		jobResult.sessionId = m_info.getSessionId();
+		jobResult.jobunitId = m_info.getJobunitId();
+		jobResult.jobId = m_info.getJobId();
+		jobResult.facilityId = m_info.getFacilityId();
+		jobResult.body = new SetJobResultRequest();
+		jobResult.body.setCommand(m_info.getCommand());
+		jobResult.body.setCommandType(m_info.getCommandType());
+		jobResult.body.setStopType(m_info.getStopType());
+		jobResult.body.setStatus(RunStatusConstant.START);
+		jobResult.body.setTime(HinemosTime.getDateInstance().getTime());
+		SetJobStartRequest setJobStartRequest = new SetJobStartRequest();
 		try {
-			if (!AgentEndPointWrapper.jobResult(resultInfo)) {
-				// ジョブがすでに起動している場合
-				m_log.warn("This job already run by other agent. SessionID="+ m_info.getSessionId() + ", JobID=" + m_info.getJobId());
-				return;
-			}
-		} catch (Exception e) {
+			RestAgentBeanUtil.convertBeanSimple(jobResult.body, setJobStartRequest);
+		} catch (HinemosUnknown e) {
 			m_log.error("CommandThread() : " + e.getMessage(), e);
 			return;
 		}
+
+		m_log.info("run SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
+
+		// Hinemosマネージャに開始メッセージ送信
+		// マネージャに開始メッセージが届く前にジョブのコマンドが実行されることと
+		// VIPの切り替えが起こった場合に、ジョブが複数のエージェントで起動することを防ぐために
+		// ジョブの開始報告は同期した動作とする
+		AgentRequestId agentRequestId = new AgentRequestId();
 		
-		//スクリプトの取得
-		try {
-			List<String> scriptInfo = AgentEndPointWrapper.getScript(m_info.getSessionId(), m_info.getJobunitId(), m_info.getJobId());
-			if(scriptInfo.size() == 3 && m_info.getCommand().contains(REPLACE_STARTCOMMAND)) {
-				String scriptName = scriptInfo.get(0);
-				String scriptEncoding = scriptInfo.get(1);
-				String scriptContent = scriptInfo.get(2);
-				scriptFile = scriptDir + m_info.getSessionId() + "_" + m_info.getJobId() +"_" + scriptName;
+		while(!ReceiveTopic.isHistoryClear()){
+			try {
+				SetJobStartResponse res = AgentRestClientWrapper.setJobStart(
+						jobResult.sessionId, jobResult.jobunitId, jobResult.jobId, jobResult.facilityId, setJobStartRequest,agentRequestId.toRequestHeaderValue());
+	
+				if(res == null){
+					// setJobStartがマネージャ側で重複した場合
+					// 異常終了の旨をメッセージ送信
+					JobResultSendableObject snd = new JobResultSendableObject();
+					snd.sessionId = m_info.getSessionId();
+					snd.jobunitId = m_info.getJobunitId();
+					snd.jobId = m_info.getJobId();
+					snd.facilityId = m_info.getFacilityId();
+					snd.body = new SetJobResultRequest();
+					snd.body.setCommand(m_info.getCommand());
+					snd.body.setCommandType(m_info.getCommandType());
+					snd.body.setStopType(m_info.getStopType());
+					snd.body.setStatus(RunStatusConstant.ERROR);
+					snd.body.setTime(HinemosTime.getDateInstance().getTime());
+					snd.body.setErrorMessage("Agent Request ID is duplicated.");
+					snd.body.setMessage("");
+					m_sendQueue.put(snd);
+					
+					m_log.warn("Agent Request ID is duplicated. Job terminated abnormally. SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
+					return;
+				}
+				if (!res.getJobRunnable().booleanValue()) {
+					// ジョブがすでに起動している場合
+					m_log.warn("This job already run by other agent. SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
+					return;
+				}
 				
-				createScriptFile(scriptContent, scriptEncoding);
-				
-				String replaceStartCommand = m_info.getCommand().replace(REPLACE_STARTCOMMAND, scriptFile);
-				m_info.setCommand(replaceStartCommand);
+				break;
+			} catch(SessionIdLocked e){
+				// 開始メッセージがリジェクトされた場合、一定時間後リトライ
+				try {
+					m_log.warn("Rejected because sessionID is locked. setJobStart retry after "+ interval + "[ms]. " + "SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
+					Thread.sleep(interval);
+				} catch (InterruptedException e1) {
+					m_log.error("CommandThread() : " + e.getMessage(), e);
+					return;
+				}
+			} catch (RestConnectFailed | RejectedExecutionException e) {
+				 // 通信エラー、マネージャ側のキュー制限によるエラーの場合、一定時間後リトライ
+				try {
+					m_log.warn("Connect Failed. setJobStart retry after "+ interval + "[ms]. " + "SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
+					Thread.sleep(interval);
+				} catch (InterruptedException e1) {
+					m_log.error("CommandThread() : " + e.getMessage(), e);
+					return;
+				}
+			} catch (Exception e) { // その他の例外の場合はエラー内容の出力のみ行う
+				m_log.error("CommandThread() : " + e.getMessage(), e);
+				return;
 			}
-		} catch (Exception e) {
-			m_log.error("CommandThread() : " + e.getMessage(), e);
-			// ファイル削除
-			deleteScript();
-			return;
+		}
+
+		
+		// mode取得
+		String mode = AgentProperties.getProperty("job.command.mode");
+		CommandCreator.PlatformType platform = CommandCreator.convertPlatform(mode);
+
+		//スクリプトの取得
+		if (m_info.getCommand().contains(REPLACE_STARTCOMMAND)) {
+			try {
+				GetScriptResponse res = AgentRestClientWrapper.getScript(m_info.getSessionId(), m_info.getJobunitId(), m_info.getJobId());
+				if (!res.getEmpty().booleanValue()) {
+					scriptFile = scriptDir + m_info.getSessionId() + "_" + m_info.getJobId() + "_" + res.getScriptName();
+					createScriptFile(res.getScriptContent(), res.getScriptEncoding());
+
+					if ((platform == CommandCreator.PlatformType.AUTO
+						&& CommandCreator.sysPlatform == CommandCreator.PlatformType.WINDOWS_CMD)
+						|| platform == CommandCreator.PlatformType.WINDOWS_CMD) {
+						m_info.setCommand(m_info.getCommand().replace(REPLACE_STARTCOMMAND, '\"' + scriptFile + '\"'));
+					} else {
+						m_info.setCommand(m_info.getCommand().replace(REPLACE_STARTCOMMAND, scriptFile));
+					}
+				}
+			} catch (Exception e) {
+				m_log.error("CommandThread() : " + e.getMessage(), e);
+				// ファイル削除
+				deleteScript();
+				return;
+			}
 		}
 		
 		// ---------------------------
 		// -- コマンド作成(OSへ渡す形式)
 		// ---------------------------
 		String[] cmd = null;
-		String mode = AgentProperties.getProperty("job.command.mode");
 		String loginFlagKey = "job.command.login";
 		boolean loginFlag = false;
 		try {
@@ -170,11 +249,28 @@ public class CommandThread extends AgentThread {
 		} catch(Exception e) {
 			m_log.warn(e.getMessage());
 		}
-		
+		String envConvertExportKey = "job.command.env.convert.export";
+		boolean envConvertExportFlag = false;
+		try {
+			String convertExportFlagStr = AgentProperties.getProperty(envConvertExportKey, "false");
+			envConvertExportFlag = Boolean.parseBoolean(convertExportFlagStr);
+		} catch (Exception e) {
+			m_log.warn(e.getMessage());
+		}
+		String limitFileoutputLengthKey = "job.limit.message.fileoutput.length";
+		boolean limitFileoutputLengthFlag = true;
+		try {
+			String convertExportFlagStr = AgentProperties.getProperty(limitFileoutputLengthKey, "true");
+			limitFileoutputLengthFlag = Boolean.parseBoolean(convertExportFlagStr);
+		} catch (Exception e) {
+			m_log.warn(e.getMessage());
+		}
+
 		/** 指定されたモードでコマンド生成の処理を切り替える */
 		try {
-			CommandCreator.PlatformType platform = CommandCreator.convertPlatform(mode);
-			cmd = CommandCreator.createCommand(m_info.getUser(), m_info.getCommand(), platform, m_info.isSpecifyUser(), loginFlag);
+			Map<String, String> envMap = getCmdEnvExportMap(info.getJobEnvVariableInfoList());
+			cmd = CommandCreator.createCommand(m_info.getUser(), m_info.getCommand(), platform, m_info.getSpecifyUser().booleanValue(),
+					loginFlag, envConvertExportFlag, envMap);
 			// ---------------------------
 			// -- コマンド実行
 			// ---------------------------
@@ -185,12 +281,17 @@ public class CommandThread extends AgentThread {
 				m_log.warn("Command Execute : cmd.length=0");
 			}
 
-			cmdExec = new CommandExecutor(cmd, Charset.forName(m_inputEncoding), CommandExecutor._disableTimeout, m_limit_jobmsg);
+			cmdExec = new JobCommandExecutor(cmd, Charset.forName(m_inputEncoding), JobCommandExecutor._disableTimeout, m_limit_jobmsg);
 			// クラウド管理のテンプレート機能で使用する環境変数を追加
 			cmdExec.addEnvironment("HINEMOS_AGENT_HOME", Agent.getAgentHome());
-			for(JobEnvVariableInfo env : info.getJobEnvVariableInfoList()) {
+			for (AgtJobEnvVariableInfoResponse env : info.getJobEnvVariableInfoList()) {
 				cmdExec.addEnvironment(env.getEnvVariableId(), env.getValue());
 			}
+
+			cmdExec.setLimitOutput(limitFileoutputLengthFlag);
+			OutputString outputSetting = new OutputString(m_info.getNormalJobOutputInfo(), m_info.getErrorJobOutputInfo());
+			cmdExec.setOutputSetting(outputSetting);
+
 			process = cmdExec.execute();
 
 			// 実行履歴に追加
@@ -211,19 +312,20 @@ public class CommandThread extends AgentThread {
 			}
 
 			// メッセージ作成
-			RunResultInfo runErrorInfo = new RunResultInfo();
-			runErrorInfo.setSessionId(m_info.getSessionId());
-			runErrorInfo.setJobunitId(m_info.getJobunitId());
-			runErrorInfo.setJobId(m_info.getJobId());
-			runErrorInfo.setFacilityId(m_info.getFacilityId());
-			runErrorInfo.setCommand(m_info.getCommand());
-			runErrorInfo.setCommandType(m_info.getCommandType());
-			runErrorInfo.setStopType(m_info.getStopType());
-			runErrorInfo.setStatus(RunStatusConstant.ERROR);
-			runErrorInfo.setTime(HinemosTime.getDateInstance().getTime());
-			runErrorInfo.setErrorMessage(errorMessage);
-			runErrorInfo.setMessage("");
-			m_sendQueue.put(runErrorInfo);
+			JobResultSendableObject snd = new JobResultSendableObject();
+			snd.sessionId = m_info.getSessionId();
+			snd.jobunitId = m_info.getJobunitId();
+			snd.jobId = m_info.getJobId();
+			snd.facilityId = m_info.getFacilityId();
+			snd.body = new SetJobResultRequest();
+			snd.body.setCommand(m_info.getCommand());
+			snd.body.setCommandType(m_info.getCommandType());
+			snd.body.setStopType(m_info.getStopType());
+			snd.body.setStatus(RunStatusConstant.ERROR);
+			snd.body.setTime(HinemosTime.getDateInstance().getTime());
+			snd.body.setErrorMessage(errorMessage);
+			snd.body.setMessage("");
+			m_sendQueue.put(snd);
 
 			//履歴削除
 			RunHistoryUtil.delRunHistory(m_info);
@@ -243,16 +345,11 @@ public class CommandThread extends AgentThread {
 	 * ReceiveTopicで受け取ったジョブの指示が実行の場合に このメソッドが実行されます。
 	 * 
 	 */
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Runnable#run()
-	 */
 	@Override
 	public void run() {
 		m_log.debug("run start");
 
-		if (RunHistoryUtil.findRunHistory(m_info) == null) {
+		if (RunHistoryUtil.findProcessRunHistory(m_info) == null) {
 			// コンストラクタで失敗 or プロセス終了
 			m_log.info("run() : process is null");
 			return;
@@ -261,7 +358,7 @@ public class CommandThread extends AgentThread {
 		// コマンド実行
 		CommandResult cmdResult = cmdExec.getResult();
 
-		if (RunHistoryUtil.findRunHistory(m_info) == null || !RunHistoryUtil.findRunHistory(m_info).equals(process)) {
+		if (RunHistoryUtil.findProcessRunHistory(m_info) == null || !RunHistoryUtil.findProcessRunHistory(m_info).equals(process)) {
 			// プロセス終了
 			m_log.info("run() : process does already stopped.");
 			return;
@@ -269,20 +366,28 @@ public class CommandThread extends AgentThread {
 
 		if (cmdResult.exitCode != null) {
 
-			resultInfo.setStatus(RunStatusConstant.END);
-			resultInfo.setEndValue(cmdResult.exitCode);
+			jobResult.body.setStatus(RunStatusConstant.END);
+			jobResult.body.setEndValue(cmdResult.exitCode);
 
 		} else {
 
-			resultInfo.setStatus(RunStatusConstant.ERROR);
+			jobResult.body.setStatus(RunStatusConstant.ERROR);
 
 		}
 
 		// 終了を送信
-		resultInfo.setTime(HinemosTime.getDateInstance().getTime());
-		resultInfo.setErrorMessage(cmdResult.stderr);
-		resultInfo.setMessage(cmdResult.stdout);
-		m_sendQueue.put(resultInfo);
+		jobResult.body.setTime(HinemosTime.getDateInstance().getTime());
+		jobResult.body.setErrorMessage(cmdResult.stderr);
+		jobResult.body.setMessage(cmdResult.stdout);
+		if (cmdExec.getOutputResult() != null) {
+			SetJobOutputResultRequest output = new SetJobOutputResultRequest();
+			output.setErorrTargetTypeList(cmdExec.getOutputResult().getResultStatus());
+			output.setStdoutErrorMessage(cmdExec.getOutputResult().stdout.errorMessage);
+			output.setStderrErrorMessage(cmdExec.getOutputResult().stderr.errorMessage);
+			jobResult.body.setJobOutput(output);
+		}
+		
+		m_sendQueue.put(jobResult);
 
 		////実行履歴から削除
 		RunHistoryUtil.delRunHistory(m_info);
@@ -323,5 +428,22 @@ public class CommandThread extends AgentThread {
 			}
 		}
 		m_log.debug("deleteScript() : " + scriptFile);
+	}
+	
+	/**
+	 * 指定された環境変数リストをLinkedHashMapへ変換します。
+	 */
+	private Map<String, String> getCmdEnvExportMap(List<AgtJobEnvVariableInfoResponse> list) {
+		Map<String, String> ret = new LinkedHashMap<>();
+
+		if (list == null || list.isEmpty()) {
+			ret = null;
+		} else {
+			for (AgtJobEnvVariableInfoResponse env : list) {
+				ret.put(env.getEnvVariableId(), env.getValue());
+			}
+		}
+
+		return ret;
 	}
 }

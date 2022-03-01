@@ -17,7 +17,7 @@ import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.performance.monitor.model.CollectorItemCodeMstEntity;
-import com.clustercontrol.platform.util.reporting.PriorityQueryUtil;
+import com.clustercontrol.reporting.util.PriorityQueryUtil;
 
 /**
  * 監視情報を検索する抽象クラス<BR>

@@ -28,7 +28,7 @@ import com.clustercontrol.plugin.util.scheduler.SchedulerException;
 import com.clustercontrol.util.HinemosTime;
 
 /**
- * スケジュール情報を操作するクラスです。
+ * 転送設定のスケジュールを操作するクラスです。
  *
  * @version 6.0.0
  * @since 6.0.0
@@ -38,7 +38,7 @@ public class ModifySchedule {
 	private static Log m_log = LogFactory.getLog( ModifySchedule.class );
 	
 	/**
-	 * スケジュール情報を基にQuartzにジョブを登録します。<BR>
+	 * 転送設定を基にQuartzにジョブを登録します。<BR>
 	 * Quartzからは、{@link com.clustercontrol.jobmanagement.session.JobControllerBean#scheduleRunJob(String, String)} が呼び出されます。
 	 * 
 	 * @param info スケジュール情報
@@ -130,7 +130,7 @@ public class ModifySchedule {
 	}
 
 	/**
-	 * スケジュール情報を基にQuartzに登録したジョブを削除します。
+	 * 転送設定を基にQuartzに登録したジョブを削除します。
 	 * 
 	 * @param jobkickId スケジュールID
 	 * @throws SchedulerException

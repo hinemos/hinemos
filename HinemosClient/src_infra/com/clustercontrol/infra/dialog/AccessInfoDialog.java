@@ -21,12 +21,12 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.CreateAccessInfoListForDialogResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.infra.AccessInfo;
 
 /**
  * 環境構築[ログイン情報入力]ダイアログクラス<BR>
@@ -44,7 +44,7 @@ public class AccessInfoDialog extends CommonDialog {
 	
 
 	/** 入力値を保持するオブジェクト。 */
-	private AccessInfo m_inputData = null;
+	private CreateAccessInfoListForDialogResponse m_inputData = null;
 	
 	private boolean afterSameAll = false;
 
@@ -73,7 +73,7 @@ public class AccessInfoDialog extends CommonDialog {
 	 * @param parent 親のシェルオブジェクト
 	 * @param identifier 変更する文字列監視の判定情報の識別キー
 	 */
-	public AccessInfoDialog(Shell parent, AccessInfo info) {
+	public AccessInfoDialog(Shell parent, CreateAccessInfoListForDialogResponse info) {
 		super(parent);
 
 		this.m_inputData = info;
@@ -340,7 +340,7 @@ public class AccessInfoDialog extends CommonDialog {
 	 *
 	 * @return 判定情報
 	 */
-	public AccessInfo getInputData() {
+	public CreateAccessInfoListForDialogResponse getInputData() {
 		return this.m_inputData;
 	}
 
@@ -349,7 +349,7 @@ public class AccessInfoDialog extends CommonDialog {
 	 *
 	 * @param info 設定値として用いる判定情報
 	 */
-	protected void setInputData(AccessInfo info) {
+	protected void setInputData(CreateAccessInfoListForDialogResponse info) {
 
 		// ファシリティID
 		this.m_txtFacilityId.setText(info.getFacilityId());
@@ -394,7 +394,7 @@ public class AccessInfoDialog extends CommonDialog {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	private AccessInfo createInputData() {
+	private CreateAccessInfoListForDialogResponse createInputData() {
 		m_inputData.setFacilityId(m_inputData.getFacilityId());
 		
 		m_inputData.setSshUser(null2empty(m_txtSshUser.getText()));

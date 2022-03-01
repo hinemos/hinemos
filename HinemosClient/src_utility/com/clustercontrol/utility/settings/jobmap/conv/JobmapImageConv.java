@@ -9,18 +9,19 @@
 package com.clustercontrol.utility.settings.jobmap.conv;
 
 import java.io.File;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Hashtable;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.JobmapIconImageInfoResponse;
 
 import com.clustercontrol.jobmanagement.util.JobmapIconImageUtil;
 import com.clustercontrol.utility.settings.jobmap.xml.JobmapInfo;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.DateUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
 
 public class JobmapImageConv {
@@ -84,7 +85,7 @@ public class JobmapImageConv {
 	}
 	
 	
-	public static JobmapInfo getJobmap(com.clustercontrol.ws.jobmanagement.JobmapIconImage jobmapImage) {
+	public static JobmapInfo getJobmap(JobmapIconImageInfoResponse jobmapImage) {
 		
 		JobmapInfo ret = new JobmapInfo();
 		ret.setIconId(jobmapImage.getIconId());
@@ -94,15 +95,15 @@ public class JobmapImageConv {
 		return ret;
 	}
 	
-	public static com.clustercontrol.ws.jobmanagement.JobmapIconImage
-		getJobmapInfoDto(JobmapInfo info) throws ParseException {
+	public static JobmapIconImageInfoResponse
+		getJobmapInfoDto(JobmapInfo info) {
 	
-		com.clustercontrol.ws.jobmanagement.JobmapIconImage ret =
-			new com.clustercontrol.ws.jobmanagement.JobmapIconImage();
+		JobmapIconImageInfoResponse ret =
+			new JobmapIconImageInfoResponse();
 	
 
 		// 登録日時、更新日時に利用する日時（実行日時とする）
-		long now = new Date().getTime();
+		String now = DateUtil.convEpoch2DateString( new Date().getTime() );
 		ret.setIconId(info.getIconId());
 		ret.setDescription(info.getDescription());
 		ret.setOwnerRoleId(info.getOwnerRoleId());
@@ -110,14 +111,6 @@ public class JobmapImageConv {
 		if (path==null) {
 			return null;
 		}
-		byte[] fileData =null;
-		try {
-			fileData = JobmapIconImageUtil.getImageFileData(path);
-		} catch (Exception e) {
-			log.error(e.getMessage(), e);
-			return null;
-		}
-		ret.setFiledata(fileData);
 		
 		ret.setCreateTime(now);
 		ret.setCreateUser(Config.getConfig("Login.USER"));
@@ -126,7 +119,21 @@ public class JobmapImageConv {
 
 		return ret;
 	}
-	
+
+	public static File getJobmapImageFile(String iconId) {
+		String path = getFilePath(iconId);
+		if (path==null) {
+			return null;
+		}
+		File fileData =null;
+		try {
+			fileData = JobmapIconImageUtil.getFileObject(path);
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+			return null;
+		}
+		return 	fileData;
+	}
 	private static String getFilePath(String iconId){
 		StringBuffer sb = new StringBuffer();
 		

@@ -11,10 +11,11 @@
 	
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
 	<import file="../HinemosCommon/ant_config/build_common.xml"/>
-	
+	<import file="../SDMLController/version_props.xml"/>
+
 	<property name="project.name" value="HinemosWorkers" />
-	<property name="jar.file" value="${jar.Agent}" />
-	<property name="src.dir" value="src_agent" />
+	<property name="jar.file.Agent" value="${jar.Agent}" />
+	<property name="jar.file.Sdml" value="${jar.Agent.Sdml}" />
 	<property name="build.dir" value="build/agent" />
 	<!-- <property name="jar.include.properties" value="true" /> -->
 	
@@ -29,22 +30,80 @@
 	<path id="id.compile.classpath.local">
 		<fileset dir="../">
 			<include name="HinemosCommon/${jar.dir}/HinemosCommon.jar" />
-			<include name="HinemosManager/${jar.dir}/AgentWS.jar" />
 		</fileset>
 		<fileset dir=".">
 			<include name="lib/*.jar"/>
+			<include name="commonlib/*.jar"/>
 		</fileset>
-		<path refid="id.compile.classpath" />
 	</path>
 	
 	<path id="id.compile.sourcepath.local">
-		
+		<fileset dir="src_agent_sdml" />
 	</path>
-	
+
+	<!-- Compile -->
+	<target name="compile" depends="clean" description="Compile Java sources">
+		<javac 
+			destdir="${build.dir}/${class.dir}" 
+			failonerror="true" 
+			classpathref="id.compile.classpath.local" 
+			sourcepathref="id.compile.sourcepath.local"
+			source="${compile.version}" 
+			target="${compile.version}"
+			bootclasspath="${boot.classpath}"
+			includeAntRuntime="false"
+			encoding="${compile.encode}"
+			debug="on">
+			<src path="src_agent" />
+			<src path="src_agent_sdml" />
+		</javac>
+	</target>
+
+	<target name="jar" depends="compile,manifest" description="Generate JAR file for non EJB projects">
+		<antcall target="jar_agent" />
+		<antcall target="jar_agent_sdml" />
+	</target>
+
+	<target name="jar_agent" depends="compile,manifest" description="Generate JAR(HinemosAgent.jar) file for non EJB projects">
+		<jar jarfile="${jar.dir}/${jar.file.Agent}" manifest="${build.dir}/MANIFEST.MF">
+			<fileset dir="${build.dir}/${class.dir}">
+				<include name="**/*.*" />
+				<exclude name="**/sdml/**" />
+			</fileset>
+			<fileset dir="src_agent">
+				<include name="**/*.properties" if="jar.include.properties"/>
+				<include name="**/*.java" if="jar.include.src"/>
+			</fileset>
+		</jar>
+	</target>
+
+	<target name="jar_agent_sdml" depends="compile,manifest" description="Generate JAR(SDMLLogReader.jar) file for non EJB projects">
+		<jar jarfile="${jar.dir}/${jar.file.Sdml}">
+			<manifest>
+				<attribute name="SDML-Log-Reader-Version" value="${option.version}"/>
+				<attribute name="Build-Date" value="${build.date}"/>
+			</manifest>
+			<fileset dir="${build.dir}/${class.dir}">
+				<include name="**/sdml/**" />
+			</fileset>
+			<fileset dir="src_agent_sdml">
+				<include name="**/*.properties" if="jar.include.properties"/>
+				<include name="**/*.java" if="jar.include.src"/>
+			</fileset>
+		</jar>
+	</target>
+
 	<!-- All -->
 	<target name="all" depends="dependency">
+		<pathconvert property="openapi_jar_exist" setonempty="false" pathsep=" ">
+			<path>
+				<fileset dir="lib/" includes="openapi-java-client.jar" />
+			</path>
+		</pathconvert>
+		<antcall target="warn_openapi_jar" />
+
 		<antcall target="jar" />
-		
+
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>
 		<antcall target="refresh" />
@@ -54,4 +113,9 @@
 		<eclipse.refreshLocal resource="${project.name}" depth="infinite" />
 		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
 	</target>
+
+	<target name="warn_openapi_jar" unless="openapi_jar_exist">
+	 	<fail status="0" message="openapi.jar is noting . please execute HinemosManager's build.xml for [build_proxy] . exit" />
+	</target>
+
 </project>

@@ -8,6 +8,9 @@
 
 package com.clustercontrol.jobmanagement.bean;
 
+import org.openapitools.client.model.GetApprovalJobListRequest;
+import com.clustercontrol.approval.util.JobApprovalInfoWrapper;
+
 import com.clustercontrol.bean.JobApprovalResultConstant;
 import com.clustercontrol.util.Messages;
 
@@ -52,5 +55,34 @@ public class JobApprovalResultMessage {
 			return JobApprovalResultConstant.TYPE_DENIAL;
 		}
 		return -1;
+	}
+
+	/**
+	 * 文字列からGetApprovalJobListRequest.ResultEnumに変換する
+	 * 
+	 * @param type
+	 * @return
+	 */
+	public static GetApprovalJobListRequest.ResultEnum stringToEnum(String string) {
+		if (string.equals(STRING_APPROVAL)) {
+			return GetApprovalJobListRequest.ResultEnum.APPROVAL;
+		} else if (string.equals(STRING_DENIAL)) {
+			return GetApprovalJobListRequest.ResultEnum.DENIAL;
+		}
+		return null;
+	}
+
+	/**
+	 * Enum（GetApprovalJobListRequest.ResultEnum）から文字列に変換する
+	 * @param type
+	 * @return
+	 */
+	public static String typeEnumToString(JobApprovalInfoWrapper.ResultEnum type) {
+		if (type == JobApprovalInfoWrapper.ResultEnum.APPROVAL) {
+			return STRING_APPROVAL;
+		} else if (type == JobApprovalInfoWrapper.ResultEnum.DENIAL){
+			return STRING_DENIAL;
+		}
+		return "";
 	}
 }

@@ -7,81 +7,70 @@
  */
 package com.clustercontrol.xcloud.util;
 
-import com.clustercontrol.ws.xcloud.HCloudScopeRootScope;
-import com.clustercontrol.ws.xcloud.HCloudScopeScope;
-import com.clustercontrol.ws.xcloud.HEntityNode;
-import com.clustercontrol.ws.xcloud.HFolder;
-import com.clustercontrol.ws.xcloud.HInstanceNode;
-import com.clustercontrol.ws.xcloud.HLocationScope;
-import com.clustercontrol.ws.xcloud.HNode;
-import com.clustercontrol.ws.xcloud.HRepository;
-import com.clustercontrol.ws.xcloud.HScope;
+import org.openapitools.client.model.HFacilityResponse;
+import org.openapitools.client.model.HFacilityResponse.TypeEnum;
+import org.openapitools.client.model.HRepositoryResponse;
 
 public class HRepositoryParser {
 	public static class Handler {
-		public boolean cloudScopeRootScope(HCloudScopeRootScope s){return true;};
-		public boolean cloudScopeScope(HCloudScopeScope s){return true;};
-		public boolean locationScope(HLocationScope s){return true;};
-		public boolean folder(HFolder s){return true;};
-		public boolean scope(HScope s){return true;};
-		public void instanceNode(HInstanceNode n){};
-		public void entityNode(HEntityNode n){};
-		public void node(HNode n){};
+		public boolean cloudScopeRootScope(HFacilityResponse f){return true;};
+		public boolean cloudScopeScope(HFacilityResponse f){return true;};
+		public boolean locationScope(HFacilityResponse f){return true;};
+		public boolean folder(HFacilityResponse f){return true;};
+		public boolean scope(HFacilityResponse f){return true;};
+		public void instanceNode(HFacilityResponse f){};
+		public void entityNode(HFacilityResponse f){};
+		public void node(HFacilityResponse f){};
 	}
 	
-	protected HRepository repository;
+	protected HRepositoryResponse repository;
 	
-	public HRepositoryParser(HRepository repository) {
+	public HRepositoryParser(HRepositoryResponse repository) {
 		this.repository = repository;
 	}
 
 	public void parse(HRepositoryParser.Handler h) {
-		for (Object o: repository.getFacilities()) {
-			recursive(h, o);
+		for (HFacilityResponse f: repository.getFacilities()) {
+			recursive(h, f);
 		}
 	}
 	
-	private void recursive(HRepositoryParser.Handler h, Object o) {
-		if (o instanceof HCloudScopeRootScope) {
-			HCloudScopeRootScope s = (HCloudScopeRootScope)o;
-			if (!h.cloudScopeRootScope(s)) return;
-			for (Object c: s.getFacilities()) {
+	private void recursive(HRepositoryParser.Handler h, HFacilityResponse f) {
+		if (f.getType() == TypeEnum.ROOT) {
+			if (!h.cloudScopeRootScope(f)) return;
+			for (HFacilityResponse c: f.getFacilities()) {
 				recursive(h, c);
 			}
-		} else if (o instanceof HCloudScopeScope) {
-			HCloudScopeScope s = (HCloudScopeScope)o;
-			if (!h.cloudScopeScope(s)) return;
-			for (Object c: s.getFacilities()) {
+		} else if (f.getType() == TypeEnum.CLOUDSCOPE) {
+			if (!h.cloudScopeScope(f)) return;
+			for (HFacilityResponse c: f.getFacilities()) {
 				recursive(h, c);
 			}
-		} else if (o instanceof HLocationScope) {
-			HLocationScope s = (HLocationScope)o;
-			if (!h.locationScope(s)) return;
-			for (Object c: s.getFacilities()) {
+		} else if (f.getType() == TypeEnum.LOCATION) {
+			if (!h.locationScope(f)) return;
+			for (HFacilityResponse c: f.getFacilities()) {
 				recursive(h, c);
 			}
-		} else if (o instanceof HFolder) {
-			HFolder s = (HFolder)o;
-			if (!h.folder(s)) return;
-			for (Object c: s.getFacilities()) {
+		} else if (f.getType() == TypeEnum.FOLDER) {
+			if (!h.folder(f)) return;
+			for (HFacilityResponse c: f.getFacilities()) {
 				recursive(h, c);
 			}
-		} else if (o instanceof HScope) {
-			HScope s = (HScope)o;
-			if (!h.scope(s)) return;
-			for (Object c: s.getFacilities()) {
+		} else if (f.getType() == TypeEnum.SCOPE) {
+			if (!h.scope(f)) return;
+			for (HFacilityResponse c: f.getFacilities()) {
 				recursive(h, c);
 			}
-		} else if (o instanceof HInstanceNode) {
-			h.instanceNode((HInstanceNode)o);
-		} else if (o instanceof HEntityNode) {
-			h.entityNode((HEntityNode)o);
-		} else if (o instanceof HNode) {
-			h.node((HNode)o);
+		} else if (f.getType() == TypeEnum.INSTANCE) {
+			h.instanceNode(f);
+		} else if (f.getType() == TypeEnum.ENTITY) {
+			h.entityNode(f);
+		} else if (f.getType() == TypeEnum.NODE) {
+			h.node(f);
 		}
 	}
 	
-	public static void parse(HRepository r, HRepositoryParser.Handler h) {
+	public static void parse(HRepositoryResponse r, HRepositoryParser.Handler h) {
 		new HRepositoryParser(r).parse(h);
 	}
 }

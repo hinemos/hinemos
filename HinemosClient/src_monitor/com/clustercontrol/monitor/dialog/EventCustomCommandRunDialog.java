@@ -26,23 +26,22 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TableItem;
+import org.openapitools.client.model.EventCustomCommandInfoDataResponse;
+import org.openapitools.client.model.EventCustomCommandInfoResponse;
+import org.openapitools.client.model.EventLogInfoRequest;
+import org.openapitools.client.model.EventLogInfoResponse;
 
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.common.util.CommonRestClientWrapper;
 import com.clustercontrol.composite.ManagerListComposite;
 import com.clustercontrol.dialog.CommonDialog;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.action.GetEventCustomCommandListTableDefine;
 import com.clustercontrol.monitor.composite.EventCustomCommandComposite;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.monitor.util.EventCustomCommandResultPoller;
-import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.EventCustomCommandInfo;
-import com.clustercontrol.ws.monitor.EventCustomCommandInfoData;
-import com.clustercontrol.ws.monitor.EventCustomCommandInfoData.EvemtCustomCommandMap.Entry;
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-
 /**
  * 監視履歴[イベント・カスタムコマンドの実行]ダイアログクラス<BR>
  */
@@ -54,11 +53,11 @@ public class EventCustomCommandRunDialog extends CommonDialog {
 	/** マネージャ */
 	private String managerName = null;
 	/** 選択されたイベント情報 */
-	private List<EventDataInfo> selectEventList = null;
+	private List<EventLogInfoRequest> selectEventList = null;
 	/** イベント表示情報 */
 	private MultiManagerEventDisplaySettingInfo eventDspInfo = null;
 	/** カスタムコマンド設定情報。 */
-	private Map<Integer, EventCustomCommandInfo> customCommandInfoMap = null;
+	private Map<Integer, EventCustomCommandInfoResponse> customCommandInfoMap = null;
 	
 	private Shell shell;
 
@@ -74,7 +73,7 @@ public class EventCustomCommandRunDialog extends CommonDialog {
 	 * @param managerName イベントカスタムスクリプトを実行するマネージャ
 	 * @param selectEventList 選択されたイベント情報
 	 */
-	public EventCustomCommandRunDialog(Shell parent, String managerName, List<EventDataInfo> selectEventList, MultiManagerEventDisplaySettingInfo eventDspInfo) {
+	public EventCustomCommandRunDialog(Shell parent, String managerName, List<EventLogInfoRequest> selectEventList, MultiManagerEventDisplaySettingInfo eventDspInfo) {
 		super(parent);
 		this.managerName = managerName;
 		this.selectEventList = selectEventList;
@@ -255,7 +254,7 @@ public class EventCustomCommandRunDialog extends CommonDialog {
 			return;
 		}
 		
-		EventCustomCommandInfo commandInfo = this.customCommandInfoMap.get(commandNo);
+		EventCustomCommandInfoResponse commandInfo = this.customCommandInfoMap.get(commandNo);
 		
 		if (this.selectEventList.size() > commandInfo.getMaxEventSize() ) {
 			//Hinemosプロパティの上限数より多いイベントが選択されているとき
@@ -307,16 +306,16 @@ public class EventCustomCommandRunDialog extends CommonDialog {
 	private void getCustomCommandInfo() {
 		customCommandInfoMap = new LinkedHashMap<>();
 		
-		EventCustomCommandInfoData eventInfoData = null;
+		EventCustomCommandInfoDataResponse eventInfoData = null;
 
 		// カスタムコマンド設定情報取得
-		MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
+		CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(managerName);
 		try {
 			eventInfoData = wrapper.getEventCustomCommandSettingInfo();
-			for (Entry entry : eventInfoData.getEvemtCustomCommandMap().getEntry()) {
-				customCommandInfoMap.put(entry.getKey(), entry.getValue());
+			for (Map.Entry<String, EventCustomCommandInfoResponse> entry : eventInfoData.getEvemtCustomCommandMap().entrySet()) {
+				customCommandInfoMap.put(Integer.parseInt(entry.getKey()), entry.getValue());
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));

@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"endStatusId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+	
+	{
+	"propName":"endValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaCheckEndValueMst_endValue"}
+	]}
+]
+}

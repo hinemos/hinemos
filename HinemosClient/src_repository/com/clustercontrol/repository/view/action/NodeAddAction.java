@@ -20,7 +20,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.clustercontrol.repository.dialog.NodeCreateDialog;
 import com.clustercontrol.repository.view.NodeListView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * ノードの作成・変更ダイアログによる、ノード登録を行うクライアント側アクションクラス<BR>
@@ -53,7 +53,7 @@ public class NodeAddAction extends AbstractHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		this.viewPart = HandlerUtil.getActivePart(event);
 
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 
 		// ダイアログを生成
 		NodeCreateDialog dialog = new NodeCreateDialog(this.viewPart.getSite().getShell(), managerName, null, false);

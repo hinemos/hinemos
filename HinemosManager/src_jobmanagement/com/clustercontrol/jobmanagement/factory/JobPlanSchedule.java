@@ -25,6 +25,7 @@ import com.clustercontrol.calendar.util.CalendarUtil;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.plugin.impl.SchedulerPlugin.TriggerType;
 import com.clustercontrol.util.HinemosTime;
 
 
@@ -71,6 +72,11 @@ public class JobPlanSchedule implements Serializable{
 	private int fromMinutes = 0;
 	private int everyMinutes = 0;
 
+	//一定間隔実行（SIMPLE）の場合に使用
+	private long simpleJobKickTime = 0L;
+	private long intervalMillis = 0L;
+	private TriggerType triggerType = null;
+
 	private boolean firstFlg = false;
 
 	/**
@@ -83,7 +89,26 @@ public class JobPlanSchedule implements Serializable{
 		createPlan(plan);
 		this.calendarId = calendarId;
 		this.firstFlg = true;
+		this.triggerType = TriggerType.CRON;
 	}
+
+	/**
+	 * 一定間隔実行（SIMPLE）の場合はこちらを使用する
+	 * @param simpleJobKickTime スケジュール開始時刻
+	 * @param intervalMillis 実行間隔（ミリ秒）
+	 * @param startTime スケジュール一覧の開始時刻
+	 * @param calendarId カレンダーID
+	 */
+	public JobPlanSchedule(long simpleJobKickTime, long intervalMillis, Long startTime, String calendarId) {
+		this.startTime = startTime;
+		this.intervalMillis = intervalMillis;
+		setThisTime(startTime);
+		this.simpleJobKickTime = simpleJobKickTime;
+		this.calendarId = calendarId;
+		this.firstFlg = true;
+		this.triggerType = TriggerType.SIMPLE;
+	}
+
 	/**
 	 * 現時刻から未来のスケジュール予定をCronから求める
 	 * 
@@ -185,12 +210,28 @@ public class JobPlanSchedule implements Serializable{
 
 	/**
 	 * 次のスケジュール予定を返す。
-	 * MAX_YEARまで進んでもスケジュール予定が見つからない場合は、nullを返す。
 	 * 
-	 * @param calendarId
 	 * @return
 	 */
 	public Long getNextPlan() {
+		Long nextPlan = null;
+
+		if (triggerType == TriggerType.CRON) {
+			nextPlan = getCronNextPlan();
+		} else if (triggerType == TriggerType.SIMPLE) {
+			nextPlan = getSimpleNextPlan();
+		}
+
+		return nextPlan;
+	}
+
+	/**
+	 * CRON指定の場合の次スケジュール予定を返す。
+	 * MAX_YEARまで進んでもスケジュール予定が見つからない場合は、nullを返す。
+	 * 
+	 * @return
+	 */
+	private Long getCronNextPlan() {
 		// 初回にnext()を実行させないようにするため、firstFlgを設定。
 		while (firstFlg || next()) {
 			// 初回処理時にfirstFlgをfalseにする。
@@ -236,6 +277,56 @@ public class JobPlanSchedule implements Serializable{
 		}
 		return null;
 	}
+
+	/**
+	 * 一定間隔実行（SIMPLE）の場合の次スケジュール予定を返す。
+	 * カレンダー有効範囲またはMAX_YEARを超える場合はnullを返す。
+	 * @return
+	 */
+	private Long getSimpleNextPlan() {
+
+		// 初回にスケジュール一覧開始日時まで進める
+		if (firstFlg) {
+			firstFlg = false;
+			while (simpleJobKickTime < startTime) {
+				simpleJobKickTime += intervalMillis;
+			}
+		} else {
+			simpleJobKickTime += intervalMillis;
+		}
+
+		// カレンダーの有効範囲を超える場合はnullを返す
+		if (calendarId != null) {
+			SelectCalendar select = new SelectCalendar();
+			CalendarInfo calInfo = null;
+			try {
+				calInfo = select.getCalendarFull(calendarId);
+				while (!CalendarUtil.isRun(calInfo, new Date(simpleJobKickTime))) {
+					if (calInfo.getValidTimeTo() < simpleJobKickTime) {
+						return null;
+					} else {
+						simpleJobKickTime += intervalMillis;
+					}
+				}
+			} catch (CalendarNotFound e) {
+				m_log.warn("getNextSimplePlan : " + e.getClass().getName() + ", " + e.getMessage());
+			} catch (InvalidRole e) {
+				m_log.warn("getNextSimplePlan : " + e.getClass().getName() + ", " + e.getMessage());
+			}
+		}
+
+		// MAX_YEARを超える場合はnullを返す
+		Calendar kickCalendar = Calendar.getInstance();
+		kickCalendar.setTimeZone(HinemosTime.getTimeZone());
+		kickCalendar.setTimeInMillis(simpleJobKickTime);
+		int maxYear = HinemosPropertyCommon.job_schedule_plan_max.getIntegerValue();
+		if (maxYear < kickCalendar.get(Calendar.YEAR)) {
+			return null;
+		}
+
+		return simpleJobKickTime;
+	}
+
 	/**
 	 * 月を進めるメソッド
 	 * 同じ処理が複数存在したためメソッド化
@@ -293,7 +384,7 @@ public class JobPlanSchedule implements Serializable{
 		}
 		return nextFireDay();
 	}
-	
+
 	/**
 	 * 現在保持している年月日の次にキックすべき日に移動する
 	 * @return 通常はtrue。CRON定義が異常な場合のみfalse

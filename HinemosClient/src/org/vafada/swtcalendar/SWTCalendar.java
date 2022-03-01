@@ -35,10 +35,10 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.openapitools.client.model.YMDResponse;
 
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.calendar.Ymd;
 
 public class SWTCalendar extends Composite {
 	/**
@@ -191,7 +191,7 @@ public class SWTCalendar extends Composite {
 	 * @see com.clustercontrol.calendar.dialog.CalendarPatternDialog#customizeDialog
 	 * @param dateList
 	 */
-	public void updateCalendar(ArrayList<Ymd> dateList){
+	public void updateCalendar(ArrayList<YMDResponse> dateList){
 		dayChooser.update(dateList);
 	}
 

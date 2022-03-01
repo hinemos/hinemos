@@ -12,11 +12,11 @@ import java.util.List;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.openapitools.client.model.InfraFileInfoResponse;
 
 import com.clustercontrol.infra.action.GetInfraFileManagerTableDefine;
 import com.clustercontrol.infra.view.InfraFileManagerView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.InfraFileInfo;
 
 public class InfraFileUtil {
 	public static String joinStringList(List<String> strList, String separator) {
@@ -69,7 +69,7 @@ public class InfraFileUtil {
 		return getManagerName(selection);
 	}
 	
-	public static InfraFileInfo getSelectedInfraFileInfo(InfraFileManagerView view) {
+	public static InfraFileInfoResponse getSelectedInfraFileInfo(InfraFileManagerView view) {
 		StructuredSelection selection = null;
 		if(view.getComposite().getTableViewer().getSelection() instanceof StructuredSelection){
 			selection = (StructuredSelection) view.getComposite().getTableViewer().getSelection();
@@ -88,12 +88,12 @@ public class InfraFileUtil {
 		return itemList.get(GetInfraFileManagerTableDefine.MANAGER_NAME);
 	}
 	
-	public static InfraFileInfo getSelectedInfraFileInfo(StructuredSelection selection) {
+	public static InfraFileInfoResponse getSelectedInfraFileInfo(StructuredSelection selection) {
 		if(selection == null){
 			return null;
 		}
 		
-		InfraFileInfo info = new InfraFileInfo();
+		InfraFileInfoResponse info = new InfraFileInfoResponse();
 		
 		@SuppressWarnings("unchecked")
 		List<String> itemList = (List<String>)selection.toList().get(0);

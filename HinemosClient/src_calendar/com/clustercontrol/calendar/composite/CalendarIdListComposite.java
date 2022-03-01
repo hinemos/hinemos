@@ -21,15 +21,15 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.CalendarInfoResponse;
 
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.notify.composite.NotifyBasicComposite;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.calendar.CalendarInfo;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
 
 
 /**
@@ -204,17 +204,17 @@ public class CalendarIdListComposite extends Composite {
 		// 空欄
 		putMap("", "");
 
-		List<CalendarInfo> calList = null;
+		List<CalendarInfoResponse> calList = null;
 		// データ取得
 		try {
 			if (ownerRoleId != null && !"".equals(ownerRoleId)) {
-				CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
+				CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
 				calList = wrapper.getCalendarList(ownerRoleId);
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.accesscontrol.16"));
+					e.getMessage());
 			setEnabled(false);
 
 		} catch (Exception e) {
@@ -223,12 +223,12 @@ public class CalendarIdListComposite extends Composite {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					e.getMessage());
 		}
 
 		if(calList != null){
 			// カレンダIDリスト
-			for(CalendarInfo info : calList){
+			for(CalendarInfoResponse info : calList){
 				putMap(info.getCalendarId(), info.getCalendarName());
 			}
 		}
@@ -272,6 +272,7 @@ public class CalendarIdListComposite extends Composite {
 	 * @see org.eclipse.swt.widgets.Combo#setText(java.lang.String)
 	 */
 	public void setText(String calId) {
+		m_log.debug("setText() : calId=" + calId + ", dispMap=" + dispMap);
 		if (calId == null) {
 			return;
 		}

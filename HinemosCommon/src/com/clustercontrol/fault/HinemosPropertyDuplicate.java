@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * keyが重複している場合に利用するException
  * @version 5.0.0
  */
-public class HinemosPropertyDuplicate extends HinemosException {
+public class HinemosPropertyDuplicate extends HinemosDuplicate {
 
 	private static final long serialVersionUID = -5612525221540116629L;
 	private String m_key = null;

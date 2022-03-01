@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Draw2d RAP Suppliment (Incubation)
+Bundle-SymbolicName: org.eclipse.rap.draw2d.compatibility
+Bundle-Version: 0.1.0.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Export-Package: intrinsic.flash.text,
+ org.eclipse.draw2d.rap.swt,
+ org.eclipse.draw2d.rap.swt.custom,
+ org.eclipse.draw2d.rap.swt.graphics,
+ org.eclipse.swt.dnd,
+ org.eclipse.swt.graphics,
+ org.eclipse.swt.printing,
+ org.eclipse.swt.widgets,
+ org.eclipse.ui.presentations
+Require-Bundle: org.eclipse.rap.rwt;bundle-version="[2.0.0,4.0.0)",
+ org.eclipse.rap.jface;bundle-version="[2.0.0,4.0.0)"

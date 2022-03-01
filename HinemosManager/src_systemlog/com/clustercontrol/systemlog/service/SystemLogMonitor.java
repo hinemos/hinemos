@@ -55,10 +55,12 @@ import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.factory.SearchNodeBySNMP;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.repository.util.MultiTenantSupport;
 import com.clustercontrol.systemlog.bean.SyslogMessage;
 import com.clustercontrol.systemlog.util.ResponseHandler;
 import com.clustercontrol.systemlog.util.SyslogHandler;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.Singletons;
 
 public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 
@@ -221,7 +223,7 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 				// 収集処理
 				List<StringSample> collectedSamples = new ArrayList<>();
 				for (SyslogMessage syslog : syslogList) {
-					Set<String> facilityIdSet = resolveFacilityId(syslog.hostname);
+					Set<String> facilityIdSet = resolveFacilityId(syslog);
 					
 					for (MonitorInfo monitor : monitorList) {
 						// 管理対象フラグが無効であれば、次の設定の処理へスキップする
@@ -330,13 +332,16 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 					continue;
 				}
 
-				Set<String> facilityIdSet = resolveFacilityId(syslog.hostname);
+				Set<String> facilityIdSet = resolveFacilityId(syslog);
 				if (facilityIdSet.size() == 0) {
 					log.warn("target facility not found: " + syslog.hostname);
 					continue;
 				}
 				List<String> validFacilityIdList = getValidFacilityIdList(facilityIdSet, monitorInfo, runInstructionInfo);
-
+				if (validFacilityIdList.size() == 0) {
+					continue;
+				}
+				
 				int orderNo = 0;
 				for (MonitorStringValueInfo rule : monitorInfo.getStringValueInfo()) {
 					++orderNo;
@@ -451,8 +456,9 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 			return validFacilityIdList;
 		}
 
-		private Set<String> resolveFacilityId(String hostname){
+		private Set<String> resolveFacilityId(SyslogMessage syslog){
 			Set<String> facilityIdSet = null;
+			String hostname = syslog.hostname;
 			String shortHostname = SearchNodeBySNMP.getShortName(hostname);
 
 			if (log.isDebugEnabled()) {
@@ -480,6 +486,11 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 					facilityIdSet = new RepositoryControllerBean().getNodeListByHostname(shortHostname);
 				}
 			}
+			
+			// マルチテナント制御 : 送信元IPアドレスがアドレスグループの範囲内であるノードに限定
+			if (facilityIdSet != null) {
+				facilityIdSet = Singletons.get(MultiTenantSupport.class).filterNodes(facilityIdSet, syslog.ipAddress);
+			}
 
 			if (facilityIdSet == null) {
 				// 指定のノード名、IPアドレスで登録されているノードがリポジトリに存在しないため、
@@ -501,7 +512,6 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 			return String.format("%s [receiverId = %s, syslogList = %s]",
 					this.getClass().getSimpleName(), receiverId, syslogList);
 		}
-
 	}
 
 	@Override

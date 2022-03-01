@@ -15,17 +15,18 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.window.Window;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.AddJobQueueRequest;
+import org.openapitools.client.model.JobQueueResponse;
 
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.dialog.ApiResultDialog;
 import com.clustercontrol.jobmanagement.dialog.JobQueueSettingDialog;
 import com.clustercontrol.jobmanagement.dialog.JobQueueSettingDialog.EditMode;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.LogUtil;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.ViewUtil;
-import com.clustercontrol.ws.jobmanagement.JobQueueSetting;
 
 /**
  * ジョブ同時実行制御キューの新規作成コマンドを実行します。
@@ -56,7 +57,7 @@ public class CreateJobQueueAction extends AbstractHandler {
 		log.debug("execute:");
 
 		// 初期値を設定
-		JobQueueSetting setting = new JobQueueSetting();
+		JobQueueResponse setting = new JobQueueResponse();
 		setting.setQueueId("");
 		setting.setName("");
 		setting.setConcurrency(null);
@@ -64,21 +65,23 @@ public class CreateJobQueueAction extends AbstractHandler {
 
 		// 設定ダイアログを呼び出す
 		JobQueueSettingDialog dialog = new JobQueueSettingDialog(HandlerUtil.getActiveWorkbenchWindow(event).getShell(),
-				EditMode.CREATE, setting, EndpointManager.getActiveManagerNameList().get(0),
+				EditMode.CREATE, setting, RestConnectManager.getActiveManagerNameList().get(0),
 				// OK時の処理
 				(managerName) -> {
 					log.debug("execute: API call.");
 					ApiResultDialog resultDialog = new ApiResultDialog();
 					boolean shouldClose;
 					try {
-						JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-						wrapper.addJobQueue(setting);
+						JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+						AddJobQueueRequest request = new AddJobQueueRequest();
+						RestClientBeanUtil.convertBean(setting, request);
+						wrapper.addJobQueue(request);
 
 						resultDialog.addSuccess(managerName,
 								Messages.get("message.jobqueue.created", setting.getQueueId()));
 						shouldClose = true;
 					} catch (Throwable t) {
-						log.info(LogUtil.filterWebFault("execute: ", t));
+						log.info("execute: " + t.getClass().getName() + ", " + t.getMessage());
 						resultDialog.addFailure(managerName, t,
 								Messages.get("message.jobqueue.id", setting.getQueueId()));
 						shouldClose = false;

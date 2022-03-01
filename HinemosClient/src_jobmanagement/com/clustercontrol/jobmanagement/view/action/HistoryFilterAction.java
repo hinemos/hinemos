@@ -21,10 +21,13 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.handlers.RegistryToggleState;
+import org.openapitools.client.model.JobHistoryFilterBaseRequest;
 
-import com.clustercontrol.bean.Property;
-import com.clustercontrol.jobmanagement.dialog.HistoryFilterDialog;
+import com.clustercontrol.filtersetting.bean.JobHistoryFilterContext;
+import com.clustercontrol.filtersetting.util.JobHistoryFilterHelper;
+import com.clustercontrol.jobmanagement.dialog.JobHistoryFilterDialog;
 import com.clustercontrol.jobmanagement.view.JobHistoryView;
+import com.clustercontrol.util.ManagerTag;
 
 /**
  * ジョブ[履歴]ビューの「フィルタ処理」のクライアント側アクションクラス<BR>
@@ -88,14 +91,20 @@ public class HistoryFilterAction extends AbstractHandler {
 		boolean isChecked = !HandlerUtil.toggleCommandState(command);
 
 		if (isChecked) { // ボタンが押された場合
+			ManagerTag<JobHistoryFilterBaseRequest> mtg = jobHistoryView.getFilter();
+			JobHistoryFilterContext context = new JobHistoryFilterContext(
+					JobHistoryFilterHelper.duplicate(mtg.data), // ダイアログ側で更新するので複製する必要がある
+					mtg.managerName);
 
-			HistoryFilterDialog dialog = new HistoryFilterDialog(HandlerUtil.getActiveWorkbenchWindow( event ).getShell());
+			JobHistoryFilterDialog dialog = new JobHistoryFilterDialog(
+					HandlerUtil.getActiveWorkbenchWindow(event).getShell(),
+					context);
 
 			//ジョブ履歴フィルタダイアログを表示
 			if (dialog.open() == IDialogConstants.OK_ID) {
 				// ジョブ履歴ビューをフィルタモードで表示
-				Property property = dialog.getInputData();
-				jobHistoryView.setFilterCondition(property);
+				jobHistoryView.setFilter(context.getManagerName(), context.getFilter());
+				jobHistoryView.setFilterEnabled(true);
 				jobHistoryView.update(false);
 			} else {
 				State state = command.getState(RegistryToggleState.STATE_ID);
@@ -103,7 +112,7 @@ public class HistoryFilterAction extends AbstractHandler {
 			}
 		} else { // ボタンが戻った場合
 			// ジョブ履歴ビューを通常モードで表示
-			jobHistoryView.setFilterCondition(null);
+			jobHistoryView.setFilterEnabled(false);
 			jobHistoryView.update(false);
 		}
 		return null;

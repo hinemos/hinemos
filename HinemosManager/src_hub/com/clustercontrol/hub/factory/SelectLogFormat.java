@@ -60,7 +60,11 @@ public class SelectLogFormat {
 	 * @return ログフォーマット情報のリスト
 	 */
 	public List<LogFormat> getLogFormatListByOwnerRole(String ownerRoleId) {
-		return QueryUtil.getLogFormatList_OR(ownerRoleId);
+		if (ownerRoleId != null) {
+			return QueryUtil.getLogFormatList_OR(ownerRoleId);
+		} else {
+			return QueryUtil.getLogFormatList();
+		}
 	}
 
 	/**

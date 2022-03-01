@@ -7,6 +7,8 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
+import org.openapitools.client.model.EndpointEntityResponse;
+
 import com.clustercontrol.xcloud.model.base.Element;
 
 public class Endpoint extends Element implements IEndpoint {
@@ -41,13 +43,13 @@ public class Endpoint extends Element implements IEndpoint {
 		internalSetProperty(p.url, url, ()->this.url, (s)->this.url=s);
 	}
 	
-	public void update(Location location, com.clustercontrol.ws.xcloud.Endpoint endpoint) {
+	public void update(Location location, EndpointEntityResponse endpoint) {
 		setLocation(location);
-		setId(endpoint.getId());
+		setId(endpoint.getEndpointId());
 		setUrl(endpoint.getUrl());
 	}
 	
-	public static Endpoint convert(Location location, com.clustercontrol.ws.xcloud.Endpoint source) {
+	public static Endpoint convert(Location location, EndpointEntityResponse source) {
 		Endpoint endpoint = new Endpoint();
 		endpoint.update(location, source);
 		return endpoint;

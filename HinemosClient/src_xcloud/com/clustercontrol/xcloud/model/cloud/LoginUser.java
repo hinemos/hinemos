@@ -7,20 +7,34 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudLoginUser;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.Credential;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
-import com.clustercontrol.ws.xcloud.ModifyCloudLoginUserRequest;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.CloudLoginUserInfoResponse;
+import org.openapitools.client.model.CredentialResponse;
+import org.openapitools.client.model.ModifyCloudLoginUserRequest;
+import org.openapitools.client.model.ModifyCloudLoginUserRoleRelationRequest;
+import org.openapitools.client.model.RoleRelationRequest;
+import org.openapitools.client.model.RoleRelationResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.TimezoneUtil;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 public class LoginUser extends Element implements ILoginUser {
+	private static Log m_log = LogFactory.getLog(LoginUser.class);
+
 	private String id;
 	private String name;
 	private String description;
@@ -28,7 +42,7 @@ public class LoginUser extends Element implements ILoginUser {
 	private Integer priority;
 	private String cloudUserType;
 	private RoleRelation[] roleRelations;
-	private Credential credential;
+	private CredentialResponse credential;
 	private Long regDate;
 	private String regUser;
 	private Long updateDate;
@@ -62,7 +76,7 @@ public class LoginUser extends Element implements ILoginUser {
 	public RoleRelation[] getRoleRelations() {return roleRelations;}
 
 	@Override
-	public Credential getCredential() {return credential;}
+	public CredentialResponse getCredential() {return credential;}
 
 	@Override
 	public Long getRegDate() {return regDate;}
@@ -101,34 +115,44 @@ public class LoginUser extends Element implements ILoginUser {
 
 	public void setUpdateUser(String updateUser) {internalSetProperty(p.updateUser, updateUser, ()->this.updateUser, (s)->this.updateUser=s);}
 
-	public void setCredential(Credential credential) {internalSetProperty(p.credential, credential, ()->this.credential, (s)->this.credential=s);}
+	public void setCredential(CredentialResponse credential) {internalSetProperty(p.credential, credential, ()->this.credential, (s)->this.credential=s);}
 
-	public boolean equalValues(CloudLoginUser source) {
-		return getId().equals(source.getId());
+	public boolean equalValues(CloudLoginUserInfoResponse source) {
+		return getId().equals(source.getEntity().getLoginUserId());
 	}
 
-	public CloudLoginUser getSource() throws CloudModelException {
+	public CloudLoginUserInfoResponse getSource() throws CloudModelException {
 		try {
-			return getEndpoint(CloudEndpoint.class).getCloudLoginUser(cloudScopeId, id);
-		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			return getWrapper().getCloudLoginUser(cloudScopeId, id);
+		} catch (CloudManagerException | InvalidUserPass | InvalidRole | InvalidSetting | RestConnectFailed | HinemosUnknown e) {
 			throw new CloudModelException(e);
 		}
 	}
 
-	protected void overwrite(CloudLoginUser source) {
-		setId(source.getId());
-		setName(source.getName());
-		setCloudScopeId(source.getCloudScopeId());
-		setCloudUserType(source.getCloudUserType().value());
-		setCredential(source.getCredential());
-		setDescription(source.getDescription());
-		setPriority(source.getPriority());
-		setRegDate(source.getRegDate());
-		setRegUser(source.getRegUser());
-		setUpdateDate(source.getUpdateDate());
-		setUpdateUser(source.getUpdateUser());
+	protected void overwrite(CloudLoginUserInfoResponse source) {
+		setId(source.getEntity().getLoginUserId());
+		setName(source.getEntity().getName());
+		setCloudScopeId(source.getEntity().getCloudScopeId());
+		setCloudUserType(source.getEntity().getCloudUserType().getValue());
+		setCredential(source.getEntity().getCredential());
+		setDescription(source.getEntity().getDescription());
+		setPriority(source.getEntity().getPriority());
+		try {
+			setRegDate(TimezoneUtil.getSimpleDateFormat().parse(source.getEntity().getRegDate()).getTime());
+		} catch (ParseException e) {
+			// ここには入らない想定
+			m_log.warn("invalid regTime.", e);
+		}
+		setRegUser(source.getEntity().getRegUser());
+		try {
+			setUpdateDate(TimezoneUtil.getSimpleDateFormat().parse(source.getEntity().getUpdateDate()).getTime());
+		} catch (ParseException e) {
+			// ここには入らない想定
+			m_log.warn("invalid updateTime.", e);
+		}
+		setUpdateUser(source.getEntity().getUpdateUser());
 		List<RoleRelation> tmpRoleRelations = new ArrayList<>();
-		for(com.clustercontrol.ws.xcloud.RoleRelation relation: source.getRoleRelations()){
+		for(RoleRelationResponse relation: source.getEntity().getRoleRelations()){
 			RoleRelation tmpRelation = new RoleRelation();
 			tmpRelation.set(relation);
 			tmpRoleRelations.add(tmpRelation);
@@ -139,15 +163,15 @@ public class LoginUser extends Element implements ILoginUser {
 	@Override
 	public LoginUser modifyCloudUser(ModifyCloudLoginUserRequest request) {
 		try {
-			overwrite(getEndpoint(CloudEndpoint.class).modifyCloudLoginUser(request));
+			overwrite(getWrapper().modifyCloudLoginUser(getCloudScopeId(),getId(), request));
 			return this;
-		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (CloudManagerException | InvalidUserPass | InvalidRole | InvalidSetting | RestConnectFailed | HinemosUnknown e) {
 			throw new CloudModelException(e);
 		}
 	}
 
-	private <T> T getEndpoint(Class<T> endpointClass){
-		return getCloudUserManager().getCloudScope().getCounterScope().getHinemosManager().getEndpoint(endpointClass);
+	private CloudRestClientWrapper getWrapper(){
+		return getCloudUserManager().getCloudScope().getCounterScope().getHinemosManager().getWrapper();
 	}
 
 	@Override
@@ -157,8 +181,8 @@ public class LoginUser extends Element implements ILoginUser {
 				return;
 			}
 		}
-		List<com.clustercontrol.ws.xcloud.RoleRelation> tmpRelations = getConvertedRoleRelations();
-		com.clustercontrol.ws.xcloud.RoleRelation relation = new com.clustercontrol.ws.xcloud.RoleRelation();
+		List<RoleRelationResponse> tmpRelations = getConvertedRoleRelations();
+		RoleRelationResponse relation = new RoleRelationResponse();
 		relation.setRoleId(roleId);
 		tmpRelations.add(relation);
 		modifyRoleRelations(tmpRelations);
@@ -166,8 +190,8 @@ public class LoginUser extends Element implements ILoginUser {
 
 	@Override
 	public void removeRoleRelation(String roleId) {
-		List<com.clustercontrol.ws.xcloud.RoleRelation> tmpRelations = getConvertedRoleRelations();
-		for(com.clustercontrol.ws.xcloud.RoleRelation relation: new ArrayList<>(tmpRelations)){
+		List<RoleRelationResponse> tmpRelations = getConvertedRoleRelations();
+		for(RoleRelationResponse relation: new ArrayList<>(tmpRelations)){
 			if(relation.getRoleId().equals(roleId)){
 				tmpRelations.remove(relation);
 				modifyRoleRelations(tmpRelations);
@@ -175,18 +199,28 @@ public class LoginUser extends Element implements ILoginUser {
 		}
 	}
 	
-	private List<com.clustercontrol.ws.xcloud.RoleRelation> getConvertedRoleRelations(){
-		List<com.clustercontrol.ws.xcloud.RoleRelation> tmpRelations = new ArrayList<>();
+	private List<RoleRelationResponse> getConvertedRoleRelations(){
+		List<RoleRelationResponse> tmpRelations = new ArrayList<>();
 		for(RoleRelation relation: roleRelations){
 			tmpRelations.add(relation.getDTO());
 		}
 		return tmpRelations;
 	}
 	
-	private void modifyRoleRelations(List<com.clustercontrol.ws.xcloud.RoleRelation> roleRelations){
+	private void modifyRoleRelations(List<RoleRelationResponse> roleRelations){
+		ModifyCloudLoginUserRoleRelationRequest req = new ModifyCloudLoginUserRoleRelationRequest();
+		List<RoleRelationRequest> roleReqList = new ArrayList<>();
 		try {
-			overwrite(getEndpoint(CloudEndpoint.class).modifyCloudLoginUserRoleRelation(cloudScopeId, id, roleRelations));
-		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			// レスポンスDTOをリクエストDTOに変換
+			for (RoleRelationResponse roleRes : roleRelations){
+				RoleRelationRequest roleReq = new RoleRelationRequest();
+				RestClientBeanUtil.convertBean(roleRes, roleReq);
+				roleReqList.add(roleReq);
+			}
+			req.setRoleRelations(roleReqList);
+			
+			overwrite(getWrapper().modifyCloudLoginUserRoleRelation(cloudScopeId, id, req));
+		} catch (CloudManagerException | HinemosUnknown | InvalidUserPass | InvalidRole | InvalidSetting | RestConnectFailed e) {
 			throw new CloudModelException(e);
 		}
 	}

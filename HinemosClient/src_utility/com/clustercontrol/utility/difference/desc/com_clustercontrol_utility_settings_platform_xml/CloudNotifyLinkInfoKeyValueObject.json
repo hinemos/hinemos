@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"name",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudNotifyLinkInfoKeyValueObject_name"}
+	]},
+	
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudNotifyLinkInfoKeyValueObject_value"}
+	]}
+]
+}

@@ -1,0 +1,29 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"orderNo",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"conditionType",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectGroupInfo_conditionType"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_and"},
+			{"value":"1", "name":"name_or"}
+		]}
+	]},
+
+	{
+	"propName":"objectInfo",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectGroupInfo_objectInfo"},
+		{"type":"Array", "idType":"props", "props":["jobId", "type", "status", "value", "time", "startMinute", "decisionValue", "crossSessionRange"]}
+	]}
+]
+}

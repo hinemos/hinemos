@@ -25,19 +25,23 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.ObjectPrivilegeInfoResponseP1;
+import org.openapitools.client.model.RoleInfoResponseP3;
+import org.openapitools.client.model.UserInfoResponseP4;
 
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
+import com.clustercontrol.common.util.CommonRestClientWrapper;
 import com.clustercontrol.composite.TextWithParameterComposite;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 
 /**
@@ -88,7 +92,7 @@ public class ApprovalComposite extends Composite {
 	private Boolean m_isUseApprovalReqSentence = null;
 	
 	/** ジョブツリー情報*/
-	private JobTreeItem m_jobTreeItem = null;
+	private JobTreeItemWrapper m_jobTreeItem = null;
 	
 	/**  承認画面へのリンク先アドレス */
 	private String m_approvalPageLink = null;
@@ -241,7 +245,6 @@ public class ApprovalComposite extends Composite {
 				updateMailBody();
 			}
 		});
-		
 		m_approvalPageLink = getApprovalPageLink();
 		
 		reflectApprovalInfo();
@@ -310,7 +313,7 @@ public class ApprovalComposite extends Composite {
 			m_approvalReqRoleCombo.setText(JobUtil.getTopJobUnitTreeItem(m_jobTreeItem).getData().getOwnerRoleId());
 		}
 		//承認依頼先ユーザIDコンボリスト設定
-		if(m_approvalReqRoleCombo.getText() != null){
+		if(m_jobTreeItem !=null && m_approvalReqRoleCombo.getText() != null){
 			getApprovalReqUserIdList(m_approvalReqRoleCombo.getText());
 		}
 		if(m_approvalReqUserId != null && m_approvalReqUserId.length() > 0){
@@ -516,7 +519,7 @@ public class ApprovalComposite extends Composite {
 	 * ジョブツリーを設定する。<BR>
 	 * @param jobTreeItem
 	 */
-	public void setJobTreeItem(JobTreeItem jobTreeItem) {
+	public void setJobTreeItem(JobTreeItemWrapper jobTreeItem) {
 		m_jobTreeItem = jobTreeItem;
 	}
 	
@@ -547,8 +550,8 @@ public class ApprovalComposite extends Composite {
 		
 		//モジュールとして登録されたジョブリスト情報を取得
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(m_managerName);
-			link = wrapper.getApprovalPageLink();
+			CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(m_managerName);
+			link = wrapper.getApprovalPageLink().getValue();
 		} catch (Exception e) {
 			// 上記以外の例外
 			MessageDialog.openError(
@@ -562,14 +565,14 @@ public class ApprovalComposite extends Composite {
 	
 	private void getApprovalReqRoleIdList() {
 		
-		List<String> list = null;
-		
-		JobTreeItem jobunitItem = JobUtil.getTopJobUnitTreeItem(m_jobTreeItem);
+		List<ObjectPrivilegeInfoResponseP1> list = null;
+
+		JobTreeItemWrapper jobunitItem = JobUtil.getTopJobUnitTreeItem(m_jobTreeItem);
 		String jobunitId = jobunitItem.getData().getJobunitId();
 		
 		//参照のオブジェクト権限を持つロールIDのリストを取得
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(m_managerName);
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(m_managerName);
 			list = wrapper.getRoleIdListWithReadObjectPrivilege(jobunitId);
 		} catch (Exception e) {
 			// 上記以外の例外
@@ -583,8 +586,8 @@ public class ApprovalComposite extends Composite {
 		this.m_approvalReqRoleCombo.add(jobunitItem.getData().getOwnerRoleId(), 0);
 		
 		if(list != null && !list.isEmpty()){
-			for(String roleId : list){
-				this.m_approvalReqRoleCombo.add(roleId);
+			for(ObjectPrivilegeInfoResponseP1 info : list){
+				this.m_approvalReqRoleCombo.add(info.getRoleId());
 			}
 		}
 		return;
@@ -592,12 +595,16 @@ public class ApprovalComposite extends Composite {
 	
 	private void getApprovalReqUserIdList(String roleId) {
 		
-		List<String> list = null;
+		if(roleId == null || roleId.equals("")){
+			//ロールIDの指定がなければ取得しない
+			return;
+		}
+		RoleInfoResponseP3 userDto = null;
 		
 		//指定のロールIDに属するユーザIDのリストを取得
 		try {
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(m_managerName);
-			list = wrapper.getUserIdListBelongToRoleId(roleId);
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(m_managerName);
+			userDto = wrapper.getUserIdListBelongToRoleId(roleId);
 		} catch (Exception e) {
 			// 上記以外の例外
 			MessageDialog.openError(
@@ -611,9 +618,9 @@ public class ApprovalComposite extends Composite {
 		//リストの先頭にはユーザ指定無しとして"*"を設定
 		this.m_approvalReqUserCombo.add("*", 0);
 		
-		if(list != null && !list.isEmpty()){
-			for(String userId : list){
-				this.m_approvalReqUserCombo.add(userId);
+		if(userDto != null && userDto.getUserInfoList() != null && !userDto.getUserInfoList().isEmpty()){
+			for(UserInfoResponseP4 user : userDto.getUserInfoList()){
+				this.m_approvalReqUserCombo.add(user.getUserId());
 			}
 		}
 		return;

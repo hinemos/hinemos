@@ -13,7 +13,7 @@ package com.clustercontrol.fault;
  * 
  * @version 6.2.0
  */
-public class NodeConfigSettingNotFound extends HinemosException {
+public class NodeConfigSettingNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = -2799194595006299333L;
 	private String m_settingId = null;

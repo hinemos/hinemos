@@ -14,7 +14,7 @@ package com.clustercontrol.fault;
  * @version 6.2.0
  * @since 6.2.0
  */
-public class AutoRegisterNodeSettingNotFound extends HinemosException {
+public class AutoRegisterNodeSettingNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = -2799194595006299333L;
 	private String m_priority = null;

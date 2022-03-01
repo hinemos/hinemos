@@ -56,6 +56,8 @@ public class OperateSkipOfJob {
 				sessionJob.setStatus(StatusConstant.TYPE_WAIT);
 				//終了値をクリア
 				sessionJob.setEndValue(null);
+				// 開始遅延によるスキップに対する解除を考慮しJobSessionJobEntity.resultをnullに戻す
+				sessionJob.setResult(null);
 			}
 		}
 	}

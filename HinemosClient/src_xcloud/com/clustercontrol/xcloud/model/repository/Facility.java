@@ -10,6 +10,9 @@ package com.clustercontrol.xcloud.model.repository;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openapitools.client.model.ExtendedPropertyResponse;
+import org.openapitools.client.model.HFacilityResponse;
+
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.model.cloud.ExtendedProperty;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
@@ -53,20 +56,20 @@ public abstract class Facility extends Element implements IFacility {
 		return null;
 	}
 	
-	protected void update(com.clustercontrol.ws.xcloud.HFacility facility) {
+	protected void update(HFacilityResponse facility) {
 		setFacilityId(facility.getId());
 		setName(facility.getName());
 		updateExtendedProperties(facility.getExtendedProperties());
 	}
 	
-	protected void updateExtendedProperties(List<com.clustercontrol.ws.xcloud.ExtendedProperty> extendedProperties) {
-		CollectionComparator.compareCollection(this.extendedProperties, extendedProperties, new CollectionComparator.Comparator<ExtendedProperty, com.clustercontrol.ws.xcloud.ExtendedProperty>(){
+	protected void updateExtendedProperties(List<ExtendedPropertyResponse> extendedProperties) {
+		CollectionComparator.compareCollection(this.extendedProperties, extendedProperties, new CollectionComparator.Comparator<ExtendedProperty, ExtendedPropertyResponse>(){
 			@Override
-			public boolean match(ExtendedProperty o1, com.clustercontrol.ws.xcloud.ExtendedProperty o2) {
+			public boolean match(ExtendedProperty o1, ExtendedPropertyResponse o2) {
 				return o1.getName().equals(o2.getName());
 			}
 			@Override
-			public void matched(ExtendedProperty o1, com.clustercontrol.ws.xcloud.ExtendedProperty o2) {
+			public void matched(ExtendedProperty o1, ExtendedPropertyResponse o2) {
 				o1.setValue(o2.getValue());
 			}
 			@Override
@@ -74,7 +77,7 @@ public abstract class Facility extends Element implements IFacility {
 				internalRemoveProperty(p.extendedProperties, o1, Facility.this.extendedProperties);
 			}
 			@Override
-			public void afterO2(com.clustercontrol.ws.xcloud.ExtendedProperty o2) {
+			public void afterO2(ExtendedPropertyResponse o2) {
 				internalAddProperty(p.extendedProperties, ExtendedProperty.convert(o2), Facility.this.extendedProperties);
 			}
 		});

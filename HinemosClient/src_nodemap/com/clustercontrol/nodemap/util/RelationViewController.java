@@ -28,10 +28,9 @@ import com.clustercontrol.nodemap.view.NodeListView;
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.nodemap.view.ScopeTreeView;
 import com.clustercontrol.nodemap.view.StatusViewM;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.view.CommonViewPart;
-import com.clustercontrol.ws.nodemap.NodeMapException;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * ビュー連携を図るユーティリティクラス。
@@ -118,12 +117,12 @@ public class RelationViewController {
 						return ;
 					}
 					TreeItem topItem = topItemArray[0];
-					FacilityTreeItem fti = (FacilityTreeItem)topItem.getData();
-					FacilityTreeItem selectItem = selectTreeItem(fti, parentId, facilityId);
+					FacilityTreeItemResponse fti = (FacilityTreeItemResponse)topItem.getData();
+					FacilityTreeItemResponse selectItem = selectTreeItem(fti, parentId, facilityId);
 
 					// スコープツリービューの該当アイテムにフォーカスを当てる。
 					FacilityTreeComposite composite = view.getScopeTreeComposite();
-					FacilityTreeItem alreadyItem = composite.getSelectItem();
+					FacilityTreeItemResponse alreadyItem = composite.getSelectItem();
 					composite.setSelectItem(selectItem);
 					if ((alreadyItem == null && selectItem != null) 
 							|| (alreadyItem != null && selectItem != null 
@@ -175,12 +174,12 @@ public class RelationViewController {
 						return ;
 					}
 					TreeItem topItem = topItemArray[0];
-					FacilityTreeItem fti = (FacilityTreeItem)topItem.getData();
-					FacilityTreeItem selectItem = selectTreeItem(fti, parentId, facilityId);
+					FacilityTreeItemResponse fti = (FacilityTreeItemResponse)topItem.getData();
+					FacilityTreeItemResponse selectItem = selectTreeItem(fti, parentId, facilityId);
 
 					// スコープツリービューの該当アイテムにフォーカスを当てる。
 					FacilityTreeComposite composite = view.getScopeTreeComposite();
-					FacilityTreeItem alreadyItem = composite.getSelectItem();
+					FacilityTreeItemResponse alreadyItem = composite.getSelectItem();
 					composite.setSelectItem(selectItem);
 					if ((alreadyItem == null && selectItem != null) 
 							|| (alreadyItem != null && selectItem != null 
@@ -201,9 +200,9 @@ public class RelationViewController {
 	 * スコープツリービューの表示を変更する。
 	 * @param facilityId
 	 */
-	public static FacilityTreeItem updateScopeTreeView(String parentId, String facilityId) {
+	public static FacilityTreeItemResponse updateScopeTreeView(String parentId, String facilityId) {
 		m_log.debug("updateScopeTreeView facilityId:" + facilityId + ", parentId:" + parentId);
-		FacilityTreeItem selectItem = null;
+		FacilityTreeItemResponse selectItem = null;
 		if (facilityId == null) {
 			m_log.warn("updateScopeTreeView(), RelationViewController updateScopeView facility Id is null");
 			return null;
@@ -238,7 +237,7 @@ public class RelationViewController {
 				return null;
 			}
 			TreeItem topItem = topItemArray[0];
-			FacilityTreeItem fti = (FacilityTreeItem)topItem.getData();
+			FacilityTreeItemResponse fti = (FacilityTreeItemResponse)topItem.getData();
 			selectItem = selectTreeItem(fti, parentId, facilityId);
 
 			// スコープツリービューの該当アイテムにフォーカスを当てる。
@@ -263,7 +262,7 @@ public class RelationViewController {
 	 *   このペアが一致している箇所を探す。子メソッドではparentId, facilityIdは変更されない。
 	 * 
 	 */
-	private static FacilityTreeItem selectTreeItem(FacilityTreeItem parent,
+	private static FacilityTreeItemResponse selectTreeItem(FacilityTreeItemResponse parent,
 			String parentId, String facilityId) {
 		/*
 		 * ROOT_SCOPEの場合はtop。
@@ -271,7 +270,7 @@ public class RelationViewController {
 		if (ReservedFacilityIdConstant.ROOT_SCOPE.equals(facilityId)) {
 			return parent;
 		}
-		for (FacilityTreeItem item : parent.getChildren()) {
+		for (FacilityTreeItemResponse item : parent.getChildren()) {
 			if (item == null) {
 				continue;
 			}
@@ -286,7 +285,7 @@ public class RelationViewController {
 				return item;
 			}
 
-			FacilityTreeItem ret = selectTreeItem(item, parentId, facilityId);
+			FacilityTreeItemResponse ret = selectTreeItem(item, parentId, facilityId);
 			if(ret != null) {
 				return ret;
 			}
@@ -403,9 +402,9 @@ public class RelationViewController {
 	 * @param facilityId
 	 * @return
 	 */
-	public static FacilityTreeItem getScopeTreeView(String parentId, String facilityId) {
+	public static FacilityTreeItemResponse getScopeTreeView(String parentId, String facilityId) {
 		m_log.debug("updateScopeTreeView " + facilityId);
-		FacilityTreeItem selectItem = null;
+		FacilityTreeItemResponse selectItem = null;
 		if (facilityId == null) {
 			m_log.warn("updateScopeTreeView(), RelationViewController updateScopeView facility Id is null");
 			return null;
@@ -440,7 +439,7 @@ public class RelationViewController {
 				return null;
 			}
 			TreeItem topItem = topItemArray[0];
-			FacilityTreeItem fti = (FacilityTreeItem)topItem.getData();
+			FacilityTreeItemResponse fti = (FacilityTreeItemResponse)topItem.getData();
 			selectItem = selectTreeItem(fti, parentId, facilityId);
 		} else {
 			m_log.warn("updateScopeTreeView(), updateScopeTreeView ScopeTreeView is null");

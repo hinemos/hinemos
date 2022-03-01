@@ -8,6 +8,8 @@
 
 package com.clustercontrol.port.bean;
 
+import org.openapitools.client.model.PortCheckInfoResponse.ServiceIdEnum;
+
 import com.clustercontrol.util.Messages;
 
 public class ProtocolMessage {
@@ -29,29 +31,31 @@ public class ProtocolMessage {
 	 * @param type 種別
 	 * @return 文字列
 	 */
-	public static String typeToString(String type) {
-		if (type.equals(ProtocolConstant.TYPE_PROTOCOL_TCP)) {
+	public static String typeToString(ServiceIdEnum type) {
+		switch(type){
+		case TCP:
 			return STRING_PROTOCOL_TCP;
-		} else if (type.equals(ProtocolConstant.TYPE_PROTOCOL_FTP)) {
+		case FTP:
 			return STRING_PROTOCOL_FTP;
-		} else if (type.equals(ProtocolConstant.TYPE_PROTOCOL_SMTP)) {
+		case SMTP:
 			return STRING_PROTOCOL_SMTP;
-		} else if (type.equals(ProtocolConstant.TYPE_PROTOCOL_SMTPS)) {
+		case SMTPS:
 			return STRING_PROTOCOL_SMTPS;
-		} else if (type.equals(ProtocolConstant.TYPE_PROTOCOL_POP3)) {
+		case POP3:
 			return STRING_PROTOCOL_POP3;
-		} else if (type.equals(ProtocolConstant.TYPE_PROTOCOL_POP3S)) {
+		case POP3S:
 			return STRING_PROTOCOL_POP3S;
-		} else if (type.equals(ProtocolConstant.TYPE_PROTOCOL_IMAP)) {
+		case IMAP:
 			return STRING_PROTOCOL_IMAP;
-		} else if (type.equals(ProtocolConstant.TYPE_PROTOCOL_IMAPS)) {
+		case IMAPS:
 			return STRING_PROTOCOL_IMAPS;
-		} else if (type.equals(ProtocolConstant.TYPE_PROTOCOL_NTP)) {
+		case NTP:
 			return STRING_PROTOCOL_NTP;
-		} else if (type.equals(ProtocolConstant.TYPE_PROTOCOL_DNS)) {
+		case DNS:
 			return STRING_PROTOCOL_DNS;
+		default:
+			return "";
 		}
-		return "";
 	}
 
 	/**
@@ -60,28 +64,29 @@ public class ProtocolMessage {
 	 * @param string 文字列
 	 * @return 種別
 	 */
-	public static String stringToType(String string) {
-		if (string.equals(STRING_PROTOCOL_TCP)) {
-			return ProtocolConstant.TYPE_PROTOCOL_TCP;
-		} else if (string.equals(STRING_PROTOCOL_FTP)) {
-			return ProtocolConstant.TYPE_PROTOCOL_FTP;
-		} else if (string.equals(STRING_PROTOCOL_SMTP)) {
-			return ProtocolConstant.TYPE_PROTOCOL_SMTP;
-		} else if (string.equals(STRING_PROTOCOL_SMTPS)) {
-			return ProtocolConstant.TYPE_PROTOCOL_SMTPS;
-		} else if (string.equals(STRING_PROTOCOL_POP3)) {
-			return ProtocolConstant.TYPE_PROTOCOL_POP3;
-		} else if (string.equals(STRING_PROTOCOL_POP3S)) {
-			return ProtocolConstant.TYPE_PROTOCOL_POP3S;
-		} else if (string.equals(STRING_PROTOCOL_IMAP)) {
-			return ProtocolConstant.TYPE_PROTOCOL_IMAP;
-		} else if (string.equals(STRING_PROTOCOL_IMAPS)) {
-			return ProtocolConstant.TYPE_PROTOCOL_IMAPS;
-		} else if (string.equals(STRING_PROTOCOL_NTP)) {
-			return ProtocolConstant.TYPE_PROTOCOL_NTP;
-		} else if (string.equals(STRING_PROTOCOL_DNS)) {
-			return ProtocolConstant.TYPE_PROTOCOL_DNS;
+	public static ServiceIdEnum stringToType(String string) {
+		if (STRING_PROTOCOL_TCP.equals(string)) {
+			return ServiceIdEnum.TCP;
+		} else if (STRING_PROTOCOL_FTP.equals(string)) {
+			return ServiceIdEnum.FTP;
+		} else if (STRING_PROTOCOL_SMTP.equals(string)) {
+			return ServiceIdEnum.SMTP;
+		} else if (STRING_PROTOCOL_SMTPS.equals(string)) {
+			return ServiceIdEnum.SMTPS;
+		} else if (STRING_PROTOCOL_POP3.equals(string)) {
+			return ServiceIdEnum.POP3;
+		} else if (STRING_PROTOCOL_POP3S.equals(string)) {
+			return ServiceIdEnum.POP3S;
+		} else if (STRING_PROTOCOL_IMAP.equals(string)) {
+			return ServiceIdEnum.IMAP;
+		} else if (STRING_PROTOCOL_IMAPS.equals(string)) {
+			return ServiceIdEnum.IMAPS;
+		} else if (STRING_PROTOCOL_NTP.equals(string)) {
+			return ServiceIdEnum.NTP;
+		} else if (STRING_PROTOCOL_DNS.equals(string)) {
+			return ServiceIdEnum.DNS;
+		} else {
+			return null;
 		}
-		return "";
 	}
 }

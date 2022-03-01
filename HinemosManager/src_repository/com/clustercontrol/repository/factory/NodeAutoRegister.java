@@ -19,12 +19,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.IpAddressInfo;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.AutoRegisterNodeSettingNotFound;
 import com.clustercontrol.fault.FacilityDuplicate;
@@ -76,7 +75,7 @@ public class NodeAutoRegister {
 	private static final int SEAUENTIAL_DIGITS_MAX = Long.valueOf(Long.MIN_VALUE).toString().length();
 
 	/** DB上のfacility_name最大バイト数 */
-	private static final int FACILITY_NAME_MAX_BYTE = 128;
+	private static final int FACILITY_NAME_MAX_BYTE = 256;
 
 	// 複数スレッド制御用.
 	/** 連番制御用マップ{@code <設定キー, 最終連番>} */
@@ -244,8 +243,7 @@ public class NodeAutoRegister {
 						this.forLogAddress, this.sourceIpAddress.getHostAddress());
 				logger.info(methodName + DELIMITER + message);
 				String[] args = { this.sourceIpAddress.getHostAddress() };
-				AplLogger.put(PriorityConstant.TYPE_INFO, HinemosModuleConstant.PLATFORM_REPSITORY_AUTO_REGISTER,
-						MessageConstant.MESSAGE_AUTO_REGISTER_NODE_NONE, args);
+				AplLogger.put(InternalIdCommon.PLT_REP_AREG_SYS_001, args);
 				throw new InvalidSetting(message);
 			}
 
@@ -365,8 +363,7 @@ public class NodeAutoRegister {
 	 */
 	private void putInternalLogMac() {
 		String[] args = { MessageConstant.MAC_ADDRESS.getMessage(), this.forLogAddress };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_REPSITORY_AUTO_REGISTER,
-				MessageConstant.MESSAGE_AUTO_REGISTER_NODE_FAILED, args);
+		AplLogger.put(InternalIdCommon.PLT_REP_AREG_SYS_002, args);
 	}
 
 	/**
@@ -830,7 +827,6 @@ public class NodeAutoRegister {
 	 */
 	private void putInternalLogIp() {
 		String[] args = { MessageConstant.SOURCE_IP.getMessage(), this.sourceIpAddress.getHostAddress() };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_REPSITORY_AUTO_REGISTER,
-				MessageConstant.MESSAGE_AUTO_REGISTER_NODE_FAILED, args);
+		AplLogger.put(InternalIdCommon.PLT_REP_AREG_SYS_002, args);
 	}
 }

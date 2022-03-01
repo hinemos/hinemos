@@ -12,6 +12,7 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.notify.monitor.model.EventLogOperationHistoryEntity;
+import com.clustercontrol.notify.monitor.model.EventLogOperationHistoryPK;
 
 /**
  * イベントログ操作履歴用のユーティリティクラス。<br/>
@@ -30,6 +31,9 @@ public class EventLogOperationHistoryUtil {
 		
 		HinemosEntityManager em = jtm.getEntityManager();
 		EventLogOperationHistoryEntity history = new EventLogOperationHistoryEntity();
+		// 下記でセットしたLogSeqNoは無視される
+		history.setId(new EventLogOperationHistoryPK());
+		history.getId().setLogSeqNo(0L);
 		history.setMonitorId(event.getId().getMonitorId());
 		history.setMonitorDetailId(event.getId().getMonitorDetailId());
 		history.setPluginId(event.getId().getPluginId());

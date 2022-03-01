@@ -15,12 +15,13 @@ public final class LoginConstant {
 	public static final String KEY_LOGIN_STATUS_UID = "LoginStatusUid";
 	public static final String KEY_LOGIN_STATUS_URL = "LoginStatusUrl";
 	public static final String KEY_LOGIN_STATUS_MANAGERNAME = "LoginStatusManagerName";
+	public static final String KEY_LOGIN_STATUS_ACCESSPOINT = "LoginStatusAccessPoint";
 
 	public static final String KEY_URL = "Url";
 	public static final String KEY_URL_NUM = "numOfUrlHistory";
 
 	public static final String VALUE_UID = "hinemos";
-	public static final String VALUE_URL = "http://localhost:8080/HinemosWS/";
+	public static final String VALUE_URL = "http://localhost:8080/HinemosWeb/";
 
 	public static final String KEY_INTERVAL = "managerPollingInterval";
 	public static final int VALUE_INTERVAL = 1; //マネージャへの疎通(Dummy)ポーリング周期（分）
@@ -63,4 +64,17 @@ public final class LoginConstant {
 	public static final String URL_MONITOR_HISTORY = "monitor_history";
 	public static final String URL_MONITOR_SETTING = "monitor_setting";
 	public static final String URL_HUB = "hub";
+	public static final String URL_XCLOUD_BILLING = "xcloud_billing";
+	public static final String URL_XCLOUD_COMPUTE = "xcloud_compute";
+	public static final String URL_XCLOUD_NETWORK = "xcloud_network";
+	public static final String URL_XCLOUD_SERVICE = "xcloud_service";
+	public static final String URL_XCLOUD_STORAGE = "xcloud_storage";
+	public static final String URL_JOBMAP_EDITOR = "jobmap_editor";
+	public static final String URL_JOBMAP_HISTORY = "jobmap_history";
+	public static final String URL_NODEMAP = "nodemap";
+	public static final String URL_SETTING_TOOLS = "setting_tools";
+	public static final String URL_REPORTING = "reporting";
+	public static final String URL_RPA_SETTING = "rpa_setting";
+	public static final String URL_RPA_SCENARIO_OPERATION_RESULT = "rpa_scenario_operation_result";
+	public static final String URL_MSG_FILTER = "msg_filter";
 }

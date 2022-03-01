@@ -8,9 +8,9 @@
 
 package com.clustercontrol.commons.util;
 
-import javax.persistence.Query;
-
 import org.eclipse.persistence.internal.jpa.EJBQueryImpl;
+
+import jakarta.persistence.Query;
 
 /**
  * JPAツール（Eclipselink等）の差異を吸収するUtilクラス

@@ -20,20 +20,22 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.JobTreeItemResponseP3;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.action.GetHistoryTableDefine;
 import com.clustercontrol.jobmanagement.action.GetPlanTableDefine;
 import com.clustercontrol.jobmanagement.composite.DetailComposite;
 import com.clustercontrol.jobmanagement.composite.HistoryComposite;
 import com.clustercontrol.jobmanagement.composite.JobPlanComposite;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[履歴]ビューまたはジョブ[ジョブ詳細]ビューのテーブルビューア用のDoubleClickListenerです。
@@ -95,9 +97,9 @@ public class SessionJobDoubleClickListener implements IDoubleClickListener {
 		else if(m_composite instanceof DetailComposite){
 			//セッションIDとジョブIDを取得
 			if (((StructuredSelection) event.getSelection()).getFirstElement() != null) {
-				JobTreeItem item = (JobTreeItem) ((StructuredSelection) event
+				JobTreeItemWrapper item = (JobTreeItemWrapper) ((StructuredSelection) event
 						.getSelection()).getFirstElement();
-				JobInfo info = item.getData();
+				JobInfoWrapper info = item.getData();
 				managerName = ((DetailComposite)m_composite).getManagerName();
 				sessionId = ((DetailComposite)m_composite).getSessionId();
 				jobunitId = ((DetailComposite)m_composite).getJobunitId();
@@ -131,11 +133,12 @@ public class SessionJobDoubleClickListener implements IDoubleClickListener {
 				jobunitId != null && jobunitId.length() > 0 &&
 				jobId != null && jobId.length() > 0){
 
-			JobTreeItem item = null;
+			JobTreeItemWrapper item = null;
 			try {
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-				item = wrapper.getSessionJobInfo(sessionId, jobunitId, jobId);
-			} catch (InvalidRole_Exception e) {
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+				JobTreeItemResponseP3 res = wrapper.getSessionJobInfo(sessionId, jobunitId, jobId);
+				item = JobTreeItemUtil.getItemFromP3(res);
+			} catch (InvalidRole e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
 			} catch (Exception e) {
@@ -150,7 +153,6 @@ public class SessionJobDoubleClickListener implements IDoubleClickListener {
 				JobDialog dialog = new JobDialog(
 						PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),
 						managerName, true, true);
-
 				dialog.setJobTreeItem(item);
 				dialog.open();
 			}

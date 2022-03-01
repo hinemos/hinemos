@@ -8,8 +8,6 @@
 
 package com.clustercontrol.composite;
 
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -20,13 +18,15 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.RoleInfoResponseP1;
+import org.openapitools.client.model.UserInfoResponseP3;
 
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
 
 
 /**
@@ -131,12 +131,12 @@ public class RoleIdListComposite extends Composite {
 	 *
 	 */
 	public void createRoleIdList(String managerName) {
-		List<String> list = null;
+		UserInfoResponseP3 dto = null;
 		// データ取得
 		try {
-				AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
-				list = wrapper.getOwnerRoleIdList();
-		} catch (InvalidRole_Exception e) {
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
+			dto = wrapper.getOwnerRoleIdList();
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
@@ -150,7 +150,7 @@ public class RoleIdListComposite extends Composite {
 					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 		}
 
-		if(list != null){
+		if(dto != null){
 			String roleIdOld = this.comboRoleId.getText();
 			// クリア
 			this.comboRoleId.removeAll();
@@ -158,8 +158,8 @@ public class RoleIdListComposite extends Composite {
 			if (m_mode.equals(Mode.ROLE)) {
 				this.comboRoleId.add("");
 			}
-			for(String roleId : list){
-				this.comboRoleId.add(roleId);
+			for(RoleInfoResponseP1 roleInfo : dto.getRoleList()){
+				this.comboRoleId.add(roleInfo.getRoleId());
 			}
 			int defaultSelect = this.comboRoleId.indexOf(roleIdOld);
 			if (defaultSelect == -1) {
@@ -219,14 +219,18 @@ public class RoleIdListComposite extends Composite {
 	}
 
 	public void add(String roleId) {
-		this.comboRoleId.add(roleId);
-		this.update();
+		if (m_enabledFlg) {
+			this.comboRoleId.add(roleId);
+			this.update();
+		}
 	}
 
 	public void delete(String roleId) {
-		if (this.comboRoleId.indexOf(roleId) > -1) {
-			this.comboRoleId.remove(roleId);
-			this.update();
+		if (m_enabledFlg) {
+			if (this.comboRoleId.indexOf(roleId) > -1) {
+				this.comboRoleId.remove(roleId);
+				this.update();
+			}
 		}
 	}
 

@@ -20,7 +20,6 @@ HinemosPlugin {
 	public Set<String> getDependency() {
 		Set<String> dependency = new HashSet<String>();
 		dependency.add(WebServiceAgentPlugin.class.getName());
-		dependency.add(WebServiceCorePlugin.class.getName());
 		return dependency;
 	}
 

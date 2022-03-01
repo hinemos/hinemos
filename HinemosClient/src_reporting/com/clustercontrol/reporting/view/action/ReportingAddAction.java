@@ -20,7 +20,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.reporting.dialog.ReportingScheduleDialog;
 import com.clustercontrol.reporting.view.ReportingScheduleView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * レポーティング[スケジュール]ビューの作成アクションクラス<BR>
@@ -58,7 +58,7 @@ public class ReportingAddAction extends AbstractHandler{
 			return null;
 		}
 
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 
 		// ダイアログを生成
 		ReportingScheduleDialog dialog = new ReportingScheduleDialog(this.viewPart.getSite()

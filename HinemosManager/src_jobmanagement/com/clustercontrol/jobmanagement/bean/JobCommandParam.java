@@ -26,39 +26,39 @@ public class JobCommandParam implements Serializable, Comparable<JobCommandParam
 	private static final long serialVersionUID = 1L;
 
 	/** 名前 **/
-	private String m_paramId;
+	private String paramId;
 	/** 値（デフォルト値） */
-	private String m_value;
+	private String value;
 	/** 標準出力フラグ */
-	private Boolean m_jobStandardOutputFlg = false;
+	private Boolean jobStandardOutputFlg = false;
 
 	public String getParamId() {
-		return m_paramId;
+		return paramId;
 	}
 	public void setParamId(String paramId) {
-		this.m_paramId = paramId;
+		this.paramId = paramId;
 	}
 
 	public String getValue() {
-		return m_value;
+		return value;
 	}
 	public void setValue(String value) {
-		this.m_value = value;
+		this.value = value;
 	}
 
 	public Boolean getJobStandardOutputFlg() {
-		return m_jobStandardOutputFlg;
+		return jobStandardOutputFlg;
 	}
 	public void setJobStandardOutputFlg(Boolean jobStandardOutputFlg) {
-		this.m_jobStandardOutputFlg = jobStandardOutputFlg;
+		this.jobStandardOutputFlg = jobStandardOutputFlg;
 	}
 
 	@Override
 	public String toString() {
 		String str = null;
-		str += "m_paramId=" + m_paramId;
-		str += " ,m_value=" + m_value;
-		str += " ,m_jobStandardOutputFlg=" + m_jobStandardOutputFlg;
+		str += "m_paramId=" + paramId;
+		str += " ,m_value=" + value;
+		str += " ,m_jobStandardOutputFlg=" + jobStandardOutputFlg;
 		return str;
 	}
 
@@ -66,9 +66,9 @@ public class JobCommandParam implements Serializable, Comparable<JobCommandParam
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((m_jobStandardOutputFlg == null) ? 0 : m_jobStandardOutputFlg.hashCode());
-		result = prime * result + ((m_paramId == null) ? 0 : m_paramId.hashCode());
-		result = prime * result + ((m_value == null) ? 0 : m_value.hashCode());
+		result = prime * result + ((jobStandardOutputFlg == null) ? 0 : jobStandardOutputFlg.hashCode());
+		result = prime * result + ((paramId == null) ? 0 : paramId.hashCode());
+		result = prime * result + ((value == null) ? 0 : value.hashCode());
 		return result;
 	}
 
@@ -82,8 +82,8 @@ public class JobCommandParam implements Serializable, Comparable<JobCommandParam
 
 	@Override
 	public int compareTo(JobCommandParam o) {
-		return (this.getParamId() + this.getValue() + this.m_jobStandardOutputFlg).compareTo(
-				o.getParamId() + o.getValue() + o.m_jobStandardOutputFlg);
+		return (this.getParamId() + this.getValue() + this.jobStandardOutputFlg).compareTo(
+				o.getParamId() + o.getValue() + o.jobStandardOutputFlg);
 	}
 
 	public static void main (String args[]) {

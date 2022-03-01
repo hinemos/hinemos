@@ -15,6 +15,8 @@ import com.clustercontrol.ClusterControlPerspectiveBase;
 import com.clustercontrol.hub.view.LogFormatView;
 import com.clustercontrol.monitor.view.MonitorListView;
 import com.clustercontrol.notify.mail.view.MailTemplateListView;
+import com.clustercontrol.notify.view.CommandTemplateListView;
+import com.clustercontrol.notify.restaccess.view.RestAccessInfoListView;
 import com.clustercontrol.notify.view.NotifyListView;
 
 /**
@@ -48,6 +50,8 @@ public class MonitorSettingPerspective extends ClusterControlPerspectiveBase {
 		top.addView(NotifyListView.ID);
 		top.addView(MailTemplateListView.ID);
 		top.addView(LogFormatView.ID);
+		top.addView(CommandTemplateListView.ID);
+		top.addView(RestAccessInfoListView.ID);
 
 		// 下部 監視[一覧]ビューの表示
 		bottom.addView(MonitorListView.ID);

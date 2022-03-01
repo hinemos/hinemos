@@ -22,6 +22,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -29,12 +31,9 @@ import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.repository.FacilityPath;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -151,10 +150,10 @@ public class MonitorBasicScopeComposite extends MonitorBasicComposite {
 				String managerName = getManagerListComposite().getText();
 				ScopeTreeDialog dialog = new ScopeTreeDialog(shell, managerName, m_ownerRoleId, false, m_unregistered);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem item = dialog.getSelectItem();
-					FacilityInfo info = item.getData();
+					FacilityTreeItemResponse item = dialog.getSelectItem();
+					FacilityInfoResponse info = item.getData();
 					m_facilityId = info.getFacilityId();
-					if (info.getFacilityType() == FacilityConstant.TYPE_NODE) {
+					if (info.getFacilityType() == FacilityInfoResponse.FacilityTypeEnum.NODE) {
 						m_textScope.setText(info.getFacilityName());
 					} else {
 						FacilityPath path = new FacilityPath(
@@ -200,7 +199,7 @@ public class MonitorBasicScopeComposite extends MonitorBasicComposite {
 	 * @see com.clustercontrol.monitor.run.composite.MonitorBasicComposite#setInputData(MonitorInfo)
 	 */
 	@Override
-	public void setInputData(MonitorInfo info, boolean updateFlg) {
+	public void setInputData(MonitorInfoResponse info, boolean updateFlg) {
 
 		super.setInputData(info, updateFlg);
 
@@ -229,7 +228,7 @@ public class MonitorBasicScopeComposite extends MonitorBasicComposite {
 	 * @see #setValidateResult(String, String)
 	 */
 	@Override
-	public ValidateResult createInputData(MonitorInfo info) {
+	public ValidateResult createInputData(MonitorInfoResponse info) {
 
 		if(info != null){
 
@@ -284,6 +283,10 @@ public class MonitorBasicScopeComposite extends MonitorBasicComposite {
 	public String getFacilityId() {
 		return m_facilityId;
 	}
+	
+	public void setFacilityId(String facilityId) {
+		m_facilityId = facilityId;
+	}
 
 	public void setOwnerRoleId(String ownerRoleId) {
 		this.m_ownerRoleId = ownerRoleId;
@@ -297,5 +300,9 @@ public class MonitorBasicScopeComposite extends MonitorBasicComposite {
 
 	public void setScopeLabel(String labelString) {
 		m_labelScope.setText(labelString);
+	}
+
+	public Text getTextScope() {
+		return m_textScope;
 	}
 }

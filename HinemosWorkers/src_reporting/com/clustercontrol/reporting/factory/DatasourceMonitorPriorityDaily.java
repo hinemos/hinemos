@@ -52,7 +52,7 @@ public class DatasourceMonitorPriorityDaily extends DatasourceBase {
 		HashMap<String, Object> retMap = new HashMap<String, Object>();
 		
 		String[] columns = { "generation_date", "critical", "warning", "info", "unknown"};
-		String columnsStr = ReportUtil.joinStrings(columns, ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 		
 		// get data from Hinemos DB
 		try {
@@ -85,7 +85,7 @@ public class DatasourceMonitorPriorityDaily extends DatasourceBase {
 						results[3] = data[3] != null ? data[3].toString() : "";
 						results[4] = data[4] != null ? data[4].toString() : "";
 	
-						bw.write(ReportUtil.joinStrings(results, ","));
+						bw.write(ReportUtil.joinStringsToCsv(results));
 						bw.newLine();
 					}
 				}

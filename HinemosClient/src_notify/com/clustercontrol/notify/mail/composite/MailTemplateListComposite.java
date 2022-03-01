@@ -9,7 +9,6 @@
 package com.clustercontrol.notify.mail.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -19,14 +18,15 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.MailTemplateInfoResponse;
 
 import com.clustercontrol.notify.mail.action.GetMailTemplate;
 import com.clustercontrol.notify.mail.action.GetMailTemplateListTableDefine;
 import com.clustercontrol.notify.mail.composite.actioin.MailTemplateDoubleClickListener;
+import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.mailtemplate.MailTemplateInfo;
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.viewer.CommonTableViewer;
 ;
 
 /**
@@ -137,27 +137,27 @@ public class MailTemplateListComposite extends Composite {
 	@Override
 	public void update() {
 		// データ取得
-		Map<String, List<MailTemplateInfo>> dispDataMap = new GetMailTemplate().getMailTemplateList();
+		Map<String, List<MailTemplateInfoResponse>> dispDataMap = new GetMailTemplate().getMailTemplateList();
 		ArrayList<ArrayList<Object>> listInput = new ArrayList<ArrayList<Object>>();
 
 		int cnt = 0;
-		for(Map.Entry<String, List<MailTemplateInfo>> entrySet : dispDataMap.entrySet()) {
-			List<MailTemplateInfo> list = entrySet.getValue();
+		for(Map.Entry<String, List<MailTemplateInfoResponse>> entrySet : dispDataMap.entrySet()) {
+			List<MailTemplateInfoResponse> list = entrySet.getValue();
 			if(list == null){
-				list = new ArrayList<MailTemplateInfo>();
+				list = new ArrayList<MailTemplateInfoResponse>();
 			}
 
 			// tableViewer にセットするための詰め替え
-			for (MailTemplateInfo mailTemplateInfo : list) {
+			for (MailTemplateInfoResponse mailTemplateInfo : list) {
 				ArrayList<Object> a = new ArrayList<Object>();
 				a.add(entrySet.getKey());
 				a.add(mailTemplateInfo.getMailTemplateId());
 				a.add(mailTemplateInfo.getDescription());
 				a.add(mailTemplateInfo.getOwnerRoleId());
 				a.add(mailTemplateInfo.getRegUser());
-				a.add(mailTemplateInfo.getRegDate() == null ? null:new Date(mailTemplateInfo.getRegDate()));
+				a.add(mailTemplateInfo.getRegDate() == null ? null : DateTimeStringConverter.parseDateString(mailTemplateInfo.getRegDate()));
 				a.add(mailTemplateInfo.getUpdateUser());
-				a.add(mailTemplateInfo.getUpdateDate() == null ? null:new Date(mailTemplateInfo.getUpdateDate()));
+				a.add(mailTemplateInfo.getUpdateDate() == null ? null : DateTimeStringConverter.parseDateString(mailTemplateInfo.getUpdateDate()));
 				a.add(null);
 				listInput.add(a);
 				cnt++;

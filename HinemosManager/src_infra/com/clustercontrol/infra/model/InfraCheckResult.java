@@ -8,12 +8,12 @@
 
 package com.clustercontrol.infra.model;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -26,7 +26,7 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 @Cacheable(true)
 public class InfraCheckResult {
 	private InfraCheckResultPK id;
-	private int result;
+	private Integer result;
 
 	public InfraCheckResult() {
 	}
@@ -71,10 +71,10 @@ public class InfraCheckResult {
 	}
 
 	@Column(name="result")
-	public int getResult() {
+	public Integer getResult() {
 		return result;
 	}
-	public void setResult(int result) {
+	public void setResult(Integer result) {
 		this.result = result;
 	}
 	

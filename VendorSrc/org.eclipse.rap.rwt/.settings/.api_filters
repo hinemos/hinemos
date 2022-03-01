@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<component id="org.eclipse.rap.rwt" version="2">
+    <resource path="src/org/eclipse/swt/dnd/DragSourceEvent.java" type="org.eclipse.swt.dnd.DragSourceEvent">
+        <filter id="643850349">
+            <message_arguments>
+                <message_argument value="DNDEvent"/>
+                <message_argument value="DragSourceEvent"/>
+                <message_argument value="DragSourceEvent(DNDEvent)"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/swt/dnd/DropTargetEvent.java" type="org.eclipse.swt.dnd.DropTargetEvent">
+        <filter id="643850349">
+            <message_arguments>
+                <message_argument value="DNDEvent"/>
+                <message_argument value="DropTargetEvent"/>
+                <message_argument value="DropTargetEvent(DNDEvent)"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/swt/widgets/TypedListener.java" type="org.eclipse.swt.widgets.TypedListener">
+        <filter comment="See bug 334028" id="643842064">
+            <message_arguments>
+                <message_argument value="SWTEventListener"/>
+                <message_argument value="TypedListener"/>
+                <message_argument value="getEventListener()"/>
+            </message_arguments>
+        </filter>
+        <filter comment="See bug 334028" id="643850349">
+            <message_arguments>
+                <message_argument value="SWTEventListener"/>
+                <message_argument value="TypedListener"/>
+                <message_argument value="TypedListener(SWTEventListener)"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/swt/widgets/Widget.java" type="org.eclipse.swt.widgets.Widget">
+        <filter id="643846161">
+            <message_arguments>
+                <message_argument value="SWTEventListener"/>
+                <message_argument value="Widget"/>
+                <message_argument value="removeListener(int, SWTEventListener)"/>
+            </message_arguments>
+        </filter>
+    </resource>
+</component>

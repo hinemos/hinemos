@@ -8,11 +8,9 @@
 package com.clustercontrol.xcloud.platform.rcp;
 
 import java.io.File;
-import java.io.InputStream;
+import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-
-import javax.activation.DataHandler;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
@@ -22,8 +20,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.BillingResultResponse.TypeEnum;
 
-import com.clustercontrol.ws.xcloud.TargetType;
 import com.clustercontrol.xcloud.platform.PlatformDependent;
 import com.clustercontrol.xcloud.ui.dialogs.DetailDialog;
 
@@ -60,14 +58,14 @@ public class RCPPlatformDependent extends PlatformDependent {
 	}
 
 	@Override
-	public void downloadBillingDetail(Shell parent, TargetType type, String targetId, int year, int month, DataHandler handler) throws Exception {
+	public void downloadBillingDetail(Shell parent, TypeEnum type, String targetId, int year, int month, File file) throws Exception {
 		FileDialog dialog = new FileDialog(parent, SWT.SAVE);
 		String filename = null;
 		switch (type) {
 		case FACILITY:
 			filename = String.format("hinemos_cloud_billing_detail_facility_%s_%04d%02d.csv.zip", targetId, year, month);
 			break;
-		case CLOUD_SCOPE:
+		case CLOUDSCOPE:
 			filename = String.format("hinemos_cloud_billing_detail_account_%s_%04d%02d.csv.zip", targetId, year, month);
 			break;
 		}
@@ -79,7 +77,7 @@ public class RCPPlatformDependent extends PlatformDependent {
 		
 		if (filePath == null) return;
 
-		try (InputStream is = handler.getInputStream()) {
+		try (FileInputStream is = new FileInputStream(file)) {
 			Files.copy(is, new File(filePath).toPath(), StandardCopyOption.REPLACE_EXISTING);
 		}
 	}

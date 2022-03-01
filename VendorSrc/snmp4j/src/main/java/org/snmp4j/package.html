@@ -1,0 +1,355 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head><title>org.snmp4j</title>
+<!--
+
+/*_############################################################################
+  _##
+  _##  SNMP4J
+  _##
+  _##  Copyright 2003-2016  Frank Fock and Jochen Katz (SNMP4J.org)
+  _##
+  _##  Licensed under the Apache License, Version 2.0 (the "License");
+  _##  you may not use this file except in compliance with the License.
+  _##  You may obtain a copy of the License at
+  _##
+  _##      http://www.apache.org/licenses/LICENSE-2.0
+  _##
+  _##  Unless required by applicable law or agreed to in writing, software
+  _##  distributed under the License is distributed on an "AS IS" BASIS,
+  _##  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  _##  See the License for the specific language governing permissions and
+  _##  limitations under the License.
+  _##
+  _##########################################################################*/
+
+--></head>
+<body bgcolor="white">Provides classes and interfaces for creating, sending, and receiving SNMP
+messages.
+<p>
+The <code>org.snmp4j</code> classes are capable of creating, sending, and
+receiving SNMPv1/v2c/v3 messages. A SNMP message is composed of its message
+header and its PDU payload. This package contains three main groups of classes
+and interfaces:
+</p>
+<ul>
+<li>Classes for SNMP message and target creation
+<li>Classes for SNMP message sending (command generation)
+<li>Classes for SNMP message dispatching (command responding)
+</ul>
+<p>
+The following UML package diagram illustrates the dependencies between the
+packages of the core SNMP4J API. Users of the API normally only need to use the
+<code>org.snmp4j</code> and the  <code>org.snmp4j.smi</code> packages directly.
+</p>
+<img src="doc-files/packages.gif"
+     alt="SNMP4J UML Package Diagram">
+<p>
+  The following UML class diagram shows the most important classes of the
+  org.snmp4j package and their relationships (relationships to other packages
+  are not shown):.
+</p>
+<img src="doc-files/org_snmp4j.gif"
+     alt="UML Class Diagram org.snmp4j">
+
+
+<h1>SNMP Messages and Targets</h1>
+
+<p>
+To exchange a SNMP message with a remote system, that system has to be identified,
+retransmission, and timeout policy information about the message exchange has
+to be specified. A remote system is specified with SNMP4J by creating a
+<code>Target</code> instance appropriate for the SNMP protocol to be used.
+</p>
+  <ul>
+  <li>For SNMPv1 and SNMPv2c the <code>CommunityTarget</code> has to be used
+    which provides community information in addition to the
+    address, retransmission, and timeout policy information defined by the
+    <code>Target</code> interface.
+  </li>
+  <li>
+    For SNMPv3 the <code>UserTarget</code> has to be used instead. It extends
+    the <code>SecureTarget</code> abstract class and provides the following
+    User Based Security Model (USM) user information: security name,
+    security level, security model (i.e. USM), and authoritative engine ID.
+  </li>
+  </ul>
+<p>
+A SNMP message consists of the message's payload, the SNMP Protocol Data Unit
+(PDU) and a message header. Simplified said, in SNMP4J the message header
+information is represented by <code>Target</code> instances and the PDU is
+represented by one of the following classes:
+</p>
+<ul>
+  <li>
+        <code>PDUv1</code> (SNMPv1)
+  </li>
+  <li>
+	<code>PDU</code> (SNMPv2c)
+  </li>
+  <li>
+	<code>ScopedPDU</code> (SNMPv3)
+  </li>
+</ul>
+
+Thus, in order to be able to send a SNMP message with SNMP4J, a <code>PDU</code>
+instance and a <code>Target</code> instance have to be created.
+
+<h2>PDU Examples
+</h2>
+<ul>
+  <li>SNMPv1/v2c GETNEXT PDU
+    <pre>
+
+import org.snmp4j.PDU;
+import org.snmp4j.smi.*;
+...
+PDU pdu = new PDU();
+pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.1.1"))); // sysDescr
+pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.2.1"))); // ifNumber
+pdu.setType(PDU.GETNEXT);
+...
+    </pre>
+  </li>
+  <li>SNMPv3 GETBULK PDU
+    <pre>
+
+import org.snmp4j.ScopedPDU;
+import org.snmp4j.smi.*;
+...
+ScopedPDU pdu = new ScopedPDU();
+pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.2.1"))); // ifNumber
+pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.2.2.1.10"))); // ifInOctets
+pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.2.2.1.16"))); // ifOutOctets
+pdu.setType(PDU.GETBULK);
+pdu.setMaxRepetitions(50);
+// Get ifNumber only once
+pdu.setNonRepeaters(1);
+// set context non-default context (default context does not need to be set)
+pdu.setContextName(new OctetString("subSystemContextA"));
+// set non-default context engine ID (to use targets authoritative engine ID
+// use an empty (size == 0) octet string)
+pdu.setContextEngineID(OctetString.fromHexString("80:00:13:70:c0:a8:01:0d"));
+...
+    </pre>
+  </li>
+  <li>SNMPv1 TRAP PDU
+    <pre>
+
+import org.snmp4j.PDUv1;
+...
+PDUv1 pdu = new PDUv1();
+pdu.setType(PDU.V1TRAP);
+pdu.setGenericTrap(PDUv1.COLDSTART);
+...
+    </pre>
+  </li>
+  <li>SNMPv2c/SNMPv3 INFORM PDU
+    <pre>
+
+import org.snmp4j.ScopedPDU;
+...
+ScopedPDU pdu = new ScopedPDU();
+pdu.setType(PDU.INFORM);
+// sysUpTime
+long sysUpTime = (System.nanoTime() - startTime) / 10000000;  // 10^-7
+pdu.add(new VariableBinding(SnmpConstants.sysUpTime, new TimeTicks(sysUpTime)));
+pdu.add(new VariableBinding(SnmpConstants.snmpTrapOID, SnmpConstants.linkDown));
+// payload
+pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.2.2.1.1"+downIndex),
+                            new Integer32(downIndex)));
+...
+    </pre>
+  </li>
+</ul>
+
+<h1>Target Examples
+</h1>
+<ul>
+  <li>Community Target
+    <pre>
+
+CommunityTarget target = new CommunityTarget();
+target.setCommunity(new OctetString("public"));
+target.setAddress(targetAddress);
+target.setVersion(SnmpConstants.version1);
+    </pre>
+  </li>
+  <li>User Target
+    <pre>
+
+UserTarget target = new UserTarget();
+target.setAddress(targetAddress);
+target.setRetries(1);
+// set timeout to 500 milliseconds: 2*500ms = 1s total timeout
+target.setTimeout(500);
+target.setVersion(SnmpConstants.version3);
+target.setSecurityLevel(SecurityLevel.AUTH_PRIV);
+target.setSecurityName(new OctetString("MD5DES"));
+    </pre>
+  </li>
+</ul>
+
+<h1>Sending SNMP messages</h1>
+<p>
+  SNMP message are sent with SNMP4J by using a instance of the SNMP
+  <code>Session</code> interface. The default implementation of this interface
+  is the <code>Snmp</code> class.
+</p>
+<p>
+  To setup a <code>Snmp</code> instance it is sufficient to call its
+  constructor with a <code>TransportMapping</code> instance. The transport
+  mapping is used by the SNMP session to send
+  (and receive) SNMP message to a remote systems by using a transport protocol,
+  for example the User Datagram Protocol (UDP).
+</p>
+<p>
+  A SNMP4J <code>Snmp</code> instance supports SNMP v1, v2c, and v3 by default.
+  By sub-classing <code>Snmp</code> other combinations of those SNMP protocol
+  versions can be supported.
+</p>
+<p>
+  With SNMP4J, SNMP messages can be sent <i>synchronously</i> (blocking) and
+  <i>asynchronously</i> (non-blocking). The <code>Snmp</code> class does not use
+  an internal thread to process responses on asynchronous and synchronous
+  requests. Nevertheless it uses the receiver threads of the transport mappings
+  to process responses.
+</p>
+<p>
+  Asynchronous responses are returned by calling a callback method
+  on an object instance that implements the <code>ResponseListener</code>
+  interface. The callback is carried out on behalf of the transport mapping
+  thread that received the response packet from the wire.
+  Thus, if the called method blocks, the delivery of synchronous and
+  asynchronous messages received on the listen port of that transport mapping
+  will be also blocked. Other transport mapping will not be affected.
+  Blocking can be avoided by either using synchronous messages only or by
+  decoupling the processing within the callback method.
+</p>
+<h2>Example for Sending a Synchronous Message
+</h2>
+<pre>
+import org.snmp4j.*;
+...
+Snmp snmp = new Snmp(new DefaultUdpTransportMapping());
+snmp.listen();
+...
+ResponseEvent response = snmp.send(requestPDU, target);
+if (response.getResponse() == null) {
+    // request timed out
+    ...
+}
+else {
+    System.out.println("Received response from: "+
+                       response.getPeerAddress());
+    // dump response PDU
+    System.out.println(response.getResponse().toString());
+}
+</pre>
+<h2>Example for Sending an Asynchronous Message
+</h2>
+<pre>
+import org.snmp4j.*;
+import org.snmp4j.event.*;
+...
+Snmp snmp = new Snmp(new DefaultUdpTransportMapping());
+snmp.listen();
+...
+ResponseListener listener = new ResponseListener() {
+    public void onResponse(ResponseEvent event) {
+       // Always cancel async request when response has been received
+       // otherwise a memory leak is created! Not canceling a request
+       // immediately can be useful when sending a request to a broadcast
+       // address.
+       ((Snmp)event.getSource()).cancel(event.getRequest(), this);
+        PDU response = event.getResponse();
+        PDU request = event.getRequest();
+        if (response == null) {
+            System.out.println("Request "+request+" timed out");
+        }
+        else {
+            System.out.println("Received response "+response+" on request "+
+                               request);
+        }
+    }
+};
+snmp.sendPDU(request, target, null, listener);
+...
+</pre>
+<h1>Receiving SNMP messages</h1>
+<p>
+  SNMP4J receives SNMP messages through the listen port of transport mappings.
+  In order to be able to receive responses or requests, that port needs to be
+  set into listen mode. This has to be done by calling the <code>listen()</code>
+  method of the <code>TransportMapping</code> instance to start the transport
+  mappings internal listen thread. The internal thread is stopped and the listen
+  port is closed by calling the <code>close()</code> method on the
+  <code>TransportMapping</code> instance or the associated <code>Snmp</code>
+  instance.
+</p>
+<p>
+  The transport mapping just receives the SNMP mesage as a stream of bytes and
+  forwards the message to associated <code>MessageDispatcher</code> instances.
+  By default, SNMP4J uses one instance of the <code>MessageDispatcherImpl</code>
+  class for decoding and dispatching incoming messages. That instance is created
+  and used internally by the <code>Snmp</code> class.
+</p>
+<p>
+  The <code>Snmp</code> class processes responses to outstanding requests and
+  forwards PDUs of other SNMP messages to registered <code>CommandResponder</code>
+  listener instances. To receive SNMP messages it is thus sufficient to
+</p>
+  <ol>
+    <li>
+      Create a <code>TransportMapping</code> and initialize its listen port
+      by calling <code>TransportMapping.listen()</code>.
+    </li>
+    <li>
+      Create a <code>Snmp</code> instance with the above
+      <code>TransportMapping</code>.
+    </li>
+    <li>
+      Instantiate a class that implements the <code>CommandResponder</code>
+      interface and register it with the <code>Snmp</code> instance by
+      calling <code>Snmp.addCommandResponder(CommandResponder)</code>.
+    </li>
+  </ol>
+<p>
+  When a unhandled SNMP message (thus a SNMP message where no corresponding
+  outstanding request exists) is received, then the
+  <code>processPdu(CommandResponderEvent)</code> method of the
+  <code>CommandResponder</code> will be called with the decoded PDU and
+  additional information about the received SNMP message provided by the
+  message processing model that has decoded the SNMP message.
+</p>
+<h2>Example for Receiving SNMP Messages
+</h2>
+<pre>
+import org.snmp4j.*;
+import org.snmp4j.smi.*;
+import org.snmp4j.mp.SnmpConstants;
+...
+TransportMapping transport =
+    new DefaultUdpTransportMapping(new UdpAddress("0.0.0.0/161"));
+Snmp snmp = new Snmp(transport);
+if (version == SnmpConstants.version3) {
+    byte[] localEngineID =
+        ((MPv3)snmp.getMessageProcessingModel(MessageProcessingModel.MPv3)).createLocalEngineID();
+    USM usm = new USM(SecurityProtocols.getInstance(),
+                      new OctetString(localEngineID), 0);
+    SecurityModels.getInstance().addSecurityModel(usm);
+    snmp.setLocalEngine(localEngineID, 0, 0);
+    // Add the configured user to the USM
+    ...
+}
+snmp.addCommandResponder(this);
+snmp.listen();
+...
+public synchronized void processPdu(CommandResponderEvent e) {
+    PDU command = e.getPdu();
+    if (command != null) {
+    ...
+    }
+}
+</pre></body>
+</html>

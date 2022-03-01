@@ -20,20 +20,22 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddUserInfoRequest;
+import org.openapitools.client.model.ModifyUserInfoRequest;
+import org.openapitools.client.model.UserInfoResponse;
 
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.composite.ManagerListComposite;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UnEditableUser;
+import com.clustercontrol.fault.UserDuplicate;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.UnEditableUser_Exception;
-import com.clustercontrol.ws.access.UserDuplicate_Exception;
-import com.clustercontrol.ws.access.UserInfo;
 
 /**
  * アカウント[ユーザの作成・変更]ダイアログクラスです。
@@ -71,7 +73,7 @@ public class UserDialog extends CommonDialog {
 	public static final int WIDTH_TEXT = 10;
 
 	/** 入力値を保持するオブジェクト。 */
-	private UserInfo inputData;
+	private UserInfoResponse inputData;
 
 	private boolean permission = false;		// 現在のユーザが変更権限をもつか否か
 
@@ -88,7 +90,7 @@ public class UserDialog extends CommonDialog {
 	 * @param uid ユーザID
 	 * @param isModifyDialog 変更用ダイアログとして利用する場合は、true
 	 */
-	public UserDialog(Shell parent, String managerName, UserInfo userInfo, boolean isModifyDialog) {
+	public UserDialog(Shell parent, String managerName, UserInfoResponse userInfo, boolean isModifyDialog) {
 		super(parent);
 
 		this.managerName = managerName;
@@ -315,16 +317,18 @@ public class UserDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		UserInfo userInfo = this.inputData;
+		UserInfoResponse userInfo = this.inputData;
 		if(userInfo == null){
 			return result;
 		}
 
-		AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(m_managerComposite.getText());
+		AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(m_managerComposite.getText());
 		if(!this.isModifyDialog){
 			// 作成の場合
 			try {
-				wrapper.addUserInfo(userInfo);
+				AddUserInfoRequest addInfo = new AddUserInfoRequest();
+				RestClientBeanUtil.convertBean(userInfo, addInfo);
+				wrapper.addUserInfo(addInfo);
 				result = true;
 
 				Object[] arg = {this.m_managerComposite.getText()};
@@ -334,7 +338,7 @@ public class UserDialog extends CommonDialog {
 						Messages.getString("successful"),
 						Messages.getString("message.accesscontrol.7", arg));
 
-			} catch (UserDuplicate_Exception e) {
+			} catch (UserDuplicate e) {
 				//ユーザID取得
 				String args[] = { userInfo.getUserId() };
 
@@ -346,12 +350,12 @@ public class UserDialog extends CommonDialog {
 
 			} catch (Exception e) {
 				String errMessage = "";
-				if (e instanceof InvalidRole_Exception) {
+				if (e instanceof InvalidRole) {
 					// 権限なし
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.accesscontrol.16"));
 				} else {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					errMessage = ", " + e.getMessage();
 				}
 				MessageDialog.openError(
 						null,
@@ -362,7 +366,9 @@ public class UserDialog extends CommonDialog {
 		} else{
 			// 変更の場合
 			try {
-				wrapper.modifyUserInfo(userInfo);
+				ModifyUserInfoRequest updInfo= new ModifyUserInfoRequest();
+				RestClientBeanUtil.convertBean(userInfo, updInfo);
+				wrapper.modifyUserInfo(userInfo.getUserId(),updInfo);
 				result = true;
 
 				Object[] arg = {this.m_managerComposite.getText()};
@@ -374,16 +380,16 @@ public class UserDialog extends CommonDialog {
 
 			} catch (Exception e) {
 				String errMessage = "";
-				if (e instanceof InvalidRole_Exception) {
+				if (e instanceof InvalidRole) {
 					// 権限なし
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.accesscontrol.16"));
-				} else if (e instanceof UnEditableUser_Exception) {
+				} else if (e instanceof UnEditableUser) {
 					// 変更できないユーザの場合（システムユーザ、内部モジュール用ユーザ）
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.accesscontrol.38"));
 				} else {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					errMessage = ", " + e.getMessage();
 				}
 				MessageDialog.openError(
 						null,
@@ -492,8 +498,8 @@ public class UserDialog extends CommonDialog {
 	 *
 	 * @return ユーザ情報
 	 */
-	private UserInfo createInputData() {
-		final UserInfo info = new UserInfo();
+	private UserInfoResponse createInputData() {
+		final UserInfoResponse info = new UserInfoResponse();
 		info.setUserId(this.textUserId.getText());
 		info.setUserName(this.textUserName.getText());
 		info.setDescription(this.textDescription.getText());

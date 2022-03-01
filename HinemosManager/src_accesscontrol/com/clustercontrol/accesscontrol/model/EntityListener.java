@@ -11,8 +11,8 @@ package com.clustercontrol.accesscontrol.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.PreRemove;
-import javax.persistence.PreUpdate;
+import jakarta.persistence.PreRemove;
+import jakarta.persistence.PreUpdate;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

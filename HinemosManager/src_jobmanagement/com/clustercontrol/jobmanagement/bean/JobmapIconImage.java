@@ -25,41 +25,41 @@ public class JobmapIconImage implements Serializable {
 	/**
 	 * アイコンID
 	 */
-	private String m_iconId;
+	private String iconId;
 
 	/** ファイルデータ */
-	private byte[] m_filedata;
+	private byte[] filedata;
 
 	/** 説明 */
-	private String m_description;
+	private String description;
 
 	/** 新規作成ユーザ */
-	private String m_createUser;
+	private String createUser;
 
 	/** 作成日時 */
-	private Long m_createTime;
+	private Long createTime;
 
 	/** 最新更新ユーザ */
-	private String m_updateUser;
+	private String updateUser;
 
 	/** 最新更新日時 */
-	private Long m_updateTime;
+	private Long updateTime;
 
 	/** オーナーロールID */
-	private String m_ownerRoleId;
+	private String ownerRoleId;
 
 	/**
 	 * アイコンIDを返す<BR>
 	 */
 	public String getIconId() {
-		return m_iconId;
+		return iconId;
 	}
 	/**
 	 * アイコンIDを設定する<BR>
 	 * @param iconId
 	 */
 	public void setIconId(String iconId) {
-		this.m_iconId = iconId;
+		this.iconId = iconId;
 	}
 
 	/**
@@ -67,14 +67,14 @@ public class JobmapIconImage implements Serializable {
 	 * @return ファイルデータ
 	 */
 	public byte[] getFiledata() {
-		return m_filedata;
+		return filedata;
 	}
 	/**
 	 * ファイルデータを設定する<BR>
 	 * @param filedata ファイルデータ
 	 */
 	public void setFiledata(byte[] filedata) {
-		this.m_filedata = filedata;
+		this.filedata = filedata;
 	}
 
 	/**
@@ -82,14 +82,14 @@ public class JobmapIconImage implements Serializable {
 	 * @return 説明
 	 */
 	public String getDescription() {
-		return m_description;
+		return description;
 	}
 	/**
 	 * 説明を設定する<BR>
 	 * @param descriptor 説明
 	 */
 	public void setDescription(String description) {
-		this.m_description = description;
+		this.description = description;
 	}
 
 	/**
@@ -97,14 +97,14 @@ public class JobmapIconImage implements Serializable {
 	 * @return 作成日時
 	 */
 	public Long getCreateTime() {
-		return m_createTime;
+		return createTime;
 	}
 	/**
 	 * 作成日時を設定する<BR>
 	 * @param createTime 作成日時
 	 */
 	public void setCreateTime(Long createTime) {
-		this.m_createTime = createTime;
+		this.createTime = createTime;
 	}
 
 	/**
@@ -112,14 +112,14 @@ public class JobmapIconImage implements Serializable {
 	 * @return 最新更新日時
 	 */
 	public Long getUpdateTime() {
-		return m_updateTime;
+		return updateTime;
 	}
 	/**
 	 * 最新更新日時を設定する<BR>
 	 * @param updateTime 最新更新日時
 	 */
 	public void setUpdateTime(Long updateTime) {
-		this.m_updateTime = updateTime;
+		this.updateTime = updateTime;
 	}
 
 	/**
@@ -127,14 +127,14 @@ public class JobmapIconImage implements Serializable {
 	 * @return 新規作成ユーザ
 	 */
 	public String getCreateUser() {
-		return m_createUser;
+		return createUser;
 	}
 	/**
 	 * 新規作成ユーザを設定する<BR>
 	 * @param createUser 新規作成ユーザ
 	 */
 	public void setCreateUser(String createUser) {
-		this.m_createUser = createUser;
+		this.createUser = createUser;
 	}
 
 	/**
@@ -142,14 +142,14 @@ public class JobmapIconImage implements Serializable {
 	 * @return 最新更新ユーザ
 	 */
 	public String getUpdateUser() {
-		return m_updateUser;
+		return updateUser;
 	}
 	/**
 	 * 最新更新ユーザを設定する<BR>
 	 * @param updateUser 最新更新ユーザ
 	 */
 	public void setUpdateUser(String updateUser) {
-		this.m_updateUser = updateUser;
+		this.updateUser = updateUser;
 	}
 
 	/**
@@ -157,13 +157,13 @@ public class JobmapIconImage implements Serializable {
 	 * @return オーナーロールID
 	 */
 	public String getOwnerRoleId() {
-		return m_ownerRoleId;
+		return ownerRoleId;
 	}
 	/**
 	 * オーナーロールIDを設定する<BR>
 	 * @param ownerRoleId オーナーロールID
 	 */
 	public void setOwnerRoleId(String ownerRoleId) {
-		this.m_ownerRoleId = ownerRoleId;
+		this.ownerRoleId = ownerRoleId;
 	}
 }

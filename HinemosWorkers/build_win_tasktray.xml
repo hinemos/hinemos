@@ -15,14 +15,23 @@
 	<property name="project.name" value="HinemosWorkers" />
 	<property name="jar.file" value="HinemosTasktray.jar" />
 	<property name="src.dir" value="src_win_tasktray" />
+	<property name="src.login.dir" value="src_win_tasktray_login" />
 	<property name="build.dir" value="build/win_tasktray" />
 	<!-- <property name="jar.include.properties" value="true" /> -->
 	
 	<!-- Classpath -->
-	<path id="id.compile.classpath.local" />
+	<path id="id.compile.classpath.local">
+		<fileset dir="../">
+			<include name="HinemosCommon/${jar.dir}/HinemosCommon.jar" />
+		</fileset>
+		<fileset dir=".">
+			<include name="commonlib/*.jar"/>
+		</fileset>
+	</path>
 
 	<path id="id.compile.sourcepath.local">
 		<pathelement path="${src.dir}" />
+		<pathelement path="${src.login.dir}" />
 	</path>
 	
 	<target name="clean" description="Clean Java's Class files and JAR files">
@@ -48,6 +57,7 @@
 			source="${compile.version}" target="${compile.version}" encoding="${compile.encode}"
 			debug="on">
 			<src path="${src.dir}" />
+			<src path="${src.login.dir}" />
 			<src path="resources" />
 		</javac>
 	</target>

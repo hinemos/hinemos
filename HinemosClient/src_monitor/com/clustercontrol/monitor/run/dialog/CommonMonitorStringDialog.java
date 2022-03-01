@@ -28,16 +28,15 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.LogFormatResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
 
 import com.clustercontrol.bean.TableColumnInfo;
-import com.clustercontrol.hub.util.HubEndpointWrapper;
+import com.clustercontrol.hub.util.HubRestClientWrapper;
 import com.clustercontrol.monitor.run.action.GetStringFilterTableDefine;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.composite.StringValueInfoComposite;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.hub.LogFormat;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * 文字列系監視設定共通ダイアログクラス<BR>
@@ -171,7 +170,7 @@ public class CommonMonitorStringDialog extends CommonMonitorDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 
 		if(validateResult != null){
@@ -186,7 +185,7 @@ public class CommonMonitorStringDialog extends CommonMonitorDialog {
 		}
 
 		// 監視種別を文字列に設定する
-		monitorInfo.setMonitorType(MonitorTypeConstant.TYPE_STRING);
+		monitorInfo.setMonitorType(MonitorInfoResponse.MonitorTypeEnum.STRING);
 
 		return monitorInfo;
 	}
@@ -207,11 +206,11 @@ public class CommonMonitorStringDialog extends CommonMonitorDialog {
 	 * @param monitor 設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		// 収集
-		if (monitor.isCollectorFlg()) {
+		if (monitor.getCollectorFlg()) {
 			this.confirmCollectValid.setSelection(true);
 		}else{
 			this.setCollectorEnabled(false);
@@ -239,9 +238,9 @@ public class CommonMonitorStringDialog extends CommonMonitorDialog {
 			return;
 		
 		//ログフォーマット一覧情報取得
-		List<LogFormat> list = null;
+		List<LogFormatResponse> list = null;
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
+		HubRestClientWrapper wrapper = HubRestClientWrapper.getWrapper(managerName);
 		try {
 			list = wrapper.getLogFormatListByOwnerRole(ownerRoleId);
 		} catch (Exception e) {
@@ -254,7 +253,7 @@ public class CommonMonitorStringDialog extends CommonMonitorDialog {
 		}
 
 		logFormat.add("");
-		for (LogFormat format:list){
+		for (LogFormatResponse format:list){
 			logFormat.add(format.getLogFormatId());
 		}
 	}

@@ -49,4 +49,29 @@ public class SummaryTypeConstant {
 		}
 		return "";
 	}
+	
+	public static String typeToString(int type) {
+		if (type == TYPE_RAW) {
+			return "TYPE_RAW";
+		} else if (type == TYPE_AVG_HOUR) {
+			return "TYPE_AVG_HOUR";
+		} else if (type == TYPE_AVG_DAY) {
+			return "TYPE_AVG_DAY";
+		} else if (type == TYPE_AVG_MONTH) {
+			return "TYPE_AVG_MONTH";
+		} else if (type == TYPE_MIN_HOUR) {
+			return "TYPE_MIN_HOUR";
+		} else if (type == TYPE_MIN_DAY) {
+			return "TYPE_MIN_DAY";
+		} else if (type == TYPE_MIN_MONTH) {
+			return "TYPE_MIN_MONTH";
+		} else if (type == TYPE_MAX_HOUR) {
+			return "TYPE_MAX_HOUR";
+		} else if (type == TYPE_MAX_DAY) {
+			return "TYPE_MAX_DAY";
+		} else if (type == TYPE_MAX_MONTH) {
+			return "TYPE_MAX_MONTH";
+		}
+		return "";
+	}
 }

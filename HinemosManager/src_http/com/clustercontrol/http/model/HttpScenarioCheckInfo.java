@@ -14,16 +14,16 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.PrimaryKeyJoinColumn;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -57,7 +57,7 @@ public class HttpScenarioCheckInfo extends MonitorCheckInfo implements Serializa
 	private Integer connectTimeout;
 	private Integer requestTimeout;
 
-	private List<Page> monitorHttpScenarioPageInfoEntities = new ArrayList<>();
+	private List<Page> pages = new ArrayList<>();
 
 	private MonitorInfo monitorInfo;
 
@@ -190,19 +190,19 @@ public class HttpScenarioCheckInfo extends MonitorCheckInfo implements Serializa
 
 	@OneToMany(mappedBy="monitorHttpScenarioInfoEntity", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public List<Page> getPages() {
-		return this.monitorHttpScenarioPageInfoEntities;
+		return this.pages;
 	}
 
-	public void setPages(List<Page> monitorHttpScenarioPageInfoEntities) {
-		if (monitorHttpScenarioPageInfoEntities != null && monitorHttpScenarioPageInfoEntities.size() > 0) {
-			Collections.sort(monitorHttpScenarioPageInfoEntities, new Comparator<Page>() {
+	public void setPages(List<Page> pages) {
+		if (pages != null && pages.size() > 0) {
+			Collections.sort(pages, new Comparator<Page>() {
 				@Override
 				public int compare(Page o1, Page o2) {
 					return o1.getId().getPageOrderNo().compareTo(o2.getId().getPageOrderNo());
 				}
 			});
 		}
-		this.monitorHttpScenarioPageInfoEntities = monitorHttpScenarioPageInfoEntities;
+		this.pages = pages;
 	}
 
 

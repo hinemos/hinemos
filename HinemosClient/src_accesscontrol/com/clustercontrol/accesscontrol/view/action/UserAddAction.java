@@ -18,12 +18,12 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.UserInfoResponse;
 
 import com.clustercontrol.accesscontrol.dialog.UserDialog;
 import com.clustercontrol.accesscontrol.view.RoleSettingTreeView;
 import com.clustercontrol.accesscontrol.view.UserListView;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.ws.access.UserInfo;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * アクセス[ユーザ]ビューの「作成」のアクションクラス
@@ -65,11 +65,11 @@ public class UserAddAction extends AbstractHandler {
 		// 選択アイテムの取得
 		this.viewPart = HandlerUtil.getActivePart(event);
 
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 		
 		// ダイアログを生成
 		UserDialog dialog = new UserDialog(this.viewPart.getSite()
-				.getShell(), managerName, new UserInfo(), false);
+				.getShell(), managerName, new UserInfoResponse(), false);
 
 		// ダイアログにて変更が選択された場合、入力内容をもって登録を行う。
 		if (dialog.open() == IDialogConstants.OK_ID) {

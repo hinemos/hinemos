@@ -223,12 +223,14 @@ public class JobFileCheckDuplicationGuard implements Closeable {
 		List<JobSessionEntity> queryResult = external.queryJobSession(triggerInfo);
 		if (queryResult.size() > 0) {
 			if (queryResult.size() > 1) {
-				String sessions = "";
+				StringBuffer sessions = new StringBuffer();
 				for (JobSessionEntity it : queryResult) {
-					if (sessions.length() > 0) sessions += ",";
-					sessions += it.getSessionId();
+					if (sessions.length() > 0) {
+						sessions.append(",") ;
+					}
+					sessions.append(it.getSessionId());
 				}
-				log.info("findJobSession : Multiple job sessions found. Ids=" + sessions);
+				log.info("findJobSession : Multiple job sessions found. Ids=" + sessions.toString());
 			}
 			log.debug("findJobSession : Found in job session entities.");
 			return queryResult.get(0).getSessionId();

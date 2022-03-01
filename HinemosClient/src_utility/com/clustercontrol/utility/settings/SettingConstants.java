@@ -34,4 +34,5 @@ public class SettingConstants {
 	
 	public static final int ERROR_SCHEMA_VERSION = -3;
 	public static final int ERROR_INPROCESS = -2;
+	public static final int ERROR_CANCEL = -4;
 }

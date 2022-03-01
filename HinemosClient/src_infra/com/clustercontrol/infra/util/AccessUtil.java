@@ -10,35 +10,39 @@ package com.clustercontrol.infra.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.CreateAccessInfoListForDialogResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.dialog.AccessInfoDialog;
-import com.clustercontrol.ws.infra.AccessInfo;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
 
 public class AccessUtil {
 	// ログ
 	private static Log m_log = LogFactory.getLog( AccessUtil.class );
 
-	public static List<AccessInfo> getAccessInfoList(Shell shell, InfraManagementInfo management, List<String> moduleIdList, String managerName) {
-		List<AccessInfo> accessInfoList = new ArrayList<AccessInfo>();
+	public static List<CreateAccessInfoListForDialogResponse> getAccessInfoList(Shell shell, InfraManagementInfoResponse management, List<String> moduleIdList, String managerName) {
+		List<CreateAccessInfoListForDialogResponse> accessInfoList = new ArrayList<CreateAccessInfoListForDialogResponse>();
 		try {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
-			accessInfoList = wrapper.createAccessInfoListForDialog(management.getManagementId(), moduleIdList);
-		} catch (InfraManagementNotFound_Exception | HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
+			accessInfoList = wrapper.createAccessInfoListForDialog(management.getManagementId(), moduleIdList.stream().collect(Collectors.joining(",")));
+		} catch (RestConnectFailed | InfraManagementNotFound | InvalidUserPass | InvalidRole | HinemosUnknown
+				| InvalidSetting e) {
 			m_log.error("getAccessInfoList() getNodeList, " + e.getMessage());
 		}
 
 		boolean isAfterSameAll = false;
-		AccessInfo tmpAccessInfo = null;
-		for(AccessInfo accessInfo: accessInfoList){
+		CreateAccessInfoListForDialogResponse tmpAccessInfo = null;
+		for(CreateAccessInfoListForDialogResponse accessInfo: accessInfoList){
 			if (isAfterSameAll){
 				accessInfo.setSshUser(tmpAccessInfo.getSshUser());
 				accessInfo.setSshPassword(tmpAccessInfo.getSshPassword());

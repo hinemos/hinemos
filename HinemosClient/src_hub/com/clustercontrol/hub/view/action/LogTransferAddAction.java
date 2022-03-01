@@ -18,7 +18,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.hub.dialog.TransferInfoDialog;
 import com.clustercontrol.hub.view.TransferView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * 収集蓄積[転送]の作成・変更ダイアログによる、収集蓄積[転送]設定登録を行うクライアント側アクションクラス<BR>
@@ -45,7 +45,7 @@ public class LogTransferAddAction extends AbstractHandler{
 		TransferView view = (TransferView) this.viewPart
 				.getAdapter(TransferView.class);
 
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 
 
 		// ダイアログを生成

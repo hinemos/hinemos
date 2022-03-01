@@ -16,9 +16,9 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.reporting.bean.TemplateSetDetailInfo;
 import com.clustercontrol.reporting.bean.TemplateSetInfo;
-import com.clustercontrol.reporting.fault.ReportingNotFound;
 import com.clustercontrol.reporting.model.TemplateSetDetailInfoEntity;
 import com.clustercontrol.reporting.model.TemplateSetInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;

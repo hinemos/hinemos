@@ -91,6 +91,20 @@ public class WsmanException  extends Exception {
         initCause(cause);
         document=null;
     }
+    /**
+     * Construct a WsmanException from a java Exception and custom message.
+     *
+     *
+     * @param cause The source of the exception
+     *
+     *
+     *
+     */
+    WsmanException(Exception cause, String message) {
+        super(message);
+        initCause(cause);
+        document=null;
+    }
 
      /**
      * Get the fault code (see WS-Management spec).

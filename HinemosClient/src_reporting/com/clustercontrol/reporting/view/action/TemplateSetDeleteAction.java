@@ -26,13 +26,13 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.reporting.view.ReportingTemplateSetView;
 import com.clustercontrol.reporting.view.action.TemplateSetDeleteAction;
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
 
 /**
  * レポーティング[テンプレートセット]ビューの削除アクションクラス<BR>
@@ -107,7 +107,7 @@ public class TemplateSetDeleteAction extends AbstractHandler implements IElement
 				
 				for (Map.Entry<String, List<String>> entry : map.entrySet()) {
 					String managerName = entry.getKey();
-					ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
+					ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(managerName);
 					
 					if(i > 0) {
 						messageArg.append(", ");
@@ -118,7 +118,7 @@ public class TemplateSetDeleteAction extends AbstractHandler implements IElement
 							wrapper.deleteTemplateSet(entryTemplateSetId);
 						}
 					} catch (Exception e) {
-						if (e instanceof InvalidRole_Exception) {
+						if (e instanceof InvalidRole) {
 							// 権限なし
 							errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
 						} else {

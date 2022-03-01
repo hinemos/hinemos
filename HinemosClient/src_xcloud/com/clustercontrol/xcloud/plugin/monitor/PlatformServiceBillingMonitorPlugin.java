@@ -7,21 +7,15 @@
  */
 package com.clustercontrol.xcloud.plugin.monitor;
 
-import java.util.List;
-
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
 
-import com.clustercontrol.monitor.action.DeleteInterface;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.monitor.plugin.IMonitorPlugin;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
-import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 
 public class PlatformServiceBillingMonitorPlugin implements IMonitorPlugin, CloudStringConstants {
 	public static final String option = "xcloud";
-	public static final String monitorPluginId = "MON_CLOUD_SERVICE_BILLING";
+	public static final String monitorPluginId = HinemosModuleConstant.MONITOR_CLOUD_SERVICE_BILLING;
 	private static final int monitorCode = 251;
 	private static final int monitorType = IMonitorPlugin.MONITOR_TYPE_NUMERIC;
 
@@ -48,27 +42,6 @@ public class PlatformServiceBillingMonitorPlugin implements IMonitorPlugin, Clou
 	@Override
 	public int getMonitorType() {
 		return monitorType;
-	}
-
-	@Override
-	public DeleteInterface getDeleteMonitorClassObject() {
-		return new DeleteMonitor();
-	}
-
-	public static class DeleteMonitor implements DeleteInterface {
-		@Override
-		public boolean delete(String managerName, List<String> monitorIdList) throws Exception {
-			boolean result = false;
-			try {
-				result = MonitorSettingEndpointWrapper.getWrapper(managerName).deleteMonitor(monitorIdList);
-			} catch (MonitorNotFound_Exception e) {
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("message"),
-						Messages.getString("message.monitor.notfound", monitorIdList.toArray()));
-			}
-			return result;
-		}
 	}
 
 	@Override

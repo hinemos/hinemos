@@ -10,7 +10,6 @@ package com.clustercontrol.jobmanagement.composite;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -27,10 +26,10 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.JobWaitRuleInfoResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.EndStatusMessage;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
@@ -40,14 +39,11 @@ import com.clustercontrol.composite.action.PositiveRealNumberVerifyListener;
 import com.clustercontrol.composite.action.TimeVerifyListener;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.OperationMessage;
-import com.clustercontrol.jobmanagement.bean.ConditionTypeConstant;
-import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimeStringConverter;
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobWaitRuleInfo;
 
 /**
  * 終了遅延タブ用のコンポジットクラスです。
@@ -91,7 +87,7 @@ public class EndDelayComposite extends Composite {
 	/** 終了遅延用チェックボタン */
 	private Button m_endDelayCondition = null;
 	/** ジョブ待ち条件情報 */
-	private JobWaitRuleInfo m_waitRule = null;
+	private JobWaitRuleInfoResponse m_waitRule = null;
 
 	/**
 	 * コンストラクタ
@@ -179,7 +175,7 @@ public class EndDelayComposite extends Composite {
 		this.m_sessionValue.setLayoutData(new GridData(100,
 				SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_sessionValue.addVerifyListener(
-				new PositiveNumberVerifyListener(0, DataRangeConstant.SMALLINT_HIGH));
+				new PositiveNumberVerifyListener(1, DataRangeConstant.SMALLINT_HIGH));
 		this.m_sessionValue.addModifyListener(
 				new ModifyListener(){
 					@Override
@@ -220,7 +216,7 @@ public class EndDelayComposite extends Composite {
 		this.m_jobValue.setLayoutData(new GridData(100,
 				SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_jobValue.addVerifyListener(
-				new PositiveNumberVerifyListener(0, DataRangeConstant.SMALLINT_HIGH));
+				new PositiveNumberVerifyListener(1, DataRangeConstant.SMALLINT_HIGH));
 		this.m_jobValue.addModifyListener(
 				new ModifyListener(){
 					@Override
@@ -379,14 +375,17 @@ public class EndDelayComposite extends Composite {
 				if (check.getSelection()) {
 					m_operationType.setEnabled(true);
 
-					int type = getSelectOperationName(m_operationType);
-					if (type == OperationConstant.TYPE_STOP_AT_ONCE) {
+					JobWaitRuleInfoResponse.EndDelayOperationTypeEnum type = getSelectOperationName(m_operationType);
+					if (type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.AT_ONCE) {
 						m_operationStatus.setEnabled(false);
 						m_operationValue.setEditable(false);
-					} else if(type == OperationConstant.TYPE_STOP_SUSPEND){
+					} else if(type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SUSPEND){
 						m_operationStatus.setEnabled(false);
 						m_operationValue.setEditable(false);
-					} else if(type == OperationConstant.TYPE_STOP_SET_END_VALUE){
+					} else if(type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE){
+						m_operationStatus.setEnabled(true);
+						m_operationValue.setEditable(true);
+					} else if(type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE_FORCE){
 						m_operationStatus.setEnabled(true);
 						m_operationValue.setEditable(true);
 					}
@@ -425,19 +424,23 @@ public class EndDelayComposite extends Composite {
 		}
 		this.m_operationType.add(OperationMessage.STRING_STOP_SUSPEND);
 		this.m_operationType.add(OperationMessage.STRING_STOP_SET_END_VALUE);
+		this.m_operationType.add(OperationMessage.STRING_STOP_SET_END_VALUE_FORCE);
 		this.m_operationType.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Combo check = (Combo) e.getSource();
 				WidgetTestUtil.setTestId(this, null, check);
-				int type = getSelectOperationName(check);
-				if (type == OperationConstant.TYPE_STOP_AT_ONCE) {
+				JobWaitRuleInfoResponse.EndDelayOperationTypeEnum type = getSelectOperationName(check);
+				if (type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.AT_ONCE) {
 					m_operationStatus.setEnabled(false);
 					m_operationValue.setEditable(false);
-				} else if(type == OperationConstant.TYPE_STOP_SUSPEND){
+				} else if(type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SUSPEND){
 					m_operationStatus.setEnabled(false);
 					m_operationValue.setEditable(false);
-				} else if(type == OperationConstant.TYPE_STOP_SET_END_VALUE){
+				} else if(type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE){
+					m_operationStatus.setEnabled(true);
+					m_operationValue.setEditable(true);
+				} else if(type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE_FORCE){
 					m_operationStatus.setEnabled(true);
 					m_operationValue.setEditable(true);
 				}
@@ -516,7 +519,8 @@ public class EndDelayComposite extends Composite {
 			this.m_changeMountValue.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
 		if(m_endDelayCondition.getSelection() && m_operationCondition.getSelection() &&
-				getSelectOperationName(m_operationType) == OperationConstant.TYPE_STOP_SET_END_VALUE &&
+				(getSelectOperationName(m_operationType) == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE ||
+				 getSelectOperationName(m_operationType) == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE_FORCE) &&
 				"".equals(this.m_operationValue.getText())){
 			this.m_operationValue.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
 		}else{
@@ -532,40 +536,40 @@ public class EndDelayComposite extends Composite {
 	public void reflectWaitRuleInfo() {
 		if (m_waitRule != null) {
 			//終了遅延
-			m_endDelayCondition.setSelection(m_waitRule.isEndDelay());
+			m_endDelayCondition.setSelection(m_waitRule.getEndDelay());
 
 			//セッション開始後の時間
-			m_sessionCondition.setSelection(m_waitRule.isEndDelaySession());
+			m_sessionCondition.setSelection(m_waitRule.getEndDelaySession());
 
 			//セッション開始後の時間の値
 			m_sessionValue.setText(String.valueOf(m_waitRule.getEndDelaySessionValue()));
 
 			//ジョブ開始後の時間
-			m_jobCondition.setSelection(m_waitRule.isEndDelayJob());
+			m_jobCondition.setSelection(m_waitRule.getEndDelayJob());
 
 			//ジョブ開始後の時間の値
 			m_jobValue.setText(String.valueOf(m_waitRule.getEndDelayJobValue()));
 
 			//時刻
-			m_timeCondition.setSelection(m_waitRule.isEndDelayTime());
+			m_timeCondition.setSelection(m_waitRule.getEndDelayTime());
 
 			//時刻の値
 			if (m_waitRule.getEndDelayTimeValue() != null) {
 				//表示形式を0時未満および24時(及び48時)超にも対応する
-				m_timeValue.setText(TimeStringConverter.formatTime(new Date(m_waitRule.getEndDelayTimeValue())));
+				m_timeValue.setText(m_waitRule.getEndDelayTimeValue());
 			}
 			else{
 				m_timeValue.setText("");
 			}
 
 			//実行履歴からの変化量
-			m_changeMountCondition.setSelection(m_waitRule.isEndDelayChangeMount());
+			m_changeMountCondition.setSelection(m_waitRule.getEndDelayChangeMount());
 
 			//実行履歴からの変化量の値
 			m_changeMountValue.setText(String.valueOf(m_waitRule.getEndDelayChangeMountValue()));
 
 			//条件関係設定
-			if (m_waitRule.getEndDelayConditionType() == ConditionTypeConstant.TYPE_AND) {
+			if (m_waitRule.getEndDelayConditionType() == JobWaitRuleInfoResponse.EndDelayConditionTypeEnum.AND) {
 				m_andCondition.setSelection(true);
 				m_orCondition.setSelection(false);
 			} else {
@@ -574,14 +578,14 @@ public class EndDelayComposite extends Composite {
 			}
 
 			//通知
-			m_notifyCondition.setSelection(m_waitRule.isEndDelayNotify());
+			m_notifyCondition.setSelection(m_waitRule.getEndDelayNotify());
 
 			//通知の重要度
 			setSelectPriority(m_notifyPriority,
 					m_waitRule.getEndDelayNotifyPriority());
 
 			//操作
-			m_operationCondition.setSelection(m_waitRule.isEndDelayOperation());
+			m_operationCondition.setSelection(m_waitRule.getEndDelayOperation());
 
 			//操作の名前
 			setSelectOperationName(m_operationType,
@@ -603,7 +607,7 @@ public class EndDelayComposite extends Composite {
 	 *
 	 * @param start ジョブ待ち条件情報
 	 */
-	public void setWaitRuleInfo(JobWaitRuleInfo start) {
+	public void setWaitRuleInfo(JobWaitRuleInfoResponse start) {
 		m_waitRule = start;
 	}
 
@@ -612,7 +616,7 @@ public class EndDelayComposite extends Composite {
 	 *
 	 * @return ジョブ待ち条件情報
 	 */
-	public JobWaitRuleInfo getWaitRuleInfo() {
+	public JobWaitRuleInfoResponse getWaitRuleInfo() {
 		return m_waitRule;
 	}
 
@@ -637,7 +641,7 @@ public class EndDelayComposite extends Composite {
 			m_waitRule.setEndDelaySessionValue(
 					Integer.parseInt(m_sessionValue.getText()));
 		} catch (NumberFormatException e) {
-			if (m_waitRule.isEndDelaySession().booleanValue()) {
+			if (m_waitRule.getEndDelaySession().booleanValue()) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -654,7 +658,7 @@ public class EndDelayComposite extends Composite {
 			m_waitRule.setEndDelayJobValue(
 					Integer.parseInt(m_jobValue.getText()));
 		} catch (NumberFormatException e) {
-			if (m_waitRule.isEndDelayJob().booleanValue()) {
+			if (m_waitRule.getEndDelayJob().booleanValue()) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -667,14 +671,13 @@ public class EndDelayComposite extends Composite {
 		m_waitRule.setEndDelayTime(m_timeCondition.getSelection());
 
 		//時刻の値
-		if (m_waitRule.isEndDelayTime().booleanValue()) {
+		if (m_waitRule.getEndDelayTime().booleanValue()) {
 			boolean check = false;
 			SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
 			formatter.setTimeZone(TimezoneUtil.getTimeZone());
-			Date date = null;
 			try {
 				//0時未満および24時(及び48時)超の文字列指定にも対応する
-				date = TimeStringConverter.parseTime(m_timeValue.getText());
+				TimeStringConverter.parseTime(m_timeValue.getText());
 				check = true;
 			} catch (ParseException e) {
 //カレンダと同様の変換処理とするため、追加変換は行わない
@@ -688,7 +691,7 @@ public class EndDelayComposite extends Composite {
 			}
 
 			if(check){
-				m_waitRule.setEndDelayTimeValue(date.getTime());
+				m_waitRule.setEndDelayTimeValue(m_timeValue.getText());
 			}
 			else{
 				result = new ValidateResult();
@@ -707,7 +710,7 @@ public class EndDelayComposite extends Composite {
 			m_waitRule.setEndDelayChangeMountValue(
 					Double.parseDouble(m_changeMountValue.getText()));
 		} catch (NumberFormatException e) {
-			if (m_waitRule.isEndDelayChangeMount().booleanValue()) {
+			if (m_waitRule.getEndDelayChangeMount().booleanValue()) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -718,9 +721,9 @@ public class EndDelayComposite extends Composite {
 
 		//条件関係取得
 		if (m_andCondition.getSelection()) {
-			m_waitRule.setEndDelayConditionType(ConditionTypeConstant.TYPE_AND);
+			m_waitRule.setEndDelayConditionType(JobWaitRuleInfoResponse.EndDelayConditionTypeEnum.AND);
 		} else {
-			m_waitRule.setEndDelayConditionType(ConditionTypeConstant.TYPE_OR);
+			m_waitRule.setEndDelayConditionType(JobWaitRuleInfoResponse.EndDelayConditionTypeEnum.OR);
 		}
 
 		//通知
@@ -741,7 +744,7 @@ public class EndDelayComposite extends Composite {
 			m_waitRule.setEndDelayOperationEndValue(
 					Integer.parseInt(m_operationValue.getText()));
 		} catch (NumberFormatException e) {
-			if (m_waitRule.isEndDelayOperation().booleanValue()) {
+			if (m_waitRule.getEndDelayOperation().booleanValue()) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -807,14 +810,17 @@ public class EndDelayComposite extends Composite {
 				m_operationStatus.setEnabled(false);
 				m_operationValue.setEditable(false);
 
-				int type = getSelectOperationName(m_operationType);
-				if (type == OperationConstant.TYPE_STOP_AT_ONCE) {
+				 JobWaitRuleInfoResponse.EndDelayOperationTypeEnum  type = getSelectOperationName(m_operationType);
+				if (type ==  JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.AT_ONCE) {
 					m_operationStatus.setEnabled(false);
 					m_operationValue.setEditable(false);
-				} else if(type == OperationConstant.TYPE_STOP_SUSPEND){
+				} else if(type ==  JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SUSPEND){
 					m_operationStatus.setEnabled(false);
 					m_operationValue.setEditable(false);
-				} else if(type == OperationConstant.TYPE_STOP_SET_END_VALUE){
+				} else if(type ==  JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE){
+					m_operationStatus.setEnabled(true);
+					m_operationValue.setEditable(true);
+				} else if(type ==  JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE_FORCE){
 					m_operationStatus.setEnabled(true);
 					m_operationValue.setEditable(true);
 				}
@@ -866,19 +872,18 @@ public class EndDelayComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.bean.PriorityConstant
 	 */
-	private void setSelectPriority(Combo combo, int priority) {
+	private void setSelectPriority(Combo combo, JobWaitRuleInfoResponse.EndDelayNotifyPriorityEnum enumValue) {
 		String select = "";
-
-		if (priority == PriorityConstant.TYPE_CRITICAL) {
+		if (enumValue == JobWaitRuleInfoResponse.EndDelayNotifyPriorityEnum.CRITICAL) {
 			select = PriorityMessage.STRING_CRITICAL;
-		} else if (priority == PriorityConstant.TYPE_WARNING) {
+		} else if (enumValue == JobWaitRuleInfoResponse.EndDelayNotifyPriorityEnum.WARNING) {
 			select = PriorityMessage.STRING_WARNING;
-		} else if (priority == PriorityConstant.TYPE_INFO) {
+		} else if (enumValue == JobWaitRuleInfoResponse.EndDelayNotifyPriorityEnum.INFO) {
 			select = PriorityMessage.STRING_INFO;
-		} else if (priority == PriorityConstant.TYPE_UNKNOWN) {
+		} else if (enumValue == JobWaitRuleInfoResponse.EndDelayNotifyPriorityEnum.UNKNOWN) {
 			select = PriorityMessage.STRING_UNKNOWN;
-		} else if (priority == PriorityConstant.TYPE_NONE) {
-			select = PriorityMessage.STRING_NONE;
+//		} else if (enumValue == JobWaitRuleInfoResponse.StartDelayNotifyPriorityEnum.NONE) {
+//			select = PriorityMessage.STRING_NONE;
 		}
 
 		combo.select(0);
@@ -898,22 +903,22 @@ public class EndDelayComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.bean.PriorityConstant
 	 */
-	private int getSelectPriority(Combo combo) {
+	private JobWaitRuleInfoResponse.EndDelayNotifyPriorityEnum getSelectPriority(Combo combo) {
 		String select = combo.getText();
 
 		if (select.equals(PriorityMessage.STRING_CRITICAL)) {
-			return PriorityConstant.TYPE_CRITICAL;
+			return JobWaitRuleInfoResponse.EndDelayNotifyPriorityEnum.CRITICAL;
 		} else if (select.equals(PriorityMessage.STRING_WARNING)) {
-			return PriorityConstant.TYPE_WARNING;
+			return JobWaitRuleInfoResponse.EndDelayNotifyPriorityEnum.WARNING;
 		} else if (select.equals(PriorityMessage.STRING_INFO)) {
-			return PriorityConstant.TYPE_INFO;
+			return JobWaitRuleInfoResponse.EndDelayNotifyPriorityEnum.INFO;
 		} else if (select.equals(PriorityMessage.STRING_UNKNOWN)) {
-			return PriorityConstant.TYPE_UNKNOWN;
-		} else if (select.equals(PriorityMessage.STRING_NONE)) {
-			return PriorityConstant.TYPE_NONE;
+			return JobWaitRuleInfoResponse.EndDelayNotifyPriorityEnum.UNKNOWN;
+//		} else if (select.equals(PriorityMessage.STRING_NONE)) {
+//			return JobWaitRuleInfoResponse.StartDelayNotifyPriorityEnum.NONE;
 		}
 
-		return -1;
+		return null;
 	}
 
 	/**
@@ -924,15 +929,17 @@ public class EndDelayComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.jobmanagement.bean.OperationConstant
 	 */
-	private void setSelectOperationName(Combo combo, int operation) {
+	private void setSelectOperationName(Combo combo, JobWaitRuleInfoResponse.EndDelayOperationTypeEnum operation) {
 		String select = "";
 
-		if (operation == OperationConstant.TYPE_STOP_AT_ONCE) {
+		if (operation == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.AT_ONCE) {
 			select = OperationMessage.STRING_START_AT_ONCE;
-		} else if (operation == OperationConstant.TYPE_STOP_SUSPEND) {
+		} else if (operation == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SUSPEND) {
 			select = OperationMessage.STRING_STOP_SUSPEND;
-		} else if (operation == OperationConstant.TYPE_STOP_SET_END_VALUE) {
+		} else if (operation == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE) {
 			select = OperationMessage.STRING_STOP_SET_END_VALUE;
+		} else if (operation == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE_FORCE) {
+			select = OperationMessage.STRING_STOP_SET_END_VALUE_FORCE;
 		}
 
 		combo.select(0);
@@ -952,28 +959,30 @@ public class EndDelayComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.jobmanagement.bean.OperationConstant
 	 */
-	private int getSelectOperationName(Combo combo) {
+	private JobWaitRuleInfoResponse.EndDelayOperationTypeEnum getSelectOperationName(Combo combo) {
 		String select = combo.getText();
 
 		if (select.equals(OperationMessage.STRING_STOP_AT_ONCE)) {
-			return OperationConstant.TYPE_STOP_AT_ONCE;
+			return JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.AT_ONCE;
 		} else if (select.equals(OperationMessage.STRING_STOP_SUSPEND)) {
-			return OperationConstant.TYPE_STOP_SUSPEND;
+			return JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SUSPEND;
 		} else if (select.equals(OperationMessage.STRING_STOP_SET_END_VALUE)) {
-			return OperationConstant.TYPE_STOP_SET_END_VALUE;
+			return JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE;
+		} else if (select.equals(OperationMessage.STRING_STOP_SET_END_VALUE_FORCE)) {
+			return JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE_FORCE;
 		}
 
-		return -1;
+		return null;
 	}
 
 	/**
 	 * 指定した重要度に該当する終了遅延終了状態用コンボボックスの項目を選択します。
 	 *
 	 */
-	private void setSelectOperationEndStatus(Combo combo, int status) {
+	private void setSelectOperationEndStatus(Combo combo, JobWaitRuleInfoResponse.EndDelayOperationEndStatusEnum status) {
 		String select = "";
 
-		select = EndStatusMessage.typeToString(status);
+		select = EndStatusMessage.typeEnumValueToString(status.getValue());
 
 		combo.select(0);
 		for (int i = 0; i < combo.getItemCount(); i++) {
@@ -988,9 +997,10 @@ public class EndDelayComposite extends Composite {
 	 * 終了遅延通知終了状態用コンボボックスにて選択している項目を取得します。
 	 *
 	 */
-	private int getSelectOperationEndStatus(Combo combo) {
+	private JobWaitRuleInfoResponse.EndDelayOperationEndStatusEnum getSelectOperationEndStatus(Combo combo) {
 		String select = combo.getText();
-		return EndStatusMessage.stringToType(select);
+		String enumValue = EndStatusMessage.stringTotypeEnumValue(select);
+		return  JobWaitRuleInfoResponse.EndDelayOperationEndStatusEnum.fromValue(enumValue);
 	}
 
 	/**
@@ -998,6 +1008,9 @@ public class EndDelayComposite extends Composite {
 	 */
 	@Override
 	public void setEnabled(boolean enabled) {
+		JobWaitRuleInfoResponse.EndDelayOperationTypeEnum type = getSelectOperationName(m_operationType);
+		boolean isSelectedOperationCondition = m_operationCondition.getSelection();
+		
 		m_endDelayCondition.setEnabled(enabled);
 		if (!m_endDelayCondition.getSelection()) {
 			enabled = false;
@@ -1015,8 +1028,12 @@ public class EndDelayComposite extends Composite {
 		m_notifyCondition.setEnabled(enabled);
 		m_notifyPriority.setEnabled(m_notifyCondition.getSelection() && enabled);
 		m_operationCondition.setEnabled(enabled);
-		m_operationType.setEnabled(m_operationCondition.getSelection() && enabled);
-		m_operationStatus.setEnabled(m_operationCondition.getSelection() && enabled);
-		m_operationValue.setEditable(m_operationCondition.getSelection() && enabled);
+		m_operationType.setEnabled(isSelectedOperationCondition && enabled);
+		m_operationStatus.setEnabled(isSelectedOperationCondition && enabled
+				&& ((type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE ||
+					 type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE_FORCE)));
+		m_operationValue.setEditable(isSelectedOperationCondition && enabled
+				&& ((type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE ||
+					 type == JobWaitRuleInfoResponse.EndDelayOperationTypeEnum.SET_END_VALUE_FORCE)));
 	}
 }

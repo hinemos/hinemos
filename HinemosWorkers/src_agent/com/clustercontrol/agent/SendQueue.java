@@ -17,12 +17,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtOutputBasicInfoRequest;
+import org.openapitools.client.model.SendMessageRequest;
+import org.openapitools.client.model.SetJobResultRequest;
 
-import com.clustercontrol.ws.agent.AgentOutputBasicInfo;
-import com.clustercontrol.ws.agent.JobInfoNotFound_Exception;
-import com.clustercontrol.ws.agent.OutputBasicInfo;
-import com.clustercontrol.ws.jobmanagement.RunResultInfo;
-
+import com.clustercontrol.agent.sdml.SdmlMessageSendableObject;
+import com.clustercontrol.agent.util.AgentProperties;
+import com.clustercontrol.agent.util.AgentRequestId;
+import com.clustercontrol.fault.JobInfoNotFound;
 
 /**
  * ジョブ実行結果（チェック、開始含む）をQueue送信するクラス<BR>
@@ -33,12 +35,29 @@ import com.clustercontrol.ws.jobmanagement.RunResultInfo;
  */
 public class SendQueue {
 
+	public interface SendableObject {
+		// empty
+	}
+
+	public static class JobResultSendableObject implements SendableObject {
+		public String sessionId;
+		public String jobunitId;
+		public String jobId;
+		public String facilityId;
+		public SetJobResultRequest body;
+	}
+
+	public static class MessageSendableObject implements SendableObject {
+		public AgtOutputBasicInfoRequest body;
+	}
+
 	//ロガー
 	static private Log m_log = LogFactory.getLog(SendQueue.class);
 
 	private static final long SEND_TIMEOUT = 60 * 1000l;
 
-	private long m_sendQueueReconnectionInterval = 10 * 1000l;
+	// リトライ間隔
+	private long m_sendQueueReconnectionInterval = 30000;
 
 	/**
 	 * コンストラクタ
@@ -46,6 +65,17 @@ public class SendQueue {
 	 */
 	public SendQueue() {
 		super();
+		// リトライ間隔を取得
+		String interval = AgentProperties.getProperty("job.reconnection.interval");
+		if (interval != null) {
+			try {
+				// プロパティファイルにはmsecで記述
+				m_sendQueueReconnectionInterval = Long.parseLong(interval);
+				m_log.info("job.reconnection.interval = " + m_sendQueueReconnectionInterval + " msec");
+			} catch (NumberFormatException e) {
+				m_log.error("job.reconnection.interval",e);
+			}
+		}
 	}
 
 	/**
@@ -55,8 +85,9 @@ public class SendQueue {
 	 * 処理失敗は再試行します。
 	 * @param msg
 	 */
-	public boolean put(Object info) {
+	public boolean put(SendableObject info) {
 		m_log.debug("put() start : " + info.getClass().getCanonicalName());
+		AgentRequestId agentRequestId = new AgentRequestId();
 
 		while (!ReceiveTopic.isHistoryClear()) {
 			m_log.debug("put() while (!ReceiveTopic.isHistoryClear()) is true");
@@ -74,7 +105,7 @@ public class SendQueue {
 				// 別スレッドでQueue送信処理を実行することで、送信処理に無限の時間がかかっても、
 				// Future.get()のタイムアウトにより、本スレッドに制御が戻るようにする。
 				m_log.debug("put() submit");
-				task = es.submit(new Sender(info));
+				task = es.submit(new Sender(info, agentRequestId));
 				sendQueueStatus = task.get(SEND_TIMEOUT, TimeUnit.MILLISECONDS);
 
 			} catch (Exception e) {
@@ -93,7 +124,7 @@ public class SendQueue {
 				if (es != null) {
 					es.shutdown();
 				}
-				m_log.debug("put() end    : " + info.getClass().getCanonicalName());
+				m_log.debug("put() end	  : " + info.getClass().getCanonicalName());
 			}
 
 			// 送信が成功していない場合はsleep後に再送を試みる
@@ -118,41 +149,53 @@ public class SendQueue {
 	 * Queueメッセージ送信処理を実行するタスク用クラス
 	 */
 	private static class Sender implements Callable<Boolean> {
-		//private RunResultInfo m_info;
-		private Object m_info;
+		private SendableObject m_info;
+		private AgentRequestId m_agentRequestId;
 
-		public Sender(Object info){
+		public Sender(SendableObject info, AgentRequestId agentRequestId) {
 			m_info = info;
+			m_agentRequestId = agentRequestId;
 		}
 
 		@Override
 		public Boolean call() throws Exception {
-			try {
-				if(m_info instanceof RunResultInfo) {
-					RunResultInfo resultInfo = (RunResultInfo)m_info;
-					m_log.info("Sender Send RunResultInfo : SessionID=" + resultInfo.getSessionId() +
-							", JobID=" + resultInfo.getJobId() +
-							", CommandType=" + resultInfo.getCommandType() +
-							", Status=" + resultInfo.getStatus());
-					AgentEndPointWrapper.jobResult(resultInfo);
-				} else if (m_info instanceof OutputBasicInfo) {
-					OutputBasicInfo message = (OutputBasicInfo)m_info;
-					m_log.info("Sender Send Message : message =" + message);
-					AgentOutputBasicInfo info = new AgentOutputBasicInfo();
-					info.setOutputBasicInfo(message);
-					AgentEndPointWrapper.sendMessage(info);
-				} else {
-					m_log.error("Sender Send Object is not unknown = " + m_info.getClass().getName());
-					return false;
+			if (m_info instanceof JobResultSendableObject) {
+				JobResultSendableObject o = (JobResultSendableObject) m_info;
+				m_log.info("Sender Send RunResultInfo : " +
+						"SessionID=" + o.sessionId +
+						", JobID=" + o.jobId +
+						", CommandType=" + o.body.getCommandType() +
+						", Status=" + o.body.getStatus());
+				m_log.debug("Sender Send agentRequestId : " + m_agentRequestId);
+
+				try {
+					AgentRestClientWrapper.setJobResult(o.sessionId, o.jobunitId, o.jobId, o.facilityId, o.body, m_agentRequestId.toRequestHeaderValue());
+				} catch (JobInfoNotFound ignored) {
+					m_log.info("call() : JobInfo has been already deleted");
 				}
 				return true;
-			} catch (JobInfoNotFound_Exception e) {
-				m_log.info("call() : JobInfo has been already deleted");
+
+			} else if (m_info instanceof MessageSendableObject) {
+				MessageSendableObject o = (MessageSendableObject) m_info;
+				m_log.info("Sender Send Message : message =" + o.body.getMessage());
+
+				SendMessageRequest req = new SendMessageRequest();
+				req.setAgentInfo(Agent.getAgentInfoRequest());
+				req.setOutputBasicInfo(o.body);
+				AgentRestClientWrapper.sendMessageToInternalEvent(req, m_agentRequestId.toRequestHeaderValue());
+
 				return true;
-			} catch (Exception e) {
-				throw e;
+
+			} else if (m_info instanceof SdmlMessageSendableObject){
+				((SdmlMessageSendableObject)m_info).sendMessage(m_agentRequestId.toRequestHeaderValue());
+				
+				return true;
+			} else {
+				m_log.error("Unknown sendable object = " + m_info.getClass().getName());
+				return false;
 			}
 		}
+
 	}
 
 	/**

@@ -27,15 +27,17 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.JobKickResponse;
+import org.openapitools.client.model.SetJobKickStatusRequest;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.action.GetJobKickTableDefine;
 import com.clustercontrol.jobmanagement.bean.JobKickConstant;
 import com.clustercontrol.jobmanagement.bean.JobKickTypeMessage;
 import com.clustercontrol.jobmanagement.composite.JobKickListComposite;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.view.JobKickListView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
 
 /**
  * ジョブ[実行契機]ビューの「有効」のクライアント側アクションクラス<BR>
@@ -105,8 +107,9 @@ public class EnableJobKickAction extends AbstractHandler implements IElementUpda
 		for (int i = 0; i < objs.length; i++) {
 			String managerName = (String) ((ArrayList<?>)objs[i]).get(GetJobKickTableDefine.MANAGER_NAME);
 			String jobkickId = (String) ((ArrayList<?>)objs[i]).get(GetJobKickTableDefine.JOBKICK_ID);
-			Integer type = JobKickTypeMessage.stringToType((String) ((ArrayList<?>)objs[i]).get(GetJobKickTableDefine.TYPE));
-			if (type == JobKickConstant.TYPE_MANUAL) {
+			JobKickResponse.TypeEnum type = JobKickResponse.TypeEnum
+					.fromValue(JobKickTypeMessage.stringToTypeEnumValue((String) ((ArrayList<?>)objs[i]).get(GetJobKickTableDefine.TYPE)));
+			if (type == JobKickResponse.TypeEnum.MANUAL) {
 				// マニュアル実行契機は対象外
 				continue;
 			}
@@ -139,19 +142,20 @@ public class EnableJobKickAction extends AbstractHandler implements IElementUpda
 		// 実行
 		for(Map.Entry<String, List<String>> entry : map.entrySet()) {
 			String managerName = entry.getKey();
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-			for(String targetId : entry.getValue()){
-				try{
-					wrapper.setJobKickStatus(targetId, true);
-					successList.append(targetId + "(" + managerName + ")" + "\n");
-				} catch (InvalidRole_Exception e) {
-					failureList.append(targetId + "\n");
-					m_log.warn("run() setJobKickStatus jobkickId=" + targetId + ", " + e.getMessage(), e);
-					hasRole = false;
-				}catch (Exception e) {
-					failureList.append(targetId + "\n");
-					m_log.warn("run() setJobKickStatus jobkickId=" + targetId + ", " + e.getMessage(), e);
-				}
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			SetJobKickStatusRequest setJobKickStatusRequest = new SetJobKickStatusRequest();
+			setJobKickStatusRequest.setJobKickId(entry.getValue());
+			setJobKickStatusRequest.setValidFlag(true);
+			try{
+				wrapper.setJobKickStatus(setJobKickStatusRequest);
+				successList.append(entry.getValue() + "(" + managerName + ")" + "\n");
+			} catch (InvalidRole e) {
+				failureList.append(entry.getValue() + "\n");
+				m_log.warn("run() setJobKickStatus jobkickIds=" + entry.getValue() + ", " + e.getMessage(), e);
+				hasRole = false;
+			}catch (Exception e) {
+				failureList.append(entry.getValue() + "\n");
+				m_log.warn("run() setJobKickStatus jobkickIds=" + entry.getValue() + ", " + e.getMessage(), e);
 			}
 		}
 
@@ -180,7 +184,7 @@ public class EnableJobKickAction extends AbstractHandler implements IElementUpda
 		}
 
 		// ビューコンポジット更新
-		composite.update();
+		composite.update(view.getFilterCondition());
 		return null;
 	}
 

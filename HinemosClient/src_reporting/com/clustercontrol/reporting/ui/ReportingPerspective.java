@@ -23,6 +23,8 @@ import com.clustercontrol.reporting.view.ReportingTemplateSetView;
  */
 public class ReportingPerspective extends ClusterControlPerspectiveBase {
 
+	public static final String ID = "com.clustercontrol.enterprise.reporting.ui.ReportingPerspective";
+
 	/*
 	 * (non-Javadoc)
 	 * 

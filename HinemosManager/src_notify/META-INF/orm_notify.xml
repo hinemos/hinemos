@@ -48,18 +48,11 @@
 			]]>
 		</query>
 	</named-query>
-	<named-query name="NotifyRelationInfoEntity.findAllWithoutJob">
+	<named-query name="NotifyRelationInfoEntity.findByFunctionPrefix">
 		<query>
 			<![CDATA[
-				SELECT a FROM NotifyRelationInfo a WHERE NOT(a.id.notifyGroupId LIKE 'JOB_SES_%') AND NOT(a.id.notifyGroupId LIKE 'JOB_MST_%')
-				ORDER BY a.id.notifyGroupId, a.id.notifyId
-			]]>
-		</query>
-	</named-query>
-	<named-query name="NotifyRelationInfoEntity.findJob">
-		<query>
-			<![CDATA[
-				SELECT a FROM NotifyRelationInfo a WHERE a.id.notifyGroupId LIKE 'JOB_MST_%'
+				SELECT a FROM NotifyRelationInfo a 
+				WHERE a.functionPrefix IN :functionPrefix
 				ORDER BY a.id.notifyGroupId, a.id.notifyId
 			]]>
 		</query>
@@ -82,11 +75,19 @@
 			]]>
 		</query>
 	</named-query>
-		<named-query name="NotifyRelationInfoEntity.deleteByNotifyGroupId">
+	<named-query name="NotifyRelationInfoEntity.deleteByNotifyGroupId">
 		<query>
 			<![CDATA[
 				DELETE FROM NotifyRelationInfo a
-				WHERE a.id.notifyGroupId like :notifyGroupId
+				WHERE a.id.notifyGroupId = :notifyGroupId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyRelationInfoEntity.deleteByNotifyId">
+		<query>
+			<![CDATA[
+				DELETE FROM NotifyRelationInfo a
+				WHERE a.id.notifyId = :notifyId
 			]]>
 		</query>
 	</named-query>
@@ -107,6 +108,15 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="NotifyInfoEntity.findByNotifyTypeOrderByNotifyId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+				WHERE a.notifyType = :notifyType
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
 	<named-query name="NotifyInfoEntity.findByOwnerRoleId">
 		<query>
 			<![CDATA[
@@ -121,6 +131,24 @@
 			<![CDATA[
 				SELECT a FROM NotifyInfo a
 				WHERE a.calendarId = :calendarId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyInfoEntity.findByNotifyIdAndNotifyType">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+				WHERE a.notifyId = :notifyId
+				AND a.notifyType = :notifyType
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyInfoEntity.findByNotifyType">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyInfo a
+				WHERE a.notifyType = :notifyType
 				ORDER BY a.notifyId
 			]]>
 		</query>
@@ -161,12 +189,55 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="NotifyHistoryEntity.deleteByNotifyId">
+		<query>
+			<![CDATA[
+				DELETE FROM NotifyHistoryEntity a
+				WHERE a.id.notifyId = :notifyId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="NotifyHistoryEntity.deleteByPluginIdAndMonitorId">
+		<query>
+			<![CDATA[
+				DELETE FROM NotifyHistoryEntity a
+				WHERE a.id.pluginId = :pluginId
+				AND a.id.monitorId = :monitorId
+			]]>
+		</query>
+	</named-query>
 	<!-- MonitorStatusEntity -->
-	<named-query name="MonitorStatusEntity.findAll">
+	<named-query name="MonitorStatusEntity.findWithoutPluginIds">
 		<query>
 			<![CDATA[
 				SELECT a FROM MonitorStatusEntity a
-				ORDER BY a.id.facilityId, a.id.pluginId, a.id.monitorId, a.id.subKey
+				WHERE a.id.pluginId NOT IN :withoutPluginIds
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorStatusEntity.deleteWithoutPluginIds">
+		<query>
+			<![CDATA[
+				DELETE FROM MonitorStatusEntity a
+				WHERE a.id.pluginId NOT IN :withoutPluginIds
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorStatusEntity.deleteByPluginIdAndMonitorId">
+		<query>
+			<![CDATA[
+				DELETE FROM MonitorStatusEntity a
+				WHERE a.id.pluginId = :pluginId
+				AND a.id.monitorId = :monitorId
+			]]>
+	</query>
+	</named-query>
+	<named-query name="MonitorStatusEntity.findByPluginId">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorStatusEntity a
+				WHERE a.id.pluginId = :pluginId
+				AND a.id.monitorId = :monitorId
 			]]>
 		</query>
 	</named-query>
@@ -197,6 +268,14 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="NotifyJobInfoEntity.findByJoblinkSendSettingId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyJobInfo a
+				WHERE a.joblinkSendSettingId = :joblinkSendSettingId
+			]]>
+		</query>
+	</named-query>
 	<!-- NotifyLogEscalateInfoEntity -->
 	<named-query name="NotifyLogEscalateInfoEntity.findByEscalateFacilityId">
 		<query>
@@ -217,8 +296,18 @@
 			]]>
 		</query>
 	</named-query>
-
-		<!-- StatusInfoEntity -->
+	<!--  NotifyCloudInfoEntity -->
+		<named-query name="NotifyCloudInfoEntity.findByCloudExecFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyCloudInfo a
+				WHERE a.facilityId = :facilityId
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	
+	<!-- StatusInfoEntity -->
 	<named-query name="StatusInfoEntity.findByPluginIdAndMonitorId">
 		<query>
 			<![CDATA[
@@ -239,6 +328,54 @@
 				AND a.outputDate = :outputDate
 				AND a.facilityId = :facilityId
 				ORDER BY a.operationDate desc, a.historyType desc, a.id.logSeqNo desc
+			]]>
+		</query>
+	</named-query>
+	<!-- CommandTemplateInfo -->
+	<named-query name="CommandTemplateInfo.findByPrimaryKey">
+		<query>
+			<![CDATA[
+				SELECT a FROM CommandTemplateInfo a 
+				WHERE a.commandTemplateId = :commandTemplateId
+			]]>
+		</query>
+	</named-query>
+
+	<!-- CommandTemplateInfo -->
+	<named-query name="CommandTemplateInfo.findAllOrderByCommandTemplateId">
+		<query>
+			<![CDATA[
+				SELECT a FROM CommandTemplateInfo a
+				ORDER BY a.commandTemplateId
+			]]>
+		</query>
+	</named-query>
+
+	<!-- NotifyCommandInfo -->
+	<named-query name="NotifyCommandInfo.findByCommandSettingType">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyCommandInfo a
+				WHERE a.commandSettingType = :commandSettingType
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
+	<!-- RestAccessInfoEntity -->
+	<named-query name="RestAccessInfoEntity.findAllOrderByRestAccessId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RestAccessInfo a
+				ORDER BY a.restAccessId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RestAccessInfoEntity.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RestAccessInfo a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.restAccessId
 			]]>
 		</query>
 	</named-query>

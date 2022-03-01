@@ -20,7 +20,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.calendar.dialog.CalendarDialog;
 import com.clustercontrol.calendar.view.CalendarListView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * カレンダの作成・変更ダイアログによる、カレンダ登録を行うクライアント側アクションクラス<BR>
@@ -56,7 +56,7 @@ public class CalendarAddAction extends AbstractHandler{
 			return null; 
 		}
 
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 
 		// ダイアログを生成
 		CalendarDialog dialog = new CalendarDialog(this.viewPart.getSite()

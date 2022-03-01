@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * ジョブ定義が不正な場合に利用するException
  * @version 3.2.0
  */
-public class JobInvalid extends HinemosException {
+public class JobInvalid extends HinemosInvalid {
 
 	private static final long serialVersionUID = -7692063951801951629L;
 

@@ -31,4 +31,14 @@ public interface ILock {
 	 */
 	void writeUnlock();
 	
+	/**
+	 * 呼び出し時に別のスレッドにより保持されていない場合のみに、書き込みロックを取得する<br/>
+	 */
+	boolean tryWriteLock();
+	
+	/**
+	 * 呼び出し時に別のスレッドにより保持されていない場合のみに、読み込みロックを取得する<br/>
+	 */
+	boolean tryReadLock();
+	
 }

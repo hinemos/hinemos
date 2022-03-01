@@ -8,6 +8,8 @@
 package com.clustercontrol.xcloud;
 
 public class HinemosCredential {
+	public static final String ANONYMOUS_USER = "anonymous";
+	
 	private String userId;
 
 	public HinemosCredential(String userId) {
@@ -15,7 +17,7 @@ public class HinemosCredential {
 	}
 	
 	public HinemosCredential() {
-		this.userId = "anonymous";
+		this.userId = ANONYMOUS_USER;
 	}
 
 	public String getUserId() {

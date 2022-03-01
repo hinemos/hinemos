@@ -9,6 +9,7 @@
 package com.clustercontrol.agent.binary.readingstatus;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -16,7 +17,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
@@ -192,9 +192,16 @@ public class DirectoryReadingStatus {
 		Map<String, FileReadingStatus> newFileRS = new TreeMap<String, FileReadingStatus>();
 
 		// 監視対象ファイル検索用のパターン作成
-		Pattern pattern = null;
+		FileFilter fileFilter = null;
 		try {
-			pattern = Pattern.compile(parentMonRS.getFilename(), Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+			fileFilter = new FileFilter() {
+				Pattern pattern = Pattern.compile(parentMonRS.getFilename(), Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+				@Override
+				public boolean accept(File f) {
+					// ファイルパターン一致チェック.
+					return  f.isFile() && pattern.matcher(f.getName()).matches();
+				}
+			};
 		} catch (Exception e) {
 			// 不正ファイルパターン、処理が継続できないので、処理を戻す。
 			log.warn(methodName + DELIMITER + e.getMessage(), e);
@@ -202,7 +209,7 @@ public class DirectoryReadingStatus {
 		}
 
 		// 検索対象のファイルを抽出.
-		File[] seekFiles = monDir.listFiles();
+		File[] seekFiles = monDir.listFiles(fileFilter);
 		if (seekFiles == null || seekFiles.length <= 0) {
 			log.info(methodName + DELIMITER + monDirName + " does not have a reference permission");
 			return;
@@ -210,19 +217,7 @@ public class DirectoryReadingStatus {
 
 		// 検索対象ファイルのチェックを行いOKなら監視対象としてマップに追加.
 		for (File file : seekFiles) {
-			// ファイル存在チェック.
 			log.debug(methodName + DELIMITER + parentMonRS.getMonitorID() + ", file=" + file.getName());
-			if (!file.isFile()) {
-				log.debug(file.getName() + " is not file");
-				continue;
-			}
-			// ファイルパターン一致チェック.
-			Matcher matcher = pattern.matcher(file.getName());
-			if (!matcher.matches()) {
-				log.debug(methodName + DELIMITER + "don't match. filename=" + file.getName() + ", pattern="
-						+ parentMonRS.getFilename());
-				continue;
-			}
 			// 最大監視対象ファイル数チェック.
 			if (!parentMonRS.incrementCounter()) {
 				log.info(methodName + DELIMITER + "too many files for binary monitor. not-monitoring file="

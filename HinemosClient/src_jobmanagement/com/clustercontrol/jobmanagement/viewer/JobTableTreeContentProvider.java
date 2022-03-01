@@ -12,8 +12,7 @@ import java.util.List;
 
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
-
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 
 /**
  * CommonTableTreeViewerクラス用のContentProviderクラス
@@ -29,7 +28,7 @@ public class JobTableTreeContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public Object getParent(Object element) {
-		return ((JobTreeItem) element).getParent();
+		return ((JobTreeItemWrapper) element).getParent();
 	}
 
 	/*
@@ -49,7 +48,7 @@ public class JobTableTreeContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public Object[] getChildren(Object parentElement) {
-		List<JobTreeItem> children = ((JobTreeItem) parentElement).getChildren();
+		List<JobTreeItemWrapper> children = ((JobTreeItemWrapper) parentElement).getChildren();
 		return children.toArray(new Object[0]);
 	}
 
@@ -59,7 +58,7 @@ public class JobTableTreeContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public boolean hasChildren(Object element) {
-		return ((JobTreeItem) element).getChildren().size() > 0;
+		return ((JobTreeItemWrapper) element).getChildren().size() > 0;
 	}
 
 	/*

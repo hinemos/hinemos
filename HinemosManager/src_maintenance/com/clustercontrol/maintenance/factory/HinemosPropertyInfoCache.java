@@ -11,6 +11,9 @@ package com.clustercontrol.maintenance.factory;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.SortedMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,10 +42,12 @@ public class HinemosPropertyInfoCache {
 	private static Log log = LogFactory.getLog(HinemosPropertyInfoCache.class);
 	
 	private static final ILock _lock;
-	
+	private static final SortedMap<String, Runnable> refreshedEventListeners;
+
 	static {
 		ILockManager lockManager = LockManagerFactory.instance().create();
 		_lock = lockManager.create(HinemosPropertyInfoCache.class.getName());
+		refreshedEventListeners = new ConcurrentSkipListMap<>();
 		
 		try {
 			_lock.writeLock();
@@ -81,6 +86,7 @@ public class HinemosPropertyInfoCache {
 	 * @return プロパティ
 	 */
 	public static HinemosPropertyInfo getProperty(String key) {
+		try {
 		// 並列してキャッシュ更新処理が実行されている場合、更新処理完了を待機しない（更新前・後のどちらが取得されるか保証されない）
 		// (部分書き換えでなく全置換えのキャッシュ更新特性、ロックに伴う処理コストの観点から参照ロックは意図的に取得しない)
 		HashMap<String, HinemosPropertyInfo> cache = getCache();
@@ -93,6 +99,10 @@ public class HinemosPropertyInfoCache {
 			
 		}
 		return cache == null ? null : cache.get(key);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	/**
@@ -110,8 +120,20 @@ public class HinemosPropertyInfoCache {
 			storeCache(cache);
 			
 			log.info(String.format("refresh: %dms size=%d", HinemosTime.currentTimeMillis() - startTime, cache.size()));
+		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
 			_lock.writeUnlock();
+		}
+
+		// キャッシュ更新後の処理を実行
+		for (Entry<String, Runnable> entry : refreshedEventListeners.entrySet()) {
+			log.info("refresh: Call " + entry.getKey());
+			try {
+				entry.getValue().run();
+			} catch (Exception e) {
+				log.warn("refresh: RefreshedEventHandling failed. ", e);
+			}
 		}
 	}
 
@@ -132,4 +154,14 @@ public class HinemosPropertyInfoCache {
 			}
 		}
 	}
+
+	/**
+	 * Hinemosプロパティキャッシュの更新時(＝Hinemosプロパティに変更があったとき)に実行する処理を追加します。
+	 * 追加した処理は、同期メソッドである {@link #refresh()} 内で、name 昇順に直列的に実行されます。
+	 */
+	public static void addRefreshedEventListener(String name, Runnable action) {
+		refreshedEventListeners.put(name, action);
+		log.info("addRefreshedEventListener: " + name);
+	}
+
 }

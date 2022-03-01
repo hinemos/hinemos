@@ -14,7 +14,7 @@
 <intAttribute key="default_start_level" value="4"/>
 <stringAttribute key="deselected_workspace_plugins" value="com.clustercontrol.xcloud.aws,com.clustercontrol.xcloud.azure,com.clustercontrol.xcloud.hyperv,com.clustercontrol.xcloud.vmware"/>
 <booleanAttribute key="includeOptional" value="true"/>
-<stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.8.0_151"/>
+<stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="-os ${target.os} -ws ${target.ws} -arch ${target.arch} -nl ${target.nl} -consoleLog"/>
 <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.pde.ui.workbenchClasspathProvider"/>
 <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xms32m -Xmx128m -Declipse.ignoreApp=true -Dosgi.noShutdown=true -Dorg.eclipse.rap.rwt.enableUITests=true"/>

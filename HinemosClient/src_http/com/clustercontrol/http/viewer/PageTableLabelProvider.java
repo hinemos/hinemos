@@ -8,9 +8,10 @@
 
 package com.clustercontrol.http.viewer;
 
+import org.openapitools.client.model.PageResponse;
+
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
 import com.clustercontrol.monitor.run.viewer.CommonTableLabelProvider;
-import com.clustercontrol.ws.monitor.Page;;
 
 /**
  * 文字列監視の判定情報一覧のラベルプロバイダークラス<BR>
@@ -18,9 +19,9 @@ import com.clustercontrol.ws.monitor.Page;;
  * @version 5.0.0
  * @since 5.0.0
  */
-public class PageTableLabelProvider extends CommonTableLabelProvider<Page> {
+public class PageTableLabelProvider extends CommonTableLabelProvider<PageResponse> {
 
-	public PageTableLabelProvider(ITableItemCompositeDefine<Page> define) {
+	public PageTableLabelProvider(ITableItemCompositeDefine<PageResponse> define) {
 		super(define);
 	}
 
@@ -33,8 +34,8 @@ public class PageTableLabelProvider extends CommonTableLabelProvider<Page> {
 	@Override
 	public String getColumnText(Object element, int columnIndex) {
 
-		if (element instanceof Page) {
-			Page pageInfo = (Page) element;
+		if (element instanceof PageResponse) {
+			PageResponse pageInfo = (PageResponse) element;
 
 			if (columnIndex == GetPageTableDefine.ORDER_NO) {
 				return String.valueOf(indexOf(pageInfo) + 1);

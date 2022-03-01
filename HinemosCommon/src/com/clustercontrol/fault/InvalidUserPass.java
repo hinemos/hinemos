@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * ユーザとパスワードの組み合わせが間違っている場合に利用するException
  * @version 3.2.0
  */
-public class InvalidUserPass extends HinemosException {
+public class InvalidUserPass extends HinemosInvalid {
 
 	private static final long serialVersionUID = -6401349857743376125L;
 

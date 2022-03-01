@@ -16,6 +16,9 @@ import java.util.Set;
 
 import javax.xml.bind.annotation.XmlType;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.repository.model.NodeCpuInfo;
 import com.clustercontrol.repository.model.NodeDeviceInfo;
@@ -35,6 +38,7 @@ import com.clustercontrol.util.MessageConstant;
 @XmlType(namespace = "http://repository.ws.clustercontrol.com")
 public class NodeInfoDeviceSearch implements Serializable
 {
+	private static Log m_log = LogFactory.getLog( NodeInfoDeviceSearch.class );
 	private static final long serialVersionUID = -6677435738596727809L;
 
 	private NodeInfo nodeInfo = null;
@@ -119,6 +123,7 @@ public class NodeInfoDeviceSearch implements Serializable
 	 */
 	public boolean equalsNodeInfo(NodeInfo lastNode) {
 		boolean equalsBasic = true;
+		boolean equalsHostName = true;
 		boolean equalsCpu = true;
 		boolean equalsMem = true;
 		boolean equalsNic = true;
@@ -128,6 +133,47 @@ public class NodeInfoDeviceSearch implements Serializable
 
 		//サーバ基本情報
 		equalsBasic = equalsNodeBasicInfo(lastNode);
+
+		//ホスト名
+		if (HinemosPropertyCommon.repository_device_search_prop_node_config_hostname.getBooleanValue()) {
+			if( nodeInfo.getNodeHostnameInfo() == null || nodeInfo.getNodeHostnameInfo().isEmpty() )
+			{
+				equalsHostName = lastNode.getNodeHostnameInfo() == null || lastNode.getNodeHostnameInfo().isEmpty();
+			} else if (lastNode.getNodeHostnameInfo() == null || lastNode.getNodeHostnameInfo().isEmpty()) {
+				// 前回値が空で、今回のデバイスサーチで値がある場合（必ず同一ではない）
+				equalsHostName = false;
+				setMessage(MessageConstant.HOST_NAME.getMessage(),
+						MessageConstant.NONEXISTENT.getMessage(),
+						nodeInfo.getNodeHostnameInfo().get(0).getHostname());
+			} else if(lastNode.getNodeHostnameInfo().size()>1){
+				//複数ホスト名を登録された場合（更新されるようにする）
+				equalsHostName = false;
+				String lastNodeHostnames = lastNode.getNodeHostnameInfo().get(0).getHostname();
+				for(int iter = 1; iter < lastNode.getNodeHostnameInfo().size(); iter++){//setMessage()のためすべてのホスト名を取得
+					lastNodeHostnames = lastNodeHostnames.concat("\n" + lastNode.getNodeHostnameInfo().get(iter).getHostname());
+				}
+				setMessage(MessageConstant.HOST_NAME.getMessage(),
+						lastNodeHostnames,
+						nodeInfo.getNodeHostnameInfo().get(0).getHostname());
+			} else {
+				equalsHostName = nodeInfo
+									.getNodeHostnameInfo()
+									.get(0)
+									.getHostname()
+									.equals(lastNode.getNodeHostnameInfo().get(0)
+											.getHostname());
+				if (nodeInfo
+						.getNodeHostnameInfo()
+						.get(0)
+						.getHostname()
+						.equals(lastNode.getNodeHostnameInfo().get(0)
+								.getHostname()) == false) {
+					setMessage(MessageConstant.HOST_NAME.getMessage(),
+							lastNode.getNodeHostnameInfo().get(0).getHostname(),
+							nodeInfo.getNodeHostnameInfo().get(0).getHostname());
+				}
+			}
+		}
 
 		//CPU情報
 		if (HinemosPropertyCommon.repository_device_search_prop_device_cpu.getBooleanValue()) {
@@ -349,7 +395,7 @@ public class NodeInfoDeviceSearch implements Serializable
 			}
 		}
 
-		boolean equals = equalsBasic && equalsCpu && equalsMem && equalsNic && equalsDisk
+		boolean equals = equalsBasic && equalsHostName && equalsCpu && equalsMem && equalsNic && equalsDisk
 				&& equalsFs && equalsDevice;
 
 		if (equals == false) {
@@ -370,11 +416,34 @@ public class NodeInfoDeviceSearch implements Serializable
 					this.newNodeInfo.setIpAddressVersion(this.nodeInfo.getIpAddressVersion());
 					this.newNodeInfo.setIpAddressV4(this.nodeInfo.getIpAddressV4());
 					this.newNodeInfo.setIpAddressV6(this.nodeInfo.getIpAddressV6());
-					this.newNodeInfo.setNodeHostnameInfo(this.nodeInfo.getNodeHostnameInfo());
+					
+					// ノード名更新の要否を判定(自動デバイスサーチが優先、または対象ノードのクラウド自動検知が無効の場合に更新する)
+					boolean isPropertyUpdate = false;
+					String pirorityName = HinemosPropertyCommon.repository_node_config_nodename_update_priority.getStringValue();
+					switch(pirorityName){
+					case "device_search":
+						isPropertyUpdate = true;
+						break;
+					case "xcloud_auto_detection":
+						isPropertyUpdate = false;
+						break;
+					default:
+						isPropertyUpdate = true;
+						m_log.info("invalid property value. name = repository.node.config.nodename.update.priority, value = " + pirorityName);
+						break;
+					}
+					
+					if (isPropertyUpdate || // 自動デバイスサーチ優先
+							"off".equals(HinemosPropertyCommon.xcloud_autoupdate_interval.getStringValue()) || // クラウド自動検知が無効
+							!HinemosPropertyCommon.xcloud_node_property_nodename_update.getBooleanValue() || // クラウド自動検知のホスト名の更新が無効
+							this.newNodeInfo.getCloudScope() == null || this.newNodeInfo.getCloudScope().length() == 0){ // 対象ノードがクラウド自動検知対象外
+						
+						this.newNodeInfo.setNodeName(this.nodeInfo.getNodeName());
+
+					}
 				}
 				// サーバ基本情報->OS
 				if (HinemosPropertyCommon.repository_device_search_prop_basic_os.getBooleanValue()) {
-					this.newNodeInfo.setNodeName(this.nodeInfo.getNodeName());
 					this.newNodeInfo.getNodeOsInfo().setOsName(this.nodeInfo.getNodeOsInfo().getOsName());
 					this.newNodeInfo.getNodeOsInfo().setOsRelease(this.nodeInfo.getNodeOsInfo().getOsRelease());
 					this.newNodeInfo.getNodeOsInfo().setOsVersion(this.nodeInfo.getNodeOsInfo().getOsVersion());
@@ -384,6 +453,9 @@ public class NodeInfoDeviceSearch implements Serializable
 				if (HinemosPropertyCommon.repository_device_search_prop_basic_agent.getBooleanValue()) {
 					this.newNodeInfo.setAgentAwakePort(this.nodeInfo.getAgentAwakePort());
 				}
+			}
+			if (equalsHostName == false) {
+				this.newNodeInfo.setNodeHostnameInfo(this.nodeInfo.getNodeHostnameInfo());
 			}
 			if (equalsCpu == false) {
 				this.newNodeInfo.setNodeCpuInfo(this.nodeInfo.getNodeCpuInfo());
@@ -509,49 +581,21 @@ public class NodeInfoDeviceSearch implements Serializable
 							nodeInfo.getIpAddressV6());
 				}
 			}
-			if( nodeInfo.getNodeHostnameInfo() == null || nodeInfo.getNodeHostnameInfo().isEmpty() )
-			{
-				lEquals = lEquals && ( lastNode.getNodeHostnameInfo() == null || lastNode.getNodeHostnameInfo().isEmpty());
-			} else if (lastNode.getNodeHostnameInfo() == null || lastNode.getNodeHostnameInfo().isEmpty()) {
-				// 前回値が空で、今回のデバイスサーチで値がある場合（必ず同一ではない）
-				lEquals = false;
-				setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.NETWORK.getMessage() + "." + MessageConstant.HOST_NAME.getMessage(),
-						MessageConstant.NONEXISTENT.getMessage(),
-						nodeInfo.getNodeHostnameInfo().get(0).getHostname());
-			} else {
-				lEquals = lEquals
-						&& nodeInfo
-								.getNodeHostnameInfo()
-								.get(0)
-								.getHostname()
-								.equals(lastNode.getNodeHostnameInfo().get(0)
-										.getHostname());
-				if (nodeInfo
-						.getNodeHostnameInfo()
-						.get(0)
-						.getHostname()
-						.equals(lastNode.getNodeHostnameInfo().get(0)
-								.getHostname()) == false) {
-					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.NETWORK.getMessage() + "." + MessageConstant.HOST_NAME.getMessage(),
-							lastNode.getNodeHostnameInfo().get(0).getHostname(),
-							nodeInfo.getNodeHostnameInfo().get(0).getHostname());
-				}
-			}
-		}
-
-		// OS
-		if (HinemosPropertyCommon.repository_device_search_prop_basic_os.getBooleanValue()) {
 			if( nodeInfo.getNodeName() == null )
 			{
 				lEquals = lEquals && ( lastNode.getNodeName() == null );
 			} else {
 				lEquals = lEquals && nodeInfo.getNodeName().equals( lastNode.getNodeName() );
 				if (nodeInfo.getNodeName().equals( lastNode.getNodeName() ) == false) {
-					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.OS.getMessage() + "." + MessageConstant.NODE_NAME.getMessage(),
+					setMessage(MessageConstant.BASIC_INFORMATION.getMessage() + "." + MessageConstant.NETWORK.getMessage() + "." + MessageConstant.NODE_NAME.getMessage(),
 							lastNode.getNodeName(),
 							nodeInfo.getNodeName());
 				}
 			}
+		}
+
+		// OS
+		if (HinemosPropertyCommon.repository_device_search_prop_basic_os.getBooleanValue()) {
 			if( nodeInfo.getNodeOsInfo().getOsName() == null )
 			{
 				lEquals = lEquals && ( lastNode.getNodeOsInfo().getOsName() == null );

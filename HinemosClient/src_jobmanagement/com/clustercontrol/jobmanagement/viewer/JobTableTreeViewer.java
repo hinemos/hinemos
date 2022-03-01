@@ -20,12 +20,19 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Item;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
+import org.eclipse.swt.widgets.Widget;
 
 import com.clustercontrol.bean.TableColumnInfo;
+import com.clustercontrol.jobmanagement.action.GetJobDetailTableDefine;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
+import com.clustercontrol.jobmanagement.util.TimeToANYhourConverter;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewerSorter;
 import com.clustercontrol.viewer.ICommonTableLabelProvider;
@@ -151,9 +158,11 @@ public class JobTableTreeViewer extends TreeViewer {
 				String text = "";//$NON-NLS-1$
 				Image image = null;
 				Color color = null;
-				text = tprov.getColumnText(element, column);
-				image = tprov.getColumnImage(element, column);
-				color = tprov.getColumnColor(element, column);
+				JobTreeItemWrapper jobTreeItem = (JobTreeItemWrapper) element;
+				Object value = getValue(jobTreeItem, column);
+				text = tprov.getColumnText(value, column);
+				image = tprov.getColumnImage(value, column);
+				color = tprov.getColumnColor(value, column);
 				ti.setText(column, text);
 				// Apparently a problem to setImage to null if already null
 				if (ti.getImage(column) != image)
@@ -209,5 +218,94 @@ public class JobTableTreeViewer extends TreeViewer {
 		}
 
 		return index;
+	}
+
+	private Object getValue(JobTreeItemWrapper item, int columnIndex) {
+		Object value = null;
+		if (columnIndex == GetJobDetailTableDefine.TREE) {
+			value = "";
+		} else if (columnIndex == GetJobDetailTableDefine.STATUS) {
+			value = item.getDetail().getStatus();
+		} else if (columnIndex == GetJobDetailTableDefine.END_STATUS) {
+			value = item.getDetail().getEndStatus();
+		} else if (columnIndex == GetJobDetailTableDefine.END_VALUE) {
+			value = item.getDetail().getEndValue();
+		} else if (columnIndex == GetJobDetailTableDefine.JOB_ID) {
+			value = item.getData().getId();
+		} else if (columnIndex == GetJobDetailTableDefine.JOB_NAME) {
+			value = item.getData().getName();
+		} else if (columnIndex == GetJobDetailTableDefine.JOBUNIT_ID) {
+			value = item.getData().getJobunitId();
+		} else if (columnIndex == GetJobDetailTableDefine.JOB_TYPE) {
+			value = item.getData().getType();
+		} else if (columnIndex == GetJobDetailTableDefine.FACILITY_ID) {
+			value = item.getDetail().getFacilityId();
+		} else if (columnIndex == GetJobDetailTableDefine.SCOPE) {
+			value = HinemosMessage.replace(item.getDetail().getScope());
+		} else if (columnIndex == GetJobDetailTableDefine.WAIT_RULE_TIME) {
+			value = String.join("/", item.getDetail().getWaitRuleTimeList());
+		} else if (columnIndex == GetJobDetailTableDefine.START_RERUN_TIME) {
+			if (item.getDetail().getStartDate() != null) {
+				value = item.getDetail().getStartDate();
+			} else {
+				value = "";
+			}
+		} else if (columnIndex == GetJobDetailTableDefine.END_SUSPEND_TIME) {
+			if (item.getDetail().getEndDate() != null) {
+				value = item.getDetail().getEndDate();
+			} else {
+				value = "";
+			}
+		} else if (columnIndex == GetJobDetailTableDefine.SESSION_TIME) {
+			value = TimeToANYhourConverter.toDiffTime(
+					JobTreeItemUtil.convertDtStringtoLong(item.getDetail().getStartDate()),
+					JobTreeItemUtil.convertDtStringtoLong(item.getDetail().getEndDate())
+			);
+		} else if (columnIndex == GetJobDetailTableDefine.RUN_COUNT) {
+			value = item.getDetail().getRunCount();
+		} else if (columnIndex == GetJobDetailTableDefine.SKIP) {
+			value = item.getDetail().getSkip();
+		} else {
+			value = "";
+		}
+		return value;
+	}
+
+	/**
+	 * Expands all nodes of the viewer's tree, starting with the root. This
+	 * method is equivalent to <code>expandToLevel(ALL_LEVELS)</code>.
+	 */
+	public void expandAll() {
+		expandToLevel(ALL_LEVELS);
+	}
+
+	/**
+	 * Expands the root of the viewer's tree to the given level.
+	 *
+	 * @param level
+	 *			non-negative level, or <code>ALL_LEVELS</code> to expand all
+	 *			levels of the tree
+	 */
+	public void expandToLevel(int level) {
+		expandToLevel(getRoot(), level, true);
+	}
+
+	public void expandToLevel(Object elementOrTreePath, int level, boolean disableRedraw) {
+		if (checkBusy())
+			return;
+		Control control = getControl();
+		try {
+			if (disableRedraw) {
+				control.setRedraw(false);
+			}
+			Widget w = internalExpand(elementOrTreePath, true);
+			if (w != null) {
+				internalExpandToLevel(w, level);
+			}
+		} finally {
+			if (disableRedraw) {
+				control.setRedraw(true);
+			}
+		}
 	}
 }

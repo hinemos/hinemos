@@ -24,12 +24,14 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
+import com.clustercontrol.approval.bean.ApprovalFilterPropertyConstant;
 import com.clustercontrol.approval.composite.ApprovalComposite;
 import com.clustercontrol.approval.view.action.ApprovalDetailAction;
 import com.clustercontrol.approval.view.action.ApprovalFilterAction;
 import com.clustercontrol.approval.view.action.ApprovalRefreshAction;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.client.swt.SWT;
+import com.clustercontrol.util.FilterPropertyUpdater;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
 
@@ -135,6 +137,9 @@ public class ApprovalView extends CommonViewPart {
 	 * @param condition フィルタ条件
 	 */
 	public void setFilterCondition(Property condition) {
+		FilterPropertyUpdater.getInstance().addFilterProperty(getClass(), condition,
+				ApprovalFilterPropertyConstant.MANAGER);
+		
 		this.condition = condition;
 	}
 

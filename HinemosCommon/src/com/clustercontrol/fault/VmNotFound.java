@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * Vm関連のレコードが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class VmNotFound extends HinemosException {
+public class VmNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = 1322162894275102404L;
 

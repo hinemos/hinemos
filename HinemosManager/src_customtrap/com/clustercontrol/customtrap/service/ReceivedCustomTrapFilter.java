@@ -26,9 +26,11 @@ import org.apache.log4j.Logger;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.calendar.factory.SelectCalendar;
+import com.clustercontrol.collect.bean.PerfData;
 import com.clustercontrol.collect.bean.Sample;
 import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.customtrap.bean.CustomTrap;
 import com.clustercontrol.customtrap.bean.CustomTrap.Type;
@@ -63,7 +65,6 @@ import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -75,7 +76,7 @@ import com.clustercontrol.util.apllog.AplLogger;
 public class ReceivedCustomTrapFilter {
 
 	private Logger logger = Logger.getLogger(this.getClass());
-	private static Map<String, Double> resentDataMap = new HashMap<String, Double>();
+	private static Map<String, Double> resentDataMap = new ConcurrentHashMap<String, Double>();
 
 	CustomTraps receivedCustomTraps;
 	private CustomTrapNotifier notifier;
@@ -163,9 +164,11 @@ public class ReceivedCustomTrapFilter {
 					continue;
 				}
 				double value = 0;// 数値用値
+				// 数値用値（ファシリティID単位）
+				Map<String, Double> valueMap = null;
 				String key = "";
+				String valueKey = "";
 				List<StringSample> collectedStringSamples = new ArrayList<>();
-				Sample sample = null;
 				StringSample stringSample = null;
 				for (MonitorInfo monitor : monitorList) {
 					// カレンダーチェック
@@ -180,49 +183,65 @@ public class ReceivedCustomTrapFilter {
 					Matcher matcherKeyPattern = keyPattern.matcher(receivedCustomTrap.getKey());
 					if (!matcherKeyPattern.matches()) {
 						logger.info("work() : KeyPattern Unmatched");
+						logger.debug("work() : MonitorId =" + monitor.getMonitorId());
 						continue;
 					}
+					
+					List<String> validFacilityIdList = getValidFacilityIdList(matchedFacilityIdList, monitor);
+					logger.debug("work() : validFacilityIdList =" + validFacilityIdList);
 
 					// 収集処理
 					// 数値で差分取得の場合、Value値をsample/notify前に計算する
 					if (receivedCustomTrap.getType() == Type.NUM) {
 						value = Double.parseDouble(receivedCustomTrap.getMsg());
 						key = monitor.getMonitorId() + ":" + receivedCustomTrap.getKey();
-						sample = new Sample(new Date(receivedCustomTrap.getSampledTime()), monitor.getMonitorId());
+						valueMap = new HashMap<>();
+
 						if (monitor.getCustomTrapCheckInfo().getConvertFlg() == ConvertValueConstant.TYPE_DELTA) {
-							Double oldData = null;
-							logger.debug("work() : monitor.Customtrap.RecentData.Map.size=" + resentDataMap.size());
-							synchronized (resentDataMap) {
-								// 取得した値と前回情報の差分をとり、閾値判定を行う。
-								oldData = resentDataMap.putIfAbsent(key, value);
-								if (null == oldData) {
-									// 前回情報なし
-									// 差分処理の初回取得処理のため、処理終了[収集も通知もしない（Custom数値と同じ）]
-									logger.info("work() : No previous information No Monitoring and sampling!!");
-									continue;
+							for (String facilityIdElement : validFacilityIdList) {
+								// ファシリティID単位
+								valueKey = key + ":" + facilityIdElement;
+
+								Double oldData = null;
+								logger.debug("work() : monitor.Customtrap.RecentData.Map.size=" + resentDataMap.size());
+								//findbugs対応 synchronized用オブジェクトを staticメンバーからクラスに変更
+								synchronized (ReceivedCustomTrapFilter.class) {
+									// 取得した値と前回情報の差分をとり、閾値判定を行う。
+									oldData = resentDataMap.putIfAbsent(valueKey, value);
+									if (null == oldData) {
+										// 前回情報なし
+										// 差分処理の初回取得処理のため、処理終了[収集も通知もしない（Custom数値と同じ）]
+										logger.info("work() : No previous information No Monitoring and sampling!!");
+										continue;
+									}
+									// 前回値情報を今回の取得値に更新
+									resentDataMap.replace(valueKey, value);
 								}
-								// 前回値情報を今回の取得値に更新
-								resentDataMap.replace(key, value);
+								if (resentDataMapMaxSize < resentDataMap.size()) {
+									logger.warn("work() : CustomTrap Specified max size(" + resentDataMapMaxSize
+											+ ") < cache size(" + resentDataMap.size() + ")  ");
+									// Internal Event
+									String[] args = { String.valueOf(resentDataMap.size()),
+											String.valueOf(resentDataMapMaxSize) };
+									AplLogger.put(InternalIdCommon.MON_CUSTOMTRAP_N_SYS_022, args);
+								}
+								// 前回値を取得
+								double prevValue = oldData.doubleValue();
+								logger.info("work() : CustomTrapNum prev=" + prevValue + " value = " + value
+										+ " new value=" + (value - prevValue));
+								
+								valueMap.put(facilityIdElement, value - prevValue);
 							}
-							if (resentDataMapMaxSize < resentDataMap.size()) {
-								logger.warn("work() : CustomTrap Specified max size(" + resentDataMapMaxSize + ") < cache size("
-										+ resentDataMap.size() + ")  ");
-								// Internal Event
-								String[] args = { String.valueOf(resentDataMap.size()),
-										String.valueOf(resentDataMapMaxSize) };
-								AplLogger.put(PriorityConstant.TYPE_CRITICAL,
-										HinemosModuleConstant.MONITOR_CUSTOMTRAP_N,
-										MessageConstant.MESSAGE_SYS_022_CUSTOM_TRAP_NUM_OVER, args);
+							logger.debug("work() : valueMap =" + valueMap);
+							if (valueMap.size() == 0) {
+								continue;
 							}
-							// 前回値を取得
-							double prevValue = oldData.doubleValue();
-							logger.info("work() : CustomTrapNum prev=" + prevValue + " value = " + value + " new value="
-									+ (value - prevValue));
-							value -= prevValue;
+						} else {
+							for (String facilityIdElement : validFacilityIdList) {
+								valueMap.put(facilityIdElement, value);
+							}
 						}
 					}
-
-					List<String> validFacilityIdList = getValidFacilityIdList(matchedFacilityIdList, monitor);
 
 					// 管理対象フラグが無効であれば、次の設定の処理へスキップする。
 					if (monitor.getCollectorFlg()
@@ -258,17 +277,25 @@ public class ReceivedCustomTrapFilter {
 								break;
 							}
 							case NUM: {
+								Sample sample = new Sample(new Date(receivedCustomTrap.getSampledTime()), monitor.getMonitorId());
+								if (!valueMap.containsKey(facilityIdElement)) {
+									// 初回通知の場合
+									continue;
+								}
 								boolean overlapCheck = false;
 								// keyの重複チェック
 								for (Sample cSample : collectedSamples){
-									// カスタムトラップ監視ではcollectedSamplesの1要素に対してperfDataは1つのため、以下で対応
-									if (cSample.getMonitorId().equals(monitor.getMonitorId())
-											&& cSample.getDateTime().getTime() == receivedCustomTrap.getSampledTime()
-											&& cSample.getPerfDataList().get(0).getFacilityId().equals(facilityIdElement)
-											&& cSample.getPerfDataList().get(0).getDisplayName().equals(key)
-											&& cSample.getPerfDataList().get(0).getItemName().equals(monitor.getItemName())) {
-										overlapCheck = true;
-										break;
+									// カスタムトラップ監視ではcollectedSamplesの1要素に対してperfDataは複数になる
+									for (PerfData pd : cSample.getPerfDataList()) {
+										if (cSample.getMonitorId().equals(monitor.getMonitorId())
+												&& cSample.getDateTime().getTime() == receivedCustomTrap
+														.getSampledTime()
+												&& pd.getFacilityId().equals(facilityIdElement)
+												&& pd.getDisplayName().equals(key)
+												&& pd.getItemName().equals(monitor.getItemName())) {
+											overlapCheck = true;
+											break;
+										}
 									}
 								}
 								if (!overlapCheck) {
@@ -281,7 +308,7 @@ public class ReceivedCustomTrapFilter {
 									CollectMonitorDataInfo collectMonitorDataInfo 
 										= CollectMonitorManagerUtil.calculateChangePredict(
 											null, monitor, facilityIdElement, displayName, monitor.getItemName(), 
-											receivedCustomTrap.getSampledTime(), value);
+											receivedCustomTrap.getSampledTime(), valueMap.get(facilityIdElement));
 
 									// 将来予測もしくは変更点監視が有効な場合、通知を行う
 									Double average = null;
@@ -308,18 +335,19 @@ public class ReceivedCustomTrapFilter {
 											customtrapListBuffer, monitor, agentAddr, collectResultBuffer));
 									
 									if (monitor.getCollectorFlg()) {
+										logger.debug("work() : facilityIdElement =" + facilityIdElement);
 										if (receivedCustomTrap.getKey() != null) {
-											sample.set(facilityIdElement, monitor.getItemName(), value,
+											sample.set(facilityIdElement, monitor.getItemName(), valueMap.get(facilityIdElement),
 													average, standardDeviation,
 													CollectedDataErrorTypeConstant.NOT_ERROR, receivedCustomTrap.getKey());
 										} else {
-											sample.set(facilityIdElement, monitor.getItemName(), value,
+											sample.set(facilityIdElement, monitor.getItemName(), valueMap.get(facilityIdElement),
 													average, standardDeviation,
 													CollectedDataErrorTypeConstant.NOT_ERROR);
 										}
-										collectedSamples.add(sample);
 									}
 								}
+								collectedSamples.add(sample);
 								break;
 							}
 							}
@@ -415,12 +443,16 @@ public class ReceivedCustomTrapFilter {
 							TreeMap<Integer, MonitorJudgementInfo> thresholds = 
 									MonitorJudgementInfoCache.getMonitorJudgementMap(
 											monitor.getMonitorId(), MonitorTypeConstant.TYPE_NUMERIC, MonitorNumericType.TYPE_BASIC.getType());
-							int priority = judgePriority(value, thresholds, receivedCustomTrap);
 							for (String facilityIdElement : validFacilityIdList) {
+								if (!valueMap.containsKey(facilityIdElement)) {
+									// 初回通知の場合
+									continue;
+								}
 								customtrapListBuffer.add(receivedCustomTrap);
 								facilityIdListBuffer.add(facilityIdElement);
+								int priority = judgePriority(valueMap.get(facilityIdElement), thresholds, receivedCustomTrap);
 								priorityBuffer.add(priority);
-								valueBuffer.add(value);
+								valueBuffer.add(valueMap.get(facilityIdElement));
 								countupNotified();
 							}
 							logger.info("work() : CustomTrap Notify ValueType.num " + customtrapListBuffer.size() + "data");

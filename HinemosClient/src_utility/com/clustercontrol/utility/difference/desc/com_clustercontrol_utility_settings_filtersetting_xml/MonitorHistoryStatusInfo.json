@@ -1,0 +1,14 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"monitorHistoryStatusConditions",
+	"annotations":[
+		{"type":"Array", "idType":"prop", "propName":"conditionIdx"},
+		{"type":"Column", "columnName":"FilterSettingConditionMonitorHistoryStatusInfo_monitorHistoryStatusConditions"},
+		{"type":"Ignore", "propNames":["conditionIdx"]}
+	]}
+]
+}

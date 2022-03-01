@@ -25,29 +25,29 @@ public class JobRuntimeParamDetail implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/** 値 */
-	private String m_paramValue;
+	private String paramValue;
 	/** 説明 */
-	private String m_description;
+	private String description;
 
 	public String getParamValue() {
-		return m_paramValue;
+		return paramValue;
 	}
 	public void setParamValue(String paramValue) {
-		this.m_paramValue = paramValue;
+		this.paramValue = paramValue;
 	}
 
 	public String getDescription() {
-		return m_description;
+		return description;
 	}
 	public void setDescription(String description) {
-		this.m_description = description;
+		this.description = description;
 	}
 
 	@Override
 	public String toString() {
 		String str = null;
-		str += "m_paramValue=" + m_paramValue;
-		str += " ,m_description=" + m_description;
+		str += "m_paramValue=" + paramValue;
+		str += " ,m_description=" + description;
 		return str;
 	}
 }

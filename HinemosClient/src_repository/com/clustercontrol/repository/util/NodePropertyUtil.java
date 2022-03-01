@@ -17,6 +17,24 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.rap.rwt.SingletonUtil;
+import org.openapitools.client.model.NodeCpuInfoResponse;
+import org.openapitools.client.model.NodeCustomInfoResponse;
+import org.openapitools.client.model.NodeDiskInfoResponse;
+import org.openapitools.client.model.NodeFilesystemInfoResponse;
+import org.openapitools.client.model.NodeGeneralDeviceInfoResponse;
+import org.openapitools.client.model.NodeHostnameInfoResponse;
+import org.openapitools.client.model.NodeInfoResponse;
+import org.openapitools.client.model.NodeLicenseInfoResponse;
+import org.openapitools.client.model.NodeMemoryInfoResponse;
+import org.openapitools.client.model.NodeNetstatInfoResponse;
+import org.openapitools.client.model.NodeNetworkInterfaceInfoResponse;
+import org.openapitools.client.model.NodeNoteInfoResponse;
+import org.openapitools.client.model.NodeOsInfoResponse;
+import org.openapitools.client.model.NodePackageInfoResponse;
+import org.openapitools.client.model.NodeProcessInfoResponse;
+import org.openapitools.client.model.NodeProductInfoResponse;
+import org.openapitools.client.model.NodeVariableInfoResponse;
+import org.openapitools.client.model.RepositoryTableInfoResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
@@ -24,32 +42,15 @@ import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.SnmpProtocolConstant;
 import com.clustercontrol.bean.SnmpSecurityLevelConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
+import com.clustercontrol.bean.WbemProtocolConstant;
+import com.clustercontrol.bean.WinrmProtocolConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.bean.DeviceTypeConstant;
-import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.NodeConstant;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.NodeCpuInfo;
-import com.clustercontrol.ws.repository.NodeCustomInfo;
-import com.clustercontrol.ws.repository.NodeDeviceInfo;
-import com.clustercontrol.ws.repository.NodeDiskInfo;
-import com.clustercontrol.ws.repository.NodeFilesystemInfo;
-import com.clustercontrol.ws.repository.NodeGeneralDeviceInfo;
-import com.clustercontrol.ws.repository.NodeHostnameInfo;
-import com.clustercontrol.ws.repository.NodeInfo;
-import com.clustercontrol.ws.repository.NodeLicenseInfo;
-import com.clustercontrol.ws.repository.NodeMemoryInfo;
-import com.clustercontrol.ws.repository.NodeProductInfo;
-import com.clustercontrol.ws.repository.NodeNetstatInfo;
-import com.clustercontrol.ws.repository.NodeNetworkInterfaceInfo;
-import com.clustercontrol.ws.repository.NodeNoteInfo;
-import com.clustercontrol.ws.repository.NodeOsInfo;
-import com.clustercontrol.ws.repository.NodePackageInfo;
-import com.clustercontrol.ws.repository.NodeProcessInfo;
-import com.clustercontrol.ws.repository.NodeVariableInfo;
-import com.clustercontrol.ws.repository.RepositoryTableInfo;
+import com.clustercontrol.util.TimezoneUtil;
 
 public class NodePropertyUtil {
 
@@ -424,8 +425,8 @@ public class NodePropertyUtil {
 	 * PropertyクラスをNodeInfoクラスに変換するメソッド。
 	 * この処理は不可逆なので注意すること。。
 	 */
-	public static NodeInfo property2node (Property property) {
-		NodeInfo nodeInfo = new NodeInfo();
+	public static NodeInfoResponse property2node (Property property) {
+		NodeInfoResponse nodeInfo = new NodeInfoResponse();
 
 		ArrayList<?> object1 = null;
 		ArrayList<?> object2 = null;
@@ -469,7 +470,7 @@ public class NodePropertyUtil {
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.CREATE_TIME);
 		if (object1.size() > 0 && object1.get(0) != null &&
 				!object1.get(0).toString().equals("")) {
-			nodeInfo.setCreateDatetime(((Date)object1.get(0)).getTime());
+			nodeInfo.setCreateDatetime(TimezoneUtil.getSimpleDateFormat().format((Date) object1.get(0)));
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.MODIFIER_NAME);
 		if (object1.size() > 0) {
@@ -478,7 +479,7 @@ public class NodePropertyUtil {
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.MODIFY_TIME);
 		if (object1.size() > 0 && object1.get(0) != null &&
 				!object1.get(0).toString().equals("")) {
-			nodeInfo.setModifyDatetime(((Date)object1.get(0)).getTime());
+			nodeInfo.setModifyDatetime(TimezoneUtil.getSimpleDateFormat().format((Date)object1.get(0)));
 		}
 
 		// ----- ノード基本情報関連 -----
@@ -508,9 +509,10 @@ public class NodePropertyUtil {
 
 		// ----- IPアドレス関連 -----
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.IP_ADDRESS_VERSION);
-		if (object1.size() > 0 && object1.get(0) != null &&
-				!object1.get(0).toString().equals("")) {
-			nodeInfo.setIpAddressVersion((Integer)object1.get(0));
+		if (object1.size() > 0 && object1.get(0) != null && object1.get(0).toString().equals("6")) {
+			nodeInfo.setIpAddressVersion(NodeInfoResponse.IpAddressVersionEnum.IPV6);
+		} else {
+			nodeInfo.setIpAddressVersion(NodeInfoResponse.IpAddressVersionEnum.IPV4);
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.IP_ADDRESS_V4);
 		if (object1.size() > 0) {
@@ -531,20 +533,18 @@ public class NodePropertyUtil {
 		// ----- 構成情報関連 -----
 		// ----- ホスト名 -----
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.HOST_NAME);
-		ArrayList<NodeHostnameInfo> nodeHostnameInfo = new ArrayList<NodeHostnameInfo>();
+		ArrayList<NodeHostnameInfoResponse> nodeHostnameInfo = new ArrayList<NodeHostnameInfoResponse>();
 		for (Object o : object1) {
-			NodeHostnameInfo item = new NodeHostnameInfo();
+			NodeHostnameInfoResponse item = new NodeHostnameInfoResponse();
 			item.setHostname((String)o);
 			nodeHostnameInfo.add(item);
 		}
-		List<NodeHostnameInfo> nodeHostnameInfo_orig = nodeInfo.getNodeHostnameInfo();
+		List<NodeHostnameInfoResponse> nodeHostnameInfo_orig = nodeInfo.getNodeHostnameInfo();
 		nodeHostnameInfo_orig.clear();
 		nodeHostnameInfo_orig.addAll(nodeHostnameInfo);
 		// ----- OS関連 -----
 		if (nodeInfo.getNodeOsInfo() == null) {
-			NodeOsInfo nodeOsInfo = new NodeOsInfo();
-			nodeOsInfo.setFacilityId(nodeInfo.getFacilityId());
-			nodeInfo.setNodeOsInfo(new NodeOsInfo());
+			nodeInfo.setNodeOsInfo(new NodeOsInfoResponse());
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.OS_NAME);
 		if (object1.size() > 0) {
@@ -565,7 +565,7 @@ public class NodePropertyUtil {
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.OS_STARTUP_DATE_TIME);
 		if (object1.size() > 0 && object1.get(0) != null &&
 				!object1.get(0).toString().equals("")) {
-			nodeInfo.getNodeOsInfo().setStartupDateTime(((Date)object1.get(0)).getTime());
+			nodeInfo.getNodeOsInfo().setStartupDateTime(TimezoneUtil.getSimpleDateFormat().format((Date)object1.get(0)));
 		}
 
 		// ----- デバイス関連 -----
@@ -581,16 +581,16 @@ public class NodePropertyUtil {
 			object6 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.DEVICE_SIZE_UNIT);
 			object7 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.DEVICE_DESCRIPTION);
 
-			ArrayList<NodeGeneralDeviceInfo> nodeDeviceInfo = new ArrayList<NodeGeneralDeviceInfo>();
+			ArrayList<NodeGeneralDeviceInfoResponse> nodeDeviceInfo = new ArrayList<NodeGeneralDeviceInfoResponse>();
 			for (int i = 0; i < object1.size(); i++) {
-				NodeGeneralDeviceInfo item = new NodeGeneralDeviceInfo();
+				NodeGeneralDeviceInfoResponse item = new NodeGeneralDeviceInfoResponse();
 				item.setDeviceType((String)object1.get(i));
 				if(object2.get(i) != null && !"".equals(object2.get(i)))
 					item.setDeviceIndex((Integer)object2.get(i));
 				item.setDeviceName((String)object3.get(i));
 				item.setDeviceDisplayName((String)object4.get(i));
 				if(object5.get(i) != null && !"".equals(object5.get(i)))
-					item.setDeviceSize((Integer)object5.get(i));
+					item.setDeviceSize((Long)object5.get(i));
 				item.setDeviceSizeUnit((String)object6.get(i));
 				item.setDeviceDescription((String)object7.get(i));
 
@@ -604,7 +604,7 @@ public class NodePropertyUtil {
 					nodeDeviceInfo.add(item);
 				}
 			}
-			List<NodeGeneralDeviceInfo> nodeDeviceInfo_orig = nodeInfo.getNodeDeviceInfo();
+			List<NodeGeneralDeviceInfoResponse> nodeDeviceInfo_orig = nodeInfo.getNodeDeviceInfo();
 			nodeDeviceInfo_orig.clear();
 			nodeDeviceInfo_orig.addAll(nodeDeviceInfo);
 		}
@@ -625,22 +625,25 @@ public class NodePropertyUtil {
 			object9 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.CPU_THREAD_COUNT);
 			object10 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.CPU_CLOCK_COUNT);
 
-			ArrayList<NodeCpuInfo> nodeCpuInfo = new ArrayList<NodeCpuInfo>();
+			ArrayList<NodeCpuInfoResponse> nodeCpuInfo = new ArrayList<NodeCpuInfoResponse>();
 
 			for (int i = 0; i < object1.size(); i++) {
-				NodeCpuInfo item = new NodeCpuInfo();
+				NodeCpuInfoResponse item = new NodeCpuInfoResponse();
 				item.setDeviceType((String)object1.get(i));
 				if(object2.get(i) != null && !"".equals(object2.get(i)))
 					item.setDeviceIndex((Integer)object2.get(i));
 				item.setDeviceName((String)object3.get(i));
 				item.setDeviceDisplayName((String)object4.get(i));
 				if(object5.get(i) != null && !"".equals(object5.get(i)))
-					item.setDeviceSize((Integer)object5.get(i));
+					item.setDeviceSize((Long)object5.get(i));
 				item.setDeviceSizeUnit((String)object6.get(i));
 				item.setDeviceDescription((String)object7.get(i));
-				item.setCoreCount((Integer)object8.get(i));
-				item.setThreadCount((Integer)object9.get(i));
-				item.setClockCount((Integer)object10.get(i));
+				if (object8.get(i) != null && !"".equals(object8.get(i)))
+					item.setCoreCount((Integer) object8.get(i));
+				if (object9.get(i) != null && !"".equals(object9.get(i)))
+					item.setThreadCount((Integer) object9.get(i));
+				if (object10.get(i) != null && !"".equals(object10.get(i)))
+					item.setClockCount((Integer) object10.get(i));
 				
 				if((item.getDeviceIndex() == null || -1 == item.getDeviceIndex())
 						&& (item.getDeviceName() == null || "".equals(item.getDeviceName()))
@@ -651,7 +654,7 @@ public class NodePropertyUtil {
 					nodeCpuInfo.add(item);
 				}
 			}
-			List<NodeCpuInfo> nodeCpuInfo_orig = nodeInfo.getNodeCpuInfo();
+			List<NodeCpuInfoResponse> nodeCpuInfo_orig = nodeInfo.getNodeCpuInfo();
 			nodeCpuInfo_orig.clear();
 			nodeCpuInfo_orig.addAll(nodeCpuInfo);
 		}
@@ -669,16 +672,16 @@ public class NodePropertyUtil {
 			object6 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.DEVICE_SIZE_UNIT);
 			object7 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.DEVICE_DESCRIPTION);
 
-			ArrayList<NodeMemoryInfo> nodeMemoryInfo = new ArrayList<NodeMemoryInfo>();
+			ArrayList<NodeMemoryInfoResponse> nodeMemoryInfo = new ArrayList<NodeMemoryInfoResponse>();
 			for (int i = 0; i < object1.size(); i++) {
-				NodeMemoryInfo item = new NodeMemoryInfo();
+				NodeMemoryInfoResponse item = new NodeMemoryInfoResponse();
 				item.setDeviceType((String)object1.get(i));
 				if(object2.get(i) != null && !"".equals(object2.get(i)))
 					item.setDeviceIndex((Integer)object2.get(i));
 				item.setDeviceName((String)object3.get(i));
 				item.setDeviceDisplayName((String)object4.get(i));
 				if(object5.get(i) != null && !"".equals(object5.get(i)))
-					item.setDeviceSize((Integer)object5.get(i));
+					item.setDeviceSize((Long)object5.get(i));
 				item.setDeviceSizeUnit((String)object6.get(i));
 				item.setDeviceDescription((String)object7.get(i));
 
@@ -691,7 +694,7 @@ public class NodePropertyUtil {
 					nodeMemoryInfo.add(item);
 				}
 			}
-			List<NodeMemoryInfo> nodeMemoryInfo_orig = nodeInfo.getNodeMemoryInfo();
+			List<NodeMemoryInfoResponse> nodeMemoryInfo_orig = nodeInfo.getNodeMemoryInfo();
 			nodeMemoryInfo_orig.clear();
 			nodeMemoryInfo_orig.addAll(nodeMemoryInfo);
 		}
@@ -711,16 +714,16 @@ public class NodePropertyUtil {
 			object8 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.NIC_IP_ADDRESS);
 			object9 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.NIC_MAC_ADDRESS);
 
-			ArrayList<NodeNetworkInterfaceInfo> nodeNetworkInterfaceInfo = new ArrayList<NodeNetworkInterfaceInfo>();
+			ArrayList<NodeNetworkInterfaceInfoResponse> nodeNetworkInterfaceInfo = new ArrayList<NodeNetworkInterfaceInfoResponse>();
 			for (int i = 0; i < object1.size(); i++) {
-				NodeNetworkInterfaceInfo item = new NodeNetworkInterfaceInfo();
+				NodeNetworkInterfaceInfoResponse item = new NodeNetworkInterfaceInfoResponse();
 				item.setDeviceType((String)object1.get(i));
 				if(object2.get(i) != null && !"".equals(object2.get(i)))
 					item.setDeviceIndex((Integer)object2.get(i));
 				item.setDeviceName((String)object3.get(i));
 				item.setDeviceDisplayName((String)object4.get(i));
 				if(object5.get(i) != null && !"".equals(object5.get(i)))
-					item.setDeviceSize((Integer)object5.get(i));
+					item.setDeviceSize((Long)object5.get(i));
 				item.setDeviceSizeUnit((String)object6.get(i));
 				item.setDeviceDescription((String)object7.get(i));
 				item.setNicIpAddress((String)object8.get(i));
@@ -735,7 +738,7 @@ public class NodePropertyUtil {
 					nodeNetworkInterfaceInfo.add(item);
 				}
 			}
-			List<NodeNetworkInterfaceInfo> nodeNetworkInterfaceInfo_orig
+			List<NodeNetworkInterfaceInfoResponse> nodeNetworkInterfaceInfo_orig
 			= nodeInfo.getNodeNetworkInterfaceInfo();
 			nodeNetworkInterfaceInfo_orig.clear();
 			nodeNetworkInterfaceInfo_orig.addAll(nodeNetworkInterfaceInfo);
@@ -755,16 +758,16 @@ public class NodePropertyUtil {
 			object7 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.DEVICE_DESCRIPTION);
 			object8 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.DISK_RPM);
 
-			ArrayList<NodeDiskInfo> nodeDiskInfo = new ArrayList<NodeDiskInfo>();
+			ArrayList<NodeDiskInfoResponse> nodeDiskInfo = new ArrayList<NodeDiskInfoResponse>();
 			for (int i = 0; i < object1.size(); i++) {
-				NodeDiskInfo item = new NodeDiskInfo();
+				NodeDiskInfoResponse item = new NodeDiskInfoResponse();
 				item.setDeviceType((String)object1.get(i));
 				if(object2.get(i) != null && !"".equals(object2.get(i)))
 					item.setDeviceIndex((Integer)object2.get(i));
 				item.setDeviceName((String)object3.get(i));
 				item.setDeviceDisplayName((String)object4.get(i));
 				if(object5.get(i) != null && !"".equals(object5.get(i)))
-					item.setDeviceSize((Integer)object5.get(i));
+					item.setDeviceSize((Long)object5.get(i));
 				item.setDeviceSizeUnit((String)object6.get(i));
 				item.setDeviceDescription((String)object7.get(i));
 				if(object8.get(i) != null && !"".equals(object8.get(i)))
@@ -779,7 +782,7 @@ public class NodePropertyUtil {
 					nodeDiskInfo.add(item);
 				}
 			}
-			List<NodeDiskInfo> nodeDiskInfo_orig = nodeInfo.getNodeDiskInfo();
+			List<NodeDiskInfoResponse> nodeDiskInfo_orig = nodeInfo.getNodeDiskInfo();
 			nodeDiskInfo_orig.clear();
 			nodeDiskInfo_orig.addAll(nodeDiskInfo);
 		}
@@ -798,16 +801,16 @@ public class NodePropertyUtil {
 			object7 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.DEVICE_DESCRIPTION);
 			object8 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.FILE_SYSTEM_TYPE);
 
-			ArrayList<NodeFilesystemInfo> nodeFilesystemInfo = new ArrayList<NodeFilesystemInfo>();
+			ArrayList<NodeFilesystemInfoResponse> nodeFilesystemInfo = new ArrayList<NodeFilesystemInfoResponse>();
 			for (int i = 0; i < object1.size(); i++) {
-				NodeFilesystemInfo item = new NodeFilesystemInfo();
+				NodeFilesystemInfoResponse item = new NodeFilesystemInfoResponse();
 				item.setDeviceType((String)object1.get(i));
 				if(object2.get(i) != null && !"".equals(object2.get(i)))
 					item.setDeviceIndex((Integer)object2.get(i));
 				item.setDeviceName((String)object3.get(i));
 				item.setDeviceDisplayName((String)object4.get(i));
 				if(object5.get(i) != null && !"".equals(object5.get(i)))
-					item.setDeviceSize((Integer)object5.get(i));
+					item.setDeviceSize((Long)object5.get(i));
 				item.setDeviceSizeUnit((String)object6.get(i));
 				item.setDeviceDescription((String)object7.get(i));
 				item.setFilesystemType((String)object8.get(i));
@@ -821,7 +824,7 @@ public class NodePropertyUtil {
 					nodeFilesystemInfo.add(item);
 				}
 			}
-			List<NodeFilesystemInfo> nodeFilesystemInfo_orig
+			List<NodeFilesystemInfoResponse> nodeFilesystemInfo_orig
 			= nodeInfo.getNodeFilesystemInfo();
 			nodeFilesystemInfo_orig.clear();
 			nodeFilesystemInfo_orig.addAll(nodeFilesystemInfo);
@@ -841,9 +844,9 @@ public class NodePropertyUtil {
 			object7 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.NETSTAT_PID);
 			object8 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.NETSTAT_STATUS);
 
-			ArrayList<NodeNetstatInfo> nodeNetstatInfo = new ArrayList<>();
+			ArrayList<NodeNetstatInfoResponse> nodeNetstatInfo = new ArrayList<>();
 			for (int i = 0; i < object1.size(); i++) {
-				NodeNetstatInfo item = new NodeNetstatInfo();
+				NodeNetstatInfoResponse item = new NodeNetstatInfoResponse();
 				item.setProtocol((String)object1.get(i));
 				item.setLocalIpAddress((String)object2.get(i));
 				item.setLocalPort((String)object3.get(i));
@@ -862,7 +865,7 @@ public class NodePropertyUtil {
 					nodeNetstatInfo.add(item);
 				}
 			}
-			List<NodeNetstatInfo> nodeNetstatInfo_orig = nodeInfo.getNodeNetstatInfo();
+			List<NodeNetstatInfoResponse> nodeNetstatInfo_orig = nodeInfo.getNodeNetstatInfo();
 			nodeNetstatInfo_orig.clear();
 			nodeNetstatInfo_orig.addAll(nodeNetstatInfo);
 		}
@@ -878,9 +881,9 @@ public class NodePropertyUtil {
 			object4 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.PROCESS_EXEC_USER);
 			object5 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.PROCESS_STARTUP_DATE_TIME);
 
-			ArrayList<NodeProcessInfo> nodeProcessInfo = new ArrayList<>();
+			ArrayList<NodeProcessInfoResponse> nodeProcessInfo = new ArrayList<>();
 			for (int i = 0; i < object1.size(); i++) {
-				NodeProcessInfo item = new NodeProcessInfo();
+				NodeProcessInfoResponse item = new NodeProcessInfoResponse();
 				item.setProcessName((String)object1.get(i));
 				if(object2.get(i) != null && !"".equals(object2.get(i))) {
 					item.setPid((Integer)object2.get(i));
@@ -888,7 +891,7 @@ public class NodePropertyUtil {
 				item.setPath((String)object3.get(i));
 				item.setExecUser((String)object4.get(i));
 				if(object5.get(i) != null && !"".equals(object5.get(i))) {
-					item.setStartupDateTime(((Date)object5.get(i)).getTime());
+					item.setStartupDateTime(TimezoneUtil.getSimpleDateFormat().format((Date)object5.get(i)));
 				}
 				if((item.getProcessName() == null || "".equals(item.getProcessName())
 						&& (item.getPid() == null || item.getPid() <= -1))){
@@ -897,7 +900,7 @@ public class NodePropertyUtil {
 					nodeProcessInfo.add(item);
 				}
 			}
-			List<NodeProcessInfo> nodeProcessInfo_orig = nodeInfo.getNodeProcessInfo();
+			List<NodeProcessInfoResponse> nodeProcessInfo_orig = nodeInfo.getNodeProcessInfo();
 			nodeProcessInfo_orig.clear();
 			nodeProcessInfo_orig.addAll(nodeProcessInfo);
 		}
@@ -915,16 +918,16 @@ public class NodePropertyUtil {
 			object6 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.PACKAGE_VENDOR);
 			object7 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.PACKAGE_ARCHITECTURE);
 
-			ArrayList<NodePackageInfo> nodePackageInfo = new ArrayList<>();
+			ArrayList<NodePackageInfoResponse> nodePackageInfo = new ArrayList<>();
 			for (int i = 0; i < object1.size(); i++) {
-				NodePackageInfo item = new NodePackageInfo();
+				NodePackageInfoResponse item = new NodePackageInfoResponse();
 				item.setPackageId((String)object1.get(i));
 				item.setPackageName((String)object2.get(i));
 				item.setVersion((String)object3.get(i));
 				item.setRelease((String)object4.get(i));
 				if (object5.size() > 0 && object5.get(i) != null &&
 						!object5.get(i).toString().equals("")) {
-					item.setInstallDate(((Date)object5.get(i)).getTime());
+					item.setInstallDate(TimezoneUtil.getSimpleDateFormat().format((Date)object5.get(i)));
 				}
 				item.setVendor((String)object6.get(i));
 				item.setArchitecture((String)object7.get(i));
@@ -935,7 +938,7 @@ public class NodePropertyUtil {
 					nodePackageInfo.add(item);
 				}
 			}
-			List<NodePackageInfo> nodePackageInfo_orig = nodeInfo.getNodePackageInfo();
+			List<NodePackageInfoResponse> nodePackageInfo_orig = nodeInfo.getNodePackageInfo();
 			nodePackageInfo_orig.clear();
 			nodePackageInfo_orig.addAll(nodePackageInfo);
 		}
@@ -949,9 +952,9 @@ public class NodePropertyUtil {
 			object2 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.PRODUCT_VERSION);
 			object3 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.PRODUCT_PATH);
 
-			ArrayList<NodeProductInfo> nodeProductInfo = new ArrayList<>();
+			ArrayList<NodeProductInfoResponse> nodeProductInfo = new ArrayList<>();
 			for (int i = 0; i < object1.size(); i++) {
-				NodeProductInfo item = new NodeProductInfo();
+				NodeProductInfoResponse item = new NodeProductInfoResponse();
 				item.setProductName((String)object1.get(i));
 				item.setVersion((String)object2.get(i));
 				item.setPath((String)object3.get(i));
@@ -962,7 +965,7 @@ public class NodePropertyUtil {
 					nodeProductInfo.add(item);
 				}
 			}
-			List<NodeProductInfo> nodeProductInfo_orig = nodeInfo.getNodeProductInfo();
+			List<NodeProductInfoResponse> nodeProductInfo_orig = nodeInfo.getNodeProductInfo();
 			nodeProductInfo_orig.clear();
 			nodeProductInfo_orig.addAll(nodeProductInfo);
 		}
@@ -979,9 +982,9 @@ public class NodePropertyUtil {
 			object5 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.LICENSE_COUNT);
 			object6 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.LICENSE_EXPIRATION_DATE);
 
-			ArrayList<NodeLicenseInfo> nodeLicenseInfo = new ArrayList<>();
+			ArrayList<NodeLicenseInfoResponse> nodeLicenseInfo = new ArrayList<>();
 			for (int i = 0; i < object1.size(); i++) {
-				NodeLicenseInfo item = new NodeLicenseInfo();
+				NodeLicenseInfoResponse item = new NodeLicenseInfoResponse();
 				item.setProductName((String)object1.get(i));
 				item.setVendor((String)object2.get(i));
 				item.setVendorContact((String)object3.get(i));
@@ -990,7 +993,7 @@ public class NodePropertyUtil {
 					item.setCount((Integer)object5.get(i));
 				}
 				if(object6.get(i) != null && !"".equals(object6.get(i))) {
-					item.setExpirationDate(((Date)object6.get(i)).getTime());
+					item.setExpirationDate(TimezoneUtil.getSimpleDateFormat().format((Date)object6.get(i)));
 				}
 				if(item.getProductName() == null || "".equals(item.getProductName())){
 					m_log.debug("License is null");
@@ -999,7 +1002,7 @@ public class NodePropertyUtil {
 				}
 
 			}
-			List<NodeLicenseInfo> nodeLicenseInfo_orig = nodeInfo.getNodeLicenseInfo();
+			List<NodeLicenseInfoResponse> nodeLicenseInfo_orig = nodeInfo.getNodeLicenseInfo();
 			nodeLicenseInfo_orig.clear();
 			nodeLicenseInfo_orig.addAll(nodeLicenseInfo);
 		}
@@ -1012,18 +1015,18 @@ public class NodePropertyUtil {
 			object1 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.NODE_VARIABLE_NAME);
 			object2 = PropertyUtil.getPropertyValue(deviceProperty, NodeConstant.NODE_VARIABLE_VALUE);
 
-			ArrayList<NodeVariableInfo> nodeVariableInfo = new ArrayList<NodeVariableInfo>();
+			ArrayList<NodeVariableInfoResponse> nodeVariableInfo = new ArrayList<NodeVariableInfoResponse>();
 			for (int i = 0; i < object1.size(); i++) {
-				if ((object1.get(i) != null || ! object1.get(i).toString().equals(""))
-						&& (object2.get(i) != null && ! object2.get(i).toString().equals(""))
+				if ((object1.get(i) != null && ! object1.get(i).toString().equals(""))
+						|| (object2.get(i) != null && ! object2.get(i).toString().equals(""))
 						) {
-					NodeVariableInfo item = new NodeVariableInfo();
+					NodeVariableInfoResponse item = new NodeVariableInfoResponse();
 					item.setNodeVariableName((String)object1.get(i));
 					item.setNodeVariableValue((String)object2.get(i));
 					nodeVariableInfo.add(item);
 				}
 			}
-			List<NodeVariableInfo> nodeVariableInfo_orig = nodeInfo.getNodeVariableInfo();
+			List<NodeVariableInfoResponse> nodeVariableInfo_orig = nodeInfo.getNodeVariableInfo();
 			nodeVariableInfo_orig.clear();
 			nodeVariableInfo_orig.addAll(nodeVariableInfo);
 		}
@@ -1069,20 +1072,84 @@ public class NodePropertyUtil {
 			nodeInfo.setSnmpCommunity((String)object1.get(0));
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.SNMP_VERSION);
-		if (object1.size() > 0) {
-			nodeInfo.setSnmpVersion(SnmpVersionConstant.stringToType((String)object1.get(0)));
+		if (object1.size() > 0 && object1.get(0) != null) {
+			switch ((String) object1.get(0)) {
+			case SnmpVersionConstant.STRING_V1:
+				nodeInfo.setSnmpVersion(NodeInfoResponse.SnmpVersionEnum.V1);
+				break;
+			case SnmpVersionConstant.STRING_V2:
+				nodeInfo.setSnmpVersion(NodeInfoResponse.SnmpVersionEnum.V2);
+				break;
+			case SnmpVersionConstant.STRING_V3:
+				nodeInfo.setSnmpVersion(NodeInfoResponse.SnmpVersionEnum.V3);
+				break;
+			}
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.SNMP_SECURITY_LEVEL);
-		if (object1.size() > 0) {
-			nodeInfo.setSnmpSecurityLevel((String)object1.get(0));
+		if (object1.size() > 0 && object1.get(0) != null) {
+			switch ((String) object1.get(0)) {
+			case SnmpSecurityLevelConstant.NOAUTH_NOPRIV:
+				nodeInfo.setSnmpSecurityLevel(NodeInfoResponse.SnmpSecurityLevelEnum.NOAUTH_NOPRIV);
+				break;
+			case SnmpSecurityLevelConstant.AUTH_NOPRIV:
+				nodeInfo.setSnmpSecurityLevel(NodeInfoResponse.SnmpSecurityLevelEnum.AUTH_NOPRIV);
+				break;
+			case SnmpSecurityLevelConstant.AUTH_PRIV:
+				nodeInfo.setSnmpSecurityLevel(NodeInfoResponse.SnmpSecurityLevelEnum.AUTH_PRIV);
+				break;
+			default:
+				nodeInfo.setSnmpSecurityLevel(NodeInfoResponse.SnmpSecurityLevelEnum.NONE);
+			}
+		} else {
+			nodeInfo.setSnmpSecurityLevel(NodeInfoResponse.SnmpSecurityLevelEnum.NONE);
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.SNMP_AUTH_PROTOCOL);
-		if (object1.size() > 0) {
-			nodeInfo.setSnmpAuthProtocol((String)object1.get(0));
+		if (object1.size() > 0 && object1.get(0) != null) {
+			switch ((String) object1.get(0)) {
+			case SnmpProtocolConstant.MD5:
+				nodeInfo.setSnmpAuthProtocol(NodeInfoResponse.SnmpAuthProtocolEnum.MD5);
+				break;
+			case SnmpProtocolConstant.SHA:
+				nodeInfo.setSnmpAuthProtocol(NodeInfoResponse.SnmpAuthProtocolEnum.SHA);
+				break;
+			case SnmpProtocolConstant.SHA224:
+				nodeInfo.setSnmpAuthProtocol(NodeInfoResponse.SnmpAuthProtocolEnum.SHA224);
+				break;
+			case SnmpProtocolConstant.SHA256:
+				nodeInfo.setSnmpAuthProtocol(NodeInfoResponse.SnmpAuthProtocolEnum.SHA256);
+				break;
+			case SnmpProtocolConstant.SHA384:
+				nodeInfo.setSnmpAuthProtocol(NodeInfoResponse.SnmpAuthProtocolEnum.SHA384);
+				break;
+			case SnmpProtocolConstant.SHA512:
+				nodeInfo.setSnmpAuthProtocol(NodeInfoResponse.SnmpAuthProtocolEnum.SHA512);
+				break;
+			default:
+				nodeInfo.setSnmpAuthProtocol(NodeInfoResponse.SnmpAuthProtocolEnum.NONE);
+			}
+		} else {
+			nodeInfo.setSnmpAuthProtocol(NodeInfoResponse.SnmpAuthProtocolEnum.NONE);
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.SNMP_PRIV_PROTOCOL);
-		if (object1.size() > 0) {
-			nodeInfo.setSnmpPrivProtocol((String)object1.get(0));
+		if (object1.size() > 0 && object1.get(0) != null) {
+			switch ((String) object1.get(0)) {
+			case SnmpProtocolConstant.AES:
+				nodeInfo.setSnmpPrivProtocol(NodeInfoResponse.SnmpPrivProtocolEnum.AES);
+				break;
+			case SnmpProtocolConstant.DES:
+				nodeInfo.setSnmpPrivProtocol(NodeInfoResponse.SnmpPrivProtocolEnum.DES);
+				break;
+			case SnmpProtocolConstant.AES192:
+				nodeInfo.setSnmpPrivProtocol(NodeInfoResponse.SnmpPrivProtocolEnum.AES192);
+				break;
+			case SnmpProtocolConstant.AES256:
+				nodeInfo.setSnmpPrivProtocol(NodeInfoResponse.SnmpPrivProtocolEnum.AES256);
+				break;
+			default:
+				nodeInfo.setSnmpPrivProtocol(NodeInfoResponse.SnmpPrivProtocolEnum.NONE);
+			}
+		} else {
+			nodeInfo.setSnmpPrivProtocol(NodeInfoResponse.SnmpPrivProtocolEnum.NONE);
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.SNMPTIMEOUT);
 		if (object1.size() > 0 && object1.get(0) != null &&
@@ -1111,8 +1178,19 @@ public class NodePropertyUtil {
 			nodeInfo.setWbemPort((Integer)object1.get(0));
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.WBEM_PROTOCOL);
-		if (object1.size() > 0) {
-			nodeInfo.setWbemProtocol((String)object1.get(0));
+		if (object1.size() > 0 && object1.get(0) != null) {
+			switch ((String) object1.get(0)) {
+			case WbemProtocolConstant.HTTP:
+				nodeInfo.setWbemProtocol(NodeInfoResponse.WbemProtocolEnum.HTTP);
+				break;
+			case WbemProtocolConstant.HTTPS:
+				nodeInfo.setWbemProtocol(NodeInfoResponse.WbemProtocolEnum.HTTPS);
+				break;
+			default:
+				nodeInfo.setWbemProtocol(NodeInfoResponse.WbemProtocolEnum.NONE);
+			}
+		} else {
+			nodeInfo.setWbemProtocol(NodeInfoResponse.WbemProtocolEnum.NONE);
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.WBEM_TIMEOUT);
 		if (object1.size() > 0 && object1.get(0) != null &&
@@ -1181,8 +1259,19 @@ public class NodePropertyUtil {
 			nodeInfo.setWinrmPort((Integer)object1.get(0));
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.WINRM_PROTOCOL);
-		if (object1.size() > 0) {
-			nodeInfo.setWinrmProtocol((String)object1.get(0));
+		if (object1.size() > 0 && object1.get(0) != null) {
+			switch ((String) object1.get(0)) {
+			case WinrmProtocolConstant.HTTP:
+				nodeInfo.setWinrmProtocol(NodeInfoResponse.WinrmProtocolEnum.HTTP);
+				break;
+			case WinrmProtocolConstant.HTTPS:
+				nodeInfo.setWinrmProtocol(NodeInfoResponse.WinrmProtocolEnum.HTTPS);
+				break;
+			default:
+				nodeInfo.setWinrmProtocol(NodeInfoResponse.WinrmProtocolEnum.NONE);
+			}
+		} else {
+			nodeInfo.setWinrmProtocol(NodeInfoResponse.WinrmProtocolEnum.NONE);
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.WINRM_TIMEOUT);
 		if (object1.size() > 0 && object1.get(0) != null &&
@@ -1209,8 +1298,11 @@ public class NodePropertyUtil {
 			nodeInfo.setSshPrivateKeyFilepath((String)object1.get(0));
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.SSH_PRIVATE_KEY_PASSPHRASE);
-		if (object1.size() > 0) {
+		if (object1.size() > 0 && object1.get(0) != null &&
+				!object1.get(0).toString().equals("")) {
 			nodeInfo.setSshPrivateKeyPassphrase((String)object1.get(0));
+		} else {
+			nodeInfo.setSshPrivateKeyPassphrase("");
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.SSH_PORT);
 		if (object1.size() > 0 && object1.get(0) != null &&
@@ -1248,6 +1340,42 @@ public class NodePropertyUtil {
 		if (object1.size() > 0) {
 			nodeInfo.setCloudLocation((String)object1.get(0));
 		}
+		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.CLOUDLOGPRIORITY);
+		if (object1.size() > 0 && object1.get(0) != null && !object1.get(0).toString().equals("")) {
+			nodeInfo.setCloudLogPriority((Integer) object1.get(0));
+		}
+
+		// ---- RPAツール情報 -----
+		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.RPA_LOG_DIRECTORY);
+		if (object1.size() > 0 && object1.get(0) != null &&
+				!object1.get(0).toString().equals("")) {
+			nodeInfo.setRpaLogDir((String)object1.get(0));
+		}
+		
+		// ---- RPA管理ツール情報 -----
+		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.RPA_MANAGEMENT_TOOL_TYPE);
+		if (object1.size() > 0 && object1.get(0) != null &&
+				!object1.get(0).toString().equals("")) {
+			nodeInfo.setRpaManagementToolType((String)object1.get(0));
+		}
+
+		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.RPA_RESOURCE_ID);
+		if (object1.size() > 0 && object1.get(0) != null &&
+				!object1.get(0).toString().equals("")) {
+			nodeInfo.setRpaResourceId((String)object1.get(0));
+		}
+
+		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.RPA_USER);
+		if (object1.size() > 0 && object1.get(0) != null &&
+				!object1.get(0).toString().equals("")) {
+			nodeInfo.setRpaUser((String)object1.get(0));
+		}
+
+		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.RPA_EXECUTION_ENVIRONMENT_ID);
+		if (object1.size() > 0 && object1.get(0) != null &&
+				!object1.get(0).toString().equals("")) {
+			nodeInfo.setRpaExecEnvId((String)object1.get(0));
+		}
 
 		// ----- 保守関連 -----
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.ADMINISTRATOR);
@@ -1259,14 +1387,14 @@ public class NodePropertyUtil {
 			nodeInfo.setContact((String)object1.get(0));
 		}
 		object1 = PropertyUtil.getPropertyValue(property, NodeConstant.NOTE);
-		ArrayList<NodeNoteInfo> nodeNoteInfo = new ArrayList<NodeNoteInfo>();
+		ArrayList<NodeNoteInfoResponse> nodeNoteInfo = new ArrayList<NodeNoteInfoResponse>();
 		for (int i = 0; i < object1.size(); i++) {
-			NodeNoteInfo item = new NodeNoteInfo();
+			NodeNoteInfoResponse item = new NodeNoteInfoResponse();
 			item.setNoteId(i);
 			item.setNote((String) object1.get(i));
 			nodeNoteInfo.add(item);
 		}
-		List<NodeNoteInfo> nodeNoteInfo_orig = nodeInfo.getNodeNoteInfo();
+		List<NodeNoteInfoResponse> nodeNoteInfo_orig = nodeInfo.getNodeNoteInfo();
 		nodeNoteInfo_orig.clear();
 		nodeNoteInfo_orig.addAll(nodeNoteInfo);
 
@@ -1282,7 +1410,7 @@ public class NodePropertyUtil {
 	 * @param isNodeMap true:ノードマップ（構成情報検索）表示
 	 * @return
 	 */
-	public static Property node2property(String managerName, NodeInfo node, int mode, Locale locale, boolean isNodeMap) {
+	public static Property node2property(String managerName, NodeInfoResponse node, int mode, Locale locale, boolean isNodeMap) {
 		/** ローカル変数 */
 		Property property = null;
 		ArrayList<Property> propertyList = null;
@@ -1307,25 +1435,39 @@ public class NodePropertyUtil {
 			((Property)propertyList.get(0)).setValue(node.getDescription());
 			// 有効/無効
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.VALID);
-			((Property)propertyList.get(0)).setValue(node.isValid());
+			((Property)propertyList.get(0)).setValue(node.getValid());
 			// 自動デバイスサーチ
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.AUTO_DEVICE_SEARCH);
-			((Property)propertyList.get(0)).setValue(node.isAutoDeviceSearch());
+			((Property)propertyList.get(0)).setValue(node.getAutoDeviceSearch());
 			// 登録ユーザID
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.CREATOR_NAME);
 			((Property)propertyList.get(0)).setValue(node.getCreateUserId());
 			// 登録日時
-			if (node.getCreateDatetime() != null && node.getCreateDatetime() != 0) {
+			Long createDatetime = null;
+			try {
+				createDatetime = TimezoneUtil.getSimpleDateFormat().parse(node.getCreateDatetime()).getTime();
+			} catch (Exception e) {
+				//findbugs対応 エラーは発生しない想定なので本来不要だが Exception無視と思われないようtraceログの出力を追加
+				m_log.trace("node2property : exception occuered",e);
+			}
+			if (createDatetime != null && createDatetime != 0L) {
 				propertyList = PropertyUtil.getProperty(property, NodeConstant.CREATE_TIME);
-				((Property)propertyList.get(0)).setValue(new Date(node.getCreateDatetime()));
+				((Property)propertyList.get(0)).setValue(new Date(createDatetime));
 			}
 			// 最終更新ユーザID
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.MODIFIER_NAME);
 			((Property)propertyList.get(0)).setValue(node.getModifyUserId());
 			// 最終更新日時
-			if (node.getModifyDatetime() != null && node.getModifyDatetime() != 0) {
+			Long modifyDatetime = null;
+			try {
+				modifyDatetime = TimezoneUtil.getSimpleDateFormat().parse(node.getModifyDatetime()).getTime();
+			} catch (Exception e) {
+				//findbugs対応 エラーは発生しない想定なので本来不要だが Exception無視と思われないようtraceログの出力を追加
+				m_log.trace("node2property : exception occuered",e);
+			}
+			if (modifyDatetime != null && modifyDatetime != 0L) {
 				propertyList = PropertyUtil.getProperty(property, NodeConstant.MODIFY_TIME);
-				((Property)propertyList.get(0)).setValue(new Date(node.getModifyDatetime()));
+				((Property)propertyList.get(0)).setValue(new Date(modifyDatetime));
 			}
 	
 			// ----- ノード関連 -----
@@ -1351,7 +1493,21 @@ public class NodePropertyUtil {
 			// ----- IPアドレス関連 -----
 			// IPバージョン
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.IP_ADDRESS_VERSION);
-			((Property)propertyList.get(0)).setValue(node.getIpAddressVersion());
+			
+			if (node.getIpAddressVersion() != null) {
+				switch (node.getIpAddressVersion()) {
+				case IPV4:
+					((Property)propertyList.get(0)).setValue(4);
+					break;
+				case IPV6:
+					((Property)propertyList.get(0)).setValue(6);
+					break;
+				default:
+					((Property)propertyList.get(0)).setValue(4);
+				}
+			} else {
+				((Property)propertyList.get(0)).setValue(4);
+			}
 			// IPアドレスV4
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.IP_ADDRESS_V4);
 			((Property)propertyList.get(0)).setValue(node.getIpAddressV4());
@@ -1382,12 +1538,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeHostnameInfo hostname = node.getNodeHostnameInfo().get(i);
+				NodeHostnameInfoResponse hostname = node.getNodeHostnameInfo().get(i);
 
-				if(hostname.isSearchTarget() == null){
+				if(hostname.getSearchTarget() == null){
 					isSearchTarget = false;
 				} else{
-					isSearchTarget = hostname.isSearchTarget();
+					isSearchTarget = hostname.getSearchTarget();
 				}
 
 				// ホスト名
@@ -1406,11 +1562,16 @@ public class NodePropertyUtil {
 			osRelease = node.getNodeOsInfo().getOsRelease();
 			osVersion = node.getNodeOsInfo().getOsVersion();
 			characterSet = node.getNodeOsInfo().getCharacterSet();
-			startDateTime = node.getNodeOsInfo().getStartupDateTime();
-			if (node.getNodeOsInfo().isSearchTarget() == null) {
+			try {
+				startDateTime = TimezoneUtil.getSimpleDateFormat().parse(node.getNodeOsInfo().getStartupDateTime()).getTime();
+			} catch (Exception e) {
+				//findbugs対応 エラーは発生しない想定なので本来不要だが Exception無視と思われないようtraceログの出力を追加
+				m_log.trace("node2property : exception occuered",e);
+			}
+			if (node.getNodeOsInfo().getSearchTarget() == null) {
 				isSearchTarget = false;
 			} else {
-				isSearchTarget = node.getNodeOsInfo().isSearchTarget();
+				isSearchTarget = node.getNodeOsInfo().getSearchTarget();
 			}
 		}
 		// OS名
@@ -1449,7 +1610,7 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeDeviceInfo device = node.getNodeDeviceInfo().get(i);
+				NodeGeneralDeviceInfoResponse device = node.getNodeDeviceInfo().get(i);
 
 				// トップ表示情報（デバイス表示名）
 				target.setValue(device.getDeviceDisplayName());
@@ -1494,12 +1655,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeCpuInfo cpu = node.getNodeCpuInfo().get(i);
+				NodeCpuInfoResponse cpu = node.getNodeCpuInfo().get(i);
 
 				// トップ表示情報（デバイス表示名）
 				target.setValue(cpu.getDeviceDisplayName());
 				// 強調表示
-				target.setStringHighlight(cpu.isSearchTarget());
+				target.setStringHighlight(cpu.getSearchTarget());
 
 				// デバイス種別
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.DEVICE_TYPE);
@@ -1552,12 +1713,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeMemoryInfo memory = node.getNodeMemoryInfo().get(i);
+				NodeMemoryInfoResponse memory = node.getNodeMemoryInfo().get(i);
 
 				// トップ表示情報（デバイス表示名）
 				target.setValue(memory.getDeviceDisplayName());
 				// 強調表示
-				target.setStringHighlight(memory.isSearchTarget());
+				target.setStringHighlight(memory.getSearchTarget());
 
 				// デバイス種別
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.DEVICE_TYPE);
@@ -1600,12 +1761,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeNetworkInterfaceInfo nic = node.getNodeNetworkInterfaceInfo().get(i);
+				NodeNetworkInterfaceInfoResponse nic = node.getNodeNetworkInterfaceInfo().get(i);
 
 				// トップ表示情報（デバイス表示名）
 				target.setValue(nic.getDeviceDisplayName());
 				// 強調表示
-				target.setStringHighlight(nic.isSearchTarget());
+				target.setStringHighlight(nic.getSearchTarget());
 
 				// デバイス種別
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.DEVICE_TYPE);
@@ -1654,12 +1815,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeDiskInfo disk = node.getNodeDiskInfo().get(i);
+				NodeDiskInfoResponse disk = node.getNodeDiskInfo().get(i);
 
 				// トップ表示情報（デバイス表示名）
 				target.setValue(disk.getDeviceDisplayName());
 				// 強調表示
-				target.setStringHighlight(disk.isSearchTarget());
+				target.setStringHighlight(disk.getSearchTarget());
 
 				// デバイス種別
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.DEVICE_TYPE);
@@ -1705,12 +1866,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeFilesystemInfo filesystem = node.getNodeFilesystemInfo().get(i);
+				NodeFilesystemInfoResponse filesystem = node.getNodeFilesystemInfo().get(i);
 
 				// トップ表示情報（デバイス表示名）
 				target.setValue(filesystem.getDeviceDisplayName());
 				// 強調表示
-				target.setStringHighlight(filesystem.isSearchTarget());
+				target.setStringHighlight(filesystem.getSearchTarget());
 
 				// デバイス種別
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.DEVICE_TYPE);
@@ -1756,13 +1917,13 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeNetstatInfo netstatInfo = node.getNodeNetstatInfo().get(i);
+				NodeNetstatInfoResponse netstatInfo = node.getNodeNetstatInfo().get(i);
 
 				// トップ表示情報（プロトコル、ローカルIPアドレス、ローカルポート）
 				target.setValue(String.format(
 						"%s %s:%s", netstatInfo.getProtocol(), netstatInfo.getLocalIpAddress(), netstatInfo.getLocalPort()));
 				// 強調表示
-				target.setStringHighlight(netstatInfo.isSearchTarget());
+				target.setStringHighlight(netstatInfo.getSearchTarget());
 
 				// プロトコル
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.NETSTAT_PROTOCOL);
@@ -1808,12 +1969,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeProcessInfo processInfo = node.getNodeProcessInfo().get(i);
+				NodeProcessInfoResponse processInfo = node.getNodeProcessInfo().get(i);
 
 				// トップ表示情報（プロセス名）
 				target.setValue(processInfo.getProcessName());
 				// 強調表示
-				target.setStringHighlight(processInfo.isSearchTarget());
+				target.setStringHighlight(processInfo.getSearchTarget());
 
 				// プロセス名
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.PROCESS_NAME);
@@ -1830,9 +1991,16 @@ public class NodePropertyUtil {
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.PROCESS_EXEC_USER);
 				((Property)propertyList.get(0)).setValue(processInfo.getExecUser());
 				// 起動日時
-				if (processInfo.getStartupDateTime() != null && processInfo.getStartupDateTime() != 0) {
+				Long startupDateTime = null;
+				try {
+					startupDateTime = TimezoneUtil.getSimpleDateFormat().parse(processInfo.getStartupDateTime()).getTime();
+				} catch (Exception e) {
+					//findbugs対応 エラーは発生しない想定なので本来不要だが Exception無視と思われないようtraceログの出力を追加
+					m_log.trace("node2property : exception occuered",e);
+				}
+				if (startupDateTime != null && startupDateTime != 0L) {
 					propertyList = PropertyUtil.getProperty(target, NodeConstant.PROCESS_STARTUP_DATE_TIME);
-					((Property)propertyList.get(0)).setValue(new Date(processInfo.getStartupDateTime()));
+					((Property)propertyList.get(0)).setValue(new Date(startupDateTime));
 				}
 			}
 		}
@@ -1852,12 +2020,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodePackageInfo packageInfo = node.getNodePackageInfo().get(i);
+				NodePackageInfoResponse packageInfo = node.getNodePackageInfo().get(i);
 
 				// トップ表示情報（パッケージID）
 				target.setValue(packageInfo.getPackageName());
 				// 強調表示
-				target.setStringHighlight(packageInfo.isSearchTarget());
+				target.setStringHighlight(packageInfo.getSearchTarget());
 
 				// パッケージID
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.PACKAGE_ID);
@@ -1872,9 +2040,16 @@ public class NodePropertyUtil {
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.PACKAGE_RELEASE);
 				((Property)propertyList.get(0)).setValue(packageInfo.getRelease());
 				// インストール日時
-				if (packageInfo.getInstallDate() != null && packageInfo.getInstallDate() != 0) {
+				Long installDate = null;
+				try {
+					installDate = TimezoneUtil.getSimpleDateFormat().parse(packageInfo.getInstallDate()).getTime();
+				} catch (Exception e) {
+					//findbugs対応 エラーは発生しない想定なので本来不要だが Exception無視と思われないようtraceログの出力を追加
+					m_log.trace("node2property : exception occuered",e);
+				}
+				if (installDate != null && installDate != 0L) {
 					propertyList = PropertyUtil.getProperty(target, NodeConstant.PACKAGE_INSTALL_DATE);
-					((Property)propertyList.get(0)).setValue(new Date(packageInfo.getInstallDate()));
+					((Property)propertyList.get(0)).setValue(new Date(installDate));
 				}
 				// ベンダ
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.PACKAGE_VENDOR);
@@ -1900,12 +2075,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeProductInfo productInfo = node.getNodeProductInfo().get(i);
+				NodeProductInfoResponse productInfo = node.getNodeProductInfo().get(i);
 
 				// トップ表示情報（名前）
 				target.setValue(productInfo.getProductName());
 				// 強調表示
-				target.setStringHighlight(productInfo.isSearchTarget());
+				target.setStringHighlight(productInfo.getSearchTarget());
 
 				// 名前
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.PRODUCT_NAME);
@@ -1934,12 +2109,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeLicenseInfo licenseInfo = node.getNodeLicenseInfo().get(i);
+				NodeLicenseInfoResponse licenseInfo = node.getNodeLicenseInfo().get(i);
 
 				// トップ表示情報（製品名）
 				target.setValue(licenseInfo.getProductName());
 				// 強調表示
-				target.setStringHighlight(licenseInfo.isSearchTarget());
+				target.setStringHighlight(licenseInfo.getSearchTarget());
 
 				// 製品名
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.LICENSE_PRODUCT_NAME);
@@ -1959,9 +2134,16 @@ public class NodePropertyUtil {
 					((Property)propertyList.get(0)).setValue(licenseInfo.getCount());
 				}
 				// 有効期限
-				if (licenseInfo.getExpirationDate() != null && licenseInfo.getExpirationDate() != 0) {
+				Long expirationDate = null;
+				try {
+					expirationDate = TimezoneUtil.getSimpleDateFormat().parse(licenseInfo.getExpirationDate()).getTime();
+				} catch (Exception e) {
+					//findbugs対応 エラーは発生しない想定なので本来不要だが Exception無視と思われないようtraceログの出力を追加
+					m_log.trace("node2property : exception occuered",e);
+				}
+				if (expirationDate != null && expirationDate != 0L) {
 					propertyList = PropertyUtil.getProperty(target, NodeConstant.LICENSE_EXPIRATION_DATE);
-					((Property)propertyList.get(0)).setValue(new Date(licenseInfo.getExpirationDate()));
+					((Property)propertyList.get(0)).setValue(new Date(expirationDate));
 				}
 			}
 		}
@@ -1981,12 +2163,12 @@ public class NodePropertyUtil {
 					target = PropertyUtil.copy(childProperty);
 					parentProperty.addChildren(target, index + i + 1);
 				}
-				NodeVariableInfo variable = node.getNodeVariableInfo().get(i);
+				NodeVariableInfoResponse variable = node.getNodeVariableInfo().get(i);
 
 				// トップ表示情報（ノード変数名）
 				target.setValue(variable.getNodeVariableName());
 				// 強調表示
-				target.setStringHighlight(variable.isSearchTarget());
+				target.setStringHighlight(variable.getSearchTarget());
 
 				// ノード変数名
 				propertyList = PropertyUtil.getProperty(target, NodeConstant.NODE_VARIABLE_NAME);
@@ -2013,7 +2195,7 @@ public class NodePropertyUtil {
 			}
 			
 			for (int i = 0; i < node.getNodeCustomInfo().size(); i++) {
-				NodeCustomInfo customInfo = node.getNodeCustomInfo().get(i);
+				NodeCustomInfoResponse customInfo = node.getNodeCustomInfo().get(i);
 				target = PropertyUtil.copy(custom);
 				parent.addChildren(target, i);
 				// 名前
@@ -2021,7 +2203,7 @@ public class NodePropertyUtil {
 				// 値(コマンド名 \n コマンド取得結果）
 				target.setValue(customInfo.getValue());
 				// 強調表示
-				target.setStringHighlight(customInfo.isSearchTarget());
+				target.setStringHighlight(customInfo.getSearchTarget());
 			}
 		}
 
@@ -2055,10 +2237,40 @@ public class NodePropertyUtil {
 			((Property)propertyList.get(0)).setValue(node.getSnmpCommunity());
 			// SNMPバージョン
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.SNMP_VERSION);
-			((Property)propertyList.get(0)).setValue(SnmpVersionConstant.typeToString(node.getSnmpVersion()));
+			if (node.getSnmpVersion() != null) {
+				switch (node.getSnmpVersion()) {
+				case V1:
+					((Property)propertyList.get(0)).setValue(SnmpVersionConstant.STRING_V1);
+					break;
+				case V2:
+					((Property)propertyList.get(0)).setValue(SnmpVersionConstant.STRING_V2);
+					break;
+				case V3:
+					((Property)propertyList.get(0)).setValue(SnmpVersionConstant.STRING_V3);
+					break;
+				}
+			} else {
+				((Property)propertyList.get(0)).setValue("");
+			}
 			// SNMPセキュリティレベル
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.SNMP_SECURITY_LEVEL);
-			((Property)propertyList.get(0)).setValue(node.getSnmpSecurityLevel());
+			if (node.getSnmpSecurityLevel() != null) {
+				switch (node.getSnmpSecurityLevel()) {
+				case NOAUTH_NOPRIV:
+					((Property)propertyList.get(0)).setValue(SnmpSecurityLevelConstant.NOAUTH_NOPRIV);
+					break;
+				case AUTH_NOPRIV:
+					((Property)propertyList.get(0)).setValue(SnmpSecurityLevelConstant.AUTH_NOPRIV);
+					break;
+				case AUTH_PRIV:
+					((Property)propertyList.get(0)).setValue(SnmpSecurityLevelConstant.AUTH_PRIV);
+					break;
+				default:
+					((Property)propertyList.get(0)).setValue("");
+				}
+			} else {
+				((Property)propertyList.get(0)).setValue("");
+			}
 			// SNMP接続認証パスワード
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.SNMP_AUTH_PASSWORD);
 			((Property)propertyList.get(0)).setValue(node.getSnmpAuthPassword());
@@ -2067,10 +2279,56 @@ public class NodePropertyUtil {
 			((Property)propertyList.get(0)).setValue(node.getSnmpPrivPassword());
 			// SNMP認証プロトコル
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.SNMP_AUTH_PROTOCOL);
-			((Property)propertyList.get(0)).setValue(node.getSnmpAuthProtocol());
+			if (node.getSnmpAuthProtocol() != null) {
+				switch (node.getSnmpAuthProtocol()) {
+				case MD5:
+					((Property)propertyList.get(0)).setValue(SnmpProtocolConstant.MD5);
+					break;
+				case SHA:
+					((Property)propertyList.get(0)).setValue(SnmpProtocolConstant.SHA);
+					break;
+				case SHA224:
+					((Property)propertyList.get(0)).setValue(SnmpProtocolConstant.SHA224);
+					break;
+				case SHA256:
+					((Property)propertyList.get(0)).setValue(SnmpProtocolConstant.SHA256);
+					break;
+				case SHA384:
+					((Property)propertyList.get(0)).setValue(SnmpProtocolConstant.SHA384);
+					break;
+				case SHA512:
+					((Property)propertyList.get(0)).setValue(SnmpProtocolConstant.SHA512);
+					break;
+				default:
+					((Property)propertyList.get(0)).setValue("");
+					break;
+				}
+			} else {
+				((Property)propertyList.get(0)).setValue("");
+			}
 			// SNMP暗号化プロトコル
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.SNMP_PRIV_PROTOCOL);
-			((Property)propertyList.get(0)).setValue(node.getSnmpPrivProtocol());
+			if (node.getSnmpPrivProtocol() != null) {
+				switch (node.getSnmpPrivProtocol()) {
+				case AES:
+					((Property)propertyList.get(0)).setValue(SnmpProtocolConstant.AES);
+					break;
+				case DES:
+					((Property)propertyList.get(0)).setValue(SnmpProtocolConstant.DES);
+					break;
+				case AES192:
+					((Property)propertyList.get(0)).setValue(SnmpProtocolConstant.AES192);
+					break;
+				case AES256:
+					((Property)propertyList.get(0)).setValue(SnmpProtocolConstant.AES256);
+					break;
+				default:
+					((Property)propertyList.get(0)).setValue("");
+					break;
+				}
+			} else {
+				((Property)propertyList.get(0)).setValue("");
+			}
 			// SNMPタイムアウト
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.SNMPTIMEOUT);
 			((Property)propertyList.get(0)).setValue(node.getSnmpTimeout());
@@ -2090,7 +2348,21 @@ public class NodePropertyUtil {
 			((Property)propertyList.get(0)).setValue(node.getWbemUserPassword());
 			// WBEM接続プロトコル
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.WBEM_PROTOCOL);
-			((Property)propertyList.get(0)).setValue(node.getWbemProtocol());
+			if (node.getWbemProtocol() != null) {
+				switch (node.getWbemProtocol()) {
+				case HTTP:
+					((Property)propertyList.get(0)).setValue(WbemProtocolConstant.HTTP);
+					break;
+				case HTTPS:
+					((Property)propertyList.get(0)).setValue(WbemProtocolConstant.HTTPS);
+					break;
+				default:
+					((Property)propertyList.get(0)).setValue("");
+					break;
+				}
+			} else {
+				((Property)propertyList.get(0)).setValue("");
+			}
 			// WBEM接続タイムアウト
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.WBEM_TIMEOUT);
 			((Property)propertyList.get(0)).setValue(node.getWbemTimeout());
@@ -2139,7 +2411,21 @@ public class NodePropertyUtil {
 			((Property)propertyList.get(0)).setValue(node.getWinrmPort());
 			// WinRM接続プロトコル
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.WINRM_PROTOCOL);
-			((Property)propertyList.get(0)).setValue(node.getWinrmProtocol());
+			if (node.getWinrmProtocol() != null) {
+				switch (node.getWinrmProtocol()) {
+				case HTTP:
+					((Property)propertyList.get(0)).setValue(WinrmProtocolConstant.HTTP);
+					break;
+				case HTTPS:
+					((Property)propertyList.get(0)).setValue(WinrmProtocolConstant.HTTPS);
+					break;
+				default:
+					((Property)propertyList.get(0)).setValue("");
+					break;
+				}
+			} else {
+				((Property)propertyList.get(0)).setValue("");
+			}
 			// WinRM接続タイムアウト
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.WINRM_TIMEOUT);
 			((Property)propertyList.get(0)).setValue(node.getWinrmTimeout());
@@ -2186,7 +2472,29 @@ public class NodePropertyUtil {
 			// クラウドゾーン
 			propertyList = PropertyUtil.getProperty(property, NodeConstant.CLOUDLOCATION);
 			((Property)propertyList.get(0)).setValue(node.getCloudLocation());
+			// クラウドログ優先度
+			propertyList = PropertyUtil.getProperty(property, NodeConstant.CLOUDLOGPRIORITY);
+			((Property)propertyList.get(0)).setValue(node.getCloudLogPriority());
 	
+			// ---- RPAツール情報 -----
+			// ログ出力先ディレクトリ
+			propertyList = PropertyUtil.getProperty(property, NodeConstant.RPA_LOG_DIRECTORY);
+			((Property)propertyList.get(0)).setValue(node.getRpaLogDir());
+
+			// ---- RPA管理ツール情報 -----
+			// RPA管理ツールタイプ
+			propertyList = PropertyUtil.getProperty(property, NodeConstant.RPA_MANAGEMENT_TOOL_TYPE);
+			((Property)propertyList.get(0)).setValue(node.getRpaManagementToolType());
+			// RPAリソースID
+			propertyList = PropertyUtil.getProperty(property, NodeConstant.RPA_RESOURCE_ID);
+			((Property)propertyList.get(0)).setValue(node.getRpaResourceId());
+			// ユーザ名
+			propertyList = PropertyUtil.getProperty(property, NodeConstant.RPA_USER);
+			((Property)propertyList.get(0)).setValue(node.getRpaUser());
+			// RPA実行環境ID
+			propertyList = PropertyUtil.getProperty(property, NodeConstant.RPA_EXECUTION_ENVIRONMENT_ID);
+			((Property)propertyList.get(0)).setValue(node.getRpaExecEnvId());
+
 	
 			// ----- 保守関連 -----
 			// 連絡先
@@ -2203,7 +2511,7 @@ public class NodePropertyUtil {
 			if (node.getNodeNoteInfo() != null) {
 				int index = PropertyUtil.getPropertyIndex(property, noteProperty);
 				int cnt = 0;
-				for (NodeNoteInfo note : node.getNodeNoteInfo()) {
+				for (NodeNoteInfoResponse note : node.getNodeNoteInfo()) {
 					Property target = null;
 					if (cnt == 0) {
 						target = noteProperty;
@@ -2241,7 +2549,7 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.FACILITY_ID, Messages.getString("facility.id", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_512);
 		//ファシリティ名
 		Property facilityName =
-				new Property(NodeConstant.FACILITY_NAME, Messages.getString("facility.name", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_128);
+				new Property(NodeConstant.FACILITY_NAME, Messages.getString("facility.name", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);
 		//説明
 		Property description =
 				new Property(NodeConstant.DESCRIPTION, Messages.getString("description", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);
@@ -2284,7 +2592,7 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.SUB_PLATFORM_FAMILY_NAME, Messages.getString("sub.platform.family.name", locale), PropertyDefineConstant.EDITOR_SELECT);
 		//ノード名
 		Property nodeName =
-				new Property(NodeConstant.NODE_NAME, Messages.getString("node.name", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_128);
+				new Property(NodeConstant.NODE_NAME, Messages.getString("node.name", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);
 		//画面アイコンイメージ
 		Property iconImage =
 				new Property(NodeConstant.ICONIMAGE, Messages.getString("icon.image", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
@@ -2362,7 +2670,7 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.DEVICE_TYPE, Messages.getString("device.type", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_32);
 		//デバイスサイズ
 		Property deviceSize =
-				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM, Integer.MAX_VALUE, 0);
+				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM_LONG, Long.MAX_VALUE, 0L);
 		//デバイスサイズ単位
 		Property deviceSizeUnit =
 				new Property(NodeConstant.DEVICE_SIZE_UNIT, Messages.getString("device.size.unit", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
@@ -2392,7 +2700,7 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.DEVICE_TYPE, Messages.getString("device.type", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_32);
 		//デバイスサイズ
 		Property cpuDeviceSize =
-				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM, Integer.MAX_VALUE, 0);
+				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM_LONG, Long.MAX_VALUE, 0L);
 		//デバイスサイズ単位
 		Property cpuDeviceSizeUnit =
 				new Property(NodeConstant.DEVICE_SIZE_UNIT, Messages.getString("device.size.unit", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
@@ -2431,7 +2739,7 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.DEVICE_TYPE, Messages.getString("device.type", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_32);
 		//デバイスサイズ
 		Property memoryDeviceSize =
-				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM, Integer.MAX_VALUE, 0);
+				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM_LONG, Long.MAX_VALUE, 0L);
 		//デバイスサイズ単位
 		Property memoryDeviceSizeUnit =
 				new Property(NodeConstant.DEVICE_SIZE_UNIT, Messages.getString("device.size.unit", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
@@ -2461,7 +2769,7 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.DEVICE_TYPE, Messages.getString("device.type", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_32);
 		//デバイスサイズ
 		Property networkInterfaceDeviceSize =
-				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM, Integer.MAX_VALUE, 0);
+				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM_LONG, Long.MAX_VALUE, 0L);
 		//デバイスサイズ単位
 		Property networkInterfaceDeviceSizeUnit =
 				new Property(NodeConstant.DEVICE_SIZE_UNIT, Messages.getString("device.size.unit", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
@@ -2497,7 +2805,7 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.DEVICE_TYPE, Messages.getString("device.type", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_32);
 		//デバイスサイズ
 		Property diskDeviceSize =
-				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM, Integer.MAX_VALUE, 0);
+				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM_LONG, Long.MAX_VALUE, 0L);
 		//デバイスサイズ単位
 		Property diskDeviceSizeUnit =
 				new Property(NodeConstant.DEVICE_SIZE_UNIT, Messages.getString("device.size.unit", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
@@ -2530,7 +2838,7 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.DEVICE_TYPE, Messages.getString("device.type", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_32);
 		//デバイスサイズ
 		Property fileSystemDeviceSize =
-				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM, Integer.MAX_VALUE, 0);
+				new Property(NodeConstant.DEVICE_SIZE, Messages.getString("device.size", locale), PropertyDefineConstant.EDITOR_NUM_LONG, Long.MAX_VALUE, 0L);
 		//デバイスサイズ単位
 		Property fileSystemDeviceSizeUnit =
 				new Property(NodeConstant.DEVICE_SIZE_UNIT, Messages.getString("device.size.unit", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
@@ -2816,13 +3124,42 @@ public class NodePropertyUtil {
 				new Property(NodeConstant.CLOUDRESOURCETYPE, Messages.getString("cloud.resource.type", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
 		//クラウドリソースID
 		Property cloudResourceId =
-				new Property(NodeConstant.CLOUDRESOURCEID, Messages.getString("cloud.resource.id", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
+				new Property(NodeConstant.CLOUDRESOURCEID, Messages.getString("cloud.resource.id", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);
 		//クラウドリソース名
 		Property cloudResourceName =
-				new Property(NodeConstant.CLOUDRESOURCENAME, Messages.getString("cloud.resource.name", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
+				new Property(NodeConstant.CLOUDRESOURCENAME, Messages.getString("cloud.resource.name", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_128);
 		//クラウドロケーション
 		Property cloudLocation =
 				new Property(NodeConstant.CLOUDLOCATION, Messages.getString("cloud.location", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
+		//クラウドログ優先度
+		Property cloudLogPriority =
+				new Property(NodeConstant.CLOUDLOGPRIORITY, Messages.getString("cloud.log.priority", locale),  PropertyDefineConstant.EDITOR_NUM, Integer.MAX_VALUE, 0);
+
+		// ---- RPAツール情報 -----
+		// RPAツール情報
+		Property rpaTool =
+				new Property(NodeConstant.RPA_TOOL, Messages.getString("rpa.tool.info", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
+		// ログ出力ディレクトリ
+		Property rpaLogDir =
+				new Property(NodeConstant.RPA_LOG_DIRECTORY, Messages.getString("rpa.log.directory", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_1024);
+
+
+		// ---- RPA管理ツール情報 -----
+		// RPA管理ツール情報
+		Property rpaManagementTool =
+				new Property(NodeConstant.RPA_MANAGEMENT_TOOL, Messages.getString("rpa.management.tool.info", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
+		// RPA管理ツールタイプ
+		Property rpaManagementToolType =
+				new Property(NodeConstant.RPA_MANAGEMENT_TOOL_TYPE, Messages.getString("rpa.management.tool.type", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_128);
+		// RPAリソースID
+		Property rpaResourceId =
+				new Property(NodeConstant.RPA_RESOURCE_ID, Messages.getString("rpa.resource.id", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
+		// ユーザ名
+		Property rpaUser =
+				new Property(NodeConstant.RPA_USER, Messages.getString("rpa.user", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
+		// RPA実行環境ID
+		Property rpaExecEnvId =
+				new Property(NodeConstant.RPA_EXECUTION_ENVIRONMENT_ID, Messages.getString("rpa.exec.env.id", locale),  PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
 
 		// ---- 保守情報 -----
 		//保守
@@ -2906,7 +3243,7 @@ public class NodePropertyUtil {
 		deviceName.setValue("");
 		deviceIndex.setValue("");
 		deviceType.setValue("");
-		deviceSize.setValue(0);
+		deviceSize.setValue(0L);
 		deviceSizeUnit.setValue("");
 		deviceDescription.setValue("");
 
@@ -2917,7 +3254,7 @@ public class NodePropertyUtil {
 		cpuDeviceName.setValue("");
 		cpuDeviceIndex.setValue("");
 		cpuDeviceType.setValue(DeviceTypeConstant.DEVICE_CPU);
-		cpuDeviceSize.setValue(0);
+		cpuDeviceSize.setValue(0L);
 		cpuDeviceSizeUnit.setValue("");
 		cpuDeviceDescription.setValue("");
 		cpuClockCount.setValue(0);
@@ -2931,7 +3268,7 @@ public class NodePropertyUtil {
 		memoryDeviceName.setValue("");
 		memoryDeviceIndex.setValue("");
 		memoryDeviceType.setValue(DeviceTypeConstant.DEVICE_MEM);
-		memoryDeviceSize.setValue(0);
+		memoryDeviceSize.setValue(0L);
 		memoryDeviceSizeUnit.setValue("");
 		memoryDeviceDescription.setValue("");
 
@@ -2942,7 +3279,7 @@ public class NodePropertyUtil {
 		networkInterfaceDeviceName.setValue("");
 		networkInterfaceDeviceIndex.setValue("");
 		networkInterfaceDeviceType.setValue(DeviceTypeConstant.DEVICE_NIC);
-		networkInterfaceDeviceSize.setValue(0);
+		networkInterfaceDeviceSize.setValue(0L);
 		networkInterfaceDeviceSizeUnit.setValue("");
 		networkInterfaceDeviceDescription.setValue("");
 		nicIpAddress.setValue("");
@@ -2955,7 +3292,7 @@ public class NodePropertyUtil {
 		diskDeviceName.setValue("");
 		diskDeviceIndex.setValue("");
 		diskDeviceType.setValue(DeviceTypeConstant.DEVICE_DISK);
-		diskDeviceSize.setValue(0);
+		diskDeviceSize.setValue(0L);
 		diskDeviceSizeUnit.setValue("");
 		diskDeviceDescription.setValue("");
 		diskRpm.setValue("");
@@ -2967,7 +3304,7 @@ public class NodePropertyUtil {
 		fileSystemDeviceName.setValue("");
 		fileSystemDeviceIndex.setValue("");
 		fileSystemDeviceType.setValue(DeviceTypeConstant.DEVICE_FILESYSTEM);
-		fileSystemDeviceSize.setValue(0);
+		fileSystemDeviceSize.setValue(0L);
 		fileSystemDeviceSizeUnit.setValue("");
 		fileSystemDeviceDescription.setValue("");
 		fileSystemType.setValue("");
@@ -3054,12 +3391,12 @@ public class NodePropertyUtil {
 				{ "", SnmpSecurityLevelConstant.NOAUTH_NOPRIV, SnmpSecurityLevelConstant.AUTH_NOPRIV, SnmpSecurityLevelConstant.AUTH_PRIV },
 		};
 		Object snmpAuthProtocolValue[][] = {
-				{ "", SnmpProtocolConstant.MD5, SnmpProtocolConstant.SHA },
-				{ "", SnmpProtocolConstant.MD5, SnmpProtocolConstant.SHA },
+				{ "", SnmpProtocolConstant.MD5, SnmpProtocolConstant.SHA, SnmpProtocolConstant.SHA224, SnmpProtocolConstant.SHA256, SnmpProtocolConstant.SHA384, SnmpProtocolConstant.SHA512 },
+				{ "", SnmpProtocolConstant.MD5, SnmpProtocolConstant.SHA, SnmpProtocolConstant.SHA224, SnmpProtocolConstant.SHA256, SnmpProtocolConstant.SHA384, SnmpProtocolConstant.SHA512 },
 		};
 		Object snmpPrivProtocolValue[][] = {
-				{ "", SnmpProtocolConstant.DES, SnmpProtocolConstant.AES },
-				{ "", SnmpProtocolConstant.DES, SnmpProtocolConstant.AES },
+				{ "", SnmpProtocolConstant.DES, SnmpProtocolConstant.AES, SnmpProtocolConstant.AES192, SnmpProtocolConstant.AES256 },
+				{ "", SnmpProtocolConstant.DES, SnmpProtocolConstant.AES, SnmpProtocolConstant.AES192, SnmpProtocolConstant.AES256 },
 		};
 		snmpUser.setValue("");
 		snmpPort.setValue("");
@@ -3082,8 +3419,8 @@ public class NodePropertyUtil {
 		// ---- WBEM情報 -----
 		wbem.setValue("");
 		Object wbemProtocolValue[][] = {
-				{"", "http", "https"},
-				{"", "http", "https"}
+				{"", WbemProtocolConstant.HTTP, WbemProtocolConstant.HTTPS},
+				{"", WbemProtocolConstant.HTTP, WbemProtocolConstant.HTTPS},
 		};
 		wbemUser.setValue("");
 		wbemUserPassword.setValue("");
@@ -3107,8 +3444,8 @@ public class NodePropertyUtil {
 
 		// ---- WinRM情報 -----
 		Object winrmProtocolValue[][] = {
-				{"", "http", "https"},
-				{"", "http", "https"}
+				{"", WinrmProtocolConstant.HTTP, WinrmProtocolConstant.HTTPS},
+				{"", WinrmProtocolConstant.HTTP, WinrmProtocolConstant.HTTPS},
 		};
 		winrm.setValue("");
 		winrmUser.setValue("");
@@ -3137,7 +3474,18 @@ public class NodePropertyUtil {
 		cloudResourceId.setValue("");
 		cloudResourceName.setValue("");
 		cloudLocation.setValue("");
+		cloudLogPriority.setValue(16);
 
+		// ---- RPAツール情報 -----
+		rpaTool.setValue("");
+		rpaLogDir.setValue("");
+
+		// ---- RPA管理ツール情報 -----
+		rpaManagementTool.setValue("");
+		rpaManagementToolType.setValue("");
+		rpaResourceId.setValue("");
+		rpaUser.setValue("");
+		rpaExecEnvId.setValue("");
 
 		// ---- 保守情報 -----
 		maintenance.setValue("");
@@ -3380,6 +3728,16 @@ public class NodePropertyUtil {
 			cloudResourceId.setModify(PropertyDefineConstant.MODIFY_OK);
 			cloudResourceName.setModify(PropertyDefineConstant.MODIFY_OK);
 			cloudLocation.setModify(PropertyDefineConstant.MODIFY_OK);
+			cloudLogPriority.setModify(PropertyDefineConstant.MODIFY_OK);
+
+			// ---- RPAツール情報 -----
+			rpaLogDir.setModify(PropertyDefineConstant.MODIFY_OK);
+
+			// ---- RPA管理ツール情報 -----
+			rpaManagementToolType.setModify(PropertyDefineConstant.MODIFY_OK);
+			rpaResourceId.setModify(PropertyDefineConstant.MODIFY_OK);
+			rpaUser.setModify(PropertyDefineConstant.MODIFY_OK);
+			rpaExecEnvId.setModify(PropertyDefineConstant.MODIFY_OK);
 
 
 			// ---- 保守情報 -----
@@ -3423,6 +3781,10 @@ public class NodePropertyUtil {
 			property.addChildren(service);
 			//クラウド・仮想化管理
 			property.addChildren(cloudManagement);
+			//RPAツール情報
+			property.addChildren(rpaTool);
+			//RPA管理ツール情報
+			property.addChildren(rpaManagementTool);
 			//保守
 			property.addChildren(maintenance);
 			//ファシリティ情報(後編)
@@ -3716,6 +4078,18 @@ public class NodePropertyUtil {
 			ssh.addChildren(sshPrivateKeyPassphrase);
 			ssh.addChildren(sshPort);
 			ssh.addChildren(sshTimeout);
+
+			// RPAツール情報ツリー
+			rpaTool.removeChildren();
+			rpaTool.addChildren(rpaLogDir);
+			
+			// RPA管理ツール情報ツリー
+			rpaManagementTool.removeChildren();
+			rpaManagementTool.addChildren(rpaManagementToolType);
+			rpaManagementTool.addChildren(rpaResourceId);
+			rpaManagementTool.addChildren(rpaUser);
+			rpaManagementTool.addChildren(rpaExecEnvId);
+			
 	
 			// ---- クラウド・仮想化管理情報ツリー
 			cloudManagement.removeChildren();
@@ -3725,7 +4099,8 @@ public class NodePropertyUtil {
 			cloudManagement.addChildren(cloudResourceId);
 			cloudManagement.addChildren(cloudResourceName);
 			cloudManagement.addChildren(cloudLocation);
-	
+			cloudManagement.addChildren(cloudLogPriority);
+			
 			// ---- 保守情報ツリー
 			maintenance.removeChildren();
 			maintenance.addChildren(administrator);
@@ -3739,8 +4114,7 @@ public class NodePropertyUtil {
 	 * TODO HinemosManagerのNodeInfoの値と揃えておくこと。!
 	 * @param nodeInfo
 	 */
-	public static void setDefaultNode(NodeInfo nodeInfo) {
-		nodeInfo.setFacilityType(FacilityConstant.TYPE_NODE);
+	public static void setDefaultNode(NodeInfoResponse nodeInfo) {
 		nodeInfo.setDisplaySortOrder(100);
 		if (nodeInfo.getFacilityId() == null) {
 			nodeInfo.setFacilityId("");
@@ -3751,10 +4125,10 @@ public class NodePropertyUtil {
 		if (nodeInfo.getDescription() == null) {
 			nodeInfo.setDescription("");
 		}
-		if (nodeInfo.isValid() == null) {
+		if (nodeInfo.getValid() == null) {
 			nodeInfo.setValid(Boolean.TRUE);
 		}
-		if (nodeInfo.isAutoDeviceSearch() == null) {
+		if (nodeInfo.getAutoDeviceSearch() == null) {
 			nodeInfo.setAutoDeviceSearch(Boolean.TRUE);
 		}
 		if (nodeInfo.getCreateUserId() == null) {
@@ -3786,7 +4160,7 @@ public class NodePropertyUtil {
 
 		// IPアドレス
 		if (nodeInfo.getIpAddressVersion() == null) {
-			nodeInfo.setIpAddressVersion(4);
+			nodeInfo.setIpAddressVersion(NodeInfoResponse.IpAddressVersionEnum.IPV4);
 		}
 		if (nodeInfo.getIpAddressV4() == null) {
 			nodeInfo.setIpAddressV4("");
@@ -3800,8 +4174,7 @@ public class NodePropertyUtil {
 			nodeInfo.setNodeName("");
 		}
 		if (nodeInfo.getNodeOsInfo() == null) {
-			NodeOsInfo nodeOsInfo = new NodeOsInfo();
-			nodeOsInfo.setFacilityId(nodeInfo.getFacilityId());
+			NodeOsInfoResponse nodeOsInfo = new NodeOsInfoResponse();
 			nodeInfo.setNodeOsInfo(nodeOsInfo);
 		}
 		if (nodeInfo.getNodeOsInfo().getOsName() == null) {
@@ -3816,7 +4189,14 @@ public class NodePropertyUtil {
 		if (nodeInfo.getNodeOsInfo().getCharacterSet() == null) {
 			nodeInfo.getNodeOsInfo().setCharacterSet("");
 		}
-		if (nodeInfo.getNodeOsInfo().getStartupDateTime() == null || nodeInfo.getNodeOsInfo().getStartupDateTime() <= 0) {
+		Long longDate = null;
+		try {
+			longDate = TimezoneUtil.getSimpleDateFormat().parse(nodeInfo.getNodeOsInfo().getStartupDateTime()).getTime();
+		} catch (Exception e) {
+			//findbugs対応 エラーは発生しない想定なので本来不要だが Exception無視と思われないようtraceログの出力を追加
+			m_log.trace("setDefaultNode : exception occuered",e);
+		}
+		if (nodeInfo.getNodeOsInfo().getStartupDateTime() == null || longDate <= 0) {
 			nodeInfo.getNodeOsInfo().setStartupDateTime(null);
 		}
 
@@ -3833,6 +4213,27 @@ public class NodePropertyUtil {
 			nodeInfo.setJobMultiplicity(0);
 		}
 
+		// RPA
+		if (nodeInfo.getRpaLogDir() == null) {
+			nodeInfo.setRpaLogDir("");
+		}
+		
+		if (nodeInfo.getRpaManagementToolType() == null) {
+			nodeInfo.setRpaManagementToolType("");
+		}
+		
+		if (nodeInfo.getRpaResourceId() == null) {
+			nodeInfo.setRpaResourceId("");
+		}
+		
+		if (nodeInfo.getRpaUser() == null) {
+			nodeInfo.setRpaUser("");
+		}
+		
+		if (nodeInfo.getRpaExecEnvId() == null) {
+			nodeInfo.setRpaExecEnvId("");
+		}
+		
 		// SNMP
 		if (nodeInfo.getSnmpUser() == null || "".equals(nodeInfo.getSnmpUser())) {
 			nodeInfo.setSnmpUser("root");
@@ -3850,16 +4251,16 @@ public class NodePropertyUtil {
 			nodeInfo.setSnmpCommunity("public");
 		}
 		if (nodeInfo.getSnmpVersion() == null) {
-			nodeInfo.setSnmpVersion(SnmpVersionConstant.TYPE_V2);
+			nodeInfo.setSnmpVersion(NodeInfoResponse.SnmpVersionEnum.V2);
 		}
 		if (nodeInfo.getSnmpSecurityLevel() == null) {
-			nodeInfo.setSnmpSecurityLevel(SnmpSecurityLevelConstant.NOAUTH_NOPRIV);
+			nodeInfo.setSnmpSecurityLevel(NodeInfoResponse.SnmpSecurityLevelEnum.NOAUTH_NOPRIV);
 		}
 		if (nodeInfo.getSnmpAuthProtocol() == null) {
-			nodeInfo.setSnmpAuthProtocol("");
+			nodeInfo.setSnmpAuthProtocol(null);
 		}
 		if (nodeInfo.getSnmpPrivProtocol() == null) {
-			nodeInfo.setSnmpPrivProtocol("");
+			nodeInfo.setSnmpPrivProtocol(null);
 		}
 		if (nodeInfo.getSnmpTimeout() == null || nodeInfo.getSnmpTimeout() == -1) {
 			nodeInfo.setSnmpTimeout(5000);
@@ -3878,8 +4279,8 @@ public class NodePropertyUtil {
 		if (nodeInfo.getWbemPort() == null || nodeInfo.getWbemPort() == -1) {
 			nodeInfo.setWbemPort(5988);
 		}
-		if (nodeInfo.getWbemProtocol() == null || "".equals(nodeInfo.getWbemProtocol())) {
-			nodeInfo.setWbemProtocol("http");
+		if (nodeInfo.getWbemProtocol() == null) {
+			nodeInfo.setWbemProtocol(NodeInfoResponse.WbemProtocolEnum.HTTP);
 		}
 		if (nodeInfo.getWbemTimeout() == null || nodeInfo.getWbemTimeout() == -1) {
 			nodeInfo.setWbemTimeout(5000);
@@ -3927,8 +4328,8 @@ public class NodePropertyUtil {
 		if (nodeInfo.getWinrmPort() == null || nodeInfo.getWinrmPort() == -1) {
 			nodeInfo.setWinrmPort(5985);
 		}
-		if (nodeInfo.getWinrmProtocol() == null || "".equals(nodeInfo.getWinrmProtocol())) {
-			nodeInfo.setWinrmProtocol("http");
+		if (nodeInfo.getWinrmProtocol() == null) {
+			nodeInfo.setWinrmProtocol(NodeInfoResponse.WinrmProtocolEnum.HTTP);
 		}
 		if (nodeInfo.getWinrmTimeout() == null || nodeInfo.getWinrmTimeout() == -1) {
 			nodeInfo.setWinrmTimeout(5000);
@@ -3976,6 +4377,9 @@ public class NodePropertyUtil {
 		if (nodeInfo.getCloudLocation() == null) {
 			nodeInfo.setCloudLocation("");
 		}
+		if (nodeInfo.getCloudLogPriority() == null) {
+			nodeInfo.setCloudLogPriority(16);
+		}
 
 		// 保守
 		if (nodeInfo.getAdministrator() == null) {
@@ -3984,6 +4388,7 @@ public class NodePropertyUtil {
 		if (nodeInfo.getContact() == null) {
 			nodeInfo.setContact("");
 		}
+
 	}
 
 	/**
@@ -4006,7 +4411,7 @@ public class NodePropertyUtil {
 		/** ローカル変数 */
 		Object[][] table = null;
 		//Collection platforms = null;
-		List<RepositoryTableInfo> platforms = null;
+		List<RepositoryTableInfoResponse> platforms = null;
 		ArrayList<String> platformIdList = null;
 		ArrayList<String> platformNameList = null;
 
@@ -4018,11 +4423,11 @@ public class NodePropertyUtil {
 			if (managerName == null) {
 				return table;
 			}
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
 			platforms = wrapper.getPlatformList();
 
 			if (platforms != null) {
-				for (RepositoryTableInfo platform : platforms) {
+				for (RepositoryTableInfoResponse platform : platforms) {
 					platformIdList.add(platform.getId());
 					platformNameList.add(platform.getName() + "(" + platform.getId() + ")");
 				}
@@ -4030,7 +4435,7 @@ public class NodePropertyUtil {
 
 			table[PropertyDefineConstant.SELECT_VALUE] = platformIdList.toArray();
 			table[PropertyDefineConstant.SELECT_DISP_TEXT] = platformNameList.toArray();
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
@@ -4068,7 +4473,7 @@ public class NodePropertyUtil {
 		}
 		/** ローカル変数 */
 		Object[][] table = null;
-		List<RepositoryTableInfo> subPlatforms = null;
+		List<RepositoryTableInfoResponse> subPlatforms = null;
 		ArrayList<String> subPlatformIdList = new ArrayList<String>();
 		ArrayList<String> subPlatformNameList = new ArrayList<String>();
 
@@ -4079,13 +4484,13 @@ public class NodePropertyUtil {
 				return table;
 			}
 			
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
 			subPlatforms = wrapper.getCollectorSubPlatformTableInfoList();
 
 			subPlatformIdList.add("");
 			subPlatformNameList.add("");
 			if (subPlatforms != null) {
-				for (RepositoryTableInfo subPlatform : subPlatforms) {
+				for (RepositoryTableInfoResponse subPlatform : subPlatforms) {
 					subPlatformIdList.add(subPlatform.getId());
 					subPlatformNameList.add(subPlatform.getName() + "(" + subPlatform.getId() + ")");
 				}
@@ -4093,7 +4498,7 @@ public class NodePropertyUtil {
 
 			table[PropertyDefineConstant.SELECT_VALUE] = subPlatformIdList.toArray();
 			table[PropertyDefineConstant.SELECT_DISP_TEXT] = subPlatformNameList.toArray();
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,

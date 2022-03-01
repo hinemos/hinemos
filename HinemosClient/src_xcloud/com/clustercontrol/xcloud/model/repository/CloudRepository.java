@@ -11,16 +11,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.clustercontrol.ws.xcloud.HCloudScopeRootScope;
-import com.clustercontrol.ws.xcloud.HCloudScopeScope;
-import com.clustercontrol.ws.xcloud.HEntityNode;
-import com.clustercontrol.ws.xcloud.HFacility;
-import com.clustercontrol.ws.xcloud.HFolder;
-import com.clustercontrol.ws.xcloud.HInstanceNode;
-import com.clustercontrol.ws.xcloud.HLocationScope;
-import com.clustercontrol.ws.xcloud.HNode;
-import com.clustercontrol.ws.xcloud.HRepository;
-import com.clustercontrol.ws.xcloud.HScope;
+import org.openapitools.client.model.HFacilityResponse;
+import org.openapitools.client.model.HFacilityResponse.TypeEnum;
+import org.openapitools.client.model.HRepositoryResponse;
+
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.model.cloud.CloudScope;
@@ -39,83 +33,88 @@ public class CloudRepository extends Element implements ICloudRepository {
 		setOwner(manager);
 	}
 
-	public void update(HRepository repository) throws CloudModelException {
-		CollectionComparator.compareCollection(rootScopes, repository.getFacilities(), new CollectionComparator.Comparator<CloudScopeRootScope, Object>(){
+	public void update(HRepositoryResponse repository) throws CloudModelException {
+		CollectionComparator.compareCollection(rootScopes, repository.getFacilities(), new CollectionComparator.Comparator<CloudScopeRootScope, HFacilityResponse>(){
 			@Override
-			public boolean match(CloudScopeRootScope o1, Object o2) {
-				return CloudRepository.this.equals(o1, (HCloudScopeRootScope)o2);
+			public boolean match(CloudScopeRootScope o1, HFacilityResponse o2) {
+				return CloudRepository.this.equals(o1, o2);
 			}
 			@Override
-			public void matched(CloudScopeRootScope o1, Object o2) {
-				recursiveUpdate(o1, (HCloudScopeRootScope)o2);
+			public void matched(CloudScopeRootScope o1, HFacilityResponse o2) {
+				recursiveUpdate(o1, o2);
 			}
 			@Override
 			public void afterO1(CloudScopeRootScope o1) {
 				internalRemoveProperty(p.rootScopes, o1, rootScopes);
 			}
 			@Override
-			public void afterO2(Object o2) {
-				convertChild(null, (HFacility)o2);
+			public void afterO2(HFacilityResponse o2) {
+				convertChild(null, o2);
 			}
 		});
 	}
 	
-	public void updateLocation(final ILocation location, HRepository repository) throws CloudModelException {
+	public void updateLocation(final ILocation location, HRepositoryResponse repository) throws CloudModelException {
 		HRepositoryParser.parse(repository, new HRepositoryParser.Handler() {
 			@Override
-			public boolean cloudScopeScope(HCloudScopeScope s){
-				if (s.getLocation() != null && location.getId().equals(s.getLocation().getId())) {
-					recursiveUpdate((Scope)location.getCounterScope(), s);
+			public boolean cloudScopeScope(HFacilityResponse f){
+				if (f.getLocation() != null && location.getId().equals(f.getLocation().getId())) {
+					recursiveUpdate((Scope)location.getCounterScope(), f);
 					return false;
 				}
 				return true;
 			};
 			@Override
-			public boolean locationScope(HLocationScope s){
-				if (location.getId().equals(s.getLocation().getId())) {
-					recursiveUpdate((Scope)location.getCounterScope(), s);
+			public boolean locationScope(HFacilityResponse f){
+				if (location.getId().equals(f.getLocation().getId())) {
+					recursiveUpdate((Scope)location.getCounterScope(), f);
 				}
 				return false;
 			};
 		});
 	}
 	
-	private boolean equals(Facility facility, HFacility hFacility) {
+	private boolean equals(Facility facility, HFacilityResponse hFacility) {
 		if (!facility.getFacilityId().equals(hFacility.getId()))
 			return false;
 		
 		if (
-			hFacility instanceof HCloudScopeScope &&
+			hFacility.getType() == TypeEnum.ROOT &&
+			facility instanceof CloudScopeRootScope
+			) {
+			return true;
+		} else if (
+			hFacility.getType() == TypeEnum.CLOUDSCOPE &&
 			facility instanceof CloudScopeScope
 			) {
 			return true;
 		} else if (
-			hFacility instanceof HLocationScope &&
+			hFacility.getType() == TypeEnum.LOCATION &&
 			facility instanceof LocationScope
 			) {
 			return true;
 		} else if (
-			hFacility instanceof HFolder &&
+			hFacility.getType() == TypeEnum.FOLDER &&
 			facility instanceof FolderScope
 			) {
 			return true;
 		} else if (
-			hFacility instanceof HScope &&
+			hFacility.getType() == TypeEnum.SCOPE &&
 			facility instanceof Scope
 			) {
 			return true;
 		} else if (
-			hFacility instanceof HNode &&
+			hFacility.getType() == TypeEnum.NODE &&
 			facility instanceof Node
 			) {
 			return true;
 		} else if (
-			hFacility instanceof HInstanceNode &&
+			hFacility.getType() == TypeEnum.INSTANCE &&
 			facility instanceof InstanceNode
 			) {
 			return true;
 		} else if (
-			hFacility instanceof HEntityNode &&
+			hFacility.getType() == TypeEnum.ENTITY &&
 			facility instanceof EntityNode
 			) {
 			return true;
@@ -124,46 +123,28 @@ public class CloudRepository extends Element implements ICloudRepository {
 		return false;
 	}
 	
-	private void recursiveUpdate(Facility facility, Object hFacility){
-		if (
-			hFacility instanceof HCloudScopeScope &&
-			facility instanceof CloudScopeScope
-			) {
-			((CloudScopeScope)facility).update((HCloudScopeScope)hFacility);
-			recursiveUpdateScope((Scope)facility, (HScope)hFacility);
-		} else if (
-			hFacility instanceof HLocationScope &&
-			facility instanceof LocationScope
-			) {
-			((LocationScope)facility).update((HLocationScope)hFacility);
-			recursiveUpdateScope((Scope)facility, (HScope)hFacility);
-		} else if (
-			hFacility instanceof HFolder &&
-			facility instanceof FolderScope
-			) {
-			((FolderScope)facility).update((HFolder)hFacility);
-			recursiveUpdateScope((FolderScope)facility, (HFolder)hFacility);
-		} else if (
-			hFacility instanceof HScope &&
-			facility instanceof Scope
-			) {
-			((Scope)facility).update((HScope)hFacility);
-			recursiveUpdateScope((Scope)facility, (HScope)hFacility);
-		} else if (
-			hFacility instanceof HNode &&
-			facility instanceof Node
-			) {
-			((Node)facility).update((HNode)hFacility);
-		} else if (
-			hFacility instanceof HInstanceNode &&
-			facility instanceof InstanceNode
-			) {
-			((InstanceNode)facility).update((HInstanceNode)hFacility);
-		} else if (
-			hFacility instanceof HEntityNode &&
-			facility instanceof EntityNode
-			) {
-			((EntityNode)facility).update((HEntityNode)hFacility);
+	private void recursiveUpdate(Facility facility, HFacilityResponse hFacility) {
+		if (hFacility.getType() == TypeEnum.ROOT && facility instanceof CloudScopeRootScope) {
+			((CloudScopeRootScope) facility).update(hFacility);
+			recursiveUpdateScope((Scope) facility, hFacility);
+		} else if (hFacility.getType() == TypeEnum.CLOUDSCOPE && facility instanceof CloudScopeScope) {
+			((CloudScopeScope) facility).update(hFacility);
+			recursiveUpdateScope((Scope) facility, hFacility);
+		} else if (hFacility.getType() == TypeEnum.LOCATION && facility instanceof LocationScope) {
+			((LocationScope) facility).update(hFacility);
+			recursiveUpdateScope((Scope) facility, hFacility);
+		} else if (hFacility.getType() == TypeEnum.FOLDER && facility instanceof FolderScope) {
+			((FolderScope) facility).update(hFacility);
+			recursiveUpdateScope((FolderScope) facility, hFacility);
+		} else if (hFacility.getType() == TypeEnum.SCOPE && facility instanceof Scope) {
+			((Scope) facility).update(hFacility);
+			recursiveUpdateScope((Scope) facility, hFacility);
+		} else if (hFacility.getType() == TypeEnum.NODE && facility instanceof Node) {
+			((Node) facility).update(hFacility);
+		} else if (hFacility.getType() == TypeEnum.INSTANCE && facility instanceof InstanceNode) {
+			((InstanceNode) facility).update(hFacility);
+		} else if (hFacility.getType() == TypeEnum.ENTITY && facility instanceof EntityNode) {
+			((EntityNode) facility).update(hFacility);
 		}
 	}
 
@@ -172,14 +153,14 @@ public class CloudRepository extends Element implements ICloudRepository {
 		return (HinemosManager)getOwner();
 	}
 
-	private Scope recursiveUpdateScope(final Scope scope, final HScope hScope) {
-		CollectionComparator.compareCollection(Arrays.asList(scope.getFacilities()), hScope.getFacilities(), new CollectionComparator.Comparator<Facility, Object>(){
+	private Scope recursiveUpdateScope(final Scope scope, final HFacilityResponse hScope) {
+		CollectionComparator.compareCollection(Arrays.asList(scope.getFacilities()), hScope.getFacilities(), new CollectionComparator.Comparator<Facility, HFacilityResponse>(){
 			@Override
-			public boolean match(Facility o1, Object o2) {
-				return CloudRepository.this.equals(o1, (HFacility)o2);
+			public boolean match(Facility o1, HFacilityResponse o2) {
+				return CloudRepository.this.equals(o1, o2);
 			}
 			@Override
-			public void matched(Facility o1, Object o2) {
+			public void matched(Facility o1, HFacilityResponse o2) {
 				recursiveUpdate(o1, o2);
 			}
 			@Override
@@ -193,7 +174,7 @@ public class CloudRepository extends Element implements ICloudRepository {
 				scope.removeFacility(o1);
 			}
 			@Override
-			public void afterO2(Object o2) {
+			public void afterO2(HFacilityResponse o2) {
 				Facility childFacility = convertChild(null, o2);
 				if (childFacility != null)
 					scope.addFacility(childFacility);
@@ -203,67 +184,63 @@ public class CloudRepository extends Element implements ICloudRepository {
 		return scope;
 	}
 	
-	private Scope convertScope(HScope hScope, Scope scope) {
-		for (Object child: hScope.getFacilities()) {
+	private Scope convertScope(HFacilityResponse hScope, Scope scope) {
+		for (HFacilityResponse child: hScope.getFacilities()) {
 			convertChild(scope, child);
 		}
 		return scope;
 	}
 	
-	private Facility convertChild(Scope parent, Object hFacility) {
-		if (hFacility instanceof HCloudScopeRootScope) {
+	private Facility convertChild(Scope parent, HFacilityResponse hFacility) {
+		if (hFacility.getType() == TypeEnum.ROOT) {
 			assert parent == null;
 			
-			HCloudScopeRootScope hRoot = (HCloudScopeRootScope)hFacility;
-			CloudScopeRootScope root = CloudScopeRootScope.convert(this, hRoot);
-			convertScope(hRoot, root);
+			CloudScopeRootScope root = CloudScopeRootScope.convert(this, hFacility);
+			convertScope(hFacility, root);
 			
 			internalAddProperty(p.rootScopes, root, rootScopes);
 			return root;
-		} else if (hFacility instanceof HCloudScopeScope) {
-			HCloudScopeScope hCloudScope = (HCloudScopeScope)hFacility;
-			CloudScopeScope cloudScope = CloudScopeScope.convert(hCloudScope);
-			convertScope(hCloudScope, cloudScope);
+		} else if (hFacility.getType() == TypeEnum.CLOUDSCOPE) {
+			CloudScopeScope cloudScope = CloudScopeScope.convert(hFacility);
+			convertScope(hFacility, cloudScope);
 			
 			if (parent != null)
 				parent.addFacility(cloudScope);
 			
-			CloudScope cs = getHinemosManager().getCloudScopes().getCloudScope(((com.clustercontrol.ws.xcloud.CloudScope)hCloudScope.getCloudScope()).getId());
+			CloudScope cs = getHinemosManager().getCloudScopes().getCloudScope(hFacility.getCloudScope().getEntity().getCloudScopeId());
 			cloudScope.setCloudScope(cs);
 			cs.setCounterScope(cloudScope);
 			
-			if (hCloudScope.getLocation() != null) {
-				Location l = cs.getLocation(hCloudScope.getLocation().getId());
+			if (hFacility.getLocation() != null) {
+				Location l = cs.getLocation(hFacility.getLocation().getId());
 				cloudScope.setLocation(l);
 				l.setCounterScope(cloudScope);
 			}
 			
 			return cloudScope;
-		} else if (hFacility instanceof HLocationScope) {
-			HLocationScope hLocation = (HLocationScope)hFacility;
-			LocationScope location = LocationScope.convert(hLocation);
-			convertScope(hLocation, location);
+		} else if (hFacility.getType() == TypeEnum.LOCATION) {
+			LocationScope location = LocationScope.convert(hFacility);
+			convertScope(hFacility, location);
 			
 			if (parent != null)
 				parent.addFacility(location);
 
-			CloudScope cs = getHinemosManager().getCloudScopes().getCloudScope(((com.clustercontrol.ws.xcloud.CloudScope)((HCloudScopeScope)hLocation.getParent()).getCloudScope()).getId());
-			Location l = cs.getLocation(hLocation.getLocation().getId());
+			CloudScope cs = getHinemosManager().getCloudScopes().getCloudScope(hFacility.getParentCloudScopeId());
+			Location l = cs.getLocation(hFacility.getLocation().getId());
 			location.setLocation(l);
 			l.setCounterScope(location);
 
 			return location;
-		} else if (hFacility instanceof HFolder) {
-			HFolder hScope = (HFolder)hFacility;
-			FolderScope scope = FolderScope.convert(hScope);
-			convertScope(hScope, scope);
+		} else if (hFacility.getType() == TypeEnum.FOLDER) {
+			FolderScope scope = FolderScope.convert(hFacility);
+			convertScope(hFacility, scope);
 
 			if (parent != null)
 				parent.addFacility(scope);
 			
 			return scope;
-		} else if (hFacility instanceof HScope) {
-			HScope hScope = (HScope)hFacility;
+		} else if (hFacility.getType() == TypeEnum.SCOPE) {
+			HFacilityResponse hScope = hFacility;
 			Scope scope = Scope.convert(hScope);
 			convertScope(hScope, scope);
 			
@@ -271,28 +248,25 @@ public class CloudRepository extends Element implements ICloudRepository {
 				parent.addFacility(scope);
 			
 			return scope;
-		} else if (hFacility instanceof HInstanceNode) {
-			HInstanceNode hInstanceNode = (HInstanceNode)hFacility;
-			InstanceNode instanceNode = InstanceNode.convert(hInstanceNode);
+		} else if (hFacility.getType() == TypeEnum.INSTANCE) {
+			InstanceNode instanceNode = InstanceNode.convert(hFacility);
 			
-			CloudScope cs = getHinemosManager().getCloudScopes().getCloudScope(((com.clustercontrol.ws.xcloud.Instance)hInstanceNode.getInstance()).getCloudScopeId());
-			Location l = cs.getLocation(((com.clustercontrol.ws.xcloud.Instance)hInstanceNode.getInstance()).getLocationId());
-			Instance i = l.getComputeResources().getInstance(((com.clustercontrol.ws.xcloud.Instance)hInstanceNode.getInstance()).getId());
+			CloudScope cs = getHinemosManager().getCloudScopes().getCloudScope(hFacility.getInstance().getCloudScopeId());
+			Location l = cs.getLocation(hFacility.getInstance().getLocationId());
+			Instance i = l.getComputeResources().getInstance(hFacility.getInstance().getId());
 			
 			i.addCounterNode(instanceNode);
 			if (parent != null)
 				parent.addFacility(instanceNode);
 			
 			return instanceNode;
-		} else if (hFacility instanceof HEntityNode) {
-			HEntityNode hNode = (HEntityNode)hFacility;
-			EntityNode node = EntityNode.convert(hNode);
+		} else if (hFacility.getType() == TypeEnum.ENTITY) {
+			EntityNode node = EntityNode.convert(hFacility);
 			if (parent != null)
 				parent.addFacility(node);
 			return node;
-		} else if (hFacility instanceof HNode) {
-			HNode hNode = (HNode)hFacility;
-			Node node = Node.convert(hNode);
+		} else if (hFacility.getType() == TypeEnum.NODE) {
+			Node node = Node.convert(hFacility);
 			if (parent != null)
 				parent.addFacility(node);
 			return node;

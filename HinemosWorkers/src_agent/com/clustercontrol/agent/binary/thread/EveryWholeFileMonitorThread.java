@@ -50,7 +50,6 @@ public class EveryWholeFileMonitorThread extends Thread {
 
 		try {
 			// 監視処理実行.
-			binaryMonitor.setTmpThreadId(Long.toString(this.getId()));
 			binaryMonitor.run();
 		} catch (Exception e) {
 			log.warn(String.format(

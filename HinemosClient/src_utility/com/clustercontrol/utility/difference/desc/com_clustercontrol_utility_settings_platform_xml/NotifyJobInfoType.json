@@ -129,6 +129,60 @@
 	"propName":"jobExecScope",
 	"annotations":[
 		{"type":"Column", "columnName":"NotifyJobInfoType_jobExecScope"}
+	]},
+	
+	{
+	"propName":"notifyJobType",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_notifyJobType"}
+	]},
+
+	{
+	"propName":"retryFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_retryFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"retryCount",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_retryCount"}
+	]},
+
+	{
+	"propName":"successInternalFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_successInternalFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"failureInternalFlg",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_failureInternalFlg"},
+		{"type":"Translate",
+			"values":[
+				{"value":"false", "name":"name_hyphen"},
+				{"value":"true", "name":"name_circle"}
+			]
+		}
+	]},
+
+	{
+	"propName":"joblinkSendSettingId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyJobInfoType_joblinkSendSettingId"}
 	]}
 ]
 }

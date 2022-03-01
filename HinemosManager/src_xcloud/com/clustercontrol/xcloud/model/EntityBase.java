@@ -7,8 +7,8 @@
  */
 package com.clustercontrol.xcloud.model;
 
-import javax.persistence.EntityListeners;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.MappedSuperclass;
 
 import com.clustercontrol.xcloud.persistence.EntityExtension;
 import com.clustercontrol.xcloud.persistence.IDHolder;

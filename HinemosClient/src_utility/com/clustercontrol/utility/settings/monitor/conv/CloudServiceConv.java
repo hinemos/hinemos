@@ -8,17 +8,28 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorPluginStringInfoResponse;
+import org.openapitools.client.model.MonitorTruthValueInfoResponse;
+import org.openapitools.client.model.PluginCheckInfoResponse;
 
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import org.openapitools.client.model.PlatformServiceConditionResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ConvertorException;
-import com.clustercontrol.utility.settings.cloud.action.CloudTools;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.monitor.xml.CloudServiceInfo;
 import com.clustercontrol.utility.settings.monitor.xml.CloudServiceMonitor;
@@ -27,13 +38,8 @@ import com.clustercontrol.utility.settings.monitor.xml.PluginStringValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.TruthValue;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.PlatformServiceCondition;
+import com.clustercontrol.xcloud.CloudManagerException;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 /**
  * クラウドサービス 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -47,7 +53,7 @@ public class CloudServiceConv {
 
 	static private String SCHEMA_TYPE = "H";
 	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "2";
+	static private String SCHEMA_REVISION = "3";
 	
 	static private String KEY_TARGETS = "targets";
 	static private String REGION = "REGION";
@@ -84,32 +90,34 @@ public class CloudServiceConv {
 	 * <BR>
 	 *
 	 * @return
-	 * @throws MonitorNotFound_Exception
-	 * @throws InvalidUserPass_Exception
-	 * @throws InvalidRole_Exception
-	 * @throws HinemosUnknown_Exception
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
+	 * @throws MonitorNotFound
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
 	 */
 	
 	public static CloudServiceMonitors
-		createCloudServiceMonitors(List<com.clustercontrol.ws.monitor.MonitorInfo> monitorInfoList)
-				throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+		createCloudServiceMonitors(List<MonitorInfoResponse> monitorInfoList)
+				throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		CloudServiceMonitors cloudServiceMonitors = new CloudServiceMonitors();
 
-		for (com.clustercontrol.ws.monitor.MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
 			CloudServiceMonitor cloudServiceMonitor = new CloudServiceMonitor();
 			cloudServiceMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 
-			for (com.clustercontrol.ws.monitor.MonitorTruthValueInfo truthValueInfo : monitorInfo.getTruthValueInfo()) {
-				cloudServiceMonitor.addTruthValue(MonitorConv.createTruthValue(truthValueInfo));
+			for (MonitorTruthValueInfoResponse truthValueInfo : monitorInfo.getTruthValueInfo()) {
+				cloudServiceMonitor.addTruthValue(MonitorConv.createTruthValue(monitorInfo.getMonitorId(),truthValueInfo));
 			}
 
-			cloudServiceMonitor.setCloudServiceInfo(createCloudServiceInfo(monitorInfo.getPluginCheckInfo()));
+			cloudServiceMonitor.setCloudServiceInfo(createCloudServiceInfo(monitorInfo.getMonitorId() ,monitorInfo.getPluginCheckInfo()));
 			cloudServiceMonitors.addCloudServiceMonitor(cloudServiceMonitor);
 		}
 
@@ -120,12 +128,11 @@ public class CloudServiceConv {
 	}
 	
 
-	public static List<com.clustercontrol.ws.monitor.MonitorInfo> createMonitorInfoList(CloudServiceMonitors cloudServiceMonitors) throws ConvertorException {
-		List<com.clustercontrol.ws.monitor.MonitorInfo> monitorInfoList = new LinkedList<com.clustercontrol.ws.monitor.MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(CloudServiceMonitors cloudServiceMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException, RestConnectFailed{
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 
 		
-		com.clustercontrol.ws.xcloud.CloudEndpoint endpoint = CloudTools.getEndpoint(com.clustercontrol.ws.xcloud.CloudEndpoint.class);
-		List<PlatformServiceCondition> conditions = null;
+		List<PlatformServiceConditionResponse> conditions = null;
 		
 		for (CloudServiceMonitor cloudServiceMonitor : cloudServiceMonitors.getCloudServiceMonitor()) {
 			logger.debug("Monitor Id : " + cloudServiceMonitor.getMonitor().getMonitorId());
@@ -137,9 +144,13 @@ public class CloudServiceConv {
 				boolean region = REGION.equals(values[2]);
 				int cloudIdValStPos =  2;
 				int cloudIdValEdPos =  values.length - 1;
+				String locationId;
 				if (region){
 					cloudIdValStPos = 3;
 					cloudIdValEdPos -= 1;
+					locationId = values[ values.length -1 ];
+				} else {
+					locationId = null;
 				}
 				String[] cloudScopeIdEditAry = new String[ cloudIdValEdPos - cloudIdValStPos + 1 ]  ;
 				for( int loopCnt = cloudIdValStPos ; loopCnt <= cloudIdValEdPos ;  loopCnt++){
@@ -148,16 +159,10 @@ public class CloudServiceConv {
 				String cloudScopeId = String.join( "_" , cloudScopeIdEditAry  );
 				logger.debug("cloudScopeId : " + cloudScopeId );
 				try {
-					if (region){
-						String locationId = values[ values.length -1 ]; 
-						logger.debug("locationId :" + locationId);
-						conditions = endpoint.getPlatformServiceConditionsByLocationAndRole( cloudScopeId
-								,locationId , cloudServiceMonitor.getMonitor().getOwnerRoleId());
-					}else{
-						conditions = endpoint.getPlatformServiceConditionsByRole(cloudScopeId,
-								cloudServiceMonitor.getMonitor().getOwnerRoleId());
-					}
-					for (PlatformServiceCondition condition :conditions){
+					CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+					conditions = endpoint.getPlatformServiceConditions( cloudScopeId
+							,locationId , cloudServiceMonitor.getMonitor().getOwnerRoleId());
+					for (PlatformServiceConditionResponse condition :conditions){
 						if (condition.getId().equals(value)){
 							matched = true;	
 							break;
@@ -166,8 +171,7 @@ public class CloudServiceConv {
 					if(!matched){
 						errMessage = Messages.getString("SettingTools.EssentialValueInvalid") + " Service = " + value;
 					}
-				} catch (CloudManagerException | com.clustercontrol.ws.xcloud.InvalidRole_Exception
-						| com.clustercontrol.ws.xcloud.InvalidUserPass_Exception e) {
+				} catch (CloudManagerException | InvalidRole | InvalidUserPass e) {
 					errMessage = Messages.getString(HinemosMessage.replace(e.getMessage()));
 				}
 			}
@@ -176,12 +180,12 @@ public class CloudServiceConv {
 			}
 			
 			if (!matched){
-				MonitorInfo erroMonitor = MonitorConv.makeErrorMonitor(
+				MonitorInfoResponse erroMonitor = MonitorConv.makeErrorMonitor(
 						cloudServiceMonitor.getMonitor().getMonitorId(), errMessage);
 				monitorInfoList.add(erroMonitor);
 			}
 			else{
-				MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(cloudServiceMonitor.getMonitor());
+				MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(cloudServiceMonitor.getMonitor());
 				for (TruthValue truthValue : cloudServiceMonitor.getTruthValue()) {
 					monitorInfo.getTruthValueInfo().add(MonitorConv.createTruthValue(truthValue));
 				}
@@ -200,21 +204,20 @@ public class CloudServiceConv {
 	 * @return
 	 */
 	
-	private static CloudServiceInfo
-		createCloudServiceInfo(com.clustercontrol.ws.monitor.PluginCheckInfo pluginCheckInfo) {
+	private static CloudServiceInfo createCloudServiceInfo(String monitorId,PluginCheckInfoResponse pluginCheckInfo) {
 		CloudServiceInfo cloudServiceInfo = new CloudServiceInfo();
 		cloudServiceInfo.setMonitorTypeId("");
 
-		cloudServiceInfo.setMonitorId(pluginCheckInfo.getMonitorId());
+		cloudServiceInfo.setMonitorId(monitorId);
 		
-		List<com.clustercontrol.ws.monitor.MonitorPluginStringInfo> monitorPluginStringInfo =
+		List<MonitorPluginStringInfoResponse> monitorPluginStringInfo =
 				pluginCheckInfo.getMonitorPluginStringInfoList();
 		
 		com.clustercontrol.utility.settings.monitor.xml.PluginStringValue pluginStringValueArray
 			= new com.clustercontrol.utility.settings.monitor.xml.PluginStringValue();
 		
 		pluginStringValueArray.setKey(monitorPluginStringInfo.get(0).getKey());
-		pluginStringValueArray.setMonitorId(monitorPluginStringInfo.get(0).getMonitorId());
+		pluginStringValueArray.setMonitorId(monitorId);
 		pluginStringValueArray.setValue(monitorPluginStringInfo.get(0).getValue());
 
 		cloudServiceInfo.setPluginStringValue(pluginStringValueArray);;
@@ -227,16 +230,12 @@ public class CloudServiceConv {
 	 *
 	 * @return
 	 */
-	private static com.clustercontrol.ws.monitor.PluginCheckInfo createCloudServiceCheckInfo(CloudServiceInfo cloudServiceInfo) {
-		com.clustercontrol.ws.monitor.PluginCheckInfo pluginCheckInfo = new com.clustercontrol.ws.monitor.PluginCheckInfo();
-		pluginCheckInfo.setMonitorTypeId(cloudServiceInfo.getMonitorTypeId());
-		pluginCheckInfo.setMonitorId(cloudServiceInfo.getMonitorId());
-		
+	private static PluginCheckInfoResponse createCloudServiceCheckInfo(CloudServiceInfo cloudServiceInfo) {
+		PluginCheckInfoResponse pluginCheckInfo = new PluginCheckInfoResponse();
 		PluginStringValue pluginStringValue = cloudServiceInfo.getPluginStringValue();
-		com.clustercontrol.ws.monitor.MonitorPluginStringInfo info = null;
-		info = new com.clustercontrol.ws.monitor.MonitorPluginStringInfo();
+		MonitorPluginStringInfoResponse info = null;
+		info = new MonitorPluginStringInfoResponse();
 		info.setKey(pluginStringValue.getKey());
-		info.setMonitorId(pluginStringValue.getMonitorId());
 		info.setValue(pluginStringValue.getValue());
 		pluginCheckInfo.getMonitorPluginStringInfoList().add(info);
 		

@@ -22,10 +22,14 @@ public class JobTriggerTypeConstant {
 	public static final int TYPE_SCHEDULE = 1;
 	/** ファイルチェック */
 	public static final int TYPE_FILECHECK = 4;
+	/** ジョブ連携受信実行契機 */
+	public static final int TYPE_JOBLINKRCV = 6;
 	/** 手動実行 */
 	public static final int TYPE_MANUAL = 2;
 	/** 監視連動 */
 	public static final int TYPE_MONITOR = 3;
+	/** ジョブセッション事前登録 */
+	public static final int TYPE_PREMAKESESSION = 5;
 	
 	/**
 	 * 種別から文字コードに変換する。
@@ -40,10 +44,14 @@ public class JobTriggerTypeConstant {
 			return "SCHEDULE";
 		} else if (type == TYPE_FILECHECK) {
 			return "FILECHECK";
+		} else if (type == TYPE_JOBLINKRCV) {
+			return "JOBLINKRCV";
 		} else if (type == TYPE_MANUAL) {
 			return "MANUAL";
 		} else if (type == TYPE_MONITOR) {
 			return "MONITOR";
+		} else if (type == TYPE_PREMAKESESSION) {
+			return "PREMAKESESSION";
 		}
 		return "UNKNOWN";
 	}

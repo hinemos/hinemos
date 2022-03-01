@@ -11,13 +11,13 @@ package com.clustercontrol.jobmanagement.model;
 import java.io.Serializable;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 
 /**
@@ -35,6 +35,9 @@ public class JobSessionEntity implements Serializable {
 	private Long scheduleDate;
 	private String triggerInfo;
 	private Integer triggerType;
+	private Long sessionGenerateDate;
+	private String sessionGenerateJobkickId;
+	private Boolean expNodeRuntimeFlg;
 	private List<JobSessionJobEntity> jobSessionJobEntities;
 	private Long position;
 
@@ -117,6 +120,32 @@ public class JobSessionEntity implements Serializable {
 		this.triggerType = triggerType;
 	}
 
+	@Column(name="session_generate_date")
+	public Long getSessionGenerateDate() {
+		return sessionGenerateDate;
+	}
+
+	public void setSessionGenerateDate(Long sessionGenerateDate) {
+		this.sessionGenerateDate = sessionGenerateDate;
+	}
+
+	@Column(name="session_generate_jobkick_id")
+	public String getSessionGenerateJobkickId() {
+		return sessionGenerateJobkickId;
+	}
+
+	public void setSessionGenerateJobkickId(String sessionGenerateJobkickId) {
+		this.sessionGenerateJobkickId = sessionGenerateJobkickId;
+	}
+
+	@Column(name="exp_node_runtime_flg")
+	public Boolean getExpNodeRuntimeFlg() {
+		return expNodeRuntimeFlg;
+	}
+
+	public void setExpNodeRuntimeFlg(Boolean expNodeRuntimeFlg) {
+		this.expNodeRuntimeFlg = expNodeRuntimeFlg;
+	}
 
 	//bi-directional many-to-one association to JobSessionJobEntity
 	@OneToMany(mappedBy="jobSessionEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)

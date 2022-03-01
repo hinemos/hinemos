@@ -14,13 +14,14 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse.RunIntervalEnum;
 
 import com.clustercontrol.calendar.composite.CalendarIdListComposite;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.repository.bean.NodeConfigRunInterval;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
 
 /**
  * 構成管理情報収集条件コンポジットクラス<BR>
@@ -136,14 +137,20 @@ public class NodeConfigCollectRuleComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.calendar.composite.CalendarIdListComposite#setText(String)
 	 */
-	public void setInputData(NodeConfigSettingInfo info) {
+	public void setInputData(NodeConfigSettingInfoResponse info) {
 
 		// 構成情報収集間隔
 		int runInterval = 0;
-		if (info == null || info.getRunInterval() == 0) {
+		if (info == null) {
 			runInterval = NodeConfigRunInterval.TYPE_HOUR_6.toSec(); 
 		} else {
-			runInterval = info.getRunInterval();
+			if (info.getRunInterval() == RunIntervalEnum._6) {
+				runInterval = NodeConfigRunInterval.TYPE_HOUR_6.toSec();
+			} else if (info.getRunInterval() == RunIntervalEnum._12) {
+				runInterval = NodeConfigRunInterval.TYPE_HOUR_12.toSec();
+			} else if (info.getRunInterval() == RunIntervalEnum._24) {
+				runInterval = NodeConfigRunInterval.TYPE_HOUR_24.toSec();
+			}
 		}
 		this.m_comboRunInterval.setText(NodeConfigRunInterval.valueOf(runInterval).toString());
 
@@ -167,15 +174,21 @@ public class NodeConfigCollectRuleComposite extends Composite {
 	 * @see #setValidateResult(String, String)
 	 * @see com.clustercontrol.calendar.composite.CalendarIdListComposite#getText()
 	 */
-	public ValidateResult createInputData(NodeConfigSettingInfo info) {
+	public ValidateResult createInputData(NodeConfigSettingInfoResponse info) {
 
 		if(info != null){
 			if (this.m_comboRunInterval.getText() != null
 					&& !"".equals((this.m_comboRunInterval.getText()).trim())) {
 				if("0".equals(this.m_comboRunInterval.getText())){
-					info.setRunInterval(0);
+					info.setRunInterval(RunIntervalEnum._6);
 				}else{
-					info.setRunInterval(NodeConfigRunInterval.stringToType(this.m_comboRunInterval.getText()).toSec());
+					if (NodeConfigRunInterval.stringToType(this.m_comboRunInterval.getText()) == NodeConfigRunInterval.TYPE_HOUR_6) {
+						info.setRunInterval(RunIntervalEnum._6);
+					} else if (NodeConfigRunInterval.stringToType(this.m_comboRunInterval.getText()) == NodeConfigRunInterval.TYPE_HOUR_12) {
+						info.setRunInterval(RunIntervalEnum._12);
+					} else if (NodeConfigRunInterval.stringToType(this.m_comboRunInterval.getText()) == NodeConfigRunInterval.TYPE_HOUR_24) {
+						info.setRunInterval(RunIntervalEnum._24);
+					}
 				}
 			}
 
@@ -225,7 +238,7 @@ public class NodeConfigCollectRuleComposite extends Composite {
 		return m_calendarId;
 	}
 	
-	public int getRunInterval() {
-		return NodeConfigRunInterval.values()[m_comboRunInterval.getSelectionIndex()].toSec();
+	public NodeConfigRunInterval getRunInterval() {
+		return NodeConfigRunInterval.values()[m_comboRunInterval.getSelectionIndex()];
 	}
 }

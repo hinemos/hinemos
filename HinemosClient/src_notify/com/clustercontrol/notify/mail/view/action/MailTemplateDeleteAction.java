@@ -125,13 +125,9 @@ public class MailTemplateDeleteAction extends AbstractHandler implements IElemen
 		}
 
 		boolean result = false;
-		for(Map.Entry<String, List<String>> entry : deleteMap.entrySet()) {
-			String managerName = entry.getKey();
-			for(String mailTemplateId : entry.getValue()) {
-				result = result | new DeleteMailTemplate().delete(managerName, mailTemplateId);
-			}
+		for(Map.Entry<String, List<String>> map : deleteMap.entrySet()) {
+			result = result | new DeleteMailTemplate().delete(map.getKey(), map.getValue());
 		}
-
 		if(result){
 			composite.update();
 		}

@@ -14,6 +14,7 @@
 		</dirset>
 		
 		<fileset dir="${commonlib.dir}">
+			<exclude name="**/*sources.jar" />
 			<include name="**/*.jar" />
 		</fileset>
 	</path>

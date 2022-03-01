@@ -10,15 +10,22 @@ package com.clustercontrol.utility.settings.nodemap.conv;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import org.openapitools.client.model.FacilityElementResponse;
+import org.openapitools.client.model.MapAssociationInfoResponse;
+import org.openapitools.client.model.NodeMapModelResponse;
+import org.openapitools.client.model.RegisterNodeMapModelRequest;
 
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.nodemap.xml.Association;
 import com.clustercontrol.utility.settings.nodemap.xml.Contents;
 import com.clustercontrol.utility.settings.nodemap.xml.NodeMapModel;
-import com.clustercontrol.ws.nodemap.FacilityElement;
-import com.clustercontrol.ws.nodemap.NodeMapModel.Contents.Entry;
 
 public class NodeMapConv {
 	
@@ -79,24 +86,24 @@ public class NodeMapConv {
 	 * @param Hinemos Bean(DTO)
 	 * @return 計算定義 XML Bean
 	 */
-	public static NodeMapModel dto2Xml(com.clustercontrol.ws.nodemap.NodeMapModel nodeMapModelWs) {
+	public static NodeMapModel dto2Xml(NodeMapModelResponse nodeMapModelWs) {
 
 		NodeMapModel ret = new NodeMapModel();
 		ret.setBgName(nodeMapModelWs.getBgName());
 		ret.setMapId(nodeMapModelWs.getMapId());
-		List<com.clustercontrol.ws.nodemap.Association> associationWsList = nodeMapModelWs.getAssociations();
-		for (com.clustercontrol.ws.nodemap.Association associationWs :associationWsList){
+		List<MapAssociationInfoResponse> associationWsList = nodeMapModelWs.getAssociations();
+		for (MapAssociationInfoResponse associationWs :associationWsList){
 			Association association = new Association();
 			association.setSource(associationWs.getSource());
 			association.setTarget(associationWs.getTarget());
 			ret.addAssociation(association);
 		}
-
-		List<com.clustercontrol.ws.nodemap.NodeMapModel.Contents.Entry> entryList = nodeMapModelWs.getContents().getEntry();
-
-		for (com.clustercontrol.ws.nodemap.NodeMapModel.Contents.Entry entry  :entryList){
-			FacilityElement facilityElement = entry.getValue();
-			if(!facilityElement.isNewcomer()){
+		
+		Set<Entry<String, FacilityElementResponse>> entryList = nodeMapModelWs.getContents().entrySet();
+		
+		for (Entry<String, FacilityElementResponse> entry  :entryList){
+			FacilityElementResponse facilityElement = entry.getValue();
+			if(!facilityElement.getNewcomer()){
 				Contents content = new Contents();
 				content.setFacilityId(facilityElement.getFacilityId());
 				content.setIconImage(facilityElement.getIconImage());
@@ -109,34 +116,30 @@ public class NodeMapConv {
 		return ret;
 	}
 	
-	public static com.clustercontrol.ws.nodemap.NodeMapModel xml2Dto(NodeMapModel nodeMapModel) {
+	public static RegisterNodeMapModelRequest xml2Dto(NodeMapModel nodeMapModel) {
 		
-		com.clustercontrol.ws.nodemap.NodeMapModel nodeMapModelDto = new com.clustercontrol.ws.nodemap.NodeMapModel();
+		RegisterNodeMapModelRequest nodeMapModelDto = new RegisterNodeMapModelRequest();
 		nodeMapModelDto.setBgName(nodeMapModel.getBgName());
 		nodeMapModelDto.setMapId(nodeMapModel.getMapId());
-		com.clustercontrol.ws.nodemap.NodeMapModel.Contents contentsDto = new com.clustercontrol.ws.nodemap.NodeMapModel.Contents();
-		List<Entry> entryListDto = contentsDto.getEntry();
+		Map<String, FacilityElementResponse> contentsDto = new HashMap<String, FacilityElementResponse>();
 		Contents[] contentXmls = nodeMapModel.getContents();
 		for (Contents contentXml :contentXmls){
-			Entry entryDto = new Entry();
-			FacilityElement facilityElement = new FacilityElement();
+			FacilityElementResponse facilityElement = new FacilityElementResponse();
 			facilityElement.setFacilityId(contentXml.getFacilityId());
 			facilityElement.setIconImage(contentXml.getIconImage());
-			facilityElement.setX(contentXml.getX());
-			facilityElement.setY(contentXml.getY());
-			entryDto.setKey(contentXml.getFacilityId());
-			entryDto.setValue(facilityElement);
-			entryListDto.add(entryDto);
+			facilityElement.setX((int)contentXml.getX());
+			facilityElement.setY((int)contentXml.getY());
+			contentsDto.put(contentXml.getFacilityId(), facilityElement);
 		}
 		
 		nodeMapModelDto.setContents(contentsDto);
 		
-		List<com.clustercontrol.ws.nodemap.Association> associations = nodeMapModelDto.getAssociations();
+		List<MapAssociationInfoResponse>  associations = nodeMapModelDto.getAssociations();
 		
 		Association[] associationXmls = nodeMapModel.getAssociation();
-		com.clustercontrol.ws.nodemap.Association association = null;
+		MapAssociationInfoResponse association = null;
 		for (Association associationXml :associationXmls){
-			association = new com.clustercontrol.ws.nodemap.Association();
+			association = new MapAssociationInfoResponse();
 			association.setSource(associationXml.getSource());
 			association.setTarget(associationXml.getTarget());
 			associations.add(association);

@@ -8,7 +8,7 @@
 
 package com.clustercontrol.hub.composite;
 
-import com.clustercontrol.ws.hub.TransferType;
+import org.openapitools.client.model.TransferInfoResponse.TransTypeEnum;
 
 /**
  * 収集蓄積[転送]機能の転送種別に関する定数クラス
@@ -29,7 +29,7 @@ public class TransferTransTypeConstant {
 	 * @param num
 	 * @return
 	 */
-	public static String typeToString(TransferType type){
+	public static String typeToString(TransTypeEnum type){
 		switch(type){
 		case BATCH:
 			return STRING_REGULAR;
@@ -47,17 +47,17 @@ public class TransferTransTypeConstant {
 	 * @param str
 	 * @return
 	 */
-	public static TransferType stringToType(String str){
+	public static TransTypeEnum stringToType(String str){
 		if (str == null) 
 			str = "";
 		
 		switch(str){
 		case STRING_REALTIME:
-			return TransferType.REALTIME;
+			return TransTypeEnum.REALTIME;
 		case STRING_REGULAR:
-			return TransferType.BATCH;
+			return TransTypeEnum.BATCH;
 		case STRING_LAG:
-			return TransferType.DELAY;
+			return TransTypeEnum.DELAY;
 		default:
 			return null;
 		}

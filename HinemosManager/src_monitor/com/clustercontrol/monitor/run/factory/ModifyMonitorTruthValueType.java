@@ -47,6 +47,7 @@ abstract public class ModifyMonitorTruthValueType extends ModifyMonitor{
 			for(int index=0; index<valueList.size(); index++){
 				value = valueList.get(index);
 				if(value != null){
+					value.setMonitorId(m_monitorInfo.getMonitorId());//findbug対応 処理をnullチェック後に移動
 					em.persist(value);
 					value.relateToMonitorInfo(m_monitorInfo);
 				}

@@ -8,14 +8,14 @@
 
 package com.clustercontrol.nodemap.figure;
 
-import com.clustercontrol.ws.nodemap.FacilityElement;
+import org.openapitools.client.model.FacilityElementResponse;
 
 /**
  * アイコン(スコープ)画像のクラス。
  * @since 1.0.0
  */
 public class ScopeFigure extends FacilityFigure {
-	public ScopeFigure(String managerName, FacilityElement element){
+	public ScopeFigure(String managerName, FacilityElementResponse element){
 		super(managerName, element);
 	}
 

@@ -154,7 +154,8 @@ public interface CloudStringConstants {
 	static final String dlgBillingDetailCollectSetting = bundle_messages.getString("caption.billing_detail_collect_setting_dialog");
 	
 	static final String dlgCloudServiceCreateModify = bundle_messages.getString("caption.cloud_service_create_modify");
-	
+	static final String dlgCloudLogCreateModify = bundle_messages.getString("caption.cloud_log_create_modify");
+
 	static final String strDetailTypeScope = bundle_messages.getString("word.billing.detail.type.scope");
 	static final String strDetailTypeNode = bundle_messages.getString("word.billing.detail.type.node");
 	static final String strDetailKindSum = bundle_messages.getString("word.billing.detail.kind.sum");
@@ -180,6 +181,8 @@ public interface CloudStringConstants {
 	static final String strMonitorCloudServiceCondition = bundle_messages.getString("monitor.cloudservice.condition.monitor");
 	static final String strMonitorCloudServiceBilling = bundle_messages.getString("monitor.cloudservice.billing.monitor");
 	static final String strMonitorCloudServiceBillingDetail = bundle_messages.getString("monitor.cloudservice.billing.detail.monitor");
+	static final String strMonitorCloudServiceLog = bundle_messages.getString("monitor.cloudservice.log.monitor");
+
 	
 	static final String msgTagKeyFromOneChar = bundle_messages.getString("message.tag.key.from_one_char");
 	static final String msgTagKeyDuplicate = bundle_messages.getString("message.tag.key.duplicate");

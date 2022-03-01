@@ -49,17 +49,20 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.openapitools.client.model.RoleInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.bean.FacilityImageConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.util.FacilityTreeCache;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.access.AccessEndpoint;
-import com.clustercontrol.ws.access.HinemosUnknown_Exception;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.InvalidUserPass_Exception;
-import com.clustercontrol.ws.access.RoleInfo;
+import com.clustercontrol.util.TableViewerSorter;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
@@ -69,7 +72,6 @@ import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
 import com.clustercontrol.xcloud.model.cloud.ILoginUser;
 import com.clustercontrol.xcloud.model.cloud.RoleRelation;
 import com.clustercontrol.xcloud.util.CollectionComparator;
-import com.clustercontrol.xcloud.util.TableViewerSorter;
 
 /**
  */
@@ -123,7 +125,7 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 
 	private TreeViewer treeViewer;
 	private IHinemosManager currentManager;
-	private RoleInfo currentRole;
+	private RoleInfoResponse currentRole;
 	private Composite composite;
 	
 	private List<Object[]> loginUsers = new ArrayList<>(); 
@@ -230,7 +232,7 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 		HinemosRole[] roles = manager.getData("roles", HinemosRole[].class);
 		if (roles == null) {
 			try {
-				List<RoleInfo> roleList = manager.getEndpoint(AccessEndpoint.class).getRoleInfoList();
+				List<RoleInfoResponse> roleList = AccessRestClientWrapper.getWrapper(manager.getManagerName()).getRoleInfoList();
 				
 				roles = new HinemosRole[roleList.size()];
 				for (int i = 0; i < roleList.size(); ++i) {
@@ -241,7 +243,7 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 				}
 				manager.setData("roles", roles);
 				return roles;
-			} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			} catch (InvalidRole | InvalidUserPass | RestConnectFailed | HinemosUnknown e) {
 				logger.warn(e.getMessage(), e);
 				return new HinemosRole[]{};
 			}
@@ -251,17 +253,17 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 	
 	protected void updateRoleInfos(final IHinemosManager manager) {
 		try {
-			List<RoleInfo> newRoleList = manager.getEndpoint(AccessEndpoint.class).getRoleInfoList();
+			List<RoleInfoResponse> newRoleList = AccessRestClientWrapper.getWrapper(manager.getManagerName()).getRoleInfoList();
 			HinemosRole[] roles = manager.getData("roles", HinemosRole[].class);
 			final List<HinemosRole> oldRoleList = new ArrayList<>();
 			if (roles != null)
 				oldRoleList.addAll(Arrays.asList(roles));
 			
-			CollectionComparator.compareCollection(oldRoleList, newRoleList, new CollectionComparator.Comparator<HinemosRole, RoleInfo>(){
-				@Override public boolean match(HinemosRole o1, RoleInfo o2) {
+			CollectionComparator.compareCollection(oldRoleList, newRoleList, new CollectionComparator.Comparator<HinemosRole, RoleInfoResponse>(){
+				@Override public boolean match(HinemosRole o1, RoleInfoResponse o2) {
 					return o1.roleInfo.getRoleId().equals(o2.getRoleId());
 				}
-				@Override public void matched(HinemosRole o1, RoleInfo o2) {
+				@Override public void matched(HinemosRole o1, RoleInfoResponse o2) {
 					o1.roleInfo.setRoleName(o2.getRoleName());
 					o1.roleInfo.setCreateDate(o2.getCreateDate());
 					o1.roleInfo.setCreateUserId(o2.getCreateUserId());
@@ -272,7 +274,7 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 				@Override public void afterO1(HinemosRole o1) {
 					oldRoleList.remove(o1);
 				}
-				@Override public void afterO2(RoleInfo o2) {
+				@Override public void afterO2(RoleInfoResponse o2) {
 					HinemosRole role = new HinemosRole();
 					role.manager = manager;
 					role.roleInfo = o2;
@@ -280,7 +282,7 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 				}
 			});
 			manager.setData("roles", oldRoleList.toArray(new HinemosRole[oldRoleList.size()]));
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (InvalidRole | InvalidUserPass | RestConnectFailed | HinemosUnknown e) {
 			logger.warn(e.getMessage(), e);
 		}
 	}
@@ -458,7 +460,16 @@ public class RoleManagementView extends AbstractCloudViewPart implements CloudSt
 						@Override
 						public void afterO1(Object[] o1) {
 							loginUsers.remove(o1);
-							((IHinemosManager)o1[0]).getModelWatch().removeWatcher((IElement)o1[1], watcher);
+							// v.7.0不具合#3828対応
+							// ログインユーザを削除した場合watcherからelementが削除されているので、以下の処理でCloudModelExceptionが発生する。
+							// ただし以下の処理が本当に不要なものか判断がつかないため、例外をキャッチしてログに出力するのみとする
+							try {
+								((IHinemosManager) o1[0]).getModelWatch().removeWatcher((IElement) o1[1], watcher);
+							} catch (CloudModelException e) {
+								if (logger.isDebugEnabled()) {
+									logger.debug("refresh(): watcher already removed for LoginUser", e);
+								}
+							}
 						}
 						@Override
 						public void afterO2(Object[] o2) {

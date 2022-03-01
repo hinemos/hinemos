@@ -13,7 +13,7 @@ package com.clustercontrol.fault;
  * @version 4.0
  */
 @SuppressWarnings("serial")
-public class CalendarInvalid extends HinemosException {
+public class CalendarInvalid extends HinemosInvalid {
 
 	public CalendarInvalid() {
 		super();

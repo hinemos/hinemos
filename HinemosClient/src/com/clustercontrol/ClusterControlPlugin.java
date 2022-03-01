@@ -22,7 +22,8 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.eclipse.core.runtime.AssertionFailedException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.ILogListener;
@@ -37,10 +38,12 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 import com.clustercontrol.bean.DefaultLayoutSettingManager;
+import com.clustercontrol.jobmanagement.preference.JobManagementPreferencePage;
 import com.clustercontrol.monitor.plugin.IMonitorPlugin;
 import com.clustercontrol.monitor.plugin.LoadMonitorPlugin;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.EndpointUnit;
+import com.clustercontrol.monitor.preference.MonitorPreferencePage;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.RestConnectUnit;
 import com.clustercontrol.utility.settings.ui.dialog.ClientUtilityDialogService;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.xcloud.model.cloud.HinemosManager;
@@ -101,6 +104,21 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	/** 監視ジョブアイコンの取得キー */
 	public static final String IMG_MONITORJOB = "monitorjob";
 
+	/** ファイルチェックジョブアイコンの取得キー */
+	public static final String IMG_FILECHECKJOB = "filecheckjob";
+
+	/** ジョブ連携送信ジョブアイコンの取得キー */
+	public static final String IMG_JOBLINKSENDJOB = "joblinksendjob";
+
+	/** ジョブ連携待機ジョブアイコンの取得キー */
+	public static final String IMG_JOBLINKRCVJOB = "joblinkrcvjob";
+
+	/** リソース制御ジョブアイコンの取得キー */
+	public static final String IMG_RESOURCEJOB = "resourcejob";
+
+	/** RPAシナリオジョブアイコンの取得キー */
+	public static final String IMG_RPAJOB = "rpajob";
+
 	/** チェック有りアイコンの取得キー */
 	public static final String IMG_CHECKED = "checked";
 
@@ -158,6 +176,9 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	/** ロール設定のユーザアイコンの取得キー */
 	public static final String IMG_ROLESETTING_USER = "rootSettingsUser";
 
+	/** 検索アイコンの取得キー */
+	public static final String IMG_FIND = "find";
+	
 	/*** JobMap用 ***/
 	/** 予定(未来)アイコンの取得キー */
 	public static final String IMG_WAIT = "wait";
@@ -169,7 +190,8 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	public static final String IMG_REFER = "refer";
 	/** ジョブマップ:キューアイコンの取得キー */
 	public static final String IMG_QUEUE = "queue";
-
+	/** 待ち条件群アイコンの取得キー */
+	public static final String IMG_WAIT_GROUP = "wait_group";
 	/** Initial window size and position */
 	public static final Rectangle WINDOW_INIT_SIZE = new Rectangle( -1, -1, 1024, 768 );
 
@@ -185,9 +207,6 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 
 	/** RAPかどうかを判別する */
 	private static Boolean is_rap = null;
-	
-	/** リロードの実行インターバル */
-	public static final int _intervalMsec = 60000;
 
 	// ----- instance メソッド ----- //
 
@@ -211,16 +230,16 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		// log4jを使うための登録処理
 		listener = new Listener();
 		Platform.addLogListener(listener);
-		
+		LoggerContext context = (LoggerContext) LogManager.getContext(false);
 		// 定期的にリロードする処理を開始する
 		String _configFileDir = System.getProperty("hinemos.web.conf.dir");
 		
 		String configFileLayoutDir = null;
 		
 		if (null != _configFileDir && !"".equals(_configFileDir)) {
-			String _configFilePath = new File(_configFileDir, "log4j.properties").getAbsolutePath();
-			m_log.info("configFilePath = " + _configFilePath);
-			PropertyConfigurator.configureAndWatch(_configFilePath, _intervalMsec);
+			URI _configFilePath = new File(_configFileDir, "log4j2.properties").toURI();
+			m_log.info("configFilePath = " + _configFilePath.getPath());
+			context.setConfigLocation(_configFilePath);
 			configFileLayoutDir = _configFileDir;
 		} else {
 			//isRapはこのタイミングでは使用できないため、hinemos.web.conf.dirがない場合、リッチクライアントと判断する
@@ -262,6 +281,25 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 
 		// UtilityのDialogServiceを注入
 		UtilityDialogInjector.setService(new ClientUtilityDialogService());
+		
+		// 確認ダイアログを表示するかをユーザが変更できない設定の場合、
+		// Preferenceの値を設定ファイルで指定された値に変更する
+		// イベント履歴の確認状態変更
+		String eventConfirmDialogEditable = System.getProperty("event.confirm.dialog.editable");
+		if (eventConfirmDialogEditable != null && eventConfirmDialogEditable.equals("false")) {
+			getPreferenceStore().setValue(MonitorPreferencePage.P_EVENT_CONFIRM_DIALOG_FLG,
+					Boolean.valueOf(System.getProperty("event.confirm.dialog")));
+		}
+		m_log.info("event.confirm.dialog = " + System.getProperty("event.confirm.dialog"));
+		m_log.info("event.confirm.dialog.editable = " + System.getProperty("event.confirm.dialog.editable"));
+		// ジョブの開始/停止
+		String jobOperationConfirmDialogEditable = System.getProperty("job.operation.confirm.dialog.editable");
+		if (jobOperationConfirmDialogEditable != null && jobOperationConfirmDialogEditable.equals("false")) {
+			getPreferenceStore().setValue(JobManagementPreferencePage.P_HISTORY_CONFIRM_DIALOG_FLG,
+					Boolean.valueOf(System.getProperty("job.operation.confirm.dialog")));
+		}
+		m_log.info("job.operation.confirm.dialog = " + System.getProperty("job.operation.confirm.dialog"));
+		m_log.info("job.operation.confirm.dialog.editable = " + System.getProperty("job.operation.confirm.dialog.editable"));
 	}
 
 	private static class Listener implements ILogListener {
@@ -381,6 +419,11 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		this.registerImage(registry, IMG_REFERJOBNET, "refer_job_net.gif");
 		this.registerImage(registry, IMG_APPROVALJOB, "approval_job.gif");
 		this.registerImage(registry, IMG_MONITORJOB, "monitor_job.gif");
+		this.registerImage(registry, IMG_FILECHECKJOB, "filecheck_job.png");
+		this.registerImage(registry, IMG_JOBLINKSENDJOB, "joblinksend_job.png");
+		this.registerImage(registry, IMG_JOBLINKRCVJOB, "joblinkrcv_job.png");
+		this.registerImage(registry, IMG_RESOURCEJOB, "resource_job.png");
+		this.registerImage(registry, IMG_RPAJOB, "rpa_job.png");
 		this.registerImage(registry, IMG_CHECKED, "checked.gif");
 		this.registerImage(registry, IMG_UNCHECKED, "unchecked.gif");
 		this.registerImage(registry, IMG_RADIO_ON, "radio_on.gif");
@@ -397,6 +440,7 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		this.registerImage(registry, IMG_SCHEDULE_NOW, "schedule_b.gif");
 		this.registerImage(registry, IMG_SCHEDULE_FUTURE, "schedule_w.gif");
 		this.registerImage(registry, IMG_JOB_EDIT_MODE, "job_edit_mode.gif");
+		this.registerImage(registry, IMG_FIND, "find.png");
 
 		// RoleSettingTree
 		this.registerImage(registry, IMG_ROLESETTING_ROOT, "node.gif");
@@ -407,6 +451,7 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 		this.registerImage(registry, IMG_WAIT, "waiting.gif");
 		this.registerImage(registry, IMG_WAIT_DOUBLE, "breakpoint_view.gif");
 		this.registerImage(registry, IMG_WAIT_CROSS_JOB, "smartmode_co.gif");
+		this.registerImage(registry, IMG_WAIT_GROUP, "waitgroup.png");
 		this.registerImage(registry, IMG_COLLAPSE, "collapse.gif");
 		this.registerImage(registry, IMG_EXPAND, "expand.gif");
 		this.registerImage(registry, IMG_REFER, "refer_mark.gif");
@@ -512,7 +557,7 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 
 	/******************************** xCloud ********************************/
 	private static String pluginPath;
-	private Map<EndpointUnit, IHinemosManager> hinemosManagers = new HashMap<>();
+	private Map<RestConnectUnit, IHinemosManager> hinemosManagers = new HashMap<>();
 	public static String getPluginPath() {
 		if (pluginPath == null) {
 			// プラグインがインストールされているパスを取得。
@@ -533,13 +578,13 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	}
 	
 	public List<IHinemosManager> getHinemosManagers(){
-		List<EndpointUnit> newEndpoints = EndpointManager.getActiveManagerList();
-		Set<EndpointUnit> oldEndpoints = hinemosManagers.keySet();
+		List<RestConnectUnit> newEndpoints = RestConnectManager.getActiveManagerList();
+		Set<RestConnectUnit> oldEndpoints = hinemosManagers.keySet();
 		
-		CollectionComparator.compareCollection(newEndpoints, oldEndpoints, new CollectionComparator.Comparator<EndpointUnit, EndpointUnit>() {
-			public boolean match(EndpointUnit o1, EndpointUnit o2) {return o1 == o2;}
-			public void afterO1(EndpointUnit o1) {hinemosManagers.put(o1, new HinemosManager(o1.getManagerName(), o1.getUrlListStr()));}
-			public void afterO2(EndpointUnit o2) {hinemosManagers.remove(o2);}
+		CollectionComparator.compareCollection(newEndpoints, oldEndpoints, new CollectionComparator.Comparator<RestConnectUnit, RestConnectUnit>() {
+			public boolean match(RestConnectUnit o1, RestConnectUnit o2) {return o1 == o2;}
+			public void afterO1(RestConnectUnit o1) {hinemosManagers.put(o1, new HinemosManager(o1.getManagerName(), o1.getUrlListStr()));}
+			public void afterO2(RestConnectUnit o2) {hinemosManagers.remove(o2);}
 		});
 		
 		return new ArrayList<>(hinemosManagers.values());

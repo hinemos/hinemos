@@ -14,15 +14,15 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import javax.xml.bind.annotation.XmlType;
 
 import com.clustercontrol.accesscontrol.annotation.HinemosObjectPrivilege;
@@ -56,7 +56,7 @@ public class CalendarInfo extends ObjectPrivilegeTargetInfo {
 	private String updateUser;
 	private Long validTimeFrom;
 	private Long validTimeTo;
-	private List<CalendarDetailInfo> calDetailInfoEntities = new ArrayList<>();
+	private List<CalendarDetailInfo> calendarDetailList = new ArrayList<>();
 
 	public CalendarInfo() {
 	}
@@ -168,19 +168,19 @@ public class CalendarInfo extends ObjectPrivilegeTargetInfo {
 	//bi-directional many-to-one association to CalDetailInfoEntity
 	@OneToMany(mappedBy="calInfoEntity", cascade=CascadeType.ALL, fetch=FetchType.LAZY)
 	public List<CalendarDetailInfo> getCalendarDetailList() {
-		return this.calDetailInfoEntities;
+		return this.calendarDetailList;
 	}
 
-	public void setCalendarDetailList(List<CalendarDetailInfo> calDetailInfoEntities) {
-		if (calDetailInfoEntities != null && calDetailInfoEntities.size() > 0) {
-			Collections.sort(calDetailInfoEntities, new Comparator<CalendarDetailInfo>() {
+	public void setCalendarDetailList(List<CalendarDetailInfo> calendarDetailList) {
+		if (calendarDetailList != null && calendarDetailList.size() > 0) {
+			Collections.sort(calendarDetailList, new Comparator<CalendarDetailInfo>() {
 				@Override
 				public int compare(CalendarDetailInfo o1, CalendarDetailInfo o2) {
 					return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
 				}
 			});
 		}
-		this.calDetailInfoEntities = calDetailInfoEntities;
+        this.calendarDetailList = calendarDetailList;
 	}
 
 }

@@ -92,7 +92,7 @@ public class PacketListenerImpl implements PacketListener {
 	public void close() {
 		this.dumper.close();
 		this.handle.close();
-		this.deleteDumps();
+		this.deleteDumps(true);
 	}
 
 	/**
@@ -174,7 +174,7 @@ public class PacketListenerImpl implements PacketListener {
 		this.clearDumper();
 
 		// 保存期間過ぎたdumpファイルを削除する.
-		this.deleteDumps();
+		this.deleteDumps(false);
 
 		// ファイル生成.
 		try {
@@ -202,7 +202,7 @@ public class PacketListenerImpl implements PacketListener {
 	/**
 	 * 保存期間過ぎたdumpファイルを削除する.
 	 */
-	private void deleteDumps() {
+	private void deleteDumps(boolean closeFlag) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
 		File directory = new File(this.dirPath);
@@ -243,6 +243,21 @@ public class PacketListenerImpl implements PacketListener {
 								"skip to delete dump file through filter of extension."
 										+ " name=[%s], fileNamePrefix=[%s], EXTENSION=[%s]",
 								name, fileNamePrefix, EXTENSION));
+				continue;
+			}
+			
+			// リスナーをクローズする場合は該当の監視IDから始まるダンプファイルを削除
+			if (closeFlag && name.startsWith(fileNamePrefix)) {
+				if (!dump.delete()) {
+					// 削除失敗.
+					m_log.warn(
+							methodName + DELIMITER + String.format("faild to delete dump file. file=[%s], monitorID=%s",
+									name, monInfo.getId()));
+					continue;
+				}
+				// 削除完了.
+				m_log.info(methodName + DELIMITER + String.format("delete dump file because monitor setting is deleted."
+						 + " file=[%s], monitorID=%s", name, monInfo.getId()));
 				continue;
 			}
 

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!-- 
+   Hinemos (http://www.hinemos.info/)
+   
+   Copyright (c) 2021 NTT DATA INTELLILINK Corporation. All rights reserved.
+ -->
+<project name="SDMLClientPackageProperties" basedir=".">
+	<property file="../SDMLClientOption/META-INF/MANIFEST.MF" />
+	
+	<property name="sdml.build.dir" value="build" />
+	<property name="sdml.plugin.dir" value="${sdml.build.dir}/plugin" />
+
+	<script language="javascript">
+		<![CDATA[
+			var pluginName = project.getProperty("Bundle-SymbolicName").split(";")[0];
+			project.setProperty("pluginName", pluginName);
+		]]>
+	</script>
+	
+	<property name="sdmlPluginPackageName" value="${pluginName}_${Bundle-Version}"/>
+	<property name="sdmlPluginPackageDir" value="${sdml.plugin.dir}/${sdmlPluginPackageName}"/>
+</project>

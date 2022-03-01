@@ -9,7 +9,6 @@
 package com.clustercontrol.infra.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,24 +22,24 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.InfraManagementInfoResponse;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.ValidMessage;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.infra.action.GetInfraManagementTableDefine;
 import com.clustercontrol.infra.composite.action.InfraManagementDoubleClickListener;
 import com.clustercontrol.infra.composite.action.InfraManagementSelectionChangedListener;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.InfraManagementView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.sun.xml.internal.ws.client.ClientTransportException;
 
 /**
  * 環境構築[構築・チェック]ビュー用のコンポジットクラスです。
@@ -172,26 +171,23 @@ public class InfraManagementComposite extends Composite {
 	 * @see #selectItem(ArrayList)
 	 */
 	public void update(Property condition) {
-		Map<String, List<InfraManagementInfo>> dispDataMap= new ConcurrentHashMap<String, List<InfraManagementInfo>>();
+		Map<String, List<InfraManagementInfoResponse>> dispDataMap= new ConcurrentHashMap<String, List<InfraManagementInfoResponse>>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 
 		//環境構築設定情報取得
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
-			List<InfraManagementInfo> infraManagementList = null;
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
+			List<InfraManagementInfoResponse> infraManagementList = null;
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 			try {
 				if (condition == null) {
-					infraManagementList = wrapper.getInfraManagementList();
+					infraManagementList = wrapper.getInfraManagementList(null);
 				}
 			} catch (Exception e) {
 				if(ClientSession.isDialogFree()){
 					ClientSession.occupyDialog();
-					if (e instanceof ClientTransportException) {
+					if (e instanceof InvalidRole) {
 						m_log.warn("update() : " + e.getMessage());
-						errorMsgs.put(managerName, Messages.getString("message.hinemos.failure.transfer") + ", " + HinemosMessage.replace(e.getMessage()));
-					} else if (e instanceof InvalidRole_Exception) {
-						m_log.warn("update() : " + e.getMessage());
-						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16") + ", " + HinemosMessage.replace(e.getMessage()));
+						errorMsgs.put(managerName, Messages.getString(HinemosMessage.replace(e.getMessage())));
 					} else {
 						m_log.warn("update() : " + e.getMessage(), e);
 						errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
@@ -201,7 +197,7 @@ public class InfraManagementComposite extends Composite {
 			}
 
 			if (infraManagementList == null) {
-				infraManagementList = new ArrayList<InfraManagementInfo>();
+				infraManagementList = new ArrayList<InfraManagementInfoResponse>();
 			}
 
 			dispDataMap.put(managerName, infraManagementList);
@@ -213,21 +209,21 @@ public class InfraManagementComposite extends Composite {
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<InfraManagementInfo>> map : dispDataMap.entrySet()) {
-			for (InfraManagementInfo setting : map.getValue()) {
+		for(Map.Entry<String, List<InfraManagementInfoResponse>> map : dispDataMap.entrySet()) {
+			for (InfraManagementInfoResponse setting : map.getValue()) {
 				ArrayList<Object> a = new ArrayList<Object>();
 				a.add(map.getKey());
 				a.add(setting.getManagementId());
 				a.add(setting.getName());
 				a.add(setting.getDescription());
-				a.add(ValidMessage.typeToString(setting.isValidFlg()));
+				a.add(ValidMessage.typeToString(setting.getValidFlg()));
 				a.add(setting.getFacilityId() != null ? setting.getFacilityId() : "#[FACILITY_ID]");
 				a.add(HinemosMessage.replace(setting.getScope()));
 				a.add(setting.getOwnerRoleId());
 				a.add(setting.getRegUser());
-				a.add(new Date(setting.getRegDate()));
+				a.add(DateTimeStringConverter.parseDateString(setting.getRegDate()));
 				a.add(setting.getUpdateUser());
-				a.add(new Date(setting.getUpdateDate()));
+				a.add(DateTimeStringConverter.parseDateString(setting.getUpdateDate()));
 				a.add(null);
 				listInput.add(a);
 			}

@@ -29,6 +29,9 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 
+import org.openapitools.client.model.JobRuntimeParamDetailResponse;
+import org.openapitools.client.model.JobRuntimeParamResponse;
+
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.jobmanagement.action.GetJobKickParameterTableDefine;
 import com.clustercontrol.jobmanagement.dialog.RuntimeParameterDialog;
@@ -36,7 +39,6 @@ import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.JobRuntimeParam;
 
 /**
  * ランタイムジョブ変数タブ用のコンポジットクラスです。
@@ -58,7 +60,7 @@ public class JobKickParamComposite extends Composite {
 	private Button m_btnDelete = null;
 
 	/** ランタイムジョブ変数情報 */
-	private Map<String, JobRuntimeParam> m_jobRuntimeParamMap = new HashMap<>();
+	private Map<String, JobRuntimeParamResponse> m_jobRuntimeParamMap = new HashMap<>();
 
 	/**
 	 * コンストラクタ
@@ -136,7 +138,7 @@ public class JobKickParamComposite extends Composite {
 							.getSelection()[0].getData()).get(0);
 					RuntimeParameterDialog dialog 
 						= new RuntimeParameterDialog(m_shell, m_jobRuntimeParamMap,
-								m_jobRuntimeParamMap.get(paramId));
+								copyJobRuntimeParam(m_jobRuntimeParamMap.get(paramId)));
 					if (dialog.open() == IDialogConstants.OK_ID) {
 						m_jobRuntimeParamMap.remove(paramId);
 						m_jobRuntimeParamMap.put(
@@ -200,7 +202,7 @@ public class JobKickParamComposite extends Composite {
 							.getSelection()[0].getData()).get(0);
 					RuntimeParameterDialog dialog 
 						= new RuntimeParameterDialog(m_shell, m_jobRuntimeParamMap,
-						m_jobRuntimeParamMap.get(paramId));
+								copyJobRuntimeParam(m_jobRuntimeParamMap.get(paramId)));
 					if (dialog.open() == IDialogConstants.OK_ID) {
 						m_jobRuntimeParamMap.remove(paramId);
 						m_jobRuntimeParamMap.put(
@@ -225,7 +227,7 @@ public class JobKickParamComposite extends Composite {
 		if (this.m_jobRuntimeParamMap != null) {
 			// ランタイムジョブ変数
 			ArrayList<ArrayList<?>> tableData = new ArrayList<ArrayList<?>>();
-			for (JobRuntimeParam jobRuntimeParam : this.m_jobRuntimeParamMap.values()) {
+			for (JobRuntimeParamResponse jobRuntimeParam : this.m_jobRuntimeParamMap.values()) {
 				ArrayList<Object> tableLineData = new ArrayList<Object>();
 				tableLineData.add(jobRuntimeParam.getParamId());
 				tableLineData.add(jobRuntimeParam.getParamType());
@@ -250,7 +252,7 @@ public class JobKickParamComposite extends Composite {
 	 * ランタイムジョブ変数情報を戻します。
 	 * @return ランタイムジョブ変数情報
 	 */
-	public List<JobRuntimeParam> getJobRuntimeParamList() {
+	public List<JobRuntimeParamResponse> getJobRuntimeParamList() {
 		return new ArrayList<>(this.m_jobRuntimeParamMap.values());
 	}
 
@@ -258,14 +260,37 @@ public class JobKickParamComposite extends Composite {
 	 * ランタイムジョブ変数情報を設定します。
 	 * @param jobRuntimeParamList ランタイムジョブ変数情報
 	 */
-	public void setJobRuntimeParamList(List<JobRuntimeParam> jobRuntimeParamList) {
+	public void setJobRuntimeParamList(List<JobRuntimeParamResponse> jobRuntimeParamList) {
 		if (jobRuntimeParamList == null) {
 			this.m_jobRuntimeParamMap = new HashMap<>();
 		} else {
-			for (JobRuntimeParam jobRuntimeParam : jobRuntimeParamList) {
-				this.m_jobRuntimeParamMap.put(jobRuntimeParam.getParamId(), jobRuntimeParam);
+			for (JobRuntimeParamResponse jobRuntimeParam : jobRuntimeParamList) {
+				this.m_jobRuntimeParamMap.put(jobRuntimeParam.getParamId(), copyJobRuntimeParam(jobRuntimeParam));
 			}
 			reflectParamInfo();
 		}
+	}
+
+	/**
+	 * ランタイムジョブ変数情報をコピーします。
+	 * @param jobRuntimeParam ランタイムジョブ変数情報
+	 */
+	private JobRuntimeParamResponse copyJobRuntimeParam(JobRuntimeParamResponse fromParam) {
+
+		JobRuntimeParamResponse param = new JobRuntimeParamResponse();
+		if (fromParam != null) {
+			param.setDescription(fromParam.getDescription());
+			param.setParamId(fromParam.getParamId());
+			param.setParamType(fromParam.getParamType());
+			param.setRequiredFlg(fromParam.getRequiredFlg());
+			param.setValue(fromParam.getValue());
+			for (JobRuntimeParamDetailResponse jobRuntimeParamDetail : fromParam.getJobRuntimeParamDetailList()) {
+				JobRuntimeParamDetailResponse detailParam = new JobRuntimeParamDetailResponse();
+				detailParam.setDescription(jobRuntimeParamDetail.getDescription());
+				detailParam.setParamValue(jobRuntimeParamDetail.getParamValue());
+				param.getJobRuntimeParamDetailList().add(detailParam);
+			}
+		}
+		return param;
 	}
 }

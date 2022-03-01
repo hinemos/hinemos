@@ -27,14 +27,15 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.SetStatusNodeConfigSettingRequest;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.action.GetNodeConfigSettingListTableDefine;
 import com.clustercontrol.repository.composite.NodeConfigSettingInfoListComposite;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.repository.view.NodeConfigSettingListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
 
 /**
  * リポジトリ[構成情報収集]ビューの収集有効アクションクラス<BR>
@@ -134,17 +135,22 @@ public class NodeConfigEnableAction extends AbstractHandler implements IElementU
 		// 実行
 		for (Map.Entry<String, List<String>> map : dataMap.entrySet()) {
 			String mgrName = map.getKey();
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(mgrName);
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(mgrName);
 
 			for (String settingId : map.getValue()) {
 
 				try {
-					wrapper.setStatusNodeConfigSetting(settingId, true);
+					SetStatusNodeConfigSettingRequest requestDto = new SetStatusNodeConfigSettingRequest();
+					List<String> settingIds = new ArrayList<>();
+					settingIds.add(settingId);
+					requestDto.setSettingId(settingIds);
+					requestDto.setValidFlag(true);
+					wrapper.setStatusNodeConfigSetting(requestDto);
 					if (successList.length() > 0) {
 						successList.append(", ");
 					}
 					successList.append(settingId + "(" + mgrName + ")");
-				} catch (InvalidRole_Exception e) {
+				} catch (InvalidRole e) {
 					if (failureList.length() > 0) {
 						failureList.append(", ");
 					}

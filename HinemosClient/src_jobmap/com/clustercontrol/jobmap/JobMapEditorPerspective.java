@@ -13,6 +13,7 @@ import org.eclipse.ui.IPageLayout;
 
 import com.clustercontrol.ClusterControlPerspectiveBase;
 import com.clustercontrol.jobmanagement.view.JobKickListView;
+import com.clustercontrol.jobmanagement.view.JobLinkSendSettingListView;
 import com.clustercontrol.jobmanagement.view.JobQueueSettingView;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.jobmap.view.JobMapImageListView;
@@ -25,6 +26,9 @@ import com.clustercontrol.jobmap.view.JobTreeView;
  * @since 1.0.0
  */
 public class JobMapEditorPerspective extends ClusterControlPerspectiveBase {
+
+	public static final String ID = "com.clustercontrol.enterprise.jobmap.JobMapEditorPerspective";
+
 	@Override
 	public void createInitialLayout(IPageLayout layout) {
 		super.createInitialLayout(layout);
@@ -42,5 +46,6 @@ public class JobMapEditorPerspective extends ClusterControlPerspectiveBase {
 		right.addView(JobKickListView.ID);
 		right.addView(JobMapImageListView.ID);
 		right.addView(JobQueueSettingView.ID);
+		right.addView(JobLinkSendSettingListView.ID);
 	}
 }

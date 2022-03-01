@@ -20,4 +20,6 @@ public class CommandTypeConstant {
 	public static final int NORMAL = 0;
 	/** 停止コマンド */
 	public static final int STOP = 1;
+	/** RPAシナリオジョブ スクリーンショット取得コマンド */
+	public static final int SCREENSHOT = 2;
 }

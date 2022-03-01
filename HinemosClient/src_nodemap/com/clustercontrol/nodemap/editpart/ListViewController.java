@@ -15,16 +15,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.GetNodeListRequest;
+import org.openapitools.client.model.NodeConfigFilterInfoRequest;
+import org.openapitools.client.model.NodeInfoResponse;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
-import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
 import com.clustercontrol.nodemap.view.NodeListView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.nodemap.InvalidSetting_Exception;
-import com.clustercontrol.ws.repository.NodeInfo;
-import com.sun.xml.internal.ws.client.ClientTransportException;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TimezoneUtil;
 
 /**
  * ノードマップビューをコントロールするクラス。
@@ -42,7 +46,7 @@ public class ListViewController {
 	private final String _currentScope;
 
 	// 描画対象のマップの情報を保持したモデル(マネージャ名、NodeInfoリスト)
-	private ConcurrentHashMap<String, List<NodeInfo>> _nodeListMap = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<String, List<NodeInfoResponse>> _nodeListMap = new ConcurrentHashMap<>();
 
 	public ListViewController(NodeListView view, String secondaryId, String currentScope){
 		this._secondaryId = secondaryId;
@@ -57,7 +61,7 @@ public class ListViewController {
 	 * @param nodeFilterInfo ノードフィルタ情報
 	 * @throws Exception
 	 */
-	public void update(NodeInfo nodeFilterInfo) throws Exception {
+	public void update(GetNodeListRequest nodeFilterInfo) throws Exception {
 
 		// マネージャからノード情報を取得
 		try {
@@ -65,10 +69,22 @@ public class ListViewController {
 			if (_view.getListComposite().getManagerName() == null
 					|| _view.getListComposite().getManagerName().isEmpty()) {
 				StringBuilder sbErrMsg = new StringBuilder();
-				for(String managerName : EndpointManager.getActiveManagerNameList()) {
+				for(String managerName : RestConnectManager.getActiveManagerNameList()) {
 					try {
-						NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(managerName);
-						List<NodeInfo> tmpList = wrapper.getNodeList(ReservedFacilityIdConstant.ROOT_SCOPE, nodeFilterInfo);
+						GetNodeListRequest requestDto = new GetNodeListRequest();
+						requestDto.setNodeConfigFilterList(new ArrayList<>());
+						if (nodeFilterInfo != null) {
+							for (NodeConfigFilterInfoRequest nodeConfigFilterInfo : nodeFilterInfo.getNodeConfigFilterList()) {
+								NodeConfigFilterInfoRequest nodeConfigFilterInfoRequest = new NodeConfigFilterInfoRequest();
+								RestClientBeanUtil.convertBean(nodeConfigFilterInfo, nodeConfigFilterInfoRequest);
+								requestDto.getNodeConfigFilterList().add(nodeConfigFilterInfoRequest);
+							}
+							requestDto.setNodeConfigFilterIsAnd(nodeFilterInfo.getNodeConfigFilterIsAnd());
+						}
+						requestDto.setParentFacilityId(ReservedFacilityIdConstant.ROOT_SCOPE);
+
+						RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+						List<NodeInfoResponse> tmpList = wrapper.searchNode(requestDto);
 						if (tmpList == null) {
 							continue;
 						}
@@ -80,11 +96,11 @@ public class ListViewController {
 						if (sbErrMsg.length() != 0) {
 							sbErrMsg.append("\n");
 						}
-						if (e instanceof ClientTransportException) {
+						if (e instanceof RestConnectFailed) {
 							m_log.debug("reload(), " + e.getMessage());
 							sbErrMsg.append(Messages.getString("message.hinemos.failure.transfer") 
 									+ ", " + e.getMessage());
-						} else if (e instanceof InvalidSetting_Exception) {
+						} else if (e instanceof InvalidSetting) {
 							m_log.warn("reload(), " + e.getMessage(), e);
 							sbErrMsg.append(HinemosMessage.replace(e.getMessage()));
 						} else {
@@ -101,8 +117,21 @@ public class ListViewController {
 			} else {
 				String managerName = _view.getListComposite().getManagerName();
 				String facilityId = _currentScope;
-				NodeMapEndpointWrapper nodeMapWrapper = NodeMapEndpointWrapper.getWrapper(managerName);
-				List<NodeInfo> tmpList = nodeMapWrapper.getNodeList(facilityId, nodeFilterInfo);
+
+				GetNodeListRequest requestDto = new GetNodeListRequest();
+				requestDto.setNodeConfigFilterList(new ArrayList<>());
+				if (nodeFilterInfo != null && nodeFilterInfo.getNodeConfigFilterList() != null) {
+					for (NodeConfigFilterInfoRequest nodeConfigFilterInfo : nodeFilterInfo.getNodeConfigFilterList()) {
+						NodeConfigFilterInfoRequest nodeConfigFilterInfoRequest = new NodeConfigFilterInfoRequest();
+						RestClientBeanUtil.convertBean(nodeConfigFilterInfo, nodeConfigFilterInfoRequest);
+						requestDto.getNodeConfigFilterList().add(nodeConfigFilterInfoRequest);
+					}
+					requestDto.setNodeConfigFilterIsAnd(nodeFilterInfo.getNodeConfigFilterIsAnd());
+				}
+				requestDto.setParentFacilityId(facilityId);
+
+				RepositoryRestClientWrapper nodeMapWrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+				List<NodeInfoResponse> tmpList = nodeMapWrapper.searchNode(requestDto);
 				if (tmpList == null) {
 					throw new Exception("facility list is null");
 				}
@@ -117,8 +146,14 @@ public class ListViewController {
 		}
 
 		// ビューの描画
-		if (nodeFilterInfo != null) {
-			_view.m_listComposite.setTableList(_nodeListMap, nodeFilterInfo.getNodeConfigTargetDatetime());
+		if (nodeFilterInfo != null ) {
+			Long longDateTime = null;
+			if (nodeFilterInfo.getNodeConfigTargetDatetime().isEmpty()) {
+				longDateTime = 0L;
+			} else {
+				longDateTime = TimezoneUtil.getSimpleDateFormat().parse(nodeFilterInfo.getNodeConfigTargetDatetime()).getTime();
+			}
+			_view.m_listComposite.setTableList(_nodeListMap, longDateTime);
 		} else {
 			_view.m_listComposite.setTableList(_nodeListMap, null);
 		}

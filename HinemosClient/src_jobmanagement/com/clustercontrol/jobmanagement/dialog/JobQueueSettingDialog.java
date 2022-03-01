@@ -26,6 +26,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.JobQueueResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -39,8 +40,6 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.jobmanagement.bean.JobQueueConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobQueueSetting;
-
 /**
  * ジョブ同時実行制御キューの設定ダイアログです。
  *
@@ -49,7 +48,7 @@ import com.clustercontrol.ws.jobmanagement.JobQueueSetting;
 public class JobQueueSettingDialog extends CommonDialog {
 //	private static Log log = LogFactory.getLog(JobQueueSettingDialog.class);
 
-	private JobQueueSetting setting;
+	private JobQueueResponse setting;
 
 	private EditMode mode;
 	public enum EditMode {
@@ -78,7 +77,7 @@ public class JobQueueSettingDialog extends CommonDialog {
 	 *               この処理の前にsettingオブジェクトは入力された値で更新されます。
 	 *               この処理がtrueを返した場合はダイアログを閉じ、falseを返した場合は閉じません。
 	 */
-	public JobQueueSettingDialog(Shell parent, EditMode mode, JobQueueSetting setting, String managerName,
+	public JobQueueSettingDialog(Shell parent, EditMode mode, JobQueueResponse setting, String managerName,
 			Predicate<String> action) {
 		super(parent);
 		this.mode = mode;
@@ -190,7 +189,9 @@ public class JobQueueSettingDialog extends CommonDialog {
 		label.setLayoutData(new GridData(labelWidth, SizeConstant.SIZE_LABEL_HEIGHT));
 
 		// オーナーロールID（テキスト）
-		ownerRoleIdComposite = new RoleIdListComposite(comp, SWT.NONE, managerName, true, Mode.OWNER_ROLE);
+		ownerRoleIdComposite = new RoleIdListComposite(comp, SWT.NONE, managerName,
+				(mode == EditMode.CREATE), // CREATE時のみ選択可能
+				Mode.OWNER_ROLE);
 		WidgetTestUtil.setTestId(this, "ownerRoleIdComposite", ownerRoleIdComposite);
 		grid = new GridData();
 		grid.widthHint = 227;
@@ -206,6 +207,7 @@ public class JobQueueSettingDialog extends CommonDialog {
 		ownerRoleIdComposite.setText(setting.getOwnerRoleId());
 
 		// 入力可能/不可能を設定
+		// - オーナーロールID入力欄についてはインスタンス生成時に設定済み
 		switch (mode) {
 		case CREATE:
 			// すべて入力可能
@@ -213,14 +215,12 @@ public class JobQueueSettingDialog extends CommonDialog {
 		case MODIFY:
 			managerComposite.setEnabled(false);
 			queueIdText.setEnabled(false);
-			ownerRoleIdComposite.setEnabled(false);
 			break;
 		case READONLY:
 			managerComposite.setEnabled(false);
 			queueIdText.setEnabled(false);
 			queueNameText.setEnabled(false);
 			concurrencytext.setEnabled(false);
-			ownerRoleIdComposite.setEnabled(false);
 			getButton(IDialogConstants.OK_ID).setEnabled(false);
 			break;
 		}

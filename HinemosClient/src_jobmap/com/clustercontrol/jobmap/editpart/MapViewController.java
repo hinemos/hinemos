@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.xml.ws.WebServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.draw2d.ColorConstantsWrapper;
@@ -33,38 +31,37 @@ import org.eclipse.draw2d.geometry.PointList;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.graphics.Color;
+import org.openapitools.client.model.JobDetailInfoResponse;
+import org.openapitools.client.model.JobNextJobOrderInfoResponse;
+import org.openapitools.client.model.JobObjectGroupInfoResponse;
+import org.openapitools.client.model.JobObjectInfoResponse;
+import org.openapitools.client.model.JobTreeItemResponseP4;
+import org.openapitools.client.model.JobWaitRuleInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.EndStatusMessage;
-import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.jobmanagement.bean.DecisionObjectMessage;
 import com.clustercontrol.jobmanagement.bean.JudgmentObjectMessage;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmap.bean.ColorfulAssociation;
 import com.clustercontrol.jobmap.composite.JobMapComposite;
 import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.figure.JobMapColor;
 import com.clustercontrol.jobmap.preference.JobMapPreferencePage;
-import com.clustercontrol.jobmap.util.JobMapEndpointWrapper;
+import com.clustercontrol.jobmap.util.JobMapRestClientWrapper;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.HinemosUnknown_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidUserPass_Exception;
-import com.clustercontrol.ws.jobmanagement.JobDetailInfo;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobNextJobOrderInfo;
-import com.clustercontrol.ws.jobmanagement.JobObjectInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobWaitRuleInfo;
 
 /**
  * ジョブマップビューをコントロールするクラス。
@@ -80,7 +77,7 @@ public class MapViewController {
 	private String m_sessionId;
 
 	// 描画対象のマップの情報を保持したモデル
-	private JobTreeItem m_jobTreeItem;
+	private JobTreeItemWrapper m_jobTreeItem;
 
 	// アイコンを置く間隔
 	public static final int heightPitch = 55;
@@ -157,14 +154,14 @@ public class MapViewController {
 
 		// 最上位の場合は描画しない。
 		if (m_jobTreeItem.getData() != null &&
-				(m_jobTreeItem.getData().getType() == JobConstant.TYPE_COMPOSITE || m_jobTreeItem.getData().getType() == JobConstant.TYPE_MANAGER)) {
+				(m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.COMPOSITE || m_jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum .MANAGER)) {
 			m_composite.initialMessageDisplay();
 			return;
 		}
 
 		try {
 			// ジョブ、ジョブネット、矢印(待ち条件)を描画
-			List<JobTreeItem> children = new ArrayList<JobTreeItem>();
+			List<JobTreeItemWrapper> children = new ArrayList<JobTreeItemWrapper>();
 			children.add(m_jobTreeItem);
 			// ジョブマップ(履歴)の場合は一つ階層が深いので、潜っておく。
 			if (m_sessionId != null) {
@@ -199,29 +196,34 @@ public class MapViewController {
 		}
 	}
 	
-	private List<JobInfo> getChildrenAll(JobTreeItem item) {
-		ArrayList<JobInfo> list = new ArrayList<JobInfo>();
+	private List<JobInfoWrapper> getChildrenAll(JobTreeItemWrapper item) {
+		ArrayList<JobInfoWrapper> list = new ArrayList<JobInfoWrapper>();
 		list.add(item.getData());
 		
-		for (JobTreeItem child : item.getChildren()) {
+		for (JobTreeItemWrapper child : item.getChildren()) {
 			list.addAll(getChildrenAll(child));
 		}
 
 		return list;
 	}
 
-	private int countJob(JobTreeItem jobTreeItem) {
+	private int countJob(JobTreeItemWrapper jobTreeItem) {
 		if (jobTreeItem.getData() != null &&
-				(jobTreeItem.getData().getType() == JobConstant.TYPE_JOB ||
-						jobTreeItem.getData().getType() == JobConstant.TYPE_FILEJOB ||
-						jobTreeItem.getData().getType() == JobConstant.TYPE_REFERJOB ||
-						jobTreeItem.getData().getType() == JobConstant.TYPE_APPROVALJOB ||
-						jobTreeItem.getData().getType() == JobConstant.TYPE_MONITORJOB)) {
+				(jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOB ||
+						jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.FILEJOB ||
+						jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOB ||
+						jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+						jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.MONITORJOB ||
+						jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+						jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+						jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+						jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB ||
+						jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.RPAJOB)) {
 			return 1;
 		}
 		int ret = 0;
 		// ジョブ履歴の場合、最上位はgetDataがnullになる。
-		for (JobTreeItem item : jobTreeItem.getChildren()) {
+		for (JobTreeItemWrapper item : jobTreeItem.getChildren()) {
 			ret += countJob(item);
 		}
 		return ret;
@@ -239,9 +241,9 @@ public class MapViewController {
 	 * @param sessionId 
 	 * @throws AccessException
 	 */
-	public void updateMap(String managerName, String sessionId, JobTreeItem jobTreeItem) throws Exception {
+	public void updateMap(String managerName, String sessionId, JobTreeItemWrapper jobTreeItem) throws Exception {
 		if( m_log.isDebugEnabled() ){
-			m_log.debug("updateMap(String managerName="+managerName+", String sessionId="+sessionId+", JobTreeItem jobTreeItem="+jobTreeItem+")");
+			m_log.debug("updateMap(String managerName="+managerName+", String sessionId="+sessionId+", JobTreeItemWrapper jobTreeItem="+jobTreeItem+")");
 		}
 		if (managerName != null) {
 			m_managerName = managerName;
@@ -289,18 +291,14 @@ public class MapViewController {
 		}
 		
 		try {
-			String version = JobMapEndpointWrapper.getWrapper(m_managerName).getVersion();
-			m_log.debug("jobmap version " + version);
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							com.clustercontrol.jobmap.messages.Messages.getString("expiration.term.invalid"));
-				}
+			boolean isPublish = JobMapRestClientWrapper.getWrapper(m_managerName).checkPublish().getPublish();
+			if (!isPublish) {
+				MessageDialog.openWarning(
+						null,
+						Messages.getString("warning"),
+						com.clustercontrol.jobmap.messages.Messages.getString("expiration.term.invalid"));
 			}
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | WebServiceException e) {
+		} catch (HinemosUnknown | InvalidRole | InvalidUserPass | RestConnectFailed e) {
 			String errMsg = com.clustercontrol.jobmap.messages.Messages.getString("message.jobmapkeyfile.notfound.error");
 			m_composite.clearCanvas();
 			m_composite.setErrorMessage(errMsg);
@@ -309,7 +307,8 @@ public class MapViewController {
 		// マネージャからジョブのセッション情報を取得
 		if (m_sessionId != null) {
 			try {
-				m_jobTreeItem = JobEndpointWrapper.getWrapper(m_managerName).getJobDetailList(m_sessionId);
+				JobTreeItemResponseP4  ret = JobRestClientWrapper.getWrapper(m_managerName).getJobDetailList(m_sessionId);
+				m_jobTreeItem =JobTreeItemUtil.getItemFromP4(ret);
 			} catch (Exception e) {
 				m_log.warn("updateMap() getJobDetailList, " + HinemosMessage.replace(e.getMessage()), e);
 				// 連続してエラーが起きないように表示内容をリセットする
@@ -329,46 +328,50 @@ public class MapViewController {
 		updateMap();
 	}
 	
-	private boolean haveWaitedJobsAlreadyBeenDrawed(JobTreeItem jobTreeItem,
-			Set<JobTreeItem> itemsDrawed, Set<String> allJobIdList) {
+	private boolean haveWaitedJobsAlreadyBeenDrawn(JobTreeItemWrapper jobTreeItem,
+			Set<JobTreeItemWrapper> itemsDrawn, Set<String> allJobIdList) {
 
-		JobWaitRuleInfo jobWaitRuleInfo = jobTreeItem.getData().getWaitRule();
+		JobWaitRuleInfoResponse jobWaitRuleInfo = jobTreeItem.getData().getWaitRule();
 		if (jobWaitRuleInfo == null) {
 			return true;
 		}
 		
-		Set<String> jobIdSetDrawed = new HashSet<String>();
-		for (JobTreeItem itemDrawed : itemsDrawed) {
-			jobIdSetDrawed.add(itemDrawed.getData().getId());
-		}
-		
-		List<JobObjectInfo>  waitList = jobWaitRuleInfo.getObject();
-		boolean haveBeenDrawed = true;
-		for (JobObjectInfo wait : waitList) {
-			//時間待ちとセッション横断待ちはスキップ
-			if (wait.getType() == JudgmentObjectConstant.TYPE_TIME
-			 || wait.getType() == JudgmentObjectConstant.TYPE_START_MINUTE
-			 || wait.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS
-			 || wait.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE ) {
-				continue;
-			}
-			
-			String jobId = wait.getJobId();
-			if (!allJobIdList.contains(jobId)) {//描画範囲外のジョブの場合スキップ
-				continue;
-			}
-			
-			if (!jobIdSetDrawed.contains(jobId)) {
-				haveBeenDrawed = false;
-				m_log.debug(String.format("%s is waiting for %s.", jobTreeItem.getData().getId(), jobId));
-				break;
-			}
+		Set<String> jobIdSetDrawn = new HashSet<String>();
+		for (JobTreeItemWrapper itemDrawn : itemsDrawn) {
+			jobIdSetDrawn.add(itemDrawn.getData().getId());
 		}
 
-		return haveBeenDrawed;
-	}	
+		boolean haveBeenDrawn = true;
+		List<JobObjectGroupInfoResponse> waitGroupList = jobWaitRuleInfo.getObjectGroup();
+		if (waitGroupList == null || waitGroupList.isEmpty()) {
+			return haveBeenDrawn;
+		}
+		for (JobObjectGroupInfoResponse waitGroup : waitGroupList) {
+			for (JobObjectInfoResponse wait : waitGroup.getJobObjectList()) {
+				// 時間待ちとセッション横断待ちはスキップ
+				if (wait.getType() == JobObjectInfoResponse.TypeEnum.TIME
+						|| wait.getType() == JobObjectInfoResponse.TypeEnum.START_MINUTE
+						|| wait.getType() == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_STATUS
+						|| wait.getType() == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_VALUE) {
+					continue;
+				}
+
+				String jobId = wait.getJobId();
+				if (!allJobIdList.contains(jobId)) {// 描画範囲外のジョブの場合スキップ
+					continue;
+				}
+
+				if (!jobIdSetDrawn.contains(jobId)) {
+					haveBeenDrawn = false;
+					m_log.debug(String.format("%s is waiting for %s.", jobTreeItem.getData().getId(), jobId));
+					break;
+				}
+			}
+		}
+		return haveBeenDrawn;
+	}
 	
-	private void updateImage(JobFigure parent, List<JobTreeItem> children) {
+	private void updateImage(JobFigure parent, List<JobTreeItemWrapper> children) throws HinemosUnknown {
 		if (children == null || children.size() == 0) {
 			return;
 		}
@@ -387,7 +390,7 @@ public class MapViewController {
 		}
 		
 		Set<String> childrenJobIdSet = new HashSet<String>();
-		for (JobTreeItem child : children) {
+		for (JobTreeItemWrapper child : children) {
 			childrenJobIdSet.add(child.getData().getId());
 		}
 		
@@ -402,24 +405,24 @@ public class MapViewController {
 		}
 
 		boolean forceDraw = false;
-		Set<JobTreeItem> childrenDrawed = new HashSet<JobTreeItem> ();
+		Set<JobTreeItemWrapper> childrenDrawn = new HashSet<JobTreeItemWrapper> ();
 		
 		int previous = isXyChange() ? y : x;
 		int interval = 0;
 		
 		//優先順番号を描画処理順に反映
-		List<JobTreeItem>adjustNextOrderList = adjustNextOrderArrangement(children);
+		List<JobTreeItemWrapper>adjustNextOrderList = adjustNextOrderArrangement(children);
 		
-		while (children.size() > childrenDrawed.size()) {
+		while (children.size() > childrenDrawn.size()) {
 			int round =0;
 			int prevChildWidth = 0;
 			int prevChildHeight = 0;
 			int maxChildWidth = 0;
 			int maxChildHeight = 0;
-			Set<JobTreeItem> childrenDrawedThisRound = new HashSet<JobTreeItem> ();
-			for (JobTreeItem jobTreeItem : adjustNextOrderList) {
+			Set<JobTreeItemWrapper> childrenDrawnThisRound = new HashSet<JobTreeItemWrapper> ();
+			for (JobTreeItemWrapper jobTreeItem : adjustNextOrderList) {
 				//すでに描画済みかどうかのチェック
-				if (childrenDrawed.contains(jobTreeItem)) {
+				if (childrenDrawn.contains(jobTreeItem)) {
 					continue;
 				}
 
@@ -428,7 +431,7 @@ public class MapViewController {
 					forceDraw = false;
 				} else {
 					//待つジョブを先に描画すべきのため、描画されていない待つジョブをチェック
-					if (!haveWaitedJobsAlreadyBeenDrawed(jobTreeItem, childrenDrawed, childrenJobIdSet)) {
+					if (!haveWaitedJobsAlreadyBeenDrawn(jobTreeItem, childrenDrawn, childrenJobIdSet)) {
 						continue;
 					}
 				}
@@ -473,7 +476,7 @@ public class MapViewController {
 				} else {
 					interval = Math.max(interval, x + prevChildWidth);
 				}
-				childrenDrawedThisRound.add(jobTreeItem);
+				childrenDrawnThisRound.add(jobTreeItem);
 
 				m_log.debug(jobTreeItem.getData().getId() +
 						", x=" + x + 
@@ -489,12 +492,12 @@ public class MapViewController {
 			}//for
 
 			//待ち条件のループが発生する場合に、
-			if (childrenDrawedThisRound.isEmpty()) {
+			if (childrenDrawnThisRound.isEmpty()) {
 				forceDraw = true;
 				continue;
 			}
 			
-			childrenDrawed.addAll(childrenDrawedThisRound);
+			childrenDrawn.addAll(childrenDrawnThisRound);
 			
 			if (xyChange) {
 				int width = 150;
@@ -538,18 +541,18 @@ public class MapViewController {
 	 * 対象JobTreeItem一覧の順番を調整（UpdateImageメソッドからの呼び出し専用）
 	 * 
 	 **/
-	private List<JobTreeItem> adjustNextOrderArrangement( List<JobTreeItem> lists) {
+	private List<JobTreeItemWrapper> adjustNextOrderArrangement( List<JobTreeItemWrapper> lists) {
 		//List内の優先順設定を取得 ( 各ジョブに紐付けられた優先順設定のMap )
 		HashMap<String,Integer> setOrderMap = new HashMap<String,Integer>(); //Job に割り付けられた優先順番号 Map
 		HashMap<String,String > setPreviousMap = new HashMap<String,String>(); //Job に割り付けられた 先行ジョブ Map
-		for (JobTreeItem jobTreeItem : lists) {
-			if( jobTreeItem.getData().getWaitRule() == null || jobTreeItem.getData().getWaitRule().isExclusiveBranch() == false ){
+		for (JobTreeItemWrapper jobTreeItem : lists) {
+			if( jobTreeItem.getData().getWaitRule() == null || jobTreeItem.getData().getWaitRule().getExclusiveBranch() == false ){
 				continue;
 			}
 			m_log.debug("adjustNextOrderArrangement .this is isExclusiveBranch .jobid="+jobTreeItem.getData().getId());
 			if( jobTreeItem.getData().getWaitRule().getExclusiveBranchNextJobOrderList()  != null ){
 				int orderNo = 0;
-				for( JobNextJobOrderInfo jobNextJobOrderInfo : jobTreeItem.getData().getWaitRule().getExclusiveBranchNextJobOrderList()){
+				for( JobNextJobOrderInfoResponse jobNextJobOrderInfo : jobTreeItem.getData().getWaitRule().getExclusiveBranchNextJobOrderList()){
 					orderNo += 1;
 					//複数の優勢設定がある場合はジョブIDが若い側を優先
 					if( setPreviousMap.containsKey(jobNextJobOrderInfo.getNextJobId()) == false ){
@@ -562,9 +565,9 @@ public class MapViewController {
 		}
 		
 		//順番調整用にListを振分
-		List<JobTreeItem>retOrderList = new ArrayList<JobTreeItem>();
-		HashMap<String,HashMap<Integer,JobTreeItem>>pendingRoleOrderMap = new HashMap<String,HashMap<Integer,JobTreeItem>>();//待ち対象ジョブID -> 順番号  = JobTreeItem
-		for (JobTreeItem jobTreeItem : lists) {
+		List<JobTreeItemWrapper>retOrderList = new ArrayList<JobTreeItemWrapper>();
+		HashMap<String,HashMap<Integer,JobTreeItemWrapper>>pendingRoleOrderMap = new HashMap<String,HashMap<Integer,JobTreeItemWrapper>>();//待ち対象ジョブID -> 順番号  = JobTreeItemWrapper
+		for (JobTreeItemWrapper jobTreeItem : lists) {
 			//優先順なし
 			String previousJob = setPreviousMap.get(jobTreeItem.getData().getId());
 			if( previousJob == null ){
@@ -574,11 +577,11 @@ public class MapViewController {
 			}else{
 				//先行ジョブ毎＋優先順を考慮できる形で保留
 				Integer orderNo = setOrderMap.get(jobTreeItem.getData().getId());
-				HashMap<Integer,JobTreeItem> orderMap = pendingRoleOrderMap.get(previousJob);
+				HashMap<Integer,JobTreeItemWrapper> orderMap = pendingRoleOrderMap.get(previousJob);
 				if( orderMap != null ) {
 					orderMap.put(orderNo,jobTreeItem);
 				}else{
-					orderMap = new HashMap<Integer,JobTreeItem>();
+					orderMap = new HashMap<Integer,JobTreeItemWrapper>();
 					orderMap.put(orderNo,jobTreeItem);
 					pendingRoleOrderMap.put(previousJob,orderMap);
 				}
@@ -588,7 +591,7 @@ public class MapViewController {
 		String[] roledOrderMapKey = pendingRoleOrderMap.keySet().toArray(new String[0]);
 		Arrays.sort(roledOrderMapKey);
 		for (String roledJobId : roledOrderMapKey) {
-			HashMap<Integer,JobTreeItem> orderMap  = pendingRoleOrderMap.get(roledJobId);
+			HashMap<Integer,JobTreeItemWrapper> orderMap  = pendingRoleOrderMap.get(roledJobId);
 			Integer[] orderKey = orderMap.keySet().toArray(new Integer[0]);
 			Arrays.sort(orderKey);
 			for (Integer orderNo : orderKey) {
@@ -598,7 +601,7 @@ public class MapViewController {
 		return retOrderList;
 	}
 
-	private boolean doesCollapseJobnet(JobTreeItem jobTreeItem) {
+	private boolean doesCollapseJobnet(JobTreeItemWrapper jobTreeItem) {
 		CollapseItemKey collapseItemKey = new CollapseItemKey(jobTreeItem);
 		if (getCollapseItemKeySet(m_sessionId).contains(collapseItemKey)) {
 			return true;
@@ -611,24 +614,24 @@ public class MapViewController {
 			return false;
 		}
 		
-		JobDetailInfo detail = jobTreeItem.getDetail();
+		JobDetailInfoResponse detail = jobTreeItem.getDetail();
 		if (detail == null) {
 			return false;
 		}
 		
-		Integer status = detail.getStatus();
+		JobDetailInfoResponse.StatusEnum status = detail.getStatus();
 		if (status == null) {
 			return false;
 		}
-		if (status == StatusConstant.TYPE_WAIT) {
+		if (status == JobDetailInfoResponse.StatusEnum.WAIT) {
 			return true;
 		}
 		
-		Integer endStatus = detail.getEndStatus();
+		JobDetailInfoResponse.EndStatusEnum endStatus = detail.getEndStatus();
 		if (endStatus == null) {
 			return false;
 		}
-		if (endStatus == EndStatusConstant.TYPE_NORMAL) {
+		if (endStatus ==JobDetailInfoResponse.EndStatusEnum.NORMAL) {
 			return true;
 		}
 		
@@ -636,19 +639,19 @@ public class MapViewController {
 	}
 
 	private void drawAssociationLines(JobFigure parent,
-			List<JobTreeItem> children) {
+			List<JobTreeItemWrapper> children) {
 		
 		//List内の優先順設定をMAPに取得
 		HashMap<String,HashMap<String,Integer> > JobWaitOrderMap = new HashMap<String,HashMap<String,Integer> >();// srcのジョブid -> tagのジョブID = 優先順番号
-		for (JobTreeItem jobTreeItem : children) {
-			if( jobTreeItem.getData().getWaitRule() == null || jobTreeItem.getData().getWaitRule().isExclusiveBranch() == false ){
+		for (JobTreeItemWrapper jobTreeItem : children) {
+			if( jobTreeItem.getData().getWaitRule() == null || jobTreeItem.getData().getWaitRule().getExclusiveBranch() == false ){
 				continue;
 			}
 			if( jobTreeItem.getData().getWaitRule().getExclusiveBranchNextJobOrderList()  != null ){
 				HashMap<String,Integer> setMap = new HashMap<String,Integer>() ;
 				m_log.debug("drawAssociationLines JobWaitOrderMap getId:" + jobTreeItem.getData().getId());
 				int orderNo = 0;
-				for( JobNextJobOrderInfo jobNextJobOrderInfo : jobTreeItem.getData().getWaitRule().getExclusiveBranchNextJobOrderList()){
+				for( JobNextJobOrderInfoResponse jobNextJobOrderInfo : jobTreeItem.getData().getWaitRule().getExclusiveBranchNextJobOrderList()){
 					orderNo += 1; 
 					setMap.put(jobNextJobOrderInfo.getNextJobId(),orderNo);
 					m_log.debug("drawAssociationLines JobWaitOrderMap put:" +jobTreeItem.getData().getId() +"->" + jobNextJobOrderInfo.getNextJobId() );
@@ -659,102 +662,106 @@ public class MapViewController {
 		// associtionListの作成、associationListの描画という流れ。
 		// まずは待ち条件からassociationListを作成する。
 		ArrayList<ColorfulAssociation> associationList = new ArrayList<ColorfulAssociation>();
-		for (JobTreeItem jobTreeItem : children) {
-			JobWaitRuleInfo jobWaitRuleInfo = jobTreeItem.getData().getWaitRule();
+		for (JobTreeItemWrapper jobTreeItem : children) {
+			JobWaitRuleInfoResponse jobWaitRuleInfo = jobTreeItem.getData().getWaitRule();
 			if (jobWaitRuleInfo == null) {
 				continue;
 			}
-			List<JobObjectInfo> objectList = jobWaitRuleInfo.getObject();
-			if (objectList == null) {
+
+			List<JobObjectGroupInfoResponse> objectGroupList = jobWaitRuleInfo.getObjectGroup();
+			if (objectGroupList == null || objectGroupList.isEmpty()) {
 				continue;
 			}
-			for (JobObjectInfo waitRule : objectList) {
-				//セッション横断待ちと時刻待ちは対象外
-				if (waitRule.getType() == JudgmentObjectConstant.TYPE_TIME 
-				 || waitRule.getType() == JudgmentObjectConstant.TYPE_START_MINUTE
-				 || waitRule.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS
-				 || waitRule.getType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE ) {
-					continue;
-				}
-				
-				ColorfulAssociation newAssociation = new ColorfulAssociation(waitRule.getJobId(),
-						jobTreeItem.getData().getId());
-				Color color = null;
-				String tooltip = "";
-				String label = "";
-
-				// 色を決めて
-				if (waitRule.getType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS) {
-					if (waitRule.getValue() == EndStatusConstant.TYPE_ABNORMAL) {
-						color = JobMapColor.red;
-					} else if (waitRule.getValue() == EndStatusConstant.TYPE_NORMAL) {
-						color = JobMapColor.green;
-					} else if (waitRule.getValue() == EndStatusConstant.TYPE_WARNING) {
-						color = JobMapColor.yellow;
-					} else {
-						m_log.debug("updateImte() association " + waitRule.getValue());
-					}
-				}
-
-				// ツールチップを作る。
-				if (color != null) {
-					newAssociation.setLineColor(new Color (null, color.getRed() * 5 / 6, color.getGreen() * 5 / 6,
-							color.getBlue() * 5 / 6));
-					newAssociation.setLabelColor(new Color (null, color.getRed() * 3 / 4, color.getGreen() * 3 / 4,
-							color.getBlue() * 3 / 4));
-				}
-				String waitValue = "";
-				if (waitRule.getType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS) {
-					waitValue = EndStatusMessage.typeToString(waitRule.getValue());
-				} else if (waitRule.getType() == JudgmentObjectConstant.TYPE_TIME) {
-					waitValue = waitRule.getTime().toString();
-				} else if (waitRule.getType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE) {
-					waitValue = "" + waitRule.getValue();
-				}
-				tooltip = JudgmentObjectMessage.typeToString(waitRule.getType()) +
-				", " + waitValue;
-				newAssociation.addTooltip(tooltip);
-				
-				// ラベルを設定する
-				if (!isCompactConnection()) {
-					label = waitRule.getDescription();
-					newAssociation.setLabel(label);
-				}
-				
-				//優先順指定があればtarget隣接ラベルに設定して tooltipにも記載
-				HashMap<String,Integer> setMap = JobWaitOrderMap.get(newAssociation.getSource());
-				if( setMap != null ){
-					Integer orderNo = setMap.get(newAssociation.getTarget());
-					if( orderNo != null ){
-						newAssociation.setTargetAdjacentLabel( orderNo +"." );
-						newAssociation.setOrderToolTip(Messages.getString("job.exclusive.branch.nextjob.order_short") + " : "+orderNo);
-						if( m_log.isDebugEnabled() ){
-							m_log.debug("drawAssociationLines JobWaitOrderNo target:" + newAssociation.getTarget() +" order:" +orderNo );
-						}
-					}
-				}
-
-				// 矢印の重複チェック(SourceとTargetで確認)。
-				// 重複していたら、Listに存在するものの色（既定に戻す）,ツールチップ（追加）、ラベル（追加）を変更して、
-				// newAssociationはListに追加しない。
-				for (ColorfulAssociation checkOjb : associationList) {
-					if (checkOjb.getSource().equals(newAssociation.getSource()) && checkOjb.getTarget().equals(newAssociation.getTarget()) ) {
-						if( m_log.isDebugEnabled() ){
-							m_log.debug("drawAssociationLines line duplicate :" + newAssociation.getSource() + "->" +
-									newAssociation.getTarget() );
-						}
-						checkOjb.setDefaultColor();
-						checkOjb.addTooltip(tooltip);
-						checkOjb.setLabel(checkOjb.getLabel() + "\n" + newAssociation.getLabel());
+			for (JobObjectGroupInfoResponse waitroup : objectGroupList) {
+				List<JobObjectInfoResponse> objectList = waitroup.getJobObjectList();
+				for (JobObjectInfoResponse waitRule : objectList) {
+					// セッション横断待ちと時刻待ちは対象外
+					if (waitRule.getType() == JobObjectInfoResponse.TypeEnum.TIME
+							|| waitRule.getType() == JobObjectInfoResponse.TypeEnum.START_MINUTE
+							|| waitRule.getType() == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_STATUS
+							|| waitRule.getType() == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_VALUE) {
 						continue;
 					}
+
+					ColorfulAssociation newAssociation = new ColorfulAssociation(waitRule.getJobId(),
+							jobTreeItem.getData().getId());
+
+					// 色を決めて
+					if (waitRule.getType() == JobObjectInfoResponse.TypeEnum.JOB_END_STATUS) {
+						Color color = null;
+						if (waitRule.getStatus() == JobObjectInfoResponse.StatusEnum.ABNORMAL) {
+							color = JobMapColor.red;
+						} else if (waitRule.getStatus() == JobObjectInfoResponse.StatusEnum.NORMAL) {
+							color = JobMapColor.green;
+						} else if (waitRule.getStatus() == JobObjectInfoResponse.StatusEnum.WARNING) {
+							color = JobMapColor.yellow;
+						} else {
+							m_log.debug("updateImte() association " + waitRule.getValue());
+						}
+						if (color != null) {
+							newAssociation.setLineColor(new Color (null, color.getRed() * 5 / 6, color.getGreen() * 5 / 6,
+									color.getBlue() * 5 / 6));
+							newAssociation.setLabelColor(new Color (null, color.getRed() * 3 / 4, color.getGreen() * 3 / 4,
+									color.getBlue() * 3 / 4));
+						}
+					} else if (waitRule.getType() == JobObjectInfoResponse.TypeEnum.JOB_RETURN_VALUE){
+						newAssociation.setLineColor(JobMapColor.black);
+					}
+
+					// ツールチップを作る。
+					String tooltip = "";
+					String waitValue = "";
+					if (waitRule.getType() == JobObjectInfoResponse.TypeEnum.JOB_END_STATUS) {
+						waitValue = EndStatusMessage.typeEnumValueToString(waitRule.getStatus().getValue());
+					} else if (waitRule.getType() == JobObjectInfoResponse.TypeEnum.JOB_END_VALUE
+							|| waitRule.getType() == JobObjectInfoResponse.TypeEnum.JOB_RETURN_VALUE) {
+						waitValue = DecisionObjectMessage.typeEnumToString(waitRule.getDecisionCondition()) + ", "
+								+ waitRule.getValue();
+					}
+					tooltip = JudgmentObjectMessage.enumToString(waitRule.getType()) + ", " + waitValue;
+					newAssociation.addTooltip(tooltip);
+
+					// ラベルを設定する
+					String label = "";
+					if (!isCompactConnection() && !waitRule.getDescription().isEmpty()) {
+						label = waitRule.getDescription();
+						newAssociation.setLabel(label);
+					}
+
+					// 優先順指定があればtarget隣接ラベルに設定して tooltipにも記載
+					HashMap<String, Integer> setMap = JobWaitOrderMap.get(newAssociation.getSource());
+					if (setMap != null) {
+						Integer orderNo = setMap.get(newAssociation.getTarget());
+						if (orderNo != null) {
+							newAssociation.setTargetAdjacentLabel(orderNo + ".");
+							newAssociation.setOrderToolTip(
+									Messages.getString("job.exclusive.branch.nextjob.order_short") + " : " + orderNo);
+							if (m_log.isDebugEnabled()) {
+								m_log.debug("drawAssociationLines JobWaitOrderNo target:" + newAssociation.getTarget()
+										+ " order:" + orderNo);
+							}
+						}
+					}
+
+					// 重複している要素があるかチェックを行う、重複していた場合要素を上書きする
+					ColorfulAssociation duplicateOjb = null;
+					for (ColorfulAssociation checkOjb : associationList) {
+						duplicateOjb = duplicateCheckOjb(checkOjb, newAssociation, tooltip);
+						if (duplicateOjb != null) {
+							checkOjb = duplicateOjb;
+							break;
+						}
+					}
+					// 重複した要素はnewAssociationはListに追加しない。
+					if (duplicateOjb != null) {
+						continue;
+					}
+					if (newAssociation.getSource() == null || newAssociation.getTarget() == null) {
+						continue;
+					}
+					m_log.debug("list " + newAssociation.getSource() + "->" + newAssociation.getTarget());
+					associationList.add(newAssociation);
 				}
-				if (newAssociation.getSource() == null || newAssociation.getTarget() == null) {
-					continue;
-				}
-				m_log.debug("list " + newAssociation.getSource() + "->" +
-						newAssociation.getTarget());
-				associationList.add(newAssociation);
 			}
 		}
 
@@ -766,6 +773,45 @@ public class MapViewController {
 			} else {
 				m_composite.drawConnection(parent.getLayer(), association[i]);
 			}
+		}
+	}
+
+	/**
+	 * 矢印が重複している場合、処理を行った要素を返す
+	 * 
+	 * @param checkOjb
+	 * @param newAssociation
+	 * @param tooltip
+	 */
+	private ColorfulAssociation duplicateCheckOjb(ColorfulAssociation checkOjb, ColorfulAssociation newAssociation,
+			String tooltip) {
+		// 矢印の重複チェック(SourceとTargetで確認)。
+		if (checkOjb.getSource().equals(newAssociation.getSource())
+				&& checkOjb.getTarget().equals(newAssociation.getTarget())) {
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("drawAssociationLines line duplicate :" + newAssociation.getSource() + "->"
+						+ newAssociation.getTarget());
+			}
+			// 重複していたら、Listに存在するものの色（既定に戻す）,ツールチップ（追加）、ラベル（追加）を変更
+			checkOjb.setDefaultColor();
+			checkOjb.addTooltip(tooltip);
+
+			// ラベルに新たに追加する要素がなければスキップ
+			if (newAssociation.getLabel().isEmpty()) {
+				return checkOjb;
+			}
+
+			// 重複した要素に既にラベルがあれば追記、なければ新たに追加
+			boolean labelExist = !checkOjb.getLabel().isEmpty();
+			if (labelExist) {
+				checkOjb.setLabel(checkOjb.getLabel() + "\n" + newAssociation.getLabel());
+			} else {
+				checkOjb.setLabel(newAssociation.getLabel());
+			}
+			return checkOjb;
+
+		} else {
+			return null;
 		}
 	}
 	
@@ -856,7 +902,7 @@ public class MapViewController {
 	 * 描画対象スコープのcurrentJobTreeItemを返す
 	 * @return 描画対象スコープのcurrentJobTreeItemを返す
 	 */
-	public JobTreeItem getCurrentJobTreeItem(){
+	public JobTreeItemWrapper getCurrentJobTreeItem(){
 		return m_jobTreeItem;
 	}
 
@@ -881,32 +927,45 @@ public class MapViewController {
 		String sourceId = association.getSource();
 		String targetId = association.getTarget();
 
-		JobTreeItem targetItem = getJobTreeItem(targetId);
-		List<JobObjectInfo> waitList = targetItem.getData().getWaitRule().getObject();
-		ArrayList<JobObjectInfo> deleteList = new ArrayList<JobObjectInfo>();
-		for (JobObjectInfo wait : waitList) {
-			if (sourceId.equals(wait.getJobId())){
-				deleteList.add(wait);
+		JobTreeItemWrapper targetItem = getJobTreeItem(targetId);
+		List<JobObjectGroupInfoResponse> waitGroupList = targetItem.getData().getWaitRule().getObjectGroup();
+		ArrayList<JobObjectGroupInfoResponse> deleteWaitGroupList = new ArrayList<JobObjectGroupInfoResponse>();
+
+		for(JobObjectGroupInfoResponse waitGroup : waitGroupList){
+			ArrayList<JobObjectInfoResponse> deleteJobList = new ArrayList<JobObjectInfoResponse>();
+
+			for (JobObjectInfoResponse wait : waitGroup.getJobObjectList()) {
+				if (sourceId.equals(wait.getJobId())){
+					deleteJobList.add(wait);
+				}
+			}
+			m_log.debug("delete wait rule : " + deleteJobList.size());
+			// 全ての待ち条件群から対象の先行ジョブを削除する。
+			waitGroup.getJobObjectList().removeAll(deleteJobList);
+
+			// 待ち条件群が空となった場合、待ち条件群を削除対象とする。
+			if(waitGroup.getJobObjectList().size() == 0){
+				deleteWaitGroupList.add(waitGroup);
 			}
 		}
-		m_log.debug("delete wait rule : " + deleteList.size());
-		waitList.removeAll(deleteList);
+
+		waitGroupList.removeAll(deleteWaitGroupList);
 
 		// 更新済みフラグを立てる。
 		JobEditState editState = JobEditStateUtil.getJobEditState(JobTreeItemUtil.getManagerName(targetItem));
 		editState.addEditedJobunit(targetItem);
 	}
 
-	private JobTreeItem getJobTreeItem (String jobId) {
+	private JobTreeItemWrapper getJobTreeItem (String jobId) {
 		return getJobTreeItemSub(jobId, m_jobTreeItem);
 	}
 
-	private JobTreeItem getJobTreeItemSub (String jobId, JobTreeItem parent) {
-		for (JobTreeItem item : parent.getChildren()) {
+	private JobTreeItemWrapper getJobTreeItemSub (String jobId, JobTreeItemWrapper parent) {
+		for (JobTreeItemWrapper item : parent.getChildren()) {
 			if (jobId.equals(item.getData().getId())) {
 				return item;
 			} else {
-				JobTreeItem tmp = getJobTreeItemSub(jobId, item);
+				JobTreeItemWrapper tmp = getJobTreeItemSub(jobId, item);
 				if (tmp != null) {
 					return tmp;
 				}
@@ -1003,13 +1062,13 @@ public class MapViewController {
 				+",textWidth="+textWidth+",labelingId="+labelingId+",dragdropId="+dragdropId+",compactConnection="+compactConnection);
 	}
 
-	public void addCollapseItem(JobTreeItem jobTreeItem) {
+	public void addCollapseItem(JobTreeItemWrapper jobTreeItem) {
 		CollapseItemKey collapseItemKey = new CollapseItemKey(jobTreeItem);
 		getCollapseItemKeySet(m_sessionId).add(collapseItemKey);
 		getExpandItemKeySet(m_sessionId).remove(collapseItemKey);
 	}
 
-	public void removeCollapseItem(JobTreeItem jobTreeItem) {
+	public void removeCollapseItem(JobTreeItemWrapper jobTreeItem) {
 		CollapseItemKey collapseItemKey = new CollapseItemKey(jobTreeItem);
 		getCollapseItemKeySet(m_sessionId).remove(collapseItemKey);
 		getExpandItemKeySet(m_sessionId).add(collapseItemKey);
@@ -1041,9 +1100,9 @@ public class MapViewController {
 	 * 指定されたアイテムからrootまでの間にある親Itemの折りたたみ表示を
 	 * すべて展開する 
 	**/
-	public boolean doExpandParentDispary(JobTreeItem targetItem) {
-		JobTreeItem rootItem = m_rootJobFigure.getJobTreeItem();
-		HashSet<JobTreeItem> expandSet = new HashSet<JobTreeItem>();
+	public boolean doExpandParentDispary(JobTreeItemWrapper targetItem) {
+		JobTreeItemWrapper rootItem = m_rootJobFigure.getJobTreeItem();
+		HashSet<JobTreeItemWrapper> expandSet = new HashSet<JobTreeItemWrapper>();
 		if(rootItem==null){
 			m_log.debug("doExpandParentDispary . rootItem . null"  );
 			return false;
@@ -1052,7 +1111,7 @@ public class MapViewController {
 		if(m_log.isDebugEnabled()){
 			m_log.debug("doExpandParentDispary . JobTreeItem . " + targetItem.getData().getId() + " root " + rootItem.getData().getId() );
 		}
-		JobTreeItem current = targetItem;
+		JobTreeItemWrapper current = targetItem;
 		boolean isReachRoot = false;
 		for (int counter = 0 ; counter <=  maxDepth ;counter++ ){
 			//rootまでたどり着いたらループ終了
@@ -1073,7 +1132,7 @@ public class MapViewController {
 		}
 		//親Itemが折りたたみ済みなら展開する
 		boolean doUpdate = false;
-		for( JobTreeItem expandItem : expandSet.toArray(new JobTreeItem[0]) ){
+		for( JobTreeItemWrapper expandItem : expandSet.toArray(new JobTreeItemWrapper[0]) ){
 			boolean isCollapse = doesCollapseJobnet(expandItem);
 			if(isCollapse){
 				removeCollapseItem(expandItem);
@@ -1101,7 +1160,7 @@ class CollapseItemKey {
 		this.jobId = jobId;
 	}
 
-	public CollapseItemKey(JobTreeItem jobTreeItem) {
+	public CollapseItemKey(JobTreeItemWrapper jobTreeItem) {
 		this.jobunitId = jobTreeItem.getData().getJobunitId();
 		this.jobId = jobTreeItem.getData().getId();
 	}

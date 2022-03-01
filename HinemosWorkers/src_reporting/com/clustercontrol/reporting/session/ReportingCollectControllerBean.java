@@ -187,6 +187,41 @@ public class ReportingCollectControllerBean{
 	}
 	
 	/**
+	 * IDと時間とオーナーロールIDを指定し、その時間内の収集データのリストを取得します。<BR>
+	 *
+	 *
+	 * @return CollectDataのリスト
+	 * @throws HinemosDbTimeout 
+	 * @throws InvalidRole 
+	 */
+	public List<CollectData> getCollectDataList(List<Integer> idList, Long fromTime, Long toTime, String ownerRoleId) throws HinemosDbTimeout {
+		List<CollectData> list = null;
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			SelectReportingCollectData select = new SelectReportingCollectData();
+			list = select.getCollectDataList(idList, fromTime, toTime, ownerRoleId);
+			jtm.commit();
+		} catch (HinemosDbTimeout e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			m_log.error("error", e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		return list;
+	}
+	
+	/**
 	 * facilityIdとmonitorIdとdisplayNameとitemCode時間を元にサマリデータを取得します。<BR>
 	 * 
 	 * @param facilityId
@@ -195,17 +230,19 @@ public class ReportingCollectControllerBean{
 	 * @param monitorId
 	 * @param displayName
 	 * @param itemCode
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getCollectDataList(String facilityId, Long fromTime, Long toTime, String monitorId, String displayName, String itemCode) throws HinemosDbTimeout {
+	public List<Object[]> getCollectDataList(String facilityId, Long fromTime, Long toTime, String monitorId,
+			String displayName, String itemCode, String ownerRoleId) throws HinemosDbTimeout {
 		JpaTransactionManager jtm = null;
 		List<Object[]> list = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SelectReportingCollectData select = new SelectReportingCollectData();
-			list = select.getCollectDataList(facilityId, fromTime, toTime, monitorId, displayName, itemCode);
+			list = select.getCollectDataList(facilityId, fromTime, toTime, monitorId, displayName, itemCode, ownerRoleId);
 			jtm.commit();
 		} catch (HinemosDbTimeout e) {
 			if (jtm != null) {
@@ -290,6 +327,42 @@ public class ReportingCollectControllerBean{
 	}
 	
 	/**
+	 * IDと時間とオーナーロールIDを指定し、その時間内のサマリデータ(時)のリストを取得します。<BR>
+	 *
+	 *
+	 * @return SummaryHourのリスト
+	 * @throws HinemosDbTimeout 
+	 * @throws InvalidRole 
+	 */
+	public List<SummaryHour> getSummaryHourList(List<Integer> idList, Long fromTime, Long toTime,
+			String ownerRoleId) throws HinemosDbTimeout {
+		List<SummaryHour> list = null;
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			SelectReportingCollectData select = new SelectReportingCollectData();
+			list = select.getSummaryHourList(idList, fromTime, toTime, ownerRoleId);
+			jtm.commit();
+		} catch (HinemosDbTimeout e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			m_log.error("error", e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		return list;
+	}
+	
+	/**
 	 * facilityIdとmonitorIdとdisplayNameとitemCode時間を元にサマリデータ(時間単位)を取得します。<BR>
 	 * 
 	 * @param facilityId
@@ -298,17 +371,19 @@ public class ReportingCollectControllerBean{
 	 * @param monitorId
 	 * @param displayName
 	 * @param itemCode
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummaryHourList(String facilityId, Long fromTime, Long toTime, String monitorId, String displayName, String itemCode) throws HinemosDbTimeout {
+	public List<Object[]> getSummaryHourList(String facilityId, Long fromTime, Long toTime, String monitorId,
+			String displayName, String itemCode, String ownerRoleId) throws HinemosDbTimeout {
 		JpaTransactionManager jtm = null;
 		List<Object[]> list = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SelectReportingCollectData select = new SelectReportingCollectData();
-			list = select.getSummaryHourList(facilityId, fromTime, toTime, monitorId, displayName, itemCode);
+			list = select.getSummaryHourList(facilityId, fromTime, toTime, monitorId, displayName, itemCode, ownerRoleId);
 			jtm.commit();
 		} catch (HinemosDbTimeout e) {
 			if (jtm != null) {
@@ -392,6 +467,41 @@ public class ReportingCollectControllerBean{
 	}
 	
 	/**
+	 * IDと時間とオーナーロールIDを指定し、その時間内のサマリデータ(日)のリストを取得します。<BR>
+	 *
+	 *
+	 * @return SummaryDayのリスト
+	 * @throws HinemosDbTimeout 
+	 */
+	public List<SummaryDay> getSummaryDayList(List<Integer> idList, Long fromTime, Long toTime,
+			String ownerRoleId) throws HinemosDbTimeout {
+		List<SummaryDay> list = null;
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			SelectReportingCollectData select = new SelectReportingCollectData();
+			list = select.getSummaryDayList(idList, fromTime, toTime, ownerRoleId);
+			jtm.commit();
+		} catch (HinemosDbTimeout e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			m_log.error("error", e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		return list;
+	}
+	
+	/**
 	 * IDを指定し、その時間内のサマリデータ(日)のリストを取得します。<BR>
 	 *
 	 *
@@ -428,17 +538,19 @@ public class ReportingCollectControllerBean{
 	 * @param monitorId
 	 * @param displayName
 	 * @param itemCode
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummaryDayList(String facilityId, Long fromTime, Long toTime, String monitorId, String displayName, String itemCode) throws HinemosDbTimeout {
+	public List<Object[]> getSummaryDayList(String facilityId, Long fromTime, Long toTime, String monitorId,
+			String displayName, String itemCode, String ownerRoleId) throws HinemosDbTimeout {
 		List<Object[]> list = null;
 		JpaTransactionManager jtm = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SelectReportingCollectData select = new SelectReportingCollectData();
-			list = select.getSummaryDayList(facilityId, fromTime, toTime, monitorId, displayName, itemCode);
+			list = select.getSummaryDayList(facilityId, fromTime, toTime, monitorId, displayName, itemCode, ownerRoleId);
 			jtm.commit();
 		} catch (HinemosDbTimeout e) {
 			if (jtm != null) {
@@ -475,6 +587,43 @@ public class ReportingCollectControllerBean{
 			jtm.begin();
 			SelectReportingCollectData select = new SelectReportingCollectData();
 			list = select.getSummaryMonthList(idList, fromTime, toTime);
+			jtm.commit();
+		} catch (HinemosDbTimeout e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
+		} catch (Exception e) {
+			m_log.error("error", e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+		return list;
+	}
+	
+	/**
+	 * IDと時間とオーナーロールIDを指定し、その時間内のサマリデータ(月)のリストを取得します。<BR>
+	 *
+	 *
+	 * @return SummaryMonthのリスト
+	 * @throws HinemosDbTimeout
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public List<SummaryMonth> getSummaryMonthList(List<Integer> idList, Long fromTime, Long toTime, String ownerRoleId)
+			throws HinemosDbTimeout {
+		List<SummaryMonth> list = null;
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			SelectReportingCollectData select = new SelectReportingCollectData();
+			list = select.getSummaryMonthList(idList, fromTime, toTime, ownerRoleId);
 			jtm.commit();
 		} catch (HinemosDbTimeout e) {
 			if (jtm != null) {
@@ -533,17 +682,19 @@ public class ReportingCollectControllerBean{
 	 * @param monitorId
 	 * @param displayName
 	 * @param itemCode
+	 * @param ownerRoleId
 	 * @return
 	 * @throws HinemosDbTimeout 
 	 */
-	public List<Object[]> getSummaryMonthList(String facilityId, Long fromTime, Long toTime, String monitorId, String displayName, String itemCode) throws HinemosDbTimeout {
+	public List<Object[]> getSummaryMonthList(String facilityId, Long fromTime, Long toTime, String monitorId,
+			String displayName, String itemCode, String ownerRoleId) throws HinemosDbTimeout {
 		JpaTransactionManager jtm = null;
 		List<Object[]> list = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SelectReportingCollectData select = new SelectReportingCollectData();
-			list = select.getSummaryMonthList(facilityId, fromTime, toTime, monitorId, displayName, itemCode);
+			list = select.getSummaryMonthList(facilityId, fromTime, toTime, monitorId, displayName, itemCode, ownerRoleId);
 			jtm.commit();
 		} catch (HinemosDbTimeout e) {
 			if (jtm != null) {

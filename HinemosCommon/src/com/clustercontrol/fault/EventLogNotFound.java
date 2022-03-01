@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * EventLogが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class EventLogNotFound extends HinemosException {
+public class EventLogNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = 4418365043337486952L;
 

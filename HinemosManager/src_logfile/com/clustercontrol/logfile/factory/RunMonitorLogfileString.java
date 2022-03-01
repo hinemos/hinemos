@@ -21,18 +21,25 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.hinemosagent.util.AgentVersionManager;
 import com.clustercontrol.hub.bean.CollectStringTag;
 import com.clustercontrol.hub.bean.StringSample;
 import com.clustercontrol.hub.bean.StringSampleTag;
 import com.clustercontrol.hub.util.CollectStringDataUtil;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.logfile.bean.LogfileResultDTO;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
+import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.sdml.util.SdmlUtil;
 import com.clustercontrol.util.MessageConstant;
 
 public class RunMonitorLogfileString {
@@ -48,7 +55,14 @@ public class RunMonitorLogfileString {
 			StringSample sample = new StringSample(new Date(result.msgInfo.getGenerationDate()), result.monitorInfo.getMonitorId());
 			
 			String filePath = new File(new File(result.monitorInfo.getLogfileCheckInfo().getDirectory()), result.monitorInfo.getLogfileCheckInfo().getFileName()).getPath();
-			sample.set(facilityId, filePath, result.message.trim(), Arrays.asList(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getLogfileCheckInfo().getLogfile())));
+			if (SdmlUtil.isCreatedBySdml(result.monitorInfo)) {
+				// SDMLで自動作成されたログファイル監視の場合、独自のタグを抽出する
+				List<StringSampleTag> tagList = SdmlUtil.extractTagsFromMonitoringLog(result.monitorInfo.getMonitorId(), result.message);
+				tagList.add(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getLogfileCheckInfo().getLogfile()));
+				sample.set(facilityId, filePath, result.message.trim(), tagList);
+			} else {
+				sample.set(facilityId, filePath, result.message.trim(), Arrays.asList(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getLogfileCheckInfo().getLogfile())));
+			}
 			CollectStringDataUtil.store(Arrays.asList(sample));
 		}
 		
@@ -61,6 +75,8 @@ public class RunMonitorLogfileString {
 		
 		OutputBasicInfo output = new OutputBasicInfo();
 		output.setNotifyGroupId(NotifyGroupIdGenerator.generate(result.monitorInfo));
+		output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, HinemosModuleConstant.MONITOR_LOGFILE,
+				result.monitorStrValueInfo.getMonitorId()));
 		output.setMonitorId(result.monitorStrValueInfo.getMonitorId());
 		output.setFacilityId(facilityId);
 		output.setPluginId(HinemosModuleConstant.MONITOR_LOGFILE);
@@ -90,6 +106,31 @@ public class RunMonitorLogfileString {
 		output.setRunInstructionInfo(result.runInstructionInfo);
 		
 		output.setMultiId(HinemosPropertyCommon.monitor_systemlog_receiverid.getStringValue());
+
+		if (result.monitorInfo.getPriorityChangeJudgmentType() == null
+				&& result.monitorInfo.getPriorityChangeFailureType() == null) {
+			// 重要度変化関連の設定は、監視対象がWS接続（非REST）エージェントの場合
+			// エージェント送信値から取得できないのでマネージャ側の設定値を参照する
+			if (!(AgentVersionManager.isRestConnetctAgent(facilityId))) {
+				try {
+					if(_log.isTraceEnabled()){
+						_log.trace("run() : isRestConnetctAgent(" + facilityId + ") = false");
+					}
+					MonitorInfo monitor = new MonitorInfo();
+					monitor = new MonitorSettingControllerBean().getMonitor(result.monitorInfo.getMonitorId());
+					output.setPriorityChangeJudgmentType(monitor.getPriorityChangeJudgmentType());
+					output.setPriorityChangeFailureType(monitor.getPriorityChangeFailureType());
+				} catch (MonitorNotFound | InvalidRole e) {
+					// レコードないなら設定不要
+				}
+			}
+		} else {
+			if(_log.isTraceEnabled()){
+				_log.trace("run() : PriorityChangeJudgmentType or getPriorityChangeFailureType of result is not null ");
+			}
+			output.setPriorityChangeJudgmentType(result.monitorInfo.getPriorityChangeJudgmentType());
+			output.setPriorityChangeFailureType(result.monitorInfo.getPriorityChangeFailureType());
+		}
 
 		if (result.runInstructionInfo == null) {
 			// 監視ジョブ以外

@@ -21,15 +21,16 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.calendar.composite.CalendarIdListComposite;
 import com.clustercontrol.composite.ManagerListComposite;
 import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.notify.dialog.NotifyBasicCreateDialog;
+import com.clustercontrol.notify.dialog.bean.NotifyInfoInputData;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.notify.NotifyInfo;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * 通知基本情報コンポジットクラス<BR>
@@ -84,6 +85,9 @@ public class NotifyBasicComposite extends Composite {
 	/** Enable editing */
 	private boolean enableFlg;
 
+	/** 親ダイアログ **/
+	private NotifyBasicCreateDialog parentDialog = null;
+
 	/**
 	 * インスタンスを返します。
 	 * <p>
@@ -96,21 +100,22 @@ public class NotifyBasicComposite extends Composite {
 	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
 	 * @see #initialize()
 	 */
-	public NotifyBasicComposite(Composite parent, int style, String notifyId) {
+	public NotifyBasicComposite(Composite parent, int style, String notifyId, NotifyBasicCreateDialog parentDialog) {
 		super(parent, style);
 
 		this.notifyId = notifyId;
+		this.parentDialog = parentDialog;
 		this.initialize();
 	}
 
 
-	public NotifyBasicComposite(Composite parent, int style, String managerName, String notifyId, boolean enableFlg) {
+	public NotifyBasicComposite(Composite parent, int style, String managerName, String notifyId, boolean enableFlg, NotifyBasicCreateDialog parentDialog) {
 		super(parent, style);
 
 		this.managerName = managerName;
 		this.notifyId = notifyId;
 		this.enableFlg = enableFlg;
-
+		this.parentDialog = parentDialog;
 		this.initialize();
 	}
 
@@ -148,9 +153,7 @@ public class NotifyBasicComposite extends Composite {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
 					m_log.debug("widgetSelected(managerComposite)");
-					String managerName = m_managerComposite.getText();
-					m_ownerRoleId.createRoleIdList(managerName);
-					m_calendarId.createCalIdCombo(managerName, m_ownerRoleId.getText());
+					updateManagerName();
 				}
 			});
 		}
@@ -254,9 +257,7 @@ public class NotifyBasicComposite extends Composite {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
 					m_log.debug("widgetSelected(roleComposite)");
-					String ownerRoleId = m_ownerRoleId.getText();
-					String managerName = m_managerComposite.getText();
-					m_calendarId.createCalIdCombo(managerName, ownerRoleId);
+					updateOwnerRole();
 				}
 			});
 		}
@@ -308,7 +309,7 @@ public class NotifyBasicComposite extends Composite {
 	 * @param info 設定値として用いる通知情報
 	 * @param udpateFlg 更新するか否か（true：更新する）
 	 */
-	public void setInputData(NotifyInfo info, boolean updateFlg) {
+	public void setInputData(NotifyInfoInputData info, boolean updateFlg) {
 		if(info != null){
 			// 通知
 			if (info.getNotifyId() != null) {
@@ -325,8 +326,14 @@ public class NotifyBasicComposite extends Composite {
 			if (info.getOwnerRoleId() != null) {
 				this.m_ownerRoleId.setText(info.getOwnerRoleId());
 			}
+		}
+		// マネージャに対応するオーナーロールIDの更新
+		// オーナーロールID関連コンポジット更新
+		updateManagerName();
+		
+		// カレンダの選択値の反映はプルダウンをオーナーロールIDに応じて更新した後に行う
+		if(info != null){
 			// カレンダID
-			this.m_calendarId.createCalIdCombo(m_managerComposite.getText(), m_ownerRoleId.getText());
 			if (info.getCalendarId() != null) {
 				this.m_calendarId.setText(info.getCalendarId());
 			}
@@ -338,14 +345,12 @@ public class NotifyBasicComposite extends Composite {
 	/**
 	 * 引数で指定された通知情報に、入力値を設定します。
 	 * <p>
-	 * 入力値チェックを行い、不正な場合は認証結果を返します。
-	 * 不正ではない場合は、<code>null</code>を返します。
+	 * 入力値チェックは行いません（マネージャ側で行います）。
 	 *
 	 * @param info 入力値を設定する通知情報
-	 * @return 検証結果
 	 *
 	 */
-	public ValidateResult createInputData(NotifyInfo info, String notifyId) {
+	public void createInputData(NotifyInfoInputData info, String notifyId) {
 		if(info != null){
 			// 通知
 			if (this.m_textNotifyId.getText() != null
@@ -368,19 +373,6 @@ public class NotifyBasicComposite extends Composite {
 				info.setCalendarId(this.m_calendarId.getText());
 			}
 		}
-		return null;
-	}
-
-	/**
-	 * オーナーロールIDを設定します。
-	 * 継承先クラスにてオーナーロールIDに関連するオブジェクト権限を持つ入力項目をクリアします。
-	 */
-	public void setOwnerRoleId(String ownerRoleId) {
-		m_ownerRoleId.setText(ownerRoleId);
-	}
-
-	public String getOwnerRoleId(){
-		return m_ownerRoleId.getText();
 	}
 
 	/* (非 Javadoc)
@@ -414,8 +406,19 @@ public class NotifyBasicComposite extends Composite {
 		return validateResult;
 	}
 
-	public RoleIdListComposite getRoleIdList(){
-		return this.m_ownerRoleId;
+	private void updateOwnerRole(){
+		m_calendarId.createCalIdCombo(m_managerComposite.getText(), m_ownerRoleId.getText());
+		parentDialog.updateOwnerRole(m_ownerRoleId.getText());
+	}
+
+	private void updateManagerName(){
+		String managerName = m_managerComposite.getText();
+		if (enableFlg) {
+			this.m_ownerRoleId.createRoleIdList(managerName);
+		}
+		m_calendarId.createCalIdCombo(managerName, m_ownerRoleId.getText());
+		parentDialog.updateManagerName(managerName);
+		updateOwnerRole();
 	}
 
 	public ManagerListComposite getManagerListComposite() {

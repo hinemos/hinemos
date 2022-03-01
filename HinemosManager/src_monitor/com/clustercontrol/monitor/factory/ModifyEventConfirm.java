@@ -8,7 +8,6 @@
 
 package com.clustercontrol.monitor.factory;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -18,16 +17,15 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.EventLogNotFound;
-import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.filtersetting.bean.EventFilterBaseInfo;
 import com.clustercontrol.monitor.bean.ConfirmConstant;
-import com.clustercontrol.monitor.bean.EventBatchConfirmInfo;
 import com.clustercontrol.monitor.bean.EventDataInfo;
-import com.clustercontrol.monitor.bean.UpdateEventFilterInternal;
 import com.clustercontrol.monitor.run.util.EventCacheModifyCallback;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.notify.monitor.util.QueryUtil;
+import com.clustercontrol.rest.endpoint.monitorresult.dto.enumtype.ConfiremTypeEnum;
 import com.clustercontrol.util.HinemosTime;
 
 
@@ -149,46 +147,36 @@ public class ModifyEventConfirm {
 	 * <li>イベント情報Entity Beanのキャッシュをフラッシュします。</li>
 	 * 
 	 * @param confirmType 確認フラグ（未確認／確認中／確認済）（更新値）
-	 * @param facilityId 更新対象の親ファシリティID
-	 * @param info 更新条件
+	 * @param filter 更新条件
 	 * @param confirmUser 確認ユーザ
-	 * @throws HinemosUnknown
-	 * 
-	 * @see com.clustercontrol.bean.ConfirmConstant
-	 * @see com.clustercontrol.util.PropertyUtil#getPropertyValue(com.clustercontrol.bean.Property, java.lang.String)
-	 * @see com.clustercontrol.repository.session.RepositoryControllerBean#getFacilityIdList(String, int)
-	 * @see com.clustercontrol.monitor.ejb.entity.EventLogBean#ejbHomeBatchConfirm(String[], Integer, Timestamp, Timestamp, Timestamp, Timestamp, String, String, Integer, Integer)
 	 */
-	public void modifyBatchConfirm(int confirmType, String facilityId, EventBatchConfirmInfo info, String confirmUser) throws HinemosUnknown {
+	public int modifyBatchConfirm(ConfiremTypeEnum confirmType, EventFilterBaseInfo filter, String confirmUser) {
+		int rtn;
 
-		if (info.getPriorityList() == null){
-			throw new HinemosUnknown("priority is null");
+		if (filter == null) {
+			filter = EventFilterBaseInfo.ofBatchConfirmingDefault();
 		}
-		
-		//フィルタ条件を変換
-		UpdateEventFilterInternal filterIntenal = new UpdateEventFilterInternal();
-		filterIntenal.setFilter(facilityId, info);
-		
+
 		// アップデートする設定フラグ
 		Long confirmDate = HinemosTime.currentTimeMillis();
-		Integer confirmFlg = Integer.valueOf(confirmType);
 		
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-			
-			int rtn = QueryUtil.updateEventLogFlgByFilter(
-					filterIntenal,
-					confirmFlg,
+			rtn = QueryUtil.updateEventLogFlgByFilter(
+					filter,
+					confirmType.getCode(),
 					confirmUser,
 					confirmDate);
 			m_log.debug("The result of updateEventLogFlgByFilter is: " + rtn);
 			
 			// イベントキャッシュの更新
 			jtm.addCallback(new EventCacheModifyCallback(
-					filterIntenal,
-					confirmFlg,
+					filter,
+					confirmType.getCode(),
 					confirmUser,
 					confirmDate));
 		}
+		return rtn;
 	}
+
 }
 

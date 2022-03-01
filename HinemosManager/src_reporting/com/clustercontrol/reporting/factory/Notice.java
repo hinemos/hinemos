@@ -13,11 +13,14 @@ import java.util.Date;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.ReportingNotFound;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
-import com.clustercontrol.reporting.fault.ReportingNotFound;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -65,10 +68,11 @@ public class Notice {
 
 				// 通知グループID
 				rtn.setNotifyGroupId(info.getNotifyGroupId());
-				
+				// ジョブ連携メッセージID
+				rtn.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.REPORTING,
+						HinemosModuleConstant.REPORTING, reportId));
 				//プラグインID
-				//rtn.setPluginId(HinemosModuleConstant.REPORTING);
-				rtn.setPluginId("REPORTING");
+				rtn.setPluginId(HinemosModuleConstant.REPORTING);
 				//アプリケーション
 				//rtn.setApplication(info.getApplication());
 				rtn.setApplication("REPORTING");

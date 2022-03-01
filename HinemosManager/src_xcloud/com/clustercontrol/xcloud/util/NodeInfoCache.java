@@ -29,6 +29,7 @@ import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudMessageConstant;
 import com.clustercontrol.xcloud.common.ErrorCode;
+import com.clustercontrol.xcloud.common.InternalIdCloud;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
@@ -172,7 +173,7 @@ public class NodeInfoCache {
 				
 				//通知用ファシリティID
 				String facilityID = nodeInfo.get(0,NodeInfo.class).getFacilityId();
-
+				String msg = MessageConstant.FACILITY_ID.getMessage()+": "+facilityID;
 				ObjectMapper om = new ObjectMapper();
 				om.addMixIn(NodeDeviceInfo.class, NodeDeviceInfoMixin.class);
 				om.addMixIn(NodeInfo.class, NodeInfoMixin.class);
@@ -205,44 +206,35 @@ public class NodeInfoCache {
 										+ MessageConstant.THISTIME.getMessage() + ":" + msgInfo.getThisVal();
 							}
 							//インターナルイベントへの通知
-							String msg = CloudMessageConstant.EXECUTED_AUTO_SEARCH.getMessage()+" "+MessageConstant.FACILITY_ID.getMessage()+": "+facilityID + "\n" + details;
-
+							String[] args = {msg + "\n" + details};
 							try {
 								CloudUtil.notifyInternalMessage(
-										CloudUtil.Priority.INFO,
-										CloudMessageUtil.pluginId_cloud,
-										msg,
+										InternalIdCloud.CLOUD_SYS_003,
+										args,
 										"");
 							} catch (Exception e ) {
 								//internal event(auto detection failed)
-								String errorMsg = CloudMessageConstant.EXECUTED_AUTO_SEARCH_FAILED.getMessage()+" "+MessageConstant.FACILITY_ID.getMessage() +": "+facilityID + "\n" + details;
 								Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
-								CloudUtil.notifyInternalMessage(
-										CloudUtil.Priority.WARNING,
-										CloudMessageUtil.pluginId_cloud,
-										errorMsg,
-										"");
+								Logger.getLogger(this.getClass()).debug(CloudMessageConstant.EXECUTED_AUTO_SEARCH.getMessage(args));
 							}
 						}
 					}
 				} catch (JsonProcessingException e) {
 					//internal event(auto detection failed)
-					String errorMsg = CloudMessageConstant.EXECUTED_AUTO_SEARCH_FAILED.getMessage()+" "+MessageConstant.FACILITY_ID.getMessage()+": "+facilityID;
+					String[] args = {msg};
 					Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
 					CloudUtil.notifyInternalMessage(
-							CloudUtil.Priority.WARNING,
-							CloudMessageUtil.pluginId_cloud,
-							errorMsg,
-							errorMsg);
-				} catch (HinemosUnknown | InvalidSetting | InvalidRole e) {
+							InternalIdCloud.CLOUD_SYS_004,
+							args,
+							"");
+				} catch (HinemosUnknown | InvalidSetting | InvalidRole | FacilityNotFound e) {
 					//internal event(auto detection failed)
-					String errorMsg = CloudMessageConstant.EXECUTED_AUTO_SEARCH_FAILED.getMessage()+" "+MessageConstant.FACILITY_ID.getMessage()+": "+facilityID;
+					String[] args = {msg};
 					Logger.getLogger(this.getClass()).warn(ErrorCode.HINEMOS_MANAGER_ERROR.cloudManagerFault(e).getMessage());
 					CloudUtil.notifyInternalMessage(
-							CloudUtil.Priority.WARNING,
-							CloudMessageUtil.pluginId_cloud,
-							errorMsg,
-							errorMsg);
+							InternalIdCloud.CLOUD_SYS_004,
+							args,
+							"");
 				}
 			}
 		}

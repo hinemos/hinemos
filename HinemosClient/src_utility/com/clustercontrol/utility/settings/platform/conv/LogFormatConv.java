@@ -9,18 +9,21 @@
 package com.clustercontrol.utility.settings.platform.conv;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AddLogFormatRequest;
+import org.openapitools.client.model.LogFormatKeyRequest;
+import org.openapitools.client.model.LogFormatKeyRequest.KeyTypeEnum;
+import org.openapitools.client.model.LogFormatKeyRequest.ValueTypeEnum;
+import org.openapitools.client.model.LogFormatKeyResponse;
+import org.openapitools.client.model.LogFormatResponse;
 
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.platform.xml.LogFormatInfo;
 import com.clustercontrol.utility.settings.platform.xml.LogFormatKey;
-import com.clustercontrol.utility.util.Config;
-
 
 /**
  * ログフォーマット情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -69,11 +72,8 @@ public class LogFormatConv {
 	 * @param notifyInfo ログフォーマット定義 XML Bean
 	 * @return ログフォーマット定義 Hinemos Bean
 	 */
-	public static com.clustercontrol.ws.hub.LogFormat getLogFormatData(LogFormatInfo logformat) {
-		com.clustercontrol.ws.hub.LogFormat ret = new com.clustercontrol.ws.hub.LogFormat();
-
-		// 登録日時、更新日時に利用する日時（実行日時とする）
-		long now = new Date().getTime();
+	public static AddLogFormatRequest getLogFormatData(LogFormatInfo logformat) {
+		AddLogFormatRequest ret = new AddLogFormatRequest();
 
 		// LogFormatID
 		if(logformat.getLogFormatId() != null &&
@@ -90,25 +90,27 @@ public class LogFormatConv {
 			ret.setDescription(logformat.getDescription());
 		}
 
-		com.clustercontrol.ws.hub.LogFormatKey logFormatKey = null;
+		// Tags
+		LogFormatKeyRequest logFormatKey = null;
 		for (LogFormatKey key : logformat.getLogFormatKey()) {
-			logFormatKey = new com.clustercontrol.ws.hub.LogFormatKey();
+			logFormatKey = new LogFormatKeyRequest();
 			logFormatKey.setKey(key.getKey());
 			if(key.getDescription() != null
 					&& !"".equals(key.getDescription())){
 				logFormatKey.setDescription(key.getDescription());
 			}
-			com.clustercontrol.ws.hub.ValueType[] valueTypeList = com.clustercontrol.ws.hub.ValueType.values();
-			com.clustercontrol.ws.hub.ValueType valueType = valueTypeList[key.getKeyType()];
+			ValueTypeEnum[] valueTypeList = ValueTypeEnum.values();
+			ValueTypeEnum valueType = valueTypeList[key.getValueType()];
 			logFormatKey.setValueType(valueType);
 
-			com.clustercontrol.ws.hub.KeyType[] keyTypeList = com.clustercontrol.ws.hub.KeyType.values();
-			com.clustercontrol.ws.hub.KeyType keyType = keyTypeList[key.getKeyType()];
+			KeyTypeEnum[] keyTypeList = KeyTypeEnum.values();
+			KeyTypeEnum keyType = keyTypeList[key.getKeyType()];
 			logFormatKey.setKeyType(keyType);
 
 			logFormatKey.setPattern(ifNull2Empty(key.getPattern()));
 			if(key.getValue() != null
-					&& !"".equals(key.getValue())){
+					&& !"".equals(key.getValue())
+					&& key.getKeyType() == 1){
 				logFormatKey.setValue(key.getValue());
 			}
 			
@@ -126,11 +128,7 @@ public class LogFormatConv {
 		}
 
 		ret.setOwnerRoleId(logformat.getOwnerRoleId());
-		ret.setRegDate(now);
-		ret.setUpdateDate(now);
-		ret.setRegUser(Config.getConfig("Login.USER"));
-		ret.setUpdateUser(Config.getConfig("Login.USER"));
-
+		
 		return ret;
 	}
 
@@ -140,7 +138,7 @@ public class LogFormatConv {
 	 * @param mailTemplateInfo ログフォーマット定義 Hinemos Bean
 	 * @return ログフォーマット定義 XML Bean
 	 */
-	public static LogFormatInfo getLogFormat(com.clustercontrol.ws.hub.LogFormat logformat) {
+	public static LogFormatInfo getLogFormat(LogFormatResponse logformat) {
 		LogFormatInfo ret = new LogFormatInfo();
 
 		ret.setLogFormatId(logformat.getLogFormatId());
@@ -151,7 +149,7 @@ public class LogFormatConv {
 
 		List<LogFormatKey> logFormatKeyList = new ArrayList<LogFormatKey>();
 		LogFormatKey logFormatKey = null;
-		for (com.clustercontrol.ws.hub.LogFormatKey key : logformat.getKeyPatternList()) {
+		for (LogFormatKeyResponse key : logformat.getKeyPatternList()) {
 			logFormatKey = new LogFormatKey();
 			logFormatKey.setKey(key.getKey());
 			if(key.getDescription() != null

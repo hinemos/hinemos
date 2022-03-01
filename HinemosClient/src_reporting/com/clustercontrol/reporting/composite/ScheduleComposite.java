@@ -22,15 +22,15 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.ReportingScheduleInfoResponse;
+import org.openapitools.client.model.ReportingScheduleResponse;
+import org.openapitools.client.model.ReportingScheduleInfoResponse.ScheduleTypeEnum;
 
 import com.clustercontrol.bean.DayOfWeekConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
-import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.composite.action.ComboModifyListener;
 import com.clustercontrol.composite.action.NumberKeyListener;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.common.Schedule;
-import com.clustercontrol.ws.reporting.ReportingInfo;
 
 /**
  * レポーティング出力期間コンポジットクラス<BR>
@@ -588,12 +588,12 @@ public class ScheduleComposite extends Composite {
 	 * @param info
 	 *            レポーティング情報
 	 */
-	public void reflectReportingInfo(ReportingInfo info) {
+	public void reflectReportingInfo(ReportingScheduleResponse info) {
 		// スケジュール設定
 		if (info != null) {
-			Schedule schedule = info.getSchedule();
+			ReportingScheduleInfoResponse schedule = info.getSchedule();
 			DecimalFormat format = new DecimalFormat("00");
-			if (schedule.getType() == ScheduleConstant.TYPE_DAY
+			if (schedule.getScheduleType() == ScheduleTypeEnum.DAY
 					&& schedule.getDay() == null) {
 				// 時を設定
 				m_comboHoursDaily.select(0);
@@ -620,7 +620,7 @@ public class ScheduleComposite extends Composite {
 					}
 				}
 
-			} else if (schedule.getType() == ScheduleConstant.TYPE_WEEK) {
+			} else if (schedule.getScheduleType() == ScheduleTypeEnum.WEEK) {
 				// 曜日を設定
 				m_comboDayOfWeek.select(0);
 				String dayOfWeek = DayOfWeekConstant.typeToString(schedule
@@ -656,7 +656,7 @@ public class ScheduleComposite extends Composite {
 					}
 				}
 
-			} else if (schedule.getType() == ScheduleConstant.TYPE_DAY
+			} else if (schedule.getScheduleType() == ScheduleTypeEnum.DAY
 					&& schedule.getDay() != null) {
 				// 日を設定
 				format = new DecimalFormat("");
@@ -703,7 +703,7 @@ public class ScheduleComposite extends Composite {
 			}
 
 			// 指定方式を設定
-			if (schedule.getType() == ScheduleConstant.TYPE_DAY
+			if (schedule.getScheduleType() == ScheduleTypeEnum.DAY
 					&& schedule.getDay() == null) {
 				m_typeDaily.setSelection(true);
 				m_comboHoursDaily.setEnabled(true);
@@ -714,7 +714,7 @@ public class ScheduleComposite extends Composite {
 				m_comboDay.setEnabled(false);
 				m_comboHoursMonthly.setEnabled(false);
 				m_comboMinutesMonthly.setEnabled(false);
-			} else if (schedule.getType() == ScheduleConstant.TYPE_WEEK) {
+			} else if (schedule.getScheduleType() == ScheduleTypeEnum.WEEK) {
 				m_typeWeekly.setSelection(true);
 				m_comboHoursDaily.setEnabled(false);
 				m_comboMinutesDaily.setEnabled(false);
@@ -724,7 +724,7 @@ public class ScheduleComposite extends Composite {
 				m_comboDay.setEnabled(false);
 				m_comboHoursMonthly.setEnabled(false);
 				m_comboMinutesMonthly.setEnabled(false);
-			} else if (schedule.getType() == ScheduleConstant.TYPE_DAY
+			} else if (schedule.getScheduleType() == ScheduleTypeEnum.DAY
 					&& schedule.getDay() != null) {
 				m_typeMonthly.setSelection(true);
 				m_comboHoursDaily.setEnabled(false);
@@ -761,11 +761,11 @@ public class ScheduleComposite extends Composite {
 	 * 
 	 * @return スケジュールタイプ
 	 */
-	public Integer getType() {
+	public ScheduleTypeEnum getType() {
 		if (m_typeDaily.getSelection() || m_typeMonthly.getSelection()) {
-			return ScheduleConstant.TYPE_DAY;
+			return ScheduleTypeEnum.DAY;
 		} else if (m_typeWeekly.getSelection()) {
-			return ScheduleConstant.TYPE_WEEK;
+			return ScheduleTypeEnum.WEEK;
 		} else {
 			return null;
 		}

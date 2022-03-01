@@ -33,6 +33,7 @@ public class ModifyMonitorSqlString extends ModifyMonitorStringValueType{
 			HinemosEntityManager em = jtm.getEntityManager();
 
 			// SQL監視情報を追加
+			m_monitorInfo.getSqlCheckInfo().setMonitorId(m_monitorInfo.getMonitorId());
 			em.persist(m_monitorInfo.getSqlCheckInfo());
 			return true;
 		}

@@ -21,20 +21,25 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddCustomtrapNumericMonitorRequest;
+import org.openapitools.client.model.CustomTrapCheckInfoRequest;
+import org.openapitools.client.model.CustomTrapCheckInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoRequest;
+import org.openapitools.client.model.ModifyCustomtrapNumericMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.monitor.bean.ConvertValueConstant;
 import com.clustercontrol.monitor.bean.ConvertValueMessage;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorNumericDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.CustomTrapCheckInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * カスタムトラップ監視の設定ダイアログクラス<br/>
@@ -168,17 +173,17 @@ public class MonitorCustomTrapDialog extends CommonMonitorNumericDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if (this.monitorId == null) {
 			// 新規作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getMonitor(this.monitorId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
@@ -220,20 +225,20 @@ public class MonitorCustomTrapDialog extends CommonMonitorNumericDialog {
 	 *            設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
 
 		// 監視条件カスタムトラップ監視情報
 
-		CustomTrapCheckInfo customtrapInfo = monitor.getCustomTrapCheckInfo();
+		CustomTrapCheckInfoResponse customtrapInfo = monitor.getCustomTrapCheckInfo();
 		
 		if(customtrapInfo == null){
 			this.m_comboConvertValue.setText(ConvertValueMessage.typeToString(ConvertValueConstant.TYPE_NO));
 		}else{
 			this.textKeypattern.setText(customtrapInfo.getTargetKey());
-			this.m_comboConvertValue.setText(ConvertValueMessage.typeToString(customtrapInfo.getConvertFlg().intValue()));
+			this.m_comboConvertValue.setText(ConvertValueMessage.codeToString(customtrapInfo.getConvertFlg().toString()));
 		}
 		m_numericValueInfo.setInputData(monitor);
 	}
@@ -244,9 +249,9 @@ public class MonitorCustomTrapDialog extends CommonMonitorNumericDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		// Local Variables
-		CustomTrapCheckInfo customtrapInfo = null;
+		CustomTrapCheckInfoResponse customtrapInfo = null;
 
 		// MAIN
 		super.createInputData();
@@ -254,14 +259,9 @@ public class MonitorCustomTrapDialog extends CommonMonitorNumericDialog {
 			return null;
 		}
 
-		// カスタムトラップ監視設置
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N);
-
 		// 監視条件コマンド監視情報
-		customtrapInfo = new CustomTrapCheckInfo();
-		customtrapInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N);
-		customtrapInfo.setConvertFlg(ConvertValueConstant.TYPE_NO);
-		customtrapInfo.setMonitorId(monitorInfo.getMonitorId());
+		customtrapInfo = new CustomTrapCheckInfoResponse();
+		customtrapInfo.setConvertFlg(CustomTrapCheckInfoResponse.ConvertFlgEnum.NONE);
 		customtrapInfo.setTargetKey(this.textKeypattern.getText());
 		monitorInfo.setCustomTrapCheckInfo(customtrapInfo);
 
@@ -275,7 +275,12 @@ public class MonitorCustomTrapDialog extends CommonMonitorNumericDialog {
 		if (this.m_comboConvertValue.getText() != null
 				&& !"".equals((this.m_comboConvertValue.getText()).trim())) {
 
-			customtrapInfo.setConvertFlg(Integer.valueOf(ConvertValueMessage.stringToType(this.m_comboConvertValue.getText())));
+			int convertFlgType = ConvertValueMessage.stringToType(this.m_comboConvertValue.getText());
+			if (convertFlgType == ConvertValueConstant.TYPE_NO) {
+				customtrapInfo.setConvertFlg(CustomTrapCheckInfoResponse.ConvertFlgEnum.NONE);
+			} else if (convertFlgType == ConvertValueConstant.TYPE_DELTA) {
+				customtrapInfo.setConvertFlg(CustomTrapCheckInfoResponse.ConvertFlgEnum.DELTA);
+			}
 		}
 		
 		// 通知設定の格納
@@ -302,32 +307,44 @@ public class MonitorCustomTrapDialog extends CommonMonitorNumericDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-		if (info != null) {
-			String[] args = { info.getMonitorId(), managerName };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+		if (this.inputData != null) {
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if (!this.updateFlg) {
 				// 新規作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if (result) {
-						// 登録が成功したことを通知する
-						MessageDialog.openInformation(null, Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						// 登録が失敗したことを通知する
-						MessageDialog.openError(null, Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddCustomtrapNumericMonitorRequest info = new AddCustomtrapNumericMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddCustomtrapNumericMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getCustomTrapCheckInfo() != null && this.inputData.getCustomTrapCheckInfo() != null) {
+						info.getCustomTrapCheckInfo().setConvertFlg(
+								CustomTrapCheckInfoRequest.ConvertFlgEnum.fromValue(
+										this.inputData.getCustomTrapCheckInfo().getConvertFlg().getValue()));
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(AddCustomtrapNumericMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.addCustomtrapNumericMonitor(info);
+					MessageDialog.openInformation(null, Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorIdInvalid e) {
+					// 監視項目IDが不適切な場合、エラーダイアログを表示する
+					MessageDialog.openInformation(null, Messages.getString("message"),
+							Messages.getString("message.monitor.97", args));
+				} catch (MonitorDuplicate e) {
 					// 重複する監視項目IDが存在することを通知する
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.monitor.53", args));
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権が付与されていないことを通知する
 						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
@@ -341,23 +358,37 @@ public class MonitorCustomTrapDialog extends CommonMonitorNumericDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権が付与されていないことを通知する
-					MessageDialog.openInformation(null, Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if (result) {
-					// 更新が成功したことを通知する
+					ModifyCustomtrapNumericMonitorRequest info = new ModifyCustomtrapNumericMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyCustomtrapNumericMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getCustomTrapCheckInfo() != null && this.inputData.getCustomTrapCheckInfo() != null) {
+						info.getCustomTrapCheckInfo().setConvertFlg(
+								CustomTrapCheckInfoRequest.ConvertFlgEnum.fromValue(
+										this.inputData.getCustomTrapCheckInfo().getConvertFlg().getValue()));
+					}
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(ModifyCustomtrapNumericMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.modifyCustomtrapNumericMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(null, Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
-					// 更新が失敗したことを通知する
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権が付与されていないことを通知する
+						MessageDialog.openInformation(null, Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(null, Messages.getString("failed"),
 							Messages.getString("message.monitor.36", args) + errMessage);
 				}

@@ -34,6 +34,15 @@ import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.AddNodeConfigSettingInfoRequest;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
+import org.openapitools.client.model.ModifyNodeConfigSettingInfoRequest;
+import org.openapitools.client.model.NodeConfigCustomInfoResponse;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse;
+import org.openapitools.client.model.NodeConfigSettingItemInfoRequest;
+import org.openapitools.client.model.NodeConfigSettingItemInfoRequest.SettingItemIdEnum;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.PropertyFieldColorConstant;
@@ -45,28 +54,24 @@ import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NodeConfigSettingDuplicate;
+import com.clustercontrol.fault.NodeConfigSettingNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.notify.composite.NotifyIdListComposite;
 import com.clustercontrol.repository.FacilityPath;
 import com.clustercontrol.repository.composite.NodeConfigCollectRuleComposite;
 import com.clustercontrol.repository.composite.NodeConfigTargetComposite;
 import com.clustercontrol.repository.composite.NodeCustomComposite;
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.repository.bean.NodeConfigSettingItem;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
+import com.clustercontrol.repository.bean.NodeConfigRunInterval;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
-import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.InvalidSetting_Exception;
-import com.clustercontrol.ws.repository.InvalidUserPass_Exception;
-import com.clustercontrol.ws.repository.NodeConfigCustomInfo;
-import com.clustercontrol.ws.repository.NodeConfigSettingDuplicate_Exception;
-import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
-import com.clustercontrol.ws.repository.NodeConfigSettingItemInfo;
-import com.clustercontrol.ws.repository.NodeConfigSettingNotFound_Exception;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * 構成情報取得設定の作成・変更ダイアログクラス<BR>
@@ -294,10 +299,10 @@ public class NodeConfigSettingCreateDialog extends CommonDialog {
 				String managerName = m_managerComposite.getText();
 				ScopeTreeDialog dialog = new ScopeTreeDialog(shell, managerName, m_ownerRoleId.getText(), false, false);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem item = dialog.getSelectItem();
-					FacilityInfo info = item.getData();
+					FacilityTreeItemResponse item = dialog.getSelectItem();
+					FacilityInfoResponse info = item.getData();
 					m_facilityId = info.getFacilityId();
-					if (info.getFacilityType() == FacilityConstant.TYPE_NODE) {
+					if (info.getFacilityType() == FacilityTypeEnum.NODE) {
 						m_configSettingScopeText.setText(info.getFacilityName());
 					} else {
 						FacilityPath path = new FacilityPath(
@@ -426,13 +431,13 @@ public class NodeConfigSettingCreateDialog extends CommonDialog {
 	 */
 	private void setInputData() {
 		// 初期表示
-		NodeConfigSettingInfo info = null;
+		NodeConfigSettingInfoResponse info = null;
 		if(m_configInfoSettingId != null){
 			// 変更、コピーの場合、情報取得
 			try {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(this.m_managerComposite.getText());
-				info = wrapper.getNodeConfigInfoSetting(m_configInfoSettingId);
-			} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | NodeConfigSettingNotFound_Exception e) {
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.m_managerComposite.getText());
+				info = wrapper.getNodeConfigSettingInfo(m_configInfoSettingId);
+			} catch (HinemosUnknown | InvalidRole | InvalidUserPass | NodeConfigSettingNotFound | RestConnectFailed e) {
 				m_log.error("setInputData() getNodeConfigInfoSetting, " + e.getMessage());
 			}
 		}
@@ -468,9 +473,11 @@ public class NodeConfigSettingCreateDialog extends CommonDialog {
 			m_facilityId = info.getFacilityId();
 
 			//	重要度と通知ID
-			m_notify.setNotify(info.getNotifyRelationList());
+			List<NotifyRelationInfoResponse> dtoList = info.getNotifyRelationList();
+			m_notify.setNotify(dtoList);
+
 			//	設定の有効化
-			m_configSettingValidCheck.setSelection(info.isValidFlg());
+			m_configSettingValidCheck.setSelection(info.getValidFlg());
 
 		} else {
 			// 作成の場合（デフォルト設定）
@@ -562,41 +569,21 @@ public class NodeConfigSettingCreateDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		List<NodeConfigSettingItemInfo> items = new ArrayList<NodeConfigSettingItemInfo>();
-
 		//ID取得
 		String args[] = { this.m_configSettingIdText.getText() };
 		
-		// 対象構成情報の収集対象情報を設定
-		for (Object i : this.m_configTarget.getTarget()) {
-			NodeConfigSettingItemInfo tmp = new NodeConfigSettingItemInfo();
-			tmp.setSettingItemId(i.toString());
-			items.add(tmp);
-		}
-		if(this.m_customList.isValid()){
-			NodeConfigSettingItemInfo tmp = new NodeConfigSettingItemInfo();
-			tmp.setSettingItemId(NodeConfigSettingItem.CUSTOM.toString());
-			items.add(tmp);
-		}
-
 		// Manager登録.
-		ArrayList<NodeConfigCustomInfo> customList = this.m_customList.getNodeConfigCustomInfoList();
+		ArrayList<NodeConfigCustomInfoResponse> customList = this.m_customList.getNodeConfigCustomInfoList();
 		String errMessage = "";
-		RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(this.m_managerComposite.getText());
+		RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.m_managerComposite.getText());
 
-		NodeConfigSettingInfo configInfo = new NodeConfigSettingInfo();
+		NodeConfigSettingInfoResponse configInfo = new NodeConfigSettingInfoResponse();
 		configInfo.setSettingId(this.m_configSettingIdText.getText());
 		configInfo.setFacilityId(this.m_facilityId);
 		configInfo.setSettingName(this.m_configSettingNameText.getText());
 		configInfo.setDescription(this.m_configSettingDescriptionText.getText());
-		configInfo.setRunInterval(this.m_collectRule.getRunInterval());
 		configInfo.setCalendarId(this.m_collectRule.getCalendarId().getText());
 		configInfo.setValidFlg(this.m_configSettingValidCheck.getSelection());
-
-
-		for (NodeConfigSettingItemInfo info : items) {
-			configInfo.getNodeConfigSettingItemList().add(info);
-		}
 
 		if(customList != null && !customList.isEmpty()){
 			configInfo.getNodeConfigCustomList().addAll(customList);
@@ -607,17 +594,34 @@ public class NodeConfigSettingCreateDialog extends CommonDialog {
 		}
 
 		if (m_notify.getNotify() != null){
-			for (NotifyRelationInfo notify : m_notify.getNotify()) {
-				configInfo.getNotifyRelationList().add(notify);
-			}
+			configInfo.setNotifyRelationList(m_notify.getNotify());
 		}
 		
 		if(!m_isModifyDialog){
 
 			// 作成の場合
 			try {
-				
-				wrapper.addNodeConfigSetting(configInfo);
+				AddNodeConfigSettingInfoRequest requestDto = new AddNodeConfigSettingInfoRequest();
+				RestClientBeanUtil.convertBean(configInfo, requestDto);
+				if (this.m_collectRule.getRunInterval() == NodeConfigRunInterval.TYPE_HOUR_6) {
+					requestDto.setRunInterval(org.openapitools.client.model.AddNodeConfigSettingInfoRequest.RunIntervalEnum._6);
+				} else if (this.m_collectRule.getRunInterval() == NodeConfigRunInterval.TYPE_HOUR_12) {
+					requestDto.setRunInterval(org.openapitools.client.model.AddNodeConfigSettingInfoRequest.RunIntervalEnum._12);
+				} else if (this.m_collectRule.getRunInterval() == NodeConfigRunInterval.TYPE_HOUR_24) {
+					requestDto.setRunInterval(org.openapitools.client.model.AddNodeConfigSettingInfoRequest.RunIntervalEnum._24);
+				}
+				requestDto.setNodeConfigSettingItemList(new ArrayList<>());
+				for (SettingItemIdEnum settingItemId : this.m_configTarget.getTarget()) {
+					NodeConfigSettingItemInfoRequest tmp = new NodeConfigSettingItemInfoRequest();
+					tmp.setSettingItemId(settingItemId);
+					requestDto.getNodeConfigSettingItemList().add(tmp);
+				}
+				if(this.m_customList.isValid()){
+					NodeConfigSettingItemInfoRequest tmp = new NodeConfigSettingItemInfoRequest();
+					tmp.setSettingItemId(SettingItemIdEnum.CUSTOM);
+					requestDto.getNodeConfigSettingItemList().add(tmp);
+				}
+				wrapper.addNodeConfigSettingInfo(requestDto);
 
 				MessageDialog.openInformation(
 						null,
@@ -626,7 +630,7 @@ public class NodeConfigSettingCreateDialog extends CommonDialog {
 
 				result = true;
 
-			} catch (NodeConfigSettingDuplicate_Exception e) {
+			} catch (NodeConfigSettingDuplicate e) {
 				// 構成情報収集設定IDが重複している場合、エラーダイアログを表示する
 
 				MessageDialog.openInformation(
@@ -636,7 +640,7 @@ public class NodeConfigSettingCreateDialog extends CommonDialog {
 
 
 			} catch (Exception e) {
-				if (e instanceof InvalidRole_Exception) {
+				if (e instanceof InvalidRole) {
 					// アクセス権なしの場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -644,7 +648,7 @@ public class NodeConfigSettingCreateDialog extends CommonDialog {
 							Messages.getString("message.accesscontrol.16"));
 				} else {
 					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-					if (!(e instanceof InvalidSetting_Exception)) {
+					if (!(e instanceof InvalidSetting)) {
 						m_log.warn("action()", e);
 					} else {
 						m_log.info("action()" + errMessage);
@@ -658,8 +662,27 @@ public class NodeConfigSettingCreateDialog extends CommonDialog {
 		} else {
 			// 変更の場合
 			try {
-				
-				wrapper.modifyNodeConfigSetting(configInfo);
+				ModifyNodeConfigSettingInfoRequest requestDto = new ModifyNodeConfigSettingInfoRequest();
+				RestClientBeanUtil.convertBean(configInfo, requestDto);
+				if (this.m_collectRule.getRunInterval() == NodeConfigRunInterval.TYPE_HOUR_6) {
+					requestDto.setRunInterval(org.openapitools.client.model.ModifyNodeConfigSettingInfoRequest.RunIntervalEnum._6);
+				} else if (this.m_collectRule.getRunInterval() == NodeConfigRunInterval.TYPE_HOUR_12) {
+					requestDto.setRunInterval(org.openapitools.client.model.ModifyNodeConfigSettingInfoRequest.RunIntervalEnum._12);
+				} else if (this.m_collectRule.getRunInterval() == NodeConfigRunInterval.TYPE_HOUR_24) {
+					requestDto.setRunInterval(org.openapitools.client.model.ModifyNodeConfigSettingInfoRequest.RunIntervalEnum._24);
+				}
+				requestDto.setNodeConfigSettingItemList(new ArrayList<>());
+				for (SettingItemIdEnum settingItemId : this.m_configTarget.getTarget()) {
+					NodeConfigSettingItemInfoRequest tmp = new NodeConfigSettingItemInfoRequest();
+					tmp.setSettingItemId(settingItemId);
+					requestDto.getNodeConfigSettingItemList().add(tmp);
+				}
+				if(this.m_customList.isValid()){
+					NodeConfigSettingItemInfoRequest tmp = new NodeConfigSettingItemInfoRequest();
+					tmp.setSettingItemId(SettingItemIdEnum.CUSTOM);
+					requestDto.getNodeConfigSettingItemList().add(tmp);
+				}
+				wrapper.modifyNodeConfigSettingInfo(configInfo.getSettingId(), requestDto);
 					MessageDialog.openInformation(
 						null,
 						Messages.getString("successful"),
@@ -668,7 +691,7 @@ public class NodeConfigSettingCreateDialog extends CommonDialog {
 					result = true;
 
 			} catch (Exception e) {
-				if (e instanceof InvalidRole_Exception) {
+				if (e instanceof InvalidRole) {
 					// アクセス権なしの場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,

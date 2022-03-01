@@ -26,10 +26,17 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.TrapValueInfoResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.traputil.action.GetImportMibDetailTableDefine;
 import com.clustercontrol.utility.traputil.bean.ImportMibDetailTableDefine;
@@ -37,12 +44,6 @@ import com.clustercontrol.utility.traputil.bean.ImportStatus;
 import com.clustercontrol.utility.traputil.bean.SnmpTrapMasterInfo;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.TrapValueInfo;
 
 /**
  * MIBインポート押下時に起動するダイアログ
@@ -55,7 +56,7 @@ public class MibImportDialog extends CommonDialog {
 	
 	/*ロガー*/
 	private Log log = LogFactory.getLog(getClass());
-	
+
 	/** インポートテーブル */
 	private CommonTableViewer importTableViewer = null;
 	
@@ -208,11 +209,11 @@ public class MibImportDialog extends CommonDialog {
 		
 			Set<String> registeredSet = new HashSet<>();
 			try {
-				MonitorInfo info = MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorId);
-				for(TrapValueInfo trap: info.getTrapCheckInfo().getTrapValueInfos()){
+				MonitorInfoResponse info = MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorId);
+				for(TrapValueInfoResponse trap: info.getTrapCheckInfo().getMonitorTrapValueInfoEntities()){
 					registeredSet.add(trap.getTrapOid() + trap.getGenericId() + trap.getSpecificId() + trap.getMib());
 				}
-			} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | MonitorNotFound_Exception e) {
+			} catch (HinemosUnknown | InvalidRole | InvalidUserPass | MonitorNotFound | RestConnectFailed e) {
 				log.error(e);
 				return list;
 			}

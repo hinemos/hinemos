@@ -27,8 +27,8 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.utility.settings.ui.action.BuildFunctionTreeAction;
 import com.clustercontrol.utility.settings.ui.bean.FuncInfo;
 import com.clustercontrol.utility.settings.ui.bean.FuncTreeItem;
@@ -167,7 +167,7 @@ public class HinemosFuncTreeComposite extends Composite {
 			public void focusGained(FocusEvent e) {
 				Combo combo = (Combo)e.getSource();
 				combo.removeAll();
-				for(String mngName: EndpointManager.getActiveManagerNameList()){
+				for(String mngName: RestConnectManager.getActiveManagerNameList()){
 					combo.add(mngName);
 				};
 				if(combo.indexOf(UtilityManagerUtil.getCurrentManagerName()) != -1){

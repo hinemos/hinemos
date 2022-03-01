@@ -395,11 +395,47 @@
 	"annotations":[
 		{"type":"Column", "columnName":"NodeInfo_cloudLocation"}
 	]},
+
+	{
+	"propName":"cloudLogPriority",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_cloudLogPriority"}
+	]},
 	
 	{
 	"propName":"autoDeviceSearch",
 	"annotations":[
 		{"type":"Column", "columnName":"NodeInfo_autoDeviceSearch"}
+	]},
+
+	{
+	"propName":"rpaLogDir",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_rpaLogDir"}
+	]},
+
+	{
+	"propName":"rpaManagementToolType",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_rpaManagementToolType"}
+	]},
+
+	{
+	"propName":"rpaResourceId",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_rpaResourceId"}
+	]},
+
+	{
+	"propName":"rpaUser",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_rpaUser"}
+	]},
+
+	{
+	"propName":"rpaExecEnvId",
+	"annotations":[
+		{"type":"Column", "columnName":"NodeInfo_rpaExecEnvId"}
 	]},
 
 	{

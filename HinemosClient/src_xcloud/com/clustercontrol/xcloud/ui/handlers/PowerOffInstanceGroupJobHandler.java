@@ -11,8 +11,8 @@ import java.text.MessageFormat;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.JobResourceInfoResponse;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
 import com.clustercontrol.xcloud.extensions.CloudOptionExtension;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.plugin.CloudOptionSourceProvider;
@@ -30,10 +30,6 @@ public class PowerOffInstanceGroupJobHandler extends AbstaractCloudOptionGroupJo
 		return cloudScope;
 	}
 	@Override
-	protected String getCommand(CloudEndpoint endpoint, String facilityId) throws Exception {
-		return endpoint.makePowerOffInstancesCommandUsingFacility(cloudScope.getId(), facilityId);
-	}
-	@Override
 	protected String getJobName(String facilityId) {
 		return getJobId(facilityId);
 	}
@@ -48,11 +44,6 @@ public class PowerOffInstanceGroupJobHandler extends AbstaractCloudOptionGroupJo
 		return jobid;
 	}
 	@Override
-	protected String getMethodName() {
-		return "makePowerOffInstancesCommandUsingFacility";
-	}
-	
-	@Override
 	protected String getWizardTitle() {
 		return MessageFormat.format(dlgComputePowerOff, CloudOptionExtension.getOptions().get(cloudScope.getCloudPlatform().getId()));
 	}
@@ -60,5 +51,9 @@ public class PowerOffInstanceGroupJobHandler extends AbstaractCloudOptionGroupJo
 	@Override
 	protected String getErrorMessage() {
 		return msgErrorFinishCreatePowerOffJob;
+	}
+	@Override
+	protected JobResourceInfoResponse.ResourceActionEnum getAction() {
+		return JobResourceInfoResponse.ResourceActionEnum.POWEROFF;
 	}
 }

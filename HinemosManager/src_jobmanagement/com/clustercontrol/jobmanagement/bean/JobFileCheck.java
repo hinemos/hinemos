@@ -10,6 +10,7 @@ package com.clustercontrol.jobmanagement.bean;
 
 import java.io.Serializable;
 
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
 
@@ -24,28 +25,31 @@ public class JobFileCheck extends JobKick implements Serializable {
 	private static final long serialVersionUID = 3475488553405827413L;
 
 	/** ファシリティID */
-	private String m_facilityId;
+	private String facilityId;
 
 	/** スコープ */
-	private String m_scope;
+	private String scope;
 
 	/** ディレクトリ */
-	private String m_directory;
+	private String directory;
 
 	/** ファイル名 */
-	private String m_fileName;
+	private String fileName;
 
 	/** ファイルチェック種別 */
-	private Integer m_eventType;
+	private Integer eventType;
 
 	/** ファイルチェック種別 - 変更種別 */
-	private Integer m_modifyType;
+	private Integer modifyType;
+
+	/** ファイルが使用されている場合判定を持ち越す */
+	private Boolean carryOverJudgmentFlg;
 
 	/**
 	 * ファイルチェック設定定義
 	 */
 	public JobFileCheck(){
-		this.m_type = JobKickConstant.TYPE_FILECHECK;
+		this.type = JobKickConstant.TYPE_FILECHECK;
 	}
 	/**
 	 * ファイルチェック設定定義
@@ -56,18 +60,20 @@ public class JobFileCheck extends JobKick implements Serializable {
 	 * @param checkInterval
 	 * @param eventType
 	 * @param modifyType
+	 * @param carryOverJudgmentFlg
 	 */
 	public JobFileCheck(String facilityId,
 			String directory, String fileName, String fileVariable,
-			int checkInterval, int eventType ,int modifyType) {
+			int checkInterval, int eventType ,int modifyType, boolean carryOverJudgmentFlg) {
 		super();
 		
-		this.m_type = JobKickConstant.TYPE_FILECHECK;
-		this.m_facilityId = facilityId;
-		this.m_directory = directory;
-		this.m_fileName = fileName;
-		this.m_eventType = eventType;
-		this.m_modifyType = modifyType;
+		this.type = JobKickConstant.TYPE_FILECHECK;
+		this.facilityId = facilityId;
+		this.directory = directory;
+		this.fileName = fileName;
+		this.eventType = eventType;
+		this.modifyType = modifyType;
+		this.carryOverJudgmentFlg = carryOverJudgmentFlg;
 	}
 
 	/**
@@ -75,14 +81,14 @@ public class JobFileCheck extends JobKick implements Serializable {
 	 * @return ファシリティID
 	 */
 	public String getFacilityId() {
-		return m_facilityId;
+		return facilityId;
 	}
 	/**
 	 * ファシリティIDを設定する<BR>
 	 * @param facilityId ファシリティID
 	 */
 	public void setFacilityId(String facilityId) {
-		this.m_facilityId = facilityId;
+		this.facilityId = facilityId;
 	}
 
 	/**
@@ -90,14 +96,14 @@ public class JobFileCheck extends JobKick implements Serializable {
 	 * @return ファシリティID
 	 */
 	public String getScope() {
-		return m_scope;
+		return scope;
 	}
 	/**
 	 * スコープを設定する<BR>
 	 * @param scope スコープ
 	 */
 	public void setScope(String scope) {
-		this.m_scope = scope;
+		this.scope = scope;
 	}
 
 	/**
@@ -105,14 +111,14 @@ public class JobFileCheck extends JobKick implements Serializable {
 	 * @return ディレクトリ
 	 */
 	public String getDirectory() {
-		return m_directory;
+		return directory;
 	}
 	/**
 	 * ディレクトリを設定する<BR>
 	 * @param directory ディレクトリ
 	 */
 	public void setDirectory(String directory) {
-		this.m_directory = directory;
+		this.directory = directory;
 	}
 
 	/**
@@ -120,14 +126,14 @@ public class JobFileCheck extends JobKick implements Serializable {
 	 * @return ファイル名
 	 */
 	public String getFileName() {
-		return m_fileName;
+		return fileName;
 	}
 	/**
 	 * ファイル名を設定する<BR>
 	 * @param fileName ファイル名
 	 */
 	public void setFileName(String fileName) {
-		this.m_fileName = fileName;
+		this.fileName = fileName;
 	}
 
 	/**
@@ -135,38 +141,54 @@ public class JobFileCheck extends JobKick implements Serializable {
 	 * @return ファイルチェック種別
 	 */
 	public Integer getEventType() {
-		return m_eventType;
+		return eventType;
 	}
 	/**
 	 * ファイルチェック種別を設定する<BR>
 	 * @param eventType ファイルチェック種別
 	 */
 	public void setEventType(Integer eventType) {
-		this.m_eventType = eventType;
+		this.eventType = eventType;
 	}
 	/**
 	 * ファイルチェック種別 - 変更種別を返す<BR>
 	 * @return ファイルチェック種別 - 変更種別
 	 */
 	public Integer getModifyType() {
-		return m_modifyType;
+		return modifyType;
 	}
 	/**
 	 * ファイルチェック種別 - 変更種別を設定する<BR>
 	 * @param modifyType ファイルチェック種別 - 変更種別
 	 */
 	public void setModifyType(Integer modifyType) {
-		this.m_modifyType = modifyType;
+		this.modifyType = modifyType;
+	}
+	/**
+	 * ファイルが使用されている場合判定を持ち越すを返す<BR>
+	 * @return ファイルが使用されている場合判定を持ち越す
+	 */
+	@XmlTransient
+	public Boolean getCarryOverJudgmentFlg() {
+		return carryOverJudgmentFlg;
+	}
+	/**
+	 * ファイルが使用されている場合判定を持ち越すを設定する<BR>
+	 * @param carryOverJudgmentFlg ファイルが使用されている場合判定を持ち越す
+	 */
+	public void setCarryOverJudgmentFlg(Boolean carryOverJudgmentFlg) {
+		this.carryOverJudgmentFlg = carryOverJudgmentFlg;
 	}
 	@Override
 	public String toString() {
 		String str = null;
-		str += "m_type=" + m_type;
-		str += " ,m_facilityId=" + m_facilityId;
-		str += " ,m_directory=" + m_directory;
-		str += " ,m_fileName=" + m_fileName;
-		str += " ,m_eventType=" + m_eventType;
-		str += " ,m_modifyType=" + m_modifyType;
+		str += "type=" + type;
+		str += " ,facilityId=" + facilityId;
+		str += " ,directory=" + directory;
+		str += " ,fileName=" + fileName;
+		str += " ,eventType=" + eventType;
+		str += " ,modifyType=" + modifyType;
+		str += " ,carryOverJudgmentFlg=" + carryOverJudgmentFlg;
 		return str;
 	}
 }

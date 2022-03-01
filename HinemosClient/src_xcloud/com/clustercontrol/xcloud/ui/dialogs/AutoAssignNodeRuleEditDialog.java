@@ -41,13 +41,15 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.openapitools.client.model.AutoAssignNodePatternEntryInfoRequest;
+import org.openapitools.client.model.AutoAssignNodePatternEntryInfoResponse;
+import org.openapitools.client.model.AutoAssignNodePatternEntryInfoResponse.PatternTypeEnum;
+import org.openapitools.client.model.RegistAutoAssigneNodePatternRequest;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ScopeTreeDialog;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
-import com.clustercontrol.ws.xcloud.AutoAssignNodePatternEntry;
-import com.clustercontrol.ws.xcloud.AutoAssignNodePatternEntryType;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.util.CloudUtil;
 
@@ -55,18 +57,18 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 	public static final long serialVersionUID = 1L;
 	
 	private String managerName;
-	private List<AutoAssignNodePatternEntry> entries = new ArrayList<>();
-	private List<AutoAssignNodePatternEntry> completed = new ArrayList<>();
+	private List<AutoAssignNodePatternEntryInfoResponse> entries = new ArrayList<>();
+	private List<AutoAssignNodePatternEntryInfoRequest> completed = new ArrayList<>();
 	
 	private Table table;
 	private Button btnArrowUp;
 	private Button btnArrowDown;
 	private Button btnDelete;
 	
-	private static final Map<AutoAssignNodePatternEntryType, String> patternTypes = new HashMap<AutoAssignNodePatternEntryType, String>() {
+	private static final Map<PatternTypeEnum, String> patternTypes = new HashMap<PatternTypeEnum, String>() {
 		private static final long serialVersionUID = 1L;{
-			put(AutoAssignNodePatternEntryType.INSTANCE_NAME, strComputeName);
-			put(AutoAssignNodePatternEntryType.CIDR, strIpAddress);
+			put(PatternTypeEnum.INSTANCENAME, strComputeName);
+			put(PatternTypeEnum.CIDR, strIpAddress);
 		}};
 	
 	/**
@@ -110,8 +112,8 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 						dialog.create();
 						dialog.getShell().setLocation(p.x, p.y);
 						if (dialog.open() == DialogConstants.OK_ID) {
-							FacilityTreeItem item = dialog.getSelectItem();
-							((AutoAssignNodePatternEntry)cell.getElement()).setScopeId(item.getData().getFacilityId());
+							FacilityTreeItemResponse item = dialog.getSelectItem();
+							((AutoAssignNodePatternEntryInfoResponse)cell.getElement()).setScopeId(item.getData().getFacilityId());
 							tableViewer.refresh();
 							valid();
 						}
@@ -139,19 +141,19 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 		tblclmnNewColumn_1.setText(strEvaluteItem);
 		tableViewerColumn_1.setLabelProvider(new ColumnLabelProvider() {
 			@Override public String getText(Object element) {
-				AutoAssignNodePatternEntry entry = (AutoAssignNodePatternEntry)element;
+				AutoAssignNodePatternEntryInfoResponse entry = (AutoAssignNodePatternEntryInfoResponse)element;
 				String typeName = patternTypes.get(entry.getPatternType());
 				return typeName != null ? typeName: entry.getPatternType().name();
 			}
 		});
 		tableViewerColumn_1.setEditingSupport(new EditingSupport(tableViewer) {
-			String[] items = new String[]{patternTypes.get(AutoAssignNodePatternEntryType.INSTANCE_NAME), patternTypes.get(AutoAssignNodePatternEntryType.CIDR)};
+			String[] items = new String[]{patternTypes.get(PatternTypeEnum.INSTANCENAME), patternTypes.get(PatternTypeEnum.CIDR)};
 			@Override protected boolean canEdit(Object element) {return true;}
 			@Override protected CellEditor getCellEditor(Object element) {
 				return new ComboBoxCellEditor((Table)getViewer().getControl(), items);
 			}
 			@Override protected Object getValue(Object element) {
-				AutoAssignNodePatternEntry entry = (AutoAssignNodePatternEntry)element;
+				AutoAssignNodePatternEntryInfoResponse entry = (AutoAssignNodePatternEntryInfoResponse)element;
 				for (int i = 0; i < items.length; ++i) {
 					if (patternTypes.get(entry.getPatternType()).equals(items[i]))
 						return i;
@@ -164,9 +166,9 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 				if (0 > index || index >= items.length)
 					return;
 				String selected = items[index];
-				for (Map.Entry<AutoAssignNodePatternEntryType, String> entry: patternTypes.entrySet()) {
+				for (Map.Entry<PatternTypeEnum, String> entry: patternTypes.entrySet()) {
 					if (entry.getValue().equals(selected)) {
-						((AutoAssignNodePatternEntry)element).setPatternType(entry.getKey());
+						((AutoAssignNodePatternEntryInfoResponse)element).setPatternType(entry.getKey());
 						getViewer().refresh();
 						break;
 					}
@@ -180,9 +182,9 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 		tblclmnNewColumn_2.setWidth(150);
 		tblclmnNewColumn_2.setText(strMatchingCondition);
 		tableViewerColumn_2.setLabelProvider(new ColumnLabelProvider() {
-			@Override public String getText(Object element) {return ((AutoAssignNodePatternEntry)element).getPattern();}
+			@Override public String getText(Object element) {return ((AutoAssignNodePatternEntryInfoResponse)element).getPattern();}
 			@Override public Color getBackground(Object element) {
-				AutoAssignNodePatternEntry entry = (AutoAssignNodePatternEntry)element;
+				AutoAssignNodePatternEntryInfoResponse entry = (AutoAssignNodePatternEntryInfoResponse)element;
 				return entry.getPattern() == null || entry.getPattern().isEmpty() ? RequiredFieldColorConstant.COLOR_REQUIRED: null;
 			}
 		});
@@ -191,8 +193,8 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 			@Override protected CellEditor getCellEditor(Object element) {
 				return new TextCellEditor((Table)getViewer().getControl());
 			}
-			@Override protected Object getValue(Object element) {return ((AutoAssignNodePatternEntry)element).getPattern();}
-			@Override protected void setValue(Object element, Object value) {((AutoAssignNodePatternEntry)element).setPattern(value.toString());getViewer().refresh();valid();}
+			@Override protected Object getValue(Object element) {return ((AutoAssignNodePatternEntryInfoResponse)element).getPattern();}
+			@Override protected void setValue(Object element, Object value) {((AutoAssignNodePatternEntryInfoResponse)element).setPattern(value.toString());getViewer().refresh();valid();}
 		});
 		
 		TableViewerColumn tableViewerColumn_3 = new TableViewerColumn(tableViewer, SWT.NONE);
@@ -201,11 +203,11 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 		tblclmnNewColumn_3.setText(strScope);
 		tableViewerColumn_3.setLabelProvider(new ColumnLabelProvider() {
 			@Override public String getText(Object element) {
-				AutoAssignNodePatternEntry entry = (AutoAssignNodePatternEntry)element;
+				AutoAssignNodePatternEntryInfoResponse entry = (AutoAssignNodePatternEntryInfoResponse)element;
 				return entry.getScopeId() == null || entry.getScopeId().isEmpty() ? "": CloudUtil.getFacilityPath(managerName, entry.getScopeId());
 			}
 			@Override public Color getBackground(Object element) {
-				AutoAssignNodePatternEntry entry = (AutoAssignNodePatternEntry)element;
+				AutoAssignNodePatternEntryInfoResponse entry = (AutoAssignNodePatternEntryInfoResponse)element;
 				return entry.getScopeId() == null || entry.getScopeId().isEmpty() ? RequiredFieldColorConstant.COLOR_REQUIRED: null;
 			}
 		});
@@ -222,7 +224,7 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 					int index = entries.indexOf(selection.getFirstElement());
 					if (index != 0) {
 						entries.remove(selection.getFirstElement());
-						entries.add(index - 1, (AutoAssignNodePatternEntry)selection.getFirstElement());
+						entries.add(index - 1, (AutoAssignNodePatternEntryInfoResponse)selection.getFirstElement());
 						tableViewer.refresh();
 						tableViewer.setSelection(new StructuredSelection(selection.getFirstElement()));
 					}
@@ -246,7 +248,7 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 					int index = entries.indexOf(selection.getFirstElement());
 					if (index != entries.size() - 1) {
 						entries.remove(selection.getFirstElement());
-						entries.add(index + 1, (AutoAssignNodePatternEntry)selection.getFirstElement());
+						entries.add(index + 1, (AutoAssignNodePatternEntryInfoResponse)selection.getFirstElement());
 						tableViewer.refresh();
 						tableViewer.setSelection(new StructuredSelection(selection.getFirstElement()));
 					}
@@ -267,8 +269,8 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 		button.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				AutoAssignNodePatternEntry entry = new AutoAssignNodePatternEntry();
-				entry.setPatternType(AutoAssignNodePatternEntryType.CIDR);
+				AutoAssignNodePatternEntryInfoResponse entry = new AutoAssignNodePatternEntryInfoResponse();
+				entry.setPatternType(PatternTypeEnum.CIDR);
 				entry.setPattern("");
 				entry.setScopeId("");
 				entries.add(entry);
@@ -351,7 +353,7 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 	
 	private void valid() {
 		boolean valid = true;
-		for (AutoAssignNodePatternEntry entry: this.entries) {
+		for (AutoAssignNodePatternEntryInfoResponse entry: this.entries) {
 			if ((entry.getScopeId() == null || entry.getScopeId().isEmpty()) ||
 				entry.getPatternType() == null ||
 				(entry.getPattern() == null || entry.getPattern().isEmpty())
@@ -383,11 +385,11 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 		return new Point(539, 390);
 	}
 	
-	public void setInput(List<AutoAssignNodePatternEntry> entries) {
+	public void setInput(List<AutoAssignNodePatternEntryInfoResponse> entries) {
 		this.entries.clear();
 		this.completed.clear();
-		for (AutoAssignNodePatternEntry entry: entries) {
-			AutoAssignNodePatternEntry e = new AutoAssignNodePatternEntry();
+		for (AutoAssignNodePatternEntryInfoResponse entry: entries) {
+			AutoAssignNodePatternEntryInfoResponse e = new AutoAssignNodePatternEntryInfoResponse();
 			e.setScopeId(entry.getScopeId());
 			e.setPatternType(entry.getPatternType());
 			e.setPattern(entry.getPattern());
@@ -395,17 +397,19 @@ public class AutoAssignNodeRuleEditDialog extends CommonDialog implements CloudS
 		}
 	}
 	
-	public List<AutoAssignNodePatternEntry> getOutput() {
-		return completed;
+	public RegistAutoAssigneNodePatternRequest getOutput() {
+		RegistAutoAssigneNodePatternRequest req = new RegistAutoAssigneNodePatternRequest();
+		req.setPatterns(completed);
+		return req;
 	}
 	
 	@Override
 	protected void okPressed() {
 		completed.clear();
-		for (AutoAssignNodePatternEntry entry: this.entries) {
-			AutoAssignNodePatternEntry e = new AutoAssignNodePatternEntry();
+		for (AutoAssignNodePatternEntryInfoResponse entry: this.entries) {
+			AutoAssignNodePatternEntryInfoRequest e = new AutoAssignNodePatternEntryInfoRequest();
 			e.setScopeId(entry.getScopeId());
-			e.setPatternType(entry.getPatternType());
+			e.setPatternType(AutoAssignNodePatternEntryInfoRequest.PatternTypeEnum.fromValue((entry.getPatternType().getValue())));
 			e.setPattern(entry.getPattern());
 			this.completed.add(e);
 		}

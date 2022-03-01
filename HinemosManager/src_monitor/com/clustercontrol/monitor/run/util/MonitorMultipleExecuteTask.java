@@ -20,6 +20,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
+import com.clustercontrol.monitor.run.model.MonitorInfo;
 
 /**
  * 監視設定について、監視対象の個々のノードに並行で監視をおこなうためのTaskクラス。
@@ -33,6 +34,7 @@ public class MonitorMultipleExecuteTask implements Callable<List<MonitorRunResul
 
 	private RunMonitor m_runMonitor;
 	private String m_facilityId;
+	private MonitorInfo m_monitorInfo;
 
 	// Logger
 	private static Log m_log = LogFactory.getLog( MonitorMultipleExecuteTask.class );
@@ -45,6 +47,7 @@ public class MonitorMultipleExecuteTask implements Callable<List<MonitorRunResul
 	public MonitorMultipleExecuteTask(RunMonitor runMonitor, String facilityId) {
 		m_runMonitor = runMonitor;
 		m_facilityId = facilityId;
+		m_monitorInfo=runMonitor.getMonitorInfo();
 	}
 
 	/**
@@ -60,6 +63,7 @@ public class MonitorMultipleExecuteTask implements Callable<List<MonitorRunResul
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			// 各監視処理を実行し、実行の可否を格納
+			m_runMonitor.callSetMonitorInfo(m_monitorInfo.getMonitorTypeId(), m_monitorInfo.getMonitorId());
 			List<MonitorRunResultInfo> list = m_runMonitor.collectMultiple(m_facilityId);
 			jtm.commit();
 			return list;

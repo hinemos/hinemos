@@ -89,8 +89,7 @@ public class GetJobKickTableDefine {
 		tableDefine.add(JOBUNIT_ID,
 				new TableColumnInfo(Messages.getString("jobunit.id", locale), TableColumnInfo.NONE, 100, SWT.LEFT));
 		tableDefine.add(DETAIL,
-				new TableColumnInfo(Messages.getString("schedule.setting", locale) + "/" + 
-									Messages.getString("file.check.setting", locale), TableColumnInfo.NONE, 100, SWT.LEFT));
+				new TableColumnInfo(Messages.getString("exec.condition", locale), TableColumnInfo.NONE, 100, SWT.LEFT));
 		tableDefine.add(CALENDAR_ID,
 				new TableColumnInfo(Messages.getString("calendar.id", locale), TableColumnInfo.NONE, 80, SWT.LEFT));
 		tableDefine.add(VALID,

@@ -1,0 +1,276 @@
+<?xml version="1.0"?>
+<!-- 
+   Hinemos (http://www.hinemos.info/)
+   
+   Copyright (c) 2021 NTT DATA INTELLILINK Corporation. All rights reserved.
+ -->
+<project name="SDMLControllerBuild" default="all" basedir=".">
+	<import file="build_props.xml"/>
+
+	<!-- targets -->
+	<target name="all">
+		<antcall target="quick" />
+		<antcall target="build_proxy" />
+		
+		<antcall target="refresh" />
+	</target>
+
+	<target name="quick" description="Build only jar (without proxy)">
+		<antcall target="clean" />
+		<antcall target="jar" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+	</target>
+
+	<target name="init_classpath">
+		<path id="id.compile.classpath.plugin">
+			<pathelement location="${hinemos_manager.dir}/build/jar/HinemosManager.jar" />
+			<fileset dir="${hinemos_manager.dir}/lib_rest">
+				<include name="**/*.jar" />
+				<exclude name="**/jackson-annotations*.jar" />
+				<exclude name="**/jackson-core*.jar" />
+				<exclude name="**/jackson-databind*.jar" />
+			</fileset>
+		</path>
+
+		<path id="id.compile.classpath.default">
+			<fileset dir="${hinemos_manager.dir}/lib">
+				<include name="**/*.jar" />
+				<exclude name="eclipselink-src.jar" />
+			</fileset>
+			<fileset dir="${hinemos_common.dir}/commonlib">
+				<include name="**/*.jar" />
+			</fileset>
+			<fileset dir="${hinemos_manager.dir}/build/jar">
+				<include name="**/*.jar" />
+			</fileset>
+			<fileset dir="${hinemos_common.dir}/build/jar">
+				<include name="**/*.jar" />
+			</fileset>
+		</path>
+	</target>
+
+	<target name="init" depends="init_classpath" >
+		<tstamp>
+			<format property="build.date" pattern="yyyy-MM-dd HH:mm:ss" />
+		</tstamp>
+		
+		<path id="id.compile.classpath">
+			<path refid="id.compile.classpath.plugin" />
+			<path refid="id.compile.classpath.default" />
+		</path>
+
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${dest.dir}" />
+	</target>
+
+	<target name="compile" description="Compile Java sources" depends="init">
+		<javac 
+			destdir="${dest.dir}" 
+			failonerror="true" 
+			classpathref="id.compile.classpath" 
+			source="${compile.version}" 
+			target="${compile.version}"
+			includeAntRuntime="false"
+			encoding="${compile.encode}"
+			debug="on">
+			<src path="${src.dir}" />
+			<src path="${src.v1.dir}" />
+		</javac>
+	</target>
+
+	<macrodef name="javac.mac">
+		<attribute name="compile.dest.dir" />
+		<attribute name="compile.src.dir" />
+		<attribute name="compile.classpath" />
+		<sequential>
+			<mkdir dir="@{compile.dest.dir}" />
+			<javac 
+				destdir="@{compile.dest.dir}" 
+				failonerror="true" 
+				classpathref="@{compile.classpath}" 
+				source="${compile.version}" 
+				target="${compile.version}"
+				encoding="${compile.encode}"
+				debug="on">
+				<src path="@{compile.src.dir}" />
+				<compilerarg value="-XDignore.symbol.file" />
+			</javac>
+			
+			<copy todir="@{compile.dest.dir}" failonerror="true" overwrite="true">
+				<fileset dir="@{compile.src.dir}">
+					<include name="**/*.*"/>
+					<exclude name="**/*.java"/>
+				</fileset>
+			</copy>
+		</sequential>
+	</macrodef>
+
+	<target name="jar" depends="compile" description="Generate JAR file">
+		<mkdir dir="${jar.dir}" />
+		<jar jarfile="${jar.dir}/${jar.plugin}">
+			<!-- make MANIFEST.MF -->
+			<manifest>
+				<attribute name="SDML-Controller-Version" value="${option.version}"/>
+				<attribute name="Build-Date" value="${build.date}"/>
+			</manifest>
+
+			<fileset dir="${dest.dir}">
+				<include name="**/*.*"/>
+			</fileset>
+			<fileset dir="${src.dir}">
+				<include name="**/*.*"/>
+			</fileset>
+		</jar>
+	</target>
+
+	<target name="war" depends="compile">
+		<delete dir="${war.dir}" failonerror="true" />
+		<mkdir dir="${war.dir}" />
+		<mkdir dir="${war.dir}/${class.dir}" />
+		<mkdir dir="${war.dir}/${refresh.project.name}" />
+		<mkdir dir="${war.dir}/${refresh.project.name}/META-INF" />
+		<mkdir dir="${war.dir}/${refresh.project.name}/WEB-INF" />
+		<mkdir dir="${war.dir}/${refresh.project.name}/WEB-INF/classes" />
+		<mkdir dir="${war.dir}/${refresh.project.name}/WEB-INF/lib" />
+
+		<copy todir="${war.dir}/${refresh.project.name}/WEB-INF/lib" overwrite="true">
+			<fileset dir="${hinemos_common.dir}/commonLib">
+				<include name="*.jar" />
+			</fileset>
+			<fileset dir="${hinemos_common.dir}/${jar.dir}">
+				<include name="${jar.HinemosCommon}" />
+			</fileset>
+			<fileset dir="${hinemos_manager.dir}/${jar.dir}">
+				<include name="${jar.HinemosManager}" />
+			</fileset>
+			<fileset dir="${hinemos_manager.dir}/lib_rest">
+				<exclude name="*sources.jar" />
+				<exclude name="**/jackson-annotations*.jar" />
+				<exclude name="**/jackson-core*.jar" />
+				<exclude name="**/jackson-databind*.jar" />
+				<include name="*.jar" />
+			</fileset>
+		</copy>
+
+		<!-- 本体側のリソースを対象外にする -->
+		<unzip src="${war.dir}/${refresh.project.name}/WEB-INF/lib/${jar.HinemosManager}" dest="${war.dir}/${refresh.project.name}/WEB-INF/lib/HinemosManager" />
+		<delete>
+			<fileset dir="${war.dir}/${refresh.project.name}/WEB-INF/lib/HinemosManager/com/clustercontrol/rest" includes="**/*Endpoints*" />
+		</delete>
+		<delete file="${war.dir}/${refresh.project.name}/WEB-INF/lib/${jar.HinemosManager}" />
+		<zip destfile="${war.dir}/${refresh.project.name}/WEB-INF/lib/${jar.HinemosManager}" basedir="${war.dir}/${refresh.project.name}/WEB-INF/lib/HinemosManager" includes="**/*.*" />
+		<delete dir="${war.dir}/${refresh.project.name}/WEB-INF/lib/HinemosManager" />
+
+		<javac destdir="${war.dir}/${class.dir}" failonerror="true" classpathref="id.compile.classpath" source="${compile.version}" target="${compile.version}" encoding="${compile.encode}" includeantruntime="false" debug="on">
+			<src path="${hinemos_manager.dir}/for_war" />
+		</javac>
+
+		<copy todir="${war.dir}/${refresh.project.name}/WEB-INF/classes" overwrite="true">
+			<fileset dir="${dest.dir}">
+				<include name="**/*.*" />
+			</fileset>
+			<fileset dir="${war.dir}/${class.dir}">
+				<include name="**/*.*" />
+			</fileset>
+		</copy>
+
+		<copy todir="${war.dir}/${refresh.project.name}/WEB-INF" overwrite="true">
+			<fileset dir="${hinemos_manager.dir}/for_war">
+				<include name="web.xml" />
+			</fileset>
+		</copy>
+
+		<copy todir="${war.dir}/${refresh.project.name}/META-INF" overwrite="true">
+			<fileset dir="${hinemos_manager.dir}/for_war">
+				<include name="MANIFEST.MF" />
+			</fileset>
+		</copy>
+
+		<copy todir="${war.dir}/${refresh.project.name}" overwrite="true">
+			<fileset dir="${hinemos_manager.dir}/for_war">
+				<include name="index.html" />
+			</fileset>
+		</copy>
+
+		<zip destfile="${war.dir}/${refresh.project.name}.war" basedir="${war.dir}/${refresh.project.name}" includes="**/*.*" />
+	</target>
+
+	<target name="build_proxy" depends="war">
+		<delete dir="${rest.proxy.dir}" failonerror="true" />
+		<mkdir dir="${rest.proxy.dir}" />
+		
+		<copy todir="${openliberty.server.dir}/dropins" overwrite="true">
+			<fileset dir="${war.dir}">
+				<include name="${refresh.project.name}.war" />
+			</fileset>
+		</copy>
+
+		<exec executable="${openliberty.dir}/bin/server.bat">
+			<arg value="start" />
+			<arg value="server1" />
+		</exec>
+
+		<sleep minutes="2" />
+
+		<exec executable="powershell">
+			<arg value="Invoke-WebRequest" />
+			<arg value="-Uri" />
+			<arg value="http://localhost:9080/openapi" />
+			<arg value="-OutFile" />
+			<arg value="${rest.proxy.dir}/openapi_tmp.yaml" />
+		</exec>
+
+		<exec executable="${openliberty.dir}/bin/server.bat">
+			<arg value="stop" />
+			<arg value="server1" />
+		</exec>
+
+		<delete file="${openliberty.server.dir}/dropins/${refresh.project.name}.war" />
+
+		<exec executable="java">
+			<arg value="-jar" />
+			<arg value="${hinemos_manager.dir}/ant/OpenApiYamlConverter.jar" />
+			<arg value="${rest.proxy.dir}/openapi_tmp.yaml" />
+			<arg value="${rest.proxy.dir}/openapi.yaml" />
+			<arg value="${hinemos_manager.dir}/ant/openapi_yaml_convert_conf.properties" />
+		</exec>
+
+		<exec executable="java">
+			<arg value="-jar" />
+			<arg value="${openapi-generator.dir}/openapi-generator-cli.jar" />
+			<arg value="generate" />
+			<arg value="-i" />
+			<arg value="${rest.proxy.dir}/openapi.yaml" />
+			<arg value="-g" />
+			<arg value="java" />
+			<arg value="-o" />
+			<arg value="${rest.proxy.dir}/java" />
+			<arg value="--api-package" />
+			<arg value="com.clustercontrol.rest.client" />
+			<arg value="--skip-validate-spec" />
+		</exec>
+
+		<exec executable="CMD">
+			<arg line="/C mvn install -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true -f ${rest.proxy.dir}/java/pom.xml -Dmaven.repo.local=C:\maven_repository" />
+		</exec>
+
+		<antcall target="proxy_install" />
+	</target>
+
+	<target name="proxy_install">
+		<copy file="${rest.proxy.dir}/java/target/openapi-java-client-1.0.0.jar" tofile="../SDMLClientOption/lib/openapi-java-client-sdml.jar" />
+		<copy file="${rest.proxy.dir}/java/target/openapi-java-client-1.0.0.jar" tofile="../HinemosWorkers/lib/openapi-java-client-sdml.jar" />
+	</target>
+
+	<target name="refresh" if="eclipse_jar_available">
+		<eclipse.refreshLocal resource="${project.name}" depth="infinite"/>
+		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
+	</target>
+</project>

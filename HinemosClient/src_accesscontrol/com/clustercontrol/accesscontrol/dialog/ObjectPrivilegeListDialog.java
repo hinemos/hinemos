@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -45,6 +46,8 @@ public class ObjectPrivilegeListDialog extends CommonDialog{
 	private String m_managerName = "";
 	/** オブジェクトID */
 	private String m_objectId = "";
+	/** オブジェクトID表示名 */
+	private String m_objectIdForDisplay = "";
 	/** オブジェクトタイプ */
 	private String m_objectType = "";
 	/** ロールID */
@@ -53,6 +56,8 @@ public class ObjectPrivilegeListDialog extends CommonDialog{
 	private ObjectPrivilegeListComposite m_objPrivListComposite = null;
 	/** 操作用のオブジェクト権限 HashMap */
 	private HashMap<String, ObjectPrivilegeBean> m_objPrivMap = null;
+	/** オブジェクトIDのラベル用文字列 */
+	private String m_objectIdLabelText = "";
 
 	// ----- 共通メンバ変数 ----- //
 	private Shell shell = null;
@@ -76,13 +81,33 @@ public class ObjectPrivilegeListDialog extends CommonDialog{
 	 * @param mode モード
 	 */
 	public ObjectPrivilegeListDialog(Shell parent, String managerName, String objectId, String objectType, String m_ownerRoleId) {
+		this(parent, managerName, objectId, objectType, m_ownerRoleId, null);
+	}
+	/**
+	 * オブジェクト権限一覧ダイアログのインスタンスを返します。
+	 * 
+	 * @param parent
+	 * @param managerName
+	 * @param objectId
+	 * @param objectType
+	 * @param ownerRoleId
+	 * @param alternativeIdLavel
+	 */
+	public ObjectPrivilegeListDialog(Shell parent, String managerName, String objectId, String objectType, String ownerRoleId, String objectIdLabelText) {
 		super(parent);
 		this.m_managerName = managerName;
 		this.m_objectId = objectId;
+		this.m_objectIdForDisplay = objectId;
 		this.m_objectType = objectType;
-		this.m_ownerRoleId = m_ownerRoleId;
+		this.m_ownerRoleId = ownerRoleId;
 		this.m_objPrivMap = RoleObjectPrivilegeUtil.dto2beanMap(managerName, m_objectId, m_objectType);
+		if (StringUtils.isEmpty(objectIdLabelText)) {
+			this.m_objectIdLabelText = HinemosModuleMessage.nameToString(objectType) + Messages.getString("id");
+		} else {
+			this.m_objectIdLabelText = objectIdLabelText;
+		}
 	}
+
 	// ----- instance メソッド ----- //
 	/**
 	 * ダイアログエリアを生成します。
@@ -115,7 +140,7 @@ public class ObjectPrivilegeListDialog extends CommonDialog{
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		lblObjID.setLayoutData(gridData);
-		lblObjID.setText(objectName + Messages.getString("id") + " : " + this.m_objectId);
+		lblObjID.setText(this.m_objectIdLabelText + " : " + this.m_objectIdForDisplay);
 
 		/*
 		 * オーナID
@@ -132,9 +157,9 @@ public class ObjectPrivilegeListDialog extends CommonDialog{
 		/*
 		 *  オブジェクト権限情報リスト
 		 */
-
-		//オブジェクト権限情報テーブルカラム取得
-		this.m_objPrivListComposite = new ObjectPrivilegeListComposite(parent, SWT.NONE, this.m_objPrivMap);
+		boolean hasExec = !ObjectPrivilegeConstant.OBJECT_TYPE_LIST_OF_NOT_HAVING_EXECUTE_PRIVILEGE
+				.contains(this.m_objectType);
+		this.m_objPrivListComposite = new ObjectPrivilegeListComposite(parent, SWT.NONE, this.m_objPrivMap, hasExec);
 		WidgetTestUtil.setTestId(this, null, m_objPrivListComposite);
 		gridData = new GridData();
 		gridData.horizontalSpan = 1;
@@ -196,7 +221,7 @@ public class ObjectPrivilegeListDialog extends CommonDialog{
 					@Override
 					public void widgetSelected(SelectionEvent e) {
 						List<ObjectBean> objectBeans = new ArrayList<ObjectBean>();
-						objectBeans.add(new ObjectBean(m_managerName, m_objectType, m_objectId));
+						objectBeans.add(new ObjectBean(m_managerName, m_objectType, m_objectId, m_objectIdForDisplay));
 						ObjectPrivilegeEditDialog dialog =
 								new ObjectPrivilegeEditDialog(getParentShell(),
 										objectBeans, m_ownerRoleId, m_objPrivMap);
@@ -211,4 +236,10 @@ public class ObjectPrivilegeListDialog extends CommonDialog{
 		this.createButton( parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false );
 	}
 
+	/**
+	 * オブジェクトIDの代わりに画面表示する文字列を指定します。
+	 */
+	public void setObjectIdForDisplay(String obejctIdForDisplay) {
+		this.m_objectIdForDisplay = obejctIdForDisplay;
+	}
 }

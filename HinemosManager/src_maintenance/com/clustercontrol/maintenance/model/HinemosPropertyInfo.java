@@ -8,11 +8,11 @@
 
 package com.clustercontrol.maintenance.model;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import javax.xml.bind.annotation.XmlType;
 
 
@@ -39,7 +39,6 @@ public class HinemosPropertyInfo {
 	private String valueString;
 	private Integer valueType;
 
-	@Deprecated
 	public HinemosPropertyInfo() {
 	}
 

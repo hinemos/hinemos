@@ -8,16 +8,19 @@
 
 package com.clustercontrol.collect.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.NoResultException;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.analytics.bean.IntegrationComparisonMethod;
 import com.clustercontrol.collect.model.CollectData;
 import com.clustercontrol.collect.model.CollectDataPK;
 import com.clustercontrol.collect.model.CollectKeyInfo;
@@ -28,9 +31,9 @@ import com.clustercontrol.collect.model.SummaryMonth;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.QueryExecutor;
 import com.clustercontrol.fault.CollectKeyNotFound;
 import com.clustercontrol.fault.HinemosDbTimeout;
-import com.clustercontrol.platform.QueryExecutor;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */
@@ -287,6 +290,11 @@ public class QueryUtil {
 	 */
 	public static List<CollectData> getCollectDataListByCondition(
 			Integer id, Long startDate, Long endDate, String comparisonMethod, Double comparisonValue) {
+		List<CollectData> list = new ArrayList<>();
+		if (comparisonValue == null 
+				&& !IntegrationComparisonMethod.EQ.symbol().equals(comparisonMethod)) {
+			return list;
+		}
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			StringBuilder sbJpql = new StringBuilder();
@@ -295,16 +303,22 @@ public class QueryUtil {
 					+ " AND a.id.time > :startDate"
 					+ " AND a.id.time <= :endDate");
 			sbJpql.append(" AND a.value ");
-			sbJpql.append(comparisonMethod);
-			sbJpql.append(" :value");
+			if (comparisonValue != null) {
+				sbJpql.append(comparisonMethod);
+				sbJpql.append(" :value");
+			} else {
+				sbJpql.append(" is null");
+			}
 			sbJpql.append(" ORDER BY a.id.time asc");
 
-			List<CollectData> list = em.createQuery(sbJpql.toString(), CollectData.class)
+			TypedQuery<CollectData> typedQuery = em.createQuery(sbJpql.toString(), CollectData.class)
 					.setParameter("collectorid", id)
 					.setParameter("startDate", startDate)
-					.setParameter("endDate", endDate)
-					.setParameter("value", comparisonValue)
-					.getResultList();
+					.setParameter("endDate", endDate);
+			if (comparisonValue != null) {
+				typedQuery.setParameter("value", comparisonValue);
+			}
+			list = typedQuery.getResultList();
 			return list;
 		}
 	}

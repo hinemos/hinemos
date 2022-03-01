@@ -28,10 +28,10 @@ import com.clustercontrol.commons.bean.ThreadInfo;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.platform.selfcheck.SelfCheckDivergence;
 import com.clustercontrol.plugin.impl.SchedulerInfo;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
 import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
+import com.clustercontrol.selfcheck.monitor.ActivationKeyMonitor;
 import com.clustercontrol.selfcheck.monitor.AsyncTaskQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.DBConnectionCountMonitor;
 import com.clustercontrol.selfcheck.monitor.DBLongTranMonitor;
@@ -41,14 +41,15 @@ import com.clustercontrol.selfcheck.monitor.JVMHeapMonitor;
 import com.clustercontrol.selfcheck.monitor.JobQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.JobRunSessionMonitor;
 import com.clustercontrol.selfcheck.monitor.RAMSwapOutMonitor;
+import com.clustercontrol.selfcheck.monitor.RestServiceQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.SchedulerMonitor;
 import com.clustercontrol.selfcheck.monitor.SelfCheckMonitor;
 import com.clustercontrol.selfcheck.monitor.SnmpTrapQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.SyslogQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.TableSizeMonitor;
 import com.clustercontrol.selfcheck.monitor.ThreadActivityMonitor;
-import com.clustercontrol.selfcheck.monitor.ActivationKeyMonitor;
 import com.clustercontrol.selfcheck.monitor.WebServiceQueueMonitor;
+import com.clustercontrol.selfcheck.util.SelfCheckDivergence;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -312,6 +313,9 @@ public class SelfCheckTaskSubmitter implements Runnable {
 
 		// Web Service
 		_executorService.submit(new SelfCheckTask(new WebServiceQueueMonitor()));
+
+		// REST Service
+		_executorService.submit(new SelfCheckTask(new RestServiceQueueMonitor()));
 
 		// syslog queue
 		_executorService.submit(new SelfCheckTask(new SyslogQueueMonitor()));

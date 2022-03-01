@@ -13,20 +13,21 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import com.clustercontrol.jobmanagement.bean.DelayNotifyConstant;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.bean.RetryWaitStatusConstant;
 
 
 /**
@@ -55,6 +56,9 @@ public class JobSessionJobEntity  implements Serializable {
 	private String ownerRoleId;
 	private Boolean waitCheckFlg				= null;
 	private Integer runCount 				= 0;
+	private Long joblinkRcvCheckedPosition;
+	private Integer retryWaitStatus = RetryWaitStatusConstant.NONE;
+	private Long retryWaitStartTime;
 
 	@Deprecated
 	public JobSessionJobEntity() {
@@ -215,6 +219,33 @@ public class JobSessionJobEntity  implements Serializable {
 		this.runCount = runCount;
 	}
 
+	@Column(name="joblink_rcv_checked_position")
+	public Long getJoblinkRcvCheckedPosition() {
+		return joblinkRcvCheckedPosition;
+	}
+
+	public void setJoblinkRcvCheckedPosition(Long joblinkRcvCheckedPosition) {
+		this.joblinkRcvCheckedPosition = joblinkRcvCheckedPosition;
+	}
+
+	@Column(name="retry_wait_status")
+	public Integer getRetryWaitStatus() {
+		return retryWaitStatus;
+	}
+
+	public void setRetryWaitStatus(Integer retryWaitStatus) {
+		this.retryWaitStatus = retryWaitStatus;
+	}
+
+	@Column(name="retry_wait_start_time")
+	public Long getRetryWaitStartTime() {
+		return retryWaitStartTime;
+	}
+
+	public void setRetryWaitStartTime(Long retryStartWaitTime) {
+		this.retryWaitStartTime = retryStartWaitTime;
+	}
+
 	//bi-directional one-to-one association to JobInfoEntity
 	@OneToOne(mappedBy="jobSessionJobEntity", cascade=CascadeType.ALL)
 	public JobInfoEntity getJobInfoEntity() {
@@ -325,6 +356,33 @@ public class JobSessionJobEntity  implements Serializable {
 		int type = typeInt.intValue();
 		return type == JobConstant.TYPE_JOB
 				|| type == JobConstant.TYPE_APPROVALJOB
-				|| type == JobConstant.TYPE_MONITORJOB;
+				|| type == JobConstant.TYPE_MONITORJOB
+				|| type == JobConstant.TYPE_JOBLINKSENDJOB
+				|| type == JobConstant.TYPE_JOBLINKRCVJOB
+				|| type == JobConstant.TYPE_FILECHECKJOB
+				|| type == JobConstant.TYPE_RESOURCEJOB
+				|| type == JobConstant.TYPE_RPAJOB;
+	}
+
+	@Override
+	public String toString() {
+		return "JobSessionJobEntity ["
+				+ "id=" + id
+				+ ", scopeText=" + scopeText
+				+ ", status=" + status
+				+ ", startDate=" + startDate
+				+ ", endDate=" + endDate
+				+ ", endValue=" + endValue
+				+ ", endStatus=" + endStatus
+				+ ", result=" + result
+				+ ", endStausCheckFlg=" + endStausCheckFlg
+				+ ", delayNotifyFlg=" + delayNotifyFlg
+				+ ", parentJobunitId=" + parentJobunitId
+				+ ", parentJobId=" + parentJobId
+				+ ", ownerRoleId=" + ownerRoleId
+				+ ", waitCheckFlg=" + waitCheckFlg
+				+ ", runCount=" + runCount
+				+ ", joblinkRcvCheckedPosition=" + joblinkRcvCheckedPosition
+				+ "]";
 	}
 }

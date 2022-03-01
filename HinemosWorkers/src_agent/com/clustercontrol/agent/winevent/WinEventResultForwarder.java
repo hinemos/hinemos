@@ -8,47 +8,44 @@
 
 package com.clustercontrol.agent.winevent;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtMessageInfoRequest;
+import org.openapitools.client.model.AgtMonitorInfoResponse;
+import org.openapitools.client.model.AgtMonitorStringValueInfoResponse;
+import org.openapitools.client.model.AgtRunInstructionInfoResponse;
+import org.openapitools.client.model.AgtWinEventResultDTORequest;
+import org.openapitools.client.model.ForwardWinEventResultRequest;
 
-import com.clustercontrol.agent.AgentHubEndPointWrapper;
+import com.clustercontrol.agent.Agent;
+import com.clustercontrol.agent.AgentHubRestClientWrapper;
 import com.clustercontrol.agent.util.AgentProperties;
-import com.clustercontrol.ws.agenthub.MessageInfo;
-import com.clustercontrol.ws.agenthub.WinEventResultDTO;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorStringValueInfo;
+import com.clustercontrol.agent.util.AgentRequestId;
+import com.clustercontrol.agent.util.BlockTransporter;
+import com.clustercontrol.agent.util.BlockTransporter.TransportProcessor;
+import com.clustercontrol.agent.util.MonitorResult;
+import com.clustercontrol.fault.HinemosUnknown;
 
 public class WinEventResultForwarder {
-	
 	private static Log log = LogFactory.getLog(WinEventResultForwarder.class);
-	
-	private static final WinEventResultForwarder _instance = new WinEventResultForwarder();
-	
-	private final ScheduledExecutorService _scheduler;
-	
-	public final int _queueMaxSize;
-	
-	public final int _transportMaxSize;
-	public final int _transportMaxTries;
-	public final int _transportIntervalSize;
-	public final long _transportIntervalMSec;
-	
-	private AtomicInteger transportTries = new AtomicInteger(0);
-	
-	private List<Result> forwardList = new ArrayList<Result>();
-	
+
+	private static final WinEventResultForwarder instance = new WinEventResultForwarder();
+
+	public static WinEventResultForwarder getInstance() {
+		return instance;
+	}
+
+	private final BlockTransporter<MonitorResult> transporter;
+
 	private WinEventResultForwarder() {
+		int _queueMaxSize;
+		int _transportMaxSize;
+		int _transportMaxTries;
+		int _transportIntervalSize;
+		long _transportIntervalMSec;
+
 		{
 			String key = "monitor.winevent.forwarding.queue.maxsize";
 			int valueDefault = 5000;
@@ -66,7 +63,7 @@ public class WinEventResultForwarder {
 			}
 			_queueMaxSize = value;
 		}
-		
+
 		{
 			String key = "monitor.winevent.forwarding.transport.maxsize";
 			int valueDefault = 100;
@@ -84,7 +81,7 @@ public class WinEventResultForwarder {
 			}
 			_transportMaxSize = value;
 		}
-		
+
 		{
 			String key = "monitor.winevent.forwarding.transport.maxtries";
 			int valueDefault = 900;
@@ -102,7 +99,7 @@ public class WinEventResultForwarder {
 			}
 			_transportMaxTries = value;
 		}
-		
+
 		{
 			String key = "monitor.winevent.forwarding.transport.interval.size";
 			int valueDefault = 15;
@@ -120,7 +117,7 @@ public class WinEventResultForwarder {
 			}
 			_transportIntervalSize = value;
 		}
-		
+
 		{
 			String key = "monitor.winevent.forwarding.transport.interval.msec";
 			long valueDefault = 1000L;
@@ -138,139 +135,46 @@ public class WinEventResultForwarder {
 			}
 			_transportIntervalMSec = value;
 		}
-		
-		_scheduler = Executors.newSingleThreadScheduledExecutor(
-				new ThreadFactory() {
-					private volatile int _count = 0;
-					@Override
-					public Thread newThread(Runnable r) {
-						Thread t = new Thread(r, WinEventResultForwarder.class.getSimpleName() + _count++);
-						t.setDaemon(true);
-						return t;
-					}
-				});
-		
-		if (_transportIntervalMSec != -1) {
-			_scheduler.scheduleWithFixedDelay(new ScheduledTask(), 0, _transportIntervalMSec, TimeUnit.MILLISECONDS);
-		}
-	}
-	
-	public static WinEventResultForwarder getInstance() {
-		return _instance;
-	}
-	
-	public void add(String message, MessageInfo msgInfo, MonitorInfo monitorInfo, MonitorStringValueInfo monitorStrValueInfo, RunInstructionInfo runInstructionInfo) {
-		try {
-			ForwardListLock.writeLock();
-			
-			if (_queueMaxSize != -1 && forwardList.size() >= _queueMaxSize) {
-				log.warn("rejected new winevent monitor's result. queue is full : " + message);
-				return;
-			}
-			
-			forwardList.add(new Result(message, msgInfo, monitorInfo, monitorStrValueInfo, runInstructionInfo));
-			
-			if (forwardList.size() != 0 && forwardList.size() % _transportIntervalSize == 0) {
-				if (_transportIntervalSize != -1 && forwardList.size() % _transportIntervalSize == 0) {
-					_scheduler.submit(new ScheduledTask());
-				}
-			}
-		} finally {
-			ForwardListLock.writeUnlock();
-		}
-	}
-	
-	private void forward() {
-		try {
-			ForwardListLock.writeLock();
-			
-			while (forwardList.size() > 0) {
-				// JAX-WSの一時ファイル肥大化(/tmp/jaxwsXXX)へのワークアラウンド実装(リクエストサイズに上限を設ける)
-				int transportSize = _transportMaxSize != -1 && forwardList.size() > _transportMaxSize ? _transportMaxSize : forwardList.size();
-				// 送信失敗直後は1メッセージずつ送信(SOAPのアーキテクチャ上、timeoutなどでメッセージの重複受信は回避できないが、その重複数を最小化する）
-				transportSize = transportTries.get() == 0 ? transportSize : 1;
-				
-				List<Result> forwardListPart = Collections.unmodifiableList(forwardList.subList(0, transportSize));
-				if (forwardListPart.size() > 0) {
-					try {
-						List<WinEventResultDTO> dtoList = new ArrayList<WinEventResultDTO>(forwardListPart.size());
-						for (Result result : forwardListPart) {
-							WinEventResultDTO dto = new WinEventResultDTO();
-							dto.setMessage(result._message);
-							dto.setMsgInfo(result._msgInfo);
-							dto.setMonitorInfo(result._monitorInfo);
-							dto.setMonitorStrValueInfo(result._monitorStrValueInfo);
-							dto.setRunInstructionInfo(result._runInstructionInfo);
-							dtoList.add(dto);
-						}
-						AgentHubEndPointWrapper.forwardWinEventResult(dtoList);
-					} catch (Throwable t) {
-						String msg = String.format("[%d/%d] failed forwarding winevent monitor's result (%d of %d) : %s ...", 
-								transportTries.get(), _transportMaxTries, forwardListPart.size(), forwardList.size(), 
-								forwardListPart.get(0)._message);
-						if (log.isDebugEnabled()) {
-							log.warn(msg, t);
-						} else {
-							log.warn(msg);
-						}
-						if (transportTries.incrementAndGet() >= _transportMaxTries && _transportMaxTries != -1) {
-							msg = String.format("[%d/%d] give up forwarding winevent monitor's result (%d of %d) : %s ...", 
-									transportTries.get(), _transportMaxTries, forwardListPart.size(), forwardList.size(), 
-									forwardListPart.get(0)._message);
-							log.warn(msg, t);
-						} else {
-							// retry
-							return;
-						}
-					}
-				}
-				
-				forwardList.removeAll(forwardListPart);
-				transportTries.set(0);
-			}
-		} catch (RuntimeException e) {
-			log.warn("failed forwarding result.", e);
-		} finally {
-			ForwardListLock.writeUnlock();
-		}
-	}
-	
-	private static class Result {
-		public final String _message;
-		public final MessageInfo _msgInfo;
-		public final MonitorInfo _monitorInfo;
-		public final MonitorStringValueInfo _monitorStrValueInfo;
-		public final RunInstructionInfo _runInstructionInfo;
-		
-		public Result(String message, MessageInfo msgInfo, MonitorInfo monitorInfo, MonitorStringValueInfo monitorStrValueInfo, RunInstructionInfo runInstructionInfo) {
-			this._message = message;
-			this._msgInfo = msgInfo;
-			this._monitorInfo = monitorInfo;
-			this._monitorStrValueInfo = monitorStrValueInfo;
-			this._runInstructionInfo = runInstructionInfo;
-		}
-	}
-	
-	private static class ScheduledTask implements Runnable {
-		
-		@Override
-		public void run() {
-			_instance.forward();
-		}
-		
-	}
-	
-	private static class ForwardListLock {
-		
-		private static final ReentrantReadWriteLock _lock = new ReentrantReadWriteLock();
 
-		public static void writeLock() {
-			_lock.writeLock().lock();
+		transporter = new BlockTransporter<>(
+				"WinEvent", //name
+				_queueMaxSize, // queueSize
+				_transportMaxSize, // blockSize
+				_transportIntervalSize, // sizeThreshold
+				_transportIntervalMSec, // timeThreshold
+				_transportMaxTries, // maxTries
+				new WinEventResultProcessor());
+	}
+
+	public void add(String message, AgtMessageInfoRequest msgInfo, AgtMonitorInfoResponse monitorInfo,
+			AgtMonitorStringValueInfoResponse monitorStrValueInfo, AgtRunInstructionInfoResponse runInstructionInfo) {
+		MonitorResult result;
+		try {
+			result = new MonitorResult(message, msgInfo, monitorInfo, monitorStrValueInfo, runInstructionInfo);
+		} catch (HinemosUnknown e){
+			log.error("add: Failed to convert result. message=" + message, e);
+			return;
 		}
-		
-		public static void writeUnlock() {
-			_lock.writeLock().unlock();
+
+		transporter.add(result);
+	}
+
+	private static class WinEventResultProcessor implements TransportProcessor<MonitorResult> {
+		@Override
+		public void accept(List<MonitorResult> results, AgentRequestId requestId) throws Exception {
+			ForwardWinEventResultRequest request = new ForwardWinEventResultRequest();
+			for (MonitorResult result : results) {
+				AgtWinEventResultDTORequest dto = new AgtWinEventResultDTORequest();
+				dto.setMessage(result.message);
+				dto.setMsgInfo(result.msgInfoReq);
+				dto.setMonitorInfo(result.monitorInfoReq);
+				dto.setMonitorStrValueInfo(result.monitorStrValueInfoReq);
+				dto.setRunInstructionInfo(result.runInstructionInfoReq);
+				request.addResultListItem(dto);
+			}
+			request.setAgentInfo(Agent.getAgentInfoRequest());
+			AgentHubRestClientWrapper.forwardWinEventResult(request, requestId.toRequestHeaderValue());
 		}
 	}
-	
+
 }

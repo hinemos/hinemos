@@ -30,6 +30,8 @@ public class DelayNotifyConstant {
 	public static final int STOP_SUSPEND = 20;
 	/** 停止[状態指定]操作済み */
 	public static final int STOP_SET_END_VALUE = 30;
+	/** 停止[状態指定](強制)操作済み */
+	public static final int STOP_SET_END_VALUE_FORCE = 40;
 
 	/**
 	 * 遅延通知状態から通知済みフラグを取り出し、通知済みフラグを返します。<BR>
@@ -38,6 +40,9 @@ public class DelayNotifyConstant {
 	 * @return 通知済みフラグ
 	 */
 	public static int getNotify(int notify){
+		if(notify >= STOP_SET_END_VALUE_FORCE){
+			notify = notify - STOP_SET_END_VALUE_FORCE;
+		}
 		if(notify >= STOP_SET_END_VALUE){
 			notify = notify - STOP_SET_END_VALUE;
 		}
@@ -57,6 +62,9 @@ public class DelayNotifyConstant {
 	 * @return 操作済みフラグ
 	 */
 	public static int getOperation(int notify){
+		if(notify >= STOP_SET_END_VALUE_FORCE){
+			return STOP_SET_END_VALUE_FORCE;
+		}
 		if(notify >= STOP_SET_END_VALUE){
 			return STOP_SET_END_VALUE;
 		}

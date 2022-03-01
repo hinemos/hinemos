@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * アイコンファイルが重複している場合に利用するException
  * @version 3.2.0
  */
-public class IconFileDuplicate extends HinemosException {
+public class IconFileDuplicate extends HinemosDuplicate {
 
 	private static final long serialVersionUID = 1L;
 	private String m_filename = null;

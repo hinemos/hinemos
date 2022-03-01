@@ -8,14 +8,6 @@
 
 package com.clustercontrol.reporting.composite;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.xml.ws.WebServiceException;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -29,13 +21,10 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.ReportingScheduleResponse;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
-import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.ReportingInfo;
 
 /**
  * レポーティング書式設定コンポジットクラス<BR>
@@ -52,8 +41,6 @@ import com.clustercontrol.ws.reporting.ReportingInfo;
  */
 public class ReportFormatComposite extends Composite {
 	
-	// ログ
-	private static Log m_log = LogFactory.getLog( ReportFormatComposite.class );
 
 	
 	/** ロゴあり */
@@ -79,10 +66,6 @@ public class ReportFormatComposite extends Composite {
 	// 出力タイプ
 	private Combo m_outputType = null;
 	
-	// マネージャ名
-	private String m_managerName = null;
-
-	
 	/**
 	 * インスタンスを返します。
 	 * <p>
@@ -98,9 +81,8 @@ public class ReportFormatComposite extends Composite {
 	 *      style)
 	 * @see #initialize()
 	 */
-	public ReportFormatComposite(Composite parent, int style, String managerName) {
+	public ReportFormatComposite(Composite parent, int style) {
 		super(parent, style);
-		this.m_managerName = managerName;
 		this.initialize();
 	}
 
@@ -236,36 +218,11 @@ public class ReportFormatComposite extends Composite {
 		 */
 		this.m_outputType.removeAll();
 		
-		// データ取得
-		List<String> list = new ArrayList<String>();
+		this.m_outputType.add(ReportOutputTypeConstant.STRING_PDF);
+		this.m_outputType.add(ReportOutputTypeConstant.STRING_XLSX);
 		
-		try {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-			list = wrapper.getReportOutputTypeStrList();
-			
-		} catch (InvalidRole_Exception e) {
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.accesscontrol.16"));
-		} catch (WebServiceException  e) {
-			//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
-			//この場合、空表示
-			return;
-		} catch (Exception e) {
-			String errMessage = HinemosMessage.replace(e.getMessage());
-			m_log.warn("update() getReportOutputTypeStrList, " + errMessage, e);
-			MessageDialog.openError(
-					null,
-					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
-		}
-
-		if(list != null && !list.isEmpty()){
-			// テンプレートIDリスト
-			for(int index=0; index<list.size(); index++){
-				this.m_outputType.add(list.get(index));
-			}
-			this.m_outputType.setText("pdf");
-		}
+		this.m_outputType.setText("pdf");
+		
 	}
 	
 	/*
@@ -305,7 +262,6 @@ public class ReportFormatComposite extends Composite {
 	 * マネージャ名を設定します。
 	 */
 	public void setManagerName (String managerName) {
-		this.m_managerName = managerName;
 		createOutputTypeStrList(managerName);
 	}
 
@@ -315,28 +271,13 @@ public class ReportFormatComposite extends Composite {
 	 * @param info
 	 *            レポーティング情報
 	 */
-	public void reflectReportingInfo(ReportingInfo info) {
+	public void reflectReportingSchedule(ReportingScheduleResponse info) {
 		if (info != null) {
 			m_textTitle.setText(info.getReportTitle());
-			m_checkLogo.setSelection(info.isLogoValidFlg().booleanValue());
+			m_checkLogo.setSelection(info.getLogoValidFlg().booleanValue());
 			m_logoFilename.setText(info.getLogoFilename());
-			m_checkPage.setSelection(info.isPageValidFlg().booleanValue());
-			
-			try {
-				ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(this.m_managerName);
-				m_outputType.setText(wrapper.outputTypeToString(info.getOutputType()));
-				
-			} catch (InvalidRole_Exception e) {
-				MessageDialog.openInformation(null, Messages.getString("message"),
-						Messages.getString("message.accesscontrol.16"));
-			} catch (Exception e) {
-				String errMessage = HinemosMessage.replace(e.getMessage());
-				m_log.warn("update() reflectReportingInfo, " + errMessage, e);
-				MessageDialog.openError(
-						null,
-						Messages.getString("failed"),
-						Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
-			}
+			m_checkPage.setSelection(info.getPageValidFlg().booleanValue());
+			m_outputType.setText(info.getOutputType().getValue());
 		}
 	}
 

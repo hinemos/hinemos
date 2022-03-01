@@ -12,9 +12,8 @@ import java.io.Serializable;
 
 import javax.xml.bind.annotation.XmlType;
 
-import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.agent.bean.TopicFlagConstant;
-
+import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.util.HinemosTime;
 
 @XmlType(namespace = "http://agent.ws.clustercontrol.com")
@@ -35,6 +34,11 @@ public class TopicInfo implements Serializable {
 
 	// トピック生成日時。古いトピックを無効とするための値。
 	private long generateDate = 0;
+
+	// このトピックの対象とするエージェントのバージョン
+	// 指定したバージョン未満のエージェントにはトピックが送られない
+	// 空の場合は全てのバージョンのエージェントを対象とする
+	private String supportedAgentVersion = null;
 
 	public TopicInfo () {
 		generateDate = HinemosTime.currentTimeMillis();
@@ -95,6 +99,29 @@ public class TopicInfo implements Serializable {
 			flag = flag - (flag & TopicFlagConstant.LOGFILE_CHANGED);
 		}
 	}
+
+	private boolean isRpaLogfileMonitorChanged() {
+		return (flag & TopicFlagConstant.RPA_LOGFILE_CHANGED) != 0;
+	}
+	public void setRpaLogfileMonitorChanged(boolean changed) {
+		if (changed) {
+			flag = flag | TopicFlagConstant.RPA_LOGFILE_CHANGED;
+		} else {
+			flag = flag - (flag & TopicFlagConstant.RPA_LOGFILE_CHANGED);
+		}
+	}
+	
+	private boolean isCloudLogMonitorChanged() {
+		return (flag & TopicFlagConstant.CLOUDLOG_CHANGED) != 0;
+	}
+	public void setCloudLogMonitorChanged(boolean changed) {
+		if (changed) {
+			flag = flag | TopicFlagConstant.CLOUDLOG_CHANGED;
+		} else {
+			flag = flag - (flag & TopicFlagConstant.CLOUDLOG_CHANGED);
+		}
+	}
+	
 	private boolean isBinaryMonitorChanged() {
 		return (flag & TopicFlagConstant.BINARY_CHANGED) != 0;
 	}
@@ -159,6 +186,17 @@ public class TopicInfo implements Serializable {
 		}
 	}
 
+	private boolean isSdmlControlSettingChanged() {
+		return (flag & TopicFlagConstant.SDML_CONTROL_SETTING_CHANGED) != 0;
+	}
+	public void setSdmlControlSettingChanged(boolean changed) {
+		if (changed) {
+			flag = flag | TopicFlagConstant.SDML_CONTROL_SETTING_CHANGED;
+		} else {
+			flag = flag - (flag & TopicFlagConstant.SDML_CONTROL_SETTING_CHANGED);
+		}
+	}
+
 	public RunInstructionInfo getRunInstructionInfo() {
 		return runInstructionInfo;
 	}
@@ -172,6 +210,13 @@ public class TopicInfo implements Serializable {
 		this.agentCommand = agentCommand;
 	}
 
+	public String getSupportedAgentVersion() {
+		return supportedAgentVersion;
+	}
+	public void setSupportedAgentVersion(String supportedAgentVersion) {
+		this.supportedAgentVersion = supportedAgentVersion;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -183,6 +228,7 @@ public class TopicInfo implements Serializable {
 				* result
 				+ ((runInstructionInfo == null) ? 0 : runInstructionInfo
 						.hashCode());
+		result = prime * result + ((supportedAgentVersion == null) ? 0 : supportedAgentVersion.hashCode());
 		return result;
 	}
 
@@ -200,7 +246,13 @@ public class TopicInfo implements Serializable {
 		
 		if (otherTopic.runInstructionInfo == null)
 			return false;
-		
+
+		if (supportedAgentVersion == null) {
+			if (otherTopic.supportedAgentVersion != null)
+				return false;
+		} else if (!supportedAgentVersion.equals(otherTopic.supportedAgentVersion))
+			return false;
+
 		return otherTopic.runInstructionInfo.equals(this.runInstructionInfo);
 	}
 	
@@ -282,6 +334,13 @@ public class TopicInfo implements Serializable {
 		System.out.println((flag ^ info.isLogfileMonitorChanged() ? "NG" : "OK") + ", flag=" + info.getFlag());
 
 		flag = false;
+		info.setRpaLogfileMonitorChanged(flag);
+		System.out.println((flag ^ info.isRpaLogfileMonitorChanged() ? "NG" : "OK")  + ", flag=" + info.getFlag());
+		flag = true;
+		info.setRpaLogfileMonitorChanged(flag);
+		System.out.println((flag ^ info.isRpaLogfileMonitorChanged() ? "NG" : "OK") + ", flag=" + info.getFlag());
+
+		flag = false;
 		info.setBinaryMonitorChanged(flag);
 		System.out.println((flag ^ info.isBinaryMonitorChanged() ? "NG" : "OK") + ", flag=" + info.getFlag());
 		flag = true;
@@ -308,6 +367,20 @@ public class TopicInfo implements Serializable {
 		flag = true;
 		info.setNodeConfigRunInstructed(flag);
 		System.out.println((flag ^ info.isNodeConfigRunInstructed() ? "NG" : "OK") + ", flag=" + info.getFlag());
+
+		flag = false;
+		info.setSdmlControlSettingChanged(flag);
+		System.out.println((flag ^ info.isSdmlControlSettingChanged() ? "NG" : "OK")  + ", flag=" + info.getFlag());
+		flag = true;
+		info.setSdmlControlSettingChanged(flag);
+		System.out.println((flag ^ info.isSdmlControlSettingChanged() ? "NG" : "OK") + ", flag=" + info.getFlag());
+		
+		flag = false;
+		info.setCloudLogMonitorChanged(flag);
+		System.out.println((flag ^ info.isCloudLogMonitorChanged() ? "NG" : "OK")  + ", flag=" + info.getFlag());
+		flag = true;
+		info.setCloudLogMonitorChanged(flag);
+		System.out.println((flag ^ info.isCloudLogMonitorChanged() ? "NG" : "OK") + ", flag=" + info.getFlag());
 
 	}
 }

@@ -27,15 +27,14 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.MonitorStringValueInfoResponse;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.MonitorStringValueInfo;
 
 /**
  * フィルタ[作成・変更]ダイアログクラス<BR>
@@ -47,7 +46,7 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 
 
 	/** 入力値を保持するオブジェクト。 */
-	private MonitorStringValueInfo m_inputData = null;
+	private MonitorStringValueInfoResponse m_inputData = null;
 
 	/** 入力値の正当性を保持するオブジェクト。 */
 	private ValidateResult m_validateResult = null;
@@ -89,11 +88,11 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 		this.logLineFlag = logLineFlag;
 
 		// 識別子が指定されている場合、その情報を初期表示する。
-		MonitorStringValueInfo info = new MonitorStringValueInfo();
+		MonitorStringValueInfoResponse info = new MonitorStringValueInfoResponse();
 		info.setProcessType(true);
 		info.setValidFlg(true);
 		info.setCaseSensitivityFlg(false);
-		info.setPriority(PriorityConstant.TYPE_CRITICAL);
+		info.setPriority(MonitorStringValueInfoResponse.PriorityEnum.CRITICAL);
 
 		m_inputData = info;
 	}
@@ -104,7 +103,7 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 	 * @param parent 親のシェルオブジェクト
 	 * @param identifier 変更する文字列監視の判定情報の識別キー
 	 */
-	public StringValueInfoCreateDialog(Shell parent, MonitorStringValueInfo info) {
+	public StringValueInfoCreateDialog(Shell parent, MonitorStringValueInfoResponse info) {
 		super(parent);
 		m_inputData = info;
 	}
@@ -434,7 +433,7 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 	 *
 	 * @return 判定情報
 	 */
-	public MonitorStringValueInfo getInputData() {
+	public MonitorStringValueInfoResponse getInputData() {
 		return this.m_inputData;
 	}
 
@@ -456,19 +455,19 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 		}
 
 		// 処理する／しない
-		if (m_inputData.isProcessType()) {
+		if (m_inputData.getProcessType()) {
 			this.m_radioProcess.setSelection(true);
 		} else {
 			this.m_radioNotProcess.setSelection(true);
 		}
 
 		// 大文字・小文字を区別しない
-		if (m_inputData.isCaseSensitivityFlg()){
+		if (m_inputData.getCaseSensitivityFlg()){
 			this.m_checkCaseSensitive.setSelection(true);
 		}
 
 		// 重要度
-		this.m_comboPriority.setText(PriorityMessage.typeToString(m_inputData.getPriority()));
+		this.m_comboPriority.setText(PriorityMessage.codeToString(m_inputData.getPriority().toString()));
 
 		// メッセージ
 		if (m_inputData.getMessage() != null) {
@@ -477,7 +476,7 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 
 
 		// 有効／無効
-		if (m_inputData.isValidFlg()) {
+		if (m_inputData.getValidFlg()) {
 			this.m_buttonValid.setSelection(true);
 		}
 
@@ -498,8 +497,8 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	private MonitorStringValueInfo createInputData() {
-		MonitorStringValueInfo info = new MonitorStringValueInfo();
+	private MonitorStringValueInfoResponse createInputData() {
+		MonitorStringValueInfoResponse info = new MonitorStringValueInfoResponse();
 
 
 		// 説明
@@ -543,8 +542,8 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 		}
 
 		// 重要度
-		String priorityText = this.m_comboPriority.getText();
-		info.setPriority(PriorityMessage.stringToType(priorityText));
+		info.setPriority(PriorityMessage.stringToEnum(
+				this.m_comboPriority.getText(), MonitorStringValueInfoResponse.PriorityEnum.class));
 
 		// メッセージ
 		if (this.m_textMessage.getText() != null
@@ -642,7 +641,7 @@ public class StringValueInfoCreateDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorStringValueInfo info = this.m_inputData;
+		MonitorStringValueInfoResponse info = this.m_inputData;
 		if(info != null){
 			result = true;
 		}

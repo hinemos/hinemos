@@ -10,7 +10,7 @@ package com.clustercontrol.infra.util;
 
 import java.util.List;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -162,7 +162,9 @@ public class QueryUtil {
 			HinemosEntityManager em = jtm.getEntityManager();
 			info = em.find_OR(InfraManagementInfo.class, managementId, mode, ownerRoleId);
 			if (info == null) {
-				InfraManagementNotFound e = new InfraManagementNotFound(managementId);
+				InfraManagementNotFound e = new InfraManagementNotFound("InfraManagementInfoEntity.findByPrimaryKey"
+						+ ", managementId = " + managementId
+						+ ", ownerRoleId = " + ownerRoleId);
 				m_log.info("getInfraManagementInfoPK_OR() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;

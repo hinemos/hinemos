@@ -8,15 +8,19 @@
 
 package com.clustercontrol.util;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.codec.net.URLCodec;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.text.StringEscapeUtils;
 
 /**
  * 文字列内の変数を置換するUtilityクラス<br/>
@@ -28,6 +32,17 @@ public class StringBinder {
 
 	private Map<String, String> param = new HashMap<String, String>();
 	private static final String _postfixOriginal = ":original";
+	private static final String _postfixQuoteSh = ":quoteSh";
+	private static final String _postfixEscapeCmd = ":escapeCmd";
+	private static final String _postfixEscapeJson = ":escapeJson";
+	private static final String _postfixSimplePost = ":simplePost";
+	private static final String[] _specialPostfix = {
+		_postfixOriginal,
+		_postfixQuoteSh,
+		_postfixEscapeCmd,
+		_postfixEscapeCmd,
+		_postfixSimplePost
+	};
 
 	private static String replaceChar = "?";
 	private static boolean replace = false;
@@ -133,10 +148,18 @@ public class StringBinder {
 				log.debug("value is not defined, 0-length string will be used. : key = " + entry.getKey());
 				str = str.replace("#[" + entry.getKey() + "]", "");
 				str = str.replace("#[" + entry.getKey() + _postfixOriginal + "]", "");
+				str = str.replace("#[" + entry.getKey() + _postfixQuoteSh + "]", "");
+				str = str.replace("#[" + entry.getKey() + _postfixEscapeCmd + "]", "");
+				str = str.replace("#[" + entry.getKey() + _postfixEscapeJson + "]", "");
+				str = str.replace("#[" + entry.getKey() + _postfixSimplePost + "]", "");
 			} else {
 				if (log.isTraceEnabled()) log.trace("replacing : string = " + str + ", key = " + entry.getKey() + ", value = " + entry.getValue());
 				str = str.replace("#[" + entry.getKey() + "]", escapeStr(entry.getValue()));		// default : escape string
 				str = str.replace("#[" + entry.getKey() + _postfixOriginal + "]", entry.getValue());	// not escape when :original
+				str = str.replace("#[" + entry.getKey() + _postfixQuoteSh + "]", quoteSh((entry.getValue()))); // Quote for Bash when :quoteSh
+				str = str.replace("#[" + entry.getKey() + _postfixEscapeCmd + "]", escapeCmd(entry.getValue())); // Escape for Command Prompt when :escapeCmd
+				str = str.replace("#[" + entry.getKey() + _postfixEscapeJson + "]", escapeJson(entry.getValue())); // Escape for Json value when :escapeJosn
+				str = str.replace("#[" + entry.getKey() + _postfixSimplePost + "]", urlEncode(entry.getValue())); // URLEncode when :simplePost
 				if (log.isTraceEnabled()) log.trace("replaced : string = " + str);
 			}
 		}
@@ -152,6 +175,7 @@ public class StringBinder {
 	public static String escapeStr(String str) {
 		// local variables
 		String ret = null;
+		String originStr = str;
 
 		// main
 		if (str != null) {
@@ -185,7 +209,146 @@ public class StringBinder {
 		}
 
 		if (log.isDebugEnabled())
+			log.debug("escaped string. (original = " + originStr + ", escaped = " + ret + ")");
+
+		return ret;
+	}
+	
+	/**
+	 * single quote for Bash.
+	 * @param str quoted string
+	 * @return
+	 */
+	private static String quoteSh(String str) {
+		// local variables
+		String ret = null;
+		
+		// main
+		if (str != null) {
+			// ' を '"'"' に置換する
+			ret = str.replace("'", "'\"'\"'");
+			// 文字列全体をシングルクォートする。
+			ret = "'" + ret + "'";
+
+			// プロパティcommon.invalid.char.replace(this.replace)がTrueの場合は制御文字を置換する。
+			if(replace) {
+				// 制御文字 (0 - 1F & 7F)を16進数文字(\xXX)に置換する。
+				for (byte ascii = 0; ascii < 0x20; ascii++) {
+					byte[] byteCode = { ascii };
+					String strReplace = new String(byteCode);
+					ret = ret.replace(strReplace, replaceChar);
+				}
+
+				byte[] byteCode = { 0x7F };
+				String strReplace = new String(byteCode);
+				ret = ret.replace(strReplace, replaceChar);
+				
+			}
+		}
+		
+		if (log.isDebugEnabled()) {
+			log.debug("quoted string. (original = " + str + ", quoted = " + ret + ")");
+		}
+
+		return ret;
+	}
+
+	/**
+	 * escape for Command Prompt.
+	 * @param str escaped string
+	 * @return
+	 */
+	private static String escapeCmd(String str) {
+		// local variables
+		String ret = null;
+		String strReplace = null;
+		
+		// main
+		if (str != null) {
+			// "を""にエスケープする。
+			ret = str.replace("\"", "\"\"");
+			// コマンドプロンプトの特殊文字を^でエスケープする。
+			// "は上のエスケープと合わせて^"^"となる。
+			ret = ret.replaceAll("(%|\\^|&|<|>|\\||\")", "^$0");
+			// \は\\にエスケープする。
+			ret = ret.replace("\\", "\\\\");
+			// 制御文字 (0 - 1F & 7F)を16進数文字(\xXX)に置換する。
+			for (byte ascii = 0; ascii < 0x20; ascii++) {
+				byte[] byteCode = { ascii };
+				strReplace = new String(byteCode);
+				if (replace) {
+					ret = ret.replace(strReplace, replaceChar);
+				} else {
+					ret = ret.replace(strReplace, String.format("\\x%02X", ascii));
+				}
+			}
+			
+			byte[] byteCode = { 0x7F };
+			strReplace = new String(byteCode);
+			if (replace) {
+				ret = ret.replace(strReplace, replaceChar);
+			} else {
+				ret = ret.replace(strReplace, String.format("\\x%02X", 0x7F));
+			}
+			
+			// 空白文字(スペース, 全角スペース)を16進数文字に置換する。
+			// 制御文字ではないのでプロパティcommon.invalid.char.replace(this.replace)の影響は受けない。
+			String space = " ";
+			String fullWidthSpace = "　";
+			
+			ret = ret.replace(space, String.format("\\x%02X", 0x20));
+			ret = ret.replace(fullWidthSpace, String.format("\\x%02X", 0x81) + String.format("\\x%02X", 0x40));
+
+		}
+
+		if (log.isDebugEnabled()) {
 			log.debug("escaped string. (original = " + str + ", escaped = " + ret + ")");
+		}
+
+		return ret;
+	}
+
+	/**
+	 * escape for Json value
+	 * @param str escaped string
+	 * @return
+	 */
+	private static String escapeJson(String str) {
+		//org.apache.commons.text.StringEscapeUtil で変換
+		return StringEscapeUtils.escapeJson(str);
+	}
+	
+	/**
+	 * URLEncode.
+	 * @param str src string
+	 * @return Encoded String
+	 */
+	private static String urlEncode(String str) {
+		//org.apache.commons.codec.net.URLCodec で変換
+		URLCodec codec = new URLCodec("UTF-8");
+		try {
+			return codec.encode(str, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			//エンコードできない場合は 先頭にエラー内容を付加して 返す
+			return  UnsupportedEncodingException.class.getSimpleName() + " " + e.getMessage()  + " "+ str;
+		}
+	}
+	/**
+	 * escape(quote) for Shell
+	 * @param str escaped string
+	 * @param opt escape option ":quoteSh" or ":escapeCmd"
+	 * @return
+	 */
+	public static String escapeShell(String str, String opt) {
+		String ret = null;
+
+		if (opt.equals(_postfixQuoteSh)) {
+			ret = quoteSh(str);
+		} else if (opt.equals(_postfixEscapeCmd)) {
+			ret = escapeCmd(str);
+		} else {
+			log.warn("escapeShell(): invalid escape option\"" + opt + "\", return null.");
+		}
 
 		return ret;
 	}
@@ -219,6 +382,44 @@ public class StringBinder {
 
 		log.debug("ret : " + ret);
 		return ret;
+	}
+	
+	/**
+	 * split paramId:specialPostfix(:original, :quoteSh, :escapeCmd)
+	 * @param str "paramId:postfix"
+	 * @return String[] {"paramId", ":postfix"} (if postfix isn't specialPostfix , will be null)
+	 */
+	public static String[] splitPostfix(String paramId) {
+		String[] ret = {null, null};
+		int paramIdLegnth = paramId.length();
+		for (String postfixStr: _specialPostfix) {
+			if (paramId.endsWith(postfixStr) && paramIdLegnth - postfixStr.length() != 0) {
+				ret[0] = paramId.substring(0,paramIdLegnth - postfixStr.length());
+				ret[1] = postfixStr;
+			}			
+		}
+		return ret;
+	}
+	
+	/**
+	 * return whether paramIdList contains paramId or also paramId with specialPostfix
+	 * 
+	 * @param paramIdList
+	 * @param paramId
+	 * @return whether paramIdList contains paramId
+	 */
+	public static boolean containsParam(List<String> paramIdList, String paramId) {
+		if (paramIdList.contains(paramId)) {
+			return true;
+		}
+		
+		for (String postfixStr: _specialPostfix) {
+			if (paramIdList.contains(paramId + postfixStr)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	public static void main(String[] args) {

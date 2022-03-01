@@ -8,6 +8,8 @@
 
 package com.clustercontrol.jobmanagement;
 
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.util.Messages;
 
@@ -43,6 +45,21 @@ public class JobMessage {
 	/** 監視ジョブ(ジョブの種別) */
 	public static final String STRING_MONITORJOB= Messages.getString("monitor.job");
 
+	/** ファイルチェックジョブ(ジョブの種別) */
+	public static final String STRING_FILECHECKJOB= Messages.getString("filecheck.job");
+
+	/** ジョブ連携送信ジョブ(ジョブの種別) */
+	public static final String STRING_JOBLINKSENDJOB= Messages.getString("joblink.send.job");
+
+	/** ジョブ連携待機ジョブ(ジョブの種別) */
+	public static final String STRING_JOBLINKRCVJOB= Messages.getString("joblink.rcv.job");
+
+	/** リソース制御ジョブ(ジョブの種別) */
+	public static final String STRING_RESOURCEJOB= Messages.getString("resource.control.job");
+
+	/** RPAシナリオジョブ(ジョブの種別) */
+	public static final String STRING_RPAJOB= Messages.getString("rpa.job");
+
 	/**
 	 * 種別から文字列に変換する
 	 *
@@ -68,6 +85,16 @@ public class JobMessage {
 			return STRING_APPROVALJOB;
 		} else if (type == JobConstant.TYPE_MONITORJOB) {
 			return STRING_MONITORJOB;
+		} else if (type == JobConstant.TYPE_RESOURCEJOB) {
+			return STRING_RESOURCEJOB;
+		} else if (type == JobConstant.TYPE_FILECHECKJOB) {
+			return STRING_FILECHECKJOB;
+		} else if (type == JobConstant.TYPE_JOBLINKSENDJOB) {
+			return STRING_JOBLINKSENDJOB;
+		} else if (type == JobConstant.TYPE_JOBLINKRCVJOB) {
+			return STRING_JOBLINKRCVJOB;
+		} else if (type == JobConstant.TYPE_RPAJOB) {
+			return STRING_RPAJOB;
 		}
 		return "";
 	}
@@ -97,7 +124,99 @@ public class JobMessage {
 			return JobConstant.TYPE_APPROVALJOB;
 		} else if (string.equals(STRING_MONITORJOB)) {
 			return JobConstant.TYPE_MONITORJOB;
+		} else if (string.equals(STRING_FILECHECKJOB)) {
+			return JobConstant.TYPE_FILECHECKJOB;
+		} else if (string.equals(STRING_JOBLINKSENDJOB)) {
+			return JobConstant.TYPE_JOBLINKSENDJOB;
+		} else if (string.equals(STRING_JOBLINKRCVJOB)) {
+			return JobConstant.TYPE_JOBLINKRCVJOB;
+		} else if (string.equals(STRING_RESOURCEJOB)) {
+			return JobConstant.TYPE_RESOURCEJOB;
+		} else if (string.equals(STRING_RPAJOB)) {
+			return JobConstant.TYPE_RPAJOB;
 		}
 		return -1;
 	}
+
+
+
+	/**
+	 * 種別(Enum)から文字列に変換する
+	 *
+	 * @param type
+	 * @return
+	 */
+	public static String typeEnumValueToString(String type) {
+		if (type.equals(JobInfoWrapper.TypeEnum.COMPOSITE.getValue())) {
+			return JobConstant.STRING_COMPOSITE;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.JOBUNIT.getValue())) {
+			return STRING_JOBUNIT;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.JOBNET.getValue())) {
+			return STRING_JOBNET;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.JOB.getValue())) {
+			return STRING_JOB;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.FILEJOB.getValue())) {
+			return STRING_FILEJOB;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.REFERJOB.getValue())) {
+			return STRING_REFERJOB;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.REFERJOBNET.getValue())) {
+			return STRING_REFERJOBNET;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.APPROVALJOB.getValue())) {
+			return STRING_APPROVALJOB;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.MONITORJOB.getValue())) {
+			return STRING_MONITORJOB;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.FILECHECKJOB.getValue())) {
+			return STRING_FILECHECKJOB;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.JOBLINKSENDJOB.getValue())) {
+			return STRING_JOBLINKSENDJOB;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.JOBLINKRCVJOB.getValue())) {
+			return STRING_JOBLINKRCVJOB;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.RESOURCEJOB.getValue())) {
+			return STRING_RESOURCEJOB;
+		} else if (type.equals(JobInfoWrapper.TypeEnum.RPAJOB.getValue())) {
+			return STRING_RPAJOB;
+		}
+		return "";
+	}
+
+	/**
+	 * 文字列から種別に変換する
+	 *
+	 * @param type
+	 * @return
+	 */
+	public static String stringToTypeEnumValue(String string) {
+		if (string.equals(JobConstant.STRING_COMPOSITE)) {
+			return JobInfoWrapper.TypeEnum.COMPOSITE.getValue();
+		} else if (string.equals(STRING_JOBUNIT)) {
+			return JobInfoWrapper.TypeEnum.JOBUNIT.getValue();
+		} else if (string.equals(STRING_JOBNET)) {
+			return JobInfoWrapper.TypeEnum.JOBNET.getValue();
+		} else if (string.equals(STRING_JOB)) {
+			return JobInfoWrapper.TypeEnum.JOB.getValue();
+		} else if (string.equals(STRING_FILEJOB)) {
+			return JobInfoWrapper.TypeEnum.FILEJOB.getValue();
+		} else if (string.equals(STRING_REFERJOB)) {
+			return JobInfoWrapper.TypeEnum.REFERJOB.getValue();
+		} else if (string.equals(STRING_REFERJOBNET)) {
+			return JobInfoWrapper.TypeEnum.REFERJOBNET.getValue();
+		} else if (string.equals(STRING_APPROVALJOB)) {
+			return JobInfoWrapper.TypeEnum.APPROVALJOB.getValue();
+		} else if (string.equals(STRING_MONITORJOB)) {
+			return JobInfoWrapper.TypeEnum.MONITORJOB.getValue();
+		} else if (string.equals(STRING_FILECHECKJOB)) {
+			return JobInfoWrapper.TypeEnum.FILECHECKJOB.getValue();
+		} else if (string.equals(STRING_JOBLINKSENDJOB)) {
+			return JobInfoWrapper.TypeEnum.JOBLINKSENDJOB.getValue();
+		} else if (string.equals(STRING_JOBLINKRCVJOB)) {
+			return JobInfoWrapper.TypeEnum.JOBLINKRCVJOB.getValue();
+		} else if (string.equals(STRING_RESOURCEJOB)) {
+			return JobInfoWrapper.TypeEnum.RESOURCEJOB.getValue();
+		} else if (string.equals(STRING_RPAJOB)) {
+			return JobInfoWrapper.TypeEnum.RPAJOB.getValue();
+		}
+		return null;
+	}
+
+
 }

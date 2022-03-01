@@ -31,6 +31,11 @@ public class MonitoredThreadPoolExecutor extends ThreadPoolExecutor {
 	private static final Log log = LogFactory.getLog(MonitoredThreadPoolExecutor.class);
 
 	private static Map<Long, ThreadInfo> runningTaskMap = new ConcurrentHashMap<Long, ThreadInfo>();
+	
+	//各スレッドプールに最後にタスクが割り当てられた時刻を保持
+	private long lastFireTime = 0L;
+	//各スレッドプールごとの実行中タスクの保持
+	private Map<Long, ThreadInfo> queueRunningTaskMap = new ConcurrentHashMap<Long, ThreadInfo>();
 
 	public MonitoredThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
 		super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
@@ -59,6 +64,12 @@ public class MonitoredThreadPoolExecutor extends ThreadPoolExecutor {
 	protected void beforeExecute(Thread t, Runnable r) {
 		try {
 			beginTask(t, r.getClass().getName());
+			//タスク実行前に実行時刻を保存
+			lastFireTime = HinemosTime.currentTimeMillis();
+			ThreadInfo threadInfo = new ThreadInfo(t, r.getClass().getName(), HinemosTime.currentTimeMillis());
+			//実行中マップに保存
+			queueRunningTaskMap.put(t.getId(), threadInfo);
+			
 		} finally {
 			super.beforeExecute(t, r);
 		}
@@ -68,6 +79,8 @@ public class MonitoredThreadPoolExecutor extends ThreadPoolExecutor {
 	protected void afterExecute(Runnable r, Throwable t) {
 		try {
 			finishTask(Thread.currentThread());
+			queueRunningTaskMap.remove(Thread.currentThread().getId());
+			
 		} finally {
 			super.afterExecute(r, t);
 		}
@@ -97,6 +110,14 @@ public class MonitoredThreadPoolExecutor extends ThreadPoolExecutor {
 
 	public static Map<Long, ThreadInfo> getRunningThreadMap() {
 		return Collections.unmodifiableMap(runningTaskMap);
+	}
+	
+	public Map<Long, ThreadInfo> getQueueRunningThreadMap() {
+		return Collections.unmodifiableMap(queueRunningTaskMap);
+	}
+	
+	public long getLastFireTime(){
+		return lastFireTime;
 	}
 
 }

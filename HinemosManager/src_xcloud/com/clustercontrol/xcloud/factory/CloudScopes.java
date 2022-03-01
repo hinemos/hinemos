@@ -10,21 +10,20 @@ package com.clustercontrol.xcloud.factory;
 import static com.clustercontrol.xcloud.common.CloudConstants.Event_CloudScope;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
-
 import org.apache.log4j.Logger;
 
-import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.Session;
@@ -37,6 +36,7 @@ import com.clustercontrol.xcloud.bean.AddPublicCloudScopeRequest;
 import com.clustercontrol.xcloud.bean.AutoAssignNodePatternEntry;
 import com.clustercontrol.xcloud.bean.ModifyBillingSettingRequest;
 import com.clustercontrol.xcloud.bean.ModifyCloudScopeRequest;
+import com.clustercontrol.xcloud.bean.ModifyPlatformServiceConditionRequest;
 import com.clustercontrol.xcloud.bean.ModifyPrivateCloudScopeRequest;
 import com.clustercontrol.xcloud.bean.ModifyPublicCloudScopeRequest;
 import com.clustercontrol.xcloud.bean.PrivateEndpoint;
@@ -64,6 +64,10 @@ import com.clustercontrol.xcloud.persistence.Transactional;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.FacilityIdUtil;
 import com.clustercontrol.xcloud.util.RepositoryControllerBeanWrapper;
+
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 
 @Transactional
 public class CloudScopes implements ICloudScopes {
@@ -261,7 +265,7 @@ public class CloudScopes implements ICloudScopes {
 	}
 	
 	@Override
-	public void removeCloudScope(String cloudScopeId) throws CloudManagerException, InvalidRole {
+	public CloudScopeEntity removeCloudScope(String cloudScopeId) throws CloudManagerException, InvalidRole {
 		HinemosEntityManager em = Session.current().getEntityManager();
 		CloudScopeEntity scope = em.find(CloudScopeEntity.class, cloudScopeId, ObjectPrivilegeMode.READ);
 		if (scope == null)
@@ -276,10 +280,17 @@ public class CloudScopes implements ICloudScopes {
 			List<String> children = query.getResultList();
 			RepositoryControllerBeanWrapper.bean().deleteNode(children.toArray(new String[children.size()]));
 			
+			String findChildScopeQuery = FacilityIdUtil.getCloudScopeScopeId(scope.getPlatformId(), scope.getCloudScopeId());
+			query.setParameter("facilityId", findChildScopeQuery);
+			List<String> childScopeList = query.getResultList();
+			
+			RepositoryControllerBean repositoryControllerBean = new RepositoryControllerBean();
+			checkChildScope(repositoryControllerBean,query,childScopeList);
+			
 			CloudManager.singleton().getRepository().removeCloudScopeRepository(scope);
 			em.remove(scope);
 			notifier.completed();
-		} catch (UsedFacility | HinemosUnknown e) {
+		} catch (UsedFacility | HinemosUnknown | FacilityNotFound e) {
 			throw ErrorCode.HINEMOS_MANAGER_ERROR.cloudManagerFault(e);
 		}
 		
@@ -289,6 +300,16 @@ public class CloudScopes implements ICloudScopes {
 				option.getCloudScopeListener().postRemoveCloudScope(scope);
 			}
 		});
+		return scope;
+	}
+
+	private void checkChildScope(RepositoryControllerBean repositoryControllerBean,TypedQuery<String> query,List<String> childScopeList) throws UsedFacility,HinemosUnknown,InvalidRole {
+		for(String facilityId : childScopeList){
+			repositoryControllerBean.checkIsUseFacilityWithChildren(facilityId);
+			query.setParameter("facilityId", facilityId);
+			List<String> getChildScopeResultList = query.getResultList();
+			checkChildScope(repositoryControllerBean,query,getChildScopeResultList);
+		}
 	}
 
 	@Override
@@ -594,7 +615,7 @@ public class CloudScopes implements ICloudScopes {
 	}
 
 	@Override
-	public void clearAutoAssigneNodePattern(String cloudScopeId) throws CloudManagerException {
+	public List<AutoAssignNodePatternEntryEntity> clearAutoAssigneNodePattern(String cloudScopeId) throws CloudManagerException {
 		HinemosEntityManager em = Session.current().getEntityManager();
 		
 		TypedQuery<AutoAssignNodePatternEntryEntity> query = em.createNamedQuery("findAutoAssigneNodePatternsByCloudScopeId", AutoAssignNodePatternEntryEntity.class);
@@ -604,10 +625,11 @@ public class CloudScopes implements ICloudScopes {
 		for (AutoAssignNodePatternEntryEntity entry: entries) {
 			em.remove(entry);
 		}
+		return entries;
 	}
 
 	@Override
-	public void modifyBillingSetting(final ModifyBillingSettingRequest request) throws CloudManagerException, InvalidRole {
+	public CloudScopeEntity modifyBillingSetting(final ModifyBillingSettingRequest request) throws CloudManagerException, InvalidRole {
 		HinemosEntityManager em = Session.current().getEntityManager();
 		CloudScopeEntity entity = em.find(CloudScopeEntity.class, request.getCloudScopeId(), ObjectPrivilegeMode.READ);
 		if (entity == null)
@@ -619,6 +641,62 @@ public class CloudScopes implements ICloudScopes {
 			@Override
 			public void execute(CloudScopeEntity scope, ICloudOption option) throws CloudManagerException {
 				option.getBillingManagement(scope).updateBillingSetting(request);
+			}
+		});
+		return entity;
+	}
+
+	@Override
+	public List<com.clustercontrol.xcloud.bean.PlatformServiceCondition> modifyPlatformServiceCondition(
+			ModifyPlatformServiceConditionRequest request) throws CloudManagerException {
+		return getCloudScope(request.getCloudScopeId()).optionCall(new CloudScopeEntity.OptionCallable<List<com.clustercontrol.xcloud.bean.PlatformServiceCondition>>() {
+		@Override
+			public List<com.clustercontrol.xcloud.bean.PlatformServiceCondition> call(final CloudScopeEntity scope, ICloudOption option) throws CloudManagerException {
+				return option.getPlatformServiceMonitor().transform(new IPlatformServiceMonitor.ITransformer<List<com.clustercontrol.xcloud.bean.PlatformServiceCondition>>() {
+					@Override
+					public List<com.clustercontrol.xcloud.bean.PlatformServiceCondition> transform(ICloudScopeAreaMonitor monitor) throws CloudManagerException {
+						return Collections.emptyList();
+					}
+					
+					@Override
+					public List<com.clustercontrol.xcloud.bean.PlatformServiceCondition> transform(IPlatformAreaMonitor monitor) throws CloudManagerException {
+						TypedQuery<PlatformAreaServiceConditionEntity> query = Session.current().getEntityManager().createNamedQuery("findPlatformAreaServiceConditionsByLocationId", PlatformAreaServiceConditionEntity.class);
+						query.setParameter("platformId", monitor.getPlatformId());
+						if (request.getLocationId() != null) {
+							query.setParameter("locationId", request.getLocationId());
+						} else {
+							query.setParameter("locationId", monitor.getPlatformId());
+						}
+						List<PlatformAreaServiceConditionEntity> conditionEntities = query.getResultList();
+						
+						List<com.clustercontrol.xcloud.bean.PlatformServiceCondition> conditionList = new ArrayList<>(); 
+						Long nowTime = HinemosTime.currentTimeMillis();
+						for (PlatformAreaServiceConditionEntity conditionEntity : conditionEntities) {
+							if (!request.getServiceIdList().contains(conditionEntity.getServiceId())) {
+								continue;
+							}
+
+							conditionEntity.setStatus(request.getStatus());
+							conditionEntity.setMessage(request.getMessage());
+							conditionEntity.setDetail(request.getMessage());
+							conditionEntity.setLastDate(nowTime);
+							conditionEntity.setRecordDate(nowTime);
+
+							com.clustercontrol.xcloud.bean.PlatformServiceCondition condition = new com.clustercontrol.xcloud.bean.PlatformServiceCondition();
+							condition.setId(conditionEntity.getServiceId());
+							condition.setServiceName(conditionEntity.getServiceName());
+							condition.setStatus(conditionEntity.getStatus());
+							condition.setMessage(conditionEntity.getMessage());
+							condition.setDetail(conditionEntity.getDetail());
+							condition.setBeginDate(conditionEntity.getBeginDate());
+							condition.setLastDate(conditionEntity.getLastDate());
+							condition.setRecordDate(conditionEntity.getRecordDate());
+							conditionList.add(condition);
+
+						}
+						return conditionList;
+					}
+				});
 			}
 		});
 	}

@@ -8,6 +8,8 @@
 
 package com.clustercontrol.utility.settings.ui.dialog;
 
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -42,6 +44,19 @@ public class UtilityDialogInjector {
 		assert shell == null : "Shell must be null here";
 
 		return _service.createDeleteProcessDialog(message);
+	}
+
+	public static UtilityResultDialog createImportResultDialog(Object shell, String pluginId, String title,
+			String mainMessage, List<String> detailList) {
+		assert shell == null : "Shell must be null here";
+
+		return _service.createImportResultDialog(pluginId, title, mainMessage, detailList);
+	}
+	
+	public static UtilityProcessDialog createImportContinueDialog(Object shell, String message) {
+		assert shell == null : "Shell must be null here";
+
+		return _service.createImportContinueDialog(message);
 	}
 
 }

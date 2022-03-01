@@ -13,8 +13,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.persistence.TypedQuery;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -24,6 +22,7 @@ import com.clustercontrol.binary.model.BinaryPatternInfo;
 import com.clustercontrol.binary.model.PacketCheckInfo;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.QueryDivergence;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
@@ -35,6 +34,8 @@ import com.clustercontrol.monitor.run.model.MonitorStringValueInfo;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfoPK;
 import com.clustercontrol.monitor.run.model.MonitorTruthValueInfo;
 import com.clustercontrol.monitor.run.model.MonitorTruthValueInfoPK;
+
+import jakarta.persistence.TypedQuery;
 
 /**
  * DB照会Util<BR>
@@ -153,6 +154,17 @@ public class QueryUtil {
 			HinemosEntityManager em = jtm.getEntityManager();
 			List<MonitorInfo> list
 			= em.createNamedQuery("MonitorInfo.findByMonitorTypeId", MonitorInfo.class, ObjectPrivilegeMode.NONE)
+			.setParameter("monitorTypeId", monitorTypeId)
+			.getResultList();
+			return list;
+		}
+	}
+
+	public static List<MonitorInfo> getMonitorInfoByMonitorTypeId_OR(String monitorTypeId, String ownerRoleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<MonitorInfo> list
+			= em.createNamedQuery_OR("MonitorInfo.findByMonitorTypeId", MonitorInfo.class, ownerRoleId)
 			.setParameter("monitorTypeId", monitorTypeId)
 			.getResultList();
 			return list;
@@ -307,7 +319,8 @@ public class QueryUtil {
 			Long updateToDate,
 			Boolean monitorFlg,
 			Boolean collectorFlg,
-			String ownerRoleId) {
+			String ownerRoleId,
+			List<String> sdmlMonTypeIdList) {
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -328,9 +341,25 @@ public class QueryUtil {
 			// monitorTypeId
 			if(monitorTypeId != null && !"".equals(monitorTypeId)) {
 				if(!monitorTypeId.startsWith(notInclude)) {
-					sbJpql.append(" AND a.monitorTypeId like :monitorTypeId");
+					if (sdmlMonTypeIdList == null || sdmlMonTypeIdList.isEmpty()) {
+						sbJpql.append(" AND (a.monitorTypeId like :monitorTypeId"
+								+ " AND a.sdmlMonitorTypeId IS NULL)");
+					} else {
+						// プラグインIDでのSDML監視種別の検索を可能とするため条件に含める
+						sbJpql.append(" AND ((a.monitorTypeId like :monitorTypeId"
+								+ " AND a.sdmlMonitorTypeId IS NULL)"
+								+ " OR a.sdmlMonitorTypeId IN (:sdmlMonitorTypeIds))");
+					}
 				}else{
-					sbJpql.append(" AND a.monitorTypeId not like :monitorTypeId");
+					if (sdmlMonTypeIdList == null || sdmlMonTypeIdList.isEmpty()) {
+						sbJpql.append(" AND (a.monitorTypeId not like :monitorTypeId"
+								+ " AND a.sdmlMonitorTypeId IS NULL)");
+					} else {
+						// SDML監視種別IDの一覧を取得する時にNOT検索しているのでこちらも一致でよい
+						sbJpql.append(" AND ((a.monitorTypeId not like :monitorTypeId"
+								+ " AND a.sdmlMonitorTypeId IS NULL)"
+								+ " OR a.sdmlMonitorTypeId IN (:sdmlMonitorTypeIds))");
+					}
 				}
 			}
 			// description
@@ -393,30 +422,49 @@ public class QueryUtil {
 					sbJpql.append(" AND a.ownerRoleId not like :ownerRoleId");
 				}
 			}
-			TypedQuery<MonitorInfo> typedQuery = em.createQuery(sbJpql.toString(), MonitorInfo.class);
+
+			String jpqrStr = sbJpql.toString();
+			if (monitorTypeId != null && !monitorTypeId.isEmpty() && sdmlMonTypeIdList != null
+					&& !sdmlMonTypeIdList.isEmpty()) {
+				// SDML監視種別IDを検索条件に含めている場合はIN句の考慮をする必要がある
+				jpqrStr = jpqrStr.replaceAll(":sdmlMonitorTypeIds", HinemosEntityManager.getParamNameString(
+						"sdmlMonitorTypeId", sdmlMonTypeIdList.toArray(new String[sdmlMonTypeIdList.size()])));
+			}
+			TypedQuery<MonitorInfo> typedQuery = em.createQuery(jpqrStr, MonitorInfo.class);
 
 			// monitorId
 			if(monitorId != null && !"".equals(monitorId)) {
 				if(!monitorId.startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("monitorId", monitorId);
+					typedQuery = typedQuery.setParameter("monitorId",
+							QueryDivergence.escapeLikeCondition(monitorId));
 				}else{
-					typedQuery = typedQuery.setParameter("monitorId", monitorId.substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("monitorId",
+							QueryDivergence.escapeLikeCondition(monitorId.substring(notInclude.length())));
 				}
 			}
 			// monitorTypeId
 			if(monitorTypeId != null && !"".equals(monitorTypeId)) {
 				if(!monitorTypeId.startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("monitorTypeId", monitorTypeId);
+					typedQuery = typedQuery.setParameter("monitorTypeId",
+							QueryDivergence.escapeLikeCondition(monitorTypeId));
 				}else{
-					typedQuery = typedQuery.setParameter("monitorTypeId", monitorTypeId.substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("monitorTypeId",
+							QueryDivergence.escapeLikeCondition(monitorTypeId.substring(notInclude.length())));
+				}
+				if (sdmlMonTypeIdList != null && !sdmlMonTypeIdList.isEmpty()) {
+					// IN句を考慮してパラメータを置き換える
+					typedQuery = HinemosEntityManager.appendParam(typedQuery, "sdmlMonitorTypeId",
+							sdmlMonTypeIdList.toArray(new String[sdmlMonTypeIdList.size()]));
 				}
 			}
 			// description
 			if(description != null && !"".equals(description)) {
 				if(!description.startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("description", description);
+					typedQuery = typedQuery.setParameter("description",
+							QueryDivergence.escapeLikeCondition(description));
 				}else{
-					typedQuery = typedQuery.setParameter("description", description.substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("description",
+							QueryDivergence.escapeLikeCondition(description.substring(notInclude.length())));
 				}
 			}
 			// calendarId
@@ -426,9 +474,11 @@ public class QueryUtil {
 			// regUser
 			if(regUser != null && !"".equals(regUser)) {
 				if(!regUser.startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("regUser", regUser);
+					typedQuery = typedQuery.setParameter("regUser",
+							QueryDivergence.escapeLikeCondition(regUser));
 				}else{
-					typedQuery = typedQuery.setParameter("regUser", regUser.substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("regUser",
+							QueryDivergence.escapeLikeCondition(regUser.substring(notInclude.length())));
 				}
 			}
 			// regFromDate
@@ -442,9 +492,11 @@ public class QueryUtil {
 			// updateUser
 			if(updateUser != null && !"".equals(updateUser)) {
 				if(!updateUser.startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("updateUser", updateUser);
+					typedQuery = typedQuery.setParameter("updateUser",
+							QueryDivergence.escapeLikeCondition(updateUser));
 				}else{
-					typedQuery = typedQuery.setParameter("updateUser", updateUser.substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("updateUser",
+							QueryDivergence.escapeLikeCondition(updateUser.substring(notInclude.length())));
 				}
 			}
 			// updateFromDate
@@ -466,9 +518,11 @@ public class QueryUtil {
 			// ownerRoleId
 			if(ownerRoleId != null && !"".equals(ownerRoleId)) {
 				if(!ownerRoleId.startsWith(notInclude)) {
-					typedQuery = typedQuery.setParameter("ownerRoleId", ownerRoleId);
+					typedQuery = typedQuery.setParameter("ownerRoleId",
+							QueryDivergence.escapeLikeCondition(ownerRoleId));
 				}else{
-					typedQuery = typedQuery.setParameter("ownerRoleId", ownerRoleId.substring(notInclude.length()));
+					typedQuery = typedQuery.setParameter("ownerRoleId",
+							QueryDivergence.escapeLikeCondition(ownerRoleId.substring(notInclude.length())));
 				}
 			}
 			return typedQuery.getResultList();

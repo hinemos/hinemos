@@ -31,7 +31,10 @@ public class CheckBoxImageConstant {
 	 * @param type
 	 * @return image
 	 */
-	public static Image typeToImage(boolean type) {
+	public static Image typeToImage(Boolean type) {
+		if (type == null) {
+			return null;  // 画像無し
+		}
 		ImageRegistry registry = ClusterControlPlugin.getDefault()
 				.getImageRegistry();
 

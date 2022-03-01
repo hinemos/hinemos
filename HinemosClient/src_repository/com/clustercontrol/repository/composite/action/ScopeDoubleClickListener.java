@@ -18,15 +18,15 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.repository.action.GetScopeListTableDefine;
-import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.composite.ScopeListComposite;
 import com.clustercontrol.repository.dialog.ScopeCreateDialog;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.repository.view.ScopeListView;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * リポジトリ[スコープ]ビュー用のテーブルビューア用のDoubleClickListenerクラスです。
@@ -65,7 +65,7 @@ public class ScopeDoubleClickListener implements IDoubleClickListener {
 	 */
 	@Override
 	public void doubleClick(DoubleClickEvent event) {
-		FacilityTreeItem selectFacilityTreeItem = null;
+		FacilityTreeItemResponse selectFacilityTreeItem = null;
 		ArrayList<?> item = null;
 
 		String facilityId = null;
@@ -85,7 +85,7 @@ public class ScopeDoubleClickListener implements IDoubleClickListener {
 				facilityId = (String) item.get(GetScopeListTableDefine.FACILITY_ID);
 
 				if (m_composite.getFacilityTreeItem() != null) {
-					List<FacilityTreeItem> items = m_composite.getFacilityTreeItem().getChildren();
+					List<FacilityTreeItemResponse> items = m_composite.getFacilityTreeItem().getChildren();
 
 					for(int i = 0; i < items.size(); i++){
 						if(facilityId.equals(items.get(i).getData().getFacilityId())){
@@ -102,9 +102,9 @@ public class ScopeDoubleClickListener implements IDoubleClickListener {
 
 				// スコープダイアログのみ表示する
 				if(facilityId != null
-						&& !selectFacilityTreeItem.getData().isBuiltInFlg()
-						&& selectFacilityTreeItem.getData().getFacilityType() == FacilityConstant.TYPE_SCOPE){
-					FacilityTreeItem manager = ScopePropertyUtil.getManager(selectFacilityTreeItem);
+						&& !selectFacilityTreeItem.getData().getBuiltInFlg()
+						&& selectFacilityTreeItem.getData().getFacilityType() == FacilityTypeEnum.SCOPE){
+					FacilityTreeItemResponse manager = ScopePropertyUtil.getManager(selectFacilityTreeItem);
 					String managerName = manager.getData().getFacilityId();
 
 					// ダイアログを生成

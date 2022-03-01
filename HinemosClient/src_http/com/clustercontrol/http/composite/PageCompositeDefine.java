@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.PageResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.http.dialog.PageCreateDialog;
@@ -20,18 +21,17 @@ import com.clustercontrol.http.viewer.PageTableLabelProvider;
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
 import com.clustercontrol.monitor.run.util.TableItemManager;
 import com.clustercontrol.monitor.run.viewer.CommonTableLabelProvider;
-import com.clustercontrol.ws.monitor.Page;
 
-public class PageCompositeDefine implements ITableItemCompositeDefine<Page> {
+public class PageCompositeDefine implements ITableItemCompositeDefine<PageResponse> {
 
 	/** 現在有効なダイアログ */
 	private PageCreateDialog dialog = null;
 
 	/** テーブルアイテムの管理クラス */
-	private TableItemManager<Page> manager = null;
+	private TableItemManager<PageResponse> manager = null;
 
 	@Override
-	public Page getCurrentCreatedItem() {
+	public PageResponse getCurrentCreatedItem() {
 		if(dialog != null){
 			return dialog.getInputData();
 		}
@@ -46,7 +46,7 @@ public class PageCompositeDefine implements ITableItemCompositeDefine<Page> {
 	}
 
 	@Override
-	public CommonDialog createDialog(Shell shell, Page item) {
+	public CommonDialog createDialog(Shell shell, PageResponse item) {
 		dialog = new PageCreateDialog(shell, item);
 		return dialog;
 	}
@@ -57,7 +57,7 @@ public class PageCompositeDefine implements ITableItemCompositeDefine<Page> {
 	}
 
 	@Override
-	public TableItemManager<Page> getTableItemInfoManager() {
+	public TableItemManager<PageResponse> getTableItemInfoManager() {
 		return manager;
 	}
 
@@ -67,7 +67,7 @@ public class PageCompositeDefine implements ITableItemCompositeDefine<Page> {
 	}
 
 	@Override
-	public void initTableItemInfoManager(List<Page> items) {
+	public void initTableItemInfoManager(List<PageResponse> items) {
 		manager = new TableItemManager<>(items);
 	}
 
@@ -77,17 +77,17 @@ public class PageCompositeDefine implements ITableItemCompositeDefine<Page> {
 	}
 
 	@Override
-	public String getItemsIdentifier(Page item) {
-		return item.getDescription();
+	public String getItemsIdentifier(PageResponse item) {
+		return item.getUrl();
 	}
 
 	@Override
-	public CommonTableLabelProvider<Page> getLabelProvider() {
+	public CommonTableLabelProvider<PageResponse> getLabelProvider() {
 		return new PageTableLabelProvider(this);
 	}
 
 	@Override
-	public int indexOf(Page item) {
+	public int indexOf(PageResponse item) {
 		if(this.manager != null){
 			return this.manager.indexOf(item);
 		}

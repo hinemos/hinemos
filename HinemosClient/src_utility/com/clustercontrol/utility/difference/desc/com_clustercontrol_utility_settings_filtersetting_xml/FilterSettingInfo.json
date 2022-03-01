@@ -1,0 +1,36 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"ownerUserId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+	
+	{
+	"propName":"filterId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"filterName",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingInfo_filterName"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingInfo_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"objectId",
+	"annotations":[
+		{"type":"Column", "columnName":"FilterSettingInfo_objectId"}
+	]}
+]
+}

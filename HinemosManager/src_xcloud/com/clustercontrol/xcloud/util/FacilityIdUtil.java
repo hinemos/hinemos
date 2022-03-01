@@ -7,7 +7,7 @@
  */
 package com.clustercontrol.xcloud.util;
 
-import javax.persistence.Query;
+import jakarta.persistence.Query;
 
 import org.apache.log4j.Logger;
 
@@ -22,15 +22,9 @@ public class FacilityIdUtil {
 	}
 	
 	public static String nextId() {
-		if ((System.getProperty("db.name") == null || System.getProperty("db.name").equals("sqlserver")) && System.getProperty("os.name").toLowerCase().startsWith("windows")) {
-			Logger.getLogger(FacilityIdUtil.class).debug("FacilityIdUtil.nextId(): OS=" +System.getProperty("os.name") + ",query=SELECT NEXT VALUE FOR setting.cc_cfg_xcloud_instance_id_sequence");
-			Query query = Session.current().getEntityManager().createNativeQuery("SELECT NEXT VALUE FOR setting.cc_cfg_xcloud_instance_id_sequence");
-			return String.format("%06d", (Long)query.getSingleResult());
-		} else {
-			Logger.getLogger(FacilityIdUtil.class).debug("FacilityIdUtil.nextId(): OS=" +System.getProperty("os.name") + ",query=SELECT nextval('setting.cc_cfg_xcloud_instance_id_sequence')");
-			Query query = Session.current().getEntityManager().createNativeQuery("SELECT nextval('setting.cc_cfg_xcloud_instance_id_sequence')");
-			return String.format("%06d", (Long)query.getSingleResult());
-		}
+		Logger.getLogger(FacilityIdUtil.class).debug("FacilityIdUtil.nextId(): OS=" +System.getProperty("os.name") + ",query=SELECT nextval('setting.cc_cfg_xcloud_instance_id_sequence')");
+		Query query = Session.current().getEntityManager().createNativeQuery("SELECT nextval('setting.cc_cfg_xcloud_instance_id_sequence')");
+		return String.format("%06d", (Long)query.getSingleResult());
 	}
 	
 	public static String getCloudScopeNodeId(String platformId, String cloudScopeId) {

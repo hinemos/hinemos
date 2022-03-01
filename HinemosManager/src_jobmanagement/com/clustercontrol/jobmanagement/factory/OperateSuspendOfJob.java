@@ -20,7 +20,10 @@ import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
+import com.clustercontrol.jobmanagement.bean.CommandConstant;
+import com.clustercontrol.jobmanagement.bean.CommandTypeConstant;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.queue.JobQueue;
@@ -30,7 +33,9 @@ import com.clustercontrol.jobmanagement.queue.JobQueueNotFoundException;
 import com.clustercontrol.jobmanagement.util.JobSessionChangeDataCache;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Singletons;
+import com.clustercontrol.xcloud.util.ResourceJobWorker;
 
 /**
  * ジョブ操作の中断に関する処理を行うクラスです。
@@ -156,7 +161,7 @@ public class OperateSuspendOfJob {
 		// ジョブを中断して、ノード詳細が終了した後に、ジョブの中断解除をした場合に
 		// ジョブが RUNNINGのままで止まってしまうため、この処理が必要。
 		if (sessionJob.hasSessionNode()) {
-			if (new JobSessionNodeImpl().startNode(sessionId, jobunitId, jobId)) {
+			if (new JobSessionNodeImpl().startNode(sessionId, jobunitId, jobId, false)) {
 				new JobSessionJobImpl().endJob(sessionId, jobunitId, jobId, null, false);
 			}
 		}

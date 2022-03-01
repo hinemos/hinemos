@@ -28,7 +28,9 @@ public class NodeConfigFilterItemInfo implements Serializable, Cloneable {
 	// 比較演算子
 	private String method = "";
 	// 値
-	private Object itemValue = null;
+	private String itemStringValue;
+	private Long itemLongValue;
+	private Integer itemIntegerValue = null;
 
 	public String getItemName() {
 		return itemName;
@@ -42,11 +44,37 @@ public class NodeConfigFilterItemInfo implements Serializable, Cloneable {
 	public void setMethod(String method) {
 		this.method = method;
 	}
-	public Object getItemValue() {
-		return itemValue;
+	public String getItemStringValue() {
+		return itemStringValue;
 	}
-	public void setItemValue(Object itemValue) {
-		this.itemValue = itemValue;
+	public void setItemStringValue(String itemStringValue) {
+		this.itemStringValue = itemStringValue;
+	}
+	public Long getItemLongValue() {
+		return itemLongValue;
+	}
+	public void setItemLongValue(Long itemLongValue) {
+		this.itemLongValue = itemLongValue;
+	}
+	public Integer getItemIntegerValue() {
+		return itemIntegerValue;
+	}
+	public void setItemIntegerValue(Integer itemIntegerValue) {
+		this.itemIntegerValue = itemIntegerValue;
+	}
+	public Object getItemValue() {
+		if (getItem().dataType() == NodeConfigFilterDataType.INTEGER
+				|| getItem().dataType() == NodeConfigFilterDataType.INTEGER_ONLYEQUAL) {
+			return this.itemIntegerValue;
+		} else if (getItem().dataType() == NodeConfigFilterDataType.STRING
+				|| getItem().dataType() == NodeConfigFilterDataType.STRING_ONLYEQUAL
+				|| getItem().dataType() == NodeConfigFilterDataType.STRING_VERSION) {
+			return this.itemStringValue;
+		} else if (getItem().dataType() == NodeConfigFilterDataType.DATETIME) {
+			return this.itemLongValue;
+		} else {
+			return null;
+		}
 	}
 	@XmlTransient
 	public NodeConfigFilterItem getItem() {
@@ -62,7 +90,9 @@ public class NodeConfigFilterItemInfo implements Serializable, Cloneable {
 			NodeConfigFilterItemInfo cloneInfo = (NodeConfigFilterItemInfo)super.clone();
 			cloneInfo.itemName = this.itemName;
 			cloneInfo.method = this.method;
-			cloneInfo.itemValue = this.itemValue;
+			cloneInfo.itemStringValue = this.itemStringValue;
+			cloneInfo.itemLongValue = this.itemLongValue;
+			cloneInfo.itemIntegerValue = this.itemIntegerValue;
 			return cloneInfo;
 		} catch (CloneNotSupportedException e) {
 			throw new InternalError(e.getMessage());

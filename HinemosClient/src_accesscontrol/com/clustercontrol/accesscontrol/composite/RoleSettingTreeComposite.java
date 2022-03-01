@@ -27,23 +27,25 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.RoleInfoResponse;
+import org.openapitools.client.model.RoleInfoResponse.RoleTypeEnum;
+import org.openapitools.client.model.RoleTreeItemResponseP1;
+import org.openapitools.client.model.UserInfoResponse;
 
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
+import com.clustercontrol.accesscontrol.bean.RoleTreeItemWrapper;
 import com.clustercontrol.accesscontrol.dialog.RoleSettingDialog;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.accesscontrol.view.RoleSettingTreeView;
 import com.clustercontrol.accesscontrol.viewer.RoleSettingTreeContentProvider;
 import com.clustercontrol.accesscontrol.viewer.RoleSettingTreeLabelProvider;
 import com.clustercontrol.accesscontrol.viewer.RoleSettingTreeViewer;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.access.UserInfo;
-import com.clustercontrol.ws.accesscontrol.RoleTreeItem;
 
 /**
  * ロールツリー用のコンポジットクラスです。
@@ -61,7 +63,7 @@ public class RoleSettingTreeComposite extends Composite {
 	/** ツリービュ */
 	private RoleSettingTreeView m_view = null;
 	/** 選択ジョブツリーアイテム */
-	private RoleTreeItem m_selectItem = null;
+	private RoleTreeItemWrapper m_selectItem = null;
 
 	/**
 	 * コンストラクタ
@@ -106,7 +108,7 @@ public class RoleSettingTreeComposite extends Composite {
 	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
 	 * @see #initialize()
 	 */
-	public RoleSettingTreeComposite(Composite parent, int style, RoleTreeItem selectItem) {
+	public RoleSettingTreeComposite(Composite parent, int style, RoleTreeItemWrapper selectItem) {
 		super(parent, style);
 
 		m_selectItem = selectItem;
@@ -140,7 +142,7 @@ public class RoleSettingTreeComposite extends Composite {
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				StructuredSelection selection = (StructuredSelection) event.getSelection();
-				m_selectItem = (RoleTreeItem) selection.getFirstElement();
+				m_selectItem = (RoleTreeItemWrapper) selection.getFirstElement();
 			}
 		});
 
@@ -150,18 +152,18 @@ public class RoleSettingTreeComposite extends Composite {
 					@Override
 					public void doubleClick(DoubleClickEvent event) {
 						StructuredSelection selection = (StructuredSelection) event.getSelection();
-						RoleTreeItem item = (RoleTreeItem) selection.getFirstElement();
+						RoleTreeItemWrapper item = (RoleTreeItemWrapper) selection.getFirstElement();
 						Object data = item.getData();
-						if (data instanceof RoleInfo
-								&& !((RoleInfo)data).getRoleId().equals(RoleSettingTreeConstant.ROOT_ID)
-								&& !((RoleInfo)data).getRoleId().equals(RoleSettingTreeConstant.MANAGER)) {
-							RoleTreeItem manager = RoleSettingTreeView.getManager(item);
-							RoleInfo info = (RoleInfo)manager.getData();
+						if (data instanceof RoleInfoResponse
+								&& !((RoleInfoResponse)data).getRoleId().equals(RoleSettingTreeConstant.ROOT_ID)
+								&& !((RoleInfoResponse)data).getRoleId().equals(RoleSettingTreeConstant.MANAGER)) {
+							RoleTreeItemWrapper manager = RoleSettingTreeView.getManager(item);
+							RoleInfoResponse info = (RoleInfoResponse)manager.getData();
 							String managerName = info.getRoleName();
 							RoleSettingDialog dialog = new RoleSettingDialog(
 									PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),
 									managerName,
-									((RoleInfo)data).getRoleId());
+									((RoleInfoResponse)data).getRoleId());
 							//ダイアログ表示
 							if (dialog.open() == IDialogConstants.OK_ID) {
 								m_view.update();
@@ -205,23 +207,27 @@ public class RoleSettingTreeComposite extends Composite {
 	 */
 	@Override
 	public void update() {
-		RoleTreeItem tree = null;
+		RoleTreeItemResponseP1 tree = null;
 
-		Map<String, RoleTreeItem> dispDataMap= new ConcurrentHashMap<String, RoleTreeItem>();
+		Map<String, RoleTreeItemWrapper> dispDataMap= new ConcurrentHashMap<String, RoleTreeItemWrapper>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 
 		//　ロール一覧情報取得
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
-				AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+				AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 				tree = wrapper.getRoleTree();
-				dispDataMap.put(managerName, tree);
-			} catch (InvalidRole_Exception e) {
+
+				// RoleTreeItemResponseP1 を RoleTreeItemWrapper形式に変換
+				RoleTreeItemWrapper convTree = ConvertRoleTreeItem(tree);
+				dispDataMap.put(managerName, convTree);
+
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
-				m_log.warn("update() getJobTree, " + HinemosMessage.replace(e.getMessage()), e);
-				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+				m_log.warn("update() getJobTree, " +e.getMessage(), e);
+				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 			}
 
 		}
@@ -234,11 +240,13 @@ public class RoleSettingTreeComposite extends Composite {
 		m_selectItem = null;
 
 		//ツリーの再構築
-		RoleTreeItem newTree = new RoleTreeItem();
-		RoleTreeItem roleTree = new RoleTreeItem();
+		RoleTreeItemWrapper newTree = new RoleTreeItemWrapper();
+		RoleTreeItemWrapper roleTree = new RoleTreeItemWrapper();
 
-		for(Map.Entry<String, RoleTreeItem> map : dispDataMap.entrySet()) {
-			RoleTreeItem orgTree = map.getValue();
+		for(Map.Entry<String, RoleTreeItemWrapper> map : dispDataMap.entrySet()) {
+			RoleTreeItemWrapper orgTree = new RoleTreeItemWrapper();
+			orgTree.getChildren().add(map.getValue());
+			
 			//トップ
 			if(newTree.getData() == null) {
 				newTree.setData(orgTree.getData());
@@ -249,19 +257,19 @@ public class RoleSettingTreeComposite extends Composite {
 				roleTree = newTree.getChildren().get(0);
 			} else {
 				Object obj = orgTree.getChildren().get(0).getData();
-				((RoleInfo)obj).setRoleName(HinemosMessage.replace(((RoleInfo)obj).getRoleName()));
+				((RoleInfoResponse)obj).setRoleName(HinemosMessage.replace(((RoleInfoResponse)obj).getRoleName()));
 				roleTree.setData(obj);
 			}
 
 			//マネージャ
-			RoleInfo role = new RoleInfo();
+			RoleInfoResponse role = new RoleInfoResponse();
 			role.setRoleId(RoleSettingTreeConstant.MANAGER);
 			role.setRoleName(map.getKey());
-			RoleTreeItem managerTree = new RoleTreeItem();
+			RoleTreeItemWrapper managerTree = new RoleTreeItemWrapper();
 			managerTree.setData(role);
 
 			//詳細設定
-			for(RoleTreeItem t : orgTree.getChildren().get(0).getChildren()) {
+			for(RoleTreeItemWrapper t : orgTree.getChildren().get(0).getChildren()) {
 				managerTree.getChildren().add(t);
 				t.setParent(managerTree);
 			}
@@ -276,7 +284,7 @@ public class RoleSettingTreeComposite extends Composite {
 		// ロールツリーの展開情報を取得
 		ArrayList<String> expandIdList = new ArrayList<String>();
 		for (Object item : m_viewer.getExpandedElements()) {
-			RoleInfo roleInfo = (RoleInfo)((RoleTreeItem)item).getData();
+			RoleInfoResponse roleInfo = (RoleInfoResponse)((RoleTreeItemWrapper)item).getData();
 			expandIdList.add(roleInfo.getRoleId());
 		}
 		
@@ -295,21 +303,21 @@ public class RoleSettingTreeComposite extends Composite {
 	/**
 	 * ロールツリーを展開します。
 	 */
-	private void expand(RoleTreeItem item, List<String> expandIdList) {
+	private void expand(RoleTreeItemWrapper item, List<String> expandIdList) {
 		if (item.getData() != null) {
-			if (item.getData() instanceof RoleInfo
-					&& expandIdList.contains(((RoleInfo)item.getData()).getRoleId())) {
+			if (item.getData() instanceof RoleInfoResponse
+					&& expandIdList.contains(((RoleInfoResponse)item.getData()).getRoleId())) {
 				// ツリーを展開（RoleInfo）
 				m_viewer.expandToLevel(item, 1);
-			} else if(item.getData() instanceof UserInfo
-					&& expandIdList.contains(((UserInfo)item.getData()).getUserId())) {
+			} else if(item.getData() instanceof UserInfoResponse
+					&& expandIdList.contains(((UserInfoResponse)item.getData()).getUserId())) {
 				// ツリーを展開（UserInfo）
 				m_viewer.expandToLevel(item, 1);
 				// 最下層のため処理終了
 				return;
 			}
 		}
-		for (RoleTreeItem child : item.getChildren()) {
+		for (RoleTreeItemWrapper child : item.getChildren()) {
 			expand(child, expandIdList);
 		}
 	}
@@ -319,7 +327,7 @@ public class RoleSettingTreeComposite extends Composite {
 	 *
 	 * @return ロールツリーアイテム
 	 */
-	public RoleTreeItem getSelectItem() {
+	public RoleTreeItemWrapper getSelectItem() {
 		return m_selectItem;
 	}
 
@@ -328,7 +336,35 @@ public class RoleSettingTreeComposite extends Composite {
 	 *
 	 * @param item ロールツリーアイテム
 	 */
-	public void setSelectItem(RoleTreeItem item) {
+	public void setSelectItem(RoleTreeItemWrapper item) {
 		m_selectItem = item;
 	}
+	
+	private RoleTreeItemWrapper ConvertRoleTreeItem(RoleTreeItemResponseP1 targetItem ) {
+		RoleTreeItemWrapper top = new RoleTreeItemWrapper();
+		setRecurciveRoleTreeItem(targetItem,top);
+		return top;
+	}
+	private void setRecurciveRoleTreeItem(RoleTreeItemResponseP1 targetItem , RoleTreeItemWrapper destItem ) {
+		if( targetItem.getType() != null && targetItem.getType().equals(RoleTreeItemResponseP1.TypeEnum.ROLE_INFO) ){
+			RoleInfoResponse item = new RoleInfoResponse();
+			item.setRoleId(targetItem.getId());
+			item.setRoleName(targetItem.getName());
+			item.setRoleType(RoleTypeEnum.USER_ROLE);
+			destItem.setData(item);
+		}
+		if( targetItem.getType() != null && targetItem.getType().equals(RoleTreeItemResponseP1.TypeEnum.USER_INFO) ){
+			UserInfoResponse item = new UserInfoResponse();
+			item.setUserId(targetItem.getId());
+			item.setUserName(targetItem.getName());
+			destItem.setData(item);
+		}
+		for( RoleTreeItemResponseP1 srcRec : targetItem.getChildren() ){
+			RoleTreeItemWrapper destRec = new RoleTreeItemWrapper();
+			destRec.setParent(destItem);
+			destItem.getChildren().add(destRec);
+			setRecurciveRoleTreeItem(srcRec,destRec);
+		}
+	}
+	
 }

@@ -8,14 +8,26 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.MonitorNumericTypeEnum;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse.PriorityEnum;
+import org.openapitools.client.model.ProcessCheckInfoResponse;
 
 import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.constant.YesNoConstant;
 import com.clustercontrol.utility.settings.ConvertorException;
@@ -28,13 +40,6 @@ import com.clustercontrol.utility.settings.monitor.xml.ProcessMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.ProcessMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
-import com.clustercontrol.ws.monitor.ProcessCheckInfo;
 
 /**
  * プロセス監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -49,7 +54,7 @@ public class ProcessConv {
 
 	private final static String SCHEMA_TYPE = "I";
 	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "1";
+	private final static String SCHEMA_REVISION = "2";
 
 	/**
 	 * <BR>
@@ -88,14 +93,17 @@ public class ProcessConv {
 	 * @param
 	 * @return
 	 * @throws ConvertorException
+	 * @throws ParseException 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	public static List<MonitorInfo> createMonitorInfoList(ProcessMonitors processMonitors) throws ConvertorException {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(ProcessMonitors processMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 
 		for (ProcessMonitor processMonitor : processMonitors.getProcessMonitor()) {
 			logger.debug("Monitor Id : " + processMonitor.getMonitor().getMonitorId());
 
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(processMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(processMonitor.getMonitor());
 
 			for (NumericValue numericValue : processMonitor.getNumericValue()) {
 				if(numericValue.getPriority() == PriorityConstant.TYPE_INFO ||
@@ -115,40 +123,40 @@ public class ProcessConv {
 					monitorInfo.getNumericValueInfo().add(MonitorConv.createMonitorNumericValueInfo(changeValue));
 				}
 			}			
-			MonitorNumericValueInfo monitorNumericValueInfo = new MonitorNumericValueInfo();
-			monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-			monitorNumericValueInfo.setMonitorNumericType("");
-			monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+			MonitorNumericValueInfoResponse monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+
+			monitorInfo.setMonitorId(processMonitor.getMonitor().getMonitorId());//MonitorId
+			monitorNumericValueInfo.setMonitorNumericType(null);
+			monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 			monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 			monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 			monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
-			monitorNumericValueInfo = new MonitorNumericValueInfo();
-			monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-			monitorNumericValueInfo.setMonitorNumericType("");
-			monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+			monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+
+			monitorNumericValueInfo.setMonitorNumericType(null);
+			monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 			monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 			monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 			monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 
 			// 変化量監視が無効の場合、関連閾値が未入力なら、画面デフォルト値にて補完
-			if( monitorInfo.isChangeFlg() ==false && processMonitor.getNumericChangeAmount().length == 0 ){
+			if( monitorInfo.getChangeFlg() ==false && processMonitor.getNumericChangeAmount().length == 0 ){
 				MonitorConv.setMonitorChangeAmountDefault(monitorInfo);
 			}
 			
 			// 変化量についても閾値判定と同様にTYPE_CRITICALとTYPE_UNKNOWNを定義する
-			monitorNumericValueInfo = new MonitorNumericValueInfo();
-			monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-			monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-			monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_CRITICAL);
+			monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+
+			monitorNumericValueInfo.setMonitorNumericType(MonitorNumericTypeEnum.CHANGE);
+			monitorNumericValueInfo.setPriority(PriorityEnum.CRITICAL);
 			monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 			monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 			monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
 			
-			monitorNumericValueInfo = new MonitorNumericValueInfo();
-			monitorNumericValueInfo.setMonitorId(monitorInfo.getMonitorId());
-			monitorNumericValueInfo.setMonitorNumericType("CHANGE");
-			monitorNumericValueInfo.setPriority(PriorityConstant.TYPE_UNKNOWN);
+			monitorNumericValueInfo = new MonitorNumericValueInfoResponse();
+			monitorNumericValueInfo.setMonitorNumericType(MonitorNumericTypeEnum.CHANGE);
+			monitorNumericValueInfo.setPriority(PriorityEnum.UNKNOWN);
 			monitorNumericValueInfo.setThresholdLowerLimit(0.0);
 			monitorNumericValueInfo.setThresholdUpperLimit(0.0);
 			monitorInfo.getNumericValueInfo().add(monitorNumericValueInfo);
@@ -165,17 +173,19 @@ public class ProcessConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws ParseException 
+	 * @throws RestConnectFailed 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static ProcessMonitors createProcessMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static ProcessMonitors createProcessMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, ParseException, RestConnectFailed {
 		ProcessMonitors processMonitors = new ProcessMonitors();
 
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
@@ -185,18 +195,18 @@ public class ProcessConv {
 			processMonitor.setMonitor(monitor);
 
 			assert monitorInfo.getProcessCheckInfo() != null: "ProcessCheckInfo must not be null.";
-			ProcessInfo processInfo = createProcessInfo(monitorInfo.getProcessCheckInfo());
+			ProcessInfo processInfo = createProcessInfo(monitorInfo);
 			processMonitor.setProcessInfo(processInfo);
 
-			for (MonitorNumericValueInfo numericValueInfo: monitorInfo.getNumericValueInfo()) {
-				if(numericValueInfo.getPriority() == PriorityConstant.TYPE_INFO ||
-						numericValueInfo.getPriority() == PriorityConstant.TYPE_WARNING){
+			for (MonitorNumericValueInfoResponse numericValueInfo: monitorInfo.getNumericValueInfo()) {
+				if(numericValueInfo.getPriority() == PriorityEnum.INFO ||
+						numericValueInfo.getPriority() == PriorityEnum.WARNING){
 
-					if(numericValueInfo.getMonitorNumericType().contains("CHANGE")) {
-						processMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(numericValueInfo));
+					if(numericValueInfo.getMonitorNumericType().name().equals("CHANGE")) {
+						processMonitor.addNumericChangeAmount(MonitorConv.createNumericChangeAmount(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 					else{
-						processMonitor.addNumericValue(MonitorConv.createNumericValue(numericValueInfo));
+						processMonitor.addNumericValue(MonitorConv.createNumericValue(monitorInfo.getMonitorId(),numericValueInfo));
 					}
 				}
 			}
@@ -210,23 +220,21 @@ public class ProcessConv {
 		return processMonitors;
 	}
 
-	private static ProcessInfo createProcessInfo(ProcessCheckInfo processCheckInfo) {
+	private static ProcessInfo createProcessInfo(MonitorInfoResponse processCheckInfo) {
 		ProcessInfo processInfo = new ProcessInfo();
-		processInfo.setCommand(processCheckInfo.getCommand());
+		processInfo.setCommand(processCheckInfo.getProcessCheckInfo().getCommand());
 		processInfo.setMonitorId(processCheckInfo.getMonitorId());
 		processInfo.setMonitorTypeId("");
 
-		processInfo.setParam(processCheckInfo.getParam());
-		processInfo.setCaseSensitivityFlg(YesNoConstant.booleanToType(processCheckInfo.isCaseSensitivityFlg()));
+		processInfo.setParam(processCheckInfo.getProcessCheckInfo().getParam());
+		processInfo.setCaseSensitivityFlg(YesNoConstant.booleanToType(processCheckInfo.getProcessCheckInfo().getCaseSensitivityFlg()));
 
 		return processInfo;
 	}
 
-	private static ProcessCheckInfo createProcessCheckInfo(ProcessInfo processInfo) {
-		ProcessCheckInfo processCheckInfo = new ProcessCheckInfo();
+	private static ProcessCheckInfoResponse  createProcessCheckInfo(ProcessInfo processInfo) {
+		ProcessCheckInfoResponse  processCheckInfo = new ProcessCheckInfoResponse ();
 		processCheckInfo.setCommand(processInfo.getCommand());
-		processCheckInfo.setMonitorId(processInfo.getMonitorId());
-		processCheckInfo.setMonitorTypeId("");
 
 		processCheckInfo.setParam(processInfo.getParam());
 		processCheckInfo.setCaseSensitivityFlg(YesNoConstant.typeToBoolean(processInfo.getCaseSensitivityFlg()));

@@ -9,39 +9,30 @@
 package com.clustercontrol.plugin.impl;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
 
 import com.clustercontrol.plugin.api.HinemosPlugin;
 
 /**
- * log4j.propertiesを定期的にリロードするプラグインサービス<br/>
+ * log4j2.propertiesを定期的にリロードするプラグインサービス<br/>
  */
 public class Log4jReloadPlugin implements HinemosPlugin {
 
 	public static final Log log = LogFactory.getLog(Log4jReloadPlugin.class);
 
-	// log4j.propertiesのファイルパス
+	// log4j2.propertiesのファイルパス
 	public static final String _configFilePath;
-	public static final String _configFilePathDefault = System.getProperty("hinemos.manager.etc.dir") + File.separator + "log4j.properties";
-
-	// リロードの実行インターバル
-	public static final int _intervalMsec;
-	public static final int _intervalMsecDefault = 60000;
+	public static final String _configFilePathDefault = System.getProperty("hinemos.manager.etc.dir") + File.separator + "log4j2.properties";
 
 	static {
 		_configFilePath = System.getProperty("hinemos.log4j.file", _configFilePathDefault);
-
-		String intervalMsecStr = System.getProperty("hinemos.log4j.interval");
-		int intervalMSec = _intervalMsecDefault;
-		try {
-			intervalMSec = Integer.parseInt(intervalMsecStr);
-		} catch (NumberFormatException e) { }
-		_intervalMsec = intervalMSec;
 	}
 
 	@Override
@@ -62,7 +53,8 @@ public class Log4jReloadPlugin implements HinemosPlugin {
 	@Override
 	public void activate() {
 		// 定期的にリロードする処理を開始する
-		PropertyConfigurator.configureAndWatch(_configFilePath, _intervalMsec);
+		LoggerContext context = (LoggerContext) LogManager.getContext(false);
+		context.setConfigLocation(Paths.get(_configFilePath).toUri());
 	}
 
 	@Override

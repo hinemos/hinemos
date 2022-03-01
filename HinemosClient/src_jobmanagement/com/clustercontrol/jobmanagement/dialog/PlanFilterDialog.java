@@ -31,6 +31,9 @@ import com.clustercontrol.bean.Property;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.action.GetPlanFilterProperty;
+import com.clustercontrol.jobmanagement.bean.HistoryFilterPropertyConstant;
+import com.clustercontrol.util.FilterPropertyCache;
+import com.clustercontrol.util.FilterPropertyUpdater;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
 import com.clustercontrol.viewer.PropertySheet;
@@ -50,9 +53,8 @@ public class PlanFilterDialog extends CommonDialog {
 	private static final int sizeX = 500;
 	private static final int sizeY = 500;
 
-	/** Cache map of filter properties for each UI session */
-	private static Map<UISession, Property> filterPropertyCache = new ConcurrentHashMap<>();
-
+	/** プロパティのキャッシュ用クラス */
+	private static FilterPropertyCache filterPropertyCache = null;
 	/**
 	 * コンストラクタ
 	 *
@@ -235,7 +237,9 @@ public class PlanFilterDialog extends CommonDialog {
 	 */
 	private Property initFilterProperty() {
 		Property property = new GetPlanFilterProperty().getProperty();
-		filterPropertyCache.put(RWT.getUISession(), property);
+		FilterPropertyUpdater.getInstance().addFilterProperty(getClass(), property,
+				HistoryFilterPropertyConstant.MANAGER);
+		filterPropertyCache.initFilterPropertyCache(FilterPropertyCache.PLAN_FILTER_DIALOG_PROPERTY,property);
 		return property;
 	}
 
@@ -244,9 +248,14 @@ public class PlanFilterDialog extends CommonDialog {
 	 * or initialize one while not.
 	 */
 	private Property getOrInitFilterProperty() {
-		Property property = filterPropertyCache.get(RWT.getUISession());
-		if( null == property ){
+		Property property = null;
+		if( null == filterPropertyCache ){
+			filterPropertyCache = new FilterPropertyCache();
+		}
+		if( null == filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.PLAN_FILTER_DIALOG_PROPERTY) ){
 			property = initFilterProperty();
+		} else {
+			property = (Property)filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.PLAN_FILTER_DIALOG_PROPERTY);
 		}
 		return property;
 	}

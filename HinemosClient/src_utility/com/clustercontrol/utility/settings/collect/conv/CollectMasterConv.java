@@ -8,6 +8,19 @@
 
 package com.clustercontrol.utility.settings.collect.conv;
 
+import org.openapitools.client.model.CollectorCalcMethodMstDataRequest;
+import org.openapitools.client.model.CollectorCalcMethodMstDataResponse;
+import org.openapitools.client.model.CollectorCategoryCollectMstDataRequest;
+import org.openapitools.client.model.CollectorCategoryCollectMstDataResponse;
+import org.openapitools.client.model.CollectorCategoryMstDataRequest;
+import org.openapitools.client.model.CollectorCategoryMstDataResponse;
+import org.openapitools.client.model.CollectorItemCalcMethodMstDataRequest;
+import org.openapitools.client.model.CollectorItemCalcMethodMstDataResponse;
+import org.openapitools.client.model.CollectorItemCodeMstDataRequest;
+import org.openapitools.client.model.CollectorItemCodeMstDataResponse;
+import org.openapitools.client.model.CollectorPollingMstDataRequest;
+import org.openapitools.client.model.CollectorPollingMstDataResponse;
+
 import com.clustercontrol.utility.settings.master.xml.CollectorCalcMethodData;
 import com.clustercontrol.utility.settings.master.xml.CollectorCalcMethods;
 import com.clustercontrol.utility.settings.master.xml.CollectorCategoryCollectData;
@@ -21,12 +34,6 @@ import com.clustercontrol.utility.settings.master.xml.CollectorItems;
 import com.clustercontrol.utility.settings.master.xml.CollectorPollingData;
 import com.clustercontrol.utility.settings.master.xml.PollingCollector;
 import com.clustercontrol.utility.settings.model.BaseConv;
-import com.clustercontrol.ws.collectmaster.CollectorCalcMethodMstData;
-import com.clustercontrol.ws.collectmaster.CollectorCategoryCollectMstData;
-import com.clustercontrol.ws.collectmaster.CollectorCategoryMstData;
-import com.clustercontrol.ws.collectmaster.CollectorItemCalcMethodMstData;
-import com.clustercontrol.ws.collectmaster.CollectorItemCodeMstData;
-import com.clustercontrol.ws.collectmaster.CollectorPollingMstData;
 
 /**
  * 収集項目定義情報のJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -72,9 +79,9 @@ public class CollectMasterConv {
 	 * @param 計算定義 XML Bean
 	 * @return  Hinemos Bean(DTO)
 	 */
-	public static CollectorCalcMethodMstData xml2dto(CollectorCalcMethodData xmlBean) {
+	public static CollectorCalcMethodMstDataRequest xml2dto(CollectorCalcMethodData xmlBean) {
 
-		CollectorCalcMethodMstData data = new CollectorCalcMethodMstData();
+		CollectorCalcMethodMstDataRequest data = new CollectorCalcMethodMstDataRequest();
 		
 		// 計算方法
 		if (xmlBean.getCalcMethod() != null && !xmlBean.getCalcMethod().equals("")) {
@@ -95,7 +102,7 @@ public class CollectMasterConv {
 	 * @param Hinemos Bean(DTO)
 	 * @return 計算定義 XML Bean
 	 */
-	public static CollectorCalcMethods dto2Xml(CollectorCalcMethodMstData data) {
+	public static CollectorCalcMethods dto2Xml(CollectorCalcMethodMstDataResponse data) {
 
 		CollectorCalcMethods ret =
 			new CollectorCalcMethods();
@@ -116,9 +123,9 @@ public class CollectMasterConv {
 	 * @param カテゴリコード XML Bean
 	 * @return  Hinemos Bean(DTO)
 	 */
-	public static CollectorCategoryMstData xml2dto(CollectorCategoryData xmlBean) {
+	public static CollectorCategoryMstDataRequest xml2dto(CollectorCategoryData xmlBean) {
 
-		CollectorCategoryMstData data = new CollectorCategoryMstData();
+		CollectorCategoryMstDataRequest data = new CollectorCategoryMstDataRequest();
 		
 		// カテゴリコード
 		if (xmlBean.getCategoryCode() != null && !xmlBean.getCategoryCode().equals("")) {
@@ -137,7 +144,7 @@ public class CollectMasterConv {
 	 * @param Hinemos Bean(DTO)
 	 * @return カテゴリコード XML Bean
 	 */
-	public static CollectorItems dto2Xml(CollectorCategoryMstData data) {
+	public static CollectorItems dto2Xml(CollectorCategoryMstDataResponse data) {
 
 		CollectorItems ret =
 			new CollectorItems();
@@ -156,9 +163,9 @@ public class CollectMasterConv {
 	 * @param 収集毎の計算方法 XML Bean
 	 * @return  Hinemos Bean(DTO)
 	 */
-	public static CollectorItemCodeMstData xml2dto(CollectorItemCodeData xmlBean) {
+	public static CollectorItemCodeMstDataRequest xml2dto(CollectorItemCodeData xmlBean) {
 
-		CollectorItemCodeMstData data = new CollectorItemCodeMstData();
+		CollectorItemCodeMstDataRequest data = new CollectorItemCodeMstDataRequest();
 		
 		// 収集項目コード
 		if (xmlBean.getItemCode() != null && !xmlBean.getItemCode().equals("")) {
@@ -189,7 +196,7 @@ public class CollectMasterConv {
 	 * @param Hinemos Bean(DTO)
 	 * @return 収集項目コード XML Bean
 	 */
-	public static CollectorItemCodes dto2Xml(CollectorItemCodeMstData data) {
+	public static CollectorItemCodes dto2Xml(CollectorItemCodeMstDataResponse data) {
 
 		CollectorItemCodes ret =
 			new CollectorItemCodes();
@@ -205,11 +212,11 @@ public class CollectMasterConv {
 		// 単位
 		ret.setMeasure(data.getMeasure());
 		// デバイスのサポート
-		ret.setDeviceSupport(data.isDeviceSupport());
+		ret.setDeviceSupport(data.getDeviceSupport());
 		// デバイス種別
 		ret.setDeviceType(data.getDeviceType());
 		// グラフレンジ
-		ret.setGraphRange(data.isGraphRange());
+		ret.setGraphRange(data.getGraphRange());
 
 		return ret;
 	}
@@ -220,9 +227,9 @@ public class CollectMasterConv {
 	 * @param 収集項目毎の計算方法 XML Bean
 	 * @return  Hinemos Bean(DTO)
 	 */
-	public static CollectorItemCalcMethodMstData xml2dto(CollectorItemCalcMethodData xmlBean) {
+	public static CollectorItemCalcMethodMstDataRequest xml2dto(CollectorItemCalcMethodData xmlBean) {
 
-		CollectorItemCalcMethodMstData data = new CollectorItemCalcMethodMstData();
+		CollectorItemCalcMethodMstDataRequest data = new CollectorItemCalcMethodMstDataRequest();
 		
 		// 収集方法
 		if (xmlBean.getCollectMethod() != null && !xmlBean.getCollectMethod().equals("")) {
@@ -256,7 +263,7 @@ public class CollectMasterConv {
 	 * @param Hinemos Bean(DTO)
 	 * @return 収集項目毎の計算方法 XML Bean
 	 */
-	public static CollectorItemCalcMethods dto2Xml(CollectorItemCalcMethodMstData data) {
+	public static CollectorItemCalcMethods dto2Xml(CollectorItemCalcMethodMstDataResponse data) {
 
 		CollectorItemCalcMethods ret =
 			new CollectorItemCalcMethods();
@@ -282,9 +289,9 @@ public class CollectMasterConv {
 	 * @param ポーリング定義 XML Bean
 	 * @return  Hinemos Bean(DTO)
 	 */
-	public static CollectorPollingMstData xml2dto(CollectorPollingData xmlBean) {
+	public static CollectorPollingMstDataRequest xml2dto(CollectorPollingData xmlBean) {
 
-		CollectorPollingMstData data = new CollectorPollingMstData();
+		CollectorPollingMstDataRequest data = new CollectorPollingMstDataRequest();
 		
 		// 収集方法
 		if (xmlBean.getCollectMethod() != null && !xmlBean.getCollectMethod().equals("")) {
@@ -328,7 +335,7 @@ public class CollectMasterConv {
 	 * @param Hinemos Bean(DTO)
 	 * @return ポーリング定義 XML Bean
 	 */
-	public static PollingCollector dto2Xml(CollectorPollingMstData data) {
+	public static PollingCollector dto2Xml(CollectorPollingMstDataResponse data) {
 
 		PollingCollector ret =
 			new PollingCollector();
@@ -361,9 +368,9 @@ public class CollectMasterConv {
 	 * @param カテゴリ毎の収集方法 XML Bean
 	 * @return  Hinemos Bean(DTO)
 	 */
-	public static CollectorCategoryCollectMstData xml2dto(CollectorCategoryCollectData xmlBean) {
+	public static CollectorCategoryCollectMstDataRequest xml2dto(CollectorCategoryCollectData xmlBean) {
 
-		CollectorCategoryCollectMstData data = new CollectorCategoryCollectMstData();
+		CollectorCategoryCollectMstDataRequest data = new CollectorCategoryCollectMstDataRequest();
 		
 		// プラットフォームID
 		if (xmlBean.getPlatformId() != null && !xmlBean.getPlatformId().equals("")) {
@@ -393,7 +400,7 @@ public class CollectMasterConv {
 	 * @param Hinemos Bean(DTO)
 	 * @return カテゴリ毎の収集方法 XML Bean
 	 */
-	public static CollectorCategoryCollects dto2Xml(CollectorCategoryCollectMstData data) {
+	public static CollectorCategoryCollects dto2Xml(CollectorCategoryCollectMstDataResponse data) {
 
 		CollectorCategoryCollects ret =
 			new CollectorCategoryCollects();

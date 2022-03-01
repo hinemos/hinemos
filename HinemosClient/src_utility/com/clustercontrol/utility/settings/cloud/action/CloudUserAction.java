@@ -19,12 +19,27 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.ValidationException;
+import org.openapitools.client.model.AddCloudLoginUserRequest;
+import org.openapitools.client.model.AddCloudScopeRequest;
+import org.openapitools.client.model.ImportCloudScopeRecordRequest;
+import org.openapitools.client.model.ImportCloudScopeRequest;
+import org.openapitools.client.model.ImportCloudScopeResponse;
+import org.openapitools.client.model.ModifyBillingSettingRequest;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.difference.CSVUtil;
@@ -42,24 +57,19 @@ import com.clustercontrol.utility.settings.cloud.xml.CloudScopeType;
 import com.clustercontrol.utility.settings.cloud.xml.ICloudScope;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.xcloud.AddCloudLoginUserRequest;
-import com.clustercontrol.ws.xcloud.AddCloudScopeRequest;
-import com.clustercontrol.ws.xcloud.AddPublicCloudScopeRequest;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
-import com.clustercontrol.ws.xcloud.ModifyBillingSettingRequest;
-import com.clustercontrol.ws.xcloud.ModifyCloudScopeRequest;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.bean.CloudConstant;
-import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 /**
  * 
@@ -93,20 +103,21 @@ public class CloudUserAction {
 		
 		List<com.clustercontrol.xcloud.model.cloud.ICloudScope> roots = CloudTools.getCloudScopeList();
 		
-		com.clustercontrol.ws.xcloud.CloudEndpoint endpoint = CloudTools.getEndpoint(com.clustercontrol.ws.xcloud.CloudEndpoint.class);
+		CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		for (com.clustercontrol.xcloud.model.cloud.ICloudScope cloudScope:roots){
 			try {
 				endpoint.removeCloudScope(cloudScope.getId());
-			} catch (com.clustercontrol.ws.xcloud.CloudManagerException e) {
-				log.error("Clear Cloud.user Error " + " : " + HinemosMessage.replace(e.getMessage()));
+				log.info(Messages.getString("SettingTools.ClearSucceeded") + " id:" + cloudScope.getId());
+			} catch (RestConnectFailed | HinemosUnknown | CloudManagerException e ) {
+				log.error("Clear Cloud.user Error " +" id:" + cloudScope.getId() + " , " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 				continue;
-			} catch (com.clustercontrol.ws.xcloud.InvalidRole_Exception e) {
-				log.error("Clear Cloud.user Error " + " : " + HinemosMessage.replace(e.getMessage()));
+			} catch (InvalidRole e) {
+				log.error("Clear Cloud.user Error " +" id:" + cloudScope.getId() + " , " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 				continue;
-			} catch (com.clustercontrol.ws.xcloud.InvalidUserPass_Exception e) {
-				log.error("Clear Cloud.user Error " + " : " + HinemosMessage.replace(e.getMessage()));
+			} catch (InvalidUserPass e) {
+				log.error("Clear Cloud.user Error " +" id:" + cloudScope.getId() + " , " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 				continue;
 			}
@@ -140,7 +151,14 @@ public class CloudUserAction {
 				log.debug("Skip importUser, cloudScope ID = " + cloudScopeEndpoint.getId());
 				continue;
 			}
-			cloudScope.addICloudScope(CloudUserConv.getICloudScope(cloudScopeEndpoint));
+			try {
+				cloudScope.addICloudScope(CloudUserConv.getICloudScope(cloudScopeEndpoint));
+			} catch (RuntimeException e) {
+				// キー情報保護の有効確認でエラーが出た場合は終了する
+				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+				ret = SettingConstants.ERROR_INPROCESS;
+				return ret;
+			}
 			log.info(Messages.getString("SettingTools.ExportSucceeded") + " : " + cloudScopeEndpoint.getId());
 		}
 		
@@ -189,7 +207,7 @@ public class CloudUserAction {
 		// XMLファイルからの読み込み
 		CloudScopeType cloudScope = null;
 		try {
-			cloudScope = CloudScope.unmarshal(new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
+			cloudScope = XmlMarshallUtil.unmarshall(CloudScopeType.class,new InputStreamReader(new FileInputStream(xmlFile), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"),e);
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -203,106 +221,147 @@ public class CloudUserAction {
 			return ret;
 		}
 		
-		final IHinemosManager manager =
-				CloudTools.getHinemosManager(UtilityManagerUtil.getCurrentManagerName());
 		List<String> platformIdList = CloudTools.getValidPlatfomIdList();
-		for (com.clustercontrol.utility.settings.cloud.xml.ICloudScope cloudScopeXML : cloudScope.getICloudScope()) {
-			if (!platformIdList.contains(cloudScopeXML.getCloudPlatformId())) {
-				log.warn(Messages.getString("CloudOption.Invalid", new String[]{cloudScopeXML.getCloudPlatformId()}));
-				log.debug("Skip importUser, cloudScope ID = " + cloudScopeXML.getCloudScopeId());
-				continue;
-			}
-			AddCloudScopeRequest request;
-			if ((cloudScopeXML.getCloudPlatformId().equals(CloudConstant.platform_ESXi)) ||
-						(cloudScopeXML.getCloudPlatformId().equals(CloudConstant.platform_vCenter))){
-				request = CloudUserConv.getPrivateCloudScopeRequestDto(cloudScopeXML);
-			} else if (cloudScopeXML.getCloudPlatformId().equals(CloudConstant.platform_AWS)) {
-				request = CloudUserConv.getPublicCloudScopeRequestDto(cloudScopeXML);
-			} else if (cloudScopeXML.getCloudPlatformId().equals(CloudConstant.platform_HyperV)) {
-				request = CloudUserConv.getHyperVCloudScopeRequestDto(cloudScopeXML);
-			} else if (cloudScopeXML.getCloudPlatformId().equals(CloudConstant.platform_Azure)) {
-				request = CloudUserConv.getAzureCloudScopeRequestDto(cloudScopeXML);
-			} else {
-				log.warn(Messages.getString("SettingTools.InvalidSetting") +
-						" : " + cloudScopeXML.getCloudScopeId() + " ( " +cloudScopeXML.getCloudPlatformId() + " )");
-				continue;
-			}
-			
-			try {
-				manager.getEndpoint(CloudEndpoint.class).addCloudScope(request);
-				// Subユーザ更新
-				importSubUser(manager, cloudScopeXML);
-				
-				// BillingSetting
-				if (request instanceof AddPublicCloudScopeRequest)
-					importBillingSetting(manager, cloudScopeXML);
-				
-				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + request.getCloudScopeId());
-			} catch (CloudManagerException e) {
-				if ("CLOUDSCOPE_ALREADY_EXIST".equals(e.getFaultInfo().getErrorCode())){
-					//重複時、インポート処理方法を確認する
-					if (!ImportProcessMode.isSameprocess()) {
-						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-								null, Messages.getString("message.import.confirm2", new String[]{cloudScopeXML.getCloudScopeId()}));
-						ImportProcessMode.setProcesstype(dialog.open());
-						ImportProcessMode.setSameprocess(dialog.getToggleState());
-					}
-					if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE) {
-						try {
-							// スコープ更新
-							ModifyCloudScopeRequest modRequest;
-							if ((cloudScopeXML.getCloudPlatformId().equals(CloudConstant.platform_ESXi)) ||
-									(cloudScopeXML.getCloudPlatformId().equals(CloudConstant.platform_vCenter))) {
-								modRequest = CloudUserConv.getModifyPrivateCloudScopeRequestDto(cloudScopeXML);
-							} else if (cloudScopeXML.getCloudPlatformId().equals(CloudConstant.platform_AWS)) {
-								modRequest = CloudUserConv.getModifyPublicCloudScopeRequestDto(cloudScopeXML);
-							} else if (cloudScopeXML.getCloudPlatformId().equals(CloudConstant.platform_HyperV)) {
-								modRequest = CloudUserConv.getModifyHyperVCloudScopeRequestDto(cloudScopeXML);
-							} else if (cloudScopeXML.getCloudPlatformId().equals(CloudConstant.platform_Azure)) {
-								modRequest = CloudUserConv.getModifyPublicCloudScopeRequestDto(cloudScopeXML);
-							} else {
-								continue;
-							}
-							manager.getEndpoint(CloudEndpoint.class).modifyCloudScope(modRequest);
-
-							// ログインユーザ更新
-							manager.getEndpoint(CloudEndpoint.class).modifyCloudLoginUser(CloudUserConv.getModifyCloudLoginUserRequestDto(cloudScopeXML));
-
-							// Subユーザ更新
-							importSubUser(manager, cloudScopeXML);
-							
-							// BillingSetting
-							if (request instanceof AddPublicCloudScopeRequest)
-								importBillingSetting(manager, cloudScopeXML);
-
-							log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + cloudScopeXML.getCloudScopeId());
-						} catch (Exception e1) {
-							log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-							ret = SettingConstants.ERROR_INPROCESS;
-						} catch (Throwable t){
-							log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(t.getMessage()));
-							ret = SettingConstants.ERROR_INPROCESS;
-						}
-					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + cloudScopeXML.getCloudScopeId());
-					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-						return ret;
-					}
-				} else {
-					log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-					ret = SettingConstants.ERROR_INPROCESS;
+		// 定義の登録向けにDtoを生成
+		ImportRecordConfirmer<com.clustercontrol.utility.settings.cloud.xml.ICloudScope, ImportCloudScopeRecordRequest, String> confirmer = new ImportRecordConfirmer<com.clustercontrol.utility.settings.cloud.xml.ICloudScope, ImportCloudScopeRecordRequest, String>(
+				log, cloudScope.getICloudScope()) {
+			@Override
+			protected ImportCloudScopeRecordRequest convertDtoXmlToRestReq(com.clustercontrol.utility.settings.cloud.xml.ICloudScope xmlDto) throws InvalidSetting, HinemosUnknown {
+				if (!platformIdList.contains(xmlDto.getCloudPlatformId())) {
+					log.warn(Messages.getString("CloudOption.Invalid", new String[]{xmlDto.getCloudPlatformId()}));
+					log.debug("Skip importUser, cloudScope ID = " +xmlDto.getCloudScopeId());
+					return null;
 				}
-			} catch (InvalidRole_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (Exception e) {
-				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
+				try {
+					// キー情報保護が有効なら、空欄になっているものを補完する
+					CloudUserConv.restoreProtectedKeys(xmlDto);
+				} catch (RuntimeException e) {
+					// キー情報保護の有効確認でエラーが出た場合は終了する
+					log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+					throw new InvalidSetting(e.getMessage());
+				}
+				// クラウドスコープ情報
+				AddCloudScopeRequest requestData;
+				if ((xmlDto.getCloudPlatformId().equals(CloudConstant.platform_ESXi)) ||
+							(xmlDto.getCloudPlatformId().equals(CloudConstant.platform_vCenter))){
+					requestData = CloudUserConv.getPrivateCloudScopeRequestDto(xmlDto);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_AWS)) {
+					requestData = CloudUserConv.getPublicCloudScopeRequestDto(xmlDto);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_HyperV)) {
+					requestData = CloudUserConv.getHyperVCloudScopeRequestDto(xmlDto);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_Azure)) {
+					requestData = CloudUserConv.getAzureCloudScopeRequestDto(xmlDto);
+				} else {
+					log.warn(Messages.getString("SettingTools.InvalidSetting") +
+							" : " + xmlDto.getCloudScopeId() + " ( " +xmlDto.getCloudPlatformId() + " )");
+					return null;
+				}
+				ImportCloudScopeRecordRequest dtoRec = new ImportCloudScopeRecordRequest();
+				dtoRec.setImportData(requestData);
+				dtoRec.setImportKeyValue(xmlDto.getCloudScopeId());
+
+				//サブユーザ
+				final List<AddCloudLoginUserRequest> addRequestList = new ArrayList<>();
+				final List<String> idList = new ArrayList<>();
+				
+				if ((xmlDto.getCloudPlatformId().equals(CloudConstant.platform_ESXi)) ||
+						(xmlDto.getCloudPlatformId().equals(CloudConstant.platform_vCenter))){
+					CloudUserConv.convertPrivateCloudUserRequestDto(xmlDto, requestData, addRequestList, idList);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_AWS)) {
+					CloudUserConv.convertPublicCloudUserRequestDto(xmlDto, requestData, addRequestList, idList);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_HyperV)) {
+					CloudUserConv.convertHyperVCloudUserRequestDto(xmlDto, requestData, addRequestList, idList);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_Azure)) {
+					CloudUserConv.convertAzureCloudUserRequestDto(xmlDto, requestData, addRequestList, idList);
+				}
+				dtoRec.setSubUserList(addRequestList);
+				dtoRec.setPriorityArrayList(idList);
+				
+				//課金情報
+				ModifyBillingSettingRequest billingSetting = CloudUserConv.createBillingSettingRequest(xmlDto);
+				dtoRec.setBillingSetting(billingSetting);
+				
+				return dtoRec;
 			}
+			@Override
+			protected Set<String> getExistIdSet() throws Exception {
+				Set<String> retSet = new HashSet<String>();
+				for( com.clustercontrol.xcloud.model.cloud.ICloudScope root : CloudTools.getCloudScopeList() ){
+					retSet.add(root.getId());
+				}
+				return retSet;
+			}
+			@Override
+			protected boolean isLackRestReq(ImportCloudScopeRecordRequest restDto) {
+				return (restDto == null || restDto.getImportData().getCloudScopeId() == null);
+			}
+			@Override
+			protected String getKeyValueXmlDto(com.clustercontrol.utility.settings.cloud.xml.ICloudScope xmlDto) {
+				return xmlDto.getCloudScopeId();
+			}
+			@Override
+			protected String getId(com.clustercontrol.utility.settings.cloud.xml.ICloudScope xmlDto) {
+				return xmlDto.getCloudScopeId();
+			}
+			@Override
+			protected void setNewRecordFlg(ImportCloudScopeRecordRequest restDto, boolean flag) {
+				restDto.setIsNewRecord(flag);
+			}
+		};
+
+		int confirmRet = confirmer.executeConfirm();
+		if( confirmRet != SettingConstants.SUCCESS && confirmRet != SettingConstants.ERROR_CANCEL ){
+			//変換エラーならUnmarshalXml扱いで処理打ち切り(キャンセルはキャンセル以前の選択結果を反映するので次に進む)
+			log.warn(Messages.getString("SettingTools.UnmarshalXmlFailed"));
+			return confirmRet;
+		}
+		
+		// 更新単位の件数毎にインポートメソッドを呼び出し、結果をログ出力
+		// API異常発生時はそこで中断、レコード個別の異常発生時はユーザ選択次第で続行
+		ImportClientController<ImportCloudScopeRecordRequest, ImportCloudScopeResponse, RecordRegistrationResponse> importController = new ImportClientController<ImportCloudScopeRecordRequest, ImportCloudScopeResponse, RecordRegistrationResponse>(
+				log, Messages.getString("cloud.scope"), confirmer.getImportRecDtoList(),true) {
+			@Override
+			protected List<RecordRegistrationResponse> getResRecList(ImportCloudScopeResponse importResponse) {
+				return importResponse.getResultList();
+			};
+			@Override
+			protected Boolean getOccurException(ImportCloudScopeResponse importResponse) {
+				return importResponse.getIsOccurException();
+			};
+			@Override
+			protected String getReqKeyValue(ImportCloudScopeRecordRequest importRec) {
+				return importRec.getImportData().getCloudScopeId();
+			};
+			@Override
+			protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+				return responseRec.getImportKeyValue();
+			};
+			@Override
+			protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+				return (responseRec.getResult() == ResultEnum.NORMAL) ;
+			};
+			@Override
+			protected ImportCloudScopeResponse callImportWrapper(List<ImportCloudScopeRecordRequest> importRecList)
+					throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+				ImportCloudScopeRequest reqDto = new ImportCloudScopeRequest();
+				reqDto.setRecordList(importRecList);
+				reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+				return UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importCloudScope(reqDto) ;
+			}
+			@Override
+			protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+				if (responseRec.getExceptionInfo() != null) {
+					return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+				}
+				return null;
+			};
+		};
+		ret = importController.importExecute();
+
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
 		}
 		checkDelete(cloudScope);
 
@@ -328,13 +387,6 @@ public class CloudUserAction {
 				sci.getSchemaType(), sci.getSchemaVersion(), sci.getSchemaRevision());
 	}
 	
-	private void importBillingSetting(IHinemosManager manager, ICloudScope info) throws CloudManagerException, InvalidRole_Exception, InvalidUserPass_Exception {
-		CloudEndpoint endpoint = manager.getEndpoint(CloudEndpoint.class);
-		ModifyBillingSettingRequest output = CloudUserConv.createBillingSettingRequest(info);
-		endpoint.modifyBillingSetting(output);
-
-	}
-
 	protected void checkDelete(CloudScopeType xmlElements){
 		List<com.clustercontrol.xcloud.model.cloud.ICloudScope> subList = CloudTools.getCloudScopeList();
 		List<ICloudScope> xmlElementList = new ArrayList<>(Arrays.asList(xmlElements.getICloudScope()));
@@ -363,7 +415,7 @@ public class CloudUserAction {
 
 				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
 					try {
-						com.clustercontrol.ws.xcloud.CloudEndpoint endpoint = CloudTools.getEndpoint(com.clustercontrol.ws.xcloud.CloudEndpoint.class);
+						CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 						endpoint.removeCloudScope(info.getId());
 						log.info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getId());
 					} catch (Exception e1) {
@@ -380,45 +432,6 @@ public class CloudUserAction {
 		}
 		
 	}
-	
-	private int importSubUser(IHinemosManager manager, ICloudScope info){
-
-		final List<AddCloudLoginUserRequest> addRequestList = new ArrayList<>();
-		final List<String> removeIdList = new ArrayList<>();
-		final List<String> idList = new ArrayList<>();
-		
-		if ((info.getCloudPlatformId().equals(CloudConstant.platform_ESXi)) ||
-				(info.getCloudPlatformId().equals(CloudConstant.platform_vCenter))){
-			CloudUserConv.getModifyPrivateCloudUserRequestDto(info, addRequestList, removeIdList, idList);
-		} else if (info.getCloudPlatformId().equals(CloudConstant.platform_AWS)) {
-			CloudUserConv.getModifyPublicCloudUserRequestDto(info, addRequestList, removeIdList, idList);
-		} else if (info.getCloudPlatformId().equals(CloudConstant.platform_HyperV)) {
-			CloudUserConv.getModifyHyperVCloudUserRequestDto(info, addRequestList, removeIdList, idList);
-		} else if (info.getCloudPlatformId().equals(CloudConstant.platform_Azure)) {
-			CloudUserConv.getModifyAzureCloudUserRequestDto(info, addRequestList, removeIdList, idList);
-		}
-		
-		CloudEndpoint endpoint = manager.getEndpoint(CloudEndpoint.class);
-		
-
-		try {
-			for(String id: removeIdList){
-				endpoint.removeCloudLoginUser(info.getCloudScopeId(), id);
-			}
-			
-			for(AddCloudLoginUserRequest request: addRequestList){
-				endpoint.addCloudLoginUser(request);
-			}
-			
-			endpoint.modifyCloudLoginUserPriority(info.getCloudScopeId(), idList);
-			
-		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
-			log.error(HinemosMessage.replace(e.getMessage()));
-		}
-		
-		return 0;
-	}
-	
 	
 	/**
 	 * 差分比較処理を行います。
@@ -441,8 +454,8 @@ public class CloudUserAction {
 		CloudScopeType cloudScope = null;
 		CloudScopeType cloudScope2 = null;
 		try {
-			cloudScope = CloudScope.unmarshal(new InputStreamReader(new FileInputStream(xmlFile1), "UTF-8"));
-			cloudScope2 = CloudScope.unmarshal(new InputStreamReader(new FileInputStream(xmlFile2), "UTF-8"));
+			cloudScope = XmlMarshallUtil.unmarshall(CloudScopeType.class,new InputStreamReader(new FileInputStream(xmlFile1), "UTF-8"));
+			cloudScope2 = XmlMarshallUtil.unmarshall(CloudScopeType.class,new InputStreamReader(new FileInputStream(xmlFile2), "UTF-8"));
 			sort(cloudScope);
 			sort(cloudScope2);
 		} catch (Exception e) {

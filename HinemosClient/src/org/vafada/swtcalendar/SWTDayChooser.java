@@ -50,11 +50,11 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Widget;
+import org.openapitools.client.model.YMDResponse;
 
 import com.clustercontrol.client.swt.SWT;
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.calendar.Ymd;
 
 public class SWTDayChooser extends Composite implements MouseListener,
 FocusListener, TraverseListener, KeyListener {
@@ -99,7 +99,7 @@ FocusListener, TraverseListener, KeyListener {
 
 	private int style;
 
-	private ArrayList<Ymd> dateList;// = new ArrayList<Ymd>();
+	private ArrayList<YMDResponse> dateList;// = new ArrayList<Ymd>();
 
 	public SWTDayChooser(Composite parent, int style) {
 		super(parent, style & ~RED_WEEKEND);
@@ -328,7 +328,7 @@ FocusListener, TraverseListener, KeyListener {
 			if(dateList == null){
 				continue;
 			}
-			for(Ymd ymd : dateList){
+			for(YMDResponse ymd : dateList){
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy/M");
 				//月までの表示データでもマネージャのタイムゾーン反映させる
 				sdf.setTimeZone(TimezoneUtil.getTimeZone());
@@ -358,15 +358,15 @@ FocusListener, TraverseListener, KeyListener {
 	 * @param ymd
 	 * @return yyyy/M/d
 	 */
-	private String yyyyMMdd(Ymd ymd){
-		return ymd.getYear() + "/" + ymd.getMonth() + "/" + ymd.getDay();
+	private String yyyyMMdd(YMDResponse ymd){
+		return ymd.getYearNo() + "/" + ymd.getMonthNo() + "/" + ymd.getDayNo();
 	}
 	/**
 	 * 複数選択SWTカレンダを更新
 	 * @param dateList
 	 * @since 4.1.0
 	 */
-	protected void update(ArrayList<Ymd> dateList){
+	protected void update(ArrayList<YMDResponse> dateList){
 		this.dateList = dateList;
 		drawMultipleDays();
 	}
@@ -381,7 +381,8 @@ FocusListener, TraverseListener, KeyListener {
 	}
 
 	public void setMonth(int month) {
-		calendar.set(Calendar.MONTH, month);
+		int differenceMonth = month - calendar.get(Calendar.MONTH);
+		calendar.add(Calendar.MONTH, differenceMonth);
 		//if(dateList.isEmpty()){
 		if(dateList == null){
 			drawDays();
@@ -392,7 +393,8 @@ FocusListener, TraverseListener, KeyListener {
 	}
 
 	public void setYear(int year) {
-		calendar.set(Calendar.YEAR, year);
+		int differenceYear = year - calendar.get(Calendar.YEAR);
+		calendar.add(Calendar.YEAR, differenceYear);
 		if(dateList == null){
 			drawDays();
 			dateChanged();

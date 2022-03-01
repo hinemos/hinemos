@@ -8,6 +8,9 @@
 
 package com.clustercontrol.view;
 
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -19,11 +22,14 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.composite.FacilityTreeComposite;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.repository.util.ScopePropertyUtil;
+import com.clustercontrol.util.FacilityTreeItemUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * スコープツリーと合わせて利用するビューを作成するための基本的な実装を持つクラス<BR>
@@ -153,7 +159,7 @@ public abstract class ScopeListBaseView extends AutoUpdateView {
 			public void selectionChanged(SelectionChangedEvent event) {
 				// 選択アイテム取得(ツリー自体でも行っているが、念のため)
 				StructuredSelection selection = (StructuredSelection) event.getSelection();
-				FacilityTreeItem selectItem = (FacilityTreeItem) selection.getFirstElement();
+				FacilityTreeItemResponse selectItem = (FacilityTreeItemResponse) selection.getFirstElement();
 				if (selectItem != null) {
 					// パスラベルの更新
 					baseComposite.layout(true, true);
@@ -193,7 +199,7 @@ public abstract class ScopeListBaseView extends AutoUpdateView {
 	 * @param item
 	 *            スコープツリーアイテム
 	 */
-	protected void doSelectTreeItem(FacilityTreeItem item) {
+	protected void doSelectTreeItem(FacilityTreeItemResponse item) {
 
 	}
 	
@@ -203,7 +209,7 @@ public abstract class ScopeListBaseView extends AutoUpdateView {
 	 * 必要に応じてオーバーライドし、アイテムチェック時のイベント処理を実装してください。
 	 * @param item スコープツリーアイテム
 	 */
-	protected void doSelectTreeItems(FacilityTreeItem[] item) {
+	protected void doSelectTreeItems(FacilityTreeItemResponse[] item) {
 		
 	}
 
@@ -268,4 +274,70 @@ public abstract class ScopeListBaseView extends AutoUpdateView {
 	public void hide() {
 		this.treeSash.setMaximizedControl(this.baseComposite);
 	}
+
+	/**
+	 * 指定されたマネージャ配下のスコープを選択します。
+	 */
+	public void selectScope(String managerName, String facilityId) {
+		AtomicBoolean managerFound = new AtomicBoolean(false);
+		FacilityTreeItemResponse abort = new FacilityTreeItemResponse();
+		FacilityTreeItemResponse found = FacilityTreeItemUtil.visitTreeItems(this.scopeTreeComposite.getAllTreeItems(), item -> {
+			if (!managerFound.get()) {
+				// まずはマネージャを探す
+				if (item.getData().getFacilityType() == FacilityTypeEnum.MANAGER
+						&& Objects.equals(managerName, item.getData().getFacilityId())) {
+					managerFound.set(true);
+				}
+			} else {
+				// マネージャが見つかったらスコープを探す
+				if (item.getData().getFacilityType() == FacilityTypeEnum.MANAGER) {
+					return abort;	// 別のマネージャに移ってしまった
+				}
+				if (Objects.equals(facilityId, item.getData().getFacilityId())) {
+					return item;
+				}
+			}
+			return null;
+		});
+		if (found == null || found == abort) {
+			m_log.warn("selectScope: Not found. manager=" + managerName + ", facilityId=" + facilityId);
+		} else {
+			scopeTreeComposite.getTreeViewer().setSelection(new StructuredSelection(found), true);
+		}
+	}
+
+	/**
+	 * スコープツリーで選択されているマネージャ名を返します。
+	 * 
+	 * @return 選択されているマネージャ名。単一のマネージャが選択されていない場合はnull。
+	 */
+	public String getSingleSelectedManagerName() {
+		String managerName = null;
+		for (Object obj : getScopeTreeComposite().getSelectionList()) {
+			FacilityTreeItemResponse item = (FacilityTreeItemResponse) obj;
+			if (null == item || item.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE) {
+				// ルートを選択中 = 複数マネージャ選択中
+				m_log.debug("getSingleSelectedManagerName: null (root)");
+				return null;
+			}
+			String mn;
+			if (item.getData().getFacilityType() == FacilityTypeEnum.MANAGER) {
+				// マネージャを選択中
+				mn = item.getData().getFacilityId();
+			} else {
+				// マネージャ配下のスコープを選択中
+				FacilityTreeItemResponse manager = ScopePropertyUtil.getManager(item);
+				mn = manager.getData().getFacilityId();
+			}
+			if (managerName != null && !managerName.equals(mn)) {
+				// 複数マネージャ選択中
+				m_log.debug("getSingleSelectedManagerName: null (" + managerName + ", " + mn + ")");
+				return null;
+			}
+			managerName = mn;
+		}
+		m_log.debug("getSingleSelectedManagerName: " + managerName);
+		return managerName;
+	}
+
 }

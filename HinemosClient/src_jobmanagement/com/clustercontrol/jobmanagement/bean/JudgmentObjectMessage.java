@@ -8,6 +8,8 @@
 
 package com.clustercontrol.jobmanagement.bean;
 
+import org.openapitools.client.model.JobObjectInfoResponse;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -38,6 +40,9 @@ public class JudgmentObjectMessage {
 	/** ジョブ終了値 */
 	public static final String STRING_CROSS_SESSION_JOB_END_VALUE = Messages.getString("wait.rule.cross.session") + Messages.getString("job") + "(" + Messages.getString("end.value") + ")";
 
+	/** リターンコード */
+	public static final String STRING_JOB_RETURN_VALUE = Messages.getString("job") + "(" + Messages.getString("return.value") + ")";
+
 	/**
 	 * 種別から文字列に変換します。<BR>
 	 * 
@@ -65,6 +70,9 @@ public class JudgmentObjectMessage {
 		}
 		else if (type == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE) {
 			return STRING_CROSS_SESSION_JOB_END_VALUE;
+		}
+		else if (type == JudgmentObjectConstant.TYPE_JOB_RETURN_VALUE) {
+				return STRING_JOB_RETURN_VALUE;
 		}
 		return "";
 	}
@@ -97,6 +105,78 @@ public class JudgmentObjectMessage {
 		else if (string.equals(STRING_CROSS_SESSION_JOB_END_VALUE)) {
 			return JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE;
 		}
+		else if (string.equals(STRING_JOB_RETURN_VALUE)) {
+			return JudgmentObjectConstant.TYPE_JOB_RETURN_VALUE;
+		}
 		return -1;
 	}
+	
+	/**
+	 * 種別から文字列に変換します。<BR>
+	 * 
+	 * @param type
+	 * @return
+	 */
+	public static String enumToString(JobObjectInfoResponse.TypeEnum typeEnum) {
+		if (typeEnum == JobObjectInfoResponse.TypeEnum.JOB_END_STATUS) {
+			return STRING_JOB_END_STATUS;
+		}
+		else if (typeEnum == JobObjectInfoResponse.TypeEnum.JOB_END_VALUE) {
+			return STRING_JOB_END_VALUE;
+		}
+		else if (typeEnum == JobObjectInfoResponse.TypeEnum.TIME) {
+			return STRING_TIME;
+		}
+		else if (typeEnum == JobObjectInfoResponse.TypeEnum.START_MINUTE) {
+			return STRING_START_MINUTE;
+		}
+		else if (typeEnum == JobObjectInfoResponse.TypeEnum.JOB_PARAMETER) {
+			return STRING_JOB_PARAMETER;
+		}
+		else if (typeEnum == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_STATUS) {
+			return STRING_CROSS_SESSION_JOB_END_STATUS;
+		}
+		else if (typeEnum == JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_VALUE) {
+			return STRING_CROSS_SESSION_JOB_END_VALUE;
+		}
+		else if (typeEnum == JobObjectInfoResponse.TypeEnum.JOB_RETURN_VALUE) {
+			return STRING_JOB_RETURN_VALUE;
+		}
+		return "";
+	}
+
+	/**
+	 * 文字列から種別に変換します。<BR>
+	 * 
+	 * @param type
+	 * @return
+	 */
+	public static JobObjectInfoResponse.TypeEnum stringToEnum(String string) {
+		if (string.equals(STRING_JOB_END_STATUS)) {
+			return JobObjectInfoResponse.TypeEnum.JOB_END_STATUS;
+		}
+		else if (string.equals(STRING_JOB_END_VALUE)) {
+			return JobObjectInfoResponse.TypeEnum.JOB_END_VALUE;
+		}
+		else if (string.equals(STRING_TIME)) {
+			return JobObjectInfoResponse.TypeEnum.TIME;
+		}
+		else if (string.equals(STRING_START_MINUTE)) {
+			return JobObjectInfoResponse.TypeEnum.START_MINUTE;
+		}
+		else if (string.equals(STRING_JOB_PARAMETER)) {
+			return JobObjectInfoResponse.TypeEnum.JOB_PARAMETER;
+		}
+		else if (string.equals(STRING_CROSS_SESSION_JOB_END_STATUS)) {
+			return JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_STATUS;
+		}
+		else if (string.equals(STRING_CROSS_SESSION_JOB_END_VALUE)) {
+			return JobObjectInfoResponse.TypeEnum.CROSS_SESSION_JOB_END_VALUE;
+		}
+		else if (string.equals(STRING_JOB_RETURN_VALUE)) {
+			return JobObjectInfoResponse.TypeEnum.JOB_RETURN_VALUE;
+		}
+		return null;
+	}
+
 }

@@ -91,6 +91,15 @@ public class ReachAddressDNS extends ReachAddressProtocol {
 			InitialDirContext idctx = null;
 
 			String hostname = HinemosPropertyCommon.monitor_port_protocol_dns.getStringValue();
+			String queryClass = HinemosPropertyCommon.monitor_port_protocol_dns_class.getStringValue();
+			String queryType = HinemosPropertyCommon.monitor_port_protocol_dns_type.getStringValue();
+
+			if ("ANY".equals(queryClass)) {
+				queryClass = "*";
+			}
+			if ("ANY".equals(queryType)) {
+				queryType = "*";
+			}
 			m_log.debug("The hostname from which to retrieve attributes is " + hostname);
 
 			for (int i = 0; i < m_sentCount && retry; i++) {
@@ -100,7 +109,9 @@ public class ReachAddressDNS extends ReachAddressProtocol {
 					start = HinemosTime.currentTimeMillis();
 
 					idctx = new InitialDirContext(props);
-					Attributes attrs = idctx.getAttributes(hostname);
+					String[] attrId = {String.format("%s %s", queryClass,queryType)};
+
+					Attributes attrs = idctx.getAttributes(hostname, attrId);
 
 					end = HinemosTime.currentTimeMillis();
 

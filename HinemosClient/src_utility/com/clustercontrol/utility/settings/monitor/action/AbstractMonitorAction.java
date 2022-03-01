@@ -14,25 +14,40 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
-import javax.xml.ws.WebServiceException;
-
-//import org.apache.commons.logging.Log;
 import org.apache.log4j.Logger;
+import org.castor.xml.XMLProperties;
 import org.exolab.castor.xml.Marshaller;
 import org.exolab.castor.xml.Unmarshaller;
+import org.exolab.castor.xml.XMLContext;
+import org.openapitools.client.model.ImportMonitorCommonRecordRequest;
+import org.openapitools.client.model.ImportMonitorCommonRequest;
+import org.openapitools.client.model.ImportMonitorCommonResponse;
+import org.openapitools.client.model.MonitorInfoRequestForUtility;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffUtil;
 import com.clustercontrol.utility.difference.ResultA;
@@ -44,18 +59,16 @@ import com.clustercontrol.utility.settings.ImportMethod;
 import com.clustercontrol.utility.settings.SettingConstants;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
+import com.clustercontrol.utility.util.AccountUtil;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.access.HinemosUnknown_Exception;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * 監視クラスの抽象クラスとなります。
@@ -66,14 +79,15 @@ import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
  *
  */
 public abstract class AbstractMonitorAction<T> {
-
+	
+	protected String targetTitle = Messages.getString("monitor");
 	public AbstractMonitorAction() throws ConvertorException {
 		super();
 	}
 
 	@SuppressWarnings("unchecked")
 	@ImportMethod
-	public int importXml(String filePath) throws ConvertorException {
+	public int importXml(String filePath) throws ConvertorException, InvalidRole, InvalidUserPass, MonitorNotFound, InvalidSetting, HinemosUnknown, ParseException, RestConnectFailed {
 		getLogger().debug("Start Import "  + getDataClass().getSimpleName());
 
 		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
@@ -89,7 +103,9 @@ public abstract class AbstractMonitorAction<T> {
 		try {
 			// ジェネリックの限界。テンプレート パラメータに指定した型に所属する static な関数を直接よべない。
 			// そのため、Class 型を返す関数を用意したり、 Unmarshaller を直接呼ぶ必要が発生する。
-			object = (T)Unmarshaller.unmarshal(getDataClass(), new InputStreamReader(new FileInputStream(filePath), "UTF-8"));
+			// 下位互換向けにXMLの内容確認（順番チェック）を緩くする
+			object = XmlMarshallUtil.unmarshall(getDataClass(),new InputStreamReader(new FileInputStream(filePath), "UTF-8"));
+
 		} catch (Exception e) {
 			returnValue = handleCastorException(e);
 			getLogger().debug("End Import "  + getDataClass().getSimpleName() + " (Error)");
@@ -102,7 +118,7 @@ public abstract class AbstractMonitorAction<T> {
 		}
 
 		// castor の 情報を DTO に変換。
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();;
+		List<MonitorInfoResponse> monitorInfoList = null;
 		try {
 			monitorInfoList = createMonitorInfoList(object);
 		} catch (Exception e) {
@@ -118,58 +134,12 @@ public abstract class AbstractMonitorAction<T> {
 
 		// MonitorInfo をマネージャに登録。
 		List<String> objectIdList = new ArrayList<String>();
-		for (com.clustercontrol.ws.monitor.MonitorInfo monitorInfo : monitorInfoList) {
-			try {
-				if (monitorInfo.getMonitorType() == null){
-					// クライアントチェックエラーの場合
-					getLogger().warn(Messages.getString("SettingTools.ImportFailed") + " : " + monitorInfo.getMonitorId() + " " + monitorInfo.getDescription());
-					returnValue = SettingConstants.ERROR_INPROCESS;
-				}
-				else{
-					if (MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).addMonitor(monitorInfo)) {
-						objectIdList.add(monitorInfo.getMonitorId());
-						getLogger().info(Messages.getString("SettingTools.ImportSucceeded") + " : " + monitorInfo.getMonitorId());
-					} else {
-						getLogger().warn(Messages.getString("SettingTools.ImportFailed") + " : " + monitorInfo.getMonitorId());
-						returnValue = SettingConstants.ERROR_INPROCESS;
-					}
-				}
-			} catch (MonitorDuplicate_Exception e) {
-				//重複時、インポート処理方法を確認する
-				if(!ImportProcessMode.isSameprocess()){
-					String[] args = {monitorInfo.getMonitorId()};
-					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-							null, Messages.getString("message.import.confirm2", args));
-				    ImportProcessMode.setProcesstype(dialog.open());
-				    ImportProcessMode.setSameprocess(dialog.getToggleState());
-				}
+		returnValue = importMonitorList(monitorInfoList ,objectIdList);
 
-			    if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-			    	try {
-			    		if (MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).modifyMonitor(monitorInfo)) {
-			    			objectIdList.add(monitorInfo.getMonitorId());
-							getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + monitorInfo.getMonitorId());
-						} else {
-							getLogger().warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-							returnValue = SettingConstants.ERROR_INPROCESS;
-						}
-					} catch (Exception e1) {
-						getLogger().warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-						returnValue = SettingConstants.ERROR_INPROCESS;
-					}
-			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-			    	getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + monitorInfo.getMonitorId());
-			    } else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-			    	getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-			    	returnValue = SettingConstants.ERROR_INPROCESS;
-			    	break;
-			    }
-			} catch (Exception e) {
-				returnValue = SettingConstants.ERROR_INPROCESS;
-				if (!handleDTOException(e, Messages.getString("SettingTools.ImportFailed"), monitorInfo)) {
-					break;
-				}
-			}
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			getLogger().info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
 		}
 		
 		//オブジェクト権限同時インポート
@@ -202,8 +172,8 @@ public abstract class AbstractMonitorAction<T> {
 		try {
 			// ジェネリックの限界。テンプレート パラメータに指定した型に所属する static な関数を直接よべない。
 			// そのため、Class 型を返す関数を用意したり、 Unmarshaller を直接呼ぶ必要が発生する。
-			object1 = (T)Unmarshaller.unmarshal(getDataClass(), new InputStreamReader(new FileInputStream(filePath1), "UTF-8"));
-			object2 = (T)Unmarshaller.unmarshal(getDataClass(), new InputStreamReader(new FileInputStream(filePath2), "UTF-8"));
+			object1 = XmlMarshallUtil.unmarshall(getDataClass(),new InputStreamReader(new FileInputStream(filePath1), "UTF-8"));
+			object2 = XmlMarshallUtil.unmarshall(getDataClass(),new InputStreamReader(new FileInputStream(filePath2), "UTF-8"));
 			sort(object1);
 			sort(object2);
 		} catch (Exception e) {
@@ -292,29 +262,31 @@ public abstract class AbstractMonitorAction<T> {
 	 *
 	 * @param Castor で生成されたクラスのインスタンス
 	 * @return
-	 * @throws MonitorNotFound_Exception
-	 * @throws com.clustercontrol.ws.monitor.InvalidUserPass_Exception
-	 * @throws com.clustercontrol.ws.monitor.InvalidRole_Exception
-	 * @throws com.clustercontrol.ws.monitor.HinemosUnknown_Exception
+	 * @throws ParseException 
+	 * @throws InvalidSetting 
+	 * @throws MonitorNotFound
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
 	 */
-	protected abstract List<MonitorInfo> createMonitorInfoList(T object) throws ConvertorException, com.clustercontrol.ws.monitor.HinemosUnknown_Exception, com.clustercontrol.ws.monitor.InvalidRole_Exception, com.clustercontrol.ws.monitor.InvalidUserPass_Exception, MonitorNotFound_Exception;
+	protected abstract List<MonitorInfoResponse> createMonitorInfoList(T object) throws ConvertorException, HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, InvalidSetting, ParseException, RestConnectFailed  ;
 
 	@ExportMethod
 	public int exportDTO(String filePath) throws ConvertorException {
 		getLogger().debug("Start Export " + getDataClass().getSimpleName());
 
 		// エージェント監視情報を取得。
-		List<com.clustercontrol.ws.monitor.MonitorInfo> monitorInfoList_dto = null;
+		List<MonitorInfoResponse> monitorInfoList_dto = null;
 		try {
 			monitorInfoList_dto = getFilterdMonitorList();
 			Collections.sort(
 				monitorInfoList_dto,
-				new Comparator<com.clustercontrol.ws.monitor.MonitorInfo>() {
+				new Comparator<MonitorInfoResponse>() {
 					/**
 					 * 監視項目IDを比較する。
 					 */
 					@Override
-					public int compare(MonitorInfo monitorInfo1, MonitorInfo monitorInfo2) {
+					public int compare(MonitorInfoResponse monitorInfo1, MonitorInfoResponse monitorInfo2) {
 						return monitorInfo1.getMonitorId().compareTo(monitorInfo2.getMonitorId());
 					}
 				});
@@ -338,7 +310,7 @@ public abstract class AbstractMonitorAction<T> {
 
 			}
 
-			for (com.clustercontrol.ws.monitor.MonitorInfo monitorInfo: monitorInfoList_dto){
+			for (MonitorInfoResponse monitorInfo: monitorInfoList_dto){
 				getLogger().info(Messages.getString("SettingTools.ExportSucceeded") + " : " + monitorInfo.getMonitorId());
 			}
 
@@ -369,31 +341,136 @@ public abstract class AbstractMonitorAction<T> {
 	 * 特定の種別でフィルターされた MonitorInfo のリストを返す。
 	 *
 	 * @return
-	 * @throws MonitorNotFound_Exception
-	 * @throws com.clustercontrol.ws.monitor.InvalidUserPass_Exception
-	 * @throws com.clustercontrol.ws.monitor.InvalidRole_Exception
-	 * @throws com.clustercontrol.ws.monitor.HinemosUnknown_Exception
+	 * @throws MonitorNotFound
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
 	 */
-	protected abstract List<com.clustercontrol.ws.monitor.MonitorInfo> getFilterdMonitorList() throws com.clustercontrol.ws.monitor.HinemosUnknown_Exception, com.clustercontrol.ws.monitor.InvalidRole_Exception, com.clustercontrol.ws.monitor.InvalidUserPass_Exception, MonitorNotFound_Exception;
+	protected abstract List<MonitorInfoResponse> getFilterdMonitorList() throws HinemosUnknown,InvalidRole, InvalidUserPass, MonitorNotFound, InvalidSetting, RestConnectFailed;
 
 	/**
 	 * 指定した MonitorInfo から、Castor のデータを作成する。
 	 *
 	 * @param
 	 * @return
-	 * @throws MonitorNotFound_Exception
-	 * @throws com.clustercontrol.ws.monitor.InvalidUserPass_Exception
-	 * @throws com.clustercontrol.ws.monitor.InvalidRole_Exception
-	 * @throws com.clustercontrol.ws.monitor.HinemosUnknown_Exception
+	 * @throws ParseException 
+	 * @throws RestConnectFailed 
+	 * @throws MonitorNotFound
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
 	 */
-	protected abstract T createCastorData(List<com.clustercontrol.ws.monitor.MonitorInfo> monitorInfoList) throws com.clustercontrol.ws.monitor.HinemosUnknown_Exception, com.clustercontrol.ws.monitor.InvalidRole_Exception, com.clustercontrol.ws.monitor.InvalidUserPass_Exception, MonitorNotFound_Exception;
+	protected abstract T createCastorData(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException;
+
+	/**
+	 *  MonitorInfo をインポートする。
+	 * 
+	 * 個別に対応が必要な場合はオーバーライドする事
+
+	 * @return
+	 * @throws MonitorNotFound
+	 * @throws InvalidUserPass
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	protected int importMonitorList(List<MonitorInfoResponse> monitorInfoList , List<String> objectIdList) throws HinemosUnknown,InvalidRole, InvalidUserPass, MonitorNotFound,RestConnectFailed{
+		int returnValue =0;
+		ImportRecordConfirmer<MonitorInfoResponse, ImportMonitorCommonRecordRequest, String> confirmer = new ImportRecordConfirmer<MonitorInfoResponse, ImportMonitorCommonRecordRequest, String>(
+				getLogger(), monitorInfoList.toArray(new MonitorInfoResponse[0])) {
+			@Override
+			protected ImportMonitorCommonRecordRequest convertDtoXmlToRestReq(MonitorInfoResponse xmlDto)
+					throws HinemosUnknown, InvalidSetting {
+				ImportMonitorCommonRecordRequest dtoRec = new ImportMonitorCommonRecordRequest();
+				dtoRec.setImportData(new MonitorInfoRequestForUtility());
+				RestClientBeanUtil.convertBean(xmlDto, dtoRec.getImportData());
+				dtoRec.setImportKeyValue(dtoRec.getImportData().getMonitorId());
+				dtoRec.setMonitorModule(dtoRec.getImportData().getMonitorTypeId());
+				return dtoRec;
+			}
+			@Override
+			protected Set<String> getExistIdSet() throws Exception {
+				Set<String> retSet = new HashSet<String>();
+				for(MonitorInfoResponse rec :getFilterdMonitorList()){
+					retSet.add(rec.getMonitorId());
+				}
+				return retSet;
+			}
+			@Override
+			protected boolean isLackRestReq(ImportMonitorCommonRecordRequest restDto) {
+				return false;
+			}
+			@Override
+			protected String getKeyValueXmlDto(MonitorInfoResponse xmlDto) {
+				return xmlDto.getMonitorId();
+			}
+			@Override
+			protected String getId(MonitorInfoResponse xmlDto) {
+				return xmlDto.getMonitorId();
+			}
+			@Override
+			protected void setNewRecordFlg(ImportMonitorCommonRecordRequest restDto, boolean flag) {
+				restDto.setIsNewRecord(flag);
+			}
+		};
+		int confirmRet = confirmer.executeConfirm();
+		if( confirmRet != SettingConstants.SUCCESS && confirmRet != SettingConstants.ERROR_CANCEL ){
+			//変換エラーならUnmarshalXml扱いで処理打ち切り(キャンセルはキャンセル以前の選択結果を反映するので次に進む)
+			getLogger().warn(Messages.getString("SettingTools.UnmarshalXmlFailed"));
+			return confirmRet;
+		}
+
+		ImportClientController<ImportMonitorCommonRecordRequest, ImportMonitorCommonResponse, RecordRegistrationResponse> importController = new ImportClientController<ImportMonitorCommonRecordRequest, ImportMonitorCommonResponse, RecordRegistrationResponse>(
+				getLogger(), targetTitle, confirmer.getImportRecDtoList(),true) {
+			@Override
+			protected List<RecordRegistrationResponse> getResRecList(ImportMonitorCommonResponse importResponse) {
+				return importResponse.getResultList();
+			};
+			@Override
+			protected Boolean getOccurException(ImportMonitorCommonResponse importResponse) {
+				return importResponse.getIsOccurException();
+			};
+			@Override
+			protected String getReqKeyValue(ImportMonitorCommonRecordRequest importRec) {
+				return importRec.getImportData().getMonitorId();
+			};
+			@Override
+			protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+				return responseRec.getImportKeyValue();
+			};
+			@Override
+			protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+				return (responseRec.getResult() == ResultEnum.NORMAL) ;
+			};
+			@Override
+			protected ImportMonitorCommonResponse callImportWrapper(List<ImportMonitorCommonRecordRequest> importRecList)
+					throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+				ImportMonitorCommonRequest reqDto = new ImportMonitorCommonRequest();
+				reqDto.setRecordList(importRecList);
+				reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+				return UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importMonitorCommon(reqDto);
+			}
+			@Override
+			protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+				if (responseRec.getExceptionInfo() != null) {
+					return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+				}
+				return null;
+			};
+		};
+		returnValue = importController.importExecute();
+		for( RecordRegistrationResponse rec: importController.getImportSuccessList() ){
+			objectIdList.add(rec.getImportKeyValue());
+		}
+		
+		return returnValue;
+	}
 
 	@ClearMethod
 	public int clear() throws ConvertorException {
 		getLogger().debug("Start Clear " + getDataClass().getSimpleName());
 
 		// 対象種別の監視ID一覧の取得
-		List<com.clustercontrol.ws.monitor.MonitorInfo> monitorList = null;
+		List<MonitorInfoResponse> monitorList = null;
 		try {
 			monitorList = getFilterdMonitorList();
 		} catch (Exception e) {
@@ -407,7 +484,7 @@ public abstract class AbstractMonitorAction<T> {
 
 		Map<String, List<String>> monitorMap = new HashMap<>();
 		
-		for (MonitorInfo monitorInfo : monitorList) {
+		for (MonitorInfoResponse monitorInfo : monitorList) {
 			if(!monitorMap.containsKey(monitorInfo.getMonitorTypeId())){
 				monitorMap.put(monitorInfo.getMonitorTypeId(), new ArrayList<String>());
 			}
@@ -415,16 +492,27 @@ public abstract class AbstractMonitorAction<T> {
 		}
 
 		for(Entry<String, List<String>> ent : monitorMap.entrySet()){
-			try {
-				MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteMonitor(ent.getValue());
-				getLogger().info(Messages.getString("SettingTools.ClearSucceeded") + " : " + ent.getValue().toString());
-			} catch (WebServiceException e) {
-				getLogger().error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				returnValue = SettingConstants.ERROR_INPROCESS;
-				break;
-			} catch (Exception e) {
-				getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				returnValue = SettingConstants.ERROR_INPROCESS;
+			if (AccountUtil.isAdministrator(UtilityManagerUtil.getCurrentManagerName())) {
+				// ADMINISTRATORS権限がある場合
+				try {
+					
+					MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteMonitor(String.join(",", ent.getValue()));
+					getLogger().info(Messages.getString("SettingTools.ClearSucceeded") + " : " + ent.getValue().toString());
+				} catch (Exception e) {
+					getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+					returnValue = SettingConstants.ERROR_INPROCESS;
+				}
+			} else {
+				// ADMINISTRATORS権限がない場合
+				for (String id : ent.getValue()) {
+					try {
+						MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteMonitor(id);
+						getLogger().info(Messages.getString("SettingTools.ClearSucceeded") + " : " + id);
+					} catch (Exception e) {
+						getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+						returnValue = SettingConstants.ERROR_INPROCESS;
+					}
+				}
 			}
 		}
 
@@ -438,43 +526,6 @@ public abstract class AbstractMonitorAction<T> {
 		getLogger().debug("End Clear " + getDataClass().getSimpleName());
 
 		return returnValue;
-	}
-
-	/**
-	 * マネージャにアクセスした際に発生する例外を処理する。
-	 *
-	 * @param
-	 */
-	protected boolean handleDTOException(Exception e, String message, MonitorInfo monitorInfo) {
-		boolean isContinue = true;
-
-		if (
-			e instanceof InvalidUserPass_Exception ||
-			e instanceof InvalidRole_Exception ||
-			e instanceof HinemosUnknown_Exception
-			) {
-			//　パスワードが不正なので処理を中断。
-			
-			getLogger().error(message + " : " + HinemosMessage.replace(e.getMessage()));
-			getLogger().debug(HinemosMessage.replace(e.getMessage()), e);
-			isContinue = false;
-		}
-		else if (e instanceof MonitorDuplicate_Exception) {
-			//　登録済みなので処理を継続
-			getLogger().info(Messages.getString("SettingTools.Duplicated") + " : " + HinemosMessage.replace(e.getMessage()));
-		}
-		else if (e instanceof com.clustercontrol.ws.monitor.InvalidSetting_Exception) {
-			//　マネージャーへ渡した情報が不正だっただけなので処理を継続
-			getLogger().error(Messages.getString("SettingTools.InvalidSetting") + " : " + HinemosMessage.replace(e.getMessage()));
-			getLogger().debug(HinemosMessage.replace(e.getMessage()), e);
-		}
-		else {
-			// 未知のエラーなので処理を中断。
-			getLogger().error(message + " : " + HinemosMessage.replace(e.getMessage()));
-			getLogger().debug(HinemosMessage.replace(e.getMessage()), e);
-		}
-
-		return isContinue;
 	}
 
 	/**
@@ -500,9 +551,9 @@ public abstract class AbstractMonitorAction<T> {
 	private Logger logger = Logger.getLogger(this.getClass());
 	public Logger getLogger(){return logger;}
 
-	protected void checkDelete(List<MonitorInfo> xmlElements){
+	protected void checkDelete(List<MonitorInfoResponse> xmlElements){
 
-		List<MonitorInfo> subList = null;
+		List<MonitorInfoResponse> subList = null;
 		try {
 			subList = getFilterdMonitorList();
 		}
@@ -515,8 +566,8 @@ public abstract class AbstractMonitorAction<T> {
 			return;
 		}
 
-		for(MonitorInfo mgrInfo: new ArrayList<>(subList)){
-			for(MonitorInfo xmlElement: new ArrayList<>(xmlElements)){
+		for(MonitorInfoResponse mgrInfo: new ArrayList<>(subList)){
+			for(MonitorInfoResponse xmlElement: new ArrayList<>(xmlElements)){
 				if(mgrInfo.getMonitorId().equals(xmlElement.getMonitorId())){
 					subList.remove(mgrInfo);
 					xmlElements.remove(xmlElement);
@@ -526,7 +577,7 @@ public abstract class AbstractMonitorAction<T> {
 		}
 
 		if(subList.size() > 0){
-			for(MonitorInfo info: subList){
+			for(MonitorInfoResponse info: subList){
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {info.getMonitorId()};
@@ -536,21 +587,19 @@ public abstract class AbstractMonitorAction<T> {
 					DeleteProcessMode.setSameprocess(dialog.getToggleState());
 				}
 
-			    if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
-			    	try {
-			    		List<String> args = new ArrayList<>();
-			    		args.add(info.getMonitorId());
-			    		MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteMonitor(args);
-			    		getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getMonitorId());
+				if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE){
+					try {
+						MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteMonitor(info.getMonitorId());
+						getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getMonitorId());
 					} catch (Exception e1) {
 						getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 					}
-			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-			    	getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getMonitorId());
-			    } else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-			    	getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
-			    	return;
-			    }
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
+					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getMonitorId());
+				} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
+					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
+					return;
+				}
 			}
 		}
 	}

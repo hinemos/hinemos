@@ -7,21 +7,32 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
-import com.clustercontrol.ws.xcloud.PlatformServiceCondition;
-import com.clustercontrol.ws.xcloud.PlatformUser;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.CloudScopeInfoResponse;
+import org.openapitools.client.model.CloudScopeInfoResponseP1;
+import org.openapitools.client.model.ExtendedPropertyResponse;
+import org.openapitools.client.model.LocationInfoResponse;
+import org.openapitools.client.model.PlatformServiceConditionResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.util.TimezoneUtil;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.model.repository.ICloudScopeScope;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 
 public class CloudScope extends Element implements ICloudScope {
+	private static Log m_log = LogFactory.getLog(CloudScope.class);
 	private LoginUsers loginUsers;
 
 	private List<Location> locations = new ArrayList<>();
@@ -49,7 +60,7 @@ public class CloudScope extends Element implements ICloudScope {
 	
 	private List<ExtendedProperty> extendedProperties = new ArrayList<>();
 	
-	public static CloudScope convert(CloudScopes cloudScopes, com.clustercontrol.ws.xcloud.CloudScope source) {
+	public static CloudScope convert(CloudScopes cloudScopes, CloudScopeInfoResponse source) {
 		CloudScope cloudScope = new CloudScope(cloudScopes);
 		cloudScope.update(source);
 		return cloudScope;
@@ -138,52 +149,64 @@ public class CloudScope extends Element implements ICloudScope {
 		return locations.toArray(new Location[locations.size()]);
 	}
 
-	public void update(com.clustercontrol.ws.xcloud.CloudScope source) {
-		setAccountId(source.getAccountId());
-		setId(source.getId());
-		setName(source.getName());
-		setDescription(source.getDescription());
-		setPlatformId(source.getPlatformId());
-		setRegDate(source.getRegDate());
-		setRegUser(source.getRegUser());
-		setUpdateDate(source.getUpdateDate());
-		setUpdateUser(source.getUpdateUser());
-		setPublic(source.isPublic());
-		setUpdateUser(source.getUpdateUser());
-		setPublic(source.isPublic());
-		setNodeId(source.getNodeId());
-		setOwnerRoleId(source.getOwnerRoleId());
-		setRetentionPeriod(source.getRetentionPeriod());
-		setbillingDetailCollectorFlg(source.isBillingDetailCollectorFlg());
+	public void update(CloudScopeInfoResponse source) {
+		setAccountId(source.getEntity().getAccountId());
+		setId(source.getEntity().getCloudScopeId());
+		setName(source.getEntity().getName());
+		setDescription(source.getEntity().getDescription());
+		setPlatformId(source.getEntity().getPlatformId());
+		try {
+			setRegDate(TimezoneUtil.getSimpleDateFormat().parse(source.getEntity().getRegDate()).getTime());
+		} catch (ParseException e) {
+			// ここには入らない想定
+			m_log.warn("invalid regTime.", e);
+		}
+		setRegUser(source.getEntity().getRegUser());
+		try {
+			setUpdateDate(TimezoneUtil.getSimpleDateFormat().parse(source.getEntity().getUpdateDate()).getTime());
+		} catch (ParseException e) {
+			// ここには入らない想定
+			m_log.warn("invalid updateTime.", e);
+		}
+		setUpdateUser(source.getEntity().getUpdateUser());
+		setUpdateUser(source.getEntity().getUpdateUser());
+		setNodeId(source.getEntity().getNodeId());
+		setOwnerRoleId(source.getEntity().getOwnerRoleId());
+		setRetentionPeriod(source.getEntity().getRetentionPeriod());
+		setbillingDetailCollectorFlg(source.getEntity().getBillingDetailCollectorFlg());
 		
-		updateLocations(source.getLocations());
+		updateLocations(source.getEntity().getLocations());
 		
-		updateExtendedProperties(source.getExtendedProperties());
+		updateExtendedProperties(source.getEntity().getExtendedProperties());
 	}
 	
-	public void updateLocations(List<com.clustercontrol.ws.xcloud.Location> webLocations){
-		CollectionComparator.compareCollection(locations, webLocations, new CollectionComparator.Comparator<Location, com.clustercontrol.ws.xcloud.Location>() {
-			public boolean match(Location o1, com.clustercontrol.ws.xcloud.Location o2) {return o1.equalValues(o2);}
-			public void matched(Location o1, com.clustercontrol.ws.xcloud.Location o2) {
+	public void updateLocations(List<LocationInfoResponse> webLocations) {
+		CollectionComparator.compareCollection(locations, webLocations, new CollectionComparator.Comparator<Location, LocationInfoResponse>() {
+			public boolean match(Location o1, LocationInfoResponse o2) {
+				return o1.equalValues(o2);
+			}
+
+			public void matched(Location o1, LocationInfoResponse o2) {
 				o1.update(o2);
 			}
 			public void afterO1(Location o1) {
 				internalRemoveProperty(p.locations, o1, locations);
 			}
-			public void afterO2(com.clustercontrol.ws.xcloud.Location o2) {
+
+			public void afterO2(LocationInfoResponse o2) {
 				Location newLocation = Location.convert(CloudScope.this, o2);
 				internalAddProperty(p.locations, newLocation, locations);
 			}
 		});
 	}
 	
-	public boolean equalValues(com.clustercontrol.ws.xcloud.CloudScope source) {
+	public boolean equalValues(CloudScopeInfoResponse source) {
 		assert source != null;
-		return this.getId().equals(source.getId());
+		return this.getId().equals(source.getEntity().getCloudScopeId());
 	}
 
-	public CloudEndpoint getEndpoint(){
-		return getEndpoint(CloudEndpoint.class);
+	public CloudRestClientWrapper getWrapper(){
+		return getCloudScopes().getHinemosManager().getWrapper();
 	}
 
 	@Override
@@ -206,14 +229,10 @@ public class CloudScope extends Element implements ICloudScope {
 		throw new CloudModelException(String.format("Not found platform of %s", platformId));
 	}
 	
-	private <T> T getEndpoint(Class<T> endpointClass){
-		return getCloudScopes().getHinemosManager().getEndpoint(endpointClass);
-	}
-	
-	public List<PlatformUser> getUnassignedUsers(){
+	public List<CloudScopeInfoResponseP1> getUnassignedUsers(){
 		try {
-			return getEndpoint(CloudEndpoint.class).getAvailablePlatformUsers(id);
-		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			return getWrapper().getAvailablePlatformUsers(id);
+		} catch (CloudManagerException | InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown e) {
 			throw new CloudModelException(e);
  		}
 	}
@@ -243,13 +262,13 @@ public class CloudScope extends Element implements ICloudScope {
 		if (serviceConditions == null) {
 			try {
 				serviceConditions = new ArrayList<>();
-				CloudEndpoint endpoint = getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
+				CloudRestClientWrapper wrapper = getCloudScopes().getHinemosManager().getWrapper();
 				
-				List<PlatformServiceCondition> conditions = endpoint.getPlatformServiceConditions(getId());
-				for (PlatformServiceCondition condition: conditions) {
+				List<PlatformServiceConditionResponse> conditions = wrapper.getPlatformServiceConditions(getId(), null, null);
+				for (PlatformServiceConditionResponse condition: conditions) {
 					internalAddProperty(p.serviceConditions, ServiceCondition.convert(condition), serviceConditions);
 				}
-			} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			} catch (CloudManagerException | InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown e) {
 				throw new CloudModelException(e);
 			}
 		}
@@ -263,16 +282,16 @@ public class CloudScope extends Element implements ICloudScope {
 			return;
 		} else {
 			try {
-				CloudEndpoint endpoint = getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-				List<PlatformServiceCondition> conditions = endpoint.getPlatformServiceConditions(getId());
+				CloudRestClientWrapper wrapper = getCloudScopes().getHinemosManager().getWrapper();
+				List<PlatformServiceConditionResponse> conditions = wrapper.getPlatformServiceConditions(getId(), null, null);
 				
-				CollectionComparator.compareCollection(serviceConditions, conditions, new CollectionComparator.Comparator<ServiceCondition, PlatformServiceCondition>() {
+				CollectionComparator.compareCollection(serviceConditions, conditions, new CollectionComparator.Comparator<ServiceCondition, PlatformServiceConditionResponse>() {
 					@Override
-					public boolean match(ServiceCondition o1, PlatformServiceCondition o2) {
+					public boolean match(ServiceCondition o1, PlatformServiceConditionResponse o2) {
 						return o1.getId().equals(o2.getId());
 					}
 					@Override
-					public void matched(ServiceCondition o1, PlatformServiceCondition o2) {
+					public void matched(ServiceCondition o1, PlatformServiceConditionResponse o2) {
 						o1.update(o2);
 					}
 					@Override
@@ -280,11 +299,17 @@ public class CloudScope extends Element implements ICloudScope {
 						internalRemoveProperty(p.serviceConditions, o1, serviceConditions);
 					}
 					@Override
-					public void afterO2(PlatformServiceCondition o2) {
+					public void afterO2(PlatformServiceConditionResponse o2) {
 						internalAddProperty(p.serviceConditions, ServiceCondition.convert(o2), serviceConditions);
 					}
 				});
-			} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			} catch (CloudManagerException | InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown e) {
+				// 更新に失敗した場合は、過去の情報がクラウド[サービス状態]に表示されるのを防ぐため、
+				// 過去の情報を削除しておく
+				List<ServiceCondition> tmpCloneListForDelete = new ArrayList<>(serviceConditions);
+				for (ServiceCondition deleteCond : tmpCloneListForDelete) {
+					internalRemoveProperty(p.serviceConditions, deleteCond, serviceConditions);
+				}
 				throw new CloudModelException(e);
 			}
 		}
@@ -313,14 +338,14 @@ public class CloudScope extends Element implements ICloudScope {
 		return null;
 	}
 	
-	protected void updateExtendedProperties(List<com.clustercontrol.ws.xcloud.ExtendedProperty> extendedProperties) {
-		CollectionComparator.compareCollection(this.extendedProperties, extendedProperties, new CollectionComparator.Comparator<ExtendedProperty, com.clustercontrol.ws.xcloud.ExtendedProperty>(){
+	protected void updateExtendedProperties(List<ExtendedPropertyResponse> extendedProperties) {
+		CollectionComparator.compareCollection(this.extendedProperties, extendedProperties, new CollectionComparator.Comparator<ExtendedProperty, ExtendedPropertyResponse>() {
 			@Override
-			public boolean match(ExtendedProperty o1, com.clustercontrol.ws.xcloud.ExtendedProperty o2) {
+			public boolean match(ExtendedProperty o1, ExtendedPropertyResponse o2) {
 				return o1.getName().equals(o2.getName());
 			}
 			@Override
-			public void matched(ExtendedProperty o1, com.clustercontrol.ws.xcloud.ExtendedProperty o2) {
+			public void matched(ExtendedProperty o1, ExtendedPropertyResponse o2) {
 				o1.setValue(o2.getValue());
 			}
 			@Override
@@ -328,7 +353,7 @@ public class CloudScope extends Element implements ICloudScope {
 				internalRemoveProperty(p.extendedProperties, o1, CloudScope.this.extendedProperties);
 			}
 			@Override
-			public void afterO2(com.clustercontrol.ws.xcloud.ExtendedProperty o2) {
+			public void afterO2(ExtendedPropertyResponse o2) {
 				internalAddProperty(p.extendedProperties, ExtendedProperty.convert(o2), CloudScope.this.extendedProperties);
 			}
 		});

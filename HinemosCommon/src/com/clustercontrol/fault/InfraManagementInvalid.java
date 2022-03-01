@@ -11,7 +11,7 @@ package com.clustercontrol.fault;
 /**
  * 環境構築機能で参照環境構築モジュールのネスト参照が深い場合にthrowされる
  */
-public class InfraManagementInvalid extends HinemosException {
+public class InfraManagementInvalid extends HinemosInvalid {
 
 	private static final long serialVersionUID = 1L;
 

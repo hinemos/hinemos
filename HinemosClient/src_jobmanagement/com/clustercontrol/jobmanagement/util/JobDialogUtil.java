@@ -14,6 +14,10 @@ import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Text;
+
+import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.jobmanagement.rpa.util.ReturnCodeConditionChecker;
 
 /**
  * ジョブ作成ダイアログ作成用ユーティリティクラス
@@ -92,5 +96,36 @@ public class JobDialogUtil {
 		((GridData)label.getLayoutData()).horizontalSpan = horizontalSpan;
 		return label;
 	}
-
+	
+	public static ValidateResult getValidateResult(String id, String message) {
+		ValidateResult result = new ValidateResult();
+		result.setValid(false);
+		result.setID(id);
+		result.setMessage(message);
+		return result;
+	}
+	
+	public static boolean validateText(Text text) {
+		return text.getText() != null && !text.getText().isEmpty();
+	}
+	
+	public static boolean validateNumberText(Text text) {
+		if (validateText(text)) {
+			try {
+				Integer.valueOf(text.getText()); 
+				return true;
+			} catch(NumberFormatException e) {
+				return false;
+			}
+		}
+		return false;
+	}
+	
+	public static boolean validateReturnCodeText(Text text) {
+		if (validateText(text)) {
+			// 単一指定、範囲指定にマッチする正規表現
+			return text.getText().matches(ReturnCodeConditionChecker.CONDITION_REGEX);
+		}
+		return false;
+	}
 }

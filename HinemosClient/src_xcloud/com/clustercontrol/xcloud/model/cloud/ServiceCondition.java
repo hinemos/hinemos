@@ -7,7 +7,8 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
-import com.clustercontrol.ws.xcloud.PlatformServiceCondition;
+import org.openapitools.client.model.PlatformServiceConditionResponse;
+
 import com.clustercontrol.xcloud.model.base.Element;
 
 public class ServiceCondition extends Element implements IServiceCondition {
@@ -51,14 +52,14 @@ public class ServiceCondition extends Element implements IServiceCondition {
 		internalSetProperty(p.detail, detail, ()->this.detail, (s)->this.detail=s);
 	}
 	
-	public void update(PlatformServiceCondition condition) {
+	public void update(PlatformServiceConditionResponse condition) {
 		setId(condition.getId());
 		setName(condition.getServiceName());
 		setStatus(condition.getStatus().name());
 		setDetail(condition.getDetail());
 	}
 	
-	public static ServiceCondition convert(PlatformServiceCondition source) {
+	public static ServiceCondition convert(PlatformServiceConditionResponse source) {
 		ServiceCondition endpoint = new ServiceCondition();
 		endpoint.update(source);
 		return endpoint;

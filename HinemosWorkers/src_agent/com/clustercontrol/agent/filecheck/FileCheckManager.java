@@ -10,14 +10,24 @@ package com.clustercontrol.agent.filecheck;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtJobFileCheckResponse;
+import org.openapitools.client.model.AgtOutputBasicInfoRequest;
+import org.openapitools.client.model.AgtRunInstructionInfoRequest;
 
+import com.clustercontrol.agent.SendQueue;
+import com.clustercontrol.agent.SendQueue.MessageSendableObject;
 import com.clustercontrol.agent.util.AgentProperties;
-import com.clustercontrol.ws.jobmanagement.JobFileCheck;
+import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 
 /**
  * ファイルチェックを管理するクラスです。<BR>
@@ -35,15 +45,21 @@ public class FileCheckManager {
 
 	/** ファイルチェック間隔 */
 	private static int m_runInterval = 10000; // 10sec
-
+	
+	// Queue送信
+	private static SendQueue sendQueue;
+	
+	public static void setSendQueue(SendQueue sendQueue){
+		FileCheckManager.sendQueue = sendQueue;
+	}
+	
 	/**
 	 * 設定情報を反映します。
 	 * 
 	 * @param jobFileCheckList ファイルチェック情報一覧。
 	 */
-	public static void setFileCheck(ArrayList<JobFileCheck> jobFileCheckList) {
-		HashMap <String, ArrayList<JobFileCheck>> newJobFileCheckMap =
-				new HashMap<String, ArrayList<JobFileCheck>>();
+	public static void setFileCheck(List<AgtJobFileCheckResponse> jobFileCheckList) {
+		Map<String, List<AgtJobFileCheckResponse>> newJobFileCheckMap = new HashMap<>();
 
 		try {
 			String runIntervalStr = AgentProperties.getProperty("job.filecheck.interval",
@@ -60,8 +76,8 @@ public class FileCheckManager {
 		/*
 		 * 1. FileCheckを生成する。
 		 */
-		for (JobFileCheck jobFileCheck : jobFileCheckList) {
-			if (!jobFileCheck.isValid().booleanValue()) {
+		for (AgtJobFileCheckResponse jobFileCheck : jobFileCheckList) {
+			if (!jobFileCheck.getValid().booleanValue()) {
 				continue;
 			}
 			m_log.info("jobFileCheck " + jobFileCheck.getId() + ", " + jobFileCheck.getDirectory());
@@ -74,9 +90,9 @@ public class FileCheckManager {
 				m_fileCheckCache.put(directory, fileCheck);
 			}
 
-			ArrayList<JobFileCheck> list = newJobFileCheckMap.get(directory);
+			List<AgtJobFileCheckResponse> list = newJobFileCheckMap.get(directory);
 			if (list == null){
-				list = new ArrayList<JobFileCheck> ();
+				list = new ArrayList<>();
 				newJobFileCheckMap.put(directory, list);
 			}
 			list.add(jobFileCheck);
@@ -85,10 +101,10 @@ public class FileCheckManager {
 		/*
 		 * 2. FileCheck.monitorInfoListを登録する。
 		 */
-		ArrayList<String> noDirectoryList = new ArrayList<String>();
+		List<String> noDirectoryList = new ArrayList<>();
 		for (Entry<String, FileCheck> directory : m_fileCheckCache.entrySet()) {
 			FileCheck fileCheck = directory.getValue();
-			ArrayList<JobFileCheck> list = newJobFileCheckMap.get(directory.getKey());
+			List<AgtJobFileCheckResponse> list = newJobFileCheckMap.get(directory.getKey());
 			fileCheck.setJobFileCheckList(list);
 			Integer size = fileCheck.sizeJobFileCheckList();
 			if (size == null || size == 0) {
@@ -126,7 +142,15 @@ public class FileCheckManager {
 					for (String directory : delList) {
 						m_fileCheckCache.remove(directory);
 					}
-				} catch (Exception e) {
+				} catch (UnsatisfiedLinkError | NoClassDefFoundError e){
+					m_log.error("FileCheckThread : Thread is terminated. " + e.getClass().getCanonicalName() + ", " +
+							e.getMessage(), e);
+					FileCheckManager.sendMessage(PriorityConstant.TYPE_CRITICAL,
+							MessageConstant.MESSAGE_JOBFILECHECK_FAILED_TO_CHECK.getMessage(),
+							"Failed to exec FileCheckThread.run(). FileCheckThread is terminated. " + e.getClass().getCanonicalName() + ", " + e.getMessage(), HinemosModuleConstant.SYSYTEM, null);
+					break;
+				}
+				catch (Exception e) {
 					m_log.warn("FileCheckThread : " + e.getClass().getCanonicalName() + ", " +
 							e.getMessage(), e);
 				} catch (Throwable e) {
@@ -141,5 +165,28 @@ public class FileCheckManager {
 				}
 			}
 		}
+	}
+	
+	/**
+	 * 通知をマネージャに送信する。
+	 * @param priority
+	 * @param message
+	 * @param messageOrg
+	 * @param monitorId
+	 */
+	public static void sendMessage(int priority, String message, String messageOrg, String monitorId, AgtRunInstructionInfoRequest runInstructionInfo) {
+		MessageSendableObject sendme = new MessageSendableObject();
+		sendme.body = new AgtOutputBasicInfoRequest();
+		sendme.body.setPluginId(HinemosModuleConstant.JOB_KICK);
+		sendme.body.setPriority(priority);
+		sendme.body.setApplication(MessageConstant.AGENT.getMessage());
+		sendme.body.setMessage(message);
+		sendme.body.setMessageOrg(messageOrg);
+		sendme.body.setGenerationDate(HinemosTime.getDateInstance().getTime());
+		sendme.body.setMonitorId(monitorId);
+		sendme.body.setFacilityId(""); // マネージャがセットする。
+		sendme.body.setScopeText(""); // マネージャがセットする。
+		sendme.body.setRunInstructionInfo(runInstructionInfo);
+		sendQueue.put(sendme);
 	}
 }

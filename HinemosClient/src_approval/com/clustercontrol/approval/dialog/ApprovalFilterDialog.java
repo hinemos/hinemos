@@ -27,9 +27,12 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 
 import com.clustercontrol.approval.action.GetApprovalFilterProperty;
+import com.clustercontrol.approval.bean.ApprovalFilterPropertyConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.util.FilterPropertyCache;
+import com.clustercontrol.util.FilterPropertyUpdater;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
 import com.clustercontrol.viewer.PropertySheet;
@@ -50,9 +53,8 @@ public class ApprovalFilterDialog extends CommonDialog {
 	private static final int sizeX = 500;
 	private static final int sizeY = 500;
 
-	/** Cache map of filter properties for each UI session */
-	private static Map<UISession, Property> filterPropertyCache = new ConcurrentHashMap<>();
-
+	/** プロパティのキャッシュ用クラス */
+	private static FilterPropertyCache filterPropertyCache = null;
 	/**
 	 * コンストラクタ
 	 *
@@ -236,7 +238,9 @@ public class ApprovalFilterDialog extends CommonDialog {
 	 */
 	private Property initFilterProperty() {
 		Property property = new GetApprovalFilterProperty().getProperty();
-		filterPropertyCache.put(RWT.getUISession(), property);
+		FilterPropertyUpdater.getInstance().addFilterProperty(getClass(), property,
+				ApprovalFilterPropertyConstant.MANAGER);
+		filterPropertyCache.initFilterPropertyCache(FilterPropertyCache.APPROVAL_FILTER_DIALOG_PROPERTY,property);
 		return property;
 	}
 
@@ -245,9 +249,14 @@ public class ApprovalFilterDialog extends CommonDialog {
 	 * or initialize one while not.
 	 */
 	private Property getOrInitFilterProperty() {
-		Property property = filterPropertyCache.get(RWT.getUISession());
-		if( null == property ){
+		Property property = null;
+		if( null == filterPropertyCache ){
+			filterPropertyCache = new FilterPropertyCache();
+		}
+		if( null == filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.APPROVAL_FILTER_DIALOG_PROPERTY) ){
 			property = initFilterProperty();
+		} else {
+			property = (Property)filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.APPROVAL_FILTER_DIALOG_PROPERTY);
 		}
 		return property;
 	}

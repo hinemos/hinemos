@@ -15,6 +15,7 @@ import com.clustercontrol.ClusterControlPerspectiveBase;
 import com.clustercontrol.jobmanagement.view.ForwardFileView;
 import com.clustercontrol.jobmanagement.view.JobDetailView;
 import com.clustercontrol.jobmanagement.view.JobHistoryView;
+import com.clustercontrol.jobmanagement.view.JobLinkMessageView;
 import com.clustercontrol.jobmanagement.view.JobNodeDetailView;
 import com.clustercontrol.jobmanagement.view.JobQueueActivityView;
 import com.clustercontrol.jobmanagement.view.JobQueueContentsView;
@@ -43,6 +44,7 @@ public class JobHistoryPerspective extends ClusterControlPerspectiveBase {
 		IFolderLayout top = layout.createFolder( "top", IPageLayout.TOP, 0.33f, editorArea );
 		top.addView(JobHistoryView.ID);
 		top.addView(JobQueueActivityView.ID);
+		top.addView(JobLinkMessageView.ID);
 		//残りの50%を占めるViewの作成
 		IFolderLayout middle = layout.createFolder( "middle", IPageLayout.TOP, 0.5f, editorArea );
 		middle.addView(JobDetailView.ID);

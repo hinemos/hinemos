@@ -32,12 +32,44 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 package intel.management.wsman;
 
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.io.*;
 import java.util.*;
 import javax.net.ssl.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.apache.commons.codec.binary.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hc.client5.http.auth.AuthScheme;
+import org.apache.hc.client5.http.auth.AuthSchemeFactory;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.Credentials;
+import org.apache.hc.client5.http.auth.CredentialsStore;
+import org.apache.hc.client5.http.auth.NTCredentials;
+import org.apache.hc.client5.http.auth.StandardAuthScheme;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.auth.BasicSchemeFactory;
+import org.apache.hc.client5.http.impl.auth.KerberosSchemeFactory;
+import org.apache.hc.client5.http.impl.auth.NTLMSchemeFactory;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.config.Registry;
+import org.apache.hc.core5.http.config.RegistryBuilder;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.message.StatusLine;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.util.Timeout;
 import org.ietf.jgss.*;
 
 import sun.nio.cs.ext.IBM037;
@@ -211,6 +243,7 @@ public class WsmanConnection {
 
         HttpURLConnection conn=null;
         Document response=null;
+        CloseableHttpResponse httpResponse = null;
         stampRequest(request);
         boolean printDebug=
                 System.getProperty("intel.management.wsman.debug","false").equals("true");
@@ -219,182 +252,273 @@ public class WsmanConnection {
         int retry=2; //inital retry count for connection
         while (retry>0) {
             try {
-
-                if (conn!=null) {
-
-                    conn.disconnect();
-                }
-
+                Object auth = properties.get("AuthScheme");
                 URL url = new URL((String)properties.get("Address"));
 
-                Proxy proxy = (Proxy)properties.get("HttpProxy");
-                if (proxy!=null)
-                    conn= (HttpURLConnection)url.openConnection(proxy);
-                else
-                    conn= (HttpURLConnection)url.openConnection();
-                if (conn instanceof HttpsURLConnection) {
-                    HttpsURLConnection sslConn = (HttpsURLConnection)conn;
+                SSLSocketFactory factory =
+                        (SSLSocketFactory)properties.get("SSLSocketFactory");
+                
+                X509TrustManager tm=
+                        (X509TrustManager)properties.get("X509TrustManager");
 
-                    SSLSocketFactory factory =
-                            (SSLSocketFactory)properties.get("SSLSocketFactory");
+                HostnameVerifier verifier=
+                        (HostnameVerifier)properties.get("HostnameVerifier");
 
-                    X509TrustManager tm=
-                            (X509TrustManager)properties.get("X509TrustManager");
-
-                    HostnameVerifier verifier=
-                            (HostnameVerifier)properties.get("HostnameVerifier");
-
-                    X509KeyManager km=
-                            (X509KeyManager)properties.get("X509KeyManager");
+                X509KeyManager km=
+                        (X509KeyManager)properties.get("X509KeyManager");
 
 
 
-                    if (factory==null && (km!=null || tm!=null)) {
-                        X509KeyManager[] keys = null;
-                        X509TrustManager[] trusts = null;
+                if (factory==null && (km!=null || tm!=null)) {
+                    X509KeyManager[] keys = null;
+                    X509TrustManager[] trusts = null;
 
-                        SSLContext sc = SSLContext.getInstance("SSL");
+                    SSLContext sc = SSLContext.getInstance("SSL");
 
-                        if (km!=null) {
-                            keys = new X509KeyManager[1];
-                            keys[0]=km;
+                    if (km!=null) {
+                        keys = new X509KeyManager[1];
+                        keys[0]=km;
+                    }
+
+                    if (tm!=null) {
+                        trusts = new X509TrustManager[1];
+                        trusts[0]=tm;
+                    }
+
+                    sc.init(keys, trusts, null);
+                    factory = sc.getSocketFactory();
+
+                    properties.put("SSLSocketFactory",factory);
+                }
+
+                // NTLM認証の場合はHttpClientで通信を行う
+                if (auth != null && auth.equals("ntlm")) {
+                    NTCredentials ntCreds = new NTCredentials(getUsername(), getUserpassword().toCharArray(), null, null);
+
+                    CredentialsStore credsProvider = new BasicCredentialsProvider();
+
+                    AuthScope targetScope = new AuthScope(url.getProtocol(), url.getHost(), url.getPort(), null, "ntlm");
+                    credsProvider.setCredentials(targetScope, ntCreds);
+                    
+
+                    Registry<AuthSchemeFactory> authSchemeRegistry = RegistryBuilder.<AuthSchemeFactory>create()
+                            .register(StandardAuthScheme.BASIC, BasicSchemeFactory.INSTANCE)
+                            .register(StandardAuthScheme.SPNEGO, new SpNegoNTLMSchemeFactory())
+                            .register(StandardAuthScheme.KERBEROS, KerberosSchemeFactory.DEFAULT)
+                            .build();
+
+                    RequestConfig config = RequestConfig.custom()
+                            .setTargetPreferredAuthSchemes(Arrays.asList(StandardAuthScheme.NTLM
+                                    , StandardAuthScheme.KERBEROS, StandardAuthScheme.SPNEGO))
+                            .setConnectTimeout(Timeout.ofMilliseconds(getTimeout()))
+                            .setConnectionRequestTimeout(Timeout.ofMilliseconds(getTimeout()))
+                            .build();
+
+                    SSLConnectionSocketFactory sslSocketFactory = null;
+                    if (factory != null) {
+                        sslSocketFactory = new SSLConnectionSocketFactory(factory, verifier);
+                    }
+
+                    // 対象のホストがignoreHostListに存在する場合はプロキシ設定を行わない
+                    HttpHost httpHost = null;
+                    List<String> proxyIgnoreHostList = (List<String>)properties.get("ProxyIgnoreHostList");
+                    if (proxyIgnoreHostList != null && proxyIgnoreHostList.contains(url.getHost())) {
+                        // do nothing
+                    } else {
+                        // プロキシ設定
+                        String proxyHost = (String)properties.get("ProxyHost");
+                        Integer proxyPort = (Integer)properties.get("ProxyPort");
+                        if (proxyHost != null && proxyPort != null) {
+                            httpHost = new HttpHost(proxyHost, proxyPort);
+                            AuthScope proxyScope = new AuthScope(proxyHost, proxyPort);
+
+                            // 認証情報の設定
+                            String proxyUsername = (String)properties.get("ProxyUsername");
+                            String proxyPassword = (String)properties.get("ProxyPassword");
+                            if (proxyUsername != null && proxyPassword != null) {
+                                Credentials proxyCreds = new UsernamePasswordCredentials(proxyUsername, proxyPassword.toCharArray());
+                                credsProvider.setCredentials(proxyScope, proxyCreds);
+                            }
                         }
+                    }
 
-                        if (tm!=null) {
-                            trusts = new X509TrustManager[1];
-                            trusts[0]=tm;
-                        }
+                    HttpClientBuilder builder = HttpClients.custom()
+                            .setDefaultCredentialsProvider(credsProvider);
+                    builder.setProxy(httpHost);
 
-                        sc.init(keys, trusts, null);
-                        factory = sc.getSocketFactory();
+                    PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder = PoolingHttpClientConnectionManagerBuilder.create();
+                    connectionManagerBuilder.setSSLSocketFactory(sslSocketFactory);
+                    SocketConfig socketConfig = SocketConfig.custom()
+                            .setSoTimeout(Timeout.ofMilliseconds(getTimeout())).build();
+                    connectionManagerBuilder.setDefaultSocketConfig(socketConfig);
 
-                        properties.put("SSLSocketFactory",factory);
+                    CloseableHttpClient closeableClient = builder.setConnectionManager(connectionManagerBuilder.build()).build();
+
+                    HttpPost httpPost = new HttpPost(getAddress()); 
+                    httpPost.addHeader("Content-Type", "application/soap+xml;charset=UTF-8");
+                    String soapxml = getXmlLoader().formatDocument(request);
+                    String body = soapxml;
+                    StringEntity entity = new StringEntity(body, StandardCharsets.UTF_8);
+                    httpPost.setEntity(entity);
+
+                    HttpClientContext context = HttpClientContext.create();
+                    context.setCredentialsProvider(credsProvider);
+                    context.setAuthSchemeRegistry(authSchemeRegistry);
+                    context.setRequestConfig(config);
+
+                    httpResponse = closeableClient.execute(httpPost, context);
+                    response = getXmlLoader().loadDocument(httpResponse.getEntity().getContent());
+                    return response;
+                } else {
+                    if (conn!=null) {
+
+                        conn.disconnect();
+                    }
+
+                    Proxy proxy = (Proxy)properties.get("HttpProxy");
+                    if (proxy!=null)
+                        conn= (HttpURLConnection)url.openConnection(proxy);
+                    else
+                        conn= (HttpURLConnection)url.openConnection();
+                    if (conn instanceof HttpsURLConnection) {
+                        HttpsURLConnection sslConn = (HttpsURLConnection)conn;
+
+                        if (factory!=null)
+                            sslConn.setSSLSocketFactory(factory);
+
+                        if (verifier!=null)
+                            sslConn.setHostnameVerifier(verifier);
                     }
 
 
-                    if (factory!=null)
-                        sslConn.setSSLSocketFactory(factory);
-
-                    if (verifier!=null)
-                        sslConn.setHostnameVerifier(verifier);
-                }
 
 
+                    if (auth!=null && auth.equals("kerberos")) {
+                        // MecOid for Kerberos authorizaton (see Kerberos spec)
+                        Oid spnegoMecOid= new Oid("1.3.6.1.5.5.2");
+                        GSSManager manager =
+                            org.ietf.jgss.GSSManager.getInstance();
 
-                Object auth = properties.get("AuthScheme");
+                        String spnName="HTTP/" + url.getHost();
 
-                if (auth!=null && auth.equals("kerberos")) {
-                    // MecOid for Kerberos authorizaton (see Kerberos spec)
-                    Oid spnegoMecOid= new Oid("1.3.6.1.5.5.2");
-                    GSSManager manager =
-                        org.ietf.jgss.GSSManager.getInstance();
+                        int spnPort = url.getPort();
+                        // force SPN port on hardware ports
+                        if (spnPort==16992|| spnPort==16993 ||
+                                spnPort==623|| spnPort==624 ) {
+                           spnName=spnName+":"+Integer.toString(spnPort);
+                        }
 
-                    String spnName="HTTP/" + url.getHost();
+                        GSSName gssName=manager.createName(spnName, null);
 
-                    int spnPort = url.getPort();
-                    // force SPN port on hardware ports
-                    if (spnPort==16992|| spnPort==16993 ||
-                            spnPort==623|| spnPort==624 ) {
-                       spnName=spnName+":"+Integer.toString(spnPort);
+                        GSSContext context =
+                            manager.createContext(gssName,
+                            spnegoMecOid,
+                            null,
+                            GSSCredential.DEFAULT_LIFETIME);
+
+                        context.requestCredDeleg(true);
+                        byte[] token = new byte[0];
+
+                        token = context.initSecContext(token, 0, token.length);
+
+
+                        String tokenStr = WsmanUtils.getBase64String(token);
+
+
+                        conn.addRequestProperty("Authorization",
+                                "Negotiate " +tokenStr );
+
+                    }
+                    else if (auth!=null && auth.equals("basic")) {
+
+                    	// Comment out by NTT DATA Corporation
+                    	/*
+                        java.net.Authenticator.requestPasswordAuthentication(url.getHost(),
+                                null, url.getPort(), url.getProtocol(),"", "basic");
+
+                        String tokenStr="";
+                        conn.addRequestProperty("Authorization",
+                                "Basic " +tokenStr );
+                        */
+
+                    	// Add by NTT DATA Corporation
+                    	String userAndPassword = getUsername() + ":" + getUserpassword();
+                        byte[] userAndPasswordByte = org.apache.commons.codec.binary.Base64.encodeBase64(userAndPassword.getBytes());  
+                        conn.addRequestProperty("Authorization",
+                                "Basic " + new String(userAndPasswordByte) );
+
                     }
 
-                    GSSName gssName=manager.createName(spnName, null);
+                    conn.setRequestMethod("POST");
+                    conn.addRequestProperty("Content-Type",
+                        "application/soap+xml;charset=UTF-8");
 
-                    GSSContext context =
-                        manager.createContext(gssName,
-                        spnegoMecOid,
-                        null,
-                        GSSCredential.DEFAULT_LIFETIME);
+                    conn.setDoOutput(true);
+                    conn.setReadTimeout(getTimeout()); // Add by NTT DATA Corporation
+                    conn.setConnectTimeout(getTimeout()); // Add by NTT DATA Corporation
 
-                    context.requestCredDeleg(true);
-                    byte[] token = new byte[0];
+                    if (printDebug)
+                        System.out.println(getXmlLoader().formatDocument(request));
 
-                    token = context.initSecContext(token, 0, token.length);
-
-
-                    String tokenStr = WsmanUtils.getBase64String(token);
+                    getXmlLoader().saveDocument(request,
+                            conn.getOutputStream());
 
 
-                    conn.addRequestProperty("Authorization",
-                            "Negotiate " +tokenStr );
 
-                }
-                else if (auth!=null && auth.equals("basic")) {
+                    InputStream s=conn.getInputStream();
+                    response= getXmlLoader().loadDocument(s);
+                    if (printDebug) {
 
-                	// Comment out by NTT DATA Corporation
-                	/*
-                    java.net.Authenticator.requestPasswordAuthentication(url.getHost(),
-                            null, url.getPort(), url.getProtocol(),"", "basic");
-
-                    String tokenStr="";
-                    conn.addRequestProperty("Authorization",
-                            "Basic " +tokenStr );
-                    */
-
-                	// Add by NTT DATA Corporation
-                	String userAndPassword = getUsername() + ":" + getUserpassword();
-                    byte[] userAndPasswordByte = Base64.encodeBase64(userAndPassword.getBytes());  
-                    conn.addRequestProperty("Authorization",
-                            "Basic " + new String(userAndPasswordByte) );
+                        System.out.println(getXmlLoader().formatDocument(response));
+                    }
+ 
+                    // we got a doc so must be Http status 200 OK
+                    conn.getResponseCode();
+                    retry=0;
+                    conn.disconnect();
+                    conn=null;
 
                 }
-
-                conn.setRequestMethod("POST");
-                conn.addRequestProperty("Content-Type",
-                    "application/soap+xml;charset=UTF-8");
-
-                conn.setDoOutput(true);
-                conn.setReadTimeout(getTimeout()); // Add by NTT DATA Corporation
-                conn.setConnectTimeout(getTimeout()); // Add by NTT DATA Corporation
-
-                if (printDebug)
-                    System.out.println(getXmlLoader().formatDocument(request));
-
-                getXmlLoader().saveDocument(request,
-                        conn.getOutputStream());
-
-
-
-                InputStream s=conn.getInputStream();
-                response= getXmlLoader().loadDocument(s);
-                if (printDebug) {
-
-                    System.out.println(getXmlLoader().formatDocument(response));
-                }
-
-                // we got a doc so must be Http status 200 OK
-                conn.getResponseCode();
-                retry=0;
-                conn.disconnect();
-                conn=null;
-
 
             }
             catch (IOException ioException) {
 
                 retry--;
 
-                 int max = conn.getHeaderFields().size();
-                for (int i=0;i<max;i++)
-                {
-                    String t = conn.getHeaderField(i);
+                if (conn != null) {
+                    int max = conn.getHeaderFields().size();
+                    for (int i=0;i<max;i++)
+                    {
+                        String t = conn.getHeaderField(i);
 
 
-                    t.toString();
+                        t.toString();
+                    }
+
+                    conn.getRequestProperty("Authorization");
+                    conn.getHeaderField("Authorization");
+                    Object errObj = getResponse(conn);
+                    if (errObj !=null && errObj instanceof Document) {
+                        response=(Document)errObj;
+                        retry=0;
+                        throw new WsmanException(this,response);
+                    }
+                    else if (errObj!=null)
+                        throw new WsmanException(ioException);
                 }
-
-                conn.getRequestProperty("Authorization");
-                conn.getHeaderField("Authorization");
-                Object errObj = getResponse(conn);
-                if (errObj !=null && errObj instanceof Document) {
-                    response=(Document)errObj;
-                    retry=0;
-                    throw new WsmanException(this,response);
-                }
-                else if (errObj!=null)
-                    throw new WsmanException(ioException);
                 if (retry==0)
                     throw new WsmanException(ioException);
+            }
+            catch (WsmanException wsmanException) {
+                if (httpResponse != null) {
+                    StatusLine statusLine = new StatusLine(httpResponse);
+                    if (statusLine != null) {
+                        retry=0;
+                        throw new WsmanException(wsmanException, statusLine.toString());
+                        }
+                }
+                retry=0;
+                throw wsmanException;
             }
             catch (Exception exception) {
                 retry=0;
@@ -402,6 +526,13 @@ public class WsmanConnection {
             }
         }
         return response;
+    }
+    private class SpNegoNTLMSchemeFactory extends NTLMSchemeFactory {
+
+        @Override
+        public AuthScheme create(HttpContext context) {
+        	return new ApacheSpnegoScheme();
+        }
     }
 
   /**
@@ -516,6 +647,45 @@ public class WsmanConnection {
         properties.put("HttpProxy",proxy);
     }
 
+    /**
+     * Set the proxy server hostname.
+     * @param proxyHost
+     */
+    public void setProxyHost(String proxyHost) {
+        properties.put("ProxyHost", proxyHost);
+    }
+
+    /**
+     * Set the proxy server port.
+     * @param proxyPort
+     */
+    public void setProxyPort(Integer proxyPort) {
+        properties.put("ProxyPort", proxyPort);
+    }
+
+    /**
+     * Set the proxy server username.
+     * @param proxyUsername
+     */
+    public void setProxyUsername(String proxyUsername) {
+        properties.put("ProxyUsername", proxyUsername);
+    }
+
+    /**
+     * Set the proxy server password.
+     * @param proxyPassword
+     */
+    public void setProxyPassword(String proxyPassword) {
+        properties.put("ProxyPassword", proxyPassword);
+    }
+
+    /**
+     * Set the proxy server ignore hosts.
+     * @param ignoreHostList
+     */
+    public void setProxyIgnoreHostList(List<String> proxyIgnoreHostList) {
+        properties.put("ProxyIgnoreHostList", proxyIgnoreHostList);
+    }
 
     /**
      * Get the authentication scheme the connection is using

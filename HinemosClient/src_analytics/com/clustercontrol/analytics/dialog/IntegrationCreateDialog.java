@@ -29,20 +29,25 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.AddIntegrationMonitorRequest;
+import org.openapitools.client.model.IntegrationCheckInfoResponse;
+import org.openapitools.client.model.IntegrationConditionInfoRequest;
+import org.openapitools.client.model.IntegrationConditionInfoResponse;
+import org.openapitools.client.model.ModifyIntegrationMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorTruthValueInfoRequest;
 
 import com.clustercontrol.analytics.action.GetIntegrationConditionTableDefine;
 import com.clustercontrol.analytics.composite.IntegrationConditionListComposite;
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorTruthDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.IntegrationCheckInfo;
-import com.clustercontrol.ws.monitor.IntegrationConditionInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * 収集値統合監視作成・変更ダイアログクラスです。
@@ -198,7 +203,7 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 				IntegrationConditionCreateDialog dialog = new IntegrationConditionCreateDialog(
 						shell, getManagerName(), m_ownerRoleId, 
-						m_monitorBasic.getFacilityId(), new IntegrationConditionInfo());
+						m_monitorBasic.getFacilityId(), new IntegrationConditionInfoResponse());
 				if (dialog.open() == IDialogConstants.OK_ID) {
 					m_compConditionList.getIntegrationConditionList().add(dialog.getInputData());
 					m_compConditionList.update();
@@ -398,17 +403,17 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 		m_compConditionList.setManagerName(getManagerName());
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(getManagerName());
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 				info = wrapper.getMonitor(monitorId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -464,7 +469,7 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 	 *            設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
@@ -473,9 +478,9 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 		m_compConditionList.setMonitorFacilityId(m_monitorBasic.getFacilityId());
 
 		// チェック項目
-		IntegrationCheckInfo checkInfo = monitor.getIntegrationCheckInfo();
+		IntegrationCheckInfoResponse checkInfo = monitor.getIntegrationCheckInfo();
 		if (checkInfo == null) {
-			checkInfo = new IntegrationCheckInfo();
+			checkInfo = new IntegrationCheckInfoResponse();
 		}
 
 		// タイムアウト
@@ -495,8 +500,8 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 		this.m_compConditionList.setInputData(checkInfo);
 
 		// 収集の順序を考慮しない
-		if (checkInfo.isNotOrder() != null) {
-			this.m_checkNotOrder.setSelection(checkInfo.isNotOrder());
+		if (checkInfo.getNotOrder() != null) {
+			this.m_checkNotOrder.setSelection(checkInfo.getNotOrder());
 		}
 
 		// 必須項目を明示
@@ -510,16 +515,14 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
-		// 監視固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_INTEGRATION);
 
 		// 監視条件 監視情報
-		IntegrationCheckInfo checkInfo = new IntegrationCheckInfo();
+		IntegrationCheckInfoResponse checkInfo = new IntegrationCheckInfoResponse();
 
 		// タイムアウト
 		if (this.m_textTimeout.getText() != null) {
@@ -579,27 +582,45 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		if(info != null){
-			String[] args = { info.getMonitorId(), getManagerName() };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(getManagerName());
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if(result){
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddIntegrationMonitorRequest info = new AddIntegrationMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddIntegrationMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getTruthValueInfo() != null
+							&& this.inputData.getTruthValueInfo() != null) {
+						for (int i = 0; i < info.getTruthValueInfo().size(); i++) {
+							info.getTruthValueInfo().get(i).setPriority(MonitorTruthValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getTruthValueInfo().get(i).getPriority().getValue()));
+							info.getTruthValueInfo().get(i).setTruthValue(MonitorTruthValueInfoRequest.TruthValueEnum.fromValue(
+									this.inputData.getTruthValueInfo().get(i).getTruthValue().getValue()));
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					if (this.inputData.getIntegrationCheckInfo() != null
+							&& this.inputData.getIntegrationCheckInfo().getConditionList() != null) {
+						for (int i = 0; i < this.inputData.getIntegrationCheckInfo().getConditionList().size(); i++) {
+							info.getIntegrationCheckInfo().getConditionList().get(i).setTargetMonitorType(
+									IntegrationConditionInfoRequest.TargetMonitorTypeEnum.fromValue(
+											this.inputData.getIntegrationCheckInfo().getConditionList().get(i).getTargetMonitorType().getValue()));
+						}
+					}
+					wrapper.addIntegrationMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorIdInvalid e) {
+					// 監視項目IDが不適切な場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.97", args));
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -607,7 +628,7 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 							Messages.getString("message.monitor.53", args));
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(
 								null,
@@ -624,25 +645,51 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if(result){
+					ModifyIntegrationMonitorRequest info = new ModifyIntegrationMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyIntegrationMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getTruthValueInfo() != null
+							&& this.inputData.getTruthValueInfo() != null) {
+						for (int i = 0; i < info.getTruthValueInfo().size(); i++) {
+							info.getTruthValueInfo().get(i).setPriority(MonitorTruthValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getTruthValueInfo().get(i).getPriority().getValue()));
+							info.getTruthValueInfo().get(i).setTruthValue(MonitorTruthValueInfoRequest.TruthValueEnum.fromValue(
+									this.inputData.getTruthValueInfo().get(i).getTruthValue().getValue()));
+						}
+					}
+					if (this.inputData.getIntegrationCheckInfo() != null
+							&& this.inputData.getIntegrationCheckInfo().getConditionList() != null) {
+						for (int i = 0; i < this.inputData.getIntegrationCheckInfo().getConditionList().size(); i++) {
+							info.getIntegrationCheckInfo().getConditionList().get(i).setTargetMonitorType(
+									IntegrationConditionInfoRequest.TargetMonitorTypeEnum.fromValue(
+											this.inputData.getIntegrationCheckInfo().getConditionList().get(i).getTargetMonitorType().getValue()));
+						}
+					}
+					wrapper.modifyIntegrationMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
+					result = true;
+				} catch (RuntimeException e) {
+					// findbus対応 RuntimeExceptionのcatchを明示化
+					String errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.36", args) + errMessage);
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
@@ -660,10 +707,10 @@ public class IntegrationCreateDialog extends CommonMonitorTruthDialog {
 	 * @see com.clustercontrol.dialog.CommonMonitorDialog#setInfoInitialValue()
 	 */
 	@Override
-	protected void setInfoInitialValue(MonitorInfo monitor) {
+	protected void setInfoInitialValue(MonitorInfoResponse monitor) {
 		super.setInfoInitialValue(monitor);
 		// 対象監視設定を取得する
-		IntegrationCheckInfo checkInfo = new IntegrationCheckInfo();
+		IntegrationCheckInfoResponse checkInfo = new IntegrationCheckInfoResponse();
 		checkInfo.setTimeout(60);
 		monitor.setIntegrationCheckInfo(checkInfo);
 	}

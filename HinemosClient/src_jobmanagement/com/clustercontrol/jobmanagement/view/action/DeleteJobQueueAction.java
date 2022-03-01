@@ -21,9 +21,8 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.dialog.ApiResultDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.view.action.JobQueueEditor.JobQueueEditTarget;
-import com.clustercontrol.util.LogUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.ViewUtil;
 
@@ -76,13 +75,13 @@ public class DeleteJobQueueAction extends AbstractHandler implements IElementUpd
 			ApiResultDialog resultDialog = new ApiResultDialog();
 			for (JobQueueEditTarget target : targets) {
 				try {
-					JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(target.getManagerName());
+					JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(target.getManagerName());
 					wrapper.deleteJobQueue(target.getQueueId());
 
 					resultDialog.addSuccess(target.getManagerName(),
 							Messages.get("message.jobqueue.deleted", target.getQueueId()));
 				} catch (Throwable t) {
-					log.info(LogUtil.filterWebFault("execute: ", t));
+					log.info("execute: " + t.getClass().getName() + ", " + t.getMessage());
 					resultDialog.addFailure(target.getManagerName(), t,
 							Messages.get("message.jobqueue.id", target.getQueueId()));
 				}

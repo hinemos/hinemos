@@ -14,12 +14,11 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.platform.selfcheck.SelfCheckDivergence;
-import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.selfcheck.util.SelfCheckDivergence;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -120,7 +119,7 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 		}
 
 		String[] msgAttr1 = { };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_013_SYS_SFC, msgAttr1,
+		AplLogger.put(InternalIdCommon.SYS_SFC_SYS_013, msgAttr1,
 				"exists long running transaction.");
 
 		return;

@@ -11,8 +11,8 @@ package com.clustercontrol.repository.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 
 import com.clustercontrol.util.HinemosTime;
 

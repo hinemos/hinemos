@@ -10,7 +10,6 @@ package com.clustercontrol.composite;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,11 +35,14 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Tree;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.composite.ScopeTreeSearchBarComposite;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.FacilityTreeCache;
 import com.clustercontrol.util.FacilityTreeItemUtil;
@@ -51,8 +53,6 @@ import com.clustercontrol.viewer.CommonTableViewer;
 import com.clustercontrol.viewer.FacilityTreeContentProvider;
 import com.clustercontrol.viewer.FacilityTreeLabelProvider;
 import com.clustercontrol.viewer.FacilityTreeViewerSorter;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * スコープツリーを表示するコンポジットクラス<BR>
@@ -77,14 +77,14 @@ public class FacilityTreeComposite extends Composite {
 	private String rootFacilityId = null;
 
 	/** tableViewer登録Item */
-	private FacilityTreeItem treeItem = null;
+	protected FacilityTreeItemResponse treeItem = null;
 
 	/** リポジトリツリーの時刻 */
-	private Date cacheDate = null;
+	protected Date cacheDate = null;
 
 	/** 選択アイテム */
 	//ノードマップオプションで使用するためprotected
-	protected FacilityTreeItem selectItem = null;
+	protected FacilityTreeItemResponse selectItem = null;
 
 	private List<?> selectionList;
 
@@ -109,7 +109,7 @@ public class FacilityTreeComposite extends Composite {
 	protected boolean topicRefresh = true;
 
 	/** オーナーロールID */
-	private String ownerRoleId = null;
+	protected String ownerRoleId = null;
 	
 	/** チェックボックス付きツリーにするかどうか */
 	private boolean checkflg = false;
@@ -118,7 +118,7 @@ public class FacilityTreeComposite extends Composite {
 	private Composite parent = null;
 
 	/** マネージャ名 */
-	private String managerName = null;
+	protected String managerName = null;
 	
 	/** 選択中のファシリティIDリスト */
 	private List<String> selectFacilityList = null;
@@ -281,14 +281,14 @@ public class FacilityTreeComposite extends Composite {
 	 *
 	 * @return ツリーアイテム
 	 */
-	public FacilityTreeItem getSelectItem() {
+	public FacilityTreeItemResponse getSelectItem() {
 		return this.selectItem;
 	}
 
 	/*
 	 * ツリーアイテムを選択します。
 	 */
-	public void setSelectItem(FacilityTreeItem item) {
+	public void setSelectItem(FacilityTreeItemResponse item) {
 		selectItem = item;
 	}
 
@@ -361,7 +361,7 @@ public class FacilityTreeComposite extends Composite {
 			public void selectionChanged(SelectionChangedEvent event) {
 				StructuredSelection selection = (StructuredSelection) event.getSelection();
 
-				selectItem = (FacilityTreeItem) selection.getFirstElement();
+				selectItem = (FacilityTreeItemResponse) selection.getFirstElement();
 				selectionList = selection.toList();
 
 				if (selectItem != null) {
@@ -378,8 +378,8 @@ public class FacilityTreeComposite extends Composite {
 					CheckboxTreeViewer checkboxTreeViewer = (CheckboxTreeViewer) treeViewer;
 					Object element = event.getElement();
 					// 親が選択されたら子供も選択し、子の一部のみがチェックされている場合はグレー状態にする
-					if (element instanceof FacilityTreeItem) {
-						FacilityTreeItem item = (FacilityTreeItem)element;
+					if (element instanceof FacilityTreeItemResponse) {
+						FacilityTreeItemResponse item = (FacilityTreeItemResponse)element;
 						checkItems(checkboxTreeViewer, item, event.getChecked());
 						checkPath(checkboxTreeViewer, item, event.getChecked(), false);
 					}
@@ -412,11 +412,11 @@ public class FacilityTreeComposite extends Composite {
 	 * @param item チェック対象のFacilityTreeItemのインスタンス
 	 * @param checked チェックボックスのチェック状態
 	 */
-	protected void checkItems(CheckboxTreeViewer tree, FacilityTreeItem item, boolean checked) {
+	protected void checkItems(CheckboxTreeViewer tree, FacilityTreeItemResponse item, boolean checked) {
 		tree.setGrayed(item, false);
 		tree.setChecked(item, checked);
-		List<FacilityTreeItem> children = item.getChildren();
-		for(FacilityTreeItem child: children) {
+		List<FacilityTreeItemResponse> children = item.getChildren();
+		for(FacilityTreeItemResponse child: children) {
 			checkItems(tree, child, checked);
 		}
 	}
@@ -428,15 +428,15 @@ public class FacilityTreeComposite extends Composite {
 	 * @param checked チェックボックスのチェック状態
 	 * @param grayed チェックボックスのグレー状態（子の一部のみが選択されている状態）
 	 */
-	protected void checkPath(CheckboxTreeViewer tree, FacilityTreeItem item, boolean checked, boolean grayed) {
+	protected void checkPath(CheckboxTreeViewer tree, FacilityTreeItemResponse item, boolean checked, boolean grayed) {
 		if(item == null){
 			return;
 		}
 		if(grayed){
 			checked = true;
 		} else {
-			List<FacilityTreeItem> children = item.getChildren();
-			for (FacilityTreeItem child: children) {
+			List<FacilityTreeItemResponse> children = item.getChildren();
+			for (FacilityTreeItemResponse child: children) {
 				if (tree.getGrayed(child) || checked != tree.getChecked(child)) {
 					checked = grayed = true;
 					break;
@@ -459,13 +459,13 @@ public class FacilityTreeComposite extends Composite {
 				if (this.selectNodeOnly) {
 					// ノードのみ取得
 					m_log.debug("getNodeFacilityTree " + managerName);
-					treeItem = addEmptyParent(RepositoryEndpointWrapper.getWrapper(managerName).getNodeFacilityTree(this.ownerRoleId));
+					treeItem = addEmptyParent(RepositoryRestClientWrapper.getWrapper(managerName).getNodeFacilityTree(this.ownerRoleId));
 					if (treeItem != null && treeItem.getChildren() != null && treeItem.getChildren().get(0) != null) {
 						Collections.sort(treeItem.getChildren().get(0).getChildren(), new FacilityTreeViewerSorter.FacilityTreeItemComparator());
 					}
 				} else {
 					m_log.debug("getFacilityTree " + managerName);
-					treeItem = addEmptyParent(RepositoryEndpointWrapper.getWrapper(managerName).getFacilityTree(this.ownerRoleId));
+					treeItem = addEmptyParent(RepositoryRestClientWrapper.getWrapper(managerName).getFacilityTree(this.ownerRoleId));
 				}
 			} catch (Exception e) {
 				m_log.warn("getTreeItem(), " + e.getMessage(), e);
@@ -487,7 +487,7 @@ public class FacilityTreeComposite extends Composite {
 		if( null == treeItem ){
 			m_log.trace("treeItem is null. Skip.");
 		}else {
-			FacilityTreeItem scope = (treeItem.getChildren()).get(0);
+			FacilityTreeItemResponse scope = (treeItem.getChildren()).get(0);
 			scope.getData().setFacilityName(HinemosMessage.replace(scope.getData().getFacilityName()));
 
 			m_log.debug("internal=" + internal + ", unregistered=" + unregistered);
@@ -495,7 +495,7 @@ public class FacilityTreeComposite extends Composite {
 			//ファシリティツリーから特定のスコープを取り外す。
 			if(!internal){
 				if (managerName == null) {
-					for (FacilityTreeItem managerScope : scope.getChildren()) {
+					for (FacilityTreeItemResponse managerScope : scope.getChildren()) {
 						if(!FacilityTreeItemUtil.removeChild(managerScope, FacilityTreeAttributeConstant.INTERNAL_SCOPE)){
 							m_log.warn("failed removing " + FacilityTreeAttributeConstant.INTERNAL_SCOPE);
 						}
@@ -508,7 +508,7 @@ public class FacilityTreeComposite extends Composite {
 			}
 			if(!unregistered){
 				if (managerName == null) {
-					for (FacilityTreeItem managerScope : scope.getChildren()) {
+					for (FacilityTreeItemResponse managerScope : scope.getChildren()) {
 						if(!FacilityTreeItemUtil.removeChild(managerScope, FacilityTreeAttributeConstant.UNREGISTERED_SCOPE)){
 							m_log.warn("failed removing " + FacilityTreeAttributeConstant.UNREGISTERED_SCOPE);
 						}
@@ -542,13 +542,13 @@ public class FacilityTreeComposite extends Composite {
 						return;
 					}
 					
-					FacilityTreeItem oldTreeItem = (FacilityTreeItem)treeViewer.getInput();
+					FacilityTreeItemResponse oldTreeItem = (FacilityTreeItemResponse)treeViewer.getInput();
 					m_log.debug("run() oldTreeItem=" + oldTreeItem);
 					if( null != oldTreeItem ){
 						if (!oldTreeItem.equals(treeItem)) {
 							ArrayList<String> expandIdList = new ArrayList<String>();
 							for (Object item : treeViewer.getExpandedElements()) {
-								expandIdList.add(((FacilityTreeItem)item).getData().getFacilityId());
+								expandIdList.add(((FacilityTreeItemResponse)item).getData().getFacilityId());
 							}
 							m_log.debug("expandIdList.size=" + expandIdList.size());
 							treeViewer.setInput(treeItem);
@@ -557,7 +557,7 @@ public class FacilityTreeComposite extends Composite {
 						}
 					}else{
 						treeViewer.setInput(treeItem);
-						List<FacilityTreeItem> selectItem = treeItem.getChildren();
+						List<FacilityTreeItemResponse> selectItem = treeItem.getChildren();
 						treeViewer.setSelection(new StructuredSelection(selectItem.get(0)), true);
 						//スコープのレベルまで展開
 						treeViewer.expandToLevel(3);
@@ -568,11 +568,11 @@ public class FacilityTreeComposite extends Composite {
 					}
 				}
 
-				private void expand(FacilityTreeItem item, List<String> expandIdList) {
+				private void expand(FacilityTreeItemResponse item, List<String> expandIdList) {
 					if (expandIdList.contains(item.getData().getFacilityId())) {
 						treeViewer.expandToLevel(item, 1);
 					}
-					for (FacilityTreeItem child : item.getChildren()) {
+					for (FacilityTreeItemResponse child : item.getChildren()) {
 						expand(child, expandIdList);
 					}
 				}
@@ -585,7 +585,7 @@ public class FacilityTreeComposite extends Composite {
 	 * @param r
 	 * @return
 	 */
-	private boolean checkAsyncExec(Runnable r){
+	protected boolean checkAsyncExec(Runnable r){
 
 		if(!this.isDisposed()){
 			m_log.trace("FacilityTreeComposite.checkAsyncExec() is true");
@@ -613,7 +613,7 @@ public class FacilityTreeComposite extends Composite {
 	 *
 	 * @param treeItem
 	 */
-	public void setScopeTree(FacilityTreeItem treeItem) {
+	public void setScopeTree(FacilityTreeItemResponse treeItem) {
 		try {
 			this.treeItem = treeItem;
 			this.treeViewer.setInput(treeItem);
@@ -629,11 +629,11 @@ public class FacilityTreeComposite extends Composite {
 	 * @param treeItem
 	 * @param facilityID
 	 */
-	public void setScopeTreeWithSelection(FacilityTreeItem treeItem,
+	public void setScopeTreeWithSelection(FacilityTreeItemResponse treeItem,
 			String facilityID) {
 		this.setScopeTree(treeItem);
 
-		List<FacilityTreeItem> tmpItem = treeItem.getChildren();
+		List<FacilityTreeItemResponse> tmpItem = treeItem.getChildren();
 
 		//引数のFaiclityIDに対応するTreeItemがあるか探します。
 		for (int i = 0; i < tmpItem.size(); i++) {
@@ -651,9 +651,9 @@ public class FacilityTreeComposite extends Composite {
 	 * @param treeItem
 	 * @param facilityID
 	 */
-	public void setScopeTreeWithSelectionSub(FacilityTreeItem treeItem,
+	public void setScopeTreeWithSelectionSub(FacilityTreeItemResponse treeItem,
 			String facilityID) {
-		List<FacilityTreeItem> tmpItem = treeItem.getChildren();
+		List<FacilityTreeItemResponse> tmpItem = treeItem.getChildren();
 
 		for (int i = 0; i < tmpItem.size(); i++) {
 			setScopeTreeWithSelectionSub(tmpItem.get(i), facilityID);
@@ -688,7 +688,7 @@ public class FacilityTreeComposite extends Composite {
 	 * 
 	 * @return
 	 */
-	public FacilityTreeItem getAllTreeItems() {
+	public FacilityTreeItemResponse getAllTreeItems() {
 		return this.treeItem;
 	}
 	
@@ -716,29 +716,37 @@ public class FacilityTreeComposite extends Composite {
 		List<String> selectFacilityStringList = new ArrayList<>();
 		m_log.debug("SIZE:" + treeItemList.size());
 		for (Object objectItem : treeItemList) {
-			if (objectItem instanceof FacilityTreeItem) {
-				FacilityTreeItem facilityTreeItem = (FacilityTreeItem)objectItem;
+			if (objectItem instanceof FacilityTreeItemResponse) {
+				FacilityTreeItemResponse facilityTreeItem = (FacilityTreeItemResponse)objectItem;
 				switch (facilityTreeItem.getData().getFacilityType()) {
-				case FacilityConstant.TYPE_COMPOSITE:
-					selectFacilityStringList.add(String.valueOf(facilityTreeItem.getData().getFacilityType()));
+				case COMPOSITE:
+					// findbugs対応 facilityType設定値をordinaryから定数に変更
+					selectFacilityStringList.add(String.valueOf(FacilityConstant.TYPE_COMPOSITE));
 					break;
-				case FacilityConstant.TYPE_SCOPE:
-				case FacilityConstant.TYPE_MANAGER:
+				case SCOPE:
+				case MANAGER:
 					// 指定したスコープ配下に含まれる全てのノードを対象
 					String managerName = ScopePropertyUtil.getManager(facilityTreeItem).getData().getFacilityId();
 					String facilityId = facilityTreeItem.getData().getFacilityId();
-					int facilityType = facilityTreeItem.getData().getFacilityType();
-					String param = managerName +SEPARATOR_HASH_EX_HASH + facilityId + SEPARATOR_HASH_EX_HASH + facilityType;
+					// findbugs対応 facilityType設定値をordinaryから定数に変更
+					Integer facilityType = null;
+					if( facilityTreeItem.getData().getFacilityType()== FacilityInfoResponse.FacilityTypeEnum.SCOPE){
+						facilityType = FacilityConstant.TYPE_SCOPE;
+					}
+					if( facilityTreeItem.getData().getFacilityType()== FacilityInfoResponse.FacilityTypeEnum.MANAGER){
+						facilityType = FacilityConstant.TYPE_MANAGER;
+					}
+					String param = managerName +SEPARATOR_HASH_EX_HASH + facilityId + SEPARATOR_HASH_EX_HASH + String.valueOf(facilityType);
 					m_log.debug(param);
 					selectFacilityStringList.add(param);
 	
 					break;
-				case FacilityConstant.TYPE_NODE:
+				case NODE:
 					managerName = ScopePropertyUtil.getManager(facilityTreeItem).getData().getFacilityId();
 					facilityId = facilityTreeItem.getData().getFacilityId();
 					String parentFacilityId = facilityTreeItem.getParent().getData().getFacilityId();
-					facilityType = facilityTreeItem.getData().getFacilityType();
-					param = managerName + SEPARATOR_HASH_EX_HASH + parentFacilityId +SEPARATOR_HASH_EX_HASH + facilityId + SEPARATOR_HASH_EX_HASH + facilityType;
+					// findbugs対応 facilityType設定値をordinaryから定数に変更
+					param = managerName + SEPARATOR_HASH_EX_HASH + parentFacilityId +SEPARATOR_HASH_EX_HASH + facilityId + SEPARATOR_HASH_EX_HASH + String.valueOf(FacilityConstant.TYPE_NODE);
 					m_log.debug(param);
 					selectFacilityStringList.add(param);
 					break;
@@ -756,17 +764,17 @@ public class FacilityTreeComposite extends Composite {
 	 * @param treeItem
 	 */
 	private void setCheckedTreeInfo(List<String> facilityItemList) {
-		List<FacilityTreeItem> treeItemList = new ArrayList<>();
-		List<FacilityTreeItem> parentItemList = new ArrayList<>();
+		List<FacilityTreeItemResponse> treeItemList = new ArrayList<>();
+		List<FacilityTreeItemResponse> parentItemList = new ArrayList<>();
 		checkTreeSelect(this.treeItem, facilityItemList, treeItemList, parentItemList);
 		m_log.debug("setSelectItemSize:" + treeItemList.size() + ", parentItemList.size:" + parentItemList.size());
 		
 		// チェック状態の復元
-		FacilityTreeItem facilityArr[] = treeItemList.toArray(new FacilityTreeItem[treeItemList.size()]);
+		FacilityTreeItemResponse facilityArr[] = treeItemList.toArray(new FacilityTreeItemResponse[treeItemList.size()]);
 		((CheckboxTreeViewer)getTreeViewer()).setCheckedElements(facilityArr);
 		
 		// 選択状態の親に新たに子供がいた場合は、子供にチェックをつけ,子の一部がチェックされている場合グレー状態にする
-		for (FacilityTreeItem item : treeItemList) {
+		for (FacilityTreeItemResponse item : treeItemList) {
 			CheckboxTreeViewer tree = (CheckboxTreeViewer)getTreeViewer();
 			checkItems(tree, item, true);
 			checkPath(tree, item, true, false);
@@ -783,13 +791,13 @@ public class FacilityTreeComposite extends Composite {
 	 * @param facilityList 選択状態にするFacilityTreeItemのリスト(戻り値)
 	 * @param parentFacilityList 選択状態の子持ちのFacilityTreeItemのリスト(戻り値)
 	 */
-	public void checkTreeSelect(FacilityTreeItem treeItem, List<String> facilityStringList, 
-			List<FacilityTreeItem> facilityList, List<FacilityTreeItem> parentFacilityList) {
+	public void checkTreeSelect(FacilityTreeItemResponse treeItem, List<String> facilityStringList, 
+			List<FacilityTreeItemResponse> facilityList, List<FacilityTreeItemResponse> parentFacilityList) {
 		if (facilityStringList == null || facilityStringList.size() == 0) {
 			return;
 		}
-		List<FacilityTreeItem> treeItemList = treeItem.getChildren();
-		for (FacilityTreeItem childItem : treeItemList) {
+		List<FacilityTreeItemResponse> treeItemList = treeItem.getChildren();
+		for (FacilityTreeItemResponse childItem : treeItemList) {
 			checkTreeSelect(childItem, facilityStringList, facilityList, parentFacilityList);
 		}
 		for (String detail : facilityStringList) {
@@ -798,7 +806,7 @@ public class FacilityTreeComposite extends Composite {
 			String parentFacilityId = "";
 			String details[] = detail.split(SEPARATOR_HASH_EX_HASH);
 			String facilityType = details[details.length-1];
-			if (treeItem.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE) {
+			if (treeItem.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE) {
 				// 「スコープ」の場合はDetailにFacilityTypeのみ入っている
 				if (details.length == 1) {
 					m_log.debug("selected(have sub:composite) managerName:" + managerName + ", parentFacilityId:" + parentFacilityId + ", facilityId:" + facilityId);
@@ -839,9 +847,9 @@ public class FacilityTreeComposite extends Composite {
 	 * @param keyword 検索文字列（前方一致検索）
 	 * @return 検索結果アイテム
 	 */
-	private FacilityTreeItem searchNeighbors( FacilityTreeItem current, String keyword ){
-		FacilityTreeItem found;
-		FacilityTreeItem parent = current.getParent();
+	private FacilityTreeItemResponse searchNeighbors( FacilityTreeItemResponse current, String keyword ){
+		FacilityTreeItemResponse found;
+		FacilityTreeItemResponse parent = current.getParent();
 		if( null != parent ){
 			do{
 				int offset = parent.getChildren().indexOf( current ) + 1;
@@ -863,18 +871,18 @@ public class FacilityTreeComposite extends Composite {
 	 * @param offset 選択アイテムのインデックス
 	 * @return 検索結果アイテム
 	 */
-	private FacilityTreeItem searchChildren( FacilityTreeItem parent, String keyword, int offset ){
-		List<FacilityTreeItem> children = parent.getChildren();
+	private FacilityTreeItemResponse searchChildren( FacilityTreeItemResponse parent, String keyword, int offset ){
+		List<FacilityTreeItemResponse> children = parent.getChildren();
 		Collections.sort(children, new FacilityTreeViewerSorter.FacilityTreeItemComparator());
 		int len = children.size();
 		for( int i = offset; i<len; i++ ){
-			FacilityTreeItem child = children.get(i);
+			FacilityTreeItemResponse child = children.get(i);
 
 			if(child.getData().getFacilityId() != null
 					&& -1 != child.getData().getFacilityId().indexOf( keyword ) ){
 				return child;
 			}else{
-				FacilityTreeItem found = searchChildren( child, keyword, 0 );
+				FacilityTreeItemResponse found = searchChildren( child, keyword, 0 );
 				if( null != found ){
 					return found;
 				}
@@ -890,8 +898,8 @@ public class FacilityTreeComposite extends Composite {
 	 * @param keyword 検索文字列（前方一致検索）
 	 * @return 検索結果アイテム
 	 */
-	private FacilityTreeItem searchItem( FacilityTreeItem item, String keyword ){
-		FacilityTreeItem found;
+	private FacilityTreeItemResponse searchItem( FacilityTreeItemResponse item, String keyword ){
+		FacilityTreeItemResponse found;
 
 		// 1. Search children
 		found= searchChildren(item, keyword, 0);
@@ -924,19 +932,19 @@ public class FacilityTreeComposite extends Composite {
 
 		StructuredSelection selection = (StructuredSelection) treeViewer.getSelection();
 		Object targetItem = selection.getFirstElement();
-		FacilityTreeItem result = searchItem( (FacilityTreeItem)( null != targetItem ? targetItem: treeViewer.getInput() ), keyword );
+		FacilityTreeItemResponse result = searchItem( (FacilityTreeItemResponse)( null != targetItem ? targetItem: treeViewer.getInput() ), keyword );
 		if( null != result ){
-			FacilityTreeItem trace = result;
-			LinkedList<FacilityTreeItem> pathList = new LinkedList<>();
+			FacilityTreeItemResponse trace = result;
+			LinkedList<FacilityTreeItemResponse> pathList = new LinkedList<>();
 			do{
 				pathList.addFirst( trace );
 				trace = trace.getParent();
 			}while( null != trace );
-			TreePath path = new TreePath( pathList.toArray(new FacilityTreeItem[]{}) );
+			TreePath path = new TreePath( pathList.toArray(new FacilityTreeItemResponse[]{}) );
 			treeViewer.setSelection( new TreeSelection(path), true );
 		}else{
 			MessageDialog.openInformation( this.getShell(), Messages.getString("message"), Messages.getString("search.not.found") );
-			treeViewer.setSelection( new StructuredSelection(((FacilityTreeItem)treeViewer.getInput()).getChildren().get(0)), true );
+			treeViewer.setSelection( new StructuredSelection(((FacilityTreeItemResponse)treeViewer.getInput()).getChildren().get(0)), true );
 		}
 	}
 	
@@ -946,16 +954,16 @@ public class FacilityTreeComposite extends Composite {
 	 * @param childTree 対象FacilityTreeItem
 	 * @return 親に空を設定したFacilityTreeItem
 	 */
-	private FacilityTreeItem addEmptyParent(FacilityTreeItem childTree) {
-		FacilityTreeItem rootTree = null;
+	protected FacilityTreeItemResponse addEmptyParent(FacilityTreeItemResponse childTree) {
+		FacilityTreeItemResponse rootTree = null;
 
 		if (childTree != null) {
 			// 木構造最上位インスタンスの生成
-			rootTree = new FacilityTreeItem();
-			FacilityInfo rootInfo = new FacilityInfo();
+			rootTree = new FacilityTreeItemResponse();
+			FacilityInfoResponse rootInfo = new FacilityInfoResponse();
 			rootInfo.setBuiltInFlg(true);
 			rootInfo.setFacilityName(FacilityConstant.STRING_COMPOSITE);
-			rootInfo.setFacilityType(FacilityConstant.TYPE_COMPOSITE);
+			rootInfo.setFacilityType(FacilityTypeEnum.COMPOSITE);
 			rootTree.setData(rootInfo);
 			childTree.setParent(rootTree);
 			rootTree.getChildren().add(childTree);

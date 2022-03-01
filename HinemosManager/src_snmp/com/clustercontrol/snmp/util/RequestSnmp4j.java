@@ -91,8 +91,7 @@ public class RequestSnmp4j {
 		Target target = Snmp4jPollerImpl.createTarget(ipAddress, portNumber, version,
 				community, retries, timeout, securityLevel, user);
 
-		DefaultPDUFactory factory = new DefaultPDUFactory();
-		factory.setPduType(PDU.GET);
+		DefaultPDUFactory factory = new DefaultPDUFactory(PDU.GET);
 		PDU pdu = factory.createPDU(target);
 
 		pdu.add(new VariableBinding(new OID(oidText)));

@@ -8,8 +8,6 @@
 
 package com.clustercontrol.infra.util;
 
-import intel.management.wsman.WsmanException;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,16 +32,17 @@ import com.clustercontrol.infra.model.FileTransferModuleInfo;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.XMLUtil;
 
+import intel.management.wsman.WsmanException;
+
 public class WinRMUtil {
 	private static Log log = LogFactory.getLog( WinRMUtil.class );
 	
 	private static String winReturnCode = "\n"; // Windowsなので、%nではなく\nとする
 
-    public final static String WINRM_FILE_SPLIT = "~";
+	public final static String WINRM_FILE_SPLIT = "~";
 
-    public static ModuleNodeResult execCommand(String user, String password, String host, int port, String protocol, String command, int maxSize) {
+	public static ModuleNodeResult execCommand(String user, String password, String host, int port, String protocol, String command, int maxSize) {
 		log.info("user=" + user + ", host=" + host + ", port=" + port + ", command=" + command);
-		// log.debug("password=" + password);
 		
 		WinRs winRs = new WinRs(host, port, protocol, user, password);
 		String shellId = null;
@@ -121,17 +120,18 @@ public class WinRMUtil {
 		String shellId = null;
 		try {
 			shellId = winRs.openShell();
-
+			
 			String tempFilePath = getTempFilePath(winRs, shellId);
 			String dstFilePath = dstDir + File.separator + dstFilename;
 			
 			//一時ファイルにアップロード
 			WinRsCommandOutput output = null;
 			String msg = "";
+			String token = login(winRs, shellId);
 			if (cnt > 1) {
 				for (int i = 1; i <= cnt; i++) {
 					// 複数ファイル
-					output = downloadToTempFile(winRs, shellId, FileTransferModuleInfo.getSplitFileName(tempFilePath, i), 
+					output = downloadFile(winRs, shellId, token, FileTransferModuleInfo.getSplitFileName(tempFilePath, i), 
 							FileTransferModuleInfo.getSplitFileName(srcFilename, i));
 					msg = "out=" + output.getStdout().trim() + "\n" + "err=" + output.getStderr().trim();
 					if (output.getExitCode() != 0) {
@@ -141,24 +141,24 @@ public class WinRMUtil {
 				}
 			} else {
 				// 1ファイル
-				output = downloadToTempFile(winRs, shellId, tempFilePath, srcFilename);
+				output = downloadFile(winRs, shellId, token, tempFilePath, srcFilename);
 				msg = "out=" + output.getStdout().trim() + "\n" + "err=" + output.getStderr().trim();
 				if (output.getExitCode() != 0) {
 					log.warn("sendFile() code="+output.getExitCode()+",out="+output.getStdout()+",err="+output.getStderr());
 					return new ModuleNodeResult(OkNgConstant.TYPE_NG, 1, XMLUtil.ignoreInvalidString(msg));
 				}
 			}
-						
-			//一時ファイルをディコードして、送信先ファイルに保存
-			output = decodeTempFile(winRs, shellId, tempFilePath, dstFilePath, isBackupIfExistFlg, cnt);
+			
+			// 一時ファイルを所定のディレクトリへ移動、および、複数ファイルの場合は連結する
+			output = moveAndConcatDownloadFile(winRs, shellId, tempFilePath, dstFilePath, isBackupIfExistFlg, cnt);
 			msg = "out=" + output.getStdout().trim() + "\n" + "err=" + output.getStderr().trim();
 			// PowershellでOOME発生の場合、ExitCode=0で返ってくるのでエラー出力も確認している
 			if (output.getExitCode() != 0 || output.getStderr().trim().contains("System.OutOfMemoryException")) {
 				log.warn("sendFile() code="+output.getExitCode()+",out="+output.getStdout()+",err="+output.getStderr());
 				return new ModuleNodeResult(OkNgConstant.TYPE_NG, 1, XMLUtil.ignoreInvalidString(msg));
 			}
-			return new ModuleNodeResult(OkNgConstant.TYPE_OK, 0,
-					dstFilename + " was transfered. (" + dstDir + ")");
+			
+			return new ModuleNodeResult(OkNgConstant.TYPE_OK, 0, dstFilename + " was transfered. (" + dstDir + ")");
 		} catch (WsmanException e) {
 			WsmanException we = (WsmanException) e;
 			log.warn("sendFile " + getMessage(we), e);
@@ -290,7 +290,7 @@ public class WinRMUtil {
 		return new ModuleNodeResult(OkNgConstant.TYPE_NG, -1, message);
 	}
 
-	private static WinRsCommandOutput decodeTempFile(WinRs winRs, String shellId,
+	private static WinRsCommandOutput moveAndConcatDownloadFile(WinRs winRs, String shellId,
 			String tempFilePath, String dstFilePath, boolean isBackupIfExistFlg, int cnt)
 			throws UnsupportedEncodingException, WsmanException {
 		
@@ -299,12 +299,12 @@ public class WinRMUtil {
 				"-inputformat",
 				"none",
 				"-encodedCommand",
-				Base64.encodeBase64String(getDecodeScript(tempFilePath,
+				Base64.encodeBase64String(getMoveAndConcatScript(tempFilePath,
 						dstFilePath, isBackupIfExistFlg, cnt).getBytes("UTF-16LE")) };
 		return runCommand(winRs, command, args, shellId);
 	}
 
-	private static String getDecodeScript(String tempFilePath, String dstFilePath, boolean isBackupIfExistFlg, int cnt) {
+	private static String getMoveAndConcatScript(String tempFilePath, String dstFilePath, boolean isBackupIfExistFlg, int cnt) {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append(String.format("$tmp_file_path = [System.IO.Path]::GetFullPath('%s')" + winReturnCode, tempFilePath));
 		buffer.append(String.format("$dest_file_path = [System.IO.Path]::GetFullPath('%s')" + winReturnCode, dstFilePath));
@@ -323,40 +323,26 @@ public class WinRMUtil {
 		buffer.append("}" + winReturnCode);
 		buffer.append("$writer = [System.IO.File]::OpenWrite($dest_file_path)" + winReturnCode);
 		buffer.append("$bufferSize = 10 * 1024 * 1024 # should be a multiplier of 4" + winReturnCode);
-		buffer.append("$buffer = New-Object char[] $bufferSize" + winReturnCode);
+		buffer.append("$buffer = New-Object byte[] $bufferSize" + winReturnCode);
 		if (cnt > 1) {
-			buffer.append(String.format("for($idx=0; $idx -le %d; $idx++) {" + winReturnCode, cnt));
-			buffer.append("    $f = [System.Xml.XmlReader]::create($tmp_file_path + '" + WINRM_FILE_SPLIT + "' + $idx)" + winReturnCode);
-			buffer.append("    while ($f.read()) {" + winReturnCode);
-			buffer.append("        switch ($f.NodeType) {" + winReturnCode);
-			buffer.append("            ([System.Xml.XmlNodeType]::Element) {" + winReturnCode);
-			buffer.append("                if ($f.Name -eq \"return\") {" + winReturnCode);
-			buffer.append("                    $null = $f.read()" + winReturnCode);
-			buffer.append("                    while (($len = $f.ReadValueChunk($buffer, 0 ,$bufferSize)) -ne 0) {" + winReturnCode);
-			buffer.append("                        $bytes = [Convert]::FromBase64CharArray($buffer, 0, $len)" + winReturnCode);
-			buffer.append("                        $writer.Write($bytes, 0, $bytes.Length)" + winReturnCode);
-			buffer.append("                    }" + winReturnCode);
-			buffer.append("                }" + winReturnCode);
-			buffer.append("                break" + winReturnCode);
-			buffer.append("            }" + winReturnCode);
+			buffer.append(String.format("for($idx=1; $idx -le %d; $idx++) {" + winReturnCode, cnt));
+			buffer.append("    $fs = [System.IO.File]::OpenRead($tmp_file_path + '~' + $idx)" + winReturnCode);
+			buffer.append("    while($TRUE) {" + winReturnCode);
+			buffer.append("        $len = $fs.Read($buffer, 0, $bufferSize)" + winReturnCode);
+			buffer.append("        if($len -eq 0) {" + winReturnCode);
+			buffer.append("            break" + winReturnCode);
 			buffer.append("        }" + winReturnCode);
+			buffer.append("        $writer.Write($buffer, 0, $len)" + winReturnCode);
 			buffer.append("    }" + winReturnCode);
 			buffer.append("}" + winReturnCode);
 		} else {
-			buffer.append("$f = [System.Xml.XmlReader]::create($tmp_file_path)" + winReturnCode);
-			buffer.append("while ($f.read()) {" + winReturnCode);
-			buffer.append("    switch ($f.NodeType) {" + winReturnCode);
-			buffer.append("        ([System.Xml.XmlNodeType]::Element) {" + winReturnCode);
-			buffer.append("            if ($f.Name -eq \"return\") {" + winReturnCode);
-			buffer.append("                $null = $f.read()" + winReturnCode);
-			buffer.append("                while (($len = $f.ReadValueChunk($buffer, 0 ,$bufferSize)) -ne 0) {" + winReturnCode);
-			buffer.append("                    $bytes = [Convert]::FromBase64CharArray($buffer, 0, $len)" + winReturnCode);
-			buffer.append("                    $writer.Write($bytes, 0, $bytes.Length)" + winReturnCode);
-			buffer.append("                }" + winReturnCode);
-			buffer.append("            }" + winReturnCode);
-			buffer.append("            break" + winReturnCode);
-			buffer.append("        }" + winReturnCode);
+			buffer.append("$fs = [System.IO.File]::OpenRead($tmp_file_path)" + winReturnCode);
+			buffer.append("while($TRUE) {" + winReturnCode);
+			buffer.append("    $len = $fs.Read($buffer, 0, $bufferSize)" + winReturnCode);
+			buffer.append("    if($len -eq 0) {" + winReturnCode);
+			buffer.append("        break" + winReturnCode);
 			buffer.append("    }" + winReturnCode);
+			buffer.append("    $writer.Write($buffer, 0, $len)" + winReturnCode);
 			buffer.append("}" + winReturnCode);
 		}
 		buffer.append("$writer.Dispose()" + winReturnCode);
@@ -405,24 +391,21 @@ public class WinRMUtil {
 		return new WinRsCommandOutput(stdout.toString(), stderr.toString(), exitCode, state);
 	}
 	
-	private static WinRsCommandOutput downloadToTempFile(WinRs winRs, String shellId, String tempFilePath, String filename) throws WsmanException, UnsupportedEncodingException, HinemosUnknown {
+	private static WinRsCommandOutput downloadFile(WinRs winRs, String shellId, String token, String tempFilePath, String filename) throws WsmanException, UnsupportedEncodingException, HinemosUnknown {
 		String command = "powershell";
 		String[] args = {
 				"-inputformat",
 				"none",
 				"-encodedCommand",
-				Base64.encodeBase64String(getDownloadScript(tempFilePath,
-						filename).getBytes("UTF-16LE")) };
+				Base64.encodeBase64String(getDownloadScript(token, tempFilePath, filename).getBytes("UTF-16LE")) };
 		WinRsCommandOutput output = runCommand(winRs, command, args, shellId);
 
 		return output;
 	}
 	
 	
-	private static String getDownloadScript(String tempFilePath, String fileName) throws HinemosUnknown {
+	private static String getDownloadScript(String token, String tempFilePath, String fileName) throws HinemosUnknown {
 		String url = HinemosPropertyCommon.infra_transfer_winrm_url.getStringValue();
-		String pass = HinemosPropertyCommon.infra_transfer_agent_password.getStringValue();
-		String account = UserIdConstant.AGENT + ":" + pass;
 		boolean sslTrustall = HinemosPropertyCommon.infra_winrm_ssl_trustall.getBooleanValue();
 		
 		if (!url.endsWith("/")) {
@@ -432,28 +415,18 @@ public class WinRMUtil {
 		
 		StringBuffer buffer = new StringBuffer();
 		buffer.append(String.format("$temp_file_path = [System.IO.Path]::GetFullPath('%s')" + winReturnCode, tempFilePath));
-		buffer.append(String.format("$url = \"%sHinemosWS/InfraEndpoint?wsdl\"" + winReturnCode, url));
-		buffer.append("$soap = @'" + winReturnCode);
-		buffer.append("<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">" + winReturnCode);
-		buffer.append("    <soap:Body>" + winReturnCode);
-		buffer.append("        <downloadTransferFile xmlns=\"http://infra.ws.clustercontrol.com\">" + winReturnCode);
-		buffer.append(String.format("            <arg0 xmlns=\"\">%s</arg0>" + winReturnCode, fileName));
-		buffer.append("        </downloadTransferFile>" + winReturnCode);
-		buffer.append("    </soap:Body>" + winReturnCode);
-		buffer.append("</soap:Envelope>" + winReturnCode);
-		buffer.append("'@" + winReturnCode);
-		buffer.append("$user = \"hinemos\"" + winReturnCode);
-		buffer.append("$pass = \"hinemos\"" + winReturnCode);
-		buffer.append(String.format("$bytes = [System.Text.Encoding]::ASCII.GetBytes(\"%s\")" + winReturnCode, account));
-		buffer.append("$base64 = [System.Convert]::ToBase64String($bytes)" + winReturnCode);
-		buffer.append("$headers = @{ Authorization = \"Basic $base64\" }" + winReturnCode);
-		buffer.append("$progressPreference = 'silentlyContinue'" + winReturnCode);
+		buffer.append(String.format("$url = \"%sHinemosWeb/api/InfraRestEndpoints/infra/file_downloadForWindows/%s\"" + winReturnCode, url, fileName));
+		buffer.append(String.format("$header = @{\"Accept\"=\"application/json, application/octet-stream\"; \"Content-Type\"=\"application/json\"; "
+				+ "\"Authorization\"=\"Bearer %s\"}" + winReturnCode, token));
+
 		if (sslTrustall && url.startsWith("https")){
 			dlScriptHttpsEdit(buffer);
 		}
-		buffer.append("Invoke-WebRequest $url -ContentType \"text/xml\" -Body $soap -Method Post -Headers $headers -OutFile $temp_file_path" + winReturnCode);
+		
+		buffer.append("Invoke-WebRequest -Method GET $url -Headers $header -OutFile $temp_file_path" + winReturnCode);
 		String str = buffer.toString();
 		log.debug(str);
+		
 		return str;
 	}
 	
@@ -500,5 +473,43 @@ public class WinRMUtil {
 		buffer.append("    Add-Type $certCallback" + winReturnCode);
 		buffer.append(" }" + winReturnCode);
 		buffer.append("[ServerCertificateValidationCallback]::Ignore()" + winReturnCode);
+	}
+	
+	private static String login(WinRs winRs, String shellId) throws WsmanException, UnsupportedEncodingException, HinemosUnknown{
+		String url = HinemosPropertyCommon.infra_transfer_winrm_url.getStringValue();
+		String pass = HinemosPropertyCommon.infra_transfer_agent_password.getStringValue();
+		String user = UserIdConstant.AGENT;
+		boolean sslTrustall = HinemosPropertyCommon.infra_winrm_ssl_trustall.getBooleanValue();
+		
+		if (!url.endsWith("/")) {
+			url += "/";
+			log.debug("login() : infra.transfer.winrm.url is not ended with '/' , so appended. url = " + url);
+		}
+		
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(String.format("$url = \"%sHinemosWeb/api/AccessRestEndpoints/access/login\"" + winReturnCode, url));
+		buffer.append("$header = @{\"Accept\"=\"application/json\"; \"Content-Type\"=\"application/json\"}" + winReturnCode);
+		buffer.append(String.format("$body = '{\"userId\":\"%s\", \"password\":\"%s\"}'" + winReturnCode, user, pass));
+		
+		if (sslTrustall && url.startsWith("https")){
+			dlScriptHttpsEdit(buffer);
+		}
+		
+		// REST APIでJSONを取得する際はInvoke-RestMethodを使用する
+		// 取得したJSONデータは自動的にPSCustomObjectに変換される
+		buffer.append("$req = Invoke-RestMethod -Method POST -Uri $url -Headers $header -Body $body" + winReturnCode);
+		buffer.append("Write-Output $req.token.tokenId");
+		String script = buffer.toString();
+		log.debug(script);
+		
+		String command = "powershell";
+		String[] args = {
+				"-inputformat",
+				"none",
+				"-encodedCommand",
+				Base64.encodeBase64String(script.getBytes("UTF-16LE")) };
+		WinRsCommandOutput output = runCommand(winRs, command, args, shellId);
+		log.debug("login() : stdout=" + output.getStdout() + ", stderr=" + output.getStderr());
+		return output.getStdout();
 	}
 }

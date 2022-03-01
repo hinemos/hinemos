@@ -23,6 +23,7 @@ import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.repository.model.NodeConfigSettingInfo;
 import com.clustercontrol.repository.model.NodeConfigSettingItemInfo;
 import com.clustercontrol.repository.model.NodeConfigSettingItemInfoPK;
+import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.QueryUtil;
 
 /**
@@ -66,6 +67,7 @@ public class NodeConfigSettingSelector {
 
 	/**
 	 * 引数で指定されたファシリティIDの対象構成情報を返します。
+	 * 対象ファシリティの管理対象フラグが無効の場合はnullを返します。
 	 * 
 	 * @param facilityId ファシリティID
 	 * @return 対象構成情報リスト
@@ -77,11 +79,14 @@ public class NodeConfigSettingSelector {
 			throws NodeConfigSettingNotFound, InvalidRole, FacilityNotFound {
 
 		List<NodeConfigSettingInfo> list = null;
+		List<String> scopeList = null;
 		try
 		{
-			// ファシリティIDが所属するスコープを取得する
-			List<String> scopeList = FacilitySelector.getNodeScopeIdList(facilityId);
-			
+			// 対象ファシリティの管理対象フラグが有効な場合のみスコープを取得する。
+			if (FacilityTreeCache.getFacilityInfo(facilityId).getValid()){
+				// ファシリティIDが所属するスコープを取得する
+				scopeList = FacilitySelector.getNodeScopeIdList(facilityId);
+			}
 			// スコープに該当する対象構成情報を取得する
 			list = QueryUtil.getNodeConfigSettingListByFacilityIdsAndValid(scopeList, ObjectPrivilegeMode.READ);
 

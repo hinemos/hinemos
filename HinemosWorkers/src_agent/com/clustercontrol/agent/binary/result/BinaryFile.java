@@ -18,12 +18,12 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtBinaryFileDTORequest;
 
 import com.clustercontrol.agent.binary.factory.BinaryCollector;
 import com.clustercontrol.binary.util.BinaryBeanUtil;
 import com.clustercontrol.util.BinaryUtil;
 import com.clustercontrol.util.XMLUtil;
-import com.clustercontrol.ws.agentbinary.BinaryFileDTO;
 
 public class BinaryFile {
 
@@ -64,8 +64,8 @@ public class BinaryFile {
 	 * @return xml送信用DTO.
 	 * 
 	 */
-	public BinaryFileDTO getDTO() {
-		BinaryFileDTO dto = new BinaryFileDTO();
+	public AgtBinaryFileDTORequest getDTO() {
+		AgtBinaryFileDTORequest dto = new AgtBinaryFileDTORequest();
 
 		dto.setLastModTime(Long.valueOf(lastModTime.getTime()));
 		dto.setFileHeader(XMLUtil.ignoreInvalidString(BinaryUtil.listToBase64(this.getFileHeader())));

@@ -20,9 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
-
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.commons.util.HinemosEntityManager;
@@ -56,14 +53,17 @@ import com.clustercontrol.xcloud.model.LocationEntity;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil.TransactionScope;
 import com.clustercontrol.xcloud.persistence.Transactional;
-import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.CloudUtil;
+import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.RepositoryUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 
 @Transactional
 public class Instances extends Resources implements IInstances {
@@ -149,6 +149,10 @@ public class Instances extends Resources implements IInstances {
 							instanceId,
 							Session.current().getContext(),
 							InstanceStatus.running, InstanceStatus.terminated);
+					if (HinemosPropertyCommon.xcloud_power_node_update_validflag.getBooleanValue()) {
+						InstanceEntity instanceEntity = getInstance(instanceId);
+						CloudUtil.updateValidFlg(instanceEntity.getFacilityId(), true);
+					}
 				}
 			}
 		});
@@ -168,6 +172,10 @@ public class Instances extends Resources implements IInstances {
 							instanceId,
 							Session.current().getContext(),
 							InstanceStatus.terminated, InstanceStatus.stopped);
+					if (HinemosPropertyCommon.xcloud_power_node_update_validflag.getBooleanValue()) {
+						InstanceEntity instanceEntity = getInstance(instanceId);
+						CloudUtil.updateValidFlg(instanceEntity.getFacilityId(), false);
+					}
 				}
 			}
 		});
@@ -187,6 +195,10 @@ public class Instances extends Resources implements IInstances {
 							instanceId,
 							Session.current().getContext(),
 							InstanceStatus.suspend, InstanceStatus.terminated, InstanceStatus.stopped);
+					if (HinemosPropertyCommon.xcloud_power_node_update_validflag.getBooleanValue()) {
+						InstanceEntity instanceEntity = getInstance(instanceId);
+						CloudUtil.updateValidFlg(instanceEntity.getFacilityId(), false);
+					}
 				}
 			}
 		});
@@ -196,11 +208,25 @@ public class Instances extends Resources implements IInstances {
 	public List<InstanceEntity> getInstances(List<String> instanceIds) {
 		if (!instanceIds.isEmpty()) {
 			HinemosEntityManager em = Session.current().getEntityManager();
-			TypedQuery<InstanceEntity> query = em.createNamedQuery(InstanceEntity.findInstancesByInstanceIds, InstanceEntity.class);
-			query.setParameter("cloudScopeId", getUser().getCloudScopeId());
-			query.setParameter("locationId", getLocation().getLocationId());
-			query.setParameter("instanceIds", instanceIds);
-			return query.getResultList();
+			int start_idx = 0;
+			int end_idx = 0;
+			List<InstanceEntity> instances = new ArrayList<>();
+			while(start_idx < instanceIds.size()){
+				TypedQuery<InstanceEntity> query =  em.createNamedQuery(InstanceEntity.findInstancesByInstanceIds, InstanceEntity.class);
+				query.setParameter("cloudScopeId", getCloudScope().getId());
+				query.setParameter("locationId", getLocation().getLocationId());
+				end_idx = start_idx + CloudUtil.SQL_PARAM_NUMBER_THRESHOLD;
+				if (end_idx > instanceIds.size()){
+					end_idx = instanceIds.size();
+				}
+
+				List<String> subList = instanceIds.subList(start_idx, end_idx);
+				query.setParameter("instanceIds", subList);
+				instances.addAll(query.getResultList());
+				start_idx = end_idx;
+			}
+
+			return instances;
 		} else {
 			HinemosEntityManager em = Session.current().getEntityManager();
 			TypedQuery<InstanceEntity> query = em.createNamedQuery(InstanceEntity.findInstancesByLocation, InstanceEntity.class);
@@ -214,15 +240,15 @@ public class Instances extends Resources implements IInstances {
 	public InstanceEntity getInstance(String instanceId) throws CloudManagerException {
 		List<InstanceEntity> instances = getInstances(Arrays.asList(instanceId));
 		if (instances.isEmpty())
-			throw ErrorCode.CLOUDINSTANCE_NOT_FOUND.cloudManagerFault(instanceId);
+			throw ErrorCode.CLOUDINSTANCE_NOT_FOUND_PLATFORMINSTANANCE.cloudManagerFault(getCloudScope().getCloudScopeId(),getLocation().getLocationId(),instanceId);
 		return instances.get(0);
 	}
 	
 	@Override
-	public void removeInstances(final List<String> instanceIds) throws CloudManagerException {
+	public List<InstanceEntity> removeInstances(final List<String> instanceIds) throws CloudManagerException {
 		final List<InstanceEntity> instanceEntitiess = getInstances(instanceIds);
 		if (instanceEntitiess.isEmpty())
-			return;
+			return instanceEntitiess;
 
 		// 検知済みのインスタンスの状態が正常か確認。
 		final List<String> existedInstanceIds = new ArrayList<>();
@@ -257,6 +283,7 @@ public class Instances extends Resources implements IInstances {
 					Session.current().getContext(),
 					InstanceStatus.running, InstanceStatus.suspend, InstanceStatus.terminated, InstanceStatus.stopped);
 		}
+		return instanceEntitiess;
 	}
 
 	@Override
@@ -497,14 +524,26 @@ public class Instances extends Resources implements IInstances {
 					return CloudUtil.emptyList(InstanceBackupEntity.class);
 				}
 				
-				TypedQuery<InstanceBackupEntity> query = Session.current().getEntityManager().createNamedQuery("findInstanceBackupsByInstanceIds", InstanceBackupEntity.class);
-				query.setParameter("cloudScopeId", getCloudScope().getId());
-				query.setParameter("locationId", getLocation().getLocationId());
-				query.setParameter("instanceIds", queryInstanceIds);
+				int start_idx = 0;
+				int end_idx = 0;
+				List<InstanceBackupEntity> backups = new ArrayList<>();
+				while(start_idx < queryInstanceIds.size()){
+					TypedQuery<InstanceBackupEntity> query = Session.current().getEntityManager().createNamedQuery(InstanceBackupEntity.findInstanceBackupsByInstanceIds, InstanceBackupEntity.class);
+					query.setParameter("cloudScopeId", getCloudScope().getId());
+					query.setParameter("locationId", getLocation().getLocationId());
+					end_idx = start_idx + CloudUtil.SQL_PARAM_NUMBER_THRESHOLD;
+					if (end_idx > queryInstanceIds.size()){
+						end_idx = queryInstanceIds.size();
+					}
+					
+					List<String> subList = queryInstanceIds.subList(start_idx, end_idx);
+					query.setParameter("instanceIds", subList);
+					backups.addAll(query.getResultList());
+					start_idx = end_idx;
+				}
 				
 				Set<InstanceEntity> instanceEntities = new HashSet<>();
 				List<InstanceBackupEntryEntity> entries = new ArrayList<>();
-				List<InstanceBackupEntity> backups = query.getResultList();
 				for (InstanceBackupEntity backup: backups) {
 					entries.addAll(backup.getEntries());
 					instanceEntities.add(backup.getInstance());
@@ -565,10 +604,10 @@ public class Instances extends Resources implements IInstances {
 	}
 
 	@Override
-	public void deletInstanceSnapshots(final String instanceId, final List<String> snapshotIds) throws CloudManagerException {
-		getCloudScope().optionExecute(new OptionExecutor() {
+	public List<InstanceBackupEntryEntity> deletInstanceSnapshots(final String instanceId, final List<String> snapshotIds) throws CloudManagerException {
+		return getCloudScope().optionCall(new OptionCallable<List<InstanceBackupEntryEntity>>() {
 			@Override
-			public void execute(CloudScopeEntity scope, ICloudOption option) throws CloudManagerException {
+			public List<InstanceBackupEntryEntity> call(CloudScopeEntity scope, ICloudOption option) throws CloudManagerException {
 				List<InstanceEntity> instanceEntities = getInstances(Arrays.asList(instanceId));
 				
 				final InstanceEntity instanceEntity;
@@ -598,6 +637,7 @@ public class Instances extends Resources implements IInstances {
 				} catch(CloudManagerException e) {
 					Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
 				}
+				return removed;
 			}
 		});
 	}

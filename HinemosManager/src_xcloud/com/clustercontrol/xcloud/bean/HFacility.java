@@ -108,6 +108,7 @@ public abstract class HFacility {
 		Node,
 		Instance,
 		Entity,
+		Location,
 		HNodeLinckage
 	}
 	

@@ -13,7 +13,7 @@ import java.io.Serializable;
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.repository.FacilityPath;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 
 /**
  * スコープツリープロパティ定義クラス<BR>
@@ -39,10 +39,10 @@ public class ScopePropertyDefine extends PropertyDefine implements Serializable 
 	@Override
 	public String getColumnText(Object value) {
 		//プロパティ値がファシリティツリーならば、スコープパスを表示
-		if (value instanceof FacilityTreeItem) {
+		if (value instanceof FacilityTreeItemResponse) {
 			FacilityPath path = new FacilityPath(ClusterControlPlugin
 					.getDefault().getSeparator());
-			return path.getPath((FacilityTreeItem) value);
+			return path.getPath((FacilityTreeItemResponse) value);
 		} else if (value instanceof String) {
 			// 文字列の場合は、そのまま表示する。
 			return (String) value;
@@ -60,10 +60,10 @@ public class ScopePropertyDefine extends PropertyDefine implements Serializable 
 	public Object getValue(Property element) {
 		//プロパティ値がファシリティツリーならば、スコープパスを表示
 		Object value = element.getValue();
-		if (value instanceof FacilityTreeItem) {
+		if (value instanceof FacilityTreeItemResponse) {
 			FacilityPath path = new FacilityPath(ClusterControlPlugin
 					.getDefault().getSeparator());
-			return path.getPath((FacilityTreeItem) value);
+			return path.getPath((FacilityTreeItemResponse) value);
 		} else if (value instanceof String) {
 			// 文字列の場合は、そのまま表示する。
 			return value;
@@ -81,7 +81,7 @@ public class ScopePropertyDefine extends PropertyDefine implements Serializable 
 	@Override
 	public void modify(Property element, Object value) {
 		//変更値がファシリティツリーならば、プロパティ値に設定する
-		if (value instanceof FacilityTreeItem) {
+		if (value instanceof FacilityTreeItemResponse) {
 			element.setValue(value);
 		}
 	}

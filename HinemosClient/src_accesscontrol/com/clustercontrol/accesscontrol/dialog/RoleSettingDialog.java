@@ -29,18 +29,18 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.AssignUserWithRoleRequest;
+import org.openapitools.client.model.RoleInfoResponse;
+import org.openapitools.client.model.UserInfoResponse;
 
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UnEditableRole;
+import com.clustercontrol.fault.UserDuplicate;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.access.UnEditableRole_Exception;
-import com.clustercontrol.ws.access.UserDuplicate_Exception;
-import com.clustercontrol.ws.access.UserInfo;
 
 /**
  * アカウント[ユーザの選択]ダイアログクラスです。
@@ -81,7 +81,7 @@ public class RoleSettingDialog extends CommonDialog {
 	public static final int WIDTH_TEXT = 10;
 
 	/** 入力値を保持するオブジェクト。 */
-	private RoleInfo inputData = null;
+	private RoleInfoResponse inputData = null;
 
 	/** 全ユーザ一覧の表示名をキーとし、ユーザIDを格納しているハッシュマップ */
 	private HashMap<String, String> mapNotRoleUser = null;
@@ -130,20 +130,20 @@ public class RoleSettingDialog extends CommonDialog {
 				.getString("dialog.accesscontrol.role.setting"));
 
 		// ロール情報の取得
-		RoleInfo info = null;
+		RoleInfoResponse info = null;
 		try {
-			AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(this.managerName);
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(this.managerName);
 			info = wrapper.getRoleInfo(this.roleId);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 			throw new InternalError(e.getMessage());
 		} catch (Exception e) {
-			m_log.warn("customizeDialog(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("customizeDialog(), " + e.getMessage(), e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 			throw new InternalError(e.getMessage());
 		}
 
@@ -356,14 +356,18 @@ public class RoleSettingDialog extends CommonDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		RoleInfo roleInfo = this.inputData;
+		RoleInfoResponse roleInfo = this.inputData;
 		if(roleInfo == null){
 			return result;
 		}
 
 		try {
-			AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
-			wrapper.assignUserRole(roleInfo.getRoleId(), roleInfo.getUserList());
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
+			AssignUserWithRoleRequest userList = new AssignUserWithRoleRequest();
+			for( UserInfoResponse rec : roleInfo.getUserInfoList()){
+				userList.addUserIdListItem(rec.getUserId());
+			}
+			wrapper.assignUserWithRole(roleInfo.getRoleId(),userList);
 			result = true;
 
 			Object[] arg = {managerName};
@@ -373,28 +377,18 @@ public class RoleSettingDialog extends CommonDialog {
 					Messages.getString("successful"),
 					Messages.getString("message.accesscontrol.34", arg));
 
-		} catch (UserDuplicate_Exception e) {
-			//ロールID取得
-			String args[] = { roleInfo.getRoleId() };
-
-			// ロールIDが重複している場合、エラーダイアログを表示する
-			MessageDialog.openInformation(
-					null,
-					Messages.getString("message"),
-					Messages.getString("message.accesscontrol.35", args));
-
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				// 権限なし
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
-			} else if (e instanceof UnEditableRole_Exception) {
+			} else if (e instanceof UnEditableRole) {
 				// ユーザの割り当て不可のロールの場合はエラー（ALL_USERS）
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.43"));
 			} else {
-				errMessage = ", " + HinemosMessage.replace(e.getMessage());
+				errMessage = ", " + e.getMessage();
 			}
 			MessageDialog.openError(
 					null,
@@ -411,36 +405,36 @@ public class RoleSettingDialog extends CommonDialog {
 	 *
 	 * @param roleInfo 設定値として用いるロール情報
 	 */
-	protected void setInputData(String managerName, RoleInfo roleInfo) {
+	protected void setInputData(String managerName, RoleInfoResponse roleInfo) {
 
 		this.inputData = roleInfo;
 
 		// 各項目に反映
 
-		java.util.List<UserInfo> allUserList = null;
+		java.util.List<UserInfoResponse> allUserList = null;
 		// 全ユーザを取得
 		try {
-			AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+			AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 			allUserList = wrapper.getUserInfoList();
 			//昇順ソート
-			Collections.sort(allUserList, new Comparator<UserInfo>(){
+			Collections.sort(allUserList, new Comparator<UserInfoResponse>(){
 				@Override
-				public int compare(UserInfo o1, UserInfo o2) {
+				public int compare(UserInfoResponse o1, UserInfoResponse o2) {
 					return o1.getUserId().compareTo(o2.getUserId());
 				}
 			});
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 
 		} catch (Exception e) {
 			// 上記以外の例外
-			m_log.warn("getOwnUserList(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("getOwnUserList(), " +e.getMessage(), e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 		}
 		
 		if (allUserList == null)
@@ -448,12 +442,16 @@ public class RoleSettingDialog extends CommonDialog {
 
 		// リストを振り分ける
 		String listName = null;
-		for (UserInfo userInfo : allUserList) {
+		java.util.List<String> roleAssignUserList = new java.util.ArrayList<String>();
+		for (UserInfoResponse userInfo : roleInfo.getUserInfoList()) {
+			roleAssignUserList.add(userInfo.getUserId());
+		}
+		for (UserInfoResponse userInfo : allUserList) {
 
 			//リストの表示名を生成する
 			listName = userInfo.getUserName() + "(" + userInfo.getUserId() + ")";
 			
-			if (roleInfo.getUserList().contains(userInfo.getUserId())) {
+			if (roleAssignUserList.contains(userInfo.getUserId())) {
 				this.listRoleUser.add(listName);
 				this.mapRoleUser.put(listName, userInfo.getUserId());
 			} else {
@@ -469,14 +467,19 @@ public class RoleSettingDialog extends CommonDialog {
 	 *
 	 * @return ロール情報
 	 */
-	private RoleInfo createInputData() {
-		RoleInfo info = this.inputData;
+	private RoleInfoResponse createInputData() {
+		RoleInfoResponse info = this.inputData;
 
 		// 所属ユーザ一覧からユーザ情報を取得する
-		java.util.List<String> roleUserList = info.getUserList();
+		java.util.List<UserInfoResponse> roleUserList = info.getUserInfoList();
 		roleUserList.clear();
 		if (this.listRoleUser.getItemCount() > 0) {
-			roleUserList.addAll(getUserIdList(this.mapRoleUser));
+			for( String userId : getUserIdList(this.mapRoleUser) ){
+				// 入力値としては ユーザIDStringのListでいいのだが、持ち回り用の型の都合上、UserInfoResponseに変更
+				UserInfoResponse rec= new UserInfoResponse();
+				rec.setUserId(userId);
+				roleUserList.add( rec );
+			}
 		}
 
 		return info;
@@ -526,7 +529,7 @@ public class RoleSettingDialog extends CommonDialog {
 	}
 
 	/**
-	 * 表示名をキーとしたハッシュマップからユーザIDのリストを返す
+	 * 表示名をキーとしたハッシュマップからユーザのリストを返す
 	 *
 	 * @param userMap HashMap
 	 * @return ユーザIDのリスト

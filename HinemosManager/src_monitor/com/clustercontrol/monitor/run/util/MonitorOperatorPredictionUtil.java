@@ -28,7 +28,7 @@ import org.apache.commons.math3.linear.SingularMatrixException;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosArithmeticException;
 import com.clustercontrol.fault.HinemosIllegalArgumentException;
-import com.clustercontrol.monitor.run.bean.MonitorPredictionMethodConstant;
+import com.clustercontrol.monitor.run.bean.MonitorPredictionMethod;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.util.MonitorCollectDataCache.MonitorCollectData;
 import com.clustercontrol.util.HinemosTime;
@@ -143,13 +143,13 @@ public class MonitorOperatorPredictionUtil {
 		}
 		m_log.debug("getPredictionData regression start : predictionMethod=" + predictionMethod);
 		int order = 0;
-		if (MonitorPredictionMethodConstant.POLYNOMIAL_1.equals(predictionMethod)) {
+		if (MonitorPredictionMethod.POLYNOMIAL_1.equals(predictionMethod)) {
 			// 線形回帰（一次）
 			order = 1;
-		} else if (MonitorPredictionMethodConstant.POLYNOMIAL_2.equals(predictionMethod)) {
+		} else if (MonitorPredictionMethod.POLYNOMIAL_2.equals(predictionMethod)) {
 			// 非線形回帰（二次）
 			order = 2;
-		} else if (MonitorPredictionMethodConstant.POLYNOMIAL_3.equals(predictionMethod)) {
+		} else if (MonitorPredictionMethod.POLYNOMIAL_3.equals(predictionMethod)) {
 			// 非線形回帰（三次）
 			order = 3;
 		}

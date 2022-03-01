@@ -11,10 +11,11 @@ package com.clustercontrol.jobmanagement.action;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.openapitools.client.model.JobParameterInfoResponse;
+
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
-import com.clustercontrol.jobmanagement.bean.JobParamTypeConstant;
 import com.clustercontrol.jobmanagement.bean.JobParamTypeMessage;
 import com.clustercontrol.util.Messages;
 
@@ -78,7 +79,7 @@ public class ParameterProperty {
 	 * @see com.clustercontrol.bean.JobParamTypeConstant
 	 * @see com.clustercontrol.jobmanagement.bean.SystemParameterConstant
 	 */
-	public Property getProperty(int type) {
+	public Property getProperty(JobParameterInfoResponse.TypeEnum type) {
 		//プロパティ項目定義
 		Property useId = new Property(ID_USER_PARAM_ID, Messages.getString("name"),
 				PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
@@ -120,7 +121,7 @@ public class ParameterProperty {
 
 		Property property = new Property(null, null, null);
 
-		if (type == JobParamTypeConstant.TYPE_USER) {
+		if (type == JobParameterInfoResponse.TypeEnum.USER) {
 			paramType.setValue(JobParamTypeMessage.STRING_USER);
 
 			// 初期表示ツリーを構成。

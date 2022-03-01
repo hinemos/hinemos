@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.CollectorNotFound;
 import com.clustercontrol.performance.monitor.entity.CollectorPollingMstData;
 import com.clustercontrol.performance.monitor.model.CollectorPollingMstEntity;
@@ -47,7 +48,7 @@ abstract public class Operator {
 	private Map<String, CollectorPollingMstData> m_oidMap = new ConcurrentHashMap<String, CollectorPollingMstData>();
 
 
-	public abstract double calc(DataTable currentTable, DataTable previousTable, String deviceName) throws CollectedDataNotFoundException, InvalidValueException;
+	public abstract double calc(DataTable currentTable, DataTable previousTable, String deviceName) throws CollectedDataNotFoundException, InvalidValueException, InvalidOverValueException;
 
 	/**
 	 * 直近の収集時の値を取得します
@@ -88,9 +89,10 @@ abstract public class Operator {
 	 * @return 差分値
 	 * @throws CollectedDataNotFoundException
 	 * @throws InvalidValueException
+	 * @throws InvalidOverValueException
 	 */
 	protected double getDifferenceValue(String variable, DataTable currentTable, DataTable previousTable, String deviceName)
-			throws CollectedDataNotFoundException, InvalidValueException{
+			throws CollectedDataNotFoundException, InvalidValueException, InvalidOverValueException{
 		if(m_log.isDebugEnabled()){
 			m_log.debug("getDifferenceValue() variable : " + variable);
 		}
@@ -236,6 +238,10 @@ abstract public class Operator {
 							PollerProtocolConstant.getEntryKey(getCollectMethod() ,pollingTarget + previousIndex));
 				} catch (CollectedDataNotFoundException e){
 					throw e;
+				} catch (InvalidOverValueException e) {
+					String message = "getDifferenceValue() : " + e.getClass().getSimpleName() + ", " + e.getMessage();
+					m_log.debug(message, e);
+					throw new InvalidOverValueException(message);
 				} catch (Exception e){
 					// 直前のgetMibValueDiff()の処理にて、failureValueが定義されていないpolling targetの場合に
 					// NullPointerExceptionが発生する。
@@ -266,6 +272,10 @@ abstract public class Operator {
 							PollerProtocolConstant.getEntryKey(getCollectMethod() ,pollingTarget));
 				} catch (CollectedDataNotFoundException e){
 					throw e;
+				} catch (InvalidOverValueException e) {
+					String message = "getDifferenceValue() : " + e.getClass().getSimpleName() + ", " + e.getMessage();
+					m_log.debug(message, e);
+					throw new InvalidOverValueException(message);
 				} catch (Exception e){
 					// 直前のgetMibValueDiff()の処理にて、failureValueが定義されていないpolling targetの場合に
 					// NullPointerExceptionが発生する。
@@ -304,6 +314,10 @@ abstract public class Operator {
 				return total;
 			} catch (CollectedDataNotFoundException e) {
 				throw e;
+			} catch (InvalidOverValueException e) {
+				String message = "getDifferenceValue() : " + e.getClass().getSimpleName() + ", " + e.getMessage();
+				m_log.debug(message, e);
+				throw new InvalidOverValueException(message);
 			} catch (Exception e){
 				// エラー処理
 				String message = "getDifferenceValue() : " + e.getClass().getSimpleName() + ", " + e.getMessage();
@@ -317,6 +331,10 @@ abstract public class Operator {
 						PollerProtocolConstant.getEntryKey(getCollectMethod() ,entryKey));
 			} catch (CollectedDataNotFoundException e){
 				throw e;
+			} catch (InvalidOverValueException e) {
+				String message = "getDifferenceValue() : " + e.getClass().getSimpleName() + ", " + e.getMessage();
+				m_log.debug(message, e);
+				throw new InvalidOverValueException(message);
 			} catch (Exception e){
 				// 直前のgetMibValueDiff()の処理にて、failureValueが定義されていないpolling targetの場合に
 				// NullPointerExceptionが発生する。
@@ -327,7 +345,7 @@ abstract public class Operator {
 			}
 		}
 	}
-
+	
 	private double getValue(String variable, DataTable table, String deviceName)
 			throws CollectedDataNotFoundException, InvalidValueException{
 		if(m_log.isDebugEnabled()){
@@ -392,7 +410,29 @@ abstract public class Operator {
 						}
 						
 						if( value.equals(deviceName) ){
-							index = entry.getKey().substring(entry.getKey().lastIndexOf("."));
+							String tmpKey = entry.getKey();
+							/**HP-UXのファイルシステム監視の場合
+							* .1.3.6.1.4.1.11.2.3.1.2.2.1.10に対してポーリングをすると、
+							* .1.3.6.1.4.1.11.2.3.1.2.2.1.10.1073741825.0 = /tmp
+							* のような形で値が帰ってくる。
+							* Indexが1073741825.0のような形で2つ使用されるため、
+							* key .1.3.6.1.4.1.11.2.3.1.2.2.1.10に対してポーリングする場合のみ、
+							* 最後の2オクテットをindexとして扱う。
+							*
+							* 収集項目マスタについては、ユーザが編集している可能性、
+							* もしくは将来的に変更になる可能性があるため、
+							* OIDについてはあえてべた書きとする。
+							*
+							* FIXME
+							* 本質的には、.1.3.6.1.4.1.11.2.3.1.2.2.1.10.?.?のような形で
+							* 複数Indexに対応するロジックを追加すべき
+							*/
+							if(platformId.equals("HP-UX") && pollingTarget.equals(".1.3.6.1.4.1.11.2.3.1.2.2.1.10")){
+								tmpKey = entry.getKey().substring(0,entry.getKey().lastIndexOf("."));
+								m_log.debug("getValue(): pollingTarget is HP-UX FileSystemKey(.1.3.6.1.4.1.11.2.3.1.2.2.1.10). Use compound index");
+							}
+							
+							index = entry.getKey().substring(tmpKey.lastIndexOf("."));
 							break;
 						}
 					}
@@ -608,11 +648,19 @@ abstract public class Operator {
 
 	/**
 	 * 直近収集と前回収集のデータテーブルから指定のpollingTargetの値を取得しその差分を求める
-	 * @throws CollectedDataNotFoundException 
+	 *
+	 * @param data
+	 * @param currentTable     現在値
+	 * @param previousTable    前回値
+	 * @param currentEntryKey  現在値キー
+	 * @param previousEntryKey 前回値キー
+	 * @return 差分値
+	 * @throws CollectedDataNotFoundException
+	 * @throws InvalidOverValueException
 	 */
 	private double getMibValueDiff(CollectorPollingMstData data,
 			DataTable currentTable, DataTable previousTable, String currentEntryKey, String previousEntryKey)
-					throws CollectedDataNotFoundException {
+					throws CollectedDataNotFoundException, InvalidOverValueException {
 
 		// return用の変数
 		double ret = 0;
@@ -631,24 +679,51 @@ abstract public class Operator {
 
 		// 差分をlongで計算する
 		long diff = currentValue - previousValue;
-
-
+		
 		// 差分が正の値の場合
-		if(diff >= 0){
+		if (diff >= 0) {
 			ret = diff;
-
+			// 前回値が負 かつ 今回値が正の場合、不正な値として返す
+			if ((previousValue < 0) && (currentValue >= 0)) {
+				// COUNTER32の場合、Long桁あふれは発生し得ずここに入ってこない為、COUNTER64のみ判断
+				if (HinemosPropertyCommon.monitor_snmp_invalid_over_value_64.getBooleanValue()) {
+					m_log.info("getMibValueDiff() : difference data is invalid(" + ret + ")");
+					throw new InvalidOverValueException("difference data is invalid(" + ret + ")");
+				}
+				if(m_log.isDebugEnabled()) {
+					m_log.debug( " A truncation of the value due to exceeding the upper limit was detected. Counter64 and more .");
+				}
+			}
 			// 差分が負の値の場合はdouble値へ変換する
 		} else {
 
-			// 値のタイプがCounter32の型の場合は上限を越えループした場合の処理
-			if("Counter32".equals(data.getValueType()) || "Uint32".equals(data.getValueType())) {
+			if( m_log.isDebugEnabled() ){
+				m_log.debug( "Difference is negative. data.getValueType()="+ data.getValueType() + " currentEntryKey="+ currentEntryKey +" previousEntryKey="
+					+previousEntryKey + " currentValue=" + currentValue + " previousValue="+previousValue  );
+			}
+			// 値のタイプがCounter32の型の場合は上限を越えループした場合の処理(TimeTicksも同様に扱う)
+			if("Counter32".equals(data.getValueType()) || "Uint32".equals(data.getValueType()) || "TimeTicks".equals(data.getValueType()) ) {
 				diff = COUNTER32_MAX_VALUE + 1 + diff;
 				ret = convLongToDouble(diff);
-
-				// 値のタイプがCounter64の型の場合は上限を越えループした場合の処理
+				if (HinemosPropertyCommon.monitor_snmp_invalid_over_value_32.getBooleanValue()) {
+					// 上限を超えた場合は不正な値として返す
+					m_log.info("getMibValueDiff() : difference data is invalid(" + ret + ")");
+					throw new InvalidOverValueException("difference data is invalid(" + ret + ")");
+				}
+				if( m_log.isDebugEnabled() ){
+					m_log.debug( " A truncation of the value due to exceeding the upper limit was detected. Counter32 and more .");
+				}
+			// 値のタイプがCounter64の型の場合は上限を越えループした場合の処理
 			} else if ("Counter64".equals(data.getValueType()) || "Uint64".equals(data.getValueType())) {
 				ret = COUTNER64_MAX_VALUE.add(BigInteger.valueOf(diff + 1)).doubleValue();
-
+				if (HinemosPropertyCommon.monitor_snmp_invalid_over_value_64.getBooleanValue()) {
+					// 上限を超えた場合は不正な値として返す
+					m_log.info("getMibValueDiff() : difference data is invalid(" + ret + ")");
+					throw new InvalidOverValueException("difference data is invalid(" + ret + ")");
+				}
+				if( m_log.isDebugEnabled() ){
+					m_log.debug( " A truncation of the value due to exceeding the upper limit was detected. Counter64 and more .");
+				}
 			}
 		}
 
@@ -797,6 +872,14 @@ abstract public class Operator {
 		}
 	}
 
+	public static class InvalidOverValueException extends Exception {
+		private static final long serialVersionUID = -6131844637673491447L;
+
+		public InvalidOverValueException(String messages) {
+			super(messages);
+		}
+	}
+	
 	public class CollectedDataNotFoundException extends Exception {
 		private static final long serialVersionUID = 6306555743811316089L;
 		

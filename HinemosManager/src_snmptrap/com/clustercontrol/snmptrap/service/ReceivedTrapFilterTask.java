@@ -25,17 +25,18 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.persistence.Query;
+import javax.xml.bind.DatatypeConverter;
 
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.StringUtil;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -61,6 +62,8 @@ import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.util.apllog.AplLogger;
+
+import jakarta.persistence.Query;
 
 /**
  * フィルタリング処理を実装したクラス
@@ -361,7 +364,7 @@ public class ReceivedTrapFilterTask implements Runnable {
 							trapV1.getEnterpriseId(),
 							String.valueOf(trapV1.getGenericId()),
 							String.valueOf(trapV1.getSpecificId())};
-					AplLogger.put(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.MONITOR_SNMPTRAP, MessageConstant.MESSAGE_SYS_009_TRAP, args);
+					AplLogger.put(InternalIdCommon.MON_SNMP_TRP_SYS_009, args);
 				}
 			}
 		}
@@ -459,7 +462,11 @@ public class ReceivedTrapFilterTask implements Runnable {
 			switch (varBinds.get(i).getType()) {
 			case OctetString :
 			case Opaque :
-				varBindStrs[i] = new String(varBinds.get(i).getObject(), charset);
+				if (StringUtil.checkEncode(varBinds.get(i).getObject(), charset)) {
+					varBindStrs[i] = new String(varBinds.get(i).getObject(), charset);
+				} else {
+					varBindStrs[i] = DatatypeConverter.printHexBinary(varBinds.get(i).getObject());
+				}
 				break;
 			default :
 				varBindStrs[i] = new String(varBinds.get(i).getObject());
@@ -744,8 +751,12 @@ public class ReceivedTrapFilterTask implements Runnable {
 
 	private String[] createMessages(TrapCheckInfo checkInfo, String[] varBindStrs, SnmpTrap receivedTrap) {
 		StringBuilder orgMessage = new StringBuilder();
-		if (HinemosPropertyCommon.monitor_snmptrap_org_message_community.getBooleanValue())
+		// v3の場合、receivedTrap.communityにユーザ名が入る。
+		// monitor.snmptrap.org.message.communityで表示を制御すると混乱を招きそう、またmonitor.snmptrap.v3.userに指定されたユーザ以外は認証されないため、ユーザ名は表示しない。
+		if (HinemosPropertyCommon.monitor_snmptrap_org_message_community.getBooleanValue()
+				&& receivedTrap.getTrapId().getVersion() != SnmpVersionConstant.TYPE_V3) {
 			orgMessage.append(MessageConstant.COMMUNITY_NAME.getMessage()).append("=").append(receivedTrap.getCommunity()).append(" \n");
+		}
 
 		if (HinemosPropertyCommon.monitor_snmptrap_org_message_varbind.getBooleanValue()) {
 			boolean first = true;

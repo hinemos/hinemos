@@ -29,21 +29,24 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddBinaryfileMonitorRequest;
+import org.openapitools.client.model.BinaryCheckInfoResponse;
+import org.openapitools.client.model.BinaryCheckInfoResponse.CollectTypeEnum;
+import org.openapitools.client.model.BinaryCheckInfoResponse.CutTypeEnum;
+import org.openapitools.client.model.BinaryPatternInfoRequest;
+import org.openapitools.client.model.ModifyBinaryfileMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.binary.bean.BinaryConstant;
-import com.clustercontrol.binary.util.BinaryEndpointWrapper;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.BinaryCheckInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
 
 /**
  * バイナリファイルの監視設定ダイアログクラス<BR>
@@ -73,7 +76,7 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 
 	// 隠しパラメータ.
 	/** 詳細設定ダイアログの入力値. */
-	protected BinaryCheckInfo m_inputDetails = null;
+	protected BinaryCheckInfoResponse m_inputDetails = null;
 	/** 詳細設定ダイアログOKボタン押下時に選択していたデータ構造. */
 	protected String m_selectedDataArch = null;
 
@@ -135,20 +138,20 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 		super.confirmCollectValid.removeSelectionListener(super.collectSelectedListner);
 
 		// 初期表示値の設定.
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if (this.monitorId == null) {
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			super.setInfoInitialValue(info);
 			super.m_monitorRule.setInputData(info);
 			this.setInputData(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(super.managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(super.managerName);
 				info = wrapper.getMonitor(monitorId);
 				this.setInputData(info);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
@@ -337,13 +340,13 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 		this.m_dataArchitecture.add(expressionStr);
 
 		// プリセットをマネージャーから取得.
-		List<BinaryCheckInfo> presetList = null;
+		List<BinaryCheckInfoResponse> presetList = null;
 		String errMessage = null;
 		String[] args = null;
 		try {
 			String managerName = super.getManagerName();
-			BinaryEndpointWrapper wrapper = BinaryEndpointWrapper.getWrapper(managerName);
-			presetList = wrapper.getPresetList();
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
+			presetList = wrapper.getBinaryPresetList();
 		} catch (Exception e) {
 			args = new String[] { Messages.getString("binary.data.struct"), Messages.getString("preset") };
 			errMessage = HinemosMessage.replace(e.getMessage());
@@ -359,7 +362,7 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 		}
 
 		// 取得したプリセットをプルダウンにセット.
-		for (BinaryCheckInfo preset : presetList) {
+		for (BinaryCheckInfoResponse preset : presetList) {
 			if ("".equals(preset.getTagType())) {
 				// プルダウンリスト表示名の取得に失敗したファイルが存在する場合はエラーメッセージを表示する(プルダウン表示不可).
 				String presetFile = Messages.getString("preset") + String.format("[%s]", preset.getFileName());
@@ -449,7 +452,7 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 		}
 
 		// プルダウンにセットしたデータがプリセットファイルから取得した設定値の場合.
-		if (obj instanceof BinaryCheckInfo) {
+		if (obj instanceof BinaryCheckInfoResponse) {
 			return BinaryConstant.DataArchType.PRESET;
 		}
 
@@ -504,7 +507,7 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 			return;
 		}
 		Object obj = this.m_dataArchitecture.getData(this.m_dataArchitecture.getText());
-		if (obj == null || !(obj instanceof BinaryCheckInfo)) {
+		if (obj == null || !(obj instanceof BinaryCheckInfoResponse)) {
 			return;
 		}
 
@@ -514,7 +517,7 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 			return;
 		}
 
-		BinaryCheckInfo presetInfo = (BinaryCheckInfo) obj;
+		BinaryCheckInfoResponse presetInfo = (BinaryCheckInfoResponse) obj;
 		this.m_inputDetails = presetInfo;
 		this.m_selectedDataArch = this.m_dataArchitecture.getText();
 	}
@@ -525,7 +528,7 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 	private void selectedDetails() {
 
 		// ダイアログデフォルト値をセット.
-		BinaryCheckInfo detailInfo = null;
+		BinaryCheckInfoResponse detailInfo = null;
 		if (m_inputDetails != null && m_selectedDataArch != null
 				&& m_selectedDataArch.equals(m_dataArchitecture.getText())) {
 			// 前回入力時と同じデータ構造を選択している場合は前回の入力値をセット.
@@ -533,8 +536,8 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 		} else {
 			// データ構造があらためて選択されている場合はプリセットファイルの設定値を設定.
 			Object obj = m_dataArchitecture.getData(m_dataArchitecture.getText());
-			if (obj != null && obj instanceof BinaryCheckInfo) {
-				detailInfo = (BinaryCheckInfo) obj;
+			if (obj != null && obj instanceof BinaryCheckInfoResponse) {
+				detailInfo = (BinaryCheckInfoResponse) obj;
 			} else {
 				// プリセット取得不可の場合はダイアログデフォルト値.
 				detailInfo = null;
@@ -579,13 +582,13 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 	 *            設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 
 		// 間隔が0の場合は、デフォルトの5分で表示する(変更のみ)
 		if (monitor.getBinaryCheckInfo() != null) {
-			if (!BinaryConstant.COLLECT_TYPE_ONLY_INCREMENTS.equals(monitor.getBinaryCheckInfo().getCollectType()) ||
-					BinaryConstant.CUT_TYPE_LENGTH.equals(monitor.getBinaryCheckInfo().getCutType())) {
-				monitor.setRunInterval(300);
+			if (!CollectTypeEnum.ONLY_INCREMENTS.equals(monitor.getBinaryCheckInfo().getCollectType()) ||
+					CutTypeEnum.LENGTH.equals(monitor.getBinaryCheckInfo().getCutType())) {
+				monitor.setRunInterval(MonitorInfoResponse.RunIntervalEnum.MIN_05);
 			}
 		}
 		
@@ -594,17 +597,17 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 		super.inputData = monitor;
 
 		// 通知設定の取得.
-		List<NotifyRelationInfo> c = monitor.getNotifyRelationList();
+		List<NotifyRelationInfoResponse> c = monitor.getNotifyRelationList();
 		if (c != null) {
-			for (NotifyRelationInfo i : c) {
+			for (NotifyRelationInfoResponse i : c) {
 				m_log.debug("notifyId : " + i.getNotifyId());
 			}
 		}
 
 		// バイナリ監視情報の設定.
-		BinaryCheckInfo binaryfileInfo = monitor.getBinaryCheckInfo();
+		BinaryCheckInfoResponse binaryfileInfo = monitor.getBinaryCheckInfo();
 		if (binaryfileInfo == null) {
-			binaryfileInfo = new BinaryCheckInfo();
+			binaryfileInfo = new BinaryCheckInfoResponse();
 			this.m_inputDetails = null;
 		} else {
 			// 登録値をデフォルト値としてセット.
@@ -612,8 +615,8 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 		}
 
 		// 収集方式.
-		if (binaryfileInfo.getCollectType() == null || binaryfileInfo.getCollectType().isEmpty()
-				|| BinaryConstant.COLLECT_TYPE_WHOLE_FILE.equals(binaryfileInfo.getCollectType())) {
+		if (binaryfileInfo.getCollectType() == null
+				|| CollectTypeEnum.WHOLE_FILE.equals(binaryfileInfo.getCollectType())) {
 			// デフォルトもしくは引継ぎで"ファイル全体"選択.
 			this.m_collectType_single.setSelection(true);
 		} else {
@@ -623,8 +626,8 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 		String expressionStr = null;
 
 		// レコード分割方法・タグタイプ→データ構造
-		if (binaryfileInfo.getCutType() != null && !binaryfileInfo.getCutType().isEmpty()) {
-			if (BinaryConstant.CUT_TYPE_INTERVAL.equals(binaryfileInfo.getCutType())) {
+		if (binaryfileInfo.getCutType() != null) {
+			if (CutTypeEnum.INTERVAL.equals(binaryfileInfo.getCutType())) {
 				// 時間区切り.
 				expressionStr = Messages.getString(BinaryConstant.CUT_TYPE_INTERVAL);
 				this.m_dataArchitecture.setText(expressionStr);
@@ -674,27 +677,21 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if (super.validateResult != null) {
 			return null;
 		}
 
-		// 監視種別を設定.
-		super.monitorInfo.setMonitorType(MonitorTypeConstant.TYPE_BINARY);
-		super.monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_BINARYFILE_BIN);
-
 		// バイナリファイル監視（バイナリ）固有情報をManager送信用infoに設定.
-		BinaryCheckInfo binaryInfo = new BinaryCheckInfo();
-		binaryInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_BINARYFILE_BIN);
-		binaryInfo.setMonitorId(super.monitorInfo.getMonitorId());
+		BinaryCheckInfoResponse binaryInfo = new BinaryCheckInfoResponse();
 
 		// 収集方式.
 		if (this.m_collectType_single.getSelection()) {
-			binaryInfo.setCollectType(BinaryConstant.COLLECT_TYPE_WHOLE_FILE);
+			binaryInfo.setCollectType(CollectTypeEnum.WHOLE_FILE);
 		}
 		if (this.m_collectType_continuous.getSelection()) {
-			binaryInfo.setCollectType(BinaryConstant.COLLECT_TYPE_ONLY_INCREMENTS);
+			binaryInfo.setCollectType(CollectTypeEnum.ONLY_INCREMENTS);
 		}
 
 		// データ構造 → レコード分割方法・プリセット名(タグ種別).
@@ -704,16 +701,16 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 			switch (dataArchType) {
 
 			case INTERVAL:
-				binaryInfo.setCutType(BinaryConstant.CUT_TYPE_INTERVAL);
+				binaryInfo.setCutType(CutTypeEnum.INTERVAL);
 				break;
 
 			case CUSTOMIZE:
-				binaryInfo.setCutType(BinaryConstant.CUT_TYPE_LENGTH);
+				binaryInfo.setCutType(CutTypeEnum.LENGTH);
 				binaryInfo.setTagType(BinaryConstant.TAG_TYPE_UNIVERSAL);
 				break;
 
 			case PRESET:
-				binaryInfo.setCutType(BinaryConstant.CUT_TYPE_LENGTH);
+				binaryInfo.setCutType(CutTypeEnum.LENGTH);
 				if (!this.m_dataArchitecture.getText().isEmpty()) {
 					binaryInfo.setTagType(this.m_dataArchitecture.getText());
 				}
@@ -735,10 +732,10 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 			binaryInfo.setRecordHeadSize(this.m_inputDetails.getRecordHeadSize());
 			binaryInfo.setSizePosition(this.m_inputDetails.getSizePosition());
 			binaryInfo.setSizeLength(this.m_inputDetails.getSizeLength());
-			binaryInfo.setHaveTs(this.m_inputDetails.isHaveTs());
+			binaryInfo.setHaveTs(this.m_inputDetails.getHaveTs());
 			binaryInfo.setTsPosition(this.m_inputDetails.getTsPosition());
 			binaryInfo.setTsType(this.m_inputDetails.getTsType());
-			binaryInfo.setLittleEndian(this.m_inputDetails.isLittleEndian());
+			binaryInfo.setLittleEndian(this.m_inputDetails.getLittleEndian());
 		}
 
 		// ディレクトリ.
@@ -787,58 +784,68 @@ public class MonitorBinaryDialog extends CommonMonitorBinaryDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = super.inputData;
-		String managerName = super.getManagerName();
-		if (info != null) {
-			String[] args = { info.getMonitorId(), managerName };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+		if (super.inputData != null) {
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if (!this.updateFlg) {
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if (result) {
-						MessageDialog.openInformation(null, Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(null, Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddBinaryfileMonitorRequest info = new AddBinaryfileMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddBinaryfileMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getBinaryPatternInfo() != null) {
+						for (int i = 0; i < this.inputData.getBinaryPatternInfo().size(); i++) {
+							info.getBinaryPatternInfo().get(i).setPriority(
+									BinaryPatternInfoRequest.PriorityEnum.fromValue(
+											this.inputData.getBinaryPatternInfo().get(i).getPriority().getValue()));
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					wrapper.addBinaryfileMonitor(info);
+					MessageDialog.openInformation(null, Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.monitor.53", args));
-
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
 					} else {
 						errMessage = ", " + HinemosMessage.replace(e.getMessage());
 					}
-
 					MessageDialog.openError(null, Messages.getString("failed"),
 							Messages.getString("message.monitor.34", args) + errMessage);
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(null, Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if (result) {
+					ModifyBinaryfileMonitorRequest info = new ModifyBinaryfileMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyBinaryfileMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getBinaryPatternInfo() != null) {
+						for (int i = 0; i < this.inputData.getBinaryPatternInfo().size(); i++) {
+							info.getBinaryPatternInfo().get(i).setPriority(
+									BinaryPatternInfoRequest.PriorityEnum.fromValue(
+											this.inputData.getBinaryPatternInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.modifyBinaryfileMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(null, Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(null, Messages.getString("message"),
+							Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(null, Messages.getString("failed"),
 							Messages.getString("message.monitor.36", args) + errMessage);
 				}

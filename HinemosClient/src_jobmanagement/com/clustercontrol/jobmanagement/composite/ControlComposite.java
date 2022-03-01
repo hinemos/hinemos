@@ -8,6 +8,12 @@
 
 package com.clustercontrol.jobmanagement.composite;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -24,9 +30,11 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jface.dialogs.IDialogConstants;
+import org.openapitools.client.model.JobNextJobOrderInfoResponse;
+import org.openapitools.client.model.JobWaitRuleInfoResponse;
+import org.openapitools.client.model.JobWaitRuleInfoResponse.CalendarEndStatusEnum;
+import org.openapitools.client.model.JobWaitRuleInfoResponse.JobRetryEndStatusEnum;
+import org.openapitools.client.model.JobWaitRuleInfoResponse.SkipEndStatusEnum;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.EndStatusMessage;
@@ -36,13 +44,13 @@ import com.clustercontrol.calendar.composite.CalendarIdListComposite;
 import com.clustercontrol.composite.action.NumberVerifyListener;
 import com.clustercontrol.composite.action.PositiveNumberVerifyListener;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.bean.JobInfoParameterConstant;
 import com.clustercontrol.jobmanagement.dialog.ExclusiveBranchCompositeDialog;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobWaitRuleInfo;
 
 /**
  * 制御タブ用のコンポジットクラスです。
@@ -71,6 +79,8 @@ public class ControlComposite extends Composite {
 	private Button m_jobRetryCondition = null;
 	/** 繰り返し実行回数用テキスト */
 	private Text m_jobRetryCount = null;
+	/** 繰り返し実行試行間隔用テキスト */
+	private Text m_jobRetryInterval = null;
 	/** 繰り返し実行終了状態用テキスト */
 	private Combo m_jobRetryEndStatus = null;
 	/** 排他条件分岐設定ボタン */
@@ -80,15 +90,20 @@ public class ControlComposite extends Composite {
 	/** 読み取り専用フラグ */
 	private boolean m_readOnly = false;
 	/** ジョブ待ち条件情報 */
-	private JobWaitRuleInfo m_waitRule = null;
+	private JobWaitRuleInfoResponse m_waitRule = null;
 	/** ジョブ種別 */
-	private int m_jobType = JobConstant.TYPE_JOB;
+	private JobInfoWrapper.TypeEnum m_jobType = JobInfoWrapper.TypeEnum.JOB;
 	/** 排他分岐ダイアログで後続ジョブを表示するために使用する */
-	private JobTreeItem m_jobTreeItem;
+	private JobTreeItemWrapper m_jobTreeItem;
 	/** ジョブキュー チェックボタン */
 	private Button m_jobQueueCondition = null;
 	/** ジョブキュー 選択リスト */
 	private JobQueueDropdown m_jobQueue = null;
+	/** ジョブ待ち条件情報（後続ジョブ実行設定） */
+	private Boolean m_exclusiveBranch;
+	private JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum m_exclusiveBranchEndStatus = null;
+    private Integer m_exclusiveBranchEndValue = null;
+    private List<JobNextJobOrderInfoResponse> m_exclusiveBranchNextJobOrderList = new ArrayList<>();
 
 	/**
 	 * コンストラクタ
@@ -100,7 +115,7 @@ public class ControlComposite extends Composite {
 	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
 	 * @see #initialize()
 	 */
-	public ControlComposite(Composite parent, int style, int jobType) {
+	public ControlComposite(Composite parent, int style, JobInfoWrapper.TypeEnum jobType) {
 		super(parent, style);
 		initialize();
 		m_shell = this.getShell();
@@ -201,7 +216,7 @@ public class ControlComposite extends Composite {
 		this.m_waitCondition = new Button(JobDialogUtil.getComposite_MarginZero(this), SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "m_waitCondition", this.m_waitCondition);
 		this.m_waitCondition.setText(Messages.getString("reserve"));
-		this.m_waitCondition.setLayoutData(new RowData(70,
+		this.m_waitCondition.setLayoutData(new RowData(100,
 				SizeConstant.SIZE_BUTTON_HEIGHT));
 		this.m_waitCondition.addSelectionListener(new SelectionListener() {
 			@Override
@@ -355,10 +370,12 @@ public class ControlComposite extends Composite {
 					if (isRetryJob()) {
 						m_jobRetryEndStatus.setEnabled(true);
 						m_jobRetryCount.setEditable(true);
+						m_jobRetryInterval.setEditable(true);
 					}
 				} else {
 					m_jobRetryEndStatus.setEnabled(false);
 					m_jobRetryCount.setEditable(false);
+					m_jobRetryInterval.setEditable(false);
 				}
 				update();
 			}
@@ -395,10 +412,31 @@ public class ControlComposite extends Composite {
 				}
 			);
 
+		// 繰り返し実行：試行間隔（ラベル）
+		Label jobRetryIntervalTitle = new Label(jobRetryEndConditionGroup, SWT.RIGHT);
+		jobRetryIntervalTitle.setText(Messages.getString("job.retry.interval") + " : ");
+		jobRetryIntervalTitle.setLayoutData(new RowData(150,
+				SizeConstant.SIZE_LABEL_HEIGHT));
+		
+		// 繰り返し実行：試行間隔（テキスト）
+		this.m_jobRetryInterval = new Text(jobRetryEndConditionGroup, SWT.BORDER);
+		this.m_jobRetryInterval.setLayoutData(new RowData(100,
+				SizeConstant.SIZE_TEXT_HEIGHT));
+		this.m_jobRetryInterval.addVerifyListener(
+				new PositiveNumberVerifyListener(0, JobInfoParameterConstant.JOB_RETRY_INTERVAL_HIGH));
+		this.m_jobRetryInterval.addModifyListener(
+				new ModifyListener(){
+					@Override
+					public void modifyText(ModifyEvent arg0) {
+						update();
+					}
+				}
+			);
+
 		// 繰り返し実行：繰り返し完了状態（ラベル）
 		Label jobRetryEndStatusTitle = new Label(jobRetryEndConditionGroup, SWT.RIGHT);
 		jobRetryEndStatusTitle.setText(Messages.getString("job.retry.end.status") + " : ");
-		jobRetryEndStatusTitle.setLayoutData(new RowData(80,
+		jobRetryEndStatusTitle.setLayoutData(new RowData(120,
 				SizeConstant.SIZE_LABEL_HEIGHT));
 		
 		// 繰り返し実行：繰り返し完了状態（コンボ）
@@ -426,10 +464,16 @@ public class ControlComposite extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				ExclusiveBranchCompositeDialog dialog = new ExclusiveBranchCompositeDialog(m_shell, m_readOnly);
-				dialog.setWaitRuleInfo(m_waitRule);
+				dialog.setExclusiveBranch(m_exclusiveBranch);
+				dialog.setExclusiveBranchEndStatus(m_exclusiveBranchEndStatus);
+				dialog.setExclusiveBranchEndValue(m_exclusiveBranchEndValue);
+				dialog.setExclusiveBranchNextJobOrderList(m_exclusiveBranchNextJobOrderList);
 				dialog.setJobTreeItem(m_jobTreeItem);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					m_waitRule = dialog.getWaitRuleInfo();
+					m_exclusiveBranch = dialog.isExclusiveBranch();
+					m_exclusiveBranchEndStatus = dialog.getExclusiveBranchEndStatus();
+					m_exclusiveBranchEndValue = dialog.getExclusiveBranchEndValue();
+					m_exclusiveBranchNextJobOrderList = dialog.getExclusiveBranchNextJobOrderList();
 				}
 			}
 		});
@@ -457,6 +501,11 @@ public class ControlComposite extends Composite {
 		} else {
 			this.m_jobRetryCount.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
+		if (m_jobRetryCondition.getSelection() && "".equals(this.m_jobRetryInterval.getText())) {
+			this.m_jobRetryInterval.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		} else {
+			this.m_jobRetryInterval.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+		}
 	}
 
 	/**
@@ -469,7 +518,7 @@ public class ControlComposite extends Composite {
 			throw new InternalError("JobWaitRuleInfo is null");
 
 		//カレンダ
-		m_calendarCondition.setSelection(m_waitRule.isCalendar());
+		m_calendarCondition.setSelection(m_waitRule.getCalendar());
 
 		//カレンダID
 		if (m_waitRule.getCalendarId() != null &&
@@ -482,25 +531,32 @@ public class ControlComposite extends Composite {
 		//カレンダ未実行時の終了値
 		m_calendarEndValue.setText(String.valueOf(m_waitRule.getCalendarEndValue()));
 		//保留
-		m_waitCondition.setSelection(m_waitRule.isSuspend());
+		m_waitCondition.setSelection(m_waitRule.getSuspend());
 		//スキップ
-		m_skipCondition.setSelection(m_waitRule.isSkip());
+		m_skipCondition.setSelection(m_waitRule.getSkip());
 		//スキップ終了値
 		m_skipEndValue.setText(String.valueOf(m_waitRule.getSkipEndValue()));
 		//スキップの終了状態
 		setSelectEndStatus(m_skipEndStatus, m_waitRule.getSkipEndStatus());
 		//繰り返し実行
-		m_jobRetryCondition.setSelection(m_waitRule.isJobRetryFlg());
+		m_jobRetryCondition.setSelection(m_waitRule.getJobRetryFlg());
 		//繰り返し実行回数
 		m_jobRetryCount.setText(String.valueOf(m_waitRule.getJobRetry()));
+		//繰り返し試行間隔
+		m_jobRetryInterval.setText(String.valueOf(m_waitRule.getJobRetryInterval()));
 		//繰り返し実行の終了状態
 		setSelectEndStatus(m_jobRetryEndStatus, m_waitRule.getJobRetryEndStatus());
 		// ジョブキュー
-		m_jobQueueCondition.setSelection(BooleanUtils.isTrue(m_waitRule.isQueueFlg()));
+		m_jobQueueCondition.setSelection(BooleanUtils.isTrue(m_waitRule.getQueueFlg()));
 		// ジョブキューID
 		if (StringUtils.isNotEmpty(m_waitRule.getQueueId())) {
 			m_jobQueue.setQueueId(m_waitRule.getQueueId());
 		}
+		// 後続ジョブ実行設定
+		m_exclusiveBranch = m_waitRule.getExclusiveBranch();
+		m_exclusiveBranchEndStatus = m_waitRule.getExclusiveBranchEndStatus();
+		m_exclusiveBranchEndValue = m_waitRule.getExclusiveBranchEndValue();
+		m_exclusiveBranchNextJobOrderList.addAll(m_waitRule.getExclusiveBranchNextJobOrderList());
 
 		//カレンダ
 		if (m_calendarCondition.getSelection()) {
@@ -532,10 +588,12 @@ public class ControlComposite extends Composite {
 		if (m_jobRetryCondition.getSelection()) {
 			if (isRetryJob()) {
 				m_jobRetryCount.setEditable(true);
+				m_jobRetryInterval.setEditable(true);
 				m_jobRetryEndStatus.setEnabled(true);
 			}
 		} else {
 			m_jobRetryCount.setEditable(false);
+			m_jobRetryInterval.setEditable(false);
 			m_jobRetryEndStatus.setEnabled(false);
 		}
 
@@ -552,7 +610,7 @@ public class ControlComposite extends Composite {
 	 *
 	 * @param start ジョブ待ち条件情報
 	 */
-	public void setWaitRuleInfo(JobWaitRuleInfo start) {
+	public void setWaitRuleInfo(JobWaitRuleInfoResponse start) {
 		m_waitRule = start;
 	}
 
@@ -561,7 +619,7 @@ public class ControlComposite extends Composite {
 	 *
 	 * @return ジョブ待ち条件情報
 	 */
-	public JobWaitRuleInfo getWaitRuleInfo() {
+	public JobWaitRuleInfoResponse getWaitRuleInfo() {
 		return m_waitRule;
 	}
 
@@ -586,7 +644,7 @@ public class ControlComposite extends Composite {
 			m_waitRule.setCalendarId(m_calendarId.getText());
 		}
 		else{
-			if (m_waitRule.isCalendar().booleanValue()) {
+			if (m_waitRule.getCalendar().booleanValue()) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -597,10 +655,10 @@ public class ControlComposite extends Composite {
 
 		//カレンダ未実行時の終了値取得
 		try {
-			m_waitRule.setCalendarEndStatus(getSelectEndStatus(m_calendarEndStatus));
+			m_waitRule.setCalendarEndStatus(JobWaitRuleInfoResponse.CalendarEndStatusEnum.fromValue(getSelectEndStatus(m_calendarEndStatus)));
 			m_waitRule.setCalendarEndValue(Integer.parseInt(m_calendarEndValue.getText()));
 		} catch (NumberFormatException e) {
-			if (m_waitRule.isCalendar().booleanValue()) {
+			if (m_waitRule.getCalendar().booleanValue()) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -617,10 +675,10 @@ public class ControlComposite extends Composite {
 
 		//スキップ終了値取得
 		try {
-			m_waitRule.setSkipEndStatus(getSelectEndStatus(m_skipEndStatus));
+			m_waitRule.setSkipEndStatus(JobWaitRuleInfoResponse.SkipEndStatusEnum.fromValue(getSelectEndStatus(m_skipEndStatus)));
 			m_waitRule.setSkipEndValue(Integer.parseInt(m_skipEndValue.getText()));
 		} catch (NumberFormatException e) {
-			if (m_waitRule.isSkip().booleanValue()) {
+			if (m_waitRule.getSkip().booleanValue()) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -635,9 +693,14 @@ public class ControlComposite extends Composite {
 		//繰り返し実行終了値取得
 		try {
 			m_waitRule.setJobRetry(Integer.parseInt(m_jobRetryCount.getText()));
-			m_waitRule.setJobRetryEndStatus(getSelectEndStatus(m_jobRetryEndStatus));
+			m_waitRule.setJobRetryInterval(Integer.parseInt(m_jobRetryInterval.getText()));
+			if (getSelectEndStatus(m_jobRetryEndStatus) != null) {
+				m_waitRule.setJobRetryEndStatus(JobWaitRuleInfoResponse.JobRetryEndStatusEnum.fromValue(getSelectEndStatus(m_jobRetryEndStatus)));
+			} else {
+				m_waitRule.setJobRetryEndStatus(null);
+			}
 		} catch (NumberFormatException e) {
-			if (m_waitRule.isJobRetryFlg().booleanValue()) {
+			if (m_waitRule.getJobRetryFlg().booleanValue()) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -652,7 +715,7 @@ public class ControlComposite extends Composite {
 		// ジョブキューID
 		if (StringUtils.isEmpty(m_jobQueue.getQueueId())) {
 			m_waitRule.setQueueId(null);
-			if (m_waitRule.isQueueFlg().booleanValue()) {
+			if (m_waitRule.getQueueFlg().booleanValue()) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -663,6 +726,13 @@ public class ControlComposite extends Composite {
 			m_waitRule.setQueueId(m_jobQueue.getQueueId());
 		}
 		
+		// 後続ジョブ実行設定
+		m_waitRule.setExclusiveBranch(m_exclusiveBranch);
+		m_waitRule.setExclusiveBranchEndStatus(m_exclusiveBranchEndStatus);
+		m_waitRule.setExclusiveBranchEndValue(m_exclusiveBranchEndValue);
+		m_waitRule.getExclusiveBranchNextJobOrderList().clear();
+		m_waitRule.getExclusiveBranchNextJobOrderList().addAll(m_exclusiveBranchNextJobOrderList);
+
 		return null;
 	}
 
@@ -671,22 +741,31 @@ public class ControlComposite extends Composite {
 	 *終了状態用コンボボックスにて選択している項目を取得します。
 	 *
 	 */
-	private Integer getSelectEndStatus(Combo combo) {
+	private String getSelectEndStatus(Combo combo) {
 		String select = combo.getText();
 		if (select.equals("")) {
 			return null;
 		}
-		return EndStatusMessage.stringToType(select);
+		return EndStatusMessage.stringTotypeEnumValue(select);
 	}
 
 	/**
 	 * 指定した重要度に該当する終了状態用コンボボックスの項目を選択します。
 	 *
 	 */
-	private void setSelectEndStatus(Combo combo, Integer status) {
+	private void setSelectEndStatus(Combo combo, Object enumValue) {
 		String select = "";
-		if (status != null) {
-			select = EndStatusMessage.typeToString(status);
+		if (enumValue == null) {
+			// 何もしない
+		} else if (enumValue instanceof CalendarEndStatusEnum) {
+			select = EndStatusMessage.typeEnumValueToString(
+					((CalendarEndStatusEnum)enumValue).getValue());
+		} else if (enumValue instanceof SkipEndStatusEnum) {
+			select = EndStatusMessage.typeEnumValueToString(
+					((SkipEndStatusEnum)enumValue).getValue());
+		} else if (enumValue instanceof JobRetryEndStatusEnum) {
+			select = EndStatusMessage.typeEnumValueToString(
+					((JobRetryEndStatusEnum)enumValue).getValue());
 		}
 
 		combo.select(0);
@@ -706,7 +785,7 @@ public class ControlComposite extends Composite {
 		this.m_calendarId = calendarId;
 	}
 
-	public void setJobTreeItem(JobTreeItem jobTreeItem) {
+	public void setJobTreeItem(JobTreeItemWrapper jobTreeItem) {
 		m_jobTreeItem = jobTreeItem;
 	}
 	
@@ -730,6 +809,7 @@ public class ControlComposite extends Composite {
 		m_jobRetryCondition.setEnabled(isRetryJob() && enabled);
 		m_jobRetryEndStatus.setEnabled(isRetryJob() && m_jobRetryCondition.getSelection() && enabled);
 		m_jobRetryCount.setEditable(isRetryJob() && m_jobRetryCondition.getSelection() && enabled);
+		m_jobRetryInterval.setEditable(isRetryJob() && m_jobRetryCondition.getSelection() && enabled);
 		m_jobQueueCondition.setEnabled(isJobQueueAvailable() && enabled);
 		m_jobQueue.setEnabled(isJobQueueAvailable() && m_jobQueueCondition.getSelection() && enabled);
 		m_readOnly = !enabled;
@@ -737,21 +817,28 @@ public class ControlComposite extends Composite {
 	
 	private boolean isRetryJob() {
 		//ファイル転送ジョブ、承認ジョブの場合は繰り返し実行の設定項目は非活性にする
-		return m_jobType != JobConstant.TYPE_FILEJOB && m_jobType != JobConstant.TYPE_APPROVALJOB;
+		if( (m_jobType != JobInfoWrapper.TypeEnum.FILEJOB)
+				&& (m_jobType != JobInfoWrapper.TypeEnum.APPROVALJOB)){
+			return true;
+		}
+		return false;
 	}
 
 	// ジョブキューが有効な種類のジョブであるか。
 	private boolean isJobQueueAvailable() {
-		switch (m_jobType) {
-		case JobConstant.TYPE_JOBNET:
-		case JobConstant.TYPE_JOB:
-		case JobConstant.TYPE_FILEJOB:
-		case JobConstant.TYPE_MONITORJOB:
-		case JobConstant.TYPE_APPROVALJOB:
+		if (m_jobType == JobInfoWrapper.TypeEnum.JOBNET
+				|| m_jobType == JobInfoWrapper.TypeEnum.JOB
+				|| m_jobType == JobInfoWrapper.TypeEnum.FILEJOB
+				|| m_jobType == JobInfoWrapper.TypeEnum.MONITORJOB
+				|| m_jobType == JobInfoWrapper.TypeEnum.APPROVALJOB
+				|| m_jobType == JobInfoWrapper.TypeEnum.FILECHECKJOB
+				|| m_jobType == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB
+				|| m_jobType == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB
+				|| m_jobType == JobInfoWrapper.TypeEnum.RESOURCEJOB
+				|| m_jobType == JobInfoWrapper.TypeEnum.RPAJOB) {
 			return true;
-		default:
-			return false;
 		}
+		return false;
 	}
 
 }

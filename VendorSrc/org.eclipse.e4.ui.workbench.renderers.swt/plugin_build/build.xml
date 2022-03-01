@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="plugin_export" name="build">
+
+	<!-- ant実行時に「ワークスペースと同じJREで実行」を選択すること。 -->
+			
+	
+	<target name="plugin_export">
+		<property name="output" value="../build/" />
+		<delete dir="${output}" failonerror="false" />
+		<mkdir dir="${output}" />
+		
+		<pde.exportPlugins destination="${output}" exportSource="false" exportType="directory"
+			plugins="org.eclipse.e4.ui.workbench.renderers.swt" useJARFormat="true"/>
+	</target>
+</project>

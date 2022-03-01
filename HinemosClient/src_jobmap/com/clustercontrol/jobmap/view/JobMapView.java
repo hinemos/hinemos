@@ -14,6 +14,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 
 import com.clustercontrol.jobmanagement.view.JobMapViewIF;
 import com.clustercontrol.jobmap.composite.JobMapComposite;
@@ -22,7 +23,6 @@ import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.view.AutoUpdateView;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 public abstract class JobMapView extends AutoUpdateView implements JobMapViewIF {
 
@@ -88,13 +88,18 @@ public abstract class JobMapView extends AutoUpdateView implements JobMapViewIF 
 	}
 
 	@Override
-	public void update(String managerName, String sessionId, JobTreeItem jobTreeItem) {
+	public void update(String managerName, String sessionId, JobTreeItemWrapper jobTreeItem) {
 		try {
 			m_canvasComposite.update(managerName, sessionId, jobTreeItem);
 		} catch (Exception e) {
 			m_log.warn("update(), " + HinemosMessage.replace(e.getMessage()), e);
 		}
 		m_canvasComposite.setVisible(true);
+
+		// 更新に失敗している場合は自動更新を停止する
+		if (!m_canvasComposite.isUpdateSuccess()) {
+			this.stopAutoReload();
+		}
 	}
 
 	public void clear() {
@@ -135,5 +140,13 @@ public abstract class JobMapView extends AutoUpdateView implements JobMapViewIF 
 
 	public void setXyChange(boolean xyChange) {
 		m_canvasComposite.setXyChange(xyChange);
+	}
+	
+	/**
+	 * 更新成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isUpdateSuccess() {
+		return this.m_canvasComposite.isUpdateSuccess();
 	}
 }

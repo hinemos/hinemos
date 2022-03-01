@@ -22,17 +22,19 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.ExistBgImageResponse;
+import org.openapitools.client.model.ExistIconImageResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.nodemap.util.ImageManager;
-import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
+import com.clustercontrol.nodemap.util.NodeMapRestClientWrapper;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.nodemap.InvalidRole_Exception;
 
 /**
  * アップロード用ダイアログ
@@ -154,11 +156,12 @@ public class UploadImageDialog extends CommonDialog {
 					m_log.debug("filepath =" + path);
 					m_log.debug("filename =" + fileName);
 					if(fileNameArray != null && fileNameArray.length > 0){
-						String fileNameStr = "";
+						// findbugs対応 文字列の連結方式をStringBuilderを利用する方法に変更
+						StringBuilder fileNameStr = new StringBuilder("");
 						for (String str : fileNameArray) {
-							fileNameStr += "\"" + str + "\" ";
+							fileNameStr.append("\"" + str + "\" ");
 						}
-						fileName.setText(fileNameStr);
+						fileName.setText(fileNameStr.toString());
 					}
 				}
 			}
@@ -209,8 +212,8 @@ public class UploadImageDialog extends CommonDialog {
 		 */
 		//ノードマップ向けエンドポイント有効チェック
 		try {
-			NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(m_managerName);
-			wrapper.getVersion();
+			NodeMapRestClientWrapper wrapper = NodeMapRestClientWrapper.getWrapper(m_managerName);
+			wrapper.checkPublish();
 		} catch (Exception e) {
 			//NGならエラーダイアログを表示して終了する。
 			MessageDialog.openInformation(
@@ -228,20 +231,23 @@ public class UploadImageDialog extends CommonDialog {
 			String filepath = fileParent + "\\" + filename;
 			m_log.debug("filepath = " + filepath);
 			try {
-				NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(m_managerName);
+				NodeMapRestClientWrapper wrapper = NodeMapRestClientWrapper.getWrapper(m_managerName);
 				if (radioBg.getSelection()) {
 					boolean okFlag = false;
-					if (wrapper.isBgImage(filename)) {
-						// 上書きになります。
-						if (MessageDialog.openQuestion(
-								null, com.clustercontrol.util.Messages.getString("confirmed"),
-								com.clustercontrol.nodemap.messages.Messages.getString("file.overwrite.question") +
-								" [" + filepath + "]")) {
+					if (!filename.isEmpty()) {
+						ExistBgImageResponse dtoRes = wrapper.existBgImage(filename);
+						if (dtoRes.getExist()) {
+							// 上書きになります。
+							if (MessageDialog.openQuestion(
+									null, com.clustercontrol.util.Messages.getString("confirmed"),
+									com.clustercontrol.nodemap.messages.Messages.getString("file.overwrite.question") +
+									" [" + filepath + "]")) {
+								okFlag = true;
+							}
+						} else {
+							// 新規になります。
 							okFlag = true;
 						}
-					} else {
-						// 新規になります。
-						okFlag = true;
 					}
 					if (okFlag) {
 						ImageManager.bgUpload(m_managerName, filepath, filename);
@@ -253,18 +259,21 @@ public class UploadImageDialog extends CommonDialog {
 					}
 				} else if (radioIcon.getSelection()) {
 					boolean okFlag = false;
-					if (wrapper.isIconImage(filename)) {
-						// 上書きになります。
-						if (MessageDialog.openQuestion(
-								null,
-								com.clustercontrol.util.Messages.getString("confirmed"),
-								com.clustercontrol.nodemap.messages.Messages.getString("file.overwrite.question") +
-								" [" + filepath + "]")) {
+					if (!filename.isEmpty()) {
+						ExistIconImageResponse dtoRes = wrapper.existIconImage(filename);
+						if (dtoRes.getExist()) {
+							// 上書きになります。
+							if (MessageDialog.openQuestion(
+									null,
+									com.clustercontrol.util.Messages.getString("confirmed"),
+									com.clustercontrol.nodemap.messages.Messages.getString("file.overwrite.question") +
+									" [" + filepath + "]")) {
+								okFlag = true;
+							}
+						} else {
+							// 新規になります。
 							okFlag = true;
 						}
-					} else {
-						// 新規になります。
-						okFlag = true;
 					}
 					if (okFlag) {
 						ImageManager.iconUpload(m_managerName, filepath, filename);
@@ -280,7 +289,7 @@ public class UploadImageDialog extends CommonDialog {
 							Messages.getString("message"),
 							com.clustercontrol.nodemap.messages.Messages.getString("file.radio.select"));
 				}
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,

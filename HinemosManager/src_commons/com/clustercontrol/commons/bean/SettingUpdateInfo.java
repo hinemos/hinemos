@@ -142,12 +142,46 @@ public class SettingUpdateInfo implements Serializable {
 			_lock.writeUnlock();
 		}
 	}
-
+	
 	public long getLogFileMonitorUpdateTime() {
 		SettingUpdateTimestamp cache = getCache();
 		return cache.logFileMonitorUpdateTime;
 	}
+
+	public long getRpaLogFileMonitorUpdateTime() {
+		SettingUpdateTimestamp cache = getCache();
+		return cache.rpaLogFileMonitorUpdateTime;
+	}
+
+	public void setRpaLogFileMonitorUpdateTime(long time) {
+		try {
+			_lock.writeLock();
+			
+			SettingUpdateTimestamp cache = getCache();
+			cache.rpaLogFileMonitorUpdateTime = time;
+			storeCache(cache);
+		} finally {
+			_lock.writeUnlock();
+		}
+	}
 	
+	public void setCloudLogMonitorUpdateTime(long time) {
+		try {
+			_lock.writeLock();
+			
+			SettingUpdateTimestamp cache = getCache();
+			cache.cloudLogMonitorUpdateTime = time;
+			storeCache(cache);
+		} finally {
+			_lock.writeUnlock();
+		}
+	}
+
+	public long getCloudLogMonitorUpdateTime() {
+		SettingUpdateTimestamp cache = getCache();
+		return cache.cloudLogMonitorUpdateTime;
+	}
+
 	public void setBinaryMonitorUpdateTime(long time) {
 		try {
 			_lock.writeLock();
@@ -268,6 +302,27 @@ public class SettingUpdateInfo implements Serializable {
 		return cache.nodeConfigSettingUpdateTime;
 	}
 
+	
+	/**
+	 * SDML制御設定の更新時刻
+	 */
+	public void setSdmlControlSettingUpdateTime(long time) {
+		try {
+			_lock.writeLock();
+
+			SettingUpdateTimestamp cache = getCache();
+			cache.sdmlControlSettingUpdateTime = time;
+			storeCache(cache);
+		} finally {
+			_lock.writeUnlock();
+		}
+	}
+
+	public long getSdmlControlSettingUpdateTime() {
+		SettingUpdateTimestamp cache = getCache();
+		return cache.sdmlControlSettingUpdateTime;
+	}
+
 	public void setNodeConfigRunCollectUpdateTime(long time) {
 		try {
 			_lock.writeLock();
@@ -284,8 +339,7 @@ public class SettingUpdateInfo implements Serializable {
 		SettingUpdateTimestamp cache = getCache();
 		return cache.nodeConfigRunCollectUpdateTime;
 	}
-	
-	
+
 	public long getHinemosTimeOffset() {
 		SettingUpdateTimestamp cache = getCache();
 		return cache.hinemosTimeOffset;
@@ -331,6 +385,8 @@ public class SettingUpdateInfo implements Serializable {
 
 		private long customMonitorUpdateTime = HinemosTime.currentTimeMillis();
 		private long logFileMonitorUpdateTime = HinemosTime.currentTimeMillis();
+		private long rpaLogFileMonitorUpdateTime = HinemosTime.currentTimeMillis();		
+		private long cloudLogMonitorUpdateTime = HinemosTime.currentTimeMillis();
 		private long binaryMonitorUpdateTime = HinemosTime.currentTimeMillis();
 		private long systemLogMonitorUpdateTime = HinemosTime.currentTimeMillis();
 		private long snmptrapMonitorUpdateTime = HinemosTime.currentTimeMillis();
@@ -339,6 +395,7 @@ public class SettingUpdateInfo implements Serializable {
 		private long customtrapMonitorUpdateTime = HinemosTime.currentTimeMillis();
 		private long nodeConfigSettingUpdateTime = HinemosTime.currentTimeMillis();
 		private long nodeConfigRunCollectUpdateTime = HinemosTime.currentTimeMillis();
+		private long sdmlControlSettingUpdateTime = HinemosTime.currentTimeMillis();
 		private long hinemosTimeOffset = HinemosTime.getTimeOffsetMillis();
 		private int hinemosTimeZoneOffset = HinemosTime.getTimeZoneOffset();
 		
@@ -356,6 +413,8 @@ public class SettingUpdateInfo implements Serializable {
 			cache.repositoryUpdateTime = now;
 			cache.customMonitorUpdateTime = now;
 			cache.logFileMonitorUpdateTime = now;
+			cache.cloudLogMonitorUpdateTime = now;
+			cache.rpaLogFileMonitorUpdateTime = now;
 			cache.binaryMonitorUpdateTime = now;
 			cache.systemLogMonitorUpdateTime = now;
 			cache.snmptrapMonitorUpdateTime = now;
@@ -363,6 +422,7 @@ public class SettingUpdateInfo implements Serializable {
 			cache.jobFileCheckUpdateTime = now;
 			cache.nodeConfigSettingUpdateTime = now;
 			cache.nodeConfigRunCollectUpdateTime = now;
+			cache.sdmlControlSettingUpdateTime = now;
 			cache.hinemosTimeOffset = HinemosTime.getTimeOffsetMillis();
 			cache.hinemosTimeZoneOffset = HinemosTime.getTimeZoneOffset();
 			

@@ -29,6 +29,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.openapitools.client.model.RunJobRequest;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -37,7 +38,6 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobTriggerInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 import org.eclipse.swt.widgets.ExpandBar;
 import org.eclipse.swt.widgets.ExpandItem;
@@ -55,7 +55,7 @@ public class JobRunConfirm extends CommonDialog {
 	private String m_MessageText = "";
 
 	/** ジョブ変数情報 */
-	private JobTriggerInfo m_trigger = null;
+	private RunJobRequest m_trigger = null;
 
 	/** ジョブの待ち条件（時刻）有効無効チェックボタン */
 	private Button btnJobWaitTime = null;
@@ -162,7 +162,7 @@ public class JobRunConfirm extends CommonDialog {
 		btnJobWaitTime = new Button(selectionComposite, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "btnJobWaitTime", btnJobWaitTime);
 		btnJobWaitTime.setText(Messages.getString("message.job.119"));
-		btnJobWaitTime.setLayoutData(new GridData(250, SizeConstant.SIZE_BUTTON_HEIGHT));
+		btnJobWaitTime.setLayoutData(new GridData(350, SizeConstant.SIZE_BUTTON_HEIGHT));
 		((GridData)btnJobWaitTime.getLayoutData()).horizontalSpan = 2;
 		btnJobWaitTime.setSelection(false);
 
@@ -170,7 +170,7 @@ public class JobRunConfirm extends CommonDialog {
 		btnJobWaitMinute = new Button(selectionComposite, SWT.CHECK);
 		WidgetTestUtil.setTestId(this, "btnJobWaitMinute", btnJobWaitMinute);
 		btnJobWaitMinute.setText(Messages.getString("message.job.120"));
-		btnJobWaitMinute.setLayoutData(new GridData(400, SizeConstant.SIZE_BUTTON_HEIGHT));
+		btnJobWaitMinute.setLayoutData(new GridData(500, SizeConstant.SIZE_BUTTON_HEIGHT));
 		((GridData)btnJobWaitMinute.getLayoutData()).horizontalSpan = 2;
 		btnJobWaitMinute.setSelection(false);
 
@@ -329,7 +329,7 @@ public class JobRunConfirm extends CommonDialog {
 	 *
 	 */
 	private void setTriggerInfo(){
-		this.m_trigger = new JobTriggerInfo();
+		this.m_trigger = new RunJobRequest();
 
 		//条件関係取得
 		if (btnJobWaitTime.getSelection()) {
@@ -358,7 +358,7 @@ public class JobRunConfirm extends CommonDialog {
 	 *
 	 * @param info 入力情報
 	 */
-	public void setInputData(JobTriggerInfo info) {
+	public void setInputData(RunJobRequest info) {
 		m_trigger = info;
 	}
 
@@ -367,7 +367,7 @@ public class JobRunConfirm extends CommonDialog {
 	 *
 	 * @return 入力情報
 	 */
-	public JobTriggerInfo getInputData() {
+	public RunJobRequest getInputData() {
 		return m_trigger;
 	}
 }

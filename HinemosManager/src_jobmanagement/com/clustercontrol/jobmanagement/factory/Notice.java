@@ -11,7 +11,6 @@ package com.clustercontrol.jobmanagement.factory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,13 +24,16 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
+import com.clustercontrol.jobmanagement.rpa.bean.RpaJobErrorTypeConstant;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.jobmanagement.util.ParameterUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.notify.util.NotifyUtil;
@@ -90,49 +92,60 @@ public class Notice {
 			OutputBasicInfo info = new OutputBasicInfo();
 			// 通知グループID
 			info.setNotifyGroupId(job.getNotifyGroupId());
+			// ジョブ連携メッセージID
+			info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(NotifyTriggerType.JOB_END, jobunitId, jobId));
 			//プラグインID
 			info.setPluginId(HinemosModuleConstant.JOB);
 			//アプリケーション
 			info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), locale));
 			//監視項目ID
 			info.setMonitorId(sessionId);
+			//ジョブユニットID
+			info.setJobunitId(jobunitId);
+			//ジョブID
+			info.setJobId(jobId);
 			
 			//メッセージID、メッセージ、オリジナルメッセージ
 			if(type == EndStatusConstant.TYPE_BEGINNING){
+				// ジョブ連携メッセージID
+				info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(NotifyTriggerType.JOB_START, jobunitId, jobId));
+				// メッセージ
 				String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
 				String jobName = job.getJobName();
 				String[] args1 = {jobType,jobName,jobId,sessionId};
 				info.setMessage(MessageConstant.MESSAGE_STARTED_SUCCESSFULLY.getMessage(args1));
-			} else if(type == EndStatusConstant.TYPE_NORMAL){
-				String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
-				String jobName = job.getJobName();
-				String[] args1 = {jobType,jobName,jobId,sessionId};
-				info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_NORMAL.getMessage(args1));
-			} else if(type == EndStatusConstant.TYPE_WARNING){
-				String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
-				String jobName = job.getJobName();
-				String[] args1 = {jobType,jobName,jobId,sessionId};
-				info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_WARNING.getMessage(args1));
-			} else if(type == EndStatusConstant.TYPE_ABNORMAL){
-				String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
-				String jobName = job.getJobName();
-				String[] args1 = {jobType,jobName,jobId,sessionId};
-				info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_ERROR.getMessage(args1));
+			} else {
+				// ジョブ連携メッセージID
+				info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(NotifyTriggerType.JOB_END, jobunitId, jobId));
+				// メッセージ
+				if(type == EndStatusConstant.TYPE_NORMAL){
+					String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
+					String jobName = job.getJobName();
+					String[] args1 = {jobType,jobName,jobId,sessionId};
+					info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_NORMAL.getMessage(args1));
+				} else if(type == EndStatusConstant.TYPE_WARNING){
+					String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
+					String jobName = job.getJobName();
+					String[] args1 = {jobType,jobName,jobId,sessionId};
+					info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_WARNING.getMessage(args1));
+				} else if(type == EndStatusConstant.TYPE_ABNORMAL){
+					String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
+					String jobName = job.getJobName();
+					String[] args1 = {jobType,jobName,jobId,sessionId};
+					info.setMessage(MessageConstant.MESSAGE_STOPPED_STATUS_ERROR.getMessage(args1));
+				}
 			}
 			if(job.getJobType() == JobConstant.TYPE_JOB
 					|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
-					|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
+					|| job.getJobType() == JobConstant.TYPE_MONITORJOB
+					|| job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB
+					|| job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB
+					|| job.getJobType() == JobConstant.TYPE_FILECHECKJOB
+					|| job.getJobType() == JobConstant.TYPE_RESOURCEJOB
+					|| job.getJobType() == JobConstant.TYPE_RPAJOB){
 				//ファシリティID
-				String facilityId = job.getFacilityId();
-				if(ParameterUtil.isParamFormat(facilityId)){
-					// "#[...]"形式の場合はジョブ変数の置換を試みる。
-					Map<String, String> jobSessionParamsMap = ParameterUtil.getJobSessionParamsMap(sessionId);
-					String paramValue = ParameterUtil.getJobSessionParamValue(
-							ParameterUtil.getParamId(facilityId), jobSessionParamsMap, sessionId);
-					if (paramValue != null) {
-						facilityId = paramValue;
-					}
-				}
+				// "#[...]"形式の場合はジョブ変数の置換を試みる。
+				String facilityId = ParameterUtil.replaceFacilityId(sessionId, job.getFacilityId());
 				info.setFacilityId(facilityId);
 				//スコープ
 				info.setScopeText(sessionJob.getScopeText());
@@ -169,19 +182,8 @@ public class Notice {
 			info.setPriority(priority);
 			//発生日時
 			info.setGenerationDate(HinemosTime.getDateInstance().getTime());
-
-			JobSessionJobEntity entity = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
-			List<JobSessionNodeEntity> list = entity.getJobSessionNodeEntities();
-			List<String> facilityId = new ArrayList<String>();
-			List<String> jobMessage = new ArrayList<String>();
-			for (JobSessionNodeEntity node : list) {
-				facilityId.add(node.getId().getFacilityId());
-				jobMessage.add(node.getMessage());
-				m_log.debug("Notice.notify  >>>info.setJobFacilityId() = : " + node.getId().getFacilityId());
-				m_log.debug("Notice.notify  >>>info.setJobMessage() = : " + node.getMessage());
-			}
-			info.setJobFacilityId(facilityId);
-			info.setJobMessage(jobMessage);
+			//JOB_MESSAGE
+			setJobMessage(sessionJob, info);
 
 			//メッセージ送信
 			if (m_log.isDebugEnabled()) {
@@ -253,6 +255,16 @@ public class Notice {
 			OutputBasicInfo info = new OutputBasicInfo();
 			// 通知グループID
 			info.setNotifyGroupId(job.getNotifyGroupId());
+			// ジョブ連携メッセージID
+			if (startDelay) {
+				// 開始遅延
+				info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(NotifyTriggerType.JOB_START_DELAY,
+						jobunitId, jobId));
+			} else {
+				// 終了遅延
+				info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(NotifyTriggerType.JOB_END_DELAY,
+						jobunitId, jobId));
+			}
 			//プラグインID
 			info.setPluginId(HinemosModuleConstant.JOB);
 			//アプリケーション
@@ -311,7 +323,12 @@ public class Notice {
 
 			if(job.getJobType() == JobConstant.TYPE_JOB
 					|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
-					|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
+					|| job.getJobType() == JobConstant.TYPE_MONITORJOB
+					|| job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB
+					|| job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB
+					|| job.getJobType() == JobConstant.TYPE_FILECHECKJOB
+					|| job.getJobType() == JobConstant.TYPE_RESOURCEJOB
+					|| job.getJobType() == JobConstant.TYPE_RPAJOB){
 				//ファシリティID
 				info.setFacilityId(job.getFacilityId());
 				//スコープ
@@ -330,6 +347,8 @@ public class Notice {
 			}
 			//発生日時
 			info.setGenerationDate(HinemosTime.getDateInstance().getTime());
+			//JOB_MESSAGE
+			setJobMessage(sessionJob, info);
 
 			// 通知設定
 			jtm.addCallback(new NotifyCallback(info));
@@ -370,6 +389,9 @@ public class Notice {
 			OutputBasicInfo info = new OutputBasicInfo();
 			// 通知グループID
 			info.setNotifyGroupId(job.getNotifyGroupId());
+			// ジョブ連携メッセージID
+			info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(NotifyTriggerType.JOB_EXCEEDED_MULTIPLICITY,
+					jobunitId, jobId));
 			//プラグインID
 			info.setPluginId(HinemosModuleConstant.JOB);
 			//アプリケーション
@@ -383,7 +405,12 @@ public class Notice {
 
 			if(job.getJobType() == JobConstant.TYPE_JOB
 					|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
-					|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
+					|| job.getJobType() == JobConstant.TYPE_MONITORJOB
+					|| job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB
+					|| job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB
+					|| job.getJobType() == JobConstant.TYPE_FILECHECKJOB
+					|| job.getJobType() == JobConstant.TYPE_RESOURCEJOB
+					|| job.getJobType() == JobConstant.TYPE_RPAJOB){
 				//ファシリティID
 				info.setFacilityId(job.getFacilityId());
 				//スコープ
@@ -398,7 +425,159 @@ public class Notice {
 			info.setPriority(job.getMultiplicityNotifyPriority());
 			//発生日時
 			info.setGenerationDate(HinemosTime.getDateInstance().getTime());
+			//JOB_MESSAGE
+			setJobMessage(sessionJob, info);
 
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(info));
+		}
+	}
+
+	/**
+	 * 通知基本情報のJOB_MESSAGEについて設定します。
+	 *
+	 * @param entity
+	 * @param info 通知基本情報
+	 */
+	private void setJobMessage(JobSessionJobEntity entity, OutputBasicInfo info) {
+
+		List<JobSessionNodeEntity> nodes = entity.getJobSessionNodeEntities();
+		List<String> facilityIds = new ArrayList<String>();
+		List<String> jobMessages = new ArrayList<String>();
+		for (JobSessionNodeEntity node : nodes) {
+			facilityIds.add(node.getId().getFacilityId());
+			jobMessages.add(node.getMessage());
+			m_log.debug("Notice.notify  >>>info.setJobFacilityId() = : " + node.getId().getFacilityId());
+			m_log.debug("Notice.notify  >>>info.setJobMessage() = : " + node.getMessage());
+		}
+		info.setJobFacilityId(facilityIds);
+		info.setJobMessage(jobMessages);
+	}
+	
+	public void notify(String sessionId, String jobunitId, String jobId, Integer priority, String message, String org) throws JobInfoNotFound, InvalidRole {
+		m_log.debug("notify() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", priority=" + priority);
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+			JobInfoEntity job = sessionJob.getJobInfoEntity();
+
+			//通知する
+			Locale locale = NotifyUtil.getNotifyLocale();
+			
+			//通知情報作成
+			OutputBasicInfo info = new OutputBasicInfo();
+			// 通知グループID
+			info.setNotifyGroupId(job.getNotifyGroupId());
+			//プラグインID
+			info.setPluginId(HinemosModuleConstant.JOB);
+			//アプリケーション
+			info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), locale));
+			//監視項目ID
+			info.setMonitorId(sessionId);
+			//ジョブユニットID
+			info.setJobunitId(jobunitId);
+			//ジョブID
+			info.setJobId(jobId);
+
+			//ファシリティID
+			String facilityId = ParameterUtil.replaceFacilityId(sessionId, job.getFacilityId());
+			info.setFacilityId(facilityId);
+			//スコープ
+			info.setScopeText(sessionJob.getScopeText());
+			if(m_log.isDebugEnabled()){
+				m_log.debug("Notice.notify  >>>info.setFacilityId() = : " + facilityId);
+				m_log.debug("Notice.notify  >>>info.setScopeText() = : " + info.getScopeText());
+			}
+			
+			//重要度
+			info.setPriority(priority);
+			//発生日時
+			info.setGenerationDate(HinemosTime.getDateInstance().getTime());
+			//JOB_MESSAGE
+			setJobMessage(sessionJob, info);
+
+			info.setMessage(message);
+			info.setMessageOrg(org);
+
+			//メッセージ送信
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("sending message"
+						+ " : priority=" + info.getPriority()
+						+ " pluginId=" + info.getPluginId()
+						+ " monitorId=" + info.getMonitorId()
+						+ " facilityId=" + info.getFacilityId() + ")");
+			}
+			// 通知設定
+			jtm.addCallback(new NotifyCallback(info));
+		}
+	}
+
+	public void rpaErrorNotify(String sessionId, String jobunitId, String jobId, Integer errorType) throws JobInfoNotFound, InvalidRole {
+		m_log.debug("rpaErrorNotify() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", type=" + errorType);
+		
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+
+			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+			JobInfoEntity job = sessionJob.getJobInfoEntity();
+
+			// 通知先の指定において以下の場合は通知しない
+			// 1.通知IDがnull、もしくは0文字
+			if(job.getNotifyGroupId() == null || job.getNotifyGroupId().isEmpty()){
+				return;
+			}
+
+			//通知する
+
+			//通知情報作成
+			OutputBasicInfo info = new OutputBasicInfo();
+			// 通知グループID
+			info.setNotifyGroupId(job.getNotifyGroupId());
+			//プラグインID
+			info.setPluginId(HinemosModuleConstant.JOB);
+			//アプリケーション
+			info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), NotifyUtil.getNotifyLocale()));
+			//監視項目ID
+			info.setMonitorId(sessionId);
+			//ファシリティID
+			info.setFacilityId(job.getFacilityId());
+			//スコープ
+			info.setScopeText(sessionJob.getScopeText());
+
+			Locale locale = NotifyUtil.getNotifyLocale();
+			//メッセージID、メッセージ、オリジナルメッセージ
+			StringBuilder message = new StringBuilder();
+			StringBuilder orgMessage = new StringBuilder();
+			String jobType = Messages.getString(JobConstant.typeToMessageCode(job.getJobType()), locale);
+			String jobName = job.getJobName();
+			int priority = PriorityConstant.TYPE_UNKNOWN;
+			String[] messageArgs = {jobType,jobName,jobId,sessionId};
+			switch(errorType) {
+				case RpaJobErrorTypeConstant.NOT_LOGIN:
+					priority = job.getRpaNotLoginNotifyPriority(); 
+					message.append(MessageConstant.MESSAGE_RPA_NOT_LOGIN_NOTIFY_MSG.getMessage(messageArgs));
+					orgMessage.append(MessageConstant.MESSAGE_RPA_NOT_LOGIN_NOTIFY_MSG.getMessage(messageArgs));
+					break;
+				case RpaJobErrorTypeConstant.ALREADY_RUNNING:
+					priority = job.getRpaAlreadyRunningNotifyPriority(); 
+					message.append(MessageConstant.MESSAGE_RPA_ALREADY_RUNNING_NOTIFY_MSG.getMessage(messageArgs));
+					orgMessage.append(MessageConstant.MESSAGE_RPA_ALREADY_RUNNING_NOTIFY_MSG.getMessage(messageArgs));
+					break;
+				case RpaJobErrorTypeConstant.ABNORMAL_EXIT:
+					priority = job.getRpaAbnormalExitNotifyPriority(); 
+					message.append(MessageConstant.MESSAGE_RPA_ABNORMAL_EXIT_NOTIFY_MSG.getMessage(messageArgs));
+					orgMessage.append(MessageConstant.MESSAGE_RPA_ABNORMAL_EXIT_NOTIFY_MSG.getMessage(messageArgs));
+					break;
+				default:
+					// NOT_LOGIN, ALREADY_RUNNING, ABNORMAL_EXIT以外で呼ばれることはない想定。
+					m_log.warn("rpaErrorNotify() : invalid errorType=" + errorType);
+					return;
+			}
+			info.setMessage(message.toString());
+			info.setMessageOrg(orgMessage.toString());
+			//重要度
+			info.setPriority(priority);
+			//発生日時
+			info.setGenerationDate(HinemosTime.getDateInstance().getTime());
 			// 通知設定
 			jtm.addCallback(new NotifyCallback(info));
 		}

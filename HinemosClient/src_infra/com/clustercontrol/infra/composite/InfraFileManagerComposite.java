@@ -10,7 +10,6 @@ package com.clustercontrol.infra.composite;
 
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,18 +31,21 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.InfraFileInfoResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.infra.action.GetInfraFileManagerTableDefine;
 import com.clustercontrol.infra.dialog.InfraFileDialog;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
 import com.clustercontrol.infra.util.InfraFileUtil;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.InfraFileManagerView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.DateTimeStringConverter;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.infra.InfraFileInfo;
 
 /**
  * 環境構築[ファイルマネージャ]ビュー用のコンポジットクラスです。
@@ -127,34 +129,42 @@ public class InfraFileManagerComposite extends Composite implements ISelectionCh
 	 */
 	public void update() {
 		//環境構築ファイル一覧取得
-		List<InfraFileInfo> infoList = null;
+		List<InfraFileInfoResponse> infoList = null;
 
-		Map<String, List<InfraFileInfo>> dispMap = new ConcurrentHashMap<String, List<InfraFileInfo>>();
+		Map<String, List<InfraFileInfoResponse>> dispMap = new ConcurrentHashMap<String, List<InfraFileInfoResponse>>();
+		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 		int size = 0;
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 			try {
-				infoList = wrapper.getInfraFileList();
+				infoList = wrapper.getInfraFileList(null);
 				dispMap.put(managerName, infoList);
-				size++;
+				size += infoList.size();
+				
 			} catch (Exception e) {
 				m_log.warn("update() getInfraFileList, " + e.getMessage());
+				errorMsgs.put(managerName, Messages.getString(HinemosMessage.replace(e.getMessage())));
 			}
 		}
 
+		//メッセージ表示
+		if( 0 < errorMsgs.size() ){
+			UIManager.showMessageBox(errorMsgs, true);
+		}
+
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<InfraFileInfo>> entry : dispMap.entrySet()) {
+		for(Map.Entry<String, List<InfraFileInfoResponse>> entry : dispMap.entrySet()) {
 			String managerName = entry.getKey();
-			for (InfraFileInfo fileInfo : entry.getValue()) {
+			for (InfraFileInfoResponse fileInfo : entry.getValue()) {
 				ArrayList<Object> a = new ArrayList<Object>();
 				a.add(managerName);
 				a.add(fileInfo.getFileId());
 				a.add(fileInfo.getFileName());
 				a.add(fileInfo.getOwnerRoleId());
 				a.add(fileInfo.getCreateUserId());
-				a.add(new Date(fileInfo.getCreateDatetime()));
+				a.add(DateTimeStringConverter.parseDateString(fileInfo.getCreateDatetime()));
 				a.add(fileInfo.getModifyUserId());
-				a.add(new Date(fileInfo.getModifyDatetime()));
+				a.add(DateTimeStringConverter.parseDateString(fileInfo.getModifyDatetime()));
 				a.add(null);
 				listInput.add(a);
 			}

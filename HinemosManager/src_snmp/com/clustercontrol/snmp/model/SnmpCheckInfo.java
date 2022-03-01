@@ -10,18 +10,17 @@ package com.clustercontrol.snmp.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToOne;
-import javax.persistence.PrimaryKeyJoinColumn;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
-import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.monitor.run.model.MonitorCheckInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 
@@ -42,7 +41,6 @@ public class SnmpCheckInfo extends MonitorCheckInfo implements Serializable {
 	
 	private String communityName;
 	private Integer snmpPort;
-	private Integer snmpVersion = SnmpVersionConstant.TYPE_V1;
 
 	public SnmpCheckInfo() {
 	}
@@ -138,13 +136,5 @@ public class SnmpCheckInfo extends MonitorCheckInfo implements Serializable {
 	}
 	public void setSnmpPort(Integer snmpPort) {
 		this.snmpPort = snmpPort;
-	}
-	
-	@Transient
-	public Integer getSnmpVersion() {
-		return this.snmpVersion;
-	}
-	public void setSnmpVersion(Integer snmpVersion) {
-		this.snmpVersion = snmpVersion;
 	}
 }

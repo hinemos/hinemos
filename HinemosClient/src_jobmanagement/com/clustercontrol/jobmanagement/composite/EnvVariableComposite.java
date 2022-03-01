@@ -24,6 +24,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.JobEnvVariableInfoResponse;
 
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.dialog.ValidateResult;
@@ -34,7 +35,6 @@ import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.JobEnvVariableInfo;
 
 /**
  * 環境変数のコンポジットクラスです。
@@ -52,7 +52,7 @@ public class EnvVariableComposite extends Composite {
 	/** 削除ボタン */
 	private Button m_deleteCondition = null;
 	/** 環境変数のリスト */
-	private List<JobEnvVariableInfo> m_envVariableList = null;
+	private List<JobEnvVariableInfoResponse> m_envVariableList = null;
 	/** シェル */
 	private Shell m_shell = null;
 	/** 選択アイテム */
@@ -215,7 +215,7 @@ public class EnvVariableComposite extends Composite {
 			//パラメータ設定
 			ArrayList<ArrayList<?>> tableData = new ArrayList<ArrayList<?>>();
 			for (int i = 0; i < m_envVariableList.size(); i++) {
-				JobEnvVariableInfo info = m_envVariableList.get(i);
+				JobEnvVariableInfoResponse info = m_envVariableList.get(i);
 				ArrayList<Object> tableLineData = new ArrayList<Object>();
 				tableLineData.add(info.getEnvVariableId());
 				tableLineData.add(info.getValue());
@@ -231,7 +231,7 @@ public class EnvVariableComposite extends Composite {
 	 *
 	 * @param paramList 環境変数情報のリスト
 	 */
-	public void setEnvVariableList(List<JobEnvVariableInfo> envVariableList) {
+	public void setEnvVariableList(List<JobEnvVariableInfoResponse> envVariableList) {
 		m_envVariableList = envVariableList;
 	}
 
@@ -240,7 +240,7 @@ public class EnvVariableComposite extends Composite {
 	 *
 	 * @return 環境変数情報のリスト
 	 */
-	public List<JobEnvVariableInfo> getEnvVariableList() {
+	public List<JobEnvVariableInfoResponse> getEnvVariableList() {
 		return m_envVariableList;
 	}
 
@@ -254,7 +254,7 @@ public class EnvVariableComposite extends Composite {
 	public ValidateResult createEnvVariableInfo() {
 
 		//パラメータ情報のインスタンスを作成・取得
-		m_envVariableList = new ArrayList<JobEnvVariableInfo>();
+		m_envVariableList = new ArrayList<JobEnvVariableInfoResponse>();
 
 		//パラメータ取得
 		ArrayList<?> tableData = (ArrayList<?>) m_viewer.getInput();
@@ -262,7 +262,7 @@ public class EnvVariableComposite extends Composite {
 		if (tableData != null) {
 			for (int i = 0; i < tableData.size(); i++) {
 				ArrayList<?> tableLineData = (ArrayList<?>) tableData.get(i);
-				JobEnvVariableInfo info = new JobEnvVariableInfo();
+				JobEnvVariableInfoResponse info = new JobEnvVariableInfoResponse();
 				info.setEnvVariableId((String)tableLineData.get(
 						GetEnvVariableTableDefine.ENV_VARIABLE_ID));
 				info.setValue((String)tableLineData.get(

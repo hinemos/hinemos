@@ -22,22 +22,24 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.AddPerformanceMonitorRequest;
+import org.openapitools.client.model.CollectorItemInfoResponse;
+import org.openapitools.client.model.ModifyPerformanceMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoRequest;
+import org.openapitools.client.model.PerfCheckInfoResponse;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorNumericDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.performance.monitor.composite.CollectorItemComboComposite;
 import com.clustercontrol.performance.util.CollectorItemCodeFactory;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.CollectorItemInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.PerfCheckInfo;
-
 /**
  * リソース監視作成・変更ダイアログクラス
  *
@@ -187,17 +189,17 @@ public class PerformanceCreateDialog extends CommonMonitorNumericDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(this.getManagerName());
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(this.getManagerName());
 				info = wrapper.getMonitor(this.monitorId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -249,18 +251,22 @@ public class PerformanceCreateDialog extends CommonMonitorNumericDialog {
 	 *            設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
 
 		// 監視条件リソース監視情報
-		PerfCheckInfo perfInfo = monitor.getPerfCheckInfo();
+		PerfCheckInfoResponse perfInfo = monitor.getPerfCheckInfo();
 		if(perfInfo == null){
-			perfInfo = new PerfCheckInfo();
+			perfInfo = new PerfCheckInfoResponse();
 		}
 		// 内訳を収集するかのフラグ
-		this.m_breakdownFlg.setSelection(isBreakdown(perfInfo));
+		if (perfInfo.getBreakdownFlg() == null) {
+			this.m_breakdownFlg.setSelection(false);
+		} else {
+			this.m_breakdownFlg.setSelection(perfInfo.getBreakdownFlg());
+		}
 
 		// 収集項目
 		m_comboCollectorItem.select(this.getManagerName(), monitor);
@@ -276,20 +282,14 @@ public class PerformanceCreateDialog extends CommonMonitorNumericDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		// リソース監視固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_PERFORMANCE);
-		monitorInfo.setMonitorType(MonitorTypeConstant.TYPE_NUMERIC);
-
 		// リソース監視情報を生成
-		PerfCheckInfo perfInfo = new PerfCheckInfo();
-		perfInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_PERFORMANCE);
-		perfInfo.setMonitorId(monitorInfo.getMonitorId());
+		PerfCheckInfoResponse perfInfo = new PerfCheckInfoResponse();
 
 		// 内訳を収集するかのフラグ
 		perfInfo.setBreakdownFlg(m_breakdownFlg.getSelection());
@@ -335,96 +335,117 @@ public class PerformanceCreateDialog extends CommonMonitorNumericDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		CollectorItemInfo itemInfo = (CollectorItemInfo)this.m_comboCollectorItem.getCombo().getData(this.itemName.getText());
-		String managerName = this.getManagerName();
-		String[] args = { info.getMonitorId(), managerName };
-		if(itemInfo == null || itemInfo.getItemCode().length() == 0) {
-			MessageDialog.openError(
-					null,
-					Messages.getString("failed"),
-					Messages.getString("message.monitor.34", args));
-			return false;
-		}
-		String itemCode = CollectorItemCodeFactory.getFullItemName(managerName, itemInfo);
-		String itemName = itemCode.split("]")[0].concat("]");
-		info.setItemName(itemName);
-		String itemMeasure = CollectorItemCodeFactory.getMeasure(itemName, itemInfo.getItemCode());
-		info.setMeasure(itemMeasure);
+		if (this.inputData != null) {
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
 
-		MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-		if(!this.updateFlg){
-			// 作成の場合
-			try {
-				result = wrapper.addMonitor(info);
+			CollectorItemInfoResponse itemInfo = (CollectorItemInfoResponse)this.m_comboCollectorItem.getCombo().getData(this.itemName.getText());
+			if(itemInfo == null || itemInfo.getItemCode().length() == 0) {
+				MessageDialog.openError(
+						null,
+						Messages.getString("failed"),
+						Messages.getString("message.monitor.34", args));
+				return false;
+			}
+			String itemCode = CollectorItemCodeFactory.getFullItemName(managerName, itemInfo);
+			String itemName = itemCode.split("]")[0].concat("]");
+			String itemMeasure = CollectorItemCodeFactory.getMeasure(itemName, itemInfo.getItemCode());
 
-				if(result){
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
+			if(!this.updateFlg){
+				// 作成の場合
+				try {
+					AddPerformanceMonitorRequest info = new AddPerformanceMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setItemName(itemName);
+					info.setMeasure(itemMeasure);
+					info.setRunInterval(AddPerformanceMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(AddPerformanceMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.addPerformanceMonitor(info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.33", args));
-				} else {
-					MessageDialog.openError(
-							null,
-							Messages.getString("failed"),
-							Messages.getString("message.monitor.34", args));
-				}
-			} catch (MonitorDuplicate_Exception e) {
-				// 監視項目IDが重複している場合、エラーダイアログを表示する
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("message"),
-						Messages.getString("message.monitor.53", args));
+					result = true;
 
-			} catch (Exception e) {
-				String errMessage = "";
-				if (e instanceof InvalidRole_Exception) {
-					// アクセス権なしの場合、エラーダイアログを表示する
+				} catch (MonitorIdInvalid e) {
+					// 監視項目IDが不適切な場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} else {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
+							Messages.getString("message.monitor.97", args));
+
+				} catch (MonitorDuplicate e) {
+					// 監視項目IDが重複している場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.53", args));
+	
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.34", args) + errMessage);
 				}
-
-				MessageDialog.openError(
-						null,
-						Messages.getString("failed"),
-						Messages.getString("message.monitor.34", args) + errMessage);
-			}
-		} else {
-			// 変更の場合
-			String errMessage = "";
-			try {
-				result = wrapper.modifyMonitor(info);
-			} catch (InvalidRole_Exception e) {
-				// アクセス権なしの場合、エラーダイアログを表示する
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("message"),
-						Messages.getString("message.accesscontrol.16"));
-			} catch (Exception e) {
-				errMessage = ", " + HinemosMessage.replace(e.getMessage());
-			}
-
-			if(result){
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("successful"),
-						Messages.getString("message.monitor.35", args));
 			} else {
-				MessageDialog.openError(
-						null,
-						Messages.getString("failed"),
-						Messages.getString("message.monitor.36", args) + errMessage);
+				// 変更の場合
+				try {
+					ModifyPerformanceMonitorRequest info = new ModifyPerformanceMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setItemName(itemName);
+					info.setMeasure(itemMeasure);
+					info.setRunInterval(ModifyPerformanceMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(ModifyPerformanceMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.modifyPerformanceMonitor(this.inputData.getMonitorId(), info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.35", args));
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.36", args) + errMessage);
+				}
 			}
 		}
-
 		return result;
-	}
-
-	private static boolean isBreakdown(PerfCheckInfo perfCheckInfo) {
-		return perfCheckInfo.isBreakdownFlg() == null ? false: perfCheckInfo.isBreakdownFlg();
 	}
 }

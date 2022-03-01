@@ -30,11 +30,11 @@ public class TimeToANYhourConverter {
      */
     public static String toDiffTime(Long startMillis, Long endMillis) {
     	if (startMillis == null || endMillis == null) {
-            return Messages.getString("");
+            return "";
     	}
 
     	if (startMillis > endMillis) {
-            return Messages.getString("");
+            return "";
     	}
     	long sessionFromTime = TimeUnit.MILLISECONDS.toSeconds(endMillis);
     	long sessionTOTime = TimeUnit.MILLISECONDS.toSeconds(startMillis);

@@ -13,10 +13,10 @@ import java.util.List;
 import org.eclipse.jface.dialogs.MessageDialog;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
 
 /**
  * 構成情報収集設定を削除するクライアント側アクションクラス<BR>
@@ -35,9 +35,9 @@ public class DeleteNodeConfigSetting {
 	public void delete(String managerName, List<String> settingIdList) {
 
 		try {
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
 			//wrapper.deleteNode(facilityIdList);
-			wrapper.deleteNodeConfigSetting(settingIdList);
+			wrapper.deleteNodeConfigSettingInfo(String.join(",", settingIdList));
 
 			// リポジトリキャッシュの更新
 			ClientSession.doCheck();
@@ -51,7 +51,7 @@ public class DeleteNodeConfigSetting {
 
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,

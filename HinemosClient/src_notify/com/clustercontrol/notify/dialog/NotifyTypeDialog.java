@@ -8,6 +8,10 @@
 
 package com.clustercontrol.notify.dialog;
 
+import java.util.List;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -19,8 +23,11 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.CloudPlatformInfoResponse;
 
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
+import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.notify.bean.NotifyTypeConstant;
@@ -36,6 +43,8 @@ import com.clustercontrol.util.Messages;
  * @since 3.0.0
  */
 public class NotifyTypeDialog extends CommonDialog {
+	
+	private static Log m_log = LogFactory.getLog(NotifyTypeDialog.class);
 
 	// ----- instance フィールド ----- //
 
@@ -47,7 +56,7 @@ public class NotifyTypeDialog extends CommonDialog {
 	private NotifyTypeListComposite listComposite = null;
 	private ListViewer notifyTypeList = null;
 
-	private String managerName = null;
+	private List<String> managerName = null;
 
 	Composite composite = null;
 
@@ -59,7 +68,7 @@ public class NotifyTypeDialog extends CommonDialog {
 	 * @param parent
 	 *            親とするシェル
 	 */
-	public NotifyTypeDialog(Shell parent, Composite composite, String managerName) {
+	public NotifyTypeDialog(Shell parent, Composite composite, List<String> managerName) {
 		super(parent);
 		this.composite = composite;
 		this.managerName = managerName;
@@ -105,7 +114,45 @@ public class NotifyTypeDialog extends CommonDialog {
 
 		// 通知タイプ定義のインスタンスを登録する
 		for (Integer type : NotifyTypeConstant.getList()) {
-			notifyTypeList.add(type);
+			if (type.equals(NotifyTypeConstant.TYPE_CLOUD)) {
+				
+				boolean isPCloudEnabled = false;
+				// クラウド管理が有効か？
+				// マルチマネージャの場合どちらかでも有効であれば表示
+				for (String mn : managerName) {
+					IHinemosManager manager = ClusterControlPlugin.getDefault().getHinemosManager(mn);
+					try {
+						manager.getWrapper().checkPublish();
+					} catch (Exception e) {
+						continue;
+					}
+
+					// クラウド管理AWS、Azureのどちらかが存在するか確認
+					try {
+						List<CloudPlatformInfoResponse> platformList = manager.getWrapper().getAllCloudPlatforms();
+						for (CloudPlatformInfoResponse platform : platformList) {
+							if (platform.getCloudSpec().getPublicCloud()) {
+								isPCloudEnabled = true;
+								m_log.debug("NotifyTypeDialog(): contains Public Cloud. Enable CloudNotify.");
+								break;
+							}
+						}
+					} catch (Exception e) {
+						m_log.debug("NotifyTypeDialog():",e);
+						continue;
+					}
+				}
+				
+				//AWS、Azureどちらかが有効な場合のみクラウド通知は表示する
+				if (isPCloudEnabled) {
+					notifyTypeList.add(type);
+				}else{
+					m_log.debug("NotifyTypeDialog(): No public cloud option found. Disable CloudNotify.");
+				}
+				
+			} else {
+				notifyTypeList.add(type);
+			}
 		}
 
 		// アイテムをダブルクリックした場合、それを選択したこととする。
@@ -144,7 +191,7 @@ public class NotifyTypeDialog extends CommonDialog {
 		// DBに登録されているダイアログのクラス名を取得する
 		Integer notifyType = this.getSelectItem();
 		NotifyModifyAction action = new NotifyModifyAction();
-		if (action.openDialog(getParentShell(), this.managerName, null, notifyType) == IDialogConstants.OK_ID) {
+		if (action.openDialog(getParentShell(), this.managerName.get(0), null, notifyType) == IDialogConstants.OK_ID) {
 			composite.update();
 		}
 	}

@@ -10,7 +10,7 @@ package com.clustercontrol.reporting.factory;
 
 import java.util.Date;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -19,13 +19,14 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.reporting.bean.TemplateSetDetailInfo;
 import com.clustercontrol.reporting.bean.TemplateSetInfo;
-import com.clustercontrol.reporting.fault.ReportingNotFound;
 import com.clustercontrol.reporting.model.TemplateSetDetailInfoEntity;
 import com.clustercontrol.reporting.model.TemplateSetDetailInfoEntityPK;
 import com.clustercontrol.reporting.model.TemplateSetInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
+import com.clustercontrol.reporting.factory.SelectTemplateSetInfo;
 
 /**
  * テンプレートセット情報を登録するためのクラスです。
@@ -44,8 +45,9 @@ public class AddTemplateSet {
 	 * @throws EntityExistsException
 	 * @throws HinemosUnknown
 	 */
-	public boolean addTemplateSet(TemplateSetInfo data, String name)
+	public TemplateSetInfo addTemplateSet(TemplateSetInfo data, String name)
 			throws EntityExistsException, InvalidRole, HinemosUnknown {
+		TemplateSetInfo ret = null;
 		
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -77,13 +79,17 @@ public class AddTemplateSet {
 				copyProperties(detailEntity, detailInfo);
 				num++;
 			}
+			
+			ret = new SelectTemplateSetInfo().getTemplateSetInfo(entity.getTemplateSetId());
 		} catch (EntityExistsException e){
 			m_log.info("addTemplateSet() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw e;
+		} catch (ReportingNotFound e) {
+			throw new HinemosUnknown(e.getMessage(), e);
 		}
 
-		return true;
+		return ret;
 	}
 	
 	/**

@@ -51,6 +51,7 @@ public class MonitorInfoBean implements Serializable {
 	private Boolean changeFlg;
 	private Integer changeAnalysysRange;
 	private String changeApplication;
+	private String sdmlMonitorTypeId;
 	private String scope;
 	private String ownerRoleId;
 
@@ -259,6 +260,13 @@ public class MonitorInfoBean implements Serializable {
 	}
 	public void setChangeApplication(String changeApplication) {
 		this.changeApplication = changeApplication;
+	}
+
+	public String getSdmlMonitorTypeId() {
+		return sdmlMonitorTypeId;
+	}
+	public void setSdmlMonitorTypeId(String sdmlMonitorTypeId) {
+		this.sdmlMonitorTypeId = sdmlMonitorTypeId;
 	}
 
 	public String getScope() {

@@ -28,7 +28,9 @@ import com.clustercontrol.jobmanagement.bean.CommandTypeConstant;
 import com.clustercontrol.jobmanagement.bean.DelayNotifyConstant;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JobEnvVariableInfo;
+import com.clustercontrol.jobmanagement.bean.RetryWaitStatusConstant;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
+import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.model.JobEnvVariableInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
@@ -36,15 +38,21 @@ import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.queue.JobQueue;
 import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
 import com.clustercontrol.jobmanagement.queue.JobQueueNotFoundException;
+import com.clustercontrol.jobmanagement.rpa.bean.RpaJobTypeConstant;
 import com.clustercontrol.jobmanagement.util.FromRunningAfterCommitCallback;
+import com.clustercontrol.jobmanagement.util.JobLinkRcvJobWorker;
+import com.clustercontrol.jobmanagement.util.JobLinkSendJobWorker;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.jobmanagement.util.ParameterUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
+import com.clustercontrol.jobmanagement.util.RpaJobLoginWorker;
+import com.clustercontrol.jobmanagement.util.RpaJobWorker;
 import com.clustercontrol.jobmanagement.util.RunHistoryUtil;
 import com.clustercontrol.jobmanagement.util.SendTopic;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Singletons;
+import com.clustercontrol.xcloud.util.ResourceJobWorker;
 
 /**
  * ジョブ操作の停止[コマンド]を行うクラスです。
@@ -84,6 +92,10 @@ public class OperateStopOfJob {
 		//実行状態が実行中の場合、実行状態を停止処理中にする
 		sessionJob.setStatus(StatusConstant.TYPE_STOPPING);
 
+		//繰り返し実行状態を「なし」に設定
+		sessionJob.setRetryWaitStatus(RetryWaitStatusConstant.NONE);
+		sessionJob.setRetryWaitStartTime(null);
+
 		// ジョブキューに入っているジョブの場合は、キューから除去する。
 		// endJob と本処理で同じことを2回繰り返す可能性があるが、
 		// 冗長であること以外に副作用があるわけではない。
@@ -101,7 +113,12 @@ public class OperateStopOfJob {
 
 		if(job.getJobType() == JobConstant.TYPE_JOB
 				|| job.getJobType() == JobConstant.TYPE_APPROVALJOB
-				|| job.getJobType() == JobConstant.TYPE_MONITORJOB){
+				|| job.getJobType() == JobConstant.TYPE_MONITORJOB
+				|| job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB
+				|| job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB
+				|| job.getJobType() == JobConstant.TYPE_FILECHECKJOB
+				|| job.getJobType() == JobConstant.TYPE_RESOURCEJOB
+				|| job.getJobType() == JobConstant.TYPE_RPAJOB){
 			//ノード停止処理
 			for (JobSessionNodeEntity sessionNode : sessionJob.getJobSessionNodeEntities()) {
 				stopNode(sessionId, jobunitId, jobId, sessionNode.getId().getFacilityId());
@@ -118,7 +135,7 @@ public class OperateStopOfJob {
 				int flg = sessionJob.getDelayNotifyFlg();
 				//遅延通知状態から操作済みフラグを取得
 				int operationFlg = DelayNotifyConstant.getOperation(flg);
-				if(operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE){
+				if(operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE || operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE_FORCE){
 					//操作済みフラグが停止[状態指定]の場合、停止[状態変更]を行う
 					new OperateMaintenanceOfJob().maintenanceJob(
 							sessionId, jobunitId, jobId,
@@ -164,7 +181,7 @@ public class OperateStopOfJob {
 					int flg = sessionJob.getDelayNotifyFlg();
 					//遅延通知状態から操作済みフラグを取得
 					int operationFlg = DelayNotifyConstant.getOperation(flg);
-					if(operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE){
+					if(operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE || operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE_FORCE){
 						//操作済みフラグが停止[状態指定]の場合、停止[状態変更]を行う
 						new OperateMaintenanceOfJob().maintenanceJob(
 								sessionId, jobunitId, jobId,
@@ -258,7 +275,7 @@ public class OperateStopOfJob {
 					int flg = parentSessionJob.getDelayNotifyFlg();
 					//遅延通知状態から操作済みフラグを取得
 					int operationFlg = DelayNotifyConstant.getOperation(flg);
-					if(operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE){
+					if(operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE || operationFlg == DelayNotifyConstant.STOP_SET_END_VALUE_FORCE){
 						//操作済みフラグが停止[状態指定]の場合、停止[状態変更]を行う
 						new OperateMaintenanceOfJob().maintenanceJob(
 								sessionId,
@@ -285,6 +302,22 @@ public class OperateStopOfJob {
 	 *
 	 */
 	public void stopNode(String sessionId, String jobunitId, String jobId, String facilityId) throws HinemosUnknown, JobInfoNotFound, InvalidRole, FacilityNotFound {
+		stopNode(sessionId, jobunitId, jobId, facilityId, false);
+	}
+
+	/**
+	 * ノード停止処理を行います。
+	 *
+	 * @param sessionId セッションID
+	 * @param jobId ジョブID
+	 * @param facilityId ファシリティID
+	 * @param isRetry true:停止処理中のリトライ処理
+	 * @throws HinemosUnknown
+	 * @throws JobInfoNotFound
+	 * @throws FacilityNotFound 
+	 *
+	 */
+	public void stopNode(String sessionId, String jobunitId, String jobId, String facilityId, Boolean isRetry) throws HinemosUnknown, JobInfoNotFound, InvalidRole, FacilityNotFound {
 		m_log.info("stopNode() : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId);
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
@@ -314,8 +347,8 @@ public class OperateStopOfJob {
 
 			//待ち条件ジョブ判定
 			for (JobSessionNodeEntity sessionNode : sessionNodeList) {
-				//実行状態が実行中の場合
-				if(sessionNode.getStatus() == StatusConstant.TYPE_RUNNING){
+				//実行状態が実行中、または停止処理のリトライの場合
+				if(sessionNode.getStatus() == StatusConstant.TYPE_RUNNING || isRetry){
 					if(job.getStopType() == CommandStopTypeConstant.DESTROY_PROCESS ||
 							(job.getStopType() == CommandStopTypeConstant.EXECUTE_COMMAND &&
 							job.getStopCommand() != null && job.getStopCommand().length() > 0)){
@@ -331,7 +364,12 @@ public class OperateStopOfJob {
 						sessionNode.setStartDate(null);
 						//メッセージをエージェント応答待ちに戻す
 						if (job.getJobType() != JobConstant.TYPE_MONITORJOB
-							&& job.getJobType() != JobConstant.TYPE_APPROVALJOB) {
+							&& job.getJobType() != JobConstant.TYPE_APPROVALJOB
+							&& job.getJobType() != JobConstant.TYPE_RESOURCEJOB
+							&& job.getJobType() != JobConstant.TYPE_JOBLINKSENDJOB
+							&& job.getJobType() != JobConstant.TYPE_JOBLINKRCVJOB
+							&& !(job.getJobType() == JobConstant.TYPE_RPAJOB && job.getRpaJobType() == RpaJobTypeConstant.INDIRECT)
+							&& !isRetry) {
 							new JobSessionNodeImpl().setMessage(sessionNode, MessageConstant.WAIT_AGENT_RESPONSE.getMessage());
 						}
 						
@@ -359,14 +397,86 @@ public class OperateStopOfJob {
 								runInstructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
 								runInstructionInfo.setSpecifyUser(job.getSpecifyUser());
 								runInstructionInfo.setUser(job.getEffectiveUser());
-								runInstructionInfo.setCommandType(CommandTypeConstant.STOP);
 								runInstructionInfo.setCommand(CommandConstant.MONITOR);
-								runInstructionInfo.setStopType(job.getStopType());
 							}
+							runInstructionInfo.setCommandType(CommandTypeConstant.STOP);
+							runInstructionInfo.setStopType(job.getStopType());
+							
 							MonitorJobWorker.runJob(runInstructionInfo);
 							// Topic送信しない
 							continue;
 						}
+
+						if (job.getJobType() == JobConstant.TYPE_RESOURCEJOB) {
+							// リソース制御ジョブの停止処理を行う
+							sessionNode.setStatus(StatusConstant.TYPE_STOP);
+							new JobSessionNodeImpl().setMessage(sessionNode, MessageConstant.STOP_AT_ONCE.getMessage());
+							RunInstructionInfo runInstructionInfo = new RunInstructionInfo();
+							runInstructionInfo.setSessionId(sessionJob.getId().getSessionId());
+							runInstructionInfo.setJobunitId(sessionJob.getId().getJobunitId());
+							runInstructionInfo.setJobId(sessionJob.getId().getJobId());
+							runInstructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
+							runInstructionInfo.setUser(job.getRegUser());
+							runInstructionInfo.setCommand(CommandConstant.RESOURCE);
+							runInstructionInfo.setCommandType(CommandTypeConstant.STOP);
+
+							ResourceJobWorker.endResourceControlJob(runInstructionInfo, "", "", RunStatusConstant.END,
+									job.getResourceSuccessValue(), true);
+
+							// Topic送信しない
+							continue;
+						}
+
+						if (job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB) {
+							// ジョブ連携送信ジョブの停止処理を行う
+							sessionNode.setStatus(StatusConstant.TYPE_STOP);
+							new JobSessionNodeImpl().setMessage(sessionNode, MessageConstant.STOP_AT_ONCE.getMessage());
+							RunInstructionInfo runInstructionInfo = RunHistoryUtil.findRunHistory(
+									sessionId, jobunitId, jobId, sessionNode.getId().getFacilityId());
+							if (runInstructionInfo == null) {
+								//実行指示情報を作成
+								runInstructionInfo = new RunInstructionInfo();
+								runInstructionInfo.setSessionId(sessionId);
+								runInstructionInfo.setJobunitId(jobunitId);
+								runInstructionInfo.setJobId(jobId);
+								runInstructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
+								runInstructionInfo.setSpecifyUser(job.getSpecifyUser());
+								runInstructionInfo.setUser(job.getEffectiveUser());
+								runInstructionInfo.setCommand(CommandConstant.JOB_LINK_SEND);
+							}
+							runInstructionInfo.setCommandType(CommandTypeConstant.STOP);
+							runInstructionInfo.setStopType(job.getStopType());
+							
+							JobLinkSendJobWorker.runJob(runInstructionInfo);
+							// Topic送信しない
+							continue;
+						}
+
+						if (job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB) {
+							// ジョブ連携待機ジョブの停止処理を行う
+							sessionNode.setStatus(StatusConstant.TYPE_STOP);
+							new JobSessionNodeImpl().setMessage(sessionNode, MessageConstant.STOP_AT_ONCE.getMessage());
+							RunInstructionInfo runInstructionInfo = RunHistoryUtil.findRunHistory(
+									sessionId, jobunitId, jobId, sessionNode.getId().getFacilityId());
+							if (runInstructionInfo == null) {
+								//実行指示情報を作成
+								runInstructionInfo = new RunInstructionInfo();
+								runInstructionInfo.setSessionId(sessionId);
+								runInstructionInfo.setJobunitId(jobunitId);
+								runInstructionInfo.setJobId(jobId);
+								runInstructionInfo.setFacilityId(sessionNode.getId().getFacilityId());
+								runInstructionInfo.setSpecifyUser(job.getSpecifyUser());
+								runInstructionInfo.setUser(job.getEffectiveUser());
+								runInstructionInfo.setCommand(CommandConstant.JOB_LINK_RCV);
+							}
+							runInstructionInfo.setCommandType(CommandTypeConstant.STOP);
+							runInstructionInfo.setStopType(job.getStopType());
+							
+							JobLinkRcvJobWorker.runJob(runInstructionInfo);
+							// Topic送信しない
+							continue;
+						}
+
 						//実行指示情報を作成
 						RunInstructionInfo instructionInfo = new RunInstructionInfo();
 						instructionInfo.setSessionId(sessionId);
@@ -390,16 +500,34 @@ public class OperateStopOfJob {
 						}
 						instructionInfo.setJobEnvVariableInfoList(envInfoList);
 						
-						if (job.getStopType() == CommandStopTypeConstant.DESTROY_PROCESS) {
+						// RPAシナリオジョブ
+						if (job.getJobType() == JobConstant.TYPE_RPAJOB) {
+							if (job.getRpaJobType() == RpaJobTypeConstant.DIRECT) {
+								// 直接実行
+								m_log.info("stopNode() : Stop Rpa Job");
+								instructionInfo.setCommand(CommandConstant.RPA);
+								if (job.getRpaLoginFlg()) {
+									// ログイン処理が継続中の場合は停止しておく
+									RpaJobLoginWorker.cancel(instructionInfo);
+								}
+							} else {
+								// 間接実行
+								RpaJobWorker.stopJob(instructionInfo);
+								// Topic送信しない
+								continue;
+							}
+						} else if (job.getStopType() == CommandStopTypeConstant.DESTROY_PROCESS) {
 							m_log.info("stopNode() : Process Destroy");
-							instructionInfo.setCommand("");
+							if (job.getJobType() == JobConstant.TYPE_FILECHECKJOB) {
+								instructionInfo.setCommand(CommandConstant.FILE_CHECK);
+							} else {
+								instructionInfo.setCommand("");
+							}
 						} else {
 							m_log.info("stopNode() : Send Stop Command");
 							//コマンド内のパラメータを置き換える
-							String stopCommand = ParameterUtil.replaceSessionParameterValue(
-									sessionId, sessionNode.getId().getFacilityId(), job.getStopCommand());
-							//コマンド内のパラメータを置き換える(#[RETURN:jobid:facilityId])
-							stopCommand = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, stopCommand);
+							String stopCommand = ParameterUtil.replaceAllSessionParameterValue(
+									sessionId, jobunitId, sessionNode.getId().getFacilityId(), job.getStopCommand());
 							instructionInfo.setCommand(stopCommand);
 						}
 

@@ -9,6 +9,8 @@ package com.clustercontrol.xcloud.factory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,8 +33,8 @@ import java.util.zip.ZipOutputStream;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.fault.FacilityNotFound;
@@ -54,6 +56,7 @@ import com.clustercontrol.xcloud.model.BillingDetailRelationEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity.OptionCallable;
 import com.clustercontrol.xcloud.persistence.Transactional;
+import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.util.CsvUtil;
 import com.clustercontrol.xcloud.util.RepositoryControllerBeanWrapper;
 
@@ -247,18 +250,31 @@ public class Billings implements IBillings {
 
 		// 上でリストアップしたfacilityIdをターゲットとして課金詳細情報をリストアップする
 		HinemosEntityManager em = Session.current().getEntityManager();
-		TypedQuery<BillingDetailRelationEntity> query = em.createNamedQuery(BillingDetailRelationEntity.selectBillingDetailRelationEntity, BillingDetailRelationEntity.class);
-		query.setParameter("facilityIds", facilityIdList);
-		
-		// 月初。
 		LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0);
-		query.setParameter("start", start.toInstant(ZoneOffset.UTC).toEpochMilli());
-
-		// 月末。
 		LocalDateTime end = start.plusMonths(1);
-		query.setParameter("end", end.toInstant(ZoneOffset.UTC).toEpochMilli());
 
-		List<BillingDetailRelationEntity> relations = query.getResultList();
+		int start_idx = 0;
+		int end_idx = 0;
+		List<BillingDetailRelationEntity> relations = new ArrayList<>();
+		while(start_idx < facilityIdList.size()){
+			TypedQuery<BillingDetailRelationEntity> query = em.createNamedQuery(BillingDetailRelationEntity.selectBillingDetailRelationEntity, BillingDetailRelationEntity.class);
+
+			// 月初。
+			query.setParameter("start", start.toInstant(ZoneOffset.UTC).toEpochMilli());
+			
+			// 月末。
+			query.setParameter("end", end.toInstant(ZoneOffset.UTC).toEpochMilli());
+			
+			end_idx = start_idx + CloudUtil.SQL_PARAM_NUMBER_THRESHOLD;
+			if (end_idx > facilityIdList.size()){
+				end_idx = facilityIdList.size();
+			}
+			
+			List<String> subList = facilityIdList.subList(start_idx, end_idx);
+			query.setParameter("facilityIds", subList);
+			relations.addAll(query.getResultList());
+			start_idx = end_idx;
+		}
 
 		BillingResult result = new BillingResult();
 		result.setType(BillingResult.TargetType.Facility);
@@ -272,6 +288,7 @@ public class Billings implements IBillings {
 		
 		Map<List<Integer>, DataPoint> totalMap = new HashMap<>();
 		Map<List<Integer>, DataPoint> resourceMap = new HashMap<>();
+		Map<List<String>, ResourceBilling> resourceBillingMap = new HashMap<>();
 		FacilityBilling fb = null;
 		ResourceBilling rb = null;
 		for (BillingDetailRelationEntity r: relations) {
@@ -285,16 +302,14 @@ public class Billings implements IBillings {
 				rb = null;
 				totalMap.clear();
 			}
-			
-			if (rb == null ||
-				!rb.getCloudScopeId().equals(r.getBillingDetail().getCloudScopeId()) ||
-				!rb.getCategory().equals(r.getBillingDetail().getCategory()) ||
-				!(rb.getResourceId().equals(r.getBillingDetail().getResourceId()) || (rb.getResourceId() != null && rb.getResourceId().equals(r.getBillingDetail().getResourceId()))) ||
-				rb.getCategoryDetail() == null || r.getBillingDetail().getCategoryDetail() == null ||
-				!(rb.getCategoryDetail().equals(r.getBillingDetail().getCategoryDetail()) || (rb.getCategoryDetail() != null && rb.getCategoryDetail().equals(r.getBillingDetail().getCategoryDetail()))) ||
-				!rb.getDisplayName().equals(r.getBillingDetail().getDisplayName()) ||
-				!rb.getUnit().equals(r.getBillingDetail().getUnit())
-				) {
+			List<String> key = Arrays.asList(
+					r.getBillingDetail().getCloudScopeId(),
+					r.getBillingDetail().getCategory(),
+					r.getBillingDetail().getResourceId(),
+					r.getBillingDetail().getCategoryDetail(),
+					r.getBillingDetail().getDisplayName(),
+					r.getBillingDetail().getUnit());
+			if (!resourceBillingMap.containsKey(key)) {
 				rb = new ResourceBilling();
 				rb.setCloudScopeId(r.getBillingDetail().getCloudScopeId());
 				rb.setCloudScopeName(r.getBillingDetail().getCloudScopeName());
@@ -308,6 +323,7 @@ public class Billings implements IBillings {
 				rb.setResourceId(r.getBillingDetail().getResourceId());
 				fb.getResources().add(rb);
 				resourceMap.clear();
+				resourceBillingMap.put(key, rb);
 			}
 			
 			LocalDateTime time = LocalDateTime.ofInstant(Instant.ofEpochMilli(r.getBillingDetail().getTargetDate()), ZoneOffset.UTC);
@@ -494,6 +510,113 @@ public class Billings implements IBillings {
 			throw new InternalManagerError(e.getMessage(), e);
 		}
 	}
+
+	@Override
+	public String writeBillingDetailsByCloudScope(String cloudScopeId, Integer year, Integer month, File tempFile) throws CloudManagerException, InvalidRole {
+		String csvName = String.format("hinemos_cloud_billing_detail_account_%s_%04d%02d.csv", cloudScopeId, year, month);
+		return writeBillingDetails(tempFile, csvName, getBillingDetailsByCloudScope(cloudScopeId, year, month));
+	}
+
+	@Override
+	public String writeBillingDetailsByFacility(String facilityId, Integer year, Integer month, File tempFile) throws CloudManagerException, InvalidRole {
+		String csvName = String.format("hinemos_cloud_billing_detail_facility_%s_%04d%02d.csv", facilityId, year, month);
+		return writeBillingDetails(tempFile, csvName, getBillingDetailsByFacility(facilityId, year, month));
+	}
+
+	/**
+	 * 課金詳細情報をCSVに書き込み、一時ファイルでzipファイルを作成する。<BR>
+	 * 成功したらzipファイル名を返す。
+	 * 
+	 * @param tempFile
+	 *            一時ファイル
+	 * @param csvName
+	 *            CSVファイル名
+	 * @param billingResult
+	 *            課金詳細情報
+	 * @return zipファイル名
+	 * @throws CloudManagerException
+	 */
+	private String writeBillingDetails(File tempFile, String csvName, BillingResult billingResult) throws CloudManagerException {
+		try {
+			ZipOutputStream zipOutput = new ZipOutputStream(new FileOutputStream(tempFile));
+			zipOutput.putNextEntry(new ZipEntry(csvName));
+			try (PrintWriter csvWriter = new PrintWriter(zipOutput)) {
+				LocalDateTime beginDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(billingResult.getBeginTime()), ZoneOffset.UTC);
+				LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(billingResult.getEndTime()), ZoneOffset.UTC);
+
+				// カラム名を書き込み。
+				List<String> columnNames = new ArrayList<>(Arrays.asList("facilityId", "facilityName", "cloudScopeId", "resourceId", "category", "displayName", "unit"));
+				LocalDateTime previous = null;
+				for (LocalDateTime dateTime = beginDateTime; dateTime.isBefore(endDateTime); dateTime = dateTime.plusDays(1)) {
+					// 最初の日と月が変わったら、日付に月を付与する。
+					if (previous == null || previous.getMonthValue() != dateTime.getMonthValue()) {
+						columnNames.add(Integer.toString(dateTime.getMonthValue()) + "/" + Integer.toString(dateTime.getDayOfMonth()));
+					} else {
+						columnNames.add(Integer.toString(dateTime.getDayOfMonth()));
+					}
+
+					previous = dateTime;
+				}
+
+				CsvUtil.writeCsvLine(csvWriter, columnNames.toArray(new String[columnNames.size()]));
+				for (FacilityBilling fb : billingResult.getFacilities()) {
+					List<String> totalValues = new ArrayList<>(Arrays.asList(fb.getFacilityId(), fb.getFacilityName(), "", "", "", "", ""));
+					for (LocalDateTime dateTime = beginDateTime; dateTime.isBefore(endDateTime); dateTime = dateTime.plusDays(1)) {
+						DataPoint point = null;
+						int month = dateTime.getMonthValue();
+						int day = dateTime.getDayOfMonth();
+						for (DataPoint p : fb.getTotalsPerDate()) {
+							if (month == p.getMonth() && day == p.getDay()) {
+								point = p;
+								break;
+							}
+						}
+						if (point != null) {
+							// とりあえず、AWS の 課金の csv が、8 桁になっています。
+							String value = new BigDecimal(point.getPrice()).setScale(8, BigDecimal.ROUND_DOWN).toPlainString();
+							Matcher m = PATTERN.matcher(value);
+							totalValues.add(m.matches() ? m.group(1) : ("0.00000000".equals(value) ? "0" : value));
+						} else {
+							totalValues.add("-");
+						}
+					}
+					CsvUtil.writeCsvLine(csvWriter, totalValues.toArray(new String[totalValues.size()]));
+
+					for (ResourceBilling rb : fb.getResources()) {
+						List<String> resourceValues = new ArrayList<>(Arrays.asList("", "", rb.getCloudScopeId(), rb.getResourceId(),
+								rb.getCategoryDetail() == null ? rb.getCategory() : rb.getCategory() + "(" + rb.getCategoryDetail() + ")", rb.getDisplayName(),
+								rb.getUnit()));
+						for (LocalDateTime dateTime = beginDateTime; dateTime.isBefore(endDateTime); dateTime = dateTime.plusDays(1)) {
+							DataPoint point = null;
+							int month = dateTime.getMonthValue();
+							int day = dateTime.getDayOfMonth();
+							for (DataPoint p : rb.getPrices()) {
+								if (month == p.getMonth() && day == p.getDay()) {
+									point = p;
+									break;
+								}
+							}
+							if (point != null) {
+								// とりあえず、AWS の 課金の csv が、8 桁になっています。
+								String value = new BigDecimal(point.getPrice()).setScale(8, BigDecimal.ROUND_DOWN).toPlainString();
+								Matcher m = PATTERN.matcher(value);
+								resourceValues.add(m.matches() ? m.group(1) : ("0.00000000".equals(value) ? "0" : value));
+							} else {
+								resourceValues.add("-");
+							}
+						}
+						CsvUtil.writeCsvLine(csvWriter, resourceValues.toArray(new String[resourceValues.size()]));
+					}
+				}
+				csvWriter.flush();
+			} finally {
+				zipOutput.close();
+			}
+			return csvName + ".zip";
+		} catch (IOException e) {
+			throw new InternalManagerError(e.getMessage(), e);
+		}
+	}
 	
 	@Override
 	public List<String> getPlatformServices(String cloudScopeId) throws CloudManagerException, InvalidRole {
@@ -534,4 +657,5 @@ public class Billings implements IBillings {
 			throw new CloudManagerException(e);
 		}
 	}
+
 }

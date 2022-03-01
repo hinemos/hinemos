@@ -47,7 +47,6 @@ public class LoadMonitorPlugin {
 				if(pluginMonitor != null){
 					assert pluginMonitor.getMonitorPluginId() != null: "MonitorPluginId is null.";
 					assert pluginMonitor.getMonitorName() != null: "MonitorName is null.";
-					assert pluginMonitor.getDeleteMonitorClassObject() != null: "DeleteMonitorClassObject is null";
 
 					//HinemosModuleConstant へ追加監視の情報を登録
 					HinemosModuleConstant.ExtensionType extensionType = new HinemosModuleConstant.ExtensionType(pluginMonitor.getMonitorPluginId(), pluginMonitor.getMonitorCode(), pluginMonitor.getMonitorName());

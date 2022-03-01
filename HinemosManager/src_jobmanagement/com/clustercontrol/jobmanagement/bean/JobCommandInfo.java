@@ -32,71 +32,77 @@ public class JobCommandInfo implements Serializable {
 	private static Log m_log = LogFactory.getLog( JobCommandInfo.class );
 
 	/** ファシリティID */
-	private String m_facilityID;
+	private String facilityID;
 
 	/** スコープ */
-	private String m_scope;
+	private String scope;
 
 	/** スコープ処理 */
-	private Integer m_processingMethod = 0;
+	private Integer processingMethod = 0;
 
 	/** マネージャから配布 */
-	private Boolean m_managerDistribution = false;
+	private Boolean managerDistribution = false;
 	
 	/** スクリプト名 */
-	private String m_scriptName;
+	private String scriptName;
 	
 	/** スクリプトエンコーディング */
-	private String m_scriptEncoding;
+	private String scriptEncoding;
 	
 	/** スクリプト */
-	private String m_scriptContent;
+	private String scriptContent;
 	
 	/** 起動コマンド */
-	private String m_startCommand;
+	private String startCommand;
 
 	/** コマンド停止方式 */
-	private Integer m_stopType;
+	private Integer stopType;
 
 	/** 停止コマンド */
-	private String m_stopCommand;
+	private String stopCommand;
 
 	/** ユーザ種別 */
-	private Boolean m_specifyUser = false;
+	private Boolean specifyUser = false;
 
 	/** 実効ユーザ */
-	private String m_user;
+	private String user;
 
 	/** リトライ回数 */
-	private Integer m_messageRetry;
+	private Integer messageRetry;
 
 	/** コマンド実行失敗時終了フラグ */
-	private Boolean m_messageRetryEndFlg = false;
+	private Boolean messageRetryEndFlg = false;
 
 	/** コマンド実行失敗時終了値 */
-	private Integer m_messageRetryEndValue = 0;
+	private Integer messageRetryEndValue = 0;
 
 	/** 繰り返し実行フラグ */
-	private Boolean m_commandRetryFlg = false;
+	private Boolean commandRetryFlg = false;
 
 	/** 繰り返し実行回数 */
-	private Integer m_commandRetry;
+	private Integer commandRetry;
 	
 	/** 繰り返し完了状態 */
-	private Integer m_commandRetryEndStatus;
+	private Integer commandRetryEndStatus;
+
+	/** 標準出力のファイル出力情報 - 標準出力 */
+	private JobOutputInfo normalJobOutputInfo;
+
+	/** 標準出力のファイル出力情報 - 標準エラー出力 */
+	private JobOutputInfo errorJobOutputInfo;
 
 	/** ランタイムジョブ変数詳細情報 */
-	private ArrayList<JobCommandParam> m_jobCommandParamList;
+	private ArrayList<JobCommandParam> jobCommandParamList;
 
 	/** 環境変数 */
-	private List<JobEnvVariableInfo> m_envVariable;
+	private List<JobEnvVariableInfo> envVariable;
 
 	/**
 	 * コマンド実行失敗時終了フラグを返す。<BR>
 	 * @return コマンド実行失敗時終了フラグ
 	 */
 	public Boolean getMessageRetryEndFlg() {
-		return m_messageRetryEndFlg;
+		return messageRetryEndFlg;
 	}
 
 	/**
@@ -104,7 +110,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param messageRetryEndFlg コマンド実行失敗時終了フラグ
 	 */
 	public void setMessageRetryEndFlg(Boolean messageRetryEndFlg) {
-		this.m_messageRetryEndFlg = messageRetryEndFlg;
+		this.messageRetryEndFlg = messageRetryEndFlg;
 	}
 
 	/**
@@ -112,7 +118,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return コマンド実行失敗時終了値
 	 */
 	public Integer getMessageRetryEndValue() {
-		return m_messageRetryEndValue;
+		return messageRetryEndValue;
 	}
 
 	/**
@@ -120,7 +126,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param messageRetryEndValue コマンド実行失敗時終了値
 	 */
 	public void setMessageRetryEndValue(Integer messageRetryEndValue) {
-		this.m_messageRetryEndValue = messageRetryEndValue;
+		this.messageRetryEndValue = messageRetryEndValue;
 	}
 
 	/**
@@ -128,7 +134,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return スコープ
 	 */
 	public String getScope() {
-		return m_scope;
+		return scope;
 	}
 
 	/**
@@ -136,7 +142,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param scope スコープ
 	 */
 	public void setScope(String scope) {
-		this.m_scope = scope;
+		this.scope = scope;
 	}
 	
 	/**
@@ -144,7 +150,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return マネージャから配布するかしないか
 	 */
 	public Boolean getManagerDistribution() {
-		return m_managerDistribution;
+		return managerDistribution;
 	}
 
 	/**
@@ -152,7 +158,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param managerDistribution マネージャから配布するかしないか
 	 */
 	public void setManagerDistribution(Boolean managerDistribution) {
-		this.m_managerDistribution = managerDistribution;
+		this.managerDistribution = managerDistribution;
 	}
 	
 	/**
@@ -160,7 +166,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return スクリプト名
 	 */
 	public String getScriptName() {
-		return m_scriptName;
+		return scriptName;
 	}
 
 	/**
@@ -168,7 +174,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param scriptName スクリプト名
 	 */
 	public void setScriptName(String scriptName) {
-		this.m_scriptName = scriptName;
+		this.scriptName = scriptName;
 	}
 	
 	/**
@@ -176,7 +182,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return スクリプトエンコーディング
 	 */
 	public String getScriptEncoding() {
-		return m_scriptEncoding;
+		return scriptEncoding;
 	}
 
 	/**
@@ -184,7 +190,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param scriptEncoding スクリプトエンコーディング
 	 */
 	public void setScriptEncoding(String scriptEncoding) {
-		this.m_scriptEncoding = scriptEncoding;
+		this.scriptEncoding = scriptEncoding;
 	}
 	
 	/**
@@ -192,7 +198,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return スクリプト
 	 */
 	public String getScriptContent() {
-		return m_scriptContent;
+		return scriptContent;
 	}
 
 	/**
@@ -200,7 +206,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param scriptContent スクリプト
 	 */
 	public void setScriptContent(String scriptContent) {
-		this.m_scriptContent = scriptContent;
+		this.scriptContent = scriptContent;
 	}
 
 	/**
@@ -208,7 +214,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return 起動コマンド
 	 */
 	public String getStartCommand() {
-		return m_startCommand;
+		return startCommand;
 	}
 
 	/**
@@ -216,7 +222,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param startCommand 起動コマンド
 	 */
 	public void setStartCommand(String startCommand) {
-		this.m_startCommand = startCommand;
+		this.startCommand = startCommand;
 	}
 
 	/**
@@ -224,7 +230,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return ファシリティID
 	 */
 	public String getFacilityID() {
-		return m_facilityID;
+		return facilityID;
 	}
 
 	/**
@@ -232,7 +238,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param facilityID ファシリティID
 	 */
 	public void setFacilityID(String facilityID) {
-		this.m_facilityID = facilityID;
+		this.facilityID = facilityID;
 	}
 
 	/**
@@ -240,7 +246,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return 停止種別
 	 */
 	public Integer getStopType() {
-		return m_stopType;
+		return stopType;
 	}
 
 	/**
@@ -248,7 +254,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param stopType 停止種別
 	 */
 	public void setStopType(Integer stopType) {
-		this.m_stopType = stopType;
+		this.stopType = stopType;
 	}
 
 	/**
@@ -256,7 +262,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return 停止コマンド
 	 */
 	public String getStopCommand() {
-		return m_stopCommand;
+		return stopCommand;
 	}
 
 	/**
@@ -264,7 +270,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param stopCommand 停止コマンド
 	 */
 	public void setStopCommand(String stopCommand) {
-		this.m_stopCommand = stopCommand;
+		this.stopCommand = stopCommand;
 	}
 
 	/**
@@ -273,7 +279,7 @@ public class JobCommandInfo implements Serializable {
 	 * @see com.clustercontrol.bean.ProcessingMethodConstant
 	 */
 	public Integer getProcessingMethod() {
-		return m_processingMethod;
+		return processingMethod;
 	}
 
 	/**
@@ -282,7 +288,7 @@ public class JobCommandInfo implements Serializable {
 	 * @see com.clustercontrol.bean.ProcessingMethodConstant
 	 */
 	public void setProcessingMethod(Integer processingMethod) {
-		this.m_processingMethod = processingMethod;
+		this.processingMethod = processingMethod;
 	}
 
 	/**
@@ -290,7 +296,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return ユーザ種別
 	 */
 	public Boolean getSpecifyUser() {
-		return m_specifyUser;
+		return specifyUser;
 	}
 
 	/**
@@ -298,7 +304,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param specifyUser ユーザ種別
 	 */
 	public void setSpecifyUser(Boolean specifyUser) {
-		this.m_specifyUser = specifyUser;
+		this.specifyUser = specifyUser;
 	}
 
 	/**
@@ -306,7 +312,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return 実効ユーザ
 	 */
 	public String getUser() {
-		return m_user;
+		return user;
 	}
 
 	/**
@@ -314,7 +320,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param user 実効ユーザ
 	 */
 	public void setUser(String user) {
-		this.m_user = user;
+		this.user = user;
 	}
 
 
@@ -323,7 +329,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return リトライ回数
 	 */
 	public Integer getMessageRetry() {
-		return m_messageRetry;
+		return messageRetry;
 	}
 
 	/**
@@ -331,7 +337,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param messageRetry リトライ回数
 	 */
 	public void setMessageRetry(Integer messageRetry) {
-		this.m_messageRetry = messageRetry;
+		this.messageRetry = messageRetry;
 	}
 
 
@@ -340,7 +346,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return 繰り返し実行フラグ
 	 */
 	public Boolean getCommandRetryFlg() {
-		return m_commandRetryFlg;
+		return commandRetryFlg;
 	}
 
 	/**
@@ -348,7 +354,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param commandRetryFlg 繰り返し実行フラグ
 	 */
 	public void setCommandRetryFlg(Boolean commandRetryFlg) {
-		this.m_commandRetryFlg = commandRetryFlg;
+		this.commandRetryFlg = commandRetryFlg;
 	}
 
 
@@ -357,7 +363,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return 繰り返し実行回数
 	 */
 	public Integer getCommandRetry() {
-		return m_commandRetry;
+		return commandRetry;
 	}
 
 	/**
@@ -365,7 +371,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param commandRetry 繰り返し実行回数
 	 */
 	public void setCommandRetry(Integer commandRetry) {
-		this.m_commandRetry = commandRetry;
+		this.commandRetry = commandRetry;
 	}
 	
 	/**
@@ -373,7 +379,7 @@ public class JobCommandInfo implements Serializable {
 	 * @return
 	 */
 	public Integer getCommandRetryEndStatus() {
-		return m_commandRetryEndStatus;
+		return commandRetryEndStatus;
 	}
 
 	/**
@@ -381,15 +387,47 @@ public class JobCommandInfo implements Serializable {
 	 * @param commandRetryEndStatus
 	 */
 	public void setCommandRetryEndStatus(Integer commandRetryEndStatus) {
-		this.m_commandRetryEndStatus = commandRetryEndStatus;
+		this.commandRetryEndStatus = commandRetryEndStatus;
 	}
-	
+
+	/**
+	 * 標準出力のファイル出力情報 - 標準出力を返す。<BR>
+	 * @return 標準出力のファイル出力情報 - 標準出力
+	 */
+	public JobOutputInfo getNormalJobOutputInfo() {
+		return normalJobOutputInfo;
+	}
+
+	/**
+	 * 標準出力のファイル出力情報 - 標準出力を設定する。<BR>
+	 * @param 標準出力のファイル出力情報 - 標準出力
+	 */
+	public void setNormalJobOutputInfo(JobOutputInfo normalJobOutputInfo) {
+		this.normalJobOutputInfo = normalJobOutputInfo;
+	}
+
+	/**
+	 * 標準出力のファイル出力情報 - 標準エラー出力を返す。<BR>
+	 * @return 標準出力のファイル出力情報 - 標準エラー出力
+	 */
+	public JobOutputInfo getErrorJobOutputInfo() {
+		return errorJobOutputInfo;
+	}
+
+	/**
+	 * 標準出力のファイル出力情報 - 標準エラー出力を設定する。<BR>
+	 * @param 標準出力のファイル出力情報 - 標準エラー出力
+	 */
+	public void setErrorJobOutputInfo(JobOutputInfo errorJobOutputInfo) {
+		this.errorJobOutputInfo = errorJobOutputInfo;
+	}
+
 	/**
 	 * 環境変数のリストを返す。<BR>
 	 * @return 環境変数のリスト
 	 */
 	public List<JobEnvVariableInfo> getEnvVariableInfo() {
-		return m_envVariable;
+		return envVariable;
 	}
 
 	/**
@@ -397,7 +435,7 @@ public class JobCommandInfo implements Serializable {
 	 * @param 環境変数のリスト
 	 */
 	public void setEnvVariableInfo(List<JobEnvVariableInfo> envVariable) {
-		this.m_envVariable = envVariable;
+		this.envVariable = envVariable;
 	}
 
 	@Override
@@ -405,46 +443,47 @@ public class JobCommandInfo implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result
-				+ ((m_commandRetry == null) ? 0 : m_commandRetry.hashCode());
+				+ ((commandRetry == null) ? 0 : commandRetry.hashCode());
 		result = prime
 				* result
-				+ ((m_commandRetryFlg == null) ? 0 : m_commandRetryFlg
+				+ ((commandRetryFlg == null) ? 0 : commandRetryFlg
 						.hashCode());
 		result = prime
 				* result
-				+ ((m_commandRetryEndStatus == null) ? 0 : m_commandRetryEndStatus
+				+ ((commandRetryEndStatus == null) ? 0 : commandRetryEndStatus
 						.hashCode());
 		result = prime * result
-				+ ((m_facilityID == null) ? 0 : m_facilityID.hashCode());
+				+ ((facilityID == null) ? 0 : facilityID.hashCode());
 		result = prime * result
-				+ ((m_messageRetry == null) ? 0 : m_messageRetry.hashCode());
+				+ ((messageRetry == null) ? 0 : messageRetry.hashCode());
 		result = prime
 				* result
-				+ ((m_messageRetryEndFlg == null) ? 0 : m_messageRetryEndFlg
+				+ ((messageRetryEndFlg == null) ? 0 : messageRetryEndFlg
 						.hashCode());
 		result = prime
 				* result
-				+ ((m_messageRetryEndValue == null) ? 0
-						: m_messageRetryEndValue.hashCode());
+				+ ((messageRetryEndValue == null) ? 0
+						: messageRetryEndValue.hashCode());
 		result = prime
 				* result
-				+ ((m_processingMethod == null) ? 0 : m_processingMethod
+				+ ((processingMethod == null) ? 0 : processingMethod
 						.hashCode());
-		result = prime * result + ((m_scope == null) ? 0 : m_scope.hashCode());
 		result = prime * result
-				+ ((m_specifyUser == null) ? 0 : m_specifyUser.hashCode());
+				+ ((specifyUser == null) ? 0 : specifyUser.hashCode());
 		result = prime * result
-				+ ((m_startCommand == null) ? 0 : m_startCommand.hashCode());
+				+ ((startCommand == null) ? 0 : startCommand.hashCode());
 		result = prime * result
-				+ ((m_stopCommand == null) ? 0 : m_stopCommand.hashCode());
+				+ ((stopCommand == null) ? 0 : stopCommand.hashCode());
 		result = prime * result
-				+ ((m_stopType == null) ? 0 : m_stopType.hashCode());
-		result = prime * result + ((m_user == null) ? 0 : m_user.hashCode());
-		result = prime * result + ((m_managerDistribution == null) ? 0 : m_managerDistribution.hashCode());
-		result = prime * result + ((m_scriptName == null) ? 0 : m_scriptName.hashCode());
-		result = prime * result + ((m_scriptEncoding == null) ? 0 : m_scriptEncoding.hashCode());
-		result = prime * result + ((m_scriptContent == null) ? 0 : m_scriptContent.hashCode());
-		result = prime * result + ((m_envVariable == null) ? 0 : m_envVariable.hashCode());
+				+ ((stopType == null) ? 0 : stopType.hashCode());
+		result = prime * result + ((user == null) ? 0 : user.hashCode());
+		result = prime * result + ((managerDistribution == null) ? 0 : managerDistribution.hashCode());
+		result = prime * result + ((scriptName == null) ? 0 : scriptName.hashCode());
+		result = prime * result + ((scriptEncoding == null) ? 0 : scriptEncoding.hashCode());
+		result = prime * result + ((scriptContent == null) ? 0 : scriptContent.hashCode());
+		result = prime * result + ((envVariable == null) ? 0 : envVariable.hashCode());
+		result = prime * result + ((normalJobOutputInfo == null) ? 0 : normalJobOutputInfo.hashCode());
+		result = prime * result + ((errorJobOutputInfo == null) ? 0 : errorJobOutputInfo.hashCode());
 		return result;
 	}
 
@@ -477,7 +516,9 @@ public class JobCommandInfo implements Serializable {
 				equalsSub(o1.getScriptName(), o2.getScriptName()) &&
 				equalsSub(o1.getScriptEncoding(), o2.getScriptEncoding()) &&
 				equalsSub(o1.getScriptContent(), o2.getScriptContent()) &&
-				equalsSub(o1.getEnvVariableInfo(), o2.getEnvVariableInfo());
+				equalsSub(o1.getEnvVariableInfo(), o2.getEnvVariableInfo()) &&
+				equalsSub(o1.getNormalJobOutputInfo(), o2.getNormalJobOutputInfo()) &&
+				equalsSub(o1.getErrorJobOutputInfo(), o2.getErrorJobOutputInfo());
 		return ret;
 	}
 
@@ -670,10 +711,10 @@ public class JobCommandInfo implements Serializable {
 	}
 
 	public ArrayList<JobCommandParam> getJobCommandParamList() {
-		return m_jobCommandParamList;
+		return jobCommandParamList;
 	}
 
 	public void setJobCommandParamList(ArrayList<JobCommandParam> jobCommandParamList) {
-		this.m_jobCommandParamList = jobCommandParamList;
+		this.jobCommandParamList = jobCommandParamList;
 	}
 }

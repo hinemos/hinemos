@@ -38,6 +38,11 @@ public class XMLConstant {
 	public static final String DEFAULT_XML_PLATFORM_CALENDAR_PATTERN = "platformCalendarPattern.xml";
 	public static final String DEFAULT_XML_PLATFORM_NOTIFY = "platformNotify.xml";
 	public static final String DEFAULT_XML_PLATFORM_MAIL_TEMPLATE = "platformMailtemplate.xml";
+	public static final String DEFAULT_XML_PLATFORM_REST_ACCESS = "platformRestaccess.xml";
+	
+	public static final String DEFAULT_XML_FILTER_SETTING_MONITOR_HISTORY_EVENT = "filterEvent.xml";
+	public static final String DEFAULT_XML_FILTER_SETTING_MONITOR_HISTORY_STATUS = "filterStatus.xml";
+	public static final String DEFAULT_XML_FILTER_SETTING_JOB_HISTORY = "filterJobHistory.xml";
 	
 	public static final String DEFAULT_XML_PLATFORM_LOG_FORMAT = "platformLogFormat.xml";
 	public static final String DEFAULT_XML_MONITOR_AGENT = "monitorAgent.xml";
@@ -60,11 +65,15 @@ public class XMLConstant {
 	public static final String DEFAULT_XML_MONITOR_PCAP = "monitorPcap.xml";
 	public static final String DEFAULT_XML_MONITOR_INTEGRATION = "monitorIntegration.xml";
 	public static final String DEFAULT_XML_MONITOR_CORRELATION = "monitorCorrelation.xml";
+	public static final String DEFAULT_XML_MONITOR_RPA_LOGFILE = "monitorRpaLogfile.xml";
+	public static final String DEFAULT_XML_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE = "monitorRpaManagementToolSerivce.xml";
 	
 	public static final String DEFAULT_XML_JOB_MST = "jobMaster.xml";
 	public static final String DEFAULT_XML_JOB_SCHEDULE = "jobSchedule.xml";
 	public static final String DEFAULT_XML_JOB_FILECHECK = "jobFileCheck.xml";
 	public static final String DEFAULT_XML_JOB_MANUAL = "jobManual.xml";
+	public static final String DEFAULT_XML_JOB_JOBLINKRCV = "jobLinkRcv.xml";
+	public static final String DEFAULT_XML_JOB_JOBLINKSEND = "jobLinkSend.xml";
 	public static final String DEFAULT_XML_JOB_QUEUE = "jobQueue.xml";
 	public static final String DEFAULT_XML_SYSYTEM_MAINTENANCE = "platformMaintenance.xml";
 	public static final String DEFAULT_XML_MASTER_COLLECT = "collectorMaster.xml";
@@ -88,7 +97,16 @@ public class XMLConstant {
 	public static final String DEFAULT_XML_REPORT_SCHEDULE = "reportSchedule.xml";
 	public static final String DEFAULT_XML_REPORT_TEMPLATE = "reportTemplateSet.xml";
 
+	public static final String DEFAULT_XML_RPA_SCENARIO_TAG = "rpaScenarioTag.xml";
+	public static final String DEFAULT_XML_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING = "rpaScenarioOperationResultCreateSetting.xml";
+	public static final String DEFAULT_XML_RPA_MANAGEMENT_TOOL_ACCOUNT = "rpaManagementToolAccount.xml";
+	public static final String DEFAULT_XML_RPA_SCENARIO_COEFFICIENT_PATTERN = "rpaScenarioCoefficientPattern.xml";
+
 	public static final String DEFAULT_XML_CLOUD_USER = "cloudScope.xml";
 	public static final String DEFAULT_XML_CLOUD_MON_SERVICE = "cloudServiceMonitor.xml";
 	public static final String DEFAULT_XML_CLOUD_MON_BILLING = "cloudBillingMonitor.xml";
+	public static final String DEFAULT_XML_CLOUD_MON_LOG = "cloudLogMonitor.xml";
+
+	public static final String DEFAULT_XML_MSGFILTER_MFPROPERTY = "mfProperty.xml";
+
 }

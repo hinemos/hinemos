@@ -21,8 +21,8 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 
 import com.clustercontrol.jobmanagement.composite.JobTreeComposite;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブ[一覧]ビューのツリービューア用のSelectionChangedListenerです。
@@ -52,7 +52,7 @@ public class JobTreeSelectionChangedListener implements ISelectionChangedListene
 	 */
 	@Override
 	public void selectionChanged(SelectionChangedEvent event) {
-		JobTreeItem selectItem = null;
+		JobTreeItemWrapper selectItem = null;
 
 		//ジョブ[登録]ビューのインスタンスを取得
 		IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
@@ -62,12 +62,12 @@ public class JobTreeSelectionChangedListener implements ISelectionChangedListene
 		StructuredSelection selection = (StructuredSelection) event.getSelection();
 
 		if (viewPart != null && selection != null) {
-			selectItem = (JobTreeItem) selection.getFirstElement();
+			selectItem = (JobTreeItemWrapper) selection.getFirstElement();
 			List<?> list = selection.toList();
-			List<JobTreeItem> itemList = new ArrayList<JobTreeItem>();
+			List<JobTreeItemWrapper> itemList = new ArrayList<JobTreeItemWrapper>();
 			for(Object obj : list) {
-				if(obj instanceof JobTreeItem) {
-					itemList.add((JobTreeItem)obj);
+				if(obj instanceof JobTreeItemWrapper) {
+					itemList.add((JobTreeItemWrapper)obj);
 				}
 			}
 

@@ -11,6 +11,7 @@ package com.clustercontrol.notify.util;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -19,37 +20,54 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.fault.CommandTemplateNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosException;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.MailTemplateNotFound;
+import com.clustercontrol.fault.RestAccessNotFound;
+import com.clustercontrol.fault.UsedCommandTemplate;
 import com.clustercontrol.infra.util.InfraManagementValidator;
 import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
 import com.clustercontrol.monitor.bean.EventUserExtensionItemInfo;
 import com.clustercontrol.monitor.util.EventHinemosPropertyUtil;
+import com.clustercontrol.notify.bean.CommandSettingTypeConstant;
 import com.clustercontrol.notify.bean.EventNotifyInfo;
 import com.clustercontrol.notify.bean.ExecFacilityConstant;
 import com.clustercontrol.notify.bean.NotifyTypeConstant;
+import com.clustercontrol.notify.bean.RenotifyTypeConstant;
 import com.clustercontrol.notify.mail.model.MailTemplateInfo;
+import com.clustercontrol.notify.model.CommandTemplateInfo;
+import com.clustercontrol.notify.model.NotifyCloudInfo;
 import com.clustercontrol.notify.model.NotifyCommandInfo;
 import com.clustercontrol.notify.model.NotifyEventInfo;
 import com.clustercontrol.notify.model.NotifyInfo;
+import com.clustercontrol.notify.model.NotifyInfoDetail;
 import com.clustercontrol.notify.model.NotifyInfraInfo;
 import com.clustercontrol.notify.model.NotifyJobInfo;
 import com.clustercontrol.notify.model.NotifyLogEscalateInfo;
 import com.clustercontrol.notify.model.NotifyMailInfo;
+import com.clustercontrol.notify.model.NotifyMessageInfo;
+import com.clustercontrol.notify.model.NotifyRestInfo;
 import com.clustercontrol.notify.model.NotifyStatusInfo;
 import com.clustercontrol.repository.util.FacilityTreeCache;
+import com.clustercontrol.rest.endpoint.notify.dto.enumtype.NotifyJobTypeEnum;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.xcloud.Session.SessionScope;
+import com.clustercontrol.xcloud.bean.CloudConstant;
+import com.clustercontrol.xcloud.factory.CloudManager;
+import com.clustercontrol.xcloud.model.CloudLoginUserEntity;
 
 /**
  * 通知の入力チェッククラス
@@ -101,6 +119,7 @@ public class NotifyValidator {
 				info.getCriticalEffectiveUser(),
 				info.getUnknownEffectiveUser()
 		};
+
 		// 実行コマンド
 		String[] commands = new String[] { info.getInfoCommand(),
 				info.getWarnCommand(), info.getCriticalCommand(),
@@ -117,7 +136,16 @@ public class NotifyValidator {
 			if (isNullOrEmpty(commands[validFlgIndex])) {
 				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_COMMAND_NOTIFY.getMessage());
 			}
-			CommonValidator.validateString("command", commands[validFlgIndex], true, 1, 1024);
+			// コマンドテンプレートを利用する場合、存在しないテンプレートIDを指定していたら設定は登録しない
+			if (info.getCommandSettingType().equals(CommandSettingTypeConstant.CHOICE_TEMPLATE)) {
+				try {
+					QueryUtil.getCommandTemplateInfoPK(commands[validFlgIndex]);
+				} catch (CommandTemplateNotFound | InvalidRole e) {
+					throwInvalidSetting(e);
+				}
+			} else {
+				CommonValidator.validateString("command", commands[validFlgIndex], true, 1, 1024);
+			}
 		}
 		
 		// タイムアウト
@@ -145,30 +173,37 @@ public class NotifyValidator {
 			return false;
 		}
 
-		if (info.getJobExecFacilityFlg() == ExecFacilityConstant.TYPE_FIX) {
-			// 固定スコープを選択している場合の確認
-			if (info.getJobExecFacility() == null) {
-				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_SCOPE_NOTIFY.getMessage());
+		if (NotifyJobTypeEnum.DIRECT.getCode().equals(info.getNotifyJobType())) {
+			if (info.getJobExecFacilityFlg() == ExecFacilityConstant.TYPE_FIX) {
+				// 固定スコープを選択している場合の確認
+				if (info.getJobExecFacility() == null) {
+					throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_SCOPE_NOTIFY.getMessage());
+				}
+				try {
+					FacilityTreeCache.validateFacilityId(info.getJobExecFacility(),
+							notifyInfo.getOwnerRoleId(), false);
+				} catch (FacilityNotFound e) {
+					throwInvalidSetting(e);
+				}
 			}
-			try {
-				FacilityTreeCache.validateFacilityId(info.getJobExecFacility(),
-						notifyInfo.getOwnerRoleId(), false);
-			} catch (FacilityNotFound e) {
-				throwInvalidSetting(e);
+			String[] jobIds = new String[] {
+					info.getInfoJobId(),
+					info.getWarnJobId(),
+					info.getCriticalJobId(),
+					info.getUnknownJobId()
+			};
+			for (int i = 0; i < validFlgIndexes.size(); i++) {
+				int validFlgIndex = validFlgIndexes.get(i);
+				if (isNullOrEmpty(jobIds[validFlgIndex])) {
+					throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_JOBID.getMessage(
+							Messages.getString(PriorityConstant.typeToMessageCode(getPriorityCode(validFlgIndex)))));
+				}
 			}
-		}
+		} else if (NotifyJobTypeEnum.JOB_LINK_SEND.getCode().equals(info.getNotifyJobType())) {
 
-		String[] jobIds = new String[] {
-				info.getInfoJobId(),
-				info.getWarnJobId(),
-				info.getCriticalJobId(),
-				info.getUnknownJobId()
-		};
-		for (int i = 0; i < validFlgIndexes.size(); i++) {
-			int validFlgIndex = validFlgIndexes.get(i);
-			if (isNullOrEmpty(jobIds[validFlgIndex])) {
-				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_JOBID.getMessage());
-			}
+			// ジョブ連携送信設定IDチェック
+			CommonValidator.validateJoblinkSendSettingId(info.getJoblinkSendSettingId(), notifyInfo.getOwnerRoleId());
+
 		}
 
 		return true;
@@ -283,10 +318,11 @@ public class NotifyValidator {
 	 * メールテンプレート情報の妥当性チェック
 	 * 
 	 * @param mailTemplateInfo
+	 * @param addFlg
 	 * @throws InvalidSetting
 	 */
 	public static void validateMailTemplateInfo(
-			MailTemplateInfo mailTemplateInfo) throws InvalidSetting {
+			MailTemplateInfo mailTemplateInfo, boolean addFlg) throws InvalidSetting {
 		// mailTemplateId
 		CommonValidator.validateId(MessageConstant.MAIL_TEMPLATE_ID.getMessage(),
 				mailTemplateInfo.getMailTemplateId(), 64);
@@ -298,13 +334,14 @@ public class NotifyValidator {
 				mailTemplateInfo.getSubject(), true, 1, 256);
 
 		// ownerRoleId
-		CommonValidator.validateOwnerRoleId(mailTemplateInfo.getOwnerRoleId(),
-				true, mailTemplateInfo.getMailTemplateId(),
-				HinemosModuleConstant.PLATFORM_MAIL_TEMPLATE);
+		if (addFlg) {
+			CommonValidator.validateOwnerRoleId(mailTemplateInfo.getOwnerRoleId(), true,
+					mailTemplateInfo.getMailTemplateId(), HinemosModuleConstant.PLATFORM_MAIL_TEMPLATE);
+		}
 
 	}
 
-	public static void validateNotifyInfo(NotifyInfo notifyInfo)
+	public static void validateNotifyInfo(NotifyInfo notifyInfo, boolean addFlg)
 			throws InvalidSetting, InvalidRole  {
 		// notifyId
 		CommonValidator.validateId(MessageConstant.NOTIFY_ID.getMessage(),
@@ -315,16 +352,16 @@ public class NotifyValidator {
 				notifyInfo.getDescription(), false, 0, 256);
 
 		// ownerRoleId
-		CommonValidator
-				.validateOwnerRoleId(notifyInfo.getOwnerRoleId(), true,
-						notifyInfo.getNotifyId(),
-						HinemosModuleConstant.PLATFORM_NOTIFY);
-		
+		if (addFlg) {
+			CommonValidator.validateOwnerRoleId(notifyInfo.getOwnerRoleId(), true, notifyInfo.getNotifyId(),
+					HinemosModuleConstant.PLATFORM_NOTIFY);
+		}
 		// calendarId
 		CommonValidator.validateCalenderId(notifyInfo.getCalendarId(), false, notifyInfo.getOwnerRoleId());
 		
 		// 再通知抑制期間
-		if (notifyInfo.getRenotifyPeriod() != null) {
+		// 期間で抑制する場合は抑制期間の入力が必須
+		if(notifyInfo.getRenotifyPeriod() != null || notifyInfo.getRenotifyType() == RenotifyTypeConstant.TYPE_PERIOD) {
 			CommonValidator.validateInt(
 					MessageConstant.SUPPRESS_BY_TIME_INTERVAL.getMessage(),
 					notifyInfo.getRenotifyPeriod(), 1,
@@ -371,6 +408,20 @@ public class NotifyValidator {
 		case NotifyTypeConstant.TYPE_INFRA:
 			NotifyInfraInfo infra = notifyInfo.getNotifyInfraInfo();
 			result = validateInfraInfo(infra, notifyInfo);
+			break;
+		case NotifyTypeConstant.TYPE_REST:
+			NotifyRestInfo rest = notifyInfo.getNotifyRestInfo();
+			result = validateRestInfo(rest, notifyInfo);
+			break;
+			
+		case NotifyTypeConstant.TYPE_CLOUD:
+			NotifyCloudInfo cloud = notifyInfo.getNotifyCloudInfo();
+			result = validateCloudInfo(cloud, notifyInfo);
+			break;
+
+		case NotifyTypeConstant.TYPE_MESSAGE:
+			NotifyMessageInfo message = notifyInfo.getNotifyMessageInfo();
+			result = validateMessageInfo(message, notifyInfo);
 			break;
 
 		default:
@@ -430,7 +481,7 @@ public class NotifyValidator {
 	 * @throws InvalidSetting
 	 */
 	public static boolean validateUserExtensionItem(String value, EventUserExtensionItemInfo itemInfo, Integer i, boolean isValidate) throws InvalidSetting {
-		final int eventItemLength = 128;
+		final int eventItemLength = 4096;
 		
 		if (value == null) {
 			//nullはチェックしない（新規の場合はデフォルト値、更新時は元の値のまま）
@@ -567,10 +618,17 @@ public class NotifyValidator {
 				info.getCriticalInfraId(),
 				info.getUnknownInfraId()
 		};
+		
+		MessageConstant[] priorities = new MessageConstant[] {
+				MessageConstant.INFO,
+				MessageConstant.WARNING,
+				MessageConstant.CRITICAL,
+				MessageConstant.UNKNOWN
+		};
 		for (int i = 0; i < validFlgIndexes.size(); i++) {
 			int validFlgIndex = validFlgIndexes.get(i);
 			if (isNullOrEmpty(infraIds[validFlgIndex])) {
-				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_INFRA_MANAGEMENT_ID.getMessage());
+				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_INFRA_MANAGEMENT_ID.getMessage(priorities[validFlgIndex].getMessage()));
 			}
 
 			// 構築IDが指定されている場合、参照可能かどうかを確認する
@@ -580,8 +638,233 @@ public class NotifyValidator {
 		return true;
 	}
 
+	private static boolean validateRestInfo(NotifyRestInfo info, NotifyInfo notifyInfo) throws InvalidSetting, InvalidRole {
+		ArrayList<Integer> validFlgIndexes = NotifyUtil.getValidFlgIndexes(info);
+
+		String[] restAccessIds = new String[] {
+				info.getInfoRestAccessId(),
+				info.getWarnRestAccessId(),
+				info.getCriticalRestAccessId(),
+				info.getUnknownRestAccessId()
+		};
+		for (int i = 0; i < validFlgIndexes.size(); i++) {
+			// IDが指定されている場合、参照可能かどうかを確認する
+			if(restAccessIds[i] == null ){
+				continue;
+			}
+			try {
+				com.clustercontrol.notify.restaccess.util.RestAccessQueryUtil.getRestAccessInfoPK(restAccessIds[i]);
+			} catch (RestAccessNotFound e) {
+				String[] args = {restAccessIds[i]};
+				throwInvalidSetting(MessageConstant.MESSAGE_REST_ACCESS_ID_NOT_EXIST.getMessage(args));
+			}
+		}
+
+		return true;
+	}
+
 	private static boolean validateStatusInfo(NotifyStatusInfo info,
 			NotifyInfo notifyInfo) {
+		return validateNotifyInfoDetail(info);
+	}
+
+	private static boolean validateMessageInfo(NotifyMessageInfo info, NotifyInfo notifyInfo) {
+		return validateNotifyInfoDetail(info);
+	}
+
+	private static boolean validateNotifyInfoDetail(NotifyInfoDetail info) {
 		return !NotifyUtil.getValidFlgIndexes(info).isEmpty();
 	}
+
+	public static void validateCommandTemplateInfo(CommandTemplateInfo templateInfo)
+			throws InvalidSetting, InvalidRole  {
+		// ownerRoleId
+		CommonValidator.validateOwnerRoleId(templateInfo.getOwnerRoleId(), true, templateInfo.getCommandTemplateId(),
+				HinemosModuleConstant.PLATFORM_NOTIFY);
+	}
+
+	public static void validateDeleteCommandTemplateInfo(String commandTemplateId)
+			throws InvalidSetting, InvalidRole, UsedCommandTemplate, HinemosUnknown  {
+		JpaTransactionManager jtm = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			// コマンド通知(コマンド通知テンプレートを利用)の取得
+			List<NotifyCommandInfo> list = QueryUtil.getNotifyCommandInfoByCommandSettingType(CommandSettingTypeConstant.CHOICE_TEMPLATE);
+			List<String> templateUsageIdList = new ArrayList<>();
+			
+			for (NotifyCommandInfo info : list) {
+				if (commandTemplateId.equals(info.getInfoCommand())) {
+					templateUsageIdList.add(info.getNotifyId());
+				} else if (commandTemplateId.equals(info.getWarnCommand())) {
+					templateUsageIdList.add(info.getNotifyId());
+				} else if (commandTemplateId.equals(info.getCriticalCommand())) {
+					templateUsageIdList.add(info.getNotifyId());
+				} else if (commandTemplateId.equals(info.getUnknownCommand())) {
+					templateUsageIdList.add(info.getNotifyId());
+				}
+			}
+			// コマンド通知でコマンド通知テンプレートIDを参照している場合に例外発生
+			if (!templateUsageIdList.isEmpty()) {
+				String message = (MessageConstant.NOTIFY.getMessage() + " : " + String.join(",", templateUsageIdList));
+				UsedCommandTemplate e = new UsedCommandTemplate(commandTemplateId, message);
+				
+				m_log.info("validateDeleteCommandTemplateInfo() : "
+						+ e.getClass().getSimpleName() + ", " 
+						+ commandTemplateId + ", " + e.getMessage());
+				throw e;
+			}
+
+			jtm.commit();
+		} catch (UsedCommandTemplate e) {
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("validateDeleteCommandTemplateInfo() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage());
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+	}
+	
+	private static boolean validateCloudInfo(NotifyCloudInfo cloudInfo, NotifyInfo notifyInfo) throws InvalidSetting, InvalidRole{
+		//スコープチェック
+		if (cloudInfo.getFacilityId() == null || cloudInfo.getFacilityId().isEmpty()) {
+			throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_SCOPE_NOTIFY.getMessage());
+		}
+
+		// コマンドラインツール、Utilityを考慮し、
+		// ここで厳密に指定されたFacilityIDがパブリッククラウドスコープ、
+		// かつオーナーロールから参照可能であるかを確認しておく
+		if (notifyInfo.getOwnerRoleId().equals(RoleIdConstant.ADMINISTRATORS)) {
+			// ADMINISTRATORの場合は何もしない
+		} else {
+			try (SessionScope sessionScope = SessionScope.open()) {
+				// cloudScopeIDの取得
+				String prefixRemoved = cloudInfo.getFacilityId().replaceFirst("_[A-Z]+_[A-Z]+_", "");
+				String cloudScopeId = prefixRemoved.substring(0, prefixRemoved.lastIndexOf("_"));
+				boolean found = false;
+				// オーナーロールに紐づくクラウドアカウントの取得
+				List<CloudLoginUserEntity> userList = null;
+				userList = CloudManager.singleton().getLoginUsers()
+						.getCloudLoginUserByRole(notifyInfo.getOwnerRoleId());
+				for (CloudLoginUserEntity e : userList) {
+					if (cloudScopeId.equals(e.getCloudScopeId())) {
+						if (e.getCloudScope().isPublic()) {
+							found = true;
+							break;
+						}
+					}
+				}
+
+				if (!found) {
+					m_log.warn("validateCloudInfo(): CloudScope Not Found For FacilityID: "+cloudInfo.getFacilityId());
+					throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SELECT_PUBLIC_CLOUD.getMessage());
+				}
+
+			} catch (RuntimeException e1) {
+				// findbugs対応 catch (Exception e) に対して RuntimeException
+				// のキャッチを明示化
+				m_log.warn("validateCloudInfo():",e1);
+				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SELECT_PUBLIC_CLOUD.getMessage());
+			} catch (Exception e1) {
+				m_log.warn("validateCloudInfo():",e1);
+				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SELECT_PUBLIC_CLOUD.getMessage());
+			}
+		}
+		
+		// 通知フラグチェック
+		ArrayList<Integer> validFlgIndexes = NotifyUtil.getValidFlgIndexes(cloudInfo);
+		if (validFlgIndexes.isEmpty()) {
+			return false;
+		}
+		
+		//AWS, Azure以外は不正
+		switch (cloudInfo.getPlatformType()){
+		case CloudConstant.notify_aws_platform:
+			//aws
+			if(cloudInfo.getInfoValidFlg()){
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_SOURCE.getMessage(), cloudInfo.getInfoSource(), true,
+						1, 256);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_DETAIL_TYPE.getMessage(), cloudInfo.getInfoDetailType(), true,
+						1, 128);
+			}
+			if(cloudInfo.getWarnValidFlg()){
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_SOURCE.getMessage(), cloudInfo.getWarnSource(), true,
+						1, 256);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_DETAIL_TYPE.getMessage(), cloudInfo.getWarnDetailType(), true,
+						1, 128);
+			}
+			if(cloudInfo.getCriticalValidFlg()){
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_SOURCE.getMessage(), cloudInfo.getCritSource(), true,
+						1, 256);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_DETAIL_TYPE.getMessage(), cloudInfo.getCritDetailType(), true,
+						1, 128);
+			}
+			if(cloudInfo.getUnknownValidFlg()){
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_SOURCE.getMessage(), cloudInfo.getUnkSource(), true,
+						1, 256);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_DETAIL_TYPE.getMessage(), cloudInfo.getUnkDetailType(), true,
+						1, 128);
+			}
+			break;
+		case CloudConstant.notify_azure_platform:
+			//azure
+			if(cloudInfo.getInfoValidFlg()){
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_ENDPOINT.getMessage(),
+						cloudInfo.getInfoEventBus(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_ACCESS_KEY.getMessage(),
+						cloudInfo.getInfoAccessKey(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_SUBJECT.getMessage(),
+						cloudInfo.getInfoDetailType(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_EVENT_TYPE.getMessage(),
+						cloudInfo.getInfoSource(), true, 1, 4096);
+			}
+			if(cloudInfo.getWarnValidFlg()){
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_ENDPOINT.getMessage(),
+						cloudInfo.getWarnEventBus(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_ACCESS_KEY.getMessage(),
+						cloudInfo.getWarnAccessKey(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_SUBJECT.getMessage(),
+						cloudInfo.getWarnDetailType(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_EVENT_TYPE.getMessage(),
+						cloudInfo.getWarnSource(), true, 1, 4096);
+			}
+			if(cloudInfo.getCriticalValidFlg()){
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_ENDPOINT.getMessage(),
+						cloudInfo.getCritEventBus(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_ACCESS_KEY.getMessage(),
+						cloudInfo.getCritAccessKey(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_SUBJECT.getMessage(),
+						cloudInfo.getCritDetailType(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_EVENT_TYPE.getMessage(),
+						cloudInfo.getCritSource(), true, 1, 4096);
+			}
+			if(cloudInfo.getUnknownValidFlg()){
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_ENDPOINT.getMessage(),
+						cloudInfo.getUnkEventBus(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_ACCESS_KEY.getMessage(),
+						cloudInfo.getUnkAccessKey(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_SUBJECT.getMessage(),
+						cloudInfo.getUnkDetailType(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_EVENT_TYPE.getMessage(),
+						cloudInfo.getUnkSource(), true, 1, 4096);
+			}
+			
+			break;
+			
+			
+		default:
+			throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SELECT_PUBLIC_CLOUD.getMessage());
+			
+		}
+		
+		
+		
+		return true;
+	}
+	
+
 }

@@ -19,17 +19,17 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.menus.UIElement;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
 import com.clustercontrol.accesscontrol.dialog.ObjectPrivilegeEditDialog;
 import com.clustercontrol.accesscontrol.dialog.ObjectPrivilegeListDialog;
 import com.clustercontrol.accesscontrol.util.ObjectBean;
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.util.JobMapActionUtil;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.jobmap.view.JobTreeView;
 import com.clustercontrol.view.action.ObjectPrivilegeAction;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブの作成・変更ダイアログによる、ジョブのオブジェクト権限設定を行うクライアント側アクションクラス<BR>
@@ -94,7 +94,7 @@ public class JobObjectPrivilegeAction extends ObjectPrivilegeAction {
 		}
 		viewPart = page.getActivePart();
 		
-		JobTreeItem jobTreeItem = null;
+		JobTreeItemWrapper jobTreeItem = null;
 		if (viewPart instanceof JobMapEditorView) {
 			JobMapEditorView view = (JobMapEditorView) viewPart;
 			JobFigure figure = (JobFigure) view.getCanvasComposite()
@@ -114,6 +114,6 @@ public class JobObjectPrivilegeAction extends ObjectPrivilegeAction {
 			return;
 		}
 		
-		this.setBaseEnabled(jobTreeItem.getData().getType() == JobConstant.TYPE_JOBUNIT);
+		this.setBaseEnabled(jobTreeItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT);
 	}
 }

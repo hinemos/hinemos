@@ -15,6 +15,10 @@ package com.clustercontrol.accesscontrol.dialog;
  * @since 5.0.0
  */
 public class LoginAccount{
+	public static enum ACCESS_POINT {
+		HINEMOS_MANAGER, FILTER_MANAGER
+	}
+
 	public static final int STATUS_UNCONNECTED = 0;
 	public static final int STATUS_CONNECTED = 1;
 
@@ -23,10 +27,23 @@ public class LoginAccount{
 	private String url;
 	private String managerName = null;
 	private int status = STATUS_UNCONNECTED;
+	private ACCESS_POINT accessPoint = ACCESS_POINT.HINEMOS_MANAGER;
+
+	public LoginAccount(String userid, String password, String url, String managerName, int status,
+			ACCESS_POINT accessPoint) {
+		this(userid, password, url, managerName);
+		setStatus(status);
+		setAccessPoint(accessPoint);
+	}
 
 	public LoginAccount( String userid, String password, String url, String managerName, int status ){
 		this( userid, password, url, managerName );
 		setStatus( status );
+	}
+
+	public LoginAccount( String userid, String password, String url, String managerName, ACCESS_POINT accessPoint ){
+		this( userid, password, url, managerName );
+		setAccessPoint(accessPoint);
 	}
 
 	public LoginAccount( String userid, String password, String url, String managerName ){
@@ -86,5 +103,13 @@ public class LoginAccount{
 
 	public void setStatus( int status ){
 		this.status = status;
+	}
+
+	public ACCESS_POINT getAccessPoint() {
+		return accessPoint;
+	}
+
+	public void setAccessPoint(ACCESS_POINT accessPoint) {
+		this.accessPoint = accessPoint;
 	}
 }

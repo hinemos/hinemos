@@ -19,17 +19,17 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.AutoAssignNodePatternEntryInfoResponse;
 
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.AutoAssignNodePatternEntry;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.plugin.CloudOptionSourceProvider;
 import com.clustercontrol.xcloud.ui.dialogs.AutoAssignNodeRuleEditDialog;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.ControlUtil;
 
 public class ModifyAutoAssignNodePatternHandler extends AbstractHandler implements CloudStringConstants{
@@ -40,10 +40,11 @@ public class ModifyAutoAssignNodePatternHandler extends AbstractHandler implemen
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		ICloudScope cloudScope = (ICloudScope)HandlerUtil.getVariable(event, CloudOptionSourceProvider.ActiveCloudScope);
 		
-		CloudEndpoint endpoint = cloudScope.getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
+		String managerName = cloudScope.getCloudScopes().getHinemosManager().getManagerName();
+		CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
 		try {
 			try {
-				endpoint.checkCallable(cloudScope.getId(), "registAutoAssigneNodePattern");
+				endpoint.checkPublish();
 			} catch(CloudManagerException e) {
 				if ("COMMUNITY_EDITION_FUNC_NOT_AVAILABLE".equals(e.getFaultInfo().getErrorCode())) {
 					throw new CloudModelException(CloudConstants.bundle_messages.getString("message.community_edition.func.not_available"));
@@ -58,7 +59,7 @@ public class ModifyAutoAssignNodePatternHandler extends AbstractHandler implemen
 			return null;
 		}
 		
-		List<AutoAssignNodePatternEntry> entries;
+		List<AutoAssignNodePatternEntryInfoResponse> entries;
 		try {
 			entries = endpoint.getAutoAssigneNodePatterns(cloudScope.getId());
 		} catch (Exception e) {

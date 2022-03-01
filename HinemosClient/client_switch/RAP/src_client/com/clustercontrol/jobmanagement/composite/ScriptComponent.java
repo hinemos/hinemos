@@ -240,11 +240,17 @@ public class ScriptComponent {
 	}
 
 	private void setFree() {
+		if(m_scriptUpload.isDisposed()) {
+			// キャンセルや×ボタンでダイアログが閉じられた場合、既にdisposeされている
+			return;
+		}
 		m_scriptUpload.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				m_scriptUpload.setEnabled(true);
-				m_scriptUpload.setText(Messages.getString("upload"));
+				if (!m_scriptUpload.isDisposed()) {
+					m_scriptUpload.setEnabled(true);
+					m_scriptUpload.setText(Messages.getString("upload"));
+				}
 			}
 		});
 	}
@@ -253,7 +259,9 @@ public class ScriptComponent {
 		m_scriptUpload.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				m_scriptUpload.setText(precentageText);
+				if (!m_scriptUpload.isDisposed()) {
+					m_scriptUpload.setText(precentageText);
+				}
 			}
 		});
 	}
@@ -262,6 +270,9 @@ public class ScriptComponent {
 		@Override
 		public void widgetSelected(SelectionEvent e) {
 			FileUpload fileUpload = (FileUpload) e.widget;
+			if (fileUpload.getFileName() == null) {
+				return;
+			}
 			m_scriptName.setText(fileUpload.getFileName());
 
 			ScriptComponent.this.setBusy();

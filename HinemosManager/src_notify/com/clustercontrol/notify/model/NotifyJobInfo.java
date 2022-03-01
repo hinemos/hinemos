@@ -10,11 +10,11 @@ package com.clustercontrol.notify.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlType;
 
 import org.apache.log4j.Logger;
@@ -54,7 +54,14 @@ public class NotifyJobInfo extends NotifyInfoDetail implements Serializable {
 	private String jobExecFacilityId;
 
 	private String jobExecScope;
-	
+
+	private Integer notifyJobType;
+	private Boolean retryFlg;
+	private Integer retryCount;
+	private Boolean successInternalFlg;
+	private Boolean failureInternalFlg;
+	private String joblinkSendSettingId;
+
 	public NotifyJobInfo() {
 	}
 
@@ -203,6 +210,54 @@ public class NotifyJobInfo extends NotifyInfoDetail implements Serializable {
 
 	public void setJobExecScope(String jobExecScope) {
 		this.jobExecScope = jobExecScope;
+	}
+
+	@Column(name="notify_job_type")
+	public Integer getNotifyJobType() {
+		return notifyJobType;
+	}
+	public void setNotifyJobType(Integer notifyJobType) {
+		this.notifyJobType = notifyJobType;
+	}
+
+	@Column(name="retry_flg")
+	public Boolean getRetryFlg() {
+		return retryFlg;
+	}
+	public void setRetryFlg(Boolean retryFlg) {
+		this.retryFlg = retryFlg;
+	}
+
+	@Column(name="retry_count")
+	public Integer getRetryCount() {
+		return retryCount;
+	}
+	public void setRetryCount(Integer retryCount) {
+		this.retryCount = retryCount;
+	}
+
+	@Column(name="success_internal_flg")
+	public Boolean getSuccessInternalFlg() {
+		return successInternalFlg;
+	}
+	public void setSuccessInternalFlg(Boolean successInternalFlg) {
+		this.successInternalFlg = successInternalFlg;
+	}
+
+	@Column(name="failure_internal_flg")
+	public Boolean getFailureInternalFlg() {
+		return failureInternalFlg;
+	}
+	public void setFailureInternalFlg(Boolean failureInternalFlg) {
+		this.failureInternalFlg = failureInternalFlg;
+	}
+
+	@Column(name="joblink_send_setting_id")
+	public String getJoblinkSendSettingId() {
+		return joblinkSendSettingId;
+	}
+	public void setJoblinkSendSettingId(String joblinkSendSettingId) {
+		this.joblinkSendSettingId = joblinkSendSettingId;
 	}
 
 	@Override

@@ -21,20 +21,23 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
+import com.clustercontrol.fault.CommandTemplateNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.notify.bean.CommandSettingTypeConstant;
 import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.model.NotifyCommandInfo;
 import com.clustercontrol.platform.HinemosPropertyDefault;
+import com.clustercontrol.rest.endpoint.notify.dto.enumtype.CommandSettingTypeEnum;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandExecutor;
 import com.clustercontrol.util.CommandExecutor.CommandResult;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.StringBinder;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -85,11 +88,17 @@ public class ExecCommand implements Notifier {
 	}
 
 	// 文字列を置換する
-	private String getCommandString(OutputBasicInfo outputInfo, NotifyCommandInfo commandInfo, int priority){
+	private String getCommandString(OutputBasicInfo outputInfo, NotifyCommandInfo commandInfo, int priority) throws CommandTemplateNotFound, InvalidRole{
+		String command;
+		if (commandInfo.getCommandSettingType().equals(CommandSettingTypeConstant.CHOICE_TEMPLATE)) {
+			command = QueryUtil.getCommandTemplateInfoPK(getCommand(commandInfo, priority)).getCommand();
+		} else {
+			command = getCommand(commandInfo, priority);
+		}
 		// 文字列を置換する
 		try {
 			int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
-			String command = getCommand(commandInfo, priority);
+			
 			ArrayList<String> inKeyList = StringBinder.getKeyList(command, maxReplaceWord);
 			Map<String, String> param = NotifyUtil.createParameter(outputInfo,
 					commandInfo.getNotifyInfoEntity(), inKeyList);
@@ -150,12 +159,6 @@ public class ExecCommand implements Notifier {
 			// 起動ユーザ名取得
 			String sysUserName = System.getProperty("user.name");
 			String effectiveUser = getEffectiveUser(commandInfo, outputInfo.getPriority());
-			boolean setEnvFlag;
-			if(commandInfo.getSetEnvironment().booleanValue()){
-				setEnvFlag = true;
-			} else {
-				setEnvFlag = false;
-			}
 			long commadTimeout = commandInfo.getTimeout();
 
 			// Hinemos Managerの起動ユーザがroot以外の場合で、
@@ -164,7 +167,9 @@ public class ExecCommand implements Notifier {
 				// 起動失敗
 				String detailMsg = "The execution user of the command and hinemos manager's user are different.";
 				m_log.info(detailMsg);
-				internalErrorNotify(PriorityConstant.TYPE_CRITICAL, notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, detailMsg);
+				String[] args = { notifyId };
+				AplLogger.put(InternalIdCommon.PLT_NTF_SYS_007, args, detailMsg);
+
 				return;
 			} else {
 				m_log.debug("NotifyCommand Submit : " + outputInfo + " command=" + command);
@@ -174,7 +179,6 @@ public class ExecCommand implements Notifier {
 						new CommandCallerTask(
 								effectiveUser,
 								command,
-								setEnvFlag,
 								notifyId,
 								outputInfo,
 								commadTimeout));
@@ -182,11 +186,12 @@ public class ExecCommand implements Notifier {
 				if (ret.isCancelled())
 					m_log.debug("Cancelled NotifyCommand Submit : " + outputInfo + " command=" + command);
 			}
-		} catch (NotifyNotFound e) {
+		} catch (NotifyNotFound | CommandTemplateNotFound | InvalidRole e) {
 			String detailMsg = e.getMessage();
 			m_log.info("executeCommand() " + detailMsg + " : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			internalErrorNotify(PriorityConstant.TYPE_CRITICAL, notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, detailMsg);
+			String[] args = { notifyId };
+			AplLogger.put(InternalIdCommon.PLT_NTF_SYS_007, args, detailMsg);
 		}
 	}
 
@@ -209,7 +214,7 @@ public class ExecCommand implements Notifier {
 	}
 
 	// 並列でコマンドを実行するためのクラス
-	class CommandCallerTask implements Callable<Long> {
+	private static class CommandCallerTask implements Callable<Long> {
 		// 実効ユーザ
 		private final String _effectiveUser;
 
@@ -223,7 +228,6 @@ public class ExecCommand implements Notifier {
 		public CommandCallerTask(
 				String effectiveUser,
 				String execCommand,
-				boolean setEnvFlag,
 				String notifyId,
 				OutputBasicInfo outputInfo,
 				long commadTimeout) {
@@ -268,15 +272,21 @@ public class ExecCommand implements Notifier {
 			}
 
 			if (ret == null || ret.exitCode == null) {
-				internalErrorNotify(PriorityConstant.TYPE_CRITICAL, _notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, "command execution failure (timeout). [command = " + _execCommand + "]");
+				String[] args = { _notifyId };
+				// 通知失敗メッセージを出力
+				AplLogger.put(InternalIdCommon.PLT_NTF_SYS_007, args, "command execution failure (timeout). [command = " + _execCommand + "]");
+
 			} else {
 				returnValue = ret.exitCode;
 				// コマンドの成功時の終了値をDBから取得する
-				int _successExitCode = HinemosPropertyCommon.notify_commandsuccess_exit.getIntegerValue();
+				int _successExitCode = HinemosPropertyCommon.notify_command_success_exit.getIntegerValue();
 
 				if (returnValue != _successExitCode) {
-					internalErrorNotify(PriorityConstant.TYPE_CRITICAL, _notifyId, MessageConstant.MESSAGE_SYS_007_NOTIFY, "command execution failure. [command = "
+					String[] args = { _notifyId };
+					// 通知失敗メッセージを出力
+					AplLogger.put(InternalIdCommon.PLT_NTF_SYS_007, args, "command execution failure. [command = "
 							+ _execCommand + ", exit code = " +  returnValue + ", stdout = " + ret.stdout + ", stderr = " + ret.stderr + "]");
+
 				}
 			}
 
@@ -292,15 +302,5 @@ public class ExecCommand implements Notifier {
 		public Thread newThread(Runnable r) {
 			return new Thread(r, "NotifyCommandTask-" + _count++);
 		}
-	}
-
-	/**
-	 * 通知失敗時の内部エラー通知を定義します
-	 */
-	@Override
-	public void internalErrorNotify(int priority, String notifyId, MessageConstant msgCode, String detailMsg) {
-		String[] args = { notifyId };
-		// 通知失敗メッセージを出力
-		AplLogger.put(priority, HinemosModuleConstant.PLATFORM_NOTIFY, msgCode, args, detailMsg);
 	}
 }

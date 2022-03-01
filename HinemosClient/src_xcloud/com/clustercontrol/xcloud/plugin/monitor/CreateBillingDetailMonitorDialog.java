@@ -8,6 +8,8 @@
 package com.clustercontrol.xcloud.plugin.monitor;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -28,28 +30,36 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddCloudserviceBillingDetailMonitorRequest;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
+import org.openapitools.client.model.ModifyCloudserviceBillingDetailMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoRequest;
+import org.openapitools.client.model.MonitorPluginStringInfoResponse;
+import org.openapitools.client.model.PluginCheckInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.dialog.ScopeTreeDialog;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.monitor.run.composite.MonitorBasicScopeComposite;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorDialog;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorNumericDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.repository.FacilityPath;
 import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.util.ICheckPublishRestClientWrapper;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorPluginStringInfo;
-import com.clustercontrol.ws.monitor.PluginCheckInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.common.MessageManager;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.ControlUtil;
 
 /**
@@ -184,23 +194,20 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 		// 収集値表示名のデフォルト値を設定
 		this.itemName.setText(strFee);
 
-		// 収集値単位のデフォルト値を設定
-//		this.measure.setText(Messages.getString("time.msec"));
-
 		// ダイアログを調整
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				info = MonitorSettingEndpointWrapper.getWrapper(getManagerName()).getMonitor(this.monitorId);
-			} catch (InvalidRole_Exception e) {
+				info = MonitorsettingRestClientWrapper.getWrapper(getManagerName()).getMonitor(this.monitorId);
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -330,8 +337,8 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 						m_monitorBasic_.getOwnerRoleId(), false, false);
 
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem item = dialog.getSelectItem();
-					FacilityInfo info = item.getData();
+					FacilityTreeItemResponse item = dialog.getSelectItem();
+					FacilityInfoResponse info = item.getData();
 					m_textScope.setData(info.getFacilityId());
 					
 					Field field = null;
@@ -349,7 +356,7 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 						}
 					}
 					
-					if (info.getFacilityType() == FacilityConstant.TYPE_NODE) {
+					if (info.getFacilityType() == FacilityTypeEnum.NODE) {
 						m_textScope.setText(info.getFacilityName());
 						m_textScope.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 					}
@@ -374,13 +381,6 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 	@Override
 	public void update(){
 		super.update();
-
-//		// 必須項目を明示
-//		if(this.m_textTimeout.getEnabled() && "".equals(this.m_textTimeout.getText())){
-//			this.m_textTimeout.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-//		}else{
-//			this.m_textTimeout.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-//		}
 	}
 
 
@@ -391,17 +391,17 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 	 *            設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 		
 		this.inputData = monitor;
 		
 		// 監視条件クラウド課金監視情報
-		PluginCheckInfo info = monitor.getPluginCheckInfo();
+		PluginCheckInfoResponse info = monitor.getPluginCheckInfo();
 		if (info != null && info.getMonitorPluginStringInfoList() != null && !info.getMonitorPluginStringInfoList().isEmpty()) {
 			String facilityType = null;
 			String monitorKind = null;
-			for (MonitorPluginStringInfo stringInfo : info.getMonitorPluginStringInfoList()) {
+			for (MonitorPluginStringInfoResponse stringInfo : info.getMonitorPluginStringInfoList()) {
 				switch(stringInfo.getKey()){
 					case key_facilityType:
 						facilityType = stringInfo.getValue();
@@ -413,7 +413,6 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 						break;
 				}
 			}
-			info.getMonitorPluginNumericInfoList();
 			int selectService = cmbTarget.indexOf(createType(facilityType,monitorKind));
 			if(selectService != -1){
 				this.cmbTarget.select(selectService);
@@ -429,7 +428,7 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
@@ -443,29 +442,22 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 			return null;
 		}
 		
-		// クラウド課金監視固有情報を設定
-		monitorInfo.setMonitorTypeId(PlatformServiceBillingDetailMonitorPlugin.monitorPluginId);
-
 		// 監視条件 クラウド課金監視情報
-		PluginCheckInfo pluginInfo = new PluginCheckInfo();
-		pluginInfo.setMonitorId(monitorInfo.getMonitorId());
-
-		pluginInfo.setMonitorTypeId(PlatformServiceBillingDetailMonitorPlugin.monitorPluginId);
-
+		PluginCheckInfoResponse pluginInfo = new PluginCheckInfoResponse();
 		String[] objects = (String[]) cmbTarget.getData(cmbTarget.getText());
+		List<MonitorPluginStringInfoResponse> monitorPluginStringInfoList = new ArrayList<>(); 
 		
-		MonitorPluginStringInfo facilityTypeInfo = new MonitorPluginStringInfo();
-		facilityTypeInfo.setMonitorId(monitorInfo.getMonitorId());
+		MonitorPluginStringInfoResponse facilityTypeInfo = new MonitorPluginStringInfoResponse();
 		facilityTypeInfo.setKey(key_facilityType);
 		facilityTypeInfo.setValue(objects[0]);
-		pluginInfo.getMonitorPluginStringInfoList().add(facilityTypeInfo);
+		monitorPluginStringInfoList.add(facilityTypeInfo);
 		
-		MonitorPluginStringInfo monitorKindInfo = new MonitorPluginStringInfo();
-		monitorKindInfo.setMonitorId(monitorInfo.getMonitorId());
+		MonitorPluginStringInfoResponse monitorKindInfo = new MonitorPluginStringInfoResponse();
 		monitorKindInfo.setKey(key_monitorKind);
 		monitorKindInfo.setValue(objects[1]);
-		pluginInfo.getMonitorPluginStringInfoList().add(monitorKindInfo);
+		monitorPluginStringInfoList.add(monitorKindInfo);
 		
+		pluginInfo.setMonitorPluginStringInfoList(monitorPluginStringInfoList);
 		monitorInfo.setPluginCheckInfo(pluginInfo);
 
 		// 結果判定の定義
@@ -503,27 +495,37 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 	protected boolean action() {
 		boolean result = false;
 		
-		managerName = m_monitorBasic_.getManagerListComposite().getText();
-		MonitorInfo info = this.inputData;
-		if(info != null){
-			String[] args = { info.getMonitorId(), managerName };
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
 				try {
-					result = MonitorSettingEndpointWrapper.getWrapper(getManagerName()).addMonitor(info);
-
-					if(result){
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddCloudserviceBillingDetailMonitorRequest info = new AddCloudserviceBillingDetailMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddCloudserviceBillingDetailMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					info.setPredictionMethod(AddCloudserviceBillingDetailMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.addCloudservicebillingdetailMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorIdInvalid e) {
+					// 監視項目IDが不適切な場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.97", args));
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -532,7 +534,7 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(
 								null,
@@ -541,35 +543,43 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 					} else {
 						errMessage = ", " + e.getMessage();
 					}
-
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
 							Messages.getString("message.monitor.34", args) + errMessage);
-
 				}
-
 			} else{
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = MonitorSettingEndpointWrapper.getWrapper(getManagerName()).modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + e.getMessage();
-				}
-
-				if(result){
+					ModifyCloudserviceBillingDetailMonitorRequest info = new ModifyCloudserviceBillingDetailMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyCloudserviceBillingDetailMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(ModifyCloudserviceBillingDetailMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.modifyCloudservicebillingdetailMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else{
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + e.getMessage();
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
@@ -587,7 +597,7 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 	 * @see com.clustercontrol.dialog.CommonMonitorDialog#setInfoInitialValue()
 	 */
 	@Override
-	protected void setInfoInitialValue(MonitorInfo monitor) {
+	protected void setInfoInitialValue(MonitorInfoResponse monitor) {
 		super.setInfoInitialValue(monitor);
 	}
 	
@@ -607,7 +617,12 @@ public class CreateBillingDetailMonitorDialog extends CommonMonitorNumericDialog
 		}
 		return String.format("%s [%s]", strType, strKind);
 	}
-	
+
+	@Override
+	public ICheckPublishRestClientWrapper getCheckPublishWrapper(String managerName) {
+		return CloudRestClientWrapper.getWrapper(managerName);
+	}
+
 	public static void main (String[] args) {
 		System.out.println(createType(null,null));
 	}

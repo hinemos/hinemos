@@ -9,7 +9,7 @@
 package com.clustercontrol.plugin.model;
 
 import java.io.Serializable;
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * The primary key class for the cc_log_async_task database table.

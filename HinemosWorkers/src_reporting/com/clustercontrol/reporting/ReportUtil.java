@@ -15,6 +15,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,11 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.persistence.Query;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
@@ -50,6 +50,8 @@ import com.clustercontrol.repository.model.FacilityRelationEntity;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 
+import jakarta.persistence.Query;
+
 /**
  *
  */
@@ -59,6 +61,9 @@ public class ReportUtil {
 	public static final int OUTPUT_PERIOD_TYPE_MONTH = 1;
 	public static final int OUTPUT_PERIOD_TYPE_YEAR = 2;
 	
+	/** CSVデリミター */
+	public static final String CSV_DELIMITER = ",";
+
 	/** 正常(文字列) */
 	public static final String STRING_NORMAL = Messages.getString("COMMON_PRIORITY_NORMAL");
 
@@ -66,7 +71,8 @@ public class ReportUtil {
 	public static final String STRING_WARNING = Messages.getString("COMMON_PRIORITY_WARN");
 
 	/** 異常(文字列) */
-	public static final String STRING_ABNORMAL = Messages.getString("COMMON_PRIORITY_ABNORMAL");
+	// クライアント画面上、ABNORMALではなくERRORと表記されるため、レポートを合わせる
+	public static final String STRING_ERROR = Messages.getString("COMMON_STATUS_ERROR");
 
 	/** 危険（文字列）。 */
 	public static final String STRING_CRITICAL = Messages.getString("COMMON_PRIORITY_CRIT");
@@ -124,9 +130,10 @@ public class ReportUtil {
 		// read log4j_reporting.properties
 		try {
 			String configFilePathDefault = System.getProperty("hinemos.manager.etc.dir", "/opt/hinemos/etc") 
-					+ File.separator + "log4j_reporting.properties";
+					+ File.separator + "log4j2_reporting.properties";
 			String configFilePath = prop.getProperty("reporting.log4j.file", configFilePathDefault);
-			PropertyConfigurator.configure(configFilePath);
+			LoggerContext context = (LoggerContext) LogManager.getContext(false);
+			context.setConfigLocation(Paths.get(configFilePath).toUri());
 		} catch (Exception e1) {
 			m_log.error(e1, e1);
 		}
@@ -506,18 +513,29 @@ public class ReportUtil {
 	}
 	
 	public static String getOutPath() {
+		m_log.debug("getOutPath() : called");
 		if (m_outPath != null) {
+			m_log.debug("getOutPath() : m_outPath is not null, m_outPath=" + m_outPath);
 			return m_outPath;
 		}
 
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd");
 		String basePath = PropertyUtil.getLogReportPath();
 		m_outPath = basePath + "/" + fmt.format(new Date());
+		m_log.debug("getOutPath() : m_outPath=" + m_outPath);
+		return m_outPath;
+	}
+
+	public static boolean createOutPathDir() {
+		m_log.debug("createOutPathDir() : called");
+		if (m_outPath == null) {
+			getOutPath();
+		}
 		boolean rtn = false;
 		try {
 			File newDir = new File(m_outPath);
 			if (newDir.exists()) {
-				return m_outPath;
+				return true;
 			}
 			rtn = newDir.mkdirs();
 			if (!rtn) {
@@ -530,12 +548,13 @@ public class ReportUtil {
 			}
 		} catch (Exception e) {
 			m_log.error(e, e);
+			return false;
 		}
-		
-		return m_outPath;
+		return true;
 	}
 	
 	public static String getCsvOutPath() {
+		m_log.debug("getCsvOutPath() : called");
 		return getOutPath() + "/csv";
 	}
 
@@ -578,7 +597,9 @@ public class ReportUtil {
 	}
 
 	public static String getReportFileName() {
+			m_log.debug("getReportFileName() : called");
 		if (m_outFileName != null) {
+			m_log.debug("getReportFileName() : m_outFileName is not null, m_outFileName=" + m_outFileName);
 			return m_outFileName;
 		}
 
@@ -598,6 +619,7 @@ public class ReportUtil {
 			m_log.error(e, e);
 		}
 
+		m_log.debug("getReportFileName() : m_outFileName=" + m_outFileName);
 		return m_outFileName;
 	}
 
@@ -623,6 +645,7 @@ public class ReportUtil {
 	}
 
 	public static String getCsvFileNameForTemplateType(String type, String suffix) {
+		m_log.debug("getCsvFileNameForTemplateType() : called");
 		return getCsvFileNameForTemplateType(type, suffix, true);
 	}
 
@@ -760,6 +783,24 @@ public class ReportUtil {
 		return m_pageValidFlg;
 	}
 
+	public static String joinStringsToCsv(String[] strings) {
+		StringBuilder sb = new StringBuilder();
+		int strsCnt = strings.length;
+		
+		for (int i = 0; i < strsCnt; i++) {
+			if (strings[i] == null) {
+				sb.append("\"\"");
+			} else {
+				sb.append('"');
+				sb.append(strings[i].replace("\"", "\"\""));
+				sb.append('"');
+			}
+			sb.append(CSV_DELIMITER);
+		}
+		sb.deleteCharAt(sb.length() - 1);
+		return sb.toString();
+	}
+
 	public static String joinStrings(String[] strings, String delimiter) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < strings.length; i++) {
@@ -785,7 +826,7 @@ public class ReportUtil {
 			break;
 		default: // 異常、その他
 			//endStatusStr = "<style backcolor='red'>" + EndStatusConstant.STRING_ABNORMAL + "</style>";
-			endStatusStr = STRING_ABNORMAL;
+			endStatusStr = STRING_ERROR;
 			break;
 		}
 

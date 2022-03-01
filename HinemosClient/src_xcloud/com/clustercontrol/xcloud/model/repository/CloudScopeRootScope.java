@@ -7,6 +7,7 @@
  */
 package com.clustercontrol.xcloud.model.repository;
 
+import org.openapitools.client.model.HFacilityResponse;
 
 public class CloudScopeRootScope extends Scope implements ICloudScopeRootScope {
 	private CloudRepository cloudRepository;
@@ -30,7 +31,7 @@ public class CloudScopeRootScope extends Scope implements ICloudScopeRootScope {
 		return null;
 	}
 
-	public static CloudScopeRootScope convert(CloudRepository cloudRepository, com.clustercontrol.ws.xcloud.HCloudScopeRootScope source) {
+	public static CloudScopeRootScope convert(CloudRepository cloudRepository, HFacilityResponse source) {
 		CloudScopeRootScope scope = new CloudScopeRootScope(cloudRepository);
 		scope.update(source);
 		return scope;

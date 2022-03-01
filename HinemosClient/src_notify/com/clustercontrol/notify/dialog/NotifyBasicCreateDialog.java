@@ -22,15 +22,14 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.notify.composite.NotifyBasicComposite;
 import com.clustercontrol.notify.composite.NotifyInhibitionComposite;
 import com.clustercontrol.notify.composite.NotifyInitialComposite;
+import com.clustercontrol.notify.dialog.bean.NotifyInfoInputData;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.notify.NotifyInfo;
-import com.clustercontrol.ws.notify.NotifyInfoDetail;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * 通知共通情報ダイアログクラス<BR>
@@ -47,6 +46,9 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 
 	/** マネージャ名 */
 	protected String managerName = null;
+
+	/** オーナーロールID */
+	protected String ownerRoleId = null;
 
 	/** 変更対象の通知ID。 */
 	protected String notifyId = null;
@@ -67,7 +69,10 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 	protected Button m_confirmValid = null;
 
 	/** 入力値を保持するオブジェクト。 */
-	protected NotifyInfo inputData = null;
+	protected NotifyInfoInputData inputData = null;
+
+	/** 自ダイアログ **/
+	protected NotifyBasicCreateDialog parentDialog = null;
 
 	// ----- コンストラクタ ----- //
 
@@ -95,6 +100,7 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 		this.notifyId = notifyId;
 		this.updateFlg = updateFlg;
 		this.referenceFlg = false;
+		this.parentDialog = this;
 	}
 
 	// ----- instance メソッド ----- //
@@ -105,7 +111,7 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 	 * @param parent 親のコンポジット
 	 *
 	 * @see com.clustercontrol.notify.action.GetNotify#getNotify(String)
-	 * @see #setInputData(NotifyInfo)
+	 * @see #setInputData(NotifyInfoInputData)
 	 */
 	@Override
 	protected void customizeDialog(Composite parent) {
@@ -126,7 +132,7 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 		/*
 		 * 通知基本情報
 		 */
-		m_notifyBasic = new NotifyBasicComposite(parent, SWT.NONE, this.managerName, this.notifyId, !this.updateFlg);
+		m_notifyBasic = new NotifyBasicComposite(parent, SWT.NONE, this.managerName, this.notifyId, !this.updateFlg, this.parentDialog);
 		WidgetTestUtil.setTestId(this, null, m_notifyBasic);
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
@@ -218,16 +224,8 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 	 *
 	 * @return 通知情報
 	 */
-	public NotifyInfo getInputData() {
+	public NotifyInfoInputData getInputData() {
 		return null;
-	}
-
-	/** 入力されたマネージャ名を返します。
-	 *
-	 * @return マネージャ名
-	 */
-	public String getInputManagerName() {
-		return this.m_notifyBasic.getManagerListComposite().getText();
 	}
 
 	/**
@@ -235,7 +233,7 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 	 *
 	 * @param notify 設定値として用いる通知情報
 	 */
-	protected void setInputData(NotifyInfo notify) {
+	protected void setInputData(NotifyInfoInputData notify) {
 		this.inputData = notify;
 
 		// 通知基本情報
@@ -264,8 +262,8 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 	 *
 	 * @see #createInputDataForEvent(ArrayList, int, Button, Combo, Button, Combo, Button, Text)
 	 */
-	protected NotifyInfo createInputData() {
-		NotifyInfo info = new NotifyInfo();
+	protected NotifyInfoInputData createInputData() {
+		NotifyInfoInputData info = new NotifyInfoInputData();
 
 		// 通知基本情報
 		this.m_notifyBasic.createInputData(info, this.notifyId);
@@ -293,6 +291,10 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 	 */
 	@Override
 	protected ValidateResult validate() {
+		ValidateResult result = validateEndpoint(getManagerName());
+		if (result != null) {
+			return result;
+		}
 		return super.validate();
 	}
 
@@ -367,25 +369,6 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 
 	}
 
-	/**
-	 * オーナーロールIDを設定します。
-	 * 継承先クラスにてオーナーロールIDに関連するオブジェクト権限を持つ入力項目をクリアします。
-	 */
-	public void setOwnerRoleId(String ownerRoleId) {
-		m_notifyBasic.setOwnerRoleId(ownerRoleId);
-	}
-
-	public String getOwnerRoleId(){
-		return m_notifyBasic.getOwnerRoleId();
-	}
-
-	public Combo getComboOwnerRoleId() {
-		return m_notifyBasic.getRoleIdList().getComboRoleId();
-	}
-
-	public Combo getComboManagerName() {
-		return m_notifyBasic.getManagerListComposite().getComboManagerName();
-	}
 	public boolean getUpdateFlg(){
 		return updateFlg;
 	}
@@ -394,14 +377,27 @@ public class NotifyBasicCreateDialog extends CommonDialog {
 		return str != null && !str.trim().isEmpty();
 	}
 
-	protected Boolean[] getValidFlgs(NotifyInfoDetail info) {
-		Boolean[] validFlgs = new Boolean[] {
-				info.isInfoValidFlg(),
-				info.isWarnValidFlg(),
-				info.isCriticalValidFlg(),
-				info.isUnknownValidFlg()
-		};
-		return validFlgs;
+	/**
+	 * マネージャ名を更新する
+	 * @return
+	 */
+	public void updateManagerName(String managerName) {
+		this.managerName = managerName;
 	}
 
+	/**
+	 * オーナーロールを更新する
+	 * @return
+	 */
+	public void updateOwnerRole(String ownerRoleId) {
+		this.ownerRoleId = ownerRoleId;
+	}
+
+	/**
+	 * 入力されたマネージャ名を返します。
+	 * @return
+	 */
+	public String getManagerName() {
+		return this.m_notifyBasic.getManagerListComposite().getText();
+	}
 }

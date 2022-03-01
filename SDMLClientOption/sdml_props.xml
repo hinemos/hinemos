@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!-- 
+   Hinemos (http://www.hinemos.info/)
+   
+   Copyright (c) 2021 NTT DATA INTELLILINK Corporation. All rights reserved.
+ -->
+<project name="SDMLClientProperties" basedir=".">
+	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<import file="sdml_package_props.xml"/>
+	
+	<property name="compile.client.version" value="1.8" />
+	
+	<import file="../SDMLController/version_props.xml"/>
+	
+	<property name="client.package.version" value="${option.version}"/>
+	<property name="client.package.arch" value="noarch"/>
+	
+	<property name="src.dir" value="src" />
+	<property name="src.dir.utility" value="src_utility" />
+	<property name="src.dir.xml" value="src_utility_xmlschema" />
+	
+	<property name="dest.dir" value="${sdml.build.dir}/${class.dir}" />
+	<property name="source.zip.dir" value="${sdml.build.dir}/source" />
+	<property name="sdml.jar.dir" value="${sdml.build.dir}/jar"/>
+	<property name="sdml.icons.dir" value="icons" />
+	<property name="sdml.resources.dir" value="resources" />
+	<property name="sdml.lib.dir" value="lib" />
+	
+	<!-- RCPのpackageからの呼び出しの場合は呼び出し元で定義 -->
+	<property name="package.arch.suffix" value="x86_64" />
+</project>

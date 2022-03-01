@@ -20,7 +20,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.calendar.dialog.CalendarPatternDialog;
 import com.clustercontrol.calendar.view.CalendarPatternView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * カレンダ[カレンダパターン]の作成・変更ダイアログによる、
@@ -67,7 +67,7 @@ public class CalendarPatternAddAction extends AbstractHandler {
 			return null;
 		}
 		
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 		
 		// ダイアログを生成
 		CalendarPatternDialog dialog = new CalendarPatternDialog(this.viewPart.getSite().getShell(),

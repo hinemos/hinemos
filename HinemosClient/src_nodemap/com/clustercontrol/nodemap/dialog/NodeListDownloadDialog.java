@@ -9,6 +9,7 @@
 package com.clustercontrol.nodemap.dialog;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -19,9 +20,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-
-import javax.activation.DataHandler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,12 +35,17 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.DownloadNodeConfigFileRequest;
+import org.openapitools.client.model.GetNodeListRequest;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.client.ui.util.FileDownloader;
+import com.clustercontrol.common.util.CommonRestClientWrapper;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.nodemap.util.NodeMapRestClientWrapper;
 import com.clustercontrol.nodemap.util.NodemapUtil;
 import com.clustercontrol.nodemap.view.action.NodeListDownloadAction;
 import com.clustercontrol.repository.bean.NodeConfigSettingConstant;
@@ -50,9 +53,6 @@ import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.nodemap.InvalidSetting_Exception;
-import com.clustercontrol.ws.repository.NodeInfo;
-import com.sun.xml.internal.ws.client.ClientTransportException;
 
 /**
  * 検索結果ノードより構成情報ファイルダウンロードを行うダイアログクラス<BR>
@@ -70,16 +70,13 @@ public class NodeListDownloadDialog extends CommonDialog {
 	private HashMap<String, List<String>> m_facilityIdMap = new HashMap<>();
 
 	/** 検索条件 */
-	private NodeInfo m_nodeFilterInfo = null;
+	private GetNodeListRequest m_nodeFilterInfo = null;
 
 	/** ファイルパス */
 	private String m_filePath = "";
 
 	/** ファイル名 */
 	private String m_fileName = "";
-
-	/** ファイル名(マネージャ側) */
-	private String m_managerFileName = "";
 
 	/** 収集対象構成情報（OS） チェックボックス */
 	private Button m_checkTargetConfigOs = null;
@@ -117,7 +114,7 @@ public class NodeListDownloadDialog extends CommonDialog {
 	 *
 	 * @param parent 親シェル
 	 */
-	public NodeListDownloadDialog(Shell parent, HashMap<String, List<String>> facilityIdMap, NodeInfo nodeFilterInfo) {
+	public NodeListDownloadDialog(Shell parent, HashMap<String, List<String>> facilityIdMap, GetNodeListRequest nodeFilterInfo) {
 		super(parent);
 		this.m_facilityIdMap = facilityIdMap;
 		this.m_nodeFilterInfo = nodeFilterInfo;
@@ -292,7 +289,6 @@ public class NodeListDownloadDialog extends CommonDialog {
 		FileDialog  fileDialog = new FileDialog(this.getShell(), SWT.SAVE);
 		String extension = ".csv";
 		m_fileName = NodeConfigSettingConstant.NODE_CONFIG_FILE_PREFIX + now + extension;
-		m_managerFileName = m_fileName;
 
 		fileDialog.setFileName(m_fileName);
 		fileDialog.setFilterExtensions(new String[] { "*" + extension });
@@ -320,11 +316,11 @@ public class NodeListDownloadDialog extends CommonDialog {
 		boolean flag = false;
 
 		// 対象日時
-		Long targetDatetime = null;
-		if (m_nodeFilterInfo != null
-				&& m_nodeFilterInfo.getNodeConfigTargetDatetime() != null
-				&& m_nodeFilterInfo.getNodeConfigTargetDatetime() != 0L) {
-			targetDatetime = m_nodeFilterInfo.getNodeConfigTargetDatetime();
+		String targetDatetime = "";
+		if (m_nodeFilterInfo != null) {
+			if (m_nodeFilterInfo.getNodeConfigTargetDatetime() != null) {
+				targetDatetime = m_nodeFilterInfo.getNodeConfigTargetDatetime();
+			}
 		}
 
 		// 検索条件
@@ -389,12 +385,7 @@ public class NodeListDownloadDialog extends CommonDialog {
 			itemList.add(NodeConfigSettingItem.CUSTOM.name());
 		}
 
-		// マネージャごとのファイル名（マネージャ名、ファイル名）
-		HashMap<String, String> managerFileNameMap = new HashMap<>();
-
-		// DataHandler
 		boolean isOutputHeader = false;
-		DataHandler dataHandlerHeader = null;
 
 		File file = new File(m_filePath);
 		FileOutputStream fOut = null;
@@ -414,55 +405,52 @@ public class NodeListDownloadDialog extends CommonDialog {
 				List<String> facilityIdList = m_facilityIdMap.get(managerName);
 				Collections.sort(facilityIdList);
 				try {
-					NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(managerName);
-
-					// ファイルID取得
-					String fileId = wrapper.getNodeConfigFileId();
-
-					// 一時ファイル名
-					String managerFileName = m_managerFileName + "." + fileId;
-
-					// ファイル出力
-					DataHandler dataHandler = null;
+					NodeMapRestClientWrapper wrapper = NodeMapRestClientWrapper.getWrapper(managerName);
+					CommonRestClientWrapper commonWrapper = CommonRestClientWrapper.getWrapper(managerName);
 
 					// 構成情報一覧取得
 					String language = Locale.getDefault().getLanguage();
-					if (!isOutputHeader) {
-						// ヘッダー出力
-						dataHandlerHeader = wrapper.downloadNodeConfigFileHeader(conditionStr, managerFileName + ".header", language);
-						dataHandlerHeader.writeTo(fOut);
-						isOutputHeader = true;
-					}
 
 					// 一度に取得する情報のノード数を取得
-					int downloadNodeCount = wrapper.getDownloadNodeConfigCount();
+					String value = commonWrapper.getDownloadNodeConfigCount().getValue();
+					int downloadNodeCount = Integer.parseInt(value);
 
 					// データ出力
-					int idx = 0;
+					DownloadNodeConfigFileRequest dtoReq = new DownloadNodeConfigFileRequest();
+					dtoReq.setConditionStr(conditionStr);
+					dtoReq.setTargetDatetime(targetDatetime);
+					dtoReq.setLanguage(language);
+					dtoReq.setManagerName(managerName);
+					dtoReq.setItemList(itemList);
+					dtoReq.setItemList(itemList);
 					for (int j = 0; j < facilityIdList.size(); j = j + downloadNodeCount) {
-						String filename = managerFileName + "." + idx;
 						if ((j + downloadNodeCount) > facilityIdList.size()) {
-							dataHandler = wrapper.downloadNodeConfigFile(
-									facilityIdList.subList(j, facilityIdList.size()), targetDatetime, filename, language, managerName, itemList);
+							dtoReq.setFacilityIdList(facilityIdList.subList(j, facilityIdList.size()));
 						} else {
-							dataHandler = wrapper.downloadNodeConfigFile(
-									facilityIdList.subList(j, j + downloadNodeCount), targetDatetime, filename, language, managerName, itemList);
+							dtoReq.setFacilityIdList(facilityIdList.subList(j, j + downloadNodeCount));
 						}
-						dataHandler.writeTo(fOut);
-						idx++;
+						if (!isOutputHeader) {
+							// ヘッダー出力
+							dtoReq.setNeedHeaderInfo(true);
+							isOutputHeader = true;
+						} else {
+							dtoReq.setNeedHeaderInfo(false);
+						}
+						File downloadFile = wrapper.downloadNodeConfigFile(dtoReq);
+						try (FileInputStream fIn = new FileInputStream(downloadFile)) {
+							writeTo(fIn, fOut);
+						}
 					}
-					// 一時ファイル削除用
-					managerFileNameMap.put(managerName, managerFileName);
 
 				} catch (Exception e) {
 					if (sbErrMsg.length() != 0) {
 						sbErrMsg.append("\n");
 					}
-					if (e instanceof ClientTransportException) {
+					if (e instanceof RestConnectFailed) {
 						m_log.debug("reload(), " + e.getMessage());
 						sbErrMsg.append(Messages.getString("message.hinemos.failure.transfer") 
 								+ ", " + e.getMessage());
-					} else if (e instanceof InvalidSetting_Exception) {
+					} else if (e instanceof InvalidSetting) {
 						m_log.warn("reload(), " + e.getMessage(), e);
 						sbErrMsg.append(HinemosMessage.replace(e.getMessage()));
 					} else {
@@ -513,15 +501,6 @@ public class NodeListDownloadDialog extends CommonDialog {
 			} catch (IOException e) {
 				m_log.warn("output() downloadNodeConfigFile, " + e.getMessage(), e);
 			}
-			try {
-				// 一時ファイル削除
-				for (Map.Entry<String, String> entry : managerFileNameMap.entrySet()) {
-					NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(entry.getKey());
-					wrapper.deleteNodeConfigFile(entry.getValue());
-				}
-			} catch (Exception e) {
-				m_log.warn("output() downloadNodeConfigFile, " + e.getMessage(), e);
-			}
 		}
 		return flag;
 	}
@@ -562,5 +541,19 @@ public class NodeListDownloadDialog extends CommonDialog {
 	@Override
 	protected String getCancelButtonText() {
 		return Messages.getString("cancel");
+	}
+	
+	private void writeTo(FileInputStream in, FileOutputStream out) throws IOException {
+		try {
+			byte[] buffer = new byte[1024];
+
+			int length;
+			while ((length = in.read(buffer)) > 0){
+				out.write(buffer, 0, length);
+			}
+		} catch(IOException e) {
+			m_log.warn("failed write nodeconfig download file.");
+			throw e;
+		}
 	}
 }

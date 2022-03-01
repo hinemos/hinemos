@@ -28,29 +28,32 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.CreateAccessInfoListForDialogResponse;
+import org.openapitools.client.model.CreateSessionRequest;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.InfraSessionResponse;
+import org.openapitools.client.model.ModuleResultResponse;
 
+import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InfraModuleNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.SessionNotFound;
 import com.clustercontrol.infra.action.GetInfraManagementTableDefine;
 import com.clustercontrol.infra.bean.InfraNodeInputConstant;
 import com.clustercontrol.infra.dialog.RunDialog;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
 import com.clustercontrol.infra.util.AccessUtil;
+import com.clustercontrol.infra.util.InfraDtoConverter;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.util.ModuleUtil;
 import com.clustercontrol.infra.view.InfraManagementView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.infra.AccessInfo;
-import com.clustercontrol.ws.infra.FacilityNotFound_Exception;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleNotFound_Exception;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidSetting_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.ModuleResult;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
-import com.clustercontrol.ws.infra.SessionNotFound_Exception;
 
 public class RunInfraManagementAction extends AbstractHandler implements IElementUpdater {
 	// ログ
@@ -124,28 +127,28 @@ public class RunInfraManagementAction extends AbstractHandler implements IElemen
 			}
 		}
 
-		Map<String, List<InfraManagementInfo>> managementMap = new ConcurrentHashMap<String, List<InfraManagementInfo>>();
+		Map<String, List<InfraManagementInfoResponse>> managementMap = new ConcurrentHashMap<>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 		StringBuffer idbuf = new StringBuffer();
 		int size = 0;
 		for(Map.Entry<String, List<String>> entry : managementIdMap.entrySet()) {
 			String managerName = entry.getKey();
 			if(managementMap.get(managerName) == null) {
-				managementMap.put(managerName, new ArrayList<InfraManagementInfo>());
+				managementMap.put(managerName, new ArrayList<InfraManagementInfoResponse>());
 			}
 			for(String managementId : entry.getValue()) {
 				try {
-					InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
-					InfraManagementInfo management = wrapper.getInfraManagement(managementId);
+					InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
+					InfraManagementInfoResponse management = wrapper.getInfraManagement(managementId);
 					managementMap.get(managerName).add(management);
 					if(size > 0) {
 						idbuf.append(", ");
 					}
 					idbuf.append(managementId);
-				} catch (InvalidRole_Exception e) {
+				} catch (InvalidRole e) {
 					// 権限なし
 					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
-				} catch (HinemosUnknown_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception e) {
+				} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidSetting | InfraManagementNotFound e) {
 					m_log.error("execute() : " + e.getClass().getName() + ", " + e.getMessage());
 					Object[] arg = new Object[]{Messages.getString("infra.module.id"), Messages.getString("infra.module.run"),
 							Messages.getString("failed"), HinemosMessage.replace(e.getMessage())};
@@ -172,13 +175,13 @@ public class RunInfraManagementAction extends AbstractHandler implements IElemen
 		allRun = dialog.isAllRun();
 
 		errorMsgs = new ConcurrentHashMap<>();
-		for(Map.Entry<String, List<InfraManagementInfo>> entry : managementMap.entrySet()) {
+		for(Map.Entry<String, List<InfraManagementInfoResponse>> entry : managementMap.entrySet()) {
 			String managerName = entry.getKey();
-			for(InfraManagementInfo management : entry.getValue()) {
-				List<AccessInfo> accessInfoList = null;
+			for(InfraManagementInfoResponse management : entry.getValue()) {
+				List<CreateAccessInfoListForDialogResponse> accessInfoList = null;
 				if (infraManagementView.getNodeInputType() == InfraNodeInputConstant.TYPE_DIALOG) {
 					accessInfoList = AccessUtil.getAccessInfoList(
-						viewPart.getSite().getShell(), management, null, managerName);
+						viewPart.getSite().getShell(), management, new ArrayList<String>(), managerName);
 					// ユーザ、パスワード、ポートの入力画面でキャンセルをクリックすると、nullが返ってくる。
 					// その場合は、処理中断。
 					if (accessInfoList == null) {
@@ -187,27 +190,30 @@ public class RunInfraManagementAction extends AbstractHandler implements IElemen
 				}
 				String managementId = management.getManagementId();
 
+				InfraRestClientWrapper wrapper = null;
+				InfraSessionResponse session = null;
 				try {
-					InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
-					String sessionId = wrapper.createSession(managementId, null, infraManagementView.getNodeInputType(), accessInfoList);
+					wrapper = InfraRestClientWrapper.getWrapper(managerName);
+					CreateSessionRequest dtoReq = InfraDtoConverter.getCreateSessionRequest(managementId, 
+							null, infraManagementView.getNodeInputType(), accessInfoList);
+					session = wrapper.createSession(dtoReq);
 
 					while (true) {
-						ModuleResult moduleResult = wrapper.runInfraModule(sessionId);
+						ModuleResultResponse moduleResult = wrapper.runInfraModule(session.getSessionId());
 						if (!allRun && !ModuleUtil.displayResult(moduleResult.getModuleId(), moduleResult)) {
 							break;
 						}
-						if(!moduleResult.isHasNext()) {
+						if(!moduleResult.getHasNext()) {
 							break;
 						}
 					}
-					wrapper.deleteSession(sessionId);
 					MessageDialog.openInformation(null, Messages.getString("message"), managerName + ":" + Messages.getString("message.infra.management.run.end"));
-				} catch (InvalidRole_Exception e) {
+				} catch (InvalidRole e) {
 					// 権限なし
 					errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
 					continue;
-				} catch (HinemosUnknown_Exception | InvalidUserPass_Exception |
-						InfraManagementNotFound_Exception | InfraModuleNotFound_Exception | SessionNotFound_Exception | FacilityNotFound_Exception | InvalidSetting_Exception e) {
+				} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass |
+						InfraManagementNotFound | InfraModuleNotFound | SessionNotFound | FacilityNotFound | InvalidSetting e) {
 					m_log.error("execute() :  " + e.getClass().getName() + ", " + e.getMessage());
 					Object[] arg = new Object[]{Messages.getString("infra.module.id"), 
 							Messages.getString("infra.module.run"), Messages.getString("failed"), HinemosMessage.replace(e.getMessage())};
@@ -219,6 +225,28 @@ public class RunInfraManagementAction extends AbstractHandler implements IElemen
 							Messages.getString("infra.module.run"), Messages.getString("failed"), HinemosMessage.replace(e.getMessage())};
 					errorMsgs.put(managerName, Messages.getString("message.infra.action.result", arg));
 					continue;
+				} finally {
+					if (session != null) {
+						try {
+							wrapper.deleteSession(session.getSessionId());
+						} catch (InvalidRole e) {
+							// 権限なし
+							errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
+							continue;
+						} catch (RestConnectFailed | SessionNotFound | InfraManagementNotFound | InvalidUserPass | HinemosUnknown e) {
+							m_log.error("execute() :  " + e.getClass().getName() + ", " + e.getMessage());
+							Object[] arg = new Object[]{Messages.getString("infra.module.id"), 
+									Messages.getString("infra.module.run"), Messages.getString("failed"), HinemosMessage.replace(e.getMessage())};
+							errorMsgs.put(managerName, Messages.getString("message.infra.action.result", arg));
+							continue;
+						} catch (Exception e) {
+							m_log.error("execute() :  " + e.getClass().getName() + ", " + e.getMessage());
+							Object[] arg = new Object[]{Messages.getString("infra.module.id"), 
+									Messages.getString("infra.module.run"), Messages.getString("failed"), HinemosMessage.replace(e.getMessage())};
+							errorMsgs.put(managerName, Messages.getString("message.infra.action.result", arg));
+							continue;
+						}
+					}
 				}
 			}
 		}

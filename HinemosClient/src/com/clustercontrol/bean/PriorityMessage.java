@@ -10,6 +10,8 @@ package com.clustercontrol.bean;
 
 import java.util.Locale;
 
+import org.openapitools.client.model.MonitorNumericValueInfoRequest;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -58,6 +60,21 @@ public class PriorityMessage {
 	/** なし（文字列）。 */
 	public static final String STRING_NONE = "";
 
+	/** 危険 Enum判定用のName */
+	private static final String ENUM_NAME_CRITICAL = "CRITICAL";
+
+	/** 警告 Enum判定用のName */
+	private static final String ENUM_NAME_WARNING = "WARNING";
+
+	/** 通知 Enum判定用のName */
+	private static final String ENUM_NAME_INFO = "INFO";
+
+	/** 不明 Enum判定用のName */
+	private static final String ENUM_NAME_UNKNOWN = "UNKNOWN";
+
+	/** なし Enum判定用のName */
+	private static final String ENUM_NAME_NONE = "NONE";
+	
 	/** 重要度のリスト（重要度の高いもの順） **/
 	public static int[] PRIORITY_LIST = {
 		PriorityConstant.TYPE_CRITICAL,
@@ -149,4 +166,90 @@ public class PriorityMessage {
 		}
 		return -1;
 	}
+	
+
+	/**
+	 * PriorityEnumの値から文字列に変換します。<BR>
+	 * 
+	 * @param code PriorityEnumの値
+	 * @return 文字列
+	 */
+	public static String codeToString(String code) {
+		if (MonitorNumericValueInfoRequest.PriorityEnum.CRITICAL.getValue().equals(code)) {
+			return STRING_CRITICAL;
+		} else if (MonitorNumericValueInfoRequest.PriorityEnum.WARNING.getValue().equals(code)) {
+			return STRING_WARNING;
+		} else if (MonitorNumericValueInfoRequest.PriorityEnum.INFO.getValue().equals(code)) {
+			return STRING_INFO;
+		} else if (MonitorNumericValueInfoRequest.PriorityEnum.UNKNOWN.getValue().equals(code)) {
+			return STRING_UNKNOWN;
+		} else if (MonitorNumericValueInfoRequest.PriorityEnum.NONE.getValue().equals(code)) {
+			return STRING_NONE;
+		}
+		return "";
+	}
+
+	/**
+	 * Enumから文字列に変換します。<BR>
+	 * ※Enumの型は引数で指定できますが、列挙子のNameは統一されている必要があります。<BR>
+	 * 
+	 * @param value 変換するEnum
+	 * @param enumType Enumの型
+	 * @return 文字列
+	 */
+	public static <T extends Enum<T>> String enumToString(T value, Class<T> enumType) {
+		String name = value.name();
+		if (name.equals(ENUM_NAME_CRITICAL)) {
+			return STRING_CRITICAL;
+		} else if (name.equals(ENUM_NAME_WARNING)) {
+			return STRING_WARNING;
+		} else if (name.equals(ENUM_NAME_INFO)) {
+			return STRING_INFO;
+		} else if (name.equals(ENUM_NAME_UNKNOWN)) {
+			return STRING_UNKNOWN;
+		} else if (name.equals(ENUM_NAME_NONE)) {
+			return STRING_NONE;
+		}
+		return "";
+	}
+
+	/**
+	 * 文字列からEnumに変換します。<BR>
+	 * ※Enumの型は引数で指定できますが、列挙子のNameは統一されている必要があります。<BR>
+	 * 
+	 * @param string 文字列
+	 * @param enumType Enumの型
+	 * @return 種別
+	 */
+	public static <T extends Enum<T>> T stringToEnum(String string, Class<T> enumType) {
+		String name = "";
+		if (string.equals(STRING_CRITICAL)) {
+			name = ENUM_NAME_CRITICAL;
+		} else if (string.equals(STRING_WARNING)) {
+			name = ENUM_NAME_WARNING;
+		} else if (string.equals(STRING_INFO)) {
+			name = ENUM_NAME_INFO;
+		} else if (string.equals(STRING_UNKNOWN)) {
+			name = ENUM_NAME_UNKNOWN;
+		} else if (string.equals(STRING_NONE)) {
+			name = ENUM_NAME_NONE;
+		} else {
+			return null;
+		}
+		return Enum.valueOf(enumType, name);
+	}
+
+	/**
+	 * ジョブ通知の呼出失敗時の重要度のデフォルト値です。
+	 * 
+	 * @return
+	 */
+	public static String getNotifyJobFailurePriorityDefault() {
+		return STRING_UNKNOWN;
+	}
+
+	public static int getNotifyJobFailurePriorityDefaultValue() {
+		return stringToType(getNotifyJobFailurePriorityDefault());
+	}
+
 }

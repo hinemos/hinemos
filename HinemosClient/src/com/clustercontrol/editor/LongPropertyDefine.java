@@ -85,7 +85,12 @@ public class LongPropertyDefine extends PropertyDefine implements Serializable {
 						Messages.getString("message.hinemos.8", args ));
 			}
 		} catch (NumberFormatException e) {
-
+			String[] args = { String.valueOf(element.getLowerBound()), String.valueOf(element.getUpperBound()) };
+			//エラーメッセージ
+			MessageDialog.openWarning(
+					null,
+					Messages.getString("message.hinemos.1"),
+					Messages.getString("message.hinemos.8", args ));
 		}
 	}
 

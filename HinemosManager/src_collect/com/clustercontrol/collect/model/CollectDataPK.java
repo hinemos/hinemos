@@ -11,7 +11,7 @@ package com.clustercontrol.collect.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Embeddable
 public class CollectDataPK implements Serializable {

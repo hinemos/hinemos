@@ -57,6 +57,7 @@ public class ModifyMonitorHttpString extends ModifyMonitorStringValueType{
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			// HTTP監視情報を追加
+			m_monitorInfo.getHttpCheckInfo().setMonitorId(m_monitorInfo.getMonitorId());
 			em.persist(m_monitorInfo.getHttpCheckInfo());
 			return true;
 		}

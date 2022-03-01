@@ -26,22 +26,28 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.CommandModuleInfoResponse;
+import org.openapitools.client.model.FileTransferModuleInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.ModifyInfraManagementRequest;
+import org.openapitools.client.model.ReferManagementModuleInfoResponse;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementDuplicate;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NotifyDuplicate;
+import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.action.GetInfraModuleTableDefine;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraDtoConverter;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.InfraModuleView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraManagementDuplicate_Exception;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleInfo;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidSetting_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyDuplicate_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 public class DisableInfraModuleAction extends AbstractHandler  implements IElementUpdater {
 	// ログ
@@ -108,11 +114,23 @@ public class DisableInfraModuleAction extends AbstractHandler  implements IEleme
 			return null;
 		}
 
-		InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+		InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 		try {
-			InfraManagementInfo info = wrapper.getInfraManagement(infraModuleView.getComposite().getManagementId());
+			InfraManagementInfoResponse info = wrapper.getInfraManagement(infraModuleView.getComposite().getManagementId());
 			for (String moduleId : moduleIds) {
-				for (InfraModuleInfo module : info.getModuleList()) {
+				for (CommandModuleInfoResponse module : info.getCommandModuleInfoList()) {
+					if (module.getModuleId().equals(moduleId)) {
+						module.setValidFlg(false);
+						break;
+					}
+				}
+				for (FileTransferModuleInfoResponse module : info.getFileTransferModuleInfoList()) {
+					if (module.getModuleId().equals(moduleId)) {
+						module.setValidFlg(false);
+						break;
+					}
+				}
+				for (ReferManagementModuleInfoResponse module : info.getReferManagementModuleInfoList()) {
 					if (module.getModuleId().equals(moduleId)) {
 						module.setValidFlg(false);
 						break;
@@ -121,12 +139,17 @@ public class DisableInfraModuleAction extends AbstractHandler  implements IEleme
 			}
 
 			try {
-				wrapper.modifyInfraManagement(info);
-			} catch (InvalidRole_Exception e) {
+				String managementId = info.getManagementId();
+				ModifyInfraManagementRequest dtoReq = new ModifyInfraManagementRequest();
+				RestClientBeanUtil.convertBean(info, dtoReq);
+				InfraDtoConverter.convertInfoToDto(info, dtoReq);
+				wrapper.modifyInfraManagement(managementId, dtoReq);
+			} catch (InvalidRole e) {
 				// 権限なし
 				MessageDialog.openError(null, Messages.getString("failed"), Messages.getString("message.accesscontrol.16"));
 				return null;
-			} catch (InvalidSetting_Exception | NotifyDuplicate_Exception | HinemosUnknown_Exception | InvalidUserPass_Exception | InfraManagementNotFound_Exception | InfraManagementDuplicate_Exception e) {
+			} catch (RestConnectFailed | NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidUserPass
+					| InvalidSetting | InfraManagementNotFound | InfraManagementDuplicate e) {
 				m_log.debug("execute modifyInfraManagement, " + e.getMessage());
 				MessageDialog.openError(
 						null,
@@ -134,9 +157,9 @@ public class DisableInfraModuleAction extends AbstractHandler  implements IEleme
 						Messages.getString("message.infra.action.result", new Object[]{Messages.getString("infra.module.id"), Messages.getString("infra.disable.setting"), Messages.getString("failed"), strModuleIds}));
 				return null;
 			}
-		} catch (InvalidRole_Exception e){
+		} catch (InvalidRole e){
 			MessageDialog.openError(null, Messages.getString("failed"),  Messages.getString("message.accesscontrol.16"));
-		} catch (HinemosUnknown_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InfraManagementNotFound | InvalidSetting e) {
 			m_log.debug("execute getInfraManagement, " + e.getMessage());
 			MessageDialog.openError(
 					null,

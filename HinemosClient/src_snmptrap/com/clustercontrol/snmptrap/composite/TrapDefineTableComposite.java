@@ -16,16 +16,16 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.TrapValueInfoResponse;
 
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
 import com.clustercontrol.monitor.run.composite.TableItemListComposite;
 import com.clustercontrol.monitor.run.viewer.TableItemTableViewer;
-import com.clustercontrol.ws.monitor.TrapValueInfo;
 
-public class TrapDefineTableComposite extends TableItemListComposite<TrapValueInfo> {
+public class TrapDefineTableComposite extends TableItemListComposite<TrapValueInfoResponse> {
 
-	public TrapDefineTableComposite(Composite parent, int style, ITableItemCompositeDefine<TrapValueInfo> define) {
+	public TrapDefineTableComposite(Composite parent, int style, ITableItemCompositeDefine<TrapValueInfoResponse> define) {
 		super(parent, style, define);
 	}
 

@@ -28,18 +28,18 @@ public class CalendarManagerUtil {
 	/**
 	 * 接続されている全エージェントに対して、カレンダ設定変更を通知する
 	 */
-	public static void broadcastConfigured() {
+	public static void broadcastConfiguredFlowControl() {
 		// Local Variables
 		TopicInfo topicInfo = null;
 
 		// MAIN
-		log.info("broadcasting configuration modified.");
+		log.info("broadcasting configuration modified. with flow control.");
 		SettingUpdateInfo.getInstance().setCalendarUpdateTime(HinemosTime.currentTimeMillis());
 
 		topicInfo = new TopicInfo();
 		topicInfo.setCalendarChanged(true);
 
-		AgentConnectUtil.setTopic(null, topicInfo);
+		AgentConnectUtil.broadcastTopicFlowControl(topicInfo);
 	}
 
 }

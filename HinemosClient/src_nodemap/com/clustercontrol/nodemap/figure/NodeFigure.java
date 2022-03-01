@@ -8,7 +8,7 @@
 
 package com.clustercontrol.nodemap.figure;
 
-import com.clustercontrol.ws.nodemap.FacilityElement;
+import org.openapitools.client.model.FacilityElementResponse;
 
 
 /**
@@ -16,7 +16,7 @@ import com.clustercontrol.ws.nodemap.FacilityElement;
  * @since 1.0.0
  */
 public class NodeFigure extends FacilityFigure {
-	public NodeFigure(String managerName, FacilityElement element){
+	public NodeFigure(String managerName, FacilityElementResponse element){
 		super(managerName, element);
 	}
 

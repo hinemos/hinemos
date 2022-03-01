@@ -1,0 +1,153 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"restAccessId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_description"}
+	]},
+	
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_ownerRoleId"}
+	]},
+
+	{
+	"propName":"httpConnectTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_httpConnectTimeout"}
+	]},
+
+	{
+	"propName":"httpRequestTimeout",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_httpRequestTimeout"}
+	]},
+
+	{
+	"propName":"httpRetryNum",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_httpRetryNum"}
+	]},
+
+	{
+	"propName":"useWebProxy",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_useWebProxy"}
+	]},
+
+	{
+	"propName":"webProxyUrlString",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_webProxyUrlString"}
+	]},
+
+	{
+	"propName":"webProxyPort",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_webProxyPort"}
+	]},
+
+	{
+	"propName":"webProxyAuthUser",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_webProxyAuthUser"}
+	]},
+
+	{
+	"propName":"webProxyAuthPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_webProxyAuthPassword"}
+	]},
+
+	{
+	"propName":"sendHttpMethodType",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_sendHttpMethodType"}
+	]},
+	
+	{
+	"propName":"sendUrlString",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_sendUrlString"}
+	]},
+
+	{
+	"propName":"sendHttpBody",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_sendHttpBody"}
+	]},
+
+	{
+	"propName":"authType",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_authType"}
+	]},
+	
+	{
+	"propName":"authBasicUser",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_authBasicUser"}
+	]},
+
+	{
+	"propName":"authBasicPassword",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_authBasicPassword"}
+	]},
+
+	{
+	"propName":"authUrlMethodType",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_authUrlMethodType"}
+	]},
+
+	{
+	"propName":"authUrlString",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_authUrlString"}
+	]},
+
+	{
+	"propName":"authUrlBody",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_authUrlBody"}
+	]},
+
+	{
+	"propName":"authUrlGetRegex",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_authUrlGetRegex"}
+	]},
+
+	{
+	"propName":"authUrlValidTerm",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_authUrlValidTerm"}
+	]},
+	
+	{
+	"propName":"sendHttpHeaders",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_sendHttpHeaders"},
+		{"type":"Array", "idType":"props", "props":["headerOrderNo"]}
+	]},
+
+	{
+	"propName":"authHttpHeaders",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessTypeInfoType_authHttpHeaders"},
+		{"type":"Array", "idType":"props", "props":["headerOrderNo"]}
+	]}
+	
+]
+}

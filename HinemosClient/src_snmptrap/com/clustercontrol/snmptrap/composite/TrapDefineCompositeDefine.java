@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.TrapValueInfoResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.monitor.run.composite.ITableItemCompositeDefine;
@@ -19,18 +20,17 @@ import com.clustercontrol.monitor.run.util.TableItemManager;
 import com.clustercontrol.monitor.run.viewer.CommonTableLabelProvider;
 import com.clustercontrol.snmptrap.action.GetTrapDefineTableDefine;
 import com.clustercontrol.snmptrap.dialog.CreateTrapDefineDialog;
-import com.clustercontrol.ws.monitor.TrapValueInfo;
 
-public class TrapDefineCompositeDefine implements ITableItemCompositeDefine<TrapValueInfo> {
+public class TrapDefineCompositeDefine implements ITableItemCompositeDefine<TrapValueInfoResponse> {
 
 	/** 現在有効なダイアログ */
 	private CreateTrapDefineDialog dialog = null;
 
 	/** テーブルアイテムの管理クラス */
-	private TableItemManager<TrapValueInfo> manager = null;
+	private TableItemManager<TrapValueInfoResponse> manager = null;
 
 	@Override
-	public TrapValueInfo getCurrentCreatedItem() {
+	public TrapValueInfoResponse getCurrentCreatedItem() {
 		if(dialog != null){
 			return dialog.getInputData();
 		}
@@ -45,7 +45,7 @@ public class TrapDefineCompositeDefine implements ITableItemCompositeDefine<Trap
 	}
 
 	@Override
-	public CommonDialog createDialog(Shell shell, TrapValueInfo item) {
+	public CommonDialog createDialog(Shell shell, TrapValueInfoResponse item) {
 		dialog = new CreateTrapDefineDialog(shell, item);
 		return dialog;
 	}
@@ -56,7 +56,7 @@ public class TrapDefineCompositeDefine implements ITableItemCompositeDefine<Trap
 	}
 
 	@Override
-	public TableItemManager<TrapValueInfo> getTableItemInfoManager() {
+	public TableItemManager<TrapValueInfoResponse> getTableItemInfoManager() {
 		return manager;
 	}
 
@@ -66,7 +66,7 @@ public class TrapDefineCompositeDefine implements ITableItemCompositeDefine<Trap
 	}
 
 	@Override
-	public void initTableItemInfoManager(List<TrapValueInfo> items) {
+	public void initTableItemInfoManager(List<TrapValueInfoResponse> items) {
 		manager = new TableItemManager<>(items);
 	}
 
@@ -76,17 +76,17 @@ public class TrapDefineCompositeDefine implements ITableItemCompositeDefine<Trap
 	}
 
 	@Override
-	public String getItemsIdentifier(TrapValueInfo item) {
+	public String getItemsIdentifier(TrapValueInfoResponse item) {
 		return item.getUei();
 	}
 
 	@Override
-	public CommonTableLabelProvider<TrapValueInfo> getLabelProvider() {
+	public CommonTableLabelProvider<TrapValueInfoResponse> getLabelProvider() {
 		return new TrapDefineTableLabelProvider(this);
 	}
 
 	@Override
-	public int indexOf(TrapValueInfo item) {
+	public int indexOf(TrapValueInfoResponse item) {
 		if(this.manager != null){
 			return this.manager.indexOf(item);
 		}

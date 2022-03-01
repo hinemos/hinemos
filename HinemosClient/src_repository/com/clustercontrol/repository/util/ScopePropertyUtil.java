@@ -15,16 +15,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
+import org.openapitools.client.model.ScopeInfoRequest;
+import org.openapitools.client.model.ScopeInfoResponseP1;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
-import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.ScopeConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
-import com.clustercontrol.ws.repository.ScopeInfo;
 
 public class ScopePropertyUtil {
 
@@ -37,14 +37,8 @@ public class ScopePropertyUtil {
 		cachedInitProperty = new ConcurrentHashMap<Locale, ConcurrentHashMap<Integer, Property>>();
 	}
 
-	public static ScopeInfo property2scope(Property property) {
-		ScopeInfo scopeInfo = new ScopeInfo();
-		scopeInfo.setFacilityType(FacilityConstant.TYPE_SCOPE);
-		scopeInfo.setDisplaySortOrder(100);
-		scopeInfo.setValid(true);
-		scopeInfo.setCreateDatetime(System.currentTimeMillis());
-		scopeInfo.setModifyDatetime(System.currentTimeMillis());
-		scopeInfo.setBuiltInFlg(false);
+	public static ScopeInfoRequest property2scope(Property property) {
+		ScopeInfoRequest scopeInfo = new ScopeInfoRequest();
 
 		ArrayList<?> object1 = null;
 
@@ -63,7 +57,7 @@ public class ScopePropertyUtil {
 		return scopeInfo;
 	}
 
-	public static Property scope2property (ScopeInfo scopeInfo, int mode, Locale locale) {
+	public static Property scope2property (ScopeInfoResponseP1 scopeInfo, int mode, Locale locale) {
 		Property property = null;
 		ArrayList<Property> propertyList = null;
 
@@ -106,7 +100,7 @@ public class ScopePropertyUtil {
 
 		//ファシリティID
 		Property facilityId =
-				new Property(ScopeConstant.FACILITY_ID, Messages.getString("facility.id", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
+				new Property(ScopeConstant.FACILITY_ID, Messages.getString("facility.id", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_512);
 		//ファシリティ名
 		Property facilityName =
 				new Property(ScopeConstant.FACILITY_NAME, Messages.getString("facility.name", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_256);
@@ -149,10 +143,10 @@ public class ScopePropertyUtil {
 		return property;
 	}
 
-	public static FacilityTreeItem getManager(FacilityTreeItem item) {
+	public static FacilityTreeItemResponse getManager(FacilityTreeItemResponse item) {
 		if (item == null) {
 			return null;
-		} else if (item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER) {
+		} else if (item.getData().getFacilityType() == FacilityTypeEnum.MANAGER) {
 			return item;
 		}
 

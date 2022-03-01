@@ -22,27 +22,25 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.ScopeDataInfoResponse;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
+import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.composite.CustomizableListComposite;
-import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.monitor.action.GetScopeListTableDefine;
 import com.clustercontrol.monitor.util.ConvertListUtil;
-import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorResultRestClientWrapper;
 import com.clustercontrol.monitor.util.ScopeSearchRunUtil;
 import com.clustercontrol.monitor.view.action.ScopeSpecifiedShowAction;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.monitor.FacilityNotFound_Exception;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.ScopeDataInfo;
-import com.sun.xml.internal.ws.client.ClientTransportException;
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.viewer.CommonTableViewer;
 
 /**
  * スコープ情報一覧のコンポジットクラス<BR>
@@ -74,7 +72,10 @@ public class ScopeListComposite extends CustomizableListComposite {
 
 	/** 合計ラベル */
 	private Label totalLabel = null;
-	
+
+	/** 更新成功可否フラグ */
+	private boolean m_updateSuccess = true;
+
 	/**
 	 * インスタンスを返します。
 	 *
@@ -200,11 +201,12 @@ public class ScopeListComposite extends CustomizableListComposite {
 		}
 		try {
 			m_log.debug("managerName=" + managerName + ", faciiltyID=" + facilityId);
-			List<ScopeDataInfo> records = null;
-			MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
+			List<ScopeDataInfoResponse> records = null;
+			MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(managerName);
 			records = wrapper.getScopeList(facilityId, true, true, false);
+			
 			infoList = ConvertListUtil.scopeInfoDataListToArrayList(managerName, records);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			if(ClientSession.isDialogFree()){
 				ClientSession.occupyDialog();
 				// アクセス権なしの場合、エラーダイアログを表示する
@@ -212,19 +214,13 @@ public class ScopeListComposite extends CustomizableListComposite {
 						Messages.getString("message.accesscontrol.16"));
 				ClientSession.freeDialog();
 			}
-		} catch (MonitorNotFound_Exception e) {
-			MessageDialog.openError(null, Messages.getString("message"),
-					Messages.getString("message.monitor.64") + ", " + HinemosMessage.replace(e.getMessage()));
-		} catch (FacilityNotFound_Exception e) {
-			MessageDialog.openError(null, Messages.getString("message"),
-					Messages.getString("message.monitor.64") + ", " + HinemosMessage.replace(e.getMessage()));
-		} catch (HinemosUnknown_Exception e) {
+		} catch (HinemosUnknown e) {
 			MessageDialog.openError(null, Messages.getString("message"),
 					Messages.getString("message.monitor.64") + ", " + HinemosMessage.replace(e.getMessage()));
 		} catch (Exception e) {
 			if (ClientSession.isDialogFree()) {
 				ClientSession.occupyDialog();
-				if (e instanceof ClientTransportException) {
+				if (e instanceof RestConnectFailed) {
 					m_log.info("update() getEventList, " + e.getMessage());
 					MessageDialog.openError(
 							null,
@@ -273,22 +269,16 @@ public class ScopeListComposite extends CustomizableListComposite {
 			m_log.debug("Scope selected");
 			ScopeSearchRunUtil util = new ScopeSearchRunUtil();
 			infoList = util.searchInfo(managerList);
+			m_updateSuccess = util.isSearchSuccess();
 		} catch (Exception e) {
 			if (ClientSession.isDialogFree()) {
 				ClientSession.occupyDialog();
-				if (e instanceof ClientTransportException) {
-					m_log.info("update() getEventList, " + e.getMessage());
-					MessageDialog.openError(
-							null,
-							Messages.getString("failed"),
-							Messages.getString("message.hinemos.failure.transfer") + ", " + HinemosMessage.replace(e.getMessage()));
-				} else {
-					m_log.warn("update() getScopeList, " + e.getMessage(), e);
-					MessageDialog.openError(
-							null,
-							Messages.getString("failed"),
-							Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
-				}
+
+				m_log.warn("update() getScopeList, " + e.getMessage(), e);
+				MessageDialog.openError(
+						null,
+						Messages.getString("failed"),
+						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 				ClientSession.freeDialog();
 			}
 		}
@@ -352,5 +342,13 @@ public class ScopeListComposite extends CustomizableListComposite {
 	@Override
 	public Map<String, Integer> getColumnIndexMap() {
 		return GetScopeListTableDefine.COLNAME_INDEX_MAP;
+	}
+
+	/**
+	 * 更新成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isUpdateSuccess() {
+		return this.m_updateSuccess;
 	}
 }

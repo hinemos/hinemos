@@ -8,7 +8,7 @@
 
 package com.clustercontrol.monitor.composite;
 
-import java.text.SimpleDateFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -35,13 +35,16 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.EventFilterBaseRequest;
+import org.openapitools.client.model.EventLogInfoResponse;
+import org.openapitools.client.model.GetEventListResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.util.ClientSession;
-import com.clustercontrol.bean.PriorityConstant;
-import com.clustercontrol.bean.Property;
-import com.clustercontrol.composite.CustomizableListComposite;
 import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
+import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.composite.CustomizableListComposite;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
 import com.clustercontrol.monitor.bean.EventHinemosPropertyConstant;
 import com.clustercontrol.monitor.dialog.EventInfoDialog;
@@ -50,20 +53,16 @@ import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo.UserItemDisplayInfo;
 import com.clustercontrol.monitor.util.ConvertListUtil;
 import com.clustercontrol.monitor.util.EventDisplaySettingGetUtil;
-import com.clustercontrol.monitor.util.EventFilterPropertyUtil;
 import com.clustercontrol.monitor.util.EventSearchRunUtil;
+import com.clustercontrol.monitor.util.MonitorResultRestClientWrapper;
 import com.clustercontrol.monitor.view.EventView;
-import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.util.TimezoneUtil;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.monitor.EventFilterInfo;
-import com.clustercontrol.ws.monitor.ViewListInfo;
+
 
 /**
  * イベント情報一覧のコンポジットクラス<BR>
@@ -96,6 +95,9 @@ public class EventListComposite extends CustomizableListComposite {
 	private Shell m_shell = null;
 	
 	private MultiManagerEventDisplaySettingInfo eventDspSetting = null; 
+
+	/** 更新成功可否フラグ */
+	private boolean m_updateSuccess = true;
 
 	/**
 	 * インスタンスを返します。
@@ -181,7 +183,7 @@ public class EventListComposite extends CustomizableListComposite {
 		updateColumnOrder(table);
 		
 		//イベント表示設定情報の取得
-		eventDspSetting = getEventDisplaySettingGetUtil(EndpointManager.getActiveManagerNameList());
+		eventDspSetting = getEventDisplaySettingGetUtil(RestConnectManager.getActiveManagerNameList());
 		
 		//ユーザ拡張項目、イベント番号の表示／非表示、列名の切替
 		updateCustomizableColumn(table, null);
@@ -242,59 +244,40 @@ public class EventListComposite extends CustomizableListComposite {
 		return label;
 	}
 	
-	private Map<String, ViewListInfo> dispDataMap;
+	private Map<String, GetEventListResponse> dispDataMap;
 	public void resetDisp() {
 		dispDataMap = new ConcurrentHashMap<>();
 	}
 	
 	/**
-	 * ビューを更新します。<BR>
-	 * 引数で指定されたファシリティの配下全てのファシリティのイベント一覧情報を取得し、
-	 * 共通テーブルビューアーにセットします。
-	 * <p>
-	 * <ol>
-	 * <li>監視管理のプレファレンスページより、監視[イベント]ビューの表示イベント数を取得します。</li>
-	 * <li>引数で指定されたファシリティに属するイベント一覧情報を、表示イベント数分取得します。</li>
-	 * <li>表示イベント数を超える場合、メッセージダイアログを表示します。</li>
-	 * <li>共通テーブルビューアーにイベント情報一覧をセットします。</li>
-	 * </ol>
+	 * ビューを更新します。
 	 *
-	 * @param facilityId 表示対象の親ファシリティID
-	 * @param condition 検索条件（条件なしの場合はnull）
+	 * @param filter 検索条件
 	 * @param managerList マネージャ名リスト
-	 * @param refreshFlag リフレッシュフラグ
-	 * @see #updateStatus(ViewListInfo)
 	 */
-	public void setDisp(String facilityId, Property condition, List<String> managerList) {
+	public void setDisp(EventFilterBaseRequest filter, List<String> managerList) {
 		
 		//イベント表示設定情報の取得
-		eventDspSetting = getEventDisplaySettingGetUtil(EndpointManager.getActiveManagerNameList());
+		eventDspSetting = getEventDisplaySettingGetUtil(RestConnectManager.getActiveManagerNameList());
 		
 		updateCustomizableColumn(this.tableViewer.getTable(), managerList);
 		updateColumnWidth(this.tableViewer.getTable(), GetEventListTableDefine.getEventListTableDefine());
-		/** 表示用リスト */
 
-		if(facilityId == null) {
-			facilityId = ReservedFacilityIdConstant.ROOT_SCOPE;
-		}
-		
-		Map<String, ViewListInfo> map = null;
-		if(condition == null) {
-			map = getEventList(facilityId, managerList);
-		} else {
-			map = getEventListByCondition(facilityId, condition, managerList);
-		}
-		
-		for (Map.Entry<String, ViewListInfo> entry : map.entrySet()) {
-			ViewListInfo viewListInfo = dispDataMap.get(entry.getKey());
+		int messages = ClusterControlPlugin.getDefault().getPreferenceStore().getInt(MonitorPreferencePage.P_EVENT_MAX);
+		EventSearchRunUtil bean = new EventSearchRunUtil();
+		Map<String, GetEventListResponse> map = bean.searchInfo(managerList, filter, messages);
+		m_updateSuccess = bean.isSearchSuccess();
+
+		for (Map.Entry<String, GetEventListResponse> entry : map.entrySet()) {
+			GetEventListResponse viewListInfo = dispDataMap.get(entry.getKey());
 			if (viewListInfo == null) {
 				dispDataMap.put(entry.getKey(), entry.getValue());
 				continue;
 			}
-			ViewListInfo value = entry.getValue();
-			for (EventDataInfo info : value.getEventList()) {
+			GetEventListResponse value = entry.getValue();
+			for (EventLogInfoResponse info : value.getEventList()) {
 				boolean flag = true;
-				for (EventDataInfo info2 : viewListInfo.getEventList()) {
+				for (EventLogInfoResponse info2 : viewListInfo.getEventList()) {
 					if (info2.getFacilityId().equals(info.getFacilityId()) &&
 						info2.getMonitorId().equals(info.getMonitorId()) &&
 						info2.getMonitorDetailId().equals(info.getMonitorDetailId()) &&
@@ -318,24 +301,25 @@ public class EventListComposite extends CustomizableListComposite {
 		}
 	}
 	
-	public void updateDisp(boolean refreshFlag) {
+	public void updateDisp(boolean refreshFlag) throws ParseException, HinemosUnknown {
 		super.update();
 
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		sdf.setTimeZone(TimezoneUtil.getTimeZone());
 		label = Messages.getString("search.from") + ":";
 		boolean flag = false;
-		for (Entry<String, ViewListInfo> entry : dispDataMap.entrySet()) {
+		for (Entry<String, GetEventListResponse> entry : dispDataMap.entrySet()) {
 			if (flag) {
 				label += ", ";
 			}
-			ViewListInfo info = entry.getValue();
+			GetEventListResponse info = entry.getValue();
 			if (info.getFromOutputDate() == null) {
 				label += "ALL";
 			} else {
-				Date fromDate = new Date(info.getFromOutputDate());
-				label += sdf.format(fromDate);
+				Long fromDateLong = null;
+				Date tmpDate = MonitorResultRestClientWrapper.parseDate(info.getFromOutputDate());
+				fromDateLong = tmpDate.getTime();
+				Date fromDate = new Date(fromDateLong);
+				label += DateTimeStringConverter.formatDate(fromDate);
 			}
 			label += "(" + entry.getKey() + ")";
 			flag = true;
@@ -346,10 +330,10 @@ public class EventListComposite extends CustomizableListComposite {
 			UIManager.showMessageBox(errorMsgs, true);
 		}
 
-		List<EventDataInfo> eventListRaw = ConvertListUtil.eventLogDataMap2SortedList(dispDataMap);
+		List<EventLogInfoResponse> eventListRaw = ConvertListUtil.eventLogDataMap2SortedList(dispDataMap);
 		ArrayList<ArrayList<Object>> eventList = ConvertListUtil.eventLogList2Input(eventListRaw);
 		int total = 0;
-		for(Map.Entry<String, ViewListInfo> entrySet : dispDataMap.entrySet()) {
+		for(Map.Entry<String, GetEventListResponse> entrySet : dispDataMap.entrySet()) {
 			total += entrySet.getValue().getTotal();
 		}
 		
@@ -359,7 +343,8 @@ public class EventListComposite extends CustomizableListComposite {
 			Date tableOutputDate = null;
 			Date takenOutputDate = null;
 			if (!eventListRaw.isEmpty()) {
-				tableOutputDate = new Date(eventListRaw.get(0).getOutputDate());
+				Long tableOutputDateLong = MonitorResultRestClientWrapper.parseDate(eventListRaw.get(0).getOutputDate()).getTime();
+				tableOutputDate = new Date(tableOutputDateLong);
 			}
 
 			// 画面に表示されているイベント履歴の最新を取得する
@@ -427,33 +412,10 @@ public class EventListComposite extends CustomizableListComposite {
 
 	private MultiManagerEventDisplaySettingInfo getEventDisplaySettingGetUtil(List<String> managerList) {
 		EventDisplaySettingGetUtil bean = new EventDisplaySettingGetUtil();
+		MultiManagerEventDisplaySettingInfo info = bean.getEventDisplaySettingInfo(managerList);
+		m_updateSuccess = bean.isUpdateSuccess();
 		
-		return bean.getEventDisplaySettingInfo(managerList);
-	}
-	
-	private Map<String, ViewListInfo> getEventList(String facilityId, List<String> managerList) {
-		int messages = ClusterControlPlugin.getDefault().getPreferenceStore().getInt(
-				MonitorPreferencePage.P_EVENT_MAX);
-		EventSearchRunUtil bean = new EventSearchRunUtil();
-		Map<String, ViewListInfo> map = bean.searchInfo(managerList, facilityId, null, messages);
-		return map;
-	}
-
-	private Map<String, ViewListInfo> getEventListByCondition(String facilityId,
-			Property condition, List<String> managerList) {
-		int messages = ClusterControlPlugin.getDefault().getPreferenceStore().getInt(
-				MonitorPreferencePage.P_EVENT_MAX);
-
-		PropertyUtil.deletePropertyDefine(condition);
-		String managerName = null;
-		if (managerList != null && managerList.size() == 1) {
-			managerName = managerList.get(0);
-		}
-		
-		EventFilterInfo filter = EventFilterPropertyUtil.property2dto(condition, this.getEventDspSetting(), managerName);
-		EventSearchRunUtil bean = new EventSearchRunUtil();
-		Map<String, ViewListInfo> map = bean.searchInfo(managerList, facilityId, filter, messages);
-		return map;
+		return info;
 	}
 
 	/**
@@ -463,10 +425,10 @@ public class EventListComposite extends CustomizableListComposite {
 	 *
 	 * @param map ビュー一覧情報
 	 */
-	private void updateStatus(List<EventDataInfo> list) {
+	private void updateStatus(List<EventLogInfoResponse> list) {
 		// 表示最大件数の取得
 		int critical = 0, warning = 0, info = 0, unknown = 0, total = 0;
-		for( EventDataInfo eventInfo : list ){
+		for( EventLogInfoResponse eventInfo : list ){
 			// ラベル更新
 			switch( eventInfo.getPriority() ){
 			case( PriorityConstant.TYPE_INFO ):
@@ -541,6 +503,8 @@ public class EventListComposite extends CustomizableListComposite {
 			column.setText(itemDspInfo.getDisplayName());
 			if (itemDspInfo.getHasMultiDisplayName()) {
 				column.setToolTipText(itemDspInfo.getToolTipName());
+			} else {
+				column.setToolTipText("");
 			}
 		}
 		
@@ -556,5 +520,13 @@ public class EventListComposite extends CustomizableListComposite {
 			return new MultiManagerEventDisplaySettingInfo();
 		}
 		return this.eventDspSetting;
+	}
+
+	/**
+	 * 更新成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isUpdateSuccess() {
+		return this.m_updateSuccess;
 	}
 }

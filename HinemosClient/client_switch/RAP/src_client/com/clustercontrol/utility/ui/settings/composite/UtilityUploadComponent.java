@@ -88,6 +88,9 @@ public class UtilityUploadComponent{
 			public void widgetSelected(SelectionEvent e) {
 				
 				UtilityFileUpload fileUpload = (UtilityFileUpload) e.widget;
+				if (fileUpload.getFileName() == null) {
+					return;
+				}
 				fileUpload.cleanup();
 				
 				m_fileName.setText(fileUpload.getFileName());
@@ -117,4 +120,10 @@ public class UtilityUploadComponent{
 	public String getFilePath(){
 		return null != fileUpload.getFilePath() ? fileUpload.getFilePath() : null;
 	}
+	
+	public boolean isReady() {
+		return fileUpload.isReady();
+	}
+	
+	
 }

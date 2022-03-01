@@ -27,20 +27,22 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.EventLogInfoRequest;
+import org.openapitools.client.model.ModifyConfirmRequest;
 
-import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
 import com.clustercontrol.monitor.bean.ConfirmConstant;
 import com.clustercontrol.monitor.composite.EventListComposite;
+import com.clustercontrol.monitor.preference.MonitorPreferencePage;
 import com.clustercontrol.monitor.util.ConvertListUtil;
-import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorResultRestClientWrapper;
 import com.clustercontrol.monitor.view.EventView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
+import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * 監視[イベント]ビューの確認中アクションによるイベントの確認の更新処理を行うアクライアント側アクションクラス<BR>
@@ -132,24 +134,35 @@ public class EventConfirmingAction extends AbstractHandler implements IElementUp
 			return null;
 		}
 
+		// 確認ダイアログを表示するかどうかのフラグをPreferenceから取得
+		if (ClusterControlPlugin.getDefault().getPreferenceStore().getBoolean(MonitorPreferencePage.P_EVENT_CONFIRM_DIALOG_FLG) 
+			&& !MessageDialog.openConfirm(
+				null,
+				Messages.getString("confirmed"),
+				Messages.getString("dialog.monitor.events.confirming.confirm"))) {
+			// OKが押されない場合は処理しない
+			return null;
+		}
+
 		for(Map.Entry<String, List<List<String>>> entry : map.entrySet()) {
 			String managerName = entry.getKey();
-			MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
+			MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(managerName);
+
 			List<List<String>> records = entry.getValue();
-			ArrayList<EventDataInfo> eventInfoList = ConvertListUtil.listToEventLogDataList(records);
+			List<EventLogInfoRequest> eventInfoList = ConvertListUtil.listToEventLogDataList(records);
 
 			if (eventInfoList != null && eventInfoList.size()>0) {
 				try {
-					wrapper.modifyConfirm(eventInfoList, ConfirmConstant.TYPE_CONFIRMING);
+					ModifyConfirmRequest modifyConfirmRequest = new ModifyConfirmRequest();
+					modifyConfirmRequest.setList(eventInfoList);
+					modifyConfirmRequest.setConfirmType(ConfirmConstant.TYPE_CONFIRMING);
+					wrapper.modifyConfirm(modifyConfirmRequest);
 					eventView.update(false);
-				} catch (InvalidRole_Exception e) {
+				} catch (InvalidRole e) {
 					// アクセス権なしの場合、エラーダイアログを表示する
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.accesscontrol.16"));
-				} catch (MonitorNotFound_Exception e) {
-					MessageDialog.openError(null, Messages.getString("message"),
-							Messages.getString("message.monitor.60") + ", " + HinemosMessage.replace(e.getMessage()));
-				} catch (HinemosUnknown_Exception e) {
+				} catch (HinemosUnknown e) {
 					MessageDialog.openError(null, Messages.getString("message"),
 							Messages.getString("message.monitor.60") + ", " + HinemosMessage.replace(e.getMessage()));
 				} catch (Exception e) {

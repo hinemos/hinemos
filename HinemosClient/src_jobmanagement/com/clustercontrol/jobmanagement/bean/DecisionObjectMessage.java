@@ -8,6 +8,8 @@
 
 package com.clustercontrol.jobmanagement.bean;
 
+import org.openapitools.client.model.JobObjectInfoResponse;
+
 import com.clustercontrol.util.Messages;
 
 /**
@@ -50,6 +52,14 @@ public class DecisionObjectMessage {
 	public static final String STRING_NOT_EQUAL_STRING = Messages.getString("wait.rule.decision.condition.not.equal")
 			+ "(" + Messages.getString("string") + ")";
 
+	/** IN(数値) */
+	public static final String STRING_IN_NUMERIC = Messages.getString("wait.rule.decision.condition.in")
+			+ "(" + Messages.getString("numeric") + ")";
+
+	/** NOT IN(数値) */
+	public static final String STRING_NOT_IN_NUMERIC = Messages.getString("wait.rule.decision.condition.not.in")
+			+ "(" + Messages.getString("numeric") + ")";
+
 	/**
 	 * 条件から文字列に変換します。<BR>
 	 * 
@@ -81,9 +91,54 @@ public class DecisionObjectMessage {
 		else if (condition == DecisionObjectConstant.NOT_EQUAL_STRING) {
 			return STRING_NOT_EQUAL_STRING;
 		}
+		else if (condition == DecisionObjectConstant.IN_NUMERIC) {
+			return STRING_IN_NUMERIC;
+		}
+		else if (condition == DecisionObjectConstant.NOT_IN_NUMERIC) {
+			return STRING_NOT_IN_NUMERIC;
+		}
 		return "";
 	}
 
+	/**
+	 * 条件から文字列に変換します。<BR>
+	 * 
+	 * @param type
+	 * @return
+	 */
+	public static String typeEnumToString(JobObjectInfoResponse.DecisionConditionEnum condition) {
+		if (condition == JobObjectInfoResponse.DecisionConditionEnum.EQUAL_NUMERIC) {
+			return STRING_EQUAL_NUMERIC;
+		}
+		else if (condition == JobObjectInfoResponse.DecisionConditionEnum.NOT_EQUAL_NUMERIC) {
+			return STRING_NOT_EQUAL_NUMERIC;
+		}
+		else if (condition == JobObjectInfoResponse.DecisionConditionEnum.GREATER_THAN) {
+			return STRING_GREATER_THAN;
+		}
+		else if (condition == JobObjectInfoResponse.DecisionConditionEnum.GREATER_THAN_OR_EQUAL_TO) {
+			return STRING_GREATER_THAN_OR_EQUAL_TO;
+		}
+		else if (condition == JobObjectInfoResponse.DecisionConditionEnum.LESS_THAN) {
+			return STRING_LESS_THAN;
+		}
+		else if (condition == JobObjectInfoResponse.DecisionConditionEnum.LESS_THAN_OR_EQUAL_TO) {
+			return STRING_LESS_THAN_OR_EQUAL_TO;
+		}
+		else if (condition == JobObjectInfoResponse.DecisionConditionEnum.EQUAL_STRING) {
+			return STRING_EQUAL_STRING;
+		}
+		else if (condition == JobObjectInfoResponse.DecisionConditionEnum.NOT_EQUAL_STRING) {
+			return STRING_NOT_EQUAL_STRING;
+		}
+		else if (condition == JobObjectInfoResponse.DecisionConditionEnum.IN_NUMERIC) {
+			return STRING_IN_NUMERIC;
+		}
+		else if (condition == JobObjectInfoResponse.DecisionConditionEnum.NOT_IN_NUMERIC) {
+			return STRING_NOT_IN_NUMERIC;
+		}
+		return "";
+	}
 	/**
 	 * 文字列から条件に変換します。<BR>
 	 * 
@@ -114,6 +169,12 @@ public class DecisionObjectMessage {
 		}
 		else if (string.equals(STRING_NOT_EQUAL_STRING)) {
 			return DecisionObjectConstant.NOT_EQUAL_STRING;
+		}
+		else if (string.equals(STRING_IN_NUMERIC)) {
+			return DecisionObjectConstant.IN_NUMERIC;
+		}
+		else if (string.equals(STRING_NOT_IN_NUMERIC)) {
+			return DecisionObjectConstant.NOT_IN_NUMERIC;
 		}
 		return -1;
 	}

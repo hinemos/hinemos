@@ -24,6 +24,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.viewer.JobTreeViewer;
 import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.util.JobMapActionUtil;
@@ -32,13 +33,12 @@ import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.jobmap.view.JobMapHistoryView;
 import com.clustercontrol.jobmap.view.JobModuleView;
 import com.clustercontrol.jobmap.view.JobTreeView;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 public class BaseAction  extends AbstractHandler implements IElementUpdater {
 	protected IWorkbenchWindow window;
 	protected IWorkbenchPart viewPart;
-	protected JobTreeItem m_jobTreeItem = null;
-	protected List<JobTreeItem> m_jobTreeItemList = null;
+	protected JobTreeItemWrapper m_jobTreeItem = null;
+	protected List<JobTreeItemWrapper> m_jobTreeItemList = null;
 	protected static final String ActionIdBase = "com.clustercontrol.enterprise.jobmap.view.action.";
 	
 	@Override
@@ -79,14 +79,15 @@ public class BaseAction  extends AbstractHandler implements IElementUpdater {
 			}
 			
 			m_jobTreeItem =  figure.getJobTreeItem();
-			m_jobTreeItemList = new ArrayList<JobTreeItem>();
+			m_jobTreeItemList = new ArrayList<JobTreeItemWrapper>();
 			m_jobTreeItemList.add(m_jobTreeItem);
 		} else if (viewPart instanceof JobModuleView) {
 			JobModuleView view = (JobModuleView) viewPart;
 			// JobTreeModuleRegistViewのitemは不完全コピーのため、JobTreeからコピーする
-			JobTreeItem jobTreeItem = view.getSelectJobTreeItem();
-			JobTreeViewer treeViewer = JobMapActionUtil.getJobTreeView().getJobMapTreeComposite().getTreeViewer();
-			if (jobTreeItem != null) {
+			JobTreeItemWrapper jobTreeItem = view.getSelectJobTreeItem();
+			JobTreeViewer treeViewer = null;
+			if (JobMapActionUtil.getJobTreeView() != null && jobTreeItem != null){
+				treeViewer = JobMapActionUtil.getJobTreeView().getJobMapTreeComposite().getTreeViewer();
 				String jobunitId = jobTreeItem.getData().getJobunitId();
 				String jobId = jobTreeItem.getData().getId();
 				String managerName = JobTreeItemUtil.getManagerName(jobTreeItem);
@@ -94,13 +95,15 @@ public class BaseAction  extends AbstractHandler implements IElementUpdater {
 			} else {
 				m_jobTreeItem = null;
 			}
-			List<JobTreeItem> jobTreeItemList = view.getSelectJobTreeItemList();
-			List<JobTreeItem> selectItemList = new ArrayList<>();
-			for (JobTreeItem item : jobTreeItemList) {
-				String jobunitId = item.getData().getJobunitId();
-				String jobId = item.getData().getId();
-				String managerName = JobTreeItemUtil.getManagerName(item);
-				selectItemList.add(JobMapTreeUtil.getTargetJobTreeItem(treeViewer, managerName, jobunitId, jobId));
+			List<JobTreeItemWrapper> jobTreeItemList = view.getSelectJobTreeItemList();
+			List<JobTreeItemWrapper> selectItemList = new ArrayList<>();
+			if (treeViewer != null){
+				for (JobTreeItemWrapper item : jobTreeItemList) {
+					String jobunitId = item.getData().getJobunitId();
+					String jobId = item.getData().getId();
+					String managerName = JobTreeItemUtil.getManagerName(item);
+					selectItemList.add(JobMapTreeUtil.getTargetJobTreeItem(treeViewer, managerName, jobunitId, jobId));
+				}
 			}
 			m_jobTreeItemList = selectItemList;
 		} else if (viewPart instanceof JobTreeView) {

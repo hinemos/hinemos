@@ -16,12 +16,11 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.platform.selfcheck.TableSizeQueryExecuter;
 import com.clustercontrol.selfcheck.TableSizeConfig;
-import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.selfcheck.util.TableSizeQueryExecuter;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -163,7 +162,7 @@ public class TableSizeMonitor extends SelfCheckMonitorBase {
 			physicalSizeMByte = physicalSize / 1024.0 / 1024.0;
 	
 			String[] msgAttr1 = { tableName, String.format("%.2f", physicalSizeMByte), Long.toString(count), Long.toString(thresholdOrig), getThresholdUnit(thresholdType) };
-			AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_006_SYS_SFC, msgAttr1,
+			AplLogger.put(InternalIdCommon.SYS_SFC_SYS_006, msgAttr1,
 					"stored data (" +
 							tableName +
 							") is too large (" +

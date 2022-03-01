@@ -9,6 +9,8 @@
 package com.clustercontrol.commons.util;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -24,6 +26,7 @@ import com.clustercontrol.commons.bean.Schedule;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.RoleNotFound;
 import com.clustercontrol.monitor.bean.ConfirmConstant;
@@ -66,6 +69,27 @@ public class CommonValidator {
 		}
 	}
 
+	/**
+	 * 指定されたIDがHinemosのID規則にマッチするかを確認する。
+	 * [a-z,A-Z,0-9,-,_,.,@]のみ許可する (Hinemos5.0で「.」と「@」を追加)
+	 * 空文字列、null チェック行わない。
+	 * 
+	 * @param id
+	 * @throws InvalidSetting
+	 */
+	public static void validateIdWithoutCheckNullAndEmpty(String name, String id, int maxSize) throws InvalidSetting{
+		// string check
+		validateString(name, id, false, 1, maxSize);
+
+		/** メイン処理 */
+		if(!id.matches(PatternConstant.HINEMOS_ID_PATTERN)){
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_ID_ILLEGAL_CHARACTERS.getMessage(id, name));
+			m_log.info("validateId() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+	}
+	
 	/**
 	 * 文字列の長さチェック
 	 * 
@@ -150,7 +174,42 @@ public class CommonValidator {
 		if (i == null) return;
 		validateInt(name, i, minSize, maxSize);
 	}
-	
+
+	/**
+	 * Integerを表す文字列の上限下限チェック
+	 * 
+	 * @param name エラー時に表示する項目名。
+	 * @param strValue Integerを表す文字列。
+	 * @param required 必須かどうか。nullまたは空文字列を許容しない場合は true、許容してデフォルト値を返す場合は false。
+	 * @param defaultValue デフォルト値。
+	 * @param minValue 最小値。
+	 * @param maxValue 最大値。
+	 * @return 数値変換した値。
+	 */
+	public static int validateIntegerString(String name, String strValue, boolean required,
+			int defaultValue, int minValue, int maxValue) throws InvalidSetting {
+		String[] args = { name, Integer.toString(minValue), Integer.toString(maxValue) };
+
+		if (strValue == null || strValue.trim().length() == 0) {
+			if (required) {
+				throw new InvalidSetting(MessageConstant.MESSAGE_INPUT_BETWEEN.getMessage(args));
+			} else {
+				return defaultValue;
+			}
+		}
+
+		int intValue;
+		try {
+			intValue = Integer.parseInt(strValue);
+		} catch (NumberFormatException e) {
+			throw new InvalidSetting(MessageConstant.MESSAGE_INPUT_BETWEEN.getMessage(args));
+		}
+		if (intValue < minValue || intValue > maxValue) {
+			throw new InvalidSetting(MessageConstant.MESSAGE_INPUT_BETWEEN.getMessage(args));
+		}
+		return intValue;
+	}
+
 	/**
 	 * 数値の上限下限チェック
 	 * @throws InvalidSetting
@@ -240,6 +299,38 @@ public class CommonValidator {
 				String[] args = {notifyId};
 				throw new InvalidSetting(MessageConstant.MESSAGE_NOTIFY_ID_NOT_EXIST.getMessage(args));
 			}
+		}
+		return;
+	}
+
+	/**
+	 * 指定されたジョブ連携送信設定IDに該当するジョブ連携送信設定が参照可能かを確認する
+	 * 
+	 * @param joblinkSendSettindId
+	 * @param ownerRoleId
+	 * 
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 */
+	
+	public static void validateJoblinkSendSettingId(String joblinkSendSettindId, String ownerRoleId)
+			throws InvalidSetting, InvalidRole {	
+		if(joblinkSendSettindId == null || joblinkSendSettindId.isEmpty()){
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_JOB_LINK_SEND_ID_IS_NULL.getMessage());
+			m_log.info("validateJoblinkSendSettingId() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		try {
+			//対象のジョブ連携送信設定を取得できない場合にExceptionエラーを発生させる。
+			com.clustercontrol.jobmanagement.util.QueryUtil.getJobLinkSendSettingPK_OR(joblinkSendSettindId, ownerRoleId);
+		} catch (JobMasterNotFound e) {
+			String[] args = {joblinkSendSettindId};
+			m_log.warn("validateJoblinkSendSettingId() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw new InvalidSetting(MessageConstant.MESSAGE_JOB_LINK_SEND_ID_NOT_EXIST.getMessage(args));
+		} catch (InvalidRole e) {
+			throw e;
 		}
 		return;
 	}
@@ -365,10 +456,27 @@ public class CommonValidator {
 				// 変更時にオーナーロールIDが変わっていないか確認する
 				RoleValidator.validateModifyOwnerRole(pk, objectType, ownerRoleId);
 			} catch (RoleNotFound e) {
-				throw new InvalidSetting(e.getMessage(), e);
+				throw new InvalidSetting(MessageConstant.MESSAGE_OWNERROLEID_NOT_EXIST.getMessage(new String[]{ownerRoleId}), e);
 			}
 		}
 		return;
+	}
+	
+	/**
+	 * ownerRoleIdに指定されたロールが存在するかを確認する<BR>
+	 * REST API向け
+	 * 
+	 * @param ownerRoleId
+	 * @throws InvalidSetting
+	 */
+	public static void validateOwnerRoleIdExists(String ownerRoleId) throws InvalidSetting {
+		try {
+			// 存在確認
+			com.clustercontrol.accesscontrol.util.QueryUtil.getRolePK(ownerRoleId);
+
+		} catch (RoleNotFound e) {
+			throw new InvalidSetting(MessageConstant.MESSAGE_OWNERROLEID_NOT_EXIST.getMessage(ownerRoleId), e);
+		}
 	}
 
 	/**
@@ -442,30 +550,34 @@ public class CommonValidator {
 	 * [,、<、>、?、!、|、＠]は許可しない  
 	 *  
 	 * @param value 
+	 * @param isCollectSelected
 	 * @throws InvalidSetting 
 	 */ 
-	public static void validateCollect(String name, String value, int maxSize) throws InvalidSetting{
+	public static void validateCollect(String name, String value, boolean isCollectSelected, int maxSize) throws InvalidSetting{
 
 		// null check
 		if(value == null || "".equals(value)){
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(name));
-			m_log.info("validateCollect() : "
-				+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
-
-		// string check
-		validateString(name, value, false, 1, maxSize);
-
-		String errorPattern = "!,<>?|＠";
-		String errorStr = ".*[" + errorPattern + "].*";
-
-		/** メイン処理 */
-		if(value.matches(errorStr)){
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_ILLEGAL_CHARACTERS.getMessage(name, errorPattern));
-			m_log.info("validateCollect() : "
-				+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
+			 if (isCollectSelected) {
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(name));
+				m_log.info("validateCollect() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			 }
+		}else{
+			// string check
+			// 後続の処理でセパレータ等に利用されている文字が含まれていないかチェック
+			// ＠ については 全角なので注意（性能グラフ表示でセパレータとして利用されている）
+			validateString(name, value, false, 0, maxSize);
+			String errorPattern = "!,<>?|＠";
+			String errorStr = ".*[" + errorPattern + "].*";
+	
+			/** メイン処理 */
+			if(value.matches(errorStr)){
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_ILLEGAL_CHARACTERS.getMessage(name, errorPattern));
+				m_log.info("validateCollect() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
 		}
 	}
 
@@ -512,6 +624,213 @@ public class CommonValidator {
 		throw e;
 		
 	}
+
+	/**
+	 * 指定された集合のnotNullと件数が指定の範囲内かを確認する。
+	 * 
+	 * @param name 項目名
+	 * @param target  Object[] List<Object> Map<String,Object> のいずれかのみを想定 
+	 * @param minSize -1なら検査しない
+	 * @param maxSize -1なら検査しない
+	 * @throws InvalidSetting
+	 */
+	public static void validateCollectionType(String name, Object target, boolean notNull, int minSize, int maxSize) throws InvalidSetting{
+
+		// null check
+		if(notNull) {
+			if( target == null ){
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(name));
+				m_log.info("validateId() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		}
+		
+		if(target != null) {
+			int size = -1;
+			if(target.getClass().isArray() ){
+				size = ((Object[])target).length;
+			}else if(target instanceof List ){
+				size = ((List<?>)target).size();
+			}else if(target instanceof Map ){
+				size = ((Map<?,?>)target).size();
+			}
+
+			//サイズチェック
+			if( minSize != -1 && size < minSize){
+				if(size == 0){
+					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(name));
+					m_log.info("validateString() : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage());
+					throw e;
+				}else{
+					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_UNDER.getMessage(name, String.valueOf(minSize)));
+					m_log.info("validateString() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+					throw e;
+				}
+			}
+			if( maxSize != -1 && size > maxSize ){
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_OVER_LIMIT.getMessage(name, String.valueOf(maxSize)));
+				m_log.info("validateString() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		}
+	}
+
+	/**
+	 * Longの上限下限チェック（チェックの一部スキップ可能）
+	 * @param name 項目名
+	 * @param target 対象数値 nullなら検査しない
+	 * @param minSize 最低数 
+	 * @param maxSize 最大数 
+	 * @throws InvalidSetting
+	 */
+	public static void validateLongSkippable(String name, Long target, long minSize, long maxSize) throws InvalidSetting {
+		//対象がNULLなら検査しない
+		if (target == null){
+			return;
+		}
+		// 最低数検査
+		if( target < minSize ){
+			String[] args = {name, Long.toString(minSize)};
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_NUM_LIMIT_LESS.getMessage(args));
+			m_log.info("validateLongSkippable() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		// 最大値検査
+		if( maxSize < target ){
+			String[] args = {name, Long.toString(maxSize)};
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_NUM_LIMIT_OVER.getMessage(args));
+			m_log.info("validateLongSkippable() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+	}
+
+	/**
+	 * Integerの上限下限チェック（チェックの一部スキップ可能）
+	 * @param name 項目名
+	 * @param target 対象数値 nullなら検査しない
+	 * @param minSize 最低数 
+	 * @param maxSize 最大数 
+	 * @throws InvalidSetting
+	 */
+	public static void validateIntegerSkippable(String name, Integer target, int minSize, int maxSize) throws InvalidSetting {
+		//対象がNULLなら検査しない
+		if (target == null){
+			return;
+		}
+		// 最低数検査
+		if( target < minSize ){
+			String[] args = {name, Integer.toString(minSize)};
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_NUM_LIMIT_LESS.getMessage(args));
+			m_log.info("validateIntegerSkippable() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		// 最大値検査
+		if( maxSize < target ){
+			String[] args = {name, Integer.toString(maxSize)};
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_NUM_LIMIT_OVER.getMessage(args));
+			m_log.info("validateIntegerSkippable() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+	}
+
+	/**
+	 * Doubleの上限下限チェック（チェックの一部スキップ可能）
+	 * @param name 項目名
+	 * @param target 対象数値 nullなら検査しない
+	 * @param minSize 最低数
+	 * @param maxSize 最大数
+	 * @throws InvalidSetting
+	 */
+	public static void validateDoubleSkippable(String name, Double target, Double minSize, Double maxSize) throws InvalidSetting {
+		//対象がNULLなら検査しない
+		if (target == null){
+			return;
+		}
+		// 最低数検査
+		if( target < minSize ){
+			String[] args = {name, Double.toString(minSize)};
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_NUM_LIMIT_LESS.getMessage(args));
+			m_log.info("validateDoubleSkippable() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		// 最大値検査
+		if( maxSize < target ){
+			String[] args = {name, Double.toString(maxSize)};
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_NUM_LIMIT_OVER.getMessage(args));
+			m_log.info("validateDoubleSkippable() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+	}
+
+	/**
+	 * Stringの文字数上限下限チェック（チェックの一部スキップ可能）
+	 * @param name 項目名
+	 * @param target 対象数値 nullなら検査しない
+	 * @param minSize 最低字数 -1なら検査しない
+	 * @param maxSize 最大字数 -1なら検査しない
+	 * @throws InvalidSetting
+	 */
+	public static void validateStringLengthSkippable(String name, String target, int minSize, int maxSize) throws InvalidSetting {
+		//対象がNULLなら検査しない
+		if (target == null){
+			return;
+		}
+		// 最低数が-1でないなら 最低数検査
+		if( minSize != -1 && target.length() < minSize ){
+			String[] args = {name, Long.toString(minSize)};
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_STR_LIMIT_LESS.getMessage(args));
+			m_log.info("validateLongSkippable() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		// 最大数が-1でないなら 最大値検査
+		if( maxSize != -1 && maxSize <  target.length()  ){
+			String[] args = {name, Long.toString(maxSize)};
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_STR_LIMIT_OVER.getMessage(args));
+			m_log.info("validateLongSkippable() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+	}
+	
+	/**
+	 * URLのフォーマットチェック
+	 * @param name 項目名
+	 * @param target
+	 * @throws InvalidSetting
+	 */
+	public static void validateUrl(String name, String target) throws InvalidSetting {
+		if (target == null){
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(name));
+			m_log.info("validateUrl() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;		}
+		
+		String url = target;
+		// format check
+		if (url.length() > 0 && (!url.startsWith("http://") && !url.startsWith("https://"))) {
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INVALID_URL.getMessage(name));
+			m_log.info("validateUrl() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		else if((url.startsWith("http://") && url.length() == 7) || (url.startsWith("https://") && url.length() == 8)){
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INVALID_URL.getMessage(name));
+			m_log.info("validateUrl() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}	
+	}
 	
 	/**
 	 * for debug
@@ -540,6 +859,5 @@ public class CommonValidator {
 		}
 
 	}
-
 
 }

@@ -1,0 +1,18 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"paramId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+	
+	{
+	"propName":"paramValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaRunParamMst_paramValue"}
+	]}
+]
+}

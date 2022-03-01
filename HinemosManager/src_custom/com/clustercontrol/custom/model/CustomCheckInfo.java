@@ -10,16 +10,16 @@ package com.clustercontrol.custom.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.OneToOne;
-import javax.persistence.PrimaryKeyJoinColumn;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -44,7 +44,7 @@ public class CustomCheckInfo extends MonitorCheckInfo implements Serializable {
 	private String command;
 	private Boolean specifyUser;
 	private String effectiveUser;
-	private CustomConstant.CommandExecType executeType;
+	private CustomConstant.CommandExecType commandExecType;
 	private String selectedFacilityId;
 	private Integer timeout;
 	private MonitorInfo monitorInfo;
@@ -91,11 +91,11 @@ public class CustomCheckInfo extends MonitorCheckInfo implements Serializable {
 	@Enumerated(EnumType.ORDINAL)
 	@Column(name="execute_type")
 	public CustomConstant.CommandExecType getCommandExecType() {
-		return this.executeType;
+		return this.commandExecType;
 	}
 
-	public void setCommandExecType(CustomConstant.CommandExecType executeType) {
-		this.executeType = executeType;
+	public void setCommandExecType(CustomConstant.CommandExecType commandExecType) {
+		this.commandExecType = commandExecType;
 	}
 
 

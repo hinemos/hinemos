@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.TrapValueInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
@@ -46,7 +47,6 @@ import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.snmptrap.dialog.SnmpTrapCreateDialog;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.TrapValueInfo;
 
 /**
  * SNMPTRAP監視OID一覧コンポジットクラス<BR>
@@ -67,10 +67,10 @@ public class TrapDefineListComposite extends Composite{
 	/** 判定情報一覧 コンポジット。 */
 	protected TrapDefineTableComposite infoList = null;
 
-	protected ITableItemCompositeDefine<TrapValueInfo> define = null;
+	protected ITableItemCompositeDefine<TrapValueInfoResponse> define = null;
 
-	private Map<TrapValueInfo, String> mibMap = new ConcurrentHashMap<TrapValueInfo, String>();
-	private Map<String, List<TrapValueInfo>> trapMap = new ConcurrentHashMap<String, List<TrapValueInfo>>();
+	private Map<TrapValueInfoResponse, String> mibMap = new ConcurrentHashMap<>();
+	private Map<String, List<TrapValueInfoResponse>> trapMap = new ConcurrentHashMap<>();
 
 	/** 追加 ボタン。 */
 	protected Button btnAdd = null;
@@ -107,11 +107,11 @@ public class TrapDefineListComposite extends Composite{
 	 * @param style
 	 *            スタイル
 	 */
-	public TrapDefineListComposite(Composite parent, int style, ITableItemCompositeDefine<TrapValueInfo> define) {
+	public TrapDefineListComposite(Composite parent, int style, ITableItemCompositeDefine<TrapValueInfoResponse> define) {
 		this(parent, style, define, null);
 	}
 
-	public TrapDefineListComposite(Composite parent, int style, ITableItemCompositeDefine<TrapValueInfo> define, List<TrapValueInfo> items) {
+	public TrapDefineListComposite(Composite parent, int style, ITableItemCompositeDefine<TrapValueInfoResponse> define, List<TrapValueInfoResponse> items) {
 		super(parent, style);
 
 		this.define = define;
@@ -130,18 +130,22 @@ public class TrapDefineListComposite extends Composite{
 	 *
 	 * @param info 設定値として用いる監視情報
 	 */
-	public void setInputData(List<TrapValueInfo> list) {
+	public void setInputData(List<TrapValueInfoResponse> list) {
 		this.infoList.setInputData(list);
-		mibMap = new ConcurrentHashMap<TrapValueInfo, String>();
-		for(TrapValueInfo info: list){
-			mibMap.put(info, info.getMib());
+		mibMap = new ConcurrentHashMap<>();
+		if (list != null) {
+			for(TrapValueInfoResponse info: list){
+				mibMap.put(info, info.getMib());
+			}
 		}
-		trapMap = new ConcurrentHashMap<String, List<TrapValueInfo>>();
+		trapMap = new ConcurrentHashMap<>();
 		for(String mib: new TreeSet<String>(mibMap.values())){
-			trapMap.put(mib, new ArrayList<TrapValueInfo>());
+			trapMap.put(mib, new ArrayList<>());
 		}
-		for(TrapValueInfo info: list){
-			trapMap.get(info.getMib()).add(info);
+		if (list != null) {
+			for(TrapValueInfoResponse info: list){
+				trapMap.get(info.getMib()).add(info);
+			}
 		}
 
 		updateMibList();
@@ -384,7 +388,7 @@ public class TrapDefineListComposite extends Composite{
 			this.btnDelete.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					List<TrapValueInfo> infos = getSelectedItems();
+					List<TrapValueInfoResponse> infos = getSelectedItems();
 
 					if (infos.size() > 0) {
 						if (MessageDialog.openConfirm(
@@ -393,7 +397,7 @@ public class TrapDefineListComposite extends Composite{
 								Messages.getString("message.monitor.snmptrap.confirm.to.delete.selected.items"))) {
 
 							define.getTableItemInfoManager().delete(infos);
-							removeItem(infos.toArray(new TrapValueInfo[0]));
+							removeItem(infos.toArray(new TrapValueInfoResponse[0]));
 							updateMibList();
 							update();
 						}
@@ -415,7 +419,7 @@ public class TrapDefineListComposite extends Composite{
 			this.btnCopy.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					TrapValueInfo item = getSelectedItem();
+					TrapValueInfoResponse item = getSelectedItem();
 					if (item != null) {
 
 						// シェルを取得
@@ -496,7 +500,7 @@ public class TrapDefineListComposite extends Composite{
 	 *
 	 * @param identifier 識別キー
 	 */
-	protected void selectItem(TrapValueInfo item) {
+	protected void selectItem(TrapValueInfoResponse item) {
 		Table table = this.infoList.getTableViewer().getTable();
 		WidgetTestUtil.setTestId(this, null, table);
 		TableItem[] items = table.getItems();
@@ -507,7 +511,7 @@ public class TrapDefineListComposite extends Composite{
 
 		for (int i = 0; i < items.length; i++) {
 
-			TrapValueInfo tmpItem = (TrapValueInfo) items[i].getData();
+			TrapValueInfoResponse tmpItem = (TrapValueInfoResponse) items[i].getData();
 			WidgetTestUtil.setTestId(this, "items" + i, items[i]);
 			if (item.equals(tmpItem)) {
 				table.select(i);
@@ -521,18 +525,18 @@ public class TrapDefineListComposite extends Composite{
 	 *
 	 * @return 識別キー。選択されていない場合は、<code>null</code>。
 	 */
-	protected TrapValueInfo getSelectedItem() {
-		List<TrapValueInfo> infos = getSelectedItems();
+	protected TrapValueInfoResponse getSelectedItem() {
+		List<TrapValueInfoResponse> infos = getSelectedItems();
 		return infos.size() > 0? infos.get(0): null;
 	}
 
-	protected List<TrapValueInfo> getSelectedItems() {
+	protected List<TrapValueInfoResponse> getSelectedItems() {
 		StructuredSelection selection = (StructuredSelection) this.infoList.getTableViewer().getSelection();
 
-		List<TrapValueInfo> tableItemInfos = new ArrayList<TrapValueInfo>();
+		List<TrapValueInfoResponse> tableItemInfos = new ArrayList<>();
 		for(Object o: selection.toList()){
-			if(o instanceof TrapValueInfo){
-				tableItemInfos.add((TrapValueInfo)o);
+			if(o instanceof TrapValueInfoResponse){
+				tableItemInfos.add((TrapValueInfoResponse)o);
 			}
 		}
 
@@ -544,7 +548,7 @@ public class TrapDefineListComposite extends Composite{
 	 *
 	 * @return List<T> テーブルアイテム。
 	 */
-	public List<TrapValueInfo> getItems(){
+	public List<TrapValueInfoResponse> getItems(){
 		return this.infoList.getTableItemData();
 	}
 
@@ -584,21 +588,21 @@ public class TrapDefineListComposite extends Composite{
 		}
 	}
 
-	private void addItem(TrapValueInfo... infos){
+	private void addItem(TrapValueInfoResponse... infos){
 		if(infos != null){
-			for(TrapValueInfo info: infos){
+			for(TrapValueInfoResponse info: infos){
 				mibMap.put(info, info.getMib());
 				if(trapMap.get(info.getMib()) == null){
-					trapMap.put(info.getMib(), new ArrayList<TrapValueInfo>());
+					trapMap.put(info.getMib(), new ArrayList<>());
 				}
 				trapMap.get(info.getMib()).add(info);
 			}
 		}
 	}
 
-	private void removeItem(TrapValueInfo... infos){
+	private void removeItem(TrapValueInfoResponse... infos){
 		if(infos != null){
-			for(TrapValueInfo info: infos){
+			for(TrapValueInfoResponse info: infos){
 				mibMap.remove(info);
 				trapMap.get(info.getMib()).remove(info);
 				if(trapMap.get(info.getMib()).isEmpty()){
@@ -608,9 +612,9 @@ public class TrapDefineListComposite extends Composite{
 		}
 	}
 
-	private List<TrapValueInfo> getFilteredList(){
-		List<TrapValueInfo> tmp1 = new ArrayList<>();
-		List<TrapValueInfo> tmp2 = new ArrayList<>();
+	private List<TrapValueInfoResponse> getFilteredList(){
+		List<TrapValueInfoResponse> tmp1 = new ArrayList<>();
+		List<TrapValueInfoResponse> tmp2 = new ArrayList<>();
 
 		if(!"".equals(cmbMib.getText().trim()) && trapMap.containsKey(cmbMib.getText().trim())){
 			tmp1.addAll(trapMap.get(cmbMib.getText().trim()));
@@ -619,7 +623,7 @@ public class TrapDefineListComposite extends Composite{
 		}
 
 		if(!"".equals(txtFilter.getText().trim())){
-			for(TrapValueInfo info: tmp1){
+			for(TrapValueInfoResponse info: tmp1){
 				if(Pattern.matches(".*" + txtFilter.getText().trim() + ".*", info.getUei())){
 					tmp2.add(info);
 				}
@@ -630,7 +634,7 @@ public class TrapDefineListComposite extends Composite{
 		return limitDisplayTrapValueInfoList(tmp2);
 	}
 	
-	private List<TrapValueInfo> limitDisplayTrapValueInfoList(List<TrapValueInfo> infoList) {
+	private List<TrapValueInfoResponse> limitDisplayTrapValueInfoList(List<TrapValueInfoResponse> infoList) {
 		int maxTrapOids = ClusterControlPlugin.getDefault().getPreferenceStore().getInt(MonitorPreferencePage.P_MAX_TRAP_OID);
 		
 		int totalNumber = infoList.size();
@@ -640,7 +644,7 @@ public class TrapDefineListComposite extends Composite{
 	}
 
 	public void modifyEvent() {
-		TrapValueInfo item = getSelectedItem();
+		TrapValueInfoResponse item = getSelectedItem();
 		if (item != null) {
 
 			// シェルを取得

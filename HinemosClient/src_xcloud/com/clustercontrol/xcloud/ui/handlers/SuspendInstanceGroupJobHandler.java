@@ -11,8 +11,8 @@ import java.text.MessageFormat;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.JobResourceInfoResponse;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
 import com.clustercontrol.xcloud.extensions.CloudOptionExtension;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.plugin.CloudOptionSourceProvider;
@@ -32,11 +32,6 @@ public class SuspendInstanceGroupJobHandler extends AbstaractCloudOptionGroupJob
 	}
 	
 	@Override
-	protected String getCommand(CloudEndpoint endpoint, String facilityId) throws Exception {
-		return endpoint.makeSuspendInstancesCommandUsingFacility(cloudScope.getId(), facilityId);
-	}
-	
-	@Override
 	protected String getJobName(String facilityId) {
 		return getJobId(facilityId);
 	}
@@ -53,11 +48,6 @@ public class SuspendInstanceGroupJobHandler extends AbstaractCloudOptionGroupJob
 	}
 	
 	@Override
-	protected String getMethodName() {
-		return "makeSuspendInstancesCommandUsingFacility";
-	}
-	
-	@Override
 	protected String getWizardTitle() {
 		return MessageFormat.format(dlgComputeSuspend, CloudOptionExtension.getOptions().get(cloudScope.getCloudPlatform().getId()));
 	}
@@ -65,5 +55,10 @@ public class SuspendInstanceGroupJobHandler extends AbstaractCloudOptionGroupJob
 	@Override
 	protected String getErrorMessage() {
 		return msgErrorFinishCreateSuspendJob;
+	}
+
+	@Override
+	protected JobResourceInfoResponse.ResourceActionEnum getAction() {
+		return JobResourceInfoResponse.ResourceActionEnum.SUSPEND;
 	}
 }

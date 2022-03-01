@@ -11,7 +11,7 @@ package com.clustercontrol.fault;
 /**
  * ロールが存在しない場合に利用するException
  */
-public class RoleNotFound extends HinemosException {
+public class RoleNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = 1L;
 

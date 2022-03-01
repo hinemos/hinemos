@@ -25,21 +25,26 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
+import org.openapitools.client.model.EventLogInfoResponse;
+import org.openapitools.client.model.GetEventInfoRequest;
+import org.openapitools.client.model.GetEventInfoResponse;
 
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.dialog.CommonDialog;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.action.GetEventListTableDefine;
 import com.clustercontrol.monitor.action.ModifyEvent;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
 import com.clustercontrol.monitor.util.EventDataPropertyUtil;
-import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorResultRestClientWrapper;
+import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
+import com.clustercontrol.util.RestClientBeanUtil;
+import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.PropertySheet;
-import com.clustercontrol.ws.monitor.EventDataInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
+
 
 /**
  * 監視[イベントの詳細]ダイアログクラス<BR>
@@ -66,7 +71,7 @@ public class EventInfoDialog extends CommonDialog {
 	/**
 	 * ダイアログ表示時点のイベント
 	 */
-	private EventDataInfo initEventInfo = null;
+	private EventLogInfoResponse initEventInfo = null;
 	
 	/**
 	 * イベント表示設定情報
@@ -152,13 +157,25 @@ public class EventInfoDialog extends CommonDialog {
 			String pluginId = (String) m_list.get(GetEventListTableDefine.PLUGIN_ID);
 			String facilityId = (String) m_list.get(GetEventListTableDefine.FACILITY_ID);
 			Date receiveTime = (Date) m_list.get(GetEventListTableDefine.RECEIVE_TIME);
-
+			
 			try {
-				MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
-				initEventInfo = wrapper.getEventInfo(monitorId, monitorDetailId, pluginId, facilityId, receiveTime.getTime());
+				MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(managerName);
+				GetEventInfoRequest getEventInfoRequest = new GetEventInfoRequest();
+				
+				getEventInfoRequest.setFacilityId(facilityId);
+				getEventInfoRequest.setMonitorId(monitorId);
+				getEventInfoRequest.setMonitorDetailId(monitorDetailId);
+				getEventInfoRequest.setOutputDate(DateTimeStringConverter.formatLongDate(receiveTime.getTime(),
+						MonitorResultRestClientWrapper.DATETIME_FORMAT));
+				getEventInfoRequest.setPluginId(pluginId);
+				
+				GetEventInfoResponse getEventInfoResponse = wrapper.getEventInfo(getEventInfoRequest);
+				initEventInfo = new EventLogInfoResponse();
+				RestClientBeanUtil.convertBean(getEventInfoResponse, initEventInfo);
+				
 				eventProperty = EventDataPropertyUtil.dto2property(initEventInfo, Locale.getDefault(), this.eventDspSetting, managerName);
 				this.propertySheet.setInput(eventProperty);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
 			} catch (Exception e) {

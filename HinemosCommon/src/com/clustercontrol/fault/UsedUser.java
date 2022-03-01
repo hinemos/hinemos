@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * ユーザが使用されている場合に利用するException
  * @version 4.1.0
  */
-public class UsedUser extends HinemosException {
+public class UsedUser extends HinemosUsed {
 
 	private static final long serialVersionUID = 1L;
 

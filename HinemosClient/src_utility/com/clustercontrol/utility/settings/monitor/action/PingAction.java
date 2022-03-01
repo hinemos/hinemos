@@ -8,27 +8,35 @@
 
 package com.clustercontrol.utility.settings.monitor.action;
 
+import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.PingMonitorInfoResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.monitor.conv.PingConv;
 import com.clustercontrol.utility.settings.monitor.xml.PingMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.PingMonitors;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 
 /**
  * PING監視設定情報を取得、設定、削除します。<br>
  * XMLファイルに定義されたPING監視情報をマネージャに反映させるクラス<br>
- * ただし、すでに登録されているPING監視情報と重複する場合はスキップされる。
+ * ただし、すでに登録されているPING監視情報と重複した場合はダイアログにて上書き/スキップをユーザに選択させる。
  *
  * @version 6.1.0
  * @since 1.0.0
@@ -37,6 +45,7 @@ import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 public class PingAction extends AbstractMonitorAction<PingMonitors> {
 	public PingAction() throws ConvertorException {
 		super();
+		this.targetTitle = Messages.getString("monitor.ping");
 	}
 
 	@Override
@@ -53,17 +62,24 @@ public class PingAction extends AbstractMonitorAction<PingMonitors> {
 	}
 
 	@Override
-	public List<MonitorInfo> createMonitorInfoList(PingMonitors object) throws ConvertorException {
+	public List<MonitorInfoResponse> createMonitorInfoList(PingMonitors object) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
 		return PingConv.createMonitorInfoList(object);
 	}
 
 	@Override
-	protected List<MonitorInfo> getFilterdMonitorList() throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
-		return MonitorSettingEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getPingList();
+	protected List<MonitorInfoResponse> getFilterdMonitorList() throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed {
+		List<PingMonitorInfoResponse> dtoList = MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getPingList(null);
+		List<MonitorInfoResponse> retList = new ArrayList<MonitorInfoResponse>();
+		for(PingMonitorInfoResponse dtoRec :  dtoList){
+			MonitorInfoResponse infoRec = new MonitorInfoResponse();
+			RestClientBeanUtil.convertBean(dtoRec, infoRec);
+			retList.add(infoRec);
+		}
+		return retList;
 	}
 
 	@Override
-	protected PingMonitors createCastorData(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	protected PingMonitors createCastorData(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		return PingConv.createPingMonitors(monitorInfoList);
 	}
 

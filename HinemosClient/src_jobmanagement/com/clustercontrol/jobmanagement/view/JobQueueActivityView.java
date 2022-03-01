@@ -34,22 +34,23 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.GetJobQueueActivityInfoRequest;
+import org.openapitools.client.model.JobQueueActivityViewInfoListItemResponse;
+import org.openapitools.client.model.JobQueueItemInfoResponse;
 
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.dialog.ApiResultDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.bean.JobQueueActivityViewFilter;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobQueueFilterBeanUtil;
 import com.clustercontrol.jobmanagement.view.action.JobQueueEditor;
 import com.clustercontrol.jobmanagement.view.action.ShowJobQueueAction;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.LogUtil;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.ViewUtil;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.JobQueueActivityViewFilter;
-import com.clustercontrol.ws.jobmanagement.JobQueueActivityViewInfo;
-import com.clustercontrol.ws.jobmanagement.JobQueueActivityViewInfoListItem;
 
 /**
  * ジョブ履歴[同時実行制御]ビュークラスです。
@@ -159,10 +160,6 @@ public class JobQueueActivityView extends CommonViewPart implements JobQueueEdit
 					String queueId = (String) selectedRow.get(COLUMN_QUEUE_ID);
 					view.update(managerName, queueId);
 				});
-
-				ViewUtil.activate(JobQueueContentsView.class);
-				// ダブルクリックリスナがアクティブなビューから選択行を取得するため、再アクティブが必要
-				ViewUtil.activate(JobQueueActivityView.class);
 			}
 		};
 	}
@@ -195,22 +192,30 @@ public class JobQueueActivityView extends CommonViewPart implements JobQueueEdit
 	public void update() {
 		try {
 			// 一覧情報を取得
-			Map<String, JobQueueActivityViewInfo> dispDataMap = new HashMap<>();
+			Map<String, JobQueueItemInfoResponse> dispDataMap = new HashMap<>();
 			ApiResultDialog errorDialog = new ApiResultDialog();
 
 			Collection<String> managerNames;
+			Collection<String> activemanagerNames = RestConnectManager.getActiveManagerSet();
+			if (!activemanagerNames.contains(managerFilter)) {
+				managerFilter = "";
+			}
 			if (!filtering || StringUtils.isEmpty(managerFilter)) {
-				managerNames = EndpointManager.getActiveManagerSet();
+				managerNames = activemanagerNames;
 			} else {
 				managerNames = Arrays.asList(managerFilter);
 			}
 
 			for (String managerName : managerNames) {
 				try {
-					JobEndpointWrapper ep = JobEndpointWrapper.getWrapper(managerName);
-					dispDataMap.put(managerName, ep.getJobQueueActivityViewInfo(filtering ? queueFilter : null));
+					JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+					GetJobQueueActivityInfoRequest request = JobQueueFilterBeanUtil.convertToRequest(filtering ? queueFilter : new JobQueueActivityViewFilter());
+					List<JobQueueItemInfoResponse> jobQueueItemInfoResponseList = wrapper.getJobQueueItemInfo(request);
+					for(JobQueueItemInfoResponse jobQueueItemInfoResponse : jobQueueItemInfoResponseList){
+						dispDataMap.put(managerName, jobQueueItemInfoResponse);
+					}
 				} catch (Throwable t) {
-					log.warn(LogUtil.filterWebFault("update: ", t));
+					log.warn("update: " + t.getClass().getName() + ", " + t.getMessage());
 					errorDialog.addFailure(managerName, t, "");
 				}
 			}
@@ -220,9 +225,9 @@ public class JobQueueActivityView extends CommonViewPart implements JobQueueEdit
 
 			// テーブル更新
 			List<List<Object>> table = new ArrayList<>();
-			for (Entry<String, JobQueueActivityViewInfo> entry : dispDataMap.entrySet()) {
-				JobQueueActivityViewInfo info = entry.getValue();
-				for (JobQueueActivityViewInfoListItem it : info.getItems()) {
+			for (Entry<String, JobQueueItemInfoResponse> entry : dispDataMap.entrySet()) {
+				JobQueueItemInfoResponse info = entry.getValue();
+				for (JobQueueActivityViewInfoListItemResponse it : info.getItems()) {
 					List<Object> row = new ArrayList<>();
 					row.add(entry.getKey());
 					row.add(it.getQueueId());
@@ -230,9 +235,9 @@ public class JobQueueActivityView extends CommonViewPart implements JobQueueEdit
 					row.add(it.getActiveCount());
 					row.add(it.getOwnerRoleId());
 					row.add(it.getRegUser());
-					row.add(new Date(it.getRegDate()));
+					row.add(it.getRegDate());
 					row.add(it.getUpdateUser());
-					row.add(new Date(it.getUpdateDate()));
+					row.add(it.getUpdateDate());
 					table.add(row);
 				}
 			}

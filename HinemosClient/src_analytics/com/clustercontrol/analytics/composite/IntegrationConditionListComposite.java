@@ -23,22 +23,22 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.IntegrationCheckInfoResponse;
+import org.openapitools.client.model.IntegrationConditionInfoResponse;
 
 import com.clustercontrol.analytics.action.GetIntegrationConditionTableDefine;
 import com.clustercontrol.analytics.dialog.IntegrationConditionCreateDialog;
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.monitor.IntegrationCheckInfo;
-import com.clustercontrol.ws.monitor.IntegrationConditionInfo;
-import com.clustercontrol.ws.repository.HinemosUnknown_Exception;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.InvalidUserPass_Exception;
 
 /**
  * 収集値統合監視の判定条件一覧コンポジットクラス<BR>
@@ -54,7 +54,7 @@ public class IntegrationConditionListComposite extends Composite {
 	private ArrayList<TableColumnInfo> m_tableDefine = null;
 
 	/** 判定条件情報 */
-	private ArrayList<IntegrationConditionInfo> m_conditionList = null;
+	private ArrayList<IntegrationConditionInfoResponse> m_conditionList = null;
 
 	/** マネージャ名 */
 	private String m_managerName = null;
@@ -70,9 +70,13 @@ public class IntegrationConditionListComposite extends Composite {
 	 * <p>
 	 * 初期処理を呼び出し、コンポジットを配置します。
 	 *
-	 * @param parent 親のコンポジット
-	 * @param style スタイル
-	 * @param tableDefine 判定情報一覧のテーブル定義情報（{@link com.clustercontrol.bean.TableColumnInfo}のリスト）
+	 * @param parent
+	 *            親のコンポジット
+	 * @param style
+	 *            スタイル
+	 * @param tableDefine
+	 *            判定情報一覧のテーブル定義情報（
+	 *            {@link com.clustercontrol.bean.TableColumnInfo}のリスト）
 	 */
 	public IntegrationConditionListComposite(Composite parent, int style, ArrayList<TableColumnInfo> tableDefine) {
 		super(parent, style);
@@ -104,16 +108,16 @@ public class IntegrationConditionListComposite extends Composite {
 
 		// テーブルビューアの作成
 		this.m_tableViewer = new CommonTableViewer(table);
-		this.m_tableViewer.createTableColumn(m_tableDefine, GetIntegrationConditionTableDefine.ORDER_NO, GetIntegrationConditionTableDefine.SORT_ORDER);
+		this.m_tableViewer.createTableColumn(m_tableDefine, GetIntegrationConditionTableDefine.ORDER_NO,
+				GetIntegrationConditionTableDefine.SORT_ORDER);
 		this.m_tableViewer.addDoubleClickListener(new IDoubleClickListener() {
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
-				IntegrationConditionInfo info = getItem();
+				IntegrationConditionInfoResponse info = getItem();
 				if (info != null) {
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-					IntegrationConditionCreateDialog dialog 
-						= new IntegrationConditionCreateDialog(shell, m_managerName, m_ownerRoleId, 
-								m_monitorFacilityId, info);
+					IntegrationConditionCreateDialog dialog = new IntegrationConditionCreateDialog(shell, m_managerName,
+							m_ownerRoleId, m_monitorFacilityId, info);
 					if (dialog.open() == IDialogConstants.OK_ID) {
 						Table table = getTableViewer().getTable();
 						int selectIndex = (Integer) ((ArrayList<?>) table.getSelection()[0].getData()).get(0) - 1;
@@ -142,34 +146,33 @@ public class IntegrationConditionListComposite extends Composite {
 	 *
 	 * @return 選択アイテム
 	 */
-	public IntegrationConditionInfo getItem() {
+	public IntegrationConditionInfoResponse getItem() {
 		StructuredSelection selection = (StructuredSelection) this.m_tableViewer.getSelection();
 
 		if (selection == null) {
 			return null;
 		} else {
 			ArrayList<?> list = (ArrayList<?>)selection.getFirstElement();
-			return (IntegrationConditionInfo) m_conditionList.get((Integer)list.get(0)-1);
+			return (IntegrationConditionInfoResponse) m_conditionList.get((Integer)list.get(0)-1);
 		}
 	}
 
 	/**
 	 * 引数で指定された監視情報の値を、各項目に設定します。
 	 *
-	 * @param info 設定値として用いる監視情報
+	 * @param info
+	 *            設定値として用いる監視情報
 	 */
-	public void setInputData(IntegrationCheckInfo checkInfo) {
+	public void setInputData(IntegrationCheckInfoResponse checkInfo) {
 		if (checkInfo.getConditionList() != null) {
 			// 文字列監視判定情報設定
-			m_conditionList = new ArrayList<IntegrationConditionInfo>(
-					checkInfo.getConditionList());
+			m_conditionList = new ArrayList<>(checkInfo.getConditionList());
 		} else {
-			m_conditionList = new ArrayList<IntegrationConditionInfo>();
+			m_conditionList = new ArrayList<>();
 		}
 		// テーブル更新
 		update();
 	}
-
 
 	/**
 	 * コンポジットを更新します。<BR>
@@ -180,29 +183,29 @@ public class IntegrationConditionListComposite extends Composite {
 		// テーブル更新
 		ArrayList<Object> listAll = new ArrayList<Object>();
 		int i = 1;
-		for (IntegrationConditionInfo info : m_conditionList) {
+		for (IntegrationConditionInfoResponse info : m_conditionList) {
 			ArrayList<Object> list = new ArrayList<Object>();
 			// 順序
 			list.add(i);
 			// 対象ノード
 			String targetNode = "";
 			try {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(this.m_managerName);
-				if (info.isMonitorNode()) {
-					targetNode = wrapper.getFacilityPath(m_monitorFacilityId, null);
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.m_managerName);
+				if (info.getMonitorNode()) {
+					targetNode = wrapper.getFacilityPath(m_monitorFacilityId, null).getFacilityPath();
 				} else {
-					targetNode = wrapper.getFacilityPath(info.getTargetFacilityId(), null);
+					targetNode = wrapper.getFacilityPath(info.getTargetFacilityId(), null).getFacilityPath();
 				}
-			} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			} catch (HinemosUnknown | InvalidRole | InvalidUserPass | RestConnectFailed e) {
 				// エラー時は何もしない
 			}
 			list.add(HinemosMessage.replace(targetNode));
 			// 収集値種別
 			String monitorType = "";
 			if (info.getTargetMonitorType() != null) {
-				if (info.getTargetMonitorType() == MonitorTypeConstant.TYPE_NUMERIC) {
+				if (info.getTargetMonitorType() == IntegrationConditionInfoResponse.TargetMonitorTypeEnum.NUMERIC) {
 					monitorType = Messages.getString("numeric");
-				} else if (info.getTargetMonitorType() == MonitorTypeConstant.TYPE_STRING) {
+				} else if (info.getTargetMonitorType() == IntegrationConditionInfoResponse.TargetMonitorTypeEnum.STRING) {
 					monitorType = Messages.getString("string");
 				}
 			}
@@ -224,25 +227,26 @@ public class IntegrationConditionListComposite extends Composite {
 	/**
 	 * 引数で指定された監視情報に、入力値を設定します。
 	 * <p>
-	 * 入力値チェックを行い、不正な場合は認証結果を返します。
-	 * 不正ではない場合は、<code>null</code>を返します。
+	 * 入力値チェックを行い、不正な場合は認証結果を返します。 不正ではない場合は、<code>null</code>を返します。
 	 *
-	 * @param monitorInfo 入力値を設定する監視情報
+	 * @param monitorInfo
+	 *            入力値を設定する監視情報
 	 * @return 検証結果
 	 */
-	public ValidateResult createInputData(IntegrationCheckInfo checkInfo) {
+	public ValidateResult createInputData(IntegrationCheckInfoResponse checkInfo) {
 		if (checkInfo != null) {
-			List<IntegrationConditionInfo> conditionList = checkInfo.getConditionList();
+			List<IntegrationConditionInfoResponse> conditionList = checkInfo.getConditionList();
 			conditionList.clear();
-			if(m_conditionList != null 
-					&& m_conditionList.size() > 0) {
+			if (m_conditionList != null && m_conditionList.size() > 0) {
 				conditionList.addAll(m_conditionList);
 			}
 		}
 		return null;
 	}
 
-	/* (非 Javadoc)
+	/*
+	 * (非 Javadoc)
+	 * 
 	 * @see org.eclipse.swt.widgets.Control#setEnabled(boolean)
 	 */
 	@Override
@@ -253,8 +257,10 @@ public class IntegrationConditionListComposite extends Composite {
 	/**
 	 * 無効な入力値の情報を設定します。
 	 *
-	 * @param id ID
-	 * @param message メッセージ
+	 * @param id
+	 *            ID
+	 * @param message
+	 *            メッセージ
 	 * @return 認証結果
 	 */
 	protected ValidateResult setValidateResult(String id, String message) {
@@ -274,9 +280,9 @@ public class IntegrationConditionListComposite extends Composite {
 	public Integer getSelection() {
 		StructuredSelection selection = (StructuredSelection) m_tableViewer.getSelection();
 		if (selection.getFirstElement() instanceof ArrayList) {
-			ArrayList<?> list = (ArrayList<?>)selection.getFirstElement();
+			ArrayList<?> list = (ArrayList<?>) selection.getFirstElement();
 			if (list.get(0) instanceof Integer) {
-				return (Integer)list.get(0);
+				return (Integer) list.get(0);
 			}
 		}
 		return null;
@@ -293,7 +299,8 @@ public class IntegrationConditionListComposite extends Composite {
 	/**
 	 * 引数で指定された判定情報の行を選択状態にします。
 	 *
-	 * @param identifier 識別キー
+	 * @param identifier
+	 *            識別キー
 	 */
 	private void selectItem(Integer order) {
 		Table integrationConditionListSelectItemTable = m_tableViewer.getTable();
@@ -310,20 +317,20 @@ public class IntegrationConditionListComposite extends Composite {
 	 * テーブル選択項目の優先度を上げる
 	 */
 	public void up() {
-		//選択したテーブル行番号を取得
+		// 選択したテーブル行番号を取得
 		Integer order = getSelection();
 
-		//行番号は1から始まるので、-1する
+		// 行番号は1から始まるので、-1する
 		--order;
 
-		if(order > 0){
-			IntegrationConditionInfo a = m_conditionList.get(order);
-			IntegrationConditionInfo b = m_conditionList.get(order-1);
+		if (order > 0) {
+			IntegrationConditionInfoResponse a = m_conditionList.get(order);
+			IntegrationConditionInfoResponse b = m_conditionList.get(order-1);
 			m_conditionList.set(order, b);
-			m_conditionList.set(order-1, a);
+			m_conditionList.set(order - 1, a);
 		}
 		update();
-		//更新後に再度選択項目にフォーカスをあてる
+		// 更新後に再度選択項目にフォーカスをあてる
 		selectItem(order - 1);
 	}
 
@@ -331,30 +338,32 @@ public class IntegrationConditionListComposite extends Composite {
 	 * テーブル選択項目の優先度を下げる
 	 */
 	public void down() {
-		//選択したテーブル行番号を取得
+		// 選択したテーブル行番号を取得
 		Integer order = getSelection();
 
-		//行番号は1から始まるので、-1する
+		// 行番号は1から始まるので、-1する
 		--order;
 
-		if(order < m_conditionList.size() - 1){
-			IntegrationConditionInfo a = m_conditionList.get(order);
-			IntegrationConditionInfo b = m_conditionList.get(order + 1);
+		if (order < m_conditionList.size() - 1) {
+			IntegrationConditionInfoResponse a = m_conditionList.get(order);
+			IntegrationConditionInfoResponse b = m_conditionList.get(order + 1);
 			m_conditionList.set(order, b);
-			m_conditionList.set(order+1, a);
+			m_conditionList.set(order + 1, a);
 		}
 		update();
-		//更新後に再度選択項目にフォーカスをあてる
+		// 更新後に再度選択項目にフォーカスをあてる
 		selectItem(order + 1);
 	}
 
-	public ArrayList<IntegrationConditionInfo> getIntegrationConditionList() {
+	public ArrayList<IntegrationConditionInfoResponse> getIntegrationConditionList() {
 		return m_conditionList;
 	}
 
 	/**
 	 * マネージャ名設定
-	 * @param managerName マネージャ名
+	 * 
+	 * @param managerName
+	 *            マネージャ名
 	 */
 	public void setManagerName(String managerName) {
 		m_managerName = managerName;
@@ -362,7 +371,9 @@ public class IntegrationConditionListComposite extends Composite {
 
 	/**
 	 * オーナーロールID設定
-	 * @param ownerRoleId オーナーロールID
+	 * 
+	 * @param ownerRoleId
+	 *            オーナーロールID
 	 */
 	public void setOwnerRoleId(String ownerRoleId) {
 		m_ownerRoleId = ownerRoleId;
@@ -370,7 +381,9 @@ public class IntegrationConditionListComposite extends Composite {
 
 	/**
 	 * 監視設定のファシリティID設定
-	 * @param monitorFacilityId 監視設定のファシリティID
+	 * 
+	 * @param monitorFacilityId
+	 *            監視設定のファシリティID
 	 */
 	public void setMonitorFacilityId(String monitorFacilityId) {
 		m_monitorFacilityId = monitorFacilityId;

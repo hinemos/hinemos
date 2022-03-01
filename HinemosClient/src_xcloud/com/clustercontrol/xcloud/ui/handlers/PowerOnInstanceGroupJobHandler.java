@@ -11,8 +11,8 @@ import java.text.MessageFormat;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.JobResourceInfoResponse;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
 import com.clustercontrol.xcloud.extensions.CloudOptionExtension;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.plugin.CloudOptionSourceProvider;
@@ -30,10 +30,6 @@ public class PowerOnInstanceGroupJobHandler extends AbstaractCloudOptionGroupJob
 		return cloudScope;
 	}
 	@Override
-	protected String getCommand(CloudEndpoint endpoint, String facilityId) throws Exception {
-		return endpoint.makePowerOnInstancesCommandUsingFacility(cloudScope.getId(), facilityId);
-	}
-	@Override
 	protected String getJobName(String facilityId) {
 		return getJobId(facilityId);
 	}
@@ -48,16 +44,15 @@ public class PowerOnInstanceGroupJobHandler extends AbstaractCloudOptionGroupJob
 		return jobid;
 	}
 	@Override
-	protected String getMethodName() {
-		return "makePowerOnInstancesCommandUsingFacility";
-	}
-	@Override
 	protected String getWizardTitle() {
 		return MessageFormat.format(dlgComputePowerOn, CloudOptionExtension.getOptions().get(cloudScope.getCloudPlatform().getId()));
 	}
-	
 	@Override
 	protected String getErrorMessage() {
 		return msgErrorFinishCreatePowerOnJob;
+	}
+	@Override
+	protected JobResourceInfoResponse.ResourceActionEnum getAction() {
+		return JobResourceInfoResponse.ResourceActionEnum.POWERON;
 	}
 }

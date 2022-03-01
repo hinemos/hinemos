@@ -19,15 +19,15 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
 
 /**
  * ジョブ[一覧]ビューの「更新」を行うクライアント側アクションクラス<BR>
@@ -113,12 +113,12 @@ public class RefreshJobAction extends AbstractHandler {
 			try {
 				for (String managerName : JobEditStateUtil.getManagerList()) {
 					JobEditState jobEditState = JobEditStateUtil.getJobEditState(managerName);
-					JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-					for (JobInfo info : jobEditState.getLockedJobunitList()) {
-						wrapper.releaseEditLock(jobEditState.getEditSession(info));
+					JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+					for (JobInfoWrapper info : jobEditState.getLockedJobunitList()) {
+						wrapper.releaseEditLock(info.getJobunitId(),jobEditState.getEditSession(info));
 					}
 				}
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,

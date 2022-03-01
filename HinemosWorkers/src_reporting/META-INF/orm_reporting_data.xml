@@ -88,4 +88,19 @@
 			]]>
 		</query>
 	</named-query>
+	<!-- MonitorInfoByItemCode -->
+	<named-query name="ReportingMonitorInfo.findByItemCodeList">
+		<query>
+			<![CDATA[
+				SELECT a FROM MonitorInfo a,
+				(SELECT c.id.monitorId, b.itemCode
+					FROM CollectorItemCodeMstEntity b
+					JOIN CollectKeyInfo c ON c.id.itemName like CONCAT(b.itemName, '%')
+					WHERE b.itemCode IN :itemCodeList
+					GROUP BY c.id.monitorId,b.itemCode)
+				AS ids
+				WHERE (ids.monitorId = a.monitorId)
+			]]>
+		</query>
+	</named-query>
 </entity-mappings>

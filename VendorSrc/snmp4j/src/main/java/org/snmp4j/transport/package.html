@@ -1,0 +1,74 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>org.snmp4j.transport</title>
+<!--
+
+/*_############################################################################
+  _##
+  _##  SNMP4J
+  _##
+  _##  Copyright 2003-2016  Frank Fock and Jochen Katz (SNMP4J.org)
+  _##
+  _##  Licensed under the Apache License, Version 2.0 (the "License");
+  _##  you may not use this file except in compliance with the License.
+  _##  You may obtain a copy of the License at
+  _##
+  _##      http://www.apache.org/licenses/LICENSE-2.0
+  _##
+  _##  Unless required by applicable law or agreed to in writing, software
+  _##  distributed under the License is distributed on an "AS IS" BASIS,
+  _##  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  _##  See the License for the specific language governing permissions and
+  _##  limitations under the License.
+  _##
+  _##########################################################################*/
+
+-->
+</head>
+<body bgcolor="white">
+
+Provides transport protocol mappings for SNMP.
+<p>
+The <code>org.snmp4j.transport</code> classes are capable of sending and
+receiving byte messages to and from a network using transport mapping specific
+transport protocol. All SNMP4J transport mappings have to implement the
+<code>org.snmp4j.TransportMapping</code> interface. SNMP4J supports two
+transport mappings for the transport protocols UDP and TCP:
+</p>
+<ul>
+<li>
+  The UDP transport mapping is the default SNMP transport mapping. It is
+  implemented by the <code>DefaultUdpTransportMapping</code> class.
+</li>
+<li>
+  The TCP transport mapping is implemented by the
+  <code>DefaultTcpTransportMapping</code> using the <code>java.nio</code>
+  package.
+</li>
+</ul>
+<p>
+  Additional transport mappings can be easily added. It is sufficient to
+  implement the <code>org.snmp4j.TransportMapping</code> interface and add
+  an instance of that class to the <code>Snmp</code>
+  (or <code>MessageDispatcher</code>)
+  object. To be able to lookup a transport mapping by an <code>Address</code>
+  class via the <code>TransportMappings</code> (as <code>Snmp</code> does
+  for notification listeners), a transport mapping has to be registered
+  in a transport mapping registration file. The default file is
+  <code>transports.properties</code> in the <code>org.snmp4j.transport</code>
+  package. To use a different file, set the system property
+  <code>org.snmp4j.transportMappings</code>.
+</p>
+		<p>Connection-oriented transport mappings like TCP should implement 
+		the <code>ConnectionOrientedTransportMapping</code> interface to support 
+		<code>MessageLengthDecoder</code> and <code>TransportStateListener</code>.</p>
+		<p>
+  The following UML class diagram shows the classes of the
+  <code>org.snmp4j.transport</code> package and their relationships
+  (relationships to other packages are not shown):
+</p>
+<img src="doc-files/org_snmp4j_transport.gif"
+  alt="UML Class Diagram org.snmp4j.transport">
+</body>
+</html>

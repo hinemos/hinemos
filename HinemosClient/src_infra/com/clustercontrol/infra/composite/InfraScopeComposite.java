@@ -21,19 +21,18 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
+import org.openapitools.client.model.InfraManagementInfoResponse;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.repository.FacilityPath;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 import com.clustercontrol.ClusterControlPlugin;
 
 /**
@@ -181,11 +180,11 @@ public class InfraScopeComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				ScopeTreeDialog dialog = new ScopeTreeDialog(null, m_managerName, m_ownerRoleId, false, m_unregistered);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem item = dialog.getSelectItem();
-					FacilityInfo info = item.getData();
+					FacilityTreeItemResponse item = dialog.getSelectItem();
+					FacilityInfoResponse info = item.getData();
 					if( !info.getFacilityId().equals(InfraScopeComposite.this.m_facilityId) ){
 						InfraScopeComposite.this.m_facilityId = info.getFacilityId();
-						if (info.getFacilityType() == FacilityConstant.TYPE_NODE) {
+						if (info.getFacilityType() == FacilityTypeEnum.NODE) {
 							m_scope.setText(info.getFacilityName());
 						} else {
 							FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
@@ -221,11 +220,11 @@ public class InfraScopeComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.infra.composite.MonitorBasicComposite#setInputData(MonitorInfo)
 	 */
-	public void setInputData(String managerName, InfraManagementInfo info) {
+	public void setInputData(String managerName, InfraManagementInfoResponse info) {
 		this.m_managerName = managerName;
 		setInputData( info );
 	}
-	public void setInputData(InfraManagementInfo info) {
+	public void setInputData(InfraManagementInfoResponse info) {
 		if(info != null){
 			this.m_ownerRoleId = info.getOwnerRoleId();
 			this.m_facilityId = info.getFacilityId();

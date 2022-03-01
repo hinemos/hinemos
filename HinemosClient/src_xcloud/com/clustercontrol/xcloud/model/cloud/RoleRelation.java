@@ -7,16 +7,17 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
+import org.openapitools.client.model.RoleRelationResponse;
 
 public class RoleRelation {
 	private String id;
 	
-	public void set(com.clustercontrol.ws.xcloud.RoleRelation roleRelation){
+	public void set(RoleRelationResponse roleRelation){
 		id = roleRelation.getRoleId();
 	}
 
-	public com.clustercontrol.ws.xcloud.RoleRelation getDTO(){
-		com.clustercontrol.ws.xcloud.RoleRelation dto = new com.clustercontrol.ws.xcloud.RoleRelation();
+	public RoleRelationResponse getDTO(){
+		RoleRelationResponse dto = new RoleRelationResponse();
 		dto.setRoleId(id);
 		return dto;
 	}

@@ -16,6 +16,7 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -24,15 +25,15 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.composite.JobTreeComposite;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+import com.clustercontrol.util.Messages;
 
 /**
  * ジョブ[一覧]ビューの「ジョブユニットの作成」のクライアント側アクションクラス<BR>
@@ -75,8 +76,8 @@ public class CreateJobUnitAction extends AbstractHandler implements IElementUpda
 	 */
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		JobTreeItem item = null;
-		JobTreeItem parent = null;
+		JobTreeItemWrapper item = null;
+		JobTreeItemWrapper parent = null;
 
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
 		// In case this action has been disposed
@@ -104,22 +105,32 @@ public class CreateJobUnitAction extends AbstractHandler implements IElementUpda
 			return null;
 		}
 
+		JobTreeItemWrapper jobTreeItem = JobEditStateUtil.getJobTreeItem();
+		if (jobTreeItem == null) {
+			// ジョブのキャッシュ情報が最新でないため処理終了
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					Messages.getString("message.accesscontrol.46"));
+			return null;
+		}
+
 		JobTreeComposite tree = view.getJobTreeComposite();
 		parent = view.getSelectJobTreeItemList().get(0);
 
 		if (parent != null) {
 
-			JobInfo jobInfo = new JobInfo();
+			JobInfoWrapper jobInfo = JobTreeItemUtil.createJobInfoWrapper();
 			jobInfo.setJobunitId(parent.getData().getJobunitId());
 			jobInfo.setId("");
 			jobInfo.setName("");
-			jobInfo.setType(JobConstant.TYPE_JOBUNIT);
-			item = new JobTreeItem();
+			jobInfo.setType(JobInfoWrapper.TypeEnum.JOBUNIT);
+			jobInfo.setPropertyFull(true);
+
+			item = new JobTreeItemWrapper();
 			item.setData(jobInfo);
 			JobTreeItemUtil.addChildren(parent, item);
 
 			String managerName = null;
-			JobTreeItem mgrTree = JobTreeItemUtil.getManager(parent);
+			JobTreeItemWrapper mgrTree = JobTreeItemUtil.getManager(parent);
 			if(mgrTree == null) {
 				managerName = parent.getChildren().get(0).getData().getId();
 			} else {
@@ -158,7 +169,7 @@ public class CreateJobUnitAction extends AbstractHandler implements IElementUpda
 					JobListView view = (JobListView)part;
 					element.setChecked(view.getEditEnable());
 
-					if(view.getDataType() == JobConstant.TYPE_MANAGER){
+					if(view.getDataType() == JobInfoWrapper.TypeEnum.MANAGER){
 						editEnable = true;
 					}
 				}

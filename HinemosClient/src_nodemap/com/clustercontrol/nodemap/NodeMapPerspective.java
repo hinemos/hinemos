@@ -27,6 +27,9 @@ import com.clustercontrol.nodemap.view.StatusViewM;
  * @since 1.0.0
  */
 public class NodeMapPerspective extends ClusterControlPerspectiveBase {
+
+	public static final String ID = "com.clustercontrol.enterprise.nodemap.NodeMapPerspective";
+
 	private static Log m_log = LogFactory.getLog( NodeMapPerspective.class );
 	@Override
 	public void createInitialLayout(IPageLayout layout) {

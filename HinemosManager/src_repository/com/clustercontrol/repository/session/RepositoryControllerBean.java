@@ -8,6 +8,7 @@
 
 package com.clustercontrol.repository.session;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -22,13 +23,11 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import javax.activation.DataHandler;
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.SnmpSecurityLevelConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
@@ -46,11 +45,14 @@ import com.clustercontrol.fault.NodeConfigFilterNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.SnmpResponseError;
 import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.hinemosagent.bean.AgentInfo;
 import com.clustercontrol.hinemosagent.bean.AgentRestartTaskParameter;
 import com.clustercontrol.hinemosagent.bean.AgentUpdateTaskParameter;
+import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
 import com.clustercontrol.hinemosagent.util.AgentLibraryManager;
 import com.clustercontrol.hinemosagent.util.AgentProfile;
 import com.clustercontrol.hinemosagent.util.AgentProfiles;
+import com.clustercontrol.hinemosagent.util.AgentUpdateList;
 import com.clustercontrol.infra.session.InfraControllerBean;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.monitor.run.util.NodeMonitorPollerController;
@@ -66,8 +68,6 @@ import com.clustercontrol.repository.bean.AgentStatusInfo;
 import com.clustercontrol.repository.bean.FacilitySortOrderConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.bean.FacilityTreeItem;
-import com.clustercontrol.repository.bean.LatestNodeConfigWrapper;
-import com.clustercontrol.repository.bean.NodeConfigSettingConstant;
 import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.repository.bean.NodeInfoDeviceSearch;
 import com.clustercontrol.repository.bean.RepositoryTableInfo;
@@ -76,22 +76,21 @@ import com.clustercontrol.repository.entity.CollectorSubPlatformMstData;
 import com.clustercontrol.repository.factory.AgentStatusCollector;
 import com.clustercontrol.repository.factory.FacilityModifier;
 import com.clustercontrol.repository.factory.FacilitySelector;
-import com.clustercontrol.repository.factory.NodeConfigSelector;
 import com.clustercontrol.repository.factory.NodeProperty;
 import com.clustercontrol.repository.factory.ScopeProperty;
 import com.clustercontrol.repository.factory.SearchNodeBySNMP;
 import com.clustercontrol.repository.model.CollectorPlatformMstEntity;
 import com.clustercontrol.repository.model.CollectorSubPlatformMstEntity;
 import com.clustercontrol.repository.model.FacilityInfo;
+import com.clustercontrol.repository.model.NodeHostnameInfo;
 import com.clustercontrol.repository.model.NodeInfo;
-import com.clustercontrol.repository.model.NodePackageInfo;
-import com.clustercontrol.repository.model.NodeProcessInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.repository.util.FacilityIdCacheInitCallback;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.FacilityTreeCacheRefreshCallback;
 import com.clustercontrol.repository.util.JobCacheUpdateCallback;
 import com.clustercontrol.repository.util.JobMultiplicityCacheKickCallback;
+import com.clustercontrol.repository.util.MultiTenantSupport;
 import com.clustercontrol.repository.util.NodeCacheRemoveCallback;
 import com.clustercontrol.repository.util.NodeCacheUpdateCallback;
 import com.clustercontrol.repository.util.NodeConfigFilterUtil;
@@ -100,9 +99,14 @@ import com.clustercontrol.repository.util.RepositoryChangedNotificationCallback;
 import com.clustercontrol.repository.util.RepositoryListenerCallback;
 import com.clustercontrol.repository.util.RepositoryListenerCallback.Type;
 import com.clustercontrol.repository.util.RepositoryValidator;
+import com.clustercontrol.rest.endpoint.repository.dto.OperationAgentResponse;
+import com.clustercontrol.sdml.session.SdmlManagerControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Singletons;
+
+import jakarta.persistence.EntityExistsException;
+
 
 /**
  *
@@ -850,7 +854,7 @@ public class RepositoryControllerBean {
 
 			/** メイン処理 */
 			if (targetDatetime == null 	|| targetDatetime == 0L) {
-				nodeInfo = NodeProperty.getPropertyFull(facilityId, NodeConfigSettingConstant.REG_DATE_TO_DEFAULT_VALUE - 1, nodeFilterInfo);
+				nodeInfo = NodeProperty.getPropertyFull(facilityId, nodeFilterInfo);
 			} else {
 				nodeInfo = NodeProperty.getPropertyFull(facilityId, targetDatetime, nodeFilterInfo);
 			}
@@ -918,33 +922,38 @@ public class RepositoryControllerBean {
 		return facilityPath;
 	}
 
-
 	/**
 	 * SNMPを利用してノードの情報を取得します。<BR>
-	 *
-	 *
 	 * クライアントからSNMPで検出を行った際に呼び出されるメソッドです。<BR>
 	 * SNMPポーリングにより、ノード詳細プロパティをセットし、クライアントに返す。
 	 * 戻り値はNodeInfo
 	 *
-	 * @version 2.1.2
-	 * @since 2.1.2
-	 *
 	 * @param ポーリング対象のIPアドレス、コミュニティ名、バージョン、ポート、ファシリティID、セキュリティレベル、ユーザー名、認証パスワード、暗号化パスワード、認証プロトコル、暗号化プロトコル
-	 * @param locale クライアントのロケール
 	 * @return ノード情報（更新情報）
-	 * @throws HinemosUnknown
 	 */
 	public NodeInfoDeviceSearch getNodePropertyBySNMP(String ipAddress,
 			int port, String community, int version, String facilityID,
 			String securityLevel, String user, String authPass,
 			String privPass, String authProtocol, String privProtocol)
 			throws HinemosUnknown, SnmpResponseError {
-		JpaTransactionManager jtm = null;
 
-		/** メイン処理 */
-		NodeInfo property = null;
+		// 既存のノード情報があれば取得する
 		NodeInfo lastNode = null;
+		if (facilityID != null && facilityID.length() > 0) {
+			try {
+				lastNode = getNode(facilityID);
+			} catch (FacilityNotFound e) {
+				m_log.info("getNodePropertyBySNMP: " + e.getMessage());
+				// ignore
+			}
+		}
+
+		// IPアドレスがテナントアドレスグループの範囲内かをチェック
+		checkMultiTenantAddressGroup(ipAddress, lastNode);
+		
+		/** メイン処理 */
+		JpaTransactionManager jtm = null;
+		NodeInfo property = null;
 		NodeInfoDeviceSearch snmpInfo = new NodeInfoDeviceSearch();
 
 		if (version == SnmpVersionConstant.TYPE_V3) {
@@ -956,15 +965,32 @@ public class RepositoryControllerBean {
 			jtm.begin();
 
 			property = SearchNodeBySNMP.searchNode(ipAddress, port, community,
-					version, facilityID, securityLevel, user, authPass,
+					version, securityLevel, user, authPass,
 					privPass, authProtocol, privProtocol);
+
+			if (lastNode != null) {
+				// ホスト名、ノード名が取得されない場合は元の値を設定（ノードがネットワーク機器などの場合）
+				if (property.getNodeHostnameInfo() == null
+						|| property.getNodeHostnameInfo().isEmpty()) {
+					m_log.debug("getNodePropertyBySNMP() : hostname is empty. facilityID=" + facilityID);
+					ArrayList<NodeHostnameInfo> list = new ArrayList<NodeHostnameInfo> ();
+					for (NodeHostnameInfo hostnameInfo : lastNode.getNodeHostnameInfo()) {
+						list.add(new NodeHostnameInfo(facilityID, hostnameInfo.getHostname()));
+					}
+					property.setNodeHostnameInfo(list);
+					
+				}
+				if (property.getNodeName() == null
+						|| property.getNodeName().isEmpty()) {
+					m_log.debug("getNodePropertyBySNMP() : nodeName is empty. facilityID=" + facilityID);
+					property.setNodeName(lastNode.getNodeName());
+				}
+			}
+
 			snmpInfo.setNodeInfo(property);
 
 			boolean isUpdated = false;
-			if (facilityID != null) {
-				//前回取得時のSNMP情報を取得する
-				lastNode = new RepositoryControllerBean().getNode(facilityID);
-
+			if (lastNode != null) {
 				//前回情報と比較
 				isUpdated = !snmpInfo.equalsNodeInfo(lastNode);
 			}
@@ -988,6 +1014,39 @@ public class RepositoryControllerBean {
 				jtm.close();
 		}
 		return snmpInfo;
+	}
+
+	/**
+	 * デバイスサーチのIPアドレスがテナントアドレスグループの範囲内かをチェックします。
+	 * (単体テストのためstaticメソッドへ切り出しています。)
+	 */
+	static void checkMultiTenantAddressGroup(String ipAddress, NodeInfo nodeInfo) throws HinemosUnknown {
+		// マルチテナント制御が有効な場合のみチェック
+		MultiTenantSupport multiTenantSupport = Singletons.get(MultiTenantSupport.class);
+		if (!multiTenantSupport.isEnabled()) return;
+	
+		// IPアドレス -> バイト列
+		byte[] addrBytes;
+		try {
+			addrBytes = InetAddress.getByName(ipAddress).getAddress();
+		} catch (UnknownHostException e) {
+			// 不正なIPアドレス (Hinemosクライアント側でチェックしているはずなので、API直接呼び出しの可能性)
+			throw new HinemosUnknown(e.getMessage());
+		}
+	
+		if (nodeInfo != null && nodeInfo.getOwnerRoleId() != null && nodeInfo.getOwnerRoleId().length() > 0) {
+			// オーナーロールIDが判明している場合は、それを使って判定
+			if (multiTenantSupport.containsAddressGroup(nodeInfo.getOwnerRoleId(), addrBytes)) return;
+			m_log.info("checkMultiTenantAddressGroup: Irrelevant ownerRoleId = " + nodeInfo.getOwnerRoleId());
+		} else {
+			// オーナーロールIDが不明な場合は、ユーザの所属するいずれかのテナントで、アドレスグループの範囲内ならOK
+			List<String> roleIds = new AccessControllerBean().getOwnerRoleIdList();
+			for (String roleId : roleIds) {
+				if (multiTenantSupport.containsAddressGroup(roleId, addrBytes)) return;
+			}
+			m_log.info("checkMultiTenantAddressGroup: Irrelevant roleIds = " + roleIds);
+		}
+		throw new HinemosUnknown(MessageConstant.MESSAGE_MULTI_TENANT_IPADDRESS_OUT_OF_BOUNDS.getMessage());
 	}
 
 	/**
@@ -1118,17 +1177,18 @@ public class RepositoryControllerBean {
 	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public void addNode(NodeInfo nodeInfo) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
+	public NodeInfo addNode(NodeInfo nodeInfo) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
 		m_log.debug("addNode(NodeInfo) : start");
 		Long starttime = 0L;
 		if (m_log.isDebugEnabled()) {
 			starttime = new Date().getTime();
 		}
-		addNode(nodeInfo, true);
+		NodeInfo ret = addNode(nodeInfo, true);
 		if (m_log.isDebugEnabled()) {
 			Long endtime = new Date().getTime();
 			m_log.debug("addNode(NodeInfo) total time=" + (endtime - starttime) + "ms");
 		}
+		return ret;
 	}
 
 	/**
@@ -1144,8 +1204,8 @@ public class RepositoryControllerBean {
 	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public void addNode(final NodeInfo nodeInfo, boolean topicSendFlg) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
-		addNode(nodeInfo, topicSendFlg, false);
+	public NodeInfo addNode(final NodeInfo nodeInfo, boolean topicSendFlg) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
+		return addNode(nodeInfo, topicSendFlg, false);
 	}
 
 	/**
@@ -1161,8 +1221,11 @@ public class RepositoryControllerBean {
 	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public void addNode(final NodeInfo nodeInfo, boolean topicSendFlg, boolean auto) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
+	public NodeInfo addNode(final NodeInfo nodeInfo, boolean topicSendFlg, boolean auto) throws FacilityDuplicate, InvalidSetting, HinemosUnknown {
 		m_log.debug("addNode(NodeInfo, boolean, boolean) : start");
+
+		NodeInfo ret = null;
+		boolean flag = false;
 
 		JpaTransactionManager jtm = new JpaTransactionManager();
 
@@ -1192,7 +1255,9 @@ public class RepositoryControllerBean {
 			jtm.addCallback(new NodeCacheUpdateCallback(nodeInfo.getFacilityId()));
 			jtm.addCallback(new FacilityIdCacheInitCallback());
 			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
-			jtm.addCallback(new RepositoryChangedNotificationCallback());
+			RepositoryChangedNotificationCallback repositoryCallBack = new RepositoryChangedNotificationCallback();
+			repositoryCallBack.setNotifyFacilityIdList( Arrays.asList( nodeInfo.getFacilityId() ) );
+			jtm.addCallback(repositoryCallBack);
 			jtm.addCallback(new NodeToMonitorCacheChangeCallback());
 			final String facilityId = nodeInfo.getFacilityId();
 			final int nodeMonitorDelaySec = nodeInfo.getNodeMonitorDelaySec();
@@ -1217,6 +1282,7 @@ public class RepositoryControllerBean {
 			m_log.debug("addNode(NodeInfo, boolean, boolean) : commit start. facilityId=" + nodeInfo.getFacilityId());
 			jtm.commit();
 			m_log.debug("addNode(NodeInfo, boolean, boolean) : commit success. facilityId=" + nodeInfo.getFacilityId());
+			flag = true;
 		} catch (EntityExistsException e) {
 			jtm.rollback();
 			throw new FacilityDuplicate(e.getMessage(), e);
@@ -1232,8 +1298,20 @@ public class RepositoryControllerBean {
 			jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
-			jtm.close();
+			if (jtm != null) {
+				jtm.close();
+			}
+			if (flag) {
+				try {
+					ret = getNode(nodeInfo.getFacilityId());
+				} catch (Exception e) {
+					// トランザクションが本メソッドで完結していない場合は例外発生の可能性があるが、本処理上問題なし
+					m_log.debug("addNode(NodeInfo, boolean, boolean) get node failure: "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
+			}
 		}
+		return ret;
 	}
 
 	/**
@@ -1246,9 +1324,10 @@ public class RepositoryControllerBean {
 	 * @param info　変更するノード情報のプロパティ
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
+	 * @throws FacilityNotFound
 	 * @throws HinemosUnknown
 	 */
-	public void modifyNode(NodeInfo info) throws InvalidSetting, InvalidRole, HinemosUnknown {
+	public NodeInfo modifyNode(NodeInfo info) throws InvalidSetting, InvalidRole, FacilityNotFound, HinemosUnknown {
 		Long starttime = 0L;
 		if (m_log.isDebugEnabled()) {
 			starttime = new Date().getTime();
@@ -1256,6 +1335,8 @@ public class RepositoryControllerBean {
 		m_log.debug("modifyNode() : start");
 
 		JpaTransactionManager jtm = null;
+		NodeInfo ret = null;
+		boolean flag = false;
 
 		try{
 			jtm = new JpaTransactionManager();
@@ -1264,6 +1345,10 @@ public class RepositoryControllerBean {
 			// メンバ変数にnullが含まれていることがあるので、nullをデフォルト値に変更する。
 			info.setDefaultInfo();
 			m_log.debug("modifyNode() : set default info success");
+
+			// オーナーロールID設定
+			NodeInfo beforeNodeInfo = NodeProperty.getProperty(info.getFacilityId());
+			info.setOwnerRoleId(beforeNodeInfo.getOwnerRoleId());
 
 			// 入力チェック
 			RepositoryValidator.validateNodeInfo(info);
@@ -1279,14 +1364,13 @@ public class RepositoryControllerBean {
 			m_log.debug("modifyNode() : commit start facilityId=" + info.getFacilityId());
 			jtm.commit();
 			m_log.debug("modifyNode() : commit success facilityId=" + info.getFacilityId());
-		} catch (InvalidSetting | InvalidRole e) {
+
+			flag = true;
+		} catch (InvalidSetting | InvalidRole | FacilityNotFound e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
-		} catch (FacilityNotFound e) {
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("modifyNode() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -1294,13 +1378,25 @@ public class RepositoryControllerBean {
 				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
+			if (flag) {
+				try {
+					ret = getNode(info.getFacilityId());
+				} catch (Exception e) {
+					// トランザクションが本メソッドで完結していない場合は例外発生の可能性があるが、本処理上問題なし
+					m_log.debug("modifyNode() get node failure: "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
+			}
 		}
 		if (m_log.isDebugEnabled()) {
 			Long endtime = new Date().getTime();
 			m_log.debug("modifyNode() total time=" + (endtime - starttime) + "ms");
 		}
+		
+		return ret;
 	}
 
 	/**
@@ -1323,10 +1419,11 @@ public class RepositoryControllerBean {
 				jtm.addCallback(new JobMultiplicityCacheKickCallback(nodeInfo.getFacilityId()));
 			}
 			jtm.addCallback(new FacilityIdCacheInitCallback());
-			if (!isNodeConfig) {
-				jtm.addCallback(new FacilityTreeCacheRefreshCallback());
-			}
-			jtm.addCallback(new RepositoryChangedNotificationCallback());
+			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
+
+			RepositoryChangedNotificationCallback repositoryCallBack = new RepositoryChangedNotificationCallback();
+			repositoryCallBack.setNotifyFacilityIdList( Arrays.asList( nodeInfo.getFacilityId() ) );
+			jtm.addCallback(repositoryCallBack);
 			if (!isNodeConfig) {
 				jtm.addCallback(new JobCacheUpdateCallback());  // FacilityTreeCacheの更新より後に呼び出す必要がある
 			}
@@ -1361,19 +1458,25 @@ public class RepositoryControllerBean {
 	 * @param facilityIds ファシリティIDの配列
 	 * @throws UsedFacility
 	 * @throws InvalidRole
+	 * @throws FacilityNotFound
 	 * @throws HinemosUnknown
 	 */
-	public void deleteNode(String[] facilityIds) throws UsedFacility, InvalidRole, HinemosUnknown {
+	public List<NodeInfo> deleteNode(String[] facilityIds) throws UsedFacility, InvalidRole, FacilityNotFound, HinemosUnknown {
 		Long starttime = 0L;
 		if (m_log.isDebugEnabled()) {
 			starttime = new Date().getTime();
 		}
 		JpaTransactionManager jtm = null;
+		List<NodeInfo> retList = new ArrayList<>();
 
 		/** メイン処理 */
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
+
+			for (String facilityId : facilityIds) {
+				retList.add(NodeProperty.getProperty(facilityId));
+			}
 
 			// NODE_DELETE_MAX_COUNTよりノード数が超過する場合は、NODE_DELETE_MAX_COUNTごとに削除処理を行う。
 			for (int i = 0; i < facilityIds.length; i = i + NODE_DELETE_MAX_COUNT) {
@@ -1388,7 +1491,7 @@ public class RepositoryControllerBean {
 				
 				m_log.debug("deleteNode() : copy of range success i=" + i);
 				for (String facilityId : tmpFacilityIds) {
-					checkIsUseFacility(facilityId);
+					checkIsUseFacilityWithChildren(facilityId);
 					FacilityModifier.deleteNode(facilityId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 				}
 
@@ -1404,7 +1507,9 @@ public class RepositoryControllerBean {
 				}
 				jtm.addCallback(new FacilityIdCacheInitCallback());
 				jtm.addCallback(new FacilityTreeCacheRefreshCallback());
-				jtm.addCallback(new RepositoryChangedNotificationCallback());
+				RepositoryChangedNotificationCallback repositoryCallBack = new RepositoryChangedNotificationCallback();
+				repositoryCallBack.setNotifyFacilityIdList( Arrays.asList( facilityIds ) );
+				jtm.addCallback(repositoryCallBack);
 				jtm.addCallback(new NodeToMonitorCacheChangeCallback());
 
 				m_log.debug("deleteNode() : read lock start i=" + i);
@@ -1429,16 +1534,11 @@ public class RepositoryControllerBean {
 			m_log.debug("deleteNode() : commit start");
 			jtm.commit();
 			m_log.debug("deleteNode() : commit success");
-		} catch (UsedFacility | InvalidRole e) {
+		} catch (UsedFacility | InvalidRole | FacilityNotFound e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
-		} catch (FacilityNotFound e) {
-			if (jtm != null){
-				jtm.rollback();
-			}
-			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (HinemosUnknown e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -1456,10 +1556,25 @@ public class RepositoryControllerBean {
 				jtm.close();
 			}
 		}
+		
+		AgentProfiles agentProfiles = Singletons.get(AgentProfiles.class);
+		AgentUpdateList agentUpdateList = Singletons.get(AgentUpdateList.class);
+		for (String facilityId : facilityIds) {
+			AgentInfo agentInfo = AgentConnectUtil.getAgentInfo(facilityId);
+			if (agentInfo != null) {
+				// エージェントとして認識されているノードの場合、キャッシュを削除
+				m_log.info("deleteAgent: " + facilityId + " is deleted.");
+				AgentConnectUtil.deleteAgent(facilityId, agentInfo);
+				agentProfiles.removeProfile(facilityId);
+				agentUpdateList.release(facilityId);
+			}
+		}
+		
 		if (m_log.isDebugEnabled()) {
 			Long endtime = new Date().getTime();
 			m_log.debug("deleteNode() total time=" + (endtime - starttime) + "ms");
 		}
+		return retList;
 	}
 
 
@@ -1579,9 +1694,9 @@ public class RepositoryControllerBean {
 	 * @thorws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public void addScope(String parentFacilityId, ScopeInfo property)
+	public ScopeInfo addScope(String parentFacilityId, ScopeInfo property)
 			throws FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
-		addScope(parentFacilityId, property, FacilitySortOrderConstant.DEFAULT_SORT_ORDER_SCOPE);
+		return addScope(parentFacilityId, property, FacilitySortOrderConstant.DEFAULT_SORT_ORDER_SCOPE);
 	}
 
 	/**
@@ -1600,8 +1715,11 @@ public class RepositoryControllerBean {
 	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public void addScope(String parentFacilityId, ScopeInfo info, int displaySortOrder)
+	public ScopeInfo addScope(String parentFacilityId, ScopeInfo info, int displaySortOrder)
 			throws FacilityDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
+
+		ScopeInfo ret = null;
+		boolean flag = false;
 
 		JpaTransactionManager jtm = null;
 
@@ -1638,6 +1756,7 @@ public class RepositoryControllerBean {
 			}
 
 			jtm.commit();
+			flag = true;
 		} catch (InvalidSetting | InvalidRole e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -1661,9 +1780,20 @@ public class RepositoryControllerBean {
 				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(),e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
+			if (flag) {
+				try {
+					ret = getScope(info.getFacilityId());
+				} catch (Exception e) {
+					// トランザクションが本メソッドで完結していない場合は例外発生の可能性があるが、本処理上問題なし
+					m_log.debug("addScope() get scope failure: "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
+			}
 		}
+		return ret;
 	}
 
 	/**
@@ -1679,14 +1809,24 @@ public class RepositoryControllerBean {
 	 * @param info
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
+	 * @throws FacilityNotFound
 	 * @throws HinemosUnknown
 	 */
-	public void modifyScope(ScopeInfo info) throws InvalidSetting, InvalidRole, HinemosUnknown {
+	public ScopeInfo modifyScope(ScopeInfo info) throws InvalidSetting, InvalidRole, FacilityNotFound, HinemosUnknown {
+
+		ScopeInfo ret = null;
+		boolean flag = false;
+
 		JpaTransactionManager jtm = null;
 
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
+
+
+			// オーナーロールID設定
+			ScopeInfo beforeScopeInfo = ScopeProperty.getProperty_NONE(info.getFacilityId());
+			info.setOwnerRoleId(beforeScopeInfo.getOwnerRoleId());
 
 			//入力チェック
 			RepositoryValidator.validateScopeInfo(null, info, false);
@@ -1712,6 +1852,93 @@ public class RepositoryControllerBean {
 			}
 
 			jtm.commit();
+			flag = true;
+		} catch (InvalidSetting | InvalidRole | FacilityNotFound e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("modifyScope() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(),e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+			if (flag) {
+				try {
+					ret = getScope(info.getFacilityId());
+				} catch (Exception e) {
+					// トランザクションが本メソッドで完結していない場合は例外発生の可能性があるが、本処理上問題なし
+					m_log.debug("modifyScope() get scope failure: "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * スコープの情報を変更します。親ファシリティも必要なら併せて変更します<BR>
+	 *
+	 * @param info スコープ情報
+	 * @param parentFacilityId 親ファシリティのID
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public ScopeInfo modifyScopeWithParent(ScopeInfo info , String parentFacilityId ) throws InvalidSetting, InvalidRole, HinemosUnknown {
+
+		ScopeInfo ret = null;
+		boolean flag = false;
+
+		JpaTransactionManager jtm = null;
+
+		try{
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+
+			// オーナーロールID設定
+			ScopeInfo beforeScopeInfo = ScopeProperty.getProperty_NONE(info.getFacilityId());
+			info.setOwnerRoleId(beforeScopeInfo.getOwnerRoleId());
+
+			//入力チェック
+			RepositoryValidator.validateScopeInfo(null, info, false);
+
+			//組み込みスコープであるかチェック
+			checkIsBuildInScope(info.getFacilityId());
+			if(parentFacilityId != null && !( parentFacilityId.isEmpty())){
+				checkIsBuildInScope(parentFacilityId);
+			}
+			/** メイン処理 */
+			String modifyUserId = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID) ;
+			FacilityModifier.modifyParentForScope(info.getFacilityId(), parentFacilityId, modifyUserId);
+			FacilityModifier.modifyScope(info, modifyUserId);
+
+			jtm.addCallback(new FacilityIdCacheInitCallback());
+			jtm.addCallback(new FacilityTreeCacheRefreshCallback());
+			jtm.addCallback(new RepositoryChangedNotificationCallback());
+			jtm.addCallback(new JobCacheUpdateCallback());  // FacilityTreeCacheの更新より後に呼び出す必要がある
+			
+			try {
+				ListenerReadWriteLock.readLock();
+				for (IRepositoryListener listener : _listenerList) {
+					jtm.addCallback(new RepositoryListenerCallback(listener, Type.CHANGE_SCOPE, info.getFacilityId(), null));
+				}
+			} finally {
+				ListenerReadWriteLock.readUnlock();
+			}
+
+			jtm.commit();
+			flag = true;
 		} catch (InvalidSetting | InvalidRole e) {
 			if (jtm != null){
 				jtm.rollback();
@@ -1731,11 +1958,22 @@ public class RepositoryControllerBean {
 				jtm.rollback();
 			throw new HinemosUnknown(e.getMessage(),e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
+			if (flag) {
+				try {
+					ret = getScope(info.getFacilityId());
+				} catch (Exception e) {
+					// トランザクションが本メソッドで完結していない場合は例外発生の可能性があるが、本処理上問題なし
+					m_log.debug("modifyScope() get scope failure: "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				}
+			}
 		}
+		return ret;
 	}
-
+	
 	/**
 	 * スコープ情報を削除します。<BR>
 	 *
@@ -1747,19 +1985,25 @@ public class RepositoryControllerBean {
 	 * @param facilityIds ファシリティID
 	 * @throws UsedFacility
 	 * @throws InvalidRole
+	 * @throws FacilityNotFound
 	 * @throws HinemosUnknown
 	 */
-	public void deleteScope(String[] facilityIds) throws UsedFacility, InvalidRole, HinemosUnknown {
+	public List<ScopeInfo> deleteScope(String[] facilityIds) throws UsedFacility, InvalidRole, FacilityNotFound, HinemosUnknown {
 		JpaTransactionManager jtm = null;
+		List<ScopeInfo> retList = new ArrayList<>();
 
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
+			for(String facilityId : facilityIds) {
+				retList.add(ScopeProperty.getProperty_NONE(facilityId));
+			}
+
 			/** メイン処理 */
 			for (String facilityId : facilityIds) {
 				checkIsBuildInScope(facilityId);
-				checkIsUseFacility(facilityId);
+				checkIsUseFacilityWithChildren(facilityId);
 				FacilityModifier.deleteScope(facilityId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 				// ノードマップ
@@ -1784,14 +2028,11 @@ public class RepositoryControllerBean {
 			}
 			
 			jtm.commit();
-		} catch (UsedFacility | InvalidRole e) {
+		} catch (UsedFacility | InvalidRole | FacilityNotFound e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
-		} catch (FacilityNotFound e) {
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
@@ -1806,6 +2047,7 @@ public class RepositoryControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+		return retList;
 	}
 
 
@@ -1873,7 +2115,7 @@ public class RepositoryControllerBean {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public ArrayList<String> getNodeScopeList(String facilityId) throws InvalidRole, HinemosUnknown {
+	public ArrayList<String> getNodeScopeList(String facilityId) throws InvalidRole, HinemosUnknown, FacilityNotFound {
 
 		JpaTransactionManager jtm = null;
 		ArrayList<String> list = null;
@@ -1884,12 +2126,11 @@ public class RepositoryControllerBean {
 			/** メイン処理 */
 			list = FacilitySelector.getNodeScopeList(facilityId);
 			jtm.commit();
-		} catch (InvalidRole e) {
-			jtm.rollback();
+		} catch (InvalidRole | FacilityNotFound e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
 			throw e;
-		} catch (FacilityNotFound e) {
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("getNodeScopeList() : "
 					+ e.getClass().getSimpleName() +", " + e.getMessage(), e);
@@ -2441,15 +2682,29 @@ public class RepositoryControllerBean {
 	 * @param facilityId　エージェントのファシリティID。
 	 * @param agentCommand エージェントが実行すべき処理。{@link AgentCommandConstant}
 	 */
-	public void restartAgent(List<String> facilityIdList, int agentCommand) {
+	public List<OperationAgentResponse> restartAgent(List<String> facilityIdList, int agentCommand) {
+
+		List<OperationAgentResponse> retList = new ArrayList<>();
+
 		if (agentCommand == AgentCommandConstant.RESTART) {
 			for (String facilityId : facilityIdList) {
+				OperationAgentResponse result = new OperationAgentResponse();
+				result.setFacilityId(facilityId);
+
+				if (!AgentConnectUtil.isValidAgent(facilityId)) {
+					m_log.info("restartAgent: Agent is not valid. facilityId=" + facilityId);
+					continue;
+				}
+
 				try {
 					AsyncWorkerPlugin.addTask(AsyncWorkerPlugin.AGENT_RESTART_TASK_FACTORY,
 							new AgentRestartTaskParameter(facilityId), false);
+					result.setResult(true);
 				} catch (HinemosUnknown e) {
 					m_log.warn("restartAgent: Failed to create a restart task. facilityId=" + facilityId, e);
+					result.setResult(false);
 				}
+				retList.add(result);
 			}
 		} else if (agentCommand == AgentCommandConstant.UPDATE) {
 			AgentProfiles profs = Singletons.get(AgentProfiles.class);
@@ -2459,6 +2714,8 @@ public class RepositoryControllerBean {
 			libman.refresh();
 
 			for (String facilityId : facilityIdList) {
+				OperationAgentResponse result = new OperationAgentResponse();
+				result.setFacilityId(facilityId);
 				try {
 					AgentProfile prof = profs.getProfile(facilityId);
 					if (prof == null) {
@@ -2476,53 +2733,66 @@ public class RepositoryControllerBean {
 
 					AsyncWorkerPlugin.addTask(AsyncWorkerPlugin.AGENT_UPDATE_TASK_FACTORY,
 							new AgentUpdateTaskParameter(facilityId), false);
+					result.setResult(true);
 				} catch (HinemosUnknown e) {
 					m_log.warn("restartAgent: Failed to create an update task. facilityId=" + facilityId, e);
+					result.setResult(false);
 				}
+				retList.add(result);
 			}
 		} else {
 			m_log.warn("restartAgent: Unknown command = " + agentCommand);
-		}		
+		}
+		return retList;
 	}
 
-	public void checkIsUseFacility (String facilityId) throws HinemosUnknown, UsedFacility {
+	public void checkIsUseFacilityWithChildren (String facilityId) throws HinemosUnknown, UsedFacility {
+		List<String> checkFacilityIdList = new RepositoryControllerBean().getFacilityIdList(facilityId, ALL);
+		
 		String message = "";
-		try {
-			new JobControllerBean().isUseFacilityId(facilityId);
-		} catch(UsedFacility e) {
-			message += (e.getMessage() + "\n");
-		}
-		try {
-			new MonitorControllerBean().isUseFacilityId(facilityId);
-		} catch(UsedFacility e) {
-			message += (e.getMessage() + "\n");
-		}
-		try {
-			new NotifyControllerBean().isUseFacilityId(facilityId);
-		} catch(UsedFacility e) {
-			message += (e.getMessage() + "\n");
-		}
-		try {
-			new InfraControllerBean().isUseFacilityId(facilityId);
-		} catch(UsedFacility e) {
-			message += (e.getMessage() + "\n");
-		}
-		try {
-			new ReportingControllerBean().isUseFacilityId(facilityId);
-		} catch(UsedFacility e) {
-			message += (e.getMessage() + "\n");
-		}
-		try {
-			new NodeConfigSettingControllerBean().isUseFacilityId(facilityId);
-		} catch(UsedFacility e) {
-			message += e.getMessage();
-		}
-		if (message.trim().length() > 0) {
-			UsedFacility ex = new UsedFacility(message);
-			throw ex;
+		for (String checkFacilityId : checkFacilityIdList) {
+			try {
+				new JobControllerBean().isUseFacilityId(checkFacilityId);
+			} catch(UsedFacility e) {
+				// JobControllerBeanで改行コードを付与しているのでここでは不要
+				message += (e.getMessage());
+			}
+			try {
+				new MonitorControllerBean().isUseFacilityId(checkFacilityId);
+			} catch(UsedFacility e) {
+				message += (e.getMessage() + "\n");
+			}
+			try {
+				new NotifyControllerBean().isUseFacilityId(checkFacilityId);
+			} catch(UsedFacility e) {
+				message += (e.getMessage() + "\n");
+			}
+			try {
+				new InfraControllerBean().isUseFacilityId(checkFacilityId);
+			} catch(UsedFacility e) {
+				message += (e.getMessage() + "\n");
+			}
+			try {
+				new ReportingControllerBean().isUseFacilityId(checkFacilityId);
+			} catch(UsedFacility e) {
+				message += (e.getMessage() + "\n");
+			}
+			try {
+				new NodeConfigSettingControllerBean().isUseFacilityId(checkFacilityId);
+			} catch(UsedFacility e) {
+				message += (e.getMessage() + "\n");
+			}
+			try {
+				new SdmlManagerControllerBean().isUseFacilityId(checkFacilityId);
+			} catch(UsedFacility e) {
+				message += e.getMessage();
+			}
+			if (message.trim().length() > 0) {
+				UsedFacility ex = new UsedFacility(message);
+				throw ex;
+			}
 		}
 	}
-
 
 	/**
 	 * ホスト名から逆引きされたIPアドレスに該当するノード一覧を返す。
@@ -2546,6 +2816,40 @@ public class RepositoryControllerBean {
 			jtm.commit();
 		} catch (Exception e) {
 			m_log.warn("modifyUserInfo() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			// ロールバック処理
+			if (jtm != null)
+				jtm.rollback();
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+
+		return ret;
+	}
+
+	/**
+	 * ホスト名から逆引きされたIPアドレスに該当するノード一覧を返す。
+	 *
+	 * @param hostname ホスト名
+	 * @return ファシリティIDの配列
+	 */
+	public Set<String> getNodeListAllByNodename(String hostname) {
+		Set<String> ret = new HashSet<String>();
+
+		JpaTransactionManager jtm = null;
+
+		/** メイン処理 */
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			ret = FacilitySelector.getNodeListAllByNodename(hostname);
+
+			// コミット処理
+			jtm.commit();
+		} catch (Exception e) {
+			m_log.warn("getNodeListAllByNodename() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			// ロールバック処理
 			if (jtm != null)
@@ -2589,6 +2893,41 @@ public class RepositoryControllerBean {
 				jtm.close();
 		}
 
+		return ret;
+	}
+
+	/**
+	 * IPアドレスに該当するノード一覧を返す。
+	 * 管理対象無効のノードも含む。
+	 * 
+	 * @param ipAddress IPアドレス
+	 * @return ファシリティIDの配列
+	 */
+	public Set<String> getNodeListAllByIpAddress(InetAddress ipAddress) {
+		Set<String> ret = new HashSet<String>();
+
+		JpaTransactionManager jtm = null;
+
+		/** メイン処理 */
+		try {
+			// EntityManager生成
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			
+			ret = FacilitySelector.getNodeListAllByIpAddress(ipAddress);
+
+			// コミット処理
+			jtm.commit();
+		} catch (Exception e) {
+			m_log.warn("getNodeListAllByIpAddress() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			// ロールバック処理
+			if (jtm != null)
+				jtm.rollback();
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
 		return ret;
 	}
 
@@ -2649,7 +2988,7 @@ public class RepositoryControllerBean {
 			// コミット処理
 			jtm.commit();
 		} catch (Exception e) {
-			m_log.warn("modifyUserInfo() : "
+			m_log.warn("containsFaciliyId() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			// ロールバック処理
 			if (jtm != null)
@@ -2661,7 +3000,47 @@ public class RepositoryControllerBean {
 
 		return ret;
 	}
-	
+
+	/**
+	 * ファシリティIDが配下にあるかどうかを返す。
+	 * 性能改善のためリストを使用せず、直接ツリーを探索する
+	 * 
+	 * @param scopeFacilityId スコープのファシリティID
+	 * @param nodeFacilityId ノードのファシリティID
+	 * @param ownerRoleId オーナーロールID
+	 * @return
+	 */
+	public boolean containsFacilityIdWithoutList(String scopeFacilityId, String nodeFacilityId, String ownerRoleId) {
+		boolean ret = false;
+
+		JpaTransactionManager jtm = null;
+
+		/** メイン処理 */
+		try {
+			// EntityManager生成
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			ret = FacilitySelector.containsFacilityIdWithoutList(scopeFacilityId, nodeFacilityId, ownerRoleId);
+
+			// コミット処理
+			jtm.commit();
+		} catch (Exception e) {
+			m_log.warn("containsFacilityIdWithoutList() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			// ロールバック処理
+			if (jtm != null) {
+				jtm.rollback();
+			}
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+
+		return ret;
+	}
+
 	private void snmpv3Check(String securityLevel, String user, String authPass, String privPass) throws HinemosUnknown {
 		if (securityLevel.equals(SnmpSecurityLevelConstant.AUTH_NOPRIV) ||
 				securityLevel.equals(SnmpSecurityLevelConstant.AUTH_PRIV)) {
@@ -2805,151 +3184,6 @@ public class RepositoryControllerBean {
 				ListenerReadWriteLock.writeUnlock();
 			}
 		}
-	}
-	
-	/**
-	 * ノード構成情報のパッケージ取得<BR>
-	 *
-	 * @version 6.2.0
-	 * @since 6.2.0
-	 *
-	 * @param facilityId
-	 *            ファシリティID
-	 * @param date
-	 *            日付
-	 * @return 引数指定の日付に対して最新状態のパッケージリストが格納されたBean.
-	 * @throws HinemosUnknown
-	 *             DB接続不可など
-	 * @throws InvalidSetting
-	 *             引数不正(空文字もしくはnull)
-	 * @throws FacilityNotFound 
-	 */
-	public LatestNodeConfigWrapper<NodePackageInfo> getNodePackageList(String facilityId, Long date)
-			throws HinemosUnknown, InvalidSetting, FacilityNotFound {
-		
-		// 引数チェック.
-		if (facilityId == null || facilityId.isEmpty()) {
-			InvalidSetting e = new InvalidSetting("facility-ID is empty.");
-			throw e;
-		}
-
-		JpaTransactionManager jtm = null;
-		LatestNodeConfigWrapper<NodePackageInfo> latestPackage = null;
-
-		try {
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-
-			/** メイン処理 */
-			latestPackage = NodeConfigSelector.getNodePackageList(facilityId, date);
-			jtm.commit();
-		} catch (FacilityNotFound e) {
-			if (jtm != null) {
-				jtm.rollback();
-			}
-			throw e;
-		} catch (Exception e) {
-			m_log.warn("getNodePackageList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null) {
-				jtm.rollback();
-			}
-			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null) {
-				jtm.close();
-			}
-		}
-		return latestPackage;
-	}
-	
-	/**
-	 * ノード構成情報の最新プロセス全量取得<BR>
-	 *
-	 * @version 6.2.0
-	 * @since 6.2.0
-	 *
-	 * @param facilityId
-	 *            ファシリティID
-	 * @return 最新のプロセスリスト.
-	 * @throws HinemosUnknown
-	 *             DB接続不可など
-	 * @throws InvalidSetting
-	 *             引数不正(空文字もしくはnull)
-	 * @throws FacilityNotFound 
-	 */
-	public List<NodeProcessInfo> getNodeProcessList(String facilityId)
-			throws HinemosUnknown, InvalidSetting, FacilityNotFound {
-		
-		// 引数チェック.
-		if (facilityId == null || facilityId.isEmpty()) {
-			InvalidSetting e = new InvalidSetting("facility-ID is empty.");
-			throw e;
-		}
-
-		JpaTransactionManager jtm = null;
-		List<NodeProcessInfo> latestProcess = null;
-
-		try {
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-
-			/** メイン処理 */
-			latestProcess = NodeConfigSelector.getNodeProcessList(facilityId);
-			jtm.commit();
-		} catch (FacilityNotFound e) {
-			if (jtm != null) {
-				jtm.rollback();
-			}
-			throw e;
-		}  catch (Exception e) {
-			m_log.warn("getNodeProcessList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null) {
-				jtm.rollback();
-			}
-			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null) {
-				jtm.close();
-			}
-		}
-		return latestProcess;
-	}
-	
-	/**
-	 * ノード構成情報のNIC情報全量取得<BR>
-	 * 
-	 *
-	 * @version 6.2.0
-	 * @since 6.2.0
-	 *
-	 * @return NIC情報がセットされたノード情報.
-	 * @throws HinemosUnknown
-	 *             DB接続不可など
-	 */
-	public List<NodeInfo> getNodeNicList() throws HinemosUnknown {
-
-		JpaTransactionManager jtm = null;
-		List<NodeInfo> nodeList = null;
-
-		try {
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-
-			/** メイン処理 */
-			nodeList = NodeConfigSelector.getNodeNicList();
-			jtm.commit();
-		} catch (Exception e) {
-			m_log.warn("getNodeNicList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null) {
-				jtm.rollback();
-			}
-			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null) {
-				jtm.close();
-			}
-		}
-		return nodeList;
 	}
 
 	private static class ListenerReadWriteLock {
@@ -3131,93 +3365,22 @@ public class RepositoryControllerBean {
 	}
 
 	/**
-	 * 構成情報ファイルのヘッダー情報を返します。<BR><BR>
-	 * 
-	 * @param conditionStr 検索対象
-	 * @param filename ファイル名
-	 * @param locale ロケール
-	 * @return 構成情報ファイル
-	 * @throws InvalidRole
-	 * @throws HinemosUnknown
-	 */
-	public DataHandler downloadNodeConfigFileHeader(String conditionStr, String filename, Locale locale)
-			throws InvalidRole, HinemosUnknown{
-
-		m_log.debug("downloadNodeConfigFileHeader() : start");
-		Long starttime = 0L;
-		if (m_log.isDebugEnabled()) {
-			starttime = new Date().getTime();
-		}
-
-		JpaTransactionManager jtm = null;
-
-		String username = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
-		DataHandler handler = null;
-		try {
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-
-			if (filename == null || filename.isEmpty()) {
-				m_log.warn("downloadNodeConfigFile() : filename is invalid.");
-				return null;
-			}
-
-			long now = HinemosTime.currentTimeMillis();
-			handler = new FacilitySelector().getNodeConfigInfoFileHeader(conditionStr, filename, username, locale);
-			long end = HinemosTime.currentTimeMillis();
-			m_log.info("downloadNodeConfigFileHeader, time=" + (end - now) + "ms");
-			jtm.commit();
-		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null) {
-				jtm.rollback();
-			}
-			throw new InvalidRole(e.getMessage(), e);
-		} catch (HinemosUnknown e) {
-			if (jtm != null) {
-				jtm.rollback();
-			}
-			throw e;
-		} catch (IOException e) {
-			m_log.warn("downloadNodeConfigFileHeader() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null) {
-				jtm.rollback();
-			}
-			throw new HinemosUnknown(e.getMessage(), e);
-		} catch (Exception e) {
-			m_log.warn("downloadNodeConfigFileHeader() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null) {
-				jtm.rollback();
-			}
-			throw new HinemosUnknown(e.getMessage(), e);
-		} finally {
-			if (jtm != null) {
-				jtm.close();
-			}
-		}
-		if (m_log.isDebugEnabled()) {
-			Long endtime = new Date().getTime();
-			m_log.debug("downloadNodeConfigFileHeader() total time=" + (endtime - starttime) + "ms");
-		}
-		return handler;
-	}
-
-	/**
 	 * 引数で指定された条件に一致する構成情報ファイルを返します。<BR><BR>
 	 * 
 	 * @param facilityIdlist ファシリティID一覧
 	 * @param targetDatetime 対象日時
+	 * @param conditionStr 検索対象
 	 * @param filename ファイル名
 	 * @param locale ロケール
 	 * @param managerName マネージャ名
 	 * @param itemNameList 構成情報ダウンロード対象一覧
+	 * @param needHeaderInfo ヘッダ情報を含むかどうかのフラグ
 	 * @return 構成情報ファイル
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public DataHandler downloadNodeConfigFile(
-			List<String> facilityIdList, Long targetDatetime, String filename, Locale locale, String managerName, List<String> itemList)
+	public File downloadNodeConfigFile(
+			List<String> facilityIdList, Long targetDatetime, String conditionStr, Locale locale, String managerName, List<String> itemList, boolean needHeaderInfo)
 			throws InvalidRole, HinemosUnknown{
 		String strItem = "";
 		if (m_log.isDebugEnabled()) {
@@ -3234,16 +3397,12 @@ public class RepositoryControllerBean {
 		}
 
 		JpaTransactionManager jtm = null;
+		String username = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 
-		DataHandler handler = null;
+		File tempFile = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-
-			if (filename == null || filename.isEmpty()) {
-				m_log.warn("downloadNodeConfigFile() : filename is invalid.");
-				return null;
-			}
 
 			if (facilityIdList == null || facilityIdList.size() == 0) {
 				m_log.warn("downloadNodeConfigFile() : facilityIdList is empty.");
@@ -3271,8 +3430,8 @@ public class RepositoryControllerBean {
 			}
 
 			long now = HinemosTime.currentTimeMillis();
-			handler = new FacilitySelector().getNodeConfigInfoFile(
-					facilityIdList, targetDatetime, filename, locale, managerName, nodeConfigSettingItemList);
+			tempFile = new FacilitySelector().getNodeConfigInfoFile(
+					facilityIdList, targetDatetime, conditionStr, username, locale, managerName, nodeConfigSettingItemList, needHeaderInfo);
 			long end = HinemosTime.currentTimeMillis();
 			m_log.info("downloadNodeConfigFile, time=" + (end - now) + "ms, name=" + strItem);
 			jtm.commit();
@@ -3309,7 +3468,7 @@ public class RepositoryControllerBean {
 			Long endtime = new Date().getTime();
 			m_log.debug("downloadNodeConfigFile() total time=" + (endtime - starttime) + "ms, name=" + strItem);
 		}
-		return handler;
+		return tempFile;
 	}
 
 
@@ -3397,5 +3556,38 @@ public class RepositoryControllerBean {
 			}
 		}
 		
+	}
+	
+	/**
+	 * ファシリティリストを取得します。<BR>
+	 *
+	 * リポジトリにあるすべてのファシリティのリストを取得します。<BR>
+	 * 戻り値は ファシリティのArrayList<BR>
+	 *
+	 * @return ファシリティの配列
+	 * @return HinemosUnknown
+	 */
+	public ArrayList<FacilityInfo> getFacilityList() throws HinemosUnknown {
+		JpaTransactionManager jtm = null;
+		ArrayList<FacilityInfo> facilityList = null;
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			/** メイン処理 */
+			facilityList = FacilitySelector.getFacilityList();
+			jtm.commit();
+		} catch (Exception e) {
+			m_log.warn("getFacilityList() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
+		return facilityList;
 	}
 }

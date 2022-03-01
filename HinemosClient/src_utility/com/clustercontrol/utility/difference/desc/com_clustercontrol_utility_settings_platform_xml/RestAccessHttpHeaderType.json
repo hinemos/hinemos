@@ -1,0 +1,26 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[	
+	
+	{
+	"propName":"headerOrderNo",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessHttpHeaderType_headerOrderNo"}
+	]},		
+
+	{
+	"propName":"key",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessHttpHeaderType_key"}
+	]},
+
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"RestAccessHttpHeaderType_value"}
+	]}
+
+]
+}

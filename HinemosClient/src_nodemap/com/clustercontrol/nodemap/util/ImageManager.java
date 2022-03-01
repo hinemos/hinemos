@@ -21,10 +21,12 @@ import org.eclipse.rap.rwt.SingletonUtil;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
+import org.openapitools.client.model.AddBgImageRequest;
+import org.openapitools.client.model.AddIconImageRequest;
 
+import com.clustercontrol.fault.BgFileNotFound;
+import com.clustercontrol.fault.IconFileNotFound;
 import com.clustercontrol.nodemap.messages.Messages;
-import com.clustercontrol.ws.nodemap.BgFileNotFound_Exception;
-import com.clustercontrol.ws.nodemap.IconFileNotFound_Exception;
 
 /**
  * 画像ファイルを管理するクラス。
@@ -80,8 +82,10 @@ public class ImageManager {
 		}
 
 		// ファイルアップロード
-		NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(managerName);
-		wrapper.setBgImage(filename, filedata);
+		NodeMapRestClientWrapper wrapper = NodeMapRestClientWrapper.getWrapper(managerName);
+		AddBgImageRequest dtoReq = new AddBgImageRequest();
+		dtoReq.setFilename(filename);
+		wrapper.addBgImage(new File(filepath), dtoReq);
 
 		// ファイルをアップロードした場合は、クライアントのキャッシュから消す。
 		ImageManager.clearBg(managerName, filename);
@@ -114,8 +118,11 @@ public class ImageManager {
 		}
 
 		// ファイルアップロード
-		NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(managerName);
-		wrapper.setIconImage(filename, filedata);
+		NodeMapRestClientWrapper wrapper = NodeMapRestClientWrapper.getWrapper(managerName);
+		File file = new File(filepath);
+		AddIconImageRequest dtoReq = new AddIconImageRequest();
+		dtoReq.setFilename(filename);
+		wrapper.addIconImage(file, dtoReq);
 
 		// ファイルをアップロードした場合は、クライアントのキャッシュから消す。
 		ImageManager.clearIcon(managerName, filename);
@@ -224,12 +231,12 @@ public class ImageManager {
 		 * iconImageからbyte[]を取得する。
 		 */
 		try {
-			NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(managerName);
-			byte[] filedata = wrapper.getIconImage(filename);
-			ByteArrayInputStream stream = new ByteArrayInputStream(filedata);
+			NodeMapRestClientWrapper wrapper = NodeMapRestClientWrapper.getWrapper(managerName);
+			File file = wrapper.downloadIconImage(filename);
+			FileInputStream stream = new FileInputStream(file);
 			ImageLoader imageLoader = new ImageLoader();
 			ret = new Image(null, imageLoader.load(stream)[0]);
-		} catch (IconFileNotFound_Exception e) {
+		} catch (IconFileNotFound e) {
 			// ファイルが存在しない場合は、nodeアイコンを見せる。
 			m_log.warn("iconfile(" + filename + ") is not found at IconImage.");
 			if ("node".equals(filename)) {
@@ -297,12 +304,12 @@ public class ImageManager {
 		 * BgImageからbyte[]を取得する。
 		 */
 		try {
-			NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(managerName);
-			byte[] filedata = wrapper.getBgImage(filename);
-			ByteArrayInputStream stream = new ByteArrayInputStream(filedata);
+			NodeMapRestClientWrapper wrapper = NodeMapRestClientWrapper.getWrapper(managerName);
+			File file = wrapper.downloadBgImage(filename);
+			FileInputStream stream = new FileInputStream(file);
 			ImageLoader imageLoader = new ImageLoader();
 			ret = new Image(null, imageLoader.load(stream)[0]);
-		} catch (BgFileNotFound_Exception e) {
+		} catch (BgFileNotFound e) {
 			m_log.warn("image file (" + filename + ") is not found at BgImage.");
 			if ("default".equals(filename)) {
 				return null;

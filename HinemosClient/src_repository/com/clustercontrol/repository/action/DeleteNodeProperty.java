@@ -13,11 +13,11 @@ import java.util.List;
 import org.eclipse.jface.dialogs.MessageDialog;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.UsedFacility_Exception;
 
 /**
  * ノードを削除するクライアント側アクションクラス<BR>
@@ -36,8 +36,8 @@ public class DeleteNodeProperty {
 	public void delete(String managerName, List<String> facilityIdList) {
 
 		try {
-			RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-			wrapper.deleteNode(facilityIdList);
+			RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+			wrapper.deleteNode(String.join(",", facilityIdList));
 
 			// リポジトリキャッシュの更新
 			ClientSession.doCheck();
@@ -51,17 +51,17 @@ public class DeleteNodeProperty {
 
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
 						Messages.getString("message"),
-						Messages.getString("message.accesscontrol.16"));
+						Messages.getString("message.accesscontrol.16") + "(" + managerName + ")");
 
-			} else if (e instanceof UsedFacility_Exception) {
+			} else if (e instanceof UsedFacility) {
 				// ファシリティが使用されている場合のエラーダイアログを表示する
-				Object[] args ={facilityIdList,
-						HinemosMessage.replace(((UsedFacility_Exception)e).getMessage())};
+				Object[] args ={facilityIdList + "(" + managerName + ")",
+						HinemosMessage.replace(((UsedFacility)e).getMessage())};
 				MessageDialog.openInformation(
 						null,
 						Messages.getString("message"),
@@ -74,7 +74,7 @@ public class DeleteNodeProperty {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.repository.9") + errMessage);
+					Messages.getString("message.repository.9") + "(" + managerName + ") " + errMessage);
 		}
 
 		return;

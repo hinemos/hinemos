@@ -16,19 +16,20 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.RunJobRequest;
+import org.openapitools.client.model.RunJobRequest.TriggerTypeEnum;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.jobmanagement.bean.JobTriggerTypeConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.dialog.JobRunConfirm;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.JobTriggerInfo;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * ジョブ[一覧]ビューの「実行」のクライアント側アクションクラス<BR>
@@ -39,13 +40,13 @@ import com.clustercontrol.ws.jobmanagement.JobTriggerInfo;
 public class RunJobAction extends BaseAction {
 	public static final String ID = ActionIdBase + RunJobAction.class.getSimpleName();
 	
-	private JobTriggerInfo m_trigger = new JobTriggerInfo();
+	private RunJobRequest m_trigger = new RunJobRequest();
 	
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		super.execute(event);
 		
-		List<JobTreeItem> itemList = m_jobTreeItemList;
+		List<JobTreeItemWrapper> itemList = m_jobTreeItemList;
 		
 		if (itemList == null || itemList.size() == 0) {
 			return null;
@@ -55,7 +56,7 @@ public class RunJobAction extends BaseAction {
 		jobListMessage.append(com.clustercontrol.jobmap.messages.Messages.getString("message.job.125"));
 		jobListMessage.append("\n");
 		
-		for (JobTreeItem item : itemList) {
+		for (JobTreeItemWrapper item : itemList) {
 			String managerName = JobTreeItemUtil.getManagerName(item);
 		
 			JobEditState editState = JobEditStateUtil.getJobEditState(JobTreeItemUtil.getManagerName(item));
@@ -82,24 +83,24 @@ public class RunJobAction extends BaseAction {
 			m_trigger = dialog.getInputData();
 			
 			// 選択しているジョブの実行
-			for (JobTreeItem item : itemList) {
+			for (JobTreeItemWrapper item : itemList) {
+				JobTreeItemWrapper manager = JobTreeItemUtil.getManager(item);
+				String managerName = manager.getData().getName();
 				try {
 					// 実行契機情報を登録
-					JobTriggerInfo triggerInfo = new JobTriggerInfo();
-					triggerInfo.setTriggerType(JobTriggerTypeConstant.TYPE_MANUAL);
-					triggerInfo.setJobWaitTime(m_trigger.isJobWaitTime());
-					triggerInfo.setJobWaitMinute(m_trigger.isJobWaitMinute());
-					triggerInfo.setJobCommand(m_trigger.isJobCommand());
-					triggerInfo.setJobCommandText(m_trigger.getJobCommandText());
-	
-					JobTreeItem manager = JobTreeItemUtil.getManager(item);
-					String managerName = manager.getData().getName();
-					JobEndpointWrapper.getWrapper(managerName).runJob(
-							item.getData().getJobunitId(),
-							item.getData().getId(),
-							null,
-							triggerInfo);
-				} catch (InvalidRole_Exception e) {
+					RunJobRequest triggerInfo = new RunJobRequest(); 
+					triggerInfo.setTriggerType(TriggerTypeEnum.MANUAL); 
+					triggerInfo.setJobWaitTime(m_trigger.getJobWaitTime()); 
+					triggerInfo.setJobWaitMinute(m_trigger.getJobWaitMinute()); 
+					triggerInfo.setJobCommand(m_trigger.getJobCommand()); 
+					triggerInfo.setJobCommandText(m_trigger.getJobCommandText()); 
+
+					JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName); 
+					RunJobRequest request = new RunJobRequest();
+					RestClientBeanUtil.convertBean(triggerInfo, request);
+					
+					wrapper.runJob(item.getData().getJobunitId(), item.getData().getId(), triggerInfo);
+				} catch (InvalidRole e) {
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.accesscontrol.16"));
 				} catch (Exception e) {
@@ -125,15 +126,20 @@ public class RunJobAction extends BaseAction {
 			return;
 		}
 		
-		for (JobTreeItem item : m_jobTreeItemList) {
-			if (item.getData().getType() == JobConstant.TYPE_JOBUNIT ||
-					item.getData().getType() == JobConstant.TYPE_JOBNET ||
-					item.getData().getType() == JobConstant.TYPE_JOB ||
-					item.getData().getType() == JobConstant.TYPE_FILEJOB ||
-					item.getData().getType() == JobConstant.TYPE_APPROVALJOB ||
-					item.getData().getType() == JobConstant.TYPE_MONITORJOB ||
-					item.getData().getType() == JobConstant.TYPE_REFERJOBNET ||
-					item.getData().getType() == JobConstant.TYPE_REFERJOB) {
+		for (JobTreeItemWrapper item : m_jobTreeItemList) {
+			if (item.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.JOB ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.FILEJOB ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.MONITORJOB ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOBNET ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.REFERJOB ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB ||
+					item.getData().getType() == JobInfoWrapper.TypeEnum.RPAJOB) {
 				editEnable = true;
 			} else {
 				editEnable = false;

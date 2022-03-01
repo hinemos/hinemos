@@ -8,6 +8,7 @@
 
 package com.clustercontrol.http.dialog;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -20,18 +21,24 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddHttpStringMonitorRequest;
+import org.openapitools.client.model.HttpCheckInfoResponse;
+import org.openapitools.client.model.ModifyHttpStringMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorStringValueInfoRequest;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.composite.TextWithParameterComposite;
-import com.clustercontrol.http.action.AddHttp;
-import com.clustercontrol.http.action.GetHttp;
-import com.clustercontrol.http.action.ModifyHttp;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorStringDialog;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.notify.bean.PriChangeFailSelectTypeConstant;
+import com.clustercontrol.notify.bean.PriChangeJudgeSelectTypeConstant;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.HttpCheckInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * HTTP監視（文字列）作成・変更ダイアログクラス<BR>
@@ -48,8 +55,6 @@ public class HttpStringCreateDialog extends CommonMonitorStringDialog {
 	/** URL */
 	private TextWithParameterComposite m_textRequestUrl = null;
 
-	/** マネージャ名 */
-	private String managerName = null;
 	// ----- コンストラクタ ----- //
 
 	/**
@@ -60,6 +65,8 @@ public class HttpStringCreateDialog extends CommonMonitorStringDialog {
 	 */
 	public HttpStringCreateDialog(Shell parent) {
 		super(parent, null);
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
+		this.priorityChangeFailSelect = PriChangeFailSelectTypeConstant.TYPE_GET;
 	}
 
 	/**
@@ -76,6 +83,8 @@ public class HttpStringCreateDialog extends CommonMonitorStringDialog {
 		this.managerName = managerName;
 		this.monitorId = monitorId;
 		this.updateFlg = updateFlg;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
+		this.priorityChangeFailSelect = PriChangeFailSelectTypeConstant.TYPE_GET;
 	}
 
 	// ----- instance メソッド ----- //
@@ -198,15 +207,31 @@ public class HttpStringCreateDialog extends CommonMonitorStringDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
-		}
-		else{
+		} else {
 			// 変更の場合、情報取得
-			info = new GetHttp().getHttp(this.managerName, this.monitorId);
+			try {
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
+				info = wrapper.getMonitor(this.monitorId);
+			} catch (InvalidRole e) {
+				// アクセス権なしの場合、エラーダイアログを表示する
+				MessageDialog.openInformation(
+						null,
+						Messages.getString("message"),
+						Messages.getString("message.accesscontrol.16"));
+				throw new InternalError(e.getMessage());
+			} catch (Exception e) {
+				// 上記以外の例外
+				MessageDialog.openInformation(
+						null,
+						Messages.getString("message"),
+						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+				throw new InternalError(e.getMessage());
+			}
 		}
 		this.setInputData(info);
 
@@ -239,16 +264,16 @@ public class HttpStringCreateDialog extends CommonMonitorStringDialog {
 	 * @param monitor 設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
 
 		// 監視条件 HTTP監視情報
-		HttpCheckInfo httpInfo = monitor.getHttpCheckInfo();
+		HttpCheckInfoResponse httpInfo = monitor.getHttpCheckInfo();
 		if(httpInfo == null){
-			httpInfo = new HttpCheckInfo();
+			httpInfo = new HttpCheckInfoResponse();
 			httpInfo.setUrlReplace(false);
 			httpInfo.setTimeout(TIMEOUT_SEC);
 			httpInfo.setProxySet(false);
@@ -271,19 +296,14 @@ public class HttpStringCreateDialog extends CommonMonitorStringDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		// HTTP監視（文字列）固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_HTTP_S);
-
 		// 監視条件 HTTP監視情報
-		HttpCheckInfo httpInfo = new HttpCheckInfo();
-		httpInfo.setMonitorTypeId(monitorInfo.getMonitorTypeId());
-		httpInfo.setMonitorId(monitorInfo.getMonitorId());
+		HttpCheckInfoResponse httpInfo = new HttpCheckInfoResponse();
 
 		if (this.m_textRequestUrl.getText() != null
 				&& !"".equals((this.m_textRequestUrl.getText()).trim())) {
@@ -338,16 +358,86 @@ public class HttpStringCreateDialog extends CommonMonitorStringDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-		if(info != null){
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
-				result = new AddHttp().add(managerName, info);
-			}
-			else{
+				try {
+					AddHttpStringMonitorRequest info = new AddHttpStringMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddHttpStringMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.addHttpStringMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorDuplicate e) {
+					// 監視項目IDが重複している場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.53", args));
+
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.34", args) + errMessage);
+				}
+			} else{
 				// 変更の場合
-				result = new ModifyHttp().modify(managerName, info);
+				try {
+					ModifyHttpStringMonitorRequest info = new ModifyHttpStringMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyHttpStringMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.modifyHttpStringMonitor(this.inputData.getMonitorId(), info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.35", args));
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.36", args) + errMessage);
+				}
 			}
 		}
 
@@ -360,11 +450,11 @@ public class HttpStringCreateDialog extends CommonMonitorStringDialog {
 	 * @see com.clustercontrol.dialog.CommonMonitorDialog#setInfoInitialValue()
 	 */
 	@Override
-	protected void setInfoInitialValue(MonitorInfo monitor) {
+	protected void setInfoInitialValue(MonitorInfoResponse monitor) {
 
 		super.setInfoInitialValue(monitor);
 
-		HttpCheckInfo httpCheckInfo = new HttpCheckInfo();
+		HttpCheckInfoResponse httpCheckInfo = new HttpCheckInfoResponse();
 		// URL置換
 		httpCheckInfo.setUrlReplace(false);
 		// タイムアウト（ミリ秒）

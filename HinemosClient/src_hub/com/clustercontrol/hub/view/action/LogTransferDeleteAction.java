@@ -24,13 +24,13 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.hub.util.HubEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.LogFormatUsed;
+import com.clustercontrol.hub.util.HubRestClientWrapper;
 import com.clustercontrol.hub.view.TransferView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.hub.InvalidRole_Exception;
-import com.clustercontrol.ws.hub.LogFormatUsed_Exception;
 
 /**
  * 収集蓄積[転送]の削除を行うクライアント側アクションクラス<BR>
@@ -97,18 +97,18 @@ public class LogTransferDeleteAction extends AbstractHandler implements IElement
 					Messages.getString(msg, args))) {
 				for(Map.Entry<String, List<String>> entry : map.entrySet()) {
 					String managerName = entry.getKey();
-					HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
+					HubRestClientWrapper wrapper = HubRestClientWrapper.getWrapper(managerName);
 					if(i > 0) {
 						messageArg.append(", ");
 					}
 					messageArg.append(managerName);
 					try {
-						wrapper.deleteTransferInfo(entry.getValue());
+						wrapper.deleteTransferInfo(String.join(",", entry.getValue()));
 					} catch (Exception e) {
-						if (e instanceof InvalidRole_Exception) {
+						if (e instanceof InvalidRole) {
 							// 権限なし
 							errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
-						} else if (e instanceof LogFormatUsed_Exception){
+						} else if (e instanceof LogFormatUsed){
 							errorMsgs.put(managerName, HinemosMessage.replace(e.getMessage()));
 						} else {
 							errorMsgs.put(managerName,
@@ -127,7 +127,7 @@ public class LogTransferDeleteAction extends AbstractHandler implements IElement
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
-							Messages.getString(endMsg, args));
+							Messages.getString(endMsg, new Object[] { args[0], messageArg }));
 				}
 
 				// ビューを更新

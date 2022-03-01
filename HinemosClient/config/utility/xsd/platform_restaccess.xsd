@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: platform_mailtemplate.xsd 295 2013-05-13 16:00:00Z sekiyaman $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="E">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="2">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="restAccess" type="RestAccessType">
+		<xs:annotation>
+			<xs:documentation>
+				RESTアクセス定義一覧のルートエレメントです。
+			</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
+	<xs:complexType name="RestAccessType">
+		<xs:annotation>
+			<xs:documentation>RESTアクセス定義一覧のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="restAccessInfo" type="RestAccessInfoType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						RESTアクセス定義の配列です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="RestAccessInfoType">
+		<xs:annotation>
+			<xs:documentation>RESTアクセス定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>この設定の説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="webProxyUrlString" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>WebProxyURLです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="sendUrlString" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>送信用URLです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="sendHttpHeaders" type="RestAccessHttpHeaderType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>送信用httpヘッダーです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="sendHttpBody" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>送信用ボディです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="authUrlString" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>認証用URLです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="authHttpHeaders" type="RestAccessHttpHeaderType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>認証用httpヘッダーです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="authUrlBody" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>認証用ボディです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="authUrlGetRegex" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>認証用アクセストークン取得用正規表現です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+		</xs:sequence>
+		<xs:attribute name="restAccessId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>RESTアクセスIDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="ownerRoleId" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>オーナーロールIDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="httpConnectTimeout" type="xs:long" use="optional">
+			<xs:annotation>
+				<xs:documentation>httpコネクションタイムアウトです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="httpRequestTimeout" type="xs:long" use="optional">
+			<xs:annotation>
+				<xs:documentation>httpリクエストタイムアウトです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="httpRetryNum" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>httpリクエスト失敗時リトライ回数です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="useWebProxy" type="xs:boolean" use="optional">
+			<xs:annotation>
+				<xs:documentation>WebProxy利用要否です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="webProxyPort" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>WebProxyポート番号です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="webProxyAuthUser" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>WebProxy認証ユーザです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="webProxyAuthPassword" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>WebProxy認証パスワードです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="sendHttpMethodType" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>送信用メソッドです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="authType" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>認証タイプです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="authBasicUser" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>Basic認証ユーザです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="authBasicPassword" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>Basic認証パスワードです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="authUrlMethodType" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>認証用メソッドです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="authUrlValidTerm" type="xs:long" use="optional">
+			<xs:annotation>
+				<xs:documentation>認証用アクセストークン有効期間です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="RestAccessHttpHeaderType">
+		<xs:annotation>
+			<xs:documentation>Httpヘッダー一覧のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="key" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ヘッダーkeyです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="value" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ヘッダーvalueです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+
+		<xs:attribute name="headerOrderNo" type="xs:long" use="optional">
+			<xs:annotation>
+				<xs:documentation>ヘッダー順番号です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		
+	</xs:complexType>
+
+</xs:schema>

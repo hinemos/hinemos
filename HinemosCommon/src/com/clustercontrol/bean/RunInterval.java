@@ -32,7 +32,16 @@ public enum RunInterval {
 	TYPE_MIN_10(600,  10 + Messages.getString("minute")),
 	TYPE_MIN_30(1800, 30 + Messages.getString("minute")),
 	TYPE_MIN_60(3600, 60 + Messages.getString("minute"));
-	
+
+	/** Enum判定用のName */
+	private static final String ENUM_NAME_NONE = "NONE";
+	private static final String ENUM_NAME_SEC_30 = "SEC_30";
+	private static final String ENUM_NAME_MIN_01 = "MIN_01";
+	private static final String ENUM_NAME_MIN_05 = "MIN_05";
+	private static final String ENUM_NAME_MIN_10 = "MIN_10";
+	private static final String ENUM_NAME_MIN_30 = "MIN_30";
+	private static final String ENUM_NAME_MIN_60 = "MIN_60";
+
 	private final int intervalSec;
 	private final String readableString;
 	private RunInterval(int _intervalSec, String _readableSuffix) {
@@ -86,7 +95,36 @@ public enum RunInterval {
 		}
 		return null;
 	}
-	
+
+	/**
+	 * Enumから文字列に変換します。<BR>
+	 * ※Enumの型は引数で指定できますが、列挙子のNameは統一されている必要があります。<BR>
+	 * 
+	 * @param value 変換するEnum
+	 * @param enumType Enumの型
+	 * @return 文字列
+	 */
+	public static <T extends Enum<T>> String enumToString(T value, Class<T> enumType) {
+		String name = value.name();
+
+		if (name.equals(ENUM_NAME_NONE)) {
+			return "-";
+		} else if (name.equals(ENUM_NAME_SEC_30)) {
+			return TYPE_SEC_30.toString();
+		} else if (name.equals(ENUM_NAME_MIN_01)) {
+			return TYPE_MIN_01.toString();
+		} else if (name.equals(ENUM_NAME_MIN_05)) {
+			return TYPE_MIN_05.toString();
+		} else if (name.equals(ENUM_NAME_MIN_10)) {
+			return TYPE_MIN_10.toString();
+		} else if (name.equals(ENUM_NAME_MIN_30)) {
+			return TYPE_MIN_30.toString();
+		} else if (name.equals(ENUM_NAME_MIN_60)) {
+			return TYPE_MIN_60.toString();
+		}
+		return "";
+	}
+
 	/**
 	 * "1分" などの可読文字列を返す
 	 */

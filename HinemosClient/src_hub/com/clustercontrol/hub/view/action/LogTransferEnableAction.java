@@ -27,17 +27,16 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.SetTransferValidRequest;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.hub.action.GetTransferTableDefine;
-import com.clustercontrol.hub.util.HubEndpointWrapper;
+import com.clustercontrol.hub.util.HubRestClientWrapper;
 import com.clustercontrol.hub.view.TransferView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.hub.HinemosUnknown_Exception;
-import com.clustercontrol.ws.hub.InvalidRole_Exception;
-import com.clustercontrol.ws.hub.InvalidSetting_Exception;
-import com.clustercontrol.ws.hub.InvalidUserPass_Exception;
-import com.clustercontrol.ws.hub.LogTransferNotFound_Exception;
-import com.clustercontrol.ws.hub.TransferInfo;
 
 
 public class LogTransferEnableAction extends AbstractHandler  implements IElementUpdater {
@@ -128,51 +127,65 @@ public class LogTransferEnableAction extends AbstractHandler  implements IElemen
 			return null;
 		}
 
-		StringBuffer sucTransferIds = new StringBuffer();
-		StringBuffer failTransferIds = new StringBuffer();
+		StringBuffer successList = new StringBuffer();
+		StringBuffer failureList = new StringBuffer();
+		StringBuffer invalidRoleList = new StringBuffer();
 		for(Map.Entry<String, List<String>> entry : transferIdMap.entrySet()) {
 			String managerName = entry.getKey();
-			HubEndpointWrapper wrapper = HubEndpointWrapper.getWrapper(managerName);
-			for (String transferId : entry.getValue()) {
-				try {
-					TransferInfo info = wrapper.getTransferInfo(transferId);
-					info.setValidFlg(true);
-					try {
-						wrapper.modifyTransferInfo(info);
-						sucTransferIds.append(transferId + "(" + managerName +")" + ", ");
-					}
-					catch (InvalidSetting_Exception | HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | LogTransferNotFound_Exception e) {
-						m_log.debug("execute modifyLogTransfer, " + e.getMessage());
-						failTransferIds.append(transferId + ", ");
-					}
-				} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
-					m_log.debug("execute getLogTransfer, " + e.getMessage());
-					failTransferIds.append(transferId + ", ");
+			HubRestClientWrapper wrapper = HubRestClientWrapper.getWrapper(managerName);
+			try{
+				SetTransferValidRequest request = new SetTransferValidRequest();
+				request.setTransferIdList(entry.getValue());
+				request.setFlg(false);
+				wrapper.setTransferValid(request);
+				for (String transferId : entry.getValue()) {
+					successList.append(transferId +"(" + managerName + ")" + "\n");
 				}
+			} catch (InvalidRole e) {
+				String targetIds = "{" + String.join(",", entry.getValue()) + "}";
+				for(String targetId : entry.getValue()) {
+					invalidRoleList.append(targetId + "\n");
+				}
+				m_log.warn("run() setNotifyValid targetIds=" + targetIds + ", " + e.getMessage(), e);
+			} catch (Exception e) {
+				String transferIds = "{" + String.join(",", entry.getValue()) + "}";
+				for(String transferId : entry.getValue()) {
+					failureList.append(transferId + "\n");
+				}
+				m_log.warn("run() setNotifyValid targetIds=" + transferIds + ", " + e.getMessage(), e);
 			}
 		}
 
-		//有効化に成功したものを表示
-		if(sucTransferIds.length() > 0) {
-			sucTransferIds.setLength(sucTransferIds.length() - 2);
+		if (invalidRoleList.length() != 0) {
+			// 権限がない場合にはエラーメッセージを表示する
+			MessageDialog.openInformation(
+					null, 
+					Messages.getString("message"),
+					Messages.getString("message.accesscontrol.16") + "\n" + invalidRoleList);
+		}
+
+		// 成功ダイアログ
+		if(successList.length() != 0){
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("successful"),
 					Messages.getString("message.hub.log.transfer.action.result",
 							new Object[]{Messages.getString("hub.log.transfer.id"),
 									Messages.getString("hub.log.transfer.enable.setting"),
-									Messages.getString("successful"), sucTransferIds}));
+									Messages.getString("successful"), successList}));
+
 		}
-		//有効化に失敗したものを表示
-		if(failTransferIds.length() > 0) {
-			failTransferIds.setLength(failTransferIds.length() - 2);
+
+		// 失敗ダイアログ
+		if(failureList.length() != 0){
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
 					Messages.getString("message.hub.log.transfer.action.result",
 							new Object[]{Messages.getString("hub.log.transfer.id"),
 									Messages.getString("hub.log.transfer.enable.setting"),
-									Messages.getString("failed"), failTransferIds}));
+									Messages.getString("failed"), failureList}));
+
 		}
 
 		logTransfarView.update();

@@ -15,8 +15,9 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.reporting.bean.ReportingInfo;
-import com.clustercontrol.reporting.fault.ReportingNotFound;
+import com.clustercontrol.rest.endpoint.reporting.dto.CreateReportingFileRequest;
 import com.clustercontrol.platform.util.reporting.ExecReportingProcess;
 
 /**
@@ -40,17 +41,17 @@ public class OperationReporting {
 
 	/**
 	 * @param reportId
-	 * @param tmpReportingInfo
+	 * @param dtoReq
 	 * @return 作成されるレポートファイル名のリスト
 	 */
-	public List<String> runReporting(String reportId, ReportingInfo tmpReportingInfo) {
+	public List<String> runReporting(String reportId, CreateReportingFileRequest dtoReq) {
 
 		List<String> ret = null;
 		m_log.debug("OperationReporting() : reportId = " + reportId);
 
 		try {
 			ReportingInfo info = new SelectReportingInfo().getReportingInfo(reportId);
-			ret = ExecReportingProcess.execute(info, tmpReportingInfo);
+			ret = ExecReportingProcess.execute(info, dtoReq);
 		} catch (ReportingNotFound e) {
 			// 何もしない
 		} catch (InvalidRole e) {

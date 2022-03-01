@@ -10,13 +10,13 @@ package com.clustercontrol.accesscontrol.viewer;
 
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;
+import org.openapitools.client.model.RoleInfoResponse;
+import org.openapitools.client.model.UserInfoResponse;
 
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
+import com.clustercontrol.accesscontrol.bean.RoleTreeItemWrapper;
 import com.clustercontrol.bean.RoleSettingImageConstant;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.access.UserInfo;
-import com.clustercontrol.ws.accesscontrol.RoleTreeItem;
 
 /**
  * ロールツリー用コンポジットのツリービューア用のLabelProviderクラスです。
@@ -36,10 +36,10 @@ public class RoleSettingTreeLabelProvider extends LabelProvider {
 	 */
 	@Override
 	public String getText(Object element) {
-		Object data = ((RoleTreeItem) element).getData();
-		if (data instanceof RoleInfo) {
-			String id = ((RoleInfo) data).getRoleId();
-			String name = ((RoleInfo) data).getRoleName();
+		Object data = ((RoleTreeItemWrapper) element).getData();
+		if (data instanceof RoleInfoResponse) {
+			String id = ((RoleInfoResponse) data).getRoleId();
+			String name = ((RoleInfoResponse) data).getRoleName();
 			if (id.equals(RoleSettingTreeConstant.ROOT_ID)) {
 				return name;
 			} else if (id.equals(RoleSettingTreeConstant.MANAGER)) {
@@ -47,9 +47,9 @@ public class RoleSettingTreeLabelProvider extends LabelProvider {
 			} else {
 				return name + " (" + id + ")";
 			}
-		} else if (data instanceof UserInfo) {
-			String id = ((UserInfo) data).getUserId();
-			String name = ((UserInfo) data).getUserName();
+		} else if (data instanceof UserInfoResponse) {
+			String id = ((UserInfoResponse) data).getUserId();
+			String name = ((UserInfoResponse) data).getUserName();
 			return name + " (" + id + ")";
 		} else {
 			return "";
@@ -67,7 +67,7 @@ public class RoleSettingTreeLabelProvider extends LabelProvider {
 	@Override
 	public Image getImage(Object element) {
 
-		Object data = ((RoleTreeItem) element).getData();
+		Object data = ((RoleTreeItemWrapper) element).getData();
 
 		return RoleSettingImageConstant.typeToImage(data);
 	}

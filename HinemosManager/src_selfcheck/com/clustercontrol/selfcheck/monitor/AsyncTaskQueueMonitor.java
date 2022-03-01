@@ -16,12 +16,11 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
 import com.clustercontrol.selfcheck.AsyncTaskQueueConfig;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -97,7 +96,7 @@ public class AsyncTaskQueueMonitor extends SelfCheckMonitorBase {
 				continue;
 			}
 			String[] msgAttr1 = { Integer.toString(queueSize), Integer.toString(threshold) };
-			AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_011_SYS_SFC, msgAttr1,
+			AplLogger.put(InternalIdCommon.SYS_SFC_SYS_011, msgAttr1,
 					"too many asynchronous task in Hinemos Manager. (queued task " +
 							queueSize +
 							" > threshold " +

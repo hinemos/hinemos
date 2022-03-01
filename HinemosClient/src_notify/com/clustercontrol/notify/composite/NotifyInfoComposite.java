@@ -8,6 +8,7 @@
 
 package com.clustercontrol.notify.composite;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
@@ -15,16 +16,22 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.run.bean.MonitorNumericType;
+import com.clustercontrol.notify.bean.PriChangeFailSelectTypeConstant;
+import com.clustercontrol.notify.bean.PriChangeFailTypeMessage;
+import com.clustercontrol.notify.bean.PriChangeJudgeSelectTypeConstant;
+import com.clustercontrol.notify.bean.PriChangeJudgeTypeForPageMessage;
+import com.clustercontrol.notify.bean.PriChangeJudgeTypeForPatternMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 
 
@@ -43,18 +50,43 @@ import com.clustercontrol.util.WidgetTestUtil;
  * @since 2.0.0
  */
 public class NotifyInfoComposite extends NotifyIdListComposite {
+	
+	/** カラム数 */
+	private static final int WIDTH = 15;
 
+	/** カラム数（ラベル）。 */
+	private static final int WIDTH_LABEL = 4;
+
+	/** カラム数（コンボ）。 */
+	private static final int WIDTH_COMBO = 8;
+	
+	
 	/** アプリケーション ラベル。 */
 	private Label labelApplication = null;
 
 	/** アプリケーション ラベル文字列。 */
 	private Text textApplication = null;
+	
+	/** 判定による重要度変化 選択コンボ。 */
+	private Combo comboPriorityChangeJudge  = null;
+	
+	/** 取得失敗による重要度変化 選択コンボ。 */
+	private Combo comboPriorityChangeFail  = null;
+
+	/** アプリケーション に指定できる最小文字数 */
+	private int minApplicationLen = 1;
 
 	/** 入力値チェック用 */
 	protected ValidateResult validateResult = null;
 
 	/** 数値監視モード  */
 	private String m_monitorNumericType = MonitorNumericType.TYPE_BASIC.getType();
+
+	/** 判定による重要度変化 の選択タイプ  */
+	private Integer priorityChangeJudgeSelect = null;
+
+	/** 取得失敗による重要度変化 の選択タイプ  */
+	private Integer priorityChangeFailSelect = null;
 
 
 	/**
@@ -87,6 +119,22 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 		this.initialize(parent);
 	}
 
+	public NotifyInfoComposite(Composite parent, int style, Integer priorityChangeJudgeSelect,
+			Integer priorityChangeFailSelect) {
+		super(parent, style, true);
+		this.priorityChangeJudgeSelect = priorityChangeJudgeSelect;
+		this.priorityChangeFailSelect = priorityChangeFailSelect;
+		this.initialize(parent);
+	}
+
+	public NotifyInfoComposite(Composite parent, int style, int notifyIdType, Integer priorityChangeJudgeSelect,
+			Integer priorityChangeFailSelect) {
+		super(parent, style, true, notifyIdType);
+		this.priorityChangeJudgeSelect = priorityChangeJudgeSelect;
+		this.priorityChangeFailSelect = priorityChangeFailSelect;
+		this.initialize(parent);
+	}
+
 	/**
 	 * インスタンスを返します。
 	 * <p>
@@ -113,6 +161,7 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 
 		// 変数として利用されるグリッドデータ
 		GridData gridData = null;
+		Label label = null;
 
 		GridLayout layout = new GridLayout(1, true);
 		layout.marginWidth = 0;
@@ -146,6 +195,73 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 				update();
 			}
 		});
+		/*
+		 * 判定による重要度変化
+		 */
+		if(priorityChangeJudgeSelect != null){
+			label = new Label(this, SWT.NONE);
+			gridData = new GridData();
+			gridData.horizontalSpan = WIDTH_LABEL;
+			gridData.horizontalAlignment = GridData.FILL;
+			gridData.grabExcessHorizontalSpace = true;
+			label.setLayoutData(gridData);
+			label.setText(Messages.getString("NotifyIdListComposite.priority.change.judge") + " : ");
+			// コンボボックス
+			this.comboPriorityChangeJudge = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+			gridData = new GridData();
+			gridData.horizontalSpan = WIDTH_COMBO;
+			gridData.horizontalAlignment = GridData.FILL;
+			gridData.grabExcessHorizontalSpace = true;
+			this.comboPriorityChangeJudge.setLayoutData(gridData);
+			if (PriChangeJudgeSelectTypeConstant.TYPE_PATTERN == priorityChangeJudgeSelect) {
+				this.comboPriorityChangeJudge.add(PriChangeJudgeTypeForPatternMessage.STRING_ACROSS_MONITOR_DETAIL_ID);
+				this.comboPriorityChangeJudge.add(PriChangeJudgeTypeForPatternMessage.STRING_NOT_PRIORITY_CHANGE);
+				this.comboPriorityChangeJudge.setText(PriChangeJudgeTypeForPatternMessage.STRING_ACROSS_MONITOR_DETAIL_ID);
+			}
+			if (PriChangeJudgeSelectTypeConstant.TYPE_PAGE == priorityChangeJudgeSelect) {
+				this.comboPriorityChangeJudge.add(PriChangeJudgeTypeForPageMessage.STRING_ACROSS_MONITOR_DETAIL_ID);
+				this.comboPriorityChangeJudge.add(PriChangeJudgeTypeForPageMessage.STRING_NOT_PRIORITY_CHANGE);
+				this.comboPriorityChangeJudge.setText(PriChangeJudgeTypeForPageMessage.STRING_ACROSS_MONITOR_DETAIL_ID);
+			}
+			// 空白（レイアウトのパティング用）
+			label = new Label(this, SWT.NONE);
+			gridData = new GridData();
+			gridData.horizontalSpan = WIDTH -( WIDTH_LABEL + WIDTH_COMBO) ;
+			gridData.horizontalAlignment = GridData.FILL;
+			gridData.grabExcessHorizontalSpace = true;
+			label.setLayoutData(gridData);
+		}
+		
+		/*
+		 * 取得失敗による重要度変化
+		 */
+		if(priorityChangeFailSelect != null){
+			label = new Label(this, SWT.NONE);
+			gridData = new GridData();
+			gridData.horizontalSpan = WIDTH_LABEL;
+			gridData.horizontalAlignment = GridData.FILL;
+			gridData.grabExcessHorizontalSpace = true;
+			label.setLayoutData(gridData);
+			label.setText(Messages.getString("NotifyIdListComposite.priority.change.fail") + " : ");
+			// コンボボックス
+			this.comboPriorityChangeFail = new Combo(this, SWT.DROP_DOWN | SWT.READ_ONLY);
+			gridData = new GridData();
+			gridData.horizontalSpan = WIDTH_COMBO;
+			gridData.horizontalAlignment = GridData.FILL;
+			gridData.grabExcessHorizontalSpace = true;
+			this.comboPriorityChangeFail.setLayoutData(gridData);
+			this.comboPriorityChangeFail.add(PriChangeFailTypeMessage.STRING_PRIORITY_CHANGE);
+			this.comboPriorityChangeFail.add(PriChangeFailTypeMessage.STRING_NOT_PRIORITY_CHANGE);
+			this.comboPriorityChangeFail.setText(PriChangeFailTypeMessage.STRING_PRIORITY_CHANGE);
+			// 空白（レイアウトのパティング用）
+			label = new Label(this, SWT.NONE);
+			gridData = new GridData();
+			gridData.horizontalSpan = WIDTH -( WIDTH_LABEL + WIDTH_COMBO) ;
+			gridData.horizontalAlignment = GridData.FILL;
+			gridData.grabExcessHorizontalSpace = true;
+			label.setLayoutData(gridData);
+		}
+		
 		update();
 	}
 
@@ -155,7 +271,7 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 	@Override
 	public void update() {
 		// 必須入力項目を明示する
-		if(this.textApplication.getEnabled() && "".equals(this.textApplication.getText())){
+		if(this.textApplication.getEnabled() && this.textApplication.getText().length() < this.minApplicationLen){
 			this.textApplication.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
 		}else{
 			this.textApplication.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
@@ -170,7 +286,12 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 	public void setEnabled(boolean enabled) {
 		super.setEnabled(enabled);
 		this.textApplication.setEnabled(enabled);
-
+		if (this.comboPriorityChangeJudge != null) {
+			this.comboPriorityChangeJudge.setEnabled(enabled);
+		}
+		if (this.comboPriorityChangeFail != null) {
+			this.comboPriorityChangeFail.setEnabled(enabled);
+		}
 		this.update();
 	}
 
@@ -191,6 +312,59 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 		this.textApplication.setText(string);
 	}
 
+
+	/**
+	 * 判定による重要度変化タイプを返します。
+	 *
+	 * @return 判定による重要度変化タイプ
+	 */
+	public MonitorInfoResponse.PriorityChangeJudgmentTypeEnum getPriorityChangeJudgeType() {
+		if(priorityChangeJudgeSelect != null ){
+			if (PriChangeJudgeSelectTypeConstant.TYPE_PATTERN == priorityChangeJudgeSelect) {
+				return PriChangeJudgeTypeForPatternMessage.stringToTypeEnum(this.comboPriorityChangeJudge.getText());
+			}
+			if (PriChangeJudgeSelectTypeConstant.TYPE_PAGE == priorityChangeJudgeSelect) {
+				return PriChangeJudgeTypeForPageMessage.stringToTypeEnum(this.comboPriorityChangeJudge.getText());
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 判定による重要度変化タイプを設定します。
+	 */
+	public void setPriorityChangeJudgeType(MonitorInfoResponse.PriorityChangeJudgmentTypeEnum type) {
+		if(priorityChangeJudgeSelect != null ){
+			if (PriChangeJudgeSelectTypeConstant.TYPE_PATTERN == priorityChangeJudgeSelect) {
+				this.comboPriorityChangeJudge.setText(PriChangeJudgeTypeForPatternMessage.typeEnumToString(type));
+			}
+			if (PriChangeJudgeSelectTypeConstant.TYPE_PAGE == priorityChangeJudgeSelect) {
+				this.comboPriorityChangeJudge.setText(PriChangeJudgeTypeForPageMessage.typeEnumToString(type));
+			}
+		}
+	}
+
+	/**
+	 * 取得失敗による重要度変化タイプを返します。
+	 *
+	 * @return 取得失敗による重要度変化タイプ
+	 */
+	public MonitorInfoResponse.PriorityChangeFailureTypeEnum getPriorityChangeFailType() {
+		if (priorityChangeFailSelect != null &&  PriChangeFailSelectTypeConstant.TYPE_GET == priorityChangeFailSelect) {
+			return PriChangeFailTypeMessage.stringToTypeEnum(this.comboPriorityChangeFail.getText());
+		}
+		return null;
+	}
+
+	/**
+	 * 取得失敗による重要度変化タイプを設定します。
+	 */
+	public void setPriorityChangeFailType(MonitorInfoResponse.PriorityChangeFailureTypeEnum type) {
+		if (priorityChangeFailSelect != null &&  PriChangeFailSelectTypeConstant.TYPE_GET == priorityChangeFailSelect) {
+			this.comboPriorityChangeFail.setText(PriChangeFailTypeMessage.typeEnumToString(type));
+		}
+	}
+
 	/**
 	 * 引数で指定された監視情報に、入力値を設定します。
 	 * <p>
@@ -200,23 +374,28 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 	 * @param info	監視情報
 	 * @return	検証結果
 	 */
-	public ValidateResult createInputData(MonitorInfo info){
+	public ValidateResult createInputData(MonitorInfoResponse info){
 
 		this.validateResult = null;
 		if(info != null){
 			if(getNotify() != null && getNotify().size() != 0){
 				//コンポジットから通知情報を取得します。
-				List<NotifyRelationInfo> notifyRelationInfoList = null;
-				if (MonitorNumericType.TYPE_PREDICTION.getType().equals(m_monitorNumericType)) {
-					notifyRelationInfoList = info.getPredictionNotifyRelationList();
-				} else if (MonitorNumericType.TYPE_CHANGE.getType().equals(m_monitorNumericType)) {
-					notifyRelationInfoList = info.getChangeNotifyRelationList();
-				} else {
-					notifyRelationInfoList = info.getNotifyRelationList();
+				List<NotifyRelationInfoResponse> monitorNotifyList = new ArrayList<>();
+				for (NotifyRelationInfoResponse notify : getNotify()) {
+					NotifyRelationInfoResponse monitorNotify = new NotifyRelationInfoResponse();
+					monitorNotify.setNotifyId(notify.getNotifyId());
+					monitorNotify.setNotifyType(notify.getNotifyType());
+					monitorNotifyList.add(monitorNotify);
 				}
-				notifyRelationInfoList.clear();
-				if (this.getNotify() != null) {
-					notifyRelationInfoList.addAll(this.getNotify());
+				if (MonitorNumericType.TYPE_PREDICTION.getType().equals(m_monitorNumericType)) {
+					info.setPredictionNotifyRelationList(new ArrayList<>());
+					info.getPredictionNotifyRelationList().addAll(monitorNotifyList);
+				} else if (MonitorNumericType.TYPE_CHANGE.getType().equals(m_monitorNumericType)) {
+					info.setChangeNotifyRelationList(new ArrayList<>());
+					info.getChangeNotifyRelationList().addAll(monitorNotifyList);
+				} else {
+					info.setNotifyRelationList(new ArrayList<>());
+					info.getNotifyRelationList().addAll(monitorNotifyList);
 				}
 			}
 
@@ -230,6 +409,10 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 					info.setApplication(this.getApplication());
 				}
 			}
+
+			//重要度変化の選択
+			info.setPriorityChangeJudgmentType(this.getPriorityChangeJudgeType());
+			info.setPriorityChangeFailureType(this.getPriorityChangeFailType());
 
 		}
 		return this.validateResult;
@@ -248,6 +431,14 @@ public class NotifyInfoComposite extends NotifyIdListComposite {
 		this.validateResult.setID(id);
 		this.validateResult.setMessage(message);
 
+	}
+
+	/**
+	 * アプリケーション に設定可能な最小文字数を設定します。
+	 */
+	public void setMinApplicationLen(int minApplicationLen) {
+		this.minApplicationLen = minApplicationLen;
+		update();
 	}
 
 }

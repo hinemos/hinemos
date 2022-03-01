@@ -32,14 +32,14 @@ public class EventLogEntityJdbcBatchInsert extends JdbcBatchQuery {
 			+ "user_item21, user_item22, user_item23, user_item24, user_item25,"
 			+ "user_item26, user_item27, user_item28, user_item29, user_item30,"
 			+ "user_item31, user_item32, user_item33, user_item34, user_item35,"
-			+ "user_item36, user_item37, user_item38, user_item39, user_item40"
+			+ "user_item36, user_item37, user_item38, user_item39, user_item40, notify_uuid"
 			+ ") "
 			+ "values ("
 			+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
 			+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
 			+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
 			+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
-			+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
+			+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
 			+ ")";
 
 	private List<EventLogEntity> entities = null;
@@ -120,6 +120,7 @@ public class EventLogEntityJdbcBatchInsert extends JdbcBatchQuery {
 					entity.getUserItem38(),
 					entity.getUserItem39(),
 					entity.getUserItem40(),
+					entity.getNotifyUUID(),
 			};
 			setParameters(pstmt, params);
 			pstmt.addBatch();

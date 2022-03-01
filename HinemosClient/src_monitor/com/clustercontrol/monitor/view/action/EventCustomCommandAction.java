@@ -26,13 +26,14 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.EventLogInfoRequest;
+import org.openapitools.client.model.EventLogInfoResponse;
 
 import com.clustercontrol.monitor.composite.EventListComposite;
 import com.clustercontrol.monitor.dialog.EventCustomCommandRunDialog;
 import com.clustercontrol.monitor.util.ConvertListUtil;
 import com.clustercontrol.monitor.view.EventView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.EventDataInfo;
 
 /**
  * 監視履歴[イベント・カスタムコマンドの実行]ビューの確認アクションによるイベントの確認の更新処理を行うアクライアント側アクションクラス<BR>
@@ -105,12 +106,12 @@ public class EventCustomCommandAction extends AbstractHandler implements IElemen
 			return null;
 		}
 		
-		ArrayList<EventDataInfo> selectEventList = ConvertListUtil.listToEventLogDataList(selectionList);
+		List<EventLogInfoRequest> selectEventList = ConvertListUtil.listToEventLogDataList(selectionList);
 		
 		//複数マネージャ選択チェック
 		
 		String managarName = selectEventList.get(0).getManagerName();
-		for (EventDataInfo eventInfo : selectEventList) {
+		for (EventLogInfoRequest eventInfo : selectEventList) {
 			if (!managarName.equals(eventInfo.getManagerName())) {
 				//複数マネージャのイベントが選択されている場合
 				MessageDialog.openInformation(

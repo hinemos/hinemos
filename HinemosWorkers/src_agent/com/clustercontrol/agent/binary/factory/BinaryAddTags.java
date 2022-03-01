@@ -29,6 +29,8 @@ import java.util.List;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtBinaryCheckInfoResponse;
+import org.openapitools.client.model.AgtBinaryPatternInfoResponse;
 
 import com.clustercontrol.agent.binary.readingstatus.FileReadingStatus;
 import com.clustercontrol.agent.binary.result.BinaryFile;
@@ -36,10 +38,7 @@ import com.clustercontrol.agent.binary.result.BinaryRecord;
 import com.clustercontrol.binary.bean.BinaryConstant;
 import com.clustercontrol.binary.bean.BinaryTagConstant;
 import com.clustercontrol.util.BinaryUtil;
-import com.clustercontrol.ws.monitor.BinaryCheckInfo;
-import com.clustercontrol.ws.monitor.BinaryPatternInfo;
-import com.clustercontrol.util.CommandCreator;
-import com.clustercontrol.util.CommandCreator.PlatformType;
+import com.clustercontrol.util.EnvUtil;
 /**
  * タグ追加用のクラス.<br>
  * <br>
@@ -56,10 +55,7 @@ public class BinaryAddTags {
 	private static final String DELIMITER = "() : ";
 
 	// 実行OSがWindowsであるかどうかのフラグ
-	// TODO
-	// HinemosCommonのCommandCreatorの実装を引用しているが、類似した実装がCloudやinquirtyに散っているので
-	// 統一が望ましい。commons-lang に含まれる SystemUtils.IS_OS_WINDOWS への置換も要検討
-	private static final boolean isWindows = (CommandCreator.sysPlatform ==  PlatformType.WINDOWS) ;
+	private static final boolean isWindows = EnvUtil.isWindows();
 	
 	/**
 	 * 各ファイルにタグ追加.
@@ -67,16 +63,16 @@ public class BinaryAddTags {
 	 * @param readingStatus
 	 * 
 	 * @param readingStatus
-	 *            監視ファイル読込状態.
+	 *			  監視ファイル読込状態.
 	 * @param fileResult
-	 *            タグ追加対象の監視結果ファイル情報.
-	 * @param binaryInfo
-	 *            監視設定の内バイナリ監視に関する情報<br>
+	 *			  タグ追加対象の監視結果ファイル情報.
+	 * @param binaryCheckInfoResponse
+	 *			  監視設定の内バイナリ監視に関する情報<br>
 	 */
-	public static void addFileTags(FileReadingStatus readingStatus, BinaryFile fileResult, BinaryCheckInfo binaryInfo) {
+	public static void addFileTags(FileReadingStatus readingStatus, BinaryFile fileResult, AgtBinaryCheckInfoResponse binaryCheckInfoResponse) {
 
 		// ファイル分類の取得.
-		String tagType = binaryInfo.getTagType();
+		String tagType = binaryCheckInfoResponse.getTagType();
 
 		// ファイルメタデータのタグ追加.
 		addFileMetadataTags(readingStatus, fileResult);
@@ -84,7 +80,7 @@ public class BinaryAddTags {
 		// ファイル分類毎にタグを追加.
 		if (BinaryConstant.TAG_TYPE_PCAP.equals(tagType)) {
 			// パケットキャプチャの場合.
-			addPcapFileTags(fileResult, binaryInfo);
+			addPcapFileTags(fileResult);
 			return;
 		}
 
@@ -96,9 +92,9 @@ public class BinaryAddTags {
 	 * タグ取得できなかった場合はログ出力.
 	 * 
 	 * @param readingStatus
-	 *            監視ファイル読込状態.
+	 *			  監視ファイル読込状態.
 	 * @param fileResult
-	 *            タグ追加対象の監視結果ファイル情報.
+	 *			  タグ追加対象の監視結果ファイル情報.
 	 */
 	private static void addFileMetadataTags(FileReadingStatus readingStatus, BinaryFile fileResult) {
 
@@ -247,11 +243,9 @@ public class BinaryAddTags {
 	 * PCAPファイル用のレコードタグ追加.
 	 * 
 	 * @param fileResult
-	 *            タグ追加対象の監視結果ファイル情報.
-	 * @param binaryInfo
-	 *            バイナリ監視情報.
+	 *			  タグ追加対象の監視結果ファイル情報.
 	 */
-	private static void addPcapFileTags(BinaryFile fileResult, BinaryCheckInfo binaryInfo) {
+	private static void addPcapFileTags(BinaryFile fileResult) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
 		List<Byte> fileHeaderBinary = fileResult.getFileHeader();
@@ -281,16 +275,16 @@ public class BinaryAddTags {
 	 * 各レコードにタグ追加.
 	 * 
 	 * @param fileInfo
-	 *            ファイル単位の監視結果情報.
+	 *			  ファイル単位の監視結果情報.
 	 * @param sendData
-	 *            タグ追加対象のレコードリスト.
+	 *			  タグ追加対象のレコードリスト.
 	 * @param binaryInfo
-	 *            監視設定の内バイナリ監視に関する情報
-	 * @param patternInfoList
-	 *            フィルタ条件<br>
+	 *			  監視設定の内バイナリ監視に関する情報
+	 * @param matchInfoList
+	 *			  フィルタ条件<br>
 	 */
-	public static void addRecordTags(BinaryFile fileInfo, List<BinaryRecord> sendData, BinaryCheckInfo binaryInfo,
-			List<BinaryPatternInfo> patternInfoList) {
+	public static void addRecordTags(BinaryFile fileInfo, List<BinaryRecord> sendData, AgtBinaryCheckInfoResponse binaryInfo,
+			List<AgtBinaryPatternInfoResponse> matchInfoList) {
 
 		addComRecTags(sendData);
 
@@ -298,7 +292,7 @@ public class BinaryAddTags {
 
 		// タイプ別にタグを追加.
 		if (BinaryConstant.TAG_TYPE_PACCT.equals(tagType)) {
-			addPacctRecTags(sendData, binaryInfo, patternInfoList);
+			addPacctRecTags(sendData, binaryInfo, matchInfoList);
 		} else if (BinaryConstant.TAG_TYPE_WTMP.equals(tagType)) {
 			// 汎用性低いので開発対象外とする.
 			return;
@@ -315,7 +309,7 @@ public class BinaryAddTags {
 	 * 共通レコードタグ追加.
 	 * 
 	 * @param sendData
-	 *            タグ追加対象のレコードリスト.
+	 *			  タグ追加対象のレコードリスト.
 	 */
 	private static void addComRecTags(List<BinaryRecord> sendData) {
 
@@ -333,10 +327,10 @@ public class BinaryAddTags {
 	 * PACCTファイル用のレコードタグ追加.
 	 * 
 	 * @param sendData
-	 *            タグ追加対象のレコードリスト.
+	 *			  タグ追加対象のレコードリスト.
 	 */
-	private static void addPacctRecTags(List<BinaryRecord> sendData, BinaryCheckInfo binaryInfo,
-			List<BinaryPatternInfo> patternInfoList) {
+	private static void addPacctRecTags(List<BinaryRecord> sendData, AgtBinaryCheckInfoResponse binaryInfo,
+			List<AgtBinaryPatternInfoResponse> patternInfoList) {
 
 		// ループ内で利用する変数初期化.
 		List<Byte> recBinary = null;
@@ -347,7 +341,7 @@ public class BinaryAddTags {
 
 		// エンコード取得.
 		if (patternInfoList != null && !patternInfoList.isEmpty()) {
-			for (BinaryPatternInfo pattern : patternInfoList) {
+			for (AgtBinaryPatternInfoResponse pattern : patternInfoList) {
 				if (pattern.getEncoding() != null && !pattern.getEncoding().isEmpty()) {
 					textEncoding = pattern.getEncoding();
 					break;
@@ -393,13 +387,13 @@ public class BinaryAddTags {
 	 * PCAPファイル用のレコードタグ追加.
 	 * 
 	 * @param fileInfo
-	 *            ファイル単位の監視結果情報.
+	 *			  ファイル単位の監視結果情報.
 	 * @param sendData
-	 *            タグ追加対象のレコードリスト.
+	 *			  タグ追加対象のレコードリスト.
 	 * @param binaryInfo
-	 *            監視設定の内バイナリ監視に関する情報<br>
+	 *			  監視設定の内バイナリ監視に関する情報<br>
 	 */
-	private static void addPcapRecTags(BinaryFile fileInfo, List<BinaryRecord> sendData, BinaryCheckInfo binaryInfo) {
+	private static void addPcapRecTags(BinaryFile fileInfo, List<BinaryRecord> sendData, AgtBinaryCheckInfoResponse binaryInfo) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		m_log.debug(methodName + DELIMITER + "start.");
 

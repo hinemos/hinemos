@@ -12,6 +12,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.clustercontrol.utility.constant.HinemosModuleConstant;
+
 /**
  * ジョブの基本情報を保持するクラス
  * 
@@ -229,4 +231,25 @@ public class FuncInfo implements Serializable, Cloneable {
 	public void setObjectType(List<String> objectType) {
 		m_objectType = objectType;
 	}
+	
+	
+	/*
+	 * フィルタ設定に関する機能であるかを判定します
+	 * 
+	 * @see com.clustercontrol.utility.settings.ui.action.BuildFunctionTreeAction
+	 */
+	public boolean isFilterSettingFunc() {
+		//com.clustercontrol.utility.settings.ui.action.BuildFunctionTreeAction.buildTree()
+		//にてどのIDを設定しているかに依存するので 上記が変更になった場合、併せて見直すこと
+		switch (this.getId()){
+			case HinemosModuleConstant.FILTER_SETTING:
+			case HinemosModuleConstant.FILTER_SETTING_JOB_HISTORY:
+			case HinemosModuleConstant.FILTER_SETTING_MONITOR_HISTORY_EVENT:
+			case HinemosModuleConstant.FILTER_SETTING_MONITOR_HISTORY_STATUS:
+				return true;
+			default:
+				return false;
+		}
+	}
+	
 }

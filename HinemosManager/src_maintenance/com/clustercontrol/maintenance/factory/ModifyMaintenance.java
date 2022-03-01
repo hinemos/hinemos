@@ -8,12 +8,11 @@
 
 package com.clustercontrol.maintenance.factory;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -25,6 +24,8 @@ import com.clustercontrol.maintenance.model.MaintenanceTypeMst;
 import com.clustercontrol.maintenance.util.QueryUtil;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.util.HinemosTime;
+
+import jakarta.persistence.EntityExistsException;
 
 
 /**
@@ -80,7 +81,7 @@ public class ModifyMaintenance {
 			}
 
 			if(data.getNotifyId() != null){
-				new NotifyControllerBean().addNotifyRelation(data.getNotifyId());
+				new NotifyControllerBean().addNotifyRelation(data.getNotifyId(), data.getOwnerRoleId());
 			}
 		}
 
@@ -124,13 +125,10 @@ public class ModifyMaintenance {
 		entity.setNotifyGroupId(info.getNotifyGroupId());
 		entity.setApplication(info.getApplication());
 		entity.setValidFlg(info.getValidFlg());
-		entity.setOwnerRoleId(info.getOwnerRoleId());
-		entity.setRegUser(info.getRegUser());
-		entity.setRegDate(info.getRegDate());
 		entity.setUpdateUser(name);
 		entity.setUpdateDate(HinemosTime.currentTimeMillis());
 
-		new NotifyControllerBean().modifyNotifyRelation(info.getNotifyId(), info.getNotifyGroupId());
+		new NotifyControllerBean().modifyNotifyRelation(info.getNotifyId(), info.getNotifyGroupId(), info.getOwnerRoleId());
 
 		return true;
 	}
@@ -157,6 +155,9 @@ public class ModifyMaintenance {
 			//メンテナンス情報の削除
 			entity.unchain();	// 削除前処理
 			em.remove(entity);
+
+			// 通知履歴情報を削除する
+			new NotifyControllerBean().deleteNotifyHistory(HinemosModuleConstant.SYSYTEM_MAINTENANCE, maintenanceId);
 
 			return true;
 		}

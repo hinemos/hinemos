@@ -1,0 +1,30 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"directory",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorRpaLogfileInfo_directory"}
+	]},
+
+	{
+	"propName":"fileName",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorRpaLogfileInfo_fileName"}
+	]},
+
+	{
+	"propName":"fileEncoding",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorRpaLogfileInfo_fileEncoding"}
+	]},
+
+	{
+	"propName":"rpaToolEnvId",
+	"annotations":[
+		{"type":"Column", "columnName":"MonitorRpaLogfileInfo_rpaToolEnvId"}
+	]}
+]
+}

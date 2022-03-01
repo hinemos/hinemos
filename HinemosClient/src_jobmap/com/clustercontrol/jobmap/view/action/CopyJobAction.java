@@ -14,11 +14,11 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmap.util.JobMapActionUtil;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.jobmap.view.JobTreeView;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 /**
  * ジョブコピーするクライアント側アクションクラス<BR>
@@ -35,11 +35,11 @@ public class CopyJobAction extends BaseAction {
 
 		if (viewPart instanceof JobTreeView) {
 			JobTreeView view = (JobTreeView)viewPart;
-			JobTreeItem copyItem = view.getSelectJobTreeItem();
+			JobTreeItemWrapper copyItem = view.getSelectJobTreeItem();
 			view.setCopyJobTreeItem(copyItem);
 		} else if (viewPart instanceof JobMapEditorView) {
 			JobMapEditorView view = (JobMapEditorView)viewPart;
-			JobTreeItem copyItem = view.getFocusFigure().getJobTreeItem();
+			JobTreeItemWrapper copyItem = view.getFocusFigure().getJobTreeItem();
 			JobMapActionUtil.getJobTreeView().setCopyJobTreeItem(copyItem);
 		}
 		return null;
@@ -53,15 +53,20 @@ public class CopyJobAction extends BaseAction {
 			return;
 		}
 		
-		Integer type = m_jobTreeItem.getData().getType();
+		JobInfoWrapper.TypeEnum type = m_jobTreeItem.getData().getType();
 		this.setBaseEnabled(
-				type == JobConstant.TYPE_JOBUNIT || 
-				type == JobConstant.TYPE_JOBNET ||
-				type == JobConstant.TYPE_JOB ||
-				type == JobConstant.TYPE_FILEJOB ||
-				type == JobConstant.TYPE_APPROVALJOB ||
-				type == JobConstant.TYPE_MONITORJOB ||
-				type == JobConstant.TYPE_REFERJOB ||
-				type == JobConstant.TYPE_REFERJOBNET);
+				type == JobInfoWrapper.TypeEnum.JOBUNIT || 
+				type == JobInfoWrapper.TypeEnum.JOBNET ||
+				type == JobInfoWrapper.TypeEnum.JOB ||
+				type == JobInfoWrapper.TypeEnum.FILEJOB ||
+				type == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+				type == JobInfoWrapper.TypeEnum.MONITORJOB ||
+				type == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+				type == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+				type == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+				type == JobInfoWrapper.TypeEnum.REFERJOB ||
+				type == JobInfoWrapper.TypeEnum.REFERJOBNET ||
+				type == JobInfoWrapper.TypeEnum.RESOURCEJOB ||
+				type == JobInfoWrapper.TypeEnum.RPAJOB);
 	}
 }

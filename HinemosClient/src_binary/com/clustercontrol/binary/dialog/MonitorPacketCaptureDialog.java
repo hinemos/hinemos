@@ -20,17 +20,19 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddPacketcaptureMonitorRequest;
+import org.openapitools.client.model.BinaryPatternInfoRequest;
+import org.openapitools.client.model.ModifyPacketcaptureMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.PacketCheckInfoResponse;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.PacketCheckInfo;
 
 /**
  * パケットキャプチャーの監視設定ダイアログクラス<BR>
@@ -109,20 +111,20 @@ public class MonitorPacketCaptureDialog extends CommonMonitorBinaryDialog {
 		super.confirmCollectValid.removeSelectionListener(super.collectSelectedListner);
 
 		// 初期表示値の設定.
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if (this.monitorId == null) {
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			super.setInfoInitialValue(info);
 			super.m_monitorRule.setInputData(info);
 			this.setInputData(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(super.managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(super.managerName);
 				info = wrapper.getMonitor(monitorId);
 				this.setInputData(info);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
@@ -203,20 +205,20 @@ public class MonitorPacketCaptureDialog extends CommonMonitorBinaryDialog {
 	 *            設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 
 		// 親の入力値を設定.
 		super.setInputData(monitor);
 
 		// バイナリ監視情報の設定.
-		PacketCheckInfo packetCaptureInfo = monitor.getPacketCheckInfo();
+		PacketCheckInfoResponse packetCaptureInfo = monitor.getPacketCheckInfo();
 		if (packetCaptureInfo == null) {
-			packetCaptureInfo = new PacketCheckInfo();
+			packetCaptureInfo = new PacketCheckInfoResponse();
 		}
 
 		// 独自項目のセット.
 		if (packetCaptureInfo != null) {
-			if (packetCaptureInfo.isPromiscuousMode()) {
+			if (packetCaptureInfo.getPromiscuousMode() != null && packetCaptureInfo.getPromiscuousMode()) {
 				this.m_promiscuousMode.setSelection(true);
 			} else {
 				this.m_promiscuousMode.setSelection(false);
@@ -239,20 +241,14 @@ public class MonitorPacketCaptureDialog extends CommonMonitorBinaryDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if (super.validateResult != null) {
 			return null;
 		}
 
-		// 監視種別を設定.
-		super.monitorInfo.setMonitorType(MonitorTypeConstant.TYPE_BINARY);
-		super.monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_PCAP_BIN);
-
 		// パケットキャプチャ監視（バイナリ）固有情報を設定
-		PacketCheckInfo packetCaptureInfo = new PacketCheckInfo();
-		packetCaptureInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_PCAP_BIN);
-		packetCaptureInfo.setMonitorId(super.monitorInfo.getMonitorId());
+		PacketCheckInfoResponse packetCaptureInfo = new PacketCheckInfoResponse();
 
 		if (this.m_promiscuousMode.getSelection()) {
 			packetCaptureInfo.setPromiscuousMode(true);
@@ -299,31 +295,34 @@ public class MonitorPacketCaptureDialog extends CommonMonitorBinaryDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = super.inputData;
-		String managerName = super.getManagerName();
-		if (info != null) {
-			String[] args = { info.getMonitorId(), managerName };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+		if (super.inputData != null) {
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if (!this.updateFlg) {
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if (result) {
-						MessageDialog.openInformation(null, Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(null, Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddPacketcaptureMonitorRequest info = new AddPacketcaptureMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddPacketcaptureMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getBinaryPatternInfo() != null) {
+						for (int i = 0; i < this.inputData.getBinaryPatternInfo().size(); i++) {
+							info.getBinaryPatternInfo().get(i).setPriority(
+									BinaryPatternInfoRequest.PriorityEnum.fromValue(
+											this.inputData.getBinaryPatternInfo().get(i).getPriority().getValue()));
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					wrapper.addPacketcaptureMonitor(info);
+					MessageDialog.openInformation(null, Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.monitor.53", args));
 
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
@@ -336,21 +335,30 @@ public class MonitorPacketCaptureDialog extends CommonMonitorBinaryDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(null, Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if (result) {
+					ModifyPacketcaptureMonitorRequest info = new ModifyPacketcaptureMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyPacketcaptureMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getBinaryPatternInfo() != null) {
+						for (int i = 0; i < this.inputData.getBinaryPatternInfo().size(); i++) {
+							info.getBinaryPatternInfo().get(i).setPriority(
+									BinaryPatternInfoRequest.PriorityEnum.fromValue(
+											this.inputData.getBinaryPatternInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.modifyPacketcaptureMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(null, Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(null, Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(null, Messages.getString("failed"),
 							Messages.getString("message.monitor.36", args) + errMessage);
 				}

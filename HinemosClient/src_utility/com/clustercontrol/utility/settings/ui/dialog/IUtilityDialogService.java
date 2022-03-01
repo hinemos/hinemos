@@ -8,6 +8,8 @@
 
 package com.clustercontrol.utility.settings.ui.dialog;
 
+import java.util.List;
+
 /**
  * Utility用確認ダイアログ
  * 
@@ -18,5 +20,7 @@ public interface IUtilityDialogService {
 
 	public UtilityProcessDialog createImportProcessDialog(String message);
 	public DeleteProcessDialog createDeleteProcessDialog(String message);
-
+	public UtilityProcessDialog createImportContinueDialog(String message);
+	public UtilityResultDialog createImportResultDialog(String pluginId, String title, String mainMessage,
+			List<String> detailList);
 }

@@ -23,11 +23,11 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import com.clustercontrol.approval.util.JobApprovalInfoWrapper;
 
 import com.clustercontrol.approval.dialog.ApprovalDetailDialog;
 import com.clustercontrol.approval.view.ApprovalView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.JobApprovalInfo;
 
 public class ApprovalDetailAction extends AbstractHandler implements IElementUpdater{
 	/** ログ */
@@ -65,7 +65,7 @@ public class ApprovalDetailAction extends AbstractHandler implements IElementUpd
 		}
 		
 		//一覧で選択された承認情報を取得
-		JobApprovalInfo info = view.getComposite().getSelectedApprovalInfo();
+		JobApprovalInfoWrapper info = view.getComposite().getSelectedApprovalInfo();
 		if(info != null){
 			// 承認詳細ダイアログを開く
 			ApprovalDetailDialog dialog = new ApprovalDetailDialog(this.viewPart.getSite().getShell(), info);

@@ -34,6 +34,9 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
 
+import org.openapitools.client.model.JobRuntimeParamDetailResponse;
+import org.openapitools.client.model.JobRuntimeParamResponse;
+
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.PatternConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -47,8 +50,6 @@ import com.clustercontrol.jobmanagement.bean.JobRuntimeParamTypeMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.JobRuntimeParam;
-import com.clustercontrol.ws.jobmanagement.JobRuntimeParamDetail;
 
 /**
  * ジョブ実行契機 ランタイムジョブ変数ダイアログクラスです。
@@ -86,10 +87,10 @@ public class RuntimeParameterDialog extends CommonDialog {
 	private Button m_chkRequiredFlg = null;
 
 	/** ランタイムジョブ変数情報 */
-	private JobRuntimeParam m_jobRuntimeParam = null;
+	private JobRuntimeParamResponse m_jobRuntimeParam = null;
 
 	/** ランタイムジョブ変数リスト */
-	private Map<String, JobRuntimeParam> m_parentJobRuntimeParamMap = new HashMap<>();
+	private Map<String, JobRuntimeParamResponse> m_parentJobRuntimeParamMap = new HashMap<>();
 	
 	/**
 	 * コンストラクタ
@@ -98,8 +99,8 @@ public class RuntimeParameterDialog extends CommonDialog {
 	 * @param paramInfo
 	 * @param mode
 	 */
-	public RuntimeParameterDialog(Shell parent, Map<String, JobRuntimeParam> parentJobRuntimeParamMap,
-		JobRuntimeParam jobRuntimeParam){
+	public RuntimeParameterDialog(Shell parent, Map<String, JobRuntimeParamResponse> parentJobRuntimeParamMap,
+		JobRuntimeParamResponse jobRuntimeParam){
 		super(parent);
 		this.m_jobRuntimeParam = jobRuntimeParam;
 		this.m_parentJobRuntimeParamMap = parentJobRuntimeParamMap;
@@ -111,10 +112,10 @@ public class RuntimeParameterDialog extends CommonDialog {
 	 * @param parent
 	 */
 	public RuntimeParameterDialog(Shell parent,
-			Map<String, JobRuntimeParam> parentJobRuntimeParamMap){
+			Map<String, JobRuntimeParamResponse> parentJobRuntimeParamMap){
 		super(parent);
 		this.m_parentJobRuntimeParamMap = parentJobRuntimeParamMap;
-		this.m_jobRuntimeParam = new JobRuntimeParam();
+		this.m_jobRuntimeParam = new JobRuntimeParamResponse();
 	}
 
 	/**
@@ -207,18 +208,6 @@ public class RuntimeParameterDialog extends CommonDialog {
 		this.m_cmbType.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				Combo combo = (Combo) e.getSource();
-				WidgetTestUtil.setTestId(this, null, combo);
-				Integer type = JobRuntimeParamTypeMessage.stringToType(combo.getText());
-				if (type == JobRuntimeParamTypeConstant.TYPE_INPUT) {
-					m_txtDefaultValue.setEditable(true);
-				} else if (type == JobRuntimeParamTypeConstant.TYPE_RADIO) {
-					m_txtDefaultValue.setEditable(false);
-				} else if (type == JobRuntimeParamTypeConstant.TYPE_COMBO) {
-					m_txtDefaultValue.setEditable(false);
-				} else if (type == JobRuntimeParamTypeConstant.TYPE_FIXED) {
-					m_txtDefaultValue.setEditable(true);
-				}
 				update();
 			}
 			@Override
@@ -279,7 +268,7 @@ public class RuntimeParameterDialog extends CommonDialog {
 					= new RuntimeParameterSelectionDialog(
 							m_shell,
 							m_jobRuntimeParam.getJobRuntimeParamDetailList(),
-							new JobRuntimeParamDetail());
+							new JobRuntimeParamDetailResponse());
 				if (dialog.open() == IDialogConstants.OK_ID) {
 					m_jobRuntimeParam.getJobRuntimeParamDetailList().add(dialog.getInputData());
 					if (dialog.getDefaultValueSelection()) {
@@ -387,7 +376,7 @@ public class RuntimeParameterDialog extends CommonDialog {
 					int orderNo = (Integer)((ArrayList<?>)m_viewer.getTable()
 							.getSelection()[0].getData()).get(1) - 1;
 					// シェルを取得
-					JobRuntimeParamDetail paramDetail = new JobRuntimeParamDetail();
+					JobRuntimeParamDetailResponse paramDetail = new JobRuntimeParamDetailResponse();
 					paramDetail.setDescription(m_jobRuntimeParam.getJobRuntimeParamDetailList().get(orderNo).getDescription());
 					paramDetail.setParamValue(m_jobRuntimeParam.getJobRuntimeParamDetailList().get(orderNo).getParamValue());
 					RuntimeParameterSelectionDialog dialog 
@@ -425,7 +414,7 @@ public class RuntimeParameterDialog extends CommonDialog {
 					int orderNo = (Integer)((ArrayList<?>)m_viewer.getTable()
 							.getSelection()[0].getData()).get(1) - 1;
 					if (orderNo > 0) {
-						JobRuntimeParamDetail jobRuntimeParamDetail 
+						JobRuntimeParamDetailResponse jobRuntimeParamDetail 
 							= m_jobRuntimeParam.getJobRuntimeParamDetailList().get(orderNo);
 						m_jobRuntimeParam.getJobRuntimeParamDetailList().remove(orderNo);
 						m_jobRuntimeParam.getJobRuntimeParamDetailList().add(orderNo-1, jobRuntimeParamDetail);
@@ -455,7 +444,7 @@ public class RuntimeParameterDialog extends CommonDialog {
 					int orderNo = (Integer)((ArrayList<?>)m_viewer.getTable()
 							.getSelection()[0].getData()).get(1) - 1;
 					if (orderNo < m_jobRuntimeParam.getJobRuntimeParamDetailList().size() - 1) {
-						JobRuntimeParamDetail jobRuntimeParamDetail 
+						JobRuntimeParamDetailResponse jobRuntimeParamDetail 
 							= m_jobRuntimeParam.getJobRuntimeParamDetailList().get(orderNo);
 						m_jobRuntimeParam.getJobRuntimeParamDetailList().remove(orderNo);
 						m_jobRuntimeParam.getJobRuntimeParamDetailList().add(orderNo+1, jobRuntimeParamDetail);
@@ -561,21 +550,21 @@ public class RuntimeParameterDialog extends CommonDialog {
 			}
 			// 種別
 			if (this.m_jobRuntimeParam.getParamType() != null) {
-				this.m_cmbType.setText(JobRuntimeParamTypeMessage.typeToString(this.m_jobRuntimeParam.getParamType()));
+				this.m_cmbType.setText(JobRuntimeParamTypeMessage.typeEnumToString(this.m_jobRuntimeParam.getParamType()));
 			}
 			// デフォルト値
 			if (this.m_jobRuntimeParam.getParamType() != null
-					&& this.m_jobRuntimeParam.getParamType() != JobRuntimeParamTypeConstant.TYPE_RADIO
-					&& this.m_jobRuntimeParam.getParamType() != JobRuntimeParamTypeConstant.TYPE_COMBO
+					&& this.m_jobRuntimeParam.getParamType() != JobRuntimeParamResponse.ParamTypeEnum.RADIO
+					&& this.m_jobRuntimeParam.getParamType() != JobRuntimeParamResponse.ParamTypeEnum.COMBO
 					&& this.m_jobRuntimeParam.getValue() != null) {
 				this.m_txtDefaultValue.setText(this.m_jobRuntimeParam.getValue());
 			}
 			// 必須有無
 			if (this.m_jobRuntimeParam.getParamType() != null
-					&& (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_INPUT
-					|| this.m_jobRuntimeParam.getParamType() == JobRuntimeParamTypeConstant.TYPE_COMBO)
-				&& this.m_jobRuntimeParam.isRequiredFlg() != null) {
-				this.m_chkRequiredFlg.setSelection(this.m_jobRuntimeParam.isRequiredFlg());
+					&& (this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.INPUT
+					|| this.m_jobRuntimeParam.getParamType() == JobRuntimeParamResponse.ParamTypeEnum.COMBO)
+				&& this.m_jobRuntimeParam.getRequiredFlg() != null) {
+				this.m_chkRequiredFlg.setSelection(this.m_jobRuntimeParam.getRequiredFlg());
 			}
 			// 選択候補
 			reflectParamDetailInfo();
@@ -604,7 +593,7 @@ public class RuntimeParameterDialog extends CommonDialog {
 						.get(0).getParamValue());
 				}
 			}
-			for (JobRuntimeParamDetail jobRuntimeParamDetail
+			for (JobRuntimeParamDetailResponse jobRuntimeParamDetail
 					: this.m_jobRuntimeParam.getJobRuntimeParamDetailList()) {
 				ArrayList<Object> tableLineData = new ArrayList<Object>();
 				if (this.m_jobRuntimeParam.getValue() != null
@@ -653,6 +642,8 @@ public class RuntimeParameterDialog extends CommonDialog {
 		// ボタン等制御
 		boolean selectFlg = type == JobRuntimeParamTypeConstant.TYPE_RADIO 
 				|| type == JobRuntimeParamTypeConstant.TYPE_COMBO;
+		this.m_txtDefaultValue.setEnabled((type == JobRuntimeParamTypeConstant.TYPE_INPUT
+				|| type == JobRuntimeParamTypeConstant.TYPE_FIXED));
 		this.m_btnSelectAdd.setEnabled(selectFlg);
 		this.m_btnSelectModify.setEnabled(selectFlg);
 		this.m_btnSelectDelete.setEnabled(selectFlg);
@@ -698,7 +689,7 @@ public class RuntimeParameterDialog extends CommonDialog {
 
 		if (this.m_jobRuntimeParam == null) {
 			// 新規作成
-			this.m_jobRuntimeParam = new JobRuntimeParam();
+			this.m_jobRuntimeParam = new JobRuntimeParamResponse();
 		}
 
 		// 変数名
@@ -741,27 +732,59 @@ public class RuntimeParameterDialog extends CommonDialog {
 			return result;
 		}
 		// 種別
-		Integer type = JobRuntimeParamTypeMessage.stringToType(this.m_cmbType.getText());
+		JobRuntimeParamResponse.ParamTypeEnum type = JobRuntimeParamTypeMessage.stringToTypeEnum(this.m_cmbType.getText());
 		this.m_jobRuntimeParam.setParamType(type);
 		// デフォルト値
-		if (type == JobRuntimeParamTypeConstant.TYPE_FIXED
-				|| type == JobRuntimeParamTypeConstant.TYPE_INPUT) {
+		if (type == JobRuntimeParamResponse.ParamTypeEnum.FIXED
+				|| type == JobRuntimeParamResponse.ParamTypeEnum.INPUT) {
 			if (this.m_txtDefaultValue.getText() != null
 					&& !this.m_txtDefaultValue.getText().equals("")) {
 				this.m_jobRuntimeParam.setValue(this.m_txtDefaultValue.getText());
 			} else {
-				if (type == JobRuntimeParamTypeConstant.TYPE_FIXED) {
+				if (type == JobRuntimeParamResponse.ParamTypeEnum.FIXED) {
 					result = new ValidateResult();
 					result.setValid(false);
 					result.setID(Messages.getString("message.hinemos.1"));
 					result.setMessage(Messages.getString("message.job.132"));
 					return result;
+				} else {
+					this.m_jobRuntimeParam.setValue(null);
+				}
+			}
+		} else {
+			if (this.m_jobRuntimeParam.getJobRuntimeParamDetailList() == null
+				|| this.m_jobRuntimeParam.getJobRuntimeParamDetailList().size() == 0) {
+				// 選択候補が存在しない場合は初期化
+				this.m_jobRuntimeParam.setValue(null);
+			} else {
+				if (this.m_jobRuntimeParam.getValue() != null
+						&& !this.m_jobRuntimeParam.getValue().equals("")) {
+					boolean isMatched = false;
+					for (JobRuntimeParamDetailResponse paramDetail : this.m_jobRuntimeParam.getJobRuntimeParamDetailList()) {
+						if (paramDetail.getParamValue().equals(this.m_jobRuntimeParam.getValue())) {
+							isMatched = true;
+							break;
+						}
+					}
+					if (!isMatched) {
+						// 選択候補に対応するものが存在しない場合は初期化
+						this.m_jobRuntimeParam.setValue(null);
+					}
+				}
+				if (type == JobRuntimeParamResponse.ParamTypeEnum.RADIO) {
+					// ラジオボタンではデフォルト値未設定の場合先頭の項目をデフォルト値に設定する
+					if (this.m_jobRuntimeParam.getValue() == null
+							|| this.m_jobRuntimeParam.getValue().equals("")) {
+						this.m_jobRuntimeParam.setValue(
+							this.m_jobRuntimeParam.getJobRuntimeParamDetailList()
+							.get(0).getParamValue());
+					}
 				}
 			}
 		}
 		// 選択候補
-		if (type == JobRuntimeParamTypeConstant.TYPE_RADIO
-				|| type == JobRuntimeParamTypeConstant.TYPE_COMBO) {
+		if (type == JobRuntimeParamResponse.ParamTypeEnum.RADIO
+				|| type == JobRuntimeParamResponse.ParamTypeEnum.COMBO) {
 			if (this.m_jobRuntimeParam.getJobRuntimeParamDetailList() == null
 				|| this.m_jobRuntimeParam.getJobRuntimeParamDetailList().size() == 0) {
 				result = new ValidateResult();
@@ -769,6 +792,12 @@ public class RuntimeParameterDialog extends CommonDialog {
 				result.setID(Messages.getString("message.hinemos.1"));
 				result.setMessage(Messages.getString("message.job.133"));
 				return result;
+			}
+		} else {
+			// 「入力」「固定」の場合はクリア
+			if (this.m_jobRuntimeParam.getJobRuntimeParamDetailList() != null
+				&& this.m_jobRuntimeParam.getJobRuntimeParamDetailList().size() != 0) {
+				this.m_jobRuntimeParam.getJobRuntimeParamDetailList().clear();
 			}
 		}
 
@@ -783,7 +812,7 @@ public class RuntimeParameterDialog extends CommonDialog {
 	 *
 	 * @return ジョブ変数情報
 	 */
-	public JobRuntimeParam getInputData() {
+	public JobRuntimeParamResponse getInputData() {
 		return this.m_jobRuntimeParam;
 	}
 
@@ -804,7 +833,7 @@ public class RuntimeParameterDialog extends CommonDialog {
 			// キーに変更がない場合は処理終了
 			return result;
 		}
-		for (Map.Entry<String, JobRuntimeParam> entry : m_parentJobRuntimeParamMap.entrySet()) {
+		for (Map.Entry<String, JobRuntimeParamResponse> entry : m_parentJobRuntimeParamMap.entrySet()) {
 			if (oldParamId != null && entry.getKey().equals(oldParamId)) {
 				continue;
 			}

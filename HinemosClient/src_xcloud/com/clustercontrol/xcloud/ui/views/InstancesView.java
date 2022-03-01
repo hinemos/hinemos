@@ -45,11 +45,12 @@ import org.eclipse.ui.IWorkbenchPart;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.FacilityTreeCache;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.util.TableViewerSorter;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
-import com.clustercontrol.xcloud.extensions.ICloudModelContentProvider;
 import com.clustercontrol.xcloud.extensions.CloudModelContentProviderExtension;
+import com.clustercontrol.xcloud.extensions.ICloudModelContentProvider;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.ElementBaseModeWatch;
 import com.clustercontrol.xcloud.model.base.IElement;
@@ -65,7 +66,6 @@ import com.clustercontrol.xcloud.platform.PlatformDependent;
 import com.clustercontrol.xcloud.plugin.CloudOptionSourceProvider;
 import com.clustercontrol.xcloud.ui.dialogs.DetailDialog;
 import com.clustercontrol.xcloud.util.CloudUtil;
-import com.clustercontrol.xcloud.util.TableViewerSorter;
 
 
 /**
@@ -172,12 +172,12 @@ public class InstancesView extends AbstractCloudViewPart implements CloudStringC
 							final IInstance instance = (IInstance)selection.getFirstElement();
 							
 							IHinemosManager manager = instance.getLocation().getCloudScope().getCloudScopes().getHinemosManager();
-							FacilityTreeItem treeItem =FacilityTreeCache.getTreeItem(manager.getManagerName());
+							FacilityTreeItemResponse treeItem =FacilityTreeCache.getTreeItem(manager.getManagerName());
 							
-							final List<FacilityTreeItem> parents = new ArrayList<>();
+							final List<FacilityTreeItemResponse> parents = new ArrayList<>();
 							CloudUtil.walkFacilityTree(treeItem, new CloudUtil.IFacilityTreeVisitor() {
 								@Override
-								public void visitTreeItem(FacilityTreeItem item) {
+								public void visitTreeItem(FacilityTreeItemResponse item) {
 									for (IInstanceNode node: instance.getCounterNodes()) {
 										if (
 											item.getData() != null &&
@@ -192,7 +192,7 @@ public class InstancesView extends AbstractCloudViewPart implements CloudStringC
 							FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
 
 							StringBuilder sb = new StringBuilder();
-							for (FacilityTreeItem parent: parents) {
+							for (FacilityTreeItemResponse parent: parents) {
 								sb.append(path.getPath(parent));
 								sb.append("\n");
 							}
@@ -367,7 +367,7 @@ public class InstancesView extends AbstractCloudViewPart implements CloudStringC
 				@Override
 				public String getText(Object element) {
 					IInstance instance = (IInstance)element;
-					List<FacilityTreeItem> items = CloudUtil.collectScopes(instance.getCloudScope().getCloudScopes().getHinemosManager().getManagerName(), ((IInstance)element).getFacilityId());
+					List<FacilityTreeItemResponse> items = CloudUtil.collectScopes(instance.getCloudScope().getCloudScopes().getHinemosManager().getManagerName(), ((IInstance)element).getFacilityId());
 					if (!items.isEmpty()) {
 						return items.get(0).getData().getFacilityName();
 					} else {
@@ -385,12 +385,12 @@ public class InstancesView extends AbstractCloudViewPart implements CloudStringC
 					final IInstance instance = (IInstance)element;
 					
 					IHinemosManager manager = instance.getLocation().getCloudScope().getCloudScopes().getHinemosManager();
-					FacilityTreeItem treeItem =FacilityTreeCache.getTreeItem(manager.getManagerName());
+					FacilityTreeItemResponse treeItem =FacilityTreeCache.getTreeItem(manager.getManagerName());
 					
-					final List<FacilityTreeItem> parents = new ArrayList<>();
+					final List<FacilityTreeItemResponse> parents = new ArrayList<>();
 					CloudUtil.walkFacilityTree(treeItem, new CloudUtil.IFacilityTreeVisitor() {
 						@Override
-						public void visitTreeItem(FacilityTreeItem item) {
+						public void visitTreeItem(FacilityTreeItemResponse item) {
 							for (IInstanceNode node: instance.getCounterNodes()) {
 								if (
 									item.getData() != null &&
@@ -405,7 +405,7 @@ public class InstancesView extends AbstractCloudViewPart implements CloudStringC
 					FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
 
 					StringBuilder sb = new StringBuilder();
-					for (FacilityTreeItem parent: parents) {
+					for (FacilityTreeItemResponse parent: parents) {
 						sb.append(path.getPath(parent));
 						sb.append(" ");
 					}
@@ -471,6 +471,8 @@ public class InstancesView extends AbstractCloudViewPart implements CloudStringC
 				logger.warn(e.getMessage(), e);
 				currentCloudScope = null;
 				currentLocation = null;
+				// エラーダイアログを出力するため、上位に投げる
+				throw e;
 			}
 		}
 	}

@@ -1,0 +1,36 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"tagId",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+
+	{
+	"propName":"tagName",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioTagInfo_tagName"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioTagInfo_description"}
+	]},
+
+	{
+	"propName":"ownerRoleId",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioTagInfo_ownerRoleId"}
+	]},
+	
+	{
+	"propName":"tagPath",
+	"annotations":[
+		{"type":"Column", "columnName":"RpaScenarioTagInfo_tagPath"}
+	]}
+]
+}

@@ -12,11 +12,10 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.MonitorInfoResponse;
 
-import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.composite.TruthValueInfoComposite;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -97,14 +96,14 @@ public class CommonMonitorTruthDialog extends CommonMonitorDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
 		// 監視種別を真偽値に設定する
-		monitorInfo.setMonitorType(MonitorTypeConstant.TYPE_TRUTH);
+		monitorInfo.setMonitorType(MonitorInfoResponse.MonitorTypeEnum.TRUTH);
 
 		return monitorInfo;
 	}

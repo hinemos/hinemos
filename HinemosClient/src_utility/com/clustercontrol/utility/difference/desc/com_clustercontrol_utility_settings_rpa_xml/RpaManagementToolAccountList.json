@@ -1,0 +1,30 @@
+{
+"annotations":[
+	{"type":"Root", "funcName":"RpaManagementToolAccountList_funcName"},
+	{"type":"OrderBy",
+		"props":[
+			"RpaManagementToolAccount.rpaScopeName",
+			"RpaManagementToolAccount.description",
+			"RpaManagementToolAccount.ownerRoleId",
+			"RpaManagementToolAccount.rpaManagementToolId",
+			"RpaManagementToolAccount.url",
+			"RpaManagementToolAccount.accountId",
+			"RpaManagementToolAccount.password",
+			"RpaManagementToolAccount.tenantName",
+			"RpaManagementToolAccount.displayName",
+			"RpaManagementToolAccount.proxyFlg",
+			"RpaManagementToolAccount.proxyUrl",
+			"RpaManagementToolAccount.proxyPort",
+			"RpaManagementToolAccount.proxyUser",
+			"RpaManagementToolAccount.proxyPassword"
+		]
+	}
+],
+"props":[
+	{
+	"propName":"RpaManagementToolAccount",
+	"annotations":[
+		{"type":"Comparison"}
+	]}
+]
+}

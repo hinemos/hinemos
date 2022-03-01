@@ -8,6 +8,7 @@
 
 package com.clustercontrol.infra.dialog;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -29,28 +30,31 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.FileTransferModuleInfoResponse;
+import org.openapitools.client.model.FileTransferModuleInfoResponse.SendMethodTypeEnum;
+import org.openapitools.client.model.InfraFileInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.ModifyInfraManagementRequest;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.infra.bean.SendMethodConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementDuplicate;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NotifyDuplicate;
+import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.composite.FileReplaceSettingComposite;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraDtoConverter;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.FileTransferModuleInfo;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraFileInfo;
-import com.clustercontrol.ws.infra.InfraManagementDuplicate_Exception;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleInfo;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidSetting_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyDuplicate_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * 環境構築[ファイル配布モジュールの作成・変更]ダイアログクラスです。
@@ -67,9 +71,9 @@ public class FileTransferModuleDialog extends CommonDialog {
 	private static String DEFAULT_SCP_ATTRIBUTE = Messages.getString("infra.module.transfer.default.file.attibute");
 
 	/** 環境構築[構築]情報*/
-	private InfraManagementInfo infraInfo ;
+	private InfraManagementInfoResponse infraInfo ;
 
-	private FileTransferModuleInfo moduleInfo;
+	private FileTransferModuleInfoResponse moduleInfo;
 
 	/**
 	 * ダイアログの最背面レイヤのカラム数8ijm
@@ -601,49 +605,52 @@ public class FileTransferModuleDialog extends CommonDialog {
 	 * @see com.clustercontrol.infra.bean.InfraManagementInfo
 	 */
 	private void setInputData() {
-		InfraManagementInfo info = null;
-		FileTransferModuleInfo module = null;
+		InfraManagementInfoResponse info = null;
+		FileTransferModuleInfoResponse module = null;
 		try {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(this.m_managerName);
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(this.m_managerName);
 			info = wrapper.getInfraManagement(m_managementId);
-		} catch (InfraManagementNotFound_Exception | HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | InfraManagementNotFound
+				| InvalidSetting e) {
 			m_log.error(m_managementId + " InfraManagerInfo is null");
 			return;
 		}
 
 		//環境構築ファイル一覧取得
-		List<InfraFileInfo> infraFileInfoList = null;
-		InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(m_managerName);
+		List<InfraFileInfoResponse> infraFileInfoList = null;
+		InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(m_managerName);
 		try {
-			infraFileInfoList = wrapper.getInfraFileListByOwnerRoleId(info.getOwnerRoleId());
+			infraFileInfoList = wrapper.getInfraFileList(info.getOwnerRoleId());
 		} catch (Exception e) {
 			m_log.warn("setInputData() getInfraFileList, " + e.getMessage());
 		}
 		if (infraFileInfoList != null) {
-			for (InfraFileInfo infraFileInfo : infraFileInfoList) {
+			for (InfraFileInfoResponse infraFileInfo : infraFileInfoList) {
 				m_comboFileId.add(infraFileInfo.getFileId());
 			}
 		}
 		
 		if (mode == PropertyDefineConstant.MODE_ADD | mode == PropertyDefineConstant.MODE_COPY) {
-			// 作成・コピーの場合新規モジュールを末尾に追加
-			moduleInfo = new FileTransferModuleInfo();
-			List<InfraModuleInfo> modules = info.getModuleList();
+			// 作成・コピーの場合新規モジュールの orderNo を計算して設定しておく
+			moduleInfo = new FileTransferModuleInfoResponse();
+			int orderNo = getOrderNoWhenAddModule(info);
+			moduleInfo.setOrderNo(orderNo);
+			List<FileTransferModuleInfoResponse> modules = info.getFileTransferModuleInfoList();
 			modules.add(moduleInfo);
 		} else if (mode == PropertyDefineConstant.MODE_MODIFY){
 			// 変更の場合モジュールを取得
-			for(InfraModuleInfo tmpModule: info.getModuleList()){
+			for(FileTransferModuleInfoResponse tmpModule: info.getFileTransferModuleInfoList()){
 				if(tmpModule.getModuleId().equals(m_strModuleId)){
-					moduleInfo = (FileTransferModuleInfo) tmpModule;
+					moduleInfo = tmpModule;
 				}
 			}
 		}
 		
 		// 変更、コピーの場合、情報取得
 		if (m_strModuleId != null && info != null) {
-			for (InfraModuleInfo tmpModule : info.getModuleList()) {
+			for (FileTransferModuleInfoResponse tmpModule : info.getFileTransferModuleInfoList()) {
 				if (tmpModule.getModuleId().equals(m_strModuleId)) {
-					module = (FileTransferModuleInfo) tmpModule;
+					module = tmpModule;
 					break;
 				}
 			}
@@ -664,7 +671,7 @@ public class FileTransferModuleDialog extends CommonDialog {
 			m_placementPath.setText(module.getDestPath());
 
 			//	実行方法
-			if (module.getSendMethodType() == SendMethodConstant.TYPE_WINRM) {
+			if (module.getSendMethodType() == SendMethodTypeEnum.WINRM) {
 				m_scp.setSelection(false);
 				m_winRm.setSelection(true);
 			}
@@ -676,19 +683,19 @@ public class FileTransferModuleDialog extends CommonDialog {
 			}
 
 			//	後続
-			m_check.setSelection(module.isStopIfFailFlg());
+			m_check.setSelection(module.getStopIfFailFlg());
 			//	リネーム
-			m_rename.setSelection(module.isBackupIfExistFlg());
+			m_rename.setSelection(module.getBackupIfExistFlg());
 			// MD5
-			m_md5Check.setSelection(module.isPrecheckFlg());
+			m_md5Check.setSelection(module.getPrecheckFlg());
 			// 戻り値の変数名
 			if (module.getExecReturnParamName() != null) {
 				m_execReturnParamName.setText(module.getExecReturnParamName());
 			}
 			//	設定の有効･無効
-			m_valid.setSelection(module.isValidFlg());
+			m_valid.setSelection(module.getValidFlg());
 
-			m_chenge.setInputData(module.getFileTransferVariableList());
+			m_chenge.setInputData(module.getFileTransferVariableInfoEntities());
 
 		} else {
 			// 作成の場合(default設定)
@@ -721,11 +728,11 @@ public class FileTransferModuleDialog extends CommonDialog {
 
 		//実行方法の取得
 		if (m_scp.getSelection()) {
-			moduleInfo.setSendMethodType(SendMethodConstant.TYPE_SCP);
+			moduleInfo.setSendMethodType(SendMethodTypeEnum.SCP);
 			moduleInfo.setDestOwner(m_scpOwner.getText());
 			moduleInfo.setDestAttribute(m_scpFileAttribute.getText());
 		} else {
-			moduleInfo.setSendMethodType(SendMethodConstant.TYPE_WINRM);
+			moduleInfo.setSendMethodType(SendMethodTypeEnum.WINRM);
 		}
 
 		//正常に行われなかった場合後続モジュールを実行しないかのフラグ取得
@@ -740,8 +747,12 @@ public class FileTransferModuleDialog extends CommonDialog {
 		if (m_execReturnParamName.getText() != null) {
 			moduleInfo.setExecReturnParamName(m_execReturnParamName.getText());
 		}
-		moduleInfo.getFileTransferVariableList().clear();
-		moduleInfo.getFileTransferVariableList().addAll(m_chenge.getInputData());
+		
+		if(moduleInfo.getFileTransferVariableInfoEntities() == null) {
+			moduleInfo.setFileTransferVariableInfoEntities(new ArrayList<>());
+		}
+		moduleInfo.getFileTransferVariableInfoEntities().clear();
+		moduleInfo.getFileTransferVariableInfoEntities().addAll(m_chenge.getInputData());
 
 		//設定の有効
 		moduleInfo.setValidFlg(m_valid.getSelection());
@@ -781,8 +792,12 @@ public class FileTransferModuleDialog extends CommonDialog {
 			}
 
 			try {
-				InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(this.m_managerName);
-				wrapper.modifyInfraManagement(infraInfo);
+				InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(this.m_managerName);
+				String managementId = infraInfo.getManagementId();
+				ModifyInfraManagementRequest dtoReq = new ModifyInfraManagementRequest();
+				RestClientBeanUtil.convertBean(infraInfo, dtoReq);
+				InfraDtoConverter.convertInfoToDto(infraInfo, dtoReq);
+				wrapper.modifyInfraManagement(managementId, dtoReq);
 				action += "(" + this.m_managerName + ")";
 				result = true;
 				MessageDialog.openInformation(null, Messages
@@ -791,15 +806,15 @@ public class FileTransferModuleDialog extends CommonDialog {
 						new Object[] { Messages.getString("infra.module"),
 								action, Messages.getString("successful"),
 								m_moduleId.getText() }));
-			} catch (InfraManagementDuplicate_Exception e) {
+			} catch (InfraManagementDuplicate e) {
 				// ID重複
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.infra.module.duplicate", new String[]{m_moduleId.getText()}));
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// 権限なし
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
-			} catch (InfraManagementNotFound_Exception | NotifyDuplicate_Exception | NotifyNotFound_Exception | HinemosUnknown_Exception | InvalidUserPass_Exception | InvalidSetting_Exception e) {
+			} catch (InfraManagementNotFound | NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidUserPass | InvalidSetting e) {
 				m_log.info("action() modifyInfraManagement : " + e.getMessage() + " (" + e.getClass().getName() + ")");
 				MessageDialog.openError(
 						null,
@@ -822,5 +837,10 @@ public class FileTransferModuleDialog extends CommonDialog {
 					Messages.getString("message.infra.action.result", new Object[]{Messages.getString("infra.module"), action, Messages.getString("failed"), m_moduleId.getText()}));
 		}
 		return result;
+	}
+	
+	private int getOrderNoWhenAddModule(InfraManagementInfoResponse info) {
+		return info.getCommandModuleInfoList().size() + info.getFileTransferModuleInfoList().size()
+				+ info.getReferManagementModuleInfoList().size();
 	}
 }

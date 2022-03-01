@@ -24,15 +24,22 @@ import org.snmp4j.MessageDispatcherImpl;
 import org.snmp4j.MessageException;
 import org.snmp4j.PDU;
 import org.snmp4j.PDUv1;
+import org.snmp4j.ScopedPDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.mp.MPv1;
 import org.snmp4j.mp.MPv2c;
 import org.snmp4j.mp.MPv3;
 import org.snmp4j.mp.StateReference;
 import org.snmp4j.mp.StatusInformation;
+import org.snmp4j.security.AuthHMAC128SHA224;
+import org.snmp4j.security.AuthHMAC192SHA256;
+import org.snmp4j.security.AuthHMAC256SHA384;
+import org.snmp4j.security.AuthHMAC384SHA512;
 import org.snmp4j.security.AuthMD5;
 import org.snmp4j.security.AuthSHA;
 import org.snmp4j.security.PrivAES128;
+import org.snmp4j.security.PrivAES192;
+import org.snmp4j.security.PrivAES256;
 import org.snmp4j.security.PrivDES;
 import org.snmp4j.security.SecurityModels;
 import org.snmp4j.security.SecurityProtocols;
@@ -50,6 +57,7 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import com.clustercontrol.bean.SnmpProtocolConstant;
 import com.clustercontrol.bean.SnmpSecurityLevelConstant;
+import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.snmptrap.bean.SnmpTrap;
 import com.clustercontrol.snmptrap.bean.SnmpVarBind;
@@ -232,6 +240,11 @@ public class Snmp4JSession implements SnmpTrapSession {
 
 			}
 			trapId = TrapId.createSnmpTrapV2Id(secondVarOid, enterpriseId);
+			
+			if (pdu instanceof ScopedPDU) {
+				// v3
+				trapId.setVersion(SnmpVersionConstant.TYPE_V3);
+			}
 		}
 
 		int index;
@@ -290,12 +303,14 @@ public class Snmp4JSession implements SnmpTrapSession {
 					os.flush();
 					value = os.toByteArray();
 					
-					// varbind のタイプと長さが格納された 2 バイトをスキップ
-					if (value.length > 2) {
-						value = Arrays.copyOfRange(value, 2, value.length);
-					} else {
-						// 2バイト以下の場合は空とする
+					if (variable.getBERPayloadLength() == 0) {
+						// PayLoad（データ部）がない場合、空とする
 						value = new byte[0];
+					} else {
+						// ヘッダ長
+						int headerLen = variable.getBERLength() - variable.getBERPayloadLength();
+						// ヘッダは除外する
+						value = Arrays.copyOfRange(value, headerLen, value.length);
 					}
 				} catch (Exception e) {
 					throw new IllegalStateException(e.getMessage(), e);
@@ -336,14 +351,42 @@ public class Snmp4JSession implements SnmpTrapSession {
 		String privProtocolStr = HinemosPropertyCommon.monitor_snmptrap_v3_priv_protocol.getStringValue();
 		String securityLevel = HinemosPropertyCommon.monitor_snmptrap_v3_security_level.getStringValue();
 		
-		OID authProtocol = AuthMD5.ID;
-		if (SnmpProtocolConstant.SHA.equals(authProtocolStr)) {
+		OID authProtocol;
+		switch (authProtocolStr) {
+		case SnmpProtocolConstant.SHA:
 			authProtocol = AuthSHA.ID;
+			break;
+		case SnmpProtocolConstant.SHA224:
+			authProtocol = AuthHMAC128SHA224.ID;
+			break;
+		case SnmpProtocolConstant.SHA256:
+			authProtocol = AuthHMAC192SHA256.ID;
+			break;
+		case SnmpProtocolConstant.SHA384:
+			authProtocol = AuthHMAC256SHA384.ID;
+			break;
+		case SnmpProtocolConstant.SHA512:
+			authProtocol = AuthHMAC384SHA512.ID;
+			break;
+		default:
+			authProtocol = AuthMD5.ID;
+			break;
 		}
 		
-		OID privProtocol = PrivDES.ID;
-		if (SnmpProtocolConstant.AES.equals(privProtocolStr)) {
+		OID privProtocol;
+		switch (privProtocolStr) {
+		case SnmpProtocolConstant.AES:
 			privProtocol = PrivAES128.ID;
+			break;
+		case SnmpProtocolConstant.AES192:
+			privProtocol = PrivAES192.ID;
+			break;
+		case SnmpProtocolConstant.AES256:
+			privProtocol = PrivAES256.ID;
+			break;
+		default:
+			privProtocol = PrivDES.ID;
+			break;
 		}
 		
 		UsmUser usmUser;

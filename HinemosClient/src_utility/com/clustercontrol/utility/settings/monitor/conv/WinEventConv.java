@@ -8,14 +8,24 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorStringValueInfoResponse;
+import org.openapitools.client.model.WinEventCheckInfoResponse;
 
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.monitor.xml.Category;
@@ -29,10 +39,6 @@ import com.clustercontrol.utility.settings.monitor.xml.WinEventInfo;
 import com.clustercontrol.utility.settings.monitor.xml.WinEventMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.WinEventMonitors;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
 
 /**
  *Windowsイベント 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -46,7 +52,7 @@ public class WinEventConv {
 
 	private final static String SCHEMA_TYPE = "H";
 	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "1";
+	private final static String SCHEMA_REVISION = "2";
 
 	/**
 	 * <BR>
@@ -84,15 +90,18 @@ public class WinEventConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws ParseException 
+	 * @throws HinemosUnknown 
+	 * @throws InvalidSetting 
 	 */
-	public static List<com.clustercontrol.ws.monitor.MonitorInfo> createMonitorInfoList(WinEventMonitors WinEventMonitors) throws ConvertorException {
-		List<com.clustercontrol.ws.monitor.MonitorInfo> monitorInfoList =
-				new LinkedList<com.clustercontrol.ws.monitor.MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(WinEventMonitors WinEventMonitors) throws ConvertorException, InvalidSetting, HinemosUnknown, ParseException {
+		List<MonitorInfoResponse> monitorInfoList =
+				new LinkedList<MonitorInfoResponse>();
 
 		for (WinEventMonitor WinEventMonitor : WinEventMonitors.getWinEventMonitor()) {
 			logger.debug("Monitor Id : " + WinEventMonitor.getMonitor().getMonitorId());
 
-			com.clustercontrol.ws.monitor.MonitorInfo monitorInfo =
+			MonitorInfoResponse monitorInfo =
 					MonitorConv.createMonitorInfo(WinEventMonitor.getMonitor());
 			StringValue[] values = WinEventMonitor.getStringValue();
 			MonitorConv.sort(values);
@@ -112,18 +121,20 @@ public class WinEventConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static WinEventMonitors createWinEventMonitors(List<com.clustercontrol.ws.monitor.MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static WinEventMonitors createWinEventMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		WinEventMonitors WinEventMonitors = new WinEventMonitors();
 
-		for (com.clustercontrol.ws.monitor.MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
@@ -131,8 +142,8 @@ public class WinEventConv {
 			winEventMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 
 			int orderNo = 0;
-			for (com.clustercontrol.ws.monitor.MonitorStringValueInfo monitorStringValueInfo : monitorInfo.getStringValueInfo()) {
-				winEventMonitor.addStringValue(MonitorConv.createStringValue(monitorStringValueInfo, ++orderNo));
+			for (MonitorStringValueInfoResponse monitorStringValueInfo : monitorInfo.getStringValueInfo()) {
+				winEventMonitor.addStringValue(MonitorConv.createStringValue(monitorInfo.getMonitorId(),monitorStringValueInfo, ++orderNo));
 			}
 
 			winEventMonitor.setWinEventInfo(createWinEventInfo(monitorInfo));
@@ -150,18 +161,18 @@ public class WinEventConv {
 	 *
 	 * @return
 	 */
-	private static WinEventInfo createWinEventInfo(com.clustercontrol.ws.monitor.MonitorInfo monitorInfo) {
-		com.clustercontrol.ws.monitor.WinEventCheckInfo WinEventCheckInfo = monitorInfo.getWinEventCheckInfo();
+	private static WinEventInfo createWinEventInfo(MonitorInfoResponse monitorInfo) {
+		WinEventCheckInfoResponse WinEventCheckInfo = monitorInfo.getWinEventCheckInfo();
 
 		WinEventInfo WinEventInfo = new WinEventInfo();
 		WinEventInfo.setMonitorTypeId("");
 
 		WinEventInfo.setMonitorId(monitorInfo.getMonitorId());
-		WinEventInfo.setLevelCritical(WinEventCheckInfo.isLevelCritical());
-		WinEventInfo.setLevelError(WinEventCheckInfo.isLevelError());
-		WinEventInfo.setLevelWarning(WinEventCheckInfo.isLevelWarning());
-		WinEventInfo.setLevelInformational(WinEventCheckInfo.isLevelInformational());
-		WinEventInfo.setLevelVerbose(WinEventCheckInfo.isLevelVerbose());
+		WinEventInfo.setLevelCritical(WinEventCheckInfo.getLevelCritical());
+		WinEventInfo.setLevelError(WinEventCheckInfo.getLevelError());
+		WinEventInfo.setLevelWarning(WinEventCheckInfo.getLevelWarning());
+		WinEventInfo.setLevelInformational(WinEventCheckInfo.getLevelInformational());
+		WinEventInfo.setLevelVerbose(WinEventCheckInfo.getLevelVerbose());
 
 		Collections.sort(
 				WinEventCheckInfo.getCategory(),
@@ -241,12 +252,10 @@ public class WinEventConv {
 	 *
 	 * @return
 	 */
-	private static com.clustercontrol.ws.monitor.WinEventCheckInfo createWinEventCheckInfo(WinEventInfo winEventInfo) {
-		com.clustercontrol.ws.monitor.WinEventCheckInfo winEventCheckInfo =
-				new com.clustercontrol.ws.monitor.WinEventCheckInfo();
-		winEventCheckInfo.setMonitorTypeId("");
+	private static WinEventCheckInfoResponse createWinEventCheckInfo(WinEventInfo winEventInfo) {
+		WinEventCheckInfoResponse winEventCheckInfo =
+				new WinEventCheckInfoResponse();
 
-		winEventCheckInfo.setMonitorId(winEventInfo.getMonitorId());
 		winEventCheckInfo.setLevelCritical(winEventInfo.getLevelCritical());
 		winEventCheckInfo.setLevelError(winEventInfo.getLevelError());
 		winEventCheckInfo.setLevelWarning(winEventInfo.getLevelWarning());

@@ -16,13 +16,13 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.JobKickResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
-import com.clustercontrol.jobmanagement.bean.JobKickConstant;
 import com.clustercontrol.jobmanagement.composite.JobKickListComposite;
 import com.clustercontrol.jobmanagement.dialog.JobKickDialog;
 import com.clustercontrol.jobmanagement.view.JobKickListView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * ジョブ[実行契機]ビューの「スケジュール作成」のクライアント側アクションクラス<BR>
@@ -87,11 +87,11 @@ public class CreateScheduleAction extends AbstractHandler {
 			}
 
 			JobKickListComposite composite = view.getComposite();
-			String managerName = EndpointManager.getActiveManagerNameList().get(0);
+			String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 
 			//ダイアログ表示
 			JobKickDialog dialog = new JobKickDialog(HandlerUtil.getActiveWorkbenchWindow( event ).getShell(),
-					managerName, null, JobKickConstant.TYPE_SCHEDULE, PropertyDefineConstant.MODE_ADD);
+					managerName, null, JobKickResponse.TypeEnum.SCHEDULE, PropertyDefineConstant.MODE_ADD);
 			dialog.open();
 			composite.update();
 		}

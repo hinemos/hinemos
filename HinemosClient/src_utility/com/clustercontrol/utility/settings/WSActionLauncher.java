@@ -17,11 +17,10 @@ import java.lang.reflect.Method;
 //import org.apache.commons.logging.Log;
 //import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.WriterAppender;
 
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.Log4J2Util;
 
 
 /**
@@ -135,6 +134,30 @@ public class WSActionLauncher {
 	{
 		this.args = args;
 		this.ev = new ErrorMessageProvider(logger);
+		this.external = new External();
+	}
+
+	public WSActionLauncher(String[] args, External external)
+	{
+		this.args = args;
+		this.ev = new ErrorMessageProvider(logger);
+		this.external = external;
+	}
+
+	private External external;
+	/**
+	 * 外部に依存する処理を注入可能とするためのクラス
+	 * 
+	 */
+	public static class External {
+		/**
+		 * クラスの取得はクラスローダに依存するため、
+		 * プラグインの別のクラスローダから呼び出せるようにオーバライド可能とする
+		 * クライアント本体では通常意識する必要はない
+		 */
+		public Class<?> getClazz(String arg) throws Exception, Throwable {
+			return Class.forName(arg);
+		}
 	}
 
 	private static Operation checkCommandType(String commandName) {
@@ -203,7 +226,7 @@ public class WSActionLauncher {
 		// アクションクラスの Class を取得。
 		Class<?> actionClass = null;
 		try {
-			actionClass = Class.forName(args[0]);
+			actionClass = external.getClazz(args[0]);
 		}
 		catch (Exception e) {
 			ev.onNotFounfClass(args[0]);
@@ -247,17 +270,15 @@ public class WSActionLauncher {
 						// リフレクション経由で呼び出し。
 						Logger logger = null;
 						CharArrayWriter byteWriter = new CharArrayWriter(8192);
-						WriterAppender appender = new WriterAppender(new PatternLayout("%d %-5p [%t] [%c] %m%n"), byteWriter);
 						PrintStream oldError = System.err;
 						String out = "";
 						String error = "";
 						try {
 							Method getLoggerMethod = actionClass.getMethod("getLogger", new Class<?>[0]);
 							logger = (Logger)getLoggerMethod.invoke(sda, new Object[0]);
-							
-							appender.setEncoding("UTF-8");
-							logger.addAppender(appender);
-
+							// log4j出力の一部を画面表示向けに取得するため、アクションクラスのLoggerにappenderを追加。appenderの名称は並列時 重複しないようにスレッド名
+							Log4J2Util.addWriteAppenderToLogger(byteWriter, Thread.currentThread().getName(),
+									logger.getName(), org.apache.logging.log4j.Level.INFO);
 							ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
 							System.setErr(new PrintStream(byteStream));
 							
@@ -265,6 +286,7 @@ public class WSActionLauncher {
 							retValue = (Integer)returnValue;
 							isCalled = true;
 							
+							// FIXME 並列動作時に別スレッドの動作ログが混在することがあるなら スレッド名でログをフィルタすること。
 							out = byteWriter.toString();
 							error = byteStream.toString("UTF-8");
 						}
@@ -281,7 +303,8 @@ public class WSActionLauncher {
 							}
 
 							if (logger != null) {
-								logger.removeAppender(appender);
+								// 不要になったappenderを削除
+								Log4J2Util.removeAppenderFromLogger(Thread.currentThread().getName(),logger.getName());
 							}
 							
 							System.setErr(oldError);

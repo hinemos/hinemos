@@ -23,39 +23,49 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.xml.ws.WebServiceException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.openapitools.client.model.AgentInfoRequest;
+import org.openapitools.client.model.AgentInfoRequest.DhcpUpdateModeEnum;
+import org.openapitools.client.model.AgentJavaInfoRequest;
+import org.openapitools.client.model.AgtOutputBasicInfoRequest;
 
+import com.clustercontrol.agent.SendQueue.MessageSendableObject;
+import com.clustercontrol.agent.bean.DhcpUpdateMode;
 import com.clustercontrol.agent.binary.BinaryMonitorManager;
+import com.clustercontrol.agent.cloud.log.CloudLogMonitorManager;
 import com.clustercontrol.agent.filecheck.FileCheckManager;
 import com.clustercontrol.agent.job.RunHistoryUtil;
 import com.clustercontrol.agent.log.LogfileMonitorManager;
+import com.clustercontrol.agent.rpa.RpaLogfileMonitorManager;
+import com.clustercontrol.agent.rpa.ScreenshotThread;
+import com.clustercontrol.agent.sdml.SdmlFileMonitorManager;
+import com.clustercontrol.agent.selfcheck.SelfCheckManager;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.agent.util.PropertiesFileUtil;
 import com.clustercontrol.agent.winevent.WinEventMonitorManager;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.repository.bean.AgentCommandConstant;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
-import com.clustercontrol.ws.agent.AgentInfo;
-import com.clustercontrol.ws.agent.AgentJavaInfo;
-import com.clustercontrol.ws.agent.HinemosUnknown_Exception;
-import com.clustercontrol.ws.agent.InvalidRole_Exception;
-import com.clustercontrol.ws.agent.InvalidUserPass_Exception;
-import com.clustercontrol.ws.agent.OutputBasicInfo;
-
 /**
  * エージェントメインクラス<BR>
  * 
@@ -75,8 +85,6 @@ public class Agent {
 
 	/** log4j設定 */
 	public String m_log4jFileName = null;
-	/** log4j設定ファイル再読み込み間隔 */
-	private long m_reconfigLog4jInterval = 60000;
 
 	/** AgentInfoの更新判定時間 [msec] */
 	private static long m_agentInfoUpdateTime = 10000;
@@ -89,9 +97,9 @@ public class Agent {
 	private static int m_shutdownWaitTime = 120;
 	private static Object m_shutdownWaitTimeLock = new Object();
 	
-	private static AgentInfo agentInfo = new AgentInfo();
+	private static AgentInfoRequest agentInfo = new AgentInfoRequest();
 
-	private static AgentJavaInfo javaInfo = null;
+	private static AgentJavaInfoRequest javaInfo = null;
 
 	public static final Integer DEFAULT_CONNECT_TIMEOUT = 10000;
 	public static final Integer DEFAULT_REQUEST_TIMEOUT = 60000;
@@ -109,6 +117,11 @@ public class Agent {
 	
 	private static boolean terminated = false;
 	
+	private static String rest_agent_id = null;
+	
+	/** 自身がマネージャに認識されているか */
+	private static AtomicBoolean registered = new AtomicBoolean(false);
+	
 	/*
 	 * AgentHome
 	 * /opt/hinemos_agentやC:\Program Files(x86)\Hinemos\Agent4.0.0
@@ -124,7 +137,7 @@ public class Agent {
 	 * 
 	 * @param args プロパティファイル名
 	 */
-	public static void main(String[] args) throws Exception{
+	public static void main(String[] args) {
 
 		// 引数チェック
 		if(args.length != 1){
@@ -160,7 +173,14 @@ public class Agent {
 			agentHome = file.getParentFile().getParent() + "/";
 			m_log.info("agentHome=" + agentHome);
 			
-			// 起動時刻
+			// AgentInfo の初期化
+			agentInfo.setFacilityId("");
+			agentInfo.setHostname("");
+			agentInfo.setIpAddressList(new ArrayList<String>());
+			agentInfo.setInterval(0);
+			agentInfo.setInstanceId("");
+			agentInfo.setVersion(AgentVersion.VERSION);
+
 			long startDate = HinemosTime.currentTimeMillis();
 			m_log.info("start date = " + new Date(startDate) + "(" + startDate
 					+ ")");
@@ -193,11 +213,56 @@ public class Agent {
 				}
 			}
 			
-			// queue生成
-			m_sendQueue = new SendQueue();
-
+			// GCログの削除
+			String gclogFileName = System.getProperty("jvm.gclog.filename");
+			int period = 31;
+			try {
+				period = Integer.parseInt(System.getProperty("jvm.gclog.date.rentention.period"));
+			} catch (NumberFormatException e) {
+				m_log.warn("System environment value \"jvm.gclog.date.rentention.period\" is not correct.");
+			}
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTimeInMillis(startDate);
+			calendar.add(Calendar.DAY_OF_MONTH, -period);
+			calendar.set(Calendar.HOUR_OF_DAY, 0);
+			calendar.set(Calendar.MINUTE, 0);
+			calendar.set(Calendar.SECOND, 0);
+			calendar.set(Calendar.MILLISECOND, 0);
+			Date deleteTargetDate = new Date(calendar.getTime().getTime());
+			
+			if(gclogFileName != null){
+				File gclogTempFile = new File(gclogFileName);
+				String logFileName = gclogTempFile.getName();
+				String logDirName = gclogTempFile.getParent();
+				if(logDirName != null){
+					File[] list = new File(logDirName).listFiles();
+					if(list != null && list.length > 0){
+						for(File targetFile : list){
+							String targetFileName = targetFile.getName();
+							int index = targetFileName.indexOf(logFileName + ".");
+							if(index != -1){
+								Date targetLogDate = new Date(targetFile.lastModified());
+								if(targetLogDate.before(deleteTargetDate)){
+									//削除実行
+									boolean ret = targetFile.delete();
+									if(!ret){
+										m_log.warn("Delete File Failure : " + targetFile);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			
 			// Agentインスタンス作成
 			agent = new Agent(args[0]);
+			
+			// RPAシナリオジョブのスクリーンショットの削除
+			ScreenshotThread.deleteScreenshotFiles();
+			
+			// queue生成
+			m_sendQueue = new SendQueue();
 
 			//-----------------
 			//-- トピック接続
@@ -246,6 +311,9 @@ public class Agent {
 		int port = 24005;
 
 		int awakeDelay = 1000;
+		
+		boolean awakeListenCheck = Boolean.valueOf(AgentProperties.getProperty("awake.listen.check", "true"));
+		boolean isBindFail = false;
 
 		try {
 			String awakeDelayStr = AgentProperties.getProperty("awake.delay", Integer.toString(1000));
@@ -275,6 +343,12 @@ public class Agent {
 						port = awakePort;
 						sock = new DatagramSocket(port);
 						sock.setSoTimeout(awakeDelay);
+						// 即時反映ポートのリッスン失敗から回復した際に通知する
+						if(awakeListenCheck && isBindFail) {
+							String msg = MessageConstant.MESSAGE_AGENT_AWAKE_LISTEN_CHECK_SUCCESS.getMessage(Integer.toString(awakePort));
+							sendMessageCheckAwakePort(PriorityConstant.TYPE_INFO, msg, msg);
+							isBindFail = false;
+						}
 					}
 					DatagramPacket recvPacket = new DatagramPacket(buf, BUFSIZE);
 					sock.receive(recvPacket);
@@ -290,11 +364,17 @@ public class Agent {
 						flag = false;
 					}
 				} catch (Exception e) {
-					String msg = "waitAwakeAgent port=" + awakePort + ", " + e.getClass().getSimpleName() + ", " + e.getMessage();
+					String msgOrg = "waitAwakeAgent port=" + awakePort + ", " + e.getClass().getSimpleName() + ", " + e.getMessage();
 					if (e instanceof BindException) {
-						m_log.warn(msg);
+						m_log.warn(msgOrg);
+						// 即時反映ポートのリッスンに失敗した場合は通知する
+						if(awakeListenCheck && !isBindFail) {
+							String msg = MessageConstant.MESSAGE_AGENT_AWAKE_LISTEN_CHECK_FAIL.getMessage(Integer.toString(awakePort));
+							sendMessageCheckAwakePort(PriorityConstant.TYPE_WARNING, msg, msgOrg);
+							isBindFail = true;
+						}
 					} else {
-						m_log.warn(msg, e);
+						m_log.warn(msgOrg, e);
 					}
 					try {
 						Thread.sleep(60*1000);
@@ -385,6 +465,21 @@ public class Agent {
 		return recvMsg;
 	}
 
+	private void sendMessageCheckAwakePort(int priority, String msg, String msgOrg) {
+		MessageSendableObject sendme = new MessageSendableObject();
+		sendme.body = new AgtOutputBasicInfoRequest();
+		sendme.body.setPluginId(HinemosModuleConstant.SYSYTEM_SELFCHECK);
+		sendme.body.setPriority(priority);
+		sendme.body.setApplication(MessageConstant.AGENT.getMessage());
+		sendme.body.setMessage(msg);
+		sendme.body.setMessageOrg(msgOrg);
+		sendme.body.setGenerationDate(HinemosTime.getDateInstance().getTime());
+		sendme.body.setMonitorId(HinemosModuleConstant.SYSYTEM);
+		sendme.body.setFacilityId(""); // マネージャがセットする。
+		sendme.body.setScopeText(""); // マネージャがセットする。
+		
+		m_sendQueue.put(sendme);
+	}
 	/**
 	 * コンストラクタ
 	 */
@@ -398,12 +493,12 @@ public class Agent {
 		AgentProperties.init(propFileName);
 
 		// エージェントのIPアドレス、ホスト名をログに出力。
-		getAgentInfo();
+		getAgentInfoRequest();
 		m_log.info(getAgentStr());
 
 		// log4j設定ファイル再読み込み設定
-		String log4jFileName = System.getProperty("hinemos.agent.conf.dir") + File.separator + "log4j.properties";
-		m_log.info("log4j.properties = " + log4jFileName);
+		String log4jFileName = System.getProperty("hinemos.agent.conf.dir") + File.separator + "log4j2.properties";
+		m_log.info("log4j2.properties = " + log4jFileName);
 		m_log4jFileName = log4jFileName;
 
 		int connectTimeout = DEFAULT_CONNECT_TIMEOUT;
@@ -415,60 +510,6 @@ public class Agent {
 		String proxyUser = DEFAULT_PROXY_USER;
 		String proxyPassword = DEFAULT_PROXY_PASSWORD;
 		
-		// ホスト認証回避のhostnameVerifierを登録する（HTTPS接続時以外は特に効果は無い）
-		try {
-			HostnameVerifier hv = new HostnameVerifier() {
-				public boolean verify(String urlHostName,
-						javax.net.ssl.SSLSession session) {
-					return true;
-				}
-			};
-			
-			// Create the trust manager.
-			javax.net.ssl.TrustManager[] trustAllCerts = new javax.net.ssl.TrustManager[1];
-			class AllTrustManager implements
-					javax.net.ssl.TrustManager,
-					javax.net.ssl.X509TrustManager {
-				public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-					return null;
-				}
-				
-				public void checkServerTrusted(
-						java.security.cert.X509Certificate[] certs,
-						String authType)
-						throws java.security.cert.CertificateException {
-					return;
-				}
-				
-				public void checkClientTrusted(
-						java.security.cert.X509Certificate[] certs,
-						String authType)
-						throws java.security.cert.CertificateException {
-					return;
-				}
-			}
-			javax.net.ssl.TrustManager tm = new AllTrustManager();
-			trustAllCerts[0] = tm;
-			// Create the SSL context
-			javax.net.ssl.SSLContext sc = javax.net.ssl.SSLContext.getInstance("SSL");
-			// Create the session context
-			javax.net.ssl.SSLSessionContext sslsc = sc.getServerSessionContext();
-			// Initialize the contexts; the session context takes the
-			// trust manager.
-			sslsc.setSessionTimeout(0);
-			sc.init(null, trustAllCerts, null);
-			// Use the default socket factory to create the socket for
-			// the secure
-			// connection
-			javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-
-			// Set the default host name verifier to enable the connection.
-			HttpsURLConnection.setDefaultHostnameVerifier(hv);
-
-		} catch (Throwable e) {
-			m_log.warn("hostname verifier (all trust) disable : " + e.getMessage(), e);
-		}
-
 		try {
 			String strConnect = AgentProperties.getProperty("connect.timeout");
 			if (strConnect != null) {
@@ -504,6 +545,8 @@ public class Agent {
 			BasicAuth basicAuth = new BasicAuth(proxyUser, proxyPassword);
 			Authenticator.setDefault(basicAuth);
 			m_log.info("proxy.host=" + System.getProperty("http.proxyHost") + ", proxy.port=" + System.getProperty("http.proxyPort") + ", proxy.user=" + proxyUser);
+			AgentRestConnectManager.setProxy(proxyHost,proxyPort);
+			AgentRestConnectManager.setProxyAuchenticator(proxyUser, proxyPassword);
 		}
 
 
@@ -546,7 +589,7 @@ public class Agent {
 					String[] managerIps = discoveryInfoMap.get("managerIp").split("\\|");
 					String key = "managerAddress";
 					String value = url.getProtocol() + "://" + managerIps[0] + ":"
-							+ url.getPort() + "/HinemosWS/";
+							+ url.getPort() + "/HinemosWeb/";
 					// HAオプションでFIPを利用できない場合の対応
 					// managerIpが「|」区切りで2つ以上連携された場合は接続先マネージャを2件設定
 					// 3つ目以降は切り捨てる
@@ -556,7 +599,7 @@ public class Agent {
 									+ "," + managerIps[1] + " to '" + key + "'.");
 						}
 						value = value + "," + url.getProtocol() + "://" + managerIps[1] + ":"
-								+ url.getPort() + "/HinemosWS/";
+								+ url.getPort() + "/HinemosWeb/";
 					}
 					m_log.info("Rewrite property. key : " + key + ", value : " + value);
 					PropertiesFileUtil.replacePropertyFile(propFileName, key, managerAddress, value);
@@ -572,7 +615,7 @@ public class Agent {
 					AgentProperties.setProperty(key, value);
 				}
 				
-				// log4j.propertiesファイルの書き換え（Windows版エージェントのみ）
+				// log4j2.propertiesファイルの書き換え（Windows版エージェントのみ）
 				{
 					String[] managerIps = discoveryInfoMap.get("managerIp").split("\\|");
 					String key = "log4j.appender.syslog.SyslogHost";
@@ -602,30 +645,32 @@ public class Agent {
 			}
 		}
 		
-		try {
-			EndpointManager.init(AgentProperties.getProperty("user"),
+		try {		
+			AgentRestConnectManager.init(AgentProperties.getProperty("user"),
 					AgentProperties.getProperty("password"),
 					AgentProperties.getProperty("managerAddress"),
 					connectTimeout, requestTimeout);
 		} catch (Exception e) {
-			m_log.error("EndpointManager.init error : " + e.getMessage(), e);
+			m_log.error("AgentRestConnectManager.init error : " + e.getMessage(), e);
 			m_log.error("current-dir=" + (new File(".")).getAbsoluteFile().getParent());
 			throw e;
 		}
+		
 
 		if (!replacePropFileSuccess) {
-			OutputBasicInfo output = new OutputBasicInfo();
-			output.setPluginId("AGT_UPDATE_CONFFILE");
-			output.setPriority(PriorityConstant.TYPE_WARNING);
-			output.setApplication(MessageConstant.AGENT.getMessage());
+			MessageSendableObject sendme = new MessageSendableObject();
+			sendme.body = new AgtOutputBasicInfoRequest();
+			sendme.body.setPluginId("AGT_UPDATE_CONFFILE");
+			sendme.body.setPriority(PriorityConstant.TYPE_WARNING);
+			sendme.body.setApplication(MessageConstant.AGENT.getMessage());
+			sendme.body.setMessage(MessageConstant.MESSAGE_AGENT_REPLACE_FILE_FAULURE_NOTIFY_MSG.getMessage());
 			String[] args = { errMsg };
-			output.setMessage(MessageConstant.MESSAGE_AGENT_REPLACE_FILE_FAULURE_NOTIFY_MSG.getMessage());
-			output.setMessageOrg(MessageConstant.MESSAGE_AGENT_REPLACE_FILE_FAULURE_NOTIFY_ORIGMSG.getMessage(args));
-			output.setGenerationDate(HinemosTime.getDateInstance().getTime());
-			output.setMonitorId("SYS");
-			output.setFacilityId(""); // マネージャがセットする。
-			output.setScopeText(""); // マネージャがセットする。
-			m_sendQueue.put(output);
+			sendme.body.setMessageOrg(MessageConstant.MESSAGE_AGENT_REPLACE_FILE_FAULURE_NOTIFY_ORIGMSG.getMessage(args));
+			sendme.body.setGenerationDate(HinemosTime.getDateInstance().getTime());
+			sendme.body.setMonitorId("SYS");
+			sendme.body.setFacilityId(""); // マネージャがセットする。
+			sendme.body.setScopeText(""); // マネージャがセットする。
+			m_sendQueue.put(sendme);
 		}
 
 		// AgentInfoの更新判定時間の更新
@@ -658,6 +703,8 @@ public class Agent {
 			@Override
 			public void run() {
 				terminate();
+				// ログ出力を停止
+				LogManager.shutdown();
 			}
 		});
 	}
@@ -678,12 +725,12 @@ public class Agent {
 	 */
 	public void exec() {
 		// 定期的にリロードする処理を開始する
-		m_log.info("log4j.properties=" + m_log4jFileName);
-		PropertyConfigurator.configureAndWatch(m_log4jFileName, m_reconfigLog4jInterval);
+		m_log.info("log4j2.properties=" + m_log4jFileName);
+		LoggerContext context = (LoggerContext) LogManager.getContext(false);
+		context.setConfigLocation(Paths.get(m_log4jFileName).toUri());
 
 		// ログファイル読み込みスレッド開始
-		LogfileMonitorManager.start();
-		
+		LogfileMonitorManager.getInstance().start();
 
 		// バイナリ監視スレッド開始
 		BinaryMonitorManager.start();
@@ -694,7 +741,15 @@ public class Agent {
 		
 		// Windowsイベント監視スレッド開始
 		WinEventMonitorManager.start();
+		
+		// RPAログファイル監視スレッド開始
+		RpaLogfileMonitorManager.getInstance().start();
 
+		// SDML制御ログ読み込みスレッド開始
+		SdmlFileMonitorManager.getInstance().start();
+
+		// セルフチェックの開始
+		SelfCheckManager.start();
 	}
 
 	/**
@@ -710,14 +765,24 @@ public class Agent {
 		m_log.info("terminate() start");
 		
 		// ログファイル監視の実行中は停止を待つ
-		LogfileMonitorManager.terminate();
+		// SDML制御ログ監視の実行中は停止を待つ
+		// RPAログファイル監視の実行中は停止を待つ
+		LogfileMonitorManager.getInstance().terminate();
+		SdmlFileMonitorManager.getInstance().terminate();
+		RpaLogfileMonitorManager.getInstance().terminate();
 		for(int i = 0 ; i < m_shutdownWaitTime / 2; i++) {
 			try {
-				if(LogfileMonitorManager.isRunning()) {
+				if(LogfileMonitorManager.getInstance().isRunning()) {
 					m_log.info("Logfile monitor is running.");
 					Thread.sleep(2 * 1000);
+				} else if(SdmlFileMonitorManager.getInstance().isRunning()) {
+					m_log.info("Sdml controllog monitor is running.");
+					Thread.sleep(2 * 1000);
+				} else if (RpaLogfileMonitorManager.getInstance().isRunning()) {
+					m_log.info("RpaLogfile monitor is running.");
+					Thread.sleep(2 * 1000);
 				} else {
-					m_log.info("Logfile monitor is stopping.");
+					m_log.info("Logfile monitor and Sdml controllog monitor and RPA logfile monitor is stopping.");
 					break;
 				}
 			} catch (InterruptedException e) {
@@ -725,23 +790,22 @@ public class Agent {
 			}
 		}
 		
+		// クラウドログ監視の停止を待つ
+		CloudLogMonitorManager.shutdownAllCloudLogTask();
+
 		RunHistoryUtil.logHistory();
 
+		SelfCheckManager.shutdown();
+		
 		try {
 			// deleteAgentを行った直後に別スレッドのgetTopicと競合するとエージェントが重複されたと認識されるため、
 			// deleteAgentとgetTopicを排他する
 			synchronized(ReceiveTopic.lockTopicReceiveTiming) {
-				AgentEndPointWrapper.deleteAgent();
+				AgentRestClientWrapper.deleteAgent(Agent.getAgentInfoRequest());
 				ReceiveTopic.terminate();
 			}
-		} catch (InvalidRole_Exception e) {
-			m_log.info("InvalidRoleException " + e.getMessage());
-		} catch (InvalidUserPass_Exception e) {
-			m_log.info("InvalidUserPassException " + e.getMessage());
-		} catch (HinemosUnknown_Exception e) {
-			m_log.info("HinemosUnknown " + e.getMessage());
-		} catch (WebServiceException e) {
-			m_log.info("WebServiceException " + e.getMessage());
+		} catch (InvalidSetting | InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown e) {
+			m_log.info("Failed to delete agent: " + e.getClass().getSimpleName() + " " + e.getMessage());
 		}
 		
 		m_log.info("terminate() end");
@@ -815,7 +879,7 @@ public class Agent {
 		}
 	}
 
-	public static AgentInfo getAgentInfo() {
+	public static AgentInfoRequest getAgentInfoRequest() {
 		// 更新判定時間以内の場合agentInfoを書き換えない
 		long diffTime = HinemosTime.currentTimeMillis() - lastAgentInfoUpdateTime;
 		m_log.debug("diffTime : " + diffTime);
@@ -861,17 +925,17 @@ public class Agent {
 					}
 				}
 			}
-			if (agentInfo.getIpAddress().size() != newIpAddressList.size()) {
-				m_log.info("ipAddress change : " + agentInfo.getIpAddress().size() +
+			if (agentInfo.getIpAddressList().size() != newIpAddressList.size()) {
+				m_log.info("ipAddress change : " + agentInfo.getIpAddressList().size() +
 						"," + newIpAddressList.size());
-				agentInfo.getIpAddress().clear();
-				agentInfo.getIpAddress().addAll(newIpAddressList);
+				agentInfo.getIpAddressList().clear();
+				agentInfo.getIpAddressList().addAll(newIpAddressList);
 				ReceiveTopic.setReloadFlg(true);
 			} else {
-				if (!agentInfo.getIpAddress().containsAll(newIpAddressList)) {
+				if (!agentInfo.getIpAddressList().containsAll(newIpAddressList)) {
 					m_log.info("ipAddress change");
-					agentInfo.getIpAddress().clear();
-					agentInfo.getIpAddress().addAll(newIpAddressList);
+					agentInfo.getIpAddressList().clear();
+					agentInfo.getIpAddressList().addAll(newIpAddressList);
 					ReceiveTopic.setReloadFlg(true);
 				}
 			}
@@ -883,6 +947,24 @@ public class Agent {
 		m_log.debug(getAgentStr());
 
 		lastAgentInfoUpdateTime = HinemosTime.currentTimeMillis();
+
+		if(agentInfo.getFacilityId() == null || agentInfo.getFacilityId().equals("")){
+			rest_agent_id = agentInfo.getHostname() + "." + agentInfo.getIpAddressList().toString();
+		}else{
+			rest_agent_id =agentInfo.getFacilityId()+"."+agentInfo.getInstanceId();
+		}
+		if(rest_agent_id.length() > 512){
+			rest_agent_id= rest_agent_id.substring(0,512);
+		}
+		
+		agentInfo.setDhcpUpdateMode(DhcpUpdateModeEnum.fromValue(
+				DhcpUpdateMode.fromValue(AgentProperties.getProperty("dhcp.update.mode")).name()));
+		
+		String autoAssignScopeIds = AgentProperties.getProperty("repository.autoassign.scopeids", "");
+		if (!autoAssignScopeIds.isEmpty()) {
+			agentInfo.setAssignScopeList(Arrays.asList(AgentProperties.getProperty("repository.autoassign.scopeids", "").split(",")));
+		}
+		
 		return agentInfo;
 	}
 
@@ -899,10 +981,10 @@ public class Agent {
 	 * システムから、Java環境情報を取得します。
 	 * @return Java環境情報。
 	 */
-	public static AgentJavaInfo getJavaInfo() {
+	public static AgentJavaInfoRequest getJavaInfo() {
 		synchronized (Agent.class) {
 			if (javaInfo == null) {
-				javaInfo = new AgentJavaInfo();
+				javaInfo = new AgentJavaInfoRequest();
 				javaInfo.setOsVersion(System.getProperty("os.version"));
 				javaInfo.setOsArch(System.getProperty("os.arch"));
 				javaInfo.setSunArchDataModel(System.getProperty("sun.arch.data.model"));
@@ -937,7 +1019,7 @@ public class Agent {
 			str.append("[instanceID=" + agentInfo.getInstanceId() + "]");
 		}
 		str.append("[hostname="+ agentInfo.getHostname() + "]");
-		for (String ipAddress : agentInfo.getIpAddress()) {
+		for (String ipAddress : agentInfo.getIpAddressList()) {
 			str.append(", " +ipAddress);
 		}
 		return str.toString();
@@ -945,6 +1027,18 @@ public class Agent {
 
 	public static String getAgentHome() {
 		return agentHome;
+	}
+	
+	public static String getRestAgentId() {
+		return rest_agent_id;
+	}
+
+	public static boolean isRegistered() {
+		return registered.get();
+	}
+
+	public static void setRegistered(boolean bool) {
+		registered.set(bool);
 	}
 }
 

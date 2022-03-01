@@ -11,11 +11,11 @@ package com.clustercontrol.reporting.action;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.TemplateSetInfoResponse;
 
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.reporting.TemplateSetInfo;
 
 /**
  * テンプレートセット情報を取得するクライアント側アクションクラス<BR>
@@ -35,14 +35,14 @@ public class GetTemplateSet {
 	 * @param templateSetId テンプレートセットID
 	 * @return テンプレートセット情報
 	 */
-	public TemplateSetInfo getTemplateSetInfo(String managerName, String templateSetId) {
+	public TemplateSetInfoResponse getTemplateSetInfo(String managerName, String templateSetId) {
 
-		TemplateSetInfo info = null;
+		TemplateSetInfoResponse info = null;
 		
 		m_log.info("templateSetId = " + templateSetId);
 		
 		try {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
+			ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(managerName);
 			info = wrapper.getTemplateSetInfo(templateSetId);
 		} catch (Exception e) {
 			// 上記以外の例外

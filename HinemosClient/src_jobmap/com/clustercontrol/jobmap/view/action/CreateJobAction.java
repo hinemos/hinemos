@@ -8,7 +8,7 @@
 
 package com.clustercontrol.jobmap.view.action;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
 /**
  * ジョブ[一覧]ビューの「ジョブの作成」のクライアント側アクションクラス<BR>
@@ -20,7 +20,7 @@ public class CreateJobAction extends BaseCreateAction {
 	public static final String ID = ActionIdBase + CreateJobAction.class.getSimpleName();
 
 	@Override
-	public int getJobType() {
-		return JobConstant.TYPE_JOB;
+	public JobInfoWrapper.TypeEnum getJobType() {
+		return JobInfoWrapper.TypeEnum.JOB;
 	}
 }

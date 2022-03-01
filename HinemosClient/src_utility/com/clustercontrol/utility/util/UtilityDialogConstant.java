@@ -14,4 +14,9 @@ public final class UtilityDialogConstant {
 	public static final int CANCEL = 258;
 
 	public static final int DELETE = 256;
+	
+	public static final int ROLLBACK = 256;
+	public static final int YES= 256;
+	public static final int NO = 257;
+	
 }

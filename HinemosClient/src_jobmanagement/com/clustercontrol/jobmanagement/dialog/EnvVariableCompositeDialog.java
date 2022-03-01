@@ -16,13 +16,13 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.JobEnvVariableInfoResponse;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.jobmanagement.composite.EnvVariableComposite;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.jobmanagement.JobEnvVariableInfo;
 
 /**
  * 環境変数のコンポジットを表示するダイアログクラスです。
@@ -34,15 +34,15 @@ public class EnvVariableCompositeDialog extends CommonDialog {
 	
 	private EnvVariableComposite m_envVariableComposite;
 	
-	private List<JobEnvVariableInfo> m_jobEnvVariableInfo = new ArrayList<JobEnvVariableInfo>();
+	private List<JobEnvVariableInfoResponse> m_jobEnvVariableInfo = new ArrayList<JobEnvVariableInfoResponse>();
 	
 	private boolean m_readOnly = false;
 	
-	public List<JobEnvVariableInfo> getJobEnvVariableInfo() {
+	public List<JobEnvVariableInfoResponse> getJobEnvVariableInfo() {
 		return m_jobEnvVariableInfo;
 	}
 
-	public void setJobEnvVariableInfo(List<JobEnvVariableInfo> m_jobEnvVariableInfo) {
+	public void setJobEnvVariableInfo(List<JobEnvVariableInfoResponse> m_jobEnvVariableInfo) {
 		this.m_jobEnvVariableInfo = m_jobEnvVariableInfo;
 	}
 

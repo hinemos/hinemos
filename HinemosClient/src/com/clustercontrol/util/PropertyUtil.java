@@ -8,9 +8,11 @@
 
 package com.clustercontrol.util;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
@@ -103,6 +105,45 @@ public class PropertyUtil {
 	}
 
 	/**
+	 * 指定されたIDで、String型の値を持つプロパティを再帰検索し、最初に見つかった空文字列でない値を返します。
+	 * 
+	 * @param prop 検索対象のプロパティ。
+	 * @param id 検索対象のID。
+	 * @return 見つかった場合はString値、見つからなかった場合はnull。
+	 */
+	public static String findNonEmptyStringValue(Property prop, String id) {
+		for (Object value : getPropertyValue(prop, id)) {
+			if (value instanceof String) {
+				String s = (String) value;
+				if (s.length() > 0) {
+					return s;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 指定されたIDで、String型の値を持つプロパティを再帰検索し、空文字列でない値をリスト化して返します。
+	 * 
+	 * @param prop 検索対象のプロパティ。
+	 * @param id 検索対象のID。
+	 * @return 空文字列でない値のリスト。
+	 */
+	public static List<String> findNonEmptyStringValues(Property prop, String id) {
+		List<String> rtn = new ArrayList<>();
+		for (Object value : getPropertyValue(prop, id)) {
+			if (value instanceof String) {
+				String s = (String) value;
+				if (s.length() > 0) {
+					rtn.add(s);
+				}
+			}
+		}
+		return rtn;
+	}
+
+	/**
 	 * 指定されたIDで、Integer型の値を持つプロパティを再帰検索し、最初に見つかった値を返します。
 	 * 
 	 * @param prop 検索対象のプロパティ。
@@ -119,6 +160,40 @@ public class PropertyUtil {
 	}
 
 	/**
+	 * 指定されたIDで、Long型の値を持つプロパティを再帰検索し、最初に見つかった値を返します。
+	 * 
+	 * @param prop 検索対象のプロパティ。
+	 * @param id 検索対象のID。
+	 * @return 見つかった場合はLong値、見つからなかった場合はnull。
+	 */
+	public static Long findLongValue(Property prop, String id) {
+		for (Object value : getPropertyValue(prop, id)) {
+			if (value instanceof Long) {
+				return (Long) value;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 指定されたIDで、Boolean型の値を持つプロパティを再帰検索し、最初に見つかった値を返します。
+	 * 
+	 * @param prop 検索対象のプロパティ。
+	 * @param id 検索対象のID。
+	 * @return 見つかった場合はBoolean値、見つからなかった場合はnull。
+	 */
+	public static Boolean findBooleanValue(Property prop, String id) {
+		for (Object value : getPropertyValue(prop, id)) {
+			if (value instanceof Boolean) {
+				return (Boolean) value;
+			}
+		}
+		//findbugs対応 Booleanの場合、明示的なnull返却は不可を回避
+		Boolean ret = null;
+		return ret;
+	}
+
+	/**
 	 * 指定されたIDで、Date型の値を持つプロパティを再帰検索し、最初に見つかった値をlong変換して返します。
 	 * 
 	 * @param prop 検索対象のプロパティ。
@@ -130,6 +205,23 @@ public class PropertyUtil {
 			if (value instanceof Date) {
 				Date d = (Date) value;
 				return d.getTime();
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 指定されたIDで、Date型の値を持つプロパティを再帰検索し、最初に見つかった値をString変換して返します。
+	 * 
+	 * @param prop 検索対象のプロパティ。
+	 * @param id 検索対象のID。
+	 * @return 見つかった場合はString値、見つからなかった場合はnull。
+	 */
+	public static String findTimeStringValue(Property prop, String id, SimpleDateFormat sdf) {
+		for (Object value : getPropertyValue(prop, id)) {
+			if (value instanceof Date) {
+				Date d = (Date) value;
+				return sdf.format(d);
 			}
 		}
 		return null;

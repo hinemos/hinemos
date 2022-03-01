@@ -9,8 +9,11 @@
 package com.clustercontrol.reporting.dialog;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
@@ -33,6 +36,12 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.CreateReportingFileRequest;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
+import org.openapitools.client.model.ReportingScheduleInfoResponse;
+import org.openapitools.client.model.ReportingScheduleResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.DataRangeConstant;
@@ -46,24 +55,21 @@ import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.notify.composite.NotifyIdListComposite;
 import com.clustercontrol.reporting.action.GetReporting;
 import com.clustercontrol.reporting.action.ReportingRunner;
 import com.clustercontrol.reporting.composite.OutputPeriodComposite;
 import com.clustercontrol.reporting.composite.ReportFormatComposite;
 import com.clustercontrol.reporting.composite.TemplateSetIdListComposite;
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
-import com.clustercontrol.reporting.util.ReportingUtil;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.repository.FacilityPath;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.ReportingInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 選択したレポーティングスケジュールを即時実行するためのダイアログクラス。
@@ -76,6 +82,9 @@ public class ReportingRunDialog extends CommonDialog {
 	public static final int WIDTH_TITLE = 4;
 	public static final int WIDTH_TEXT = 8;
 
+	// ログ
+	private static Log m_log = LogFactory.getLog( ReportingRunDialog.class );
+		
 	/** スケジュールID */
 	private String m_scheduleId = null;
 
@@ -119,7 +128,10 @@ public class ReportingRunDialog extends CommonDialog {
 	private Button m_confirmNotify = null;
 
 	/** レポーティング情報 */
-	private ReportingInfo m_reportingInfo = null;
+	private ReportingScheduleResponse m_reportingInfo = null;
+	
+	/** レポーティング作成情報 */
+	private CreateReportingFileRequest m_createReportingFileRequest = null;
 
 	/** ダイアログ表示時の処理タイプ */
 	private int m_mode;
@@ -374,10 +386,10 @@ public class ReportingRunDialog extends CommonDialog {
 				ScopeTreeDialog dialog = new ScopeTreeDialog(shell,
 						m_managerComposite.getText(), m_ownerRoleId.getText(), false, m_unregistered);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem item = dialog.getSelectItem();
-					FacilityInfo info = item.getData();
+					FacilityTreeItemResponse item = dialog.getSelectItem();
+					FacilityInfoResponse info = item.getData();
 					m_facilityId = info.getFacilityId();
-					if (info.getFacilityType() == FacilityConstant.TYPE_NODE) {
+					if (info.getFacilityType() == FacilityTypeEnum.NODE) {
 						m_textScope.setText(info.getFacilityName());
 					} else {
 						FacilityPath path = new FacilityPath(
@@ -436,7 +448,8 @@ public class ReportingRunDialog extends CommonDialog {
 		/*
 		 * 書式設定
 		 */
-		this.m_reportFormat = new ReportFormatComposite(parent, SWT.NONE, this.m_managerComposite.getText());
+		this.m_reportFormat = new ReportFormatComposite(parent, SWT.NONE);
+		
 		gridData = new GridData();
 		gridData.horizontalSpan = 15;
 		gridData.horizontalAlignment = GridData.FILL;
@@ -505,7 +518,7 @@ public class ReportingRunDialog extends CommonDialog {
 		// レポーティング情報の生成
 		if (m_scheduleId != null) {
 			this.m_reportingInfo = new GetReporting()
-					.getReportingInfo(this.m_managerComposite.getText(), m_scheduleId);
+					.getReportingSchedule(this.m_managerComposite.getText(), m_scheduleId);
 		}
 	}
 
@@ -589,8 +602,7 @@ public class ReportingRunDialog extends CommonDialog {
 	private void reflectReportingInfo() {
 
 		// レポーティング情報を this.reportingInfo とは別のインスタンスとして取得
-		ReportingInfo info = new GetReporting().getReportingInfo(this.m_managerComposite.getText(), m_scheduleId);
-
+		ReportingScheduleResponse info = new GetReporting().getReportingSchedule(this.m_managerComposite.getText(), m_scheduleId);
 		if (info != null) {
 
 			// オーナーロールID設定
@@ -616,8 +628,8 @@ public class ReportingRunDialog extends CommonDialog {
 			}
 
 			// スコープ
-			if (info.getScopeText() != null) {
-				this.m_textScope.setText(HinemosMessage.replace(info.getScopeText()));
+			if (info.getScope() != null) {
+				this.m_textScope.setText(HinemosMessage.replace(info.getScope()));
 			}
 
 			// ファシリティ
@@ -631,8 +643,14 @@ public class ReportingRunDialog extends CommonDialog {
 			}
 
 			// 通知情報の設定
-			if (info.getNotifyId() != null) {
-				this.m_notifyIdList.setNotify(info.getNotifyId());
+			if (info.getNotifyRelationList() != null) {
+				List<NotifyRelationInfoResponse> relationInfoList = new ArrayList<>();
+				if (info.getNotifyRelationList() != null && info.getNotifyRelationList().size() > 0) {
+					for (NotifyRelationInfoResponse infoRes : info.getNotifyRelationList()){
+						relationInfoList.add(infoRes);
+					}
+				}
+				this.m_notifyIdList.setNotify(relationInfoList);
 			}
 			
 			// テンプレートセット
@@ -642,9 +660,9 @@ public class ReportingRunDialog extends CommonDialog {
 		}
 
 		// 出力期間
-		m_outputPeriod.reflectReportingInfo(info);
+		m_outputPeriod.reflectReportingSchedule(info);
 		// 書式
-		m_reportFormat.reflectReportingInfo(info);
+		m_reportFormat.reflectReportingSchedule(info);
 
 		this.update();
 	}
@@ -661,9 +679,10 @@ public class ReportingRunDialog extends CommonDialog {
 	 */
 	private ValidateResult createReportingInfoForRunning() {
 		ValidateResult result = null;
+		m_createReportingFileRequest = new CreateReportingFileRequest();
 
 		if (m_reportingInfo == null) {
-			m_reportingInfo = new ReportingInfo();
+			m_reportingInfo = new ReportingScheduleResponse();
 		}
 
 		// 出力期間
@@ -671,25 +690,52 @@ public class ReportingRunDialog extends CommonDialog {
 		m_reportingInfo.setOutputPeriodBefore(m_outputPeriod
 				.getOutputPeriodBefore());
 		m_reportingInfo.setOutputPeriodFor(m_outputPeriod.getOutputPeriodFor());
+		
+		try {
+			RestClientBeanUtil.convertBean(m_reportingInfo, m_createReportingFileRequest);
+		} catch (HinemosUnknown e) {
+			String errMessage = HinemosMessage.replace(e.getMessage());
+			m_log.warn("createReportingInfo(), " + errMessage, e);
+			MessageDialog.openError(null,
+					Messages.getString("failed"),
+					Messages.getString("message.accesscontrol.23")
+					+ ", " + errMessage);
+		}
 
 		// 通知を行う場合
 		if (m_confirmNotify.getSelection()) {
-			m_reportingInfo.setNotifyGroupId(ReportingUtil
-					.createNotifyGroupIdReporting(m_reportingInfo.getReportScheduleId()));
-			// コンポジット中の通知情報に通知グループIDを対応させる
-			this.m_notifyIdList
-					.setNotifyGroupId(m_reportingInfo.getNotifyGroupId());
+			m_createReportingFileRequest.setNotifyFlg(true);
 			// 通知情報のリストを更新する
-			List<NotifyRelationInfo> notifyRelationInfoList = m_reportingInfo
-					.getNotifyId();
+			if (m_reportingInfo.getNotifyRelationList() == null) {
+				m_reportingInfo.setNotifyRelationList(new ArrayList<NotifyRelationInfoResponse>());
+			}
+			List<NotifyRelationInfoResponse> notifyRelationInfoList = m_reportingInfo.getNotifyRelationList();
+
 			notifyRelationInfoList.clear();
 			if (this.m_notifyIdList.getNotify() != null) {
-				notifyRelationInfoList.addAll(this.m_notifyIdList.getNotify());
+				List<NotifyRelationInfoResponse> relationInfoResList = new ArrayList<>();
+				try {
+					if (this.m_notifyIdList.getNotify() != null && this.m_notifyIdList.getNotify().size() > 0) {
+						for (NotifyRelationInfoResponse info : this.m_notifyIdList.getNotify()){
+							NotifyRelationInfoResponse relationInfoRes = new NotifyRelationInfoResponse();
+							RestClientBeanUtil.convertBean(info, relationInfoRes);
+							relationInfoResList.add(relationInfoRes);
+						}
+					}
+				} catch (HinemosUnknown e) {
+					String errMessage = HinemosMessage.replace(e.getMessage());
+					m_log.warn("createReportingInfo(), " + errMessage, e);
+					MessageDialog.openError(null,
+							Messages.getString("failed"),
+							Messages.getString("message.accesscontrol.23")
+							+ ", " + errMessage);
+				}
+				notifyRelationInfoList.addAll(relationInfoResList);
 			}
 
 			// 通知を行わない場合、通知グループIDには null を入れておく。
 		} else {
-			m_reportingInfo.setNotifyGroupId(null);
+			m_createReportingFileRequest.setNotifyFlg(false);
 		}
 
 		return result;
@@ -765,14 +811,14 @@ public class ReportingRunDialog extends CommonDialog {
 	protected boolean action() {
 		boolean ret = false;
 
-		// 実行準備
-		m_runner = new ReportingRunner(
-				this.m_scheduleId, 
-				this.m_folderName,
-				this.m_reportingInfo, 
-				ReportingEndpointWrapper.getWrapper(this.m_managerComposite.getText()));
-
 		try {
+			// 実行準備
+			m_runner = new ReportingRunner(
+					this.m_scheduleId, 
+					this.m_folderName,
+					this.m_createReportingFileRequest, 
+					ReportingRestClientWrapper.getWrapper(this.m_managerComposite.getText()));
+
 			// レポート作成処理を開始
 			List<String> downloadFileList = m_runner.create(this.m_managerComposite.getText());
 
@@ -794,7 +840,7 @@ public class ReportingRunDialog extends CommonDialog {
 			}
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
 			} else {

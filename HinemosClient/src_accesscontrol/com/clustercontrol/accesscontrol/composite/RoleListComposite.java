@@ -22,18 +22,18 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.RoleInfoResponse;
 
 import com.clustercontrol.accesscontrol.action.GetRoleListTableDefine;
 import com.clustercontrol.accesscontrol.composite.action.RoleDoubleClickListener;
-import com.clustercontrol.accesscontrol.util.AccessEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.RoleInfo;
 
 /**
  * アカウント[ロール]ビュー用のコンポジットクラスです。
@@ -132,27 +132,27 @@ public class RoleListComposite extends Composite {
 	public void update() {
 
 		//ロール情報取得
-		List<RoleInfo> infoList = null;
-		Map<String, List<RoleInfo>> dispDataMap= new ConcurrentHashMap<String, List<RoleInfo>>();
+		List<RoleInfoResponse> infoList = null;
+		Map<String, List<RoleInfoResponse>> dispDataMap= new ConcurrentHashMap<String, List<RoleInfoResponse>>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<>();
 
 		//実行契機情報取得
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
 			try {
-				AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
+				AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
 				infoList = wrapper.getRoleInfoList();
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// 権限なし
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 
 			} catch (Exception e) {
 				// 上記以外の例外
 				m_log.warn("update(), " + e.getMessage(), e);
-				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 			}
 
 			if (infoList == null) {
-				infoList = new ArrayList<RoleInfo>();
+				infoList = new ArrayList<RoleInfoResponse>();
 			}
 
 			dispDataMap.put(managerName, infoList);
@@ -164,17 +164,17 @@ public class RoleListComposite extends Composite {
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<RoleInfo>> map : dispDataMap.entrySet()) {
-			for (RoleInfo info : map.getValue()) {
+		for(Map.Entry<String, List<RoleInfoResponse>> map : dispDataMap.entrySet()) {
+			for (RoleInfoResponse info : map.getValue()) {
 				ArrayList<Object> obj = new ArrayList<Object>();
 				obj.add(map.getKey());
 				obj.add(info.getRoleId());
 				obj.add(info.getRoleName());
 				obj.add(info.getDescription());
 				obj.add(info.getCreateUserId());
-				obj.add(new Date(info.getCreateDate()));
+				obj.add(info.getCreateDate());
 				obj.add(info.getModifyUserId());
-				obj.add(new Date(info.getModifyDate()));
+				obj.add(info.getModifyDate());
 				obj.add(null);
 				listInput.add(obj);
 			}

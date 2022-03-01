@@ -31,6 +31,9 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
+import org.openapitools.client.model.CollectKeyInfoResponseP1;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
@@ -39,20 +42,20 @@ import com.clustercontrol.collect.bean.GraphTypeConstant;
 import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.bean.SummaryTypeMessage;
 import com.clustercontrol.collect.dialog.CollectItemJobDialog;
-import com.clustercontrol.collect.util.CollectEndpointWrapper;
+
+import com.clustercontrol.collect.util.CollectRestClientWrapper;
 import com.clustercontrol.collect.view.CollectGraphView;
+import com.clustercontrol.fault.HinemosDbTimeout;
+import com.clustercontrol.fault.HinemosException;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.collect.CollectKeyInfoPK;
-import com.clustercontrol.ws.collect.HinemosDbTimeout_Exception;
-import com.clustercontrol.ws.collect.HinemosUnknown_Exception;
-import com.clustercontrol.ws.collect.InvalidRole_Exception;
-import com.clustercontrol.ws.collect.InvalidUserPass_Exception;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+
 
 /**
  * 性能グラフを表示するコンポジットクラス<BR>
@@ -348,7 +351,7 @@ public class CollectSettingComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				m_log.debug("apply");
 				String selectItemName = getSelectItemNameBySelectIndex();
-				List<CollectKeyInfoPK> collectKeyInfoList = getCollectorItems();
+				List<CollectKeyInfoResponseP1> collectKeyInfoList = getCollectorItems();
 				
 				int summaryType = getSummaryItem();
 				Boolean checkInput = checkTreeCombo(collectKeyInfoList, summaryType);
@@ -434,16 +437,16 @@ public class CollectSettingComposite extends Composite {
 	 * 
 	 * @return 監視項目種別リスト
 	 */
-	private List<CollectKeyInfoPK> getCollectorItems(){
+	private List<CollectKeyInfoResponseP1> getCollectorItems(){
 		if ((selectIndexList == null || selectIndexList.size() == 0)
 				&& (m_collectorItemJobCheckList == null || m_collectorItemJobCheckList.size() == 0)) {
 			return null;
 		}
-		List<CollectKeyInfoPK> collectKeyInfoList = new ArrayList<>();
+		List<CollectKeyInfoResponseP1> collectKeyInfoList = new ArrayList<>();
 		for (Integer number : selectIndexList) {
 			String key = m_listCollectorItem.getItem(number);
 			String itemCodeName = (String)m_listCollectorItem.getData(key);
-			CollectKeyInfoPK pk = new CollectKeyInfoPK();
+			CollectKeyInfoResponseP1 pk = new CollectKeyInfoResponseP1();
 			String itemName = itemCodeName.split(SEPARATOR_AT)[0];
 			String displayName = itemCodeName.split(SEPARATOR_AT)[1];
 			String monitorId = itemCodeName.split(SEPARATOR_AT)[2];
@@ -463,7 +466,7 @@ public class CollectSettingComposite extends Composite {
 		}
 		for (String collectorItemJobCheck : m_collectorItemJobCheckList) {
 			String itemCodeName = m_collectorItemJobMap.get(collectorItemJobCheck);
-			CollectKeyInfoPK pk = new CollectKeyInfoPK();
+			CollectKeyInfoResponseP1 pk = new CollectKeyInfoResponseP1();
 			String itemName = itemCodeName.split(SEPARATOR_AT)[0];
 			String displayName = itemCodeName.split(SEPARATOR_AT)[1];
 			String monitorId = itemCodeName.split(SEPARATOR_AT)[2];
@@ -511,19 +514,21 @@ public class CollectSettingComposite extends Composite {
 			String managerName = map.getKey();
 			List<String> facilityList = map.getValue();
 			// 収集項目の一覧を生成
-			List<CollectKeyInfoPK> collectKeyInfoList;
+			List<CollectKeyInfoResponseP1> collectKeyInfoList = new ArrayList<>();
 			try {
-				CollectEndpointWrapper wrapper = CollectEndpointWrapper.getWrapper(managerName);
-				collectKeyInfoList = wrapper.getItemCodeList(facilityList);
-			} catch (InvalidRole_Exception e) {
-				m_log.warn("setCollectorItemCombo() getItemCodeList, " + e.getMessage());
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("message"),
-						Messages.getString("message.accesscontrol.16"));
-				return;
-			} catch (InvalidUserPass_Exception
-					| HinemosUnknown_Exception e) {
+				CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
+				String facilityIds = String.join(",", facilityList);
+				List<CollectKeyInfoResponseP1> res = wrapper.getItemCodeList(facilityIds);
+				CollectKeyInfoResponseP1 collectKeyInfoPK = new CollectKeyInfoResponseP1();
+				for(CollectKeyInfoResponseP1 tmp:res){
+					collectKeyInfoPK = new CollectKeyInfoResponseP1();
+					collectKeyInfoPK.setDisplayName(tmp.getDisplayName());
+					collectKeyInfoPK.setFacilityId(tmp.getFacilityId());
+					collectKeyInfoPK.setItemName(tmp.getItemName());
+					collectKeyInfoPK.setMonitorId(tmp.getMonitorId());
+					collectKeyInfoList.add(collectKeyInfoPK);
+				}
+			} catch (HinemosException e) {
 				// 上記以外の例外
 				m_log.warn("setCollectorItemCombo() getItemCodeList, " + e.getMessage(), e);
 				MessageDialog.openInformation(
@@ -533,7 +538,7 @@ public class CollectSettingComposite extends Composite {
 				return;
 			}
 			// DBから取得した情報をリストに追加する
-			for (CollectKeyInfoPK collectKeyInfo : collectKeyInfoList) {
+			for (CollectKeyInfoResponseP1 collectKeyInfo : collectKeyInfoList) {
 				String itemName = collectKeyInfo.getItemName();
 				String monitorId = collectKeyInfo.getMonitorId();
 				String displayName = collectKeyInfo.getDisplayName();
@@ -545,6 +550,8 @@ public class CollectSettingComposite extends Composite {
 		}
 
 		// すでにコンボにある場合は追加しない
+		List<String> itemList = new ArrayList<>();
+		Map<String,String> itemMap = new HashMap<>();
 		for (String itemCodeName : allItemList) {
 			String itemName = HinemosMessage.replace(itemCodeName.split(SEPARATOR_AT)[0]);
 			String displayName = itemCodeName.split(SEPARATOR_AT)[1];
@@ -558,8 +565,8 @@ public class CollectSettingComposite extends Composite {
 				// ジョブ履歴以外
 				itemNameStr = itemName + "(" + monitorId + ")";
 				if (!(Arrays.asList(m_listCollectorItem.getItems())).contains(itemNameStr)) {
-					m_listCollectorItem.add(itemNameStr);
-					m_listCollectorItem.setData(itemNameStr, itemCodeName);
+					itemList.add(itemNameStr);
+					itemMap.put(itemNameStr, itemCodeName);
 				}
 			} else {
 				// ジョブ履歴
@@ -576,6 +583,11 @@ public class CollectSettingComposite extends Composite {
 				}
 			}
 		}
+		m_listCollectorItem.setItems(itemList.toArray(new String[0]));
+		for (Map.Entry<String, String> entry : itemMap.entrySet()) {
+			m_listCollectorItem.setData(entry.getKey(),entry.getValue());
+		}
+
 		// webクライアントで描画中に次に進むとエラーになる場合があるのでいったんチェックする（マネージャアクセス等は発生しない)
 		m_listCollectorItem.update();
 
@@ -761,7 +773,7 @@ public class CollectSettingComposite extends Composite {
 	 * @param summaryType
 	 * @return
 	 */
-	private boolean checkTreeCombo(List<CollectKeyInfoPK> itemCodeList, int summaryType) {
+	private boolean checkTreeCombo(List<CollectKeyInfoResponseP1> itemCodeList, int summaryType) {
 
 		if (itemCodeList == null || itemCodeList.isEmpty()) {
 			m_log.debug("checkTreeCombo() 監視項目未選択");
@@ -878,28 +890,28 @@ public class CollectSettingComposite extends Composite {
 	 * @param collectKeyList 選択された監視項目コードリスト
 	 * @param summaryType 選択されたサマリータイプ
 	 */
-	private void drawGraphs(List<CollectKeyInfoPK> collectKeyList, int summaryType, String selectItemName) {
+	private void drawGraphs(List<CollectKeyInfoResponseP1> collectKeyList, int summaryType, String selectItemName) {
 
 		int type = getGraphTypeItem();
 
-		List<FacilityTreeItem> treeItemList = m_collectGraphView.getCheckedTreeItemList();
-		Map<String, List<FacilityInfo>> facilityInfoMap = new TreeMap<>();
-		for (FacilityTreeItem treeItem : treeItemList) {
-			if (treeItem.getData().getFacilityType() != FacilityConstant.TYPE_NODE) {
+		List<FacilityTreeItemResponse> treeItemList = m_collectGraphView.getCheckedTreeItemList();
+		Map<String, List<FacilityInfoResponse>> facilityInfoMap = new TreeMap<>();
+		for (FacilityTreeItemResponse treeItem : treeItemList) {
+			if (treeItem.getData().getFacilityType() != FacilityTypeEnum.NODE) {
 				continue;
 			}
 			String managerName = ScopePropertyUtil.getManager(treeItem).getData().getFacilityId();
 			if (!facilityInfoMap.containsKey(managerName)) {
-				facilityInfoMap.put(managerName, new ArrayList<FacilityInfo>());
+				facilityInfoMap.put(managerName, new ArrayList<FacilityInfoResponse>());
 				if (!m_collectorItemJobCheckList.isEmpty()
 						&& (type == GraphTypeConstant.LINE 
 						|| type == GraphTypeConstant.LINE_SUMMARIZED 
 						|| type == GraphTypeConstant.AREA)) {
 					// ジョブ履歴を表示する場合
-					FacilityInfo rootFacilityInfo = new FacilityInfo();
+					FacilityInfoResponse rootFacilityInfo = new FacilityInfoResponse();
 					rootFacilityInfo.setFacilityId(RoleSettingTreeConstant.ROOT_ID);
 					rootFacilityInfo.setFacilityName("");
-					rootFacilityInfo.setFacilityType(FacilityConstant.TYPE_NODE);
+					rootFacilityInfo.setFacilityType(FacilityTypeEnum.NODE);
 					facilityInfoMap.get(managerName).add(rootFacilityInfo);
 				}
 			}
@@ -938,17 +950,17 @@ public class CollectSettingComposite extends Composite {
 					returnButton.getSelection(), returnKindButton.getSelection(), totalflg, stackflg,
 					approximateButton.getSelection(), thresholdButton.getSelection(), pieflg, scatterflg,
 					legendButton.getSelection(), predictedButton.getSelection(), barflg);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			m_log.error("drawGraphs InvalidRole_Exception");
 			MessageDialog.openInformation(null, Messages.getString("message"),
 			Messages.getString("message.accesscontrol.16"));
 			m_collectGraphView.getCollectGraphComposite().removeGraphSliderDisp();
-		} catch (InvalidUserPass_Exception e) {
+		} catch (InvalidUserPass e) {
 			m_log.error("drawGraphs InvalidUserPass_Exception");
 			MessageDialog.openInformation(null, Messages.getString("message"),
 			Messages.getString("message.accesscontrol.45"));
 			m_collectGraphView.getCollectGraphComposite().removeGraphSliderDisp();
-		} catch (HinemosDbTimeout_Exception e) {
+		} catch (HinemosDbTimeout e) {
 			String message = HinemosMessage.replace(e.getMessage());
 			m_log.error("drawGraphs グラフ描画時にエラーが発生 message=" + message, e);
 			MessageDialog.openError(

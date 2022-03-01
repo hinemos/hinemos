@@ -8,23 +8,23 @@
 
 package com.clustercontrol.infra.util;
 
+import java.util.Base64;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.ModuleNodeResultResponse;
+import org.openapitools.client.model.ModuleResultResponse;
+import org.openapitools.client.model.ModuleNodeResultResponse.RunCheckTypeEnum;
+import org.openapitools.client.model.ModuleResultResponse.ModuleTypeEnum;
 
 import com.clustercontrol.dialog.TextAreaDialog;
-import com.clustercontrol.infra.bean.ModuleTypeConstant;
 import com.clustercontrol.infra.bean.ModuleTypeMessage;
-import com.clustercontrol.infra.bean.OkNgConstant;
-import com.clustercontrol.infra.bean.RunCheckTypeConstant;
 import com.clustercontrol.infra.bean.RunCheckTypeMessage;
 import com.clustercontrol.infra.dialog.FileDiffDialog;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.ModuleNodeResult;
-import com.clustercontrol.ws.infra.ModuleResult;
 
 public class ModuleUtil {
 	private static Log m_log = LogFactory.getLog( ModuleUtil.class );
@@ -35,36 +35,30 @@ public class ModuleUtil {
 	 * @param moduleResult
 	 * @return
 	 */
-	public static boolean displayResult(String moduleId, ModuleResult moduleResult) {
+	public static boolean displayResult(String moduleId, ModuleResultResponse moduleResult) {
 		boolean ret = false; // trueになったら、以降実行しない。
-		List<ModuleNodeResult> resultList = moduleResult.getModuleNodeResultList();
+		List<ModuleNodeResultResponse> resultList = moduleResult.getNodeResultList();
 		StringBuilder str = new StringBuilder();
 
-		// 参照環境構築情報のモジュール情報
 		String strModuleInfo = "moduleId=" + moduleId;
-		if (moduleResult.getSubManagementId() != null && !moduleResult.getSubManagementId().isEmpty()) {
-			strModuleInfo = strModuleInfo + 
-					", referManagementId=" + moduleResult.getSubManagementId()
-					+ ", referModuleId=" + moduleResult.getSubModuleId();
-		}
 
 		if (resultList.size() > 0) {
-			if (moduleResult.getModuleType() == ModuleTypeConstant.TYPE_COMMAND) {
+			if (moduleResult.getModuleType() == ModuleTypeEnum.COMMAND) {
 				// コマンドモジュール
 				str.append(strModuleInfo + ", size=" + resultList.size() +
-						", type=" + ModuleTypeMessage.typeToString(moduleResult.getModuleType()) + "\n");
-				for (ModuleNodeResult result : resultList) {
+						", type=" + ModuleTypeMessage.enumToString(moduleResult.getModuleType()) + "\n");
+				for (ModuleNodeResultResponse result : resultList) {
 					str.append("\n#####" + result.getFacilityId() + " : " +
-							OkNgConstant.typeToString(result.getResult()) +
-							"(" + RunCheckTypeMessage.typeToString(result.getRunCheckType()) + ")" +
+							result.getResult().getValue() +
+							"(" + RunCheckTypeMessage.enumToString(result.getRunCheckType()) + ")" +
 							" \n" + result.getMessage() + " \n");
 				}
 				m_log.debug("checkModule : " + str);
-			} else if (moduleResult.getModuleType() == ModuleTypeConstant.TYPE_FILETRANSFER){
+			} else if (moduleResult.getModuleType() == ModuleTypeEnum.FILETRANSFER){
 				// ファイル転送モジュール
-				for (ModuleNodeResult result : resultList) {
-					if (result.getRunCheckType() == RunCheckTypeConstant.TYPE_CHECK) {
-						if (result.isFileDiscarded()) {
+				for (ModuleNodeResultResponse result : resultList) {
+					if (result.getRunCheckType() == RunCheckTypeEnum.CHECK) {
+						if (result.getFileDiscarded()) {
 							// ファイルサイズオーバーの場合はメッセージを表示して比較ダイアログを表示しない
 							MessageDialog.openInformation(null, Messages.getString("message"), Messages.getString("message.infra.file.discarded"));
 						} else {
@@ -74,13 +68,15 @@ public class ModuleUtil {
 								diffDialog.setOldFilename(result.getOldFilename());
 							}
 							if (result.getOldFile() != null) {
-								diffDialog.setOldFile(result.getOldFile());
+								byte[] oldFile = Base64.getDecoder().decode(result.getOldFile());
+								diffDialog.setOldFile(oldFile);
 							}
 							if (result.getNewFilename() != null) {
 								diffDialog.setNewFilename(result.getNewFilename());
 							}
 							if (result.getNewFile() != null) {
-								diffDialog.setNewFile(result.getNewFile());
+								byte[] newFile = Base64.getDecoder().decode(result.getNewFile());
+								diffDialog.setNewFile(newFile);
 							}
 							m_log.debug("newFilename=" + result.getNewFilename());
 							if (diffDialog.open() != IDialogConstants.OK_ID) {
@@ -90,17 +86,19 @@ public class ModuleUtil {
 					}
 				}
 				str.append(strModuleInfo + ", size=" + resultList.size() +
-						", type=" + ModuleTypeMessage.typeToString(moduleResult.getModuleType()) + "\n");
-				for (ModuleNodeResult result : resultList) {
+						", type=" + ModuleTypeMessage.enumToString(moduleResult.getModuleType()) + "\n");
+				for (ModuleNodeResultResponse result : resultList) {
 					str.append("\n#####" + result.getFacilityId() + " : " +
-							OkNgConstant.typeToString(result.getResult()) +
-							"(" + RunCheckTypeMessage.typeToString(result.getRunCheckType()) + ")" +
+							result.getResult().getValue() +
+							"(" + RunCheckTypeMessage.enumToString(result.getRunCheckType()) + ")" +
 							" \n" + result.getMessage() + " \n");
 					if (result.getOldFile() != null) {
-						str.append(", oldFile.size=" + result.getOldFile().length);
+						byte[] oldFile = Base64.getDecoder().decode(result.getOldFile());
+						str.append(", oldFile.size=" + oldFile.length);
 					}
 					if (result.getNewFile() != null) {
-						str.append(", newFile.size=" + result.getNewFile().length);
+						byte[] newFile = Base64.getDecoder().decode(result.getNewFile());
+						str.append(", newFile.size=" + newFile.length);
 					}
 					str.append("\n");
 				}

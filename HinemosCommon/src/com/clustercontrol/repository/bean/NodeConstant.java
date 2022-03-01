@@ -58,6 +58,27 @@ public class NodeConstant extends FacilityConstant{
 	public static final String JOB_MULTIPLICITY = "jobMultiplicity";
 
 	/** ------------------ */
+	/** --- RPAツール情報 -- */
+	/** ------------------ */
+
+	/** ログ出力先ディレクトリ */
+	public static final String RPA_LOG_DIRECTORY = "rpaLogDir";
+
+	/** ------------------ */
+	/** - RPA管理ツール情報 - */
+	/** ------------------ */
+
+	/** RPA管理ツールタイプ */
+	public static final String RPA_MANAGEMENT_TOOL_TYPE = "rpaManagementToolType";
+	/** RPAリソースID */
+	public static final String RPA_RESOURCE_ID = "rpaResourceId";
+	/** ユーザ名 */
+	public static final String RPA_USER = "rpaUser";
+	/** RPA実行環境ID */
+	public static final String RPA_EXECUTION_ENVIRONMENT_ID = "rpaExecEnvId";
+
+	
+	/** ------------------ */
 	/** ----- サービス ----- */
 	/** ------------------ */
 
@@ -331,6 +352,8 @@ public class NodeConstant extends FacilityConstant{
 	public static final String CLOUDRESOURCEID= "cloudResourceId";
 	/** クラウドロケーション */
 	public static final String CLOUDLOCATION= "cloudLocation";
+	/** クラウドログ監視優先度 */
+	public static final String CLOUDLOGPRIORITY= "cloudLogPriorty";
 	
 	/** ----------------- */
 	/** ----- 保守 ----- */
@@ -416,6 +439,12 @@ public class NodeConstant extends FacilityConstant{
 	public static final String CUSTOM = "custom";
 	public static final String CUSTOM_LIST = "customList";
 
+	/** -----RPAツール情報----- */
+	public static final String RPA_TOOL ="rpaTool";
+
+	/** -----RPA管理ツール情報----- */
+	public static final String RPA_MANAGEMENT_TOOL ="rpaManagementTool";
+	
 	/** ----- サービス----- */
 	public static final String SERVICE ="service";
 	/** SNMP */

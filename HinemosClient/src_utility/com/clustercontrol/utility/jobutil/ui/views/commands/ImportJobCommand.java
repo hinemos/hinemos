@@ -28,11 +28,18 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.JobInfoResponse.TypeEnum;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.OtherUserGetLock;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.jobmap.figure.JobFigure;
@@ -40,18 +47,14 @@ import com.clustercontrol.jobmap.util.JobMapActionUtil;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.jobmap.view.JobTreeView;
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.jobutil.dialog.JobImportDialog;
 import com.clustercontrol.utility.jobutil.util.JobConvert;
 import com.clustercontrol.utility.jobutil.util.JobStringUtil;
 import com.clustercontrol.utility.settings.SettingConstants;
-import com.clustercontrol.utility.util.UtilityEndpointWrapper;
-import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.OtherUserGetLock_Exception;
-import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
-import com.clustercontrol.ws.utility.InvalidRole_Exception;
-import com.clustercontrol.ws.utility.InvalidUserPass_Exception;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+
 
 /**
  * ジョブをインポートするダイアログを開くためのクライアント側アクションクラス<BR>
@@ -80,31 +83,6 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		// keyチェック
-		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-			String version = wrapper.getVersion();
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							Messages.getString("message.expiration.term.invalid"));
-				}
-			}
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					e.getMessage());
-			return null;
-		} catch (Exception e) {
-			// キーファイルを確認できませんでした。処理を終了します。
-			// Key file not found. This process will be terminated.
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.expiration.term"));
-			return null;
-		}
-
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
 		// In case this action has been disposed
 		if( null == this.window || !isEnabled() ){
@@ -114,7 +92,7 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 		// 選択アイテムの取得
 		this.viewPart = HandlerUtil.getActivePart(event);
 
-		JobTreeItem selection;
+		JobTreeItemWrapper selection;
 		if (viewPart instanceof JobMapEditorView) {
 			JobMapEditorView view = (JobMapEditorView) viewPart;
 			JobFigure figure = (JobFigure) view.getCanvasComposite().getSelection();
@@ -133,13 +111,53 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 			return null;
 		}
 
+		// 対象マネージャを取得
+		JobTreeItemWrapper mgrTree = JobTreeItemUtil.getManager(selection);
+		String managerName = null;
+		if(mgrTree == null) {
+			managerName = selection.getChildren().get(0).getData().getId();
+		} else {
+			managerName = mgrTree.getData().getId();
+		}
+
+		// 対象マネージャのPublishを確認
+		try {
+			UtilityRestClientWrapper wrapper = UtilityRestClientWrapper.getWrapper(managerName);
+		boolean isPublish = wrapper.checkPublish().getPublish();
+			if (!isPublish) {
+				MessageDialog.openWarning(
+						null,
+						Messages.getString("warning"),
+						Messages.getString("message.enterprise.required"));			}
+		} catch (InvalidRole | InvalidUserPass e) {
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					e.getMessage());
+			return null;
+		} catch (HinemosUnknown e) {
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						Messages.getString("message.enterprise.required"));
+				return null;
+			} else {
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						e.getMessage());
+				return null;
+			}
+		} catch (Exception e) {
+			// キーファイルを確認できませんでした。処理を終了します。
+			// Key file not found. This process will be terminated.
+			MessageDialog.openInformation(null, Messages.getString("message"),
+					Messages.getString("message.enterprise.required"));
+			return null;
+		}
+
 		JobImportDialog dialog = new JobImportDialog(viewPart.getSite().getShell());
 		dialog.setSelectJob(selection);
 		if (dialog.open() != Dialog.OK)
 			return null;
 		
 		//jobxml convert to jobtreeitem
-		List<JobTreeItem> importJobList = JobConvert.convertJobTreeItem(dialog.getFileName(), dialog.isScope(), dialog.isNotify());
+		List<JobTreeItemWrapper> importJobList = JobConvert.convertJobTreeItem(dialog.getFileName(), dialog.isScope(), dialog.isNotify());
 
 		if (importJobList == null) {
 			String errorMsg = Messages.getString("message.job.import.convert.fail") +
@@ -150,16 +168,9 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 			return null;
 		}
 
-		JobTreeItem mgrTree = JobTreeItemUtil.getManager(selection);
-		String managerName = null;
-		if(mgrTree == null) {
-			managerName = selection.getChildren().get(0).getData().getId();
-		} else {
-			managerName = mgrTree.getData().getId();
-		}
 
 		Map<Integer, List<String>> ret = new HashMap<>();
-		for (JobTreeItem importTopJob : importJobList) {
+		for (JobTreeItemWrapper importTopJob : importJobList) {
 			// 選択項目とインポート項目の適正チェック
 			String errMsg = JobConvert.preImportJobCheck(selection, importTopJob);
 			if (!errMsg.isEmpty()) {
@@ -175,15 +186,12 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 			// 編集モードに入る
 			JobEditState editState = JobEditStateUtil.getJobEditState(managerName);
 			String jobunitId = "";
-			if (importTopJob.getData().getType().equals(JobConstant.TYPE_JOBUNIT)) {
-				editMode(managerName, importTopJob, false);
+			if (importTopJob.getData().getType().equals(JobInfoWrapper.TypeEnum.JOBUNIT)) {
+				editMode(managerName, importTopJob, false, JobInfoWrapper.TypeEnum.JOBUNIT);
 				jobunitId = importTopJob.getData().getId();
-			} else if (importTopJob.getData().getType().equals(JobConstant.TYPE_JOBNET)) {
+			} else if (importTopJob.getData().getType().equals(JobInfoWrapper.TypeEnum.JOBNET)) {
 				jobunitId = selection.getData().getJobunitId();
-				boolean editEnable = editState.isLockedJobunitId(jobunitId);
-				if (!editEnable) {
-					editMode(managerName, JobConvert.getJobUnit(selection), true);
-				}
+				editMode(managerName, JobConvert.getJobUnit(selection), true, JobInfoWrapper.TypeEnum.JOBNET);
 			}
 			
 			// edit mode に変わっていなければとりやめる
@@ -204,17 +212,17 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 			JobTreeView view = JobMapActionUtil.getJobTreeView();
 			view.getJobMapTreeComposite().getTreeViewer().sort(selection);
 			view.getJobMapTreeComposite().refresh(
-					selection.getData().getType().equals(JobConstant.TYPE_MANAGER) ?
+					selection.getData().getType().equals(TypeEnum.MANAGER) ?
 							selection :
 							JobConvert.getJobUnit(selection));
 			view.getJobMapTreeComposite().updateJobMapEditor(
-					(selection.getData().getType() == JobConstant.TYPE_MANAGER && importJobList.size() == 1) ?
+					(selection.getData().getType() == JobInfoWrapper.TypeEnum.MANAGER && importJobList.size() == 1) ?
 							importJobList.get(0) : JobConvert.getJobUnit(selection));
 		} else if (viewPart instanceof JobListView) {
 			JobListView view = (JobListView) viewPart;
 			view.getJobTreeComposite().getTreeViewer().sort(selection);
 			view.getJobTreeComposite().refresh(
-					selection.getData().getType().equals(JobConstant.TYPE_MANAGER) ?
+					selection.getData().getType().equals(TypeEnum.MANAGER) ?
 							selection :
 							JobConvert.getJobUnit(selection));
 		}
@@ -276,7 +284,7 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 
 		IWorkbenchPart part = page.getActivePart();
 		boolean editEnable = false;
-		int jobType = -1;
+		JobInfoWrapper.TypeEnum jobType = null;
 		if (part instanceof JobListView) {
 			// Enable button when 1 item is selected
 			JobListView view = (JobListView)part;
@@ -297,36 +305,41 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 				jobType = view.getDataType();
 		}
 		
-		if(jobType == JobConstant.TYPE_MANAGER || jobType == JobConstant.TYPE_JOBUNIT ||
-				jobType == JobConstant.TYPE_JOBNET || jobType == JobConstant.TYPE_REFERJOBNET) {
+		if(jobType == JobInfoWrapper.TypeEnum.MANAGER || jobType == JobInfoWrapper.TypeEnum.JOBUNIT ||
+				jobType == JobInfoWrapper.TypeEnum.JOBNET) {
 			editEnable = true;
 		}
 		this.setBaseEnabled(editEnable);
 	}
 	
-	private void editMode(String managerName, JobTreeItem unitJob, boolean backupTree) {
+	private void editMode(String managerName, JobTreeItemWrapper unitJob, boolean backupTree, JobInfoWrapper.TypeEnum jobType) {
 		Integer editSession = null;
 		JobEditState jobEditState = JobEditStateUtil.getJobEditState( managerName );
 
-		Long updateTime = jobEditState.getJobunitUpdateTime(unitJob.getData().getId());
-		try {
-			editSession = JobUtil.getEditLock(managerName, unitJob.getData().getId(), updateTime, false);
-		} catch (OtherUserGetLock_Exception e) {
-			String message = HinemosMessage.replace(e.getMessage());
-			if (MessageDialog.openQuestion(
-					null,
-					Messages.getString("confirmed"),
-					message)) {
-				try {
-					editSession = JobUtil.getEditLock(managerName, unitJob.getData().getId(), updateTime, true);
-				} catch (Exception e1) {
-					log.error("run() : logical error");
-				}
-			} else {
-				MessageDialog.openInformation(
+		if (jobType == JobInfoWrapper.TypeEnum.JOBNET && jobEditState.isLockedJobunitId(unitJob.getData().getId())) {
+			editSession = jobEditState.getEditSession(unitJob.getData());
+		} else {
+			Long updateTime = jobEditState.getJobunitUpdateTime(unitJob.getData().getId());
+			try {
+				editSession = JobUtil.getEditLock(managerName, unitJob.getData().getId(), updateTime, false);
+			} catch (OtherUserGetLock e) {
+				String message = e.getMessage() + "\n"
+						+ HinemosMessage.replace(MessageConstant.MESSAGE_WANT_TO_GET_LOCK.getMessage());
+				if (MessageDialog.openQuestion(
 						null,
-						Messages.getString("info"),
-						Messages.getString("message.job.import.cancel"));
+						Messages.getString("confirmed"),
+						message)) {
+					try {
+						editSession = JobUtil.getEditLock(managerName, unitJob.getData().getId(), updateTime, true);
+					} catch (Exception e1) {
+						log.error("run() : logical error");
+					}
+				} else {
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("info"),
+							Messages.getString("message.job.import.cancel"));
+				}
 			}
 		}
 		if (editSession != null) {

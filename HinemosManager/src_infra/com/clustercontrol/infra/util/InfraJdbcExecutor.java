@@ -15,7 +15,6 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InfraFileTooLarge;
-import com.clustercontrol.platform.infra.InfraJdbcExecutorSupport;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -51,11 +50,11 @@ public class InfraJdbcExecutor {
 		}
 	}
 
-	public static String selectFileContent(String fileId, String fileName) throws HinemosUnknown {
+	public static String selectFileContent(String fileId) throws HinemosUnknown {
 		long start = HinemosTime.currentTimeMillis();
 		
 		try {
-			String filePath = InfraJdbcExecutorSupport.execSelectFileContent(fileId, fileName);
+			String filePath = InfraJdbcExecutorSupport.execSelectFileContent(fileId);
 			
 			long time = HinemosTime.currentTimeMillis() - start;
 			String message = String.format("Execute [selectFileContent]: %dms",time);

@@ -31,21 +31,21 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.composite.FacilityTreeComposite;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.nodemap.util.RelationViewController;
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.nodemap.view.ScopeTreeView;
-import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.composite.ScopeTreeSearchBarComposite;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.FacilityTreeCache;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.FacilityTreeContentProvider;
 import com.clustercontrol.viewer.FacilityTreeLabelProvider;
 import com.clustercontrol.viewer.FacilityTreeViewerSorter;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * スコープビューを構成するコンポジット
@@ -119,7 +119,7 @@ public class ScopeComposite extends FacilityTreeComposite {
 				/*
 				 * topicが飛ぶと、ぬるぽが出るので、null checkを入れる。
 				 */
-				selectItem = (FacilityTreeItem) selection.getFirstElement();
+				selectItem = (FacilityTreeItemResponse) selection.getFirstElement();
 				if (selectItem == null) {
 					m_log.warn("selectionChanged(), selectionChanged selectItem is null");
 					return;
@@ -164,12 +164,12 @@ public class ScopeComposite extends FacilityTreeComposite {
 						if (event.getSelection() instanceof TreeSelection) {
 							TreeSelection treeSelection = (TreeSelection)event.getSelection();
 							m_log.debug("first " + treeSelection.getFirstElement());
-							if (treeSelection.getFirstElement() instanceof FacilityTreeItem) {
-								FacilityTreeItem item = (FacilityTreeItem) treeSelection.getFirstElement();
-								if (FacilityConstant.TYPE_NODE != item.getData().getFacilityType() &&
-										FacilityConstant.TYPE_COMPOSITE != item.getData().getFacilityType()) {
+							if (treeSelection.getFirstElement() instanceof FacilityTreeItemResponse) {
+								FacilityTreeItemResponse item = (FacilityTreeItemResponse) treeSelection.getFirstElement();
+								if (FacilityTypeEnum.NODE != item.getData().getFacilityType() &&
+										FacilityTypeEnum.COMPOSITE != item.getData().getFacilityType()) {
 									String facilityId = item.getData().getFacilityId();
-									if (item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER) {
+									if (item.getData().getFacilityType() == FacilityTypeEnum.MANAGER) {
 										facilityId = ReservedFacilityIdConstant.ROOT_SCOPE;
 									}
 									String managerName = ScopePropertyUtil.getManager(item).getData().getFacilityId();
@@ -186,7 +186,7 @@ public class ScopeComposite extends FacilityTreeComposite {
 		treeViewer.addDragSupport(DND.DROP_MOVE, transferTypes, new DragSourceListener() {
 			@Override
 			public void dragStart(DragSourceEvent event) {
-				if (selectItem.getData().getFacilityType() != FacilityConstant.TYPE_NODE) {
+				if (selectItem.getData().getFacilityType() != FacilityTypeEnum.NODE) {
 					event.doit = false;
 				}
 			}

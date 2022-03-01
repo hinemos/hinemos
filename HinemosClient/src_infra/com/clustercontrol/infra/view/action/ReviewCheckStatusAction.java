@@ -27,21 +27,22 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.InfraCheckResultResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
 
 import com.clustercontrol.dialog.TextAreaDialog;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.action.GetInfraModuleTableDefine;
-import com.clustercontrol.infra.bean.OkNgConstant;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.composite.InfraModuleComposite;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.InfraModuleView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraCheckResult;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
 
 /**
  * [チェック状態ダ]イアログを表示
@@ -67,19 +68,19 @@ public class ReviewCheckStatusAction extends AbstractHandler implements IElement
 	 * @see InfraModuleComposite#getStatusString(String, String)
 	 */
 	private String getStatusString( String managerName, String managementId, String moduleId ) {
-		List<InfraCheckResult> allResultList = null;
+		List<InfraCheckResultResponse> allResultList = null;
 		try {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 			allResultList = wrapper.getCheckResultList(managementId);
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | InvalidSetting e) {
 			m_log.error("getStatusString() getCheckResultList, " + e.getMessage());
 		}
 		if(allResultList == null){
 			return null;
 		}
 
-		List<InfraCheckResult> resultList = new ArrayList<>();
-		for (InfraCheckResult result : allResultList) {
+		List<InfraCheckResultResponse> resultList = new ArrayList<>();
+		for (InfraCheckResultResponse result : allResultList) {
 			if( moduleId.equals(result.getModuleId()) ){
 				resultList.add( result );
 			}
@@ -88,10 +89,10 @@ public class ReviewCheckStatusAction extends AbstractHandler implements IElement
 		List<String> okList = new ArrayList<>();
 		List<String> ngList = new ArrayList<>();
 		String newline = System.getProperty("line.separator");
-		for (InfraCheckResult result : resultList) {
-			if(result.getResult() == OkNgConstant.TYPE_OK){
+		for (InfraCheckResultResponse result : resultList) {
+			if(result.getResult() == InfraCheckResultResponse.ResultEnum.OK){
 				okList.add(result.getNodeId());
-			} else if (result.getResult() == OkNgConstant.TYPE_NG){
+			} else if(result.getResult() == InfraCheckResultResponse.ResultEnum.NG){
 				ngList.add(result.getNodeId());
 			} else {
 				m_log.warn("getStatusString : " + result.getNodeId() + ", " + result.getResult()); // ここには到達しないはず。
@@ -146,16 +147,17 @@ public class ReviewCheckStatusAction extends AbstractHandler implements IElement
 		}
 
 		String managerName = infraModuleView.getComposite().getManagerName();
-		InfraManagementInfo management = null;
+		InfraManagementInfoResponse management = null;
 
 		try {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(managerName);
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(managerName);
 			management = wrapper.getInfraManagement(infraModuleView.getComposite().getManagementId());
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openError(null, Messages.getString("failed"), Messages.getString("message.accesscontrol.16"));
 			return null;
-		} catch (HinemosUnknown_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InfraManagementNotFound
+				| InvalidSetting e) {
 			m_log.error("execute() : " + e.getClass().getName() + ", " + e.getMessage());
 			MessageDialog.openError(null, Messages.getString("failed"),
 					Messages.getString("message.infra.action.result", new Object[]{Messages.getString("infra.module.id"),

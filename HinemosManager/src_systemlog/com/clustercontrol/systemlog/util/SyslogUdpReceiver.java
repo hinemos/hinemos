@@ -16,8 +16,12 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
@@ -43,8 +47,12 @@ public class SyslogUdpReceiver {
 	// 読み取り時のブロックのタイムアウト。
 	private static int RECIEVE_TOMEOUT = 1000;
 	
+	private int recvQueueSize;
+	
 	// ハンドラーを実行するスレッドプール。
-	private ExecutorService worker;
+	private ThreadPoolExecutor worker;
+	private int threadNum;
+	private long keepAliveTime;
 	
 	// 読み込んだ情報を処理するハンドラー。
 	private ResponseHandler<byte[]> handler;
@@ -134,12 +142,17 @@ public class SyslogUdpReceiver {
 					Runnable sender = new Runnable() {
 						@Override
 						public void run() {
-							handler.accept(m, i);
+							handler.accept(m,i);
 						}
 					};
-					
+					//workerのキューサイズがmonitor_systemlog_filter_queue_sizeを超えたらドロップ
 					try {
-						worker.execute(sender);
+						if(worker.getQueue().size()>= recvQueueSize){
+							logger.warn("read(): Exceeded max queue size. Drop message: "+new String(m)+" [Sender]"+i);
+						}
+						else{
+							worker.execute(sender);
+						}
 					} catch(RejectedExecutionException e) {
 						logger.warn("accept() : rejected from worker-thread-pool. " + e.getMessage() + " " + handler.toString());
 					}
@@ -151,12 +164,14 @@ public class SyslogUdpReceiver {
 		}
 	};
 	
-	public SyslogUdpReceiver(String address, int port, Counter counter, ResponseHandler<byte[]> handler, ExecutorService worker) {
+	public SyslogUdpReceiver(String address, int port, Counter counter, ResponseHandler<byte[]> handler, int recvQueueSize, int threadNum, long keepAliveTime) {
 		this.counter = counter;
 		this.address = address;
 		this.port = port;
 		this.handler = handler;
-		this.worker = worker;
+		this.recvQueueSize = recvQueueSize;
+		this.threadNum = threadNum;
+		this.keepAliveTime = keepAliveTime;
 	}
 	
 	public void start() throws SocketException {
@@ -164,6 +179,21 @@ public class SyslogUdpReceiver {
 			logger.warn("start() : already started. " + this.toString());
 		
 		DatagramSocket server = new DatagramSocket(new InetSocketAddress(address, port));
+		
+		// スレッドプール作成。
+		LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>() {
+			private static final long serialVersionUID = -6903933921423432194L;
+		};
+		worker = new ThreadPoolExecutor(threadNum, threadNum, keepAliveTime, TimeUnit.MILLISECONDS,
+				queue, new ThreadFactory() {
+					private AtomicInteger index = new AtomicInteger();
+
+					@Override
+					public Thread newThread(Runnable r) {
+						return new Thread(r, String.format("Thread-SyslogUdpWorker-%d", index.incrementAndGet()));
+					}
+		});
+		
 		
 		mainThread = new Thread(new RecieveTask(server), "Thread-SyslogUdpReceiver");
 		
@@ -177,6 +207,10 @@ public class SyslogUdpReceiver {
 	
 	public void stop() {
 		loop = false;
+		
+		if (worker != null) {
+			worker.shutdown();
+		}
 		logger.info(String.format("stop() : stopping. %s", this.toString()));
 	}
 	
@@ -193,8 +227,8 @@ public class SyslogUdpReceiver {
 		return this;
 	}
 	
-	public static SyslogUdpReceiver build(String address, int port, Counter counter, ResponseHandler<byte[]> handler, ExecutorService worker) {
-		return new SyslogUdpReceiver(address, port, counter, handler, worker);
+	public static SyslogUdpReceiver build(String address, int port, Counter counter, ResponseHandler<byte[]> handler, int recvQueueSize, int threadNum, long keepAliveTime) {
+		return new SyslogUdpReceiver(address, port, counter, handler, recvQueueSize, threadNum, keepAliveTime);
 	}
 
 	@Override

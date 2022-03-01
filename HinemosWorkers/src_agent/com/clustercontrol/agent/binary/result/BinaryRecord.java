@@ -18,14 +18,17 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtBinaryPatternInfoRequest;
+import org.openapitools.client.model.AgtBinaryPatternInfoResponse;
+import org.openapitools.client.model.AgtBinaryRecordDTORequest;
 
 import com.clustercontrol.agent.binary.BinaryMonitorConfig;
 import com.clustercontrol.agent.binary.factory.BinaryCollector;
+import com.clustercontrol.agent.util.RestAgentBeanUtil;
 import com.clustercontrol.binary.util.BinaryBeanUtil;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.util.BinaryUtil;
 import com.clustercontrol.util.XMLUtil;
-import com.clustercontrol.ws.agentbinary.BinaryRecordDTO;
-import com.clustercontrol.ws.monitor.BinaryPatternInfo;
 
 /**
  * バイナリレコードクラス.<br>
@@ -59,7 +62,7 @@ public class BinaryRecord {
 	/** 各種タグ(key=tagName,value=tagValue) */
 	private Map<String, String> tags;
 	/** マッチしたバイナリ検索条件(フィルタなしはnull) */
-	private BinaryPatternInfo matchBinaryProvision;
+	private AgtBinaryPatternInfoResponse matchBinaryProvision;
 
 	/** レコードバイナリ全体(ヘッダ含む) */
 	private List<Byte> alldata;
@@ -153,8 +156,8 @@ public class BinaryRecord {
 	 * @return xml送信用DTO.
 	 * 
 	 */
-	public BinaryRecordDTO getDTO() {
-		BinaryRecordDTO dto = new BinaryRecordDTO();
+	public AgtBinaryRecordDTORequest getDTO() {
+		AgtBinaryRecordDTORequest dto = new AgtBinaryRecordDTORequest();
 
 		dto.setFilePosition(filePosition);
 		dto.setSequential(sequential);
@@ -174,7 +177,19 @@ public class BinaryRecord {
 
 		dto.setRecTime(Long.valueOf(ts.getTime()));
 		dto.setTags(XMLUtil.ignoreInvalidString(BinaryBeanUtil.tagMapToStr(tags)));
-		dto.setMatchBinaryProvision(matchBinaryProvision);
+
+		try {
+			AgtBinaryPatternInfoRequest x = new AgtBinaryPatternInfoRequest();
+			if (matchBinaryProvision != null) {
+				RestAgentBeanUtil.convertBean(matchBinaryProvision, x);
+				dto.setMatchBinaryProvision(x);
+			} else {
+				dto.setMatchBinaryProvision(null);  // matchBinaryProvisionがnullの場合はDTOにもnullをセットする
+			}
+			m_log.debug("matchBinaryProvision=" + matchBinaryProvision + ", x=" + x);
+		} catch (HinemosUnknown never) {
+			throw new RuntimeException(never);
+		}
 
 		return dto;
 	}
@@ -292,12 +307,12 @@ public class BinaryRecord {
 	}
 
 	/** マッチしたバイナリ検索条件(フィルタなしはnull) */
-	public BinaryPatternInfo getMatchBinaryProvision() {
+	public AgtBinaryPatternInfoResponse getMatchBinaryProvision() {
 		return matchBinaryProvision;
 	}
 
 	/** マッチしたバイナリ検索条件(フィルタなしはnull) */
-	public void setMatchBinaryProvision(BinaryPatternInfo matchBinaryProvision) {
+	public void setMatchBinaryProvision(AgtBinaryPatternInfoResponse matchBinaryProvision) {
 		this.matchBinaryProvision = matchBinaryProvision;
 	}
 

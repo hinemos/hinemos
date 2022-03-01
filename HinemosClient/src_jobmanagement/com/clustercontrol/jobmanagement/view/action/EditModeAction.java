@@ -29,20 +29,22 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.handlers.RegistryToggleState;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.OtherUserGetLock;
 import com.clustercontrol.jobmanagement.composite.JobTreeComposite;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.OtherUserGetLock_Exception;
 
 /**
  * ジョブ[一覧]ビューの「編集モード」のクライアント側アクションクラス<BR>
@@ -105,10 +107,10 @@ public class EditModeAction extends AbstractHandler implements IElementUpdater {
 		}
 
 		// 選択されたジョブツリーアイテム
-		JobTreeItem selectedItem = null;
+		JobTreeItemWrapper selectedItem = null;
 		// 編集モードにするジョブユニット
-		JobTreeItem item = null;
-		JobTreeItem parent = null;
+		JobTreeItemWrapper item = null;
+		JobTreeItemWrapper parent = null;
 
 		selectedItem = jobListView.getSelectJobTreeItemList().get(0);
 		ICommandService commandService = (ICommandService)window.getService(ICommandService.class);
@@ -134,7 +136,7 @@ public class EditModeAction extends AbstractHandler implements IElementUpdater {
 
 		String jobunitId = item.getData().getJobunitId();
 		String managerName = "";
-		JobTreeItem managerTree = JobTreeItemUtil.getManager(item);
+		JobTreeItemWrapper managerTree = JobTreeItemUtil.getManager(item);
 		if ( managerTree == null)
 			throw new InternalError("JobTreeItem is null");
 
@@ -150,9 +152,10 @@ public class EditModeAction extends AbstractHandler implements IElementUpdater {
 			Integer result = null;
 			try {
 				result =JobUtil.getEditLock(managerName, jobunitId, updateTime, false);
-			} catch (OtherUserGetLock_Exception e) {
+			} catch (OtherUserGetLock e) {
 				// 他のユーザがロックを取得している
-				String message = HinemosMessage.replace(e.getMessage());
+				String message = e.getMessage() + "\n"
+						+ HinemosMessage.replace(MessageConstant.MESSAGE_WANT_TO_GET_LOCK.getMessage());
 				if (MessageDialog.openQuestion(
 						null,
 						Messages.getString("confirmed"),
@@ -191,12 +194,12 @@ public class EditModeAction extends AbstractHandler implements IElementUpdater {
 						Messages.getString("confirmed"),
 						Messages.getString("message.job.103"))) {
 					// 編集ロックの開放
-					JobTreeItem manager = JobTreeItemUtil.getManager(item);
-					JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-					wrapper.releaseEditLock(jobEditState.getEditSession(item.getData()));
+					JobTreeItemWrapper manager = JobTreeItemUtil.getManager(item);
+					JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+					wrapper.releaseEditLock(item.getData().getJobunitId(), jobEditState.getEditSession(item.getData()));
 
 					//バックアップに切り戻す
-					JobTreeItem backup = jobEditState.getLockedJobunitBackup(item.getData());
+					JobTreeItemWrapper backup = jobEditState.getLockedJobunitBackup(item.getData());
 					JobTreeItemUtil.removeChildren(parent, item);
 					if (backup != null) {
 						JobPropertyUtil.setJobFullTree(manager.getData().getName(), backup);
@@ -210,7 +213,7 @@ public class EditModeAction extends AbstractHandler implements IElementUpdater {
 					//編集ロックを開放しない
 					state.setValue(false);
 				}
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -244,14 +247,19 @@ public class EditModeAction extends AbstractHandler implements IElementUpdater {
 
 					int size = view.getJobTreeComposite().getSelectItemList().size();
 					if(size == 1) {
-						if(view.getDataType() == JobConstant.TYPE_JOBUNIT ||
-								view.getDataType() == JobConstant.TYPE_JOBNET ||
-								view.getDataType() == JobConstant.TYPE_JOB ||
-								view.getDataType() == JobConstant.TYPE_FILEJOB ||
-								view.getDataType() == JobConstant.TYPE_APPROVALJOB ||
-								view.getDataType() == JobConstant.TYPE_MONITORJOB ||
-								view.getDataType() == JobConstant.TYPE_REFERJOBNET ||
-								view.getDataType() == JobConstant.TYPE_REFERJOB){
+						if(view.getDataType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.JOBNET ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.JOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.FILEJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.APPROVALJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.MONITORJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.RPAJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.REFERJOBNET ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.REFERJOB ||
+								view.getDataType() == JobInfoWrapper.TypeEnum.RESOURCEJOB){
 							editEnable = true;
 						}
 					}

@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * カレンダが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class CalendarNotFound extends HinemosException {
+public class CalendarNotFound extends HinemosNotFound {
 
 
 	/**

@@ -10,20 +10,24 @@ package com.clustercontrol.reporting.factory;
 
 import java.util.Date;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.FunctionPrefixEnum;
 import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.ReportingNotFound;
+import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
-import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.bean.ReportingInfo;
+import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * メンテナンス情報を登録するためのクラスです。
@@ -42,8 +46,10 @@ public class AddReporting {
 	 * @throws EntityExistsException
 	 * @throws HinemosUnknown
 	 */
-	public boolean addReporting(ReportingInfo data, String name)
+	public ReportingInfo addReporting(ReportingInfo data, String name)
 			throws EntityExistsException, InvalidRole, HinemosUnknown {
+		ReportingInfo ret = null;
+		data.setNotifyGroupId(NotifyGroupIdGenerator.generate(data));
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -84,17 +90,26 @@ public class AddReporting {
 			entity.setRegUser(name);
 			entity.setUpdateUser(name);
 			em.persist(entity);
+			
+			ret = new SelectReportingInfo().getReportingInfo(entity.getReportScheduleId());
 		} catch (EntityExistsException e){
 			m_log.info("addReporting() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw e;
+		} catch (ReportingNotFound e) {
+			throw new HinemosUnknown(e.getMessage(), e);
 		}
 
-		if(data.getNotifyId() != null){
-			new NotifyControllerBean().addNotifyRelation(data.getNotifyId());
+		if (data.getNotifyRelationList() != null && data.getNotifyRelationList().size() > 0) {
+			for (NotifyRelationInfo notifyRelationInfo : data.getNotifyRelationList()) {
+				notifyRelationInfo.setNotifyGroupId(data.getNotifyGroupId());
+				notifyRelationInfo.setFunctionPrefix(FunctionPrefixEnum.REPORTING.name());
+			}
+			new NotifyControllerBean().addNotifyRelation(data.getNotifyRelationList(), data.getOwnerRoleId());
+			ret.setNotifyRelationList(data.getNotifyRelationList());
 		}
 
-		return true;
+		return ret;
 
 	}
 

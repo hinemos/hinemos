@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!-- 
+   Hinemos (http://www.hinemos.info/)
+   
+   Copyright (c) 2021 NTT DATA INTELLILINK Corporation. All rights reserved.
+ -->
+
+<project name="version_props_hinemoslogging" basedir=".">
+	<property name="option.version" value="1.0.0"/>
+	<property name="hinemos.depends.version" value="7.0.0"/>
+</project>

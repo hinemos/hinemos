@@ -8,10 +8,12 @@
 
 package com.clustercontrol.jobmanagement.editor;
 
+import java.util.ArrayList;
+
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.editor.PropertyDefine;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 /**
  * ジョブ選択用のプロパティ定義クラスです。
  *
@@ -20,7 +22,6 @@ import com.clustercontrol.ws.jobmanagement.JobTreeItem;
  */
 public class JobPropertyDefine extends PropertyDefine {
 	private static final long serialVersionUID = -5940758348294063798L;
-
 	/**
 	 * コンストラクタ
 	 *
@@ -44,25 +45,28 @@ public class JobPropertyDefine extends PropertyDefine {
 	/**
 	 * コンストラクタ
 	 *
-	 * @param parentJobId 親ジョブID
-	 * @param jobId ジョブID
+	 * @param JobTreeItemWrapper
+	 *            ジョブツリー
 	 *
-	 * @see com.clustercontrol.jobmanagement.editor.JobDialogCellEditor#JobDialogCellEditor(String, String)
+	 * @see com.clustercontrol.jobmanagement.editor.JobDialogCellEditor#JobDialogCellEditor(String,
+	 *      String)
 	 */
-	public JobPropertyDefine(JobTreeItem item) {
+	public JobPropertyDefine(JobTreeItemWrapper item) {
 		m_cellEditor = new JobDialogCellEditor(item);
 	}
 
 	/**
 	 * コンストラクタ
 	 *
-	 * @param parentJobId 親ジョブID
-	 * @param jobId ジョブID
+	 * @param JobTreeItemWrapper
+	 *            ジョブツリー
 	 *
-	 * @see com.clustercontrol.jobmanagement.editor.JobDialogCellEditor#JobDialogCellEditor(String, String)
+	 * @see com.clustercontrol.jobmanagement.editor.JobDialogCellEditor#JobDialogCellEditor(String,
+	 *      String)
 	 */
-	public JobPropertyDefine(JobTreeItem item, Integer mode) {
-		m_cellEditor = new JobDialogCellEditor(item, mode);
+	public JobPropertyDefine(JobTreeItemWrapper item, JobInfoWrapper.TypeEnum mode,
+			ArrayList<JobInfoWrapper.TypeEnum> targetJobTypeList) {
+		m_cellEditor = new JobDialogCellEditor(item, mode, targetJobTypeList);
 	}
 
 	/**
@@ -75,8 +79,8 @@ public class JobPropertyDefine extends PropertyDefine {
 	@Override
 	public String getColumnText(Object value) {
 		//プロパティ値がジョブツリーならば、ジョブIDを表示
-		if (value instanceof JobTreeItem) {
-			return ((JobTreeItem) value).getData().getId();
+		if (value instanceof JobTreeItemWrapper) {
+			return ((JobTreeItemWrapper) value).getData().getId();
 		} else if (value instanceof String) {
 			return (String) value;
 		}
@@ -94,8 +98,8 @@ public class JobPropertyDefine extends PropertyDefine {
 	public Object getValue(Property element) {
 		//プロパティ値がジョブツリーならば、ジョブIDを表示
 		Object value = element.getValue();
-		if (value instanceof JobTreeItem) {
-			return ((JobTreeItem) value).getData().getId();
+		if (value instanceof JobTreeItemWrapper) {
+			return ((JobTreeItemWrapper) value).getData().getId();
 		} else if (value instanceof String) {
 			return value;
 		}
@@ -113,7 +117,7 @@ public class JobPropertyDefine extends PropertyDefine {
 	@Override
 	public void modify(Property element, Object value) {
 		//変更値がジョブツリーならば、プロパティ値に設定する
-		if (value instanceof JobTreeItem) {
+		if (value instanceof JobTreeItemWrapper) {
 			element.setValue(value);
 		}
 	}

@@ -9,7 +9,6 @@
 package com.clustercontrol.calendar.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -27,22 +26,21 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.CalendarDetailInfoResponse.DayTypeEnum;
+import org.openapitools.client.model.CalendarDetailInfoResponse;
+import org.openapitools.client.model.CalendarPatternInfoResponse;
 
-import com.clustercontrol.bean.DayOfWeekConstant;
 import com.clustercontrol.calendar.action.GetCalendarDetailTableDefine;
+import com.clustercontrol.calendar.bean.DayOfWeekConstant;
 import com.clustercontrol.calendar.bean.DayOfWeekInMonthConstant;
 import com.clustercontrol.calendar.bean.MonthConstant;
 import com.clustercontrol.calendar.bean.OperateConstant;
 import com.clustercontrol.calendar.dialog.CalendarDetailDialog;
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
-import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.util.TimeStringConverter;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.calendar.CalendarDetailInfo;
-import com.clustercontrol.ws.calendar.CalendarPatternInfo;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
 
 /**
  * カレンダ詳細情報一覧コンポジットクラス<BR>
@@ -57,7 +55,7 @@ public class CalendarDetailListComposite extends Composite {
 	/** テーブルビューアー。 */
 	private CommonTableViewer m_tableViewer = null;
 	/** カレンダ詳細情報一覧 */
-	private ArrayList<CalendarDetailInfo> detailList = null;
+	private List<CalendarDetailInfoResponse> detailList = null;
 	/** オーナーロールID */
 	private String m_ownerRoleId = null;
 	/** マネージャ名 */
@@ -78,7 +76,10 @@ public class CalendarDetailListComposite extends Composite {
 	 *
 	 * @return
 	 */
-	public ArrayList<CalendarDetailInfo> getDetailList(){
+	public List<CalendarDetailInfoResponse> getDetailList(){
+		if(this.detailList == null){
+			 this.detailList = new ArrayList<CalendarDetailInfoResponse>();
+		}
 		return this.detailList;
 	}
 	/**
@@ -123,13 +124,13 @@ public class CalendarDetailListComposite extends Composite {
 		ArrayList<?> list =  (ArrayList<?>) selection.getFirstElement();
 		//選択したテーブル行番号を取得
 		Integer order = (Integer) list.get(0);
-		List<CalendarDetailInfo> detailList = this.detailList;
+		List<CalendarDetailInfoResponse> detailList = this.detailList;
 
 		//orderは、テーブルカラム番号のため、1 ～ n listから値を取得する際は、 order - 1
 		order = order-1;
 		if(order > 0){
-			CalendarDetailInfo a = detailList.get(order);
-			CalendarDetailInfo b = detailList.get(order-1);
+			CalendarDetailInfoResponse a = detailList.get(order);
+			CalendarDetailInfoResponse b = detailList.get(order-1);
 			detailList.set(order, b);
 			detailList.set(order-1, a);
 		}
@@ -145,13 +146,13 @@ public class CalendarDetailListComposite extends Composite {
 		ArrayList<?> list =  (ArrayList<?>) selection.getFirstElement();
 		//選択したテーブル行番号を取得
 		Integer order = (Integer) list.get(0);
-		List<CalendarDetailInfo> detailList = this.detailList;
+		List<CalendarDetailInfoResponse> detailList = this.detailList;
 		//list内 order+1 の値を取得するため、
 		if(order < detailList.size()){
 			//orderは、テーブルカラム番号のため、1 ～ n listから値を取得する際は、 order - 1
 			order = order - 1;
-			CalendarDetailInfo a = detailList.get(order);
-			CalendarDetailInfo b = detailList.get(order + 1);
+			CalendarDetailInfoResponse a = detailList.get(order);
+			CalendarDetailInfoResponse b = detailList.get(order + 1);
 			detailList.set(order, b);
 			detailList.set(order+1, a);
 		}
@@ -209,7 +210,7 @@ public class CalendarDetailListComposite extends Composite {
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				Integer order = getSelection();
-				List<CalendarDetailInfo> detailList = getDetailList();
+				List<CalendarDetailInfoResponse> detailList = getDetailList();
 				if (order != null) {
 					// シェルを取得
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
@@ -253,13 +254,13 @@ public class CalendarDetailListComposite extends Composite {
 	 *
 	 * @return 選択アイテム
 	 */
-	public CalendarDetailInfo getFilterItem() {
+	public CalendarDetailInfoResponse getFilterItem() {
 		StructuredSelection selection = (StructuredSelection) m_tableViewer.getSelection();
 
 		if (selection == null) {
 			return null;
 		} else {
-			return (CalendarDetailInfo) selection.getFirstElement();
+			return (CalendarDetailInfoResponse) selection.getFirstElement();
 		}
 	}
 
@@ -267,7 +268,7 @@ public class CalendarDetailListComposite extends Composite {
 	 * 引数で指定されたカレンダ詳細情報をコンポジット内リストに反映させる
 	 * @param detailList
 	 */
-	public void setDetailList(ArrayList<CalendarDetailInfo> detailList){
+	public void setDetailList(List<CalendarDetailInfoResponse> detailList){
 		if (detailList != null) {
 			this.detailList = detailList;
 			this.update();
@@ -282,51 +283,50 @@ public class CalendarDetailListComposite extends Composite {
 		// テーブル更新
 		ArrayList<Object> listAll = new ArrayList<Object>();
 		int i = 1;
-		for (CalendarDetailInfo detail : getDetailList()) {
+		for (CalendarDetailInfoResponse detail : getDetailList()) {
 			ArrayList<Object> list = new ArrayList<Object>();
 			String ruleMonthDay = "";
 			//規則（日程）表示項目設定
-			if(detail.getYear() != null){
-				if(detail.getYear() == 0){
+			if(detail.getYearNo() != null){
+				if(detail.getYearNo() == 0){
 					ruleMonthDay = Messages.getString("calendar.detail.every.year");
 				}else{
-					ruleMonthDay = detail.getYear() + Messages.getString("year");
+					ruleMonthDay = detail.getYearNo() + Messages.getString("year");
 				}
 			}
-			if(detail.getMonth() != null && detail.getMonth() >= 0){
-				ruleMonthDay = ruleMonthDay + MonthConstant.typeToString(detail.getMonth());
+			if(detail.getMonthNo() != null && detail.getMonthNo() >= 0){
+				ruleMonthDay = ruleMonthDay + MonthConstant.typeToString(detail.getMonthNo());
 			}
 			switch(detail.getDayType()){
-			case 0:
+			case ALL_DAY:
 				ruleMonthDay = ruleMonthDay + Messages.getString("calendar.detail.everyday");
 				break;
-			case 1:
-				if(detail.getDayOfWeekInMonth() != null && detail.getDayOfWeekInMonth() >= 0){
-					ruleMonthDay = ruleMonthDay + " " + DayOfWeekInMonthConstant.typeToString(detail.getDayOfWeekInMonth());
+			case DAY_OF_WEEK:
+				if(detail.getWeekXth() != null){
+					ruleMonthDay = ruleMonthDay + " " + DayOfWeekInMonthConstant.enumToString(detail.getWeekXth());
 				}
-				if(detail.getDayOfWeek() != null && detail.getDayOfWeek() > 0){
-					ruleMonthDay = ruleMonthDay + DayOfWeekConstant.typeToString(detail.getDayOfWeek());
-				}
-				break;
-			case 2:
-				if(detail.getDate() != null && detail.getDate() > 0){
-					ruleMonthDay = ruleMonthDay + " " + detail.getDate() + Messages.getString("monthday");
+				if(detail.getWeekNo() != null){
+					ruleMonthDay = ruleMonthDay + DayOfWeekConstant.enumToString(detail.getWeekNo());
 				}
 				break;
-			case 3:
+			case DAY:
+				if(detail.getDayNo() != null && detail.getDayNo() > 0){
+					ruleMonthDay = ruleMonthDay + " " + detail.getDayNo() + Messages.getString("monthday");
+				}
+				break;
+			case CALENDAR_PATTERN:
 				if(detail.getCalPatternId() != null && detail.getCalPatternId().length() > 0){
 					ruleMonthDay = ruleMonthDay + " " + getCalendarPatternName(detail.getCalPatternId());
 				}
 				break;
-			default: // 対応しない。
-				break;
+			default: // 対応T
 			}
 			// [すべての日]は前後日を出力しない
-			if(detail.getAfterday() != null && detail.getAfterday() != 0 && detail.getDayType() != 0){
-				if(detail.getAfterday() > 0){
-					ruleMonthDay = ruleMonthDay + " " + detail.getAfterday() + Messages.getString("calendar.detail.after.2");
-				}else if (detail.getAfterday() < 0){
-					ruleMonthDay = ruleMonthDay + " " + Math.abs(detail.getAfterday()) + Messages.getString("calendar.detail.after.3");
+			if(detail.getAfterDay() != null && detail.getAfterDay() != 0 && !DayTypeEnum.ALL_DAY.equals(detail.getDayType())){
+				if(detail.getAfterDay() > 0){
+					ruleMonthDay = ruleMonthDay + " " + detail.getAfterDay() + Messages.getString("calendar.detail.after.2");
+				}else if (detail.getAfterDay() < 0){
+					ruleMonthDay = ruleMonthDay + " " + Math.abs(detail.getAfterDay()) + Messages.getString("calendar.detail.after.3");
 				}
 			}
 
@@ -342,11 +342,11 @@ public class CalendarDetailListComposite extends Composite {
 			// 0時未満の場合
 			// 前日の23:45は-00:15と表示する
 			// 前々日の22:00は-26:00と表示する
-			if(detail.getTimeFrom() != null){
-				strFrom = TimeStringConverter.formatTime(new Date(detail.getTimeFrom()));
+			if(detail.getStartTime() != null){
+				strFrom = detail.getStartTime();
 			}
-			if(detail.getTimeTo() != null){
-				strTo = TimeStringConverter.formatTime(new Date(detail.getTimeTo()));
+			if(detail.getEndTime() != null){
+				strTo = detail.getEndTime();;
 			}
 			String ruleTime = "";
 			ruleTime = strFrom + " - " + strTo;
@@ -359,8 +359,8 @@ public class CalendarDetailListComposite extends Composite {
 			list.add(ruleTime);
 
 			//稼動・非稼動
-			if (detail.isOperateFlg() != null) {
-				if(detail.isOperateFlg()){
+			if (detail.getExecuteFlg() != null) {
+				if(detail.getExecuteFlg()){
 					list.add(OperateConstant.typeToString(1));
 				}else {
 					list.add(OperateConstant.typeToString(0));
@@ -388,26 +388,26 @@ public class CalendarDetailListComposite extends Composite {
 	 * @return カレンダパターン名
 	 */
 	private String getCalendarPatternName(String id){
-		CalendarPatternInfo info = null;
+		CalendarPatternInfoResponse info = null;
 		//カレンダパターン情報取得
 		try {
-			CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(this.m_managerName);
+			CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(this.m_managerName);
 			info = wrapper.getCalendarPattern(id);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.accesscontrol.16"));
+					e.getMessage());
 			return null;
 		} catch (Exception e) {
 			// 上記以外の例外
-			m_log.warn("update(), " + HinemosMessage.replace(e.getMessage()), e);
+			m_log.warn("update(), " + e.getMessage(), e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					e.getMessage());
 			return null;
 		}
-		return info.getCalPatternName();
+		return info.getCalendarPatternName();
 	}
 
 }

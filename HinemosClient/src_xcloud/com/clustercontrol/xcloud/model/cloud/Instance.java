@@ -7,19 +7,29 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
+import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.InstanceInfoResponse;
+import org.openapitools.client.model.ResourceTagResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.util.TimezoneUtil;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.repository.InstanceNode;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
 public class Instance extends Resource implements IInstance {
-    protected String facilityId;
+	private static Log m_log = LogFactory.getLog(Instance.class);
+
+	protected String facilityId;
     protected String instanceId;
     protected String status;
     protected String nativeStatus;
@@ -76,31 +86,41 @@ public class Instance extends Resource implements IInstance {
 	@Override
 	public ComputeResources getCloudComputeManager() {return (ComputeResources)getOwner();}
 	
-	public static Instance convert(com.clustercontrol.ws.xcloud.Instance source) {
+	public static Instance convert(InstanceInfoResponse source) {
 		Instance instance = new Instance();
 		instance.update(source);
 		return instance;
 	}
 
-	protected void update(com.clustercontrol.ws.xcloud.Instance source) {
-		setFacilityId(source.getFacilityId());
+	protected void update(InstanceInfoResponse source) {
+		setFacilityId(source.getEntity().getFacilityId());
 		setId(source.getId());
-		setStatus(source.getInstanceStatus().value());
-		setNativeStatus(source.getInstanceStatusAsPlatform());
-		setPlatform(source.getPlatform().name());
-		setMemo(source.getMemo());
-		setRegDate(source.getRegDate());
-		setRegUser(source.getRegUser());
-		setUpdateDate(source.getUpdateDate());
-		setUpdateUser(source.getUpdateUser());
+		setStatus(source.getEntity().getInstanceStatus().getValue());
+		setNativeStatus(source.getEntity().getInstanceStatusAsPlatform());
+		setPlatform(source.getEntity().getPlatform().getValue());
+		setMemo(source.getEntity().getMemo());
+		try {
+			setRegDate(TimezoneUtil.getSimpleDateFormat().parse(source.getEntity().getRegDate()).getTime());
+		} catch (ParseException e) {
+			// ここには入らない想定
+			m_log.warn("invalid regTime.", e);
+		}
+		setRegUser(source.getEntity().getRegUser());
+		try {
+			setUpdateDate(TimezoneUtil.getSimpleDateFormat().parse(source.getEntity().getUpdateDate()).getTime());
+		} catch (ParseException e) {
+			// ここには入らない想定
+			m_log.warn("invalid updateTime.", e);
+		}
+		setUpdateUser(source.getEntity().getUpdateUser());
 		setName(source.getName());
-		setIpAddresses(source.getIpAddresses());
+		setIpAddresses(source.getEntity().getIpAddresses());
 		List<Tag> tags = new ArrayList<>();
-		if(source.getTags() != null){
-			for(com.clustercontrol.ws.xcloud.Tag tag: source.getTags()){
+		if(source.getEntity().getTags() != null){
+			for(ResourceTagResponse tag: source.getEntity().getTags().values()){
 				Tag tmpTag = new Tag();
 				tmpTag.setKey(tag.getKey());
-				tmpTag.setType(tag.getTagType().value());
+				tmpTag.setType(tag.getTagType().getValue());
 				tmpTag.setValue(tag.getValue());
 				tags.add(tmpTag);
 			}
@@ -111,12 +131,11 @@ public class Instance extends Resource implements IInstance {
 	
 	public void update() {
 		try {
-			CloudEndpoint endpoint = getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-			List<com.clustercontrol.ws.xcloud.Instance> instances = endpoint.getInstances(getCloudScope().getId(), getLocation().getId(), Arrays.asList(getId()));
+			CloudRestClientWrapper wrapper = getCloudScope().getCloudScopes().getHinemosManager().getWrapper();
+			List<InstanceInfoResponse> instances = wrapper.getInstances(getCloudScope().getId(), getLocation().getId(), getId());
 			if (!instances.isEmpty())
 				update(instances.get(0));
-		} catch (CloudManagerException | InvalidRole_Exception
-				| InvalidUserPass_Exception e) {
+		} catch (CloudManagerException | InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown e) {
 			throw new CloudModelException(e);
 		}
 	}
@@ -141,7 +160,7 @@ public class Instance extends Resource implements IInstance {
 	public List<String> getIpAddresses() {return ipAddresses;}
 	public void setIpAddresses(List<String> ipAddresses) {internalSetProperty(IInstance.p.ipAddresses, ipAddresses, ()->this.ipAddresses, (s)->this.ipAddresses=s);}
 	
-	public boolean equalValues(com.clustercontrol.ws.xcloud.Instance source) {
+	public boolean equalValues(InstanceInfoResponse source) {
 		return this.getId().equals(source.getId());
 	}
 

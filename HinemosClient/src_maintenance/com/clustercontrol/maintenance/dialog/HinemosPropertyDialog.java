@@ -23,23 +23,27 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddHinemosPropertyRequest;
+import org.openapitools.client.model.HinemosPropertyResponse;
+import org.openapitools.client.model.HinemosPropertyResponse.TypeEnum;
 
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.common.util.CommonRestClientWrapper;
 import com.clustercontrol.composite.ManagerListComposite;
 import com.clustercontrol.dialog.CommonDialog;
+import com.clustercontrol.fault.HinemosPropertyDuplicate;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.maintenance.HinemosPropertyTypeConstant;
 import com.clustercontrol.maintenance.HinemosPropertyTypeMessage;
 import com.clustercontrol.maintenance.action.ModifyHinemosProperty;
 import com.clustercontrol.maintenance.composite.HinemosPropertyComposite;
-import com.clustercontrol.maintenance.util.HinemosPropertyEndpointWrapper;
+import com.clustercontrol.maintenance.util.HinemosPropertyBeanUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.maintenance.HinemosPropertyDuplicate_Exception;
-import com.clustercontrol.ws.maintenance.HinemosPropertyInfo;
-import com.clustercontrol.ws.maintenance.InvalidRole_Exception;
+
 
 /**
  * メンテナンス[共通設定の作成・変更]ダイアログクラスです。
@@ -53,7 +57,7 @@ public class HinemosPropertyDialog extends CommonDialog {
 	public static final int WIDTH_TEXT = 8;
 
 	// ログ
-	private static Log m_log = LogFactory.getLog( HinemosPropertyComposite.class );
+	private static Log m_log = LogFactory.getLog(HinemosPropertyComposite.class);
 
 	// キー
 	private Text m_key = null;
@@ -68,9 +72,9 @@ public class HinemosPropertyDialog extends CommonDialog {
 	// ダイアログ表示時の処理タイプ
 	private final int mode;
 	// 値種別
-	private int valueType = 0;
+	private TypeEnum valueType = null;
 	// 共通設定情報
-	private HinemosPropertyInfo HinemosPropertyInfo;
+	private HinemosPropertyResponse HinemosPropertyInfo;
 	/** マネージャ名 */
 	private String managerName = null;
 	/** マネージャ名コンボボックス用コンポジット */
@@ -78,13 +82,20 @@ public class HinemosPropertyDialog extends CommonDialog {
 
 	/**
 	 * コンストラクタ
-	 * @param parent 親シェル
-	 * @param managerName マネージャ名
-	 * @param valueType 値種別
-	 * @param mode ダイアログ表示時の処理タイプ
-	 * @param info 共通設定情報
+	 * 
+	 * @param parent
+	 *            親シェル
+	 * @param managerName
+	 *            マネージャ名
+	 * @param valueType
+	 *            値種別
+	 * @param mode
+	 *            ダイアログ表示時の処理タイプ
+	 * @param info
+	 *            共通設定情報
 	 */
-	public HinemosPropertyDialog(Shell parent, String managerName, int valueType, int mode, HinemosPropertyInfo info) {
+	public HinemosPropertyDialog(Shell parent, String managerName, TypeEnum valueType, int mode,
+			HinemosPropertyResponse info) {
 		super(parent);
 		this.managerName = managerName;
 		this.valueType = valueType;
@@ -95,7 +106,8 @@ public class HinemosPropertyDialog extends CommonDialog {
 	/**
 	 * ダイアログエリアを生成します。
 	 *
-	 * @param parent 親コンポジット
+	 * @param parent
+	 *            親コンポジット
 	 */
 	@Override
 	protected void customizeDialog(Composite parent) {
@@ -115,7 +127,7 @@ public class HinemosPropertyDialog extends CommonDialog {
 		layout.marginWidth = 10;
 		layout.numColumns = 10;
 		layout.marginBottom = -10;
-		//セル間の間隔
+		// セル間の間隔
 		layout.verticalSpacing = 10;
 		layout.makeColumnsEqualWidth = true;
 		parent.setLayout(layout);
@@ -131,7 +143,7 @@ public class HinemosPropertyDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		labelManager.setLayoutData(gridData);
 		labelManager.setText(Messages.getString("facility.manager") + " : ");
-		if(this.mode == PropertyDefineConstant.MODE_MODIFY){
+		if (this.mode == PropertyDefineConstant.MODE_MODIFY) {
 			this.m_managerComposite = new ManagerListComposite(parent, SWT.NONE, false);
 		} else {
 			this.m_managerComposite = new ManagerListComposite(parent, SWT.NONE, true);
@@ -143,7 +155,7 @@ public class HinemosPropertyDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_managerComposite.setLayoutData(gridData);
 
-		if(this.managerName != null) {
+		if (this.managerName != null) {
 			this.m_managerComposite.setText(this.managerName);
 		}
 
@@ -167,11 +179,10 @@ public class HinemosPropertyDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_key.setLayoutData(gridData);
-		if(this.mode == PropertyDefineConstant.MODE_MODIFY
-				|| this.mode == PropertyDefineConstant.MODE_SHOW){
+		if (this.mode == PropertyDefineConstant.MODE_MODIFY || this.mode == PropertyDefineConstant.MODE_SHOW) {
 			this.m_key.setEnabled(false);
 		}
-		this.m_key.addModifyListener(new ModifyListener(){
+		this.m_key.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
@@ -194,20 +205,20 @@ public class HinemosPropertyDialog extends CommonDialog {
 		gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
-		if (this.valueType == HinemosPropertyTypeConstant.TYPE_TRUTH) {
+		if (TypeEnum.BOOLEAN.equals(this.valueType)) {
 			gridData.horizontalSpan = 2;
 			this.m_blCombo = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
 			WidgetTestUtil.setTestId(this, null, m_blCombo);
 			this.m_blCombo.add(HinemosPropertyTypeConstant.BOOL_TRUE);
 			this.m_blCombo.add(HinemosPropertyTypeConstant.BOOL_FALSE);
 			this.m_blCombo.setLayoutData(gridData);
-			this.m_blCombo.addModifyListener(new ModifyListener(){
+			this.m_blCombo.addModifyListener(new ModifyListener() {
 				@Override
 				public void modifyText(ModifyEvent arg0) {
 					update();
 				}
 			});
-			//余白
+			// 余白
 			label = new Label(parent, SWT.NONE);
 			WidgetTestUtil.setTestId(this, "blank", label);
 			gridData = new GridData();
@@ -220,7 +231,7 @@ public class HinemosPropertyDialog extends CommonDialog {
 			this.m_value = new Text(parent, SWT.BORDER | SWT.LEFT);
 			WidgetTestUtil.setTestId(this, "value", m_value);
 			this.m_value.setLayoutData(gridData);
-			this.m_value.addModifyListener(new ModifyListener(){
+			this.m_value.addModifyListener(new ModifyListener() {
 				@Override
 				public void modifyText(ModifyEvent arg0) {
 					update();
@@ -250,14 +261,14 @@ public class HinemosPropertyDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_valueType.setLayoutData(gridData);
-		this.m_valueType.addModifyListener(new ModifyListener(){
+		this.m_valueType.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
 			}
 		});
 
-		//余白
+		// 余白
 		label = new Label(parent, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "blank2", label);
 		gridData = new GridData();
@@ -286,7 +297,7 @@ public class HinemosPropertyDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textDescription.setLayoutData(gridData);
-		this.m_textDescription.addModifyListener(new ModifyListener(){
+		this.m_textDescription.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent arg0) {
 				update();
@@ -312,16 +323,15 @@ public class HinemosPropertyDialog extends CommonDialog {
 		shell.setLocation((display.getBounds().width - shell.getSize().x) / 2,
 				(display.getBounds().height - shell.getSize().y) / 2);
 
-
-		//最後に変更であれば情報を表示
+		// 最後に変更であれば情報を表示
 		this.setInputData();
 	}
 
-	private void update(){
+	private void update() {
 		// キーが必須項目であることを明示
-		if(this.m_key.getEnabled() && "".equals(this.m_key.getText())){
+		if (this.m_key.getEnabled() && "".equals(this.m_key.getText())) {
 			this.m_key.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-		}else{
+		} else {
 			this.m_key.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
 	}
@@ -331,26 +341,18 @@ public class HinemosPropertyDialog extends CommonDialog {
 	 */
 	protected void setInputData() {
 
-		if(this.HinemosPropertyInfo != null){
+		if (this.HinemosPropertyInfo != null) {
 			if (this.HinemosPropertyInfo.getKey() != null) {
 				this.m_key.setText(this.HinemosPropertyInfo.getKey());
 			}
 
-			if (this.HinemosPropertyInfo.getValueType() == HinemosPropertyTypeConstant.TYPE_STRING
-					&& this.HinemosPropertyInfo.getValueString() != null) {
-				this.m_value.setText(this.HinemosPropertyInfo.getValueString());
+			if (this.HinemosPropertyInfo.getValue() != null) {
+				if(TypeEnum.BOOLEAN.equals(this.HinemosPropertyInfo.getType())){
+					this.m_blCombo.setText(this.HinemosPropertyInfo.getValue());
+				} else {
+					this.m_value.setText(this.HinemosPropertyInfo.getValue());
+				}
 			}
-
-			if (this.HinemosPropertyInfo.getValueType() == HinemosPropertyTypeConstant.TYPE_NUMERIC
-					&& this.HinemosPropertyInfo.getValueNumeric() != null) {
-				this.m_value.setText(this.HinemosPropertyInfo.getValueNumeric().toString());
-			}
-
-			if (this.HinemosPropertyInfo.getValueType() == HinemosPropertyTypeConstant.TYPE_TRUTH
-					&& this.HinemosPropertyInfo.isValueBoolean() != null) {
-				this.m_blCombo.setText(this.HinemosPropertyInfo.isValueBoolean().toString());
-			}
-
 			if (this.HinemosPropertyInfo.getDescription() != null) {
 				this.m_textDescription.setText(this.HinemosPropertyInfo.getDescription());
 			}
@@ -392,74 +394,69 @@ public class HinemosPropertyDialog extends CommonDialog {
 		boolean result = false;
 
 		if (HinemosPropertyInfo == null) {
-			this.HinemosPropertyInfo = new HinemosPropertyInfo();
+			this.HinemosPropertyInfo = new HinemosPropertyResponse();
 		}
-		HinemosPropertyInfo.setKey(m_key.getText());
-		HinemosPropertyInfo.setValueType(valueType);
 
-		if (valueType == HinemosPropertyTypeConstant.TYPE_STRING) {
-			HinemosPropertyInfo.setValueString(m_value.getText());
-		} else if (valueType == HinemosPropertyTypeConstant.TYPE_NUMERIC) {
+		HinemosPropertyInfo.setKey(m_key.getText());
+		HinemosPropertyInfo.setType(valueType);
+
+		if (TypeEnum.STRING.equals(valueType)) {
+			HinemosPropertyInfo.setValue(m_value.getText());
+		} else if (TypeEnum.NUMERIC.equals(valueType)) {
 			if (m_value.getText() == null || m_value.getText().trim().length() == 0) {
-				HinemosPropertyInfo.setValueNumeric(null);
+				HinemosPropertyInfo.setValue(null);
 			} else {
 				try {
-					HinemosPropertyInfo.setValueNumeric(Long.parseLong(m_value.getText().trim()));
+					Long.parseLong(m_value.getText().trim());
+					HinemosPropertyInfo.setValue(m_value.getText().trim());
 				} catch (NumberFormatException e) {
 					m_log.info("action() setValueNumeric, " + e.getMessage());
-					Object[] args = {Messages.getString("hinemos.property.value"), Long.MIN_VALUE, Long.MAX_VALUE};
-					MessageDialog.openError(
-							null,
-							Messages.getString("failed"),
+					Object[] args = { Messages.getString("hinemos.property.value"), Long.MIN_VALUE, Long.MAX_VALUE };
+					MessageDialog.openError(null, Messages.getString("failed"),
 							Messages.getString("message.common.4", args));
 
 					return false;
 				}
 			}
 		} else {
-			HinemosPropertyInfo.setValueBoolean(Boolean.parseBoolean(m_blCombo.getText()));
+			HinemosPropertyInfo.setValue(m_blCombo.getText());
 		}
 
 		HinemosPropertyInfo.setDescription(m_textDescription.getText());
 		HinemosPropertyInfo.setOwnerRoleId(RoleIdConstant.ADMINISTRATORS);
 
-		if(this.mode == PropertyDefineConstant.MODE_ADD){
+		String managerName = this.m_managerComposite.getText();
+		CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(managerName);
+		if (this.mode == PropertyDefineConstant.MODE_ADD) {
 			// 作成の場合
-			String managerName = this.m_managerComposite.getText();
 			String[] args = { HinemosPropertyInfo.getKey(), managerName };
+
 			try {
-				HinemosPropertyEndpointWrapper wrapper = HinemosPropertyEndpointWrapper
-						.getWrapper(managerName);
-				wrapper.addHinemosProperty(HinemosPropertyInfo);
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("successful"),
+				AddHinemosPropertyRequest request = HinemosPropertyBeanUtil.convertToAddHinemosPropertyRequest(HinemosPropertyInfo);
+				wrapper.addHinemosProperty(request);
+				MessageDialog.openInformation(null, Messages.getString("successful"),
 						Messages.getString("message.hinemos.property.2", args));
 
 				result = true;
-			} catch (HinemosPropertyDuplicate_Exception e) {
+			} catch (HinemosPropertyDuplicate e) {
 				// キーが重複している場合、エラーダイアログを表示する
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("message"),
+				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.hinemos.property.10", args));
 			} catch (Exception e) {
 				String errMessage = "";
-				if (e instanceof InvalidRole_Exception) {
+				if (e instanceof InvalidRole) {
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.accesscontrol.16"));
 				} else {
 					errMessage = ", " + HinemosMessage.replace(e.getMessage());
 				}
-				MessageDialog.openError(
-						null,
-						Messages.getString("failed"),
+				MessageDialog.openError(null, Messages.getString("failed"),
 						Messages.getString("message.hinemos.property.3", args) + errMessage);
 			}
 
 		} else if (this.mode == PropertyDefineConstant.MODE_MODIFY) {
 			// 変更の場合
-			result = new ModifyHinemosProperty().modify(m_managerComposite.getText(), HinemosPropertyInfo);
+			result = new ModifyHinemosProperty().modify(m_managerComposite.getText(), m_key.getText(), HinemosPropertyInfo);
 		}
 
 		return result;

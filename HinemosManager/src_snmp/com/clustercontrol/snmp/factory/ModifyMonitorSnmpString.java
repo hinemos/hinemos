@@ -33,6 +33,7 @@ public class ModifyMonitorSnmpString extends ModifyMonitorStringValueType{
 			HinemosEntityManager em = jtm.getEntityManager();
 
 			// SNMP監視情報を追加
+			m_monitorInfo.getSnmpCheckInfo().setMonitorId(m_monitorInfo.getMonitorId());
 			em.persist(m_monitorInfo.getSnmpCheckInfo());
 			return true;
 		}

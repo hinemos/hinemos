@@ -27,19 +27,23 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddLogfileMonitorRequest;
+import org.openapitools.client.model.LogfileCheckInfoResponse;
+import org.openapitools.client.model.ModifyLogfileMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorStringValueInfoRequest;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorStringDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.notify.bean.PriChangeJudgeSelectTypeConstant;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.LogfileCheckInfo;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
 
 /**
  * ログファイル監視の設定ダイアログクラス<BR>
@@ -91,6 +95,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 	public LogfileStringCreateDialog(Shell parent) {
 		super(parent, null);
 		logLineFlag = true;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
 	}
 
 	/**
@@ -108,6 +113,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		this.managerName = managerName;
 		this.monitorId = monitorId;
 		this.updateFlg = updateFlg;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
 	}
 
 	// ----- instance メソッド ----- //
@@ -171,6 +177,8 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		gridData.horizontalSpan = LONG_UNIT;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
+		String tooltipText = Messages.getString("monitor.logfile.directory.tool.tip") + Messages.getString("replace.parameter.node");
+		this.m_directory.setToolTipText(tooltipText);
 		this.m_directory.setLayoutData(gridData);
 		this.m_directory.addModifyListener(new ModifyListener(){
 			@Override
@@ -374,19 +382,19 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 			this.setInputData(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getMonitor(monitorId);
 				this.setInputData(info);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -445,22 +453,24 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 	 * @param monitor 設定値として用いる監視情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 
 		super.setInputData(monitor);
 		this.inputData = monitor;
 
-		List<NotifyRelationInfo> c = monitor.getNotifyRelationList();
-		if (c != null ) {
-			for (NotifyRelationInfo i : c) {
-				m_log.debug("notifyId : " + i.getNotifyId());
+		List<NotifyRelationInfoResponse> c = monitor.getNotifyRelationList();
+		if (m_log.isDebugEnabled()) {
+			if (c != null ) {
+				for (NotifyRelationInfoResponse i : c) {
+					m_log.debug("notifyId : " + i.getNotifyId());
+				}
 			}
 		}
 
 		// 監視条件 ログファイル監視情報
-		LogfileCheckInfo logfileInfo = monitor.getLogfileCheckInfo();
+		LogfileCheckInfoResponse logfileInfo = monitor.getLogfileCheckInfo();
 		if(logfileInfo == null){
-			logfileInfo = new LogfileCheckInfo();
+			logfileInfo = new LogfileCheckInfoResponse();
 		}
 		if(logfileInfo != null){
 			if (logfileInfo.getDirectory() != null){
@@ -500,19 +510,14 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
 
-		// ログファイル監視（文字列）固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_LOGFILE);
-
 		// 監視条件 ログファイル監視情報
-		LogfileCheckInfo logfileInfo = new LogfileCheckInfo();
-		logfileInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_LOGFILE);
-		logfileInfo.setMonitorId(monitorInfo.getMonitorId());
+		LogfileCheckInfoResponse logfileInfo = new LogfileCheckInfoResponse();
 
 		//テキストボックスから文字列を取得
 		if (this.m_directory.getText() != null
@@ -579,28 +584,29 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-		if(info != null){
-			String[] args = { info.getMonitorId(), managerName };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if(result){
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddLogfileMonitorRequest info = new AddLogfileMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddLogfileMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					wrapper.addLogfileMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -609,7 +615,7 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(
 								null,
@@ -626,25 +632,34 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if(result) {
+					ModifyLogfileMonitorRequest info = new ModifyLogfileMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyLogfileMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.modifyLogfileMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),

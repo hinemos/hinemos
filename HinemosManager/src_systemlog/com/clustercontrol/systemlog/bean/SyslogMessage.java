@@ -49,23 +49,32 @@ public class SyslogMessage implements Serializable {
 	public String hostname;
 	public String message;
 	public String rawSyslog;
+	public String ipAddress;
 
+	// 外部依存処理
+	static External external = new External();
+	static class External {
+		int getMonitorSystemlogMonitorPeriodHour() {
+			return HinemosPropertyCommon.monitor_systemlog_period_hour.getIntegerValue();
+		}
+	}
+	
 	public enum Facility { KERN, USER, MAIL, DAEMON, AUTH, SYSLOG, LPR, NEWS, UUCP, CRON, AUTHPRIV, FTP, NTP, SECURITY, CONSOLE,
 		LOCAL0, LOCAL1, LOCAL2, LOCAL3, LOCAL4, LOCAL5, LOCAL6, LOCAL7 };
 
 		public enum Severity { EMERG, ALERT, CRIT, ERR, WARNING, NOTICE, INFO, DEBUG };
 
 		public SyslogMessage() {
-
 		}
 
-		public SyslogMessage(Facility facility, Severity severity, long date, String hostname, String message, String rawSyslog) {
+		public SyslogMessage(Facility facility, Severity severity, long date, String hostname, String message, String rawSyslog, String ipAddress) {
 			this.facility = facility;
 			this.severity = severity;
 			this.date = date;
 			this.hostname = hostname;
 			this.message = message;
 			this.rawSyslog = rawSyslog;
+			this.ipAddress = ipAddress;
 		}
 
 		/**
@@ -97,16 +106,15 @@ public class SyslogMessage implements Serializable {
 				log.debug("parsed start syslog : " + syslog + ",senderAddress=" +senderAddress);
 			}
 
-			//送信者IPアドレスに/が先頭に付与されるケースを補正
-			if(senderAddress.length() > 1 && senderAddress.substring(0,1).equals("/") ){
-				senderAddress = senderAddress.substring(1);
-			}
-			
+			// InetAddress#toString() の返す "ホスト名/IPアドレス" 形式の場合、IPアドレス部分のみに変換
+			String addr[] = senderAddress.split("/");
+			senderAddress = (addr.length == 2) ? addr[1] : addr[0];
+
 			//PRI取得（取得された場合、該当箇所はreadBufから切除）
 			Integer parsePri =getSyslogHeaderPRI(readBuf);
 			if(parsePri==null){
 				int pri =13;
-				SyslogMessage instance = new SyslogMessage(getFacility((int) pri), getSeverity((int) pri), System.currentTimeMillis(), senderAddress, readBuf.toString(), syslog);
+				SyslogMessage instance = new SyslogMessage(getFacility((int) pri), getSeverity((int) pri), System.currentTimeMillis(), senderAddress, readBuf.toString(), syslog, senderAddress);
 				if (log.isDebugEnabled()) {
 					log.debug("parsed syslog : " + instance);
 				}
@@ -114,9 +122,9 @@ public class SyslogMessage implements Serializable {
 			}
 
 			//DATE取得（取得された場合、該当箇所はreadBufから切除）
-			Date parseDate =getSyslogHeaderDate(readBuf);
+			Date parseDate = getSyslogHeaderDate(readBuf);
 			if(parseDate == null){
-				SyslogMessage instance = new SyslogMessage(getFacility((int) parsePri), getSeverity((int) parsePri), System.currentTimeMillis(), senderAddress, readBuf.toString(), syslog);
+				SyslogMessage instance = new SyslogMessage(getFacility((int) parsePri), getSeverity((int) parsePri), System.currentTimeMillis(), senderAddress, readBuf.toString(), syslog, senderAddress);
 				if (log.isDebugEnabled()) {
 					log.debug("parsed syslog : " + instance);
 				}
@@ -131,7 +139,7 @@ public class SyslogMessage implements Serializable {
 
 			//残ったreadBufはTAG MSGとして扱う
 			// インスタンスの生成
-			SyslogMessage instance = new SyslogMessage(getFacility((int) parsePri), getSeverity((int) parsePri), parseDate.getTime(), parseHost, readBuf.toString(), syslog);
+			SyslogMessage instance = new SyslogMessage(getFacility((int) parsePri), getSeverity((int) parsePri), parseDate.getTime(), parseHost, readBuf.toString(), syslog, senderAddress);
 			if (log.isDebugEnabled()) {
 				log.debug("parsed syslog : " + instance);
 			}
@@ -148,6 +156,12 @@ public class SyslogMessage implements Serializable {
 		 * @return Integer PRI値
 		 */
 		private static Integer getSyslogHeaderPRI(final StringBuffer readBuf ) {
+			//headerおよびmessageが存在しない場合
+			if ( readBuf == null || readBuf.length() == 0 ){
+				log.debug("getSyslogHearderPRI(): syslog_buf is either null or zero. No header and/or message is provided");
+				return null;
+			}
+			
 			if ( readBuf.charAt(0) != '<' ){
 				return null;
 			} 
@@ -180,9 +194,9 @@ public class SyslogMessage implements Serializable {
 		 * @param readBuf 読み込み文字. 取得成功したら 該当部分は削除して返却
 		 * @return DATE部 parse値
 		 */
-		private static Date getSyslogHeaderDate(final StringBuffer readBuf ) {
+		private static Date getSyslogHeaderDate(final StringBuffer readBuf) {
 
-			Date RetDate ;
+			Date RetDate = null;
 			boolean isRfc3164 = false;
 			boolean notRfc13164 = false;
 			boolean isCiscoHead = false;
@@ -201,14 +215,16 @@ public class SyslogMessage implements Serializable {
 				try {
 					final MessageFormat syslogFormatUtil_1 = new MessageFormat("{0} {1}", Locale.ENGLISH);
 					syslogArgs = syslogFormatUtil_1.parse(readBuf.toString());
+					RetDate = parseRFC3339Date((String)syslogArgs[0]);
 				} catch (ParseException e3) {
-					log.info("ParseException3 : message=" + e3.getMessage() + ", syslog_buf=" + readBuf.toString());
-				}
-					RetDate =parseRFC3339Date((String)syslogArgs[0]);
-					if(RetDate!=null){
-						readBuf.delete(0, readBuf.length());
-						readBuf.append((String)syslogArgs[1]);
+					if (log.isDebugEnabled()) {
+						log.debug("ParseException3 : message=" + e3.getMessage() + ", syslog_buf=" + readBuf.toString());
 					}
+				}
+				if(RetDate!=null){
+					readBuf.delete(0, readBuf.length());
+					readBuf.append((String)syslogArgs[1]);
+				}
 				return RetDate;
 			}
 
@@ -229,7 +245,9 @@ public class SyslogMessage implements Serializable {
 					syslogArgs = syslogDateFormatRFC3164_1.parse(readBuf.toString());
 					isRfc3164 = true;
 				} catch (ParseException e1) {
-					log.info("ParseException1 : message=" + e1.getMessage() + ", syslog_buf=" + readBuf);
+					if (log.isDebugEnabled()) {
+						log.debug("ParseException1 : message=" + e1.getMessage() + ", syslog_buf=" + readBuf);
+					}
 				}
 			}
 
@@ -241,7 +259,9 @@ public class SyslogMessage implements Serializable {
 					syslogArgs = syslogDateFormatRFC3164_2.parse(readBuf.toString());
 					isCiscoHead =true;
 				} catch (ParseException e2) {
-					log.info("ParseException2 : message=" + e2.getMessage() + ", syslog_buf=" + readBuf.toString());
+					if (log.isDebugEnabled()) {
+						log.debug("ParseException2 : message=" + e2.getMessage() + ", syslog_buf=" + readBuf.toString());
+					}
 				}
 			}
 			//RFC3164とCISCOどちらでもないならＮＧ
@@ -271,7 +291,7 @@ public class SyslogMessage implements Serializable {
 			
 			//rfc13164形式日付の後続処理 年の指定がないので候補を推定して決定
 			// システムログ時刻が現在時刻より未来の場合に許容する時間(H) 
-			Integer syslogEffectiveTime = HinemosPropertyCommon.monitor_systemlog_period_hour.getIntegerValue();
+			Integer syslogEffectiveTime = external.getMonitorSystemlogMonitorPeriodHour();
 
 			// 0以下が設定された場合は、デフォルト値に置き換え
 			if (syslogEffectiveTime <= 0) {
@@ -531,8 +551,8 @@ public class SyslogMessage implements Serializable {
 
 		@Override
 		public String toString() {
-			return String.format("%s [facility = %s, severity = %s, date = %s, hostname = %s, message = %s]",
-					this.getClass().getSimpleName(), facility, severity, new Date(date), hostname, message);
+			return String.format("%s [facility = %s, severity = %s, date = %s, hostname = %s, ipaddr = %s, message = %s]",
+					this.getClass().getSimpleName(), facility, severity, new Date(date), hostname, ipAddress, message);
 		}
 
 		/**

@@ -20,7 +20,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.hub.dialog.LogFormatDialog;
 import com.clustercontrol.hub.view.LogFormatView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * ログフォーマットの作成・変更ダイアログによる、ログフォーマット登録を行うクライアント側アクションクラス<BR>
@@ -54,7 +54,7 @@ public class LogFormatAddAction extends AbstractHandler{
 			return null;
 		}
 
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 
 		// ダイアログを生成
 		LogFormatDialog dialog = new LogFormatDialog(this.viewPart.getSite()

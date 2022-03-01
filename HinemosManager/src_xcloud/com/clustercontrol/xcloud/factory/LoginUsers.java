@@ -14,10 +14,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-import javax.persistence.NoResultException;
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.log4j.Logger;
 
@@ -264,7 +264,7 @@ public class LoginUsers implements ILoginUsers {
 	}
 	
 	@Override
-	public void removeCloudLoginUser(String cloudScopeId, String loginUserId) throws CloudManagerException {
+	public CloudLoginUserEntity removeCloudLoginUser(String cloudScopeId, String loginUserId) throws CloudManagerException {
 		HinemosEntityManager em = Session.current().getEntityManager();
 		CloudLoginUserEntity user = em.find(CloudLoginUserEntity.class, new CloudLoginUserEntity.CloudLoginUserPK(cloudScopeId, loginUserId), ObjectPrivilegeMode.READ);
 
@@ -288,6 +288,7 @@ public class LoginUsers implements ILoginUsers {
 
 			notifier.completed();
 		}
+		return user; 
 	}
 
 	@Override

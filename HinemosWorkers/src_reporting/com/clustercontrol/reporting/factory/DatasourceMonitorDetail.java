@@ -51,7 +51,7 @@ public class DatasourceMonitorDetail extends DatasourceBase {
 			throw new ReportingPropertyNotFound(SUFFIX_KEY_VALUE+"."+num + " is not defined.");
 		}
 		String suffix = m_propertiesMap.get(SUFFIX_KEY_VALUE+"."+num);
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		
 		String csvFileName = ReportUtil.getCsvFileNameForTemplateType(m_templateId, m_facilityId + "_" + suffix + "_" + dayString);
 		HashMap<String, Object> retMap = new HashMap<String, Object>();
@@ -59,7 +59,7 @@ public class DatasourceMonitorDetail extends DatasourceBase {
 		String[] columns = { "monitor_id", "priority", "generation_date", "output_date", "plugin_id", 
 				"message", "application", "monitor_detail_id", "scope_text", "owner_role_id",
 				"comment_date", "comment_user", "comment"};
-		String columnsStr = ReportUtil.joinStrings(columns, ",");
+		String columnsStr = ReportUtil.joinStringsToCsv(columns);
 		
 		// get data from Hinemos DB
 		try {
@@ -101,8 +101,7 @@ public class DatasourceMonitorDetail extends DatasourceBase {
 						results[3] = new Timestamp(entity.getId().getOutputDate()).toString();
 						results[4] = entity.getId().getPluginId();
 						String message = HinemosMessage.replace(entity.getMessage());
-						message = (message.length() <= max_length ? message : message.substring(0, max_length) + "...");
-						results[5] = '"' + message.replace("\"", "\"\"") + '"';
+						results[5] = (message.length() <= max_length ? message : message.substring(0, max_length) + "...");
 						results[6] = entity.getApplication();
 						results[7] = entity.getId().getMonitorDetailId();
 						results[8] = entity.getScopeText();
@@ -111,7 +110,7 @@ public class DatasourceMonitorDetail extends DatasourceBase {
 						results[11] = entity.getCommentUser();
 						results[12] = entity.getComment();
 
-						bw.write(ReportUtil.joinStrings(results, ","));
+						bw.write(ReportUtil.joinStringsToCsv(results));
 						bw.newLine();
 					}
 				}

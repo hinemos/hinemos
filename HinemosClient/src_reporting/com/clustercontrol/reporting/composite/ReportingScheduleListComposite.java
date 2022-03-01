@@ -9,12 +9,9 @@
 package com.clustercontrol.reporting.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.xml.ws.WebServiceException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,19 +22,21 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.ReportingScheduleResponse;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.reporting.action.GetReportingScheduleTableDefine;
 import com.clustercontrol.reporting.composite.action.ReportingDoubleClickListener;
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.reporting.HinemosUnknown_Exception;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.InvalidUserPass_Exception;
-import com.clustercontrol.ws.reporting.ReportingInfo;
 
 /**
  * レポーティングスケジュール一覧コンポジットクラスです。
@@ -137,49 +136,45 @@ public class ReportingScheduleListComposite extends Composite {
 	@Override
 	public void update() {
 		// データ取得
-		List<ReportingInfo> reportingList = null;
+		List<ReportingScheduleResponse> reportingList = null;
 		
-		Map<String, List<ReportingInfo>> dispDataMap= new ConcurrentHashMap<String, List<ReportingInfo>>();
+		Map<String, List<ReportingScheduleResponse>> dispDataMap = new ConcurrentHashMap<String, List<ReportingScheduleResponse>>();
 		Map<String, String> errorMsgs = new ConcurrentHashMap<String, String>();
 		
-		for(String managerName : EndpointManager.getActiveManagerSet()) {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-			boolean key = false;
+		for(String managerName : RestConnectManager.getActiveManagerSet()) {
+			ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(managerName);
 			try {
-				String version = wrapper.getVersion();
-				m_log.debug("version:" + version);
-				key = true;
-				if (version.length() > 7) {
-					boolean result = Boolean.valueOf(version.substring(7, version.length()));
-					if (!result) {
-						MessageDialog.openWarning(
-								null,
-								Messages.getString("warning"),
-								Messages.getString("message.expiration.term.invalid"));
-					}
+				boolean isPublish = wrapper.checkPublish().getPublish();
+				if (!isPublish) {
+					MessageDialog.openWarning(
+							null,
+							Messages.getString("warning"),
+							Messages.getString("message.expiration.term.invalid"));
 				}
-			} catch (WebServiceException  e) {
-				//マルチマネージャ接続時にレポーティングが有効になってないマネージャの混在によりendpoint通信で異常が出る場合あり
-				//この場合は無視
-				continue;
-			} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			} catch (HinemosUnknown e) {
+				// エンタープライズ機能が無効の場合は HinemosUnknownでラップしたUrlNotFoundとなる。
+				// この場合は無視する
+				if(UrlNotFound.class.equals(e.getCause().getClass())) {
+					continue;
+				}
+				errorMsgs.put(managerName, Messages.getString("message.expiration.term"));
+			} catch (InvalidRole | InvalidUserPass | RestConnectFailed e) {
 				errorMsgs.put(managerName, Messages.getString("message.expiration.term"));
 			}
-			if (key) {
-				try {
-					reportingList = wrapper.getReportingList();
-				} catch (InvalidRole_Exception e) {
-					// 権限なし
-					errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
-				} catch (Exception e) {
-					// 上記以外の例外
-					String errMessage = HinemosMessage.replace(e.getMessage());
-					m_log.warn("update(), " + errMessage, e);
-					errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
-				}
+
+			try {
+				reportingList = wrapper.getReportingScheduleList();
+			} catch (InvalidRole e) {
+				// 権限なし
+				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
+			} catch (Exception e) {
+				// 上記以外の例外
+				String errMessage = HinemosMessage.replace(e.getMessage());
+				m_log.warn("update(), " + errMessage, e);
+				errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + errMessage);
 			}
 			if (reportingList == null) {
-				reportingList = new ArrayList<ReportingInfo>();
+				reportingList = new ArrayList<ReportingScheduleResponse>();
 			}
 			
 			dispDataMap.put(managerName, reportingList);
@@ -192,22 +187,22 @@ public class ReportingScheduleListComposite extends Composite {
 		
 		// tableViewer にセットするための詰め替え
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for(Map.Entry<String, List<ReportingInfo>> map: dispDataMap.entrySet()) {
-			for (ReportingInfo reportingInfo : map.getValue()) {
+		for(Map.Entry<String, List<ReportingScheduleResponse>> map: dispDataMap.entrySet()) {
+			for (ReportingScheduleResponse reportingInfo : map.getValue()) {
 				ArrayList<Object> a = new ArrayList<Object>();
 				a.add(map.getKey());
 				a.add(reportingInfo.getReportScheduleId());
 				a.add(reportingInfo.getDescription());
 				a.add(reportingInfo.getTemplateSetId());
 				a.add(reportingInfo.getFacilityId());
-				a.add(HinemosMessage.replace(reportingInfo.getScopeText()));
+				a.add(HinemosMessage.replace(reportingInfo.getScope()));
 				a.add(reportingInfo.getCalendarId());
-				a.add(reportingInfo.isValidFlg());
+				a.add(reportingInfo.getValidFlg());
 				a.add(reportingInfo.getOwnerRoleId());
 				a.add(reportingInfo.getRegUser());
-				a.add(new Date(reportingInfo.getRegDate()));
+				a.add(reportingInfo.getRegDate());
 				a.add(reportingInfo.getUpdateUser());
-				a.add(new Date(reportingInfo.getUpdateDate()));
+				a.add(reportingInfo.getUpdateDate());
 				listInput.add(a);
 			}
 		}

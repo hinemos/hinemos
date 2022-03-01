@@ -23,11 +23,10 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -171,11 +170,10 @@ public class NodeConfigRunCollectManager {
 						+ ", targets[ facilityID : <settingID, instructedTime> ]=[ " + loginfo.toString() + " ]");
 				// マネージャ通知.
 				Long margin = HinemosPropertyCommon.repository_node_config_run_too_old.getNumericValue();
-				String[] args = { margin.toString(), cleanInterval.toString(), originMsg.toString() };
-				AplLogger.put(PriorityConstant.TYPE_WARNING, // 警告通知.
-						HinemosModuleConstant.NODE_CONFIG_SETTING, // 構成情報取得.
-						MessageConstant.MESSAGE_FAILED_TO_GET_NODE_CONFIG_RUN.getMessage(), // メッセージ.
-						MessageConstant.MESSAGE_FAILED_TO_GET_NODE_CONFIG_RUN_DETAIL.getMessage(args)); // オリジナルメッセージ.
+				String[] args = {};
+				String[] detailArgs = { margin.toString(), cleanInterval.toString(), originMsg.toString() };
+				AplLogger.put(InternalIdCommon.NODE_CONFIG_SETTING_SYS_004, args,
+						MessageConstant.MESSAGE_FAILED_TO_GET_NODE_CONFIG_RUN_DETAIL.getMessage(detailArgs)); // オリジナルメッセージ.
 			}
 
 		}

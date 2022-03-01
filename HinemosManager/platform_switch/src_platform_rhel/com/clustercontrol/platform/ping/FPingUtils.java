@@ -43,12 +43,7 @@ public class FPingUtils {
 		Process process = null ;//fpingプロセス
 		int	m_exitValue = 0; //fpingコマンドの戻り値
 
-		String fpingPath;
-		if(version== 6){
-			fpingPath = PingProperties.getFping6Path();
-		}else{
-			fpingPath = PingProperties.getFpingPath();
-		}
+		String fpingPath = PingProperties.getFpingPath();
 		String cmd[] = getCommand(fpingPath, hosts, sentCount, sentInterval, timeout, bytes);
 
 		try {

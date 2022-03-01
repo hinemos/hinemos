@@ -8,8 +8,6 @@
 
 package com.clustercontrol.binary.factory;
 
-import javax.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -20,9 +18,12 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.plugin.impl.SchedulerPlugin.TriggerType;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * バイナリファイル監視情報をマネージャで変更するクラス<BR>
@@ -35,7 +36,8 @@ public class ModifyMonitorBinaryFile extends ModifyMonitorBinary {
 	private static Log m_log = LogFactory.getLog(ModifyMonitorBinaryFile.class);
 	
 	@Override
-	protected boolean addMonitorInfo(String user) throws MonitorNotFound, TriggerSchedulerException, EntityExistsException, HinemosUnknown, InvalidRole {
+	protected boolean addMonitorInfo(String user) throws MonitorIdInvalid, MonitorNotFound, TriggerSchedulerException,
+			EntityExistsException, HinemosUnknown, InvalidRole {
 		BinaryCheckInfo checkInfo = m_monitorInfo.getBinaryCheckInfo();
 		
 		// 増分の時間区切り監視以外は監視間隔を0にする

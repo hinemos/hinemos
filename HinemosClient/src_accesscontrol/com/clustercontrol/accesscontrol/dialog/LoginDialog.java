@@ -32,20 +32,24 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.accesscontrol.dialog.LoginAccount.ACCESS_POINT;
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.EndpointUnit;
+import com.clustercontrol.msgfilter.extensions.IRestConnectMsgFilter;
+import com.clustercontrol.msgfilter.extensions.RestConnectMsgFilterExtension;
 import com.clustercontrol.util.LoginConstant;
-import com.clustercontrol.util.LoginManager;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.RestConnectUnit;
+import com.clustercontrol.util.RestLoginManager;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -67,7 +71,11 @@ public class LoginDialog extends Dialog {
 	private int counter = 1;
 	private Map<String, String> paramMap;
 	private static int maxConnectManager;
-	
+
+	// RCPではMsgFilterClientOptionは未対応のためnullとなります。
+	private IRestConnectMsgFilter restConnectMsgFilter = RestConnectMsgFilterExtension.getInstance()
+			.getRestConnectMsgFilter();
+
 	static {
 		int max_manager = 8;
 		try {
@@ -83,7 +91,7 @@ public class LoginDialog extends Dialog {
 	/**
 	* コンストラクタ
 	*
-	* <注意!!!> LoginManager.java以外から呼ばないこと！！！
+	* <注意!!!> RestLoginManager.java以外から呼ばないこと！！！
 	*
 	* @param parent 親シェル
 	*/
@@ -91,7 +99,7 @@ public class LoginDialog extends Dialog {
 		super(parent);
 		paramMap = map;
 		
-		if (map.containsKey(LoginManager.KEY_BASIC_AUTH) && map.get(LoginManager.KEY_BASIC_AUTH).equals("true")) {
+		if (map.containsKey(RestLoginManager.KEY_BASIC_AUTH) && map.get(RestLoginManager.KEY_BASIC_AUTH).equals("true")) {
 			// Basic認証情報を元にログイン
 			String userId = paramMap.get("user");
 			String password = paramMap.get("password");
@@ -99,11 +107,11 @@ public class LoginDialog extends Dialog {
 			String[] urls = new String[]{};
 			String[] managerNames = new String[]{};
 			
-			if (paramMap.containsKey(LoginManager.KEY_URL_LOGIN_URL)) {
-				urls = paramMap.get(LoginManager.KEY_URL_LOGIN_URL).split(";");
+			if (paramMap.containsKey(RestLoginManager.KEY_URL_LOGIN_URL)) {
+				urls = paramMap.get(RestLoginManager.KEY_URL_LOGIN_URL).split(";");
 			}
-			if (paramMap.containsKey(LoginManager.KEY_URL_MANAGER_NAME)) {
-				managerNames = paramMap.get(LoginManager.KEY_URL_MANAGER_NAME).split(";");
+			if (paramMap.containsKey(RestLoginManager.KEY_URL_MANAGER_NAME)) {
+				managerNames = paramMap.get(RestLoginManager.KEY_URL_MANAGER_NAME).split(";");
 			}
 			
 			if (urls.length == 0) {
@@ -178,7 +186,11 @@ public class LoginDialog extends Dialog {
 				reInitializeCounter();
 
 				LoginAccount lastInputAccount = inputList.get( inputList.size() - 1 ).getAccount();
-				inputList.add( new LoginInput( lastInputAccount.getUserId(), "", lastInputAccount.getUrl(), null ) );
+				if (lastInputAccount.getAccessPoint() != ACCESS_POINT.FILTER_MANAGER) {
+					inputList.add(new LoginInput(lastInputAccount.getUserId(), "", lastInputAccount.getUrl(), null));
+				} else {
+					inputList.add(new LoginInput());
+				}
 
 				int buttonId = ((Integer) e.widget.getData()).intValue();
 				setReturnCode(buttonId);
@@ -208,27 +220,34 @@ public class LoginDialog extends Dialog {
 		/** パスワード用テキスト */
 		private Text managerNameText = null;
 
+		/** 接続先ラジオボタン(Hinemosマネージャ) **/
+		private Button connectHMRadio = null;
+		/** 接続先ラジオボタン(フィルタマネージャ) **/
+		private Button connectFMRadio = null;
+
 		private boolean isNew = true;
 
+		private ACCESS_POINT selectedAccessPoint = ACCESS_POINT.HINEMOS_MANAGER;
+		
 		private LoginAccount presetAccount;
 
 		private LoginInput(){
 			// ユーザIDを環境変数/デフォルトから取得します
-			String userId = System.getenv(LoginManager.ENV_HINEMOS_MANAGER_USER);
+			String userId = System.getenv(RestLoginManager.ENV_HINEMOS_MANAGER_USER);
 			if( null == userId || 0 == userId.length() ){
-				userId = LoginManager.VALUE_UID;
+				userId = RestLoginManager.VALUE_UID;
 			}
 
 			// パスワードを環境変数/デフォルトから取得する
-			String password = System.getenv(LoginManager.ENV_HINEMOS_MANAGER_PASS);
+			String password = System.getenv(RestLoginManager.ENV_HINEMOS_MANAGER_PASS);
 			if( null == password || 0 == password.length() ){
 				password = "";
 			}
 
 			// 接続先URLを環境変数/デフォルトから取得する
-			String url = System.getenv(LoginManager.ENV_HINEMOS_MANAGER_URL);
+			String url = System.getenv(RestLoginManager.ENV_HINEMOS_MANAGER_URL);
 			if( null == url || 0 == url.length() ){
-				url = LoginManager.VALUE_URL;
+				url = RestLoginManager.VALUE_URL;
 			}
 			String managerName = Messages.getString("facility.manager") + (counter++);
 			presetAccount = new LoginAccount( userId, password, url, managerName );
@@ -240,6 +259,12 @@ public class LoginDialog extends Dialog {
 			isNew = false;
 		}
 
+		private LoginInput(String userId, String password, String url, String managerName, int status,
+				ACCESS_POINT accessPoint) {
+			presetAccount = new LoginAccount(userId, password, url, managerName, status, accessPoint);
+			isNew = false;
+		}
+
 		private LoginInput( String userId, String password, String url, String managerName ){
 			if( null != managerName ){
 				updateCounter(managerName);
@@ -247,6 +272,16 @@ public class LoginDialog extends Dialog {
 				managerName = Messages.getString("facility.manager") + (counter++);
 			}
 			presetAccount = new LoginAccount( userId, password, url, managerName );
+			isNew = true;
+		}
+
+		private LoginInput(String userId, String password, String url, String managerName, ACCESS_POINT accessPoint) {
+			if (null != managerName) {
+				updateCounter(managerName);
+			} else {
+				managerName = Messages.getString("facility.manager") + (counter++);
+			}
+			presetAccount = new LoginAccount(userId, password, url, managerName, accessPoint);
 			isNew = true;
 		}
 
@@ -262,6 +297,13 @@ public class LoginDialog extends Dialog {
 			}
 			if( null != managerNameText ){
 				presetAccount.setManagerName( managerNameText.getText() );
+			}
+			if( null != connectHMRadio && null != connectFMRadio && !connectHMRadio.isDisposed() && !connectFMRadio.isDisposed()){
+				if(connectFMRadio.getSelection()){
+					presetAccount.setAccessPoint(ACCESS_POINT.FILTER_MANAGER);
+				} else {
+					presetAccount.setAccessPoint(ACCESS_POINT.HINEMOS_MANAGER);
+				}
 			}
 		}
 
@@ -338,7 +380,11 @@ public class LoginDialog extends Dialog {
 				logoutBtn.addSelectionListener(new SelectionAdapter(){
 					@Override
 					public void widgetSelected( SelectionEvent e ){
-						LoginManager.disconnect( presetAccount.getManagerName() );
+						if(presetAccount.getAccessPoint() == ACCESS_POINT.FILTER_MANAGER){
+							restConnectMsgFilter.disconnect();
+						} else {
+							RestLoginManager.disconnect( presetAccount.getManagerName() );
+						}
 						presetAccount.setStatus( LoginAccount.STATUS_UNCONNECTED );
 
 						// Save inputting account info
@@ -356,9 +402,13 @@ public class LoginDialog extends Dialog {
 				logoutBtn.addSelectionListener(new SelectionAdapter(){
 					@Override
 					public void widgetSelected( SelectionEvent e ){
-						// Remove if existed in EndpointManager
+						// Remove if existed in RestApiConnectManager
 						if( !isNew ){
-							EndpointManager.delete( presetAccount.getManagerName() );
+							if(presetAccount.getAccessPoint() == ACCESS_POINT.FILTER_MANAGER){
+								restConnectMsgFilter.delete();
+							} else {
+								RestConnectManager.delete( presetAccount.getManagerName() );
+							}
 						}
 
 						// If useSameID is true and the first input is deleted, pass its info to the second input
@@ -394,6 +444,11 @@ public class LoginDialog extends Dialog {
 				});
 			}
 
+			// MsgFilterのプラグインが有効な場合のみ選択肢表示
+			if(restConnectMsgFilter != null){
+				createAccessPointSelection(parent);
+			}
+			
 			// Set preset value
 			uidText.setText( presetAccount.getUserId() );
 			passwordText.setText( presetAccount.getPassword() );
@@ -408,6 +463,116 @@ public class LoginDialog extends Dialog {
 			}
 		}
 
+		private void createAccessPointSelection(Composite parent){
+			Group connectGroup = null;
+			connectGroup = new Group(parent, SWT.NONE);
+			GridLayout layout = new GridLayout(1, true);
+			layout.marginWidth = 5;
+			layout.numColumns = 4;
+			connectGroup.setLayout(layout);
+
+			GridData gridData = new GridData();
+			gridData.horizontalSpan = 4;
+			gridData.horizontalAlignment = GridData.FILL;
+			gridData.grabExcessHorizontalSpace = true;
+			connectGroup.setLayoutData(gridData);
+			connectGroup.setText(Messages.getString("access.point"));
+
+			// Hinemosマネージャの接続先
+			this.connectHMRadio = new Button(connectGroup, SWT.RADIO);
+			this.connectHMRadio.setText(Messages.getString("manager"));
+			GridData gridManagerRadio = new GridData();
+			gridManagerRadio.horizontalSpan = 2;
+			gridManagerRadio.horizontalAlignment = SWT.BEGINNING;
+			gridManagerRadio.grabExcessHorizontalSpace = true;
+			this.connectHMRadio.setLayoutData(gridManagerRadio);
+			this.connectHMRadio.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					Button check = (Button) e.getSource();
+					// フィルタマネージャからHinemosマネージャに選択肢変更した場合は全てのラジオボタンを有効にする
+					if (check.getSelection() && selectedAccessPoint == ACCESS_POINT.FILTER_MANAGER) {
+						selectedAccessPoint = ACCESS_POINT.HINEMOS_MANAGER;
+						setOtherConnectGroupEnable(true);
+					}
+				}
+			});
+
+			
+			// フィルタマネージャの接続先
+			this.connectFMRadio = new Button(connectGroup, SWT.RADIO);
+			this.connectFMRadio.setText(Messages.getString("filter.manager"));
+			GridData gridOptionRadio = new GridData();
+			gridOptionRadio.horizontalSpan = 2;
+			gridOptionRadio.horizontalAlignment = SWT.BEGINNING;
+			gridOptionRadio.grabExcessHorizontalSpace = true;
+			this.connectFMRadio.setLayoutData(gridOptionRadio);
+			this.connectFMRadio.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					Button check = (Button) e.getSource();
+					// フィルタマネージャに選択肢変更した場合は全ての自身以外のラジオボタンを無効にする
+					if (check.getSelection()) {
+						selectedAccessPoint = ACCESS_POINT.FILTER_MANAGER;
+						setOtherConnectGroupEnable(false);
+					}
+				}
+			});
+
+			selectedAccessPoint = presetAccount.getAccessPoint();
+			switch(selectedAccessPoint){
+			case HINEMOS_MANAGER:
+				this.connectHMRadio.setSelection(true);
+				this.connectFMRadio.setSelection(false);
+				break;
+			case FILTER_MANAGER:
+				this.connectHMRadio.setSelection(false);
+				this.connectFMRadio.setSelection(true);
+				setOtherConnectGroupEnable(false);
+				break;
+			}
+
+			// 他でフィルタマネージャが選択されていたら自身のラジオボタンを無効化する
+			if (presetAccount.getAccessPoint() != ACCESS_POINT.FILTER_MANAGER) {
+				for(LoginInput li : inputList){
+					if(li.connectFMRadio == null || li.connectFMRadio.isDisposed()){
+						// まだレンダリングされていないものは飛ばす
+						continue;
+					}
+					if(li.connectFMRadio.getSelection()){
+						connectGroup.setEnabled(false);
+						break;
+					}
+				}
+			}
+
+			// 接続済みの場合は変更不可
+			if (presetAccount.getStatus() == LoginAccount.STATUS_CONNECTED) {
+				connectGroup.setEnabled(false);
+			}
+		}
+
+		/**
+		 * 自身以外の接続先ラジオボタンを有効化/無効化する
+		 * @param enable
+		 */
+		private void setOtherConnectGroupEnable(boolean enable){
+			LoginInput self = this;
+			for(LoginInput li : inputList){
+				if(self.equals(li)){
+					continue;
+				}
+				if(li.connectFMRadio == null || li.connectFMRadio.isDisposed()){
+					// まだレンダリングされていないものは飛ばす
+					continue;
+				}
+				// 未接続状態のみ変更
+				if (li.getAccount().getStatus() != LoginAccount.STATUS_CONNECTED) {
+					li.connectHMRadio.getParent().setEnabled(enable);
+				}
+			}
+		}
+		
 		private void setFocus(){
 			//通常入力する必要がある項目はパスワードのみであるため、パスワードにフォーカス
 			passwordText.setFocus();
@@ -422,7 +587,8 @@ public class LoginDialog extends Dialog {
 					passwordText.getText().trim(),
 					urlCombo.getText().trim(),
 					managerNameText.getText().trim(),
-					presetAccount.getStatus()
+					presetAccount.getStatus(),
+					selectedAccessPoint
 				);
 		}
 
@@ -457,15 +623,22 @@ public class LoginDialog extends Dialog {
 		scrolledContent.setLayout(new GridLayout(4, false));
 
 		if( inputList.isEmpty() ){
-			if( 0 < EndpointManager.sizeOfAll() ){
-				// 1. Load manager from EndpointManager
-				List<EndpointUnit> endpointUnitList = EndpointManager.getAllManagerList();
+			if( 0 < RestConnectManager.sizeOfAll() || (restConnectMsgFilter != null && restConnectMsgFilter.isSaved()) ){
+				// 1. Load manager from RestApiConnectManager
+				List<RestConnectUnit> endpointUnitList = RestConnectManager.getAllManagerList();
 				int connectedLen = endpointUnitList.size();
 				for( int i=0; i<connectedLen; i++ ){
-					EndpointUnit endpointUnit = endpointUnitList.get(i);
+					RestConnectUnit endpointUnit = endpointUnitList.get(i);
 					inputList.add( new LoginInput(
 							endpointUnit.getUserId(), endpointUnit.getPassword(), endpointUnit.getUrlListStr(),
 							endpointUnit.getManagerName(), endpointUnit.getStatus() ) );
+				}
+				
+				// 1'. Load manager from IRestConnectMsgFilter
+				if (restConnectMsgFilter != null && restConnectMsgFilter.isSaved()) {
+					inputList.add(new LoginInput(restConnectMsgFilter.getUserId(), restConnectMsgFilter.getPassword(),
+							restConnectMsgFilter.getUrlListStr(), restConnectMsgFilter.getManagerName(),
+							restConnectMsgFilter.getStatus(), ACCESS_POINT.FILTER_MANAGER));
 				}
 			} else if (paramMap.size() > 0) {
 				// 2. Load manager from GET query
@@ -473,21 +646,21 @@ public class LoginDialog extends Dialog {
 				String[] users = new String[]{};
 				String[] managerNames = new String[]{};
 				
-				if (paramMap.containsKey(LoginManager.KEY_URL_LOGIN_URL)) {
-					urls = paramMap.get(LoginManager.KEY_URL_LOGIN_URL).split(";");
+				if (paramMap.containsKey(RestLoginManager.KEY_URL_LOGIN_URL)) {
+					urls = paramMap.get(RestLoginManager.KEY_URL_LOGIN_URL).split(";");
 				}
-				if (paramMap.containsKey(LoginManager.KEY_URL_UID)) {
-					users = paramMap.get(LoginManager.KEY_URL_UID).split(";");
+				if (paramMap.containsKey(RestLoginManager.KEY_URL_UID)) {
+					users = paramMap.get(RestLoginManager.KEY_URL_UID).split(";");
 				}
-				if (paramMap.containsKey(LoginManager.KEY_URL_MANAGER_NAME)) {
-					managerNames = paramMap.get(LoginManager.KEY_URL_MANAGER_NAME).split(";");
+				if (paramMap.containsKey(RestLoginManager.KEY_URL_MANAGER_NAME)) {
+					managerNames = paramMap.get(RestLoginManager.KEY_URL_MANAGER_NAME).split(";");
 				}
 				
 				for (int cnt = 0; cnt < maxConnectManager; ++cnt) {
 					if (urls.length > cnt) {
 						// URLが指定されている場合
 						String url = urls[cnt];
-						String userId = LoginManager.VALUE_UID;
+						String userId = RestLoginManager.VALUE_UID;
 						String managerName = null;
 						
 						if (users.length > cnt) {
@@ -524,20 +697,27 @@ public class LoginDialog extends Dialog {
 						// Use ENV setting at first when existed
 						if( 0 == i ){
 							// 環境変数から取得
-							String envUserId = System.getenv(LoginManager.ENV_HINEMOS_MANAGER_USER);
+							String envUserId = System.getenv(RestLoginManager.ENV_HINEMOS_MANAGER_USER);
 							if( null != envUserId && 0 != envUserId.length() ){
 								userId = envUserId;
 							}
-							String envPassword = System.getenv(LoginManager.ENV_HINEMOS_MANAGER_PASS);
+							String envPassword = System.getenv(RestLoginManager.ENV_HINEMOS_MANAGER_PASS);
 							if( null != envPassword && 0 != envPassword.length() ){
 								password = envPassword;
 							}
-							String envUrl = System.getenv(LoginManager.ENV_HINEMOS_MANAGER_URL);
+							String envUrl = System.getenv(RestLoginManager.ENV_HINEMOS_MANAGER_URL);
 							if( null != envUrl && 0 != envUrl.length() ){
 								url = envUrl;
 							}
 						}
-						inputList.add( new LoginInput(userId, password, url, managerName) );
+						if (restConnectMsgFilter != null
+								&& store.getString(LoginConstant.KEY_LOGIN_STATUS_ACCESSPOINT + "_" + i) != null
+								&& !store.getString(LoginConstant.KEY_LOGIN_STATUS_ACCESSPOINT + "_" + i).isEmpty()) {
+							ACCESS_POINT accessPoint = ACCESS_POINT.valueOf(store.getString(LoginConstant.KEY_LOGIN_STATUS_ACCESSPOINT + "_" + i));
+							inputList.add( new LoginInput(userId, password, url, managerName, accessPoint) );
+						} else {
+							inputList.add( new LoginInput(userId, password, url, managerName) );
+						}
 					}
 				}
 			}
@@ -647,10 +827,10 @@ public class LoginDialog extends Dialog {
 		ArrayList<String> ret = new ArrayList<String>();
 		//リソースストアから接続先URLの履歴数を取得
 		IPreferenceStore store = ClusterControlPlugin.getDefault().getPreferenceStore();
-		int numOfUrlHistory = store.getInt(LoginManager.KEY_URL_NUM);
+		int numOfUrlHistory = store.getInt(RestLoginManager.KEY_URL_NUM);
 	
 		for(int i=numOfUrlHistory-1; i>=0; i--){
-			String url = store.getString(LoginManager.KEY_URL + "_" + i);
+			String url = store.getString(RestLoginManager.KEY_URL + "_" + i);
 			if(!url.equals("")){
 				ret.add(url);
 			}
@@ -720,7 +900,8 @@ public class LoginDialog extends Dialog {
 			}
 			String url = account.getUrl();
 			String managerName = account.getManagerName();
-
+			ACCESS_POINT accessPoint = account.getAccessPoint();
+			
 			// マネージャ名 check
 			if( managerName.isEmpty() ){
 				result = new ValidateResult();
@@ -765,7 +946,7 @@ public class LoginDialog extends Dialog {
 				result.setMessage(Messages.getString("message.hinemos.9"));
 				return result;
 			}
-			validatedLoginList.add(new LoginAccount(userid, password, url, managerName));
+			validatedLoginList.add(new LoginAccount(userid, password, url, managerName, accessPoint));
 		}
 
 		return null;

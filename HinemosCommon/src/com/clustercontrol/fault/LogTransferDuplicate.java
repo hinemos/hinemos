@@ -8,7 +8,7 @@
 
 package com.clustercontrol.fault;
 
-public class LogTransferDuplicate extends HinemosException {
+public class LogTransferDuplicate extends HinemosDuplicate {
 	
 	/**
 	 * 

@@ -19,7 +19,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.maintenance.dialog.MaintenanceDialog;
 import com.clustercontrol.maintenance.view.MaintenanceListView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * メンテナンス[一覧]ビューの作成アクションクラス<BR>
@@ -51,8 +51,8 @@ public class MaintenanceAddAction extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		this.viewPart = HandlerUtil.getActivePart(event);
-
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 		MaintenanceDialog dialog = new MaintenanceDialog(this.viewPart.getSite().getShell(),
 				managerName, null, PropertyDefineConstant.MODE_ADD);
 		dialog.open();

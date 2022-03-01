@@ -26,27 +26,30 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.CommandModuleInfoResponse;
+import org.openapitools.client.model.CommandModuleInfoResponse.AccessMethodTypeEnum;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.ModifyInfraManagementRequest;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.infra.bean.AccessMethodConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementDuplicate;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NotifyDuplicate;
+import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.bean.AccessMethodMessage;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraDtoConverter;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.CommandModuleInfo;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraManagementDuplicate_Exception;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleInfo;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidSetting_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyDuplicate_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * 環境構築[コマンドモジュールの作成・変更]ダイアログクラスです。
@@ -59,8 +62,8 @@ public class CommandModuleDialog extends CommonDialog {
 	// ログ
 	private static Log m_log = LogFactory.getLog( CommandModuleDialog.class );
 	/** 環境構築[構築]情報*/
-	private InfraManagementInfo infraInfo ;
-	private CommandModuleInfo moduleInfo;
+	private InfraManagementInfoResponse infraInfo ;
+	private CommandModuleInfoResponse moduleInfo;
 	
 	/**
 	 * ダイアログの最背面レイヤのカラム数
@@ -112,8 +115,6 @@ public class CommandModuleDialog extends CommonDialog {
 	private String moduleId = null;
 	/** 所属構築ID */
 	private String managementId = null;
-	/** インデックス（初期：-1）*/
-	private int index = -1;
 
 
 	/**
@@ -468,70 +469,79 @@ public class CommandModuleDialog extends CommonDialog {
 	 * @see com.clustercontrol.infra.bean.InfraManagementInfo
 	 */
 	private void setInputData() {
-		InfraManagementInfo info = null;
-		CommandModuleInfo module = null;
+		InfraManagementInfoResponse info = null;
+		CommandModuleInfoResponse module = null;
 		try {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(this.managerName);
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(this.managerName);
 			info = wrapper.getInfraManagement(this.managementId);
-		} catch (InfraManagementNotFound_Exception | HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | InfraManagementNotFound | InvalidSetting e) {
 			m_log.error(managementId + " InfraManagerInfo is null");
 		}
 
 		if (mode == PropertyDefineConstant.MODE_ADD | mode == PropertyDefineConstant.MODE_COPY) {
-			// 作成・コピーの場合新規モジュールを末尾に追加
-			moduleInfo = new CommandModuleInfo();
-			List<InfraModuleInfo> modules = info.getModuleList();
+			// 作成・コピーの場合新規モジュールの orderNo を計算して設定しておく
+			moduleInfo = new CommandModuleInfoResponse();
+			int orderNo = getOrderNoWhenAddModule(info);
+			moduleInfo.setOrderNo(orderNo);
+			List<CommandModuleInfoResponse> modules = info.getCommandModuleInfoList();
 			modules.add(moduleInfo);
 		} else if (mode == PropertyDefineConstant.MODE_MODIFY){
 			// 変更の場合モジュールを取得
-			for(InfraModuleInfo tmpModule: info.getModuleList()){
+			for(CommandModuleInfoResponse tmpModule: info.getCommandModuleInfoList()){
 				if(tmpModule.getModuleId().equals(moduleId)){
-					moduleInfo = (CommandModuleInfo) tmpModule;
+					moduleInfo = tmpModule;
 				}
 			}
 		}
 		
 		// 変更、コピーの場合、情報取得
 		if (moduleId != null) {
-			for (InfraModuleInfo tmpModule : info.getModuleList()) {
+			for (CommandModuleInfoResponse tmpModule : info.getCommandModuleInfoList()) {
 				if (tmpModule.getModuleId().equals(moduleId)) {
-					index = info.getModuleList().indexOf(tmpModule);
+					module = tmpModule;
 					break;
 				}
 			}
-			module = (CommandModuleInfo) info.getModuleList().get(index);
 			//	モジュールID
-			m_moduleId.setText(module.getModuleId());
+			//	findbugs対応 nullチェック追加
+			if (module != null) {
+				m_moduleId.setText(module.getModuleId());
+			}
 			if (mode == PropertyDefineConstant.MODE_MODIFY) {
 				m_moduleId.setEnabled(false);
 			}
 			//	モジュール名
-			m_moduleName.setText(module.getName());
+			//	findbugs対応 nullチェック追加
+			if (module != null) {
+				m_moduleName.setText(module.getName());
+			}
 			//	実行方法
-			if (module.getAccessMethodType() == AccessMethodConstant.TYPE_WINRM) {
+			//	findbugs対応 nullチェック追加
+			if (module != null && module.getAccessMethodType() == AccessMethodTypeEnum.WINRM) {
 				m_methodWinRM.setSelection(true);
 			}
 			else {
 				m_methodSSH.setSelection(true);
 			}
-
-			//	実行前に確認
-			m_precheckFlg.setSelection(module.isPrecheckFlg());
-			//	エラーが起こったら後続モジュールを実行しない
-			m_proceedIfFailFlg.setSelection(module.isStopIfFailFlg());
-			//	チェックコマンドの取得
-			if (module.getCheckCommand() != null) {
-				m_commandCheck.setText(module.getCheckCommand());
+			//	findbugs対応 nullチェック追加
+			if (module != null) {
+				//	実行前に確認
+				m_precheckFlg.setSelection(module.getPrecheckFlg());
+				//	エラーが起こったら後続モジュールを実行しない
+				m_proceedIfFailFlg.setSelection(module.getStopIfFailFlg());
+				//	チェックコマンドの取得
+				if (module.getCheckCommand() != null) {
+					m_commandCheck.setText(module.getCheckCommand());
+				}
+				//	実行コマンドの取得
+				m_commandExec.setText(module.getExecCommand());
+				//	戻り値の変数の取得
+				if (module.getExecReturnParamName() != null) {
+					m_execReturnParamName.setText(module.getExecReturnParamName());
+				}
+				//	設定の有効･無効
+				m_validFlg.setSelection(module.getValidFlg());
 			}
-			//	実行コマンドの取得
-			m_commandExec.setText(module.getExecCommand());
-			//	戻り値の変数の取得
-			if (module.getExecReturnParamName() != null) {
-				m_execReturnParamName.setText(module.getExecReturnParamName());
-			}
-			//	設定の有効･無効
-			m_validFlg.setSelection(module.isValidFlg());
-
 		} else {
 			// 作成の場合(default設定)
 			m_validFlg.setSelection(true);
@@ -559,9 +569,9 @@ public class CommandModuleDialog extends CommonDialog {
 
 		//実行方法の取得
 		if (m_methodSSH.getSelection()) {
-			moduleInfo.setAccessMethodType(AccessMethodConstant.TYPE_SSH);
+			moduleInfo.setAccessMethodType(AccessMethodTypeEnum.SSH);
 		} else {
-			moduleInfo.setAccessMethodType(AccessMethodConstant.TYPE_WINRM);
+			moduleInfo.setAccessMethodType(AccessMethodTypeEnum.WINRM);
 		}
 
 		//チェックコマンドで確認するかどうかのフラグ取得
@@ -642,8 +652,12 @@ public class CommandModuleDialog extends CommonDialog {
 			}
 
 			try {
-				InfraEndpointWrapper wrapper = InfraEndpointWrapper.getWrapper(this.managerName);
-				wrapper.modifyInfraManagement(infraInfo);
+				InfraRestClientWrapper wrapper = InfraRestClientWrapper.getWrapper(this.managerName);
+				String managementId = infraInfo.getManagementId();
+				ModifyInfraManagementRequest dtoReq = new ModifyInfraManagementRequest();
+				RestClientBeanUtil.convertBean(infraInfo, dtoReq);
+				InfraDtoConverter.convertInfoToDto(infraInfo, dtoReq);
+				wrapper.modifyInfraManagement(managementId, dtoReq);
 				action += "(" + this.managerName + ")";
 				result = true;
 				MessageDialog.openInformation(null, Messages
@@ -652,15 +666,15 @@ public class CommandModuleDialog extends CommonDialog {
 						new Object[] { Messages.getString("infra.module"),
 								action, Messages.getString("successful"),
 								m_moduleId.getText() }));
-			} catch (InfraManagementDuplicate_Exception e) {
+			} catch (InfraManagementDuplicate e) {
 				// ID重複
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.infra.module.duplicate", new String[]{m_moduleId.getText()}));
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// 権限なし
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
-			} catch (InfraManagementNotFound_Exception | NotifyDuplicate_Exception | NotifyNotFound_Exception | HinemosUnknown_Exception | InvalidUserPass_Exception | InvalidSetting_Exception e) {
+			} catch (InfraManagementNotFound | NotifyDuplicate | NotifyNotFound | HinemosUnknown | InvalidUserPass | InvalidSetting e) {
 				m_log.info("action() modifyInfraManagement : " + e.getMessage() + " (" + e.getClass().getName() + ")");
 				MessageDialog.openError(
 						null,
@@ -683,5 +697,10 @@ public class CommandModuleDialog extends CommonDialog {
 					Messages.getString("message.infra.action.result", new Object[]{Messages.getString("infra.module"), action, Messages.getString("failed"), m_moduleId.getText()}));
 		}
 		return result;
+	}
+	
+	private int getOrderNoWhenAddModule(InfraManagementInfoResponse info) {
+		return info.getCommandModuleInfoList().size() + info.getFileTransferModuleInfoList().size()
+				+ info.getReferManagementModuleInfoList().size() + 1;
 	}
 }

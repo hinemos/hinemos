@@ -38,6 +38,7 @@ import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.TableViewerSorter;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.ICloudModelContentProvider;
 import com.clustercontrol.xcloud.extensions.CloudModelContentProviderExtension;
@@ -54,7 +55,6 @@ import com.clustercontrol.xcloud.model.repository.IFacility;
 import com.clustercontrol.xcloud.model.repository.IInstanceNode;
 import com.clustercontrol.xcloud.model.repository.IScope;
 import com.clustercontrol.xcloud.util.ControlUtil;
-import com.clustercontrol.xcloud.util.TableViewerSorter;
 
 
 /**

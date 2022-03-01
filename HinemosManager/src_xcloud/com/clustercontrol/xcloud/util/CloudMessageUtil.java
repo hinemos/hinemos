@@ -15,15 +15,17 @@ import java.util.Date;
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.xcloud.common.CloudMessageConstant;
+import com.clustercontrol.xcloud.common.InternalIdCloud;
 import com.clustercontrol.xcloud.factory.monitors.CloudServiceBillingDetailRunMonitor;
 
 
 public class CloudMessageUtil {
-	public static final String pluginId_cloud = "CLOUD";
 	public static final String InternalScopeText = "Hinemos_Internal";
 	
 	public static String getExceptionStackTrace(Exception exception) {
@@ -40,9 +42,7 @@ public class CloudMessageUtil {
 			Exception exception
 			) {
 		CloudUtil.notifyInternalMessage(
-			CloudUtil.Priority.WARNING,
-			pluginId_cloud,
-			CloudMessageConstant.AUTOUPDATE_ERROR.getMessage(),
+			InternalIdCloud.CLOUD_SYS_001,
 			getExceptionStackTrace(exception));
 	}
 	
@@ -53,9 +53,7 @@ public class CloudMessageUtil {
 			Exception exception
 			) {
 		CloudUtil.notifyInternalMessage(
-			CloudUtil.Priority.WARNING,
-			pluginId_cloud,
-			CloudMessageConstant.AUTOUPDATE_ERROR.getMessage(),
+				InternalIdCloud.CLOUD_SYS_001,
 			getExceptionStackTrace(exception));
 	}
 
@@ -75,8 +73,8 @@ public class CloudMessageUtil {
 				ba.getNotifyGroupId(),
 				d.getTime(),
 				CloudMessageConstant.BILLINGALARM_NOTIFY_UNKNOWN.getMessage(exception.getMessage()),
-				CloudMessageConstant.BILLINGALARM_NOTIFY_ORG_UNKNOWN.getMessage(format.format(d.getTime()), CloudMessageUtil.getExceptionStackTrace(exception))
-				);
+				CloudMessageConstant.BILLINGALARM_NOTIFY_ORG_UNKNOWN.getMessage(format.format(d.getTime()), CloudMessageUtil.getExceptionStackTrace(exception)),
+				JobLinkMessageId.getId(NotifyTriggerType.MONITOR, CloudServiceBillingDetailRunMonitor.monitorTypeId, ba.getMonitorId()));
 	}
 
 	// 基本通知処理。
@@ -88,7 +86,8 @@ public class CloudMessageUtil {
 			String notifyGroupId, 
 			Long generationDate, 
 			String message,
-			String messageOrg) {
+			String messageOrg,
+			String joblinkMessageId) {
 		Logger logger = Logger.getLogger(CloudMessageUtil.class);
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
@@ -98,6 +97,8 @@ public class CloudMessageUtil {
 
 			// 通知処理
 			notice.setNotifyGroupId(notifyGroupId);
+			// ジョブ連携メッセージID
+			notice.setJoblinkMessageId(joblinkMessageId);
 			// 通知設定
 			jtm.addCallback(new NotifyCallback(notice));
 			logger.debug(alarmId + " is notified.");

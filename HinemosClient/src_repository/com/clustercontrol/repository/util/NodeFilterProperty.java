@@ -19,9 +19,9 @@ import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.repository.bean.NodeFilterConstant;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * ノードフィルタ用プロパティを作成するクラス<BR>
@@ -105,7 +105,7 @@ public class NodeFilterProperty {
 		Property maintenance =
 				new Property(NodeFilterConstant.MAINTENANCE, Messages.getString("maintenance", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_1024);
 
-		Object[] obj = EndpointManager.getActiveManagerSet().toArray();
+		Object[] obj = RestConnectManager.getActiveManagerSet().toArray();
 		Object[] val = new Object[obj.length + 1];
 		val[0] = "";
 		for(int i = 0; i<obj.length; i++) {

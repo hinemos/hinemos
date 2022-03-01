@@ -18,22 +18,23 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.EventFilterBaseRequest;
+import org.openapitools.client.model.EventFilterConditionRequest;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
+import org.openapitools.client.model.ModifyBatchConfirmRequest;
+import org.openapitools.client.model.ModifyBatchConfirmRequest.ConfirmTypeEnum;
 
-import com.clustercontrol.bean.Property;
-import com.clustercontrol.monitor.bean.ConfirmConstant;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.filtersetting.bean.EventFilterContext;
+import com.clustercontrol.filtersetting.util.EventFilterHelper;
 import com.clustercontrol.monitor.dialog.EventBatchConfirmDialog;
-import com.clustercontrol.monitor.util.EventBatchConfirmPropertyUtil;
-import com.clustercontrol.monitor.util.MonitorEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorResultRestClientWrapper;
 import com.clustercontrol.monitor.view.EventView;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.ws.monitor.EventBatchConfirmInfo;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 監視[一括確認]ダイアログによる確認の更新処理を行うクライアント側アクションクラス<BR>
@@ -88,9 +89,6 @@ public class EventBatchConfirmAction extends AbstractHandler {
 		// 選択アイテムの取得
 		this.viewPart = HandlerUtil.getActivePart(event);
 
-		EventBatchConfirmDialog dialog = new EventBatchConfirmDialog(
-				this.viewPart.getSite().getShell());
-
 		EventView view = null;
 		try {
 			view = (EventView) this.viewPart.getAdapter(EventView.class);
@@ -104,8 +102,8 @@ public class EventBatchConfirmAction extends AbstractHandler {
 			return null;
 		}
 
-		FacilityTreeItem item = view.getScopeTreeComposite().getSelectItem();
-		if( null == item || item.getData().getFacilityType() == FacilityConstant.TYPE_COMPOSITE ){
+		FacilityTreeItemResponse item = view.getScopeTreeComposite().getSelectItem();
+		if( null == item || item.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE ){
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
@@ -115,28 +113,68 @@ public class EventBatchConfirmAction extends AbstractHandler {
 
 		String managerName;
 		String facilityId;
-		if( item.getData().getFacilityType() == FacilityConstant.TYPE_MANAGER ){
+		if( item.getData().getFacilityType() == FacilityTypeEnum.MANAGER ){
 			facilityId = null;
 			managerName = item.getData().getFacilityId();
 		}else{
 			facilityId = item.getData().getFacilityId();
-			FacilityTreeItem manager = ScopePropertyUtil.getManager(item);
+			FacilityTreeItemResponse manager = ScopePropertyUtil.getManager(item);
 			managerName = manager.getData().getFacilityId();
 		}
 
+		EventFilterContext context = new EventFilterContext(
+				// 元のフィルタ設定は壊さないように複製する
+				EventFilterHelper.duplicate(view.getFilter()),
+				managerName,
+				view.getSelectedScopeLabel(),
+				view.getEventDspSetting());
+
+		EventBatchConfirmDialog dialog = new EventBatchConfirmDialog(
+				this.viewPart.getSite().getShell(),
+				context);
+
 		if (dialog.open() == IDialogConstants.OK_ID) {
-			Property condition = dialog.getInputData();
-			PropertyUtil.deletePropertyDefine(condition);
 			try {
-				MonitorEndpointWrapper wrapper = MonitorEndpointWrapper.getWrapper(managerName);
-				EventBatchConfirmInfo info = EventBatchConfirmPropertyUtil.property2dto(condition);
-				wrapper.modifyBatchConfirm(ConfirmConstant.TYPE_CONFIRMED, facilityId, info);
+				EventFilterBaseRequest filter = context.getFilter();
+
+				if (filter.getFacilityId() == null) {
+					// ダイアログでスコープが選択されていない場合は、ダイアログを開く前に選択していたスコープをセット
+					filter.setFacilityId(facilityId);
+				} else {
+					// ダイアログでスコープが選択されている場合は、対象マネージャを更新
+					managerName = context.getManagerName();
+				}
+
+				// 重要度の入力値チェック
+				boolean prioritySelected = false;
+				for (EventFilterConditionRequest cnd : filter.getConditions()) {
+					if (Boolean.TRUE.equals(cnd.getPriorityInfo())
+							|| Boolean.TRUE.equals(cnd.getPriorityWarning())
+							|| Boolean.TRUE.equals(cnd.getPriorityCritical())
+							|| Boolean.TRUE.equals(cnd.getPriorityUnknown())) {
+						prioritySelected = true;
+						break;
+					}
+				}
+				if (!prioritySelected) {
+					MessageDialog.openError(
+							null,
+							Messages.getString("failed"),
+							Messages.getString("message.monitor.60") + ", " + Messages.getString("message.notify.13"));
+					return null;
+				}
+
+				MonitorResultRestClientWrapper wrapper = MonitorResultRestClientWrapper.getWrapper(managerName);
+				ModifyBatchConfirmRequest modifyBatchConfirmRequest = new ModifyBatchConfirmRequest();
+				modifyBatchConfirmRequest.setConfirmType(ConfirmTypeEnum.CONFIRMED);
+				modifyBatchConfirmRequest.setFilter(filter);
+				wrapper.modifyBatchConfirm(modifyBatchConfirmRequest);
 				view.update(false);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
-			} catch (HinemosUnknown_Exception e) {
+			} catch (HinemosUnknown e) {
 				MessageDialog.openError(null, Messages.getString("message"),
 						Messages.getString("message.monitor.60") + ", " + HinemosMessage.replace(e.getMessage()));
 			} catch (Exception e) {

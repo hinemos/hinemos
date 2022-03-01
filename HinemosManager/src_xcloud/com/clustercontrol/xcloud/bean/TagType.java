@@ -7,8 +7,9 @@
  */
 package com.clustercontrol.xcloud.bean;
 
+
 public enum TagType {
 	AUTO,
 	CLOUD,
-	LOCAL
+	LOCAL;
 }

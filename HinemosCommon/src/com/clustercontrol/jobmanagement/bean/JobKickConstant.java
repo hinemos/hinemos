@@ -23,4 +23,7 @@ public class JobKickConstant {
 
 	/** マニュアル実行の場合 */
 	public static final int TYPE_MANUAL = 2;
+
+	/** ジョブ連携受信の場合 */
+	public static final int TYPE_JOBLINKRCV = 3;
 }

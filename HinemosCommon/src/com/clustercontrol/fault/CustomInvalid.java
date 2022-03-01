@@ -13,7 +13,7 @@ package com.clustercontrol.fault;
  * @version 4.0
  */
 @SuppressWarnings("serial")
-public class CustomInvalid extends HinemosException {
+public class CustomInvalid extends HinemosInvalid {
 
 	public CustomInvalid() {
 		super();

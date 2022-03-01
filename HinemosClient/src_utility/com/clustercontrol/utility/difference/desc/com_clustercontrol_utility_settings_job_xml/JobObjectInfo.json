@@ -1,0 +1,110 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"jobId",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_jobId"}
+	]},
+	
+	{
+	"propName":"type",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_type"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_jobObjectInfo_type_endstatus"},
+			{"value":"1", "name":"name_jobObjectInfo_type_endvalue"},
+			{"value":"2", "name":"name_jobObjectInfo_type_time"},
+			{"value":"3", "name":"name_jobObjectInfo_type_session_time"},
+			{"value":"4", "name":"name_jobObjectInfo_type_env"},
+			{"value":"5", "name":"name_jobObjectInfo_type_cross_session_endstatus"},
+			{"value":"6", "name":"name_jobObjectInfo_type_cross_session_endvalue"},
+			{"value":"7", "name":"name_jobObjectInfo_type_job_return_value"}
+		]}
+	]},
+	
+	{
+	"propName":"status",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_status"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_normal"},
+			{"value":"1", "name":"name_warning"},
+			{"value":"2", "name":"name_abnormal"},
+			{"value":"4", "name":"name_any"}
+		]}
+	]},
+	
+	{
+	"propName":"value",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_value"}
+	]},
+
+	{
+	"propName":"time",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_time"}
+	]},
+	
+	{
+	"propName":"startMinute",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_startMinute"}
+	]},
+
+	{
+	"propName":"decisionValue",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_decisionValue"}
+	]},
+
+	{
+	"propName":"decisionCondition",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_decisionCondition"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_jobObjectInfo_decision_equal_numeric"},
+			{"value":"1", "name":"name_jobObjectInfo_decision_not_equal_numeric"},
+			{"value":"2", "name":"name_jobObjectInfo_decision_greater_than"},
+			{"value":"3", "name":"name_jobObjectInfo_decision_greater_than_or_equal_to"},
+			{"value":"4", "name":"name_jobObjectInfo_decision_less_than"},
+			{"value":"5", "name":"name_jobObjectInfo_decision_less_than_or_equal_to"},
+			{"value":"6", "name":"name_jobObjectInfo_decision_equal_string"},
+			{"value":"7", "name":"name_jobObjectInfo_decision_not_equal_string"},
+			{"value":"8", "name":"name_jobObjectInfo_decision_in"},
+			{"value":"9", "name":"name_jobObjectInfo_decision_not_in"}
+		]}
+	]},
+
+	{
+	"propName":"numberDecisionCondition",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_decisionCondition"},
+		{"type":"Translate", "values":[
+			{"value":"0", "name":"name_jobObjectInfo_decision_equal_numeric"},
+			{"value":"1", "name":"name_jobObjectInfo_decision_not_equal_numeric"},
+			{"value":"2", "name":"name_jobObjectInfo_decision_greater_than"},
+			{"value":"3", "name":"name_jobObjectInfo_decision_greater_than_or_equal_to"},
+			{"value":"4", "name":"name_jobObjectInfo_decision_less_than"},
+			{"value":"5", "name":"name_jobObjectInfo_decision_less_than_or_equal_to"},
+			{"value":"8", "name":"name_jobObjectInfo_decision_in"},
+			{"value":"9", "name":"name_jobObjectInfo_decision_not_in"}
+		]}
+	]},
+
+	{
+	"propName":"crossSessionRange",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_crossSessionRange"}
+	]},
+
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"JobObjectInfo_description"}
+	]}
+]
+}

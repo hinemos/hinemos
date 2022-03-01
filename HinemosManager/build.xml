@@ -15,7 +15,6 @@
 	<property name="build.dir" value="build/manager" />
 	<property name="build.mdb.dir" value="build/HinemosMDB.jar" />
 	<property name="agentws.dir" value="build/agentws" />
-	<property name="clientws.dir" value="build/clientws" />
 	<property name="managercliws.dir" value="build/managercliws" />
 	<property name="wsdl.dir" value="build/wsdl" />
 	<property name="wsdlsrc.dir" value="build/wsdlsrc"/>
@@ -27,6 +26,12 @@
 	<property name="win.dir" value="win" />
 	<property name="jar.rhel" value="HinemosManagerRhel.jar" />
 	<property name="jar.win" value="HinemosManagerWin.jar" />
+	<property name="war.dir" value="build/war" />
+	<property name="rest.proxy.dir" value="build/rest_proxy" />
+	<property name="jar.rest.proxy" value="${jar.RestProxy}" />
+	<property name="jar.rest.proxy.src" value="${jar.RestProxySrc}" />
+	<property name="jar.rest.proxy.tests" value="openapi-java-client-tests.jar" />
+	<property name="jar.rest.proxy.javadoc" value="openapi-java-client-javadoc.jar" />
 	<!-- Dependency -->
 	<target name="dependency" depends="check_dependency">
 		<fail unless="HinemosCommon.built" message="file not found. (HinemosCommon/${jar.HinemosCommon})" />
@@ -39,13 +44,26 @@
 		</fileset>
 		<fileset dir="./lib">
 			<include name="**/*.jar" />
-			<exclude name="**/eclipselink-src.jar" />
+			<exclude name="**/*sources.jar" />
 		</fileset>
 		<fileset dir="./lib_rest">
 			<exclude name="**/*sources.jar" />
 			<include name="**/*.jar" />
 		</fileset>
+		<fileset dir="./commonlib">
+			<include name="**/*.jar" />
+			<exclude name="**/*sources.jar" />
+		</fileset>
+		<fileset dir="./commonlib_rest">
+			<exclude name="**/*sources.jar" />
+			<include name="**/*.jar" />
+		</fileset>
 		<fileset dir="./platform_switch/lib_platform_win">
+			<exclude name="**/*sources.jar" />
+			<include name="**/*.jar" />
+		</fileset>
+		<fileset dir="./platform_switch/commonlib_platform_win">
+			<exclude name="**/*sources.jar" />
 			<include name="**/*.jar" />
 		</fileset>
 		<path refid="id.compile.classpath" />
@@ -99,11 +117,19 @@
 		<pathelement path="src_bootstrap" />
 
 		<pathelement path="src_reporting" />
+		
+		<pathelement path="src_rest" />
+
+		<pathelement path="src_rpa" />
+		
+		<pathelement path="src_grafana" />
 
 		<pathelement path="./build/tmp/src_platform" />
 		<pathelement path="src_binary" />
 		<pathelement path="src_xcloud"/>
-		<pathelement path="src_inquiry" />
+	    <pathelement path="src_filtersetting" />
+
+		<pathelement path="src_sdml" />
 	</path>
 
 	<target name="compile" description="Compile Java sources">
@@ -164,10 +190,18 @@
 
 			<src path="src_reporting" />
 
+			<src path="src_rpa" />
+			
+			<src path="src_rest" />
+			
 			<src path="./build/tmp/src_platform" />
 			<src path="src_binary" />
 			<src path="src_xcloud" />
-			<src path="src_inquiry" />
+			<src path="src_filtersetting" />
+
+			<src path="src_sdml" />
+			
+			<src path="src_grafana" />
 
 			<src path="resources" />
 		</javac>
@@ -189,6 +223,10 @@
 				<include name="**/*.java" if="jar.include.src"/>
 				<include name="**/model/*.java" if="jar.include.src"/>
 				<include name="META-INF/*.xml" if="jar.include.xml"/>
+			</fileset>
+			<fileset dir="src_binary">
+				<include name="**/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
 			</fileset>
 			<fileset dir="src_calendar">
 				<include name="**/*.java" if="jar.include.src"/>
@@ -351,17 +389,16 @@
 				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 
-			<fileset dir="src_inquiry">
-				<include name="**/*.java" if="jar.include.src"/>
-				<include name="**/model/*.java" if="jar.include.src"/>
-				<include name="META-INF/*.xml" if="jar.include.xml"/>
-			</fileset>
-
 			<fileset dir="src_bootstrap">
 				<include name="**/*.java" if="jar.include.src"/>
 				<include name="**/model/*.java" if="jar.include.src"/>
 				<include name="META-INF/*.xml" if="jar.include.xml"/>
 				<include name="META-INF/services/*" />
+			</fileset>
+			<fileset dir="src_rpa">
+				<include name="**/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 			<fileset dir="src_reporting">
 				<include name="**/*.java" if="jar.include.src" />
@@ -375,6 +412,27 @@
 				<include name="**/model/*.java" if="jar.include.src" />
 				<include name="META-INF/*.xml" if="jar.include.xml" />
 				<include name="**/*.properties" if="jar.include.properties"/>
+			</fileset>
+			<fileset dir="src_rest">
+				<include name="**/*.java" if="jar.include.src" />
+				<include name="**/model/*.java" if="jar.include.src" />
+				<include name="META-INF/*.xml" if="jar.include.xml" />
+				<include name="**/*.properties" if="jar.include.properties"/>
+			</fileset>
+			<fileset dir="src_filtersetting">
+				<include name="**/*.java" if="jar.include.src" />
+				<include name="META-INF/*.xml" if="jar.include.xml" />
+			</fileset>
+
+			<fileset dir="src_sdml">
+				<include name="**/*.java" if="jar.include.src" />
+				<include name="**/model/*.java" if="jar.include.src" />
+				<include name="META-INF/*.xml" if="jar.include.xml" />
+			</fileset>
+			<fileset dir="src_grafana">
+				<include name="**/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+				<include name="META-INF/*.xml" if="jar.include.xml"/>
 			</fileset>
 		</jar>
 	</target>
@@ -415,7 +473,7 @@
 			<property name="jpa.jar-reporting-file.package" value="&lt;jar-file&gt;@{dir.plugin}/HinemosReporting.jar&lt;/jar-file&gt;" />
 			<property name="jpa.jar-reporting-win-file.package" value="&lt;jar-file&gt;@{dir.plugin}/@{reporting.jar.diff}&lt;/jar-file&gt;" />
 			<copy todir="../HinemosManager/build/META-INF_@{dir.to}" overwrite="true">
-				<fileset dir="../HinemosManager/resources/@{dir.from}/META-INF">
+				<fileset dir="../HinemosManager/resources/META-INF">
 					<include name="**/*.xml" />
 				</fileset>
 			</copy>
@@ -435,21 +493,21 @@
 		<jpa_config.mac dir.lib="../lib" dir.from="${win.dir}" dir.to="WIN" jar.diff="${jar.win}" dir.plugin="../lib"  reporting.jar.diff="HinemosReportingWin.jar" />
 	</target>
 
-	<target name="install">
-		<copy file="${jar.dir}/${jar.ClientWS}" todir="../HinemosClient/lib" />
+	<target name="proxy_install">
+		<copy file="${rest.proxy.dir}/java/target/${jar.rest.proxy}" todir="../HinemosManager/lib/" />
+		<copy file="${rest.proxy.dir}/java/target/${jar.rest.proxy}" todir="../HinemosClient/lib/" />
+		<copy file="${rest.proxy.dir}/java/target/${jar.rest.proxy}" todir="../HinemosWorkers/lib/" />
+		<copy file="${rest.proxy.dir}/java/target/${jar.rest.proxy}" todir="${jar.dir}/" />
 	</target>
-
+	
 	<target name="webclient">
 		<delete dir="${agentws.dir}" failonerror="true" />
 		<mkdir dir="${agentws.dir}" />
-		<delete dir="${clientws.dir}" failonerror="true" />
-		<mkdir dir="${clientws.dir}" />
 		<delete dir="${wsdl.dir}" failonerror="true" />
 		<mkdir dir="${wsdl.dir}" />
 		<delete dir="${wsdlsrc.dir}" failonerror="true" />
 		<mkdir dir="${wsdlsrc.dir}" />
 		<delete file="${jar.dir}/AgentWS.jar" failonerror="true"/>
-		<delete file="${jar.dir}/ClientWS.jar" failonerror="true"/>
 
 		<path id="ws.class.path">
 			<fileset dir="../HinemosCommon">
@@ -460,7 +518,7 @@
 			<fileset dir=".">
 				<include name="${jar.dir}/HinemosManager.jar"/>
 				<include name="lib/javax.persistence_2.1.1.v201509150925.jar"/>
-				<include name="lib/jsch-0.1.53.jar"/>
+				<include name="lib/jsch-0.1.55.jar"/>
 			</fileset>
 		</path>
 
@@ -484,33 +542,10 @@
 			</sequential>
 		</macrodef>
 
-		<wsgen.mac sei.class="com.clustercontrol.ws.access.AccessEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.agent.AgentEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.agentbinary.AgentBinaryEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.agentnodeconfig.AgentNodeConfigEndpoint"/>
 		<wsgen.mac sei.class="com.clustercontrol.ws.agenthub.AgentHubEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.calendar.CalendarEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.cloud.CloudCommonEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.collect.CollectEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.jobmanagement.JobEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.jobmanagement.JobMapEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.mailtemplate.MailTemplateEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.maintenance.MaintenanceEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.maintenance.HinemosPropertyEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.monitor.MonitorEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.monitor.MonitorSettingEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.nodemap.NodeMapEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.notify.NotifyEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.collectmaster.PerformanceCollectMasterEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.repository.RepositoryEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.reporting.ReportingEndpoint" />
-		<wsgen.mac sei.class="com.clustercontrol.ws.jmxmaster.JmxMasterEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.infra.InfraEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.utility.UtilityEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.hub.HubEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.hub.BinaryEndpoint"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.xcloud.CloudEndpointImpl"/>
-		<wsgen.mac sei.class="com.clustercontrol.ws.inquiry.InquiryEndpoint"/>
 		<taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
 			<classpath refid="ws.class.path"/>
 		</taskdef>
@@ -534,29 +569,6 @@
 		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentBinaryEndpointService.wsdl" />
 		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentNodeConfigEndpointService.wsdl" />
 		<wsimport.mac dir="${agentws.dir}" service.wsdl="AgentHubEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="CloudCommonEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="AccessEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="CalendarEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="CollectEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="JobEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="JobMapEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="MailTemplateEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="MaintenanceEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="HinemosPropertyEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="MonitorEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="MonitorSettingEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="NodeMapEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="NotifyEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="PerformanceCollectMasterEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="RepositoryEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="ReportingEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="JmxMasterEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="InfraEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="UtilityEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="HubEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="BinaryEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="CloudEndpointService.wsdl" />
-		<wsimport.mac dir="${clientws.dir}" service.wsdl="InquiryEndpointService.wsdl" />
 		<!-- sourcedestdir="${agentws.dir}" -->
 		<delete>
 			<fileset dir="build/agentws" includes="**/*.class" />
@@ -578,13 +590,256 @@
 				<include name="**/*.*"/>
 			</fileset>
 		</jar>
-		<jar jarfile="${jar.dir}/ClientWS.jar" manifest="${build.dir}/MANIFEST.MF">
-			<fileset dir="./${clientws.dir}">
-				<include name="**/*.*"/>
-			</fileset>
-		</jar>
 	</target>
 
+	<target name="war" depends="compile">
+		<delete dir="${war.dir}" failonerror="true" />
+		<mkdir dir="${war.dir}" />
+		<mkdir dir="${war.dir}/${class.dir}" />
+		<mkdir dir="${war.dir}/${project.name}" />
+		<mkdir dir="${war.dir}/${project.name}/META-INF" />
+		<mkdir dir="${war.dir}/${project.name}/WEB-INF" />
+		<mkdir dir="${war.dir}/${project.name}/WEB-INF/classes" />
+		<mkdir dir="${war.dir}/${project.name}/WEB-INF/lib" />
+
+		<copy todir="${war.dir}/${project.name}/WEB-INF/lib" overwrite="true">
+			<fileset dir="../HinemosCommon/commonLib">
+				<include name="*.jar" />
+			</fileset>
+			<fileset dir="../HinemosCommon/${jar.dir}">
+				<include name="${jar.HinemosCommon}" />
+			</fileset>
+			<fileset dir="./lib">
+				<include name="*.jar" />
+				<exclude name="eclipselink-src.jar" />
+				<exclude name="eclipselink.jar" />
+			</fileset>
+			<fileset dir="./lib_rest">
+				<exclude name="*sources.jar" />
+				<include name="*.jar" />
+			</fileset>
+		</copy>
+
+		<javac destdir="${war.dir}/${class.dir}" failonerror="true" classpathref="id.compile.classpath.local" source="${compile.version.manager}" target="${compile.version.manager}" encoding="${compile.encode}" includeantruntime="false" debug="on">
+			<src path="for_war" />
+		</javac>
+
+
+		<copy todir="${war.dir}/${project.name}/WEB-INF/classes" overwrite="true">
+			<fileset dir="${build.dir}/${class.dir}">
+				<include name="**/*.*" />
+				<include name="**/model/*.*" />
+				<exclude name="**/platform/**" />
+			</fileset>
+
+			<fileset dir="${war.dir}/${class.dir}">
+				<include name="**/*.*" />
+			</fileset>
+		</copy>
+
+		<copy todir="${war.dir}/${project.name}/WEB-INF" overwrite="true">
+			<fileset dir="for_war">
+				<include name="web.xml" />
+			</fileset>
+		</copy>
+
+		<copy todir="${war.dir}/${project.name}/WEB-INF" overwrite="true">
+			<fileset dir="for_war">
+				<include name="web.xml" />
+			</fileset>
+		</copy>
+
+		<copy todir="${war.dir}/${project.name}/META-INF" overwrite="true">
+			<fileset dir="for_war">
+				<include name="MANIFEST.MF" />
+			</fileset>
+		</copy>
+
+		<copy todir="${war.dir}/${project.name}" overwrite="true">
+			<fileset dir="for_war">
+				<include name="index.html" />
+			</fileset>
+		</copy>
+
+		<zip destfile="${war.dir}/${project.name}.war" basedir="${war.dir}/${project.name}" includes="**/*.*" />
+	</target>
+
+	<target name="build_proxy" depends="war">
+		<delete dir="${rest.proxy.dir}" failonerror="true" />
+		<mkdir dir="${rest.proxy.dir}" />
+
+	    <!-- Prepare the custom template for the OpenAPI generator. -->
+	    <unzip src="${openapi-generator.dir}/openapi-generator-cli.jar"
+	           dest="${rest.proxy.dir}/openapi-generator-template">
+	    	<patternset>
+	        	<include name="Java/**"/>
+	    	</patternset>
+	    	
+		</unzip>
+	    <copy todir="${rest.proxy.dir}/openapi-generator-template" overwrite="true">
+			<fileset dir="for_proxy/template">
+				<include name="**/*" />
+			</fileset>
+		</copy>
+
+		<copy todir="${openliberty.server.dir}/dropins" overwrite="true">
+			<fileset dir="${war.dir}">
+				<include name="${project.name}.war" />
+			</fileset>
+		</copy>
+
+		<exec executable="${openliberty.dir}/bin/server.bat">
+			<arg value="start"/>
+			<arg value="server1" />
+		</exec>
+
+		<sleep minutes="2" />
+
+		<exec executable="powershell">
+			<arg value="Invoke-WebRequest" />
+			<arg value="-Uri" />
+			<arg value="http://localhost:9080/openapi" />
+			<arg value="-OutFile" />
+			<arg value="${rest.proxy.dir}/openapi_tmp.yaml" />
+		</exec>
+
+		<!-- No need to wait for a stop, so run in a separate process-->
+		<exec executable="${openliberty.dir}/bin/server.bat" spawn="true">
+			<arg value="stop"/>
+			<arg value="server1" />
+		</exec>
+
+		<delete file="${openliberty.server.dir}/dropins/${project.name}.war" />
+
+		<exec executable="java">
+			<arg value="-jar" />
+			<arg value="ant/OpenApiYamlConverter.jar" />
+			<arg value="${rest.proxy.dir}/openapi_tmp.yaml" />
+			<arg value="${rest.proxy.dir}/openapi.yaml" />
+			<arg value="ant/openapi_yaml_convert_conf.properties" />
+		</exec>
+
+		<exec executable="java">
+			<arg value="-jar" />
+			<arg value="${openapi-generator.dir}/openapi-generator-cli.jar" />
+			<arg value="generate" />
+			<arg value="-i" />
+			<arg value="${rest.proxy.dir}/openapi.yaml" />
+			<arg value="-g" />
+			<arg value="python" />
+			<arg value="-o" />
+			<arg value="${rest.proxy.dir}/python" />
+			<arg value="--skip-validate-spec" />
+		</exec>
+
+		<exec executable="java">
+			<arg value="-jar" />
+			<arg value="${openapi-generator.dir}/openapi-generator-cli.jar" />
+			<arg value="generate" />
+			<arg value="-i" />
+			<arg value="${rest.proxy.dir}/openapi.yaml" />
+			<arg value="-g" />
+			<arg value="java" />
+			<arg value="-o" />
+			<arg value="${rest.proxy.dir}/java" />
+			<arg value="--api-package" />
+			<arg value="com.clustercontrol.rest.client" />
+			<arg value="--skip-validate-spec" />
+			<arg value="-t" />
+			<arg value="${rest.proxy.dir}/openapi-generator-template/Java" />
+		</exec>
+
+		<exec executable="CMD">
+			<arg line="/C mvn install -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true -f ${rest.proxy.dir}/java/pom.xml -Dmaven.repo.local=C:\maven_repository" />
+		</exec>
+
+		<move file="${rest.proxy.dir}/java/target/openapi-java-client-1.0.0.jar" tofile="${rest.proxy.dir}/java/target/${jar.rest.proxy}" />
+		
+		<antcall target="proxy_install" />
+	</target>
+
+	<!-- Do not generate python proxy -->
+	<target name="build_proxy_without_python" depends="war">
+		<delete dir="${rest.proxy.dir}" failonerror="true" />
+		<mkdir dir="${rest.proxy.dir}" />
+
+	    <!-- Prepare the custom template for the OpenAPI generator. -->
+	    <unzip src="${openapi-generator.dir}/openapi-generator-cli.jar"
+	           dest="${rest.proxy.dir}/openapi-generator-template">
+	    	<patternset>
+	        	<include name="Java/**"/>
+	    	</patternset>
+	    	
+		</unzip>
+	    <copy todir="${rest.proxy.dir}/openapi-generator-template" overwrite="true">
+			<fileset dir="for_proxy/template">
+				<include name="**/*" />
+			</fileset>
+		</copy>
+
+		<copy todir="${openliberty.server.dir}/dropins" overwrite="true">
+			<fileset dir="${war.dir}">
+				<include name="${project.name}.war" />
+			</fileset>
+		</copy>
+
+		<exec executable="${openliberty.dir}/bin/server.bat">
+			<arg value="start"/>
+			<arg value="server1" />
+		</exec>
+
+		<sleep minutes="2"/>
+
+		<exec executable="powershell">
+			<arg value="Invoke-WebRequest" />
+			<arg value="-Uri" />
+			<arg value="http://localhost:9080/openapi" />
+			<arg value="-OutFile" />
+			<arg value="${rest.proxy.dir}/openapi_tmp.yaml" />
+		</exec>
+
+		<!-- No need to wait for a stop, so run in a separate process-->
+		<exec executable="${openliberty.dir}/bin/server.bat" spawn="true">
+			<arg value="stop"/>
+			<arg value="server1" />
+		</exec>
+
+		<delete file="${openliberty.server.dir}/dropins/${project.name}.war" />
+
+		<exec executable="java">
+			<arg value="-jar" />
+			<arg value="ant/OpenApiYamlConverter.jar" />
+			<arg value="${rest.proxy.dir}/openapi_tmp.yaml" />
+			<arg value="${rest.proxy.dir}/openapi.yaml" />
+			<arg value="ant/openapi_yaml_convert_conf.properties" />
+		</exec>
+
+		<exec executable="java">
+			<arg value="-jar" />
+			<arg value="${openapi-generator.dir}/openapi-generator-cli.jar" />
+			<arg value="generate" />
+			<arg value="-i" />
+			<arg value="${rest.proxy.dir}/openapi.yaml" />
+			<arg value="-g" />
+			<arg value="java" />
+			<arg value="-o" />
+			<arg value="${rest.proxy.dir}/java" />
+			<arg value="--api-package" />
+			<arg value="com.clustercontrol.rest.client" />
+			<arg value="--skip-validate-spec" />
+			<arg value="-t" />
+			<arg value="${rest.proxy.dir}/openapi-generator-template/Java" />
+		</exec>
+
+		<exec executable="CMD">
+			<arg line="/C mvn install -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true -f ${rest.proxy.dir}/java/pom.xml -Dmaven.repo.local=C:\maven_repository" />
+		</exec>
+
+		<move file="${rest.proxy.dir}/java/target/openapi-java-client-1.0.0.jar" tofile="${rest.proxy.dir}/java/target/${jar.rest.proxy}" />
+		
+		<antcall target="proxy_install" />
+	</target>
+	
 	<!-- All -->
 	<target name="all" depends="dependency">
 		<!-- <delete> will recursely remove files under build\tmp\src_platform -->
@@ -606,7 +861,7 @@
 		<antcall target="build_publish" />
 		<antcall target="copy_messages" />
 		<antcall target="webclient" />
-		<antcall target="install" />
+		<antcall target="build_proxy" />
 
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>
@@ -633,7 +888,34 @@
 		<antcall target="build_publish" />
 		<antcall target="copy_messages" />
 		<antcall target="webclient" />
-		<antcall target="install" />
+		<antcall target="build_proxy" />
+
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh" />
+	</target>
+
+	<target name="all_without_python_proxy" depends="dependency">
+		<!-- <delete> will recursely remove files under build\tmp\src_platform -->
+		<exec executable="CMD" failonerror="false">
+			<arg line="/C rmdir build\tmp\src_platform" />
+		</exec>
+		<delete dir="build" failonerror="true" />
+		<antcall target="clean" />
+
+		<!-- win -->
+		<antcall target="win_quick" />
+		<antcall target="jpa_config_win" />
+
+		<!-- rhel -->
+		<antcall target="rhel_quick" />
+		<antcall target="jpa_config_rhel" />
+
+		<antcall target="jar_main" />
+		<antcall target="build_publish" />
+		<antcall target="copy_messages" />
+		<antcall target="webclient" />
+		<antcall target="build_proxy_without_python" />
 
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>
@@ -651,7 +933,6 @@
 		<antcall target="jar_main" />
 		<antcall target="copy_messages" />
 		<antcall target="webclient" />
-		<antcall target="install" />
 
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>
@@ -669,7 +950,6 @@
 		<antcall target="jar_main" />
 		<antcall target="copy_messages" />
 		<antcall target="webclient" />
-		<antcall target="install" />
 
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>

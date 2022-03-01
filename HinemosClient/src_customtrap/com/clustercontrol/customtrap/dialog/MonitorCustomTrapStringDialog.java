@@ -20,19 +20,23 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddCustomtrapStringMonitorRequest;
+import org.openapitools.client.model.CustomTrapCheckInfoRequest;
+import org.openapitools.client.model.CustomTrapCheckInfoResponse;
+import org.openapitools.client.model.MonitorStringValueInfoRequest;
+import org.openapitools.client.model.ModifyCustomtrapStringMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
-import com.clustercontrol.monitor.bean.ConvertValueConstant;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorStringDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
+import com.clustercontrol.notify.bean.PriChangeJudgeSelectTypeConstant;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.CustomTrapCheckInfo;
 
 /**
  * カスタムトラップ監視(文字列)の設定ダイアログクラス<br/>
@@ -57,6 +61,7 @@ public class MonitorCustomTrapStringDialog extends CommonMonitorStringDialog {
 	public MonitorCustomTrapStringDialog(Shell parent) {
 		super(parent, null);
 		logLineFlag = true;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
 	}
 
 	/**
@@ -77,6 +82,7 @@ public class MonitorCustomTrapStringDialog extends CommonMonitorStringDialog {
 		this.managerName = managerName;
 		this.monitorId = monitorId;
 		this.updateFlg = updateFlg;
+		this.priorityChangeJudgeSelect = PriChangeJudgeSelectTypeConstant.TYPE_PATTERN;
 	}
 
 	/**
@@ -144,17 +150,17 @@ public class MonitorCustomTrapStringDialog extends CommonMonitorStringDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if (this.monitorId == null) {
 			// 新規作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
 				info = wrapper.getMonitor(this.monitorId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
@@ -195,14 +201,14 @@ public class MonitorCustomTrapStringDialog extends CommonMonitorStringDialog {
 	 *            設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
 
 		// 監視条件カスタムトラップ監視情報
 
-		CustomTrapCheckInfo customtrapInfo = monitor.getCustomTrapCheckInfo();
+		CustomTrapCheckInfoResponse customtrapInfo = monitor.getCustomTrapCheckInfo();
 
 		if (null != customtrapInfo) {
 			this.textKeypattern.setText(customtrapInfo.getTargetKey());
@@ -217,9 +223,9 @@ public class MonitorCustomTrapStringDialog extends CommonMonitorStringDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		// Local Variables
-		CustomTrapCheckInfo customtrapInfo = null;
+		CustomTrapCheckInfoResponse customtrapInfo = null;
 
 		// MAIN
 		super.createInputData();
@@ -227,19 +233,11 @@ public class MonitorCustomTrapStringDialog extends CommonMonitorStringDialog {
 			return null;
 		}
 
-		// カスタムトラップ監視設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S);
-
 		// 監視条件カスタムトラップ監視情報
-		customtrapInfo = new CustomTrapCheckInfo();
-		customtrapInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S);
-		customtrapInfo.setConvertFlg(ConvertValueConstant.TYPE_NO);
-		customtrapInfo.setMonitorId(monitorInfo.getMonitorId());
+		customtrapInfo = new CustomTrapCheckInfoResponse();
+		customtrapInfo.setConvertFlg(CustomTrapCheckInfoResponse.ConvertFlgEnum.NONE);
 		customtrapInfo.setTargetKey(this.textKeypattern.getText());
 		monitorInfo.setCustomTrapCheckInfo(customtrapInfo);
-
-		// カスタムトラップ監視（文字列）固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S);
 
 		// 結果判定の定義
 		validateResult = m_stringValueInfo.createInputData(monitorInfo);
@@ -272,31 +270,38 @@ public class MonitorCustomTrapStringDialog extends CommonMonitorStringDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		String managerName = this.getManagerName();
-		if (info != null) {
-			String[] args = { info.getMonitorId(), managerName };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
+		if (this.inputData != null) {
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if (!this.updateFlg) {
 				// 新規作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-					if (result) {
-						// 登録が成功したことを通知する
-						MessageDialog.openInformation(null, Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						// 登録が失敗したことを通知する
-						MessageDialog.openError(null, Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddCustomtrapStringMonitorRequest info = new AddCustomtrapStringMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddCustomtrapStringMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getCustomTrapCheckInfo() != null && this.inputData.getCustomTrapCheckInfo() != null) {
+						info.getCustomTrapCheckInfo().setConvertFlg(
+								CustomTrapCheckInfoRequest.ConvertFlgEnum.fromValue(
+										this.inputData.getCustomTrapCheckInfo().getConvertFlg().getValue()));
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.addCustomtrapStringMonitor(info);
+					MessageDialog.openInformation(null, Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorDuplicate e) {
 					// 重複する監視項目IDが存在することを通知する
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.monitor.53", args));
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権が付与されていないことを通知する
 						MessageDialog.openInformation(null, Messages.getString("message"),
 								Messages.getString("message.accesscontrol.16"));
@@ -310,23 +315,35 @@ public class MonitorCustomTrapStringDialog extends CommonMonitorStringDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権が付与されていないことを通知する
-					MessageDialog.openInformation(null, Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if (result) {
-					// 更新が成功したことを通知する
+					ModifyCustomtrapStringMonitorRequest info = new ModifyCustomtrapStringMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyCustomtrapStringMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getCustomTrapCheckInfo() != null && this.inputData.getCustomTrapCheckInfo() != null) {
+						info.getCustomTrapCheckInfo().setConvertFlg(
+								CustomTrapCheckInfoRequest.ConvertFlgEnum.fromValue(
+										this.inputData.getCustomTrapCheckInfo().getConvertFlg().getValue()));
+					}
+					if (info.getStringValueInfo() != null
+							&& this.inputData.getStringValueInfo() != null) {
+						for (int i = 0; i < info.getStringValueInfo().size(); i++) {
+							info.getStringValueInfo().get(i).setPriority(MonitorStringValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getStringValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					wrapper.modifyCustomtrapStringMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(null, Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
-					// 更新が失敗したことを通知する
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権が付与されていないことを通知する
+						MessageDialog.openInformation(null, Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(null, Messages.getString("failed"),
 							Messages.getString("message.monitor.36", args) + errMessage);
 				}

@@ -14,25 +14,32 @@ import java.io.IOException;
 import java.util.List;
 
 import javax.activation.DataHandler;
+import javax.activation.FileDataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.service.UISession;
 import org.eclipse.swt.widgets.Display;
+import org.openapitools.client.model.CreateReportingFileResponse;
+import org.openapitools.client.model.CreateReportingFileRequest;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.client.ui.util.FileDownloader;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.ReportFileCreateFailed;
+import com.clustercontrol.fault.ReportFileNotFound;
+import com.clustercontrol.fault.ReportingNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.reporting.preference.ReportingPreferencePage;
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
+import com.clustercontrol.rest.util.RestCodecUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.reporting.HinemosUnknown_Exception;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.InvalidUserPass_Exception;
-import com.clustercontrol.ws.reporting.NotifyNotFound_Exception;
-import com.clustercontrol.ws.reporting.ReportingInfo;
-import com.clustercontrol.ws.reporting.ReportingNotFound_Exception;
 
 /**
  * レポート作成を実行するクラス
@@ -47,9 +54,9 @@ public class ReportingRunner implements Runnable {
 	// input
 	private String reportId;
 
-	private ReportingInfo reportingInfo;
+	private CreateReportingFileRequest reportingInfo;
 
-	private ReportingEndpointWrapper wrapper;
+	private ReportingRestClientWrapper wrapper;
 	
 	final private Display display;
 	
@@ -78,8 +85,8 @@ public class ReportingRunner implements Runnable {
 	 * @param info
 	 *            レポーティング情報
 	 */
-	public ReportingRunner(String reportId, ReportingInfo info, 
-			ReportingEndpointWrapper wrapper, Display display) {
+	public ReportingRunner(String reportId, CreateReportingFileRequest info, 
+			ReportingRestClientWrapper wrapper, Display display) {
 		super();
 		this.reportId = reportId;
 		this.reportingInfo = info;
@@ -108,12 +115,10 @@ public class ReportingRunner implements Runnable {
 	 * @return ファイル名リスト
 	 */
 	public List<String> create(String managerName)
-			throws HinemosUnknown_Exception, InvalidRole_Exception,
-			InvalidUserPass_Exception, ReportingNotFound_Exception,
-			NotifyNotFound_Exception {
-		ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-		downloadFileList = wrapper.createReportingFileWithParam(this.reportId,
-						this.reportingInfo);
+			throws HinemosUnknown, InvalidRole, InvalidUserPass, ReportingNotFound, NotifyNotFound, RestConnectFailed, InvalidSetting {
+		ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(managerName);
+		CreateReportingFileResponse listRes = wrapper.createReportingFileManual(this.reportId, this.reportingInfo);
+		downloadFileList = listRes.getFileNameList();
 
 		// for debug
 		if (m_log.isDebugEnabled()) {
@@ -138,9 +143,13 @@ public class ReportingRunner implements Runnable {
 	public void download(String managerName, String fileName) {
 		m_log.debug("download() downloadFileName = " + fileName);
 		m_log.info("download report file  = " + fileName);
+		
+		String downloadFileEncoded = RestCodecUtil.stringEncode(fileName); 
 
 		FileOutputStream fileOutputStream = null;
 		DataHandler handler = null;
+		File file = null;
+		boolean isClientTimeout = true;
 		try {
 			// 指定回数だけファイル存在確認をする
 			m_log.info("download report file = " + fileName + ", waitCount = "
@@ -156,24 +165,41 @@ public class ReportingRunner implements Runnable {
 					if(wrapper == null) {
 						throw new Exception("failed to download");
 					}
-					handler = wrapper.downloadReportingFile(fileName);
-					if (handler != null) {
+					try {
+						file = wrapper.downloadReportingFile(downloadFileEncoded);
 						m_log.info("download report file = " + fileName
 								+ ", created !");
+						break;
+					} catch (ReportFileNotFound e) {
+						m_log.debug("download report file =" + e.getMessage() + "," + e.getClass().getSimpleName());
+						continue;
+					} catch (ReportFileCreateFailed e) {
+						m_log.debug("download report file =" + e.getMessage() + "," + e.getClass().getSimpleName());
+						isClientTimeout = false;
 						break;
 					}
 				}
 			}
-			if (handler == null) {
-				m_log.info("download handler is null");
-				setCancelMessage(Messages
-						.getString("message.reporting.25")
-						+ ": "
-						+ Messages
-								.getString("message.reporting.26"));
+			if (file == null) {
+				m_log.info("download file is null");
+				if(isClientTimeout) {
+					setCancelMessage(Messages
+							.getString("message.reporting.25")
+							+ ": "
+							+ Messages
+							.getString("message.reporting.26"));
+				} else {
+					setCancelMessage(Messages
+							.getString("message.reporting.25")
+							+ ": "
+							+ Messages
+							.getString("message.reporting.44"));
+				}
 				setCanceled(true);
 				return;
 			}
+			FileDataSource source = new FileDataSource(file);
+			handler = new DataHandler(source);
 
 			// OSが異なると、セパレータが違うので正しくファイル名が取得できないので
 			// クライアントのPSのセパレータに置換する
@@ -184,9 +210,9 @@ public class ReportingRunner implements Runnable {
 			
 			m_log.info("exactFileName = " + exactFileName);
 			
-			final File file = new File(exactFileName);
-			file.createNewFile();
-			fileOutputStream = new FileOutputStream(file);
+			final File createFile = new File(exactFileName);
+			createFile.createNewFile();
+			fileOutputStream = new FileOutputStream(createFile);
 			handler.writeTo(fileOutputStream);
 
 			m_log.info("download report file  = " + exactFileName + ", succeed !");
@@ -199,9 +225,9 @@ public class ReportingRunner implements Runnable {
 					public void run() {
 						display.asyncExec( new Runnable() {
 							public void run() {
-								FileDownloader.openBrowser(display.getActiveShell(), file.getAbsolutePath(), exactFileName);
+								FileDownloader.openBrowser(display.getActiveShell(), createFile.getAbsolutePath(), exactFileName);
 								m_log.info("FileDownloader.openBrowser finish.");
-								FileDownloader.cleanup(file.getAbsolutePath());
+								FileDownloader.cleanup(createFile.getAbsolutePath());
 								m_log.info("FileDownloader.cleanup finish.");
 							}
 						});

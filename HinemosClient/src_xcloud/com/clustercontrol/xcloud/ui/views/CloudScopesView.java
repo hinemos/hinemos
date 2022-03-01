@@ -40,6 +40,7 @@ import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.FacilityImageConstant;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.util.FacilityTreeCache;
+import com.clustercontrol.util.TableViewerSorter;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.ICloudModelContentProvider;
 import com.clustercontrol.xcloud.extensions.CloudModelContentProviderExtension;
@@ -52,7 +53,6 @@ import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
 import com.clustercontrol.xcloud.plugin.CloudOptionSourceProvider;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.ControlUtil;
-import com.clustercontrol.xcloud.util.TableViewerSorter;
 
 
 public class CloudScopesView extends AbstractCloudViewPart {
@@ -115,9 +115,9 @@ public class CloudScopesView extends AbstractCloudViewPart {
 			for (IHinemosManager m: managers) {
 				try {
 					if (!initialize || (initialize && !m.isInitialized())){
-						//ƒ}ƒl[ƒWƒƒ–ˆ‚Éó‘ÔXV‚ğs‚Á‚Ä‚¢‚é‚ªA
-						//ƒ}ƒ‹ƒ`ƒ}ƒl[ƒWƒƒÚ‘±‚ÉƒNƒ‰ƒEƒh/‚u‚l‚ª—LŒø‚É‚È‚Á‚Ä‚È‚¢ƒ}ƒl[ƒWƒƒ‚Ì¬İ‚ª‚ ‚è‚¦‚éiendpoint’ÊM‚ÅˆÙí‚ªo‚éj‚Ì‚Å
-						//ˆÙí”­¶‚ÍŠY“–‚ÌŒxƒƒO‚Ì‚İ‚ğ•\¦‚·‚éB
+						//ï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½Éï¿½ÔXï¿½Vï¿½ï¿½ï¿½sï¿½ï¿½ï¿½Ä‚ï¿½ï¿½é‚ªï¿½A
+						//ï¿½}ï¿½ï¿½ï¿½`ï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½Ú‘ï¿½ï¿½ï¿½ï¿½ÉƒNï¿½ï¿½ï¿½Eï¿½h/ï¿½uï¿½lï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½É‚È‚ï¿½ï¿½Ä‚È‚ï¿½ï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½Ìï¿½ï¿½İ‚ï¿½ï¿½ï¿½ï¿½è‚¦ï¿½ï¿½iendpointï¿½ÊMï¿½ÅˆÙí‚ªï¿½oï¿½ï¿½jï¿½Ì‚ï¿½
+						//ï¿½Ùí”­ï¿½ï¿½ï¿½ï¿½ï¿½ÍŠYï¿½ï¿½ï¿½ÌŒxï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½Ì‚İ‚ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½B
 						try{
 							m.update();
 						} catch(CloudModelException e) {
@@ -134,8 +134,12 @@ public class CloudScopesView extends AbstractCloudViewPart {
 			CollectionComparator.compareCollection(cloudScopes, newCloudScopes, new CollectionComparator.Comparator<ICloudScopes, ICloudScopes>() {
 				@Override
 				public boolean match(ICloudScopes o1, ICloudScopes o2) {
-					return o1.getHinemosManager().getManagerName().equals(o2.getHinemosManager().getManagerName());
-				}
+					if(o1.getHinemosManager().getManagerName().equals(o1.getHinemosManager().getManagerName())){
+						return o1.getCloudScopes().length == o2.getCloudScopes().length;
+					} else {
+						logger.info("update() : number of login managers changed.");
+					}
+					return false;				}
 				@Override
 				public void afterO1(ICloudScopes o1) {
 					o1.getHinemosManager().getModelWatch().removeWatcher(o1, watcher);
@@ -166,7 +170,7 @@ public class CloudScopesView extends AbstractCloudViewPart {
 			if (element instanceof ICloudScopes) {
 				List<ICloudScope> scopes = new ArrayList<>();
 				for (ICloudScope scope: ((ICloudScopes)element).getCloudScopes()) {
-					if (scope.getCloudPlatform().getCloudSpec().isBillingAlarmEnabled())
+					if (scope.getCloudPlatform().getCloudSpec().getBillingAlarmEnabled())
 						scopes.add(scope);
 				}
 				return scopes.toArray();

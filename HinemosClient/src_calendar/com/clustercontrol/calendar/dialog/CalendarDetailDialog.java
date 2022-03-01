@@ -33,24 +33,27 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.CalendarDetailInfoResponse;
+import org.openapitools.client.model.CalendarDetailInfoResponse.DayTypeEnum;
+import org.openapitools.client.model.CalendarDetailInfoResponse.WeekNoEnum;
+import org.openapitools.client.model.CalendarDetailInfoResponse.WeekXthEnum;
+import org.openapitools.client.model.CalendarPatternInfoResponse;
 
 import com.clustercontrol.bean.DataRangeConstant;
-import com.clustercontrol.bean.DayOfWeekConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
+import com.clustercontrol.calendar.bean.DayOfWeekConstant;
 import com.clustercontrol.calendar.bean.DayOfWeekInMonthConstant;
 import com.clustercontrol.calendar.bean.MonthConstant;
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
 import com.clustercontrol.composite.action.NumberKeyListener;
 import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimeStringConverter;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.calendar.CalendarDetailInfo;
-import com.clustercontrol.ws.calendar.CalendarPatternInfo;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
 
 /**
  * カレンダ詳細設定ダイアログ作成・変更ダイアログクラス<BR>
@@ -71,7 +74,7 @@ public class CalendarDetailDialog extends CommonDialog{
 	 */
 	private final int DIALOG_WIDTH = 8;
 	/** 入力値を保持するオブジェクト */
-	private CalendarDetailInfo inputData = null;
+	private CalendarDetailInfoResponse inputData = null;
 	/** 入力値の正当性を保持するオブジェクト。 */
 	private ValidateResult m_validateResult = null;
 	// ----- 共通メンバ変数 ----- //
@@ -130,7 +133,7 @@ public class CalendarDetailDialog extends CommonDialog{
 	 *
 	 * @return
 	 */
-	public CalendarDetailInfo getInputData() {
+	public CalendarDetailInfoResponse getInputData() {
 		return this.inputData;
 	}
 	// ----- コンストラクタ ----- //
@@ -169,7 +172,7 @@ public class CalendarDetailDialog extends CommonDialog{
 	 * @param detailInfo カレンダ詳細情報
 	 * @param ownerRoleId オーナーロールID
 	 */
-	public CalendarDetailDialog(Shell parent, String managerName, CalendarDetailInfo detailInfo, String ownerRoleId){
+	public CalendarDetailDialog(Shell parent, String managerName, CalendarDetailInfoResponse detailInfo, String ownerRoleId){
 		super(parent);
 		this.managerName = managerName;
 		this.inputData = detailInfo;
@@ -422,11 +425,9 @@ public class CalendarDetailDialog extends CommonDialog{
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.calDetailDayOfWeekInMonthCombo.setLayoutData(gridData);
-		//毎週、第1週～第5週までの配列
-		String dayOfWeekInMonth[] = new String[6];
-		for(int i = 0; i < dayOfWeekInMonth.length ; i++){
-			dayOfWeekInMonth[i] = DayOfWeekInMonthConstant.typeToString(i);
-			this.calDetailDayOfWeekInMonthCombo.add(dayOfWeekInMonth[i]);
+		
+		for(WeekXthEnum e : WeekXthEnum.values()){
+			this.calDetailDayOfWeekInMonthCombo.add(DayOfWeekInMonthConstant.enumToString(e));
 		}
 		this.calDetailDayOfWeekInMonthCombo.addModifyListener(new ModifyListener() {
 			@Override
@@ -443,12 +444,11 @@ public class CalendarDetailDialog extends CommonDialog{
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.calDetailDayOfWeekCombo.setLayoutData(gridData);
-		//日曜日から土曜日までの配列
-		String dayOfWeek[] = new String[7];
-		for(int i = 0; i < dayOfWeek.length ; i++){
-			dayOfWeek[i] = DayOfWeekConstant.typeToString(i+1);
-			this.calDetailDayOfWeekCombo.add(dayOfWeek[i]);
+		
+		for(WeekNoEnum e : WeekNoEnum.values()) {
+			this.calDetailDayOfWeekCombo.add(DayOfWeekConstant.enumToString(e));
 		}
+		
 		this.calDetailDayOfWeekCombo.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent e) {
@@ -549,9 +549,9 @@ public class CalendarDetailDialog extends CommonDialog{
 		this.calDetailCalPatternCombo.setLayoutData(gridData);
 		this.calDetailCalPatternCombo.add("", index);
 		this.calPatternMap = new ConcurrentHashMap<>();
-		for(CalendarPatternInfo str : getCalendarPatternList(this.managerName, this.ownerRoleId)){
-			this.calDetailCalPatternCombo.add(str.getCalPatternName(), ++index);
-			calPatternMap.put(str.getCalPatternId(), index);
+		for(CalendarPatternInfoResponse str : getCalendarPatternList(this.managerName, this.ownerRoleId)){
+			this.calDetailCalPatternCombo.add(str.getCalendarPatternName(), ++index);
+			calPatternMap.put(str.getCalendarPatternId(), index);
 		}
 		this.calDetailCalPatternCombo.addModifyListener(new ModifyListener() {
 			@Override
@@ -980,13 +980,13 @@ public class CalendarDetailDialog extends CommonDialog{
 	 *
 	 * @see
 	 */
-	private CalendarDetailInfo createCalendarInfo() {
+	private CalendarDetailInfoResponse createCalendarInfo() {
 		/** 開始時間*/
 		Long timeFrom = null;
 		/** 終了時間*/
 		Long timeTo = null;
 
-		inputData = new CalendarDetailInfo();
+		inputData = new CalendarDetailInfoResponse();
 		/*
 		 * 説明
 		 */
@@ -999,11 +999,11 @@ public class CalendarDetailDialog extends CommonDialog{
 		 */
 		if(calDetailEveryYearRadio.getSelection()){
 			//0 は毎年
-			this.inputData.setYear(0);
+			this.inputData.setYearNo(0);
 		}else {
 			if(calDetailYearText.getText() != null && calDetailYearText.getText().length() > 0){
 				try {
-					this.inputData.setYear(Integer.parseInt(calDetailYearText.getText()));
+					this.inputData.setYearNo(Integer.parseInt(calDetailYearText.getText()));
 				}catch (NumberFormatException e) {
 					String[] args = {"[ " +  Messages.getString("year") + " ]"};
 					this.setValidateResult(Messages.getString("message.hinemos.1"),
@@ -1021,7 +1021,7 @@ public class CalendarDetailDialog extends CommonDialog{
 		 * 月グループ情報 取得
 		 */
 		if(calDetailMonthCombo.getText() != null && calDetailMonthCombo.getText().length() > 0){
-			this.inputData.setMonth(MonthConstant.stringToType(calDetailMonthCombo.getText()));
+			this.inputData.setMonthNo(MonthConstant.stringToType(calDetailMonthCombo.getText()));
 		} else {
 			String[] args = {"[ " +  Messages.getString("month") + " ]"};
 			this.setValidateResult(Messages.getString("message.hinemos.1"),
@@ -1040,15 +1040,15 @@ public class CalendarDetailDialog extends CommonDialog{
 		 */
 		//すべての日
 		if(calDetailAllDayRadio.getSelection()){
-			this.inputData.setDayType(0);
+			this.inputData.setDayType(DayTypeEnum.ALL_DAY);
 		}
 		//曜日
 		else if(calDetailDayOfWeekRadio.getSelection()){
 			//第x週テキスト
 			if(calDetailDayOfWeekInMonthCombo.getText() != null
 					&& calDetailDayOfWeekInMonthCombo.getText().length() > 0){
-				this.inputData.setDayOfWeekInMonth(
-						DayOfWeekInMonthConstant.stringToType(calDetailDayOfWeekInMonthCombo.getText()));
+				this.inputData.setWeekXth(
+						DayOfWeekInMonthConstant.stringToEnum(calDetailDayOfWeekInMonthCombo.getText()));
 			}else {
 				String[] args = {"[ " +  Messages.getString("calendar.detail.xth") + " ]"};
 				this.setValidateResult(Messages.getString("message.hinemos.1"),
@@ -1058,28 +1058,28 @@ public class CalendarDetailDialog extends CommonDialog{
 			//曜日テキスト
 			if(calDetailDayOfWeekCombo.getText() != null &&
 					calDetailDayOfWeekCombo.getText().length() > 0){
-				this.inputData.setDayOfWeek(DayOfWeekConstant.stringToType(calDetailDayOfWeekCombo.getText()));
+				this.inputData.setWeekNo(DayOfWeekConstant.stringToEnum(calDetailDayOfWeekCombo.getText()));
 			}else {
 				String[] args = {"[ " +  Messages.getString("weekday") + " ]"};
 				this.setValidateResult(Messages.getString("message.hinemos.1"),
 						Messages.getString("message.calendar.15",args));
 				return null;
 			}
-			this.inputData.setDayType(1);
+			this.inputData.setDayType(DayTypeEnum.DAY_OF_WEEK);
 		}
 		//日
 		else if(calDetailDateRadio.getSelection()){
 			//日テキスト
 			if(calDetailDayGroup.getText() != null
 					&& calDetailDayGroup.getText().length() > 0){
-				this.inputData.setDate(Integer.parseInt(calDetailDayGroup.getText()));
+				this.inputData.setDayNo(Integer.parseInt(calDetailDayGroup.getText()));
 			}else {
 				String[] args = {"[ " +  Messages.getString("monthday") + " ]"};
 				this.setValidateResult(Messages.getString("message.hinemos.1"),
 						Messages.getString("message.calendar.15",args));
 				return null;
 			}
-			this.inputData.setDayType(2);
+			this.inputData.setDayType(DayTypeEnum.DAY);
 		}
 		//カレンダパターン
 		else if(calDetailCalPatternRadio.getSelection()){
@@ -1092,7 +1092,7 @@ public class CalendarDetailDialog extends CommonDialog{
 						Messages.getString("message.calendar.15",args));
 				return null;
 			}
-			this.inputData.setDayType(3);
+			this.inputData.setDayType(DayTypeEnum.CALENDAR_PATTERN);
 		}
 		//ラジオボタンで、いずれか選択状態にあるはずだが、念のため...未選択のときアラート
 		else {
@@ -1119,7 +1119,7 @@ public class CalendarDetailDialog extends CommonDialog{
 						Messages.getString("message.calendar.52",args));
 				return null;
 			}
-			this.inputData.setAfterday(daysLater);
+			this.inputData.setAfterDay(daysLater);
 		}
 
 		// 振り替え間隔
@@ -1176,8 +1176,8 @@ public class CalendarDetailDialog extends CommonDialog{
 				return null;
 			}
 			else {
-				this.inputData.setTimeFrom(timeFrom);
-				this.inputData.setTimeTo(timeTo);
+				this.inputData.setStartTime(calDetailTimeFromText.getText());
+				this.inputData.setEndTime(calDetailTimeToText.getText());
 			}
 		} catch (ParseException e) {
 			//「HH:mm:ss」形式に変換できないものが入力値として与えられた場合
@@ -1195,9 +1195,9 @@ public class CalendarDetailDialog extends CommonDialog{
 		}
 		//稼動/非稼動取得
 		if (calDetailOptOnRadio.getSelection()) {
-			this.inputData.setOperateFlg(true);
+			this.inputData.executeFlg(true);
 		} else {
-			this.inputData.setOperateFlg(false);
+			this.inputData.executeFlg(false);
 		}
 		return inputData;
 	}
@@ -1210,7 +1210,7 @@ public class CalendarDetailDialog extends CommonDialog{
 	 */
 	private void reflectCalendar() {
 		// 初期表示
-		CalendarDetailInfo detailInfo = null;
+		CalendarDetailInfoResponse detailInfo = null;
 		if(this.inputData != null){
 			// 変更の場合、情報取得
 			detailInfo = this.inputData;
@@ -1218,7 +1218,7 @@ public class CalendarDetailDialog extends CommonDialog{
 		}
 		else{
 			// 作成の場合
-			detailInfo = new CalendarDetailInfo();
+			detailInfo = new CalendarDetailInfoResponse();
 		}
 		//カレンダ詳細情報取得
 		if(detailInfo != null){
@@ -1227,45 +1227,45 @@ public class CalendarDetailDialog extends CommonDialog{
 				this.calDetailDescriptionText.setText(detailInfo.getDescription());
 			}
 			//年
-			if(detailInfo.getYear() != null){
-				if(detailInfo.getYear() == 0){
+			if(detailInfo.getYearNo() != null){
+				if(detailInfo.getYearNo() == 0){
 					this.calDetailEveryYearRadio.setSelection(true);
 					this.calDetailSpecifyYearRadio.setSelection(false);
 				}else {
 					this.calDetailSpecifyYearRadio.setSelection(true);
 					this.calDetailEveryYearRadio.setSelection(false);
-					this.calDetailYearText.setText(String.valueOf(detailInfo.getYear()));
+					this.calDetailYearText.setText(String.valueOf(detailInfo.getYearNo()));
 				}
 			}
 			//月
-			if (detailInfo.getMonth() != null) {
-				this.calDetailMonthCombo.setText(MonthConstant.typeToString(detailInfo.getMonth()));
+			if (detailInfo.getMonthNo() != null) {
+				this.calDetailMonthCombo.setText(MonthConstant.typeToString(detailInfo.getMonthNo()));
 			}
 			//日
 			if(detailInfo.getDayType() != null){
 				//すべての日
-				if(detailInfo.getDayType() == 0){
+				if(DayTypeEnum.ALL_DAY.equals(detailInfo.getDayType())){
 					this.calDetailAllDayRadio.setSelection(true);
 					this.calDetailDayOfWeekRadio.setSelection(false);
 					this.calDetailDateRadio.setSelection(false);
 					this.calDetailCalPatternRadio.setSelection(false);
 				}
 				//曜日
-				else if (detailInfo.getDayType() == 1){
+				else if(DayTypeEnum.DAY_OF_WEEK.equals(detailInfo.getDayType())){
 					this.calDetailAllDayRadio.setSelection(false);
 					this.calDetailDayOfWeekRadio.setSelection(true);
 					this.calDetailDateRadio.setSelection(false);
 					this.calDetailCalPatternRadio.setSelection(false);
 				}
 				//日
-				else if (detailInfo.getDayType() == 2){
+				else if(DayTypeEnum.DAY.equals(detailInfo.getDayType())){
 					this.calDetailAllDayRadio.setSelection(false);
 					this.calDetailDayOfWeekRadio.setSelection(false);
 					this.calDetailDateRadio.setSelection(true);
 					this.calDetailCalPatternRadio.setSelection(false);
 				}
 				//その他
-				else if (detailInfo.getDayType() == 3){
+				else if(DayTypeEnum.CALENDAR_PATTERN.equals(detailInfo.getDayType())){
 					this.calDetailAllDayRadio.setSelection(false);
 					this.calDetailDayOfWeekRadio.setSelection(false);
 					this.calDetailDateRadio.setSelection(false);
@@ -1274,32 +1274,32 @@ public class CalendarDetailDialog extends CommonDialog{
 					m_log.error("Error Of DayType[" + detailInfo.getDayType() + "]");
 				}
 				//第x週
-				if(detailInfo.getDayOfWeekInMonth() != null){
+				if(detailInfo.getWeekXth() != null){
 					//取得した数値を文字列に変換
-					String str = DayOfWeekInMonthConstant.typeToString(detailInfo.getDayOfWeekInMonth());
+					String str = DayOfWeekInMonthConstant.enumToString(detailInfo.getWeekXth());
 					this.calDetailDayOfWeekInMonthCombo.setText(str);
 				}
 				//曜日
-				if(detailInfo.getDayOfWeek() != null){
-					String str = DayOfWeekConstant.typeToString(detailInfo.getDayOfWeek());
+				if(detailInfo.getWeekNo() != null){
+					String str = DayOfWeekConstant.enumToString(detailInfo.getWeekNo());
 					this.calDetailDayOfWeekCombo.setText(str);
 				}
 				//日
-				if(detailInfo.getDate() != null){
-					this.calDetailDayGroup.setText(String.valueOf(detailInfo.getDate()));
+				if(detailInfo.getDayNo() != null){
+					this.calDetailDayGroup.setText(String.valueOf(detailInfo.getDayNo()));
 				}
 				//カレンダパターン
 				if(detailInfo.getCalPatternId() != null){
 					this.calDetailCalPatternCombo.setText(calDetailCalPatternCombo.getItem(calPatternMap.get(detailInfo.getCalPatternId())));
 				}
 				//上記の日程からx日後
-				if(detailInfo.getAfterday() != null){
-					this.calDetailDaysLaterText.setText(String.valueOf(detailInfo.getAfterday()));
+				if(detailInfo.getAfterDay() != null){
+					this.calDetailDaysLaterText.setText(String.valueOf(detailInfo.getAfterDay()));
 				}
 			}
 			// 振り替え
-			if (detailInfo.isSubstituteFlg() != null) {
-				this.calDetailSubstituteCheck.setSelection(detailInfo.isSubstituteFlg());
+			if (detailInfo.getSubstituteFlg() != null) {
+				this.calDetailSubstituteCheck.setSelection(detailInfo.getSubstituteFlg());
 				this.calDetailSubstituteTime.setText(String.valueOf(detailInfo.getSubstituteTime()));
 				this.calDetailSubstituteLimit.setText(String.valueOf(detailInfo.getSubstituteLimit()));
 			}
@@ -1317,15 +1317,15 @@ public class CalendarDetailDialog extends CommonDialog{
 			// 0時未満の場合
 			// 前日の23:45は-00:15と表示する
 			// 前々日の22:00は-26:00と表示する
-			if(detailInfo.getTimeFrom() != null){
-				this.calDetailTimeFromText.setText(TimeStringConverter.formatTime(new Date(detailInfo.getTimeFrom())));
+			if(detailInfo.getStartTime() != null){
+				this.calDetailTimeFromText.setText(detailInfo.getStartTime());
 			}
-			if(detailInfo.getTimeTo() != null){
-				this.calDetailTimeToText.setText(TimeStringConverter.formatTime(new Date(detailInfo.getTimeTo())));
+			if(detailInfo.getEndTime() != null){
+				this.calDetailTimeToText.setText(detailInfo.getEndTime());
 			}
 			//稼動/非稼動取得
-			if (detailInfo.isOperateFlg() != null) {
-				if(detailInfo.isOperateFlg()){
+			if (detailInfo.getExecuteFlg() != null) {
+				if(detailInfo.getExecuteFlg()){
 					calDetailOptOnRadio.setSelection(true);
 					calDetailOptOffRadio.setSelection(false);
 				} else {
@@ -1409,14 +1409,14 @@ public class CalendarDetailDialog extends CommonDialog{
 	 * @param ownerRoleId オーナーロールID
 	 * @return
 	 */
-	private List<CalendarPatternInfo> getCalendarPatternList(String managerNane, String ownerRoleId){
+	private List<CalendarPatternInfoResponse> getCalendarPatternList(String managerNane, String ownerRoleId){
 		//カレンダ詳細ダイアログカレンダパターン項目
-		List<CalendarPatternInfo> calPatternList = null;
+		List<CalendarPatternInfoResponse> calPatternList = null;
 		//カレンダパターン情報取得
 		try {
-			CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerNane);
+			CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerNane);
 			calPatternList = wrapper.getCalendarPatternList(ownerRoleId);
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));

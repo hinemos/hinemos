@@ -223,7 +223,7 @@ public class CollectorItemCodeTable {
 				m_log.debug("getEnableCodeSet() facilityId is scope");
 
 				// スコープにふくまれるノードのIDのリストを取得
-				nodeList = bean.getNodeFacilityIdList(facilityId, null, RepositoryControllerBean.ALL);
+				nodeList = bean.getNodeFacilityIdList(facilityId, null, RepositoryControllerBean.ALL, false, null);
 			}
 
 			////
@@ -454,7 +454,7 @@ public class CollectorItemCodeTable {
 
 		// 対象のファシリティIDリスト
 		// targetFacilityIdListはノードのみ含まれる。
-		List<String> targetFacilityIdList = FacilitySelector.getNodeFacilityIdList(facilityId, null, RepositoryControllerBean.ALL, false, true);
+		List<String> targetFacilityIdList = FacilitySelector.getNodeFacilityIdList(facilityId, null, RepositoryControllerBean.ALL, false, null);
 		List<NodeDeviceInfo> checkTargetList = null;
 		for (String targetFacilityId : targetFacilityIdList){
 

@@ -10,12 +10,13 @@ package com.clustercontrol.hub.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 
 import com.clustercontrol.hub.bean.ValueType;
+import com.clustercontrol.rest.dto.EnumDto;
 
 /**
  * The persistent class for the cc_log_format_key database table.
@@ -28,9 +29,14 @@ public class LogFormatKey implements Serializable{
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public static enum KeyType {
+	public static enum KeyType implements EnumDto<Integer> {
 		parsing,
-		fixed
+		fixed;
+
+		@Override
+		public Integer getCode() {
+			return this.ordinal();
+		}
 	}
 
 	private String key;

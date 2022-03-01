@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 
-import com.clustercontrol.tasktray.ha.ServiceObserver;
+import com.clustercontrol.tasktray.LoginFileObserver;
 
 public class HinemosTasktrayMain {
 	// shutdownHookが呼ばれるまでmainスレッドを待機させるためのLockオブジェクトおよびフラグ
@@ -23,6 +23,7 @@ public class HinemosTasktrayMain {
 	private static final String PID_FILE_NAME = "_pid_tasktray_ha";
 
 	private static ServiceObserver observer;
+	private static LoginFileObserver loginObserver;
 	
 	private static File pidFile;
 
@@ -35,6 +36,8 @@ public class HinemosTasktrayMain {
 
 			observer = new ServiceObserver();
 			observer.start();
+			loginObserver = new LoginFileObserver();
+			loginObserver.start();
 			
 			Runtime.getRuntime().addShutdownHook(
 					new Thread() {
@@ -42,6 +45,7 @@ public class HinemosTasktrayMain {
 						public void run() {
 							synchronized (shutdownLock) {
 								observer.shutdown();
+								loginObserver.shutdown();
 
 								shutdown = true;
 								shutdownLock.notify();

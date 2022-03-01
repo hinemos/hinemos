@@ -23,9 +23,9 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
+import org.openapitools.client.model.NodeInfoResponseP2;
 
 import com.clustercontrol.ClusterControlPlugin;
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.repository.action.GetNodeList;
@@ -35,8 +35,8 @@ import com.clustercontrol.repository.composite.action.NodeDoubleClickListener;
 import com.clustercontrol.repository.view.NodeAttributeView;
 import com.clustercontrol.repository.view.NodeScopeView;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.repository.NodeInfo;
 
 /**
  * ノード一覧コンポジットクラス<BR>
@@ -182,7 +182,7 @@ public class NodeListComposite extends Composite {
 	@Override
 	public void update() {
 		// データ取得
-		Map<String, List<NodeInfo>> dispDataMap = null;
+		Map<String, List<NodeInfoResponseP2>> dispDataMap = null;
 		ArrayList<Object> listInput = new ArrayList<Object>();
 
 		if (this.condition == null) {
@@ -197,27 +197,27 @@ public class NodeListComposite extends Composite {
 			if(conditionManager == null || conditionManager.equals("")) {
 				dispDataMap = new GetNodeList().get(this.condition);
 			} else {
-				List<NodeInfo> list = new GetNodeList().get(conditionManager, this.condition);
-				dispDataMap = new ConcurrentHashMap<String, List<NodeInfo>>();
+				List<NodeInfoResponseP2> list = new GetNodeList().get(conditionManager, this.condition);
+				dispDataMap = new ConcurrentHashMap<String, List<NodeInfoResponseP2>>();
 				dispDataMap.put(conditionManager, list);
 			}
 		}
 
 		int cnt = 0;
-		for(Map.Entry<String, List<NodeInfo>> entrySet : dispDataMap.entrySet()) {
-			List<NodeInfo> list = entrySet.getValue();
+		for(Map.Entry<String, List<NodeInfoResponseP2>> entrySet : dispDataMap.entrySet()) {
+			List<NodeInfoResponseP2> list = entrySet.getValue();
 
 			if(list == null){
-				list = new ArrayList<NodeInfo>();
+				list = new ArrayList<NodeInfoResponseP2>();
 			}
 
-			for (NodeInfo node : list) {
+			for (NodeInfoResponseP2 node : list) {
 				ArrayList<Object> a = new ArrayList<Object>();
 				a.add(entrySet.getKey());
 				a.add(node.getFacilityId());
 				a.add(node.getFacilityName());
 				a.add(node.getPlatformFamily());
-				if (node.getIpAddressVersion() == 6) {
+				if (node.getIpAddressVersion() == NodeInfoResponseP2.IpAddressVersionEnum.IPV6) {
 					a.add(new IpAddr(node.getIpAddressV6(), 6));
 				} else {
 					a.add(new IpAddr(node.getIpAddressV4(), 4));

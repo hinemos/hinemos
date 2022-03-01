@@ -14,8 +14,8 @@ import java.lang.reflect.Proxy;
 import java.util.Collections;
 import java.util.List;
 
-import javax.persistence.EntityExistsException;
-import javax.persistence.Query;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.Query;
 
 import org.apache.log4j.Logger;
 
@@ -58,9 +58,6 @@ public class PersistenceUtil {
 					requiredNew = true;
 				} else {
 					if (session.isTransaction()) {
-						if (session.isPostCommitting())
-							throw new InternalManagerError("postcommitting now");
-						
 						Session.offer();
 						session = Session.current();
 						transactional = true;
@@ -75,9 +72,6 @@ public class PersistenceUtil {
 			}
 			
 			if (transactional) {
-				if (session.isPostCommitting())
-					throw new InternalManagerError("postcommitting now");
-				
 				session.beginTransaction();
 			}
 		}
@@ -144,9 +138,6 @@ public class PersistenceUtil {
 							requiredNew = true;
 						} else {
 							if (session.isTransaction()) {
-								if (session.isPostCommitting())
-									throw new InternalManagerError("postcommitting now");
-								
 								Session.offer();
 								session = Session.current();
 								transactional = true;
@@ -162,9 +153,6 @@ public class PersistenceUtil {
 				}
 				
 				if (transactional) {
-					if (session.isPostCommitting())
-						throw new InternalManagerError("postcommitting now");
-					
 					session.beginTransaction();
 					
 					ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -251,7 +239,7 @@ public class PersistenceUtil {
 				}
 				sb.append("c.")
 					.append(f.getName().replaceAll("''", "''"))
-					.append(" like ")
+					.append(" = ")
 					.append(String.format(":value_%d_%d", i, j));
 				subsequent2 = true;
 			}
@@ -298,6 +286,21 @@ public class PersistenceUtil {
 		} else {
 			// 重複エラー
 			throw new EntityExistsException("{" + entity.getClass().getSimpleName() + ", " + entity.getId().toString() + "}");
+		}
+	}
+
+	public static void delete(HinemosEntityManager em, Object entity) {
+		if (entity instanceof IDHolder) {
+			remove(em, (IDHolder)entity);
+		} else {
+			em.remove(entity);
+		}
+	}
+
+	public static void remove(HinemosEntityManager em, IDHolder entity) {
+		Object managed = em.find(entity.getClass(), entity.getId(), ObjectPrivilegeMode.READ);
+		if (managed != null) {
+			em.remove(entity);
 		}
 	}
 }

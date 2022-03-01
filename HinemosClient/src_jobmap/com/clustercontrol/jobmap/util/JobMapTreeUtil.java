@@ -14,11 +14,11 @@ import java.util.List;
 
 import org.eclipse.rap.rwt.SingletonUtil;
 import org.eclipse.swt.widgets.TreeItem;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.viewer.JobTreeViewer;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
 
 public class JobMapTreeUtil {
 
@@ -34,11 +34,11 @@ public class JobMapTreeUtil {
 	 * 
 	 * @return ディープコピー
 	 */
-	public static JobTreeItem deepCopy(JobTreeItem item, JobTreeItem parentItem) {
+	public static JobTreeItemWrapper deepCopy(JobTreeItemWrapper item, JobTreeItemWrapper parentItem) {
 		synchronized(getInstance()) {
-		JobTreeItem resultItem = new JobTreeItem();
+			JobTreeItemWrapper resultItem = new JobTreeItemWrapper();
 			if (item.getData() != null) {
-				JobInfo resultData = new JobInfo();
+				JobInfoWrapper resultData = JobTreeItemUtil.createJobInfoWrapper();
 				
 				if (item.getData().getAbnormalPriority() != null) {
 					resultData.setAbnormalPriority(item.getData().getAbnormalPriority());
@@ -86,7 +86,7 @@ public class JobMapTreeUtil {
 				// List<JobParameterInfo> skip
 				
 				resultData.setParentId(item.getData().getParentId());
-				resultData.setPropertyFull(item.getData().isPropertyFull());
+				resultData.setPropertyFull(item.getData().getPropertyFull());
 				resultData.setReferJobId(item.getData().getReferJobId());
 				
 				if (item.getData().getReferJobSelectType() != null) {
@@ -94,7 +94,7 @@ public class JobMapTreeUtil {
 				}
 
 				resultData.setReferJobUnitId(item.getData().getReferJobUnitId());
-				resultData.setRegisteredModule(item.getData().isRegisteredModule());
+				resultData.setRegistered(item.getData().getRegistered());
 				if (item.getData().getType() != null) {
 					resultData.setType(item.getData().getType());
 				}
@@ -104,21 +104,22 @@ public class JobMapTreeUtil {
 				}
 				
 				resultData.setUpdateUser(item.getData().getUpdateUser());
-				resultData.setUseApprovalReqSentence(item.getData().isUseApprovalReqSentence());
+				resultData.setIsUseApprovalReqSentence(item.getData().getIsUseApprovalReqSentence());
 				
 				// JobWaitRuleInfo skip
 				
 				if (item.getData().getWarnPriority() != null) {
 					resultData.setWarnPriority(item.getData().getWarnPriority());
 				}
+				resultData.setExpNodeRuntimeFlg(item.getData().getExpNodeRuntimeFlg());
 				resultItem.setData(resultData);
 			}
 	
 			if (item.getChildren() != null) {
-				List<JobTreeItem> resultChildren = new ArrayList<JobTreeItem>();
-				for(JobTreeItem child : item.getChildren()) {
+				List<JobTreeItemWrapper> resultChildren = new ArrayList<JobTreeItemWrapper>();
+				for(JobTreeItemWrapper child : item.getChildren()) {
 					if (child != null) {
-						JobTreeItem resultChild = deepCopy(child, resultItem);
+						JobTreeItemWrapper resultChild = deepCopy(child, resultItem);
 						resultChildren.add(resultChild);
 					} else {
 						resultChildren.add(null);
@@ -144,22 +145,22 @@ public class JobMapTreeUtil {
 	 * @param jobId 検索するジョブID
 	 * @return
 	 */
-	public static JobTreeItem getTargetJobTreeItem(JobTreeViewer treeViewer, String managerName, String jobunitId, String jobId) {
+	public static JobTreeItemWrapper getTargetJobTreeItem(JobTreeViewer treeViewer, String managerName, String jobunitId, String jobId) {
 		TreeItem items[] = treeViewer.getTree().getItems();
 		for (int i = 0; i < items.length; i++) {
-			JobTreeItem jobItem = (JobTreeItem)items[i].getData();
-			JobTreeItem ret = searchTreeItem(jobItem.getChildren(), managerName, jobunitId, jobId);
+			JobTreeItemWrapper jobItem = (JobTreeItemWrapper)items[i].getData();
+			JobTreeItemWrapper ret = searchTreeItem(jobItem.getChildren(), managerName, jobunitId, jobId);
 			if (ret != null) {
 				return ret;
 			}
 		}
 		return null;
 	}
-	private static JobTreeItem searchTreeItem(List<JobTreeItem> jobTreeList, String managerName, String jobunitId, String jobId) {
-		Iterator<JobTreeItem> it = jobTreeList.iterator();
+	private static JobTreeItemWrapper searchTreeItem(List<JobTreeItemWrapper> jobTreeList, String managerName, String jobunitId, String jobId) {
+		Iterator<JobTreeItemWrapper> it = jobTreeList.iterator();
 		while (it.hasNext()) {
-			JobTreeItem jobItem = it.next();
-			JobTreeItem ret = searchTreeItem(jobItem.getChildren(), managerName, jobunitId, jobId);
+			JobTreeItemWrapper jobItem = it.next();
+			JobTreeItemWrapper ret = searchTreeItem(jobItem.getChildren(), managerName, jobunitId, jobId);
 			if (ret != null) {
 				return ret;
 			}

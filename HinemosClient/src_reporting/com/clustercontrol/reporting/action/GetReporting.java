@@ -11,12 +11,12 @@ package com.clustercontrol.reporting.action;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.ReportingScheduleResponse;
 
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.ReportingInfo;
 
 /**
  * レポーティング情報を取得するクライアント側アクションクラス<BR>
@@ -35,13 +35,13 @@ public class GetReporting {
 	 * @param レポートID
 	 * @return レポーティング情報
 	 */
-	public ReportingInfo getReportingInfo(String managerName, String reportId) {
+	public ReportingScheduleResponse getReportingSchedule(String managerName, String scheduleId) {
 
-		ReportingInfo info = null;
+		ReportingScheduleResponse info = null;
 		try {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-			info = wrapper.getReportingInfo(reportId);
-		} catch (InvalidRole_Exception e) {
+			ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(managerName);
+			info = wrapper.getReportingSchedule(scheduleId);
+		} catch (InvalidRole e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 		} catch (Exception e) {

@@ -1,0 +1,30 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"infoRulebaseId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyMessageInfoType_infoRulebaseId"}
+	]},
+
+	{
+	"propName":"warnRulebaseId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyMessageInfoType_warnRulebaseId"}
+	]},
+
+	{
+	"propName":"criticalRulebaseId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyMessageInfoType_criticalRulebaseId"}
+	]},
+
+	{
+	"propName":"unknownRulebaseId",
+	"annotations":[
+		{"type":"Column", "columnName":"NotifyMessageInfoType_unknownRulebaseId"}
+	]}
+]
+}

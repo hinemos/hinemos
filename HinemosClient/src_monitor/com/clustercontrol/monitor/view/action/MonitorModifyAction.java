@@ -25,6 +25,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
 
 import com.clustercontrol.analytics.dialog.CorrelationCreateDialog;
 import com.clustercontrol.analytics.dialog.IntegrationCreateDialog;
@@ -52,6 +53,9 @@ import com.clustercontrol.performance.monitor.dialog.PerformanceCreateDialog;
 import com.clustercontrol.ping.dialog.PingCreateDialog;
 import com.clustercontrol.port.dialog.PortCreateDialog;
 import com.clustercontrol.process.dialog.ProcessCreateDialog;
+import com.clustercontrol.sdml.util.SdmlClientUtil;
+import com.clustercontrol.rpa.monitor.dialog.RpaLogfileStringCreateDialog;
+import com.clustercontrol.rpa.monitor.dialog.RpaManagementToolServiceCreateDialog;
 import com.clustercontrol.snmp.dialog.SnmpNumericCreateDialog;
 import com.clustercontrol.snmp.dialog.SnmpStringCreateDialog;
 import com.clustercontrol.snmptrap.dialog.SnmpTrapCreateDialog;
@@ -60,7 +64,6 @@ import com.clustercontrol.sql.dialog.SqlStringCreateDialog;
 import com.clustercontrol.systemlog.dialog.SystemlogStringCreateDialog;
 import com.clustercontrol.winevent.dialog.WinEventDialog;
 import com.clustercontrol.winservice.dialog.WinServiceCreateDialog;
-import com.clustercontrol.ws.monitor.MonitorNumericValueInfo;
 
 /**
  * 監視[一覧]ビューの編集アクションクラス<BR>
@@ -80,7 +83,7 @@ public class MonitorModifyAction extends AbstractHandler implements IElementUpda
 	private IWorkbenchPart viewPart;
 	
 	/** グラフから閾値を変更した場合の情報 */
-	private List<MonitorNumericValueInfo> m_MonitorNumericValueInfoList = null;
+	private List<MonitorNumericValueInfoResponse> m_MonitorNumericValueInfoList = null;
 
 	/**
 	 * Dispose
@@ -95,6 +98,10 @@ public class MonitorModifyAction extends AbstractHandler implements IElementUpda
 		boolean updateFlg = true;
 		if (monitorId == null) {
 			updateFlg = false;
+		}
+		if (SdmlClientUtil.isSdmlPluginId(managerName, pluginId)) {
+			// SDMLのプラグインIDをテーブルに表示していた場合は本来のプラグインIDに置き換える
+			pluginId = SdmlClientUtil.getActualPluginId(managerName, monitorId);
 		}
 		if (pluginId.equals(HinemosModuleConstant.MONITOR_AGENT)) {
 			dialog = new AgentCreateDialog(shell, managerName, monitorId, updateFlg);
@@ -150,6 +157,10 @@ public class MonitorModifyAction extends AbstractHandler implements IElementUpda
 			dialog = new CorrelationCreateDialog(shell, managerName, monitorId, updateFlg);
 		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_INTEGRATION)) {
 			dialog = new IntegrationCreateDialog(shell, managerName, monitorId, updateFlg);
+		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_RPA_LOGFILE)) {
+			dialog = new RpaLogfileStringCreateDialog(shell, managerName, monitorId, updateFlg);
+		} else if (pluginId.equals(HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE)) {
+			dialog = new RpaManagementToolServiceCreateDialog(shell, managerName, monitorId, updateFlg);
 		} else {
 			for(IMonitorPlugin extensionMonitor: LoadMonitorPlugin.getExtensionMonitorList()){
 				if(pluginId.equals(extensionMonitor.getMonitorPluginId())){
@@ -171,7 +182,7 @@ public class MonitorModifyAction extends AbstractHandler implements IElementUpda
 	 * グラフ画面から閾値情報を変えた場合に設定する。
 	 * @param monitorNumericValueInfo
 	 */
-	public void setGraphMonitorNumericValueInfo(List<MonitorNumericValueInfo> monitorNumericValueInfo) {
+	public void setGraphMonitorNumericValueInfo(List<MonitorNumericValueInfoResponse> monitorNumericValueInfo) {
 		this.m_MonitorNumericValueInfoList = monitorNumericValueInfo;
 	}
 

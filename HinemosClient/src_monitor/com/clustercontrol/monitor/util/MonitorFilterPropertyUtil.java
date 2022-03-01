@@ -17,24 +17,26 @@ import java.util.Locale;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.CalendarInfoResponse;
+import org.openapitools.client.model.MonitorFilterInfoRequest;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.ValidMessage;
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.monitor.bean.MonitorFilterConstant;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.ws.calendar.CalendarInfo;
-import com.clustercontrol.ws.calendar.CalendarNotFound_Exception;
-import com.clustercontrol.ws.calendar.HinemosUnknown_Exception;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
-import com.clustercontrol.ws.calendar.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorFilterInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TimezoneUtil;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * 監視[一覧]のフィルタダイアログに関するutilityクラス
@@ -53,8 +55,8 @@ public class MonitorFilterPropertyUtil {
 	 * @param property
 	 * @return
 	 */
-	public static MonitorFilterInfo property2dto(Property property){
-		MonitorFilterInfo info = new MonitorFilterInfo();
+	public static MonitorFilterInfoRequest property2dto(Property property){
+		MonitorFilterInfoRequest info = new MonitorFilterInfoRequest();
 
 		String monitorId = null;	// 監視項目ID
 		String monitorTypeId = null;// プラグインID
@@ -101,7 +103,7 @@ public class MonitorFilterPropertyUtil {
 		values = PropertyUtil.getPropertyValue(property,
 				MonitorFilterConstant.FACILITY_ID);
 		if (!"".equals(values.get(0))) {
-			FacilityTreeItem item = (FacilityTreeItem)values.get(0);
+			FacilityTreeItemResponse item = (FacilityTreeItemResponse)values.get(0);
 			facilityId = item.getData().getFacilityId();
 			info.setFacilityId(facilityId);
 		}
@@ -129,7 +131,7 @@ public class MonitorFilterPropertyUtil {
 			regFromDate = new Timestamp(((Date) values.get(0))
 					.getTime());
 			regFromDate.setNanos(999999999);
-			info.setRegFromDate(regFromDate.getTime());
+			info.setRegFromDate(TimezoneUtil.getSimpleDateFormat().format(regFromDate));
 		}
 
 		//作成日時(To)
@@ -139,7 +141,7 @@ public class MonitorFilterPropertyUtil {
 			regToDate = new Timestamp(((Date) values.get(0))
 					.getTime());
 			regToDate.setNanos(999999999);
-			info.setRegToDate(regToDate.getTime());
+			info.setRegToDate(TimezoneUtil.getSimpleDateFormat().format(regToDate));
 		}
 
 		//最終変更者
@@ -156,7 +158,7 @@ public class MonitorFilterPropertyUtil {
 			updateFromDate = new Timestamp(((Date) values.get(0))
 					.getTime());
 			updateFromDate.setNanos(999999999);
-			info.setUpdateFromDate(updateFromDate.getTime());
+			info.setUpdateFromDate(TimezoneUtil.getSimpleDateFormat().format(updateFromDate));
 		}
 
 		//最終変更日時(To)
@@ -166,7 +168,7 @@ public class MonitorFilterPropertyUtil {
 			updateToDate = new Timestamp(((Date) values.get(0))
 					.getTime());
 			updateToDate.setNanos(999999999);
-			info.setUpdateToDate(updateToDate.getTime());
+			info.setUpdateToDate(TimezoneUtil.getSimpleDateFormat().format(updateToDate));
 		}
 
 		// 監視有効フラグ
@@ -279,7 +281,7 @@ public class MonitorFilterPropertyUtil {
 		Property ownerRoleId =
 				new Property(MonitorFilterConstant.OWNER_ROLE_ID, Messages.getString("owner.role.id", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
 
-		Object[] obj = EndpointManager.getActiveManagerSet().toArray();
+		Object[] obj = RestConnectManager.getActiveManagerSet().toArray();
 		Object[] val = new Object[obj.length + 1];
 		val[0] = "";
 		for(int i = 0; i<obj.length; i++) {
@@ -382,34 +384,28 @@ public class MonitorFilterPropertyUtil {
 	 */
 	private static Object[][] getCalendarIdList() {
 
-		List<CalendarInfo> calList = new ArrayList<CalendarInfo>();
+		List<CalendarInfoResponse> calList = new ArrayList<>();
 		Object retArray[][] = null;
 		try{
-			for(String managerName : EndpointManager.getActiveManagerSet()) {
-				CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
-				for(CalendarInfo info : wrapper.getAllCalendarList()) {
+			for(String managerName : RestConnectManager.getActiveManagerSet()) {
+				CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
+				for(CalendarInfoResponse info : wrapper.getCalendarList(null)) {
 					calList.add(info);
 				}
 			}
-		} catch (InvalidUserPass_Exception e) {
+		} catch (InvalidUserPass e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (HinemosUnknown_Exception e) {
-			m_log.warn("getCalendarIdList(), " + e.getMessage(), e);
-			MessageDialog.openError(
-					null,
-					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
-		} catch (CalendarNotFound_Exception e) {
+		} catch (HinemosUnknown | RestConnectFailed e) {
 			m_log.warn("getCalendarIdList(), " + e.getMessage(), e);
 			MessageDialog.openError(
 					null,

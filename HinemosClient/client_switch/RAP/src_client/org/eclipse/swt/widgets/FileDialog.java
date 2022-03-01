@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.widgets.Shell;
 
 /**
@@ -45,7 +46,7 @@ public class FileDialog{
 
 			File dir = null != this.filterPath ? new File(this.filterPath) : null;
 
-			this.tmpFile = File.createTempFile(prefix, suffix, dir);
+			this.tmpFile = File.createTempFile(StringUtils.rightPad(prefix, 3, "_"), suffix, dir);
 
 			this.fileName = this.tmpFile.getName();
 			this.filterPath = this.tmpFile.getParent();

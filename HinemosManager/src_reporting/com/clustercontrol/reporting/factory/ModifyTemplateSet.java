@@ -18,9 +18,9 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.reporting.bean.TemplateSetDetailInfo;
 import com.clustercontrol.reporting.bean.TemplateSetInfo;
-import com.clustercontrol.reporting.fault.ReportingNotFound;
 import com.clustercontrol.reporting.model.TemplateSetDetailInfoEntity;
 import com.clustercontrol.reporting.model.TemplateSetDetailInfoEntityPK;
 import com.clustercontrol.reporting.model.TemplateSetInfoEntity;
@@ -43,8 +43,9 @@ public class ModifyTemplateSet {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public boolean modifyTemplateSet(TemplateSetInfo info, String name)
+	public TemplateSetInfo modifyTemplateSet(TemplateSetInfo info, String name)
 			throws ReportingNotFound, NotifyNotFound, InvalidRole, HinemosUnknown {
+		TemplateSetInfo ret = null;
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -85,8 +86,10 @@ public class ModifyTemplateSet {
 			//不要なTemplateSetDetailInfoEntityを削除
 			entity.deleteTemplateSetDetailInfoEntities(templateSetDetailInfoEntityPKList);
 			
-			return true;
+			ret = new SelectTemplateSetInfo().getTemplateSetInfo(entity.getTemplateSetId());
+			
 		}
+		return ret;
 	}
 	
 	/**

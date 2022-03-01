@@ -64,7 +64,7 @@ public class DatasourceJobRunTimeOrderGraph extends DatasourceBase {
 			throw new ReportingPropertyNotFound(SUFFIX_KEY_VALUE+"."+num + " is not defined.");
 		}
 		String suffix = m_propertiesMap.get(SUFFIX_KEY_VALUE+"."+num);
-		String dayString = new SimpleDateFormat("MMdd").format(m_startDate);
+		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 		
 		String csvFileName = "";
 		HashMap<String, Object> retMap = new HashMap<String, Object>();
@@ -113,7 +113,7 @@ public class DatasourceJobRunTimeOrderGraph extends DatasourceBase {
 			
 			// 抽出したジョブ情報を基に実行時間を抽出する
 			String[] columns = { "graph_number", "jobunit_id", "job_id", "date_time", "elapsed_time" };
-			String columnsStr = ReportUtil.joinStrings(columns, ",");
+			String columnsStr = ReportUtil.joinStringsToCsv(columns);
 			
 			int count = 0;
 			int graphNum = 0;
@@ -178,9 +178,9 @@ public class DatasourceJobRunTimeOrderGraph extends DatasourceBase {
 										maxTime = maxTime / graphDiv;
 									}
 									
-									bw.write(graphNum + "," + jobunitId + "," + jobId + "," + 
-											new Timestamp(baseCal.getTimeInMillis()) + "," + 
-											maxTime);
+									String[] data = { Integer.toString(graphNum), jobunitId, jobId,
+											new Timestamp(baseCal.getTimeInMillis()).toString(), maxTime.toString() };
+									bw.write(ReportUtil.joinStringsToCsv(data));
 									bw.newLine();
 								}
 									
@@ -191,9 +191,9 @@ public class DatasourceJobRunTimeOrderGraph extends DatasourceBase {
 								while(timeCal.getTimeInMillis() - baseCal.getTimeInMillis() > 86400000) {
 									
 									// 1日足してもまだ1日以上を開いている場合は、間の値を""(空欄)で埋める
-									bw.write(graphNum + "," + jobunitId + "," + jobId + "," + 
-											new Timestamp(baseCal.getTimeInMillis()) + "," + 
-											"");
+									String[] data = { Integer.toString(graphNum), jobunitId, jobId,
+											new Timestamp(baseCal.getTimeInMillis()).toString(), "" };
+									bw.write(ReportUtil.joinStringsToCsv(data));
 									bw.newLine();
 									
 									// 日付を1日足す
@@ -219,9 +219,9 @@ public class DatasourceJobRunTimeOrderGraph extends DatasourceBase {
 							maxTime = maxTime / graphDiv;
 						}
 						
-						bw.write(graphNum + "," + info.jobUnitId + "," + info.jobId + "," + 
-								new Timestamp(baseCal.getTimeInMillis()) + "," + 
-								maxTime);
+						String[] data = { Integer.toString(graphNum), info.jobUnitId, info.jobId,
+								new Timestamp(baseCal.getTimeInMillis()).toString(), maxTime.toString() };
+						bw.write(ReportUtil.joinStringsToCsv(data));
 						bw.newLine();
 					}
 				}

@@ -11,10 +11,11 @@ package com.clustercontrol.maintenance.factory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MaintenanceNotFound;
-import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.maintenance.bean.MaintenanceTypeMstConstant;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.session.MaintenanceControllerBean;
@@ -43,7 +44,12 @@ public class OperationMaintenance {
 
 		int result = 0;
 
+		JpaTransactionManager jtm = null;
+
 		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			
 			MaintenanceInfo entity = QueryUtil.getMaintenanceInfoPK(maintenanceId);
 			MaintenanceControllerBean controller = new MaintenanceControllerBean();
 
@@ -51,44 +57,59 @@ public class OperationMaintenance {
 			String type_id = entity.getMaintenanceTypeMstEntity() == null ? null :
 				entity.getMaintenanceTypeMstEntity().getType_id();
 			String ownerRoleId = entity.getOwnerRoleId();
+			
+			jtm.commit();
 
 			if (MaintenanceTypeMstConstant.DELETE_EVENT_LOG_ALL.equals(type_id)) {
-				result = controller.deleteEventLog(dataRetentionPeriod, true, ownerRoleId);
+				result = controller.deleteEventLog(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
 			} else if (MaintenanceTypeMstConstant.DELETE_EVENT_LOG.equals(type_id)) {
-				result = controller.deleteEventLog(dataRetentionPeriod, false, ownerRoleId);
+				result = controller.deleteEventLog(dataRetentionPeriod, false, ownerRoleId, maintenanceId);
 			} else if (MaintenanceTypeMstConstant.DELETE_JOB_HISTORY_ALL.equals(type_id)) {
-				result = controller.deleteJobHistory(dataRetentionPeriod, true, ownerRoleId);
+				result = controller.deleteJobHistory(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
 			} else if (MaintenanceTypeMstConstant.DELETE_JOB_HISTORY.equals(type_id)) {
-				result = controller.deleteJobHistory(dataRetentionPeriod, false, ownerRoleId);
+				result = controller.deleteJobHistory(dataRetentionPeriod, false, ownerRoleId, maintenanceId);
 			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_DATA_RAW.equals(type_id)) {
-				result = controller.deleteCollectData(dataRetentionPeriod, true, ownerRoleId);
+				result = controller.deleteCollectData(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
 			} else if (MaintenanceTypeMstConstant.DELETE_SUMMARY_DATA_HOUR.equals(type_id)) {
-				result = controller.deleteSummaryHour(dataRetentionPeriod, true, ownerRoleId);
+				result = controller.deleteSummaryHour(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
 			} else if (MaintenanceTypeMstConstant.DELETE_SUMMARY_DATA_DAY.equals(type_id)) {
-				result = controller.deleteSummaryDay(dataRetentionPeriod, true, ownerRoleId);
+				result = controller.deleteSummaryDay(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
 			} else if (MaintenanceTypeMstConstant.DELETE_SUMMARY_DATA_MONTH.equals(type_id)) {
-				result = controller.deleteSummaryMonth(dataRetentionPeriod, true, ownerRoleId);
+				result = controller.deleteSummaryMonth(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
 			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_STRING_DATA.equals(type_id)) {
-				result = controller.deleteCollectStringData(dataRetentionPeriod, true, ownerRoleId);
+				result = controller.deleteCollectStringData(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
 			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_BINFILE_DATA.equals(type_id)) {
-				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, HinemosModuleConstant.MONITOR_BINARYFILE_BIN);
+				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, maintenanceId, HinemosModuleConstant.MONITOR_BINARYFILE_BIN);
 			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_PCAP_DATA.equals(type_id)) {
-				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, HinemosModuleConstant.MONITOR_PCAP_BIN);
+				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, maintenanceId, HinemosModuleConstant.MONITOR_PCAP_BIN);
 			} else if (MaintenanceTypeMstConstant.DELETE_COLLECT_BINARY_DATA.equals(type_id)) {
-				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId);
+				result = controller.deleteCollectBinaryData(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
 			} else if (MaintenanceTypeMstConstant.DELETE_NODE_CONFIG_HISTORY.equals(type_id)) {
-				result = controller.deleteNodeConfigSettingHistory(dataRetentionPeriod, true, ownerRoleId);
+				result = controller.deleteNodeConfigSettingHistory(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
+			} else if (MaintenanceTypeMstConstant.DELETE_JOBLINK_MSG.equals(type_id)) {
+				result = controller.deleteJobLinkMessage(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
+			} else if (MaintenanceTypeMstConstant.DELETE_RPA_SCENARIO_OPERATION_RESULT.equals(type_id)) {
+				result = controller.deleteRpaScenarioOperationResult(dataRetentionPeriod, true, ownerRoleId, maintenanceId);
 			} else {
 				m_log.info("runMaintenance() : " + type_id);
 			}
-
+			
 		} catch (MaintenanceNotFound e) {
-			// 何もしない
+			if (jtm != null) {
+				jtm.rollback();
+			}
 		} catch (InvalidRole e) {
-			// 何もしない
+			if (jtm != null) {
+				jtm.rollback();
+			}
 		} catch (HinemosUnknown e) {
-			// 何もしない
+			if (jtm != null) {
+				jtm.rollback();
+			}
 		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
 			try {
 				rtn = new Notice().createOutputBasicInfo(maintenanceId, result);
 			} catch (HinemosUnknown e) {

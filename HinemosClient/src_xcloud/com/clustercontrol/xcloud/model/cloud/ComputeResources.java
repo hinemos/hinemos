@@ -10,12 +10,18 @@ package com.clustercontrol.xcloud.model.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
-import com.clustercontrol.ws.xcloud.CloudManagerException;
-import com.clustercontrol.ws.xcloud.InvalidRole_Exception;
-import com.clustercontrol.ws.xcloud.InvalidUserPass_Exception;
+import org.openapitools.client.model.InstanceInfoResponse;
+import org.openapitools.client.model.NetworkInfoResponse;
+import org.openapitools.client.model.StorageInfoResponse;
+
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 
 public class ComputeResources extends Element implements IComputeResources {
@@ -46,12 +52,12 @@ public class ComputeResources extends Element implements IComputeResources {
 		throw new CloudModelException(String.format("Not found instance of %s", instanceId));
 	}
 	
-	public void updateInstances(List<com.clustercontrol.ws.xcloud.Instance> webInstances) {
-		CollectionComparator.compareCollection(instances, webInstances, new CollectionComparator.Comparator<Instance, com.clustercontrol.ws.xcloud.Instance>() {
-			public boolean match(Instance o1, com.clustercontrol.ws.xcloud.Instance o2) {return o1.equalValues(o2);}
-			public void matched(Instance o1, com.clustercontrol.ws.xcloud.Instance o2) {o1.update(o2);}
+	public void updateInstances(List<InstanceInfoResponse> webInstances) {
+		CollectionComparator.compareCollection(instances, webInstances, new CollectionComparator.Comparator<Instance, InstanceInfoResponse>() {
+			public boolean match(Instance o1, InstanceInfoResponse o2) {return o1.equalValues(o2);}
+			public void matched(Instance o1, InstanceInfoResponse o2) {o1.update(o2);}
 			public void afterO1(Instance o1) {internalRemoveProperty(p.instances, o1, instances);}
-			public void afterO2(com.clustercontrol.ws.xcloud.Instance o2) {
+			public void afterO2(InstanceInfoResponse o2) {
 				Instance newInstance = Instance.convert(o2);
 				internalAddProperty(p.instances, newInstance, instances);
 			}
@@ -68,23 +74,23 @@ public class ComputeResources extends Element implements IComputeResources {
 	@Override
 	public void updateStorages() {
 		try {
-			CloudEndpoint endpoint = getLocation().getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-			List <com.clustercontrol.ws.xcloud.Storage> webStorages = endpoint.getAllStorages(getLocation().getCloudScope().getId(), getLocation().getId());
-			updateStorages(webStorages);
-		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+			CloudRestClientWrapper wrapper = getLocation().getCloudScope().getCloudScopes().getHinemosManager().getWrapper();
+			List <StorageInfoResponse> responses = wrapper.getStorages(getLocation().getCloudScope().getId(), getLocation().getId(), null);
+			updateStorages(responses);
+		} catch (CloudManagerException | InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown e) {
 			throw new CloudModelException(e);
 		}
 	}	
 	
-	public void updateStorages(List <com.clustercontrol.ws.xcloud.Storage> webStorages) {
+	public void updateStorages(List <StorageInfoResponse> webStorages) {
 		if (storages == null)
 			storages = new ArrayList<>();
 		
-		CollectionComparator.compareCollection(storages, webStorages, new CollectionComparator.Comparator<Storage, com.clustercontrol.ws.xcloud.Storage>() {
-			public boolean match(Storage o1, com.clustercontrol.ws.xcloud.Storage o2) {return o1.equalValues(o2);}
-			public void matched(Storage o1, com.clustercontrol.ws.xcloud.Storage o2) {o1.update(o2);}
+		CollectionComparator.compareCollection(storages, webStorages, new CollectionComparator.Comparator<Storage, StorageInfoResponse>() {
+			public boolean match(Storage o1, StorageInfoResponse o2) {return o1.equalValues(o2);}
+			public void matched(Storage o1, StorageInfoResponse o2) {o1.update(o2);}
 			public void afterO1(Storage o1) {internalRemoveProperty(p.storages, o1, storages);}
-			public void afterO2(com.clustercontrol.ws.xcloud.Storage o2) {
+			public void afterO2(StorageInfoResponse o2) {
 				Storage newStorage = Storage.convert(o2);
 				internalAddProperty(p.storages, newStorage, storages);
 			}
@@ -110,19 +116,19 @@ public class ComputeResources extends Element implements IComputeResources {
 		if (networks == null)
 			networks = new ArrayList<>();
 		
-		CloudEndpoint endpoint = getLocation().getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
+		CloudRestClientWrapper wrapper = getLocation().getCloudScope().getCloudScopes().getHinemosManager().getWrapper();
 		try {
-			List <com.clustercontrol.ws.xcloud.Network> webStorages = endpoint.getAllNetworks(getLocation().getCloudScope().getId(), getLocation().getId());
-			CollectionComparator.compareCollection(networks, webStorages, new CollectionComparator.Comparator<Network, com.clustercontrol.ws.xcloud.Network>() {
-				public boolean match(Network o1, com.clustercontrol.ws.xcloud.Network o2) {return o1.equalValues(o2);}
-				public void matched(Network o1, com.clustercontrol.ws.xcloud.Network o2) {o1.update(o2);}
+			List <NetworkInfoResponse> webStorages = wrapper.getAllNetworks(getLocation().getCloudScope().getId(), getLocation().getId());
+			CollectionComparator.compareCollection(networks, webStorages, new CollectionComparator.Comparator<Network, NetworkInfoResponse>() {
+				public boolean match(Network o1, NetworkInfoResponse o2) {return o1.equalValues(o2);}
+				public void matched(Network o1, NetworkInfoResponse o2) {o1.update(o2);}
 				public void afterO1(Network o1) {internalRemoveProperty(p.networks, o1, networks);}
-				public void afterO2(com.clustercontrol.ws.xcloud.Network o2) {
+				public void afterO2(NetworkInfoResponse o2) {
 					Network newStorage = Network.convert(o2);
 					internalAddProperty(p.networks, newStorage, networks);
 				}
 			});
-		} catch (CloudManagerException | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (CloudManagerException | InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown e) {
 			throw new CloudModelException(e);
 		}
 	}

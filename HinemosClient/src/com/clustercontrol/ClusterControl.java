@@ -25,11 +25,13 @@ import org.eclipse.ui.application.WorkbenchAdvisor;
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.msgfilter.IMsgFilterClientOption;
+import com.clustercontrol.msgfilter.MsgFilterClientOptionManager;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.MultiManagerRunUtil;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * IApplication実装クラス<BR>
@@ -114,16 +116,21 @@ public class ClusterControl implements IApplication {
 			try{
 				// Stop the the timer task if started
 				ClientSession.stopChecktask();
+
+				IMsgFilterClientOption option = MsgFilterClientOptionManager.getInstance().getMsgFilterClientOption();
+				if(option != null){
+					option.stopChecktask();
+				}
 				
 				// 各マネージャから情報を取得するためのスレッドを停止する
 				MultiManagerRunUtil.getExecutorService().shutdown();
 				
 				// ロックしているジョブユニットがある場合
-				for (String managerName : EndpointManager.getActiveManagerNameList()) {
+				for (String managerName : RestConnectManager.getActiveManagerNameList()) {
 					JobEditState state = JobEditStateUtil.getJobEditState(managerName);
-					for (JobInfo jobunit : state.getLockedJobunitList()) {
+					for (JobInfoWrapper jobunit : state.getLockedJobunitList()) {
 						try {
-							JobEndpointWrapper.getWrapper(managerName).releaseEditLock(state.getEditSession(jobunit));
+							JobRestClientWrapper.getWrapper(managerName).releaseEditLock(jobunit.getJobunitId(), state.getEditSession(jobunit));
 							m_log.info("release job lock : jobunitId=" + jobunit.getJobunitId());
 						} catch (Exception e) {
 							m_log.warn("dispose() : " + e.getMessage());

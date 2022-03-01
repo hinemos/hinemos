@@ -9,13 +9,13 @@
 package com.clustercontrol.reporting.action;
 
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.ModifyTemplateSetRequest;
 
-import com.clustercontrol.reporting.util.ReportingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.reporting.HinemosUnknown_Exception;
-import com.clustercontrol.ws.reporting.InvalidRole_Exception;
-import com.clustercontrol.ws.reporting.TemplateSetInfo;
 
 /**
  * 
@@ -33,13 +33,13 @@ public class ModifyTemplateSet {
 	 * @param テンプレートセット情報
 	 * @return 成功時 true 失敗時 false
 	 */
-	public boolean modify(String managerName, TemplateSetInfo info) {
+	public boolean modify(String managerName, String templateSetId, ModifyTemplateSetRequest info) {
 		boolean ret = false;
 
-		String[] args = { info.getTemplateSetId(), managerName };
+		String[] args = { templateSetId, managerName };
 		try {
-			ReportingEndpointWrapper wrapper = ReportingEndpointWrapper.getWrapper(managerName);
-			ret = wrapper.modifyTemplateSet(info);
+			ReportingRestClientWrapper wrapper = ReportingRestClientWrapper.getWrapper(managerName);
+			wrapper.modifyTemplateSet(templateSetId, info);
 
 			MessageDialog.openInformation(null,
 					Messages.getString("successful"),
@@ -47,14 +47,14 @@ public class ModifyTemplateSet {
 
 			ret = true;
 
-		} catch (HinemosUnknown_Exception e) {
+		} catch (HinemosUnknown e) {
 			String errMessage = HinemosMessage.replace(e.getMessage());
 			MessageDialog.openError(null, Messages.getString("failed"),
 					Messages.getString("message.reporting.38", args)
 							+ ", " + errMessage);
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				MessageDialog.openInformation(null,
 						Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));

@@ -24,6 +24,16 @@ import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtBinaryCheckInfoRequest;
+import org.openapitools.client.model.AgtBinaryCheckInfoResponse;
+import org.openapitools.client.model.AgtBinaryFileDTORequest;
+import org.openapitools.client.model.AgtBinaryPatternInfoResponse;
+import org.openapitools.client.model.AgtBinaryRecordDTORequest;
+import org.openapitools.client.model.AgtMessageInfoRequest;
+import org.openapitools.client.model.AgtMonitorInfoRequest;
+import org.openapitools.client.model.AgtMonitorInfoResponse;
+import org.openapitools.client.model.AgtRunInstructionInfoRequest;
+import org.openapitools.client.model.AgtRunInstructionInfoResponse;
 
 import com.clustercontrol.agent.Agent;
 import com.clustercontrol.agent.binary.factory.BinaryAddTags;
@@ -37,20 +47,13 @@ import com.clustercontrol.agent.binary.readingstatus.MonitorReadingStatus;
 import com.clustercontrol.agent.binary.result.BinaryFile;
 import com.clustercontrol.agent.binary.result.BinaryRecord;
 import com.clustercontrol.agent.log.MonitorInfoWrapper;
-import com.clustercontrol.agent.util.CalendarWSUtil;
+import com.clustercontrol.agent.util.RestCalendarUtil;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.binary.bean.BinaryConstant;
 import com.clustercontrol.util.BinaryUtil;
 import com.clustercontrol.util.FileUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
-import com.clustercontrol.ws.agentbinary.BinaryFileDTO;
-import com.clustercontrol.ws.agentbinary.BinaryRecordDTO;
-import com.clustercontrol.ws.agentbinary.MessageInfo;
-import com.clustercontrol.ws.jobmanagement.RunInstructionInfo;
-import com.clustercontrol.ws.monitor.BinaryCheckInfo;
-import com.clustercontrol.ws.monitor.BinaryPatternInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * バイナリファイル監視クラス.
@@ -198,13 +201,16 @@ public class BinaryMonitor {
 		}
 
 		// カレンダー非稼動チェック.
-		MonitorInfo monInfo = m_wrapper.monitorInfo;
-		RunInstructionInfo jobInfo = m_wrapper.runInstructionInfo;
-		if (jobInfo == null && monInfo.getCalendar() != null && !CalendarWSUtil.isRun(monInfo.getCalendar())) {
+		AgtMonitorInfoResponse monInfo = m_wrapper.monitorInfo;
+		AgtRunInstructionInfoResponse jobInfo = m_wrapper.runInstructionInfo;
+		if (jobInfo == null && monInfo.getCalendar() != null && !RestCalendarUtil.isRun(monInfo.getCalendar())) {
 			// ジョブではなく監視設定による監視でカレンダー設定されているが非稼動の場合.
 			m_log.debug(methodName + DELIMITER + "monitor is skipped because it's out of monitor by calendar");
 			return onlyRotatedFile;
 		}
+
+		// 監視を開始するタイミングでスレッドIDを設定する
+		this.setTmpThreadId(Long.toString(Thread.currentThread().getId()));
 
 		// --監視開始.
 		this.readingStatus.setRunMonitor(true);
@@ -249,7 +255,7 @@ public class BinaryMonitor {
 	 */
 	private void sendMessage(int priority, String app, String msg, String msgOrg) {
 		BinaryMonitorManager.sendMessage(priority, app, msg, msgOrg, m_wrapper.monitorInfo.getMonitorId(),
-				m_wrapper.runInstructionInfo, m_wrapper.monitorInfo.getMonitorTypeId());
+				m_wrapper.runInstructionInfoReq, m_wrapper.monitorInfo.getMonitorTypeId());
 	}
 
 	/**
@@ -471,8 +477,8 @@ public class BinaryMonitor {
 						&& newFileBinary.size() >= this.readingStatus.getPrefixSize()) {
 					// 新しいファイルが比較対象バイナリのサイズより大きい場合、比較対象と同じサイズを格納して比較.
 					int prefixSize = this.readingStatus.getPrefixSize();
-					if ( this.readingStatus.getPrevSize() < prefixSize ){
-						prefixSize = (int)this.readingStatus.getPrevSize() ;
+					if (this.readingStatus.getPrevSize() < prefixSize) {
+						prefixSize = (int) this.readingStatus.getPrevSize();
 					}
 					newFirstPartOfFile = newFirstPartOfFile.subList(0, prefixSize);
 
@@ -606,7 +612,7 @@ public class BinaryMonitor {
 			BinaryAddTags.addFileTags(readingStatus, fileInfo, m_wrapper.monitorInfo.getBinaryCheckInfo());
 
 			// パターンマッチ用変数.
-			List<BinaryPatternInfo> matchInfoList = new ArrayList<BinaryPatternInfo>();
+			List<AgtBinaryPatternInfoResponse> matchInfoList = new ArrayList<AgtBinaryPatternInfoResponse>();
 			this.setFilterInfoList(matchInfoList);
 
 			// パターンマッチ表現が存在する場合はフィルタリング実行.
@@ -627,11 +633,11 @@ public class BinaryMonitor {
 							+ String.format(
 									"matched pattern in big data to send manager. pattern order=%d, pattern String=%s, processType=%b",
 									filtering.getmatchKey(), filtering.getMatchBinaryProvision().getGrepString(),
-									filtering.getMatchBinaryProvision().isProcessType()));
+									filtering.getMatchBinaryProvision().getProcessType()));
 				} else {
 					// パターンマッチしない場合はRS更新.
 					StringBuilder patternListSb = new StringBuilder();
-					for (BinaryPatternInfo pattern : matchInfoList) {
+					for (AgtBinaryPatternInfoResponse pattern : matchInfoList) {
 						patternListSb.append("[");
 						patternListSb.append(pattern.getGrepString());
 						patternListSb.append("],");
@@ -644,15 +650,14 @@ public class BinaryMonitor {
 			}
 
 			// 監視ジョブもしくは収集無効の場合は収集なしで通知用のデータだけ送信する.
-			if (m_wrapper.runInstructionInfo != null || !m_wrapper.monitorInfo.isCollectorFlg()) {
+			if (m_wrapper.runInstructionInfo != null || !m_wrapper.monitorInfo.getCollectorFlg().booleanValue()) {
 				if (endRecord == null) {
 					// 監視自体は実施したのでファイルRS更新しとく.
 					readingStatus.storeRS(currentFilesize, currentFileTimeStamp);
 					// フィルタにマッチしない場合、監視ジョブで通知不要なので終了.
 					m_log.info(methodName + DELIMITER
 							+ String.format("matchdata isn't exist. monitorId=%s, collectFlg=%b, file=[%s]",
-									m_wrapper.getId(), m_wrapper.monitorInfo.isCollectorFlg(),
-									readingStatus.getMonFileName()));
+									m_wrapper.getId(), m_wrapper.monitorInfo.getCollectorFlg(), readingStatus.getMonFileName()));
 					return;
 				}
 				sendData.clear();
@@ -660,8 +665,7 @@ public class BinaryMonitor {
 				m_log.debug(
 						methodName + DELIMITER
 								+ String.format("matchdata is exist. monitorId=%s, collectFlg=%b, file=[%s]",
-										m_wrapper.getId(), m_wrapper.monitorInfo.isCollectorFlg(),
-										readingStatus.getMonFileName()));
+										m_wrapper.getId(), m_wrapper.monitorInfo.getCollectorFlg(), readingStatus.getMonFileName()));
 			}
 
 			// マネージャーにバイナリ送信.
@@ -739,8 +743,8 @@ public class BinaryMonitor {
 				BinaryCollector collector = new BinaryCollector();
 				onlyRotatedFile = collector.setMonitorBinary(fileInfo, readedBinary, this);
 				collector = null;
-				BinaryCheckInfo binaryInfo = m_wrapper.monitorInfo.getBinaryCheckInfo();
-				List<BinaryPatternInfo> matchInfoList = m_wrapper.monitorInfo.getBinaryPatternInfo();
+				AgtBinaryCheckInfoResponse binaryInfo = m_wrapper.monitorInfo.getBinaryCheckInfo();
+				List<AgtBinaryPatternInfoResponse> matchInfoList = m_wrapper.monitorInfo.getBinaryPatternInfo();
 
 				// ファイル種類別に送信用にレコードを区切ってマップに格納する.
 				List<BinaryRecord> sendData = new ArrayList<BinaryRecord>();
@@ -768,20 +772,20 @@ public class BinaryMonitor {
 
 				case INTERVAL:
 					// 時間区切りは取れた分を1レコードとして扱う.
-					if( readingStatus.isToSkipRecord() ){
+					if (readingStatus.isToSkipRecord()) {
 						// ただし、スキップサイズの指定があれば範囲内は無視するように考慮(読込み開始位置なども考慮)
 						// 時間区切りにヘッダーはないので考慮しない
-						if(readedBinary.size() > this.readingStatus.getSkipSize()){
+						if (readedBinary.size() > this.readingStatus.getSkipSize()) {
 							// 読み取ったレコードがスキップサイズを超えた場合、範囲外のデータをレコードとする
-							readedBinary = readedBinary.subList((int)this.readingStatus.getSkipSize(), readedBinary.size());
-							skippedSize = (int)this.readingStatus.getSkipSize();
+							readedBinary = readedBinary.subList((int) this.readingStatus.getSkipSize(), readedBinary.size());
+							skippedSize = (int) this.readingStatus.getSkipSize();
 						} else {
 							// スキップサイズ範囲内の場合は全てスキップ
 							skippedSize = readedBinary.size();
 							break;
 						}
 					}
-					if(readedBinary.size() == 0){//
+					if (readedBinary.size() == 0) {//
 						break;
 					}
 
@@ -823,7 +827,7 @@ public class BinaryMonitor {
 									m_wrapper.getId(), readingStatus.getMonFileName(), fileInfo.toString()));
 
 					// 読込サイズが0の場合でもスキップしたデータがある場合は、ファイルRSを更新する
-					if(skippedSize > 0) {
+					if (skippedSize > 0) {
 						this.updateFileRS(onlyRotatedFile, fileInfo, 0, skippedSize);
 					}
 					return false;
@@ -857,7 +861,7 @@ public class BinaryMonitor {
 
 				//以後の処理でsendDataを補正する可能性があるため ここで読み込みサイズを一旦保存（RSの更新に利用予定）
 				long readedSize = separator.getReadedSize(sendData);
-				
+
 				// wtmpの場合は単純な固定長ではないので、レコード再編成する.
 				String tagType = m_wrapper.monitorInfo.getBinaryCheckInfo().getTagType();
 				if (BinaryConstant.TAG_TYPE_WTMP.equals(tagType)) {
@@ -869,7 +873,7 @@ public class BinaryMonitor {
 				BinaryAddTags.addRecordTags(fileInfo, sendData, binaryInfo, matchInfoList);
 
 				// パターンマッチ用変数.
-				matchInfoList = new ArrayList<BinaryPatternInfo>();
+				matchInfoList = new ArrayList<AgtBinaryPatternInfoResponse>();
 				this.setFilterInfoList(matchInfoList);
 
 				// パターンマッチ表現が存在する場合はフィルタリング実行.
@@ -886,13 +890,13 @@ public class BinaryMonitor {
 								topMonitorResult = record;
 							}
 							// 収集フラグオフの場合はマッチした監視結果だけを送信する.
-							if (!m_wrapper.monitorInfo.isCollectorFlg()) {
+							if (!m_wrapper.monitorInfo.getCollectorFlg().booleanValue()) {
 								matchData.add(record);
 							}
 							m_log.debug(methodName + DELIMITER + String.format(
 									"matched pattern in a record to send manager. pattern order=%d, pattern String=%s, processType=%b",
 									filtering.getmatchKey(), filtering.getMatchBinaryProvision().getGrepString(),
-									filtering.getMatchBinaryProvision().isProcessType()));
+									filtering.getMatchBinaryProvision().getProcessType()));
 						} else {
 							m_log.debug(methodName + DELIMITER + "unmatched pattern in a record to send manager.");
 						}
@@ -920,22 +924,20 @@ public class BinaryMonitor {
 				}
 
 				// 収集フラグオフの場合はマッチした監視結果だけを送信する.
-				if (!m_wrapper.monitorInfo.isCollectorFlg()) {
+				if (!m_wrapper.monitorInfo.getCollectorFlg().booleanValue()) {
 					if (matchData.isEmpty()) {
 						// マッチした監視結果が存在しない場合は終了(監視自体は実施してるのでファイルRSは更新しとく)
 						this.updateFileRS(onlyRotatedFile, fileInfo, readedSize, skippedSize);
 						m_log.info(methodName + DELIMITER
 								+ String.format(
 										"match data for only monitoring isn't exist. Id=%s, collectFlg=%b, file=[%s]",
-										m_wrapper.getId(), m_wrapper.monitorInfo.isCollectorFlg(),
-										readingStatus.getMonFileName()));
+										m_wrapper.getId(), m_wrapper.monitorInfo.getCollectorFlg(), readingStatus.getMonFileName()));
 						return false;
 					}
 					sendData = matchData;
 					m_log.debug(methodName + DELIMITER
 							+ String.format("match data for only monitoring is exist. Id=%s, collectFlg=%b, file=[%s]",
-									m_wrapper.getId(), m_wrapper.monitorInfo.isCollectorFlg(),
-									readingStatus.getMonFileName()));
+									m_wrapper.getId(), m_wrapper.monitorInfo.getCollectorFlg(), readingStatus.getMonFileName()));
 				}
 
 				// マネージャーにバイナリ送信.
@@ -1011,7 +1013,7 @@ public class BinaryMonitor {
 	 * 
 	 * @return 設定値不正等はERROR返却.
 	 */
-	private CutProcessType getCutProcessType(BinaryCheckInfo binaryInfo) {
+	private CutProcessType getCutProcessType(AgtBinaryCheckInfoResponse binaryInfo) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
 		// 引数不正.
@@ -1082,13 +1084,91 @@ public class BinaryMonitor {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
 		// 送信用の監視情報をセット.
-		MonitorInfo sendMonInfo = m_wrapper.monitorInfo;
-		RunInstructionInfo sendJobInfo = m_wrapper.runInstructionInfo;
+		// ファイル名に正規表現が使われていた場合、ファイル名が複数存在する場合があるためファイル単位でインスタンスを作成
+		// [REST対応] MonitorInfo のプロパティのうち不要と思われる項目を除外している。
+		//            後からやっぱり必要となった場合はコメントアウトを解除して、DTOへプロパティを追加する。
+		AgtMonitorInfoRequest sendMonInfo = new AgtMonitorInfoRequest();
+		sendMonInfo.setApplication(m_wrapper.monitorInfo.getApplication());
+		// sendMonInfo.setCalendar(m_wrapper.monitorInfo.getCalendar());
+		// sendMonInfo.setCalendarId(m_wrapper.monitorInfo.getCalendarId());
+		// sendMonInfo.setChangeAnalysysRange(m_wrapper.monitorInfo.getChangeAnalysysRange());
+		// sendMonInfo.setChangeApplication(m_wrapper.monitorInfo.getChangeApplication());
+		// sendMonInfo.setChangeFlg(m_wrapper.monitorInfo.isChangeFlg());
+		sendMonInfo.setCollectorFlg(m_wrapper.monitorInfo.getCollectorFlg());
+		// sendMonInfo.setCorrelationCheckInfo(m_wrapper.monitorInfo.getCorrelationCheckInfo());
+		// sendMonInfo.setCustomCheckInfo(m_wrapper.monitorInfo.getCustomCheckInfo());
+		// sendMonInfo.setCustomTrapCheckInfo(m_wrapper.monitorInfo.getCustomTrapCheckInfo());
+		// sendMonInfo.setDelayTime(m_wrapper.monitorInfo.getDelayTime());
+		// sendMonInfo.setDescription(m_wrapper.monitorInfo.getDescription());
+		sendMonInfo.setFacilityId(m_wrapper.monitorInfo.getFacilityId());
+		// sendMonInfo.setFailurePriority(m_wrapper.monitorInfo.getFailurePriority());
+		// sendMonInfo.setHttpCheckInfo(m_wrapper.monitorInfo.getHttpCheckInfo());
+		// sendMonInfo.setHttpScenarioCheckInfo(m_wrapper.monitorInfo.getHttpScenarioCheckInfo());
+		// sendMonInfo.setIntegrationCheckInfo(m_wrapper.monitorInfo.getIntegrationCheckInfo());
+		// sendMonInfo.setItemName(m_wrapper.monitorInfo.getItemName());
+		// sendMonInfo.setJmxCheckInfo(m_wrapper.monitorInfo.getJmxCheckInfo());
+		// sendMonInfo.setLogcountCheckInfo(m_wrapper.monitorInfo.getLogcountCheckInfo());
+		// sendMonInfo.setLogfileCheckInfo(m_wrapper.monitorInfo.getLogfileCheckInfo());
+		// sendMonInfo.setLogFormatId(m_wrapper.monitorInfo.getLogFormatId());
+		// sendMonInfo.setMeasure(m_wrapper.monitorInfo.getMeasure());
+		sendMonInfo.setMonitorFlg(m_wrapper.monitorInfo.getMonitorFlg());
+		sendMonInfo.setMonitorId(m_wrapper.monitorInfo.getMonitorId());
+		sendMonInfo.setMonitorType(m_wrapper.monitorInfo.getMonitorType());
+		sendMonInfo.setMonitorTypeId(m_wrapper.monitorInfo.getMonitorTypeId());
+		sendMonInfo.setNotifyGroupId(m_wrapper.monitorInfo.getNotifyGroupId());
+		sendMonInfo.setOwnerRoleId(m_wrapper.monitorInfo.getOwnerRoleId());
+		// sendMonInfo.setPacketCheckInfo(m_wrapper.monitorInfo.getPacketCheckInfo());
+		// sendMonInfo.setPerfCheckInfo(m_wrapper.monitorInfo.getPerfCheckInfo());
+		// sendMonInfo.setPingCheckInfo(m_wrapper.monitorInfo.getPingCheckInfo());
+		// sendMonInfo.setPluginCheckInfo(m_wrapper.monitorInfo.getPluginCheckInfo());
+		// sendMonInfo.setPortCheckInfo(m_wrapper.monitorInfo.getPortCheckInfo());
+		// sendMonInfo.setPredictionAnalysysRange(m_wrapper.monitorInfo.getPredictionAnalysysRange());
+		// sendMonInfo.setPredictionApplication(m_wrapper.monitorInfo.getPredictionApplication());
+		// sendMonInfo.setPredictionFlg(m_wrapper.monitorInfo.isPredictionFlg());
+		// sendMonInfo.setPredictionMethod(m_wrapper.monitorInfo.getPredictionMethod());
+		// sendMonInfo.setPredictionTarget(m_wrapper.monitorInfo.getPredictionTarget());
+		// sendMonInfo.setProcessCheckInfo(m_wrapper.monitorInfo.getProcessCheckInfo());
+		sendMonInfo.setRegDate(m_wrapper.monitorInfo.getRegDate());
+		sendMonInfo.setRegUser(m_wrapper.monitorInfo.getRegUser());
+		sendMonInfo.setRunInterval(m_wrapper.monitorInfo.getRunInterval());
+		sendMonInfo.setScope(m_wrapper.monitorInfo.getScope());
+		// sendMonInfo.setSnmpCheckInfo(m_wrapper.monitorInfo.getSnmpCheckInfo());
+		// sendMonInfo.setSqlCheckInfo(m_wrapper.monitorInfo.getSqlCheckInfo());
+		// sendMonInfo.setTrapCheckInfo(m_wrapper.monitorInfo.getTrapCheckInfo());
+		sendMonInfo.setTriggerType(m_wrapper.monitorInfo.getTriggerType());
+		sendMonInfo.setUpdateDate(m_wrapper.monitorInfo.getUpdateDate());
+		sendMonInfo.setUpdateUser(m_wrapper.monitorInfo.getUpdateUser());
+		// sendMonInfo.setWinEventCheckInfo(m_wrapper.monitorInfo.getWinEventCheckInfo());
+		// sendMonInfo.setWinServiceCheckInfo(m_wrapper.monitorInfo.getWinServiceCheckInfo());
+
+		AgtBinaryCheckInfoRequest binaryCheckInfo = new AgtBinaryCheckInfoRequest();
+		binaryCheckInfo.setBinaryfile(m_wrapper.monitorInfo.getBinaryCheckInfo().getBinaryfile());
+		binaryCheckInfo.setCollectType(m_wrapper.monitorInfo.getBinaryCheckInfo().getCollectType());
+		binaryCheckInfo.setCutType(m_wrapper.monitorInfo.getBinaryCheckInfo().getCutType());
+		binaryCheckInfo.setDirectory(m_wrapper.monitorInfo.getBinaryCheckInfo().getDirectory());
+		binaryCheckInfo.setErrMsg(m_wrapper.monitorInfo.getBinaryCheckInfo().getErrMsg());
+		binaryCheckInfo.setFileHeadSize(m_wrapper.monitorInfo.getBinaryCheckInfo().getFileHeadSize());
+		binaryCheckInfo.setFileName(m_wrapper.monitorInfo.getBinaryCheckInfo().getFileName());
+		binaryCheckInfo.setHaveTs(m_wrapper.monitorInfo.getBinaryCheckInfo().getHaveTs());
+		binaryCheckInfo.setLengthType(m_wrapper.monitorInfo.getBinaryCheckInfo().getLengthType());
+		binaryCheckInfo.setLittleEndian(m_wrapper.monitorInfo.getBinaryCheckInfo().getLittleEndian());
+		binaryCheckInfo.setMonitorId(m_wrapper.monitorInfo.getBinaryCheckInfo().getMonitorId());
+		binaryCheckInfo.setMonitorTypeId(m_wrapper.monitorInfo.getBinaryCheckInfo().getMonitorTypeId());
+		binaryCheckInfo.setRecordHeadSize(m_wrapper.monitorInfo.getBinaryCheckInfo().getRecordHeadSize());
+		binaryCheckInfo.setRecordSize(m_wrapper.monitorInfo.getBinaryCheckInfo().getRecordSize());
+		binaryCheckInfo.setSizeLength(m_wrapper.monitorInfo.getBinaryCheckInfo().getSizeLength());
+		binaryCheckInfo.setSizePosition(m_wrapper.monitorInfo.getBinaryCheckInfo().getSizePosition());
+		binaryCheckInfo.setTagType(m_wrapper.monitorInfo.getBinaryCheckInfo().getTagType());
+		binaryCheckInfo.setTsPosition(m_wrapper.monitorInfo.getBinaryCheckInfo().getTsPosition());
+		binaryCheckInfo.setTsType(m_wrapper.monitorInfo.getBinaryCheckInfo().getTsType());
+		sendMonInfo.setBinaryCheckInfo(binaryCheckInfo);
+
+		AgtRunInstructionInfoRequest sendJobInfo = m_wrapper.runInstructionInfoReq;
 
 		// 送信用のsys_logの情報をセット.
-		MessageInfo logmsg = new MessageInfo();
+		AgtMessageInfoRequest logmsg = new AgtMessageInfoRequest();
 		logmsg.setGenerationDate(HinemosTime.getDateInstance().getTime());
-		logmsg.setHostName(Agent.getAgentInfo().getHostname());
+		logmsg.setHostName(Agent.getAgentInfoRequest().getHostname());
 
 		// 送信用にファイル単位の情報をセット.
 		if (readingStatus.getParentDirRS().getMonDir() != null) {
@@ -1099,12 +1179,12 @@ public class BinaryMonitor {
 			// ファイル名.
 			sendMonInfo.getBinaryCheckInfo().setBinaryfile(readingStatus.getMonFileName());
 		}
-		BinaryFileDTO fileDto = fileInfo.getDTO();
+		AgtBinaryFileDTORequest fileDto = fileInfo.getDTO();
 
 		// 送信ループ処理用の変数初期化.
 		int maxSendSize = BinaryMonitorConfig.getSendSize();
-		BinaryRecordDTO dto = null;
-		List<BinaryRecordDTO> sendList = new ArrayList<BinaryRecordDTO>();
+		AgtBinaryRecordDTORequest dto = null;
+		List<AgtBinaryRecordDTORequest> sendList = new ArrayList<>();
 		int nextSendSize = 0;
 		int sendSize = 0;
 
@@ -1127,7 +1207,7 @@ public class BinaryMonitor {
 				// 送信タスクとして追加.
 				BinaryForwarder.getInstance().add(fileDto, sendList, logmsg, sendMonInfo, sendJobInfo);
 				// 送信用リストと送信サイズを初期化.
-				sendList = new ArrayList<BinaryRecordDTO>();
+				sendList = new ArrayList<>();
 				nextSendSize = sendRecord.getAlldata().size();
 			}
 
@@ -1377,22 +1457,22 @@ public class BinaryMonitor {
 	 * <br>
 	 * 引数のリストに有効なフィルタ条件のみを設定する.
 	 */
-	private void setFilterInfoList(List<BinaryPatternInfo> setMatchInfoList) {
+	private void setFilterInfoList(List<AgtBinaryPatternInfoResponse> matchInfoList2) {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 
 		// 監視設定から全量取得.
-		List<BinaryPatternInfo> matchInfoList = m_wrapper.monitorInfo.getBinaryPatternInfo();
-		BinaryPatternInfo filter = null;
+		List<AgtBinaryPatternInfoResponse> matchInfoList = m_wrapper.monitorInfo.getBinaryPatternInfo();
+		AgtBinaryPatternInfoResponse filter = null;
 
 		if (matchInfoList != null && !matchInfoList.isEmpty()) {
-			BinaryPatternInfo matchInfo = null;
+			AgtBinaryPatternInfoResponse matchInfo = null;
 			// 取得したフィルタについて有効か判定.
 			for (int i = 0; i < matchInfoList.size(); i++) {
 				filter = matchInfoList.get(i);
-				if (filter.isValidFlg()) {
+				if (filter.getValidFlg().booleanValue()) {
 					matchInfo = matchInfoList.get(i);
 					// 有効なフィルタ条件をセットする.
-					setMatchInfoList.add(matchInfo);
+					matchInfoList2.add(matchInfo);
 				} else {
 					m_log.debug(
 							methodName + DELIMITER + String.format("invalid filter. monitorID=%s, filterString=[%s]",
@@ -1433,7 +1513,7 @@ public class BinaryMonitor {
 	 * 
 	 * @throws IOException
 	 */
-	private void updateFileRS(boolean onlyRotated, BinaryFile fileResult, long readedSize, int skippedSize)throws IOException {
+	private void updateFileRS(boolean onlyRotated, BinaryFile fileResult, long readedSize, int skippedSize) throws IOException {
 		// ローテーションファイルのみを読込んだ場合は飛ばす.
 		if (onlyRotated) {
 			return;
@@ -1443,13 +1523,13 @@ public class BinaryMonitor {
 
 		// 次回監視用に読込開始位置をずらす.（現在のポジションは不完全なレコードも含んでいる場合があるので補正する）
 		// ヘッダーサイズ と レコードスキップサイズ の取り扱いには注意
-		if( m_log.isDebugEnabled() ){
+		if (m_log.isDebugEnabled()) {
 			m_log.debug("updateFileRS () " + DELIMITER +
-					"  org setPosition="+this.fileChannel.position()  +
-					" startPosition=" +  this.readingStatus.getPosition() +
-					" readSize=" + this.readedSize  +
+					"  org setPosition=" + this.fileChannel.position() +
+					" startPosition=" + this.readingStatus.getPosition() +
+					" readSize=" + this.readedSize +
 					" skippedSize=" + skippedSize +
-					"  file="+ readingStatus.getStoreFileRSFile().getName() );
+					"  file=" + readingStatus.getStoreFileRSFile().getName());
 		}
 		long setPosition = 0;
 		if (skippedSize > 0) {
@@ -1459,16 +1539,16 @@ public class BinaryMonitor {
 
 			if (skippedSize >= this.readingStatus.getSkipSize()) {
 				// 読み飛ばしが完了した場合
-				if( m_log.isDebugEnabled() ){
-					m_log.debug("updateFileRS () " + DELIMITER + " setPosition is included record skip size . SkipSize="+ this.readingStatus.getSkipSize());
+				if (m_log.isDebugEnabled()) {
+					m_log.debug("updateFileRS () " + DELIMITER + " setPosition is included record skip size . SkipSize=" + this.readingStatus.getSkipSize());
 				}
 				// スキップフラグのリセット
 				this.readingStatus.setToSkipRecord(false);
 				this.readingStatus.setSkipSize(0);
 			} else {
 				// 読み飛ばしが完了していない場合(読み飛ばしの部分がが大きい場合)
-				if( m_log.isDebugEnabled() ){
-					m_log.debug("updateFileRS () " + DELIMITER + " readsize is all skipped. SkipSize="+ this.readingStatus.getSkipSize());
+				if (m_log.isDebugEnabled()) {
+					m_log.debug("updateFileRS () " + DELIMITER + " readsize is all skipped. SkipSize=" + this.readingStatus.getSkipSize());
 				}
 				// skipSizeの再設定
 				// 読み飛ばしきれなかったレコードを次回読込の際スキップする
@@ -1477,13 +1557,13 @@ public class BinaryMonitor {
 		} else {
 			//通常は 次回の読込み開始位置＝ 今回の読込み開始位置 ＋ レコード読込みサイズ とする　
 			// ただし、ヘッダーの読み飛ばしを行っている場合はその分を加味する
-			setPosition = this.readingStatus.getPosition()+ this.readedSize;
+			setPosition = this.readingStatus.getPosition() + this.readedSize;
 			if (this.readingStatus.getPosition() < fileResult.getFileHeaderSize()) {
-				setPosition = setPosition + fileResult.getFileHeaderSize() - this.readingStatus.getPosition() ;
+				setPosition = setPosition + fileResult.getFileHeaderSize() - this.readingStatus.getPosition();
 			}
 		}
-		if( m_log.isDebugEnabled() ){
-			m_log.debug("updateFileRS () " + DELIMITER + "  upd setPosition="+setPosition + " file="+ readingStatus.getStoreFileRSFile().getName() );
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("updateFileRS () " + DELIMITER + "  upd setPosition=" + setPosition + " file=" + readingStatus.getStoreFileRSFile().getName());
 		}
 		this.fileChannel.position(setPosition);
 

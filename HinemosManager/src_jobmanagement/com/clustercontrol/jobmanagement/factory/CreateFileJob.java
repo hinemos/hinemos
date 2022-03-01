@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.persistence.EntityExistsException;
+import jakarta.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,14 +36,14 @@ import com.clustercontrol.jobmanagement.bean.ConditionTypeConstant;
 import com.clustercontrol.jobmanagement.bean.DelayNotifyConstant;
 import com.clustercontrol.jobmanagement.bean.EndStatusCheckConstant;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.jobmanagement.bean.JudgmentObjectConstant;
 import com.clustercontrol.jobmanagement.bean.OperationConstant;
 import com.clustercontrol.jobmanagement.bean.ProcessingMethodConstant;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
-import com.clustercontrol.jobmanagement.model.JobStartJobInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobWaitGroupInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobWaitInfoEntity;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.repository.model.NodeInfo;
@@ -222,6 +222,10 @@ public class CreateFileJob {
 				nodeJobSessionJob.relateToJobSessionEntity(parentJobSessionJobEntity.getJobSessionEntity());
 
 				//JobInfoEntityを作成
+
+				// 待ち条件順番
+				int waitGroupOrderNo = 0;
+
 				// インスタンス生成
 				JobInfoEntity nodeJobInfoEntity = new JobInfoEntity(nodeJobSessionJob);
 				// 重複チェック
@@ -270,41 +274,51 @@ public class CreateFileJob {
 						nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_AND);
 						nodeJobInfoEntity.setUnmatchEndValue(ABNORMAL);
 
-						//JobStartJobInfoEntityを作成
-						// インスタンス生成
-						JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-								nodeJobInfoEntity,
-								jobSessionJobEntity.getId().getJobunitId(),
-								waitJobId,
-								JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-								EndStatusConstant.TYPE_NORMAL);
+						//JobWaitGroupInfoEntityを作成
+						JobWaitGroupInfoEntity jobWaitGroupInfoEntity
+							= new JobWaitGroupInfoEntity(nodeJobInfoEntity, waitGroupOrderNo);
 						// 重複チェック
-						jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+						jtm.checkEntityExists(JobWaitGroupInfoEntity.class, jobWaitGroupInfoEntity.getId());
+						jobWaitGroupInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+
+						//JobWaitInfoEntityを作成
+						JobWaitInfoEntity jobWaitInfoEntity = JobWaitInfoEntity.createJobEndStatus(
+								jobWaitGroupInfoEntity, jobSessionJobEntity.getId().getJobunitId(), waitJobId, EndStatusConstant.TYPE_NORMAL);
+						// 重複チェック
+						jtm.checkEntityExists(JobWaitInfoEntity.class, jobWaitInfoEntity.getId());
+						jobWaitInfoEntity.relateToJobWaitGroupInfoEntity(jobWaitGroupInfoEntity);
+
 						// 登録
-						em.persist(jobStartJobInfoEntity);
-						jobStartJobInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+						em.persist(jobWaitGroupInfoEntity);
+						waitGroupOrderNo++;
 					}else{
 						//待ち条件を設定
 						nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
 						nodeJobInfoEntity.setUnmatchEndValue(NORMAL);
 
-						//JobStartJobInfoEntityを作成
+						// JobWaitGroupInfoEntity、JobWaitInfoEntityを作成
 						Integer[] targetJobEndValues = {EndStatusConstant.TYPE_NORMAL,
 								EndStatusConstant.TYPE_WARNING,
 								EndStatusConstant.TYPE_ABNORMAL};
 						for (Integer targetJobEndValue : targetJobEndValues) {
-							// インスタンス生成
-							JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-									nodeJobInfoEntity,
-									jobSessionJobEntity.getId().getJobunitId(),
-									waitJobId,
-									JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-									targetJobEndValue);
+
+							//JobWaitGroupInfoEntityを作成
+							JobWaitGroupInfoEntity jobWaitGroupInfoEntity
+								= new JobWaitGroupInfoEntity(nodeJobInfoEntity, waitGroupOrderNo);
 							// 重複チェック
-							jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+							jtm.checkEntityExists(JobWaitGroupInfoEntity.class, jobWaitGroupInfoEntity.getId());
+							jobWaitGroupInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+
+							//JobWaitInfoEntityを作成
+							JobWaitInfoEntity jobWaitInfoEntity = JobWaitInfoEntity.createJobEndStatus(
+									jobWaitGroupInfoEntity, jobSessionJobEntity.getId().getJobunitId(), waitJobId, targetJobEndValue);
+							// 重複チェック
+							jtm.checkEntityExists(JobWaitInfoEntity.class, jobWaitInfoEntity.getId());
+							jobWaitInfoEntity.relateToJobWaitGroupInfoEntity(jobWaitGroupInfoEntity);
+
 							// 登録
-							em.persist(jobStartJobInfoEntity);
-							jobStartJobInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+							em.persist(jobWaitGroupInfoEntity);
+							waitGroupOrderNo++;
 						}
 
 					}
@@ -317,52 +331,64 @@ public class CreateFileJob {
 						nodeJobInfoEntity.setUnmatchEndValue(ABNORMAL);
 						nodeJobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_ABNORMAL);
 
-						//JobStartJobInfoEntityを作成
-						// インスタンス生成
-						JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-								nodeJobInfoEntity,
-								jobSessionJobEntity.getId().getJobunitId(),
-								waitJobId,
-								JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-								EndStatusConstant.TYPE_NORMAL);
+						//JobWaitGroupInfoEntityを作成
+						JobWaitGroupInfoEntity jobWaitGroupInfoEntity
+							= new JobWaitGroupInfoEntity(nodeJobInfoEntity, waitGroupOrderNo);
 						// 重複チェック
-						jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+						jtm.checkEntityExists(JobWaitGroupInfoEntity.class, jobWaitGroupInfoEntity.getId());
+						jobWaitGroupInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+
+						//JobWaitInfoEntityを作成
+						JobWaitInfoEntity jobWaitInfoEntity = JobWaitInfoEntity.createJobEndStatus(
+								jobWaitGroupInfoEntity, jobSessionJobEntity.getId().getJobunitId(), waitJobId, EndStatusConstant.TYPE_NORMAL);
+						// 重複チェック
+						jtm.checkEntityExists(JobWaitInfoEntity.class, jobWaitInfoEntity.getId());
+						jobWaitInfoEntity.relateToJobWaitGroupInfoEntity(jobWaitGroupInfoEntity);
+
 						// 登録
-						em.persist(jobStartJobInfoEntity);
-						jobStartJobInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+						em.persist(jobWaitGroupInfoEntity);
+						waitGroupOrderNo++;
 					}else{
 						//待ち条件を設定
 						nodeJobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
 						nodeJobInfoEntity.setUnmatchEndValue(NORMAL);
 						nodeJobInfoEntity.setUnmatchEndStatus(EndStatusConstant.TYPE_NORMAL);
 
-						//JobStartJobInfoEntityを作成
-						// インスタンス生成
-						JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-								nodeJobInfoEntity,
-								jobSessionJobEntity.getId().getJobunitId(),
-								waitJobId,
-								JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-								EndStatusConstant.TYPE_WARNING);
+						//JobWaitGroupInfoEntityを作成
+						JobWaitGroupInfoEntity jobWaitGroupInfoEntity
+							= new JobWaitGroupInfoEntity(nodeJobInfoEntity, waitGroupOrderNo);
 						// 重複チェック
-						jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
-						// 登録
-						em.persist(jobStartJobInfoEntity);
-						jobStartJobInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+						jtm.checkEntityExists(JobWaitGroupInfoEntity.class, jobWaitGroupInfoEntity.getId());
+						jobWaitGroupInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
 
-						//JobStartJobInfoEntityを作成
-						// インスタンス生成
-						jobStartJobInfoEntity = new JobStartJobInfoEntity(
-								nodeJobInfoEntity,
-								jobSessionJobEntity.getId().getJobunitId(),
-								waitJobId,
-								JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-								EndStatusConstant.TYPE_ABNORMAL);
+						//JobWaitInfoEntityを作成
+						JobWaitInfoEntity jobWaitInfoEntity = JobWaitInfoEntity.createJobEndStatus(
+								jobWaitGroupInfoEntity, jobSessionJobEntity.getId().getJobunitId(), waitJobId, EndStatusConstant.TYPE_WARNING);
 						// 重複チェック
-						jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+						jtm.checkEntityExists(JobWaitInfoEntity.class, jobWaitInfoEntity.getId());
+						jobWaitInfoEntity.relateToJobWaitGroupInfoEntity(jobWaitGroupInfoEntity);
+
 						// 登録
-						em.persist(jobStartJobInfoEntity);
-						jobStartJobInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+						em.persist(jobWaitGroupInfoEntity);
+						waitGroupOrderNo++;
+
+						//JobWaitGroupInfoEntityを作成
+						jobWaitGroupInfoEntity
+							= new JobWaitGroupInfoEntity(nodeJobInfoEntity, waitGroupOrderNo);
+						// 重複チェック
+						jtm.checkEntityExists(JobWaitGroupInfoEntity.class, jobWaitGroupInfoEntity.getId());
+						jobWaitGroupInfoEntity.relateToJobInfoEntity(nodeJobInfoEntity);
+
+						//JobWaitInfoEntityを作成
+						jobWaitInfoEntity = JobWaitInfoEntity.createJobEndStatus(
+								jobWaitGroupInfoEntity, jobSessionJobEntity.getId().getJobunitId(), waitJobId, EndStatusConstant.TYPE_ABNORMAL);
+						// 重複チェック
+						jtm.checkEntityExists(JobWaitInfoEntity.class, jobWaitInfoEntity.getId());
+						jobWaitInfoEntity.relateToJobWaitGroupInfoEntity(jobWaitGroupInfoEntity);
+
+						// 登録
+						em.persist(jobWaitGroupInfoEntity);
+						waitGroupOrderNo++;
 					}
 				}
 
@@ -515,19 +541,22 @@ public class CreateFileJob {
 
 			//整合性チェックなしの場合
 
-			//JobStartJobInfoEntityを作成
-			// インスタンス生成
-			JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-					jobInfoEntity,
-					jobInfoEntity.getId().getJobunitId(),
-					waitJobId,
-					JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-					EndStatusConstant.TYPE_NORMAL);
+			//JobWaitGroupInfoEntityを作成
+			JobWaitGroupInfoEntity jobWaitGroupInfoEntity
+				= new JobWaitGroupInfoEntity(jobInfoEntity, 0);
 			// 重複チェック
-			jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+			jtm.checkEntityExists(JobWaitGroupInfoEntity.class, jobWaitGroupInfoEntity.getId());
+			jobWaitGroupInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+
+			//JobWaitInfoEntityを作成
+			JobWaitInfoEntity jobWaitInfoEntity = JobWaitInfoEntity.createJobEndStatus(
+					jobWaitGroupInfoEntity, jobInfoEntity.getId().getJobunitId(), waitJobId, EndStatusConstant.TYPE_NORMAL);
+			// 重複チェック
+			jtm.checkEntityExists(JobWaitInfoEntity.class, jobWaitInfoEntity.getId());
+			jobWaitInfoEntity.relateToJobWaitGroupInfoEntity(jobWaitGroupInfoEntity);
+
 			// 登録
-			em.persist(jobStartJobInfoEntity);
-			jobStartJobInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+			em.persist(jobWaitGroupInfoEntity);
 
 			NodeInfo info = repository.getNode(fileInfo.getSrc_facility_id());
 
@@ -614,19 +643,22 @@ public class CreateFileJob {
 			//待ち条件を設定
 			jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
 
-			//判定対象の作成
-			// インスタンス生成
-			JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-					jobInfoEntity,
-					jobInfoEntity.getId().getJobunitId(),
-					waitJobId,
-					JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-					EndStatusConstant.TYPE_NORMAL);
+			//JobWaitGroupInfoEntityを作成
+			JobWaitGroupInfoEntity jobWaitGroupInfoEntity
+				= new JobWaitGroupInfoEntity(jobInfoEntity, 0);
 			// 重複チェック
-			jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+			jtm.checkEntityExists(JobWaitGroupInfoEntity.class, jobWaitGroupInfoEntity.getId());
+			jobWaitGroupInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+
+			//JobWaitInfoEntityを作成
+			JobWaitInfoEntity jobWaitInfoEntity = JobWaitInfoEntity.createJobEndStatus(
+					jobWaitGroupInfoEntity, jobInfoEntity.getId().getJobunitId(), waitJobId, EndStatusConstant.TYPE_NORMAL);
+			// 重複チェック
+			jtm.checkEntityExists(JobWaitInfoEntity.class, jobWaitInfoEntity.getId());
+			jobWaitInfoEntity.relateToJobWaitGroupInfoEntity(jobWaitGroupInfoEntity);
+
 			// 登録
-			em.persist(jobStartJobInfoEntity);
-			jobStartJobInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+			em.persist(jobWaitGroupInfoEntity);
 
 			//実行コマンドを設定
 			jobInfoEntity.setStartCommand(CommandConstant.GET_CHECKSUM);
@@ -691,19 +723,22 @@ public class CreateFileJob {
 			//待ち条件を設定
 			jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_AND);
 
-			//JobStartJobInfoEntityを作成
-			// インスタンス生成
-			JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-					jobInfoEntity,
-					jobInfoEntity.getId().getJobunitId(),
-					waitJobId,
-					JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-					EndStatusConstant.TYPE_NORMAL);
+			//JobWaitGroupInfoEntityを作成
+			JobWaitGroupInfoEntity jobWaitGroupInfoEntity
+				= new JobWaitGroupInfoEntity(jobInfoEntity, 0);
 			// 重複チェック
-			jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+			jtm.checkEntityExists(JobWaitGroupInfoEntity.class, jobWaitGroupInfoEntity.getId());
+			jobWaitGroupInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+
+			//JobWaitInfoEntityを作成
+			JobWaitInfoEntity jobWaitInfoEntity = JobWaitInfoEntity.createJobEndStatus(
+					jobWaitGroupInfoEntity, jobInfoEntity.getId().getJobunitId(), waitJobId, EndStatusConstant.TYPE_NORMAL);
+			// 重複チェック
+			jtm.checkEntityExists(JobWaitInfoEntity.class, jobWaitInfoEntity.getId());
+			jobWaitInfoEntity.relateToJobWaitGroupInfoEntity(jobWaitGroupInfoEntity);
+
 			// 登録
-			em.persist(jobStartJobInfoEntity);
-			jobStartJobInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+			em.persist(jobWaitGroupInfoEntity);
 
 			//ファイルパス取得
 			int index = filePath.lastIndexOf("/");
@@ -824,18 +859,22 @@ public class CreateFileJob {
 			jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_AND);
 
 			if(waitJobId != null && waitJobId.length() > 0){
-				//JobStartJobInfoEntityを作成
-				JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-						jobInfoEntity,
-						jobInfoEntity.getId().getJobunitId(),
-						waitJobId,
-						JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-						EndStatusConstant.TYPE_NORMAL);
+				//JobWaitGroupInfoEntityを作成
+				JobWaitGroupInfoEntity jobWaitGroupInfoEntity
+					= new JobWaitGroupInfoEntity(jobInfoEntity, 0);
 				// 重複チェック
-				jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+				jtm.checkEntityExists(JobWaitGroupInfoEntity.class, jobWaitGroupInfoEntity.getId());
+				jobWaitGroupInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+
+				//JobWaitInfoEntityを作成
+				JobWaitInfoEntity jobWaitInfoEntity = JobWaitInfoEntity.createJobEndStatus(
+						jobWaitGroupInfoEntity, jobInfoEntity.getId().getJobunitId(), waitJobId, EndStatusConstant.TYPE_NORMAL);
+				// 重複チェック
+				jtm.checkEntityExists(JobWaitInfoEntity.class, jobWaitInfoEntity.getId());
+				jobWaitInfoEntity.relateToJobWaitGroupInfoEntity(jobWaitGroupInfoEntity);
+
 				// 登録
-				em.persist(jobStartJobInfoEntity);
-				jobStartJobInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+				em.persist(jobWaitGroupInfoEntity);
 			}
 
 			//実行コマンドを設定
@@ -888,6 +927,9 @@ public class CreateFileJob {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 
+			// 待ち条件順番
+			int waitGroupOrderNo = 0;
+
 			// インスタンス生成
 			JobInfoEntity jobInfoEntity = subCreateJobInfoEntityForJob (nodeJobSessionJob, DEL_KEY, fileInfo.getSrc_facility_id());
 
@@ -895,23 +937,29 @@ public class CreateFileJob {
 			jobInfoEntity.setConditionType(ConditionTypeConstant.TYPE_OR);
 
 			if(waitJobId != null && waitJobId.length() > 0){
-				//JobStartJobInfoEntityを作成
+				//JobWaitGroupInfoEntity、JobWaitInfoEntityを作成
 				Integer[] targetJobEndValues = {EndStatusConstant.TYPE_NORMAL,
 						EndStatusConstant.TYPE_WARNING,
 						EndStatusConstant.TYPE_ABNORMAL};
 				for (Integer targetJobEndValue : targetJobEndValues) {
-					// インスタンス生成
-					JobStartJobInfoEntity jobStartJobInfoEntity = new JobStartJobInfoEntity(
-							jobInfoEntity,
-							jobInfoEntity.getId().getJobunitId(),
-							waitJobId,
-							JudgmentObjectConstant.TYPE_JOB_END_STATUS,
-							targetJobEndValue);
+
+					//JobWaitGroupInfoEntityを作成
+					JobWaitGroupInfoEntity jobWaitGroupInfoEntity
+						= new JobWaitGroupInfoEntity(jobInfoEntity, waitGroupOrderNo);
 					// 重複チェック
-					jtm.checkEntityExists(JobStartJobInfoEntity.class, jobStartJobInfoEntity.getId());
+					jtm.checkEntityExists(JobWaitGroupInfoEntity.class, jobWaitGroupInfoEntity.getId());
+					jobWaitGroupInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+
+					//JobWaitInfoEntityを作成
+					JobWaitInfoEntity jobWaitInfoEntity = JobWaitInfoEntity.createJobEndStatus(
+							jobWaitGroupInfoEntity, jobInfoEntity.getId().getJobunitId(), waitJobId, targetJobEndValue);
+					// 重複チェック
+					jtm.checkEntityExists(JobWaitInfoEntity.class, jobWaitInfoEntity.getId());
+					jobWaitInfoEntity.relateToJobWaitGroupInfoEntity(jobWaitGroupInfoEntity);
+
 					// 登録
-					em.persist(jobStartJobInfoEntity);
-					jobStartJobInfoEntity.relateToJobInfoEntity(jobInfoEntity);
+					em.persist(jobWaitGroupInfoEntity);
+					waitGroupOrderNo++;
 				}
 			}
 
@@ -966,7 +1014,11 @@ public class CreateFileJob {
 			= new JobSessionJobEntity(jobSessionEntity, jobunitId, jobId);
 			// 重複チェック
 			jtm.checkEntityExists(JobSessionJobEntity.class, sessionJob.getId());
-			sessionJob.setStatus(StatusConstant.TYPE_WAIT);
+			if (jobSessionJobEntity.getStatus() == StatusConstant.TYPE_SCHEDULED) {
+				sessionJob.setStatus(StatusConstant.TYPE_SCHEDULED);
+			} else {
+				sessionJob.setStatus(StatusConstant.TYPE_WAIT);
+			}
 			sessionJob.setParentJobunitId(jobSessionJobEntity.getId().getJobunitId());
 			sessionJob.setParentJobId(jobSessionJobEntity.getId().getJobId());
 			sessionJob.setEndStausCheckFlg(EndStatusCheckConstant.NO_WAIT_JOB);
@@ -1030,7 +1082,11 @@ public class CreateFileJob {
 			jtm.checkEntityExists(JobSessionNodeEntity.class, jobSessionNodeEntity.getId());
 			NodeInfo info = repository.getNode(facilityId);
 			jobSessionNodeEntity.setNodeName(info.getFacilityName());
-			jobSessionNodeEntity.setStatus(StatusConstant.TYPE_WAIT);
+			if (jobSessionJobEntity.getStatus() == StatusConstant.TYPE_SCHEDULED) {
+				jobSessionNodeEntity.setStatus(StatusConstant.TYPE_SCHEDULED);
+			} else {
+				jobSessionNodeEntity.setStatus(StatusConstant.TYPE_WAIT);
+			}
 			jobSessionNodeEntity.setMessage(null);
 			// 登録
 			em.persist(jobSessionNodeEntity);

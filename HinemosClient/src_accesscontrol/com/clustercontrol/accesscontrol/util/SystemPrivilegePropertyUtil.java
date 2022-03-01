@@ -18,12 +18,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.SystemPrivilegeInfoResponse;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.access.InvalidRole_Exception;
-import com.clustercontrol.ws.access.SystemPrivilegeInfo;
 
 /**
  * システム権限の表示文字列とシステム権限テーブル値を保持するユーティリティクラスです。
@@ -36,7 +36,7 @@ public class SystemPrivilegePropertyUtil {
 	private static Log m_log = LogFactory.getLog(SystemPrivilegePropertyUtil.class);
 
 	/** システム権限マップ（key=マネージャ名、value=システム権限マップ（key=表示文字列、value=システム権限）） */
-	private static Map<String, Map<String, SystemPrivilegeInfo>> m_systemPrivilegeAllMngMap
+	private static Map<String, Map<String, SystemPrivilegeInfoResponse>> m_systemPrivilegeAllMngMap
 		= new ConcurrentHashMap<>();
 	
 	/** メッセージ情報 */
@@ -48,33 +48,33 @@ public class SystemPrivilegePropertyUtil {
 
 	private static void createSystemPrivilegeMap(String managerName){
 		if (managerName != null && managerName.length() > 0) {
-			Map<String, SystemPrivilegeInfo> systemPrivilegeMap = m_systemPrivilegeAllMngMap.get(managerName);
+			Map<String, SystemPrivilegeInfoResponse> systemPrivilegeMap = m_systemPrivilegeAllMngMap.get(managerName);
 			if (systemPrivilegeMap == null) {
 				systemPrivilegeMap = new ConcurrentHashMap<>();
-				List<SystemPrivilegeInfo> systemPrivilegeInfoList = new ArrayList<>();
+				List<SystemPrivilegeInfoResponse> systemPrivilegeInfoList = new ArrayList<>();
 
 				// システム権限取得
 				try {
-					AccessEndpointWrapper wrapper = AccessEndpointWrapper.getWrapper(managerName);
-					systemPrivilegeInfoList = wrapper.getSystemPrivilegeInfoListByEditType(
-							PrivilegeConstant.SYSTEMPRIVILEGE_EDITTYPE_DIALOG);
+					AccessRestClientWrapper wrapper = AccessRestClientWrapper.getWrapper(managerName);
+					systemPrivilegeInfoList = wrapper.getSystemPrivilegeInfoList(
+							SystemPrivilegeInfoResponse.EditTypeEnum.DIALOG.toString());
 				}
-				catch (InvalidRole_Exception e) {
+				catch (InvalidRole e) {
 					// 権限なし
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							Messages.getString("message.accesscontrol.16"));
 
 				} catch (Exception e) {
 					// 上記以外の例外
-					m_log.warn("getOwnUserList(), " + HinemosMessage.replace(e.getMessage()), e);
+					m_log.warn("getOwnUserList(), " + e.getMessage(), e);
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
-							Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+							Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage());
 				}
 
 				// システム権限をマップに設定
-				for (SystemPrivilegeInfo systemPrivilegeInfo : systemPrivilegeInfoList) {
+				for (SystemPrivilegeInfoResponse systemPrivilegeInfo : systemPrivilegeInfoList) {
 					systemPrivilegeMap.put(getSystemPrivilegeMessage(systemPrivilegeInfo), systemPrivilegeInfo);
 				}
 
@@ -105,10 +105,10 @@ public class SystemPrivilegePropertyUtil {
 	 * @param systemPrivilegeInfo
 	 * @return [SystemFunction Message] - [SystemPrivilege Message]
 	 */
-	public static String getSystemPrivilegeName(String managerName, SystemPrivilegeInfo systemPrivilegeInfo){
+	public static String getSystemPrivilegeName(String managerName, SystemPrivilegeInfoResponse systemPrivilegeInfo){
 		createSystemPrivilegeMap(managerName);
 		if (m_systemPrivilegeAllMngMap.get(managerName) != null) {
-			for (Map.Entry<String, SystemPrivilegeInfo> entry : m_systemPrivilegeAllMngMap.get(managerName).entrySet()) {
+			for (Map.Entry<String, SystemPrivilegeInfoResponse> entry : m_systemPrivilegeAllMngMap.get(managerName).entrySet()) {
 				if (systemPrivilegeInfo.getSystemFunction().equals(entry.getValue().getSystemFunction()) &&
 						systemPrivilegeInfo.getSystemPrivilege().equals(entry.getValue().getSystemPrivilege())) {
 					return entry.getKey();
@@ -124,7 +124,7 @@ public class SystemPrivilegePropertyUtil {
 	 * @param [SystemFunction Message] - [SystemPrivilege Message]
 	 * @return SyFunctionConstant.REPOSITORY + SystemPrivilegeMode.READ.name() の形
 	 */
-	public static SystemPrivilegeInfo getFunctionPrivilege(String managerName, String value){
+	public static SystemPrivilegeInfoResponse getFunctionPrivilege(String managerName, String value){
 		createSystemPrivilegeMap(managerName);
 		if (m_systemPrivilegeAllMngMap.get(managerName) != null) {
 			return m_systemPrivilegeAllMngMap.get(managerName).get(value);
@@ -140,13 +140,13 @@ public class SystemPrivilegePropertyUtil {
 	 * @param systemPrivilegeInfo システム権限
 	 * @return メッセージ
 	 */
-	private static String getSystemPrivilegeMessage(SystemPrivilegeInfo systemPrivilegeInfo){
+	private static String getSystemPrivilegeMessage(SystemPrivilegeInfoResponse systemPrivilegeInfo){
 		String message = "";
 		if (systemPrivilegeInfo != null) {
 			Locale locale = Locale.getDefault();
 
 			String functionKey = KEY_SYSTEM_PRIVILEGE_FUNCTION_PREFIX 
-					+ systemPrivilegeInfo.getSystemFunction().toLowerCase(locale);
+					+ systemPrivilegeInfo.getSystemFunction().getValue().toLowerCase(locale);
 			String functionmessage = m_messageMap.get(functionKey);
 
 			// マップに存在しない場合のみ取得する
@@ -156,7 +156,7 @@ public class SystemPrivilegePropertyUtil {
 			}
 
 			String privilegeKey = KEY_SYSTEM_PRIVILEGE_PRIVILEGE_PREFIX 
-					+ systemPrivilegeInfo.getSystemPrivilege().toLowerCase(locale);
+					+ systemPrivilegeInfo.getSystemPrivilege().getValue().toLowerCase(locale);
 			String privilegemessage = m_messageMap.get(privilegeKey);
 
 			// マップに存在しない場合のみ取得する

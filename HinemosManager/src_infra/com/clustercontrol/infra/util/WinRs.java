@@ -18,8 +18,8 @@ import javax.net.ssl.X509TrustManager;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.HttpsSupport;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -177,7 +177,7 @@ public class WinRs {
 			conn.setTrustManager(tm);
 			conn.setHostnameVerifier(NoopHostnameVerifier.INSTANCE);
 		} else {
-			conn.setHostnameVerifier(SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+			conn.setHostnameVerifier(HttpsSupport.getDefaultHostnameVerifier());
 		}
 
 		return conn;

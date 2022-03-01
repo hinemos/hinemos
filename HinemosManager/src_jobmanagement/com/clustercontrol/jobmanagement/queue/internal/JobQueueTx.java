@@ -10,10 +10,11 @@ package com.clustercontrol.jobmanagement.queue.internal;
 
 import java.util.List;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.commons.util.Transaction;
+import com.clustercontrol.commons.util.QueryDivergence;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.queue.bean.JobQueueReferrerViewInfo.JobQueueReferrerViewInfoListItem;
 import com.clustercontrol.jobmanagement.queue.bean.JobQueueSettingViewFilter;
@@ -85,15 +86,15 @@ public class JobQueueTx extends Transaction {
 	public List<JobQueueSettingViewInfoListItem> findSettingViewInfoListItemForRead(JobQueueSettingViewFilter filter) {
 		String entityName = JobQueueEntity.class.getSimpleName();
 		CriteriaBuilder criteria = new CriteriaBuilder()
-				.add(entityName, "queueId", filter.getQueueId(), OperationType.LIKE)
-				.add(entityName, "name", filter.getQueueName(), OperationType.LIKE)
+				.add(entityName, "queueId", QueryDivergence.escapeLikeCondition(filter.getQueueId()), OperationType.LIKE)
+				.add(entityName, "name", QueryDivergence.escapeLikeCondition(filter.getQueueName()), OperationType.LIKE)
 				.add(entityName, "concurrency", filter.getConcurrencyFrom(), OperationType.FROM)
 				.add(entityName, "concurrency", filter.getConcurrencyTo(), OperationType.TO)
-				.add(entityName, "ownerRoleId", filter.getOwnerRoleId(), OperationType.LIKE)
-				.add(entityName, "regUser", filter.getRegUser(), OperationType.LIKE)
+				.add(entityName, "ownerRoleId", QueryDivergence.escapeLikeCondition(filter.getOwnerRoleId()), OperationType.LIKE)
+				.add(entityName, "regUser", QueryDivergence.escapeLikeCondition(filter.getRegUser()), OperationType.LIKE)
 				.add(entityName, "regDate", filter.getRegDateFrom(), OperationType.FROM)
 				.add(entityName, "regDate", filter.getRegDateTo(), OperationType.TO)
-				.add(entityName, "updateUser", filter.getUpdateUser(), OperationType.LIKE)
+				.add(entityName, "updateUser", QueryDivergence.escapeLikeCondition(filter.getUpdateUser()), OperationType.LIKE)
 				.add(entityName, "updateDate", filter.getUpdateDateFrom(), OperationType.FROM)
 				.add(entityName, "updateDate", filter.getUpdateDateTo(), OperationType.TO);		
 		

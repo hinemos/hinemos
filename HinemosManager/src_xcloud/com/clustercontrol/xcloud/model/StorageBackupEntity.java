@@ -10,24 +10,28 @@ package com.clustercontrol.xcloud.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.IdClass;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinColumns;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
 @NamedQueries({
 	@NamedQuery(
 			name=StorageBackupEntity.findStorageBackupsByStorageIds,
 			query="SELECT i FROM StorageBackupEntity i WHERE i.cloudScopeId = :cloudScopeId AND i.locationId = :locationId AND i.storageId IN :storageIds"
+			),
+	@NamedQuery(
+			name=StorageBackupEntity.findStorageBackups,
+			query="SELECT i FROM StorageBackupEntity i WHERE i.cloudScopeId = :cloudScopeId AND i.locationId = :locationId"
 			)
 })
 @Entity
@@ -35,6 +39,7 @@ import javax.persistence.Table;
 @IdClass(StorageBackupEntity.StorageBackupEntityPK.class)
 public class StorageBackupEntity extends HinemosObjectEntity {
 	public final static String findStorageBackupsByStorageIds = "findStorageBackupsByStorageIds";
+	public final static String findStorageBackups = "findStorageBackups";
 
 	public static class StorageBackupEntityPK {
 		private String cloudScopeId;

@@ -8,13 +8,23 @@
 
 package com.clustercontrol.utility.settings.monitor.conv;
 
+import java.text.ParseException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.BinaryPatternInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.PacketCheckInfoResponse;
 
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.monitor.xml.BinaryValue;
@@ -23,13 +33,6 @@ import com.clustercontrol.utility.settings.monitor.xml.PacketCapMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.PacketCapMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.monitor.BinaryPatternInfo;
-import com.clustercontrol.ws.monitor.HinemosUnknown_Exception;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.InvalidUserPass_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.monitor.MonitorNotFound_Exception;
-import com.clustercontrol.ws.monitor.PacketCheckInfo;
 
 /**
  * パケットキャプチャ 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -43,7 +46,7 @@ public class PacketCapConv {
 
 	private final static String SCHEMA_TYPE = "I";
 	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "1";
+	private final static String SCHEMA_REVISION = "2";
 
 	/**
 	 * <BR>
@@ -81,17 +84,19 @@ public class PacketCapConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws ParseException 
+	 * @throws InvalidSetting 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static List<MonitorInfo> createMonitorInfoList(PacketCapMonitors packetCapMonitors) throws ConvertorException, HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
-		List<MonitorInfo> monitorInfoList = new LinkedList<MonitorInfo>();
+	public static List<MonitorInfoResponse> createMonitorInfoList(PacketCapMonitors packetCapMonitors) throws ConvertorException, HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, InvalidSetting, ParseException {
+		List<MonitorInfoResponse> monitorInfoList = new LinkedList<MonitorInfoResponse>();
 
 		for (PacketCapMonitor packetCapMonitor : packetCapMonitors.getPacketCapMonitor()) {
 			logger.debug("Monitor Id : " + packetCapMonitor.getMonitor().getMonitorId());
-			MonitorInfo monitorInfo = MonitorConv.createMonitorInfo(packetCapMonitor.getMonitor());
+			MonitorInfoResponse monitorInfo = MonitorConv.createMonitorInfo(packetCapMonitor.getMonitor());
 
 			BinaryValue[] binaryVals = packetCapMonitor.getBinaryValue();
 			MonitorConv.sort(binaryVals);
@@ -111,18 +116,20 @@ public class PacketCapConv {
 	 *
 	 * @param
 	 * @return
+	 * @throws RestConnectFailed 
+	 * @throws ParseException 
 	 * @throws MonitorNotFound_Exception
 	 * @throws InvalidUserPass_Exception
 	 * @throws InvalidRole_Exception
 	 * @throws HinemosUnknown_Exception
 	 */
-	public static PacketCapMonitors createPacketCapMonitors(List<MonitorInfo> monitorInfoList) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, MonitorNotFound_Exception {
+	public static PacketCapMonitors createPacketCapMonitors(List<MonitorInfoResponse> monitorInfoList) throws HinemosUnknown, InvalidRole, InvalidUserPass, MonitorNotFound, RestConnectFailed, ParseException {
 		PacketCapMonitors packetCapMonitors = new PacketCapMonitors();
 
-		for (MonitorInfo monitorInfo : monitorInfoList) {
+		for (MonitorInfoResponse monitorInfo : monitorInfoList) {
 			logger.debug("Monitor Id : " + monitorInfo.getMonitorId());
 
-			monitorInfo = MonitorSettingEndpointWrapper
+			monitorInfo = MonitorsettingRestClientWrapper
 					.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.getMonitor(monitorInfo.getMonitorId());
 
@@ -130,11 +137,11 @@ public class PacketCapConv {
 			packetCapMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
 			
 			int orderNo = 0;
-			for (BinaryPatternInfo binaryPatternInfo : monitorInfo.getBinaryPatternInfo()) {
-				packetCapMonitor.addBinaryValue(MonitorConv.createBinaryValue(binaryPatternInfo, ++orderNo));
+			for (BinaryPatternInfoResponse binaryPatternInfo : monitorInfo.getBinaryPatternInfo()) {
+				packetCapMonitor.addBinaryValue(MonitorConv.createBinaryValue(monitorInfo.getMonitorId(),binaryPatternInfo, ++orderNo));
 			}
 
-			packetCapMonitor.setPacketCapInfo(createPacketInfo(monitorInfo.getPacketCheckInfo()));
+			packetCapMonitor.setPacketCapInfo(createPacketInfo(monitorInfo));
 			packetCapMonitors.addPacketCapMonitor(packetCapMonitor);
 		}
 
@@ -149,20 +156,20 @@ public class PacketCapConv {
 	 *
 	 * @return
 	 */
-	private static PacketCapInfo createPacketInfo(PacketCheckInfo packetCapCheckInfo) {
+	private static PacketCapInfo createPacketInfo(MonitorInfoResponse monitorInfo) {
 		PacketCapInfo packetCapInfo = new PacketCapInfo();
 		packetCapInfo.setMonitorTypeId("");
-		packetCapInfo.setMonitorId(packetCapCheckInfo.getMonitorId());
+		packetCapInfo.setMonitorId(monitorInfo.getMonitorId());
 
-		packetCapInfo.setFilterStr(packetCapCheckInfo.getFilterStr());
-		packetCapInfo.setPromiscuousMode(packetCapCheckInfo.isPromiscuousMode());
+		packetCapInfo.setFilterStr(monitorInfo.getPacketCheckInfo().getFilterStr());
+		packetCapInfo.setPromiscuousMode(monitorInfo.getPacketCheckInfo().getPromiscuousMode());
 
 		return packetCapInfo;
 	}
 	
 	
-	private static PacketCheckInfo createPacketCheckInfo(PacketCapInfo packetCapInfo) {
-		PacketCheckInfo packetCapCheckInfo = new PacketCheckInfo();
+	private static PacketCheckInfoResponse createPacketCheckInfo(PacketCapInfo packetCapInfo) {
+		PacketCheckInfoResponse packetCapCheckInfo = new PacketCheckInfoResponse();
 
 		packetCapCheckInfo.setFilterStr(packetCapInfo.getFilterStr());
 		packetCapCheckInfo.setPromiscuousMode(packetCapInfo.getPromiscuousMode());

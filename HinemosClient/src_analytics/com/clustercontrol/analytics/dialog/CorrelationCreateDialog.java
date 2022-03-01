@@ -30,27 +30,31 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.AddCorrelationMonitorRequest;
+import org.openapitools.client.model.CorrelationCheckInfoResponse;
+import org.openapitools.client.model.ModifyCorrelationMonitorRequest;
+import org.openapitools.client.model.MonitorInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoRequest;
+import org.openapitools.client.model.FacilityInfoResponse;
+
+import org.openapitools.client.model.CollectKeyInfoResponseP1;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.analytics.util.AnalyticsUtil;
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.ScopeTreeDialog;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.MonitorDuplicate;
+import com.clustercontrol.fault.MonitorIdInvalid;
 import com.clustercontrol.monitor.run.dialog.CommonMonitorNumericDialog;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.repository.FacilityPath;
-import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.util.WidgetTestUtil;
-import com.clustercontrol.ws.collect.CollectKeyInfo;
-import com.clustercontrol.ws.monitor.CorrelationCheckInfo;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.MonitorDuplicate_Exception;
-import com.clustercontrol.ws.monitor.MonitorInfo;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 /**
  * 相関係数監視作成・変更ダイアログクラスです。
@@ -67,7 +71,7 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 	private Combo m_comboTargetItemName = null;
 
 	/** 対象収集値表示名マップ（表示名, キー) */
-	private Map<String, CollectKeyInfo> m_targetItemNameMap = new HashMap<>();
+	private Map<String, CollectKeyInfoResponseP1> m_targetItemNameMap = new HashMap<>();
 
 	/** 対象収集期間 */
 	private Text m_analysysRange = null;
@@ -76,7 +80,7 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 	private Combo m_comboReferItemName = null;
 
 	/** 参照収集値表示名マップ（表示名, キー) */
-	private Map<String, CollectKeyInfo> m_referItemNameMap = new HashMap<>();
+	private Map<String, CollectKeyInfoResponseP1> m_referItemNameMap = new HashMap<>();
 
 	/** 参照スコープ */
 	private String m_referFacilityId = null;
@@ -261,9 +265,9 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 				String managerName = getMonitorBasicScope().getManagerListComposite().getText();
 				ScopeTreeDialog dialog = new ScopeTreeDialog(shell, managerName, m_monitorBasic.getOwnerRoleId(), false, m_unregistered);
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					FacilityTreeItem item = dialog.getSelectItem();
-					FacilityInfo info = item.getData();
-					if (info.getFacilityType() == FacilityConstant.TYPE_NODE) {
+					FacilityTreeItemResponse item = dialog.getSelectItem();
+					FacilityInfoResponse info = item.getData();
+					if (info.getFacilityType() == FacilityInfoResponse.FacilityTypeEnum.NODE) {
 						m_textReferScope.setText(info.getFacilityName());
 					} else {
 						FacilityPath path = new FacilityPath(
@@ -339,17 +343,17 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 		this.adjustDialog();
 
 		// 初期表示
-		MonitorInfo info = null;
+		MonitorInfoResponse info = null;
 		if(this.monitorId == null){
 			// 作成の場合
-			info = new MonitorInfo();
+			info = new MonitorInfoResponse();
 			this.setInfoInitialValue(info);
 		} else {
 			// 変更の場合、情報取得
 			try {
-				MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(getManagerName());
+				MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 				info = wrapper.getMonitor(monitorId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(
 						null,
@@ -412,13 +416,13 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 	 *            設定値として用いる通知情報
 	 */
 	@Override
-	protected void setInputData(MonitorInfo monitor) {
+	protected void setInputData(MonitorInfoResponse monitor) {
 		super.setInputData(monitor);
 
 		this.inputData = monitor;
 
 		// チェック項目
-		CorrelationCheckInfo checkInfo = monitor.getCorrelationCheckInfo();
+		CorrelationCheckInfoResponse checkInfo = monitor.getCorrelationCheckInfo();
 		if (checkInfo != null) {
 			// 対象収集値表示名設定
 			AnalyticsUtil.setComboItemNameForNumeric(m_comboTargetItemName, m_targetItemNameMap, monitor.getFacilityId(),
@@ -428,24 +432,26 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 
 			// 参照ノード設定
 			this.m_referFacilityId = checkInfo.getReferFacilityId();
-			try {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(getManagerName());
-				m_textReferScope.setText(HinemosMessage.replace(wrapper.getFacilityPath(m_referFacilityId, null)));
-			} catch (com.clustercontrol.ws.repository.InvalidRole_Exception e) {
-				// アクセス権なしの場合、エラーダイアログを表示する
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("message"),
-						Messages.getString("message.accesscontrol.16"));
-				throw new InternalError(e.getMessage());
-			} catch (Exception e) {
-				// Managerとの通信で予期せぬ内部エラーが発生したことを通知する
-				m_log.warn("customizeDialog(), " + HinemosMessage.replace(e.getMessage()), e);
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("message"),
-						Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
-				throw new InternalError(e.getMessage());
+			if (this.m_referFacilityId != null && !this.m_referFacilityId.isEmpty()) {
+				try {
+					RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(getManagerName());
+					m_textReferScope.setText(HinemosMessage.replace(wrapper.getFacilityPath(m_referFacilityId, null).getFacilityPath()));
+				} catch (InvalidRole e) {
+					// アクセス権なしの場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.accesscontrol.16"));
+					throw new InternalError(e.getMessage());
+				} catch (Exception e) {
+					// Managerとの通信で予期せぬ内部エラーが発生したことを通知する
+					m_log.warn("customizeDialog(), " + HinemosMessage.replace(e.getMessage()), e);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
+					throw new InternalError(e.getMessage());
+				}
 			}
 
 			// 参照収集値表示名設定
@@ -466,18 +472,15 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 	 * @return 入力値を保持した通知情報
 	 */
 	@Override
-	protected MonitorInfo createInputData() {
+	protected MonitorInfoResponse createInputData() {
 		super.createInputData();
 		if(validateResult != null){
 			return null;
 		}
-		// 監視固有情報を設定
-		monitorInfo.setMonitorTypeId(HinemosModuleConstant.MONITOR_CORRELATION);
-
 		// 監視条件 監視情報
-		CorrelationCheckInfo correlationCheckInfo = new CorrelationCheckInfo();
+		CorrelationCheckInfoResponse correlationCheckInfo = new CorrelationCheckInfoResponse();
 		if (this.m_comboTargetItemName.getText() != null) {
-			CollectKeyInfo collectKeyInfo = m_targetItemNameMap.get(this.m_comboTargetItemName.getText());
+			CollectKeyInfoResponseP1 collectKeyInfo = m_targetItemNameMap.get(this.m_comboTargetItemName.getText());
 			if (collectKeyInfo != null) {
 				correlationCheckInfo.setTargetMonitorId(collectKeyInfo.getMonitorId());
 				correlationCheckInfo.setTargetDisplayName(collectKeyInfo.getDisplayName());
@@ -485,7 +488,7 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 			}
 		}
 		if (this.m_comboReferItemName.getText() != null) {
-			CollectKeyInfo collectKeyInfo = m_referItemNameMap.get(this.m_comboReferItemName.getText());
+			CollectKeyInfoResponseP1 collectKeyInfo = m_referItemNameMap.get(this.m_comboReferItemName.getText());
 			if (collectKeyInfo != null) {
 				correlationCheckInfo.setReferMonitorId(collectKeyInfo.getMonitorId());
 				correlationCheckInfo.setReferDisplayName(collectKeyInfo.getDisplayName());
@@ -535,27 +538,37 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 	protected boolean action() {
 		boolean result = false;
 
-		MonitorInfo info = this.inputData;
-		if(info != null){
-			String[] args = { info.getMonitorId(), getManagerName() };
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(getManagerName());
+		if(this.inputData != null){
+			String[] args = { this.inputData.getMonitorId(), getManagerName() };
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());
 			if(!this.updateFlg){
 				// 作成の場合
 				try {
-					result = wrapper.addMonitor(info);
-
-					if(result){
-						MessageDialog.openInformation(
-								null,
-								Messages.getString("successful"),
-								Messages.getString("message.monitor.33", args));
-					} else {
-						MessageDialog.openError(
-								null,
-								Messages.getString("failed"),
-								Messages.getString("message.monitor.34", args));
+					AddCorrelationMonitorRequest info = new AddCorrelationMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(AddCorrelationMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
 					}
-				} catch (MonitorDuplicate_Exception e) {
+					info.setPredictionMethod(AddCorrelationMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.addCorrelationMonitor(info);
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("successful"),
+							Messages.getString("message.monitor.33", args));
+					result = true;
+				} catch (MonitorIdInvalid e) {
+					// 監視項目IDが不適切な場合、エラーダイアログを表示する
+					MessageDialog.openInformation(
+							null,
+							Messages.getString("message"),
+							Messages.getString("message.monitor.97", args));
+				} catch (MonitorDuplicate e) {
 					// 監視項目IDが重複している場合、エラーダイアログを表示する
 					MessageDialog.openInformation(
 							null,
@@ -563,7 +576,7 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 							Messages.getString("message.monitor.53", args));
 				} catch (Exception e) {
 					String errMessage = "";
-					if (e instanceof InvalidRole_Exception) {
+					if (e instanceof InvalidRole) {
 						// アクセス権なしの場合、エラーダイアログを表示する
 						MessageDialog.openInformation(
 								null,
@@ -580,25 +593,36 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 				}
 			} else {
 				// 変更の場合
-				String errMessage = "";
 				try {
-					result = wrapper.modifyMonitor(info);
-				} catch (InvalidRole_Exception e) {
-					// アクセス権なしの場合、エラーダイアログを表示する
-					MessageDialog.openInformation(
-							null,
-							Messages.getString("message"),
-							Messages.getString("message.accesscontrol.16"));
-				} catch (Exception e) {
-					errMessage = ", " + HinemosMessage.replace(e.getMessage());
-				}
-
-				if(result){
+					ModifyCorrelationMonitorRequest info = new ModifyCorrelationMonitorRequest();
+					RestClientBeanUtil.convertBean(this.inputData, info);
+					info.setRunInterval(ModifyCorrelationMonitorRequest.RunIntervalEnum.fromValue(this.inputData.getRunInterval().getValue()));
+					if (info.getNumericValueInfo() != null
+							&& this.inputData.getNumericValueInfo() != null) {
+						for (int i = 0; i < info.getNumericValueInfo().size(); i++) {
+							info.getNumericValueInfo().get(i).setPriority(MonitorNumericValueInfoRequest.PriorityEnum.fromValue(
+									this.inputData.getNumericValueInfo().get(i).getPriority().getValue()));
+						}
+					}
+					info.setPredictionMethod(ModifyCorrelationMonitorRequest.PredictionMethodEnum.fromValue(
+							this.inputData.getPredictionMethod().getValue()));
+					wrapper.modifyCorrelationMonitor(this.inputData.getMonitorId(), info);
 					MessageDialog.openInformation(
 							null,
 							Messages.getString("successful"),
 							Messages.getString("message.monitor.35", args));
-				} else {
+					result = true;
+				} catch (Exception e) {
+					String errMessage = "";
+					if (e instanceof InvalidRole) {
+						// アクセス権なしの場合、エラーダイアログを表示する
+						MessageDialog.openInformation(
+								null,
+								Messages.getString("message"),
+								Messages.getString("message.accesscontrol.16"));
+					} else {
+						errMessage = ", " + HinemosMessage.replace(e.getMessage());
+					}
 					MessageDialog.openError(
 							null,
 							Messages.getString("failed"),
@@ -616,12 +640,12 @@ public class CorrelationCreateDialog extends CommonMonitorNumericDialog {
 	 * @see com.clustercontrol.dialog.CommonMonitorDialog#setInfoInitialValue()
 	 */
 	@Override
-	protected void setInfoInitialValue(MonitorInfo monitor) {
+	protected void setInfoInitialValue(MonitorInfoResponse monitor) {
 
 		super.setInfoInitialValue(monitor);
 
 		// 対象監視設定を取得する
-		CorrelationCheckInfo correlationCheckInfo = new CorrelationCheckInfo();
+		CorrelationCheckInfoResponse correlationCheckInfo = new CorrelationCheckInfoResponse();
 		correlationCheckInfo.setAnalysysRange(60);
 		monitor.setCorrelationCheckInfo(correlationCheckInfo);
 	}

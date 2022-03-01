@@ -18,15 +18,16 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.openapitools.client.model.DetachStorageRequest;
 
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.xcloud.CloudEndpoint;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.ICloudOptionHandler;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.model.cloud.IInstance;
 import com.clustercontrol.xcloud.model.cloud.IStorage;
 import com.clustercontrol.xcloud.plugin.CloudOptionSourceProvider;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.ControlUtil;
 
 public class DetachStorageHandler implements ICloudOptionHandler, CloudStringConstants {
@@ -60,8 +61,11 @@ public class DetachStorageHandler implements ICloudOptionHandler, CloudStringCon
 				
 				try {
 					ICloudScope cloudScope = (ICloudScope)HandlerUtil.getVariable(event, CloudOptionSourceProvider.ActiveCloudScope);
-					CloudEndpoint endpoint = storage.getCloudScope().getCloudScopes().getHinemosManager().getEndpoint(CloudEndpoint.class);
-					endpoint.detachStorage(cloudScope.getId(),storage.getLocationId(), storageIds);
+					String managerName = storage.getCloudScope().getCloudScopes().getHinemosManager().getManagerName();
+					CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
+					DetachStorageRequest req = new DetachStorageRequest();
+					req.setStorageIds(storageIds);
+					endpoint.detachStorage(cloudScope.getId(),storage.getLocationId(), req);
 					
 					// 成功報告ダイアログを生成
 					MessageDialog.openInformation(

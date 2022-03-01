@@ -13,9 +13,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.Session;
@@ -34,7 +35,6 @@ import com.clustercontrol.xcloud.model.InstanceEntity;
 import com.clustercontrol.xcloud.model.LocationEntity;
 import com.clustercontrol.xcloud.model.StorageBackupEntity;
 import com.clustercontrol.xcloud.model.StorageBackupEntryEntity;
-import com.clustercontrol.xcloud.model.StorageEntity;
 import com.clustercontrol.xcloud.util.CloudUtil;
 
 public class CacheResourceManagement implements IResourceManagement {
@@ -199,12 +199,26 @@ public class CacheResourceManagement implements IResourceManagement {
 					
 					List<String> queryInstanceIds = instances.stream().map(InstanceEntity::getResourceId).collect(Collectors.toList());
 					if (!queryInstanceIds.isEmpty()) {
-						TypedQuery<InstanceBackupEntity> query = Session.current().getEntityManager().createNamedQuery("findInstanceBackupsByInstanceIds", InstanceBackupEntity.class);
-						query.setParameter("cloudScopeId", getCloudLoginUser().getCloudScope().getId())
-							.setParameter("locationId", getLocation().getLocationId())
-							.setParameter("instanceIds", queryInstanceIds);
+						int start_idx = 0;
+						int end_idx = 0;
+						List<InstanceBackupEntity> backups = new ArrayList<>();
+						while(start_idx < queryInstanceIds.size()) {
+							TypedQuery<InstanceBackupEntity> query = Session.current().getEntityManager().createNamedQuery(InstanceBackupEntity.findInstanceBackupsByInstanceIds, InstanceBackupEntity.class);
+							query.setParameter("cloudScopeId", getCloudLoginUser().getCloudScope().getId());
+							query.setParameter("locationId", getLocation().getLocationId());
+							end_idx = start_idx + CloudUtil.SQL_PARAM_NUMBER_THRESHOLD;
+							if (end_idx > queryInstanceIds.size()){
+								end_idx = queryInstanceIds.size();
+							}
+							
+							List<String> subList = queryInstanceIds.subList(start_idx, end_idx);
+							query.setParameter("instanceIds", subList);
+							backups.addAll(query.getResultList());
+							start_idx = end_idx;
+						}
+
 						
-						List<InstanceBackupEntryEntity> entries = query.getResultList().stream().flatMap((v)->v.getEntries().stream()).collect(Collectors.toList());
+						List<InstanceBackupEntryEntity> entries = backups.stream().flatMap((v)->v.getEntries().stream()).collect(Collectors.toList());
 						
 						images = rm.getInstanceSnapshots(entries);
 					} else {
@@ -318,19 +332,14 @@ public class CacheResourceManagement implements IResourceManagement {
 				IResourceManagement rm = option.getResourceManagement(location, getCloudLoginUser());
 				List<IResourceManagement.StorageSnapshot> images;
 				if (entries.length == 0) {
-					List<StorageEntity> instances = CloudManager.singleton().getStorages(getCloudLoginUser(), getLocation()).getStorages(CloudUtil.emptyList(String.class));
-					
-					List<String> queryStorageIds = instances.stream().map(StorageEntity::getResourceId).collect(Collectors.toList());
-					if (!queryStorageIds.isEmpty()) {
-						TypedQuery<StorageBackupEntity> query = Session.current().getEntityManager().createNamedQuery(StorageBackupEntity.findStorageBackupsByStorageIds, StorageBackupEntity.class);
-						query.setParameter("cloudScopeId", getCloudLoginUser().getCloudScopeId());
-						query.setParameter("locationId", getLocation().getLocationId());
-						query.setParameter("storageIds", queryStorageIds);
-						
-						List<StorageBackupEntryEntity> entries = query.getResultList().stream().flatMap((v)->v.getEntries().stream()).collect(Collectors.toList());
-						
+					TypedQuery<StorageBackupEntity> query = Session.current().getEntityManager().createNamedQuery(StorageBackupEntity.findStorageBackups, StorageBackupEntity.class);
+					query.setParameter("cloudScopeId", getCloudLoginUser().getCloudScopeId());
+					query.setParameter("locationId", getLocation().getLocationId());
+					List<StorageBackupEntryEntity> entries = query.getResultList().stream().flatMap((v)->v.getEntries().stream()).collect(Collectors.toList());
+					try {
 						images = rm.getStorageSnapshots(entries);
-					} else {
+					} catch (UnsupportedOperationException e) {
+						//Azure、Hyper-Vなどストレージの機能がないプラットファームの場合
 						images = Collections.emptyList();
 					}
 				} else {
@@ -372,5 +381,10 @@ public class CacheResourceManagement implements IResourceManagement {
 	@Override
 	public List<Network> getNetworks() throws CloudManagerException {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void execNotify(ConcurrentHashMap<String, Object> requestMap) throws CloudManagerException {
+		throw new UnsupportedOperationException();		
 	}
 }

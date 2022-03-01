@@ -10,6 +10,7 @@ package com.clustercontrol.bean;
 
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
+import org.openapitools.client.model.JobDetailInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.EndStatusConstant;
@@ -50,6 +51,38 @@ public class EndStatusImageConstant extends EndStatusConstant {
 						.createImage();
 			return warning;
 		} else if (type == TYPE_ABNORMAL) {
+			if (abnormal == null)
+				abnormal = registry.getDescriptor(
+						ClusterControlPlugin.IMG_END_STATUS_ABNORMAL)
+						.createImage();
+			return abnormal;
+		}
+		return null;
+	}
+	/**
+	 * 種別からImageに変換します。<BR>
+	 *
+	 * @param type
+	 * @return
+	 */
+	public static Image typeEnumValueToImage(String type) {
+		ImageRegistry registry = ClusterControlPlugin.getDefault()
+				.getImageRegistry();
+
+		//findbugs対応 String比較方法をequelsに統一
+		if (type.equals(JobDetailInfoResponse.EndStatusEnum.NORMAL.getValue())) {
+			if (normal == null)
+				normal = registry.getDescriptor(
+						ClusterControlPlugin.IMG_END_STATUS_NORMAL)
+						.createImage();
+			return normal;
+		} else if (type.equals(JobDetailInfoResponse.EndStatusEnum.WARNING.getValue())) {
+			if (warning == null)
+				warning = registry.getDescriptor(
+						ClusterControlPlugin.IMG_END_STATUS_WARNING)
+						.createImage();
+			return warning;
+		} else if (type.equals(JobDetailInfoResponse.EndStatusEnum.ABNORMAL.getValue())) {
 			if (abnormal == null)
 				abnormal = registry.getDescriptor(
 						ClusterControlPlugin.IMG_END_STATUS_ABNORMAL)

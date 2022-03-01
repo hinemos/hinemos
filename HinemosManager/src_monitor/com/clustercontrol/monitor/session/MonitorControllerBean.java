@@ -8,17 +8,19 @@
 
 package com.clustercontrol.monitor.session;
 
-import java.io.IOException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.activation.DataHandler;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.session.CheckFacility;
+import com.clustercontrol.commons.util.CommonValidator;
+import com.clustercontrol.commons.util.HinemosSessionContext;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.EventLogNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -26,18 +28,14 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.UsedFacility;
-import com.clustercontrol.commons.session.CheckFacility;
-import com.clustercontrol.commons.util.CommonValidator;
-import com.clustercontrol.commons.util.HinemosSessionContext;
-import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.monitor.bean.EventBatchConfirmInfo;
+import com.clustercontrol.filtersetting.bean.EventFilterBaseInfo;
+import com.clustercontrol.filtersetting.bean.StatusFilterBaseInfo;
 import com.clustercontrol.monitor.bean.EventDataInfo;
 import com.clustercontrol.monitor.bean.EventDisplaySettingInfo;
-import com.clustercontrol.monitor.bean.EventFilterInfo;
+import com.clustercontrol.monitor.bean.EventSelectionInfo;
 import com.clustercontrol.monitor.bean.EventUserExtensionItemInfo;
 import com.clustercontrol.monitor.bean.ScopeDataInfo;
 import com.clustercontrol.monitor.bean.StatusDataInfo;
-import com.clustercontrol.monitor.bean.StatusFilterInfo;
 import com.clustercontrol.monitor.bean.ViewListInfo;
 import com.clustercontrol.monitor.factory.DeleteStatus;
 import com.clustercontrol.monitor.factory.ManageStatus;
@@ -50,10 +48,12 @@ import com.clustercontrol.monitor.factory.SelectEventHinemosProperty;
 import com.clustercontrol.monitor.factory.SelectScope;
 import com.clustercontrol.monitor.factory.SelectStatus;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
-import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.monitor.run.util.EventMonitorValidator;
+import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.util.MonitorStatusCache;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.rest.endpoint.monitorresult.dto.enumtype.ConfiremTypeEnum;
+import com.clustercontrol.rest.util.RestDownloadFile;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -130,15 +130,10 @@ public class MonitorControllerBean implements CheckFacility {
 	 * 引数で指定された条件に一致するステータス情報一覧を取得します。<BR>
 	 * 各ステータス情報は、StatusInfoDataのインスタンスとして保持されます。<BR>
 	 * 
-	 * @param facilityId 取得対象の親ファシリティID
-	 * @param property 検索条件
+	 * @param filter 検索条件
 	 * @return ステータス情報一覧（StatusInfoDataが格納されたArrayList）
-	 * @throws HinemosUnknown
-	 * 
-	 * @see com.clustercontrol.monitor.bean.StatusDataInfo
-	 * @see com.clustercontrol.monitor.factory.SelectStatus#getStatusList(String, StatusFilterInfo)
 	 */
-	public ArrayList<StatusDataInfo> getStatusList(String facilityId, StatusFilterInfo filter)
+	public ArrayList<StatusDataInfo> getStatusList(StatusFilterBaseInfo filter)
 			throws InvalidRole, HinemosUnknown{
 
 		JpaTransactionManager jtm = null;
@@ -149,7 +144,7 @@ public class MonitorControllerBean implements CheckFacility {
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-			list = select.getStatusList(facilityId, filter);
+			list = select.getStatusList(filter);
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
@@ -188,20 +183,19 @@ public class MonitorControllerBean implements CheckFacility {
 	 * @see com.clustercontrol.monitor.bean.StatusInfoData
 	 * @see com.clustercontrol.monitor.factory.DeleteStatus#delete(List)
 	 */
-	public boolean deleteStatus(ArrayList<StatusDataInfo> list) throws MonitorNotFound, InvalidRole, HinemosUnknown {
+	public ArrayList<StatusDataInfo> deleteStatus(ArrayList<StatusDataInfo> list) throws MonitorNotFound, InvalidRole, HinemosUnknown {
 
 		JpaTransactionManager jtm = null;
 
 		//ステータス情報を削除
 		DeleteStatus status = new DeleteStatus();
 
-		boolean ret = false;
-
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-
-			ret = status.delete(list);
+			
+			//findbugs対応 戻り値は 利用していないので無視
+			status.delete(list);
 
 			jtm.commit();
 		}catch (InvalidRole | MonitorNotFound e) {
@@ -223,7 +217,7 @@ public class MonitorControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.close();
 		}
-		return ret;
+		return list;
 	}
 
 	/**
@@ -272,21 +266,16 @@ public class MonitorControllerBean implements CheckFacility {
 	/**
 	 * 引数で指定された条件に一致するイベント一覧情報を取得します。(クライアントview用)<BR><BR>
 	 * 
-	 * 引数のpropertyには、com.clustercontrol.monitor.factory.EventFilterInfoの属性が１つ以上含まれます。<BR>
 	 * 各イベント情報は、EventDataInfoインスタンスとして保持されます。<BR>
 	 * 戻り値のViewListInfoは、クライアントにて表示用の形式に変換されます。
 	 * 
-	 * @param facilityId 取得対象の親ファシリティID
 	 * @param filter 検索条件
 	 * @param messages 表示イベント数
 	 * @return ビュー一覧情報
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
-	 * 
-	 * @see com.clustercontrol.monitor.bean.EventDataInfo
-	 * @see com.clustercontrol.monitor.factory.SelectEvent#getEventList(String, EventFilterInfo, int)
 	 */
-	public ViewListInfo getEventList(String facilityId, EventFilterInfo filter, int messages) throws InvalidRole, HinemosUnknown{
+	public ViewListInfo getEventList(EventFilterBaseInfo filter, int messages) throws InvalidRole, HinemosUnknown{
 
 		JpaTransactionManager jtm = null;
 
@@ -296,7 +285,7 @@ public class MonitorControllerBean implements CheckFacility {
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-			list = select.getEventList(facilityId, filter, messages);
+			list = select.getEventList(filter, messages);
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
@@ -322,13 +311,8 @@ public class MonitorControllerBean implements CheckFacility {
 	/**
 	 * 引数で指定された条件に一致する帳票ファイルのデータハンドラを返します。<BR><BR>
 	 * 
-	 * 引数のpropertyには、com.clustercontrol.monitor.factory.StatusFilterPropertyの属性が
-	 * １つ以上含まれます。<BR>
-	 * 戻り値のArrayListはArrayListのArrayListであり、内部のArrayListには、
-	 * com.clustercontrol.monitor.bean.ReportEventInfoがリストとして格納されます。
-	 * 
-	 * @param facilityId 取得対象の親ファシリティID
 	 * @param filter 検索条件
+	 * @param selectedEvents 選択されているイベント (null なら無選択)
 	 * @param filename 出力ファイル名
 	 * @param locale ロケール
 	 * @return 出力用ファイルのデータハンドラ
@@ -339,45 +323,40 @@ public class MonitorControllerBean implements CheckFacility {
 	 * 
 	 * @see com.clustercontrol.monitor.factory.SelectEvent#getEventFile(facilityId, filter, filename, username, locale)
 	 */
-	public DataHandler downloadEventFile(String facilityId, EventFilterInfo filter, String filename, Locale locale)
-			throws InvalidRole, HinemosUnknown{
+	public RestDownloadFile downloadEventFile(EventFilterBaseInfo filter, List<EventSelectionInfo> selectedEvents, String filename, Locale locale)
+			throws InvalidRole, HinemosUnknown {
 
 		JpaTransactionManager jtm = null;
 
 		// 帳票出力用イベントログ情報を取得
 		SelectEvent select = new SelectEvent();
 		String username = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
-		DataHandler handler = null;
+		File file = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
 			long now = HinemosTime.currentTimeMillis();
-			handler = select.getEventFile(facilityId, filter, filename, username, locale);
+			file = select.getEventFile(filter, selectedEvents, filename, username, locale);
 			long end = HinemosTime.currentTimeMillis();
 			m_log.info("downloadEventFile, time=" + (end - now) + "ms");
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (HinemosUnknown e) {
-			jtm.rollback();
-			throw e;
-		} catch (IOException e) {
-			m_log.warn("downloadEventFile() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (Exception e) {
-			m_log.warn("downloadEventFile() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			m_log.warn("downloadEventFile() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
 			if (jtm != null)
 				jtm.close();
 		}
-		return handler;
+		return new RestDownloadFile(file,filename);
 	}
 
 	/**
@@ -628,37 +607,34 @@ public class MonitorControllerBean implements CheckFacility {
 	 * 引数で指定された条件に一致するイベント情報の確認を一括更新します。<BR><BR>
 	 * 確認ユーザとして、操作を実施したユーザを設定します。<BR>
 	 * 
-	 * @param confirmType 確認タイプ（未確認／確認中／確認済）（更新値）
-	 * @param facilityId 更新対象の親ファシリティID
-	 * @param info 更新条件
+	 * @param confiremType 確認タイプ（未確認／確認中／確認済）（更新値）
+	 * @param filter 更新条件
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 * 
 	 * @see com.clustercontrol.bean.ConfirmConstant
 	 * @see com.clustercontrol.monitor.factory.ModifyEventConfirm#modifyBatchConfirm(int, String, String)
 	 */
-	public void modifyBatchConfirm(int confirmType, String facilityId, EventBatchConfirmInfo info) throws InvalidRole, HinemosUnknown{
+	public int modifyBatchConfirm(ConfiremTypeEnum confiremType, EventFilterBaseInfo filter) throws InvalidRole, HinemosUnknown{
 
 		JpaTransactionManager jtm = null;
 		String confirmUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
 
 		// イベントの確認状態を一括更新する
 		ModifyEventConfirm modify = new ModifyEventConfirm();
-
+		int rtn = 0;
+		
 		try{
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			modify.modifyBatchConfirm(confirmType, facilityId, info, confirmUser);
+			rtn = modify.modifyBatchConfirm(confiremType, filter, confirmUser);
 
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		}catch(HinemosUnknown e){
-			jtm.rollback();
-			throw e;
 		}catch(Exception e){
 			m_log.warn("modifyBatchConfirm() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -669,6 +645,7 @@ public class MonitorControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.close();
 		}
+		return rtn;
 	}
 
 	/**

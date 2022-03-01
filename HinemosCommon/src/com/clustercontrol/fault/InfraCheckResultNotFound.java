@@ -8,7 +8,7 @@
 
 package com.clustercontrol.fault;
 
-public class InfraCheckResultNotFound extends HinemosException {
+public class InfraCheckResultNotFound extends HinemosNotFound {
 	/**
 	 * 
 	 */
@@ -18,6 +18,20 @@ public class InfraCheckResultNotFound extends HinemosException {
 	
 	private String moduleId;
 
+	/**
+	 * InfraCheckResultNotFound コンストラクタ
+	 */
+	public InfraCheckResultNotFound() {
+		super();
+	}
+	
+	/**
+	 * InfraCheckResultNotFound コンストラクタ
+	 */
+	public InfraCheckResultNotFound(String messages) {
+		super(messages);
+	}
+	
 	/**
 	 * InfraCheckResultNotFound コンストラクタ
 	 */

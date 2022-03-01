@@ -23,10 +23,10 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.collect.bean.Sample;
 import com.clustercontrol.collect.util.CollectDataUtil;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.MonitorNotFound;
@@ -325,7 +325,7 @@ public class RunMonitorPing extends RunMonitorNumericValueType {
 		//fpingの出力を分割するパターン
 		Pattern patternSp = Pattern.compile("(\\s:\\s|\\s)+");
 		//正常な出力パターン
-		Pattern patternNormal = Pattern.compile("([0-9]+\\.[0-9]+|-)");
+		Pattern patternNormal = Pattern.compile("([0-9]+\\.[0-9]+|[0-9]+|-)");
 
 		//IPアドレス判定用
 		Matcher matcherIp;
@@ -880,7 +880,7 @@ public class RunMonitorPing extends RunMonitorNumericValueType {
 							{
 								logMsg += " , " + m_MsgErrV6.toString();
 							}
-							AplLogger.put(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.MONITOR_PING, MessageConstant.MESSAGE_SYS_001_MON_PNG, args, logMsg);
+							AplLogger.put(InternalIdCommon.MON_PNG_N_SYS_001, args, logMsg);
 							m_log.info("Fping no response.");
 
 							/* fping失敗で結果がありません。*/

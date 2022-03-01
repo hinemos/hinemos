@@ -9,7 +9,6 @@
 package com.clustercontrol.jobmanagement.composite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -22,16 +21,17 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.JobForwardFileResponse;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.action.GetForwardFileTableDefine;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.jobmanagement.util.TimeToANYhourConverter;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.JobForwardFile;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -129,14 +129,14 @@ public class ForwardFileComposite extends Composite {
 	 * @see com.clustercontrol.jobmanagement.action.GetForwardFile#get(String, String)
 	 */
 	public void update(String managerName, String sessionId, String jobunitId, String jobId) {
-		List<JobForwardFile> list = null;
+		List<JobForwardFileResponse> list = null;
 
 		//ファイル転送情報取得
 		if (sessionId != null && jobId != null) {
 			try {
-				JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
+				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
 				list = wrapper.getForwardFileList(sessionId, jobunitId, jobId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
 				if(ClientSession.isDialogFree()){
 					ClientSession.occupyDialog();
 					MessageDialog.openInformation(null, Messages.getString("message"),
@@ -156,11 +156,11 @@ public class ForwardFileComposite extends Composite {
 			}
 		}
 		if (list == null) {
-			list = new ArrayList<JobForwardFile>();
+			list = new ArrayList<JobForwardFileResponse>();
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		for (JobForwardFile info : list) {
+		for (JobForwardFileResponse info : list) {
 			ArrayList<Object> a = new ArrayList<Object>();
 			a.add(info.getStatus());
 			a.add(info.getEndStatus());
@@ -169,9 +169,11 @@ public class ForwardFileComposite extends Composite {
 			a.add(info.getSrcFacilityName());
 			a.add(info.getDstFacilityId());
 			a.add(info.getDstFacilityName());
-			a.add(info.getStartDate() == null ? "":new Date(info.getStartDate()));
-			a.add(info.getEndDate() == null ? "":new Date(info.getEndDate()));
-			a.add(TimeToANYhourConverter.toDiffTime(info.getStartDate(), info.getEndDate()));
+			a.add(info.getStartDate() == null ? "":info.getStartDate());
+			a.add(info.getEndDate() == null ? "":info.getEndDate());
+			a.add(TimeToANYhourConverter.toDiffTime(
+					JobTreeItemUtil.convertDtStringtoLong(info.getStartDate()),
+					JobTreeItemUtil.convertDtStringtoLong(info.getEndDate())));
 			listInput.add(a);
 		}
 		m_viewer.setInput(listInput);

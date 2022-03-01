@@ -23,7 +23,7 @@
 				</xs:annotation>
 			</xs:element>
 			<xs:element name="schemaRevision" type="xs:string"
-				minOccurs="0" maxOccurs="1" default="1">
+				minOccurs="0" maxOccurs="1" default="2">
 				<xs:annotation>
 					<xs:documentation>データ型のバージョン</xs:documentation>
 				</xs:annotation>
@@ -1070,6 +1070,55 @@
 				<xs:annotation>
 					<xs:documentation>
 						クラウドロケーション(任意の文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="cloudLogPriority" type="xs:integer"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						クラウドログ優先度(任意の数値)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			
+			<xs:attribute name="rpaLogDir" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						RPAツール情報 ログ出力ディレクトリ(任意の文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="rpaManagementToolType" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						RPA管理ツールタイプ(定型文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="rpaResourceId" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						RPAリソースID(任意の文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="rpaUser" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						RPA管理ツール情報 ユーザID(任意の文字列)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="rpaExecEnvId" type="xs:string"
+				use="optional">
+				<xs:annotation>
+					<xs:documentation>
+						RPA実行環境ID(任意の文字列)です。
 					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>

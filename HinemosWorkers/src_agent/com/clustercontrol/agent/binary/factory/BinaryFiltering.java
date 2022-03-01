@@ -17,13 +17,13 @@ import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtBinaryPatternInfoResponse;
 
 import com.clustercontrol.agent.binary.BinaryMonitorConfig;
 import com.clustercontrol.agent.binary.result.BinaryRecord;
 import com.clustercontrol.binary.bean.BinarySearchBean;
 import com.clustercontrol.binary.util.BinaryBeanUtil;
 import com.clustercontrol.util.BinaryUtil;
-import com.clustercontrol.ws.monitor.BinaryPatternInfo;
 
 /**
  * バイナリフィルタリングクラス.
@@ -41,9 +41,9 @@ public class BinaryFiltering {
 
 	// フィルタ条件フィールド.
 	/** バイナリ検索条件リスト */
-	private List<BinaryPatternInfo> matchInfoList;
+	private List<AgtBinaryPatternInfoResponse> matchInfoList;
 	/** バイナリ検索条件マップ(キー優先順) */
-	private Map<Integer, BinaryPatternInfo> matchInfoMap;
+	private Map<Integer, AgtBinaryPatternInfoResponse> matchInfoMap;
 	/** 検索パターンバイナリマップ(キー優先順) */
 	private Map<Integer, List<Byte>> patternBinaryMap;
 
@@ -64,21 +64,21 @@ public class BinaryFiltering {
 	/**
 	 * コンストラクタ.
 	 * 
-	 * @param matchInfoList
-	 *            バイナリ検索条件リスト
+	 * @param matchInfoList2
+	 *			  バイナリ検索条件リスト
 	 * @param patternList
-	 *            検索文字列リスト
+	 *			  検索文字列リスト
 	 */
-	public BinaryFiltering(List<BinaryPatternInfo> matchInfoList) {
+	public BinaryFiltering(List<AgtBinaryPatternInfoResponse> matchInfoList2) {
 		// 引数不正チェック.
-		if (matchInfoList == null || matchInfoList.isEmpty()) {
+		if (matchInfoList2 == null || matchInfoList2.isEmpty()) {
 			log.warn("failed to match pattern by parameter");
 			this.errorParams = true;
 			return;
 		} else {
 			this.errorParams = false;
 		}
-		this.matchInfoList = matchInfoList;
+		this.matchInfoList = matchInfoList2;
 		this.maxPatternLength = this.setMaps();
 	}
 
@@ -86,7 +86,7 @@ public class BinaryFiltering {
 	 * バイナリレコード毎にパターンマッチするかチェック.
 	 * 
 	 * @param binary
-	 *            検索対象バイナリが格納されたBinaryRecord
+	 *			  検索対象バイナリが格納されたBinaryRecord
 	 * 
 	 * @return 処理対象の場合はtrue,引数不正もfalse;
 	 * 
@@ -113,7 +113,7 @@ public class BinaryFiltering {
 	 * サイズの大きなバイナリがパターンマッチするかチェック.
 	 * 
 	 * @param bigData
-	 *            検索対象バイナリが格納されたList<BinaryRecord>
+	 *			  検索対象バイナリが格納されたList<BinaryRecord>
 	 * 
 	 * @return 処理対象の場合はtrue,引数不正もfalse;
 	 * 
@@ -255,7 +255,7 @@ public class BinaryFiltering {
 	private int setMaps() {
 
 		// 検索条件とパターンマップ化.
-		this.matchInfoMap = new TreeMap<Integer, BinaryPatternInfo>();
+		this.matchInfoMap = new TreeMap<Integer, AgtBinaryPatternInfoResponse>();
 		for (int order = 1; order <= this.matchInfoList.size(); order++) {
 			this.matchInfoMap.put(order, this.matchInfoList.get(order - 1));
 		}
@@ -265,12 +265,12 @@ public class BinaryFiltering {
 
 		// ループ用変数初期化.
 		List<Byte> patternBinary = null;
-		BinaryPatternInfo matchInfo = null;
+		AgtBinaryPatternInfoResponse matchInfo = null;
 
 		int maxPatternLength = 0;
 
 		// 優先順に取り出して検索パターンをバイナリに変換.
-		for (Map.Entry<Integer, BinaryPatternInfo> matchInfoEntry : this.matchInfoMap.entrySet()) {
+		for (Map.Entry<Integer, AgtBinaryPatternInfoResponse> matchInfoEntry : this.matchInfoMap.entrySet()) {
 
 			// パターンとセットのバイナリ検索条件を取得.
 			matchInfo = matchInfoEntry.getValue();
@@ -333,7 +333,7 @@ public class BinaryFiltering {
 	 * パターンマッチするかチェック.
 	 * 
 	 * @param searchBinary
-	 *            検索対象バイナリ
+	 *			  検索対象バイナリ
 	 * 
 	 * @return 処理対象の場合はtrue,引数不正もfalse;
 	 * 
@@ -345,12 +345,12 @@ public class BinaryFiltering {
 		}
 
 		// ループ用変数初期化.
-		BinaryPatternInfo binaryProvision = null;
+		AgtBinaryPatternInfoResponse binaryProvision = null;
 		List<Byte> patternBinary = null;
 		this.priority = 0;
 
 		// 優先順に取り出してマッチするか確認.
-		for (Map.Entry<Integer, BinaryPatternInfo> matchInfoEntry : this.matchInfoMap.entrySet()) {
+		for (Map.Entry<Integer, AgtBinaryPatternInfoResponse> matchInfoEntry : this.matchInfoMap.entrySet()) {
 
 			// マッチキーをセット.
 			this.matchKey = matchInfoEntry.getKey();
@@ -363,7 +363,7 @@ public class BinaryFiltering {
 			patternBinary = patternBinaryMap.get(matchInfoEntry.getKey());
 			if(log.isDebugEnabled()){
 				log.debug(methodName + DELIMITER + "binary provision to match : searchText = "
-						+ binaryProvision.getGrepString() + ", processType = " + binaryProvision.isProcessType());
+						+ binaryProvision.getGrepString() + ", processType = " + binaryProvision.getProcessType());
 			}
 
 			// 引数不正等で検索対象文字列がバイナリ変換できていない場合(変換時にログ出力済).
@@ -401,7 +401,7 @@ public class BinaryFiltering {
 			if ( BinaryUtil.byteListIndexOf(searchBinary,patternBinary) > -1 ) {
 				// 優先順位を返却値として格納.
 				this.priority = matchInfoEntry.getKey().intValue();
-				if (binaryProvision.isProcessType()) {
+				if (binaryProvision.getProcessType().booleanValue()) {
 					// 条件に一致したら処理するの場合は含まれてるので処理対象としてtrue返却.
 					if(log.isDebugEnabled()){
 						log.debug(methodName + DELIMITER + "matched and process(binary) with matchKey = " + this.matchKey.toString());
@@ -438,7 +438,7 @@ public class BinaryFiltering {
 	 * <br>
 	 * 監視結果送信用ロジック.
 	 */
-	public BinaryPatternInfo getMatchBinaryProvision() {
+	public AgtBinaryPatternInfoResponse getMatchBinaryProvision() {
 		if (this.matchKey <= 0) {
 			return null;
 		}

@@ -8,7 +8,7 @@
 
 package com.clustercontrol.fault;
 
-public class LogFormatNotFound extends HinemosException {
+public class LogFormatNotFound extends HinemosNotFound {
 
 	/**
 	 * 

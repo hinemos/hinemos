@@ -13,8 +13,10 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -161,7 +163,7 @@ public class SelectCalendar {
 	 * @throws CalendarNotFound
 	 * @throws InvalidRole
 	 */
-	public ArrayList<Integer> getCalendarMonth(String id, Integer year, Integer month) throws CalendarNotFound, InvalidRole {
+	public Map<Integer, Integer> getCalendarMonth(String id, Integer year, Integer month) throws CalendarNotFound, InvalidRole {
 		return getCalendarMonth(getCalendarFull(id), year, month);
 	}
 
@@ -172,8 +174,8 @@ public class SelectCalendar {
 	 * @param month
 	 * @return
 	 */
-	public ArrayList<Integer> getCalendarMonth(CalendarInfo info, Integer year, Integer month) {
-		ArrayList<Integer> ret = new ArrayList<Integer>();
+	public Map<Integer, Integer> getCalendarMonth(CalendarInfo info, Integer year, Integer month) {
+		Map<Integer, Integer> ret = new HashMap<>();
 		ArrayList<CalendarDetailInfo>list24 = new ArrayList<CalendarDetailInfo>();
 		for (CalendarDetailInfo d : info.getCalendarDetailList()) {
 			list24.addAll(CalendarUtil.getDetail24(d));
@@ -221,7 +223,7 @@ public class SelectCalendar {
 			
 			// その日が有効期限内に入っていない場合、無条件に×とする
 			if (dayValidStart > dayValidEnd) {
-				ret.add(2);
+				ret.put(i, 2);
 				continue;
 			}
 			
@@ -273,19 +275,19 @@ public class SelectCalendar {
 			
 			if (isAllNG == true) {
 				// ×：全部NG
-				ret.add(2);
+				ret.put(i, 2);
 			} else {
 				if (isAllOK == true) {
 					if (isContainInvalidPeriod) {
 						// △：一部OK・一部NG （有効期間内は全てOKだが、カレンダそのものの非有効範囲が被るため）
-						ret.add(1);
+						ret.put(i, 1);
 					} else {
 						// ○：全てOK
-						ret.add(0);
+						ret.put(i, 0);
 					}
 				} else {
 					// △：一部OK・一部NG
-					ret.add(1);
+					ret.put(i, 1);
 				}
 			}
 		}
@@ -580,10 +582,10 @@ public class SelectCalendar {
 		info.setCalendarDetailList(detailList);
 
 		SelectCalendar selectCalendar = new SelectCalendar();
-		ArrayList<Integer> list = selectCalendar.getCalendarMonth(info, 2012, 2);
+		Map<Integer, Integer> map = selectCalendar.getCalendarMonth(info, 2012, 2);
 		int j = 0;
 		StringBuilder str = new StringBuilder();
-		for (Integer i : list) {
+		for (Integer i : map.values()) {
 			if (j % 7 == 0) {
 				str.append("\n");
 			}

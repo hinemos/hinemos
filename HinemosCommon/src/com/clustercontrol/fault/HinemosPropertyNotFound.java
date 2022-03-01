@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * 共通情報が存在しない場合に利用するException
  * @version 5.0.0
  */
-public class HinemosPropertyNotFound extends HinemosException {
+public class HinemosPropertyNotFound extends HinemosNotFound {
 
 	private static final long serialVersionUID = 3178697208871226266L;
 	private String m_key = null;

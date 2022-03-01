@@ -22,9 +22,11 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.ModifyBillingSettingRequest;
 
 import com.clustercontrol.dialog.CommonDialog;
-import com.clustercontrol.ws.xcloud.ModifyBillingSettingRequest;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.cloud.ICloudScope;
 import com.clustercontrol.xcloud.util.ControlUtil;
@@ -158,7 +160,6 @@ public class ModifyBillingSettingDialog extends CommonDialog implements CloudStr
 
 	@Override
 	protected void okPressed() {
-		output.setCloudScopeId(cloudScope.getId());
 		output.setRetentionPeriod(Integer.valueOf(txtRetentionPeriod.getText()));
 		output.setBillingDetailCollectorFlg(btnBillingDetailCollectorFlg.getSelection());
 
@@ -172,6 +173,11 @@ public class ModifyBillingSettingDialog extends CommonDialog implements CloudStr
 	}
 
 	public ModifyBillingSettingRequest getOutput() {
-		return output;
+		ModifyBillingSettingRequest req = new ModifyBillingSettingRequest();
+		try {
+			RestClientBeanUtil.convertBean(output, req);
+		} catch (HinemosUnknown e) {
+		}
+		return req;
 	}
 }

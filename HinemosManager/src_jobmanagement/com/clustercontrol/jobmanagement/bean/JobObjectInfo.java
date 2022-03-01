@@ -19,50 +19,50 @@ import javax.xml.bind.annotation.XmlType;
  * @since 1.0.0
  */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
+public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo>, Cloneable {
 
 	/** シリアライズ可能クラスに定義するUID */
 	private static final long serialVersionUID = -4050301670424654620L;
 
 	/** 判定対象種別 */
-	private Integer m_type = 0;
+	private Integer type;
 
 	/** ジョブID */
-	private String m_jobId;
+	private String jobId;
 
 	/** ジョブ名 */
-	private String m_jobName;
+	private String jobName;
 
-	/** 値 */
-	private Integer m_value = 0;
+	/** 終了状態 */
+	private Integer status;
+
+	/** 終了値 */
+	private String value;
 
 	/** 時刻 */
-	private Long m_time;
+	private Long time;
 
 	/** セッション開始時の時間（分） */
-	private Integer m_startMinute = 0;
+	private Integer startMinute;
 
 	/** 説明 */
-	private String m_description;
+	private String description;
 
 	/** 判定値1 */
-	private String m_decisionValue01;
-
-	/** 判定値2 */
-	private String m_decisionValue02;
+	private String decisionValue;
 
 	/** 判定条件 */
-	private Integer m_decisionCondition;
+	private Integer decisionCondition;
 	
 	/** セッション横断ジョブ履歴判定対象範囲（分）*/
-	private Integer m_crossSessionRange = 60;
+	private Integer crossSessionRange;
 	
 	/**
 	 * 待ち条件の判定対象となるジョブIDを返す。<BR>
 	 * @return 待ち条件の判定対象となるジョブID
 	 */
 	public String getJobId() {
-		return m_jobId;
+		return jobId;
 	}
 
 	/**
@@ -70,7 +70,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @param jobId 待ち条件となる判定対象となるジョブID
 	 */
 	public void setJobId(String jobId) {
-		this.m_jobId = jobId;
+		this.jobId = jobId;
 	}
 
 	/**
@@ -78,7 +78,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @return 待ち条件の時刻
 	 */
 	public Long getTime() {
-		return m_time;
+		return time;
 	}
 
 	/**
@@ -86,25 +86,41 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @param time 待ち条件の時刻
 	 */
 	public void setTime(Long time) {
-		this.m_time = time;
+		this.time = time;
 	}
 
 	/**
-	 * 待ち条件の判定対象となるジョブの値（終了値 or 終了状態）を返す。<BR>
-	 * @return 待ち条件の判定対象となるジョブの値（終了値 or 終了状態）
+	 * 待ち条件の判定対象となるジョブの終了状態を返す。<BR>
+	 * @return 待ち条件の判定対象となるジョブの終了状態
 	 * @see com.clustercontrol.bean.EndStatusConstant
 	 */
-	public Integer getValue() {
-		return m_value;
+	public Integer getStatus() {
+		return status;
 	}
 
 	/**
-	 * 待ち条件の判定対象となるジョブの値（終了値 or 終了状態）を設定する。<BR>
-	 * @param value 待ち条件の判定対象となるジョブの値（終了値 or 終了状態）
+	 * 待ち条件の判定対象となるジョブの終了状態を設定する。<BR>
+	 * @param value 待ち条件の判定対象となるジョブの終了状態
 	 * @see com.clustercontrol.bean.EndStatusConstant
 	 */
-	public void setValue(Integer value) {
-		this.m_value = value;
+	public void setStatus(Integer status) {
+		this.status = status;
+	}
+
+	/**
+	 * 待ち条件の判定対象となるジョブの終了値を返す。<BR>
+	 * @return 待ち条件の判定対象となるジョブの終了値
+	 */
+	public String getValue() {
+		return value;
+	}
+
+	/**
+	 * 待ち条件の判定対象となるジョブの終了値を設定する。<BR>
+	 * @param value 待ち条件の判定対象となるジョブの終了値
+	 */
+	public void setValue(String value) {
+		this.value = value;
 	}
 
 	/**
@@ -113,7 +129,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @see com.clustercontrol.bean.JudgmentObjectConstant
 	 */
 	public Integer getType() {
-		return m_type;
+		return type;
 	}
 
 	/**
@@ -122,7 +138,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @see com.clustercontrol.bean.JudgmentObjectConstant
 	 */
 	public void setType(Integer type) {
-		this.m_type = type;
+		this.type = type;
 	}
 
 	/**
@@ -130,7 +146,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @return ジョブ名
 	 */
 	public String getJobName() {
-		return m_jobName;
+		return jobName;
 	}
 
 	/**
@@ -138,7 +154,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @param jobName ジョブ名
 	 */
 	public void setJobName(String jobName) {
-		this.m_jobName = jobName;
+		this.jobName = jobName;
 	}
 
 	/**
@@ -146,7 +162,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @return セッション開始時の時間（分）
 	 */
 	public Integer getStartMinute() {
-		return m_startMinute;
+		return startMinute;
 	}
 
 	/**
@@ -154,7 +170,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @param startMinute セッション開始時の時間（分）
 	 */
 	public void setStartMinute(Integer startMinute) {
-		this.m_startMinute = startMinute;
+		this.startMinute = startMinute;
 	}
 
 	/**
@@ -162,7 +178,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @return 説明
 	 */
 	public String getDescription() {
-		return m_description;
+		return description;
 	}
 
 	/**
@@ -170,39 +186,23 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @param description 説明
 	 */
 	public void setDescription(String description) {
-		this.m_description = description;
+		this.description = description;
 	}
 
 	/**
-	 * 判定値1を返す。<BR>
-	 * @return 判定値1
+	 * 判定値を返す。<BR>
+	 * @return 判定値
 	 */
-	public String getDecisionValue01() {
-		return m_decisionValue01;
+	public String getDecisionValue() {
+		return decisionValue;
 	}
 
 	/**
-	 * 判定値1を設定する。<BR>
-	 * @param decisionValue01 判定値1
+	 * 判定値を設定する。<BR>
+	 * @param decisionValue 判定値
 	 */
-	public void setDecisionValue01(String decisionValue01) {
-		this.m_decisionValue01 = decisionValue01;
-	}
-
-	/**
-	 * 判定値2を返す。<BR>
-	 * @return 判定値2
-	 */
-	public String getDecisionValue02() {
-		return m_decisionValue02;
-	}
-
-	/**
-	 * 判定値2を設定する。<BR>
-	 * @param decisionValue02 判定値2
-	 */
-	public void setDecisionValue02(String decisionValue02) {
-		this.m_decisionValue02 = decisionValue02;
+	public void setDecisionValue(String decisionValue) {
+		this.decisionValue = decisionValue;
 	}
 
 	/**
@@ -210,7 +210,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @return 判定条件
 	 */
 	public Integer getDecisionCondition() {
-		return m_decisionCondition;
+		return decisionCondition;
 	}
 
 	/**
@@ -218,7 +218,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @param decisionCondition 判定条件
 	 */
 	public void setDecisionCondition(Integer decisionCondition) {
-		this.m_decisionCondition = decisionCondition;
+		this.decisionCondition = decisionCondition;
 	}
 	
 	/**
@@ -226,7 +226,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @return
 	 */
 	public Integer getCrossSessionRange() {
-		return m_crossSessionRange;
+		return crossSessionRange;
 	}
 
 	/**
@@ -234,7 +234,7 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	 * @param crossSessionRange
 	 */
 	public void setCrossSessionRange(Integer crossSessionRange) {
-		this.m_crossSessionRange = crossSessionRange;
+		this.crossSessionRange = crossSessionRange;
 	}
 
 	
@@ -242,19 +242,17 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((m_jobId == null) ? 0 : m_jobId.hashCode());
+		result = prime * result + ((jobId == null) ? 0 : jobId.hashCode());
 		result = prime * result
-				+ ((m_jobName == null) ? 0 : m_jobName.hashCode());
-		result = prime * result
-				+ ((m_startMinute == null) ? 0 : m_startMinute.hashCode());
-		result = prime * result + ((m_time == null) ? 0 : m_time.hashCode());
-		result = prime * result + ((m_type == null) ? 0 : m_type.hashCode());
-		result = prime * result + ((m_value == null) ? 0 : m_value.hashCode());
-		result = prime * result + ((m_description == null) ? 0 : m_description.hashCode());
-		result = prime * result + ((m_decisionValue01 == null) ? 0 : m_decisionValue01.hashCode());
-		result = prime * result + ((m_decisionValue02 == null) ? 0 : m_decisionValue02.hashCode());
-		result = prime * result + ((m_decisionCondition == null) ? 0 : m_decisionCondition.hashCode());
-		result = prime * result + ((m_crossSessionRange == null) ? 0 : m_crossSessionRange.hashCode());
+				+ ((startMinute == null) ? 0 : startMinute.hashCode());
+		result = prime * result + ((time == null) ? 0 : time.hashCode());
+		result = prime * result + ((type == null) ? 0 : type.hashCode());
+		result = prime * result + ((status == null) ? 0 : status.hashCode());
+		result = prime * result + ((value == null) ? 0 : value.hashCode());
+		result = prime * result + ((description == null) ? 0 : description.hashCode());
+		result = prime * result + ((decisionValue == null) ? 0 : decisionValue.hashCode());
+		result = prime * result + ((decisionCondition == null) ? 0 : decisionCondition.hashCode());
+		result = prime * result + ((crossSessionRange == null) ? 0 : crossSessionRange.hashCode());
 		return result;
 	}
 
@@ -269,12 +267,12 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		boolean ret = false;
 		ret = 	equalsSub(o1.getType(), o2.getType()) &&
 				equalsSub(o1.getJobId(), o2.getJobId()) &&
+				equalsSub(o1.getStatus(), o2.getStatus()) &&
 				equalsSub(o1.getValue(), o2.getValue()) &&
 				equalsSub(o1.getTime(), o2.getTime()) &&
 				equalsSub(o1.getStartMinute(), o2.getStartMinute()) &&
 				equalsSub(o1.getDescription(), o2.getDescription()) &&
-				equalsSub(o1.getDecisionValue01(), o2.getDecisionValue01()) &&
-				equalsSub(o1.getDecisionValue02(), o2.getDecisionValue02()) &&
+				equalsSub(o1.getDecisionValue(), o2.getDecisionValue()) &&
 				equalsSub(o1.getDecisionCondition(), o2.getDecisionCondition()) &&
 				equalsSub(o1.getCrossSessionRange(), o2.getCrossSessionRange());
 		return ret;
@@ -292,10 +290,10 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 
 	@Override
 	public int compareTo(JobObjectInfo o) {
-		return ("" + this.m_jobId + this.m_jobName + this.m_type + this.m_value + this.m_time + this.m_startMinute
-				 + this.m_decisionValue01 + this.m_decisionValue02 + this.m_decisionCondition + this.m_description + this.m_crossSessionRange)
-				.compareTo("" + o.m_jobId + o.m_jobName + o.m_type + o.m_value + o.m_time + o.m_startMinute
-						 + o.m_decisionValue01 + o.m_decisionValue02 + o.m_decisionCondition + o.m_description + o.m_crossSessionRange);
+		return ("" + this.jobId + this.type + this.status + this.value + this.time + this.startMinute
+				 + this.decisionValue + this.decisionCondition + this.description + this.crossSessionRange)
+				.compareTo("" + o.jobId + o.type + o.status + o.value + o.time + o.startMinute
+						 + o.decisionValue + o.decisionCondition + o.description + o.crossSessionRange);
 	}
 
 	/**
@@ -317,11 +315,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info1.setType(0);
 		info1.setJobId("testJob");
 		info1.setJobName("テストジョブ");
-		info1.setValue(0);
+		info1.setStatus(0);
 		info1.setTime(0L);
 		info1.setStartMinute(0);
-		info1.setDecisionValue01("テスト判定値1");
-		info1.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info1.setDecisionCondition(0);
 		info1.setDescription("説明");
 
@@ -329,11 +327,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(0);
 		info2.setJobId("testJob");
 		info2.setJobName("テストジョブ");
-		info2.setValue(0);
+		info2.setStatus(0);
 		info2.setTime(0L);
 		info2.setStartMinute(0);
-		info2.setDecisionValue01("テスト判定値1");
-		info2.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(0);
 		info2.setDescription("説明");
 		
@@ -344,11 +342,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(1);
 		info2.setJobId("testJob");
 		info2.setJobName("テストジョブ");
-		info2.setValue(0);
+		info2.setStatus(0);
 		info2.setTime(0L);
 		info2.setStartMinute(0);
-		info2.setDecisionValue01("テスト判定値1");
-		info2.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(0);
 		info2.setDescription("説明");
 
@@ -359,11 +357,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(0);
 		info2.setJobId("testJob ");
 		info2.setJobName("テストジョブ");
-		info2.setValue(0);
+		info2.setStatus(0);
 		info2.setTime(0L);
 		info2.setStartMinute(0);
-		info2.setDecisionValue01("テスト判定値1");
-		info2.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(0);
 		info2.setDescription("説明");
 
@@ -374,11 +372,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(0);
 		info2.setJobId("testJob");
 		info2.setJobName("テストジョブ ");
-		info2.setValue(0);
+		info2.setStatus(0);
 		info2.setTime(0L);
 		info2.setStartMinute(0);
-		info2.setDecisionValue01("テスト判定値1");
-		info2.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(0);
 		info2.setDescription("説明");
 
@@ -389,11 +387,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(0);
 		info2.setJobId("testJob");
 		info2.setJobName("テストジョブ");
-		info2.setValue(1);
+		info2.setStatus(1);
 		info2.setTime(0L);
 		info2.setStartMinute(0);
-		info2.setDecisionValue01("テスト判定値1");
-		info2.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(0);
 		info2.setDescription("説明");
 
@@ -404,10 +402,10 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(0);
 		info2.setJobId("testJob");
 		info2.setJobName("テストジョブ");
-		info2.setValue(0);
+		info2.setStatus(0);
 		info2.setTime(1L);
-		info2.setDecisionValue01("テスト判定値1");
-		info2.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(0);
 		info2.setStartMinute(0);
 		info2.setDescription("説明");
@@ -419,11 +417,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(0);
 		info2.setJobId("testJob");
 		info2.setJobName("テストジョブ");
-		info2.setValue(0);
+		info2.setStatus(0);
 		info2.setTime(0L);
 		info2.setStartMinute(1);
-		info2.setDecisionValue01("テスト判定値1");
-		info2.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(0);
 		info2.setDescription("説明");
 
@@ -434,11 +432,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(0);
 		info2.setJobId("testJob");
 		info2.setJobName("テストジョブ");
-		info2.setValue(0);
+		info2.setStatus(0);
 		info2.setTime(0L);
 		info2.setStartMinute(0);
-		info2.setDecisionValue01("テスト判定値1 ");
-		info2.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(0);
 		info2.setDescription("説明");
 
@@ -449,11 +447,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(0);
 		info2.setJobId("testJob");
 		info2.setJobName("テストジョブ");
-		info2.setValue(0);
+		info2.setStatus(0);
 		info2.setTime(0L);
 		info2.setStartMinute(0);
-		info2.setDecisionValue01("テスト判定値1");
-		info2.setDecisionValue02("テスト判定値2 ");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(0);
 		info2.setDescription("説明");
 
@@ -464,11 +462,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(0);
 		info2.setJobId("testJob");
 		info2.setJobName("テストジョブ");
-		info2.setValue(0);
+		info2.setStatus(0);
 		info2.setTime(0L);
 		info2.setStartMinute(0);
-		info2.setDecisionValue01("テスト判定値1");
-		info2.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(1);
 		info2.setDescription("説明");
 
@@ -479,11 +477,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 		info2.setType(0);
 		info2.setJobId("testJob");
 		info2.setJobName("テストジョブ");
-		info2.setValue(0);
+		info2.setStatus(0);
 		info2.setTime(0L);
 		info2.setStartMinute(0);
-		info2.setDecisionValue01("テスト判定値1");
-		info2.setDecisionValue02("テスト判定値2");
+		info1.setDecisionValue("テスト判定値1");
+		info1.setValue("テスト判定値2");
 		info2.setDecisionCondition(0);
 		info2.setDescription("説明 ");
 
@@ -504,5 +502,11 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo> {
 			ret = "OK";
 		}
 		System.out.println("    is ...  " + ret);
+	}
+
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+		JobObjectInfo jobObjectInfo = (JobObjectInfo) super.clone();
+		return jobObjectInfo;
 	}
 }

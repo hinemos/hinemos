@@ -22,8 +22,6 @@ import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
-import com.clustercontrol.util.HinemosTime;
-import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.custom.bean.CommandExecuteDTO;
 import com.clustercontrol.custom.bean.CommandResultDTO;
@@ -31,7 +29,6 @@ import com.clustercontrol.custom.bean.Type;
 import com.clustercontrol.custom.factory.RunCustom;
 import com.clustercontrol.custom.factory.RunCustomString;
 import com.clustercontrol.custom.factory.SelectCustom;
-import com.clustercontrol.custom.util.CustomManagerUtil;
 
 /**
  * カスタム監視を制御するSession Bean <BR>
@@ -151,9 +148,6 @@ public class MonitorCustomControllerBean {
 							monitorJobEndNode.getStatus(),
 							monitorJobEndNode.getEndValue());
 				}
-				// 接続中のHinemosAgentに対する更新通知
-				SettingUpdateInfo.getInstance().setCustomMonitorUpdateTime(HinemosTime.currentTimeMillis());
-				CustomManagerUtil.broadcastConfigured();
 			}
 		} catch (Exception e) {
 			m_log.warn("evalCommandResult() MonitorJobWorker.endMonitorJob() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);

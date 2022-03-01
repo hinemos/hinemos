@@ -77,6 +77,10 @@ public class IPv6PropertyDefine extends PropertyDefine implements Serializable {
 			if(address instanceof Inet6Address){
 				check = true;
 			}
+
+			if (((String) value).contains("%")) {
+				check = false;
+			}
 		} catch (UnknownHostException e) {
 		}
 

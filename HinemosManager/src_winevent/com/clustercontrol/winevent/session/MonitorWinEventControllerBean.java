@@ -18,7 +18,6 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
-import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
@@ -42,7 +41,6 @@ import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.winevent.bean.WinEventResultDTO;
 import com.clustercontrol.winevent.factory.RunMonitorWinEventString;
-import com.clustercontrol.winevent.util.WinEventManagerUtil;
 
 /**
  * 
@@ -167,9 +165,7 @@ public class MonitorWinEventControllerBean {
 				
 				for (MonitorInfo monitorInfo : monitorList) {
 					String scope = monitorInfo.getFacilityId();
-					ArrayList<String> facilityIdList
-					= new RepositoryControllerBean().getExecTargetFacilityIdList(scope, monitorInfo.getOwnerRoleId());
-					if (facilityIdList != null && facilityIdList.contains(requestedFacilityId)) {
+					if (new RepositoryControllerBean().containsFacilityIdWithoutList(scope, requestedFacilityId, monitorInfo.getOwnerRoleId())) {
 						String calendarId = monitorInfo.getCalendarId();
 						if(calendarId != null){
 							CalendarInfo calendar = new CalendarControllerBean().getCalendarFull(calendarId);
@@ -251,9 +247,6 @@ public class MonitorWinEventControllerBean {
 							monitorJobEndNode.getStatus(),
 							monitorJobEndNode.getEndValue());
 				}
-				// 接続中のHinemosAgentに対する更新通知
-				SettingUpdateInfo.getInstance().setWinEventMonitorUpdateTime(HinemosTime.currentTimeMillis());
-				WinEventManagerUtil.broadcastConfigured();
 			}
 		} catch (Exception e) {
 			m_log.warn("run() MonitorJobWorker.endMonitorJob() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);

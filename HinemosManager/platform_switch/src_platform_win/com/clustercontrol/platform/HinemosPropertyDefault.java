@@ -25,16 +25,19 @@ public enum HinemosPropertyDefault implements HinemosPropertyAbstract {
 	data_dir(HinemosPropertyBean.string(System.getProperty("hinemos.manager.data.dir"))),
 	// Windows only.
 	user_home_dir(HinemosPropertyBean.string(System.getProperty("user.home"))),
+	cloud_export_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "/export/")),
 	binary_export_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "/export/")),
-	infra_export_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "/export/")),
+	infra_export_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "\\export\\")),
 	infra_transfer_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "/infra/")),
 	internal_command_commandline(HinemosPropertyBean.string("cmd /c echo #[GENERATION_DATE] #[MESSAGE] >> C:\\temp\\test.txt")),
 	internal_command_user(HinemosPropertyBean.string("")),
 	monitor_event_customcmd_common_stdout_encode(HinemosPropertyBean.string("MS932")),
 	monitor_ping_fping_path(HinemosPropertyBean.string(home_dir.getBean().getDefaultStringValue() + "/sbin/fping.ps1")),
-	monitor_ping_fping6_path(HinemosPropertyBean.string(monitor_ping_fping_path.getBean().getDefaultStringValue())),
 	performance_export_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "/export/")),
 	node_config_export_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "/export/")),
+	jobmap_export_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "/export/")),
+	job_rpa_screenshot_export_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "/export/")),
+	reporting_create_process_multiplicity_limit(HinemosPropertyBean.numeric(0L)),
 	reporting_create_timeout(HinemosPropertyBean.numeric(1800L)),
 	reporting_filename(HinemosPropertyBean.string("hinemos_report")),
 	reporting_heap_size(HinemosPropertyBean.string("-Xms256m -Xmx256m -Xss256k")),
@@ -44,7 +47,12 @@ public enum HinemosPropertyDefault implements HinemosPropertyAbstract {
 	notify_command_charset(HinemosPropertyBean.string("MS932")),
 	performance_export_manager_encode(HinemosPropertyBean.string("MS932")),
 	// Windows only.
-	windows_eventlog(HinemosPropertyBean.bool(true));
+	windows_eventlog(HinemosPropertyBean.bool(true)),
+	nodemap_export_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "/export/")),
+	rpa_scenario_operation_result_export_dir(HinemosPropertyBean.string(data_dir.getBean().getDefaultStringValue() + "/export/")),
+	job_rpa_login_file_dir(HinemosPropertyBean.string(System.getProperty("hinemos.manager.data.dir") + File.separator + "rpa")),
+	job_rpa_login_end_file_check_interval(HinemosPropertyBean.numeric(10000L));
+	
 
 	// Hinemosプロパティ情報
 	private final HinemosPropertyBean bean;

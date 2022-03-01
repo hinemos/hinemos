@@ -31,6 +31,15 @@ public class LocalLockManager implements ILockManager {
 		return lock;
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.clustercontrol.commons.util.ILockManager#get(java.lang.String)
+	 */
+	@Override
+	public synchronized ILock get(String key) {
+		LocalLock lock = _lockMap.get(key);
+		return lock;
+	}
+	
 	@Override
 	public synchronized boolean delete(String key) {
 		return _lockMap.remove(key) != null;
@@ -74,7 +83,22 @@ public class LocalLockManager implements ILockManager {
 		public void writeUnlock() {
 			_lock.writeLock().unlock();
 		}
-
+		
+		/* (non-Javadoc)
+		 * @see com.clustercontrol.commons.util.ILock#tryWriteLock()
+		 */
+		@Override
+		public boolean tryWriteLock() {
+			return _lock.writeLock().tryLock();
+		}
+		
+		/* (non-Javadoc)
+		 * @see com.clustercontrol.commons.util.ILock#tryReadLock()
+		 */
+		@Override
+		public boolean tryReadLock() {
+			return _lock.readLock().tryLock();
+		}
 	}
 	
 }

@@ -10,7 +10,6 @@ package com.clustercontrol.notify.composite;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -26,19 +25,21 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
+import org.openapitools.client.model.NotifyInfoResponse;
+import org.openapitools.client.model.NotifyInfoResponse.NotifyTypeEnum;
+import org.openapitools.client.model.NotifyRelationInfoResponse;
 
-import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.bean.Property;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.notify.action.GetNotify;
 import com.clustercontrol.notify.action.GetNotifyTableDefineCheckBox;
 import com.clustercontrol.notify.action.GetNotifyTableDefineNoCheckBox;
 import com.clustercontrol.notify.composite.action.NotifyDoubleClickListener;
+import com.clustercontrol.notify.util.NotifyTypeUtil;
 import com.clustercontrol.util.CheckBoxSelectionAdapter;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.notify.InvalidRole_Exception;
-import com.clustercontrol.ws.notify.NotifyInfo;
-import com.clustercontrol.ws.notify.NotifyRelationInfo;
 
 /**
  * 通知一覧コンポジットクラス<BR>
@@ -64,7 +65,7 @@ public class NotifyListComposite extends Composite {
 	private Property condition = null;
 
 	/**/
-	private List<NotifyRelationInfo> notify;
+	private List<NotifyRelationInfoResponse> notify;
 
 	/** マネージャ名 */
 	private String managerName = null;
@@ -184,7 +185,7 @@ public class NotifyListComposite extends Composite {
 	public void update() {
 
 		// 通知一覧をマネージャから取得
-		Map<String, List<NotifyInfo>> dispDataMap = null;
+		Map<String, List<NotifyInfoResponse>> dispDataMap = null;
 		ArrayList<ArrayList<Object>> listInput = new ArrayList<ArrayList<Object>>();
 
 		if (this.isSelect) {
@@ -194,53 +195,56 @@ public class NotifyListComposite extends Composite {
 			}
 
 			try {
+				m_log.debug("update() : managerName=" + this.managerName + ", ownerRoleId=" + ownerRoleId);
 				dispDataMap = new GetNotify().getNotifyListByOwnerRole(this.managerName, this.ownerRoleId);
-			} catch (InvalidRole_Exception e) {
+			} catch (InvalidRole e) {
+				m_log.debug("update() : isShowFlg is set to false");
 				// 通知一覧のシステム権限（参照）がない場合
 				setShowFlg(false);
 				return;
 			}
 
 		} else {
+			m_log.debug("update() : managerName=" + this.managerName);
 			dispDataMap = new GetNotify().getNotifyList(this.managerName);
 		}
 
-		for(Map.Entry<String, List<NotifyInfo>> entrySet : dispDataMap.entrySet()) {
-			List<NotifyInfo> list = null;
+		for(Map.Entry<String, List<NotifyInfoResponse>> entrySet : dispDataMap.entrySet()) {
+			List<NotifyInfoResponse> list = null;
 			list = entrySet.getValue();
 			if(list == null)
 			{
 				//通知一覧に設定されている通知がない場合
-				list = new ArrayList<NotifyInfo>();
+				list = new ArrayList<NotifyInfoResponse>();
 			}
-			for(NotifyInfo info : list){
+			for(NotifyInfoResponse info : list){
 				ArrayList<Object> a = new ArrayList<Object>();
 				if (this.isSelect) {
 					a.add(false);
 					//a.add(entrySet.getKey());
-					a.add(info.isValidFlg());
+					a.add(info.getValidFlg());
 					a.add(info.getNotifyId());
 					a.add(info.getDescription());
-					a.add(info.getNotifyType());
+					a.add(NotifyTypeUtil.enumToType(info.getNotifyType(), NotifyTypeEnum.class));
 				} else {
 					a.add(entrySet.getKey());
 					a.add(info.getNotifyId());
 					a.add(info.getDescription());
-					a.add(info.getNotifyType());
-					a.add(info.isValidFlg());
+					a.add(NotifyTypeUtil.enumToType(info.getNotifyType(), NotifyTypeEnum.class));
+					a.add(info.getValidFlg());
 				}
 				a.add(info.getOwnerRoleId());
 				a.add(info.getCalendarId());
 				a.add(info.getRegUser());
-				a.add(info.getRegDate() == null ? null:new Date(info.getRegDate()));
+				a.add(info.getRegDate());
 				a.add(info.getUpdateUser());
-				a.add(info.getUpdateDate() == null ? null:new Date(info.getUpdateDate()));
+				a.add(info.getUpdateDate());
 				a.add(null);
 				listInput.add(a);
 			}
 			if(notify == null){
 				//変更でない場合などはnotifyを初期化する。
-				notify = new ArrayList<NotifyRelationInfo>();
+				notify = new ArrayList<>();
 			}
 
 			if(isSelect){
@@ -249,17 +253,16 @@ public class NotifyListComposite extends Composite {
 				boolean flg = false;
 
 				//変更の通知を通知一覧のチェックボックスに表示させる。
-				Iterator<NotifyRelationInfo> it = notify.iterator();
-				NotifyRelationInfo nri = null ;
-				ArrayList<NotifyRelationInfo> removeNotifyList = new ArrayList<NotifyRelationInfo>();
+				Iterator<NotifyRelationInfoResponse> it = notify.iterator();
+				NotifyRelationInfoResponse nri = null ;
+				ArrayList<NotifyRelationInfoResponse> removeNotifyList = new ArrayList<>();
 
 				while(it.hasNext()){
 					nri = it.next();
-					nri.setNotifyGroupId(null);
 					flg = false;
 
 					for(int i = 0; i < list.size(); i++){
-						NotifyInfo info = list.get(i);
+						NotifyInfoResponse info = list.get(i);
 						ArrayList<Object> objList = listInput.get(i);
 						tableNotifyId = info.getNotifyId();
 
@@ -267,17 +270,17 @@ public class NotifyListComposite extends Composite {
 							objList.set(GetNotifyTableDefineCheckBox.SELECTION, true);
 							flg=true;
 						}
-						objList.set(GetNotifyTableDefineCheckBox.VALID_FLG, info.isValidFlg());
+						objList.set(GetNotifyTableDefineCheckBox.VALID_FLG, info.getValidFlg());
 						objList.set(GetNotifyTableDefineCheckBox.NOTIFY_ID, info.getNotifyId());
 						objList.set(GetNotifyTableDefineCheckBox.DESCRIPTION, info.getDescription());
-						objList.set(GetNotifyTableDefineCheckBox.NOTIFY_TYPE, info.getNotifyType());
+						objList.set(GetNotifyTableDefineCheckBox.NOTIFY_TYPE, NotifyTypeUtil.enumToType(info.getNotifyType(), NotifyTypeEnum.class));
 						objList.set(GetNotifyTableDefineCheckBox.OWNER_ROLE, info.getOwnerRoleId());
 						objList.set(GetNotifyTableDefineCheckBox.CALENDAR_ID, info.getCalendarId());
 
 						objList.set(GetNotifyTableDefineCheckBox.CREATE_USER, info.getRegUser());
-						objList.set(GetNotifyTableDefineCheckBox.CREATE_TIME, new Date(info.getRegDate()));
+						objList.set(GetNotifyTableDefineCheckBox.CREATE_TIME, info.getRegDate());
 						objList.set(GetNotifyTableDefineCheckBox.UPDATE_USER, info.getUpdateUser());
-						objList.set(GetNotifyTableDefineCheckBox.UPDATE_TIME, new Date(info.getUpdateDate()));
+						objList.set(GetNotifyTableDefineCheckBox.UPDATE_TIME, info.getUpdateDate());
 						objList.set(GetNotifyTableDefineCheckBox.DUMMY, null);
 						listInput.set(i, objList);
 					}
@@ -312,10 +315,10 @@ public class NotifyListComposite extends Composite {
 	 *
 	 * @param notify
 	 */
-	public void setSelectNotify(List<NotifyRelationInfo> notify){
+	public void setSelectNotify(List<NotifyRelationInfoResponse> notify){
 
 		if(notify != null){
-			this.notify =  new ArrayList<NotifyRelationInfo>();
+			this.notify =  new ArrayList<>();
 		}
 		this.notify = notify;
 	}
@@ -325,7 +328,7 @@ public class NotifyListComposite extends Composite {
 	 *
 	 * @return 通知情報のコレクション
 	 */
-	public List<NotifyRelationInfo> getSelectNotify(){
+	public List<NotifyRelationInfoResponse> getSelectNotify(){
 		return notify;
 	}
 
@@ -338,7 +341,7 @@ public class NotifyListComposite extends Composite {
 
 		TableItem[] ti = this.tableViewer.getTable().getItems();
 		ArrayList<?> al;
-		Collection<NotifyRelationInfo> ct = new ArrayList<NotifyRelationInfo>();;
+		Collection<NotifyRelationInfoResponse> ct = new ArrayList<>();
 
 		if (this.isSelect) {
 			for (int i = 0; i<ti.length; i++){
@@ -347,10 +350,10 @@ public class NotifyListComposite extends Composite {
 
 				if((Boolean)al.get(GetNotifyTableDefineCheckBox.SELECTION)){
 
-					NotifyRelationInfo nri = new NotifyRelationInfo();
-					nri.setNotifyGroupId(null);
+					NotifyRelationInfoResponse nri = new NotifyRelationInfoResponse();
 					nri.setNotifyId((String)al.get(GetNotifyTableDefineCheckBox.NOTIFY_ID));
-					nri.setNotifyType((Integer)al.get(GetNotifyTableDefineCheckBox.NOTIFY_TYPE));
+					nri.setNotifyType(NotifyTypeUtil.typeToEnum(
+							(Integer)al.get(GetNotifyTableDefineCheckBox.NOTIFY_TYPE), NotifyRelationInfoResponse.NotifyTypeEnum.class));
 
 					ct.add(nri);
 				}

@@ -42,6 +42,14 @@ public final class PropertiesConstant{
 	public static final String TYPE_FACILITY_NAME = "facility_name";
 	public static final String LEGEND_TYPE_DEFAULT = TYPE_FACILITY_ID;
 
+	public static final String DEVICE_GRAPH_LINE_MAX_KEY = "device.graph.line.max";
+	public static final String DEVICE_SORT_TYPE_KEY = "device.sort.type";
+	public static final String DEVICE_SORT_TYPE_DEFAULT = "NONE";
+	public static final String DEVICE_SORT_TYPE_ASC = "ASC";
+	public static final String DEVICE_SORT_TYPE_DESC = "DESC";
+	public static final String DEVICE_TRIM_PREFIX_KEY = "device.trim.prefix";
+	public static final String DEVICE_TRIM_SUFFIX_KEY = "device.trim.suffix";
+
 	// Property keys and default values for resource group template
 	public static final String REPORT_GRAPH_LINE_MAX_KEY = "report.graph.line.max";
 	public static final String GRAPH_LINE_MAX_DEFAULT = "10";

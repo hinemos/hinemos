@@ -11,7 +11,6 @@ package com.clustercontrol.agent.custom;
 import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -26,25 +25,25 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.AgtCustomMonitorInfoResponse;
+import org.openapitools.client.model.AgtCustomMonitorInfoResponse.TypeEnum;
+import org.openapitools.client.model.AgtCustomMonitorVarsInfoResponse;
+import org.openapitools.client.model.AgtCustomResultDTORequest;
+import org.openapitools.client.model.AgtRunInstructionInfoRequest;
 
-import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.agent.util.AgentProperties;
-import com.clustercontrol.agent.util.CalendarWSUtil;
 import com.clustercontrol.agent.util.CollectorId;
 import com.clustercontrol.agent.util.CollectorTask;
 import com.clustercontrol.agent.util.CommandMonitoringWSUtil;
+import com.clustercontrol.agent.util.RestAgentBeanUtil;
+import com.clustercontrol.agent.util.RestCalendarUtil;
 import com.clustercontrol.bean.PluginConstant;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandExecutor;
 import com.clustercontrol.util.CommandExecutor.CommandResult;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.StringBinder;
-import com.clustercontrol.ws.monitor.CommandExecuteDTO;
-import com.clustercontrol.ws.monitor.CommandResultDTO;
-import com.clustercontrol.ws.monitor.CommandResultDTO.InvalidLines;
-import com.clustercontrol.ws.monitor.CommandResultDTO.Results;
-import com.clustercontrol.ws.monitor.CommandVariableDTO;
-import com.clustercontrol.ws.monitor.Type;
 
 /**
  * Collector using command (register one Collector against one Command Monitoring)
@@ -83,7 +82,7 @@ public class CommandCollector implements CollectorTask, Runnable {
 	public static final String _returnCode;
 	public static final String _returnCodeDefault = "\n";
 
-	private CommandExecuteDTO config;
+	private AgtCustomMonitorInfoResponse config;
 	
 	private static volatile int _schedulerThreadCount = 0;
 	
@@ -102,7 +101,8 @@ public class CommandCollector implements CollectorTask, Runnable {
 
 		// read command mode
 		String commandModeStr = AgentProperties.getProperty("monitor.custom.command.mode");
-		if (! ("windows".equals(commandModeStr) || "unix".equals(commandModeStr) || "unix.su".equals(commandModeStr)
+		if (! ("windows".equals(commandModeStr) || "windows.cmd".equals(commandModeStr)
+				|| "unix".equals(commandModeStr) || "unix.su".equals(commandModeStr)
 				|| "compatible".equals(commandModeStr) || "regacy".equals(commandModeStr)
 				|| "auto".equals(commandModeStr))) {
 			commandModeStr = _commandModeDefault;
@@ -163,8 +163,8 @@ public class CommandCollector implements CollectorTask, Runnable {
 				);
 	}
 
-	public CommandCollector(CommandExecuteDTO config) {
-		this.config = config;
+	public CommandCollector(AgtCustomMonitorInfoResponse dto) {
+		this.config = dto;
 	}
 
 	@Override
@@ -177,12 +177,12 @@ public class CommandCollector implements CollectorTask, Runnable {
 		setConfig(((CommandCollector)task).getConfig());
 	}
 
-	public synchronized CommandExecuteDTO getConfig() {
+	public synchronized AgtCustomMonitorInfoResponse getConfig() {
 		return config;
 	}
 
-	public synchronized void setConfig(CommandExecuteDTO newConfig) {
-		CommandExecuteDTO currentConfig = config;
+	public synchronized void setConfig(AgtCustomMonitorInfoResponse newConfig) {
+		AgtCustomMonitorInfoResponse currentConfig = config;
 		this.config = newConfig;
 
 		if (currentConfig.getInterval().intValue() != newConfig.getInterval().intValue()) {
@@ -217,7 +217,7 @@ public class CommandCollector implements CollectorTask, Runnable {
 	 */
 	@Override
 	public void run() {
-		if (config.getRunInstructionInfo() == null && config.getCalendar() != null && ! CalendarWSUtil.isRun(config.getCalendar())) {
+		if (config.getRunInstructionInfo() == null && config.getCalendar() != null && !RestCalendarUtil.isRun(config.getCalendar())) {
 			// do nothing because now is not allowed
 			if (log.isDebugEnabled()) {
 				log.debug("command execution is skipped because of calendar. [" + CommandMonitoringWSUtil.toStringCommandExecuteDTO(config) + ", " + config.getCalendar() + "]");
@@ -225,7 +225,7 @@ public class CommandCollector implements CollectorTask, Runnable {
 			return;
 		}
 
-		for (CommandVariableDTO entry : config.getVariables()) {
+		for (AgtCustomMonitorVarsInfoResponse entry : config.getVariables()) {
 			if (log.isDebugEnabled()) {
 				log.debug("starting command worker. [" + CommandMonitoringWSUtil.toStringCommandExecuteDTO(config) + ", facilityId = " + entry.getFacilityId() + "]");
 			}
@@ -245,10 +245,10 @@ public class CommandCollector implements CollectorTask, Runnable {
 		// determine startup time
 		//
 		// example)
-		//   delay : 15 [sec]
-		//   interval : 300 [sec]
-		//   now : 2000-1-1 00:00:10
-		//   best startup : 2000-1-1 00:00:15
+		//	 delay : 15 [sec]
+		//	 interval : 300 [sec]
+		//	 now : 2000-1-1 00:00:10
+		//	 best startup : 2000-1-1 00:00:15
 		long now = HinemosTime.currentTimeMillis();
 		long startup = config.getInterval() * (now / config.getInterval()) + delay;
 		startup = startup > now ? startup : startup + config.getInterval();
@@ -289,15 +289,15 @@ public class CommandCollector implements CollectorTask, Runnable {
 
 	public static class CollectorCommandWorker implements Callable<Void> {
 
-		private final CommandExecuteDTO config;
+		private final AgtCustomMonitorInfoResponse config;
 		private final String facilityId;
 
 		private final Pattern lineSplitter;
 		private final Pattern stdoutPattern;
 		private final static String _stdoutRegex = "^(.+),\\s*(-?[0-9.]+)$";
 
-		public CollectorCommandWorker(CommandExecuteDTO config, String facilityId) {
-			this.config = config;
+		public CollectorCommandWorker(AgtCustomMonitorInfoResponse config2, String facilityId) {
+			this.config = config2;
 			this.facilityId = facilityId;
 
 			lineSplitter = Pattern.compile(_returnCode);
@@ -306,6 +306,15 @@ public class CommandCollector implements CollectorTask, Runnable {
 
 		@Override
 		public Void call() {
+			try {
+				call0();
+			} catch (Exception e) {
+				log.error("call: Failed to collect a result.", e);
+			}
+			return null;
+		}
+
+		private void call0() {
 			// execute command
 			String[] command = null;
 			String commandBinded = null;
@@ -323,7 +332,12 @@ public class CommandCollector implements CollectorTask, Runnable {
 			Date exitDate = null;
 			try {
 				CommandCreator.PlatformType platform = CommandCreator.convertPlatform(_commandMode);
-				command = CommandCreator.createCommand(config.getEffectiveUser(), commandBinded, platform, config.isSpecifyUser(), _commandLogin);
+				command = CommandCreator.createCommand(
+						config.getEffectiveUser(),
+						commandBinded,
+						platform,
+						config.getSpecifyUser(),
+						_commandLogin);
 
 				// execute command
 				CommandExecutor cmdExecutor = new CommandExecutor(command, _charset, config.getTimeout(), _bufferSize);
@@ -344,7 +358,7 @@ public class CommandCollector implements CollectorTask, Runnable {
 				// parse stdout
 				Map<String, Double> values = new HashMap<String, Double>();
 				Map<Integer, String> invalids = new HashMap<Integer, String>();
-				if (config.getType() == Type.NUMBER){
+				if (config.getType() == TypeEnum.NUMBER) {
 					parseStdout(ret != null ? ret.stdout : null, values, invalids);
 				}
 
@@ -355,10 +369,9 @@ public class CommandCollector implements CollectorTask, Runnable {
 						commandStr.append(commandStr.length() == 0 ? arg : " " + arg);
 					}
 				}
-				String user = (config.isSpecifyUser() ? config.getEffectiveUser() : CommandCreator.getSysUser());
+				String user = (config.getSpecifyUser().booleanValue() ? config.getEffectiveUser() : CommandCreator.getSysUser());
 				sendResult(ret, values, invalids, user, commandStr.toString(), executeDate, exitDate);
 			}
-			return null;
 		}
 
 		/**
@@ -409,8 +422,9 @@ public class CommandCollector implements CollectorTask, Runnable {
 			}
 		}
 
-		private void sendResult(CommandResult result, Map<String, Double> values, Map<Integer, String> invalids, String user, String commandLine, Date executeDate, Date exitDate) {
-			CommandResultDTO dto = new CommandResultDTO();
+		private void sendResult(CommandResult result, Map<String, Double> values, Map<Integer, String> invalids,
+				String user, String commandLine, Date executeDate, Date exitDate) {
+			AgtCustomResultDTORequest dto = new AgtCustomResultDTORequest();
 
 			dto.setMonitorId(config.getMonitorId());
 			dto.setFacilityId(facilityId);
@@ -420,30 +434,30 @@ public class CommandCollector implements CollectorTask, Runnable {
 			dto.setExitCode(result == null ? null : result.exitCode);
 			dto.setStdout(result == null ? null : result.stdout);
 			dto.setStderr(result == null ? null : result.stderr);
-			dto.setRunInstructionInfo(config.getRunInstructionInfo());
+			if (config.getRunInstructionInfo() != null) {
+				dto.setRunInstructionInfo(new AgtRunInstructionInfoRequest());
+				try {
+					RestAgentBeanUtil.convertBean(config.getRunInstructionInfo(), dto.getRunInstructionInfo());
+				} catch (HinemosUnknown never) {
+					log.error("sendResult: Failed to convert RunInstructionInfoRequest.", never);
+					return;
+				}
+			}
 
 			// convert values for web service
-			Results resultsDTO = new Results();
+			Map<String, String> resultsDTO = new HashMap<>();
 			if (values != null) {
-				List<CommandResultDTO.Results.Entry> resultEntry = resultsDTO.getEntry();
-				for (Entry<String, Double> value : values.entrySet()) {
-					CommandResultDTO.Results.Entry entry = new CommandResultDTO.Results.Entry();
-					entry.setKey(value.getKey());
-					entry.setValue(value.getValue());
-					resultEntry.add(entry);
+				for (Entry<String, Double> it : values.entrySet()) {
+					resultsDTO.put(it.getKey(), it.getValue().toString());
 				}
 			}
 			dto.setResults(resultsDTO);
 
 			// convert invalid lines for web service
-			InvalidLines invalidLinesDTO = new InvalidLines();
+			Map<String, String> invalidLinesDTO = new HashMap<>();
 			if (invalids != null) {
-				List<CommandResultDTO.InvalidLines.Entry> invalidLinesEntry = invalidLinesDTO.getEntry();
-				for (Entry<Integer, String> invalid : invalids.entrySet()) {
-					CommandResultDTO.InvalidLines.Entry entry = new CommandResultDTO.InvalidLines.Entry();
-					entry.setKey(invalid.getKey());
-					entry.setValue(invalid.getValue());
-					invalidLinesEntry.add(entry);
+				for (Entry<Integer, String> it : invalids.entrySet()) {
+					invalidLinesDTO.put(it.getKey().toString(), it.getValue());
 				}
 			}
 			dto.setInvalidLines(invalidLinesDTO);
@@ -458,14 +472,14 @@ public class CommandCollector implements CollectorTask, Runnable {
 			dto.setExitDate(exitDate.getTime());
 			
 			// 監視の種別を設定。
-			dto.setType(config.getType());
+			dto.setType(AgtCustomResultDTORequest.TypeEnum.valueOf(config.getType().getValue()));
 			
 			// send result to manager
 			if (log.isDebugEnabled()) {
 				log.debug("sending command result to manager. [" + CommandMonitoringWSUtil.toString(dto) + "]");
 			}
 			
-			CommandResultForwarder.getInstance().add(dto);
+			CustomResultForwarder.getInstance().add(dto);
 		}
 
 	}

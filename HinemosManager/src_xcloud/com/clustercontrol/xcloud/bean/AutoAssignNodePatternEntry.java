@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import com.clustercontrol.commons.util.CommonValidator;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.xcloud.PluginException;
 import com.clustercontrol.xcloud.common.ErrorCode;
 import com.clustercontrol.xcloud.model.AutoAssignNodePatternEntryEntity;
@@ -37,6 +39,11 @@ public class AutoAssignNodePatternEntry {
 					throw ErrorCode.AUTO_ASSIGN_NODE_UNMATCHED_CIDR_FORMAT.cloudManagerFault(entity.getPattern());
 				break;
 			case instanceName:
+				try {
+					CommonValidator.validateRegex("", entity.getPattern(), true);
+				} catch (InvalidSetting e) {
+					throw ErrorCode.AUTO_ASSIGN_NODE_UNMATCHED_REGEX.cloudManagerFault(entity.getPattern());
+				}
 				break;
 			}
 		}

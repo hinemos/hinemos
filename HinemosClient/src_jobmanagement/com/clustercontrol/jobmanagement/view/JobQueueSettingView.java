@@ -11,7 +11,6 @@ package com.clustercontrol.jobmanagement.view;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,28 +33,31 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.GetJobQueueListSearchRequest;
+import org.openapitools.client.model.JobQueueResponse;
+import org.openapitools.client.model.JobQueueSettingViewInfoListItemResponse;
+import org.openapitools.client.model.JobQueueSettingViewInfoResponse;
 
 import com.clustercontrol.accesscontrol.util.ObjectBean;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.dialog.ApiResultDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.bean.JobQueueSettingViewFilter;
+import com.clustercontrol.jobmanagement.util.JobQueueFilterBeanUtil;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.view.action.CopyJobQueueAction;
 import com.clustercontrol.jobmanagement.view.action.DeleteJobQueueAction;
 import com.clustercontrol.jobmanagement.view.action.JobQueueEditor;
 import com.clustercontrol.jobmanagement.view.action.ModifyJobQueueAction;
 import com.clustercontrol.jobmanagement.view.action.ObjectPrivilegeJobQueueAction;
-import com.clustercontrol.util.EndpointManager;
-import com.clustercontrol.util.LogUtil;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.ViewUtil;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
 import com.clustercontrol.view.ObjectPrivilegeTargetListView;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.JobQueueSettingViewFilter;
-import com.clustercontrol.ws.jobmanagement.JobQueueSettingViewInfo;
-import com.clustercontrol.ws.jobmanagement.JobQueueSettingViewInfoListItem;
+
 
 /**
  * ジョブ設定[同時実行制御]ビュークラスです。
@@ -170,10 +172,6 @@ public class JobQueueSettingView extends CommonViewPart implements ObjectPrivile
 					String queueId = (String) selectedRow.get(COLUMN_QUEUE_ID);
 					view.update(managerName, queueId);
 				});
-
-				ViewUtil.activate(JobQueueReferrerView.class);
-				// ダブルクリックリスナがアクティブなビューから選択行を取得するため、再アクティブが必要
-				ViewUtil.activate(JobQueueSettingView.class);
 			}
 		};
 	}
@@ -204,22 +202,28 @@ public class JobQueueSettingView extends CommonViewPart implements ObjectPrivile
 	public void update() {
 		try {
 			// 一覧情報を取得
-			Map<String, JobQueueSettingViewInfo> dispDataMap = new HashMap<>();
+			Map<String, JobQueueSettingViewInfoResponse> dispDataMap = new HashMap<>();
 			ApiResultDialog errorDialog = new ApiResultDialog();
 
 			Collection<String> managerNames;
+			Collection<String> activemanagerNames = RestConnectManager.getActiveManagerSet();
+			if (!activemanagerNames.contains(managerFilter)) {
+				managerFilter = "";
+			}
 			if (!filtering || StringUtils.isEmpty(managerFilter)) {
-				managerNames = EndpointManager.getActiveManagerSet();
+				managerNames = activemanagerNames;
 			} else {
 				managerNames = Arrays.asList(managerFilter);
 			}
 
 			for (String managerName : managerNames) {
 				try {
-					JobEndpointWrapper ep = JobEndpointWrapper.getWrapper(managerName);
-					dispDataMap.put(managerName, ep.getJobQueueSettingViewInfo(filtering ? queueFilter : null));
+					JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+					GetJobQueueListSearchRequest request = JobQueueFilterBeanUtil.convertToRequest(filtering ? queueFilter : new JobQueueSettingViewFilter());
+					JobQueueSettingViewInfoResponse jobQueueSettingViewInfoResponse = wrapper.getJobQueueListSearch(request);
+					dispDataMap.put(managerName, jobQueueSettingViewInfoResponse);
 				} catch (Throwable t) {
-					log.warn(LogUtil.filterWebFault("update: ", t));
+					log.warn("update: " + t.getClass().getName() + ", " + t.getMessage());
 					errorDialog.addFailure(managerName, t, "");
 				}
 			}
@@ -229,9 +233,9 @@ public class JobQueueSettingView extends CommonViewPart implements ObjectPrivile
 
 			// テーブル更新
 			List<List<Object>> table = new ArrayList<>();
-			for (Entry<String, JobQueueSettingViewInfo> entry : dispDataMap.entrySet()) {
-				JobQueueSettingViewInfo list = entry.getValue();
-				for (JobQueueSettingViewInfoListItem it : list.getItems()) {
+			for (Entry<String, JobQueueSettingViewInfoResponse> entry : dispDataMap.entrySet()) {
+				JobQueueSettingViewInfoResponse list = entry.getValue();
+				for (JobQueueSettingViewInfoListItemResponse it : list.getItems()) {
 					List<Object> row = new ArrayList<>();
 					row.add(entry.getKey());
 					row.add(it.getQueueId());
@@ -239,9 +243,9 @@ public class JobQueueSettingView extends CommonViewPart implements ObjectPrivile
 					row.add(it.getConcurrency());
 					row.add(it.getOwnerRoleId());
 					row.add(it.getRegUser());
-					row.add(new Date(it.getRegDate()));
+					row.add(it.getRegDate());
 					row.add(it.getUpdateUser());
-					row.add(new Date(it.getUpdateDate()));
+					row.add(it.getUpdateDate());
 					table.add(row);
 				}
 			}

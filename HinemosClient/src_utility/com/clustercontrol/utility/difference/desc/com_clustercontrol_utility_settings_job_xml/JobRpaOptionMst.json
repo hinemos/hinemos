@@ -1,0 +1,24 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	{
+	"propName":"orderNo",
+	"annotations":[
+		{"type":"PrimaryKey"}
+	]},
+	
+	{
+	"propName":"description",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaOptionMst_description"}
+	]},
+	
+	{
+	"propName":"option",
+	"annotations":[
+		{"type":"Column", "columnName":"JobRpaOptionMst_option"}
+	]}
+]
+}

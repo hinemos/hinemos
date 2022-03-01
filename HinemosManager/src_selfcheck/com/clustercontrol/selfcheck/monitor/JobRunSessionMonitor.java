@@ -8,15 +8,20 @@
 
 package com.clustercontrol.selfcheck.monitor;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.platform.QueryDivergence;
-import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.commons.util.QueryDivergence;
+import com.clustercontrol.jobmanagement.factory.CreateJobSession;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -102,7 +107,7 @@ public class JobRunSessionMonitor extends SelfCheckMonitorBase {
 			return;
 		}
 		String[] msgAttr1 = { Long.toString(count), Long.toString(threshold) };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_007_SYS_SFC, msgAttr1,
+		AplLogger.put(InternalIdCommon.SYS_SFC_SYS_007, msgAttr1,
 				"job run session count is too large (" +
 						count +
 						" > threshold " +
@@ -122,11 +127,19 @@ public class JobRunSessionMonitor extends SelfCheckMonitorBase {
 		// ローカル変数
 		JpaTransactionManager tm = null;
 		HinemosEntityManager em =null;
+		
+		//log.cc_job_session_jobから実行中を表すステータスのセッションのみを取得する
+		List<Integer> unendStatusList = StatusConstant.getUnendList();
+		List<Object> queryParams = new ArrayList<>();
+		queryParams.add(CreateJobSession.TOP_JOBUNIT_ID);
+		queryParams.add(CreateJobSession.TOP_JOB_ID);
+		queryParams.addAll(unendStatusList);
 
-		String query = "SELECT count(*) " +
-				"FROM log.cc_job_session s, log.cc_job_session_job j " +
-				"WHERE s.session_id = j.session_id AND s.jobunit_id = j.jobunit_id " +
-				"AND s.job_id = j.job_id AND status NOT IN (300,301)";
+		String query = String.format(
+				"SELECT count(*) " + "FROM log.cc_job_session_job j " + "WHERE j.parent_jobunit_id = '%s' "
+						+ "AND j.parent_job_id = '%s' AND j.status IN "
+						+ "(" + String.join(",", Collections.nCopies(unendStatusList.size(), "%d")) + ")",
+				queryParams.toArray());
 
 		long count = -1;
 

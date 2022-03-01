@@ -27,10 +27,6 @@
 	
 	<property name="rpm.settings.dir" value="${rpm.dir}/${settings.dir}" />
 	<property name="rpm.sources.dir" value="${rpm.dir}/sources" />
-	
-	<property name="xcloud.ws.sei.classes" value="com.clustercontrol.ws.xcloud.CloudEndpointImpl" />
-	<property name="xcloud.service.wsdls" value="CloudEndpointService.wsdl"/>
-	<property name="xcloud.wsclient.jar" value="xCloudManagerWS.jar"/>
 
 	<property name="xcloud.lib.dir" value="${lib.dir}"/>
 	<property name="xcloud.sbin.dir" value="${sbin.dir}"/>

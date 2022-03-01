@@ -8,8 +8,6 @@
 
 package com.clustercontrol.nodemap.figure;
 
-import java.util.List;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.draw2d.ColorConstantsWrapper;
@@ -27,13 +25,15 @@ import org.eclipse.draw2d.geometry.Dimension;
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.swt.graphics.Color;
+import org.openapitools.client.model.FacilityElementResponse;
+import org.openapitools.client.model.NodeMapAttributesResponse;
 
 import com.clustercontrol.bean.PriorityColorConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.nodemap.bean.NodeMapAttributeConstant;
 import com.clustercontrol.nodemap.util.RelationViewController;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.ws.nodemap.FacilityElement;
 
 /**
  * アイコン(ノード、スコープ)画像のクラス。
@@ -49,10 +49,10 @@ public abstract class FacilityFigure extends FileImageFigure {
 	private Label m_label;
 	// ツールチップ
 	private Panel m_tooltip;
-	private final FacilityElement m_element;
+	private final FacilityElementResponse m_element;
 	private final String m_managerName;
 
-	public FacilityFigure(String managerName, FacilityElement element){
+	public FacilityFigure(String managerName, FacilityElementResponse element){
 		this.setFocusTraversable(true);
 		this.setRequestFocusEnabled(true);
 
@@ -143,7 +143,7 @@ public abstract class FacilityFigure extends FileImageFigure {
 			color = PriorityColorConstant.COLOR_NONE;
 			break;
 		}
-		if (!m_element.isValid()
+		if (!m_element.getValid()
 				&& FacilityConstant.TYPE_NODE_STRING.equals(m_element.getTypeName())) {
 			/*
 			 * 枠は太く、priority色をつける。
@@ -190,7 +190,7 @@ public abstract class FacilityFigure extends FileImageFigure {
 		m_tooltip.add(new Label(str));
 	}
 
-	public FacilityElement getFacilityElement() {
+	public FacilityElementResponse getFacilityElement() {
 		return m_element;
 	}
 
@@ -206,7 +206,7 @@ public abstract class FacilityFigure extends FileImageFigure {
 	
 	@Override
 	public boolean isBuiltin() {
-		return m_element.isBuiltin();
+		return m_element.getBuiltin();
 	}
 	
 	@Override
@@ -243,12 +243,27 @@ public abstract class FacilityFigure extends FileImageFigure {
 	protected String getFacilityElementProperty(String key) {
 		String resultStr = "";
 
-		List<FacilityElement.Attributes.Entry> entries = getFacilityElement().getAttributes().getEntry();
-		for (FacilityElement.Attributes.Entry entry : entries) {
-			if (key.equals(entry.getKey())) {
-				resultStr = (String)entry.getValue();
-				break;
-			}
+		NodeMapAttributesResponse attributes = getFacilityElement().getAttributes();
+		switch(key) {
+			case NodeMapAttributeConstant.FACILITY_ID:
+			resultStr = attributes.getFacilityId();
+			break;
+			case NodeMapAttributeConstant.NODENAME:
+			resultStr = attributes.getNodeName();
+			break;
+			case NodeMapAttributeConstant.DESCRIPTION:
+			resultStr = attributes.getDescription();
+			break;
+			case NodeMapAttributeConstant.IPPROTOCOL_NUMBER:
+			resultStr = attributes.getIpProtocolNumber();
+			break;
+			case NodeMapAttributeConstant.IPNETWORK_NUMBER:
+			resultStr = attributes.getIpNetworkNumber();
+			break;
+			case NodeMapAttributeConstant.IPNETWORK_NUMBER_V6:
+			resultStr = attributes.getIpNetworkNumberV6();
+			break;
+		
 		}
 		return resultStr;
 	}

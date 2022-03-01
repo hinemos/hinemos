@@ -7,14 +7,23 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.BackupedDataEntryResponse;
+import org.openapitools.client.model.InstanceBackupEntryResponse;
+
+import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 
 
 public class InstanceBackupEntry extends Element implements IInstanceBackupEntry {
+	private static Log m_log = LogFactory.getLog(InstanceBackupEntry.class);
+
 	private String name;
 	private String id;
 	private String status;
@@ -80,30 +89,35 @@ public class InstanceBackupEntry extends Element implements IInstanceBackupEntry
 		return null;
 	}
 	
-	public static InstanceBackupEntry convert(com.clustercontrol.ws.xcloud.InstanceBackupEntry source) {
+	public static InstanceBackupEntry convert(InstanceBackupEntryResponse source) {
 		InstanceBackupEntry entry = new InstanceBackupEntry();
 		entry.update(source);
 		return entry;
 	}
 	
-	public void update(com.clustercontrol.ws.xcloud.InstanceBackupEntry source) {
+	public void update(InstanceBackupEntryResponse source) {
 		setId(source.getId());
 		setName(source.getName());
-		setStatus(source.getStatus().value());
+		setStatus(source.getStatus().getValue());
 		setStatusAsPlatform(source.getStatusAsPlatform());
 		setDescription(source.getDescription());
-		setCreateTime(source.getCreateTime());
+		try {
+			setCreateTime(TimezoneUtil.getSimpleDateFormat().parse(source.getCreateTime()).getTime());
+		} catch (ParseException e) {
+			// ここには入らない想定
+			m_log.warn("invalid createTime.", e);
+		}
 		updateBackupedDataEntries(source.getBackupedData().getEntries());
 	}
 	
-	protected void updateBackupedDataEntries(List<com.clustercontrol.ws.xcloud.BackupedDataEntry> extendedProperties) {
-		CollectionComparator.compareCollection(this.backupedDataEntries, extendedProperties, new CollectionComparator.Comparator<BackupedDataEntry, com.clustercontrol.ws.xcloud.BackupedDataEntry>(){
+	protected void updateBackupedDataEntries(List<BackupedDataEntryResponse> extendedProperties) {
+		CollectionComparator.compareCollection(this.backupedDataEntries, extendedProperties, new CollectionComparator.Comparator<BackupedDataEntry, BackupedDataEntryResponse>(){
 			@Override
-			public boolean match(BackupedDataEntry o1, com.clustercontrol.ws.xcloud.BackupedDataEntry o2) {
+			public boolean match(BackupedDataEntry o1, BackupedDataEntryResponse o2) {
 				return o1.getName().equals(o2.getName());
 			}
 			@Override
-			public void matched(BackupedDataEntry o1, com.clustercontrol.ws.xcloud.BackupedDataEntry o2) {
+			public void matched(BackupedDataEntry o1, BackupedDataEntryResponse o2) {
 				o1.setValue(o2.getValue());
 			}
 			@Override
@@ -111,7 +125,7 @@ public class InstanceBackupEntry extends Element implements IInstanceBackupEntry
 				internalRemoveProperty(p.backupedDataEntries, o1, backupedDataEntries);
 			}
 			@Override
-			public void afterO2(com.clustercontrol.ws.xcloud.BackupedDataEntry o2) {
+			public void afterO2(BackupedDataEntryResponse o2) {
 				internalAddProperty(p.backupedDataEntries, BackupedDataEntry.convert(o2), backupedDataEntries);
 			}
 		});

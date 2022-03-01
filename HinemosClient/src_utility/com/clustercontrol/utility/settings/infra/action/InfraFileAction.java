@@ -21,11 +21,20 @@ import java.util.List;
 import java.util.Set;
 
 import javax.activation.DataHandler;
-import javax.xml.ws.WebServiceException;
+import javax.activation.FileDataSource;
 
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import org.openapitools.client.model.AddInfraFileRequest;
+import org.openapitools.client.model.InfraFileInfoResponse;
+import org.openapitools.client.model.ModifyInfraFileRequest;
+
+import com.clustercontrol.fault.InfraFileTooLarge;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
+import com.clustercontrol.rest.JSON;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.SettingConstants;
@@ -45,9 +54,7 @@ import com.clustercontrol.utility.util.Config;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.infra.InfraFileTooLarge_Exception;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
  * 環境構築ファイル定義情報をインポート・エクスポート・削除するアクションクラス<br>
@@ -55,10 +62,10 @@ import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
  * @version 6.0.0
  * @since 5.0.a
  */
-public class InfraFileAction extends BaseAction<com.clustercontrol.ws.infra.InfraFileInfo, InfraFileInfo, InfraFile> {
+public class InfraFileAction extends BaseAction<InfraFileInfoResponse, InfraFileInfo, InfraFile> {
 
 	protected InfraFileConv conv;
-	
+	protected List<String> objectList = new ArrayList<String>();
 	public InfraFileAction() throws ConvertorException {
 		super();
 		conv = new InfraFileConv();
@@ -68,19 +75,19 @@ public class InfraFileAction extends BaseAction<com.clustercontrol.ws.infra.Infr
 	protected String getActionName() {return "InfraFile";}
 
 	@Override
-	protected List<com.clustercontrol.ws.infra.InfraFileInfo> getList() throws Exception {
-		return InfraEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getInfraFileList();
+	protected List<InfraFileInfoResponse> getList() throws Exception {
+		return InfraRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getInfraFileList(null);
 	}
 
 	@Override
-	protected void deleteInfo(com.clustercontrol.ws.infra.InfraFileInfo info) throws WebServiceException, Exception {
+	protected void deleteInfo(InfraFileInfoResponse info) throws Exception {
 		List<String> args = new ArrayList<>();
 		args.add(info.getFileId());
-		InfraEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteInfraFileList(args);
+		InfraRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).deleteInfraFileList(String.join(",",args));
 	}
 
 	@Override
-	protected String getKeyInfoD(com.clustercontrol.ws.infra.InfraFileInfo info) {
+	protected String getKeyInfoD(InfraFileInfoResponse info) {
 		return info.getFileId();
 	}
 
@@ -90,33 +97,38 @@ public class InfraFileAction extends BaseAction<com.clustercontrol.ws.infra.Infr
 	}
 
 	@Override
-	protected void addInfo(InfraFile xmlInfo, com.clustercontrol.ws.infra.InfraFileInfo info) throws Exception {
+	protected void addInfo(InfraFile xmlInfo, InfraFileInfoResponse info) throws Exception {
 		xmlInfo.addInfraFileInfo(conv.getXmlInfo(info));
 	}
 
 	@Override
 	protected void exportXml(InfraFile xmlInfo, String xmlFile) throws Exception {
-		boolean backup = xmlFile.contains(BackupUtil.getBackupFolder());
+		boolean backup = false;
+		String directoryPath = MultiManagerPathUtil.getDirectoryPath(SettingToolsXMLPreferencePage.KEY_XML);
+		if (directoryPath != null && (xmlFile.length() > directoryPath.length())) {
+			backup = xmlFile.substring(directoryPath.length()).contains(BackupUtil.getBackupFolder());
+		}
+
 		xmlInfo.setCommon(com.clustercontrol.utility.settings.platform.conv.CommonConv.versionInfraDto2Xml(Config.getVersion()));
 		xmlInfo.setSchemaInfo(conv.getSchemaVersion(com.clustercontrol.utility.settings.infra.xml.SchemaInfo.class));
 		try(FileOutputStream fos = new FileOutputStream(xmlFile);
 				OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");){
 			xmlInfo.marshal(osw);
 		}
-		InfraEndpointWrapper endpoint = InfraEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+		InfraRestClientWrapper endpoint = InfraRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		
 		FileOutputStream fos = null;
 		String infraFolderPath = getFolderPath(backup);
 		for(InfraFileInfo info: xmlInfo.getInfraFileInfo()){
 			try {
-				DataHandler handler = endpoint.downloadInfraFile(info.getFileId(), info.getFileName());
-
+				File downloadFile =  endpoint.downloadInfraFile(info.getFileId());
+				FileDataSource source = new FileDataSource(downloadFile);
+				DataHandler handler = new DataHandler(source);
+				
 				String filePath = getFilePath(info, infraFolderPath);
-				
 				fos = new FileOutputStream(new File(filePath));
-				handler.writeTo(fos);
 				
-				endpoint.deleteDownloadedInfraFile(info.getFileName());
+				handler.writeTo(fos);
 			} catch (Exception e) {
 				log.error(e);
 			} finally {
@@ -140,7 +152,7 @@ public class InfraFileAction extends BaseAction<com.clustercontrol.ws.infra.Infr
 	protected void preCheckDuplicate() {
 		registerdSet = new HashSet<>();
 		try {
-			for(com.clustercontrol.ws.infra.InfraFileInfo info: getList()){
+			for(InfraFileInfoResponse info: getList()){
 				registerdSet.add(getKeyInfoD(info));
 			}
 		} catch (Exception e) {
@@ -151,54 +163,67 @@ public class InfraFileAction extends BaseAction<com.clustercontrol.ws.infra.Infr
 	}
 	
 	@Override
-	protected int registElement(InfraFileInfo element) throws Exception {
-		InfraEndpointWrapper endpoint = InfraEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-		com.clustercontrol.ws.infra.InfraFileInfo dto = conv.getDTO(element);
-		String filePath = getFilePath(element, getFolderPath(false));
-		
-		if(! new File(filePath).exists()){
-			log.warn(Messages.getString("SettingTools.InfraFileNotFound") + " : " + getKeyInfoE(element));
-			return SettingConstants.ERROR_INPROCESS;
-		}
-
+	protected int registElements(InfraFile element) throws Exception {
+		InfraRestClientWrapper endpoint = InfraRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		int ret = 0;
-		try {
-			if(!registerdSet.contains(getKeyInfoE(element))){
-				endpoint.addInfraFile(dto, filePath);
-			} else {
-				//重複時、インポート処理方法を確認する
-				if(!ImportProcessMode.isSameprocess()){
-					String[] args = {getKeyInfoE(element)};
-					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-							null, Messages.getString("message.import.confirm2", args));
-					ImportProcessMode.setProcesstype(dialog.open());
-					ImportProcessMode.setSameprocess(dialog.getToggleState());
-				}
-				
-				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
-					try {
-						endpoint.modifyInfraFile(dto, filePath);
-						log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + getKeyInfoE(element));
-					} catch (Exception e1) {
-						log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-						ret = SettingConstants.ERROR_INPROCESS;
-					}
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + getKeyInfoE(element));
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
-					log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-					ret = -1;
-				}
+		
+		for(InfraFileInfo infraFileInfo:element.getInfraFileInfo()){
+			AddInfraFileRequest dto = conv.getDTO(infraFileInfo);
+			String filePath = getFilePath(infraFileInfo, getFolderPath(false));
+			File file = new File(filePath);
+			if(! file.exists()){
+				log.warn(Messages.getString("SettingTools.InfraFileNotFound") + " : " + getKeyInfoE(infraFileInfo));
+				return SettingConstants.ERROR_INPROCESS;
 			}
-		} catch (InvalidRole_Exception e) {
-			log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (InvalidUserPass_Exception e) {
-			log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-			ret = SettingConstants.ERROR_INPROCESS;
-		} catch (InfraFileTooLarge_Exception e) {
-			log.warn(Messages.getString("SettingTools.InfraFileTooLarge") + " : " + HinemosMessage.replace(e.getMessage()));
-			ret = SettingConstants.ERROR_INPROCESS;
+			
+			try {
+				if(!registerdSet.contains(getKeyInfoE(infraFileInfo))){
+					AddInfraFileRequestEx dtoEx = new AddInfraFileRequestEx();
+					RestClientBeanUtil.convertBeanSimple(dto, dtoEx);
+					endpoint.addInfraFile(file, dtoEx);
+					log.info(Messages.getString("SettingTools.ImportSucceeded") + " : " + getKeyInfoE(infraFileInfo));
+					objectList.add(dto.getFileId());
+				} else {
+					//重複時、インポート処理方法を確認する
+					if(!ImportProcessMode.isSameprocess()){
+						String[] args = {getKeyInfoE(infraFileInfo)};
+						UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
+								null, Messages.getString("message.import.confirm2", args));
+						ImportProcessMode.setProcesstype(dialog.open());
+						ImportProcessMode.setSameprocess(dialog.getToggleState());
+					}
+					
+					if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE){
+						try {
+							ModifyInfraFileRequestEx modifyDtoEx = new ModifyInfraFileRequestEx();
+							RestClientBeanUtil.convertBeanSimple(dto, modifyDtoEx);
+							endpoint.modifyInfraFile(dto.getFileId(), file, modifyDtoEx);
+							log.info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + getKeyInfoE(infraFileInfo));
+							objectList.add(dto.getFileId());
+						} catch (Exception e1) {
+							log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
+							ret = SettingConstants.ERROR_INPROCESS;
+						}
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP){
+						log.info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + getKeyInfoE(infraFileInfo));
+					} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
+						log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
+						ret = -1;
+					}
+				}
+			} catch (InvalidRole e) {
+				log.error(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()) + " : " + getKeyInfoE(infraFileInfo) );
+				ret = SettingConstants.ERROR_INPROCESS;
+			} catch (InvalidUserPass e) {
+				log.error(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()) + " : " + getKeyInfoE(infraFileInfo));
+				ret = SettingConstants.ERROR_INPROCESS;
+			} catch (InfraFileTooLarge e) {
+				log.warn(Messages.getString("SettingTools.InfraFileTooLarge") + " : " + HinemosMessage.replace(e.getMessage()) + " : " + getKeyInfoE(infraFileInfo));
+				ret = SettingConstants.ERROR_INPROCESS;
+			} catch (Exception e) {
+				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()) + " : " + getKeyInfoE(infraFileInfo));
+				ret = SettingConstants.ERROR_INPROCESS;
+			}
 		}
 		return ret;
 	}
@@ -210,7 +235,7 @@ public class InfraFileAction extends BaseAction<com.clustercontrol.ws.infra.Infr
 
 	@Override
 	protected InfraFile getXmlInfo(String filePath) throws Exception {
-		return InfraFile.unmarshal(new InputStreamReader(new FileInputStream(filePath), "UTF-8"));
+		return XmlMarshallUtil.unmarshall(InfraFile.class,new InputStreamReader(new FileInputStream(filePath), "UTF-8"));
 	}
 
 	@Override
@@ -236,8 +261,8 @@ public class InfraFileAction extends BaseAction<com.clustercontrol.ws.infra.Infr
 
 	@Override
 	protected int compare(
-			com.clustercontrol.ws.infra.InfraFileInfo info1,
-			com.clustercontrol.ws.infra.InfraFileInfo info2) {
+			InfraFileInfoResponse info1,
+			InfraFileInfoResponse info2) {
 		return info1.getFileId().compareTo(info2.getFileId());
 	}
 
@@ -255,10 +280,10 @@ public class InfraFileAction extends BaseAction<com.clustercontrol.ws.infra.Infr
 	@Override
 	protected void checkDelete(InfraFile xmlInfo) throws Exception{
 		
-		List<com.clustercontrol.ws.infra.InfraFileInfo> subList = getList();
+		List<InfraFileInfoResponse> subList = getList();
 		List<InfraFileInfo> xmlElements = new ArrayList<>(getElements(xmlInfo));
 		
-		for(com.clustercontrol.ws.infra.InfraFileInfo mgrInfo: new ArrayList<>(subList)){
+		for(InfraFileInfoResponse mgrInfo: new ArrayList<>(subList)){
 			for(InfraFileInfo xmlElement: new ArrayList<>(xmlElements)){
 				if(getKeyInfoD(mgrInfo).equals(getKeyInfoE(xmlElement))){
 					subList.remove(mgrInfo);
@@ -269,7 +294,7 @@ public class InfraFileAction extends BaseAction<com.clustercontrol.ws.infra.Infr
 		}
 		
 		if(subList.size() > 0){
-			for(com.clustercontrol.ws.infra.InfraFileInfo info: subList){
+			for(InfraFileInfoResponse info: subList){
 				//マネージャのみに存在するデータがあった場合の削除方法を確認する
 				if(!DeleteProcessMode.isSameprocess()){
 					String[] args = {getKeyInfoD(info)};
@@ -341,18 +366,33 @@ public class InfraFileAction extends BaseAction<com.clustercontrol.ws.infra.Infr
 	 * @param objectIdList
 	 */
 	@Override
-	protected void importObjectPrivilege(List<InfraFileInfo> objectList){
+	protected void importObjectPrivilege(List<String> objectList){
 		if(ImportProcessMode.isSameObjectPrivilege()){
-			List<String> objectIdList = new ArrayList<String>();
-			if(objectList != null){
-				for(InfraFileInfo info : objectList)
-					objectIdList.add(info.getFileId());
-			}
 			ObjectPrivilegeAction.importAccessExtraction(
 					ImportProcessMode.getXmlObjectPrivilege(),
 					HinemosModuleConstant.INFRA_FILE,
-					objectIdList,
+					objectList,
 					getLogger());
+		}
+	}
+
+	@Override
+	protected List<String> getImportObjects() {
+		return objectList;
+	}
+	
+	// ファイルアップロード用のDTO
+	public static class AddInfraFileRequestEx extends AddInfraFileRequest {
+		@Override
+		public String toString() {
+			return new JSON().serialize(this);
+		}
+	}
+	
+	public static class ModifyInfraFileRequestEx extends ModifyInfraFileRequest {
+		@Override
+		public String toString() {
+			return new JSON().serialize(this);
 		}
 	}
 }

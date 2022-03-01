@@ -22,12 +22,12 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.NodeConfigCustomInfoResponse;
+import org.openapitools.client.model.NodeConfigSettingInfoResponse;
 
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.repository.dialog.NodeCustomInfoCreateDialog;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.repository.NodeConfigCustomInfo;
-import com.clustercontrol.ws.repository.NodeConfigSettingInfo;
 
 /**
  * ユーザ任意情報一覧コンポジットクラス<BR>
@@ -135,7 +135,7 @@ public class NodeCustomComposite extends Composite {
 				if (order >= 0) {
 					// シェルを取得
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-					NodeConfigCustomInfo modifyInfo = m_infoList.getFilterItem();
+					NodeConfigCustomInfoResponse modifyInfo = m_infoList.getFilterItem();
 					String beforeId = modifyInfo.getSettingCustomId();
 					NodeCustomInfoCreateDialog dialog = new NodeCustomInfoCreateDialog(shell, modifyInfo,
 							m_infoList.getCustomIdList(), false);
@@ -157,7 +157,7 @@ public class NodeCustomComposite extends Composite {
 		this.m_buttonDelete.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				NodeConfigCustomInfo deleteInfo = m_infoList.getFilterItem();
+				NodeConfigCustomInfoResponse deleteInfo = m_infoList.getFilterItem();
 
 				if (deleteInfo != null) {
 					String deleteId = m_infoList.getFilterItem().getSettingCustomId();
@@ -188,7 +188,7 @@ public class NodeCustomComposite extends Composite {
 
 					// シェルを取得
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-					NodeConfigCustomInfo copyInfo = m_infoList.getFilterItem();
+					NodeConfigCustomInfoResponse copyInfo = m_infoList.getFilterItem();
 					NodeCustomInfoCreateDialog dialog = new NodeCustomInfoCreateDialog(shell, copyInfo,
 							m_infoList.getCustomIdList(), true);
 					if (dialog.open() == IDialogConstants.OK_ID) {
@@ -212,7 +212,7 @@ public class NodeCustomComposite extends Composite {
 	 * @param info
 	 *            設定値として用いる監視情報
 	 */
-	public void setInputData(NodeConfigSettingInfo info) {
+	public void setInputData(NodeConfigSettingInfoResponse info) {
 
 		this.m_infoList.setInputData(info);
 		// 必須項目を明示
@@ -230,7 +230,7 @@ public class NodeCustomComposite extends Composite {
 	 *
 	 * @see com.clustercontrol.monitor.run.composite.StringValueListComposite#createInputData(MonitorInfo)
 	 */
-	public ValidateResult createInputData(NodeConfigSettingInfo info) {
+	public ValidateResult createInputData(NodeConfigSettingInfoResponse info) {
 
 		// 文字列監視判定情報
 		ValidateResult validateResult = m_infoList.createInputData(info);
@@ -301,8 +301,8 @@ public class NodeCustomComposite extends Composite {
 	/**
 	 * 入力したユーザ任意情報を取得します。
 	 */
-	public ArrayList<NodeConfigCustomInfo> getNodeConfigCustomInfoList() {
-		ArrayList<NodeConfigCustomInfo> returnList = new ArrayList<NodeConfigCustomInfo>();
+	public ArrayList<NodeConfigCustomInfoResponse> getNodeConfigCustomInfoList() {
+		ArrayList<NodeConfigCustomInfoResponse> returnList = new ArrayList<NodeConfigCustomInfoResponse>();
 		returnList.addAll(this.m_infoList.getNodeConfigCustomInfoMap().values());
 		return returnList;
 	}
@@ -317,8 +317,8 @@ public class NodeCustomComposite extends Composite {
 		}
 
 		boolean valid = false;
-		for (NodeConfigCustomInfo customInfo : this.m_infoList.getNodeConfigCustomInfoMap().values()) {
-			if (customInfo.isValidFlg()) {
+		for (NodeConfigCustomInfoResponse customInfo : this.m_infoList.getNodeConfigCustomInfoMap().values()) {
+			if (customInfo.getValidFlg()) {
 				valid = true;
 				break;
 			}

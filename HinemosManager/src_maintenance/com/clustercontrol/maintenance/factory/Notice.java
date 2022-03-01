@@ -16,8 +16,10 @@ import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MaintenanceNotFound;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.util.QueryUtil;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.util.HinemosTime;
@@ -69,6 +71,9 @@ public class Notice {
 
 				// 通知グループID
 				rtn.setNotifyGroupId(info.getNotifyGroupId());
+				// ジョブ連携メッセージID
+				rtn.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MAINTENANCE,
+						HinemosModuleConstant.SYSYTEM_MAINTENANCE, maintenanceId));
 				//プラグインID
 				rtn.setPluginId(HinemosModuleConstant.SYSYTEM_MAINTENANCE);
 				//アプリケーション

@@ -17,7 +17,7 @@ import com.clustercontrol.plugin.api.HinemosPlugin;
  * An blank plug-in reserved for enterprise use
  *
  */
-public class EnterprisePlugin extends WebServicePlugin implements HinemosPlugin {
+public class EnterprisePlugin extends RestServicePlugin implements HinemosPlugin {
 	@Override
 	public Set<String> getDependency() {
 		return Collections.emptySet();

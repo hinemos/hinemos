@@ -8,7 +8,6 @@
 
 package com.clustercontrol.jobmanagement.util;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -17,24 +16,25 @@ import java.util.Locale;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.CalendarInfoResponse;
+import org.openapitools.client.model.JobKickFilterInfoRequest;
 
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.bean.ValidMessage;
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.jobmanagement.bean.JobKickFilterConstant;
 import com.clustercontrol.jobmanagement.bean.JobKickTypeMessage;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.PropertyUtil;
-import com.clustercontrol.ws.calendar.CalendarInfo;
-import com.clustercontrol.ws.calendar.CalendarNotFound_Exception;
-import com.clustercontrol.ws.calendar.HinemosUnknown_Exception;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
-import com.clustercontrol.ws.calendar.InvalidUserPass_Exception;
-import com.clustercontrol.ws.jobmanagement.JobKickFilterInfo;
+import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.util.TimezoneUtil;
 
 /**
  * 実行契機フィルタの検索条件ユーティリティクラス
@@ -51,8 +51,8 @@ public class JobKickFilterPropertyUtil {
 	 * @param property
 	 * @return
 	 */
-	public static JobKickFilterInfo property2dto(Property property){
-		JobKickFilterInfo info = new JobKickFilterInfo();
+	public static JobKickFilterInfoRequest property2dto(Property property){
+		JobKickFilterInfoRequest info = new JobKickFilterInfoRequest();
 		ArrayList<?> values = null;
 		
 		// 実行契機ID
@@ -71,7 +71,9 @@ public class JobKickFilterPropertyUtil {
 		values = PropertyUtil.getPropertyValue(property,
 				JobKickFilterConstant.JOBKICK_TYPE);
 		if(!"".equals(values.get(0))){
-			info.setJobkickType((Integer)JobKickTypeMessage.stringToType((String)values.get(0)));
+			JobKickFilterInfoRequest.JobkickTypeEnum TypeNum = JobKickFilterInfoRequest.JobkickTypeEnum
+					.fromValue(JobKickTypeMessage.stringToTypeEnumValue((String)values.get(0)));
+			info.setJobkickType(TypeNum);
 		}
 		// ジョブユニットID
 		values = PropertyUtil.getPropertyValue(property,
@@ -112,25 +114,17 @@ public class JobKickFilterPropertyUtil {
 		}
 
 		//作成日時(From)
-		Timestamp regFromDate = null;
 		values = PropertyUtil.getPropertyValue(property,
 				JobKickFilterConstant.REG_FROM_DATE);
 		if (values.get(0) instanceof Date) {
-			regFromDate = new Timestamp(((Date) values.get(0))
-					.getTime());
-			regFromDate.setNanos(999999999);
-			info.setRegFromDate(regFromDate.getTime());
+			info.setRegFromDate(TimezoneUtil.getSimpleDateFormat().format((Date)values.get(0)));
 		}
 
 		//作成日時(To)
-		Timestamp regToDate = null;
 		values = PropertyUtil.getPropertyValue(property,
 				JobKickFilterConstant.REG_TO_DATE);
 		if (values.get(0) instanceof Date) {
-			regToDate = new Timestamp(((Date) values.get(0))
-					.getTime());
-			regToDate.setNanos(999999999);
-			info.setRegToDate(regToDate.getTime());
+			info.setRegToDate(TimezoneUtil.getSimpleDateFormat().format((Date)values.get(0)));
 		}
 
 		//最終変更者
@@ -140,27 +134,19 @@ public class JobKickFilterPropertyUtil {
 			info.setUpdateUser((String) values.get(0));
 		}
 		//最終変更日時(From)
-		Timestamp updateFromDate = null;
 		values = PropertyUtil.getPropertyValue(property,
 				JobKickFilterConstant.UPDATE_FROM_DATE);
 		if (values.get(0) instanceof Date) {
-			updateFromDate = new Timestamp(((Date) values.get(0))
-					.getTime());
-			updateFromDate.setNanos(999999999);
-			info.setUpdateFromDate(updateFromDate.getTime());
+			info.setUpdateFromDate(TimezoneUtil.getSimpleDateFormat().format((Date)values.get(0)));
 		}
 
 		//最終変更日時(To)
-		Timestamp updateToDate = null;
 		values = PropertyUtil.getPropertyValue(property,
 				JobKickFilterConstant.UPDATE_TO_DATE);
 		if (values.get(0) instanceof Date) {
-			updateToDate = new Timestamp(((Date) values.get(0))
-					.getTime());
-			updateToDate.setNanos(999999999);
-			info.setUpdateToDate(updateToDate.getTime());
+			info.setUpdateToDate(TimezoneUtil.getSimpleDateFormat().format((Date)values.get(0)));
 		}
-
+		
 		//オーナーロールID
 		values = PropertyUtil.getPropertyValue(property,
 				JobKickFilterConstant.OWNER_ROLE_ID);
@@ -244,7 +230,7 @@ public class JobKickFilterPropertyUtil {
 		Property ownerRoleId =
 				new Property(JobKickFilterConstant.OWNER_ROLE_ID, Messages.getString("owner.role.id", locale), PropertyDefineConstant.EDITOR_TEXT, DataRangeConstant.VARCHAR_64);
 
-		Object[] obj = EndpointManager.getActiveManagerSet().toArray();
+		Object[] obj = RestConnectManager.getActiveManagerSet().toArray();
 		Object[] val = new Object[obj.length + 1];
 		val[0] = "";
 		for(int i = 0; i<obj.length; i++) {
@@ -260,8 +246,8 @@ public class JobKickFilterPropertyUtil {
 		jobkickName.setValue("");
 
 		Object jobkickTypeValues[][] = {
-				{"", JobKickTypeMessage.STRING_MANUAL, JobKickTypeMessage.STRING_FILECHECK, JobKickTypeMessage.STRING_SCHEDULE},
-				{"", JobKickTypeMessage.STRING_MANUAL, JobKickTypeMessage.STRING_FILECHECK, JobKickTypeMessage.STRING_SCHEDULE}};
+				{"", JobKickTypeMessage.STRING_MANUAL, JobKickTypeMessage.STRING_FILECHECK, JobKickTypeMessage.STRING_SCHEDULE, JobKickTypeMessage.STRING_JOBLINKRCV},
+				{"", JobKickTypeMessage.STRING_MANUAL, JobKickTypeMessage.STRING_FILECHECK, JobKickTypeMessage.STRING_SCHEDULE, JobKickTypeMessage.STRING_JOBLINKRCV}};
 		jobkickType.setSelectValues(jobkickTypeValues);
 		jobkickType.setValue("");
 
@@ -348,34 +334,34 @@ public class JobKickFilterPropertyUtil {
 	 */
 	private static Object[][] getCalendarIdList() {
 
-		List<CalendarInfo> calList = new ArrayList<CalendarInfo>();
+		List<CalendarInfoResponse> calList = new ArrayList<CalendarInfoResponse>();
 		Object retArray[][] = null;
 		try{
-			for(String managerName : EndpointManager.getActiveManagerSet()) {
-				CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
-				for(CalendarInfo info : wrapper.getAllCalendarList()) {
+			for(String managerName : RestConnectManager.getActiveManagerSet()) {
+				CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
+				for(CalendarInfoResponse info : wrapper.getCalendarList(null)) {
 					calList.add(info);
 				}
 			}
-		} catch (InvalidUserPass_Exception e) {
+		} catch (InvalidUserPass e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
-		} catch (HinemosUnknown_Exception e) {
+		} catch (HinemosUnknown e) {
 			m_log.warn("getCalendarIdList(), " + e.getMessage(), e);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
 					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
-		} catch (CalendarNotFound_Exception e) {
+		} catch ( RestConnectFailed e) {
 			m_log.warn("getCalendarIdList(), " + e.getMessage(), e);
 			MessageDialog.openError(
 					null,

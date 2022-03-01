@@ -87,12 +87,18 @@ public class UtilityFileUpload extends FileUpload {
 	}
 
 	private void setFree(){
+		if(isDisposed()) {
+			// キャンセルや×ボタンでダイアログが閉じられた場合、既にdisposeされている
+			return;
+		}
 		getDisplay().asyncExec( new Runnable() {
 			@Override
 			public void run() {
-				setEnabled( true );
-				if(label != null && !"".equals(label)){
-					setText(label);
+				if (!isDisposed()) {
+					setEnabled( true );
+					if(label != null && !"".equals(label)){
+						setText(label);
+					}
 				}
 			}
 		});
@@ -102,7 +108,9 @@ public class UtilityFileUpload extends FileUpload {
 		getDisplay().asyncExec( new Runnable() {
 			@Override
 			public void run() {
-				UtilityFileUpload.super.setText( precentageText );
+				if (!isDisposed()) {
+					UtilityFileUpload.super.setText( precentageText );
+				}
 			}
 		});
 	}

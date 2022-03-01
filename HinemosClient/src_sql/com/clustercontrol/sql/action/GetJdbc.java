@@ -14,12 +14,12 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.JdbcDriverInfoResponse;
 
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
-import com.clustercontrol.ws.monitor.JdbcDriverInfo;
 
 /**
  * JDBC情報を取得するクライアント側アクションクラス<BR>
@@ -44,15 +44,15 @@ public class GetJdbc {
 		List<List<String>> list = new ArrayList<List<String>>();
 
 		try {
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(managerName);
-			List<JdbcDriverInfo> driverList = wrapper.getJdbcDriverList();
-			for (JdbcDriverInfo driver : driverList) {
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(managerName);
+			List<JdbcDriverInfoResponse> driverList = wrapper.getJdbcDriverList();
+			for (JdbcDriverInfoResponse driver : driverList) {
 				ArrayList<String> a = new ArrayList<String>();
 				a.add(driver.getJdbcDriverName());
 				a.add(driver.getJdbcDriverClass());
 				list.add(a);
 			}
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			MessageDialog.openInformation(
 					null,

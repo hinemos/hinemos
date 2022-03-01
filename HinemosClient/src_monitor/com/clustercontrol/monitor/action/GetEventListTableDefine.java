@@ -74,131 +74,134 @@ public class GetEventListTableDefine {
 	/** オーナーロール */
 	public static final int OWNER_ROLE = 14;
 
+	/** 通知UUID */
+	public static final int NOTIFY_UUID = 15;
+
 	/** ユーザ項目01 */
-	public static final int USER_ITEM01 = 15;
+	public static final int USER_ITEM01 = 16;
 
 	/** ユーザ項目02 */
-	public static final int USER_ITEM02 = 16;
+	public static final int USER_ITEM02 = 17;
 
 	/** ユーザ項目03 */
-	public static final int USER_ITEM03 = 17;
+	public static final int USER_ITEM03 = 18;
 
 	/** ユーザ項目04 */
-	public static final int USER_ITEM04 = 18;
+	public static final int USER_ITEM04 = 19;
 
 	/** ユーザ項目05 */
-	public static final int USER_ITEM05 = 19;
+	public static final int USER_ITEM05 = 20;
 
 	/** ユーザ項目06 */
-	public static final int USER_ITEM06 = 20;
+	public static final int USER_ITEM06 = 21;
 
 	/** ユーザ項目07 */
-	public static final int USER_ITEM07 = 21;
+	public static final int USER_ITEM07 = 22;
 
 	/** ユーザ項目08 */
-	public static final int USER_ITEM08 = 22;
+	public static final int USER_ITEM08 = 23;
 
 	/** ユーザ項目09 */
-	public static final int USER_ITEM09 = 23;
+	public static final int USER_ITEM09 = 24;
 
 	/** ユーザ項目10 */
-	public static final int USER_ITEM10 = 24;
+	public static final int USER_ITEM10 = 25;
 
 	/** ユーザ項目11 */
-	public static final int USER_ITEM11 = 25;
+	public static final int USER_ITEM11 = 26;
 
 	/** ユーザ項目12 */
-	public static final int USER_ITEM12 = 26;
+	public static final int USER_ITEM12 = 27;
 
 	/** ユーザ項目13 */
-	public static final int USER_ITEM13 = 27;
+	public static final int USER_ITEM13 = 28;
 
 	/** ユーザ項目14 */
-	public static final int USER_ITEM14 = 28;
+	public static final int USER_ITEM14 = 29;
 
 	/** ユーザ項目15 */
-	public static final int USER_ITEM15 = 29;
+	public static final int USER_ITEM15 = 30;
 
 	/** ユーザ項目16 */
-	public static final int USER_ITEM16 = 30;
+	public static final int USER_ITEM16 = 31;
 
 	/** ユーザ項目17 */
-	public static final int USER_ITEM17 = 31;
+	public static final int USER_ITEM17 = 32;
 
 	/** ユーザ項目18 */
-	public static final int USER_ITEM18 = 32;
+	public static final int USER_ITEM18 = 33;
 
 	/** ユーザ項目19 */
-	public static final int USER_ITEM19 = 33;
+	public static final int USER_ITEM19 = 34;
 
 	/** ユーザ項目20 */
-	public static final int USER_ITEM20 = 34;
+	public static final int USER_ITEM20 = 35;
 
 	/** ユーザ項目21 */
-	public static final int USER_ITEM21 = 35;
+	public static final int USER_ITEM21 = 36;
 
 	/** ユーザ項目22 */
-	public static final int USER_ITEM22 = 36;
+	public static final int USER_ITEM22 = 37;
 
 	/** ユーザ項目23 */
-	public static final int USER_ITEM23 = 37;
+	public static final int USER_ITEM23 = 38;
 
 	/** ユーザ項目24 */
-	public static final int USER_ITEM24 = 38;
+	public static final int USER_ITEM24 = 39;
 
 	/** ユーザ項目25 */
-	public static final int USER_ITEM25 = 39;
+	public static final int USER_ITEM25 = 40;
 
 	/** ユーザ項目26 */
-	public static final int USER_ITEM26 = 40;
+	public static final int USER_ITEM26 = 41;
 
 	/** ユーザ項目27 */
-	public static final int USER_ITEM27 = 41;
+	public static final int USER_ITEM27 = 42;
 
 	/** ユーザ項目28 */
-	public static final int USER_ITEM28 = 42;
+	public static final int USER_ITEM28 = 43;
 
 	/** ユーザ項目29 */
-	public static final int USER_ITEM29 = 43;
+	public static final int USER_ITEM29 = 44;
 
 	/** ユーザ項目30 */
-	public static final int USER_ITEM30 = 44;
+	public static final int USER_ITEM30 = 45;
 
 	/** ユーザ項目31 */
-	public static final int USER_ITEM31 = 45;
+	public static final int USER_ITEM31 = 46;
 
 	/** ユーザ項目32 */
-	public static final int USER_ITEM32 = 46;
+	public static final int USER_ITEM32 = 47;
 
 	/** ユーザ項目33 */
-	public static final int USER_ITEM33 = 47;
+	public static final int USER_ITEM33 = 48;
 
 	/** ユーザ項目34 */
-	public static final int USER_ITEM34 = 48;
+	public static final int USER_ITEM34 = 49;
 
 	/** ユーザ項目35 */
-	public static final int USER_ITEM35 = 49;
+	public static final int USER_ITEM35 = 50;
 
 	/** ユーザ項目36 */
-	public static final int USER_ITEM36 = 50;
+	public static final int USER_ITEM36 = 51;
 
 	/** ユーザ項目37 */
-	public static final int USER_ITEM37 = 51;
+	public static final int USER_ITEM37 = 52;
 
 	/** ユーザ項目38 */
-	public static final int USER_ITEM38 = 52;
+	public static final int USER_ITEM38 = 53;
 
 	/** ユーザ項目39 */
-	public static final int USER_ITEM39 = 53;
+	public static final int USER_ITEM39 = 54;
 
 	/** ユーザ項目40 */
-	public static final int USER_ITEM40 = 54;
+	public static final int USER_ITEM40 = 55;
 
 	/** イベント番号 */
-	public static final int EVENT_NO = 55;
+	public static final int EVENT_NO = 56;
 
 	/** ダミー**/
-	public static final int DUMMY = 56;
+	public static final int DUMMY = 57;
 
 
 	/** 初期表示時ソートカラム。 */
@@ -275,6 +278,7 @@ public class GetEventListTableDefine {
 		map.put(String.format(USER_ITEM_FORMAT, 38), USER_ITEM38);
 		map.put(String.format(USER_ITEM_FORMAT, 39), USER_ITEM39);
 		map.put(String.format(USER_ITEM_FORMAT, 40), USER_ITEM40);
+		map.put("NOTIFY_UUID", NOTIFY_UUID);
 		map.put("EVENT_NO", EVENT_NO);
 		map.put("DUMMY", DUMMY);
 		COLNAME_INDEX_MAP = Collections.unmodifiableMap(map);
@@ -330,11 +334,16 @@ public class GetEventListTableDefine {
 				new TableColumnInfo(Messages.getString("comment", locale), TableColumnInfo.NONE, 200, SWT.LEFT));
 		tableDefine.add(OWNER_ROLE,
 				new TableColumnInfo(Messages.getString("owner.role.id", locale), TableColumnInfo.NONE, 130, SWT.LEFT));
+
+		tableDefine.add(NOTIFY_UUID,
+				new TableColumnInfo(Messages.getString("notify.uuid", locale), TableColumnInfo.NONE, 250, SWT.LEFT));
+
 		//UserItemはHinemosプロパティから列名をセットするため、空文字
 		for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
 			tableDefine.add(getUserItemIndex(i),
-					new TableColumnInfo("", TableColumnInfo.NONE, USERITEM_WIDTH, SWT.LEFT));			
+					new TableColumnInfo("", TableColumnInfo.NONE, USERITEM_WIDTH, SWT.LEFT));
 		}
+
 		tableDefine.add(EVENT_NO,
 				new TableColumnInfo(Messages.getString("monitor.eventno", locale), TableColumnInfo.NONE, EVENT_NO_WIDTH, SWT.LEFT));
 

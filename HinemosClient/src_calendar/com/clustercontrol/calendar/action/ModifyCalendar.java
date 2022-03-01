@@ -9,13 +9,16 @@
 package com.clustercontrol.calendar.action;
 
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.openapitools.client.model.CalendarInfoResponse;
+import org.openapitools.client.model.CalendarPatternInfoResponse;
+import org.openapitools.client.model.ModifyCalendarPatternRequest;
+import org.openapitools.client.model.ModifyCalendarRequest;
 
-import com.clustercontrol.calendar.util.CalendarEndpointWrapper;
+import com.clustercontrol.calendar.util.CalendarRestClientWrapper;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.calendar.CalendarInfo;
-import com.clustercontrol.ws.calendar.CalendarPatternInfo;
-import com.clustercontrol.ws.calendar.InvalidRole_Exception;
+import com.clustercontrol.util.RestClientBeanUtil;
 
 /**
  * カレンダ情報を変更するクライアント側アクションクラス<BR>
@@ -35,13 +38,15 @@ public class ModifyCalendar {
 	 * @param info 変更対象のカレンダ情報
 	 * @return 変更に成功した場合、<code> true </code>
 	 */
-	public boolean modify(String managerName, CalendarInfo info){
+	public boolean modify(String managerName, CalendarInfoResponse info ,String calendarId){
 
 		boolean result = false;
-		String[] args = { info.getCalendarId() };
+		String[] args = { calendarId };
 		try {
-			CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
-			wrapper.modifyCalendar(info);
+			CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
+			ModifyCalendarRequest dto = new ModifyCalendarRequest();
+			RestClientBeanUtil.convertBean(info, dto);
+			wrapper.modifyCalendar(calendarId, dto);
 			result = true;
 			args[0] = managerName;
 			MessageDialog.openInformation(
@@ -51,13 +56,13 @@ public class ModifyCalendar {
 
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				MessageDialog.openInformation(
 						null,
 						Messages.getString("message"),
-						Messages.getString("message.accesscontrol.16"));
+						e.getMessage());
 			} else {
-				errMessage = ", " + HinemosMessage.replace(e.getMessage());
+				errMessage = ", " + e.getMessage();
 			}
 			MessageDialog.openError(
 					null,
@@ -74,12 +79,14 @@ public class ModifyCalendar {
 	 * @param info
 	 * @return
 	 */
-	public boolean modifyPatternInfo(String managerName, CalendarPatternInfo info){
+	public boolean modifyPatternInfo(String managerName, CalendarPatternInfoResponse info, String  calendarPatternId ){
 		boolean result = false;
-		String[] args = { info.getCalPatternId() };
+		String[] args = { calendarPatternId };
 		try {
-			CalendarEndpointWrapper wrapper = CalendarEndpointWrapper.getWrapper(managerName);
-			wrapper.modifyCalendarPattern(info);
+			CalendarRestClientWrapper wrapper = CalendarRestClientWrapper.getWrapper(managerName);
+			ModifyCalendarPatternRequest dto = new ModifyCalendarPatternRequest();
+			RestClientBeanUtil.convertBean(info, dto);
+			wrapper.modifyCalendarPattern(calendarPatternId, dto);
 			result = true;
 			args[0] = managerName;
 			MessageDialog.openInformation(
@@ -89,7 +96,7 @@ public class ModifyCalendar {
 
 		} catch (Exception e) {
 			String errMessage = "";
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				MessageDialog.openInformation(
 						null,
 						Messages.getString("message"),

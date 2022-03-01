@@ -103,9 +103,11 @@ public class MonitorSummaryAction extends AbstractHandler implements IElementUpd
 					// Enable button when 1 item is selected
 					MonitorListView view = (MonitorListView)part;
 
-					if(Objects.equals(view.getSelectMonitorTypeId(), HinemosModuleConstant.MONITOR_LOGCOUNT)) {
-						// ログ件数監視が選択されている場合はTrue
-						editEnable = true;
+					if (view.getSelectedNum() == 1) {
+						if(Objects.equals(view.getSelectMonitorTypeId(), HinemosModuleConstant.MONITOR_LOGCOUNT)) {
+							// ログ件数監視が1件選択されている場合はTrue
+							editEnable = true;
+						}
 					}
 				}
 				this.setBaseEnabled(editEnable);

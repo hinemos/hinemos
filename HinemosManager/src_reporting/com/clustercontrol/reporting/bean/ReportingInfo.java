@@ -9,28 +9,25 @@
 package com.clustercontrol.reporting.bean;
 
 import java.io.Serializable;
-import java.util.Collection;
-
-import javax.xml.bind.annotation.XmlType;
+import java.util.List;
 
 import com.clustercontrol.commons.bean.Schedule;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 
 /**
- * レポーティング テンプレートセット情報のデータクラスです。
+ * レポーティング スケジュール情報のデータクラスです。
  * 
  * @version 5.0.a
  * @since 4.1.2
  *
  */
-@XmlType(namespace = "http://reporting.ws.clustercontrol.com")
 public class ReportingInfo implements Serializable{
 	private static final long serialVersionUID = 1L;
 	private String reportScheduleId = null;
 	private String description = null;
 	private String ownerRoleId = null;
 	private String facilityId = null;
-	private String scopeText = null;
+	private String scope = null;
 	private String calendarId = null;
 	private Integer outputPeriodType = Integer.valueOf(0);
 	private Integer outputPeriodBefore = null;
@@ -38,7 +35,7 @@ public class ReportingInfo implements Serializable{
 	private String templateSetId = null;;
 	private String reportTitle = null;
 	private Boolean logoValidFlg = null;
-	private String logFilaname = null;
+	private String logoFilename = null;
 	private Boolean pageValidFlg = null;
 	private Integer outputType = Integer.valueOf(0);
 	private String notifyGroupId = null;;
@@ -52,7 +49,7 @@ public class ReportingInfo implements Serializable{
 	private Schedule schedule;
 
 	/**通知*/
-	private Collection<NotifyRelationInfo> notifyId = null;
+	private List<NotifyRelationInfo> notifyRelationList = null;
 
 	public ReportingInfo() {
 	}
@@ -61,16 +58,16 @@ public class ReportingInfo implements Serializable{
 	 * 
 	 * @return
 	 */
-	public Collection<NotifyRelationInfo> getNotifyId() {
-		return notifyId;
+	public List<NotifyRelationInfo> getNotifyRelationList() {
+		return notifyRelationList;
 	}
 
 	/**
 	 * 
-	 * @param notifyId
+	 * @param notifyRelationList
 	 */
-	public void setNotifyId(Collection<NotifyRelationInfo> notifyId) {
-		this.notifyId = notifyId;
+	public void setNotifyRelationList(List<NotifyRelationInfo> notifyRelationList) {
+		this.notifyRelationList = notifyRelationList;
 	}
 
 	public String getReportScheduleId() {
@@ -105,12 +102,12 @@ public class ReportingInfo implements Serializable{
 		this.facilityId = facilityId;
 	}
 
-	public void setScopeText(String scopeText) {
-		this.scopeText = scopeText;
+	public void setScope(String scope) {
+		this.scope = scope;
 	}
 
-	public String getScopeText() {
-		return scopeText;
+	public String getScope() {
+		return scope;
 	}
 
 	public String getCalendarId() {
@@ -170,11 +167,11 @@ public class ReportingInfo implements Serializable{
 	}
 
 	public String getLogoFilename() {
-		return logFilaname;
+		return logoFilename;
 	}
 
 	public void setLogoFilename(String logoFilename) {
-		this.logFilaname = logoFilename;
+		this.logoFilename = logoFilename;
 	}
 
 	public Boolean getPageValidFlg() {

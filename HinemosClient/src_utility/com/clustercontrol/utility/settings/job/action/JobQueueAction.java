@@ -16,17 +16,32 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-
-import javax.xml.ws.WebServiceException;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.openapitools.client.model.AddJobQueueRequest;
+import org.openapitools.client.model.GetJobQueueListSearchRequest;
+import org.openapitools.client.model.ImportJobQueueRecordRequest;
+import org.openapitools.client.model.ImportJobQueueRequest;
+import org.openapitools.client.model.ImportJobQueueResponse;
+import org.openapitools.client.model.JobQueueSettingViewInfoListItemResponse;
+import org.openapitools.client.model.JobQueueSettingViewInfoResponse;
+import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.difference.CSVUtil;
 import com.clustercontrol.utility.difference.DiffUtil;
@@ -44,19 +59,16 @@ import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.platform.conv.CommonConv;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
 import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.utility.util.ImportClientController;
+import com.clustercontrol.utility.util.ImportRecordConfirmer;
 import com.clustercontrol.utility.util.UtilityDialogConstant;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidSetting_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidUserPass_Exception;
-import com.clustercontrol.ws.jobmanagement.JobQueueSetting;
-import com.clustercontrol.ws.jobmanagement.JobQueueSettingViewInfo;
-import com.clustercontrol.ws.jobmanagement.JobQueueSettingViewInfoListItem;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
+import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 public class JobQueueAction {
 
@@ -87,10 +99,10 @@ public class JobQueueAction {
 		}
 
 		int ret = SettingConstants.SUCCESS;
-		//スケジュール情報のXMからBeanに取り込みます。
+		// 同時実行制御情報のXMLからBeanに取り込みます。
 		JobQueueList queueList = null;
 		try {
-			queueList = JobQueueList.unmarshal(new InputStreamReader(
+			queueList = XmlMarshallUtil.unmarshall(JobQueueList.class,new InputStreamReader(
 					new FileInputStream(xmlFile), "UTF-8"));
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.UnmarshalXmlFailed"), e);
@@ -107,62 +119,35 @@ public class JobQueueAction {
 
 		List<String> objectIdList = new ArrayList<String>();
 
-		//XMLからDTOに変換
-		List<JobQueueSetting> queues = queueConv.queueXml2Dto(queueList);
-
-		JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-		for (JobQueueSetting queue : queues) {
-			try {
-				wrapper.addJobQueue(queue);
-				objectIdList.add(queue.getQueueId());
-			} catch (InvalidSetting_Exception e) {
-				if (!e.getMessage().contains(MessageConstant.MESSAGE_JOBQUEUE_DUPLICATION.toString())) {
-					log.info(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-					ret = SettingConstants.ERROR_INPROCESS;
-					continue;
-				}
-				//重複時、インポート処理方法を確認する
-				if(!ImportProcessMode.isSameprocess()) {
-					String[] arg = {queue.getQueueId()};
-					UtilityProcessDialog dialog = UtilityDialogInjector.createImportProcessDialog(
-							null, Messages.getString("message.import.confirm2", arg));
-					ImportProcessMode.setProcesstype(dialog.open());
-					ImportProcessMode.setSameprocess(dialog.getToggleState());
-				}
-
-				if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.UPDATE) {
-					try {
-						wrapper.modifyJobQueue(queue);
-						objectIdList.add(queue.getQueueId());
-						getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Update") + " : " + queue.getQueueId());
-					} catch (Exception e1) {
-						getLogger().warn(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
-						ret = SettingConstants.ERROR_INPROCESS;
-					}
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.SKIP) {
-					getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Skip") + " : " + queue.getQueueId());
-				} else if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
-					getLogger().info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
-					ret = SettingConstants.ERROR_INPROCESS;
-					break;
-				}
-			} catch (InvalidRole_Exception e) {
-				log.info(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (InvalidUserPass_Exception e) {
-				log.info(Messages.getString("SettingTools.InvalidUserPass") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-			} catch (Exception e) {
-				log.info(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
+		// レコードの登録（ジョブキュー(同時実行制御キュー)）
+		ImportJobQueueRecordConfirmer jobQueueConfirmer = new ImportJobQueueRecordConfirmer( log, queueList.getJobQueueInfo() );
+		int jobQueueConfirmerRet = jobQueueConfirmer.executeConfirm();
+		if (jobQueueConfirmerRet != 0) {
+			ret = jobQueueConfirmerRet;
+		}
+		// レコードの登録（ジョブキュー(同時実行制御キュー)）
+		if (!(jobQueueConfirmer.getImportRecDtoList().isEmpty())) {
+			ImportJobQueueClientController jobQueueController = new ImportJobQueueClientController(log,
+					Messages.getString("jobqueue"), jobQueueConfirmer.getImportRecDtoList(), true);
+			int jobQueueControllerRet = jobQueueController.importExecute();
+			for (RecordRegistrationResponse rec: jobQueueController.getImportSuccessList() ){
+				objectIdList.add(rec.getImportKeyValue());
+			}
+			if (jobQueueControllerRet != 0) {
+				ret = jobQueueControllerRet;
 			}
 		}
-
+		//重複確認でキャンセルが選択されていたら 以降の処理は行わない
+		if (ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
+			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		
 		//オブジェクト権限同時インポート
 		importObjectPrivilege(HinemosModuleConstant.JOB_QUEUE, objectIdList);
 
 		//差分削除
-		checkDelete(queues);
+		checkDelete(queueList);
 
 		// 処理の終了
 		if (ret == SettingConstants.SUCCESS) {
@@ -202,11 +187,12 @@ public class JobQueueAction {
 		log.debug("Start Export JobQueue : " + fileName);
 
 		int ret = SettingConstants.SUCCESS;
+
 		//マネージャから同時実行制御キューのビューを取得する。
-		JobQueueSettingViewInfo viewInfo;
+		JobQueueSettingViewInfoResponse viewInfo;
 		try {
 			//マネージャからキューの一覧(ビュー)を取得
-			viewInfo = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobQueueSettingViewInfo(null);
+			viewInfo = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobQueueListSearch(new GetJobQueueListSearchRequest());
 		} catch (Exception e1) {
 			log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e1.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -251,31 +237,40 @@ public class JobQueueAction {
 		log.debug("Start Clear JobQueue");
 
 		int ret = SettingConstants.SUCCESS;
+
 		//マネージャから同時実行制御キューのビューを取得する。
-		JobQueueSettingViewInfo viewInfo;
-		JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+		JobQueueSettingViewInfoResponse viewInfo;
+		JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		try {
 			//マネージャからキューの一覧(ビュー)を取得
-			viewInfo = wrapper.getJobQueueSettingViewInfo(null);
+			viewInfo = wrapper.getJobQueueListSearch(new GetJobQueueListSearchRequest());
 		} catch (Exception e) {
 			log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			ret = SettingConstants.ERROR_INPROCESS;
 			log.debug("End Export JobQueue : (Error)");
 			return ret;
 		}
-
-		for (JobQueueSettingViewInfoListItem queue : viewInfo.getItems()) {
+		
+		// 同時実行制御キューのIDList作成
+		List<String> idList = new ArrayList<String>();
+		if(viewInfo!= null){
+			for(JobQueueSettingViewInfoListItemResponse tmp: viewInfo.getItems()){
+				idList.add(tmp.getQueueId());
+			}
+			Collections.sort(idList);
+		}
+		
+		//削除
+		for (String targetId : idList) {
 			try {
-				wrapper.deleteJobQueue(queue.getQueueId());
-			} catch (WebServiceException e) {
-				getLogger().error(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
-				ret = SettingConstants.ERROR_INPROCESS;
-				break;
+				wrapper.deleteJobQueue(targetId);
+				log.info(Messages.getString("SettingTools.ClearSucceeded") + " : " + targetId);
 			} catch (Exception e) {
 				getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 			}
 		}
+		
 		// 処理の終了
 		if (ret == SettingConstants.SUCCESS) {
 			log.info(Messages.getString("SettingTools.ClearCompleted"));
@@ -310,8 +305,8 @@ public class JobQueueAction {
 
 		// XMLファイルからの読み込み
 		try {
-			queueList1 = JobQueueList.unmarshal(new InputStreamReader(new FileInputStream(xmlQueue), "UTF-8"));
-			queueList2 = JobQueueList.unmarshal(new InputStreamReader(new FileInputStream(xmlQueue2), "UTF-8"));
+			queueList1 = XmlMarshallUtil.unmarshall(JobQueueList.class,new InputStreamReader(new FileInputStream(xmlQueue), "UTF-8"));
+			queueList2 = XmlMarshallUtil.unmarshall(JobQueueList.class,new InputStreamReader(new FileInputStream(xmlQueue2), "UTF-8"));
 			sort(queueList1);
 			sort(queueList2);
 
@@ -415,34 +410,37 @@ public class JobQueueAction {
 		return log;
 	}
 
-	protected void checkDelete(List<JobQueueSetting> xmlElements){
-		JobQueueSettingViewInfo subList = null;
-		JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+	protected void checkDelete(JobQueueList xmlElements){
+		JobQueueSettingViewInfoResponse subList = null;
+		JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		try {
-			subList = wrapper.getJobQueueSettingViewInfo(null);
+			subList = wrapper.getJobQueueListSearch(new GetJobQueueListSearchRequest());
 		} catch (Exception e) {
 			getLogger().error(Messages.getString("SettingTools.FailToGetList") + " : " + HinemosMessage.replace(e.getMessage()));
 			getLogger().debug(e.getMessage(), e);
 		}
 
-		if(subList == null || subList.getItems().size() <= 0) {
+		if(subList == null) {
 			return;
 		}
 
-		for(JobQueueSettingViewInfoListItem mgrInfo: new ArrayList<>(subList.getItems())) {
-			for(JobQueueSetting xmlElement: new ArrayList<>(xmlElements)) {
-				if(mgrInfo.getQueueId().equals(xmlElement.getQueueId())){
-					subList.getItems().remove(mgrInfo);
-					xmlElements.remove(xmlElement);
+		List<JobQueueInfo> xmlElementList = new ArrayList<>(Arrays.asList(xmlElements.getJobQueueInfo()));
+		List<JobQueueSettingViewInfoListItemResponse> mgrInfoList = subList.getItems();
+		
+		for(JobQueueSettingViewInfoListItemResponse tmp:new ArrayList<>(mgrInfoList)){
+			for(JobQueueInfo xmlElement: new ArrayList<>(xmlElementList)) {
+				if(tmp.getQueueId().equals(xmlElement.getQueueId())){
+					mgrInfoList.remove(tmp);
+					xmlElementList.remove(xmlElement);
 					break;
 				}
 			}
 		}
 
-		for(JobQueueSettingViewInfoListItem info: subList.getItems()){
+		for(JobQueueSettingViewInfoListItemResponse tmp:subList.getItems()){
 			//マネージャのみに存在するデータがあった場合の削除方法を確認する
 			if(!DeleteProcessMode.isSameprocess()) {
-				String[] args = {info.getQueueId()};
+				String[] args = {tmp.getQueueId()};
 				DeleteProcessDialog dialog = UtilityDialogInjector.createDeleteProcessDialog(
 						null, Messages.getString("message.delete.confirm4", args));
 				DeleteProcessMode.setProcesstype(dialog.open());
@@ -451,16 +449,135 @@ public class JobQueueAction {
 
 			if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.DELETE) {
 				try {
-					wrapper.deleteJobQueue(info.getQueueId());
-					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + info.getQueueId());
+					wrapper.deleteJobQueue(tmp.getQueueId());
+					getLogger().info(Messages.getString("SettingTools.SubSucceeded.Delete") + " : " + tmp.getQueueId());
 				} catch (Exception e) {
 					getLogger().warn(Messages.getString("SettingTools.ClearFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				}
 			} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.SKIP) {
-				getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + info.getQueueId());
+				getLogger().info(Messages.getString("SettingTools.SubSucceeded.Skip") + " : " + tmp.getQueueId());
 			} else if(DeleteProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL) {
 				getLogger().info(Messages.getString("SettingTools.SubSucceeded.Cancel"));
 				return;
+			}
+		}
+
+	}
+	
+	/**
+	 * ジョブキュー(同時実行制御キュー) インポート向けのレコード確認用クラス
+	 * 
+	 */
+	protected class ImportJobQueueRecordConfirmer extends ImportRecordConfirmer<JobQueueInfo, ImportJobQueueRecordRequest, String>{
+		
+		public ImportJobQueueRecordConfirmer(Logger logger, JobQueueInfo[] importRecDtoList) {
+			super(logger, importRecDtoList);
+		}
+		
+		@Override
+		protected ImportJobQueueRecordRequest convertDtoXmlToRestReq(JobQueueInfo xmlDto)
+				throws HinemosUnknown, InvalidSetting {
+			AddJobQueueRequest  dto = queueConv.queueXml2Dto(xmlDto);
+			ImportJobQueueRecordRequest dtoRec = new ImportJobQueueRecordRequest();
+			dtoRec.setImportData(new AddJobQueueRequest());
+			RestClientBeanUtil.convertBean(dto, dtoRec.getImportData());
+			
+			dtoRec.setImportKeyValue(dtoRec.getImportData().getQueueId());
+			return dtoRec;
+		}
+
+		@Override
+		protected Set<String> getExistIdSet() throws Exception {
+			Set<String> retSet = new HashSet<String>();
+			JobQueueSettingViewInfoResponse jobQueueInfoList = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobQueueListSearch(new GetJobQueueListSearchRequest());
+			for(JobQueueSettingViewInfoListItemResponse tmp:jobQueueInfoList.getItems())
+				retSet.add(tmp.getQueueId());
+			return retSet;
+		}
+		@Override
+		protected boolean isLackRestReq(ImportJobQueueRecordRequest restDto) {
+			return (restDto == null || restDto.getImportData().getQueueId() == null || restDto.getImportData().getQueueId().equals(""));
+		}
+		@Override
+		protected String getKeyValueXmlDto(JobQueueInfo xmlDto) {
+			return xmlDto.getQueueId();
+		}
+		@Override
+		protected String getId(JobQueueInfo xmlDto) {
+			return xmlDto.getQueueId();
+		}
+		@Override
+		protected void setNewRecordFlg(ImportJobQueueRecordRequest restDto, boolean flag) {
+			restDto.setIsNewRecord(flag);
+		}
+	}
+
+	/**
+	 * ジョブキュー(同時実行制御キュー) インポート向けのレコード登録用クラス
+	 * 
+	 */
+	protected static class ImportJobQueueClientController extends ImportClientController<ImportJobQueueRecordRequest, ImportJobQueueResponse, RecordRegistrationResponse>{
+		
+		public ImportJobQueueClientController(Logger logger, String importInfoName, List<ImportJobQueueRecordRequest> importRecList ,boolean displayFailed) {
+			super(logger, importInfoName,importRecList,displayFailed);
+		}
+		@Override
+		protected List<RecordRegistrationResponse> getResRecList(ImportJobQueueResponse importResponse) {
+			return importResponse.getResultList();
+		};
+
+		@Override
+		protected Boolean getOccurException(ImportJobQueueResponse importResponse) {
+			return importResponse.getIsOccurException();
+		};
+
+		@Override
+		protected String getReqKeyValue(ImportJobQueueRecordRequest importRec) {
+			return importRec.getImportKeyValue();
+		};
+
+		@Override
+		protected String getResKeyValue(RecordRegistrationResponse responseRec) {
+			return responseRec.getImportKeyValue();
+		};
+
+		@Override
+		protected boolean isResNormal(RecordRegistrationResponse responseRec) {
+			return (responseRec.getResult() == ResultEnum.NORMAL) ;
+		};
+
+		@Override
+		protected boolean isResSkip(RecordRegistrationResponse responseRec) {
+			return (responseRec.getResult() == ResultEnum.SKIP) ;
+		};
+
+		@Override
+		protected ImportJobQueueResponse callImportWrapper(List<ImportJobQueueRecordRequest> importRecList)
+				throws HinemosUnknown, InvalidUserPass, InvalidRole, RestConnectFailed {
+			ImportJobQueueRequest reqDto = new ImportJobQueueRequest();
+			reqDto.setRecordList(importRecList);
+			reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
+			return UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).importJobQueue(reqDto);
+		}
+
+		@Override
+		protected String getRestExceptionMessage(RecordRegistrationResponse responseRec) {
+			if (responseRec.getExceptionInfo() != null) {
+				return responseRec.getExceptionInfo().getException() +":"+ responseRec.getExceptionInfo().getMessage();
+			}
+			return null;
+		};
+
+		@Override
+		protected void setResultLog( RecordRegistrationResponse responseRec ){
+			String keyValue = getResKeyValue(responseRec);
+			if ( isResNormal(responseRec) ) {
+				log.info(Messages.getString("SettingTools.ImportSucceeded") + " : "+ this.importInfoName + ":" + keyValue);
+			} else if(isResSkip(responseRec)){
+				log.info(Messages.getString("SettingTools.SkipSystemRole") + " : " + this.importInfoName + ":" + keyValue);
+			} else {
+				log.warn(Messages.getString("SettingTools.ImportFailed") + " : "+ this.importInfoName + ":" + keyValue + " : "
+						+ HinemosMessage.replace(getRestExceptionMessage(responseRec)));
 			}
 		}
 	}

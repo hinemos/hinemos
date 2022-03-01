@@ -14,8 +14,8 @@ import java.util.List;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.repository.FacilityPath;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.util.FacilityTreeCache;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 
 public class CloudUtil {
 	
@@ -25,8 +25,8 @@ public class CloudUtil {
 	}
 	
 	public static String getFacilityPath(String managerName, String facilityId) {
-		FacilityTreeItem treeItem = FacilityTreeCache.getTreeItem(managerName);
-		List<FacilityTreeItem> treeItems = collectScopes(treeItem, facilityId);
+		FacilityTreeItemResponse treeItem = FacilityTreeCache.getTreeItem(managerName);
+		List<FacilityTreeItemResponse> treeItems = collectScopes(treeItem, facilityId);
 		if (!treeItems.isEmpty()) {
 			FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
 			return path.getPath(treeItems.get(0));
@@ -34,20 +34,20 @@ public class CloudUtil {
 		return facilityId;
 	}
 
-	public static List<FacilityTreeItem> collectScopes(String managerName, String...targetIds) {
-		return recursiveCollectScopes(FacilityTreeCache.getTreeItem(managerName), new ArrayList<String>(Arrays.asList(targetIds)), new ArrayList<FacilityTreeItem>());
+	public static List<FacilityTreeItemResponse> collectScopes(String managerName, String...targetIds) {
+		return recursiveCollectScopes(FacilityTreeCache.getTreeItem(managerName), new ArrayList<String>(Arrays.asList(targetIds)), new ArrayList<FacilityTreeItemResponse>());
 	}
 	
-	public static List<FacilityTreeItem> collectScopes(FacilityTreeItem treeItem, String...targetIds) {
-		return recursiveCollectScopes(treeItem, new ArrayList<String>(Arrays.asList(targetIds)), new ArrayList<FacilityTreeItem>());
+	public static List<FacilityTreeItemResponse> collectScopes(FacilityTreeItemResponse treeItem, String...targetIds) {
+		return recursiveCollectScopes(treeItem, new ArrayList<String>(Arrays.asList(targetIds)), new ArrayList<FacilityTreeItemResponse>());
 	}
 	
-	private static List<FacilityTreeItem> recursiveCollectScopes(FacilityTreeItem treeItem, List<String> targetIds, List<FacilityTreeItem> buf) {
+	private static List<FacilityTreeItemResponse> recursiveCollectScopes(FacilityTreeItemResponse treeItem, List<String> targetIds, List<FacilityTreeItemResponse> buf) {
 		if (targetIds.contains(treeItem.getData().getFacilityId()) /*&& treeItem.getData().getFacilityType() == FacilityConstant.TYPE_SCOPE*/) {
 			targetIds.remove(treeItem.getData().getFacilityId());
 			buf.add(treeItem);
 		} else {
-			for (FacilityTreeItem fti: treeItem.getChildren()) {
+			for (FacilityTreeItemResponse fti: treeItem.getChildren()) {
 				recursiveCollectScopes(fti, targetIds, buf);
 				if (targetIds.isEmpty())
 					break;
@@ -58,13 +58,13 @@ public class CloudUtil {
 	
 	
 	public interface IFacilityTreeVisitor {
-		void visitTreeItem(FacilityTreeItem item);
+		void visitTreeItem(FacilityTreeItemResponse item);
 	}
 	
 	
-	public static void walkFacilityTree(FacilityTreeItem treeItem, IFacilityTreeVisitor visitor) {
+	public static void walkFacilityTree(FacilityTreeItemResponse treeItem, IFacilityTreeVisitor visitor) {
 		visitor.visitTreeItem(treeItem);
-		for (FacilityTreeItem child: treeItem.getChildren()) {
+		for (FacilityTreeItemResponse child: treeItem.getChildren()) {
 			walkFacilityTree(child, visitor);
 		}
 	}

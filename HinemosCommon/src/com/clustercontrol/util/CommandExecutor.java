@@ -55,6 +55,8 @@ public class CommandExecutor {
 	public static final int _defaultBufferSize = 8120;
 
 	public static final Object _runtimeExecLock = new Object();
+	
+	private final boolean _destroy;
 
 	private Process process = null;
 
@@ -71,14 +73,23 @@ public class CommandExecutor {
 	}
 
 	public CommandExecutor(String[] command, Charset charset, long timeout) throws HinemosUnknown {
-		this(command, charset, timeout, _defaultBufferSize);
+		this(command, charset, timeout, _defaultBufferSize, true);
+	}
+
+	public CommandExecutor(String[] command, Charset charset, long timeout, boolean destroy) throws HinemosUnknown {
+		this(command, charset, timeout, _defaultBufferSize, destroy);
 	}
 
 	public CommandExecutor(String[] command, Charset charset, long timeout, int bufferSize) throws HinemosUnknown {
+		this(command, charset, timeout, bufferSize, true);
+	}
+
+	public CommandExecutor(String[] command, Charset charset, long timeout, int bufferSize, boolean destroy) throws HinemosUnknown {
 		this._command = command;
 		this._charset = charset;
 		this._timeout = timeout;
 		this._bufferSize = bufferSize;
+		this._destroy = destroy;
 
 		log.debug("initializing " + this);
 
@@ -147,7 +158,7 @@ public class CommandExecutor {
 	}
 
 	public CommandResult getResult() {
-		CommandExecuteTask task = new CommandExecuteTask(process, _charset, _timeout, _bufferSize);
+		CommandExecuteTask task = new CommandExecuteTask(process, _charset, _timeout, _bufferSize, _destroy);
 		Future<CommandResult> future = _commandExecutor.submit(task);
 		log.debug("executing command. (command = " + _commandLine + ", timeout = " + _timeout + " [msec])");
 
@@ -212,15 +223,22 @@ public class CommandExecutor {
 		public final Charset charset;
 
 		public final Process process;
+		
+		// true if destroy child process
+		public final boolean destroy;
 
 		// thread for receive stdout and stderr
 		private final ExecutorService _receiverService;
 
 		public CommandExecuteTask(Process process, Charset charset, long timeout, int bufferSize) {
+			this(process, charset, timeout, bufferSize, true);
+		}
+		public CommandExecuteTask(Process process, Charset charset, long timeout, int bufferSize, boolean destroy) {
 			this.charset = charset;
 			this.timeout = timeout;
 			this.bufferSize = bufferSize;
 			this.process = process;
+			this.destroy = destroy;
 
 			log.debug("initializing " + this);
 
@@ -302,7 +320,7 @@ public class CommandExecutor {
 					} catch (IOException e) {
 					}
 				}
-				if (process != null) {
+				if (process != null && destroy) {
 					log.debug("destroying child process.");
 					process.destroy();
 				}

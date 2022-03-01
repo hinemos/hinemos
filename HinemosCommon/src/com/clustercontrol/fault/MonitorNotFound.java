@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * facilityIDが存在しない場合に利用するException
  * @version 3.2.0
  */
-public class MonitorNotFound extends HinemosException {
+public class MonitorNotFound extends HinemosNotFound {
 	
 	private static final long serialVersionUID = 6496146742364458888L;
 

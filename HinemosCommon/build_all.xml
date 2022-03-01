@@ -15,9 +15,12 @@
 	<target name="all">
 		<ant antfile="build.xml" dir="../HinemosCommon" target="all" inheritall="false" />
 		<ant antfile="build.xml" dir="../HinemosManager" target="all" inheritall="false" />
+		<!-- Build SDML source (need project) -->
+		<ant antfile="build.xml" dir="../SDMLController" target="all" inheritAll="false"/>
 		<ant antfile="build.xml" dir="../HinemosWorkers" target="all" inheritall="false" />
 		<!-- Prerequisite for building Client (Utility XML schema) -->
 		<ant antfile="build_client.xml" dir="../HinemosClient" target="generate-schema" inheritall="false" />
+		<ant antfile="build.xml" dir="../SDMLClientOption" target="generate-schema" inheritall="false" />
 
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>
@@ -26,19 +29,43 @@
 	<target name="allfortest">
 		<ant antfile="build.xml" dir="../HinemosCommon" target="all" inheritall="false" />
 		<ant antfile="build.xml" dir="../HinemosManager" target="allfortest" inheritall="false" />
+		<!-- Build SDML source (need project) -->
+		<ant antfile="build.xml" dir="../SDMLController" target="all" inheritAll="false"/>
 		<ant antfile="build.xml" dir="../HinemosWorkers" target="all" inheritall="false" />
 		<!-- Prerequisite for building Client (Utility XML schema) -->
 		<ant antfile="build_client.xml" dir="../HinemosClient" target="generate-schema" inheritall="false" />
+		<ant antfile="build.xml" dir="../SDMLClientOption" target="generate-schema" inheritall="false" />
+
+		<!-- Build SDML source (need project) -->
+		<ant antfile="build.xml" dir="../SDMLController" target="all" inheritAll="false"/>
+		
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh" />
+	</target>
+
+	<target name="all_without_python_proxy">
+		<ant antfile="build.xml" dir="../HinemosCommon" target="all" inheritall="false" />
+		<ant antfile="build.xml" dir="../HinemosManager" target="all_without_python_proxy" inheritall="false" />
+		<!-- Build SDML source (need project) -->
+		<ant antfile="build.xml" dir="../SDMLController" target="all" inheritAll="false"/>
+		<ant antfile="build.xml" dir="../HinemosWorkers" target="all" inheritall="false" />
+		<!-- Prerequisite for building Client (Utility XML schema) -->
+		<ant antfile="build_client.xml" dir="../HinemosClient" target="generate-schema" inheritall="false" />
+		<ant antfile="build.xml" dir="../SDMLClientOption" target="generate-schema" inheritall="false" />
 
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>
 		<antcall target="refresh" />
 	</target>
-	
+
 	<target name="all_without_interface">
 		<ant antfile="build.xml" dir="../HinemosCommon" target="all" inheritall="false" />
 		<ant antfile="build.xml" dir="../HinemosManager" target="all_without_interface" inheritall="false" />
 		<ant antfile="build.xml" dir="../HinemosWorkers" target="all" inheritall="false" />
+		
+		<!-- Build SDML source (need project) -->
+		<ant antfile="build.xml" dir="../SDMLController" target="all" inheritAll="false"/>
 		
 		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
 				property="eclipse_jar_available"/>
@@ -57,6 +84,9 @@
 		
 		<eclipse.refreshLocal resource="HinemosClient" depth="infinite" />
 		<eclipse.incrementalBuild project="HinemosClient" kind="clean" />
+		
+		<eclipse.refreshLocal resource="SDMLController" depth="infinite" />
+		<eclipse.incrementalBuild project="SDMLController" kind="clean" />
 		
 	</target>
 	

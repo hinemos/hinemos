@@ -13,14 +13,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.PrimaryKeyJoinColumn;
-import javax.persistence.Table;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
@@ -39,8 +39,8 @@ import com.clustercontrol.monitor.run.model.MonitorInfo;
 @Cacheable(true)
 public class PluginCheckInfo extends MonitorCheckInfo implements Serializable {
 	private static final long serialVersionUID = 1L;
-	private List<MonitorPluginNumericInfo> monitorPluginNumericInfoEntities = new ArrayList<>();
-	private List<MonitorPluginStringInfo> monitorPluginStringInfoEntities = new ArrayList<>();
+	private List<MonitorPluginNumericInfo> monitorPluginNumericInfoList = new ArrayList<>();
+	private List<MonitorPluginStringInfo> monitorPluginStringInfoList = new ArrayList<>();
 	private MonitorInfo monitorInfo;
 
 	@Deprecated
@@ -50,21 +50,21 @@ public class PluginCheckInfo extends MonitorCheckInfo implements Serializable {
 	//bi-directional many-to-one association to MonitorPluginNumericInfoEntity
 	@OneToMany(mappedBy="monitorPluginInfoEntity", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public List<MonitorPluginNumericInfo> getMonitorPluginNumericInfoList() {
-		return this.monitorPluginNumericInfoEntities;
+		return this.monitorPluginNumericInfoList;
 	}
 
-	public void setMonitorPluginNumericInfoList(List<MonitorPluginNumericInfo> monitorPluginNumericInfoEntities) {
-		this.monitorPluginNumericInfoEntities = monitorPluginNumericInfoEntities;
+	public void setMonitorPluginNumericInfoList(List<MonitorPluginNumericInfo> monitorPluginNumericInfoList) {
+		this.monitorPluginNumericInfoList = monitorPluginNumericInfoList;
 	}
 
 	//bi-directional many-to-one association to MonitorPluginNumericInfoEntity
 	@OneToMany(mappedBy="monitorPluginInfoEntity", fetch=FetchType.LAZY, cascade=CascadeType.ALL)
 	public List<MonitorPluginStringInfo> getMonitorPluginStringInfoList() {
-		return this.monitorPluginStringInfoEntities;
+		return this.monitorPluginStringInfoList;
 	}
 
-	public void setMonitorPluginStringInfoList(List<MonitorPluginStringInfo> monitorPluginStringInfoEntities) {
-		this.monitorPluginStringInfoEntities = monitorPluginStringInfoEntities;
+	public void setMonitorPluginStringInfoList(List<MonitorPluginStringInfo> monitorPluginStringInfoList) {
+		this.monitorPluginStringInfoList = monitorPluginStringInfoList;
 	}
 
 	//bi-directional one-to-one association to MonitorInfo

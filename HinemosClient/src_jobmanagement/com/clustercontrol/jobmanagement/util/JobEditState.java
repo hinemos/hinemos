@@ -14,19 +14,17 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.eclipse.jface.dialogs.MessageDialog;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import org.openapitools.client.model.JobTreeItemResponseP1;
+import org.openapitools.client.model.JobTreeItemResponseP2;
 
-import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.jobmanagement.HinemosUnknown_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidRole_Exception;
-import com.clustercontrol.ws.jobmanagement.InvalidUserPass_Exception;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobMasterNotFound_Exception;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
-import com.clustercontrol.ws.jobmanagement.NotifyNotFound_Exception;
-import com.clustercontrol.ws.jobmanagement.UserNotFound_Exception;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.JobMasterNotFound;
+import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.UserNotFound;
 
 /**
  * JobEditStateクラス
@@ -43,22 +41,22 @@ public class JobEditState{
 	private static Log m_log = LogFactory.getLog( JobEditState.class );
 
 	/** 新規作成または編集したマネージャに登録する必要があるジョブユニットのリスト */
-	private ArrayList<JobTreeItem> editedJobunitList = new ArrayList<JobTreeItem>();
+	private ArrayList<JobTreeItemWrapper> editedJobunitList = new ArrayList<JobTreeItemWrapper>();
 
 	/** 削除されたマネージャから削除する必要があるジョブユニットのリスト */
-	private ArrayList<JobTreeItem> deletedJobunitList = new ArrayList<JobTreeItem>();
+	private ArrayList<JobTreeItemWrapper> deletedJobunitList = new ArrayList<JobTreeItemWrapper>();
 
 	/** 編集ロックを取得したジョブユニットのバックアップ */
-	private ConcurrentHashMap<JobInfo, JobTreeItem> lockedJobunitMap = new ConcurrentHashMap<JobInfo, JobTreeItem>();
+	private ConcurrentHashMap<JobInfoWrapper, JobTreeItemWrapper> lockedJobunitMap = new ConcurrentHashMap<JobInfoWrapper, JobTreeItemWrapper>();
 
 	/** 編集ロックを取得したジョブユニットのリスト */
-	private ConcurrentHashMap<JobInfo, Integer> editSessionMap = new ConcurrentHashMap<JobInfo, Integer>();
+	private ConcurrentHashMap<JobInfoWrapper, Integer> editSessionMap = new ConcurrentHashMap<JobInfoWrapper, Integer>();
 
 	/** ジョブユニットと最終更新日時の組 */
 	private ConcurrentHashMap<String, Long> jobunitUpdateTimeMap = new ConcurrentHashMap<String, Long>();
 
 	private String managerName;
-	private JobTreeItem m_jobTreeItem; // マネージャごとのジョブツリーのキャッシュ
+	private JobTreeItemWrapper m_jobTreeItem; // マネージャごとのジョブツリーのキャッシュ
 
 	public JobEditState( String managerName ){
 		this.managerName = managerName;
@@ -68,12 +66,12 @@ public class JobEditState{
 	 * マネージャに登録する必要があるジョブユニットを追加します
 	 * @param jobunit 編集したジョブユニット
 	 */
-	public void addEditedJobunit(JobTreeItem jobunit ){
-		if( jobunit.getData().getType() == JobConstant.TYPE_COMPOSITE ){
+	public void addEditedJobunit(JobTreeItemWrapper jobunit ){
+		if( jobunit.getData().getType() == JobInfoWrapper.TypeEnum.COMPOSITE ){
 			// ツリーのトップが呼ばれることはないはず
 			m_log.warn("addEditJobunit() : jobunit is TOP");
 			return;
-		} else if( jobunit.getData().getType() == JobConstant.TYPE_JOBUNIT ){
+		} else if( jobunit.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ){
 			// ジョブユニットの場合は編集済みジョブユニットに登録する
 
 			if( !editedJobunitList.contains(jobunit) ){
@@ -91,7 +89,7 @@ public class JobEditState{
 	 *
 	 * @return ArrayList<JobTreeItem>
 	 */
-	public ArrayList<JobTreeItem> getEditedJobunitList( ){
+	public ArrayList<JobTreeItemWrapper> getEditedJobunitList( ){
 		return editedJobunitList;
 	}
 
@@ -99,7 +97,7 @@ public class JobEditState{
 	 *マネージャに登録する必要があるジョブユニットのリストからジョブユニットを削除します。
 	 *
 	 */
-	public void removeEditedJobunit( JobTreeItem jobunit ){
+	public void removeEditedJobunit( JobTreeItemWrapper jobunit ){
 		editedJobunitList.remove(jobunit);
 	}
 
@@ -107,7 +105,7 @@ public class JobEditState{
 	 * マネージャから削除する必要があるジョブユニットを追加します
 	 * @param jobunit 削除操作したジョブユニット
 	 */
-	public void addDeletedJobunit( JobTreeItem jobunit ){
+	public void addDeletedJobunit( JobTreeItemWrapper jobunit ){
 		deletedJobunitList.add(jobunit);
 	}
 
@@ -116,7 +114,7 @@ public class JobEditState{
 	 *
 	 * @return ArrayList<String>
 	 */
-	public ArrayList<JobTreeItem> getDeletedJobunitList( ){
+	public ArrayList<JobTreeItemWrapper> getDeletedJobunitList( ){
 		return deletedJobunitList;
 	}
 
@@ -138,9 +136,9 @@ public class JobEditState{
 	 * 編集ロックを取得したjobunitのリストを返します。
 	 * @return ArrayList<JobInfo> 編集ロックを取得したジョブユニットのリスト
 	 */
-	public List<JobInfo> getLockedJobunitList( ){
-		List<JobInfo> list = new ArrayList<JobInfo>();
-		for( JobInfo info : editSessionMap.keySet() ){
+	public List<JobInfoWrapper> getLockedJobunitList( ){
+		List<JobInfoWrapper> list = new ArrayList<JobInfoWrapper>();
+		for( JobInfoWrapper info : editSessionMap.keySet() ){
 			m_log.debug("list add " + info.getJobunitId());
 			list.add(info);
 		}
@@ -152,7 +150,7 @@ public class JobEditState{
 	 * @param info
 	 * @return ジョブユニットのバックアップ
 	 */
-	public JobTreeItem getLockedJobunitBackup(JobInfo info ){
+	public JobTreeItemWrapper getLockedJobunitBackup(JobInfoWrapper info ){
 		return lockedJobunitMap.get(info);
 	}
 
@@ -161,7 +159,7 @@ public class JobEditState{
 	 *
 	 * @param info
 	 */
-	public void removeLockedJobunit(JobInfo info ){
+	public void removeLockedJobunit(JobInfoWrapper info ){
 		lockedJobunitMap.remove(info);
 		editSessionMap.remove(info);
 	}
@@ -172,7 +170,7 @@ public class JobEditState{
 	 * @param item ジョブツリーのバックアップ
 	 * @param editSession セッション
 	 */
-	public void addLockedJobunit(JobInfo info, JobTreeItem item, Integer editSession ){
+	public void addLockedJobunit(JobInfoWrapper info, JobTreeItemWrapper item, Integer editSession ){
 		if (info == null) {
 			m_log.info("JobInfo is null, editSession=" + editSession);
 			return;
@@ -193,7 +191,7 @@ public class JobEditState{
 	 * @return 編集ロックを取得したジョブユニット配下のジョブである場合true
 	 */
 	public boolean isLockedJobunitId(String jobunitId ){
-		for (JobInfo info : editSessionMap.keySet()) {
+		for (JobInfoWrapper info : editSessionMap.keySet()) {
 			if (jobunitId.equals(info.getJobunitId())) {
 				return true;
 			}
@@ -207,7 +205,7 @@ public class JobEditState{
 	 * @param info ジョブユニット
 	 * @return セッション
 	 */
-	public Integer getEditSession(JobInfo info ){
+	public Integer getEditSession(JobInfoWrapper info ){
 		return editSessionMap.get(info);
 	}
 
@@ -230,7 +228,8 @@ public class JobEditState{
 	 *
 	 * @param item ジョブツリーアイテム
 	 */
-	public void exitEditMode(JobTreeItem item ){
+	public void exitEditMode(JobTreeItemWrapper item ){
+		m_log.debug("exitEditMode(), editedJobunitList start. jobunitId=" + item.getData().getJobunitId());
 		editedJobunitList.remove(item);
 		deletedJobunitList.remove(item);
 		removeLockedJobunit(item.getData());
@@ -253,6 +252,7 @@ public class JobEditState{
 	 * @param updateTime 最終更新日時
 	 */
 	public void putJobunitUpdateTime(String jobunitId, Long updateTime ){
+		m_log.debug("putJobunitUpdateTime() :jobunitId="+ jobunitId + " updateTime =" +updateTime );
 		jobunitUpdateTimeMap.put(jobunitId, updateTime);
 	}
 
@@ -262,43 +262,19 @@ public class JobEditState{
 	 * @param jobunitId 情報を削除するジョブユニットID
 	 */
 	public void removeJobunitUpdateTime( String jobunitId ){
+		m_log.debug("removeJobunitUpdateTime() :jobunitId="+ jobunitId );
 		jobunitUpdateTimeMap.remove(jobunitId);
 	}
 
-	private void updateJobunitUpdateTime( JobTreeItem tree ){
-		try {
-			List<String> jobunitIdList = new ArrayList<String>();
-			for( JobTreeItem jobunit : tree.getChildren().get(0).getChildren() ){
-				String jobunitId = jobunit.getData().getJobunitId();
-				jobunitIdList.add(jobunitId);
+	private void updateJobunitUpdateTime( JobTreeItemWrapper tree ){
+		
+		for( JobTreeItemWrapper jobunit : tree.getChildren().get(0).getChildren() ){
+			if(jobunit.getData().getUpdateTime() != null){ 
+				putJobunitUpdateTime(jobunit.getData().getJobunitId(),
+						JobTreeItemUtil.convertDtStringtoLong(jobunit.getData().getUpdateTime()));
 			}
-			
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-			List<Long> updateTimeList = wrapper.getUpdateTimeList(jobunitIdList);
-			if (updateTimeList.size() != jobunitIdList.size()) {
-				m_log.warn("size differ " + updateTimeList.size() + ", " + jobunitIdList.size());
-			}
-			for (int i = 0; i < jobunitIdList.size(); i++) {
-				String jobunitId = jobunitIdList.get(i);
-				Long updateTime = updateTimeList.get(i);
-				if( updateTime != null ){
-					m_log.info("jobunitId="  + jobunitId + ", updateTime=" + updateTime); 
-					putJobunitUpdateTime(jobunitId, updateTime);
-				}
-			}
-		} catch (InvalidRole_Exception e ){
-			// アクセス権なしの場合、エラーダイアログを表示する
-			MessageDialog.openInformation(
-					null,
-					Messages.getString("message"),
-					Messages.getString("message.accesscontrol.16"));
-		} catch (Exception e ){
-			m_log.warn("updateJobunitUpdateTime() : " + e.getMessage(), e);
-			MessageDialog.openError(
-					null,
-					Messages.getString("failed"),
-					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 		}
+			
 	}
 
 	/**
@@ -314,30 +290,36 @@ public class JobEditState{
 	 * @throws NotifyNotFound_Exception
 	 * @throws UserNotFound_Exception
 	 */
-	public JobTreeItem updateJobTree( String ownerRoleId, boolean m_treeOnly ) throws HinemosUnknown_Exception, InvalidRole_Exception, InvalidUserPass_Exception, JobMasterNotFound_Exception, NotifyNotFound_Exception, UserNotFound_Exception{
+	public JobTreeItemWrapper updateJobTree( String ownerRoleId, boolean m_treeOnly ) throws HinemosUnknown, InvalidRole, InvalidUserPass, JobMasterNotFound, NotifyNotFound, UserNotFound,RestConnectFailed{
 		// managerがルートとなる木を作成する
 		//     manager
 		//     |
 		//     -----jobunits
 
 		//ジョブツリーのルート(Manager)を生成
-		m_jobTreeItem = new JobTreeItem();
-		JobInfo managerInfo = new JobInfo();
+		m_jobTreeItem = new JobTreeItemWrapper();
+		JobInfoWrapper managerInfo =JobTreeItemUtil.createJobInfoWrapper();
 		managerInfo.setId(managerName);
 		managerInfo.setName(managerName);
-		managerInfo.setType(JobConstant.TYPE_MANAGER);
+		managerInfo.setType(JobInfoWrapper.TypeEnum.MANAGER);
 		managerInfo.setJobunitId(managerName);
 		m_jobTreeItem.setData(managerInfo);
 		m_jobTreeItem.setParent(null);
 		
-		JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper(managerName);
-
-		JobTreeItem orgTree = wrapper.getJobTree(ownerRoleId, m_treeOnly);
+		JobTreeItemWrapper orgTree =null;
+		JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+		if( m_treeOnly ){
+			JobTreeItemResponseP1 orgTreeRes = wrapper.getJobTree(ownerRoleId);//変換
+			orgTree = JobTreeItemUtil.getItemFromP1(orgTreeRes);
+		}else{
+			JobTreeItemResponseP2 orgTreeRes = wrapper.getJobTreeJobInfoFull(ownerRoleId);
+			//不要な情報を削り落として変換
+			orgTree = JobTreeItemUtil.getItemFromP2ForTreeView(orgTreeRes);
+		}
 
 		updateJobunitUpdateTime(orgTree);
-
-		// Children
-		for( JobTreeItem childItem : orgTree.getChildren().get(0).getChildren() ){
+		// Children TOP->JOB->Jobunitの一覧を取得してセット
+		for( JobTreeItemWrapper childItem : orgTree.getChildren().get(0).getChildren() ){
 			childItem.setParent(m_jobTreeItem);
 			m_jobTreeItem.getChildren().add(childItem);
 		}
@@ -349,7 +331,7 @@ public class JobEditState{
 	 * ジョブツリーのキャッシュをそのまま返します
 	 * @return
 	 */
-	public JobTreeItem getJobTree() {
+	public JobTreeItemWrapper getJobTree() {
 		return m_jobTreeItem;
 	}
 	
@@ -358,12 +340,12 @@ public class JobEditState{
 	 * Clear job lock states
 	 */
 	public void releaseEditLock(){
-		List<JobInfo> lockedJobunitList = getLockedJobunitList();
+		List<JobInfoWrapper> lockedJobunitList = getLockedJobunitList();
 		if( lockedJobunitList.size() > 0 ){
-			JobEndpointWrapper wrapper = JobEndpointWrapper.getWrapper( managerName );
-			for( JobInfo jobunit : lockedJobunitList ){
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper( managerName );
+			for( JobInfoWrapper jobunit : lockedJobunitList ){
 				try{
-					wrapper.releaseEditLock(getEditSession(jobunit));
+					wrapper.releaseEditLock(jobunit.getJobunitId(),getEditSession(jobunit));
 					removeLockedJobunit(jobunit);
 					m_log.info("releaseEditLock jobunit=" + jobunit + ", managerName=" + managerName);
 				}catch(Exception e){

@@ -10,7 +10,6 @@ package com.clustercontrol.jobmanagement.view;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -28,25 +27,27 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.JobDetailInfoResponse;
+import org.openapitools.client.model.JobQueueContentsViewInfoListItemResponse;
+import org.openapitools.client.model.JobQueueItemContentResponse;
+import org.openapitools.client.model.JobTreeItemResponseP3;
 
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.dialog.ApiResultDialog;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
-import com.clustercontrol.jobmanagement.util.JobEndpointWrapper;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
+import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.action.StartJobDetailAction;
 import com.clustercontrol.jobmanagement.view.action.StopJobDetailAction;
 import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.LogUtil;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.ViewUtil;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.jobmanagement.JobDetailInfo;
-import com.clustercontrol.ws.jobmanagement.JobInfo;
-import com.clustercontrol.ws.jobmanagement.JobQueueContentsViewInfo;
-import com.clustercontrol.ws.jobmanagement.JobQueueContentsViewInfoListItem;
-import com.clustercontrol.ws.jobmanagement.JobTreeItem;
+
 
 /**
  * ジョブ履歴[同時実行制御状況]ビュークラスです。
@@ -62,6 +63,7 @@ public class JobQueueContentsView extends CommonViewPart {
 	private static final int COLUMN_SESSION_ID = 1;
 	private static final int COLUMN_JOBUNIT_ID = 4;
 	private static final int COLUMN_JOB_ID = 2;
+	private static final int COLUMN_JOB_NAME = 3;
 	private static final int COLUMN_REG_DATE = 8;
 
 	// テーブルのソート基準
@@ -91,13 +93,14 @@ public class JobQueueContentsView extends CommonViewPart {
 
 	private String managerName;
 	private String queueId;
-	private JobQueueContentsViewInfo viewInfo;
+	private JobQueueItemContentResponse viewInfo;
 	
 	private int selectedCount;
 
 	private String selectedSessionId;
 	private String selectedJobunitId;
 	private String selectedJobId;
+	private String selectedJobName;
 
 	public JobQueueContentsView() {
 		super();
@@ -182,6 +185,7 @@ public class JobQueueContentsView extends CommonViewPart {
 				selectedSessionId = null;
 				selectedJobunitId = null;
 				selectedJobId = null;
+				selectedJobName = null;
 
 				StructuredSelection selection = (StructuredSelection) event.getSelection();
 				if (selection != null) {
@@ -191,6 +195,7 @@ public class JobQueueContentsView extends CommonViewPart {
 						selectedSessionId = (String) selectedRow.get(COLUMN_SESSION_ID);
 						selectedJobunitId = (String) selectedRow.get(COLUMN_JOBUNIT_ID);
 						selectedJobId = (String) selectedRow.get(COLUMN_JOB_ID);
+						selectedJobName = (String) selectedRow.get(COLUMN_JOB_NAME);
 					}
 				}
 				log.debug("SelectionChangedListener: Selected. " + getSelectedIdString());
@@ -200,7 +205,7 @@ public class JobQueueContentsView extends CommonViewPart {
 
 				// ノード詳細・ファイル転送ビューを更新
 				ViewUtil.executeWith(JobNodeDetailView.class, view -> {
-					view.update(managerName, selectedSessionId, selectedJobunitId, selectedJobId);
+					view.update(managerName, selectedSessionId, selectedJobunitId, selectedJobId, selectedJobName);
 				});
 				ViewUtil.executeWith(ForwardFileView.class, view -> {
 					view.update(managerName, selectedSessionId, selectedJobunitId, selectedJobId);
@@ -214,9 +219,9 @@ public class JobQueueContentsView extends CommonViewPart {
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				// 選択されているジョブのJobTreeItemを取得してダイアログを表示する
-				JobQueueContentsViewInfoListItem selectedItem = null;
-				for (JobQueueContentsViewInfoListItem item : viewInfo.getItems()) {
-					JobInfo jobInfo = item.getJobTreeItem().getData();
+				JobQueueContentsViewInfoListItemResponse selectedItem = null;
+				for (JobQueueContentsViewInfoListItemResponse item : viewInfo.getItems()) {
+					JobInfoWrapper jobInfo = JobTreeItemUtil.getInfoFromDto(item.getJobTreeItem().getData());
 					if (item.getSessionId().equals(selectedSessionId)
 							&& jobInfo.getJobunitId().equals(selectedJobunitId)
 							&& jobInfo.getId().equals(selectedJobId)) {
@@ -233,14 +238,15 @@ public class JobQueueContentsView extends CommonViewPart {
 				// viewInfoが持っているJobTreeItemは、ジョブダイアログを表示するには情報不足であるため、
 				// 改めて詳しい情報を取得する。
 				ApiResultDialog errorDialog = new ApiResultDialog();
-				JobTreeItem fullInfo = null;
+				JobTreeItemWrapper fullInfo = null;
 				try {
-					JobEndpointWrapper ep = JobEndpointWrapper.getWrapper(managerName);
-					fullInfo = ep.getSessionJobInfo(selectedItem.getSessionId(),
+					JobRestClientWrapper ep = JobRestClientWrapper.getWrapper(managerName);
+					JobTreeItemResponseP3 res = ep.getSessionJobInfo(selectedItem.getSessionId(),
 							selectedItem.getJobTreeItem().getData().getJobunitId(),
 							selectedItem.getJobTreeItem().getData().getId());
+					fullInfo = JobTreeItemUtil.getItemFromP3(res);
 				} catch (Throwable t) {
-					log.warn(LogUtil.filterWebFault("DoubleClickListener: ", t));
+					log.warn("DoubleClickListener: " + t.getClass().getName() + ", " + t.getMessage());
 					errorDialog.addFailure(managerName, t, "");
 				}
 				errorDialog.show(); // エラーメッセージ表示(エラーがあれば)
@@ -287,10 +293,10 @@ public class JobQueueContentsView extends CommonViewPart {
 		// 一覧情報を取得
 		ApiResultDialog errorDialog = new ApiResultDialog();
 		try {
-			JobEndpointWrapper ep = JobEndpointWrapper.getWrapper(managerName);
-			viewInfo = ep.getJobQueueContentsViewInfo(queueId);
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			viewInfo = wrapper.getJobQueueContentsInfo(queueId);
 		} catch (Throwable t) {
-			log.warn(LogUtil.filterWebFault("refresh: ", t));
+			log.warn("refresh: " + t.getClass().getName() + ", " + t.getMessage());
 			errorDialog.addFailure(managerName, t, "");
 		}
 		errorDialog.show(); // エラーメッセージ表示(エラーがあれば)
@@ -310,9 +316,9 @@ public class JobQueueContentsView extends CommonViewPart {
 		// テーブル更新
 		// - JobTableTreeLabelProviderを参考にした。
 		List<List<Object>> table = new ArrayList<>();
-		for (JobQueueContentsViewInfoListItem item : viewInfo.getItems()) {
-			JobInfo job = item.getJobTreeItem().getData();
-			JobDetailInfo detail = item.getJobTreeItem().getDetail();
+		for (JobQueueContentsViewInfoListItemResponse item : viewInfo.getItems()) {
+			JobInfoWrapper job = JobTreeItemUtil.getInfoFromDto(item.getJobTreeItem().getData()) ;
+			JobDetailInfoResponse detail = item.getJobTreeItem().getDetail();
 
 			List<Object> row = new ArrayList<>();
 			row.add(detail.getStatus());
@@ -323,7 +329,7 @@ public class JobQueueContentsView extends CommonViewPart {
 			row.add(job.getType());
 			row.add(detail.getFacilityId());
 			row.add(HinemosMessage.replace(detail.getScope()));
-			row.add(item.getRegDate() == null ? null : new Date(item.getRegDate()));
+			row.add(item.getRegDate() == null ? null : item.getRegDate());
 			table.add(row);
 		}
 		tableViewer.setInput(table);
@@ -370,6 +376,13 @@ public class JobQueueContentsView extends CommonViewPart {
 	 */
 	public String getSelectedJobId() {
 		return selectedJobId;
+	}
+
+	/**
+	 * このビュー上で選択状態にあるジョブ詳細のジョブ名を返します。
+	 */
+	public String getSelectedJobName() {
+		return selectedJobName;
 	}
 
 	// こういう汎用ユーティリティは一箇所にまとめるべきだが、全体に影響するので控える。

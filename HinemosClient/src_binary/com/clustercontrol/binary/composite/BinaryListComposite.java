@@ -23,6 +23,8 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PlatformUI;
+import org.openapitools.client.model.BinaryPatternInfoResponse;
+import org.openapitools.client.model.MonitorInfoResponse;
 
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.TableColumnInfo;
@@ -31,8 +33,6 @@ import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.monitor.run.action.GetStringFilterTableDefine;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.monitor.BinaryPatternInfo;
-import com.clustercontrol.ws.monitor.MonitorInfo;
 
 /**
  * 文字列監視の判定情報一覧コンポジットクラス<BR>
@@ -49,7 +49,7 @@ public class BinaryListComposite extends Composite {
 	private ArrayList<TableColumnInfo> m_tableDefine = null;
 
 	/** バイナリ検索条件情報(一覧としては非表示) */
-	private ArrayList<BinaryPatternInfo> m_binaryPatternInfoList = null;
+	private ArrayList<BinaryPatternInfoResponse> m_binaryPatternInfoList = null;
 
 	/**
 	 * インスタンスを返します。
@@ -133,7 +133,7 @@ public class BinaryListComposite extends Composite {
 		dclickListner = new IDoubleClickListener() {
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
-				BinaryPatternInfo binaryInfo = getFilterItemBinary();
+				BinaryPatternInfoResponse binaryInfo = getFilterItemBinary();
 				if (binaryInfo != null) {
 					Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 					BinaryPatternInfoCreateDialog dialog = new BinaryPatternInfoCreateDialog(shell, binaryInfo);
@@ -169,14 +169,14 @@ public class BinaryListComposite extends Composite {
 	 *
 	 * @return 選択アイテムに紐づくバイナリ検索条件情報
 	 */
-	public BinaryPatternInfo getFilterItemBinary() {
+	public BinaryPatternInfoResponse getFilterItemBinary() {
 		StructuredSelection selection = (StructuredSelection) this.m_tableViewer.getSelection();
 
 		if (selection == null) {
 			return null;
 		} else {
 			ArrayList<?> list = (ArrayList<?>) selection.getFirstElement();
-			return (BinaryPatternInfo) m_binaryPatternInfoList.get((Integer) list.get(0) - 1);
+			return (BinaryPatternInfoResponse) m_binaryPatternInfoList.get((Integer) list.get(0) - 1);
 		}
 	}
 
@@ -187,11 +187,11 @@ public class BinaryListComposite extends Composite {
 	 *            設定値として用いる監視情報
 	 */
 
-	public void setInputData(MonitorInfo info) {
+	public void setInputData(MonitorInfoResponse info) {
 
-		if (info != null) {
+		if (info != null && info.getBinaryPatternInfo() != null) {
 			// バイナリ監視の場合はバイナリ検索条件も設定.
-			m_binaryPatternInfoList = new ArrayList<BinaryPatternInfo>(info.getBinaryPatternInfo());
+			m_binaryPatternInfoList = new ArrayList<>(info.getBinaryPatternInfo());
 
 			// テーブル更新
 			update();
@@ -210,21 +210,37 @@ public class BinaryListComposite extends Composite {
 		// テーブル更新
 		ArrayList<Object> listAll = new ArrayList<Object>();
 		int i = 1;
-		for (BinaryPatternInfo info : m_binaryPatternInfoList) {
+		for (BinaryPatternInfoResponse info : m_binaryPatternInfoList) {
 			ArrayList<Object> list = new ArrayList<Object>();
 
 			// 順序
 			list.add(i);
 
 			// 処理
-			list.add(info.isProcessType());
+			list.add(info.getProcessType());
 
 			// 重要度
-			if (!info.isProcessType()) {
+			if (!info.getProcessType()) {
 				// 処理しないの場合は空欄
 				list.add(PriorityConstant.TYPE_NONE);
 			} else {
-				list.add(info.getPriority());
+				switch (info.getPriority()) {
+				case CRITICAL:
+					list.add(PriorityConstant.TYPE_CRITICAL);
+					break;
+				case INFO:
+					list.add(PriorityConstant.TYPE_INFO);
+					break;
+				case WARNING:
+					list.add(PriorityConstant.TYPE_WARNING);
+					break;
+				case UNKNOWN:
+					list.add(PriorityConstant.TYPE_UNKNOWN);
+					break;
+				case NONE:
+					list.add(PriorityConstant.TYPE_NONE);
+					break;
+				}
 			}
 
 			// パターンマッチ表現
@@ -234,7 +250,7 @@ public class BinaryListComposite extends Composite {
 			list.add(info.getDescription());
 
 			// 有効/無効
-			list.add(info.isValidFlg());
+			list.add(info.getValidFlg());
 
 			listAll.add(list);
 			++i;
@@ -254,16 +270,10 @@ public class BinaryListComposite extends Composite {
 	 *
 	 * @see #setValidateResult(String, String)
 	 */
-	public ValidateResult createInputData(MonitorInfo monitorInfo) {
+	public ValidateResult createInputData(MonitorInfoResponse monitorInfo) {
 
 		if (m_binaryPatternInfoList != null && m_binaryPatternInfoList.size() > 0) {
-			String MonitorId = monitorInfo.getMonitorId();
-
-			for (int index = 0; index < m_binaryPatternInfoList.size(); index++) {
-				BinaryPatternInfo info = m_binaryPatternInfoList.get(index);
-				info.setMonitorId(MonitorId);
-			}
-			List<BinaryPatternInfo> binaryPatternInfoList = monitorInfo.getBinaryPatternInfo();
+			List<BinaryPatternInfoResponse> binaryPatternInfoList = monitorInfo.getBinaryPatternInfo();
 			binaryPatternInfoList.clear();
 			binaryPatternInfoList.addAll(m_binaryPatternInfoList);
 		}
@@ -352,8 +362,8 @@ public class BinaryListComposite extends Composite {
 		--order;
 
 		if (order > 0) {
-			BinaryPatternInfo aa = m_binaryPatternInfoList.get(order);
-			BinaryPatternInfo bb = m_binaryPatternInfoList.get(order - 1);
+			BinaryPatternInfoResponse aa = m_binaryPatternInfoList.get(order);
+			BinaryPatternInfoResponse bb = m_binaryPatternInfoList.get(order - 1);
 			m_binaryPatternInfoList.set(order, bb);
 			m_binaryPatternInfoList.set(order - 1, aa);
 		}
@@ -373,8 +383,8 @@ public class BinaryListComposite extends Composite {
 		--order;
 
 		if (order < m_binaryPatternInfoList.size() - 1) {
-			BinaryPatternInfo aa = m_binaryPatternInfoList.get(order);
-			BinaryPatternInfo bb = m_binaryPatternInfoList.get(order + 1);
+			BinaryPatternInfoResponse aa = m_binaryPatternInfoList.get(order);
+			BinaryPatternInfoResponse bb = m_binaryPatternInfoList.get(order + 1);
 			m_binaryPatternInfoList.set(order, bb);
 			m_binaryPatternInfoList.set(order + 1, aa);
 		}
@@ -383,7 +393,7 @@ public class BinaryListComposite extends Composite {
 		selectItem(order + 1);
 	}
 
-	public ArrayList<BinaryPatternInfo> getBinaryPatternInfoList() {
+	public ArrayList<BinaryPatternInfoResponse> getBinaryPatternInfoList() {
 		return m_binaryPatternInfoList;
 	}
 }

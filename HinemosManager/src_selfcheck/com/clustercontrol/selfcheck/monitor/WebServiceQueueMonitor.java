@@ -15,11 +15,9 @@ import java.net.URL;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.plugin.impl.WebServiceAgentPlugin;
-import com.clustercontrol.plugin.impl.WebServiceCorePlugin;
-import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -62,47 +60,10 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 	 */
 	@Override
 	public void execute() {
-		checkForClientQueue("ForClient");
 		checkForAgentQueue("ForAgent");
 		checkForAgentHubQueue("ForAgentHub");
 		checkForAgentBinaryQueue("ForAgentBinary");
 		checkForAgentNodeConfigQueue("ForAgentNodeConfig");
-	}
-	
-	private void checkForClientQueue(String subKey) {
-		if (!HinemosPropertyCommon.selfcheck_monitoring_ws_queue.getBooleanValue()) {
-			m_log.debug("skip checkForClientQueue");
-			return;
-		}
-
-		/** ローカル変数 */
-		int queueSize = 0;
-		boolean warn = true;
-		
-		threshold = HinemosPropertyCommon.selfcheck_monitoring_ws_queue_threshold.getIntegerValue();
-
-		/** メイン処理 */
-		queueSize = WebServiceCorePlugin.getQueueSize();
-		if (queueSize <= threshold) {
-			m_log.debug("web service queue (ForClient) is normal. (queueSize = " + queueSize + ")");
-			warn = false;
-		}
-
-		if (warn) {
-			m_log.info("web service queue (ForClient) is too large. (queueSize = " + queueSize + ")");
-		}
-		if (!isNotify(subKey, warn)) {
-			return;
-		}
-		
-		String port = Integer.toString(getClientPort());
-		String[] msgAttr1 = { port, Integer.toString(queueSize), Integer.toString(threshold) };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_008_SYS_SFC, msgAttr1,
-				"too many request to Hinemos Manager (tcp:" + port + "). (queued request " +
-						queueSize +
-						" > threshold " +
-						threshold +
-				")");
 	}
 	
 	private void checkForAgentQueue(String subKey) {
@@ -133,7 +94,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 		
 		String port = Integer.toString(getAgentPort());
 		String[] msgAttr1 = { port, Integer.toString(queueSize), Integer.toString(threshold) };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_008_SYS_SFC, msgAttr1,
+		AplLogger.put(InternalIdCommon.SYS_SFC_SYS_008, msgAttr1,
 				"too many request from Agent to Hinemos Manager (tcp:" + port + "). (queued request " +
 						queueSize +
 						" > threshold " +
@@ -169,7 +130,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 		
 		String port = Integer.toString(getAgentPort());
 		String[] msgAttr1 = { port, Integer.toString(queueSize), Integer.toString(threshold) };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_008_SYS_SFC, msgAttr1,
+		AplLogger.put(InternalIdCommon.SYS_SFC_SYS_008, msgAttr1,
 				"too many request from AgentHub to Hinemos Manager (tcp:" + port + "). (queued request " +
 						queueSize +
 						" > threshold " +
@@ -205,7 +166,7 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 
 		String port = Integer.toString(getAgentPort());
 		String[] msgAttr1 = { port, Integer.toString(queueSize), Integer.toString(threshold) };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_008_SYS_SFC, msgAttr1,
+		AplLogger.put(InternalIdCommon.SYS_SFC_SYS_008, msgAttr1,
 				"too many request from AgentBinary to Hinemos Manager (tcp:" + port + "). (queued request " + queueSize
 						+ " > threshold " + threshold + ")");
 	}
@@ -238,21 +199,9 @@ public class WebServiceQueueMonitor extends SelfCheckMonitorBase {
 
 		String port = Integer.toString(getAgentPort());
 		String[] msgAttr1 = { port, Integer.toString(queueSize), Integer.toString(threshold) };
-		AplLogger.put(PriorityConstant.TYPE_WARNING, PLUGIN_ID, MessageConstant.MESSAGE_SYS_008_SYS_SFC, msgAttr1,
+		AplLogger.put(InternalIdCommon.SYS_SFC_SYS_008, msgAttr1,
 				"too many request from AgentNodeConfig to Hinemos Manager (tcp:" + port + "). (queued request " + queueSize
 						+ " > threshold " + threshold + ")");
-	}
-	
-	private int getClientPort() {
-		int port = 8080;
-		String address = HinemosPropertyCommon.ws_client_address.getStringValue();
-		try {
-			port = new URL(address).getPort();
-		} catch (MalformedURLException e) {
-			// ここは通らない
-			m_log.warn(e.getMessage());
-		}
-		return port;
 	}
 	
 	private int getAgentPort() {

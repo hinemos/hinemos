@@ -12,6 +12,7 @@ import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openapitools.client.model.MailTemplateInfoResponse;
 
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.model.BaseConv;
@@ -65,8 +66,8 @@ public class MailTemplateConv {
 	 * @param notifyInfo メールテンプレート定義 XML Bean
 	 * @return メールテンプレート定義 Hinemos Bean
 	 */
-	public static com.clustercontrol.ws.mailtemplate.MailTemplateInfo getMailTemplateInfoData(MailTemplateInfo mailTemplateInfo) {
-		com.clustercontrol.ws.mailtemplate.MailTemplateInfo ret = new com.clustercontrol.ws.mailtemplate.MailTemplateInfo();
+	public static MailTemplateInfoResponse getMailTemplateInfoData(MailTemplateInfo mailTemplateInfo) {
+		MailTemplateInfoResponse ret = new MailTemplateInfoResponse();
 		
 		// 登録日時、更新日時に利用する日時（実行日時とする）
 		long now = new Date().getTime();
@@ -87,8 +88,8 @@ public class MailTemplateConv {
 		ret.setSubject(mailTemplateInfo.getSubject());
 		ret.setBody(mailTemplateInfo.getBody());
 
-		ret.setRegDate(now);
-		ret.setUpdateDate(now);
+		ret.setRegDate(String.valueOf(now));
+		ret.setUpdateDate(String.valueOf(now));
 		ret.setRegUser(Config.getConfig("Login.USER"));
 		ret.setUpdateUser(Config.getConfig("Login.USER"));
 		
@@ -101,7 +102,7 @@ public class MailTemplateConv {
 	 * @param mailTemplateInfo メールテンプレート定義 Hinemos Bean
 	 * @return メールテンプレート定義 XML Bean
 	 */
-	public static MailTemplateInfo getMailTemplateInfo(com.clustercontrol.ws.mailtemplate.MailTemplateInfo mailTemplateInfo) {
+	public static MailTemplateInfo getMailTemplateInfo(MailTemplateInfoResponse mailTemplateInfo) {
 		MailTemplateInfo ret = new MailTemplateInfo();
 		
 		ret.setMailTemplateId(mailTemplateInfo.getMailTemplateId());

@@ -34,6 +34,7 @@ import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.UserNotFound;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JobInfo;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.factory.FullJob;
 import com.clustercontrol.jobmanagement.factory.JobSessionJobImpl;
 import com.clustercontrol.jobmanagement.factory.SelectJob;
@@ -52,6 +53,7 @@ import com.clustercontrol.jobmanagement.queue.internal.JobQueueItemStatus;
 import com.clustercontrol.jobmanagement.queue.internal.JobQueueTx;
 import com.clustercontrol.jobmanagement.session.JobRunManagementBean;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.notify.util.NotifyUtil;
@@ -232,8 +234,7 @@ public class JobQueue {
 				tx.addCallback(new PostCloseCallback() {
 					@Override
 					public void postClose() {
-						JobQueue.this.notify(MessageConstant.MESSAGE_JOBQUEUE_NOTIFY_STANDBY, sessionId, jobunitId,
-								jobId);
+						JobQueue.this.notify(sessionId, jobunitId, jobId, false);
 					}
 				}); 
 
@@ -462,7 +463,7 @@ public class JobQueue {
 					JobQueueItemEntityPK id = it.getId();
 					current.add(new JobKey(id.getSessionId(), id.getJobunitId(), id.getJobId(), it.getRegDate()));
 				}
-	
+
 				long now = external.currentTimeMillis();
 				if (lastActiveJobsChangedTime == 0 || !current.equals(previous)) {
 					// 初回呼び出し or 変化あり -> 最終変更確認時刻を更新
@@ -470,15 +471,16 @@ public class JobQueue {
 					log.debug("getFreezingTime: Changed. QID=" + queueId);
 				} else {
 					// 前回から変化していない
-					// ACTIVEなジョブで同時実行可能枠が埋まっている状態であるか判定する
-					if (current.size() > 0 && current.size() >= concurrency) {
+					// ACTIVEなジョブで同時実行可能枠が埋まっている状態で実行待機のジョブがあるか判定する
+					long standbyCount = tx.countJobQueueItemByStatus(queueId, JobQueueItemStatus.STANDBY.getId());
+					if (current.size() > 0 && current.size() >= concurrency && standbyCount > 0) {
 						// 固定化しているので、差分時刻を算出
 						result = now - lastActiveJobsChangedTime;
 						log.debug("getFreezingTime: Freezing since " + lastActiveJobsChangedTime + ". QID=" + queueId
-								+ ", Filled (" + " " + current.size() + " >= " + concurrency + ")");
+								+ ", Filled (" + " " + current.size() + " >= " + concurrency + ", " + standbyCount + " > 0)");
 					} else {
 						log.debug("getFreezingTime: Freezing since " + lastActiveJobsChangedTime + ". QID=" + queueId
-								+ ", Not filled (" + " " + current.size() + " < " + concurrency + ")");
+								+ ", Not filled (" + " size=" + current.size() + ", concurrency=" + concurrency + ", standby=" + standbyCount + ")");
 					}
 				}
 				tx.commit();
@@ -524,7 +526,7 @@ public class JobQueue {
 	 * @throws InvalidSetting 設定に不備があります。
 	 * @throws JobQueueNotFoundException 参照可能なジョブキューの情報が存在しませんでした。
 	 */
-	public void setSetting(JobQueueSetting setting) throws InvalidSetting, JobQueueNotFoundException {
+	public JobQueueSetting setSetting(JobQueueSetting setting) throws InvalidSetting, JobQueueNotFoundException {
 		setting.validate();
 		synchronized (lock) {
 			try (JobQueueTx tx = external.newTransaction()) {
@@ -548,6 +550,7 @@ public class JobQueue {
 			}
 		}
 		activateJobs();
+		return getSetting();
 	}
 
 	/**
@@ -671,8 +674,14 @@ public class JobQueue {
 	}
 
 	/** 通知情報の収集及び、通知キューへの登録を行うサブ処理。例外はログへ記録し、握りつぶす。 */
-	private void notify(MessageConstant message, String sessionId, String jobunitId, String jobId) {
+	private void notify(String sessionId, String jobunitId, String jobId, boolean isActive) {
 		try {
+			MessageConstant message = null;
+			if (isActive) {
+				message = MessageConstant.MESSAGE_JOBQUEUE_NOTIFY_ACTIVE;
+			} else {
+				message = MessageConstant.MESSAGE_JOBQUEUE_NOTIFY_STANDBY;
+			}
 			OutputBasicInfo info = new OutputBasicInfo();
 			try (JobQueueTx tx = external.newTransaction()) {
 				// 通知で使用する各種情報を収集する
@@ -691,6 +700,12 @@ public class JobQueue {
 	
 				// 通知情報作成
 				info.setNotifyGroupId(jobInfo.getNotifyGroupId());
+				// ジョブ連携メッセージID
+				if (isActive) {
+					info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(NotifyTriggerType.JOB_QUEUE_END, jobunitId, jobId));
+				} else {
+					info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(NotifyTriggerType.JOB_QUEUE_START, jobunitId, jobId));
+				}
 				info.setPluginId(HinemosModuleConstant.JOB);
 				info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), locale));
 				info.setMonitorId(sessionId);
@@ -729,8 +744,7 @@ public class JobQueue {
 			log.info("ItemActivationTask: Start " + target);
 	
 			// 待機終了通知
-			JobQueue.this.notify(MessageConstant.MESSAGE_JOBQUEUE_NOTIFY_ACTIVE, target.getSessionId(),
-					target.getJobunitId(), target.getJobId());
+			JobQueue.this.notify(target.getSessionId(), target.getJobunitId(), target.getJobId(), true);
 
 			// ジョブ＆キューアイテム操作
 			int retryCount = 0;

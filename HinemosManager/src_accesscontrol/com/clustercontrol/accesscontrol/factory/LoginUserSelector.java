@@ -62,7 +62,7 @@ public class LoginUserSelector {
 	private static String hash(String password) {
 		MessageDigest md = null;
 		try {
-			md = MessageDigest.getInstance("MD5");
+			md = MessageDigest.getInstance("SHA-256");
 		} catch (NoSuchAlgorithmException e) {
 			m_log.info("hash() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());

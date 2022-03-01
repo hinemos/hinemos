@@ -13,19 +13,19 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.DefaultLayoutSettingManager.ListLayout;
 import com.clustercontrol.monitor.composite.ScopeListComposite;
 import com.clustercontrol.monitor.preference.MonitorPreferencePage;
 import com.clustercontrol.view.ScopeListBaseView;
-import com.clustercontrol.ws.repository.FacilityInfo;
-import com.clustercontrol.ws.repository.FacilityTreeItem;
 import com.clustercontrol.repository.FacilityPath;
-import com.clustercontrol.repository.bean.FacilityConstant;
+import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
-import com.clustercontrol.util.EndpointManager;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.WidgetTestUtil;
 
 /**
@@ -103,31 +103,36 @@ public class ScopeView extends ScopeListBaseView {
 	 * @see com.clustercontrol.monitor.composite.ScopeListComposite#update(String)
 	 */
 	@Override
-	protected void doSelectTreeItem( FacilityTreeItem selectItem ){
+	protected void doSelectTreeItem( FacilityTreeItemResponse selectItem ){
 		FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
 		setPathLabel(Messages.getString("scope") + " : "  + path.getPath(selectItem));
 		
 		// Select root if nothing selected
 		if( selectItem == null && 0 < getScopeTreeComposite().getTree().getItemCount() ){
-			selectItem = (FacilityTreeItem) getScopeTreeComposite().getTree().getItem(0).getData();
+			selectItem = (FacilityTreeItemResponse) getScopeTreeComposite().getTree().getItem(0).getData();
 		}
 
 		if( selectItem != null ){
-			FacilityInfo itemData = selectItem.getData();
+			FacilityInfoResponse itemData = selectItem.getData();
 
 			String managerName;
 			String facilityId;
-			if(itemData.getFacilityType() == FacilityConstant.TYPE_COMPOSITE){
-				this.tableComposite.update( EndpointManager.getActiveManagerNameList() );
-			}else if(itemData.getFacilityType() == FacilityConstant.TYPE_MANAGER) {
+			if(itemData.getFacilityType() == FacilityTypeEnum.COMPOSITE){
+				this.tableComposite.update( RestConnectManager.getActiveManagerNameList() );
+			}else if(itemData.getFacilityType() == FacilityTypeEnum.MANAGER) {
 				managerName = selectItem.getData().getFacilityId();
-				this.tableComposite.update( managerName, "" );
+				this.tableComposite.update( managerName, null );
 			}else{
-				FacilityTreeItem manager = ScopePropertyUtil.getManager(selectItem);
+				FacilityTreeItemResponse manager = ScopePropertyUtil.getManager(selectItem);
 				managerName = manager.getData().getFacilityId();
 				facilityId = selectItem.getData().getFacilityId();
 				this.tableComposite.update( managerName, facilityId );
 			}
+		}
+
+		// 更新に失敗している場合は自動更新を停止する
+		if (!this.tableComposite.isUpdateSuccess()) {
+			this.stopAutoReload();
 		}
 	}
 
@@ -144,12 +149,20 @@ public class ScopeView extends ScopeListBaseView {
 	 */
 	@Override
 	public void update(boolean refreshFlag) {
-		FacilityTreeItem item = this.getScopeTreeComposite().getSelectItem();
+		FacilityTreeItemResponse item = this.getScopeTreeComposite().getSelectItem();
 		doSelectTreeItem( item );
 	}
 	
 	@Override
 	public boolean isDefaultLayoutView() {
 		return true;
+	}
+
+	/**
+	 * 更新成功可否を返します。
+	 * @return 更新成功可否
+	 */
+	public boolean isUpdateSuccess() {
+		return this.tableComposite.isUpdateSuccess();
 	}
 }

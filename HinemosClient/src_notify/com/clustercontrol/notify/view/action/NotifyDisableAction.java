@@ -27,13 +27,14 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.SetNotifyValidRequest;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.action.NotifyTableDefineNoCheckBox;
 import com.clustercontrol.notify.composite.NotifyListComposite;
-import com.clustercontrol.notify.util.NotifyEndpointWrapper;
+import com.clustercontrol.notify.util.NotifyRestClientWrapper;
 import com.clustercontrol.notify.view.NotifyListView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.notify.InvalidRole_Exception;
 
 /**
  * 通知[一覧]ビューの無効アクションクラス<BR>
@@ -126,19 +127,28 @@ public class NotifyDisableAction extends AbstractHandler implements IElementUpda
 		// 実行
 		for(Map.Entry<String, List<String>> map : disableMap.entrySet()) {
 			String managerName = map.getKey();
-			NotifyEndpointWrapper wrapper = NotifyEndpointWrapper.getWrapper(managerName);
-			for(String targetId : map.getValue()) {
-				try{
-					wrapper.setNotifyStatus(targetId, false);
+			NotifyRestClientWrapper wrapper = NotifyRestClientWrapper.getWrapper(managerName);
+			try{
+				SetNotifyValidRequest request = new SetNotifyValidRequest();
+				request.setNotifyIds(map.getValue());
+				request.setValidFlg(false);
+				wrapper.setNotifyValid(request);
+				for(String targetId : map.getValue()) {
 					successList.append(targetId +"(" + managerName + ")" + "\n");
-				} catch (InvalidRole_Exception e) {
-					failureList.append(targetId + "\n");
-					m_log.warn("run() setNotifyStatus targetId=" + targetId + ", " + e.getMessage(), e);
-					hasRole = false;
-				}catch (Exception e) {
-					failureList.append(targetId + "\n");
-					m_log.warn("run() setNotifyStatus targetId=" + targetId + ", " + e.getMessage(), e);
 				}
+			} catch (InvalidRole e) {
+				String targetIds = "{" + String.join(",", map.getValue()) + "}";
+				for(String targetId : map.getValue()) {
+					failureList.append(targetId + "\n");
+				}
+				m_log.warn("run() setNotifyValid targetIds=" + targetIds + ", " + e.getMessage(), e);
+				hasRole = false;
+			} catch (Exception e) {
+				String targetIds = "{" + String.join(",", map.getValue()) + "}";
+				for(String targetId : map.getValue()) {
+					failureList.append(targetId + "\n");
+				}
+				m_log.warn("run() setNotifyValid targetIds=" + targetIds + ", " + e.getMessage(), e);
 			}
 		}
 

@@ -8,57 +8,69 @@
 
 package com.clustercontrol.utility.settings.system.conv;
 
+import org.openapitools.client.model.HinemosPropertyResponse;
+import org.openapitools.client.model.HinemosPropertyResponse.TypeEnum;
+
 import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.maintenance.HinemosPropertyTypeConstant;
 import com.clustercontrol.utility.settings.maintenance.xml.HinemosPropertyInfo;
 import com.clustercontrol.utility.settings.model.BaseConv;
 
 /**
- * Hinemosプロパティ設定情報をJavaBeanとXML(Bean)のbindingとの間でやりとりを
- * 行うクラス<BR>
+ * Hinemosプロパティ設定情報をJavaBeanとXML(Bean)のbindingとの間でやりとりを 行うクラス<BR>
  * 
  * @version 6.1.0
  * @since 5.0.a
  * 
  */
 public class HinemosPropertyConv extends BaseConv {
-	
+
 	// スキーマのタイプ、バージョン、リビジョンをそれぞれ返す
 	@Override
-	protected String getType() {return "G";}
+	protected String getType() {
+		return "G";
+	}
+
 	@Override
-	protected String getVersion() {return "1";}
+	protected String getVersion() {
+		return "1";
+	}
+
 	@Override
-	protected String getRevision() {return "1";}
-	
+	protected String getRevision() {
+		return "1";
+	}
+
 	/**
 	 * DTOのBeanからXMLのBeanに変換する。
 	 * 
-	 * @param info　DTOのBean
-	 * @return 
-	 * @throws Exception 
+	 * @param info
+	 *            DTOのBean
+	 * @return
+	 * @throws Exception
 	 */
-	public HinemosPropertyInfo getXmlInfo(com.clustercontrol.ws.maintenance.HinemosPropertyInfo info) throws Exception {
+	public HinemosPropertyInfo getXmlInfo(HinemosPropertyResponse info)
+			throws Exception {
 
 		HinemosPropertyInfo ret = new HinemosPropertyInfo();
 
-		//情報のセット(主部分)
+		// 情報のセット(主部分)
 		ret.setKey(info.getKey());
 		ret.setDescription(ifNull2Empty(info.getDescription()));
 		ret.setOwnerRoleId(ifNull2Empty(info.getOwnerRoleId()));
-		
-		switch (info.getValueType()){
-		case HinemosPropertyTypeConstant.TYPE_STRING:
+ 
+		switch (info.getType()) {
+		case STRING:
 			ret.setValueType(HinemosPropertyTypeConstant.TYPE_STRING);
-			ret.setValue(info.getValueString());
+			ret.setValue(info.getValue());
 			break;
-		case HinemosPropertyTypeConstant.TYPE_NUMERIC:
+		case NUMERIC:
 			ret.setValueType(HinemosPropertyTypeConstant.TYPE_NUMERIC);
-			ret.setValue(ifNull2EmptyAndNonNull2String(info.getValueNumeric()));
+			ret.setValue(ifNull2EmptyAndNonNull2String(info.getValue()));
 			break;
-		case HinemosPropertyTypeConstant.TYPE_TRUTH:
+		case BOOLEAN:
 			ret.setValueType(HinemosPropertyTypeConstant.TYPE_TRUTH);
-			ret.setValue(ifNull2EmptyAndNonNull2String(info.isValueBoolean()));
+			ret.setValue(ifNull2EmptyAndNonNull2String(info.getValue()));
 			break;
 		default:
 			throw new Exception(info.getKey() + " has undefined value type.");
@@ -67,24 +79,22 @@ public class HinemosPropertyConv extends BaseConv {
 		return ret;
 	}
 
-	public com.clustercontrol.ws.maintenance.HinemosPropertyInfo getDTO(HinemosPropertyInfo info) throws Exception {
-		com.clustercontrol.ws.maintenance.HinemosPropertyInfo ret = new com.clustercontrol.ws.maintenance.HinemosPropertyInfo();
+	public HinemosPropertyResponse getDTO(HinemosPropertyInfo info) throws Exception {
+		HinemosPropertyResponse ret = new HinemosPropertyResponse();
 		ret.setKey(info.getKey());
 		ret.setDescription(ifNull2Empty(info.getDescription()));
 		ret.setOwnerRoleId(RoleIdConstant.ADMINISTRATORS);
+		ret.setValue(info.getValue());
 
-		switch (info.getValueType()){
+		switch (info.getValueType()) {
 		case HinemosPropertyTypeConstant.TYPE_STRING:
-			ret.setValueType(HinemosPropertyTypeConstant.TYPE_STRING);
-			ret.setValueString(info.getValue());
+			ret.setType(TypeEnum.STRING);
 			break;
 		case HinemosPropertyTypeConstant.TYPE_NUMERIC:
-			ret.setValueType(HinemosPropertyTypeConstant.TYPE_NUMERIC);
-			ret.setValueNumeric(str2Long(info.getValue()));
+			ret.setType(TypeEnum.NUMERIC);
 			break;
 		case HinemosPropertyTypeConstant.TYPE_TRUTH:
-			ret.setValueType(HinemosPropertyTypeConstant.TYPE_TRUTH);
-			ret.setValueBoolean(str2Bool(info.getValue()));
+			ret.setType(TypeEnum.BOOLEAN);
 			break;
 		default:
 			throw new Exception(info.getKey() + " has undefined value type.");

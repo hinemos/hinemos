@@ -39,9 +39,15 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.CheckPublishResponse;
 
 import com.clustercontrol.client.ui.util.FileDownloader;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.TargetPlatformUtil;
 import com.clustercontrol.utility.constant.HinemosModuleConstant;
 import com.clustercontrol.utility.settings.SettingConstants;
 import com.clustercontrol.utility.settings.ui.action.CommandAction;
@@ -52,12 +58,10 @@ import com.clustercontrol.utility.settings.ui.views.ImportExportExecView;
 import com.clustercontrol.utility.ui.settings.dialog.UtilityDiffCommandDialog;
 import com.clustercontrol.utility.util.ClientPathUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
-import com.clustercontrol.utility.util.UtilityEndpointWrapper;
+import com.clustercontrol.utility.util.StringUtil;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
 import com.clustercontrol.utility.util.ZipUtil;
-import com.clustercontrol.ws.utility.HinemosUnknown_Exception;
-import com.clustercontrol.ws.utility.InvalidRole_Exception;
-import com.clustercontrol.ws.utility.InvalidUserPass_Exception;
 
 /**
  * 比較処理を実行するクライアント側アクションクラス<BR>
@@ -118,21 +122,29 @@ public class DiffSettingCommand extends AbstractHandler implements IElementUpdat
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// keyチェック
 		try {
-			UtilityEndpointWrapper wrapper = UtilityEndpointWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
-			String version = wrapper.getVersion();
-			if (version.length() > 7) {
-				boolean result = Boolean.valueOf(version.substring(7, version.length()));
-				if (!result) {
-					MessageDialog.openWarning(
-							null,
-							Messages.getString("warning"),
-							Messages.getString("message.expiration.term.invalid"));
-				}
+			UtilityRestClientWrapper wrapper = UtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+			CheckPublishResponse response = wrapper.checkPublish();
+			boolean isPublish = response.getPublish();
+			if (!isPublish) {
+				MessageDialog.openWarning(
+						null,
+						Messages.getString("warning"),
+						Messages.getString("message.expiration.term.invalid"));
 			}
-		} catch (HinemosUnknown_Exception | InvalidRole_Exception | InvalidUserPass_Exception e) {
+		} catch (InvalidRole | InvalidUserPass e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					e.getMessage());
 			return null;
+		} catch (HinemosUnknown e) {
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						Messages.getString("message.expiration.term"));
+				return null;
+			} else {
+				MessageDialog.openInformation(null, Messages.getString("message"),
+						e.getMessage());
+				return null;
+			}
 		} catch (Exception e) {
 			// キーファイルを確認できませんでした。処理を終了します。
 			// Key file not found. This process will be terminated.
@@ -187,8 +199,32 @@ public class DiffSettingCommand extends AbstractHandler implements IElementUpdat
 						Messages.getString("message.diff.not.support.jmx.master"));
 						return null;
 			}
+			if (funcInfo.getId().equals(HinemosModuleConstant.RPA_SCENARIO_COEFFICIENT_PATTERN)){
+				MessageDialog.openError(
+						null,
+						Messages.getString("message.confirm"),
+						Messages.getString("message.diff.not.support.rpa.scenario.coefficient.pattern"));
+						return null;
+			}
 		}
 		
+		// リッチクライアントの場合ディレクトリの存在チェック
+		if (TargetPlatformUtil.isRCP()) {
+			if (!MultiManagerPathUtil.existsDirectory(SettingToolsXMLPreferencePage.KEY_XML)) {
+				MessageDialog.openWarning(
+						null,
+						Messages.getString("warning"),
+						Messages.getString("message.utility.preferences.common.error"));
+				return null;
+			}
+			if (!MultiManagerPathUtil.existsDirectory(SettingToolsXMLPreferencePage.KEY_DIFF_XML)) {
+				MessageDialog.openWarning(
+						null,
+						Messages.getString("warning"),
+						Messages.getString("message.utility.preferences.diff.error"));
+				return null;
+			}
+		}
 		String parentPath = MultiManagerPathUtil.getDirectoryPath(SettingToolsXMLPreferencePage.KEY_XML);
 		String tmpPath = null;
 		String diffParentPath = MultiManagerPathUtil.getDirectoryPath(SettingToolsXMLPreferencePage.KEY_DIFF_XML);
@@ -295,7 +331,8 @@ public class DiffSettingCommand extends AbstractHandler implements IElementUpdat
 				String resultMessage = m_action.getStdOut().replaceAll("\r\n", "\n");
 				String[] resultMessages = resultMessage.split("\n");
 				for (int i = 0; i < resultMessages.length; i++) {
-					mStatus.add(new Status(IStatus.INFO, this.toString(), IStatus.OK, resultMessages[i], null));
+					mStatus.add(new Status(IStatus.INFO, this.toString(), IStatus.OK,
+							StringUtil.cutTailForStatus(resultMessages[i]), null));
 				}
 
 				ErrorDialog.openError(null, Messages.getString("message.confirm"), null, mStatus);
@@ -309,7 +346,8 @@ public class DiffSettingCommand extends AbstractHandler implements IElementUpdat
 				String resultMessage = m_action.getStdOut().replaceAll("\r\n", "\n") + m_action.getErrOut().replaceAll("\r\n", "\n");
 				String[] resultMessages = resultMessage.split("\n");
 				for (int i = 0; i < resultMessages.length; i++) {
-					mStatus.add(new Status(IStatus.WARNING, this.toString(), IStatus.OK, resultMessages[i], null));
+					mStatus.add(new Status(IStatus.WARNING, this.toString(), IStatus.OK,
+							StringUtil.cutTailForStatus(resultMessages[i]), null));
 				}
 
 				// 結果表示（失敗）

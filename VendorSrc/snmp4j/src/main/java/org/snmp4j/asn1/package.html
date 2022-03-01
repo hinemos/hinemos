@@ -1,0 +1,64 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>org.snmp4j.asn1</title>
+<!--
+
+/*_############################################################################
+  _##
+  _##  SNMP4J
+  _##
+  _##  Copyright 2003-2004  Frank Fock and Jochen Katz (SNMP4J.org)
+  _##
+  _##  Licensed under the Apache License, Version 2.0 (the "License");
+  _##  you may not use this file except in compliance with the License.
+  _##  You may obtain a copy of the License at
+  _##
+  _##      http://www.apache.org/licenses/LICENSE-2.0
+  _##
+  _##  Unless required by applicable law or agreed to in writing, software
+  _##  distributed under the License is distributed on an "AS IS" BASIS,
+  _##  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  _##  See the License for the specific language governing permissions and
+  _##  limitations under the License.
+  _##
+  _##########################################################################*/
+
+-->
+</head>
+<body bgcolor="white">
+
+Provides classes and interfaces
+for the mapping between Abstract Syntax Notation One (ASN.1)
+formatted values and their transfer syntax according to the Basic Encoding Rules
+(BER).
+<p>
+The <code>org.snmp4j.asn1</code> classes are capable of serializing of ASN.1
+formatted values into a byte stream and deserializing the same from a byte
+stream. There are three groups of classes/interfaces in this package:
+</p>
+<ul>
+<li>The <code>BER</code> class implements the BER serialization and
+  deserialization by providing static methods for encoding/decoding of
+  primitive ASN.1 and Structure of Management Information (SMI) data types.
+</li>
+<li>The <code>BERSerializable</code> interface provides a common interface
+  for all objects that are (de)serializable according to the Basic Encoding
+  Rules (BER).
+</li>
+<li>The <code>BERInputStream</code> and the <code>BEROutputStream</code> provide
+  optimized implementations for the serialization and deserialization
+  of the <code>InputStream</code> and <code>OutputStream</code> abstract
+  classes.
+</li>
+</ul>
+<p>
+  The following UML class diagram shows the most important classes of the
+  <code>org.snmp4j.asn1</code> package and their relationships
+  (relationships to other packages are not shown):
+</p>
+<img alt="UML Class Diagram for SMI package"
+     src="doc-files/org_snmp4j_asn1.gif">
+
+</body>
+</html>

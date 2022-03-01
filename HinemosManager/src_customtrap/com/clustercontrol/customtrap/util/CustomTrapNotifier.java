@@ -18,6 +18,7 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
 import com.clustercontrol.customtrap.bean.CustomTrap;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
@@ -25,6 +26,7 @@ import com.clustercontrol.monitor.bean.ConvertValueConstant;
 import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.run.model.MonitorStringValueInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -64,6 +66,8 @@ public class CustomTrapNotifier {
 
 			OutputBasicInfo output = new OutputBasicInfo();
 			output.setNotifyGroupId(NotifyGroupIdGenerator.generate(monitorInfo));
+			output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR,
+					HinemosModuleConstant.MONITOR_CUSTOMTRAP_S, monitorStringValueInfo.getMonitorId()));
 			output.setMonitorId(monitorStringValueInfo.getMonitorId());
 			output.setPluginId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_S);
 			output.setFacilityId(facilityId);
@@ -104,6 +108,9 @@ public class CustomTrapNotifier {
 			output.setPriority(priority);
 			output.setGenerationDate(customTrap.getSampledTime());
 
+			output.setPriorityChangeJudgmentType(monitorInfo.getPriorityChangeJudgmentType());
+			output.setPriorityChangeFailureType(monitorInfo.getPriorityChangeFailureType());
+
 			if (runInstructionInfo != null) {
 				// 監視ジョブ
 				MonitorJobWorker.endMonitorJob(
@@ -143,12 +150,15 @@ public class CustomTrapNotifier {
 
 			OutputBasicInfo output = new OutputBasicInfo();
 			output.setNotifyGroupId(NotifyGroupIdGenerator.generate(monitorInfo));
+			output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, HinemosModuleConstant.MONITOR_CUSTOMTRAP_N, monitorInfo.getMonitorId()));
 			output.setMonitorId(monitorInfo.getMonitorId());
 			output.setPluginId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N);
 			output.setSubKey(customTrap.getKey());
 			output.setPriority(priority);
 			output.setApplication(monitorInfo.getApplication());
 			output.setFacilityId(facilityId);
+			output.setPriorityChangeJudgmentType(monitorInfo.getPriorityChangeJudgmentType());
+			output.setPriorityChangeFailureType(monitorInfo.getPriorityChangeFailureType());
 	
 			if (FacilityTreeAttributeConstant.UNREGISTERED_SCOPE.equals(facilityId)) {
 				// 未登録ノードの場合には送信元IPを表示する。
@@ -209,6 +219,8 @@ public class CustomTrapNotifier {
 			MonitorRunResultInfo collectResult = collectResultBuffer.get(i);
 			OutputBasicInfo output = new OutputBasicInfo();
 			output.setNotifyGroupId(collectResult.getNotifyGroupId());
+			output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR,
+					HinemosModuleConstant.MONITOR_CUSTOMTRAP_N, monitorInfo.getMonitorId()));
 			output.setMonitorId(monitorInfo.getMonitorId());
 			output.setPluginId(HinemosModuleConstant.MONITOR_CUSTOMTRAP_N);
 			output.setSubKey(collectResult.getDisplayName());

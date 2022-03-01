@@ -1,0 +1,341 @@
+SNMP4J-STATISTICS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	snmp4jAgentModules
+		FROM SNMP4J-AGENT-REG
+	TAddress,
+	TDomain,
+	DateAndTime
+		FROM SNMPv2-TC
+	MODULE-IDENTITY,
+	OBJECT-TYPE,
+	Counter32,
+	Counter64,
+	Unsigned32
+		FROM SNMPv2-SMI
+	OBJECT-GROUP
+		FROM SNMPv2-CONF;
+
+snmp4jStatsMIB MODULE-IDENTITY
+	LAST-UPDATED "201601241030Z"	-- Jan 24, 2016, 10:30:00 AM
+	ORGANIZATION "SNMP4J.org"
+	CONTACT-INFO
+		"Frank Fock
+		Email: info@snmp4j.org"
+	DESCRIPTION
+		"The SNMP4J-STATISTICS-MIB module provides general
+		statistics information about SNMP4J command generator
+		and responder applications. The purpose is to collect performance
+		indicators that are not collected by standard SNMP means,
+		i.e. the SNMPv2-MIB."
+	REVISION "201601252007Z"	-- Jan 25, 2016, 8:07:00 PM
+	DESCRIPTION
+		"Initial version."
+	-- 1.3.6.1.4.1.4976.10.1.1.4
+::= { snmp4jAgentModules 4 }
+
+
+-- Scalars and Tables
+--
+
+snmp4jStatsObjects OBJECT IDENTIFIER 
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1
+	::= { snmp4jStatsMIB 1 }
+
+snmp4jStatsRequests OBJECT IDENTIFIER 
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1
+	::= { snmp4jStatsObjects 1 }
+
+snmp4jStatsRequestTimeouts OBJECT-TYPE
+	SYNTAX  Counter32
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The total number of requests that timed out."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.1
+	::= { snmp4jStatsRequests 1 }
+
+
+snmp4jStatsRequestRetries OBJECT-TYPE
+	SYNTAX  Counter32
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The total number of retries sent on behalf of 
+		requests. The first message, thus the request
+		itself is not counted."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.2
+	::= { snmp4jStatsRequests 2 }
+
+
+snmp4jStatsRequestWaitTime OBJECT-TYPE
+	SYNTAX  Counter64
+	UNITS	"milliseconds"
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The total number of milliseconds this SNMP
+		entity spend waiting for responses on its own
+		requests."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.3
+::= { snmp4jStatsRequests 3 }
+
+
+snmp4jStatsRequestsByTarget OBJECT IDENTIFIER 
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10
+	::= { snmp4jStatsRequests 10 }
+
+snmp4jStatsReqTableMaxIdlePeriod OBJECT-TYPE
+	SYNTAX  Unsigned32
+	UNITS	"minutes"
+	MAX-ACCESS read-write
+	STATUS  current
+	DESCRIPTION
+		"The period that defines the number of minutes
+		after which entries in the snmp4jStatsReqTable
+		should be removed when no new event has been
+		recorded for that target."
+	DEFVAL { 60 }
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.1
+::= { snmp4jStatsRequestsByTarget 1 }
+
+
+snmp4jStatsReqTableMaxEntries OBJECT-TYPE
+	SYNTAX  Unsigned32 (0..100000)
+	MAX-ACCESS read-write
+	STATUS  current
+	DESCRIPTION
+		"The maximum number of entries collected in the
+		statistics table in this MIB object sub-tree."
+	DEFVAL { 100 }
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.2
+	::= { snmp4jStatsRequestsByTarget 2 }
+
+
+snmp4jStatsReqTable OBJECT-TYPE
+	SYNTAX  SEQUENCE OF Snmp4jStatsReqEntry
+	MAX-ACCESS not-accessible
+	STATUS  current
+	DESCRIPTION
+		"The request statistics table provides statistics for
+		each target transport address to which a requests
+		has been sent during the period defined by
+		snmp4jStatsReqTableMaxIdlePeriod."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.3
+::= { snmp4jStatsRequestsByTarget 3 }
+
+
+snmp4jStatsReqEntry OBJECT-TYPE
+	SYNTAX  Snmp4jStatsReqEntry
+	MAX-ACCESS not-accessible
+	STATUS  current
+	DESCRIPTION
+		"Each row in the requests statistics table provides
+		the date and time of the last event for that target 
+		address as well as statistics on requests, retries,
+		and timeouts."
+	INDEX {
+		snmp4jStatsReqTableTIndex }
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.3.1
+	::= { snmp4jStatsReqTable 1 }
+
+
+Snmp4jStatsReqEntry ::= SEQUENCE {
+
+	snmp4jStatsReqTableTIndex      Unsigned32,
+	snmp4jStatsReqTableTDomain     TDomain,
+	snmp4jStatsReqTableTAddress    TAddress,
+	snmp4jStatsReqTableTimeouts    Counter32,
+	snmp4jStatsReqTableRetries     Counter32,
+	snmp4jStatsReqTableWaitTime    Counter64,
+	snmp4jStatsReqTableLastUpdated DateAndTime }
+
+
+snmp4jStatsReqTableTIndex OBJECT-TYPE
+	SYNTAX  Unsigned32
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"An monotonically increasing identifier of the 
+		target statistics row. If a statistics entry is 
+		removed from the table (because no event occurred
+		in the defined report period) its index value is
+		not reassigned to a new entry unless the index
+		counter overflows and all other smaller index values
+		have already be reassigned."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.3.1.1
+	::= { snmp4jStatsReqEntry 1 }
+
+
+snmp4jStatsReqTableTDomain OBJECT-TYPE
+	SYNTAX  TDomain
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The transport domain of the target."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.3.1.2
+	::= { snmp4jStatsReqEntry 2 }
+
+
+snmp4jStatsReqTableTAddress OBJECT-TYPE
+	SYNTAX  TAddress
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The address of the target."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.3.1.3
+	::= { snmp4jStatsReqEntry 3 }
+
+
+snmp4jStatsReqTableTimeouts OBJECT-TYPE
+	SYNTAX  Counter32
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The total number of requests that timed out for this target."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.3.1.4
+	::= { snmp4jStatsReqEntry 4 }
+
+
+snmp4jStatsReqTableRetries OBJECT-TYPE
+	SYNTAX  Counter32
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The total number of retries sent on behalf of 
+		requests to this target. The first message, thus the request
+		itself is not counted."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.3.1.5
+	::= { snmp4jStatsReqEntry 5 }
+
+
+snmp4jStatsReqTableWaitTime OBJECT-TYPE
+	SYNTAX  Counter64
+	UNITS	"ms"
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The total number of milliseconds this SNMP
+		entity spend waiting for responses on its own
+		requests to this target."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.3.1.6
+	::= { snmp4jStatsReqEntry 6 }
+
+
+snmp4jStatsReqTableLastUpdated OBJECT-TYPE
+	SYNTAX  DateAndTime
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The date and time when this entry was last updated."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.1.10.3.1.7
+	::= { snmp4jStatsReqEntry 7 }
+
+
+snmp4jStatsResponses OBJECT IDENTIFIER 
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.2
+	::= { snmp4jStatsObjects 2 }
+
+snmp4jStatsResponseTimeouts OBJECT-TYPE
+	SYNTAX  Counter32
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The number of response processings that ended
+		due to an internal timeout before that maximum 
+		number of response variables (GETBULK) has been
+		reached. For other request types than GETBULK,
+		an internal timeout would return a SNMP error
+		(e.g. genErr) to the command sender."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.2.1
+	::= { snmp4jStatsResponses 1 }
+
+
+snmp4jStatsResponseIgnoredRetries OBJECT-TYPE
+	SYNTAX  Counter32
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The total number of retries ignored by the command
+		responder while processing requests."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.2.2
+	::= { snmp4jStatsResponses 2 }
+
+
+snmp4jStatsResponseProcessTime OBJECT-TYPE
+	SYNTAX  Counter64
+	UNITS	"milliseconds"
+	MAX-ACCESS read-only
+	STATUS  current
+	DESCRIPTION
+		"The total number of milliseconds the command
+		responder took to process a request."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.1.2.3
+::= { snmp4jStatsResponses 3 }
+
+
+-- Notification Types
+--
+
+snmp4jStatsEvents OBJECT IDENTIFIER 
+	-- 1.3.6.1.4.1.4976.10.1.1.4.2
+	::= { snmp4jStatsMIB 2 }
+
+-- Conformance
+--
+
+snmp4jStatsConf OBJECT IDENTIFIER 
+	-- 1.3.6.1.4.1.4976.10.1.1.4.3
+	::= { snmp4jStatsMIB 3 }
+
+-- Groups
+--
+
+snmp4jStatsGroups OBJECT IDENTIFIER 
+	-- 1.3.6.1.4.1.4976.10.1.1.4.3.1
+	::= { snmp4jStatsConf 1 }
+
+-- Compliances
+--
+
+snmp4jStatsCompliances OBJECT IDENTIFIER 
+	-- 1.3.6.1.4.1.4976.10.1.1.4.3.2
+	::= { snmp4jStatsConf 2 }
+
+snmp4jStatsBasicGroup OBJECT-GROUP
+	OBJECTS {
+		snmp4jStatsRequestTimeouts,
+		snmp4jStatsRequestRetries,
+		snmp4jStatsRequestWaitTime,
+		snmp4jStatsResponseTimeouts,
+		snmp4jStatsResponseIgnoredRetries,
+		snmp4jStatsResponseProcessTime }
+	STATUS  current
+	DESCRIPTION
+		"Basic statistic objects. The values in this group
+		can be combined with statistics objects from the 
+		SNMPv2-MIB to relate them with requests."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.3.1.1
+	::= { snmp4jStatsGroups 1 }
+
+snmp4jStatsDetailGroup OBJECT-GROUP
+	OBJECTS {
+		snmp4jStatsReqTableMaxIdlePeriod,
+		snmp4jStatsReqTableTIndex,
+		snmp4jStatsReqTableTDomain,
+		snmp4jStatsReqTableTAddress,
+		snmp4jStatsReqTableTimeouts,
+		snmp4jStatsReqTableRetries,
+		snmp4jStatsReqTableLastUpdated,
+		snmp4jStatsReqTableWaitTime,
+		snmp4jStatsReqTableMaxEntries }
+	STATUS  current
+	DESCRIPTION
+		"This object group contains objects that provide
+		detailed statistics with additional memory 
+		requirements which make them optional to
+		implement."
+	-- 1.3.6.1.4.1.4976.10.1.1.4.3.1.2
+	::= { snmp4jStatsGroups 2 }
+
+END

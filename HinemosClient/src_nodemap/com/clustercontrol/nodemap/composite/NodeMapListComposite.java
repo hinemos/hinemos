@@ -25,7 +25,10 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.openapitools.client.model.FacilityElementResponse;
+import org.openapitools.client.model.NodeMapAttributesResponse;
 
+import com.clustercontrol.nodemap.bean.NodeMapAttributeConstant;
 import com.clustercontrol.nodemap.editpart.MapViewController;
 import com.clustercontrol.nodemap.etc.action.NodeMapListTableDefine;
 import com.clustercontrol.nodemap.util.FacilityElementComparator;
@@ -35,7 +38,6 @@ import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.viewer.CommonTableViewer;
-import com.clustercontrol.ws.nodemap.FacilityElement;
 
 public class NodeMapListComposite extends Composite{
 
@@ -149,9 +151,9 @@ public class NodeMapListComposite extends Composite{
 		this.totalLabel.setLayoutData(gridData);
 	}
 
-	public void setTableList(ArrayList<FacilityElement> list) {
+	public void setTableList(ArrayList<FacilityElementResponse> list) {
 		if(list == null) {
-			list = new ArrayList<FacilityElement>();
+			list = new ArrayList<FacilityElementResponse>();
 		}
 
 		Collections.sort(list, new FacilityElementComparator());
@@ -161,7 +163,7 @@ public class NodeMapListComposite extends Composite{
 		int nodeN = 0;
 
 		// scope
-		for (FacilityElement element : list) {
+		for (FacilityElementResponse element : list) {
 			if (FacilityConstant.TYPE_NODE_STRING.equals(element.getTypeName())) {
 				continue;
 			}
@@ -176,7 +178,7 @@ public class NodeMapListComposite extends Composite{
 		}
 
 		// node
-		for (FacilityElement element : list) {
+		for (FacilityElementResponse element : list) {
 			if (!(FacilityConstant.TYPE_NODE_STRING.equals(element.getTypeName()))) {
 				continue;
 			}
@@ -222,15 +224,30 @@ public class NodeMapListComposite extends Composite{
 	 * @param key
 	 * @return 属性値
 	 */
-	private static String getFacilityElementProperty(FacilityElement node, String key) {
+	private static String getFacilityElementProperty(FacilityElementResponse node, String key) {
 		String resultStr = "";
 
-		List<FacilityElement.Attributes.Entry> entries = node.getAttributes().getEntry();
-		for (FacilityElement.Attributes.Entry entry : entries) {
-			if (key.equals(entry.getKey())) {
-				resultStr = (String)entry.getValue();
-				break;
-			}
+		NodeMapAttributesResponse attributes = node.getAttributes();
+		switch(key) {
+			case NodeMapAttributeConstant.FACILITY_ID:
+			resultStr = attributes.getFacilityId();
+			break;
+			case NodeMapAttributeConstant.NODENAME:
+			resultStr = attributes.getNodeName();
+			break;
+			case NodeMapAttributeConstant.DESCRIPTION:
+			resultStr = attributes.getDescription();
+			break;
+			case NodeMapAttributeConstant.IPPROTOCOL_NUMBER:
+			resultStr = attributes.getIpProtocolNumber();
+			break;
+			case NodeMapAttributeConstant.IPNETWORK_NUMBER:
+			resultStr = attributes.getIpNetworkNumber();
+			break;
+			case NodeMapAttributeConstant.IPNETWORK_NUMBER_V6:
+			resultStr = attributes.getIpNetworkNumberV6();
+			break;
+		
 		}
 		return resultStr;
 	}

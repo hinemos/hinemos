@@ -7,6 +7,8 @@
  */
 package com.clustercontrol.xcloud.model.repository;
 
+import org.openapitools.client.model.HFacilityResponse;
+
 import com.clustercontrol.xcloud.model.cloud.Instance;
 
 
@@ -21,7 +23,7 @@ public class InstanceNode extends Node implements IInstanceNode{
 		this.instance = instance;
 	}
 
-	public static InstanceNode convert(com.clustercontrol.ws.xcloud.HInstanceNode source) {
+	public static InstanceNode convert(HFacilityResponse source) {
 		InstanceNode node = new InstanceNode();
 		node.update(source);
 		return node;

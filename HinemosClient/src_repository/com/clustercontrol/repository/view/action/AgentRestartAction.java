@@ -27,15 +27,15 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.OperationAgentRequest;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.repository.action.GetAgentListTableDefine;
-import com.clustercontrol.repository.bean.AgentCommandConstant;
-import com.clustercontrol.repository.util.RepositoryEndpointWrapper;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.repository.view.AgentListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
-import com.clustercontrol.ws.repository.InvalidRole_Exception;
 
 /**
  * ノードの作成・変更ダイアログによる、ノード登録を行うクライアント側アクションクラス<BR>
@@ -149,9 +149,12 @@ public class AgentRestartAction extends AbstractHandler implements IElementUpdat
 			String managerName = entry.getKey();
 			ArrayList<String> facilityIdList = entry.getValue();
 			try {
-				RepositoryEndpointWrapper wrapper = RepositoryEndpointWrapper.getWrapper(managerName);
-				wrapper.restartAgent(facilityIdList, AgentCommandConstant.RESTART);
-			} catch (InvalidRole_Exception e) {
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(managerName);
+				OperationAgentRequest requestDto = new OperationAgentRequest();
+				requestDto.setFacilityIds(facilityIdList);
+				requestDto.setAgentCommand(OperationAgentRequest.AgentCommandEnum.RESTART);
+				wrapper.operationAgent(requestDto);
+			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				Object[] arg = {managerName};
 				errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16", arg));

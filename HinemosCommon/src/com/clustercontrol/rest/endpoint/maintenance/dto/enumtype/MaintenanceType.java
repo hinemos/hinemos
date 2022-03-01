@@ -1,0 +1,40 @@
+/*
+ * Copyright (c) 2022 NTT DATA INTELLILINK Corporation.
+ *
+ * Hinemos (http://www.hinemos.info/)
+ *
+ * See the LICENSE file for licensing information.
+ */
+
+package com.clustercontrol.rest.endpoint.maintenance.dto.enumtype;
+
+import com.clustercontrol.rest.dto.EnumDto;
+
+public enum MaintenanceType implements EnumDto<String> {
+	DELETE_EVENT_LOG("DELETE_EVENT_LOG"),
+	DELETE_EVENT_LOG_ALL("DELETE_EVENT_LOG_ALL"),
+	DELETE_JOB_HISTORY("DELETE_JOB_HISTORY"),
+	DELETE_JOB_HISTORY_ALL("DELETE_JOB_HISTORY_ALL"),
+	DELETE_COLLECT_DATA_RAW("DELETE_COLLECT_DATA_RAW"),
+	DELETE_SUMMARY_DATA_HOUR("DELETE_SUMMARY_DATA_HOUR"),
+	DELETE_SUMMARY_DATA_DAY("DELETE_SUMMARY_DATA_DAY"),
+	DELETE_SUMMARY_DATA_MONTH("DELETE_SUMMARY_DATA_MONTH"),
+	DELETE_COLLECT_STRING_DATA("DELETE_COLLECT_STRING_DATA"),
+	DELETE_COLLECT_BINFILE_DATA("DELETE_COLLECT_BINFILE_DATA"),
+	DELETE_COLLECT_PCAP_DATA("DELETE_COLLECT_PCAP_DATA"),
+	DELETE_COLLECT_BINARY_DATA("DELETE_COLLECT_BINARY_DATA"),
+	DELETE_NODE_CONFIG_HISTORY("DELETE_NODE_CONFIG_HISTORY"),
+	DELETE_JOBLINK_MSG("DELETE_JOBLINK_MSG"),
+	DELETE_RPA_SCENARIO_OPERATION_RESULT("DELETE_RPA_SCENARIO_OPERATION_RESULT")
+	;
+	private final String code;
+
+	private MaintenanceType(final String code) {
+		this.code = code;
+	}
+
+	public String getCode() {
+		return code;
+	}
+
+}

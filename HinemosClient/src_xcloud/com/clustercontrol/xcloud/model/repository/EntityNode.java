@@ -7,11 +7,12 @@
  */
 package com.clustercontrol.xcloud.model.repository;
 
+import org.openapitools.client.model.HFacilityResponse;
 
 public class EntityNode extends Node implements IEntityNode {
 	private String entityType;
 
-	public static EntityNode convert(com.clustercontrol.ws.xcloud.HEntityNode source) {
+	public static EntityNode convert(HFacilityResponse source) {
 		EntityNode node = new EntityNode();
 		node.update(source);
 		node.setEntityType(source.getEntityType());

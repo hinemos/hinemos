@@ -26,20 +26,23 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.InstanceInfoResponse;
+import org.openapitools.client.model.ModifyInstanceRequest;
+import org.openapitools.client.model.ResourceTagResponse;
+import org.openapitools.client.model.TagRequest;
+import org.openapitools.client.model.TagRequest.TagTypeEnum;
 
 import com.clustercontrol.dialog.CommonDialog;
-import com.clustercontrol.ws.xcloud.Instance;
-import com.clustercontrol.ws.xcloud.ModifyInstanceRequest;
-import com.clustercontrol.ws.xcloud.Tag;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.util.RestClientBeanUtil;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.CloudOptionExtension;
 
 public class ModifyInstanceTagDialog extends CommonDialog implements CloudStringConstants {
 	public static final long serialVersionUID = 1L;
 	
-	private Instance instance;
 	private String cloudPlatformId;
-	private List<Tag> editingTag = new ArrayList<>();
+	private List<TagRequest> editingTag = new ArrayList<>();
 	private String editingMemo;
 	private ModifyInstanceRequest completed;
 	
@@ -50,7 +53,7 @@ public class ModifyInstanceTagDialog extends CommonDialog implements CloudString
 	 * Create the dialog.
 	 * @param parentShell
 	 */
-	public ModifyInstanceTagDialog(Shell parentShell, Instance instance, String cloudPlatformId) {
+	public ModifyInstanceTagDialog(Shell parentShell, InstanceInfoResponse instance, String cloudPlatformId) {
 		super(parentShell);
 		setShellStyle(SWT.CLOSE | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
 		setInput(instance);
@@ -144,32 +147,35 @@ public class ModifyInstanceTagDialog extends CommonDialog implements CloudString
 		return new Point(512, 498);
 	}
 	
-	protected void setInput(Instance instance) {
+	protected void setInput(InstanceInfoResponse instance) {
 		completed = null;
-		this.instance =instance;
 		editingTag.clear();
-		for (Tag t: instance.getTags()) {
-			Tag nt = new Tag();
-			nt.setTagType(t.getTagType());
+		for (ResourceTagResponse t: instance.getEntity().getTags().values()) {
+			TagRequest nt = new TagRequest();
+			nt.setTagType(TagTypeEnum.fromValue(t.getTagType().name()));
 			nt.setKey(t.getKey());
 			nt.setValue(t.getValue());
 			this.editingTag.add(nt);
 		}
-		editingMemo = instance.getMemo() != null ? instance.getMemo(): "";
+		editingMemo = instance.getEntity().getMemo() != null ? instance.getEntity().getMemo(): "";
 	}
 
-	public ModifyInstanceRequest getOutput() {
-		return completed;
+	public org.openapitools.client.model.ModifyInstanceRequest getOutput() {
+		org.openapitools.client.model.ModifyInstanceRequest req = new org.openapitools.client.model.ModifyInstanceRequest();
+		try {
+			RestClientBeanUtil.convertBean(completed, req);
+		} catch (HinemosUnknown e) {
+		}
+		return req;
 	}
 
 	@Override
 	protected void okPressed() {
 		completed = new ModifyInstanceRequest();
 		
-		completed.setInstanceId(instance.getId());
 		completed.getTags().clear();
-		for (Tag t: editingTag) {
-			Tag nt = new Tag();
+		for (TagRequest t: editingTag) {
+			TagRequest nt = new TagRequest();
 			nt.setTagType(t.getTagType());
 			nt.setKey(t.getKey());
 			nt.setValue(t.getValue());

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+	<!-- SdmlControlSettingInfo -->
+	<named-query name="SdmlControlSettingInfo.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a
+				ORDER BY a.applicationId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlControlSettingInfo.findByVersion">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a
+				WHERE a.version = :version
+				ORDER BY a.applicationId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlControlSettingInfo.findByFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a
+				WHERE a.facilityId = :facilityId
+				ORDER BY a.applicationId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlControlSettingInfo.findByMonitorId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a
+				JOIN SdmlControlMonitorRelation b ON b.id.applicationId = a.applicationId
+				WHERE b.id.monitorId = :monitorId
+			]]>
+		</query>
+	</named-query>
+	<!-- SdmlControlMonitorRelation -->
+	<named-query name="SdmlControlMonitorRelation.findByApplicationId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlMonitorRelation a
+				WHERE a.id.applicationId = :applicationId
+				ORDER BY a.id.monitorId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlControlMonitorRelation.findByApplicationIdAndFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlMonitorRelation a
+				WHERE a.id.applicationId = :applicationId
+				AND a.id.facilityId = :facilityId
+				ORDER BY a.id.monitorId
+			]]>
+		</query>
+	</named-query>
+	<!-- SdmlControlStatus -->
+	<named-query name="SdmlControlStatus.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlStatus a
+				ORDER BY a.id.applicationId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlControlStatus.deleteByApplicationId">
+		<query>
+			<![CDATA[
+				DELETE FROM SdmlControlStatus a
+				WHERE a.id.applicationId = :applicationId
+			]]>
+		</query>
+	</named-query>
+	<!-- SdmlInitializeData -->
+	<named-query name="SdmlInitializeData.findByApplicationIdAndFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlInitializeData a
+				WHERE a.id.applicationId = :applicationId
+				AND a.id.facilityId = :facilityId
+				ORDER BY a.id.key
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlInitializeData.deleteByApplicationId">
+		<query>
+			<![CDATA[
+				DELETE FROM SdmlInitializeData a
+				WHERE a.id.applicationId = :applicationId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlInitializeData.deleteByApplicationIdAndFacilityId">
+		<query>
+			<![CDATA[
+				DELETE FROM SdmlInitializeData a
+				WHERE a.id.applicationId = :applicationId
+				AND a.id.facilityId = :facilityId
+			]]>
+		</query>
+	</named-query>
+	<!-- SdmlMonitorTypeMasterInfo -->
+	<named-query name="SdmlMonitorTypeMasterInfo.findAll">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlMonitorTypeMasterInfo a
+				ORDER BY a.id.sdmlMonitorTypeId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlMonitorTypeMasterInfo.findByPluginId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlMonitorTypeMasterInfo a
+				WHERE a.pluginId LIKE :pluginId
+				ORDER BY a.id.sdmlMonitorTypeId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="SdmlMonitorTypeMasterInfo.findByPluginIdNot">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlMonitorTypeMasterInfo a
+				WHERE a.pluginId NOT LIKE :pluginId
+				ORDER BY a.id.sdmlMonitorTypeId
+			]]>
+		</query>
+	</named-query>
+</entity-mappings>

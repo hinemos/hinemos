@@ -16,10 +16,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
+import org.openapitools.client.model.RoleInfoResponse;
+import org.openapitools.client.model.UserInfoResponse;
 
-import com.clustercontrol.ws.access.RoleInfo;
-import com.clustercontrol.ws.access.UserInfo;
-import com.clustercontrol.ws.accesscontrol.RoleTreeItem;
+import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
+import com.clustercontrol.accesscontrol.bean.RoleTreeItemWrapper;
 
 /**
  * ロールツリー用コンポジットのツリービューア用のITreeContentProviderクラスです。
@@ -67,15 +68,21 @@ public class RoleSettingTreeContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public Object[] getChildren(Object parentElement) {
-		List<RoleTreeItem> ret = ((RoleTreeItem) parentElement).getChildren();
-		Collections.sort(ret, new Comparator<RoleTreeItem>(){
+		List<RoleTreeItemWrapper> ret = ((RoleTreeItemWrapper) parentElement).getChildren();
+		Collections.sort(ret, new Comparator<RoleTreeItemWrapper>(){
 			@Override
-			public int compare(RoleTreeItem o1, RoleTreeItem o2) {
-				if (o1.getData() instanceof RoleInfo && o2.getData() instanceof RoleInfo) {
-					RoleInfo r1 = (RoleInfo) o1.getData();
-					RoleInfo r2 = (RoleInfo) o2.getData();
-					String s1 = r1.getRoleType();
-					String s2 = r2.getRoleType();
+			public int compare(RoleTreeItemWrapper o1, RoleTreeItemWrapper o2) {
+				if (o1.getData() instanceof RoleInfoResponse && o2.getData() instanceof RoleInfoResponse) {
+					RoleInfoResponse r1 = (RoleInfoResponse) o1.getData();
+					RoleInfoResponse r2 = (RoleInfoResponse) o2.getData();
+					String s1 = null;
+					if(!RoleSettingTreeConstant.MANAGER.equals(r1.getRoleId())) {
+						s1 = r1.getRoleType().getValue();
+					}
+					String s2 = null;
+					if(!RoleSettingTreeConstant.MANAGER.equals(r1.getRoleId())) {
+						s2 = r2.getRoleType().getValue();
+					}
 					m_log.trace("s1=" + s1 + ", s2=" + s2);
 					if (s1 == null || s2 == null) {
 						// マネージャの比較
@@ -85,9 +92,9 @@ public class RoleSettingTreeContentProvider implements ITreeContentProvider {
 					} else {
 						return r1.getRoleType().compareTo(r2.getRoleType()) * -1;
 					}
-				} else if (o1.getData() instanceof UserInfo && o2.getData() instanceof UserInfo) {
-					UserInfo u1 = (UserInfo) o1.getData();
-					UserInfo u2 = (UserInfo) o2.getData();
+				} else if (o1.getData() instanceof UserInfoResponse && o2.getData() instanceof UserInfoResponse) {
+					UserInfoResponse u1 = (UserInfoResponse) o1.getData();
+					UserInfoResponse u2 = (UserInfoResponse) o2.getData();
 					m_log.trace("u1=" + u1 + ", u2=" + u2);
 					return u1.getUserId().compareTo(u2.getUserId());
 				}
@@ -107,7 +114,7 @@ public class RoleSettingTreeContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public Object getParent(Object element) {
-		return ((RoleTreeItem) element).getParent();
+		return ((RoleTreeItemWrapper) element).getParent();
 	}
 
 	/**
@@ -120,7 +127,7 @@ public class RoleSettingTreeContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public boolean hasChildren(Object element) {
-		return ((RoleTreeItem) element).getChildren().size() > 0;
+		return ((RoleTreeItemWrapper) element).getChildren().size() > 0;
 	}
 
 }

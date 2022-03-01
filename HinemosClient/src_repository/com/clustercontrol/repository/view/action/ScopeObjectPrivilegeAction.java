@@ -17,9 +17,9 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
-import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.view.ScopeListView;
 import com.clustercontrol.view.action.ObjectPrivilegeAction;
 
@@ -71,20 +71,20 @@ public class ScopeObjectPrivilegeAction extends ObjectPrivilegeAction {
 							view.getComposite().getTable().isFocusControl())) {
 
 				switch(view.getType()) {
-				case FacilityConstant.TYPE_MANAGER:
+				case MANAGER:
 					editEnable = false;
 					break;
-				case FacilityConstant.TYPE_SCOPE:
+				case SCOPE:
 					editEnable = !view.getNotReferFlg();
 					break;
-				case FacilityConstant.TYPE_NODE:
+				case NODE:
 					editEnable = false;
 					break;
 				default: // 既定の対処はスルー。
 					break;
 				}
 			} else {
-				if(view.getType() == FacilityConstant.TYPE_COMPOSITE) {
+				if(view.getType() == FacilityTypeEnum.COMPOSITE) {
 					editEnable = false;
 				}
 			}

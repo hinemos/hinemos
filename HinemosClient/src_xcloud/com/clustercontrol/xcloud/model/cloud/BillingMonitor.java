@@ -7,12 +7,13 @@
  */
 package com.clustercontrol.xcloud.model.cloud;
 
-import com.clustercontrol.ws.monitor.MonitorInfo;
+import org.openapitools.client.model.MonitorInfoResponse;
+
 import com.clustercontrol.xcloud.model.base.Element;
 
 public class BillingMonitor extends Element implements IBillingMonitor{
 
-	private MonitorInfo monitorInfo;
+	private MonitorInfoResponse monitorInfo;
 
 	public BillingMonitor(BillingMonitors billingAlarms){
 		setOwner(billingAlarms);
@@ -22,18 +23,18 @@ public class BillingMonitor extends Element implements IBillingMonitor{
 		return (BillingMonitors)getOwner();
 	}
 	
-	public void update(MonitorInfo source) {
+	public void update(MonitorInfoResponse source) {
 		setMonitorInfo(source);
 	}
 	@Override
-	public MonitorInfo getMonitorInfo() {
+	public MonitorInfoResponse getMonitorInfo() {
 		return monitorInfo;
 	}
-	public void setMonitorInfo(MonitorInfo source) {
+	public void setMonitorInfo(MonitorInfoResponse source) {
 		this.monitorInfo = source;
 	}
 	
-	public static BillingMonitor convert(BillingMonitors billingAlarms, MonitorInfo source) {
+	public static BillingMonitor convert(BillingMonitors billingAlarms, MonitorInfoResponse source) {
 		BillingMonitor billingAlarm = new BillingMonitor(billingAlarms);
 		billingAlarm.update(source);
 		return billingAlarm;

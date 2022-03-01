@@ -30,6 +30,9 @@ public class HistoryFilterPropertyConstant {
 	/** 終了・中断日時（終了） */
 	public static final String END_TO_DATE = "endToDate";
 
+	/** セッションID */
+	public static final String SESSION_ID = "sessionId";
+
 	/** ジョブID */
 	public static final String JOB_ID = "jobId";
 

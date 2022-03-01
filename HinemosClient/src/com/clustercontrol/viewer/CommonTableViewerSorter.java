@@ -12,8 +12,7 @@ import java.util.ArrayList;
 
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerSorter;
-
-import com.clustercontrol.ws.common.Schedule;
+import org.openapitools.client.model.MaintenanceScheduleResponse;
 
 /**
  * CommonTableViewerクラス用のViewerSorterクラス<BR>
@@ -120,9 +119,9 @@ public class CommonTableViewerSorter extends ViewerSorter {
 				obj1.getClass().equals(obj2.getClass())) {
 			rtn = ((Comparable<Object>)obj1).compareTo(obj2);
 		} else if (obj1 != null && obj2 != null &&
-				obj1 instanceof Schedule && obj2 instanceof Schedule){
-			Schedule schedule1 = (Schedule)obj1;
-			Schedule schedule2 = (Schedule)obj2;
+				obj1 instanceof MaintenanceScheduleResponse && obj2 instanceof MaintenanceScheduleResponse){
+			MaintenanceScheduleResponse schedule1 = (MaintenanceScheduleResponse)obj1;
+			MaintenanceScheduleResponse schedule2 = (MaintenanceScheduleResponse)obj2;
 
 			// month
 			if (schedule1.getMonth() != null && schedule2.getMonth() == null) {

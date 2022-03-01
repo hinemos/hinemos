@@ -25,27 +25,27 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.CommandModuleInfoResponse;
+import org.openapitools.client.model.FileTransferModuleInfoResponse;
+import org.openapitools.client.model.InfraManagementInfoResponse;
+import org.openapitools.client.model.ReferManagementModuleInfoResponse;
 
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.dialog.CommonDialog;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InfraManagementNotFound;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.infra.action.GetInfraModuleTableDefine;
 import com.clustercontrol.infra.dialog.CommandModuleDialog;
 import com.clustercontrol.infra.dialog.FileTransferModuleDialog;
 import com.clustercontrol.infra.dialog.ReferManagementModuleDialog;
-import com.clustercontrol.infra.util.InfraEndpointWrapper;
+import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.infra.view.InfraModuleView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.infra.CommandModuleInfo;
-import com.clustercontrol.ws.infra.FileTransferModuleInfo;
-import com.clustercontrol.ws.infra.HinemosUnknown_Exception;
-import com.clustercontrol.ws.infra.InfraManagementInfo;
-import com.clustercontrol.ws.infra.InfraManagementNotFound_Exception;
-import com.clustercontrol.ws.infra.InfraModuleInfo;
-import com.clustercontrol.ws.infra.InvalidRole_Exception;
-import com.clustercontrol.ws.infra.InvalidUserPass_Exception;
-import com.clustercontrol.ws.infra.NotifyNotFound_Exception;
-import com.clustercontrol.ws.infra.ReferManagementModuleInfo;
 
 public class ModifyInfraModuleAction extends AbstractHandler implements IElementUpdater {
 	// ログ
@@ -101,16 +101,17 @@ public class ModifyInfraModuleAction extends AbstractHandler implements IElement
 		}
 
 		String managementId = infraModuleView.getComposite().getManagementId();
-		InfraManagementInfo info = null;
+		InfraManagementInfoResponse info = null;
 		try {
-			InfraEndpointWrapper wrapper = InfraEndpointWrapper
+			InfraRestClientWrapper wrapper = InfraRestClientWrapper
 					.getWrapper(infraModuleView.getComposite().getManagerName());
 			info = wrapper.getInfraManagement(infraModuleView.getComposite().getManagementId());
-		} catch (InvalidRole_Exception e) {
+		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openError(null, Messages.getString("failed"), Messages.getString("message.accesscontrol.16"));
 			return null;
-		} catch (HinemosUnknown_Exception | InvalidUserPass_Exception | NotifyNotFound_Exception | InfraManagementNotFound_Exception e) {
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InfraManagementNotFound
+				| InvalidSetting e) {
 			m_log.debug("execute getInfraManagement, " + e.getMessage());
 			MessageDialog.openError(
 					null,
@@ -119,32 +120,50 @@ public class ModifyInfraModuleAction extends AbstractHandler implements IElement
 			return null;
 		}
 
-		InfraModuleInfo module = null;
-
-		if(info != null && info.getModuleList() != null){
-			for(InfraModuleInfo tmpModule: info.getModuleList()){
-				if(tmpModule.getModuleId().equals(moduleId)){
-					module = tmpModule;
-					break;
+		boolean moduleIsCmd = false;
+		boolean moduleIsFile = false;
+		boolean moduleIsRefer = false;
+		if(info != null) {
+			if(info.getCommandModuleInfoList() != null) {
+				for(CommandModuleInfoResponse tmpModule: info.getCommandModuleInfoList()) {
+					if(tmpModule.getModuleId().equals(moduleId)){
+						moduleIsCmd = true;
+						break;
+					}
 				}
 			}
-
+			if(info.getFileTransferModuleInfoList() != null) {
+				for(FileTransferModuleInfoResponse tmpModule: info.getFileTransferModuleInfoList()) {
+					if(tmpModule.getModuleId().equals(moduleId)){
+						moduleIsFile = true;
+						break;
+					}
+				}
+			}
+			if(info.getReferManagementModuleInfoList() != null) {
+				for(ReferManagementModuleInfoResponse tmpModule: info.getReferManagementModuleInfoList()) {
+					if(tmpModule.getModuleId().equals(moduleId)){
+						moduleIsRefer = true;
+						break;
+					}
+				}
+			}
+			
 			CommonDialog dialog = null;
-			if(moduleId != null){
-				if(module instanceof CommandModuleInfo){
+			if(moduleId != null) {
+				if(moduleIsCmd) {
 					dialog = new CommandModuleDialog(infraModuleView.getSite().getShell(), managerName, managementId, moduleId, PropertyDefineConstant.MODE_MODIFY);
-				} else if (module instanceof FileTransferModuleInfo) {
+				} else if (moduleIsFile) {
 					dialog = new FileTransferModuleDialog(infraModuleView.getSite().getShell(), managerName, managementId, moduleId, PropertyDefineConstant.MODE_MODIFY);
-				} else if (module instanceof ReferManagementModuleInfo) {
+				} else if (moduleIsRefer) {
 					dialog = new ReferManagementModuleDialog(infraModuleView.getSite().getShell(), managerName, managementId, moduleId, PropertyDefineConstant.MODE_MODIFY);
 				} else {
 					throw new InternalError("dialog is null");
 				}
 			}
+			
 			if (dialog != null)
 				dialog.open();
-
-			infraModuleView.update(managerName, managementId);
 		}
 		return null;
 	}

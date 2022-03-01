@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<!-- 
+   Hinemos (http://www.hinemos.info/)
+   
+   Copyright (c) 2021 NTT DATA INTELLILINK Corporation. All rights reserved.
+ -->
+
+<!-- execute Ant (Run in the same JRE as the workspace -->
+
+<project name="ManagerRestClient" default="all" basedir=".">
+	
+	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<import file="../HinemosCommon/ant_config/build_common.xml"/>
+	
+	<property name="project.name" value="HinemosWorkers" />
+	<property name="jar.file" value="${jar.ManagerRestCli}" />
+	<property name="src.dir" value="src_manager_restcli" />
+	<property name="build.dir" value="build/manager_restcli" />
+	
+	<!-- Dependency -->
+	<target name="dependency" depends="check_dependency">
+		<fail unless="HinemosCommon.built" message="file not found. (HinemosCommon/${jar.dir}/${jar.HinemosCommon})" />
+		<fail unless="HinemosManager.built" message="file not found. (HinemosManager/${jar.dir}/${jar.HinemosManager})" />
+	</target>
+	
+	
+	<!-- Classpath -->
+	<path id="id.compile.classpath.local">
+		<fileset dir="../">
+			<include name="HinemosCommon/${jar.dir}/${jar.HinemosCommon}" />
+			<include name="HinemosManager/${jar.dir}/${jar.HinemosManager}" />
+			<include name="HinemosManager/lib/*.jar" />
+			<include name="HinemosManager/lib_rest/*.jar" />
+		</fileset>
+		<fileset dir=".">
+			<include name="lib/*.jar"/>
+			<include name="commonlib/*.jar"/>
+		</fileset>
+	</path>
+	
+	<path id="id.compile.sourcepath.local">
+		
+	</path>
+
+	<target name="jar" depends="compile,manifest" description="Generate JAR file">
+
+		<jar jarfile="${jar.dir}/${jar.file}" manifest="${build.dir}/MANIFEST.MF">
+			<fileset dir="${build.dir}/${class.dir}">
+				<include name="**/*.*" />
+			</fileset>
+			<fileset dir="${src.dir}">
+				<include name="**/*.*"/>
+			</fileset>
+		</jar>
+	</target>
+
+	<!-- All -->
+	<target name="all" depends="dependency">
+		<pathconvert property="openapi_jar_exist" setonempty="false" pathsep=" ">
+			<path>
+				<fileset dir="lib/" includes="openapi-java-client-*.jar" />
+			</path>
+		</pathconvert>
+		<antcall target="warn_openapi_jar" />
+
+		<antcall target="jar" />
+		
+		<available classname="org.eclipse.core.resources.ant.RefreshLocalTask"
+				property="eclipse_jar_available"/>
+		<antcall target="refresh" />
+	</target>
+	
+	<target name="refresh" if="eclipse_jar_available">
+		<eclipse.refreshLocal resource="${project.name}" depth="infinite" />
+		<eclipse.incrementalBuild project="${project.name}" kind="clean" />
+	</target>
+
+	<target name="warn_openapi_jar" unless="openapi_jar_exist">
+	 	<fail status="0" message="openapi.jar is noting . please execute HinemosManager's build.xml for [build_proxy] . exit" />
+	</target>
+
+</project>

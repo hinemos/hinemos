@@ -20,7 +20,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.reporting.dialog.TemplateSetDialog;
 import com.clustercontrol.reporting.view.ReportingTemplateSetView;
-import com.clustercontrol.util.EndpointManager;
+import com.clustercontrol.util.RestConnectManager;
 
 /**
  * レポーティング[テンプレートセット]ビューの作成アクションクラス<BR>
@@ -58,7 +58,7 @@ public class TemplateSetAddAction extends AbstractHandler{
 			m_log.info("execute: view is null"); 
 			return null;
 		}
-		String managerName = EndpointManager.getActiveManagerNameList().get(0);
+		String managerName = RestConnectManager.getActiveManagerNameList().get(0);
 
 		// ダイアログを生成
 		TemplateSetDialog dialog = new TemplateSetDialog(this.viewPart.getSite()

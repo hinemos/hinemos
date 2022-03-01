@@ -79,6 +79,7 @@ public class FileDiffComposite extends Composite {
 						+ "cmsettings: { readOnly: true, lineNumbers: true },"
 						+ "width: 'auto',"
 						+ "height: 'auto',"
+						+ "license: 'lgpl-separate-notice',"
 						+ "resized: function(){"
 						+ "var w = $('#compare').width();"
 						+ "var hw = $('.mergely-margin').width() + $('.mergely-column').width();"
@@ -96,9 +97,14 @@ public class FileDiffComposite extends Composite {
 	}
 
 	private String escapeQuote(String input) {
-		String output = input.replace("\r", "\\r");
+		String output = input.replace("\\", "\\\\");
+		output = output.replace("\r", "\\r");
 		output = output.replace("\n", "\\n");
 		output = output.replace("'", "\\'");
+		output = output.replace("\0", "\\0");
+		output = output.replace("\u2028", "\\u2028");
+		output = output.replace("\u2029", "\\u2029");
+		
 		return output;
 	}
 

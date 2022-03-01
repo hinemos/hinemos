@@ -12,7 +12,7 @@ package com.clustercontrol.fault;
  * システム権限、オブジェクト権限が重複している場合に利用するException
  * @version 3.2.0
  */
-public class PrivilegeDuplicate extends HinemosException {
+public class PrivilegeDuplicate extends HinemosDuplicate {
 
 	private static final long serialVersionUID = 1L;
 	// オブジェクト権限のPK

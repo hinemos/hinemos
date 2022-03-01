@@ -23,6 +23,9 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.openapitools.client.model.AddFilterScopeRequest;
+import org.openapitools.client.model.GetNodeListRequest;
+import org.openapitools.client.model.ScopeInfoRequest;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -31,14 +34,12 @@ import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
-import com.clustercontrol.nodemap.util.NodeMapEndpointWrapper;
+import com.clustercontrol.fault.FacilityDuplicate;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.nodemap.util.NodemapUtil;
+import com.clustercontrol.repository.util.RepositoryRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.nodemap.FacilityDuplicate_Exception;
-import com.clustercontrol.ws.nodemap.InvalidRole_Exception;
-import com.clustercontrol.ws.repository.NodeInfo;
-import com.clustercontrol.ws.repository.ScopeInfo;
 
 /**
  * 検索結果ノード割当て用スコープの作成ダイアログクラス<BR>
@@ -74,7 +75,7 @@ public class NodeListScopeCreateDialog extends CommonDialog {
 	private Text m_imageText = null;
 
 	/** フィルタ条件 */
-	private NodeInfo m_nodeFilterInfo = null;
+	private GetNodeListRequest m_nodeFilterInfo = null;
 
 	// ----- コンストラクタ ----- //
 
@@ -88,7 +89,7 @@ public class NodeListScopeCreateDialog extends CommonDialog {
 	 * @param nodeFilterInfo 検索条件
 	 */
 	public NodeListScopeCreateDialog(
-			Shell parent, String managerName, String scopeFacilityId, List<String> facilityIdList, NodeInfo nodeFilterInfo) {
+			Shell parent, String managerName, String scopeFacilityId, List<String> facilityIdList, GetNodeListRequest nodeFilterInfo) {
 		super(parent);
 		this.m_managerName = managerName;
 		this.m_scopeFacilityId = scopeFacilityId;
@@ -271,18 +272,23 @@ public class NodeListScopeCreateDialog extends CommonDialog {
 		boolean result = false;
 		String errMessage = "";
 
-		NodeMapEndpointWrapper wrapper = NodeMapEndpointWrapper.getWrapper(this.m_managerName);
+		RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(this.m_managerName);
 		Object[] arg = {this.m_managerName};
 
 		// 作成の場合
 		try {
-			ScopeInfo scopeInfo = new ScopeInfo();
+			ScopeInfoRequest scopeInfo = new ScopeInfoRequest();
 			scopeInfo.setFacilityId(this.m_scopeFacilityIdText.getText());
 			scopeInfo.setFacilityName(this.m_scopeFacilityNameText.getText());
 			scopeInfo.setDescription(this.m_descriptionText.getText());
 			scopeInfo.setOwnerRoleId(this.m_ownerRoleId.getText());
 			scopeInfo.setIconImage(this.m_imageText.getText());
-			wrapper.addFilterScope(scopeInfo, m_facilityIdList);
+
+			AddFilterScopeRequest request = new AddFilterScopeRequest();
+			request.setFacilityIdList(m_facilityIdList);
+			request.setProperty(scopeInfo);
+
+			wrapper.addFilterScope(request);
 
 			// リポジトリキャッシュの更新
 			ClientSession.doCheck();
@@ -294,7 +300,7 @@ public class NodeListScopeCreateDialog extends CommonDialog {
 
 			result = true;
 
-		} catch (FacilityDuplicate_Exception e) {
+		} catch (FacilityDuplicate e) {
 			String args[] = {m_scopeFacilityId};
 
 			// ファシリティIDが重複している場合、エラーダイアログを表示する
@@ -304,7 +310,7 @@ public class NodeListScopeCreateDialog extends CommonDialog {
 					Messages.getString("message.repository.63", args));
 
 		} catch (Exception e) {
-			if (e instanceof InvalidRole_Exception) {
+			if (e instanceof InvalidRole) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));

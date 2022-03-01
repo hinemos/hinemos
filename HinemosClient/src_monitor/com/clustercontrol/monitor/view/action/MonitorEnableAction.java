@@ -27,14 +27,15 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+import org.openapitools.client.model.SetStatusMonitorRequest;
 
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.monitor.composite.MonitorListComposite;
 import com.clustercontrol.monitor.run.action.GetMonitorListTableDefine;
-import com.clustercontrol.monitor.util.MonitorSettingEndpointWrapper;
+import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.monitor.view.MonitorListView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.ws.monitor.InvalidRole_Exception;
 
 /**
  * 監視[一覧]ビューの監視有効アクションクラス<BR>
@@ -141,31 +142,34 @@ public class MonitorEnableAction extends AbstractHandler implements IElementUpda
 		// 実行
 		for(Map.Entry<String, List<String[]>> map : dataMap.entrySet()) {
 			String mgrName = map.getKey();
-			MonitorSettingEndpointWrapper wrapper = MonitorSettingEndpointWrapper.getWrapper(mgrName);
-			for(String[] strArgs : map.getValue()) {
-				monitorId = strArgs[0];
-				monitorTypeId = strArgs[1];
+			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(mgrName);
 
-				try{
-					wrapper.setStatusMonitor(monitorId, monitorTypeId, true);
-					if (successList.length() > 0) {
-						successList.append(", ");
-					}
-					successList.append(monitorId + "(" + mgrName + ")");
-				} catch (InvalidRole_Exception e) {
-					if (failureList.length() > 0) {
-						failureList.append(", ");
-					}
-					failureList.append(monitorId + "(" + HinemosMessage.replace(e.getMessage()) + ")");
-					m_log.warn("run() setStatusMonitor monitorId=" + monitorId + ", " + e.getMessage(), e);
-					hasRole = false;
-				}catch (Exception e) {
-					if (failureList.length() > 0) {
-						failureList.append(", ");
-					}
-					failureList.append(monitorId + "(" + HinemosMessage.replace(e.getMessage()) + ")");
-					m_log.warn("run() setStatusMonitor monitorId=" + monitorId + ", " + e.getMessage(), e);
+			List<String> monitorIdList = new ArrayList<>();
+			for(String[] strArgs : map.getValue()) {
+				monitorIdList.add(strArgs[0]);
+			}
+			try{
+				SetStatusMonitorRequest info = new SetStatusMonitorRequest();
+				info.setMonitorIds(monitorIdList);
+				info.setValidFlg(true);
+				wrapper.setStatusMonitor(info);
+				if (successList.length() > 0) {
+					successList.append("\n");
 				}
+				successList.append(mgrName + " : " + String.join(", ", monitorIdList));
+			} catch (InvalidRole e) {
+				if (failureList.length() > 0) {
+					failureList.append("\n");
+				}
+				failureList.append(HinemosMessage.replace(e.getMessage()) + " : " + String.join(",", monitorIdList));
+				m_log.warn("run() setStatusMonitor monitorId=" + String.join(",", monitorIdList) + ", " + e.getMessage(), e);
+				hasRole = false;
+			}catch (Exception e) {
+				if (failureList.length() > 0) {
+					failureList.append("\n");
+				}
+				failureList.append(HinemosMessage.replace(e.getMessage()) + " : " + String.join(",", monitorIdList));
+				m_log.warn("run() setStatusMonitor monitorId=" + String.join(",", monitorIdList) + ", " + e.getMessage(), e);
 			}
 		}
 

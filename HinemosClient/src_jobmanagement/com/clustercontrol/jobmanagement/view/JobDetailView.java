@@ -83,9 +83,11 @@ public class JobDetailView extends CommonViewPart {
 		//ポップアップメニュー作成
 		createContextMenu();
 
+		// タブ名の取得
+		orgViewName = this.getPartName();
+
 		//ビューの更新
 		this.update(null, null, null);
-		orgViewName = this.getPartName();
 	}
 
 	/**
@@ -115,11 +117,14 @@ public class JobDetailView extends CommonViewPart {
 	 * @see com.clustercontrol.jobmanagement.composite.DetailComposite#update(String, String)
 	 */
 	public void update(String managerName, String sessionId, String jobunitId) {
+		String viewName = "";
 		if(managerName == null || managerName.equals("")) {
-			return;
+			m_detail.update(null, null, null);
+			viewName = orgViewName;
+		} else {
+			m_detail.update(managerName, sessionId, jobunitId);
+			viewName = orgViewName + "(" + managerName + ")";
 		}
-		m_detail.update(managerName, sessionId, jobunitId);
-		String viewName = orgViewName + "(" + managerName + ")";
 		setPartName(viewName);
 	}
 

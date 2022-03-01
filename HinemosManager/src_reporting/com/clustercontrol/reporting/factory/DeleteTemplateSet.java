@@ -16,7 +16,7 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
-import com.clustercontrol.reporting.fault.ReportingNotFound;
+import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.reporting.model.TemplateSetInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
 

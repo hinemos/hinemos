@@ -16,8 +16,10 @@ import com.clustercontrol.custom.bean.CommandResultDTO;
 import com.clustercontrol.fault.CustomInvalid;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.MonitorNotFound;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 
 /**
@@ -95,6 +97,10 @@ public abstract class RunCustomBase {
 		}
 		notifyInfo.setApplication(applicationName);
 		notifyInfo.setNotifyGroupId(notifyGroupId);
+		notifyInfo.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, pluginID, monitor.getMonitorId()));
+		
+		notifyInfo.setPriorityChangeJudgmentType(monitor.getPriorityChangeJudgmentType());
+		notifyInfo.setPriorityChangeFailureType(monitor.getPriorityChangeFailureType());
 		
 		return notifyInfo;
 	}
