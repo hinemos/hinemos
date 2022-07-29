@@ -1165,6 +1165,11 @@ public class CollectRestEndpoints {
 
 		BinaryQueryInfo infoReq = new BinaryQueryInfo();
 		RestBeanUtil.convertBeanNoInvalid(dtoReq, infoReq);
+		if (dtoReq.getOperator() == QueryCollectBinaryDataRequest.OperatorEnum.AND ) {
+			infoReq.setOperator(StringQueryInfo.Operator.AND);
+		} else {
+			infoReq.setOperator(StringQueryInfo.Operator.OR);
+		}
 		
 		BinaryQueryResultResponse dtoRes = new BinaryQueryResultResponse();
 		StringQueryResult result = new BinaryHubController().queryCollectBinaryData(infoReq);

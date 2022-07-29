@@ -75,7 +75,7 @@ public class ControlNodeComposite extends Composite {
 	/** RPAシナリオジョブ情報 */
 	private JobRpaInfoResponse m_jobRpa = null;
 
-	/** コマンド実行失敗時に終了する用チェックボタン */
+	/** エージェントに接続できない時に終了する用チェックボタン */
 	private Button m_messageRetryEndCondition = null;
 	/** 終了値用テキスト */
 	private Text m_messageRetryEndValue = null;
@@ -309,9 +309,8 @@ public class ControlNodeComposite extends Composite {
 				WidgetTestUtil.setTestId(this, null, check);
 				if (check.getSelection()) {
 					m_commandRetry.setEditable(true);
-					//コマンドジョブ、RPAシナリオジョブの場合のみ、活性にする
-					if (m_jobType == JobInfoWrapper.TypeEnum.JOB ||
-							m_jobType == JobInfoWrapper.TypeEnum.RPAJOB) {
+					//コマンドジョブの場合のみ、活性にする
+					if (m_jobType == JobInfoWrapper.TypeEnum.JOB) {
 						m_commandRetryEndStatus.setEnabled(true);
 					}
 				} else {
@@ -383,6 +382,10 @@ public class ControlNodeComposite extends Composite {
 			this.m_commandRetryCondition.setEnabled(true);
 			this.m_commandRetry.setEditable(true);
 			this.m_commandRetryEndStatus.setEnabled(true);
+		} else if (m_jobType == JobInfoWrapper.TypeEnum.RPAJOB) {
+			this.m_commandRetryCondition.setEnabled(false);
+			this.m_commandRetry.setEditable(false);
+			this.m_commandRetryEndStatus.setEnabled(false);
 		}
 	}
 
@@ -931,29 +934,8 @@ public class ControlNodeComposite extends Composite {
 			}
 		}
 
-		//繰り返し実行回数
-		try {
-			if (m_commandRetry.getText().length() > 0) {
-				m_jobRpa.setCommandRetry(Integer.parseInt(m_commandRetry.getText()));
-				m_jobRpa.setCommandRetryEndStatus(JobRpaInfoResponse.CommandRetryEndStatusEnum.fromValue(
-						getSelectEndStatus(m_commandRetryEndStatus)));
-			} else {
-				result = new ValidateResult();
-				result.setValid(false);
-				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.167"));
-				return result;
-			}
-		} catch(NumberFormatException e) {
-			result = new ValidateResult();
-			result.setValid(false);
-			result.setID(Messages.getString("message.hinemos.1"));
-			result.setMessage(Messages.getString("message.job.167"));
-			return result;
-		}
-
-		//エラー時のリトライ
-		m_jobRpa.setCommandRetryFlg(m_commandRetryCondition.getSelection());
+		//エラー時のコマンドリトライ
+		m_jobRpa.setCommandRetryFlg(false);
 
 		return null;
 	}
@@ -1029,11 +1011,11 @@ public class ControlNodeComposite extends Composite {
 				(m_jobType == JobInfoWrapper.TypeEnum.JOB || m_jobType == JobInfoWrapper.TypeEnum.FILECHECKJOB || m_jobType == JobInfoWrapper.TypeEnum.RPAJOB)
 						&& m_messageRetryEndCondition.getSelection() && enabled);
 
-		m_commandRetryCondition.setEnabled((m_jobType == JobInfoWrapper.TypeEnum.JOB  || m_jobType == JobInfoWrapper.TypeEnum.RPAJOB) 
+		m_commandRetryCondition.setEnabled((m_jobType == JobInfoWrapper.TypeEnum.JOB ) 
 				&& enabled);
-		m_commandRetry.setEditable((m_jobType == JobInfoWrapper.TypeEnum.JOB  || m_jobType == JobInfoWrapper.TypeEnum.RPAJOB)
+		m_commandRetry.setEditable((m_jobType == JobInfoWrapper.TypeEnum.JOB )
 				&& m_commandRetryCondition.getSelection() && enabled);
-		m_commandRetryEndStatus.setEnabled((m_jobType == JobInfoWrapper.TypeEnum.JOB  || m_jobType == JobInfoWrapper.TypeEnum.RPAJOB) 
+		m_commandRetryEndStatus.setEnabled((m_jobType == JobInfoWrapper.TypeEnum.JOB ) 
 				&& m_commandRetryCondition.getSelection() && enabled);
 	}
 

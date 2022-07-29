@@ -49,6 +49,7 @@ import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 
 /**
  * ジョブツリー用のコンポジットクラスです。
@@ -423,12 +424,17 @@ public class JobTreeComposite extends Composite {
 				JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(this.managerName);
 				long start = System.currentTimeMillis();
 				JobTreeItemWrapper res =null;
+				JobTreeItemResponseP1 orgTreeRes = wrapper.getJobTree(ownerRoleId);
 				if( m_treeOnly ){
-					JobTreeItemResponseP1 orgTreeRes = wrapper.getJobTree(ownerRoleId);
 					res = JobTreeItemUtil.getItemFromP1(orgTreeRes);
 				}else{
-					JobTreeItemResponseP2 orgTreeRes = wrapper.getJobTreeJobInfoFull(ownerRoleId);
-					res = JobTreeItemUtil.getItemFromP2ForTreeView(orgTreeRes);
+					//不要な情報を削り落として変換
+					if(orgTreeRes.getData().getDescription() == null) {
+						JobTreeItemResponseP2 dtoP2 = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTreeJobInfoFull(ownerRoleId);
+						res = JobTreeItemUtil.getItemFromP2ForTreeView(dtoP2);
+					} else {
+						res = JobTreeItemUtil.getItemFromP1ForTreeView(orgTreeRes);
+					}
 				}
 				jobTreeList.add(res);
 				long end = System.currentTimeMillis();

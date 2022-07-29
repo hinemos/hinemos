@@ -494,7 +494,7 @@ public class JobMultiplicityCache {
 			}
 			
 			if (!isRpaJobDirect(pk)) {
-				if (runningQueue.remove(pk)) { //// runningQueueから削除
+				if (runningQueue != null && runningQueue.remove(pk)) { //// runningQueueから削除
 					storeRunningCache(runningCache);
 				} else {
 					// 普通は実行中から停止に遷移するが、
@@ -502,7 +502,7 @@ public class JobMultiplicityCache {
 					m_log.info("fromRunning(). from not-running to stop : " + pk);
 				}
 			} else {
-				if (runningRpaQueue.remove(pk)) { //// runningRpaQueueから削除
+				if (runningRpaQueue != null && runningRpaQueue.remove(pk)) { //// runningRpaQueueから削除
 					storeRunningRpaCache(runningRpaCache);
 				} else {
 					m_log.info("fromRunning(). from not-running to stop : " + pk);
@@ -837,18 +837,18 @@ public class JobMultiplicityCache {
 							m_log.debug("session job is retry waiting : " + node.getId());
 							continue;
 						}
+						if (runningQueue == null) {
+							runningQueue = new LinkedList<JobSessionNodeEntityPK>();
+							runningCache.put(facilityId, runningQueue);
+						}
+						if (runningRpaQueue == null) {
+							runningRpaQueue = new LinkedList<JobSessionNodeEntityPK>();
+							runningRpaCache.put(facilityId, runningRpaQueue);
+						}
 						if (!isRpaJobDirect(node.getId())) {
-							if (runningQueue == null) {
-								runningQueue = new LinkedList<JobSessionNodeEntityPK>();
-								runningCache.put(facilityId, runningQueue);
-							}
 							m_log.debug("refresh add runningQueue : " + node.getId());
 							runningQueue.offer(node.getId());
 						} else {
-							if (runningRpaQueue == null) {
-								runningRpaQueue = new LinkedList<JobSessionNodeEntityPK>();
-								runningRpaCache.put(facilityId, runningRpaQueue);
-							}
 							m_log.debug("refresh add runningRpaQueue : " + node.getId());
 							runningRpaQueue.offer(node.getId());
 						}
@@ -883,6 +883,12 @@ public class JobMultiplicityCache {
 							&& job.getJobInfoEntity().getJobType() != JobConstant.TYPE_FILECHECKJOB
 							&& job.getJobInfoEntity().getJobType() != JobConstant.TYPE_RESOURCEJOB
 							&& job.getJobInfoEntity().getJobType() != JobConstant.TYPE_RPAJOB) {
+						continue;
+					}
+					// RPAシナリオジョブ（直接実行）の場合は多重度に依らず複数同時実行しない
+					if(job.getJobInfoEntity().getJobType() == JobConstant.TYPE_RPAJOB
+							&& job.getJobInfoEntity().getRpaJobType() != null
+							&& job.getJobInfoEntity().getRpaJobType() == RpaJobTypeConstant.DIRECT){
 						continue;
 					}
 					execJobList.add(job.getId());
@@ -1044,18 +1050,18 @@ public class JobMultiplicityCache {
 							m_log.debug("session job is retry waiting : " + node.getId());
 							continue;
 						}
+						if (runningQueue == null) {
+							runningQueue = new LinkedList<JobSessionNodeEntityPK>();
+							runningCache.put(facilityId, runningQueue);
+						}
+						if (runningRpaQueue == null) {
+							runningRpaQueue = new LinkedList<JobSessionNodeEntityPK>();
+							runningRpaCache.put(facilityId, runningRpaQueue);
+						}
 						if (!isRpaJobDirect(node.getId())) {
-							if (runningQueue == null) {
-								runningQueue = new LinkedList<JobSessionNodeEntityPK>();
-								runningCache.put(facilityId, runningQueue);
-							}
 							m_log.debug("refresh add runningQueue : " + node.getId());
 							runningQueue.offer(node.getId());
 						} else {
-							if (runningRpaQueue == null) {
-								runningRpaQueue = new LinkedList<JobSessionNodeEntityPK>();
-								runningRpaCache.put(facilityId, runningRpaQueue);
-							}
 							m_log.debug("refresh add runningRpaQueue : " + node.getId());
 							runningRpaQueue.offer(node.getId());
 						}

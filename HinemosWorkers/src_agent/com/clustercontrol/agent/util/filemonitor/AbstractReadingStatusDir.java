@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
@@ -57,6 +58,10 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 
 	// 読み込み状態管理インスタンス
 	private AbstractReadingStatusRoot<T> parent;
+
+	/** ファイル最大数超過による無視リスト (RPAシナリオジョブ向け) */
+	private Map<String,String> ignoreListForFileCounter = new ConcurrentHashMap<String,String>();
+
 	
 	protected T wrapper;
 
@@ -149,6 +154,9 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 	}
 
 	private void update(boolean init) {
+		
+		ignoreListForFileCounter.clear();
+		
 		// 監視設定に関わる情報を格納するルートディレクトリの存在確認。
 		File statusDir = new File(basePath, getDirName());
 		if (!statusDir.exists()) {
@@ -270,6 +278,7 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 			if (!parent.isMonitorFile(wrapper, file)) {
 				log.warn("update() : too many files for logfile. not-monitoring file=" + file.getName());
 				isReachedMaxFiles = true;
+				this.ignoreListForFileCounter.put(file.getName(),file.getPath());
 				continue;
 			}
 
@@ -381,6 +390,15 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 	 */
 	public T getMonitorInfo() {
 		return wrapper;
+	}
+
+	/**
+	 * ファイル最大数超過による無視ファイルリストを取得する。
+	 * 
+	 * @return
+	 */
+	public Map<String,String> getIgnoreListForFileCounter() {
+		return this.ignoreListForFileCounter;
 	}
 
 	/**

@@ -276,7 +276,7 @@ public class JobRestClientWrapper {
 				if(m_log.isTraceEnabled()){
 					m_log.trace("registerJobunit(): request="+ registerJobunitRequest.toString());
 				}
-				JobTreeItemResponseP2 result = apiClient.jobmanagementRegisterJobunit(registerJobunitRequest);
+				JobTreeItemResponseP2 result = apiClient.jobmanagementRegisterJobunit(true, registerJobunitRequest);
 				if(m_log.isTraceEnabled()){
 					m_log.trace("registerJobunit(): response="+ result.toString());
 				}
@@ -298,7 +298,7 @@ public class JobRestClientWrapper {
 				if(m_log.isTraceEnabled()){
 					m_log.trace("replaceJobunit(): request="+ replaceJobunitRequest.toString());
 				}
-				JobTreeItemResponseP2  result =  apiClient.jobmanagementReplaceJobunit(jobunitId, replaceJobunitRequest);
+				JobTreeItemResponseP2  result =  apiClient.jobmanagementReplaceJobunit(jobunitId, true, replaceJobunitRequest);
 				if(m_log.isTraceEnabled()){
 					m_log.trace("replaceJobunit(): response="+ result.toString());
 				}

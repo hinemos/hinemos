@@ -15,20 +15,44 @@ import java.util.Iterator;
 
 import javax.xml.bind.annotation.XmlType;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.annotation.RestItemName;
+import com.clustercontrol.rest.annotation.validation.RestValidateObject;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ConditionTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.util.MessageConstant;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * ジョブの待ち条件グループに関する情報を保持するクラス<BR>
  * 
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobObjectGroupInfo implements Serializable, Comparable<JobObjectGroupInfo>, Cloneable {
+public class JobObjectGroupInfo implements Serializable, Comparable<JobObjectGroupInfo>, Cloneable, RequestDto {
 
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = -4050301670424654620L;
 
 	/** 待ち条件群の順番 */
 	private Integer orderNo;
 
 	/** AND/OR */
+	@RestItemName(value = MessageConstant.CONDITION_TYPE)
+	@RestValidateObject(notNull = true)
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ConditionTypeEnum.class)
 	private Integer conditionType = ConditionTypeConstant.TYPE_AND;
 
 	/** 複数待ち条件を持つか */
@@ -143,5 +167,14 @@ public class JobObjectGroupInfo implements Serializable, Comparable<JobObjectGro
 			}
 		}
 		return jobObjectGroupInfo;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+		if (jobObjectList != null) {
+			for (JobObjectInfo req : jobObjectList) {
+				req.correlationCheck();
+			}
+		}
 	}
 }

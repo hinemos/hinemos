@@ -16,9 +16,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.TypedQuery;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -27,8 +24,8 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.Ipv6Util;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.commons.util.QueryExecutor;
 import com.clustercontrol.commons.util.QueryDivergence;
+import com.clustercontrol.commons.util.QueryExecutor;
 import com.clustercontrol.fault.AutoRegisterNodeSettingNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosDbTimeout;
@@ -52,15 +49,10 @@ import com.clustercontrol.repository.model.FacilityRelationEntity;
 import com.clustercontrol.repository.model.FacilityRelationEntityPK;
 import com.clustercontrol.repository.model.NodeConfigCustomInfo;
 import com.clustercontrol.repository.model.NodeConfigCustomInfoPK;
-import com.clustercontrol.repository.model.NodeHistory;
-import com.clustercontrol.repository.model.NodeHistoryDetail;
-import com.clustercontrol.repository.model.NodeHistoryPK;
 import com.clustercontrol.repository.model.NodeConfigSettingInfo;
 import com.clustercontrol.repository.model.NodeConfigSettingItemInfo;
 import com.clustercontrol.repository.model.NodeConfigSettingItemInfoPK;
 import com.clustercontrol.repository.model.NodeCpuHistoryDetail;
-import com.clustercontrol.repository.model.NodeGeneralDeviceInfo;
-import com.clustercontrol.repository.model.NodeHostnameHistoryDetail;
 import com.clustercontrol.repository.model.NodeCpuInfo;
 import com.clustercontrol.repository.model.NodeCustomHistoryDetail;
 import com.clustercontrol.repository.model.NodeCustomInfo;
@@ -71,6 +63,11 @@ import com.clustercontrol.repository.model.NodeDiskHistoryDetail;
 import com.clustercontrol.repository.model.NodeDiskInfo;
 import com.clustercontrol.repository.model.NodeFilesystemHistoryDetail;
 import com.clustercontrol.repository.model.NodeFilesystemInfo;
+import com.clustercontrol.repository.model.NodeGeneralDeviceInfo;
+import com.clustercontrol.repository.model.NodeHistory;
+import com.clustercontrol.repository.model.NodeHistoryDetail;
+import com.clustercontrol.repository.model.NodeHistoryPK;
+import com.clustercontrol.repository.model.NodeHostnameHistoryDetail;
 import com.clustercontrol.repository.model.NodeHostnameInfo;
 import com.clustercontrol.repository.model.NodeHostnameInfoPK;
 import com.clustercontrol.repository.model.NodeInfo;
@@ -79,9 +76,6 @@ import com.clustercontrol.repository.model.NodeLicenseInfo;
 import com.clustercontrol.repository.model.NodeLicenseInfoPK;
 import com.clustercontrol.repository.model.NodeMemoryHistoryDetail;
 import com.clustercontrol.repository.model.NodeMemoryInfo;
-import com.clustercontrol.repository.model.NodeProductHistoryDetail;
-import com.clustercontrol.repository.model.NodeProductInfo;
-import com.clustercontrol.repository.model.NodeProductInfoPK;
 import com.clustercontrol.repository.model.NodeNetstatHistoryDetail;
 import com.clustercontrol.repository.model.NodeNetstatInfo;
 import com.clustercontrol.repository.model.NodeNetstatInfoPK;
@@ -94,10 +88,16 @@ import com.clustercontrol.repository.model.NodePackageHistoryDetail;
 import com.clustercontrol.repository.model.NodePackageInfo;
 import com.clustercontrol.repository.model.NodePackageInfoPK;
 import com.clustercontrol.repository.model.NodeProcessInfo;
+import com.clustercontrol.repository.model.NodeProductHistoryDetail;
+import com.clustercontrol.repository.model.NodeProductInfo;
+import com.clustercontrol.repository.model.NodeProductInfoPK;
 import com.clustercontrol.repository.model.NodeVariableHistoryDetail;
 import com.clustercontrol.repository.model.NodeVariableInfo;
 import com.clustercontrol.repository.model.NodeVariableInfoPK;
 import com.clustercontrol.repository.model.ScopeInfo;
+
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */
@@ -2570,7 +2570,7 @@ public class QueryUtil {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			List<FacilityInfo> resultList
-			= em.createNamedQuery("FacilityEntity.findAll", FacilityInfo.class)
+			= em.createNamedQuery_OR("FacilityEntity.findAll", FacilityInfo.class, ObjectPrivilegeMode.READ, null)
 			.getResultList();
 			return resultList;
 		}

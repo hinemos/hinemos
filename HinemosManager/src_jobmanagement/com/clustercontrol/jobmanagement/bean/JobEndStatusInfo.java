@@ -15,21 +15,41 @@ import javax.xml.bind.annotation.XmlType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.EndStatusEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * ジョブの終了状態に関する情報を保持するクラス<BR>
  * 
  * @version 2.0.0
  * @since 1.0.0
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusInfo> {
+public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusInfo>, RequestDto {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 5256607875379422805L;
 
 	/** ログ出力のインスタンス<BR> */
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( JobEndStatusInfo.class );
 
 	/** 終了状態の種別 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=EndStatusEnum.class)
 	private Integer type = 0;
 
 	/** 終了状態の終了値 */
@@ -248,5 +268,9 @@ public class JobEndStatusInfo implements Serializable, Comparable<JobEndStatusIn
 			ret = "OK";
 		}
 		System.out.println("    is ...  " + ret);
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

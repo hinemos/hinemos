@@ -1487,15 +1487,18 @@ public class OutputBasicInfo implements java.io.Serializable, Cloneable {
 	}
 
 	@Override
-	public String toString(){
-		String str = "OutputBasicInfo : "
-				+ "FacilityId = " + facilityId 
-				+ ", PluginId = " + pluginId 
-				+ ", MonitorId = " + monitorId
-				+ ", NotifyGroupId = " + notifyGroupId;
+	public String toString() {
+		String str = "OutputBasicInfo ["
+				+ "facilityId = " + facilityId 
+				+ ", pluginId = " + pluginId 
+				+ ", monitorId = " + monitorId
+				+ ", notifyGroupId = " + notifyGroupId
+				+ ", m_jobunitId=" + m_jobunitId
+				+ ", m_jobId=" + m_jobId
+				+ "]";
 		return str;
 	}
-	
+
 	@Override
 	public OutputBasicInfo clone(){
 		OutputBasicInfo clonedInfo = null;

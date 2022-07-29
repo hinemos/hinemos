@@ -14,13 +14,17 @@ import com.clustercontrol.jobmanagement.bean.RpaJobInfo;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertAssertion;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
 import com.clustercontrol.rest.dto.RequestDto;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.CommandRetryEndStatusEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.PrioritySelectEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ProcessingMethodEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaJobReturnCodeConditionEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaJobTypeEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaStopTypeEnum;
 
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @RestBeanConvertAssertion(to = RpaJobInfo.class)
 public class JobRpaInfoRequest implements RequestDto {
 	
@@ -114,16 +118,6 @@ public class JobRpaInfoRequest implements RequestDto {
 
 	/** コマンド実行失敗時終了値 */
 	private Integer messageRetryEndValue;
-
-	/** 繰り返し実行フラグ */
-	private Boolean commandRetryFlg;
-
-	/** 繰り返し実行回数 */
-	private Integer commandRetry;
-
-	/** 繰り返し完了状態 */
-	@RestBeanConvertEnum
-	private CommandRetryEndStatusEnum commandRetryEndStatus;
 
 	/** 実行オプション */
 	private List<JobRpaOptionInfoRequest> rpaJobOptionInfos;
@@ -649,51 +643,6 @@ public class JobRpaInfoRequest implements RequestDto {
 	 */
 	public void setMessageRetryEndValue(Integer messageRetryEndValue) {
 		this.messageRetryEndValue = messageRetryEndValue;
-	}
-
-	/**
-	 * @return the commandRetryFlg
-	 */
-	public Boolean getCommandRetryFlg() {
-		return commandRetryFlg;
-	}
-
-	/**
-	 * @param commandRetryFlg
-	 *            the commandRetryFlg to set
-	 */
-	public void setCommandRetryFlg(Boolean commandRetryFlg) {
-		this.commandRetryFlg = commandRetryFlg;
-	}
-
-	/**
-	 * @return the commandRetry
-	 */
-	public Integer getCommandRetry() {
-		return commandRetry;
-	}
-
-	/**
-	 * @param commandRetry
-	 *            the commandRetry to set
-	 */
-	public void setCommandRetry(Integer commandRetry) {
-		this.commandRetry = commandRetry;
-	}
-
-	/**
-	 * @return the commandRetryEndStatus
-	 */
-	public CommandRetryEndStatusEnum getCommandRetryEndStatus() {
-		return commandRetryEndStatus;
-	}
-
-	/**
-	 * @param commandRetryEndStatus
-	 *            the commandRetryEndStatus to set
-	 */
-	public void setCommandRetryEndStatus(CommandRetryEndStatusEnum commandRetryEndStatus) {
-		this.commandRetryEndStatus = commandRetryEndStatus;
 	}
 
 	/**

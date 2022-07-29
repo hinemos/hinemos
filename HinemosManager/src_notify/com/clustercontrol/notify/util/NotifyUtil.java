@@ -622,8 +622,8 @@ public class NotifyUtil {
 					return RoleIdConstant.INTERNAL;
 				}
 			}
-			// 通知元がシナリオ実績作成設定の場合
-			else if(pluginId.matches(HinemosModuleConstant.RPA_SCENARIO_CREATE)) {
+			// 通知元がシナリオ実績作成設定、およびシナリオ実績更新の場合
+			else if(pluginId.matches(HinemosModuleConstant.RPA_SCENARIO_CREATE) || pluginId.matches(HinemosModuleConstant.RPA_SCENARIO_CORRECT)) {
 				// オブジェクト権限チェックのため、cc_rpa_scenario_operation_result_create_settingのowner_role_idを設定する
 				RpaScenarioOperationResultCreateSetting rpaScenarioOperationResultCreateSettingEntity
 				= em.find(RpaScenarioOperationResultCreateSetting.class, monitorId, ObjectPrivilegeMode.NONE);

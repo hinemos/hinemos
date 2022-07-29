@@ -557,4 +557,21 @@ public class QueryUtil {
 			return list;
 		}
 	}
+
+	/**
+	 * 指定したカレンダIDに一致するSDML監視種別の一覧を取得
+	 * 
+	 * @return
+	 */
+	public static List<SdmlControlSettingInfo> getSdmlControlSettingInfoFindByCalendarId_NONE(
+			String autoMonitorCalendarId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<SdmlControlSettingInfo> list = em
+					.createNamedQuery("SdmlControlSettingInfo.findByAutoMonitorCalendarId",
+							SdmlControlSettingInfo.class, ObjectPrivilegeMode.NONE)
+					.setParameter("autoMonitorCalendarId", autoMonitorCalendarId).getResultList();
+			return list;
+		}
+	}
 }

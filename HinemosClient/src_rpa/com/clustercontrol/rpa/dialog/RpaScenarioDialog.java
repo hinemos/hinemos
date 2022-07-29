@@ -160,7 +160,7 @@ public class RpaScenarioDialog extends CommonDialog{
 		 */
 		//ラベル
 		Label labelManager = new Label(composite, SWT.NONE);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
 		labelManager.setLayoutData(gridData);
 		labelManager.setText(Messages.getString("facility.manager") + " : ");
@@ -172,7 +172,7 @@ public class RpaScenarioDialog extends CommonDialog{
 		} else {
 			this.m_managerComposite = new ManagerListComposite(composite, SWT.NONE, true);
 		}
-		gridData = new GridData();
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
 		gridData.widthHint = 207;
 		this.m_managerComposite.setLayoutData(gridData);
 
@@ -183,8 +183,8 @@ public class RpaScenarioDialog extends CommonDialog{
 		this.m_managerComposite.addComboSelectionListener(new SelectionAdapter(){
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					// シナリオ実績作成設定一覧を更新
-					scenarioOperationResultCreateSettingListComposite.setManagerName(m_managerComposite.getText());
+					refresh();
+					update();
 				}
 		});
 		
@@ -193,8 +193,8 @@ public class RpaScenarioDialog extends CommonDialog{
 		 */
 		//ラベル
 		Label labelScenarioOperationResultCreateSettingId = new Label(composite, SWT.NONE);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
-		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		gridData.heightHint = SizeConstant.SIZE_BUTTON_HEIGHT;
 		labelScenarioOperationResultCreateSettingId.setLayoutData(gridData);
 		labelScenarioOperationResultCreateSettingId.setText(Messages.getString("rpa.scenario.operation.result.create.setting.id") + " : ");
 		
@@ -205,7 +205,7 @@ public class RpaScenarioDialog extends CommonDialog{
 		} else {
 			this.scenarioOperationResultCreateSettingListComposite = new RpaScenarioOperationResultCreateSettingIdListComposite(composite, SWT.DROP_DOWN, this.managerName, false);
 		}
-		gridData = new GridData();
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
 		gridData.widthHint = 207;
 		scenarioOperationResultCreateSettingListComposite.setLayoutData(gridData);
 		scenarioOperationResultCreateSettingListComposite.addSelectionListenerToComboBox(new SelectionAdapter() {
@@ -213,6 +213,7 @@ public class RpaScenarioDialog extends CommonDialog{
 			public void widgetSelected(SelectionEvent e) {
 				// オーナーロールIDを更新
 				refreshRoleId();
+				update();
 			}
 		});
 
@@ -221,14 +222,16 @@ public class RpaScenarioDialog extends CommonDialog{
 		 */
 		//ラベル
 		Label labelScenarioId = new Label(composite, SWT.NONE);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
 		labelScenarioId.setLayoutData(gridData);
 		labelScenarioId.setText(Messages.getString("rpa.scenario.id") + " : ");
 		
 		//テキスト
 		scenarioIdText = new Text(composite, SWT.BORDER);
-		gridData = new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData.heightHint = SizeConstant.SIZE_TEXT_HEIGHT;
+		gridData.widthHint = 207;
 		scenarioIdText.setLayoutData(gridData);
 		scenarioIdText.setEnabled(false);
 
@@ -237,7 +240,7 @@ public class RpaScenarioDialog extends CommonDialog{
 		 */
 		//ラベル
 		Label labelRpaToolName = new Label(composite, SWT.NONE);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
 		labelRpaToolName.setLayoutData(gridData);
 		labelRpaToolName.setText(Messages.getString("rpa.tool") + " : ");
@@ -249,7 +252,7 @@ public class RpaScenarioDialog extends CommonDialog{
 		} else {
 			this.rpaToolComposite = new RpaToolListComposite(composite, SWT.DROP_DOWN, this.managerName, false);
 		}
-		gridData = new GridData();
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
 		gridData.widthHint = 207;
 		this.rpaToolComposite.setLayoutData(gridData);
 
@@ -258,14 +261,16 @@ public class RpaScenarioDialog extends CommonDialog{
 		 */
 		//ラベル
 		Label labelScenarioIdentifyString = new Label(composite, SWT.NONE);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
 		labelScenarioIdentifyString.setLayoutData(gridData);
 		labelScenarioIdentifyString.setText(Messages.getString("rpa.scenario.identify.string") + " : ");
 		
 		//テキスト
 		scenarioIdentifyStringText = new Text(composite, SWT.BORDER);
-		gridData = new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData.heightHint = SizeConstant.SIZE_TEXT_HEIGHT;
+		gridData.widthHint = 207;
 		scenarioIdentifyStringText.setLayoutData(gridData);
 		scenarioIdentifyStringText.addModifyListener(new ModifyListener(){
 			@Override
@@ -282,14 +287,16 @@ public class RpaScenarioDialog extends CommonDialog{
 		 */
 		//ラベル
 		Label labelScenarioName = new Label(composite, SWT.NONE);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
 		labelScenarioName.setLayoutData(gridData);
 		labelScenarioName.setText(Messages.getString("rpa.scenario.name") + " : ");
 		
 		//テキスト
 		scenarioNameText = new Text(composite, SWT.BORDER);
-		gridData = new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData.heightHint = SizeConstant.SIZE_TEXT_HEIGHT;
+		gridData.widthHint = 207;
 		scenarioNameText.setLayoutData(gridData);
 		scenarioNameText.addModifyListener(new ModifyListener(){
 			@Override
@@ -303,14 +310,16 @@ public class RpaScenarioDialog extends CommonDialog{
 		 */
 		//ラベル
 		Label labelDescription = new Label(composite, SWT.NONE);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
 		labelDescription.setLayoutData(gridData);
 		labelDescription.setText(Messages.getString("description") + " : ");
 		
 		//テキスト
 		descriptionText = new Text(composite, SWT.BORDER);
-		gridData = new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData.heightHint = SizeConstant.SIZE_TEXT_HEIGHT;
+		gridData.widthHint = 207;
 		descriptionText.setLayoutData(gridData);
 		descriptionText.addModifyListener(new ModifyListener(){
 			@Override
@@ -324,14 +333,16 @@ public class RpaScenarioDialog extends CommonDialog{
 		 */
 		//ラベル
 		Label labelRoleId = new Label(composite, SWT.NONE);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
 		labelRoleId.setLayoutData(gridData);
 		labelRoleId.setText(Messages.getString("owner.role.id") + " : ");
 		
 		// テキスト
 		roleIdText = new Text(composite, SWT.BORDER);
-		gridData = new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData.heightHint = SizeConstant.SIZE_TEXT_HEIGHT;
+		gridData.widthHint = 207;
 		roleIdText.setLayoutData(gridData);
 		// オーナーロールIDは手動設定不可
 		roleIdText.setEnabled(false);
@@ -485,7 +496,7 @@ public class RpaScenarioDialog extends CommonDialog{
 			try {
 				Long manualTime = Long.valueOf(manualTimeText);
 				//負の値またはLong型の最大/1000以上の値はエラーとする
-				if (manualTime < 0 || 9223372036854775L < manualTime) {
+				if (manualTime < 1 || 9223372036854775L < manualTime) {
 					throw new NumberFormatException();
 				}
 				//秒をミリ秒に変換して設定
@@ -632,12 +643,37 @@ public class RpaScenarioDialog extends CommonDialog{
 	}
 	
 	/**
+	 * マネージャから最新の情報を取得、反映する。
+	 */
+	public void refresh() {
+		this.managerName = m_managerComposite.getText();
+		// マネージャ名に合わせて各コンポジット更新
+
+		// シナリオ実績作成設定一覧を更新
+		this.scenarioOperationResultCreateSettingListComposite.setManagerName(managerName);
+		this.scenarioOperationResultCreateSettingListComposite.refresh();
+		// オーナーロールIDを更新(シナリオ実績作成設定から取得)
+		refreshRoleId();
+			
+		// RPAツール一覧更新
+		this.rpaToolComposite.setManagerName(managerName);
+		this.rpaToolComposite.refresh();
+
+		// シナリオ情報コンポジット更新
+		this.scenarioInformationComposite.setManagerName(managerName);
+		this.scenarioInformationComposite.refresh();
+	}
+	
+	/**
 	 * オーナーロールIDを更新
 	 */
 	private void refreshRoleId() {
 		String ownerRoleId = scenarioOperationResultCreateSettingListComposite.getOwnerRoleId();
 		// シナリオ実績作成設定のオーナーロールを表示
 		roleIdText.setText(ownerRoleId);
+		// シナリオ情報コンポジットに反映
+		this.scenarioInformationComposite.setOwnerRoleId(roleIdText.getText());
+		this.scenarioInformationComposite.refresh();
 	}
 
 	@Override

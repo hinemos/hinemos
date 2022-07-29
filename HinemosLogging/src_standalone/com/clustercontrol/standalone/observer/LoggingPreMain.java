@@ -17,46 +17,35 @@ import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 
-import com.clustercontrol.log.internal.InternalLogManager;
 import com.clustercontrol.logging.LoggingConfigurator;
 import com.clustercontrol.logging.constant.LoggingConstant;
-import com.clustercontrol.logging.property.LoggingProperty;
 
+/**
+ * Premain Class.
+ */
 public class LoggingPreMain {
+
 	public static void premain(String agentArgs) {
-		Path path = null;
-		String filePath = null;
-
-		// 最初にHinemosロギングの動作ログの設定をする
 		try {
-			path = getJarDir(LoggingPreMain.class);
-			// 設定ファイルのパスを設定 (agentArgsに指定して任意に設定可能)
 
+			// 設定ファイルの読み込み
+			String filePath = null;
 			if (agentArgs == null || agentArgs.equals("")) {
-				filePath = path + "/" + LoggingConstant.CONFIG_FILE_NAME;
+				// 指定がない場合は同一ディレクトリ
+				Path path = getJarDir(LoggingPreMain.class);
+				filePath = path.resolve(LoggingConstant.CONFIG_FILE_NAME).toString();
 			} else {
 				filePath = agentArgs;
 			}
-			try (FileInputStream in = new FileInputStream(filePath)) {
-				LoggingProperty.getInstance().loadProperty(in);
-			} catch (Exception e1) {
-				throw e1;
-			}
-		} catch (Exception e) {
-			// 設定ファイルの読み込みでエラーが出たら吐き出し先がないので終了
-			throw new RuntimeException(e);
-		}
+			FileInputStream in = new FileInputStream(filePath);
 
-		// Hinemos内部ログの初期設定
-		InternalLogManager.init();
-		InternalLogManager.Logger internalLog = InternalLogManager.getLogger(LoggingPreMain.class);
-		internalLog.info("premain : internalLog start");
-		internalLog.info("premain : " + LoggingConstant.CONFIG_FILE_NAME + " path=" + filePath);
-		try {
-			LoggingConfigurator.init(false);
-		} catch (Exception e) {
-			internalLog.error("premain : " + e.getMessage(), e);
-			LoggingConfigurator.stop();
+			// HinemosLoggingの起動
+			LoggingConfigurator.start(in);
+
+		} catch (Throwable t) {
+			// 起動時に異常が起きた場合は標準エラー出力に書き込み、終了する
+			t.printStackTrace();
+			return;
 		}
 	}
 

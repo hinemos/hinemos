@@ -15,26 +15,48 @@ import javax.xml.bind.annotation.XmlType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.annotation.validation.RestValidateString;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.EndStatusSelectEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.OperationJobOutputEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.rest.endpoint.monitorsetting.dto.enumtype.PriorityEnum;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 
 /**
  * 標準出力のファイル出力に関する情報を保持するクラス
  * 
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobOutputInfo implements Serializable {
+public class JobOutputInfo implements Serializable, RequestDto {
 
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 364327644303818965L;
 
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( JobOutputInfo.class );
 
 	/** 出力先と同じ出力先を使用する */
 	private Boolean sameNormalFlg;
 	
 	/** 出力先 - ディレクトリ */
+	@RestValidateString(minLen=1, maxLen=1024)
 	private String directory;
 	
 	/** 出力先 - ファイル名 */
+	@RestValidateString(minLen=1, maxLen=1024)
 	private String fileName;
 	
 	/** 追記フラグ */
@@ -44,9 +66,15 @@ public class JobOutputInfo implements Serializable {
 	private Boolean failureOperationFlg;
 	
 	/** ファイル出力失敗時の操作 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=OperationJobOutputEnum.class)
 	private Integer failureOperationType;
 	
 	/** ファイル出力失敗時 - 終了状態 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=EndStatusSelectEnum.class)
 	private Integer failureOperationEndStatus;
 	
 	/** ファイル出力失敗時 - 終了値 */
@@ -56,6 +84,9 @@ public class JobOutputInfo implements Serializable {
 	private Boolean failureNotifyFlg;
 
 	/** ファイル出力失敗時 - 通知の重要度 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PriorityEnum.class)
 	private Integer failureNotifyPriority;
 
 	/** 有効／無効 */
@@ -292,5 +323,9 @@ public class JobOutputInfo implements Serializable {
 			}
 		}
 		return ret;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

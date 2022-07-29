@@ -18,26 +18,53 @@ import javax.xml.bind.annotation.XmlType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.CommandRetryEndStatusEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ProcessingMethodEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.StopTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.LanguageTranslateSerializer;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * ジョブのコマンドに関する情報を保持するクラス
  *
  * @version 2.0.0
  * @since 1.0.0
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobCommandInfo implements Serializable {
+@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE) //JSONから変換する際、getter名、setter名を無視し、フィールド名のみを参照して変換する。
+public class JobCommandInfo implements Serializable, RequestDto {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 333607610499761260L;
 
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( JobCommandInfo.class );
 
 	/** ファシリティID */
 	private String facilityID;
 
 	/** スコープ */
+	@JsonSerialize(using=LanguageTranslateSerializer.class)
 	private String scope;
 
 	/** スコープ処理 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ProcessingMethodEnum.class)
 	private Integer processingMethod = 0;
 
 	/** マネージャから配布 */
@@ -56,6 +83,9 @@ public class JobCommandInfo implements Serializable {
 	private String startCommand;
 
 	/** コマンド停止方式 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=StopTypeEnum.class)
 	private Integer stopType;
 
 	/** 停止コマンド */
@@ -83,6 +113,9 @@ public class JobCommandInfo implements Serializable {
 	private Integer commandRetry;
 	
 	/** 繰り返し完了状態 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=CommandRetryEndStatusEnum.class)
 	private Integer commandRetryEndStatus;
 
 	/** 標準出力のファイル出力情報 - 標準出力 */
@@ -496,6 +529,7 @@ public class JobCommandInfo implements Serializable {
 		JobCommandInfo o2 = (JobCommandInfo)o;
 
 		boolean ret = false;
+		// スコープ(階層)は比較しない。
 		ret = 	equalsSub(o1.getMessageRetryEndFlg(), o2.getMessageRetryEndFlg()) &&
 				equalsSub(o1.getMessageRetryEndValue(), o2.getMessageRetryEndValue()) &&
 				equalsSub(o1.getFacilityID(), o2.getFacilityID()) &&
@@ -511,7 +545,6 @@ public class JobCommandInfo implements Serializable {
 				equalsSub(o1.getUser(), o2.getUser()) &&
 				equalsArray(o1.getJobCommandParamList(), o2.getJobCommandParamList()) &&
 				equalsSub(o1.getUser(), o2.getUser()) &&
-				equalsSub(o1.getScope(), o2.getScope()) &&
 				equalsSub(o1.getManagerDistribution(), o2.getManagerDistribution()) &&
 				equalsSub(o1.getScriptName(), o2.getScriptName()) &&
 				equalsSub(o1.getScriptEncoding(), o2.getScriptEncoding()) &&
@@ -716,5 +749,41 @@ public class JobCommandInfo implements Serializable {
 
 	public void setJobCommandParamList(ArrayList<JobCommandParam> jobCommandParamList) {
 		this.jobCommandParamList = jobCommandParamList;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+		if (normalJobOutputInfo != null) {
+			normalJobOutputInfo.correlationCheck();
+		}
+		if (errorJobOutputInfo != null) {
+			errorJobOutputInfo.correlationCheck();
+		}
+		if (jobCommandParamList != null) {
+			for (JobCommandParam req : jobCommandParamList) {
+				req.correlationCheck();
+			}
+		}
+		if (envVariable != null) {
+			for (JobEnvVariableInfo req : envVariable) {
+				req.correlationCheck();
+			}
+		}
+		//標準エラー出力設定の出力先が同じとする設定の場合、標準出力の設定がなかったら不正な設定とする
+		if (errorJobOutputInfo != null && errorJobOutputInfo.getSameNormalFlg()) {
+			if (normalJobOutputInfo == null) {
+				throw new InvalidSetting("please set normalJobOutputInfo if sameNomalFlg of errorJobOutputInfo is true.");
+			}
+			//標準出力のディレクトリチェック
+			if (normalJobOutputInfo.getDirectory() == null ||
+					normalJobOutputInfo.getDirectory().isEmpty()) {
+				throw new InvalidSetting("please set directory of normalJobOutputInfo if sameNomalFlg of errorJobOutputInfo is true.");
+			}
+			//標準出力のファイル名チェック
+			if (normalJobOutputInfo.getFileName() == null ||
+					normalJobOutputInfo.getFileName().isEmpty()) {
+				throw new InvalidSetting("please set fileName of normalJobOutputInfo if sameNomalFlg of errorJobOutputInfo is true.");
+			}
+		}
 	}
 }

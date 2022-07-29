@@ -45,7 +45,7 @@ import com.clustercontrol.jobmanagement.bean.EndStatusCheckConstant;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.JobInfo;
 import com.clustercontrol.jobmanagement.bean.JobParamTypeConstant;
-import com.clustercontrol.jobmanagement.bean.JobRuntimeParam;
+import com.clustercontrol.jobmanagement.bean.JobRuntimeParamRun;
 import com.clustercontrol.jobmanagement.bean.JobSessionRequestMessage;
 import com.clustercontrol.jobmanagement.bean.JobTriggerInfo;
 import com.clustercontrol.jobmanagement.bean.JobTriggerTypeConstant;
@@ -1102,6 +1102,9 @@ public class CreateJobSession {
 									&& triggerInfo.getJobWaitTime()) {
 									continue;
 								}
+								if (jobWaitMstEntity.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_TIME) {
+									jobInfoEntity.addWaitRuleTime(jobWaitMstEntity.getId().getTargetLong());
+								}
 
 								// 待ち条件－セッション開始時の時間（分）を、ジョブ手動起動時のダイアログで「無視する」を有効にした場合
 								if (jobWaitMstEntity.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_START_MINUTE
@@ -1247,20 +1250,20 @@ public class CreateJobSession {
 					}
 					// ランタイムジョブ変数を設定
 					if (triggerInfo.getJobRuntimeParamList() != null) {
-						for (JobRuntimeParam jobRuntimeParam : triggerInfo.getJobRuntimeParamList()) {
+						for (JobRuntimeParamRun JobRuntimeParamRun : triggerInfo.getJobRuntimeParamList()) {
 							JobParamInfoEntityPK jobParamInfoEntityPK
 								= new JobParamInfoEntityPK(jobInfoEntity.getId().getSessionId(),
 										jobInfoEntity.getId().getJobunitId(),
 										jobInfoEntity.getId().getJobId(),
-										jobRuntimeParam.getParamId());
+										JobRuntimeParamRun.getParamId());
 							JobParamInfoEntity jobParamInfoEntity
 							= em.find(JobParamInfoEntity.class, jobParamInfoEntityPK, ObjectPrivilegeMode.READ);
 							if (jobParamInfoEntity == null) {
-								jobParamInfoEntity = new JobParamInfoEntity(jobInfoEntity, jobRuntimeParam.getParamId());
+								jobParamInfoEntity = new JobParamInfoEntity(jobInfoEntity, JobRuntimeParamRun.getParamId());
 								em.persist(jobParamInfoEntity);
 								jobParamInfoEntity.relateToJobInfoEntity(jobInfoEntity);
 							}
-							jobParamInfoEntity.setValue(jobRuntimeParam.getValue());
+							jobParamInfoEntity.setValue(JobRuntimeParamRun.getValue());
 							jobParamInfoEntity.setParamType(JobParamTypeConstant.TYPE_RUNTIME);
 						}
 					}
@@ -1702,6 +1705,13 @@ public class CreateJobSession {
 					em.persist(jobSessionNodeEntity);
 					jobSessionNodeEntity.relateToJobSessionJobEntity(jobSessionJobEntity);
 				}
+				
+				// RPAシナリオジョブ(間接実行)の場合、ノード詳細はスコープのみとし、スコープ配下のノードに対しては作成しない
+				if(jobInfoEntity.getJobType() == JobConstant.TYPE_RPAJOB && 
+						jobInfoEntity.getRpaJobType() == RpaJobTypeConstant.INDIRECT) {
+					nodeIdList.clear();
+				}
+				
 				if(nodeIdList != null){
 					for(String nodeId : nodeIdList){
 						//ノード名を取得

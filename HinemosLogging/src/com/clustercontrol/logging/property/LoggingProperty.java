@@ -8,23 +8,26 @@
 
 package com.clustercontrol.logging.property;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IllegalFormatException;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Properties;
 
+import com.clustercontrol.logging.constant.LoggingConstant;
 import com.clustercontrol.logging.constant.PropertyConstant;
+import com.clustercontrol.logging.exception.LoggingPropertyException;
 
 public class LoggingProperty extends Properties {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final LoggingProperty INSTANCE = new LoggingProperty();
-
-	private LoggingProperty() {
-	}
-
-	public static LoggingProperty getInstance() {
-		return INSTANCE;
+	public LoggingProperty() {
 	}
 
 	/**
@@ -51,14 +54,18 @@ public class LoggingProperty extends Properties {
 		defProp.setProperty(PropertyConstant.INT_CPU_PRIORITY, "warning");
 		defProp.setProperty(PropertyConstant.INT_CPU_DESCRIPTION, "Auto registered by SDML Controller.");
 		defProp.setProperty(PropertyConstant.INT_CPU_TIMEOUT, "3");
-		defProp.setProperty(PropertyConstant.INFORM_INTERVAL, "60");
+		defProp.setProperty(PropertyConstant.INFO_INTERVAL, "60");
 		defProp.setProperty(PropertyConstant.FAILD_MAX_COUNT, "10");
 		return defProp;
 	}
 
-	public void loadProperty(InputStream in) throws Exception {
+	public void loadProperty(InputStream in) throws IOException, LoggingPropertyException {
 		this.defaults = new Properties(getDefaultProperties());
-		this.load(in);
+		// 文字コードを指定して読み込む
+		try (InputStreamReader isr = new InputStreamReader(in, LoggingConstant.CONFIG_CHARSET);
+				BufferedReader reader = new BufferedReader(isr)) {
+			this.load(reader);
+		}
 
 		// 複数項目の要素数ごとにデフォルト値を設定する
 		if (!getMonStrFilterNumbers().isEmpty()) {
@@ -105,9 +112,20 @@ public class LoggingProperty extends Properties {
 
 		InitValidater.validInternalLogrootLogger(this, PropertyConstant.INTERNAL_LOG_ROOT_LOGGER);
 
-		for (String key : PropertyConstant.INTERNAL_LOG_LOGGERS) {
+		for (String key : getInternalLogLoggers()) {
 			InitValidater.validInternalLogLogger(this, key);
 		}
+	}
+
+	public String getProperty(String key, int num) {
+		String rtn;
+		try {
+			key = String.format(key, num);
+			rtn = getProperty(key);
+		} catch (IllegalFormatException e) {
+			return null;
+		}
+		return rtn;
 	}
 
 	public Integer getIntProperty(String key) {
@@ -118,6 +136,33 @@ public class LoggingProperty extends Properties {
 			return null;
 		}
 		return rtn;
+	}
+
+	public Integer getIntProperty(String key, int num) {
+		Integer rtn;
+		try {
+			key = String.format(key, num);
+			rtn = Integer.parseInt(getProperty(key));
+		} catch (NumberFormatException | IllegalFormatException e) {
+			return null;
+		}
+		return rtn;
+	}
+
+	/**
+	 * 複数設定の場合に別の番号の設定にも同じ設定を反映する
+	 * 
+	 * @param key
+	 * @param srcNum
+	 * @param dstNum
+	 */
+	public void replaceWithSameValue(String key, int srcNum, int dstNum) {
+		String srcVal = getProperty(key, srcNum);
+		if (srcVal == null) {
+			return;
+		}
+		String dstKey = String.format(key, dstNum);
+		setProperty(dstKey, srcVal);
 	}
 
 	/**
@@ -139,16 +184,32 @@ public class LoggingProperty extends Properties {
 	/**
 	 * 設定ファイルで複数設定したGC発生頻度監視の「～gc.count.N」のNを取得する
 	 * 
-	 * @return 複数設定した番号のリスト
+	 * @return 複数設定した番号のリスト（昇順）
 	 */
-	public LinkedHashSet<Integer> getGccNumbers() {
-		LinkedHashSet<Integer> list = new LinkedHashSet<Integer>();
+	public List<Integer> getGccNumbers() {
+		LinkedHashSet<Integer> set = new LinkedHashSet<Integer>();
 		for (Object key : this.keySet()) {
 			String k = key.toString();
 			if (k.matches(".*gc.count.\\d..*")) {
-				list.add(Integer.valueOf(k.replaceAll("[^0-9]", "")));
+				set.add(Integer.valueOf(k.replaceAll("[^0-9]", "")));
 			}
 		}
+		List<Integer> list = new ArrayList<>(set);
+		Collections.sort(list);
 		return list;
+	}
+
+	public List<String> getInternalLogLoggers() {
+		ArrayList<String> loggers = new ArrayList<String>();
+		for (Object key : keySet()) {
+			String k = key.toString();
+			if (k.matches(PropertyConstant.INTERNAL_LOG_ROOT_LOGGER)) {
+				continue;
+			}
+			if (k.matches(PropertyConstant.INTERNAL_LOG_LOGGER_PREFIX)) {
+				loggers.add(k);
+			}
+		}
+		return loggers;
 	}
 }

@@ -203,6 +203,16 @@ public class CommandExecutor {
 			this.stderr = stderr;
 			this.bufferDiscarded = bufferDiscarded;
 		}
+
+		@Override
+		public String toString() {
+			return "CommandResult ["
+					+ "exitCode=" + exitCode
+					+ ", stdout=" + stdout
+					+ ", stderr=" + stderr
+					+ ", bufferDiscarded=" + bufferDiscarded
+					+ "]";
+		}
 	}
 
 	/**

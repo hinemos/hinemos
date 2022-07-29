@@ -83,6 +83,10 @@ public class AutoCreatedMonitorSettingComposite extends Composite {
 		this.autoDeleteValidButton.setLayoutData(gridData);
 		this.autoDeleteValidButton.setText(Messages.getString("sdml.auto.monitor.delete.valid"));
 
+		// TODO ver7.0.1では暫定対処として常に削除する設定とする
+		autoDeleteValidButton.setSelection(true);
+		autoDeleteValidButton.setEnabled(false);
+
 		// カレンダID（コンボボックス）
 		this.calendarComposite = new CalendarIdListComposite(groupMonitor, SWT.NONE, true);
 		gridData = new GridData();
@@ -129,10 +133,10 @@ public class AutoCreatedMonitorSettingComposite extends Composite {
 	public void setInputData(SdmlControlSettingInfoResponse info) {
 		if (info == null) {
 			// デフォルト値
-			autoDeleteValidButton.setSelection(false);
+			// autoDeleteValidButton.setSelection(false);
 
 		} else {
-			autoDeleteValidButton.setSelection(info.getAutoMonitorDeleteFlg());
+			// autoDeleteValidButton.setSelection(info.getAutoMonitorDeleteFlg());
 			if (info.getAutoMonitorCalendarId() != null) {
 				calendarComposite.setText(info.getAutoMonitorCalendarId());
 			}
@@ -207,7 +211,7 @@ public class AutoCreatedMonitorSettingComposite extends Composite {
 
 	@Override
 	public void setEnabled(boolean enabled) {
-		autoDeleteValidButton.setEnabled(enabled);
+		// autoDeleteValidButton.setEnabled(enabled);
 		calendarComposite.setEnabled(enabled);
 		commonNotifySettingComposite.setEnabled(enabled);
 	}

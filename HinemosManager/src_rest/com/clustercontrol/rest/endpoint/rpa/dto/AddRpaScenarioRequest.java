@@ -9,14 +9,22 @@ package com.clustercontrol.rest.endpoint.rpa.dto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.RpaScenarioOperationResultCreateSettingNotFound;
 import com.clustercontrol.rest.annotation.RestItemName;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertDatetime;
 import com.clustercontrol.rest.annotation.cmdtool.DatetimeTypeParam;
+import com.clustercontrol.rest.annotation.validation.RestValidateLong;
 import com.clustercontrol.rest.annotation.validation.RestValidateString;
 import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.rpa.scenario.model.RpaScenario.CulcType;
+import com.clustercontrol.rpa.scenario.model.RpaScenarioOperationResultCreateSetting;
+import com.clustercontrol.rpa.scenario.model.RpaScenarioTag;
+import com.clustercontrol.rpa.session.RpaControllerBean;
 import com.clustercontrol.util.MessageConstant;
 public class AddRpaScenarioRequest implements RequestDto {
 	
@@ -31,6 +39,8 @@ public class AddRpaScenarioRequest implements RequestDto {
 	/** RPAツールID */
 	private String rpaToolId;
 	/** 手動操作時間 */
+	@RestItemName(value = MessageConstant.RPA_SCENARIO_MANUAL_TIME_SPECIFIED_VALUE)
+	@RestValidateLong(minVal = 1, maxVal = Long.MAX_VALUE)
 	private Long manualTime;
 	/** 手動操作時間算出方式 */
 	private CulcType manualTimeCulcType;
@@ -51,21 +61,7 @@ public class AddRpaScenarioRequest implements RequestDto {
 	private List<String> execNodes = new ArrayList<>();
 	
 	/** シナリオタグ紐付け情報 */
-	private List<String> tagRelationList;
-
-	/** 作成日時 */
-	@RestBeanConvertDatetime
-	@DatetimeTypeParam
-	private String regDate;
-	/** 新規作成ユーザ */
-	private String regUser;
-	/** 最終変更日時 */
-	@RestBeanConvertDatetime
-	@DatetimeTypeParam
-	private String updateDate;
-	/** 最終変更ユーザ */
-	private String updateUser;
-
+	private List<String> tagRelationList = new ArrayList<>();
 
 	/** シナリオ実績作成設定ID */
 	public String getScenarioOperationResultCreateSettingId() {
@@ -155,48 +151,36 @@ public class AddRpaScenarioRequest implements RequestDto {
 		this.tagRelationList = tagRelationList;
 	}
 
-	/** 作成日時 */
-	public String getRegDate() {
-		return this.regDate;
-	}
-	public void setRegDate(String regDate) {
-		this.regDate = regDate;
-	}
-
-	/** 新規作成ユーザ */
-	public String getRegUser() {
-		return this.regUser;
-	}
-	public void setRegUser(String regUser) {
-		this.regUser = regUser;
-	}
-
-	/** 最終変更日時 */
-	public String getUpdateDate() {
-		return this.updateDate;
-	}
-	public void setUpdateDate(String updateDate) {
-		this.updateDate = updateDate;
-	}
-
-	/** 最終変更ユーザ */
-	public String getUpdateUser() {
-		return this.updateUser;
-	}
-	public void setUpdateUser(String updateUser) {
-		this.updateUser = updateUser;
-	}
-
 	@Override
 	public String toString() {
 		return "AddRpaScenarioRequest [description=" + description + ", rpaToolId=" + rpaToolId + ", manualTime=" + manualTime + ", manualTimeCulcType="
 				+ manualTimeCulcType + ", opeStartDate=" + opeStartDate + ", scenarioIdentifyString=" + scenarioIdentifyString + ", commonNodeScenario="
-				+ commonNodeScenario + ", scenarioName=" + scenarioName + ", execNodes=" + execNodes + ", tagRelationList=" + tagRelationList + ", regDate=" + regDate
-				+ ", regUser=" + regUser + ", updateDate=" + updateDate + ", updateUser=" + updateUser + "]";
+				+ commonNodeScenario + ", scenarioName=" + scenarioName + ", execNodes=" + execNodes + ", tagRelationList=" + tagRelationList + "]";
 	}
 	
 	@Override
 	public void correlationCheck() throws InvalidSetting {
+			try {
+				RpaControllerBean rpaControllerBean = new RpaControllerBean();
+				// シナリオ実績作成設定IDの存在チェック
+				RpaScenarioOperationResultCreateSetting createSetting = rpaControllerBean.getRpaScenarioOperationResultCreateSetting(this.scenarioOperationResultCreateSettingId);
+
+				String ownerRoleId = createSetting.getOwnerRoleId();
+				for (String tagId: tagRelationList) {
+					// 参照可能なタグIDをチェック
+					List<String> referableTagIds = rpaControllerBean.getRpaScenarioTagListByOwnerRole(ownerRoleId)
+							.stream().map(RpaScenarioTag::getTagId).collect(Collectors.toList());
+					
+					if (!referableTagIds.contains(tagId)) {
+						throw new InvalidSetting(
+								MessageConstant.MESSAGE_NOT_FOUND.getMessage(
+										MessageConstant.RPA_SCENARIO_TAG_ID.getMessage(), 
+										tagId));
+					}
+				}
+			} catch (RpaScenarioOperationResultCreateSettingNotFound | InvalidRole | HinemosUnknown e) {
+				throw new InvalidSetting(e.getMessage());
+			}
 	}
 
 }

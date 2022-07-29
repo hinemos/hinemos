@@ -338,9 +338,14 @@ public class RpaJobWorker {
 				} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | NullPointerException
 						| IOException e) {
 					tasklog.warn("execRun() : request failed, " + e.getMessage(), e);
-					// メッセージを出力
+					if (e instanceof java.net.SocketTimeoutException && (e.getMessage().equals("Read timed out") )) {
+						// リクエストが応答タイムアウトの場合 RPA管理ツール側の処理成否が不明なので処理を打ち切り、その旨をメッセージ出力
+						setMessage(MessageConstant.MESSAGE_JOB_RPA_RUN_SCENARIO_REQUEST_TIMEOUT.getMessage());
+						throw new RpaManagementRestRunFailed(e);
+					}
+					// 失敗メッセージを出力
 					setMessage(MessageConstant.MESSAGE_JOB_RPA_RUN_SCENARIO_FAILED
-							.getMessage(String.valueOf(retryCount), e.getMessage()));
+							.getMessage(String.valueOf(retryCount)) + "\n" + e.getMessage());
 					// 実行できない場合に終了する
 					if (this.jobInfo.getRpaRunEndFlg() && retryCount >= this.jobInfo.getRpaRunRetry()) {
 						throw new RpaManagementRestRunFailed(e);
@@ -515,7 +520,7 @@ public class RpaJobWorker {
 					tasklog.warn("execCheck() : request failed, " + e.getMessage(), e);
 					// メッセージを出力
 					setMessage(MessageConstant.MESSAGE_JOB_RPA_CHECK_SCENARIO_RESULT_FAILED
-							.getMessage(String.valueOf(retryCount), e.getMessage()));
+							.getMessage(String.valueOf(retryCount)) + "\n"  + e.getMessage());
 					// 結果が確認できない場合に終了する
 					if (this.jobInfo.getRpaCheckEndFlg() && retryCount >= this.jobInfo.getRpaCheckRetry()) {
 						throw new RpaManagementRestCheckFailed(e);

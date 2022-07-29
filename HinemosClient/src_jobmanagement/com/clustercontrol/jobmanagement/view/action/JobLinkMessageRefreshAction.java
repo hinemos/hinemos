@@ -48,6 +48,9 @@ public class JobLinkMessageRefreshAction extends AbstractHandler {
 	 */
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("execute() start");
+		}
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
 		// In case this action has been disposed
 		if (null == this.window || !isEnabled()) {
@@ -69,6 +72,9 @@ public class JobLinkMessageRefreshAction extends AbstractHandler {
 		}
 		// ビュー更新
 		view.update();
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("execute() end");
+		}
 		return null;
 	}
 }

@@ -67,6 +67,9 @@ public class HistorySelectionChangedListener implements ISelectionChangedListene
 	 */
 	@Override
 	public void selectionChanged(SelectionChangedEvent event) {
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("selectionChanged() start");
+		}
 		String managerName = null;
 		String sessionId = null;
 		String jobunitId = null;
@@ -125,6 +128,9 @@ public class HistorySelectionChangedListener implements ISelectionChangedListene
 				JobMapViewIF view = (JobMapViewIF) viewPart;
 				view.update(managerName, sessionId, null);
 			}
+		}
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("selectionChanged() end");
 		}
 	}
 }

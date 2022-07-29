@@ -8,15 +8,23 @@
 package com.clustercontrol.rest.endpoint.jobmanagement.dto;
 
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.annotation.RestItemName;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
 import com.clustercontrol.rest.annotation.validation.RestValidateString;
 import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.EndStatusSelectEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.OperationJobOutputEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.PriorityRequiredEnum;
+import com.clustercontrol.util.MessageConstant;
 
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 public class JobOutputInfoRequest implements RequestDto {
-	/** 出力先と同じ出力先を使用する */
+	/** 標準出力と同じ出力先を使用する */
+	@RestItemName(value=MessageConstant.JOB_OUTPUT_FAILURE_SAME_NORMAL)
 	private Boolean sameNormalFlg;
 	
 	/** 出力先 - ディレクトリ */

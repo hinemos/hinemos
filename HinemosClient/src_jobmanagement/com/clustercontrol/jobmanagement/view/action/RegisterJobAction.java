@@ -23,7 +23,7 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
-import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import org.openapitools.client.model.JobTreeItem;
 import org.openapitools.client.model.JobTreeItemResponseP2;
 import org.openapitools.client.model.RegisterJobunitRequest;
 import org.openapitools.client.model.ReplaceJobunitRequest;
@@ -31,6 +31,7 @@ import org.openapitools.client.model.ReplaceJobunitRequest;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
@@ -217,7 +218,7 @@ public class RegisterJobAction extends AbstractHandler {
 							// 編集ロック開放リストに追加する
 							releaseList.add(jobunit);
 
-							jobEditState.putJobunitUpdateTime(updateRes.getData().getJobunitId(), JobTreeItemUtil.convertDtStringtoLong(updateRes.getData().getUpdateTime()));
+							jobEditState.putJobunitUpdateTime(jobunit.getData().getJobunitId(), JobTreeItemUtil.convertDtStringtoLong(updateRes.getData().getUpdateTime()));
 							Object[] arg = { managerName };
 							resultList.put(jobunitId, Messages.getString("message.job.79", arg));
 						}

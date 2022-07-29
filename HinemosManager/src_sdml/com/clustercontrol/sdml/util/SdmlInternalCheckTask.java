@@ -25,6 +25,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.SdmlControlSettingNotFound;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.sdml.model.SdmlControlSettingInfo;
@@ -123,7 +124,8 @@ public class SdmlInternalCheckTask implements Runnable {
 							PriorityConstant.TYPE_WARNING,
 							MessageConstant.SDML_MSG_LOG_NO_RECEPTION
 									.getMessage(status.getInternalCheckInterval().toString()),
-							MessageConstant.SDML_MSG_LAST_RECEIVED_TIME.getMessage(lastUpdate)));
+							MessageConstant.SDML_MSG_LAST_RECEIVED_TIME.getMessage(lastUpdate),
+							NotifyTriggerType.SDML_CONTROL_ABNORMAL));
 
 					// 通知済みリストに格納
 					notifiedPKList.add(new SdmlControlStatusPK(status.getApplicationId(), status.getFacilityId()));

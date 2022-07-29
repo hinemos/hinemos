@@ -16,7 +16,14 @@ import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.CommandRetryEndStatusEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ProcessingMethodEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.StopTypeEnum;
+import com.clustercontrol.rest.util.RestItemNameResolver;
+import com.clustercontrol.util.MessageConstant;
 
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 public class JobCommandInfoRequest implements RequestDto {
 	/** ファシリティID */
 	private String facilityID;
@@ -311,6 +318,12 @@ public class JobCommandInfoRequest implements RequestDto {
 			for (JobEnvVariableInfoRequest req : envVariable) {
 				req.correlationCheck();
 			}
+		}
+
+		// [標準出力と同じ出力先を使用する]がNullの場合はエラー
+		if (errorJobOutputInfo != null && errorJobOutputInfo.getSameNormalFlg() == null) {
+			String r1 = RestItemNameResolver.resolveItenName(errorJobOutputInfo.getClass(), "sameNormalFlg");
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
 		}
 
 		//標準エラー出力設定の出力先が同じとする設定の場合、標準出力の設定がなかったら不正な設定とする

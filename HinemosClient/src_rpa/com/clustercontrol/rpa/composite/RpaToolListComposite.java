@@ -9,7 +9,6 @@
 package com.clustercontrol.rpa.composite;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,6 +24,7 @@ import org.eclipse.swt.widgets.Text;
 import org.openapitools.client.model.RpaToolResponse;
 
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.rpa.util.RpaRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -45,9 +45,6 @@ public class RpaToolListComposite extends Composite {
 
 	/** Rpaツールテキストボックス */
 	private Text txtRpaTool = null;
-
-	/** Rpaツールテキストボックス */
-	private ConcurrentHashMap<String, String> rpaToolMap = new ConcurrentHashMap<String, String>();
 
 	/** 変更可能フラグ */
 	private boolean enabledFlg = false;
@@ -112,31 +109,12 @@ public class RpaToolListComposite extends Composite {
 			this.txtRpaTool.setEnabled(false);
 		}
 
-		List<RpaToolResponse> dtoList = this.callRpaToolList();
-		this.setRpaToolMap(dtoList);
 		
 		// 変更可能時はコンボボックスを表示する
-		if (this.enabledFlg) {
-			this.setCompoRpaTool(dtoList);
-			this.update();
-		} 
+		this.refresh();
+		this.update();
 	}
 
-	/**
-	 * マップに値を設定します。<BR>
-	 * <p>
-	 *
-	 */
-	private void setRpaToolMap(List<RpaToolResponse> dtoList) {
-		if(dtoList != null){
-			this.rpaToolMap.clear();
-			
-			for(RpaToolResponse tool : dtoList){
-				this.rpaToolMap.put(tool.getRpaToolName(), tool.getRpaToolId());
-			}
-		}
-	}
-	
 	/**
 	 * コンボボックスに値を設定します。<BR>
 	 * <p>
@@ -148,7 +126,7 @@ public class RpaToolListComposite extends Composite {
 			this.comboRpaTool.removeAll();
 			
 			for(RpaToolResponse tool : dtoList){
-				this.comboRpaTool.add(tool.getRpaToolName());
+				this.comboRpaTool.add(tool.getRpaToolId());
 			}
 			int defaultSelect = this.comboRpaTool.indexOf(toolOld);
 			this.comboRpaTool.select( (-1 == defaultSelect) ? 0 : defaultSelect );
@@ -171,6 +149,10 @@ public class RpaToolListComposite extends Composite {
 					Messages.getString("message.accesscontrol.16"));
 
 		} catch (Exception e) {
+			// エンタープライズ機能が無効の場合は無視する
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				return dtoList;
+			}
 			// 上記以外の例外
 			m_log.warn("update(), " + HinemosMessage.replace(e.getMessage()), e);
 			MessageDialog.openError(
@@ -182,13 +164,23 @@ public class RpaToolListComposite extends Composite {
 	}
 	
 	/**
+	 * マネージャから最新の情報を取得する。
+	 */
+	public void refresh() {
+		if (this.enabledFlg) {
+			List<RpaToolResponse> dtoList = this.callRpaToolList();
+			this.setCompoRpaTool(dtoList);
+			this.comboRpaTool.select(0);
+		}
+	}
+	
+	/**
 	 * コンポジットを更新します。<BR>
 	 * <p>
 	 *
 	 */
 	@Override
 	public void update() {
-		this.comboRpaTool.select(0);
 	}
 
 	/* (非 Javadoc)
@@ -206,9 +198,9 @@ public class RpaToolListComposite extends Composite {
 	 */
 	public String getText() {
 		if (this.enabledFlg) {
-			return this.rpaToolMap.get(this.comboRpaTool.getText());
+			return this.comboRpaTool.getText();
 		} else {
-			return this.rpaToolMap.get(this.txtRpaTool.getText());
+			return this.txtRpaTool.getText();
 		}
 	}
 
@@ -224,7 +216,7 @@ public class RpaToolListComposite extends Composite {
 	}
 	
 	public void setRpaToolId(String rpaToolId) {
-		setText(this.rpaToolMap.get(rpaToolId));
+		setText(rpaToolId);
 	}
 
 	public void addModifyListener(ModifyListener modifyListener){
@@ -235,22 +227,14 @@ public class RpaToolListComposite extends Composite {
 		return comboRpaTool;
 	}
 
-	public void add(String tool) {
-		this.comboRpaTool.add(tool);
-		this.update();
-	}
-
-	public void delete(String tool) {
-		if (this.comboRpaTool.indexOf(tool) > -1) {
-			this.comboRpaTool.remove(tool);
-			this.update();
-		}
-	}
-
 	public void addComboSelectionListener(SelectionListener listener) {
 		if (this.enabledFlg) {
 			this.comboRpaTool.addSelectionListener(listener);
 		}
+	}
+
+	public void setManagerName(String managerName) {
+		this.managerName = managerName;
 	}
 	
 }

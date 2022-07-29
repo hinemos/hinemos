@@ -83,6 +83,9 @@ public class PasteJobAction extends AbstractHandler implements IElementUpdater{
 	 */
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("execute() start");
+		}
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
 		// In case this action has been disposed
 		if( null == this.window || !isEnabled() ){
@@ -249,6 +252,9 @@ public class PasteJobAction extends AbstractHandler implements IElementUpdater{
 				MessageDialog.openError(null, Messages.getString("failed"),
 						Messages.getString("paste") + Messages.getString("failed"));
 			}
+		}
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("execute() end");
 		}
 		return null;
 	}

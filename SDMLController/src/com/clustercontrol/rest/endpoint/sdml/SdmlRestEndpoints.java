@@ -63,8 +63,6 @@ import com.clustercontrol.rest.annotation.RestSystemPrivilege;
 import com.clustercontrol.rest.annotation.cmdtool.ArrayTypeParam;
 import com.clustercontrol.rest.endpoint.sdml.dto.AddSdmlControlSettingRequest;
 import com.clustercontrol.rest.endpoint.sdml.dto.GetSdmlControlSettingListRequest;
-import com.clustercontrol.rest.endpoint.sdml.dto.ImportSdmlControlRequest;
-import com.clustercontrol.rest.endpoint.sdml.dto.ImportSdmlControlResponse;
 import com.clustercontrol.rest.endpoint.sdml.dto.ModifySdmlControlSettingRequest;
 import com.clustercontrol.rest.endpoint.sdml.dto.SdmlControlSettingInfoResponse;
 import com.clustercontrol.rest.endpoint.sdml.dto.SdmlMonitorTypeMasterResponse;
@@ -79,7 +77,6 @@ import com.clustercontrol.sdml.model.SdmlControlSettingInfo;
 import com.clustercontrol.sdml.model.SdmlMonitorTypeMasterInfo;
 import com.clustercontrol.sdml.v1.SdmlV1Option;
 import com.clustercontrol.sdml.v1.session.SdmlControllerBean;
-import com.clustercontrol.sdml.v1.utility.ImportSdmlControlV1Controller;
 
 /**
  * 本クラスのリソースメソッドには@Tag(name = "sdml")を付与すること。<br>
@@ -87,7 +84,7 @@ import com.clustercontrol.sdml.v1.utility.ImportSdmlControlV1Controller;
  * (本体側APIのDefaultApiクラスとは別名にする必要がある。)<br>
  * 
  * SDMLのバージョンアップ時にRestKindなどクライアントの本体側のjarに影響を与えないために、クラス名とクラスのPathを共通化する。<br>
- * バージョンごとに要にする必要があるAPIは各メソッドのPathにバージョンを付与すること。
+ * バージョンごとに用意する必要があるAPIは各メソッドのPathにバージョンを付与すること。
  */
 @Path("/sdml")
 @RestLogFunc(name = LogFuncName.Sdml)
@@ -412,47 +409,6 @@ public class SdmlRestEndpoints {
 		RestLanguageConverter.convertMessages(dtoResList);
 
 		return Response.status(Status.OK).entity(dtoResList).build();
-	}
-
-	/**
-	 * SDML制御設定のインポートを行います。
-	 * 	
-	 * 個別のレコードに由来する例外は OKレスポンスの一部として結果返却し、メソッドの例外とはなりません。
-	 * @throws InvalidSetting 
-	 * 
-	 */
-	@POST
-	@Path("/v1/controlSetting_import")
-	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "ImportSdmlControlSettingV1")
-	@APIResponses(value = {
-			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ImportSdmlControlResponse.class)), description = "response"),
-			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
-			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
-			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
-	@RestLog(action = LogAction.Modify, target = LogTarget.controlSetting, type = LogType.UPDATE )
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.SdmlSetting, modeList = { SystemPrivilegeMode.ADD, SystemPrivilegeMode.MODIFY })
-	@Produces(MediaType.APPLICATION_JSON)
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Tag(name = "sdml")
-	public Response importSdmlControlSettingV1(@Context Request request,@Context UriInfo uriInfo,
-			@RequestBody(description = "ImportSdmlControlSettingV1", content = @Content(schema = @Schema(implementation = ImportSdmlControlRequest.class))) String requestBody)
-			throws InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
-		logger.info("call importSdmlControlSettingV1()");
-
-		ImportSdmlControlRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
-				ImportSdmlControlRequest.class);
-
-		ImportSdmlControlResponse resDto = new ImportSdmlControlResponse();
-
-		ImportSdmlControlV1Controller controller = new ImportSdmlControlV1Controller(dtoReq.isRollbackIfAbnormal(),
-				dtoReq.getRecordList());
-		controller.importExecute();
-
-		resDto.setIsOccurException(controller.getOccurException());
-		resDto.setResultList(controller.getResultList());
-
-		RestLanguageConverter.convertMessages(resDto);
-		return Response.status(Status.OK).entity(resDto).build();
 	}
 
 	/**

@@ -76,7 +76,7 @@
 	<classpathentry kind="lib" path="lib_rest/org.osgi.annotation.versioning-1.1.1.jar" sourcepath="lib_rest/org.osgi.annotation.versioning-1.1.1-sources.jar"/>
 	<classpathentry kind="lib" path="platform_switch/commonlib_platform_win/jna-5.6.0.jar" sourcepath="/HinemosCommon/commonlib/jna-5.6.0-sources.jar"/>
 	<classpathentry kind="lib" path="platform_switch/commonlib_platform_win/jna-platform-5.6.0.jar" sourcepath="/HinemosCommon/commonlib/jna-platform-5.6.0-sources.jar"/>
-	<classpathentry kind="lib" path="lib/eclipselink-3.0.0.jar" sourcepath="lib/eclipselink-3.0.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib/eclipselink-3.0.2.jar" sourcepath="lib/eclipselink-3.0.2-sources.jar"/>
 	<classpathentry kind="lib" path="lib/snmp4j-log4j-2.8.2.jar" sourcepath="lib/snmp4j-log4j-2.8.2-sources.jar"/>
 	<classpathentry kind="lib" path="lib_rest/aopalliance-repackaged-2.6.1.jar" sourcepath="lib_rest/aopalliance-repackaged-2.6.1-sources.jar"/>
 	<classpathentry kind="lib" path="lib_rest/grizzly-framework-2.4.4.jar" sourcepath="lib_rest/grizzly-framework-2.4.4-sources.jar"/>

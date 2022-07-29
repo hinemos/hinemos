@@ -15,25 +15,47 @@ import javax.xml.bind.annotation.XmlType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ProcessingMethodEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.LanguageTranslateSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * 監視ジョブに関する情報を保持するクラス
  *
  * @version 5.1.0
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class MonitorJobInfo implements Serializable {
+public class MonitorJobInfo implements Serializable, RequestDto {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 1L;
 
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( MonitorJobInfo.class );
 
 	/** ファシリティID */
 	private String facilityID;
 
 	/** スコープ */
+	@JsonSerialize(using=LanguageTranslateSerializer.class)
 	private String scope;
 
 	/** スコープ処理 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ProcessingMethodEnum.class)
 	private Integer processingMethod = 0;
 
 	/** 監視ID */
@@ -266,5 +288,9 @@ public class MonitorJobInfo implements Serializable {
 			}
 		}
 		return ret;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

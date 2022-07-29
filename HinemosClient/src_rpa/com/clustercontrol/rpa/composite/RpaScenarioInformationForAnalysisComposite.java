@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.Text;
 import org.openapitools.client.model.GetRpaScenarioResponse.ManualTimeCulcTypeEnum;
 import org.openapitools.client.model.RpaScenarioTagResponse;
 
+import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.dialog.DateTimeDialog;
 import com.clustercontrol.fault.InvalidRole;
@@ -69,6 +70,8 @@ public class RpaScenarioInformationForAnalysisComposite extends Composite {
 
 	/** マネージャ名 */
 	private String managerName = null;
+	/** オーナーロールID */
+	private String ownerRoleId = null;
 
 	/**
 	 * コンストラクタ
@@ -107,7 +110,6 @@ public class RpaScenarioInformationForAnalysisComposite extends Composite {
 		labelScenarioTag.setLayoutData(gd_labelScenarioTag);
 		// コンポジット
 		this.tagNameList = new RpaScenarioTagNameListComposite(tagNameListComposite, SWT.CENTER);
-		this.tagNameList.setManagerName(this.managerName);
 
 		/*
 		 * 運用開始日時
@@ -226,12 +228,27 @@ public class RpaScenarioInformationForAnalysisComposite extends Composite {
 			}
 		});
 	}
+	
+	/**
+	 * マネージャから最新の情報を取得します。
+	 */
+	public void refresh() {
+		this.tagNameList.setManagerName(this.managerName);
+		this.tagNameList.setOwnerRoleId(this.ownerRoleId);
+	}
 
 	/**
 	 * コンポジットを更新します。<BR>
 	 */
 	@Override
 	public void update() {
+		if (getManualTimeCulcType().equals(ManualTimeCulcTypeEnum.FIX_TIME)) {
+			if ("".equals(getManualTime())) {
+				this.fixTimeParamText.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+			} else {
+				this.fixTimeParamText.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
+			}
+		}
 	}
 
 	/**
@@ -363,6 +380,22 @@ public class RpaScenarioInformationForAnalysisComposite extends Composite {
 		} else {
 			return this.fixTimeParamText.getText();
 		}
+	}
+
+	public String getManagerName() {
+		return managerName;
+	}
+
+	public void setManagerName(String managerName) {
+		this.managerName = managerName;
+	}
+
+	public String getOwnerRoleId() {
+		return ownerRoleId;
+	}
+
+	public void setOwnerRoleId(String ownerRoleId) {
+		this.ownerRoleId = ownerRoleId;
 	}
 
 	/**

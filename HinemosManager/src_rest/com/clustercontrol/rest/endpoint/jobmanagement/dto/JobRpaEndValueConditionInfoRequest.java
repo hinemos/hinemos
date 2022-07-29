@@ -14,7 +14,13 @@ import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
 import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaJobEndValueConditionTypeEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaJobReturnCodeConditionEnum;
+import com.clustercontrol.util.MessageConstant;
 
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @RestBeanConvertAssertion(to = RpaJobEndValueConditionInfo.class)
 public class JobRpaEndValueConditionInfoRequest implements RequestDto {
 
@@ -196,5 +202,13 @@ public class JobRpaEndValueConditionInfoRequest implements RequestDto {
 
 	@Override
 	public void correlationCheck() throws InvalidSetting {
+		// 終了値判定条件のリターンコードによる判定条件 の組み合わせ入力チェック
+		if (conditionType.equals(RpaJobEndValueConditionTypeEnum.RETURN_CODE)) {
+			if (returnCodeCondition == null) {
+				String[] args = { MessageConstant.JUDGEMENT_CONDITION.getMessage() };
+				String message = MessageConstant.MESSAGE_JOB_RPA_END_VALUE_CONDITION_TYPE_RETCD_INPUT.getMessage(args);
+				throw new InvalidSetting(message);
+			}
+		}
 	}
 }

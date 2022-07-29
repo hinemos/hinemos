@@ -12,6 +12,12 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlTransient;
+import javax.xml.bind.annotation.XmlType;
+
+import com.clustercontrol.monitor.run.model.MonitorCheckInfo;
+import com.clustercontrol.monitor.run.model.MonitorInfo;
+
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -23,11 +29,6 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
-import javax.xml.bind.annotation.XmlTransient;
-import javax.xml.bind.annotation.XmlType;
-
-import com.clustercontrol.monitor.run.model.MonitorCheckInfo;
-import com.clustercontrol.monitor.run.model.MonitorInfo;
 
 
 /**
@@ -151,23 +152,36 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 	 * 
 	 * となった。
 	 * JDK1.8の場合は、マネージャがDTOを受け取った直後にrefrectメソッドを呼び出す必要あり。
+	 * 
+	 * フィールドのListオブジェクトに対しては同期化してアクセスする。
 	 */
 	public void reflect() {
-		setLogName(logName);
-		setSource(source);
-		setEventId(eventId);
-		setCategory(category);
-		setKeywords(keywords);
+		synchronized (this) {
+			setLogName(logName);
+			setSource(source);
+			setEventId(eventId);
+			setCategory(category);
+			setKeywords(keywords);
+		}
 	}
 	
+	/**
+	 * 複数スレッド（対象エージェントごと）から呼び出されるため、add時にメンバ変数に競合が無いようsynchronizedにする
+	 */
 	@Transient
 	public List<String> getLogName(){
-		logName = new ArrayList<>();
-		for (MonitorWinEventLogInfoEntity entity: getMonitorWinEventLogInfoEntities()) {
-			logName.add(entity.getId().getLogName());
+		synchronized (this) {
+			logName = new ArrayList<>();
+			for (MonitorWinEventLogInfoEntity entity: getMonitorWinEventLogInfoEntities()) {
+				logName.add(entity.getId().getLogName());
+			}
+			return logName;
 		}
-		return logName;
 	}
+	/**
+	 * @deprecated reflectを使用してください{@link #reflect()}
+	 */
+	@Deprecated
 	public void setLogName(List<String> logName){
 		for(MonitorWinEventLogInfoEntity info: getMonitorWinEventLogInfoEntities()){
 			info.relateToMonitorWinEventInfoEntity(null);
@@ -180,14 +194,23 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 		setMonitorWinEventLogInfoEntities(logs);
 	}
 
+	/**
+	 * 複数スレッド（対象エージェントごと）から呼び出されるため、add時にメンバ変数に競合が無いようsynchronizedにする
+	 */
 	@Transient
 	public List<String> getSource(){
-		source = new ArrayList<>();
-		for (MonitorWinEventSourceInfoEntity entity: getMonitorWinEventSourceInfoEntities()) {
-			source.add(entity.getId().getSource());
+		synchronized (this) {
+			source = new ArrayList<>();
+			for (MonitorWinEventSourceInfoEntity entity: getMonitorWinEventSourceInfoEntities()) {
+				source.add(entity.getId().getSource());
+			}
+			return source;
 		}
-		return source;
 	}
+	/**
+	 * @deprecated reflectを使用してください{@link #reflect()}
+	 */
+	@Deprecated
 	public void setSource(List<String> source){
 		for(MonitorWinEventSourceInfoEntity info: getMonitorWinEventSourceInfoEntities()){
 			info.relateToMonitorWinEventInfoEntity(null);
@@ -200,14 +223,23 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 		setMonitorWinEventSourceInfoEntities(sources);
 	}
 
+	/**
+	 * 複数スレッド（対象エージェントごと）から呼び出されるため、add時にメンバ変数に競合が無いようsynchronizedにする
+	 */
 	@Transient
 	public List<Integer> getEventId() {
-		eventId = new ArrayList<>();
-		for (MonitorWinEventIdInfoEntity entity: getMonitorWinEventIdInfoEntities()) {
-			eventId.add(entity.getId().getEventId());
+		synchronized (this) {
+			eventId = new ArrayList<>();
+			for (MonitorWinEventIdInfoEntity entity: getMonitorWinEventIdInfoEntities()) {
+				eventId.add(entity.getId().getEventId());
+			}
+			return eventId;
 		}
-		return eventId;
 	}
+	/**
+	 * @deprecated reflectを使用してください{@link #reflect()}
+	 */
+	@Deprecated
 	public void setEventId(List<Integer> eventId){
 		for(MonitorWinEventIdInfoEntity info: getMonitorWinEventIdInfoEntities()){
 			info.relateToMonitorWinEventInfoEntity(null);
@@ -220,14 +252,23 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 		setMonitorWinEventIdInfoEntities(eventIds);
 	}
 
+	/**
+	 * 複数スレッド（対象エージェントごと）から呼び出されるため、add時にメンバ変数に競合が無いようsynchronizedにする
+	 */
 	@Transient
 	public List<Integer> getCategory(){
-		category = new ArrayList<>();
-		for (MonitorWinEventCategoryInfoEntity entity: getMonitorWinEventCategoryInfoEntities()) {
-			category.add(entity.getId().getCategory());
+		synchronized (this) {
+			category = new ArrayList<>();
+			for (MonitorWinEventCategoryInfoEntity entity: getMonitorWinEventCategoryInfoEntities()) {
+				category.add(entity.getId().getCategory());
+			}
+			return category;
 		}
-		return category;
 	}
+	/**
+	 * @deprecated reflectを使用してください{@link #reflect()}
+	 */
+	@Deprecated
 	public void setCategory(List<Integer> category){
 		for(MonitorWinEventCategoryInfoEntity info: getMonitorWinEventCategoryInfoEntities()){
 			info.relateToMonitorWinEventInfoEntity(null);
@@ -240,14 +281,23 @@ public class WinEventCheckInfo extends MonitorCheckInfo implements Serializable 
 		setMonitorWinEventCategoryInfoEntities(categories);
 	}
 
+	/**
+	 * 複数スレッド（対象エージェントごと）から呼び出されるため、add時にメンバ変数に競合が無いようsynchronizedにする
+	 */
 	@Transient
 	public List<Long> getKeywords() {
-		keywords = new ArrayList<>();
-		for (MonitorWinEventKeywordInfoEntity entity: getMonitorWinEventKeywordInfoEntities()) {
-			keywords.add(entity.getId().getKeyword());
+		synchronized (this) {
+			keywords = new ArrayList<>();
+			for (MonitorWinEventKeywordInfoEntity entity: getMonitorWinEventKeywordInfoEntities()) {
+				keywords.add(entity.getId().getKeyword());
+			}
+			return keywords;
 		}
-		return keywords;
 	}
+	/**
+	 * @deprecated reflectを使用してください{@link #reflect()}
+	 */
+	@Deprecated
 	public void setKeywords(List<Long> keywords) {
 		for(MonitorWinEventKeywordInfoEntity info: getMonitorWinEventKeywordInfoEntities()){
 			info.relateToMonitorWinEventInfoEntity(null);

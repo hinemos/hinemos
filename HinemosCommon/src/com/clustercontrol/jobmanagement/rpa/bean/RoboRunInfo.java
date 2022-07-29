@@ -49,6 +49,8 @@ public class RoboRunInfo extends RoboInfo {
 	 *            ジョブID
 	 * @param facilityId
 	 *            ファシリティID
+	 * @param userName
+	 *            ユーザ名
 	 * @param execCommand
 	 *            シナリオ実行コマンド
 	 * @param destroyCommand
@@ -60,9 +62,9 @@ public class RoboRunInfo extends RoboInfo {
 	 * @param destroy
 	 *            ジョブ停止時にRPAツールのプロセスを停止するかどうかのフラグ
 	 */
-	public RoboRunInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId,
+	public RoboRunInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId, String userName,
 			String execCommand, String destroyCommand, Boolean login, Boolean logout, Boolean destroy) {
-		super(datetime, sessionId, jobunitId, jobId, facilityId);
+		super(datetime, sessionId, jobunitId, jobId, facilityId, userName);
 		this.execCommand = execCommand;
 		this.destroyCommand = destroyCommand;
 		this.login = login;
@@ -78,7 +80,7 @@ public class RoboRunInfo extends RoboInfo {
 	 */
 	public RoboRunInfo(RoboInfo roboInfo) {
 		super(roboInfo.getDatetime(), roboInfo.getSessionId(), roboInfo.getJobunitId(), roboInfo.getJobId(),
-				roboInfo.getFacilityId());
+				roboInfo.getFacilityId(), roboInfo.getUserName());
 	}
 
 	public String getExecCommand() {
@@ -123,10 +125,14 @@ public class RoboRunInfo extends RoboInfo {
 
 	@Override
 	public String toString() {
-		return "RoboRunInfo [getExecCommand()=" + getExecCommand() + ", getDestroyCommand()=" + getDestroyCommand()
-				+ ", getLogin()=" + getLogin() + ", getLogout()=" + getLogout() + ", getDestroy()=" + getDestroy()
-				+ ", getDatetime()=" + getDatetime() + ", getSessionId()=" + getSessionId() + ", getJobunitId()="
-				+ getJobunitId() + ", getJobId()=" + getJobId() + ", getFacilityId()=" + getFacilityId() + "]";
+		return "RoboRunInfo ["
+				+ "toString()=" + super.toString()
+				+ ", execCommand=" + execCommand
+				+ ", destroyCommand=" + destroyCommand
+				+ ", login=" + login
+				+ ", logout=" + logout
+				+ ", destroy=" + destroy
+				+ "]";
 	}
 
 	@Override

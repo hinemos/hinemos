@@ -80,7 +80,7 @@ public class SelectRpaScenarioTag {
 	}
 	
 	/**
-	 * 対象のシナリオタグに紐づくRPAシナリオが存在する場合、紐づいているタグIDを返します。
+	 * 対象のシナリオタグに紐づくRPAシナリオが存在する場合、紐づいているシナリオIDを返します。
 	 */
 	public List<String> checkRpaScenarioTagRelation(List<String> tagIds) {
 		return QueryUtil.getRpaScenarioTagIdFindByScenarioTagRelation(tagIds);

@@ -11,6 +11,8 @@ import java.util.List;
 
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertDatetime;
 import com.clustercontrol.rest.annotation.msgconverter.RestPartiallyTransrateTarget;
+import com.clustercontrol.rest.dto.serializer.ConvertNewlineCharacterSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class EventLogInfoResponse {
 	private Integer priority = null;			//重要度
@@ -30,8 +32,10 @@ public class EventLogInfoResponse {
 	@RestPartiallyTransrateTarget
 	private String application = null;			//アプリケーション
 	@RestPartiallyTransrateTarget
+	@JsonSerialize(using=ConvertNewlineCharacterSerializer.class)
 	private String message = null;				//メッセージ
 	@RestPartiallyTransrateTarget
+	@JsonSerialize(using=ConvertNewlineCharacterSerializer.class)
 	private String messageOrg = null;			//オリジナルメッセージ
 	private Integer confirmed = null;			//確認
 	@RestBeanConvertDatetime

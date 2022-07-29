@@ -165,13 +165,13 @@ public class QueryUtil {
 	}
 
 	/**
-	 * 引数のアカウントIDとURLに一致するRPA管理アカウントを取得する。
+	 * 引数のアカウントIDとURLに一致するRPA管理アカウントを取得する。(権限チェックなし)
 	 * @throws RpaManagementToolAccountNotFound
 	 */
-	public static RpaManagementToolAccount getRpaAccountByAccountIdAndUrl(String accountId, String url) throws RpaManagementToolAccountNotFound {
+	public static RpaManagementToolAccount getRpaAccountByAccountIdAndUrl_NONE(String accountId, String url) throws RpaManagementToolAccountNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			return em.createNamedQuery("RpaManagementToolAccount.findByAccountIdAndUrl", RpaManagementToolAccount.class)
+			return em.createNamedQuery("RpaManagementToolAccount.findByAccountIdAndUrl", RpaManagementToolAccount.class, ObjectPrivilegeMode.NONE)
 					.setParameter("accountId", accountId)
 					.setParameter("url", url)
 					.getSingleResult();
@@ -181,13 +181,13 @@ public class QueryUtil {
 	}
 
 	/**
-	 * 引数のアカウントIDとURLに一致するRPA管理アカウントを取得する。
+	 * 引数のアカウントIDとURLに一致するRPA管理アカウントを取得する。(権限チェックなし)
 	 * @throws RpaManagementToolAccountNotFound
 	 */
-	public static RpaManagementToolAccount getRpaAccountByAccountIdAndUrlAndTenantName(String accountId, String url, String tenantName) throws RpaManagementToolAccountNotFound {
+	public static RpaManagementToolAccount getRpaAccountByAccountIdAndUrlAndTenantName_NONE(String accountId, String url, String tenantName) throws RpaManagementToolAccountNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			return em.createNamedQuery("RpaManagementToolAccount.findByAccountIdAndUrlAndTenantName", RpaManagementToolAccount.class)
+			return em.createNamedQuery("RpaManagementToolAccount.findByAccountIdAndUrlAndTenantName", RpaManagementToolAccount.class, ObjectPrivilegeMode.NONE)
 					.setParameter("accountId", accountId)
 					.setParameter("url", url)
 					.setParameter("tenantName", tenantName)
@@ -434,12 +434,33 @@ public class QueryUtil {
 		}
 	}
 
+	/**
+	 * 指定したファシリティIDを用いてRPAシナリオ実績作成設定一覧を取得する
+	 */
+	public static List<RpaScenarioOperationResultCreateSetting> getRpaScenarioCreateSettingListFindByFacilityId_NONE(String facilityId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			return em.createNamedQuery("RpaScenarioOperationResultCreateSetting.findByFacilityId", RpaScenarioOperationResultCreateSetting.class, ObjectPrivilegeMode.NONE)
+				.setParameter("facilityId", facilityId)
+				.getResultList();
+		}
+	}
+
 	public static RpaScenarioOperationResultCreateSetting getRpaScenarioCreateSettingPK_NONE(String settingId) throws RpaScenarioOperationResultCreateSettingNotFound, InvalidRole {
 		return getRpaScenarioCreateSettingPK(settingId, ObjectPrivilegeMode.NONE);
 	}
 
 	public static RpaScenarioOperationResultCreateSetting getRpaScenarioCreateSettingPK(String settingId) throws RpaScenarioOperationResultCreateSettingNotFound, InvalidRole {
 		return getRpaScenarioCreateSettingPK(settingId, ObjectPrivilegeMode.READ);
+	}
+
+	public static List<RpaScenarioOperationResultCreateSetting> getRpaScenarioCreateSettingFindByCalendarId_NONE(String calendarId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			return em.createNamedQuery("RpaScenarioOperationResultCreateSetting.findByCalendarId", RpaScenarioOperationResultCreateSetting.class, ObjectPrivilegeMode.NONE)
+				.setParameter("calendarId", calendarId)
+				.getResultList();
+		}
 	}
 
 	/**
@@ -846,7 +867,7 @@ public class QueryUtil {
 	}
 	
 	/**
-	 * 対象のシナリオタグに紐づくシナリオが存在する場合、紐づいているタグのIDを取得する
+	 * 対象のシナリオタグに紐づくシナリオが存在する場合、紐づいているシナリオのIDを取得する
 	 */
 	public static List<String> getRpaScenarioTagIdFindByScenarioTagRelation(List<String> tagIds){
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {

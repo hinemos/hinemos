@@ -576,19 +576,24 @@ public class WinEventReader {
 
 			if (!wevtapi.INSTANCE.EvtFormatMessage(hProviderMetadata, h, 0, 0, null, wevtapi.EvtFormatMessageXml,
 					bufferSize, buffer, bufferUsed)) {
+				boolean success = false;
 				if (WinError.ERROR_INSUFFICIENT_BUFFER == getLastError()) {
 					bufferSize = bufferUsed.getValue();
-					buffer = new Memory(bufferSize);
-					wevtapi.INSTANCE.EvtFormatMessage(hProviderMetadata, h, 0, 0, null, wevtapi.EvtFormatMessageXml,
+					buffer = new Memory(bufferSize * (Character.SIZE / Byte.SIZE));
+					success = wevtapi.INSTANCE.EvtFormatMessage(hProviderMetadata, h, 0, 0, null, wevtapi.EvtFormatMessageXml,
 							bufferSize, buffer, bufferUsed);
 				}
-				if (WinError.ERROR_SUCCESS != getLastError()) {
-					m_log.warn("formatEvent() EvtFormatMessage(second time) error=" + Win32Error.getMessage(getLastError()));
-					if(secondChallenge) {
-						m_log.info("Second challenge render event.");
-						return renderEvent(h, wevtapi.EvtRenderEventXml);
+				if (!success) {
+					if (WinError.ERROR_EVT_MESSAGE_ID_NOT_FOUND == getLastError() && buffer.getWideString(0).endsWith("</Event>")) {
+						m_log.info("formatEvent() EvtFormatMessage(second time) success=" + Win32Error.getMessage(getLastError()));
 					} else {
-						throw new Win32Exception(getLastError());
+						m_log.warn("formatEvent() EvtFormatMessage(second time) error=" + Win32Error.getMessage(getLastError()));
+						if (secondChallenge) {
+							m_log.info("Second challenge render event.");
+							return renderEvent(h, wevtapi.EvtRenderEventXml);
+						} else {
+							throw new Win32Exception(getLastError());
+						}
 					}
 				}
 			} else {

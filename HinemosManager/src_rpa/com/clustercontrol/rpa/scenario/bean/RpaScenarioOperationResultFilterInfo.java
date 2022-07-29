@@ -9,11 +9,17 @@
 package com.clustercontrol.rpa.scenario.bean;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.xml.bind.annotation.XmlType;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.rpa.scenario.model.RpaScenarioOperationResult.OperationResultStatus;
+import com.clustercontrol.rpa.scenario.model.RpaScenarioTag;
+import com.clustercontrol.rpa.session.RpaControllerBean;
 
 
 /**
@@ -81,6 +87,19 @@ public class RpaScenarioOperationResultFilterInfo implements Serializable {
 	}
 	public void setTagIdList(List<String> tagIdList) {
 		this.tagIdList = tagIdList;
+	}
+	
+	/** 子タグを含めた全てのシナリオタグIDを返す */
+	public List<String> getAllTagIdList() throws InvalidRole, HinemosUnknown {
+		List<String> allChildrenTagIdList = new ArrayList<>();
+		allChildrenTagIdList.addAll(tagIdList);
+		for (String tagId: tagIdList) {
+			List<RpaScenarioTag> childrenTagList = new RpaControllerBean().getChildrenScenarioTagList(tagId);
+			List<String> childrenTagIdList = childrenTagList.stream().map(RpaScenarioTag::getTagId).collect(Collectors.toList());
+			allChildrenTagIdList.addAll(childrenTagIdList);
+		}
+		// 重複を削除して返す。
+		return allChildrenTagIdList.stream().distinct().collect(Collectors.toList());
 	}
 
 	/** ステータス */

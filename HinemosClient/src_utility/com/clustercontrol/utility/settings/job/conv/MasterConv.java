@@ -396,46 +396,41 @@ public class MasterConv {
 		ret.setProcessingMethod(OpenApiEnumConverter.integerToEnum(jobMasterXML.getProcessMode(), JobCommandInfoResponse.ProcessingMethodEnum.class));
 		ret.setStartCommand(jobMasterXML.getStartCommand());
 		ret.setStopType(OpenApiEnumConverter.integerToEnum(jobMasterXML.getStopType(), JobCommandInfoResponse.StopTypeEnum.class));
-		if (jobMasterXML.getStopType() == 0){
+		if (jobMasterXML.getStopType() == 0) {
 			ret.setStopCommand(jobMasterXML.getStopCommand());
 		}
 		ret.setSpecifyUser(jobMasterXML.getSpecifyUser());
-		if(jobMasterXML.getSpecifyUser() && jobMasterXML.getEffectiveUser() != null && !jobMasterXML.getEffectiveUser().equals("")){
-			ret.setUser(jobMasterXML.getEffectiveUser());
-		}else{
-			log.info("User not found " + jobMasterXML.getId());
+		if (jobMasterXML.getSpecifyUser()) {
+			if (jobMasterXML.getEffectiveUser() != null && !jobMasterXML.getEffectiveUser().equals("")) {
+				ret.setUser(jobMasterXML.getEffectiveUser());
+			} else {
+				log.info("User not found " + jobMasterXML.getId());
+			}
 		}
 		ret.setMessageRetryEndFlg(jobMasterXML.getMessageRetryEndFlg());
 		// エージェントに接続できない時の試行回数
-		if (jobMasterXML.getMessageRetryEndFlg()){
-			ret.setMessageRetry(jobMasterXML.getMessageRetry());
-		} else {
-			//未設定時はデフォルトの10を設定する。
-			ret.setMessageRetry(10);
-		}
+		ret.setMessageRetry(jobMasterXML.getMessageRetry());
 		ret.setMessageRetryEndValue(jobMasterXML.getMessageRetryEndValue());
 
 		ret.setCommandRetryFlg(jobMasterXML.getCommandRetryFlg());
 		ret.setCommandRetryEndStatus(jobMasterXML.hasCommandRetryEndStatus() ? OpenApiEnumConverter.integerToEnum(jobMasterXML.getCommandRetryEndStatus(), JobCommandInfoResponse.CommandRetryEndStatusEnum.class) : null);
 
-		//ジョブが指定された終了状態になるまでコマンドを繰り返す時の試行回数
-		if (jobMasterXML.getCommandRetryFlg() && jobMasterXML.hasCommandRetry()){
+		// ジョブが指定された終了状態になるまでコマンドを繰り返す時の試行回数
+		if (jobMasterXML.hasCommandRetry()) {
 			ret.setCommandRetry(jobMasterXML.getCommandRetry());
 		} else {
-			//未設定時はデフォルトの10を設定する。
+			// 未設定時はデフォルトの10を設定する。
 			ret.setCommandRetry(10);
 		}
 
 		// スクリプトをマネージャから配布
 		ret.setManagerDistribution(jobMasterXML.getManagerDistribution());
-		if (jobMasterXML.getManagerDistribution()){
-			// スクリプト名
-			ret.setScriptName(jobMasterXML.getScriptName());
-			// スクリプトエンコーディング
-			ret.setScriptEncoding(jobMasterXML.getScriptEncoding());
-			// スクリプト内容
-			ret.setScriptContent(jobMasterXML.getScriptContent());
-		}
+		// スクリプト名
+		ret.setScriptName(jobMasterXML.getScriptName());
+		// スクリプトエンコーディング
+		ret.setScriptEncoding(jobMasterXML.getScriptEncoding());
+		// スクリプト内容
+		ret.setScriptContent(jobMasterXML.getScriptContent());
 		// コマンドジョブパラメータ
 		for(CommandParam cp : jobMasterXML.getCommandParam()){
 			JobCommandParamResponse e = new JobCommandParamResponse();
@@ -589,18 +584,13 @@ public class MasterConv {
 		// 実行ユーザーを指定するかのフラグ
 		ret.setSpecifyUser(jobMasterXML.getSpecifyUser());
 		// 実行ユーザー名
-		if (jobMasterXML.getSpecifyUser()){
+		if (jobMasterXML.getSpecifyUser()) {
 			ret.setUser(jobMasterXML.getEffectiveUser());
 		}
 		// エージェントに接続できない時に終了するかのフラグ
 		ret.setMessageRetryEndFlg(jobMasterXML.getMessageRetryEndFlg());
 		// エージェントに接続できない時の試行回数
-		if (jobMasterXML.getMessageRetryEndFlg()){
-			ret.setMessageRetry(jobMasterXML.getMessageRetry());
-		} else {
-			//未設定時はデフォルトの10を設定する。
-			ret.setMessageRetry(10);
-		}
+		ret.setMessageRetry(jobMasterXML.getMessageRetry());
 		// エージェントに接続できない時に終了する時の終了値
 		// Import with constant otherwise it will be set to "0"
 		ret.setMessageRetryEndValue(jobMasterXML.hasMessageRetryEndValue() ? jobMasterXML.getMessageRetryEndValue() : 0);
@@ -622,9 +612,7 @@ public class MasterConv {
 		// カレンダーの終了値
 		ret.setCalendarEndValue(jobMasterXML.getCalendarEndValue());
 		// カレンダーID
-		if (jobMasterXML.getCalendar()){
-			ret.setCalendarId(jobMasterXML.getCalendarId());
-		}
+		ret.setCalendarId(jobMasterXML.getCalendarId());
 		// 判定対象の条件関係
 		ret.setCondition(OpenApiEnumConverter.integerToEnum(jobMasterXML.getConditionType() , JobWaitRuleInfoResponse.ConditionEnum.class));
 		// 終了遅延有無
@@ -634,9 +622,7 @@ public class MasterConv {
 		// ジョブ開始後の経過時間監視有無
 		ret.setEndDelayJob(jobMasterXML.getEndDelayJob());
 		// ジョブ開始後の経過時間(分)
-		if (jobMasterXML.getEndDelayJob()){ 
-			ret.setEndDelayJobValue(jobMasterXML.getEndDelayJobValue());
-		}
+		ret.setEndDelayJobValue(jobMasterXML.getEndDelayJobValue());
 		// 終了遅延通知有無
 		ret.setEndDelayNotify(jobMasterXML.getEndDelayNotify());
 		// 終了遅延通知重要度
@@ -652,9 +638,7 @@ public class MasterConv {
 		// セッション開始後の経過時間使用有無
 		ret.setEndDelaySession(jobMasterXML.getEndDelaySession());
 		// セッション開始後の経過時間（分）
-		if (jobMasterXML.getEndDelaySession()){
-			ret.setEndDelaySessionValue(jobMasterXML.getEndDelaySessionValue());
-		}
+		ret.setEndDelaySessionValue(jobMasterXML.getEndDelaySessionValue());
 		// 終了遅延監視時刻監視有無
 		ret.setEndDelayTime(jobMasterXML.getEndDelayTime());
 		// 終了監視遅延時刻の値
@@ -697,9 +681,7 @@ public class MasterConv {
 		// セッション開始後からの開始遅延有無
 		ret.setStartDelaySession(jobMasterXML.getStartDelaySession());
 		// 開始遅延セッション開始後の時間の値
-		if (jobMasterXML.getStartDelaySession()){
-			ret.setStartDelaySessionValue(jobMasterXML.getStartDelaySessionValue());
-		}
+		ret.setStartDelaySessionValue(jobMasterXML.getStartDelaySessionValue());
 		// 開始遅延時刻有無
 		ret.setStartDelayTime(jobMasterXML.getStartDelayTime());
 		// セッション開始後の経過時間（分）
@@ -750,16 +732,13 @@ public class MasterConv {
 			ret.getExclusiveBranchNextJobOrderList().add(nextJob);
 		}
 
-		//繰り返し実行
-		if( jobMasterXML.getType() == JobConstant.TYPE_JOBUNIT ){
-			ret.setJobRetryFlg( null);
-			ret.setJobRetryEndStatus(null);
-			ret.setJobRetry(null);
-			ret.setJobRetryInterval(null);
-		}else{
-			ret.setJobRetryFlg( jobMasterXML.getJobRetryFlg());
-			ret.setJobRetryEndStatus(jobMasterXML.hasJobRetryEndStatus() ? OpenApiEnumConverter.integerToEnum(jobMasterXML.getJobRetryEndStatus() , JobWaitRuleInfoResponse.JobRetryEndStatusEnum.class)  : null);
-			if (jobMasterXML.getJobRetryFlg() && jobMasterXML.hasJobRetry()) {
+		// 繰り返し実行
+		// ジョブユニットは待ち条件の変更をしない(JobTreeItemUtil.getNewJobWaitRuleInfo();でデフォルト値設定のままとする)
+		if (jobMasterXML.getType() != JobConstant.TYPE_JOBUNIT) {
+			ret.setJobRetryFlg(jobMasterXML.getJobRetryFlg());
+			ret.setJobRetryEndStatus(jobMasterXML.hasJobRetryEndStatus() ? OpenApiEnumConverter.integerToEnum(
+					jobMasterXML.getJobRetryEndStatus(), JobWaitRuleInfoResponse.JobRetryEndStatusEnum.class) : null);
+			if (jobMasterXML.hasJobRetry()) {
 				ret.setJobRetry(jobMasterXML.getJobRetry());
 			} else {
 				// 未設定時はデフォルトの10を設定する。
@@ -767,8 +746,7 @@ public class MasterConv {
 			}
 			ret.setJobRetryInterval(jobMasterXML.hasJobRetryInterval() ? jobMasterXML.getJobRetryInterval() : 0);
 		}
-		
-		
+
 		//同時実行制御キュー
 		ret.setQueueFlg(jobMasterXML.getQueueFlg());
 		ret.setQueueId(jobMasterXML.getQueueId());

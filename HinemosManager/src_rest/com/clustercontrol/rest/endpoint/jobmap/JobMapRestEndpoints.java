@@ -444,6 +444,7 @@ public class JobMapRestEndpoints {
 		dtoResList.add(new JobmapIconIdDefaultListResponse(JobTypeEnum.RESOURCEJOB, bean.getJobmapIconIdResourceDefault()));
 		dtoResList.add(new JobmapIconIdDefaultListResponse(JobTypeEnum.JOBLINKSENDJOB, bean.getJobmapIconIdJobLinkSendDefault()));
 		dtoResList.add(new JobmapIconIdDefaultListResponse(JobTypeEnum.JOBLINKRCVJOB, bean.getJobmapIconIdJobLinkRcvDefault()));
+		dtoResList.add(new JobmapIconIdDefaultListResponse(JobTypeEnum.RPAJOB, bean.getJobmapIconIdRpaDefault()));
 
 		RestLanguageConverter.convertMessages(dtoResList);
 

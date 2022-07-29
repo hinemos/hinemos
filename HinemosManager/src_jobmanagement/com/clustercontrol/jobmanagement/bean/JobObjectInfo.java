@@ -12,19 +12,47 @@ import java.io.Serializable;
 
 import javax.xml.bind.annotation.XmlType;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.annotation.RestItemName;
+import com.clustercontrol.rest.annotation.validation.RestValidateInteger;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.TimeStringToLongDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.DecisionObjectEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JudgmentObjectEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.WaitStatusEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.TimeLongToStringSerializer;
+import com.clustercontrol.util.MessageConstant;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * ジョブの待ち条件の判定対象に関する情報を保持するクラス<BR>
  * 
  * @version 2.0.0
  * @since 1.0.0
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo>, Cloneable {
+public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo>, Cloneable, RequestDto {
 
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = -4050301670424654620L;
 
 	/** 判定対象種別 */
+	@RestItemName(value = MessageConstant.TYPE)
+	@RestValidateInteger(notNull = true)
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=JudgmentObjectEnum.class)
 	private Integer type;
 
 	/** ジョブID */
@@ -34,12 +62,17 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo>, C
 	private String jobName;
 
 	/** 終了状態 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=WaitStatusEnum.class)
 	private Integer status;
 
 	/** 終了値 */
 	private String value;
 
 	/** 時刻 */
+	@JsonDeserialize(using=TimeStringToLongDeserializer.class)
+	@JsonSerialize(using=TimeLongToStringSerializer.class)
 	private Long time;
 
 	/** セッション開始時の時間（分） */
@@ -52,6 +85,9 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo>, C
 	private String decisionValue;
 
 	/** 判定条件 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=DecisionObjectEnum.class)
 	private Integer decisionCondition;
 	
 	/** セッション横断ジョブ履歴判定対象範囲（分）*/
@@ -508,5 +544,9 @@ public class JobObjectInfo implements Serializable, Comparable<JobObjectInfo>, C
 	public Object clone() throws CloneNotSupportedException {
 		JobObjectInfo jobObjectInfo = (JobObjectInfo) super.clone();
 		return jobObjectInfo;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

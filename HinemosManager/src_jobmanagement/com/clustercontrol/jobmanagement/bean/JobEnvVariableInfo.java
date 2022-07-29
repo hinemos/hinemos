@@ -15,6 +15,10 @@ import javax.xml.bind.annotation.XmlType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 /**
  * 環境変数に関する情報を保持するクラス
@@ -22,11 +26,18 @@ import org.apache.commons.logging.LogFactory;
  * @version 6.0.0
  * @since 6.0.0
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。
+ * 詳細は、不具合チケット#13882を参照)
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobEnvVariableInfo implements Serializable, Comparable<JobEnvVariableInfo> {
+public class JobEnvVariableInfo implements Serializable, Comparable<JobEnvVariableInfo>, RequestDto {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 981926727088488958L;
 
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( JobEnvVariableInfo.class );
 
 	/** 環境変数ID */
@@ -207,5 +218,9 @@ public class JobEnvVariableInfo implements Serializable, Comparable<JobEnvVariab
 			ret = "OK";
 		}
 		System.out.println("    is ...  " + ret);
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

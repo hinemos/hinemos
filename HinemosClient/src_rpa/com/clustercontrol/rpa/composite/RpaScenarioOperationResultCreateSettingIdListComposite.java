@@ -26,6 +26,7 @@ import org.eclipse.swt.widgets.Text;
 import org.openapitools.client.model.RpaScenarioOperationResultCreateSettingResponse;
 
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.rpa.util.RpaRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -113,11 +114,17 @@ public class RpaScenarioOperationResultCreateSettingIdListComposite extends Comp
 			this.txtScenarioResultCreateSetting.setEnabled(false);
 		}
 
-		// 変更可能時はコンボボックスを表示する
+		this.refresh();
+		this.update();
+	}
+	
+	/**
+	 * マネージャから最新の情報を取得する。
+	 */
+	public void refresh() {
 		if (this.enabledFlg) {
 			this.createScenarioResultCreateSettingList();
-			this.update();
-		} 
+		}
 	}
 
 	/**
@@ -147,6 +154,7 @@ public class RpaScenarioOperationResultCreateSettingIdListComposite extends Comp
 			}
 			int defaultSelect = this.comboScenarioResultCreateSetting.indexOf(settingOld);
 			this.comboScenarioResultCreateSetting.select( (-1 == defaultSelect) ? 0 : defaultSelect );
+			this.comboScenarioResultCreateSetting.select(0);
 		}
 	}
 	
@@ -161,6 +169,10 @@ public class RpaScenarioOperationResultCreateSettingIdListComposite extends Comp
 					Messages.getString("message.accesscontrol.16"));
 
 		} catch (Exception e) {
+			// エンタープライズ機能が無効の場合は無視する
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				return dtoList;
+			}
 			// 上記以外の例外
 			m_log.warn("update(), " + HinemosMessage.replace(e.getMessage()), e);
 			MessageDialog.openError(
@@ -178,7 +190,6 @@ public class RpaScenarioOperationResultCreateSettingIdListComposite extends Comp
 	 */
 	@Override
 	public void update() {
-		this.comboScenarioResultCreateSetting.select(0);
 	}
 
 	/* (非 Javadoc)
@@ -221,18 +232,6 @@ public class RpaScenarioOperationResultCreateSettingIdListComposite extends Comp
 		return comboScenarioResultCreateSetting;
 	}
 
-	public void add(String managerName) {
-		this.comboScenarioResultCreateSetting.add(managerName);
-		this.update();
-	}
-
-	public void delete(String managerName) {
-		if (this.comboScenarioResultCreateSetting.indexOf(managerName) > -1) {
-			this.comboScenarioResultCreateSetting.remove(managerName);
-			this.update();
-		}
-	}
-
 	public void addComboSelectionListener(SelectionListener listener) {
 		if (this.enabledFlg) {
 			this.comboScenarioResultCreateSetting.addSelectionListener(listener);
@@ -254,10 +253,6 @@ public class RpaScenarioOperationResultCreateSettingIdListComposite extends Comp
 
 	public void setManagerName(String managerName) {
 		this.managerName = managerName;
-		if (this.enabledFlg) {
-			this.createScenarioResultCreateSettingList();
-			this.update();
-		}
 	}
 	
 	public void addSelectionListenerToComboBox(SelectionListener listener) {

@@ -10,6 +10,8 @@ package com.clustercontrol.jobmanagement.dialog;
 
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.swt.SWT;
@@ -34,6 +36,8 @@ import com.clustercontrol.util.WidgetTestUtil;
  * @since 1.0.0
  */
 public class JobTreeDialog extends CommonDialog {
+	// ログ
+	private static Log m_log = LogFactory.getLog(JobTreeDialog.class);
 
 	/** ジョブツリー用のコンポジット */
 	private JobTreeComposite treeComposite = null;
@@ -120,6 +124,9 @@ public class JobTreeDialog extends CommonDialog {
 	 */
 	@Override
 	protected void customizeDialog(Composite parent) {
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("customizeDialog() start");
+		}
 		// タイトル
 		parent.getShell().setText(Messages.getString("select.job"));
 
@@ -138,6 +145,9 @@ public class JobTreeDialog extends CommonDialog {
 
 		createGridData();
 		addDoubleClick();
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("customizeDialog() end");
+		}
 	}
 
 	/**

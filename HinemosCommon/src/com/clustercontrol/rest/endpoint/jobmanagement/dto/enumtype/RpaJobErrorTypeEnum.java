@@ -18,6 +18,20 @@ public enum RpaJobErrorTypeEnum implements EnumDto<Integer> {
 	ALREADY_RUNNING(RpaJobErrorTypeConstant.ALREADY_RUNNING),
 	/** RPAツールが異常終了した */
 	ABNORMAL_EXIT(RpaJobErrorTypeConstant.ABNORMAL_EXIT),
+	/** シナリオファイルパスが存在しない */
+	FILE_DOES_NOT_EXIST(RpaJobErrorTypeConstant.FILE_DOES_NOT_EXIST), 
+	/** ログインに失敗しました */
+	LOGIN_ERROR(RpaJobErrorTypeConstant.LOGIN_ERROR), 
+	/** ログインセッションが複数あります */
+	TOO_MANY_LOGIN_SESSION(RpaJobErrorTypeConstant.TOO_MANY_LOGIN_SESSION), 
+	/** RPAシナリオエグゼキューターが起動していません */
+	NOT_RUNNING_EXECUTOR(RpaJobErrorTypeConstant.NOT_RUNNING_EXECUTOR), 
+	/** エラーが発生しました */
+	ERROR_OCCURRED(RpaJobErrorTypeConstant.ERROR_OCCURRED), 
+	/** ログインセッションが失われました */
+	LOST_LOGIN_SESSION(RpaJobErrorTypeConstant.LOST_LOGIN_SESSION), 
+	/** スクリーンショット取得失敗 */
+	SCREENSHOT_FAILED(RpaJobErrorTypeConstant.SCREENSHOT_FAILED), 
 	/** それ以外 */
 	OTHER(RpaJobErrorTypeConstant.OTHER);
 

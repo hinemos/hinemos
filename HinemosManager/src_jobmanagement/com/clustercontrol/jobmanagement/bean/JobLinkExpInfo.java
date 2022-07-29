@@ -15,23 +15,41 @@ import javax.xml.bind.annotation.XmlType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.annotation.RestItemName;
+import com.clustercontrol.rest.annotation.validation.RestValidateString;
+import com.clustercontrol.rest.annotation.validation.RestValidateString.CheckType;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.util.MessageConstant;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 /**
  * ジョブ連携メッセージの拡張情報設定を保持するクラス
  * 
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobLinkExpInfo implements Serializable, Comparable<JobLinkExpInfo> {
+public class JobLinkExpInfo implements Serializable, Comparable<JobLinkExpInfo>, RequestDto {
 
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = -2690504181259485106L;
 
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( JobLinkExpInfo.class );
 
 	/** キー */
+	@RestItemName(value = MessageConstant.KEY)
+	@RestValidateString(notNull = true, minLen = 1, maxLen = 128, type = CheckType.ID)
 	private String key;
 
 	/** 値 */
+	@RestItemName(value = MessageConstant.VALUE)
 	private String value;
 
 	/**
@@ -112,5 +130,8 @@ public class JobLinkExpInfo implements Serializable, Comparable<JobLinkExpInfo> 
 		} else {
 			return this.key.compareTo(o.key);
 		}
+	}
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

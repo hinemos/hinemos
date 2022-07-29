@@ -633,6 +633,8 @@ public class JobmapIconImageCache {
 		String defaultJobLinkSendIconId = "";
 		// ジョブマップ用アイコンID（ジョブ連携待機ジョブ）
 		String defaultJobLinkRcvIconId = "";
+		// ジョブマップ用アイコンID（RPAシナリオジョブ）
+		String defaultJobRpaIconId = "";
 
 		JobMapRestClientWrapper mapWrapper = JobMapRestClientWrapper.getWrapper(managerName);
 		try {
@@ -677,6 +679,9 @@ public class JobmapIconImageCache {
 					case JOBLINKRCVJOB:
 						defaultJobLinkRcvIconId = dtoRes.getDefaultId();
 						break;
+					case RPAJOB:
+						defaultJobRpaIconId = dtoRes.getDefaultId();
+						break;
 					default:
 						break;
 				}
@@ -717,6 +722,7 @@ public class JobmapIconImageCache {
 		m_defaultResourceIconIdCache.put(managerName, defaultResourceIconId);
 		m_defaultJobLinkSendIconIdCache.put(managerName, defaultJobLinkSendIconId);
 		m_defaultJobLinkRcvIconIdCache.put(managerName, defaultJobLinkRcvIconId);
+		m_defaultRpaIconIdCache.put(managerName, defaultJobRpaIconId);
 
 		if( isSyncGraphicImage ){
 			//必要なら画像イメージインスタンスのキャッシュの同期

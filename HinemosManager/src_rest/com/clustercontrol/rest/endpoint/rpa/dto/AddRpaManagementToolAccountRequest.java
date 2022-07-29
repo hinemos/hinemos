@@ -282,12 +282,12 @@ public class AddRpaManagementToolAccountRequest implements RequestDto {
 		try {
 			// 同一アカウントID、URL(、テナント名)のRPA管理ツールアカウントがある場合、バリデーションエラー
 			if (tenantName == null) {
-				RpaManagementToolAccount sameAccount = QueryUtil.getRpaAccountByAccountIdAndUrl(accountId, url);
+				RpaManagementToolAccount sameAccount = QueryUtil.getRpaAccountByAccountIdAndUrl_NONE(accountId, url);
 				if (!sameAccount.getRpaScopeId().equals(rpaScopeId)) {
 					throw new InvalidSetting(MessageConstant.MESSAGE_RPA_MANAGEMENT_ACCOUNT_DUPULICATED.getMessage(sameAccount.getRpaScopeName(), sameAccount.getRpaScopeId(), accountId, url));
 				}
 			} else {
-				RpaManagementToolAccount sameAccount = QueryUtil.getRpaAccountByAccountIdAndUrlAndTenantName(accountId, url, tenantName);
+				RpaManagementToolAccount sameAccount = QueryUtil.getRpaAccountByAccountIdAndUrlAndTenantName_NONE(accountId, url, tenantName);
 				if (!sameAccount.getRpaScopeId().equals(rpaScopeId)) {
 					throw new InvalidSetting(MessageConstant.MESSAGE_RPA_MANAGEMENT_ACCOUNT_DUPULICATED_WITH_TENANT.getMessage(sameAccount.getRpaScopeName(), sameAccount.getRpaScopeId(), accountId, url, tenantName));
 				}

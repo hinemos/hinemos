@@ -270,7 +270,21 @@ public class RpaScenarioTagDialog extends CommonDialog{
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		scenarioTagRoleIdListComposite.setLayoutData(gridData);
+		if(scenarioTagRoleIdListComposite.getComboRoleId() != null){
+			scenarioTagRoleIdListComposite.getComboRoleId().addSelectionListener(
+				new SelectionAdapter() {
+					@Override
+					public void widgetSelected(SelectionEvent e) {
+						// オーナーロール変更時の動作
+						scenarioTagPathListComposite.setOwnerRoleID(scenarioTagRoleIdListComposite.getText());
+					}
+				}
+			);
+		}
 
+		//オーナーロールに併せて選択可能な親タグの一覧を調整
+		scenarioTagPathListComposite.setOwnerRoleID(scenarioTagRoleIdListComposite.getText());
+		
 		Display calDisplay = shell.getDisplay();
 		shell.setLocation((calDisplay.getBounds().width - shell.getSize().x) / 2,
 				(calDisplay.getBounds().height - shell.getSize().y) / 2);

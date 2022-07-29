@@ -399,4 +399,24 @@ public class RunResultInfo extends RunInfo implements Serializable {
 		}
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "RunResultInfo ["
+				+ "status=" + status
+				+ ", time=" + time
+				+ ", fileList=" + fileList
+				+ ", jobLinkMessageInfo=" + jobLinkMessageInfo
+				+ ", endValue=" + endValue
+				+ ", message=" + message
+				+ ", errorMessage=" + errorMessage
+				+ ", rpaJobErrorType=" + rpaJobErrorType
+				+ ", rpaJobReturnCode=" + rpaJobReturnCode
+				+ ", rpaJobLogfileName=" + rpaJobLogfileName
+				+ ", rpaJobLogMessage=" + rpaJobLogMessage
+				+ ", rpaJobEndValueConditionInfo=" + rpaJobEndValueConditionInfo
+				+ ", runResultFileCheckInfo=" + runResultFileCheckInfo
+				+ "]";
+	}
+
 }

@@ -15,6 +15,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -22,7 +23,7 @@ public class RestObjectMapperWrapper {
 
 	private static Log m_log = LogFactory.getLog(RestObjectMapperWrapper.class);
 
-	private static ObjectMapper mapper = new ObjectMapper();
+	private static ObjectMapper mapper = new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
 	public static <T> T convertJsonToObject(String json, Class<T> clazz) throws InvalidSetting, HinemosUnknown {
 		T obj = null;

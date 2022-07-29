@@ -26,6 +26,7 @@ import org.openapitools.client.model.RpaScenarioOperationResultCreateSettingResp
 import org.openapitools.client.model.RpaScenarioOperationResultCreateSettingResponse.IntervalEnum;
 
 import com.clustercontrol.bean.RunInterval;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.rpa.action.GetRpaScenarioOperationResultCreateSettingListTableDefine;
 import com.clustercontrol.rpa.composite.action.RpaScenarioOperationResultCreateSettingDoubleClickListener;
 import com.clustercontrol.rpa.util.RpaRestClientWrapper;
@@ -133,6 +134,11 @@ public class RpaScenarioOperationResultCreateSettingListComposite extends Compos
 			try {
 				list = wrapper.getRpaScenarioOperationResultCreateSettingList();
 			} catch (Exception e) {
+				// エンタープライズ機能が無効の場合は無視する
+				if(UrlNotFound.class.equals(e.getCause().getClass())) {
+					continue;
+				}
+				// 上記以外の例外
 				log.warn("update(), " + e.getMessage(), e);
 				errorMsgs.put( managerName, e.getMessage() );
 			}
@@ -155,7 +161,7 @@ public class RpaScenarioOperationResultCreateSettingListComposite extends Compos
 				obj.add(map.getKey());
 				obj.add(info.getScenarioOperationResultCreateSettingId());
 				obj.add(HinemosMessage.replace(info.getDescription()));
-				obj.add(info.getFacilityId());
+				obj.add(info.getScope());
 				obj.add(RunInterval.enumToString(info.getInterval(), IntervalEnum.class));
 				String validFlgStr;
 				if (info.getValidFlg()) {

@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.bean.EndStatusConstant;
+import com.clustercontrol.calendar.util.TimeStringConverter;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
@@ -77,10 +79,16 @@ import com.clustercontrol.jobmanagement.model.JobOutputMstEntity;
 import com.clustercontrol.jobmanagement.model.JobParamMstEntity;
 import com.clustercontrol.jobmanagement.model.JobWaitGroupMstEntity;
 import com.clustercontrol.jobmanagement.model.JobWaitMstEntity;
+import com.clustercontrol.jobmanagement.util.JobEnumConvertMap;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.repository.factory.FacilitySelector;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobNextJobOrderInfoResponse;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobObjectGroupInfoResponse;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobObjectInfoResponse;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobWaitRuleInfoResponse;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JudgmentObjectEnum;
 import com.clustercontrol.util.HinemosTime;
 
 import jakarta.persistence.EntityManager;
@@ -533,6 +541,51 @@ public class FullJob {
 		jobInfo = createJobInfo(jobMstEntity, null, null, null, null, null, null, null);
 		
 		return jobInfo;
+	}
+
+	/**
+	 * ジョブ情報を作成します。<BR>
+	 *
+	 * @param jobunitId ジョブユニットID
+	 * @param jobId ジョブID
+	 * @return ジョブ情報
+	 * @throws HinemosUnknown
+	 * @throws JobMasterNotFound
+	 * @throws UserNotFound
+	 * @throws InvalidRole
+	 */
+	public static JobMstEntity getJobMasterFull(String jobunitId, String jobId) throws HinemosUnknown, JobMasterNotFound, InvalidRole {
+		m_log.trace("getJobMasterFull() : " + jobunitId + ", " + jobId);
+		try {
+			_lock.readLock();
+			
+			Map<String, Map<String,JobMstEntity>> jobInfoCache = getJobMstCacheWithoutDebugLog();
+			Map<String, JobMstEntity> jobInfoUnitCache = jobInfoCache.get(jobunitId);
+			if (jobInfoUnitCache != null) {
+				JobMstEntity ret = jobInfoUnitCache.get(jobId);
+				if (ret != null) {
+					m_log.trace("cache hit " + jobunitId + "," + jobId + ", hit=" + jobInfoUnitCache.size());
+					return ret;
+				}
+			} else {
+				m_log.trace("cache didn't hit " + jobunitId + "," + jobId);
+			}
+		} finally {
+			_lock.readUnlock();
+		}
+		
+		m_log.trace("createJobData() : " + jobunitId + ", " + jobId);
+		JobMstEntity jobMstEntity = null;
+		try {
+			_lock.readLock();
+			jobMstEntity = getJobMstEntityFromLocal(jobunitId, jobId);
+			if (jobMstEntity == null) {
+				jobMstEntity = QueryUtil.getJobMstPK(jobunitId, jobId);
+			}
+		} finally {
+			_lock.readUnlock();
+		}
+		return jobMstEntity;
 	}
 
 	/**
@@ -1858,5 +1911,245 @@ public class FullJob {
 		}
 		return updateIDSet;
 		
+	}
+	
+	/**
+	 * JobMstからJobWaitRuleInfoResponseに変換する。
+	 * Enumの変換マップはインスタンス化して使いまわす。
+	 * 
+	 * @param job 変換対象
+	 * @param enumCache EnumとDB格納数値データとの辞書
+	 * @return JobWaitRuleInfoResponse
+	 * @throws InvalidRole
+	 */
+	public static JobWaitRuleInfoResponse createWaitRuleResponse(JobMstEntity job, JobEnumConvertMap enumCache) throws InvalidRole {
+		//待ち条件を取得
+		JobWaitRuleInfoResponse waitRule = new JobWaitRuleInfoResponse();
+		//ジョブネット・ジョブ・ファイル転送ジョブの場合
+		//待ち条件を設定
+		if(job.getJobType() == JobConstant.TYPE_JOBNET ||
+				job.getJobType() == JobConstant.TYPE_JOB||
+				job.getJobType() == JobConstant.TYPE_FILEJOB ||
+				job.getJobType() == JobConstant.TYPE_APPROVALJOB ||
+				job.getJobType() == JobConstant.TYPE_REFERJOBNET ||
+				job.getJobType() == JobConstant.TYPE_REFERJOB ||
+				job.getJobType() == JobConstant.TYPE_MONITORJOB ||
+				job.getJobType() == JobConstant.TYPE_JOBLINKSENDJOB ||
+				job.getJobType() == JobConstant.TYPE_JOBLINKRCVJOB ||
+				job.getJobType() == JobConstant.TYPE_FILECHECKJOB ||
+				job.getJobType() == JobConstant.TYPE_RESOURCEJOB ||
+				job.getJobType() == JobConstant.TYPE_RPAJOB){
+			waitRule.setSuspend(job.getSuspend());
+
+			waitRule.setCondition(enumCache.getConditionTypeEnum(job.getConditionType()));
+			waitRule.setEndCondition(job.getUnmatchEndFlg());
+
+			waitRule.setEndStatus(enumCache.getEndStatusSelectEnum(job.getUnmatchEndStatus()));
+			waitRule.setEndValue(job.getUnmatchEndValue());
+			waitRule.setSkip(job.getSkip());
+			waitRule.setSkipEndStatus(enumCache.getEndStatusSelectEnum(job.getSkipEndStatus()));
+			waitRule.setSkipEndValue(job.getSkipEndValue());
+			waitRule.setExclusiveBranch(job.getExclusiveBranchFlg());
+			waitRule.setExclusiveBranchEndStatus(enumCache.getEndStatusSelectEnum(job.getExclusiveBranchEndStatus()));
+			waitRule.setExclusiveBranchEndValue(job.getExclusiveBranchEndValue());
+			waitRule.setCalendar(job.getCalendar());
+			waitRule.setCalendarId(job.getCalendarId());
+			waitRule.setCalendarEndStatus(enumCache.getEndStatusSelectEnum(job.getCalendarEndStatus()));
+			waitRule.setCalendarEndValue(job.getCalendarEndValue());
+			waitRule.setJobRetryFlg(job.getJobRetryFlg());
+			waitRule.setJobRetry(job.getJobRetry());
+			waitRule.setJobRetryInterval(job.getJobRetryInterval());
+			// JobInfo->JobWaitRuleInfoの jobRetryEndStatusにnullが入っている場合の適用
+			if (job.getJobRetryEndStatus() == null) {
+				waitRule.setJobRetryEndStatus(null);
+			} else {
+				waitRule.setJobRetryEndStatus(enumCache.getEndStatusSelectEnum(job.getJobRetryEndStatus()));
+			}
+			waitRule.setStartDelay(job.getStartDelay());
+			waitRule.setStartDelaySession(job.getStartDelaySession());
+			waitRule.setStartDelaySessionValue(job.getStartDelaySessionValue());
+			waitRule.setStartDelayTime(job.getStartDelayTime());
+			if (job.getStartDelayTimeValue() != null) {
+				waitRule.setStartDelayTimeValue(convertTimeLongToString(job.getStartDelayTimeValue()));
+			}
+
+			waitRule.setStartDelayConditionType(enumCache.getConditionTypeEnum(job.getStartDelayConditionType()));
+			waitRule.setStartDelayNotify(job.getStartDelayNotify());
+
+			waitRule.setStartDelayNotifyPriority(enumCache.getPrioritySelectEnum(job.getStartDelayNotifyPriority()));
+			waitRule.setStartDelayOperation(job.getStartDelayOperation());
+
+			waitRule.setStartDelayOperationType(enumCache.getOperationStartDelayEnum(job.getStartDelayOperationType()));
+
+			waitRule.setStartDelayOperationEndStatus(enumCache.getEndStatusSelectEnum(job.getStartDelayOperationEndStatus()));
+			waitRule.setStartDelayOperationEndValue(job.getStartDelayOperationEndValue());
+
+			waitRule.setEndDelay(job.getEndDelay());
+			waitRule.setEndDelaySession(job.getEndDelaySession());
+			waitRule.setEndDelaySessionValue(job.getEndDelaySessionValue());
+			waitRule.setEndDelayJob(job.getEndDelayJob());
+			waitRule.setEndDelayJobValue(job.getEndDelayJobValue());
+			waitRule.setEndDelayTime(job.getEndDelayTime());
+			if (job.getEndDelayTimeValue() != null) {
+				waitRule.setEndDelayTimeValue(convertTimeLongToString(job.getEndDelayTimeValue()));
+			}
+
+			waitRule.setEndDelayConditionType(enumCache.getConditionTypeEnum(job.getEndDelayConditionType()));
+			waitRule.setEndDelayNotify(job.getEndDelayNotify());
+			waitRule.setEndDelayNotifyPriority(enumCache.getPrioritySelectEnum(job.getEndDelayNotifyPriority()));
+			waitRule.setEndDelayOperation(job.getEndDelayOperation());
+			waitRule.setEndDelayOperationType(enumCache.getOperationEndDelayEnum(job.getEndDelayOperationType()));
+			waitRule.setEndDelayOperationEndStatus(enumCache.getEndStatusSelectEnum(job.getEndDelayOperationEndStatus()));
+			waitRule.setEndDelayOperationEndValue(job.getEndDelayOperationEndValue());
+			waitRule.setEndDelayChangeMount(job.getEndDelayChangeMount());
+			waitRule.setEndDelayChangeMountValue(job.getEndDelayChangeMountValue());
+			waitRule.setMultiplicityNotify(job.getMultiplicityNotify());
+
+			waitRule.setMultiplicityNotifyPriority(enumCache.getPrioritySelectEnum(job.getMultiplicityNotifyPriority()));
+			waitRule.setMultiplicityOperation(enumCache.getOperationMultipleEnum(job.getMultiplicityOperation()));
+			waitRule.setMultiplicityEndValue(job.getMultiplicityEndValue());
+			waitRule.setQueueFlg(job.getQueueFlg());
+			waitRule.setQueueId(job.getQueueId());
+		}
+
+		//待ち条件を取得
+		List<JobWaitGroupMstEntity> waitGroupList = job.getJobWaitGroupMstEntities();
+		ArrayList<JobObjectGroupInfoResponse> objectGroupList = new ArrayList<>();
+		if(waitGroupList != null && !waitGroupList.isEmpty()){
+			for (JobWaitGroupMstEntity waitGroup : waitGroupList){
+				if(waitGroup == null){
+					continue;
+				}
+				JobObjectGroupInfoResponse objectGroupInfo = new JobObjectGroupInfoResponse();
+				objectGroupInfo.setOrderNo(waitGroup.getId().getOrderNo());
+				objectGroupInfo.setConditionType(enumCache.getConditionTypeEnum(waitGroup.getConditionType()));
+
+				objectGroupInfo.setIsGroup(waitGroup.getIsGroup());
+				ArrayList<JobObjectInfoResponse> objectList = new ArrayList<>();
+				for (JobWaitMstEntity wait : waitGroup.getJobWaitMstEntities()) {
+					JobObjectInfoResponse objectInfo = new JobObjectInfoResponse();
+					if (wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_TIME
+							&& wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_START_MINUTE
+							&& wait.getId().getTargetJobType() != JudgmentObjectConstant.TYPE_JOB_PARAMETER) {
+						// ジョブ名格納用
+						String jobName = "";
+						//対象ジョブを取得
+						Map<String, Map<String, JobMstEntity>> jobMstCache = getJobMstCacheWithoutDebugLog();
+						if (jobMstCache.get(wait.getId().getTargetJobunitId()) != null
+								&& jobMstCache.get(wait.getId().getTargetJobunitId()).get(wait.getId().getTargetJobId()) != null) {
+							// キャッシュが存在し、ジョブ名が取得できるならキャッシュから取得
+							JobMstEntity targetJob = jobMstCache.get(wait.getId().getTargetJobunitId()).get(wait.getId().getTargetJobId());
+							jobName = targetJob.getJobName();
+						} else {
+							// ジョブ名をSQLで取得する
+							try {
+								JobMstEntity targetJob= QueryUtil.getJobMstPK(wait.getId().getTargetJobunitId(), wait.getId().getTargetJobId());
+								jobName = targetJob.getJobName();
+							} catch(JobMasterNotFound e) {
+								m_log.error("targetJob Not Found : " + e.getMessage());
+								jobName = "";
+							}
+						}
+						objectInfo.setJobId(wait.getId().getTargetJobId());
+						objectInfo.setJobName(jobName);
+					}
+
+					switch (wait.getId().getTargetJobType()) {
+					case JudgmentObjectConstant.TYPE_JOB_END_STATUS:
+						/** ジョブ終了状態 */
+						objectInfo.setStatus(enumCache.getWaitStatusEnum(wait.getId().getTargetInt1()));
+						objectInfo.setType(JudgmentObjectEnum.JOB_END_STATUS);
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_END_VALUE:
+						/** ジョブ終了値 */
+						objectInfo.setDecisionCondition(enumCache.getDecisionObjectEnum(wait.getId().getTargetInt1()));
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						objectInfo.setType(JudgmentObjectEnum.JOB_END_VALUE);
+						break;
+					case JudgmentObjectConstant.TYPE_TIME:
+						/** 時刻 */
+						objectInfo.setTime(convertTimeLongToString(wait.getId().getTargetLong()));
+						objectInfo.setType(JudgmentObjectEnum.TIME);
+						break;
+					case JudgmentObjectConstant.TYPE_START_MINUTE:
+						/** セッション開始時の時間（分）  */
+						objectInfo.setStartMinute(wait.getId().getTargetInt1());
+						objectInfo.setType(JudgmentObjectEnum.START_MINUTE);
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_PARAMETER:
+						/** ジョブ変数 */
+						objectInfo.setDecisionCondition(enumCache.getDecisionObjectEnum(wait.getId().getTargetInt1()));
+						objectInfo.setDecisionValue(wait.getId().getTargetStr1());
+						objectInfo.setValue(wait.getId().getTargetStr2());
+						objectInfo.setType(JudgmentObjectEnum.JOB_PARAMETER);
+						break;
+					case JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS:
+						/** セッション横断ジョブ終了状態 */
+						objectInfo.setStatus(enumCache.getWaitStatusEnum(wait.getId().getTargetInt1()));
+						objectInfo.setCrossSessionRange(wait.getId().getTargetInt2());
+						objectInfo.setType(JudgmentObjectEnum.CROSS_SESSION_JOB_END_STATUS);
+						break;
+					case JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE:
+						/** セッション横断ジョブ終了値 */
+						objectInfo.setCrossSessionRange(wait.getId().getTargetInt2());
+						objectInfo.setDecisionCondition(enumCache.getDecisionObjectEnum(wait.getId().getTargetInt1()));
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						objectInfo.setType(JudgmentObjectEnum.CROSS_SESSION_JOB_END_VALUE);
+						break;
+					case JudgmentObjectConstant.TYPE_JOB_RETURN_VALUE:
+						/** ジョブ戻り値 */
+						objectInfo.setDecisionCondition(enumCache.getDecisionObjectEnum(wait.getId().getTargetInt1()));
+						objectInfo.setValue(wait.getId().getTargetStr1());
+						objectInfo.setType(JudgmentObjectEnum.JOB_RETURN_VALUE);
+						break;
+					default:
+						break;
+					}
+					objectInfo.setDescription(wait.getDescription());
+					objectList.add(objectInfo);
+				}
+				objectGroupInfo.setJobObjectList(objectList);
+				objectGroupList.add(objectGroupInfo);
+			}
+		}
+		/*
+		 * ソート処理
+		 */
+		Collections.sort(objectGroupList, new Comparator<JobObjectGroupInfoResponse>() {
+			@Override
+			public int compare(JobObjectGroupInfoResponse o1, JobObjectGroupInfoResponse o2) {
+				return o1.getOrderNo().compareTo(o2.getOrderNo());
+			}
+		});
+		waitRule.setObjectGroup(objectGroupList);
+		ArrayList<JobNextJobOrderInfoResponse> nextJobOrderList = new ArrayList<>();	
+		List<JobNextJobOrderMstEntity> orderMstList = job.getJobNextJobOrderMstEntities();
+		
+		if(orderMstList != null){
+			//優先度順にソート
+			//nextJobOrderListに優先度順で登録する
+			orderMstList.sort(Comparator.comparing(orderMst -> orderMst.getOrder()));
+			for (JobNextJobOrderMstEntity orderMst : orderMstList) {
+				JobNextJobOrderInfoResponse orderInfo = new JobNextJobOrderInfoResponse();
+				orderInfo.setJobunit_id(orderMst.getId().getJobunitId());
+				orderInfo.setJob_id(orderMst.getId().getJobId());
+				orderInfo.setNext_job_id(orderMst.getId().getNextJobId());
+				nextJobOrderList.add(orderInfo);
+			}
+		}
+
+		waitRule.setExclusiveBranchNextJobOrderList(nextJobOrderList);
+		return waitRule;
+	}
+	
+	//エポックミリ秒を 時刻（HH:mm:ss 24時以降対応）に変換
+	private static String convertTimeLongToString(Long time) {
+		// クライアントとマネージャのタイムゾーンは一致している前提の処理である。
+		if (time == null) {
+			return null;
+		}
+		String strTime = null;
+		strTime = TimeStringConverter.formatTime(new Date(time));
+		return strTime;
 	}
 }

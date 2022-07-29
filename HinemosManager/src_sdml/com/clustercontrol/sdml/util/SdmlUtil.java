@@ -14,9 +14,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.hub.bean.StringSampleTag;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.sdml.factory.SdmlVersionManager;
@@ -111,7 +114,7 @@ public class SdmlUtil {
 	 * @throws HinemosUnknown
 	 */
 	public static OutputBasicInfo createOutputBasicInfo(SdmlControlSettingInfo controlSetting, String facilityId,
-			int priority, String message, String messageOrg) throws HinemosUnknown {
+			int priority, String message, String messageOrg, NotifyTriggerType notifyTriggerType) throws HinemosUnknown {
 		OutputBasicInfo output = new OutputBasicInfo();
 
 		// 通知情報を設定
@@ -125,6 +128,12 @@ public class SdmlUtil {
 		output.setMessage(message);
 		output.setMessageOrg(messageOrg);
 		output.setNotifyGroupId(controlSetting.getNotifyGroupId());
+		output.setJoblinkMessageId(JobLinkMessageId.getId(notifyTriggerType, HinemosModuleConstant.SDML_CONTROL, controlSetting.getApplicationId()));
+		//7.0.0との互換性保持のため、Hinemosプロパティで出力するか制御
+		boolean flg = HinemosPropertyCommon.notify_output_trigger_subkey_$.getBooleanValue(HinemosModuleConstant.SDML_CONTROL);
+		if (flg) {
+			output.setSubKey(notifyTriggerType.name());
+		}
 
 		return output;
 	}

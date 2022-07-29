@@ -222,6 +222,13 @@ public class RpaComposite extends Composite {
 	}
 
 	/**
+	 * 直接実行のラジオボタンが選択されているかを返します
+	 */
+	public boolean isDirectExecButtonSelected() {
+		return m_directExecButton.getSelection();
+	}
+
+	/**
 	 * @param m_rpa
 	 *            the m_rpa to set
 	 */

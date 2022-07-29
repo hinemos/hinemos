@@ -175,10 +175,9 @@
 	<named-query name="RpaScenario.relationScenarioTagId">
 		<query>
 			<![CDATA[
-				SELECT DISTINCT b.id.tagId
-				FROM RpaScenario a 
-				JOIN RpaScenarioTagRelation b 
-				WHERE b.id.tagId IN :tagIds
+				SELECT DISTINCT a.id.scenarioId
+				FROM RpaScenarioTagRelation a 
+				WHERE a.id.tagId IN :tagIds
 			]]>
 		</query>
 	</named-query>
@@ -821,6 +820,24 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="RpaScenarioOperationResultCreateSetting.findByFacilityId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioOperationResultCreateSetting a
+				WHERE a.facilityId = :facilityId
+				ORDER BY a.scenarioOperationResultCreateSettingId ASC
+			]]>
+		</query>
+	</named-query>
+	<named-query name="RpaScenarioOperationResultCreateSetting.findByCalendarId">
+		<query>
+			<![CDATA[
+				SELECT a FROM RpaScenarioOperationResultCreateSetting a
+				WHERE a.calendarId = :calendarId
+				ORDER BY a.scenarioOperationResultCreateSettingId ASC
+			]]>
+		</query>
+	</named-query>
 	<!-- RpaScenarioExecNode -->
 	<named-query name="RpaScenarioExecNode.findByScenarioIdentifyStringAndCreateSettingId">
 		<query>
@@ -829,6 +846,7 @@
 				JOIN RpaScenario b ON b.scenarioId = a.id.scenarioId
 				WHERE a.id.scenarioIdentifyString = :scenarioIdentifyString
 				AND b.scenarioOperationResultCreateSettingId = :scenarioOperationResultCreateSettingId
+				ORDER BY a.id.facilityId ASC
 			]]>
 		</query>
 	</named-query>

@@ -10,14 +10,18 @@ package com.clustercontrol.notify.model;
 
 import java.io.Serializable;
 
+import javax.xml.bind.annotation.XmlTransient;
+import javax.xml.bind.annotation.XmlType;
+
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.NotifyRelationInfoSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
-import javax.xml.bind.annotation.XmlTransient;
-import javax.xml.bind.annotation.XmlType;
 
 
 /**
@@ -28,6 +32,7 @@ import javax.xml.bind.annotation.XmlType;
 @Entity
 @Table(name="cc_notify_relation_info", schema="setting")
 @Cacheable(true)
+@JsonSerialize(using=NotifyRelationInfoSerializer.class)
 public class NotifyRelationInfo implements Serializable, Comparable<NotifyRelationInfo> {
 	private static final long serialVersionUID = 1L;
 	private String functionPrefix;
@@ -206,5 +211,10 @@ public class NotifyRelationInfo implements Serializable, Comparable<NotifyRelati
 			ret = "OK";
 		}
 		System.out.println("    is ...  " + ret);
+	}
+
+	@Override
+	public String toString() {
+		return "NotifyRelationInfo [functionPrefix=" + functionPrefix + ", id=" + id + ", notifyType=" + notifyType + "]";
 	}
 }

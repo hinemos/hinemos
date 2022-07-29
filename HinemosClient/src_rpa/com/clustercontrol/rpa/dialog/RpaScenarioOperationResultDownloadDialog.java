@@ -62,7 +62,7 @@ public class RpaScenarioOperationResultDownloadDialog extends CommonDialog{
 		shell = this.getShell();
 
 		// タイトル
-		shell.setText(Messages.getString("dialog.rpa.scenario.operation.result.download.target"));
+		shell.setText(Messages.getString("dialog.rpa.scenario.operation.result.download"));
 		GridData gridData = new GridData();
 		
 		RowLayout layout = new RowLayout();

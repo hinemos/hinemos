@@ -29,6 +29,7 @@ import org.openapitools.client.model.GetRpaScenarioListResponse;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.rpa.action.GetRpaScenarioListTableDefine;
 import com.clustercontrol.rpa.composite.action.RpaScenarioDoubleClickListener;
@@ -192,8 +193,9 @@ public class RpaScenarioListComposite extends Composite {
 			for (GetRpaScenarioListResponse response : entry.getValue()) {
 				ArrayList<Object> arrayList = new ArrayList<Object>();
 				arrayList.add(entry.getKey());
-				arrayList.add(response.getRpaToolName());
+				arrayList.add(response.getScenarioOperationResultCreateSettingId());
 				arrayList.add(response.getScenarioId());
+				arrayList.add(response.getRpaToolId());
 				arrayList.add(response.getScenarioName());
 				arrayList.add(response.getScenarioIdentifyString());
 				arrayList.add(response.getDescription());
@@ -267,7 +269,13 @@ public class RpaScenarioListComposite extends Composite {
 		} catch (InvalidRole e) {
 			// アクセス権なしの場合、エラーダイアログを表示する
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
-		} catch (HinemosUnknown e) {			errorMsgs.put( managerName, Messages.getString("message.rpa.scenario.list.1") + ", " + HinemosMessage.replace(e.getMessage()));
+		} catch (HinemosUnknown e) {
+			// エンタープライズ機能が無効の場合は無視する
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				return;
+			}
+			// 上記以外の例外
+			errorMsgs.put( managerName, Messages.getString("message.rpa.scenario.list.1") + ", " + HinemosMessage.replace(e.getMessage()));
 		} catch (Exception e) {
 			m_log.warn("update() getRpaScenarioList, " + HinemosMessage.replace(e.getMessage()), e);
 			errorMsgs.put( managerName, Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));

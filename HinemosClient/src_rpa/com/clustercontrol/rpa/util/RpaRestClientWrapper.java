@@ -61,6 +61,7 @@ import com.clustercontrol.fault.RpaScenarioOperationResultCreateSettingNotFound;
 import com.clustercontrol.fault.RpaScenarioOperationResultNotFound;
 import com.clustercontrol.fault.RpaScenarioTagDuplicate;
 import com.clustercontrol.fault.RpaScenarioTagNotFound;
+import com.clustercontrol.fault.UsedFacility;
 import com.clustercontrol.rest.client.DefaultApi;
 import com.clustercontrol.rest.endpoint.rpa.dto.SummaryTypeEnum;
 import com.clustercontrol.util.RestConnectManager;
@@ -153,7 +154,7 @@ public class RpaRestClientWrapper {
 	}
 	
 	public List<RpaManagementToolAccountResponse> deleteRpaManagementToolAccount(String rpaScopeIds)
-			throws RestConnectFailed, HinemosUnknown, InvalidUserPass, InvalidRole, RpaManagementToolAccountNotFound {
+			throws RestConnectFailed, HinemosUnknown, InvalidUserPass, InvalidRole, RpaManagementToolAccountNotFound, UsedFacility {
 		RestUrlSequentialExecuter<List<RpaManagementToolAccountResponse>> proxy = new RestUrlSequentialExecuter<List<RpaManagementToolAccountResponse>>(this.connectUnit,this.restKind){
 			@Override
 			public List<RpaManagementToolAccountResponse> executeMethod( DefaultApi apiClient) throws Exception{
@@ -163,7 +164,7 @@ public class RpaRestClientWrapper {
 		};
 		try {
 			return proxy.proxyExecute();
-		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | RpaManagementToolAccountNotFound def) {//想定内例外 API個別に判断
+		} catch (RestConnectFailed | HinemosUnknown | InvalidUserPass | InvalidRole | RpaManagementToolAccountNotFound | UsedFacility def) {//想定内例外 API個別に判断
 			throw def;
 		} catch ( Exception unknown ){ //想定外の例外の場合HinemosUnknownに変換（通常ここには来ない想定）
 			throw new HinemosUnknown(unknown);

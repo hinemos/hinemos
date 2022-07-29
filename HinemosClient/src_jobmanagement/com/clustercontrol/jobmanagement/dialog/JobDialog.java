@@ -354,6 +354,8 @@ public class JobDialog extends CommonDialog {
 					// ロックの取得に失敗した
 					m_log.debug("run() : cannot get editLock(jobunitId="+jobunitId+")");
 				}
+				// RPAシナリオジョブの場合、制御(ノード)タブの活性を制御する
+				updateControlNodeComposite();
 			}
 		});
 
@@ -960,7 +962,13 @@ public class JobDialog extends CommonDialog {
 		}
 
 		m_tabFolder.setSelection(0);
-
+		m_tabFolder.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// RPAシナリオジョブの場合、制御(ノード)タブの活性を制御する
+				updateControlNodeComposite();
+			}
+		});
 		// 画面中央に
 		Display display = m_shell.getDisplay();
 		m_shell.setLocation(
@@ -2528,4 +2536,14 @@ public class JobDialog extends CommonDialog {
 		}
 	}
 
+	private void updateControlNodeComposite(){
+		// 間接実行の場合はノードを指定・エージェント指定しないため非活性
+		if(m_rpaComposite != null && !m_readOnly){
+			if(m_rpaComposite.isDirectExecButtonSelected()){
+				m_controlNodeComposite.setEnabled(true);
+			} else{
+				m_controlNodeComposite.setEnabled(false);
+			}
+		}
+	}
 }

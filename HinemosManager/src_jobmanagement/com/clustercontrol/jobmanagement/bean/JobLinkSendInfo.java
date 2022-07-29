@@ -11,52 +11,105 @@ package com.clustercontrol.jobmanagement.bean;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 
 import javax.xml.bind.annotation.XmlType;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.annotation.RestItemName;
+import com.clustercontrol.rest.annotation.validation.RestValidateInteger;
+import com.clustercontrol.rest.annotation.validation.RestValidateString;
+import com.clustercontrol.rest.annotation.validation.RestValidateString.CheckType;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.EndStatusSelectEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.OperationFailureEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.PrioritySelectEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ProcessingMethodEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.rest.util.RestItemNameResolver;
+import com.clustercontrol.util.MessageConstant;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * ジョブ連携送信ジョブに関する情報を保持するクラス
  *
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobLinkSendInfo implements Serializable {
+public class JobLinkSendInfo implements Serializable, RequestDto {
 
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 7216413607782857671L;
 
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( JobLinkSendInfo.class );
 
 	/** 送信に失敗した場合再送する */
 	private Boolean retryFlg;
 
 	/** 再送回数 */
+	@RestItemName(value=MessageConstant.RESEND_COUNT)
+	@RestValidateInteger(minVal = 0, maxVal = 32767)
 	private Integer retryCount;
 
 	/** 送信失敗時の操作 */
+	@RestItemName(value=MessageConstant.SEND_FAILURE_OPERATION)
+	@RestValidateInteger(notNull = true)
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=OperationFailureEnum.class)
 	private Integer failureOperation;
 
 	/** 送信失敗時の終了状態 */
+	@RestItemName(value=MessageConstant.END_STATUS_SEND_FAILURE)
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=EndStatusSelectEnum.class)
 	private Integer failureEndStatus;
 
 	/** 送信失敗時の終了値 */
+	@RestItemName(value=MessageConstant.END_VALUE_SEND_FAILURE)
+	@RestValidateInteger(minVal = -32768, maxVal = 32767)
 	private Integer failureEndValue;
 
 	/** 送信成功時の終了値 */
+	@RestItemName(value=MessageConstant.END_VALUE_SEND_SUCCESS)
+	@RestValidateInteger(notNull = true, minVal = -32768, maxVal = 32767)
 	private Integer successEndValue;
 
 	/** ジョブ連携メッセージID */
+	@RestItemName(value=MessageConstant.JOBLINK_MESSAGE_ID)
+	@RestValidateString(notNull = true, minLen = 1, maxLen = 508, type = CheckType.ID)
 	private String joblinkMessageId;
 
 	/** 重要度 */
+	@RestItemName(value=MessageConstant.PRIORITY)
+	@RestValidateInteger(notNull = true)
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer priority;
 
 	/** メッセージ */
+	@RestItemName(value=MessageConstant.MESSAGE)
+	@RestValidateString(maxLen = 4096)
 	private String message;
 
 	/** ジョブ連携送信設定ID */
+	@RestItemName(value=MessageConstant.JOBLINK_SEND_SETTING_ID)
+	@RestValidateString(notNull = true)
 	private String joblinkSendSettingId;
 
 	/** ファシリティID */
@@ -66,6 +119,8 @@ public class JobLinkSendInfo implements Serializable {
 	private String scope;
 
 	/** スコープ処理 */
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ProcessingMethodEnum.class)
 	private Integer processingMethod = ProcessingMethodConstant.TYPE_ALL_NODE;
 
 	/** 送信先プロトコル */
@@ -96,6 +151,7 @@ public class JobLinkSendInfo implements Serializable {
 	private String proxyPassword;
 
 	/** ジョブ連携メッセージの拡張情報設定 */
+	@RestItemName(value = MessageConstant.EXTENDED_INFO)
 	private ArrayList<JobLinkExpInfo> jobLinkExpList;
 
 	public Boolean getRetryFlg() {
@@ -378,5 +434,49 @@ public class JobLinkSendInfo implements Serializable {
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+		// [送信に失敗した場合に再送する]がtrueの場合、[再送回数]必須
+		if (retryFlg && retryCount == null) {
+			String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "retryCount");
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+		}
+
+		// [送信失敗時の操作]が「停止[状態指定]」の場合、[終了状態][終了値]必須
+		if (failureOperation.equals(OperationFailureEnum.STOP_SET_END_VALUE.getCode())) {
+			if (failureEndStatus == null) {
+				String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "failureEndStatus");
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+			}
+			if (failureEndValue == null) {
+				String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "failureEndValue");
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+			}
+		}
+
+		if (jobLinkExpList != null && !jobLinkExpList.isEmpty()) {
+			// [拡張情報]が最大件数を超えて指定されている場合はエラー
+			if (jobLinkExpList.size() > JobLinkConstant.EXP_INFO_MAX_COUNT) {
+				String[] r1 = {RestItemNameResolver.resolveItenName(this.getClass(), "jobLinkExpList"),
+						Integer.toString(JobLinkConstant.EXP_INFO_MAX_COUNT)};
+				throw new InvalidSetting(MessageConstant.MESSAGE_ERROR_IN_EXCEEDED.getMessage(r1));
+			}
+
+			HashSet<String> exps = new HashSet<>();
+			for (JobLinkExpInfo exp : jobLinkExpList) {
+				// [拡張情報]チェック
+				exp.correlationCheck();
+
+				// [拡張情報]でキーが重複して存在する場合エラー
+				if (exps.contains(exp.getKey())) {
+					String[] r1 = {RestItemNameResolver.resolveItenName(this.getClass(), "jobLinkExpList"),
+							exp.getKey()};
+					throw new InvalidSetting(MessageConstant.MESSAGE_ERROR_IN_OVERLAP.getMessage(r1));
+				}
+				exps.add(exp.getKey());
+			}
+		}
 	}
 }

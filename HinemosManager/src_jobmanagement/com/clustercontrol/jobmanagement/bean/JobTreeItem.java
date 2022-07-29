@@ -13,6 +13,11 @@ import java.util.ArrayList;
 
 import javax.xml.bind.annotation.XmlType;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.annotation.validation.RestValidateObject;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * ジョブのツリー表示に関する情報を保持するクラス<BR>
  * 
@@ -20,23 +25,28 @@ import javax.xml.bind.annotation.XmlType;
  * @since 1.0.0
  */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobTreeItem implements Serializable {
+public class JobTreeItem implements Serializable, RequestDto {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = -5749478055659165471L;
 
 	/** ジョブ情報 */
+	@RestValidateObject(notNull = true)
 	private JobInfo data;
 
 	/** ジョブ詳細 */
+	@JsonIgnore
 	private JobDetailInfo detail;
 
 	/** 子のジョブツリーアイテムのリスト */
 	private ArrayList<JobTreeItem> children = new ArrayList<JobTreeItem>();
 
 	/** 親のジョブツリーアイテム */
+	@JsonIgnore
 	private JobTreeItem parent;
 
 	/** パスセパレータ */
+	@JsonIgnore
 	private static final String SEPARATOR = ">";
 
 	public JobTreeItem() {
@@ -229,5 +239,16 @@ public class JobTreeItem implements Serializable {
 		}
 
 		return buffer.toString();
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+		data.correlationCheck();
+
+		if (children != null) {
+			for (JobTreeItem child : children) {
+				child.correlationCheck();
+			}
+		}
 	}
 }

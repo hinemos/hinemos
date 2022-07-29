@@ -10,6 +10,8 @@ package com.clustercontrol.jobmanagement.view.action;
 
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -34,6 +36,8 @@ import com.clustercontrol.jobmanagement.view.JobListView;
 public class CopyJobAction extends AbstractHandler implements IElementUpdater{
 	/** アクションID */
 	public static final String ID = CopyJobAction.class.getName();
+	/** ログ */
+	private static Log m_log = LogFactory.getLog(CopyJobAction.class);
 	private IWorkbenchWindow window;
 	/** ビュー */
 	private IWorkbenchPart viewPart;
@@ -55,6 +59,9 @@ public class CopyJobAction extends AbstractHandler implements IElementUpdater{
 	 */
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("execute() start");
+		}
 		this.window = HandlerUtil.getActiveWorkbenchWindow(event);
 		// In case this action has been disposed
 		if( null == this.window || !isEnabled() ){
@@ -68,6 +75,9 @@ public class CopyJobAction extends AbstractHandler implements IElementUpdater{
 
 			JobTreeItemWrapper copyItem = view.getSelectJobTreeItemList().get(0);
 			view.setCopyJobTreeItem(copyItem);
+		}
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("execute() end");
 		}
 		return null;
 	}

@@ -28,7 +28,7 @@ import org.eclipse.swt.widgets.TableItem;
 import org.openapitools.client.model.RpaScenarioTagResponse;
 
 import com.clustercontrol.fault.InvalidRole;
-import com.clustercontrol.notify.action.GetNotifyTableDefineCheckBox;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.rpa.action.GetRpaScenarioTagToDialogTableDefineCheckBox;
 import com.clustercontrol.rpa.util.RpaRestClientWrapper;
 import com.clustercontrol.rpa.util.RpaScenarioTagUtil;
@@ -55,6 +55,8 @@ public class RpaScenarioTagListToDialogComposite extends Composite {
 	private Map<String, String> tagPathMap;
 	/** マネージャ名 */
 	private String managerName = null;
+	/** オーナーロールID */
+	private String ownerRoleId = null;
 
 	/**
 	 * インスタンスを返します。
@@ -68,8 +70,10 @@ public class RpaScenarioTagListToDialogComposite extends Composite {
 	 * @see org.eclipse.swt.widgets.Composite#Composite(Composite parent, int style)
 	 * @see #initialize()
 	 */
-	public RpaScenarioTagListToDialogComposite(Composite parent, int style) {
+	public RpaScenarioTagListToDialogComposite(Composite parent, int style, String managerName, String ownerRoleId) {
 		super(parent, style);
+		this.managerName = managerName;
+		this.ownerRoleId = ownerRoleId;
 		this.initialize();
 	}
 
@@ -101,8 +105,8 @@ public class RpaScenarioTagListToDialogComposite extends Composite {
 		this.tableViewer = new CommonTableViewer(table);
 		
 		this.tableViewer.createTableColumn(GetRpaScenarioTagToDialogTableDefineCheckBox.get(),
-		GetNotifyTableDefineCheckBox.SORT_COLUMN_INDEX,
-		GetNotifyTableDefineCheckBox.SORT_ORDER);
+				GetRpaScenarioTagToDialogTableDefineCheckBox.SORT_COLUMN_INDEX,
+				GetRpaScenarioTagToDialogTableDefineCheckBox.SORT_ORDER);
 		
 		/** チェックボックスの選択を制御するリスナー */
 		SelectionAdapter adapter =
@@ -140,11 +144,15 @@ public class RpaScenarioTagListToDialogComposite extends Composite {
 		Map<String, String> errorMsgs = new ConcurrentHashMap<String, String>();
 		RpaRestClientWrapper wrapper = RpaRestClientWrapper.getWrapper(managerName);
 		try {
-			list = wrapper.getRpaScenarioTagList(null);
+			list = wrapper.getRpaScenarioTagList(this.ownerRoleId);
 		} catch (InvalidRole e) {
 			// 権限なし
 			errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 		} catch (Exception e) {
+			// エンタープライズ機能が無効の場合は無視する
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				return;
+			}
 			// 上記以外の例外
 			String errMessage = HinemosMessage.replace(e.getMessage());
 			m_log.warn("update(), " + errMessage, e);

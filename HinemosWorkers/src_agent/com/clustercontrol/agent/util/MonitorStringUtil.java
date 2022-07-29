@@ -25,7 +25,7 @@ import com.clustercontrol.agent.Agent;
 import com.clustercontrol.agent.cloud.log.CloudLogResultForwarder;
 import com.clustercontrol.agent.log.LogfileResultForwarder;
 import com.clustercontrol.agent.rpa.RpaLogfileResultForwarder;
-import com.clustercontrol.agent.rpa.ScenarioLogCache;
+import com.clustercontrol.agent.rpa.scenariojob.ScenarioLogCache;
 import com.clustercontrol.agent.sdml.SdmlMonitorTypeEnum;
 import com.clustercontrol.agent.winevent.WinEventResultForwarder;
 import com.clustercontrol.bean.HinemosModuleConstant;

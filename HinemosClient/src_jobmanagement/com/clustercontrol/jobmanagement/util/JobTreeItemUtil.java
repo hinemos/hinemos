@@ -25,7 +25,6 @@ import org.openapitools.client.model.JobInfoRequest;
 import org.openapitools.client.model.JobInfoResponse;
 import org.openapitools.client.model.JobLinkRcvInfoResponse;
 import org.openapitools.client.model.JobLinkSendInfoResponse;
-
 import org.openapitools.client.model.JobMonitorInfoResponse;
 import org.openapitools.client.model.JobNextJobOrderInfoResponse;
 import org.openapitools.client.model.JobObjectGroupInfoResponse;
@@ -777,6 +776,54 @@ public class JobTreeItemUtil {
 		for (JobTreeItemResponseP2 dtoChild : dto.getChildren()) {
 			JobTreeItemWrapper infoChild = new JobTreeItemWrapper();
 			setItemRecursiveFromP2ForTreeView(dtoChild, infoChild);
+			// 上位方向のリンクを補足
+			infoChild.setParent(info);
+			info.getChildren().add(infoChild);
+		}
+	}
+	
+	/**
+	 * 
+	 * RESTのDTO（JobTreeItemResponseP1）を元に JobTreeItemWrapper を生成
+	 *  
+	 * ただし、 TreeView向けに設定するメンバ項目を限定する。
+	 * 
+	 * @param dto JobTreeItemResponseP2
+ 	 * @return JobTreeItemWrapper
+	 */
+	public static JobTreeItemWrapper getItemFromP1ForTreeView(JobTreeItemResponseP1 dto) {
+		JobTreeItemWrapper info = new JobTreeItemWrapper();
+		setItemRecursiveFromP1ForTreeView(dto, info);
+		return info;
+	}
+
+	private static void setItemRecursiveFromP1ForTreeView(JobTreeItemResponseP1 dto, JobTreeItemWrapper info) {
+		JobInfoWrapper infoData = JobTreeItemUtil.createJobInfoWrapper();
+		// データコピー（ツリーに必要な情報のみ）
+		infoData.setId(dto.getData().getId());
+		infoData.setJobunitId(dto.getData().getJobunitId());
+		infoData.setName(dto.getData().getName());
+		infoData.setType(JobInfoWrapper.TypeEnum.fromValue(dto.getData().getType().getValue()));
+		infoData.setPropertyFull(false);
+		infoData.setOwnerRoleId(dto.getData().getOwnerRoleId());
+		infoData.setUpdateTime(dto.getData().getUpdateTime());
+		infoData.setDescription(dto.getData().getDescription());
+		infoData.setIconId(dto.getData().getIconId());
+		infoData.setExpNodeRuntimeFlg(dto.getData().getExpNodeRuntimeFlg());
+
+		infoData.setWaitRule(dto.getData().getWaitRule());
+		infoData.setReferJobId(dto.getData().getReferJobId());
+		infoData.setReferJobSelectType(
+				JobInfoWrapper.ReferJobSelectTypeEnum.fromValue(dto.getData().getReferJobSelectType().getValue()));
+		infoData.setReferJobUnitId(dto.getData().getReferJobUnitId());
+		infoData.setRegistered(dto.getData().getRegistered());
+
+		info.setData(infoData);
+
+		info.setChildren(new ArrayList<JobTreeItemWrapper>());
+		for (JobTreeItemResponseP1 dtoChild : dto.getChildren()) {
+			JobTreeItemWrapper infoChild = new JobTreeItemWrapper();
+			setItemRecursiveFromP1ForTreeView(dtoChild, infoChild);
 			// 上位方向のリンクを補足
 			infoChild.setParent(info);
 			info.getChildren().add(infoChild);

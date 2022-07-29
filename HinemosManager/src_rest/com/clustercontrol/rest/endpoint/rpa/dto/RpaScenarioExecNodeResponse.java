@@ -16,21 +16,13 @@ public class RpaScenarioExecNodeResponse {
 	public RpaScenarioExecNodeResponse() {
 	}
 
-	/** シナリオID */
-	private String scenarioId;
 	/** ファシリティID*/
 	private String facilityId;
 	/** ファシリティ名*/
 	private String facilityName;
-
 	/** シナリオID */
-	public String getScenarioId() {
-		return scenarioId;
-	}
-	public void setScenarioId(String scenarioId) {
-		this.scenarioId = scenarioId;
-	}
-	
+	private String scenarioId;
+
 	/** ファシリティID */
 	public String getFacilityId() {
 		return facilityId;
@@ -46,9 +38,17 @@ public class RpaScenarioExecNodeResponse {
 	public void setFacilityName(String facilityName) {
 		this.facilityName = facilityName;
 	}
+	/** シナリオID */
+	public String getScenarioId() {
+		return scenarioId;
+	}
+	public void setScenarioId(String scenarioId) {
+		this.scenarioId = scenarioId;
+	}
+	
 	@Override
 	public String toString() {
-		return "RpaScenarioExecNodeResponse [scenarioId=" + scenarioId + ", facilityId=" + facilityId + ", facilityName=" + facilityName + "]";
+		return "RpaScenarioExecNodeResponse [facilityId=" + facilityId + ", facilityName=" + facilityName + ", scenarioId=" + scenarioId + "]";
 	}
 
 

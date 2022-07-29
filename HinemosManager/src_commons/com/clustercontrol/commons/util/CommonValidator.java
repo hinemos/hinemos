@@ -831,7 +831,35 @@ public class CommonValidator {
 			throw e;
 		}	
 	}
-	
+
+	/**
+	 * ジョブ変数名が[a-z,A-Z,0-9,-,_]にマッチするかを確認する。
+	 * [@,.]は許可しない。
+	 * 
+	 * @param id
+	 * @throws InvalidSetting
+	 */
+	public static void validateJobParamId(String name, String id, int maxSize) throws InvalidSetting {
+		// null check
+		if (id == null || "".equals(id)) {
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_ID_IS_NULL.getMessage(name));
+			m_log.info("validateJobParamId() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+
+		// string check
+		validateString(name, id, false, 1, maxSize);
+		String errorPattern = "＠.";
+
+		/** メイン処理 */
+		if (!id.matches("[a-zA-Z0-9_-]+")) {
+			InvalidSetting e = new InvalidSetting(
+					MessageConstant.MESSAGE_INPUT_ILLEGAL_CHARACTERS.getMessage(name, errorPattern));
+			m_log.info("validateJobParamId() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+	}
+
 	/**
 	 * for debug
 	 * @param args

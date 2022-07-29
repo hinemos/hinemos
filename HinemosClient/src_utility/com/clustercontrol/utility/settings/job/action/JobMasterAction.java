@@ -37,6 +37,7 @@ import org.openapitools.client.model.ImportJobMasterRequest;
 import org.openapitools.client.model.ImportJobMasterResponse;
 import org.openapitools.client.model.JobInfoRequestP1;
 import org.openapitools.client.model.JobInfoResponse;
+import org.openapitools.client.model.JobTreeItemResponseP1;
 
 import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import org.openapitools.client.model.JobTreeItemResponseP2;
@@ -534,8 +535,15 @@ public class JobMasterAction {
 			// ログインユーザで参照可能なジョブユニットを取得するメソッドをマネージャ側に用意し、
 			// この部分の実装は修正する
 			// treeOnly = trueの場合は、ログインユーザで参照可能なジョブユニットと 配下のジョブが取れる
-			JobTreeItemResponseP2 res = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTreeJobInfoFull(null);
-			JobTreeItemWrapper jobTreeItem =JobTreeItemUtil.getItemFromP2(res); 
+			JobTreeItemResponseP1 res = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTree(null);
+			JobTreeItemWrapper jobTreeItem;
+			if(res.getData().getDescription() == null) {
+				JobTreeItemResponseP2 dtoP2 = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTreeJobInfoFull(null);
+				jobTreeItem = JobTreeItemUtil.getItemFromP2ForTreeView(dtoP2);
+			} else {
+				jobTreeItem = JobTreeItemUtil.getItemFromP1ForTreeView(res); 
+			}
+			
 			List<JobTreeItemWrapper> jobunitList = jobTreeItem.getChildren().get(0).getChildren();
 			
 			for (JobTreeItemWrapper jobunit : jobunitList) {
@@ -938,11 +946,21 @@ public class JobMasterAction {
 	private Map<String, Long> getJobUnitUpdateTimeMap(List<String> jobUnitIdList){
 		Map<String, Long> jobUnitUpdateTimeMap = new HashMap<>();
 		try {
-			JobTreeItemResponseP2 resDto = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTreeJobInfoFull(null);
-			for( JobTreeItemResponseP2 jobunit : resDto.getChildren().get(0).getChildren() ){
-				if(jobunit.getData().getUpdateTime() != null && jobUnitIdList.contains(jobunit.getData().getJobunitId()) ){ 
-					jobUnitUpdateTimeMap.put(jobunit.getData().getJobunitId(),
-							JobTreeItemUtil.convertDtStringtoLong(jobunit.getData().getUpdateTime()));
+			JobTreeItemResponseP1 resDto = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTree(null);
+			if(resDto.getData().getUpdateTime() == null) {
+				JobTreeItemResponseP2 dtoP2 = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTreeJobInfoFull(null);
+				for( JobTreeItemResponseP2 jobunit : dtoP2.getChildren().get(0).getChildren() ){
+					if(jobunit.getData().getUpdateTime() != null && jobUnitIdList.contains(jobunit.getData().getJobunitId()) ){ 
+						jobUnitUpdateTimeMap.put(jobunit.getData().getJobunitId(),
+								JobTreeItemUtil.convertDtStringtoLong(jobunit.getData().getUpdateTime()));
+					}
+				}
+			} else {
+				for( JobTreeItemResponseP1 jobunit : resDto.getChildren().get(0).getChildren() ){
+					if(jobunit.getData().getUpdateTime() != null && jobUnitIdList.contains(jobunit.getData().getJobunitId()) ){ 
+						jobUnitUpdateTimeMap.put(jobunit.getData().getJobunitId(),
+								JobTreeItemUtil.convertDtStringtoLong(jobunit.getData().getUpdateTime()));
+					}
 				}
 			}
 		} catch (RestConnectFailed| HinemosUnknown| InvalidRole| InvalidUserPass| JobMasterNotFound| NotifyNotFound| UserNotFound e) {
@@ -1009,8 +1027,13 @@ public class JobMasterAction {
 		@Override
 		protected Set<String> getExistIdSet() throws Exception {
 			JobTreeItemWrapper tree = null;
-			JobTreeItemResponseP2 orgTree = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTreeJobInfoFull(null);
-			tree =JobTreeItemUtil.getItemFromP2ForTreeView(orgTree);
+			JobTreeItemResponseP1 orgTree = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTree(null);
+			if(orgTree.getData().getDescription() == null) {
+				JobTreeItemResponseP2 dtoP2 = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTreeJobInfoFull(null);
+				tree = JobTreeItemUtil.getItemFromP2ForTreeView(dtoP2);
+			} else {
+				tree =JobTreeItemUtil.getItemFromP1ForTreeView(orgTree);
+			}
 			this.jobMap = createJobMap(tree);
 			return null;
 		}

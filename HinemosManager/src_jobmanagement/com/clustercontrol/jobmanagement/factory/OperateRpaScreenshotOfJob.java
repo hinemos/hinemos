@@ -22,6 +22,7 @@ import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.rpa.bean.RoboInfo;
 import com.clustercontrol.jobmanagement.rpa.bean.RoboRunInfo;
+import com.clustercontrol.jobmanagement.rpa.bean.RpaScreenshotTriggerTypeConstant;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.jobmanagement.util.SendTopic;
 import com.clustercontrol.util.HinemosTime;
@@ -59,9 +60,13 @@ public class OperateRpaScreenshotOfJob {
 		JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 		JobInfoEntity job = sessionJob.getJobInfoEntity();
 		JobSessionNodeEntity sessionNode = QueryUtil.getJobSessionNodePK(sessionId, jobunitId, jobId, facilityId);
-		if (sessionNode.getStatus() != StatusConstant.TYPE_RUNNING) {
+		if (sessionNode.getStatus() != StatusConstant.TYPE_RUNNING  && 
+			!( triggerType == RpaScreenshotTriggerTypeConstant.END_DELAY 
+				&& sessionNode.getStatus() == StatusConstant.TYPE_STOPPING 
+			) 
+		) {
 			m_log.warn("takeScreenshot() : node status isn't running, skip status=" + sessionNode.getStatus());
-			return; // 実行中でない場合は処理を行わない
+			return; // 実行中でない場合は処理を行わない（終了遅延による停止処理中は除く） 
 		}
 
 		// 実行指示情報を作成
@@ -77,7 +82,7 @@ public class OperateRpaScreenshotOfJob {
 		// RPAツールエグゼキューターシナリオ実行情報を設定
 		RoboRunInfo roboRunInfo = new RoboRunInfo(
 				new RoboInfo(HinemosTime.currentTimeMillis(), job.getId().getSessionId(), job.getId().getJobunitId(),
-						job.getId().getJobId(), facilityId));
+						job.getId().getJobId(), facilityId, job.getRpaLoginUserId()));
 		m_log.debug("roboRunInfo=" + roboRunInfo);
 		instructionInfo.setRpaRoboRunInfo(roboRunInfo);
 

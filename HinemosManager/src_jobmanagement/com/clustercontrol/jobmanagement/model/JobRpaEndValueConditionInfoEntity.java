@@ -228,7 +228,7 @@ public class JobRpaEndValueConditionInfoEntity implements Serializable {
 	//bi-directional many-to-one association to JobInfoEntity
 	@ManyToOne(fetch=FetchType.LAZY)
 	@JoinColumns({
-		@JoinColumn(name="session_id", referencedColumnName="job_id", insertable=false, updatable=false),
+		@JoinColumn(name="session_id", referencedColumnName="session_id", insertable=false, updatable=false),
 		@JoinColumn(name="job_id", referencedColumnName="job_id", insertable=false, updatable=false),
 		@JoinColumn(name="jobunit_id", referencedColumnName="jobunit_id", insertable=false, updatable=false)
 	})

@@ -37,6 +37,7 @@ import com.clustercontrol.jobmanagement.bean.JobInfo;
 import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.factory.FullJob;
 import com.clustercontrol.jobmanagement.factory.JobSessionJobImpl;
+import com.clustercontrol.jobmanagement.factory.Notice;
 import com.clustercontrol.jobmanagement.factory.SelectJob;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
@@ -700,11 +701,23 @@ public class JobQueue {
 	
 				// 通知情報作成
 				info.setNotifyGroupId(jobInfo.getNotifyGroupId());
+
 				// ジョブ連携メッセージID
 				if (isActive) {
 					info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(NotifyTriggerType.JOB_QUEUE_END, jobunitId, jobId));
 				} else {
 					info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(NotifyTriggerType.JOB_QUEUE_START, jobunitId, jobId));
+				}
+
+				// 監視詳細
+				// 7.0.0との互換性保持のため、Hinemosプロパティで出力するか制御
+				boolean flg = HinemosPropertyCommon.notify_output_trigger_subkey_$.getBooleanValue(HinemosModuleConstant.JOB);
+				if (flg) {
+					if (isActive) {
+						info.setSubKey(Notice.makeMonitorDetail(sessionId, jobInfo, NotifyTriggerType.JOB_QUEUE_END));
+					} else {
+						info.setSubKey(Notice.makeMonitorDetail(sessionId, jobInfo, NotifyTriggerType.JOB_QUEUE_START));
+					}
 				}
 				info.setPluginId(HinemosModuleConstant.JOB);
 				info.setApplication(HinemosMessage.replace(MessageConstant.JOB_MANAGEMENT.getMessage(), locale));

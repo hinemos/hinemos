@@ -16,6 +16,7 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.rap.rwt.RWT;
+import org.eclipse.rap.rwt.service.ServerPushSession;
 import org.eclipse.rap.rwt.service.UISession;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -53,8 +54,8 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.notify.composite.NotifyIdListComposite;
 import com.clustercontrol.reporting.action.GetReporting;
 import com.clustercontrol.reporting.action.ReportingRunner;
-import com.clustercontrol.reporting.composite.ReportFormatComposite;
 import com.clustercontrol.reporting.composite.OutputPeriodComposite;
+import com.clustercontrol.reporting.composite.ReportFormatComposite;
 import com.clustercontrol.reporting.composite.TemplateSetIdListComposite;
 import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.repository.FacilityPath;
@@ -709,13 +710,14 @@ public class ReportingRunDialog extends CommonDialog {
 	@Override
 	protected boolean action() {
 		boolean ret = false;
+		final Display display = Display.getCurrent();
 
 		// 実行準備
 		m_runner = new ReportingRunner(
 				this.m_scheduleId, 
 				this.m_createReportingFileRequest, 
 				ReportingRestClientWrapper.getWrapper(this.m_managerComposite.getText()),
-				Display.getCurrent());
+				display);
 
 		try {
 			// レポート作成処理を開始
@@ -730,21 +732,30 @@ public class ReportingRunDialog extends CommonDialog {
 						Messages.getString("report.will.create")); // レポートファイルを作成します。
 																				  // この処理には数分かかります。
 				// RAP用の処理
-				final Display display = Display.getCurrent();
+				final ServerPushSession pushSession = new ServerPushSession();
 				final UISession uiSession = RWT.getUISession(display);
 				final Runnable runnable = new Runnable() {
 					public void run() {
 						uiSession.exec(m_runner);
+						// ダウンロード処理終了後にServerPushSessionを終了する。
+						pushSession.stop();
 					}
 				};
-				
+
 				Thread thread = new Thread(runnable);
 				// Client 終了時にこのスレッドの終了を待たない
 				thread.setDaemon(true);
 				// ダウンロード処理の開始
 				thread.start();
+				// クライアントはUIスレッドの外部（要求の外部）で発生するUIの更新に自動的に気付くことはありません。
+				// これは、Display.asyncExec()がバックグラウンドスレッドから呼び出された場合です。
+				// そのため、ダウンロード処理のスレッド開始後にこのスレッドからのUIへの更新を可能にするため、ServerPushSessionをstartする必要があります。
+				// Display.asyncExec()の使用箇所については下記を参照してください。
+				// com.clustercontrol.reporting.action.reportingRunner#download()
+				pushSession.start();
 
 				ret = true;
+
 			}
 		} catch (Exception e) {
 			String errMessage = "";

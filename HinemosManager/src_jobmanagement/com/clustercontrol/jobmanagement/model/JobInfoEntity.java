@@ -9,7 +9,10 @@
 package com.clustercontrol.jobmanagement.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import com.clustercontrol.commons.util.CryptUtil;
 import com.clustercontrol.jobmanagement.bean.ConditionTypeConstant;
@@ -132,6 +135,8 @@ public class JobInfoEntity implements Serializable {
 	private String srcWorkDir;
 	private String srcFacilityId;
 	private String destFacilityId;
+
+	private String startTime = "";
 
 	//ジョブ通知関連
 	private String notifyGroupId = "";
@@ -1209,6 +1214,35 @@ public class JobInfoEntity implements Serializable {
 		this.destFacilityId = destFacilityId;
 	}
 
+	@Column(name = "start_time")
+	public String getStartTime() {
+		return this.startTime;
+	}
+
+	public void setStartTime(String startTime) {
+		this.startTime = startTime;
+	}
+
+	@Transient
+	public List<Long> getWaitRuleTimeList() {
+		Set<Long> timeList = new TreeSet<>(); // 時刻順ソート
+		String[] startTimeArray = this.getStartTime().split("/");
+		for (String startTime : startTimeArray) {
+			try {
+				Long time = Long.parseLong(startTime);
+				timeList.add(time);
+			} catch (NumberFormatException e) {
+				// 何もしない
+			}
+		}
+		return new ArrayList<>(timeList);
+	}
+
+	public void addWaitRuleTime(long waitRuleTime) {
+		StringBuilder startTimeBuilder = new StringBuilder(this.getStartTime());
+		startTimeBuilder.append(waitRuleTime).append('/');
+		this.setStartTime(startTimeBuilder.toString());
+	}
 
 	@Column(name="notify_group_id")
 	public String getNotifyGroupId() {

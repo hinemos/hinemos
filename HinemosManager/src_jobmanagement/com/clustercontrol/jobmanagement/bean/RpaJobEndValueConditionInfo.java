@@ -9,18 +9,38 @@ package com.clustercontrol.jobmanagement.bean;
 
 import java.io.Serializable;
 
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.jobmanagement.rpa.bean.RpaJobEndValueConditionTypeConstant;
 import com.clustercontrol.jobmanagement.rpa.bean.RpaJobReturnCodeConditionConstant;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaJobEndValueConditionTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaJobReturnCodeConditionEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.util.MessageConstant;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * RPAシナリオジョブ（直接実行）の終了値判定条件に関する情報を保持するクラス
  */
-public class RpaJobEndValueConditionInfo implements Serializable {
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
+public class RpaJobEndValueConditionInfo implements Serializable, RequestDto, Comparable<RpaJobEndValueConditionInfo> {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 1L;
 	/** 判定条件の優先順位 */
 	private Integer orderNo;
 	/** 判定条件タイプ */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=RpaJobEndValueConditionTypeEnum.class)
 	private Integer conditionType;
 	/** パターンマッチ文字列 */
 	private String pattern;
@@ -31,6 +51,9 @@ public class RpaJobEndValueConditionInfo implements Serializable {
 	/** リターンコードの指定文字列 */
 	private String returnCode;
 	/** リターンコードの判定条件 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=RpaJobReturnCodeConditionEnum.class)
 	private Integer returnCodeCondition;
 	/** コマンドのリターンコードをそのまま終了値にするフラグ */
 	private Boolean useCommandReturnCodeFlg;
@@ -304,5 +327,22 @@ public class RpaJobEndValueConditionInfo implements Serializable {
 		b.setDescription("");
 
 		System.out.println("a.equals(b)=" + a.equals(b));
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+		// 終了値判定条件のリターンコードによる判定条件 の組み合わせ入力チェック
+		if (conditionType.equals(RpaJobEndValueConditionTypeEnum.RETURN_CODE.getCode())) {
+			if (returnCodeCondition == null) {
+				String[] args = { MessageConstant.JUDGEMENT_CONDITION.getMessage() };
+				String message = MessageConstant.MESSAGE_JOB_RPA_END_VALUE_CONDITION_TYPE_RETCD_INPUT.getMessage(args);
+				throw new InvalidSetting(message);
+			}
+		}
+	}
+
+	@Override
+	public int compareTo(RpaJobEndValueConditionInfo o) {
+		return this.getOrderNo() - o.getOrderNo();
 	}
 }

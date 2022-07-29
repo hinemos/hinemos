@@ -23,6 +23,12 @@ public enum NotifyTriggerType {
 	JOB_START,
 	// ジョブ-終了
 	JOB_END,
+	// ジョブ-正常終了
+	JOB_END_NORMAL,
+	// ジョブ-警告終了
+	JOB_END_WARNING,
+	// ジョブ-異常終了
+	JOB_END_ABNORMAL,
 	// ジョブ-開始遅延
 	JOB_START_DELAY,
 	// ジョブ-終了遅延
@@ -33,6 +39,8 @@ public enum NotifyTriggerType {
 	JOB_QUEUE_END,
 	// ジョブ-多重度超過
 	JOB_EXCEEDED_MULTIPLICITY,
+	// ジョブ-ファイル出力失敗
+	JOB_COMMAND_OUTPUT_FAILED,
 	// 環境構築-モジュール実行開始
 	INFRA_RUN_START,
 	// 環境構築-モジュール実行終了
@@ -50,5 +58,19 @@ public enum NotifyTriggerType {
 	// RPA-シナリオ実績更新
 	RPA_SCENARIO_UPDATE,
 	// 履歴削除
-	MAINTENANCE;
+	MAINTENANCE,
+	// INTERNALイベント;
+	INTERNAL_EVENT,
+	// SDML-監視設定作成
+	SDML_CONTROL_CREATE_MONITOR,
+	// SDML-監視設定更新
+	SDML_CONTROL_UPDATE_MONITOR,
+	// SDML-監視設定無効化
+	SDML_CONTROL_DISABLE_MONITOR,
+	// SDML-監視設定有効化
+	SDML_CONTROL_ENABLE_MONITOR,
+	// SDML-異常時
+	SDML_CONTROL_ABNORMAL,
+	// SDML-起動から停止までの時間が短い場合
+	SDML_CONTROL_EARLY_STOP;
 }

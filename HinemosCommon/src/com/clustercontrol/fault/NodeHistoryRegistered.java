@@ -9,7 +9,7 @@
 package com.clustercontrol.fault;
 
 /**
- * ノードの構成情報履歴が存在しない場合に利用するException
+ * ノードの構成情報履歴がすでに存在している場合に利用するException
  * 
  * @version 6.2.0
  */

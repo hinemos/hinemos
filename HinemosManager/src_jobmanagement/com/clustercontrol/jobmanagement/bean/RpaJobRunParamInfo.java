@@ -9,11 +9,21 @@ package com.clustercontrol.jobmanagement.bean;
 
 import java.io.Serializable;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * RPAシナリオジョブ（間接実行）の起動パラメータに関する情報を保持するクラス
  */
-public class RpaJobRunParamInfo implements Serializable {
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
+public class RpaJobRunParamInfo implements Serializable, RequestDto, Comparable<RpaJobRunParamInfo> {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 1L;
 	/** パラメータID */
 	private Integer paramId;
@@ -85,5 +95,14 @@ public class RpaJobRunParamInfo implements Serializable {
 		} else if (!paramValue.equals(other.paramValue))
 			return false;
 		return true;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+	}
+
+	@Override
+	public int compareTo(RpaJobRunParamInfo o) {
+		return this.getParamId() - o.getParamId();
 	}
 }

@@ -5,7 +5,7 @@
  *
  * See the LICENSE file for licensing information.
  */
-package com.clustercontrol.agent.rpa;
+package com.clustercontrol.agent.rpa.scenariojob;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +25,6 @@ import org.openapitools.client.model.AgtRunInstructionInfoResponse;
 import org.openapitools.client.model.SetJobResultRequest;
 import org.openapitools.client.model.SetJobResultRequest.RpaJobErrorTypeEnum;
 
-import com.clustercontrol.agent.Agent;
 import com.clustercontrol.agent.SendQueue;
 import com.clustercontrol.agent.SendQueue.JobResultSendableObject;
 import com.clustercontrol.agent.job.AgentThread;
@@ -34,6 +33,9 @@ import com.clustercontrol.agent.log.MonitorInfoWrapper;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.fault.HinemosException;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.jobmanagement.bean.CommandTypeConstant;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.rpa.bean.RoboAbortInfo;
 import com.clustercontrol.jobmanagement.rpa.bean.RoboLogoutInfo;
@@ -43,6 +45,7 @@ import com.clustercontrol.jobmanagement.rpa.bean.RpaJobEndValueConditionTypeCons
 import com.clustercontrol.jobmanagement.rpa.bean.RpaJobReturnCodeConditionConstant;
 import com.clustercontrol.jobmanagement.rpa.util.ReturnCodeConditionChecker;
 import com.clustercontrol.jobmanagement.rpa.util.RoboFileManager;
+import com.clustercontrol.jobmanagement.rpa.util.RpaWindowsUtil;
 import com.clustercontrol.jobmanagement.util.JobCommonUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
@@ -53,22 +56,45 @@ import com.clustercontrol.util.MessageConstant;
 public class ScenarioMonitorThread extends AgentThread {
 
 	/** ロガー */
-	static private Log m_log = LogFactory.getLog(ScenarioMonitorThread.class);
+	private static Log m_log = LogFactory.getLog(ScenarioMonitorThread.class);
+	
 	/** インスタンスを格納 */
-	static private Map<String, ScenarioMonitorThread> instances = new ConcurrentHashMap<>();
+	private static Map<String, ScenarioMonitorThread> instances = new ConcurrentHashMap<>();
+	
 	/** ジョブ実行結果送信用オブジェクト */
 	private JobResultSendableObject jobResult = new JobResultSendableObject();
-	/** RPAツールエグゼキューター連携用ファイル出力先フォルダ */
-	private String roboFileDir = Agent.getAgentHome() + "var/rpa";
+
 	/** RPAツールエグゼキューター連携用ファイル管理オブジェクト */
 	private RoboFileManager roboFileManager;
+
 	/** 実行結果ファイルチェック間隔 */
-	private static int checkInterval = 10000; // 10sec
-	/** スレッド名 */
-	private String threadName = "ScenarioMonitorThread";
+	public static int checkInterval = 10000; // 10sec
+
+	/** 実行指示ファイルチェック間隔 */
+	public static int instConfirmInterval = 5000; // 5sec
+
+	/** 実行指示ファイルチェックタイムアウト */
+	public static int instConfirmTimeout = 20000; // 20sec
+
+	/** ログアウト完了チェック間隔 */
+	public static int logoutConfirmInterval = 5000; // 5sec
+
+	/** ログアウト完了チェックタイムアウト */
+	public static int logoutConfirmTimeout = 60000; // 60sec
+
+	/** エグゼキューターへのログアウト指示を始めたか否か **/
+	private boolean isLogoutStarted = false;
+	
+	/** セッションがアクティブ（デスクトップログイン中）なユーザー名 **/
+	private String activeUserName = null;
+
+	private static final String key1 = "job.rpa.result.check.interval";
+	private static final String key2 = "job.rpa.instruction.confirm.interval";
+	private static final String key3 = "job.rpa.instruction.confirm.timeout";
+	private static final String key4 = "job.rpa.logout.confirm.interval";
+	private static final String key5 = "job.rpa.logout.confirm.timeout";
 
 	static {
-		String key1 = "job.rpa.result.check.interval";
 		try {
 			String checkIntervalStr = AgentProperties.getProperty(key1, Integer.toString(checkInterval));
 			checkInterval = Integer.parseInt(checkIntervalStr);
@@ -76,7 +102,40 @@ public class ScenarioMonitorThread extends AgentThread {
 			m_log.warn("ScenarioMonitorThread : " + e.getMessage(), e);
 		}
 		m_log.info(key1 + "=" + checkInterval);
+		
+		try {
+			String instructionConfirmIntervalStr = AgentProperties.getProperty(key2, Integer.toString(instConfirmInterval));
+			instConfirmInterval = Integer.parseInt(instructionConfirmIntervalStr);
+		} catch (Exception e) {
+			m_log.warn("ScenarioMonitorThread : " + e.getMessage(), e);
+		}
+		m_log.info(key2 + "=" + instConfirmInterval);
+		
+		try {
+			String instructionConfirmTimeoutStr = AgentProperties.getProperty(key3, Integer.toString(instConfirmTimeout));
+			instConfirmTimeout = Integer.parseInt(instructionConfirmTimeoutStr);
+		} catch (Exception e) {
+			m_log.warn("ScenarioMonitorThread : " + e.getMessage(), e);
+		}
+		m_log.info(key3 + "=" + instConfirmTimeout);
+		
+		try {
+			String logoutConfirmIntervalStr = AgentProperties.getProperty(key4, Integer.toString(logoutConfirmInterval));
+			logoutConfirmInterval = Integer.parseInt(logoutConfirmIntervalStr);
+		} catch (Exception e) {
+			m_log.warn("ScenarioMonitorThread : " + e.getMessage(), e);
+		}
+		m_log.info(key4 + "=" + logoutConfirmInterval);
+		
+		try {
+			String logoutConfirmTimeoutStr = AgentProperties.getProperty(key5, Integer.toString(logoutConfirmTimeout));
+			logoutConfirmTimeout = Integer.parseInt(logoutConfirmTimeoutStr);
+		} catch (Exception e) {
+			m_log.warn("ScenarioMonitorThread : " + e.getMessage(), e);
+		}
+		m_log.info(key5 + "=" + logoutConfirmTimeout);
 	}
+
 
 	/**
 	 * コンストラクタ
@@ -84,9 +143,9 @@ public class ScenarioMonitorThread extends AgentThread {
 	 * @param info
 	 * @param sendQueue
 	 */
-	public ScenarioMonitorThread(AgtRunInstructionInfoResponse info, SendQueue sendQueue) {
+	public ScenarioMonitorThread(AgtRunInstructionInfoResponse info, SendQueue sendQueue ,String activeUserName) {
 		super(info, sendQueue);
-		this.setName(threadName);
+		this.setName(this.getClass().getSimpleName());
 		this.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
 
 			@Override
@@ -94,6 +153,7 @@ public class ScenarioMonitorThread extends AgentThread {
 				m_log.error("uncaughtException() : " + e.getMessage(), e);
 			}
 		});
+		this.activeUserName = activeUserName;
 	}
 
 	/*
@@ -111,7 +171,12 @@ public class ScenarioMonitorThread extends AgentThread {
 
 		try {
 			// 古いファイルが存在する場合削除しておく
-			roboFileManager = new RoboFileManager(roboFileDir);
+			try {
+				roboFileManager = new RoboFileManager();
+			} catch (InterruptedException e) {
+				m_log.error("run() : interrupted. e=" + e.getMessage(), e);
+				return;
+			}
 			roboFileManager.clear();
 
 			if (isLogConditionExisting()) {
@@ -138,8 +203,19 @@ public class ScenarioMonitorThread extends AgentThread {
 
 			// RPAツールエグゼキューターへの実行指示
 			RoboRunInfo roboRunInfo = convertDTO(m_info.getRpaRoboRunInfo());
-			m_log.debug("run() : roboRunInfo=" + roboRunInfo);
-			roboFileManager.write(roboRunInfo);
+			// 一般ユーザでの実行可能性があるためEveryoneのフルアクセスで設定
+			roboFileManager.writeWithEveryoneFullAccess(roboRunInfo);
+
+			// 指示受付確認待ち
+			boolean retRunInst = roboFileManager.confirmDelete(RoboRunInfo.class, true, instConfirmInterval, instConfirmTimeout);
+			if (!retRunInst) {
+				m_log.warn("run() : The run instruction may not have been communicated to the executor. session="
+						+ m_info.getSessionId());
+				//停止指示があった場合、指示が受け付けられていない可能性を考慮して、指示ファイルの削除を試行する。
+				if( roboFileManager.isAborted() ){
+					roboFileManager.deleteIfExist(RoboRunInfo.class);
+				}
+			}
 
 			// RPAツールエグゼキューターの実行結果取得
 			// 実行結果ファイルが生成するまでここで待機する
@@ -186,7 +262,33 @@ public class ScenarioMonitorThread extends AgentThread {
 					// スクリーンショットの取得条件をチェック
 					if (m_info.getRpaScreenshotEndValue() != null) {
 						if (checkScreenshotEndValueCondition(endValue)) {
-							message.append(MessageConstant.MESSAGE_JOB_RPA_TAKE_SCREENSHOT.getMessage());
+							m_info.setRpaScreenshotTriggerType(AgtRunInstructionInfoResponse.RpaScreenshotTriggerTypeEnum.END_VALUE);
+							if (new ScreenshotThread(m_info, m_sendQueue, this.activeUserName).takeScreenshot()) {
+								m_log.debug("run() : success to take screenshot.");
+								message.append(MessageConstant.MESSAGE_JOB_RPA_TAKE_SCREENSHOT.getMessage());
+							} else {
+								m_log.debug("run() : fail to take screenshot.");
+								message.append(MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_FAIL.getMessage());
+							}
+						}
+					}
+					// 監視ファイル最大数エラーがあれば通知メッセージに追加
+					if (logMonitorThread != null && logMonitorThread.getIgnoreListForFileCounter() != null
+							&& logMonitorThread.getIgnoreListForFileCounter().size() > 0) {
+						if(m_log.isDebugEnabled()){
+							m_log.info("run() : a job message was set that there is too many file. ,session="
+									+ m_info.getSessionId() + " ,IgnoreListForFileCounter:"
+									+ logMonitorThread.getIgnoreListForFileCounter());
+						}
+						message.append(MessageConstant.MESSAGE_JOB_RPA_LOG_FILE_TOO_MANY_FILES.getMessage() + "\n");
+					}
+					// 	各ファイル監視中の各種エラーがあれば通知メッセージに追加
+					if (logMonitorThread != null && logMonitorThread.getErrorMessageForLogfileMonitor() != null
+							&& logMonitorThread.getErrorMessageForLogfileMonitor().size() > 0) {
+						for( Map.Entry<String,StringBuilder> rec : logMonitorThread.getErrorMessageForLogfileMonitor().entrySet() ){
+							if(rec.getValue() != null && rec.getValue().length() > 0){
+								message.append(rec.getValue().toString()+"\n");
+							}
 						}
 					}
 					// ログインを行った場合、ログアウトするかどうかをチェック
@@ -205,19 +307,29 @@ public class ScenarioMonitorThread extends AgentThread {
 				endValue = -1;
 				// RPAツールエグゼキューターへのシナリオ実行中断指示ファイルを生成
 				RoboAbortInfo roboAbortInfo = new RoboAbortInfo(roboRunInfo.getDatetime(), roboRunInfo.getSessionId(),
-						roboRunInfo.getJobunitId(), roboRunInfo.getJobId(), roboRunInfo.getFacilityId());
+						roboRunInfo.getJobunitId(), roboRunInfo.getJobId(), roboRunInfo.getFacilityId(), this.activeUserName);
 				m_log.debug("run() : " + roboAbortInfo);
-				roboFileManager.write(roboAbortInfo);
+				// 一般ユーザでの実行可能性があるためEveryoneのフルアクセスで設定
+				roboFileManager.writeWithEveryoneFullAccess(roboAbortInfo);
+				// 指示受付確認待ち
+				boolean retAbortInst = roboFileManager.confirmDelete(RoboAbortInfo.class, false, instConfirmInterval,
+						instConfirmTimeout);
+				if (!retAbortInst) {
+					m_log.warn("run() : The abort instruction may not have been communicated to the executor. session="
+							+ m_info.getSessionId());
+				}
+				//停止した旨をマネージャに送信
+				sendStopMessage();
 			}
 
 			// 実行結果ファイルを削除
-			roboFileManager.delete(RoboResultInfo.class);
+			roboFileManager.deleteIfExist(RoboResultInfo.class);
 
 			// ジョブ実行結果を送信
 			sendJobResult(status, endValue, returnCode, endValueCondition, message.toString(), errorMessage,
 					logfileName, logMessage);
 
-		} catch (IOException e) {
+		} catch (IOException | HinemosException e) {
 			// RPAツールエグゼキューター連携用ファイル入出力エラーが発生
 			// ジョブ実行結果を送信
 			sendJobResult(RunStatusConstant.ERROR, -1, null, null, "", e.getMessage(), "", "");
@@ -339,6 +451,7 @@ public class ScenarioMonitorThread extends AgentThread {
 			}
 		}
 		monitorInfo.setStringValueInfo(stringValueInfos);
+		monitorInfo.setUpdateDate(Long.MAX_VALUE);//null回避用のダミー値
 		MonitorInfoWrapper monitorInfoWrapper = new MonitorInfoWrapper(monitorInfo, m_info);
 		return monitorInfoWrapper;
 	}
@@ -363,6 +476,7 @@ public class ScenarioMonitorThread extends AgentThread {
 		roboRunInfo.setLogin(dto.getLogin());
 		roboRunInfo.setLogout(dto.getLogout());
 		roboRunInfo.setDestroy(dto.getDestroy());
+		roboRunInfo.setUserName(this.activeUserName);
 		return roboRunInfo;
 
 	}
@@ -391,7 +505,6 @@ public class ScenarioMonitorThread extends AgentThread {
 
 	/**
 	 * 終了値がスクリーンショット取得条件を満たしているかどうかを確認します。<br>
-	 * 満たしている場合はスクリーンショットの取得を行います。
 	 * 
 	 * @param endValue
 	 *            終了値
@@ -405,7 +518,6 @@ public class ScenarioMonitorThread extends AgentThread {
 			m_log.warn("checkScreenshotEndValueCondition() : condition is null");
 			return false;
 		}
-		boolean result = false;
 		Integer condition;
 		// Enumを定数に変換
 		switch (m_info.getRpaScreenshotEndValueCondition()) {
@@ -432,12 +544,8 @@ public class ScenarioMonitorThread extends AgentThread {
 					+ m_info.getRpaScreenshotEndValueCondition());
 			condition = RpaJobReturnCodeConditionConstant.EQUAL_NUMERIC;
 		}
-		// 終了値が条件を満たしていればスクリーンショットの取得を開始
-		if (ReturnCodeConditionChecker.check(endValue, m_info.getRpaScreenshotEndValue(), condition)) {
-			m_info.setRpaScreenshotTriggerType(AgtRunInstructionInfoResponse.RpaScreenshotTriggerTypeEnum.END_VALUE);
-			new ScreenshotThread(m_info, m_sendQueue).takeScreenshot();
-			result = true;
-		}
+		
+		boolean result = ReturnCodeConditionChecker.check(endValue, m_info.getRpaScreenshotEndValue(), condition);
 		m_log.debug("checkScreenshotEndValueCondition() : result=" + result);
 		return result;
 	}
@@ -450,15 +558,18 @@ public class ScenarioMonitorThread extends AgentThread {
 	 *            終了値
 	 * @return true : ログアウトする / false : ログアウトしない
 	 * @throws IOException
+	 * @throws HinemosException 
 	 */
-	private boolean checkLogout(int endValue) throws IOException {
+	private boolean checkLogout(int endValue) throws IOException, HinemosException {
 		// 終了状態を判定
 		int endStatus = JobCommonUtil.checkEndStatus(endValue, m_info.getRpaNormalEndValueFrom(),
 				m_info.getRpaNormalEndValueTo(), m_info.getRpaWarnEndValueFrom(), m_info.getRpaWarnEndValueTo());
-		m_log.debug("checkLogout() : endValue=" + endValue + ", endStatus=" + endStatus + ", normalEndValueFrom="
-				+ m_info.getRpaNormalEndValueFrom() + ", normalEndValueTo=" + m_info.getRpaNormalEndValueTo()
-				+ ", warnEndValueFrom=" + m_info.getRpaWarnEndValueFrom() + ", warnEndValueTo="
-				+ m_info.getRpaWarnEndValueTo());
+		if(m_log.isDebugEnabled()){
+			m_log.debug("checkLogout() : endValue=" + endValue + ", endStatus=" + endStatus + ", normalEndValueFrom="
+					+ m_info.getRpaNormalEndValueFrom() + ", normalEndValueTo=" + m_info.getRpaNormalEndValueTo()
+					+ ", warnEndValueFrom=" + m_info.getRpaWarnEndValueFrom() + ", warnEndValueTo="
+					+ m_info.getRpaWarnEndValueTo());
+		}
 		if (endStatus == EndStatusConstant.TYPE_ABNORMAL) {
 			// 異常終了の場合はログアウトする設定の場合のみログアウトする
 			if (!m_info.getRpaRoboRunInfo().getLogout()) {
@@ -466,9 +577,41 @@ public class ScenarioMonitorThread extends AgentThread {
 				return false;
 			}
 		}
-		// RPAツールエグゼキューターにログアウトを指示
-		roboFileManager.write(new RoboLogoutInfo(HinemosTime.currentTimeMillis(), m_info.getSessionId(),
-				m_info.getJobunitId(), m_info.getJobId(), m_info.getFacilityId()));
+		this.isLogoutStarted = true;
+		// RPAツールエグゼキューターにログアウトを指示、一般ユーザでの実行可能性があるためEveryoneのフルアクセスで設定
+		roboFileManager.writeWithEveryoneFullAccess(new RoboLogoutInfo(HinemosTime.currentTimeMillis(), m_info.getSessionId(),
+				m_info.getJobunitId(), m_info.getJobId(), m_info.getFacilityId(), this.activeUserName));
+		// 指示受付確認待ち
+		boolean retLogoutInst = roboFileManager.confirmDelete(RoboLogoutInfo.class, true, instConfirmInterval,
+				instConfirmTimeout);
+		if (!retLogoutInst) {
+			m_log.warn("checkLogout() : The logout instruction may not have been communicated to the executor. session="
+					+ m_info.getSessionId());
+		}
+
+		// ログアウト完了待ち
+		// ログアウト処理の完了時にRPAツールエグゼキューターも終了するため、RPAツールエグゼキューターの終了待ちも行う
+		long limitMills = HinemosTime.currentTimeMillis() + logoutConfirmTimeout;
+		while (true) {
+			try {
+				if (!(RpaWindowsUtil.hasActiveSession(this.activeUserName))
+						&& RpaWindowsUtil.isRpaExecutorTerminate(this.activeUserName)) {
+					m_log.debug("checkLogout() : isRpaExecutorTerminate = true. session=" + m_info.getSessionId());
+					break;
+				}
+				Thread.sleep(logoutConfirmInterval);
+			} catch (IOException | HinemosUnknown | InterruptedException e) {
+				m_log.error("checkLogout() : An abnormality occurred when checking the status of the executor. session="
+						+ m_info.getSessionId());
+				break;
+			}
+			if (limitMills <= HinemosTime.currentTimeMillis()) {
+				m_log.warn("checkLogout() :The logout instruction may not have ended at the executor. session="
+						+ m_info.getSessionId());
+				break;
+			}
+		}
+
 		return true;
 	}
 
@@ -511,5 +654,43 @@ public class ScenarioMonitorThread extends AgentThread {
 	public static boolean isRunning(AgtRunInstructionInfoResponse info) {
 		String key = RunHistoryUtil.getKey(info);
 		return instances.containsKey(key);
+	}
+
+	/**
+	 * 終了メッセージを送信します。<br>
+	 * ジョブが停止された場合に呼ばれます。
+	 */
+	private void sendStopMessage() {
+		JobResultSendableObject jobResult = new JobResultSendableObject();
+		jobResult.sessionId = m_info.getSessionId();
+		jobResult.jobunitId = m_info.getJobunitId();
+		jobResult.jobId = m_info.getJobId();
+		jobResult.facilityId = m_info.getFacilityId();
+		jobResult.body = new SetJobResultRequest();
+		jobResult.body.setCommand(m_info.getCommand());
+		jobResult.body.setCommandType(CommandTypeConstant.STOP); // 正常終了した場合とメッセージを分けるためSTOPを指定
+		jobResult.body.setStatus(RunStatusConstant.END);
+		jobResult.body.setTime(HinemosTime.getDateInstance().getTime());
+
+		m_log.info("sendJobEndMessage() : SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
+		// 送信
+		m_sendQueue.put(jobResult);
+	}
+
+	/**
+	 * シナリオ監視スレッドがエグゼキューターへログアウトを指示したかどうかを返します。
+	 * 
+	 * @param info
+	 * @return true: ログアウト指示済み、false: 指示無し
+	 */
+	public static boolean isLogoutStarted(AgtRunInstructionInfoResponse info) {
+		String key = RunHistoryUtil.getKey(info);
+		if (instances.containsKey(key)) {
+			ScenarioMonitorThread instance = instances.get(key);
+			return instance.isLogoutStarted;
+		} else {
+			m_log.warn("isLogoutStarted() : thread not found");
+			return false;
+		}
 	}
 }

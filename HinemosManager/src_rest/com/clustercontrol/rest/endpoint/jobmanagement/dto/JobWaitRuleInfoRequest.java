@@ -21,6 +21,11 @@ import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.OperationMult
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.OperationStartDelayEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.PrioritySelectEnum;
 
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 public class JobWaitRuleInfoRequest implements RequestDto {
 	
 	/** 保留 */

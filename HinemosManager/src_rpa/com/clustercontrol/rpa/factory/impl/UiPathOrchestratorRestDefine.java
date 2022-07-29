@@ -54,6 +54,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public abstract class UiPathOrchestratorRestDefine extends RpaManagementRestDefine {
 	private static final Logger m_log = Logger.getLogger(UiPathOrchestratorOnPremiseRestDefine.class);
 
+	// シナリオ実行に必要なヘッダリスト
+	private static final List<String> HEADER_LIST_FOR_RUN = Arrays.asList("X-UIPATH-OrganizationUnitId", "X-UIPATH-FolderPath");
+	
 	public UiPathOrchestratorRestDefine(int apiVersion) {
 		super(apiVersion);
 	}
@@ -262,8 +265,15 @@ public abstract class UiPathOrchestratorRestDefine extends RpaManagementRestDefi
 	}
 
 	@Override
-	protected Header[] createRunHeader(String token) {
-		return new Header[] {getAuthTokenHeader(token)};
+	protected Header[] createRunHeader(String token, Map<String, Object> headerData) {
+		List<Header> headerList = new ArrayList<>();
+		headerList.add(getAuthTokenHeader(token));
+		if(!headerData.isEmpty()) {
+			for (Map.Entry<String, Object> e : headerData.entrySet()) {
+				headerList.add(new BasicHeader(e.getKey(), e.getValue()));
+			}
+		}
+		return headerList.toArray(new Header[headerList.size()]);
 	}
 
 	@Override
@@ -292,6 +302,21 @@ public abstract class UiPathOrchestratorRestDefine extends RpaManagementRestDefi
 		requestData.clear();
 		requestData.put("startInfo", startInfo);
 		return requestData;
+	}
+
+	@Override
+	protected Map<String, Object> adjustRunHeaderData(Map<String, Object> requestData) {
+		// requestDataでヘッダに関する情報を別マップに切り出す。その際requestDataにあったヘッダ情報は削除する。
+		Map<String, Object> headerData = new HashMap<String, Object>();
+		for(String headerKey : HEADER_LIST_FOR_RUN) {
+			if(requestData.containsKey(headerKey)) {
+				headerData.put(headerKey, requestData.get(headerKey));
+				requestData.remove(headerKey);
+			}
+		}
+		
+		m_log.debug("adjustRunHeaderData(); : headerData=" + headerData);
+		return headerData;
 	}
 
 	@Override

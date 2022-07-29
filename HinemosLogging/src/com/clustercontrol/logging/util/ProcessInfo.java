@@ -17,30 +17,40 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.clustercontrol.log.internal.InternalLogManager;
+import com.clustercontrol.logging.LoggingConfigurator;
 import com.clustercontrol.logging.constant.MessageConstant;
 import com.clustercontrol.logging.constant.PropertyConstant;
 import com.clustercontrol.logging.property.LoggingProperty;
 
 public class ProcessInfo {
 	private static InternalLogManager.Logger internalLog = InternalLogManager.getLogger(ProcessInfo.class);
-	private static final ProcessInfo INSTANCE = new ProcessInfo();
+
 	private final Integer pid;
 	private final boolean isWin;
+	private final StringEscaper regexEscaper;
 
-	private ProcessInfo() {
+	public ProcessInfo() {
 		RuntimeMXBean bean = java.lang.management.ManagementFactory.getRuntimeMXBean();
 		this.pid = Integer.valueOf(bean.getName().split("@")[0]);
+		internalLog.info("ProcessInfo PID is " + this.pid);
 
 		String osName = System.getProperty("os.name");
 		this.isWin = (osName != null && (osName.startsWith("Windows") || osName.startsWith("windows")));
+
+		// 正規表現のメタ文字エスケープ用
+		this.regexEscaper = new StringEscaper("\\*+.?{}()[]^$-|");
 	}
 
-	public static ProcessInfo getInstance() {
-		return INSTANCE;
+	public Integer getPid() {
+		return pid;
 	}
 
-	public HashMap<String, String> getProcInfo() throws TimeoutException, IOException, InterruptedException {
-		LoggingProperty prop = LoggingProperty.getInstance();
+	public boolean isWin() {
+		return isWin;
+	}
+
+	public HashMap<String, String> getCommandInfo() throws TimeoutException, IOException, InterruptedException {
+		LoggingProperty prop = LoggingConfigurator.getProperty();
 		// 設定ファイルから取得
 		int timeout = Integer.parseInt(prop.getProperty(PropertyConstant.PRC_GET_TIMEOUT));
 		String cmdForCommandLine = prop.getProperty(PropertyConstant.PRC_GET_COMMAND_LINE).replace("%p",
@@ -56,7 +66,7 @@ public class ProcessInfo {
 		String prcCommand = "";
 		String prcArgument = "";
 
-		if (isWin && (cmdForCommandPath != null && !cmdForCommandPath.isEmpty())) {
+		if (isWin() && (cmdForCommandPath != null && !cmdForCommandPath.isEmpty())) {
 			// Windowsの場合
 			String rawCommand = "";
 			String rawArguments = "";
@@ -90,8 +100,8 @@ public class ProcessInfo {
 			}
 
 			// SNMPの最大値で切る
-			path = truncateAndAppend(path, 128, ""); // 末尾は追加しない
-			name = truncateAndAppend(name, 64, "");
+			path = adjustForMonitorSetting(path, 128, ""); // 末尾は追加しない
+			name = adjustForMonitorSetting(name, 64, "");
 
 			if (rawCommand.contains("\\")) {
 				// 起動時のコマンドで実行ファイルをパスで指定していた場合
@@ -101,7 +111,7 @@ public class ProcessInfo {
 				prcCommand = name;
 			}
 
-			prcArgument = truncateAndAppend(rawArguments, 128, anyChr);
+			prcArgument = adjustForMonitorSetting(rawArguments, 128, anyChr);
 
 		} else {
 			// Windows以外、または実行ファイルのパス取得用のコマンドが指定されていない場合
@@ -114,8 +124,8 @@ public class ProcessInfo {
 			}
 
 			// SNMPの最大値で切る
-			prcCommand = truncateAndAppend(rawCommand, 128, anyChr);
-			prcArgument = truncateAndAppend(rawArguments, 128, anyChr);
+			prcCommand = adjustForMonitorSetting(rawCommand, 128, anyChr);
+			prcArgument = adjustForMonitorSetting(rawArguments, 128, anyChr);
 		}
 
 		HashMap<String, String> procMap = new HashMap<String, String>();
@@ -156,18 +166,18 @@ public class ProcessInfo {
 		return result;
 	}
 
-	public Integer getPid() {
-		return pid;
-	}
-
 	/*
-	 * 引数の文字列が指定された文字数を超過している場合、
-	 * 超過している分を切り捨て末尾に指定された文字列を結合する
+	 * 引数で受け取った文字列を監視設定に設定する値に調整する
 	 */
-	private String truncateAndAppend(String str, int length, String appendStr) {
+	private String adjustForMonitorSetting(String str, int length, String appendStr) {
 		if (str.length() <= length) {
-			return str;
+			return regexEscaper.escapeString(str);
 		}
-		return str.substring(0, length) + appendStr;
+		// 指定された文字数を超過している場合
+		// 1. 指定された文字数で切り捨てる
+		// 2. 正規表現のメタ文字をエスケープする
+		// 3. 最後に指定された文字を結合する
+		// SNMPのMIBの最大長はエスケープ用の"\"は文字数にカウントしないためこの順序で行う
+		return regexEscaper.escapeString(str.substring(0, length)) + appendStr;
 	}
 }

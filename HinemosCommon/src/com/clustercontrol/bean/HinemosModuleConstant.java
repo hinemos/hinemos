@@ -225,6 +225,12 @@ public class HinemosModuleConstant {
 
 	/** SDML制御設定 */
 	public static final String SDML_CONTROL = "SDML_CONTROL";
+	public static final String SDML_CONTROL_CREATE_MONITOR = "CREATE_MONITOR";
+	public static final String SDML_CONTROL_UPDATE_MONITOR = "UPDATE_MONITOR";
+	public static final String SDML_CONTROL_DISABLE_MONITOR = "DISABLE_MONITOR";
+	public static final String SDML_CONTROL_ENABLE_MONITOR = "ENABLE_MONITOR";
+	public static final String SDML_CONTROL_ABNORMAL = "ABNORMAL";
+	public static final String SDML_CONTROL_EARLY_STOP = "EARLY_STOP";
 
 	/** マネージャ操作ログタイトル */
 	/** リポジトリ */

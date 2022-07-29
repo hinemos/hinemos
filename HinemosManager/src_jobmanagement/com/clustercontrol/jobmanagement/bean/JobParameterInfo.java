@@ -15,6 +15,16 @@ import javax.xml.bind.annotation.XmlType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JobParamTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 
 /**
  * ジョブの変数に関する情報を保持するクラス
@@ -22,17 +32,27 @@ import org.apache.commons.logging.LogFactory;
  * @version 2.1.0
  * @since 2.1.0
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobParameterInfo implements Serializable, Comparable<JobParameterInfo> {
+public class JobParameterInfo implements Serializable, Comparable<JobParameterInfo>, RequestDto {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 981926727088488957L;
 
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( JobParameterInfo.class );
 
 	/** パラメータID */
 	private String paramId;
 
 	/** パラメータ種別 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=JobParamTypeEnum.class)
 	private Integer type = 0;
 
 	/** 説明 */
@@ -245,5 +265,9 @@ public class JobParameterInfo implements Serializable, Comparable<JobParameterIn
 			ret = "OK";
 		}
 		System.out.println("    is ...  " + ret);
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

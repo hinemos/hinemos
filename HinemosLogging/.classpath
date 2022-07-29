@@ -11,8 +11,8 @@
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/log4j-api-2.17.1.jar"/>
-	<classpathentry kind="lib" path="lib/log4j-core-2.17.1.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-api-2.17.1.jar" sourcepath="lib/log4j-api-2.17.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-core-2.17.1.jar" sourcepath="lib/log4j-core-2.17.1-sources.jar"/>
 	<classpathentry kind="lib" path="platform_switch/JakartaEE/lib/jakarta.servlet-api-5.0.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -66,9 +66,10 @@ import com.clustercontrol.agent.repository.NodeRegister;
 import com.clustercontrol.agent.selfcheck.SelfCheckManager;
 import com.clustercontrol.agent.rpa.RpaLogfileMonitorManager;
 import com.clustercontrol.agent.rpa.RpaMonitorInfoWrapper;
-import com.clustercontrol.agent.rpa.RpaScenarioThread;
-import com.clustercontrol.agent.rpa.ScreenshotThread;
+import com.clustercontrol.agent.rpa.scenariojob.RpaScenarioThread;
+import com.clustercontrol.agent.rpa.scenariojob.ScreenshotThread;
 import com.clustercontrol.agent.update.AgentUpdater;
+import com.clustercontrol.agent.update.RpaExecuterUpdater;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.agent.util.CollectorId;
 import com.clustercontrol.agent.util.CollectorManager;
@@ -90,6 +91,7 @@ import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.jobmanagement.bean.CommandConstant;
 import com.clustercontrol.jobmanagement.bean.CommandStopTypeConstant;
 import com.clustercontrol.jobmanagement.bean.CommandTypeConstant;
+import com.clustercontrol.jobmanagement.rpa.util.RpaWindowsUtil;
 import com.clustercontrol.repository.bean.AgentCommandConstant;
 import com.clustercontrol.util.EnvUtil;
 import com.clustercontrol.util.HinemosTime;
@@ -128,6 +130,7 @@ public class ReceiveTopic extends Thread {
 	
 	// リモートアップデート処理オブジェクト
 	private AgentUpdater updater = new AgentUpdater();
+	private RpaExecuterUpdater rpaExecuterUpdater = new RpaExecuterUpdater();
 	
 	// topic受信とエージェント終了時の通信コンフリクトを防ぐためのロック
 	public static final Object lockTopicReceiveTiming = new Object();
@@ -457,6 +460,15 @@ public class ReceiveTopic extends Thread {
 					m_log.info("run: Execute update command.");
 					try {
 						if (updater.download()) {
+							// Windowsの場合のみrpaExecuterUpdaterを実施
+							String osName = System.getProperty("os.name");
+							if(osName != null && osName.startsWith("Windows")){
+								try {
+									rpaExecuterUpdater.updateJarAndScript(m_sendQueue);
+								} catch (Throwable e) {
+									m_log.warn("run: Failed to update the file of rpa executer.", e);
+								}
+							}
 							Agent.restart(AgentCommandConstant.UPDATE);
 						}
 					} catch (Throwable e) {
@@ -573,7 +585,7 @@ public class ReceiveTopic extends Thread {
 		} else if (settingLastUpdateInfo == null) {
 			return true;
 		} else {
-			if (settingLastUpdateInfo.getLogFileMonitorUpdateTime().equals(updateInfo.getRpaLogFileMonitorUpdateTime())
+			if (settingLastUpdateInfo.getRpaLogFileMonitorUpdateTime().equals(updateInfo.getRpaLogFileMonitorUpdateTime())
 					&& settingLastUpdateInfo.getCalendarUpdateTime().equals(updateInfo.getCalendarUpdateTime())
 					&& settingLastUpdateInfo.getRepositoryUpdateTime().equals(updateInfo.getRepositoryUpdateTime())) {
 				return false;
@@ -1257,8 +1269,12 @@ public class ReceiveTopic extends Thread {
 					} else if (info.getCommandType() == CommandTypeConstant.SCREENSHOT) {
 						//RPAシナリオスクリーンショットの取得
 						m_log.debug("onMessage CommandType = SCREENSHOT");
-						ScreenshotThread thread = new ScreenshotThread(info, m_sendQueue);
-						thread.start();
+						List<String> users = RpaWindowsUtil.getActiveUsers();
+						if (users != null && users.size() > 0) {
+							// 通常、ユーザは1件なので、get(0)を使用する
+							ScreenshotThread thread = new ScreenshotThread(info, m_sendQueue, users.get(0));
+							thread.start();
+						}
 					} else {
 						//既に終了したジョブに対しての停止コマンドの場合等にここを通る
 						m_log.warn("runJob() : rpa job command type is invalid, commandType=" + info.getCommandType());

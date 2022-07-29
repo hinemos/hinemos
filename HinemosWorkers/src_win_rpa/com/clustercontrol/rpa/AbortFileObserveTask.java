@@ -12,6 +12,7 @@ import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.jobmanagement.rpa.bean.RoboAbortInfo;
 
 /**
@@ -25,8 +26,9 @@ public class AbortFileObserveTask extends ObserveTask {
 
 	/**
 	 *  コンストラクタ
+	 * @throws HinemosUnknown 
 	 */
-	public AbortFileObserveTask() {
+	public AbortFileObserveTask() throws HinemosUnknown {
 		super(threadName);
 	}
 
@@ -34,6 +36,7 @@ public class AbortFileObserveTask extends ObserveTask {
 	public void run() {
 		m_log.info("run() : start");
 		while (!Thread.currentThread().isInterrupted()) {
+			m_log.debug("run() : loop start.");
 			try {
 				// 指示ファイルが生成するまで待機
 				RoboAbortInfo roboAbortInfo = roboFileManager.read(RoboAbortInfo.class, checkInterval);
@@ -41,7 +44,17 @@ public class AbortFileObserveTask extends ObserveTask {
 					m_log.warn("run() : roboAbortInfo is null");
 					return; // 処理終了等で処理が中断された場合
 				}
-				m_log.debug("run() : " + roboAbortInfo);
+				m_log.debug("run() : roboAbortInfo=" + roboAbortInfo);
+
+				try {
+					if (!super.isAllowedToExecute(roboAbortInfo)) {
+						continue;
+					}
+				} catch (InterruptedException e) {
+					m_log.debug("run() : thread interrupted. e=" + e.getMessage(), e);
+					return;
+				}
+
 				// 実行指示ファイルを削除
 				roboFileManager.delete(RoboAbortInfo.class);
 				// RPAシナリオ実行を中断

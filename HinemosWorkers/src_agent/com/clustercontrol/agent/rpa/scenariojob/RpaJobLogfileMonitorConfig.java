@@ -6,7 +6,7 @@
  * See the LICENSE file for licensing information.
  */
 
-package com.clustercontrol.agent.rpa;
+package com.clustercontrol.agent.rpa.scenariojob;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,8 +36,6 @@ public class RpaJobLogfileMonitorConfig implements FileMonitorConfig {
 	private static final String MONITOR_LOGFILE_MESSAGE_LINE = "job.rpalogfile.message.line";
 
 	private static final String READ_CARRYOVER_LENGTH = "job.rpalogfile.read.carryover.length";
-
-	private static final String MAX_FILE_NOTIFY_INTERVAL_KEY = "job.rpalogfile.filter.maxfiles.notify.interval";
 
 	/** ログファイル監視間隔 */
 	private int runInterval = 10000; // 10sec
@@ -72,7 +70,8 @@ public class RpaJobLogfileMonitorConfig implements FileMonitorConfig {
 	private String program = HINEMOS_LOG_AGENT;
 
 	/** 上限ファイル数超過通知間隔 */
-	private long logfileMaxFileNotifyInterval = 0;
+	// シナリオジョブによるファイル監視では定周期通知を行わないため0固定
+	private final long logfileMaxFileNotifyInterval = 0;
 
 	private static RpaJobLogfileMonitorConfig instance = new RpaJobLogfileMonitorConfig();
 
@@ -182,17 +181,6 @@ public class RpaJobLogfileMonitorConfig implements FileMonitorConfig {
 			m_log.warn("RpaJobLogfileMonitorConfig() : " + READ_CARRYOVER_LENGTH, e);
 		}
 		m_log.debug(READ_CARRYOVER_LENGTH + " = " + logfileReadCarryOverLength);
-
-		// 上限ファイル数超過通知間隔
-		String logfileMaxFileNotifyIntervalStr = AgentProperties.getProperty(MAX_FILE_NOTIFY_INTERVAL_KEY, "0");
-		try {
-			logfileMaxFileNotifyInterval = Long.parseLong(logfileMaxFileNotifyIntervalStr);
-		} catch (NumberFormatException e) {
-			m_log.warn("RpaJobLogfileMonitorConfig() : " + MAX_FILE_NOTIFY_INTERVAL_KEY, e);
-		} catch (Exception e) {
-			m_log.warn("RpaJobLogfileMonitorConfig() : " + MAX_FILE_NOTIFY_INTERVAL_KEY, e);
-		}
-		m_log.debug(MAX_FILE_NOTIFY_INTERVAL_KEY + " = " + logfileReadCarryOverLength);
 	}
 
 	public static RpaJobLogfileMonitorConfig getInstance() {

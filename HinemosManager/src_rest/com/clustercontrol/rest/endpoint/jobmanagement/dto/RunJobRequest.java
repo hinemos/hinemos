@@ -66,8 +66,8 @@ public class RunJobRequest implements RequestDto {
 	 */
 	private String jobkickId;
 
-	/** ランタイムジョブ変数情報 */
-	private ArrayList<JobRuntimeParamRequest> jobRuntimeParamList;
+	/** ランタイムジョブ変数実行情報 */
+	private ArrayList<JobRuntimeParamRunRequest> jobRuntimeParamList;
 
 	public JobTriggerTypeEnum getTrigger_type() {
 		return trigger_type;
@@ -131,11 +131,11 @@ public class RunJobRequest implements RequestDto {
 		return jobCommandText;
 	}
 
-	public void setJobRuntimeParamList(ArrayList<JobRuntimeParamRequest> jobRuntimeParamList) {
+	public void setJobRuntimeParamList(ArrayList<JobRuntimeParamRunRequest> jobRuntimeParamList) {
 		this.jobRuntimeParamList = jobRuntimeParamList;
 	}
 
-	public ArrayList<JobRuntimeParamRequest> getJobRuntimeParamList() {
+	public ArrayList<JobRuntimeParamRunRequest> getJobRuntimeParamList() {
 		return jobRuntimeParamList;
 	}
 

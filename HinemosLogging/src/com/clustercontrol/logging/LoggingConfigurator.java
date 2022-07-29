@@ -8,51 +8,89 @@
 
 package com.clustercontrol.logging;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Enumeration;
 
 import com.clustercontrol.log.control.ControlLogManager;
 import com.clustercontrol.log.internal.InternalLogManager;
 import com.clustercontrol.log.monitoring.MonitoringLogManager;
+import com.clustercontrol.logging.exception.LoggingPropertyException;
+import com.clustercontrol.logging.property.LoggingProperty;
+import com.clustercontrol.logging.util.ProcessInfo;
 
 /**
  * 各種ログファイルの起動、終了を構成するクラスです<BR>
  */
 
 public class LoggingConfigurator {
-	private static final String INFO_LOGGING_START = "Hinemos Logging is started.";
-	private static final String INFO_LOGGING_STOP = "Hinemos Logging is stopped.";
-	private static ControlLogManager.Logger controlLog = ControlLogManager.getLogger(LoggingConfigurator.class);
-	private static InternalLogManager.Logger internalLog = InternalLogManager.getLogger(LoggingConfigurator.class);
+	/** HinemosLoggingの起動日時 */
+	private static long startupTime;
+	/** 起動フラグ */
+	private static boolean run = false;
+	/** インスタンスマネージャ */
+	private static LoggingInstanceManager manager;
 
+	/** 内部ログのロガー */
+	private static InternalLogManager.Logger internalLog;
 	/** ホスト名 */
 	private static String hostname;
-	/** Servlet（Webアプリケーション）かどうか */
-	private static boolean isServlet;
-
-	public static String getHostname() {
-		return hostname;
-	}
-
-	public static boolean isServlet() {
-		return isServlet;
-	}
+	private static final String HOSTNAME_DEFAULT = "localhost";
 
 	/**
-	 * 起動時の各種ログを構成します。
+	 * HinemosLoggingの起動処理
+	 * 順序を考慮して各種ログを構成します。
 	 * 
-	 * @throws Exception
-	 *
+	 * @param properyFile 設定ファイルのInputStream
 	 */
-	public static void init(boolean isServlet) throws Exception {
-		LoggingConfigurator.isServlet = isServlet;
+	public static void start(InputStream properyFile) throws Exception {
+		// 現在の日時を起動日時に設定
+		startupTime = System.currentTimeMillis();
+		manager = new LoggingInstanceManager();
+
+		// 設定ファイル読み込み
+		try {
+			manager.initializeLoggingPropety(properyFile);
+		} catch (IOException | LoggingPropertyException e) {
+			throw e;
+		} finally {
+			if (properyFile != null) {
+				try {
+					properyFile.close();
+				} catch (IOException e) {
+					throw e;
+				}
+			}
+		}
+
+		// 内部ログの初期化
+		try {
+			InternalLogManager.init();
+
+			internalLog = InternalLogManager.getLogger(LoggingConfigurator.class);
+			internalLog.info("start : Hinemos Logging is initializing...");
+			internalLog.info("start : Startup Time="
+					+ new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS").format(new Date(startupTime)));
+		} catch (FileNotFoundException e) {
+			throw e;
+		}
+
+		// 内部ログの初期化後に起動とする
+		run = true;
 
 		try {
-			getSysHostname();
+			// ホスト名の取得
+			hostname = getSysHostname();
+			// プロセス情報の初期化
+			manager.initializeProcessInfo();
 
 			// 制御ログの初期設定
 			ControlLogManager.init();
@@ -61,49 +99,82 @@ public class LoggingConfigurator {
 			MonitoringLogManager.init();
 
 			// プロセス内部監視の開始
-			InternalMonitor.getInstance().start();
+			manager.startInternalMonitor();
 
-			internalLog.info("init : " + INFO_LOGGING_START);
-		} catch (Exception e) {
-			stop();
-			throw e;
-		}
-
-	}
-
-	public static void stop() {
-		// プロセス内部監視の停止
-		InternalMonitor.getInstance().stop();
-		// 各アペンダーの停止
-		stopAppender();
-	}
-
-	public static void stopAppender() {
-		if (MonitoringLogManager.isRun()) {
-			MonitoringLogManager.stop();
-		}
-		if (ControlLogManager.isRun()) {
-			controlLog.stop();
-			ControlLogManager.stop();
-		}
-		internalLog.info("stop : " + INFO_LOGGING_STOP);
-		if (InternalLogManager.isRun()) {
-			InternalLogManager.stop();
+			internalLog.info("start : Hinemos Logging is started.");
+		} catch (Throwable t) {
+			internalLog.error("start : Initialization failed. " + t.getMessage(), t);
+			stop(true);
 		}
 	}
 
-	private static String getSysHostname() throws Exception {
+	/**
+	 * HinemosLoggingの停止処理<br>
+	 * <br>
+	 * 初回の呼び出しでHinemosLoggingは停止し、2回目以降の呼び出しは無視されます。<br>
+	 * 呼び出しは同期的に行われることを前提としています。
+	 * 
+	 * @param stopAppender
+	 *            独自に追加したAppenderを停止するかどうか<br>
+	 *            Log4j2の停止処理が働いている場合はそちらに委ねます<br>
+	 */
+	public static void stop(boolean stopAppender) {
+		if (!run) {
+			// 停止処理の2回目起動の防止
+			return;
+		}
+		try {
+			internalLog.info("stop : Hinemos Logging is stopping.");
+
+			// プロセス内部監視の停止
+			manager.stopInternalMonitor();
+
+			// Stopの出力
+			ControlLogManager.getLogger(LoggingConfigurator.class).stop();
+
+			// 各アペンダーの停止
+			MonitoringLogManager.stop(stopAppender);
+			ControlLogManager.stop(stopAppender);
+
+		} catch (Throwable t) {
+			internalLog.error("stop : " + t.getMessage(), t);
+		} finally {
+			internalLog.info("stop : Hinemos Logging is stopped.");
+			// 内部ログの停止
+			InternalLogManager.stop(stopAppender);
+
+			// インスタンスの参照を明示的に破棄する
+			manager = null;
+			run = false;
+		}
+	}
+
+	public static String getHostname() {
+		return hostname;
+	}
+
+	public static long getStartupTime() {
+		return startupTime;
+	}
+
+	public static LoggingProperty getProperty() {
+		return manager.getLoggingProperty();
+	}
+
+	public static ProcessInfo getProcessInfo() {
+		return manager.getProcessInfo();
+	}
+
+	private static String getSysHostname() {
 		// 末尾 ":" チェック . <PRI>DATE TAG MSG形式（主に商用Unix）を想定
 		// ブランク チェック . <PRI>DATE last message repeat を想定
 		// [ ] 囲い込み補正 .特定のsyslogdにてホスト名を[]にて囲う仕様に対応
-
+		String hostname = "";
 		// ホスト名の取得
-		// 取得するものに差異があるかもしれない（https://qiita.com/zakisanbaiman/items/8c3df06efad92c489e7d）
 		try {
 			hostname = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException e) {
-			internalLog.error("getSysHostname : get hostname failed. " + e.getMessage());
-			throw e;
+			internalLog.warn("getSysHostname : get hostname failed. " + e.getMessage());
 		}
 
 		if (hostname.equals("") || hostname.substring(hostname.length() - 1).equals(":")) {
@@ -120,18 +191,18 @@ public class LoggingConfigurator {
 					|| hostname.charAt(cnt) == '/' || hostname.charAt(cnt) == '_' || hostname.charAt(cnt) == '-') {
 				continue;
 			}
-			internalLog.error("getSysHostname : hostname contains forbidden characters.");
-			throw new Exception("getSysHostname : hostname contains forbidden characters.");
+			internalLog.warn("getSysHostname : hostname contains forbidden characters.");
+			return HOSTNAME_DEFAULT;
 		}
 
 		if (hostname.length() >= 255) {
-			internalLog.error("getSysHostname : hostname exceeds 255 characters.");
-			throw new Exception("getSysHostname : hostname exceeds 255 characters.");
+			internalLog.warn("getSysHostname : hostname exceeds 255 characters.");
+			return HOSTNAME_DEFAULT;
 		}
 		return hostname;
 	}
 
-	private static String getSysIpAddress() throws SocketException {
+	private static String getSysIpAddress() {
 		// IPアドレス取得
 		Enumeration<NetworkInterface> networkInterfaces;
 		try {
@@ -155,15 +226,15 @@ public class LoggingConfigurator {
 				}
 			}
 			if (newIpAddressList.isEmpty()) {
-				return "localhost";
+				return HOSTNAME_DEFAULT;
 			} else {
 				// IPアドレスは複数ある場合は最初に取得したもの（どれが妥当かまで判断するのは難しい)
 				internalLog.debug("getSysIpAddress : " + String.join(",", newIpAddressList));
 				return newIpAddressList.get(0);
 			}
 		} catch (SocketException e) {
-			internalLog.error("getSysIpAddress : get IpAddress failed. " + e.getMessage());
-			throw e;
+			internalLog.warn("getSysIpAddress : get IpAddress failed. " + e.getMessage());
+			return HOSTNAME_DEFAULT;
 		}
 
 	}

@@ -12,6 +12,7 @@ import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.jobmanagement.rpa.bean.RoboResultInfo;
 import com.clustercontrol.jobmanagement.rpa.bean.RoboRunInfo;
 import com.clustercontrol.jobmanagement.rpa.util.RoboFileManager;
@@ -42,7 +43,16 @@ public class ResultFileHandler extends AbstractHandler {
 	@Override
 	public void handle(RoboResultInfo roboResultInfo) {
 		m_log.debug("handle() : " + roboResultInfo);
-		RoboFileManager roboFileManager = new RoboFileManager(roboFileDir);
+		RoboFileManager roboFileManager = null;
+		try {
+			roboFileManager = new RoboFileManager();
+		} catch (HinemosUnknown e) {
+			m_log.error("handle() : write result file failed, " + e.getMessage(), e);
+			return;
+		} catch (InterruptedException e) {
+			m_log.warn("ObserveTask() : interrupted. e=" + e.getMessage(), e);
+			return;
+		}
 		try {
 			roboFileManager.write(roboResultInfo);
 		} catch (IOException e) {

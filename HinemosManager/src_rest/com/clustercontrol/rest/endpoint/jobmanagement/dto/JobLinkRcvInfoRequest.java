@@ -19,6 +19,11 @@ import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.rest.util.RestItemNameResolver;
 import com.clustercontrol.util.MessageConstant;
 
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 public class JobLinkRcvInfoRequest implements RequestDto {
 
 	/** ファシリティID */
@@ -65,6 +70,7 @@ public class JobLinkRcvInfoRequest implements RequestDto {
 	private String joblinkMessageId;
 
 	/** 確認期間フラグ */
+	@RestItemName(value=MessageConstant.JOBLINK_CHECK_PAST_MESSAGE)
 	private Boolean pastFlg = Boolean.FALSE;
 
 	/** 確認期間（分） */
@@ -544,6 +550,12 @@ public class JobLinkRcvInfoRequest implements RequestDto {
 
 	@Override
 	public void correlationCheck() throws InvalidSetting {
+
+		// [確認期間フラグ]がNullの場合はエラー
+		if (pastFlg == null) {
+			String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "pastFlg");
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+		}
 
 		// [確認期間フラグ]がtrueの場合、[確認期間（分）]必須
 		if (pastFlg && pastMin == null) {

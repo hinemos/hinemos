@@ -41,6 +41,7 @@ public class RpaScenarioTagListDialog extends CommonDialog {
 	private RpaScenarioTagListToDialogComposite tagListComposite = null;
 
 	private String managerName = null;
+	private String ownerRoleId = null;
 
 	/** 選択されているタグ */
 	private List<RpaScenarioTagResponse> tagList = null;
@@ -55,11 +56,12 @@ public class RpaScenarioTagListDialog extends CommonDialog {
 		setShellStyle(getShellStyle() | SWT.RESIZE | SWT.MAX);
 	}
 
-	public RpaScenarioTagListDialog(Shell parent, String managerName) {
+	public RpaScenarioTagListDialog(Shell parent, String managerName, String ownerRoleId) {
 		super(parent);
 		setShellStyle(getShellStyle() | SWT.RESIZE | SWT.MAX);
 
 		this.managerName = managerName;
+		this.ownerRoleId = ownerRoleId;
 	}
 
 	/**
@@ -89,8 +91,7 @@ public class RpaScenarioTagListDialog extends CommonDialog {
 		parent.setLayout(layout);
 
 		// タグ一覧
-		this.tagListComposite = new RpaScenarioTagListToDialogComposite(parent, SWT.BORDER);
-		this.tagListComposite.setManagerName(this.managerName);
+		this.tagListComposite = new RpaScenarioTagListToDialogComposite(parent, SWT.BORDER, this.managerName, this.ownerRoleId);
 		GridData gridData = new GridData();
 		gridData.verticalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;

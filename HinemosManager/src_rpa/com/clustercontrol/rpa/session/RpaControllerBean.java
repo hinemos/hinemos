@@ -43,6 +43,7 @@ import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.FunctionPrefixEnum;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.collect.util.ZipCompressor;
+import com.clustercontrol.commons.session.CheckFacility;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
@@ -95,7 +96,6 @@ import com.clustercontrol.rest.endpoint.rpa.dto.GetRpaScenarioOperationResultSum
 import com.clustercontrol.rest.endpoint.rpa.dto.GetRpaScenarioOperationResultSummaryStructureResponse;
 import com.clustercontrol.rest.endpoint.rpa.dto.GetRpaScenarioResponse;
 import com.clustercontrol.rest.endpoint.rpa.dto.RpaScenarioExecNodeResponse;
-import com.clustercontrol.rest.endpoint.rpa.dto.RpaScenarioOperationResultDetailResponse;
 import com.clustercontrol.rest.endpoint.rpa.dto.RpaScenarioOperationResultWithDetailResponse;
 import com.clustercontrol.rest.endpoint.rpa.dto.RpaScenarioResponseP1;
 import com.clustercontrol.rest.endpoint.rpa.dto.RpaScenarioTagResponse;
@@ -147,7 +147,7 @@ import com.clustercontrol.util.MessageConstant;
 /**
  * RPA機能の管理を行う Session Bean
  */
-public class RpaControllerBean {
+public class RpaControllerBean implements CheckFacility{
 
 	private static Log m_log = LogFactory.getLog( RpaControllerBean.class );
 	/** ログ出力区切り文字 */
@@ -405,6 +405,7 @@ public class RpaControllerBean {
 
 		JpaTransactionManager jtm = null;
 		List<RpaManagementToolAccount> retList =  new ArrayList<>();
+		String id = "";
 
 		try{
 			jtm = new JpaTransactionManager();
@@ -413,6 +414,7 @@ public class RpaControllerBean {
 			// RPA管理ツールアカウントを削除
 			ModifyRpaAccount modifier = new ModifyRpaAccount();
 			for(String rpaScopeId : rpaScopeIdList) {
+				id = rpaScopeId;
 				RpaManagementToolAccount ret = new SelectRpaAccount().getRpaAccount(rpaScopeId);
 				// アカウント及び自動検知リソース削除
 				RpaResourceMonitor.internalResourceRemove(ret);
@@ -424,17 +426,26 @@ public class RpaControllerBean {
 			if (jtm != null){
 				jtm.rollback();
 			}
-			throw e;
+			throw new RpaManagementToolAccountNotFound(
+					MessageConstant.MESSAGE_FAILED_TO_DELETE.getMessage(MessageConstant.RPA_MANAGEMENT_TOOL_ACCOUNT.getMessage()) 
+					+ MessageConstant.MESSAGE_NOT_FOUND.getMessage(
+							MessageConstant.RPA_SCOPE_ID.getMessage(),
+							id));
 		} catch (InvalidRole e){
 			if (jtm != null){
 				jtm.rollback();
 			}
-			throw e;
+			throw new InvalidRole(
+					MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage()
+					);
 		} catch (UsedFacility e){
 			if (jtm != null){
 				jtm.rollback();
 			}
-			throw e;
+			throw new UsedFacility(
+					MessageConstant.MESSAGE_FAILED_TO_DELETE.getMessage(MessageConstant.RPA_MANAGEMENT_TOOL_ACCOUNT.getMessage()) 
+					+ MessageConstant.MESSAGE_PLEASE_CHECK_TO_BE_USED.getMessage(MessageConstant.RPA_SCOPE.getMessage(),e.getMessage())
+					);
 		} catch (Exception e) {
 			m_log.warn("deleteRpaScenario() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -773,18 +784,11 @@ public class RpaControllerBean {
 		JpaTransactionManager jtm = null;
 
 		ArrayList<RpaScenario> scenarioList = null;
-		Map<String,String> rpaToolNameMap = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			scenarioList = new SelectRpaScenario().getRpaScenarioList(condition);
-			rpaToolNameMap = new SelectRpaScenario().getRpaToolNameMap();
 			jtm.commit();
-		} catch (InvalidRole e) {
-			if (jtm != null){
-				jtm.rollback();
-			}
-			throw e;
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
@@ -805,7 +809,6 @@ public class RpaControllerBean {
 		for (RpaScenario info : scenarioList){
 			GetRpaScenarioListResponse dto = new GetRpaScenarioListResponse();
 			RestBeanUtil.convertBeanNoInvalid(info, dto);
-			dto.setRpaToolName(rpaToolNameMap.get(dto.getScenarioId()));
 			resList.add(dto);
 		}
 		
@@ -1140,7 +1143,7 @@ public class RpaControllerBean {
 	/**
 	 * タグIDからRPAシナリオタグ情報の取得
 	 */
-	public RpaScenarioTag getRpaScenarioTag(String tagId) throws InvalidRole, HinemosUnknown {
+	public RpaScenarioTag getRpaScenarioTag(String tagId) throws InvalidRole, HinemosUnknown, RpaScenarioTagNotFound {
 		JpaTransactionManager jtm = null;
 		RpaScenarioTag info = null;
 		try {
@@ -1152,6 +1155,13 @@ public class RpaControllerBean {
 			info = select.getRpaScenarioTag(tagId);
 			
 			jtm.commit();
+		} catch (RpaScenarioTagNotFound e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new RpaScenarioTagNotFound(
+					MessageConstant.MESSAGE_NOT_FOUND.getMessage(
+							MessageConstant.RPA_SCENARIO_TAG_ID.getMessage(), 
+							tagId));
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -1170,6 +1180,17 @@ public class RpaControllerBean {
 			}
 		}
 		return info;
+	}
+	
+	/**
+	 * 指定されたタグIDを親に含む子タグを抽出する。
+	 */
+	public List<RpaScenarioTag> getChildrenScenarioTagList(String parentTagId) throws InvalidRole, HinemosUnknown {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			List <RpaScenarioTag> scenarioTagList = getRpaScenarioTagListByOwnerRole(null);
+			// タグのパスが「\親タグID\」を含む、または「\親タグ」で終わるタグを抽出する。
+			return scenarioTagList.stream().filter(tag -> tag.getTagPath().matches("(.*\\\\" + parentTagId + "\\\\.*|.*\\\\" + parentTagId + "$)")).collect(Collectors.toList());
+		}
 	}
 	
 	/**
@@ -1244,9 +1265,9 @@ public class RpaControllerBean {
 			RpaScenarioOperationResultNotFound, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		RpaScenarioOperationResult info = null;
-		Map<String,String> scenarioNameMap = null;
-		Map<String,String> facilityNameMap = null;
-		Map<String,String> rpaToolNameMap = null;
+		Map<String, String> scenarioNameMap = null;
+		Map<String, String> facilityNameMap = null;
+		Map<String, RpaToolMst> rpaToolMap = null;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
@@ -1256,15 +1277,12 @@ public class RpaControllerBean {
 			info = select.getRpaScenarioOperationResult(resultId);
 			scenarioNameMap = new SelectRpaScenario().getRpaScenarioNameMap();
 			facilityNameMap = getFacilityNameMap();
-			rpaToolNameMap = new SelectRpaScenario().getRpaToolNameMap();
-
+			rpaToolMap = new SelectRpaScenario().getRpaToolNameMap();
 			RpaScenarioOperationResultWithDetailResponse dto = new RpaScenarioOperationResultWithDetailResponse();
 			RestBeanUtil.convertBeanNoInvalid(info, dto);
 			dto.setScenarioName(scenarioNameMap.get(dto.getScenarioId()));
 			dto.setFacilityName(facilityNameMap.get(dto.getFacilityId()));
-			dto.setRpaToolName(rpaToolNameMap.get(dto.getScenarioId()));
-			
-			recalcOperationResult(dto);
+			dto.setRpaToolId(rpaToolMap.get(dto.getScenarioId()).getRpaToolId());
 			
 			jtm.commit();
 			return dto;
@@ -1292,46 +1310,6 @@ public class RpaControllerBean {
 		}
 		
 	}	
-	
-	/**
-	 * 表示用にシナリオ設定から手動操作時間、削減時間、削減率を再計算する。
-	 * @throws HinemosUnknown 
-	 * @throws InvalidRole 
-	 */
-	private void recalcOperationResult(RpaScenarioOperationResultWithDetailResponse operationResult) throws InvalidRole, HinemosUnknown {
-		GetRpaScenarioResponse scenario = getRpaScenario(operationResult.getScenarioId());
-		switch (scenario.getManualTimeCulcType()) {
-		case FIX_TIME:
-			// 手動操作時間が指定されている場合は、そちらを参照する。
-			// 手動操作コストは0とする。
-			long manualTime = scenario.getManualTime();
-			operationResult.setManualTime(manualTime);
-			operationResult.setCoefficientCost(null);
-			
-			for (RpaScenarioOperationResultDetailResponse detail: operationResult.getOperationResultDetail()) {
-				detail.setCoefficientCost(null);
-			}
-
-			switch (operationResult.getStatus()) {
-			case NORMAL_END:
-				// 終了(正常)の場合、削減時間と削減率を再計算する。
-				long reductionTime = manualTime - operationResult.getRunTime();
-				operationResult.setReductionTime(reductionTime);
-				int reductionRate = (int)(reductionTime * 100 / manualTime);
-				operationResult.setReductionRate(reductionRate);
-				
-				break;
-			default:
-				break;
-			}
-
-			return;
-		case AUTO:
-		default:
-			// 自動算出の場合はそのまま
-			return;
-		}
-	}
 	
 	/**
 	 * シナリオIDから同一実績作成設定、同一識別子のRPAシナリオ情報の取得
@@ -1665,7 +1643,7 @@ public class RpaControllerBean {
 			String hourString = String.valueOf(i); 
 			hoursMap.put(hourString, MessageConstant.IN_HOUR.getMessage(hourString));
 		}
-		List<GetRpaScenarioOperationResultSummaryDataResponse> datas = setReductionDatas(countList, 24, hoursMap, true);
+		List<GetRpaScenarioOperationResultSummaryDataResponse> datas = setReductionDatas(countList, 24, hoursMap, true, true);
 		// setReductionDatasで反転しているので、戻す。
 		Collections.reverse(datas);
 		dtoRes.setDatas(datas);
@@ -1710,7 +1688,7 @@ public class RpaControllerBean {
 				MessageConstant.MINUTE.getMessage(), stacks));
 		
 		Map<String,String> scenarioNameMap = new SelectRpaScenario().getRpaScenarioNameMap();
-		dtoRes.setDatas(sortErrorsDatas(setReductionDatas(countList, limit, scenarioNameMap, false),limit,scenarioNameMap));
+		dtoRes.setDatas(sortErrorsDatas(setReductionDatas(countList, limit, scenarioNameMap, false, false),limit,scenarioNameMap));
 	}
 	
 	/**
@@ -1724,7 +1702,7 @@ public class RpaControllerBean {
 				MessageConstant.MINUTE.getMessage(), stacks));
 		
 		Map<String, String> facilityNameMap = getFacilityNameMap();
-		dtoRes.setDatas(sortErrorsDatas(setReductionDatas(countList, limit, facilityNameMap, false),limit,facilityNameMap));
+		dtoRes.setDatas(sortErrorsDatas(setReductionDatas(countList, limit, facilityNameMap, false, false),limit,facilityNameMap));
 	}
 	
 	/**
@@ -1829,7 +1807,8 @@ public class RpaControllerBean {
 	/**
 	 * 削減工数グラフ描画用のデータをセット
 	 */
-	private List<GetRpaScenarioOperationResultSummaryDataResponse> setReductionDatas(List<Object[]> countList, int limit, Map<String, String> nameMap, boolean padding){
+	private List<GetRpaScenarioOperationResultSummaryDataResponse> setReductionDatas(List<Object[]> countList,
+			int limit, Map<String, String> nameMap, boolean padding, boolean useNameAndIdAsItem) {
 		List<GetRpaScenarioOperationResultSummaryDataResponse> datas = new ArrayList<>();
 		
 		// 最大表示件数に対応する為、一度取得データを逆順にする
@@ -1885,9 +1864,18 @@ public class RpaControllerBean {
 			if (limit <= datas.size()){
 				break;
 			}
+			if (nameMap.get(itemKey) == null) {
+				continue;
+			}
 			
 			GetRpaScenarioOperationResultSummaryDataResponse data = new GetRpaScenarioOperationResultSummaryDataResponse();
-			data.setItem(nameMap.get(itemKey));
+			if (useNameAndIdAsItem) {
+				//時間帯別削減工数(分)の場合は時間の表示名をそのままセット
+				data.setItem(nameMap.get(itemKey));
+			} else {
+				// シナリオ別削減工数(分)およびノード別削減工数(分)の場合は名前とIDをセット
+				data.setItem(nameMap.get(itemKey) + "(" + itemKey + ")");
+			}
 
 			double reductionTime = rec.getValue();
 			double runTime = runTimes.get(itemKey);
@@ -1939,13 +1927,16 @@ public class RpaControllerBean {
 			}
 			
 			for (GetRpaScenarioOperationResultSummaryDataResponse data: datas){
+				if (entry.getKey() == null || data.getItem() == null) {
+					continue;
+				}
 				if ( !entry.getKey().equals(data.getItem()) ){
 					continue;
 				}
 				
 				String item = nameMap.get(data.getItem());
 				if (item != null){
-					data.setItem(item);
+					data.setItem(item + "(" + data.getItem() + ")");
 				} else {
 					data.setItem(data.getItem());
 				}
@@ -2187,7 +2178,7 @@ public class RpaControllerBean {
 	 * シナリオ作成設定の削除
 	 */
 	public List<RpaScenarioOperationResultCreateSetting> deleteRpaScenarioOperationResultCreateSetting(List<String> settingIdList)
-			throws RpaScenarioOperationResultCreateSettingNotFound, InvalidRole, HinemosUnknown {
+			throws RpaScenarioOperationResultCreateSettingNotFound, InvalidRole, HinemosUnknown, InvalidSetting {
 		JpaTransactionManager jtm = null;
 		String id = "";
 		try {
@@ -2195,6 +2186,20 @@ public class RpaControllerBean {
 			jtm.begin();
 			List<RpaScenarioOperationResultCreateSetting> ret = new ArrayList<>();
 			for (String settingId : settingIdList) {
+				// 紐づくシナリオ実績があれば設定削除不可
+				List<RpaScenario> ScenarioList = QueryUtil.getRpaScenarioByFilter(settingId,null,null,null,null,null);
+				if(ScenarioList != null && ScenarioList.size() > 0){
+					StringBuilder Idlist = new StringBuilder();
+					for(RpaScenario rec : ScenarioList){
+						if( Idlist.length() > 0  ){
+							Idlist.append(",");
+						}
+						Idlist.append(rec.getScenarioId());
+					}
+					String[] args = { Idlist.toString() };
+					String message = MessageConstant.MESSAGE_RPA_SCENARIO_OPERATION_RESULT_LINKED.getMessage(args);
+					throw new InvalidSetting(message);
+				}
 				id = settingId;
 				RpaScenarioOperationResultCreateSetting entity = getRpaScenarioOperationResultCreateSetting(settingId);
 				new ModifyRpaScenario().deleteCreateSetting(settingId);
@@ -2220,11 +2225,16 @@ public class RpaControllerBean {
 					MessageConstant.MESSAGE_NOT_FOUND.getMessage(
 							MessageConstant.RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING_ID.getMessage(), 
 							id)));
-		} catch (InvalidRole e) {
+		} catch (InvalidRole | ObjectPrivilege_InvalidRole e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage());
+		} catch ( InvalidSetting e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw e;
 		} catch ( Exception e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -2298,7 +2308,7 @@ public class RpaControllerBean {
 	 * レコードをZIPにまとめるため一時ファイルとして出力
 	 */
 	public ArrayList<String> createTmpRecords(DownloadRpaScenarioOperationResultRecordsRequest dtoReq, Locale locale)
-			throws HinemosUnknown, InvalidSetting {
+			throws HinemosUnknown, InvalidSetting, InvalidRole {
 		String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
 		
 		ArrayList<String> csvPathList = new ArrayList<>();
@@ -2338,21 +2348,30 @@ public class RpaControllerBean {
 			}
 			
 			if (dtoReq.getScopeFlg()) {
-				ArrayList<FacilityInfo> facilityList = new RepositoryControllerBean().getFacilityList();
+				List<FacilityInfo> facilityList = new RepositoryControllerBean().getFacilityList();
 				csvPathList.add(exportFacilityCsv(facilityList, download.getDirName(), locale));
 				List<FacilityRelationEntity> facilityRelationList = com.clustercontrol.repository.util.QueryUtil.getAllFacilityRelations_NONE();
+				// 参照可能なファシリティのリレーションのみ出力
+				facilityRelationList = facilityRelationList.stream()
+						.filter(relation ->	facilityList.stream().anyMatch(facility -> facility.getFacilityId().equals(relation.getChildFacilityId())))
+						.filter(relation ->	facilityList.stream().anyMatch(facility -> facility.getFacilityId().equals(relation.getParentFacilityId())))
+						.collect(Collectors.toList());
 				csvPathList.add(exportFacilityRelationCsv(facilityRelationList, download.getDirName(), locale));
 			}
 			
 			if (dtoReq.getScenarioTagFlg()) {
-				ArrayList<RpaScenarioTag> tagList = new SelectRpaScenarioTag().getRpaScenarioTagList(null);
+				List<RpaScenarioTag> tagList = new SelectRpaScenarioTag().getRpaScenarioTagList(null);
 				csvPathList.add(exportScenarioTagCsv(tagList, download.getDirName(), locale));
-				ArrayList<RpaScenarioTagRelation> tagRelationList = new SelectRpaScenarioTag().getRpaScenarioTagRelationList();
+				List<RpaScenarioTagRelation> tagRelationList = new SelectRpaScenarioTag().getRpaScenarioTagRelationList();
+				// 参照可能なタグのリレーションのみ出力
+				tagRelationList = tagRelationList.stream()
+						.filter(relation -> tagList.stream().anyMatch(tag -> tag.getTagId().equals(relation.getId().getTagId())))
+						.collect(Collectors.toList());
 				csvPathList.add(exportScenarioTagRelationCsv(tagRelationList, download.getDirName(), locale));
 			}
 			
 			if (dtoReq.getScenarioFlg()) {
-				ArrayList<RpaScenario> scenarioList = new SelectRpaScenario().getRpaScenarioList(new RpaScenarioFilterInfo());
+				List<RpaScenario> scenarioList = new SelectRpaScenario().getRpaScenarioList(new RpaScenarioFilterInfo());
 				csvPathList.add(exportScenarioCsv(scenarioList, download.getDirName(), locale));
 			}
 			
@@ -3036,7 +3055,7 @@ public class RpaControllerBean {
 				// 対象レコード数が最大サイズを超えていたらエラー
 				throw new InvalidSetting(MessageConstant.MESSAGE_UPDATE_NUMBER_OF_OPERATION_RESULTS_IS_OVER.getMessage(
 						String.valueOf(maxNum)
-						, String.valueOf(numberOfTotalUpdatingResults)
+						, String.valueOf(numberOfTargetResults)
 						));
 			} else if (numberOfTotalUpdatingResults + numberOfTargetResults > maxNum) {
 				// スケジュール済のシナリオ実績更新の合計更新レコードが最大サイズを超えたらエラー
@@ -3145,5 +3164,49 @@ public class RpaControllerBean {
 			return entity;
 		}
 		
+	}
+	
+	/**
+	 * ファシリティが利用されているか確認する。
+	 * 
+	 * @throws UsedFacility
+	 * @throws InvalidRole
+	 */
+	@Override
+	public void isUseFacilityId(String facilityId) throws UsedFacility {
+		JpaTransactionManager jtm = null;
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+			
+			List<RpaScenarioOperationResultCreateSetting> infoCollection
+					= QueryUtil.getRpaScenarioCreateSettingListFindByFacilityId_NONE(facilityId);
+			if (infoCollection != null && infoCollection.size() > 0) {
+				// ID名を取得する
+				StringBuilder sb = new StringBuilder();
+				sb.append(MessageConstant.RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING.getMessage() + " : ");
+				for(RpaScenarioOperationResultCreateSetting info : infoCollection) {
+					sb.append(info.getScenarioOperationResultCreateSettingId());
+					sb.append(", ");
+				}
+				UsedFacility e = new UsedFacility(sb.toString());
+				m_log.info("isUseFacilityId() : " + e.getClass().getSimpleName() +
+						", " + facilityId + ", " + e.getMessage());
+				throw e;
+			}
+			jtm.commit();
+		} catch (UsedFacility e) {
+			jtm.rollback();
+			throw e;
+		} catch (Exception e) {
+			m_log.warn("isUseFacilityId() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
 	}
 }

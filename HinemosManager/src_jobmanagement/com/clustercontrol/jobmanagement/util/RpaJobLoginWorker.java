@@ -34,6 +34,8 @@ import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.rpa.bean.LoginParameter;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.platform.rpa.LoginExecutor;
+import com.clustercontrol.rpa.util.LoginResultEnum;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
 /**
@@ -141,21 +143,23 @@ public class RpaJobLoginWorker {
 		 */
 		@Override
 		public Boolean call() {
-			m_log.info("call() SessionID=" + this.runInstructionInfo.getSessionId() + ", JobunitID="
-					+ this.runInstructionInfo.getJobunitId() + ", JobID=" + this.runInstructionInfo.getJobId()
-					+ ", FacilityID=" + this.runInstructionInfo.getFacilityId() + ", CommandType="
-					+ this.runInstructionInfo.getCommandType() + ", Command=" + this.runInstructionInfo.getCommand());
+			m_log.info("call() SessionID=" + this.runInstructionInfo.getSessionId()
+				+ ", JobunitID=" + this.runInstructionInfo.getJobunitId()
+				+ ", JobID=" + this.runInstructionInfo.getJobId()
+				+ ", FacilityID=" + this.runInstructionInfo.getFacilityId()
+				+ ", CommandType=" + this.runInstructionInfo.getCommandType()
+				+ ", Command=" + this.runInstructionInfo.getCommand());
 
-			boolean interrupted = false;
 			LoginExecutor executor = new LoginExecutor(parameter);
-			boolean result = false;
+			LoginResultEnum result = LoginResultEnum.UNKNOWN;
 			int retryCount = 0;
 			// ログイン実行
+			m_log.debug("call() : login, maxRetry=" + retry + ", sleep " + retryInterval + "ms");
 			do {
+				m_log.debug("call() : retry=" + retryCount);
 				if (retryCount > 0) {
 					try {
-						m_log.debug("run() : login failed, retry=" + retryCount + ", maxRetry=" + retry + ", sleep "
-								+ retryInterval + "ms");
+						m_log.debug("call() : login retring, retry=" + retryCount + ", maxRetry=" + retry + ", sleep " + retryInterval + "ms");
 						// ログイン失敗のメッセージを出力
 						new JobControllerBean().setMessage(runInstructionInfo.getSessionId(),
 								runInstructionInfo.getJobunitId(), runInstructionInfo.getJobId(),
@@ -163,47 +167,29 @@ public class RpaJobLoginWorker {
 										.getMessage(String.valueOf(retryCount), String.valueOf(this.retry)));
 						Thread.sleep(retryInterval);
 					} catch (InterruptedException e) {
-						m_log.warn("thread interrupted");
-						interrupted = true;
+						m_log.warn("call() : thread interrupted");
 						break;
 					}
 				}
-				// ログインが成功した場合、ここでログアウトされるのを待ち続ける
-				// ログインが失敗した場合、指定された回数リトライする
+				// ログインが成功した場合、ログアウトまで待機
 				result = executor.login();
-			} while (!result && retryCount++ < retry);
+				m_log.debug("call() : login result=" + result);
+				if (result == LoginResultEnum.SUCCESS
+						|| result == LoginResultEnum.CANCELL
+						) {
+					// 成功、キャンセルはリトライしない
+					break;
+				}
+				// ログインが失敗した場合、指定された回数リトライする
+			} while (retryCount++ < retry);
 
-			// ログインに失敗した場合はジョブを終了する
-			// ジョブの停止によりinterruptされた場合は不要
-			if (!result && !interrupted) {
-				m_log.info("run() : login failed, stop node");
-				stopNode();
-			}
-			m_log.info("run() : end, result=" + result);
+			boolean methodResult = result == LoginResultEnum.SUCCESS;
+			m_log.info("call() : end, result=" + methodResult);
+
 			// 処理完了時にキャッシュから削除する
 			futureCache.remove(getKey(runInstructionInfo));
-			return result;
-		}
 
-		/**
-		 * RPAシナリオジョブを終了します。<br>
-		 * ログインが失敗したノードに対して停止[コマンド]を実行します。
-		 */
-		private void stopNode() {
-			try {
-				m_log.debug("stopNode() : sessionId=" + runInstructionInfo.getSessionId() + ", jobunitId="
-						+ runInstructionInfo.getJobunitId() + ", jobId=" + runInstructionInfo.getJobId()
-						+ ", facilityId=" + runInstructionInfo.getFacilityId());
-				// 停止[コマンド]によりノードを終了する
-				// ここで設定した終了値は使用されず、ジョブ開始時にエージェントが受け取ったrunInstructionInfo内の値が使用される
-				JobOperationInfo operation = new JobOperationInfo(runInstructionInfo.getSessionId(),
-						runInstructionInfo.getJobunitId(), runInstructionInfo.getJobId(),
-						runInstructionInfo.getFacilityId(), OperationConstant.TYPE_STOP_AT_ONCE,
-						EndStatusConstant.TYPE_ABNORMAL, -1);
-				new JobControllerBean().operationSessionNode(operation);
-			} catch (JobInfoNotFound | InvalidRole | HinemosUnknown e) {
-				m_log.warn("stopNode() : exception=" + e.getMessage(), e);
-			}
+			return methodResult;
 		}
 	}
 
@@ -225,13 +211,51 @@ public class RpaJobLoginWorker {
 	 * @param runInfo
 	 */
 	public static void cancel(RunInfo runInfo) {
+		m_log.debug("cancel() : runInfo=" + runInfo);
+
 		String key = getKey(runInfo);
-		m_log.info("cancel()");
 		m_log.debug("cancel() : key=" + key);
+
 		Future<Boolean> future = futureCache.get(key);
 		if (future != null) {
 			future.cancel(true);
 		}
 		futureCache.remove(key);
 	}
+	
+	/**
+	 * ログイン処理が継続中なら一定時間待機し、それでも変わらない場合は強制停止します。
+	 * 
+	 * @param runInfo
+	 */
+	public static void waitStopAndCancel(RunInfo runInfo) {
+		m_log.debug("checkRunAndCancel() : runInfo=" + runInfo);
+		/// ログアウトの確認間隔 
+		int logoutInterval = HinemosPropertyCommon.job_rpa_login_thread_logout_check_interval.getIntegerValue();
+		//* ログアウトの確認タイムアウト
+		int logoutTimeout = HinemosPropertyCommon.job_rpa_login_thread_logout_check_timeout.getIntegerValue();
+
+		// futureCache に 該当ジョブの情報がある場合、ログイン処理が継続中とみなす。
+		String key = getKey(runInfo);
+		Future<Boolean> future = futureCache.get(key);
+		long limitMills = HinemosTime.currentTimeMillis() + logoutTimeout;
+		while (limitMills > HinemosTime.currentTimeMillis()) {
+			if (future == null) {
+				break;
+			}
+			try {
+				Thread.sleep(logoutInterval);
+			} catch (InterruptedException e) {
+				break;
+			}
+			future = futureCache.get(key);
+		}
+		//  ログイン処理が継続中のままならキャンセルする
+		if (future != null) {
+			m_log.info("checkRunAndCancel() : Cancel the thread. key=" + key);
+			future.cancel(true);
+			futureCache.remove(key);
+		}
+	}
+	
 }

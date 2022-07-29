@@ -186,7 +186,7 @@ public class RunJob implements DependDbNotifier {
 					request.setJoblinkMessageId(outputInfo.getJoblinkMessageId());
 					request.setSendDate(RestCommonConverter.convertHinemosTimeToDTString(JobLinkUtil.createSendDate()));
 					request.setMonitorDetailId(outputInfo.getSubKey());
-					request.setApplication(outputInfo.getApplication());
+					request.setApplication(HinemosMessage.replace(outputInfo.getApplication(), Locale.getDefault()));
 					if (outputInfo.getPriority() == PriorityConstant.TYPE_INFO) {
 						request.setPriority(PriorityRequiredEnum.INFO);
 					} else if (outputInfo.getPriority() == PriorityConstant.TYPE_WARNING) {

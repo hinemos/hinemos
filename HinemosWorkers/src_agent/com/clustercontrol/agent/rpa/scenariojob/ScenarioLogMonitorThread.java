@@ -5,11 +5,14 @@
  *
  * See the LICENSE file for licensing information.
  */
-package com.clustercontrol.agent.rpa;
+package com.clustercontrol.agent.rpa.scenariojob;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,8 +21,6 @@ import com.clustercontrol.agent.Agent;
 import com.clustercontrol.agent.log.MonitorInfoWrapper;
 import com.clustercontrol.agent.util.filemonitor.AbstractFileMonitor;
 import com.clustercontrol.agent.util.filemonitor.AbstractReadingStatus;
-import com.clustercontrol.agent.util.filemonitor.AbstractReadingStatusDir;
-import com.clustercontrol.agent.util.filemonitor.AbstractReadingStatusRoot;
 
 /**
  * RPAシナリオの実行ログを監視するスレッドクラス
@@ -31,11 +32,11 @@ public class ScenarioLogMonitorThread extends Thread {
 	/**
 	 * RPAシナリオの実行ログ監視用ReadingStatusRoot
 	 */
-	private static AbstractReadingStatusRoot<MonitorInfoWrapper> rpaLogStatusRoot;
+	private static ScenarioLogReadingStatusRoot rpaLogStatusRoot;
 	/**
 	 * RPAシナリオの実行ログ監視用ReadingStatusDir
 	 */
-	AbstractReadingStatusDir<MonitorInfoWrapper> rpaLogStatusDir;
+	ScenarioLogReadingStatusDir rpaLogStatusDir;
 	/** RPAシナリオの実行ログ監視用readingstatusディレクトリ */
 	private static String readingStatusDir = "/var/rpa/readingstatus";
 	/** ログファイル監視設定 */
@@ -44,7 +45,7 @@ public class ScenarioLogMonitorThread extends Thread {
 	 * ログファイル監視実行オブジェクト<br>
 	 * ファイル名が正規表現で指定されている場合は複数になります。
 	 */
-	private List<AbstractFileMonitor<MonitorInfoWrapper>> logfileMonitors = new ArrayList<>();
+	private List<ScenarioLogfileMonitor> logfileMonitors = new ArrayList<>();
 	/**
 	 * ログファイル監視を停止するためのフラグ<br>
 	 * シナリオ監視スレッドから変更するためvolatileを指定しています。
@@ -54,6 +55,15 @@ public class ScenarioLogMonitorThread extends Thread {
 	private String threadName = "ScenarioLogMonitorThread";
 	/** 監視処理が開始したことを表すフラグ */
 	private boolean logMonitorStarted = false;
+	/**
+	 * ログファイル監視によるエラーメッセージ<br>
+	 * シナリオ監視スレッドから参照するためConcurrentHashを想定。
+	 */
+	private Map<String,StringBuilder> errorMessageForLogfileMonitor = new ConcurrentHashMap<String,StringBuilder>();
+	/**
+	 * ファイル最大数超過による無視リスト<br>
+	 */
+	private Map<String,String> ignoreListForFileCounter = new ConcurrentHashMap<String,String>();
 
 	static {
 		/*
@@ -91,20 +101,32 @@ public class ScenarioLogMonitorThread extends Thread {
 	@Override
 	public void run() {
 		m_log.info("run() start");
+
+		ignoreListForFileCounter.clear();
+		errorMessageForLogfileMonitor.clear();
+
 		// ログファイル監視のために必要なReadingStatusDirを作成
-		rpaLogStatusDir = rpaLogStatusRoot.createReadingStatusDir(monitorInfoWrapper, getRootStoreDirectory(),
-				RpaJobLogfileMonitorConfig.getInstance());
-		// 開始時にreadingstatusファイルが存在していた場合は削除
-		// ※前回の結果等は引き継がない
+		// ※前回の結果等は引き継がず、ジョブ起動前のログは読み飛ばす（そのため一度clearし、ScenarioLogReadingStatusDir#createReadingStatusで tailをtrueに固定 ）
+		rpaLogStatusDir = rpaLogStatusRoot.createReadingStatusDir(monitorInfoWrapper, getRootStoreDirectory(),RpaJobLogfileMonitorConfig.getInstance());
+		if( m_log.isDebugEnabled()){
+			for (AbstractReadingStatus<MonitorInfoWrapper> rs : rpaLogStatusDir.list()) {
+				m_log.debug("run() : rpaLogStatusDir : path=" +rs.getFilePath()+ ",position=" + rs.getPosition() +",prevsize="+rs.getPrevSize());
+			}
+		}
 		rpaLogStatusDir.clear();
+
 		// terminateが実行されるまで監視を実行
 		while (waiting) {
 			try {
 				// ログファイル情報を更新
 				update();
 				// ログファイル監視を実行
-				for (AbstractFileMonitor<MonitorInfoWrapper> logfileMonitor : logfileMonitors) {
+				for (ScenarioLogfileMonitor logfileMonitor : logfileMonitors) {
 					logfileMonitor.run();
+					// ファイル監視で異常が有れば呼び出し元へ連携出来るように設定
+					if(logfileMonitor.getErrorMessageBuilder() != null && logfileMonitor.getErrorMessageBuilder().length()>0){
+						errorMessageForLogfileMonitor.put(logfileMonitor.getMonitorFilePath(), logfileMonitor.getErrorMessageBuilder());
+					}
 				}
 				if (!this.logMonitorStarted) {
 					logMonitorStarted = true;
@@ -113,11 +135,12 @@ public class ScenarioLogMonitorThread extends Thread {
 				Thread.sleep(RpaJobLogfileMonitorConfig.getInstance().getRunInterval());
 			} catch (InterruptedException e) {
 				m_log.info("run() : thread interrupted");
+			} finally {
+				// ログファイル監視を終了
+				for (AbstractFileMonitor<MonitorInfoWrapper> logfileMonitor : logfileMonitors) {
+					logfileMonitor.clean();
+				}
 			}
-		}
-		// ログファイル監視を終了
-		for (AbstractFileMonitor<MonitorInfoWrapper> logfileMonitor : logfileMonitors) {
-			logfileMonitor.clean();
 		}
 		// readingstatusファイルを削除
 		rpaLogStatusDir.clear();
@@ -143,6 +166,13 @@ public class ScenarioLogMonitorThread extends Thread {
 					+ monitorInfoWrapper.monitorInfo.getLogfileCheckInfo().getFileEncoding() + ", lineSeparator="
 					+ monitorInfoWrapper.monitorInfo.getLogfileCheckInfo().getFileReturnCode() + ", rsFilepath="
 					+ status.getFilePath());
+		}
+		// 対象ファイルの件数が上限超フラグを呼び出し元へ連携出来るように設定
+		if (rpaLogStatusDir.getIgnoreListForFileCounter() != null
+				&& rpaLogStatusDir.getIgnoreListForFileCounter().size() > 0) {
+			for(Map.Entry<String,String> rec : rpaLogStatusDir.getIgnoreListForFileCounter().entrySet()){
+				this.ignoreListForFileCounter.put(rec.getKey(), rec.getValue());
+			}
 		}
 	}
 
@@ -172,5 +202,13 @@ public class ScenarioLogMonitorThread extends Thread {
 	 */
 	public boolean isLogMonitorStarted() {
 		return logMonitorStarted;
+	}
+
+	public Map<String,StringBuilder> getErrorMessageForLogfileMonitor() {
+		return errorMessageForLogfileMonitor;
+	}
+
+	public Map<String,String> getIgnoreListForFileCounter() {
+		return this.ignoreListForFileCounter;
 	}
 }

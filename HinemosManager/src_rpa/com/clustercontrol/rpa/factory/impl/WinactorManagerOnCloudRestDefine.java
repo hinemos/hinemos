@@ -42,9 +42,13 @@ import org.apache.hc.core5.net.URIBuilder;
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.rpa.factory.RpaManagementRestDefine;
 import com.clustercontrol.rpa.factory.RpaManagementRestResponseHandler;
 import com.clustercontrol.rpa.factory.bean.RpaResourceInfo;
+import com.clustercontrol.rpa.model.RpaManagementToolEndStatusMst;
+import com.clustercontrol.rpa.session.RpaControllerBean;
 import com.clustercontrol.rpa.util.RpaUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
@@ -62,6 +66,13 @@ public class WinactorManagerOnCloudRestDefine extends RpaManagementRestDefine {
 	// URLに含まれるAPIバージョン
 	private final String winActorApiVersion;
 
+	// RPA管理ツールのID（RpaManagementToolEndStatusMst取得用）
+	private String RpaManagementToolId = null;
+
+	// RPA管理ツールのIDに対応した 結果Statusの一覧(優先順位付き) < ステータスコード, 優先順位  >
+	private Map<String,Integer> resultStausMap = null;
+
+	
 	public WinactorManagerOnCloudRestDefine(int apiVersion) {
 		super(apiVersion);
 		if (apiVersion == 1) {
@@ -118,7 +129,7 @@ public class WinactorManagerOnCloudRestDefine extends RpaManagementRestDefine {
 
 	@Override
 	public long getTokenExpiredMillis() {
-		return HinemosPropertyCommon.rpa_management_rest_winactor_manager_on_cloud_token_expired_millis
+		return HinemosPropertyCommon.rpa_management_rest_winactor_moc_token_expired_millis
 				.getIntegerValue();
 	}
 
@@ -223,7 +234,7 @@ public class WinactorManagerOnCloudRestDefine extends RpaManagementRestDefine {
 	}
 
 	@Override
-	protected Header[] createRunHeader(String token) {
+	protected Header[] createRunHeader(String token, Map<String, Object> headerData) {
 		return new Header[] { getAuthTokenHeader(token) };
 	}
 
@@ -291,6 +302,12 @@ public class WinactorManagerOnCloudRestDefine extends RpaManagementRestDefine {
 	}
 
 	@Override
+	protected Map<String, Object> adjustRunHeaderData(Map<String, Object> requestData) {
+		// シナリオ実行に必要なヘッダ情報はないので空マップを返すのみ
+		return new HashMap<String, Object>();
+	}
+
+	@Override
 	protected HttpUriRequest createCheckRequest(String baseUrl, String runIdentifier) {
 		HttpGet httpGet = new HttpGet(StringUtils.join(new String[]{baseUrl, winActorApiVersion, "tasks"}, "/"));
 		// リクエストパラメータを設定
@@ -332,10 +349,38 @@ public class WinactorManagerOnCloudRestDefine extends RpaManagementRestDefine {
 					if (rootNode.has("error")) {
 						throw new ClientProtocolException(getMessage(response));
 					}
-					// "status"を取得
-					String status = rootNode.get("items").get(0).get("status").textValue();
-					m_log.debug("handleRpaManagementResponse() : status=" + status);
-					return status;
+					if(m_log.isDebugEnabled()){ 
+						m_log.debug( "getCheckResponseHandler() rootNode="+ rootNode.toString());
+					}
+					// 複数のitem を考慮して"status"を取得
+					//  終了statusの一覧が無ければ先頭のレコードの設定値を返却（判断ができないので先頭を優先）
+					//  未終了statusがあればそちらを優先して返却（未終了扱いとするため）
+					//  すべて終了statusであれば 順番号の大きいものを優先して返却（優先度の高いstatusを代表として返す）
+					String retStatus = null;
+					int recNum = rootNode.get("items").size();
+					for( int index = 0 ; index < recNum ; index++ ){
+						JsonNode recItem = rootNode.get("items").get(index);
+						String recStatus = recItem.get("status").textValue();
+						if( resultStausMap == null ){
+							return recStatus;
+						}
+						if(!resultStausMap.containsKey(recStatus)){
+							return recStatus;
+						}
+						if(retStatus == null){
+							retStatus = recStatus;
+						} else {
+							int curOrder = resultStausMap.get(retStatus);
+							int recOrder = resultStausMap.get(recStatus);
+							if (curOrder < recOrder) {
+								retStatus = recStatus;
+							}
+						}
+					}
+					if(m_log.isDebugEnabled()){ 
+						m_log.debug("getCheckResponseHandler() : status=" + retStatus);
+					}
+					return retStatus;
 				} catch (UnsupportedOperationException | IOException e1) {
 					throw new ClientProtocolException(getMessage(response));
 				}
@@ -423,6 +468,27 @@ public class WinactorManagerOnCloudRestDefine extends RpaManagementRestDefine {
 				}
 			}
 		};
+	}
+
+	public String getRpaManagementToolId() {
+		return RpaManagementToolId;
+	}
+
+	public void setRpaManagementToolId(String rpaManagementToolId) {
+		RpaManagementToolId = rpaManagementToolId;
+		// IDに紐づく終了ステータス一覧（優先順位付き）を取得
+		try{
+			List<RpaManagementToolEndStatusMst> infoList = new RpaControllerBean().getRpaManagementToolEndStatusMstList(rpaManagementToolId);
+			if( infoList != null && infoList.size() > 0 ){
+				resultStausMap = new HashMap<String,Integer>();
+				for (RpaManagementToolEndStatusMst rec : infoList){
+					resultStausMap.put(rec.getEndStatus(), rec.getOrderNo());
+				}
+			}
+		}catch( InvalidRole | HinemosUnknown e){
+			m_log.warn("setRpaManagementToolId(): " + e.getClass().getSimpleName() +  ", " + e.getMessage());
+		}
+		
 	}
 
 	public static void main(String[] args) {

@@ -146,7 +146,7 @@ public class RpaScenarioOperationResultSearchComposite extends Composite {
 						return "";
 					}
 				}),
-		status(Messages.getString("view.rpa.scenario.operation.result.search.column.status"),new ColumnPixelData(70, true, true),
+		status(Messages.getString("view.rpa.scenario.operation.result.search.column.status"),new ColumnPixelData(100, true, true),
 				new ColumnLabelProvider() {
 					@Override
 					public String getText(Object element) {
@@ -382,7 +382,7 @@ public class RpaScenarioOperationResultSearchComposite extends Composite {
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 
 				// ダイアログ表示及び終了処理
-				RpaScenarioTagListDialog dialog = new RpaScenarioTagListDialog(shell, managerName);
+				RpaScenarioTagListDialog dialog = new RpaScenarioTagListDialog(shell, managerName, null);
 				if (txtTagId.getText() != null || "".equals(txtTagId.getText())) {
 					dialog.setSelectTag(tagList);
 				}

@@ -45,8 +45,8 @@ public class RpaScenarioOperationResultWithDetailResponse {
 	private String scenarioName;
 	/** ファシリティ名 */
 	private String facilityName;
-	/** RPAツール名 */
-	private String rpaToolName;
+	/** RPAツールID */
+	private String rpaToolId;
 	/** シナリオ実績明細 */
 	private List<RpaScenarioOperationResultDetailResponse> operationResultDetail = new ArrayList<>();
 
@@ -162,12 +162,12 @@ public class RpaScenarioOperationResultWithDetailResponse {
 		this.facilityName = facilityName;
 	}
 	
-	/** RPAツール名 */
-	public String getRpaToolName() {
-		return this.rpaToolName;
+	/** RPAツールID */
+	public String getRpaToolId() {
+		return this.rpaToolId;
 	}
-	public void setRpaToolName(String rpaToolName) {
-		this.rpaToolName = rpaToolName;
+	public void setRpaToolId(String rpaToolId) {
+		this.rpaToolId = rpaToolId;
 	}
 
 	/** シナリオ実績明細 */
@@ -180,11 +180,22 @@ public class RpaScenarioOperationResultWithDetailResponse {
 
 	@Override
 	public String toString() {
-		return "RpaScenarioOperationResultWithDetailResponse [resultId=" + resultId + ", scenarioId=" + scenarioId 
-				+ ", facilityId=" + facilityId + ", startDate=" + startDate + ", endDate=" + endDate + ", manualTime=" + manualTime
-				+ ", runTime = " + runTime + ", coefficientCost=" + coefficientCost + ", reductionRate=" + reductionRate 
-				+ ", reductionTime=" + reductionTime + ", status=" + status + ", step=" + step
-				+ ", scenarioName=" + scenarioName + ", facilityName=" + facilityName + ", rpaToolName=" + rpaToolName 
+		return "RpaScenarioOperationResultWithDetailResponse ["
+				+ "resultId=" + resultId
+				+ ", scenarioId=" + scenarioId 
+				+ ", facilityId=" + facilityId
+				+ ", startDate=" + startDate
+				+ ", endDate=" + endDate
+				+ ", manualTime=" + manualTime
+				+ ", runTime=" + runTime
+				+ ", coefficientCost=" + coefficientCost
+				+ ", reductionRate=" + reductionRate 
+				+ ", reductionTime=" + reductionTime
+				+ ", status=" + status
+				+ ", step=" + step
+				+ ", scenarioName=" + scenarioName
+				+ ", facilityName=" + facilityName
+				+ ", rpaToolId=" + rpaToolId 
 				+ ", operationResultDetail=" + operationResultDetail
 				+ "]";
 	}

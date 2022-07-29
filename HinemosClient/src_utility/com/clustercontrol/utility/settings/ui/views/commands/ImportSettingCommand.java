@@ -470,6 +470,10 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 								if (monitor.isCanceled())
 									throw new InterruptedException();
 								
+								if (log.isTraceEnabled()) {
+									log.trace("execute() import start");
+								}
+
 								FuncInfo info = importOrderList.get(i);
 								defaultFileList = info.getDefaultXML();
 								
@@ -541,6 +545,10 @@ public class ImportSettingCommand extends AbstractHandler implements IElementUpd
 								}
 								else {
 									m_failureList = m_failureList + " " + info.getName() + "\n";
+								}
+
+								if (log.isTraceEnabled()) {
+									log.trace("execute() import end");
 								}
 								
 								monitor.worked(100/importOrderList.size());

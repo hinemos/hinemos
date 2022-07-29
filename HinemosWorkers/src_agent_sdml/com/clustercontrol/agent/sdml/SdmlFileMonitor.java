@@ -151,9 +151,9 @@ public class SdmlFileMonitor extends AbstractFileMonitor<SdmlFileMonitorInfoWrap
 
 	@Override
 	protected void sendMessageByFileReadIOException(IOException e) {
-		sendMessage(PriorityConstant.TYPE_CRITICAL, m_wrapper.getApplication(),
+		sendMessage(PriorityConstant.TYPE_WARNING, m_wrapper.getApplication(),
 				MessageConstant.SDML_MSG_LOG_READER_FILE_OPEN_FAILED.getMessage(),
-				MessageConstant.SDML_MSG_FILE_PATH.getMessage(getFilePath()) + "\n" + e.getMessage());
+				MessageConstant.SDML_MSG_FILE_PATH.getMessage(getFilePath()));
 	}
 
 	@Override

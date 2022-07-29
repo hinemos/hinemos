@@ -23,6 +23,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.openapitools.client.model.JobInfoResponse;
 import org.openapitools.client.model.JobNodeDetailResponse;
+import org.openapitools.client.model.JobRpaInfoResponse;
 import org.openapitools.client.model.JobTreeItemResponseP3;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
@@ -68,6 +69,8 @@ public class NodeDetailComposite extends Composite {
 	private JobInfoResponse.TypeEnum m_jobType = null;
 	/** 実行状態 */
 	private JobNodeDetailResponse.StatusEnum m_status = null;
+	/** RPAシナリオジョブ種別 */
+	private JobRpaInfoResponse.RpaJobTypeEnum m_rpaJobType = null;
 
 	/**
 	 * コンストラクタ
@@ -212,9 +215,13 @@ public class NodeDetailComposite extends Composite {
 					+ Messages.getString("job.id") + " : ");
 		}
 		
-		// ジョブ種別をアクションボタンの有効・無効の切り替えに使用する
+		// RPAシナリオジョブ種別をアクションボタンの有効・無効の切り替えに使用する
 		if (jobInfo != null) {
-			m_jobType = jobInfo.getData().getType();
+			if (jobInfo.getData().getRpa() != null) {
+				if (jobInfo.getData().getRpa().getRpaJobType() != null) {
+					m_rpaJobType = jobInfo.getData().getRpa().getRpaJobType();
+				}
+			}
 		}
 	}
 
@@ -364,5 +371,22 @@ public class NodeDetailComposite extends Composite {
 	 */
 	public JobNodeDetailResponse.StatusEnum getStatus() {
 		return m_status;
+	}
+	
+	/**
+	 * RPAシナリオジョブ種別を設定します。
+	 * 
+	 * @param rpaJobType RPAシナリオジョブ種別
+	 */
+	public void setRpaJobType(JobRpaInfoResponse.RpaJobTypeEnum rpaJobType) {
+		this.m_rpaJobType = rpaJobType;
+	}
+	
+	/**
+	 * RPAシナリオジョブ種別を返します。
+	 * @return RPAシナリオジョブ種別
+	 */
+	public JobRpaInfoResponse.RpaJobTypeEnum getRpaJobType() {
+		return m_rpaJobType;
 	}
 }

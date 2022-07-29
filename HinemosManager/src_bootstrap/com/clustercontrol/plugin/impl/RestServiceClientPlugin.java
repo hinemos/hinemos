@@ -27,6 +27,8 @@ import com.clustercontrol.rest.endpoint.common.CommonRestEndpoints;
 import com.clustercontrol.rest.endpoint.common.CommonRestFilterRegistration;
 import com.clustercontrol.rest.endpoint.filtersetting.FilterSettingRestEndpoints;
 import com.clustercontrol.rest.endpoint.filtersetting.FilterSettingRestFilterRegistration;
+import com.clustercontrol.rest.endpoint.grafana.GrafanaRestEndpoints;
+import com.clustercontrol.rest.endpoint.grafana.GrafanaRestFilterRegistration;
 import com.clustercontrol.rest.endpoint.hub.HubRestEndpoints;
 import com.clustercontrol.rest.endpoint.hub.HubRestFilterRegistration;
 import com.clustercontrol.rest.endpoint.infra.InfraRestEndpoints;
@@ -180,6 +182,14 @@ public class RestServiceClientPlugin extends RestServicePlugin implements Hinemo
 			registerClasseSetFilterSetting.add(FilterSettingRestFilterRegistration.class);
 			ResourceConfig filterSettingResourceConfig = new ResourceConfig().registerClasses(registerClasseSetFilterSetting);
 			publish(addressPrefix, BASE_URL + "/" + filterSettingClassName, filterSettingResourceConfig);
+
+			// GrafanaRestEndpoints
+			String grafanaClassName = GrafanaRestEndpoints.class.getSimpleName();
+			Set<Class<?>> registerClasseSetGrafana = commonRegisterClasses();
+			registerClasseSetGrafana.add(GrafanaRestEndpoints.class);
+			registerClasseSetGrafana.add(GrafanaRestFilterRegistration.class);
+			ResourceConfig grafanaResourceConfig = new ResourceConfig().registerClasses(registerClasseSetGrafana);
+			publish(addressPrefix, BASE_URL + "/" + grafanaClassName, grafanaResourceConfig);
 
 			// Access は最後に publish する
 			String accessClassName = AccessRestEndpoints.class.getSimpleName();

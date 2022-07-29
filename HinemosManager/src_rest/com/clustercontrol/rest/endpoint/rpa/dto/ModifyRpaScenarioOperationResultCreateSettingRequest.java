@@ -33,7 +33,7 @@ public class ModifyRpaScenarioOperationResultCreateSettingRequest implements Req
 	private String description;
 	/** ファシリティID(スコープ)　*/
 	@RestItemName(MessageConstant.SCOPE)
-	@RestValidateString(notNull=true, type=CheckType.ID, minLen=1, maxLen=64)
+	@RestValidateString(notNull=true, type=CheckType.ID, minLen=1, maxLen=512)
 	private String facilityId;
 	/** 作成間隔　*/
 	@RestItemName(MessageConstant.CREATE_INTERVAL)
@@ -48,6 +48,7 @@ public class ModifyRpaScenarioOperationResultCreateSettingRequest implements Req
 	@RestItemName(MessageConstant.CREATE_FROM_DATE)
 	@RestValidateString(notNull=true, minLen=1)
 	@RestBeanConvertDatetime
+	// FIXME 作成対象日時は変更不可。次期メジャーで削除すること。
 	private String createFromDate;
 	/** 通知ID */
 	@RestItemName(value = MessageConstant.NOTIFY_ID)
@@ -72,11 +73,20 @@ public class ModifyRpaScenarioOperationResultCreateSettingRequest implements Req
 	}
 
 
-	/** 作成対象日(from)	*/
+	/**
+	 * @deprecated 作成対象日時は変更不可
+	 */
+	// FIXME 次期メジャーで削除すること。
+	@Deprecated
 	public String getCreateFromDate() {
 		return this.createFromDate;
 	}
 
+	/**
+	 * @deprecated 作成対象日時は変更不可
+	 */
+	// FIXME 次期メジャーで削除すること。
+	@Deprecated
 	public void setCreateFromDate(String createFromDate) {
 		this.createFromDate = createFromDate;
 	}
@@ -140,7 +150,7 @@ public class ModifyRpaScenarioOperationResultCreateSettingRequest implements Req
 	@Override
 	public String toString() {
 		return "ModifyRpaScenarioOperationResultCreateSettingRequest [description=" + description + ", facilityId=" + facilityId + ", interval=" + interval
-				+ ", calendarId=" + calendarId + ", createFromDate=" + createFromDate + ", notifyId=" + notifyId + ", application=" + application + ", validFlg="
+				+ ", calendarId=" + calendarId + ", notifyId=" + notifyId + ", application=" + application + ", validFlg="
 				+ validFlg + "]";
 	}
 

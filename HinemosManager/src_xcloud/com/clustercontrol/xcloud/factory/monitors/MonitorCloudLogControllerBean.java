@@ -335,6 +335,10 @@ public class MonitorCloudLogControllerBean {
 	private String getTargetFacilityId(MonitorInfo monitorInfo) throws FacilityNotFound, HinemosUnknown {
 		String scope = getTargetScope(monitorInfo);
 		ArrayList<String> activeFacilityList = new ArrayList<String>();
+		
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("run(): getTargetFacilityId start.");
+		}
 
 		// スコープ配下のファシリティIDを取得
 		for (String f : new RepositoryControllerBean().getNodeFacilityIdList(scope, monitorInfo.getOwnerRoleId(), 0,
@@ -359,6 +363,10 @@ public class MonitorCloudLogControllerBean {
 				max = tmp.getCloudLogPriority();
 				targetFacility = tmp.getFacilityId();
 			}
+		}
+		
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("run(): getTargetFacilityId end.");
 		}
 
 		return targetFacility;
@@ -471,6 +479,11 @@ public class MonitorCloudLogControllerBean {
 			jtm.begin();
 
 			if (results != null) {
+				
+				if (m_log.isTraceEnabled()) {
+					m_log.trace("run(): eval each result start. Results list size :" + results.size());
+				}
+				
 				for (CloudLogResultDTO result : results) {
 					// 現時点でAgentが実行対象であるかを確認
 					try {
@@ -534,7 +547,11 @@ public class MonitorCloudLogControllerBean {
 					monitorJobEndNodeList.addAll(runMonitorCloudLogString.getMonitorJobEndNodeList());
 				}
 			}
-
+			
+			if (m_log.isTraceEnabled()) {
+				m_log.trace("run(): eval each result end.");
+			}
+			
 			// 通知設定
 			jtm.addCallback(new NotifyCallback(notifyInfoList));
 
@@ -567,6 +584,11 @@ public class MonitorCloudLogControllerBean {
 					e);
 			throw new HinemosUnknown(e.getMessage(), e);
 		}
+		
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("run(): end.");
+		}
+		
 	}
 
 	/**

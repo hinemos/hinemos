@@ -9,8 +9,10 @@ package com.clustercontrol.rest.endpoint.notify.dto;
 
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertDatetime;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
+import com.clustercontrol.rest.dto.serializer.ConvertNewlineCharacterSerializer;
 import com.clustercontrol.rest.endpoint.notify.dto.enumtype.EventNormalStateEnum;
 import com.clustercontrol.rest.endpoint.notify.dto.enumtype.NotifyPriorityEnum;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class EventDataInfoResponse {
 	@RestBeanConvertEnum
@@ -25,7 +27,9 @@ public class EventDataInfoResponse {
 	private String facilityId;
 	private String scopeText;
 	private String application;
+	@JsonSerialize(using=ConvertNewlineCharacterSerializer.class)
 	private String message;
+	@JsonSerialize(using=ConvertNewlineCharacterSerializer.class)
 	private String messageOrg;
 	@RestBeanConvertEnum
 	private EventNormalStateEnum confirmed;

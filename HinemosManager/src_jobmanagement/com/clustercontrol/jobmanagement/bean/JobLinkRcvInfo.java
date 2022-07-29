@@ -11,64 +11,106 @@ package com.clustercontrol.jobmanagement.bean;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import javax.xml.bind.annotation.XmlType;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.annotation.RestItemName;
+import com.clustercontrol.rest.annotation.validation.RestValidateInteger;
+import com.clustercontrol.rest.annotation.validation.RestValidateString;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.LanguageTranslateSerializer;
+import com.clustercontrol.rest.util.RestItemNameResolver;
+import com.clustercontrol.util.MessageConstant;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * ジョブ連携送信ジョブに関する情報を保持するクラス
  *
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobLinkRcvInfo implements Serializable {
+public class JobLinkRcvInfo implements Serializable, RequestDto {
 
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 7216413607782857671L;
 
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( JobLinkRcvInfo.class );
 
 	/** スコープ処理 */
+	@JsonIgnore
 	private Integer processingMethod = 0;
 
 	/** ファシリティID */
+	@RestItemName(value = MessageConstant.SOURCE_SCOPE)
+	@RestValidateString(notNull = true)
 	private String facilityID;
 
 	/** スコープ */
+	@JsonSerialize(using=LanguageTranslateSerializer.class)
 	private String scope;
 
 	/** 終了値 - 「情報」 */
+	@RestItemName(value = MessageConstant.END_VALUE_INFO)
+	@RestValidateInteger(minVal = -32768, maxVal = 32767)
 	private Integer monitorInfoEndValue;
 
 	/** 終了値 - 「警告」 */
+	@RestItemName(value = MessageConstant.END_VALUE_WARNING)
+	@RestValidateInteger(minVal = -32768, maxVal = 32767)
 	private Integer monitorWarnEndValue;
 
 	/** 終了値 - 「危険」 */
+	@RestItemName(value = MessageConstant.END_VALUE_CRITICAL)
+	@RestValidateInteger(minVal = -32768, maxVal = 32767)
 	private Integer monitorCriticalEndValue;
 
 	/** 終了値 - 「不明」 */
+	@RestItemName(value = MessageConstant.END_VALUE_UNKNOWN)
+	@RestValidateInteger(minVal = -32768, maxVal = 32767)
 	private Integer monitorUnknownEndValue;
 
 	/** メッセージが得られなかった場合に終了する */
 	private Boolean failureEndFlg;
 
 	/** メッセージが得られなかった場合に終了する - タイムアウト */
+	@RestItemName(value = MessageConstant.TIME_OUT)
+	@RestValidateInteger(minVal = 0, maxVal = 32767)
 	private Integer monitorWaitTime;
 
 	/** メッセージが得られなかった場合に終了する - 終了値 */
+	@RestItemName(value = MessageConstant.END_VALUE_JOBLINKRCV_FAILURE)
+	@RestValidateInteger(minVal = -32768, maxVal = 32767)
 	private Integer monitorWaitEndValue;
 
 	/** ジョブ連携メッセージID */
+	@RestItemName(value = MessageConstant.JOBLINK_MESSAGE_ID)
+	@RestValidateString(notNull = true, minLen = 1, maxLen = 512)
 	private String joblinkMessageId;
 
 	/** メッセージ */
+	@RestItemName(value=MessageConstant.MESSAGE)
+	@RestValidateString(maxLen = 4096)
 	private String message;
 
 	/** 確認期間フラグ */
 	private Boolean pastFlg;
 
 	/** 確認期間（分） */
+	@RestItemName(value = MessageConstant.TARGET_PERIOD)
+	@RestValidateInteger(minVal = 0, maxVal = 32767)
 	private Integer pastMin;
 
 	/** 重要度（情報）有効/無効 */
@@ -87,15 +129,21 @@ public class JobLinkRcvInfo implements Serializable {
 	private Boolean applicationFlg;
 
 	/** アプリケーション */
+	@RestItemName(value=MessageConstant.APPLICATION)
+	@RestValidateString(maxLen = 64)
 	private String application;
 
 	/** 監視詳細フラグ */
 	private Boolean monitorDetailIdFlg;
 
 	/** 監視詳細 */
+	@RestItemName(value=MessageConstant.MONITOR_DETAIL_ID)
+	@RestValidateString(maxLen = 1024)
 	private String monitorDetailId;
 
 	/** メッセージフラグ */
+	@RestItemName(value=MessageConstant.MESSAGE)
+	@RestValidateString(maxLen = 4096)
 	private Boolean messageFlg;
 
 	/** 拡張情報フラグ */
@@ -105,9 +153,12 @@ public class JobLinkRcvInfo implements Serializable {
 	private Boolean monitorAllEndValueFlg;
 
 	/** 終了値 - 「常に」 */
+	@RestItemName(value = MessageConstant.END_VALUE_JOBLINKRCV_ALL)
+	@RestValidateInteger(minVal = -32768, maxVal = 32767)
 	private Integer monitorAllEndValue;
 
 	/** ジョブ連携メッセージの拡張情報設定 */
+	@RestItemName(value = MessageConstant.EXTENDED_INFO)
 	private ArrayList<JobLinkExpInfo> jobLinkExpList;
 
 	/** メッセージの引継ぎ情報設定 */
@@ -605,8 +656,8 @@ public class JobLinkRcvInfo implements Serializable {
 		JobLinkRcvInfo o2 = (JobLinkRcvInfo) obj;
 
 		boolean ret = false;
+		// スコープ(階層)は比較しない
 		ret = equalsSub(o1.getFacilityID(), o2.getFacilityID()) &&
-				equalsSub(o1.getScope(), o2.getScope()) &&
 				equalsSub(o1.getMonitorInfoEndValue(), o2.getMonitorInfoEndValue()) &&
 				equalsSub(o1.getMonitorWarnEndValue(), o2.getMonitorWarnEndValue()) &&
 				equalsSub(o1.getMonitorCriticalEndValue(), o2.getMonitorCriticalEndValue()) &&
@@ -673,5 +724,120 @@ public class JobLinkRcvInfo implements Serializable {
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+		// [確認期間フラグ]がtrueの場合、[確認期間（分）]必須
+		if (pastFlg && pastMin == null) {
+			String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "pastMin");
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+		}
+
+		// 重要度のいずれかが選択されていなければエラー
+		if (!infoValidFlg && !warnValidFlg && !criticalValidFlg && !unknownValidFlg) {
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SELECT_ONE_OR_MORE.getMessage(
+					MessageConstant.PRIORITY.getMessage()));
+		}
+
+		// [アプリケーションフラグ]がtrueの場合、[アプリケーション]必須
+		if (applicationFlg
+				&& (application == null || application.isEmpty())) {
+			String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "application");
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+		}
+
+		// [監視詳細フラグ]がtrueの場合、[監視詳細]必須
+		if (monitorDetailIdFlg
+				&& (monitorDetailId == null || monitorDetailId.isEmpty())) {
+			String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "monitorDetailId");
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+		}
+
+		// [メッセージフラグ]がtrueの場合、[メッセージ]必須
+		if (messageFlg
+				&& (message == null || message.isEmpty())) {
+			String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "message");
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+		}
+
+		// [拡張情報フラグ]がtrueの場合、[拡張情報]必須
+		if (expFlg
+				&& (jobLinkExpList == null || jobLinkExpList.isEmpty())) {
+			String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "jobLinkExpList");
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+		}
+
+		if (jobLinkExpList != null && !jobLinkExpList.isEmpty()) {
+			HashMap<String, String> expMap = new HashMap<>();
+			for (JobLinkExpInfo exp : jobLinkExpList) {
+				// [拡張情報]チェック
+				exp.correlationCheck();
+
+				// [拡張情報]でキーと値が重複して存在する場合エラー
+				if (expMap.containsKey(exp.getKey())
+						&& expMap.containsValue(exp.getValue())) {
+					String[] r1 = {RestItemNameResolver.resolveItenName(this.getClass(), "jobLinkExpList"),
+							String.format("%s,%s", exp.getKey(), exp.getValue())};
+					throw new InvalidSetting(MessageConstant.MESSAGE_ERROR_IN_OVERLAP.getMessage(r1));
+				}
+				expMap.put(exp.getKey(), exp.getValue());
+			}
+		}
+
+		if (monitorAllEndValueFlg) {
+			// [メッセージが得られたら常に]がtrueの場合
+			if (monitorAllEndValue == null) {
+				String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "monitorAllEndValue");
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+			}
+		} else {
+			// [メッセージが得られたら常に]がfalseの場合
+			if (monitorInfoEndValue == null) {
+				String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "monitorInfoEndValue");
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+			}
+			if (monitorWarnEndValue == null) {
+				String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "monitorWarnEndValue");
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+			}
+			if (monitorCriticalEndValue == null) {
+				String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "monitorCriticalEndValue");
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+			}
+			if (monitorUnknownEndValue == null) {
+				String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "monitorUnknownEndValue");
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+			}
+		}
+
+		// [メッセージが得られなかった場合に終了する]がtrueの場合
+		if (failureEndFlg) {
+			if (monitorWaitTime == null) {
+				String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "monitorWaitTime");
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+			}
+			if (monitorWaitEndValue == null) {
+				String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "monitorWaitEndValue");
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+			}
+		}
+
+		// [引継ぎ情報]
+		if (jobLinkInheritList != null && !jobLinkInheritList.isEmpty()) {
+			HashSet<String> inherits = new HashSet<>();
+			for (JobLinkInheritInfo inherit : jobLinkInheritList) {
+				// [引継ぎ情報]チェック
+				inherit.correlationCheck();
+
+				// [引継ぎ情報]で[ジョブ変数名]が重複して存在する場合エラー
+				if (inherits.contains(inherit.getParamId())) {
+					String[] r1 = {RestItemNameResolver.resolveItenName(this.getClass(), "jobLinkInheritList"),
+							inherit.getParamId()};
+					throw new InvalidSetting(MessageConstant.MESSAGE_ERROR_IN_OVERLAP.getMessage(r1));
+				}
+				inherits.add(inherit.getParamId());
+			}
+		}
 	}
 }

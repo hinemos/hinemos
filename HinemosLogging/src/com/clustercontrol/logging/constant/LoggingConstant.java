@@ -8,12 +8,22 @@
 package com.clustercontrol.logging.constant;
 
 public class LoggingConstant {
+	/** Hinemos Logging設定ファイルのデフォルト名 */
 	public static final String CONFIG_FILE_NAME = "hinemoslogging.cfg";
-	public static final String CONFIG_FILE_PATH = "/WEB-INF/lib/" + CONFIG_FILE_NAME;
+	/** Hinemos Logging設定ファイルの文字コード */
+	public static final String CONFIG_CHARSET = "UTF-8";
+
+	/** ServletContextのパラメータでファイルパスを指定する場合のパラメータ名 */
 	public static final String SERVLET_CONTEXT_PARAM_PROPERTIES_PATH = "HinemosLoggingConfigPath";
+
 	public static final String CONTROL_APPENDER_NAME = "ControlLogRollingFile";
 	public static final String MONITOR_APPENDER_NAME = "MonitoringLogRollingFile";
 	public static final String INTERNAL_APPENDER_NAME = "HinemosLoggingInternalLog";
 	public static final String INTERNAL_LOGGER_NAME = "com.clustercontrol.internal";
-	public static final String[] PRIORITY = { "info", "warning", "critical", "unknown" };
+
+	/** 制御ログ用Appenderのlayoutに設定する文字コード */
+	public static final String CONTROL_APPENDER_CHARSET = "UTF-8";
+	/** 監視ログ用Appenderのlayoutに設定する文字コード */
+	public static final String MONITOR_APPENDER_CHARSET = "UTF-8";
+
 }

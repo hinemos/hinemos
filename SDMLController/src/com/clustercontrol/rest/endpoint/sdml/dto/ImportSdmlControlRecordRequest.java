@@ -10,5 +10,6 @@ package com.clustercontrol.rest.endpoint.sdml.dto;
 import com.clustercontrol.rest.endpoint.utility.dto.AbstractImportRecordRequest;
 
 public class ImportSdmlControlRecordRequest extends AbstractImportRecordRequest<AddSdmlControlSettingRequest> {
-
+	public ImportSdmlControlRecordRequest() {
+	}
 }

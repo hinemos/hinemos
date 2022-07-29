@@ -42,6 +42,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.rest.endpoint.rpa.dto.SummaryTypeEnum;
 import com.clustercontrol.rpa.preference.RpaPreferencePage;
@@ -423,6 +424,10 @@ public class RpaScenarioSummaryGraphComposite extends Composite {
 				// 権限なし
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
+				// エンタープライズ機能が無効の場合は無視する
+				if(UrlNotFound.class.equals(e.getCause().getClass())) {
+					continue;
+				}
 				// 上記以外の例外
 				String errMessage = HinemosMessage.replace(e.getMessage());
 				log.warn("update(), " + errMessage, e);
@@ -452,12 +457,12 @@ public class RpaScenarioSummaryGraphComposite extends Composite {
 		List<String> errorValues = new ArrayList<>();
 		List<String> titles = new ArrayList<>();
 
-		// 成功件数、失敗件数、グラフタイトルを取得
+		// 成功件数(削減工数)、失敗件数(実行時間)、グラフタイトルを取得
 		int max = response.getDatas().size();
 		for (int i = 0; i < max; i++){
-			Integer successValue = response.getDatas().get(i).getValues().get(0).intValue();
+			Long successValue = Math.round(response.getDatas().get(i).getValues().get(0));
 			successValues.add(successValue.toString());
-			Integer errorValue = response.getDatas().get(i).getValues().get(1).intValue();
+			Long errorValue = Math.round(response.getDatas().get(i).getValues().get(1));
 			errorValues.add(errorValue.toString());
 			titles.add(response.getDatas().get(i).getItem());
 		}
@@ -585,8 +590,8 @@ public class RpaScenarioSummaryGraphComposite extends Composite {
 		}
 		
 		List<String> joinValues = new ArrayList<>();
-		joinValues.add(String.valueOf(response.getDatas().get(0).intValue()));
-		joinValues.add(String.valueOf(response.getDatas().get(1).intValue()));
+		joinValues.add(String.valueOf(Math.round(response.getDatas().get(0))));
+		joinValues.add(String.valueOf(Math.round(response.getDatas().get(1))));
 		String string = String.join(",", joinValues);
 		
 		String name = response.getName();

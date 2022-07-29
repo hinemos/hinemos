@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.clustercontrol.rest.annotation.msgconverter.RestPartiallyTransrateTarget;
+import com.clustercontrol.rest.dto.serializer.ConvertNewlineCharacterSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class StringDataResponse {
 
@@ -19,6 +21,7 @@ public class StringDataResponse {
 	private String monitorId;
 	private Long time;
 	@RestPartiallyTransrateTarget
+	@JsonSerialize(using=ConvertNewlineCharacterSerializer.class)	
 	private String data;
 	private List<TagResponse> tagList = new ArrayList<>();
 

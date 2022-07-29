@@ -14,15 +14,19 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.RpaScenarioNotFound;
 import com.clustercontrol.fault.RpaScenarioOperationResultNotFound;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.rpa.scenario.bean.RpaScenarioOperationResultFilterInfo;
+import com.clustercontrol.rpa.scenario.model.RpaScenario;
 import com.clustercontrol.rpa.scenario.model.RpaScenarioOperationResult;
 import com.clustercontrol.rpa.util.QueryUtil;
 import com.clustercontrol.util.MessageConstant;
@@ -38,7 +42,7 @@ public class SelectRpaScenarioOperationResult {
 	/**
 	 * 指定したフィルタにマッチするRPAシナリオ実績情報一覧を返します。
 	 */
-	public ArrayList<RpaScenarioOperationResult> getRpaScenarioOperationResultList(RpaScenarioOperationResultFilterInfo condition, List<String> facilityIds) {
+	public ArrayList<RpaScenarioOperationResult> getRpaScenarioOperationResultList(RpaScenarioOperationResultFilterInfo condition, List<String> facilityIds) throws InvalidRole, HinemosUnknown {
 		m_log.debug("getRpaScenarioOperationResultList() condition ");
 		if(m_log.isDebugEnabled()){
 			if(condition != null){
@@ -47,6 +51,7 @@ public class SelectRpaScenarioOperationResult {
 						", startDateTo = " + condition.getStartDateTo() +
 						", scenarioId = " + condition.getScenarioId() +
 						", tagIdList = " + condition.getTagIdList() +
+						", allTagIdList = " + condition.getAllTagIdList() +
 						", status = " + condition.getStatusList());
 			}
 		}
@@ -63,7 +68,7 @@ public class SelectRpaScenarioOperationResult {
 				condition.getStartDateFrom(),
 				condition.getStartDateTo(),
 				condition.getScenarioId(),
-				condition.getTagIdList(),
+				condition.getAllTagIdList(),
 				condition.getStatusList(),
 				facilityIds,
 				condition.getOffset(),
@@ -71,6 +76,7 @@ public class SelectRpaScenarioOperationResult {
 		
 		for(RpaScenarioOperationResult entity : entityList){
 			m_log.debug("getRpaScenarioOperationResultList() add display list : target = " + entity.getResultId());
+			recalcOperationResult(entity);
 			filterList.add(entity);
 		}
 		return filterList;
@@ -89,6 +95,7 @@ public class SelectRpaScenarioOperationResult {
 						", startDateTo = " + condition.getStartDateTo() +
 						", scenarioId = " + condition.getScenarioId() +
 						", tagIdList = " + condition.getTagIdList() +
+						", allTagIdList = " + condition.getAllTagIdList() +
 						", statusList = " + condition.getStatusList());
 			}
 		}
@@ -105,7 +112,7 @@ public class SelectRpaScenarioOperationResult {
 				condition.getStartDateFrom(),
 				condition.getStartDateTo(),
 				condition.getScenarioId(),
-				condition.getTagIdList(),
+				condition.getAllTagIdList(),
 				condition.getStatusList(),
 				facilityIds);
 		
@@ -154,6 +161,7 @@ public class SelectRpaScenarioOperationResult {
 		// RPAシナリオ実績詳細情報を取得
 		RpaScenarioOperationResult entity = null;
 		entity = QueryUtil.getRpaScenarioOperationResultPK(resultId);
+		recalcOperationResult(entity);
 		
 		return entity;
 	}
@@ -260,5 +268,48 @@ public class SelectRpaScenarioOperationResult {
 				startDateFrom, startDateTo, facilityIds);
 		
 		return countList;
+	}
+	
+	/**
+	 * シナリオの手動操作時間指定に合わせて、手動操作時間、削減時間、削減率を再計算する。
+	 */
+	private void recalcOperationResult(RpaScenarioOperationResult operationResult) throws InvalidRole {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			jtm.begin();
+			HinemosEntityManager em = jtm.getEntityManager();
+			// DBの値は変えないのでデタッチする。
+			em.detach(operationResult);
+			
+			RpaScenario scenario = new SelectRpaScenario().getRpaScenario(operationResult.getScenarioId());
+				switch (scenario.getManualTimeCulcType()) {
+				case FIX_TIME:
+		            // 手動操作時間が固定の場合、手動操作コストは未定義とする。
+		            operationResult.setCoefficientCost(null);
+					switch (operationResult.getStatus()) {
+					case NORMAL_END:
+						// 手動操作時間が固定、かつ正常終了している場合は再計算
+						long manualTime = scenario.getManualTime();
+						operationResult.setManualTime(manualTime);
+						long reductionTime = manualTime - operationResult.getRunTime();
+						operationResult.setReductionTime(reductionTime);
+						int reductionRate = Math.toIntExact(Math.round((double)reductionTime * 100 / manualTime));
+						operationResult.setReductionRate(reductionRate);
+						
+						break;
+					default:
+						break;
+					}
+
+					return;
+				case AUTO:
+				default:
+					// 自動算出の場合はそのまま
+					return;
+				}
+
+		} catch (RpaScenarioNotFound e) {
+			// シナリオ実績明細が見つかっているため、ここに来ることはありえない。(想定外)
+			m_log.warn(e.getMessage(), e);
+		}
 	}
 }

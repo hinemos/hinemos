@@ -99,7 +99,7 @@ public class UiPathAutomationCloudRestDefine extends UiPathOrchestratorRestDefin
 
 	@Override
 	public long getTokenExpiredMillis() {
-		return HinemosPropertyCommon.rpa_management_rest_uipath_orchestrator_cloud_token_expired_millis
+		return HinemosPropertyCommon.rpa_management_rest_uipath_automation_cloud_token_expired_millis
 				.getIntegerValue();
 	}
 	

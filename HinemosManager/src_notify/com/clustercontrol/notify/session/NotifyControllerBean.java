@@ -9,6 +9,7 @@
 package com.clustercontrol.notify.session;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -84,9 +85,6 @@ public class NotifyControllerBean implements CheckFacility {
 	private static SendMail m_reportingSendMail = null;
 
 	private static ConcurrentHashMap<String, Object> m_lockObjectMap = new ConcurrentHashMap<String, Object>();
-
-	private final static String LOCK_KEY_STR_NONE = "@NONE";
-	private final static String LOCK_KEY_STR_MIX = "@MIX";
 
 	/**
 	 * 通知情報を作成します。
@@ -1385,96 +1383,72 @@ public class NotifyControllerBean implements CheckFacility {
 	 * 外部から直接通知処理を実行します。
 	 *
 	 * @param notifyInfoList 通知情報リスト
-	 * @param notifyGroupId
-	 * @throws HinemosUnknown
 	 */
 	public static void notify(List<OutputBasicInfo> notifyInfoList) {
-
-		JpaTransactionManager jtm = null;
 
 		if (notifyInfoList == null || notifyInfoList.isEmpty()) {
 			return;
 		}
+		m_log.debug("notify(notifyInfoList=" + Arrays.toString(notifyInfoList.toArray()) + ")");
 
-		String lockKeyStr = LOCK_KEY_STR_NONE;
-		for(OutputBasicInfo info : notifyInfoList){
-			if (info == null) {
-				continue;
-			}
-			String pluginId = info.getPluginId();
-			// findbugs対応 不要なnullチェックを除去
-			if (lockKeyStr.equals(LOCK_KEY_STR_NONE)) {
-				lockKeyStr = pluginId;
-			} else if (!lockKeyStr.equals(pluginId)) {
-				lockKeyStr = LOCK_KEY_STR_MIX; // リストに複数のPluginIDが含まれている場合
-				break;
-			}
-		}
-		
-		m_lockObjectMap.putIfAbsent(lockKeyStr, new Object());
+		JpaTransactionManager jtm = new JpaTransactionManager();
+		try {
+			jtm.begin(true);
 
-		m_log.debug("notify() try get notifyLock. lockKey = " + lockKeyStr + "(" + lockKeyStr.hashCode() + "), size = " + notifyInfoList.size());
+			for (OutputBasicInfo notifyInfo : notifyInfoList) {
+				if (notifyInfo == null) {
+					m_log.debug("notify() notifyInfo is NULL, so skip.");
+					continue;
+				}
+				m_log.debug("notify() notifyInfo=" + notifyInfo);
 
-		long startTime = System.currentTimeMillis();
-		synchronized (m_lockObjectMap.get(lockKeyStr)) {
-			long duration = System.currentTimeMillis() - startTime;
-			if(duration < 100){
-				m_log.debug("notify() got notifyLock. lockKey = " + lockKeyStr + "(" + lockKeyStr.hashCode() + "), size = " + notifyInfoList.size() + ", duration = " + duration);
-			} else {
-				m_log.debug("notify() got notifyLock. lockKey = " + lockKeyStr + "(" + lockKeyStr.hashCode() + "), size = " + notifyInfoList.size() + ", duration = " + duration + " long_wait");
-			}
+				// 監視設定から通知IDのリストを取得する
+				List<String> notifyIdList = NotifyRelationCache.getNotifyIdList(notifyInfo.getNotifyGroupId());
+				if (notifyIdList == null || notifyIdList.isEmpty()) {
+					// 該当の通知IDのリストがない場合はスキップする
+					m_log.debug("notify() notifyIdList is NULL or empty, so skip.");
+					continue;
+				}
+				m_log.debug("notify() made notifyIdList: " + Arrays.toString(notifyIdList.toArray()));
 
-			try {
-				jtm = new JpaTransactionManager();
-				jtm.begin(true);
-
-				String keyStr = "";
-				for (OutputBasicInfo notifyInfo : notifyInfoList) {
-					if (notifyInfo == null) {
-						m_log.trace("notifyInfo key:null");
-						continue;
-					}
-					m_log.trace("notifyInfo key:" + "pluginId = " + notifyInfo.getPluginId() + ", facilityId = " +notifyInfo.getFacilityId() + ", monitorId = " +notifyInfo.getMonitorId());
-					if (keyStr.isEmpty()) {
-						keyStr = "pluginId = " + notifyInfo.getPluginId() + ", facilityId = " +notifyInfo.getFacilityId() + ", monitorId = " +notifyInfo.getMonitorId();
-					}
-					// 監視設定から通知IDのリストを取得する
-					List<String> notifyIdList = NotifyRelationCache.getNotifyIdList(notifyInfo.getNotifyGroupId());
-					m_log.trace("notifyIdList.size=" + notifyIdList.size() + ", notifyGroupId=" + notifyInfo.getNotifyGroupId());
-					// 該当の通知IDのリストがない場合は終了する
-					if(notifyIdList == null || notifyIdList.size() <= 0){
-						continue;
+				if (notifyInfo.getPluginId() == null) {
+					m_log.debug("notify() notifyInfo PluginId is NULL, so skip.");
+					continue;
+				}
+				String lockKey = notifyInfo.getPluginId();
+				m_lockObjectMap.putIfAbsent(lockKey, new Object());
+				m_log.debug("notify() try to get notifyLock. lockKey=" + lockKey + ", notifyInfo=" + notifyInfo);
+				long startTime = System.currentTimeMillis();
+				synchronized (m_lockObjectMap.get(lockKey)) {
+					if (m_log.isDebugEnabled()) {
+						long duration = System.currentTimeMillis() - startTime;
+						String logStr = "notify() got notifyLock. lockKey=" + lockKey + ", duration=" + duration + ", notifyInfo=" + notifyInfo;
+						if (duration < 100) {
+							m_log.debug(logStr);
+						} else {
+							m_log.warn(logStr + ", long_wait");
+						}
 					}
 
 					// 通知処理を行う
 					new NotifyControllerBean().notify(notifyInfo, notifyIdList);
 				}
-				if (m_log.isDebugEnabled()) {
-					if (LOCK_KEY_STR_NONE.equals(lockKeyStr)) {
-						m_log.debug("notify() start commit, pluginId = " +  null + ", facilityId = " + null + ", monitorId = " + null);
-					} else {
-						m_log.debug("notify() start commit, " + keyStr);
-					}
-				}
-				long commitStartTime = System.currentTimeMillis();
-				jtm.commit();
-				if (m_log.isDebugEnabled()) {
-					if (LOCK_KEY_STR_NONE.equals(lockKeyStr)) {
-						m_log.debug("notify() end commit, commit_duration = " + (System.currentTimeMillis() - commitStartTime) + ", pluginId = " + null + ", facilityId =" + null + ", monitorId =" + null);
-					} else {
-						m_log.debug("notify() end commit, commit_duration = " + (System.currentTimeMillis() - commitStartTime) + ", " + keyStr);
-					}
-				}
-			} catch (Exception e) {
-				m_log.warn("notify() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-				if (jtm != null) {
-					jtm.rollback();
-				}
-				throw new RuntimeException(e.getMessage(), e);
-			} finally {
-				if (jtm != null)
-					jtm.close();
-				m_log.debug("notify() release notifyLock. lockKey = " + lockKeyStr + "(" + lockKeyStr.hashCode() + "), size = " + notifyInfoList.size() + ", duration = " + (System.currentTimeMillis() - startTime));
+				m_log.debug("notify() release notifyLock. lockKey=" + lockKey + ", duration=" + (System.currentTimeMillis() - startTime) + ", notifyInfo=" + notifyInfo);
+			}
+
+			m_log.debug("notify() start commit.");
+			long commitStartTime = System.currentTimeMillis();
+			jtm.commit();
+			m_log.debug("notify() end commit, commit_duration=" + (System.currentTimeMillis() - commitStartTime));
+		} catch (HinemosUnknown e) {
+			m_log.warn("notify() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new RuntimeException(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
 			}
 		}
 	}

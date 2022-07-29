@@ -215,9 +215,18 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 					selection.getData().getType().equals(TypeEnum.MANAGER) ?
 							selection :
 							JobConvert.getJobUnit(selection));
-			view.getJobMapTreeComposite().updateJobMapEditor(
-					(selection.getData().getType() == JobInfoWrapper.TypeEnum.MANAGER && importJobList.size() == 1) ?
-							importJobList.get(0) : JobConvert.getJobUnit(selection));
+			JobTreeItemWrapper parentJobUnit = null;
+			if (selection.getData().getType() == JobInfoWrapper.TypeEnum.MANAGER) {
+				if (importJobList.size() == 1) {
+					// import対象がジョブユニット1件
+					parentJobUnit = importJobList.get(0);
+				}
+			} else {
+				//ジョブユニット、ジョブネットに対してのインポート
+				parentJobUnit = JobConvert.getJobUnit(selection);
+			}
+
+			view.getJobMapTreeComposite().updateJobMapEditor(parentJobUnit);
 		} else if (viewPart instanceof JobListView) {
 			JobListView view = (JobListView) viewPart;
 			view.getJobTreeComposite().getTreeViewer().sort(selection);

@@ -49,11 +49,10 @@ public enum HinemosPropertyDefault implements HinemosPropertyAbstract {
 	windows_eventlog(HinemosPropertyBean.bool(false)),
 	nodemap_export_dir(HinemosPropertyBean.string(home_dir.getBean().getDefaultStringValue() + "/var/export/")),
 	// Linux only
-	job_rpa_login_command(HinemosPropertyBean.string("xfreerdp /v:%s /u:%s /p:%s /w:%d /h:%d /cert-tofu")), // 初回の証明書の警告で停止するのを防ぐため/cert-tofuを付ける
-	job_rpa_login_command_exit_code_logout(HinemosPropertyBean.numeric(12L)), // xfreerdpログアウト時のリターンコード（ERRINFO_LOGOFF_BY_USER）
+	job_rpa_login_command(HinemosPropertyBean.string("xfreerdp /v:%s /u:%s /p:'%s' /w:%d /h:%d /cert-tofu")), // 初回の証明書の警告で停止するのを防ぐため/cert-tofuを付ける
 	job_rpa_login_command_user(HinemosPropertyBean.string("root")),
 	job_rpa_login_command_home_dir(HinemosPropertyBean.string("/root")),
-	job_rpa_login_display(HinemosPropertyBean.string(":0"));
+	job_rpa_login_display(HinemosPropertyBean.string(":99"));
 
 	// Hinemosプロパティ情報
 	private final HinemosPropertyBean bean;

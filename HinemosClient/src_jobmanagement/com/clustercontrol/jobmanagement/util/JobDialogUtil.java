@@ -17,6 +17,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.jobmanagement.bean.SystemParameterConstant;
 import com.clustercontrol.jobmanagement.rpa.util.ReturnCodeConditionChecker;
 
 /**
@@ -123,6 +124,10 @@ public class JobDialogUtil {
 	
 	public static boolean validateReturnCodeText(Text text) {
 		if (validateText(text)) {
+			// ジョブ変数のフォーマットチェック
+			if(SystemParameterConstant.isParamFormat(text.getText())){
+				return true;
+			}
 			// 単一指定、範囲指定にマッチする正規表現
 			return text.getText().matches(ReturnCodeConditionChecker.CONDITION_REGEX);
 		}

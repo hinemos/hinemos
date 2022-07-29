@@ -8,25 +8,30 @@
 package com.clustercontrol.log.control;
 
 import java.io.IOException;
+import java.lang.management.GarbageCollectorMXBean;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import com.clustercontrol.log.internal.InternalLogManager;
 import com.clustercontrol.logging.constant.MessageConstant;
 import com.clustercontrol.logging.constant.PropertyConstant;
 import com.clustercontrol.logging.exception.LoggingPropertyException;
+import com.clustercontrol.logging.monitor.GcCountMonitorTask;
 import com.clustercontrol.logging.property.LoggingProperty;
 import com.clustercontrol.logging.property.LoggingPropertyValidater;
 import com.clustercontrol.logging.util.PriorityType;
 import com.clustercontrol.logging.util.ProcessInfo;
 import com.clustercontrol.logging.util.SeparationType;
+import com.clustercontrol.logging.util.StringEscaper;
 
 /**
  * 制御ログのヘッダー情報をList型で作成するクラス
@@ -35,6 +40,7 @@ import com.clustercontrol.logging.util.SeparationType;
  */
 public class ControlLogHeader extends ArrayList<String> {
 	private static final long serialVersionUID = 1L;
+	private static final InternalLogManager.Logger log = InternalLogManager.getLogger(ControlLogHeader.class);
 	private static final String VERSION = "SDMLControlLog Version:";
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
 	private static final String VERSION_KEY = "Hinemos-Logging-Version";
@@ -49,14 +55,14 @@ public class ControlLogHeader extends ArrayList<String> {
 	 * @throws IllegalAccessException
 	 * @throws LoggingPropertyException
 	 */
-	public String toFormatString(String pattern)
-			throws IllegalArgumentException, IllegalAccessException, LoggingPropertyException {
+	public String toFormatString(String pattern, String lineSeparator) {
 		List<String> addPatternList = new ArrayList<String>();
 
+		String ver = "";
 		try {
 			// versionを取得
 			Enumeration<URL> resources = ControlLogHeader.class.getClassLoader().getResources(MANIFEST_PATH);
-			String ver = "";
+			
 			while (resources.hasMoreElements()) {
 				Manifest manifest = new Manifest(resources.nextElement().openStream());
 				Attributes attrs = manifest.getMainAttributes();
@@ -69,18 +75,18 @@ public class ControlLogHeader extends ArrayList<String> {
 				// [メジャーバージョン].[マイナーバージョン]のみ抽出
 				ver = ver.substring(0, 3);
 			}
-			String version = VERSION + ver;
-
-			// ヘッダー情報にパターンを追加
-			for (String initSet : this) {
-				addPatternList.add(pattern + initSet);
-			}
-			String initSetHeader = String.join("%n", addPatternList);
-			// versionを1行目に出力
-			return version + "%n" + initSetHeader;
 		} catch (IOException e) {
-			return null;
+			log.error("toFormatString : Getting version is failed.", e);
 		}
+		String version = VERSION + ver;
+
+		// ヘッダー情報にパターンを追加
+		for (String initSet : this) {
+			addPatternList.add(pattern + initSet);
+		}
+		String initSetHeader = String.join(lineSeparator, addPatternList);
+		// versionを1行目に出力
+		return version + lineSeparator + initSetHeader;
 	}
 
 	/**
@@ -92,8 +98,7 @@ public class ControlLogHeader extends ArrayList<String> {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public ControlLogHeader setProperty(LoggingProperty prop)
-			throws LoggingPropertyException, TimeoutException, IOException, InterruptedException {
+	public ControlLogHeader setProperty(LoggingProperty prop, ProcessInfo procInfo) throws LoggingPropertyException {
 
 		this.add(ControlCode.INITIALIZE_BEGIN.getString());
 
@@ -102,17 +107,18 @@ public class ControlLogHeader extends ArrayList<String> {
 		LoggingPropertyValidater.validPrcCommandPath(prop, PropertyConstant.PRC_GET_COMMAND_PATH);
 		LoggingPropertyValidater.validPrcTimeout(prop, PropertyConstant.PRC_GET_TIMEOUT);
 
-		HashMap<String, String> procMap = ProcessInfo.getInstance().getProcInfo();
-		// 正規表現で指定可能な項目は"\"をエスケープする
-		// SNMPのMIBの最大長はエスケープ用の"\"は文字数にカウントしないためこのタイミングで行う
-		StringEscaper stringEscaper = new StringEscaper("\\");
+		HashMap<String, String> procMap = null;
+		try {
+			procMap = procInfo.getCommandInfo();
+		} catch (TimeoutException | IOException | InterruptedException e) {
+			log.error("setProperty : Getting command is failed.", e);
+			throw new LoggingPropertyException(e);
+		}
 
 		String prcCmd = procMap.get("PrcCommand");
-		prcCmd = stringEscaper.escapeString(prcCmd);
 		this.addInitSet("PrcCommand", prcCmd);
 
 		String prcArg = procMap.get("PrcArgument");
-		prcArg = stringEscaper.escapeString(prcArg);
 		this.addInitSet("PrcArgument", prcArg);
 
 		// -------------------------------------------------------------------------------------------------------------------
@@ -287,9 +293,54 @@ public class ControlLogHeader extends ArrayList<String> {
 		// プロセス内部監視/GC発生頻度監視
 		// -------------------------------------------------------------------------------------------------------------------
 
-		this.addInitSet("IntGccNCount", prop.getGccNumbers().size());
-		if (!prop.getGccNumbers().isEmpty()) {
-			for (Integer gccPropNum : prop.getGccNumbers()) {
+		if (prop.getGccNumbers().isEmpty()) {
+			this.addInitSet("IntGccNCount", 0);
+		} else {
+			// 番号1の設定が"all"かチェック
+			String method = prop.getProperty(String.format(PropertyConstant.INT_GCC_METHOD, 1));
+			if ("all".equalsIgnoreCase(method)) {
+				log.info("setProperty : Garbage Collector is specified " + method);
+				for (Integer num : prop.getGccNumbers()) {
+					if (num != 1) {
+						// allの時に1以外が設定されている場合
+						throw new LoggingPropertyException(MessageConstant.VALIDATE_GCC_ALL);
+					}
+				}
+				ExecutorService executor = Executors.newSingleThreadExecutor();
+				Future<List<GarbageCollectorMXBean>> f = executor.submit(new GcCountMonitorTask());
+				List<GarbageCollectorMXBean> beans;
+				try {
+					beans = f.get();
+				} catch (Exception e) {
+					throw new LoggingPropertyException(MessageConstant.VALIDATE_GCC_GET_FAILED, e);
+				} finally {
+					executor.shutdownNow();
+				}
+				if (beans == null || beans.size() == 0) {
+					// 何も取得できなかった場合も失敗
+					throw new LoggingPropertyException(MessageConstant.VALIDATE_GCC_GET_FAILED);
+				}
+				// 取得できたコレクタに置き換え、1の設定を他に反映する
+				int i = 1;
+				for (GarbageCollectorMXBean bean : beans) {
+					log.info("setProperty : Replace GC setting " + i + " with " + bean.getName());
+					prop.setProperty(String.format(PropertyConstant.INT_GCC_METHOD, i), bean.getName());
+					if (i > 1) {
+						prop.replaceWithSameValue(PropertyConstant.INT_GCC_INTERVAL, 1, i);
+						prop.replaceWithSameValue(PropertyConstant.INT_GCC_PRIORITY, 1, i);
+						prop.replaceWithSameValue(PropertyConstant.INT_GCC_THRESHOLD, 1, i);
+						prop.replaceWithSameValue(PropertyConstant.INT_GCC_DESCRIPTION, 1, i);
+						prop.replaceWithSameValue(PropertyConstant.INT_GCC_TIMEOUT, 1, i);
+						prop.replaceWithSameValue(PropertyConstant.INT_GCC_MONITOR, 1, i);
+						prop.replaceWithSameValue(PropertyConstant.INT_GCC_COLLECT, 1, i);
+					}
+					i++;
+				}
+			}
+
+			List<Integer> gccNumbers = prop.getGccNumbers();
+			this.addInitSet("IntGccNCount", gccNumbers.size());
+			for (Integer gccPropNum : gccNumbers) {
 				String gccIntervalKey = String.format(PropertyConstant.INT_GCC_INTERVAL, gccPropNum);
 				String gccMethodKey = String.format(PropertyConstant.INT_GCC_METHOD, gccPropNum);
 				String gccPriorityKey = String.format(PropertyConstant.INT_GCC_PRIORITY, gccPropNum);
@@ -358,9 +409,9 @@ public class ControlLogHeader extends ArrayList<String> {
 		// 監視以外
 		// -------------------------------------------------------------------------------------------------------------------
 
-		LoggingPropertyValidater.validInformInterval(prop, PropertyConstant.INFORM_INTERVAL);
+		LoggingPropertyValidater.validInfoInterval(prop, PropertyConstant.INFO_INTERVAL);
 		this.addInitSet("InfoInterval",
-				Integer.parseInt(prop.getProperty(PropertyConstant.INFORM_INTERVAL)));
+				Integer.parseInt(prop.getProperty(PropertyConstant.INFO_INTERVAL)));
 
 		LoggingPropertyValidater.validFaildMaxCount(prop, PropertyConstant.FAILD_MAX_COUNT);
 
@@ -409,56 +460,6 @@ public class ControlLogHeader extends ArrayList<String> {
 			message = String.format("%s%s,%s", sendKey, i, value);
 		}
 		this.add(ControlCode.INITIALIZE_SET.getString() + " " + message);
-	}
-
-	private static class StringEscaper {
-		private Set<Character> escapeTargetCharacterSet;
-		private Character escapeCharacter = '\\';
-
-		public StringEscaper() {
-			this.escapeTargetCharacterSet = new HashSet<Character>();
-		}
-
-		public StringEscaper(String escapeTaregtStr) {
-			this(escapeTaregtStr.toCharArray());
-		}
-
-		public StringEscaper(char[] escapeTaregtCharArray) {
-			this();
-			for (final char c : escapeTaregtCharArray) {
-				this.add(c);
-			}
-		}
-
-		public boolean add(char escapeTargetChar) {
-			return this.add(Character.valueOf(escapeTargetChar));
-		}
-
-		public boolean add(Character escapeTargetCharacter) {
-			return escapeTargetCharacterSet.add(escapeTargetCharacter);
-		}
-
-		public boolean needsEscape(char c) {
-			return this.needsEscape(Character.valueOf(c));
-		}
-
-		public boolean needsEscape(Character character) {
-			return this.escapeTargetCharacterSet.contains(character);
-		}
-
-		public String escapeString(String str) {
-			if (str == null || str.isEmpty()) {
-				return str;
-			}
-			StringBuilder builder = new StringBuilder();
-			for (final char c : str.toCharArray()) {
-				if (this.needsEscape(c)) {
-					builder.append(this.escapeCharacter);
-				}
-				builder.append(c);
-			}
-			return builder.toString();
-		}
 	}
 
 	/*

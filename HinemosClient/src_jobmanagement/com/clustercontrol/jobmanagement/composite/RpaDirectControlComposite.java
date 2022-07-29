@@ -44,12 +44,14 @@ import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.composite.action.NumberVerifyListener;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.jobmanagement.bean.JobRpaReturnCodeConditionMessage;
 import com.clustercontrol.jobmanagement.rpa.bean.RpaJobTypeConstant;
 import com.clustercontrol.jobmanagement.rpa.util.ReturnCodeConditionChecker;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
 
 /**
@@ -704,6 +706,16 @@ public class RpaDirectControlComposite extends Composite {
 				if (!JobDialogUtil.validateReturnCodeText(m_screenshotEndValueText)) {
 					return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),
 							Messages.getString("message.job.rpa.13"));
+				}
+				// スクリーンショット取得を行う終了値 設定値の範囲チェック
+				// 区切り文字で分割して分割後の値毎にチェック
+				try{
+					ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(
+							MessageConstant.END_VALUE.getMessage(), m_screenshotEndValueText.getText());
+				}catch(InvalidSetting e){
+					String[] args = { m_screenshotEndValueText.getText() };
+					String errMsg = MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_END_VALUE_INVALID.getMessage(args) + "\n" + e.getMessage();
+					return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),HinemosMessage.replace(errMsg ));
 				}
 			}
 		}

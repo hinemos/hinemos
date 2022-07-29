@@ -14,14 +14,33 @@ import javax.xml.bind.annotation.XmlType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ResourceJobActionEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ResourceJobTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.LanguageTranslateSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * リソース制御ジョブに関する情報を保持するクラス
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class ResourceJobInfo implements Serializable {
+public class ResourceJobInfo implements Serializable, RequestDto {
 
+	@JsonIgnore
 	private static final long serialVersionUID = 1L;
 
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog(ResourceJobInfo.class);
 
 	/** クラウドスコープID */
@@ -31,9 +50,15 @@ public class ResourceJobInfo implements Serializable {
 	private String resourceLocationId;
 
 	/** リソース種別 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ResourceJobTypeEnum.class)
 	private Integer resourceType;
 
 	/** アクション */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ResourceJobActionEnum.class)
 	private Integer resourceAction;
 
 	/** 対象ID（スコープID、インスタンスID、ストレージID） */
@@ -55,6 +80,7 @@ public class ResourceJobInfo implements Serializable {
 	private String resourceNotifyScope;
 
 	/** 通知先スコープパス */
+	@JsonSerialize(using=LanguageTranslateSerializer.class)
 	private String resourceNotifyScopePath;
 
 	/** 終了値（成功） */
@@ -194,7 +220,7 @@ public class ResourceJobInfo implements Serializable {
 		}
 		ResourceJobInfo o1 = this;
 		ResourceJobInfo o2 = (ResourceJobInfo) o;
-
+		// スコープ(階層)は比較しない
 		boolean ret = equalsSub(o1.getResourceCloudScopeId(), o2.getResourceCloudScopeId())
 				&& equalsSub(o1.getResourceLocationId(), o2.getResourceLocationId())
 				&& equalsSub(o1.getResourceType(), o2.getResourceType())
@@ -205,7 +231,6 @@ public class ResourceJobInfo implements Serializable {
 				&& equalsSub(o1.getResourceAttachNode(), o2.getResourceAttachNode())
 				&& equalsSub(o1.getResourceAttachDevice(), o2.getResourceAttachDevice())
 				&& equalsSub(o1.getResourceNotifyScope(), o2.getResourceNotifyScope())
-				&& equalsSub(o1.getResourceNotifyScopePath(), o2.getResourceNotifyScopePath())
 				&& equalsSub(o1.getResourceSuccessValue(), o2.getResourceSuccessValue())
 				&& equalsSub(o1.getResourceFailureValue(), o2.getResourceFailureValue());
 		return ret;
@@ -225,5 +250,9 @@ public class ResourceJobInfo implements Serializable {
 			}
 		}
 		return ret;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

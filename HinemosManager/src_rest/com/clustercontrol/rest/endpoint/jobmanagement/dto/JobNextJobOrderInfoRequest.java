@@ -10,6 +10,11 @@ package com.clustercontrol.rest.endpoint.jobmanagement.dto;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.dto.RequestDto;
 
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 public class JobNextJobOrderInfoRequest implements RequestDto {
 	/** ジョブユニットID */
 	private String jobunit_id;

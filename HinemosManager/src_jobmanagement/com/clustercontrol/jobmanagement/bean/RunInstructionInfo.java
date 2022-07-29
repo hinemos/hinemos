@@ -647,7 +647,7 @@ public class RunInstructionInfo extends RunInfo implements Serializable {
 		a.setRpaWarnEndValueFrom(1);
 		a.setRpaWarnEndValueTo(1);
 		a.setRpaRoboRunInfo(new RoboRunInfo(
-				0L, "sessionId", "jobunitId", "jobId", "fasilityId", "startCommand", "stopCommand",
+				0L, "sessionId", "jobunitId", "jobId", "fasilityId", "userName", "startCommand", "stopCommand",
 				true, true, true));
 		a.setRpaEndValueConditionInfoList(Arrays.asList(new RpaJobEndValueConditionInfo()));
 
@@ -679,7 +679,7 @@ public class RunInstructionInfo extends RunInfo implements Serializable {
 		b.setRpaWarnEndValueFrom(1);
 		b.setRpaWarnEndValueTo(1);
 		b.setRpaRoboRunInfo(new RoboRunInfo(
-				0L, "sessionId", "jobunitId", "jobId", "fasilityId", "startCommand", "stopCommand",
+				0L, "sessionId", "jobunitId", "jobId", "fasilityId", "userName", "startCommand", "stopCommand",
 				true, true, true));
 		b.setRpaEndValueConditionInfoList(Arrays.asList(new RpaJobEndValueConditionInfo()));
 

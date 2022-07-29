@@ -16,8 +16,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
@@ -45,6 +43,9 @@ public class RpaScenarioTagPathListComposite extends Composite {
 	/** 親タグコンボボックス（表示用のIDのみ保持） */
 	private Combo comboScenarioTagPath = null;
 
+	/** 親タグコンボ表示用タグデータ一覧 */
+	private List<RpaScenarioTagResponse> listScenarioTag = null;
+
 	/** 親タグ(ID,階層を関連付けて保持) */
 	private Map<String, String> mapScenarioTagPath = new HashMap<>();
 
@@ -57,6 +58,9 @@ public class RpaScenarioTagPathListComposite extends Composite {
 	/** マネージャ名 */
 	private String managerName = null;
 
+	/** オーナーロールID */
+	private String ownerRoleID = null;
+	
 	// ----- コンストラクタ ----- //
 
 	/**
@@ -91,7 +95,7 @@ public class RpaScenarioTagPathListComposite extends Composite {
 		this.setLayout(layout);
 
 		/*
-		 * ロールID
+		 * タグ
 		 */
 		if (this.enabledFlg) {
 			// 変更可能な場合コンボボックス
@@ -117,13 +121,7 @@ public class RpaScenarioTagPathListComposite extends Composite {
 		}
 
 		// 変更可能時はコンボボックスに、変更不可時は親タグ表示用のデータを設定する
-		if (this.enabledFlg) {
-			// 親タグリストの初期化
-			this.createTagPathList();
-			this.update();
-		} else {
-			this.createTagPathMap();
-		}
+		adjustDisplay();
 	}
 
 	/**
@@ -145,7 +143,7 @@ public class RpaScenarioTagPathListComposite extends Composite {
 			
 			for(RpaScenarioTagResponse tag : dtoList){
 				this.mapScenarioTagPath.put(tag.getTagId(), tag.getTagPath());
-				this.comboScenarioTagPath.add(tag.getTagId());
+				this.comboScenarioTagPath.add(tag.getTagId() + "(" + tag.getTagName() + ")");
 			}
 			int defaultSelect = this.comboScenarioTagPath.indexOf(tagPathOld);
 			this.comboScenarioTagPath.select( (-1 == defaultSelect) ? 0 : defaultSelect );
@@ -153,10 +151,14 @@ public class RpaScenarioTagPathListComposite extends Composite {
 	}
 	
 	private List<RpaScenarioTagResponse> callTagList(){
+		if (listScenarioTag != null) {
+			return listScenarioTag;
+		}
+		
 		List<RpaScenarioTagResponse> dtoList = null;
 		try {
 			RpaRestClientWrapper wrapper = RpaRestClientWrapper.getWrapper(this.managerName);
-			dtoList = wrapper.getRpaScenarioTagList(null);
+			dtoList = wrapper.getRpaScenarioTagList(ownerRoleID);
 		} catch (InvalidRole e) {
 			// 権限なし
 			MessageDialog.openInformation(null, Messages.getString("message"),
@@ -170,7 +172,28 @@ public class RpaScenarioTagPathListComposite extends Composite {
 					Messages.getString("failed"),
 					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 		}
+		listScenarioTag = dtoList;
 		return dtoList;
+	}
+
+	private RpaScenarioTagResponse getTagDto(String id) {
+		List<RpaScenarioTagResponse> dtoList = callTagList();
+		for(RpaScenarioTagResponse tag : dtoList){
+			if(tag.getTagId().equals(id)){
+				return tag;
+			}
+		}
+		return null;
+	}
+
+	private void adjustDisplay() {
+		if (this.enabledFlg) {
+			// 親タグリストの初期化
+			this.createTagPathList();
+			this.update();
+		} else {
+			this.createTagPathMap();
+		}
 	}
 	
 	/**
@@ -197,21 +220,30 @@ public class RpaScenarioTagPathListComposite extends Composite {
 	 * @see org.eclipse.swt.widgets.Combo#getText()
 	 */
 	public String getText() {
+		String retText = null;
 		if (this.enabledFlg) {
-			return this.comboScenarioTagPath.getText();
+			retText = this.comboScenarioTagPath.getText();
 		} else {
-			return this.txtScenarioTagPath.getText();
+			retText = this.txtScenarioTagPath.getText();
 		}
+		// 名称部 (...)を除外して返却
+		retText = retText.replaceAll("\\(.*\\)", "");
+		return retText;
 	}
 
 	/* (非 Javadoc)
 	 * @see org.eclipse.swt.widgets.Combo#setText(java.lang.String)
 	 */
-	public void setText(String string) {
+	public void setText(String tagId) {
+		RpaScenarioTagResponse tagDto = getTagDto(tagId);
+		String setText = tagId;
+		if(tagDto != null){
+			setText = tagDto.getTagId() + "(" + tagDto.getTagName() + ")";
+		}
 		if (this.enabledFlg) {
-			this.comboScenarioTagPath.setText(string);
+			this.comboScenarioTagPath.setText(setText);
 		} else {
-			this.txtScenarioTagPath.setText(string);
+			this.txtScenarioTagPath.setText(setText);
 		}
 	}
 
@@ -258,30 +290,10 @@ public class RpaScenarioTagPathListComposite extends Composite {
 		}
 	}
 
-	public void addModifyListener(ModifyListener modifyListener){
-		comboScenarioTagPath.addModifyListener(modifyListener);
+	public void setOwnerRoleID(String ownerRoleID) {
+		this.ownerRoleID = ownerRoleID;
+		listScenarioTag =null;
+		adjustDisplay();
 	}
 
-	public Combo getComboManagerName() {
-		return comboScenarioTagPath;
-	}
-
-	public void add(String managerName) {
-		this.comboScenarioTagPath.add(managerName);
-		this.update();
-	}
-
-	public void delete(String managerName) {
-		if (this.comboScenarioTagPath.indexOf(managerName) > -1) {
-			this.comboScenarioTagPath.remove(managerName);
-			this.update();
-		}
-	}
-
-	public void addComboSelectionListener(SelectionListener listener) {
-		if (this.enabledFlg) {
-			this.comboScenarioTagPath.addSelectionListener(listener);
-		}
-	}
-	
 }

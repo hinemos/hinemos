@@ -92,6 +92,7 @@ public class SdmlControlSettingInfo extends ObjectPrivilegeTargetInfo {
 	}
 	public void setApplicationId(String applicationId) {
 		this.applicationId = applicationId;
+		this.setObjectId(applicationId);
 	}
 
 	@Column(name="description")

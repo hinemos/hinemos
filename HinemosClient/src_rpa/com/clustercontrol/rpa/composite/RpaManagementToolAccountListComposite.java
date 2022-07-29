@@ -36,6 +36,7 @@ import org.openapitools.client.model.RpaManagementToolAccountResponse;
 import org.openapitools.client.model.RpaManagementToolResponse;
 
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.rpa.composite.action.RpaManagementToolAccountDoubleClickListener;
 import com.clustercontrol.rpa.util.RpaRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
@@ -182,6 +183,10 @@ public class RpaManagementToolAccountListComposite extends Composite {
 				// 権限なし
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
+				// エンタープライズ機能が無効の場合は無視する
+				if(UrlNotFound.class.equals(e.getCause().getClass())) {
+					continue;
+				}
 				// 上記以外の例外
 				String errMessage = HinemosMessage.replace(e.getMessage());
 				m_log.warn("update(), " + errMessage, e);
@@ -266,6 +271,16 @@ public class RpaManagementToolAccountListComposite extends Composite {
 				@Override
 				public String getText(Object element) {
 					return ((RpaManagementToolAccountViewColumn)element).getRpaManagementToolAccount().getDescription();
+				}
+			}
+		),
+		owner_role_id(
+				Messages.getString("owner.role.id"),
+			new ColumnPixelData(120, true, true),
+			new ColumnLabelProvider(){
+				@Override
+				public String getText(Object element) {
+					return ((RpaManagementToolAccountViewColumn)element).getRpaManagementToolAccount().getOwnerRoleId();
 				}
 			}
 		),

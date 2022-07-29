@@ -26,6 +26,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+
 import com.clustercontrol.rpa.action.GetRpaScenarioListTableDefine;
 import com.clustercontrol.rpa.composite.RpaScenarioListComposite;
 import com.clustercontrol.rpa.dialog.RpaScenarioCorrectExecNodeDialog;
@@ -72,11 +73,9 @@ public class RpaScenarioModifyExecNodeAction extends AbstractHandler implements 
 		List<?> list = (List<?>) selection.getFirstElement();
 		String managerName = null;
 		String scenarioId = null;
-		String ownerRoleId = null;
 		if (list != null && list.size() > 0) {
 			managerName = (String) list.get(GetRpaScenarioListTableDefine.MANAGER_NAME);
 			scenarioId = (String) list.get(GetRpaScenarioListTableDefine.SCENARIO_ID);
-			ownerRoleId = (String) list.get(GetRpaScenarioListTableDefine.OWNER_ROLE_ID);
 		}
 		Table table = composite.getTableViewer().getTable();
 
@@ -86,7 +85,7 @@ public class RpaScenarioModifyExecNodeAction extends AbstractHandler implements 
 			try {
 				// ダイアログを生成
 				RpaScenarioCorrectExecNodeDialog dialog = new RpaScenarioCorrectExecNodeDialog(
-						this.viewPart.getSite().getShell(), managerName, scenarioId, ownerRoleId);
+						this.viewPart.getSite().getShell(), managerName, scenarioId);
 
 				// ダイアログが閉じられた際、シナリオ一覧を再取得
 				dialog.open();

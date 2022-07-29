@@ -34,9 +34,11 @@ public class RoboLogoutInfo extends RoboInfo {
 	 *            ジョブID
 	 * @param facilityId
 	 *            ファシリティID
+	 * @param userName
+	 *            ユーザ名
 	 */
-	public RoboLogoutInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId) {
-		super(datetime, sessionId, jobunitId, jobId, facilityId);
+	public RoboLogoutInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId, String userName) {
+		super(datetime, sessionId, jobunitId, jobId, facilityId, userName);
 	}
 
 	/**
@@ -47,13 +49,12 @@ public class RoboLogoutInfo extends RoboInfo {
 	 */
 	public RoboLogoutInfo(RoboInfo roboInfo) {
 		super(roboInfo.getDatetime(), roboInfo.getSessionId(), roboInfo.getJobunitId(), roboInfo.getJobId(),
-				roboInfo.getFacilityId());
+				roboInfo.getFacilityId(), roboInfo.getUserName());
 	}
 
 	@Override
 	public String toString() {
-		return "RoboLogoutInfo [getDatetime()=" + getDatetime() + ", getSessionId()=" + getSessionId()
-				+ ", getJobunitId()=" + getJobunitId() + ", getJobId()=" + getJobId() + ", getFacilityId()="
-				+ getFacilityId() + ", getLogoutFileName()=" + "]";
+		return "RoboLogoutInfo [toString()=" + super.toString() + "]";
 	}
+
 }

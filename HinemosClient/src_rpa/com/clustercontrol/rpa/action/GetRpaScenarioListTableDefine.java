@@ -24,38 +24,41 @@ public class GetRpaScenarioListTableDefine {
 	/** マネージャ名 */
 	public static final int MANAGER_NAME = 0;
 
-	/** RPA種別 */
-	public static final int RPATOOL_NAME = 1;
+	/** シナリオ実績作成設定ID */
+	public static final int SCENARIO_OPERATION_RESULT_CREATE_SETTING_ID = 1;
 
 	/** シナリオID */
 	public static final int SCENARIO_ID = 2;
 
-	/** シナリオ名 */
-	public static final int SCENARIO_NAME = 3;
+	/** RPAツールID */
+	public static final int RPATOOL_ID = 3;
 
-	/** シナリオ識別 */
-	public static final int SCENARIO_IDENTIFY_STRING = 4;
+	/** シナリオ名 */
+	public static final int SCENARIO_NAME = 4;
+
+	/** シナリオ識別子 */
+	public static final int SCENARIO_IDENTIFY_STRING = 5;
 
 	/** 説明 */
-	public static final int DESCRIPTION = 5;
+	public static final int DESCRIPTION = 6;
 
 	/** オーナーロールID**/
-	public static final int OWNER_ROLE_ID = 6;
+	public static final int OWNER_ROLE_ID = 7;
 
 	/** 新規作成ユーザ */
-	public static final int CREATOR_NAME = 7;
+	public static final int CREATOR_NAME = 8;
 
 	/** 作成日時 */
-	public static final int CREATE_TIME = 8;
+	public static final int CREATE_TIME = 9;
 
 	/** 最終更新ユーザ */
-	public static final int MODIFIER_NAME = 9;
+	public static final int MODIFIER_NAME = 10;
 
 	/** 最終更新日時 */
-	public static final int MODIFY_TIME = 10;
+	public static final int MODIFY_TIME = 11;
 
 	/** ダミー**/
-	public static final int DUMMY = 11;
+	public static final int DUMMY = 12;
 
 	/** 初期表示時ソートカラム。 */
 	public static final int SORT_COLUMN_INDEX1 = MANAGER_NAME;
@@ -78,13 +81,17 @@ public class GetRpaScenarioListTableDefine {
 		tableDefine.add(MANAGER_NAME,
 				new TableColumnInfo(Messages.getString("facility.manager", "Manager", locale), TableColumnInfo.MANAGER_NAME, 100, SWT.LEFT));
 
-		// RPA識別
-		tableDefine.add(RPATOOL_NAME,
-				new TableColumnInfo(Messages.getString("rpa.scenario.rpa.tool.name", locale), TableColumnInfo.NONE, 100, SWT.LEFT));
+		// シナリオ実績作成設定ID
+		tableDefine.add(SCENARIO_OPERATION_RESULT_CREATE_SETTING_ID,
+				new TableColumnInfo(Messages.getString("rpa.scenario.operation.result.create.setting.id", locale), TableColumnInfo.NONE, 200, SWT.LEFT));
 
 		// シナリオID
 		tableDefine.add(SCENARIO_ID,
 				new TableColumnInfo(Messages.getString("rpa.scenario.id", locale), TableColumnInfo.NONE, 200, SWT.LEFT));
+
+		// RPAツールID
+		tableDefine.add(RPATOOL_ID,
+				new TableColumnInfo(Messages.getString("rpa.tool", locale), TableColumnInfo.NONE, 100, SWT.LEFT));
 
 		// シナリオ名
 		tableDefine.add(SCENARIO_NAME,
@@ -100,7 +107,7 @@ public class GetRpaScenarioListTableDefine {
 
 		// オーナーロールID
 		tableDefine.add(OWNER_ROLE_ID,
-				new TableColumnInfo(Messages.getString("owner.role.id", locale), TableColumnInfo.NONE, 100, SWT.LEFT));
+				new TableColumnInfo(Messages.getString("owner.role.id", locale), TableColumnInfo.NONE, 120, SWT.LEFT));
 
 		// 新規作成ユーザ
 		tableDefine.add(CREATOR_NAME, new TableColumnInfo( Messages.getString("creator.name", locale), TableColumnInfo.NONE, 100, SWT.LEFT) );

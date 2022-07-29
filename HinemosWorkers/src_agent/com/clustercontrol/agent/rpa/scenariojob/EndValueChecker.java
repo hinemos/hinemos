@@ -5,7 +5,7 @@
  *
  * See the LICENSE file for licensing information.
  */
-package com.clustercontrol.agent.rpa;
+package com.clustercontrol.agent.rpa.scenariojob;
 
 import java.util.ArrayList;
 import java.util.List;

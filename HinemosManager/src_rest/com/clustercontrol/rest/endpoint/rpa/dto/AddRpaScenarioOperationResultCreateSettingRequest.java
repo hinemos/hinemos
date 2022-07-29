@@ -43,7 +43,7 @@ public class AddRpaScenarioOperationResultCreateSettingRequest implements Reques
 	private String ownerRoleId;
 	/** ファシリティID(スコープ)　*/
 	@RestItemName(MessageConstant.SCOPE)
-	@RestValidateString(notNull=true, type=CheckType.ID, minLen=1, maxLen=64)
+	@RestValidateString(notNull=true, type=CheckType.ID, minLen=1, maxLen=512)
 	private String facilityId;
 	/** 作成間隔　*/
 	@RestItemName(MessageConstant.CREATE_INTERVAL)

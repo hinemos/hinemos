@@ -33,9 +33,11 @@ public class RoboAbortInfo extends RoboInfo {
 	 *            ジョブID
 	 * @param facilityId
 	 *            ファシリティID
+	 * @param userName
+	 *            ユーザ名
 	 */
-	public RoboAbortInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId) {
-		super(datetime, sessionId, jobunitId, jobId, facilityId);
+	public RoboAbortInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId, String userName) {
+		super(datetime, sessionId, jobunitId, jobId, facilityId, userName);
 	}
 
 	/**
@@ -46,13 +48,12 @@ public class RoboAbortInfo extends RoboInfo {
 	 */
 	public RoboAbortInfo(RoboInfo roboInfo) {
 		super(roboInfo.getDatetime(), roboInfo.getSessionId(), roboInfo.getJobunitId(), roboInfo.getJobId(),
-				roboInfo.getFacilityId());
+				roboInfo.getFacilityId(), roboInfo.getUserName());
 	}
 
 	@Override
 	public String toString() {
-		return "RoboAbortInfo [getDatetime()=" + getDatetime() + ", getSessionId()=" + getSessionId()
-				+ ", getJobunitId()=" + getJobunitId() + ", getJobId()=" + getJobId() + ", getFacilityId()="
-				+ getFacilityId() + "]";
+		return "RoboAbortInfo [toString()=" + super.toString() + "]";
 	}
+
 }

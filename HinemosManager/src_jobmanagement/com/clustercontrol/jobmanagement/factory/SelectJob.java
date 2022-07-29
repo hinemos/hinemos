@@ -9,15 +9,18 @@
 package com.clustercontrol.jobmanagement.factory;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,6 +36,7 @@ import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.bean.StatusConstant;
+import com.clustercontrol.calendar.util.TimeStringConverter;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
@@ -40,6 +44,7 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.QueryDivergence;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.MonitorNotFound;
@@ -100,13 +105,25 @@ import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobWaitGroupInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobWaitGroupMstEntity;
 import com.clustercontrol.jobmanagement.model.JobWaitInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobWaitMstEntity;
+import com.clustercontrol.jobmanagement.util.JobEnumConvertMap;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobInfoResponseP1;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobObjectGroupInfoResponse;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobObjectInfoResponse;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemResponseP1;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobWaitRuleInfoResponse;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ConditionTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JobTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ReferJobSelectTypeEnum;
+import com.clustercontrol.rest.util.RestCommonConverter;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -229,6 +246,69 @@ public class SelectJob {
 			return tree;
 		}
 	}
+	
+	/**
+	 * 参照可能な 全てのジョブの構成を取得する
+	 * ジョブツリー表示面で必要な情報のみResponseDTOで直接取得
+	 * 
+	 * @param ownerRoleId
+	 * @param locale
+	 * @param userId
+	 * @return JobTreeItemResponseP1
+	 * @throws NotifyNotFound
+	 * @throws JobMasterNotFound
+	 * @throws UserNotFound
+	 */
+	public JobTreeItemResponseP1 getJobTreeItemResponse(String ownerRoleId, Locale locale, String userId) throws NotifyNotFound, JobMasterNotFound, UserNotFound {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
+			//JobTreeItemResponseP1の最上位インスタンスを作成
+			JobInfoResponseP1 treeData = new JobInfoResponseP1();
+			treeData.setJobunitId("");
+			treeData.setId("");
+			treeData.setName(JobConstant.STRING_COMPOSITE);
+			treeData.setType(JobTypeEnum.COMPOSITE);
+			JobTreeItemResponseP1 tree = new JobTreeItemResponseP1();
+			tree.setData(treeData);
+
+			//ジョブツリーのルートを生成
+			JobInfoResponseP1 item = new JobInfoResponseP1();
+			item.setJobunitId("");
+			item.setId("");
+			item.setName(MessageConstant.JOB.getMessage());
+			item.setType(JobTypeEnum.COMPOSITE);
+			JobTreeItemResponseP1 childeTree = new JobTreeItemResponseP1();
+			childeTree.setData(item);
+			tree.getChildren().add(childeTree);
+
+			//親ジョブIDが"TOP"のジョブリレーションを取得
+			Collection<JobMstEntity> ct = null;
+			if (ownerRoleId != null && !ownerRoleId.isEmpty()) {
+				ct = em.createNamedQuery_OR("JobMstEntity.findByParentJobunitIdAndJobId", JobMstEntity.class, ownerRoleId)
+						.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID)
+						.setParameter("parentJobId", CreateJobSession.TOP_JOB_ID)
+						.getResultList();
+			} else {
+				ct = em.createNamedQuery("JobMstEntity.findByParentJobunitIdAndJobId", JobMstEntity.class)
+						.setParameter("parentJobunitId", CreateJobSession.TOP_JOBUNIT_ID)
+						.setParameter("parentJobId", CreateJobSession.TOP_JOB_ID)
+						.getResultList();
+			}
+
+			for (JobMstEntity childJob : ct) {
+				String jobunitId = childJob.getId().getJobunitId();
+
+				//ジョブツリーを作成する
+				HashMap<String, ArrayList<JobMstEntity>> map = getJobunitMap(jobunitId);
+				createJobTreeResponse(childJob, childeTree, map);
+			}
+
+			// ソートする
+			JobUtil.sort(childeTree);
+			return tree;
+		}
+	}
 
 	/**
 	 * ジョブツリー情報を取得します。
@@ -319,6 +399,54 @@ public class SelectJob {
 		}
 	}
 
+
+	/**
+	 * ジョブツリーResponseDTO情報を作成します。
+	 * 再帰呼び出しを行います。
+	 * <P>
+	 * <ol>
+	 * <li>ジョブマスタを基に、ジョブDTO情報を作成します。</li>
+	 * <li>ジョブツリー情報のインスタンスを作成します。</li>
+	 * <li>ジョブリレーションマスタをジョブマスタのジョブIDで検索し取得します。</li>
+	 * <li>取得したジョブリレーションマスタの数、以下の処理を行います。</li>
+	 *   <ol>
+	 *   <li>ジョブリレーションマスタからジョブマスタを取得します。</li>
+	 *   <li>ジョブマスタとジョブツリー情報のルートを渡して、ジョブツリー情報の作成を行います。</li>
+	 *   </ol>
+	 * </ol>
+	 *
+	 * @param job ジョブマスタ
+	 * @param parent 親ジョブツリー情報
+	 * @param map ジョブのリレーションマップ
+	 * @throws JobMasterNotFound
+	 * @throws NotifyNotFound
+	 * @throws UserNotFound
+	 * @throws InvalidRole 
+	 */
+	private void createJobTreeResponse(JobMstEntity job, JobTreeItemResponseP1 parent, HashMap<String, ArrayList<JobMstEntity>> map)
+			throws JobMasterNotFound, NotifyNotFound, UserNotFound {
+
+		//JobTreeItemResponseP1に格納するジョブ情報(JobInfoResponseP1)を作成
+		JobInfoResponseP1 info = createJobInfoResponse(job);
+
+		//JobTreeItemResponseP1を作成
+		JobTreeItemResponseP1 tree = new JobTreeItemResponseP1();
+		tree.setData(info);
+		parent.getChildren().add(tree);
+
+		Collection<JobMstEntity> collection = null;
+		//ジョブリレーションを親ジョブIDで検索
+		collection = map.get(job.getId().getJobId());
+		if (collection == null) {
+			return;
+		}
+
+		for (JobMstEntity childJob : collection) {
+			//ジョブツリーを作成する
+			createJobTreeResponse(childJob, tree, map);
+		}
+	}
+
 	/**
 	 * ジョブツリー情報を作成します。
 	 * 再帰呼び出しを行います。
@@ -362,6 +490,67 @@ public class SelectJob {
 			//ジョブツリーを作成する
 			createJobTree(childJob, item, treeOnly, map);
 		}
+	}
+
+	/**
+	 * ツリー表示に使用しているパラメータのみのジョブ情報ResponseDTOを作成します。<BR>
+	 * ジョブマスタを基に、ReponseDTOを作成します。
+	 *
+	 * @param job ジョブマスタ
+	 * @return JobInfoResponseP1 ジョブ情報
+	 * @throws InvalidRole 
+	 */
+	private JobInfoResponseP1 createJobInfoResponse(JobMstEntity job) {
+		JobEnumConvertMap enumCache = new JobEnumConvertMap();
+		//JobInfoResponseP1を作成
+		JobInfoResponseP1 info = new JobInfoResponseP1();
+		info.setJobunitId(job.getId().getJobunitId());
+		info.setId(job.getId().getJobId());
+		info.setName(job.getJobName());
+		info.setType(enumCache.getJobTypeEnum(job.getJobType()));
+		if (job.isRegisteredModule() != null) {
+			info.setRegistered(job.isRegisteredModule());
+		}
+
+		JobMstEntity fullMaster = null;;
+		try {
+			fullMaster = FullJob.getJobMasterFull(info.getJobunitId(), info.getId());
+		} catch (JobMasterNotFound | InvalidRole | HinemosUnknown e) {
+			e.printStackTrace();
+			return info;
+		}
+
+		// クライアントとマネージャのタイムゾーンは一致している前提の処理である。
+		if (job.getUpdateDate() != null) {
+			String strTime;
+			try {
+				strTime = RestCommonConverter.convertHinemosTimeToDTString(job.getUpdateDate());
+				info.setUpdateTime(strTime);
+			} catch (InvalidSetting e) {
+				m_log.warn("createJobInfoResponse() failed set updateTime.updateTime=" + job.getUpdateDate());
+			}
+		}
+		
+		info.setDescription(job.getDescription());
+		if (job.getExpNodeRuntimeFlg() != null) {
+			info.setExpNodeRuntimeFlg(job.getExpNodeRuntimeFlg());
+		}
+		info.setIconId(job.getIconId());
+		info.setOwnerRoleId(job.getOwnerRoleId());
+
+		if (fullMaster != null) {
+			if (info.getType().equals(JobTypeEnum.REFERJOBNET) || info.getType().equals(JobTypeEnum.REFERJOB)) {
+				info.setReferJobId(fullMaster.getReferJobId());
+				info.setReferJobSelectType(enumCache.getReferJobSelectTypeEnum(fullMaster.getReferJobSelectType()));
+				info.setReferJobUnitId(job.getReferJobUnitId());
+			}
+			try {
+				info.setWaitRule(FullJob.createWaitRuleResponse(fullMaster, enumCache));
+			} catch (InvalidRole e) {
+				m_log.warn("createJobInfoResponse() : " + info.getJobunitId() + ", " + info.getId() +": " +e.getMessage());
+			}
+		}
+		return info;
 	}
 
 	/**
@@ -741,17 +930,7 @@ public class SelectJob {
 			detail.setFacilityId(jobInfo.getFacilityId());
 			detail.setScope(sessionJob.getScopeText());
 		}
-		List<Long> timeList = new ArrayList<Long>();
-		List<JobWaitInfoEntity> waitList = QueryUtil.getJobWaitInfoByTypeJobId(
-				sessionJob.getId().getSessionId(), sessionJob.getId().getJobunitId(), sessionJob.getId().getJobId(),
-				JudgmentObjectConstant.TYPE_TIME);
-		for (JobWaitInfoEntity wait : waitList) {
-			if(wait.getTime() == null){
-				continue;
-			}
-			timeList.add(wait.getTime());
-		}
-		detail.setWaitRuleTimeList(timeList);
+		detail.setWaitRuleTimeList(jobInfo.getWaitRuleTimeList());
 		if (sessionJob.getStartDate() != null){
 			detail.setStartDate(sessionJob.getStartDate());
 		}

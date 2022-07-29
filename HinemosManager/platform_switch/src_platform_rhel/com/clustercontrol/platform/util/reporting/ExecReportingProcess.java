@@ -136,7 +136,7 @@ public class ExecReportingProcess {
 					" -Dhinemos.manager.log.dir=" + System.getProperty("hinemos.manager.log.dir", "/opt/hinemos/var/log") +
 					" " + HinemosPropertyDefault.reporting_heap_size.getStringValue() +
 					" -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=" + System.getProperty("hinemos.manager.log.dir", "/opt/hinemos/var/log") + 
-					" -javaagent:" + System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") + "/lib/eclipselink-3.0.0.jar";
+					" -javaagent:" + System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") + "/lib/eclipselink-3.0.2.jar";
 					
 			// OSがWindows以外の場合、OOMの情報出力する
 			String osName = System.getProperty("os.name");

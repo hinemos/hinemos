@@ -26,6 +26,7 @@ import org.eclipse.ui.menus.UIElement;
 import org.openapitools.client.model.JobInfoResponse;
 import org.openapitools.client.model.JobNodeDetailResponse;
 import org.openapitools.client.model.JobOperationRequest;
+import org.openapitools.client.model.JobRpaInfoResponse;
 
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -118,10 +119,10 @@ public class TakeScreenshotJobNodeDetailAction extends AbstractHandler implement
 				boolean editEnable = false;
 				if (part instanceof JobNodeDetailView) {
 					JobNodeDetailView view = (JobNodeDetailView) part;
-					// RPAシナリオジョブで実行中の場合のみ有効化する
-					JobInfoResponse.TypeEnum jobType = view.getComposite().getJobType();
+					// RPAシナリオジョブ種別が直接実行の場合のみ有効化する
+					JobRpaInfoResponse.RpaJobTypeEnum rpaJobType = view.getComposite().getRpaJobType();
 					JobNodeDetailResponse.StatusEnum status = view.getComposite().getStatus();
-					if (view.getSelectedNum() > 0 && jobType != null && jobType == JobInfoResponse.TypeEnum.RPAJOB
+					if (view.getSelectedNum() > 0 && rpaJobType != null && rpaJobType == JobRpaInfoResponse.RpaJobTypeEnum.DIRECT
 							&& status == JobNodeDetailResponse.StatusEnum.RUNNING) {
 						editEnable = true;
 					}

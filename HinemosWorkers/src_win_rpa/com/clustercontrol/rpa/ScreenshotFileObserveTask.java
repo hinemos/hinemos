@@ -12,6 +12,7 @@ import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.jobmanagement.rpa.bean.RoboScreenshotInfo;
 
 /**
@@ -25,8 +26,9 @@ public class ScreenshotFileObserveTask extends ObserveTask {
 
 	/**
 	 *  コンストラクタ
+	 * @throws HinemosUnknown 
 	 */
-	public ScreenshotFileObserveTask() {
+	public ScreenshotFileObserveTask() throws HinemosUnknown {
 		super(threadName);
 	}
 
@@ -35,18 +37,29 @@ public class ScreenshotFileObserveTask extends ObserveTask {
 		m_log.info("run() : start");
 		while (!Thread.currentThread().isInterrupted()) {
 			try {
+				m_log.debug("run() : loop start.");
+
 				// 指示ファイルが生成するまで待機
 				RoboScreenshotInfo roboScreenshotInfo = roboFileManager.read(RoboScreenshotInfo.class, checkInterval);
 				if (roboScreenshotInfo == null) {
 					m_log.warn("run() : roboScreenshotInfo is null");
 					return; // 処理終了等で処理が中断された場合
 				}
-				m_log.debug("run() : " + roboScreenshotInfo);
+				m_log.debug("run() : roboScreenshotInfo=" + roboScreenshotInfo);
+
+				try {
+					if (!super.isAllowedToExecute(roboScreenshotInfo)) {
+						continue;
+					}
+				} catch (InterruptedException e) {
+					m_log.debug("run() : thread interrupted. e=" + e.getMessage(), e);
+					return;
+				}
+
 				// 実行指示ファイルを削除
 				roboFileManager.delete(RoboScreenshotInfo.class);
 				// スクリーンショットの取得
-				ScreenshotUtil screenshotUtil = new ScreenshotUtil();
-				screenshotUtil.save(roboScreenshotInfo.getScreenshotFileName());
+				ScreenshotUtil.save(roboScreenshotInfo.getScreenshotFileName());
 			} catch (IOException e) {
 				m_log.error("run() : " + e.getMessage(), e);
 			}

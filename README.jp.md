@@ -12,7 +12,7 @@
 
 Hinemosは大規模、複雑化するITシステムの「監視」や「ジョブ」といった「運用業務の自動化」を実現し、オープンソースソフトウェアが持つコストメリットを最大限に活用できる統合運用管理ソフトウェアです。
 
-[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v7.0.0#packages)
+[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v7.0.1#packages)
 
 ## インストール
 
@@ -20,32 +20,35 @@ Hinemosはコマンドひとつでインストールできます。
 
 - マネージャのインストール
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.0/hinemos-7.0-manager-7.0.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-manager-7.0.1-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.0/hinemos-7.0-manager-7.0.0-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-manager-7.0.1-1.el8.x86_64.rpm```
 
 
 - Webクライアントのインストール
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.0/hinemos-7.0-web-7.0.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-web-7.0.1-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.0/hinemos-7.0-web-7.0.0-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-web-7.0.1-1.el8.x86_64.rpm```
 
-詳細は[Hinemos ver.7.0 基本機能マニュアル](https://github.com/hinemos/hinemos/releases/download/v7.0.0/ja_Base_Linux_7.0_rev2.pdf)をご覧下さい。
+詳細は[Hinemos ver.7.0 基本機能マニュアル](https://github.com/hinemos/hinemos/releases/download/v7.0.1/ja_Base_Linux_7.0_rev3.pdf)をご覧下さい。
 
 
 ## ver.7.0新機能
 
 - 監視
-    - #11348 SDML(Software Defined Monitoring and Logging)＜プレビュー＞
+    - #13586 SDML(Software Defined Monitoring and Logging)
 
 - エンタープライズ
-    - #11519 RPA管理＜プレビュー＞
+    - #13585 RPA管理機能
 
 - ユーティリティツール
     - #13115 Grafanaプラグイン
 
 ## ver.7.0機能改善
+
+- マネージャ、エージェント、クライアント
+    - #15254、#15260、15187 JREでTLSが1.3がデフォルトとなる変更に伴い、Hinemosでの通信がTLS1.2で行われるように対応する
 
 - クライアント・エージェント
     - #11218 フィルタ条件保存
@@ -64,6 +67,7 @@ Hinemosはコマンドひとつでインストールできます。
     - #11692 REST通知
     - #11611 通知結果にIDを追加
     - #11479 イベントカスタムコマンド コマンドの実行モード(monitor.event.customcmd.cmdN.mode) "auto"の場合の動作変更
+    - #14716 通知の監視詳細、アプリケーションおよびスコープの内容を改善する
 
 - メンテナンス
    - #12256 履歴削除にメンテナンス種別に「ジョブ連携メッセージ削除」追加
@@ -108,11 +112,12 @@ Hinemosはコマンドひとつでインストールできます。
     - #11226 メール送信に使用するSMTPサーバを複数登録できるよう改善
     - #13144 メール送信の認証方法にOAuth2.0を追加
 
-詳細は[リリースノート](https://github.com/hinemos/hinemos/releases)をご覧下さい。
+
+詳細は[リリースノート](https://github.com/hinemos/hinemos/releases/tag/v7.0.1)をご覧下さい。
 
 ## ドキュメント
 
-- Hinemos ver.7.0 基本機能マニュアル ([ja_Base_Linux_7.0_rev2.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.0/ja_Base_Linux_7.0_rev2.pdf) )
+- Hinemos ver.7.0 基本機能マニュアル ([ja_Base_Linux_7.0_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/ja_Base_Linux_7.0_rev3.pdf) )
 
 ## ライセンス
 

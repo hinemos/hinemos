@@ -25,7 +25,7 @@ public class RpaScenarioFilterConstant {
 	/** シナリオ名 */
 	public static final String SCENARIO_NAME = "scenarioName";
 
-	/** シナリオ名 */
+	/** シナリオ識別文字列 */
 	public static final String SCENARIO_IDENTIFY_STRING = "scenarioIdentifyString";
 
 	/** シナリオ実績作成設定ID */

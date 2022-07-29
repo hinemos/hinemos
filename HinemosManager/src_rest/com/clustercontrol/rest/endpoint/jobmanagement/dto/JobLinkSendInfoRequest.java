@@ -25,9 +25,15 @@ import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.PriorityRequi
 import com.clustercontrol.rest.util.RestItemNameResolver;
 import com.clustercontrol.util.MessageConstant;
 
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 public class JobLinkSendInfoRequest implements RequestDto {
 
-	/** 送信に失敗した場合再送する */
+	/** 送信に失敗した場合に再送する */
+	@RestItemName(value=MessageConstant.JOBLINK_SEND_FAILURE_RETRY)
 	private Boolean retryFlg = Boolean.FALSE;
 
 	/** 再送回数 */
@@ -260,6 +266,12 @@ public class JobLinkSendInfoRequest implements RequestDto {
 
 	@Override
 	public void correlationCheck() throws InvalidSetting {
+
+		// [送信に失敗した場合に再送する]がNullの場合はエラー
+		if (retryFlg == null) {
+			String r1 = RestItemNameResolver.resolveItenName(this.getClass(), "retryFlg");
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
+		}
 
 		// [送信に失敗した場合に再送する]がtrueの場合、[再送回数]必須
 		if (retryFlg && retryCount == null) {

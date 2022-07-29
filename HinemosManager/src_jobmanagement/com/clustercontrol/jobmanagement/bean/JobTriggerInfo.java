@@ -74,8 +74,8 @@ public class JobTriggerInfo implements Serializable {
 	 */
 	private Long executeTime = 0L;
 
-	/** ランタイムジョブ変数情報 */
-	private ArrayList<JobRuntimeParam> jobRuntimeParamList;
+	/** ランタイムジョブ変数実行情報 */
+	private ArrayList<JobRuntimeParamRun> jobRuntimeParamList;
 
 	/**
 	 * 実行契機種別を返す。
@@ -194,7 +194,7 @@ public class JobTriggerInfo implements Serializable {
 	 * 
 	 * @param jobRuntimeParamList ランタイムジョブ変数リスト
 	 */
-	public void setJobRuntimeParamList(ArrayList<JobRuntimeParam> jobRuntimeParamList) {
+	public void setJobRuntimeParamList(ArrayList<JobRuntimeParamRun> jobRuntimeParamList) {
 		this.jobRuntimeParamList = jobRuntimeParamList;
 	}
 
@@ -202,7 +202,7 @@ public class JobTriggerInfo implements Serializable {
 	 * ランタイムジョブ変数のリストを返す。
 	 * @return ランタイムジョブ変数リスト
 	 */
-	public ArrayList<JobRuntimeParam> getJobRuntimeParamList() {
+	public ArrayList<JobRuntimeParamRun> getJobRuntimeParamList() {
 		return jobRuntimeParamList;
 	}
 

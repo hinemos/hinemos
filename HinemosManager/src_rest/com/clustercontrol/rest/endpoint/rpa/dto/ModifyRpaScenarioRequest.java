@@ -9,12 +9,18 @@ package com.clustercontrol.rest.endpoint.rpa.dto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.annotation.RestItemName;
+import com.clustercontrol.rest.annotation.validation.RestValidateLong;
 import com.clustercontrol.rest.annotation.validation.RestValidateString;
 import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.rpa.scenario.model.RpaScenario.CulcType;
+import com.clustercontrol.rpa.scenario.model.RpaScenarioTag;
+import com.clustercontrol.rpa.session.RpaControllerBean;
 import com.clustercontrol.util.MessageConstant;
 
 public class ModifyRpaScenarioRequest implements RequestDto {
@@ -26,6 +32,8 @@ public class ModifyRpaScenarioRequest implements RequestDto {
 	@RestValidateString(maxLen = 256)
 	private String description;
 	/** 手動操作時間 */
+	@RestItemName(value = MessageConstant.RPA_SCENARIO_MANUAL_TIME_SPECIFIED_VALUE)
+	@RestValidateLong(minVal = 1, maxVal = Long.MAX_VALUE)
 	private Long manualTime;
 	/** 手動操作時間算出方式 */
 	private CulcType manualTimeCulcType;
@@ -42,7 +50,7 @@ public class ModifyRpaScenarioRequest implements RequestDto {
 	private List<String> execNodes = new ArrayList<>();
 	
 	/** シナリオタグ紐付け情報 */
-	private List<String> tagRelationList;
+	private List<String> tagRelationList = new ArrayList<>();
 
 
 	/** 説明 */
@@ -121,5 +129,24 @@ public class ModifyRpaScenarioRequest implements RequestDto {
 	@Override
 	public void correlationCheck() throws InvalidSetting {
 	}
-
+	
+	public void correlationCheck(String ownerRoleId) throws InvalidSetting {
+		try {
+			RpaControllerBean rpaControllerBean = new RpaControllerBean();
+			for (String tagId: tagRelationList) {
+				// 参照可能なタグIDをチェック
+				List<String> referableTagIds = rpaControllerBean.getRpaScenarioTagListByOwnerRole(ownerRoleId)
+						.stream().map(RpaScenarioTag::getTagId).collect(Collectors.toList());
+				
+				if (!referableTagIds.contains(tagId)) {
+					throw new InvalidSetting(
+							MessageConstant.MESSAGE_NOT_FOUND.getMessage(
+									MessageConstant.RPA_SCENARIO_TAG_ID.getMessage(), 
+									tagId));
+				}
+			}
+		} catch (InvalidRole | HinemosUnknown e) {
+			throw new InvalidSetting(e.getMessage());
+		}
+	}
 }

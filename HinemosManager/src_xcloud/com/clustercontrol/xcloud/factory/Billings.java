@@ -573,7 +573,7 @@ public class Billings implements IBillings {
 						}
 						if (point != null) {
 							// とりあえず、AWS の 課金の csv が、8 桁になっています。
-							String value = new BigDecimal(point.getPrice()).setScale(8, BigDecimal.ROUND_DOWN).toPlainString();
+							String value = new BigDecimal(point.getPrice()).setScale(8, BigDecimal.ROUND_UP).toPlainString();
 							Matcher m = PATTERN.matcher(value);
 							totalValues.add(m.matches() ? m.group(1) : ("0.00000000".equals(value) ? "0" : value));
 						} else {
@@ -598,7 +598,7 @@ public class Billings implements IBillings {
 							}
 							if (point != null) {
 								// とりあえず、AWS の 課金の csv が、8 桁になっています。
-								String value = new BigDecimal(point.getPrice()).setScale(8, BigDecimal.ROUND_DOWN).toPlainString();
+								String value = new BigDecimal(point.getPrice()).setScale(8, BigDecimal.ROUND_UP).toPlainString();
 								Matcher m = PATTERN.matcher(value);
 								resourceValues.add(m.matches() ? m.group(1) : ("0.00000000".equals(value) ? "0" : value));
 							} else {

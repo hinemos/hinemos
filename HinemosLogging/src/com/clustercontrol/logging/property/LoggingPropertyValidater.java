@@ -8,10 +8,11 @@
 package com.clustercontrol.logging.property;
 
 import com.clustercontrol.log.internal.InternalLogManager;
-import com.clustercontrol.logging.constant.LoggingConstant;
+import com.clustercontrol.logging.constant.MessageConstant;
 import com.clustercontrol.logging.constant.PropertyConstant;
 import com.clustercontrol.logging.exception.LoggingPropertyException;
 import com.clustercontrol.logging.util.CommonValidater;
+import com.clustercontrol.logging.util.PriorityType;
 
 public class LoggingPropertyValidater {
 
@@ -352,7 +353,7 @@ public class LoggingPropertyValidater {
 		String value = prop.getProperty(key);
 
 		try {
-			CommonValidater.validateStringSelect(key, value, required, LoggingConstant.PRIORITY);
+			CommonValidater.validateStringSelect(key, value, required, PriorityType.getStringValues());
 		} catch (LoggingPropertyException e) {
 			internalLog.info("validPriority", value, e);
 			throw e;
@@ -416,7 +417,7 @@ public class LoggingPropertyValidater {
 		String value = prop.getProperty(key);
 
 		try {
-			CommonValidater.validateStringSelect(key, value, required, LoggingConstant.PRIORITY);
+			CommonValidater.validateStringSelect(key, value, required, PriorityType.getStringValues());
 		} catch (LoggingPropertyException e) {
 			internalLog.info("validIntDlkPriority", value, e);
 			throw e;
@@ -495,7 +496,7 @@ public class LoggingPropertyValidater {
 		String value = prop.getProperty(key);
 
 		try {
-			CommonValidater.validateStringSelect(key, value, required, LoggingConstant.PRIORITY);
+			CommonValidater.validateStringSelect(key, value, required, PriorityType.getStringValues());
 		} catch (LoggingPropertyException e) {
 			internalLog.info("validIntHprPriority", value, e);
 			throw e;
@@ -588,6 +589,10 @@ public class LoggingPropertyValidater {
 		boolean required = true;
 		String value = prop.getProperty(key);
 
+		if ("all".equalsIgnoreCase(value)) {
+			throw new LoggingPropertyException(MessageConstant.VALIDATE_GCC_ALL);
+		}
+
 		try {
 			CommonValidater.validateString(key, value, required);
 		} catch (LoggingPropertyException e) {
@@ -601,7 +606,7 @@ public class LoggingPropertyValidater {
 		String value = prop.getProperty(key);
 
 		try {
-			CommonValidater.validateStringSelect(key, value, required, LoggingConstant.PRIORITY);
+			CommonValidater.validateStringSelect(key, value, required, PriorityType.getStringValues());
 		} catch (LoggingPropertyException e) {
 			internalLog.info("validPriority", value, e);
 			throw e;
@@ -695,7 +700,7 @@ public class LoggingPropertyValidater {
 		String value = prop.getProperty(key);
 
 		try {
-			CommonValidater.validateStringSelect(key, value, required, LoggingConstant.PRIORITY);
+			CommonValidater.validateStringSelect(key, value, required, PriorityType.getStringValues());
 		} catch (LoggingPropertyException e) {
 			internalLog.info("validIntCpuPriority", value, e);
 			throw e;
@@ -773,7 +778,7 @@ public class LoggingPropertyValidater {
 	// 監視以外
 	// -------------------------------------------------------------------------------------------------------------------
 
-	public static void validInformInterval(LoggingProperty prop, String key) throws LoggingPropertyException {
+	public static void validInfoInterval(LoggingProperty prop, String key) throws LoggingPropertyException {
 		boolean required = false;
 		String value = prop.getProperty(key);
 
@@ -784,7 +789,7 @@ public class LoggingPropertyValidater {
 			CommonValidater.validateStringToInteger(key, value, required);
 			CommonValidater.validateInt(key, Integer.parseInt(value), 0, 2147483647);
 		} catch (LoggingPropertyException e) {
-			internalLog.info("validInformInterval", value, e);
+			internalLog.info("validInfoInterval", value, e);
 			throw e;
 		}
 	}

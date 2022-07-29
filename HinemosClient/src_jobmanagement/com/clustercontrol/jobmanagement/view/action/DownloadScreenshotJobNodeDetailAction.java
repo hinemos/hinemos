@@ -24,6 +24,7 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 import org.openapitools.client.model.JobInfoResponse;
+import org.openapitools.client.model.JobRpaInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.jobmanagement.composite.NodeDetailComposite;
@@ -81,9 +82,9 @@ public class DownloadScreenshotJobNodeDetailAction extends AbstractHandler imple
 				boolean editEnable = false;
 				if (part instanceof JobNodeDetailView) {
 					JobNodeDetailView view = (JobNodeDetailView) part;
-					// RPAシナリオジョブの場合のみ有効化する
-					JobInfoResponse.TypeEnum jobType = view.getComposite().getJobType();
-					if (view.getSelectedNum() > 0 && jobType != null && jobType == JobInfoResponse.TypeEnum.RPAJOB) {
+					// RPAシナリオジョブ種別が直接実行の場合のみ有効化する
+					JobRpaInfoResponse.RpaJobTypeEnum rpaJobType = view.getComposite().getRpaJobType();
+					if (view.getSelectedNum() > 0 && rpaJobType != null && rpaJobType == JobRpaInfoResponse.RpaJobTypeEnum.DIRECT) {
 						editEnable = true;
 					}
 				}

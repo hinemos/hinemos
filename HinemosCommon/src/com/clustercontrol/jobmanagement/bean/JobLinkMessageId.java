@@ -49,6 +49,24 @@ public class JobLinkMessageId {
 		} else if (notifyTriggerType == NotifyTriggerType.INFRA_CHECK_END) {
 			return String.format("%s_%s_%s", pluginId, HinemosModuleConstant.INFRA_CHECK_END, id);
 
+		} else if (notifyTriggerType == NotifyTriggerType.SDML_CONTROL_CREATE_MONITOR) {
+			return String.format("%s_%s_%s", pluginId, HinemosModuleConstant.SDML_CONTROL_CREATE_MONITOR, id);
+
+		} else if (notifyTriggerType == NotifyTriggerType.SDML_CONTROL_UPDATE_MONITOR) {
+			return String.format("%s_%s_%s", pluginId, HinemosModuleConstant.SDML_CONTROL_UPDATE_MONITOR, id);
+
+		} else if (notifyTriggerType == NotifyTriggerType.SDML_CONTROL_DISABLE_MONITOR) {
+			return String.format("%s_%s_%s", pluginId, HinemosModuleConstant.SDML_CONTROL_DISABLE_MONITOR, id);
+
+		} else if (notifyTriggerType == NotifyTriggerType.SDML_CONTROL_ENABLE_MONITOR) {
+			return String.format("%s_%s_%s", pluginId, HinemosModuleConstant.SDML_CONTROL_ENABLE_MONITOR, id);
+
+		} else if (notifyTriggerType == NotifyTriggerType.SDML_CONTROL_ABNORMAL) {
+			return String.format("%s_%s_%s", pluginId, HinemosModuleConstant.SDML_CONTROL_ABNORMAL, id);
+
+		} else if (notifyTriggerType == NotifyTriggerType.SDML_CONTROL_EARLY_STOP) {
+			return String.format("%s_%s_%s", pluginId, HinemosModuleConstant.SDML_CONTROL_EARLY_STOP, id);
+
 		} else {
 			return String.format("%s_%s", pluginId, id);
 		}

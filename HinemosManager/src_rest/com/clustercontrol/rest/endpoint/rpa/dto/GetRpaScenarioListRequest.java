@@ -77,10 +77,14 @@ public class GetRpaScenarioListRequest implements RequestDto {
 
 	@Override
 	public String toString() {
-		return "GetRpaScenarioRequest [rpaToolId=" + rpaToolId + ", scenarioId=" + scenarioId
-				+ ", scenarioName=" + scenarioName + ", scenarioIdentifyString=" + scenarioIdentifyString 
-				+ ", scenarioOperationResultCreateSettingId=" + scenarioOperationResultCreateSettingId 
-				+ ", ownerRoleId=" + ownerRoleId + "]";
+		return "GetRpaScenarioListRequest ["
+				+ "rpaToolId=" + rpaToolId
+				+ ", scenarioId=" + scenarioId
+				+ ", scenarioName=" + scenarioName
+				+ ", scenarioIdentifyString=" + scenarioIdentifyString
+				+ ", scenarioOperationResultCreateSettingId=" + scenarioOperationResultCreateSettingId
+				+ ", ownerRoleId=" + ownerRoleId
+				+ "]";
 	}
 	
 	@Override

@@ -189,11 +189,6 @@ public class NotifyListComposite extends Composite {
 		ArrayList<ArrayList<Object>> listInput = new ArrayList<ArrayList<Object>>();
 
 		if (this.isSelect) {
-			if (this.ownerRoleId == null || this.ownerRoleId.equals("")) {
-				m_log.info("ownerRole=" + ownerRoleId);
-				return;
-			}
-
 			try {
 				m_log.debug("update() : managerName=" + this.managerName + ", ownerRoleId=" + ownerRoleId);
 				dispDataMap = new GetNotify().getNotifyListByOwnerRole(this.managerName, this.ownerRoleId);

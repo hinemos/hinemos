@@ -704,13 +704,13 @@ public class ResourceJobWorker {
 	/**
 	 * スコープ指定でクラウドリソース制御API実行
 	 */
-	private static void executeInstancesOperation(String cloudScopeId, String facilityId,
+	private static void executeInstancesOperation(String cloudScopeId, String facilityId, String ownerRoleId,
 			InstancesExecutor executor) throws CloudManagerException {
 
 		Map<String, List<String>> locationMap = getTargetInstanceMap(cloudScopeId, facilityId);
 
 		List<String> failedLocations = new ArrayList<>();
-		CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers().getPrimaryCloudLoginUserByCurrent(cloudScopeId);
+		CloudLoginUserEntity user = getCloudLoginUser(cloudScopeId, ownerRoleId);
 		for (Map.Entry<String, List<String>> entry : locationMap.entrySet()) {
 			try {
 				IInstances instances = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(entry.getKey()));
@@ -783,8 +783,7 @@ public class ResourceJobWorker {
 		if (jobInfo.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode())) {
 			//インスタンスＩＤを指定
 			List<String> targetInstanceIds = Arrays.asList(jobInfo.getResourceTargetId());
-			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
-					.getPrimaryCloudLoginUserByCurrent(jobInfo.getResourceCloudScopeId());
+			CloudLoginUserEntity user = getCloudLoginUser(jobInfo.getResourceCloudScopeId(), jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 			IInstances instances = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(jobInfo.getResourceLocationId()));
 			// コンピュートノードの存在チェック
 			instances.getInstance(jobInfo.getResourceTargetId());
@@ -806,7 +805,8 @@ public class ResourceJobWorker {
 							jobInfo.getResourceTargetId(), failedLocations.toString());
 				}
 			};
-			executeInstancesOperation(jobInfo.getResourceCloudScopeId(), jobInfo.getResourceTargetId(), powerOnExcecutor);
+			executeInstancesOperation(jobInfo.getResourceCloudScopeId(), jobInfo.getResourceTargetId(), 
+					jobInfo.getJobSessionJobEntity().getOwnerRoleId(), powerOnExcecutor);
 		}
 		return result;
 	}
@@ -821,8 +821,7 @@ public class ResourceJobWorker {
 		if (jobInfo.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode())) {
 			//インスタンスＩＤを指定
 			List<String> targetInstanceIds = Arrays.asList(jobInfo.getResourceTargetId());
-			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
-					.getPrimaryCloudLoginUserByCurrent(jobInfo.getResourceCloudScopeId());
+			CloudLoginUserEntity user = getCloudLoginUser(jobInfo.getResourceCloudScopeId(), jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 			IInstances instances = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(jobInfo.getResourceLocationId()));
 			// コンピュートノードの存在チェック
 			instances.getInstance(jobInfo.getResourceTargetId());
@@ -844,7 +843,8 @@ public class ResourceJobWorker {
 							jobInfo.getResourceTargetId(), failedLocations.toString());
 				}
 			};
-			executeInstancesOperation(jobInfo.getResourceCloudScopeId(), jobInfo.getResourceTargetId(), powerOffExcecutor);
+			executeInstancesOperation(jobInfo.getResourceCloudScopeId(), jobInfo.getResourceTargetId(),
+					jobInfo.getJobSessionJobEntity().getOwnerRoleId(), powerOffExcecutor);
 
 		}
 		return result;
@@ -860,8 +860,7 @@ public class ResourceJobWorker {
 		if (jobInfo.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode())) {
 			//インスタンスＩＤを指定
 			List<String> targetInstanceIds = Arrays.asList(jobInfo.getResourceTargetId());
-			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
-					.getPrimaryCloudLoginUserByCurrent(jobInfo.getResourceCloudScopeId());
+			CloudLoginUserEntity user = getCloudLoginUser(jobInfo.getResourceCloudScopeId(), jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 			IInstances instances = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(jobInfo.getResourceLocationId()));
 			// コンピュートノードの存在チェック
 			instances.getInstance(jobInfo.getResourceTargetId());
@@ -883,7 +882,8 @@ public class ResourceJobWorker {
 							jobInfo.getResourceTargetId(), failedLocations.toString());
 				}
 			};
-			executeInstancesOperation(jobInfo.getResourceCloudScopeId(), jobInfo.getResourceTargetId(), suspendExcecutor);
+			executeInstancesOperation(jobInfo.getResourceCloudScopeId(), jobInfo.getResourceTargetId(),
+					jobInfo.getJobSessionJobEntity().getOwnerRoleId(), suspendExcecutor);
 		}
 		return result;
 	}
@@ -898,8 +898,7 @@ public class ResourceJobWorker {
 		if (jobInfo.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode())) {
 			//インスタンスＩＤを指定
 			List<String> targetInstanceIds = Arrays.asList(jobInfo.getResourceTargetId());
-			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
-					.getPrimaryCloudLoginUserByCurrent(jobInfo.getResourceCloudScopeId());
+			CloudLoginUserEntity user = getCloudLoginUser(jobInfo.getResourceCloudScopeId(), jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 			IInstances instances = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(jobInfo.getResourceLocationId()));
 			// コンピュートノードの存在チェック
 			instances.getInstance(jobInfo.getResourceTargetId());
@@ -921,7 +920,8 @@ public class ResourceJobWorker {
 							jobInfo.getResourceTargetId(), failedLocations.toString());
 				}
 			};
-			executeInstancesOperation(jobInfo.getResourceCloudScopeId(), jobInfo.getResourceTargetId(), rebootExcecutor);
+			executeInstancesOperation(jobInfo.getResourceCloudScopeId(), jobInfo.getResourceTargetId(),
+					jobInfo.getJobSessionJobEntity().getOwnerRoleId(), rebootExcecutor);
 		}
 		return result;
 	}
@@ -944,8 +944,7 @@ public class ResourceJobWorker {
 
 		if (jobInfo.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode())) {
 			//インスタンスＩＤを指定
-			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
-					.getPrimaryCloudLoginUserByCurrent(cloudScopeId);
+			CloudLoginUserEntity user = getCloudLoginUser(cloudScopeId, jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 			IInstances instances = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(locationId));
 			// コンピュートノードの存在チェック
 			instances.getInstance(instanceId);
@@ -967,7 +966,8 @@ public class ResourceJobWorker {
 							jobInfo.getResourceTargetId(), failedLocations.toString());
 				}
 			};
-			executeInstancesOperation(cloudScopeId, instanceId, snapshotExcecutor);
+			executeInstancesOperation(cloudScopeId, instanceId,
+					jobInfo.getJobSessionJobEntity().getOwnerRoleId(), snapshotExcecutor);
 		}
 		return result;
 
@@ -991,15 +991,10 @@ public class ResourceJobWorker {
 		op.setValue(jobInfo.getResourceAttachDevice());
 		options.add(op);
 
-		try {
-			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
-					.getPrimaryCloudLoginUserByCurrent(cloudScopeId);
-			CloudManager.singleton().getStorages(user, user.getCloudScope().getLocation(locationId))
-					.attachStorage(instanceId, storageId, options);
-			result.successIdList.add(storageId);
-		} catch (CloudManagerException e) {
-			result.failedIdList.add(storageId);
-		}
+		CloudLoginUserEntity user = getCloudLoginUser(cloudScopeId, jobInfo.getJobSessionJobEntity().getOwnerRoleId());
+		CloudManager.singleton().getStorages(user, user.getCloudScope().getLocation(locationId))
+				.attachStorage(instanceId, storageId, options);
+		result.successIdList.add(storageId);
 		return result;
 	}
 
@@ -1014,15 +1009,10 @@ public class ResourceJobWorker {
 		String cloudScopeId = jobInfo.getResourceCloudScopeId();
 		String locationId = jobInfo.getResourceLocationId();
 
-		try {
-			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
-					.getPrimaryCloudLoginUserByCurrent(cloudScopeId);
-			CloudManager.singleton().getStorages(user, user.getCloudScope().getLocation(locationId))
-					.detachStorage(storageIds);
-			result.successIdList.add(jobInfo.getResourceTargetId());
-		} catch (CloudManagerException e) {
-			result.failedIdList.add(jobInfo.getResourceCloudScopeId());
-		}
+		CloudLoginUserEntity user = getCloudLoginUser(cloudScopeId, jobInfo.getJobSessionJobEntity().getOwnerRoleId());
+		CloudManager.singleton().getStorages(user, user.getCloudScope().getLocation(locationId))
+				.detachStorage(storageIds);
+		result.successIdList.add(jobInfo.getResourceTargetId());
 		return result;
 	}
 
@@ -1040,8 +1030,7 @@ public class ResourceJobWorker {
 		String name = storageId + "-" + new SimpleDateFormat("yyyyMMddHHmmss").format(now);
 		String description = "Create by Hinemos at " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(now);
 
-		CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
-				.getPrimaryCloudLoginUserByCurrent(cloudScopeId);
+		CloudLoginUserEntity user = getCloudLoginUser(cloudScopeId, jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 		CloudManager.singleton().getStorages(user, user.getCloudScope().getLocation(locationId))
 				.takeStorageSnapshot(storageId, name, description, null);
 		result.successIdList.add(storageId);
@@ -1068,8 +1057,7 @@ public class ResourceJobWorker {
 					instanceIds = result.checkLocationIdMap.get(jobInfo.getResourceLocationId());
 				}
 				ActionMode.enterAutoDetection();
-				CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
-						.getPrimaryCloudLoginUserByCurrent(jobInfo.getResourceCloudScopeId());
+				CloudLoginUserEntity user = getCloudLoginUser(cloudScopeId, jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 				List<InstanceEntity> instanceEntities = CloudManager.singleton()
 						.getInstances(user, user.getCloudScope().getLocation(jobInfo.getResourceLocationId()))
 						.updateInstances(instanceIds);
@@ -1107,8 +1095,7 @@ public class ResourceJobWorker {
 			for (Map.Entry<String, List<String>> entry : locationMap.entrySet()) {
 				try {
 					ActionMode.enterAutoDetection();
-					CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
-							.getPrimaryCloudLoginUserByCurrent(cloudScopeId);
+					CloudLoginUserEntity user = getCloudLoginUser(cloudScopeId, jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 					List<InstanceEntity> instanceEntities = CloudManager.singleton()
 							.getInstances(user, user.getCloudScope().getLocation(entry.getKey()))
 							.updateInstances(entry.getValue());
@@ -1162,5 +1149,25 @@ public class ResourceJobWorker {
 			return ACTION_DETACH;
 		}
 		return null;
+	}
+	
+	private static CloudLoginUserEntity getCloudLoginUser(String cloudScopeId, String ownerRoleId)
+			throws CloudManagerException{
+		CloudLoginUserEntity ret = null;
+		List<CloudLoginUserEntity> users = CloudManager.singleton().getLoginUsers()
+				.getCloudLoginUserByRole(ownerRoleId);
+
+		for(CloudLoginUserEntity user : users){
+			if (cloudScopeId.equals(user.getCloudScopeId())) {
+				ret = user;
+				break;
+			}
+		}
+		
+		if(ret == null){
+			throw ErrorCode.LOGINUSER_NOT_ASSIGNED_TO_ROLE.cloudManagerFault(cloudScopeId, ownerRoleId);
+		}
+		
+		return ret;
 	}
 }

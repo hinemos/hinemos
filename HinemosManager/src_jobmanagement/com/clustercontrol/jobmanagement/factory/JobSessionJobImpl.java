@@ -994,7 +994,7 @@ public class JobSessionJobImpl {
 		// ファシリティIDの文字列
 		String decisionFacilityId = job.getFacilityId();
 		// ファシリティIDが正規表現にマッチするか検証する
-		if (pattern.matcher(decisionFacilityId).find()) {
+		if (decisionFacilityId != null && pattern.matcher(decisionFacilityId).find()) {
 			// ファシリティIDの置換
 			decisionFacilityId = ParameterUtil.replaceSessionParameterValue(sessionId, decisionFacilityId,
 					decisionFacilityId);

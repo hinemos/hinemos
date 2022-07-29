@@ -136,7 +136,7 @@ public class LogTransferEnableAction extends AbstractHandler  implements IElemen
 			try{
 				SetTransferValidRequest request = new SetTransferValidRequest();
 				request.setTransferIdList(entry.getValue());
-				request.setFlg(false);
+				request.setFlg(true);
 				wrapper.setTransferValid(request);
 				for (String transferId : entry.getValue()) {
 					successList.append(transferId +"(" + managerName + ")" + "\n");

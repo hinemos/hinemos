@@ -281,6 +281,9 @@ public class ExportSettingCommand extends AbstractHandler implements IElementUpd
 								if (monitor.isCanceled())
 									throw new InterruptedException();
 
+								if (log.isTraceEnabled()) {
+									log.trace("execute() export start");
+								}
 								FuncInfo info = m_funcList.get(i);
 								
 								int result = 0;
@@ -314,6 +317,9 @@ public class ExportSettingCommand extends AbstractHandler implements IElementUpd
 								}
 								else {
 									m_failureList = m_failureList + " " + info.getName() + "\n";
+								}
+								if (log.isTraceEnabled()) {
+									log.trace("execute() export end");
 								}
 								
 								monitor.worked(100/m_funcList.size());

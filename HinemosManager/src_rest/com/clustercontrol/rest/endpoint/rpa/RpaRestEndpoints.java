@@ -548,6 +548,10 @@ public class RpaRestEndpoints {
 		ModifyRpaScenarioRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,ModifyRpaScenarioRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
+		
+		// オーナーロールによるチェック
+		GetRpaScenarioResponse scenario = new RpaControllerBean().getRpaScenario(scenarioId);
+		dtoReq.correlationCheck(scenario.getOwnerRoleId());
 
 		RpaScenario infoReq = new RpaScenario();
 		RestBeanUtil.convertBean(dtoReq, infoReq);
@@ -1221,13 +1225,14 @@ public class RpaRestEndpoints {
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.Rpa, modeList = { SystemPrivilegeMode.READ,SystemPrivilegeMode.MODIFY })
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = RpaScenarioOperationResultCreateSettingResponse.class, type = SchemaType.ARRAY)), description = "response"),
+			@APIResponse(responseCode = STATUS_CODE_400, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_404, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response deleteRpaScenarioOperationResultCreateSetting(@ArrayTypeParam @QueryParam(value = "operationResultCreateSettingIds") String operationResultCreateSettingIds,
-			@Context Request request, @Context UriInfo uriInfo) throws HinemosUnknown, RpaScenarioOperationResultCreateSettingNotFound, InvalidRole {
+			@Context Request request, @Context UriInfo uriInfo) throws HinemosUnknown, RpaScenarioOperationResultCreateSettingNotFound, InvalidRole, InvalidSetting {
 		m_log.info("call deleteRpaScenarioOperationResultCreateSetting()");
 
 		List<String> operationResultCreateSettingIdList = Arrays.asList(operationResultCreateSettingIds.split(","));
@@ -1396,7 +1401,7 @@ public class RpaRestEndpoints {
 			@RequestBody(description = "downloadRpaScenarioOperationResultRecordsBody", 
 			content = @Content(schema = @Schema(implementation = DownloadRpaScenarioOperationResultRecordsRequest.class))) 
 			String requestBody)
-					throws InvalidSetting, HinemosUnknown {
+					throws InvalidSetting, HinemosUnknown, InvalidRole {
 		m_log.info("call downloadRecords");
 		
 		DownloadRpaScenarioOperationResultRecordsRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,

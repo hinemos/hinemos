@@ -102,10 +102,16 @@ public class HistoryFilterAction extends AbstractHandler {
 
 			//ジョブ履歴フィルタダイアログを表示
 			if (dialog.open() == IDialogConstants.OK_ID) {
+				if(m_log.isTraceEnabled()) {
+					m_log.trace("execute() show start");
+				}
 				// ジョブ履歴ビューをフィルタモードで表示
 				jobHistoryView.setFilter(context.getManagerName(), context.getFilter());
 				jobHistoryView.setFilterEnabled(true);
 				jobHistoryView.update(false);
+				if(m_log.isTraceEnabled()) {
+					m_log.trace("execute() show end");
+				}
 			} else {
 				State state = command.getState(RegistryToggleState.STATE_ID);
 				state.setValue(false);

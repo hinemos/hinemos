@@ -29,6 +29,8 @@ public class RoboInfo implements Serializable {
 	private String jobId;
 	/** ファシリティID */
 	private String facilityId;
+	/** ユーザ名 */
+	private String userName;
 
 	/**
 	 * コンストラクタ
@@ -51,13 +53,16 @@ public class RoboInfo implements Serializable {
 	 *            ファシリティID
 	 * @param rpaKind
 	 *            RPAツール種別
+	 * @param userName
+	 *            ユーザ名
 	 */
-	public RoboInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId) {
+	public RoboInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId, String userName) {
 		this.datetime = datetime;
 		this.sessionId = sessionId;
 		this.jobunitId = jobunitId;
 		this.jobId = jobId;
 		this.facilityId = facilityId;
+		this.userName = userName;
 	}
 
 	public Long getDatetime() {
@@ -100,10 +105,24 @@ public class RoboInfo implements Serializable {
 		this.facilityId = facilityId;
 	}
 
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
 	@Override
 	public String toString() {
-		return "RoboInfo [datetime=" + datetime + ", sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId="
-				+ jobId + ", facilityId=" + facilityId + "]";
+		return "RoboInfo ["
+				+ "datetime=" + datetime
+				+ ", sessionId=" + sessionId
+				+ ", jobunitId=" + jobunitId
+				+ ", jobId=" + jobId
+				+ ", facilityId=" + facilityId
+				+ ", userName=" + userName
+				+ "]";
 	}
 
 	@Override
@@ -115,6 +134,7 @@ public class RoboInfo implements Serializable {
 		result = prime * result + ((jobId == null) ? 0 : jobId.hashCode());
 		result = prime * result + ((jobunitId == null) ? 0 : jobunitId.hashCode());
 		result = prime * result + ((sessionId == null) ? 0 : sessionId.hashCode());
+		result = prime * result + ((userName == null) ? 0 : userName.hashCode());
 		return result;
 	}
 
@@ -151,6 +171,11 @@ public class RoboInfo implements Serializable {
 			if (other.sessionId != null)
 				return false;
 		} else if (!sessionId.equals(other.sessionId))
+			return false;
+		if (userName == null) {
+			if (other.userName != null)
+				return false;
+		} else if (!userName.equals(other.userName))
 			return false;
 		return true;
 	}

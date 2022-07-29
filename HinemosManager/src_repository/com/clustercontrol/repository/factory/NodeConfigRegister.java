@@ -925,7 +925,14 @@ public class NodeConfigRegister {
 		// プラグインID
 		outputBasicInfo.setPluginId(HinemosModuleConstant.NODE_CONFIG_SETTING);
 		// アプリケーション
-		outputBasicInfo.setApplication("");
+		//7.0.0との互換性保持のため、Hinemosプロパティで出力するか制御
+		boolean flgApp = HinemosPropertyCommon.notify_output_app_$.getBooleanValue(HinemosModuleConstant.NODE_CONFIG_SETTING);
+		if (flgApp) {
+			//構成情報取得
+			outputBasicInfo.setApplication(MessageConstant.NODE_CONFIG.getMessage());
+		} else {
+			outputBasicInfo.setApplication("");
+		}
 		// 監視項目ID
 		outputBasicInfo.setMonitorId(settingInfo.getSettingId());
 		// ファシリティID
@@ -941,6 +948,12 @@ public class NodeConfigRegister {
 		outputBasicInfo.setPriority(priority);
 		//発生日時
 		outputBasicInfo.setGenerationDate(outputDate);
+		//7.0.0との互換性保持のため、Hinemosプロパティで出力するか制御
+		boolean flgSubkey = HinemosPropertyCommon.notify_output_trigger_subkey_$.getBooleanValue(HinemosModuleConstant.NODE_CONFIG_SETTING);
+		if (flgSubkey) {
+			// 監視詳細：通知契機
+			outputBasicInfo.setSubKey(NotifyTriggerType.NODE_CONFIG_SETTING.name());
+		}
 
 		return outputBasicInfo;
 	}

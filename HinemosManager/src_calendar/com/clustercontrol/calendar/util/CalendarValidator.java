@@ -34,6 +34,8 @@ import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.model.NotifyInfo;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
 import com.clustercontrol.repository.model.NodeConfigSettingInfo;
+import com.clustercontrol.rpa.scenario.model.RpaScenarioOperationResultCreateSetting;
+import com.clustercontrol.sdml.model.SdmlControlSettingInfo;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -407,6 +409,30 @@ public class CalendarValidator {
 					if(transferInfo.getCalendarId() != null){
 						String[] args = {transferInfo.getTransferId(),calendarId};
 						throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_HUB_TRANSFER_REFERENCE.getMessage(args));
+					}
+				}
+			}
+			//RPAシナリオ実績作成設定
+			List<RpaScenarioOperationResultCreateSetting> rpaScenarioCreateSettingInfoList =
+					com.clustercontrol.rpa.util.QueryUtil.getRpaScenarioCreateSettingFindByCalendarId_NONE(calendarId);
+			if (transferInfoList != null) {
+				for(RpaScenarioOperationResultCreateSetting ScenarioCreateInfo : rpaScenarioCreateSettingInfoList){
+					m_log.debug("valideDeleteCalendar() target RpaScenarioOperationResultCreateSetting " + ScenarioCreateInfo.getScenarioOperationResultCreateSettingId() + ", calendarId = " + calendarId);
+					if(ScenarioCreateInfo.getCalendarId() != null){
+						String[] args = {ScenarioCreateInfo.getScenarioOperationResultCreateSettingId(),calendarId};
+						throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_RPA_SCENARIO_CREATE_REFERENCE.getMessage(args));
+					}
+				}
+			}
+			//SDML制御設定
+			List<SdmlControlSettingInfo> sdmlControlSettingInfoList =
+					com.clustercontrol.sdml.util.QueryUtil.getSdmlControlSettingInfoFindByCalendarId_NONE(calendarId);
+			if (sdmlControlSettingInfoList != null) {
+				for(SdmlControlSettingInfo sdmlControlSettingInfo : sdmlControlSettingInfoList){
+					m_log.debug("valideDeleteCalendar() target SdmlControlSettingInfo " + sdmlControlSettingInfo.getApplicationId() + ", calendarId = " + calendarId);
+					if(sdmlControlSettingInfo.getAutoMonitorCalendarId() != null){
+						String[] args = {sdmlControlSettingInfo.getApplicationId(),calendarId};
+						throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_SDML_CONTRL_REFERENCE.getMessage(args));
 					}
 				}
 			}

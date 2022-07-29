@@ -33,6 +33,7 @@ import com.clustercontrol.jobmanagement.bean.JobLinkConstant;
 import com.clustercontrol.jobmanagement.bean.JobLinkExpInfo;
 import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.monitor.bean.EventConfirmConstant;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.notify.util.NotifyUtil;
@@ -167,6 +168,12 @@ public class AplLogger {
 			output.setPriority(priority);
 			if (nowDate != null) {
 				output.setGenerationDate(nowDate.getTime());
+			}
+			//7.0.0との互換性保持のため、Hinemosプロパティで出力するか制御
+			boolean flg = HinemosPropertyCommon.notify_output_trigger_subkey_INTERNAL.getBooleanValue();
+			if (flg) {
+				//監視詳細：<チェック対象のID>|<通知契機>
+				output.setSubKey(internalId.getInternalId() + "|" + NotifyTriggerType.INTERNAL_EVENT.name());
 			}
 
 			/////

@@ -263,7 +263,7 @@ public class WinDirectorRestDefine extends RpaManagementRestDefine {
 	}
 
 	@Override
-	protected Header[] createRunHeader(String token) {
+	protected Header[] createRunHeader(String token, Map<String, Object> headerData) {
 		return new Header[] { getAuthTokenHeader(token) };
 	}
 
@@ -335,6 +335,12 @@ public class WinDirectorRestDefine extends RpaManagementRestDefine {
 			requestData.put("data_names", datas.get(0).keySet());
 		}
 		return requestData;
+	}
+
+	@Override
+	protected Map<String, Object> adjustRunHeaderData(Map<String, Object> requestData) {
+		// シナリオ実行に必要なヘッダ情報はないので空マップを返すのみ
+		return new HashMap<String, Object>();
 	}
 
 	@Override

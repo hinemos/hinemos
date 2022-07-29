@@ -15,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
+
 import org.openapitools.client.model.JobTreeItemResponseP1;
 import org.openapitools.client.model.JobTreeItemResponseP2;
 
@@ -308,13 +310,18 @@ public class JobEditState{
 		
 		JobTreeItemWrapper orgTree =null;
 		JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+		JobTreeItemResponseP1 orgTreeRes = wrapper.getJobTree(ownerRoleId);
 		if( m_treeOnly ){
-			JobTreeItemResponseP1 orgTreeRes = wrapper.getJobTree(ownerRoleId);//変換
+			//変換
 			orgTree = JobTreeItemUtil.getItemFromP1(orgTreeRes);
 		}else{
-			JobTreeItemResponseP2 orgTreeRes = wrapper.getJobTreeJobInfoFull(ownerRoleId);
 			//不要な情報を削り落として変換
-			orgTree = JobTreeItemUtil.getItemFromP2ForTreeView(orgTreeRes);
+			if(orgTreeRes.getData().getDescription() == null) {
+				JobTreeItemResponseP2 dtoP2 = JobRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getJobTreeJobInfoFull(ownerRoleId);
+				orgTree = JobTreeItemUtil.getItemFromP2ForTreeView(dtoP2);
+			} else {
+				orgTree = JobTreeItemUtil.getItemFromP1ForTreeView(orgTreeRes);
+			}
 		}
 
 		updateJobunitUpdateTime(orgTree);

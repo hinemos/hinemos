@@ -66,22 +66,6 @@ public class RpaPlugin implements HinemosPlugin {
 			HinemosEntityManager em = jtm.getEntityManager();
 			long now = HinemosTime.currentTimeMillis();
 
-			// RPA管理ツールタイプマスタを取得
-			List<RpaManagementToolTypeMst> rpaManagementToolTypeMstList = QueryUtil.getRpaManagementToolTypeMstList();
-
-			// RPA管理ツールタイプがサブプラットフォームマスタにない場合、登録
-			List<String> subPlatformMstIdList = com.clustercontrol.repository.util.QueryUtil.getAllCollectorSubPlatformMstEntity().stream().map(CollectorSubPlatformMstEntity::getSubPlatformId).collect(Collectors.toList());
-			for (RpaManagementToolTypeMst rpaManagementToolType : rpaManagementToolTypeMstList) {
-				if (!subPlatformMstIdList.contains(rpaManagementToolType.getRpaManagementToolType())) {
-					CollectorSubPlatformMstEntity rpaSubPlatform = new CollectorSubPlatformMstEntity(rpaManagementToolType.getRpaManagementToolType());
-					rpaSubPlatform.setSubPlatformName(rpaManagementToolType.getRpaManagementToolTypeName());
-					rpaSubPlatform.setOrderNo(RpaConstants.rpaManagementToolPlatformOrderNo);
-					rpaSubPlatform.setType(RpaConstants.rpaSubPlatformType);
-					
-					em.persist(rpaSubPlatform);
-				}
-			}
-			
 			// RPA管理ツールのミドルウェア監視を登録する。
 			List<MonitorInfo> middlewareMonitorList = RpaUtil.createBuiltInMiddlewareMonitor();
 			for (MonitorInfo middlewareMonitor : middlewareMonitorList) {

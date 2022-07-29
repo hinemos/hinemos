@@ -12,17 +12,27 @@ import java.io.Serializable;
 
 import javax.xml.bind.annotation.XmlType;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 /**
  * ジョブコマンドタブ ジョブ変数情報を保持するクラス<BR>
  * 
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobCommandParam implements Serializable, Comparable<JobCommandParam> {
+public class JobCommandParam implements Serializable, Comparable<JobCommandParam>, RequestDto {
 
 	/**
 	 * シリアライズ可能クラスに定義するUID
 	 */
+	@JsonIgnore
 	private static final long serialVersionUID = 1L;
 
 	/** 名前 **/
@@ -102,5 +112,8 @@ public class JobCommandParam implements Serializable, Comparable<JobCommandParam
 		
 		System.out.println("hoge " + p1.equals(p2) + "," + p1.equals(p3));
 		System.out.println("hoge " + p1.compareTo(p2) + "," + p1.compareTo(p3));
+	}
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

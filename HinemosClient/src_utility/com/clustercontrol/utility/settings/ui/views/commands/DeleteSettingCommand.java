@@ -351,6 +351,10 @@ public class DeleteSettingCommand extends AbstractHandler implements IElementUpd
 								if (monitor.isCanceled())
 									throw new InterruptedException();
 
+								if (log.isTraceEnabled()) {
+									log.trace("execute() delete start");
+								}
+
 								// 削除メソッドを実行
 								FuncInfo info = deleteOrderList.get(i);
 								
@@ -375,6 +379,10 @@ public class DeleteSettingCommand extends AbstractHandler implements IElementUpd
 								}
 								else {
 									m_failureList = m_failureList + " " + info.getName() + "\n";
+								}
+
+								if (log.isTraceEnabled()) {
+									log.trace("execute() delete end");
 								}
 								
 								monitor.worked(100/deleteOrderList.size());

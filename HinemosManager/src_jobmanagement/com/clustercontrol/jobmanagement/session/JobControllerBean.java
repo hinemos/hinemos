@@ -156,6 +156,7 @@ import com.clustercontrol.performance.util.PollingDataManager;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemResponseP1;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ControlEnum;
 import com.clustercontrol.sdml.util.SdmlUtil;
 import com.clustercontrol.util.HinemosTime;
@@ -234,6 +235,58 @@ public class JobControllerBean implements CheckFacility {
 				jtm.close();
 		}
 		removeParent(item);
+		return item;
+	}
+	
+	/**
+	 * JobTreeItemResponseP1に必要なJob設定のみを直接DTOへ変換する。
+	 * JobInfoからDTO変換の場合、時間がかかることの改善。ツリー表示時の情報のみDTOに変換する
+	 * 
+	 * @param ownerRoleId
+	 * @param locale
+	 * @return JobTreeItemResponseP1
+	 * @throws NotifyNotFound
+	 * @throws HinemosUnknown
+	 * @throws JobMasterNotFound
+	 * @throws UserNotFound
+	 * @throws InvalidRole
+	 */
+	public JobTreeItemResponseP1 getJobTree(String ownerRoleId, Locale locale) throws NotifyNotFound, HinemosUnknown, JobMasterNotFound, UserNotFound, InvalidRole {
+		m_log.debug("getJobTree() : locale=" + locale);
+
+		JpaTransactionManager jtm = null;
+		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+		JobTreeItemResponseP1 item = null;
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			//ジョブツリーを取得
+			SelectJob select = new SelectJob();
+			long start = HinemosTime.currentTimeMillis();
+			item = select.getJobTreeItemResponse(ownerRoleId, locale, loginUser);
+			long end = HinemosTime.currentTimeMillis();
+			m_log.info("getJobTree " + (end - start) + "ms");
+			jtm.commit();
+		} catch (NotifyNotFound | JobMasterNotFound | UserNotFound e) {
+			if (jtm != null){
+				jtm.rollback();
+			}
+			throw e;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
+		} catch (Exception e) {
+			m_log.warn("getJobTree() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null)
+				jtm.close();
+		}
 		return item;
 	}
 
@@ -2054,6 +2107,9 @@ public class JobControllerBean implements CheckFacility {
 				AplLogger.put(InternalIdCommon.JOB_SYS_025, args);
 			} else if (isSuccessInternal) {
 				AplLogger.put(InternalIdCommon.JOB_SYS_024, args);
+			}
+			if (m_log.isTraceEnabled()) {
+				m_log.trace("schedulePremakeJobSession() end");
 			}
 		}
 	}

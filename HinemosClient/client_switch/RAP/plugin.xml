@@ -4421,7 +4421,7 @@
 			</command>
 			<command
 				commandId="com.clustercontrol.rpa.view.action.RpaScenarioModifyExecNodeAction"
-				icon="platform:/plugin/com.clustercontrol/icons/write_obj.gif" label="%modifyExecNode" style="push" tooltip="%modifyExecNode">
+				icon="platform:/plugin/com.clustercontrol/icons/modify_exec_node_obj.png" label="%modifyExecNode" style="push" tooltip="%modifyExecNode">
 			</command>
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.rpa.view.RpaScenarioListView" allPopups="false">
@@ -4706,6 +4706,14 @@
 				label="%object.privilege.setting"
 				style="push"
 				tooltip="%object.privilege.setting">
+			</command>
+			<separator name="RpaScenarioCreateSettingViewSeparator2" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.rpa.view.action.RpaScenarioCreateSettingRefreshAction"
+				icon="platform:/plugin/com.clustercontrol/icons/refresh_tab.gif"
+				label="%update"
+				style="push"
+				tooltip="%update">
 			</command>
 		</menuContribution>
 		<!-- xCloud -->

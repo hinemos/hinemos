@@ -10,6 +10,8 @@ package com.clustercontrol.rest.endpoint.monitorresult.dto;
 import java.util.List;
 
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertDatetime;
+import com.clustercontrol.rest.dto.serializer.ConvertNewlineCharacterSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 public class GetEventInfoResponse {
 
@@ -30,7 +32,9 @@ public class GetEventInfoResponse {
 	private String facilityId = null;			//ファシリティID
 	private String scopeText = null;			//スコープ
 	private String application = null;			//アプリケーション
+	@JsonSerialize(using=ConvertNewlineCharacterSerializer.class)
 	private String message = null;				//メッセージ
+	@JsonSerialize(using=ConvertNewlineCharacterSerializer.class)
 	private String messageOrg = null;			//オリジナルメッセージ
 	private Integer confirmed = null;			//確認
 	@RestBeanConvertDatetime

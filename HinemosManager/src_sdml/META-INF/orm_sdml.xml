@@ -131,4 +131,13 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="SdmlControlSettingInfo.findByAutoMonitorCalendarId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a
+				WHERE a.autoMonitorCalendarId = :autoMonitorCalendarId
+				ORDER BY a.applicationId
+			]]>
+		</query>
+	</named-query>
 </entity-mappings>

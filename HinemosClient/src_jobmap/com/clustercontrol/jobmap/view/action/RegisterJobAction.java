@@ -18,7 +18,6 @@ import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.MessageDialog;
-import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import org.openapitools.client.model.JobTreeItemResponseP2;
 import org.openapitools.client.model.RegisterJobunitRequest;
 import org.openapitools.client.model.ReplaceJobunitRequest;
@@ -26,6 +25,7 @@ import org.openapitools.client.model.ReplaceJobunitRequest;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
@@ -178,7 +178,7 @@ public class RegisterJobAction extends BaseAction {
 						
 						// 編集ロック開放リストに追加する
 						releaseList.add(jobunit);
-						editState.putJobunitUpdateTime(updateRes.getData().getJobunitId(), JobTreeItemUtil.convertDtStringtoLong(updateRes.getData().getUpdateTime()));
+						editState.putJobunitUpdateTime(jobunit.getData().getJobunitId(), JobTreeItemUtil.convertDtStringtoLong(updateRes.getData().getUpdateTime()));
 						Object[] arg = {managerName};
 						resultList.put(jobunitId, Messages.getString("message.job.79", arg));
 					}

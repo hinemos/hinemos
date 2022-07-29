@@ -79,6 +79,7 @@ import com.clustercontrol.repository.model.ScopeInfo;
 import com.clustercontrol.rpa.factory.RpaManagementRestDefine;
 import com.clustercontrol.rpa.factory.RpaManagementRestTokenCache;
 import com.clustercontrol.rpa.factory.bean.RpaResourceInfo;
+import com.clustercontrol.rpa.factory.impl.WinactorManagerOnCloudRestDefine;
 import com.clustercontrol.rpa.model.RpaAbstructPattern;
 import com.clustercontrol.rpa.model.RpaManagementToolAccount;
 import com.clustercontrol.rpa.model.RpaManagementToolMst;
@@ -316,7 +317,13 @@ public class RpaUtil {
 	public static RpaManagementRestDefine getRestDefine(String rpaManagementToolId) throws RpaManagementToolMasterNotFound, HinemosUnknown {		
 		// RPA管理ツールマスタを取得
 		RpaManagementToolMst master = QueryUtil.getRpaManagementToolMstPK(rpaManagementToolId);
-		return getRestDefine(master);
+		RpaManagementRestDefine ret = getRestDefine(master);
+		// WinactorManagerOnCloudRestDefineの場合はRpaManagementToolTypeMstの取得用にtoolIdを付与する。
+		if( ret instanceof WinactorManagerOnCloudRestDefine){
+			WinactorManagerOnCloudRestDefine moc = (WinactorManagerOnCloudRestDefine)ret;
+			moc.setRpaManagementToolId(rpaManagementToolId);
+		}
+		return ret;
 	}
 	
 	/**

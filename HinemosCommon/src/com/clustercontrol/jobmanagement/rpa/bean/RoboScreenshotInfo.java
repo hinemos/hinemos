@@ -36,12 +36,14 @@ public class RoboScreenshotInfo extends RoboInfo {
 	 *            ジョブID
 	 * @param facilityId
 	 *            ファシリティID
+	 * @param userName
+	 *            ユーザ名
 	 * @param screenshotFileName
 	 *            取得するスクリーンショットのファイル名
 	 */
-	public RoboScreenshotInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId,
+	public RoboScreenshotInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId, String userName,
 			String screenshotFileName) {
-		super(datetime, sessionId, jobunitId, jobId, facilityId);
+		super(datetime, sessionId, jobunitId, jobId, facilityId, userName);
 		this.screenshotFileName = screenshotFileName;
 	}
 
@@ -55,7 +57,7 @@ public class RoboScreenshotInfo extends RoboInfo {
 	 */
 	public RoboScreenshotInfo(RoboInfo roboInfo, String screenshotFileName) {
 		super(roboInfo.getDatetime(), roboInfo.getSessionId(), roboInfo.getJobunitId(), roboInfo.getJobId(),
-				roboInfo.getFacilityId());
+				roboInfo.getFacilityId(), roboInfo.getUserName());
 		this.screenshotFileName = screenshotFileName;
 	}
 
@@ -69,9 +71,10 @@ public class RoboScreenshotInfo extends RoboInfo {
 
 	@Override
 	public String toString() {
-		return "RoboScreenshotInfo [getDatetime()=" + getDatetime() + ", getSessionId()=" + getSessionId()
-				+ ", getJobunitId()=" + getJobunitId() + ", getJobId()=" + getJobId() + ", getFacilityId()="
-				+ getFacilityId() + ", getScreenshotFileName()=" + getScreenshotFileName() + "]";
+		return "RoboScreenshotInfo ["
+				+ "toString()=" + super.toString()
+				+ ", screenshotFileName=" + screenshotFileName
+				+ "]";
 	}
 
 	@Override

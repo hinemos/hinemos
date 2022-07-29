@@ -8,10 +8,6 @@
 
 package com.clustercontrol.logging.constant;
 
-import java.util.ArrayList;
-
-import com.clustercontrol.logging.property.LoggingProperty;
-
 public class PropertyConstant {
 
 	// -------------------------------------------------------------------------------------------------------------------
@@ -186,7 +182,7 @@ public class PropertyConstant {
 	// 障害検知用設定
 	// -------------------------------------------------------------------------------------------------------------------
 
-	public static final String INFORM_INTERVAL = "inform.interval";
+	public static final String INFO_INTERVAL = "info.interval";
 
 	public static final String FAILD_MAX_COUNT = "internal.monitor.failed.max.count";
 
@@ -204,19 +200,6 @@ public class PropertyConstant {
 
 	public static final String INTERNAL_LOG_ROOT_LOGGER = "hinemos.logging.log.logger.root";
 
-	public static ArrayList<String> INTERNAL_LOG_LOGGERS;
-	static {
-		LoggingProperty prop = LoggingProperty.getInstance();
-		ArrayList<String> loggers = new ArrayList<String>();
-		for (Object key : prop.keySet()) {
-			String k = key.toString();
-			if (k.matches("hinemos.logging.log.logger.root")) {
-				continue;
-			}
-			if (k.matches("hinemos.logging.log.logger..*")) {
-				loggers.add(k);
-			}
-		}
-		INTERNAL_LOG_LOGGERS = loggers;
-	}
+	public static final String INTERNAL_LOG_LOGGER_PREFIX = "hinemos.logging.log.logger..*";
+
 }

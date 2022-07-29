@@ -81,5 +81,16 @@ public class RpaScenarioFilterInfo implements Serializable {
 	public void setOwnerRoleId(String ownerRoleId) {
 		this.ownerRoleId = ownerRoleId;
 	}
+	@Override
+	public String toString() {
+		return "RpaScenarioFilterInfo ["
+				+ "rpaToolId=" + rpaToolId
+				+ ", scenarioId=" + scenarioId
+				+ ", scenarioName=" + scenarioName
+				+ ", scenarioIdentifyString=" + scenarioIdentifyString
+				+ ", scenarioOperationResultCreateSettingId=" + scenarioOperationResultCreateSettingId
+				+ ", ownerRoleId=" + ownerRoleId
+				+ "]";
+	}
 
 }

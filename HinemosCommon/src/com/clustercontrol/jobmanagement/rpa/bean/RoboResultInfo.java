@@ -49,12 +49,14 @@ public class RoboResultInfo extends RoboInfo {
 	 *            ジョブID
 	 * @param facilityId
 	 *            ファシリティID
+	 * @param userName
+	 *            ユーザ名
 	 * @param returnCode
 	 *            RPAツールのリターンコード
 	 */
-	public RoboResultInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId,
+	public RoboResultInfo(Long datetime, String sessionId, String jobunitId, String jobId, String facilityId, String userName,
 			Integer returnCode) {
-		super(datetime, sessionId, jobunitId, jobId, facilityId);
+		super(datetime, sessionId, jobunitId, jobId, facilityId, userName);
 		this.returnCode = returnCode;
 	}
 
@@ -66,7 +68,7 @@ public class RoboResultInfo extends RoboInfo {
 	 */
 	public RoboResultInfo(RoboInfo roboInfo) {
 		super(roboInfo.getDatetime(), roboInfo.getSessionId(), roboInfo.getJobunitId(), roboInfo.getJobId(),
-				roboInfo.getFacilityId());
+				roboInfo.getFacilityId(), roboInfo.getUserName());
 	}
 
 	public Integer getReturnCode() {
@@ -111,11 +113,14 @@ public class RoboResultInfo extends RoboInfo {
 
 	@Override
 	public String toString() {
-		return "RoboResultInfo [getReturnCode()=" + getReturnCode() + ", getScreenshotFileName()="
-				+ getScreenshotFileName() + ", getAbnormal()=" + getAbnormal() + ", getError()=" + getError()
-				+ ", getErrorMessage()=" + getErrorMessage() + ", getDatetime()=" + getDatetime() + ", getSessionId()="
-				+ getSessionId() + ", getJobunitId()=" + getJobunitId() + ", getJobId()=" + getJobId()
-				+ ", getFacilityId()=" + getFacilityId() + "]";
+		return "RoboResultInfo ["
+				+ "toString()=" + super.toString()
+				+ ", returnCode=" + returnCode
+				+ ", screenshotFileName=" + screenshotFileName
+				+ ", abnormal=" + abnormal
+				+ ", error=" + error
+				+ ", errorMessage=" + errorMessage
+				+ "]";
 	}
 
 	/*

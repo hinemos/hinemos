@@ -15,6 +15,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.ReportingNotFound;
@@ -24,6 +25,7 @@ import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
 
 
@@ -74,11 +76,15 @@ public class Notice {
 				//プラグインID
 				rtn.setPluginId(HinemosModuleConstant.REPORTING);
 				//アプリケーション
-				//rtn.setApplication(info.getApplication());
-				rtn.setApplication("REPORTING");
+				rtn.setApplication(MessageConstant.REPORTING.getMessage());
 				//監視項目ID
 				rtn.setMonitorId(reportId);
-
+				//監視詳細
+				//7.0.0との互換性保持のため、Hinemosプロパティで出力するか制御
+				boolean flg = HinemosPropertyCommon.notify_output_trigger_subkey_$.getBooleanValue(HinemosModuleConstant.REPORTING);
+				if (flg) {
+					rtn.setSubKey(outFile + "|" + NotifyTriggerType.REPORTING.name());
+				}
 				//ファシリティID
 				rtn.setFacilityId(info.getFacilityId());
 				try {
@@ -93,8 +99,10 @@ public class Notice {
 				if(type.intValue() == PriorityConstant.TYPE_INFO){
 					String[] args1 = {reportId};
 					rtn.setMessage(Messages.getString("MESSAGE_REPORTING_12", args1));
-					//サブキーとしてファイル名のフルパスを指定(メール通知)
-					rtn.setSubKey(outFile);
+					if (!flg) {
+						//サブキーとしてファイル名のフルパスを指定(メール通知)
+						rtn.setSubKey(outFile);
+					}
 					//オリジナルメッセージとしてファイル名のフルパスを指定(コマンド通知)
 					rtn.setMessageOrg(outFile);
 				}

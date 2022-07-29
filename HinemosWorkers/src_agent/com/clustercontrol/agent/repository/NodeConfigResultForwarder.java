@@ -292,6 +292,11 @@ public class NodeConfigResultForwarder {
 					}
 				}
 
+				// 成功分、及び最大リトライ回数を超過したリクエストIDの削除
+				for(NodeConfigResult sendInfo : forwardListPart){
+					requestIdMap.remove(sendInfo);
+				}
+
 				forwardList.removeAll(forwardListPart);
 				transportTries.set(0);
 			}

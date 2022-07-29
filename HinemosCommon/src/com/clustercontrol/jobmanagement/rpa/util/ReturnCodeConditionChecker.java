@@ -25,6 +25,9 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.util.MessageConstant;
+
 /**
  * RPAシナリオジョブでリターンコードが判定条件を満たしているかどうかを判定するクラス
  */
@@ -184,5 +187,51 @@ public class ReturnCodeConditionChecker {
 		m_log.debug("expandRange() : rangeStr=" + rangeStr + ", result=" + ret);
 		return ret;
 	}
+	
+	/**
+	 * リターンコードの数値範囲チェック
+	 * 
+	 * @param name
+	 *            値の名称（エラーメッセージ生成に利用）
+	 * @param returnCode
+	 *           リターンコード(,による複数定義、 :による範囲設定 あり)
+	 */
+	public static void comfirmReturnCodeNumberRange(String name, String returnCode) throws InvalidSetting{
+		if (returnCode == null || returnCode.isEmpty()) {
+			return;
+		}
+		// 区切り文字で分割して分割後の値毎にチェック
+		String[] retCodeValues = returnCode.split(DELIMITER) ;
+		for(String targetValue :  retCodeValues ){
+			Matcher matcher = rangePattern.matcher(targetValue);
+			if ( matcher.matches() && matcher.groupCount() == 2) {
+				comfirmShortString(name,matcher.group(1));
+				comfirmShortString(name,matcher.group(2));
+			} else {
+				comfirmShortString(name,targetValue);
+			}
+		}
+	}
+	
+	private static void comfirmShortString(String name, String strValue ) throws InvalidSetting {
+		int minValue = Short.MIN_VALUE;
+		int maxValue = Short.MAX_VALUE;
+		String[] args = { name + " " +strValue, Integer.toString(minValue), Integer.toString(maxValue) };
+
+		if (strValue == null || strValue.trim().length() == 0) {
+			throw new InvalidSetting(MessageConstant.MESSAGE_INPUT_BETWEEN.getMessage(args));
+		}
+		int intValue;
+		try {
+			intValue = Integer.parseInt(strValue);
+		} catch (NumberFormatException e) {
+			throw new InvalidSetting(MessageConstant.MESSAGE_INPUT_BETWEEN.getMessage(args));
+		}
+		if (intValue < minValue || intValue > maxValue) {
+			throw new InvalidSetting(MessageConstant.MESSAGE_INPUT_BETWEEN.getMessage(args));
+		}
+		return;
+	}
+
 
 }

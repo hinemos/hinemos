@@ -205,7 +205,19 @@
 	<target name="build_proxy" depends="war">
 		<delete dir="${rest.proxy.dir}" failonerror="true" />
 		<mkdir dir="${rest.proxy.dir}" />
-		
+
+		<!-- Prepare the custom template for the OpenAPI generator. -->
+		<unzip src="${openapi-generator.dir}/openapi-generator-cli.jar" dest="${rest.proxy.dir}/openapi-generator-template">
+			<patternset>
+				<include name="Java/**" />
+			</patternset>
+		</unzip>
+		<copy todir="${rest.proxy.dir}/openapi-generator-template" overwrite="true">
+			<fileset dir="${hinemos_manager.dir}/for_proxy/template">
+				<include name="**/*" />
+			</fileset>
+		</copy>
+
 		<copy todir="${openliberty.server.dir}/dropins" overwrite="true">
 			<fileset dir="${war.dir}">
 				<include name="${refresh.project.name}.war" />
@@ -249,12 +261,27 @@
 			<arg value="-i" />
 			<arg value="${rest.proxy.dir}/openapi.yaml" />
 			<arg value="-g" />
+			<arg value="python" />
+			<arg value="-o" />
+			<arg value="${rest.proxy.dir}/python" />
+			<arg value="--skip-validate-spec" />
+		</exec>
+
+		<exec executable="java">
+			<arg value="-jar" />
+			<arg value="${openapi-generator.dir}/openapi-generator-cli.jar" />
+			<arg value="generate" />
+			<arg value="-i" />
+			<arg value="${rest.proxy.dir}/openapi.yaml" />
+			<arg value="-g" />
 			<arg value="java" />
 			<arg value="-o" />
 			<arg value="${rest.proxy.dir}/java" />
 			<arg value="--api-package" />
 			<arg value="com.clustercontrol.rest.client" />
 			<arg value="--skip-validate-spec" />
+			<arg value="-t" />
+			<arg value="${rest.proxy.dir}/openapi-generator-template/Java" />
 		</exec>
 
 		<exec executable="CMD">

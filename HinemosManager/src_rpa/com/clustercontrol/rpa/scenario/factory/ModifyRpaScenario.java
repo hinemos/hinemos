@@ -179,7 +179,6 @@ public class ModifyRpaScenario {
 			
 			//RPAシナリオ実績作成設定を更新
 			entity.setCalendarId(data.getCalendarId());
-			entity.setCreateFromDate(data.getCreateFromDate());
 			entity.setDescription(data.getDescription());
 			entity.setFacilityId(data.getFacilityId());
 			entity.setInterval(data.getInterval());

@@ -10,13 +10,37 @@ package com.clustercontrol.jobmanagement.bean;
 import java.io.Serializable;
 import java.util.List;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.PrioritySelectEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ProcessingMethodEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaJobReturnCodeConditionEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaJobTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaStopTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.LanguageTranslateSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * RPAシナリオジョブに関する情報を保持するクラス
  */
-public class RpaJobInfo implements Serializable {
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
+public class RpaJobInfo implements Serializable, RequestDto {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 1L;
 	/** RPAジョブ種別 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=RpaJobTypeEnum.class)
 	private Integer rpaJobType;
 
 	// 直接実行
@@ -24,9 +48,13 @@ public class RpaJobInfo implements Serializable {
 	private String facilityID;
 
 	/** スコープ */
+	@JsonSerialize(using=LanguageTranslateSerializer.class)
 	private String scope;
 
 	/** スコープ処理 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ProcessingMethodEnum.class)
 	private Integer processingMethod;
 
 	/** RPAツールID */
@@ -93,6 +121,9 @@ public class RpaJobInfo implements Serializable {
 	private String rpaScreenshotEndValue;
 
 	/** スクリーンショットを取得する終了値判定条件 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=RpaJobReturnCodeConditionEnum.class)
 	private Integer rpaScreenshotEndValueCondition;
 
 	/** リトライ回数 */
@@ -123,6 +154,9 @@ public class RpaJobInfo implements Serializable {
 	private Boolean rpaNotLoginNotify;
 
 	/** ログインされていない場合 通知重要度 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer rpaNotLoginNotifyPriority;
 
 	/** ログインされていない場合 終了値 */
@@ -132,6 +166,9 @@ public class RpaJobInfo implements Serializable {
 	private Boolean rpaAlreadyRunningNotify;
 
 	/** RPAツールが既に動作している場合 通知重要度 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer rpaAlreadyRunningNotifyPriority;
 
 	/** RPAツールが既に動作している場合 終了値 */
@@ -141,6 +178,9 @@ public class RpaJobInfo implements Serializable {
 	private Boolean rpaAbnormalExitNotify;
 
 	/** RPAツールが異常終了した場合 通知重要度 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer rpaAbnormalExitNotifyPriority;
 
 	/** RPAツールが異常終了した場合 終了値 */
@@ -160,6 +200,9 @@ public class RpaJobInfo implements Serializable {
 	private String rpaScenarioParam;
 
 	/** 停止種別 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=RpaStopTypeEnum.class)
 	private Integer rpaStopType;
 
 	/** 停止方法 */
@@ -1299,25 +1342,13 @@ public class RpaJobInfo implements Serializable {
 				return false;
 		} else if (!rpaExeFilepath.equals(other.rpaExeFilepath))
 			return false;
-		if (rpaJobCheckEndValueInfos == null) {
-			if (other.rpaJobCheckEndValueInfos != null)
-				return false;
-		} else if (!rpaJobCheckEndValueInfos.equals(other.rpaJobCheckEndValueInfos))
+		if (!JobInfo.equalsArray(rpaJobCheckEndValueInfos,other.rpaJobCheckEndValueInfos))
 			return false;
-		if (rpaJobEndValueConditionInfos == null) {
-			if (other.rpaJobEndValueConditionInfos != null)
-				return false;
-		} else if (!rpaJobEndValueConditionInfos.equals(other.rpaJobEndValueConditionInfos))
+		if (!JobInfo.equalsArray(rpaJobEndValueConditionInfos,other.rpaJobEndValueConditionInfos))
 			return false;
-		if (rpaJobOptionInfos == null) {
-			if (other.rpaJobOptionInfos != null)
-				return false;
-		} else if (!rpaJobOptionInfos.equals(other.rpaJobOptionInfos))
+		if (!JobInfo.equalsArray(rpaJobOptionInfos,other.rpaJobOptionInfos))
 			return false;
-		if (rpaJobRunParamInfos == null) {
-			if (other.rpaJobRunParamInfos != null)
-				return false;
-		} else if (!rpaJobRunParamInfos.equals(other.rpaJobRunParamInfos))
+		if (!JobInfo.equalsArray(rpaJobRunParamInfos,other.rpaJobRunParamInfos))
 			return false;
 		if (rpaJobType == null) {
 			if (other.rpaJobType != null)
@@ -1485,5 +1516,29 @@ public class RpaJobInfo implements Serializable {
 		} else if (!scope.equals(other.scope))
 			return false;
 		return true;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+		if (rpaJobOptionInfos != null) {
+			for (RpaJobOptionInfo req : rpaJobOptionInfos) {
+				req.correlationCheck();
+			}
+		}
+		if (rpaJobEndValueConditionInfos != null) {
+			for (RpaJobEndValueConditionInfo req : rpaJobEndValueConditionInfos) {
+				req.correlationCheck();
+			}
+		}
+		if (rpaJobRunParamInfos != null) {
+			for (RpaJobRunParamInfo req : rpaJobRunParamInfos) {
+				req.correlationCheck();
+			}
+		}
+		if (rpaJobCheckEndValueInfos != null) {
+			for (RpaJobCheckEndValueInfo req : rpaJobCheckEndValueInfos) {
+				req.correlationCheck();
+			}
+		}
 	}
 }

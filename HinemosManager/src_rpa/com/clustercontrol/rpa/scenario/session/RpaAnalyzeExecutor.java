@@ -9,6 +9,7 @@
 package com.clustercontrol.rpa.scenario.session;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -134,17 +135,46 @@ public class RpaAnalyzeExecutor {
 					fetchSize = maxSize - analyzed;
 				}
 
-				 m_log.debug(String.format("analyze(): start fetch string data. maxSize=%d, fetchSize=%d, analyzed=%d", maxSize, fetchSize, analyzed ));
+				m_log.debug(String.format("analyze(): start fetch string data. maxSize=%d, fetchSize=%d, analyzed=%d", maxSize, fetchSize, analyzed));
 				// フェッチサイズを指定して文字列収集データを取得
-				 List<CollectStringData> rpaLogDataList = getRpaLogDataList(m_lastPosition, fetchSize);
-				 m_log.debug(String.format("analyze(): %d string data are fetched. start analyze.", rpaLogDataList.size()));
+				List<CollectStringData> rpaLogDataList = getRpaLogDataList(m_lastPosition, fetchSize);
+				m_log.debug(String.format("analyze(): %d string data are fetched. start analyze.", rpaLogDataList.size()));
 				if (rpaLogDataList.isEmpty()) {
 					// 解析対象のデータが無い場合は、最終解析位置を更新して終了。
 					m_createSetting.setLastPosition(m_currentStringDataId);
 					break;
 				}
+				if (m_log.isDebugEnabled()) {
+					m_log.debug("analyze(): original data=" + Arrays.toString(rpaLogDataList.toArray()));
+				}
+
+				// 重複行があると解析がおかしくなるため、重複を取り除く。
+				// ただし、シナリオ実行ログがRPAシナリオ実績作成のタイミングで分割された場合には対応していない。
+				List<CollectStringData> newRpaLogDataList = new ArrayList<>();
+				for (CollectStringData data : rpaLogDataList) {
+					boolean isRedundant = false;
+					for (CollectStringData newData : newRpaLogDataList) {
+						// value、collectIdが一致している場合、重複データと判断する
+						if (data.getValue().equals(newData.getValue())
+								&& data.getId().getCollectId().equals(newData.getId().getCollectId())) {
+							m_log.warn("analyze(): skip, found redundant data=" + data);
+							isRedundant = true;
+							break;
+						}
+					}
+					if (isRedundant) {
+						failed++;
+						continue;
+					}
+					newRpaLogDataList.add(data);
+				}
+
 				// 収集データ解析
-				analyzeStringDataList(rpaLogDataList);
+				if (m_log.isDebugEnabled()) {
+					m_log.debug("analyze(): analyzing data=" + Arrays.toString(newRpaLogDataList.toArray()));
+				}
+				analyzeStringDataList(newRpaLogDataList);
+
 				// 解析済カウンタを更新。
 				m_lastPosition = rpaLogDataList.get(rpaLogDataList.size() - 1).getDataId();
 				m_createSetting.setLastPosition(m_lastPosition);
@@ -160,7 +190,8 @@ public class RpaAnalyzeExecutor {
 				// 通知が設定されている場合、完了通知を行う。
 				OutputBasicInfo output = new OutputBasicInfo();
 				// メッセージ「シナリオ実績作成が完了しました。対象ログ=I件、処理件数=M件, スキップ件数=N件」
-				String message = MessageConstant.MESSAGE_RPA_SCENARIO_OPERATION_RESULT_CREATE_FINISH.getMessage(String.valueOf(successed + failed), String.valueOf(successed), String.valueOf(failed));
+				String message = MessageConstant.MESSAGE_RPA_SCENARIO_OPERATION_RESULT_CREATE_FINISH.getMessage(
+						String.valueOf(successed + failed), String.valueOf(successed), String.valueOf(failed));
 				int priority = PriorityConstant.TYPE_INFO;
 
 				output.setGenerationDate(HinemosTime.currentTimeMillis());

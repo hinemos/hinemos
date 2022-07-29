@@ -508,7 +508,7 @@ public class RpaScenarioOperationResultDetailDialog extends CommonDialog {
 		
 		this.txtScenarioId.setText(this.resultData.getScenarioId());
 		this.txtScenarioName.setText(this.resultData.getScenarioName());
-		this.txtRpaTool.setText(this.resultData.getRpaToolName());
+		this.txtRpaTool.setText(this.resultData.getRpaToolId());
 		this.txtFacilityId.setText(this.resultData.getFacilityId());
 		this.txtFacilityName.setText(this.resultData.getFacilityName());
 		this.txtStartDate.setText(df.format(new Date(this.resultData.getStartDate())));

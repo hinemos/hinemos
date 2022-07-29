@@ -74,8 +74,13 @@ public class RepositoryUpdater {
 		m_log.debug(String.format("update() update RPA Management Scope. RpaScopeId=%s", account.getRpaScopeId()));
 		ScopeInfo scopeInfo = updateRpaManagementScope(cacheRm.getRpaManagementToolAccount(), cacheRm.getRpaManagementToolMst());
 
+
 		// RPA管理ツールのリソース自動検知が有効な場合、スコープ配下のノードを更新
 		// スコープをキャッシュツリーに反映させておく必要がある都合上、スコープの更新とは別トランザクションで行う。
+		if (!HinemosPropertyCommon.rpa_autoupdate_enable.getBooleanValue()) {
+			// プロパティで自動検知が無効な場合は実施しない。
+			return;
+		}	
 		updateRpaNodes(cacheRm, scopeInfo.getFacilityId());
 	}
 	
@@ -300,8 +305,8 @@ public class RepositoryUpdater {
 		// プラットフォーム:WINDOWS
 		nodeInfo.setPlatformFamily(PlatformConstant.WINDOWS);
 		
-		// サブプラットフォーム:RPA管理ツールタイプ
-		nodeInfo.setSubPlatformFamily(master.getRpaManagementToolType().getRpaManagementToolType());
+		// サブプラットフォーム:ブランク
+		nodeInfo.setSubPlatformFamily("");
 		
 		// IPアドレス
 		setIp(nodeInfo, resourceInfo.getIpAddress());

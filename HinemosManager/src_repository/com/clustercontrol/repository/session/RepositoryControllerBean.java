@@ -100,6 +100,7 @@ import com.clustercontrol.repository.util.RepositoryListenerCallback;
 import com.clustercontrol.repository.util.RepositoryListenerCallback.Type;
 import com.clustercontrol.repository.util.RepositoryValidator;
 import com.clustercontrol.rest.endpoint.repository.dto.OperationAgentResponse;
+import com.clustercontrol.rpa.session.RpaControllerBean;
 import com.clustercontrol.sdml.session.SdmlManagerControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
@@ -2784,6 +2785,11 @@ public class RepositoryControllerBean {
 			}
 			try {
 				new SdmlManagerControllerBean().isUseFacilityId(checkFacilityId);
+			} catch(UsedFacility e) {
+				message += e.getMessage();
+			}
+			try {
+				new RpaControllerBean().isUseFacilityId(checkFacilityId);
 			} catch(UsedFacility e) {
 				message += e.getMessage();
 			}

@@ -220,13 +220,37 @@ public class AsyncModuleWorker {
 				} else {
 					infraManagementInfo = management;
 				}
+
+				//7.0.0との互換性保持のため、Hinemosプロパティで出力するか制御
+				boolean flgApp = HinemosPropertyCommon.notify_output_app_$.getBooleanValue(HinemosModuleConstant.INFRA);
+				String application = "";
+				if (flgApp) {
+					//アプリケーション：モジュール実行、モジュールチェック
+					if (notifyTriggerType == NotifyTriggerType.INFRA_CHECK_START || notifyTriggerType == NotifyTriggerType.INFRA_CHECK_END) {
+						application = MessageConstant.INFRA_MODULE_CHECK.getMessage();
+					} else if (notifyTriggerType == NotifyTriggerType.INFRA_RUN_START || notifyTriggerType == NotifyTriggerType.INFRA_RUN_END) {
+						application = MessageConstant.INFRA_MODULE_EXEC.getMessage();
+					}
+				}
+
+				//7.0.0との互換性保持のため、Hinemosプロパティで出力するか制御
+				boolean flgSubkey = HinemosPropertyCommon.notify_output_trigger_subkey_$.getBooleanValue(HinemosModuleConstant.INFRA);
+				String subKey;
+				//監視詳細
+				if (flgSubkey) {
+					//モジュールID|通知契機
+					subKey = module.getModuleId() + "|" + notifyTriggerType.name();
+				} else {
+					subKey = module.getModuleId();
+				}
+				
 				OutputBasicInfo info = createOutputBasicInfo(
 						HinemosModuleConstant.INFRA,
 						infraManagementInfo.getManagementId(),
-						module.getModuleId(),
+						subKey,
 						node.getFacilityId(),
 						null,
-						"", // application
+						application,
 						priority,
 						msg,
 						msgOrg,

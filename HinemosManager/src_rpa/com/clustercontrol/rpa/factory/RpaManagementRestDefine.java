@@ -168,15 +168,15 @@ public abstract class RpaManagementRestDefine {
 	abstract protected HttpUriRequest createRunRequest(String baseUrl, Integer runType);
 
 	// シナリオ実行APIのHTTPリクエストヘッダを定義する
-	abstract protected Header[] createRunHeader(String token);
+	abstract protected Header[] createRunHeader(String token, Map<String, Object> headerData);
 	
 	// シナリオ実行APIのHTTPリクエストボディを定義する
 	abstract protected HttpEntity createRunEntity(Map<String, Object> requestData, Integer runType);
 
 	// シナリオ実行APIのHTTPリクエストを返す。
-	protected HttpUriRequest getRunRequest(String baseUrl, String token, Map<String, Object> requestData, Integer runType) {
+	protected HttpUriRequest getRunRequest(String baseUrl, String token, Map<String, Object> headerData, Map<String, Object> requestData, Integer runType) {
 		return createRequest(createRunRequest(baseUrl, runType), 
-				createRunHeader(token),
+				createRunHeader(token, headerData),
 				createRunEntity(requestData, runType));
 	}
 
@@ -186,14 +186,18 @@ public abstract class RpaManagementRestDefine {
 	// シナリオ実行APIへ渡すリクエストデータを必要に応じて変更する
 	abstract protected Map<String, Object> adjustRunRequestData(Map<String, Object> requestData);
 
+	// シナリオ実行APIへ渡すリクエストヘッダデータを必要に応じて変更する
+	abstract protected Map<String, Object> adjustRunHeaderData(Map<String, Object> requestData);
+
 	/**
 	 * 引数のクライアントでシナリオ実行APIを実行する。
 	 * @return RPA管理ツールの実行識別子(ex. job_id)
 	 */
 	public String run(String baseUrl, String token, Map<String, Object> requestData, Integer runType, HttpClient client) throws IOException {
 		// 必要に応じてリクエストデータを加工
+		Map<String, Object> runHeaderData = adjustRunHeaderData(requestData);
 		Map<String, Object> runRequestData = adjustRunRequestData(requestData);
-		HttpUriRequest request = this.getRunRequest(baseUrl, token, runRequestData, runType);
+		HttpUriRequest request = this.getRunRequest(baseUrl, token, runHeaderData, runRequestData, runType);
 		return client.execute(request, this.getRunResponseHandler(runRequestData));
 	}
 

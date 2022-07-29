@@ -27,6 +27,7 @@ public enum RestKind {
 	UtilityRestEndpoints("UtilityRestEndpoints"),
 	FilterSettingRestEndpoints("FilterSettingRestEndpoints"),
 	SdmlRestEndpoints("SdmlRestEndpoints"),
+	SdmlUtilityRestEndpoints("SdmlUtilityRestEndpoints"),
 	CloudRestEndpoints("CloudRestEndpoints"),
 	VMwareOptionRestEndpoints("VMwareOptionRestEndpoints"),
 	AWSOptionRestEndpoints("AWSOptionRestEndpoints"),

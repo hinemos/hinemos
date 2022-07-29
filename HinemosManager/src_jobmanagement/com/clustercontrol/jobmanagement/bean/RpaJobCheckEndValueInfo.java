@@ -9,11 +9,21 @@ package com.clustercontrol.jobmanagement.bean;
 
 import java.io.Serializable;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * RPAシナリオジョブ（間接実行）の終了値判定条件に関する情報を保持するクラス
  */
-public class RpaJobCheckEndValueInfo implements Serializable {
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
+public class RpaJobCheckEndValueInfo implements Serializable, RequestDto, Comparable<RpaJobCheckEndValueInfo> {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 1L;
 	/** RPA管理ツール 終了状態ID */
 	private Integer endStatusId;
@@ -87,4 +97,12 @@ public class RpaJobCheckEndValueInfo implements Serializable {
 		return true;
 	}
 
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+	}
+
+	@Override
+	public int compareTo(RpaJobCheckEndValueInfo o) {
+		return this.getEndStatusId() - o.getEndStatusId();
+	}
 }

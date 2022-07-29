@@ -40,10 +40,12 @@ import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.composite.ManagerListComposite;
 import com.clustercontrol.composite.RoleIdListComposite;
 import com.clustercontrol.composite.RoleIdListComposite.Mode;
+import com.clustercontrol.composite.action.NumberVerifyListener;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.fault.HinemosException;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.rpa.action.AddAccount;
 import com.clustercontrol.rpa.action.GetAccount;
 import com.clustercontrol.rpa.action.ModifyAccount;
@@ -543,6 +545,7 @@ public class RpaManagementToolAccountDialog extends CommonDialog{
 				update();
 			}
 		});
+		this.m_textProxyPort.addVerifyListener(new NumberVerifyListener(0, 65535));
 
 		// 空白
 		label = new Label(groupProxy, SWT.NONE);
@@ -904,6 +907,10 @@ public class RpaManagementToolAccountDialog extends CommonDialog{
 				RpaRestClientWrapper rpaWrapper = RpaRestClientWrapper.getWrapper(managerName);
 				rpaManagementToolMap.put(managerName, rpaWrapper.getRpaManagementTool());
 			} catch (HinemosException e) {
+				// エンタープライズ機能が無効の場合は無視する
+				if(UrlNotFound.class.equals(e.getCause().getClass())) {
+					return;
+				}
 				m_log.warn(e.getMessage(), e);
 			}
 		}

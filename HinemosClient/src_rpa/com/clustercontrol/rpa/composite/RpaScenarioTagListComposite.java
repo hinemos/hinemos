@@ -25,6 +25,7 @@ import org.eclipse.swt.widgets.Table;
 import org.openapitools.client.model.RpaScenarioTagResponse;
 
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.rpa.action.GetRpaScenarioTagListTableDefine;
 import com.clustercontrol.rpa.composite.action.RpaScenarioTagDoubleClickListener;
 import com.clustercontrol.rpa.util.RpaRestClientWrapper;
@@ -152,6 +153,10 @@ public class RpaScenarioTagListComposite extends Composite {
 				// 権限なし
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
+				// エンタープライズ機能が無効の場合は無視する
+				if(UrlNotFound.class.equals(e.getCause().getClass())) {
+					continue;
+				}
 				// 上記以外の例外
 				String errMessage = HinemosMessage.replace(e.getMessage());
 				log.warn("update(), " + errMessage, e);

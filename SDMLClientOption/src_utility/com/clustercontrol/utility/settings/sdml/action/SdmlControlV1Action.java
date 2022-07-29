@@ -35,6 +35,7 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.sdml.util.SdmlRestClientWrapper;
+import com.clustercontrol.sdml.util.SdmlUtilityRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.RestClientBeanUtil;
@@ -365,7 +366,7 @@ public class SdmlControlV1Action extends BaseAction<SdmlControlSettingInfoRespon
 			ImportSdmlControlRequest reqDto = new ImportSdmlControlRequest();
 			reqDto.setRecordList(importRecList);
 			reqDto.setRollbackIfAbnormal(ImportProcessMode.isRollbackIfAbnormal());
-			return SdmlRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName())
+			return SdmlUtilityRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName())
 					.importSdmlControlSettingV1(reqDto);
 		}
 

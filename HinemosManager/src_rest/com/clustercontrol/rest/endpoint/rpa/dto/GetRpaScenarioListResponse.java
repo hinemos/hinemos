@@ -15,8 +15,10 @@ public class GetRpaScenarioListResponse {
 	public GetRpaScenarioListResponse() {
 	}
 
-	/** RPAツール名 */
-	private String rpaToolName;
+	/** シナリオ実績作成設定ID */
+	private String scenarioOperationResultCreateSettingId;
+	/** RPAツールID */
+	private String rpaToolId;
 	/** シナリオID */
 	private String scenarioId;
 	/** シナリオ名 */
@@ -40,12 +42,20 @@ public class GetRpaScenarioListResponse {
 	/** 最終変更ユーザ */
 	private String updateUser;
 
-	/** RPAツール名 */
-	public String getRpaToolName() {
-		return this.rpaToolName;
+	/** シナリオ実績作成設定ID */
+	public String getScenarioOperationResultCreateSettingId() {
+		return scenarioOperationResultCreateSettingId;
 	}
-	public void setRpaToolName(String rpaToolName) {
-		this.rpaToolName = rpaToolName;
+	public void setScenarioOperationResultCreateSettingId(String scenarioOperationResultCreateSettingId) {
+		this.scenarioOperationResultCreateSettingId = scenarioOperationResultCreateSettingId;
+	}
+
+	/** RPAツールID */
+	public String getRpaToolId() {
+		return this.rpaToolId;
+	}
+	public void setRpaToolId(String rpaToolId) {
+		this.rpaToolId = rpaToolId;
 	}
 
 	/** シナリオID */
@@ -123,10 +133,18 @@ public class GetRpaScenarioListResponse {
 	
 	@Override
 	public String toString() {
-		return "RpaScenarioResponse [rpaToolName= " + rpaToolName + "scenarioId=" + scenarioId + ", scenarioName=" + scenarioName 
-				+ ", scenarioIdentifyString=" + scenarioIdentifyString + ", description=" + description + ", ownerRoleId=" + ownerRoleId
-				+ ", regDate = " + regDate + ", updateDate=" + updateDate 
-				+ ", regUser=" + regUser + ", updateUser=" + updateUser
+		return "RpaScenarioResponse ["
+				+ "scenarioOperationResultCreateSettingId= " + scenarioOperationResultCreateSettingId
+				+ ", rpaToolId= " + rpaToolId
+				+ ", scenarioId=" + scenarioId
+				+ ", scenarioName=" + scenarioName 
+				+ ", scenarioIdentifyString=" + scenarioIdentifyString
+				+ ", description=" + description
+				+ ", ownerRoleId=" + ownerRoleId
+				+ ", regDate = " + regDate
+				+ ", updateDate=" + updateDate
+				+ ", regUser=" + regUser
+				+ ", updateUser=" + updateUser
 				+ "]";
 	}
 

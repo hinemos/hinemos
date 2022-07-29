@@ -31,6 +31,7 @@ import com.clustercontrol.fault.SdmlControlSettingDuplicate;
 import com.clustercontrol.fault.UsedObjectPrivilege;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.factory.FacilitySelector;
 import com.clustercontrol.sdml.factory.ModifySdmlControl;
@@ -122,7 +123,8 @@ public class SdmlController {
 			logger.warn("run() : This code is not supported. controlCode=" + logDto.getControlCode());
 			if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-						MessageConstant.SDML_MSG_LOG_NOT_SUPPORTED.getMessage(), logDto.getOrgLogLine()));
+						MessageConstant.SDML_MSG_LOG_NOT_SUPPORTED.getMessage(), logDto.getOrgLogLine(),
+						NotifyTriggerType.SDML_CONTROL_ABNORMAL));
 			}
 			return rtn;
 		}
@@ -220,7 +222,8 @@ public class SdmlController {
 		if (!controlStatusManager.checkStatus(status, this.controlCode)) {
 			if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-						MessageConstant.SDML_MSG_LOG_OUT_OF_ORDER.getMessage(), logDto.getOrgLogLine()));
+						MessageConstant.SDML_MSG_LOG_OUT_OF_ORDER.getMessage(), logDto.getOrgLogLine(),
+						NotifyTriggerType.SDML_CONTROL_ABNORMAL));
 			}
 			rtn.addAll(forcedUpdateToWaiting(status));
 			return rtn;
@@ -253,7 +256,8 @@ public class SdmlController {
 		if (!controlStatusManager.checkStatus(status, this.controlCode)) {
 			if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-						MessageConstant.SDML_MSG_LOG_OUT_OF_ORDER.getMessage(), logDto.getOrgLogLine()));
+						MessageConstant.SDML_MSG_LOG_OUT_OF_ORDER.getMessage(), logDto.getOrgLogLine(),
+						NotifyTriggerType.SDML_CONTROL_ABNORMAL));
 			}
 			rtn.addAll(forcedUpdateToWaiting(status));
 			return rtn;
@@ -273,7 +277,8 @@ public class SdmlController {
 			logger.warn("initializeEnd() : initialize data is not available.");
 			if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-						MessageConstant.SDML_MSG_INITIALIZE_DATA_NOT_AVAILABLE.getMessage(), ""));
+						MessageConstant.SDML_MSG_INITIALIZE_DATA_NOT_AVAILABLE.getMessage(), "",
+						NotifyTriggerType.SDML_CONTROL_ABNORMAL));
 			}
 			rtn.addAll(forcedUpdateToWaiting(status));
 			return rtn;
@@ -307,43 +312,10 @@ public class SdmlController {
 				}
 			}
 
-			MonitorInfo info = null;
-			if (firstFlg || monitorRelation == null) {
-				// 初回 または 対応した関連情報がない（＝前回は監視収集が無効だった）場合は新規作成
+			if (!firstFlg && monitorRelation != null) {
+				// 初回ではない かつ 対応した関連情報がある（＝前回は監視収集が無効ではない）場合は更新
 				try {
-					info = SdmlMonitorUtil.createMonitorInfo(validInfo, controlSetting, initializeDataMap, facilityId);
-					controllerBean.addMonitor(info);
-
-					// オブジェクト権限
-					SdmlMonitorUtil.setObjectPlivilege(controlSetting, info);
-
-					// SdmlControlMonitorRelation作成
-					monitorRelation = new SdmlControlMonitorRelation(controlSetting.getApplicationId(), facilityId,
-							info.getMonitorId());
-					monitorRelation.setSdmlMonitorTypeId(validInfo.getSdmlMonitorTypeId());
-					monitorRelation.setSubType(validInfo.getSubType());
-					monitorRelation.setMonitorFlg(validInfo.isMonitorFlg());
-					monitorRelation.setCollectorFlg(validInfo.isCollectorFlg());
-					new ModifySdmlControl().addSdmlControlMonitorRelation(monitorRelation);
-
-					createSuccessList.add(info.getMonitorId());
-				} catch (MonitorIdInvalid | MonitorDuplicate | SdmlControlSettingDuplicate | InvalidSetting | InvalidRole
-						| UsedObjectPrivilege | PrivilegeDuplicate | HinemosUnknown e) {
-					logger.warn(
-							"initializeEnd() : create failed. " + e.getClass().getSimpleName() + ", " + e.getMessage(),
-							e);
-					if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
-						rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-								MessageConstant.SDML_MSG_CREATE_FAILED.getMessage(validInfo.getMonitorId()),
-								e.getMessage()));
-					}
-					rtn.addAll(forcedUpdateToWaiting(status));
-					return rtn;
-				}
-			} else {
-				// 初回以外は更新
-				try {
-					info = controllerBean.getMonitor(monitorRelation.getMonitorId());
+					MonitorInfo info = controllerBean.getMonitor(monitorRelation.getMonitorId());
 					info = SdmlMonitorUtil.updateMonitorInfo(validInfo, controlSetting, initializeDataMap, info);
 					controllerBean.modifyMonitor(info);
 
@@ -355,19 +327,63 @@ public class SdmlController {
 					monitorRelation.setCollectorFlg(validInfo.isCollectorFlg());
 
 					updateSuccessList.add(info.getMonitorId());
-				} catch (MonitorNotFound | InvalidSetting | InvalidRole | UsedObjectPrivilege | PrivilegeDuplicate
-						| HinemosUnknown e) {
+					// 成功したら次へ
+					continue;
+
+				} catch (InvalidSetting | InvalidRole | UsedObjectPrivilege | PrivilegeDuplicate | HinemosUnknown e) {
 					logger.warn(
 							"initializeEnd() : update failed. " + e.getClass().getSimpleName() + ", " + e.getMessage(),
 							e);
 					if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
+						String sdmlMessage = MessageConstant.SDML_MSG_UPDATE_FAILED.getMessage();
 						rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-								MessageConstant.SDML_MSG_UPDATE_FAILED.getMessage(monitorRelation.getMonitorId()),
-								e.getMessage()));
+								sdmlMessage,
+								createMessageOrg(sdmlMessage, monitorRelation.getMonitorId(), e),
+								NotifyTriggerType.SDML_CONTROL_UPDATE_MONITOR));
 					}
 					rtn.addAll(forcedUpdateToWaiting(status));
 					return rtn;
+				} catch (MonitorNotFound e) {
+					logger.warn(
+							"initializeEnd() : update failed. " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					// 設定が存在しない場合は関連情報を削除して新規作成に進む
+					new ModifySdmlControl().deleteOnlyControlMonitorRelation(monitorRelation);
+					monitorRelation = null;
 				}
+			}
+
+			// 更新ではない場合は新規作成
+			try {
+				MonitorInfo info = SdmlMonitorUtil.createMonitorInfo(validInfo, controlSetting, initializeDataMap,
+						facilityId);
+				controllerBean.addMonitor(info);
+
+				// オブジェクト権限
+				SdmlMonitorUtil.setObjectPlivilege(controlSetting, info);
+
+				// SdmlControlMonitorRelation作成
+				monitorRelation = new SdmlControlMonitorRelation(controlSetting.getApplicationId(), facilityId,
+						info.getMonitorId());
+				monitorRelation.setSdmlMonitorTypeId(validInfo.getSdmlMonitorTypeId());
+				monitorRelation.setSubType(validInfo.getSubType());
+				monitorRelation.setMonitorFlg(validInfo.isMonitorFlg());
+				monitorRelation.setCollectorFlg(validInfo.isCollectorFlg());
+				new ModifySdmlControl().addSdmlControlMonitorRelation(monitorRelation);
+
+				createSuccessList.add(info.getMonitorId());
+			} catch (MonitorIdInvalid | MonitorDuplicate | SdmlControlSettingDuplicate | InvalidSetting | InvalidRole
+					| UsedObjectPrivilege | PrivilegeDuplicate | HinemosUnknown e) {
+				logger.warn("initializeEnd() : create failed. " + e.getClass().getSimpleName() + ", " + e.getMessage(),
+						e);
+				if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
+					String sdmlMessage = MessageConstant.SDML_MSG_CREATE_FAILED.getMessage();
+					rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
+							sdmlMessage,
+							createMessageOrg(sdmlMessage, validInfo.getMonitorId(), e),
+							NotifyTriggerType.SDML_CONTROL_CREATE_MONITOR));
+				}
+				rtn.addAll(forcedUpdateToWaiting(status));
+				return rtn;
 			}
 		}
 		// 初回ではない場合、監視も収集も無効に指定された登録済みの監視設定は全て無効とする（削除はしない）
@@ -391,14 +407,20 @@ public class SdmlController {
 		// 通知
 		if (!createSuccessList.isEmpty()) {
 			if (isNotified(this.controlSetting.getAutoCreateSuccessPriority())) {
+				String sdmlMessage = MessageConstant.SDML_MSG_CREATE_SUCCESS.getMessage();
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoCreateSuccessPriority(),
-						MessageConstant.SDML_MSG_CREATE_SUCCESS.getMessage(String.join(",", createSuccessList)), ""));
+						sdmlMessage,
+						createMessageOrg(sdmlMessage, String.join(",", createSuccessList), null),
+						NotifyTriggerType.SDML_CONTROL_CREATE_MONITOR));
 			}
 		}
 		if (!updateSuccessList.isEmpty()) {
 			if (isNotified(this.controlSetting.getAutoUpdateSuccessPriority())) {
+				String sdmlMessage = MessageConstant.SDML_MSG_UPDATE_SUCCESS.getMessage();
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoUpdateSuccessPriority(),
-						MessageConstant.SDML_MSG_UPDATE_SUCCESS.getMessage(String.join(",", updateSuccessList)), ""));
+						sdmlMessage,
+						createMessageOrg(sdmlMessage, String.join(",", updateSuccessList), null),
+						NotifyTriggerType.SDML_CONTROL_UPDATE_MONITOR));
 			}
 		}
 
@@ -434,7 +456,8 @@ public class SdmlController {
 		if (!controlStatusManager.checkStatus(status, this.controlCode)) {
 			if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-						MessageConstant.SDML_MSG_LOG_OUT_OF_ORDER.getMessage(), logDto.getOrgLogLine()));
+						MessageConstant.SDML_MSG_LOG_OUT_OF_ORDER.getMessage(), logDto.getOrgLogLine(),
+						NotifyTriggerType.SDML_CONTROL_ABNORMAL));
 			}
 			rtn.addAll(forcedUpdateToWaiting(status));
 			return rtn;
@@ -468,8 +491,11 @@ public class SdmlController {
 			}
 			// 通知
 			if (isNotified(this.controlSetting.getAutoEnableSuccessPriority())) {
+				String sdmlMessage = MessageConstant.SDML_MSG_ENABLE_SUCCESS.getMessage();
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoEnableSuccessPriority(),
-						MessageConstant.SDML_MSG_ENABLE_SUCCESS.getMessage(ids), ""));
+						sdmlMessage,
+						createMessageOrg(sdmlMessage, ids, null),
+						NotifyTriggerType.SDML_CONTROL_ENABLE_MONITOR));
 			}
 
 			// ステータス更新
@@ -478,8 +504,11 @@ public class SdmlController {
 		} catch (MonitorNotFound | InvalidSetting | InvalidRole | HinemosUnknown e) {
 			logger.warn("start() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
+				String sdmlMessage = MessageConstant.SDML_MSG_ENABLE_FAILED.getMessage();
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-						MessageConstant.SDML_MSG_ENABLE_FAILED.getMessage(ids), e.getMessage()));
+						sdmlMessage,
+						createMessageOrg(sdmlMessage, ids, e),
+						NotifyTriggerType.SDML_CONTROL_ENABLE_MONITOR));
 			}
 			rtn.addAll(forcedUpdateToWaiting(status));
 		}
@@ -499,7 +528,8 @@ public class SdmlController {
 		if (!controlStatusManager.checkStatus(status, this.controlCode)) {
 			if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-						MessageConstant.SDML_MSG_LOG_OUT_OF_ORDER.getMessage(), logDto.getOrgLogLine()));
+						MessageConstant.SDML_MSG_LOG_OUT_OF_ORDER.getMessage(), logDto.getOrgLogLine(),
+						NotifyTriggerType.SDML_CONTROL_ABNORMAL));
 			}
 			// 蓄積情報が残っている可能性があるため削除
 			InitializeDataUtil.clear(controlSetting.getApplicationId(), facilityId);
@@ -526,7 +556,8 @@ public class SdmlController {
 							MessageConstant.SDML_MSG_EARLY_STOP
 									.getMessage(controlSetting.getEarlyStopThresholdSecond().toString()),
 							MessageConstant.SDML_MSG_START_DATE.getMessage(startDateStr) + "\n"
-									+ MessageConstant.SDML_MSG_STOP_DATE.getMessage(stopDateStr)));
+									+ MessageConstant.SDML_MSG_STOP_DATE.getMessage(stopDateStr),
+							NotifyTriggerType.SDML_CONTROL_EARLY_STOP));
 				}
 			}
 		}
@@ -535,7 +566,9 @@ public class SdmlController {
 		rtn.addAll(stopMonitor());
 
 		// 停止するので機能障害検知は停止する
-		status.setInternalCheckInterval(null);
+		if (status != null) {
+			status.setInternalCheckInterval(null);
+		}
 
 		// ステータス更新（Stopの場合は待機に遷移するのでforceUpdateは不要）
 		ControlStatusUtil.refresh(controlStatusManager.update(status, this.controlCode));
@@ -586,16 +619,22 @@ public class SdmlController {
 					logger.warn("stopMonitor() : delete failed. monitorId=" + monitorId + ", "
 							+ e.getClass().getSimpleName() + ", " + e.getMessage());
 					if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
+						String sdmlMessage = MessageConstant.SDML_MSG_DELETE_FAILED.getMessage();
 						rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-								MessageConstant.SDML_MSG_DELETE_FAILED.getMessage(monitorId), e.getMessage()));
+								sdmlMessage,
+								createMessageOrg(sdmlMessage, monitorId, e),
+								NotifyTriggerType.SDML_CONTROL_DISABLE_MONITOR));
 					}
 				}
 			}
 			if (!successList.isEmpty()) {
 				// 通知
 				if (isNotified(this.controlSetting.getAutoDisableSuccessPriority())) {
+					String sdmlMessage = MessageConstant.SDML_MSG_DELETE_SUCCESS.getMessage();
 					rtn.add(createOutputBasicInfo(this.controlSetting.getAutoDisableSuccessPriority(),
-							MessageConstant.SDML_MSG_DELETE_SUCCESS.getMessage(String.join(",", successList)), ""));
+							sdmlMessage,
+							createMessageOrg(sdmlMessage, String.join(",", successList), null),
+							NotifyTriggerType.SDML_CONTROL_DISABLE_MONITOR));
 				}
 			}
 
@@ -622,16 +661,22 @@ public class SdmlController {
 							+ e.getClass().getSimpleName() + ", " + e.getMessage());
 					// 理由が異なる可能性もあるため一件ずつ通知する
 					if (isNotified(this.controlSetting.getAutoControlFailedPriority())) {
+						String sdmlMessage = MessageConstant.SDML_MSG_DISABLE_FAILED.getMessage();
 						rtn.add(createOutputBasicInfo(this.controlSetting.getAutoControlFailedPriority(),
-								MessageConstant.SDML_MSG_DISABLE_FAILED.getMessage(monitorId), e.getMessage()));
+								sdmlMessage,
+								createMessageOrg(sdmlMessage, monitorId, e),
+								NotifyTriggerType.SDML_CONTROL_DISABLE_MONITOR));
 					}
 				}
 			}
 			if (!successList.isEmpty()) {
 				// 通知
 				if (isNotified(this.controlSetting.getAutoDisableSuccessPriority())) {
+					String sdmlMessage = MessageConstant.SDML_MSG_DISABLE_SUCCESS.getMessage();
 					rtn.add(createOutputBasicInfo(this.controlSetting.getAutoDisableSuccessPriority(),
-							MessageConstant.SDML_MSG_DISABLE_SUCCESS.getMessage(String.join(",", successList)), ""));
+							sdmlMessage,
+							createMessageOrg(sdmlMessage, String.join(",", successList), null),
+							NotifyTriggerType.SDML_CONTROL_DISABLE_MONITOR));
 				}
 			}
 		}
@@ -648,7 +693,8 @@ public class SdmlController {
 		List<OutputBasicInfo> rtn = new ArrayList<>();
 		// 通知
 		rtn.add(createOutputBasicInfo(PriorityConstant.TYPE_CRITICAL,
-				MessageConstant.SDML_MSG_LOG_ERROR.getMessage(logDto.getMessage()), logDto.getOrgLogLine()));
+				MessageConstant.SDML_MSG_LOG_ERROR.getMessage(logDto.getMessage()), logDto.getOrgLogLine(),
+				NotifyTriggerType.SDML_CONTROL_ABNORMAL));
 
 		// ステータスを強制的に待機に更新
 		SdmlControlStatus status = controlStatusManager.getSdmlControlStatus();
@@ -666,7 +712,8 @@ public class SdmlController {
 		List<OutputBasicInfo> rtn = new ArrayList<>();
 		// 通知
 		rtn.add(createOutputBasicInfo(PriorityConstant.TYPE_WARNING,
-				MessageConstant.SDML_MSG_LOG_WARNING.getMessage(logDto.getMessage()), logDto.getOrgLogLine()));
+				MessageConstant.SDML_MSG_LOG_WARNING.getMessage(logDto.getMessage()), logDto.getOrgLogLine(),
+				NotifyTriggerType.SDML_CONTROL_ABNORMAL));
 
 		// ステータス更新
 		SdmlControlStatus status = controlStatusManager.getSdmlControlStatus();
@@ -727,9 +774,9 @@ public class SdmlController {
 	/**
 	 * 通知情報作成
 	 */
-	private OutputBasicInfo createOutputBasicInfo(int priority, String message, String messageOrg)
+	private OutputBasicInfo createOutputBasicInfo(int priority, String message, String messageOrg, NotifyTriggerType notifyTriggerType)
 			throws HinemosUnknown {
-		return SdmlUtil.createOutputBasicInfo(this.controlSetting, this.facilityId, priority, message, messageOrg);
+		return SdmlUtil.createOutputBasicInfo(this.controlSetting, this.facilityId, priority, message, messageOrg, notifyTriggerType);
 	}
 
 	/**
@@ -765,6 +812,16 @@ public class SdmlController {
 		}
 		// 要通知の場合はtrue
 		return true;
+	}
+	
+	private String createMessageOrg(String sdmlMessage, String monitorId, Exception e) {
+		String messageOrg = sdmlMessage + "\n"
+				+ MessageConstant.SDML_CONTROL_LOG.getMessage() + " : " + logDto.getOrgLogLine().trim() + "\n"
+				+ "Monitor ID : " + monitorId;
+		if (e != null) {
+			messageOrg += "\n" + "Error Message : " + e.getMessage();
+		}
+		return messageOrg;
 	}
 
 }

@@ -13,6 +13,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MaintenanceNotFound;
@@ -80,6 +81,12 @@ public class Notice {
 				rtn.setApplication(info.getApplication());
 				//監視項目ID
 				rtn.setMonitorId(maintenanceId);
+				
+				//7.0.0との互換性保持のため、Hinemosプロパティで出力するか制御
+				boolean flg = HinemosPropertyCommon.notify_output_trigger_subkey_$.getBooleanValue(HinemosModuleConstant.SYSYTEM_MAINTENANCE);
+				if (flg) {
+					rtn.setSubKey(info.getTypeId() + "|" + NotifyTriggerType.MAINTENANCE.name());
+				}
 
 				//メンテナンス機能では該当する値なし
 				rtn.setFacilityId(FacilityTreeAttributeConstant.INTERNAL_SCOPE);

@@ -124,7 +124,7 @@ public class RpaScenarioTagNameListComposite extends Composite {
 				Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 
 				// ダイアログ表示及び終了処理
-				RpaScenarioTagListDialog dialog = new RpaScenarioTagListDialog(shell, managerName);
+				RpaScenarioTagListDialog dialog = new RpaScenarioTagListDialog(shell, managerName, ownerRoleId);
 				if (tagList != null) {
 					dialog.setSelectTag(tagList);
 				}
@@ -183,6 +183,9 @@ public class RpaScenarioTagNameListComposite extends Composite {
 	public void setTagList(List<RpaScenarioTagResponse> tagList, Map<String,String> tagNameMap, Map<String,String> tagPathMap) {
 
 		//フィールドに追加
+		if (tagList == null){
+			tagList = new ArrayList<>();
+		}
 		this.tagList = tagList;
 
 		this.tagListTable.removeAll();
@@ -218,7 +221,5 @@ public class RpaScenarioTagNameListComposite extends Composite {
 	 */
 	public void setManagerName(String managerName) {
 		this.managerName = managerName;
-		this.tagListTable.removeAll(); 
-		this.tagList = null; 
 	}
 }

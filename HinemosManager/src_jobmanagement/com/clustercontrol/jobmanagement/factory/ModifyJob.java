@@ -33,7 +33,9 @@ import com.clustercontrol.fault.JobInvalid;
 import com.clustercontrol.fault.JobMasterDuplicate;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.fault.RpaManagementToolAccountNotFound;
 import com.clustercontrol.fault.RpaManagementToolEndStatusMasterNotFound;
+import com.clustercontrol.fault.RpaManagementToolMasterNotFound;
 import com.clustercontrol.fault.RpaManagementToolRunParamMasterNotFound;
 import com.clustercontrol.jobmanagement.bean.CommandStopTypeConstant;
 import com.clustercontrol.jobmanagement.bean.JobCommandParam;
@@ -86,8 +88,12 @@ import com.clustercontrol.jobmanagement.util.JobValidator;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
+import com.clustercontrol.rpa.model.RpaManagementToolAccount;
 import com.clustercontrol.rpa.model.RpaManagementToolEndStatusMst;
+import com.clustercontrol.rpa.model.RpaManagementToolMst;
 import com.clustercontrol.rpa.model.RpaManagementToolRunParamMst;
+import com.clustercontrol.rpa.session.RpaControllerBean;
+import com.clustercontrol.rpa.util.RpaUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 
@@ -104,7 +110,8 @@ public class ModifyJob {
 	private static Log m_log = LogFactory.getLog( ModifyJob.class );
 
 	public Long replaceJobunit(List<JobInfo> oldList, List<JobInfo> newList, String userId)
-			throws JobInvalid, JobMasterNotFound, EntityExistsException, HinemosUnknown, JobMasterDuplicate, InvalidSetting, InvalidRole {
+			throws JobInvalid, JobMasterNotFound, EntityExistsException, HinemosUnknown, JobMasterDuplicate, InvalidSetting, InvalidRole,
+			RpaManagementToolAccountNotFound, RpaManagementToolMasterNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 
 			//ジョブユニットのジョブIDを取得
@@ -208,7 +215,8 @@ public class ModifyJob {
 	 * @see com.clustercontrol.jobmanagement.factory.ModifyJob#createJobMaster(JobTreeItem, String)
 	 */
 	public Long registerJobunit(JobTreeItem jobunit, String userId)
-			throws HinemosUnknown, JobMasterNotFound, JobInvalid, JobMasterDuplicate, InvalidSetting, InvalidRole {
+			throws HinemosUnknown, JobMasterNotFound, JobInvalid, JobMasterDuplicate, InvalidSetting, InvalidRole,
+			RpaManagementToolAccountNotFound, RpaManagementToolMasterNotFound {
 
 		//ジョブユニットのジョブIDを取得
 		String jobunitId = jobunit.getData().getJobunitId();
@@ -307,7 +315,8 @@ public class ModifyJob {
 	 *      String)
 	 */
 	private void createJobMaster(JobTreeItem item, String jobunitId, String parentId, String user, Long updateDate)
-			throws HinemosUnknown, JobMasterDuplicate, JobMasterNotFound, InvalidSetting, InvalidRole {
+			throws HinemosUnknown, JobMasterDuplicate, JobMasterNotFound, InvalidSetting, InvalidRole,
+			RpaManagementToolAccountNotFound, RpaManagementToolMasterNotFound {
 
 		//ジョブマスタデータ作成
 		createJobMasterData(item.getData(), jobunitId, parentId, user, updateDate);
@@ -343,7 +352,8 @@ public class ModifyJob {
 	 * @throws InvalidRole
 	 */
 	private void createJobMasterData(JobInfo info, String jobunitId, String parentId, String user, Long updateDate)
-			throws HinemosUnknown, JobMasterDuplicate, JobMasterNotFound, InvalidSetting, InvalidRole {
+			throws HinemosUnknown, JobMasterDuplicate, JobMasterNotFound, InvalidSetting, InvalidRole,
+			RpaManagementToolAccountNotFound, RpaManagementToolMasterNotFound {
 
 		m_log.debug("createJobMasterData");
 
@@ -1101,6 +1111,13 @@ public class ModifyJob {
 				if (info.getRpa().getRpaJobType() == RpaJobTypeConstant.DIRECT) {
 					jobMst.setProcessMode(info.getRpa().getProcessingMethod());
 				} else {
+					RpaManagementToolAccount account = new RpaControllerBean().getRpaAccount(info.getRpa().getRpaScopeId());
+					// RPA管理ツールマスタを取得
+					RpaManagementToolMst master = com.clustercontrol.rpa.util.QueryUtil.getRpaManagementToolMstPK(account.getRpaManagementToolId());
+					// RPA管理ツールアカウントスコープのファシリティIDを取得しセットする
+					String parentFacilityId = RpaUtil.generateRpaManagementScopeId(account, master);
+					jobMst.setFacilityId(parentFacilityId);
+					
 					jobMst.setProcessMode(ProcessingMethodConstant.TYPE_ALL_NODE);
 				}
 				jobMst.setMessageRetry(info.getRpa().getMessageRetry());
@@ -1211,6 +1228,14 @@ public class ModifyJob {
 			m_log.info("createJobMasterData() : "
 					+ jmd.getClass().getSimpleName() + ", " + jmd.getMessage());
 			throw jmd;
+		} catch (RpaManagementToolAccountNotFound e) {
+			m_log.info("createJobMasterData() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		} catch (RpaManagementToolMasterNotFound e) {
+			m_log.info("createJobMasterData() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
 		}
 	}
 	

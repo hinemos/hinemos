@@ -22,6 +22,8 @@ public class MessageConstant {
 	private static final String VALIDATE_STRING_LONG = "\"The string parameter is too long. property=%s\"";
 	private static final String VALIDATE_STRING_SELECT = "\"The parameter is not a specific value. property=%s\"";
 	private static final String VALIDATE_TYPE = "\"Type of the parameter is invalid. property=%s\"";
+	public static final String VALIDATE_GCC_ALL = "\"If you use GC method 'all', you must set the number only 1.\"";
+	public static final String VALIDATE_GCC_GET_FAILED = "\"Failed to get GC collector during initialization.\"";
 
 	public static String getFaildCommandTimeout() {
 		return FAILD_COMMAND_TIMEOUT;

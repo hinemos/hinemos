@@ -12,15 +12,28 @@ import java.io.Serializable;
 
 import javax.xml.bind.annotation.XmlType;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * ジョブの後続ジョブ優先度に関する情報を保持するクラス
  * 
  * @version 6.1.0
  * @since 6.1.0
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobNextJobOrderInfo implements Serializable, Cloneable {
+@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE) //JSONから変換する際、getter名、setter名を無視し、フィールド名のみを参照して変換する。
+public class JobNextJobOrderInfo implements Serializable, Cloneable, RequestDto {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 1L;
 
 	/** ジョブユニットID */
@@ -97,5 +110,9 @@ public class JobNextJobOrderInfo implements Serializable, Cloneable {
 	public Object clone() throws CloneNotSupportedException {
 		JobNextJobOrderInfo jobNextJobOrderInfo = (JobNextJobOrderInfo) super.clone();
 		return jobNextJobOrderInfo;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

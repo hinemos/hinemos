@@ -11,8 +11,6 @@ import java.util.List;
 
 import org.openapitools.client.model.AddSdmlControlSettingRequest;
 import org.openapitools.client.model.GetSdmlControlSettingListRequest;
-import org.openapitools.client.model.ImportSdmlControlRequest;
-import org.openapitools.client.model.ImportSdmlControlResponse;
 import org.openapitools.client.model.ModifySdmlControlSettingRequest;
 import org.openapitools.client.model.SdmlControlSettingInfoResponse;
 import org.openapitools.client.model.SdmlMonitorTypeMasterResponse;
@@ -208,25 +206,6 @@ public class SdmlRestClientWrapper {
 			return proxy.proxyExecute();
 		} catch (RestConnectFailed | HinemosUnknown | SdmlControlSettingNotFound | InvalidUserPass | InvalidRole
 				| InvalidSetting def) {
-			throw def;
-		} catch (Exception unknown) {
-			throw new HinemosUnknown(unknown);
-		}
-	}
-
-	public ImportSdmlControlResponse importSdmlControlSettingV1(ImportSdmlControlRequest importSdmlControlRequest)
-			throws RestConnectFailed, InvalidUserPass, InvalidRole, HinemosUnknown {
-		SdmlRestUrlSequentialExecuter<ImportSdmlControlResponse> proxy = new SdmlRestUrlSequentialExecuter<ImportSdmlControlResponse>(
-				this.connectUnit, this.restKind) {
-			@Override
-			public ImportSdmlControlResponse executeMethod(SdmlApi apiClient) throws Exception {
-				ImportSdmlControlResponse result = apiClient.sdmlImportSdmlControlSettingV1(importSdmlControlRequest);
-				return result;
-			}
-		};
-		try {
-			return proxy.proxyExecute();
-		} catch (RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown def) {
 			throw def;
 		} catch (Exception unknown) {
 			throw new HinemosUnknown(unknown);

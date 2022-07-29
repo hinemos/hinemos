@@ -111,11 +111,6 @@ public class RpaResourceMonitor {
 	}
 
 	private static void internalResourceUpdate(List<RpaManagementToolAccount> rpaManagementToolAccounts) throws Exception {
-		if (!HinemosPropertyCommon.rpa_autoupdate_enable.getBooleanValue()) {
-			// プロパティで自動検知が無効な場合は実施しない。
-			return;
-		}
-		
 		// アカウント毎にRPAリソースを更新
 		for (RpaManagementToolAccount account : rpaManagementToolAccounts) {
 			if (detecting.contains(account.getRpaScopeId())) {

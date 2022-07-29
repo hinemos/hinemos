@@ -35,6 +35,7 @@ import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemResponseP1;
 
 /**
  * ジョブユーティリティクラス
@@ -212,7 +213,17 @@ public class JobUtil {
 		}
 		return ret;
 	}
-	
+
+	public static void sort(JobTreeItemResponseP1 item) {
+		ArrayList<JobTreeItemResponseP1> children = item.getChildren();
+		if (children == null || children.size() == 0) {
+			return;
+		}
+		Collections.sort(item.getChildren(), new DataComparatorResponse());
+		for (JobTreeItemResponseP1 child : children) {
+			sort(child);
+		}
+	}
 	/**
 	 * ジョブツリーをソートする
 	 * @param item
@@ -228,6 +239,21 @@ public class JobUtil {
 		}
 	}
 
+	private static class DataComparatorResponse implements java.util.Comparator<JobTreeItemResponseP1>, Serializable {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public int compare(JobTreeItemResponseP1 o1, JobTreeItemResponseP1 o2){
+			String s1 = o1.getData().getId();
+			String s2 = o2.getData().getId();
+			m_log.trace("s1=" + s1 + ", s2=" + s2);
+			return s1.compareTo(s2);
+		}
+	}
+	
 	private static class DataComparator implements java.util.Comparator<JobTreeItem>, Serializable {
 		/**
 		 * 

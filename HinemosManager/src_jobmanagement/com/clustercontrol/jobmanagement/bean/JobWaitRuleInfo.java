@@ -22,6 +22,25 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.StatusConstant;
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.JobObjectGroupInfoDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.TimeStringToLongDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ConditionTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.EndStatusSelectEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.OperationEndDelayEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.OperationMultipleEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.OperationStartDelayEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.PrioritySelectEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.TimeLongToStringSerializer;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * ジョブの待ち条件に関する情報を保持するクラス<BR>
@@ -29,12 +48,20 @@ import com.clustercontrol.bean.StatusConstant;
  * @version 2.1.0
  * @since 1.0.0
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
+@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE) //JSONから変換する際、getter名、setter名を無視し、フィールド名のみを参照して変換する。
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobWaitRuleInfo implements Serializable, Cloneable {
+public class JobWaitRuleInfo implements Serializable, Cloneable, RequestDto {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = -6362706494732152461L;
 
 	/** ログ出力のインスタンス<BR> */
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( JobWaitRuleInfo.class );
 
 	/** 保留 */
@@ -44,21 +71,31 @@ public class JobWaitRuleInfo implements Serializable, Cloneable {
 	private Boolean skip = false;
 
 	/** スキップ時終了状態 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=EndStatusSelectEnum.class)
 	private Integer skipEndStatus = 0;
 
 	/** スキップ時終了値 */
 	private Integer skipEndValue = EndStatusConstant.INITIAL_VALUE_NORMAL;
 
 	/** 判定対象の条件関係 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ConditionTypeEnum.class)
 	private Integer condition = ConditionTypeConstant.TYPE_AND;
 
 	/** ジョブ判定対象情報 */
+	@JsonDeserialize(using=JobObjectGroupInfoDeserializer.class)
 	private ArrayList<JobObjectGroupInfo> objectGroup;
 
 	/** 条件を満たさなければ終了する */
 	private Boolean endCondition = false;
 
 	/** 条件を満たさない時の終了状態 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=EndStatusSelectEnum.class)
 	private Integer endStatus = 0;
 
 	/** 条件を満たさない時の終了値 */
@@ -68,6 +105,9 @@ public class JobWaitRuleInfo implements Serializable, Cloneable {
 	private Boolean exclusiveBranch = false;
 
 	/** 排他分岐の終了状態 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=EndStatusSelectEnum.class)
 	private Integer exclusiveBranchEndStatus = 0;
 
 	/** 排他分岐の終了値 */
@@ -83,6 +123,9 @@ public class JobWaitRuleInfo implements Serializable, Cloneable {
 	private String calendarId;
 
 	/** カレンダにより未実行時の終了状態 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=EndStatusSelectEnum.class)
 	private Integer calendarEndStatus = EndStatusConstant.INITIAL_VALUE_NORMAL;
 
 	/** カレンダにより未実行時の終了値 */
@@ -92,6 +135,9 @@ public class JobWaitRuleInfo implements Serializable, Cloneable {
 	private Boolean jobRetryFlg = false;
 
 	/** 繰り返し完了状態 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=EndStatusSelectEnum.class)
 	private Integer jobRetryEndStatus = null;
 
 	/** 繰り返し回数 */
@@ -113,25 +159,39 @@ public class JobWaitRuleInfo implements Serializable, Cloneable {
 	private Boolean startDelayTime = false;
 
 	/** 開始遅延時刻の値 */
+	@JsonDeserialize(using=TimeStringToLongDeserializer.class)
+	@JsonSerialize(using=TimeLongToStringSerializer.class)
 	private Long startDelayTimeValue = 0l;
 
 	/** 開始遅延判定対象の条件関係 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ConditionTypeEnum.class)
 	private Integer startDelayConditionType = ConditionTypeConstant.TYPE_AND;
 
 	/** 開始遅延通知 */
 	private Boolean startDelayNotify = false;
 
 	/** 開始遅延通知重要度 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer startDelayNotifyPriority = 0;
 
 	/** 開始遅延操作 */
 	private Boolean startDelayOperation = false;
 
 	/** 開始遅延操作種別 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=OperationStartDelayEnum.class)
 	private Integer startDelayOperationType = OperationConstant.TYPE_STOP_SKIP;
 
 	/** 開始遅延操作終了状態 */
-	private Integer startDelayOperationEndStatus = EndStatusConstant.INITIAL_VALUE_ABNORMAL;
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=EndStatusSelectEnum.class)
+	private Integer startDelayOperationEndStatus = EndStatusConstant.TYPE_ABNORMAL;
 
 	/** 開始遅延操作終了値 */
 	private Integer startDelayOperationEndValue = EndStatusConstant.INITIAL_VALUE_NORMAL;
@@ -155,25 +215,39 @@ public class JobWaitRuleInfo implements Serializable, Cloneable {
 	private Boolean endDelayTime = false;
 
 	/** 終了遅延時刻の値 */
+	@JsonDeserialize(using=TimeStringToLongDeserializer.class)
+	@JsonSerialize(using=TimeLongToStringSerializer.class)
 	private Long endDelayTimeValue;
 
 	/** 終了遅延判定対象の条件関係 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ConditionTypeEnum.class)
 	private Integer endDelayConditionType = ConditionTypeConstant.TYPE_AND;
 
 	/** 終了遅延通知 */
 	private Boolean endDelayNotify = false;
 
 	/** 終了遅延通知重要度 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer endDelayNotifyPriority = 0;
 
 	/** 終了遅延操作 */
 	private Boolean endDelayOperation = false;
 
 	/** 終了遅延操作種別 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=OperationEndDelayEnum.class)
 	private Integer endDelayOperationType = OperationConstant.TYPE_STOP_AT_ONCE;
 
 	/** 終了遅延操作終了状態 */
-	private Integer endDelayOperationEndStatus = EndStatusConstant.INITIAL_VALUE_ABNORMAL;
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=EndStatusSelectEnum.class)
+	private Integer endDelayOperationEndStatus = EndStatusConstant.TYPE_ABNORMAL;
 
 	/** 終了遅延操作終了値 */
 	private Integer endDelayOperationEndValue = EndStatusConstant.INITIAL_VALUE_NORMAL;
@@ -186,7 +260,13 @@ public class JobWaitRuleInfo implements Serializable, Cloneable {
 
 	/** 多重度 */
 	private Boolean multiplicityNotify = true;
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer multiplicityNotifyPriority = PriorityConstant.TYPE_WARNING;
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=OperationMultipleEnum.class)
 	private Integer multiplicityOperation = StatusConstant.TYPE_WAIT;
 	private Integer multiplicityEndValue = -1;
 	
@@ -1398,5 +1478,19 @@ public class JobWaitRuleInfo implements Serializable, Cloneable {
 			}
 		}
 		return jobWaitRuleInfo;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+		if (objectGroup != null) {
+			for (JobObjectGroupInfo req : objectGroup) {
+				req.correlationCheck();
+			}
+		}
+		if (exclusiveBranchNextJobOrderList != null) {
+			for (JobNextJobOrderInfo req : exclusiveBranchNextJobOrderList) {
+				req.correlationCheck();
+			}
+		}
 	}
 }

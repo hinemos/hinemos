@@ -8,10 +8,18 @@
 package com.clustercontrol.logging.util;
 
 public enum PriorityType {
-	INFO(3), WARN(2), UNKNOWN(1), CRITICAL(0),;
+	// @formatter:off
+	INFO("info", 3),
+	WARNING("warning", 2),
+	UNKNOWN("unknown", 1),
+	CRITICAL("critical", 0);
+	// @formatter:on
+
+	private final String str;
 	private final Integer i;
 
-	private PriorityType(final Integer i) {
+	private PriorityType(final String str, final Integer i) {
+		this.str = str;
 		this.i = i;
 	}
 
@@ -19,21 +27,27 @@ public enum PriorityType {
 		if (str == null) {
 			return null;
 		}
-		switch (str) {
-		case "info":
-			return INFO.getInt();
-		case "warning":
-			return WARN.getInt();
-		case "unknown":
-			return UNKNOWN.getInt();
-		case "critical":
-			return CRITICAL.getInt();
-		default:
-			return null;
+		for (PriorityType value : values()) {
+			if (str.equals(value.getStringValue())) {
+				return value.getIntValue();
+			}
 		}
+		return null;
 	}
 
-	private Integer getInt() {
-		return this.i;
+	public static String[] getStringValues() {
+		String[] strValues = new String[values().length];
+		for (int i = 0; i < strValues.length; i++) {
+			strValues[i] = values()[i].getStringValue();
+		}
+		return strValues;
+	}
+
+	public String getStringValue() {
+		return str;
+	}
+
+	public Integer getIntValue() {
+		return i;
 	}
 }

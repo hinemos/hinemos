@@ -12,6 +12,11 @@ import com.clustercontrol.jobmanagement.bean.RpaJobInfo;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertAssertion;
 import com.clustercontrol.rest.dto.RequestDto;
 
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 @RestBeanConvertAssertion(to = RpaJobInfo.class)
 public class JobRpaOptionInfoRequest implements RequestDto {
 

@@ -99,6 +99,8 @@ public class RpaScenarioOperationResultCreateSettingDialog extends CommonDialog 
 	private CalendarIdListComposite m_calendarId = null;
 	/** 作成対象日(from) */
 	private Text createFromDateText = null;
+	/** 作成対象日選択ボタン */
+	private Button createTimeFromButton;
 	/** 通知情報 */
 	private NotifyInfoComposite m_notifyIdList = null;
 	/** この設定を有効にする */
@@ -407,7 +409,7 @@ public class RpaScenarioOperationResultCreateSettingDialog extends CommonDialog 
 			}
 		});
 		// 追加ボタン
-		Button createTimeFromButton = new Button(parent, SWT.NONE);
+		createTimeFromButton = new Button(parent, SWT.NONE);
 		gridData = new GridData();
 		gridData.horizontalSpan = 1;
 		gridData.horizontalAlignment = GridData.FILL;
@@ -616,6 +618,11 @@ public class RpaScenarioOperationResultCreateSettingDialog extends CommonDialog 
 				this.m_notifyIdList.setApplication(settingInfo.getApplication());
 				// 有効フラグ
 				this.m_validFlg.setSelection(settingInfo.getValidFlg());
+			}
+			
+			if (mode == PropertyDefineConstant.MODE_MODIFY) {
+				// 作成対象日は変更不可
+				this.createTimeFromButton.setEnabled(false);
 			}
 		} else {
 			// 作成の場合

@@ -35,9 +35,12 @@ import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.composite.action.NumberVerifyListener;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.jobmanagement.bean.JobRpaReturnCodeConditionMessage;
 import com.clustercontrol.jobmanagement.rpa.util.ReturnCodeConditionChecker;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
+import com.clustercontrol.util.HinemosMessage;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
 
@@ -411,16 +414,30 @@ public class RpaDirectEndValueConditionDialog extends CommonDialog {
 		} else {
 			m_condition.setConditionType(ConditionTypeEnum.RETURN_CODE);
 
+			// 入力の形式が正しいか確認
 			if (JobDialogUtil.validateReturnCodeText(m_returnCodeText)) {
 				m_condition.setReturnCode(m_returnCodeText.getText());
 			} else {
 				return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),
 						Messages.getString("message.job.rpa.21"));
 			}
+			
+			// 区切り文字として分割し、入力チェックを行う
+			try{
+				ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(
+						MessageConstant.RPAJOB_END_VALUE_CONDITION_RETURN_CODE.getMessage(), m_returnCodeText.getText());
+			} catch(InvalidSetting e) {
+				return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),HinemosMessage.replace(e.getMessage()));
+			}
+			
 			IStructuredSelection returnCodeConditionSelection = (StructuredSelection) m_returnCodeConditionComboViewer
 					.getSelection();
 			ReturnCodeConditionEnum selectedCondition = (ReturnCodeConditionEnum) returnCodeConditionSelection
 					.getFirstElement();
+			if(selectedCondition == null){
+				return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),
+						Messages.getString("message.job.rpa.38"));
+			}
 			// 複数指定または範囲指定の場合、判定条件は"="か"!="のみ
 			if (m_returnCodeText.getText().matches(ReturnCodeConditionChecker.RANGE_CONDITION_REGEX)
 					|| m_returnCodeText.getText().matches(ReturnCodeConditionChecker.MULTI_CONDITION_REGEX)) {

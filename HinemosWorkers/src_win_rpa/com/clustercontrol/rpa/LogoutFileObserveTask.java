@@ -30,8 +30,9 @@ public class LogoutFileObserveTask extends ObserveTask {
 
 	/**
 	 *  コンストラクタ
+	 * @throws HinemosUnknown 
 	 */
-	public LogoutFileObserveTask() {
+	public LogoutFileObserveTask() throws HinemosUnknown {
 		super(threadName);
 	}
 
@@ -39,6 +40,7 @@ public class LogoutFileObserveTask extends ObserveTask {
 	public void run() {
 		m_log.info("run() : start");
 		while (!Thread.currentThread().isInterrupted()) {
+			m_log.debug("run() : loop start.");
 			try {
 				// 指示ファイルが生成するまで待機
 				RoboLogoutInfo roboLogoutInfo = roboFileManager.read(RoboLogoutInfo.class, checkInterval);
@@ -46,9 +48,25 @@ public class LogoutFileObserveTask extends ObserveTask {
 					m_log.warn("run() : roboLogoutInfo is null");
 					return; // 処理終了等で処理が中断された場合
 				}
-				m_log.debug("run() : " + roboLogoutInfo);
+				m_log.debug("run() : roboLogoutInfo=" + roboLogoutInfo);
+
+				try {
+					if (!super.isAllowedToExecute(roboLogoutInfo)) {
+						continue;
+					}
+				} catch (InterruptedException e) {
+					m_log.debug("run() : thread interrupted. e=" + e.getMessage(), e);
+					return;
+				}
+
 				// 実行指示ファイルを削除
 				roboFileManager.delete(RoboLogoutInfo.class);
+
+				// PIDファイルを削除
+				if (!PidFile.getInstance().delete()) {
+					m_log.warn("run() : failed to delete pid file.");
+				}
+
 				// ログアウトを実行
 				CommandResult ret = null;
 				try {

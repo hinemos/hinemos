@@ -86,7 +86,7 @@ public class SelectRpaScenario {
 				condition.getOwnerRoleId());
 
 		for(RpaScenario entity : entityList){
-			m_log.debug("getRpaScenarioList() add display list : target = " + entity.getScenarioId());
+			m_log.debug("getRpaScenarioList() add display list: target=" + entity);
 			filterList.add(entity);
 		}
 		return filterList;
@@ -109,15 +109,15 @@ public class SelectRpaScenario {
 	/**
 	 * RPAシナリオに紐づくRPAツール名情報を返します。
 	 */
-	public Map<String,String> getRpaToolNameMap() throws RpaToolMasterNotFound, InvalidRole {
-		Map<String,String> toolMap = new HashMap<>();
+	public Map<String, RpaToolMst> getRpaToolNameMap() throws RpaToolMasterNotFound, InvalidRole {
+		Map<String, RpaToolMst> toolMap = new HashMap<>();
 		List<RpaToolMst> toolEntityList = QueryUtil.getRpaToolMstList();
 		
 		for (RpaToolMst entity : toolEntityList){
-			toolMap.put(entity.getRpaToolId(), entity.getRpaToolName());
+			toolMap.put(entity.getRpaToolId(), entity);
 		}
 		
-		Map<String,String> scenarioToolMap = new HashMap<>();
+		Map<String, RpaToolMst> scenarioToolMap = new HashMap<>();
 		List<RpaScenario> scenarioEntityList = QueryUtil.getRpaScenarioByFilter(null,null,null,null,null,null);
 		
 		for (RpaScenario entity : scenarioEntityList){

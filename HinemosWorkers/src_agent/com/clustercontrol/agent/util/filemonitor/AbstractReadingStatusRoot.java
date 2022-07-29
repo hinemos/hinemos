@@ -344,7 +344,10 @@ public abstract class AbstractReadingStatusRoot<T extends AbstractFileMonitorInf
 		}
 		// 新規監視対象で前回監視数と新規監視数が監視最大数を超えていない場合、監視対象
 		if ((preFileTotalCounter + newMonitorCounter) < fileMonitorConfig.getFileMaxFiles()) {
-			log.debug("isMonitorFile() file is new monitor : id=" + wrapper.getId() + ", file=" + file.getName());
+			if (log.isDebugEnabled()) {
+				log.debug("isMonitorFile() file is new monitor : id=" + wrapper.getId() + ", file=" + file.getName()
+						+ " ,newMonitorCounter= " + newMonitorCounter + " preFileTotalCounter:" + preFileTotalCounter);
+			}
 			++newMonitorCounter;
 			return true;
 		}

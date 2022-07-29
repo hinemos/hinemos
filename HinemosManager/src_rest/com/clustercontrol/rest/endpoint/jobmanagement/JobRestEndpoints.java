@@ -127,110 +127,8 @@ import com.clustercontrol.rest.annotation.RestSystemPrivilege;
 import com.clustercontrol.rest.annotation.cmdtool.ArrayTypeParam;
 import com.clustercontrol.rest.annotation.cmdtool.IgnoreCommandline;
 import com.clustercontrol.rest.annotation.cmdtool.IgnoreReference;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AbstractAddJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AbstractModifyJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddApprovalJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddCommandJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddFileCheckJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddFileCheckRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddFileTransferJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddJobLinkRcvJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddJobLinkRcvRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddJobLinkSendJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddJobLinkSendSettingRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddJobManualRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddJobQueueRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddJobnetRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddMonitorJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddReferJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddRpaJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.AddScheduleRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ApprovalJobInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.CommandJobInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.EditLockResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.FileCheckJobInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.FileJobInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetApprovalJobListRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetEditLockRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetJobFullListRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetJobHistoryListRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetJobHistoryListResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetJobKickListByConditionRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetJobKickListByConditionResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetJobLinkMessageListRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetJobLinkMessageListResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetJobQueueActivityInfoRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetJobQueueListSearchRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.GetPlanListRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobApprovalInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobDetailInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobFileCheckResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobForwardFileResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobInfoReferrerQueueResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobInfoRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobInfoRequestP1;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobInfoResponseP1;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobKickFilterInfoRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobKickResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobLinkExpInfoRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobLinkRcvJobInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobLinkRcvResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobLinkSendJobInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobLinkSendSettingResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobManualResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobNodeDetailResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobObjectGroupInfoRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobObjectGroupInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobObjectInfoRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobObjectInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobOperationPropResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobOperationRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobPlanResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobQueueItemContentResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobQueueItemInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobQueueSettingViewInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobQueueResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobRpaLoginResolutionResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobRpaScreenshotResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobScheduleResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobSessionJobDetailResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemResponseP1;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemResponseP2;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemResponseP3;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemResponseP4;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobnetInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyApprovalInfoRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyApprovalJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyCommandJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyFileCheckJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyFileCheckRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyFileTransferJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyJobLinkRcvJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyJobLinkRcvRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyJobLinkSendJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyJobLinkSendSettingRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyJobManualRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyJobQueueRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyJobnetRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyMonitorJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyReferJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyRpaJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ModifyScheduleRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.MonitorJobInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.PremakeJobsessionResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ReferJobInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.RegistJobLinkMessageRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.RegistJobLinkMessageResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.RegisterJobunitRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.ReplaceJobunitRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.RpaJobInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.RunJobRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.RunJobResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.SendJobLinkMessageManualRequest;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.SendJobLinkMessageManualResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.SetJobKickStatusRequest;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.*;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.bean.RegisterJobunitWrapper;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ControlEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JobApprovalStatusEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JobKickTypeEnum;
@@ -283,14 +181,11 @@ public class JobRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, JobMasterNotFound, UserNotFound, InvalidRole, InvalidRole ,InvalidUserPass {
 		m_log.info("call getJobTree()");
 		
-		JobTreeItem retOrg= new JobControllerBean().getJobTree(ownerRoleId, true, Locale.getDefault());
+		JobTreeItemResponseP1 retOrg = new JobControllerBean().getJobTree(ownerRoleId, Locale.getDefault());
 
-		JobTreeItemResponseP1 dto = new JobTreeItemResponseP1();
-		RestBeanUtil.convertBeanNoInvalid(retOrg, dto);
+		RestLanguageConverter.convertMessages(retOrg);
 
-		RestLanguageConverter.convertMessages(dto);
-
-		return Response.status(Status.OK).entity(dto).build();
+		return Response.status(Status.OK).entity(retOrg).build();
 	}
 
 	/**
@@ -438,7 +333,13 @@ public class JobRestEndpoints {
 	 *
 	 * JobManagementAdd権限とJobManagementWrite権限が必要
 	 *
-	 * @param RegisterJobunitRequest->jobTreeItem ジョブユニット情報。{@link com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemRequest}の階層オブジェクト
+	 * @param RegisterJobunitRequest ->jobTreeItem ジョブユニット情報。{@link com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemRequest}の階層オブジェクト
+	 * <BR>本APIでは一度に大量のジョブが登録されるケースが想定されるため、変換コストを減らすためにJSONからRegisterJobunitRequestのインスタンスは作らず、独自実装として直接JobTreeItemクラスに変換している。
+	 * <BR>なお、内部コード(数値型)を文字列型で定義するため、リクエストボディのJSONスキーマはJobTreeItemRequestで定義している(RequestBodyアノテーション)。
+	 * <BR>即ち、本APIではリクエストボディ(JobTreeItemRequest)->JobTreeItem の変換を行っている。
+	 * @param isClient クエリパラメータで指定。trueの場合、レスポンスにはジョブユニットの更新時刻のみが含まれる。デフォルトはfalse
+	 * @return isClientがfalse:更新後のJobTreeItemを返す。なお、リクエストと同様パフォーマンス重視でJobTreeItemクラスを直接JSONに変換している(スキーマはJobTreeItemResponseP2に準ずる)。
+	 * <BR>isClientがtrue:更新時刻のみ格納して返す。
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
@@ -464,14 +365,15 @@ public class JobRestEndpoints {
 	@RestLog(action = LogAction.Add, target = LogTarget.Jobunit, type = LogType.UPDATE )
 	@IgnoreCommandline
 	public Response registerJobunit(@Context Request request, @Context UriInfo uriInfo,
-			@RequestBody(description = "RegisterJobunitRequest", content = @Content(schema = @Schema(implementation = RegisterJobunitRequest.class))) String requestBody )
+			@RequestBody(description = "RegisterJobunitRequest", content = @Content(schema = @Schema(implementation = RegisterJobunitRequest.class))) String requestBody 
+			, @QueryParam(value = "isClient") boolean isClient)
 					throws HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting, JobMasterNotFound, JobInvalid, NotifyNotFound, UserNotFound, JobMasterDuplicate {
 		m_log.info("call registerJobunit()");
-
-		RegisterJobunitRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, RegisterJobunitRequest.class);
+		// JSONからJobTreeItemインスタンス(RegisterJobunitWrapper.jobTreeItem)に変換する。
+		RegisterJobunitWrapper dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, RegisterJobunitWrapper.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
-		JobTreeItemRequest topItem = dtoReq.getJobTreeItem();
+		JobTreeItem topItem = dtoReq.getJobTreeItem();
 		boolean existJobUnit = false;
 		try{
 			// jobunitIdとjobIdが既に存在するか
@@ -484,22 +386,26 @@ public class JobRestEndpoints {
 		if(existJobUnit){
 			throw new JobMasterDuplicate(MessageConstant.MESSAGE_JOBUNIT_ID_DUPLICATED.getMessage(topItem.getData().getJobunitId()));
 		}
-		// DTOからINFOへ変換
-		JobTreeItem reqItem = convertJobTreeItemFromDto(topItem);
 
 		//登録
-		new JobControllerBean().registerJobunit(reqItem);
+		JobControllerBean jobControllerBean = new JobControllerBean();
+		jobControllerBean.registerJobunit(topItem);
 
-		//更新結果を取得
-				
-		JobTreeItem retOrg= new JobControllerBean().getJobunitTreeFullInfo(reqItem.getData().getJobunitId(), null, Locale.getDefault());
-		
-		// INFOからDTOへ変換し返却
-		JobTreeItemResponseP2 resDto = convertJobTreeItemP2FromInfo(retOrg);
-		if (resDto != null) {
-			RestLanguageConverter.convertMessages(resDto);
+		if (isClient) {
+			// クライアントから使用する場合、更新時刻のみ返す。
+			JobTreeItemResponseP2 resDto = new JobTreeItemResponseP2();
+			JobInfoResponse emptyData = new JobInfoResponse();
+			long updateTime = jobControllerBean.getUpdateTime(Arrays.asList(topItem.getData().getJobunitId())).get(0);
+			emptyData.setUpdateTime(RestCommonConverter.convertHinemosTimeToDTString(updateTime));
+			resDto.setData(emptyData);
+			return Response.status(Status.OK).entity(resDto).build();
+		} else {
+			//更新結果を取得
+			JobTreeItem retOrg= new JobControllerBean().getJobunitTreeFullInfo(topItem.getData().getJobunitId(), null, Locale.getDefault());
+			// JobTreeItemをそのまま返却
+			// メッセージ翻訳はJSON変換時に実施 @see LanguageTranslateSerializer
+			return Response.status(Status.OK).entity(retOrg).build();
 		}
-		return Response.status(Status.OK).entity(resDto).build();
 	}
 
 	/**
@@ -511,6 +417,12 @@ public class JobRestEndpoints {
 	 * JobManagementAdd権限とJobManagementWrite権限が必要
 	 *
 	 * @param ReplaceJobunitRequest->jobTreeItem ジョブユニット情報。{@link com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemRequest}の階層オブジェクト
+	 * <BR>本APIでは一度に大量のジョブが登録されるケースが想定されるため、変換コストを減らすためにJSONからRegisterJobunitRequestのインスタンスは作らず、独自実装として直接JobTreeItemクラスに変換している。
+	 * <BR>なお、内部コード(数値型)を文字列型で定義するため、リクエストボディのJSONスキーマはJobTreeItemRequestで定義している(RequestBodyアノテーション)。
+	 * <BR>即ち、本APIではリクエストボディ(JobTreeItemRequest)->JobTreeItem の変換を行っている。
+	 * @param isClient クエリパラメータで指定。trueの場合、レスポンスにはジョブユニットの更新時刻のみが含まれる。デフォルトはfalse
+	 * @return isClientがfalse:更新後のJobTreeItemを返す。なお、リクエストと同様パフォーマンス重視でJobTreeItemクラスを直接JSONに変換している(スキーマはJobTreeItemResponseP2に準ずる)。
+	 * <BR>isClientがtrue:更新時刻のみ格納して返す。
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
 	 * @throws InvalidUserPass
@@ -534,14 +446,15 @@ public class JobRestEndpoints {
 	@RestLog(action = LogAction.Modify, target = LogTarget.Jobunit, type = LogType.UPDATE )
 	@IgnoreCommandline
 	public Response replaceJobunit(@Context Request request, @Context UriInfo uriInfo,
-			@PathParam("jobunitId") String jobunitId, @RequestBody(description = "ReplaceJobunitRequest", content = @Content(schema = @Schema(implementation = ReplaceJobunitRequest.class))) String requestBody)
+			@PathParam("jobunitId") String jobunitId, @RequestBody(description = "ReplaceJobunitRequest", content = @Content(schema = @Schema(implementation = ReplaceJobunitRequest.class))) String requestBody
+			, @QueryParam(value = "isClient") boolean isClient)
 					throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, NotifyNotFound,UserNotFound {
 		m_log.info("call replaceJobunit()");
-
-		ReplaceJobunitRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, ReplaceJobunitRequest.class);
+		// JSONからJobTreeItemインスタンス(RegisterJobunitWrapper.jobTreeItem)に変換する。
+		RegisterJobunitWrapper dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, RegisterJobunitWrapper.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
-		JobTreeItemRequest topItem = dtoReq.getJobTreeItem();
+		JobTreeItem topItem = dtoReq.getJobTreeItem();
 		try{
 			// jobunitIdとjobIdが既に存在するか
 			JobValidator.validateJobId(topItem.getData().getJobunitId(), topItem.getData().getId(),true);
@@ -551,21 +464,27 @@ public class JobRestEndpoints {
 			throw new InvalidSetting(MessageConstant.MESSAGE_JOBUNIT_ID_NOT_EXIST.getMessage( topItem.getData().getJobunitId()));
 		}
 		
-		// DTOからINFOへ変換
-		JobTreeItem reqItem = convertJobTreeItemFromDto(topItem);
-
 		//登録
-		new JobControllerBean().registerJobunit(reqItem);
+		JobControllerBean jobControllerBean = new JobControllerBean();
+		jobControllerBean.registerJobunit(topItem);
 
-		//更新結果を取得
-		JobTreeItem retOrg= new JobControllerBean().getJobunitTreeFullInfo(reqItem.getData().getJobunitId(), null, Locale.getDefault());
 		
-		// INFOからDTOへ変換し返却
-		JobTreeItemResponseP2 resDto = convertJobTreeItemP2FromInfo(retOrg);
-		if (resDto != null) {
-			RestLanguageConverter.convertMessages(resDto);
+		if (isClient) {
+			// クライアントから使用する場合、更新時刻のみ返す。
+			JobTreeItemResponseP2 resDto = new JobTreeItemResponseP2();
+			JobInfoResponse emptyData = new JobInfoResponse();
+			long updateTime = jobControllerBean.getUpdateTime(Arrays.asList(topItem.getData().getJobunitId())).get(0);
+			emptyData.setUpdateTime(RestCommonConverter.convertHinemosTimeToDTString(updateTime));
+			resDto.setData(emptyData);
+			return Response.status(Status.OK).entity(resDto).build();
+		} else {
+			//更新結果を取得
+			JobTreeItem retOrg= new JobControllerBean().getJobunitTreeFullInfo(topItem.getData().getJobunitId(), null, Locale.getDefault());
+			
+			// JobTreeItemをそのまま返却
+			// メッセージ翻訳はJSON変換時に実施 @see LanguageTranslateSerializer
+			return Response.status(Status.OK).entity(retOrg).build();
 		}
-		return Response.status(Status.OK).entity(resDto).build();
 	}
 
 	/**

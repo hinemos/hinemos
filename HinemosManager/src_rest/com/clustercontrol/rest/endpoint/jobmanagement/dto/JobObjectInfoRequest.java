@@ -17,6 +17,11 @@ import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JudgmentObjec
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.WaitStatusEnum;
 import com.clustercontrol.util.MessageConstant;
 
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。)
+ * refs #13882
+ */
 public class JobObjectInfoRequest implements RequestDto {
 
 	/** 判定対象種別 */

@@ -29,6 +29,7 @@ import com.clustercontrol.rest.annotation.validation.RestValidateObject;
 import com.clustercontrol.rest.annotation.validation.RestValidateString;
 import com.clustercontrol.rest.annotation.validation.RestValidateString.CheckType;
 import com.clustercontrol.util.MessageConstant;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Restの入力チェックで使用する共通メソッド
@@ -83,6 +84,10 @@ public class RestCommonValitater {
 		//対象オブジェクト内の各メンバーに対し、オブジェクトの型別のチェックを実施
 		List<Field> memberFields = getClassFields(target.getClass());
 		for ( Field targetField : memberFields ){
+			// JsonIgnoreアノテーションが付与されたフィールドはチェックしない。
+			if (targetField.getAnnotation(JsonIgnore.class) != null) {
+				continue;
+			}
 			//private なFieldでもアクセスできるようにする。
 			targetField.setAccessible(true);
 			Object targetInstance = null;

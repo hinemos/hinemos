@@ -90,9 +90,6 @@ public class RpaScenarioCorrectExecNodeDialog extends CommonDialog{
 	/** シナリオID */
 	private String scenarioId = "";
 	
-	/** オーナーロールID */
-	private String ownerRoleId = "";
-
 	// ----- 共通メンバ変数 ----- //
 	private Shell shell = null;
 
@@ -106,11 +103,10 @@ public class RpaScenarioCorrectExecNodeDialog extends CommonDialog{
 	 * @param parent
 	 *            親のシェルオブジェクト
 	 */
-	public RpaScenarioCorrectExecNodeDialog(Shell parent, String managerName, String scenarioId, String ownerRoleId) {
+	public RpaScenarioCorrectExecNodeDialog(Shell parent, String managerName, String scenarioId) {
 		super(parent);
 		this.managerName = managerName;
 		this.scenarioId = scenarioId;
-		this.ownerRoleId = ownerRoleId;
 	}
 	// ----- instance メソッド ----- //
 	/**
@@ -145,16 +141,14 @@ public class RpaScenarioCorrectExecNodeDialog extends CommonDialog{
 		 */
 		//ラベル
 		Label labelManager = new Label(composite, SWT.NONE);
-		WidgetTestUtil.setTestId(this, "manager", labelManager);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
 		labelManager.setLayoutData(gridData);
 		labelManager.setText(Messages.getString("facility.manager") + " : ");
 		
 		//コンボ
 		this.managerComposite = new ManagerListComposite(composite, SWT.NONE, false);
-		WidgetTestUtil.setTestId(this, "managerComposite", this.managerComposite);
-		gridData = new GridData();
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
 		gridData.widthHint = 207;
 		this.managerComposite.setLayoutData(gridData);
 
@@ -168,15 +162,16 @@ public class RpaScenarioCorrectExecNodeDialog extends CommonDialog{
 		//ラベル
 		Label labelScenarioOperationResultCreateSettingId = new Label(composite, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "scenarioOperationResultCreateSettingId", labelScenarioOperationResultCreateSettingId);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
 		labelScenarioOperationResultCreateSettingId.setLayoutData(gridData);
 		labelScenarioOperationResultCreateSettingId.setText(Messages.getString("rpa.scenario.operation.result.create.setting.id") + " : ");
 		
 		//テキスト
 		scenarioOperationResultCreateSettingText = new Text(composite, SWT.BORDER);
-		WidgetTestUtil.setTestId(this, "scenarioOperationResultCreateSettingText", scenarioOperationResultCreateSettingText);
-		gridData = new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData.heightHint = SizeConstant.SIZE_TEXT_HEIGHT;
+		gridData.widthHint = 207;
 		scenarioOperationResultCreateSettingText.setLayoutData(gridData);
 		scenarioOperationResultCreateSettingText.setEnabled(false);
 
@@ -187,15 +182,16 @@ public class RpaScenarioCorrectExecNodeDialog extends CommonDialog{
 		//ラベル
 		Label labelScenarioIdentifyString = new Label(composite, SWT.NONE);
 		WidgetTestUtil.setTestId(this, "description", labelScenarioIdentifyString);
-		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		gridData.heightHint = SizeConstant.SIZE_LABEL_HEIGHT;
 		labelScenarioIdentifyString.setLayoutData(gridData);
 		labelScenarioIdentifyString.setText(Messages.getString("rpa.scenario.identify.string") + " : ");
 		
 		//テキスト
 		scenarioIdentifyStringText = new Text(composite, SWT.BORDER);
-		WidgetTestUtil.setTestId(this, "scenarioIdentifyString", scenarioIdentifyStringText);
-		gridData = new GridData(200, SizeConstant.SIZE_TEXT_HEIGHT);
+		gridData = new GridData(SWT.FILL, SWT.CENTER, false, false);
+		gridData.heightHint = SizeConstant.SIZE_TEXT_HEIGHT;
+		gridData.widthHint = 207;
 		scenarioIdentifyStringText.setLayoutData(gridData);
 		scenarioIdentifyStringText.setEnabled(false);
 		
@@ -410,7 +406,8 @@ public class RpaScenarioCorrectExecNodeDialog extends CommonDialog{
 			this.scenarioExecNodeListComposite.setRpaToolId(scenarioInfo.getRpaToolId());
 			this.scenarioExecNodeListComposite.setExecNode(scenarioInfo.getExecNodeList(), scenarioInfo.getScenarioList());
 			
-			this.notifyIdList.setOwnerRoleId(this.ownerRoleId, true);
+			// ユーザが取得可能な通知IDを取得する。
+			this.notifyIdList.setOwnerRoleId(null, true);
 		}
 
 		this.update();

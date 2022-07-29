@@ -50,7 +50,7 @@
 	<classpathentry kind="lib" path="commonlib/httpcore5-5.0.3.jar" sourcepath="/HinemosCommon/commonlib/httpcore5-5.0.3-sources.jar"/>
 	<classpathentry kind="lib" path="commonlib/httpcore5-h2-5.0.3.jar" sourcepath="/HinemosCommon/commonlib/httpcore5-h2-5.0.3-sources.jar"/>
 	<classpathentry kind="lib" path="commonlib_reporting/castor-core-1.4.1.jar" sourcepath="/HinemosCommon/commonlib/castor-core-1.4.1-sources.jar"/>
-	<classpathentry kind="lib" path="/HinemosManager/lib/eclipselink-3.0.0.jar" sourcepath="/HinemosManager/lib/eclipselink-3.0.0-sources.jar"/>
+	<classpathentry kind="lib" path="/HinemosManager/lib/eclipselink-3.0.2.jar" sourcepath="/HinemosManager/lib/eclipselink-3.0.2-sources.jar"/>
 	<classpathentry kind="lib" path="lib_reporting/commons-digester-2.1.jar" sourcepath="lib_reporting/commons-digester-2.1-sources.jar"/>
 	<classpathentry kind="lib" path="lib/commons-io-2.6.jar" sourcepath="lib/commons-io-2.6-sources.jar"/>
 	<classpathentry kind="lib" path="lib_manager_cli/commons-cli-1.4.jar" sourcepath="lib_manager_cli/commons-cli-1.4-sources.jar"/>

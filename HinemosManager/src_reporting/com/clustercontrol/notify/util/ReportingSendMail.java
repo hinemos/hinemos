@@ -194,7 +194,16 @@ public class ReportingSendMail extends SendMail {
 			// メール通知の説明欄に添付しない（[NOT_ATTACHED]）が含まれていない、かつ
 			// 添付ファイルに関する情報が空でない
 			if (attachedFlg && outputInfo.getSubKey() != null && !outputInfo.getSubKey().isEmpty()) {
-				attachedFilePath = outputInfo.getSubKey();
+
+				// 監視詳細テキストからレポートファイルパスを抽出する。
+				int splitPos = outputInfo.getSubKey().lastIndexOf('|');
+				if (splitPos == -1) {
+					// 区切り文字が見つからない場合は加工しない。
+					attachedFilePath = outputInfo.getSubKey();
+					m_log.debug("sendMail() :delimiter \"|\" is not found. monitorDetail: " + outputInfo.getSubKey());
+				} else {
+					attachedFilePath = outputInfo.getSubKey().substring(0, splitPos);
+				}
 			}
 
 			int successCount = 0;

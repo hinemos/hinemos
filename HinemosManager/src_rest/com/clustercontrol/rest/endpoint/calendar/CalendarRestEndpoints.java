@@ -55,6 +55,7 @@ import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.model.CalendarPatternInfo;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.calendar.util.TimeStringConverter;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.fault.CalendarDuplicate;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -69,6 +70,7 @@ import com.clustercontrol.rest.annotation.RestLogFunc;
 import com.clustercontrol.rest.annotation.RestLogFunc.LogFuncName;
 import com.clustercontrol.rest.annotation.RestSystemPrivilege;
 import com.clustercontrol.rest.annotation.cmdtool.ArrayTypeParam;
+import com.clustercontrol.rest.annotation.validation.RestValidateObject;
 import com.clustercontrol.rest.endpoint.calendar.dto.enumtype.OperationStatusEnum;
 import com.clustercontrol.rest.endpoint.calendar.dto.AddCalendarPatternRequest;
 import com.clustercontrol.rest.endpoint.calendar.dto.AddCalendarRequest;
@@ -378,6 +380,7 @@ public class CalendarRestEndpoints {
 	 * @throws InvalidUserPass
 	 * @throws InvalidRole
 	 * @throws CalendarNotFound
+	 * @throws InvalidSetting 
 	 */
 	@GET
 	@Path("/calendar/{calendarId}/calendarDetail_monthOperationState")
@@ -393,10 +396,13 @@ public class CalendarRestEndpoints {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Get, target = LogTarget.CalendarDetail, type = LogType.REFERENCE )
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.Calendar, modeList = { SystemPrivilegeMode.READ })
-	public Response getCalendarMonth(@PathParam(value = "calendarId") String calendarId, @Context Request request,
-			@Context UriInfo uriInfo, @QueryParam(value = "year") String year,
-			@QueryParam(value = "month") String month)
-			throws HinemosUnknown, InvalidUserPass, InvalidRole, CalendarNotFound {
+	public Response getCalendarMonth(@RestValidateObject(notNull=true) @PathParam(value = "calendarId") String calendarId, @Context Request request,
+			@Context UriInfo uriInfo, @RestValidateObject(notNull=true) @QueryParam(value = "year") String year,
+			@RestValidateObject(notNull=true) @QueryParam(value = "month") String month)
+			throws HinemosUnknown, InvalidUserPass, InvalidRole, CalendarNotFound, InvalidSetting {
+
+		CommonValidator.validateNull(MessageConstant.YEAR.getMessage(), year);
+		CommonValidator.validateNull(MessageConstant.MONTH.getMessage(), month);
 
 		Map<Integer, Integer> infoResMap = new CalendarControllerBean().getCalendarMonth(calendarId,
 				Integer.parseInt(year), Integer.parseInt(month));
@@ -441,10 +447,14 @@ public class CalendarRestEndpoints {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Get, target = LogTarget.CalendarDetail, type = LogType.REFERENCE )
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.Calendar, modeList = { SystemPrivilegeMode.READ })
-	public Response getCalendarWeek(@PathParam(value = "calendarId") String calendarId,
-			@QueryParam(value = "year") String year, @QueryParam(value = "month") String month,
-			@QueryParam(value = "day") String day, @Context UriInfo uriInfo, @Context Request request)
+	public Response getCalendarWeek(@RestValidateObject(notNull=true) @PathParam(value = "calendarId") String calendarId,
+			@RestValidateObject(notNull=true) @QueryParam(value = "year") String year, @RestValidateObject(notNull=true) @QueryParam(value = "month") String month,
+			@RestValidateObject(notNull=true) @QueryParam(value = "day") String day, @Context UriInfo uriInfo, @Context Request request)
 			throws InvalidUserPass, InvalidRole, HinemosUnknown, CalendarNotFound, InvalidSetting {
+
+		CommonValidator.validateNull(MessageConstant.YEAR.getMessage(), year);
+		CommonValidator.validateNull(MessageConstant.MONTH.getMessage(), month);
+		CommonValidator.validateNull(MessageConstant.DAY.getMessage(), day);
 
 		List<CalendarDetailInfo> infoResList = new CalendarControllerBean().getCalendarWeek(calendarId,
 				Integer.parseInt(year), Integer.parseInt(month), Integer.parseInt(day));

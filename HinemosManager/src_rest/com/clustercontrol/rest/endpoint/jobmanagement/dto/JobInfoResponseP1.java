@@ -10,6 +10,7 @@ package com.clustercontrol.rest.endpoint.jobmanagement.dto;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertDatetime;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JobTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ReferJobSelectTypeEnum;
 
 public class JobInfoResponseP1 {
 
@@ -35,7 +36,85 @@ public class JobInfoResponseP1 {
 	/** 最終更新日時 */
 	@RestBeanConvertDatetime
 	private String updateTime; 
+
+	/** 説明 */
+	private String description = "";
+
+	/** アイコンID */
+	private String iconId;
+
+	/** ジョブ待ち条件情報 */
+	private JobWaitRuleInfoResponse waitRule;
+
+	/** 参照先ジョブユニットID */
+	private String referJobUnitId;
+
+	/** 参照先ジョブID */
+	private String referJobId;	
+
+	/** 参照ジョブ選択種別 */
+	@RestBeanConvertEnum
+	private ReferJobSelectTypeEnum referJobSelectType = ReferJobSelectTypeEnum.JOB_TREE;
+
+	/** モジュール登録済フラグ */
+	private boolean registered = false;
 	
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public String getIconId() {
+		return iconId;
+	}
+
+	public void setIconId(String iconId) {
+		this.iconId = iconId;
+	}
+
+	public JobWaitRuleInfoResponse getWaitRule() {
+		return waitRule;
+	}
+
+	public void setWaitRule(JobWaitRuleInfoResponse waitRule) {
+		this.waitRule = waitRule;
+	}
+
+	public String getReferJobUnitId() {
+		return referJobUnitId;
+	}
+
+	public void setReferJobUnitId(String referJobUnitId) {
+		this.referJobUnitId = referJobUnitId;
+	}
+
+	public String getReferJobId() {
+		return referJobId;
+	}
+
+	public void setReferJobId(String referJobId) {
+		this.referJobId = referJobId;
+	}
+
+	public ReferJobSelectTypeEnum getReferJobSelectType() {
+		return referJobSelectType;
+	}
+
+	public void setReferJobSelectType(ReferJobSelectTypeEnum referJobSelectType) {
+		this.referJobSelectType = referJobSelectType;
+	}
+
+	public boolean isRegistered() {
+		return registered;
+	}
+
+	public void setRegistered(boolean registered) {
+		this.registered = registered;
+	}
+
 	public JobInfoResponseP1() {
 	}
 

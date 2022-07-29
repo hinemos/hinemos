@@ -713,6 +713,9 @@ public class MaintenanceControllerBean {
 				String[] args = {maintenanceId};
 				AplLogger.put(InternalIdCommon.MAINTENANCE_SYS_001, args);
 			}
+			if (m_log.isTraceEnabled()) {
+				m_log.trace("scheduleRunMaintenance() end");
+			}
 		}
 	}
 

@@ -39,6 +39,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.openapitools.client.model.FacilityInfoResponse;
 import org.openapitools.client.model.JobRpaInfoResponse;
@@ -379,11 +380,18 @@ public class RpaDirectScenarioComposite extends Composite {
 								m_selectScenarioParameter.get(GetRpaDirectParameterTableDefine.ORDER_NO));
 						@SuppressWarnings("unchecked")
 						List<List<Object>> parameterRows = (List<List<Object>>) m_scenarioParameterViewer.getInput();
-						parameterRows.set(parameterRows.indexOf(m_selectScenarioParameter), modifiedRow);
-						m_selectScenarioParameter = null;
+						int index = parameterRows.indexOf(m_selectScenarioParameter);
+						parameterRows.set(index, modifiedRow);
 						m_scenarioParameterViewer.setInput(parameterRows);
+						m_selectScenarioParameter = modifiedRow;
 						m_scenarioParameterViewer.refresh();
+						selectItem(index);
 					}
+				} else {
+					MessageDialog.openWarning(
+							null,
+							Messages.getString("warning"),
+							Messages.getString("message.job.rpa.39"));
 				}
 			}
 		});
@@ -397,10 +405,17 @@ public class RpaDirectScenarioComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				@SuppressWarnings("unchecked")
 				List<List<Object>> parameterRows = (List<List<Object>>) m_scenarioParameterViewer.getInput();
-				parameterRows.remove(m_selectScenarioParameter);
-				refreshParameterOrder(parameterRows);
-				m_scenarioParameterViewer.setInput(parameterRows);
-				m_scenarioParameterViewer.refresh();
+				if (m_selectScenarioParameter != null) {
+					parameterRows.remove(m_selectScenarioParameter);
+					refreshParameterOrder(parameterRows);
+					m_scenarioParameterViewer.setInput(parameterRows);
+					m_scenarioParameterViewer.refresh();
+				} else {
+					MessageDialog.openWarning(
+							null,
+							Messages.getString("warning"),
+							Messages.getString("message.job.rpa.39"));
+				}
 			}
 		});
 
@@ -413,12 +428,19 @@ public class RpaDirectScenarioComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				@SuppressWarnings("unchecked")
 				List<List<Object>> parameterRows = (List<List<Object>>) m_scenarioParameterViewer.getInput();
-				int index = parameterRows.indexOf(m_selectScenarioParameter);
-				if (index > 0) {
-					Collections.swap(parameterRows, index, index - 1);
-					refreshParameterOrder(parameterRows);
-					m_scenarioParameterViewer.setInput(parameterRows);
-					m_scenarioParameterViewer.refresh();
+				if (m_selectScenarioParameter != null) {
+					int index = parameterRows.indexOf(m_selectScenarioParameter);
+					if (index > 0) {
+						Collections.swap(parameterRows, index, index - 1);
+						refreshParameterOrder(parameterRows);
+						m_scenarioParameterViewer.setInput(parameterRows);
+						m_scenarioParameterViewer.refresh();
+					}
+				} else {
+					MessageDialog.openWarning(
+							null,
+							Messages.getString("warning"),
+							Messages.getString("message.job.rpa.39"));
 				}
 			}
 		});
@@ -432,12 +454,19 @@ public class RpaDirectScenarioComposite extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				@SuppressWarnings("unchecked")
 				List<List<Object>> parameterRows = (List<List<Object>>) m_scenarioParameterViewer.getInput();
-				int index = parameterRows.indexOf(m_selectScenarioParameter);
-				if (index < parameterRows.size()) {
-					Collections.swap(parameterRows, index, index + 1);
-					refreshParameterOrder(parameterRows);
-					m_scenarioParameterViewer.setInput(parameterRows);
-					m_scenarioParameterViewer.refresh();
+				if (m_selectScenarioParameter != null) {
+					int index = parameterRows.indexOf(m_selectScenarioParameter);
+					if (index < parameterRows.size() - 1) {
+						Collections.swap(parameterRows, index, index + 1);
+						refreshParameterOrder(parameterRows);
+						m_scenarioParameterViewer.setInput(parameterRows);
+						m_scenarioParameterViewer.refresh();
+					}
+				} else {
+					MessageDialog.openWarning(
+							null,
+							Messages.getString("warning"),
+							Messages.getString("message.job.rpa.39"));
 				}
 			}
 		});
@@ -504,6 +533,8 @@ public class RpaDirectScenarioComposite extends Composite {
 	}
 
 	public void reflectRpaJobInfo() {
+		// スコープ（ジョブ変数）の初期値は"#[FACILITY_ID]"とする
+		m_scopeJobParamText.setText(SystemParameterConstant.getParamText(SystemParameterConstant.FACILITY_ID));
 		if (this.m_rpa != null) {
 			// スコープ設定
 			if (m_rpa.getScope() != null) {
@@ -565,8 +596,6 @@ public class RpaDirectScenarioComposite extends Composite {
 			m_scopeFixedValueRadio.setSelection(true);
 			m_scopeFixedValueText.setText("");
 			m_scopeJobParamRadio.setSelection(false);
-			// スコープ（ジョブ変数）の初期値は"#[FACILITY_ID]"とする
-			m_scopeJobParamText.setText(SystemParameterConstant.getParamText(SystemParameterConstant.FACILITY_ID));
 			m_allNode.setSelection(true);
 			m_retry.setSelection(false);
 			m_scenarioFilepathText.setText("");
@@ -730,5 +759,21 @@ public class RpaDirectScenarioComposite extends Composite {
 	 */
 	public void setRpaJobType(Integer rpaJobType) {
 		this.m_rpaJobType = rpaJobType;
+	}
+	
+	/**
+	 * 引数で指定された実行パラメータの行を選択状態にします。
+	 *
+	 * @param order 実行パラメータの順序
+	 */
+	private void selectItem(Integer order) {
+		Table scenarioParameterItemTable = m_scenarioParameterViewer.getTable();
+		TableItem[] items = scenarioParameterItemTable.getItems();
+
+		if (items == null || order == null) {
+			return;
+		}
+		scenarioParameterItemTable.select(order);
+		return;
 	}
 }

@@ -16,6 +16,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
@@ -32,6 +33,8 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.SdmlControlSettingDuplicate;
 import com.clustercontrol.fault.SdmlControlSettingNotFound;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.notify.util.NotifyCallback;
@@ -709,6 +712,7 @@ public class SdmlControllerBean {
 			clonedInfo.setFacilityId(facilityId);
 			clonedInfo.setScopeText(scopeText);
 			clonedInfo.setNotifyGroupId(controlSetting.getNotifyGroupId());
+			clonedInfo.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.SDML_CONTROL_ABNORMAL, HinemosModuleConstant.SDML_CONTROL, controlSetting.getApplicationId()));
 			notifyList.add(clonedInfo);
 		}
 		// 通知

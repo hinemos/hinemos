@@ -309,10 +309,10 @@ public class RpaIndirectScenarioComposite extends Composite {
 				updateRunTypeCombo(m_rpaAccount.getRpaManagementToolId(), 1); // 実行種別の初期表示は1
 				// 終了値タブの終了状態テーブルをRPA管理ツールに合わせて更新
 				m_rpaIndirectEndValueComposite.refresh(m_rpaAccount.getRpaManagementToolId());
+				// 停止関連のラジオボタンの状態をRPA管理ツールに合わせて更新
+				updateStopTypeButton();
 				// 停止方法
 				updateStopModeCombo(m_rpaAccount.getRpaManagementToolId(), 1); // 停止方法の初期表示は1
-				// 停止方法を選択できない場合はボタンを非活性にする
-				disableStopTypeButton();
 			}
 		});
 
@@ -466,12 +466,12 @@ public class RpaIndirectScenarioComposite extends Composite {
 						// 実行種別、起動パラメータの反映
 						updateRunTypeCombo(rpaAccount.getRpaManagementToolId(), m_rpa.getRpaRunType());
 						m_runParamTableViewer.setRunParamInfos(m_rpa.getRpaJobRunParamInfos());
+						// 停止関連のラジオボタンの状態をRPA管理ツールに合わせて更新
+						updateStopTypeButton();
 						// 停止方法の選択
 						if (m_rpa.getRpaStopType() == RpaStopTypeEnum.SCENARIO) {
 							updateStopModeCombo(m_rpaAccount.getRpaManagementToolId(), m_rpa.getRpaStopMode());
 						}
-						// 停止種別を選択できない場合はボタンを非活性にする
-						disableStopTypeButton();
 						break;
 					}
 				}
@@ -579,8 +579,10 @@ public class RpaIndirectScenarioComposite extends Composite {
 		// ジョブのみ終了する ラジオボタン
 		m_stopJobButton.setEnabled(enabled);
 		m_readOnly = !enabled;
-		// 停止方法を選択できない場合はボタンを非活性にする
-		disableStopTypeButton();
+
+		if (enabled) {
+			updateStopTypeButton();
+		}
 	}
 
 	/**
@@ -602,15 +604,24 @@ public class RpaIndirectScenarioComposite extends Composite {
 		this.m_rpaIndirectEndValueComposite = composite;
 	}
 
-	private void disableStopTypeButton() {
+	private void updateStopTypeButton() {
 		// WinDirectorでapiVersion=1の場合はジョブのみ終了する以外選択不可
-		if (m_rpaAccount != null
-				&& m_rpaAccountToolMap.get(m_rpaAccount).getRpaManagementToolType().equals("WIN_DIRECTOR")
-				&& m_rpaAccountToolMap.get(m_rpaAccount).getApiVersion() == 1) {
-			m_stopScenarioButton.setEnabled(false);
-			m_stopScenarioButton.setSelection(false);
-			m_stopJobButton.setEnabled(false);
-			m_stopJobButton.setSelection(true);
+		if (m_rpaAccount != null) {
+			if (m_rpaAccountToolMap.get(m_rpaAccount).getRpaManagementToolType() != null
+					&& m_rpaAccountToolMap.get(m_rpaAccount).getApiVersion() != null) {
+				if (m_rpaAccountToolMap.get(m_rpaAccount).getRpaManagementToolType().equals("WIN_DIRECTOR")
+						&& m_rpaAccountToolMap.get(m_rpaAccount).getApiVersion() == 1) {
+					m_stopScenarioButton.setEnabled(false);
+					m_stopScenarioButton.setSelection(false);
+					m_stopJobButton.setEnabled(false);
+					m_stopJobButton.setSelection(true);
+				} else {
+					m_stopScenarioButton.setEnabled(true);
+					m_stopScenarioButton.setSelection(true);
+					m_stopJobButton.setEnabled(true);
+					m_stopJobButton.setSelection(false);
+				}
+			}
 		}
 	}
 

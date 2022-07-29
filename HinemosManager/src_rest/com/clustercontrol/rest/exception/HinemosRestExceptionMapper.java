@@ -144,6 +144,7 @@ public class HinemosRestExceptionMapper implements ExceptionMapper<Throwable> {
 				case FACILITY_NOT_FOUND:
 				case LOCATION_NOT_FOUND:
 				case LOGINUSER_NOT_FOUND:
+				case LOGINUSER_NOT_ASSIGNED_TO_ROLE:
 				case MONITOR_CLOUDSERVICE_FOUND_NO_SERVICEID:
 					return Status.NOT_FOUND;
 	

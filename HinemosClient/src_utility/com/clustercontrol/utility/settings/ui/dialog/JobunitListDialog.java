@@ -11,6 +11,8 @@ package com.clustercontrol.utility.settings.ui.dialog;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -44,7 +46,8 @@ import com.clustercontrol.viewer.CommonTableViewer;
  *
  */
 public class JobunitListDialog extends CommonDialog {
-	
+	/** ログ */
+	private static Log m_log = LogFactory.getLog(JobunitListDialog.class);
 	private static final int SELECTION = 0;
 	private static final int JOBUNIT_ID = 1;
 //	private final int JOBUNIT_NAME = 2;
@@ -91,6 +94,9 @@ public class JobunitListDialog extends CommonDialog {
 	 */
 	@Override
 	protected void customizeDialog(Composite parent) {
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("customizeDialog() start");
+		}
 		m_shell = this.getShell();
 		
 		parent.getShell().setText(Messages.getString("dialog.select.jobunit"));
@@ -196,6 +202,10 @@ public class JobunitListDialog extends CommonDialog {
 		SelectionAdapter adapter =
 				new CheckBoxSelectionAdapter(this.getParentShell(), this.m_viewer, SELECTION);
 		table.addSelectionListener(adapter);
+
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("customizeDialog() end");
+		}
 	}
 
 	/**

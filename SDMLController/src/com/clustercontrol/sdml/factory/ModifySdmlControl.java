@@ -70,6 +70,9 @@ public class ModifySdmlControl {
 			// 重複チェック
 			jtm.checkEntityExists(SdmlControlSettingInfo.class, info.getApplicationId());
 
+			// TODO ver7.0.1では暫定対処として常に削除する設定とする
+			info.setAutoMonitorDeleteFlg(true);
+
 			info.setNotifyGroupId(NotifyGroupIdGenerator.generate(info));
 			info.setAutoMonitorCommonNotifyGroupId(NotifyGroupIdGenerator.generate(info, true));
 			info.setRegDate(now);
@@ -159,7 +162,8 @@ public class ModifySdmlControl {
 			entity.setControlLogCollectFlg(info.getControlLogCollectFlg());
 			entity.setApplication(info.getApplication());
 			entity.setValidFlg(info.getValidFlg());
-			entity.setAutoMonitorDeleteFlg(info.getAutoMonitorDeleteFlg());
+			// TODO ver7.0.1では暫定対処として常に削除する設定とする
+			entity.setAutoMonitorDeleteFlg(true);
 			entity.setAutoMonitorCalendarId(info.getAutoMonitorCalendarId());
 			entity.setEarlyStopThresholdSecond(info.getEarlyStopThresholdSecond());
 			entity.setEarlyStopNotifyPriority(info.getEarlyStopNotifyPriority());
@@ -379,6 +383,22 @@ public class ModifySdmlControl {
 				em.remove(relation);
 				throw e;
 			}
+			// 関連情報を削除
+			em.remove(relation);
+		}
+		return true;
+	}
+
+	/**
+	 * 引数で受け取った関連情報を削除する<br>
+	 * 紐づく監視設定が既に存在しないことがわかっている場合のみ使用すること<br>
+	 * 
+	 * @param relation
+	 * @return
+	 */
+	public boolean deleteOnlyControlMonitorRelation(SdmlControlMonitorRelation relation) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 			// 関連情報を削除
 			em.remove(relation);
 		}

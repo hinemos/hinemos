@@ -26,10 +26,8 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
-import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.rpa.util.RpaRestClientWrapper;
 import com.clustercontrol.rpa.view.RpaManagementToolAccountView;
-import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.UIManager;
 
@@ -113,13 +111,8 @@ public class AccountDeleteAction extends AbstractHandler implements IElementUpda
 					// 削除処理
 					try {
 						wrapper.deleteRpaManagementToolAccount(String.join(",", entry.getValue()));
-					} catch (InvalidRole e) {
-						// 権限なし
-						errorMsgs.put(managerName, Messages.getString("message.accesscontrol.16"));
 					} catch (Exception e) {
-						String errMessage = HinemosMessage.replace(e.getMessage());
-						errorMsgs.put(managerName, Messages.getString("message.rpa.account.delete.fail") +
-								", " + errMessage);
+						errorMsgs.put(managerName, e.getMessage());
 					}
 					i++;
 				}

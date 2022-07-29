@@ -32,12 +32,14 @@ import org.openapitools.client.model.ImportRpaManagementToolAccountResponse;
 import org.openapitools.client.model.RecordRegistrationResponse;
 import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 import org.openapitools.client.model.RpaManagementToolAccountResponse;
+
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.fault.RpaManagementToolAccountNotFound;
+import com.clustercontrol.fault.UsedFacility;
 import com.clustercontrol.rpa.util.RpaRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
@@ -114,7 +116,7 @@ public class RpaManagementToolAccountAction {
 				try {
 					wrapper.deleteRpaManagementToolAccount(targetId);
 					log.info(Messages.getString("SettingTools.ClearSucceeded") + " id:" + targetId);
-				} catch ( RestConnectFailed |HinemosUnknown	| InvalidRole | InvalidUserPass | RpaManagementToolAccountNotFound e) {
+				} catch ( RestConnectFailed |HinemosUnknown	| InvalidRole | InvalidUserPass | RpaManagementToolAccountNotFound | UsedFacility e) {
 					log.error(Messages.getString("SettingTools.ClearFailed")  + " id:" + targetId+ " , " + HinemosMessage.replace(e.getMessage()));
 					ret = SettingConstants.ERROR_INPROCESS;
 				}

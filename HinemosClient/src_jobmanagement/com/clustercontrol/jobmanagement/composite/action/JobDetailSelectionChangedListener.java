@@ -64,6 +64,9 @@ public class JobDetailSelectionChangedListener implements ISelectionChangedListe
 	 */
 	@Override
 	public void selectionChanged(SelectionChangedEvent event) {
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("selectionChanged() start");
+		}
 		String managerName = null;
 		String sessionId = null;
 		String jobunitId = null;
@@ -128,6 +131,9 @@ public class JobDetailSelectionChangedListener implements ISelectionChangedListe
 			} else {
 				view.setEnabledAction(((StructuredSelection)event.getSelection()).size(), event.getSelection());
 			}
+		}
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("selectionChanged() end");
 		}
 	}
 }

@@ -35,11 +35,10 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
-import org.openapitools.client.model.JobRuntimeParamRequest;
-import org.openapitools.client.model.RunJobRequest;
-
 import org.openapitools.client.model.JobKickResponse;
 import org.openapitools.client.model.JobRuntimeParamResponse;
+import org.openapitools.client.model.JobRuntimeParamRunRequest;
+import org.openapitools.client.model.RunJobRequest;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
@@ -447,7 +446,7 @@ public class JobKickRunConfirm extends CommonDialog {
 					: this.m_jobKickInputParamCompositeList){
 				if (paramComposite.getParamId() != null 
 						&& paramComposite.getValue() != null) {
-					JobRuntimeParamRequest jobRuntimeParam = new JobRuntimeParamRequest();
+					JobRuntimeParamRunRequest jobRuntimeParam = new JobRuntimeParamRunRequest();
 					jobRuntimeParam.setParamId(paramComposite.getParamId());
 					jobRuntimeParam.setValue(paramComposite.getValue());
 					this.m_trigger.getJobRuntimeParamList().add(jobRuntimeParam);

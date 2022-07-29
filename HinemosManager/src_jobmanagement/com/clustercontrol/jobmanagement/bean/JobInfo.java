@@ -11,33 +11,56 @@ package com.clustercontrol.jobmanagement.bean;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.xml.bind.annotation.XmlType;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
-
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JobTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.PrioritySelectEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ReferJobSelectTypeEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.DateLongToStringSerializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.LanguageTranslateSerializer;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 /**
  * ジョブの基本情報を保持するクラス
  * 
  * @version 4.1.0
  * @since 1.0.0
  */
+@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE) //JSONから変換する際、getter名、setter名を無視し、フィールド名のみを参照して変換する。
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobInfo implements Serializable, Cloneable {
+public class JobInfo implements Serializable, Cloneable, RequestDto {
 
 	/** ログ出力のインスタンス<BR> */
+	@JsonIgnore
 	private static Log m_log = LogFactory.getLog( JobInfo.class );
 
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = -1453680330220941926L;
 
 	/**
 	 * ジョブツリーの情報だけの場合はfalse
 	 * 全てのプロパティ値が入っている場合はtrue
 	 **/
+	// WRITE_ONLY:JSONからの読み込み時のみ反映。書き出しは行わない。
+	@JsonProperty(value="updateTaget", access=Access.WRITE_ONLY)
 	private Boolean propertyFull = false;
 
 	/** 所属ジョブユニットのジョブID */
@@ -55,9 +78,13 @@ public class JobInfo implements Serializable, Cloneable {
 	private String parentId;
 
 	/** ジョブ名 */
+	@JsonSerialize(using=LanguageTranslateSerializer.class)
 	private String name;
 
 	/** ジョブ種別 com.clustercontrol.bean.JobConstant */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=JobTypeEnum.class)
 	private Integer type = 0;
 
 	/** ジョブ待ち条件情報 */
@@ -103,12 +130,17 @@ public class JobInfo implements Serializable, Cloneable {
 	private String iconId;
 
 	/** 参照ジョブ選択種別 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ReferJobSelectTypeEnum.class)
 	private Integer referJobSelectType = 0;
 
 	/** 作成日時 */
+	@JsonSerialize(using=DateLongToStringSerializer.class)
 	private Long createTime;
 
 	/** 最終更新日時 */
+	@JsonSerialize(using=DateLongToStringSerializer.class)
 	private Long updateTime;
 
 	/** 新規作成ユーザ */
@@ -148,9 +180,21 @@ public class JobInfo implements Serializable, Cloneable {
 	private boolean expNodeRuntimeFlg = false;
 
 	//ジョブ通知関連
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer beginPriority = 0;
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer normalPriority = 0;
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer warnPriority = 0;
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=PrioritySelectEnum.class)
 	private Integer abnormalPriority = 0;
 	/** 通知ID**/
 	private ArrayList<NotifyRelationInfo> notifyRelationInfos;
@@ -919,7 +963,9 @@ public class JobInfo implements Serializable, Cloneable {
 				equalsSub(o1.getWarnPriority(), o2.getWarnPriority()) &&
 				equalsSub(o1.getAbnormalPriority(), o2.getAbnormalPriority()) &&
 				equalsSub(o1.getIconId(), o2.getIconId()) &&
-				equalsArray(o1.getNotifyRelationInfos(), o2.getNotifyRelationInfos());
+				// 通知IDのみ比較する。
+				equalsArray(o1.getNotifyRelationInfos().stream().map(NotifyRelationInfo::getNotifyId).collect(Collectors.toList()),
+						o2.getNotifyRelationInfos().stream().map(NotifyRelationInfo::getNotifyId).collect(Collectors.toList()));
 
 		if (!ret && o1.getId().equals(o2.getId())) {
 			m_log.debug("equals(o1,o2) : o1=" + o1.getId() + ", o2=" + o2.getId() + ", " + ret);
@@ -943,7 +989,7 @@ public class JobInfo implements Serializable, Cloneable {
 		return ret;
 	}
 
-	private boolean equalsArray(ArrayList<?> list1, ArrayList<?> list2) {
+	protected static boolean equalsArray(List<?> list1, List<?> list2) {
 		if (list1 != null && !list1.isEmpty()) {
 			if (list2 != null && list1.size() == list2.size()) {
 				Object[] ary1 = list1.toArray();
@@ -1248,5 +1294,46 @@ public class JobInfo implements Serializable, Cloneable {
 			jobInfo.waitRule = (JobWaitRuleInfo) this.waitRule.clone();
 		}
 		return jobInfo;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
+		if (waitRule != null) {
+			waitRule.correlationCheck();
+		}
+		if (command != null) {
+			command.correlationCheck();
+		}
+		if (file != null) {
+			file.correlationCheck();
+		}
+		if (monitor != null) {
+			monitor.correlationCheck();
+		}
+		if (jobLinkSend != null) {
+			jobLinkSend.correlationCheck();
+		}
+		if (jobLinkRcv != null) {
+			jobLinkRcv.correlationCheck();
+		}
+		if (jobFileCheck != null) {
+			jobFileCheck.correlationCheck();
+		}
+		if (resource != null) {
+			resource.correlationCheck();
+		}
+		if (rpa != null) {
+			rpa.correlationCheck();
+		}
+		if (endStatus != null) {
+			for (JobEndStatusInfo req : endStatus) {
+				req.correlationCheck();
+			}
+		}
+		if (param != null) {
+			for (JobParameterInfo req : param) {
+				req.correlationCheck();
+			}
+		}
 	}
 }

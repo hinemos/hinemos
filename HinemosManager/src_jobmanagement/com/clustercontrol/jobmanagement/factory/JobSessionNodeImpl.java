@@ -34,12 +34,14 @@ import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidApprovalStatus;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobInfoNotFound;
+import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.fault.RpaToolMasterNotFound;
 import com.clustercontrol.hinemosagent.bean.AgentInfo;
 import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
@@ -99,6 +101,8 @@ import com.clustercontrol.jobmanagement.util.RunHistoryUtil;
 import com.clustercontrol.jobmanagement.util.SendApprovalMail;
 import com.clustercontrol.jobmanagement.util.SendTopic;
 import com.clustercontrol.jobmanagement.util.ToRunningAfterCommitCallback;
+import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.repository.factory.NodeProperty;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
@@ -106,6 +110,7 @@ import com.clustercontrol.rpa.model.RpaToolRunCommandMst;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.apllog.AplLogger;
 import com.clustercontrol.xcloud.util.ResourceJobWorker;
 
 import jakarta.persistence.EntityExistsException;
@@ -271,6 +276,7 @@ public class JobSessionNodeImpl {
 					&& !(sessionNode.getJobSessionJobEntity().getJobInfoEntity().getJobType() == JobConstant.TYPE_RPAJOB
 						&& sessionNode.getJobSessionJobEntity().getJobInfoEntity().getRpaJobType() == RpaJobTypeConstant.INDIRECT)
 					&& sessionNode.getStatus() == StatusConstant.TYPE_WAIT
+					&& !(isMonitorRpaAccountJob(sessionNode))
 					&& !checkManaged(sessionNode)) {
 				m_log.debug("startNodeSub() : node is not managed. " + sessionNode.getId());
 				sessionNode.setStatus(StatusConstant.TYPE_NOT_MANAGED);
@@ -667,12 +673,14 @@ public class JobSessionNodeImpl {
 				instructionInfo.setRpaLogPatternTail(replaceParam.apply(job.getRpaLogPatternTail()));
 				instructionInfo.setRpaLogMaxBytes(job.getRpaLogMaxBytes());
 				instructionInfo.setRpaDefaultEndValue(job.getRpaDefaultEndValue());
+				// 存在チェック用にシナリオファイルパスをセット
+				instructionInfo.setFilePath(replaceParam.apply(job.getRpaScenarioFilepath()));
 				// マネージャからログインを行う場合はログイン完了までエージェントを待機させる時間を指定
 				Integer loginWaitMills = 0;
 				if (job.getRpaLoginFlg()) {
-					// ログインされるまで待機する時間[ms] = (コマンドのタイムアウト時間 + リトライ間隔) * リトライ回数
-					 loginWaitMills = (HinemosPropertyCommon.job_rpa_login_connection_timeout.getIntegerValue() 
-							+ HinemosPropertyCommon.job_rpa_login_retry_interval.getIntegerValue()) * job.getRpaLoginRetry();
+					// ログインされるまで待機する時間[ms] = コマンドのタイムアウト時間 + リトライ間隔 * リトライ回数
+					 loginWaitMills = HinemosPropertyCommon.job_rpa_login_connection_timeout.getIntegerValue() 
+							+ HinemosPropertyCommon.job_rpa_login_retry_interval.getIntegerValue() * job.getRpaLoginRetry();
 				}
 				instructionInfo.setRpaLoginWaitMills(loginWaitMills);
 				// スクリーンショット取得終了値条件
@@ -714,7 +722,7 @@ public class JobSessionNodeImpl {
 				// RPAツールエグゼキューターシナリオ実行情報を設定
 				// プロセス終了を行うかどうかのフラグをHinemosプロパティから取得
 				RoboRunInfo roboRunInfo = new RoboRunInfo(HinemosTime.currentTimeMillis(),
-						job.getId().getSessionId(), job.getId().getJobunitId(), job.getId().getJobId(), facilityId,
+						job.getId().getSessionId(), job.getId().getJobunitId(), job.getId().getJobId(), facilityId, job.getRpaLoginUserId(),
 						execCommand, destroyCommand, job.getRpaLoginFlg(), job.getRpaLogoutFlg(), 
 						HinemosPropertyCommon.job_rpa_destroy_process.getBooleanValue());
 				m_log.debug("roboRunInfo=" + roboRunInfo);
@@ -1020,7 +1028,7 @@ public class JobSessionNodeImpl {
 					if(info.getCommandType() == CommandTypeConstant.SCREENSHOT) {
 						setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_END.getMessage());
 						return false;
-				}
+					}
 
 					//終了の場合
 					if (retryFlag && retryJob(sessionNode, sessionJob, info, job.getCommandRetry())) {
@@ -1060,7 +1068,14 @@ public class JobSessionNodeImpl {
 								if (job.getRpaJobType() == RpaJobTypeConstant.DIRECT) {
 									//メッセージを設定
 									if(info.getCommandType() == CommandTypeConstant.STOP){
-										setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_STOP_SCENARIO.getMessage());
+										//プロセス終了を行うかのフラグに応じてメッセージを設定
+										if (HinemosPropertyCommon.job_rpa_destroy_process.getBooleanValue()) {
+											// シナリオを終了
+											setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_STOP_SCENARIO.getMessage());
+										} else {
+											// シナリオは終了せず、ジョブのみ終了
+											setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_STOP_JOB.getMessage());
+										}
 									} else {
 										// エージェントからのメッセージと共に終了値判定結果のメッセージを表示
 										setMessage(sessionNode, createRpaJobEndMessage(info));
@@ -1078,8 +1093,9 @@ public class JobSessionNodeImpl {
 									}
 									if (job.getRpaLoginFlg()) {
 										// ログイン処理が継続中の場合は停止しておく
-										RpaJobLoginWorker.cancel(info);
+										RpaJobLoginWorker.waitStopAndCancel(info);
 									}
+									
 								//間接実行の場合
 								} else if (job.getRpaJobType() == RpaJobTypeConstant.INDIRECT){
 									//メッセージを設定
@@ -1364,6 +1380,11 @@ public class JobSessionNodeImpl {
 								//実行状態が実行中の場合、実行状態バッファに実行失敗を設定
 								sessionNode.setStatus(StatusConstant.TYPE_ERROR);
 							}
+							if (job.getJobType() == JobConstant.TYPE_RPAJOB && job.getRpaJobType() == RpaJobTypeConstant.DIRECT
+									&& info.getRpaJobErrorType() == null && job.getRpaLoginFlg()) {
+								//RPAシナリオジョブ（直接実行）でマネージャ側判断での異常（エージェント停止等）にてログイン処理継続中なら停止を試行
+								RpaJobLoginWorker.cancel(info);
+							}
 						}else if(sessionNode.getStatus() == StatusConstant.TYPE_STOPPING){
 							//実行状態が停止処理中の場合、実行状態バッファにコマンド停止を設定
 							sessionNode.setStatus(StatusConstant.TYPE_STOP);
@@ -1429,7 +1450,7 @@ public class JobSessionNodeImpl {
 									//失敗時状態遷移する場合、通知のメッセージとオリジナルメッセージは同じ内容
 									messageorg = message;
 								}
-								new Notice().notify(ssesionId, job.getId().getJobunitId(), jobId, outputEnt.getFailureNotifyPriority(), message, messageorg);
+								new Notice().notify(ssesionId, job.getId().getJobunitId(), jobId, outputEnt.getFailureNotifyPriority(), message, messageorg, NotifyTriggerType.JOB_COMMAND_OUTPUT_FAILED);
 							}
 						}
 					}
@@ -2606,6 +2627,92 @@ public class JobSessionNodeImpl {
 					+ ", jobId=" + jobId + ", notify=" + job.getRpaAbnormalExitNotify() + ", endValue="
 					+ job.getRpaAbnormalExitEndValue() + ", login=" + job.getRpaLoginFlg());
 			break;
+		case (RpaJobErrorTypeConstant.FILE_DOES_NOT_EXIST):
+			// シナリオファイルパスが存在しない場合
+			message = MessageConstant.MESSAGE_JOB_RPA_FILE_DOES_NOT_EXIST.getMessage();
+			if (job.getRpaNotLoginNotify()) {
+				// 通知する場合（ログインされていない場合の設定）
+				new Notice().rpaErrorNotify(sessionId, jobunitId, jobId, RpaJobErrorTypeConstant.FILE_DOES_NOT_EXIST);
+			}
+			// 終了値を設定
+			sessionNode.setEndValue(job.getRpaNotLoginEndValue());
+			m_log.debug("endAbnormalRpaJob() : file does not exist, sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", notify=" + job.getRpaNotLoginNotify() + ", endValue="
+					+ job.getRpaNotLoginEndValue() + ", login=" + job.getRpaLoginFlg());
+			break;
+		case (RpaJobErrorTypeConstant.LOGIN_ERROR):
+			// ログインに失敗
+			message = MessageConstant.MESSAGE_JOB_RPA_LOGIN_ERROR.getMessage();
+			if (job.getRpaNotLoginNotify()) {
+				// 通知する場合（ログインされていない場合の設定）
+				new Notice().rpaErrorNotify(sessionId, jobunitId, jobId, RpaJobErrorTypeConstant.LOGIN_ERROR);
+			}
+			// 終了値を設定
+			sessionNode.setEndValue(job.getRpaNotLoginEndValue());
+			m_log.debug("endAbnormalRpaJob() : " + RpaJobErrorTypeConstant.LOGIN_ERROR + ", sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", notify=" + job.getRpaNotLoginNotify() + ", endValue="
+					+ job.getRpaNotLoginEndValue() + ", login=" + job.getRpaLoginFlg());
+			break;
+		case (RpaJobErrorTypeConstant.TOO_MANY_LOGIN_SESSION):
+			// ログインセッションが複数あり
+			message = MessageConstant.MESSAGE_JOB_RPA_TOO_MANY_LOGIN_SESSION.getMessage();
+			if (job.getRpaNotLoginNotify()) {
+				// 通知する場合（ログインされていない場合の設定）
+				new Notice().rpaErrorNotify(sessionId, jobunitId, jobId, RpaJobErrorTypeConstant.TOO_MANY_LOGIN_SESSION);
+			}
+			// 終了値を設定
+			sessionNode.setEndValue(job.getRpaNotLoginEndValue());
+			m_log.debug("endAbnormalRpaJob() : " + RpaJobErrorTypeConstant.TOO_MANY_LOGIN_SESSION + ", sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", notify=" + job.getRpaNotLoginNotify() + ", endValue="
+					+ job.getRpaNotLoginEndValue() + ", login=" + job.getRpaLoginFlg());
+			break;
+		case (RpaJobErrorTypeConstant.NOT_RUNNING_EXECUTOR):
+			// RPAシナリオエグゼキューターが起動していない場合
+			message = MessageConstant.MESSAGE_JOB_RPA_NOT_RUNNING_EXECUTOR.getMessage();
+			if (job.getRpaNotLoginNotify()) {
+				// 通知する場合（ログインされていない場合の設定）
+				new Notice().rpaErrorNotify(sessionId, jobunitId, jobId, RpaJobErrorTypeConstant.NOT_RUNNING_EXECUTOR);
+			}
+			// 終了値を設定
+			sessionNode.setEndValue(job.getRpaNotLoginEndValue());
+			m_log.debug("endAbnormalRpaJob() : " + RpaJobErrorTypeConstant.NOT_RUNNING_EXECUTOR + ", sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", notify=" + job.getRpaNotLoginNotify() + ", endValue="
+					+ job.getRpaNotLoginEndValue() + ", login=" + job.getRpaLoginFlg());
+			break;
+		case (RpaJobErrorTypeConstant.ERROR_OCCURRED):
+			// エラーが発生した場合
+			message = MessageConstant.MESSAGE_JOB_RPA_ERROR_OCCURRED.getMessage();
+			if (job.getRpaNotLoginNotify()) {
+				// 通知する場合（ログインされていない場合の設定）
+				new Notice().rpaErrorNotify(sessionId, jobunitId, jobId, RpaJobErrorTypeConstant.ERROR_OCCURRED);
+			}
+			// 終了値を設定
+			sessionNode.setEndValue(job.getRpaNotLoginEndValue());
+			m_log.debug("endAbnormalRpaJob() : " + RpaJobErrorTypeConstant.ERROR_OCCURRED + ", sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", notify=" + job.getRpaNotLoginNotify() + ", endValue="
+					+ job.getRpaNotLoginEndValue() + ", login=" + job.getRpaLoginFlg());
+			break;
+		case (RpaJobErrorTypeConstant.LOST_LOGIN_SESSION):
+			// ログインセッションが失われた場合
+			message = MessageConstant.MESSAGE_JOB_RPA_LOST_LOGIN_SESSION.getMessage();
+			if (job.getRpaAbnormalExitNotify()) {
+				// 通知する場合（RPAツールが異常終了した場合の設定）
+				new Notice().rpaErrorNotify(sessionId, jobunitId, jobId, RpaJobErrorTypeConstant.LOST_LOGIN_SESSION);
+			}
+			// 終了値を設定
+			sessionNode.setEndValue(job.getRpaAbnormalExitEndValue());
+			m_log.debug("endAbnormalRpaJob() : " + RpaJobErrorTypeConstant.LOST_LOGIN_SESSION + ", sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", notify=" + job.getRpaAbnormalExitNotify() + ", endValue="
+					+ job.getRpaAbnormalExitEndValue() + ", login=" + job.getRpaLoginFlg());
+			break;
+		case (RpaJobErrorTypeConstant.SCREENSHOT_FAILED):
+			// スクリーンショットの取得に失敗した場合
+			message = MessageConstant.MESSAGE_SYS_JOB_SCREENSHOT_FAILED.getMessage();
+			// INTERNALイベント通知
+			AplLogger.put(InternalIdCommon.JOB_SYS_033, new String[] { sessionId, jobId, info.getFacilityId() });
+			m_log.debug("endAbnormalRpaJob() : failed to take screen shot, sessionId=" + sessionId + ", jobunitId=" + jobunitId
+					+ ", jobId=" + jobId + ", login=" + job.getRpaLoginFlg());
+			break;
 		case (RpaJobErrorTypeConstant.OTHER):
 			// コマンドの起動失敗等のエラーの場合
 			message = info.getErrorMessage();
@@ -2624,4 +2731,39 @@ public class JobSessionNodeImpl {
 		// メッセージを設定
 		setMessage(sessionNode, message);
 	}
+
+	/**
+	 * 該当セッションがRPA管理ツール監視の監視ジョブであるかどうかを判断する。
+	 * （）
+	 * 
+	 * @param sessionNode セッションノード
+	 * @return true/false
+	 */
+	private boolean isMonitorRpaAccountJob(JobSessionNodeEntity sessionNode) {
+		if(m_log.isDebugEnabled()){ 	
+			m_log.debug("isMonitorRpaAcountJob() : start ,session= "+ sessionNode.getId());
+		}
+		JobInfoEntity info = sessionNode.getJobSessionJobEntity().getJobInfoEntity();
+
+		if( info.getJobType() == JobConstant.TYPE_MONITORJOB ){
+			JpaTransactionManager jtm = null;
+			try {
+				MonitorInfo monitorInfo = null;
+				jtm = new JpaTransactionManager();
+				monitorInfo = com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK_NONE(info.getMonitorId());
+				jtm.getEntityManager().detach(monitorInfo);
+				if (monitorInfo != null && monitorInfo.getMonitorTypeId().equals(HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE)) {
+					return true;
+				}
+			} catch (MonitorNotFound e) {
+				m_log.warn("isMonitorRpaAcountJob() : invalid getMonitorId=" + info.getMonitorId());
+			}finally{
+				if(jtm != null){
+					jtm.close();
+				}
+			}
+		}
+		return false;
+	}
+
 }

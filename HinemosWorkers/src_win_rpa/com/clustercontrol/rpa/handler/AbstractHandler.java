@@ -19,8 +19,6 @@ import com.clustercontrol.jobmanagement.rpa.bean.RoboRunInfo;
 public abstract class AbstractHandler {
 	/** ロガー */
 	private static Log m_log = LogFactory.getLog(AbstractHandler.class);
-	/** RPAツールエグゼキューター連携用ファイル出力先フォルダ */
-	protected static final String roboFileDir = System.getProperty("hinemos.agent.rpa.dir");
 	/** 処理完了後に実行する次のハンドラ */
 	private AbstractHandler next;
 	/** RPAシナリオ実行指示情報 */

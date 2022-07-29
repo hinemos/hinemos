@@ -47,10 +47,10 @@ public class RpaScenarioFilterPropertyUtil {
 		GetRpaScenarioListRequest info = new GetRpaScenarioListRequest();
 
 		String rpaToolId = null;								// RPAツールID
+		String scenarioOperationResultCreateSettingId = null;	// シナリオ実績作成設定ID
 		String scenarioId = null;								// シナリオID
 		String scenarioName = null; 							// シナリオ名
 		String scenarioIdentifyString = null;					// シナリオ識別子
-		String scenarioOperationResultCreateSettingId = null;	// シナリオ実績作成設定ID
 		String ownerRoleId = null;								// オーナーロールID
 
 		ArrayList<?> values = null;
@@ -61,6 +61,14 @@ public class RpaScenarioFilterPropertyUtil {
 		if (!"".equals(values.get(0))) {
 			rpaToolId = (String) values.get(0);
 			info.setRpaToolId(rpaToolId);
+		}
+
+		//シナリオ実績作成設定ID
+		values = PropertyUtil.getPropertyValue(property,
+				RpaScenarioFilterConstant.SCENARIO_OPERATION_RESULT_CREATE_SETTING_ID);
+		if (!"".equals(values.get(0))) {
+			scenarioOperationResultCreateSettingId = (String) values.get(0);
+			info.setScenarioOperationResultCreateSettingId(scenarioOperationResultCreateSettingId);
 		}
 
 		//シナリオID
@@ -85,14 +93,6 @@ public class RpaScenarioFilterPropertyUtil {
 		if (!"".equals(values.get(0))) {
 			scenarioIdentifyString = (String) values.get(0);
 			info.setScenarioIdentifyString(scenarioIdentifyString);
-		}
-
-		//シナリオ実績作成設定ID
-		values = PropertyUtil.getPropertyValue(property,
-				RpaScenarioFilterConstant.SCENARIO_OPERATION_RESULT_CREATE_SETTING_ID);
-		if (!"".equals(values.get(0))) {
-			scenarioOperationResultCreateSettingId = (String) values.get(0);
-			info.setScenarioOperationResultCreateSettingId(scenarioOperationResultCreateSettingId);
 		}
 
 		//オーナーロールID
@@ -176,10 +176,10 @@ public class RpaScenarioFilterPropertyUtil {
 		property.removeChildren();
 		property.addChildren(manager);
 		property.addChildren(rpaToolId);
+		property.addChildren(scenarioOperationResultCreateSettingId);
 		property.addChildren(scenarioId);
 		property.addChildren(scenarioName);
 		property.addChildren(scenarioIdentifyString);
-		property.addChildren(scenarioOperationResultCreateSettingId);
 		property.addChildren(ownerRoleId);
 
 		return property;
@@ -224,8 +224,9 @@ public class RpaScenarioFilterPropertyUtil {
 			retArray[0][0] = "";
 			retArray[1][0] = "";
 			for (int i = 0; i < rpaToolList.size(); i++){
+				// RPAツールIDで統一するため、[0]、[1]ともRPAツールIDを設定する
 				retArray[0][i+1] = rpaToolList.get(i).getRpaToolId();
-				retArray[1][i+1] = rpaToolList.get(i).getRpaToolName();
+				retArray[1][i+1] = rpaToolList.get(i).getRpaToolId();
 			}
 		}
 		else{

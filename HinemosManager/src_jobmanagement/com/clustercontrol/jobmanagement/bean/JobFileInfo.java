@@ -12,18 +12,38 @@ import java.io.Serializable;
 
 import javax.xml.bind.annotation.XmlType;
 
+import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ProcessingMethodEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.LanguageTranslateSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 /**
  * ジョブのファイル転送に関する情報を保持するクラス<BR>
  * 
  * @version 2.0.0
  * @since 2.0.0
  */
+/* 
+ * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Requestクラスも同様に修正すること。
+ * (ジョブユニットの登録/更新はInfoクラス、ジョブ単位の登録/更新の際はRequestクラスが使用される。
+ * 詳細は、不具合チケット#13882を参照)
+ */
 @XmlType(namespace = "http://jobmanagement.ws.clustercontrol.com")
-public class JobFileInfo implements Serializable {
+public class JobFileInfo implements Serializable, RequestDto {
 	/** シリアライズ可能クラスに定義するUID */
+	@JsonIgnore
 	private static final long serialVersionUID = 6448926354392693297L;
 
 	/** スコープ処理方法 */
+	@JsonDeserialize(using=EnumToConstantDeserializer.class)
+	@JsonSerialize(using=ConstantToEnumSerializer.class)
+	@EnumerateConstant(enumDto=ProcessingMethodEnum.class)
 	private Integer processingMethod = 0;
 
 	/** 転送ファシリティID */
@@ -36,6 +56,7 @@ public class JobFileInfo implements Serializable {
 	private String srcScope;
 
 	/** 受信スコープ */
+	@JsonSerialize(using=LanguageTranslateSerializer.class)
 	private String destScope;
 
 	/** ファイル */
@@ -384,11 +405,11 @@ public class JobFileInfo implements Serializable {
 		JobFileInfo o2 = (JobFileInfo)o;
 
 		boolean ret = false;
+		// スコープ(階層)は比較しない
 		ret = 	equalsSub(o1.isCheckFlg(), o2.isCheckFlg()) &&
 				equalsSub(o1.isCompressionFlg(), o2.isCompressionFlg()) &&
 				equalsSub(o1.getDestDirectory(), o2.getDestDirectory()) &&
 				equalsSub(o1.getDestFacilityID(), o2.getDestFacilityID()) &&
-				equalsSub(o1.getDestScope(), o2.getDestScope()) &&
 				equalsSub(o1.getDestWorkDir(), o2.getDestWorkDir()) &&
 				equalsSub(o1.getMessageRetry(), o2.getMessageRetry()) &&
 				equalsSub(o1.isMessageRetryEndFlg(), o2.isMessageRetryEndFlg()) &&
@@ -397,7 +418,6 @@ public class JobFileInfo implements Serializable {
 				equalsSub(o1.isSpecifyUser(), o2.isSpecifyUser()) &&
 				equalsSub(o1.getSrcFacilityID(), o2.getSrcFacilityID()) &&
 				equalsSub(o1.getSrcFile(), o2.getSrcFile()) &&
-				equalsSub(o1.getSrcScope(), o2.getSrcScope()) &&
 				equalsSub(o1.getSrcWorkDir(), o2.getSrcWorkDir()) &&
 				equalsSub(o1.getUser(), o2.getUser());
 		return ret;
@@ -523,5 +543,9 @@ public class JobFileInfo implements Serializable {
 		info.setSrcWorkDir("/root/");
 		info.setUser("root");
 		return info;
+	}
+
+	@Override
+	public void correlationCheck() throws InvalidSetting {
 	}
 }

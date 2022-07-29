@@ -117,7 +117,7 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 		try {
 			Long managerHavingUpdateDate = fileMonitorManager.getMonitorInfoUpdateDate(m_wrapper.getId());
 			m_log.debug("run() check updatedate. manager updateDate=" + managerHavingUpdateDate + ", monitorInfoUpdateDate=" + monitorInfoUpdateDate);
-			if (managerHavingUpdateDate > monitorInfoUpdateDate) {
+			if (managerHavingUpdateDate != null && managerHavingUpdateDate > monitorInfoUpdateDate) {
 				// マネージャが保持している更新日時が新しい場合、監視設定が変更されているためこのタスクは処理せず終了
 				m_log.info("run() update check is false, so return. managerHavingUpdateDate=" + managerHavingUpdateDate + ", monitorInfoUpdateDate=" + monitorInfoUpdateDate);
 				return;

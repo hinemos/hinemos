@@ -8,6 +8,7 @@
 package com.clustercontrol.rpa.monitor.factory;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -15,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.hc.client5.http.ConnectTimeoutException;
+import org.apache.hc.client5.http.HttpHostConnectException;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.log4j.Logger;
 
@@ -195,7 +197,7 @@ public class RunMonitorRpaManagementToolService extends RunMonitorTruthValueType
 			m_messageOrg += MessageConstant.MESSAGE_RPA_MANAGEMENT_TOOL_SERVICE_MON_GET_TOKEN_SUCCESS.getMessage(managementToolTypeName);
 		} catch (IOException e) {
 			m_log.warn(e.getMessage(), e);
-			if (e instanceof ConnectTimeoutException || e instanceof UnknownHostException) {
+			if (e instanceof ConnectTimeoutException || e instanceof UnknownHostException || e instanceof SocketException) {
 				// 管理ツールサービスへのアクセス失敗
 				m_messageOrg += "\n";
 				m_messageOrg += MessageConstant.MESSAGE_RPA_MANAGEMENT_TOOL_SERVICE_MON_ACCESS_FAILED.getMessage(managementToolTypeName);

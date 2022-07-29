@@ -50,7 +50,7 @@ import com.clustercontrol.agent.filecheck.FileCheckManager;
 import com.clustercontrol.agent.job.RunHistoryUtil;
 import com.clustercontrol.agent.log.LogfileMonitorManager;
 import com.clustercontrol.agent.rpa.RpaLogfileMonitorManager;
-import com.clustercontrol.agent.rpa.ScreenshotThread;
+import com.clustercontrol.agent.rpa.scenariojob.ScreenshotThread;
 import com.clustercontrol.agent.sdml.SdmlFileMonitorManager;
 import com.clustercontrol.agent.selfcheck.SelfCheckManager;
 import com.clustercontrol.agent.util.AgentProperties;
@@ -167,10 +167,18 @@ public class Agent {
 			System.setProperty(limitKey, "0");
 			m_log.info(limitKey + " = " + System.getProperty(limitKey));
 			
+			String jdkTlsClilentProtocolsKey = "jdk.tls.client.protocols";
+			System.setProperty(jdkTlsClilentProtocolsKey, "TLSv1.2");
+			m_log.info(jdkTlsClilentProtocolsKey + " = " + System.getProperty(jdkTlsClilentProtocolsKey));
+			
+			String httpsProtocolsKey = "https.protocols";
+			System.setProperty(httpsProtocolsKey, "TLSv1.2");
+			m_log.info(httpsProtocolsKey + " = " + System.getProperty(httpsProtocolsKey));
+			
 			// TODO プロパティファイルのフォルダの親がagentHome。
 			// あまり良くない実装なので、修正予定。
 			File file = new File(args[0]);
-			agentHome = file.getParentFile().getParent() + "/";
+			agentHome = file.getParentFile().getParent() + File.separator;
 			m_log.info("agentHome=" + agentHome);
 			
 			// AgentInfo の初期化

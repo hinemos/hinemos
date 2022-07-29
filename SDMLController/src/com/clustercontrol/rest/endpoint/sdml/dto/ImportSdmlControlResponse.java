@@ -11,5 +11,6 @@ import com.clustercontrol.rest.endpoint.utility.dto.AbstractImportResponse;
 import com.clustercontrol.rest.endpoint.utility.dto.RecordRegistrationResponse;
 
 public class ImportSdmlControlResponse extends AbstractImportResponse<RecordRegistrationResponse> {
-
+	public ImportSdmlControlResponse() {
+	}
 }

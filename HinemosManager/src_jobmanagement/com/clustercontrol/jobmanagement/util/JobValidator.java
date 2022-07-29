@@ -25,13 +25,18 @@ import java.util.stream.Collectors;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.FunctionConstant;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
+import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
+import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -169,7 +174,7 @@ public class JobValidator {
 		if (jobKick.getJobRuntimeParamList() != null) {
 			for (JobRuntimeParam jobRuntimeParam : jobKick.getJobRuntimeParamList()) {
 				// paramId
-				CommonValidator.validateId(MessageConstant.JOBKICK_PARAM_ID.getMessage(), jobRuntimeParam.getParamId(), 64);
+				CommonValidator.validateJobParamId(MessageConstant.JOBKICK_PARAM_ID.getMessage(), jobRuntimeParam.getParamId(), 64);
 				//paramType
 				if (jobRuntimeParam.getParamType() != JobRuntimeParamTypeConstant.TYPE_INPUT
 						&& jobRuntimeParam.getParamType() != JobRuntimeParamTypeConstant.TYPE_RADIO
@@ -973,7 +978,7 @@ public class JobValidator {
 				for (JobCommandParam jobCommandParam : jobCommandParamList) {
 					// パラメータID
 					String paramId = jobCommandParam.getParamId();
-					CommonValidator.validateId(MessageConstant.JOB_PARAM_ID.getMessage(), paramId, 64);
+					CommonValidator.validateJobParamId(MessageConstant.JOB_PARAM_ID.getMessage(), paramId, 64);
 					// 値
 					String jobCommandParamValue = jobCommandParam.getValue();
 					CommonValidator.validateString(MessageConstant.JOB_PARAM_VALUE.getMessage(), jobCommandParamValue, true, 1, 256);
@@ -1321,6 +1326,18 @@ public class JobValidator {
 		} else if (jobInfo.getType() == JobConstant.TYPE_RESOURCEJOB) {
 
 			// リソース制御ジョブのバリデーション
+			// ログインユーザの権限チェック(クラウド・仮想化 - 実行)の権限が必要
+			String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+			SystemPrivilegeInfo systemPrivilegeInfo = new SystemPrivilegeInfo(FunctionConstant.CLOUDMANAGEMENT, SystemPrivilegeMode.EXEC);
+			boolean isApprovalPrivilege = UserRoleCache.isSystemPrivilege(loginUser, systemPrivilegeInfo);
+			if (!isApprovalPrivilege) {
+				String roleName = systemPrivilegeInfo.getSystemFunction() + "." + systemPrivilegeInfo.getSystemPrivilege();
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_USER_AUTH_NEED_ROLL_CREATE_JOB.getMessage(
+						MessageConstant.RESOURCE_JOB.getMessage(), jobInfo.getId(), roleName));
+				m_log.warn("validateJobUnit() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			
 			ResourceJobInfo resource = jobInfo.getResource();
 
 			// リソース種別のチェック（Enumに持っている値か確認）
@@ -1688,6 +1705,18 @@ public class JobValidator {
 					CommonValidator.validateNullableInt(MessageConstant.RPAJOB_SCREENSHOT_END_VALUE_CONDITION.getMessage(), rpa.getRpaScreenshotEndValueCondition(), minSize, maxSize);
 				}
 			}
+			try{
+				// 設定値の範囲チェック
+				// 区切り文字で分割して分割後の値毎にチェック
+				ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(MessageConstant.END_VALUE.getMessage(), rpa.getRpaScreenshotEndValue());
+			}catch(InvalidSetting e){
+				String[] args = { rpa.getRpaScreenshotEndValue() };
+				String errMsg = MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_END_VALUE_INVALID.getMessage(args) + "\n" + e.getMessage();
+				InvalidSetting ex = new InvalidSetting(errMsg);
+				m_log.info("validateJobUnit() : "+ ex.getClass().getSimpleName() + ", " + ex.getMessage());
+				throw ex;
+			}
+			
 
 			// 直接実行でログファイルによる終了値判定条件が存在する場合のみnullは不可な設定
 			final boolean nullcheckIfDirectAndLogEndValue = rpa.getRpaJobType() == RpaJobTypeConstant.DIRECT 
@@ -1750,9 +1779,20 @@ public class JobValidator {
 						CommonValidator.validateNull(MessageConstant.RPAJOB_END_VALUE_CONDITION_CASE_SENSITIVITY.getMessage(), condition.getCaseSensitivityFlg());
 						break;
 					case RpaJobEndValueConditionTypeConstant.RETURN_CODE:
-						// リターンコードをチェック
-						if (!condition.getReturnCode().matches(ReturnCodeConditionChecker.CONDITION_REGEX)) {
+						// リターンコードをチェック( 数値で複数か範囲あり or ジョブ変数 )
+						if (!(condition.getReturnCode().matches(ReturnCodeConditionChecker.CONDITION_REGEX))
+							&& !(ParameterUtil.isParamFormat(condition.getReturnCode()))) {
 							InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_JOB_RPA_END_VALUE_CONDITION_RETURN_CODE_INVALID.getMessage(condition.getReturnCode()));
+							m_log.info("validateJobUnit() : "
+									+ e.getClass().getSimpleName() + ", " + e.getMessage());
+							throw e;
+						}
+						
+						// 区切り文字として分割し、入力チェックを行う
+						try{
+							ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(
+									MessageConstant.RPAJOB_END_VALUE_CONDITION_RETURN_CODE.getMessage(), condition.getReturnCode());
+						} catch(InvalidSetting e) {
 							m_log.info("validateJobUnit() : "
 									+ e.getClass().getSimpleName() + ", " + e.getMessage());
 							throw e;
@@ -1931,15 +1971,16 @@ public class JobValidator {
 
 			// 起動パラメータのチェック
 			// 必須パラメータが登録されていることをチェック
-			if (rpaManagementToolAccount != null) {
+			if (nullcheckIfIndirect) {
 				Function<Integer, Optional<RpaJobRunParamInfo>> findParam = paramId -> rpa.getRpaJobRunParamInfos().stream().filter(r -> r.getParamId().equals(paramId)).findFirst();
 				List<RpaManagementToolRunParamMst> requiredParams = com.clustercontrol.rpa.util.QueryUtil.getRpaManagementToolRequiredRunParamMstList(
 						rpaManagementToolAccount.getRpaManagementToolId(), rpa.getRpaRunType());
 				for (RpaManagementToolRunParamMst requiredParam : requiredParams) {
 					Optional<RpaJobRunParamInfo> param = findParam.apply(requiredParam.getParamId()); 
 					if (!param.isPresent()) {
-						InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_NOT_FOUND.getMessage(
-								MessageConstant.MESSAGE_JOB_RPA_RUN_REQUIRED_PARAM_INVALID.getMessage(), String.valueOf(requiredParam.getParamName())));
+						InvalidSetting e1 = new InvalidSetting(
+								MessageConstant.MESSAGE_JOB_RPA_RUN_REQUIRED_PARAM_INVALID
+										.getMessage(String.valueOf(requiredParam.getParamName())));
 						m_log.info("validateJobUnit() : "
 								+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
 						throw e1;
@@ -1951,8 +1992,8 @@ public class JobValidator {
 				for (RpaManagementToolRunParamMst fixedParam : fixedParams) {
 					Optional<RpaJobRunParamInfo> param = findParam.apply(fixedParam.getParamId()); 
 					if (param.isPresent() && !param.get().getParamValue().equals(fixedParam.getParamValue())) {
-						InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_NOT_FOUND.getMessage(
-								MessageConstant.MESSAGE_JOB_RPA_RUN_FIXED_PARAM_INVALID.getMessage(), String.valueOf(fixedParam.getParamName()), fixedParam.getParamValue()));
+						InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_JOB_RPA_RUN_FIXED_PARAM_INVALID
+								.getMessage(String.valueOf(fixedParam.getParamName()), fixedParam.getParamValue()));
 						m_log.info("validateJobUnit() : "
 								+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
 						throw e1;
@@ -2052,9 +2093,8 @@ public class JobValidator {
 				throw e;
 			}
 			// 試行回数の未設定時(インポート時を想定)
-			if (rpa.getMessageRetry() == null || rpa.getCommandRetry() == null) {
-				String message = "validateJobUnit() messageRetry or commandRetry is null(job). messageRetry =" + rpa.getMessageRetry()
-						+ ", commandRetry =" + rpa.getCommandRetry();
+			if (rpa.getMessageRetry() == null ) {
+				String message = "validateJobUnit() messageRetry (rpajob). messageRetry =" + rpa.getMessageRetry();
 				m_log.info(message);
 				throw new InvalidSetting(message);
 			}
