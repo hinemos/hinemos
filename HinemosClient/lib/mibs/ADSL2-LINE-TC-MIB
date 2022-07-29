@@ -1,0 +1,389 @@
+   ADSL2-LINE-TC-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+      MODULE-IDENTITY,
+      transmission
+         FROM SNMPv2-SMI
+
+      TEXTUAL-CONVENTION
+         FROM SNMPv2-TC;
+
+   adsl2TCMIB MODULE-IDENTITY
+      LAST-UPDATED "200610040000Z" -- October 4th, 2006
+      ORGANIZATION "ADSLMIB Working Group"
+
+         ::= { transmission 238 2 } -- adsl2MIB 2
+
+
+   Adsl2Unit ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      INTEGER {
+                     atuc(1),
+                     atur(2)
+                  }
+
+   Adsl2Direction ::= TEXTUAL-CONVENTION
+        STATUS current
+        SYNTAX INTEGER {
+          upstream(1),
+          downstream(2)
+       }
+
+
+
+   Adsl2TransmissionModeType ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      BITS {
+                     ansit1413(0),
+                     etsi(1),
+                     g9921PotsNonOverlapped(2),
+                     g9921PotsOverlapped(3),
+                     g9921IsdnNonOverlapped(4),
+                     g9921isdnOverlapped(5),
+                     g9921tcmIsdnNonOverlapped(6),
+                     g9921tcmIsdnOverlapped(7),
+                     g9922potsNonOverlapped(8),
+                     g9922potsOverlapped(9),
+                     g9922tcmIsdnNonOverlapped(10),
+                     g9922tcmIsdnOverlapped(11),
+                     g9921tcmIsdnSymmetric(12),
+                     reserved1(13),
+                     reserved2(14),
+
+
+
+
+
+                     reserved3(15),
+                     reserved4(16),
+                     reserved5(17),
+                     g9923PotsNonOverlapped(18),
+                     g9923PotsOverlapped(19),
+                     g9923IsdnNonOverlapped(20),
+                     g9923isdnOverlapped(21),
+                     reserved6(22),
+                     reserved7(23),
+                     g9924potsNonOverlapped(24),
+                     g9924potsOverlapped(25),
+                     reserved8(26),
+                     reserved9(27),
+                     g9923AnnexIAllDigNonOverlapped(28),
+                     g9923AnnexIAllDigOverlapped(29),
+                     g9923AnnexJAllDigNonOverlapped(30),
+                     g9923AnnexJAllDigOverlapped(31),
+                     g9924AnnexIAllDigNonOverlapped(32),
+                     g9924AnnexIAllDigOverlapped(33),
+                     g9923AnnexLMode1NonOverlapped(34),
+                     g9923AnnexLMode2NonOverlapped(35),
+                     g9923AnnexLMode3Overlapped(36),
+                     g9923AnnexLMode4Overlapped(37),
+                     g9923AnnexMPotsNonOverlapped(38),
+                     g9923AnnexMPotsOverlapped(39),
+                     g9925PotsNonOverlapped(40),
+                     g9925PotsOverlapped(41),
+                     g9925IsdnNonOverlapped(42),
+                     g9925isdnOverlapped(43),
+                     reserved10(44),
+                     reserved11(45),
+                     g9925AnnexIAllDigNonOverlapped(46),
+                     g9925AnnexIAllDigOverlapped(47),
+                     g9925AnnexJAllDigNonOverlapped(48),
+                     g9925AnnexJAllDigOverlapped(49),
+                     g9925AnnexMPotsNonOverlapped(50),
+                     g9925AnnexMPotsOverlapped(51),
+                     reserved12(52),
+                     reserved13(53),
+                     reserved14(54),
+                     reserved15(55)
+                  }
+
+   Adsl2RaMode ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      INTEGER {
+                     manual(1),
+                     raInit(2),
+                     dynamicRa(3)
+                  }
+
+   Adsl2InitResult ::= TEXTUAL-CONVENTION
+      STATUS      current
+
+      SYNTAX      INTEGER {
+                     noFail(0),
+                     configError(1),
+                     configNotFeasible(2),
+                     commFail(3),
+                     noPeerAtu(4),
+                     otherCause(5)
+                  }
+
+   Adsl2OperationModes ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      INTEGER {
+                     defMode (1),
+                     adsl(2),
+                     g9923PotsNonOverlapped(8),
+                     g9923PotsOverlapped(9),
+                     g9923IsdnNonOverlapped(10),
+                     g9923isdnOverlapped(11),
+                     g9924potsNonOverlapped(14),
+                     g9924potsOverlapped(15),
+                     g9923AnnexIAllDigNonOverlapped(18),
+                     g9923AnnexIAllDigOverlapped(19),
+                     g9923AnnexJAllDigNonOverlapped(20),
+                     g9923AnnexJAllDigOverlapped(21),
+                     g9924AnnexIAllDigNonOverlapped(22),
+                     g9924AnnexIAllDigOverlapped(23),
+                     g9923AnnexLMode1NonOverlapped(24),
+                     g9923AnnexLMode2NonOverlapped(25),
+                     g9923AnnexLMode3Overlapped(26),
+                     g9923AnnexLMode4Overlapped(27),
+                     g9923AnnexMPotsNonOverlapped(28),
+                     g9923AnnexMPotsOverlapped(29),
+                     g9925PotsNonOverlapped(30),
+                     g9925PotsOverlapped(31),
+                     g9925IsdnNonOverlapped(32),
+                     g9925isdnOverlapped(33),
+                     g9925AnnexIAllDigNonOverlapped(36),
+                     g9925AnnexIAllDigOverlapped(37),
+                     g9925AnnexJAllDigNonOverlapped(38),
+                     g9925AnnexJAllDigOverlapped(39),
+                     g9925AnnexMPotsNonOverlapped(40),
+                     g9925AnnexMPotsOverlapped(41)
+                  }
+
+
+   Adsl2PowerMngState ::= TEXTUAL-CONVENTION
+      STATUS      current
+
+      SYNTAX      INTEGER {
+
+
+
+
+
+                     l0(1),
+                     l1(2),
+                     l2(3),
+                     l3(4)
+                  }
+
+   Adsl2ConfPmsForce ::= TEXTUAL-CONVENTION
+      STATUS      current
+
+      SYNTAX      INTEGER {
+                     l3toL0(0),
+                     l0toL2(2),
+                     l0orL2toL3(3)
+                  }
+
+   Adsl2LConfProfPmMode ::= TEXTUAL-CONVENTION
+      STATUS current
+
+      SYNTAX BITS {
+          allowTransitionsToIdle(0),
+          allowTransitionsToLowPower(1)
+        }
+
+   Adsl2LineLdsf ::= TEXTUAL-CONVENTION
+
+
+
+
+
+      STATUS current
+
+      SYNTAX INTEGER {
+          inhibit(0),
+          force(1)
+        }
+
+   Adsl2LdsfResult ::= TEXTUAL-CONVENTION
+        STATUS current
+        SYNTAX INTEGER {
+             none(1),
+             success(2),
+
+
+
+
+
+             inProgress(3),
+             unsupported(4),
+             cannotRun(5),
+             aborted(6),
+             failed(7),
+             illegalMode(8),
+             adminUp(9),
+             tableFull(10),
+             noResources(11)
+        }
+
+   Adsl2SymbolProtection ::= TEXTUAL-CONVENTION
+      STATUS      current
+
+      SYNTAX      INTEGER {
+                  noProtection(1),
+                  halfSymbol(2),
+                  singleSymbol(3),
+                  twoSymbols(4),
+                  threeSymbols(5),
+                  fourSymbols(6),
+                  fiveSymbols(7),
+                  sixSymbols(8),
+                  sevenSymbols(9),
+                  eightSymbols(10),
+                  nineSymbols(11),
+                  tenSymbols(12),
+                  elevenSymbols(13),
+                  twelveSymbols(14),
+                  thirteeSymbols(15),
+                  fourteenSymbols(16),
+                  fifteenSymbols(17),
+                  sixteenSymbols(18)
+                }
+   Adsl2MaxBer ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      INTEGER {
+                     eminus3(1),
+                     eminus5(2),
+                     eminus7(3)
+                  }
+
+   Adsl2ScMaskDs ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      OCTET STRING (SIZE(0..64))
+
+   Adsl2ScMaskUs ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      OCTET STRING (SIZE(0..8))
+
+   Adsl2RfiDs ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      OCTET STRING (SIZE(0..64))
+
+   Adsl2PsdMaskDs ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      OCTET STRING (SIZE(0..96))
+
+
+
+
+
+   Adsl2PsdMaskUs ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      OCTET STRING (SIZE(0..12))
+
+   Adsl2Tssi ::= TEXTUAL-CONVENTION
+      STATUS      current
+      SYNTAX      OCTET STRING (SIZE(0..96))
+
+   Adsl2LastTransmittedState ::= TEXTUAL-CONVENTION
+        STATUS current
+        SYNTAX      INTEGER {
+          atucG9941(0),
+          atucQuiet1(1),
+          atucComb1(2),
+          atucQuiet2(3),
+          atucComb2(4),
+          atucIcomb1(5),
+          atucLineprob(6),
+          atucQuiet3(7),
+          atucComb3(8),
+          atucIComb2(9),
+          atucMsgfmt(10),
+
+
+
+
+
+          atucMsgpcb(11),
+          atucQuiet4(12),
+          atucReverb1(13),
+          atucTref1(14),
+          atucReverb2(15),
+          atucEct(16),
+          atucReverb3(17),
+          atucTref2(18),
+          atucReverb4(19),
+          atucSegue1(20),
+          atucMsg1(21),
+          atucReverb5(22),
+          atucSegue2(23),
+          atucMedley(24),
+          atucExchmarker(25),
+          atucMsg2(26),
+          atucReverb6(27),
+          atucSegue3(28),
+          atucParams(29),
+          atucReverb7(30),
+          atucSegue4(31),
+          atucShowtime(32),
+          aturG9941(100),
+          aturQuiet1(101),
+          aturComb1(102),
+          aturQuiet2(103),
+          aturComb2(104),
+          aturIcomb1(105),
+          aturLineprob(106),
+          aturQuiet3(107),
+          aturComb3(108),
+          aturIcomb2(109),
+          aturMsgfmt(110),
+          aturMsgpcb(111),
+          aturReverb1(112),
+          aturQuiet4(113),
+          aturReverb2(114),
+          aturQuiet5(115),
+          aturReverb3(116),
+          aturEct(117),
+          aturReverb4(118),
+          aturSegue1(119),
+          aturReverb5(120),
+          aturSegue2(121),
+          aturMsg1(122),
+          aturMedley(123),
+          aturExchmarker(124),
+
+
+
+
+
+          aturMsg2(125),
+          aturReverb6(126),
+          aturSegue3(127),
+          aturParams(128),
+          aturReverb7(129),
+          aturSegue4(130),
+          aturShowtime(131)
+        }
+
+   Adsl2LineStatus ::= TEXTUAL-CONVENTION
+      STATUS current
+
+      SYNTAX BITS {
+          noDefect(0),
+          lossOfFrame(1),
+          lossOfSignal(2),
+          lossOfPower(3),
+          initFailure(4)
+        }
+
+   Adsl2ChAtmStatus ::= TEXTUAL-CONVENTION
+      STATUS current
+
+      SYNTAX BITS {
+          noDefect(0),
+          noCellDelineation(1),
+          lossOfCellDelineation(2)
+        }
+
+   Adsl2ChPtmStatus ::= TEXTUAL-CONVENTION
+      STATUS current
+
+         SYNTAX BITS {
+             noDefect(0),
+             outOfSync(1)
+        }
+
+   END

@@ -1,0 +1,1386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0"
+				maxOccurs="1" default="H">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string"
+				minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string"
+				minOccurs="0" maxOccurs="1" default="3">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="notify" type="NotifyType">
+		<xs:annotation>
+			<xs:documentation>通知定義一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
+	<xs:complexType name="NotifyType">
+		<xs:annotation>
+			<xs:documentation>通知定義一覧のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0"
+				maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyInfo" type="NotifyInfoType"
+				minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>通知定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="NotifyInfoType">
+		<xs:annotation>
+			<xs:documentation>通知定義情報です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="notifyStatusInfo"
+				type="NotifyStatusInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ステータス通知定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyEventInfo"
+				type="NotifyEventInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>イベント通知定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyMailInfo" type="NotifyMailInfoType"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>メール通知定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyJobInfo" type="NotifyJobInfoType"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>ジョブ連動通知定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyLogEscalateInfo"
+				type="NotifyLogEscalateInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ログエスカレーション通知定義の配列
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyCommandInfo"
+				type="NotifyCommandInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>コマンド通知定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="notifyInfraInfo" type="NotifyInfraInfoType"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>環境構築通知定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyMessageInfo"
+				type="NotifyMessageInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>メッセージ通知定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+			<xs:element name="notifyRestInfo"
+				type="NotifyRestInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>REST通知定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			
+			<xs:element name="notifyCloudInfo" type="NotifyCloudInfoType"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>クラウド通知定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+
+		</xs:sequence>
+
+		<xs:attribute name="notifyId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>通知IDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="description" type="xs:string"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>この設定の説明です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="notifyType" type="xs:int"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					この設定で用いる通知タイプです。
+					{ステータス(0)、イベント(1)、メール(2)、ジョブ(3)、ログエスカレーション(4)、コマンド(5)、環境構築(6)}の各index番号を指定します。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="validFlg" type="xs:boolean"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					この設定の有効/無効フラグです。 {有効(True)、無効(False)}のどちらかを指定します。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="regDate" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>作成日時です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="regUser" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>作成ユーザです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="updateDate" type="xs:string"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>更新日時です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="updateUser" type="xs:string"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>更新ユーザです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="initialCount" type="xs:int"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>通知までのカウント数です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="notFirstNotify" type="xs:boolean"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>有効直後の通知の有無です。{通知しない(True), 通知する(False)}を入力します。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="renotifyType" type="xs:int"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>再通知種別です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="renotifyPeriod" type="xs:int"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					再通知抑制期間です。
+					1以上32767以下の値をセットします。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="ownerRoleId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>オーナーロールIDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="calendarId" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>カレンダIDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+	</xs:complexType>
+
+	<xs:complexType name="NotifyInfoDetailType" abstract="true">
+		<xs:annotation>
+			<xs:documentation>通知詳細定義の基底データ型</xs:documentation>
+		</xs:annotation>
+
+		<xs:attribute name="notifyId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>通知ID</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="infoValidFlg" type="xs:boolean"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>情報：通知フラグ</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="warnValidFlg" type="xs:boolean"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>警告：通知フラグ</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="criticalValidFlg" type="xs:boolean"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>危険：通知フラグ</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="unknownValidFlg" type="xs:boolean"
+			use="optional">
+			<xs:annotation>
+				<xs:documentation>不明：通知フラグ</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+
+	<xs:complexType name="NotifyStatusInfoType">
+		<xs:annotation>
+			<xs:documentation>ステータス通知定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexContent>
+			<xs:extension base="NotifyInfoDetailType">
+				<xs:attribute name="statusInvalidFlg" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							存続期間経過後の処理フラグです。
+							{情報を削除する(11)、更新されていない旨のメッセージに置き換える(12)}のどちらかを指定します。}
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="statusUpdatePriority"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							ステータス情報更新時の重要度です。
+							{危険(0)、不明(1)、警告(2)、情報(3)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="statusValidPeriod" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							ステータス情報の存続期間です。
+							{無期限(-1)、10分(10)、20分(20)、30分(30)、1時間(60)、3時間(180)、6時間(360)、12時間(720)、1日(1440)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+
+	</xs:complexType>
+
+	<xs:complexType name="NotifyEventInfoType">
+		<xs:annotation>
+			<xs:documentation>イベント通知定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexContent>
+			<xs:extension base="NotifyInfoDetailType">
+				<xs:attribute name="infoEventNormalState" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：イベント通知状態です。 {確認済み(1)、未確認(0)、確認中(2)}のどちらかを指定します。}
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnEventNormalState" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：イベント通知状態です。 {確認済み(1)、未確認(0)、確認中(2)}のどちらかを指定します。}
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalEventNormalState" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：イベント通知状態です。 {確認済み(1)、未確認(0)、確認中(2)}のどちらかを指定します。}
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownEventNormalState" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：イベント通知状態です。 {確認済み(1)、未確認(0)、確認中(2)}のどちらかを指定します。}
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+
+	</xs:complexType>
+
+	<xs:complexType name="NotifyMailInfoType">
+		<xs:annotation>
+			<xs:documentation>メール通知定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexContent>
+			<xs:extension base="NotifyInfoDetailType">
+				<xs:attribute name="mailTemplateId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							メールテンプレートIDです。 登録済みのメールテンプレートIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="infoMailAddress" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：メールアドレス（セミコロン区切り）です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnMailAddress" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：メールアドレス（セミコロン区切り）です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalMailAddress" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：メールアドレス（セミコロン区切り）です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownMailAddress" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：メールアドレス（セミコロン区切り）です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="NotifyJobInfoType">
+		<xs:annotation>
+			<xs:documentation>ジョブ連動通知定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexContent>
+			<xs:extension base="NotifyInfoDetailType">
+				<xs:attribute name="infoJobunitId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：ジョブユニットのジョブIDです。 登録済みジョブユニットのジョブIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnJobunitId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：ジョブユニットのジョブIDです。 登録済みジョブユニットのジョブIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalJobunitId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：ジョブユニットのジョブIDです。 登録済みジョブユニットのジョブIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownJobunitId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：ジョブユニットのジョブIDです。 登録済みジョブユニットのジョブIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+				<xs:attribute name="infoJobId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：ジョブIDです。 登録済みジョブIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnJobId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：ジョブIDです。 登録済みジョブIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalJobId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：ジョブIDです。 登録済みジョブIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownJobId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：ジョブIDです。 登録済みジョブIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+				<xs:attribute name="infoJobFailurePriority"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：呼出失敗時の重要度です。
+							{危険(0)、不明(1)、警告(2)、通知(3)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnJobFailurePriority"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：呼出失敗時の重要度です。
+							{危険(0)、不明(1)、警告(2)、通知(3)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalJobFailurePriority"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：呼出失敗時の重要度です。
+							{危険(0)、不明(1)、警告(2)、通知(3)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownJobFailurePriority"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：呼出失敗時の重要度です。
+							{危険(0)、不明(1)、警告(2)、通知(3)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+				<xs:attribute name="jobExecFacilityFlg"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							ジョブ実行ファシリティフラグです。
+							{イベントが発生したスコープ(0)、固定スコープ(1)}のどちらかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="jobExecFacility" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							ジョブ実行ファシリティフラグが{固定スコープ}の場合のジョブ実行ファシリティIDです。
+							登録済みスコープのファシリティIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="jobExecScope" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							ジョブ実行スコープです。
+							通常はリポジトリに既に登録されているため、本項目への入力はマネージャへの登録時には無視されます。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="notifyJobType" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							実行モードです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="retryFlg" type="xs:boolean"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							送信に失敗した場合に再送するフラグです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="retryCount" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							送信に失敗した場合の再送回数です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="successInternalFlg" type="xs:boolean"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							送信成功時のINTERNALイベントによる通知フラグです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="failureInternalFlg" type="xs:boolean"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							送信失敗時のINTERNALイベントによる通知フラグです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="joblinkSendSettingId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							ジョブ連携送信設定IDです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="NotifyInfraInfoType">
+		<xs:annotation>
+			<xs:documentation>環境構築連動通知定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexContent>
+			<xs:extension base="NotifyInfoDetailType">
+				<xs:attribute name="infoInfraId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：環境構築IDです。 登録済み環境構築IDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnInfraId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：環境構築IDです。 登録済み環境構築IDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalInfraId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：環境構築IDです。 登録済み環境構築IDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownInfraId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：環境構築IDです。 登録済み環境構築IDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+				<xs:attribute name="infoInfraFailurePriority"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：呼出失敗時の重要度です。
+							{危険(0)、不明(1)、警告(2)、通知(3)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnInfraFailurePriority"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：呼出失敗時の重要度です。
+							{危険(0)、不明(1)、警告(2)、通知(3)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalInfraFailurePriority"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：呼出失敗時の重要度です。
+							{危険(0)、不明(1)、警告(2)、通知(3)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownInfraFailurePriority"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：呼出失敗時の重要度です。
+							{危険(0)、不明(1)、警告(2)、通知(3)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+				<xs:attribute name="infraExecFacilityFlg"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							環境構築実行ファシリティフラグです。
+							{イベントが発生したスコープ(0)、固定スコープ(1)}のどちらかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="infraExecFacility" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							環境構築実行ファシリティフラグが{固定スコープ}の場合の環境構築実行ファシリティIDです。
+							登録済みスコープのファシリティIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="infraExecScope" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							環境構築実行スコープです。
+							通常はリポジトリに既に登録されているため、本項目への入力はマネージャへの登録時には無視されます。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="NotifyLogEscalateInfoType">
+		<xs:annotation>
+			<xs:documentation>ログエスカレーション通知定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexContent>
+			<xs:extension base="NotifyInfoDetailType">
+				<xs:attribute name="infoEscalateMessage" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：転送の際に用いるメッセージです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnEscalateMessage" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：転送の際に用いるメッセージです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalEscalateMessage" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：転送の際に用いるメッセージです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownEscalateMessage" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：転送の際に用いるメッセージです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+				<xs:attribute name="infoSyslogPriority" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：syslog重要度です。
+							{emergency(0)、alert(1)、critical(2)、error(3)、warning(4)、notice(5)、information(6)、debug(7)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnSyslogPriority" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：syslog重要度です。
+							{emergency(0)、alert(1)、critical(2)、error(3)、warning(4)、notice(5)、information(6)、debug(7)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalSyslogPriority" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：syslog重要度です。
+							{emergency(0)、alert(1)、critical(2)、error(3)、warning(4)、notice(5)、information(6)、debug(7)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownSyslogPriority" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：syslog重要度です。
+							{emergency(0)、alert(1)、critical(2)、error(3)、warning(4)、notice(5)、information(6)、debug(7)}のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+				<xs:attribute name="infoSyslogFacility" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：syslogファシリティです。
+							{
+							kern(0)、
+							user(8)、
+							mail(16)、
+							daemon(24)、
+							auth(32)、
+							syslog(40)、
+							lpr(48)、
+							news(56)、
+							uucp(64)、
+							cron(72)、
+							authpriv(80)、
+							ftp(88)、
+							local0(128)、
+							local1(136)、
+							local2(144)、
+							local3(152)、
+							local4(160)、
+							local5(168)、
+							local6(176)、
+							local7(184)
+							}
+							のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnSyslogFacility" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：syslogファシリティです。
+							{
+							kern(0)、
+							user(8)、
+							mail(16)、
+							daemon(24)、
+							auth(32)、
+							syslog(40)、
+							lpr(48)、
+							news(56)、
+							uucp(64)、
+							cron(72)、
+							authpriv(80)、
+							ftp(88)、
+							local0(128)、
+							local1(136)、
+							local2(144)、
+							local3(152)、
+							local4(160)、
+							local5(168)、
+							local6(176)、
+							local7(184)
+							}
+							のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalSyslogFacility" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：syslogファシリティです。
+							{
+							kern(0)、
+							user(8)、
+							mail(16)、
+							daemon(24)、
+							auth(32)、
+							syslog(40)、
+							lpr(48)、
+							news(56)、
+							uucp(64)、
+							cron(72)、
+							authpriv(80)、
+							ftp(88)、
+							local0(128)、
+							local1(136)、
+							local2(144)、
+							local3(152)、
+							local4(160)、
+							local5(168)、
+							local6(176)、
+							local7(184)
+							}
+							のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownSyslogFacility" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：syslogファシリティです。
+							{
+							kern(0)、
+							user(8)、
+							mail(16)、
+							daemon(24)、
+							auth(32)、
+							syslog(40)、
+							lpr(48)、
+							news(56)、
+							uucp(64)、
+							cron(72)、
+							authpriv(80)、
+							ftp(88)、
+							local0(128)、
+							local1(136)、
+							local2(144)、
+							local3(152)、
+							local4(160)、
+							local5(168)、
+							local6(176)、
+							local7(184)
+							}
+							のどれかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+				<xs:attribute name="esaclateFacilityFlg"
+					type="xs:int" use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							転送先ファシリティフラグです。
+							{イベントが発生したスコープ(0)、固定スコープ(1)}のどちらかを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="escalateFacility" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							転送先ファシリティフラグが{固定スコープ}の場合の転送先ファシリティIDです。
+							登録済みスコープのファシリティIDを指定します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="escalateScope" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							転送先スコープです。
+							通常はリポジトリに既に登録されているため、本項目への入力はマネージャへの登録時には無視されます。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="escalatePort" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							転送先ポートです。
+							1以上65535以下の値をセットします。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="NotifyCommandInfoType">
+		<xs:annotation>
+			<xs:documentation>コマンド通知定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexContent>
+			<xs:extension base="NotifyInfoDetailType">
+				<xs:attribute name="infoCommand" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：実行するコマンド定義です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnCommand" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：実行するコマンド定義です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalCommand" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：実行するコマンド定義です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownCommand" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：実行するコマンド定義です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+				<xs:attribute name="infoEffectiveUser" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：コマンドを実行するユーザです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnEffectiveUser" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：コマンドを実行するユーザです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalEffectiveUser" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：コマンドを実行するユーザです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownEffectiveUser" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：コマンドを実行するユーザです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="commandTimeout" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							コマンドのタイムアウト値です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="commandSettingType" type="xs:int"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>コマンドの入力種別です。
+						{コマンドの直接入力(1), コマンド通知テンプレートの選択(2)}を入力します。</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:complexType name="NotifyMessageInfoType">
+		<xs:annotation>
+			<xs:documentation>メッセージ通知定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexContent>
+			<xs:extension base="NotifyInfoDetailType">
+				<xs:attribute name="infoRulebaseId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：ルールベース定義です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnRulebaseId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：ルールベース定義です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalRulebaseId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：ルールベース定義です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownRulebaseId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：ルールベース定義です。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="NotifyRestInfoType">
+		<xs:annotation>
+			<xs:documentation>REST通知定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:complexContent>
+			<xs:extension base="NotifyInfoDetailType">
+				<xs:attribute name="infoRestAccessId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：実施するRESTアクセスのIDです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnRestAccessId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：実施するRESTアクセスのIDです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="criticalRestAccessId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：実施するRESTアクセスのIDです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unknownRestAccessId" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：実施するRESTアクセスのIDです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="NotifyCloudInfoType">
+		<xs:annotation>
+			<xs:documentation>クラウド通知定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="NotifyInfoDetailType">
+				<xs:sequence>
+					<xs:element name="keyValueData" type="CloudNotifyLinkInfoKeyValueObject"
+						minOccurs="0" maxOccurs="unbounded">
+						<xs:annotation>
+							<xs:documentation>・AWS：リクエストのディテールです。 ・Azure：リクエストのデータです。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="facilityId" type="xs:string"
+					use="required">
+					<xs:annotation>
+						<xs:documentation>
+							クラウド通知を実行する先のクラウドスコープのファシリティIDを入力します。
+							AWS:イベントバスが存在するロケーションのクラウドスコープ。
+							Azure：Azureのクラウドスコープ。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="platformType" type="xs:int"
+					use="required">
+					<xs:annotation>
+						<xs:documentation>
+							クラウド通知を実行する対象のプラットフォームです。
+							{AWS(0), Azure(1)}を入力します。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="textScope" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							クラウド通知を実行する先のクラウドスコープのファシリティ名です。
+							通常はリポジトリに既に登録されているため、本項目への入力はマネージャへの登録時には無視されます。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="infoEventBus" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：
+							・AWS：送信先のイベントバス名です。
+							・Azure：送信先のエンドポイントです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="infoDetailType" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：
+							・AWS：リクエストのディテールタイプです。
+							・Azure：リクエストのサブジェクトです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="infoSource" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：
+							・AWS：リクエストのソースです。
+							・Azure：リクエストのイベントタイプです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="infoDataVersion" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：
+							・Azure：リクエストのデータバージョンです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="infoAccessKey" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							情報：
+							・Azure：送信先のアクセスキーです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnEventBus" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：
+							・AWS：送信先のイベントバス名です。
+							・Azure：送信先のエンドポイントです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnDetailType" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：
+							・AWS：リクエストのディテールタイプです。
+							・Azure：リクエストのサブジェクトです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnSource" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：
+							・AWS：リクエストのソースです。
+							・Azure：リクエストのイベントタイプです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnDataVersion" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：
+							・Azure：リクエストのデータバージョンです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="warnAccessKey" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							警告：
+							・Azure：送信先のアクセスキーです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="critEventBus" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：
+							・AWS：送信先のイベントバス名です。
+							・Azure：送信先のエンドポイントです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="critDetailType" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：
+							・AWS：リクエストのディテールタイプです。
+							・Azure：リクエストのサブジェクトです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="critSource" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：
+							・AWS：リクエストのソースです。
+							・Azure：リクエストのイベントタイプです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="critDataVersion" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：
+							・Azure：リクエストのデータバージョンです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="critAccessKey" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							危険：
+							・Azure：送信先のアクセスキーです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unkEventBus" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：
+							・AWS：送信先のイベントバス名です。
+							・Azure：送信先のエンドポイントです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unkDetailType" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：
+							・AWS：リクエストのディテールタイプです。
+							・Azure：リクエストのサブジェクトです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unkSource" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：
+							・AWS：リクエストのソースです。
+							・Azure：リクエストのイベントタイプです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unkDataVersion" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：
+							・Azure：リクエストのデータバージョンです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="unkAccessKey" type="xs:string"
+					use="optional">
+					<xs:annotation>
+						<xs:documentation>
+							不明：
+							・Azure：送信先のアクセスキーです。
+						</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	
+	<xs:complexType name="CloudNotifyLinkInfoKeyValueObject">
+		<xs:annotation>
+			<xs:documentation>クラウド通知のディテール/データを格納する要素</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="priority" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						本要素が紐づく重要度を指定
+							・情報：INFO(3)
+							・警告：WARNING(2)
+							・危険：CRITICAL(0)
+							・不明：UNKNOWN(1)
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="name" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>名前</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="value" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>値</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+</xs:schema>

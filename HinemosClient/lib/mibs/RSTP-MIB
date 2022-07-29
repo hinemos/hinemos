@@ -1,0 +1,173 @@
+   RSTP-MIB DEFINITIONS ::= BEGIN
+
+
+   IMPORTS
+
+
+
+
+
+       MODULE-IDENTITY, OBJECT-TYPE, Integer32, mib-2
+           FROM SNMPv2-SMI
+       TruthValue
+           FROM SNMPv2-TC
+       MODULE-COMPLIANCE, OBJECT-GROUP
+           FROM SNMPv2-CONF
+       dot1dStp, dot1dStpPortEntry
+           FROM BRIDGE-MIB;
+
+   rstpMIB MODULE-IDENTITY
+       LAST-UPDATED "200512070000Z"
+       ORGANIZATION "IETF Bridge MIB Working Group"
+
+       ::= { mib-2 134 }
+
+
+   rstpNotifications OBJECT IDENTIFIER ::= { rstpMIB 0 }
+   rstpObjects       OBJECT IDENTIFIER ::= { rstpMIB 1 }
+   rstpConformance   OBJECT IDENTIFIER ::= { rstpMIB 2 }
+
+
+   dot1dStpVersion OBJECT-TYPE
+       SYNTAX      INTEGER {
+                       stpCompatible(0),
+                       rstp(2)
+                   }
+       MAX-ACCESS  read-write
+       STATUS      current
+
+
+
+
+
+       DEFVAL      { rstp }
+       ::= { dot1dStp 16 }
+
+   dot1dStpTxHoldCount OBJECT-TYPE
+       SYNTAX      Integer32 (1..10)
+       MAX-ACCESS  read-write
+       STATUS      current
+
+       DEFVAL      { 3 }
+       ::= { dot1dStp 17 }
+
+
+   dot1dStpExtPortTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF Dot1dStpExtPortEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       ::= { dot1dStp 19 }
+
+
+
+
+
+
+   dot1dStpExtPortEntry OBJECT-TYPE
+       SYNTAX      Dot1dStpExtPortEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       AUGMENTS    { dot1dStpPortEntry }
+       ::= { dot1dStpExtPortTable 1 }
+
+   Dot1dStpExtPortEntry ::=
+       SEQUENCE {
+           dot1dStpPortProtocolMigration
+               TruthValue,
+           dot1dStpPortAdminEdgePort
+               TruthValue,
+           dot1dStpPortOperEdgePort
+               TruthValue,
+           dot1dStpPortAdminPointToPoint
+               INTEGER,
+           dot1dStpPortOperPointToPoint
+               TruthValue,
+           dot1dStpPortAdminPathCost
+               Integer32
+       }
+
+   dot1dStpPortProtocolMigration OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { dot1dStpExtPortEntry 1 }
+
+   dot1dStpPortAdminEdgePort OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-write
+       STATUS      current
+
+       ::= { dot1dStpExtPortEntry 2 }
+
+   dot1dStpPortOperEdgePort OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-only
+       STATUS      current
+
+       ::= { dot1dStpExtPortEntry 3 }
+
+   dot1dStpPortAdminPointToPoint OBJECT-TYPE
+       SYNTAX      INTEGER {
+                       forceTrue(0),
+                       forceFalse(1),
+                       auto(2)
+                   }
+       MAX-ACCESS  read-write
+       STATUS      current
+
+      ::= { dot1dStpExtPortEntry 4 }
+
+   dot1dStpPortOperPointToPoint OBJECT-TYPE
+       SYNTAX      TruthValue
+       MAX-ACCESS  read-only
+       STATUS      current
+       ::= { dot1dStpExtPortEntry 5 }
+
+   dot1dStpPortAdminPathCost OBJECT-TYPE
+       SYNTAX      Integer32 (0..200000000)
+       MAX-ACCESS  read-write
+       STATUS      current
+       ::= { dot1dStpExtPortEntry 6 }
+
+
+   rstpGroups OBJECT IDENTIFIER ::= { rstpConformance 1 }
+
+   rstpCompliances OBJECT IDENTIFIER ::= { rstpConformance 2 }
+
+
+   rstpBridgeGroup OBJECT-GROUP
+       OBJECTS {
+           dot1dStpVersion,
+           dot1dStpTxHoldCount
+       }
+       STATUS      current
+       ::= { rstpGroups 1 }
+
+   rstpPortGroup OBJECT-GROUP
+       OBJECTS {
+           dot1dStpPortProtocolMigration,
+           dot1dStpPortAdminEdgePort,
+           dot1dStpPortOperEdgePort,
+           dot1dStpPortAdminPointToPoint,
+           dot1dStpPortOperPointToPoint,
+           dot1dStpPortAdminPathCost
+       }
+       STATUS      current
+       ::= { rstpGroups 2 }
+
+
+   rstpCompliance MODULE-COMPLIANCE
+       STATUS      current
+
+
+
+
+
+       MODULE
+           MANDATORY-GROUPS {
+               rstpBridgeGroup,
+               rstpPortGroup
+           }
+       ::= { rstpCompliances 1 }
+
+   END

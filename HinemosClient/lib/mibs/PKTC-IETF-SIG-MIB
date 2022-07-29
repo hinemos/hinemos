@@ -1,0 +1,1402 @@
+PKTC-IETF-SIG-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Integer32,
+    Unsigned32,
+    mib-2
+          FROM SNMPv2-SMI                   -- [RFC2578]
+    InetAddressType,
+    InetAddress,
+    InetPortNumber
+          FROM INET-ADDRESS-MIB             -- [RFC4001]
+    TEXTUAL-CONVENTION,
+    RowStatus,
+    TruthValue
+          FROM SNMPv2-TC                    -- [RFC2579]
+
+
+
+
+
+    OBJECT-GROUP,
+    MODULE-COMPLIANCE
+          FROM SNMPv2-CONF                  -- [RFC2580]
+    SnmpAdminString
+          FROM SNMP-FRAMEWORK-MIB           -- [RFC3411]
+    ifIndex
+          FROM IF-MIB                       -- [RFC2863]
+    Dscp
+          FROM DIFFSERV-DSCP-TC;            -- [RFC3289]
+
+pktcIetfSigMib MODULE-IDENTITY
+    LAST-UPDATED    "200712180000Z" -- December 18, 2007
+    ORGANIZATION    "IETF IPCDN Working Group"
+
+
+::=  { mib-2 169 }
+
+
+TenthdBm ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d-1"
+    STATUS       current
+    SYNTAX       Integer32
+
+PktcCodecType ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX INTEGER {
+               other     (1),
+               unknown   (2),
+               g729      (3),
+               reserved  (4),
+               g729E     (5),
+               pcmu      (6),
+               g726at32  (7),
+               g728      (8),
+               pcma      (9),
+               g726at16  (10),
+               g726at24  (11),
+               g726at40  (12),
+               ilbc      (13),
+               bv16      (14)
+    }
+
+PktcRingCadence   ::= TEXTUAL-CONVENTION
+    STATUS        current
+
+
+    SYNTAX  OCTET STRING (SIZE(4..36))
+
+
+PktcSigType     ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX INTEGER {
+                   other(1),
+                   ncs(2)
+    }
+
+
+
+
+
+
+
+DtmfCode::=TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       INTEGER {
+                  dtmfcode0(0),
+                  dtmfcode1(1),
+                  dtmfcode2(2),
+                  dtmfcode3(3),
+                  dtmfcode4(4),
+                  dtmfcode5(5),
+                  dtmfcode6(6),
+                  dtmfcode7(7),
+                  dtmfcode8(8),
+                  dtmfcode9(9),
+                  dtmfcodeStar(10),
+                  dtmfcodeHash(11),
+                  dtmfcodeA(12),
+                  dtmfcodeB(13),
+                  dtmfcodeC(14),
+                  dtmfcodeD(15)
+}
+
+PktcSubscriberSideSigProtocol::=TEXTUAL-CONVENTION
+    STATUS  current
+         SYNTAX INTEGER {
+                fsk(1),
+                dtmf(2)
+         }
+
+pktcSigMibObjects OBJECT IDENTIFIER ::= { pktcIetfSigMib 1 }
+pktcSigDevObjects OBJECT IDENTIFIER ::=
+
+
+
+
+
+                                        { pktcSigMibObjects 1 }
+pktcSigEndPntConfigObjects OBJECT IDENTIFIER ::=
+                                        { pktcSigMibObjects 2 }
+pktcSigDevCodecTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PktcSigDevCodecEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pktcSigDevObjects 1 }
+
+pktcSigDevCodecEntry  OBJECT-TYPE
+    SYNTAX      PktcSigDevCodecEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { pktcSigDevCodecComboIndex, pktcSigDevCodecType }
+    ::= { pktcSigDevCodecTable 1 }
+
+PktcSigDevCodecEntry  ::= SEQUENCE {
+    pktcSigDevCodecComboIndex    Unsigned32,
+    pktcSigDevCodecType     PktcCodecType,
+    pktcSigDevCodecMax      Unsigned32
+    }
+
+pktcSigDevCodecComboIndex  OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..255)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pktcSigDevCodecEntry 1 }
+
+pktcSigDevCodecType  OBJECT-TYPE
+    SYNTAX       PktcCodecType
+    MAX-ACCESS   not-accessible
+    STATUS       current
+
+
+
+
+
+    ::= { pktcSigDevCodecEntry 2 }
+
+pktcSigDevCodecMax  OBJECT-TYPE
+    SYNTAX      Unsigned32(1..255)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pktcSigDevCodecEntry 3 }
+
+
+pktcSigDevEchoCancellation  OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { pktcSigDevObjects 2 }
+
+pktcSigDevSilenceSuppression  OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+::= { pktcSigDevObjects 3 }
+
+pktcSigDevCidSigProtocol  OBJECT-TYPE
+    SYNTAX       PktcSubscriberSideSigProtocol
+    MAX-ACCESS   read-write
+    STATUS       current
+     DEFVAL { fsk }
+::= { pktcSigDevObjects 4 }
+
+pktcSigDevR0Cadence     OBJECT-TYPE
+    SYNTAX      PktcRingCadence
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { pktcSigDevObjects 5 }
+
+pktcSigDevR1Cadence     OBJECT-TYPE
+    SYNTAX      PktcRingCadence
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { pktcSigDevObjects 6 }
+
+pktcSigDevR2Cadence     OBJECT-TYPE
+    SYNTAX       PktcRingCadence
+    MAX-ACCESS    read-write
+    STATUS        current
+    ::= { pktcSigDevObjects 7 }
+
+pktcSigDevR3Cadence     OBJECT-TYPE
+    SYNTAX       PktcRingCadence
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { pktcSigDevObjects 8 }
+
+pktcSigDevR4Cadence     OBJECT-TYPE
+    SYNTAX       PktcRingCadence
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { pktcSigDevObjects 9 }
+
+pktcSigDevR5Cadence     OBJECT-TYPE
+    SYNTAX       PktcRingCadence
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { pktcSigDevObjects 10 }
+
+pktcSigDevR6Cadence     OBJECT-TYPE
+    SYNTAX      PktcRingCadence
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { pktcSigDevObjects 11 }
+
+pktcSigDevR7Cadence     OBJECT-TYPE
+    SYNTAX       PktcRingCadence
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { pktcSigDevObjects 12 }
+
+pktcSigDevRgCadence     OBJECT-TYPE
+    SYNTAX       PktcRingCadence
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { pktcSigDevObjects 13 }
+
+pktcSigDevRsCadence     OBJECT-TYPE
+    SYNTAX       PktcRingCadence
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { pktcSigDevObjects 14 }
+
+pktcSigDefCallSigDscp  OBJECT-TYPE
+    SYNTAX      Dscp  -- RFC 3289: DIFFSERV-DSCP-TC
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { pktcSigDevObjects 15 }
+
+pktcSigDefMediaStreamDscp  OBJECT-TYPE
+    SYNTAX      Dscp  -- RFC 3289: DIFFSERV-DSCP-TC
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { pktcSigDevObjects 16 }
+
+
+pktcSigCapabilityTable    OBJECT-TYPE
+    SYNTAX        SEQUENCE OF PktcSigCapabilityEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    ::= { pktcSigDevObjects 17 }
+
+pktcSigCapabilityEntry    OBJECT-TYPE
+    SYNTAX        PktcSigCapabilityEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    INDEX { pktcSigCapabilityIndex }
+    ::= { pktcSigCapabilityTable 1 }
+
+PktcSigCapabilityEntry  ::= SEQUENCE {
+    pktcSigCapabilityIndex             Unsigned32,
+    pktcSigCapabilityType              PktcSigType,
+    pktcSigCapabilityVersion           SnmpAdminString,
+    pktcSigCapabilityVendorExt         SnmpAdminString
+    }
+
+pktcSigCapabilityIndex       OBJECT-TYPE
+    SYNTAX        Unsigned32 (1..255)
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    ::= { pktcSigCapabilityEntry 1 }
+
+pktcSigCapabilityType      OBJECT-TYPE
+    SYNTAX        PktcSigType
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { pktcSigCapabilityEntry 2 }
+
+pktcSigCapabilityVersion      OBJECT-TYPE
+    SYNTAX        SnmpAdminString
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { pktcSigCapabilityEntry 3 }
+
+pktcSigCapabilityVendorExt      OBJECT-TYPE
+    SYNTAX        SnmpAdminString
+    MAX-ACCESS    read-only
+    STATUS        current
+    ::= { pktcSigCapabilityEntry 4 }
+
+pktcSigDefNcsReceiveUdpPort  OBJECT-TYPE
+    SYNTAX      InetPortNumber (1025..65535)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pktcSigDevObjects 18 }
+
+pktcSigPowerRingFrequency    OBJECT-TYPE
+    SYNTAX       INTEGER {
+                 f20Hz(1),
+                 f25Hz(2),
+                 f33Point33Hz(3),
+                 f50Hz(4),
+                 f15Hz(5),
+                 f16Hz(6),
+                 f22Hz(7),
+                 f23Hz(8),
+                 f45Hz(9)
+    }
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { pktcSigDevObjects 19 }
+
+pktcSigPulseSignalTable    OBJECT-TYPE
+    SYNTAX       SEQUENCE OF PktcSigPulseSignalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { pktcSigDevObjects 20 }
+
+pktcSigPulseSignalEntry    OBJECT-TYPE
+    SYNTAX       PktcSigPulseSignalEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { pktcSigPulseSignalType }
+    ::= { pktcSigPulseSignalTable 1 }
+
+PktcSigPulseSignalEntry ::= SEQUENCE {
+        pktcSigPulseSignalType              INTEGER,
+        pktcSigPulseSignalFrequency         INTEGER,
+        pktcSigPulseSignalDbLevel           TenthdBm,
+        pktcSigPulseSignalDuration          Unsigned32,
+        pktcSigPulseSignalPulseInterval     Unsigned32,
+        pktcSigPulseSignalRepeatCount       Unsigned32
+}
+
+pktcSigPulseSignalType    OBJECT-TYPE
+    SYNTAX       INTEGER
+                 {
+                     initialRing(1),
+                     pulseLoopClose(2),
+                     pulseLoopOpen(3),
+                     enableMeterPulse(4),
+                     meterPulseBurst(5),
+                     pulseNoBattery(6),
+                     pulseNormalPolarity(7),
+                     pulseReducedBattery(8),
+                     pulseReversePolarity(9)
+                 }
+    MAX-ACCESS   not-accessible
+    STATUS       current
+
+    ::= { pktcSigPulseSignalEntry 1 }
+
+pktcSigPulseSignalFrequency    OBJECT-TYPE
+    SYNTAX       INTEGER {
+                 twentyfive(1),
+
+
+
+
+
+                 twelvethousand(2),
+                 sixteenthousand(3)
+    }
+    MAX-ACCESS   read-write
+    STATUS       current
+         ::= { pktcSigPulseSignalEntry 2}
+
+pktcSigPulseSignalDbLevel    OBJECT-TYPE
+    SYNTAX       TenthdBm (-350..0)
+    UNITS        "1/10 of a dBm"
+    MAX-ACCESS   read-write
+    STATUS       current
+
+    DEFVAL { -135 }
+    ::={pktcSigPulseSignalEntry 3 }
+
+pktcSigPulseSignalDuration    OBJECT-TYPE
+
+
+
+
+
+    SYNTAX       Unsigned32 (0..5000)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+         ::= {pktcSigPulseSignalEntry 4 }
+
+pktcSigPulseSignalPulseInterval     OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..5000)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+         ::= { pktcSigPulseSignalEntry 5}
+
+pktcSigPulseSignalRepeatCount    OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..50)
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::={ pktcSigPulseSignalEntry 6 }
+
+pktcSigDevCidMode    OBJECT-TYPE
+    SYNTAX       INTEGER {
+                 duringRingingETS(1),
+                 dtAsETS(2),
+                 rpAsETS(3),
+
+
+
+
+
+                 lrAsETS(4),
+                 lrETS(5)
+                 }
+    MAX-ACCESS read-write
+    STATUS current
+
+    DEFVAL { rpAsETS}
+    ::= {pktcSigDevObjects 21 }
+
+pktcSigDevCidAfterRing     OBJECT-TYPE
+    SYNTAX       Unsigned32 (0|50..2000)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL { 550 }
+    ::= {pktcSigDevObjects 22 }
+
+pktcSigDevCidAfterDTAS    OBJECT-TYPE
+    SYNTAX       Unsigned32 (0|45..500)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL { 50 }
+    ::= {pktcSigDevObjects 23 }
+
+pktcSigDevCidAfterRPAS    OBJECT-TYPE
+    SYNTAX       Unsigned32 (0|500..800)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL { 650 }
+    ::= {pktcSigDevObjects 24 }
+
+pktcSigDevRingAfterCID    OBJECT-TYPE
+    SYNTAX       Unsigned32 (0|50..500)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-write
+
+
+
+
+
+    STATUS       current
+    DEFVAL { 250 }
+    ::= {pktcSigDevObjects 25 }
+
+pktcSigDevCidDTASAfterLR    OBJECT-TYPE
+    SYNTAX       Unsigned32 (50..655)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL { 250 }
+
+    ::= {pktcSigDevObjects 26 }
+
+pktcSigDevVmwiMode    OBJECT-TYPE
+    SYNTAX       INTEGER {
+                 dtAsETS(1),
+                 rpAsETS(2),
+                 lrAsETS(3),
+                 osi(4),
+                 lrETS(5)
+                 }
+    MAX-ACCESS read-write
+    STATUS current
+
+    DEFVAL { rpAsETS }
+    ::= {pktcSigDevObjects 27 }
+
+pktcSigDevVmwiAfterDTAS    OBJECT-TYPE
+    SYNTAX       Unsigned32 (0|45..500)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL { 50 }
+    ::= {pktcSigDevObjects 28 }
+
+
+pktcSigDevVmwiAfterRPAS    OBJECT-TYPE
+    SYNTAX       Unsigned32 (0|500..800)
+
+
+
+
+
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL { 650 }
+    ::= {pktcSigDevObjects 29 }
+
+pktcSigDevVmwiDTASAfterLR    OBJECT-TYPE
+    SYNTAX       Unsigned32 (0|50..655)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-write
+    STATUS       current
+    DEFVAL { 250 }
+    ::= {pktcSigDevObjects 30 }
+
+pktcSigDevRingCadenceTable    OBJECT-TYPE
+    SYNTAX       SEQUENCE OF PktcSigDevRingCadenceEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { pktcSigDevObjects 31 }
+
+pktcSigDevRingCadenceEntry    OBJECT-TYPE
+    SYNTAX       PktcSigDevRingCadenceEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { pktcSigDevRingCadenceIndex }
+    ::= { pktcSigDevRingCadenceTable 1 }
+
+PktcSigDevRingCadenceEntry ::= SEQUENCE {
+        pktcSigDevRingCadenceIndex       Unsigned32,
+        pktcSigDevRingCadence            PktcRingCadence
+    }
+
+pktcSigDevRingCadenceIndex    OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..127)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { pktcSigDevRingCadenceEntry 1 }
+
+pktcSigDevRingCadence    OBJECT-TYPE
+    SYNTAX       PktcRingCadence
+    MAX-ACCESS   read-write
+    STATUS       current
+    ::= { pktcSigDevRingCadenceEntry 2 }
+
+
+pktcSigDevToneTable    OBJECT-TYPE
+    SYNTAX       SEQUENCE OF PktcSigDevToneEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { pktcSigDevObjects 32 }
+
+pktcSigDevToneEntry    OBJECT-TYPE
+    SYNTAX       PktcSigDevToneEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { pktcSigDevToneType, pktcSigDevToneFreqGroup }
+    ::= { pktcSigDevToneTable 1 }
+
+PktcSigDevToneEntry ::= SEQUENCE {
+    pktcSigDevToneType                      INTEGER,
+    pktcSigDevToneFreqGroup                 Unsigned32,
+    pktcSigDevToneFreqCounter               Unsigned32,
+    pktcSigDevToneWholeToneRepeatCount      Unsigned32,
+    pktcSigDevToneSteady                    TruthValue
+    }
+
+pktcSigDevToneType        OBJECT-TYPE
+    SYNTAX       INTEGER {
+                 busy(1),
+                 confirmation(2),
+                 dial(3),
+                 messageWaiting(4),
+                 offHookWarning(5),
+                 ringBack(6),
+                 reOrder(7),
+                 stutterdial(8),
+                 callWaiting1(9),
+                 callWaiting2(10),
+                 callWaiting3(11),
+                 callWaiting4(12),
+                 alertingSignal(13),
+                 specialDial(14),
+                 specialInfo(15),
+                 release(16),
+                 congestion(17),
+                 userDefined1(18),
+                 userDefined2(19),
+                 userDefined3(20),
+                 userDefined4(21)
+                 }
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { pktcSigDevToneEntry 1 }
+
+pktcSigDevToneFreqGroup  OBJECT-TYPE
+       SYNTAX       Unsigned32(1..4)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::={ pktcSigDevToneEntry 2}
+
+pktcSigDevToneFreqCounter OBJECT-TYPE
+       SYNTAX       Unsigned32(1..8)
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::={ pktcSigDevToneEntry 3}
+
+pktcSigDevToneWholeToneRepeatCount      OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..5000)
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::={ pktcSigDevToneEntry 4 }
+
+pktcSigDevToneSteady    OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::={ pktcSigDevToneEntry 5 }
+
+   pktcSigDevMultiFreqToneTable    OBJECT-TYPE
+       SYNTAX       SEQUENCE OF PktcSigDevMultiFreqToneEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+
+
+
+
+
+       ::= { pktcSigDevObjects 33 }
+
+   pktcSigDevMultiFreqToneEntry    OBJECT-TYPE
+       SYNTAX       PktcSigDevMultiFreqToneEntry
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       INDEX {pktcSigDevToneType, pktcSigDevToneNumber}
+       ::= { pktcSigDevMultiFreqToneTable 1 }
+
+   PktcSigDevMultiFreqToneEntry ::= SEQUENCE {
+         pktcSigDevToneNumber                    Unsigned32,
+         pktcSigDevToneFirstFreqValue            Unsigned32,
+         pktcSigDevToneSecondFreqValue           Unsigned32,
+         pktcSigDevToneThirdFreqValue            Unsigned32,
+         pktcSigDevToneFourthFreqValue           Unsigned32,
+         pktcSigDevToneFreqMode                  INTEGER,
+         pktcSigDevToneFreqAmpModePrtg           Unsigned32,
+         pktcSigDevToneDbLevel                   TenthdBm,
+         pktcSigDevToneFreqOnDuration            Unsigned32,
+         pktcSigDevToneFreqOffDuration           Unsigned32,
+         pktcSigDevToneFreqRepeatCount           Unsigned32
+   }
+
+   pktcSigDevToneNumber OBJECT-TYPE
+       SYNTAX       Unsigned32(1..8)
+       MAX-ACCESS   not-accessible
+       STATUS       current
+       ::={ pktcSigDevMultiFreqToneEntry 1}
+
+   pktcSigDevToneFirstFreqValue    OBJECT-TYPE
+       SYNTAX       Unsigned32(0..4000)
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::={ pktcSigDevMultiFreqToneEntry 2}
+
+   pktcSigDevToneSecondFreqValue    OBJECT-TYPE
+       SYNTAX       Unsigned32(0..4000)
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::={ pktcSigDevMultiFreqToneEntry 3}
+
+   pktcSigDevToneThirdFreqValue    OBJECT-TYPE
+       SYNTAX       Unsigned32(0..4000)
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::={ pktcSigDevMultiFreqToneEntry 4}
+
+   pktcSigDevToneFourthFreqValue    OBJECT-TYPE
+       SYNTAX       Unsigned32(0..4000)
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::={ pktcSigDevMultiFreqToneEntry 5}
+
+   pktcSigDevToneFreqMode OBJECT-TYPE
+       SYNTAX       INTEGER {
+                     firstModulatedBySecond(1),
+                     summation(2)
+
+
+
+
+
+                    }
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::={ pktcSigDevMultiFreqToneEntry 6}
+
+  pktcSigDevToneFreqAmpModePrtg OBJECT-TYPE
+       SYNTAX       Unsigned32(0..100)
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::={ pktcSigDevMultiFreqToneEntry 7}
+
+  pktcSigDevToneDbLevel    OBJECT-TYPE
+      SYNTAX       TenthdBm (-250..-110)
+      UNITS        "1/10 of a dBm"
+      MAX-ACCESS   read-only
+
+
+
+
+
+      STATUS       current
+    DEFVAL { -120 }
+    ::={ pktcSigDevMultiFreqToneEntry 8}
+
+   pktcSigDevToneFreqOnDuration OBJECT-TYPE
+       SYNTAX       Unsigned32(0..5000)
+       UNITS        "milliseconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::={ pktcSigDevMultiFreqToneEntry 9}
+
+   pktcSigDevToneFreqOffDuration OBJECT-TYPE
+       SYNTAX       Unsigned32(0..5000)
+       UNITS        "milliseconds"
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::={ pktcSigDevMultiFreqToneEntry 10}
+
+   pktcSigDevToneFreqRepeatCount OBJECT-TYPE
+       SYNTAX       Unsigned32(0..5000)
+       MAX-ACCESS   read-only
+       STATUS       current
+       ::={ pktcSigDevMultiFreqToneEntry 11}
+
+   pktcSigDevCidDelayAfterLR  OBJECT-TYPE
+       SYNTAX       Unsigned32 (300..800)
+       UNITS        "Milliseconds"
+       MAX-ACCESS   read-write
+       STATUS       current
+       DEFVAL { 400 }
+       ::= {pktcSigDevObjects 34 }
+
+   pktcSigDevCidDtmfStartCode OBJECT-TYPE
+       SYNTAX       DtmfCode
+       MAX-ACCESS   read-write
+       STATUS       current
+       DEFVAL {dtmfcodeA}
+   ::= { pktcSigDevObjects 35 }
+
+   pktcSigDevCidDtmfEndCode OBJECT-TYPE
+       SYNTAX       DtmfCode
+       MAX-ACCESS   read-write
+       STATUS       current
+       DEFVAL {dtmfcodeC}
+   ::= { pktcSigDevObjects 36 }
+
+   pktcSigDevVmwiSigProtocol  OBJECT-TYPE
+       SYNTAX       PktcSubscriberSideSigProtocol
+       MAX-ACCESS   read-write
+       STATUS       current
+        DEFVAL { fsk }
+   ::= { pktcSigDevObjects 37 }
+
+   pktcSigDevVmwiDelayAfterLR    OBJECT-TYPE
+       SYNTAX       Unsigned32 (0|300..800)
+       UNITS        "Milliseconds"
+       MAX-ACCESS   read-write
+       STATUS       current
+
+       DEFVAL {400}
+           ::= {pktcSigDevObjects 38 }
+
+   pktcSigDevVmwiDtmfStartCode OBJECT-TYPE
+       SYNTAX       DtmfCode
+       MAX-ACCESS   read-write
+       STATUS       current
+       DEFVAL {dtmfcodeA}
+   ::= { pktcSigDevObjects 39 }
+
+   pktcSigDevVmwiDtmfEndCode OBJECT-TYPE
+       SYNTAX       DtmfCode
+       MAX-ACCESS   read-write
+       STATUS       current
+       DEFVAL {dtmfcodeC}
+   ::= { pktcSigDevObjects 40 }
+
+pktcSigDevrpAsDtsDuration     OBJECT-TYPE
+       SYNTAX       Unsigned32 (0|200..500)
+       UNITS        "Milliseconds"
+       MAX-ACCESS   read-write
+       STATUS       current
+       DEFVAL { 250 }
+       ::= {pktcSigDevObjects 41 }
+
+
+
+
+
+
+
+pktcSigEndPntConfigTable  OBJECT-TYPE
+    SYNTAX        SEQUENCE OF PktcSigEndPntConfigEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+   ::=  { pktcSigEndPntConfigObjects 1 }
+
+pktcSigEndPntConfigEntry  OBJECT-TYPE
+    SYNTAX        PktcSigEndPntConfigEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    INDEX { ifIndex }
+    ::= { pktcSigEndPntConfigTable 1 }
+
+PktcSigEndPntConfigEntry  ::= SEQUENCE {
+    pktcSigEndPntConfigCallAgentId             SnmpAdminString,
+    pktcSigEndPntConfigCallAgentUdpPort        InetPortNumber,
+    pktcSigEndPntConfigPartialDialTO           Unsigned32,
+    pktcSigEndPntConfigCriticalDialTO          Unsigned32,
+    pktcSigEndPntConfigBusyToneTO              Unsigned32,
+    pktcSigEndPntConfigDialToneTO              Unsigned32,
+    pktcSigEndPntConfigMessageWaitingTO        Unsigned32,
+    pktcSigEndPntConfigOffHookWarnToneTO       Unsigned32,
+    pktcSigEndPntConfigRingingTO               Unsigned32,
+    pktcSigEndPntConfigRingBackTO              Unsigned32,
+    pktcSigEndPntConfigReorderToneTO           Unsigned32,
+    pktcSigEndPntConfigStutterDialToneTO       Unsigned32,
+
+
+
+
+
+    pktcSigEndPntConfigTSMax                   Unsigned32,
+    pktcSigEndPntConfigMax1                    Unsigned32,
+    pktcSigEndPntConfigMax2                    Unsigned32,
+    pktcSigEndPntConfigMax1QEnable             TruthValue,
+    pktcSigEndPntConfigMax2QEnable             TruthValue,
+    pktcSigEndPntConfigMWD                     Unsigned32,
+    pktcSigEndPntConfigTdinit                  Unsigned32,
+    pktcSigEndPntConfigTdmin                   Unsigned32,
+    pktcSigEndPntConfigTdmax                   Unsigned32,
+    pktcSigEndPntConfigRtoMax                  Unsigned32,
+    pktcSigEndPntConfigRtoInit                 Unsigned32,
+    pktcSigEndPntConfigLongDurationKeepAlive   Unsigned32,
+    pktcSigEndPntConfigThist                   Unsigned32,
+    pktcSigEndPntConfigStatus                  RowStatus,
+    pktcSigEndPntConfigCallWaitingMaxRep       Unsigned32,
+    pktcSigEndPntConfigCallWaitingDelay        Unsigned32,
+    pktcSigEndPntStatusCallIpAddressType       InetAddressType,
+    pktcSigEndPntStatusCallIpAddress           InetAddress,
+    pktcSigEndPntStatusError                   INTEGER,
+    pktcSigEndPntConfigMinHookFlash            Unsigned32,
+    pktcSigEndPntConfigMaxHookFlash            Unsigned32,
+    pktcSigEndPntConfigPulseDialInterdigitTime Unsigned32,
+    pktcSigEndPntConfigPulseDialMinMakeTime    Unsigned32,
+    pktcSigEndPntConfigPulseDialMaxMakeTime    Unsigned32,
+    pktcSigEndPntConfigPulseDialMinBreakTime   Unsigned32,
+    pktcSigEndPntConfigPulseDialMaxBreakTime   Unsigned32
+    }
+
+pktcSigEndPntConfigCallAgentId     OBJECT-TYPE
+    SYNTAX      SnmpAdminString(SIZE (3..255))
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    ::= {  pktcSigEndPntConfigEntry 1 }
+
+pktcSigEndPntConfigCallAgentUdpPort    OBJECT-TYPE
+    SYNTAX      InetPortNumber (1025..65535)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL    { 2727 }
+    ::= { pktcSigEndPntConfigEntry 2 }
+
+pktcSigEndPntConfigPartialDialTO     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { 16 }
+    ::= { pktcSigEndPntConfigEntry 3 }
+
+pktcSigEndPntConfigCriticalDialTO     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+
+
+
+
+
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { 4 }
+    ::= { pktcSigEndPntConfigEntry 4 }
+
+pktcSigEndPntConfigBusyToneTO     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL    { 30 }
+    ::= { pktcSigEndPntConfigEntry 5 }
+
+pktcSigEndPntConfigDialToneTO     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL    { 16 }
+    ::= { pktcSigEndPntConfigEntry 6 }
+
+pktcSigEndPntConfigMessageWaitingTO     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL    { 16 }
+    ::= { pktcSigEndPntConfigEntry 7 }
+
+pktcSigEndPntConfigOffHookWarnToneTO     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { 0 }
+    ::= { pktcSigEndPntConfigEntry 8 }
+
+pktcSigEndPntConfigRingingTO     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL    { 180 }
+    ::= { pktcSigEndPntConfigEntry 9 }
+
+pktcSigEndPntConfigRingBackTO     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL    { 180 }
+    ::= { pktcSigEndPntConfigEntry 10 }
+
+pktcSigEndPntConfigReorderToneTO     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL    { 30 }
+    ::= { pktcSigEndPntConfigEntry 11 }
+
+pktcSigEndPntConfigStutterDialToneTO     OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL    { 16 }
+    ::= { pktcSigEndPntConfigEntry 12 }
+
+pktcSigEndPntConfigTSMax     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 20 }
+    ::= { pktcSigEndPntConfigEntry 13 }
+
+pktcSigEndPntConfigMax1     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 5 }
+    ::= { pktcSigEndPntConfigEntry 14 }
+
+pktcSigEndPntConfigMax2     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 7 }
+    ::= { pktcSigEndPntConfigEntry 15 }
+
+pktcSigEndPntConfigMax1QEnable     OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { true }
+    ::= { pktcSigEndPntConfigEntry 16 }
+
+pktcSigEndPntConfigMax2QEnable     OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { true }
+    ::= { pktcSigEndPntConfigEntry 17 }
+
+pktcSigEndPntConfigMWD     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 600 }
+
+
+
+
+
+    ::= { pktcSigEndPntConfigEntry 18 }
+
+pktcSigEndPntConfigTdinit     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 15 }
+    ::= { pktcSigEndPntConfigEntry 19 }
+
+pktcSigEndPntConfigTdmin     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 15 }
+    ::= { pktcSigEndPntConfigEntry 20 }
+
+pktcSigEndPntConfigTdmax     OBJECT-TYPE
+    SYNTAX      Unsigned32
+
+
+
+
+
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 600 }
+    ::= { pktcSigEndPntConfigEntry 21 }
+
+pktcSigEndPntConfigRtoMax     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 4 }
+    ::= { pktcSigEndPntConfigEntry 22 }
+
+pktcSigEndPntConfigRtoInit     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 200 }
+    ::= { pktcSigEndPntConfigEntry 23 }
+
+pktcSigEndPntConfigLongDurationKeepAlive     OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "minutes"
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    DEFVAL { 60 }
+    ::= { pktcSigEndPntConfigEntry 24 }
+
+pktcSigEndPntConfigThist  OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 30 }
+    ::= { pktcSigEndPntConfigEntry 25 }
+
+pktcSigEndPntConfigStatus     OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pktcSigEndPntConfigEntry 26 }
+
+pktcSigEndPntConfigCallWaitingMaxRep     OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..10)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL    { 1 }
+    ::= { pktcSigEndPntConfigEntry 27 }
+
+pktcSigEndPntConfigCallWaitingDelay     OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..100)
+
+
+
+
+
+    UNITS        "seconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL    { 10 }
+    ::= { pktcSigEndPntConfigEntry 28 }
+
+pktcSigEndPntStatusCallIpAddressType  OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+
+    ::= { pktcSigEndPntConfigEntry 29 }
+
+pktcSigEndPntStatusCallIpAddress  OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+::= { pktcSigEndPntConfigEntry 30 }
+
+pktcSigEndPntStatusError  OBJECT-TYPE
+    SYNTAX INTEGER {
+               operational (1),
+               noSecurityAssociation (2),
+
+
+
+
+
+               disconnected (3)
+             }
+    MAX-ACCESS   read-only
+    STATUS  current
+    ::= { pktcSigEndPntConfigEntry 31 }
+
+pktcSigEndPntConfigMinHookFlash    OBJECT-TYPE
+    SYNTAX       Unsigned32 (20..1550)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DEFVAL { 300 }
+    ::= { pktcSigEndPntConfigEntry 32 }
+
+
+
+
+
+
+pktcSigEndPntConfigMaxHookFlash    OBJECT-TYPE
+    SYNTAX       Unsigned32 (20..1550)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DEFVAL { 800 }
+    ::= { pktcSigEndPntConfigEntry 33 }
+
+pktcSigEndPntConfigPulseDialInterdigitTime    OBJECT-TYPE
+    SYNTAX       Unsigned32 (100..1500)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DEFVAL { 100 }
+    ::= { pktcSigEndPntConfigEntry 34 }
+
+pktcSigEndPntConfigPulseDialMinMakeTime    OBJECT-TYPE
+    SYNTAX       Unsigned32 (20..200)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DEFVAL { 25 }
+    ::= { pktcSigEndPntConfigEntry 35 }
+
+pktcSigEndPntConfigPulseDialMaxMakeTime    OBJECT-TYPE
+    SYNTAX       Unsigned32 (20..200)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DEFVAL { 55 }
+    ::= { pktcSigEndPntConfigEntry 36 }
+
+pktcSigEndPntConfigPulseDialMinBreakTime    OBJECT-TYPE
+    SYNTAX       Unsigned32 (20..200)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DEFVAL { 45 }
+    ::= { pktcSigEndPntConfigEntry 37 }
+
+pktcSigEndPntConfigPulseDialMaxBreakTime    OBJECT-TYPE
+    SYNTAX       Unsigned32 (20..200)
+    UNITS        "Milliseconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DEFVAL { 75 }
+    ::= { pktcSigEndPntConfigEntry 38 }
+
+pktcSigNotification  OBJECT IDENTIFIER ::= { pktcIetfSigMib 0 }
+pktcSigConformance   OBJECT IDENTIFIER ::= { pktcIetfSigMib 2 }
+pktcSigCompliances   OBJECT IDENTIFIER ::= { pktcSigConformance 1 }
+pktcSigGroups        OBJECT IDENTIFIER ::= { pktcSigConformance 2 }
+
+
+
+
+
+
+
+pktcSigBasicCompliance  MODULE-COMPLIANCE
+    STATUS     current
+
+MODULE  -- pktcIetfSigMib
+
+
+MANDATORY-GROUPS {
+    pktcSigDeviceGroup,
+    pktcSigEndpointGroup
+}
+
+GROUP pktcInternationalGroup
+
+GROUP pktcLLinePackageGroup
+
+GROUP pktcELinePackageGroup
+    ::={ pktcSigCompliances 1 }
+
+pktcSigDeviceGroup  OBJECT-GROUP
+    OBJECTS {
+    pktcSigDevCodecMax,
+    pktcSigDevEchoCancellation,
+    pktcSigDevSilenceSuppression,
+    pktcSigDevR0Cadence,
+    pktcSigDevR1Cadence,
+    pktcSigDevR2Cadence,
+    pktcSigDevR3Cadence,
+
+
+
+
+
+    pktcSigDevR4Cadence,
+    pktcSigDevR5Cadence,
+    pktcSigDevR6Cadence,
+    pktcSigDevR7Cadence,
+    pktcSigDevRgCadence,
+    pktcSigDevRsCadence,
+    pktcSigDefCallSigDscp,
+    pktcSigDefMediaStreamDscp,
+    pktcSigDevVmwiMode,
+    pktcSigCapabilityType,
+    pktcSigCapabilityVersion,
+    pktcSigCapabilityVendorExt,
+    pktcSigDefNcsReceiveUdpPort
+    }
+    STATUS current
+    ::= { pktcSigGroups 1 }
+
+pktcSigEndpointGroup  OBJECT-GROUP
+    OBJECTS {
+    pktcSigEndPntConfigCallAgentId,
+    pktcSigEndPntConfigCallAgentUdpPort,
+    pktcSigEndPntConfigPartialDialTO,
+    pktcSigEndPntConfigCriticalDialTO,
+    pktcSigEndPntConfigBusyToneTO,
+    pktcSigEndPntConfigDialToneTO,
+    pktcSigEndPntConfigMessageWaitingTO,
+    pktcSigEndPntConfigOffHookWarnToneTO,
+    pktcSigEndPntConfigRingingTO,
+    pktcSigEndPntConfigRingBackTO,
+    pktcSigEndPntConfigReorderToneTO,
+    pktcSigEndPntConfigStutterDialToneTO,
+    pktcSigEndPntConfigTSMax,
+    pktcSigEndPntConfigMax1,
+    pktcSigEndPntConfigMax2,
+    pktcSigEndPntConfigMax1QEnable,
+    pktcSigEndPntConfigMax2QEnable,
+    pktcSigEndPntConfigMWD,
+    pktcSigEndPntConfigTdinit,
+    pktcSigEndPntConfigTdmin,
+    pktcSigEndPntConfigTdmax,
+    pktcSigEndPntConfigRtoMax,
+    pktcSigEndPntConfigRtoInit,
+    pktcSigEndPntConfigLongDurationKeepAlive,
+    pktcSigEndPntConfigThist,
+    pktcSigEndPntConfigStatus,
+
+
+
+
+
+    pktcSigEndPntConfigCallWaitingMaxRep,
+    pktcSigEndPntConfigCallWaitingDelay,
+    pktcSigEndPntStatusCallIpAddressType,
+    pktcSigEndPntStatusCallIpAddress,
+    pktcSigEndPntStatusError
+    }
+    STATUS current
+    ::= { pktcSigGroups 2 }
+
+pktcInternationalGroup    OBJECT-GROUP
+    OBJECTS {
+    pktcSigEndPntConfigMinHookFlash,
+    pktcSigEndPntConfigMaxHookFlash,
+    pktcSigEndPntConfigPulseDialInterdigitTime,
+    pktcSigEndPntConfigPulseDialMinMakeTime,
+    pktcSigEndPntConfigPulseDialMaxMakeTime,
+    pktcSigEndPntConfigPulseDialMinBreakTime,
+    pktcSigEndPntConfigPulseDialMaxBreakTime,
+    pktcSigDevRingCadence,
+    pktcSigDevCidSigProtocol,
+    pktcSigDevCidDelayAfterLR,
+    pktcSigDevCidDtmfStartCode,
+    pktcSigDevCidDtmfEndCode,
+    pktcSigDevVmwiSigProtocol,
+    pktcSigDevVmwiDelayAfterLR,
+    pktcSigDevVmwiDtmfStartCode,
+    pktcSigDevVmwiDtmfEndCode,
+    pktcSigDevrpAsDtsDuration,
+    pktcSigDevCidMode,
+    pktcSigDevCidAfterRing,
+    pktcSigDevCidAfterDTAS,
+    pktcSigDevCidAfterRPAS,
+    pktcSigDevRingAfterCID,
+    pktcSigDevCidDTASAfterLR,
+    pktcSigDevVmwiMode,
+    pktcSigDevVmwiAfterDTAS,
+    pktcSigDevVmwiAfterRPAS,
+    pktcSigDevVmwiDTASAfterLR,
+    pktcSigPowerRingFrequency,
+    pktcSigPulseSignalFrequency,
+    pktcSigPulseSignalDbLevel,
+    pktcSigPulseSignalDuration,
+    pktcSigPulseSignalPulseInterval,
+    pktcSigPulseSignalRepeatCount,
+    pktcSigDevToneDbLevel,
+
+
+
+
+
+    pktcSigDevToneFreqCounter,
+    pktcSigDevToneWholeToneRepeatCount,
+    pktcSigDevToneSteady,
+    pktcSigDevToneFirstFreqValue,
+    pktcSigDevToneSecondFreqValue,
+    pktcSigDevToneThirdFreqValue,
+    pktcSigDevToneFourthFreqValue,
+    pktcSigDevToneFreqMode,
+    pktcSigDevToneFreqAmpModePrtg,
+    pktcSigDevToneFreqOnDuration,
+    pktcSigDevToneFreqOffDuration,
+    pktcSigDevToneFreqRepeatCount
+    }
+    STATUS current
+    ::= { pktcSigGroups 3 }
+
+pktcLLinePackageGroup  OBJECT-GROUP
+    OBJECTS {
+    pktcSigDevR0Cadence,
+    pktcSigDevR1Cadence,
+    pktcSigDevR2Cadence,
+    pktcSigDevR3Cadence,
+    pktcSigDevR4Cadence,
+    pktcSigDevR5Cadence,
+    pktcSigDevR6Cadence,
+    pktcSigDevR7Cadence,
+    pktcSigDevRgCadence,
+    pktcSigDevRsCadence
+    }
+    STATUS current
+    ::= { pktcSigGroups 4 }
+
+pktcELinePackageGroup  OBJECT-GROUP
+    OBJECTS {
+    pktcSigDevR0Cadence,
+    pktcSigDevR1Cadence,
+    pktcSigDevR2Cadence,
+    pktcSigDevR3Cadence,
+    pktcSigDevR4Cadence,
+    pktcSigDevR5Cadence,
+
+
+
+
+
+    pktcSigDevR6Cadence,
+    pktcSigDevR7Cadence,
+    pktcSigDevRgCadence,
+    pktcSigDevRsCadence,
+    pktcSigPulseSignalFrequency,
+    pktcSigPulseSignalDbLevel,
+    pktcSigPulseSignalDuration,
+    pktcSigPulseSignalPulseInterval,
+    pktcSigPulseSignalRepeatCount,
+    pktcSigDevRingCadence
+    }
+    STATUS current
+    ::= { pktcSigGroups 5 }
+
+END

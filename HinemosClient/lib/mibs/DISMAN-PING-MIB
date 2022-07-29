@@ -1,0 +1,1727 @@
+DISMAN-PING-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Integer32,
+    Unsigned32, mib-2,
+    NOTIFICATION-TYPE, OBJECT-IDENTITY
+        FROM SNMPv2-SMI                  -- RFC2578
+    TEXTUAL-CONVENTION, RowStatus,
+    StorageType, DateAndTime, TruthValue
+        FROM SNMPv2-TC                   -- RFC2579
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP
+        FROM SNMPv2-CONF                 -- RFC2580
+    InterfaceIndexOrZero                 -- RFC2863
+        FROM IF-MIB
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB          -- RFC2571
+    InetAddressType, InetAddress
+        FROM INET-ADDRESS-MIB;           -- RFC2851
+
+ pingMIB MODULE-IDENTITY
+    LAST-UPDATED "200009210000Z"         -- 21 September 2000
+    ORGANIZATION "IETF Distributed Management Working Group"
+
+
+
+    ::= { mib-2 80 }
+
+
+  OperationResponseStatus ::= TEXTUAL-CONVENTION
+    STATUS  current
+    SYNTAX INTEGER {
+                 responseReceived(1),
+                 unknown(2),
+                 internalError(3),
+                 requestTimedOut(4),
+                 unknownDestinationAddress(5),
+                 noRouteToTarget(6),
+                 interfaceInactiveToTarget(7),
+                 arpFailure(8),
+                 maxConcurrentLimitReached(9),
+                 unableToResolveDnsName(10),
+                 invalidHostAddress(11)
+              }
+
+
+ pingNotifications              OBJECT IDENTIFIER ::= { pingMIB 0 }
+ pingObjects                    OBJECT IDENTIFIER ::= { pingMIB 1 }
+ pingConformance                OBJECT IDENTIFIER ::= { pingMIB 2 }
+
+
+
+ pingImplementationTypeDomains  OBJECT IDENTIFIER ::= { pingMIB 3 }
+
+ pingIcmpEcho OBJECT-IDENTITY
+    STATUS      current
+    ::= { pingImplementationTypeDomains 1 }
+
+ pingUdpEcho OBJECT-IDENTITY
+    STATUS      current
+    ::= { pingImplementationTypeDomains 2 }
+
+ pingSnmpQuery OBJECT-IDENTITY
+    STATUS      current
+
+
+
+
+
+    ::= { pingImplementationTypeDomains 3 }
+
+ pingTcpConnectionAttempt OBJECT-IDENTITY
+    STATUS      current
+    ::= { pingImplementationTypeDomains 4 }
+
+
+
+ pingMaxConcurrentRequests OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "requests"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 10 }
+    ::= { pingObjects 1 }
+
+
+ pingCtlTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PingCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+   ::= { pingObjects 2 }
+
+ pingCtlEntry OBJECT-TYPE
+    SYNTAX      PingCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {
+             pingCtlOwnerIndex,
+             pingCtlTestName
+          }
+    ::= { pingCtlTable 1 }
+
+ PingCtlEntry ::=
+    SEQUENCE {
+        pingCtlOwnerIndex             SnmpAdminString,
+        pingCtlTestName               SnmpAdminString,
+        pingCtlTargetAddressType      InetAddressType,
+        pingCtlTargetAddress          InetAddress,
+        pingCtlDataSize               Unsigned32,
+        pingCtlTimeOut                Unsigned32,
+        pingCtlProbeCount             Unsigned32,
+        pingCtlAdminStatus            INTEGER,
+        pingCtlDataFill               OCTET STRING,
+        pingCtlFrequency              Unsigned32,
+        pingCtlMaxRows                Unsigned32,
+        pingCtlStorageType            StorageType,
+        pingCtlTrapGeneration         BITS,
+        pingCtlTrapProbeFailureFilter Unsigned32,
+        pingCtlTrapTestFailureFilter  Unsigned32,
+        pingCtlType                   OBJECT IDENTIFIER,
+        pingCtlDescr                  SnmpAdminString,
+        pingCtlSourceAddressType      InetAddressType,
+        pingCtlSourceAddress          InetAddress,
+        pingCtlIfIndex                InterfaceIndexOrZero,
+        pingCtlByPassRouteTable       TruthValue,
+        pingCtlDSField                Unsigned32,
+        pingCtlRowStatus              RowStatus
+    }
+
+ pingCtlOwnerIndex OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pingCtlEntry 1 }
+
+ pingCtlTestName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pingCtlEntry 2 }
+
+ pingCtlTargetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { unknown }
+    ::= { pingCtlEntry 3 }
+
+ pingCtlTargetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { ''H }
+    ::= { pingCtlEntry 4 }
+
+ pingCtlDataSize OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65507)
+    UNITS       "octets"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { pingCtlEntry 5 }
+
+ pingCtlTimeOut OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..60)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 3 }
+    ::= { pingCtlEntry 6 }
+
+ pingCtlProbeCount OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..15)
+    UNITS       "probes"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 1 }
+    ::= { pingCtlEntry 7 }
+
+ pingCtlAdminStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                          enabled(1), -- test should be started
+
+
+
+
+
+                          disabled(2) -- test should be stopped
+                        }
+    MAX-ACCESS  read-create
+    STATUS      current
+     DEFVAL { disabled }
+    ::= { pingCtlEntry 8 }
+
+ pingCtlDataFill  OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE(0..1024))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { '00'H }
+    ::= { pingCtlEntry 9 }
+
+ pingCtlFrequency  OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { pingCtlEntry 10 }
+
+ pingCtlMaxRows OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "rows"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { 50 }
+    ::= { pingCtlEntry 11 }
+
+ pingCtlStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { pingCtlEntry 12 }
+
+ pingCtlTrapGeneration OBJECT-TYPE
+    SYNTAX      BITS {
+                   probeFailure(0),
+                   testFailure(1),
+
+
+
+
+
+                   testCompletion(2)
+                  }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pingCtlEntry 13 }
+
+ pingCtlTrapProbeFailureFilter OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..15)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 1 }
+    ::= { pingCtlEntry 14 }
+
+ pingCtlTrapTestFailureFilter OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..15)
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    DEFVAL { 1 }
+    ::= { pingCtlEntry 15 }
+
+ pingCtlType OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { pingIcmpEcho }
+    ::= { pingCtlEntry 16 }
+
+ pingCtlDescr OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { '00'H }
+    ::= { pingCtlEntry 17 }
+
+ pingCtlSourceAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { ipv4 }
+
+
+
+
+
+    ::= { pingCtlEntry 18 }
+
+  pingCtlSourceAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { ''H }
+    ::= { pingCtlEntry 19 }
+
+ pingCtlIfIndex OBJECT-TYPE
+    SYNTAX      InterfaceIndexOrZero
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { pingCtlEntry 20 }
+
+ pingCtlByPassRouteTable OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { false }
+    ::= { pingCtlEntry 21 }
+
+ pingCtlDSField OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { pingCtlEntry 22 }
+
+ pingCtlRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { pingCtlEntry 23 }
+
+
+ pingResultsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PingResultsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+   ::= { pingObjects 3 }
+
+ pingResultsEntry OBJECT-TYPE
+    SYNTAX      PingResultsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {
+             pingCtlOwnerIndex,
+             pingCtlTestName
+          }
+    ::= { pingResultsTable 1 }
+
+ PingResultsEntry ::=
+    SEQUENCE {
+        pingResultsOperStatus          INTEGER,
+        pingResultsIpTargetAddressType InetAddressType,
+        pingResultsIpTargetAddress     InetAddress,
+        pingResultsMinRtt              Unsigned32,
+        pingResultsMaxRtt              Unsigned32,
+        pingResultsAverageRtt          Unsigned32,
+        pingResultsProbeResponses      Unsigned32,
+        pingResultsSentProbes          Unsigned32,
+        pingResultsRttSumOfSquares     Unsigned32,
+        pingResultsLastGoodProbe       DateAndTime
+     }
+
+ pingResultsOperStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                          enabled(1),  -- test is in progress
+                          disabled(2)  -- test has stopped
+                        }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingResultsEntry 1 }
+
+ pingResultsIpTargetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL { unknown }
+    ::= { pingResultsEntry 2 }
+
+ pingResultsIpTargetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+
+
+
+
+
+    MAX-ACCESS  read-only
+    STATUS      current
+    DEFVAL { ''H }
+    ::= { pingResultsEntry 3 }
+
+ pingResultsMinRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingResultsEntry 4 }
+
+ pingResultsMaxRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingResultsEntry 5 }
+
+  pingResultsAverageRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingResultsEntry 6 }
+
+  pingResultsProbeResponses OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "responses"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingResultsEntry 7 }
+
+  pingResultsSentProbes OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "probes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingResultsEntry 8 }
+
+  pingResultsRttSumOfSquares OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingResultsEntry 9 }
+
+ pingResultsLastGoodProbe OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingResultsEntry 10 }
+
+
+ pingProbeHistoryTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF PingProbeHistoryEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+   ::= { pingObjects 4 }
+
+ pingProbeHistoryEntry OBJECT-TYPE
+    SYNTAX      PingProbeHistoryEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {
+             pingCtlOwnerIndex,
+             pingCtlTestName,
+             pingProbeHistoryIndex
+           }
+    ::= { pingProbeHistoryTable 1 }
+
+ PingProbeHistoryEntry ::=
+    SEQUENCE {
+        pingProbeHistoryIndex         Unsigned32,
+        pingProbeHistoryResponse      Unsigned32,
+        pingProbeHistoryStatus        OperationResponseStatus,
+        pingProbeHistoryLastRC        Integer32,
+        pingProbeHistoryTime          DateAndTime
+    }
+
+ pingProbeHistoryIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..'ffffffff'h)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { pingProbeHistoryEntry 1 }
+
+ pingProbeHistoryResponse OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingProbeHistoryEntry 2 }
+
+ pingProbeHistoryStatus OBJECT-TYPE
+    SYNTAX      OperationResponseStatus
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingProbeHistoryEntry 3 }
+
+ pingProbeHistoryLastRC        OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { pingProbeHistoryEntry 4 }
+
+ pingProbeHistoryTime OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+
+
+
+
+
+    ::= { pingProbeHistoryEntry 5 }
+
+
+
+ pingProbeFailed NOTIFICATION-TYPE
+      OBJECTS {
+        pingCtlTargetAddressType,
+        pingCtlTargetAddress,
+        pingResultsOperStatus,
+        pingResultsIpTargetAddressType,
+        pingResultsIpTargetAddress,
+        pingResultsMinRtt,
+        pingResultsMaxRtt,
+        pingResultsAverageRtt,
+        pingResultsProbeResponses,
+        pingResultsSentProbes,
+        pingResultsRttSumOfSquares,
+        pingResultsLastGoodProbe
+      }
+      STATUS  current
+      ::= { pingNotifications 1 }
+
+ pingTestFailed NOTIFICATION-TYPE
+      OBJECTS {
+        pingCtlTargetAddressType,
+        pingCtlTargetAddress,
+        pingResultsOperStatus,
+        pingResultsIpTargetAddressType,
+        pingResultsIpTargetAddress,
+        pingResultsMinRtt,
+        pingResultsMaxRtt,
+        pingResultsAverageRtt,
+        pingResultsProbeResponses,
+        pingResultsSentProbes,
+        pingResultsRttSumOfSquares,
+        pingResultsLastGoodProbe
+      }
+
+
+
+
+
+      STATUS  current
+      ::= { pingNotifications 2 }
+
+ pingTestCompleted NOTIFICATION-TYPE
+      OBJECTS {
+        pingCtlTargetAddressType,
+        pingCtlTargetAddress,
+        pingResultsOperStatus,
+        pingResultsIpTargetAddressType,
+        pingResultsIpTargetAddress,
+        pingResultsMinRtt,
+        pingResultsMaxRtt,
+        pingResultsAverageRtt,
+        pingResultsProbeResponses,
+        pingResultsSentProbes,
+        pingResultsRttSumOfSquares,
+        pingResultsLastGoodProbe
+      }
+      STATUS  current
+      ::= { pingNotifications 3 }
+
+
+ pingCompliances OBJECT IDENTIFIER ::= { pingConformance 1 }
+ pingGroups      OBJECT IDENTIFIER ::= { pingConformance 2 }
+
+
+ pingCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS {
+                            pingGroup,
+                            pingNotificationsGroup
+
+
+
+
+
+                          }
+        GROUP pingTimeStampGroup
+
+        OBJECT pingMaxConcurrentRequests
+        MIN-ACCESS  read-only
+
+        OBJECT pingCtlStorageType
+        MIN-ACCESS  read-only
+
+        OBJECT pingCtlType
+        MIN-ACCESS  read-only
+
+        OBJECT pingCtlByPassRouteTable
+        MIN-ACCESS  read-only
+
+        OBJECT pingCtlSourceAddressType
+        SYNTAX  InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+        MIN-ACCESS  read-only
+
+
+
+
+
+
+        OBJECT pingCtlSourceAddress
+        SYNTAX  InetAddress (SIZE(0|4|16))
+        MIN-ACCESS  read-only
+
+        OBJECT pingCtlIfIndex
+        MIN-ACCESS  read-only
+
+        OBJECT pingCtlDSField
+        MIN-ACCESS  read-only
+
+        OBJECT pingResultsIpTargetAddressType
+        SYNTAX  InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+        OBJECT pingResultsIpTargetAddress
+        SYNTAX  InetAddress (SIZE(0|4|16))
+
+    ::= { pingCompliances 1 }
+
+
+ pingGroup OBJECT-GROUP
+   OBJECTS {
+             pingMaxConcurrentRequests,
+             pingCtlTargetAddressType,
+             pingCtlTargetAddress,
+             pingCtlDataSize,
+             pingCtlTimeOut,
+
+
+
+
+
+             pingCtlProbeCount,
+             pingCtlAdminStatus,
+             pingCtlDataFill,
+             pingCtlFrequency,
+             pingCtlMaxRows,
+             pingCtlStorageType,
+             pingCtlTrapGeneration,
+             pingCtlTrapProbeFailureFilter,
+             pingCtlTrapTestFailureFilter,
+             pingCtlType,
+             pingCtlDescr,
+             pingCtlByPassRouteTable,
+             pingCtlSourceAddressType,
+             pingCtlSourceAddress,
+             pingCtlIfIndex,
+             pingCtlDSField,
+             pingCtlRowStatus,
+             pingResultsOperStatus,
+             pingResultsIpTargetAddressType,
+             pingResultsIpTargetAddress,
+             pingResultsMinRtt,
+             pingResultsMaxRtt,
+             pingResultsAverageRtt,
+             pingResultsProbeResponses,
+             pingResultsSentProbes,
+             pingResultsRttSumOfSquares,
+             pingProbeHistoryResponse,
+             pingProbeHistoryStatus,
+             pingProbeHistoryLastRC
+           }
+   STATUS  current
+    ::= { pingGroups 1 }
+
+ pingTimeStampGroup OBJECT-GROUP
+   OBJECTS {
+             pingResultsLastGoodProbe,
+             pingProbeHistoryTime
+           }
+   STATUS  current
+    ::= { pingGroups 2 }
+
+ pingNotificationsGroup NOTIFICATION-GROUP
+   NOTIFICATIONS {
+
+
+
+
+
+             pingProbeFailed,
+             pingTestFailed,
+             pingTestCompleted
+          }
+   STATUS        current
+   ::= { pingGroups 3 }
+
+END
+DISMAN-TRACEROUTE-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Integer32,
+    Gauge32, Unsigned32, mib-2,
+    NOTIFICATION-TYPE,
+    OBJECT-IDENTITY
+        FROM SNMPv2-SMI                  -- RFC2578
+    RowStatus, StorageType,
+    TruthValue, DateAndTime
+        FROM SNMPv2-TC                   -- RFC2579
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP
+        FROM SNMPv2-CONF                 -- RFC2580
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB          -- RFC2571
+    InterfaceIndexOrZero                 -- RFC2863
+        FROM IF-MIB
+    InetAddressType, InetAddress
+        FROM INET-ADDRESS-MIB            -- RFC2851
+    OperationResponseStatus
+        FROM DISMAN-PING-MIB;            -- RFC2925
+
+ traceRouteMIB MODULE-IDENTITY
+    LAST-UPDATED "200009210000Z"         -- 21 September 2000
+
+    ORGANIZATION "IETF Distributed Management Working Group"
+
+
+
+    ::= { mib-2 81 }
+
+
+ traceRouteNotifications  OBJECT IDENTIFIER ::= { traceRouteMIB 0 }
+ traceRouteObjects        OBJECT IDENTIFIER ::= { traceRouteMIB 1 }
+ traceRouteConformance    OBJECT IDENTIFIER ::= { traceRouteMIB 2 }
+
+
+ traceRouteImplementationTypeDomains OBJECT IDENTIFIER
+ ::= { traceRouteMIB 3 }
+
+ traceRouteUsingUdpProbes OBJECT-IDENTITY
+    STATUS      current
+    ::= { traceRouteImplementationTypeDomains 1 }
+
+
+
+ traceRouteMaxConcurrentRequests OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "requests"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 10 }
+    ::= { traceRouteObjects 1 }
+
+
+
+
+
+
+
+
+ traceRouteCtlTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF TraceRouteCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+   ::= { traceRouteObjects 2 }
+
+ traceRouteCtlEntry OBJECT-TYPE
+    SYNTAX      TraceRouteCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {
+            traceRouteCtlOwnerIndex,
+            traceRouteCtlTestName
+          }
+    ::= { traceRouteCtlTable 1 }
+
+ TraceRouteCtlEntry ::=
+    SEQUENCE {
+      traceRouteCtlOwnerIndex         SnmpAdminString,
+      traceRouteCtlTestName           SnmpAdminString,
+      traceRouteCtlTargetAddressType  InetAddressType,
+      traceRouteCtlTargetAddress      InetAddress,
+      traceRouteCtlByPassRouteTable   TruthValue,
+      traceRouteCtlDataSize           Unsigned32,
+      traceRouteCtlTimeOut            Unsigned32,
+      traceRouteCtlProbesPerHop       Unsigned32,
+      traceRouteCtlPort               Unsigned32,
+      traceRouteCtlMaxTtl             Unsigned32,
+      traceRouteCtlDSField            Unsigned32,
+      traceRouteCtlSourceAddressType  InetAddressType,
+
+
+
+
+
+      traceRouteCtlSourceAddress      InetAddress,
+      traceRouteCtlIfIndex            InterfaceIndexOrZero,
+      traceRouteCtlMiscOptions        SnmpAdminString,
+      traceRouteCtlMaxFailures        Unsigned32,
+      traceRouteCtlDontFragment       TruthValue,
+      traceRouteCtlInitialTtl         Unsigned32,
+      traceRouteCtlFrequency          Unsigned32,
+      traceRouteCtlStorageType        StorageType,
+      traceRouteCtlAdminStatus        INTEGER,
+      traceRouteCtlMaxRows            Unsigned32,
+      traceRouteCtlTrapGeneration     BITS,
+      traceRouteCtlDescr              SnmpAdminString,
+      traceRouteCtlCreateHopsEntries  TruthValue,
+      traceRouteCtlType               OBJECT IDENTIFIER,
+      traceRouteCtlRowStatus          RowStatus
+    }
+
+ traceRouteCtlOwnerIndex OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { traceRouteCtlEntry 1 }
+
+
+
+
+
+
+  traceRouteCtlTestName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { traceRouteCtlEntry 2 }
+
+ traceRouteCtlTargetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { ipv4 }
+    ::= { traceRouteCtlEntry 3 }
+
+ traceRouteCtlTargetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { traceRouteCtlEntry 4 }
+
+ traceRouteCtlByPassRouteTable OBJECT-TYPE
+    SYNTAX TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { false }
+    ::= { traceRouteCtlEntry 5 }
+
+ traceRouteCtlDataSize OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65507)
+    UNITS       "octets"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { traceRouteCtlEntry 6 }
+
+ traceRouteCtlTimeOut OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..60)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 3 }
+    ::= { traceRouteCtlEntry 7 }
+
+ traceRouteCtlProbesPerHop OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..10)
+    UNITS       "probes"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 3 }
+    ::= { traceRouteCtlEntry 8 }
+
+ traceRouteCtlPort OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..65535)
+    UNITS       "UDP Port"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 33434 }
+    ::= { traceRouteCtlEntry 9 }
+
+ traceRouteCtlMaxTtl OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..255)
+    UNITS       "time-to-live value"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 30 }
+    ::= { traceRouteCtlEntry 10 }
+
+ traceRouteCtlDSField OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { traceRouteCtlEntry 11 }
+
+ traceRouteCtlSourceAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    DEFVAL { unknown }
+    ::= { traceRouteCtlEntry 12 }
+
+ traceRouteCtlSourceAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { ''H }
+    ::= { traceRouteCtlEntry 13 }
+
+ traceRouteCtlIfIndex OBJECT-TYPE
+    SYNTAX      InterfaceIndexOrZero
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { traceRouteCtlEntry 14 }
+
+ traceRouteCtlMiscOptions OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { ''H }
+    ::= { traceRouteCtlEntry 15 }
+
+ traceRouteCtlMaxFailures OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    UNITS       "timeouts"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 5 }
+    ::= { traceRouteCtlEntry 16 }
+
+ traceRouteCtlDontFragment OBJECT-TYPE
+    SYNTAX         TruthValue
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL  { false }
+    ::= { traceRouteCtlEntry 17 }
+
+ traceRouteCtlInitialTtl OBJECT-TYPE
+    SYNTAX         Unsigned32 (0..255)
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL { 1 }
+    ::= { traceRouteCtlEntry 18 }
+
+ traceRouteCtlFrequency  OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    DEFVAL { 0 }
+    ::= { traceRouteCtlEntry 19 }
+
+ traceRouteCtlStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { traceRouteCtlEntry 20 }
+
+ traceRouteCtlAdminStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                          enabled(1), -- operation should be started
+                          disabled(2) -- operation should be stopped
+                        }
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+     DEFVAL { disabled }
+    ::= { traceRouteCtlEntry 21 }
+
+ traceRouteCtlDescr OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { '00'H }
+    ::= { traceRouteCtlEntry 22 }
+
+ traceRouteCtlMaxRows OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "rows"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { 50 }
+    ::= { traceRouteCtlEntry 23 }
+
+ traceRouteCtlTrapGeneration OBJECT-TYPE
+    SYNTAX      BITS {
+                  pathChange(0),
+                  testFailure(1),
+                  testCompletion(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { traceRouteCtlEntry 24 }
+
+ traceRouteCtlCreateHopsEntries OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { false }
+    ::= { traceRouteCtlEntry 25 }
+
+ traceRouteCtlType OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { traceRouteUsingUdpProbes }
+    ::= { traceRouteCtlEntry 26 }
+
+ traceRouteCtlRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { traceRouteCtlEntry 27 }
+
+
+
+ traceRouteResultsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF TraceRouteResultsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+   ::= { traceRouteObjects 3 }
+
+
+
+
+
+ traceRouteResultsEntry OBJECT-TYPE
+    SYNTAX      TraceRouteResultsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {
+            traceRouteCtlOwnerIndex,
+            traceRouteCtlTestName
+          }
+    ::= { traceRouteResultsTable 1 }
+
+ TraceRouteResultsEntry ::=
+    SEQUENCE {
+      traceRouteResultsOperStatus       INTEGER,
+      traceRouteResultsCurHopCount      Gauge32,
+      traceRouteResultsCurProbeCount    Gauge32,
+      traceRouteResultsIpTgtAddrType    InetAddressType,
+      traceRouteResultsIpTgtAddr        InetAddress,
+      traceRouteResultsTestAttempts     Unsigned32,
+      traceRouteResultsTestSuccesses    Unsigned32,
+      traceRouteResultsLastGoodPath     DateAndTime
+    }
+
+ traceRouteResultsOperStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                          enabled(1), -- test is in progress
+                          disabled(2) -- test has stopped
+                        }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteResultsEntry 1 }
+
+ traceRouteResultsCurHopCount OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS       "hops"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteResultsEntry 2 }
+
+ traceRouteResultsCurProbeCount OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS       "probes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteResultsEntry 3 }
+
+ traceRouteResultsIpTgtAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteResultsEntry 4 }
+
+ traceRouteResultsIpTgtAddr OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteResultsEntry 5 }
+
+ traceRouteResultsTestAttempts OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "tests"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteResultsEntry 6 }
+
+ traceRouteResultsTestSuccesses OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "tests"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteResultsEntry 7 }
+
+ traceRouteResultsLastGoodPath OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteResultsEntry 8 }
+
+
+ traceRouteProbeHistoryTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF TraceRouteProbeHistoryEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+   ::= { traceRouteObjects 4 }
+
+ traceRouteProbeHistoryEntry OBJECT-TYPE
+    SYNTAX      TraceRouteProbeHistoryEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {
+             traceRouteCtlOwnerIndex,
+             traceRouteCtlTestName,
+             traceRouteProbeHistoryIndex,
+             traceRouteProbeHistoryHopIndex,
+             traceRouteProbeHistoryProbeIndex
+          }
+    ::= { traceRouteProbeHistoryTable 1 }
+
+ TraceRouteProbeHistoryEntry ::=
+    SEQUENCE {
+      traceRouteProbeHistoryIndex         Unsigned32,
+      traceRouteProbeHistoryHopIndex      Unsigned32,
+      traceRouteProbeHistoryProbeIndex    Unsigned32,
+      traceRouteProbeHistoryHAddrType     InetAddressType,
+      traceRouteProbeHistoryHAddr         InetAddress,
+      traceRouteProbeHistoryResponse      Unsigned32,
+      traceRouteProbeHistoryStatus        OperationResponseStatus,
+      traceRouteProbeHistoryLastRC        Integer32,
+      traceRouteProbeHistoryTime          DateAndTime
+    }
+
+ traceRouteProbeHistoryIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..'ffffffff'h)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+    ::= { traceRouteProbeHistoryEntry 1 }
+
+ traceRouteProbeHistoryHopIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..255)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { traceRouteProbeHistoryEntry 2 }
+
+ traceRouteProbeHistoryProbeIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..10)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { traceRouteProbeHistoryEntry 3 }
+
+ traceRouteProbeHistoryHAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteProbeHistoryEntry 4 }
+
+ traceRouteProbeHistoryHAddr OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteProbeHistoryEntry 5 }
+
+ traceRouteProbeHistoryResponse OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { traceRouteProbeHistoryEntry 6 }
+
+ traceRouteProbeHistoryStatus OBJECT-TYPE
+    SYNTAX      OperationResponseStatus
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteProbeHistoryEntry 7 }
+
+ traceRouteProbeHistoryLastRC OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteProbeHistoryEntry 8 }
+
+ traceRouteProbeHistoryTime OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteProbeHistoryEntry 9 }
+
+
+ traceRouteHopsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF TraceRouteHopsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { traceRouteObjects 5 }
+
+ traceRouteHopsEntry OBJECT-TYPE
+    SYNTAX      TraceRouteHopsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {
+            traceRouteCtlOwnerIndex,
+            traceRouteCtlTestName,
+            traceRouteHopsHopIndex
+          }
+    ::= { traceRouteHopsTable 1 }
+
+ TraceRouteHopsEntry ::=
+    SEQUENCE {
+        traceRouteHopsHopIndex         Unsigned32,
+        traceRouteHopsIpTgtAddressType InetAddressType,
+        traceRouteHopsIpTgtAddress     InetAddress,
+        traceRouteHopsMinRtt           Unsigned32,
+        traceRouteHopsMaxRtt           Unsigned32,
+        traceRouteHopsAverageRtt       Unsigned32,
+        traceRouteHopsRttSumOfSquares  Unsigned32,
+        traceRouteHopsSentProbes       Unsigned32,
+        traceRouteHopsProbeResponses   Unsigned32,
+        traceRouteHopsLastGoodProbe    DateAndTime
+      }
+
+ traceRouteHopsHopIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { traceRouteHopsEntry 1 }
+
+ traceRouteHopsIpTgtAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteHopsEntry 2 }
+
+ traceRouteHopsIpTgtAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteHopsEntry 3 }
+
+ traceRouteHopsMinRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteHopsEntry 4 }
+
+ traceRouteHopsMaxRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { traceRouteHopsEntry 5 }
+
+ traceRouteHopsAverageRtt OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteHopsEntry 6 }
+
+ traceRouteHopsRttSumOfSquares OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteHopsEntry 7 }
+
+ traceRouteHopsSentProbes OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteHopsEntry 8 }
+
+ traceRouteHopsProbeResponses OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteHopsEntry 9 }
+
+ traceRouteHopsLastGoodProbe OBJECT-TYPE
+    SYNTAX      DateAndTime
+
+
+
+
+
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { traceRouteHopsEntry 10 }
+
+
+ traceRoutePathChange NOTIFICATION-TYPE
+      OBJECTS {
+        traceRouteCtlTargetAddressType,
+        traceRouteCtlTargetAddress,
+        traceRouteResultsIpTgtAddrType,
+        traceRouteResultsIpTgtAddr
+      }
+      STATUS  current
+      ::= { traceRouteNotifications 1 }
+
+ traceRouteTestFailed NOTIFICATION-TYPE
+      OBJECTS {
+        traceRouteCtlTargetAddressType,
+        traceRouteCtlTargetAddress,
+        traceRouteResultsIpTgtAddrType,
+        traceRouteResultsIpTgtAddr
+      }
+      STATUS  current
+      ::= { traceRouteNotifications 2 }
+
+ traceRouteTestCompleted NOTIFICATION-TYPE
+      OBJECTS {
+        traceRouteCtlTargetAddressType,
+        traceRouteCtlTargetAddress,
+        traceRouteResultsIpTgtAddrType,
+        traceRouteResultsIpTgtAddr
+      }
+      STATUS  current
+      ::= { traceRouteNotifications 3 }
+
+
+
+
+
+
+
+ traceRouteCompliances OBJECT IDENTIFIER ::= { traceRouteConformance 1 }
+ traceRouteGroups      OBJECT IDENTIFIER ::= { traceRouteConformance 2 }
+
+
+ traceRouteCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS {
+                            traceRouteGroup
+                          }
+        GROUP traceRouteTimeStampGroup
+
+        GROUP traceRouteNotificationsGroup
+
+        GROUP traceRouteHopsTableGroup
+
+        OBJECT traceRouteMaxConcurrentRequests
+        MIN-ACCESS  read-only
+
+        OBJECT traceRouteCtlByPassRouteTable
+        MIN-ACCESS  read-only
+
+        OBJECT traceRouteCtlSourceAddressType
+        SYNTAX  InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+        MIN-ACCESS  read-only
+
+
+
+
+
+
+        OBJECT traceRouteCtlSourceAddress
+        SYNTAX  InetAddress (SIZE(0|4|16))
+        MIN-ACCESS  read-only
+
+        OBJECT traceRouteCtlIfIndex
+        MIN-ACCESS  read-only
+
+        OBJECT traceRouteCtlMiscOptions
+        MIN-ACCESS  read-only
+
+        OBJECT traceRouteCtlStorageType
+        MIN-ACCESS  read-only
+
+        OBJECT traceRouteCtlDSField
+        MIN-ACCESS  read-only
+
+        OBJECT traceRouteCtlType
+        MIN-ACCESS  read-only
+
+        OBJECT traceRouteResultsIpTgtAddrType
+        SYNTAX  InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+        OBJECT traceRouteResultsIpTgtAddr
+        SYNTAX  InetAddress (SIZE(0|4|16))
+
+        OBJECT traceRouteProbeHistoryHAddrType
+        SYNTAX  InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+        OBJECT traceRouteProbeHistoryHAddr
+        SYNTAX  InetAddress (SIZE(0|4|16))
+
+        OBJECT traceRouteHopsIpTgtAddressType
+        SYNTAX  InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+        OBJECT traceRouteHopsIpTgtAddress
+        SYNTAX  InetAddress (SIZE(0|4|16))
+    ::= { traceRouteCompliances 1 }
+
+
+ traceRouteGroup OBJECT-GROUP
+   OBJECTS {
+             traceRouteMaxConcurrentRequests,
+             traceRouteCtlTargetAddressType,
+             traceRouteCtlTargetAddress,
+             traceRouteCtlByPassRouteTable,
+
+
+
+
+
+             traceRouteCtlDataSize,
+             traceRouteCtlTimeOut,
+             traceRouteCtlProbesPerHop,
+             traceRouteCtlPort,
+             traceRouteCtlMaxTtl,
+             traceRouteCtlDSField,
+             traceRouteCtlSourceAddressType,
+             traceRouteCtlSourceAddress,
+             traceRouteCtlIfIndex,
+             traceRouteCtlMiscOptions,
+             traceRouteCtlMaxFailures,
+             traceRouteCtlDontFragment,
+             traceRouteCtlInitialTtl,
+             traceRouteCtlFrequency,
+             traceRouteCtlStorageType,
+             traceRouteCtlAdminStatus,
+             traceRouteCtlMaxRows,
+             traceRouteCtlTrapGeneration,
+             traceRouteCtlDescr,
+             traceRouteCtlCreateHopsEntries,
+             traceRouteCtlType,
+             traceRouteCtlRowStatus,
+             traceRouteResultsOperStatus,
+             traceRouteResultsCurHopCount,
+             traceRouteResultsCurProbeCount,
+             traceRouteResultsIpTgtAddrType,
+             traceRouteResultsIpTgtAddr,
+             traceRouteResultsTestAttempts,
+             traceRouteResultsTestSuccesses,
+             traceRouteProbeHistoryHAddrType,
+             traceRouteProbeHistoryHAddr,
+             traceRouteProbeHistoryResponse,
+             traceRouteProbeHistoryStatus,
+             traceRouteProbeHistoryLastRC
+          }
+   STATUS  current
+   ::= { traceRouteGroups 1 }
+
+ traceRouteTimeStampGroup OBJECT-GROUP
+   OBJECTS {
+             traceRouteResultsLastGoodPath,
+             traceRouteProbeHistoryTime
+           }
+   STATUS  current
+    ::= { traceRouteGroups 2 }
+
+ traceRouteNotificationsGroup NOTIFICATION-GROUP
+   NOTIFICATIONS {
+             traceRoutePathChange,
+             traceRouteTestFailed,
+             traceRouteTestCompleted
+          }
+   STATUS   current
+   ::= { traceRouteGroups 3 }
+
+ traceRouteHopsTableGroup OBJECT-GROUP
+   OBJECTS {
+             traceRouteHopsIpTgtAddressType,
+             traceRouteHopsIpTgtAddress,
+             traceRouteHopsMinRtt,
+             traceRouteHopsMaxRtt,
+             traceRouteHopsAverageRtt,
+             traceRouteHopsRttSumOfSquares,
+             traceRouteHopsSentProbes,
+             traceRouteHopsProbeResponses,
+             traceRouteHopsLastGoodProbe
+           }
+    STATUS   current
+  ::= { traceRouteGroups 4 }
+
+END
+DISMAN-NSLOOKUP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    Unsigned32, mib-2, Integer32
+        FROM SNMPv2-SMI                  -- RFC2578
+    RowStatus
+        FROM SNMPv2-TC                   -- RFC2579
+    MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF                 -- RFC2580
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB          -- RFC2571
+
+
+
+
+
+    InetAddressType, InetAddress
+        FROM INET-ADDRESS-MIB;           -- RFC2851
+
+
+ lookupMIB MODULE-IDENTITY
+    LAST-UPDATED "200009210000Z"         -- 21 September 2000
+    ORGANIZATION "IETF Distributed Management Working Group"
+
+
+
+    ::= { mib-2 82 }
+
+
+ lookupObjects        OBJECT IDENTIFIER ::= { lookupMIB 1 }
+ lookupConformance    OBJECT IDENTIFIER ::= { lookupMIB 2 }
+
+
+ lookupMaxConcurrentRequests OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "requests"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 10 }
+    ::= { lookupObjects 1 }
+
+
+
+
+
+
+ lookupPurgeTime OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..86400)
+    UNITS       "seconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 900 }  -- 15 minutes as default
+    ::= { lookupObjects 2 }
+
+
+ lookupCtlTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF LookupCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+   ::= { lookupObjects 3 }
+
+ lookupCtlEntry OBJECT-TYPE
+    SYNTAX      LookupCtlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {
+             lookupCtlOwnerIndex,
+             lookupCtlOperationName
+          }
+    ::= { lookupCtlTable 1 }
+
+ LookupCtlEntry ::=
+    SEQUENCE {
+        lookupCtlOwnerIndex         SnmpAdminString,
+        lookupCtlOperationName      SnmpAdminString,
+        lookupCtlTargetAddressType  InetAddressType,
+        lookupCtlTargetAddress      InetAddress,
+        lookupCtlOperStatus         INTEGER,
+        lookupCtlTime               Unsigned32,
+        lookupCtlRc                 Integer32,
+        lookupCtlRowStatus          RowStatus
+    }
+
+ lookupCtlOwnerIndex OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { lookupCtlEntry 1 }
+
+ lookupCtlOperationName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(0..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { lookupCtlEntry 2 }
+
+ lookupCtlTargetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { lookupCtlEntry 3 }
+
+ lookupCtlTargetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { lookupCtlEntry 4 }
+
+ lookupCtlOperStatus OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      INTEGER {
+                   notStarted(2), -- operation has not started
+                   completed(3)   -- operation is done
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { lookupCtlEntry 5 }
+
+ lookupCtlTime OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "milliseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { lookupCtlEntry 6 }
+
+ lookupCtlRc OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { lookupCtlEntry 7 }
+
+
+
+
+
+ lookupCtlRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { lookupCtlEntry 8 }
+
+
+
+ lookupResultsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF LookupResultsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+   ::= { lookupObjects 4 }
+
+ lookupResultsEntry OBJECT-TYPE
+    SYNTAX      LookupResultsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX {
+             lookupCtlOwnerIndex,
+             lookupCtlOperationName,
+
+
+
+
+
+             lookupResultsIndex
+          }
+    ::= { lookupResultsTable 1 }
+
+ LookupResultsEntry ::=
+    SEQUENCE {
+        lookupResultsIndex        Unsigned32,
+        lookupResultsAddressType  InetAddressType,
+        lookupResultsAddress      InetAddress
+     }
+
+ lookupResultsIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..'ffffffff'h)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { lookupResultsEntry 1 }
+
+ lookupResultsAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { lookupResultsEntry 2 }
+
+ lookupResultsAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { lookupResultsEntry 3 }
+
+
+
+
+
+
+
+ lookupCompliances OBJECT IDENTIFIER ::= { lookupConformance 1 }
+ lookupGroups      OBJECT IDENTIFIER ::= { lookupConformance 2 }
+
+
+ lookupCompliance MODULE-COMPLIANCE
+    STATUS  current
+    MODULE  -- this module
+        MANDATORY-GROUPS {
+                            lookupGroup
+                          }
+
+        OBJECT lookupMaxConcurrentRequests
+        MIN-ACCESS  read-only
+
+        OBJECT lookupPurgeTime
+        MIN-ACCESS  read-only
+    ::= { lookupCompliances 1 }
+
+
+ lookupGroup OBJECT-GROUP
+   OBJECTS {
+             lookupMaxConcurrentRequests,
+             lookupPurgeTime,
+             lookupCtlOperStatus,
+             lookupCtlTargetAddressType,
+             lookupCtlTargetAddress,
+             lookupCtlTime,
+             lookupCtlRc,
+             lookupCtlRowStatus,
+             lookupResultsAddressType,
+             lookupResultsAddress
+           }
+   STATUS  current
+    ::= { lookupGroups 1 }
+
+
+
+
+
+
+END

@@ -1,0 +1,978 @@
+APM-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    NOTIFICATION-TYPE,
+    Counter32, Unsigned32                        FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION, RowStatus, TimeStamp,
+    TimeInterval, TruthValue, DateAndTime,
+    StorageType                                  FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP,
+    NOTIFICATION-GROUP                           FROM SNMPv2-CONF
+    SnmpAdminString                              FROM SNMP-FRAMEWORK-MIB
+    rmon, OwnerString                            FROM RMON-MIB
+    protocolDirLocalIndex                        FROM RMON2-MIB;
+
+
+apm MODULE-IDENTITY
+    LAST-UPDATED "200402190000Z"  -- February 19, 2004
+    ORGANIZATION "IETF RMON MIB Working Group"
+
+
+    ::= { rmon 23 }
+
+apmMibObjects OBJECT IDENTIFIER ::= { apm 1 }
+apmConformance OBJECT IDENTIFIER ::= { apm 2 }
+apmCompliances    OBJECT IDENTIFIER ::= { apmConformance 1 }
+apmGroups         OBJECT IDENTIFIER ::= { apmConformance 2 }
+
+
+AppLocalIndex ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX       Unsigned32 (1..2147483647)
+
+ProtocolDirNetworkAddress ::= TEXTUAL-CONVENTION
+    STATUS       current
+    SYNTAX        OCTET STRING (SIZE(0..255))
+
+DataSourceOrZero ::= TEXTUAL-CONVENTION
+
+
+
+
+
+    STATUS       current
+
+    SYNTAX       OBJECT IDENTIFIER
+
+RmonClientID ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      Unsigned32 (0..4294967295)
+
+
+TransactionAggregationType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    SYNTAX      INTEGER {
+                  flows(1),    -- Least Aggregation
+                  clients(2),
+                  servers(3),
+                  applications(4) -- Most Aggregation
+                }
+
+
+
+
+
+
+
+
+apmAppDirTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ApmAppDirEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmMibObjects 1 }
+
+apmAppDirEntry OBJECT-TYPE
+    SYNTAX      ApmAppDirEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { apmAppDirAppLocalIndex,
+            apmAppDirResponsivenessType }
+    ::= { apmAppDirTable 1 }
+
+ApmAppDirEntry ::= SEQUENCE {
+    apmAppDirAppLocalIndex            AppLocalIndex,
+    apmAppDirResponsivenessType       INTEGER,
+    apmAppDirConfig                   INTEGER,
+    apmAppDirResponsivenessBoundary1  Unsigned32,
+    apmAppDirResponsivenessBoundary2  Unsigned32,
+    apmAppDirResponsivenessBoundary3  Unsigned32,
+    apmAppDirResponsivenessBoundary4  Unsigned32,
+    apmAppDirResponsivenessBoundary5  Unsigned32,
+    apmAppDirResponsivenessBoundary6  Unsigned32
+}
+
+apmAppDirAppLocalIndex OBJECT-TYPE
+    SYNTAX      AppLocalIndex
+    MAX-ACCESS  not-accessible
+
+
+
+
+
+    STATUS      current
+    ::= { apmAppDirEntry 1 }
+
+apmAppDirResponsivenessType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  transactionOriented(1),
+                  throughputOriented(2),
+                  streamingOriented(3)
+                }
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmAppDirEntry 2 }
+
+apmAppDirConfig OBJECT-TYPE
+    SYNTAX      INTEGER {
+                  off(1),
+                  on(2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { apmAppDirEntry 3 }
+
+apmAppDirResponsivenessBoundary1 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { apmAppDirEntry 4 }
+
+apmAppDirResponsivenessBoundary2 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { apmAppDirEntry 5 }
+
+apmAppDirResponsivenessBoundary3 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { apmAppDirEntry 6 }
+
+apmAppDirResponsivenessBoundary4 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { apmAppDirEntry 7 }
+
+apmAppDirResponsivenessBoundary5 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { apmAppDirEntry 8 }
+
+apmAppDirResponsivenessBoundary6 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { apmAppDirEntry 9 }
+
+
+apmBucketBoundaryLastChange OBJECT-TYPE
+    SYNTAX     TimeStamp
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { apmMibObjects 2 }
+
+apmAppDirID OBJECT-TYPE
+    SYNTAX     OBJECT IDENTIFIER
+    MAX-ACCESS read-write
+    STATUS     current
+     ::= { apmMibObjects 3 }
+
+
+
+
+
+
+
+
+apmHttpFilterTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ApmHttpFilterEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmMibObjects 4 }
+
+apmHttpFilterEntry OBJECT-TYPE
+    SYNTAX      ApmHttpFilterEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { apmHttpFilterIndex }
+    ::= { apmHttpFilterTable 1 }
+
+ApmHttpFilterEntry ::= SEQUENCE {
+    apmHttpFilterIndex              Unsigned32,
+    apmHttpFilterAppLocalIndex      AppLocalIndex,
+
+
+
+
+
+    apmHttpFilterServerProtocol     Unsigned32,
+    apmHttpFilterServerAddress      ProtocolDirNetworkAddress,
+    apmHttpFilterURLPath            OCTET STRING,
+    apmHttpFilterMatchType          INTEGER,
+    apmHttpFilterOwner              OwnerString,
+    apmHttpFilterStorageType        StorageType,
+    apmHttpFilterRowStatus          RowStatus
+}
+
+apmHttpFilterIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmHttpFilterEntry 1 }
+
+apmHttpFilterAppLocalIndex OBJECT-TYPE
+    SYNTAX      AppLocalIndex
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmHttpFilterEntry 2 }
+
+apmHttpFilterServerProtocol OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..2147483647)
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmHttpFilterEntry 3 }
+
+apmHttpFilterServerAddress OBJECT-TYPE
+    SYNTAX      ProtocolDirNetworkAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmHttpFilterEntry 4 }
+
+apmHttpFilterURLPath OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE(0..65535))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmHttpFilterEntry 5 }
+
+apmHttpFilterMatchType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    exact(1),
+                    stripTrailingSlash(2),
+                    prefix(3)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmHttpFilterEntry 6 }
+
+apmHttpFilterOwner OBJECT-TYPE
+    SYNTAX      OwnerString
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmHttpFilterEntry 7 }
+
+apmHttpFilterStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmHttpFilterEntry 8 }
+
+apmHttpFilterRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmHttpFilterEntry 9 }
+
+apmHttpIgnoreUnregisteredURLs OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+
+
+
+
+
+    ::= { apmMibObjects 5 }
+
+apmHttp4xxIsFailure OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { apmMibObjects 6 }
+
+
+
+
+
+
+
+apmUserDefinedAppTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ApmUserDefinedAppEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmMibObjects 7 }
+
+apmUserDefinedAppEntry OBJECT-TYPE
+    SYNTAX      ApmUserDefinedAppEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { apmAppDirAppLocalIndex }
+    ::= { apmUserDefinedAppTable 1 }
+
+ApmUserDefinedAppEntry ::= SEQUENCE {
+    apmUserDefinedAppParentIndex    Unsigned32,
+
+
+
+
+
+    apmUserDefinedAppApplication    SnmpAdminString
+}
+
+apmUserDefinedAppParentIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmUserDefinedAppEntry 1 }
+
+apmUserDefinedAppApplication OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmUserDefinedAppEntry 2 }
+
+
+apmNameTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ApmNameEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmMibObjects 8 }
+
+apmNameEntry OBJECT-TYPE
+    SYNTAX      ApmNameEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { apmNameClientID,
+            protocolDirLocalIndex, apmNameClientAddress,
+            apmNameMappingStartTime }
+    ::= { apmNameTable 1 }
+
+ApmNameEntry ::= SEQUENCE {
+    apmNameClientID                  RmonClientID,
+    apmNameClientAddress             ProtocolDirNetworkAddress,
+
+
+
+
+
+    apmNameMappingStartTime          DateAndTime,
+    apmNameMachineName               SnmpAdminString,
+    apmNameUserName                  SnmpAdminString
+}
+
+apmNameClientID OBJECT-TYPE
+    SYNTAX      RmonClientID
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmNameEntry 1 }
+
+apmNameClientAddress OBJECT-TYPE
+    SYNTAX      ProtocolDirNetworkAddress (SIZE(1..255))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmNameEntry 2 }
+
+apmNameMappingStartTime OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmNameEntry 3 }
+
+
+
+
+
+
+apmNameMachineName OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmNameEntry 4 }
+
+apmNameUserName OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmNameEntry 5 }
+
+
+apmReportControlTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ApmReportControlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmMibObjects 9 }
+
+apmReportControlEntry OBJECT-TYPE
+    SYNTAX      ApmReportControlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { apmReportControlIndex }
+    ::= { apmReportControlTable 1 }
+
+ApmReportControlEntry ::= SEQUENCE {
+    apmReportControlIndex            Unsigned32,
+    apmReportControlDataSource       DataSourceOrZero,
+    apmReportControlAggregationType  TransactionAggregationType,
+    apmReportControlInterval         Unsigned32,
+    apmReportControlRequestedSize    Unsigned32,
+    apmReportControlGrantedSize      Unsigned32,
+    apmReportControlRequestedReports Unsigned32,
+    apmReportControlGrantedReports   Unsigned32,
+    apmReportControlStartTime        TimeStamp,
+    apmReportControlReportNumber     Unsigned32,
+    apmReportControlDeniedInserts    Counter32,
+    apmReportControlDroppedFrames    Counter32,
+    apmReportControlOwner            OwnerString,
+    apmReportControlStorageType      StorageType,
+    apmReportControlStatus           RowStatus
+}
+
+
+apmReportControlIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmReportControlEntry 1 }
+
+apmReportControlDataSource OBJECT-TYPE
+    SYNTAX      DataSourceOrZero
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmReportControlEntry 2 }
+
+apmReportControlAggregationType OBJECT-TYPE
+    SYNTAX      TransactionAggregationType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmReportControlEntry 3 }
+
+apmReportControlInterval OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "Seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 3600 }
+    ::= { apmReportControlEntry 4 }
+
+apmReportControlRequestedSize OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmReportControlEntry 5 }
+
+
+
+
+
+apmReportControlGrantedSize OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportControlEntry 6 }
+
+apmReportControlRequestedReports OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmReportControlEntry 7 }
+
+apmReportControlGrantedReports OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportControlEntry 8 }
+
+apmReportControlStartTime OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportControlEntry 9 }
+
+apmReportControlReportNumber OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportControlEntry 10 }
+
+apmReportControlDeniedInserts OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportControlEntry 11 }
+
+apmReportControlDroppedFrames OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportControlEntry 12 }
+
+apmReportControlOwner OBJECT-TYPE
+    SYNTAX      OwnerString
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    ::= { apmReportControlEntry 13 }
+
+apmReportControlStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmReportControlEntry 14 }
+
+apmReportControlStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmReportControlEntry 15 }
+
+
+apmReportTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ApmReportEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmMibObjects 10 }
+
+apmReportEntry OBJECT-TYPE
+    SYNTAX      ApmReportEntry
+    MAX-ACCESS  not-accessible
+
+
+
+
+
+    STATUS      current
+    INDEX { apmReportControlIndex, apmReportIndex,
+            apmAppDirAppLocalIndex,
+            apmAppDirResponsivenessType,
+            protocolDirLocalIndex, apmReportServerAddress,
+            apmNameClientID }
+    ::= { apmReportTable 1 }
+
+ApmReportEntry ::= SEQUENCE {
+    apmReportIndex                  Unsigned32,
+    apmReportServerAddress          ProtocolDirNetworkAddress,
+
+
+
+
+
+    apmReportTransactionCount       Unsigned32,
+    apmReportSuccessfulTransactions Unsigned32,
+    apmReportResponsivenessMean     Unsigned32,
+    apmReportResponsivenessMin      Unsigned32,
+    apmReportResponsivenessMax      Unsigned32,
+    apmReportResponsivenessB1       Unsigned32,
+    apmReportResponsivenessB2       Unsigned32,
+    apmReportResponsivenessB3       Unsigned32,
+    apmReportResponsivenessB4       Unsigned32,
+    apmReportResponsivenessB5       Unsigned32,
+    apmReportResponsivenessB6       Unsigned32,
+    apmReportResponsivenessB7       Unsigned32
+}
+
+apmReportIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmReportEntry 1 }
+
+apmReportServerAddress OBJECT-TYPE
+    SYNTAX      ProtocolDirNetworkAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmReportEntry 2 }
+
+
+
+
+
+
+apmReportTransactionCount OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 3 }
+
+apmReportSuccessfulTransactions OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 4 }
+
+apmReportResponsivenessMean OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 5 }
+
+apmReportResponsivenessMin OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 6 }
+
+apmReportResponsivenessMax OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 7 }
+
+
+
+
+
+
+
+apmReportResponsivenessB1 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 8 }
+
+apmReportResponsivenessB2 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 9 }
+
+apmReportResponsivenessB3 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 10 }
+
+apmReportResponsivenessB4 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 11 }
+
+
+
+
+
+
+apmReportResponsivenessB5 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 12 }
+
+apmReportResponsivenessB6 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 13 }
+
+apmReportResponsivenessB7 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmReportEntry 14 }
+
+
+apmTransactionTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ApmTransactionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmMibObjects 11 }
+
+apmTransactionEntry OBJECT-TYPE
+    SYNTAX      ApmTransactionEntry
+
+
+
+
+
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX { apmAppDirAppLocalIndex,
+            apmAppDirResponsivenessType,
+            protocolDirLocalIndex, apmTransactionServerAddress,
+            apmNameClientID, apmTransactionID }
+    ::= { apmTransactionTable 1 }
+
+ApmTransactionEntry ::= SEQUENCE {
+    apmTransactionServerAddress      ProtocolDirNetworkAddress,
+    apmTransactionID                 Unsigned32,
+    apmTransactionResponsiveness     Unsigned32,
+    apmTransactionAge                TimeInterval,
+    apmTransactionSuccess            TruthValue
+}
+
+apmTransactionServerAddress OBJECT-TYPE
+    SYNTAX      ProtocolDirNetworkAddress (SIZE (1..255))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmTransactionEntry 1 }
+
+apmTransactionID OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmTransactionEntry 2 }
+
+apmTransactionResponsiveness OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmTransactionEntry 3 }
+
+apmTransactionAge OBJECT-TYPE
+    SYNTAX      TimeInterval
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmTransactionEntry 4 }
+
+apmTransactionSuccess OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmTransactionEntry 5 }
+
+apmTransactionsRequestedHistorySize OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { apmMibObjects 12 }
+
+
+
+apmExceptionTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ApmExceptionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmMibObjects 13 }
+
+apmExceptionEntry OBJECT-TYPE
+    SYNTAX      ApmExceptionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+    INDEX { apmAppDirAppLocalIndex,
+            apmAppDirResponsivenessType, apmExceptionIndex }
+    ::= { apmExceptionTable 1 }
+
+ApmExceptionEntry ::= SEQUENCE {
+    apmExceptionIndex                       Unsigned32,
+    apmExceptionResponsivenessComparison    INTEGER,
+    apmExceptionResponsivenessThreshold     Unsigned32,
+    apmExceptionUnsuccessfulException       INTEGER,
+    apmExceptionResponsivenessEvents        Counter32,
+    apmExceptionUnsuccessfulEvents          Counter32,
+    apmExceptionOwner                       OwnerString,
+    apmExceptionStorageType                 StorageType,
+    apmExceptionStatus                      RowStatus
+}
+
+apmExceptionIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { apmExceptionEntry 1 }
+
+apmExceptionResponsivenessComparison OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    none(1),
+                    greater(2),
+                    less(3)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmExceptionEntry 2 }
+
+apmExceptionResponsivenessThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmExceptionEntry 3 }
+
+apmExceptionUnsuccessfulException OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    off(1),
+                    on(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmExceptionEntry 4 }
+
+apmExceptionResponsivenessEvents OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+
+
+
+
+
+    ::= { apmExceptionEntry 5 }
+
+apmExceptionUnsuccessfulEvents OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { apmExceptionEntry 6 }
+
+apmExceptionOwner OBJECT-TYPE
+    SYNTAX      OwnerString
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { apmExceptionEntry 7 }
+
+apmExceptionStorageType OBJECT-TYPE
+    SYNTAX     StorageType
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { apmExceptionEntry 8 }
+
+apmExceptionStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    ::= { apmExceptionEntry 9 }
+
+
+
+
+
+apmThroughputExceptionMinTime OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "seconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL     { 10 }
+    ::= { apmMibObjects 14 }
+
+apmNotificationMaxRate OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 1 }
+    ::= { apmMibObjects 15 }
+
+
+
+
+
+
+
+apmNotifications OBJECT IDENTIFIER ::= { apm 0 }
+
+apmTransactionResponsivenessAlarm NOTIFICATION-TYPE
+    OBJECTS     { apmExceptionResponsivenessThreshold,
+                  apmTransactionResponsiveness }
+    STATUS      current
+    ::= { apmNotifications 1 }
+
+apmTransactionUnsuccessfulAlarm NOTIFICATION-TYPE
+    OBJECTS     { apmExceptionResponsivenessThreshold }
+    STATUS      current
+    ::= { apmNotifications 2 }
+
+apmCompliance MODULE-COMPLIANCE
+    STATUS  current
+
+
+
+
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { apmAppDirGroup, apmReportGroup }
+
+        GROUP apmUserDefinedApplicationsGroup
+
+        GROUP apmTransactionGroup
+
+        GROUP apmExceptionGroup
+
+        GROUP apmNotificationGroup
+
+    ::= { apmCompliances 1 }
+
+apmAppDirGroup OBJECT-GROUP
+    OBJECTS { apmAppDirConfig,
+              apmAppDirResponsivenessBoundary1,
+              apmAppDirResponsivenessBoundary2,
+              apmAppDirResponsivenessBoundary3,
+              apmAppDirResponsivenessBoundary4,
+              apmAppDirResponsivenessBoundary5,
+              apmAppDirResponsivenessBoundary6,
+              apmBucketBoundaryLastChange, apmAppDirID,
+              apmNameMachineName, apmNameUserName }
+    STATUS  current
+    ::=  { apmGroups 1 }
+
+apmUserDefinedApplicationsGroup OBJECT-GROUP
+    OBJECTS {     apmHttpFilterAppLocalIndex,
+                  apmHttpFilterServerProtocol,
+                  apmHttpFilterServerAddress, apmHttpFilterURLPath,
+                  apmHttpFilterMatchType, apmHttpFilterOwner,
+                  apmHttpFilterStorageType, apmHttpFilterRowStatus,
+                  apmHttpIgnoreUnregisteredURLs, apmHttp4xxIsFailure,
+                  apmUserDefinedAppParentIndex,
+
+
+
+
+
+                  apmUserDefinedAppApplication }
+    STATUS  current
+    ::= { apmGroups 2 }
+
+apmReportGroup OBJECT-GROUP
+    OBJECTS { apmReportControlDataSource,
+              apmReportControlAggregationType,
+              apmReportControlInterval,
+              apmReportControlRequestedSize,
+              apmReportControlGrantedSize,
+              apmReportControlRequestedReports,
+              apmReportControlGrantedReports,
+              apmReportControlStartTime,
+              apmReportControlReportNumber,
+              apmReportControlDeniedInserts,
+              apmReportControlDroppedFrames,
+              apmReportControlOwner,
+              apmReportControlStorageType,
+              apmReportControlStatus,
+              apmReportTransactionCount,
+              apmReportSuccessfulTransactions,
+              apmReportResponsivenessMean,
+              apmReportResponsivenessMin,
+              apmReportResponsivenessMax,
+              apmReportResponsivenessB1,
+              apmReportResponsivenessB2,
+              apmReportResponsivenessB3,
+              apmReportResponsivenessB4,
+              apmReportResponsivenessB5,
+              apmReportResponsivenessB6,
+              apmReportResponsivenessB7 }
+    STATUS  current
+    ::=  { apmGroups 3 }
+
+apmTransactionGroup OBJECT-GROUP
+    OBJECTS { apmTransactionResponsiveness,
+              apmTransactionAge, apmTransactionSuccess,
+              apmTransactionsRequestedHistorySize }
+    STATUS  current
+
+
+
+
+
+    ::=  { apmGroups 4 }
+
+apmExceptionGroup OBJECT-GROUP
+    OBJECTS { apmExceptionResponsivenessComparison,
+              apmExceptionResponsivenessThreshold,
+              apmExceptionUnsuccessfulException,
+              apmExceptionResponsivenessEvents,
+              apmExceptionUnsuccessfulEvents,
+              apmExceptionOwner, apmExceptionStorageType,
+              apmExceptionStatus, apmThroughputExceptionMinTime,
+              apmNotificationMaxRate }
+    STATUS  current
+    ::=  { apmGroups 5 }
+
+apmNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { apmTransactionResponsivenessAlarm,
+                    apmTransactionUnsuccessfulAlarm }
+    STATUS        current
+    ::= { apmGroups 6 }
+
+END

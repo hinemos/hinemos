@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd" />
+	<xs:include schemaLocation="part_notify_relation.xsd" />
+		
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="H">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="reporting" type="ReportingType">
+		<xs:annotation>
+			<xs:documentation>レポーティングスケジュール定義一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	
+	<xs:complexType name="ReportingType">
+		<xs:annotation>
+			<xs:documentation>レポーティングスケジュール定義一覧のデータ型です。</xs:documentation>
+		</xs:annotation>
+	
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="reportingInfo" type="ReportingInfoType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						レポーティングスケジュール定義の配列です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="ReportingInfoType">
+		<xs:annotation>
+			<xs:documentation>レポーティングスケジュール定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+		
+		<xs:sequence>
+			<xs:element name="notifyGroupId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						通知グループIDです。 
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定で用いる通知IDです。 複数の通知を併用する場合は併記します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+		
+		<xs:attribute name="reportScheduleId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>スケジュールIDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="description" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>この設定の説明です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		
+		<xs:attribute name="ownerRoleId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>オーナーロールIDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="facilityId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					ファシリティIDです。
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="calendarId" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>カレンダーIDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="outputPeriodType" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					出力期間タイプです。
+					{日数(0)、月数(1)、年数(2)}
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		
+		<xs:attribute name="outputPeriodBefore" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					出力開始前期間
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>		
+
+		<xs:attribute name="outputPeriodFor" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					出力期間
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>		
+
+		<xs:attribute name="templateSetId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					テンプレートセットID
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>		
+
+		<xs:attribute name="reportTitle" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					タイトル
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="logoValidFlg" type="xs:boolean" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					ロゴ有効フラグ
+					{有効(true)、無効(false)}
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="logoFilename" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					ロゴファイル名
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="pageValidFlg" type="xs:boolean" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					ページ番号有効フラグ
+					{有効(true)、無効(false)}
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="outputType" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					出力ファイル形式
+					{PDF(0)、XLSX(1)}
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="scheduleType" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					スケジュールタイプ
+					{毎日(0)、毎週(1)、毎月(2)}
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="day" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					スケジュール日
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="week" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>
+					スケジュール曜日
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+		
+		<xs:attribute name="hour" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					スケジュール時間
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="minute" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>
+					スケジュール分
+				</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="validFlg" type="xs:boolean" use="required">
+			<xs:annotation>
+				<xs:documentation>有効フラグです。（有効(True)・無効(False)）</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		
+	</xs:complexType>
+
+</xs:schema>

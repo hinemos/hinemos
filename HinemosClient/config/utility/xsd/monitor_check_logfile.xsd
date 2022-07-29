@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id: monitor_check_logfile.xsd 295 2015-02-03 16:00:00Z kawamoto $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_monitor_master.xsd" />
+	<xs:include schemaLocation="part_monitor_check.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+	
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="H">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="2">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="logfileMonitors" type="LogfileMonitorList">
+		<xs:annotation>
+			<xs:documentation>ログファイル監視設定のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	
+	<xs:complexType name="LogfileMonitorList">
+		<xs:annotation>
+			<xs:documentation>ログファイル監視設定のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="logfileMonitor" type="MonitorLogfile" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ログファイル監視設定</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="logfile" type="MonitorLogfile" />
+	<xs:complexType name="MonitorLogfile">
+		<xs:annotation>
+			<xs:documentation>ログファイル監視の1設定分です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="monitor" type="MonitorInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視設定情報（共通）です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="logfileInfo" type="MonitorLogfileInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定情報（ログファイル監視固有部分）です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="stringValue" type="MonitorStringValueInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>文字列判定情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="MonitorLogfileInfo">
+		<xs:annotation>
+			<xs:documentation>ログファイル監視設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="MonitorCheckInfo">
+				<xs:sequence>
+					<xs:element name="directory" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>ディレクトリです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="fileEncoding" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>ファイルのエンコードタイプです。UTF-8等</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="fileName" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>ファイル名です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="fileReturnCode" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>ファイルで使用されるリターンコードです。LF等</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="filePatternHead" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>区切り条件の先頭パターン（正規表現）です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="filePatternTail" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>区切り条件の終端パターン（正規表現）です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					
+					<xs:element name="fileMaxBytes" type="xs:int" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>最大読み取り文字数です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

@@ -1,0 +1,897 @@
+   MAU-MIB DEFINITIONS ::= BEGIN
+
+     IMPORTS
+       Counter32, Integer32, Counter64,
+       OBJECT-TYPE, MODULE-IDENTITY, NOTIFICATION-TYPE, mib-2
+         FROM SNMPv2-SMI         -- RFC 2578
+       TruthValue, AutonomousType, TEXTUAL-CONVENTION
+         FROM SNMPv2-TC          -- RFC 2579
+       OBJECT-GROUP, MODULE-COMPLIANCE, NOTIFICATION-GROUP
+         FROM SNMPv2-CONF        -- RFC 2580
+       InterfaceIndex
+         FROM IF-MIB             -- RFC 2863
+       IANAifMauTypeListBits, IANAifMauMediaAvailable,
+       IANAifMauAutoNegCapBits, IANAifJackType
+         FROM IANA-MAU-MIB
+       ;
+
+     mauMod MODULE-IDENTITY
+       LAST-UPDATED "200704210000Z"  -- April 21, 2007
+       ORGANIZATION "IETF Ethernet Interfaces and Hub MIB Working Group"
+
+
+
+
+
+
+
+       ::= { snmpDot3MauMgt 6 }
+
+      snmpDot3MauMgt OBJECT IDENTIFIER ::= { mib-2 26 }
+
+
+      JackType ::= TEXTUAL-CONVENTION
+        STATUS      deprecated
+        SYNTAX      INTEGER {
+                              other(1),
+                              rj45(2),
+                              rj45S(3), -- rj45 shielded
+                              db9(4),
+                              bnc(5),
+                              fAUI(6),  -- female aui
+
+
+
+
+
+                              mAUI(7),  -- male aui
+                              fiberSC(8),
+                              fiberMIC(9),
+                              fiberST(10),
+                              telco(11),
+                              mtrj(12),  -- fiber MT-RJ
+                              hssdc(13), -- fiber channel style-2
+                              fiberLC(14)
+                          }
+
+      dot3RpMauBasicGroup
+          OBJECT IDENTIFIER ::= { snmpDot3MauMgt 1 }
+      dot3IfMauBasicGroup
+          OBJECT IDENTIFIER ::= { snmpDot3MauMgt 2 }
+      dot3BroadMauBasicGroup
+          OBJECT IDENTIFIER ::= { snmpDot3MauMgt 3 }
+
+
+      dot3IfMauAutoNegGroup
+          OBJECT IDENTIFIER ::= { snmpDot3MauMgt 5 }
+
+
+
+      rpMauTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF RpMauEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { dot3RpMauBasicGroup 1 }
+
+      rpMauEntry OBJECT-TYPE
+        SYNTAX      RpMauEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX       { rpMauGroupIndex,
+                      rpMauPortIndex,
+
+
+
+
+
+                      rpMauIndex
+                    }
+        ::= { rpMauTable 1 }
+
+      RpMauEntry ::=
+        SEQUENCE {
+            rpMauGroupIndex                     Integer32,
+            rpMauPortIndex                      Integer32,
+            rpMauIndex                          Integer32,
+            rpMauType                           AutonomousType,
+            rpMauStatus                         INTEGER,
+            rpMauMediaAvailable                 IANAifMauMediaAvailable,
+            rpMauMediaAvailableStateExits       Counter32,
+            rpMauJabberState                    INTEGER,
+            rpMauJabberingStateEnters           Counter32,
+            rpMauFalseCarriers                  Counter32
+      }
+
+      rpMauGroupIndex OBJECT-TYPE
+        SYNTAX      Integer32 (1..2147483647)
+        MAX-ACCESS  read-only  -- read-only since originally an
+        STATUS      current
+        ::= { rpMauEntry 1 }
+
+      rpMauPortIndex OBJECT-TYPE
+        SYNTAX      Integer32 (1..2147483647)
+        MAX-ACCESS  read-only  -- read-only since originally an
+        STATUS      current
+
+
+
+
+
+        ::= { rpMauEntry 2 }
+
+      rpMauIndex OBJECT-TYPE
+        SYNTAX      Integer32 (1..2147483647)
+        MAX-ACCESS  read-only  -- read-only since originally an
+        STATUS      current
+        ::= { rpMauEntry 3 }
+
+      rpMauType OBJECT-TYPE
+        SYNTAX      AutonomousType
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { rpMauEntry 4 }
+
+      rpMauStatus OBJECT-TYPE
+          SYNTAX      INTEGER {
+                          other(1),
+                          unknown(2),
+                          operational(3),
+                          standby(4),
+                          shutdown(5),
+                          reset(6)
+                      }
+          MAX-ACCESS  read-write
+          STATUS      current
+          ::= { rpMauEntry 5 }
+
+      rpMauMediaAvailable OBJECT-TYPE
+          SYNTAX      IANAifMauMediaAvailable
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { rpMauEntry 6 }
+
+      rpMauMediaAvailableStateExits OBJECT-TYPE
+          SYNTAX      Counter32
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { rpMauEntry 7 }
+
+      rpMauJabberState OBJECT-TYPE
+          SYNTAX      INTEGER {
+                          other(1),
+                          unknown(2),
+                          noJabber(3),
+                          jabbering(4)
+                      }
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { rpMauEntry 8 }
+
+      rpMauJabberingStateEnters OBJECT-TYPE
+          SYNTAX      Counter32
+          MAX-ACCESS  read-only
+
+
+
+
+
+          STATUS      current
+          ::= { rpMauEntry 9 }
+
+      rpMauFalseCarriers OBJECT-TYPE
+          SYNTAX      Counter32
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { rpMauEntry 10 }
+
+
+
+
+
+
+      rpJackTable OBJECT-TYPE
+          SYNTAX      SEQUENCE OF RpJackEntry
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          ::= { dot3RpMauBasicGroup 2 }
+
+      rpJackEntry OBJECT-TYPE
+          SYNTAX      RpJackEntry
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          INDEX       { rpMauGroupIndex,
+                        rpMauPortIndex,
+                        rpMauIndex,
+                        rpJackIndex
+                      }
+          ::= { rpJackTable 1 }
+
+      RpJackEntry ::=
+          SEQUENCE {
+              rpJackIndex                         Integer32,
+              rpJackType                          IANAifJackType
+          }
+
+      rpJackIndex OBJECT-TYPE
+          SYNTAX      Integer32 (1..2147483647)
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          ::= { rpJackEntry 1 }
+
+      rpJackType OBJECT-TYPE
+          SYNTAX      IANAifJackType
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { rpJackEntry 2 }
+
+
+
+
+
+
+
+      ifMauTable OBJECT-TYPE
+          SYNTAX      SEQUENCE OF IfMauEntry
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          ::= { dot3IfMauBasicGroup 1 }
+
+      ifMauEntry OBJECT-TYPE
+          SYNTAX      IfMauEntry
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          INDEX       { ifMauIfIndex,
+                        ifMauIndex
+                      }
+          ::= { ifMauTable 1 }
+
+      IfMauEntry ::=
+          SEQUENCE {
+              ifMauIfIndex                      InterfaceIndex,
+              ifMauIndex                        Integer32,
+              ifMauType                         AutonomousType,
+              ifMauStatus                       INTEGER,
+              ifMauMediaAvailable               IANAifMauMediaAvailable,
+              ifMauMediaAvailableStateExits     Counter32,
+              ifMauJabberState                  INTEGER,
+              ifMauJabberingStateEnters         Counter32,
+              ifMauFalseCarriers                Counter32,
+              ifMauTypeList                     Integer32,
+              ifMauDefaultType                  AutonomousType,
+              ifMauAutoNegSupported             TruthValue,
+              ifMauTypeListBits                 IANAifMauTypeListBits,
+              ifMauHCFalseCarriers              Counter64
+          }
+
+      ifMauIfIndex OBJECT-TYPE
+          SYNTAX      InterfaceIndex
+          MAX-ACCESS  read-only  -- read-only since originally an
+          STATUS      current
+          ::= { ifMauEntry 1 }
+
+
+
+
+
+
+      ifMauIndex OBJECT-TYPE
+          SYNTAX      Integer32 (1..2147483647)
+          MAX-ACCESS  read-only  -- read-only since originally an
+          STATUS      current
+          ::= { ifMauEntry 2 }
+
+      ifMauType OBJECT-TYPE
+        SYNTAX      AutonomousType
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { ifMauEntry 3 }
+
+      ifMauStatus OBJECT-TYPE
+          SYNTAX      INTEGER {
+                          other(1),
+                          unknown(2),
+                          operational(3),
+                          standby(4),
+                          shutdown(5),
+                          reset(6)
+                      }
+          MAX-ACCESS  read-write
+          STATUS      current
+          ::= { ifMauEntry 4 }
+
+      ifMauMediaAvailable OBJECT-TYPE
+
+
+
+
+
+          SYNTAX      IANAifMauMediaAvailable
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauEntry 5 }
+
+      ifMauMediaAvailableStateExits OBJECT-TYPE
+          SYNTAX      Counter32
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauEntry 6 }
+
+      ifMauJabberState OBJECT-TYPE
+          SYNTAX      INTEGER {
+                          other(1),
+                          unknown(2),
+                          noJabber(3),
+                          jabbering(4)
+                      }
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauEntry 7 }
+
+      ifMauJabberingStateEnters OBJECT-TYPE
+          SYNTAX      Counter32
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauEntry 8 }
+
+      ifMauFalseCarriers OBJECT-TYPE
+          SYNTAX      Counter32
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauEntry 9 }
+
+      ifMauTypeList OBJECT-TYPE
+          SYNTAX      Integer32
+          MAX-ACCESS  read-only
+          STATUS      deprecated
+          ::= { ifMauEntry 10 }
+
+      ifMauDefaultType OBJECT-TYPE
+          SYNTAX      AutonomousType
+          MAX-ACCESS  read-write
+          STATUS      current
+          ::= { ifMauEntry 11 }
+
+
+
+
+
+
+      ifMauAutoNegSupported OBJECT-TYPE
+          SYNTAX      TruthValue
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauEntry 12 }
+
+      ifMauTypeListBits OBJECT-TYPE
+          SYNTAX      IANAifMauTypeListBits
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauEntry 13 }
+
+      ifMauHCFalseCarriers OBJECT-TYPE
+          SYNTAX      Counter64
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauEntry 14 }
+
+
+      ifJackTable OBJECT-TYPE
+          SYNTAX      SEQUENCE OF IfJackEntry
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          ::= { dot3IfMauBasicGroup 2 }
+
+      ifJackEntry OBJECT-TYPE
+          SYNTAX      IfJackEntry
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          INDEX       { ifMauIfIndex,
+                        ifMauIndex,
+                        ifJackIndex
+                      }
+          ::= { ifJackTable 1 }
+
+      IfJackEntry ::=
+          SEQUENCE {
+              ifJackIndex                         Integer32,
+              ifJackType                          IANAifJackType
+          }
+
+      ifJackIndex OBJECT-TYPE
+          SYNTAX      Integer32 (1..2147483647)
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          ::= { ifJackEntry 1 }
+
+      ifJackType OBJECT-TYPE
+          SYNTAX      IANAifJackType
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifJackEntry 2 }
+
+
+
+
+
+
+      ifMauAutoNegTable OBJECT-TYPE
+          SYNTAX      SEQUENCE OF IfMauAutoNegEntry
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          ::= { dot3IfMauAutoNegGroup 1 }
+
+      ifMauAutoNegEntry OBJECT-TYPE
+          SYNTAX      IfMauAutoNegEntry
+          MAX-ACCESS  not-accessible
+          STATUS      current
+          INDEX       { ifMauIfIndex,
+                        ifMauIndex
+                      }
+          ::= { ifMauAutoNegTable 1 }
+
+      IfMauAutoNegEntry ::=
+          SEQUENCE {
+              ifMauAutoNegAdminStatus           INTEGER,
+              ifMauAutoNegRemoteSignaling       INTEGER,
+              ifMauAutoNegConfig                INTEGER,
+              ifMauAutoNegCapability            Integer32,
+              ifMauAutoNegCapAdvertised         Integer32,
+              ifMauAutoNegCapReceived           Integer32,
+              ifMauAutoNegRestart               INTEGER,
+              ifMauAutoNegCapabilityBits        IANAifMauAutoNegCapBits,
+              ifMauAutoNegCapAdvertisedBits     IANAifMauAutoNegCapBits,
+              ifMauAutoNegCapReceivedBits       IANAifMauAutoNegCapBits,
+              ifMauAutoNegRemoteFaultAdvertised INTEGER,
+              ifMauAutoNegRemoteFaultReceived   INTEGER
+          }
+
+
+
+
+
+
+      ifMauAutoNegAdminStatus OBJECT-TYPE
+          SYNTAX      INTEGER {
+                          enabled(1),
+                          disabled(2)
+                      }
+          MAX-ACCESS  read-write
+          STATUS      current
+          ::= { ifMauAutoNegEntry 1 }
+
+      ifMauAutoNegRemoteSignaling OBJECT-TYPE
+          SYNTAX      INTEGER {
+                          detected(1),
+                          notdetected(2)
+                      }
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauAutoNegEntry 2 }
+
+      ifMauAutoNegConfig OBJECT-TYPE
+
+
+
+
+
+          SYNTAX      INTEGER {
+                          other(1),
+                          configuring(2),
+                          complete(3),
+                          disabled(4),
+                          parallelDetectFail(5)
+                      }
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauAutoNegEntry 4 }
+
+      ifMauAutoNegCapability OBJECT-TYPE
+          SYNTAX      Integer32
+          MAX-ACCESS  read-only
+          STATUS      deprecated
+          ::= { ifMauAutoNegEntry 5 }
+
+      ifMauAutoNegCapAdvertised OBJECT-TYPE
+          SYNTAX      Integer32
+          MAX-ACCESS  read-write
+          STATUS      deprecated
+          ::= { ifMauAutoNegEntry 6 }
+
+      ifMauAutoNegCapReceived OBJECT-TYPE
+          SYNTAX      Integer32
+          MAX-ACCESS  read-only
+          STATUS      deprecated
+          ::= { ifMauAutoNegEntry 7 }
+
+      ifMauAutoNegRestart OBJECT-TYPE
+          SYNTAX      INTEGER {
+                          restart(1),
+                          norestart(2)
+                      }
+          MAX-ACCESS  read-write
+          STATUS      current
+          ::= { ifMauAutoNegEntry 8 }
+
+      ifMauAutoNegCapabilityBits OBJECT-TYPE
+          SYNTAX      IANAifMauAutoNegCapBits
+          MAX-ACCESS  read-only
+          STATUS      current
+
+
+
+
+
+
+          ::= { ifMauAutoNegEntry 9 }
+
+      ifMauAutoNegCapAdvertisedBits OBJECT-TYPE
+          SYNTAX      IANAifMauAutoNegCapBits
+          MAX-ACCESS  read-write
+          STATUS      current
+          ::= { ifMauAutoNegEntry 10 }
+
+      ifMauAutoNegCapReceivedBits OBJECT-TYPE
+          SYNTAX      IANAifMauAutoNegCapBits
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauAutoNegEntry 11 }
+
+      ifMauAutoNegRemoteFaultAdvertised OBJECT-TYPE
+          SYNTAX      INTEGER {
+                          noError(1),
+                          offline(2),
+
+
+
+
+
+                          linkFailure(3),
+                          autoNegError(4)
+                      }
+          MAX-ACCESS  read-write
+          STATUS      current
+          ::= { ifMauAutoNegEntry 12 }
+
+      ifMauAutoNegRemoteFaultReceived OBJECT-TYPE
+          SYNTAX      INTEGER {
+                          noError(1),
+                          offline(2),
+                          linkFailure(3),
+                          autoNegError(4)
+                      }
+          MAX-ACCESS  read-only
+          STATUS      current
+          ::= { ifMauAutoNegEntry 13 }
+
+
+
+      broadMauBasicTable OBJECT-TYPE
+          SYNTAX      SEQUENCE OF BroadMauBasicEntry
+          MAX-ACCESS  not-accessible
+          STATUS      deprecated
+          ::= { dot3BroadMauBasicGroup 1 }
+
+      broadMauBasicEntry OBJECT-TYPE
+          SYNTAX      BroadMauBasicEntry
+          MAX-ACCESS  not-accessible
+          STATUS      deprecated
+          INDEX       { broadMauIfIndex,
+                        broadMauIndex
+                      }
+          ::= { broadMauBasicTable 1 }
+
+      BroadMauBasicEntry ::=
+          SEQUENCE {
+              broadMauIfIndex                     InterfaceIndex,
+              broadMauIndex                       Integer32,
+              broadMauXmtRcvSplitType             INTEGER,
+              broadMauXmtCarrierFreq              Integer32,
+              broadMauTranslationFreq             Integer32
+          }
+
+      broadMauIfIndex OBJECT-TYPE
+          SYNTAX      InterfaceIndex
+          MAX-ACCESS  read-only  -- read-only since originally an
+          STATUS      deprecated
+          ::= { broadMauBasicEntry 1 }
+
+      broadMauIndex OBJECT-TYPE
+          SYNTAX      Integer32 (1..2147483647)
+          MAX-ACCESS  read-only  -- read-only since originally an
+          STATUS      deprecated
+          ::= { broadMauBasicEntry 2 }
+
+      broadMauXmtRcvSplitType OBJECT-TYPE
+          SYNTAX      INTEGER {
+                          other(1),
+                          single(2),
+                          dual(3)
+                      }
+          MAX-ACCESS  read-only
+          STATUS      deprecated
+          ::= { broadMauBasicEntry 3 }
+
+      broadMauXmtCarrierFreq OBJECT-TYPE
+          SYNTAX      Integer32
+          MAX-ACCESS  read-only
+          STATUS      deprecated
+          ::= { broadMauBasicEntry 4 }
+
+      broadMauTranslationFreq OBJECT-TYPE
+          SYNTAX      Integer32
+          MAX-ACCESS  read-only
+          STATUS      deprecated
+          ::= { broadMauBasicEntry 5 }
+
+
+      snmpDot3MauTraps OBJECT IDENTIFIER ::= { snmpDot3MauMgt 0 }
+
+      rpMauJabberTrap NOTIFICATION-TYPE
+          OBJECTS     { rpMauJabberState }
+          STATUS      current
+          ::= { snmpDot3MauTraps 1 }
+
+      ifMauJabberTrap NOTIFICATION-TYPE
+          OBJECTS     { ifMauJabberState }
+          STATUS      current
+
+          ::= { snmpDot3MauTraps 2 }
+
+
+      mauModConf
+              OBJECT IDENTIFIER ::= { mauMod 1 }
+        mauModCompls
+              OBJECT IDENTIFIER ::= { mauModConf 1 }
+        mauModObjGrps
+              OBJECT IDENTIFIER ::= { mauModConf 2 }
+        mauModNotGrps
+              OBJECT IDENTIFIER ::= { mauModConf 3 }
+
+
+
+
+
+
+
+      mauRpGrpBasic OBJECT-GROUP
+          OBJECTS     { rpMauGroupIndex,
+                        rpMauPortIndex,
+                        rpMauIndex,
+                        rpMauType,
+                        rpMauStatus,
+                        rpMauMediaAvailable,
+                        rpMauMediaAvailableStateExits,
+                        rpMauJabberState,
+                        rpMauJabberingStateEnters
+                      }
+          STATUS      current
+          ::= { mauModObjGrps 1 }
+
+      mauRpGrp100Mbs OBJECT-GROUP
+          OBJECTS     { rpMauFalseCarriers }
+          STATUS      current
+          ::= { mauModObjGrps 2 }
+
+      mauRpGrpJack OBJECT-GROUP
+          OBJECTS     { rpJackType }
+          STATUS      current
+          ::= { mauModObjGrps 3 }
+
+      mauIfGrpBasic OBJECT-GROUP
+          OBJECTS     { ifMauIfIndex,
+                        ifMauIndex,
+                        ifMauType,
+                        ifMauStatus,
+                        ifMauMediaAvailable,
+                        ifMauMediaAvailableStateExits,
+                        ifMauJabberState,
+                        ifMauJabberingStateEnters
+                      }
+          STATUS      current
+
+
+
+
+
+          ::= { mauModObjGrps 4 }
+
+      mauIfGrp100Mbs OBJECT-GROUP
+          OBJECTS     { ifMauFalseCarriers,
+                        ifMauTypeList,
+                        ifMauDefaultType,
+                        ifMauAutoNegSupported
+                      }
+
+          STATUS      deprecated
+          ::= { mauModObjGrps 5 }
+
+      mauIfGrpJack OBJECT-GROUP
+          OBJECTS     { ifJackType }
+          STATUS      current
+          ::= { mauModObjGrps 6 }
+
+      mauIfGrpAutoNeg OBJECT-GROUP
+          OBJECTS     { ifMauAutoNegAdminStatus,
+                        ifMauAutoNegRemoteSignaling,
+                        ifMauAutoNegConfig,
+                        ifMauAutoNegCapability,
+                        ifMauAutoNegCapAdvertised,
+                        ifMauAutoNegCapReceived,
+                        ifMauAutoNegRestart
+                      }
+          STATUS      deprecated
+          ::= { mauModObjGrps 7 }
+
+      mauBroadBasic OBJECT-GROUP
+          OBJECTS     { broadMauIfIndex,
+                        broadMauIndex,
+
+
+
+
+
+                        broadMauXmtRcvSplitType,
+                        broadMauXmtCarrierFreq,
+                        broadMauTranslationFreq
+                      }
+          STATUS      deprecated
+          ::= { mauModObjGrps 8 }
+
+      mauIfGrpHighCapacity OBJECT-GROUP
+          OBJECTS     { ifMauFalseCarriers,
+                        ifMauTypeListBits,
+                        ifMauDefaultType,
+                        ifMauAutoNegSupported
+                      }
+          STATUS      current
+          ::= { mauModObjGrps 9 }
+
+      mauIfGrpAutoNeg2 OBJECT-GROUP
+          OBJECTS     { ifMauAutoNegAdminStatus,
+                        ifMauAutoNegRemoteSignaling,
+                        ifMauAutoNegConfig,
+                        ifMauAutoNegCapabilityBits,
+                        ifMauAutoNegCapAdvertisedBits,
+                        ifMauAutoNegCapReceivedBits,
+                        ifMauAutoNegRestart
+                      }
+          STATUS      current
+          ::= { mauModObjGrps 10 }
+
+      mauIfGrpAutoNeg1000Mbps OBJECT-GROUP
+          OBJECTS     { ifMauAutoNegRemoteFaultAdvertised,
+                        ifMauAutoNegRemoteFaultReceived
+                      }
+          STATUS      current
+          ::= { mauModObjGrps 11 }
+
+
+
+
+
+      mauIfGrpHCStats OBJECT-GROUP
+          OBJECTS     { ifMauHCFalseCarriers }
+          STATUS      current
+          ::= { mauModObjGrps 12 }
+
+
+      rpMauNotifications NOTIFICATION-GROUP
+          NOTIFICATIONS { rpMauJabberTrap }
+          STATUS      current
+          ::= { mauModNotGrps 1 }
+
+      ifMauNotifications NOTIFICATION-GROUP
+          NOTIFICATIONS { ifMauJabberTrap }
+          STATUS      current
+          ::= { mauModNotGrps 2 }
+
+
+      mauModRpCompl MODULE-COMPLIANCE
+          STATUS      deprecated
+
+          MODULE -- this module
+              MANDATORY-GROUPS { mauRpGrpBasic }
+
+              GROUP       mauRpGrp100Mbs
+
+              GROUP       mauRpGrpJack
+
+              GROUP       rpMauNotifications
+
+
+
+
+
+          ::= { mauModCompls 1 }
+
+      mauModIfCompl MODULE-COMPLIANCE
+          STATUS      deprecated
+
+          MODULE -- this module
+              MANDATORY-GROUPS { mauIfGrpBasic }
+
+              GROUP       mauIfGrp100Mbs
+
+              GROUP       mauIfGrpJack
+
+              GROUP       mauIfGrpAutoNeg
+
+              GROUP       mauBroadBasic
+
+              GROUP       ifMauNotifications
+          ::= { mauModCompls 2 }
+
+      mauModIfCompl2 MODULE-COMPLIANCE
+          STATUS      deprecated
+
+
+
+
+
+
+          MODULE -- this module
+              MANDATORY-GROUPS { mauIfGrpBasic }
+
+              GROUP       mauIfGrpHighCapacity
+
+              GROUP       mauIfGrpJack
+
+
+              GROUP       mauIfGrpAutoNeg2
+
+              GROUP       mauIfGrpAutoNeg1000Mbps
+
+              GROUP       ifMauNotifications
+
+              OBJECT      ifMauStatus
+              MIN-ACCESS  read-only
+          ::= { mauModCompls 3 }
+
+      mauModRpCompl2 MODULE-COMPLIANCE
+          STATUS      current
+
+          MODULE -- this module
+              MANDATORY-GROUPS { mauRpGrpBasic }
+
+              GROUP       mauRpGrp100Mbs
+
+
+
+
+
+
+              GROUP       mauRpGrpJack
+
+              GROUP       rpMauNotifications
+
+
+              OBJECT      rpMauStatus
+              MIN-ACCESS  read-only
+          ::= { mauModCompls 4 }
+
+      mauModIfCompl3 MODULE-COMPLIANCE
+          STATUS      current
+
+          MODULE -- this module
+              MANDATORY-GROUPS { mauIfGrpBasic }
+
+              GROUP       mauIfGrpHighCapacity
+
+              GROUP       mauIfGrpHCStats
+
+              GROUP       mauIfGrpJack
+
+
+
+
+
+              GROUP       mauIfGrpAutoNeg2
+              GROUP       mauIfGrpAutoNeg1000Mbps
+
+              GROUP       ifMauNotifications
+
+              OBJECT      ifMauStatus
+              MIN-ACCESS  read-only
+          ::= { mauModCompls 5 }
+
+   END

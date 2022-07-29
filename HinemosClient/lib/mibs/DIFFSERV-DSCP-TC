@@ -1,0 +1,28 @@
+DIFFSERV-DSCP-TC DEFINITIONS ::= BEGIN
+
+    IMPORTS
+    Integer32, MODULE-IDENTITY, mib-2
+         FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION
+         FROM SNMPv2-TC;
+
+
+
+
+
+diffServDSCPTC MODULE-IDENTITY
+    LAST-UPDATED "200205090000Z"
+    ORGANIZATION "IETF Differentiated Services WG"
+    ::= { mib-2 96 }
+
+Dscp ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS   current
+    SYNTAX   Integer32 (0..63)
+
+DscpOrAny ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS   current
+    SYNTAX   Integer32 (-1 | 0..63)
+
+END

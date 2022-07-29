@@ -1,0 +1,533 @@
+DISMAN-EXPRESSION-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE,
+    Integer32, Gauge32, Unsigned32,
+    Counter32, Counter64, IpAddress,
+    TimeTicks, mib-2, zeroDotZero  FROM SNMPv2-SMI
+    RowStatus, TruthValue, TimeStamp    FROM SNMPv2-TC
+    sysUpTime                 FROM SNMPv2-MIB
+    SnmpAdminString           FROM SNMP-FRAMEWORK-MIB
+    MODULE-COMPLIANCE, OBJECT-GROUP     FROM SNMPv2-CONF;
+
+dismanExpressionMIB MODULE-IDENTITY
+    LAST-UPDATED "200010160000Z" -- 16 October 2000
+    ORGANIZATION "IETF Distributed Management Working Group"
+
+    ::= { mib-2 90 }
+
+
+dismanExpressionMIBObjects OBJECT IDENTIFIER ::=
+                                            { dismanExpressionMIB 1 }
+
+expResource    OBJECT IDENTIFIER ::= { dismanExpressionMIBObjects 1 }
+expDefine OBJECT IDENTIFIER ::= { dismanExpressionMIBObjects 2 }
+expValue  OBJECT IDENTIFIER ::= { dismanExpressionMIBObjects 3 }
+
+
+
+
+
+
+
+expResourceDeltaMinimum OBJECT-TYPE
+    SYNTAX      Integer32 (-1 | 1..600)
+    UNITS       "seconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { expResource 1 }
+
+expResourceDeltaWildcardInstanceMaximum OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "instances"
+    MAX-ACCESS  read-write
+    STATUS      current
+    ::= { expResource 2 }
+
+expResourceDeltaWildcardInstances OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS       "instances"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expResource 3 }
+
+expResourceDeltaWildcardInstancesHigh OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS       "instances"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expResource 4 }
+
+expResourceDeltaWildcardInstanceResourceLacks OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "instances"
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expResource 5 }
+
+
+
+expExpressionTable OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      SEQUENCE OF ExpExpressionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { expDefine 1 }
+
+expExpressionEntry OBJECT-TYPE
+    SYNTAX      ExpExpressionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { expExpressionOwner, expExpressionName }
+    ::= { expExpressionTable 1 }
+
+ExpExpressionEntry ::= SEQUENCE {
+    expExpressionOwner           SnmpAdminString,
+    expExpressionName             SnmpAdminString,
+    expExpression                OCTET STRING,
+    expExpressionValueType       INTEGER,
+    expExpressionComment         SnmpAdminString,
+    expExpressionDeltaInterval   Integer32,
+    expExpressionPrefix           OBJECT IDENTIFIER,
+    expExpressionErrors          Counter32,
+    expExpressionEntryStatus     RowStatus
+}
+
+expExpressionOwner OBJECT-TYPE
+   SYNTAX      SnmpAdminString (SIZE(0..32))
+   MAX-ACCESS  not-accessible
+   STATUS      current
+    ::= { expExpressionEntry 1 }
+
+expExpressionName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { expExpressionEntry 2 }
+
+expExpression OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (1..1024))
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    ::= { expExpressionEntry 3 }
+
+expExpressionValueType OBJECT-TYPE
+    SYNTAX      INTEGER { counter32(1), unsigned32(2), timeTicks(3),
+                 integer32(4), ipAddress(5), octetString(6),
+                 objectId(7), counter64(8) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { counter32 }
+    ::= { expExpressionEntry 4 }
+
+expExpressionComment OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { ''H }
+    ::= { expExpressionEntry 5 }
+
+expExpressionDeltaInterval OBJECT-TYPE
+    SYNTAX      Integer32 (0..86400)
+    UNITS       "seconds"
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { 0 }
+    ::= { expExpressionEntry 6 }
+
+expExpressionPrefix OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expExpressionEntry 7 }
+
+expExpressionErrors OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expExpressionEntry 8 }
+
+expExpressionEntryStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { expExpressionEntry 9 }
+
+
+expErrorTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ExpErrorEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { expDefine 2 }
+
+expErrorEntry OBJECT-TYPE
+    SYNTAX      ExpErrorEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { expExpressionOwner, expExpressionName }
+
+
+
+
+
+    ::= { expErrorTable 1 }
+
+ExpErrorEntry ::= SEQUENCE {
+    expErrorTime       TimeStamp,
+    expErrorIndex      Integer32,
+    expErrorCode       INTEGER,
+    expErrorInstance   OBJECT IDENTIFIER
+}
+
+expErrorTime OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expErrorEntry 1 }
+
+expErrorIndex OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expErrorEntry 2 }
+
+expErrorCode OBJECT-TYPE
+    SYNTAX      INTEGER {
+          invalidSyntax(1),
+          undefinedObjectIndex(2),
+          unrecognizedOperator(3),
+          unrecognizedFunction(4),
+          invalidOperandType(5),
+          unmatchedParenthesis(6),
+          tooManyWildcardValues(7),
+          recursion(8),
+          deltaTooShort(9),
+          resourceUnavailable(10),
+          divideByZero(11)
+          }
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expErrorEntry 3 }
+
+expErrorInstance OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { expErrorEntry 4 }
+
+
+expObjectTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ExpObjectEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { expDefine 3 }
+
+expObjectEntry OBJECT-TYPE
+    SYNTAX      ExpObjectEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { expExpressionOwner, expExpressionName, expObjectIndex }
+    ::= { expObjectTable 1 }
+
+ExpObjectEntry ::= SEQUENCE {
+    expObjectIndex                     Unsigned32,
+    expObjectID                        OBJECT IDENTIFIER,
+    expObjectIDWildcard                TruthValue,
+
+
+
+
+
+    expObjectSampleType                INTEGER,
+    expObjectDeltaDiscontinuityID      OBJECT IDENTIFIER,
+    expObjectDiscontinuityIDWildcard   TruthValue,
+    expObjectDiscontinuityIDType       INTEGER,
+    expObjectConditional               OBJECT IDENTIFIER,
+    expObjectConditionalWildcard       TruthValue,
+    expObjectEntryStatus               RowStatus
+}
+
+expObjectIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..4294967295)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { expObjectEntry 1 }
+
+expObjectID OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { expObjectEntry 2 }
+
+expObjectIDWildcard  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { false }
+    ::= { expObjectEntry 3 }
+
+expObjectSampleType OBJECT-TYPE
+    SYNTAX      INTEGER { absoluteValue(1), deltaValue(2),
+                          changedValue(3) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { absoluteValue }
+    ::= { expObjectEntry 4 }
+
+sysUpTimeInstance OBJECT IDENTIFIER ::= { sysUpTime 0 }
+
+expObjectDeltaDiscontinuityID OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { sysUpTimeInstance }
+    ::= { expObjectEntry 5 }
+
+expObjectDiscontinuityIDWildcard OBJECT-TYPE
+     SYNTAX      TruthValue
+     MAX-ACCESS  read-create
+     STATUS      current
+    DEFVAL      { false }
+     ::= { expObjectEntry 6 }
+
+expObjectDiscontinuityIDType OBJECT-TYPE
+     SYNTAX      INTEGER { timeTicks(1), timeStamp(2), dateAndTime(3) }
+     MAX-ACCESS  read-create
+     STATUS      current
+    DEFVAL      { timeTicks }
+     ::= { expObjectEntry 7 }
+
+
+
+
+
+
+expObjectConditional OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL      { zeroDotZero }
+    ::= { expObjectEntry 8 }
+
+ expObjectConditionalWildcard  OBJECT-TYPE
+     SYNTAX      TruthValue
+     MAX-ACCESS  read-create
+     STATUS      current
+    DEFVAL      { false }
+     ::= { expObjectEntry 9 }
+
+expObjectEntryStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+
+
+
+
+
+    STATUS      current
+    ::= { expObjectEntry 10 }
+
+
+expValueTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ExpValueEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { expValue 1 }
+
+expValueEntry OBJECT-TYPE
+    SYNTAX      ExpValueEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { expExpressionOwner, expExpressionName,
+                  IMPLIED expValueInstance }
+    ::= { expValueTable 1 }
+
+ExpValueEntry ::= SEQUENCE {
+    expValueInstance          OBJECT IDENTIFIER,
+    expValueCounter32Val      Counter32,
+    expValueUnsigned32Val     Unsigned32,
+    expValueTimeTicksVal      TimeTicks,
+    expValueInteger32Val      Integer32,
+    expValueIpAddressVal      IpAddress,
+    expValueOctetStringVal    OCTET STRING,
+    expValueOidVal            OBJECT IDENTIFIER,
+    expValueCounter64Val      Counter64
+}
+
+expValueInstance OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { expValueEntry 1 }
+
+expValueCounter32Val OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { expValueEntry 2 }
+
+expValueUnsigned32Val OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expValueEntry 3 }
+
+expValueTimeTicksVal OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expValueEntry 4 }
+
+expValueInteger32Val OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expValueEntry 5 }
+
+expValueIpAddressVal OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expValueEntry 6 }
+
+expValueOctetStringVal OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (0..65536))
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expValueEntry 7 }
+
+expValueOidVal OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  read-only
+
+
+
+
+
+    STATUS      current
+    ::= { expValueEntry 8 }
+
+expValueCounter64Val OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { expValueEntry 9 }
+
+
+dismanExpressionMIBConformance OBJECT IDENTIFIER ::=
+    { dismanExpressionMIB 3 }
+dismanExpressionMIBCompliances OBJECT IDENTIFIER ::=
+    { dismanExpressionMIBConformance 1 }
+dismanExpressionMIBGroups      OBJECT IDENTIFIER ::=
+    { dismanExpressionMIBConformance 2 }
+
+
+dismanExpressionMIBCompliance MODULE-COMPLIANCE
+     STATUS current
+     MODULE    -- this module
+          MANDATORY-GROUPS {
+               dismanExpressionResourceGroup,
+               dismanExpressionDefinitionGroup,
+               dismanExpressionValueGroup
+          }
+
+     OBJECT         expResourceDeltaMinimum
+     SYNTAX         Integer32 (-1 | 60..600)
+
+     OBJECT         expObjectSampleType
+     WRITE-SYNTAX   INTEGER { absoluteValue(1) }
+
+     OBJECT         expObjectIDWildcard
+     WRITE-SYNTAX   INTEGER { false(2) }
+
+     OBJECT         expObjectDiscontinuityIDWildcard
+     WRITE-SYNTAX   INTEGER { false(2) }
+
+     OBJECT          expObjectConditionalWildcard
+     WRITE-SYNTAX   INTEGER { false(2) }
+
+     ::= { dismanExpressionMIBCompliances 1 }
+
+
+dismanExpressionResourceGroup OBJECT-GROUP
+     OBJECTS {
+          expResourceDeltaMinimum,
+          expResourceDeltaWildcardInstanceMaximum,
+          expResourceDeltaWildcardInstances,
+          expResourceDeltaWildcardInstancesHigh,
+          expResourceDeltaWildcardInstanceResourceLacks
+     }
+     STATUS current
+     ::= { dismanExpressionMIBGroups 1 }
+
+dismanExpressionDefinitionGroup OBJECT-GROUP
+     OBJECTS {
+          expExpression,
+          expExpressionValueType,
+          expExpressionComment,
+          expExpressionDeltaInterval,
+          expExpressionPrefix,
+          expExpressionErrors,
+          expExpressionEntryStatus,
+
+          expErrorTime,
+          expErrorIndex,
+          expErrorCode,
+          expErrorInstance,
+
+
+
+
+
+          expObjectID,
+          expObjectIDWildcard,
+          expObjectSampleType,
+          expObjectDeltaDiscontinuityID,
+          expObjectDiscontinuityIDWildcard,
+          expObjectDiscontinuityIDType,
+          expObjectConditional,
+          expObjectConditionalWildcard,
+          expObjectEntryStatus
+     }
+     STATUS current
+     ::= { dismanExpressionMIBGroups 2 }
+
+dismanExpressionValueGroup OBJECT-GROUP
+     OBJECTS {
+          expValueCounter32Val,
+          expValueUnsigned32Val,
+          expValueTimeTicksVal,
+          expValueInteger32Val,
+          expValueIpAddressVal,
+          expValueOctetStringVal,
+          expValueOidVal,
+          expValueCounter64Val
+     }
+     STATUS current
+     ::= { dismanExpressionMIBGroups 3 }
+
+END

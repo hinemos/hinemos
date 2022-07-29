@@ -1,0 +1,83 @@
+IF-INVERTED-STACK-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+  MODULE-IDENTITY, OBJECT-TYPE, mib-2      FROM SNMPv2-SMI
+  RowStatus                                FROM SNMPv2-TC
+  MODULE-COMPLIANCE, OBJECT-GROUP          FROM SNMPv2-CONF
+  ifStackGroup2,
+  ifStackHigherLayer, ifStackLowerLayer    FROM IF-MIB;
+
+ifInvertedStackMIB MODULE-IDENTITY
+  LAST-UPDATED "200006140000Z"
+  ORGANIZATION "IETF Interfaces MIB Working Group"
+  ::= { mib-2 77 }
+
+ifInvMIBObjects OBJECT IDENTIFIER ::= { ifInvertedStackMIB 1 }
+
+
+ifInvStackTable  OBJECT-TYPE
+   SYNTAX        SEQUENCE OF IfInvStackEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   ::= { ifInvMIBObjects 1 }
+
+ifInvStackEntry  OBJECT-TYPE
+   SYNTAX        IfInvStackEntry
+   MAX-ACCESS    not-accessible
+   STATUS        current
+   INDEX { ifStackLowerLayer, ifStackHigherLayer }
+   ::= { ifInvStackTable 1 }
+
+IfInvStackEntry ::=
+  SEQUENCE {
+      ifInvStackStatus       RowStatus
+   }
+
+ifInvStackStatus  OBJECT-TYPE
+
+
+
+
+
+  SYNTAX         RowStatus
+  MAX-ACCESS     read-only
+  STATUS         current
+  ::= { ifInvStackEntry 1 }
+
+
+ifInvConformance OBJECT IDENTIFIER ::= { ifInvMIBObjects 2 }
+
+ifInvGroups      OBJECT IDENTIFIER ::= { ifInvConformance 1 }
+ifInvCompliances OBJECT IDENTIFIER ::= { ifInvConformance 2 }
+
+
+ifInvCompliance MODULE-COMPLIANCE
+  STATUS  current
+
+  MODULE  -- this module
+      MANDATORY-GROUPS { ifInvStackGroup }
+
+      OBJECT       ifInvStackStatus
+      SYNTAX       INTEGER { active(1) }
+
+
+
+
+
+
+
+
+
+
+  MODULE  IF-MIB
+      MANDATORY-GROUPS { ifStackGroup2 }
+
+  ::= { ifInvCompliances 1 }
+
+
+ifInvStackGroup    OBJECT-GROUP
+  OBJECTS { ifInvStackStatus }
+  STATUS  current
+  ::= { ifInvGroups 1 }
+
+END

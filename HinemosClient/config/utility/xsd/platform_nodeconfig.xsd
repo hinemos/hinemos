@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_notify_relation.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="I">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="nodeConfig" type="NodeConfigList">
+		<xs:annotation>
+			<xs:documentation>構成情報取得設定のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
+	<xs:complexType name="NodeConfigList">
+		<xs:annotation>
+			<xs:documentation>構成情報取得設定のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="nodeConfigInfo" type="NodeConfigInfoType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>構成情報取得設定の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="NodeConfigInfoType">
+		<xs:annotation>
+			<xs:documentation>構成情報取得設定</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="settingId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>構成情報取得ID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="settingName" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>構成情報取得名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="facilityId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>対象のファシリティID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="scope" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>対象にしているスコープ名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="runInterval" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集実行間隔</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="calendarId" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カレンダID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="ownerRoleId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>オーナーロールID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="validFlg" type="xs:boolean" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集の有効フラグ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="settingItemList" type="SettingItemList" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集対象のコレクション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="customItemInfo" type="CustomItemInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>ユーザ任意の収集対象のコレクション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyId" type="NotifyRelationInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>通知IDのコレクション</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="SettingItemList">
+		<xs:annotation>
+			<xs:documentation>収集対象の項目情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="settingItemId" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						収集項目種別です。
+						以下いずれかの種別IDが入ります。（種別ID:種別名）{
+						OS:OS情報
+						HW_CPU:HW情報 - CPU情報
+						HW_MEMORY:HW情報 - メモリ情報
+						HW_NIC:HW情報 - NIC情報
+						HW_DISK:HW情報 - ディスク情報
+						HW_FILESYSTEM:HW情報 - ファイルシステム情報
+						HOSTNAME:ホスト名情報
+						NODE_VARIABLE:ノード変数情報
+						NETSTAT:ネットワーク接続情報
+						PROCESS:プロセス情報
+						PACKAGE:パッケージ情報
+						PRODUCT:個別導入製品情報
+						LICENSE:ライセンス情報
+						CUSTOM:ユーザ任意情報
+						}
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="CustomItemInfo">
+		<xs:annotation>
+			<xs:documentation>ユーザ任意のカスタム収集対象情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="settingCustomId" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カスタム収集対象ID</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="displayName" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>カスタム収集対象表示名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="command" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>実効コマンド</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="specifyUser" type="xs:boolean" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>実効ユーザの種別{true(エージェント起動ユーザ),false(ユーザを指定する)}</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="effectiveUser" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>実効ユーザ名</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="validFlg" type="xs:boolean" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>収集の有効フラグ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

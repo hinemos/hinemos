@@ -1,0 +1,942 @@
+         IPV6-MIB DEFINITIONS ::= BEGIN
+
+         IMPORTS
+             MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+             mib-2, Counter32, Unsigned32, Integer32,
+             Gauge32                               FROM SNMPv2-SMI
+             DisplayString, PhysAddress, TruthValue, TimeStamp,
+             VariablePointer, RowPointer           FROM SNMPv2-TC
+             MODULE-COMPLIANCE, OBJECT-GROUP,
+             NOTIFICATION-GROUP                    FROM SNMPv2-CONF
+             Ipv6IfIndex, Ipv6Address, Ipv6AddressPrefix,
+             Ipv6AddressIfIdentifier,
+             Ipv6IfIndexOrZero                     FROM IPV6-TC;
+
+         ipv6MIB MODULE-IDENTITY
+             LAST-UPDATED "9802052155Z"
+             ORGANIZATION "IETF IPv6 Working Group"
+             ::= { mib-2 55 }
+
+
+
+         ipv6MIBObjects OBJECT IDENTIFIER   ::= { ipv6MIB 1 }
+
+
+         ipv6Forwarding OBJECT-TYPE
+             SYNTAX      INTEGER {
+                          forwarding(1),    -- acting as a router
+
+                          notForwarding(2)  -- a router
+                         }
+              MAX-ACCESS read-write
+              STATUS     current
+
+
+
+
+
+              ::= { ipv6MIBObjects 1 }
+
+         ipv6DefaultHopLimit OBJECT-TYPE
+             SYNTAX      INTEGER(0..255)
+             MAX-ACCESS  read-write
+              STATUS     current
+             DEFVAL  { 64 }
+             ::= { ipv6MIBObjects 2 }
+
+        ipv6Interfaces OBJECT-TYPE
+             SYNTAX      Unsigned32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6MIBObjects 3 }
+
+        ipv6IfTableLastChange OBJECT-TYPE
+             SYNTAX      TimeStamp
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6MIBObjects 4 }
+
+
+
+        ipv6IfTable OBJECT-TYPE
+             SYNTAX     SEQUENCE OF Ipv6IfEntry
+             MAX-ACCESS not-accessible
+             STATUS     current
+             ::= { ipv6MIBObjects 5 }
+
+         ipv6IfEntry OBJECT-TYPE
+             SYNTAX     Ipv6IfEntry
+             MAX-ACCESS not-accessible
+             STATUS     current
+             INDEX   { ipv6IfIndex }
+             ::= { ipv6IfTable 1 }
+
+         Ipv6IfEntry ::= SEQUENCE {
+                 ipv6IfIndex              Ipv6IfIndex,
+                 ipv6IfDescr              DisplayString,
+                 ipv6IfLowerLayer         VariablePointer,
+                 ipv6IfEffectiveMtu       Unsigned32,
+                 ipv6IfReasmMaxSize       Unsigned32,
+                 ipv6IfIdentifier         Ipv6AddressIfIdentifier,
+                 ipv6IfIdentifierLength   INTEGER,
+                 ipv6IfPhysicalAddress    PhysAddress,
+                 ipv6IfAdminStatus        INTEGER,
+                 ipv6IfOperStatus         INTEGER,
+                 ipv6IfLastChange         TimeStamp
+             }
+
+         ipv6IfIndex OBJECT-TYPE
+             SYNTAX     Ipv6IfIndex
+             MAX-ACCESS not-accessible
+             STATUS     current
+             ::= { ipv6IfEntry 1 }
+
+         ipv6IfDescr OBJECT-TYPE
+             SYNTAX     DisplayString
+             MAX-ACCESS read-write
+             STATUS     current
+             ::= { ipv6IfEntry 2 }
+
+         ipv6IfLowerLayer OBJECT-TYPE
+
+
+
+
+
+            SYNTAX      VariablePointer
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { ipv6IfEntry 3 }
+
+         ipv6IfEffectiveMtu OBJECT-TYPE
+            SYNTAX      Unsigned32
+            UNITS       "octets"
+            MAX-ACCESS  read-only
+            STATUS      current
+         ::= { ipv6IfEntry 4 }
+
+         ipv6IfReasmMaxSize OBJECT-TYPE
+            SYNTAX      Unsigned32 (0..65535)
+            UNITS       "octets"
+            MAX-ACCESS  read-only
+            STATUS      current
+         ::= { ipv6IfEntry 5 }
+
+         ipv6IfIdentifier OBJECT-TYPE
+             SYNTAX      Ipv6AddressIfIdentifier
+             MAX-ACCESS  read-write
+             STATUS      current
+             ::= { ipv6IfEntry 6 }
+
+         ipv6IfIdentifierLength OBJECT-TYPE
+             SYNTAX      INTEGER (0..64)
+             UNITS       "bits"
+             MAX-ACCESS  read-write
+             STATUS      current
+             ::= { ipv6IfEntry 7 }
+
+         ipv6IfPhysicalAddress OBJECT-TYPE
+             SYNTAX      PhysAddress
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfEntry 8 }
+
+        ipv6IfAdminStatus OBJECT-TYPE
+            SYNTAX  INTEGER {
+                     up(1),       -- ready to pass packets
+                     down(2)
+                    }
+            MAX-ACCESS  read-write
+            STATUS      current
+            ::= { ipv6IfEntry 9 }
+
+        ipv6IfOperStatus OBJECT-TYPE
+            SYNTAX  INTEGER {
+                     up(1),             -- ready to pass packets
+
+                     down(2),
+
+                     noIfIdentifier(3), -- no interface identifier
+
+                     unknown(4),        -- reason
+
+                     notPresent(5)      -- missing
+                    }
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { ipv6IfEntry 10 }
+
+        ipv6IfLastChange OBJECT-TYPE
+            SYNTAX      TimeStamp
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { ipv6IfEntry 11 }
+
+
+         ipv6IfStatsTable OBJECT-TYPE
+             SYNTAX     SEQUENCE OF Ipv6IfStatsEntry
+             MAX-ACCESS not-accessible
+             STATUS     current
+             ::= { ipv6MIBObjects 6 }
+
+         ipv6IfStatsEntry OBJECT-TYPE
+             SYNTAX     Ipv6IfStatsEntry
+             MAX-ACCESS not-accessible
+             STATUS     current
+             AUGMENTS { ipv6IfEntry }
+             ::= { ipv6IfStatsTable 1 }
+
+         Ipv6IfStatsEntry ::= SEQUENCE {
+                 ipv6IfStatsInReceives
+                     Counter32,
+                 ipv6IfStatsInHdrErrors
+                     Counter32,
+                 ipv6IfStatsInTooBigErrors
+                     Counter32,
+                 ipv6IfStatsInNoRoutes
+                     Counter32,
+                 ipv6IfStatsInAddrErrors
+                     Counter32,
+                 ipv6IfStatsInUnknownProtos
+                     Counter32,
+                 ipv6IfStatsInTruncatedPkts
+                     Counter32,
+                 ipv6IfStatsInDiscards
+                     Counter32,
+                 ipv6IfStatsInDelivers
+                     Counter32,
+                 ipv6IfStatsOutForwDatagrams
+                     Counter32,
+                 ipv6IfStatsOutRequests
+                     Counter32,
+                 ipv6IfStatsOutDiscards
+
+
+
+
+
+                     Counter32,
+                 ipv6IfStatsOutFragOKs
+                     Counter32,
+                 ipv6IfStatsOutFragFails
+                     Counter32,
+                 ipv6IfStatsOutFragCreates
+                     Counter32,
+                 ipv6IfStatsReasmReqds
+                     Counter32,
+                 ipv6IfStatsReasmOKs
+                     Counter32,
+                 ipv6IfStatsReasmFails
+                     Counter32,
+                 ipv6IfStatsInMcastPkts
+                     Counter32,
+                 ipv6IfStatsOutMcastPkts
+                     Counter32
+             }
+
+         ipv6IfStatsInReceives OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 1 }
+
+         ipv6IfStatsInHdrErrors OBJECT-TYPE
+             SYNTAX     Counter32
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6IfStatsEntry 2 }
+
+         ipv6IfStatsInTooBigErrors OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+
+
+
+
+
+             ::= { ipv6IfStatsEntry 3 }
+
+         ipv6IfStatsInNoRoutes OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 4 }
+
+         ipv6IfStatsInAddrErrors OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 5 }
+
+         ipv6IfStatsInUnknownProtos OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 6 }
+
+
+         ipv6IfStatsInTruncatedPkts OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+
+
+
+
+
+             ::= { ipv6IfStatsEntry 7 }
+
+         ipv6IfStatsInDiscards OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 8 }
+
+         ipv6IfStatsInDelivers OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 9 }
+
+         ipv6IfStatsOutForwDatagrams OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 10 }
+
+         ipv6IfStatsOutRequests OBJECT-TYPE
+
+
+
+
+
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 11 }
+
+         ipv6IfStatsOutDiscards OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 12 }
+
+         ipv6IfStatsOutFragOKs OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 13 }
+
+         ipv6IfStatsOutFragFails OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 14 }
+
+         ipv6IfStatsOutFragCreates OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+
+
+
+
+
+             ::= { ipv6IfStatsEntry 15 }
+
+         ipv6IfStatsReasmReqds OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 16 }
+
+         ipv6IfStatsReasmOKs OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 17 }
+
+         ipv6IfStatsReasmFails OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 18 }
+
+
+
+
+
+         ipv6IfStatsInMcastPkts OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS     current
+             ::= { ipv6IfStatsEntry 19 }
+
+         ipv6IfStatsOutMcastPkts OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6IfStatsEntry 20 }
+
+
+
+
+
+         ipv6AddrPrefixTable OBJECT-TYPE
+             SYNTAX  SEQUENCE OF Ipv6AddrPrefixEntry
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { ipv6MIBObjects 7 }
+
+         ipv6AddrPrefixEntry OBJECT-TYPE
+             SYNTAX  Ipv6AddrPrefixEntry
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             INDEX   { ipv6IfIndex,
+                       ipv6AddrPrefix,
+                       ipv6AddrPrefixLength }
+             ::= { ipv6AddrPrefixTable 1 }
+
+         Ipv6AddrPrefixEntry ::= SEQUENCE {
+
+
+
+
+
+              ipv6AddrPrefix                     Ipv6AddressPrefix,
+              ipv6AddrPrefixLength               INTEGER (0..128),
+              ipv6AddrPrefixOnLinkFlag           TruthValue,
+              ipv6AddrPrefixAutonomousFlag       TruthValue,
+              ipv6AddrPrefixAdvPreferredLifetime Unsigned32,
+              ipv6AddrPrefixAdvValidLifetime     Unsigned32
+             }
+
+         ipv6AddrPrefix OBJECT-TYPE
+             SYNTAX      Ipv6AddressPrefix
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { ipv6AddrPrefixEntry 1 }
+
+         ipv6AddrPrefixLength OBJECT-TYPE
+             SYNTAX      INTEGER (0..128)
+             UNITS       "bits"
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { ipv6AddrPrefixEntry 2 }
+
+         ipv6AddrPrefixOnLinkFlag OBJECT-TYPE
+             SYNTAX      TruthValue
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6AddrPrefixEntry 3 }
+
+         ipv6AddrPrefixAutonomousFlag OBJECT-TYPE
+             SYNTAX      TruthValue
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6AddrPrefixEntry 4 }
+
+
+
+
+
+
+         ipv6AddrPrefixAdvPreferredLifetime OBJECT-TYPE
+             SYNTAX      Unsigned32
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6AddrPrefixEntry 5 }
+
+         ipv6AddrPrefixAdvValidLifetime OBJECT-TYPE
+             SYNTAX      Unsigned32
+             UNITS       "seconds"
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6AddrPrefixEntry 6 }
+
+
+
+
+         ipv6AddrTable OBJECT-TYPE
+            SYNTAX      SEQUENCE OF Ipv6AddrEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { ipv6MIBObjects 8 }
+
+
+
+
+
+
+         ipv6AddrEntry OBJECT-TYPE
+            SYNTAX      Ipv6AddrEntry
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            INDEX   { ipv6IfIndex, ipv6AddrAddress }
+            ::= { ipv6AddrTable 1 }
+
+         Ipv6AddrEntry ::=
+            SEQUENCE {
+                 ipv6AddrAddress        Ipv6Address,
+                 ipv6AddrPfxLength      INTEGER,
+                 ipv6AddrType           INTEGER,
+                 ipv6AddrAnycastFlag    TruthValue,
+                 ipv6AddrStatus         INTEGER
+                }
+
+         ipv6AddrAddress OBJECT-TYPE
+            SYNTAX      Ipv6Address
+            MAX-ACCESS  not-accessible
+            STATUS      current
+            ::= { ipv6AddrEntry 1 }
+
+         ipv6AddrPfxLength OBJECT-TYPE
+            SYNTAX      INTEGER(0..128)
+            UNITS       "bits"
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { ipv6AddrEntry 2 }
+
+         ipv6AddrType OBJECT-TYPE
+            SYNTAX      INTEGER {
+                 stateless(1),  -- autoconfiguration
+
+                 stateful(2),   -- configuration)
+
+
+
+
+
+                 unknown(3)     -- for some reason.
+               }
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { ipv6AddrEntry 3 }
+
+         ipv6AddrAnycastFlag OBJECT-TYPE
+             SYNTAX      TruthValue
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6AddrEntry 4 }
+
+         ipv6AddrStatus OBJECT-TYPE
+            SYNTAX      INTEGER {
+                     preferred(1),
+
+                     deprecated(2),
+
+                     invalid(3),
+
+                     inaccessible(4),
+
+                     unknown(5)   -- status can not be determined
+                    }
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { ipv6AddrEntry 5 }
+
+
+
+         ipv6RouteNumber OBJECT-TYPE
+             SYNTAX      Gauge32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6MIBObjects 9 }
+
+         ipv6DiscardedRoutes OBJECT-TYPE
+             SYNTAX      Counter32
+             MAX-ACCESS  read-only
+             STATUS      current
+             ::= { ipv6MIBObjects 10 }
+
+
+
+         ipv6RouteTable OBJECT-TYPE
+             SYNTAX     SEQUENCE OF Ipv6RouteEntry
+             MAX-ACCESS not-accessible
+             STATUS     current
+             ::= { ipv6MIBObjects 11 }
+
+         ipv6RouteEntry OBJECT-TYPE
+             SYNTAX     Ipv6RouteEntry
+             MAX-ACCESS not-accessible
+
+
+
+
+
+             STATUS     current
+             INDEX   { ipv6RouteDest,
+                       ipv6RoutePfxLength,
+                       ipv6RouteIndex }
+             ::= { ipv6RouteTable 1 }
+
+         Ipv6RouteEntry ::= SEQUENCE {
+                 ipv6RouteDest           Ipv6Address,
+                 ipv6RoutePfxLength      INTEGER,
+                 ipv6RouteIndex          Unsigned32,
+                 ipv6RouteIfIndex        Ipv6IfIndexOrZero,
+                 ipv6RouteNextHop        Ipv6Address,
+                 ipv6RouteType           INTEGER,
+                 ipv6RouteProtocol       INTEGER,
+                 ipv6RoutePolicy         Integer32,
+                 ipv6RouteAge            Unsigned32,
+                 ipv6RouteNextHopRDI     Unsigned32,
+                 ipv6RouteMetric         Unsigned32,
+                 ipv6RouteWeight         Unsigned32,
+                 ipv6RouteInfo           RowPointer,
+                 ipv6RouteValid          TruthValue
+             }
+
+         ipv6RouteDest OBJECT-TYPE
+             SYNTAX     Ipv6Address
+             MAX-ACCESS not-accessible
+             STATUS     current
+             ::= { ipv6RouteEntry 1 }
+
+         ipv6RoutePfxLength OBJECT-TYPE
+             SYNTAX     INTEGER(0..128)
+             UNITS      "bits"
+             MAX-ACCESS not-accessible
+             STATUS     current
+             ::= { ipv6RouteEntry 2 }
+
+         ipv6RouteIndex OBJECT-TYPE
+             SYNTAX     Unsigned32
+             MAX-ACCESS not-accessible
+
+
+
+
+
+             STATUS     current
+             ::= { ipv6RouteEntry 3 }
+
+         ipv6RouteIfIndex OBJECT-TYPE
+             SYNTAX     Ipv6IfIndexOrZero
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6RouteEntry 4 }
+
+         ipv6RouteNextHop OBJECT-TYPE
+             SYNTAX     Ipv6Address
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6RouteEntry 5 }
+
+         ipv6RouteType OBJECT-TYPE
+             SYNTAX     INTEGER {
+                other(1),     -- none of the following
+
+                discard(2),   -- to be discarded
+
+                local(3),     -- connected (sub-)network
+
+
+
+
+
+
+                remote(4)     -- destination
+
+             }
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6RouteEntry 6 }
+
+         ipv6RouteProtocol OBJECT-TYPE
+             SYNTAX     INTEGER {
+               other(1),   -- none of the following
+
+               local(2),   -- entries
+
+               netmgmt(3), -- static route
+
+               ndisc(4),   -- e.g., result of Redirect
+
+               rip(5),     -- RIPng
+               ospf(6),    -- Open Shortest Path First
+               bgp(7),     -- Border Gateway Protocol
+               idrp(8),    -- InterDomain Routing Protocol
+               igrp(9)     -- InterGateway Routing Protocol
+             }
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6RouteEntry 7 }
+
+         ipv6RoutePolicy OBJECT-TYPE
+             SYNTAX     Integer32
+             MAX-ACCESS read-only
+
+
+
+
+
+             STATUS     current
+             ::= { ipv6RouteEntry 8 }
+
+         ipv6RouteAge OBJECT-TYPE
+             SYNTAX     Unsigned32
+             UNITS      "seconds"
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6RouteEntry 9 }
+
+         ipv6RouteNextHopRDI OBJECT-TYPE
+             SYNTAX     Unsigned32
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6RouteEntry 10 }
+
+         ipv6RouteMetric OBJECT-TYPE
+             SYNTAX     Unsigned32
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6RouteEntry 11 }
+
+         ipv6RouteWeight OBJECT-TYPE
+             SYNTAX     Unsigned32
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6RouteEntry 12 }
+
+         ipv6RouteInfo OBJECT-TYPE
+             SYNTAX     RowPointer
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6RouteEntry 13 }
+
+         ipv6RouteValid OBJECT-TYPE
+             SYNTAX     TruthValue
+             MAX-ACCESS read-write
+             STATUS     current
+             DEFVAL  { true }
+             ::= { ipv6RouteEntry 14 }
+
+
+
+         ipv6NetToMediaTable OBJECT-TYPE
+             SYNTAX      SEQUENCE OF Ipv6NetToMediaEntry
+             MAX-ACCESS  not-accessible
+             STATUS      current
+             ::= { ipv6MIBObjects 12 }
+
+         ipv6NetToMediaEntry OBJECT-TYPE
+             SYNTAX     Ipv6NetToMediaEntry
+             MAX-ACCESS not-accessible
+             STATUS     current
+             INDEX   { ipv6IfIndex,
+                       ipv6NetToMediaNetAddress }
+             ::= { ipv6NetToMediaTable 1 }
+
+         Ipv6NetToMediaEntry ::= SEQUENCE {
+                 ipv6NetToMediaNetAddress
+                     Ipv6Address,
+                 ipv6NetToMediaPhysAddress
+
+
+
+
+
+                     PhysAddress,
+                 ipv6NetToMediaType
+                     INTEGER,
+                 ipv6IfNetToMediaState
+                     INTEGER,
+                 ipv6IfNetToMediaLastUpdated
+                     TimeStamp,
+                 ipv6NetToMediaValid
+                     TruthValue
+             }
+
+         ipv6NetToMediaNetAddress OBJECT-TYPE
+             SYNTAX     Ipv6Address
+             MAX-ACCESS not-accessible
+             STATUS     current
+             ::= { ipv6NetToMediaEntry 1 }
+
+         ipv6NetToMediaPhysAddress OBJECT-TYPE
+             SYNTAX     PhysAddress
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6NetToMediaEntry 2 }
+
+         ipv6NetToMediaType OBJECT-TYPE
+             SYNTAX     INTEGER {
+                         other(1),    -- none of the following
+                         dynamic(2),  -- dynamically resolved
+                         static(3),   -- statically configured
+                         local(4)     -- local interface
+                        }
+             MAX-ACCESS read-only
+             STATUS     current
+             ::= { ipv6NetToMediaEntry 3 }
+
+
+
+
+
+
+        ipv6IfNetToMediaState OBJECT-TYPE
+            SYNTAX      INTEGER {
+                     reachable(1), -- confirmed reachability
+
+                     stale(2),     -- unconfirmed reachability
+
+                     delay(3),     -- waiting for reachability
+
+                     probe(4),     -- actively probing
+
+                     invalid(5),   -- an invalidated mapping
+
+                     unknown(6)    -- state can not be determined
+                    }
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { ipv6NetToMediaEntry 4 }
+
+        ipv6IfNetToMediaLastUpdated OBJECT-TYPE
+            SYNTAX      TimeStamp
+            MAX-ACCESS  read-only
+            STATUS      current
+            ::= { ipv6NetToMediaEntry 5 }
+
+         ipv6NetToMediaValid OBJECT-TYPE
+             SYNTAX     TruthValue
+             MAX-ACCESS read-write
+             STATUS     current
+             DEFVAL  { true }
+             ::= { ipv6NetToMediaEntry 6 }
+
+
+
+        ipv6Notifications      OBJECT IDENTIFIER
+             ::= { ipv6MIB 2 }
+        ipv6NotificationPrefix OBJECT IDENTIFIER
+             ::= { ipv6Notifications 0 }
+
+        ipv6IfStateChange NOTIFICATION-TYPE
+             OBJECTS {
+                      ipv6IfDescr,
+                      ipv6IfOperStatus -- the new state of the If.
+                     }
+             STATUS             current
+
+             ::= { ipv6NotificationPrefix 1 }
+
+
+
+        ipv6Conformance OBJECT IDENTIFIER ::= { ipv6MIB 3 }
+
+        ipv6Compliances OBJECT IDENTIFIER ::= { ipv6Conformance 1 }
+        ipv6Groups      OBJECT IDENTIFIER ::= { ipv6Conformance 2 }
+
+
+
+
+
+
+
+        ipv6Compliance MODULE-COMPLIANCE
+            STATUS  current
+            MODULE  -- this module
+                MANDATORY-GROUPS { ipv6GeneralGroup,
+                                   ipv6NotificationGroup }
+                  OBJECT    ipv6Forwarding
+                    MIN-ACCESS  read-only
+                  OBJECT    ipv6DefaultHopLimit
+                    MIN-ACCESS  read-only
+                  OBJECT    ipv6IfDescr
+                    MIN-ACCESS  read-only
+                  OBJECT    ipv6IfIdentifier
+                    MIN-ACCESS  read-only
+                  OBJECT    ipv6IfIdentifierLength
+                    MIN-ACCESS  read-only
+
+                  OBJECT    ipv6IfAdminStatus
+                    MIN-ACCESS  read-only
+                  OBJECT    ipv6RouteValid
+                    MIN-ACCESS  read-only
+                  OBJECT    ipv6NetToMediaValid
+                    MIN-ACCESS  read-only
+            ::= { ipv6Compliances 1 }
+
+        ipv6GeneralGroup OBJECT-GROUP
+            OBJECTS { ipv6Forwarding,
+                      ipv6DefaultHopLimit,
+                      ipv6Interfaces,
+                      ipv6IfTableLastChange,
+                      ipv6IfDescr,
+                      ipv6IfLowerLayer,
+                      ipv6IfEffectiveMtu,
+                      ipv6IfReasmMaxSize,
+                      ipv6IfIdentifier,
+                      ipv6IfIdentifierLength,
+                      ipv6IfPhysicalAddress,
+                      ipv6IfAdminStatus,
+                      ipv6IfOperStatus,
+                      ipv6IfLastChange,
+                      ipv6IfStatsInReceives,
+                      ipv6IfStatsInHdrErrors,
+                      ipv6IfStatsInTooBigErrors,
+                      ipv6IfStatsInNoRoutes,
+                      ipv6IfStatsInAddrErrors,
+                      ipv6IfStatsInUnknownProtos,
+                      ipv6IfStatsInTruncatedPkts,
+                      ipv6IfStatsInDiscards,
+                      ipv6IfStatsInDelivers,
+                      ipv6IfStatsOutForwDatagrams,
+                      ipv6IfStatsOutRequests,
+                      ipv6IfStatsOutDiscards,
+                      ipv6IfStatsOutFragOKs,
+                      ipv6IfStatsOutFragFails,
+                      ipv6IfStatsOutFragCreates,
+                      ipv6IfStatsReasmReqds,
+                      ipv6IfStatsReasmOKs,
+                      ipv6IfStatsReasmFails,
+                      ipv6IfStatsInMcastPkts,
+                      ipv6IfStatsOutMcastPkts,
+                      ipv6AddrPrefixOnLinkFlag,
+                      ipv6AddrPrefixAutonomousFlag,
+                      ipv6AddrPrefixAdvPreferredLifetime,
+                      ipv6AddrPrefixAdvValidLifetime,
+                      ipv6AddrPfxLength,
+                      ipv6AddrType,
+                      ipv6AddrAnycastFlag,
+                      ipv6AddrStatus,
+                      ipv6RouteNumber,
+                      ipv6DiscardedRoutes,
+
+
+
+
+
+                      ipv6RouteIfIndex,
+                      ipv6RouteNextHop,
+                      ipv6RouteType,
+                      ipv6RouteProtocol,
+                      ipv6RoutePolicy,
+                      ipv6RouteAge,
+                      ipv6RouteNextHopRDI,
+                      ipv6RouteMetric,
+                      ipv6RouteWeight,
+                      ipv6RouteInfo,
+                      ipv6RouteValid,
+                      ipv6NetToMediaPhysAddress,
+                      ipv6NetToMediaType,
+                      ipv6IfNetToMediaState,
+                      ipv6IfNetToMediaLastUpdated,
+                      ipv6NetToMediaValid }
+            STATUS    current
+            ::= { ipv6Groups 1 }
+
+        ipv6NotificationGroup NOTIFICATION-GROUP
+            NOTIFICATIONS { ipv6IfStateChange }
+            STATUS    current
+
+
+            ::= { ipv6Groups 2 }
+
+         END

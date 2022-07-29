@@ -1,0 +1,176 @@
+   MPLS-LC-FR-STD-MIB DEFINITIONS ::= BEGIN
+   IMPORTS
+      MODULE-IDENTITY, OBJECT-TYPE
+         FROM SNMPv2-SMI
+      MODULE-COMPLIANCE, OBJECT-GROUP
+         FROM SNMPv2-CONF
+      RowStatus, StorageType
+         FROM SNMPv2-TC
+      mplsInterfaceIndex
+         FROM MPLS-LSR-STD-MIB
+      DLCI
+         FROM FRAME-RELAY-DTE-MIB
+      mplsStdMIB
+         FROM MPLS-TC-STD-MIB
+      ;
+   mplsLcFrStdMIB MODULE-IDENTITY
+
+      LAST-UPDATED "200601120000Z"  -- 12 January 2006
+      ORGANIZATION "Multiprotocol Label Switching (MPLS) Working Group"
+
+
+
+
+
+
+      ::= { mplsStdMIB 10 }
+
+
+   mplsLcFrStdNotifications OBJECT IDENTIFIER ::= { mplsLcFrStdMIB 0 }
+   mplsLcFrStdObjects       OBJECT IDENTIFIER ::= { mplsLcFrStdMIB 1 }
+   mplsLcFrStdConformance   OBJECT IDENTIFIER ::= { mplsLcFrStdMIB 2 }
+
+   mplsLcFrStdInterfaceConfTable  OBJECT-TYPE
+      SYNTAX        SEQUENCE OF MplsLcFrStdInterfaceConfEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      ::= { mplsLcFrStdObjects 1 }
+
+   mplsLcFrStdInterfaceConfEntry OBJECT-TYPE
+      SYNTAX        MplsLcFrStdInterfaceConfEntry
+      MAX-ACCESS    not-accessible
+      STATUS        current
+      INDEX       { mplsInterfaceIndex }
+         ::= { mplsLcFrStdInterfaceConfTable 1 }
+
+   MplsLcFrStdInterfaceConfEntry ::= SEQUENCE {
+      mplsLcFrStdTrafficMinDlci           DLCI,
+      mplsLcFrStdTrafficMaxDlci           DLCI,
+      mplsLcFrStdCtrlMinDlci              DLCI,
+      mplsLcFrStdCtrlMaxDlci              DLCI,
+      mplsLcFrStdInterfaceConfRowStatus   RowStatus,
+
+
+
+
+
+      mplsLcFrStdInterfaceConfStorageType StorageType
+   }
+
+   mplsLcFrStdTrafficMinDlci OBJECT-TYPE
+      SYNTAX        DLCI
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { mplsLcFrStdInterfaceConfEntry 1 }
+
+   mplsLcFrStdTrafficMaxDlci OBJECT-TYPE
+      SYNTAX        DLCI
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { mplsLcFrStdInterfaceConfEntry 2 }
+
+   mplsLcFrStdCtrlMinDlci OBJECT-TYPE
+      SYNTAX        DLCI
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { mplsLcFrStdInterfaceConfEntry 3 }
+
+   mplsLcFrStdCtrlMaxDlci OBJECT-TYPE
+      SYNTAX        DLCI
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { mplsLcFrStdInterfaceConfEntry 4 }
+
+   mplsLcFrStdInterfaceConfRowStatus OBJECT-TYPE
+      SYNTAX        RowStatus
+      MAX-ACCESS    read-create
+      STATUS        current
+      ::= { mplsLcFrStdInterfaceConfEntry 5 }
+
+    mplsLcFrStdInterfaceConfStorageType OBJECT-TYPE
+      SYNTAX        StorageType
+      MAX-ACCESS    read-create
+      STATUS        current
+      DEFVAL { nonVolatile }
+      ::= { mplsLcFrStdInterfaceConfEntry 6 }
+
+
+
+   mplsLcFrStdCompliances
+      OBJECT IDENTIFIER ::= { mplsLcFrStdConformance 1 }
+
+   mplsLcFrStdGroups
+      OBJECT IDENTIFIER ::= { mplsLcFrStdConformance 2 }
+
+
+
+   mplsLcFrStdModuleFullCompliance MODULE-COMPLIANCE
+      STATUS current
+
+
+
+
+
+      MODULE -- this module
+         MANDATORY-GROUPS {
+            mplsLcFrStdIfGroup
+         }
+
+         OBJECT       mplsLcFrStdInterfaceConfRowStatus
+         SYNTAX       RowStatus { active(1), notInService(2) }
+         WRITE-SYNTAX RowStatus { active(1), notInService(2),
+                                  createAndGo(4), destroy(6)
+                                }
+
+      ::= { mplsLcFrStdCompliances 1 }
+
+
+
+   mplsLcFrStdModuleReadOnlyCompliance MODULE-COMPLIANCE
+      STATUS current
+
+      MODULE -- this module
+         MANDATORY-GROUPS {
+            mplsLcFrStdIfGroup
+         }
+
+
+         OBJECT     mplsLcFrStdTrafficMinDlci
+         MIN-ACCESS  read-only
+
+         OBJECT     mplsLcFrStdTrafficMaxDlci
+         MIN-ACCESS  read-only
+
+         OBJECT      mplsLcFrStdCtrlMinDlci
+         MIN-ACCESS  read-only
+
+
+
+
+
+         OBJECT      mplsLcFrStdCtrlMaxDlci
+         MIN-ACCESS  read-only
+
+         OBJECT       mplsLcFrStdInterfaceConfRowStatus
+         SYNTAX       RowStatus { active(1) }
+         MIN-ACCESS   read-only
+
+         OBJECT      mplsLcFrStdInterfaceConfStorageType
+         MIN-ACCESS  read-only
+      ::= { mplsLcFrStdCompliances 2 }
+
+
+   mplsLcFrStdIfGroup OBJECT-GROUP
+      OBJECTS {
+           mplsLcFrStdTrafficMinDlci,
+           mplsLcFrStdTrafficMaxDlci,
+           mplsLcFrStdCtrlMinDlci,
+           mplsLcFrStdCtrlMaxDlci,
+           mplsLcFrStdInterfaceConfRowStatus,
+           mplsLcFrStdInterfaceConfStorageType
+       }
+      STATUS  current
+
+      ::= { mplsLcFrStdGroups 1 }
+
+   END

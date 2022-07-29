@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd" />
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="H">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="transfer" type="TransferType">
+		<xs:annotation>
+			<xs:documentation>
+				転送定義一覧のルートエレメントです。
+			</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
+	<xs:complexType name="TransferType">
+		<xs:annotation>
+			<xs:documentation>転送定義一覧のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="transferInfo" type="TransferInfoType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						転送定義の配列です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="TransferInfoType">
+		<xs:annotation>
+			<xs:documentation>転送定義のデータ型です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="transferDestProp" type="TransferDestProp" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>転送先プロパティ定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+
+		<xs:attribute name="transferId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>転送IDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="ownerRoleId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>オーナーロールIDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="description" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>この設定の説明です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		
+		<xs:attribute name="dataType" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>データタイプです。（ジョブ履歴(0)・イベント履歴(1)・収集データ（数値）(2)・収集データ（文字列）(3)）</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="destTypeID" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>転送先タイプです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="transType" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>転送タイプです。(リアルタイムで転送("REALTIME")・一定間隔で転送("BATCH")・保存期間を経て転送("DELAY"))</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="interval" type="xs:int" use="optional">
+			<xs:annotation>
+				<xs:documentation>転送間隔です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="calendarId" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>カレンダーIDです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="regDate" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>作成日時です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="regUser" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>作成ユーザです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="updateDate" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>更新日時です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="updateUser" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>更新ユーザです。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+
+		<xs:attribute name="validFlg" type="xs:boolean" use="required">
+			<xs:annotation>
+				<xs:documentation>有効フラグです。（有効(True)・無効(False)）</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		
+	</xs:complexType>
+
+
+		<!-- 転送先プロパティのデータ型 -->
+	<xs:complexType name="TransferDestProp">
+		<xs:annotation>
+			<xs:documentation>転送先プロパティ情報です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:attribute name="name" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>転送先プロパティ名です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+
+		<xs:attribute name="value" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>転送先プロパティ値です。</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>	
+	</xs:complexType>
+
+</xs:schema>

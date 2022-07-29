@@ -1,0 +1,2012 @@
+DIFFSERV-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+    Unsigned32, Counter64, MODULE-IDENTITY, OBJECT-TYPE,
+    OBJECT-IDENTITY, zeroDotZero, mib-2
+         FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION, RowStatus, RowPointer,
+    StorageType, AutonomousType
+         FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP
+         FROM SNMPv2-CONF
+    ifIndex, InterfaceIndexOrZero
+        FROM IF-MIB
+    InetAddressType, InetAddress, InetAddressPrefixLength,
+    InetPortNumber
+        FROM INET-ADDRESS-MIB
+    BurstSize
+        FROM INTEGRATED-SERVICES-MIB
+    Dscp, DscpOrAny
+        FROM DIFFSERV-DSCP-TC;
+
+diffServMib MODULE-IDENTITY
+    LAST-UPDATED "200202070000Z"
+    ORGANIZATION "IETF Differentiated Services WG"
+    ::= { mib-2 97 }
+
+diffServMIBObjects     OBJECT IDENTIFIER ::= { diffServMib 1 }
+diffServMIBConformance OBJECT IDENTIFIER ::= { diffServMib 2 }
+diffServMIBAdmin       OBJECT IDENTIFIER ::= { diffServMib 3 }
+
+IndexInteger ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS   current
+    SYNTAX   Unsigned32 (1..4294967295)
+
+IndexIntegerNextFree ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS   current
+    SYNTAX   Unsigned32 (0..4294967295)
+
+IfDirection ::= TEXTUAL-CONVENTION
+    STATUS current
+    SYNTAX  INTEGER {
+                inbound(1),     -- ingress interface
+                outbound(2)     -- egress interface
+}
+
+
+diffServDataPath       OBJECT IDENTIFIER ::= { diffServMIBObjects 1 }
+
+
+
+diffServDataPathTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServDataPathEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+
+
+
+
+
+    ::= { diffServDataPath 1 }
+
+diffServDataPathEntry OBJECT-TYPE
+    SYNTAX       DiffServDataPathEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { ifIndex, diffServDataPathIfDirection }
+    ::= { diffServDataPathTable 1 }
+
+DiffServDataPathEntry ::= SEQUENCE  {
+    diffServDataPathIfDirection    IfDirection,
+    diffServDataPathStart          RowPointer,
+    diffServDataPathStorage        StorageType,
+    diffServDataPathStatus         RowStatus
+}
+
+diffServDataPathIfDirection OBJECT-TYPE
+    SYNTAX       IfDirection
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServDataPathEntry 1 }
+
+diffServDataPathStart OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+
+
+
+
+
+    ::= { diffServDataPathEntry 2 }
+
+diffServDataPathStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServDataPathEntry 3 }
+
+diffServDataPathStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServDataPathEntry 4 }
+
+
+diffServClassifier     OBJECT IDENTIFIER ::= { diffServMIBObjects 2 }
+
+
+
+
+
+
+
+
+
+diffServClfrNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServClassifier 1 }
+
+diffServClfrTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServClfrEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServClassifier 2 }
+
+diffServClfrEntry OBJECT-TYPE
+    SYNTAX       DiffServClfrEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServClfrId }
+    ::= { diffServClfrTable 1 }
+
+DiffServClfrEntry ::= SEQUENCE  {
+    diffServClfrId              IndexInteger,
+    diffServClfrStorage         StorageType,
+    diffServClfrStatus          RowStatus
+}
+
+diffServClfrId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServClfrEntry 1 }
+
+diffServClfrStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServClfrEntry 2 }
+
+diffServClfrStatus OBJECT-TYPE
+
+
+
+
+
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServClfrEntry 3 }
+
+diffServClfrElementNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServClassifier 3 }
+
+diffServClfrElementTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServClfrElementEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+
+
+
+
+
+    ::= { diffServClassifier 4 }
+
+diffServClfrElementEntry OBJECT-TYPE
+    SYNTAX       DiffServClfrElementEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServClfrId, diffServClfrElementId }
+    ::= { diffServClfrElementTable 1 }
+
+DiffServClfrElementEntry ::= SEQUENCE  {
+    diffServClfrElementId          IndexInteger,
+    diffServClfrElementPrecedence  Unsigned32,
+    diffServClfrElementNext        RowPointer,
+    diffServClfrElementSpecific    RowPointer,
+    diffServClfrElementStorage     StorageType,
+    diffServClfrElementStatus      RowStatus
+}
+
+diffServClfrElementId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServClfrElementEntry 1 }
+
+diffServClfrElementPrecedence OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServClfrElementEntry 2 }
+
+diffServClfrElementNext OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+
+    ::= { diffServClfrElementEntry 3 }
+
+diffServClfrElementSpecific OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServClfrElementEntry 4 }
+
+diffServClfrElementStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServClfrElementEntry 5 }
+
+diffServClfrElementStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServClfrElementEntry 6 }
+
+
+diffServMultiFieldClfrNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServClassifier 5 }
+
+diffServMultiFieldClfrTable OBJECT-TYPE
+    SYNTAX   SEQUENCE OF DiffServMultiFieldClfrEntry
+    MAX-ACCESS   not-accessible
+    STATUS   current
+    ::= { diffServClassifier 6 }
+
+diffServMultiFieldClfrEntry OBJECT-TYPE
+    SYNTAX       DiffServMultiFieldClfrEntry
+    MAX-ACCESS   not-accessible
+    STATUS   current
+    INDEX { diffServMultiFieldClfrId }
+    ::= { diffServMultiFieldClfrTable 1 }
+
+DiffServMultiFieldClfrEntry ::= SEQUENCE {
+    diffServMultiFieldClfrId           IndexInteger,
+    diffServMultiFieldClfrAddrType     InetAddressType,
+    diffServMultiFieldClfrDstAddr      InetAddress,
+    diffServMultiFieldClfrDstPrefixLength InetAddressPrefixLength,
+    diffServMultiFieldClfrSrcAddr      InetAddress,
+    diffServMultiFieldClfrSrcPrefixLength InetAddressPrefixLength,
+    diffServMultiFieldClfrDscp         DscpOrAny,
+    diffServMultiFieldClfrFlowId       Unsigned32,
+    diffServMultiFieldClfrProtocol     Unsigned32,
+    diffServMultiFieldClfrDstL4PortMin InetPortNumber,
+    diffServMultiFieldClfrDstL4PortMax InetPortNumber,
+    diffServMultiFieldClfrSrcL4PortMin InetPortNumber,
+    diffServMultiFieldClfrSrcL4PortMax InetPortNumber,
+    diffServMultiFieldClfrStorage      StorageType,
+    diffServMultiFieldClfrStatus       RowStatus
+}
+
+diffServMultiFieldClfrId OBJECT-TYPE
+    SYNTAX         IndexInteger
+    MAX-ACCESS     not-accessible
+    STATUS     current
+
+    ::= { diffServMultiFieldClfrEntry 1 }
+
+diffServMultiFieldClfrAddrType OBJECT-TYPE
+    SYNTAX         InetAddressType
+    MAX-ACCESS     read-create
+    STATUS         current
+    ::= { diffServMultiFieldClfrEntry 2 }
+
+diffServMultiFieldClfrDstAddr OBJECT-TYPE
+    SYNTAX         InetAddress
+    MAX-ACCESS     read-create
+    STATUS         current
+    ::= { diffServMultiFieldClfrEntry 3 }
+
+diffServMultiFieldClfrDstPrefixLength OBJECT-TYPE
+    SYNTAX         InetAddressPrefixLength
+    UNITS          "bits"
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL         { 0 }
+    ::= { diffServMultiFieldClfrEntry 4 }
+
+diffServMultiFieldClfrSrcAddr OBJECT-TYPE
+    SYNTAX         InetAddress
+    MAX-ACCESS     read-create
+    STATUS         current
+    ::= { diffServMultiFieldClfrEntry 5 }
+
+diffServMultiFieldClfrSrcPrefixLength OBJECT-TYPE
+    SYNTAX         InetAddressPrefixLength
+    UNITS          "bits"
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL         { 0 }
+    ::= { diffServMultiFieldClfrEntry 6 }
+
+diffServMultiFieldClfrDscp OBJECT-TYPE
+    SYNTAX         DscpOrAny
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL         { -1 }
+    ::= { diffServMultiFieldClfrEntry 7 }
+
+diffServMultiFieldClfrFlowId OBJECT-TYPE
+    SYNTAX         Unsigned32 (0..1048575)
+    MAX-ACCESS     read-create
+    STATUS         current
+    ::= { diffServMultiFieldClfrEntry 8 }
+
+diffServMultiFieldClfrProtocol OBJECT-TYPE
+    SYNTAX         Unsigned32 (0..255)
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL         { 255 }
+    ::= { diffServMultiFieldClfrEntry 9 }
+
+diffServMultiFieldClfrDstL4PortMin OBJECT-TYPE
+    SYNTAX         InetPortNumber
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL         { 0 }
+
+
+
+
+
+    ::= { diffServMultiFieldClfrEntry 10 }
+
+diffServMultiFieldClfrDstL4PortMax OBJECT-TYPE
+    SYNTAX         InetPortNumber
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL         { 65535 }
+    ::= { diffServMultiFieldClfrEntry 11 }
+
+diffServMultiFieldClfrSrcL4PortMin OBJECT-TYPE
+    SYNTAX         InetPortNumber
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL         { 0 }
+    ::= { diffServMultiFieldClfrEntry 12 }
+
+diffServMultiFieldClfrSrcL4PortMax OBJECT-TYPE
+    SYNTAX         InetPortNumber
+    MAX-ACCESS     read-create
+    STATUS         current
+    DEFVAL         { 65535 }
+    ::= { diffServMultiFieldClfrEntry 13 }
+
+diffServMultiFieldClfrStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServMultiFieldClfrEntry 14 }
+
+diffServMultiFieldClfrStatus OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { diffServMultiFieldClfrEntry 15 }
+
+
+diffServMeter          OBJECT IDENTIFIER ::= { diffServMIBObjects 3 }
+
+
+
+
+
+
+
+
+
+
+
+
+diffServMeterNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServMeter 1 }
+
+diffServMeterTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServMeterEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServMeter 2 }
+
+diffServMeterEntry OBJECT-TYPE
+    SYNTAX       DiffServMeterEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServMeterId }
+    ::= { diffServMeterTable 1 }
+
+DiffServMeterEntry ::= SEQUENCE  {
+    diffServMeterId                IndexInteger,
+    diffServMeterSucceedNext       RowPointer,
+    diffServMeterFailNext          RowPointer,
+    diffServMeterSpecific          RowPointer,
+    diffServMeterStorage           StorageType,
+    diffServMeterStatus            RowStatus
+}
+
+
+
+
+
+
+diffServMeterId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServMeterEntry 1 }
+
+diffServMeterSucceedNext OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { zeroDotZero }
+    ::= { diffServMeterEntry 2 }
+
+diffServMeterFailNext OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { zeroDotZero }
+    ::= { diffServMeterEntry 3 }
+
+diffServMeterSpecific OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServMeterEntry 4 }
+
+diffServMeterStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServMeterEntry 5 }
+
+diffServMeterStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+
+
+
+
+
+    STATUS       current
+    ::= { diffServMeterEntry 6 }
+
+
+diffServTBParam        OBJECT IDENTIFIER ::= { diffServMIBObjects 4 }
+
+
+
+diffServTBParamNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServTBParam 1 }
+
+diffServTBParamTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServTBParamEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServTBParam 2 }
+
+diffServTBParamEntry OBJECT-TYPE
+    SYNTAX       DiffServTBParamEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+
+
+
+
+
+    INDEX { diffServTBParamId }
+    ::= { diffServTBParamTable 1 }
+
+DiffServTBParamEntry ::= SEQUENCE  {
+    diffServTBParamId              IndexInteger,
+    diffServTBParamType            AutonomousType,
+    diffServTBParamRate            Unsigned32,
+    diffServTBParamBurstSize       BurstSize,
+    diffServTBParamInterval        Unsigned32,
+    diffServTBParamStorage         StorageType,
+    diffServTBParamStatus          RowStatus
+}
+
+diffServTBParamId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServTBParamEntry 1 }
+
+diffServTBParamType OBJECT-TYPE
+    SYNTAX       AutonomousType
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServTBParamEntry 2 }
+
+diffServTBParamRate OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    UNITS        "kilobits per second"
+    MAX-ACCESS   read-create
+    STATUS       current
+
+
+
+
+
+    ::= { diffServTBParamEntry 3 }
+
+diffServTBParamBurstSize OBJECT-TYPE
+    SYNTAX       BurstSize
+    UNITS        "Bytes"
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServTBParamEntry 4 }
+
+diffServTBParamInterval OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..4294967295)
+    UNITS        "microseconds"
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServTBParamEntry 5 }
+
+diffServTBParamStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServTBParamEntry 6 }
+
+
+
+
+
+diffServTBParamStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServTBParamEntry 7 }
+
+
+diffServTBMeters  OBJECT IDENTIFIER ::= { diffServMIBAdmin 1 }
+
+diffServTBParamSimpleTokenBucket OBJECT-IDENTITY
+    STATUS       current
+    ::= { diffServTBMeters 1 }
+
+diffServTBParamAvgRate OBJECT-IDENTITY
+    STATUS       current
+    ::= { diffServTBMeters 2 }
+
+diffServTBParamSrTCMBlind OBJECT-IDENTITY
+    STATUS       current
+    ::= { diffServTBMeters 3 }
+
+diffServTBParamSrTCMAware OBJECT-IDENTITY
+    STATUS       current
+
+
+
+
+
+    ::= { diffServTBMeters 4 }
+
+diffServTBParamTrTCMBlind OBJECT-IDENTITY
+    STATUS       current
+    ::= { diffServTBMeters 5 }
+
+diffServTBParamTrTCMAware OBJECT-IDENTITY
+    STATUS       current
+    ::= { diffServTBMeters 6 }
+
+diffServTBParamTswTCM OBJECT-IDENTITY
+    STATUS       current
+    ::= { diffServTBMeters 7 }
+
+
+diffServAction         OBJECT IDENTIFIER ::= { diffServMIBObjects 5 }
+
+
+diffServActionNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServAction 1 }
+
+
+
+
+
+diffServActionTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServActionEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServAction 2 }
+
+diffServActionEntry OBJECT-TYPE
+    SYNTAX       DiffServActionEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServActionId }
+    ::= { diffServActionTable 1 }
+
+DiffServActionEntry ::= SEQUENCE  {
+    diffServActionId                IndexInteger,
+    diffServActionInterface         InterfaceIndexOrZero,
+    diffServActionNext              RowPointer,
+    diffServActionSpecific          RowPointer,
+    diffServActionStorage           StorageType,
+    diffServActionStatus            RowStatus
+}
+
+diffServActionId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServActionEntry 1 }
+
+diffServActionInterface  OBJECT-TYPE
+     SYNTAX        InterfaceIndexOrZero
+     MAX-ACCESS    read-create
+     STATUS        current
+
+
+
+
+
+     ::= { diffServActionEntry 2 }
+
+diffServActionNext OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { zeroDotZero }
+    ::= { diffServActionEntry 3 }
+
+diffServActionSpecific OBJECT-TYPE
+
+
+
+
+
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServActionEntry 4 }
+
+diffServActionStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServActionEntry 5 }
+
+diffServActionStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServActionEntry 6 }
+
+
+
+
+
+
+
+diffServDscpMarkActTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServDscpMarkActEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServAction 3 }
+
+diffServDscpMarkActEntry OBJECT-TYPE
+    SYNTAX       DiffServDscpMarkActEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServDscpMarkActDscp }
+    ::= { diffServDscpMarkActTable 1 }
+
+DiffServDscpMarkActEntry ::= SEQUENCE  {
+    diffServDscpMarkActDscp          Dscp
+}
+
+diffServDscpMarkActDscp OBJECT-TYPE
+    SYNTAX       Dscp
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServDscpMarkActEntry 1 }
+
+
+
+
+
+
+
+diffServCountActNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServAction 4 }
+
+diffServCountActTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServCountActEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServAction 5 }
+
+diffServCountActEntry OBJECT-TYPE
+    SYNTAX       DiffServCountActEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServCountActId }
+    ::= { diffServCountActTable 1 }
+
+DiffServCountActEntry ::= SEQUENCE  {
+    diffServCountActId           IndexInteger,
+    diffServCountActOctets       Counter64,
+    diffServCountActPkts         Counter64,
+    diffServCountActStorage      StorageType,
+    diffServCountActStatus       RowStatus
+}
+
+diffServCountActId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServCountActEntry 1 }
+
+diffServCountActOctets OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServCountActEntry 2 }
+
+diffServCountActPkts OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServCountActEntry 3 }
+
+diffServCountActStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServCountActEntry 4 }
+
+diffServCountActStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServCountActEntry 5 }
+
+
+diffServAlgDrop        OBJECT IDENTIFIER ::= { diffServMIBObjects 6 }
+
+diffServAlgDropNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServAlgDrop 1 }
+
+diffServAlgDropTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServAlgDropEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServAlgDrop 2 }
+
+diffServAlgDropEntry OBJECT-TYPE
+    SYNTAX       DiffServAlgDropEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServAlgDropId }
+    ::= { diffServAlgDropTable 1 }
+
+DiffServAlgDropEntry ::= SEQUENCE  {
+    diffServAlgDropId               IndexInteger,
+    diffServAlgDropType             INTEGER,
+    diffServAlgDropNext             RowPointer,
+    diffServAlgDropQMeasure         RowPointer,
+    diffServAlgDropQThreshold       Unsigned32,
+    diffServAlgDropSpecific         RowPointer,
+    diffServAlgDropOctets           Counter64,
+
+
+
+
+
+    diffServAlgDropPkts             Counter64,
+    diffServAlgRandomDropOctets     Counter64,
+    diffServAlgRandomDropPkts       Counter64,
+    diffServAlgDropStorage          StorageType,
+    diffServAlgDropStatus           RowStatus
+}
+
+diffServAlgDropId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServAlgDropEntry 1 }
+
+diffServAlgDropType OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     other(1),
+                     tailDrop(2),
+                     headDrop(3),
+                     randomDrop(4),
+                     alwaysDrop(5)
+}
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServAlgDropEntry 2 }
+
+diffServAlgDropNext OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServAlgDropEntry 3 }
+
+diffServAlgDropQMeasure OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServAlgDropEntry 4 }
+
+diffServAlgDropQThreshold OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    UNITS        "Bytes"
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServAlgDropEntry 5 }
+
+diffServAlgDropSpecific OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+
+
+
+
+
+    ::= { diffServAlgDropEntry 6 }
+
+diffServAlgDropOctets OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServAlgDropEntry 7 }
+
+diffServAlgDropPkts OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServAlgDropEntry 8 }
+
+diffServAlgRandomDropOctets OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServAlgDropEntry 9 }
+
+diffServAlgRandomDropPkts OBJECT-TYPE
+    SYNTAX       Counter64
+    MAX-ACCESS   read-only
+
+
+
+
+
+    STATUS       current
+    ::= { diffServAlgDropEntry 10 }
+
+diffServAlgDropStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServAlgDropEntry 11 }
+
+diffServAlgDropStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServAlgDropEntry 12 }
+
+
+diffServRandomDropNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServAlgDrop 3 }
+
+
+
+
+
+
+diffServRandomDropTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServRandomDropEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServAlgDrop 4 }
+
+diffServRandomDropEntry OBJECT-TYPE
+    SYNTAX       DiffServRandomDropEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServRandomDropId }
+    ::= { diffServRandomDropTable 1 }
+
+DiffServRandomDropEntry ::= SEQUENCE  {
+    diffServRandomDropId               IndexInteger,
+    diffServRandomDropMinThreshBytes   Unsigned32,
+    diffServRandomDropMinThreshPkts    Unsigned32,
+    diffServRandomDropMaxThreshBytes   Unsigned32,
+    diffServRandomDropMaxThreshPkts    Unsigned32,
+    diffServRandomDropProbMax          Unsigned32,
+    diffServRandomDropWeight           Unsigned32,
+    diffServRandomDropSamplingRate     Unsigned32,
+    diffServRandomDropStorage          StorageType,
+    diffServRandomDropStatus           RowStatus
+}
+
+diffServRandomDropId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServRandomDropEntry 1 }
+
+diffServRandomDropMinThreshBytes OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    UNITS        "bytes"
+    MAX-ACCESS   read-create
+    STATUS       current
+
+
+
+
+
+    ::= { diffServRandomDropEntry 2 }
+
+diffServRandomDropMinThreshPkts OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    UNITS        "packets"
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServRandomDropEntry 3 }
+
+diffServRandomDropMaxThreshBytes OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    UNITS        "bytes"
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServRandomDropEntry 4 }
+
+diffServRandomDropMaxThreshPkts OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    UNITS        "packets"
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServRandomDropEntry 5 }
+
+diffServRandomDropProbMax OBJECT-TYPE
+
+
+
+
+
+    SYNTAX       Unsigned32 (0..1000)
+    MAX-ACCESS   read-create
+    STATUS       current
+   ::= { diffServRandomDropEntry 6 }
+
+diffServRandomDropWeight OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..65536)
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServRandomDropEntry 7 }
+
+diffServRandomDropSamplingRate OBJECT-TYPE
+    SYNTAX       Unsigned32 (0..1000000)
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServRandomDropEntry 8 }
+
+diffServRandomDropStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+
+
+
+
+
+    DEFVAL { nonVolatile }
+    ::= { diffServRandomDropEntry 9 }
+
+diffServRandomDropStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServRandomDropEntry 10 }
+
+
+diffServQueue          OBJECT IDENTIFIER ::= { diffServMIBObjects 7 }
+
+
+diffServQNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+
+
+
+
+
+    STATUS       current
+    ::= { diffServQueue 1 }
+
+diffServQTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServQEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServQueue 2 }
+
+diffServQEntry OBJECT-TYPE
+    SYNTAX       DiffServQEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServQId }
+    ::= { diffServQTable 1 }
+
+DiffServQEntry ::= SEQUENCE  {
+    diffServQId                      IndexInteger,
+    diffServQNext                    RowPointer,
+    diffServQMinRate                 RowPointer,
+    diffServQMaxRate                 RowPointer,
+    diffServQStorage                 StorageType,
+    diffServQStatus                  RowStatus
+}
+
+diffServQId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServQEntry 1 }
+
+diffServQNext OBJECT-TYPE
+
+
+
+
+
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServQEntry 2 }
+
+diffServQMinRate OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServQEntry 3 }
+
+diffServQMaxRate OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServQEntry 4 }
+
+diffServQStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServQEntry 5 }
+
+diffServQStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServQEntry 6 }
+
+
+diffServScheduler      OBJECT IDENTIFIER ::= { diffServMIBObjects 8 }
+
+
+
+
+
+
+
+diffServSchedulerNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServScheduler 1 }
+
+diffServSchedulerTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServSchedulerEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServScheduler 2 }
+
+diffServSchedulerEntry OBJECT-TYPE
+    SYNTAX       DiffServSchedulerEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServSchedulerId }
+    ::= { diffServSchedulerTable 1 }
+
+DiffServSchedulerEntry ::= SEQUENCE  {
+    diffServSchedulerId                   IndexInteger,
+    diffServSchedulerNext                 RowPointer,
+    diffServSchedulerMethod               AutonomousType,
+    diffServSchedulerMinRate              RowPointer,
+    diffServSchedulerMaxRate              RowPointer,
+    diffServSchedulerStorage              StorageType,
+    diffServSchedulerStatus               RowStatus
+}
+
+diffServSchedulerId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+
+
+
+
+
+    ::= { diffServSchedulerEntry 1 }
+
+diffServSchedulerNext OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL       { zeroDotZero }
+    ::= { diffServSchedulerEntry 2 }
+
+diffServSchedulerMethod OBJECT-TYPE
+    SYNTAX       AutonomousType
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServSchedulerEntry 3 }
+
+diffServSchedulerMinRate OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { zeroDotZero }
+    ::= { diffServSchedulerEntry 4 }
+
+diffServSchedulerMaxRate OBJECT-TYPE
+    SYNTAX       RowPointer
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL      { zeroDotZero }
+    ::= { diffServSchedulerEntry 5 }
+
+diffServSchedulerStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+
+
+
+
+
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServSchedulerEntry 6 }
+
+diffServSchedulerStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServSchedulerEntry 7 }
+
+
+diffServSchedulers  OBJECT IDENTIFIER ::= { diffServMIBAdmin 2 }
+
+diffServSchedulerPriority OBJECT-IDENTITY
+    STATUS       current
+    ::= { diffServSchedulers 1 }
+
+diffServSchedulerWRR OBJECT-IDENTITY
+    STATUS       current
+
+
+
+
+
+    ::= { diffServSchedulers 2 }
+
+diffServSchedulerWFQ OBJECT-IDENTITY
+    STATUS       current
+    ::= { diffServSchedulers 3 }
+
+
+diffServMinRateNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+
+
+
+
+
+    ::= { diffServScheduler 3 }
+
+diffServMinRateTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServMinRateEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServScheduler 4 }
+
+diffServMinRateEntry OBJECT-TYPE
+    SYNTAX       DiffServMinRateEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServMinRateId }
+    ::= { diffServMinRateTable 1 }
+
+DiffServMinRateEntry ::= SEQUENCE  {
+    diffServMinRateId              IndexInteger,
+    diffServMinRatePriority        Unsigned32,
+    diffServMinRateAbsolute        Unsigned32,
+    diffServMinRateRelative        Unsigned32,
+    diffServMinRateStorage         StorageType,
+    diffServMinRateStatus          RowStatus
+}
+
+diffServMinRateId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServMinRateEntry 1 }
+
+diffServMinRatePriority OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServMinRateEntry 2 }
+
+diffServMinRateAbsolute OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    UNITS        "kilobits per second"
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServMinRateEntry 3 }
+
+diffServMinRateRelative OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServMinRateEntry 4 }
+
+diffServMinRateStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServMinRateEntry 5 }
+
+diffServMinRateStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServMinRateEntry 6 }
+
+
+
+
+
+
+
+diffServMaxRateNextFree OBJECT-TYPE
+    SYNTAX       IndexIntegerNextFree
+    MAX-ACCESS   read-only
+    STATUS       current
+    ::= { diffServScheduler 5 }
+
+diffServMaxRateTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF DiffServMaxRateEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServScheduler 6 }
+
+diffServMaxRateEntry OBJECT-TYPE
+    SYNTAX       DiffServMaxRateEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    INDEX { diffServMaxRateId, diffServMaxRateLevel }
+    ::= { diffServMaxRateTable 1 }
+
+DiffServMaxRateEntry ::= SEQUENCE  {
+    diffServMaxRateId              IndexInteger,
+    diffServMaxRateLevel           Unsigned32,
+    diffServMaxRateAbsolute        Unsigned32,
+
+
+
+
+
+    diffServMaxRateRelative        Unsigned32,
+    diffServMaxRateThreshold       BurstSize,
+    diffServMaxRateStorage         StorageType,
+    diffServMaxRateStatus          RowStatus
+}
+
+diffServMaxRateId OBJECT-TYPE
+    SYNTAX       IndexInteger
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServMaxRateEntry 1 }
+
+diffServMaxRateLevel OBJECT-TYPE
+    SYNTAX       Unsigned32 (1..32)
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    ::= { diffServMaxRateEntry 2 }
+
+diffServMaxRateAbsolute OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    UNITS        "kilobits per second"
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServMaxRateEntry 3 }
+
+diffServMaxRateRelative OBJECT-TYPE
+    SYNTAX       Unsigned32  (1..4294967295)
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServMaxRateEntry 4 }
+
+diffServMaxRateThreshold OBJECT-TYPE
+    SYNTAX       BurstSize
+    UNITS        "Bytes"
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServMaxRateEntry 5 }
+
+diffServMaxRateStorage OBJECT-TYPE
+    SYNTAX       StorageType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DEFVAL { nonVolatile }
+    ::= { diffServMaxRateEntry 6 }
+
+diffServMaxRateStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    ::= { diffServMaxRateEntry 7 }
+
+
+diffServMIBCompliances OBJECT IDENTIFIER ::=
+                                     { diffServMIBConformance 1 }
+diffServMIBGroups      OBJECT IDENTIFIER ::=
+                                     { diffServMIBConformance 2 }
+
+diffServMIBFullCompliance MODULE-COMPLIANCE
+    STATUS current
+
+    MODULE IF-MIB -- The interfaces MIB, RFC2863
+    MANDATORY-GROUPS {
+
+
+
+
+
+       ifCounterDiscontinuityGroup
+    }
+
+    MODULE -- This Module
+    MANDATORY-GROUPS {
+        diffServMIBDataPathGroup, diffServMIBClfrGroup,
+        diffServMIBClfrElementGroup, diffServMIBMultiFieldClfrGroup,
+        diffServMIBActionGroup, diffServMIBAlgDropGroup,
+        diffServMIBQGroup, diffServMIBSchedulerGroup,
+        diffServMIBMaxRateGroup, diffServMIBMinRateGroup,
+        diffServMIBCounterGroup
+    }
+
+    GROUP diffServMIBMeterGroup
+
+    GROUP diffServMIBTBParamGroup
+
+    GROUP diffServMIBDscpMarkActGroup
+
+    GROUP diffServMIBRandomDropGroup
+
+    OBJECT diffServDataPathStatus
+    SYNTAX RowStatus { active(1) }
+    WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+    OBJECT diffServClfrStatus
+    SYNTAX RowStatus { active(1) }
+    WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+    OBJECT diffServClfrElementStatus
+    SYNTAX RowStatus { active(1) }
+    WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+
+
+
+
+
+    OBJECT diffServMultiFieldClfrAddrType
+    SYNTAX  InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+
+    OBJECT diffServMultiFieldClfrDstAddr
+    SYNTAX  InetAddress (SIZE(0|4|16))
+
+    OBJECT diffServAlgDropStatus
+    SYNTAX RowStatus { active(1) }
+    WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+    OBJECT diffServRandomDropStatus
+    SYNTAX RowStatus { active(1) }
+    WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+    OBJECT diffServQStatus
+    SYNTAX RowStatus { active(1) }
+    WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+    OBJECT diffServSchedulerStatus
+    SYNTAX RowStatus { active(1) }
+    WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+    OBJECT diffServMinRateStatus
+    SYNTAX RowStatus { active(1) }
+    WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+    OBJECT diffServMaxRateStatus
+    SYNTAX RowStatus { active(1) }
+    WRITE-SYNTAX RowStatus { createAndGo(4), destroy(6) }
+
+
+
+
+
+
+    ::= { diffServMIBCompliances 1 }
+
+
+diffServMIBReadOnlyCompliance MODULE-COMPLIANCE
+    STATUS current
+
+    MODULE IF-MIB -- The interfaces MIB, RFC2863
+    MANDATORY-GROUPS {
+       ifCounterDiscontinuityGroup
+    }
+
+    MODULE -- This Module
+    MANDATORY-GROUPS {
+        diffServMIBDataPathGroup, diffServMIBClfrGroup,
+        diffServMIBClfrElementGroup, diffServMIBMultiFieldClfrGroup,
+        diffServMIBActionGroup, diffServMIBAlgDropGroup,
+        diffServMIBQGroup, diffServMIBSchedulerGroup,
+        diffServMIBMaxRateGroup, diffServMIBMinRateGroup,
+        diffServMIBCounterGroup
+    }
+
+    GROUP diffServMIBMeterGroup
+
+    GROUP diffServMIBTBParamGroup
+
+    GROUP        diffServMIBDscpMarkActGroup
+
+    GROUP        diffServMIBRandomDropGroup
+
+
+
+
+
+
+    OBJECT       diffServDataPathStart
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServDataPathStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServDataPathStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServClfrNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServClfrStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServClfrStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServClfrElementNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServClfrElementPrecedence
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServClfrElementNext
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServClfrElementSpecific
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServClfrElementStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServClfrElementStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServMultiFieldClfrAddrType
+    SYNTAX       InetAddressType { unknown(0), ipv4(1), ipv6(2) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrDstAddr
+    SYNTAX       InetAddress (SIZE(0|4|16))
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrDstPrefixLength
+    MIN-ACCESS   read-only
+
+
+
+
+
+    OBJECT       diffServMultiFieldClfrSrcAddr
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrSrcPrefixLength
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrDscp
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrFlowId
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrProtocol
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrDstL4PortMin
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrDstL4PortMax
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrSrcL4PortMin
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrSrcL4PortMax
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMultiFieldClfrStorage
+    MIN-ACCESS   read-only
+
+
+
+
+
+
+    OBJECT       diffServMultiFieldClfrStatus
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMeterNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServMeterSucceedNext
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMeterFailNext
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMeterSpecific
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMeterStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMeterStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServTBParamNextFree
+    MIN-ACCESS   not-accessible
+
+
+
+
+
+
+    OBJECT       diffServTBParamType
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServTBParamRate
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServTBParamBurstSize
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServTBParamInterval
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServTBParamStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServTBParamStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServActionNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServActionInterface
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServActionNext
+    MIN-ACCESS   read-only
+
+
+
+
+
+
+    OBJECT       diffServActionSpecific
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServActionStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServActionStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServCountActNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServCountActStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServCountActStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServAlgDropNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServAlgDropType
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServAlgDropNext
+    MIN-ACCESS   read-only
+
+
+
+
+
+
+    OBJECT       diffServAlgDropQMeasure
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServAlgDropQThreshold
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServAlgDropSpecific
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServAlgDropStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServAlgDropStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServRandomDropNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServRandomDropMinThreshBytes
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServRandomDropMinThreshPkts
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServRandomDropMaxThreshBytes
+    MIN-ACCESS   read-only
+
+
+
+
+
+
+    OBJECT       diffServRandomDropMaxThreshPkts
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServRandomDropProbMax
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServRandomDropWeight
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServRandomDropSamplingRate
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServRandomDropStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServRandomDropStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServQNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServQNext
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServQMinRate
+    MIN-ACCESS   read-only
+
+
+
+
+
+
+    OBJECT       diffServQMaxRate
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServQStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServQStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServSchedulerNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServSchedulerNext
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServSchedulerMethod
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServSchedulerMinRate
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServSchedulerMaxRate
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServSchedulerStorage
+    MIN-ACCESS   read-only
+
+
+
+
+
+
+    OBJECT       diffServSchedulerStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMinRateNextFree
+    MIN-ACCESS   not-accessible
+
+    OBJECT       diffServMinRatePriority
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMinRateAbsolute
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMinRateRelative
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMinRateStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMinRateStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMaxRateNextFree
+    MIN-ACCESS   not-accessible
+
+
+
+
+
+    OBJECT       diffServMaxRateAbsolute
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMaxRateRelative
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMaxRateThreshold
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMaxRateStorage
+    MIN-ACCESS   read-only
+
+    OBJECT       diffServMaxRateStatus
+    SYNTAX       RowStatus { active(1) }
+    MIN-ACCESS   read-only
+
+    ::= { diffServMIBCompliances 2 }
+
+diffServMIBDataPathGroup OBJECT-GROUP
+    OBJECTS {
+              diffServDataPathStart, diffServDataPathStorage,
+              diffServDataPathStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 1 }
+
+diffServMIBClfrGroup OBJECT-GROUP
+    OBJECTS {
+              diffServClfrNextFree, diffServClfrStorage,
+              diffServClfrStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 2 }
+
+diffServMIBClfrElementGroup OBJECT-GROUP
+    OBJECTS {
+              diffServClfrElementNextFree,
+              diffServClfrElementPrecedence, diffServClfrElementNext,
+              diffServClfrElementSpecific, diffServClfrElementStorage,
+              diffServClfrElementStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 3 }
+
+diffServMIBMultiFieldClfrGroup OBJECT-GROUP
+    OBJECTS {
+              diffServMultiFieldClfrNextFree,
+              diffServMultiFieldClfrAddrType,
+              diffServMultiFieldClfrDstAddr,
+              diffServMultiFieldClfrDstPrefixLength,
+              diffServMultiFieldClfrFlowId,
+              diffServMultiFieldClfrSrcAddr,
+              diffServMultiFieldClfrSrcPrefixLength,
+              diffServMultiFieldClfrDscp,
+              diffServMultiFieldClfrProtocol,
+              diffServMultiFieldClfrDstL4PortMin,
+              diffServMultiFieldClfrDstL4PortMax,
+              diffServMultiFieldClfrSrcL4PortMin,
+              diffServMultiFieldClfrSrcL4PortMax,
+              diffServMultiFieldClfrStorage,
+              diffServMultiFieldClfrStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 4 }
+
+diffServMIBMeterGroup OBJECT-GROUP
+    OBJECTS {
+              diffServMeterNextFree, diffServMeterSucceedNext,
+              diffServMeterFailNext, diffServMeterSpecific,
+              diffServMeterStorage, diffServMeterStatus
+    }
+
+
+
+
+
+    STATUS       current
+    ::= { diffServMIBGroups 5 }
+
+diffServMIBTBParamGroup OBJECT-GROUP
+    OBJECTS {
+              diffServTBParamNextFree, diffServTBParamType,
+              diffServTBParamRate, diffServTBParamBurstSize,
+              diffServTBParamInterval, diffServTBParamStorage,
+              diffServTBParamStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 6 }
+
+diffServMIBActionGroup OBJECT-GROUP
+    OBJECTS {
+              diffServActionNextFree, diffServActionNext,
+              diffServActionSpecific, diffServActionStorage,
+              diffServActionInterface, diffServActionStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 7 }
+
+diffServMIBDscpMarkActGroup OBJECT-GROUP
+    OBJECTS {
+              diffServDscpMarkActDscp
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 8 }
+
+diffServMIBCounterGroup OBJECT-GROUP
+    OBJECTS {
+              diffServCountActOctets, diffServCountActPkts,
+              diffServAlgDropOctets, diffServAlgDropPkts,
+              diffServAlgRandomDropOctets, diffServAlgRandomDropPkts,
+              diffServCountActStorage, diffServCountActStatus,
+              diffServCountActNextFree
+
+
+
+
+
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 9 }
+
+diffServMIBAlgDropGroup OBJECT-GROUP
+    OBJECTS {
+              diffServAlgDropNextFree, diffServAlgDropType,
+              diffServAlgDropNext, diffServAlgDropQMeasure,
+              diffServAlgDropQThreshold, diffServAlgDropSpecific,
+              diffServAlgDropStorage, diffServAlgDropStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 10 }
+
+diffServMIBRandomDropGroup OBJECT-GROUP
+    OBJECTS {
+              diffServRandomDropNextFree,
+              diffServRandomDropMinThreshBytes,
+              diffServRandomDropMinThreshPkts,
+              diffServRandomDropMaxThreshBytes,
+              diffServRandomDropMaxThreshPkts,
+              diffServRandomDropProbMax,
+              diffServRandomDropWeight,
+              diffServRandomDropSamplingRate,
+              diffServRandomDropStorage,
+              diffServRandomDropStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 11 }
+
+diffServMIBQGroup OBJECT-GROUP
+
+    OBJECTS {
+              diffServQNextFree, diffServQNext, diffServQMinRate,
+              diffServQMaxRate, diffServQStorage, diffServQStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 12 }
+
+diffServMIBSchedulerGroup OBJECT-GROUP
+    OBJECTS {
+              diffServSchedulerNextFree, diffServSchedulerNext,
+              diffServSchedulerMethod, diffServSchedulerMinRate,
+              diffServSchedulerMaxRate, diffServSchedulerStorage,
+              diffServSchedulerStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 13 }
+
+diffServMIBMinRateGroup OBJECT-GROUP
+    OBJECTS {
+              diffServMinRateNextFree, diffServMinRatePriority,
+              diffServMinRateAbsolute, diffServMinRateRelative,
+              diffServMinRateStorage, diffServMinRateStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 14 }
+
+diffServMIBMaxRateGroup OBJECT-GROUP
+    OBJECTS {
+              diffServMaxRateNextFree, diffServMaxRateAbsolute,
+              diffServMaxRateRelative, diffServMaxRateThreshold,
+              diffServMaxRateStorage, diffServMaxRateStatus
+    }
+    STATUS       current
+    ::= { diffServMIBGroups 15 }
+
+END

@@ -1,0 +1,1318 @@
+NAT-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+     MODULE-IDENTITY,
+     OBJECT-TYPE,
+     Integer32,
+     Unsigned32,
+     Gauge32,
+     Counter64,
+     TimeTicks,
+     mib-2,
+     NOTIFICATION-TYPE
+             FROM SNMPv2-SMI
+     TEXTUAL-CONVENTION,
+     StorageType,
+     RowStatus
+
+
+
+
+
+             FROM SNMPv2-TC
+     MODULE-COMPLIANCE,
+     NOTIFICATION-GROUP,
+     OBJECT-GROUP
+             FROM SNMPv2-CONF
+     ifIndex,
+     ifCounterDiscontinuityGroup
+             FROM IF-MIB
+     SnmpAdminString
+             FROM SNMP-FRAMEWORK-MIB
+     InetAddressType,
+     InetAddress,
+     InetPortNumber
+             FROM INET-ADDRESS-MIB;
+
+natMIB MODULE-IDENTITY
+     LAST-UPDATED "200503210000Z"
+     ORGANIZATION "IETF Transport Area"
+     ::= { mib-2 123 }
+
+natMIBObjects OBJECT IDENTIFIER ::= { natMIB 1 }
+
+NatProtocolType ::= TEXTUAL-CONVENTION
+       STATUS       current
+       SYNTAX   INTEGER {
+                     none (1),  -- not specified
+                     other (2), -- none of the following
+                     icmp (3),
+                     udp (4),
+                     tcp (5)
+                  }
+
+NatProtocolMap ::= TEXTUAL-CONVENTION
+       STATUS       current
+       SYNTAX   BITS {
+                  other (0),
+                  icmp (1),
+                  udp (2),
+                  tcp (3)
+                }
+
+NatAddrMapId ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "d"
+       STATUS current
+       SYNTAX   Unsigned32 (1..4294967295)
+
+NatBindIdOrZero ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "d"
+       STATUS current
+       SYNTAX   Unsigned32 (0..4294967295)
+
+NatBindId ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "d"
+       STATUS current
+       SYNTAX   Unsigned32 (1..4294967295)
+
+NatSessionId ::= TEXTUAL-CONVENTION
+       DISPLAY-HINT "d"
+       STATUS current
+       SYNTAX   Unsigned32 (1..4294967295)
+
+NatBindMode ::= TEXTUAL-CONVENTION
+       STATUS current
+
+
+
+
+
+       SYNTAX   INTEGER {
+                     addressBind (1),
+                     addressPortBind (2)
+                }
+
+NatAssociationType ::= TEXTUAL-CONVENTION
+       STATUS current
+       SYNTAX   INTEGER {
+                     static (1),
+                     dynamic (2)
+                }
+
+NatTranslationEntity ::= TEXTUAL-CONVENTION
+       STATUS       current
+       SYNTAX   BITS {
+                  inboundSrcEndPoint (0),
+                  outboundDstEndPoint(1),
+                  inboundDstEndPoint (2),
+                  outboundSrcEndPoint(3)
+                }
+
+
+natDefTimeouts OBJECT IDENTIFIER ::= { natMIBObjects 1 }
+
+natNotifCtrl OBJECT IDENTIFIER ::= { natMIBObjects 2 }
+
+
+natBindDefIdleTimeout OBJECT-TYPE
+    SYNTAX     Unsigned32  (0..4294967295)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 0 }
+    ::= { natDefTimeouts 1 }
+
+
+natUdpDefIdleTimeout OBJECT-TYPE
+    SYNTAX     Unsigned32  (1..4294967295)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 300 }
+    ::= { natDefTimeouts 2 }
+
+
+natIcmpDefIdleTimeout OBJECT-TYPE
+    SYNTAX     Unsigned32  (1..4294967295)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 300 }
+    ::= { natDefTimeouts 3 }
+
+
+
+
+
+
+
+natOtherDefIdleTimeout OBJECT-TYPE
+    SYNTAX     Unsigned32  (1..4294967295)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 60 }
+    ::= { natDefTimeouts 4 }
+
+
+natTcpDefIdleTimeout OBJECT-TYPE
+    SYNTAX     Unsigned32  (1..4294967295)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 86400 }
+    ::= { natDefTimeouts 5 }
+
+natTcpDefNegTimeout OBJECT-TYPE
+    SYNTAX     Unsigned32  (1..4294967295)
+    UNITS      "seconds"
+    MAX-ACCESS read-write
+    STATUS     current
+    DEFVAL { 60 }
+    ::= { natDefTimeouts 6 }
+
+natNotifThrottlingInterval OBJECT-TYPE
+    SYNTAX      Integer32 (0 | 5..3600)
+    UNITS       "seconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { 0 }
+
+
+
+
+
+    ::= { natNotifCtrl 1 }
+
+
+natInterfaceTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NatInterfaceEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { natMIBObjects 3 }
+
+natInterfaceEntry OBJECT-TYPE
+    SYNTAX      NatInterfaceEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { ifIndex }
+    ::= { natInterfaceTable 1 }
+
+NatInterfaceEntry ::= SEQUENCE {
+    natInterfaceRealm            INTEGER,
+    natInterfaceServiceType      BITS,
+    natInterfaceInTranslates     Counter64,
+    natInterfaceOutTranslates    Counter64,
+    natInterfaceDiscards         Counter64,
+    natInterfaceStorageType      StorageType,
+    natInterfaceRowStatus        RowStatus
+}
+
+natInterfaceRealm OBJECT-TYPE
+    SYNTAX     INTEGER {
+                   private (1),
+                   public (2)
+
+
+
+
+
+               }
+    MAX-ACCESS read-create
+    STATUS     current
+    DEFVAL  { public }
+    ::= { natInterfaceEntry 1 }
+
+natInterfaceServiceType OBJECT-TYPE
+    SYNTAX  BITS {
+                basicNat (0),
+                napt (1),
+                bidirectionalNat (2),
+                twiceNat (3)
+            }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natInterfaceEntry 2 }
+
+natInterfaceInTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natInterfaceEntry 3 }
+
+natInterfaceOutTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natInterfaceEntry 4 }
+
+natInterfaceDiscards OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+     ::= { natInterfaceEntry 5 }
+
+natInterfaceStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { natInterfaceEntry 6 }
+
+natInterfaceRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natInterfaceEntry 7 }
+
+
+natAddrMapTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NatAddrMapEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { natMIBObjects 4 }
+
+natAddrMapEntry OBJECT-TYPE
+    SYNTAX      NatAddrMapEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { ifIndex, natAddrMapIndex }
+    ::= { natAddrMapTable 1 }
+
+NatAddrMapEntry ::= SEQUENCE {
+    natAddrMapIndex                 NatAddrMapId,
+    natAddrMapName                  SnmpAdminString,
+    natAddrMapEntryType             NatAssociationType,
+    natAddrMapTranslationEntity     NatTranslationEntity,
+    natAddrMapLocalAddrType         InetAddressType,
+    natAddrMapLocalAddrFrom         InetAddress,
+    natAddrMapLocalAddrTo           InetAddress,
+    natAddrMapLocalPortFrom         InetPortNumber,
+    natAddrMapLocalPortTo           InetPortNumber,
+    natAddrMapGlobalAddrType        InetAddressType,
+    natAddrMapGlobalAddrFrom        InetAddress,
+    natAddrMapGlobalAddrTo          InetAddress,
+    natAddrMapGlobalPortFrom        InetPortNumber,
+    natAddrMapGlobalPortTo          InetPortNumber,
+    natAddrMapProtocol              NatProtocolMap,
+    natAddrMapInTranslates          Counter64,
+    natAddrMapOutTranslates         Counter64,
+    natAddrMapDiscards              Counter64,
+
+
+
+
+
+    natAddrMapAddrUsed              Gauge32,
+    natAddrMapStorageType           StorageType,
+    natAddrMapRowStatus             RowStatus
+}
+
+natAddrMapIndex  OBJECT-TYPE
+    SYNTAX      NatAddrMapId
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { natAddrMapEntry 1 }
+
+natAddrMapName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 2 }
+
+natAddrMapEntryType OBJECT-TYPE
+    SYNTAX      NatAssociationType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 3 }
+
+natAddrMapTranslationEntity OBJECT-TYPE
+    SYNTAX      NatTranslationEntity
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 4 }
+
+natAddrMapLocalAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 5 }
+
+natAddrMapLocalAddrFrom OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 6 }
+
+natAddrMapLocalAddrTo OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 7 }
+
+natAddrMapLocalPortFrom OBJECT-TYPE
+    SYNTAX      InetPortNumber
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { natAddrMapEntry 8 }
+
+natAddrMapLocalPortTo OBJECT-TYPE
+    SYNTAX      InetPortNumber
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    DEFVAL { 0 }
+    ::= { natAddrMapEntry 9 }
+
+natAddrMapGlobalAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 10 }
+
+natAddrMapGlobalAddrFrom OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 11 }
+
+natAddrMapGlobalAddrTo OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 12 }
+
+natAddrMapGlobalPortFrom OBJECT-TYPE
+    SYNTAX      InetPortNumber
+
+
+
+
+
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { natAddrMapEntry 13 }
+
+natAddrMapGlobalPortTo OBJECT-TYPE
+    SYNTAX      InetPortNumber
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 0 }
+    ::= { natAddrMapEntry 14 }
+
+natAddrMapProtocol OBJECT-TYPE
+    SYNTAX      NatProtocolMap
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 15 }
+
+natAddrMapInTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrMapEntry 16 }
+
+natAddrMapOutTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrMapEntry 17 }
+
+natAddrMapDiscards OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrMapEntry 18 }
+
+natAddrMapAddrUsed OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrMapEntry 19 }
+
+natAddrMapStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { natAddrMapEntry 20 }
+
+natAddrMapRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { natAddrMapEntry 21 }
+
+
+natAddrBindNumberOfEntries OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natMIBObjects 5 }
+
+
+
+
+
+
+
+natAddrBindTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF NatAddrBindEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { natMIBObjects 6 }
+
+natAddrBindEntry OBJECT-TYPE
+    SYNTAX     NatAddrBindEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+
+    INDEX   { ifIndex, natAddrBindLocalAddrType, natAddrBindLocalAddr }
+    ::= { natAddrBindTable 1 }
+
+NatAddrBindEntry ::= SEQUENCE {
+    natAddrBindLocalAddrType        InetAddressType,
+    natAddrBindLocalAddr            InetAddress,
+    natAddrBindGlobalAddrType       InetAddressType,
+    natAddrBindGlobalAddr           InetAddress,
+    natAddrBindId                   NatBindId,
+    natAddrBindTranslationEntity    NatTranslationEntity,
+    natAddrBindType                 NatAssociationType,
+    natAddrBindMapIndex             NatAddrMapId,
+    natAddrBindSessions             Gauge32,
+    natAddrBindMaxIdleTime          TimeTicks,
+    natAddrBindCurrentIdleTime      TimeTicks,
+    natAddrBindInTranslates         Counter64,
+    natAddrBindOutTranslates        Counter64
+}
+
+
+
+
+
+
+natAddrBindLocalAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { natAddrBindEntry 1 }
+
+natAddrBindLocalAddr OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+   ::= { natAddrBindEntry 2 }
+
+natAddrBindGlobalAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { natAddrBindEntry 3 }
+
+natAddrBindGlobalAddr OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrBindEntry 4 }
+
+natAddrBindId OBJECT-TYPE
+    SYNTAX     NatBindId
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { natAddrBindEntry 5 }
+
+natAddrBindTranslationEntity OBJECT-TYPE
+    SYNTAX     NatTranslationEntity
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrBindEntry 6 }
+
+natAddrBindType OBJECT-TYPE
+    SYNTAX     NatAssociationType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrBindEntry 7 }
+
+natAddrBindMapIndex OBJECT-TYPE
+    SYNTAX     NatAddrMapId
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrBindEntry 8 }
+
+natAddrBindSessions OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrBindEntry 9 }
+
+natAddrBindMaxIdleTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrBindEntry 10 }
+
+natAddrBindCurrentIdleTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrBindEntry 11 }
+
+natAddrBindInTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrBindEntry 12 }
+
+natAddrBindOutTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrBindEntry 13 }
+
+
+natAddrPortBindNumberOfEntries OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natMIBObjects 7 }
+
+
+natAddrPortBindTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF NatAddrPortBindEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { natMIBObjects 8 }
+
+natAddrPortBindEntry OBJECT-TYPE
+    SYNTAX     NatAddrPortBindEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { ifIndex, natAddrPortBindLocalAddrType,
+              natAddrPortBindLocalAddr, natAddrPortBindLocalPort,
+              natAddrPortBindProtocol }
+    ::= { natAddrPortBindTable 1 }
+
+NatAddrPortBindEntry ::= SEQUENCE {
+    natAddrPortBindLocalAddrType        InetAddressType,
+    natAddrPortBindLocalAddr            InetAddress,
+    natAddrPortBindLocalPort            InetPortNumber,
+    natAddrPortBindProtocol             NatProtocolType,
+    natAddrPortBindGlobalAddrType       InetAddressType,
+    natAddrPortBindGlobalAddr           InetAddress,
+    natAddrPortBindGlobalPort           InetPortNumber,
+    natAddrPortBindId                   NatBindId,
+    natAddrPortBindTranslationEntity    NatTranslationEntity,
+    natAddrPortBindType                 NatAssociationType,
+    natAddrPortBindMapIndex             NatAddrMapId,
+    natAddrPortBindSessions             Gauge32,
+    natAddrPortBindMaxIdleTime          TimeTicks,
+    natAddrPortBindCurrentIdleTime      TimeTicks,
+    natAddrPortBindInTranslates         Counter64,
+    natAddrPortBindOutTranslates        Counter64
+}
+
+natAddrPortBindLocalAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { natAddrPortBindEntry 1 }
+
+natAddrPortBindLocalAddr OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { natAddrPortBindEntry 2 }
+
+natAddrPortBindLocalPort OBJECT-TYPE
+    SYNTAX     InetPortNumber
+    MAX-ACCESS not-accessible
+    STATUS     current
+   ::= { natAddrPortBindEntry 3 }
+
+natAddrPortBindProtocol OBJECT-TYPE
+    SYNTAX      NatProtocolType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { natAddrPortBindEntry 4 }
+
+
+
+
+
+
+natAddrPortBindGlobalAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { natAddrPortBindEntry 5 }
+
+natAddrPortBindGlobalAddr OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrPortBindEntry 6 }
+
+natAddrPortBindGlobalPort OBJECT-TYPE
+    SYNTAX     InetPortNumber
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrPortBindEntry 7 }
+
+natAddrPortBindId OBJECT-TYPE
+    SYNTAX     NatBindId
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrPortBindEntry 8 }
+
+natAddrPortBindTranslationEntity OBJECT-TYPE
+    SYNTAX     NatTranslationEntity
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrPortBindEntry 9 }
+
+natAddrPortBindType OBJECT-TYPE
+    SYNTAX     NatAssociationType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrPortBindEntry 10 }
+
+natAddrPortBindMapIndex OBJECT-TYPE
+    SYNTAX     NatAddrMapId
+    MAX-ACCESS read-only
+
+
+
+
+
+    STATUS     current
+    ::= { natAddrPortBindEntry 11 }
+
+natAddrPortBindSessions OBJECT-TYPE
+    SYNTAX     Gauge32
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrPortBindEntry 12 }
+
+natAddrPortBindMaxIdleTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+
+    ::= { natAddrPortBindEntry 13 }
+
+natAddrPortBindCurrentIdleTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrPortBindEntry 14 }
+
+natAddrPortBindInTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrPortBindEntry 15 }
+
+natAddrPortBindOutTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natAddrPortBindEntry 16 }
+
+
+natSessionTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF NatSessionEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { natMIBObjects 9 }
+
+natSessionEntry OBJECT-TYPE
+    SYNTAX     NatSessionEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { ifIndex, natSessionIndex }
+    ::= { natSessionTable 1 }
+
+NatSessionEntry ::= SEQUENCE {
+
+
+
+
+
+    natSessionIndex                        NatSessionId,
+    natSessionPrivateSrcEPBindId           NatBindIdOrZero,
+    natSessionPrivateSrcEPBindMode         NatBindMode,
+    natSessionPrivateDstEPBindId           NatBindIdOrZero,
+    natSessionPrivateDstEPBindMode         NatBindMode,
+    natSessionDirection                    INTEGER,
+    natSessionUpTime                       TimeTicks,
+    natSessionAddrMapIndex                 NatAddrMapId,
+    natSessionProtocolType                 NatProtocolType,
+    natSessionPrivateAddrType              InetAddressType,
+    natSessionPrivateSrcAddr               InetAddress,
+    natSessionPrivateSrcPort               InetPortNumber,
+    natSessionPrivateDstAddr               InetAddress,
+    natSessionPrivateDstPort               InetPortNumber,
+    natSessionPublicAddrType               InetAddressType,
+    natSessionPublicSrcAddr                InetAddress,
+    natSessionPublicSrcPort                InetPortNumber,
+    natSessionPublicDstAddr                InetAddress,
+    natSessionPublicDstPort                InetPortNumber,
+    natSessionMaxIdleTime                  TimeTicks,
+    natSessionCurrentIdleTime              TimeTicks,
+    natSessionInTranslates                 Counter64,
+    natSessionOutTranslates                Counter64
+}
+
+natSessionIndex OBJECT-TYPE
+    SYNTAX     NatSessionId
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { natSessionEntry 1 }
+
+natSessionPrivateSrcEPBindId OBJECT-TYPE
+    SYNTAX     NatBindIdOrZero
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 2 }
+
+natSessionPrivateSrcEPBindMode OBJECT-TYPE
+    SYNTAX     NatBindMode
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 3 }
+
+natSessionPrivateDstEPBindId OBJECT-TYPE
+    SYNTAX     NatBindIdOrZero
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 4 }
+
+natSessionPrivateDstEPBindMode OBJECT-TYPE
+    SYNTAX     NatBindMode
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 5 }
+
+natSessionDirection OBJECT-TYPE
+    SYNTAX     INTEGER {
+                   inbound (1),
+                   outbound (2)
+               }
+
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 6 }
+
+natSessionUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { natSessionEntry 7 }
+
+natSessionAddrMapIndex OBJECT-TYPE
+    SYNTAX     NatAddrMapId
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 8 }
+
+natSessionProtocolType OBJECT-TYPE
+    SYNTAX     NatProtocolType
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 9 }
+
+natSessionPrivateAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { natSessionEntry 10 }
+
+natSessionPrivateSrcAddr OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 11 }
+
+
+
+
+
+
+natSessionPrivateSrcPort OBJECT-TYPE
+    SYNTAX     InetPortNumber
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 12 }
+
+natSessionPrivateDstAddr OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 13 }
+
+natSessionPrivateDstPort OBJECT-TYPE
+    SYNTAX     InetPortNumber
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { natSessionEntry 14 }
+
+natSessionPublicAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { natSessionEntry 15 }
+
+natSessionPublicSrcAddr OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 16 }
+
+natSessionPublicSrcPort OBJECT-TYPE
+    SYNTAX     InetPortNumber
+    MAX-ACCESS read-only
+
+
+
+
+
+    STATUS     current
+    ::= { natSessionEntry 17 }
+
+natSessionPublicDstAddr OBJECT-TYPE
+    SYNTAX     InetAddress
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 18 }
+
+natSessionPublicDstPort OBJECT-TYPE
+    SYNTAX     InetPortNumber
+    MAX-ACCESS read-only
+    STATUS     current
+
+
+
+
+
+    ::= { natSessionEntry 19 }
+
+natSessionMaxIdleTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 20 }
+
+natSessionCurrentIdleTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 21 }
+
+natSessionInTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 22 }
+
+natSessionOutTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natSessionEntry 23 }
+
+
+natProtocolTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF NatProtocolEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { natMIBObjects 10 }
+
+natProtocolEntry OBJECT-TYPE
+    SYNTAX     NatProtocolEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    INDEX   { natProtocol }
+    ::= { natProtocolTable 1 }
+
+NatProtocolEntry ::= SEQUENCE {
+    natProtocol                 NatProtocolType,
+    natProtocolInTranslates     Counter64,
+    natProtocolOutTranslates    Counter64,
+    natProtocolDiscards         Counter64
+}
+
+
+
+
+
+
+natProtocol    OBJECT-TYPE
+    SYNTAX     NatProtocolType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    ::= { natProtocolEntry 1 }
+
+natProtocolInTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natProtocolEntry 2 }
+
+natProtocolOutTranslates OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+    ::= { natProtocolEntry 3 }
+
+natProtocolDiscards OBJECT-TYPE
+    SYNTAX     Counter64
+    MAX-ACCESS read-only
+    STATUS     current
+     ::= { natProtocolEntry 4 }
+
+
+natMIBNotifications OBJECT IDENTIFIER ::= { natMIB 0 }
+
+
+natPacketDiscard NOTIFICATION-TYPE
+    OBJECTS { ifIndex }
+    STATUS  current
+    ::= { natMIBNotifications 1 }
+
+
+natMIBConformance OBJECT IDENTIFIER ::= { natMIB 2 }
+
+natMIBGroups      OBJECT IDENTIFIER ::= { natMIBConformance 1 }
+natMIBCompliances OBJECT IDENTIFIER ::= { natMIBConformance 2 }
+
+
+natConfigGroup OBJECT-GROUP
+    OBJECTS { natInterfaceRealm,
+              natInterfaceServiceType,
+              natInterfaceStorageType,
+              natInterfaceRowStatus,
+              natAddrMapName,
+
+
+
+
+
+              natAddrMapEntryType,
+              natAddrMapTranslationEntity,
+              natAddrMapLocalAddrType,
+              natAddrMapLocalAddrFrom,
+              natAddrMapLocalAddrTo,
+              natAddrMapLocalPortFrom,
+              natAddrMapLocalPortTo,
+              natAddrMapGlobalAddrType,
+              natAddrMapGlobalAddrFrom,
+              natAddrMapGlobalAddrTo,
+              natAddrMapGlobalPortFrom,
+              natAddrMapGlobalPortTo,
+              natAddrMapProtocol,
+              natAddrMapStorageType,
+              natAddrMapRowStatus,
+              natBindDefIdleTimeout,
+              natUdpDefIdleTimeout,
+              natIcmpDefIdleTimeout,
+              natOtherDefIdleTimeout,
+              natTcpDefIdleTimeout,
+              natTcpDefNegTimeout,
+              natNotifThrottlingInterval }
+    STATUS  current
+    ::= { natMIBGroups 1 }
+
+natTranslationGroup OBJECT-GROUP
+    OBJECTS { natAddrBindNumberOfEntries,
+              natAddrBindGlobalAddrType,
+              natAddrBindGlobalAddr,
+              natAddrBindId,
+              natAddrBindTranslationEntity,
+              natAddrBindType,
+              natAddrBindMapIndex,
+              natAddrBindSessions,
+              natAddrBindMaxIdleTime,
+              natAddrBindCurrentIdleTime,
+              natAddrBindInTranslates,
+              natAddrBindOutTranslates,
+              natAddrPortBindNumberOfEntries,
+              natAddrPortBindGlobalAddrType,
+              natAddrPortBindGlobalAddr,
+              natAddrPortBindGlobalPort,
+              natAddrPortBindId,
+              natAddrPortBindTranslationEntity,
+
+
+
+
+
+              natAddrPortBindType,
+              natAddrPortBindMapIndex,
+              natAddrPortBindSessions,
+              natAddrPortBindMaxIdleTime,
+              natAddrPortBindCurrentIdleTime,
+              natAddrPortBindInTranslates,
+              natAddrPortBindOutTranslates,
+              natSessionPrivateSrcEPBindId,
+              natSessionPrivateSrcEPBindMode,
+              natSessionPrivateDstEPBindId,
+              natSessionPrivateDstEPBindMode,
+              natSessionDirection,
+              natSessionUpTime,
+              natSessionAddrMapIndex,
+              natSessionProtocolType,
+              natSessionPrivateAddrType,
+              natSessionPrivateSrcAddr,
+              natSessionPrivateSrcPort,
+              natSessionPrivateDstAddr,
+              natSessionPrivateDstPort,
+              natSessionPublicAddrType,
+              natSessionPublicSrcAddr,
+              natSessionPublicSrcPort,
+              natSessionPublicDstAddr,
+              natSessionPublicDstPort,
+              natSessionMaxIdleTime,
+              natSessionCurrentIdleTime,
+              natSessionInTranslates,
+              natSessionOutTranslates }
+    STATUS  current
+
+    ::= { natMIBGroups 2 }
+
+natStatsInterfaceGroup OBJECT-GROUP
+    OBJECTS { natInterfaceInTranslates,
+              natInterfaceOutTranslates,
+              natInterfaceDiscards }
+    STATUS  current
+    ::= { natMIBGroups 3 }
+
+natStatsProtocolGroup OBJECT-GROUP
+
+
+
+
+
+    OBJECTS { natProtocolInTranslates,
+              natProtocolOutTranslates,
+              natProtocolDiscards }
+    STATUS  current
+    ::= { natMIBGroups 4 }
+
+natStatsAddrMapGroup OBJECT-GROUP
+    OBJECTS { natAddrMapInTranslates,
+              natAddrMapOutTranslates,
+              natAddrMapDiscards,
+              natAddrMapAddrUsed }
+    STATUS  current
+    ::= { natMIBGroups 5 }
+
+natMIBNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { natPacketDiscard }
+    STATUS        current
+    ::= { natMIBGroups 6 }
+
+
+natMIBFullCompliance MODULE-COMPLIANCE
+    STATUS  current
+
+
+
+
+
+
+
+
+
+    MODULE IF-MIB -- The interfaces MIB, RFC2863
+      MANDATORY-GROUPS {
+        ifCounterDiscontinuityGroup
+      }
+
+    MODULE  -- this module
+      MANDATORY-GROUPS { natConfigGroup, natTranslationGroup,
+                         natStatsInterfaceGroup }
+
+      GROUP       natStatsProtocolGroup
+      GROUP       natStatsAddrMapGroup
+      GROUP       natMIBNotificationGroup
+
+      OBJECT  natAddrMapLocalAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT  natAddrMapLocalAddrFrom
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natAddrMapLocalAddrTo
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natAddrMapGlobalAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT  natAddrMapGlobalAddrFrom
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natAddrMapGlobalAddrTo
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natAddrBindGlobalAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT  natAddrBindGlobalAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natAddrPortBindGlobalAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT  natAddrPortBindGlobalAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natSessionPrivateAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT  natSessionPrivateSrcAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+
+      OBJECT  natSessionPrivateDstAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natSessionPublicAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT  natSessionPublicSrcAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+
+
+
+
+
+      OBJECT  natSessionPublicDstAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+    ::= { natMIBCompliances 1 }
+
+natMIBReadOnlyCompliance MODULE-COMPLIANCE
+    STATUS  current
+
+
+
+
+
+
+
+
+
+    MODULE IF-MIB -- The interfaces MIB, RFC2863
+      MANDATORY-GROUPS {
+        ifCounterDiscontinuityGroup
+      }
+
+    MODULE  -- this module
+      MANDATORY-GROUPS { natConfigGroup, natTranslationGroup,
+                         natStatsInterfaceGroup }
+
+      GROUP       natStatsProtocolGroup
+      GROUP       natStatsAddrMapGroup
+      GROUP       natMIBNotificationGroup
+      OBJECT natInterfaceRowStatus
+      SYNTAX RowStatus { active(1) }
+      MIN-ACCESS   read-only
+
+      OBJECT  natAddrMapLocalAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+      MIN-ACCESS   read-only
+
+      OBJECT  natAddrMapLocalAddrFrom
+      SYNTAX  InetAddress (SIZE(4|16))
+      MIN-ACCESS   read-only
+
+
+
+
+
+
+      OBJECT  natAddrMapLocalAddrTo
+      SYNTAX  InetAddress (SIZE(4|16))
+      MIN-ACCESS   read-only
+
+      OBJECT  natAddrMapGlobalAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+      MIN-ACCESS   read-only
+
+      OBJECT  natAddrMapGlobalAddrFrom
+      SYNTAX  InetAddress (SIZE(4|16))
+      MIN-ACCESS   read-only
+
+      OBJECT  natAddrMapGlobalAddrTo
+      SYNTAX  InetAddress (SIZE(4|16))
+      MIN-ACCESS   read-only
+
+      OBJECT natAddrMapRowStatus
+      SYNTAX RowStatus { active(1) }
+      MIN-ACCESS   read-only
+
+      OBJECT  natAddrBindGlobalAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT  natAddrBindGlobalAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+
+
+
+
+
+      OBJECT  natAddrPortBindGlobalAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT  natAddrPortBindGlobalAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natSessionPrivateAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT  natSessionPrivateSrcAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natSessionPrivateDstAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natSessionPublicAddrType
+      SYNTAX  InetAddressType { ipv4(1), ipv6(2) }
+
+      OBJECT  natSessionPublicSrcAddr
+
+
+
+
+
+      SYNTAX  InetAddress (SIZE(4|16))
+
+      OBJECT  natSessionPublicDstAddr
+      SYNTAX  InetAddress (SIZE(4|16))
+
+    ::= { natMIBCompliances 2 }
+
+END

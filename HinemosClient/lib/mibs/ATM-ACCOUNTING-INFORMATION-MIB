@@ -1,0 +1,280 @@
+ATM-ACCOUNTING-INFORMATION-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY,
+    mib-2, Integer32, Counter64                   FROM SNMPv2-SMI
+    DisplayString, DateAndTime                    FROM SNMPv2-TC
+    AtmAddr                                       FROM ATM-TC-MIB;
+
+
+atmAccountingInformationMIB MODULE-IDENTITY
+    LAST-UPDATED "9611052000Z"
+    ORGANIZATION "IETF AToM MIB Working Group"
+
+
+
+
+
+    ::= { mib-2 59 }
+
+
+atmAcctngMIBObjects OBJECT IDENTIFIER ::=
+                                        { atmAccountingInformationMIB 1 }
+
+
+
+atmAcctngDataObjects OBJECT-IDENTITY
+    STATUS      current
+    ::= { atmAcctngMIBObjects 1 }
+
+
+atmAcctngConnectionType OBJECT-TYPE
+    SYNTAX      INTEGER { pvc(1),
+                          pvp(2),
+                          svcIncoming(3),
+                          svcOutgoing(4),
+                          svpIncoming(5),
+                          svpOutgoing(6),
+                          spvcInitiator(7),
+                          spvcTarget(8),
+                          spvpInitiator(9),
+                          spvpTarget(10) }
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 1 }
+
+atmAcctngCastType OBJECT-TYPE
+    SYNTAX      INTEGER { p2p(1), p2mp(2) }
+    MAX-ACCESS  not-accessible
+
+
+
+
+
+    STATUS      current
+    ::= { atmAcctngDataObjects 2 }
+
+atmAcctngIfName OBJECT-TYPE
+    SYNTAX      DisplayString
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 3 }
+
+atmAcctngIfAlias OBJECT-TYPE
+    SYNTAX      DisplayString
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 4 }
+
+atmAcctngVpi OBJECT-TYPE
+    SYNTAX      INTEGER (0..4095)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 5 }
+
+atmAcctngVci OBJECT-TYPE
+    SYNTAX      INTEGER (0..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 6 }
+
+atmAcctngCallingParty OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      AtmAddr
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 7 }
+
+atmAcctngCalledParty OBJECT-TYPE
+    SYNTAX      AtmAddr
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 8 }
+
+atmAcctngCallReference OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE(0..3))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 9 }
+
+atmAcctngStartTime OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 10 }
+
+atmAcctngCollectionTime OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 11 }
+
+atmAcctngCollectMode OBJECT-TYPE
+    SYNTAX      INTEGER { onRelease(1),
+                          periodically(2),
+
+
+
+
+
+                          onCommand(3) }
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 12 }
+
+atmAcctngReleaseCause OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 13 }
+
+atmAcctngServiceCategory OBJECT-TYPE
+    SYNTAX      INTEGER { other(1), cbr(2), vbrRt(3), vbrNrt(4),
+                          abr(5), ubr(6), unknown(7) }
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 14 }
+
+atmAcctngTransmittedCells OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 15 }
+
+atmAcctngTransmittedClp0Cells OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 16 }
+
+atmAcctngReceivedCells OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  not-accessible
+
+
+
+
+
+    STATUS      current
+    ::= { atmAcctngDataObjects 17 }
+
+atmAcctngReceivedClp0Cells OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 18 }
+
+atmAcctngTransmitTrafficDescriptorType OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 19 }
+
+atmAcctngTransmitTrafficDescriptorParam1 OBJECT-TYPE
+    SYNTAX      INTEGER (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 20 }
+
+atmAcctngTransmitTrafficDescriptorParam2 OBJECT-TYPE
+    SYNTAX      INTEGER (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+    ::= { atmAcctngDataObjects 21 }
+
+atmAcctngTransmitTrafficDescriptorParam3 OBJECT-TYPE
+    SYNTAX      INTEGER (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 22 }
+
+atmAcctngTransmitTrafficDescriptorParam4 OBJECT-TYPE
+    SYNTAX      INTEGER (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 23 }
+
+atmAcctngTransmitTrafficDescriptorParam5 OBJECT-TYPE
+    SYNTAX      INTEGER (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 24 }
+
+atmAcctngReceiveTrafficDescriptorType OBJECT-TYPE
+    SYNTAX      OBJECT IDENTIFIER
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 25 }
+
+
+
+
+
+
+atmAcctngReceiveTrafficDescriptorParam1 OBJECT-TYPE
+    SYNTAX      INTEGER (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 26 }
+
+atmAcctngReceiveTrafficDescriptorParam2 OBJECT-TYPE
+    SYNTAX      INTEGER (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 27 }
+
+atmAcctngReceiveTrafficDescriptorParam3 OBJECT-TYPE
+    SYNTAX      INTEGER (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 28 }
+
+atmAcctngReceiveTrafficDescriptorParam4 OBJECT-TYPE
+    SYNTAX      INTEGER (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 29 }
+
+atmAcctngReceiveTrafficDescriptorParam5 OBJECT-TYPE
+    SYNTAX      INTEGER (0..2147483647)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+    ::= { atmAcctngDataObjects 30 }
+
+atmAcctngCallingPartySubAddress OBJECT-TYPE
+    SYNTAX      AtmAddr
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 31 }
+
+atmAcctngCalledPartySubAddress OBJECT-TYPE
+    SYNTAX      AtmAddr
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 32 }
+
+atmAcctngRecordCrc16 OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE(2))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { atmAcctngDataObjects 33 }
+
+
+
+
+
+END

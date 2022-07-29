@@ -1,0 +1,187 @@
+ARC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+  MODULE-IDENTITY, OBJECT-TYPE, Unsigned32, mib-2
+          FROM SNMPv2-SMI                           -- [RFC2578]
+  TEXTUAL-CONVENTION, RowStatus, StorageType
+          FROM SNMPv2-TC                            -- [RFC2579]
+  MODULE-COMPLIANCE, OBJECT-GROUP
+          FROM SNMPv2-CONF                          -- [RFC2580]
+  ResourceId
+          FROM ALARM-MIB;                           -- [RFC3877]
+
+arcMibModule MODULE-IDENTITY
+  LAST-UPDATED "200409090000Z"  -- September 09, 2004
+  ORGANIZATION "IETF Distributed Management Working Group"
+
+
+  ::={ mib-2 117 }
+
+
+IANAItuProbableCauseOrZero ::= TEXTUAL-CONVENTION
+  STATUS  current
+  SYNTAX  INTEGER (0..2147483647)
+
+
+arcTimeIntervals   OBJECT IDENTIFIER ::= { arcMibModule 1 }
+arcObjects         OBJECT IDENTIFIER ::= { arcMibModule 2 }
+
+arcTITimeInterval OBJECT-TYPE
+  SYNTAX  Unsigned32
+  UNITS       "seconds"
+  MAX-ACCESS  read-write
+  STATUS  current
+  ::= { arcTimeIntervals 1 }
+
+arcCDTimeInterval OBJECT-TYPE
+  SYNTAX  Unsigned32
+  UNITS       "seconds"
+  MAX-ACCESS  read-write
+  STATUS  current
+  ::= { arcTimeIntervals 2 }
+
+arcTable OBJECT-TYPE
+  SYNTAX  SEQUENCE OF ArcEntry
+  MAX-ACCESS  not-accessible
+  STATUS  current
+
+  ::= { arcObjects 1 }
+
+arcEntry OBJECT-TYPE
+  SYNTAX  ArcEntry
+
+
+
+
+
+  MAX-ACCESS  not-accessible
+  STATUS  current
+
+  INDEX  { arcIndex, arcAlarmType, arcNotificationId }
+  ::= { arcTable 1 }
+
+ArcEntry ::=
+  SEQUENCE {
+    arcIndex                      ResourceId,
+    arcAlarmType                  IANAItuProbableCauseOrZero,
+    arcNotificationId             OBJECT IDENTIFIER,
+    arcState                      INTEGER,
+    arcNalmTimeRemaining          Unsigned32,
+    arcRowStatus                  RowStatus,
+    arcStorageType                StorageType
+    }
+
+arcIndex OBJECT-TYPE
+  SYNTAX  ResourceId
+  MAX-ACCESS  not-accessible
+  STATUS  current
+  ::= { arcEntry 1 }
+
+arcAlarmType OBJECT-TYPE
+  SYNTAX  IANAItuProbableCauseOrZero
+  MAX-ACCESS  not-accessible
+  STATUS  current
+  ::= { arcEntry 2 }
+
+arcNotificationId OBJECT-TYPE
+  SYNTAX  OBJECT IDENTIFIER
+  MAX-ACCESS  not-accessible
+  STATUS  current
+  ::= { arcEntry 3 }
+
+arcState OBJECT-TYPE
+  SYNTAX  INTEGER {
+            nalm (1),
+            nalmQI (2),
+            nalmTI (3),
+            nalmQICD (4)
+            }
+  MAX-ACCESS  read-create
+  STATUS  current
+
+  ::= { arcEntry 4 }
+
+arcNalmTimeRemaining OBJECT-TYPE
+  SYNTAX  Unsigned32
+  UNITS       "seconds"
+  MAX-ACCESS  read-create
+  STATUS  current
+  ::= { arcEntry 5 }
+
+arcRowStatus OBJECT-TYPE
+  SYNTAX  RowStatus
+  MAX-ACCESS  read-create
+  STATUS  current
+  ::= { arcEntry 6 }
+
+arcStorageType OBJECT-TYPE
+  SYNTAX       StorageType
+  MAX-ACCESS   read-create
+  STATUS       current
+  DEFVAL      { nonVolatile }
+
+
+
+
+
+  ::= { arcEntry 7}
+
+
+arcConformance OBJECT IDENTIFIER ::= { arcMibModule 3 }
+
+arcCompliances OBJECT IDENTIFIER ::= { arcConformance 1 }
+
+arcCompliance MODULE-COMPLIANCE
+  STATUS  current
+
+  MODULE -- this module
+           MANDATORY-GROUPS {
+            arcSettingGroup
+           }
+
+  OBJECT arcStorageType
+    WRITE-SYNTAX StorageType {
+                         volatile(2),
+                         nonVolatile(3),
+                         permanent(4)
+                         }
+
+  GROUP  arcTIGroup
+
+  GROUP  arcQICDGroup
+
+  ::= { arcCompliances 1 }
+
+arcGroups OBJECT IDENTIFIER ::= { arcConformance 2 }
+
+
+
+
+
+
+arcSettingGroup OBJECT-GROUP
+  OBJECTS {
+          arcState,
+          arcRowStatus,
+          arcStorageType
+          }
+   STATUS   current
+   ::= { arcGroups 1}
+
+arcTIGroup OBJECT-GROUP
+  OBJECTS {
+          arcTITimeInterval,
+          arcNalmTimeRemaining
+          }
+   STATUS   current
+   ::= { arcGroups 2}
+
+arcQICDGroup OBJECT-GROUP
+  OBJECTS {
+          arcCDTimeInterval,
+          arcNalmTimeRemaining
+          }
+  STATUS   current
+  ::= { arcGroups 3}
+
+END

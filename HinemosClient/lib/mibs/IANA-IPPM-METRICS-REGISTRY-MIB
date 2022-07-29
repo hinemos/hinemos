@@ -1,0 +1,414 @@
+IANA-IPPM-METRICS-REGISTRY-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       OBJECT-IDENTITY, MODULE-IDENTITY, mib-2
+           FROM SNMPv2-SMI;
+
+   ianaIppmMetricsRegistry MODULE-IDENTITY
+   LAST-UPDATED "201508140000Z"    -- August 14, 2015
+   ORGANIZATION "IANA"
+
+
+
+
+
+
+
+
+
+   ::= { mib-2 128 }  
+
+   ianaIppmMetrics OBJECT-IDENTITY
+       STATUS       current
+       ::= { ianaIppmMetricsRegistry 1 }
+
+
+
+   ietfInstantUnidirConnectivity OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 1}
+
+   ietfInstantBidirConnectivity OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 2}
+
+   ietfIntervalUnidirConnectivity OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 3 }
+
+   ietfIntervalBidirConnectivity OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 4 }
+
+   ietfIntervalTemporalConnectivity OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 5 }
+
+
+
+
+
+   ietfOneWayDelay OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 6 }
+
+   ietfOneWayDelayPoissonStream OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 7 }
+
+   ietfOneWayDelayPercentile OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 8 }
+
+   ietfOneWayDelayMedian OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 9 }
+
+   ietfOneWayDelayMinimum OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 10 }
+
+   ietfOneWayDelayInversePercentile OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 11 }
+
+
+   ietfOneWayPktLoss OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 12 }
+
+   ietfOneWayPktLossPoissonStream OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 13 }
+
+   ietfOneWayPktLossAverage OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 14 }
+
+
+
+
+
+   ietfRoundTripDelay OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 15 }
+
+   ietfRoundTripDelayPoissonStream OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 16 }
+
+   ietfRoundTripDelayPercentile OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 17 }
+
+   ietfRoundTripDelayMedian OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 18 }
+
+   ietfRoundTripDelayMinimum OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 19 }
+
+   ietfRoundTripDelayInvPercentile OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 20 }
+
+
+
+
+
+   ietfOneWayLossDistanceStream OBJECT-IDENTITY
+       STATUS     current
+       ::={ ianaIppmMetrics 21}
+
+   ietfOneWayLossPeriodStream OBJECT-IDENTITY
+       STATUS     current
+       ::={ ianaIppmMetrics 22}
+
+   ietfOneWayLossNoticeableRate OBJECT-IDENTITY
+
+       STATUS     current
+       ::= { ianaIppmMetrics 23 }
+
+   ietfOneWayLossPeriodTotal OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 24 }
+
+   ietfOneWayLossPeriodLengths OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 25 }
+
+   ietfOneWayInterLossPeriodLengths OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 26 }
+
+
+
+
+
+   ietfOneWayIpdv OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 27 }
+
+   ietfOneWayIpdvPoissonStream OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 28 }
+
+   ietfOneWayIpdvPercentile OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 29 }
+
+   ietfOneWayIpdvInversePercentile OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 30 }
+
+   ietfOneWayIpdvJitter OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 31 }
+
+   ietfOneWayPeakToPeakIpdv OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 32 }
+
+
+
+
+   ietfOneWayDelayPeriodicStream OBJECT-IDENTITY
+       STATUS     current
+       ::= { ianaIppmMetrics 33 }
+
+
+
+
+   ietfReorderedSingleton OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 34 }  
+    
+   ietfReorderedPacketRatio OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 35 }  
+    
+   ietfReorderingExtent OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 36 }
+    
+   ietfReorderingLateTimeOffset OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 37 } 
+    
+   ietfReorderingByteOffset OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 38 } 
+    
+   ietfReorderingGap OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 39 } 
+    
+   ietfReorderingGapTime OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 40 } 
+    
+   ietfReorderingFreeRunx OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 41 }
+    
+   ietfReorderingFreeRunq OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 42 } 
+    
+   ietfReorderingFreeRunp OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 43 } 
+    
+   ietfReorderingFreeRuna OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 44 } 
+       
+   ietfnReordering OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 45 } 
+
+
+
+   
+   ietfOneWayPacketArrivalCount OBJECT-IDENTITY 
+       STATUS       current 
+       ::= { ianaIppmMetrics 46 }
+
+   ietfOneWayPacketDuplication OBJECT-IDENTITY
+       STATUS       current 
+       ::= { ianaIppmMetrics 47 }
+
+   ietfOneWayPacketDuplicationPoissonStream OBJECT-IDENTITY
+       STATUS       current 
+       ::= { ianaIppmMetrics 48 }
+
+   ietfOneWayPacketDuplicationPeriodicStream OBJECT-IDENTITY
+       STATUS       current 
+       ::= { ianaIppmMetrics 49 }
+
+   ietfOneWayPacketDuplicationFraction OBJECT-IDENTITY
+       STATUS       current 
+       ::= { ianaIppmMetrics 50 }
+
+   ietfOneWayReplicatedPacketRate OBJECT-IDENTITY
+       STATUS       current 
+       ::= { ianaIppmMetrics 51 }
+
+
+
+   
+   ietfSpatialOneWayDelayVector OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 52 }
+
+   ietfSpatialPacketLossVector OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 53 } 
+
+   ietfSpatialOneWayIpdvVector OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 54 }
+      
+   ietfSegmentOneWayDelayStream OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 55 } 
+
+   ietfSegmentPacketLossStream OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 56 }
+
+   ietfSegmentIpdvPrevStream OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 57 } 
+
+   ietfSegmentIpdvMinStream OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 58 }
+
+
+   ietfOneToGroupDelayVector OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 59 }
+   
+   ietfOneToGroupPacketLossVector OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 60 } 
+   
+   ietfOneToGroupIpdvVector OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 61 } 
+
+
+
+   ietfOnetoGroupReceiverNMeanDelay OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 62 } 
+
+   ietfOneToGroupMeanDelay OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 63 } 
+
+   ietfOneToGroupRangeMeanDelay OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 64 } 
+   
+   ietfOneToGroupMaxMeanDelay OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 65 } 
+
+   ietfOneToGroupReceiverNLossRatio OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 66 }
+
+   ietfOneToGroupReceiverNCompLossRatio OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 67 } 
+   
+   ietfOneToGroupLossRatio OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 68 } 
+
+   ietfOneToGroupRangeLossRatio OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 69 } 
+
+   ietfOneToGroupRangeDelayVariation OBJECT-IDENTITY
+       STATUS current
+       ::= { ianaIppmMetrics 70 } 
+
+        
+   ietfFiniteOneWayDelayStream OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 71 }
+
+
+   ietfFiniteOneWayDelayMean OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 72 }
+
+
+
+   ietfCompositeOneWayDelayMean OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 73 } 
+
+
+
+   ietfFiniteOneWayDelayMinimum OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 74 } 
+
+
+
+   ietfCompositeOneWayDelayMinimum OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 75 } 
+
+
+   ietfOneWayPktLossEmpiricProb OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 76 } 
+
+
+   ietfCompositeOneWayPktLossEmpiricProb OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 77 }
+
+
+
+   ietfOneWayPdvRefminStream OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 78 }
+
+
+   ietfOneWayPdvRefminMean OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 79 } 
+
+
+   ietfOneWayPdvRefminVariance OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 80 } 
+
+
+
+   ietfOneWayPdvRefminSkewness OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 81 } 
+
+
+
+   ietfCompositeOneWayPdvRefminQtil OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 82 }
+
+
+   
+   ietfCompositeOneWayPdvRefminNPA OBJECT-IDENTITY
+      STATUS current
+      ::= { ianaIppmMetrics 83 } 
+
+
+
+   END

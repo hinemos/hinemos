@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id: monitor_check_logfile.xsd 295 2015-02-03 16:00:00Z kawamoto $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_monitor_master.xsd" />
+	<xs:include schemaLocation="part_monitor_check.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="I">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="2">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="packetCapMonitors" type="PacketCapMonitorList">
+		<xs:annotation>
+			<xs:documentation>パケットキャプチャ監視設定のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
+	<xs:complexType name="PacketCapMonitorList">
+		<xs:annotation>
+			<xs:documentation>パケットキャプチャ監視設定のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="packetCapMonitor" type="MonitorPacketCap" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>パケットキャプチャ監視設定</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="packetCap" type="MonitorPacketCap" />
+	<xs:complexType name="MonitorPacketCap">
+		<xs:annotation>
+			<xs:documentation>パケットキャプチャ監視の1設定分です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="monitor" type="MonitorInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視設定情報（共通）です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="packetCapInfo" type="MonitorPacketCapInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定情報（パケットキャプチャ監視固有部分）です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="binaryValue" type="MonitorBinaryPatternInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>バイナリ判定情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="MonitorPacketCapInfo">
+		<xs:annotation>
+			<xs:documentation>パケットキャプチャ監視設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="MonitorCheckInfo">
+				<xs:sequence>
+
+					<xs:element name="promiscuousMode" type="xs:boolean" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>プロミスキャスモードです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="filterStr" type="xs:string" minOccurs="0" maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>フィルター文字列(BPF Expression)(tcp等)です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

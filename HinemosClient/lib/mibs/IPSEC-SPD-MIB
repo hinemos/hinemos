@@ -1,0 +1,1439 @@
+IPSEC-SPD-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE, Integer32,
+    Unsigned32, mib-2            FROM SNMPv2-SMI
+
+    TEXTUAL-CONVENTION, RowStatus, TruthValue,
+    TimeStamp, StorageType, VariablePointer
+                                        FROM SNMPv2-TC
+
+
+
+
+
+
+    MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+                                        FROM SNMPv2-CONF
+
+    InterfaceIndex
+                                        FROM IF-MIB
+
+    diffServMIBMultiFieldClfrGroup, IfDirection,
+    diffServMultiFieldClfrNextFree
+                                        FROM DIFFSERV-MIB
+
+    InetAddressType, InetAddress
+                                        FROM INET-ADDRESS-MIB
+
+    SnmpAdminString                     FROM SNMP-FRAMEWORK-MIB
+
+    ;
+
+
+spdMIB MODULE-IDENTITY
+    LAST-UPDATED "200702070000Z"    -- 7 February 2007
+    ORGANIZATION "IETF IP Security Policy Working Group"
+
+
+
+    ::= { mib-2 153 }
+
+
+spdConfigObjects         OBJECT IDENTIFIER
+     ::= { spdMIB 1 }
+spdNotificationObjects   OBJECT IDENTIFIER
+     ::= { spdMIB 2 }
+spdConformanceObjects    OBJECT IDENTIFIER
+     ::= { spdMIB 3 }
+spdActions               OBJECT IDENTIFIER
+     ::= { spdMIB 4 }
+
+
+SpdBooleanOperator ::= TEXTUAL-CONVENTION
+    STATUS   current
+    SYNTAX      INTEGER { or(1), and(2) }
+
+SpdAdminStatus ::= TEXTUAL-CONVENTION
+    STATUS   current
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+
+SpdIPPacketLogging ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS   current
+
+    SYNTAX      Integer32 (-1..65535)
+
+
+SpdTimePeriod ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "31t"
+    STATUS       current
+    SYNTAX      OCTET STRING (SIZE (0..31))
+
+spdLocalConfigObjects OBJECT IDENTIFIER
+     ::= { spdConfigObjects 1 }
+
+spdIngressPolicyGroupName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(0..32))
+    MAX-ACCESS  read-write
+    STATUS      current
+
+
+
+
+
+    DEFVAL { "" }
+    ::= { spdLocalConfigObjects 1 }
+
+spdEgressPolicyGroupName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(0..32))
+    MAX-ACCESS  read-write
+    STATUS      current
+    DEFVAL { "" }
+    ::= { spdLocalConfigObjects 2 }
+
+
+spdEndpointToGroupTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SpdEndpointToGroupEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdConfigObjects 2 }
+
+spdEndpointToGroupEntry OBJECT-TYPE
+    SYNTAX      SpdEndpointToGroupEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+    INDEX { spdEndGroupDirection, spdEndGroupInterface }
+    ::= { spdEndpointToGroupTable 1 }
+
+SpdEndpointToGroupEntry ::= SEQUENCE {
+    spdEndGroupDirection                      IfDirection,
+    spdEndGroupInterface                      InterfaceIndex,
+    spdEndGroupName                           SnmpAdminString,
+    spdEndGroupLastChanged                    TimeStamp,
+    spdEndGroupStorageType                    StorageType,
+    spdEndGroupRowStatus                      RowStatus
+}
+
+spdEndGroupDirection OBJECT-TYPE
+    SYNTAX      IfDirection
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdEndpointToGroupEntry 1 }
+
+spdEndGroupInterface OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdEndpointToGroupEntry 2 }
+
+spdEndGroupName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdEndpointToGroupEntry 3 }
+
+spdEndGroupLastChanged OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdEndpointToGroupEntry 4 }
+
+spdEndGroupStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { spdEndpointToGroupEntry 5 }
+
+spdEndGroupRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+
+
+
+
+
+    STATUS      current
+    ::= { spdEndpointToGroupEntry 6 }
+
+
+spdGroupContentsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SpdGroupContentsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdConfigObjects 3 }
+
+spdGroupContentsEntry OBJECT-TYPE
+    SYNTAX      SpdGroupContentsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+
+
+
+
+
+    INDEX   { spdGroupContName, spdGroupContPriority }
+    ::= { spdGroupContentsTable 1 }
+
+SpdGroupContentsEntry ::= SEQUENCE {
+    spdGroupContName                        SnmpAdminString,
+    spdGroupContPriority                    Integer32,
+    spdGroupContFilter                      VariablePointer,
+    spdGroupContComponentType               INTEGER,
+    spdGroupContComponentName               SnmpAdminString,
+    spdGroupContLastChanged                 TimeStamp,
+    spdGroupContStorageType                 StorageType,
+    spdGroupContRowStatus                   RowStatus
+}
+
+spdGroupContName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdGroupContentsEntry 1 }
+
+spdGroupContPriority OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdGroupContentsEntry 2 }
+
+spdGroupContFilter OBJECT-TYPE
+    SYNTAX      VariablePointer
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { spdTrueFilterInstance }
+    ::= { spdGroupContentsEntry 3 }
+
+spdGroupContComponentType OBJECT-TYPE
+    SYNTAX      INTEGER { group(1), rule(2) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { rule }
+    ::= { spdGroupContentsEntry 4 }
+
+spdGroupContComponentName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdGroupContentsEntry 5 }
+
+spdGroupContLastChanged OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdGroupContentsEntry 6 }
+
+spdGroupContStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { spdGroupContentsEntry 7 }
+
+spdGroupContRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdGroupContentsEntry 8 }
+
+
+
+spdRuleDefinitionTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SpdRuleDefinitionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdConfigObjects 4 }
+
+spdRuleDefinitionEntry OBJECT-TYPE
+    SYNTAX      SpdRuleDefinitionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { spdRuleDefName }
+    ::= { spdRuleDefinitionTable 1 }
+
+SpdRuleDefinitionEntry ::= SEQUENCE {
+    spdRuleDefName                          SnmpAdminString,
+
+
+
+
+
+    spdRuleDefDescription                   SnmpAdminString,
+    spdRuleDefFilter                        VariablePointer,
+    spdRuleDefFilterNegated                 TruthValue,
+    spdRuleDefAction                        VariablePointer,
+    spdRuleDefAdminStatus                   SpdAdminStatus,
+    spdRuleDefLastChanged                   TimeStamp,
+    spdRuleDefStorageType                   StorageType,
+    spdRuleDefRowStatus                     RowStatus
+}
+
+spdRuleDefName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdRuleDefinitionEntry 1 }
+
+spdRuleDefDescription OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { "" }
+    ::= { spdRuleDefinitionEntry 2 }
+
+spdRuleDefFilter OBJECT-TYPE
+    SYNTAX      VariablePointer
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdRuleDefinitionEntry 3 }
+
+spdRuleDefFilterNegated OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { false }
+    ::= { spdRuleDefinitionEntry 4 }
+
+spdRuleDefAction OBJECT-TYPE
+    SYNTAX      VariablePointer
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdRuleDefinitionEntry 5 }
+
+spdRuleDefAdminStatus OBJECT-TYPE
+    SYNTAX      SpdAdminStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { enabled }
+    ::= { spdRuleDefinitionEntry 6 }
+
+spdRuleDefLastChanged OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdRuleDefinitionEntry 7 }
+
+spdRuleDefStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { spdRuleDefinitionEntry 8 }
+
+spdRuleDefRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdRuleDefinitionEntry 9 }
+
+
+spdCompoundFilterTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SpdCompoundFilterEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdConfigObjects 5 }
+
+spdCompoundFilterEntry OBJECT-TYPE
+    SYNTAX      SpdCompoundFilterEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       { spdCompFiltName }
+    ::= { spdCompoundFilterTable 1 }
+
+SpdCompoundFilterEntry ::= SEQUENCE {
+    spdCompFiltName                          SnmpAdminString,
+    spdCompFiltDescription                   SnmpAdminString,
+    spdCompFiltLogicType                     SpdBooleanOperator,
+    spdCompFiltLastChanged                   TimeStamp,
+    spdCompFiltStorageType                   StorageType,
+    spdCompFiltRowStatus                     RowStatus
+}
+
+spdCompFiltName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdCompoundFilterEntry 1 }
+
+spdCompFiltDescription OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { "" }
+    ::= { spdCompoundFilterEntry 2 }
+
+spdCompFiltLogicType OBJECT-TYPE
+    SYNTAX      SpdBooleanOperator
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { and }
+    ::= { spdCompoundFilterEntry 3 }
+
+
+
+
+
+
+spdCompFiltLastChanged OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdCompoundFilterEntry 4 }
+
+spdCompFiltStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { spdCompoundFilterEntry 5 }
+
+spdCompFiltRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdCompoundFilterEntry 6 }
+
+
+spdSubfiltersTable OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      SEQUENCE OF SpdSubfiltersEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdConfigObjects 6 }
+
+spdSubfiltersEntry OBJECT-TYPE
+    SYNTAX      SpdSubfiltersEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       {  spdCompFiltName, spdSubFiltPriority }
+    ::= { spdSubfiltersTable 1 }
+
+SpdSubfiltersEntry ::= SEQUENCE {
+    spdSubFiltPriority                      Integer32,
+    spdSubFiltSubfilter                     VariablePointer,
+    spdSubFiltSubfilterIsNegated            TruthValue,
+    spdSubFiltLastChanged                   TimeStamp,
+    spdSubFiltStorageType                   StorageType,
+    spdSubFiltRowStatus                     RowStatus
+}
+
+spdSubFiltPriority OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdSubfiltersEntry 1 }
+
+spdSubFiltSubfilter OBJECT-TYPE
+    SYNTAX      VariablePointer
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdSubfiltersEntry 2 }
+
+spdSubFiltSubfilterIsNegated OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { false }
+    ::= { spdSubfiltersEntry 3 }
+
+spdSubFiltLastChanged OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdSubfiltersEntry 4 }
+
+spdSubFiltStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { spdSubfiltersEntry 5 }
+
+spdSubFiltRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdSubfiltersEntry 6 }
+
+
+
+
+
+
+
+spdStaticFilters OBJECT IDENTIFIER ::= { spdConfigObjects 7 }
+
+spdTrueFilter OBJECT-TYPE
+        SYNTAX      Integer32 (1)
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { spdStaticFilters 1 }
+
+
+spdTrueFilterInstance OBJECT IDENTIFIER ::= { spdTrueFilter 0 }
+
+
+
+spdIpOffsetFilterTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SpdIpOffsetFilterEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdConfigObjects 8 }
+
+spdIpOffsetFilterEntry OBJECT-TYPE
+    SYNTAX      SpdIpOffsetFilterEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       {  spdIpOffFiltName }
+    ::= { spdIpOffsetFilterTable 1 }
+
+
+
+
+
+
+SpdIpOffsetFilterEntry ::= SEQUENCE {
+    spdIpOffFiltName                         SnmpAdminString,
+    spdIpOffFiltOffset                       Unsigned32,
+    spdIpOffFiltType                         INTEGER,
+    spdIpOffFiltValue                        OCTET STRING,
+    spdIpOffFiltLastChanged                  TimeStamp,
+    spdIpOffFiltStorageType                  StorageType,
+    spdIpOffFiltRowStatus                    RowStatus
+}
+
+spdIpOffFiltName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdIpOffsetFilterEntry 1 }
+
+spdIpOffFiltOffset OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..65535)
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdIpOffsetFilterEntry 2 }
+
+spdIpOffFiltType OBJECT-TYPE
+    SYNTAX INTEGER { equal(1),
+                     notEqual(2),
+                     arithmeticLess(3),
+                     arithmeticGreaterOrEqual(4),
+                     arithmeticGreater(5),
+                     arithmeticLessOrEqual(6) }
+    MAX-ACCESS  read-create
+    STATUS      current
+
+    ::= { spdIpOffsetFilterEntry 3 }
+
+spdIpOffFiltValue OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      OCTET STRING (SIZE(1..1024))
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdIpOffsetFilterEntry 4 }
+
+spdIpOffFiltLastChanged OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdIpOffsetFilterEntry 5 }
+
+
+spdIpOffFiltStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { spdIpOffsetFilterEntry 6 }
+
+spdIpOffFiltRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdIpOffsetFilterEntry 7 }
+
+
+
+spdTimeFilterTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SpdTimeFilterEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdConfigObjects 9 }
+
+spdTimeFilterEntry OBJECT-TYPE
+    SYNTAX      SpdTimeFilterEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { spdTimeFiltName }
+    ::= { spdTimeFilterTable 1 }
+
+SpdTimeFilterEntry ::= SEQUENCE {
+    spdTimeFiltName                 SnmpAdminString,
+    spdTimeFiltPeriod               SpdTimePeriod,
+    spdTimeFiltMonthOfYearMask      BITS,
+    spdTimeFiltDayOfMonthMask       OCTET STRING,
+    spdTimeFiltDayOfWeekMask        BITS,
+    spdTimeFiltTimeOfDayMask        SpdTimePeriod,
+    spdTimeFiltLastChanged          TimeStamp,
+    spdTimeFiltStorageType          StorageType,
+    spdTimeFiltRowStatus            RowStatus
+}
+
+
+
+
+
+
+spdTimeFiltName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdTimeFilterEntry 1 }
+
+
+spdTimeFiltPeriod OBJECT-TYPE
+    SYNTAX      SpdTimePeriod
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { "THISANDPRIOR/THISANDFUTURE" }
+    ::= { spdTimeFilterEntry 2 }
+
+
+spdTimeFiltMonthOfYearMask OBJECT-TYPE
+    SYNTAX      BITS { january(0), february(1), march(2),
+                       april(3), may(4), june(5), july(6),
+                       august(7), september(8), october(9),
+                       november(10), december(11) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { { january, february, march, april, may, june, july,
+               august, september, october, november, december } }
+    ::= { spdTimeFilterEntry 3 }
+
+spdTimeFiltDayOfMonthMask OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE(8))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { 'fffffffffffffffe'H }
+    ::= { spdTimeFilterEntry 4 }
+
+spdTimeFiltDayOfWeekMask OBJECT-TYPE
+    SYNTAX      BITS { sunday(0), monday(1), tuesday(2),
+                       wednesday(3), thursday(4), friday(5),
+                       saturday(6) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { { monday, tuesday, wednesday, thursday, friday,
+               saturday, sunday } }
+    ::= { spdTimeFilterEntry 5 }
+
+spdTimeFiltTimeOfDayMask OBJECT-TYPE
+    SYNTAX      SpdTimePeriod
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { "00000000T000000/00000000T240000" }
+    ::= { spdTimeFilterEntry 6 }
+
+spdTimeFiltLastChanged OBJECT-TYPE
+    SYNTAX      TimeStamp
+
+
+
+
+
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdTimeFilterEntry 7 }
+
+spdTimeFiltStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { spdTimeFilterEntry 8 }
+
+spdTimeFiltRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdTimeFilterEntry 9 }
+
+
+
+
+
+
+
+spdIpsoHeaderFilterTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SpdIpsoHeaderFilterEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdConfigObjects 10 }
+
+spdIpsoHeaderFilterEntry OBJECT-TYPE
+    SYNTAX      SpdIpsoHeaderFilterEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX       {  spdIpsoHeadFiltName }
+    ::= { spdIpsoHeaderFilterTable 1 }
+
+SpdIpsoHeaderFilterEntry ::= SEQUENCE {
+    spdIpsoHeadFiltName                     SnmpAdminString,
+    spdIpsoHeadFiltType                     BITS,
+    spdIpsoHeadFiltClassification           INTEGER,
+    spdIpsoHeadFiltProtectionAuth           INTEGER,
+    spdIpsoHeadFiltLastChanged              TimeStamp,
+    spdIpsoHeadFiltStorageType              StorageType,
+    spdIpsoHeadFiltRowStatus                RowStatus
+}
+
+spdIpsoHeadFiltName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdIpsoHeaderFilterEntry 1 }
+
+spdIpsoHeadFiltType OBJECT-TYPE
+    SYNTAX      BITS { classificationLevel(0),
+                       protectionAuthority(1) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdIpsoHeaderFilterEntry 2 }
+
+spdIpsoHeadFiltClassification OBJECT-TYPE
+    SYNTAX      INTEGER { topSecret(61), secret(90),
+                          confidential(150), unclassified(171) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdIpsoHeaderFilterEntry 3 }
+
+spdIpsoHeadFiltProtectionAuth OBJECT-TYPE
+    SYNTAX      INTEGER { genser(0), siopesi(1), sci(2),
+                          nsa(3), doe(4) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdIpsoHeaderFilterEntry 4 }
+
+spdIpsoHeadFiltLastChanged OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+
+
+
+
+
+    ::= { spdIpsoHeaderFilterEntry 5 }
+
+spdIpsoHeadFiltStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { spdIpsoHeaderFilterEntry 6 }
+
+spdIpsoHeadFiltRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdIpsoHeaderFilterEntry 7 }
+
+
+spdCompoundActionTable OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      SEQUENCE OF SpdCompoundActionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdConfigObjects 11 }
+
+spdCompoundActionEntry OBJECT-TYPE
+    SYNTAX      SpdCompoundActionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { spdCompActName }
+    ::= { spdCompoundActionTable 1 }
+
+SpdCompoundActionEntry ::= SEQUENCE {
+    spdCompActName                      SnmpAdminString,
+    spdCompActExecutionStrategy         INTEGER,
+    spdCompActLastChanged               TimeStamp,
+    spdCompActStorageType               StorageType,
+    spdCompActRowStatus                 RowStatus
+}
+
+spdCompActName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE(1..32))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdCompoundActionEntry 1 }
+
+spdCompActExecutionStrategy OBJECT-TYPE
+    SYNTAX      INTEGER { doAll(1),
+                          doUntilSuccess(2),
+                          doUntilFailure(3) }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { doUntilSuccess }
+    ::= { spdCompoundActionEntry 2 }
+
+spdCompActLastChanged OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdCompoundActionEntry 3 }
+
+spdCompActStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+
+
+
+
+
+    ::= { spdCompoundActionEntry 4 }
+
+spdCompActRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdCompoundActionEntry 5 }
+
+
+
+spdSubactionsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SpdSubactionsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdConfigObjects 12 }
+
+spdSubactionsEntry OBJECT-TYPE
+    SYNTAX      SpdSubactionsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    INDEX   { spdCompActName, spdSubActPriority }
+    ::= { spdSubactionsTable 1 }
+
+SpdSubactionsEntry ::= SEQUENCE {
+    spdSubActPriority                          Integer32,
+    spdSubActSubActionName                     VariablePointer,
+
+
+
+
+
+    spdSubActLastChanged                       TimeStamp,
+    spdSubActStorageType                       StorageType,
+    spdSubActRowStatus                         RowStatus
+}
+
+spdSubActPriority OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    ::= { spdSubactionsEntry 1 }
+
+spdSubActSubActionName OBJECT-TYPE
+    SYNTAX      VariablePointer
+    MAX-ACCESS  read-create
+    STATUS      current
+    ::= { spdSubactionsEntry 2 }
+
+spdSubActLastChanged OBJECT-TYPE
+
+
+
+
+
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdSubactionsEntry 3 }
+
+spdSubActStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DEFVAL { nonVolatile }
+    ::= { spdSubactionsEntry 4 }
+
+spdSubActRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+
+
+
+
+
+    ::= { spdSubactionsEntry 5 }
+
+
+
+spdStaticActions OBJECT IDENTIFIER ::= { spdConfigObjects 13 }
+
+spdDropAction    OBJECT-TYPE
+    SYNTAX      Integer32 (1)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdStaticActions 1 }
+
+spdDropActionLog OBJECT-TYPE
+    SYNTAX      Integer32 (1)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdStaticActions 2 }
+
+spdAcceptAction OBJECT-TYPE
+    SYNTAX      Integer32 (1)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdStaticActions 3 }
+
+spdAcceptActionLog OBJECT-TYPE
+    SYNTAX      Integer32 (1)
+    MAX-ACCESS  read-only
+    STATUS      current
+    ::= { spdStaticActions 4 }
+
+
+
+
+
+
+
+spdNotificationVariables OBJECT IDENTIFIER ::=
+   { spdNotificationObjects 1 }
+
+spdNotifications OBJECT IDENTIFIER ::=
+   { spdNotificationObjects 0 }
+
+spdActionExecuted OBJECT-TYPE
+    SYNTAX      VariablePointer
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    ::= { spdNotificationVariables 1 }
+
+spdIPEndpointAddType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    ::= { spdNotificationVariables 2 }
+
+spdIPEndpointAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    ::= { spdNotificationVariables 3 }
+
+spdIPSourceType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    ::= { spdNotificationVariables 4 }
+
+spdIPSourceAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    ::= { spdNotificationVariables 5 }
+
+spdIPDestinationType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    ::= { spdNotificationVariables 6 }
+
+spdIPDestinationAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    ::= { spdNotificationVariables 7 }
+
+spdPacketDirection OBJECT-TYPE
+    SYNTAX      IfDirection
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    ::= { spdNotificationVariables 8 }
+
+spdPacketPart OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (0..65535))
+    MAX-ACCESS  accessible-for-notify
+
+
+
+
+
+    STATUS      current
+    ::= { spdNotificationVariables 9 }
+
+spdActionNotification NOTIFICATION-TYPE
+    OBJECTS { spdActionExecuted, spdIPEndpointAddType,
+              spdIPEndpointAddress,
+              spdIPSourceType, spdIPSourceAddress,
+              spdIPDestinationType,
+              spdIPDestinationAddress,
+              spdPacketDirection }
+    STATUS  current
+    ::= { spdNotifications 1 }
+
+spdPacketNotification NOTIFICATION-TYPE
+    OBJECTS { spdActionExecuted, spdIPEndpointAddType,
+              spdIPEndpointAddress,
+              spdIPSourceType, spdIPSourceAddress,
+              spdIPDestinationType,
+              spdIPDestinationAddress,
+              spdPacketDirection,
+              spdPacketPart }
+    STATUS  current
+    ::= { spdNotifications 2 }
+
+
+
+
+
+
+
+
+spdCompliances OBJECT IDENTIFIER
+    ::= { spdConformanceObjects 1 }
+spdGroups OBJECT IDENTIFIER
+    ::= { spdConformanceObjects 2 }
+
+spdRuleFilterFullCompliance MODULE-COMPLIANCE
+    STATUS      current
+
+    MODULE -- This Module
+        MANDATORY-GROUPS { spdEndpointGroup,
+                           spdGroupContentsGroup,
+                           spdRuleDefinitionGroup,
+                           spdStaticFilterGroup,
+                           spdStaticActionGroup ,
+                           diffServMIBMultiFieldClfrGroup }
+
+        GROUP spdIpsecSystemPolicyNameGroup
+
+        GROUP spdCompoundFilterGroup
+
+        GROUP spdIPOffsetFilterGroup
+
+        GROUP spdTimeFilterGroup
+
+        GROUP spdIpsoHeaderFilterGroup
+
+        GROUP  spdCompoundActionGroup
+
+        OBJECT      spdEndGroupLastChanged
+        MIN-ACCESS  not-accessible
+
+        OBJECT      spdGroupContComponentType
+        SYNTAX      INTEGER {
+                rule(2)
+        }
+
+        OBJECT      spdGroupContLastChanged
+        MIN-ACCESS  not-accessible
+
+        OBJECT      spdRuleDefLastChanged
+        MIN-ACCESS  not-accessible
+
+        OBJECT      spdCompFiltLastChanged
+        MIN-ACCESS  not-accessible
+
+        OBJECT      spdSubFiltLastChanged
+        MIN-ACCESS  not-accessible
+
+
+
+
+
+
+        OBJECT      spdIpOffFiltLastChanged
+        MIN-ACCESS  not-accessible
+
+        OBJECT      spdTimeFiltLastChanged
+        MIN-ACCESS  not-accessible
+
+        OBJECT      spdIpsoHeadFiltLastChanged
+        MIN-ACCESS  not-accessible
+
+        OBJECT      spdCompActLastChanged
+        MIN-ACCESS  not-accessible
+
+        OBJECT      spdSubActLastChanged
+        MIN-ACCESS  not-accessible
+
+        OBJECT      diffServMultiFieldClfrNextFree
+        MIN-ACCESS  not-accessible
+
+    ::= { spdCompliances 1 }
+
+
+spdLoggingCompliance MODULE-COMPLIANCE
+    STATUS      current
+    MODULE -- This Module
+        MANDATORY-GROUPS { spdActionLoggingObjectGroup,
+                           spdActionNotificationGroup }
+
+    ::= { spdCompliances 2 }
+
+
+
+
+
+
+spdRuleFilterReadOnlyCompliance MODULE-COMPLIANCE
+    STATUS      current
+
+    MODULE -- This Module
+        MANDATORY-GROUPS { spdEndpointGroup,
+                           spdGroupContentsGroup,
+                           spdRuleDefinitionGroup,
+                           spdStaticFilterGroup,
+                           spdStaticActionGroup ,
+                           diffServMIBMultiFieldClfrGroup }
+
+        GROUP spdIpsecSystemPolicyNameGroup
+
+        GROUP spdCompoundFilterGroup
+
+        GROUP spdIPOffsetFilterGroup
+
+        GROUP spdTimeFilterGroup
+
+        GROUP spdIpsoHeaderFilterGroup
+
+        GROUP  spdCompoundActionGroup
+
+        OBJECT       spdCompActExecutionStrategy
+        MIN-ACCESS   read-only
+
+        OBJECT       spdCompActLastChanged
+
+        OBJECT       spdCompActRowStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdCompActStorageType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdCompFiltDescription
+        MIN-ACCESS   read-only
+
+        OBJECT       spdCompFiltLastChanged
+
+        OBJECT       spdCompFiltLogicType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdCompFiltRowStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdCompFiltStorageType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdEgressPolicyGroupName
+        MIN-ACCESS   read-only
+
+        OBJECT       spdEndGroupLastChanged
+
+        OBJECT       spdEndGroupName
+        MIN-ACCESS   read-only
+
+        OBJECT       spdEndGroupRowStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdEndGroupStorageType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdGroupContComponentName
+        MIN-ACCESS   read-only
+
+        OBJECT       spdGroupContComponentType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdGroupContFilter
+        MIN-ACCESS   read-only
+
+        OBJECT       spdGroupContLastChanged
+
+        OBJECT       spdGroupContRowStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdGroupContStorageType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIngressPolicyGroupName
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIpOffFiltLastChanged
+
+        OBJECT       spdIpOffFiltOffset
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIpOffFiltRowStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIpOffFiltStorageType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIpOffFiltType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIpOffFiltValue
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIpsoHeadFiltClassification
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIpsoHeadFiltLastChanged
+
+        OBJECT       spdIpsoHeadFiltProtectionAuth
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIpsoHeadFiltRowStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIpsoHeadFiltStorageType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdIpsoHeadFiltType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdRuleDefAction
+        MIN-ACCESS   read-only
+
+        OBJECT       spdRuleDefAdminStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdRuleDefDescription
+        MIN-ACCESS   read-only
+
+        OBJECT       spdRuleDefFilter
+        MIN-ACCESS   read-only
+
+        OBJECT       spdRuleDefFilterNegated
+        MIN-ACCESS   read-only
+
+        OBJECT       spdRuleDefLastChanged
+
+
+
+
+
+
+        OBJECT       spdRuleDefRowStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdRuleDefStorageType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdSubActLastChanged
+
+        OBJECT       spdSubActRowStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdSubActStorageType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdSubActSubActionName
+        MIN-ACCESS   read-only
+
+        OBJECT       spdSubFiltLastChanged
+
+        OBJECT       spdSubFiltRowStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdSubFiltStorageType
+        MIN-ACCESS   read-only
+
+        OBJECT       spdSubFiltSubfilter
+        MIN-ACCESS   read-only
+
+
+
+
+
+
+        OBJECT       spdSubFiltSubfilterIsNegated
+        MIN-ACCESS   read-only
+
+        OBJECT       spdTimeFiltDayOfMonthMask
+        MIN-ACCESS   read-only
+
+        OBJECT       spdTimeFiltDayOfWeekMask
+        MIN-ACCESS   read-only
+
+        OBJECT       spdTimeFiltLastChanged
+
+        OBJECT       spdTimeFiltMonthOfYearMask
+        MIN-ACCESS   read-only
+
+        OBJECT       spdTimeFiltPeriod
+        MIN-ACCESS   read-only
+
+        OBJECT       spdTimeFiltRowStatus
+        MIN-ACCESS   read-only
+
+        OBJECT       spdTimeFiltTimeOfDayMask
+        MIN-ACCESS   read-only
+
+        OBJECT       spdTimeFiltStorageType
+        MIN-ACCESS   read-only
+
+    ::= { spdCompliances 3 }
+
+
+
+
+
+
+
+spdEndpointGroup OBJECT-GROUP
+    OBJECTS {
+        spdEndGroupName, spdEndGroupLastChanged,
+        spdEndGroupStorageType, spdEndGroupRowStatus
+    }
+    STATUS current
+    ::= { spdGroups 1 }
+
+spdGroupContentsGroup OBJECT-GROUP
+    OBJECTS {
+        spdGroupContComponentType, spdGroupContFilter,
+        spdGroupContComponentName, spdGroupContLastChanged,
+        spdGroupContStorageType, spdGroupContRowStatus
+    }
+    STATUS current
+    ::= { spdGroups 2 }
+
+spdIpsecSystemPolicyNameGroup OBJECT-GROUP
+    OBJECTS {
+        spdIngressPolicyGroupName,
+        spdEgressPolicyGroupName
+    }
+    STATUS current
+    ::= { spdGroups 3}
+
+spdRuleDefinitionGroup OBJECT-GROUP
+    OBJECTS {
+        spdRuleDefDescription, spdRuleDefFilter,
+        spdRuleDefFilterNegated, spdRuleDefAction,
+        spdRuleDefAdminStatus, spdRuleDefLastChanged,
+
+
+
+
+
+        spdRuleDefStorageType, spdRuleDefRowStatus
+    }
+    STATUS current
+    ::= { spdGroups 4 }
+
+spdCompoundFilterGroup OBJECT-GROUP
+    OBJECTS {
+        spdCompFiltDescription, spdCompFiltLogicType,
+        spdCompFiltLastChanged, spdCompFiltStorageType,
+        spdCompFiltRowStatus, spdSubFiltSubfilter,
+        spdSubFiltSubfilterIsNegated, spdSubFiltLastChanged,
+        spdSubFiltStorageType, spdSubFiltRowStatus
+    }
+    STATUS current
+    ::= { spdGroups 5 }
+
+spdStaticFilterGroup OBJECT-GROUP
+        OBJECTS { spdTrueFilter }
+     STATUS current
+    ::= { spdGroups 6 }
+
+spdIPOffsetFilterGroup OBJECT-GROUP
+    OBJECTS {
+        spdIpOffFiltOffset, spdIpOffFiltType,
+        spdIpOffFiltValue, spdIpOffFiltLastChanged,
+        spdIpOffFiltStorageType, spdIpOffFiltRowStatus
+    }
+
+    STATUS current
+    ::= { spdGroups 7 }
+
+spdTimeFilterGroup OBJECT-GROUP
+    OBJECTS {
+        spdTimeFiltPeriod,
+        spdTimeFiltMonthOfYearMask, spdTimeFiltDayOfMonthMask,
+        spdTimeFiltDayOfWeekMask, spdTimeFiltTimeOfDayMask,
+
+
+
+
+
+        spdTimeFiltLastChanged,
+        spdTimeFiltStorageType, spdTimeFiltRowStatus
+    }
+    STATUS current
+    ::= { spdGroups 8 }
+
+spdIpsoHeaderFilterGroup OBJECT-GROUP
+    OBJECTS {
+        spdIpsoHeadFiltType, spdIpsoHeadFiltClassification,
+        spdIpsoHeadFiltProtectionAuth, spdIpsoHeadFiltLastChanged,
+        spdIpsoHeadFiltStorageType, spdIpsoHeadFiltRowStatus
+    }
+    STATUS current
+    ::= { spdGroups 9 }
+
+
+spdStaticActionGroup OBJECT-GROUP
+    OBJECTS {
+        spdDropAction, spdAcceptAction,
+        spdDropActionLog, spdAcceptActionLog
+    }
+    STATUS current
+    ::= { spdGroups 10 }
+
+spdCompoundActionGroup OBJECT-GROUP
+    OBJECTS {
+        spdCompActExecutionStrategy, spdCompActLastChanged,
+        spdCompActStorageType,
+
+        spdCompActRowStatus, spdSubActSubActionName,
+        spdSubActLastChanged, spdSubActStorageType,
+        spdSubActRowStatus
+    }
+    STATUS current
+    ::= { spdGroups 11 }
+
+spdActionLoggingObjectGroup OBJECT-GROUP
+    OBJECTS {
+        spdActionExecuted,
+        spdIPEndpointAddType,   spdIPEndpointAddress,
+        spdIPSourceType,        spdIPSourceAddress,
+        spdIPDestinationType,   spdIPDestinationAddress,
+        spdPacketDirection,     spdPacketPart
+    }
+    STATUS current
+    ::= { spdGroups 12 }
+
+spdActionNotificationGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+        spdActionNotification,
+        spdPacketNotification
+    }
+    STATUS current
+    ::= { spdGroups 13 }
+
+
+END

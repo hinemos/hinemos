@@ -1,0 +1,139 @@
+   IF-CAP-STACK-MIB DEFINITIONS ::= BEGIN
+
+     IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, mib-2
+         FROM SNMPv2-SMI         -- [RFC2578]
+       TruthValue
+         FROM SNMPv2-TC          -- [RFC2579]
+       MODULE-COMPLIANCE, OBJECT-GROUP
+         FROM SNMPv2-CONF        -- [RFC2580]
+       ifStackGroup2, ifStackHigherLayer, ifStackLowerLayer
+         FROM IF-MIB             -- [RFC2863]
+       ifInvStackGroup
+         FROM IF-INVERTED-STACK-MIB -- [RFC2864]
+       ;
+
+     ifCapStackMIB MODULE-IDENTITY
+       LAST-UPDATED "200711070000Z"  -- November 07, 2007
+       ORGANIZATION "IETF Ethernet Interfaces and Hub MIB Working Group"
+
+
+
+       ::= { mib-2 166 }
+
+
+      ifCapStackObjects     OBJECT IDENTIFIER ::= { ifCapStackMIB 1 }
+
+      ifCapStackConformance OBJECT IDENTIFIER ::= { ifCapStackMIB 2 }
+
+
+
+
+
+
+
+
+      ifCapStackTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF IfCapStackEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        ::= { ifCapStackObjects 1 }
+
+      ifCapStackEntry  OBJECT-TYPE
+        SYNTAX      IfCapStackEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        INDEX {
+          ifStackHigherLayer,
+          ifStackLowerLayer
+        }
+
+
+
+
+
+        ::= { ifCapStackTable 1 }
+
+      IfCapStackEntry ::= SEQUENCE {
+           ifCapStackStatus       TruthValue
+         }
+
+      ifCapStackStatus  OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        ::= { ifCapStackEntry 1 }
+
+      ifInvCapStackTable  OBJECT-TYPE
+        SYNTAX        SEQUENCE OF IfInvCapStackEntry
+        MAX-ACCESS    not-accessible
+        STATUS        current
+        ::= { ifCapStackObjects 2 }
+
+      ifInvCapStackEntry  OBJECT-TYPE
+        SYNTAX        IfInvCapStackEntry
+        MAX-ACCESS    not-accessible
+        STATUS        current
+        INDEX { ifStackLowerLayer, ifStackHigherLayer }
+        ::= { ifInvCapStackTable 1 }
+
+       IfInvCapStackEntry ::= SEQUENCE {
+         ifInvCapStackStatus       TruthValue
+       }
+
+      ifInvCapStackStatus  OBJECT-TYPE
+        SYNTAX         TruthValue
+        MAX-ACCESS     read-only
+        STATUS         current
+        ::= { ifInvCapStackEntry 1 }
+
+
+      ifCapStackGroups      OBJECT IDENTIFIER ::=
+           { ifCapStackConformance 1 }
+
+      ifCapStackCompliances OBJECT IDENTIFIER ::=
+           { ifCapStackConformance 2 }
+
+
+      ifCapStackGroup OBJECT-GROUP
+        OBJECTS {
+          ifCapStackStatus,
+          ifInvCapStackStatus
+        }
+        STATUS  current
+        ::= { ifCapStackGroups 1 }
+
+
+
+      ifCapStackCompliance MODULE-COMPLIANCE
+        STATUS      current
+
+
+        MODULE  -- this module
+          MANDATORY-GROUPS {
+            ifCapStackGroup
+          }
+
+          OBJECT       ifCapStackStatus
+
+
+
+
+
+          SYNTAX       TruthValue { true(1) }
+
+          OBJECT       ifInvCapStackStatus
+          SYNTAX       TruthValue { true(1) }
+
+        MODULE  IF-MIB
+          MANDATORY-GROUPS {
+            ifStackGroup2
+          }
+
+        MODULE  IF-INVERTED-STACK-MIB
+          MANDATORY-GROUPS {
+            ifInvStackGroup
+          }
+
+        ::= { ifCapStackCompliances 1 }
+   END

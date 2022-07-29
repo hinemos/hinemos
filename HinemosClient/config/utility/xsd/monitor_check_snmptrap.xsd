@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: monitor_check_snmptrap.xsd 295 2015-02-05 19:00:00Z uchiyama $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_monitor_master.xsd" />
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1"  default="H">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="2">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="snmpTrapMonitors" type="SnmpTrapMonitorList">
+		<xs:annotation>
+			<xs:documentation>SNMPTRAP監視のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="SnmpTrapMonitorList">
+		<xs:annotation>
+			<xs:documentation>SNMPTRAP監視のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trapMonitor" type="MonitorSnmpTrap" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>SNMPTRAP監視設定</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="snmpTrap" type="MonitorSnmpTrap" />
+	<xs:complexType name="MonitorSnmpTrap">
+		<xs:annotation>
+			<xs:documentation>SNMPTRAP監視の1設定分です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="monitor" type="MonitorInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>監視設定情報（共通）です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="snmpTrapInfo" type="MonitorSnmpTrapInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						監視設定情報（SNMPTRAP監視固有部分）です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="MonitorSnmpTrapInfo">
+		<xs:annotation>
+			<xs:documentation>SNMPTRAP受信情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="communityCheck" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						SNMPのコミュニティチェックモード{-(False)、○(True)}を指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="communityName" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						SNMPのコミュニティ名を指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="charsetConvert" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						文字コード変換モード{しない(False)、指定する(True)}を指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="charsetName" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						文字コードを指定します。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="notifyofReceivingUnspecifiedFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						未指定トラップ受信時の通知有無を指定します。{有効(True)、無効(False)}の文字列が入ります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="priorityUnspecified" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						未指定トラップ受信時に通知する場合の重要度を指定します。
+						{危険(0)、不明(1)、警告(2)、情報(3)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trapValueInfos" type="TrapValueInfo" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						監視対象とするトラップ定義情報のリストです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="TrapValueInfo">
+		<xs:annotation>
+			<xs:documentation>SNMPTRAP受信MIB詳細情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="mib" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>MIB名を指定します。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="uei" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>トラップ名を指定します。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="version" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>バージョンを指定します。{1(0)、2c/3(1)}のどちらかのindex番号を入力します。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="trapOid" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>トラップOIDを指定します。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="genericId" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>genericIDを指定します。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="specificId" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>specificIDを指定します。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="logmsg" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>受信時に表示するメッセージです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>受信時に表示する詳細メッセージです。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="processingVarbindSpecified" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>判定方法を指定します。{変数に関わらず通知する(False)、変数で判定する(True)}を入力します。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="priorityAnyVarbind" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						変数に関わらず通知する場合のトラップを受信した際の重要度を数値で指定します。
+						{危険(0)、不明(1)、警告(2)、情報(3)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="formatVarBinds" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>変数で判定する場合の判定対象文字列です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="validFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						このOIDに対する監視の有効/無効フラグです。 {有効(True)、無効(False)}の文字列が入ります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="varBindPatterns" type="VarBindPattern" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						VarBindパターン設定のリストです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="VarBindPattern">
+		<xs:annotation>
+			<xs:documentation>VarBind判定を行う際のパターン情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="orderNo" type="xs:int" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>順序です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>説明です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="processType" type="xs:boolean" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>処理タイプです。判定結果に対し、{処理する(True)、処理しない(False)}を入力します。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="pattern" type="xs:string" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						判定で用いるパターンマッチ表現(正規表現)です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="priority" type="xs:int" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						重要度を数値で指定します。
+						{危険(0)、不明(1)、警告(2)、通知(3)}の各index番号が入力される必要があります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="caseSensitivityFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						「大文字・小文字を区別しない」のフラグです。
+						{しない(True)、する(False)}の文字列が入ります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			
+			<xs:element name="validFlg" type="xs:boolean" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						このパターンに対する有効/無効フラグです。 {有効(True)、無効(False)}の文字列が入ります。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+</xs:schema>

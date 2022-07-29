@@ -1,0 +1,434 @@
+   ETHER-WIS DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE,
+       Gauge32, transmission
+           FROM SNMPv2-SMI
+       ifIndex
+           FROM IF-MIB
+       MODULE-COMPLIANCE, OBJECT-GROUP
+           FROM SNMPv2-CONF
+       sonetMediumStuff2, sonetSectionStuff2,
+       sonetLineStuff2, sonetFarEndLineStuff2,
+       sonetPathStuff2, sonetFarEndPathStuff2,
+       sonetMediumType, sonetMediumLineCoding,
+       sonetMediumLineType, sonetMediumCircuitIdentifier,
+       sonetMediumLoopbackConfig, sonetSESthresholdSet,
+       sonetPathCurrentWidth
+           FROM SONET-MIB;
+
+   etherWisMIB MODULE-IDENTITY
+       LAST-UPDATED "200309190000Z"  -- September 19, 2003
+           ORGANIZATION "IETF Ethernet Interfaces and Hub MIB
+                        Working Group"
+
+
+
+
+
+
+
+       ::= { transmission 134 }
+
+
+   etherWisObjects     OBJECT IDENTIFIER ::= { etherWisMIB 1 }
+
+   etherWisObjectsPath OBJECT IDENTIFIER ::= { etherWisMIB 2 }
+
+   etherWisConformance OBJECT IDENTIFIER ::= { etherWisMIB 3 }
+
+
+
+
+
+
+
+
+
+
+
+   etherWisDevice      OBJECT IDENTIFIER ::= { etherWisObjects 1 }
+
+   etherWisSection     OBJECT IDENTIFIER ::= { etherWisObjects 2 }
+
+   etherWisPath        OBJECT IDENTIFIER ::= { etherWisObjectsPath 1 }
+
+   etherWisFarEndPath  OBJECT IDENTIFIER ::= { etherWisObjectsPath 2 }
+
+
+
+
+   etherWisDeviceTable OBJECT-TYPE
+       SYNTAX  SEQUENCE OF EtherWisDeviceEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+        ::= { etherWisDevice 1 }
+
+   etherWisDeviceEntry OBJECT-TYPE
+       SYNTAX  EtherWisDeviceEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       INDEX  { ifIndex }
+        ::= { etherWisDeviceTable 1 }
+
+   EtherWisDeviceEntry ::=
+       SEQUENCE {
+           etherWisDeviceTxTestPatternMode     INTEGER,
+           etherWisDeviceRxTestPatternMode     INTEGER,
+           etherWisDeviceRxTestPatternErrors   Gauge32
+           }
+
+
+
+
+
+
+
+
+
+
+
+
+   etherWisDeviceTxTestPatternMode OBJECT-TYPE
+       SYNTAX  INTEGER {
+                   none(1),
+                   squareWave(2),
+                   prbs31(3),
+                   mixedFrequency(4)
+               }
+       MAX-ACCESS  read-write
+       STATUS  current
+        ::= { etherWisDeviceEntry 1 }
+
+   etherWisDeviceRxTestPatternMode OBJECT-TYPE
+       SYNTAX  INTEGER {
+                   none(1),
+                   prbs31(3),
+                   mixedFrequency(4)
+               }
+       MAX-ACCESS  read-write
+       STATUS  current
+
+
+
+
+
+
+
+
+
+
+
+
+        ::= { etherWisDeviceEntry 2 }
+
+   etherWisDeviceRxTestPatternErrors OBJECT-TYPE
+       SYNTAX  Gauge32 ( 0..65535 )
+       MAX-ACCESS  read-write
+       STATUS  current
+        ::= { etherWisDeviceEntry 3 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+   etherWisSectionCurrentTable OBJECT-TYPE
+       SYNTAX  SEQUENCE OF EtherWisSectionCurrentEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+        ::= { etherWisSection 1 }
+
+   etherWisSectionCurrentEntry OBJECT-TYPE
+       SYNTAX  EtherWisSectionCurrentEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       INDEX  { ifIndex }
+        ::= { etherWisSectionCurrentTable 1 }
+
+   EtherWisSectionCurrentEntry ::=
+       SEQUENCE {
+           etherWisSectionCurrentJ0Transmitted OCTET STRING,
+           etherWisSectionCurrentJ0Received    OCTET STRING
+           }
+
+   etherWisSectionCurrentJ0Transmitted OBJECT-TYPE
+       SYNTAX  OCTET STRING (SIZE (16))
+       MAX-ACCESS  read-write
+       STATUS  current
+        ::= { etherWisSectionCurrentEntry 1 }
+
+
+
+
+
+
+
+
+   etherWisSectionCurrentJ0Received OBJECT-TYPE
+       SYNTAX  OCTET STRING (SIZE (16))
+       MAX-ACCESS  read-only
+       STATUS  current
+        ::= { etherWisSectionCurrentEntry 2 }
+
+
+
+
+   etherWisPathCurrentTable OBJECT-TYPE
+       SYNTAX  SEQUENCE OF EtherWisPathCurrentEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+        ::= { etherWisPath 1 }
+
+   etherWisPathCurrentEntry OBJECT-TYPE
+       SYNTAX  EtherWisPathCurrentEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       INDEX  { ifIndex }
+        ::= { etherWisPathCurrentTable 1 }
+
+   EtherWisPathCurrentEntry ::=
+       SEQUENCE {
+           etherWisPathCurrentStatus           BITS,
+           etherWisPathCurrentJ1Transmitted    OCTET STRING,
+           etherWisPathCurrentJ1Received       OCTET STRING
+           }
+
+
+
+
+
+
+
+
+
+
+
+   etherWisPathCurrentStatus OBJECT-TYPE
+       SYNTAX  BITS {
+                   etherWisPathLOP(0),
+                   etherWisPathAIS(1),
+                   etherWisPathPLM(2),
+                   etherWisPathLCD(3)
+               }
+       MAX-ACCESS  read-only
+       STATUS  current
+        ::= { etherWisPathCurrentEntry 1 }
+
+   etherWisPathCurrentJ1Transmitted OBJECT-TYPE
+       SYNTAX  OCTET STRING (SIZE (16))
+       MAX-ACCESS  read-write
+       STATUS  current
+        ::= { etherWisPathCurrentEntry 2 }
+
+   etherWisPathCurrentJ1Received OBJECT-TYPE
+       SYNTAX  OCTET STRING (SIZE (16))
+       MAX-ACCESS  read-only
+       STATUS  current
+        ::= { etherWisPathCurrentEntry 3 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   etherWisFarEndPathCurrentTable OBJECT-TYPE
+       SYNTAX  SEQUENCE OF EtherWisFarEndPathCurrentEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+        ::= { etherWisFarEndPath 1 }
+
+   etherWisFarEndPathCurrentEntry OBJECT-TYPE
+       SYNTAX  EtherWisFarEndPathCurrentEntry
+       MAX-ACCESS  not-accessible
+       STATUS  current
+       INDEX  { ifIndex }
+        ::= { etherWisFarEndPathCurrentTable 1 }
+
+   EtherWisFarEndPathCurrentEntry ::=
+       SEQUENCE {
+           etherWisFarEndPathCurrentStatus     BITS
+           }
+
+   etherWisFarEndPathCurrentStatus OBJECT-TYPE
+       SYNTAX  BITS {
+                   etherWisFarEndPayloadDefect(0),
+                   etherWisFarEndServerDefect(1)
+               }
+       MAX-ACCESS  read-only
+       STATUS  current
+        ::= { etherWisFarEndPathCurrentEntry 1 }
+
+
+
+   etherWisGroups      OBJECT IDENTIFIER ::= { etherWisConformance 1 }
+
+   etherWisCompliances OBJECT IDENTIFIER ::= { etherWisConformance 2 }
+
+
+   etherWisDeviceGroupBasic OBJECT-GROUP
+       OBJECTS {
+           etherWisDeviceTxTestPatternMode,
+           etherWisDeviceRxTestPatternMode
+           }
+       STATUS  current
+        ::= { etherWisGroups 1 }
+
+   etherWisDeviceGroupExtra OBJECT-GROUP
+       OBJECTS {
+           etherWisDeviceRxTestPatternErrors
+           }
+       STATUS  current
+        ::= { etherWisGroups 2 }
+
+
+
+
+
+
+
+
+
+
+
+
+   etherWisSectionGroup OBJECT-GROUP
+       OBJECTS {
+           etherWisSectionCurrentJ0Transmitted,
+           etherWisSectionCurrentJ0Received
+           }
+       STATUS  current
+        ::= { etherWisGroups 3 }
+
+   etherWisPathGroup OBJECT-GROUP
+       OBJECTS {
+           etherWisPathCurrentStatus,
+           etherWisPathCurrentJ1Transmitted,
+           etherWisPathCurrentJ1Received
+           }
+       STATUS  current
+        ::= { etherWisGroups 4 }
+
+   etherWisFarEndPathGroup OBJECT-GROUP
+       OBJECTS {
+           etherWisFarEndPathCurrentStatus
+           }
+       STATUS  current
+        ::= { etherWisGroups 5 }
+
+
+   etherWisCompliance MODULE-COMPLIANCE
+       STATUS  current
+
+
+
+
+
+       MODULE  -- this module
+           MANDATORY-GROUPS {
+               etherWisDeviceGroupBasic,
+               etherWisSectionGroup,
+               etherWisPathGroup,
+               etherWisFarEndPathGroup
+               }
+
+           OBJECT       etherWisDeviceTxTestPatternMode
+           SYNTAX       INTEGER {
+               none(1),
+               squareWave(2),
+               mixedFrequency(4)
+               }
+
+           OBJECT       etherWisDeviceRxTestPatternMode
+           SYNTAX       INTEGER {
+               none(1),
+               mixedFrequency(4)
+               }
+
+           GROUP        etherWisDeviceGroupExtra
+
+           OBJECT       etherWisDeviceRxTestPatternErrors
+           WRITE-SYNTAX Gauge32 ( 0 )
+
+
+
+
+
+
+
+
+
+
+
+
+       MODULE SONET-MIB
+           MANDATORY-GROUPS {
+               sonetMediumStuff2,
+               sonetSectionStuff2,
+               sonetLineStuff2,
+               sonetFarEndLineStuff2,
+               sonetPathStuff2,
+               sonetFarEndPathStuff2
+               }
+
+           OBJECT       sonetMediumType
+           SYNTAX       INTEGER {
+               sonet(1)
+               }
+           MIN-ACCESS   read-only
+
+           OBJECT       sonetMediumLineCoding
+           SYNTAX       INTEGER {
+               sonetMediumNRZ(4)
+               }
+           MIN-ACCESS   read-only
+
+           OBJECT       sonetMediumLineType
+           MIN-ACCESS   read-only
+
+           OBJECT       sonetMediumCircuitIdentifier
+           MIN-ACCESS   read-only
+
+           OBJECT       sonetMediumLoopbackConfig
+           SYNTAX       BITS {
+               sonetNoLoop(0),
+               sonetFacilityLoop(1)
+               }
+           MIN-ACCESS   read-only
+
+
+
+
+
+
+           OBJECT       sonetSESthresholdSet
+           MIN-ACCESS   read-only
+
+           OBJECT       sonetPathCurrentWidth
+           SYNTAX       INTEGER {
+               sts192cSTM64(6)
+               }
+           MIN-ACCESS   read-only
+
+        ::= { etherWisCompliances 1 }
+
+   END

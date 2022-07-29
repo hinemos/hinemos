@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: platform_role.xsd 295 295 2013-05-13 16:00:00Z sekiyaman $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="part_version.xsd" />
+
+	<xs:complexType name="SchemaInfoType">
+		<xs:annotation>
+			<xs:documentation>XMLスキーマ情報</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="schemaType" type="xs:string" minOccurs="0" maxOccurs="1" default="K">
+				<xs:annotation>
+					<xs:documentation>データ型のタイプ</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaVersion" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaRevision" type="xs:string" minOccurs="0" maxOccurs="1" default="1">
+				<xs:annotation>
+					<xs:documentation>データ型のバージョン</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="RpaScenarioCoefficientPatterns" type="RpaScenarioCoefficientPatternList">
+		<xs:annotation>
+			<xs:documentation>自動化効果計算マスタ定義一覧のルートエレメントです。</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+
+	<xs:complexType name="RpaScenarioCoefficientPatternList">
+		<xs:annotation>
+			<xs:documentation>自動化効果計算マスタ定義一覧のデータ型です。</xs:documentation>
+		</xs:annotation>
+		
+		<xs:sequence>
+			<xs:element name="common" type="CommonType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLに付与する一般情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="schemaInfo" type="SchemaInfoType" minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>XMLスキーマ情報</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="RpaScenarioCoefficientPattern" type="RpaScenarioCoefficientPatternInfoType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>自動化効果計算マスタ定義の配列</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="rpaScenarioCoefficientPattern" type="RpaScenarioCoefficientPatternInfoType" />
+	<xs:complexType name="RpaScenarioCoefficientPatternInfoType">
+		<xs:annotation>
+			<xs:documentation>自動化効果計算マスタ定義の1設定分です。</xs:documentation>
+		</xs:annotation>
+
+		<xs:sequence>
+			<xs:element name="rpaScenarioCoefficientPatternInfo" type="RpaScenarioCoefficientPatternInfo" minOccurs="1" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>自動化効果計算マスタ定義情報です。</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="RpaScenarioCoefficientPatternInfo">
+		<xs:annotation>
+			<xs:documentation>自動化効果計算マスタ情報</xs:documentation>
+		</xs:annotation>
+
+		<xs:attribute name="rpaToolEnvId" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>環境毎のRPAツールID</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="orderNo" type="xs:int" use="required">
+			<xs:annotation>
+				<xs:documentation>順序</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="coefficient" type="xs:double" use="required">
+			<xs:annotation>
+				<xs:documentation>シナリオ係数</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="pattern" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>パターン</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="caseSensitivity" type="xs:boolean" use="required">
+			<xs:annotation>
+				<xs:documentation>文字の大小区別フラグ</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+</xs:schema>

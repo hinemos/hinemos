@@ -1,0 +1,314 @@
+   IPV6-MLD-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, Counter32, Gauge32,
+       Unsigned32, TimeTicks, mib-2     FROM SNMPv2-SMI
+       RowStatus, TruthValue            FROM SNMPv2-TC
+       InetAddressIPv6             FROM INET-ADDRESS-MIB
+       InterfaceIndex, InterfaceIndexOrZero
+                                            FROM IF-MIB
+       MODULE-COMPLIANCE, OBJECT-GROUP  FROM SNMPv2-CONF;
+
+
+   mldMIB MODULE-IDENTITY
+       LAST-UPDATED "200101250000Z" -- 25 Jan 2001
+       ORGANIZATION "IETF IPNGWG Working Group."
+       ::= { mib-2 91 }
+
+
+   mldMIBObjects     OBJECT IDENTIFIER ::= { mldMIB 1 }
+
+   mldInterfaceTable OBJECT-TYPE
+       SYNTAX     SEQUENCE OF MldInterfaceEntry
+
+
+
+
+
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { mldMIBObjects 1 }
+
+   mldInterfaceEntry OBJECT-TYPE
+       SYNTAX     MldInterfaceEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+       INDEX      { mldInterfaceIfIndex }
+       ::= { mldInterfaceTable 1 }
+
+   MldInterfaceEntry ::= SEQUENCE {
+       mldInterfaceIfIndex               InterfaceIndex,
+       mldInterfaceQueryInterval         Unsigned32,
+       mldInterfaceStatus                RowStatus,
+       mldInterfaceVersion               Unsigned32,
+       mldInterfaceQuerier               InetAddressIPv6,
+       mldInterfaceQueryMaxResponseDelay Unsigned32,
+       mldInterfaceJoins                 Counter32,
+       mldInterfaceGroups                Gauge32,
+       mldInterfaceRobustness            Unsigned32,
+       mldInterfaceLastListenQueryIntvl  Unsigned32,
+       mldInterfaceProxyIfIndex          InterfaceIndexOrZero,
+       mldInterfaceQuerierUpTime         TimeTicks,
+       mldInterfaceQuerierExpiryTime     TimeTicks
+   }
+
+   mldInterfaceIfIndex OBJECT-TYPE
+
+       SYNTAX     InterfaceIndex
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { mldInterfaceEntry 1 }
+
+   mldInterfaceQueryInterval OBJECT-TYPE
+       SYNTAX     Unsigned32
+       UNITS      "seconds"
+       MAX-ACCESS read-create
+       STATUS     current
+
+
+
+
+
+       DEFVAL     { 125 }
+       ::= { mldInterfaceEntry 2 }
+
+   mldInterfaceStatus OBJECT-TYPE
+       SYNTAX     RowStatus
+       MAX-ACCESS read-create
+       STATUS     current
+       ::= { mldInterfaceEntry 3 }
+
+   mldInterfaceVersion OBJECT-TYPE
+       SYNTAX     Unsigned32
+       MAX-ACCESS read-create
+       STATUS     current
+       DEFVAL     { 1 }
+       ::= { mldInterfaceEntry 4 }
+
+   mldInterfaceQuerier OBJECT-TYPE
+       SYNTAX     InetAddressIPv6 (SIZE (16))
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { mldInterfaceEntry 5 }
+
+   mldInterfaceQueryMaxResponseDelay OBJECT-TYPE
+       SYNTAX     Unsigned32
+       UNITS      "seconds"
+       MAX-ACCESS read-create
+       STATUS     current
+       DEFVAL     { 10 }
+       ::= { mldInterfaceEntry 6 }
+
+   mldInterfaceJoins OBJECT-TYPE
+
+
+
+
+
+       SYNTAX     Counter32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { mldInterfaceEntry 7 }
+
+   mldInterfaceGroups OBJECT-TYPE
+       SYNTAX     Gauge32
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { mldInterfaceEntry 8 }
+
+   mldInterfaceRobustness OBJECT-TYPE
+       SYNTAX     Unsigned32
+       MAX-ACCESS read-create
+       STATUS     current
+       DEFVAL     { 2 }
+       ::= { mldInterfaceEntry 9 }
+
+   mldInterfaceLastListenQueryIntvl OBJECT-TYPE
+       SYNTAX     Unsigned32
+       UNITS      "seconds"
+       MAX-ACCESS read-create
+       STATUS     current
+       DEFVAL     { 1 }
+
+
+
+
+
+       ::= { mldInterfaceEntry 10 }
+
+   mldInterfaceProxyIfIndex OBJECT-TYPE
+       SYNTAX     InterfaceIndexOrZero
+       MAX-ACCESS read-create
+       STATUS     current
+       DEFVAL     { 0 }
+       ::= { mldInterfaceEntry 11 }
+
+   mldInterfaceQuerierUpTime OBJECT-TYPE
+       SYNTAX     TimeTicks
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { mldInterfaceEntry 12 }
+
+   mldInterfaceQuerierExpiryTime OBJECT-TYPE
+       SYNTAX     TimeTicks
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { mldInterfaceEntry 13 }
+
+
+
+   mldCacheTable OBJECT-TYPE
+       SYNTAX     SEQUENCE OF MldCacheEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { mldMIBObjects 2 }
+
+   mldCacheEntry OBJECT-TYPE
+       SYNTAX     MldCacheEntry
+       MAX-ACCESS not-accessible
+       STATUS     current
+       INDEX      { mldCacheAddress, mldCacheIfIndex }
+       ::= { mldCacheTable 1 }
+
+   MldCacheEntry ::= SEQUENCE {
+       mldCacheAddress         InetAddressIPv6,
+       mldCacheIfIndex            InterfaceIndex,
+       mldCacheSelf               TruthValue,
+       mldCacheLastReporter   InetAddressIPv6,
+       mldCacheUpTime             TimeTicks,
+       mldCacheExpiryTime         TimeTicks,
+       mldCacheStatus             RowStatus
+   }
+
+   mldCacheAddress OBJECT-TYPE
+       SYNTAX     InetAddressIPv6 (SIZE (16))
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { mldCacheEntry 1 }
+
+   mldCacheIfIndex OBJECT-TYPE
+       SYNTAX     InterfaceIndex
+       MAX-ACCESS not-accessible
+       STATUS     current
+       ::= { mldCacheEntry 2 }
+
+   mldCacheSelf OBJECT-TYPE
+       SYNTAX     TruthValue
+       MAX-ACCESS read-create
+       STATUS     current
+       DEFVAL     { true }
+       ::= { mldCacheEntry 3 }
+
+   mldCacheLastReporter OBJECT-TYPE
+       SYNTAX     InetAddressIPv6 (SIZE (16))
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { mldCacheEntry 4 }
+
+   mldCacheUpTime OBJECT-TYPE
+       SYNTAX     TimeTicks
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { mldCacheEntry 5 }
+
+   mldCacheExpiryTime OBJECT-TYPE
+       SYNTAX     TimeTicks
+       MAX-ACCESS read-only
+       STATUS     current
+       ::= { mldCacheEntry 6 }
+
+   mldCacheStatus OBJECT-TYPE
+       SYNTAX     RowStatus
+       MAX-ACCESS read-create
+       STATUS     current
+       ::= { mldCacheEntry 7 }
+
+
+
+
+
+
+
+
+   mldMIBConformance
+                  OBJECT IDENTIFIER ::= { mldMIB 2 }
+   mldMIBCompliances
+                  OBJECT IDENTIFIER ::= { mldMIBConformance 1 }
+   mldMIBGroups
+                  OBJECT IDENTIFIER ::= { mldMIBConformance 2 }
+
+
+
+   mldHostMIBCompliance MODULE-COMPLIANCE
+       STATUS  current
+       MODULE  -- this module
+       MANDATORY-GROUPS { mldBaseMIBGroup,
+                          mldHostMIBGroup
+                        }
+
+       OBJECT     mldInterfaceStatus
+       MIN-ACCESS read-only
+
+       ::= { mldMIBCompliances 1 }
+
+   mldRouterMIBCompliance MODULE-COMPLIANCE
+       STATUS  current
+       MODULE  -- this module
+       MANDATORY-GROUPS { mldBaseMIBGroup,
+                          mldRouterMIBGroup
+                        }
+
+       OBJECT     mldInterfaceStatus
+       MIN-ACCESS read-only
+
+       ::= { mldMIBCompliances 2 }
+
+
+
+
+
+
+
+
+   mldBaseMIBGroup OBJECT-GROUP
+       OBJECTS { mldCacheSelf,
+                 mldCacheStatus, mldInterfaceStatus
+               }
+       STATUS  current
+       ::= { mldMIBGroups 1 }
+
+   mldRouterMIBGroup OBJECT-GROUP
+       OBJECTS { mldCacheUpTime, mldCacheExpiryTime,
+                 mldInterfaceQueryInterval,
+                 mldInterfaceJoins, mldInterfaceGroups,
+                 mldCacheLastReporter,
+                 mldInterfaceQuerierUpTime,
+                 mldInterfaceQuerierExpiryTime,
+                 mldInterfaceQuerier,
+                 mldInterfaceVersion,
+                 mldInterfaceQueryMaxResponseDelay,
+                 mldInterfaceRobustness,
+                 mldInterfaceLastListenQueryIntvl
+               }
+       STATUS  current
+       ::= { mldMIBGroups 2 }
+
+
+   mldHostMIBGroup OBJECT-GROUP
+       OBJECTS { mldInterfaceQuerier
+               }
+       STATUS  current
+       ::= { mldMIBGroups 3 }
+
+
+   mldProxyMIBGroup OBJECT-GROUP
+       OBJECTS { mldInterfaceProxyIfIndex }
+       STATUS  current
+
+
+
+
+
+       ::= { mldMIBGroups 4 }
+
+   END
