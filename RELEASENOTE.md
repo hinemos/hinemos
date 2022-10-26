@@ -95,6 +95,6 @@ https://github.com/hinemos/hinemos/releases/tag/v7.0.1
 
 # ■English Doc <a name="eng"/>
 
-English manuals are also available here (uploaded on 2022/7/29):
+English manuals are also available here (uploaded on 2022/10/26):
 
-- Basic Features Manual ( ([en_Base_Linux_7.0_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/en_Base_Linux_7.0_rev1.pdf) ) )
+- Basic Features Manual ( ([en_Base_Linux_7.0_rev2.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/en_Base_Linux_7.0_rev2.pdf) ) )
