@@ -31,7 +31,7 @@ You can install hinemos with the following commands.
   - RHEL 8.x  
 ```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-web-7.0.1-1.el8.x86_64.rpm```
 
-For details, please refer to [Basic Features Manual](https://github.com/hinemos/hinemos/releases/download/v7.0.1/en_Base_Linux_7.0_rev1.pdf).
+For details, please refer to [Basic Features Manual](https://github.com/hinemos/hinemos/releases/download/v7.0.1/en_Base_Linux_7.0_rev2.pdf).
 
 
 ## ver.7.0 New Features
@@ -120,7 +120,7 @@ See the [release note](https://github.com/hinemos/hinemos/releases/tag/v7.0.1) f
 
 ## Documentation
 
-- Basic Features Manual ([en_Base_Linux_7.0_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/en_Base_Linux_7.0_rev1.pdf) )
+- Basic Features Manual ([en_Base_Linux_7.0_rev2.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/en_Base_Linux_7.0_rev2.pdf) )
 
 ## License
 
