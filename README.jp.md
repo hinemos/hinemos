@@ -31,7 +31,7 @@ Hinemosはコマンドひとつでインストールできます。
   - RHEL 8.x  
 ```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-web-7.0.1-1.el8.x86_64.rpm```
 
-詳細は[Hinemos ver.7.0 基本機能マニュアル](https://github.com/hinemos/hinemos/releases/download/v7.0.1/ja_Base_Linux_7.0_rev3.pdf)をご覧下さい。
+詳細は[Hinemos ver.7.0 基本機能マニュアル](https://github.com/hinemos/hinemos/releases/download/v7.0.1/ja_Base_Linux_7.0_rev10.pdf)をご覧下さい。
 
 
 ## ver.7.0新機能
@@ -117,7 +117,7 @@ Hinemosはコマンドひとつでインストールできます。
 
 ## ドキュメント
 
-- Hinemos ver.7.0 基本機能マニュアル ([ja_Base_Linux_7.0_rev3.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/ja_Base_Linux_7.0_rev3.pdf) )
+- Hinemos ver.7.0 基本機能マニュアル ([ja_Base_Linux_7.0_rev10.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/ja_Base_Linux_7.0_rev10.pdf) )
 
 ## ライセンス
 
