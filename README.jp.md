@@ -121,7 +121,7 @@ Hinemosはコマンドひとつでインストールできます。
 
 ## ドキュメント
 
-- Hinemos ver.7.0 基本機能マニュアル ([ja_Base_Linux_7.0_rev13.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/ja_Base_Linux_7.0_rev17.pdf) )
+- Hinemos ver.7.0 基本機能マニュアル ([ja_Base_Linux_7.0_rev17.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/ja_Base_Linux_7.0_rev17.pdf) )
 
 ## ライセンス
 
