@@ -79,14 +79,189 @@
 	</target>
 	
 	<target name="manifest">
-		<tstamp>
-			<format property="build.date" pattern="yyyy-MM-dd HH:mm:ss" />
-		</tstamp>
 		<copy file="${jar.manifest}" tofile="${build.dir}/MANIFEST.MF" overwrite="true" />
 		<replace file="${build.dir}/MANIFEST.MF">
-			<replacefilter token="@BUILD_DATE@" value="${build.date}" />
-			<replacefilter token="@VERSION@" value="${version}" />
+			<replacefilter token="@VERSION@" value="${manifest.hinemos.version}" />
 		</replace>
 	</target>
 	
+	<macrodef name="version_properties">
+		<attribute name="props.version" />
+		<attribute name="props.version.short" />
+		<attribute name="props.version.major" />
+		<attribute name="props.version.tool" />
+		<attribute name="props.version.tool.short" />
+		<attribute name="props.copyright.year" />
+		<attribute name="props.cloud.clouduser.schemarevision" />
+		<attribute name="props.platform.notify.schemarevision" />
+		<attribute name="props.required.version" />
+		
+		<attribute name="props.manager.product.code" />
+		<attribute name="props.manager.upgrade.code" />
+		<attribute name="props.client.web.product.code" />
+		<attribute name="props.client.web.upgrade.code" />
+		<attribute name="props.agent.product.code" />
+		<attribute name="props.xcloud.aws.manager.product.code" />
+		<attribute name="props.xcloud.aws.manager.upgrade.code" />
+		<attribute name="props.xcloud.aws.client.product.code" />
+		<attribute name="props.xcloud.aws.client.upgrade.code" />
+		<attribute name="props.xcloud.azure.manager.product.code" />
+		<attribute name="props.xcloud.azure.manager.upgrade.code" />
+		<attribute name="props.xcloud.azure.client.product.code" />
+		<attribute name="props.xcloud.azure.client.upgrade.code" />
+		<attribute name="props.xcloud.hyperv.manager.product.code" />
+		<attribute name="props.xcloud.hyperv.manager.upgrade.code" />
+		<attribute name="props.xcloud.hyperv.client.product.code" />
+		<attribute name="props.xcloud.hyperv.client.upgrade.code" />
+		<attribute name="props.xcloud.vmware.manager.product.code" />
+		<attribute name="props.xcloud.vmware.manager.upgrade.code" />
+		<attribute name="props.xcloud.vmware.client.product.code" />
+		<attribute name="props.xcloud.vmware.client.upgrade.code" />
+		<attribute name="props.ha.product.code" />
+		<attribute name="props.ha.upgrade.code" />
+		
+		<attribute name="doc.commandline.ja.name" />
+		<attribute name="doc.commandline.en.name" />
+		<attribute name="doc.commandline.ja.package.name" />
+		<attribute name="doc.commandline.en.package.name" />
+		<attribute name="doc.commandline.importexporttool.ja.package.name" />
+		<attribute name="doc.commandline.importexporttool.en.package.name" />
+		
+		<attribute name="doc.restapi.ja.name" />
+		<attribute name="doc.restapi.en.name" />
+
+		<sequential>
+			<copy
+				file="../HinemosCommon/ant_config/build_common_version.properties.tmpl"
+				tofile="../HinemosCommon/ant_config/build_common_version.properties"
+				overwrite="true"
+			/>
+			<copy
+				file="../HinemosClient/splash_@{props.version.major}.bmp"
+				tofile="../HinemosClient/splash.bmp"
+				overwrite="true"
+			/>
+			<replace file="../HinemosCommon/ant_config/build_common_version.properties">
+				<replacefilter token="@VERSION@" value="@{props.version}" />
+				<replacefilter token="@VERSION_SHORT@" value="@{props.version.short}" />
+				<replacefilter token="@VERSION_MAJOR@" value="@{props.version.major}" />
+				<replacefilter token="@VERSION_TOOL@" value="@{props.version.tool}" />
+				<replacefilter token="@VERSION_TOOL_SHORT@" value="@{props.version.tool.short}" />
+				<replacefilter token="@COPYRIGHT_YEAR@" value="@{props.copyright.year}" />
+				<replacefilter token="@CLOUD.CLOUDUSER.SCHEMAREVISION@" value="@{props.cloud.clouduser.schemarevision}" />
+				<replacefilter token="@PLATFORM.NOTIFY.SCHEMAREVISION@" value="@{props.platform.notify.schemarevision}" />
+				<replacefilter token="@REQUIRED_VERSION@" value="@{props.required.version}" />
+				
+				<replacefilter token="@MANAGER_PRODUCT_CODE@" value="@{props.manager.product.code}" />
+				<replacefilter token="@MANAGER_UPGRADE_CODE@" value="@{props.manager.upgrade.code}" />
+				<replacefilter token="@CLIENT_WEB_PRODUCT_CODE@" value="@{props.client.web.product.code}" />
+				<replacefilter token="@CLIENT_WEB_UPGRADE_CODE@" value="@{props.client.web.upgrade.code}" />
+				<replacefilter token="@AGENT_PRODUCT_CODE@" value="@{props.agent.product.code}" />
+				<replacefilter token="@XCLOUD_AWS_MANAGER_PRODUCT_CODE@" value="@{props.xcloud.aws.manager.product.code}" />
+				<replacefilter token="@XCLOUD_AWS_MANAGER_UPGRADE_CODE@" value="@{props.xcloud.aws.manager.upgrade.code}" />
+				<replacefilter token="@XCLOUD_AWS_CLIENT_PRODUCT_CODE@" value="@{props.xcloud.aws.client.product.code}" />
+				<replacefilter token="@XCLOUD_AWS_CLIENT_UPGRADE_CODE@" value="@{props.xcloud.aws.client.upgrade.code}" />
+				<replacefilter token="@XCLOUD_AZURE_MANAGER_PRODUCT_CODE@" value="@{props.xcloud.azure.manager.product.code}" />
+				<replacefilter token="@XCLOUD_AZURE_MANAGER_UPGRADE_CODE@" value="@{props.xcloud.azure.manager.upgrade.code}" />
+				<replacefilter token="@XCLOUD_AZURE_CLIENT_PRODUCT_CODE@" value="@{props.xcloud.azure.client.product.code}" />
+				<replacefilter token="@XCLOUD_AZURE_CLIENT_UPGRADE_CODE@" value="@{props.xcloud.azure.client.upgrade.code}" />
+				<replacefilter token="@XCLOUD_HYPERV_MANAGER_PRODUCT_CODE@" value="@{props.xcloud.hyperv.manager.product.code}" />
+				<replacefilter token="@XCLOUD_HYPERV_MANAGER_UPGRADE_CODE@" value="@{props.xcloud.hyperv.manager.upgrade.code}" />
+				<replacefilter token="@XCLOUD_HYPERV_CLIENT_PRODUCT_CODE@" value="@{props.xcloud.hyperv.client.product.code}" />
+				<replacefilter token="@XCLOUD_HYPERV_CLIENT_UPGRADE_CODE@" value="@{props.xcloud.hyperv.client.upgrade.code}" />
+				<replacefilter token="@XCLOUD_VMWARE_MANAGER_PRODUCT_CODE@" value="@{props.xcloud.vmware.manager.product.code}" />
+				<replacefilter token="@XCLOUD_VMWARE_MANAGER_UPGRADE_CODE@" value="@{props.xcloud.vmware.manager.upgrade.code}" />
+				<replacefilter token="@XCLOUD_VMWARE_CLIENT_PRODUCT_CODE@" value="@{props.xcloud.vmware.client.product.code}" />
+				<replacefilter token="@XCLOUD_VMWARE_CLIENT_UPGRADE_CODE@" value="@{props.xcloud.vmware.client.upgrade.code}" />
+				<replacefilter token="@HA_PRODUCT_CODE@" value="@{props.ha.product.code}" />
+				<replacefilter token="@HA_UPGRADE_CODE@" value="@{props.ha.upgrade.code}" />
+
+				<replacefilter token="@DOC_COMMANDLINE_JA_NAME@" value="@{doc.commandline.ja.name}" />
+				<replacefilter token="@DOC_COMMANDLINE_EN_NAME@" value="@{doc.commandline.en.name}" />
+				<replacefilter token="@DOC_COMMANDLINE_JA_PACKAGE_NAME@" value="@{doc.commandline.ja.package.name}" />
+				<replacefilter token="@DOC_COMMANDLINE_EN_PACKAGE_NAME@" value="@{doc.commandline.en.package.name}" />
+				<replacefilter token="@DOC_COMMANDLINE_IMPORTEXPORTTOOL_JA_PACKAGE_NAME@" value="@{doc.commandline.importexporttool.ja.package.name}" />
+				<replacefilter token="@DOC_COMMANDLINE_IMPORTEXPORTTOOL_EN_PACKAGE_NAME@" value="@{doc.commandline.importexporttool.en.package.name}" />
+				<replacefilter token="@DOC_RESTAPI_JA_NAME@" value="@{doc.restapi.ja.name}" />
+				<replacefilter token="@DOC_RESTAPI_EN_NAME@" value="@{doc.restapi.en.name}" />
+			</replace>
+		</sequential>
+	</macrodef>
+	
+	<target name="version_properties_7.0">
+		<version_properties props.version="7.0.2" props.version.short="702" props.version.major="7.0"
+			props.version.tool="7.0.c" props.version.tool.short="70c" props.required.version="7.0.0"
+			props.copyright.year="2022" props.cloud.clouduser.schemarevision="2" props.platform.notify.schemarevision="3"
+			props.manager.product.code="2dad03dd-ff2a-4303-8a3c-d4f3aeae05ea" props.manager.upgrade.code="ecab0f52-c312-4d1a-a7a5-567c85419c3f"
+			props.client.web.product.code="021059b6-20c9-477b-a292-f314d66d4e1a" props.client.web.upgrade.code="848a2214-1ba5-4f18-9756-66b6b25c15da"
+			props.agent.product.code="ef65e509-b3c6-4fc7-ac40-4d5204d40a1e"
+			props.xcloud.aws.manager.product.code="9cb4c2d0-b0ed-4352-a791-5bd8ca611301"
+			props.xcloud.aws.manager.upgrade.code="16e7619e-1cc7-4110-9170-e6b24b62389c"
+			props.xcloud.aws.client.product.code="ae489c83-5f0f-4938-90e8-fe3c636c487a"
+			props.xcloud.aws.client.upgrade.code="139d8f58-fd96-4173-9cd8-345d6a6132b5"
+			props.xcloud.azure.manager.product.code="dc77b29c-c6a0-4c82-8589-e19cba3f5eac"
+			props.xcloud.azure.manager.upgrade.code="c8ece0f0-aeef-49b5-9dbd-a0c39a2920b7"
+			props.xcloud.azure.client.product.code="d4bdbf68-258d-44de-b770-e844df4fb5b7"
+			props.xcloud.azure.client.upgrade.code="6b32a43f-1524-4e44-abbc-1ba72d4843ce"
+			props.xcloud.hyperv.manager.product.code="af32932f-da9f-4fa8-b10b-3927d5bd1535"
+			props.xcloud.hyperv.manager.upgrade.code="0848abdf-3ce9-4de7-8acd-a41f6ca59c40"
+			props.xcloud.hyperv.client.product.code="d768fd91-c868-431b-8fd9-87e86dae8f16"
+			props.xcloud.hyperv.client.upgrade.code="9b950b1a-e29b-4b15-b15d-0fa8a5d26cb8"
+			props.xcloud.vmware.manager.product.code="7cc7769f-4410-4e41-b107-81341ddf2ee7"
+			props.xcloud.vmware.manager.upgrade.code="8bfc43d7-fcd9-45c8-b503-1b8003e751c9"
+			props.xcloud.vmware.client.product.code="09ddb1ed-a744-4aae-a361-02f9c09436e1"
+			props.xcloud.vmware.client.upgrade.code="e3d133db-1cf7-425f-831d-121622cca872"
+			props.ha.product.code="B58BE865-1066-426D-9D31-DAD199A42E9F" props.ha.upgrade.code="53204C45-04F2-4E6A-B2D2-53F117E61803"
+			doc.commandline.ja.name="ja_CommandLine_7.0_rev9"
+			doc.commandline.en.name="en_CommandLine_7.0_rev3"
+			doc.commandline.ja.package.name="ja_CommandLine_7.0_doc_20240412.zip"
+			doc.commandline.en.package.name="en_CommandLine_7.0_doc_20240412.zip"
+			doc.commandline.importexporttool.ja.package.name="ja_CommandLine_ImportExport_7.0_rev5"
+			doc.commandline.importexporttool.en.package.name="en_CommandLine_ImportExport_7.0_rev2"
+			doc.restapi.ja.name="ja_RestAPI_7.0_rev3"
+			doc.restapi.en.name="en_RestAPI_7.0_rev2"
+		/>
+	</target>
+	
+	<target name="version_properties_7.1">
+		<version_properties props.version="7.1.0" props.version.short="710" props.version.major="7.1"
+			props.version.tool="7.1.a" props.version.tool.short="71a" props.required.version="7.1.0"
+			props.copyright.year="2024" props.cloud.clouduser.schemarevision="3" props.platform.notify.schemarevision="4"
+			props.manager.product.code="9a127484-eec8-457d-a7ea-845881ad9085" props.manager.upgrade.code="2d4e9fd0-2a09-40da-b151-5b479109ba41"
+			props.client.web.product.code="b48e63b3-b262-4ce4-98a5-816ed8938bb6" props.client.web.upgrade.code="f5c4608b-a908-4c5b-8e45-b9563ac6e59e"
+			props.agent.product.code="77934342-ff24-40f2-8e52-1cfd8046ff83"
+			props.xcloud.aws.manager.product.code="7f9a2990-fdab-4845-a6cc-d35d8e729ad7"
+			props.xcloud.aws.manager.upgrade.code="9d3f3714-acf4-4f24-b575-683a72839544"
+			props.xcloud.aws.client.product.code="182d0fe8-bd61-45f2-a90f-329fb93c6bf5"
+			props.xcloud.aws.client.upgrade.code="49a66883-4330-4159-b9bd-2d39a2970286"
+			props.xcloud.azure.manager.product.code="627cefd9-e9df-4f92-b3fb-c82c864feb1d"
+			props.xcloud.azure.manager.upgrade.code="f5fe0ade-166c-4b64-a7ea-59f784a7b499"
+			props.xcloud.azure.client.product.code="fbc223e1-7e15-4d0b-8f26-a3c8747d9e19"
+			props.xcloud.azure.client.upgrade.code="dca7c350-ed0d-46a6-aba8-18f87d7c1aaf"
+			props.xcloud.hyperv.manager.product.code="60790c5a-e243-43ac-8ae1-a639d4b0274d"
+			props.xcloud.hyperv.manager.upgrade.code="6c748a9a-96c6-4620-8a03-353f19ff110c"
+			props.xcloud.hyperv.client.product.code="febf649f-1177-4e93-bcb6-2e1cafa36750"
+			props.xcloud.hyperv.client.upgrade.code="72a85ea5-ecad-4637-b5e4-714ae35ca7cc"
+			props.xcloud.vmware.manager.product.code="91ca687f-5063-4b2e-b607-cc7b5e09cafd"
+			props.xcloud.vmware.manager.upgrade.code="d471b50e-7a16-4a00-87b9-3ea285769bbe"
+			props.xcloud.vmware.client.product.code="6eccddfd-4896-482b-9206-7f262a9b4b95"
+			props.xcloud.vmware.client.upgrade.code="b83f78a3-ede4-461d-92eb-8bdf94089e37"
+			props.ha.product.code="a3839a8d-8082-4b4c-8fd8-b1ac2c1b25f3" props.ha.upgrade.code="0dfad011-18f3-44d5-9ffc-84a37d4dfad8"
+			doc.commandline.ja.name="ja_CommandLine_7.1_rev1"
+			doc.commandline.en.name="en_CommandLine_7.1_rev1"
+			doc.commandline.ja.package.name="ja_CommandLine_7.1_doc_20240412.zip"
+			doc.commandline.en.package.name="en_CommandLine_7.1_doc_20240412.zip"
+			doc.commandline.importexporttool.ja.package.name="ja_CommandLine_ImportExport_7.1_rev1"
+			doc.commandline.importexporttool.en.package.name="en_CommandLine_ImportExport_7.1_rev1"
+			doc.restapi.ja.name="ja_RestAPI_7.1_rev1"
+			doc.restapi.en.name="en_RestAPI_7.1_rev1"
+		/>
+	</target>
+	
+	<target name="check_version_propertires">
+		<condition property="version.properties.built">
+			<available file="../HinemosCommon/ant_config/build_common_version.properties" />
+		</condition>
+	</target>
+
 </project>

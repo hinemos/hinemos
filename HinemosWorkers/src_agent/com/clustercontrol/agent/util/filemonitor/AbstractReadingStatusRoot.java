@@ -10,14 +10,20 @@ package com.clustercontrol.agent.util.filemonitor;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -273,47 +279,32 @@ public abstract class AbstractReadingStatusRoot<T extends AbstractFileMonitorInf
 			// 存在しない場合は処理終了
 			return;
 		}
-
 		File filesDir = new File(statusDir, AbstractReadingStatusDir.FILES_KEY);
 		if (!filesDir.exists()) {
 			// 存在しない場合は処理終了
 			return;
 		}
-
-		// 監視対象ファイル検索用のパターン作成
-		FileFilter fileFilter = null;
-		try {
-			fileFilter = new FileFilter() {
-				Pattern pattern = Pattern.compile(wrapper.getFileName(), Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-				@Override
-				public boolean accept(File f) {
-					// ファイル、ファイル名でフィルタリングする
-					return  f.isFile() && pattern.matcher(f.getName()).matches();
-				}
-			};
-		} catch (Exception e) {
-			log.warn("checkMonitorFile() : " + e.getMessage(), e);
-			return;
-		}
-
-		// シーク対象のファイル一覧を取得。
-		File directory = new File(wrapper.getDirectory()).getAbsoluteFile();
-		File[] seekFiles = directory.listFiles(fileFilter);
-		if (seekFiles == null) {
-			return;
-		}
-
-		List<File> preMonitorList = new ArrayList<>();
-		// 監視対象ファイルが存在し、過去に監視された実績がある場合は今回も監視対象とする
-		for (File file : seekFiles) {
-			String rsFileTrueTempPath = new File(filesDir.getPath(), file.getName()) + ".t";
-			String rsFileFalseTempPath = new File(filesDir.getPath(), file.getName()) + ".f";
-			if (java.nio.file.Files.exists(Paths.get(rsFileTrueTempPath)) || java.nio.file.Files.exists(Paths.get(rsFileFalseTempPath))) {
-				preMonitorList.add(file);
+		File dir = new File(wrapper.getDirectory());
+		if (!dir.isDirectory()) {
+			if (log.isDebugEnabled()) {
+				log.debug("checkMonitorFile() : " + wrapper.getDirectory() + " is not directory. ID=" + wrapper.getId());
 			}
+			return;
 		}
 
-		preMonitorMap.put(wrapper.getId(), preMonitorList);
+		// ビジターでシーク対象ファイル一覧を取得する
+		Pattern pattern = Pattern.compile(wrapper.getFileName(), Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+		PreMonitorListFileVisitor fv = new PreMonitorListFileVisitor(pattern, filesDir);
+		Path path = dir.getAbsoluteFile().toPath();
+		try {
+			// 辿る階層はログファイル監視設定のディレクトリ直下のみ
+			Files.walkFileTree(path, EnumSet.of(FileVisitOption.FOLLOW_LINKS), 1, fv);
+		} catch (IOException e) {
+			log.warn("checkMonitorFile() : " + e.getMessage());
+			return;
+		}
+
+		preMonitorMap.put(wrapper.getId(), fv.getPreMonitorList());
 	}
 
 	/**
@@ -361,4 +352,72 @@ public abstract class AbstractReadingStatusRoot<T extends AbstractFileMonitorInf
 
 	public abstract AbstractReadingStatusDir<T> createReadingStatusDir(T wrapper, String basePath,
 			FileMonitorConfig fileMonitorConfig);
+	
+	// 監視対象ファイルを取得するビジター(checkMonitorFile用)
+	private static class PreMonitorListFileVisitor implements FileVisitor<Path> {
+
+		List<File> preMonitorList = new ArrayList<>();
+		
+		private Pattern pattern;
+		
+		private File filesDir;
+
+		public PreMonitorListFileVisitor(final Pattern pattern, final File filesDir) {
+			this.pattern = pattern;
+			this.filesDir = filesDir;
+		}
+				
+		public List<File> getPreMonitorList() {
+			return preMonitorList;
+		}
+				
+		@Override
+		public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			// findbugs 対応(nullチェック)
+			Path filePath = file.getFileName();
+			if(filePath == null) {
+				// 想定外の状況
+				// スキップして次へいく
+				log.warn("update() : file.getFileName() is null");
+				return FileVisitResult.CONTINUE;
+			}
+			String fileName = filePath.toString();
+			log.debug("visitFile() : file = " + fileName);
+
+			// ファイル以外の場合は何もしない
+			if(!file.toFile().isFile()) {
+				return FileVisitResult.CONTINUE;
+			}
+
+			// 監視設定のファイル名にマッチしない場合何もしない
+			if(!pattern.matcher(fileName).matches()) {
+				return FileVisitResult.CONTINUE;
+			}
+
+			// 監視対象ファイルが存在し、過去に監視された実績がある場合は今回も監視対象とする
+			String rsFileTrueTempPath = new File(filesDir.getPath(), file.toFile().getName()) + ".t";
+			String rsFileFalseTempPath = new File(filesDir.getPath(), file.toFile().getName()) + ".f";
+			if (java.nio.file.Files.exists(Paths.get(rsFileTrueTempPath)) || java.nio.file.Files.exists(Paths.get(rsFileFalseTempPath))) {
+				preMonitorList.add(file.toFile());
+			}
+
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+	}
+
 }

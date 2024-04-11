@@ -211,7 +211,9 @@ public class ScriptComponent {
 				try {
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					Files.copy(p, baos);
-					m_scriptContent.setText(baos.toString(m_scriptEncoding.getText()));
+					String scriptContent = baos.toString(m_scriptEncoding.getText());
+					scriptContent.replace("\r\n", "\n");
+					m_scriptContent.setText(scriptContent);
 				} catch (IOException ex) {
 					m_log.warn("falied to upload script content " + ex.getClass().getSimpleName() + ":" + ex.getMessage());
 					MessageDialog.openError(null, Messages.getString("failed"),

@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.xcloud.Session.ContextBean;
 import com.clustercontrol.xcloud.Session.SessionScope;
 
@@ -362,6 +363,10 @@ public class Threading {
 	private static ExecutorService executorService = newCachedThreadPool("SessionContextPool");
 	private static ScheduledExecutorService scheduledExecutorService = newScheduledThreadPool(3, "SessionContextScheduler");
 
+	/** エージェント登録時用スレッドプール */
+	private static ScheduledExecutorService scheduledExecutorServiceForRegistAgent = newScheduledThreadPool(
+			HinemosPropertyCommon.xcloud_autoregist_agent_threadpool_size.getIntegerValue(), "RegistAgentScheduler");
+
 	public static void execute(Runnable command) {
 		executorService.execute(command);
 	}
@@ -381,4 +386,19 @@ public class Threading {
 	public static ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
 		return scheduledExecutorService.scheduleWithFixedDelay(command, initialDelay, delay, unit);
 	}
+
+	/**
+	 * エージェント登録時の定期的なアクションを作成して実行します。
+	 * 
+	 * @param command 実行するタスク
+	 * @param initialDelay 最初の遅延実行までの時間
+	 * @param delay 実行の終了後から次の開始までの遅延
+	 * @param unit initialDelayおよびdelayパラメータの時間単位
+	 * @return タスクの保留状態の完了を表すScheduledFuture
+	 */
+	public static ScheduledFuture<?> scheduleWithFixedDelayForRegistAgent(Runnable command, long initialDelay,
+			long delay, TimeUnit unit) {
+		return scheduledExecutorServiceForRegistAgent.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+	}
+
 }

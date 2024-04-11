@@ -77,8 +77,14 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 
 		// 時間間隔（秒）
 		Integer intervalSec = HinemosPropertyCommon.selfcheck_monitoring_dbtran_interval.getIntegerValue();
+		// 指定文字列用の時間間隔（秒）
+		Integer longIntervalSec = HinemosPropertyCommon.selfcheck_monitoring_dbtran_long_interval.getIntegerValue();
 		// SQL
-		validationQuery = String.format(SelfCheckDivergence.getDbLongTranValidationQuery(), intervalSec);
+		if(intervalSec > longIntervalSec) {
+			validationQuery = String.format(SelfCheckDivergence.getDbLongTranValidationQuery(), longIntervalSec);
+		} else {
+			validationQuery = String.format(SelfCheckDivergence.getDbLongTranValidationQuery(), intervalSec);
+		}
 
 		/** メイン処理 */
 		m_log.debug("monitoring long running transaction query. (query = " + validationQuery + ")");
@@ -107,9 +113,16 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 		}
 		if (warn) {
 			if (list != null) {
+				warn = false;
 				for(Object info : list) {
 					Object[] resultList = (Object[])info;
-					m_log.info("exists long running transaction. (" + (String)resultList[1] + ")");
+					boolean stringBool = designationStringBool((String)resultList[1]);
+
+					if(stringBool && (double)resultList[0] >= longIntervalSec ||
+							!stringBool && (double)resultList[0] >= intervalSec) {
+						warn = true;
+						m_log.info("exists long running transaction. (" + (String)resultList[1] + ")");
+					}
 				}
 			}
 		}
@@ -123,6 +136,35 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 				"exists long running transaction.");
 
 		return;
+	}
+
+	/**
+	 * 実行したクエリの結果内に指定した文字列が一致するかの確認
+	 * 
+	 * @param resultListString クエリ実行結果の文字列
+	 * @return
+	 */
+	private boolean designationStringBool(String resultListString) {
+		boolean stringBool = false;
+		// 一致確認用
+		final String query = "query = [";
+		String designationString = HinemosPropertyCommon.selfcheck_monitoring_dbtran_interval_designation_string.getStringValue();
+		String[] designationStringList = designationString.split(",", -1);
+
+		for(String s : designationStringList) {
+			if(s.replaceAll("\\s|　", "").equals("")) {
+				continue;
+			}
+
+			String checkString = query + s;
+			// 指定した文字列があった場合はtrueとし、処理を抜ける
+			if(resultListString.contains(checkString)) {
+				stringBool = true;
+				break;
+			}
+		}
+
+		return stringBool;
 	}
 
 	/**

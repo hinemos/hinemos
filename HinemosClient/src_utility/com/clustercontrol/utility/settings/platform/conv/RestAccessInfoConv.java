@@ -22,6 +22,7 @@ import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.platform.xml.AuthHttpHeaders;
 import com.clustercontrol.utility.settings.platform.xml.RestAccessInfo;
 import com.clustercontrol.utility.settings.platform.xml.SendHttpHeaders;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * RESTアクセス情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -31,9 +32,15 @@ import com.clustercontrol.utility.settings.platform.xml.SendHttpHeaders;
 
 public class RestAccessInfoConv  {
 	
-	static private final String schemaType="K";
-	static private final String schemaVersion="1";
-	static private final String schemaRevision="1" ;
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private final String schemaType=VersionUtil.getSchemaProperty("PLATFORM.RESTACCESSINFO.SCHEMATYPE");
+	static private final String schemaVersion=VersionUtil.getSchemaProperty("PLATFORM.RESTACCESSINFO.SCHEMAVERSION");
+	static private final String schemaRevision=VersionUtil.getSchemaProperty("PLATFORM.RESTACCESSINFO.SCHEMAREVISION");
 
 	private static Log log = LogFactory.getLog(MailTemplateConv.class);
 

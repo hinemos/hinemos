@@ -17,26 +17,24 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.TypedQuery;
+import org.apache.log4j.Logger;
 
-import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.FacilityTreeItem;
 import com.clustercontrol.repository.model.ScopeInfo;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.InternalManagerError;
-import com.clustercontrol.xcloud.Session;
 import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.factory.Repository.RepositoryVisitor;
 import com.clustercontrol.xcloud.model.CloudScopeEntity;
 import com.clustercontrol.xcloud.model.EntityEntity;
 import com.clustercontrol.xcloud.model.InstanceEntity;
 import com.clustercontrol.xcloud.model.LocationEntity;
+import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 import com.clustercontrol.xcloud.util.FacilityIdUtil;
-import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.util.RepositoryControllerBeanWrapper;
 import com.clustercontrol.xcloud.util.RepositoryUtil;
 
@@ -45,6 +43,8 @@ import com.clustercontrol.xcloud.util.RepositoryUtil;
  *
  */
 public class CloudRepositoryWalker {
+	private static final Logger logger = Logger.getLogger(CloudRepositoryWalker.class);
+	
 	private RepositoryVisitor visitor;
 	
 	private CloudRepositoryWalker() {
@@ -61,11 +61,15 @@ public class CloudRepositoryWalker {
 	
 	public void walk(RepositoryVisitor visitor, String hinemosUser) throws CloudManagerException {
 		List<CloudScopeEntity> cloudScopes;
+		long start = HinemosTime.currentTimeMillis();
+		logger.debug("walk(): call walk start.");
+
 		if (hinemosUser == null) {
 			cloudScopes = CloudManager.singleton().getCloudScopes().getCloudScopesByCurrentHinemosUser();
 		} else {
 			cloudScopes = CloudManager.singleton().getCloudScopes().getCloudScopesByHinemosUser(hinemosUser);
 		}
+		logger.debug("walk(): call walk end. " + (HinemosTime.currentTimeMillis() - start) + " ms.");
 		startComparison(visitor, cloudScopes);
 	}
 	
@@ -77,7 +81,7 @@ public class CloudRepositoryWalker {
 	//		1. ロケーションまでは更新を行う。
 	//		2. ロケーションは以下は、ID でフィルタを行う
 	//		積極的にクラウド管理が想定する階層を維持しない
-		
+		long startComparison = HinemosTime.currentTimeMillis();
 		this.visitor = visitor;
 		
 		// 登録済みのクラウドスコープを public と private に選別。
@@ -102,13 +106,21 @@ public class CloudRepositoryWalker {
 		} catch (HinemosUnknown e) {
 			throw new InternalManagerError(e.getMessage(), e);
 		}
+		logger.debug("startComparison(): call getFacilityTree end. " + (HinemosTime.currentTimeMillis() - startComparison) + " ms.");
+		long startCollectScopes = HinemosTime.currentTimeMillis();
+
 		List<FacilityTreeItem> treeItems = CloudUtil.collectScopes(treeItem, CloudConstants.publicRootId, CloudConstants.privateRootId);
-		
+
+		logger.debug("startComparison(): call collectScopes end. " + (HinemosTime.currentTimeMillis() - startCollectScopes) + " ms.");
 		this.visitor.visitStart();
 		
 		CollectionComparator.compare(new ArrayList<>(Arrays.asList(CloudConstants.publicRootId, CloudConstants.privateRootId)), treeItems, new CollectionComparator.Comparator<String, FacilityTreeItem>() {
+			long startCompare = 0L;
+
 			@Override
 			public boolean match(String o1, FacilityTreeItem o2) throws CloudManagerException {
+				logger.debug("startComparison(): comparing o1: [" + o1 + "], o2: [" + o2.getData().getFacilityId() + "] start.");
+				startCompare = HinemosTime.currentTimeMillis();
 				return o1.equals(o2.getData().getFacilityId()) && o2.getData().getFacilityType() == FacilityConstant.TYPE_SCOPE;
 			}
 			// リポジトリ上にクラウドスコープに該当するスコープが存在している場合
@@ -116,6 +128,7 @@ public class CloudRepositoryWalker {
 			public void matched(String o1, FacilityTreeItem o2) throws CloudManagerException {
 				CloudRepositoryWalker.this.visitor.visitCloudScopeRootScope(o2.getData());
 				compareCloudScopes(scopesMap.get(o1), o2);
+				logger.debug("startComparison(): comparing end with matched. " + (HinemosTime.currentTimeMillis() - startCompare) + " ms.");
 			}
 			// リポジトリ上にクラウドスコープに該当するスコープがない
 			@Override
@@ -152,6 +165,7 @@ public class CloudRepositoryWalker {
 						}
 					});
 				}
+				logger.debug("startComparison(): comparing end with afterO1. " + (HinemosTime.currentTimeMillis() - startCompare) + " ms.");
 			}
 		});
 		visitor.visitEnd();
@@ -159,8 +173,12 @@ public class CloudRepositoryWalker {
 	
 	protected void compareCloudScopes(Collection<CloudScopeEntity> cloudScopes, final FacilityTreeItem rootFacility) throws CloudManagerException {
 		CollectionComparator.compare(cloudScopes, rootFacility.getChildren(), new CollectionComparator.Comparator<CloudScopeEntity, FacilityTreeItem>() {
+			long startCompare = 0L;
+
 			@Override
 			public boolean match(CloudScopeEntity o1, FacilityTreeItem o2) throws CloudManagerException {
+				logger.debug("compareCloudScopes(): comparing o1: [" + FacilityIdUtil.getCloudScopeScopeId(o1) + "], o2: [" + String.valueOf(o2.getData().getFacilityId()) + "] start.");
+				startCompare = HinemosTime.currentTimeMillis();
 				return FacilityIdUtil.getCloudScopeScopeId(o1).equals(o2.getData().getFacilityId()) && o2.getData().getFacilityType() == FacilityConstant.TYPE_SCOPE;
 			}
 			// リポジトリ上にクラウドスコープに該当するスコープが存在している場合
@@ -173,6 +191,7 @@ public class CloudRepositoryWalker {
 				// 引き続きロケーションの更新
 				int count = o1.getLocations().size();
 				if (count == 1) {
+					visitor.visitLocationEntity(o1.getLocations().get(0));
 					Pattern p = Pattern.compile(String.format("^_(.*)(_%s|_%s_(.*))$", o1.getId(), o1.getId()));
 					for (FacilityTreeItem child: o2.getChildren()) {
 						recursiveWalkLocationResources(o1.getLocations().get(0), o2, child, p);
@@ -181,6 +200,7 @@ public class CloudRepositoryWalker {
 					// ロケーションの一覧取得
 					compareLocations(o1, o2);
 				}
+				logger.debug("startComparison(): comparing end with matched. " + (HinemosTime.currentTimeMillis() - startCompare) + " ms.");
 			}
 			// リポジトリ上にクラウドスコープに該当するスコープがない
 			@Override
@@ -200,6 +220,7 @@ public class CloudRepositoryWalker {
 						// クラウドオプション管理のリポジトリツリーのみの取得処理なので、ロケーション配下の情報は更新しない。
 					}
 				});
+				logger.debug("startComparison(): comparing end with afterO1. " + (HinemosTime.currentTimeMillis() - startCompare) + " ms.");
 			}
 			// リポジトリ上にクラウドスコープに該当しないスコープがある
 			@Override
@@ -211,19 +232,25 @@ public class CloudRepositoryWalker {
 	
 	protected void compareLocations(final CloudScopeEntity cloudScopeEntity, final FacilityTreeItem cloudScopeScope) throws CloudManagerException {
 		CollectionComparator.compare(cloudScopeEntity.getLocations(), cloudScopeScope.getChildren(), new CollectionComparator.Comparator<LocationEntity, FacilityTreeItem>() {
+			long startCompare = 0L;
+
 			@Override
 			public boolean match(LocationEntity o1, FacilityTreeItem o2) throws CloudManagerException {
+				logger.debug("compareLocations(): comparing o1: [" + FacilityIdUtil.getLocationScopeId(o1.getCloudScope().getId(), o1) + "], o2: [" + String.valueOf(o2.getData().getFacilityId()) + "] start.");
+				startCompare = HinemosTime.currentTimeMillis();
 				return FacilityIdUtil.getLocationScopeId(o1.getCloudScope().getId(), o1).equals(o2.getData().getFacilityId()) && o2.getData().getFacilityType() == FacilityConstant.TYPE_SCOPE;
 			}
 			// リポジトリ上にロケーションに該当するスコープが存在している場合
 			@Override
 			public void matched(LocationEntity o1, FacilityTreeItem o2) throws CloudManagerException {
 				visitor.visitLocationScope(cloudScopeScope.getData(), o2.getData(), o1);
+				visitor.visitLocationEntity(o1);
 				
 				Pattern p = Pattern.compile(String.format("^_(.*)(_%s|_%s_(.*))$", cloudScopeEntity.getId(), cloudScopeEntity.getId()));
 				for (FacilityTreeItem child: o2.getChildren()) {
 					recursiveWalkLocationResources(o1, o2, child, p);
 				}
+				logger.debug("startComparison(): comparing end with matched. " + (HinemosTime.currentTimeMillis() - startCompare) + " ms.");
 			}
 			// リポジトリ上にロケーションに該当するスコープがない
 			@Override
@@ -235,6 +262,7 @@ public class CloudRepositoryWalker {
 						visitor.visitLocationScope(cloudScopeScope.getData(), scope, location);
 					}
 				});
+				logger.debug("startComparison(): comparing end with afterO1. " + (HinemosTime.currentTimeMillis() - startCompare) + " ms.");
 				// クラウドオプション管理のリポジトリツリーのみの取得処理なので、ロケーション配下の情報は更新しない。
 			}
 			// リポジトリ上にロケーションに該当しないスコープがある
@@ -247,6 +275,8 @@ public class CloudRepositoryWalker {
 	
 	protected void recursiveWalkLocationResources(LocationEntity location, FacilityTreeItem parent, FacilityTreeItem treeItem, Pattern pattern) throws CloudManagerException {
 		String allScopeId = FacilityIdUtil.getAllNodeScopeId(location.getCloudScope().getPlatformId(), location.getCloudScope().getId());
+		logger.debug("recursiveWalkLocationResources(): start. locationID: " + location.getLocationId());
+
 		if (allScopeId.equals(treeItem.getData().getFacilityId()))
 			return;
 		
@@ -262,23 +292,26 @@ public class CloudRepositoryWalker {
 			}
 			break;
 		case FacilityConstant.TYPE_NODE:
-			HinemosEntityManager em = Session.current().getEntityManager();
-			try {
-				TypedQuery<InstanceEntity> query = em.createNamedQuery(InstanceEntity.findInstancesByFacilityIds, InstanceEntity.class);
-				query.setParameter("cloudScopeId", location.getCloudScope().getCloudScopeId());
-				query.setParameter("facilityIds", Arrays.asList(treeItem.getData().getFacilityId()));
-				InstanceEntity instanceEntity = query.getSingleResult();
+			logger.debug("recursiveWalkLocationResources(): Instance start. facilityId:" + treeItem.getData().getFacilityId());
+			long start = HinemosTime.currentTimeMillis();
+			// compareCloudScopesやcompareLocationsで取得したキャッシュからInstanceEntityを検索
+			InstanceEntity instanceEntity = visitor.findInstanceEntity(treeItem.getData().getFacilityId());
+			logger.debug("recursiveWalkLocationResources(): Instance end. " + (HinemosTime.currentTimeMillis() - start) + " ms.");
+			if (instanceEntity != null) {
 				visitor.visitInstance(parent.getData(), treeItem.getData(), instanceEntity);
-			} catch (NoResultException e) {
-				try {
-					TypedQuery<EntityEntity> query = em.createNamedQuery(EntityEntity.findEntitiesByFacilityIds, EntityEntity.class);
-					query.setParameter("cloudScopeId", location.getCloudScope().getCloudScopeId());
-					query.setParameter("facilityIds", Arrays.asList(treeItem.getData().getFacilityId()));
-					EntityEntity entityEntity = query.getSingleResult();
-					visitor.visitEntity(parent.getData(), treeItem.getData(), entityEntity);
-				} catch (NoResultException e1) {
-				}
+				break;
 			}
+
+			logger.debug("recursiveWalkLocationResources(): Entity start. facilityId:" + treeItem.getData().getFacilityId());
+			start = HinemosTime.currentTimeMillis();
+			// compareCloudScopesやcompareLocationsで取得したキャッシュからEntityEntityを検索
+			EntityEntity entityEntity = visitor.findEntityEntity(treeItem.getData().getFacilityId());
+			logger.debug("recursiveWalkLocationResources(): Entity end. " + (HinemosTime.currentTimeMillis() - start) + " ms.");
+			if (entityEntity != null) {
+				visitor.visitEntity(parent.getData(), treeItem.getData(), entityEntity);
+				break;
+			}
+
 			break;
 		default:
 			break;

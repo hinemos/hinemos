@@ -216,8 +216,12 @@ public class JobSessionJobImpl {
 		}
 	}
 
-	// 次回のrunningCheckを強制的に動作させるためのリスト。
-	// このリストがないと、次回時刻(待ち条件、遅延監視)になるまではrunnincCheckは動作しない。
+	/**
+	 * 「強制チェック対象ジョブキャッシュ」のリストを返す関数<BR>
+	 * 「強制チェック対象ジョブキャッシュ」とは、次回のrunningCheckで強制的にチェック対象とするジョブセッションIDのこと。<BR>
+	 * 「強制チェック対象ジョブキャッシュ」リストへのジョブセッションIDの追加は、ジョブセッション配下のジョブが「実行中」に遷移した場合に行う
+	 * @return 強制チェック対象ジョブキャッシュのリスト
+	 */
 	@SuppressWarnings("unchecked")
 	private static ArrayList<String> getForceCheckCache() {
 		ICacheManager cm = CacheManagerFactory.instance().create();
@@ -263,6 +267,12 @@ public class JobSessionJobImpl {
 		}
 	}
 
+	/**
+	 * 待ち条件／開始遅延／終了遅延チェックの実施判定用キャッシュ<BR>
+	 * ・毎分０秒に実行されるJobRunManagementBean#runSub内で待ち条件／開始遅延／終了遅延チェック（JobSessionImpl#runningCheck）の実施要否の判断に利用している<BR>
+	 * ・本キャッシュにはジョブセッションごとに「待ち条件」、「開始遅延」、「終了遅延」内で直近の時刻（最も小さい時刻）が格納される<BR>
+	 * ・本キャッシュ内に格納される値は「null」（マネージャ起動直後、ジョブセッション生成直後）、直近の時刻、Long.MAX(時刻がない場合)のいずれか
+	 */
 	private static ConcurrentHashMap <String, Long> checkTimeMap = new ConcurrentHashMap<String, Long>();
 
 	public static boolean isSkipCheck(String sessionId) {
@@ -284,11 +294,13 @@ public class JobSessionJobImpl {
 	 */
 	private static void addCheckDate(String sessionId, Long inputTime) {
 		Long time = checkTimeMap.get(sessionId);
-		if (time == null || inputTime < time) {
-			Date date = null;
-			if (time != null) {
-				date = new Date(time);
-			}
+		
+		// キャッシュに格納された日時と指定された日時を比較し、直近の日時をキャッシュに格納する
+		// キャッシュがnullの場合は、本メソッドで更新しない
+		// ・更新すると、マネージャの起動時に「JobSessionImpl#runningCheck」が実行される前にジョブが終了した場合、不正な値が設定される
+		// ・キャッシュがnull場合、「JobSessionImpl#runningCheck」が呼ばれ、ジョブセッション配下の全ジョブの状態と時刻に関する設定から算出された直近の時刻が設定される
+		if (time != null && inputTime < time) {
+			Date date = new Date(time);
 			m_log.info("addCheckDate " + sessionId +
 					", input=" + new Date(inputTime) + ", date=" + date);
 			checkTimeMap.put(sessionId, inputTime);
@@ -352,8 +364,10 @@ public class JobSessionJobImpl {
 			}
 		}
 		waitCheckJobIdList.add(jobunitIdJobId);
-		m_log.info("addWaitCheckJob " + sessionId + ","
-					+ " jobunitId=" + jobunitIdJobId[0] + ", jobId=" + jobunitIdJobId[1]);
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("addWaitCheckJob " + sessionId + "," + " jobunitId=" + jobunitIdJobId[0] + ", jobId="
+					+ jobunitIdJobId[1]);
+		}
 	}
 
 	/**
@@ -372,7 +386,9 @@ public class JobSessionJobImpl {
 	public void clearWaitCheckMap(String sessionId) {
 		List<String[]> waitCheckJobIdList = waitCheckJobMap.get(sessionId);
 		if (waitCheckJobIdList != null) {
-			m_log.info("clearWaitCheckJob " + sessionId);
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("clearWaitCheckJob " + sessionId);
+			}
 			waitCheckJobMap.remove(sessionId);
 		}
 	}
@@ -611,7 +627,8 @@ public class JobSessionJobImpl {
 		// 実行状態に遷移した場合は、1分後に終了遅延のチェックをする必要がある。
 		addForceCheck(sessionId);
 		// 実行状態が待機→実行中に遷移する場合ノードを再展開の対象になる
-		if (sessionJob.getStatus() == StatusConstant.TYPE_WAIT) {
+		if (sessionJob.getStatus() == StatusConstant.TYPE_WAIT
+				|| sessionJob.getStatus() == StatusConstant.TYPE_RUNNING_QUEUE) {
 			isExpNode = true;
 		}
 		// 実行状態を実行中にする
@@ -741,20 +758,10 @@ public class JobSessionJobImpl {
 				if (wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS
 						|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE
 						|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS
-						|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE) {
+						|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE
+						|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_RETURN_VALUE) {
 					// 待ち条件群内のジョブを指定する待ち条件についての判定
 					infoReturnValue = checkWaitJobEnd(sessionId, jobunitId, jobId, sessionJob, wait);
-				} else if (wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_RETURN_VALUE) {
-					JobSessionJobEntity targetSessionJob = QueryUtil.getJobSessionJobPK(sessionJob.getId().getSessionId(),
-							wait.getId().getTargetJobunitId(), wait.getId().getTargetJobId());
-					// 待ち条件「ジョブ（戻り値）」については、先行ジョブの実行対象が１ノードである場合のみ使用可能とする
-					if(targetSessionJob.getJobSessionNodeEntities().size() > 1){
-						// 後の判定は行わず「待機状態」のままとする
-						infoReturnValue = ReturnValue.NONE;
-					} else {
-						// 待ち条件群内のジョブ終了判定
-						infoReturnValue = checkWaitJobEnd(sessionId, jobunitId, jobId, sessionJob, wait);
-					}
 				} else if (wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_PARAMETER) {
 					// 待ち条件群内のジョブ変数判定
 					infoReturnValue = checkWaitJobParam(sessionId, jobunitId, job, wait);
@@ -955,8 +962,10 @@ public class JobSessionJobImpl {
 		}
 		// セッション横断待ち条件の場合
 		if (typeIsCrossJob) {
-			m_log.info("CrossSessionJob exists : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId="
-					+ jobId);
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("CrossSessionJob exists : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId="
+						+ jobId);
+			}
 			// ジョブユニットID、ジョブID、ジョブ終了日時から、対象セッションジョブを取得
 			List<JobSessionJobEntity> targetCrossSessionJobList = JobSessionJobUtil.searchCrossSessionJob(wait);
 			returnValue = JobSessionJobUtil.checkStartCrossSessionCondition(targetCrossSessionJobList, wait);
@@ -1373,11 +1382,13 @@ public class JobSessionJobImpl {
 
 		//開始遅延チェック結果が遅延の場合
 		if(delayCheck){
-			m_log.info("checkStartDelaySub: Detected a start delay."
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("checkStartDelaySub: Detected a start delay."
 						+ " job=[" + sessionId + ", " + jobunitId + ", " + jobId + "]"
 						+ ", notify=" + job.getStartDelayNotify()
 						+ ", operation=" + job.getStartDelayOperation()
 						+ "(" + job.getStartDelayOperationType() + ")");
+			}
 
 			//通知
 			if(job.getStartDelayNotify().booleanValue()){
@@ -1388,7 +1399,11 @@ public class JobSessionJobImpl {
 
 				if(notifyFlg == DelayNotifyConstant.NONE || notifyFlg == DelayNotifyConstant.END){
 					//通知済みフラグが「通知・操作なし」又は「終了遅延通知済み」の場合
-
+					m_log.info("checkStartDelaySub: Start delay notity start."
+							+ " job=[" + sessionId + ", " + jobunitId + ", " + jobId + "]"
+							+ ", notify=" + job.getStartDelayNotify()
+							+ ", operation=" + job.getStartDelayOperation()
+							+ "(" + job.getStartDelayOperationType() + ")");
 					//通知処理
 					new Notice().delayNotify(sessionId, jobunitId, jobId, true, reason.toString());
 
@@ -1402,6 +1417,11 @@ public class JobSessionJobImpl {
 
 			// 操作
 			if (job.getStartDelayOperation().booleanValue()) {
+				m_log.info("checkStartDelaySub: Start delay operation start."
+						+ " job=[" + sessionId + ", " + jobunitId + ", " + jobId + "]"
+						+ ", notify=" + job.getStartDelayNotify()
+						+ ", operation=" + job.getStartDelayOperation()
+						+ "(" + job.getStartDelayOperationType() + ")");
 				int type = job.getStartDelayOperationType();
 				if (type == OperationConstant.TYPE_STOP_SKIP) {
 					sessionJob.setStatus(StatusConstant.TYPE_SKIP);

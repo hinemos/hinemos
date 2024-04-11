@@ -12,8 +12,9 @@ import java.util.List;
 
 public class GetStatusListResponse {
 
-	private Integer total = 0;			//合計数（size制限が無い場合に取得できた件数）
+	private Integer total = 0;			//合計数（size制限がある場合に取得できた件数）
 	private List<StatusInfoResponse> statusList  = new ArrayList<>();//ステータス一覧
+	private Integer countAll = 0;		//全レコード数
 
 	public GetStatusListResponse() {
 	}
@@ -32,5 +33,11 @@ public class GetStatusListResponse {
 		this.statusList = statusList;
 	}
 	
+	public Integer getCountAll() {
+		return countAll;
+	}
 
+	public void setCountAll(Integer countAll) {
+		this.countAll = countAll;
+	}
 }

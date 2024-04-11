@@ -51,8 +51,8 @@ public class ImageManager {
 	public static final int MAX_BG_HEIGHT = 1200;
 
 	// イメージのクライアントキャッシュ
-	private ConcurrentHashMap <String, ConcurrentHashMap<String, Image>> iconImageMap;
-	private ConcurrentHashMap <String, ConcurrentHashMap<String, Image>> bgImageMap;
+	private ConcurrentHashMap<String, ConcurrentHashMap<String, Image>> iconImageMap = new ConcurrentHashMap<String, ConcurrentHashMap<String, Image>>();
+	private ConcurrentHashMap<String, ConcurrentHashMap<String, Image>> bgImageMap = new ConcurrentHashMap<String, ConcurrentHashMap<String, Image>>();
 
 	private ImageManager(){}
 	
@@ -213,10 +213,6 @@ public class ImageManager {
 		/*
 		 * キャッシュに存在する場合は、キャッシュの値を返す。
 		 */
-		if (getInstance().iconImageMap == null) {
-			getInstance().iconImageMap = new ConcurrentHashMap<String, ConcurrentHashMap<String, Image>>();
-		}
-		
 		map = getInstance().iconImageMap.get(managerName);
 		if (map == null) {
 			map = new ConcurrentHashMap<String, Image>();
@@ -287,10 +283,6 @@ public class ImageManager {
 		/*
 		 * キャッシュに存在する場合は、キャッシュの値を返す。
 		 */
-		if (getInstance().bgImageMap == null) {
-			getInstance().bgImageMap = new ConcurrentHashMap<String, ConcurrentHashMap<String, Image>>();
-		}
-
 		map = getInstance().bgImageMap.get(managerName);
 		if (map == null) {
 			map = new ConcurrentHashMap<String, Image>();

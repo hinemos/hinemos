@@ -35,6 +35,8 @@ import com.clustercontrol.utility.settings.monitor.xml.PluginStringValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
+import com.clustercontrol.xcloud.bean.CloudConstant;
 
 /**
  * クラウドログ 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -43,9 +45,15 @@ import com.clustercontrol.utility.util.UtilityManagerUtil;
 public class CloudLogConv {
 	private final static Log logger = LogFactory.getLog(CloudLogConv.class);
 
-	static private String SCHEMA_TYPE = "K";
-	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "1";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private String SCHEMA_TYPE = VersionUtil.getSchemaProperty("MONITOR.CLOUDLOG.SCHEMATYPE");
+	static private String SCHEMA_VERSION = VersionUtil.getSchemaProperty("MONITOR.CLOUDLOG.SCHEMAVERSION");
+	static private String SCHEMA_REVISION = VersionUtil.getSchemaProperty("MONITOR.CLOUDLOG.SCHEMAREVISION");
 	
 	
 	/**
@@ -178,13 +186,20 @@ public class CloudLogConv {
 	 */
 	private static PluginCheckInfoResponse createCloudLogCheckInfo(CloudLogInfo cloudLogInfo) {
 		PluginCheckInfoResponse pluginCheckInfo = new PluginCheckInfoResponse();
-		for(PluginStringValue pluginStringValue : cloudLogInfo.getPluginStringValue()){
+		for (PluginStringValue pluginStringValue : cloudLogInfo.getPluginStringValue()) {
 			MonitorPluginStringInfoResponse info = new MonitorPluginStringInfoResponse();
 			info.setKey(pluginStringValue.getKey());
-			info.setValue(pluginStringValue.getValue());
+			// 最大読み取り文字数はnullが未設定扱いのため、空文字ならnullを設定
+			if (pluginStringValue.getKey().equals(CloudConstant.cloudLog_maxBytes)
+					&& (pluginStringValue.getValue() == null || pluginStringValue.getValue().isEmpty())) {
+				logger.debug("createCloudLogCheckInfo(): set value null for key: " + pluginStringValue.getKey());
+				info.setValue(null);
+			} else {
+				info.setValue(pluginStringValue.getValue());
+			}
 			pluginCheckInfo.getMonitorPluginStringInfoList().add(info);
 		}
-		
+
 		return pluginCheckInfo;
 	}
 	

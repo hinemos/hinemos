@@ -36,6 +36,7 @@ import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.rest.client.DefaultApi;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.ICheckPublishRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.RestConnectManager;
@@ -305,13 +306,15 @@ public class ReportingRestClientWrapper implements ICheckPublishRestClientWrappe
 		};
 		try {
 			return proxy.proxyExecute();
-		} catch (RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown def) {//想定内例外 API個別に判断
+		} catch (RestConnectFailed def) {//通信異常
+			throw new RestConnectFailed(Messages.getString("message.hinemos.failure.transfer") + ", " + HinemosMessage.replace(def.getMessage()), def);
+		} catch (InvalidUserPass | InvalidRole | HinemosUnknown def) {//想定内例外 API個別に判断
 			throw def;
 		} catch (UrlNotFound e) {
 			// UrlNotFoundが返された場合エンドポイントがPublishされていないためメッセージを設定する
-			throw new HinemosUnknown(new UrlNotFound(Messages.getString("message.expiration.term")));
+			throw new HinemosUnknown(Messages.getString("message.expiration.term"), e);
 		} catch ( Exception unknown ){ //想定外の例外の場合HinemosUnknownに変換（通常ここには来ない想定）
-			throw new HinemosUnknown(unknown);
+			throw new HinemosUnknown(Messages.getString("message.unexpected_error") + "," + HinemosMessage.replace(unknown.getMessage()), unknown);
 		}
 	}
 	

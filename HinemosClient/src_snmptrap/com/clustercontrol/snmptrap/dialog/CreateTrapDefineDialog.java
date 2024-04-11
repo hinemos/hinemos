@@ -690,11 +690,6 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		}else{
 			txtMessage.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
-		if("".equals(txtMessageDetail.getText().trim())){
-			txtMessageDetail.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
-		}else{
-			txtMessageDetail.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
-		}
 
 		cmbPriority.setEnabled(btnNotifyIgnoreVariable.getSelection());
 
@@ -800,16 +795,16 @@ public class CreateTrapDefineDialog extends CommonDialog {
 				return createValidateResult(Messages.getString("message.hinemos.1"),Messages.getString("message.monitor.http.scenario.required.numeric", new Object[]{Messages.getString("specific.id")}));
 			}
 			if (Integer.parseInt(txtGenericId.getText()) > DataRangeConstant.SMALLINT_HIGH
-					|| Integer.parseInt(txtGenericId.getText()) < DataRangeConstant.SMALLINT_LOW) {
+					|| Integer.parseInt(txtGenericId.getText()) < DataRangeConstant.GENERIC_ID_LOW) {
 				String[] args = {Messages.getString("generic.id"),
-						String.valueOf(DataRangeConstant.SMALLINT_LOW), String.valueOf(DataRangeConstant.SMALLINT_HIGH)};
+						String.valueOf(DataRangeConstant.GENERIC_ID_LOW), String.valueOf(DataRangeConstant.SMALLINT_HIGH)};
 				return createValidateResult(Messages.getString("message.hinemos.1"),
 						Messages.getString("message.calendar.52",args));
 			}
 			if (Long.parseLong(txtSpecificId.getText()) > DataRangeConstant.INTEGER_HIGH
-					|| Long.parseLong(txtSpecificId.getText()) < DataRangeConstant.INTEGER_LOW) {
+					|| Long.parseLong(txtSpecificId.getText()) < DataRangeConstant.SPECIFIC_ID_LOW) {
 				String[] args = {Messages.getString("specific.id"),
-						String.valueOf(DataRangeConstant.INTEGER_LOW), String.valueOf(DataRangeConstant.INTEGER_HIGH)};
+						String.valueOf(DataRangeConstant.SPECIFIC_ID_LOW), String.valueOf(DataRangeConstant.INTEGER_HIGH)};
 				return createValidateResult(
 						Messages.getString("message.hinemos.1"), 
 						Messages.getString("message.calendar.52",args));
@@ -818,9 +813,6 @@ public class CreateTrapDefineDialog extends CommonDialog {
 
 		if ("".equals(txtMessage.getText().trim())) {
 			return createValidateResult(Messages.getString("message.hinemos.1"),Messages.getString("message.monitor.http.scenario.required", new Object[]{Messages.getString("message")}));
-		}
-		if ("".equals(txtMessageDetail.getText().trim())) {
-			return createValidateResult(Messages.getString("message.hinemos.1"),Messages.getString("message.monitor.http.scenario.required", new Object[]{Messages.getString("monitor.snmptrap.message.detail")}));
 		}
 
 		if(btnNotifyUseVariable.getSelection()){

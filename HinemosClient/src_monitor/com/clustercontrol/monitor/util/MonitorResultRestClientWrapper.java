@@ -96,18 +96,14 @@ public class MonitorResultRestClientWrapper {
 		}
 	}
 
-	public List<StatusInfoResponse> getStatusList(GetStatusListRequest getStatusListRequest)
+	public GetStatusListResponse getStatusList(GetStatusListRequest getStatusListRequest)
 			throws RestConnectFailed, HinemosUnknown, InvalidRole, InvalidUserPass, InvalidSetting {
-		RestUrlSequentialExecuter<List<StatusInfoResponse>> proxy =
-				new RestUrlSequentialExecuter<List<StatusInfoResponse>>(this.connectUnit, this.restKind, DATETIME_FORMAT) {
+		RestUrlSequentialExecuter<GetStatusListResponse> proxy =
+				new RestUrlSequentialExecuter<GetStatusListResponse>(this.connectUnit, this.restKind, DATETIME_FORMAT) {
 			@Override
-			public List<StatusInfoResponse> executeMethod(DefaultApi apiClient) throws Exception {
-				List<StatusInfoResponse> result = null;
+			public GetStatusListResponse executeMethod(DefaultApi apiClient) throws Exception {
 				GetStatusListResponse dtoRes =apiClient.monitorresultGetStatusList(getStatusListRequest);
-				if(dtoRes != null){
-					result = dtoRes.getStatusList();
-				}
-				return result;
+				return dtoRes;
 			}
 		};
 		try {

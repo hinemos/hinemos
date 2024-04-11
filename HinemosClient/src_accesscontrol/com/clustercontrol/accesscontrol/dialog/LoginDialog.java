@@ -164,39 +164,42 @@ public class LoginDialog extends Dialog {
 		// Customize createButtonsForButtonBar(parent) here
 		Button button;
 
-		button = createButton( parent, IDialogConstants.RETRY_ID, Messages.getString("button.addlogin"), false );
-		WidgetTestUtil.setTestId(this, "addlogin", button);
-		button.addSelectionListener(new SelectionAdapter(){
-			@Override
-			public void widgetSelected( SelectionEvent e ){
-				if (inputList.size() >= maxConnectManager ) {
-					// 最大マネージャ接続数を超えている
-					String msg = Messages.getString("message.accesscontrol.66", new String[] {String.valueOf(maxConnectManager)});
-					m_log.warn(msg);
-					MessageDialog.openError(null, Messages.getString("message"), msg);
-					return;
-				}
-				
-				// Save inputting account info
-				for( LoginInput input: inputList ){
-					input.saveInfo();
-				}
+		//standalone 起動時ログイン先の追加ボタンは表示しない
+		if (restConnectMsgFilter == null || !restConnectMsgFilter.isStandalone()) {
+			button = createButton( parent, IDialogConstants.RETRY_ID, Messages.getString("button.addlogin"), false );
+			WidgetTestUtil.setTestId(this, "addlogin", button);
+			button.addSelectionListener(new SelectionAdapter(){
+				@Override
+				public void widgetSelected( SelectionEvent e ){
+					if (inputList.size() >= maxConnectManager ) {
+						// 最大マネージャ接続数を超えている
+						String msg = Messages.getString("message.accesscontrol.66", new String[] {String.valueOf(maxConnectManager)});
+						m_log.warn(msg);
+						MessageDialog.openError(null, Messages.getString("message"), msg);
+						return;
+					}
 
-				// Update counter before add a new one and copy last manager input
-				reInitializeCounter();
+					// Save inputting account info
+					for( LoginInput input: inputList ){
+						input.saveInfo();
+					}
 
-				LoginAccount lastInputAccount = inputList.get( inputList.size() - 1 ).getAccount();
-				if (lastInputAccount.getAccessPoint() != ACCESS_POINT.FILTER_MANAGER) {
-					inputList.add(new LoginInput(lastInputAccount.getUserId(), "", lastInputAccount.getUrl(), null));
-				} else {
-					inputList.add(new LoginInput());
+					// Update counter before add a new one and copy last manager input
+					reInitializeCounter();
+
+					LoginAccount lastInputAccount = inputList.get( inputList.size() - 1 ).getAccount();
+					if (lastInputAccount.getAccessPoint() != ACCESS_POINT.FILTER_MANAGER) {
+						inputList.add(new LoginInput(lastInputAccount.getUserId(), "", lastInputAccount.getUrl(), null));
+					} else {
+						inputList.add(new LoginInput());
+					}
+
+					int buttonId = ((Integer) e.widget.getData()).intValue();
+					setReturnCode(buttonId);
+					close();
 				}
-
-				int buttonId = ((Integer) e.widget.getData()).intValue();
-				setReturnCode(buttonId);
-				close();
-			}
-		});
+			});
+		}
 
 		// ＯＫボタンのテキスト変更
 		button= createButton(parent, IDialogConstants.OK_ID, Messages.getString("login"), true);
@@ -247,7 +250,11 @@ public class LoginDialog extends Dialog {
 			// 接続先URLを環境変数/デフォルトから取得する
 			String url = System.getenv(RestLoginManager.ENV_HINEMOS_MANAGER_URL);
 			if( null == url || 0 == url.length() ){
-				url = RestLoginManager.VALUE_URL;
+				if (restConnectMsgFilter != null && restConnectMsgFilter.isStandalone()) {
+					url = RestLoginManager.VALUE_URL_MSGFILTER;
+				} else {
+					url = RestLoginManager.VALUE_URL;
+				}
 			}
 			String managerName = Messages.getString("facility.manager") + (counter++);
 			presetAccount = new LoginAccount( userId, password, url, managerName );
@@ -307,7 +314,7 @@ public class LoginDialog extends Dialog {
 			}
 		}
 
-		private void render( Composite parent, boolean onFirst ){
+		private void render( Composite parent, boolean onFirst ) {
 			if( !onFirst ){
 				Label separatorLabel = new Label(parent, SWT.SEPARATOR | SWT.HORIZONTAL);
 				separatorLabel.setLayoutData(new GridData(GridData.FILL, GridData.VERTICAL_ALIGN_BEGINNING, false, false, 4, 1));
@@ -446,8 +453,12 @@ public class LoginDialog extends Dialog {
 
 			// MsgFilterのプラグインが有効な場合のみ選択肢表示
 			if(restConnectMsgFilter != null){
-				createAccessPointSelection(parent);
-			}
+				if (restConnectMsgFilter.isStandalone()) {
+					selectedAccessPoint = ACCESS_POINT.FILTER_MANAGER;
+				} else {
+					createAccessPointSelection(parent);
+				}
+			} 
 			
 			// Set preset value
 			uidText.setText( presetAccount.getUserId() );

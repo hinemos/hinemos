@@ -452,7 +452,7 @@ public class EventListComposite extends CustomizableListComposite {
 		this.warningLabel.setText(String.valueOf(warning));
 		this.infoLabel.setText(String.valueOf(info));
 		this.unknownLabel.setText(String.valueOf(unknown));
-		this.totalLabel.setText(Messages.getString("records", new Object[]{ total }));
+		this.totalLabel.setText(Messages.getString("records.short", new Object[]{ total }));
 	}
 	
 

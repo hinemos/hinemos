@@ -9,6 +9,7 @@
 package com.clustercontrol.agent;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -990,6 +991,30 @@ public class ReceiveTopic extends Thread {
 				CloudLogMonitorUtil.deleteGarbageFiles();
 				// リーディングステータスの削除
 				CloudLogfileMonitorManager.getInstance().clearReadingStatus();
+			} else if (force) {
+				// エージェント停止中にクラウドログ監視設定が無効化、削除された可能性を考慮し、
+				// 不要な一時ファイルとステータスファイルを削除する
+				File rootDir = new File(CloudLogMonitorUtil.getFileStorePathRoot());
+				File propRootDir = new File(CloudLogMonitorUtil.getPropFileStorePathRoot());
+				File[] rootDirs = { rootDir, propRootDir };
+
+				for (File dir : rootDirs) {
+					File[] monDirs = dir.listFiles();
+					if (monDirs != null) {
+						for (File monDir : monDirs) {
+							// フォルダ名(監視設定ID)がマネージャから送られてきた実行対象にいなかった場合、
+							// 不要なフォルダとして削除
+							if (!CloudLogMonitorManager.getAllCloudLogIds().contains(monDir.getName())) {
+								m_log.info("reloadCloudLogMonitor(): remove unnecessary file dir. Path: " + monDir.getAbsolutePath());
+								try {
+									CloudLogMonitorUtil.deleteDirectoryRecursive(monDir);
+								} catch (IOException e) {
+									m_log.warn("reloadCloudLogMonitor(): failed to remove unnecessary file dir.", e);
+								}
+							} 
+						}
+					}
+				}
 			}
 
 		} catch (InvalidSetting | HinemosUnknown e) {

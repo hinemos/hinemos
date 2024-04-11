@@ -171,7 +171,6 @@ public class AccessRestEndpoints {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Login, target = LogTarget.Null, type = LogType.LOGIN )
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.AccessControl, modeList = { SystemPrivilegeMode.READ })
 	@IgnoreCommandline
 	public Response login(@Context Request request, @Context UriInfo uriInfo,
 			@RequestBody(description = "loginBody", content = @Content(schema = @Schema(implementation = LoginRequest.class))) String requestBody)
@@ -1522,7 +1521,6 @@ public class AccessRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Get, target = LogTarget.Version, type = LogType.REFERENCE )
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.AccessControl, modeList = { SystemPrivilegeMode.READ })
 	public Response getVersion(@Context Request request, @Context UriInfo uriInfo)
 			throws HinemosUnknown, InvalidUserPass, InvalidRole, RoleNotFound {
 		m_log.info("call getVersion()");

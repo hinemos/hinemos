@@ -21,6 +21,7 @@ import com.clustercontrol.utility.settings.sdml.xml.MonitorNotifyRelationList;
 import com.clustercontrol.utility.settings.sdml.xml.NotifyId;
 import com.clustercontrol.utility.settings.sdml.xml.SdmlControlInfoV1;
 import com.clustercontrol.utility.util.OpenApiEnumConverter;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * SDML制御設定(v1)のJavaBeanとXML(Bean)のbindingとの変換を行うクラス
@@ -28,19 +29,25 @@ import com.clustercontrol.utility.util.OpenApiEnumConverter;
  */
 public class SdmlControlV1Conv extends BaseConv {
 	// --- スキーマタイプを定義
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
 	@Override
 	protected String getType() {
-		return "K";
+		return VersionUtil.getSchemaProperty("SDML.SDMLCONTROLV1.SCHEMATYPE");
 	}
 
 	@Override
 	protected String getVersion() {
-		return "1";
+		return VersionUtil.getSchemaProperty("SDML.SDMLCONTROLV1.SCHEMAVERSION");
 	}
 
 	@Override
 	protected String getRevision() {
-		return "1";
+		return VersionUtil.getSchemaProperty("SDML.SDMLCONTROLV1.SCHEMAREVISION");
 	}
 
 	/**

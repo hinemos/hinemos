@@ -9,6 +9,7 @@ package com.clustercontrol.rest.endpoint.utility.controller;
 
 import java.util.List;
 
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.session.MaintenanceControllerBean;
 import com.clustercontrol.rest.endpoint.utility.dto.ImportMaintenanceRecordRequest;
@@ -38,10 +39,10 @@ public class ImportMaintenanceController extends AbstractImportController<Import
 		// ControllerBean呼び出し
 		if(importRec.getIsNewRecord()){
 			//新規登録
-			new MaintenanceControllerBean().addMaintenance(infoReq);
+			new MaintenanceControllerBean().addMaintenance(infoReq, true);
 		}else{
 			//変更
-			new MaintenanceControllerBean().modifyMaintenance(infoReq);
+			new MaintenanceControllerBean().modifyMaintenance(infoReq, true);
 		}
 		
 		dtoRecRes.setResult(ImportResultEnum.NORMAL);
@@ -51,5 +52,10 @@ public class ImportMaintenanceController extends AbstractImportController<Import
 	@Override
 	protected RecordRegistrationResponse getRecordResponseInstance(){
 		return  new RecordRegistrationResponse();
+	}
+
+	@Override
+	protected void addCallback(JpaTransactionManager jtm) {
+		new MaintenanceControllerBean().addImportMaintenanceCallback(jtm);
 	}
 }

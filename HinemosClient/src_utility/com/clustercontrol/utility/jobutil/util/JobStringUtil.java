@@ -22,7 +22,14 @@ import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
 
 public class JobStringUtil {
+	// インポート先誤りのエラー
 	public static final int ERROR_PRE_CHECK = -10;
+	// インポートファイル内のジョブIDの重複チェック
+	public static final int ERROR_FILE_DUPLICATE_JOB_ID_CHECK = -20;
+	// ジョブユニットIDの重複チェック
+	public static final int ERROR_DUPLICATE_JOBUNIT_ID_CHECK = -30;
+	// ジョブIDの重複チェック
+	public static final int ERROR_DUPLICATE_JOB_ID_CHECK = -40;
 	
 	public enum ItemType {
 		Manager(JobConstant.TYPE_MANAGER, Messages.getString("facility.manager")),

@@ -9,6 +9,7 @@ package com.clustercontrol.rest.endpoint.utility.controller;
 
 import java.util.List;
 
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.repository.model.NodeConfigSettingInfo;
 import com.clustercontrol.repository.session.NodeConfigSettingControllerBean;
 import com.clustercontrol.rest.endpoint.utility.dto.ImportNodeConfigSettingRecordRequest;
@@ -36,10 +37,10 @@ public class ImportNodeConfigSettingController extends AbstractImportController<
 		// ControllerBean呼び出し
 		if(importRec.getIsNewRecord()){
 			//新規登録
-			new NodeConfigSettingControllerBean().addNodeConfigSettingInfo(infoReq);
+			new NodeConfigSettingControllerBean().addNodeConfigSettingInfo(infoReq, true);
 		}else{
 			//変更
-			new NodeConfigSettingControllerBean().modifyNodeConfigSettingInfo(infoReq);
+			new NodeConfigSettingControllerBean().modifyNodeConfigSettingInfo(infoReq, true);
 		}
 		
 		dtoRecRes.setResult(ImportResultEnum.NORMAL);
@@ -49,5 +50,10 @@ public class ImportNodeConfigSettingController extends AbstractImportController<
 	@Override
 	protected RecordRegistrationResponse getRecordResponseInstance(){
 		return  new RecordRegistrationResponse();
+	}
+
+	@Override
+	protected void addCallback(JpaTransactionManager jtm) {
+		new NodeConfigSettingControllerBean().addImportNodeConfigSettingInfoCallback(jtm);
 	}
 }

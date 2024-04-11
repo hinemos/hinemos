@@ -27,6 +27,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.UsedFacility;
 import com.clustercontrol.nodemap.session.NodeMapControllerBean;
+import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.bean.NodeRegisterFlagConstant;
@@ -694,10 +695,16 @@ public class FacilityModifier {
 
 			m_log.debug("deleteNode() delete node info success");
 
-			// 付随する情報の登録
+			// 付随する情報の削除
 			deleteNodeOptionalInfo(facility.getFacilityId());
 
 			m_log.debug("deleteNode() delete node optional success");
+
+			// キャッシュおよびステータス情報
+			new NotifyControllerBean().deleteMonitorStatus(facilityId);
+
+			// 通知履歴の削除
+			new NotifyControllerBean().deleteNotifyHistoryByFacilityId(facilityId);
 
 			m_log.info("deleteNode() successful in deleting a node. (facilityId = " + facilityId + ")");
 		}

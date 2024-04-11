@@ -182,6 +182,7 @@ public class SummaryLogcountWorker {
 
 				// SummaryLogcountCollectDataに渡すstartDateは、収集ログ取得の時間に合わせる
 				long toDate = m_startDate - (m_startDate % interval);
+				long collectStartDate = toDate;
 				long fromDate  = toDate - interval;
 		        SummaryLogcountCollectData summaryLogcount = new SummaryLogcountCollectData(monitorInfo, toDate, m_endDate);
 		        m_log.debug("m_startDate=" + m_startDate + ", m_endDate=" + m_endDate + ", interval=" + interval);
@@ -216,7 +217,7 @@ public class SummaryLogcountWorker {
 				Map<CollectKeyInfoPK, LinkedList<LogcountCollectData>> summaryDataMap = summaryLogcount.createSummaryDataMap();
 
 				// 登録処理
-				int count = CollectDataUtil.replace(monitorInfo.getMonitorId(), summaryDataMap, m_startDate, m_endDate, collectLogcountTimeout);
+				int count = CollectDataUtil.replace(monitorInfo.getMonitorId(), summaryDataMap, collectStartDate, m_endDate, collectLogcountTimeout);
 
 				// 通知処理(処理終了)
 				AplLogger.put(InternalIdCommon.MON_LOGCOUNT_N_SYS_002, 

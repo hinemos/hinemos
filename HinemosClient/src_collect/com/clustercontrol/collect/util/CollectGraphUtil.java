@@ -33,6 +33,7 @@ import org.openapitools.client.model.FacilityInfoResponse;
 import org.openapitools.client.model.GetCoefficientsRequest;
 import org.openapitools.client.model.GetCoefficientsResponse;
 import org.openapitools.client.model.GetEventDataMapResponse;
+import org.openapitools.client.model.HinemosTimeResponse;
 import org.openapitools.client.model.MonitorInfoResponseP3;
 import org.openapitools.client.model.MonitorNumericValueInfoResponse;
 import org.openapitools.client.model.MonitorNumericValueInfoResponse.MonitorNumericTypeEnum;
@@ -44,6 +45,7 @@ import com.clustercontrol.collect.bean.CollectConstant;
 import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.composite.CollectSettingComposite;
 import com.clustercontrol.collect.preference.PerformancePreferencePage;
+import com.clustercontrol.common.util.CommonRestClientWrapper;
 import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -55,11 +57,11 @@ import com.clustercontrol.monitor.util.MonitorResultRestClientWrapper;
 import com.clustercontrol.monitor.util.MonitorsettingRestClientWrapper;
 import com.clustercontrol.rest.endpoint.collect.dto.emuntype.SummaryTypeEnum;
 import com.clustercontrol.util.HinemosMessage;
-import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.TimezoneUtil;
-
+import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.repository.bean.FacilityIdConstant;
 /**
  * 性能グラフを表示する補助クラス<BR>
  *
@@ -219,13 +221,13 @@ public class CollectGraphUtil {
 	}
 	
 	/**
-	 * 現在表示中のグラフに線を追加します。
+	 * グラフに表示するJSONを取得します
 	 * 
 	 * @param startDate DBから取得するデータの開始時刻
 	 * @param endDate DBから取得するデータの終了時刻
 	 * @param selectStartDate グラフの表示開始時刻
 	 * @param selectEndDate グラフの表示終了時刻
-	 * @param nowDate 現在日時
+	 * @param now 現在日時（nullの場合はメソッドがreturn null）
 	 * @return
 	 * @throws RestConnectFailed 
 	 * @throws HinemosDbTimeout 
@@ -234,9 +236,16 @@ public class CollectGraphUtil {
 	 * @throws InvalidUserPass 
 	 * @throws InvalidSetting 
 	 */
-	public static StringBuffer getAddGraphPlotJson(Long startDate, Long endDate, Long selectStartDate, Long selectEndDate, Long nowDate) 
+	public static StringBuffer getGraphJsonData(Long startDate, Long endDate, Long selectStartDate, Long selectEndDate, Long now) 
 			throws HinemosDbTimeout, InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
-		m_log.debug("getAddGraphPlotJson() start");
+		m_log.debug("getGraphJsonData() start. startDate=" + toDatetimeString(startDate) + ", endDate=" + toDatetimeString(endDate));
+		m_log.debug("  selectStartDate=" + toDatetimeString(selectStartDate) + ", selectEndDate=" + toDatetimeString(selectEndDate));
+		m_log.debug("  nowDate=" + toDatetimeString(now));
+
+		if (now == null) {
+			return null;
+		}
+
 		StringBuffer sb = new StringBuffer();
 		int count = 0;
 		boolean allbreak = false;
@@ -244,10 +253,6 @@ public class CollectGraphUtil {
 		// グラフの表示開始時刻、表示終了時刻、今回の処理日時を内部に保持する
 		setTargetConditionStartDate(selectStartDate);
 		setTargetConditionEndDate(selectEndDate);
-		long now = HinemosTime.currentTimeMillis();
-		if (nowDate != null) {
-			now = nowDate.longValue();
-		}
 		if (now > endDate) {
 			setTargetDBAccessDate(endDate);
 		} else {
@@ -261,13 +266,16 @@ public class CollectGraphUtil {
 			String displayName = collectKeyInfo.getDisplayName();
 			for (Map.Entry<String, TreeMap<String, List<Integer>>> entry : getInstance().m_targetManagerFacilityCollectMap.entrySet()) {
 				String managerName = entry.getKey();
-				String targetDrawnDateListKey = managerName + monitorId + itemName + displayName;
+				String targetDrawnDateListKey = getTargetDrawnDateListKey(managerName, monitorId, itemName, displayName);
+
+				m_log.debug("getGraphJsonData() m_targetDrawnDateList=" + getInstance().m_targetDrawnDateList.toString());
 				Long targetDrawnDate = getInstance().m_targetDrawnDateList.get(targetDrawnDateListKey);
-				
-				if ((getInstance().useDrawnDateListFlg) && (targetDrawnDate != null)){
+				m_log.debug("getGraphJsonData() targetDrawnDateListKey=" + targetDrawnDateListKey + ", targetDrawnDate=" + toDatetimeString(targetDrawnDate));
+				if (getInstance().useDrawnDateListFlg && targetDrawnDate != null){
 					startDate = targetDrawnDate;
 				}
 				
+				// DBから対象のグラフ情報を取得
 				Map<Integer, List<CollectDataInfoResponse>> graphMap = getGraphDetailDataMap(managerName, monitorId, displayName, itemName, startDate, getTargetDBAccessDate());
 				String itemNameDisplayNameMonitorId = itemName + displayName + monitorId;
 				Map<String, Integer> collectIdMap = getFacilityCollectMap(itemNameDisplayNameMonitorId, managerName);
@@ -275,7 +283,7 @@ public class CollectGraphUtil {
 				List<String> plotList = parseGraphData(collectIdMap, graphMap, targetDrawnDateListKey);
 				
 				if (plotList == null || plotList.isEmpty()) {
-					m_log.debug("getAddGraphPlotJson() plotDataList is Empty.");
+					m_log.debug("getGraphJsonData() plotDataList is empty.");
 					break;
 				}
 				// 閾値情報と単位情報とグラフレンジ情報を取得する
@@ -376,7 +384,7 @@ public class CollectGraphUtil {
 							+ "\'predictiontarget\':" + escapeParam(predictionTarget) + ", "
 							+ "\'predictiontargetstr\':\'" + escapeParam(predictionTargetStr) +"\', "
 							+ "\'predictionrange\':" + escapeParam(predictionRange) + ", "
-							+ "\'now\':" + new Date().getTime() + ", "
+							+ "\'now\':" + now + ", "							// 予測先（分後）の基準となる現在時刻
 							+ "\'summarytype\':" + getSummaryType() + ", "
 							+ "\'startdate\':\'" + selectStartDate + "\', "
 							+ "\'enddate\':\'" + selectEndDate + "\', "
@@ -409,7 +417,7 @@ public class CollectGraphUtil {
 			}
 		}
 		if (sb.length() == 0) {
-			m_log.debug("getAddGraphPlotJson() plot data 0.");
+			m_log.debug("getGraphJsonData() plot data is empty.");
 			return null;
 		}
 		String appendfirst = "{\'all\':[";
@@ -496,7 +504,9 @@ public class CollectGraphUtil {
 	public static int sortManagerNameFacilityIdMap(String managerName, FacilityInfoResponse info, int count){
 		m_log.debug("sortManagerNameFacilityIdMap() managerName:" + managerName + 
 				", facilityId:" + info.getFacilityId() + ", facilityName:" + info.getFacilityName());
-		if (!getInstance().m_managerFacilityDataInfoMap.containsKey(managerName + SQUARE_SEPARATOR + info.getFacilityId())) {
+		if (!getInstance().m_managerFacilityDataInfoMap
+				.containsKey(managerName + SQUARE_SEPARATOR + info.getFacilityId())
+				&& !info.getFacilityId().equals(FacilityIdConstant.ROOT)) {
 			count++;
 			getInstance().m_managerFacilityDataInfoMap.put(managerName + SQUARE_SEPARATOR + info.getFacilityId(), 
 					new CollectFacilityDataInfo(info.getFacilityId(), info.getFacilityName(), "dummy_" + count));
@@ -551,8 +561,12 @@ public class CollectGraphUtil {
 	 */
 	public static String drawGraphSheets(int summaryType, boolean appflg) {
 		long start = System.currentTimeMillis();
-		m_log.debug("drawGraphSheets()");
-		Long nowDate = System.currentTimeMillis();
+		m_log.debug("drawGraphSheets() start.");
+
+		// 現在時刻は、マネージャのHinemosTimeから取得する。
+		// これは、マネージャとクライアントに時間差（offsetも含む）がある場合にグラフ右端が表示されない場合があるため。
+		Long nowDate = getManagerTime();
+		m_log.info("drawGraphSheets() nowDate=" + nowDate + ", " + new Date(nowDate).toString());
 
 		long formatTerm = MILLISECOND_MONTH;
 		if (getTargetConditionEndDate() == null && getTargetConditionStartDate() == null) {
@@ -681,7 +695,7 @@ public class CollectGraphUtil {
 		sb.append("], ");
 		sb.append(orderItemInfoSelection());
 		sb.append("}");
-		m_log.info("createDrawGraphs() time:" + (System.currentTimeMillis() - start) + "ms");
+		m_log.info("createDrawGraphs() method elapsed time:" + (System.currentTimeMillis() - start) + "ms");
 		
 		
 		return sb.toString();
@@ -741,7 +755,7 @@ public class CollectGraphUtil {
 	 * @throws InvalidSetting 
 	 */
 	public static void collectCollectIdInfo(int summaryType) throws InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
-		long start2 = System.currentTimeMillis();
+		long start = System.currentTimeMillis();
 
 		setSummaryType(summaryType);
 		int count = 0;
@@ -773,7 +787,7 @@ public class CollectGraphUtil {
 				break;
 			}
 		}
-		m_log.info("collectCollectIdInfo() time:" + (System.currentTimeMillis() - start2) + "ms");
+		m_log.info("collectCollectIdInfo() method elapsed time:" + (System.currentTimeMillis() - start) + "ms");
 	}
 	
 	/**
@@ -824,7 +838,7 @@ public class CollectGraphUtil {
 			collectIdList1.add(collectId);
 			collectList.add(collectId);
 		}
-		m_log.debug("getFacilityCollectIdMap() DB time=" + (System.currentTimeMillis() - start) + "ms");
+		m_log.debug("getFacilityCollectIdMap() method elapsed time=" + (System.currentTimeMillis() - start) + "ms");
 	}
 	
 	/**
@@ -925,8 +939,8 @@ public class CollectGraphUtil {
 			map.put(entry3.getKey(),entry3.getValue().getList1());
 			count += entry3.getValue().getList1().size();
 		}
-		m_log.debug("getGraphDetailDataMap : monitorId=" + monitorId + ", size=" + count + ", collectIdList.size:" + collectIdList.size());
-		m_log.debug("getGraphDetailDataMap() DB time=" + (System.currentTimeMillis() - start) + "ms");
+		m_log.debug("getGraphDetailDataMap() monitorId=" + monitorId + ", size=" + count + ", collectIdList.size:" + collectIdList.size());
+		m_log.debug("getGraphDetailDataMap() method elapsed time=" + (System.currentTimeMillis() - start) + "ms");
 		return map;
 	}
 
@@ -1023,7 +1037,7 @@ public class CollectGraphUtil {
 		} else if (getInstance().m_targetDrawnDateList.containsKey(drawnDateListKey)) {
 			getInstance().m_targetDrawnDateList.remove(drawnDateListKey);
 		}
-		m_log.debug("parseGraphData() time=" + (System.currentTimeMillis() - start) + "ms");
+		m_log.debug("parseGraphData() method elapsed time=" + (System.currentTimeMillis() - start) + "ms");
 		return plotDataList;
 	}
 	
@@ -1082,7 +1096,7 @@ public class CollectGraphUtil {
 				+ "\'enddate\':" + getTargetConditionEndDate() 
 				+ "}";
 
-		m_log.debug("createBaseGraphDiv() time=" + (System.currentTimeMillis() - start) + "ms");
+		m_log.debug("createBaseGraphDiv() method elapsed time=" + (System.currentTimeMillis() - start) + "ms");
 		return param;
 	}
 	
@@ -1563,4 +1577,105 @@ public class CollectGraphUtil {
 			return dummyName;
 		}
 	}
+
+	/**
+	 * マネージャのHinemosTimeから現在時刻を取得する。
+	 * クライアントのHinemosTimeはクライアントの現在時刻で、Hinemosプロパティcommon.time.offsetの値も反映されていない。
+	 * マネージャから取得できない場合は、クライアントの現在時刻を返す。
+	 * 
+	 * @return マネージャの現在時刻（Hinemosプロパティ common.time.offset も加味した値）
+	 */
+	public static long getManagerTime() {
+		CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+		Long now = null;
+		try {
+			HinemosTimeResponse hinemosTimeResponse = wrapper.getHinemosTime();
+			now = hinemosTimeResponse.getCurrentTimeMillis();
+			m_log.debug("getManagerTime() hinemosTimeResponse=" + hinemosTimeResponse + ", manager now=" + toDatetimeString(now));
+		} catch (InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown | NullPointerException e) {
+			// 例外発生時は警告ログ出力し、続行
+			m_log.warn("getManagerTime() error occurred. e=" + e, e);
+		}
+		if (now == null) {
+			// マネージャから取得できない場合は、クライアントの現在時刻とする
+			now = System.currentTimeMillis();
+			m_log.warn("getManagerTime() failed to get HinemosTime of manager, so use client time. now=" + toDatetimeString(now));
+		}
+
+		m_log.debug("getManagerTime() now=" + toDatetimeString(now));
+		return now;
+	}
+
+	/**
+	 * 各描画済みグラフ上の最新時間を更新する
+	 * 
+	 * @param targetDrawnDate 更新する日時のunixtime
+	 */
+	public static void setTargetDrawnDate(long targetDrawnDate) {
+		m_log.debug("setTargetDrawnDate() start. targetDrawnDate=" + toDatetimeString(targetDrawnDate));
+
+		for (CollectKeyInfoResponseP1 collectKeyInfo : getInstance().m_collectKeyInfoList) {
+			for (Map.Entry<String, TreeMap<String, List<Integer>>> entry : getInstance().m_targetManagerFacilityCollectMap.entrySet()) {
+				String targetDrawnDateListKey = getTargetDrawnDateListKey(
+						entry.getKey(),
+						collectKeyInfo.getMonitorId(),
+						HinemosMessage.replace(collectKeyInfo.getItemName()),
+						collectKeyInfo.getDisplayName());
+				if (m_log.isDebugEnabled()) {
+					if (getInstance().m_targetDrawnDateList.containsKey(targetDrawnDateListKey)) {
+						m_log.debug("setTargetDrawnDate() targetDrawnDateListKey=" + targetDrawnDateListKey + ", old value=" + toDatetimeString(getInstance().m_targetDrawnDateList.get(targetDrawnDateListKey)));
+					} else {
+						m_log.debug("setTargetDrawnDate() m_targetDrawnDateList does not contains key=" + targetDrawnDateListKey);
+					}
+				}
+				m_log.debug("setTargetDrawnDate() put. targetDrawnDateListKey=" + targetDrawnDateListKey + ", targetDrawnDate=" + toDatetimeString(targetDrawnDate));
+				getInstance().m_targetDrawnDateList.put(targetDrawnDateListKey, targetDrawnDate);
+			}
+		}
+	}
+
+	/**
+	 * 各描画済みグラフ上の最新時間のリストのキーを取得する
+	 * FIXME 区切り文字がないため、キーが重複する可能性がある
+	 * 
+	 * @param managerName
+	 * @param monitorId
+	 * @param itemName
+	 * @param displayName
+	 * @return
+	 */
+	private static String getTargetDrawnDateListKey(String managerName, String monitorId, String itemName, String displayName) {
+		return managerName + monitorId + itemName + displayName;
+	}
+
+
+
+	/**
+	 * デバッグ出力用日時フォーマット
+	 */
+	private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss,SSS";
+
+	/**
+	 * デバッグ用にunixtimeを以下の形式の文字列に変換する
+	 * ログレベルがdebug以外：unixtime
+	 * ログレベルがdebug：unixtime[日時]
+	 * 
+	 * @param unixtime
+	 * @return デバッグ用日時文字列
+	 */
+	public static String toDatetimeString(Long unixtime) {
+		if (unixtime == null) {
+			return "null";
+		}
+
+		if (!m_log.isDebugEnabled()) {
+			return unixtime.toString();
+		}
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
+		dateFormat.setTimeZone(TimezoneUtil.getTimeZone());
+
+		return unixtime + "[" + dateFormat.format(new Date(unixtime)) + "]";
+	}
+
 }

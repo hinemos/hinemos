@@ -101,7 +101,11 @@ public class UserRoleAction {
 	private static final String PASSWORD_REGEX = "^[\\x21-\\x7e]+$";
 	/** 文字コード */
 	private static final Charset CHARSET = Charset.forName("UTF-8");
-
+	/** システムロール */
+	private static final Set<String> systemRoleSet = new HashSet<String>(Arrays.asList(
+			"ADMINISTRATORS", "ALL_USERS", "INTERNAL")
+			);
+	
 	protected static Logger log = Logger.getLogger(UserRoleAction.class);
 
 	public UserRoleAction() throws ConvertorException {
@@ -478,17 +482,31 @@ public class UserRoleAction {
 			log.info(Messages.getString("SettingTools.ImportCompleted.Cancel"));
 			return SettingConstants.ERROR_INPROCESS;
 		}
-
+		
 		// ロール内ユーザ情報の登録
 		HashMap<String, List<String>> mapRoleUser = new HashMap<String, List<String>>();
+		for(ImportRoleRecordRequest roleRecordRequest : roleConfirmer.getImportRecDtoList()){
+			List<String> list = new ArrayList<String>();
+			mapRoleUser.put(roleRecordRequest.getImportKeyValue(), list);
+			
+		}
+		
 		for (int i = 0; i < accountRoleUser.getRoleUserInfoCount(); i++) {
 			RoleUserInfo roleUserInfo = accountRoleUser.getRoleUserInfo(i);
-			List<String> list = mapRoleUser.get(roleUserInfo.getRoleId());
-			if(list == null)
-				list = new ArrayList<String>();
-			list.add(roleUserInfo.getUserId());
-			mapRoleUser.put(roleUserInfo.getRoleId(), list);
+			
+			// システムロール、もしくは登録対象のロールの場合に、ロール内ユーザ情報を登録
+			if (systemRoleSet.contains(roleUserInfo.getRoleId()) || 
+					mapRoleUser.containsKey(roleUserInfo.getRoleId())){
+				
+				List<String> list = mapRoleUser.get(roleUserInfo.getRoleId());
+				if(list == null)
+					list = new ArrayList<String>();
+				
+				list.add(roleUserInfo.getUserId());
+				mapRoleUser.put(roleUserInfo.getRoleId(), list);
+			}
 		}
+		
 		List<ImportRoleUserRecordRequest> roleUserList = new ArrayList<ImportRoleUserRecordRequest>();
 		for(Entry<String, List<String>> entry : mapRoleUser.entrySet()){
 			ImportRoleUserRecordRequest rec = new ImportRoleUserRecordRequest();
@@ -873,9 +891,6 @@ public class UserRoleAction {
 	 * ・システムロールはインポート対象から除外
 	 */
 	protected static class ImportRoleRecordConfirmer extends ImportRecordConfirmer<RoleInfo, ImportRoleRecordRequest, String>{
-		private final Set<String> systemRoleSet = new HashSet<String>(Arrays.asList(
-				"ADMINISTRATORS", "ALL_USERS", "INTERNAL")
-				);
 		public ImportRoleRecordConfirmer(Logger logger, RoleInfo[] importRecDtoList) {
 			super(logger, importRecDtoList);
 		}

@@ -1148,6 +1148,8 @@ public class FullJob {
 			endValueInfo.setDescription(e.getDescription());
 			rpaJobInfo.getRpaJobEndValueConditionInfos().add(endValueInfo);
 		});
+		// データ取得時にSQLが発行されているが、ORDER BY が指定されないため登録順で取得している。データ量も多くないため、ここでソートして対応する。
+		rpaJobInfo.getRpaJobEndValueConditionInfos().sort((a, b) -> a.getOrderNo() - b.getOrderNo());
 		// 間接実行
 		rpaJobInfo.setRpaScopeId(jobMstEntity.getRpaScopeId());
 		rpaJobInfo.setRpaRunType(jobMstEntity.getRpaRunType());

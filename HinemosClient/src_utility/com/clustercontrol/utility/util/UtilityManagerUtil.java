@@ -50,7 +50,7 @@ public class UtilityManagerUtil {
 
 			this.currentManagerName = managerName;
 
-			if (oldManagerName != null && !oldManagerName.equals(currentManagerName)) {
+			if (!oldManagerName.equals(currentManagerName)) {
 				for (ManagerChangeListener listener : notifyList) {
 					listener.notifyManagerChanged();
 				}
@@ -61,6 +61,10 @@ public class UtilityManagerUtil {
 
 		public void addManagerChangeListener(ManagerChangeListener listener) {
 			notifyList.add(listener);
+		}
+
+		public void removeManagerChangeListener(ManagerChangeListener listener) {
+			notifyList.remove(listener);
 		}
 	}
 
@@ -78,5 +82,9 @@ public class UtilityManagerUtil {
 
 	public static void addManagerChangeListener(ManagerChangeListener listener){
 		ManagerManager.getInstance().addManagerChangeListener(listener);
+	}
+
+	public static void removeManagerChangeListener(ManagerChangeListener listener){
+		ManagerManager.getInstance().removeManagerChangeListener(listener);
 	}
 }

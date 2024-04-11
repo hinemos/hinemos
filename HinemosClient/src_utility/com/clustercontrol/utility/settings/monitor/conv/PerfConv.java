@@ -36,6 +36,7 @@ import com.clustercontrol.performance.util.CollectorItemCodeFactory;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
+import com.clustercontrol.utility.settings.monitor.xml.Monitor;
 import com.clustercontrol.utility.settings.monitor.xml.NumericChangeAmount;
 import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.PerfInfo;
@@ -43,6 +44,7 @@ import com.clustercontrol.utility.settings.monitor.xml.PerfMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.PerfMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * リソース 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -55,9 +57,15 @@ import com.clustercontrol.utility.util.UtilityManagerUtil;
 public class PerfConv {
 	private final static Log logger = LogFactory.getLog(PerfConv.class);
 
-	private final static String SCHEMA_TYPE = "I";
-	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "2";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	private final static String SCHEMA_TYPE = VersionUtil.getSchemaProperty("MONITOR.PERF.SCHEMATYPE");
+	private final static String SCHEMA_VERSION = VersionUtil.getSchemaProperty("MONITOR.PERF.SCHEMAVERSION");
+	private final static String SCHEMA_REVISION =VersionUtil.getSchemaProperty("MONITOR.PERF.SCHEMAREVISION");
 
 	/**
 	 * <BR>
@@ -196,6 +204,10 @@ public class PerfConv {
 
 			PerfMonitor perfMonitor = new PerfMonitor();
 			perfMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
+			
+			Monitor monitor = perfMonitor.getMonitor();
+			monitor.setItemName("");
+			monitor.setMeasure("");
 
 			for (MonitorNumericValueInfoResponse numericValueInfo : monitorInfo.getNumericValueInfo()) {
 				if(numericValueInfo.getPriority() == PriorityEnum.INFO ||

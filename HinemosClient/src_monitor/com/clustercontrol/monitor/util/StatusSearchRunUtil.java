@@ -16,11 +16,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.rwt.internal.service.ContextProvider;
 import org.eclipse.rap.rwt.internal.service.ServiceContext;
 import org.openapitools.client.model.GetStatusListRequest;
+import org.openapitools.client.model.GetStatusListResponse;
 import org.openapitools.client.model.StatusFilterBaseRequest;
 import org.openapitools.client.model.StatusInfoResponse;
 
@@ -37,10 +39,16 @@ import com.clustercontrol.util.UIManager;
  *
  */
 public class StatusSearchRunUtil extends MultiManagerRunUtil{
+	/** 件数制限なしでステータス一覧を取得した場合のレコード数を格納するリスト内の位置 */
+	public static int POS_COUNT_ALL = 2; 
+	
 	/** ログ出力のインスタンス<BR> */
 	private static Log m_log = LogFactory.getLog(StatusSearchRunUtil.class);
 	/** 検索成功可否フラグ */
 	private boolean m_searchSuccess = true;
+	
+	/** 件数制限なしでステータス一覧を取得した場合のレコード数 */
+	private int m_searchCountAll = 0;
 
 	@SuppressWarnings("unchecked")
 	public Map<String, ArrayList<ArrayList<Object>>> searchInfo(List<String> managerList, StatusFilterBaseRequest filter) {
@@ -48,6 +56,7 @@ public class StatusSearchRunUtil extends MultiManagerRunUtil{
 		Map<String, ArrayList<ArrayList<Object>>> dispDataMap= new ConcurrentHashMap<>();
 		Map<String, String> errMsgs = new ConcurrentHashMap<>();
 		long start = System.currentTimeMillis();
+		m_searchCountAll = 0;
 
 		try {
 			String threadName = Thread.currentThread().getName() + "-StatusSearch";
@@ -78,6 +87,9 @@ public class StatusSearchRunUtil extends MultiManagerRunUtil{
 						String errList = (String)ret.get(POS_ERROR);
 						errMsgs.put(managerName, errList);
 					}
+					if (ret.get(POS_COUNT_ALL) != null && ret.get(POS_COUNT_ALL) instanceof Integer) {
+						m_searchCountAll += (Integer) ret.get(POS_COUNT_ALL);
+					}
 				}
 			}
 		} catch (InterruptedException e) {
@@ -106,6 +118,14 @@ public class StatusSearchRunUtil extends MultiManagerRunUtil{
 	public boolean isSearchSuccess() {
 		return this.m_searchSuccess;
 	}
+	
+	/**
+	 * 件数制限なしでステータス一覧を取得した場合のレコード数を返します。
+	 * @return 件数制限なしでステータス一覧を取得した場合のレコード数
+	 */
+	public int getSearchCountAll() {
+		return m_searchCountAll;
+	}
 
 	public static class StatusSearchTask implements Callable<Map<String, List<?>>>{
 		private static final Log m_log2 = LogFactory.getLog(StatusSearchTask.class);
@@ -124,9 +144,13 @@ public class StatusSearchRunUtil extends MultiManagerRunUtil{
 
 		@Override
 		public Map<String, List<?>> call() throws Exception {
+			// ステータス情報取得上限数
+			final int limit = NumberUtils.toInt(System.getProperty("maximum.monitor.history.status.view.size"), -1);
+			
 			Map<String, List<?>> dispDataMap= new ConcurrentHashMap<>();
 			String errMsgs = null;
 			ArrayList<ArrayList<Object>> infoList = new ArrayList<ArrayList<Object>>();
+			Integer countAll = null;
 			
 			Thread.currentThread().setName(threadName);
 			ContextProvider.releaseContextHolder();
@@ -137,9 +161,15 @@ public class StatusSearchRunUtil extends MultiManagerRunUtil{
 
 				GetStatusListRequest getStatusListRequest = new GetStatusListRequest();
 				getStatusListRequest.setFilter(filter);
-				List<StatusInfoResponse> records = wrapper.getStatusList(getStatusListRequest);
+				if (limit > 0) {
+					getStatusListRequest.setSize(limit);
+				}
+				GetStatusListResponse getStatusListResponse = wrapper.getStatusList(getStatusListRequest);
+				
+				countAll = getStatusListResponse.getCountAll();
 
-				infoList = ConvertListUtil.statusInfoDataListToArrayList(this.managerName, records);
+				infoList = ConvertListUtil.statusInfoDataListToArrayList(this.managerName, getStatusListResponse.getStatusList());
+				
 			} catch (InvalidRole e) {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				errMsgs = Messages.getString("message.accesscontrol.16");
@@ -152,6 +182,7 @@ public class StatusSearchRunUtil extends MultiManagerRunUtil{
 			List<Object> list = new ArrayList<Object>();
 			list.add(POS_INFO, infoList);
 			list.add(POS_ERROR, errMsgs);
+			list.add(POS_COUNT_ALL, countAll);
 			dispDataMap.put(this.managerName, list);
 
 			return dispDataMap;

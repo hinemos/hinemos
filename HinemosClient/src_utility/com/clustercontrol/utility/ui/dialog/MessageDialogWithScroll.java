@@ -44,7 +44,8 @@ public class MessageDialogWithScroll extends MessageDialog {
 				0
 			);
 	}
-	
+
+		
 	@Override
 	protected Control createMessageArea(Composite composite) {
 		//LabelをTextに差し替えるため、IconAndMessageDialogより移植

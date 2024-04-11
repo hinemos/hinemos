@@ -37,11 +37,13 @@ import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.monitor.xml.JmxInfo;
 import com.clustercontrol.utility.settings.monitor.xml.JmxMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.JmxMonitors;
+import com.clustercontrol.utility.settings.monitor.xml.Monitor;
 import com.clustercontrol.utility.settings.monitor.xml.NumericChangeAmount;
 import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.util.OpenApiEnumConverter;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * Jmx 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -54,9 +56,15 @@ import com.clustercontrol.utility.util.UtilityManagerUtil;
 public class JmxConv {
 	private final static Log logger = LogFactory.getLog(JmxConv.class);
 
-	static private String SCHEMA_TYPE = "I";
-	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "2";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private String SCHEMA_TYPE = VersionUtil.getSchemaProperty("MONITOR.JMX.SCHEMATYPE");
+	static private String SCHEMA_VERSION = VersionUtil.getSchemaProperty("MONITOR.JMX.SCHEMAVERSION");
+	static private String SCHEMA_REVISION =VersionUtil.getSchemaProperty("MONITOR.JMX.SCHEMAREVISION");
 
 	/**
 	 * <BR>
@@ -108,6 +116,10 @@ public class JmxConv {
 
 			JmxMonitor jmxMonitor = new JmxMonitor();
 			jmxMonitor.setMonitor(MonitorConv.createMonitor(monitorInfo));
+			
+			Monitor monitor = jmxMonitor.getMonitor();
+			monitor.setItemName("");
+			monitor.setMeasure("");
 
 			for (MonitorNumericValueInfoResponse numericValueInfo : monitorInfo.getNumericValueInfo()) {
 				if(numericValueInfo.getPriority() == PriorityEnum.INFO ||
@@ -243,8 +255,8 @@ public class JmxConv {
 	private static JmxCheckInfoResponse createJmxCheckInfo(JmxInfo jmxInfo) throws InvalidSetting, HinemosUnknown {
 		JmxCheckInfoResponse jmxCheckInfo = new JmxCheckInfoResponse();
 
-		jmxCheckInfo.setAuthUser(jmxInfo.getAuthUser());
-		jmxCheckInfo.setAuthPassword(jmxInfo.getAuthPassword());
+		jmxCheckInfo.setAuthUser(ifEmpty2Null(jmxInfo.getAuthUser()));
+		jmxCheckInfo.setAuthPassword(ifEmpty2Null(jmxInfo.getAuthPassword()));
 		jmxCheckInfo.setMasterId(jmxInfo.getMasterId());
 		jmxCheckInfo.setPort(jmxInfo.getPort());
 		JmxCheckInfoResponse.ConvertFlgEnum convertFlgEnum = OpenApiEnumConverter.integerToEnum(jmxInfo.getConvertFlg(), JmxCheckInfoResponse.ConvertFlgEnum.class);
@@ -256,6 +268,13 @@ public class JmxConv {
 	private static String ifNull2Empty(String str){
 		if(str == null){
 			return "";
+		}
+		return str;
+	}
+	
+	private static String ifEmpty2Null(String str){
+		if(str.isEmpty()){
+			return null;
 		}
 		return str;
 	}

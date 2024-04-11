@@ -58,6 +58,8 @@ public class TablePhysicalSizes {
 			long log_cc_status_info
 			) {
 			this.log_cc_collect_data_raw = log_cc_collect_data_raw;
+			this.log_cc_collect_data_string = log_cc_collect_data_string;
+			this.log_cc_collect_data_tag = log_cc_collect_data_tag;
 			this.log_cc_collect_summary_day = log_cc_collect_summary_day;
 			this.log_cc_collect_summary_hour = log_cc_collect_summary_hour;
 			this.log_cc_collect_summary_month = log_cc_collect_summary_month;

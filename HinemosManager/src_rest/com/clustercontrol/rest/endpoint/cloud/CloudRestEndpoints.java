@@ -1053,7 +1053,7 @@ public class CloudRestEndpoints {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Modify, target = LogTarget.CloudLoginUser, type = LogType.UPDATE)
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.CloudManagement, modeList = { SystemPrivilegeMode.EXEC,
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.CloudManagement, modeList = { SystemPrivilegeMode.MODIFY,
 			SystemPrivilegeMode.READ })
 	public Response modifyCloudLoginUser(@PathParam(value = "cloudScopeId") String cloudScopeId,
 			@PathParam(value = "cloudLoginUserId") String cloudLoginUserId, @Context Request request,
@@ -2220,8 +2220,7 @@ public class CloudRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Get, target = LogTarget.XcloudRepository, type = LogType.REFERENCE)
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.CloudManagement, modeList = { SystemPrivilegeMode.EXEC,
-			SystemPrivilegeMode.READ })
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.CloudManagement, modeList = { SystemPrivilegeMode.READ })
 	public Response updateLocationRepository(@PathParam(value = "cloudScopeId") String cloudScopeId,
 			@PathParam(value = "locationId") String locationId, @Context Request request, @Context UriInfo uriInfo)
 			throws CloudManagerException, InvalidUserPass, InvalidRole, HinemosUnknown {

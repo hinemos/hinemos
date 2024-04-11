@@ -212,8 +212,8 @@ public class JobLinkSendSettingDialog extends CommonDialog {
 			this.m_managerComposite.getComboManagerName().addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					String managerName = m_managerComposite.getText();
-					m_cmpOwnerRoleId.createRoleIdList(managerName);
+					m_managerName = m_managerComposite.getText();
+					m_cmpOwnerRoleId.createRoleIdList(m_managerName);
 					m_txtScope.setText("");
 					m_facilityId = null;
 				}
@@ -688,18 +688,18 @@ public class JobLinkSendSettingDialog extends CommonDialog {
 		m_jobLinkSendSetting.setHinemosPassword(m_txtPassword.getText());
 		m_jobLinkSendSetting.setProxyFlg(m_checkProxy.getSelection());
 		m_jobLinkSendSetting.setProxyHost(m_txtProxyHost.getText());
-		try {
-			m_jobLinkSendSetting.setProxyPort(Integer.parseInt(m_txtProxyPort.getText()));
-		} catch (NumberFormatException e) {
-			if (m_jobLinkSendSetting.getProxyFlg()) {
+		if (!m_jobLinkSendSetting.getProxyFlg() && m_txtProxyPort.getText().isEmpty()) {
+			m_jobLinkSendSetting.setProxyPort(null);
+		} else {
+			try {
+				m_jobLinkSendSetting.setProxyPort(Integer.parseInt(m_txtProxyPort.getText()));
+			} catch (NumberFormatException e) {
 				ValidateResult validateResult = new ValidateResult();
 				validateResult.setValid(false);
 				validateResult.setID(Messages.getString("message.hinemos.1"));
 				validateResult.setMessage(Messages.getString("message.common.1", 
 						new String[]{Messages.getString("proxy.connection.port")}));
 				return validateResult;
-			} else {
-				m_jobLinkSendSetting.setProxyPort(null);
 			}
 		}
 		m_jobLinkSendSetting.setProxyUser(m_txtProxyUser.getText());
@@ -711,9 +711,9 @@ public class JobLinkSendSettingDialog extends CommonDialog {
 	@Override
 	protected boolean action() {
 		boolean result = false;
+		m_joblinkSendSettingId =m_jobLinkSendSetting.getJoblinkSendSettingId();		
 		try {
-			String managerName = this.m_managerComposite.getText();
-			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(managerName);
+			JobRestClientWrapper wrapper = JobRestClientWrapper.getWrapper(m_managerName);
 			if(this.m_mode == PropertyDefineConstant.MODE_MODIFY){
 				ModifyJobLinkSendSettingRequest request = new ModifyJobLinkSendSettingRequest();
 				RestClientBeanUtil.convertBean(m_jobLinkSendSetting, request);
@@ -743,7 +743,7 @@ public class JobLinkSendSettingDialog extends CommonDialog {
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.joblinksendsetting.duplicate", arg) + " " + HinemosMessage.replace(e.getMessage()));
+					Messages.getString("message.joblinksendsetting.duplicate", arg));
 		} catch (InvalidUserPass | InvalidSetting e) {
 			Object[] arg = {m_joblinkSendSettingId};
 			MessageDialog.openError(

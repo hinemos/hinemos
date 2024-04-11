@@ -26,6 +26,7 @@ import org.openapitools.client.model.StorageInfoResponse;
 
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.UrlNotFound;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.xcloud.common.CloudConstants;
@@ -124,13 +125,12 @@ public class HinemosManager extends Element implements IHinemosManager {
 				} else {
 					MessageDialog.openWarning(null, 
 							Messages.getString("warning"), 
-							CloudConstants.bundle_messages.getString("message.expiration.term.invalid"));
+							e.getMessage());
 				}
 			} catch (Throwable e) {
-				// 起動キーが有効期限切れの場合
 				MessageDialog.openWarning(null, 
 						Messages.getString("warning"), 
-						CloudConstants.bundle_messages.getString("message.expiration.term.invalid"));
+						e.getMessage());
 			}
 
 			long start2 = System.currentTimeMillis();

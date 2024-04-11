@@ -271,6 +271,10 @@ public class ModifyJobKick {
 		String beforeJobunitId = "";
 		String beforeJobId = "";
 
+		// 変更前の事前ジョブセッション生成フラグと設定の有効無効を退避
+		boolean beforeSessionPremakeFlg = false;
+		boolean beforeValidFlg = false;
+
 		// DBにスケジュール情報を保存
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -356,6 +360,10 @@ public class ModifyJobKick {
 				if (!(info instanceof JobSchedule)) {
 					throw new HinemosUnknown("type error : " + info.getClass() + "!=JobSchedule");
 				}
+				// スケジュールと判定された場合は事前ジョブセッション生成フラグと設定の有効無効を退避
+				beforeSessionPremakeFlg = bean.getSessionPremakeFlg();
+				beforeValidFlg = bean.getValidFlg();
+
 				JobSchedule jobSchedule = (JobSchedule)info;
 
 				// ジョブセッション事前生成用フラグ反転
@@ -378,6 +386,12 @@ public class ModifyJobKick {
 						// ジョブスケジュール変更
 						isDeletePremake = true;
 					}
+				}
+
+				// 前回が無効だった場合は削除フラグをリセットする
+				if (!beforeSessionPremakeFlg
+					|| !beforeValidFlg) {
+					isDeletePremake = false;
 				}
 
 				if ("".equals(jobSchedule.getCalendarId())) {

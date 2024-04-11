@@ -62,7 +62,7 @@ public class Messages {
 
 		public void addBundle(ResourceBundle bundle) {
 			bundles.add(bundle);
-			log.info("addBundle() : " + bundle.getBaseBundleName());
+			log.debug("addBundle() : " + bundle.getBaseBundleName());
 		}
 
 		public String getString(String key) {

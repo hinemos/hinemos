@@ -675,9 +675,8 @@ public class ReportUtil {
 		String basePath = PropertyUtil.getLogReportPath();
 		
 		Path dir = new File(basePath).toPath();
-		try {
-			// /output_path/YYYYDDMM/
-			DirectoryStream<Path> ds = Files.newDirectoryStream(dir, "[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]");
+		// /output_path/YYYYDDMM/
+		try(DirectoryStream<Path> ds = Files.newDirectoryStream(dir, "[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]")) {
 			for (Path path : ds) {
 				m_log.info("path: " + path);
 				// exclude today's directory

@@ -69,6 +69,7 @@ import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.rest.client.DefaultApi;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.ICheckPublishRestClientWrapper;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.RestConnectManager;
@@ -102,13 +103,15 @@ public class CloudRestClientWrapper implements ICheckPublishRestClientWrapper {
 		};
 		try {
 			return proxy.proxyExecute();
-		} catch (RestConnectFailed | CloudManagerException | InvalidRole | InvalidUserPass def) {
+		} catch (RestConnectFailed def) {//通信異常
+			throw new RestConnectFailed(Messages.getString("message.hinemos.failure.transfer") + ", " + HinemosMessage.replace(def.getMessage()), def);
+		} catch (CloudManagerException | InvalidRole | InvalidUserPass def) {
 			throw def;
 		} catch (UrlNotFound e) {
 			// UrlNotFoundが返された場合エンドポイントがPublishされていないためメッセージを設定する
-			throw new HinemosUnknown(new UrlNotFound(Messages.getString("message.expiration.term")));
+			throw new HinemosUnknown(Messages.getString("message.expiration.term"), e);
 		} catch ( Exception unknown ){
-			throw new HinemosUnknown(unknown);
+			throw new HinemosUnknown(Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(unknown.getMessage()), unknown);
 		}
 	}
 

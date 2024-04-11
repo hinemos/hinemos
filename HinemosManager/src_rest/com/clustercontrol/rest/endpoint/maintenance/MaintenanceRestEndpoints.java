@@ -111,7 +111,7 @@ public class MaintenanceRestEndpoints {
 
 		MaintenanceInfo infoReq = new MaintenanceInfo();
 		RestBeanUtil.convertBean(dtoReq, infoReq);
-		MaintenanceInfo infoRes = new MaintenanceControllerBean().addMaintenance(infoReq);
+		MaintenanceInfo infoRes = new MaintenanceControllerBean().addMaintenance(infoReq, false);
 		
 		MaintenanceInfoResponse dtoRes = new MaintenanceInfoResponse();
 		RestBeanUtil.convertBean(infoRes, dtoRes);
@@ -149,7 +149,7 @@ public class MaintenanceRestEndpoints {
 		MaintenanceInfo infoReq = new MaintenanceInfo();
 		RestBeanUtil.convertBean(dtoReq, infoReq);
 		infoReq.setMaintenanceId(maintenanceId);
-		MaintenanceInfo infoRes = new MaintenanceControllerBean().modifyMaintenance(infoReq);
+		MaintenanceInfo infoRes = new MaintenanceControllerBean().modifyMaintenance(infoReq, false);
 		
 		MaintenanceInfoResponse dtoRes = new MaintenanceInfoResponse();
 		RestBeanUtil.convertBean(infoRes, dtoRes);

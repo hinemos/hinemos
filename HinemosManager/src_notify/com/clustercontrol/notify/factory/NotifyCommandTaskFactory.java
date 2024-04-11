@@ -60,7 +60,7 @@ public class NotifyCommandTaskFactory implements AsyncTaskFactory {
 			} catch (Exception e) {
 				if (jtm != null)
 					jtm.rollback();
-				log.warn("asynchronous task failure.", e);
+				log.warn("asynchronous task failure. " + e.getMessage(), e);
 			} finally {
 				if (jtm != null)
 					jtm.close();

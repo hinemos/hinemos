@@ -24,7 +24,6 @@ import org.eclipse.ui.internal.ErrorViewPart;
 import com.clustercontrol.jobmanagement.action.GetHistoryTableDefine;
 import com.clustercontrol.jobmanagement.composite.HistoryComposite;
 import com.clustercontrol.jobmanagement.view.JobDetailView;
-import com.clustercontrol.jobmanagement.view.JobHistoryView;
 import com.clustercontrol.jobmanagement.view.JobMapViewIF;
 
 /**
@@ -97,31 +96,26 @@ public class HistorySelectionChangedListener implements ISelectionChangedListene
 			m_composite.setJobunitId(jobunitId);
 		}
 
-		String viewClass = m_composite.getView().getClass().getSimpleName();
 		//アクティブページを手に入れる
 		IWorkbenchPage page = PlatformUI.getWorkbench()
 				.getActiveWorkbenchWindow().getActivePage();
-		if (JobHistoryView.class.getSimpleName().equals(viewClass)) {
-			//自動更新によりジョブ[履歴]ビューがアクティブでない場合にも呼ばれる可能性があるので注意
-			//ジョブ[詳細]ビューを更新する
-			m_log.debug("selectionChanged() : job detail update");
-			IViewPart viewPartDetail = page.findView(JobDetailView.ID);
-			if (viewPartDetail != null) {
-				JobDetailView view = (JobDetailView) viewPartDetail
-						.getAdapter(JobDetailView.class);
-				if (view == null) {
-					m_log.info("selection changed: view is null"); 
-					return;
-				}
-				view.update(managerName, sessionId, jobunitId);
-			}
-		} else {
-			//ジョブマップ[履歴]ビューを更新する
-			m_log.debug("selectionChanged() : jobmap detail update");
-			IViewReference viewReference = page.findViewReference("com.clustercontrol.jobmap.view.JobMapHistoryView");
-			if (viewReference == null){
+
+		// 自動更新によりジョブ[履歴]ビューがアクティブでない場合にも呼ばれる可能性があるので注意
+		// ジョブ[詳細]ビューを更新する
+		m_log.debug("selectionChanged() : job detail update");
+		IViewPart viewPartDetail = page.findView(JobDetailView.ID);
+		if (viewPartDetail != null) {
+			JobDetailView view = (JobDetailView) viewPartDetail.getAdapter(JobDetailView.class);
+			if (view == null) {
+				m_log.info("selection changed: view is null");
 				return;
 			}
+			view.update(managerName, sessionId, jobunitId);
+		}
+
+		// ジョブマップ[履歴]ビューを更新する
+		IViewReference viewReference = page.findViewReference("com.clustercontrol.jobmap.view.JobMapHistoryView");
+		if (viewReference != null) {
 			IViewPart viewPart = viewReference.getView(false);
 			if (viewPart != null && !(viewPart instanceof ErrorViewPart)) {
 				m_log.debug("viewPart " + viewPart.getClass().getName());
@@ -129,6 +123,7 @@ public class HistorySelectionChangedListener implements ISelectionChangedListene
 				view.update(managerName, sessionId, null);
 			}
 		}
+
 		if (m_log.isTraceEnabled()) {
 			m_log.trace("selectionChanged() end");
 		}

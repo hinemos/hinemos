@@ -41,13 +41,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\..\..\..\..\..\Program Files\Microsoft SDKs\Windows\v7.1\Lib\AdvAPI32.Lib">
+    <Library Include="..\..\lib\AdvAPI32.Lib">
       <Filter>リソース ファイル</Filter>
     </Library>
-    <Library Include="..\..\..\..\..\..\..\Program Files\Microsoft SDKs\Windows\v7.1\Lib\Pdh.Lib">
+    <Library Include="..\..\lib\Pdh.Lib">
       <Filter>リソース ファイル</Filter>
     </Library>
-    <Library Include="..\..\..\..\..\..\..\Program Files\Microsoft SDKs\Windows\v7.1\Lib\SnmpAPI.Lib">
+    <Library Include="..\..\lib\SnmpAPI.Lib">
       <Filter>リソース ファイル</Filter>
     </Library>
   </ItemGroup>

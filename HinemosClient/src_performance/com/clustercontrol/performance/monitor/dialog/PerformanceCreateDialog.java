@@ -346,8 +346,7 @@ public class PerformanceCreateDialog extends CommonMonitorNumericDialog {
 						Messages.getString("message.monitor.34", args));
 				return false;
 			}
-			String itemCode = CollectorItemCodeFactory.getFullItemName(managerName, itemInfo);
-			String itemName = itemCode.split("]")[0].concat("]");
+			String itemName = CollectorItemCodeFactory.getItemName(managerName, itemInfo.getItemCode());
 			String itemMeasure = CollectorItemCodeFactory.getMeasure(itemName, itemInfo.getItemCode());
 
 			MonitorsettingRestClientWrapper wrapper = MonitorsettingRestClientWrapper.getWrapper(getManagerName());

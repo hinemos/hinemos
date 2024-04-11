@@ -53,10 +53,10 @@ import com.clustercontrol.infra.factory.SelectInfraManagement;
 import com.clustercontrol.infra.model.InfraCheckResult;
 import com.clustercontrol.infra.model.InfraFileInfo;
 import com.clustercontrol.infra.model.InfraManagementInfo;
-import com.clustercontrol.infra.util.InfraManagementChangeCallback;
 import com.clustercontrol.infra.util.InfraManagementValidator;
 import com.clustercontrol.infra.util.QueryUtil;
 import com.clustercontrol.notify.util.NotifyRelationCache;
+import com.clustercontrol.notify.util.NotifyRelationCacheRefreshCallback;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.rest.util.RestDownloadFile;
 import com.clustercontrol.util.MessageConstant;
@@ -78,10 +78,18 @@ public class InfraControllerBean implements CheckFacility {
 
 	/**
 	 * 環境構築機能を作成します。
-	 * @throws InfraManagementDuplicate 
-	 *
+	 * 
+	 * @param info 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return
+	 * @throws NotifyDuplicate
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws InfraManagementDuplicate
+	 * @throws InfraManagementNotFound
 	 */
-	public InfraManagementInfo addInfraManagement(InfraManagementInfo info) 
+	public InfraManagementInfo addInfraManagement(InfraManagementInfo info, boolean isImport) 
 			throws NotifyDuplicate, InvalidSetting, InvalidRole, HinemosUnknown, InfraManagementDuplicate, InfraManagementNotFound {
 		JpaTransactionManager jtm = null;
 
@@ -106,8 +114,10 @@ public class InfraControllerBean implements CheckFacility {
 				ret = new SelectInfraManagement().get(info.getManagementId(), null, ObjectPrivilegeMode.READ);
 			}
 
-			// コミット後にNotifyRelationCacheを更新
-			jtm.addCallback(new InfraManagementChangeCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportInfraManagementCallback(jtm);
+			}
 
 			jtm.commit();
 
@@ -140,10 +150,20 @@ public class InfraControllerBean implements CheckFacility {
 
 	/**
 	 * 環境構築機能を変更します。
-	 * @throws InfraManagementDuplicate 
-	 *
+	 * 
+	 * @param info 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return
+	 * @throws InfraManagementNotFound
+	 * @throws NotifyDuplicate
+	 * @throws NotifyNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 * @throws InvalidSetting
+	 * @throws InfraManagementDuplicate
 	 */
-	public InfraManagementInfo modifyInfraManagement(InfraManagementInfo info) throws InfraManagementNotFound, NotifyDuplicate, NotifyNotFound, InvalidRole, HinemosUnknown, InvalidSetting, InfraManagementDuplicate {
+	public InfraManagementInfo modifyInfraManagement(InfraManagementInfo info, boolean isImport)
+			throws InfraManagementNotFound, NotifyDuplicate, NotifyNotFound, InvalidRole, HinemosUnknown, InvalidSetting, InfraManagementDuplicate {
 		JpaTransactionManager jtm = null;
 		
 		InfraManagementInfo ret = new InfraManagementInfo();
@@ -166,13 +186,13 @@ public class InfraControllerBean implements CheckFacility {
 				ret = new SelectInfraManagement().get(info.getManagementId(), null, ObjectPrivilegeMode.READ);
 			}
 
-			// コミット後にNotifyRelationCacheを更新
-			jtm.addCallback(new InfraManagementChangeCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportInfraManagementCallback(jtm);
+			}
 
 			jtm.commit();
 
-			// コミット後にキャッシュクリア
-			NotifyRelationCache.refresh();
 		} catch (HinemosUnknown e) {
 			if (jtm != null)
 				jtm.rollback();
@@ -216,6 +236,18 @@ public class InfraControllerBean implements CheckFacility {
 	}
 
 	/**
+	 * 環境構築情報の新規登録／変更時に呼び出すコールバックメソッドを設定
+	 * 
+	 * 設定インポートエクスポートでCommit後に呼び出すものだけ定義
+	 * 
+	 * @param jtm JpaTransactionManager
+	 */
+	public void addImportInfraManagementCallback(JpaTransactionManager jtm) {
+		// 通知リレーション情報のキャッシュ更新
+		jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+	}
+
+	/**
 	 */
 	public List<InfraManagementInfo> deleteInfraManagement(String[] infraManagementIds) throws InfraManagementNotFound, InvalidSetting, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
@@ -238,7 +270,7 @@ public class InfraControllerBean implements CheckFacility {
 			}
 
 			// コミット後にNotifyRelationCacheを更新
-			jtm.addCallback(new InfraManagementChangeCallback());
+			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 
 			jtm.commit();
 

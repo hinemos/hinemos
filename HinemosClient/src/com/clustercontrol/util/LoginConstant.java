@@ -22,6 +22,7 @@ public final class LoginConstant {
 
 	public static final String VALUE_UID = "hinemos";
 	public static final String VALUE_URL = "http://localhost:8080/HinemosWeb/";
+	public static final String VALUE_URL_MSGFILTER = "http://localhost:9080";
 
 	public static final String KEY_INTERVAL = "managerPollingInterval";
 	public static final int VALUE_INTERVAL = 1; //マネージャへの疎通(Dummy)ポーリング周期（分）

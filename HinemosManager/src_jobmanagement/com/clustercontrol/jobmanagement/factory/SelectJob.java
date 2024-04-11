@@ -9,18 +9,15 @@
 package com.clustercontrol.jobmanagement.factory;
 
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,7 +33,6 @@ import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.bean.StatusConstant;
-import com.clustercontrol.calendar.util.TimeStringConverter;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
@@ -105,9 +101,7 @@ import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.model.JobWaitGroupInfoEntity;
-import com.clustercontrol.jobmanagement.model.JobWaitGroupMstEntity;
 import com.clustercontrol.jobmanagement.model.JobWaitInfoEntity;
-import com.clustercontrol.jobmanagement.model.JobWaitMstEntity;
 import com.clustercontrol.jobmanagement.util.JobEnumConvertMap;
 import com.clustercontrol.jobmanagement.util.JobUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
@@ -116,13 +110,8 @@ import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobInfoResponseP1;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobObjectGroupInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobObjectInfoResponse;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemResponseP1;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobWaitRuleInfoResponse;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ConditionTypeEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JobTypeEnum;
-import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ReferJobSelectTypeEnum;
 import com.clustercontrol.rest.util.RestCommonConverter;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
@@ -657,21 +646,28 @@ public class SelectJob {
 			info.setSessionId(sessionJob.getId().getSessionId());
 			info.setJobId(sessionJob.getId().getJobId());
 			info.setJobunitId(sessionJob.getId().getJobunitId());
-			info.setJobName(jobInfo.getJobName());
-			info.setJobType(jobInfo.getJobType());
-			if (sessionJob.hasSessionNode()) {
-				info.setFacilityId(jobInfo.getFacilityId());
-				info.setScope(sessionJob.getScopeText());
-			}
 			info.setOwnerRoleId(sessionJob.getOwnerRoleId());
-			info.setScheduleDate(session.getScheduleDate());
-			info.setStartDate(sessionJob.getStartDate());
-			info.setEndDate(sessionJob.getEndDate());
-			if (session.getTriggerInfo() != null && !session.getTriggerInfo().equals("")) {
-				info.setJobTriggerType(session.getTriggerType());
-				info.setTriggerInfo(session.getTriggerInfo());
+
+			// 実行契機削除などでジョブセッション削除のタイミングで履歴情報取得した場合の対策
+			if (session != null) {
+				info.setScheduleDate(session.getScheduleDate());
+				info.setStartDate(sessionJob.getStartDate());
+				info.setEndDate(sessionJob.getEndDate());
+				if (session.getTriggerInfo() != null && !session.getTriggerInfo().equals("")) {
+					info.setJobTriggerType(session.getTriggerType());
+					info.setTriggerInfo(session.getTriggerInfo());
+				}
 			}
 
+			// 実行契機削除などでジョブセッション削除のタイミングで履歴情報取得した場合の対策
+			if (jobInfo != null) {
+				info.setJobName(jobInfo.getJobName());
+				info.setJobType(jobInfo.getJobType());
+				if (sessionJob.hasSessionNode()) {
+					info.setScope(sessionJob.getScopeText());
+					info.setFacilityId(jobInfo.getFacilityId());
+				}
+			}
 			historyList.add(info);
 
 			//取得した履歴を最大表示件数まで格納したら終了
@@ -1341,7 +1337,7 @@ public class SelectJob {
 					|| childJob.getJobType() == JobConstant.TYPE_RESOURCEJOB
 					|| childJob.getJobType() == JobConstant.TYPE_RPAJOB){
 				for (JobSessionNodeEntity sessionNode : childSessionJob.getJobSessionNodeEntities()) {
-					if (sessionNode.getEndValue() != null && sessionNode.getEndValue() == -1) {
+					if (sessionNode.getEndValue() != null && sessionNode.getEndValue() != 0) {
 						// ファイルリストに失敗したときだけノード詳細ビューに表示
 						JobNodeDetail info = new JobNodeDetail(
 								sessionNode.getStatus(),
@@ -2840,7 +2836,10 @@ public class SelectJob {
 		JpqlEquals equals3 = QueryPreparator.createEquals(QueryPreparator.createPath(privilegeAlias + ".id.objectPrivilege"), QueryPreparator.createStringLiteral(mode.name()));
 		JpqlIn in = QueryPreparator.createIn(QueryPreparator.createPath(privilegeAlias + ".id.roleId"), QueryPreparator.createNamedParameter("roleIds"));
 		Node node = null;
-		if (objectType.equals(HinemosModuleConstant.JOB_MST)) {
+		// #18669対応 データパターンによりパフォーマンスが大きく違っているため隠しプロパティによりSQLの切り替えを可能にする
+		Long queryMode = HinemosPropertyCommon.job_history_select_query_mode.getNumericValue();
+		if (queryMode.equals(1L)){
+			// #12622対応前
 			JpqlExists node1 = QueryPreparator.createExists(
 					QueryPreparator.createSubselect(
 							QueryPreparator.createSelectClause(privilegeAlias),
@@ -2848,18 +2847,29 @@ public class SelectJob {
 							QueryPreparator.createWhere(QueryPreparator.createAnd(QueryPreparator.createAnd(QueryPreparator.createAnd(equals1, equals2), equals3), in))));
 
 			JpqlIn node2 = QueryPreparator.createIn(QueryPreparator.createPath(objectAlias + ".ownerRoleId"), QueryPreparator.createNamedParameter("roleIds"));
-
-			JpqlEquals equals7 = QueryPreparator.createEquals(QueryPreparator.createPath(objectAlias + ".id.jobunitId"), QueryPreparator.createStringLiteral(CreateJobSession.TOP_JOBUNIT_ID));
-			node = QueryPreparator.createBrackets(QueryPreparator.createOr(QueryPreparator.createOr(node1, node2), equals7));
-		} else {
+			node = QueryPreparator.createBrackets(QueryPreparator.createOr(node1, node2));
+		} else if (queryMode.equals(2L)){
+			// #12622対応後
 			JpqlExists node1 = QueryPreparator.createExists(
 					QueryPreparator.createSubselect(
 							QueryPreparator.createSelectClause(privilegeAlias),
 							QueryPreparator.createFrom(ObjectPrivilegeInfo.class.getSimpleName(),privilegeAlias),
 							QueryPreparator.createWhere(QueryPreparator.createOr(QueryPreparator.createAnd(QueryPreparator.createAnd(QueryPreparator.createAnd(equals1, equals2), equals3), in),
 									QueryPreparator.createIn(QueryPreparator.createPath(objectAlias + ".ownerRoleId"),QueryPreparator.createNamedParameter("roleIds"))))));
-			
+
 			node = QueryPreparator.createBrackets(node1);
+		} else {
+			// #18669対応
+			JpqlIn node1 = QueryPreparator.createIn(
+					QueryPreparator.createPath(objectAlias + ".id.jobunitId")
+					,QueryPreparator.createSubselect(
+							QueryPreparator.createSelectClause(privilegeAlias + ".id.objectId"),
+							QueryPreparator.createFrom(ObjectPrivilegeInfo.class.getSimpleName(),privilegeAlias),
+							QueryPreparator.createWhere(QueryPreparator.createAnd(QueryPreparator.createAnd( equals2, equals3), in)
+						))
+					);
+			JpqlIn node2 = QueryPreparator.createIn(QueryPreparator.createPath(objectAlias + ".ownerRoleId"), QueryPreparator.createNamedParameter("roleIds"));
+			node = QueryPreparator.createBrackets(QueryPreparator.createOr(node1, node2));
 		}
 		return node;
 	}

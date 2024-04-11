@@ -61,9 +61,9 @@ public class ScenarioLogMonitorThread extends Thread {
 	 */
 	private Map<String,StringBuilder> errorMessageForLogfileMonitor = new ConcurrentHashMap<String,StringBuilder>();
 	/**
-	 * ファイル最大数超過による無視リスト<br>
+	 * ファイル最大数を超過したか否か<br>
 	 */
-	private Map<String,String> ignoreListForFileCounter = new ConcurrentHashMap<String,String>();
+	private boolean ignoreListForFileCounter = false;
 
 	static {
 		/*
@@ -102,11 +102,11 @@ public class ScenarioLogMonitorThread extends Thread {
 	public void run() {
 		m_log.info("run() start");
 
-		ignoreListForFileCounter.clear();
+		ignoreListForFileCounter = false;
 		errorMessageForLogfileMonitor.clear();
 
 		// ログファイル監視のために必要なReadingStatusDirを作成
-		// ※前回の結果等は引き継がず、ジョブ起動前のログは読み飛ばす（そのため一度clearし、ScenarioLogReadingStatusDir#createReadingStatusで tailをtrueに固定 ）
+		// ※前回の結果等は引き継がず、ジョブ起動前のログは読み飛ばす（そのため一度clearし、ScenarioLogReadingStatusDir#createReadingStatusでtailをtrueに設定しupdateする）
 		rpaLogStatusDir = rpaLogStatusRoot.createReadingStatusDir(monitorInfoWrapper, getRootStoreDirectory(),RpaJobLogfileMonitorConfig.getInstance());
 		if( m_log.isDebugEnabled()){
 			for (AbstractReadingStatus<MonitorInfoWrapper> rs : rpaLogStatusDir.list()) {
@@ -114,6 +114,8 @@ public class ScenarioLogMonitorThread extends Thread {
 			}
 		}
 		rpaLogStatusDir.clear();
+		rpaLogStatusDir.setIsTail(true);
+		rpaLogStatusDir.update();
 
 		// terminateが実行されるまで監視を実行
 		while (waiting) {
@@ -154,6 +156,8 @@ public class ScenarioLogMonitorThread extends Thread {
 		// 監視中のログファイル数をリセット
 		rpaLogStatusRoot.update();
 		// 新たに監視対象となるファイルが生成していないか確認
+		// シナリオジョブ実行後に作成されたファイルは先頭から読み込むようにtailをfalseに設定しupdateする
+		rpaLogStatusDir.setIsTail(false);
 		rpaLogStatusDir.update();
 		// ログファイル監視情報を更新
 		logfileMonitors.clear();
@@ -167,12 +171,9 @@ public class ScenarioLogMonitorThread extends Thread {
 					+ monitorInfoWrapper.monitorInfo.getLogfileCheckInfo().getFileReturnCode() + ", rsFilepath="
 					+ status.getFilePath());
 		}
-		// 対象ファイルの件数が上限超フラグを呼び出し元へ連携出来るように設定
-		if (rpaLogStatusDir.getIgnoreListForFileCounter() != null
-				&& rpaLogStatusDir.getIgnoreListForFileCounter().size() > 0) {
-			for(Map.Entry<String,String> rec : rpaLogStatusDir.getIgnoreListForFileCounter().entrySet()){
-				this.ignoreListForFileCounter.put(rec.getKey(), rec.getValue());
-			}
+		
+		if (rpaLogStatusDir.isIgnoreListForFileCounter()) {
+			ignoreListForFileCounter = true;
 		}
 	}
 
@@ -208,7 +209,7 @@ public class ScenarioLogMonitorThread extends Thread {
 		return errorMessageForLogfileMonitor;
 	}
 
-	public Map<String,String> getIgnoreListForFileCounter() {
+	public boolean isIgnoreListForFileCounter() {
 		return this.ignoreListForFileCounter;
 	}
 }

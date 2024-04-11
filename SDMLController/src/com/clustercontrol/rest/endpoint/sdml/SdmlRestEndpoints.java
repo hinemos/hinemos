@@ -127,7 +127,7 @@ public class SdmlRestEndpoints {
 
 		// このタイミングでバージョンを設定する
 		infoReq.setVersion(SdmlV1Option.VERSION);
-		SdmlControlSettingInfo infoRes = new SdmlControllerBean().addSdmlControlSetting(infoReq);
+		SdmlControlSettingInfo infoRes = new SdmlControllerBean().addSdmlControlSetting(infoReq, false);
 
 		SdmlControlSettingInfoResponse dtoRes = new SdmlControlSettingInfoResponse();
 		RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
@@ -169,7 +169,7 @@ public class SdmlRestEndpoints {
 		SdmlControlSettingInfo infoReq = new SdmlControlSettingInfo(applicationId);
 		RestBeanUtil.convertBean(dtoReq, infoReq);
 
-		SdmlControlSettingInfo infoRes = new SdmlControllerBean().modifySdmlControlSetting(infoReq);
+		SdmlControlSettingInfo infoRes = new SdmlControllerBean().modifySdmlControlSetting(infoReq, false);
 
 		SdmlControlSettingInfoResponse dtoRes = new SdmlControlSettingInfoResponse();
 		RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);

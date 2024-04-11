@@ -12,6 +12,7 @@ import org.openapitools.client.model.AddCollectPlatformMasterRequest;
 import org.openapitools.client.model.CollectorPlatformInfoResponse;
 
 import com.clustercontrol.utility.settings.model.BaseConv;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * プラットフォーム情報のJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -23,9 +24,15 @@ import com.clustercontrol.utility.settings.model.BaseConv;
  */
 public class PlatformMasterConv {
 	
-	static private final String schemaType="E";
-	static private final String schemaVersion="1";
-	static private String schemaRevision ="1";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private final String schemaType=VersionUtil.getSchemaProperty("COLLECT.PLATFORMMASTER.SCHEMATYPE");
+	static private final String schemaVersion=VersionUtil.getSchemaProperty("COLLECT.PLATFORMMASTER.SCHEMAVERSION");
+	static private String schemaRevision =VersionUtil.getSchemaProperty("COLLECT.PLATFORMMASTER.SCHEMAREVISION");
 	
 	/**
 	 * XMLとツールの対応バージョンをチェック */

@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -36,6 +36,7 @@ import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
 import com.clustercontrol.plugin.util.scheduler.JobKey;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.apllog.AplLogger;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.HinemosCredential;
 import com.clustercontrol.xcloud.InternalManagerError;
@@ -43,6 +44,7 @@ import com.clustercontrol.xcloud.Session;
 import com.clustercontrol.xcloud.Session.ContextBean;
 import com.clustercontrol.xcloud.Session.SessionScope;
 import com.clustercontrol.xcloud.common.ErrorCode;
+import com.clustercontrol.xcloud.common.InternalIdCloud;
 import com.clustercontrol.xcloud.factory.ActionMode;
 import com.clustercontrol.xcloud.factory.CacheResourceManagement;
 import com.clustercontrol.xcloud.factory.CloudManager;
@@ -55,8 +57,8 @@ import com.clustercontrol.xcloud.model.CloudLoginUserEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity.OptionCallable;
 import com.clustercontrol.xcloud.model.LocationEntity;
-import com.clustercontrol.xcloud.persistence.Transactional;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil.TransactionScope;
+import com.clustercontrol.xcloud.persistence.Transactional;
 import com.clustercontrol.xcloud.util.CloudMessageUtil;
 import com.clustercontrol.xcloud.util.CloudUtil;
 import com.clustercontrol.xcloud.util.Tuple;
@@ -66,11 +68,17 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 
 	private static final String jobName = "AutoDetection";
 	private static final String jobGroupName = "CLOUD_MANAGEMENT";
+
+	/** 経過時間ログ出力切り替え閾値（ms） */
+	private static final long elapsedThresholdForLog = 30000;
+
 	public static final JobKey key = JobKey.jobKey(jobName, jobGroupName);
-	
+
+
 	private static class QueueInfo {
 		public boolean threadStart = false;
-		public Map<Tuple, UpdateInfo> resourceMap = new HashMap<>();
+		public Map<Tuple, UpdateInfo> resourceMap = new LinkedHashMap<>();
+		public List<Tuple> orderList = new ArrayList<>();
 	}
 
 	private static final ReentrantLock lock = new ReentrantLock();
@@ -151,7 +159,7 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 		if (lock.tryLock()) {
 			try {
 				ActionMode.enterAutoDetection();
-				logger.debug("Start async auto-detect...");
+				logger.info("Start async auto-detect...");
 				for (AutoDetectionListner listener: listeners) {
 					listener.onPreUpdateRoot();
 				}
@@ -175,7 +183,7 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 		if (lock.tryLock()) {
 			try {
 				ActionMode.enterAutoDetection();
-				logger.debug("Start async auto-detect...");
+				logger.info("Start async auto-detect...");
 				
 				for (AutoDetectionListner listener: listeners) {
 					listener.onPreUpdateRoot();
@@ -205,6 +213,7 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 	private static void internalResourceUpdate(List<CloudScopeEntity> cloudScopes) throws Exception {
 		synchronized (queue) {
 			final ContextBean contextData = Session.current().getContext();
+			Map<Tuple, UpdateInfo> updateTargetMap = new LinkedHashMap<>();
 			
 			for (CloudScopeEntity cloudScope: cloudScopes) {
 				for (LocationEntity location: cloudScope.getLocations()) {
@@ -215,7 +224,9 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 						continue;
 					}
 					
-					logger.debug(String.format("submit for autoupdate : %s", key));
+					if (!queue.orderList.contains(key)) {
+						queue.orderList.add(key);
+					}
 
 					Future<CacheResourceManagement> future = threadPool.submit(new Callable<CacheResourceManagement>() {
 						@Override
@@ -272,7 +283,29 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 					info.location = location;
 					info.future = future;
 					
-					queue.resourceMap.put(Tuple.build(cloudScope.getId(), location.getLocationId()), info);
+					updateTargetMap.put(Tuple.build(cloudScope.getId(), location.getLocationId()), info);
+				}
+			}
+			
+			int queueEndIndex = 0;
+
+			if (queue.resourceMap.size() > 0) {
+				// キューに詰まっている最後の要素が詰まっているorderListのインデックスを取得
+				List<Tuple> keys = new ArrayList<>(queue.resourceMap.keySet());
+				queueEndIndex = queue.orderList.indexOf(keys.get(keys.size() - 1));
+			}
+
+			int queueOrderListSize = queue.orderList.size();
+			for (int i = 0; i < queueOrderListSize; i++) {
+				// キューに詰まっている最後の要素以降から順番に詰め込む
+				int index = i + queueEndIndex;
+				if (index >= queueOrderListSize) {
+					index = index - queueOrderListSize;
+				}
+				Tuple updateTarget = queue.orderList.get(index);
+				if (updateTargetMap.containsKey(updateTarget)) {
+					logger.debug(String.format("submit for autoupdate : %s", updateTarget));
+					queue.resourceMap.put(updateTarget, updateTargetMap.get(updateTarget));
 				}
 			}
 			
@@ -280,6 +313,16 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 				mainThread.execute(new Runnable() {
 					@Override
 					public void run() {
+						// 開始ログ、INTERNALイベント
+						logger.info("Auto-detect has been started.");
+						if (HinemosPropertyCommon.xcloud_autoupdate_internal_enable.getBooleanValue()) {
+							try {
+								AplLogger.put(InternalIdCloud.CLOUD_SYS_005, new String[] {});
+							} catch (Exception e) {
+								// 通知に失敗しても続行
+								logger.warn("Failed to notify InternalEvent.", e);
+							}
+						}
 						try (SessionScope sessionScope = SessionScope.open(contextData)) {
 							IRepository repository = CloudManager.singleton().getRepository();
 							while(true) {
@@ -359,7 +402,16 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 											for (AutoDetectionListner listener: listeners) {
 												listener.onPostUpdateBranch();
 											}
-											logger.debug(String.format("autoupdate is complete. %s elapsed=%d", entry.getKey(), System.currentTimeMillis() - start_total));
+
+											// ログ出力
+											long elapsed = System.currentTimeMillis() - start_total;
+											String logStr = String.format("autoupdate is complete. %s elapsed=%d ms", entry.getKey(), elapsed);
+											if (elapsed < elapsedThresholdForLog) {
+												logger.debug(logStr);
+											} else {
+												// 長時間経過の場合は、INFOログ出力
+												logger.info(logStr);
+											}
 										} catch(CloudManagerException e) {
 											CloudMessageUtil.notify_AutoUpadate_Error(entry.getValue().cloudScope.getId(), entry.getValue().location.getLocationId(), e);
 											if (!ErrorCode.UNEXPECTED.match(e) && !ErrorCode.HINEMOS_MANAGER_ERROR.match(e) && e.getCause() == null) {
@@ -385,7 +437,7 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 											queue.resourceMap.remove(entry.getKey());
 										}
 									}
-								}
+								} // end of "for loop"
 								
 								boolean loop;
 								synchronized(queue) {
@@ -404,13 +456,32 @@ public class PlatformResourceMonitor extends CloudManagerJob {
 									Thread.sleep(1000);
 								} catch (Exception e) {
 								}
+							} // end of "while loop"
+						}
+						// 終了ログ、INTERNALイベント
+						logger.info("Auto-detect has been finished.");
+						if (HinemosPropertyCommon.xcloud_autoupdate_internal_enable.getBooleanValue()) {
+							try {
+								AplLogger.put(InternalIdCloud.CLOUD_SYS_006, new String[] {});
+							} catch (Exception e) {
+								// 通知に失敗しても続行
+								logger.warn("Failed to notify InternalEvent.", e);
 							}
 						}
 					}
-				});
+				}); // end of Runnable
 				queue.threadStart = true;
 			}else{
-				logger.info("Thread already started");
+				// 重複実行ログ、INTERNALイベント
+				logger.info("Auto-detect had been started, but stopped. because Auto-detect is overlap.");
+				if (HinemosPropertyCommon.xcloud_autoupdate_overlap_internal_enable.getBooleanValue()) {
+					try {
+						AplLogger.put(InternalIdCloud.CLOUD_SYS_007, new String[] {});
+					} catch (Exception e) {
+						// 通知に失敗しても続行
+						logger.warn("Failed to notify InternalEvent.", e);
+					}
+				}
 			}
 		}
 	}

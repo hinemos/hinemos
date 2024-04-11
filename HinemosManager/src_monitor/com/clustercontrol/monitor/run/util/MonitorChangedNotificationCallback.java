@@ -126,8 +126,6 @@ public class MonitorChangedNotificationCallback implements JpaTransactionCallbac
 		}
 		if (flag) {
 			try {
-				NotifyRelationCache.refresh();
-
 				if (HinemosModuleConstant.MONITOR_SYSTEMLOG.equals(monitorTypeId)) {
 					SystemlogCache.refresh();
 				}

@@ -161,7 +161,7 @@ public class JobWaitRuleInfo implements Serializable, Cloneable, RequestDto {
 	/** 開始遅延時刻の値 */
 	@JsonDeserialize(using=TimeStringToLongDeserializer.class)
 	@JsonSerialize(using=TimeLongToStringSerializer.class)
-	private Long startDelayTimeValue = 0l;
+	private Long startDelayTimeValue = null;
 
 	/** 開始遅延判定対象の条件関係 */
 	@JsonDeserialize(using=EnumToConstantDeserializer.class)
@@ -217,7 +217,7 @@ public class JobWaitRuleInfo implements Serializable, Cloneable, RequestDto {
 	/** 終了遅延時刻の値 */
 	@JsonDeserialize(using=TimeStringToLongDeserializer.class)
 	@JsonSerialize(using=TimeLongToStringSerializer.class)
-	private Long endDelayTimeValue;
+	private Long endDelayTimeValue = null;
 
 	/** 終了遅延判定対象の条件関係 */
 	@JsonDeserialize(using=EnumToConstantDeserializer.class)

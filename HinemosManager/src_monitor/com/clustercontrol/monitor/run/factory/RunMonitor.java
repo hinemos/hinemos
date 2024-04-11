@@ -680,13 +680,14 @@ abstract public class RunMonitor {
 						}
 					}
 				} else {
-					// 監視ジョブの場合
+					// 監視ジョブの場合は、最初に取得できた結果を設定して処理終了
 					m_monitorRunResultInfo = new MonitorRunResultInfo();
 					m_monitorRunResultInfo.setPriority(result.getPriority());
 					m_monitorRunResultInfo.setCheckResult(result.getCheckResult());
 					m_monitorRunResultInfo.setNodeDate(m_nodeDate);
 					m_monitorRunResultInfo.setMessageOrg(makeJobOrgMessage(result.getMessageOrg(), result.getMessage()));
 					m_monitorRunResultInfo.setCurData(result.getCurData());
+					return ret;
 				}
 			}
 
@@ -1062,11 +1063,13 @@ abstract public class RunMonitor {
 							ret.add(createOutputBasicInfo(true, facilityId, result.getCheckResult(), new Date(result.getNodeDate()), result, targetMonitor.m_monitor));
 						}
 					} else {
+						// 監視ジョブの場合は、最初に取得できた結果を設定して処理終了
 						m_monitorRunResultInfo = new MonitorRunResultInfo();
 						m_monitorRunResultInfo.setNodeDate(m_nodeDate);
 						m_monitorRunResultInfo.setCurData(result.getCurData());
 						m_monitorRunResultInfo.setPriority(result.getPriority());
 						m_monitorRunResultInfo.setMessageOrg(makeJobOrgMessage(result.getMessage(), null));
+						return ret;
 					}
 
 					

@@ -41,6 +41,7 @@ import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.PluginStringValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
 import com.clustercontrol.xcloud.plugin.monitor.CreateBillingDetailMonitorDialog.MonitorKind;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.plugin.monitor.PlatformServiceBillingDetailMonitorPlugin;
@@ -58,9 +59,15 @@ import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 public class BillingConv {
 	private final static Log logger = LogFactory.getLog(BillingConv.class);
 
-	private final static String SCHEMA_TYPE = "I";
-	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "2";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	private final static String SCHEMA_TYPE = VersionUtil.getSchemaProperty("MONITOR.BILLING.SCHEMATYPE");
+	private final static String SCHEMA_VERSION = VersionUtil.getSchemaProperty("MONITOR.BILLING.SCHEMAVERSION");
+	private final static String SCHEMA_REVISION =VersionUtil.getSchemaProperty("MONITOR.BILLING.SCHEMAREVISION");
 
 	private final static int PLUGIN_STRINGVALUE_INFO_SIZE = 2;
 	

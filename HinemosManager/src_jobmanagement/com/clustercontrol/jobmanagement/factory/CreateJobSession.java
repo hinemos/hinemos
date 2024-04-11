@@ -1337,32 +1337,6 @@ public class CreateJobSession {
 						mailTitle = renameJobIdInVariable(mailTitle, jobIdMap);
 						mailBody = renameJobIdInVariable(mailBody, jobIdMap);
 					}
-					
-					// ジョブ変数のパラメータを置き換える
-					// ジョブ変数の設定(JobParamInfoEntity作成)後、及び監視機能への通知前のタイミングとしてここで実行
-					// 承認依頼文
-					reqSentence = ParameterUtil.replaceSessionParameterValue(
-							sessionId,
-							jobInfoEntity.getFacilityId(),
-							reqSentence);
-					// ここでリターンコードを置き換える(#[RETURN:jobid:facilityId])とnullが入るので、置き換えない。
-					jobInfoEntity.setApprovalReqSentence(reqSentence);
-					
-					// 承認依頼メール件名
-					mailTitle = ParameterUtil.replaceSessionParameterValue(
-							sessionId,
-							jobInfoEntity.getFacilityId(),
-							mailTitle);
-					// ここでリターンコードを置き換える(#[RETURN:jobid:facilityId])とnullが入るので、置き換えない。
-					jobInfoEntity.setApprovalReqMailTitle(mailTitle);
-					
-					// 承認依頼メール本文
-					mailBody = ParameterUtil.replaceSessionParameterValue(
-							sessionId,
-							jobInfoEntity.getFacilityId(),
-							mailBody);
-					// ここでリターンコードを置き換える(#[RETURN:jobid:facilityId])とnullが入るので、置き換えない。
-					jobInfoEntity.setApprovalReqMailBody(mailBody);
 				}
 
 				// ジョブ連携待機ジョブにおけるJobSessionNodeEntityを制定
@@ -1805,7 +1779,7 @@ public class CreateJobSession {
 		Pattern pattern = Pattern.compile(ParameterUtil.REGEX_RETURN);
 		String toReplace = source;
 		Matcher matcher = pattern.matcher(toReplace);
-		if (matcher.find()) { //"#\\[RETURN:([^:]*):([^:]*)\\]"のパターンが見つかった
+		if (matcher.find()) { //REGEX_RETURNのパターンが見つかった
 			String jobId = matcher.group(1);
 			String rJobId = jobIdMap.get(jobId);
 			if (rJobId != null){ //参照元ジョブネット配下のジョブが設定されていない
@@ -1816,7 +1790,7 @@ public class CreateJobSession {
 		pattern = Pattern.compile(ParameterUtil.REGEX_END_NUM);
 		toReplace = source;
 		matcher = pattern.matcher(toReplace);
-		if (matcher.find()) { //"#\\[END_NUM:([^:]*)\\]"のパターンが見つかった
+		if (matcher.find()) { //REGEX_END_NUMのパターンが見つかった
 			String jobId = matcher.group(1);
 			String rJobId = jobIdMap.get(jobId);
 			if (rJobId != null){ //参照元ジョブネット配下のジョブが設定されていない

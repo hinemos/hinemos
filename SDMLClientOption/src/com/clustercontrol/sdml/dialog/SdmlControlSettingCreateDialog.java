@@ -505,7 +505,7 @@ public class SdmlControlSettingCreateDialog extends CommonDialog {
 					.getString("message.sdml.control.duplicate", new String[] { this.applicationIdText.getText() }));
 		} catch (Exception e) {
 			logger.warn("action(), " + e.getMessage(), e);
-			MessageDialog.openInformation(null, Messages.getString("failed"),
+			MessageDialog.openError(null, Messages.getString("failed"),
 					Messages.getString("message.sdml.control.action.failed",
 							new String[] { this.applicationIdText.getText(), action, e.getMessage() }));
 		}

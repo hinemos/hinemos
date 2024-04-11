@@ -83,8 +83,10 @@ public class DownloadScreenshotJobNodeDetailAction extends AbstractHandler imple
 				if (part instanceof JobNodeDetailView) {
 					JobNodeDetailView view = (JobNodeDetailView) part;
 					// RPAシナリオジョブ種別が直接実行の場合のみ有効化する
+					JobInfoResponse.TypeEnum jobType = view.getComposite().getJobType();
 					JobRpaInfoResponse.RpaJobTypeEnum rpaJobType = view.getComposite().getRpaJobType();
-					if (view.getSelectedNum() > 0 && rpaJobType != null && rpaJobType == JobRpaInfoResponse.RpaJobTypeEnum.DIRECT) {
+					if (view.getSelectedNum() > 0 && jobType != null && jobType == JobInfoResponse.TypeEnum.RPAJOB
+						&&	rpaJobType != null && rpaJobType == JobRpaInfoResponse.RpaJobTypeEnum.DIRECT) {
 						editEnable = true;
 					}
 				}

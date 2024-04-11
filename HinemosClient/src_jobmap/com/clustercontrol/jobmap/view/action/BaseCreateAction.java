@@ -100,9 +100,7 @@ abstract public class BaseCreateAction  extends BaseAction {
 					return null;
 				}
 			} catch (Exception e) {
-				// キーファイルを確認できませんでした。処理を終了します。
-				// Key file not found. This process will be terminated.
-				MessageDialog.openInformation(null, Messages.getString("message"), message);
+				MessageDialog.openInformation(null, Messages.getString("message"), e.getMessage());
 				return null;
 			}
 			

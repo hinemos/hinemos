@@ -801,7 +801,7 @@ public class FileCheckComposite extends Composite {
 		m_scopeJobParamText.setEditable(m_scopeJobParamRadio.getSelection() && enabled);
 		m_scopeJobParamRadio.setEnabled(enabled);
 		m_scopeFixedValueRadio.setEnabled(enabled);
-		m_scopeFixedValueSelect.setEnabled(enabled);
+		m_scopeFixedValueSelect.setEnabled(m_scopeFixedValueRadio.getSelection() && enabled);
 		m_directory.setEditable(enabled);
 		m_fileName.setEditable(enabled);
 		m_allNode.setEnabled(enabled);

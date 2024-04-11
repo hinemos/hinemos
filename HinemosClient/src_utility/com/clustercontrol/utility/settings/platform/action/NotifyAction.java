@@ -546,7 +546,7 @@ public class NotifyAction {
 		
 		@Override
 		protected ImportNotifyRecordRequest convertDtoXmlToRestReq(NotifyInfo xmlDto)
-				throws HinemosUnknown, InvalidSetting {
+				throws HinemosUnknown, InvalidSetting, ConvertorException {
 			
 			NotifyInfoInputData dto = NotifyInfoConv.convXml2DtoNotify(xmlDto);
 			ImportNotifyRecordRequest dtoRec = new ImportNotifyRecordRequest();

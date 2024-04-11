@@ -1140,6 +1140,7 @@ public class BinaryMonitor {
 		sendMonInfo.setUpdateUser(m_wrapper.monitorInfo.getUpdateUser());
 		// sendMonInfo.setWinEventCheckInfo(m_wrapper.monitorInfo.getWinEventCheckInfo());
 		// sendMonInfo.setWinServiceCheckInfo(m_wrapper.monitorInfo.getWinServiceCheckInfo());
+		// sendMonInfo.setSdmlMonitorTypeId(m_wrapper.monitorInfo.getSdmlMonitorTypeId());
 
 		AgtBinaryCheckInfoRequest binaryCheckInfo = new AgtBinaryCheckInfoRequest();
 		binaryCheckInfo.setBinaryfile(m_wrapper.monitorInfo.getBinaryCheckInfo().getBinaryfile());

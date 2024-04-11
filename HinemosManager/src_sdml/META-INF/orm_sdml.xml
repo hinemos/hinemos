@@ -12,6 +12,15 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="SdmlControlSettingInfo.findByOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM SdmlControlSettingInfo a
+				WHERE a.ownerRoleId = :ownerRoleId
+				ORDER BY a.applicationId
+			]]>
+		</query>
+	</named-query>
 	<named-query name="SdmlControlSettingInfo.findByVersion">
 		<query>
 			<![CDATA[

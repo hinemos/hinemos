@@ -18,5 +18,13 @@
 			]]>
 		</query>
 	</named-query>
-	
+	<named-native-query name="RestAgentRequestEntity.insertRequestId">
+		<query>
+			<![CDATA[
+				INSERT INTO log.cc_rest_agent_request(request_id, agent_id, system_function, resource_method, reg_date)
+					VALUES (?requestId, ?agentId, ?systemFunction, ?resourceMethod, ?regDate)
+					ON CONFLICT (request_id) DO NOTHING;
+			]]>
+		</query>
+	</named-native-query>
 </entity-mappings>

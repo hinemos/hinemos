@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Created with Jaspersoft Studio version 5.6.2.final using JasperReports Library version 5.6.1  -->
-<!-- 2015-07-22T18:59:00 -->
+<!-- Created with Jaspersoft Studio version 6.16.0.final using JasperReports Library version 6.16.0-48579d909b7943b64690c65c71e07e0b80981928  -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="indexpage" pageWidth="595" pageHeight="842" columnWidth="595" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="8ff636e6-b327-430f-b810-96d7af4829c1">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
 	<property name="net.sf.jasperreports.awt.ignore.missing.font" value="true"/>
@@ -60,7 +59,7 @@
 					<pen lineWidth="0.0"/>
 				</graphicElement>
 			</rectangle>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement positionType="Float" x="67" y="75" width="460" height="162" uuid="e6233e99-4075-435e-9e63-aa84a7982906"/>
 				<textElement textAlignment="Left" verticalAlignment="Top">
 					<font fontName="SansSerif" size="12" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
@@ -68,14 +67,14 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{REPORT_CONTENTS}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement positionType="Float" x="67" y="291" width="460" height="44" uuid="822dca91-14cf-426b-896b-a53ab9e86df3"/>
 				<textElement textAlignment="Left" verticalAlignment="Top">
 					<font fontName="SansSerif" size="12" pdfFontName="HeiseiKakuGo-W5" pdfEncoding="UniJIS-UCS2-H"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$P{REPORT_PERIOD}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement positionType="Float" x="67" y="390" width="460" height="200" uuid="9f600e2e-38f6-44c3-b20e-c113fe01f61c">
 					<property name="local_mesure_unity" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.y" value="px"/>

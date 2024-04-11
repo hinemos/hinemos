@@ -9,11 +9,19 @@
 package com.clustercontrol.agent.binary.readingstatus;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
@@ -191,39 +199,34 @@ public class DirectoryReadingStatus {
 		Map<String, FileReadingStatus> curFileRS = new TreeMap<String, FileReadingStatus>(fileRSMap);
 		Map<String, FileReadingStatus> newFileRS = new TreeMap<String, FileReadingStatus>();
 
-		// 監視対象ファイル検索用のパターン作成
-		FileFilter fileFilter = null;
+		Pattern pattern = Pattern.compile(parentMonRS.getFilename(), Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+		BinaryFileVisitor fv = new BinaryFileVisitor(pattern, methodName);
+		if (!monDir.isDirectory()) {
+			if (log.isDebugEnabled()) {
+				log.debug(methodName + DELIMITER + monDir + " is not directory. ID=" + parentMonRS.getMonitorID());
+			}
+			return;
+		}
+		Path path = monDir.toPath();
 		try {
-			fileFilter = new FileFilter() {
-				Pattern pattern = Pattern.compile(parentMonRS.getFilename(), Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-				@Override
-				public boolean accept(File f) {
-					// ファイルパターン一致チェック.
-					return  f.isFile() && pattern.matcher(f.getName()).matches();
-				}
-			};
-		} catch (Exception e) {
-			// 不正ファイルパターン、処理が継続できないので、処理を戻す。
+			// 辿る階層はバイナリ監視設定のディレクトリ直下のみ
+			Files.walkFileTree(path, EnumSet.of(FileVisitOption.FOLLOW_LINKS), 1, fv);
+		} catch (IOException e) {
 			log.warn(methodName + DELIMITER + e.getMessage(), e);
 			return;
 		}
 
-		// 検索対象のファイルを抽出.
-		File[] seekFiles = monDir.listFiles(fileFilter);
+		File[] seekFiles = fv.getSeekFiles();
+		log.debug("initFileRS() : seekFiles length = " + seekFiles.length);
+		
 		if (seekFiles == null || seekFiles.length <= 0) {
-			log.info(methodName + DELIMITER + monDirName + " does not have a reference permission");
+			log.info(methodName + DELIMITER + monDirName + " does not have a reference permission, or has no file.");
 			return;
 		}
 
 		// 検索対象ファイルのチェックを行いOKなら監視対象としてマップに追加.
 		for (File file : seekFiles) {
 			log.debug(methodName + DELIMITER + parentMonRS.getMonitorID() + ", file=" + file.getName());
-			// 最大監視対象ファイル数チェック.
-			if (!parentMonRS.incrementCounter()) {
-				log.info(methodName + DELIMITER + "too many files for binary monitor. not-monitoring file="
-						+ file.getName());
-				continue;
-			}
 
 			// 前回検知分として存在するかマップ取得.
 			FileReadingStatus oldFileRS = curFileRS.get(file.getName());
@@ -365,4 +368,76 @@ public class DirectoryReadingStatus {
 	public File getMonDir() {
 		return this.monDir;
 	}
+	
+	// 監視対象ファイルを取得するビジター
+	private class BinaryFileVisitor implements FileVisitor<Path> {
+
+		private Pattern pattern;
+	
+		private String methodName;
+	
+		private List<File> seekFileList = new ArrayList<>();
+
+		public BinaryFileVisitor(Pattern pattern, String methodName) {
+			this.pattern = pattern;
+			this.methodName = methodName;
+		}
+			
+		public File[] getSeekFiles() {
+			File[] f = new File[seekFileList.size()];
+			seekFileList.toArray(f);
+			return f;
+		}
+			
+		@Override
+		public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+	
+			// findbugs 対応(nullチェック)
+			Path filePath = file.getFileName();
+			if(filePath == null) {
+				// 想定外の状況
+				// スキップして次へいく
+				log.warn(methodName + DELIMITER + "file.getFileName() is null");
+				return FileVisitResult.CONTINUE;
+			}
+				
+			String fileName = filePath.toString();
+			log.debug("visitFile() : file = " + fileName);
+		
+			// ファイル以外の場合は何もしない
+			if(!file.toFile().isFile()) {
+				return FileVisitResult.CONTINUE;
+			}
+		
+			// 監視設定のファイル名にマッチしない場合何もしない
+			if(!pattern.matcher(fileName).matches()) {
+				return FileVisitResult.CONTINUE;
+			}
+		
+			// 最大監視対象数に達している場合はログだけ出力する
+			if (!parentMonRS.incrementCounter()) {
+				log.info(methodName + DELIMITER + "too many files for binary monitor. not-monitoring file=" + fileName);
+				return FileVisitResult.CONTINUE;
+			}
+		
+			seekFileList.add(file.toAbsolutePath().toFile());
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+	}
+
 }

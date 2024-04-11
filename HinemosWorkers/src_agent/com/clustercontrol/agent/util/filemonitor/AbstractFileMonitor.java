@@ -67,7 +67,8 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 	/** クリーンフラグ */
 	private boolean cleanFlag;
 
-
+	/** 増加分読み込み成功フラグ */
+	private boolean readSuccessFlg = true;
 	/**
 	 * 監視項目設定更新日時
 	 * 設定変更チェック用
@@ -148,14 +149,24 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 			}
 		}
 		
-		boolean readSuccessFlg = true; // 増加分読み込み成功フラグ
+		readSuccessFlg = true; // 増加分読み込み成功フラグ
 		long currentFilesize = 0;
 		try {
 			currentFilesize = fileChannel.size(); // 現在監視しているファイルのサイズを取得・・・（１）
-			
-			if (status.getPrevSize() == currentFilesize) {
+			if (status.getPrevSize() == 0 && currentFilesize > 0 || status.getPrevSize() == currentFilesize) {
 				/** ログローテートを判定するフラグ */
 				boolean logrotateFlag = false;			// ローテートフラグ
+				
+				// #17603の対応
+				// 監視対象のファイルを新規作成(0バイト)後、次の監視までにログ書き込みと
+				// ローテートが発生した場合に検知するため以下の分岐を追加。
+				if (status.getPrevSize() == 0 && currentFilesize > 0 ){
+					readFile(currentFilesize);
+					// （２）の判定でtrueとならず、ローテートの判断に時間を要する場合がある。
+					// 上記の場合（３）の判定が行われるまでに再度ローテートが行われてしまうと検知対象のログ
+					// をロストする恐れがあるため、ここでファイルの冒頭を確認しローテートを検知する
+					logrotateFlag = checkPrefix();
+				}
 				
 				int runInterval = fileMonitorConfig.getRunInterval();
 				// ファイルサイズがm_unchangedStatsPeriod秒間以上変わらなかったら、ファイル切り替わりチェック
@@ -177,7 +188,7 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 					m_log.debug("run() : m_fr.length()=" + fileChannel.size());
 					m_log.debug("run() : file.length()=" + file.length());
 				} else if (currentFilesize > 0 && fileMonitorConfig.getFirstPartDataCheckPeriod() > 0 &&
-						(HinemosTime.currentTimeMillis() - m_lastDataCheck) > fileMonitorConfig.getFirstPartDataCheckPeriod()){
+						(HinemosTime.currentTimeMillis() - m_lastDataCheck) > fileMonitorConfig.getFirstPartDataCheckPeriod()){ //（３）
 					m_log.debug("run() : " + getFilePath() + " check first part of file");
 					
 					// 追加された判定ロジック：
@@ -231,158 +242,7 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 			// 現状の実装では対象ファイルのサイズが変わるまで 行われない。
 			// status.positon が読込みの開始条件として考慮されていない
 			if (status.getPrevSize() < currentFilesize) {
-				//ファイルサイズを確認（上限を超えた場合通知）
-				checkFilesize(fileChannel);// 
-				// デバッグログ
-				m_log.debug("run() read start: " + getFilePath() + ",prevsize=" + status.getPrevSize() + ",currentFilesize=" + currentFilesize +",FilePointer=" + status.getPosition());
-				
-				char[] cbuf = new char[1024];
-				
-				// ディスク書き込み負荷軽減の対応
-				boolean statusUpdateFlag = true;
-				
-				try (Reader fr = new InputStreamReader(Channels.newInputStream(fileChannel), m_wrapper.getFileEncoding()) {
-						@Override
-						public void close() {
-							// チャネルがクローズされないように修正。
-						}
-					}) {
-					LineSeparator separator = new LineSeparator(m_wrapper.getFileReturnCode(), m_wrapper.getStartRegexString(), m_wrapper.getEndRegexString());
-					int maxLines = fileMonitorConfig.getFilMessageLine();
-					long start = System.currentTimeMillis();
-					boolean logFlag = true;
-					while (true) {
-						readSuccessFlg = false;
-						int read = fr.read(cbuf);
-						readSuccessFlg = true;
-						if (read == -1) {
-							break;
-						}
-						m_log.debug("run() : " + getFilePath() + " . fr.read is success . read=" + read + ",fileChannel.position()=" + fileChannel.position() );
-
-						// 今回出力処理する分のバッファを作成
-						// 前回の繰越分と今回ファイルから読み出したデータのうち
-						// 最後の改行までのデータをマージする。
-						String appendedBuf = new StringBuilder(status.getCarryover().length() + read).append(status.getCarryover()).append(cbuf, 0, read).toString();
-						List<String> lines = new LinkedList<String>();
-						while (lines.size() <= maxLines) {
-							int pos = separator.search(appendedBuf);
-							if (pos != -1) {
-								lines.add(appendedBuf.substring(0, pos));
-								appendedBuf = appendedBuf.substring(pos, appendedBuf.length());
-							} else {
-								break;
-							}
-						}
-						
-						if (!appendedBuf.isEmpty()) {
-							status.setCarryOver(appendedBuf);
-							
-							// 繰越データが非常に長い場合（規定の繰越データ長超え）は繰越バッファをカットする
-							// FIXME
-							// 改行コード（2byte以上）が繰越バッファ＋読取バッファをまたぐ場合、考慮不足でログがロストするケースあり。
-							// 現状は繰越バッファに余裕があるために、ほぼ発現しない。
-							if(status.getCarryover().length() > fileMonitorConfig.getFileReadCarryOverLength()){
-								String message = "run() : " + getFilePath() + " carryOverBuf size = " + status.getCarryover().length() + 
-										". carryOverBuf is too long. it cut down .(see monitor.logfile.read.carryover.length)";
-								if (logFlag) {
-									m_log.info(message);
-									logFlag = false;
-								} else {
-									m_log.debug(message);
-								}
-								
-								// ディスク書き込み負荷軽減の対応
-								statusUpdateFlag = false;
-								
-								status.setCarryOver(status.getCarryover().substring(0, fileMonitorConfig.getFileReadCarryOverLength()));
-							}
-							m_log.debug("run() : " + getFilePath() + " carryOverBuf size " + status.getCarryover().length());
-						} else {
-							status.setCarryOver("");
-							logFlag = true;
-						}
-						
-						for (String line : lines) {
-							m_log.debug("run() line=" + line);
-							// 旧バージョンとの互換性のため、syslogでも飛ばせるようにする。
-							if (m_syslog.isValid()) {
-								// v3.2 mode
-								String logPrefix = fileMonitorConfig.getProgram() + "(" + getFilePath() + "):";
-								m_syslog.log(logPrefix + line);
-							} else {
-								// v4.0 mode
-								patternMatchAndSendManager(line);
-							}
-						}
-						//Copytruncate方式の場合、読み込み中のPositionを更新中に
-						//ローテート処理がはしるとPositionがリセットされず、ローテートしたとみなされなくなる。
-						//そのため、再度、ファイルチャネルのサイズと前のファイルのサイズを比較し、
-						//ファイルチャネルのサイズが小さい場合、ローテートしたとみなす。
-						currentFilesize =  fileChannel.size();
-						if (status.getPrevSize() <= currentFilesize) {
-							//直近のポジションを控えておく（差分のバイトデータ取得用）
-							long prePosition = status.getPosition();
-							// ファイルの読込情報を保存
-							// FIXME
-							// 読込み途中にReadingStatusファイルに中間保存してるpositionが実際の処理状況と合致しない場合あり
-							// 処理用データを取得しているInputStreamReader での読込み位置と 
-							// positionを取得してるfileChannel側でのposition管理が合致していない模様
-							status.setPosition(fileChannel.position());
-							status.setPrevSize(currentFilesize);
-							
-							//prefixBinary は必要な場合（未設定or長さが最大に達していない）のみ更新
-							if (status.getPrefixBinary() == null || status.getPrefixBinary().isEmpty()) {
-								//ローテーション検出などにより 未設定なら先頭から今回の読込み部分までのPrefixを取得
-								status.setPrefixBinary(getMonFileByteData(0,status.getPosition()));
-								int setListMax =Math.min((int)status.getPosition(), fileMonitorConfig.getFirstPartDataCheckSize());
-								if(status.getPrefixBinary().size() > setListMax ){
-									status.setPrefixBinary(status.getPrefixBinary().subList(0, setListMax));
-								}
-								status.setPrefixBinString(BinaryUtil.listToString(status.getPrefixBinary(), 1));
-								if(m_log.isTraceEnabled()){
-									m_log.trace("run() : " + getFilePath() + " prefixBinary initial set .status.prefixBinary .size " + status.getPrefixBinary().size() + ", FilePointer = " + fileChannel.position());
-								}
-							} else if (status.getPrefixBinary().size() < fileMonitorConfig.getFirstPartDataCheckSize()) {
-								//設定済みだが最大長で無いなら今回の読込み部分をPREFIXに継ぎ足し
-								List<Byte> addPreFix = getMonFileByteData(prePosition,status.getPosition());
-								int addListMax = Math.min(addPreFix.size(), fileMonitorConfig.getFirstPartDataCheckSize() - status.getPrefixBinary().size());
-								if(addPreFix.size() > addListMax ){
-									addPreFix = addPreFix.subList(0, addListMax);
-								}
-								status.getPrefixBinary().addAll(addPreFix);
-								status.setPrefixBinString(BinaryUtil.listToString(status.getPrefixBinary(), 1));
-								if(m_log.isTraceEnabled()){
-									m_log.trace("run() : " + getFilePath() + " prefixBinary add set .status.prefixBinary .size " + status.getPrefixBinary().size() + ", FilePointer = " + fileChannel.position());
-								}
-							}
-							
-							// ディスク書き込み負荷軽減の対応 繰越データが非常に長い場合は	
-							// status書き出しをスキップする（運用上の影響は無し）
-							if(statusUpdateFlag){
-								status.store();
-							}
-							
-							if(m_log.isTraceEnabled()){
-								m_log.trace("run() : " + getFilePath() + " . status is stored . status.prevSize=" + status.getPrevSize() + ",status.position=" + status.getPosition() + ", fileChannel.size() = " + fileChannel.size() );
-							}
-						} else {
-							fileChannel.position(0);
-							status.rotate();
-							if(m_log.isTraceEnabled()){
-								m_log.trace("run() : " + getFilePath() + " . status is rotate . status.prevSize=" + status.getPrevSize() + ",status.position=" + status.getPosition() );
-							}
-						}
-					}
-					m_log.info(String.format("run() :" + getFilePath() + " , MonitorId " + m_wrapper.getId() + " , elapsed=%d ms.", System.currentTimeMillis() - start));
-				}
-				
-				// ディスク書き込み負荷軽減の対応
-				if(!statusUpdateFlag){
-					status.store();
-				}
-
-				m_log.debug("run() read end: " + getFilePath() + " filesize = " + status.getPrevSize() + ", FilePointer = " + fileChannel.position());
+				readFile(currentFilesize);
 			} else if (status.getPrevSize() > currentFilesize) {
 				// 最初から読み込み
 				m_log.info("run() : " + getFilePath() + " : file size becomes small");
@@ -617,6 +477,166 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 			// ファイルサイズが大きい場合、監視管理へ通知
 			sendMessageByFileSizeOver(filesize);
 		}
+	}
+
+	/**
+	 * 転送対象ログファイルの読み込み
+	 * 
+	 */
+	private void readFile(long currentFilesize) throws IOException{
+		//ファイルサイズを確認（上限を超えた場合通知）
+		checkFilesize(fileChannel);// 
+		// デバッグログ
+		m_log.debug("run() read start: " + getFilePath() + ",prevsize=" + status.getPrevSize() + ",currentFilesize=" + currentFilesize +",FilePointer=" + status.getPosition());
+		
+		char[] cbuf = new char[1024];
+		
+		// ディスク書き込み負荷軽減の対応
+		boolean statusUpdateFlag = true;
+		
+		try (Reader fr = new InputStreamReader(Channels.newInputStream(fileChannel), m_wrapper.getFileEncoding()) {
+				@Override
+				public void close() {
+					// チャネルがクローズされないように修正。
+				}
+			}) {
+			LineSeparator separator = new LineSeparator(m_wrapper.getFileReturnCode(), m_wrapper.getStartRegexString(), m_wrapper.getEndRegexString());
+			int maxLines = fileMonitorConfig.getFilMessageLine();
+			long start = System.currentTimeMillis();
+			boolean logFlag = true;
+			while (true) {
+				readSuccessFlg = false;
+				int read = fr.read(cbuf);
+				readSuccessFlg = true;
+				if (read == -1) {
+					break;
+				}
+				m_log.debug("run() : " + getFilePath() + " . fr.read is success . read=" + read + ",fileChannel.position()=" + fileChannel.position() );
+
+				// 今回出力処理する分のバッファを作成
+				// 前回の繰越分と今回ファイルから読み出したデータのうち
+				// 最後の改行までのデータをマージする。
+				String appendedBuf = new StringBuilder(status.getCarryover().length() + read).append(status.getCarryover()).append(cbuf, 0, read).toString();
+				List<String> lines = new LinkedList<String>();
+				while (lines.size() <= maxLines) {
+					int pos = separator.search(appendedBuf);
+					if (pos != -1) {
+						lines.add(appendedBuf.substring(0, pos));
+						appendedBuf = appendedBuf.substring(pos, appendedBuf.length());
+					} else {
+						break;
+					}
+				}
+				
+				if (!appendedBuf.isEmpty()) {
+					status.setCarryOver(appendedBuf);
+					
+					// 繰越データが非常に長い場合（規定の繰越データ長超え）は繰越バッファをカットする
+					// FIXME
+					// 改行コード（2byte以上）が繰越バッファ＋読取バッファをまたぐ場合、考慮不足でログがロストするケースあり。
+					// 現状は繰越バッファに余裕があるために、ほぼ発現しない。
+					if(status.getCarryover().length() > fileMonitorConfig.getFileReadCarryOverLength()){
+						String message = "run() : " + getFilePath() + " carryOverBuf size = " + status.getCarryover().length() + 
+								". carryOverBuf is too long. it cut down .(see monitor.logfile.read.carryover.length)";
+						if (logFlag) {
+							m_log.info(message);
+							logFlag = false;
+						} else {
+							m_log.debug(message);
+						}
+						
+						// ディスク書き込み負荷軽減の対応
+						statusUpdateFlag = false;
+						
+						status.setCarryOver(status.getCarryover().substring(0, fileMonitorConfig.getFileReadCarryOverLength()));
+					}
+					m_log.debug("run() : " + getFilePath() + " carryOverBuf size " + status.getCarryover().length());
+				} else {
+					status.setCarryOver("");
+					logFlag = true;
+				}
+				
+				for (String line : lines) {
+					m_log.debug("run() line=" + line);
+					// 旧バージョンとの互換性のため、syslogでも飛ばせるようにする。
+					if (m_syslog.isValid()) {
+						// v3.2 mode
+						String logPrefix = fileMonitorConfig.getProgram() + "(" + getFilePath() + "):";
+						m_syslog.log(logPrefix + line);
+					} else {
+						// v4.0 mode
+						patternMatchAndSendManager(line);
+					}
+				}
+				//Copytruncate方式の場合、読み込み中のPositionを更新中に
+				//ローテート処理がはしるとPositionがリセットされず、ローテートしたとみなされなくなる。
+				//そのため、再度、ファイルチャネルのサイズと前のファイルのサイズを比較し、
+				//ファイルチャネルのサイズが小さい場合、ローテートしたとみなす。
+				currentFilesize =  fileChannel.size();
+				if (status.getPrevSize() <= currentFilesize) {
+					//直近のポジションを控えておく（差分のバイトデータ取得用）
+					long prePosition = status.getPosition();
+					// ファイルの読込情報を保存
+					// FIXME
+					// 読込み途中にReadingStatusファイルに中間保存してるpositionが実際の処理状況と合致しない場合あり
+					// 処理用データを取得しているInputStreamReader での読込み位置と 
+					// positionを取得してるfileChannel側でのposition管理が合致していない模様
+					status.setPosition(fileChannel.position());
+					status.setPrevSize(currentFilesize);
+					
+					//prefixBinary は必要な場合（未設定or長さが最大に達していない）のみ更新
+					if (status.getPrefixBinary() == null || status.getPrefixBinary().isEmpty()) {
+						//ローテーション検出などにより 未設定なら先頭から今回の読込み部分までのPrefixを取得
+						status.setPrefixBinary(getMonFileByteData(0,status.getPosition()));
+						int setListMax =Math.min((int)status.getPosition(), fileMonitorConfig.getFirstPartDataCheckSize());
+						if(status.getPrefixBinary().size() > setListMax ){
+							status.setPrefixBinary(status.getPrefixBinary().subList(0, setListMax));
+						}
+						status.setPrefixBinString(BinaryUtil.listToString(status.getPrefixBinary(), 1));
+						if(m_log.isTraceEnabled()){
+							m_log.trace("run() : " + getFilePath() + " prefixBinary initial set .status.prefixBinary .size " + status.getPrefixBinary().size() + ", FilePointer = " + fileChannel.position());
+						}
+					} else if (status.getPrefixBinary().size() < fileMonitorConfig.getFirstPartDataCheckSize()) {
+						//設定済みだが最大長で無いなら今回の読込み部分をPREFIXに継ぎ足し
+						List<Byte> addPreFix = getMonFileByteData(prePosition,status.getPosition());
+						int addListMax = Math.min(addPreFix.size(), fileMonitorConfig.getFirstPartDataCheckSize() - status.getPrefixBinary().size());
+						if(addPreFix.size() > addListMax ){
+							addPreFix = addPreFix.subList(0, addListMax);
+						}
+						status.getPrefixBinary().addAll(addPreFix);
+						status.setPrefixBinString(BinaryUtil.listToString(status.getPrefixBinary(), 1));
+						if(m_log.isTraceEnabled()){
+							m_log.trace("run() : " + getFilePath() + " prefixBinary add set .status.prefixBinary .size " + status.getPrefixBinary().size() + ", FilePointer = " + fileChannel.position());
+						}
+					}
+					
+					// ディスク書き込み負荷軽減の対応 繰越データが非常に長い場合は	
+					// status書き出しをスキップする（運用上の影響は無し）
+					if(statusUpdateFlag){
+						status.store();
+					}
+					
+					if(m_log.isTraceEnabled()){
+						m_log.trace("run() : " + getFilePath() + " . status is stored . status.prevSize=" + status.getPrevSize() + ",status.position=" + status.getPosition() + ", fileChannel.size() = " + fileChannel.size() );
+					}
+				} else {
+					fileChannel.position(0);
+					status.rotate();
+					if(m_log.isTraceEnabled()){
+						m_log.trace("run() : " + getFilePath() + " . status is rotate . status.prevSize=" + status.getPrevSize() + ",status.position=" + status.getPosition() );
+					}
+				}
+			}
+			m_log.info(String.format("run() :" + getFilePath() + " , MonitorId " + m_wrapper.getId() + " , elapsed=%d ms.", System.currentTimeMillis() - start));
+		}
+		
+		// ディスク書き込み負荷軽減の対応
+		if(!statusUpdateFlag){
+			status.store();
+		}
+
+		m_log.debug("run() read end: " + getFilePath() + " filesize = " + status.getPrevSize() + ", FilePointer = " + fileChannel.position());
+
 	}
 
 	/**

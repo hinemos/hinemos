@@ -115,6 +115,15 @@
 		</query>
 	</named-query>
 
+	<named-query name="JobMstEntity.findByApprovalUserId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobMstEntity a
+				WHERE a.approvalReqUserId = :approvalReqUserId
+			]]>
+		</query>
+	</named-query>
+
 	<!-- JobInfoEntity -->
 	<named-query name="JobInfoEntity.findByIconId">
 		<query>
@@ -133,7 +142,6 @@
 			]]>
 		</query>
 	</named-query>
-
 	<!-- JobParamMstEntity -->
 	<named-query name="JobParamMstEntity.findByJobunitId">
 		<query>
@@ -496,6 +504,17 @@
 				AND a.startDate IS NOT NULL
 				AND a.endDate IS NULL
 				ORDER BY a.id.sessionId, a.id.jobunitId, a.id.jobId, a.id.facilityId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="JobSessionNodeEntity.findByJobTypeStatus">
+		<query>
+			<![CDATA[
+				SELECT a FROM JobSessionNodeEntity a
+				JOIN a.jobSessionJobEntity b
+				JOIN b.jobInfoEntity c
+				WHERE a.status = :status
+				AND c.jobType = :jobType
 			]]>
 		</query>
 	</named-query>

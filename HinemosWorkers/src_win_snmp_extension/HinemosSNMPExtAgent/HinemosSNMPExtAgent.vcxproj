@@ -14,16 +14,19 @@
     <ProjectGuid>{06500E15-B959-4C4F-8D9F-D27B4F236F11}</ProjectGuid>
     <RootNamespace>HinemosSNMPExtAgent</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -108,9 +111,9 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\..\..\..\..\..\Program Files\Microsoft SDKs\Windows\v7.1\Lib\AdvAPI32.Lib" />
-    <Library Include="..\..\..\..\..\..\..\Program Files\Microsoft SDKs\Windows\v7.1\Lib\Pdh.Lib" />
-    <Library Include="..\..\..\..\..\..\..\Program Files\Microsoft SDKs\Windows\v7.1\Lib\SnmpAPI.Lib" />
+    <Library Include="..\..\lib\AdvAPI32.Lib" />
+    <Library Include="..\..\lib\Pdh.Lib" />
+    <Library Include="..\..\lib\SnmpAPI.Lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

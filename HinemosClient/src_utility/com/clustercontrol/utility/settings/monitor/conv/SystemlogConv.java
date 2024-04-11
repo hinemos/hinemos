@@ -32,6 +32,7 @@ import com.clustercontrol.utility.settings.monitor.xml.SyslogInfo;
 import com.clustercontrol.utility.settings.monitor.xml.SyslogMonitor;
 import com.clustercontrol.utility.settings.monitor.xml.SyslogMonitors;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * システムログ 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -43,9 +44,15 @@ import com.clustercontrol.utility.util.UtilityManagerUtil;
 public class SystemlogConv {
 	private final static Log logger = LogFactory.getLog(SystemlogConv.class);
 
-	private final static String SCHEMA_TYPE = "H";
-	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "2";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	private final static String SCHEMA_TYPE = VersionUtil.getSchemaProperty("MONITOR.SYSTEMLOG.SCHEMATYPE");
+	private final static String SCHEMA_VERSION = VersionUtil.getSchemaProperty("MONITOR.SYSTEMLOG.SCHEMAVERSION");
+	private final static String SCHEMA_REVISION =VersionUtil.getSchemaProperty("MONITOR.SYSTEMLOG.SCHEMAREVISION");
 
 	/**
 	 * <BR>

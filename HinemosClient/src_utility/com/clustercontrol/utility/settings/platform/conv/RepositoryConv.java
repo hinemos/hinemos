@@ -55,6 +55,7 @@ import com.clustercontrol.utility.settings.platform.xml.PackageInfo;
 import com.clustercontrol.utility.settings.platform.xml.ProcessInfo;
 import com.clustercontrol.utility.settings.platform.xml.ProductInfo;
 import com.clustercontrol.utility.util.OpenApiEnumConverter;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * リポジトリ情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -66,13 +67,19 @@ import com.clustercontrol.utility.util.OpenApiEnumConverter;
  */
 public class RepositoryConv {
 	
-	static final private String scopeSchemaType="E";
-	static final private String scopeSchemaVersion="1";
-	static final private String scopeSchemaRevision="2" ;
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static final private String scopeSchemaType=VersionUtil.getSchemaProperty("PLATFORM.REPOSITORYSCOPE.SCHEMATYPE");
+	static final private String scopeSchemaVersion=VersionUtil.getSchemaProperty("PLATFORM.REPOSITORYSCOPE.SCHEMAVERSION");
+	static final private String scopeSchemaRevision=VersionUtil.getSchemaProperty("PLATFORM.REPOSITORYSCOPE.SCHEMAREVISION");
 	
-	static final private String nodeSchemaType="I";
-	static final private String nodeSchemaVersion="1";
-	static final private String nodeSchemaRevision="2" ;
+	static final private String nodeSchemaType=VersionUtil.getSchemaProperty("PLATFORM.REPOSITORY.SCHEMATYPE");
+	static final private String nodeSchemaVersion=VersionUtil.getSchemaProperty("PLATFORM.REPOSITORY.SCHEMAVERSION");
+	static final private String nodeSchemaRevision=VersionUtil.getSchemaProperty("PLATFORM.REPOSITORY.SCHEMAREVISION");
 	static private String schemaType="";
 	static private String schemaVersion="";
 	static private String schemaRevision="" ;

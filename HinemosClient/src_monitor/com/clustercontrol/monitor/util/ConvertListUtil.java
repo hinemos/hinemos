@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.openapitools.client.model.EventLogInfoRequest;
 import org.openapitools.client.model.EventLogInfoResponse;
 import org.openapitools.client.model.GetEventListResponse;
@@ -304,6 +305,22 @@ public class ConvertListUtil {
 				statusList.add(list);
 			}
 		}
+		
+		final int limit = NumberUtils.toInt(System.getProperty("maximum.monitor.history.status.view.size"), -1);
+		final int len = statusList.size();
+		if (limit > 0 && len > limit) {
+			// 表示ステータス数の上限設定が有効かつ上限に達している場合
+			// 改めて最終変更日時の降順でソート後にステータス一覧を上限数に絞る
+			// マルチマネージャの場合にここを通る
+			Collections.sort(statusList, (list1, list2) -> {
+				Date d1 = (Date) list1.get(GetStatusListTableDefine.UPDATE_TIME);
+				Date d2 = (Date) list2.get(GetStatusListTableDefine.UPDATE_TIME);
+				return d2.compareTo(d1);
+			});
+
+			statusList.subList(limit, len).clear();
+		}
+		
 		return statusList;
 	}
 

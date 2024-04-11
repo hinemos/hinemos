@@ -24,6 +24,7 @@ import org.openapitools.client.model.JobTreeItemResponseP4;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.action.GetJobDetailTableDefine;
 import com.clustercontrol.jobmanagement.composite.action.JobDetailSelectionChangedListener;
 import com.clustercontrol.jobmanagement.composite.action.SessionJobDoubleClickListener;
@@ -165,6 +166,9 @@ public class DetailComposite extends Composite {
 							Messages.getString("message.accesscontrol.16"));
 					ClientSession.freeDialog();
 				}
+			} catch (JobInfoNotFound e) {
+				// 実行契機削除などでジョブセッション削除のタイミングで履歴情報取得した場合の対策
+				// itemはnullのままにする
 			} catch (Exception e) {
 				m_log.warn("update() getJobDetailList, " + e.getMessage(), e);
 				if(ClientSession.isDialogFree()){
@@ -199,7 +203,8 @@ public class DetailComposite extends Composite {
 		}
 		m_viewer.expandAll();
 
-		if (m_sessionId != null && m_sessionId.length() > 0
+		if (item != null
+				&& m_sessionId != null && m_sessionId.length() > 0
 				&& sessionId != null && sessionId.length() > 0
 				&& m_sessionId.compareTo(sessionId) == 0) {
 			selectDetail(item.getChildren().get(0));

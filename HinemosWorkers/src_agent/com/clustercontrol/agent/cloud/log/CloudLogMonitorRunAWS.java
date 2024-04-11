@@ -8,12 +8,12 @@
 package com.clustercontrol.agent.cloud.log;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -38,7 +38,7 @@ import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
 import com.amazonaws.services.securitytoken.model.Credentials;
 import com.amazonaws.util.EC2MetadataUtils;
 import com.amazonaws.util.EC2MetadataUtils.IAMInfo;
-import com.clustercontrol.agent.cloud.log.util.CloudLogRawObject;
+import com.clustercontrol.agent.cloud.log.util.CloudLogfileMonitor;
 import com.clustercontrol.agent.cloud.log.util.CloudLogfileMonitorConfig;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -54,7 +54,6 @@ public class CloudLogMonitorRunAWS extends AbstractCloudLogMonitorRun {
 
 	public CloudLogMonitorRunAWS(CloudLogMonitorConfig config) {
 		super(config);
-		rawObject = new ArrayList<CloudLogRawObject>();
 	}
 
 	/**
@@ -199,10 +198,13 @@ public class CloudLogMonitorRunAWS extends AbstractCloudLogMonitorRun {
 		}
 
 		// ファイル監視を実行
-		execFileMonitor(rawObject, resumeFlg);
-		// rawObjectの切りつめ
-		truncateRawObjectCarryOver();
+		execFileMonitor();
 		
+		// ステータス管理ファイルの更新
+		for (CloudLogMonitorStatus status : statusMap.values()) {
+			status.store();
+		}
+
 		// どこまでログを取得したかを記録
 		lastFireTime = timeFilteredTo + 1;
 
@@ -242,7 +244,7 @@ public class CloudLogMonitorRunAWS extends AbstractCloudLogMonitorRun {
 
 		StringBuilder sb = new StringBuilder();
 		boolean hasRotated = false;
-
+		
 		for (FilteredLogEvent e : res.getEvents()) {
 
 			// 前回取得のメッセージでローテーションされた場合は、
@@ -258,7 +260,7 @@ public class CloudLogMonitorRunAWS extends AbstractCloudLogMonitorRun {
 				} catch (InterruptedException e1) {
 					log.warn("getResult():", e1);
 				}
-				execFileMonitor(rawObject, resumeFlg);
+				execFileMonitor();
 				hasRotated = false;
 			}
 
@@ -272,12 +274,14 @@ public class CloudLogMonitorRunAWS extends AbstractCloudLogMonitorRun {
 			// 区切り条件が改行コード以外の場合でも一時ファイルに改行コードが
 			// 混在してしまわないように、処理を行う
 			log.debug("getResult(): split message with " + config.getReturnCode());
+			
 			for (String mes : e.getMessage().split(retCode)) {
 				String splitStr = mes + "\n";
-				sb.append(splitStr);
-				rawObject.add(new CloudLogRawObject(date, splitStr, e.getLogStreamName()));
+				String timestamp = e.getTimestamp() + "";
+				sb.append(getSplitStr(splitStr, timestamp, e.getLogStreamName()));
+				
 			}
-
+			
 			// 一時ファイルへの書き込み
 			// ローテートしたかを記録
 			hasRotated = writeToFile(config, sb.toString(), e.getLogStreamName());
@@ -293,7 +297,7 @@ public class CloudLogMonitorRunAWS extends AbstractCloudLogMonitorRun {
 		// execFileMonitorで検知される)
 		if (hasRotated) {
 			log.info("getResult(): File Rotate occured after writing logs to file. Exec File Monitor.");
-			execFileMonitor(rawObject, resumeFlg);
+			execFileMonitor();
 			try {
 				// 負荷軽減のため、
 				// monitor.cloudlogfile.filter.interval指定秒数スリープ（デフォルト1秒）
@@ -451,6 +455,32 @@ public class CloudLogMonitorRunAWS extends AbstractCloudLogMonitorRun {
 			}
 
 		}
+	}
+
+	/**
+	 * プロパティファイル名を取得するメソッド
+	 * AWSの場合、ログストリーム名をMD5でハッシュしたものを返す
+	 */
+	@Override
+	protected String getPropFileName(String fileKey) {
+		return DigestUtils.md5Hex(fileKey);
+	}
+
+	/**
+	 * CloudLogfileMonitorにログストリーム名を設定するメソッド
+	 */
+	@Override
+	protected void setStreamNameForCloudLogfileMonitor(CloudLogfileMonitor mon) {
+		String streamName = "";
+
+		for (String key : statusMap.keySet()) {
+			if (mon.getFilePathForStream().contains(DigestUtils.md5Hex(key))) {
+				streamName = key;
+				break;
+			}
+		}
+		mon.setLogStreamName(streamName);
+
 	}
 
 }

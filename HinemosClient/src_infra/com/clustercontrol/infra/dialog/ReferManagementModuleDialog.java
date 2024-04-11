@@ -49,7 +49,6 @@ import com.clustercontrol.infra.util.InfraRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.RestClientBeanUtil;
-import com.clustercontrol.util.WidgetTestUtil;
 
 /**
  * 環境構築[参照環境構築モジュールの作成・変更]ダイアログクラスです。
@@ -213,13 +212,18 @@ public class ReferManagementModuleDialog extends CommonDialog {
 		gridData.grabExcessHorizontalSpace = true;
 		label.setText(Messages.getString("infra.module.refer.management") + " : ");
 		label.setLayoutData(gridData);
-		m_comboReferManagementId = new Combo(composite, SWT.DROP_DOWN | SWT.READ_ONLY);
-		WidgetTestUtil.setTestId(this, "m_comboReferManagementId", m_comboReferManagementId);
+		this.m_comboReferManagementId = new Combo(composite, SWT.DROP_DOWN | SWT.READ_ONLY);
 		gridData = new GridData();
 		gridData.horizontalSpan = FORM_WIDTH;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
-		m_comboReferManagementId.setLayoutData(gridData);
+		this.m_comboReferManagementId.setLayoutData(gridData);
+		this.m_comboReferManagementId.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(ModifyEvent arg0) {
+				update();
+			}
+		});
 
 		// 空白
 		label = new Label(composite, SWT.NONE);

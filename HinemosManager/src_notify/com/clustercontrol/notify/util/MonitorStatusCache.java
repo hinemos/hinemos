@@ -208,6 +208,33 @@ public class MonitorStatusCache {
 	}
 
 	/**
+	 * キャッシュ情報削除
+	 * 
+	 * @param facilityId ファシリティID
+	 */
+	public static void remove(String facilityId){
+		if (log.isDebugEnabled()) {
+			log.debug("remove() : start. facilityId=" + facilityId);
+		}
+		Set<MonitorStatusEntityPK> keySet = cacheKeys();
+		for (MonitorStatusEntityPK key : keySet) {
+			if (key.getFacilityId().equals(facilityId)) {
+				if (log.isTraceEnabled()) {
+					log.trace("remove() : " + key.toString());
+				}
+				ILock lock = getLock(key);
+				try {
+					lock.writeLock();
+					removeCache(key);
+				} finally {
+					lock.writeUnlock();
+					removeLock(key);
+				}
+			}
+		}
+	}
+
+	/**
 	 * キャッシュ情報全件削除
 	 */
 	public static void removeAll() {

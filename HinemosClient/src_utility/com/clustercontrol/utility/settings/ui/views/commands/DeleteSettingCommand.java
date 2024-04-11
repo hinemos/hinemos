@@ -46,6 +46,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.UrlNotFound;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.TargetPlatformUtil;
@@ -112,25 +113,9 @@ public class DeleteSettingCommand extends AbstractHandler implements IElementUpd
 						Messages.getString("warning"),
 						Messages.getString("message.expiration.term.invalid"));
 			}
-		} catch (InvalidRole | InvalidUserPass e) {
+		} catch (Exception e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					e.getMessage());
-			return null;
-		} catch (HinemosUnknown e) {
-			if(UrlNotFound.class.equals(e.getCause().getClass())) {
-				MessageDialog.openInformation(null, Messages.getString("message"),
-						Messages.getString("message.expiration.term"));
-				return null;
-			} else {
-				MessageDialog.openInformation(null, Messages.getString("message"),
-						e.getMessage());
-				return null;
-			}
-		} catch (Exception e) {
-			// キーファイルを確認できませんでした。処理を終了します。
-			// Key file not found. This process will be terminated.
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.expiration.term"));
 			return null;
 		}
 

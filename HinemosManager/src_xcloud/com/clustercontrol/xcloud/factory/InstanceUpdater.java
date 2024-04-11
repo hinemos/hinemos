@@ -19,6 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import jakarta.persistence.EntityExistsException;
@@ -30,12 +34,14 @@ import org.apache.log4j.Logger;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.fault.FacilityDuplicate;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
+import com.clustercontrol.repository.factory.SearchNodeBySNMP;
 import com.clustercontrol.repository.model.NodeDiskInfo;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.NodeNetworkInterfaceInfo;
@@ -50,6 +56,7 @@ import com.clustercontrol.xcloud.bean.Tag;
 import com.clustercontrol.xcloud.bean.TagType;
 import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.common.ErrorCode;
+import com.clustercontrol.xcloud.common.InternalIdCloud;
 import com.clustercontrol.xcloud.factory.IResourceManagement.Instance;
 import com.clustercontrol.xcloud.factory.monitors.InstanceMonitorService;
 import com.clustercontrol.xcloud.model.CloudLoginUserEntity;
@@ -111,19 +118,61 @@ public class InstanceUpdater {
 			}
 		}
 	}
-	
+
+
+	/** Hinemosエージェントの設定ファイル更新エグセキュータ */
+	private static MonitoredThreadPoolExecutor autoUpdateAgentExecutor;
+
+	/** Hinemosエージェントの設定ファイル更新エグセキュータのロック用オブジェクト */
+	private static final Object autoUpdateAgentExecutorLock = new Object();
+
+	/** Hinemosエージェントの設定ファイル更新のスレッド名 */
+	private static final String AgentAutoUpdaterTreadName = "AgentAutoUpdater-executor-";
+
+	/**
+	 * Hinemosエージェントの設定ファイル更新スレッドの実行管理
+	 * 同一エージェントに対する重複実行を防ぐために、ファシリティIDを保持する。
+	 */
+	private static Set<String> agentAutoUpdaterRunningSet = new HashSet<>();
+
 	private static ReentrantLockPool lockPool = new ReentrantLockPool();
 	private List<Cidr> ciderList = null;
-	
+
 	private boolean nodeAssign = false;
 	private boolean removeMissing = false;
 	private boolean nodeRegist = HinemosPropertyCommon.xcloud_autoregist_node_instance.getBooleanValue();
 	private boolean nodeDelete = HinemosPropertyCommon.xcloud_autodelete_node_instance.getBooleanValue();
 	private boolean instanceDelete = HinemosPropertyCommon.xcloud_autodelete_instance.getBooleanValue();
-	
+
+
+	/**
+	 * コンストラクタ
+	 */
 	public InstanceUpdater() {
+		logger.debug("constructor start.");
+
+		if (logger.isTraceEnabled()) {
+			logger.trace("constructor: agentAutoUpdaterRunningSet=" + Arrays.toString(agentAutoUpdaterRunningSet.toArray()));
+		}
+
+		synchronized (autoUpdateAgentExecutorLock) {
+			if (autoUpdateAgentExecutor == null) {
+				Integer threadSize =  HinemosPropertyCommon.xcloud_autoupdate_agent_threadpool_size.getIntegerValue();
+				logger.debug("constructor: threadSize=" + threadSize);
+				autoUpdateAgentExecutor = new MonitoredThreadPoolExecutor(threadSize, threadSize, 0L, TimeUnit.MILLISECONDS,
+						new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
+							private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+							// スレッド名を設定するためにオーバライド
+							@Override
+							public Thread newThread(Runnable r) {
+								return new Thread(r, AgentAutoUpdaterTreadName + threadNumber.getAndIncrement());
+							}
+						});
+			}
+		}
 	}
-	
+
 	public InstanceUpdater setNodeAssine(boolean nodeAssign) {
 		this.nodeAssign = nodeAssign;
 		return this;
@@ -451,7 +500,7 @@ public class InstanceUpdater {
 				instanceEntity.getName() == null || instanceEntity.getName().isEmpty() ? instanceEntity.getResourceId(): instanceEntity.getName(),
 				instanceEntity.getPlatform() == Instance.Platform.unknown ? Instance.Platform.other.label() : instanceEntity.getPlatform().label(),
 				cloudScope.getPlatformId(),
-				platformInstance.getHostName() != null ? platformInstance.getHostName(): instanceEntity.getResourceId(),
+				platformInstance.getHostName() != null ? SearchNodeBySNMP.getShortName(platformInstance.getHostName()): instanceEntity.getResourceId(),
 				ActionMode.isAutoDetection() ? "Hinemos Auto Registered": "",
 				cloudScope.getPlatformId(),
 				cloudScope.getId(),
@@ -554,6 +603,8 @@ public class InstanceUpdater {
 	}
 	
 	public InstanceEntity updateInstanceEntity(LocationEntity location, InstanceEntity instanceEntity, IResourceManagement.Instance platformInstance) throws CloudManagerException {
+		logger.debug("updateInstanceEntity() start, instanceEntity=" + instanceEntity);
+
 		// 登録済みの情報を更新。
 		String instanceName = null;
 		if (platformInstance.getName() == null) {
@@ -650,7 +701,7 @@ public class InstanceUpdater {
 				
 				if (HinemosPropertyCommon.xcloud_node_property_nodename_update.getBooleanValue()) {
 					String oldValue = nodeInfo.getNodeName();
-					String newValue = platformInstance.getHostName() != null ? platformInstance.getHostName(): instanceEntity.getResourceId();
+					String newValue = platformInstance.getHostName() != null ? SearchNodeBySNMP.getShortName(platformInstance.getHostName()): instanceEntity.getResourceId();
 					if((null==oldValue && null!=newValue) || (null!=oldValue && !oldValue.equals(newValue))){
 
 						// ノード名更新の要否を判定(クラウド自動検知が優先、または対象ノードの自動デバイスサーチが無効の場合に更新する)
@@ -762,8 +813,25 @@ public class InstanceUpdater {
 					if(!isExcluded){
 						boolean oldValue = nodeInfo.getValid();
 						boolean newValue = InstanceStatus.running == instanceEntity.getInstanceStatus();
+						boolean isTarget = true;
 
-						if(oldValue!=newValue){
+						if (HinemosPropertyCommon.xcloud_node_property_cloud_validflag_update_ipaddress
+								.getBooleanValue()) {
+							// コンピュートノードが起動 かつ IPアドレスが取得できない場合
+							if (newValue && instanceEntity.getIpAddresses().isEmpty()) {
+								// 管理対象フラグがtrueであれば無効化する
+								if (oldValue) {
+									nodeInfo.setValid(false);
+									String[] args = { nodeInfo.getFacilityName(), nodeInfo.getFacilityId() };
+									CloudUtil.notifyInternalMessage(InternalIdCloud.CLOUD_SYS_008, args, "");
+									changeLog.append("ValidFlg:").append(oldValue).append("->").append(newValue)
+											.append(";");
+								}
+								isTarget = false;
+							}
+						}
+						// isTargetがtrueであれば起動状態と管理対象フラグの状態によって更新する
+						if (isTarget && oldValue != newValue) {
 							nodeInfo.setValid(newValue);
 							changeLog.append("ValidFlg:").append(oldValue).append("->").append(newValue).append(";");
 						}
@@ -835,25 +903,96 @@ public class InstanceUpdater {
 				targetFacilityIpAddress = nodeInfo.getAvailableIpAddress();
 			}
 		}
-		
+		logger.debug("updateInstanceEntity() instanceEntity=" + instanceEntity);
+
+		boolean isAutoupdate = HinemosPropertyCommon.xcloud_autoupdate_agent.getBooleanValue();
+		logger.debug("updateInstanceEntity() xcloud_autoupdate_agent=" + isAutoupdate);
 		// Try to fish agent
-		if(null!=targetFacilityId && HinemosPropertyCommon.xcloud_autoupdate_agent.getBooleanValue()){
+		if (null != targetFacilityId && isAutoupdate) {
+			synchronized (agentAutoUpdaterRunningSet) {
+				if (logger.isTraceEnabled()) {
+					logger.trace("updateInstanceEntity() agentAutoUpdaterRunningSet=" + Arrays.toString(agentAutoUpdaterRunningSet.toArray()));
+				}
+				if (agentAutoUpdaterRunningSet.contains(targetFacilityId)) {
+					// 既に実行中の場合は実行しない
+					logger.info("updateInstanceEntity() agent updater is already running, so skip. targetFacilityId=" + targetFacilityId);
+				} else {
+					agentAutoUpdaterRunningSet.add(targetFacilityId);
+					autoUpdateAgentExecutor.execute(new AgentAutoUpdater(
+							this, targetFacilityId, targetFacilityIpAddress, targetFacilityIpAddressVersion));
+				}
+			}
+		}
+
+		logger.debug("updateInstanceEntity() end, return instanceEntity=" + instanceEntity);
+		return instanceEntity;
+	}
+
+	/**
+	 * Hinemosエージェント接続機能
+	 */
+	private static class AgentAutoUpdater extends Thread {
+		InstanceUpdater instanceUpdater;
+		String facilityId;
+		String ipAddress;
+		Integer ipAddressVersion;
+
+
+		/**
+		 * コンストラクタ
+		 *
+		 * @param instanceUpdater
+		 * @param facilityId
+		 * @param ipAddress
+		 * @param ipAddressVersion
+		 */
+		public AgentAutoUpdater(InstanceUpdater instanceUpdater, String facilityId, String ipAddress, Integer ipAddressVersion) {
+			this.instanceUpdater = instanceUpdater;
+			this.facilityId = facilityId;
+			this.ipAddress = ipAddress;
+			this.ipAddressVersion = ipAddressVersion;
+		}
+
+		/**
+		 * 実行
+		 */
+		public void run() {
+			try {
+				updateAgent(this.facilityId, this.ipAddress, this.ipAddressVersion);
+			} catch (Throwable e) {
+				logger.error("run() error occurred, e=" + e, e);
+			} finally {
+				this.instanceUpdater.removeFromAgentAutoUpdaterRunningSet(this.facilityId);
+			}
+		}
+
+		/**
+		 * 設定を確認し、エージェントに接続後、マネージャの情報を送信する。
+		 *
+		 * @param facilityId 対象エージェントのファシリティID
+		 * @param ipAddress 対象エージェントのIPアドレス（0.0.0.0/32 の場合は全通し）
+		 * @param ipAddressVersion IPアドレスのバージョン（6：IPv6の場合は全通し）
+		 */
+		private void updateAgent(String facilityId, String ipAddress, Integer ipAddressVersion) {
+			logger.debug("updateAgent("
+					+ "facilityId=" + facilityId + ", ipAddress=" + ipAddress + ", ipAddressVersion=" + ipAddressVersion + ")");
+
 			// cidr filter
 			boolean isMatch = false;
 			String autoupdateAgentCidr = HinemosPropertyCommon.xcloud_autoupdate_agent_cidr.getStringValue();
 			if ("0.0.0.0/32".equals(autoupdateAgentCidr)) {
 				// 設定値が 0.0.0.0/32 の場合は全通し
 				isMatch = true;
-			} else if (targetFacilityIpAddressVersion != null && targetFacilityIpAddressVersion.intValue() == 6) {
+			} else if (ipAddressVersion != null && ipAddressVersion.intValue() == 6) {
 				// 対象がIPv6の場合は全通し
 				isMatch = true;
 			} else {
 				try {
 					List<String> cidrStrList = Arrays.asList(autoupdateAgentCidr.split(","));
-					
+
 					for (String cidrStr : cidrStrList) {
 						Cidr cidr = new Cidr(cidrStr);
-						isMatch = cidr.matches(targetFacilityIpAddress);
+						isMatch = cidr.matches(ipAddress);
 						if (isMatch) {
 							break;
 						}
@@ -864,22 +1003,39 @@ public class InstanceUpdater {
 					isMatch = true;
 				}
 			}
-			if(isMatch && !AgentConnectUtil.isValidAgent(targetFacilityId)) {
+			logger.debug("updateAgent() isMatch=" + isMatch + ", facilityId=" + facilityId);
+			if (isMatch && !AgentConnectUtil.isValidAgent(facilityId)) {
 				try {
-					if(AgentConnectUtil.sendManagerDiscoveryInfo(targetFacilityId)){
-						logger.info("Found agent. facilityId=" + targetFacilityId);
-					}else{
-						logger.trace("No agent found. facilityId=" + targetFacilityId);
+					logger.debug("updateAgent() matched and not valid agent. facilityId=" + facilityId);
+					if (AgentConnectUtil.sendManagerDiscoveryInfo(facilityId)) {
+						logger.info("updateAgent() Found agent. facilityId=" + facilityId);
+					} else {
+						logger.debug("updateAgent() No agent found. facilityId=" + facilityId);
 					}
 				} catch (IOException e) {
 					logger.error(e);
 				}
 			}
 		}
-		
-		return instanceEntity;
 	}
-	
+
+	/**
+	 * Hinemosエージェント設定ファイル更新スレッドの実行管理から該当ファシリティIDを削除する
+	 *
+	 * @param facilityId
+	 */
+	public void removeFromAgentAutoUpdaterRunningSet(String facilityId) {
+		synchronized (agentAutoUpdaterRunningSet) {
+			logger.debug("removeFromAgentAutoUpdaterRunningSet() removing from agentAutoUpdaterRunningSet. facilityId=" + facilityId);
+			if (!agentAutoUpdaterRunningSet.remove(facilityId)) {
+				logger.debug("removeFromAgentAutoUpdaterRunningSet() not contains at agentAutoUpdaterRunningSet. facilityId=" + facilityId);
+			}
+			if (logger.isTraceEnabled()) {
+				logger.trace("removeFromAgentAutoUpdaterRunningSet() after removing. agentAutoUpdaterRunningSet=" + Arrays.toString(agentAutoUpdaterRunningSet.toArray()));
+			}
+		}
+	}
+
 	public List<InstanceEntity> transactionalUpdateInstanceEntities(LocationEntity location, CloudLoginUserEntity user, List<InstanceEntity> instances, List<IResourceManagement.Instance> platformInstances) throws CloudManagerException {
 		return  transactionalUpdateInstanceEntities(location, user, instances, platformInstances, new InstanceUpdatorCallback() {
 			@Override
@@ -895,15 +1051,19 @@ public class InstanceUpdater {
 	}
 	
 	/**
+	 * 自動検知の際、コンピュートノードの更新等を行う。
 	 * 
-	 * @param instances in Hinemos DB
-	 * @param platformInstances on AWS
+	 * @param location
+	 * @param user
+	 * @param instances Hinemos側のコンピュートノードリスト（cc_cfg_xcloud_instanceテーブルのEntity）
+	 * @param platformInstances クラウド側のコンピュートノードリスト
+	 * @param callback
 	 * @return
 	 * @throws CloudManagerException
 	 */
 	public List<InstanceEntity> transactionalUpdateInstanceEntities(LocationEntity location, CloudLoginUserEntity user, List<InstanceEntity> instances, List<IResourceManagement.Instance> platformInstances, InstanceUpdatorCallback callback) throws CloudManagerException {
 		if(logger.isDebugEnabled()){
-			logger.debug(String.format("Transactional update. Compare %d instances with %d platform instances...", instances.size(), instances.size()));
+			logger.debug(String.format("Transactional update. Compare %d instances with %d platform instances...", instances.size(), platformInstances.size()));
 		}
 		
 		final List<LocationResourceEntity.LocationResourceEntityPK> updateds = new ArrayList<>();
@@ -919,7 +1079,7 @@ public class InstanceUpdater {
 					
 					//　EntityManager が切り替わっているので、再度取得。
 					InstanceEntity instance = em.find(InstanceEntity.class, o1.getId(), ObjectPrivilegeMode.READ);
-					logger.debug("Update "+instance.getResourceId());
+					logger.debug(String.format("Update %s (instanceStatus: %s)", instance.getResourceId(), o2.getInstanceStatus()));
 					
 					InstanceEntity updated = updateInstanceEntity(location, instance, o2);
 					if (updated != null){
@@ -995,6 +1155,17 @@ public class InstanceUpdater {
 		return updatedInstances;
 	}
 	
+	/**
+	/**
+	 * クラウド側で削除されたコンピュートノードに対応するノードについて操作を行う。
+	 * Hinemosプロパティの設定により、ノードの削除、管理対象フラグをOFF、スコープから解除を行う。
+	 * 
+	 * @param location
+	 * @param user
+	 * @param instance クラウド側で削除されたコンピュートノード（cc_cfg_xcloud_instanceテーブルのEntity）
+	 * @return
+	 * @throws CloudManagerException
+	 */
 	public InstanceEntity disableInstanceEntity(LocationEntity location, CloudLoginUserEntity user, InstanceEntity instance) throws CloudManagerException {
 		if (instanceDelete || (instance.getInstanceStatus().equals(InstanceStatus.missing)) && removeMissing) {
 			try (RemovedEventNotifier<InstanceEntity> notifier = new RemovedEventNotifier<>(InstanceEntity.class, Event_Instance, instance)) {
@@ -1038,8 +1209,16 @@ public class InstanceUpdater {
 								ExtendedProperty ep = addition.getExtendedProperties().get(CloudConstants.EPROP_CloudScope);
 								if (ep == null || !ep.getValue().equals(Session.current().get(CloudScopeEntity.class).getId()))
 									continue;
-								
+								// スコープから解除
 								RepositoryControllerBeanWrapper.bean().releaseNodeScope(Session.current().get(CloudScopeEntity.class).getId(), new String[]{instance.getFacilityId()});
+							}
+							
+							// ノードの管理対象フラグをOFFにする
+							if (HinemosPropertyCommon.xcloud_node_property_cloud_validflag_update.getBooleanValue()) {
+								logger.info("disableInstanceEntity() Compute node deleted, so set Node validflag to false. FacilityID=" + instance.getFacilityId());
+								NodeInfo info = RepositoryControllerBeanWrapper.bean().getNode(instance.getFacilityId());
+								info.setValid(false);
+								RepositoryControllerBeanWrapper.bean().modifyNode(info);
 							}
 						}
 					} catch (Exception e) {

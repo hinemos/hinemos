@@ -574,4 +574,20 @@ public class QueryUtil {
 			return list;
 		}
 	}
+
+	/**
+	 * 指定したオーナーロールIDが設定されたSDML制御設定の一覧を取得
+	 * 
+	 * @param ownerRoleId
+	 * @return
+	 */
+	public static List<SdmlControlSettingInfo> getSdmlControlSettingInfoFindByOwnerRoleId_NONE(String ownerRoleId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<SdmlControlSettingInfo> list = em.createNamedQuery("SdmlControlSettingInfo.findByOwnerRoleId",
+					SdmlControlSettingInfo.class, ObjectPrivilegeMode.NONE).setParameter("ownerRoleId", ownerRoleId)
+					.getResultList();
+			return list;
+		}
+	}
 }

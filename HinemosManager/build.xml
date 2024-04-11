@@ -7,6 +7,8 @@
 <project name="HinemosManager" default="all" basedir=".">
 
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<property file="../HinemosCommon/ant_config/build_common_version.properties" />
+	
 	<import file="../HinemosCommon/ant_config/build_common.xml"/>
 	<import file="platform_switch/switch.xml"/>
 
@@ -33,7 +35,8 @@
 	<property name="jar.rest.proxy.tests" value="openapi-java-client-tests.jar" />
 	<property name="jar.rest.proxy.javadoc" value="openapi-java-client-javadoc.jar" />
 	<!-- Dependency -->
-	<target name="dependency" depends="check_dependency">
+	<target name="dependency" depends="check_version_propertires, check_dependency">
+		<fail unless="version.properties.built" message="file not found. (HinemosCommon/build_common_version.properties)" />
 		<fail unless="HinemosCommon.built" message="file not found. (HinemosCommon/${jar.HinemosCommon})" />
 	</target>
 
@@ -41,6 +44,7 @@
 	<path id="id.compile.classpath.local">
 		<fileset dir="../">
 			<include name="HinemosCommon/${jar.dir}/${jar.HinemosCommon}" />
+			<include name="HinemosCommon/${jar.dir}/${jar.Version}" />
 		</fileset>
 		<fileset dir="./lib">
 			<include name="**/*.jar" />

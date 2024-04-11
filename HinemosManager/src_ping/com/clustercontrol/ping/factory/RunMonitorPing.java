@@ -762,6 +762,7 @@ public class RunMonitorPing extends RunMonitorNumericValueType {
 					if (!m_isMonitorJob) {
 						ret.add(createOutputBasicInfo(true, facilityId, checkResult, new Date(m_nodeDate)));
 					} else {
+						// 監視ジョブの場合は、最初に取得できた結果を設定して処理終了
 						m_monitorRunResultInfo = new MonitorRunResultInfo();
 						MonitorJudgementInfo info = m_judgementInfoList.get(checkResult);
 						if(info != null){
@@ -772,6 +773,7 @@ public class RunMonitorPing extends RunMonitorNumericValueType {
 						}
 						m_monitorRunResultInfo.setMessageOrg(makeJobOrgMessage(m_messageOrg, m_message));
 						m_monitorRunResultInfo.setNodeDate(m_nodeDate);
+						return ret;
 					}
 
 					if (m_monitor.getCollectorFlg()
@@ -925,10 +927,12 @@ public class RunMonitorPing extends RunMonitorNumericValueType {
 							if (!m_isMonitorJob) {
 								ret.add(createOutputBasicInfo(true, targetFacility, checkResult, new Date(m_nodeDate)));
 							} else {
+								// 監視ジョブの場合は、最初に取得できた結果を設定して処理終了
 								m_monitorRunResultInfo = new MonitorRunResultInfo();
 								m_monitorRunResultInfo.setPriority(checkResult);
 								m_monitorRunResultInfo.setMessageOrg(makeJobOrgMessage(m_messageOrg, m_message));
 								m_monitorRunResultInfo.setNodeDate(m_nodeDate);
+								return ret;
 							}
 
 							if (m_monitor.getCollectorFlg()

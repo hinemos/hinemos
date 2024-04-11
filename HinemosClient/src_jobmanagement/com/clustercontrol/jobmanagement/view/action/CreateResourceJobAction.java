@@ -131,25 +131,9 @@ public class CreateResourceJobAction extends AbstractHandler implements IElement
 							null,
 							Messages.getString("warning"),
 							Messages.getString("message.xcloud.required"));			}
-			} catch (InvalidRole | InvalidUserPass e) {
+			} catch (Exception e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						e.getMessage());
-				return null;
-			} catch (HinemosUnknown e) {
-				if(UrlNotFound.class.equals(e.getCause().getClass())) {
-					MessageDialog.openInformation(null, Messages.getString("message"),
-							Messages.getString("message.xcloud.required"));
-					return null;
-				} else {
-					MessageDialog.openInformation(null, Messages.getString("message"),
-							e.getMessage());
-					return null;
-				}
-			} catch (Exception e) {
-				// キーファイルを確認できませんでした。処理を終了します。
-				// Key file not found. This process will be terminated.
-				MessageDialog.openInformation(null, Messages.getString("message"),
-						Messages.getString("message.xcloud.required"));
 				return null;
 			}
 			JobInfoWrapper jobInfo = JobTreeItemUtil.getNewJobInfo(parent.getData().getJobunitId(),

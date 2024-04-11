@@ -351,6 +351,116 @@ public class JobUtil {
 	}
 
 	/**
+	 * ジョブツリーアイテムからジョブユニットIDが一致するインスタンスの有無を返す<BR>
+	 * ジョブユニットIDがnullもしくは空文字の場合はfalseにする
+	 *
+	 * @param jobunitId ジョブユニットID
+	 * @param item ジョブツリーアイテム(マネージャ)
+	 * @return ジョブユニットIDが一致するジョブユニットが存在すればtrue、なければfalse
+	 */
+	public static boolean findJobunitId(String jobunitId, JobTreeItemWrapper managerItem) {
+		boolean find = false;
+
+		if (jobunitId == null || jobunitId.isEmpty()) {
+			return find;
+		}
+
+		List<JobTreeItemWrapper> jobunits = managerItem.getChildren();
+
+		for (JobTreeItemWrapper jobunit : jobunits) {
+			if (jobunitId.equals(jobunit.getData().getJobunitId())) {
+				find = true;
+				break;
+			}
+		}
+		return find;
+	}
+
+	/**
+	 * インポート先のジョブツリーアイテムと重複するジョブIDを検索する<BR>
+	 *
+	 * @param sourceItem インポート元のジョブツリーアイテム
+	 * @param destItem インポート先のジョブツリーアイテム
+	 * @return 重複しているジョブID
+	 */
+	public static HashSet<String> findDuplicateJobId(
+			JobTreeItemWrapper sourceItem, JobTreeItemWrapper destItem) {
+		JobTreeItemWrapper destTopItem = null;
+		if (destItem.getData().getType().equals(JobInfoWrapper.TypeEnum.JOBUNIT)) {
+			destTopItem = destItem;
+		} else {
+			destTopItem = getTopJobUnitTreeItem(destItem);
+		}
+		return findDuplicateJobId(sourceItem, destTopItem, new HashSet<String>());
+	}
+
+	/**
+	 * インポート先のジョブツリーアイテムと重複するジョブIDを検索する<BR>
+	 *
+	 * @param sourceItem インポート元のジョブツリーアイテム
+	 * @param destItem インポート先のジョブツリーアイテム
+	 * @return 重複しているジョブID
+	 */
+	private static HashSet<String> findDuplicateJobId(
+			JobTreeItemWrapper sourceItem, JobTreeItemWrapper destItem, HashSet<String> duplicateJobIds) {
+
+		if(sourceItem.getData() != null){
+			String jobId = sourceItem.getData().getId();
+			if(findJobId(jobId, destItem)){
+				if (duplicateJobIds == null) {
+					duplicateJobIds = new HashSet<>();
+				}
+				duplicateJobIds.add(jobId);
+			}
+			for (JobTreeItemWrapper child : sourceItem.getChildren()) {
+				duplicateJobIds = findDuplicateJobId(child, destItem, duplicateJobIds);
+			}
+		}
+		return duplicateJobIds;
+	}
+
+	/**
+	 * ジョブツリーアイテム内で重複するジョブIDを検索する<BR>
+	 *
+	 * @param item ジョブツリーアイテム
+	 * @return 重複しているジョブID
+	 */
+	public static HashSet<String> findDuplicateJobId(JobTreeItemWrapper item) {
+		return findDuplicateJobId(item, new HashSet<String>(), new HashSet<String>());
+	}
+
+	/**
+	 * ジョブツリーアイテム内で重複するジョブIDを検索する<BR>
+	 *
+	 * @param item ジョブツリーアイテム
+	 * @param jobIds ジョブツリーアイテム内のジョブID
+	 * @return 重複しているジョブID
+	 */
+	private static HashSet<String> findDuplicateJobId(
+			JobTreeItemWrapper item, HashSet<String> jobIds, HashSet<String> duplicateJobIds) {
+
+		if(item.getData() != null){
+			String jobId = item.getData().getId();
+
+			if(jobIds != null && jobIds.contains(jobId)){
+				if (duplicateJobIds == null) {
+					duplicateJobIds = new HashSet<>();
+				}
+				duplicateJobIds.add(jobId);
+			} else {
+				if (jobIds == null) {
+					jobIds = new HashSet<String>();
+				}
+				jobIds.add(jobId);
+				for (JobTreeItemWrapper child : item.getChildren()) {
+					duplicateJobIds = findDuplicateJobId(child, jobIds, duplicateJobIds);
+				}
+			}
+		}
+		return duplicateJobIds;
+	}
+
+	/**
 	 * ジョブツリーアイテム内のジョブIDが一致するインスタンスの有無を返す<BR>
 	 *
 	 * @param item ジョブツリーアイテム

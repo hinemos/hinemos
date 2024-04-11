@@ -583,6 +583,12 @@ public class FileComposite extends Composite {
 		//ユーザー取得
 		if (m_agentUser.getSelection()) {
 			m_jobFileInfo.setSpecifyUser(false);
+			
+			//実行ユーザー名が設定されている場合、m_agentUserに関わらず設定する
+			if (m_user.getText().length() > 0) {
+				m_jobFileInfo.setUser(m_user.getText());
+			}
+			
 		} else {
 			if (m_user.getText().length() > 0) {
 				m_jobFileInfo.setSpecifyUser(true);

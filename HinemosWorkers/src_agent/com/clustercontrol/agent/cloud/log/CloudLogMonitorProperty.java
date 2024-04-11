@@ -28,7 +28,6 @@ public class CloudLogMonitorProperty {
 	private static final String RETRY_THRESHOLD = "xcloud.log.connection.timeout.retry.threshold";
 	private static final String MISSING_ENABLE = "xcloud.log.acquire.missing.enable";
 	private static final String MISSING_PERIOD = "xcloud.log.acquire.missing.period";
-	private static final String CARRYOVER_LENGTH =  "xcloud.log.mem.carryover.line.count";
 	private static final String AWAIT_TERMINATION =  "xcloud.log.await.termination.period";
 	private static final String AWS_CLIENT_RETRY = "xcloud.aws.client.connection.retry";
 	private static final String AWS_MAX_CONNECTION = "xcloud.aws.client.config.maxConnections";
@@ -55,7 +54,6 @@ public class CloudLogMonitorProperty {
 	private int retryThreshold;
 	private boolean isMissingEnable;
 	private long missingPeriod;
-	private int carryoverLength;
 	private long awaitTerminationPeriod;
 	private int aws_max_connection;
 	private int aws_client_retry;
@@ -125,12 +123,6 @@ public class CloudLogMonitorProperty {
 		} catch (Exception e) {
 			missingPeriod = 3600000;
 			m_log.warn("CloudLogMonitorProperty(): Failed loading" + MISSING_PERIOD + ". Use default");
-		}
-		try {
-			carryoverLength = Integer.parseInt(AgentProperties.getProperty(CARRYOVER_LENGTH, "15"));
-		} catch (Exception e) {
-			carryoverLength = 15;
-			m_log.warn("CloudLogMonitorProperty(): Failed loading" + CARRYOVER_LENGTH + ". Use default");
 		}
 		try {
 			awaitTerminationPeriod = Long.parseLong(AgentProperties.getProperty(AWAIT_TERMINATION, "15000"));
@@ -247,10 +239,7 @@ public class CloudLogMonitorProperty {
 		return missingPeriod;
 	}
 
-	public int getCarryoverLength(){
-		return carryoverLength ;
-	}
-	
+
 	public long getAwaitTerminationPeriod(){
 		return awaitTerminationPeriod ;
 	}

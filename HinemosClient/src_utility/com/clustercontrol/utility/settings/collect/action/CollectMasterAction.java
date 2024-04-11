@@ -12,6 +12,7 @@ package com.clustercontrol.utility.settings.collect.action;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
@@ -67,12 +68,9 @@ import com.clustercontrol.utility.settings.master.xml.CollectorItemCodes;
 import com.clustercontrol.utility.settings.master.xml.CollectorItems;
 import com.clustercontrol.utility.settings.master.xml.PollingCollector;
 import com.clustercontrol.utility.settings.model.BaseAction;
-import com.clustercontrol.utility.settings.ui.util.ImportProcessMode;
 import com.clustercontrol.utility.ui.dialog.MessageDialogWithScroll;
 import com.clustercontrol.utility.util.Config;
-import com.clustercontrol.utility.util.ImportClientController;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.utility.util.UtilityRestClientWrapper;
 import com.clustercontrol.utility.util.XmlMarshallUtil;
 
 /**
@@ -233,6 +231,11 @@ public class CollectMasterAction {
 			log.debug("End Import CollectMaster : " + fileName +"(Error)");
 			return ret;
 		} catch (FileNotFoundException e1) {
+			log.error(Messages.getString("CollectMaster.UnmarshalXmlFailed") + " " + e1.getMessage(),e1);
+			ret = SettingConstants.ERROR_INPROCESS;
+			log.debug("End Import CollectMaster : " + fileName +"(Error)");
+			return ret;
+		} catch (IOException e1) {
 			log.error(Messages.getString("CollectMaster.UnmarshalXmlFailed") + " " + e1.getMessage(),e1);
 			ret = SettingConstants.ERROR_INPROCESS;
 			log.debug("End Import CollectMaster : " + fileName +"(Error)");

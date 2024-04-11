@@ -52,6 +52,7 @@ import com.clustercontrol.utility.settings.cloud.xml.Vmware;
 import com.clustercontrol.utility.settings.cloud.xml.VmwareUser;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
 import com.clustercontrol.xcloud.bean.CloudConstant;
 import com.clustercontrol.xcloud.bean.CloudConstant.HyperVProtocol;
 import com.clustercontrol.xcloud.model.CloudModelException;
@@ -59,9 +60,15 @@ import com.clustercontrol.xcloud.model.cloud.ILoginUser;
 
 public class CloudUserConv {
 	
-	private static final String schemaType="I";
-	private static final String schemaVersion="1";
-	private static final String schemaRevision="2";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	private static final String schemaType=VersionUtil.getSchemaProperty("CLOUD.CLOUDUSER.SCHEMATYPE");
+	private static final String schemaVersion=VersionUtil.getSchemaProperty("CLOUD.CLOUDUSER.SCHEMAVERSION");
+	private static final String schemaRevision=VersionUtil.getSchemaProperty("CLOUD.CLOUDUSER.SCHEMAREVISION");
 
 	/* キー情報保護 */
 	private static boolean HP_EXPIMP_XCLOUD_KEYPROTECT_ENABLE_DEFAULT = false;

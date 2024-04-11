@@ -14,9 +14,11 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
+import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.jobmanagement.util.RpaJobWorker;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.util.Singletons;
@@ -60,6 +62,11 @@ public class JobInitializerPlugin implements HinemosPlugin {
 
 			// 実行途中のリソース制御ジョブを別スレッドで再実行
 			ResourceJobWorker.restartRunningJob();
+
+			// 監視ジョブマップ生成
+			if (HinemosPropertyCommon.job_monitor_restart.getBooleanValue()) {
+				MonitorJobWorker.restartMonitorJob();
+			}
 
 			jtm.commit();
 		} catch (Exception e) {

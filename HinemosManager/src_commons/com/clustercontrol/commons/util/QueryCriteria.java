@@ -322,7 +322,8 @@ public abstract class QueryCriteria {
 				}
 			}
 			regex.append("\\E");
-			return Pattern.matches(regex.toString(), subject);
+			Pattern p = Pattern.compile(regex.toString(), Pattern.DOTALL);
+			return p.matcher(subject).matches();
 		} else {
 			return pattern.equals(subject);
 		}

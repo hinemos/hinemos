@@ -702,7 +702,7 @@ public class RpaDirectScenarioComposite extends Composite {
 		this.m_scopeJobParamRadio.setEnabled(enabled);
 		this.m_scopeJobParamText.setEditable(m_scopeJobParamRadio.getSelection() && enabled);
 		this.m_scopeFixedValueRadio.setEnabled(enabled);
-		this.m_scopeFixedValueSelectButton.setEnabled(enabled);
+		this.m_scopeFixedValueSelectButton.setEnabled(m_scopeFixedValueRadio.getSelection() && enabled);
 		this.m_allNode.setEnabled(enabled);
 		this.m_retry.setEnabled(enabled);
 		this.m_rpaToolComboViewer.getCombo().setEnabled(enabled);

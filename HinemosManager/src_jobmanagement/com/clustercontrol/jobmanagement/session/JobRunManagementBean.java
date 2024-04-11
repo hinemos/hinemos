@@ -186,6 +186,13 @@ public class JobRunManagementBean {
 		return lm.create(JobSessionImpl.class.getName() + "-" + sessionId);
 	}
 
+	/**
+	 * 本メソッドは定周期(毎分0秒)に実行される
+	 * @throws HinemosUnknown
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 * @throws FacilityNotFound
+	 */
 	private void runSub() throws HinemosUnknown, JobInfoNotFound, InvalidRole, FacilityNotFound {
 		m_log.debug("runSub() start");
 
@@ -216,12 +223,17 @@ public class JobRunManagementBean {
 				jtm.close();
 		}
 
-		// 実行中のジョブセッションをチェック。（待ち条件に時刻が入っていることがあるので。）
+		// 待ち条件／開始遅延／終了遅延のチェック
+		// キャッシュの状態によって、ジョブセッションごとに以下を呼び分けている
+		// ・待機中、実行中、実行中(キュー待機)のジョブに対して「待ち条件／開始遅延／終了遅延のチェック」（runningCheck）を実施
+		// ・待ち条件「ジョブ変数」、「セッション横断ジョブ」が設定されてジョブに対して「待ち条件／開始遅延／終了遅延のチェック」（waitingCheck）を実施
 		long from = HinemosTime.currentTimeMillis();
 		for (String sessionId : unendSessionIdList) {
 			m_log.trace("run() unendSessionId=" + sessionId);
 			Boolean doRunningCheck = true;
 			if (!JobSessionJobImpl.checkRemoveForceCheck(sessionId)) {
+				// 強制チェック対象ジョブキャッシュ（JobSessionJobImpl#getForceCheckCache()）にない場合は、
+				// 時刻判定用キャッシュ(JobSessionJobImpl#checkTimeMap)の時刻を元に実施要否を判定
 				if (JobSessionJobImpl.isSkipCheck(sessionId)) {
 					doRunningCheck = false;
 				}
@@ -235,11 +247,11 @@ public class JobRunManagementBean {
 					jtm = new JpaTransactionManager();
 					jtm.begin();
 					if (doRunningCheck) {
-						//待機中、実行中のジョブをチェック
+						// 待機中、実行中、実行中(キュー待機)のジョブに対して「待ち条件／開始遅延／終了遅延のチェック」
 						new JobSessionImpl().runningCheck(sessionId);
 					} else {
-						//待機中のジョブをチェック
-						//ジョブ変数、セッション横断待ち条件が設定されているジョブのみ待ち条件をチェックする
+						// 待機中のジョブをチェック
+						// 待ち条件「ジョブ変数」、「セッション横断ジョブ」が設定されてジョブに対して「待ち条件／開始遅延／終了遅延のチェック」
 						new JobSessionImpl().waitingCheck(sessionId);
 					}
 					jtm.commit();
@@ -399,6 +411,7 @@ public class JobRunManagementBean {
 					continue;
 				}
 			}
+			jtm.commit();
 		} catch (Exception e) {
 			m_log.warn("runSub() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);

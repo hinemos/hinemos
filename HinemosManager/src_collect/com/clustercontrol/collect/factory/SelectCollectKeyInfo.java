@@ -17,6 +17,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
 import com.clustercontrol.collect.bean.CollectConstant;
+import com.clustercontrol.collect.model.CollectKeyInfo;
 import com.clustercontrol.collect.model.CollectKeyInfoPK;
 import com.clustercontrol.collect.util.QueryUtil;
 import com.clustercontrol.commons.util.HinemosSessionContext;
@@ -134,5 +135,24 @@ public class SelectCollectKeyInfo {
 			}
 		}
 		return retCollectList;
+	}
+
+	/**
+	 * 
+	 * 指定された収集項目情報を取得します。<br>
+	 * 
+	 * ここでは権限による可視性の検証は行いません。<br>
+	 * 必要に応じて呼び出し元で実施してください。<br>
+	 * 
+	 * @param itemName
+	 * @param displayName
+	 * @param monitorId
+	 * @param facilityId
+	 * @return
+	 * @throws CollectKeyNotFound
+	 */
+	public CollectKeyInfo getCollectKeyInfo(String itemName, String displayName, String monitorId, String facilityId)
+			throws CollectKeyNotFound {
+		return QueryUtil.getCollectKeyPK(new CollectKeyInfoPK(itemName, displayName, monitorId, facilityId));
 	}
 }

@@ -43,6 +43,7 @@ import com.clustercontrol.repository.model.FacilityRelationEntity;
 import com.clustercontrol.repository.model.FacilityRelationEntityPK;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
+import com.clustercontrol.repository.util.QueryUtil;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.Session;
 import com.clustercontrol.xcloud.Session.PostCommitAction;
@@ -581,15 +582,38 @@ public class RepositoryUtil {
 					try {
 						// スコープの存在チェック
 						RepositoryControllerBeanWrapper.bean().getScope(entry.getKey());
+						
+						// クラウドスコープのオーナーロールIDがスコープに対してリポジトリ - 変更権限があるか確認
+						QueryUtil.getFacilityPK_OR(entry.getKey(), cloudScope.getOwnerRoleId(), ObjectPrivilegeMode.MODIFY);
 					} catch (FacilityNotFound e) {
 						Logger logger = Logger.getLogger(RepositoryUtil.class);
 						logger.warn(String.format("Not found scope to relate to nodes. scopeId=%s,nodeIds=%s", entry.getKey(), entry.getValue()));
-						String[] args = {entry.getValue().toString(),entry.getKey()};
+						
 						//internal event notify
+						StringBuilder msgBuilder = new StringBuilder();
+						msgBuilder.append(InternalIdCloud.CLOUD_SYS_002.getMessage())
+								.append(" ")
+								.append("(ScopeId=")
+								.append(entry.getValue().toString())
+								.append(", InstanceId=")
+								.append(entry.getKey())
+								.append(")");
+						
 						CloudUtil.notifyInternalMessage(
 								InternalIdCloud.CLOUD_SYS_002,
-								args,
+								msgBuilder.toString(),
 								""
+								);
+						continue;
+					} catch (InvalidRole e) {
+						Logger.getLogger(RepositoryUtil.class).warn(String.format(
+								"Unable to assign scope. Because cloudScope doesn't have privilege scopeId=%s, nodeIds=%s", entry.getKey(), entry.getValue().toString()));
+
+						//internal event notify
+						CloudUtil.notifyInternalMessage(
+								InternalIdCloud.CLOUD_SYS_009,
+								CloudMessageConstant.VALIDATION_SCOPE_INVALID_ROLE.getMessage() + "\n" +
+									String.format("CloudScopeID=%s,\nCloudScope OwnerRoleID=%s,\nScopeID=%s,\nnodeIDs=%s", cloudScope.getCloudScopeId(), cloudScope.getOwnerRoleId(),entry.getKey(),entry.getValue())
 								);
 						continue;
 					}
@@ -622,7 +646,7 @@ public class RepositoryUtil {
 							}
 						}
 					});
-				} catch (HinemosUnknown | InvalidRole e) {
+				} catch (HinemosUnknown e) {
 					Logger.getLogger(RepositoryUtil.class).warn(e.getMessage(), e);
 					CloudUtil.notifyInternalMessage(
 							InternalIdCloud.CLOUD_SYS_001,

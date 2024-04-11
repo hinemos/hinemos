@@ -72,7 +72,7 @@
 	<classpathentry kind="lib" path="lib/postgresql-42.2.19.jar" sourcepath="lib/postgresql-42.2.19-sources.jar"/>
 	<classpathentry kind="lib" path="lib/snmp4j-2.8.6.jar" sourcepath="lib/snmp4j-2.8.6-sources.jar"/>
 	<classpathentry kind="lib" path="lib_rest/aspectjweaver-1.9.6.jar" sourcepath="lib_rest/aspectjweaver-1.9.6-sources.jar"/>
-	<classpathentry kind="lib" path="lib_rest/jackson-module-jaxb-annotations-2.12.0.jar" sourcepath="lib_rest/jackson-module-jaxb-annotations-2.12.0-sources.jar"/>
+	<classpathentry kind="lib" path="lib_rest/jackson-module-jaxb-annotations-2.15.1.jar" sourcepath="lib_rest/jackson-module-jaxb-annotations-2.15.1-sources.jar"/>
 	<classpathentry kind="lib" path="lib_rest/org.osgi.annotation.versioning-1.1.1.jar" sourcepath="lib_rest/org.osgi.annotation.versioning-1.1.1-sources.jar"/>
 	<classpathentry kind="lib" path="platform_switch/commonlib_platform_win/jna-5.6.0.jar" sourcepath="/HinemosCommon/commonlib/jna-5.6.0-sources.jar"/>
 	<classpathentry kind="lib" path="platform_switch/commonlib_platform_win/jna-platform-5.6.0.jar" sourcepath="/HinemosCommon/commonlib/jna-platform-5.6.0-sources.jar"/>
@@ -100,9 +100,9 @@
 	<classpathentry kind="lib" path="lib_rest/jersey-server-2.32.jar" sourcepath="lib_rest/jersey-server-2.32-sources.jar"/>
 	<classpathentry kind="lib" path="lib/jakarta.mail-2.0.0.jar" sourcepath="lib/jakarta.mail-2.0.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/jakarta.activation-2.0.0.jar" sourcepath="lib/jakarta.activation-2.0.0-sources.jar"/>
-	<classpathentry kind="lib" path="commonlib/jackson-annotations-2.12.0.jar" sourcepath="/HinemosCommon/commonlib/jackson-annotations-2.12.0-sources.jar"/>
-	<classpathentry kind="lib" path="commonlib/jackson-core-2.12.0.jar" sourcepath="/HinemosCommon/commonlib/jackson-core-2.12.0-sources.jar"/>
-	<classpathentry kind="lib" path="commonlib/jackson-databind-2.12.0.jar" sourcepath="/HinemosCommon/commonlib/jackson-databind-2.12.0-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/jackson-annotations-2.15.1.jar" sourcepath="/HinemosCommon/commonlib/jackson-annotations-2.15.1-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/jackson-core-2.15.1.jar" sourcepath="/HinemosCommon/commonlib/jackson-core-2.15.1-sources.jar"/>
+	<classpathentry kind="lib" path="commonlib/jackson-databind-2.15.1.jar" sourcepath="/HinemosCommon/commonlib/jackson-databind-2.15.1-sources.jar"/>
 	<classpathentry kind="lib" path="commonlib_rest/jakarta.annotation-api-1.3.5.jar" sourcepath="/HinemosCommon/commonlib/jakarta.annotation-api-1.3.5-sources.jar"/>
 	<classpathentry kind="lib" path="lib_rest/microprofile-openapi-api-2.0.jar" sourcepath="lib_rest/microprofile-openapi-api-2.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/openapi-java-client.jar" sourcepath="lib/openapi-java-client-sources.jar"/>
@@ -119,5 +119,6 @@
 	<classpathentry kind="lib" path="commonlib/swagger-annotations-1.6.2.jar" sourcepath="/HinemosCommon/commonlib/swagger-annotations-1.6.2-sources.jar"/>
 	<classpathentry kind="lib" path="commonlib/threetenbp-1.5.0.jar" sourcepath="/HinemosCommon/commonlib/threetenbp-1.5.0-sources.jar"/>
 	<classpathentry kind="lib" path="commonlib/commons-lang3-3.11.jar" sourcepath="/HinemosCommon/commonlib/commons-lang3-3.11-sources.jar"/>
+	<classpathentry kind="lib" path="/HinemosCommon/build/jar/HinemosVersion.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

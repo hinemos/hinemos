@@ -206,34 +206,45 @@ public class NodeInfoCache {
 										+ MessageConstant.THISTIME.getMessage() + ":" + msgInfo.getThisVal();
 							}
 							//インターナルイベントへの通知
-							String[] args = {msg + "\n" + details};
+							StringBuilder msgBuilder = new StringBuilder();
+							msgBuilder.append(InternalIdCloud.CLOUD_SYS_003.getMessage())
+									.append(" ")
+									.append(msg)
+									.append("\n")
+									.append(details);
 							try {
 								CloudUtil.notifyInternalMessage(
 										InternalIdCloud.CLOUD_SYS_003,
-										args,
+										msgBuilder.toString(),
 										"");
 							} catch (Exception e ) {
 								//internal event(auto detection failed)
 								Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
-								Logger.getLogger(this.getClass()).debug(CloudMessageConstant.EXECUTED_AUTO_SEARCH.getMessage(args));
+								Logger.getLogger(this.getClass()).debug(msgBuilder.toString());
 							}
 						}
 					}
 				} catch (JsonProcessingException e) {
 					//internal event(auto detection failed)
-					String[] args = {msg};
+					StringBuilder msgBuilder = new StringBuilder();
+					msgBuilder.append(InternalIdCloud.CLOUD_SYS_004.getMessage())
+							.append(" ")
+							.append(msg);
 					Logger.getLogger(this.getClass()).warn(e.getMessage(), e);
 					CloudUtil.notifyInternalMessage(
 							InternalIdCloud.CLOUD_SYS_004,
-							args,
+							msgBuilder.toString(),
 							"");
 				} catch (HinemosUnknown | InvalidSetting | InvalidRole | FacilityNotFound e) {
 					//internal event(auto detection failed)
-					String[] args = {msg};
+					StringBuilder msgBuilder = new StringBuilder();
+					msgBuilder.append(InternalIdCloud.CLOUD_SYS_004.getMessage())
+							.append(" ")
+							.append(msg);
 					Logger.getLogger(this.getClass()).warn(ErrorCode.HINEMOS_MANAGER_ERROR.cloudManagerFault(e).getMessage());
 					CloudUtil.notifyInternalMessage(
 							InternalIdCloud.CLOUD_SYS_004,
-							args,
+							msgBuilder.toString(),
 							"");
 				}
 			}

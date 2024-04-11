@@ -412,6 +412,13 @@ public class JobMultiplicityCache {
 
 		String facilityId = pk.getFacilityId();
 		
+		if (!isMultiplicityJob(pk)) {
+			// 多重度判定対象外のジョブの場合はキューに積まない
+			m_log.debug("skip offer queue. " + pk);
+			kickWithoutQueue(pk);
+			return true;
+		}
+		
 		try {
 			_lock.writeLock();
 			
@@ -489,17 +496,28 @@ public class JobMultiplicityCache {
 			HashMap<String, Queue<JobSessionNodeEntityPK>> runningRpaCache = getRunningRpaCache();
 			Queue<JobSessionNodeEntityPK> runningRpaQueue = runningRpaCache.get(facilityId);
 			if (runningQueue == null && runningRpaQueue == null) {
-				m_log.warn("fromRunning " + pk);
+				if (isMultiplicityJob(pk)) {
+					m_log.warn("fromRunning " + pk);
+				} else {
+					//多重度判定対象外のジョブの場合はWARNでは出力しないようにする
+					m_log.debug("not MultiplicityJob. Queue is null :" + pk);
+				}
 				return false;
 			}
+			
 			
 			if (!isRpaJobDirect(pk)) {
 				if (runningQueue != null && runningQueue.remove(pk)) { //// runningQueueから削除
 					storeRunningCache(runningCache);
 				} else {
-					// 普通は実行中から停止に遷移するが、
-					// 実行中以外(待機など)から、停止に遷移することがある。
-					m_log.info("fromRunning(). from not-running to stop : " + pk);
+					if (isMultiplicityJob(pk)) {
+						// 普通は実行中から停止に遷移するが、
+						// 実行中以外(待機など)から、停止に遷移することがある。
+						m_log.info("fromRunning(). from not-running to stop : " + pk);
+					} else {
+						//多重度判定対象外のジョブの場合はINFOでは出力しないようにする
+						m_log.debug("not MultiplicityJob. :" + pk);
+					}
 				}
 			} else {
 				if (runningRpaQueue != null && runningRpaQueue.remove(pk)) { //// runningRpaQueueから削除
@@ -572,6 +590,11 @@ public class JobMultiplicityCache {
 			//findbugs対応 nullで呼び出されることはあり得ない前提だがfindbugs向けにチェックを設定
 			return false;
 		}
+		if (!isMultiplicityJob(pk)) {
+			// 多重度判定の対象ジョブでない場合はスキップ
+			return false;
+		}
+
 		try {
 			_lock.writeLock();
 
@@ -790,6 +813,29 @@ public class JobMultiplicityCache {
 			_lock.writeUnlock();
 		}
 	}
+	
+	/**
+	 * ジョブ多重度判定の対象外のジョブが、他のジョブの多重度判定に影響してしまう不具合契機で追加。
+	 * キューに依存せずノード詳細のジョブを実行する。
+	 * ジョブの多重度判定の対象外のジョブの実行時のみ利用する。
+	 */
+	public static void kickWithoutQueue(JobSessionNodeEntityPK pk) {
+		m_log.debug("kick(without queue) " + pk);
+
+		JpaTransactionManager jtm = new JpaTransactionManager();
+		try {
+			jtm.begin();
+			// kick()ではキューの追加・削除処理のためにwait2runnningの戻り値を受け取っていたが、
+			// 判定対象外のジョブはキューに乗せないので、戻り値を受け取らない
+			new JobSessionNodeImpl().wait2running(pk);
+			jtm.commit();
+		} catch (Exception e) {
+			m_log.warn("kick : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			jtm.rollback();
+		} finally {
+			jtm.close();
+		}
+	}
 
 	/**
 	 * 「マネージャ起動時」と「ジョブ履歴削除」から呼ばれる。
@@ -830,6 +876,10 @@ public class JobMultiplicityCache {
 					List<JobSessionNodeEntity> nodeList = em.createNamedQuery("JobSessionNodeEntity.findByStatus", JobSessionNodeEntity.class, ObjectPrivilegeMode.NONE)
 							.setParameter("status", StatusConstant.TYPE_RUNNING).getResultList();
 					for (JobSessionNodeEntity node : nodeList) {
+						if (!isMultiplicityJob(node.getJobSessionJobEntity().getJobInfoEntity().getJobType())) {
+							// 多重度判定の対象ジョブでない場合はスキップ
+							continue;
+						}
 						String facilityId = node.getId().getFacilityId();
 						Queue<JobSessionNodeEntityPK> runningQueue = runningCache.get(facilityId);
 						Queue<JobSessionNodeEntityPK> runningRpaQueue = runningRpaCache.get(facilityId);
@@ -1043,6 +1093,10 @@ public class JobMultiplicityCache {
 						List<JobSessionNodeEntity> nodeList = em.createNamedQuery("JobSessionNodeEntity.findByStatus", JobSessionNodeEntity.class, ObjectPrivilegeMode.NONE)
 								.setParameter("status", StatusConstant.TYPE_RUNNING).getResultList();
 						for (JobSessionNodeEntity node : nodeList) {
+							if (!isMultiplicityJob(node.getJobSessionJobEntity().getJobInfoEntity().getJobType())) {
+								// 多重度判定の対象ジョブでない場合はスキップ
+								continue;
+							}
 							String facilityId = node.getId().getFacilityId();
 						Queue<JobSessionNodeEntityPK> runningQueue = runningCache.get(facilityId);
 						Queue<JobSessionNodeEntityPK> runningRpaQueue = runningRpaCache.get(facilityId);
@@ -1120,6 +1174,33 @@ public class JobMultiplicityCache {
 		JobInfoEntity job = sessionJob.getJobInfoEntity();
 		return job.getJobType() == JobConstant.TYPE_RPAJOB
 				&& job.getRpaJobType() == RpaJobTypeConstant.DIRECT;
+	}
+
+	/**
+	 * ジョブ種別が多重度判定の対象かどうかをチェックします。
+	 * @param pk
+	 * @return true : 多重度判定の対象のジョブである、false : 多重度判定の対象外のジョブ
+	 */
+	public static boolean isMultiplicityJob(JobSessionNodeEntityPK pk) {
+		JobInfoEntity jobInfo = null;
+		try {
+			jobInfo = QueryUtil.getJobInfoEntityPK(pk.getSessionId(), pk.getJobunitId(), pk.getJobId());
+		} catch (JobInfoNotFound | InvalidRole e) {
+			m_log.warn("isMultiplicityJob()" + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			// そもそも通らないが、念のため元の処理（対象のジョブかの判定がなかった状態）に寄せておく
+			return true;
+		}
+		return isMultiplicityJob(jobInfo.getJobType());
+	}
+
+	/**
+	 * ジョブ種別が多重度判定の対象かどうかを返します。
+	 * @param jobType
+	 * @return true : 多重度判定の対象のジョブである、 false : 多重度判定の対象外のジョブ
+	 */
+	public static boolean isMultiplicityJob(Integer jobType) {
+		return jobType != JobConstant.TYPE_MONITORJOB && jobType != JobConstant.TYPE_JOBLINKRCVJOB
+				&& jobType != JobConstant.TYPE_JOBLINKSENDJOB && jobType != JobConstant.TYPE_RESOURCEJOB;
 	}
 
 	/**

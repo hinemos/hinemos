@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.logging.Log;
@@ -36,6 +37,7 @@ import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
@@ -100,6 +102,9 @@ import com.clustercontrol.jobmanagement.bean.JobNodeDetail;
 import com.clustercontrol.jobmanagement.bean.JobOperationInfo;
 import com.clustercontrol.jobmanagement.bean.JobPlan;
 import com.clustercontrol.jobmanagement.bean.JobPlanFilter;
+import com.clustercontrol.jobmanagement.bean.JobRuntimeParam;
+import com.clustercontrol.jobmanagement.bean.JobRuntimeParamDetail;
+import com.clustercontrol.jobmanagement.bean.JobRuntimeParamRun;
 import com.clustercontrol.jobmanagement.bean.JobSchedule;
 import com.clustercontrol.jobmanagement.bean.JobSessionRequestMessage;
 import com.clustercontrol.jobmanagement.bean.JobTreeItem;
@@ -158,6 +163,7 @@ import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.JobTreeItemResponseP1;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ControlEnum;
+import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JobRuntimeParamTypeEnum;
 import com.clustercontrol.sdml.util.SdmlUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
@@ -1374,10 +1380,12 @@ public class JobControllerBean implements CheckFacility {
 	 * @return ジョブ操作開始用プロパティ
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
+	 * @throws JobInfoNotFound 
 	 *
 	 * @see com.clustercontrol.jobmanagement.factory.JobOperationProperty#getAvailableStartOperationSessionJob(String, String, String, Locale)
 	 */
-	public ArrayList<ControlEnum> getAvailableStartOperationSessionJob(String sessionId, String jobunitId, String jobId, Locale locale) throws InvalidRole, HinemosUnknown {
+	public ArrayList<ControlEnum> getAvailableStartOperationSessionJob(String sessionId, String jobunitId, String jobId, Locale locale) 
+			throws InvalidRole, HinemosUnknown, JobInfoNotFound {
 
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		ArrayList<ControlEnum> list = null;
@@ -1390,6 +1398,9 @@ public class JobControllerBean implements CheckFacility {
 		} catch (ObjectPrivilege_InvalidRole e) {
 			jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
+		} catch (JobInfoNotFound e) {
+			jtm.rollback();
+			throw e;
 		} catch (Exception e) {
 			m_log.warn("getAvailableStartOperationSessionJob() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -1412,10 +1423,12 @@ public class JobControllerBean implements CheckFacility {
 	 * @return ジョブ操作開始用プロパティ
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
+	 * @throws JobInfoNotFound 
 	 *
 	 * @see com.clustercontrol.jobmanagement.factory.JobOperationProperty#getAvailableStartOperationSessionNode(String, String, String, String, Locale)
 	 */
-	public ArrayList<ControlEnum> getAvailableStartOperationSessionNode(String sessionId, String jobunitId, String jobId, String facilityId, Locale locale) throws InvalidRole, HinemosUnknown {
+	public ArrayList<ControlEnum> getAvailableStartOperationSessionNode(String sessionId, String jobunitId, String jobId, String facilityId, Locale locale) 
+			throws InvalidRole, HinemosUnknown, JobInfoNotFound {
 
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		ArrayList<ControlEnum> list = null;
@@ -1428,6 +1441,9 @@ public class JobControllerBean implements CheckFacility {
 		} catch (ObjectPrivilege_InvalidRole e) {
 			jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
+		} catch (JobInfoNotFound e) {
+			jtm.rollback();
+			throw e;
 		} catch (Exception e) {
 			m_log.warn("getAvailableStartOperationSessionNode() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -1487,10 +1503,11 @@ public class JobControllerBean implements CheckFacility {
 	 * @return ジョブ操作停止用プロパティ
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
+	 * @throws JobInfoNotFound 
 	 *
 	 * @see com.clustercontrol.jobmanagement.factory.JobOperationProperty#getAvailableStopOperationSessionJob(String, String, String, Locale)
 	 */
-	public ArrayList<ControlEnum> getAvailableStopOperationSessionJob(String sessionId, String jobunitId,  String jobId, Locale locale) throws InvalidRole, HinemosUnknown {
+	public ArrayList<ControlEnum> getAvailableStopOperationSessionJob(String sessionId, String jobunitId,  String jobId, Locale locale) throws InvalidRole, HinemosUnknown, JobInfoNotFound {
 
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		ArrayList<ControlEnum> list = null;
@@ -1503,6 +1520,9 @@ public class JobControllerBean implements CheckFacility {
 		} catch (ObjectPrivilege_InvalidRole e) {
 			jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
+		} catch (JobInfoNotFound e) {
+			jtm.rollback();
+			throw e;
 		} catch (Exception e) {
 			m_log.warn("getAvailableStopOperationSessionJob() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -1525,10 +1545,12 @@ public class JobControllerBean implements CheckFacility {
 	 * @return ジョブ操作停止用プロパティ
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
+	 * @throws JobInfoNotFound 
 	 *
 	 * @see com.clustercontrol.jobmanagement.factory.JobOperationProperty#getAvailableStopOperationSessionNode(String, String, String, String, Locale)
 	 */
-	public ArrayList<ControlEnum> getAvailableStopOperationSessionNode(String sessionId, String jobunitId,  String jobId, String facilityId, Locale locale) throws InvalidRole, HinemosUnknown {
+	public ArrayList<ControlEnum> getAvailableStopOperationSessionNode(String sessionId, String jobunitId,  String jobId, String facilityId, Locale locale) 
+			throws InvalidRole, HinemosUnknown, JobInfoNotFound {
 
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		ArrayList<ControlEnum> list = null;
@@ -1541,6 +1563,9 @@ public class JobControllerBean implements CheckFacility {
 		} catch (ObjectPrivilege_InvalidRole e) {
 			jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
+		} catch (JobInfoNotFound e) {
+			jtm.rollback();
+			throw e;
 		} catch (Exception e) {
 			m_log.warn("getAvailableStopOperationSessionNode() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -1569,6 +1594,174 @@ public class JobControllerBean implements CheckFacility {
 	public String runJob(String jobunitId, String jobId, JobTriggerInfo triggerInfo) throws FacilityNotFound, HinemosUnknown, JobMasterNotFound, JobInfoNotFound, JobSessionDuplicate, InvalidRole, InvalidSetting {
 		m_log.debug("runJob(jobunitId,jobId,triggerInfo) : jobId=" + jobId);
 		return runJob(jobunitId, jobId, null, triggerInfo);
+	}
+
+	/**
+	 * ジョブ実行契機を直接実行します。<BR>
+	 * コマンドラインツールのみ呼び出される
+	 *
+	 * @param jobKickId 実行契機ID
+	 * @param triggerInfo 実行契機情報
+	 * @throws FacilityNotFound
+	 * @throws HinemosUnknown
+	 * @throws JobInfoNotFound
+	 * @throws JobMasterNotFound
+	 * @throws JobSessionDuplicate
+	 * @throws InvalidRole
+	 * @throws InvalidSetting
+	 */
+	public String runJobKickDirect(String jobKickId, JobTriggerInfo triggerInfo)
+			throws FacilityNotFound, HinemosUnknown, JobInfoNotFound, JobMasterNotFound, JobSessionDuplicate, InvalidRole, InvalidSetting {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+
+			// 実行契機種別を指定
+			triggerInfo.setTrigger_type(JobTriggerTypeConstant.TYPE_MANUAL);
+
+			// ジョブ実行契機情報取得
+			JobKick jobKick = null;
+			try {
+				jobKick = getJobKick(jobKickId);
+			} catch (JobMasterNotFound e) {
+				// 実行契機情報未存在
+				throw new JobMasterNotFound(MessageConstant.MESSAGE_NOT_FOUND.getMessage(
+						MessageConstant.JOBKICK_ID.getMessage(), jobKickId));
+			} catch (InvalidRole | HinemosUnknown e) {
+				throw e;
+			}
+
+			// ランタイム変数の整合性チェック、デフォルト値設定
+			HashMap<String, JobRuntimeParam> paramMap = new HashMap<>();
+			if (jobKick.getJobRuntimeParamList() != null
+					&& !jobKick.getJobRuntimeParamList().isEmpty()) {
+				for (JobRuntimeParam param : jobKick.getJobRuntimeParamList()) {
+					paramMap.put(param.getParamId(), param);
+				}
+			}
+
+			// 実行時に指定されたランタイム変数チェック
+			if (triggerInfo.getJobRuntimeParamList() != null
+					&& !triggerInfo.getJobRuntimeParamList().isEmpty()) {
+				HashSet<String> paramRuns = new HashSet<>();
+				for (JobRuntimeParamRun paramRun : triggerInfo.getJobRuntimeParamList()) {
+					if (paramRuns.contains(paramRun.getParamId())) {
+						// 重複エラー
+						m_log.info("runJobKickDirect() : paramId is dupulicated. "
+								+ "jobkickId=" + jobKickId + ", paramId=" + paramRun.getParamId());
+						throw new InvalidSetting(MessageConstant.MESSAGE_DUPLICATED.getMessage(
+								MessageConstant.JOBKICK_PARAM_ID.getMessage(), paramRun.getParamId()));
+					}
+					paramRuns.add(paramRun.getParamId());
+					JobRuntimeParam param = paramMap.get(paramRun.getParamId());
+					if (param == null) {
+						// ランタイム変数未存在
+						m_log.info("runJobKickDirect() : paramId is not found. "
+								+ "jobkickId=" + jobKickId + ", paramId=" + paramRun.getParamId());
+						throw new InvalidSetting(MessageConstant.MESSAGE_NOT_FOUND.getMessage(
+								MessageConstant.JOBKICK_PARAM_ID.getMessage(), paramRun.getParamId()));
+					}
+					if (JobRuntimeParamTypeEnum.INPUT.getCode().equals(param.getParamType())) {
+						if (param.getRequiredFlg() 
+								&& (paramRun.getValue() == null || paramRun.getValue().isEmpty())) {
+							// 必須の場合にランタイム変数値未設定
+							m_log.info("runJobKickDirect() : paramId is not set. "
+									+ "jobkickId=" + jobKickId + ", paramId=" + paramRun.getParamId());
+							throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_TO.getMessage(
+									MessageConstant.JOBKICK_PARAM_VALUE.getMessage(), MessageConstant.JOBKICK_PARAM_ID.getMessage(),
+									paramRun.getParamId()));
+						}
+					} else if (JobRuntimeParamTypeEnum.RADIO.getCode().equals(param.getParamType())) {
+						if (paramRun.getValue() == null || paramRun.getValue().isEmpty()) {
+							// ランタイム変数未設定
+							m_log.info("runJobKickDirect() : paramId is not set. "
+									+ "jobkickId=" + jobKickId + ", paramId=" + paramRun.getParamId());
+							throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_TO.getMessage(
+									MessageConstant.JOBKICK_PARAM_VALUE.getMessage(), MessageConstant.JOBKICK_PARAM_ID.getMessage(),
+									paramRun.getParamId()));
+						}
+						boolean isError = true;
+						List<String> selectValueList = new ArrayList<>();
+						for (JobRuntimeParamDetail paramDetail : param.getJobRuntimeParamDetailList()) {
+							selectValueList.add(paramDetail.getParamValue());
+							if (paramRun.getValue().equals(paramDetail.getParamValue())) {
+								isError = false;
+								break;
+							}
+						}
+						if (isError) {
+							// 候補以外の値が設定されている
+							m_log.info("runJobKickDirect() : paramId is invalid. "
+									+ "jobkickId=" + jobKickId + ", paramId=" + paramRun.getParamId() + ", value=" + paramRun.getValue());
+							throw new InvalidSetting(MessageConstant.MESSAGE_INPUT_NON_EXISTENT_MEMBER.getMessage(
+									MessageConstant.JOBKICK_PARAM_ID.getMessage() + "(" + paramRun.getParamId() + ")",
+									String.join(",", selectValueList)));
+						}
+					} else if (JobRuntimeParamTypeEnum.COMBO.getCode().equals(param.getParamType())) {
+						if (paramRun.getValue() == null || paramRun.getValue().isEmpty()) {
+							if (param.getRequiredFlg()) { 
+								// ランタイム変数未設定
+								m_log.info("runJobKickDirect() : paramId is not set. "
+										+ "jobkickId=" + jobKickId + ", paramId=" + paramRun.getParamId());
+								throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_TO.getMessage(
+										MessageConstant.JOBKICK_PARAM_VALUE.getMessage(), MessageConstant.JOBKICK_PARAM_ID.getMessage(),
+										paramRun.getParamId()));
+							}
+						} else {
+							boolean isError = true;
+							List<String> selectValueList = new ArrayList<>();
+							for (JobRuntimeParamDetail paramDetail : param.getJobRuntimeParamDetailList()) {
+								selectValueList.add(paramDetail.getParamValue());
+								if (paramRun.getValue().equals(paramDetail.getParamValue())) {
+									isError = false;
+									break;
+								}
+							}
+							if (isError) {
+								// 候補以外の値が設定されている
+								m_log.info("runJobKickDirect() : paramId is invalid. "
+										+ "jobkickId=" + jobKickId + ", paramId=" + paramRun.getParamId() + ", value=" + paramRun.getValue());
+								throw new InvalidSetting(MessageConstant.MESSAGE_INPUT_NON_EXISTENT_MEMBER.getMessage(
+										MessageConstant.JOBKICK_PARAM_ID.getMessage() + "(" + paramRun.getParamId() + ")",
+										String.join(",", selectValueList)));
+							}
+						}
+					} else if (JobRuntimeParamTypeEnum.FIXED.getCode().equals(param.getParamType())) {
+						if (paramRun.getValue() == null || paramRun.getValue().isEmpty()
+								|| !paramRun.getValue().equals(param.getValue())) {
+							// 候補以外の値が設定されている
+							m_log.info("runJobKickDirect() : paramId is invalid. "
+									+ "jobkickId=" + jobKickId + ", paramId=" + paramRun.getParamId() + ", value=" + paramRun.getValue());
+							throw new  InvalidSetting(MessageConstant.MESSAGE_INPUT_NON_EXISTENT_MEMBER.getMessage(
+									MessageConstant.JOBKICK_PARAM_ID.getMessage() + "(" + paramRun.getParamId() + ")",
+									param.getValue()));
+						}
+					}
+					// 実行時ランタイム変数に設定されている
+					paramMap.remove(paramRun.getParamId());
+				}
+				// 実行時ランタイム変数に設定されていないパラメータを追加
+				for (Map.Entry<String, JobRuntimeParam> entry : paramMap.entrySet()) {
+					if (((JobRuntimeParamTypeEnum.INPUT.getCode().equals(entry.getValue().getParamType())
+							|| JobRuntimeParamTypeEnum.COMBO.getCode().equals(entry.getValue().getParamType()))
+							&& entry.getValue().getRequiredFlg())
+						|| JobRuntimeParamTypeEnum.RADIO.getCode().equals(entry.getValue().getParamType())) {
+						// 必須の場合にランタイム変数未設定
+						m_log.info("runJobKickDirect() : paramId is not set. "
+								+ "jobkickId=" + jobKickId + ", paramId=" + entry.getValue().getParamId());
+						throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(
+								MessageConstant.JOBKICK_PARAM_ID.getMessage() + "(" + entry.getValue().getParamId() + ")"));
+					}
+					JobRuntimeParamRun runtimeParamRun = new JobRuntimeParamRun();
+					runtimeParamRun.setParamId(entry.getKey());
+					runtimeParamRun.setValue(entry.getValue().getValue());
+					triggerInfo.getJobRuntimeParamList().add(runtimeParamRun);
+				}
+			}
+
+			// ジョブ実行
+			return runJob(jobKick.getJobunitId(), jobKick.getJobId(), null, triggerInfo);
+		} catch (JobMasterNotFound | InvalidRole | HinemosUnknown e) {
+			throw e;
+		}
 	}
 
 	/**
@@ -6014,6 +6207,25 @@ public class JobControllerBean implements CheckFacility {
 			jtm.close();
 		}
 		return rpaScreenshot;
+	}
+	
+	/**
+	 * 対象ユーザを承認要求ユーザに持つ承認ジョブ設定を返します
+	 * @return 承認ジョブ設定Entityのリスト
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public List<JobMstEntity>  getJobMstFindByApprovalReqUserId(String approvalReqUserId) throws JobInfoNotFound, InvalidRole, HinemosUnknown {
+		m_log.debug("getJobScriptInfo()");
+
+		try {
+			return QueryUtil.getJobMstEntityFindByApprovalReqUserId(approvalReqUserId);
+		} catch (Exception e) {
+			m_log.warn("getJobMstFindByApprovalReqUserId() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
+		} 
 	}
 
 	/**

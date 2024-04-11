@@ -17,8 +17,11 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +60,8 @@ public class ExportCollectDataFile {
 	
 	/** csvファイル名の最大bytes数 */
 	private static final int MAX_FILE_NAME_BYTES = 200;
+	/** ファイル作成リトライ回数 **/
+	private static int createFileRetryMax = 0;
 
 	/**
 	 *
@@ -93,14 +98,37 @@ public class ExportCollectDataFile {
 		ArrayList<String> targetFileNameList = new ArrayList<String>();
 		try {
 			// zip名はクライアント側でリネームされるため、ここでは厳密に命名しない
-			String zipName = Messages.getString(SummaryTypeConstant.typeToMessageCode(summaryType), Locale.ENGLISH) + "_" + defaultDateStr + ".zip";
-			targetFileNameList.add(zipName);
-
-			// 出力ファイル作成スレッドを実行して抜ける
-			CreatePerfFileTask task = new CreatePerfFileTask(targetFacilityList, collectKeyInfoList, 
-					summaryType, localeStr, header, defaultDateStr, userId, zipName);
-			Thread thread = new Thread(task);
-			thread.start();
+			createFileRetryMax = HinemosPropertyCommon.collect_createfile_retry_max.getIntegerValue();
+			String exportDirectory = HinemosPropertyDefault.performance_export_dir.getStringValue();
+			String summaryTypeStr = Messages.getString(SummaryTypeConstant.typeToMessageCode(summaryType), Locale.ENGLISH);
+			String tmpDirName = null;
+			String zipName = null;
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+			Calendar defaultDate = Calendar.getInstance();
+			
+			for (int retry = 0; retry < createFileRetryMax; retry++) {
+				tmpDirName = summaryTypeStr + "_" + defaultDateStr;
+				File tmpDir = Paths.get(exportDirectory, tmpDirName).toFile();
+				
+				if (!tmpDir.exists()) {
+					Files.createDirectories(tmpDir.toPath());
+					zipName = tmpDirName + ".zip";
+					break;
+				}
+				defaultDate.setTime(sdf.parse(defaultDateStr));
+				defaultDate.add(Calendar.SECOND, 1);
+				defaultDateStr = sdf.format(defaultDate.getTime());
+			}
+			
+			if (zipName != null) {
+				targetFileNameList.add(zipName);
+				
+				// 出力ファイル作成スレッドを実行して抜ける
+				CreatePerfFileTask task = new CreatePerfFileTask(targetFacilityList, collectKeyInfoList, 
+						summaryType, localeStr, header, defaultDateStr, userId, zipName);
+				Thread thread = new Thread(task);
+				thread.start();
+			}
 
 		} catch (Exception e) {
 			m_log.warn("create() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -110,6 +138,15 @@ public class ExportCollectDataFile {
 			for (String fileName : targetFileNameList) {
 				m_log.debug("target file name = " + fileName);
 			}
+		}
+		if (targetFileNameList.isEmpty()) {
+			m_log.warn("create() : Create failed."
+				+ "facilityIdNameMap = " + facilityIdNameMap.toString() 
+				+ ", targetFacilityList =" + targetFacilityList.toString()
+				+ ", collectKeyInfoList =" + collectKeyInfoList.toString()
+				+ ", summaryType = " + summaryType + ", localeStr = " + localeStr + ", header = " + header 
+				+ ", defaultDateStr = " + defaultDateStr);
+			throw new HinemosUnknown();
 		}
 		return targetFileNameList;
 	}
@@ -355,6 +392,26 @@ public class ExportCollectDataFile {
 	}
 
 	/**
+	 * 指定したファイルパスを削除する。ディレクトリチェックは行わない。
+	 *
+	 * @param filePathList
+	 */
+	private static void deleteFilePath(String filePath) {
+		m_log.debug("deleteFilePath() targetFilePath = " + filePath);
+
+		File file = new File(filePath);
+
+		if (file.exists()) {
+			m_log.info("Delete Performance Export File. file = " + file.getPath());
+
+			boolean ret = file.delete();
+			m_log.debug("deleteFilePath() targetFilePath = " + filePath + " : delete succeed. " + ret);
+		} else {
+			m_log.debug("deleteFilePath() targetFilePath = " + filePath + " : does not exist.");
+		}
+	}
+
+	/**
 	 * 指定したファイルパスのリストを削除する。ディレクトリチェックは行わない。
 	 *
 	 * @param filePathList
@@ -363,18 +420,8 @@ public class ExportCollectDataFile {
 		m_log.debug("deleteFilePath()");
 
 		for (String filePath : filePathList) {
-			m_log.debug("deleteFilePath() targetFilePath = " + filePath);
+			deleteFilePath(filePath);
 
-			File file = new File(filePath);
-
-			if (file.exists()) {
-				m_log.info("Delete Performance Export File. file = " + file.getPath());
-
-				boolean ret = file.delete();
-				m_log.debug("deleteFilePath() targetFilePath = " + filePath + " : delete succeed. " + ret);
-			} else {
-				m_log.debug("deleteFilePath() targetFilePath = " + filePath + " : does not exist.");
-			}
 		}
 	}
 
@@ -496,6 +543,7 @@ public class ExportCollectDataFile {
 				CollectControllerBean controller = new CollectControllerBean();
 
 				String exportDirectory = HinemosPropertyDefault.performance_export_dir.getStringValue();
+				String exportTmpDirectory = Paths.get(exportDirectory, m_zipName.replaceAll("\\.zip$", "")).toString() + "/";
 
 				Map<String, Map<Long, Float>> itemCodeTimeDataMap = new HashMap<String, Map<Long, Float>>();
 
@@ -622,7 +670,7 @@ public class ExportCollectDataFile {
 
 						if (itemCodeTimeDataMap.isEmpty()) {
 							m_log.debug("run() Create Empty CSV File at targetFacilityId = " + facilityId);
-							String createFilePath = exportDirectory
+							String createFilePath = exportTmpDirectory
 									+ createFileName(HinemosMessage.replace(itemName, new Locale(m_localeStr)), displayName, monitorId, 
 											Messages.getString(SummaryTypeConstant.typeToMessageCode(m_summaryType), Locale.ENGLISH), 
 											facilityId, m_fileId, "csv");
@@ -639,10 +687,10 @@ public class ExportCollectDataFile {
 							}
 						} else {
 							m_log.debug("run() Create CSV File at targetFacilityId = " + facilityId);
-							String createTmpFilePath = exportDirectory
+							String createTmpFilePath = exportTmpDirectory
 									+ createFileName(HinemosMessage.replace(itemName, new Locale(m_localeStr)), displayName, monitorId, 
 											String.valueOf(m_summaryType), facilityId, m_fileId, "tmp");
-							String createFilePath = exportDirectory
+							String createFilePath = exportTmpDirectory
 									+ createFileName(HinemosMessage.replace(itemName, new Locale(m_localeStr)), displayName, monitorId,
 											Messages.getString(SummaryTypeConstant.typeToMessageCode(m_summaryType), Locale.ENGLISH),
 											facilityId, m_fileId, "csv");
@@ -683,7 +731,7 @@ public class ExportCollectDataFile {
 				// 圧縮
 				////
 				// 戻り値として渡すパスの設定
-				String createTmpArchiveFilePath = exportDirectory
+				String createTmpArchiveFilePath = exportTmpDirectory
 						+ createFileName("", "", "", String.valueOf(m_summaryType), "", m_fileId, "tmp");
 				String craeteZipArchiveFilePath = exportDirectory + m_zipName;
 				m_log.debug("run() create archive csv file : " + craeteZipArchiveFilePath);
@@ -699,6 +747,9 @@ public class ExportCollectDataFile {
 				// 完成したらファイル名を変更
 				createFilePathList.add(craeteZipArchiveFilePath);
 				renameFile(createTmpArchiveFilePath, craeteZipArchiveFilePath);
+
+				// 一時ディレクトリの削除
+				deleteFilePath(exportTmpDirectory);
 
 			} catch (HinemosUnknown e) {
 				m_log.info("run() " + e.getMessage(), e);

@@ -10,6 +10,7 @@ package com.clustercontrol.utility.jobutil.ui.views.commands;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -129,25 +130,9 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 						null,
 						Messages.getString("warning"),
 						Messages.getString("message.enterprise.required"));			}
-		} catch (InvalidRole | InvalidUserPass e) {
+		} catch (Exception e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					e.getMessage());
-			return null;
-		} catch (HinemosUnknown e) {
-			if(UrlNotFound.class.equals(e.getCause().getClass())) {
-				MessageDialog.openInformation(null, Messages.getString("message"),
-						Messages.getString("message.enterprise.required"));
-				return null;
-			} else {
-				MessageDialog.openInformation(null, Messages.getString("message"),
-						e.getMessage());
-				return null;
-			}
-		} catch (Exception e) {
-			// キーファイルを確認できませんでした。処理を終了します。
-			// Key file not found. This process will be terminated.
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.enterprise.required"));
 			return null;
 		}
 
@@ -160,11 +145,6 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 		List<JobTreeItemWrapper> importJobList = JobConvert.convertJobTreeItem(dialog.getFileName(), dialog.isScope(), dialog.isNotify());
 
 		if (importJobList == null) {
-			String errorMsg = Messages.getString("message.job.import.convert.fail") +
-					"\n\n" +
-					"FileName=" +
-					dialog.getFileName();
-			MessageDialog.openError(null, Messages.getString("warning"), errorMsg);
 			return null;
 		}
 
@@ -183,6 +163,55 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 				continue;
 			}
 
+			// インポートファイル内でジョブIDが重複していないことを確認する
+			String parentJobId = importTopJob.getData().getId();
+			HashSet<String> fileDuplicates = JobUtil.findDuplicateJobId(importTopJob);
+			if (fileDuplicates != null && !fileDuplicates.isEmpty()) {
+				List<String> errorResultList = ret.get(JobStringUtil.ERROR_FILE_DUPLICATE_JOB_ID_CHECK);
+				if (errorResultList == null) {
+					errorResultList = new ArrayList<>();
+				}
+				for (String duplicateJobId : fileDuplicates) {
+					String duplicateJobIdStr = String.format("%s (%s)", duplicateJobId, parentJobId);
+					if (!errorResultList.contains(duplicateJobIdStr)) {
+						errorResultList.add(duplicateJobIdStr);
+					}
+					ret.put(JobStringUtil.ERROR_FILE_DUPLICATE_JOB_ID_CHECK, errorResultList);
+				}
+				continue;
+			}
+
+			// ジョブユニットID、ジョブIDの重複チェック
+			if (importTopJob.getData().getType().equals(JobInfoWrapper.TypeEnum.JOBUNIT)
+					&& JobUtil.findJobunitId(parentJobId, selection)) {
+				List<String> errorResultList = ret.get(JobStringUtil.ERROR_DUPLICATE_JOBUNIT_ID_CHECK);
+				if (errorResultList == null) {
+					errorResultList = new ArrayList<>();
+				}
+				if (!errorResultList.contains(parentJobId)) {
+					errorResultList.add(parentJobId);
+					ret.put(JobStringUtil.ERROR_DUPLICATE_JOBUNIT_ID_CHECK, errorResultList);
+				}
+				continue;
+			} else if (importTopJob.getData().getType().equals(JobInfoWrapper.TypeEnum.JOBNET)) {
+				// ジョブネットの場合は、インポート先とジョブIDが重複しないことを確認する
+				HashSet<String> itemDuplicates = JobUtil.findDuplicateJobId(importTopJob, selection);
+				if (itemDuplicates != null && !itemDuplicates.isEmpty()) {
+					List<String> errorResultList = ret.get(JobStringUtil.ERROR_DUPLICATE_JOB_ID_CHECK);
+					if (errorResultList == null) {
+						errorResultList = new ArrayList<>();
+					}
+					for (String duplicateJobId : itemDuplicates) {
+						String duplicateJobIdStr = String.format("%s (%s)", duplicateJobId, parentJobId);
+						if (!errorResultList.contains(duplicateJobIdStr)) {
+							errorResultList.add(duplicateJobIdStr);
+						}
+						ret.put(JobStringUtil.ERROR_DUPLICATE_JOB_ID_CHECK, errorResultList);
+					}
+					continue;
+				}
+			}
+			
 			// 編集モードに入る
 			JobEditState editState = JobEditStateUtil.getJobEditState(managerName);
 			String jobunitId = "";
@@ -267,6 +296,40 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 			}
 			MessageDialog.openError(null, Messages.getString("warning"), message.toString());
 		}
+
+		// インポートファイル内のジョブID重複エラー
+		if (ret.get(JobStringUtil.ERROR_FILE_DUPLICATE_JOB_ID_CHECK) != null) {
+			StringBuffer message = new StringBuffer(Messages.getString("message.job.import.duplicate.file.jobid"));
+			message.append("\n");
+			for (String id : ret.get(JobStringUtil.ERROR_FILE_DUPLICATE_JOB_ID_CHECK)) {
+				message.append("\nJobID=");
+				message.append(id);
+			}
+			MessageDialog.openError(null, Messages.getString("warning"), message.toString());
+		}
+
+		// ジョブユニットID重複エラー
+		if (ret.get(JobStringUtil.ERROR_DUPLICATE_JOBUNIT_ID_CHECK) != null) {
+			StringBuffer message = new StringBuffer(Messages.getString("message.job.import.duplicate.jobunitid"));
+			message.append("\n");
+			for (String id : ret.get(JobStringUtil.ERROR_DUPLICATE_JOBUNIT_ID_CHECK)) {
+				message.append("\nJobID=");
+				message.append(id);
+			}
+			MessageDialog.openError(null, Messages.getString("warning"), message.toString());
+		}
+
+		// ジョブID重複エラー
+		if (ret.get(JobStringUtil.ERROR_DUPLICATE_JOB_ID_CHECK) != null) {
+			StringBuffer message = new StringBuffer(Messages.getString("message.job.import.duplicate.jobid"));
+			message.append("\n");
+			for (String id : ret.get(JobStringUtil.ERROR_DUPLICATE_JOB_ID_CHECK)) {
+				message.append("\nJobID=");
+				message.append(id);
+			}
+			MessageDialog.openError(null, Messages.getString("warning"), message.toString());
+		}
+
 		if (ret.get(SettingConstants.ERROR_INPROCESS) != null) {
 			StringBuffer errorMsg = new StringBuffer(Messages.getString("message.job.import.fail"));
 			errorMsg.append("\n");

@@ -10,9 +10,9 @@
 	<classpathentry kind="lib" path="/HinemosClient/lib/log4j-api-2.17.1.jar" sourcepath="/HinemosCommon/commonlib/log4j-api-2.17.1-sources.jar"/>
 	<classpathentry kind="lib" path="/HinemosClient/lib/log4j-core-2.17.1.jar" sourcepath="/HinemosCommon/commonlib/log4j-core-2.17.1-sources.jar"/>
 	<classpathentry kind="lib" path="/HinemosClient/lib/log4j-jcl-2.17.1.jar" sourcepath="/HinemosCommon/commonlib/log4j-jcl-2.17.1-sources.jar"/>
-	<classpathentry kind="lib" path="/HinemosClient/lib/jackson-annotations-2.12.0.jar" sourcepath="/HinemosCommon/rest_clientlib/jackson-annotations-2.12.0-sources.jar"/>
-	<classpathentry kind="lib" path="/HinemosClient/lib/jackson-core-2.12.0.jar" sourcepath="/HinemosCommon/rest_clientlib/jackson-core-2.12.0-sources.jar"/>
-	<classpathentry kind="lib" path="/HinemosClient/lib/jackson-databind-2.12.0.jar" sourcepath="/HinemosCommon/rest_clientlib/jackson-databind-2.12.0-sources.jar"/>
+	<classpathentry kind="lib" path="/HinemosClient/lib/jackson-annotations-2.15.1.jar" sourcepath="/HinemosCommon/rest_clientlib/jackson-annotations-2.15.1-sources.jar"/>
+	<classpathentry kind="lib" path="/HinemosClient/lib/jackson-core-2.15.1.jar" sourcepath="/HinemosCommon/rest_clientlib/jackson-core-2.15.1-sources.jar"/>
+	<classpathentry kind="lib" path="/HinemosClient/lib/jackson-databind-2.15.1.jar" sourcepath="/HinemosCommon/rest_clientlib/jackson-databind-2.15.1-sources.jar"/>
 	<classpathentry kind="lib" path="/HinemosClient/lib/okhttp-3.14.9.jar"/>
 	<classpathentry kind="lib" path="/HinemosClient/lib/okhttp-digest-1.20.jar"/>
 	<classpathentry kind="lib" path="/HinemosClient/lib/okio-1.17.5.jar"/>
@@ -21,5 +21,6 @@
 	<classpathentry kind="lib" path="/HinemosClient/lib/openapi-java-client.jar" sourcepath="/HinemosClient/lib/openapi-java-client-sources.jar"/>
 	<classpathentry kind="lib" path="/HinemosClient/lib/castor-xml-1.4.1.jar" sourcepath="/HinemosCommon/commonlib/castor-xml-1.4.1-sources.jar"/>
 	<classpathentry kind="lib" path="/HinemosClient/lib/castor-core-1.4.1.jar" sourcepath="/HinemosCommon/commonlib/castor-core-1.4.1-sources.jar"/>
+	<classpathentry kind="lib" path="/HinemosClient/lib/HinemosVersion.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

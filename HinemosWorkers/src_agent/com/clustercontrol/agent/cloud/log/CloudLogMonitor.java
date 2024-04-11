@@ -21,6 +21,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,7 +51,7 @@ public class CloudLogMonitor implements Runnable {
 	private AbstractCloudLogMonitorRun runMonitor;
 	private boolean hasNotifiedEx = false;
 	private boolean hasNotifiedTE = false;
-	boolean resumeFlg = false;
+	private AtomicBoolean shutdownFlg = new AtomicBoolean(false);
 
 	private static Log log = LogFactory.getLog(CloudLogMonitor.class);
 
@@ -116,6 +117,7 @@ public class CloudLogMonitor implements Runnable {
 		int delay = new Random(settingConf.getMonitorId().hashCode()).nextInt(60000);
 
 		lastFireTime = settingConf.getLastFireTime();
+		shutdownFlg.set(false);
 
 		// initialize scheduler thread
 		_scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
@@ -140,6 +142,7 @@ public class CloudLogMonitor implements Runnable {
 		// 一時ファイル用のディレクトリを作成
 		try {
 			CloudLogMonitorUtil.createTmpFileDir(this.settingConf.getFilePath());
+			CloudLogMonitorUtil.createPropFileDir(CloudLogMonitorUtil.getPropFileStorePath(this.settingConf.getMonitorId()));
 		} catch (HinemosUnknown e) {
 			// ディレクトリの作成に失敗した場合は、監視が続行できないので通知して終了
 			CloudLogMonitorUtil.sendMessage(getConfig(), PriorityConstant.TYPE_WARNING,
@@ -178,7 +181,7 @@ public class CloudLogMonitor implements Runnable {
 				lastFireTime = CloudLogMonitorUtil.getTimeWithOffset();
 				isInitialRun = false;
 				// 初回実行タイミングでファイル監視を初期化
-				runMonitor.execFileMonitor(null, false);
+				runMonitor.execFileMonitor();
 
 				return;
 			}
@@ -205,7 +208,7 @@ public class CloudLogMonitor implements Runnable {
 					File directory = new File(settingConf.getFilePath());
 					CloudLogMonitorUtil.deleteOnlyTmpFiles(directory);
 					// 初回実行タイミングでファイル監視を初期化
-					runMonitor.execFileMonitor(null, false);
+					runMonitor.execFileMonitor();
 					return;
 				}
 				
@@ -217,11 +220,9 @@ public class CloudLogMonitor implements Runnable {
 				// 重複を防ぐため、再開時は必ず一時ファイルを0バイトにしておく。
 				// ※キャリーオーバはrsファイルに保存されるので影響は受けない
 				File directory = new File(settingConf.getFilePath());
-				CloudLogMonitorUtil.truncateTmpFilesRecursive(directory);
+				CloudLogMonitorUtil.truncateTmpFilesRecursive(directory,this.settingConf.getMonitorId());
 				// 初回実行タイミングでファイル監視を初期化
-				runMonitor.execFileMonitor(null, false);
-				// 再開は記録しておく
-				resumeFlg = true;
+				runMonitor.execFileMonitor();
 			} else {
 				log.info("run(): start from " + lastFireTime);
 			}
@@ -239,7 +240,6 @@ public class CloudLogMonitor implements Runnable {
 			}
 
 			runMonitor.setLastFireTime(lastFireTime);
-			runMonitor.setResumeFlg(resumeFlg);
 			Future<?> result = _executorService.submit(runMonitor);
 			boolean isSuccess = true;
 			int waitTime = 0;
@@ -248,14 +248,22 @@ public class CloudLogMonitor implements Runnable {
 					result.get(getConfig().getInterval(), TimeUnit.SECONDS);
 					break;
 				} catch (InterruptedException | ExecutionException e) {
-					log.error("run(): Unknown Error.", e);
-					// マネージャに通知
-					if (!hasNotifiedEx) {
-						CloudLogMonitorUtil.sendMessage(getConfig(), PriorityConstant.TYPE_WARNING,
-								MessageConstant.AGENT.getMessage(),
-								MessageConstant.MESSAGE_CLOUD_LOG_MONITOR_FAILED_UNKNOWN.getMessage(), e.getMessage());
-						hasNotifiedEx = true;
+					
+					if (!shutdownFlg.get()) {
+						log.error("run(): Unknown Error.", e);
+						// マネージャに通知
+						if (!hasNotifiedEx) {
+							CloudLogMonitorUtil.sendMessage(getConfig(), PriorityConstant.TYPE_WARNING,
+									MessageConstant.AGENT.getMessage(),
+									MessageConstant.MESSAGE_CLOUD_LOG_MONITOR_FAILED_UNKNOWN.getMessage(),
+									e.getMessage());
+							hasNotifiedEx = true;
+						}
+					} else {
+						// 監視終了時にはExceptionが発生する可能性があるが、動作に影響はないので通知しない
+						log.debug("run(): Exception during shutdown.", e);
 					}
+					
 					isSuccess = false;
 					break;
 				} catch (TimeoutException e) {
@@ -338,6 +346,7 @@ public class CloudLogMonitor implements Runnable {
 	 */
 	public void shutdown() {
 		log.info("shutdown CloudLog monitor. MonitorID: " + settingConf.getMonitorId());
+		shutdownFlg.set(true);
 		// 一時ファイルへの参照をクローズ
 		CloudLogfileMonitorManager.getInstance().cleanCloudLogMonitorFiles(settingConf.getMonitorId());
 		// 一時ファイルの削除
@@ -383,15 +392,50 @@ public class CloudLogMonitor implements Runnable {
 	 */
 	private void removeTmpFile(boolean partial) {
 		File directory = new File(settingConf.getFilePath());
+		File propDirectory = new File(CloudLogMonitorUtil.getPropFileStorePath(settingConf.getMonitorId()));
+		List<String> deletedList = null;
 		try {
 			if (!partial) {
 				CloudLogMonitorUtil.deleteDirectoryRecursive(directory);
+				// 監視終了時はプロパティファイルも全削除する
+				CloudLogMonitorUtil.deleteDirectoryRecursive(propDirectory);
 			} else {
-				CloudLogMonitorUtil.deleteOldFiles(directory);
+				deletedList = CloudLogMonitorUtil.deleteOldFiles(directory);
+				// 一時ファイルを削除した場合、対応するプロパティファイルも削除する
+				if (deletedList != null) {
+					for (String fileName : deletedList) {
+						log.debug("removeTmpFile(): deleted file name : " + fileName);
+						// ローテーションしたファイルは無視
+						if (fileName.matches(".*\\.tmp$")) {
+							for (String key : runMonitor.statusMap.keySet()) {
+								log.debug("removeTmpFile(): prop key : " + key);
+								String fileKey = "";
+								// プロパティファイル名を取得
+								fileKey = runMonitor.getPropFileName(key);
+								if (fileName.contains(fileKey)) {
+									CloudLogMonitorStatus removed = runMonitor.statusMap.remove(key);
+									// nullにはならないはずだが念のため。
+									if (removed != null) {
+										removed.clear();
+										log.info("removeTmpFile(): prop file removed. Prop target: "
+												+ removed.getMonitorTarget());
+										break;
+									}
+								}
+							}
+						}
+					}
+
+				}
+				// エージェント起動後一度も該当のログストリームからログを取得していない場合、
+				// CloudLogMonitorStatusは作成されていないがプロパティファイルのみ存在する場合があるので、
+				// 更新のないものは削除
+				CloudLogMonitorUtil.deleteOldFiles(propDirectory);
 			}
 		} catch (Exception e) {
 			log.warn("removeTmpFile(): failed remove file", e);
 		}
+
 	}
 
 }

@@ -103,8 +103,8 @@ public class RunMonitorCloudLogString {
 			logStream = logStreamInSetting;
 		}
 		
-		// 収集処理.
-		if (result.monitorInfo.getCollectorFlg() != null && result.monitorInfo.getCollectorFlg()) {
+		// 監視ジョブ以外の場合、収集処理.
+		if (result.runInstructionInfo == null && result.monitorInfo.getCollectorFlg() != null && result.monitorInfo.getCollectorFlg()) {
 			StringSample sample = new StringSample(new Date(result.msgInfo.getGenerationDate()),
 					result.monitorInfo.getMonitorId());
 			List<StringSampleTag> tagsList = new ArrayList<StringSampleTag>();

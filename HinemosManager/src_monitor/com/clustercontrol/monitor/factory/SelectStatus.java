@@ -17,6 +17,7 @@ import java.util.List;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.filtersetting.bean.StatusFilterBaseInfo;
 import com.clustercontrol.monitor.bean.StatusDataInfo;
+import com.clustercontrol.monitor.bean.ViewStatusListInfo;
 import com.clustercontrol.monitor.session.MonitorControllerBean;
 import com.clustercontrol.notify.monitor.model.StatusInfoEntity;
 import com.clustercontrol.notify.monitor.util.QueryUtil;
@@ -34,17 +35,24 @@ public class SelectStatus {
 	 * 引数で指定された条件に一致するステータス一覧情報を返します。
 	 * 
 	 * @param filter 検索条件
-	 * @return ステータス情報一覧（StatusInfoDataが格納されたList）
+	 * @param limit 取得上限数
+	 * @return ステータス情報一覧保持クラス
 	 */
-	public ArrayList<StatusDataInfo> getStatusList(StatusFilterBaseInfo filter) throws HinemosUnknown {
-
+	public ViewStatusListInfo getStatusList(StatusFilterBaseInfo filter, Integer limit) throws HinemosUnknown {
+		
+		// ステータス情報一覧の件数を、検索条件を指定して取得
+		int countAll = QueryUtil.getStatusCountByFilter(filter);
+		
 		// ステータス情報一覧を、検索条件を指定して取得
-		Collection<StatusInfoEntity> ct = QueryUtil.getStatusInfoByFilter(filter);
+		Collection<StatusInfoEntity> ct = QueryUtil.getStatusInfoByFilter(filter, limit);
 
 		// 2次元配列に変換
 		ArrayList<StatusDataInfo> list = collectionToArray(filter.getFacilityId(), ct);
 
-		return list;
+		ViewStatusListInfo viewStatusListInfo = new ViewStatusListInfo();
+		viewStatusListInfo.setCountAll(countAll);
+		viewStatusListInfo.setStatusList(list);
+		return viewStatusListInfo;
 	}
 
 

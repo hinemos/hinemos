@@ -112,7 +112,7 @@ public class FileSystemMonitor extends SelfCheckMonitorBase {
 	
 			fileSystemUsagePer = (double)fileSystemUsage / (double)fileSystemTotal * 100.0;
 	
-			if (fileSystemUsage == -1 || fileSystemTotal == -1) {
+			if (fileSystemUsage == -1 || fileSystemTotal == -1 || Double.isNaN(fileSystemUsagePer) ) {
 				m_log.info("skipped monitoring file system usage. (mountPoint = " + mountPoint + ", threshold = " + thresholdPer + " [%])");
 				continue;
 			} else {

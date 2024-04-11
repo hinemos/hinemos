@@ -393,7 +393,7 @@ public class LdapConnection implements Closeable {
 	public static class LenientSSLSocketFactory extends SSLSocketFactory {
 		private static Log log = LogFactory.getLog(LenientSSLSocketFactory.class);
 
-		public static final String SSL_PROTOCOL = "TLSv1.2";
+		public static final String SSL_PROTOCOL = "TLS";
 
 		private SSLContext sslContext;
 		private SSLSocketFactory delegate;

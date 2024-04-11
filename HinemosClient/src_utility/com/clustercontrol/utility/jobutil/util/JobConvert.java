@@ -16,10 +16,16 @@ import java.io.OutputStreamWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.eclipse.jface.dialogs.MessageDialog;
+
+import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import org.openapitools.client.model.JobNextJobOrderInfoResponse;
 
@@ -174,18 +180,36 @@ public class JobConvert {
 			} catch (Exception e) {
 				log.error(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				log.debug("End Import JobMaster (Error)");
+				MessageDialog.openError(null, Messages.getString("warning"),
+						Messages.getString("SettingTools.ImportFailed") + " : "
+								+ HinemosMessage.replace(e.getMessage()));
 				return null;
 			}
 			
 			/* スキーマのバージョンチェック*/
 			if (!checkSchemaVersion(jobXML.getSchemaInfo())) {
-				
+				com.clustercontrol.utility.settings.job.xml.SchemaInfo sci = MasterConv.getSchemaVersion();
+				MessageDialog.openError(null, Messages.getString("warning"),
+						Messages.getString("SettingTools.SchemaVerionDifferent") + " : tool version "
+								+ sci.getSchemaType() + "-" + sci.getSchemaVersion() + "-" + sci.getSchemaRevision());
+				return null;
+			}
+			
+			// ジョブ設定が存在しない場合
+			if (jobXML.getJobInfoCount() < 1) {
+				throw new IllegalArgumentException("not find job.");
+			}
+			
+			// 親JOBのチェック
+			if(!checkParentJobId(jobXML.getJobInfo())) {
 				return null;
 			}
 			
 			item = MasterConv.masterXml2Dto(jobXML.getJobInfo(), getTopJobIdList(jobXML.getJobInfo()));
 		} catch (Exception e) {
 			log.warn(Messages.getString("SettingTools.ImportFailed"), e);
+			MessageDialog.openError(null, Messages.getString("warning"),
+					Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 			return null;
 		}
 		log.debug("End Convert JobMaster : " + fileName);
@@ -270,7 +294,8 @@ public class JobConvert {
 			child.getData().setJobunitId(parentJob.getData().getJobunitId());
 			child.setParent(importJob);
 			child.getData().setOwnerRoleId(null);
-			if (child.getData().getType().equals(JobInfoWrapper.TypeEnum.REFERJOB)) {
+			if (child.getData().getType().equals(JobInfoWrapper.TypeEnum.REFERJOB)
+					|| child.getData().getType().equals(JobInfoWrapper.TypeEnum.REFERJOBNET)) {
 				child.getData().setReferJobUnitId(parentJob.getData().getJobunitId());
 			}
 			if (child.getData().getWaitRule() != null && !child.getData().getWaitRule().getExclusiveBranchNextJobOrderList().isEmpty()) {
@@ -487,5 +512,81 @@ public class JobConvert {
 			return item;
 		
 		return getJobUnit(item.getParent());
+	}
+	
+	/**
+	 * スキーマ内のJobInfoについて親ジョブID存在チェックを行い、エラーがあればエラーダイアログを表示する。<BR>
+	 * 
+	 * @param XMLファイルのjobInfo
+	 * @return チェック結果
+	 */
+	private static boolean checkParentJobId(com.clustercontrol.utility.settings.job.xml.JobInfo[] jobMastersXML) {
+		boolean ret = true;
+		// 各ジョブユニット毎に親ジョブになれるジョブID一覧を作成
+		Map<String, Set<String>> unitMap = new HashMap<String, Set<String>>();
+		for (int i = 0; i < jobMastersXML.length; i++) {
+			Set<String> jobIdSet = unitMap.get(jobMastersXML[i].getJobunitId());
+			if (jobIdSet == null) {
+				jobIdSet = new HashSet<String>();
+				unitMap.put(jobMastersXML[i].getJobunitId(), jobIdSet);
+			}
+			// 親ジョブになれるジョブIDのみ、リストに加える。(ジョブユニット、ジョブネット)
+			if (jobMastersXML[i].getType() == JobConstant.TYPE_JOBUNIT
+					|| jobMastersXML[i].getType() == JobConstant.TYPE_JOBNET) {
+				jobIdSet.add(jobMastersXML[i].getId());
+			}
+		}
+		// ジョブネットが最上位かつ親ジョブIDがTOPでない場合、エラーで終了
+		if (jobMastersXML[0].getType() == JobConstant.TYPE_JOBNET
+				&& jobMastersXML[0].getParentJobId().equals("TOP") == false) {
+			String[] mesArgs = { jobMastersXML[0].getJobunitId(), jobMastersXML[0].getId(),
+					jobMastersXML[0].getParentJobId() };
+			log.error(Messages.getString("SettingTools.InvalidParentJobId", mesArgs));
+			MessageDialog.openError(null, Messages.getString("warning"),
+					Messages.getString("SettingTools.InvalidParentJobId", mesArgs));
+			return false;
+		}
+		// 各JobInfoに設定された親ジョブIDが同一ジョブユニット内に存在するかチェック
+		for (int i = 0; i < jobMastersXML.length; i++) {
+			// ジョブユニット自身の場合はノーチェック
+			if (jobMastersXML[i].getType() == JobConstant.TYPE_JOBUNIT) {
+				continue;
+			}
+			// ジョブネットの場合は親ジョブIDがTOPであればノーチェック
+			if (jobMastersXML[i].getType() == JobConstant.TYPE_JOBNET
+					&& jobMastersXML[i].getParentJobId().equals("TOP")) {
+				continue;
+			}
+			// 親ジョブユニットID＝ジョブ自身のジョブユニットID でないならエラー
+			Set<String> jobIdSet = unitMap.get(jobMastersXML[i].getParentJobunitId());
+			if (jobIdSet == null
+					|| jobMastersXML[i].getParentJobunitId().equals(jobMastersXML[i].getJobunitId()) == false) {
+				String[] mesArgs = { jobMastersXML[i].getJobunitId(), jobMastersXML[i].getId(),
+						jobMastersXML[i].getParentJobunitId() };
+				log.error(Messages.getString("SettingTools.InvalidParentJobunitId", mesArgs));
+				MessageDialog.openError(null, Messages.getString("warning"),
+						Messages.getString("SettingTools.InvalidParentJobunitId", mesArgs));
+				return false;
+			}
+			// 自身のジョブIDと親ジョブIDが同じ場合はエラー
+			if (jobMastersXML[i].getId().equals(jobMastersXML[i].getParentJobId())) {
+				String[] mesArgs = { jobMastersXML[i].getJobunitId(), jobMastersXML[i].getId(),
+						jobMastersXML[i].getParentJobId() };
+				log.error(Messages.getString("SettingTools.InvalidParentJobId", mesArgs));
+				MessageDialog.openError(null, Messages.getString("warning"),
+						Messages.getString("SettingTools.InvalidParentJobId", mesArgs));
+				return false;
+			}
+			// 同じジョブユニット内に親ジョブIDが存在しないならエラー
+			if (jobIdSet.contains(jobMastersXML[i].getParentJobId()) == false) {
+				String[] mesArgs = { jobMastersXML[i].getJobunitId(), jobMastersXML[i].getId(),
+						jobMastersXML[i].getParentJobId() };
+				log.error(Messages.getString("SettingTools.InvalidParentJobId", mesArgs));
+				MessageDialog.openError(null, Messages.getString("warning"),
+						Messages.getString("SettingTools.InvalidParentJobId", mesArgs));
+				return false;
+			}
+		}
+		return ret;
 	}
 }

@@ -16,7 +16,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -38,7 +37,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.util.CharArrayBuffer;
 
-import com.clustercontrol.agent.cloud.log.util.CloudLogRawObject;
+import com.clustercontrol.agent.cloud.log.util.CloudLogfileMonitor;
 import com.clustercontrol.agent.cloud.log.util.CloudLogfileMonitorConfig;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -54,7 +53,6 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 
 	public CloudLogMonitorRunAzure(CloudLogMonitorConfig config) {
 		super(config);
-		rawObject = new ArrayList<CloudLogRawObject>();
 	}
 
 	private static Log log = LogFactory.getLog(CloudLogMonitorRunAzure.class);
@@ -71,8 +69,10 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 	// Azureへのクエリ用定数
 	private static final String TIMEGENERATED = "TimeGenerated";
 	private static final String INGESTIONTIME = "ingestion_time()";
+	private static final String HINEMOS_TIMEGENERATED = "_Hinemos_TimeGenerated"; // Hinemos内で利用する整形済み日時情報カラム名
+	private static final String EXTENDQUERY = "| extend _Hinemos_TimeGenerated  = format_datetime(TimeGenerated, 'yyyy-MM-dd HH:mm:ss.fff')";
 	private static final String TIMEQUERY = "| where  datetime(%s) < %s and %s <= datetime(%s)";
-	private static final String ORDERQUERY = "{\"query\":\"%s%s%s| order by %s asc\"}";
+	private static final String ORDERQUERY = "{\"query\":\"%s%s%s%s| order by %s asc\"}";
 
 	/**
 	 * プロキシの使用有無を確認しHTTPCientを作成
@@ -175,7 +175,7 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 			userCols = userCols.replace("," + TIMEGENERATED, "");
 		}
 
-		String cols = String.format("%s,%s,%s", INGESTIONTIME, TIMEGENERATED, userCols);
+		String cols = String.format("%s,%s,%s,%s", INGESTIONTIME, TIMEGENERATED, HINEMOS_TIMEGENERATED, userCols);
 		String queryStr = String.format("|project %s", cols);
 
 		// 取得先時刻（現在時刻を取得）
@@ -186,7 +186,7 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 
 		// 日時指定用のクエリ作成
 		String timeStr = String.format(TIMEQUERY, sdf.format(lastFireTime), INGESTIONTIME, INGESTIONTIME, nowTime);
-		String e = String.format(ORDERQUERY, tableName, queryStr, timeStr, INGESTIONTIME);
+		String e = String.format(ORDERQUERY, tableName, EXTENDQUERY, queryStr, timeStr, INGESTIONTIME);
 		log.debug("runAzure(): access url: " + e);
 
 		// Azureへ送信
@@ -324,7 +324,7 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 		// カラム情報をフォーマットして、
 		// 一時ファイルに書き出し
 		try {
-			 findAndFormatMessages(obj, tableIndex, containTimeGenerated, rawObject);
+			 findAndFormatMessages(obj, tableIndex, containTimeGenerated);
 		} catch (HinemosUnknown e1) {
 			if (!hasNotifiedTPE) {
 				CloudLogMonitorUtil.sendMessage(config, PriorityConstant.TYPE_WARNING,
@@ -336,9 +336,12 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 		}
 
 		// ファイル監視を実行
-		execFileMonitor(rawObject, resumeFlg);
-		// rawObjectの切りつめ
-		truncateRawObjectCarryOver();
+		execFileMonitor();
+
+		// ステータス管理ファイルの更新
+		for (CloudLogMonitorStatus status : statusMap.values()) {
+			status.store();
+		}
 
 		// 取得した日時を記録
 		lastFireTime = nowDate.getTime() + 1;
@@ -407,10 +410,13 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 	 * @param rawObject
 	 * @throws HinemosUnknown 
 	 */
+	@SuppressWarnings("unchecked")
 	private void findAndFormatMessages(HashMap<String, ArrayList<HashMap<String, ArrayList<Object>>>> obj, int tableIndex,
-			boolean containTimeGenerated, List<CloudLogRawObject> rawObject) throws HinemosUnknown {
+			boolean containTimeGenerated) throws HinemosUnknown {
 
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+		// Azure logsのタイムスタンプにマイクロ秒が付いている場合に日時が正常に変換出来ないケースと、
+		// 丁度000ミリ秒の時にミリ秒が欠落して取得され、日時変換に失敗するケースがある為、Azureからの日時取得と解析は以下のフォーマット固定で行う
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 		// Azure logsのタイムスタンプはUTCなので、UTCで変換
 		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 		
@@ -434,30 +440,41 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 				} catch (InterruptedException e1) {
 					log.warn("findAndFormatMessages():", e1);
 				}
-				execFileMonitor(rawObject, resumeFlg);
+				execFileMonitor();
 				hasRotated = false;
 			}
 
-			@SuppressWarnings("unchecked")
-			ArrayList<String> tmp = (ArrayList<String>) t.get(i);
+			// カラムから取得してきた要素をString型にキャスト
+			ArrayList<String> tmp = new ArrayList<String>();
+			for(Object o : (ArrayList<Object>)t.get(i)){
+				if(o instanceof String){
+					tmp.add((String)o);
+				} else {
+					// カラムの種別によりString型以外の場合があるので明示的に変換
+					tmp.add(o.toString());
+				}
+			}
 
 			Date parsedDate = null;
 			for (int y = 0; y < tmp.size(); y++) {
 				if (y == 0) {
 					// dispose time received
 				} else if (y == 1) {
-					// timeGeratedのパース
-					try {
-						parsedDate = sdf.parse(tmp.get(y));
-					} catch (java.text.ParseException e1) {
-					}
 					// TimeGeneratedがユーザ指定で含まれる場合は、パース前の文字列を含む
 					if (containTimeGenerated) {
 						sb.append(tmp.get(y) + " ");
 					}
+				} else if (y == 2) {
+					// 整形済みのTimeGeratedをパースして日時情報取得
+					try {
+						parsedDate = sdf.parse(tmp.get(y));
+					} catch (java.text.ParseException e1) {
+						log.warn("findAndFormatMessages():", e1);
+					}
 				} else if (y == tmp.size() - 1) {
 					// 最後にスペースをつけない
 					sb.append(tmp.get(y));
+					
 				} else {
 					sb.append(tmp.get(y) + " ");
 				}
@@ -469,10 +486,14 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 			// 混在してしまわないように、処理を行う
 			log.debug("findAndFormatMessages(): split message with " + config.getReturnCode());
 			StringBuilder sbRes = new StringBuilder();
-			for (String mes :sb.toString().split(retCode)) {
+			String date = "";
+			if (parsedDate != null) {
+				date = parsedDate.getTime() + "";
+			}
+
+			for (String mes : sb.toString().split(retCode)) {
 				String splitStr = mes + "\n";
-				sbRes.append(splitStr);
-				rawObject.add(new CloudLogRawObject(parsedDate, splitStr, null));
+				sbRes.append(getSplitStr(splitStr, date, config.getMonitorId()));
 			}
 			log.debug("findAndFormatMessages(): find Message :" + sb.toString());
 			hasRotated = writeToFile(config, sbRes.toString(), null);
@@ -486,7 +507,7 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 		// execFileMonitorで検知される)
 		if (hasRotated) {
 			log.info("findAndFormatMessages(): File Rotate occured after writing logs to file. Exec File Monitor.");
-			execFileMonitor(rawObject, resumeFlg);
+			execFileMonitor();
 			try {
 				// 負荷軽減とローテートを確実に検知するため
 				// monitor.cloudlogfile.filter.interval指定秒数スリープ（デフォルト1秒）
@@ -672,6 +693,24 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 		public void setAccessToken(String accessToken) {
 			this.accessToken = accessToken;
 		}
+	}
+	
+	/**
+	 * プロパティファイル名を取得するメソッド
+	 * Azureの場合監視設定IDがそのまま使用される。
+	 */
+	@Override
+	protected String getPropFileName(String fileKey) {
+		return fileKey;
+	}
+
+	/**
+	 * CloudLogfileMonitorにログストリーム名を設定するメソッド
+	 * Azureでは空文字を設定(何もしない)
+	 */
+	@Override
+	protected void setStreamNameForCloudLogfileMonitor(CloudLogfileMonitor mon) {
+		// 何もしない
 	}
 
 }

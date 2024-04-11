@@ -9,6 +9,7 @@
 package com.clustercontrol.plugin.util.scheduler;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -28,12 +29,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.fault.DbmsSchedulerNotFound;
 import com.clustercontrol.plugin.factory.ModifyDbmsScheduler;
 import com.clustercontrol.plugin.impl.SchedulerPlugin;
 import com.clustercontrol.plugin.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.apllog.AplLogger;
 
 /**
  * 時間がきたジョブを実行するスケジューラのコア実装部分<br>
@@ -479,7 +483,32 @@ public final class HinemosScheduler {
 						// として動く
 						fireTargetJob.getTrigger().updateAfterMisfire(currentTime);
 						m_log.info("mainLoop() : PrevFireTime=" + fireTargetJob.getTrigger().getPreviousFireTime() + ", NextFireTime=" + fireTargetJob.getTrigger().getNextFireTime());
-						// 今のところ何もしない動きにしている(以前のスケジュールは実行せず、現在時刻基点で再スケジュール)
+						// 以前のスケジュールは実行せず、現在時刻基点で再スケジュール
+						
+						// ユーザが気付けるよう、実行を見送った機能を通知する。
+						if(HinemosPropertyCommon.scheduler_dbms_notify_delay.getBooleanValue()){
+							// Hinemosプロパティで指定した機能のみ通知する。
+							String target = HinemosPropertyCommon.scheduler_dbms_notify_delay_target.getStringValue();
+							List<String> targetList = Arrays.asList(target.split(","));
+							String groupName = fireTargetJob.detail.getGroup();
+							
+							if(targetList.contains(groupName)){
+								String pluginId = null;
+								if(HinemosModuleConstant.isExist(groupName)){
+									pluginId = groupName;
+								} else {
+									//groupNameがプラグインIDに対応していない場合、HINEMOS_MANAGER_MONITORとする
+									pluginId = HinemosModuleConstant.HINEMOS_MANAGER_MONITOR;
+								}
+								
+								String[] args = { getSchedulerType().toString(), fireTargetJob.detail.getName(),
+										groupName, String.format("%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS", nextFireTime) };
+								AplLogger.put(
+										InternalIdCommon.SYS_SFC_SYS_026, pluginId,
+										args);
+							}
+						}
+
 					}
 					// Trigger情報更新
 					if(SchedulerPlugin.isDBMS(schedulerType)){

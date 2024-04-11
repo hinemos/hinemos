@@ -454,6 +454,19 @@ public class NodeMapCanvasComposite extends Composite{
 						|| item.getText().equals(
 								com.clustercontrol.nodemap.messages.Messages.getString("select.contextmenu.ping"))) {
 					item.setEnabled(true);
+				} else if (item.getText()
+						.indexOf(com.clustercontrol.nodemap.messages.Messages.getString("tooltip.facilityid")) == 0 ) {
+					// ファシリティIDは常に選択不能
+					item.setEnabled(false);
+				} else if (
+						( _view.getMode() == NodeMapView.Mode.FLOATING_MODE || 
+						  _view.getMode() == NodeMapView.Mode.EDIT_CONNECTION_MODE )
+						&&
+						( item.getText().equals(com.clustercontrol.nodemap.messages.Messages.getString("file.select.image.bg")) ||
+						  item.getText().equals(com.clustercontrol.nodemap.messages.Messages.getString("object.privilege.setting")))
+						) {
+					// ノード・スコープ移動またはコネクタ作成での背景画像・オブジェクト権限設定は常に選択可能
+					item.setEnabled(true);
 				} else {
 					item.setEnabled(enable);
 				}

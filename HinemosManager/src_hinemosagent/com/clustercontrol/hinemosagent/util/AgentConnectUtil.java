@@ -15,6 +15,7 @@ import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -735,17 +736,18 @@ public class AgentConnectUtil {
 
 		Socket socket = null;
 		InputStream is = null;
+		int timeout = HinemosPropertyCommon.agent_connection_timeout.getIntegerValue();
 		try {
 			String sendDataStr = "managerIp=" + managerIpAddr + ",agentFacilityId=" + facilityId;
 			byte[] data = sendDataStr.getBytes();
 			byte[] msg = new byte[data.length];
 			agentIpAddr = NodeProperty.getProperty(facilityId)
 					.getAvailableIpAddress();
-			
 			m_log.info("trying to establish connection to hinemos agent server at "
-					+ agentIpAddr + ":" + pingPort);
-			
-			socket = new Socket(agentIpAddr, pingPort);
+					+ agentIpAddr + ":" + pingPort + ", facilityId: " + facilityId + ", timeout: " + timeout);
+
+			socket = new Socket();
+			socket.connect(new InetSocketAddress(agentIpAddr, pingPort), timeout);
 
 			m_log.info("established the connection to the hinemos agent server at "
 					+ agentIpAddr);
@@ -771,6 +773,7 @@ public class AgentConnectUtil {
 		} catch (Exception e) {
 			successFlag = false;
 			m_log.warn("facilityId: " + facilityId + ", " + e.getMessage());
+			m_log.debug("facilityId: " + facilityId + ", " + agentIpAddr + ":" + pingPort, e);
 		} finally {
 			try {
 				if (is != null) {
@@ -783,8 +786,7 @@ public class AgentConnectUtil {
 				throw e;
 			}
 		}
-		
-		
+
 		return successFlag;
 	}
 

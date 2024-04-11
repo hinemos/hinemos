@@ -25,6 +25,7 @@ import org.openapitools.client.model.JobForwardFileResponse;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.action.GetForwardFileTableDefine;
 import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
@@ -143,6 +144,9 @@ public class ForwardFileComposite extends Composite {
 							Messages.getString("message.accesscontrol.16"));
 					ClientSession.freeDialog();
 				}
+			} catch (JobInfoNotFound e) {
+				// 実行契機削除などでジョブセッション削除のタイミングで履歴情報取得した場合の対策
+				// itemはnullのままにする
 			} catch (Exception e) {
 				if(ClientSession.isDialogFree()){
 					ClientSession.occupyDialog();

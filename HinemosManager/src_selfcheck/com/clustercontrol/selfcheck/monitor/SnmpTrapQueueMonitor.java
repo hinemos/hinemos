@@ -74,11 +74,11 @@ public class SnmpTrapQueueMonitor extends SelfCheckMonitorBase {
 		queueSize = SnmpTrapPlugin.getQueuedCount();
 
 		if (queueSize <= threshold) {
-			m_log.debug("snmptrap queue is normal. (queueSize = " + queueSize + ")");
+			m_log.debug("snmptrap queue is normal. (queueSize = " + queueSize + ", threshold = " + threshold + ")");
 			warn = false;
 		}
 		if (warn) {
-			m_log.info("snmptrap queue is too large. (queueSize = " + queueSize + ")");
+			m_log.info("snmptrap queue is too large. (queueSize = " + queueSize + ", threshold = " + threshold + ")");
 		}
 
 		if (!isNotify(subKey, warn)) {

@@ -33,6 +33,7 @@ import com.clustercontrol.utility.settings.platform.xml.NodeConfigInfo;
 import com.clustercontrol.utility.settings.platform.xml.NotifyId;
 import com.clustercontrol.utility.settings.platform.xml.SettingItemList;
 import com.clustercontrol.utility.util.OpenApiEnumConverter;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * 構成情報収集設定JavaBeanとXML(Bean)のbindingとのやりとりを
@@ -43,9 +44,15 @@ import com.clustercontrol.utility.util.OpenApiEnumConverter;
  * 
  */
 public class NodeConfigSettingConv {
-	static final private String schemaType="I";
-	static final private String schemaVersion="1";
-	static final private String schemaRevision="1";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static final private String schemaType=VersionUtil.getSchemaProperty("PLATFORM.NODECONFIGSETTING.SCHEMATYPE");
+	static final private String schemaVersion=VersionUtil.getSchemaProperty("PLATFORM.NODECONFIGSETTING.SCHEMAVERSION");
+	static final private String schemaRevision=VersionUtil.getSchemaProperty("PLATFORM.NODECONFIGSETTING.SCHEMAREVISION");
 	
 	public NodeConfigSettingConv() {
 	}

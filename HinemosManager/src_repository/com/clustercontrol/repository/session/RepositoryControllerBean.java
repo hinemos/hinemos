@@ -53,6 +53,7 @@ import com.clustercontrol.hinemosagent.util.AgentLibraryManager;
 import com.clustercontrol.hinemosagent.util.AgentProfile;
 import com.clustercontrol.hinemosagent.util.AgentProfiles;
 import com.clustercontrol.hinemosagent.util.AgentUpdateList;
+import com.clustercontrol.hinemosagent.util.AgentVersionManager;
 import com.clustercontrol.infra.session.InfraControllerBean;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.monitor.run.util.NodeMonitorPollerController;
@@ -171,11 +172,14 @@ public class RepositoryControllerBean {
 	 * ファシリティIDを条件としてNodeEntity を取得します。
 	 *
 	 * @param facilityId ファシリティID
+	 * @param mode オブジェクト権限モード
 	 * @return facilityEntity
 	 * @return InvalidRole
 	 * @return HinemosUnknown
 	 */
-	public NodeInfo getNodeEntityByPK(String facilityId) throws FacilityNotFound, InvalidRole, HinemosUnknown {
+	public NodeInfo getNodeEntityByPK(String facilityId, ObjectPrivilegeMode mode)
+			throws FacilityNotFound, InvalidRole, HinemosUnknown {
+
 		JpaTransactionManager jtm = null;
 		NodeInfo nodeEntity = null;
 
@@ -184,21 +188,25 @@ public class RepositoryControllerBean {
 			jtm.begin();
 
 			/** メイン処理 */
-			nodeEntity = QueryUtil.getNodePK(facilityId);
+			nodeEntity = QueryUtil.getNodePK(facilityId, mode);
 			
 			jtm.commit();
-		} catch (FacilityNotFound e) {
-			jtm.rollback();
+		} catch (FacilityNotFound | InvalidRole e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
 			throw e;
 		} catch (Exception e) {
 			m_log.warn("getNodeEntityByPK() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
 		}
 		return nodeEntity;
 	}
@@ -1236,7 +1244,8 @@ public class RepositoryControllerBean {
 			// メンバ変数にnullが含まれていることがあるので、nullをデフォルト値に変更する。
 			nodeInfo.setDefaultInfo();
 			m_log.debug("addNode(NodeInfo, boolean, boolean) : set default info success.");
-
+			//ファシリティIDとの重複チェック
+			jtm.checkEntityExists(FacilityInfo.class, nodeInfo.getFacilityId());
 			// 入力チェック
 			RepositoryValidator.validateNodeInfo(nodeInfo, auto);
 			m_log.debug("addNode(NodeInfo, boolean, boolean) : validate success. facilityId=" + nodeInfo.getFacilityId());
@@ -1728,7 +1737,8 @@ public class RepositoryControllerBean {
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-
+			//ファシリティIDとの重複チェック
+			jtm.checkEntityExists(FacilityInfo.class, info.getFacilityId());
 			//入力チェック
 			RepositoryValidator.validateScopeInfo(parentFacilityId, info, true);
 			
@@ -2723,8 +2733,9 @@ public class RepositoryControllerBean {
 						m_log.info("restartAgent: Skip no profile. facilityId=" + facilityId);
 						continue;
 					}
-					if (prof.isV61Earlier()) {
-						m_log.info("restartAgent: Skip ver.6.1 earlier. facilityId=" + facilityId);
+					if ((AgentVersionManager.checkVersion(AgentConnectUtil.getAgentVersion(facilityId),
+							AgentVersionManager.VERSION_MAJOR)) == false) {
+						m_log.info("restartAgent: Skip under ver." + AgentVersionManager.VERSION_MAJOR + ". facilityId=" + facilityId);
 						continue;
 					}
 					if (libman.isLatest(prof)) {
@@ -3224,7 +3235,7 @@ public class RepositoryControllerBean {
 	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	private void checkIsBuildInScope(String facilityId) throws FacilityNotFound, InvalidRole, HinemosUnknown{
+	public void checkIsBuildInScope(String facilityId) throws FacilityNotFound, HinemosUnknown{
 		ScopeInfo facility = QueryUtil.getScopePK(facilityId);
 
 		if(FacilitySelector.isBuildinScope(facility)){

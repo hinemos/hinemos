@@ -26,6 +26,8 @@ public interface ISdmlClientOption {
 
 	public List<String> getApplicationIdList(String managerName);
 
+	public void updateCaches();
+
 	// --- for Utility
 	public String getUtilityFunctionId();
 

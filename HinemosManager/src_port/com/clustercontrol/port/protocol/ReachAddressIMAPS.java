@@ -33,6 +33,8 @@ public class ReachAddressIMAPS extends ReachAddressProtocol {
 
 	private static Log m_log = LogFactory.getLog(ReachAddressIMAPS.class);
 
+	private static final String SSL_PROTOCOL = "TLS";
+
 	/**
 	 * IMAPSサービスが動作しているかをテストします
 	 * 
@@ -64,7 +66,7 @@ public class ReachAddressIMAPS extends ReachAddressProtocol {
 					+ hostname + "[" + address.getHostAddress()
 					+ "]:" + m_portNo + ".\n\n");
 
-			IMAPSClient client = new IMAPSClient(true) {
+			IMAPSClient client = new IMAPSClient(SSL_PROTOCOL, true) {
 				@Override
 				protected void _connectAction_() throws IOException {
 					setSoTimeout(m_timeout);

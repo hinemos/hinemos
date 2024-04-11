@@ -138,7 +138,7 @@ public class ReportingRestEndpoints {
 		ReportingInfo infoReq = new ReportingInfo();
 		RestBeanUtil.convertBean(dtoReq, infoReq);
 		
-		ReportingInfo infoRes = new ReportingControllerBean().addReporting(infoReq);
+		ReportingInfo infoRes = new ReportingControllerBean().addReporting(infoReq, false);
 		
 		ReportingScheduleResponse dtoRes = new ReportingScheduleResponse();
 		RestBeanUtil.convertBean(infoRes, dtoRes);
@@ -180,7 +180,7 @@ public class ReportingRestEndpoints {
 		infoReq.setReportScheduleId(scheduleId);
 		RestBeanUtil.convertBean(dtoReq, infoReq);
 		
-		ReportingInfo infoRes = new ReportingControllerBean().modifyReporting(infoReq);
+		ReportingInfo infoRes = new ReportingControllerBean().modifyReporting(infoReq, false);
 		
 		ReportingScheduleResponse dtoRes = new ReportingScheduleResponse();
 		RestBeanUtil.convertBean(infoRes, dtoRes);

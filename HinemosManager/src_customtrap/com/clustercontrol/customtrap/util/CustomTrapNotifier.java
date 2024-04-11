@@ -97,7 +97,9 @@ public class CustomTrapNotifier {
 				String str = monitorStringValueInfo.getMessage().replace("#[LOG_LINE]", customTrap.getMsg());
 				// DBよりオリジナルメッセージ出力文字数を取得
 				int maxLen = HinemosPropertyCommon.monitor_log_line_max_length.getIntegerValue();
-				m_log.info("monitor.log.line.max.length = " + maxLen);
+				if (m_log.isDebugEnabled()) {
+					m_log.debug("monitor.log.line.max.length = " + maxLen);
+				}
 				if (str.length() > maxLen) {
 					str = str.substring(0, maxLen);
 				}

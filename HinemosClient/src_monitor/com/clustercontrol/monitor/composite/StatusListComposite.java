@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -77,6 +78,9 @@ public class StatusListComposite extends CustomizableListComposite {
 
 	/** 更新成功可否フラグ */
 	private boolean m_updateSuccess = true;
+	
+	/** 件数制限なしでステータス一覧を取得した場合のレコード数 */
+	private int m_searchCountAll = 0;
 
 	/**
 	 * インスタンスを返します。
@@ -149,10 +153,21 @@ public class StatusListComposite extends CustomizableListComposite {
 
 		// テーブルビューアの作成
 		this.tableViewer = new CommonTableViewer(table);
-		this.tableViewer.createTableColumn(GetStatusListTableDefine.getStatusListTableDefine(),
-				GetStatusListTableDefine.SORT_COLUMN_INDEX1,
-				GetStatusListTableDefine.SORT_COLUMN_INDEX2,
-				GetStatusListTableDefine.SORT_ORDER);
+		// ステータス情報の表示上限数
+		final int limit = NumberUtils.toInt(System.getProperty("maximum.monitor.history.status.view.size"), -1);
+		if (limit <= 0) {
+			// 表示上限なし
+			this.tableViewer.createTableColumn(GetStatusListTableDefine.getStatusListTableDefine(),
+					GetStatusListTableDefine.SORT_COLUMN_INDEX1,
+					GetStatusListTableDefine.SORT_COLUMN_INDEX2,
+					GetStatusListTableDefine.SORT_ORDER);
+		} else {
+			// 表示上限あり
+			this.tableViewer.createTableColumn(GetStatusListTableDefine.getStatusListTableDefine(),
+					GetStatusListTableDefine.SORT_COLUMN_INDEX1_FOR_LIMITED,
+					GetStatusListTableDefine.SORT_COLUMN_INDEX2_FOR_LIMITED,
+					GetStatusListTableDefine.SORT_ORDER_FOR_LIMITED);
+		}
 
 		for (int i = 0; i < table.getColumnCount(); i++){
 			table.getColumn(i).setMoveable(true);
@@ -212,6 +227,7 @@ public class StatusListComposite extends CustomizableListComposite {
 		StatusSearchRunUtil util = new StatusSearchRunUtil();
 		Map<String, ArrayList<ArrayList<Object>>> map = util.searchInfo(managerList, filter);
 		m_updateSuccess = util.isSearchSuccess();
+		m_searchCountAll = util.getSearchCountAll();
 
 		for (Map.Entry<String, ArrayList<ArrayList<Object>>> entry : map.entrySet()) {
 			ArrayList<ArrayList<Object>> viewListInfo = dispDataMap.get(entry.getKey());
@@ -352,7 +368,15 @@ public class StatusListComposite extends CustomizableListComposite {
 		this.infoLabel.setText(String.valueOf(status[2]));
 		this.unknownLabel.setText(String.valueOf(status[3]));
 		int total = status[0] + status[1] + status[2] + status[3];
-		this.totalLabel.setText(Messages.getString("filtered.records", new Object[]{total}));
+		
+		String totalLabelText;
+		if (total < m_searchCountAll) {
+			totalLabelText = Messages.getString("records.total.short", new Object[]{total, m_searchCountAll});
+		} else {
+			totalLabelText = Messages.getString("records.short", new Object[]{total});
+		}
+		this.totalLabel.setText(totalLabelText);
+		
 	}
 	
 	/**

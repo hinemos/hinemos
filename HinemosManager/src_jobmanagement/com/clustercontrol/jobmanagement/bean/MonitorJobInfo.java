@@ -270,7 +270,7 @@ public class MonitorJobInfo implements Serializable, RequestDto {
 				equalsSub(o1.getMonitorCriticalEndValue(), o2.getMonitorCriticalEndValue()) &&
 				equalsSub(o1.getMonitorUnknownEndValue(), o2.getMonitorUnknownEndValue()) &&
 				equalsSub(o1.getMonitorWaitTime(), o2.getMonitorWaitTime()) &&
-				equalsSub(o1.getMonitorWarnEndValue(), o2.getMonitorWarnEndValue());
+				equalsSub(o1.getMonitorWaitEndValue(), o2.getMonitorWaitEndValue());
 		return ret;
 	}
 

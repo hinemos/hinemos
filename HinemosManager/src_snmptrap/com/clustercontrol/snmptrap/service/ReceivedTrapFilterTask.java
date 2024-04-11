@@ -79,15 +79,20 @@ public class ReceivedTrapFilterTask implements Runnable {
 	 * クエリの結果、受信したSNMPTRAPにマッチする(MonitorInfo, MonitorTrapValueInfoEntity)の配列のリストが得られるので、
 	 * MonitorInfoごとに順番に処理する
 	 * 
-	 * 例：SNMPTRAP監視設定A,Bがあり、受信したSNMPTRAPが、監視設定Aのトラップ定義A-1とトラップ定義A-2、監視設定Bのトラップ定義B-1にマッチする場合
+	 * 例：SNMPTRAP監視設定A,Bがあり、受信したSNMPTRAPが、
+	 * 監視設定Aのトラップ定義A-1とトラップ定義A-2とトラップ定義A-3、
+	 * 監視設定Bのトラップ定義B-1にマッチする場合
 	 * resultsには、以下のように2要素の配列から成るリストが設定される
-	 * [[監視設定A, トラップ定義A-1],
-	 *  [監視設定A, トラップ定義A-2],
-	 *  [監視設定B, トラップ定義B-1]]
+	 * [[監視設定A, トラップ定義A-1(v1)],
+	 *  [監視設定A, トラップ定義A-2(v2)],
+	 *  [監視設定A, トラップ定義A-3(v1)],
+	 *  [監視設定B, トラップ定義B-1(v2)]]
 	 *  
 	 *  この場合next()を実行すると、監視設定A, 監視設定Bと順に得られる。
-	 *  next()で監視設定Aが得られた後、次にnext()を実行するまでgetValueInfoList()を実行すると、リスト[トラップ定義A-1, トラップ定義A-2]が得られ、
-	 *  next()で監視設定Bが得られた後、次にnext()を実行するまでgetValueInfoList()を実行すると、リスト[トラップ定義B-1]が得られる。
+	 *  next()で監視設定Aが得られた後、次にnext()を実行するまでgetValueInfoList()を実行すると、
+	 *  リスト[v1のトラップ定義リスト[トラップ定義A-1, トラップ定義A-3],v2のトラップ定義リスト[トラップ定義A-2]]が得られ、
+	 *  next()で監視設定Bが得られた後、次にnext()を実行するまでgetValueInfoList()を実行すると、
+	 *  リスト[v1のトラップ定義リスト[], v2のトラップ定義リスト[トラップ定義B-1]]が得られる。
 	 */
 	private static class QueryResultIterator<E> implements Iterator<E> {
 		
@@ -132,21 +137,24 @@ public class ReceivedTrapFilterTask implements Runnable {
 		}
 
 		// MonitorInfoに対応するMonitorTrapValueInfoEntity(受信したトラップにマッチするもの)のリストを返す
-		private List<TrapValueInfo> getValueInfoList() {
-			List<TrapValueInfo> list = new ArrayList<TrapValueInfo>();
+		private List<List<TrapValueInfo>> getValueInfoList() {
+			List<List<TrapValueInfo>> list = new ArrayList<List<TrapValueInfo>>();
+			// 2バージョン分けてリストに保持する
+			// (MonitorTrapValueInfoEntityのバージョン情報は v1 or v2c/v3 の2値なため)
+			list.add(new ArrayList<TrapValueInfo>());
+			list.add(new ArrayList<TrapValueInfo>());
 			for (int i = current; i < results.size(); ++i) {
 				MonitorInfo o = (MonitorInfo)results.get(i)[MONITOR_INFO];
 				if (o != null && o == currentMonitorInfo) {
 					// MonitorInfoに対応するMonitorTrapValueInfoEntityが複数ある場合はすべてリストにつめる
 					TrapValueInfo entity = (TrapValueInfo)results.get(i)[MONITOR_TRAP_VALUE_INFO];
 					if (entity != null) {
-						list.add(entity);
+						list.get(entity.getVersion()).add(entity);
 					}
 				} else {
 					break;
 				}
 			}
-			
 			return list;
 		}
 
@@ -306,7 +314,7 @@ public class ReceivedTrapFilterTask implements Runnable {
 						: MonitorJobWorker.getMonitorJobMap(HinemosModuleConstant.MONITOR_SNMPTRAP).entrySet()) {
 
 					boolean isCheck = false;
-					List<TrapValueInfo> trapValueList = null;
+					List<List<TrapValueInfo>> trapValueList = null;
 					QueryResultIterator<MonitorInfo> monitorIter = new QueryResultIterator<MonitorInfo>(results);
 					while (monitorIter.hasNext()) {
 						MonitorInfo currentMonitor = monitorIter.next();
@@ -392,7 +400,7 @@ public class ReceivedTrapFilterTask implements Runnable {
 		MonitorInfo monitorInfo,
 		RunInstructionInfo runInstructionInfo,
 		SnmpTrap receivedTrap,
-		List<TrapValueInfo> valueInfoList,
+		List<List<TrapValueInfo>> valueInfoList,
 		Map<String, List<String>> matchedFacilityIdListMap,
 		List<SnmpTrap> receivedTrapBuffer,
 		List<MonitorInfo> monitorBuffer,
@@ -477,15 +485,13 @@ public class ReceivedTrapFilterTask implements Runnable {
 		VarBindPattern matchedPattern = null;
 		String matchedString = null;
 
-		Iterator<TrapValueInfo> valueIterator = valueInfoList.iterator();
-
 		if (runInstructionInfo == null) {
 			// 監視ジョブ以外
 			//収集
 			if (monitorInfo.getCollectorFlg() != null && monitorInfo.getCollectorFlg()) {
 
 				String[] msgs = createMessages(trapInfo, varBindStrs, receivedTrap);
-	
+
 				Date date = new Date(HinemosTime.currentTimeMillis());
 				// 収集値の入れ物を作成
 				StringSample strSample = new StringSample(date, monitorInfo.getMonitorId());
@@ -503,7 +509,95 @@ public class ReceivedTrapFilterTask implements Runnable {
 			}
 		}
 
-		if (!valueIterator.hasNext() && trapInfo.getNotifyofReceivingUnspecifiedFlg()) {
+		// 受信したSNMPTRAPのバージョンに合わせて、バージョンの一致するトラップ定義を優先する
+		List<Integer> trapVersionOrder = new ArrayList<Integer>();
+		if (SnmpVersionConstant.TYPE_V1 == receivedTrap.getTrapId().getVersion()) {
+			trapVersionOrder.add(SnmpVersionConstant.TYPE_V1);
+			trapVersionOrder.add(SnmpVersionConstant.TYPE_V2);
+		} else {
+			trapVersionOrder.add(SnmpVersionConstant.TYPE_V2);
+			trapVersionOrder.add(SnmpVersionConstant.TYPE_V1);
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("processing trapVersionOrder, receivedTrapVer " + receivedTrap.getTrapId().getVersion());
+			logger.debug("processing trapVersionOrder : " + trapVersionOrder);
+		}
+
+		for (Integer trapDefVersion : trapVersionOrder) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("processing valueInfoList, version " + SnmpVersionConstant.typeToString(trapDefVersion));
+				logger.debug("processing valueInfoList : " + valueInfoList.get(trapDefVersion));
+			}
+
+			if (valueInfoList.get(trapDefVersion).isEmpty()) {
+				// 受信したSNMPTRAPと同じバージョンのトラップ定義がないため、別バージョンの定義も確認する
+				continue;
+			}
+
+			Iterator<TrapValueInfo> valueIterator = valueInfoList.get(trapDefVersion).iterator();
+
+			while (valueIterator.hasNext()) {
+				TrapValueInfo currentValueInfo = valueIterator.next();
+				if (logger.isDebugEnabled()) {
+					logger.debug("currentValueInfo : " + currentValueInfo);
+				}
+
+				if (!currentValueInfo.getProcessingVarbindSpecified()) {
+					// varbindで判定をおこなわない場合
+					matchedTrapValueInfo = currentValueInfo;
+					if (!SnmpTrapConstants.genericTrapV2Set.contains(currentValueInfo.getId().getTrapOid())) {
+						// GENERIC TRAPのOIDより、個別のOIDを優先する
+						break;
+					}
+				} else {
+					// varbindで判定をおこなう場合
+
+					String varBindStr = getBindedString(currentValueInfo.getFormatVarBinds(), varBindStrs);
+					List<VarBindPattern> patterns = new ArrayList<>(currentValueInfo.getVarBindPatterns());
+					Collections.sort(patterns, new Comparator<VarBindPattern>() {
+						@Override
+						public int compare(VarBindPattern o1, VarBindPattern o2) {
+							return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
+						}
+					});
+
+					for (VarBindPattern currentPattern : patterns) {
+						if (!currentPattern.getValidFlg()) // VarBindパターン[作成・変更]の「この設定を有効にする」がOFF
+							continue;
+
+						Pattern pattern = null;
+						if (currentPattern.getCaseSensitivityFlg()) {
+							// 大文字・小文字を区別しない場合
+							pattern = Pattern.compile(currentPattern.getPattern(),
+									Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+						} else {
+							// 大文字・小文字を区別する場合
+							pattern = Pattern.compile(currentPattern.getPattern(), Pattern.DOTALL);
+						}
+
+						// パターンマッチ表現でマッチング
+						Matcher matcher = pattern.matcher(varBindStr);
+						if (matcher.matches()) {
+							matchedTrapValueInfo = currentValueInfo;
+							matchedPattern = currentPattern;
+							matchedString = varBindStr;
+							break;
+						}
+					}
+
+					if (matchedTrapValueInfo != null
+							&& !SnmpTrapConstants.genericTrapV2Set.contains(currentValueInfo.getId().getTrapOid())) {
+						// GENERIC TRAPのOIDより、個別のOIDを優先する
+						break;
+					}
+				}
+			} // while valueIterator
+
+			// 受信したSNMPTRAPと同じバージョンのトラップ定義があった場合は、別バージョンの定義は確認しない
+			break;
+		} // while v1 and v2c/v3
+
+		if (matchedTrapValueInfo == null && trapInfo.getNotifyofReceivingUnspecifiedFlg()) {
 			// マッチするTRAPの設定が存在せず、存在しない場合に通知する場合
 			String[] msgs = createMessages(trapInfo, varBindStrs, receivedTrap);
 
@@ -518,58 +612,6 @@ public class ReceivedTrapFilterTask implements Runnable {
 			}
 			return;
 		}
-
-		while (valueIterator.hasNext()) {
-			TrapValueInfo currentValueInfo = valueIterator.next();
-
-			if (!currentValueInfo.getProcessingVarbindSpecified()) {
-				// varbindで判定をおこなわない場合
-				matchedTrapValueInfo = currentValueInfo;
-				if (!SnmpTrapConstants.genericTrapV2Set.contains(currentValueInfo.getId().getTrapOid())) {
-					// GENERIC TRAPのOIDより、個別のOIDを優先する
-					break;
-				}
-			} else {
-				// varbindで判定をおこなう場合
-
-				String varBindStr = getBindedString(currentValueInfo.getFormatVarBinds(), varBindStrs);
-				List<VarBindPattern> patterns = new ArrayList<>(currentValueInfo.getVarBindPatterns());
-				Collections.sort(patterns, new Comparator<VarBindPattern>() {
-					@Override
-					public int compare(VarBindPattern o1, VarBindPattern o2) {
-						return o1.getId().getOrderNo().compareTo(o2.getId().getOrderNo());
-					}
-				});
-
-				for (VarBindPattern currentPattern: patterns) {
-					if (!trapInfo.getNotifyofReceivingUnspecifiedFlg() && !currentPattern.getValidFlg())
-						continue;
-
-					Pattern pattern = null;
-					if (currentPattern.getCaseSensitivityFlg()) {
-						// 大文字・小文字を区別しない場合
-						pattern = Pattern.compile(currentPattern.getPattern(), Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-					} else {
-						// 大文字・小文字を区別する場合
-						pattern = Pattern.compile(currentPattern.getPattern(), Pattern.DOTALL);
-					}
-
-					// パターンマッチ表現でマッチング
-					Matcher matcher = pattern.matcher(varBindStr);
-					if (matcher.matches()) {
-						matchedTrapValueInfo = currentValueInfo;
-						matchedPattern = currentPattern;
-						matchedString = varBindStr;
-						break;
-					}
-				}
-
-				if (matchedTrapValueInfo != null && !SnmpTrapConstants.genericTrapV2Set.contains(currentValueInfo.getId().getTrapOid())) {
-					// GENERIC TRAPのOIDより、個別のOIDを優先する
-					break;
-				}
-			}
-		} // while valueIterator
 
 		if (matchedTrapValueInfo == null) {
 			return;

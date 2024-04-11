@@ -12,10 +12,10 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
@@ -34,7 +34,6 @@ import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.model.NotifyCommandInfo;
 import com.clustercontrol.platform.HinemosPropertyDefault;
-import com.clustercontrol.rest.endpoint.notify.dto.enumtype.CommandSettingTypeEnum;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandExecutor;
 import com.clustercontrol.util.CommandExecutor.CommandResult;
@@ -59,14 +58,15 @@ public class ExecCommand implements Notifier {
 
 	// 「コマンドを実行するスレッド（CommandTask）」を実行し、その終了を待つスレッド（CommandCallerTask）用の
 	// スレッドプールを保持するExecutorService
-	private static ExecutorService _callerExecutorService;
+	private static ThreadPoolExecutor _callerExecutorService;
 
 	static {
 	// hinemos.propertiesからスレッドプール数を取得する
 		int threadPoolCount = HinemosPropertyCommon.notify_command_thread_pool_count.getIntegerValue();
+		int queueSize = HinemosPropertyCommon.notify_command_queue_size.getIntegerValue();
 
 		_callerExecutorService = new MonitoredThreadPoolExecutor(threadPoolCount, threadPoolCount,
-				0L, TimeUnit.MICROSECONDS, new LinkedBlockingQueue<Runnable>(),
+				0L, TimeUnit.MICROSECONDS, new LinkedBlockingQueue<Runnable>(queueSize),
 				new CommandTaskThreadFactory());
 	}
 
@@ -254,16 +254,25 @@ public class ExecCommand implements Notifier {
 
 			String[] cmd;
 			// コマンドを実行する(実効ユーザが空欄の場合はマネージャ起動ユーザで実行)
+			boolean specifyUser = false;
 			if (_effectiveUser.isEmpty()) {
-				cmd = CommandCreator.createCommand(_effectiveUser, _execCommand, _modeType, false);
+				specifyUser = false;
+				cmd = CommandCreator.createCommand(_effectiveUser, _execCommand, _modeType, specifyUser);
 			} else {
+				specifyUser = true;
 				cmd = CommandCreator.createCommand(_effectiveUser, _execCommand, _modeType);
 			}
 
 			m_log.info("call() excuting command. (effectiveUser = " + _effectiveUser + ", command = " + _execCommand + ", mode = " + _modeType + ", timeout = " + _commadTimeout + ")");
 
 			// 戻り値を格納する
-			CommandExecutor cmdExec = new CommandExecutor(cmd, Charset.forName(charset), _commadTimeout);
+			CommandExecutor cmdExec = new CommandExecutor(
+					new CommandExecutor.CommandExecutorParams()
+						.setCommand(cmd)
+						.setCharset(Charset.forName(charset))
+						.setTimeout(_commadTimeout)
+						.setForceSigterm(specifyUser));
+
 			cmdExec.execute();
 			CommandResult ret = cmdExec.getResult();
 
@@ -302,5 +311,14 @@ public class ExecCommand implements Notifier {
 		public Thread newThread(Runnable r) {
 			return new Thread(r, "NotifyCommandTask-" + _count++);
 		}
+	}
+
+	/**
+	 * コマンド実行
+	 * 
+	 * @return キューの蓄積数
+	 */
+	public static int getTaskCount(){
+		return _callerExecutorService.getQueue().size();
 	}
 }

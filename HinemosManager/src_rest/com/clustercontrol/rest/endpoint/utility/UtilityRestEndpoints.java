@@ -646,7 +646,7 @@ public class UtilityRestEndpoints {
 		ImportInfraManagementInfoRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
 				ImportInfraManagementInfoRequest.class);
 
-		m_log.info("call importSystemPrivilegeInfo()");
+		m_log.info("call importInfraManagementInfo()");
 
 		ImportInfraManagementInfoResponse resDto = new ImportInfraManagementInfoResponse();
 

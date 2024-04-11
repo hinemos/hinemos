@@ -44,12 +44,16 @@ import com.clustercontrol.accesscontrol.util.UserRoleCacheRefreshCallback;
 import com.clustercontrol.accesscontrol.util.UserValidator;
 import com.clustercontrol.accesscontrol.util.VersionUtil;
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.fault.AccessUsedUser;
+import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.FacilityDuplicate;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.HinemosUsed;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.InvalidUserPass;
@@ -68,7 +72,12 @@ import com.clustercontrol.fault.UsedUser;
 import com.clustercontrol.fault.UserDuplicate;
 import com.clustercontrol.fault.UserNotFound;
 import com.clustercontrol.filtersetting.session.FilterSettingControllerBean;
+import com.clustercontrol.jobmanagement.bean.JobApprovalFilter;
+import com.clustercontrol.jobmanagement.bean.JobApprovalInfo;
+import com.clustercontrol.jobmanagement.model.JobInfoEntity;
+import com.clustercontrol.jobmanagement.model.JobMstEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
+import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.repository.bean.FacilityConstant;
 import com.clustercontrol.repository.bean.FacilitySortOrderConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
@@ -81,6 +90,7 @@ import com.clustercontrol.repository.util.FacilityTreeCacheRefreshCallback;
 import com.clustercontrol.repository.util.RepositoryChangedNotificationCallback;
 import com.clustercontrol.repository.util.RepositoryValidator;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Singletons;
 import com.clustercontrol.xcloud.Session;
 import com.clustercontrol.xcloud.bean.AvailableRole;
@@ -360,7 +370,7 @@ public class AccessControllerBean {
 		}
 		return ret;
 	}
-
+	
 	/**
 	 * ユーザ情報を削除する。<BR>
 	 *
@@ -381,8 +391,21 @@ public class AccessControllerBean {
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-
+			
+			JobControllerBean jcb = new JobControllerBean();
+			
 			for(String userId : userIdList) {
+				List<JobMstEntity> approvalJobMstList = jcb.getJobMstFindByApprovalReqUserId(userId);
+
+				m_log.debug("Check ApprovalJobMst: userId: " + userId + 
+						", approvalJobMstList size: " + approvalJobMstList.size());
+				if (approvalJobMstList.size() > 0) {
+					JobMstEntity jobEntity = approvalJobMstList.get(0);
+					String jobId = jobEntity.getId().getJobId();
+					String jobUnitId = jobEntity.getId().getJobunitId();
+					throw new AccessUsedUser(MessageConstant.MESSAGE_ACCESS_CANNOT_DELETE_USER_USED_BY_APPROVAL_JOB.getMessage(userId, jobUnitId, jobId));
+				}
+
 				UserInfo info = LoginUserSelector.getUserInfo(userId);
 				ret.add(info);
 				LoginUserModifier.deleteUserInfo(userId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));

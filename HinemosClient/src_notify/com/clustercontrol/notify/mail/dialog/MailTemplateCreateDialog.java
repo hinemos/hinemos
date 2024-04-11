@@ -506,6 +506,9 @@ public class MailTemplateCreateDialog extends CommonDialog {
 			String managerName = m_managerComposite.getText();
 			String[] args = { info.getMailTemplateId(), managerName };
 			CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(managerName);
+			
+			info.setBody(this.textBody.getText().replace("\r\n", "\n"));
+			
 			if (this.mode == PropertyDefineConstant.MODE_ADD) {
 				// 作成の場合
 				try {

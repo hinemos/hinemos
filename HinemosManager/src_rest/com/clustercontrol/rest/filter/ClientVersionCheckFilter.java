@@ -22,6 +22,7 @@ import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.exception.ExceptionBody;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * Hinemosクライアントのバージョンチェックを行う HTTPヘッダで X-HinemosClientVersion が指定された場合、当該ヘッダの値が
@@ -38,7 +39,7 @@ public class ClientVersionCheckFilter implements ContainerRequestFilter {
 
 	private static final Log log = LogFactory.getLog(ClientVersionCheckFilter.class);
 
-	private static final String VERSION = "7.0";
+	private static final String VERSION = VersionUtil.getVersionMajor();
 
 	@Context
 	private ResourceInfo resourceInfo;

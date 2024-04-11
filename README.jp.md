@@ -12,7 +12,7 @@
 
 Hinemosは大規模、複雑化するITシステムの「監視」や「ジョブ」といった「運用業務の自動化」を実現し、オープンソースソフトウェアが持つコストメリットを最大限に活用できる統合運用管理ソフトウェアです。
 
-[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v7.0.1#packages)
+[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v7.0.2#packages)
 
 ## インストール
 
@@ -20,22 +20,22 @@ Hinemosはコマンドひとつでインストールできます。
 
 - マネージャのインストール
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-manager-7.0.1-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-manager-7.0.1-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el8.x86_64.rpm```
   - RHEL 9.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-manager-7.0.1-1.el9.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el9.x86_64.rpm```
 
 
 - Webクライアントのインストール
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-web-7.0.1-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-web-7.0.1-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el8.x86_64.rpm```
   - RHEL 9.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-web-7.0.1-1.el9.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el9.x86_64.rpm```
 
-詳細は[Hinemos ver.7.0 基本機能マニュアル](https://github.com/hinemos/hinemos/releases/download/v7.0.1/ja_Base_Linux_7.0_rev17.pdf)をご覧下さい。
+詳細は[Hinemos ver.7.0 基本機能マニュアル](https://github.com/hinemos/hinemos/releases/download/v7.0.2/ja_Base_Linux_7.0_rev19.pdf)をご覧下さい。
 
 
 ## ver.7.0新機能
@@ -117,11 +117,11 @@ Hinemosはコマンドひとつでインストールできます。
     - #13144 メール送信の認証方法にOAuth2.0を追加
 
 
-詳細は[リリースノート](https://github.com/hinemos/hinemos/releases/tag/v7.0.1)をご覧下さい。
+詳細は[リリースノート](https://github.com/hinemos/hinemos/releases/tag/v7.0.2)をご覧下さい。
 
 ## ドキュメント
 
-- Hinemos ver.7.0 基本機能マニュアル ([ja_Base_Linux_7.0_rev17.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/ja_Base_Linux_7.0_rev17.pdf) )
+- Hinemos ver.7.0 基本機能マニュアル ([ja_Base_Linux_7.0_rev19.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.2/ja_Base_Linux_7.0_rev19.pdf) )
 
 ## ライセンス
 

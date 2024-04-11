@@ -687,7 +687,7 @@ public class CollectRestEndpoints {
 	@Path("/data_create")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "CreatePerfFile")
 	@RestLog(action = LogAction.Create, target = LogTarget.Data, type = LogType.UPDATE )
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.MonitorSetting, modeList = { SystemPrivilegeMode.ADD })
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.Collect, modeList = { SystemPrivilegeMode.READ })
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = CreatePerfFileResponse.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_400, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
@@ -746,7 +746,7 @@ public class CollectRestEndpoints {
 	@Path("/data_download/{fileName}")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "DownloadPerfFile")
 	@RestLog(action = LogAction.Download, target = LogTarget.Data, type = LogType.UPDATE )
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.MonitorSetting, modeList = { SystemPrivilegeMode.ADD })
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.Collect, modeList = { SystemPrivilegeMode.READ })
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING, format = "binary")), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),

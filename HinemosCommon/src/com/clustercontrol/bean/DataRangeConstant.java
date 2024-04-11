@@ -94,6 +94,9 @@ public class DataRangeConstant {
 	/** SNMP TRAPのgeneric trap の上限 */
 	public static final int GENERIC_ID_HIGH = 6;
 
+	/** SNMP TRAPのspecific trap の下限 */
+	public static final int SPECIFIC_ID_LOW = 0;
+
 	/** オーナーロールIDの最大長 */
 	public static final int OWNER_ROLE_ID_MAXLEN = 64;
 	

@@ -330,7 +330,10 @@ public class JobTreeItemUtil {
 				rpaJobInfo.setRpaScreenshotEndValue(orgInfo.getRpa().getRpaScreenshotEndValue());
 				rpaJobInfo.setRpaScreenshotEndValueCondition(orgInfo.getRpa().getRpaScreenshotEndValueCondition());
 				rpaJobInfo.setRpaJobOptionInfos(orgInfo.getRpa().getRpaJobOptionInfos());
-				rpaJobInfo.setRpaJobEndValueConditionInfos(orgInfo.getRpa().getRpaJobEndValueConditionInfos());
+				rpaJobInfo.setRpaJobEndValueConditionInfos(new ArrayList<>());
+				if (orgInfo.getRpa().getRpaJobEndValueConditionInfos() != null){
+					rpaJobInfo.getRpaJobEndValueConditionInfos().addAll(orgInfo.getRpa().getRpaJobEndValueConditionInfos());
+				}
 				// 間接実行
 				rpaJobInfo.setRpaScopeId(orgInfo.getRpa().getRpaScopeId());
 				rpaJobInfo.setRpaRunType(orgInfo.getRpa().getRpaRunType());
@@ -546,6 +549,8 @@ public class JobTreeItemUtil {
 						JobObjectGroupInfoResponse jobObjectGroupInfo = new JobObjectGroupInfoResponse();
 						jobObjectGroupInfo.setConditionType(itemGroup.getConditionType());
 						jobObjectGroupInfo.setJobObjectList(objectList);
+						jobObjectGroupInfo.setOrderNo(itemGroup.getOrderNo());
+						jobObjectGroupInfo.setIsGroup(itemGroup.getIsGroup());
 						objectGroupList.add(jobObjectGroupInfo);
 					}
 					jobWaitRuleInfo.setObjectGroup(objectGroupList);

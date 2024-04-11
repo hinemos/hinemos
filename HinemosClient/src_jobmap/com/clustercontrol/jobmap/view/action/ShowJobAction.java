@@ -15,6 +15,7 @@ import org.eclipse.ui.PlatformUI;
 import org.openapitools.client.model.JobTreeItemResponseP3;
 
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
 import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
@@ -57,6 +58,12 @@ public class ShowJobAction extends BaseAction {
 			} catch (InvalidRole e) {
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
+			} catch (JobInfoNotFound e) {
+				// 実行契機削除などでジョブセッション削除のタイミングで履歴情報取得した場合の対策
+				MessageDialog.openError(
+						null,
+						Messages.getString("failed"),
+						Messages.getString("message.job.122"));
 			} catch (Exception e) {
 				MessageDialog.openError(
 						null,

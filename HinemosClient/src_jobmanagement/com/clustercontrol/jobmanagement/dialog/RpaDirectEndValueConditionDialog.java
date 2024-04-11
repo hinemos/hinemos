@@ -37,6 +37,7 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.jobmanagement.bean.JobRpaReturnCodeConditionMessage;
+import com.clustercontrol.jobmanagement.bean.SystemParameterConstant;
 import com.clustercontrol.jobmanagement.rpa.util.ReturnCodeConditionChecker;
 import com.clustercontrol.jobmanagement.util.JobDialogUtil;
 import com.clustercontrol.util.HinemosMessage;
@@ -225,7 +226,7 @@ public class RpaDirectEndValueConditionDialog extends CommonDialog {
 		conditionLabel.setText(Messages.getString("judgment.condition") + " : ");
 		conditionLabel.setLayoutData(new GridData(SWT.DEFAULT, SizeConstant.SIZE_LABEL_HEIGHT));
 
-		m_returnCodeConditionComboViewer = new ComboViewer(returnCodeGroup, SWT.BORDER);
+		m_returnCodeConditionComboViewer = new ComboViewer(returnCodeGroup, SWT.READ_ONLY);
 		m_returnCodeConditionComboViewer.getCombo().setLayoutData(new GridData(50, SizeConstant.SIZE_TEXT_HEIGHT));
 		// プルダウン項目を設定
 		m_returnCodeConditionComboViewer.setContentProvider(ArrayContentProvider.getInstance());
@@ -362,6 +363,12 @@ public class RpaDirectEndValueConditionDialog extends CommonDialog {
 			this.m_returnCodeText.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 			this.m_returnCodeEndValueText.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
+		//  ファイルの内容で判定を選択時、条件に一致する/しないが未選択なら デフォルトとして一致するをセット
+		if (m_fileContentButton.getSelection()) {
+			if( !(m_conditionMatchedButton.getSelection()) && !(m_conditionNotMatchedButton.getSelection()) ){
+				m_conditionMatchedButton.setSelection(true);
+			}
+		}
 	}
 
 	/**
@@ -422,12 +429,14 @@ public class RpaDirectEndValueConditionDialog extends CommonDialog {
 						Messages.getString("message.job.rpa.21"));
 			}
 			
-			// 区切り文字として分割し、入力チェックを行う
-			try{
-				ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(
-						MessageConstant.RPAJOB_END_VALUE_CONDITION_RETURN_CODE.getMessage(), m_returnCodeText.getText());
-			} catch(InvalidSetting e) {
-				return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),HinemosMessage.replace(e.getMessage()));
+			// ジョブ変数でなければ、区切り文字として分割し、範囲チェックを行う
+			if(!SystemParameterConstant.isParamFormat(m_returnCodeText.getText())){
+				try{
+					ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(
+							MessageConstant.RPAJOB_END_VALUE_CONDITION_RETURN_CODE.getMessage(), m_returnCodeText.getText());
+				} catch(InvalidSetting e) {
+					return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),HinemosMessage.replace(e.getMessage()));
+				}
 			}
 			
 			IStructuredSelection returnCodeConditionSelection = (StructuredSelection) m_returnCodeConditionComboViewer

@@ -35,11 +35,12 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.openapitools.client.model.MapAssociationInfoResponse;
 import org.openapitools.client.model.MapAssociationInfoResponse.TypeEnum;
-import org.openapitools.client.model.ScopeInfoResponseP1;
-
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.fault.FacilityNotFound;
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
-import com.clustercontrol.fault.NodeMapElementNoPrivilege;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.NodeMapException;
 import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.nodemap.composite.NodeMapCanvasComposite;
@@ -158,52 +159,19 @@ public class NodeMapView extends AutoUpdateView {
 				String facilityId = (String)combo.getData(item);
 				// クライアント側のキャッシュを有効にして選択したファシリティIDのマップを描画
 				// 選択されたファシリティIDのスコープに遷移
-				// スコープの存在確認
-				ScopeInfoResponseP1 scopeInfo = null;
-				try {
-					RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(m_canvasComposite.getManagerName());
-					scopeInfo = wrapper.getScope(facilityId);
-				} catch (Exception ex) {
-					// スコープ情報取得エラー
-					String errMessage = "";
-					if (ex instanceof InvalidRole) {
-						errMessage = Messages.getString("message.accesscontrol.16");
-					} else {
-						errMessage = ex.getMessage();
+
+				// 編集中の情報を解除してよいか確認
+				if (isEditing()) {
+					if (!MessageDialog.openQuestion(
+							null,
+							Messages.getString("confirm"),
+							com.clustercontrol.nodemap.messages.Messages.getString("edit.refresh.confirm"))) {
+						return;
 					}
-					m_log.error("createPartControl() : "
-							+ "Failed to get the list of Scope information, "
-							+ errMessage
-							, ex);
 				}
-				if (scopeInfo == null) {
-					// スコープが存在しない場合
-					// 履歴より対象スコープを削除
-					combo.remove(combo.getSelectionIndex());
-					// 履歴選択前のスコープのノードマップを表示
-					String beforeFacilityId = SecondaryIdMap.getFacilityId(secondaryId);
-					int beforeIndex = 0;
-					for(int i=0; i<combo.getItemCount(); i++) {
-						if (beforeFacilityId.equals(combo.getData(combo.getItem(i)))) {
-							beforeIndex = i;
-							break;
-						}
-					}
-					combo.select(beforeIndex);
-				} else {
-					// 編集中の情報を解除してよいか確認
-					if (isEditing()) {
-						if (!MessageDialog.openQuestion(
-								null,
-								Messages.getString("confirm"),
-								com.clustercontrol.nodemap.messages.Messages.getString("edit.refresh.confirm"))) {
-							return;
-						}
-					}
-					
-					// スコープが存在する場合は対象スコープのノードマップを表示
-					updateView(facilityId);
-				}
+
+				// スコープが存在する場合は対象スコープのノードマップを表示
+				updateView(facilityId);
 			}
 
 			@Override
@@ -377,11 +345,6 @@ public class NodeMapView extends AutoUpdateView {
 	public void updateView(String facilityId){
 		m_log.debug("@@updateView() " + facilityId);
 
-		String oldFacilityId = null;
-		if (m_controller != null) {
-			oldFacilityId = m_controller.getCurrentScope();
-		}
-		
 		if (m_canvasComposite == null) {
 			m_log.info("m_canvasComposit is null");
 			return;
@@ -398,17 +361,7 @@ public class NodeMapView extends AutoUpdateView {
 
 		// マネージャからマップ情報を取得して描画
 		m_canvasComposite.setController(m_controller);
-		boolean result = reload();
-		if (!result) {
-			// アップデート失敗の場合は、ひとつ前のスコープ表示に戻す
-			if (oldFacilityId != null) {
-				m_log.info("updateView(), rollback " + facilityId + "->" + oldFacilityId);
-				SecondaryIdMap.putSecondaryId(secondaryId, m_canvasComposite.getManagerName(), oldFacilityId, NodeMapView.class);
-				m_controller = new MapViewController(this, secondaryId, oldFacilityId);
-				m_canvasComposite.setController(m_controller);
-				reload();
-			}
-		}
+		reload();
 		if (m_listComposite != null) {
 			m_listComposite.setController(m_controller);
 		} else {
@@ -518,9 +471,11 @@ public class NodeMapView extends AutoUpdateView {
 			if (e instanceof RestConnectFailed) {
 				m_log.debug("update() updateMap, " + e.getMessage());
 				errMsg = Messages.getString("message.hinemos.failure.transfer") + ", " + e.getMessage();
-			} else if (e instanceof NodeMapElementNoPrivilege) {
-				m_log.debug("update() updateMap, " + e.getMessage());
-				errMsg = Messages.getString("nodemap.element.noprivilege") + ", " + e.getMessage();
+			} else if(e instanceof NodeMapException){
+				// スコープが存在しない場合NodeMapExceptionがスローされる
+				String beforeFacilityId = SecondaryIdMap.getFacilityId(secondaryId);
+				String[] args ={ beforeFacilityId };
+				errMsg = Messages.getString("message.repository.64",args);
 			} else {
 				m_log.warn("update() updateMap, " + e.getMessage(), e);
 				errMsg = Messages.getString("message.hinemos.failure.unexpected") + ", " + e.getMessage();
@@ -625,5 +580,19 @@ public class NodeMapView extends AutoUpdateView {
 
 	public void setEnabled(boolean enable) {
 		m_canvasComposite.setEnabled(enable);
+	}
+	
+	public void refreshHistoryCombobox() throws InvalidUserPass, RestConnectFailed, HinemosUnknown{
+		// 履歴のスコープの存在チェックを行い未存在の場合は削除
+		for(String item : m_ccombo.getItems()){
+			String  facilityId = (String)m_ccombo.getData(item);
+			try {
+				RepositoryRestClientWrapper wrapper = RepositoryRestClientWrapper.getWrapper(m_canvasComposite.getManagerName());
+				wrapper.getScope(facilityId);
+			} catch (FacilityNotFound | InvalidRole e) {
+				m_log.debug("update() updateMap, " + e.getMessage());
+				m_ccombo.remove(item);
+			}
+		}
 	}
 }

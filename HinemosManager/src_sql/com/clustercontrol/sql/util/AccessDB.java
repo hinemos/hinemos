@@ -9,6 +9,7 @@
 package com.clustercontrol.sql.util;
 
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -96,7 +97,15 @@ public class AccessDB{
 			} else {
 				m_log.debug("disabled loginTimeout for \"" + m_url + "\".");
 			}
-			m_connection = DriverManager.getConnection(m_url, prop);
+			Driver driver = DriverManager.getDriver(m_url);
+
+			if (!driver.getClass().getName().equals(m_jdbcDriver)) {
+				// JDBCドライバが一致しない場合
+				String message = "Unexpected driver resolved: " + driver.getClass().getName() + ", expected: "
+						+ m_jdbcDriver;
+				throw new SQLException(message);
+			}
+			m_connection = driver.connect(m_url, prop);
 
 			//SQL文を実行するためのStatementクラスを作成
 			m_statement = m_connection.createStatement(

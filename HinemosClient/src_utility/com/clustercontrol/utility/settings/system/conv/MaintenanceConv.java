@@ -20,9 +20,11 @@ import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.maintenance.util.MaintenanceUtil;
+import com.clustercontrol.rest.endpoint.maintenance.dto.enumtype.MaintenanceScheduleEnum;
 import com.clustercontrol.utility.settings.maintenance.xml.MaintenanceInfo;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.util.OpenApiEnumConverter;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * メンテナンス設定情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -37,9 +39,15 @@ import com.clustercontrol.utility.util.OpenApiEnumConverter;
  */
 public class MaintenanceConv {
 
-	private static final String schemaType="H";
-	private static final String schemaVersion="1";
-	private static final String schemaRevision="1" ;
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	private static final String schemaType=VersionUtil.getSchemaProperty("SYSTEM.MAINTENANCE.SCHEMATYPE");
+	private static final String schemaVersion=VersionUtil.getSchemaProperty("SYSTEM.MAINTENANCE.SCHEMAVERSION");
+	private static final String schemaRevision=VersionUtil.getSchemaProperty("SYSTEM.MAINTENANCE.SCHEMAREVISION");
 	
 	/**
 	 * XMLとツールの対応バージョンをチェック */
@@ -206,7 +214,7 @@ public class MaintenanceConv {
 			{
 				calendar.set(Calendar.DAY_OF_MONTH, info.getMday());
 			}
-		if (info.hasDayOfWeek() && (!info.hasMday() || (info.hasMday() && info.getMday() == 0)))
+		if (info.hasDayOfWeek() && info.getType() == MaintenanceScheduleEnum.WEEK.getCode())
 			if(info.getDayOfWeek()>=0){
 				calendar.set(Calendar.DAY_OF_WEEK, (int)info.getDayOfWeek());
 				ret.setWeek((int)info.getDayOfWeek());
@@ -228,10 +236,10 @@ public class MaintenanceConv {
 			}
 		calendar.set(Calendar.SECOND, 0);
 
-		if (info.hasMonth() && info.getMonth() > 0) {
+		if (info.hasMonth() && info.getMonth() > 0 && info.getType() == MaintenanceScheduleEnum.DAY.getCode()) {
 			ret.setMonth(calendar.get(Calendar.MONTH) + 1);
 		}
-		if (info.hasMday() && info.getMday() > 0) {
+		if (info.hasMday() && info.getMday() > 0 && info.getType() == MaintenanceScheduleEnum.DAY.getCode()) {
 			ret.setDay(calendar.get(Calendar.DAY_OF_MONTH));
 		}
 		if (info.hasHour() && info.getHour() >= 0) {

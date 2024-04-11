@@ -75,6 +75,13 @@ public class GetStatusListTableDefine {
 	/** 初期表示時ソートオーダー。 */
 	public static final int SORT_ORDER = 1;
 
+	/** 表示件数の上限設定が有効な場合のソートカラム1 */
+	public static final int SORT_COLUMN_INDEX1_FOR_LIMITED = UPDATE_TIME;
+	/** 表示件数の上限設定が有効な場合のソートカラム2（-1:ソートカラムなし） */
+	public static final int SORT_COLUMN_INDEX2_FOR_LIMITED = -1;
+	/** 表示件数の上限設定が有効な場合のソートオーダー（-1:降順） */
+	public static final int SORT_ORDER_FOR_LIMITED = -1;
+
 	/** カラム名からINDEXを取得するためのMap */
 	public static final Map<String, Integer> COLNAME_INDEX_MAP;
 	static {

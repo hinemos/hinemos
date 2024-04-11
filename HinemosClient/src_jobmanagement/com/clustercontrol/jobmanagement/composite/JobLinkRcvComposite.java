@@ -1326,7 +1326,7 @@ public class JobLinkRcvComposite extends Composite {
 		this.m_scopeJobParamText.setEditable(this.m_scopeJobParamRadio.getSelection() && enabled);
 		this.m_scopeJobParamRadio.setEnabled(enabled);
 		this.m_scopeFixedValueRadio.setEnabled(enabled);
-		this.m_scopeFixedValueSelect.setEnabled(enabled);
+		this.m_scopeFixedValueSelect.setEnabled(m_scopeFixedValueRadio.getSelection() && enabled);
 		this.m_past.setEnabled(enabled);
 		this.m_pastMin.setEditable(this.m_past.getSelection() && enabled);
 		this.m_joblinkMessageId.setEditable(enabled);

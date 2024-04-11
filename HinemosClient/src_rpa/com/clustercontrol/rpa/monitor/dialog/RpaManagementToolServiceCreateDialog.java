@@ -35,6 +35,7 @@ import org.openapitools.client.model.RpaManagementToolServiceCheckInfoResponse;
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.client.swt.SWT;
+import com.clustercontrol.composite.action.LongNumberVerifyListener;
 import com.clustercontrol.dialog.ScopeTreeDialog;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorDuplicate;
@@ -162,6 +163,7 @@ public class RpaManagementToolServiceCreateDialog extends CommonMonitorTruthDial
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textConnectionTimeout.setLayoutData(gridData);
+		this.m_textConnectionTimeout.addVerifyListener(new LongNumberVerifyListener(0, 60 * 60 * 1000));
 		this.m_textConnectionTimeout.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {
@@ -198,6 +200,7 @@ public class RpaManagementToolServiceCreateDialog extends CommonMonitorTruthDial
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textRequestTimeout.setLayoutData(gridData);
+		this.m_textRequestTimeout.addVerifyListener(new LongNumberVerifyListener(0, 60 * 60 * 1000));
 		this.m_textRequestTimeout.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {

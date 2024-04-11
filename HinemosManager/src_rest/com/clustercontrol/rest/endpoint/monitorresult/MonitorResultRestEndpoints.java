@@ -14,6 +14,7 @@ import static com.clustercontrol.rest.RestConstant.STATUS_CODE_403;
 import static com.clustercontrol.rest.RestConstant.STATUS_CODE_404;
 import static com.clustercontrol.rest.RestConstant.STATUS_CODE_500;
 
+import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +68,7 @@ import com.clustercontrol.monitor.bean.EventSelectionInfo;
 import com.clustercontrol.monitor.bean.ScopeDataInfo;
 import com.clustercontrol.monitor.bean.StatusDataInfo;
 import com.clustercontrol.monitor.bean.ViewListInfo;
+import com.clustercontrol.monitor.bean.ViewStatusListInfo;
 import com.clustercontrol.monitor.session.EventCustomCommandBean;
 import com.clustercontrol.monitor.session.MonitorControllerBean;
 import com.clustercontrol.rest.annotation.RestLog;
@@ -283,26 +285,24 @@ public class MonitorResultRestEndpoints {
 			size = dtoReq.getSize();
 			RestBeanUtil.convertBean(dtoReq.getFilter(), filterInfo);
 		}
-
-		//
-		List<StatusDataInfo> statusDataInfoList = new MonitorControllerBean().getStatusList(filterInfo);
+		
+		// ステータス一覧を取得する
+		ViewStatusListInfo viewStatusListInfo = new MonitorControllerBean().getStatusList(filterInfo, size);
+		List<StatusDataInfo> statusDataInfoList = viewStatusListInfo.getStatusList();
 
 		//Response
 		List<StatusInfoResponse> dtoResList = new ArrayList<StatusInfoResponse>();
-		int recCount = 0;
+
 		for (StatusDataInfo tmp : statusDataInfoList) {
 			StatusInfoResponse dtoResRec = new StatusInfoResponse();
 			RestBeanUtil.convertBeanNoInvalid(tmp, dtoResRec);
 			dtoResList.add(dtoResRec);
-			recCount++;
-			if (size != null && recCount >= size) {
-				break;
-			}
 		}
 		RestLanguageConverter.convertMessages(dtoResList);
 		GetStatusListResponse dtoRes = new GetStatusListResponse();
 		dtoRes.setTotal(statusDataInfoList.size());
 		dtoRes.setStatusList(dtoResList);
+		dtoRes.setCountAll(viewStatusListInfo.getCountAll());
 		return Response.status(Status.OK).entity(dtoRes).build();
 	}
 
@@ -435,7 +435,9 @@ public class MonitorResultRestEndpoints {
 
 		RestDownloadFile restDownloadFile = new MonitorControllerBean()
 				.downloadEventFile(filter, selectedEvents, dtoReq.getFilename(), targetLocale);
-		StreamingOutput stream = RestTempFileUtil.getTempFileStream(restDownloadFile.getTempFile());
+		File file = restDownloadFile.getTempFile();
+		File dir = file.getParentFile();
+		StreamingOutput stream = RestTempFileUtil.getTempFileStream(file, dir);
 
 		return Response.ok(stream).header("Content-Disposition", "filename=\"" + restDownloadFile.getFileName() + "\"").build();
 	}
@@ -880,7 +882,7 @@ public class MonitorResultRestEndpoints {
 	@Path("/eventCustomCommand/{uuid}")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "GetEventCustomCommandResult")
 	@RestLog(action = LogAction.Get, target = LogTarget.EventCustomCommand, type = LogType.REFERENCE)
-	@RestSystemPrivilege(function=SystemPrivilegeFunction.MonitorResult,modeList={SystemPrivilegeMode.READ})
+	@RestSystemPrivilege(function=SystemPrivilegeFunction.MonitorResult,modeList={SystemPrivilegeMode.EXEC})
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = GetEventCustomCommandResultResponse.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),

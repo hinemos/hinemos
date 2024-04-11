@@ -145,8 +145,8 @@ public class RunCustomString extends RunCustomBase {
 					m_log.debug("command monitoring : values [" + msg + "]");
 				}
 				
-				// 収集
-				if (monitor.getCollectorFlg()) {	// collector each value
+				// 監視ジョブ以外の場合、収集
+				if (!isMonitorJob && monitor.getCollectorFlg()) {	// collector each value
 					List<StringSample> sampleList= new ArrayList<StringSample>();
 					StringSample sample = new StringSample(new Date(HinemosTime.currentTimeMillis()),
 							monitor.getMonitorId());

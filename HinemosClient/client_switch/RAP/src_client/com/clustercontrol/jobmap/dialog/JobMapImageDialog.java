@@ -616,7 +616,7 @@ public class JobMapImageDialog extends CommonDialog {
 				MessageDialog.openInformation(
 					null,
 					Messages.getString("message"),
-					com.clustercontrol.jobmap.messages.Messages.getString("expiration.term"));
+					e.getMessage());
 				return result;
 			}
 			JobmapImageCacheUtil iconCache = JobmapImageCacheUtil.getInstance();

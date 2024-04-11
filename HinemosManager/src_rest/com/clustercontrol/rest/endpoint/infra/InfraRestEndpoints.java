@@ -181,7 +181,7 @@ public class InfraRestEndpoints {
 		RestBeanUtil.convertBean(dtoReq, infoReq);
 		convertInfraDtoToInfo(dtoReq, infoReq);
 
-		InfraManagementInfo infoRes = new InfraControllerBean().addInfraManagement(infoReq);
+		InfraManagementInfo infoRes = new InfraControllerBean().addInfraManagement(infoReq, false);
 
 		InfraManagementInfoResponse dtoRes = new InfraManagementInfoResponse();
 		RestBeanUtil.convertBean(infoRes, dtoRes);
@@ -243,7 +243,7 @@ public class InfraRestEndpoints {
 		convertInfraDtoToInfo(dtoReq, infoReq);
 		infoReq.setManagementId(managementId);
 
-		InfraManagementInfo infoRes = new InfraControllerBean().modifyInfraManagement(infoReq);
+		InfraManagementInfo infoRes = new InfraControllerBean().modifyInfraManagement(infoReq, false);
 
 		InfraManagementInfoResponse dtoRes = new InfraManagementInfoResponse();
 		RestBeanUtil.convertBean(infoRes, dtoRes);

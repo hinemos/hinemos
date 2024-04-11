@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Created with Jaspersoft Studio version 5.6.2.final using JasperReports Library version 5.6.1  -->
-<!-- 2015-07-22T13:28:52 -->
+<!-- Created with Jaspersoft Studio version 6.16.0.final using JasperReports Library version 6.16.0-48579d909b7943b64690c65c71e07e0b80981928  -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="job_node" pageWidth="842" pageHeight="595" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="b3555393-5ca6-4c3c-a841-04fcb1f6eb87">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="CSV Data Adapter job_node"/>
 	<property name="com.jaspersoft.studio.unit." value="pixel"/>
@@ -172,7 +171,7 @@
 				</textElement>
 				<text><![CDATA[24:00]]></text>
 			</staticText>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="21" y="0" width="70" height="14" uuid="9e7f1853-25b2-470e-a669-e2e6e9422a04">
 					<property name="local_mesure_unitx" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.x" value="px"/>
@@ -190,8 +189,8 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.sessionid}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
-				<reportElement x="91" y="0" width="90" height="14" uuid="d9ddab5b-a586-4598-9348-3fa1fc4d985d">
+			<textField textAdjust="StretchHeight">
+				<reportElement x="91" y="0" width="88" height="14" uuid="d9ddab5b-a586-4598-9348-3fa1fc4d985d">
 					<property name="local_mesure_unitx" value="pixel"/>
 				</reportElement>
 				<box leftPadding="2">
@@ -205,8 +204,8 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.startjobid}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
-				<reportElement x="181" y="0" width="90" height="14" uuid="0c7375ce-814d-46a6-b516-4571f0a1bafa">
+			<textField textAdjust="StretchHeight">
+				<reportElement x="179" y="0" width="88" height="14" uuid="0c7375ce-814d-46a6-b516-4571f0a1bafa">
 					<property name="local_mesure_unitx" value="pixel"/>
 				</reportElement>
 				<box leftPadding="2">
@@ -220,8 +219,8 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.jobid}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
-				<reportElement x="271" y="0" width="50" height="14" uuid="740b324c-bb6b-42e9-ab96-c6c2f557718a">
+			<textField textAdjust="StretchHeight">
+				<reportElement x="267" y="0" width="40" height="14" uuid="740b324c-bb6b-42e9-ab96-c6c2f557718a">
 					<property name="local_mesure_unitx" value="pixel"/>
 				</reportElement>
 				<box leftPadding="2">
@@ -235,8 +234,8 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.status}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
-				<reportElement x="351" y="0" width="24" height="14" uuid="4411a435-dbd8-4b02-8e5a-fe41f3d996bb">
+			<textField textAdjust="StretchHeight">
+				<reportElement x="343" y="0" width="33" height="14" uuid="4411a435-dbd8-4b02-8e5a-fe41f3d996bb">
 					<property name="local_mesure_unitx" value="pixel"/>
 				</reportElement>
 				<box leftPadding="2">
@@ -250,8 +249,8 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.endvalue}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
-				<reportElement x="375" y="0" width="35" height="14" uuid="a45c10a6-57a6-446b-8970-406b00e82af3">
+			<textField textAdjust="StretchHeight">
+				<reportElement x="376" y="0" width="34" height="14" uuid="a45c10a6-57a6-446b-8970-406b00e82af3">
 					<property name="local_mesure_unitx" value="pixel"/>
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
@@ -267,7 +266,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.starttime}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="410" y="0" width="35" height="14" uuid="5f4e8cfc-6f22-4081-a8f1-422f2494b7b7">
 					<property name="local_mesure_unitx" value="pixel"/>
 				</reportElement>
@@ -282,8 +281,8 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.endtime}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
-				<reportElement x="321" y="0" width="30" height="14" uuid="69fc1e4b-bb7f-4ae2-aa05-2c84faf896d1">
+			<textField textAdjust="StretchHeight">
+				<reportElement x="307" y="0" width="36" height="14" uuid="69fc1e4b-bb7f-4ae2-aa05-2c84faf896d1">
 					<property name="local_mesure_unitx" value="pixel"/>
 				</reportElement>
 				<box leftPadding="2">
@@ -317,19 +316,19 @@
 				<text><![CDATA[]]></text>
 			</staticText>
 			<staticText>
-				<reportElement key="normal-bg" stretchType="RelativeToTallestObject" mode="Opaque" x="321" y="0" width="30" height="14" backcolor="rgba(0, 255, 0, 0.7529412)" uuid="88452c8a-12e1-4c47-8526-9f4c50b57c83">
+				<reportElement key="normal-bg" stretchType="RelativeToTallestObject" mode="Opaque" x="307" y="0" width="36" height="14" backcolor="rgba(0, 255, 0, 0.7529412)" uuid="88452c8a-12e1-4c47-8526-9f4c50b57c83">
 					<printWhenExpression><![CDATA[$F{end_status_str}.contains($P{status.normal})]]></printWhenExpression>
 				</reportElement>
 				<text><![CDATA[]]></text>
 			</staticText>
 			<staticText>
-				<reportElement key="warn-bg" stretchType="RelativeToTallestObject" mode="Opaque" x="321" y="0" width="30" height="14" backcolor="#FFFF00" uuid="f282b94d-4fb4-491a-91e0-0baf60b974e4">
+				<reportElement key="warn-bg" stretchType="RelativeToTallestObject" mode="Opaque" x="307" y="0" width="36" height="14" backcolor="#FFFF00" uuid="f282b94d-4fb4-491a-91e0-0baf60b974e4">
 					<printWhenExpression><![CDATA[$F{end_status_str}.contains($P{status.warning})]]></printWhenExpression>
 				</reportElement>
 				<text><![CDATA[]]></text>
 			</staticText>
 			<staticText>
-				<reportElement key="abnormal-bg" stretchType="RelativeToTallestObject" mode="Opaque" x="321" y="0" width="30" height="14" backcolor="rgba(255, 0, 0, 0.7529412)" uuid="4c54b457-7e95-48df-a05e-bea86b000fc9">
+				<reportElement key="abnormal-bg" stretchType="RelativeToTallestObject" mode="Opaque" x="307" y="0" width="36" height="14" backcolor="rgba(255, 0, 0, 0.7529412)" uuid="4c54b457-7e95-48df-a05e-bea86b000fc9">
 					<printWhenExpression><![CDATA[$F{end_status_str}.contains($P{status.error})]]></printWhenExpression>
 				</reportElement>
 				<text><![CDATA[]]></text>
@@ -350,8 +349,8 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$F{session_id}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
-				<reportElement stretchType="RelativeToTallestObject" x="181" y="0" width="90" height="14" uuid="78ba4055-0b39-45a1-b52b-624438591fab">
+			<textField textAdjust="StretchHeight">
+				<reportElement stretchType="RelativeToTallestObject" x="179" y="0" width="88" height="14" uuid="78ba4055-0b39-45a1-b52b-624438591fab">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
 				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="2">
@@ -380,8 +379,8 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$F{end_date} != null ? new SimpleDateFormat("H:mm:ss").format($F{end_date}) : ""]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
-				<reportElement stretchType="RelativeToTallestObject" x="91" y="0" width="90" height="14" uuid="edd34b23-e7b4-40f3-8c20-a299e8fe001b">
+			<textField textAdjust="StretchHeight">
+				<reportElement stretchType="RelativeToTallestObject" x="91" y="0" width="88" height="14" uuid="edd34b23-e7b4-40f3-8c20-a299e8fe001b">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
 				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="2">
@@ -396,7 +395,7 @@
 				<textFieldExpression><![CDATA[$F{jobunit_label}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement stretchType="RelativeToTallestObject" x="375" y="0" width="35" height="14" uuid="6ab5bc3b-9de6-4549-9c67-3f539114b959">
+				<reportElement stretchType="RelativeToTallestObject" x="376" y="0" width="34" height="14" uuid="6ab5bc3b-9de6-4549-9c67-3f539114b959">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
@@ -455,7 +454,7 @@
 				</barPlot>
 			</ganttChart>
 			<textField>
-				<reportElement key="" style="Style1" stretchType="RelativeToTallestObject" mode="Opaque" x="321" y="0" width="30" height="14" uuid="2ec53db7-e84d-417c-97cb-ae3950b10cf3">
+				<reportElement key="" style="Style1" stretchType="RelativeToTallestObject" mode="Opaque" x="307" y="0" width="36" height="14" uuid="2ec53db7-e84d-417c-97cb-ae3950b10cf3">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2">
@@ -470,7 +469,7 @@
 				<textFieldExpression><![CDATA[$F{end_status_str}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement stretchType="RelativeToTallestObject" x="271" y="0" width="50" height="14" uuid="17d53c20-82ee-4849-be55-ecec1dbe2c02">
+				<reportElement stretchType="RelativeToTallestObject" x="267" y="0" width="40" height="14" uuid="17d53c20-82ee-4849-be55-ecec1dbe2c02">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
 				<box leftPadding="0" rightPadding="0">
@@ -485,7 +484,7 @@
 				<textFieldExpression><![CDATA[$F{status_str}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement stretchType="RelativeToTallestObject" x="351" y="0" width="24" height="14" uuid="f20bd9d1-a08d-44b2-96a9-ba8573989ece">
+				<reportElement stretchType="RelativeToTallestObject" x="343" y="0" width="33" height="14" uuid="f20bd9d1-a08d-44b2-96a9-ba8573989ece">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
 				<box leftPadding="2" rightPadding="2">

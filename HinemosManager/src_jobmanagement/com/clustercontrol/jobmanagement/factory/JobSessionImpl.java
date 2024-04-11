@@ -110,6 +110,9 @@ public class JobSessionImpl {
 		m_log.debug("waitingCheck() start : sessionid = " + sessionId);
 		JobSessionJobImpl jobImpl = new JobSessionJobImpl();
 		List<String[]> waitCheckJobIdList = jobImpl.getWaitCheckJob(sessionId);
+		if (waitCheckJobIdList != null && waitCheckJobIdList.size() > 0) {
+			m_log.info("waitingCheck() exist target job : sessionid = " + sessionId);
+		}
 		//ジョブの実行前に現在の待機中の対象ジョブのリストをclearしておく
 		jobImpl.clearWaitCheckMap(sessionId);
 

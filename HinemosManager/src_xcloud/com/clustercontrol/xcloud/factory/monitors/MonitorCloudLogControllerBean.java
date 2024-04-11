@@ -11,7 +11,9 @@ package com.clustercontrol.xcloud.factory.monitors;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -571,10 +573,24 @@ public class MonitorCloudLogControllerBean {
 		// 監視ジョブEndNode処理
 		try {
 			if (monitorJobEndNodeList != null && monitorJobEndNodeList.size() > 0) {
+				// 同一キーに対する監視ジョブの終了処理は初回以外意味がないため、ここで重複を排除する
+				Map<String, MonitorJobEndNode> monitorJobEndNodeMap = new LinkedHashMap<>();
+
 				for (MonitorJobEndNode monitorJobEndNode : monitorJobEndNodeList) {
-					MonitorJobWorker.endMonitorJob(monitorJobEndNode.getRunInstructionInfo(),
-							monitorJobEndNode.getMonitorTypeId(), monitorJobEndNode.getMessage(),
-							monitorJobEndNode.getErrorMessage(), monitorJobEndNode.getStatus(),
+					String monitorJobKey = MonitorJobWorker.getKey(monitorJobEndNode.getRunInstructionInfo());
+					if (!monitorJobEndNodeMap.containsKey(monitorJobKey)) {
+						m_log.debug("run() : endMonitorJob target=" + monitorJobKey);
+						monitorJobEndNodeMap.put(monitorJobKey, monitorJobEndNode);
+					}
+				}
+				
+				for (MonitorJobEndNode monitorJobEndNode : monitorJobEndNodeMap.values()) {
+					MonitorJobWorker.endMonitorJob(
+							monitorJobEndNode.getRunInstructionInfo(),
+							monitorJobEndNode.getMonitorTypeId(),
+							monitorJobEndNode.getMessage(),
+							monitorJobEndNode.getErrorMessage(),
+							monitorJobEndNode.getStatus(),
 							monitorJobEndNode.getEndValue());
 				}
 			}

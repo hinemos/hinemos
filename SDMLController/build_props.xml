@@ -14,6 +14,7 @@
 	<property name="hinemos_manager.dir" value="../HinemosManager" />
 	
 	<property file="${hinemos_common.dir}/ant_config/build_common.properties" />
+	<property file="${hinemos_common.dir}/ant_config/build_common_version.properties" />
 
 	<property name="build.dir" value="build/" />
 	<property name="src.dir" value="src" />

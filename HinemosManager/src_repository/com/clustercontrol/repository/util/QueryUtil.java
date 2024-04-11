@@ -192,10 +192,14 @@ public class QueryUtil {
 	}
 
 	public static FacilityInfo getFacilityPK_OR(String facilityId, String ownerRoleId) throws FacilityNotFound, InvalidRole {
+		return getFacilityPK_OR(facilityId, ownerRoleId, ObjectPrivilegeMode.READ);
+	}
+	
+	public static FacilityInfo getFacilityPK_OR(String facilityId, String ownerRoleId, ObjectPrivilegeMode mode) throws FacilityNotFound, InvalidRole {
 		FacilityInfo entity = null;
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			entity = em.find_OR(FacilityInfo.class, facilityId, ownerRoleId);
+			entity = em.find_OR(FacilityInfo.class, facilityId, mode, ownerRoleId);
 			if (entity == null) {
 				FacilityNotFound e = new FacilityNotFound("FacilityEntity.findByPrimaryKey"
 						+ ", facilityId = " + facilityId);

@@ -121,13 +121,15 @@ public class SystemLogPlugin implements HinemosPlugin {
 			try {
 				
 				/** 受信処理とフィルタリング処理の間に存在するsyslog処理待ちキューの最大サイズ*/
-				int _taskQueueSize = HinemosPropertyCommon.monitor_systemlog_filter_queue_size.getIntegerValue(); // 15[min] * 30[msg/sec] (about 27mbyte)
+				int _taskQueueSize = HinemosPropertyCommon.monitor_systemlog_filter_queue_size.getIntegerValue();
 				/** フィルタリング処理のスレッド数 */
 				int _taskThreadSize = HinemosPropertyCommon.monitor_systemlog_filter_thread_size.getIntegerValue();
 
 				_handler = new SystemLogMonitor(_taskThreadSize, _taskQueueSize);
 				
 				_handler.start();
+				log.info(String.format("starting SystemLogMonitor : taskQueueSize = %d, taskThreadSize = %d",
+						_taskQueueSize, _taskThreadSize));
 				
 				final SyslogService syslog = new SyslogService();
 				if(!HinemosManagerMain._isClustered){

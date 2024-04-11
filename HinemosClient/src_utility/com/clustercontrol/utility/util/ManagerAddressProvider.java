@@ -31,7 +31,7 @@ public class ManagerAddressProvider {
 	}
 
 	public String getManagerAddress() {
-		if (UtilityManagerUtil.getCurrentManagerName() == null) {return null;}
+		if (UtilityManagerUtil.getCurrentManagerName() == null || "".equals(UtilityManagerUtil.getCurrentManagerName())) {return null;}
 		try {
 			URL url = new URL(RestConnectManager.get(UtilityManagerUtil.getCurrentManagerName()).getUrlListStr());
 			return url.getHost();

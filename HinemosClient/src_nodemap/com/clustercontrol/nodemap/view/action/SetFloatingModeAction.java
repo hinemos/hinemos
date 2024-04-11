@@ -24,6 +24,7 @@ import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 
 /**
  * ビューをアイコン移動可能モードに変更するクライアント側アクションクラス<BR>
@@ -58,11 +59,21 @@ public class SetFloatingModeAction extends AbstractHandler implements IElementUp
 			return null;
 		}
 		
-		view.setEnabled(true);
+	
 		view.setMode(NodeMapView.Mode.FLOATING_MODE);
-
 		view.setFocus();
 		
+		// 組み込みスコープの場合はコンテキストメニュー選択不能にする
+		String scopeFacilityId = view.getController().getCurrentScope();
+		boolean isScopeBuiltin = FacilityTreeAttributeConstant.isBuiltinScope(scopeFacilityId);
+	
+		if( isScopeBuiltin ){
+			view.setEnabled(false);
+		}
+		else{
+			view.setEnabled(true);			
+		}
+	
 		return null;
 	}
 	

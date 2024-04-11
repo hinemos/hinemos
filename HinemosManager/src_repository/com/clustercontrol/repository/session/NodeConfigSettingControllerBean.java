@@ -79,11 +79,13 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 	 * 対象構成情報を新規に追加します。<BR>
 	 *
 	 * @param info 追加する対象構成情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return
 	 * @throws NodeConfigSettingDuplicate
 	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public NodeConfigSettingInfo addNodeConfigSettingInfo(NodeConfigSettingInfo info)
+	public NodeConfigSettingInfo addNodeConfigSettingInfo(NodeConfigSettingInfo info, boolean isImport)
 			throws NodeConfigSettingDuplicate, InvalidSetting, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
@@ -105,8 +107,10 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 					(String) HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.addCallback(new NodeConfigSettingChangedNotificationCallback());
-			// コミット後にリフレッシュする
-			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportNodeConfigSettingInfoCallback(jtm);
+			}
 
 			jtm.commit();
 
@@ -139,12 +143,14 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 	 * 対象構成情報を更新します。<BR>
 	 *
 	 * @param info　更新する対象構成情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 * @throws NodeConfigSettingNotFound
 	 * @throws HinemosUnknown
 	 */
-	public NodeConfigSettingInfo modifyNodeConfigSettingInfo(NodeConfigSettingInfo info)
+	public NodeConfigSettingInfo modifyNodeConfigSettingInfo(NodeConfigSettingInfo info, boolean isImport)
 			throws InvalidSetting, InvalidRole, NodeConfigSettingNotFound, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
@@ -165,8 +171,10 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.addCallback(new NodeConfigSettingChangedNotificationCallback());
-			// コミット後にリフレッシュする
-			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportNodeConfigSettingInfoCallback(jtm);
+			}
 
 			jtm.commit();
 
@@ -188,6 +196,18 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 				jtm.close();
 			}
 		}
+	}
+
+	/**
+	 * 対象構成情報の新規登録／変更時に呼び出すコールバックメソッドを設定
+	 * 
+	 * 設定インポートエクスポートでCommit後に呼び出すものだけ定義
+	 * 
+	 * @param jtm JpaTransactionManager
+	 */
+	public void addImportNodeConfigSettingInfoCallback(JpaTransactionManager jtm) {
+		// 通知リレーション情報のキャッシュ更新
+		jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 	}
 
 	/**
@@ -271,12 +291,12 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 			if(validFlag){
 				if(!info.getValidFlg()){
 					info.setValidFlg(true);
-					retInfo = modifyNodeConfigSettingInfo(info);
+					retInfo = modifyNodeConfigSettingInfo(info, false);
 				}
 			} else{
 				if(info.getValidFlg()){
 					info.setValidFlg(false);
-					retInfo = modifyNodeConfigSettingInfo(info);
+					retInfo = modifyNodeConfigSettingInfo(info, false);
 				}
 			}
 		} catch (InvalidSetting | InvalidRole | NodeConfigSettingNotFound e) {

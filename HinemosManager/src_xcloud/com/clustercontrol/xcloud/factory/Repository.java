@@ -19,6 +19,7 @@ import org.apache.log4j.Logger;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.repository.model.FacilityInfo;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.InternalManagerError;
 import com.clustercontrol.xcloud.Session;
@@ -64,6 +65,7 @@ public class Repository implements IRepository {
 		public void visitCloudScopeRootScope(FacilityInfo root) throws CloudManagerException {}
 		public void visitCloudScopeScope(FacilityInfo parent, FacilityInfo facility, CloudScopeEntity cloudScope) throws CloudManagerException {}
 		public void visitLocationScope(FacilityInfo parent, FacilityInfo facility, LocationEntity locationEntity) throws CloudManagerException {}
+		public void visitLocationEntity(LocationEntity locationEntity) throws CloudManagerException {}
 		public void visitFolder(FacilityInfo parent, FacilityInfo facility) throws CloudManagerException {}
 		public void visitScope(FacilityInfo parent, FacilityInfo facility) throws CloudManagerException {}
 		public void visitNode(FacilityInfo parent, FacilityInfo facility) throws CloudManagerException {}
@@ -71,6 +73,8 @@ public class Repository implements IRepository {
 		public void visitEntity(FacilityInfo parent, FacilityInfo facility, EntityEntity entityEntity) throws CloudManagerException {}
 		public void visitStart() throws CloudManagerException {}
 		public void visitEnd() throws CloudManagerException {}
+		public EntityEntity findEntityEntity(String facilityId) {return null;}
+		public InstanceEntity findInstanceEntity(String facilityId) {return null;}
 	}
 	
 	public class HScopeRepositoryVisitor extends RepositoryVisitor {
@@ -83,7 +87,11 @@ public class Repository implements IRepository {
 		private Map<String, HScope> scopeMap = new HashMap<>();
 		private Map<String, HNode> nodeMap = new HashMap<>();
 		private Map<String, Instance> instanceMap = new HashMap<>();
-		
+
+		// InstanceEntity,EntityEntityのキャッシュ(検索用にファシリティIDをキーにする)
+		private Map<String,InstanceEntity> instanceEntityMap = new HashMap<>();
+		private Map<String,EntityEntity> entityEntityMap = new HashMap<>();
+
 		@Override
 		public void visitCloudScopeRootScope(FacilityInfo root) throws CloudManagerException {
 			HCloudScopeRootScope hRoot = new HCloudScopeRootScope();
@@ -95,6 +103,8 @@ public class Repository implements IRepository {
 		}
 		@Override
 		public void visitCloudScopeScope(FacilityInfo parent, FacilityInfo facility, CloudScopeEntity cloudScope) throws CloudManagerException {
+			logger.debug("visitCloudScopeScope(): start. CloudScopeID: " + cloudScope.getCloudScopeId());
+
 			this.cloudScope = cloudScope;
 			
 			HCloudScopeScope hCloudScope = new HCloudScopeScope();
@@ -111,19 +121,25 @@ public class Repository implements IRepository {
 				hCloudScope.setLocation(Location.convertWebEntity(cloudScope.getLocations().get(0)));
 				
 				HinemosEntityManager em = Session.current().getEntityManager();
+				long startGetInstances = HinemosTime.currentTimeMillis();
 				List<InstanceEntity> instances = PersistenceUtil.findByFilter(em, InstanceEntity.class, Filter.apply("cloudScopeId", cloudScope.getCloudScopeId()), Filter.apply("locationId", hCloudScope.getLocation().getId()));
 				for (InstanceEntity instanceEntity: instances) {
 					Instance instance = Instance.convertWebEntity(instanceEntity);
 					instanceMap.put(instanceEntity.getResourceId(), instance);
 					hRepository.getInstances().add(instance);
 					hRepository.getInstanceBackups().add(InstanceBackup.convertWebEntity(instanceEntity.getBackup()));
+					// InstanceEntityをキャッシュ
+					instanceEntityMap.put(instanceEntity.getFacilityId(), instanceEntity);
 				}
-				
+
+				logger.debug("visitCloudScopeScope(): End InstanceQuery. " + (HinemosTime.currentTimeMillis() - startGetInstances) + " ms.");
+				long startGetStorages = HinemosTime.currentTimeMillis();
 				List<StorageEntity> storages = PersistenceUtil.findByFilter(em, StorageEntity.class, Filter.apply("cloudScopeId", cloudScope.getCloudScopeId()), Filter.apply("locationId", hCloudScope.getLocation().getId()));
 				for (StorageEntity storageEntity: storages) {
 					hRepository.getStorages().add(Storage.convertWebEntity(storageEntity));
 					hRepository.getStorageBackups().add(StorageBackup.convertWebEntity(storageEntity.getBackup()));
 				}
+				logger.debug("visitCloudScopeScope(): End StorageEntityQuery. " + (HinemosTime.currentTimeMillis() - startGetStorages) + " ms.");
 			}
 			
 			HScope scope = scopeMap.get(parent.getFacilityId());
@@ -141,7 +157,8 @@ public class Repository implements IRepository {
 			hLocation.setName(locationEntity.getName());
 			
 			hLocation.setLocation(Location.convertWebEntity(locationEntity));
-			
+
+			long startGetInstances = HinemosTime.currentTimeMillis();
 			HinemosEntityManager em = Session.current().getEntityManager();
 			List<InstanceEntity> instances = PersistenceUtil.findByFilter(em, InstanceEntity.class, Filter.apply("cloudScopeId", cloudScope.getCloudScopeId()), Filter.apply("locationId", hLocation.getLocation().getId()));
 			for (InstanceEntity instanceEntity: instances) {
@@ -149,13 +166,18 @@ public class Repository implements IRepository {
 				instanceMap.put(instanceEntity.getResourceId(), instance);
 				hRepository.getInstances().add(instance);
 				hRepository.getInstanceBackups().add(InstanceBackup.convertWebEntity(instanceEntity.getBackup()));
+				// InstanceEntityをキャッシュ
+				instanceEntityMap.put(instanceEntity.getFacilityId(), instanceEntity);
 			}
+			logger.debug("visitLocationScope(): End InstanceQuery. " + (HinemosTime.currentTimeMillis() - startGetInstances) + " ms.");
 
+			long startGetStorages = HinemosTime.currentTimeMillis();
 			List<StorageEntity> storages = PersistenceUtil.findByFilter(em, StorageEntity.class, Filter.apply("cloudScopeId", cloudScope.getCloudScopeId()), Filter.apply("locationId", hLocation.getLocation().getId()));
 			for (StorageEntity storageEntity: storages) {
 				hRepository.getStorages().add(Storage.convertWebEntity(storageEntity));
 				hRepository.getStorageBackups().add(StorageBackup.convertWebEntity(storageEntity.getBackup()));
 			}
+			logger.debug("visitLocationScope(): End StorageEntityQuery. " + (HinemosTime.currentTimeMillis() - startGetStorages) + " ms.");
 
 			HScope scope = scopeMap.get(parent.getFacilityId());
 			if (scope == null)
@@ -165,6 +187,17 @@ public class Repository implements IRepository {
 			scope.addScope(hLocation);
 			scopeMap.put(hLocation.getId(), hLocation);
 		}
+		@Override
+		public void visitLocationEntity(LocationEntity locationEntity) throws CloudManagerException {
+			HinemosEntityManager em = Session.current().getEntityManager();
+			// EntityEntityをキャッシュする。
+			long startGetEntities = HinemosTime.currentTimeMillis();
+			List<EntityEntity> entities = PersistenceUtil.findByFilter(em, EntityEntity.class, Filter.apply("cloudScopeId", cloudScope.getCloudScopeId()), Filter.apply("locationId", locationEntity.getLocationId()));
+			for (EntityEntity entityEntity : entities) {
+				entityEntityMap.put(entityEntity.getFacilityId(), entityEntity);
+			}
+			logger.debug("visitLocationEntity(): End EntityEntityQuery. " + (HinemosTime.currentTimeMillis() - startGetEntities) + " ms.");
+		};
 		@Override
 		public void visitFolder(FacilityInfo parent, FacilityInfo facility) throws CloudManagerException {
 			Pattern p = Pattern.compile(String.format("^_(.*)(_%s|_%s_(.*))$", cloudScope.getId(), cloudScope.getId()));
@@ -258,6 +291,23 @@ public class Repository implements IRepository {
 				}
 			});
 		}
+
+		/**
+		 * キャッシュからEntityEntityを検索する。一致するものがなければnullを返す。
+		 */
+		@Override
+		public EntityEntity findEntityEntity(String facilityId) {
+			return entityEntityMap.get(facilityId);
+		}
+
+		/**
+		 * キャッシュからInstanceEntityを検索する。一致するものがなければnullを返す。
+		 */
+		@Override
+		public InstanceEntity findInstanceEntity(String facilityId) {
+			return instanceEntityMap.get(facilityId);
+		}
+
 		public HRepository getRepository() {
 			return hRepository;
 		}

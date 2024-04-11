@@ -48,6 +48,7 @@ public class DatasourceJobDetail extends DatasourceBase {
 	protected static final String JOB_UNIT_REGEX = "job.unit.id";
 	protected static final String JOB_ID_REGEX = "job.id";
 	protected static final String JOB_ID_REGEX_EXC = "job.id.exc";
+	protected static final String REGEX_DEFAULT = "%%";
 
 	protected int m_daySec = 1000*24*60*60;
 	protected String m_ownerRoleId = null;
@@ -110,30 +111,46 @@ public class DatasourceJobDetail extends DatasourceBase {
 			return false;
 		}
 
-		List<JobNode> getJobTreeList() {
+		List<JobNode> getJobTreeList(boolean isFilterJobId) {
 			if (jobTreeList == null) {
-				// link parents-children
-				for (Iterator<Map.Entry<String, JobNode>> it = allJobs.entrySet().iterator(); it.hasNext(); ) {
-					Map.Entry<String, JobNode> entry = it.next();
-					JobNode node = entry.getValue();
-					if (node != rootJob) {
-						JobNode parent = findJob(node.parentJobId);
-						if (parent != null) {
-							if (parent == node || isNodeAncestor(parent, node)) {
-								m_log.debug("broken tree: " + parent.jobId + "/" + node.jobId);
+				jobTreeList = new ArrayList<>();
+				
+				// ジョブセッションの親ジョブが存在し、かつjob.idによるフィルタ設定がされていない場合
+				if (rootJob != null && !isFilterJobId) {
+					// link parents-children
+					for (Iterator<Map.Entry<String, JobNode>> it = allJobs.entrySet().iterator(); it.hasNext(); ) {
+						Map.Entry<String, JobNode> entry = it.next();
+						JobNode node = entry.getValue();
+						if (node != rootJob) {
+							JobNode parent = findJob(node.parentJobId);
+							if (parent != null) {
+								if (parent == node || isNodeAncestor(parent, node)) {
+									m_log.debug("broken tree: " + parent.jobId + "/" + node.jobId);
+								} else {
+									parent.addChild(node);
+								}
 							} else {
-								parent.addChild(node);
+								m_log.debug(node.jobId + ": cannot find parent: " + node.parentJobId);
 							}
 						} else {
-							m_log.debug(node.jobId + ": cannot find parent: " + node.parentJobId);
+							// 何もしない
 						}
-					} else {
-						// 何もしない
 					}
-				}
+					traverseJobTree(rootJob, 0);
 
-				jobTreeList = new ArrayList<>();
-				traverseJobTree(rootJob, 0);
+				// 出力対象のジョブが存在し、かつjob.idによるフィルタ設定がされている場合
+				} else if (isFilterJobId && !allJobs.isEmpty()) {
+
+					for (Iterator<Map.Entry<String, JobNode>> it = allJobs.entrySet().iterator(); it.hasNext(); ) {
+						Map.Entry<String, JobNode> entry = it.next();
+						JobNode node = entry.getValue();
+
+						node.level = 0;
+						jobTreeList.add(node);
+					}
+				} else {
+					// job.idによるフィルタ設定がされておらず、かつジョブセッションの親ジョブが存在しない場合は、表示しない
+				}
 			}
 
 			return jobTreeList;
@@ -208,9 +225,9 @@ public class DatasourceJobDetail extends DatasourceBase {
 		String suffix = m_propertiesMap.get(SUFFIX_KEY_VALUE+"."+num);
 		String dayString = new SimpleDateFormat("yyyyMMdd").format(m_startDate);
 
-		String jobUnitRegex = isDefine(JOB_UNIT_REGEX+"."+num, "%%");		
-		String jobIdRegex = isDefine(JOB_ID_REGEX+"."+num, "%%");
-		String jobIdRegexExc = isDefine(JOB_ID_REGEX_EXC+"."+num, "");
+		String jobUnitRegex = isDefine(JOB_UNIT_REGEX +"."+num, REGEX_DEFAULT);
+		String jobIdRegex = isDefine(JOB_ID_REGEX + "."+num, REGEX_DEFAULT);
+		String jobIdRegexExc = isDefine(JOB_ID_REGEX_EXC +"."+num, "");
 
 		String csvFileName = ReportUtil.getCsvFileNameForTemplateType(m_templateId, suffix + "_" + dayString);
 		HashMap<String, Object> retMap = new HashMap<String, Object>();
@@ -302,7 +319,7 @@ public class DatasourceJobDetail extends DatasourceBase {
 					for (Iterator<Map.Entry<String, JobSession>> it = sessionMap.entrySet().iterator(); it.hasNext(); ) {
 						Map.Entry<String, JobSession> entry = it.next();
 						JobSession session = entry.getValue();
-						List<JobNode> jobList = session.getJobTreeList();
+						List<JobNode> jobList = session.getJobTreeList(!REGEX_DEFAULT.equals(jobIdRegex));
 						for (JobNode node : jobList) {
 							bw.write(node.getCsvLine(session.sessionId, maxLength));
 							bw.newLine();

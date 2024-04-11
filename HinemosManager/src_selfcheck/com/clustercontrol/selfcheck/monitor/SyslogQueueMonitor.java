@@ -74,11 +74,11 @@ public class SyslogQueueMonitor extends SelfCheckMonitorBase {
 		queueSize = SystemLogPlugin.getQueuedCount();
 
 		if (queueSize <= threshold) {
-			m_log.debug("syslog queue is normal. (queueSize = " + queueSize + ")");
+			m_log.debug("syslog queue is normal. (queueSize = " + queueSize + ", threshold = " + threshold + ")");
 			warn = false;
 		}
 		if (warn) {
-			m_log.info("syslog queue is too large. (queueSize = " + queueSize + ")");
+			m_log.info("syslog queue is too large. (queueSize = " + queueSize + ", threshold = " + threshold + ")");
 		}
 
 		if (!isNotify(subKey, warn)) {

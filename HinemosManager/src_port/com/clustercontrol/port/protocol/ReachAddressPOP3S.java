@@ -32,6 +32,8 @@ public class ReachAddressPOP3S extends ReachAddressProtocol {
 
 	private static Log m_log = LogFactory.getLog(ReachAddressPOP3S.class);
 
+	private static final String SSL_PROTOCOL = "TLS";
+
 	/**
 	 * POP3Sサービスが動作しているかをテストします
 	 * 
@@ -63,7 +65,7 @@ public class ReachAddressPOP3S extends ReachAddressProtocol {
 					+ hostname + "[" + address.getHostAddress()
 					+ "]:" + m_portNo + ".\n\n");
 
-			POP3SClient client = new POP3SClient(true) {
+			POP3SClient client = new POP3SClient(SSL_PROTOCOL, true) {
 				@Override
 				protected void _connectAction_() throws IOException {
 					setSoTimeout(m_timeout);

@@ -34,6 +34,7 @@ import com.clustercontrol.utility.settings.monitor.xml.AgentMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.TruthValue;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * AGENT 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -45,9 +46,15 @@ import com.clustercontrol.utility.util.UtilityManagerUtil;
 public class AgentConv {
 	private final static Log logger = LogFactory.getLog(AgentConv.class);
 
-	static private String SCHEMA_TYPE = "H";
-	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "3";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private String SCHEMA_TYPE = VersionUtil.getSchemaProperty("MONITOR.AGENT.SCHEMATYPE");
+	static private String SCHEMA_VERSION = VersionUtil.getSchemaProperty("MONITOR.AGENT.SCHEMAVERSION");
+	static private String SCHEMA_REVISION =VersionUtil.getSchemaProperty("MONITOR.AGENT.SCHEMAREVISION");
 
 	/**
 	 * <BR>

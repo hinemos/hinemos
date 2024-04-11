@@ -15,6 +15,7 @@ import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.maintenance.HinemosPropertyTypeConstant;
 import com.clustercontrol.utility.settings.maintenance.xml.HinemosPropertyInfo;
 import com.clustercontrol.utility.settings.model.BaseConv;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * Hinemosプロパティ設定情報をJavaBeanとXML(Bean)のbindingとの間でやりとりを 行うクラス<BR>
@@ -26,19 +27,25 @@ import com.clustercontrol.utility.settings.model.BaseConv;
 public class HinemosPropertyConv extends BaseConv {
 
 	// スキーマのタイプ、バージョン、リビジョンをそれぞれ返す
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
 	@Override
 	protected String getType() {
-		return "G";
+		return VersionUtil.getSchemaProperty("SYSTEM.HINEMOSPROPERTY.SCHEMATYPE");
 	}
 
 	@Override
 	protected String getVersion() {
-		return "1";
+		return VersionUtil.getSchemaProperty("SYSTEM.HINEMOSPROPERTY.SCHEMAVERSION");
 	}
 
 	@Override
 	protected String getRevision() {
-		return "1";
+		return VersionUtil.getSchemaProperty("SYSTEM.HINEMOSPROPERTY.SCHEMAREVISION");
 	}
 
 	/**

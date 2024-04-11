@@ -184,4 +184,13 @@ public class SdmlClientUtil {
 		}
 		return rtn;
 	}
+
+	/**
+	 * ログイン後にキャッシュを更新する
+	 */
+	public static void updateCachesAfterLogin() {
+		for (ISdmlClientOption option : SdmlClientOptionManager.getInstance().getOptionList()) {
+			option.updateCaches();
+		}
+	}
 }

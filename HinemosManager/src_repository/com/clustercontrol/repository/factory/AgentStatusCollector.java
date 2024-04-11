@@ -28,6 +28,7 @@ import com.clustercontrol.hinemosagent.util.AgentLibraryManager;
 import com.clustercontrol.hinemosagent.util.AgentProfile;
 import com.clustercontrol.hinemosagent.util.AgentProfiles;
 import com.clustercontrol.hinemosagent.util.AgentUpdateList;
+import com.clustercontrol.hinemosagent.util.AgentVersionManager;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
 import com.clustercontrol.repository.bean.AgentStatusInfo;
@@ -141,7 +142,8 @@ public class AgentStatusCollector {
 					agent.setUpdateStatus(AgentUpdateStatus.UNKNOWN);
 				} else if (agentLibMgr.isLatest(prof)) {
 					agent.setUpdateStatus(AgentUpdateStatus.DONE);
-				} else if (prof.isV61Earlier()) {
+				} else if ((AgentVersionManager.checkVersion(AgentConnectUtil.getAgentVersion(facilityId),
+						AgentVersionManager.VERSION_MAJOR)) == false) {
 					agent.setUpdateStatus(AgentUpdateStatus.UNSUPPORTED);
 				} else {
 					agent.setUpdateStatus(AgentUpdateStatus.NOT_YET);

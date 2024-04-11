@@ -372,7 +372,7 @@ public class AgentRestConnectManager {
 	/**
 	 *	http要求タイムアウトの設定値を取得
 	 */
-	private static int getHttpRequestTimeout(){
+	public static int getHttpRequestTimeout(){
 		return m_httpRequestTimeout;
 	}
 

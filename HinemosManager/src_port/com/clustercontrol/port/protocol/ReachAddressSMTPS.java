@@ -34,6 +34,8 @@ public class ReachAddressSMTPS extends ReachAddressProtocol {
 
 	private static Log m_log = LogFactory.getLog(ReachAddressSMTPS.class);
 
+	private static final String SSL_PROTOCOL = "TLS";
+
 	/**
 	 * SMTPSサービスが動作しているかをテストします
 	 * 
@@ -65,7 +67,7 @@ public class ReachAddressSMTPS extends ReachAddressProtocol {
 					+ hostname + "[" + address.getHostAddress()
 					+ "]:" + m_portNo + ".\n\n");
 
-			SMTPSClient client = new SMTPSClient(true) {
+			SMTPSClient client = new SMTPSClient(SSL_PROTOCOL, true) {
 				@Override
 				protected void _connectAction_() throws IOException {
 					setSoTimeout(m_timeout);

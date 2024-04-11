@@ -79,6 +79,7 @@ import com.clustercontrol.utility.settings.job.xml.RpaJobRunParamInfos;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.util.DateUtil;
 import com.clustercontrol.utility.util.OpenApiEnumConverter;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * ジョブの定義情報をXMLのBeanとHinemosとDTOとで変換します。<BR>
@@ -90,10 +91,16 @@ public class MasterConv {
 	// ロガー
 	private static Log log = LogFactory.getLog(MasterConv.class);
 
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
 	// 対応スキーマバージョン
-	private static final String schemaType = "K";
-	private static final String schemaVersion = "1";
-	private static final String schemaRevision = "1";
+	private static final String schemaType = VersionUtil.getSchemaProperty("JOB.MASTER.SCHEMATYPE");
+	private static final String schemaVersion = VersionUtil.getSchemaProperty("JOB.MASTER.SCHEMAVERSION");
+	private static final String schemaRevision = VersionUtil.getSchemaProperty("JOB.MASTER.SCHEMAREVISION");
 
 	/**
 	 * ツリートップのID
@@ -400,13 +407,14 @@ public class MasterConv {
 			ret.setStopCommand(jobMasterXML.getStopCommand());
 		}
 		ret.setSpecifyUser(jobMasterXML.getSpecifyUser());
-		if (jobMasterXML.getSpecifyUser()) {
-			if (jobMasterXML.getEffectiveUser() != null && !jobMasterXML.getEffectiveUser().equals("")) {
-				ret.setUser(jobMasterXML.getEffectiveUser());
-			} else {
-				log.info("User not found " + jobMasterXML.getId());
-			}
+
+		//実行ユーザー名が設定されている場合、SpecifyUserに関わらず設定する
+		if (jobMasterXML.getEffectiveUser() != null && !jobMasterXML.getEffectiveUser().equals("")) {
+			ret.setUser(jobMasterXML.getEffectiveUser());
+		} else if (jobMasterXML.getSpecifyUser()){
+			log.info("User not found " + jobMasterXML.getId());
 		}
+
 		ret.setMessageRetryEndFlg(jobMasterXML.getMessageRetryEndFlg());
 		// エージェントに接続できない時の試行回数
 		ret.setMessageRetry(jobMasterXML.getMessageRetry());
@@ -584,7 +592,7 @@ public class MasterConv {
 		// 実行ユーザーを指定するかのフラグ
 		ret.setSpecifyUser(jobMasterXML.getSpecifyUser());
 		// 実行ユーザー名
-		if (jobMasterXML.getSpecifyUser()) {
+		if (jobMasterXML.getEffectiveUser() != null && !jobMasterXML.getEffectiveUser().equals("")) {
 			ret.setUser(jobMasterXML.getEffectiveUser());
 		}
 		// エージェントに接続できない時に終了するかのフラグ

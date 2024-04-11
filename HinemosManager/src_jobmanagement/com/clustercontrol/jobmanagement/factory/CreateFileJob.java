@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 
 import jakarta.persistence.EntityExistsException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -583,7 +584,7 @@ public class CreateFileJob {
 			command.append(":");
 			command.append(filePath);
 			command.append(" ");
-			command.append(fileInfo.getDest_directory());
+			command.append(StringUtils.appendIfMissing(fileInfo.getDest_directory(), "/"));
 
 			//実行コマンドを設定
 			jobInfoEntity.setStartCommand(command.toString());

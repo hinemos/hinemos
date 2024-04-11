@@ -53,7 +53,9 @@ import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
 import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.msgfilter.extensions.IRestConnectMsgFilter;
 import com.clustercontrol.msgfilter.extensions.RestConnectMsgFilterExtension;
+import com.clustercontrol.sdml.util.SdmlClientUtil;
 import com.clustercontrol.ui.util.OptionUtil;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
 
 public class RestLoginManager {
 	private static Log m_log = LogFactory.getLog( RestLoginManager.class );
@@ -63,6 +65,7 @@ public class RestLoginManager {
 
 	public static final String VALUE_UID = LoginConstant.VALUE_UID;
 	public static final String VALUE_URL = LoginConstant.VALUE_URL;
+	public static final String VALUE_URL_MSGFILTER = LoginConstant.VALUE_URL_MSGFILTER;
 
 
 	public static final String KEY_INTERVAL = LoginConstant.KEY_INTERVAL;
@@ -183,6 +186,9 @@ public class RestLoginManager {
 
 			FilterPropertyUpdater.getInstance().updateFilterProperties();
 			FilterSettingManagerNameUpdater.getInstance().updateFilterManagerNames();
+			if(managerName.equals(UtilityManagerUtil.getCurrentManagerName())){
+				UtilityManagerUtil.setCurrentManagerName("");
+			}
 
 			updateStatusBar();
 
@@ -483,6 +489,9 @@ public class RestLoginManager {
 		// ログイン状態を更新
 		updateStatusBar();
 
+		// ログイン後に成否に関わらずキャッシュを更新する
+		updateCaches();
+
 		// Close all if no connection left
 		if( returnCode != IDialogConstants.OK_ID && !RestLoginManager.isLogin() ){
 			m_log.info("login() : cancel, " + returnCode);
@@ -550,6 +559,20 @@ public class RestLoginManager {
 				}
 			}}
 		);
+	}
+
+	/**
+	 * キャッシュの更新処理<br>
+	 * 
+	 * 接続先マネージャの変更時など、<br>
+	 * クライアントで保持している情報を更新したいときに利用する。<br>
+	 * 
+	 */
+	private static void updateCaches() {
+
+		// SDML関連情報の更新
+		SdmlClientUtil.updateCachesAfterLogin();
+
 	}
 
 }

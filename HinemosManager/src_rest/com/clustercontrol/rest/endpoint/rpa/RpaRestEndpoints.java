@@ -1156,7 +1156,7 @@ public class RpaRestEndpoints {
 
 		RpaScenarioOperationResultCreateSetting infoReq = new RpaScenarioOperationResultCreateSetting();
 		RestBeanUtil.convertBean(dtoReq, infoReq);
-		RpaScenarioOperationResultCreateSetting infoRes = new RpaControllerBean().addRpaScenarioOperationResultCreateSetting(infoReq);
+		RpaScenarioOperationResultCreateSetting infoRes = new RpaControllerBean().addRpaScenarioOperationResultCreateSetting(infoReq, false);
 
 		RpaScenarioOperationResultCreateSettingResponse dtoRes = new RpaScenarioOperationResultCreateSettingResponse();
 		RestBeanUtil.convertBean(infoRes, dtoRes);
@@ -1204,7 +1204,7 @@ public class RpaRestEndpoints {
 		RestBeanUtil.convertBean(dtoReq, infoReq);
 		infoReq.setScenarioOperationResultCreateSettingId(operationResultCreateSettingId);
 
-		RpaScenarioOperationResultCreateSetting infoRes = new RpaControllerBean().modifyRpaScenarioOperationResultCreateSetting(infoReq);
+		RpaScenarioOperationResultCreateSetting infoRes = new RpaControllerBean().modifyRpaScenarioOperationResultCreateSetting(infoReq, false);
 		
 		RpaScenarioOperationResultCreateSettingResponse dtoRes = new RpaScenarioOperationResultCreateSettingResponse();
 		RestBeanUtil.convertBean(infoRes, dtoRes);
@@ -1385,7 +1385,7 @@ public class RpaRestEndpoints {
 	@POST
 	@Path("/scenario_data_zip_download")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "DownloadRpaScenarioOperationResultRecords")
-	@RestLog(action = LogAction.Get, target = LogTarget.RpaScenarioResult, type = LogType.REFERENCE )
+	@RestLog(action = LogAction.Download, target = LogTarget.RpaScenarioResult, type = LogType.UPDATE )
 	@RestSystemPrivilege(function=SystemPrivilegeFunction.Rpa,modeList={SystemPrivilegeMode.READ})
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING, format = "binary")), description = "response"),
@@ -1434,7 +1434,7 @@ public class RpaRestEndpoints {
 		// ダウンロード処理
 		StreamingOutput stream = RestTempFileUtil.getTempFileStream(restDownloadFile.getTempFile());
 
-		return Response.ok(stream).header("Content-Disposition", "attachment; name=" + restDownloadFile.getFileName()).build();
+		return Response.ok(stream).header("Content-Disposition", "attachment; filename=" + restDownloadFile.getFileName()).build();
 	}
 	
 	/**

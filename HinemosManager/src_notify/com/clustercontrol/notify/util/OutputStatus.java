@@ -23,6 +23,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.monitor.bean.PriorityChangeFailureTypeConstant;
 import com.clustercontrol.monitor.bean.StatusExpirationConstant;
 import com.clustercontrol.notify.bean.NotifyRequestMessage;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -43,6 +44,9 @@ public class OutputStatus implements DependDbNotifier {
 
 	// 無期限収集の場合に設定される終了予定時刻（9999.12.31 23:59:59.000 に相当）
 	private final long EXPIRATION_DATE_MAX = 253402268399000l;
+
+	// log.cc_status_info#messageの桁数
+	private final int MESSAGE_DEGIT = 255;
 
 	public void updateStatus(OutputBasicInfo status) throws HinemosUnknown {
 		NotifyRequestMessage msg = new NotifyRequestMessage();
@@ -151,7 +155,14 @@ public class OutputStatus implements DependDbNotifier {
 			throw new HinemosUnknown("expirationFlg is null.");
 		}
 
-		outputStatusInfo(outputInfo, expirationFlg, expirationDateTime, outputDateTime, oldEntityMap, roleId, insertEntityList);
+		// 判定による重要度変化の有無によるoutputStatusInfoの作成方法を選択
+		if (outputInfo.getPriorityChangeJudgmentType() != null 
+				&& outputInfo.getPriorityChangeJudgmentType() == PriorityChangeFailureTypeConstant.TYPE_PRIORITY_CHANGE) {
+			// 判定による重要度変化する場合
+			outputStatusInfoPriorityChanged(outputInfo, expirationFlg, expirationDateTime, outputDateTime, oldEntityMap, roleId, insertEntityList);
+		} else {
+			outputStatusInfo(outputInfo, expirationFlg, expirationDateTime, outputDateTime, oldEntityMap, roleId, insertEntityList);
+		}
 	}
 
 	/**
@@ -169,6 +180,10 @@ public class OutputStatus implements DependDbNotifier {
 	 */
 	private void outputStatusInfo(OutputBasicInfo outputInfo, int expirationFlg, long expirationDateTime, long outputDateTime,
 			Map<StatusInfoEntityPK, StatusInfoEntity> oldEntityMap, String roleId, List<StatusInfoEntity> insertEntityList) {
+
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("outputStatusInfo start." + outputInfo.toString());
+		}
 		StatusInfoEntity outputStatus = null;
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
@@ -213,8 +228,8 @@ public class OutputStatus implements DependDbNotifier {
 				if (message == null) {
 					message = "";
 				}
-				if (message.length() > 255) {
-					outputStatus.setMessage(message.substring(0, 255));
+				if (message.length() > MESSAGE_DEGIT) {
+					outputStatus.setMessage(message.substring(0, MESSAGE_DEGIT));
 				} else {
 					outputStatus.setMessage(message);
 				}
@@ -227,8 +242,8 @@ public class OutputStatus implements DependDbNotifier {
 			} else {
 				// ステータス情報の更新
 				outputStatus.setApplication(outputInfo.getApplication());
-				if (outputInfo.getMessage().length() > 255) {
-					outputStatus.setMessage(outputInfo.getMessage().substring(0, 255));
+				if (outputInfo.getMessage().length() > MESSAGE_DEGIT) {
+					outputStatus.setMessage(outputInfo.getMessage().substring(0, MESSAGE_DEGIT));
 				} else {
 					outputStatus.setMessage(outputInfo.getMessage());
 				}
@@ -284,5 +299,138 @@ public class OutputStatus implements DependDbNotifier {
 		}
 		
 		return true;
+	}
+
+	/**
+	 * 判定による重要度変化する場合のステータス情報を出力します。<BR>
+	 * 監視項目IDとファシリティID、プラグインIDが合致するステータス情報が存在しない場合は、ステータス情報を作成します。
+	 * 監視項目IDとファシリティID、プラグインIDが合致するステータス情報がすでに存在する場合は、ステータス情報を更新します。
+	 * 今回の更新対象を最新のステータスとし、それ以外の監視項目IDとファシリティID、プラグインIDが合致するステータス情報が
+	 * 存在する場合は削除を行います。
+	 * 
+	 * @param outputInfo 通知情報
+	 * @param expirationFlg 有効期限制御フラグ
+	 * @param expirationDateTime 有効期限日時
+	 * @param outputDateTime 受信日時
+	 * @param oldEntityMap
+	 * @param roleId
+	 * @param insertEntityList
+	 */
+	private void outputStatusInfoPriorityChanged(OutputBasicInfo outputInfo, int expirationFlg, long expirationDateTime, long outputDateTime,
+			Map<StatusInfoEntityPK, StatusInfoEntity> oldEntityMap, String roleId, List<StatusInfoEntity> insertEntityList) {
+
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("outputStatusInfoPriorityChanged start." + outputInfo.toString());
+		}
+		StatusInfoEntity outputStatus = null;
+
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
+			// ステータス情報のPKエンティティの作成
+			StatusInfoEntityPK outputStatusPk
+			= new StatusInfoEntityPK(outputInfo.getFacilityId(),
+					outputInfo.getMonitorId(),
+					outputInfo.getSubKey(),
+					outputInfo.getPluginId());
+
+			// サブキーを除いたリストを取得する
+			List<StatusInfoEntity> updateStatusList
+			= com.clustercontrol.notify.monitor.util.QueryUtil.getStatusInfoByPKWithoutMonitorDetailId(
+					outputInfo.getPluginId(),
+					outputInfo.getMonitorId(),
+					outputInfo.getFacilityId());
+
+			// DELETE INSERTをメインとするため、インスタンス生成
+			outputStatus = new StatusInfoEntity(outputStatusPk);
+			// 検索条件に合致するエンティティが存在しないため新規に生成
+			if (roleId == null) {
+				outputStatus.setOwnerRoleId(NotifyUtil.getOwnerRoleId(
+						outputStatusPk.getPluginId(), outputStatusPk.getMonitorId(),
+						outputStatusPk.getMonitorDetailId(), outputStatusPk.getFacilityId(), false));
+				em.persist(outputStatus);
+			} else {
+				outputStatus.setOwnerRoleId(roleId);
+			}
+
+			outputStatus.setApplication(outputInfo.getApplication());
+			outputStatus.setExpirationDate(expirationDateTime);
+			outputStatus.setExpirationFlg(expirationFlg);
+
+			String message = outputInfo.getMessage();
+			if (message == null) {
+				message = "";
+			}
+			if (message.length() > MESSAGE_DEGIT) {
+				outputStatus.setMessage(message.substring(0, MESSAGE_DEGIT));
+			} else {
+				outputStatus.setMessage(message);
+			}
+
+			// 前回情報が存在しており、重要度が同一の場合は、出力日時を前回情報のものとする
+			if (!updateStatusList.isEmpty() 
+					&& updateStatusList.get(0).getPriority().intValue() == outputInfo.getPriority()) {
+				outputStatus.setGenerationDate(updateStatusList.get(0).getGenerationDate());
+			} else {
+				outputStatus.setGenerationDate(outputInfo.getGenerationDate());
+			}
+
+			outputStatus.setOutputDate(outputDateTime);
+			outputStatus.setPriority(outputInfo.getPriority());
+
+			// 追加対象の重複チェック
+			if (checkDuplicateStatusWithoutMonitorDetailId(insertEntityList, outputStatus)) {
+				insertEntityList.add(outputStatus);
+			}
+
+			// 今回のoutputStatus以外のステータス通知を削除する
+			// 削除対象がoldEntityMapにいた場合は削除する
+			if (!updateStatusList.isEmpty()) {
+				for (StatusInfoEntity delStatusinfo : updateStatusList) {
+					em.remove(delStatusinfo);
+					oldEntityMap.remove(delStatusinfo.getId());
+				}
+			}
+			
+		}
+	}
+	
+	/**
+	 * 監視詳細IDを除くキーが同じステータス通知が同時に発行される場合は、
+	 * 最新のものだけが通知されるようにする。
+	 * targetのほうが最新の場合は、entityListから古い情報を削除する
+	 * なお、文字列監視において、List<NotifyRequestMessage>が
+	 * 2件以上なければ、削除処理は実行されない
+	 * 
+	 * @param entityList insertするステータス通知のリスト
+	 * @param target 追加でinsertするステータス通知のリスト
+	 * 
+	 * @return targetを追加してよい場合はtrue、targetより新しいものがentityListにある場合はfalse
+	 */
+	private boolean checkDuplicateStatusWithoutMonitorDetailId(List<StatusInfoEntity> entityList, StatusInfoEntity target) {
+		ArrayList<StatusInfoEntity> deleteList = new ArrayList<>();
+		boolean targetAdoptFlag = true;
+		for (StatusInfoEntity entity : entityList) {
+			// 監視詳細IDを除くキーの操作
+			if (entity.getId().getFacilityId().equals(target.getId().getFacilityId())
+					&& entity.getId().getMonitorId().equals(target.getId().getMonitorId())
+					&& entity.getId().getPluginId().equals(target.getId().getPluginId())) {
+				if (entity.getOutputDate() < target.getOutputDate()) {
+					// キーが一致して、targetの最終変更日時が新しい場合はentityをリストに追加
+					deleteList.add(entity);
+				} else {
+					// キーが一致して、targetの最終変更日時が古い場合はtargetをaddしない
+					targetAdoptFlag = false;
+				}
+			}
+		}
+		// 重複した追加対象の削除
+		if (!deleteList.isEmpty()) {
+			for (StatusInfoEntity result : deleteList) {
+				entityList.remove(result);
+			}
+		}
+		
+		return targetAdoptFlag;
 	}
 }

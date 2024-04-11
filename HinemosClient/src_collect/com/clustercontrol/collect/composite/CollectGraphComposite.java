@@ -8,7 +8,6 @@
 
 package com.clustercontrol.collect.composite;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,16 +31,15 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
-import org.openapitools.client.model.MonitorNumericValueInfoResponse;
 import org.openapitools.client.model.CollectKeyInfoResponseP1;
 import org.openapitools.client.model.FacilityInfoResponse;
+import org.openapitools.client.model.MonitorNumericValueInfoResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.bean.SummaryTypeMessage;
 import com.clustercontrol.collect.preference.PerformancePreferencePage;
 import com.clustercontrol.collect.util.CollectGraphUtil;
-
 import com.clustercontrol.collect.view.CollectGraphView;
 import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -68,6 +66,8 @@ import com.clustercontrol.util.TimezoneUtil;
  * @since 4.0.0
  */
 public class CollectGraphComposite extends Composite {
+	private static final long serialVersionUID = 8060282120185063132L;
+
 	private static Log m_log = LogFactory.getLog(CollectGraphComposite.class);
 
 	private Label settingLabel = null;
@@ -142,9 +142,9 @@ public class CollectGraphComposite extends Composite {
 	/** プラグインIDの末尾文字（数値） */
 	private static final String SUFFIX_PLUGIN_ID_NUM = "_N";
 
-	private final String DATE_FORMAT = "yyyy/MM/dd HH:mm:ss.SSS";
-
 	private String lastScript = "";
+
+
 	/**
 	 * コンストラクタ
 	 *
@@ -194,7 +194,8 @@ public class CollectGraphComposite extends Composite {
 		}
 		
 		this.addControlListener(new ControlListener() {
-			
+			private static final long serialVersionUID = 5161768188146531389L;
+
 			@Override
 			public void controlResized(ControlEvent e) {
 				// nop
@@ -212,6 +213,8 @@ public class CollectGraphComposite extends Composite {
 	private void loadBrowser() {
 		HtmlLoaderUtil.load(m_browserGraph, "graph.html", "com/clustercontrol/collect/composite/");
 		m_browserGraph.addProgressListener(new ProgressListener() {
+			private static final long serialVersionUID = 9027758974641362334L;
+
 			public void completed(ProgressEvent event) {
 				// ページのロードが完了してからjavascriptを実行する
 				completed = true;
@@ -225,6 +228,8 @@ public class CollectGraphComposite extends Composite {
 		
 		HtmlLoaderUtil.load(m_browserSlider, "slider.html", "com/clustercontrol/collect/composite/");
 		m_browserSlider.addProgressListener(new ProgressListener() {
+			private static final long serialVersionUID = -1482560819326936962L;
+
 			public void completed(ProgressEvent event) {
 				// ページのロードが完了してからjavascriptを実行する
 				slider_completed = true;
@@ -314,16 +319,25 @@ public class CollectGraphComposite extends Composite {
 			}
 			return retObj;
 		}
-		
+
+		/**
+		 * Javascriptからの実行
+		 * 
+		 * @param arguments
+		 * @return
+		 * @throws HinemosDbTimeout
+		 * @throws InvalidUserPass
+		 * @throws HinemosUnknown
+		 * @throws InvalidRole
+		 * @throws RestConnectFailed
+		 * @throws InvalidSetting
+		 */
 		private Object executeFromJavascript(Object[] arguments) 
 				throws HinemosDbTimeout, InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
-			SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
-			dateFormat.setTimeZone(TimezoneUtil.getTimeZone());
-			
-			boolean isAutoGragh = false;		
+
 			String ret = (String)arguments[0];
-			m_log.debug("wow!called from javascript!" + ret);
-			m_log.info("javascript call:" + ret);
+			m_log.info("executeFromJavascript() start. arguments=" + ret);
+
 			// jsonの解析、<key, value>にする
 			ret = ret.replaceAll("\\{", "").replaceAll("\\}", "").replaceAll("\"", "");
 			String rets[] = ret.split(",");
@@ -348,7 +362,7 @@ public class CollectGraphComposite extends Composite {
 			// javascriptの呼び出し種別がエラーの場合は、エラーログに出して終了
 			if (methodName.equals(CALL_METHOD_NAME_JAVASCRIPT_ERROR)) {
 				m_log.error("executeFromJavascript() ERROR:" + ret);
-				m_log.error("execScript:" + lastScript);
+				m_log.error("executeFromJavascript() execScript:" + lastScript);
 				if (lastScript.length() > 2000) {
 					lastScript = lastScript.substring(0, 2000) + "...";
 				}
@@ -359,33 +373,36 @@ public class CollectGraphComposite extends Composite {
 
 				return null;
 			}
-			
+
 			// javascriptの呼び出し種別により処理を分ける
 			if (methodName.equals(CALL_METHOD_NAME_AUTOZOOMGRAPH)) {
 				// 「自動調整」ボタンが押下されたときに呼ばれる
 				// javascriptでは画面サイズが正しく取得できないことがあるため、Java側で取得して返す
 				return CollectGraphUtil.getScreenWidth();
-			} else if (methodName.equals(CALL_METHOD_NAME_NOTICESLIDERTYPE) || methodName.equals(CALL_METHOD_NAME_NOTICESLIDER_BRUSHEND)) {
+
+			} else if (methodName.equals(CALL_METHOD_NAME_NOTICESLIDERTYPE)
+					|| methodName.equals(CALL_METHOD_NAME_NOTICESLIDER_BRUSHEND)) {
 				// スライダーの種別(10year,year,month,week,day)を操作したときに呼ばれる
 				// メンバに現在表示中の期間(種別)を保持するのみで終わり
 				CollectGraphUtil.setSliderStart(parseString2Long(scriptMap.get("start_date")));
 				CollectGraphUtil.setSliderEnd(parseString2Long(scriptMap.get("end_date")));
-				m_log.debug("function() noticeSliderType call term:" + (CollectGraphUtil.getSliderEnd() - CollectGraphUtil.getSliderStart()));
+				m_log.debug("executeFromJavascript() noticeSliderType call term:" + (CollectGraphUtil.getSliderEnd() - CollectGraphUtil.getSliderStart()));
 				if (methodName.equals(CALL_METHOD_NAME_NOTICESLIDERTYPE)) {
 					return null;
 				}
+				// CALL_METHOD_NAME_NOTICESLIDER_BRUSHEND は処理続行
+
 			} else if (methodName.equals(CALL_METHOD_NAME_NOTICEGRAPHZOOM)) {
 				// グラフのズームボタンを操作したときに呼ばれる
 				// グラフのズームレベルをメンバに保持して終わり
 				CollectGraphUtil.setGraphZoomSize(scriptMap.get("graphZoomSize"));
-				m_log.debug("function() noticeGraphZoom call zoomSize:" + CollectGraphUtil.getGraphZoomSize());
+				m_log.debug("executeFromJavascript() noticeGraphZoom call zoomSize:" + CollectGraphUtil.getGraphZoomSize());
 				return null;
-				
+
 			} else if (methodName.equals(CALL_METHOD_NAME_CHANGETHRESHOLD)) {
 				// 閾値の範囲を変更した場合に呼ばれる
 				// 閾値範囲の変更
 				// EventModifyMonitorSettingAction参照
-				
 				String infoMaxValue = scriptMap.get("info_max");
 				String infoMinValue = scriptMap.get("info_min");
 				String warnMaxValue = scriptMap.get("warn_max");
@@ -413,7 +430,7 @@ public class CollectGraphComposite extends Composite {
 						warnMinValue = threshold.split(",")[2];
 						warnMaxValue = threshold.split(",")[3];
 					}
-					
+
 					String param =
 							"ThresholdGraph.prototype.setThresholdParamMonitorId({"
 							+ "\'itemname\':\"" + CollectGraphUtil.escapeParam(itemName) + "\", "
@@ -426,7 +443,7 @@ public class CollectGraphComposite extends Composite {
 					executeScript(param, m_browserGraph);
 				}
 				return true;
-				
+
 			} else if (methodName.equals(CALL_METHOD_NAME_OPEN_EVENT_DETAIL)) {
 				// イベントフラグ線を押下したときに呼ばれる
 				// イベント詳細画面を表示する
@@ -441,7 +458,7 @@ public class CollectGraphComposite extends Composite {
 					monitorDetailId = "";
 				}
 				String monitorId = scriptMap.get("monitorid");
-				m_log.debug("open_event_detail managerName:" + managerName + ", facilityid:" + facilityId + ", date:" + date 
+				m_log.debug("executeFromJavascript() open_event_detail managerName:" + managerName + ", facilityid:" + facilityId + ", date:" + date 
 						+ ", pluginid:" + pluginId + ", monitordetailid:" + monitorDetailId + ", monitorid:" + monitorId);
 				List<Object> list = new ArrayList<>();
 				list.add(GetEventListTableDefine.MANAGER_NAME, managerName);
@@ -460,97 +477,122 @@ public class CollectGraphComposite extends Composite {
 				return null;
 			}
 			// autoZoomGraph noticeSliderType noticeGraphZoom changeThreshold openEventDetailはこの時点でreturn済
-			// 以下はグラフ表示の更新処理
-			// brushend mouseup autodraw inputdate
-			
+
+			// グラフ表示の更新処理
+			return updateGraphs(scriptMap);
+		}
+
+		/**
+		 * グラフ表示を更新する
+		 * JSメソッド brushend、mouseup、autodraw、inputdate について処理を行う。
+		 * 
+		 * @param scriptMap
+		 * @return
+		 * @throws HinemosDbTimeout
+		 * @throws InvalidUserPass
+		 * @throws HinemosUnknown
+		 * @throws InvalidRole
+		 * @throws RestConnectFailed
+		 * @throws InvalidSetting
+		 */
+		private Object updateGraphs(HashMap<String, String> scriptMap)
+						throws HinemosDbTimeout, InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
+			m_log.debug("updateGraphs() start.");
+
+			boolean isAutoGragh = false;
+
+			// 現在時刻は、マネージャのHinemosTimeから取得する。
+			// これは、マネージャとクライアントに時間差（offsetも含む）がある場合にグラフ右端が表示されない場合があるため。
+			long nowDate = CollectGraphUtil.getManagerTime();
+			m_log.debug("updateGraphs() nowDate=" + CollectGraphUtil.toDatetimeString(nowDate));
+
 			if (!scriptMap.containsKey("xaxis_min") || !scriptMap.containsKey("xaxis_max")) {
-				m_log.info("xaxis_min or xaxis_max or id not define. FINISH.");
+				m_log.info("updateGraphs() xaxis_min or xaxis_max is not define, so finished.");
 				return null;
 			}
 			Long xaxis_min = parseString2Long(scriptMap.get("xaxis_min"));
 			Long xaxis_max = parseString2Long(scriptMap.get("xaxis_max"));
+			m_log.debug("updateGraphs() xaxis_min=" + CollectGraphUtil.toDatetimeString(xaxis_min) + ", xaxis_max=" + CollectGraphUtil.toDatetimeString(xaxis_max));
+			m_log.debug("updateGraphs() TargetConditionStartDate=" + CollectGraphUtil.toDatetimeString(CollectGraphUtil.getTargetConditionStartDate()) 
+					+ ", TargetConditionEndDate=" + CollectGraphUtil.toDatetimeString(CollectGraphUtil.getTargetConditionEndDate()));
 
-			m_log.info("変更要求：xaxis_min=" + new Date(xaxis_min).toString() + ", xaxis_max=" + new Date(xaxis_max).toString());
-			m_log.info("変更前(DB取得済み)：select_start=" + new Date(CollectGraphUtil.getTargetConditionStartDate()).toString() 
-					+ ", select_end=" + new Date(CollectGraphUtil.getTargetConditionEndDate()).toString());
-			m_log.debug("plot start(now) :" + dateFormat.format(new Date()));
-			
+			// X軸のスケール変更
 			// 描画範囲が1日より長い場合にrawが指定されていた場合、ave_hourに変える
 			long date_diff = xaxis_max - xaxis_min;
 			if (date_diff > CollectGraphUtil.MILLISECOND_DAY && CollectGraphUtil.getSummaryType() == SummaryTypeConstant.TYPE_RAW) {
-				m_log.info("rawで1日以上選択された、avg(hour)に変えます");
+				m_log.info("updateGraphs() summary type is raw and x axis range is greater than 24 hours, so change scale.");
 				CollectGraphUtil.setSummaryType(SummaryTypeConstant.TYPE_AVG_HOUR);
 				// ComboBoxを変更する
 				m_collectGraphView.getCollectSettingComposite().setSummaryTypeComboBox(SummaryTypeConstant.TYPE_AVG_HOUR);
 				// labelの更新
 				setSettingLabel(SummaryTypeConstant.TYPE_AVG_HOUR, CollectGraphUtil.getCollectKeyInfoList());
-				
+
 				// 表示中のRAWとこれから表示するavg_hourを混合させないためにすべてのplotを消す
 				deletePlots(CALL_METHOD_NAME_BRUSHEND, xaxis_min, xaxis_max, true);
 				CollectGraphUtil.setTargetConditionStartDate(Long.MAX_VALUE);
 				CollectGraphUtil.setTargetConditionEndDate(0L);
 			}
-			
+
+			// メソッド別の処理
+			String methodName = scriptMap.get("method_name");
 			if (methodName.equals(CALL_METHOD_NAME_MOUSEUP)) {
+				m_log.debug("updateGraphs() CALL_METHOD_NAME_MOUSEUP");
+
 				// スライダーの選択範囲を変更する
 				// inputdateの場合はjavascript内で実施しているのでここではしない
 				String script = "BrushLine.prototype.moveTarget(" + xaxis_min + ", " + xaxis_max + ");";
 				executeScript(script, m_browserSlider);
-				
-			}
-			if (methodName.equals(CALL_METHOD_NAME_BRUSHEND) || methodName.equals(CALL_METHOD_NAME_INPUTDATE) 
+
+			} else if (methodName.equals(CALL_METHOD_NAME_BRUSHEND)
+					|| methodName.equals(CALL_METHOD_NAME_INPUTDATE) 
 					|| methodName.equals(CALL_METHOD_NAME_NOTICESLIDER_BRUSHEND)) {
-				if (CollectGraphUtil.getBarFlg() && (CollectGraphUtil.getTargetConditionStartDate() < xaxis_min
-						|| CollectGraphUtil.getTargetConditionEndDate() > xaxis_max)) {
-					String removePointsScript = getHeadGraphClassName() + ".prototype.removePoints(" + xaxis_min + ", "
-							+ xaxis_max + ", " + false + ");";
+				m_log.debug("updateGraphs() CALL_METHOD_NAME_BRUSHEND or CALL_METHOD_NAME_INPUTDATE or CALL_METHOD_NAME_NOTICESLIDER_BRUSHEND. methodName=" + methodName);
+
+				if (CollectGraphUtil.getBarFlg()
+						&& (CollectGraphUtil.getTargetConditionStartDate() < xaxis_min
+								|| CollectGraphUtil.getTargetConditionEndDate() > xaxis_max)) {
+					String removePointsScript = getHeadGraphClassName() + ".prototype.removePoints(" + xaxis_min + ", " + xaxis_max + ", " + false + ");";
 					executeScript(removePointsScript, m_browserGraph);
 				}
+				// xaxis_max日時まで描画されているため、この値で描画済みグラフ上の最新時間を更新する（設定しないと、自動更新ボタンクリックでプロットされない範囲が発生する）
+				CollectGraphUtil.setTargetDrawnDate(xaxis_max);
 				// すべてのグラフの表示期間(x軸のみ)を変更する
 				String script = getHeadControlClassName() + ".trimXAxis(" + xaxis_min + ", " + xaxis_max + ", null);";
 				executeScript(script, m_browserGraph);
-			}
-			if (methodName.equals(CALL_METHOD_NAME_AUTODRAW)) {
+
+			} else if (methodName.equals(CALL_METHOD_NAME_AUTODRAW)) {
+				m_log.debug("updateGraphs() CALL_METHOD_NAME_AUTODRAW");
+
 				isAutoGragh = true;
 				// 現在表示している期間の間隔で、現在時刻で最新情報を取得する
 				long term = xaxis_max - xaxis_min;
-				if (xaxis_max < new Date().getTime()) {
-					xaxis_max = new Date().getTime();
+				if (xaxis_max < nowDate) {
+					xaxis_max = nowDate;
 				}
-
 				xaxis_min = xaxis_max - term;
-				m_log.debug("autodraw -> xaxis_min:" + new Date(xaxis_min).toString() + ", xaxis_max:" + new Date(xaxis_max).toString() + ", term:" + term);
+				m_log.debug("updateGraphs() xaxis_min=" + CollectGraphUtil.toDatetimeString(xaxis_min) + ", xaxis_max=" + CollectGraphUtil.toDatetimeString(xaxis_max) + ", term=" + term);
+
 				// スライダーの選択範囲を変更する
 				String script = "BrushLine.prototype.moveTarget(" + xaxis_min + ", " + xaxis_max + ");";
 				executeScript(script, m_browserSlider);
 				// すべてのグラフの表示期間(x軸のみ)を変更する
-				script = getHeadControlClassName() + ".trimXAxis(" 
-						+ (xaxis_min) + ", " 
-						+ (xaxis_max) + ", null);";
+				script = getHeadControlClassName() + ".trimXAxis(" + (xaxis_min) + ", " + (xaxis_max) + ", null);";
 				executeScript(script, m_browserGraph);
 			}
-			
+
+			// 表示範囲外プロット消去
+			deletePlots(methodName, xaxis_min, xaxis_max, false);
+
+			// グラフ描画
 			// targetstart:画面に表示している最小x、targetend:画面に表示している最大xだけど<=現在時間
 			// 前側だけ取りに行くパターン(min < targetstart && max < targetend)
 			// 後側だけ取りに行くパターン(min > targetstart && max > targetend, targetend < now)
 			// 前後取りに行くパターン(min < targetstart && max > targetend, targetend < now)
 			// すべて取りに行くパターン(min > targetend || max < targetstart)
-			
-			// methodnameがautodrawの場合は、必ずDBにとりにいく
-			if (CollectGraphUtil.getTargetConditionStartDate() <= xaxis_min 
-					&& xaxis_max <= CollectGraphUtil.getTargetConditionEndDate()) {
-				// グラフ情報は取得しないが選択範囲が狭まった場合は、見えなくなた部分を消す
-				// 以下のif文にはhitしないため、個別に削除
-				m_log.debug("become small. delete invisible area. method_name:" + methodName);
-			}
-			
-			// 前回DBにとりにいった日付と、画面に表示したい日付の比較。情報が少ないなら取りに行く
-			
-			// 表示範囲外のプロットは消す
-			deletePlots(methodName, xaxis_min, xaxis_max, false);
-
-			// 現在時刻
-			Long nowDate = System.currentTimeMillis();
+			m_log.debug("updateGraphs() Plotting graphs."
+					+ " TargetConditionStartDate=" + CollectGraphUtil.toDatetimeString(CollectGraphUtil.getTargetConditionStartDate())
+					+ ", TargetConditionEndDate=" + CollectGraphUtil.toDatetimeString(CollectGraphUtil.getTargetConditionEndDate()));
+			m_log.debug("  xaxis_min=" + CollectGraphUtil.toDatetimeString(xaxis_min) + ", xaxis_max=" + CollectGraphUtil.toDatetimeString(xaxis_max));
 			// DBに取りに行く日時（From）
 			long dbStartDate = xaxis_min;
 			// DBに取りに行く日時（To）
@@ -558,51 +600,46 @@ public class CollectGraphComposite extends Composite {
 			if (xaxis_max > nowDate) {
 				dbEndDate = nowDate;
 			}
+			m_log.debug("  dbStartDate=" + CollectGraphUtil.toDatetimeString(dbStartDate) + ", dbEndDate=" + CollectGraphUtil.toDatetimeString(dbEndDate));
 
 			if (xaxis_max <= CollectGraphUtil.getTargetConditionStartDate()) {
 				// すべて取りに行く(前側)
-				m_log.debug("GET ALL side:startdate");
+				m_log.debug("updateGraphs() X axis range is at left side, adding graphs plot all.");
 				addGraphPlot(dbStartDate, dbEndDate, xaxis_min, xaxis_max, nowDate);
 			} else if (xaxis_min >= CollectGraphUtil.getTargetConditionEndDate()) {
 				// すべて取りに行く(後側)
-				m_log.debug("GET ALL side:enddate");
 				if (xaxis_min > nowDate) {
 					// グラフ表示最古時間が現在時刻よりも新しい場合はデータが無いのでとりにいかない
-					m_log.debug("startdate is future. finish.");
+					m_log.debug("updateGraphs() No data in x axis range.");
 				} else {
+					m_log.debug("updateGraphs() X axis range is at right side, adding graphs plot all.");
 					addGraphPlot(dbStartDate, dbEndDate, xaxis_min, xaxis_max, nowDate);
 				}
 			} else {
 				// 前側取りに行く
 				if (xaxis_min < CollectGraphUtil.getTargetConditionStartDate() && xaxis_max >= CollectGraphUtil.getTargetConditionStartDate()) {
-					m_log.debug("GET FRONT");
+					m_log.debug("updateGraphs() Adding graph plot at left side.");
 					addGraphPlot(dbStartDate, CollectGraphUtil.getTargetConditionStartDate(), xaxis_min, xaxis_max, nowDate);
 				}
 				// 後側取りに行く
+				m_log.debug("updateGraphs() TargetDBAccessDate=" + CollectGraphUtil.toDatetimeString(CollectGraphUtil.getTargetDBAccessDate()));
 				if (xaxis_max > CollectGraphUtil.getTargetDBAccessDate()) {
-					m_log.debug("GET BACK");
-					if (xaxis_max > nowDate) {
-						dbEndDate = nowDate;
-						m_log.debug("xaxis_max is now.:" + xaxis_max);
-					}
-					if (isAutoGragh){
-						CollectGraphUtil.setUseDrawnDateListFlg(true);
-					}
+					m_log.debug("updateGraphs() Adding graph plot at right side.");
+					CollectGraphUtil.setUseDrawnDateListFlg(isAutoGragh);
 					addGraphPlot(CollectGraphUtil.getTargetDBAccessDate() + 1, dbEndDate, xaxis_min, xaxis_max, nowDate);
 					CollectGraphUtil.setUseDrawnDateListFlg(false);
 				}
 			}
-			
+
 			// y軸をきれいにする
 			String yaxisParam = getHeadControlClassName() + ".trimBranch();";
 			executeScript(yaxisParam, m_browserGraph);
 
-			m_log.info("targetStartDate:" + dateFormat.format(new Date(CollectGraphUtil.getTargetConditionStartDate()))
-					+ ", targetEndDate:" + dateFormat.format(new Date(CollectGraphUtil.getTargetConditionEndDate())));
-			m_log.info("addPoint end:" + dateFormat.format(new Date()));
+			m_log.debug("updateGraphs() end. Target date is changed. TargetConditionStartDate=" + CollectGraphUtil.toDatetimeString(CollectGraphUtil.getTargetConditionStartDate())
+					+ ", TargetConditionEndDate=" + CollectGraphUtil.toDatetimeString(CollectGraphUtil.getTargetConditionEndDate()));
 			return true;
 		}
-		
+
 		/**
 		 * 画面から消えた部分の線を消します<br>
 		 * javascriptの関数が[brushend][autodraw][inputdate][noticeSlider_brushend]のときのみ、この関数を実行する必要があります。<br>
@@ -648,7 +685,7 @@ public class CollectGraphComposite extends Composite {
 		}
 	}
 	/**
-	 * 現在表示中のグラフに線を追加します。
+	 * 現在表示中のグラフに線やプロットを追加します。
 	 * 
 	 * @param startDate DBから取得するデータの開始時刻
 	 * @param endDate DBから取得するデータの終了時刻
@@ -664,8 +701,14 @@ public class CollectGraphComposite extends Composite {
 	 */
 	private void addGraphPlot(Long startDate, Long endDate, Long selectStartDate, Long selectEndDate, Long nowDate) 
 			throws HinemosDbTimeout, InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
-		m_log.debug("addGraphPlot() start");
-		StringBuffer sb = CollectGraphUtil.getAddGraphPlotJson(startDate, endDate, selectStartDate, selectEndDate, nowDate);
+		m_log.debug("addGraphPlot() start. "
+				+ "startDate=" + CollectGraphUtil.toDatetimeString(startDate)
+				+ ", endDate=" + CollectGraphUtil.toDatetimeString(endDate)
+				+ ", selectStartDate=" + CollectGraphUtil.toDatetimeString(selectStartDate)
+				+ ", selectEndDate=" + CollectGraphUtil.toDatetimeString(selectEndDate)
+				+ ", nowDate=" + CollectGraphUtil.toDatetimeString(nowDate));
+
+		StringBuffer sb = CollectGraphUtil.getGraphJsonData(startDate, endDate, selectStartDate, selectEndDate, nowDate);
 		if (sb == null) {
 			m_log.debug("addGraphPlot() add plot data 0.");
 			return;
@@ -768,10 +811,8 @@ public class CollectGraphComposite extends Composite {
 			boolean returnFlg, boolean returnKindFlg, boolean totalFlg, boolean stackflg, boolean appflg, 
 			boolean threflg, boolean pieflg, boolean scatterflg, boolean legendFlg, boolean sigmaFlg, boolean barFlg) 
 					throws HinemosDbTimeout, InvalidUserPass, HinemosUnknown, InvalidRole, RestConnectFailed, InvalidSetting {
-		SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
-		dateFormat.setTimeZone(TimezoneUtil.getTimeZone());
-		
-		m_log.info("drawGraphs() START time:" + dateFormat.format(new Date()) + ", selectInfoStr:" + selectInfoStr + ", summaryType:" + summaryType);
+
+		m_log.info("drawGraphs() START. selectInfoStr:" + selectInfoStr + ", summaryType:" + summaryType);
 
 		if (!completed || !slider_completed) {
 			m_log.info("uncompleted!!");
@@ -881,13 +922,14 @@ public class CollectGraphComposite extends Composite {
 		
 		// プロット情報の取得と描画
 		addGraphPlot(CollectGraphUtil.getTargetConditionStartDate(), CollectGraphUtil.getTargetConditionEndDate(), 
-				CollectGraphUtil.getTargetConditionStartDate(), CollectGraphUtil.getTargetConditionEndDate(), null);
+				CollectGraphUtil.getTargetConditionStartDate(), CollectGraphUtil.getTargetConditionEndDate(),
+				CollectGraphUtil.getManagerTime());
 		
 		// y軸をきれいにする
 		String yaxisParam = getHeadControlClassName() + ".trimBranch();";
 		executeScript(yaxisParam, m_browserGraph);
 
-		m_log.info("drawGraphs() END time:" + dateFormat.format(new Date()));
+		m_log.info("drawGraphs() END.");
 	}
 	
 	/** 
@@ -953,7 +995,7 @@ public class CollectGraphComposite extends Composite {
 	 */
 	private Object executeScript(String script, Browser execBrowser) {
 		this.lastScript = script;
-		m_log.debug("script:" + this.lastScript);
+		m_log.debug("executeScript() script=" + this.lastScript);
 		Object retObj = execBrowser.evaluate(this.lastScript);
 		return retObj;
 	}

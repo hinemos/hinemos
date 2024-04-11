@@ -220,3 +220,39 @@ var msec_month = msec_day * 31;
 var msec_year = msec_day * 365;
 var msec_10year = msec_year * 10;
 var msec_none = -1;
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+// 指定した文字列を指定した幅でカットします
+function truncateByWidth(text, width, fontFamily, fontSize, fontWeight) {
+	var currentWidth;
+	var len = text.length;
+	ellipsis = "...";
+	while ((currentWidth = getTextWidth(text, fontFamily, fontSize, fontWeight)) > width) {
+		--len;
+		text = text.substring(0, len) + ellipsis;
+	}
+	return text;
+}
+//////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+//引数で指定したテキスト及びフォントで、画面上の幅を取得します
+function getTextWidth(text, fontFamily, fontSize, fontWeight) {
+	// 計算するためのspanを生成
+	var span = document.createElement('span');
+	// 現在の表示要素に影響しないように設定
+	span.style.position = 'absolute';
+	span.style.top = '-9999px';
+	//折り返しさせない
+	span.style.whiteSpace = 'nowrap';
+	
+	span.style.fontSize = fontSize;
+	span.style.fontFamily = fontFamily;
+	span.style.fontWeight = fontWeight;
+	span.textContent = text;
+	// 一旦 DOM Tree に append しする
+	document.body.appendChild(span);
+	textWidth = span.clientWidth;
+	// DOM Treeから削除
+	document.body.removeChild(span);
+	return textWidth;
+}

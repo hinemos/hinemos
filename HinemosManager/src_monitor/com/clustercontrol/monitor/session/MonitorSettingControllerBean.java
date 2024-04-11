@@ -29,6 +29,7 @@ import com.clustercontrol.binary.factory.ModifyMonitorPacketCapture;
 import com.clustercontrol.commons.scheduler.TriggerSchedulerException;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.custom.factory.ModifyCustom;
 import com.clustercontrol.custom.factory.ModifyCustomString;
 import com.clustercontrol.custom.factory.SelectCustom;
@@ -65,6 +66,7 @@ import com.clustercontrol.monitor.run.util.MonitorValidator;
 import com.clustercontrol.monitor.run.util.NodeToMonitorCacheChangeCallback;
 import com.clustercontrol.monitor.run.util.QueryUtil;
 import com.clustercontrol.notify.util.NotifyRelationCache;
+import com.clustercontrol.notify.util.NotifyRelationCacheRefreshCallback;
 import com.clustercontrol.performance.monitor.factory.ModifyMonitorPerformance;
 import com.clustercontrol.ping.factory.ModifyMonitorPing;
 import com.clustercontrol.port.factory.ModifyMonitorPort;
@@ -99,14 +101,32 @@ public class MonitorSettingControllerBean {
 	/**
 	 * 監視設定情報をマネージャに登録します。<BR>
 	 *
-	 * @param info
+	 * @param info 登録情報
 	 * @return 監視設定情報
 	 * @throws MonitorIdInvalid 数値監視の場合のみ
 	 * @throws MonitorDuplicate
 	 * @throws InvalidSetting
+	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
 	public MonitorInfo addMonitor(MonitorInfo info)
+			throws MonitorIdInvalid, MonitorDuplicate, InvalidSetting, InvalidRole, HinemosUnknown{
+		return addMonitor(info, false);
+	}
+
+	/**
+	 * 監視設定情報をマネージャに登録します。<BR>
+	 *
+	 * @param info 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return 監視設定情報
+	 * @throws MonitorIdInvalid 数値監視の場合のみ
+	 * @throws MonitorDuplicate
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public MonitorInfo addMonitor(MonitorInfo info, boolean isImport)
 			throws MonitorIdInvalid, MonitorDuplicate, InvalidSetting, InvalidRole, HinemosUnknown{
 		m_log.debug("addMonitor()");
 
@@ -352,6 +372,10 @@ public class MonitorSettingControllerBean {
 				flag = addMonitor.add(info, loginUser);
 
 				jtm.addCallback(new MonitorChangedNotificationCallback(monitorTypeId,flag));
+				// コールバックメソッド設定
+				if (!isImport) {
+					addImportMonitorCallback(jtm);
+				}
 				if (HinemosModuleConstant.MONITOR_PROCESS.equals(monitorTypeId)
 						|| HinemosModuleConstant.MONITOR_PERFORMANCE.equals(monitorTypeId)) {
 					jtm.addCallback(new NodeToMonitorCacheChangeCallback(monitorTypeId));
@@ -391,17 +415,34 @@ public class MonitorSettingControllerBean {
 		return ret;
 	}
 
+	/**
+	 * 監視設定情報を更新します。<BR>
+	 *
+	 * @param info 登録情報
+	 * @return 監視設定情報
+	 * @throws MonitorNotFound
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public MonitorInfo modifyMonitor(MonitorInfo info)
+			throws MonitorNotFound, InvalidSetting, InvalidRole, HinemosUnknown {
+		return modifyMonitor(info, false);
+	}
 
 	/**
 	 * 監視設定情報を更新します。<BR>
 	 *
-	 * @param info
+	 * @param info 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
 	 * @return 監視設定情報
 	 * @throws MonitorNotFound
 	 * @throws InvalidSetting
+	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public MonitorInfo modifyMonitor(MonitorInfo info) throws MonitorNotFound, InvalidSetting, InvalidRole, HinemosUnknown {
+	public MonitorInfo modifyMonitor(MonitorInfo info, boolean isImport)
+			throws MonitorNotFound, InvalidSetting, InvalidRole, HinemosUnknown {
 		m_log.debug("modifyMonitor()");
 
 		JpaTransactionManager jtm = null;
@@ -649,6 +690,10 @@ public class MonitorSettingControllerBean {
 				flag = modMonitor.modify(info, loginUser);
 				
 				jtm.addCallback(new MonitorChangedNotificationCallback(monitorTypeId,flag));
+				// コールバックメソッド設定
+				if (!isImport) {
+					addImportMonitorCallback(jtm);
+				}
 				if (HinemosModuleConstant.MONITOR_PROCESS.equals(monitorTypeId)
 						|| HinemosModuleConstant.MONITOR_PERFORMANCE.equals(monitorTypeId)) {
 					jtm.addCallback(new NodeToMonitorCacheChangeCallback(monitorTypeId));
@@ -702,6 +747,17 @@ public class MonitorSettingControllerBean {
 		return ret;
 	}
 
+	/**
+	 * 監視設定情報の新規登録／変更時に呼び出すコールバックメソッドを設定
+	 * 
+	 * 設定インポートエクスポートでCommit後に呼び出すものだけ定義
+	 * 
+	 * @param jtm JpaTransactionManager
+	 */
+	public void addImportMonitorCallback(JpaTransactionManager jtm) {
+		// 通知リレーション情報のキャッシュ更新
+		jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+	}
 
 	/**
 	 *
@@ -1240,17 +1296,31 @@ public class MonitorSettingControllerBean {
 				if (isChangeNecessary(info, validFlag)) {
 					info.setMonitorFlg(validFlag);
 					
-					if (info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC &&
-							!(validFlag && !info.getCollectorFlg())) {
-						//数値監視 
-						//有効への変更は収集フラグがONの場合のみ変更
-						//無効への変更は収集フラグを判断せずに変更
-						//※不具合で発生した下記の状態を変更できるようにするため　
-						//  収集フラグ=OFF、変更量=ON、将来予測=ON
-						
-						//変化量、将来予測フラグを変更する
-						info.setChangeFlg(validFlag);
-						info.setPredictionFlg(validFlag);
+					if (info.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC
+							&& !(validFlag && !info.getCollectorFlg())) {
+						// 数値監視
+						// 有効への変更は収集フラグがONの場合のみ変更
+						// 無効への変更は収集フラグを判断せずに変更
+						// ※不具合で発生した下記の状態を変更できるようにするため
+						// 収集フラグ=OFF、変更量=ON、将来予測=ON
+
+						// 変化量、将来予測フラグを変更する
+						m_log.debug("Hinemos property：monitor_valid_link_change:"
+								+ String.valueOf(HinemosPropertyCommon.monitor_valid_link_change.getBooleanValue()));
+						// 変化量フラグの設定
+						// Hinemosプロパティで変化量フラグの変更可否を判断
+						if (HinemosPropertyCommon.monitor_valid_link_change.getBooleanValue()) {
+							m_log.debug("change amount flag：" + String.valueOf(validFlag));
+							info.setChangeFlg(validFlag);
+						}
+						m_log.debug("Hinemos property：monitor_valid_link_prediction:" + String
+								.valueOf(HinemosPropertyCommon.monitor_valid_link_prediction.getBooleanValue()));
+						// 将来予測フラグの設定
+						// Hinemosプロパティで将来予測フラグの変更可否を判断
+						if (HinemosPropertyCommon.monitor_valid_link_prediction.getBooleanValue()) {
+							m_log.debug("prediction flag：" + String.valueOf(validFlag));
+							info.setPredictionFlg(validFlag);
+						}
 					}
 					modifyMonitor(info);
 				}

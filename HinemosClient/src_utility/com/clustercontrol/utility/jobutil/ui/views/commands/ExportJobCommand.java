@@ -40,6 +40,7 @@ import com.clustercontrol.jobmanagement.view.JobListView;
 import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.view.JobMapEditorView;
 import com.clustercontrol.jobmap.view.JobTreeView;
+import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.jobutil.dialog.JobExportDialog;
 import com.clustercontrol.utility.jobutil.util.JobConvert;
@@ -124,25 +125,9 @@ public class ExportJobCommand extends AbstractHandler implements IElementUpdater
 						null,
 						Messages.getString("warning"),
 						Messages.getString("message.enterprise.required"));			}
-		} catch (InvalidRole | InvalidUserPass e) {
+		} catch (Exception e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					e.getMessage());
-			return null;
-		} catch (HinemosUnknown e) {
-			if(UrlNotFound.class.equals(e.getCause().getClass())) {
-				MessageDialog.openInformation(null, Messages.getString("message"),
-						Messages.getString("message.enterprise.required"));
-				return null;
-			} else {
-				MessageDialog.openInformation(null, Messages.getString("message"),
-						e.getMessage());
-				return null;
-			}
-		} catch (Exception e) {
-			// キーファイルを確認できませんでした。処理を終了します。
-			// Key file not found. This process will be terminated.
-			MessageDialog.openInformation(null, Messages.getString("message"),
-					Messages.getString("message.enterprise.required"));
 			return null;
 		}
 		

@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.clustercontrol.agent.util.filemonitor.AbstractFileMonitor;
 import com.clustercontrol.agent.util.filemonitor.AbstractFileMonitorManager;
 import com.clustercontrol.agent.util.filemonitor.AbstractReadingStatus;
@@ -26,6 +29,8 @@ import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.util.MessageConstant;
 
 public class SdmlFileMonitor extends AbstractFileMonitor<SdmlFileMonitorInfoWrapper> {
+
+	private static Log log = LogFactory.getLog(SdmlFileMonitor.class);
 
 	private static final String SDML_VERSION_FORMAT = "^SDMLControlLog Version:(\\d+\\.\\d+)$";
 	private static final List<String> SDML_SUPPORTED_VERSION;
@@ -111,6 +116,14 @@ public class SdmlFileMonitor extends AbstractFileMonitor<SdmlFileMonitorInfoWrap
 						message = message.substring(1); // 先頭のスペースを取り除く
 					}
 
+					if (applicationId == null || !applicationId.equals(m_wrapper.getId())) {
+						// アプリケーションIDが異なるログは送信せずに破棄する
+						// パターンに誤りがなければnullは通常ありえないが念のため除外
+						log.warn("patternMatchAndSendManager(): Application ID in the log is different. Control Setting="
+								+ m_wrapper.getId() + ", Log=" + line);
+						return;
+					}
+
 					SdmlControlLogForwarder.getInstance().add(time, hostname, applicationId, pid, controlCode, message,
 							line);
 				} catch (ParseException e) {
@@ -160,6 +173,7 @@ public class SdmlFileMonitor extends AbstractFileMonitor<SdmlFileMonitorInfoWrap
 	protected void sendMessageByFileSizeOver(long fileSize) {
 		sendMessage(PriorityConstant.TYPE_WARNING, m_wrapper.getApplication(),
 				MessageConstant.SDML_MSG_LOG_READER_FILE_SIZE_OVER.getMessage(),
-				MessageConstant.SDML_MSG_FILE_PATH.getMessage(getFilePath()));
+				MessageConstant.SDML_MSG_FILE_PATH.getMessage(getFilePath()) + "\n"
+						+ MessageConstant.SDML_MSG_FILE_SIZE.getMessage(String.valueOf(fileSize) + " byte"));
 	}
 }

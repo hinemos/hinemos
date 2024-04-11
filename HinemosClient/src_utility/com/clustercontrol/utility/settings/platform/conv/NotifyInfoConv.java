@@ -61,10 +61,12 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.notify.bean.NotifyTypeConstant;
 import com.clustercontrol.notify.dialog.bean.NotifyInfoInputData;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.platform.xml.KeyValueData;
 import com.clustercontrol.utility.util.DateUtil;
 import com.clustercontrol.utility.util.OpenApiEnumConverter;
+import com.clustercontrol.version.util.VersionUtil;
 
 
 /**
@@ -80,9 +82,15 @@ public class NotifyInfoConv {
 
 	private static Log log = LogFactory.getLog(NotifyInfoConv.class);
 
-	static private final String schemaType="H";
-	static private final String schemaVersion="1";
-	static private final String schemaRevision="3" ;
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private final String schemaType=VersionUtil.getSchemaProperty("PLATFORM.NOTIFY.SCHEMATYPE");
+	static private final String schemaVersion=VersionUtil.getSchemaProperty("PLATFORM.NOTIFY.SCHEMAVERSION");
+	static private final String schemaRevision=VersionUtil.getSchemaProperty("PLATFORM.NOTIFY.SCHEMAREVISION");
 
 
 	/**
@@ -117,8 +125,9 @@ public class NotifyInfoConv {
 	 * @return 通知定義 Hinemos Bean
 	 * @throws HinemosUnknown 
 	 * @throws InvalidSetting 
+	 * @throws ConvertorException 
 	 */
-	public static NotifyInfoInputData convXml2DtoNotify(com.clustercontrol.utility.settings.platform.xml.NotifyInfo notifyInfo) throws InvalidSetting, HinemosUnknown {
+	public static NotifyInfoInputData convXml2DtoNotify(com.clustercontrol.utility.settings.platform.xml.NotifyInfo notifyInfo) throws InvalidSetting, HinemosUnknown, ConvertorException {
 		//通知設定(1つ）の戻りインスタンスを生成します。
 		NotifyInfoInputData ret = new NotifyInfoInputData();
 
@@ -152,7 +161,7 @@ public class NotifyInfoConv {
 		ret.setRenotifyType(notifyInfo.getRenotifyType());
 		
 		//renotifyPeriodが未入力の場合はnullをセットする
-		if (notifyInfo.getRenotifyPeriod() == 0 || notifyInfo.getRenotifyType() != 1) {
+		if (notifyInfo.getRenotifyPeriod() == 0) {
 			ret.setRenotifyPeriod(null);
 		} else {
 			ret.setRenotifyPeriod(notifyInfo.getRenotifyPeriod());
@@ -190,33 +199,83 @@ public class NotifyInfoConv {
 		switch ( ret.getNotifyType() ){
 
 		case NotifyTypeConstant.TYPE_STATUS:
+			if (notifyInfo.getNotifyStatusInfo() == null) {
+				throw new ConvertorException(
+						notifyInfo.getNotifyId() + " " + Messages.getString("SettingTools.InvalidSettingItem",
+								new String[] { Messages.getString("SettingTools.Notifies.Status") }));
+			}
 			ret.setNotifyStatusInfo(convXml2DtoStatus(notifyInfo.getNotifyStatusInfo()));
 			break;
 		case NotifyTypeConstant.TYPE_EVENT:
+			if (notifyInfo.getNotifyEventInfo() == null) {
+				throw new ConvertorException(
+						notifyInfo.getNotifyId() + " " + Messages.getString("SettingTools.InvalidSettingItem",
+								new String[] { Messages.getString("SettingTools.Notifies.Event") }));
+			}
 			ret.setNotifyEventInfo(convXml2DtoEvent(notifyInfo.getNotifyEventInfo()));
 			break;
 		case NotifyTypeConstant.TYPE_MAIL:
+			if (notifyInfo.getNotifyMailInfo() == null) {
+				throw new ConvertorException(
+						notifyInfo.getNotifyId() + " " + Messages.getString("SettingTools.InvalidSettingItem",
+								new String[] { Messages.getString("SettingTools.Notifies.Mail") }));
+			}
 			ret.setNotifyMailInfo(convXml2DtoMail(notifyInfo.getNotifyMailInfo()));
 			break;
 		case NotifyTypeConstant.TYPE_JOB:
+			if (notifyInfo.getNotifyJobInfo() == null) {
+				throw new ConvertorException(
+						notifyInfo.getNotifyId() + " " + Messages.getString("SettingTools.InvalidSettingItem",
+								new String[] { Messages.getString("SettingTools.Notifies.Job") }));
+			}
 			ret.setNotifyJobInfo(convXml2DtoJob(notifyInfo.getNotifyJobInfo()));
 			break;
 		case NotifyTypeConstant.TYPE_LOG_ESCALATE:
+			if (notifyInfo.getNotifyLogEscalateInfo() == null) {
+				throw new ConvertorException(
+						notifyInfo.getNotifyId() + " " + Messages.getString("SettingTools.InvalidSettingItem",
+								new String[] { Messages.getString("SettingTools.Notifies.LogEscalation") }));
+			}
 			ret.setNotifyLogEscalateInfo(convXml2DtoLogEscalate(notifyInfo.getNotifyLogEscalateInfo()));
 			break;
 		case NotifyTypeConstant.TYPE_COMMAND:
+			if (notifyInfo.getNotifyCommandInfo() == null) {
+				throw new ConvertorException(
+						notifyInfo.getNotifyId() + " " + Messages.getString("SettingTools.InvalidSettingItem",
+								new String[] { Messages.getString("SettingTools.Notifies.Command") }));
+			}
 			ret.setNotifyCommandInfo(convXml2DtoCommand(notifyInfo.getNotifyCommandInfo()));
 			break;
 		case NotifyTypeConstant.TYPE_INFRA:
+			if (notifyInfo.getNotifyInfraInfo() == null) {
+				throw new ConvertorException(
+						notifyInfo.getNotifyId() + " " + Messages.getString("SettingTools.InvalidSettingItem",
+								new String[] { Messages.getString("SettingTools.Notifies.Infra") }));
+			}
 			ret.setNotifyInfraInfo(convXml2DtoInfra(notifyInfo.getNotifyInfraInfo()));
 			break;
 		case NotifyTypeConstant.TYPE_REST:
+			if (notifyInfo.getNotifyRestInfo() == null) {
+				throw new ConvertorException(
+						notifyInfo.getNotifyId() + " " + Messages.getString("SettingTools.InvalidSettingItem",
+								new String[] { Messages.getString("SettingTools.Notifies.Rest") }));
+			}
 			ret.setNotifyRestInfo(convXml2DtoRest(notifyInfo.getNotifyRestInfo()));
 			break;
 		case NotifyTypeConstant.TYPE_MESSAGE:
+			if (notifyInfo.getNotifyMessageInfo() == null) {
+				throw new ConvertorException(
+						notifyInfo.getNotifyId() + " " + Messages.getString("SettingTools.InvalidSettingItem",
+								new String[] { Messages.getString("SettingTools.Notifies.Message") }));
+			}
 			ret.setNotifyMessageInfo(convXml2DtoMessage(notifyInfo.getNotifyMessageInfo()));
 			break;
 		case NotifyTypeConstant.TYPE_CLOUD:
+			if (notifyInfo.getNotifyCloudInfo() == null) {
+				throw new ConvertorException(
+						notifyInfo.getNotifyId() + " " + Messages.getString("SettingTools.InvalidSettingItem",
+								new String[] { Messages.getString("SettingTools.Notifies.Cloud") }));
+			}
 			ret.setNotifyCloudInfo(convXml2DtoCloud(notifyInfo.getNotifyCloudInfo()));
 			break;
 			

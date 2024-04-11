@@ -34,6 +34,7 @@ import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.ReportingDuplicate;
 import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.notify.util.NotifyRelationCacheRefreshCallback;
 import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.bean.TemplateSetDetailInfo;
@@ -50,7 +51,6 @@ import com.clustercontrol.reporting.factory.SelectReportingInfo;
 import com.clustercontrol.reporting.factory.SelectTemplateSetInfo;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
-import com.clustercontrol.reporting.util.ReportingChangeCallback;
 import com.clustercontrol.reporting.util.ReportingValidator;
 import com.clustercontrol.rest.endpoint.reporting.dto.CreateReportingFileRequest;
 import com.clustercontrol.util.MessageConstant;
@@ -70,12 +70,15 @@ public class ReportingControllerBean implements CheckFacility {
 	/**
 	 * レポーティング情報を追加します。
 	 * 
+	 * @param reportingInfo 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return
 	 * @throws HinemosUnknown
 	 * @throws ReportingDuplicate
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public ReportingInfo addReporting(ReportingInfo reportingInfo)
+	public ReportingInfo addReporting(ReportingInfo reportingInfo, boolean isImport)
 			throws HinemosUnknown, ReportingDuplicate, InvalidSetting, InvalidRole {
 
 		ReportingInfo ret;
@@ -106,8 +109,10 @@ public class ReportingControllerBean implements CheckFacility {
 			ModifySchedule modify = new ModifySchedule();
 			modify.addSchedule(reportingInfo, loginUser);
 
-			// コミット後にNotifyRelationCacheを更新
-			jtm.addCallback(new ReportingChangeCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportReportingCallback(jtm);
+			}
 
 			jtm.commit();
 
@@ -145,13 +150,17 @@ public class ReportingControllerBean implements CheckFacility {
 	/**
 	 * レポーティング情報を変更します。
 	 * 
+	 * @param reportingInfo 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return
 	 * @throws HinemosUnknown
 	 * @throws NotifyNotFound
 	 * @throws ReportingNotFound
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public ReportingInfo modifyReporting(ReportingInfo reportingInfo) throws HinemosUnknown, NotifyNotFound, ReportingNotFound, InvalidSetting, InvalidRole {
+	public ReportingInfo modifyReporting(ReportingInfo reportingInfo, boolean isImport)
+			throws HinemosUnknown, NotifyNotFound, ReportingNotFound, InvalidSetting, InvalidRole {
 
 		ReportingInfo ret = null;
 		JpaTransactionManager jtm = null;
@@ -178,8 +187,10 @@ public class ReportingControllerBean implements CheckFacility {
 			ModifySchedule modifySchedule = new ModifySchedule();
 			modifySchedule.addSchedule(reportingInfo, loginUser);
 
-			// コミット後にNotifyRelationCacheを更新
-			jtm.addCallback(new ReportingChangeCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportReportingCallback(jtm);
+			}
 
 			jtm.commit();
 
@@ -210,6 +221,18 @@ public class ReportingControllerBean implements CheckFacility {
 	}
 
 	/**
+	 * レポーティング情報の新規登録／変更時に呼び出すコールバックメソッドを設定
+	 * 
+	 * 設定インポートエクスポートでCommit後に呼び出すものだけ定義
+	 * 
+	 * @param jtm JpaTransactionManager
+	 */
+	public void addImportReportingCallback(JpaTransactionManager jtm) {
+		// 通知リレーション情報のキャッシュ更新
+		jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+	}
+
+	/**
 	 * レポーティング情報を削除します。
 	 * @throws HinemosUnknown
 	 * @throws ReportingNotFound
@@ -237,7 +260,7 @@ public class ReportingControllerBean implements CheckFacility {
 			}
 			
 			// コミット後にNotifyRelationCacheを更新
-			jtm.addCallback(new ReportingChangeCallback());
+			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 
 			jtm.commit();
 
@@ -392,7 +415,7 @@ public class ReportingControllerBean implements CheckFacility {
 			info.setValidFlg(validFlag);
 			
 			try{
-				retList.add(this.modifyReporting(info));
+				retList.add(this.modifyReporting(info, false));
 			} catch (InvalidSetting  e) {
 				throw new HinemosUnknown(e.getMessage(), e);
 			}			
@@ -472,9 +495,10 @@ public class ReportingControllerBean implements CheckFacility {
 	 * @param reportId
 	 * @return 作成されるレポートファイル名のリスト
 	 * @throws InvalidRole
+	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public List<String> runReporting(String reportId) throws InvalidRole, HinemosUnknown {
+	public List<String> runReporting(String reportId) throws InvalidRole, InvalidSetting, HinemosUnknown {
 		return runReporting(reportId, null);
 	}
 
@@ -485,9 +509,10 @@ public class ReportingControllerBean implements CheckFacility {
 	 * @param reportId
 	 * @return 作成されるレポートファイル名のリスト
 	 * @throws InvalidRole
+	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
-	public List<String> runReporting(String reportId, CreateReportingFileRequest dtoReq) throws InvalidRole, HinemosUnknown {
+	public List<String> runReporting(String reportId, CreateReportingFileRequest dtoReq) throws InvalidRole, InvalidSetting, HinemosUnknown {
 		m_log.debug("runReporting() : reportId=" + reportId);
 
 		JpaTransactionManager jtm = null;
@@ -507,6 +532,11 @@ public class ReportingControllerBean implements CheckFacility {
 				jtm.rollback();
 			}
 			throw new InvalidRole(e.getMessage(), e);
+		} catch (InvalidSetting e) {
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new InvalidSetting(e.getMessage(), e);
 		} catch(Exception e){
 			m_log.warn("runReporting() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);

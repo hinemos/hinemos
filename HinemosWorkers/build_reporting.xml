@@ -6,6 +6,7 @@
  -->
 <project default="all" name="Create Jars for Project HinemosReporting and export templates">
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<property file="../HinemosCommon/ant_config/build_common_version.properties" />
 	<import file="../HinemosCommon/ant_config/build_common.xml" />
 
 	<property name="HinemosCommon.location" value="../HinemosCommon"/>
@@ -102,13 +103,9 @@
 	</target>
 
 	<target name="manifest">
-		<tstamp>
-			<format property="build.date" pattern="yyyy-MM-dd HH:mm:ss" />
-		</tstamp>
 		<copy file="${jar.manifest}" tofile="${build.dir}/MANIFEST.MF" overwrite="true" />
 		<replace file="${build.dir}/MANIFEST.MF">
-			<replacefilter token="@BUILD_DATE@" value="${build.date}" />
-			<replacefilter token="@VERSION@" value="${version}" />
+			<replacefilter token="@VERSION@" value="${manifest.hinemos.version}" />
 		</replace>
 	</target>
 

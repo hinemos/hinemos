@@ -37,6 +37,7 @@ import com.clustercontrol.monitor.bean.EventUserExtensionItemInfo;
 import com.clustercontrol.monitor.bean.ScopeDataInfo;
 import com.clustercontrol.monitor.bean.StatusDataInfo;
 import com.clustercontrol.monitor.bean.ViewListInfo;
+import com.clustercontrol.monitor.bean.ViewStatusListInfo;
 import com.clustercontrol.monitor.factory.DeleteStatus;
 import com.clustercontrol.monitor.factory.ManageStatus;
 import com.clustercontrol.monitor.factory.ModifyEventCollectGraphFlg;
@@ -131,20 +132,21 @@ public class MonitorControllerBean implements CheckFacility {
 	 * 各ステータス情報は、StatusInfoDataのインスタンスとして保持されます。<BR>
 	 * 
 	 * @param filter 検索条件
-	 * @return ステータス情報一覧（StatusInfoDataが格納されたArrayList）
+	 * @param limit 取得上限数
+	 * @return ステータス情報一覧保持クラス
 	 */
-	public ArrayList<StatusDataInfo> getStatusList(StatusFilterBaseInfo filter)
+	public ViewStatusListInfo getStatusList(StatusFilterBaseInfo filter, Integer limit)
 			throws InvalidRole, HinemosUnknown{
 
 		JpaTransactionManager jtm = null;
 
 		//ステータス情報を取得
 		SelectStatus select = new SelectStatus();
-		ArrayList<StatusDataInfo> list;
+		ViewStatusListInfo viewStatusListInfo;
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
-			list = select.getStatusList(filter);
+			viewStatusListInfo = select.getStatusList(filter, limit);
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
@@ -164,7 +166,7 @@ public class MonitorControllerBean implements CheckFacility {
 				jtm.close();
 		}
 
-		return list;
+		return viewStatusListInfo;
 	}
 
 	/**

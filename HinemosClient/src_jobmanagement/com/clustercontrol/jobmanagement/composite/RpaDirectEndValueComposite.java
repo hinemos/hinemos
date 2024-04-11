@@ -7,6 +7,7 @@
  */
 package com.clustercontrol.jobmanagement.composite;
 
+import java.util.ArrayList;
 import java.util.Collections;
 
 import org.apache.commons.logging.Log;
@@ -337,7 +338,8 @@ public class RpaDirectEndValueComposite extends Composite {
 		this.m_conditionModifyButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int index = m_endValueConditionComposite.getTableViewer().getTable().getSelectionIndex();
+				int index = (Integer) ((ArrayList<?>) m_endValueConditionComposite.getTableViewer().getTable()
+						.getSelection()[0].getData()).get(0) - 1;
 				if (index >= 0 && index <= m_endValueConditionComposite.getInputData().size()) {
 					RpaDirectEndValueConditionDialog dialog = new RpaDirectEndValueConditionDialog(m_shell,
 							m_endValueConditionComposite.getInputData().get(index));
@@ -361,7 +363,8 @@ public class RpaDirectEndValueComposite extends Composite {
 		m_conditionDeleteButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int index = m_endValueConditionComposite.getTableViewer().getTable().getSelectionIndex();
+				int index = (Integer) ((ArrayList<?>) m_endValueConditionComposite.getTableViewer().getTable()
+						.getSelection()[0].getData()).get(0) - 1;
 				if (index >= 0 && index <= m_endValueConditionComposite.getInputData().size()) {
 					m_endValueConditionComposite.getInputData().remove(index);
 					m_endValueConditionComposite.update();
@@ -379,7 +382,8 @@ public class RpaDirectEndValueComposite extends Composite {
 		this.m_conditionCopyButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int index = m_endValueConditionComposite.getTableViewer().getTable().getSelectionIndex();
+				int index = (Integer) ((ArrayList<?>) m_endValueConditionComposite.getTableViewer().getTable()
+						.getSelection()[0].getData()).get(0) - 1;
 				if (index >= 0 && index <= m_endValueConditionComposite.getInputData().size()) {
 					RpaDirectEndValueConditionDialog dialog = new RpaDirectEndValueConditionDialog(m_shell,
 							m_endValueConditionComposite.getInputData().get(index));
@@ -402,7 +406,8 @@ public class RpaDirectEndValueComposite extends Composite {
 		m_conditionUpButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int index = m_endValueConditionComposite.getTableViewer().getTable().getSelectionIndex();
+				int index = (Integer) ((ArrayList<?>) m_endValueConditionComposite.getTableViewer().getTable()
+						.getSelection()[0].getData()).get(0) - 1;
 				if (index > 0) {
 					Collections.swap(m_endValueConditionComposite.getInputData(), index, index - 1);
 					m_endValueConditionComposite.update();
@@ -418,7 +423,8 @@ public class RpaDirectEndValueComposite extends Composite {
 		m_conditionDownButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				int index = m_endValueConditionComposite.getTableViewer().getTable().getSelectionIndex();
+				int index = (Integer) ((ArrayList<?>) m_endValueConditionComposite.getTableViewer().getTable()
+						.getSelection()[0].getData()).get(0) - 1;
 				if (index < m_endValueConditionComposite.getInputData().size() - 1) {
 					Collections.swap(m_endValueConditionComposite.getInputData(), index, index + 1);
 					m_endValueConditionComposite.update();

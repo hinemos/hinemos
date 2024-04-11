@@ -242,25 +242,14 @@ public class TemplateSetIdListComposite extends Composite {
 						Messages.getString("warning"),
 						Messages.getString("message.expiration.term.invalid"));
 			}
-		} catch (HinemosUnknown e) {
-			// エンタープライズ機能が無効の場合は HinemosUnknownでラップしたUrlNotFoundとなる。
-			// この場合は無視する
-			if(UrlNotFound.class.equals(e.getCause().getClass())) {
-				return;
-			}
-			String errMsg = HinemosMessage.replace(e.getMessage());
-			m_log.warn("checkPublish Error, " + errMsg);
-			MessageDialog.openError(
-					null,
-					Messages.getString("failed"),
-					Messages.getString("message.expiration.term"));
 		} catch (Exception e) {
 			String errMsg = HinemosMessage.replace(e.getMessage());
 			m_log.warn("checkPublish Error, " + errMsg);
 			MessageDialog.openError(
 					null,
 					Messages.getString("failed"),
-					Messages.getString("message.expiration.term"));
+					e.getMessage());
+			return;
 		}
 
 		try {

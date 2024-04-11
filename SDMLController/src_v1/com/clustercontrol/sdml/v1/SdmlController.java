@@ -489,8 +489,8 @@ public class SdmlController {
 				// 将来予測・変化量も変わってしまうためsetStatusMonitorは使わない
 				controllerBean.modifyMonitor(info);
 			}
-			// 通知
-			if (isNotified(this.controlSetting.getAutoEnableSuccessPriority())) {
+			// 通知（有効にする対象がない場合は通知しない）
+			if (!monitorIdList.isEmpty() && isNotified(this.controlSetting.getAutoEnableSuccessPriority())) {
 				String sdmlMessage = MessageConstant.SDML_MSG_ENABLE_SUCCESS.getMessage();
 				rtn.add(createOutputBasicInfo(this.controlSetting.getAutoEnableSuccessPriority(),
 						sdmlMessage,

@@ -95,14 +95,17 @@ public class ReceivedCustomTrapFilter {
 		this.receivedCustomTraps = receivedCustomTraps;
 		this.notifier = notifier;
 		resentDataMapMaxSize = HinemosPropertyCommon.monitor_Customtrap_RecentData_Map_size.getIntegerValue();
-		logger.info("monitor.Customtrap.RecentData.Map.initialCapacity=" + resentDataMapMaxSize);
+		if (logger.isDebugEnabled()) {
+			logger.debug("monitor.Customtrap.RecentData.Map.initialCapacity=" + resentDataMapMaxSize);
+		}
 	}
 
 	/**
 	 * フィルタリング処理します。
 	 */
 	public void work() {
-		logger.info("ReceivedCustomTrapFilter work");
+		String facilityId = receivedCustomTraps.getFacilityId();
+		logger.info("work() : facilityId=" + facilityId);
 		JpaTransactionManager tm = null;
 		List<OutputBasicInfo> notifyInfoList = new ArrayList<>();
 
@@ -113,7 +116,6 @@ public class ReceivedCustomTrapFilter {
 			RepositoryControllerBean repositoryCtrl = new RepositoryControllerBean();
 			List<String> matchedFacilityIdList = new ArrayList<String>();
 			String agentAddr = receivedCustomTraps.getAgentAddr();
-			String facilityId = receivedCustomTraps.getFacilityId();
 
 			// 該当ファシリティを取得
 			if ((null == facilityId) || (facilityId.isEmpty())) {
@@ -122,7 +124,9 @@ public class ReceivedCustomTrapFilter {
 				if (matchedFacilityIdList.size() == 0) {
 					// FacilityNotFound
 					matchedFacilityIdList.add(FacilityTreeAttributeConstant.UNREGISTERED_SCOPE);
-					logger.info("work() : UNREGISTERED_SCOPE agentAddr =" + agentAddr);
+					if (logger.isDebugEnabled()) {
+						logger.debug("work() : UNREGISTERED_SCOPE agentAddr =" + agentAddr);
+					}
 				}
 			} else {
 				try {
@@ -158,8 +162,8 @@ public class ReceivedCustomTrapFilter {
 				if (monitorList == null) {
 					// 該当モニタがない場合
 					if (logger.isDebugEnabled()) {
-						logger.info("work() : customtrap monitor not found. skip filtering. [" + receivedCustomTrap.toString()
-								+ "]");
+						logger.debug("work() : customtrap monitor not found. skip filtering. ["
+								+ receivedCustomTrap.toString() + "]");
 					}
 					continue;
 				}
@@ -173,7 +177,9 @@ public class ReceivedCustomTrapFilter {
 				for (MonitorInfo monitor : monitorList) {
 					// カレンダーチェック
 					if (isNotInCalendar(monitor, receivedCustomTrap)) {
-						logger.debug("work() : NotInCalender");
+						if (logger.isDebugEnabled()) {
+							logger.debug("work() : NotInCalender");
+						}
 						continue;
 					}
 
@@ -182,13 +188,19 @@ public class ReceivedCustomTrapFilter {
 							Pattern.DOTALL);
 					Matcher matcherKeyPattern = keyPattern.matcher(receivedCustomTrap.getKey());
 					if (!matcherKeyPattern.matches()) {
-						logger.info("work() : KeyPattern Unmatched");
-						logger.debug("work() : MonitorId =" + monitor.getMonitorId());
+						if (logger.isDebugEnabled()) {
+							logger.debug("work() : KeyPattern Unmatched. MonitorId =" + monitor.getMonitorId());
+						}
 						continue;
 					}
 					
 					List<String> validFacilityIdList = getValidFacilityIdList(matchedFacilityIdList, monitor);
-					logger.debug("work() : validFacilityIdList =" + validFacilityIdList);
+					if (logger.isDebugEnabled()) {
+						logger.debug("work() : validFacilityIdList =" + validFacilityIdList);
+					}
+					if (validFacilityIdList.isEmpty()) {
+						continue;
+					}
 
 					// 収集処理
 					// 数値で差分取得の場合、Value値をsample/notify前に計算する
@@ -203,7 +215,9 @@ public class ReceivedCustomTrapFilter {
 								valueKey = key + ":" + facilityIdElement;
 
 								Double oldData = null;
-								logger.debug("work() : monitor.Customtrap.RecentData.Map.size=" + resentDataMap.size());
+								if (logger.isDebugEnabled()) {
+									logger.debug("work() : monitor.Customtrap.RecentData.Map.size=" + resentDataMap.size());
+								}
 								//findbugs対応 synchronized用オブジェクトを staticメンバーからクラスに変更
 								synchronized (ReceivedCustomTrapFilter.class) {
 									// 取得した値と前回情報の差分をとり、閾値判定を行う。
@@ -211,7 +225,9 @@ public class ReceivedCustomTrapFilter {
 									if (null == oldData) {
 										// 前回情報なし
 										// 差分処理の初回取得処理のため、処理終了[収集も通知もしない（Custom数値と同じ）]
-										logger.info("work() : No previous information No Monitoring and sampling!!");
+										if (logger.isDebugEnabled()) {
+											logger.debug("work() : No previous information No Monitoring and sampling!!");
+										}
 										continue;
 									}
 									// 前回値情報を今回の取得値に更新
@@ -227,12 +243,16 @@ public class ReceivedCustomTrapFilter {
 								}
 								// 前回値を取得
 								double prevValue = oldData.doubleValue();
-								logger.info("work() : CustomTrapNum prev=" + prevValue + " value = " + value
-										+ " new value=" + (value - prevValue));
+								if (logger.isDebugEnabled()) {
+									logger.debug("work() : CustomTrapNum prev=" + prevValue + " value = " + value
+											+ " new value=" + (value - prevValue));
+								}
 								
 								valueMap.put(facilityIdElement, value - prevValue);
 							}
-							logger.debug("work() : valueMap =" + valueMap);
+							if (logger.isDebugEnabled()) {
+								logger.debug("work() : valueMap =" + valueMap);
+							}
 							if (valueMap.size() == 0) {
 								continue;
 							}
@@ -335,7 +355,9 @@ public class ReceivedCustomTrapFilter {
 											customtrapListBuffer, monitor, agentAddr, collectResultBuffer));
 									
 									if (monitor.getCollectorFlg()) {
-										logger.debug("work() : facilityIdElement =" + facilityIdElement);
+										if (logger.isDebugEnabled()) {
+											logger.debug("work() : facilityIdElement =" + facilityIdElement);
+										}
 										if (receivedCustomTrap.getKey() != null) {
 											sample.set(facilityIdElement, monitor.getItemName(), valueMap.get(facilityIdElement),
 													average, standardDeviation,
@@ -353,7 +375,9 @@ public class ReceivedCustomTrapFilter {
 							}
 						}
 					} else {
-						logger.debug("work() : CustomTrap CollectorFlg==false");
+						if (logger.isDebugEnabled()) {
+							logger.debug("work() : CustomTrap CollectorFlg==false");
+						}
 					}
 
 					// 通知処理
@@ -362,7 +386,9 @@ public class ReceivedCustomTrapFilter {
 						List<NotifyRelationInfo> notifyRelationList 
 							= NotifyRelationCache.getNotifyList(monitor.getNotifyGroupId());
 						if (notifyRelationList == null || notifyRelationList.size() == 0) {
-							logger.info("work() : notifyRelationList.size() == 0");
+							if (logger.isDebugEnabled()) {
+								logger.debug("work() : notifyRelationList.size() == 0");
+							}
 							continue;
 						}
 
@@ -379,20 +405,23 @@ public class ReceivedCustomTrapFilter {
 							for (MonitorStringValueInfo rule : monitor.getStringValueInfo()) {
 								++orderNo;
 								if (logger.isDebugEnabled()) {
-									logger.info(String.format(
+									logger.debug(String.format(
 											"work() : monitoring (monitorId = %s, orderNo = %d, patten = %s, enabled = %s, casesensitive = %s)",
 											monitor.getMonitorId(), orderNo, rule.getPattern(), rule.getValidFlg(),
 											rule.getCaseSensitivityFlg()));
 								}
 								if (!rule.getValidFlg()) {
 									// 無効化されているルールはスキップする
-									logger.debug("work() : CustomTrap !rule.getValidFlg()");
+									if (logger.isDebugEnabled()) {
+										logger.debug("work() : CustomTrap !rule.getValidFlg()");
+									}
 									continue;
 								}
 								// パターンマッチを実施
 								if (logger.isDebugEnabled()) {
-									logger.debug(String.format("work() : filtering customtrap (regex = %s, customtrap = %s",
-											rule.getPattern(), receivedCustomTrap));
+									logger.debug(
+											String.format("work() : filtering customtrap (regex = %s, customtrap = %s",
+													rule.getPattern(), receivedCustomTrap));
 								}
 								try {
 									Pattern pattern = null;
@@ -408,8 +437,11 @@ public class ReceivedCustomTrapFilter {
 									Matcher matcher = pattern.matcher(receivedCustomTrap.getMsg());
 									if (matcher.matches()) {
 										if (rule.getProcessType()) {
-											logger.debug(String.format("work() : matched (regex = %s, CustomTrap = %s",
-													rule.getPattern(), receivedCustomTrap));
+											if (logger.isDebugEnabled()) {
+												logger.debug(
+														String.format("work() : matched (regex = %s, CustomTrap = %s",
+																rule.getPattern(), receivedCustomTrap));
+											}
 											for (String facilityIdElement : validFacilityIdList) {
 												customtrapListBuffer.add(receivedCustomTrap);
 												ruleListBuffer.add(rule);
@@ -418,12 +450,18 @@ public class ReceivedCustomTrapFilter {
 												countupNotified();
 											}
 										} else {
-											logger.debug(String.format("work() : CustomTrap not ProcessType (regex = %s, CustomTrap = %s",
-													rule.getPattern(), receivedCustomTrap));
+											if (logger.isDebugEnabled()) {
+												logger.debug(String.format(
+														"work() : CustomTrap not ProcessType (regex = %s, CustomTrap = %s",
+														rule.getPattern(), receivedCustomTrap));
+											}
 										}
 										break;
 									} else {
-										logger.debug("work() : CustomTrap rule not match rule = " + rule.getPattern());
+										if (logger.isDebugEnabled()) {
+											logger.debug(
+													"work() : CustomTrap rule not match rule = " + rule.getPattern());
+										}
 									}
 								} catch (Exception e) {
 									logger.warn("work() : filtering failure. (regex = " + rule.getPattern() + ") . "
@@ -431,7 +469,10 @@ public class ReceivedCustomTrapFilter {
 								}
 							}
 
-							logger.info("work() : CustomTrap Notify ValueType.string " + customtrapListBuffer.size() + "data");
+							if (logger.isDebugEnabled()) {
+								logger.debug("work() : CustomTrap Notify ValueType.string "
+										+ customtrapListBuffer.size() + "data");
+							}
 							notifyInfoList.addAll(notifier.createStringOutputBasicInfoList(
 									customtrapListBuffer, monitor, priorityBuffer, ruleListBuffer,
 									facilityIdListBuffer, agentAddr, null));
@@ -455,7 +496,10 @@ public class ReceivedCustomTrapFilter {
 								valueBuffer.add(valueMap.get(facilityIdElement));
 								countupNotified();
 							}
-							logger.info("work() : CustomTrap Notify ValueType.num " + customtrapListBuffer.size() + "data");
+							if (logger.isDebugEnabled()) {
+								logger.debug("work() : CustomTrap Notify ValueType.num " + customtrapListBuffer.size()
+										+ "data");
+							}
 							notifyInfoList.addAll(notifier.createNumOutputBasicInfoList(customtrapListBuffer, monitor, priorityBuffer, facilityIdListBuffer,
 									agentAddr, valueBuffer, null));
 						}
@@ -465,14 +509,19 @@ public class ReceivedCustomTrapFilter {
 				}
 				// DB登録
 				if (!collectedStringSamples.isEmpty()) {
-					logger.debug("work() : CustomTrap collectedStringSamples " + collectedStringSamples.size() + "data");
+					if (logger.isDebugEnabled()) {
+						logger.debug(
+								"work() : CustomTrap collectedStringSamples " + collectedStringSamples.size() + "data");
+					}
 					CollectStringDataUtil.store(collectedStringSamples);
 				}
 			}
 
 			// DB登録(数値)
 			if (!collectedSamples.isEmpty()) {
-				logger.debug("work() : CustomTrap collectedSamples " + collectedSamples.size() + "data");
+				if (logger.isDebugEnabled()) {
+					logger.debug("work() : CustomTrap collectedSamples " + collectedSamples.size() + "data");
+				}
 				CollectDataUtil.put(collectedSamples);
 			}
 
@@ -495,8 +544,8 @@ public class ReceivedCustomTrapFilter {
 				if (monitorJobMap == null) {
 					// 該当モニタがない場合
 					if (logger.isDebugEnabled()) {
-						logger.info("customtrap job monitor not found. skip filtering. [" + receivedCustomTrap.toString()
-								+ "]");
+						logger.debug("customtrap job monitor not found. skip filtering. ["
+								+ receivedCustomTrap.toString() + "]");
 					}
 					continue;
 				}
@@ -511,7 +560,9 @@ public class ReceivedCustomTrapFilter {
 							Pattern.DOTALL);
 					Matcher matcherKeyPattern = keyPattern.matcher(receivedCustomTrap.getKey());
 					if (!matcherKeyPattern.matches()) {
-						logger.info("KeyPattern Unmatched");
+						if (logger.isDebugEnabled()) {
+							logger.debug("KeyPattern Unmatched");
+						}
 						continue;
 					}
 
@@ -530,7 +581,9 @@ public class ReceivedCustomTrapFilter {
 								map.put(key, value);
 								MonitorJobWorker.addPrevMonitorValue(entry.getKey(), map);
 								// 差分処理の初回取得処理のため、処理終了
-								logger.info("No previous information No Monitoring and sampling!!");
+								if (logger.isDebugEnabled()) {
+									logger.debug("No previous information No Monitoring and sampling!!");
+								}
 								continue;
 							} else {
 								@SuppressWarnings("unchecked")
@@ -540,13 +593,17 @@ public class ReceivedCustomTrapFilter {
 									map.put(key, value);
 									MonitorJobWorker.addPrevMonitorValue(entry.getKey(), map);
 									// 差分処理の初回取得処理のため、処理終了
-									logger.info("No previous information No Monitoring and sampling!!");
+									if (logger.isDebugEnabled()) {
+										logger.debug("No previous information No Monitoring and sampling!!");
+									}
 									continue;
 								} else {
 									// 前回値を取得
 									double prevValue = ((Double)map.get(key)).doubleValue();
-									logger.info("CustomTrapNum prev=" + prevValue + " value = " + value + " new value="
-											+ (value - prevValue));
+									if (logger.isDebugEnabled()) {
+										logger.debug("CustomTrapNum prev=" + prevValue + " value = " + value
+												+ " new value=" + (value - prevValue));
+									}
 									value -= prevValue;
 								}
 							}
@@ -566,7 +623,9 @@ public class ReceivedCustomTrapFilter {
 						for (MonitorStringValueInfo rule : entry.getValue().getStringValueInfo()) {
 							if (!rule.getValidFlg()) {
 								// 無効化されているルールはスキップする
-								logger.debug("CustomTrap !rule.getValidFlg()");
+								if (logger.isDebugEnabled()) {
+									logger.debug("CustomTrap !rule.getValidFlg()");
+								}
 								continue;
 							}
 							// パターンマッチを実施
@@ -588,20 +647,27 @@ public class ReceivedCustomTrapFilter {
 								Matcher matcher = pattern.matcher(receivedCustomTrap.getMsg());
 								if (matcher.matches()) {
 									if (rule.getProcessType()) {
-										logger.debug(String.format("matched (regex = %s, CustomTrap = %s",
-												rule.getPattern(), receivedCustomTrap));
+										if (logger.isDebugEnabled()) {
+											logger.debug(String.format("matched (regex = %s, CustomTrap = %s",
+													rule.getPattern(), receivedCustomTrap));
+										}
 										customtrapListBuffer.add(receivedCustomTrap);
 										ruleListBuffer.add(rule);
 										priorityBuffer.add(rule.getPriority());
 										facilityIdListBuffer.add(entry.getKey().getFacilityId());
 										countupNotified();
 									} else {
-										logger.debug(String.format("CustomTrap not ProcessType (regex = %s, CustomTrap = %s",
-												rule.getPattern(), receivedCustomTrap));
+										if (logger.isDebugEnabled()) {
+											logger.debug(String.format(
+													"CustomTrap not ProcessType (regex = %s, CustomTrap = %s",
+													rule.getPattern(), receivedCustomTrap));
+										}
 									}
 									break;
 								} else {
-									logger.debug("CustomTrap rule not match rule = " + rule.getPattern());
+									if (logger.isDebugEnabled()) {
+										logger.debug("CustomTrap rule not match rule = " + rule.getPattern());
+									}
 								}
 							} catch (Exception e) {
 								logger.warn("filtering failure. (regex = " + rule.getPattern() + ") . "
@@ -609,7 +675,9 @@ public class ReceivedCustomTrapFilter {
 							}
 						}
 
-						logger.info("CustomTrap Notify ValueType.string " + customtrapListBuffer.size() + "data");
+						if (logger.isDebugEnabled()) {
+							logger.debug("CustomTrap Notify ValueType.string " + customtrapListBuffer.size() + "data");
+						}
 						notifyInfoList.addAll(notifier.createStringOutputBasicInfoList(
 								customtrapListBuffer, entry.getValue(), priorityBuffer, ruleListBuffer,
 								facilityIdListBuffer, agentAddr, entry.getKey()));
@@ -627,7 +695,9 @@ public class ReceivedCustomTrapFilter {
 						priorityBuffer.add(priority);
 						valueBuffer.add(value);
 
-						logger.info("CustomTrap Notify ValueType.num " + customtrapListBuffer.size() + "data");
+						if (logger.isDebugEnabled()) {
+							logger.debug("CustomTrap Notify ValueType.num " + customtrapListBuffer.size() + "data");
+						}
 						notifyInfoList.addAll(notifier.createNumOutputBasicInfoList(
 								customtrapListBuffer, entry.getValue(), priorityBuffer, facilityIdListBuffer,
 								agentAddr, valueBuffer, entry.getKey()));
@@ -698,7 +768,9 @@ public class ReceivedCustomTrapFilter {
 				// if threshold is not defined
 				CustomInvalid e = new CustomInvalid(
 						"configuration of CustomTrap monitor is not valid. [" + customTrap + "]");
-				logger.info("judgePriority() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+				if (logger.isDebugEnabled()) {
+					logger.debug("judgePriority() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+				}
 				throw e;
 			}
 		}
@@ -801,9 +873,13 @@ public class ReceivedCustomTrapFilter {
 	private synchronized void countupNotified() {
 		notifiedCount = notifiedCount >= Long.MAX_VALUE ? 0 : notifiedCount + 1;
 		int _statsInterval = HinemosPropertyCommon.monitor_customtrap_stats_interval.getIntegerValue();
-		logger.info("monitor.customtrap.stats.interval = " + _statsInterval);
+		if (logger.isDebugEnabled()) {
+			logger.debug("monitor.customtrap.stats.interval = " + _statsInterval);
+		}
 		if (notifiedCount % _statsInterval == 0) {
-			logger.info("The number of CustomTrap (notified) : " + notifiedCount);
+			if (logger.isDebugEnabled()) {
+				logger.debug("The number of CustomTrap (notified) : " + notifiedCount);
+			}
 		}
 	}
 }

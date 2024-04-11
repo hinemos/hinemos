@@ -9,6 +9,7 @@
 package com.clustercontrol.jobmanagement.util;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -26,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.RunInterval;
+import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.binary.util.BinaryManagerUtil;
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.EmptyJpaTransactionCallback;
@@ -43,6 +45,8 @@ import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
 import com.clustercontrol.jobmanagement.bean.CommandConstant;
 import com.clustercontrol.jobmanagement.bean.CommandStopTypeConstant;
 import com.clustercontrol.jobmanagement.bean.CommandTypeConstant;
+import com.clustercontrol.jobmanagement.bean.JobConstant;
+import com.clustercontrol.jobmanagement.bean.JobEnvVariableInfo;
 import com.clustercontrol.jobmanagement.bean.MonitorJobConstant;
 import com.clustercontrol.jobmanagement.bean.QuartzConstant;
 import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
@@ -51,6 +55,7 @@ import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.factory.JobSessionJobImpl;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
+import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.session.JobRunManagementBean;
 import com.clustercontrol.logfile.util.LogfileManagerUtil;
 import com.clustercontrol.monitor.bean.ConvertValueConstant;
@@ -422,6 +427,53 @@ public class MonitorJobWorker {
 			map.put(entry.getValue().runInstructionInfo, entry.getValue().monitorInfo);
 		}
 		return map;
+	}
+
+	/**
+	 * 監視ジョブマップ再登録
+	 * カスタムトラップ監視の場合に、Hinemosマネージャ再起動時に再登録する。
+	 * 
+	 */
+	public static void restartMonitorJob() {
+
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("restartMonitorJob()() start");
+		}
+		try {
+			List<JobSessionNodeEntity> jobSessionNodeList = QueryUtil.getJobSessionNodeByStatus(
+					StatusConstant.TYPE_RUNNING, JobConstant.TYPE_MONITORJOB);
+
+			if (jobSessionNodeList != null && !jobSessionNodeList.isEmpty()) {
+				for (JobSessionNodeEntity jobSessionNodeEntity : jobSessionNodeList) {
+					String monitorId = jobSessionNodeEntity.getJobSessionJobEntity().getJobInfoEntity().getMonitorId();
+					MonitorInfo monitorInfo = com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK_NONE(monitorId);
+					String monitorTypeId = monitorInfo.getMonitorTypeId();
+					if (!HinemosModuleConstant.MONITOR_CUSTOMTRAP_N.equals(monitorTypeId)
+							&& !HinemosModuleConstant.MONITOR_CUSTOMTRAP_S.equals(monitorTypeId)) {
+						continue;
+					}
+					RunInstructionInfo runInstructionInfo = new RunInstructionInfo();
+					runInstructionInfo.setSessionId(jobSessionNodeEntity.getId().getSessionId());
+					runInstructionInfo.setJobunitId(jobSessionNodeEntity.getId().getJobunitId());
+					runInstructionInfo.setJobId(jobSessionNodeEntity.getId().getJobId());
+					runInstructionInfo.setFacilityId(jobSessionNodeEntity.getId().getFacilityId());
+					runInstructionInfo.setJobEnvVariableInfoList(new ArrayList<JobEnvVariableInfo>());
+					runInstructionInfo.setCommand(CommandConstant.MONITOR);
+					runInstructionInfo.setCommandType(CommandTypeConstant.NORMAL);
+					if (!monitorJobMap.get(monitorTypeId).containsKey(getKey(runInstructionInfo))) {
+						if (m_log.isTraceEnabled()) {
+							m_log.trace("restartMonitorJob()() addKey = " + getKey(runInstructionInfo));
+						}
+						monitorJobMap.get(monitorTypeId).put(getKey(runInstructionInfo), new MonitorJobInfo(runInstructionInfo, monitorInfo));
+					}
+				}
+			}
+		} catch (Exception e) {
+			// エラー処理
+		}
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("restartMonitorJob()() end");
+		}
 	}
 
 	/**

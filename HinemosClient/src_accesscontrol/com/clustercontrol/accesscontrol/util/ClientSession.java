@@ -10,9 +10,12 @@ package com.clustercontrol.accesscontrol.util;
 
 import java.util.Date;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.SingletonUtil;
+import org.eclipse.rap.rwt.service.ServerPushSession;
 import org.openapitools.client.model.ConnectCheckResponse;
 
 import com.clustercontrol.fault.RestConnectFailed;
@@ -39,6 +42,9 @@ public class ClientSession {
 	/** Whether error dialog is available or not */
 	private boolean dialogFlag = true;
 
+	/** (RAP用)サーバからブラウザヘUI変更を通知するクラス */
+	private ServerPushSession pushSession = null;
+	
 	/**
 	 * コンストラクタ
 	 */
@@ -68,6 +74,27 @@ public class ClientSession {
 			clientSession.m_timer.start( interval );
 			clientSession.interval=interval;
 		}
+		
+		final int sessionTimeoutMinute = NumberUtils.toInt(System.getProperty("session.timeout.minute"), 0);
+		if (sessionTimeoutMinute > 0) {
+			// システムプロパティにセッションタイムアウト時間（分）が定義されている時は、
+			// セッションタイムアウト時間を死活監視間隔 + セッションタイムアウト値にする 
+			int sessionTimeoutSec = (interval + sessionTimeoutMinute) * 60;
+			RWT.getRequest().getSession().setMaxInactiveInterval(sessionTimeoutSec);
+			if (m_log.isInfoEnabled()) {
+				m_log.info("ClientSession.startChecktask() set Session setMaxInactiveInterval " + sessionTimeoutSec + " seconds");	
+			}
+		}
+		
+		final boolean isSessionAutoRefresh = "true".equals(System.getProperty("session.auto.refresh.enable"));
+		if (isSessionAutoRefresh && clientSession.pushSession == null) {
+			// システムプロパティにセッションタイムアウトを防止するフラグが立っている時は、
+			// サーバからブラウザへ通知する処理（ロングポーリング）を開始する。
+			// サーバとブラウザ間で定期的に通信が行われる為セッションタイムアウトしなくなる
+			clientSession.pushSession = new ServerPushSession(); 
+			clientSession.pushSession.start();
+			m_log.info("ClientSession.startChecktask() session.auto.refresh.enable = true");	
+		}
 	}
 
 	/**
@@ -95,6 +122,11 @@ public class ClientSession {
 
 			// タイマー削除
 			clientSession.m_timer = null;
+		}
+		if (clientSession.pushSession != null) {
+			// サーバからブラウザヘの通知処理停止
+			clientSession.pushSession.stop();
+			clientSession.pushSession = null;
 		}
 	}
 

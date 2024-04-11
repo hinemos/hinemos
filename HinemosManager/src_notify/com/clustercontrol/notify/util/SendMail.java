@@ -631,6 +631,48 @@ public class SendMail implements Notifier {
 	}
 
 	/**
+	 * オリジナルメッセージありの、メール本文を返します。
+	 *
+	 * @param source
+	 *            出力内容
+	 * @return メール本文
+	 */
+	public String getContentWithMessageOrg(OutputBasicInfo source) {
+
+		StringBuffer buf = new StringBuffer();
+		SimpleDateFormat sdf = new SimpleDateFormat(SUBJECT_DATE_FORMAT);
+		sdf.setTimeZone(HinemosTime.getTimeZone());
+
+		try {
+			Locale locale = NotifyUtil.getNotifyLocale();
+
+			buf.append(Messages.getString("GENERATION_TIME", locale) + " : "
+					+ sdf.format(source.getGenerationDate()) + "\n");
+			buf.append(Messages.getString("APPLICATION", locale) + " : "
+					+ HinemosMessage.replace(source.getApplication(), locale) + "\n");
+			buf.append(Messages.getString("PRIORITY", locale) + " : "
+					+ Messages.getString(PriorityConstant.typeToMessageCode(source.getPriority()), locale) + "\n");
+			buf.append(Messages.getString("MESSAGE", locale) + " : "
+					+ HinemosMessage.replace(source.getMessage(), locale) + "\n");
+			buf.append(Messages.getString("MESSAGE_ORG", locale) + " : "
+					+ HinemosMessage.replace(source.getMessageOrg(), locale) + "\n");
+			buf.append(Messages.getString("SCOPE", locale) + " : "
+					+ HinemosMessage.replace(source.getScopeText(), locale) + "\n");
+		} catch (RuntimeException e) {
+			m_log.warn("getContent() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			// 例外発生時のメール本文
+			return "An error occurred creating message.";
+		}
+
+		// 改行コードをLFからCRLFに変更する。
+		// 本来はJavaMailが変換するはずだが、変換されないこともあるので、
+		// 予め変更しておく。
+		String ret = buf.toString().replaceAll("\r\n", "\n").replaceAll("\n", "\r\n");
+
+		return ret;
+	}
+	
+	/**
 	 * 通知失敗時の内部エラー通知を定義します
 	 */
 	private void internalErrorNotifyMailSendFailed(String notifyId, OutputBasicInfo source, String detailMsg) {

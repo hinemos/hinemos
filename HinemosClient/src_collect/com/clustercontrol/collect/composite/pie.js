@@ -137,8 +137,26 @@ this.vis.append("g")
 	.style("fill",HINEMOS_COLLECT_CONST.CONST_COLOR_WHITE)
 	.attr("y", y_posi)
 	.attr("x", -30)
-	.text(truncateText(title, 30)); 
-
+	.text(truncateByWidth(title, width, 'Meiryo, メイリオ',"9pt", "bold"))
+	.on("mouseout", function(){
+		disableTooltip();
+	})
+	.on("mouseover", function(){
+		var pagey = d3.event.pageY;
+		var pagex = d3.event.pageX;
+		if (!checkBrowserKind("firefox") && (event.pageY == undefined || event.pageX == undefined)) { // IE9、10でのevent.pageX、event.pageYが取れない対策
+			pagex = event.clientX + (document.body.scrollLeft || document.documentElement.scrollLeft);
+			pagey = event.clientY + (document.body.scrollTop || document.documentElement.scrollTop);
+		}
+		d3.select("body").select(".tooltip_mouse")
+		.style("visibility", "visible")
+		.style("width", "300px")
+		.style("font-size", "8pt")
+		.style("word-wrap","break-word")
+		.html(title)
+		.style("top", (pagey-20)+"px")
+		.style("left",(pagex+20)+"px");
+	});
 
 // グラフのitemName(左)表示
 this.ylabel = options.ylabel;

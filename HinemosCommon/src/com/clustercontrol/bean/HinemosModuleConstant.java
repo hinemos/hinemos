@@ -444,7 +444,8 @@ public class HinemosModuleConstant {
 		} else if (string.equals(PLATFORM_CALENDAR_PATTERN)) {
 			return "CALENDAR_PATTERN";
 		} else if (string.equals(PLATFORM_REPOSITORY)
-				|| string.equals(PLATFORM_REPSITORY_AUTO_REGISTER)) {
+				|| string.equals(PLATFORM_REPSITORY_AUTO_REGISTER)
+				|| string.equals(PLATFORM_REPSITORY_SCOPE)) {
 			return "REPOSITORY";
 		} else if (string.equals(PLATFORM_NOTIFY)) {
 			return "NOTIFY";

@@ -278,8 +278,7 @@ public class AgentLibraryManager {
 	 * エージェントのバージョンに対して、以下のような動作の違いがあります。
 	 * <ul>
 	 * <li>Java情報が送信されてきている場合、 HinemosJava等のアーカイブを含む一覧を返します。
-	 * <li>Java情報が送信されてきていない && ver.6.2先行版に該当する場合は、アーカイブを含まない一覧を返します。
-	 * <li>Java情報が送信されてきていない && ver.6.2先行版に該当しない(通常、ver.6.1以前)場合は、空の一覧を返します。
+	 * <li>Java情報が送信されてきていない場合は、空の一覧を返します。
 	 * </ul>
 	 * 
 	 * @param facilityIdList エージェントに紐付けられたファシリティIDのリスト。nullあるいは空の場合、ファシリティIDが不明。
@@ -299,16 +298,12 @@ public class AgentLibraryManager {
 			log.info("getAgentLibMd5s: No profile. facilityIds=" + String.join(",", facilityIds));
 			return ret;
 		}
+		
 
 		if (agentProfile.getJavaInfo() == null) {
-			if (agentProfile.isV62Beta()) {
-				// ver.6.2先行版
-				log.debug("getAgentLibMd5s: ver.6.2beta. facilityIds=" + String.join(",", facilityIds));
-			} else {
-				// ver.6.1以前 (本来はありえない状況のはず)
-				log.info("getAgentLibMd5s: ver.6.1 or earlier. facilityIds=" + String.join(",", facilityIds));
-				return ret;
-			}
+			log.info("getAgentLibMd5s: No javainfo. facilityIds=" + String.join(",", facilityIds));
+			// Java情報が送信されてきていない場合は、空の一覧を返す (本来はありえない状況のはず)
+			return ret;
 		}
 
 		// ファイルリストから対象外OS/アーキのファイルを除去 & エージェント側パスに変換

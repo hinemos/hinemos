@@ -23,6 +23,7 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.common.ui.dialogs.MessageDialogWithScroll;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.extensions.CloudOptionExtension;
@@ -43,11 +44,11 @@ public class SnapshotStorageHandler extends AbstractCloudOptionHandler implement
 			if (dialog.open() != Window.OK) {
 				break;
 			}
+			
+		MessageDialogWithScroll messageDialogWithScroll = new MessageDialogWithScroll(              
+				MessageFormat.format(msgConfirmSnapshotCreateStorage, storage.getName(), storage.getId()));
 
-			if (MessageDialog.openConfirm(
-					null,
-					Messages.getString("confirmed"),
-					MessageFormat.format(msgConfirmSnapshotCreateStorage, storage.getName(), storage.getId()))) {
+			if (messageDialogWithScroll.openConfirm()) {
 
 				CreateStorageSnapshotRequest request = new CreateStorageSnapshotRequest();
 				request.setStorageId(storage.getId());
@@ -57,12 +58,12 @@ public class SnapshotStorageHandler extends AbstractCloudOptionHandler implement
 				String managerName = storage.getCloudScope().getCloudScopes().getHinemosManager().getManagerName();
 				CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
 				endpoint.snapshotStorage(storage.getCloudScope().getId(), storage.getLocation().getId(), request);
-
-				// 成功報告ダイアログを生成
-				MessageDialog.openInformation(
-						null,
-						Messages.getString("successful"),
-						MessageFormat.format(msgFinishSnapshotCreateStorage, storage.getName(), storage.getId()));
+				
+				String dialogTitle = Messages.getString("Successful");
+				String dialogMessage = MessageFormat.format(msgFinishSnapshotCreateStorage, storage.getName() , storage.getId());
+				MessageDialogWithScroll mInformationDialog = new MessageDialogWithScroll(dialogTitle,dialogMessage); 
+			    mInformationDialog.open();
+				
 
 				Display.getCurrent().asyncExec(new Runnable() {
 					@Override

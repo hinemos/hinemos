@@ -74,6 +74,8 @@ public class HubValidator {
 			CommonValidator.validateString(MessageConstant.DESCRIPTION.getMessage(), key.getDescription(), false, 0, 256);
 			//Regex
 			CommonValidator.validateRegex(key.getKey() + " - " + key.getPattern(), key.getPattern(), false);
+			// Value
+			CommonValidator.validateString(MessageConstant.VALUE.getMessage(), key.getValue(), false, 0, 256);
 			//Value Type
 //			CommonValidator.validateString(Messages.getString("word.format.value.type"),key.getValueType(), true, 1, 64);
 		}

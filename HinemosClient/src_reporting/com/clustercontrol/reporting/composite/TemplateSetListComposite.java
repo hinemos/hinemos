@@ -178,11 +178,13 @@ public class TemplateSetListComposite extends Composite {
 				}
 				String errMsg = HinemosMessage.replace(e.getMessage());
 				m_log.warn("checkPublish Error, " + errMsg);
-				errorMsgs.put(managerName, Messages.getString("message.expiration.term"));
+				errorMsgs.put(managerName, e.getMessage());
+				continue;
 			} catch (Exception e) {
 				String errMsg = HinemosMessage.replace(e.getMessage());
 				m_log.warn("checkPublish Error, " + errMsg);
-				errorMsgs.put(managerName, Messages.getString("message.expiration.term"));
+				errorMsgs.put(managerName, e.getMessage());
+				continue;
 			}
 
 			try {

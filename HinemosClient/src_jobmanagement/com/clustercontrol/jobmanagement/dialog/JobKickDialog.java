@@ -507,7 +507,7 @@ public class JobKickDialog extends CommonDialog {
 		// サイズを最適化
 		// グリッドレイアウトを用いた場合、こうしないと横幅が画面いっぱいになります。
 		this.m_shell.pack();
-		this.m_shell.setSize(new Point(640, m_shell.getSize().y));
+		this.m_shell.setSize(new Point(800, m_shell.getSize().y));
 
 		// 画面中央に配置
 		Display display = this.m_shell.getDisplay();

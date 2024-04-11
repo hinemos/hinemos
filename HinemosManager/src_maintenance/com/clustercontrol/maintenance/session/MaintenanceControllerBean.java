@@ -71,12 +71,15 @@ public class MaintenanceControllerBean {
 	/**
 	 * メンテナンス情報を追加します。
 	 * 
+	 * @param maintenanceInfo 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return
 	 * @throws HinemosUnknown
 	 * @throws MaintenanceDuplicate
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public MaintenanceInfo addMaintenance(MaintenanceInfo maintenanceInfo)
+	public MaintenanceInfo addMaintenance(MaintenanceInfo maintenanceInfo, boolean isImport)
 			throws HinemosUnknown, MaintenanceDuplicate, InvalidSetting, InvalidRole {
 		m_log.debug("addMaintenance");
 
@@ -109,8 +112,11 @@ public class MaintenanceControllerBean {
 			ModifySchedule modify = new ModifySchedule();
 			modify.addSchedule(maintenanceInfo, loginUser);
 
-			// コミット後にキャッシュクリアを行うコールバック
-			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportMaintenanceCallback(jtm);
+			}
+
 			jtm.commit();
 
 			return getMaintenanceInfo(maintenanceInfo.getMaintenanceId());
@@ -142,13 +148,17 @@ public class MaintenanceControllerBean {
 	/**
 	 * メンテナンス情報を変更します。
 	 * 
+	 * @param maintenanceInfo 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return
 	 * @throws HinemosUnknown
 	 * @throws NotifyNotFound
 	 * @throws MaintenanceNotFound
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
-	public MaintenanceInfo modifyMaintenance(MaintenanceInfo maintenanceInfo) throws HinemosUnknown, NotifyNotFound, MaintenanceNotFound, InvalidSetting, InvalidRole {
+	public MaintenanceInfo modifyMaintenance(MaintenanceInfo maintenanceInfo, boolean isImport)
+			throws HinemosUnknown, NotifyNotFound, MaintenanceNotFound, InvalidSetting, InvalidRole {
 		m_log.debug("modifyMaintenance");
 
 		JpaTransactionManager jtm = null;
@@ -180,8 +190,11 @@ public class MaintenanceControllerBean {
 			ModifySchedule modifySchedule = new ModifySchedule();
 			modifySchedule.addSchedule(maintenanceInfo, loginUser);
 
-			// コミット後にキャッシュクリアを行うコールバック
-			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportMaintenanceCallback(jtm);
+			}
+
 			jtm.commit();
 
 			
@@ -205,6 +218,18 @@ public class MaintenanceControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+	}
+
+	/**
+	 * メンテナンス情報の新規登録／変更時に呼び出すコールバックメソッドを設定
+	 * 
+	 * 設定インポートエクスポートでCommit後に呼び出すものだけ定義
+	 * 
+	 * @param jtm JpaTransactionManager
+	 */
+	public void addImportMaintenanceCallback(JpaTransactionManager jtm) {
+		// 通知リレーション情報のキャッシュ更新
+		jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 	}
 
 	/**
@@ -415,7 +440,7 @@ public class MaintenanceControllerBean {
 		info.setValidFlg(validFlag);
 
 		try{
-			this.modifyMaintenance(info);
+			this.modifyMaintenance(info, false);
 			return getMaintenanceInfo(maintenanceId);
 		} catch (InvalidSetting  e) {
 			throw new HinemosUnknown(e.getMessage(), e);
@@ -663,6 +688,7 @@ public class MaintenanceControllerBean {
 
 		JpaTransactionManager jtm = null;
 		OutputBasicInfo notifyInfo = null;
+		boolean check = false;
 		try {
 			// トランザクションがすでに開始されている場合は処理終了
 			jtm = new JpaTransactionManager();
@@ -672,7 +698,6 @@ public class MaintenanceControllerBean {
 			}
 
 			//カレンダをチェック
-			boolean check = false;
 			if(calendarId != null && calendarId.length() > 0){
 				//カレンダによる実行可/不可のチェック
 				if(new CalendarControllerBean().isRun(calendarId, HinemosTime.getDateInstance().getTime()).booleanValue()){
@@ -683,8 +708,10 @@ public class MaintenanceControllerBean {
 				check = true;
 			}
 
-			if(!check)
+			if (!check) {
+				m_log.debug("scheduleRunMaintenance() : Not run because of calendar Not-Operate period.");
 				return;
+			}
 
 			//メンテナンス実行
 			notifyInfo = runMaintenance(maintenanceId);
@@ -706,9 +733,11 @@ public class MaintenanceControllerBean {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
-			if (notifyInfo == null) {
+			}
+			// メンテナンスは実行されたが、失敗した場合
+			if (notifyInfo == null && check) {
 				// AplLoggerによるINTERNALイベント
 				String[] args = {maintenanceId};
 				AplLogger.put(InternalIdCommon.MAINTENANCE_SYS_001, args);

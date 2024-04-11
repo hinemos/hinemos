@@ -14,6 +14,7 @@ import com.clustercontrol.jobmanagement.bean.RunResultInfo;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertAssertion;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.RpaJobErrorTypeEnum;
+import com.clustercontrol.util.XMLUtil;
 
 @RestBeanConvertAssertion(to = RunResultInfo.class)
 public class SetJobResultRequest extends AgentRequestDto {
@@ -156,7 +157,8 @@ public class SetJobResultRequest extends AgentRequestDto {
 	}
 
 	public void setMessage(String message) {
-		this.message = message;
+		// NULL等が含まれる場合があるため変換する
+		this.message = XMLUtil.ignoreInvalidString(message);
 	}
 
 	public String getErrorMessage() {
@@ -164,7 +166,8 @@ public class SetJobResultRequest extends AgentRequestDto {
 	}
 
 	public void setErrorMessage(String errorMessage) {
-		this.errorMessage = errorMessage;
+		// NULL等が含まれる場合があるため変換する
+		this.errorMessage = XMLUtil.ignoreInvalidString(errorMessage);
 	}
 
 	public SetJobOutputResultRequest getJobOutput() {

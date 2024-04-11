@@ -64,6 +64,11 @@ public class SdmlV1ClientOption implements ISdmlClientOption {
 	}
 
 	@Override
+	public void updateCaches() {
+		// NOP
+	}
+
+	@Override
 	public String getUtilityFunctionId() {
 		return SdmlUtilityConstant.SDML_CONTROL_V1;
 	}

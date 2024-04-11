@@ -23,6 +23,7 @@ import com.clustercontrol.agent.SendQueue.JobResultSendableObject;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 
 /**
  * プロセスを終了するスレッドクラス<BR>
@@ -94,7 +95,7 @@ public class DeleteProcessThread extends AgentThread {
 			sendme.body.setStatus(RunStatusConstant.ERROR);
 			sendme.body.setTime(HinemosTime.getDateInstance().getTime());
 			sendme.body.setEndValue(-1);
-			sendme.body.setMessage("Internal Error : Ex. Agent restarted or Job already terminated.");
+			sendme.body.setMessage(MessageConstant.MESSAGE_JOB_PROCESS_NOT_EXISTS.getMessage());
 			sendme.body.setErrorMessage("");
 			// 送信
 			m_sendQueue.put(sendme);
@@ -129,9 +130,12 @@ public class DeleteProcessThread extends AgentThread {
 		m_log.info("run() : shutdown process : " + process.toString());
 		try {
 			String mode = AgentProperties.getProperty("job.command.mode");
+			// 以下と同様の実装が「HinemosCommon/src/com/clustercontrol/util/CommandExecutor.java」に存在します。修正する際には併せて修正してください。
 			// sudoの仕様変更対応に伴い、
 			// 実効ユーザが「ユーザを指定する」である場合は強制停止を行う
-			if (!mode.equals("compatible") && m_info.getSpecifyUser() && process.getClass().getName().equals("java.lang.UNIXProcess")){
+			String sysUser = System.getProperty("user.name");
+
+			if (!mode.equals("compatible") && m_info.getSpecifyUser() && !sysUser.equals(m_info.getUser()) && process.getClass().getName().equals("java.lang.UNIXProcess")){
 				// sudoプロセスID取得
 				Field f = process.getClass().getDeclaredField("pid");
 				f.setAccessible(true);

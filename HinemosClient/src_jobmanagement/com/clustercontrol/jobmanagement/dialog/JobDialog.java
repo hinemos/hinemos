@@ -403,7 +403,8 @@ public class JobDialog extends CommonDialog {
 				info.getType() == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
 				info.getType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
 				info.getType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
-				info.getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB) {
+				info.getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB || 
+				info.getType() == JobInfoWrapper.TypeEnum.RPAJOB) {
 			m_moduleRegisteredCondition.setEnabled(!m_readOnly);
 		} else {
 			m_moduleRegisteredCondition.setEnabled(false);
@@ -1017,7 +1018,8 @@ public class JobDialog extends CommonDialog {
 				info.getType() == JobInfoWrapper.TypeEnum.FILECHECKJOB ||
 				info.getType() == JobInfoWrapper.TypeEnum.JOBLINKSENDJOB ||
 				info.getType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB ||
-				info.getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB) {
+				info.getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB ||
+				info.getType() == JobInfoWrapper.TypeEnum.RPAJOB) {
 			m_moduleRegisteredCondition.setEnabled(!m_readOnly);
 		}
 		m_jobAnnotationText.setEditable(!m_readOnly);

@@ -26,12 +26,10 @@ import com.clustercontrol.util.RestConnectManager;
 public class SdmlMonitorTypeUtil {
 	private static Log logger = LogFactory.getLog(SdmlMonitorTypeUtil.class);
 
-	private Map<String, Map<String, SdmlMonitorTypeMasterResponse>> sdmlMonitorTypeMstMap = new ConcurrentHashMap<>();
+	private Map<String, Map<String, SdmlMonitorTypeMasterResponse>> sdmlMonitorTypeMstMap;
 
 	/** Private Constructor */
 	private SdmlMonitorTypeUtil() {
-		// SDML監視種別マスタは運用中に変更する想定ではないので初回のみ更新
-		refresh();
 	}
 
 	/** Get singleton */
@@ -41,30 +39,30 @@ public class SdmlMonitorTypeUtil {
 
 	private Map<String, Map<String, SdmlMonitorTypeMasterResponse>> getMap() {
 		if (sdmlMonitorTypeMstMap == null || sdmlMonitorTypeMstMap.size() == 0) {
-			refresh();
+			initialize();
 		}
 		return sdmlMonitorTypeMstMap;
 	}
 
 	/**
-	 * キャッシュ情報更新
+	 * キャッシュ情報初期化
 	 */
-	private void refresh() {
-		logger.debug("refresh()");
+	private void initialize() {
+		logger.debug("initialize()");
 		// 初期化
-		sdmlMonitorTypeMstMap.clear();
+		sdmlMonitorTypeMstMap = new ConcurrentHashMap<>();
 
-		// マネージャ毎での更新
+		// マネージャ毎に初期化する
 		for (String managerName : RestConnectManager.getActiveManagerSet()) {
-			refresh(managerName);
+			initialize(managerName);
 		}
 	}
 
 	/**
-	 * キャッシュ情報更新（マネージャー毎）
+	 * キャッシュ情報初期化（マネージャー毎）
 	 */
-	private void refresh(String managerName) {
-		logger.debug("refresh() : managerName=" + managerName);
+	private void initialize(String managerName) {
+		logger.debug("initialize() : managerName=" + managerName);
 
 		try {
 			SdmlRestClientWrapper wrapper = SdmlRestClientWrapper.getWrapper(managerName);
@@ -81,8 +79,15 @@ public class SdmlMonitorTypeUtil {
 				sdmlMonitorTypeMstMap.put(managerName, new ConcurrentHashMap<>());
 			}
 		} catch (Exception e) {
-			logger.error("refresh() : " + e.getMessage(), e);
+			logger.error("initialize() : " + e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * キャッシュ情報を更新する
+	 */
+	public static void refresh() {
+		getInstance().initialize();
 	}
 
 	/**
@@ -92,7 +97,11 @@ public class SdmlMonitorTypeUtil {
 	 * @return
 	 */
 	public static Map<String, SdmlMonitorTypeMasterResponse> getMap(String managerName) {
-		return getInstance().getMap().get(managerName);
+		Map<String, SdmlMonitorTypeMasterResponse> map = getInstance().getMap().get(managerName);
+		if (map == null) {
+			return new ConcurrentHashMap<>();
+		}
+		return map;
 	}
 
 	/**
@@ -103,7 +112,7 @@ public class SdmlMonitorTypeUtil {
 	 * @return
 	 */
 	public static String getPluginId(String managerName, String sdmlMonitorTypeId) {
-		SdmlMonitorTypeMasterResponse info = getInstance().getMap().get(managerName).get(sdmlMonitorTypeId);
+		SdmlMonitorTypeMasterResponse info = getMap(managerName).get(sdmlMonitorTypeId);
 		if (info == null) {
 			return null;
 		}
@@ -118,7 +127,7 @@ public class SdmlMonitorTypeUtil {
 	 * @return
 	 */
 	public static boolean isSdmlPluginId(String managerName, String pluginId) {
-		Map<String, SdmlMonitorTypeMasterResponse> map = getInstance().getMap().get(managerName);
+		Map<String, SdmlMonitorTypeMasterResponse> map = getMap(managerName);
 		if (map == null || map.isEmpty()) {
 			return false;
 		}

@@ -69,8 +69,8 @@ public class ParameterUtil {
 	/** ログ出力のインスタンス */
 	private static Log m_log = LogFactory.getLog( ParameterUtil.class );
 
-	public static final String REGEX_RETURN = "#\\[RETURN:([^:]*):([^:]*)\\]";
-	public static final String REGEX_END_NUM = "#\\[END_NUM:([^:]*)\\]";
+	public static final String REGEX_RETURN = "#\\[RETURN:([^:]*):([^:\\]]*)\\]";
+	public static final String REGEX_END_NUM = "#\\[END_NUM:([^:\\]]*)\\]";
 
 	/**
 	 * 監視結果情報、ジョブ契機（ファイルチェック情報）を取得します。

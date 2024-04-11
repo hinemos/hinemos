@@ -10,31 +10,35 @@
 
 ![Hinemos-logo](http://www.hinemos.info/files/images/HinemosLogo.png)
 
-Hinemos is an open source integrated system management software providing both monitoring and job management (workload scheduling) features, to implement system operation automation.
+Hinemos is an integrated operations management software that maximizes the cost advantages of open source software to achieve "operational automation" such as "monitoring" and "jobs" for increasingly complex large-scale IT systems.
 
-[README(Japanese version)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v7.0.1#packages)
+[README(Japanese version)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v7.0.2#packages)
 
 ## Installation
 
-You can install hinemos with the following commands.
+Hinemos can be installed with a single command.
 
 - For installing the Manager
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-manager-7.0.1-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-manager-7.0.1-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el8.x86_64.rpm```
+  - RHEL 9.x  
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el9.x86_64.rpm```
 
 
 - For installing the Web Client
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-web-7.0.1-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.1/hinemos-7.0-web-7.0.1-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el8.x86_64.rpm```
+  - RHEL 9.x  
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el9.x86_64.rpm```
 
-For details, please refer to [Basic Features Manual](https://github.com/hinemos/hinemos/releases/download/v7.0.1/en_Base_Linux_7.0_rev2.pdf).
+For details, refer to [Hinemos ver. 7.0 Basic Features Manual](https://github.com/hinemos/hinemos/releases/download/v7.0.2/en_Base_Linux_7.0_rev3.pdf).
 
 
-## ver.7.0 New Features
+## ver. 7.0 New Features
 
 - Monitor
     - #13586 SDML(Software Defined Monitoring and Logging)
@@ -45,10 +49,10 @@ For details, please refer to [Basic Features Manual](https://github.com/hinemos/
 - Utility Tool
     - #13115 Grafana Plugin
 
-## ver.7.0 Improvement
+## ver. 7.0 Improvement
 
 - Manager, Agent, and Client
-    - #15254,#15260,#15187 Communication on Hinemos now using TLS1.2 due to default TLS for JRE changed to 1.3.
+    - #15254, #15260, #15187 Communication on Hinemos now using TLS1.2 due to default TLS for JRE changed to 1.3.
 
 - Client & Agent
     - #11218 Storing filtering conditions
@@ -116,11 +120,12 @@ For details, please refer to [Basic Features Manual](https://github.com/hinemos/
     - #11226 Made improvement so that multiple SMTP servers can be registered for mail delivery
     - #13144 Added OAuth2.0 authentication for mail delivery
 
-See the [release note](https://github.com/hinemos/hinemos/releases/tag/v7.0.1) for details.
+
+For details, refer to [release note](https://github.com/hinemos/hinemos/releases/tag/v7.0.2).
 
 ## Documentation
 
-- Basic Features Manual ([en_Base_Linux_7.0_rev2.pdf](https://github.com/hinemos/hinemos/releases/download/v7.0.1/en_Base_Linux_7.0_rev2.pdf) )
+English manuals will be available soon.
 
 ## License
 

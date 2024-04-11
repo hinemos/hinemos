@@ -23,9 +23,6 @@ public class JobFileCheckInfoRequest implements RequestDto {
 	/** ファシリティID */
 	private String facilityID;
 
-	/** スコープ */
-	private String scope;
-
 	/** スコープ処理 */
 	@RestBeanConvertEnum
 	private ScopeJudgmentTargetEnum processingMethod;
@@ -90,22 +87,6 @@ public class JobFileCheckInfoRequest implements RequestDto {
 	 */
 	public void setFacilityID(String facilityID) {
 		this.facilityID = facilityID;
-	}
-
-	/**
-	 * スコープを返す。<BR>
-	 * @return スコープ
-	 */
-	public String getScope() {
-		return scope;
-	}
-
-	/**
-	 * スコープを設定する。<BR>
-	 * @param scope スコープ
-	 */
-	public void setScope(String scope) {
-		this.scope = scope;
 	}
 
 	/**

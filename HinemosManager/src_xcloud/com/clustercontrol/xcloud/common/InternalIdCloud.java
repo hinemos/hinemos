@@ -31,6 +31,16 @@ public enum InternalIdCloud implements InternalIdAbstract {
 	CLOUD_SYS_003(PriorityConstant.TYPE_INFO, CloudConstants.PLUGIN_ID, CloudMessageConstant.EXECUTED_AUTO_SEARCH),
 	// 自動検知に失敗しました。
 	CLOUD_SYS_004(PriorityConstant.TYPE_WARNING, CloudConstants.PLUGIN_ID, CloudMessageConstant.EXECUTED_AUTO_SEARCH_FAILED),
+	// リソースの自動検知が開始しました。
+	CLOUD_SYS_005(PriorityConstant.TYPE_INFO, CloudConstants.PLUGIN_ID, CloudMessageConstant.EXECUTED_AUTO_SEARCH_START),
+	// リソースの自動検知が終了しました。
+	CLOUD_SYS_006(PriorityConstant.TYPE_INFO, CloudConstants.PLUGIN_ID, CloudMessageConstant.EXECUTED_AUTO_SEARCH_END),
+	// リソースの自動検知を開始しましたが、別の自動検知が実行中のため終了しました。
+	CLOUD_SYS_007(PriorityConstant.TYPE_WARNING, CloudConstants.PLUGIN_ID, CloudMessageConstant.EXECUTED_AUTO_SEARCH_OVERLAP),
+	// {0}[{1}]のIPアドレスが取得できないため、当該のノードの管理対象フラグを無効にしました。
+	CLOUD_SYS_008(PriorityConstant.TYPE_WARNING, CloudConstants.PLUGIN_ID, CloudMessageConstant.EXECUTED_AUTO_SEARCH_IPADRESS),
+	// スコープ自動割り当てに失敗しました。クラウドスコープに割当先スコープの変更権限がありません。
+	CLOUD_SYS_009(PriorityConstant.TYPE_WARNING, CloudConstants.PLUGIN_ID, CloudMessageConstant.VALIDATION_SCOPE_INVALID_ROLE),
 	// 予期せぬエラーが発生しました, {0}
 	CLOUD_SYS_099(PriorityConstant.TYPE_WARNING, CloudConstants.PLUGIN_ID, CloudMessageConstant.FAILURE_UNEXPECTED),
 	;

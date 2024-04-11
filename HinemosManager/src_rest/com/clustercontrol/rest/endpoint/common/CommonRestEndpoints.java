@@ -620,7 +620,6 @@ public class CommonRestEndpoints {
 	@Path("/hinemosTime")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "GetHinemosTime")
 	@RestLog(action = LogAction.Get, target = LogTarget.HinemosTime, type = LogType.REFERENCE )
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.Maintenance, modeList = { SystemPrivilegeMode.READ })
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = HinemosTimeResponse.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_400, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),

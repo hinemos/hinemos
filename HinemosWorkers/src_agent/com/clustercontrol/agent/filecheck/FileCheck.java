@@ -10,7 +10,14 @@ package com.clustercontrol.agent.filecheck;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -152,25 +159,21 @@ public class FileCheck {
 			runEndDirectoryError();
 			return;
 		}
-		File[] files = directory.listFiles();
-		if (files == null) {
-			m_log.warn(m_directory + " does not have a reference permission");
+		// ビジターで対象ファイル一覧を取得する
+		TargetFileCheckFileVisitor fv = new TargetFileCheckFileVisitor(fileCheckInfoMap);
+		Path path = directory.getAbsoluteFile().toPath();
+		try {
+			// 辿る階層はログファイル監視設定のディレクトリ直下のみ
+			Files.walkFileTree(path, EnumSet.of(FileVisitOption.FOLLOW_LINKS), 1, fv);
+		} catch (IOException e) {
+			m_log.warn("run() Files.walkFileTree: IOException : " + e.getMessage());
 			runEndDirectoryError();
 			return;
-		}
-		List<File> fileList = new ArrayList<>();
-		
-		for (File file : files) {
-			if (!file.isFile()) {
-				m_log.debug(file.getName() + " is not file");
-				continue;
-			}
-			fileList.add(file);
 		}
 
 		// 2. ファイルの生存チェック
 		List<String> filenameList = new ArrayList<>();
-		for (File file : fileList) {
+		for (File file : fv.getfileChkFileList()) {
 			filenameList.add(file.getName());
 		}
 		for (String filename : fileTimestampCache.keySet()) {
@@ -193,7 +196,7 @@ public class FileCheck {
 		}
 
 		// 3. 最終更新日時のチェック
-		for (File file : fileList) {
+		for (File file : fv.getfileChkFileList()) {
 			String filename = file.getName();
 			Long newTimestamp = file.lastModified();
 			Long oldTimestamp = fileTimestampCache.get(filename);
@@ -217,7 +220,7 @@ public class FileCheck {
 					}
 				}
 			} else if (!oldTimestamp.equals(newTimestamp)) {
-				m_log.info("timestamp : " + oldTimestamp + "->" + newTimestamp + " (" + filename+ ")");
+				m_log.info("timestamp : " + oldTimestamp + "->" + newTimestamp + " (" + filename + ")");
 				fileTimestampCache.put(filename, newTimestamp);
 				fileTimestampFlagCache.put(filename, true);
 			} else {
@@ -242,7 +245,7 @@ public class FileCheck {
 		}
 
 		// 4. ファイルサイズのチェック
-		for (File file : fileList) {
+		for (File file : fv.getfileChkFileList()) {
 			String filename = file.getName();
 			RandomAccessFileWrapper fr = null;
 			try {
@@ -278,7 +281,7 @@ public class FileCheck {
 			} catch (IOException e) {
 				m_log.info("run() : IOException: " + e.getMessage());
 			} catch (Exception e) {
-				m_log.warn("run() : IOException: " + e.getMessage());
+				m_log.warn("run() : Exception: " + e.getMessage());
 			} finally {
 				if (fr != null) {
 					try {
@@ -553,5 +556,65 @@ public class FileCheck {
 		}
 		m_log.warn("give up jobFileCheckResultRetry. Maybe, manager is down");
 		return null;
+	}
+
+	// 監視対象ファイルを取得するビジター
+	private class TargetFileCheckFileVisitor implements FileVisitor<Path> {
+
+		private List<File> fileChkFileList = new ArrayList<>();
+		private Map<String, FileCheckInfo> fileCheckInfo = new ConcurrentHashMap<>();
+
+		public List<File> getfileChkFileList() {
+			return fileChkFileList;
+		}
+
+		public TargetFileCheckFileVisitor(Map<String, FileCheckInfo> fileCheckInfo) {
+			this.fileCheckInfo = fileCheckInfo;
+		}
+
+		@Override
+		public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+
+			// findbugs 対応 (nullチェック)
+			Path filePath = file.getFileName();
+			if (filePath == null) {
+				// 想定外の状況
+				// スキップして次へいく
+				m_log.warn("FileCheck Class visitFile(): file.getFileName() is null");
+				return FileVisitResult.CONTINUE;
+			}
+			String fileName = filePath.toString();
+
+			// ファイル以外の場合は何もしない
+			if (!file.toFile().isFile()) {
+				return FileVisitResult.CONTINUE;
+			}
+
+			// ファイル名を正規表現でパターンマッチするかどうか
+			for (FileCheckInfo check : fileCheckInfo.values()) {
+				// ファイルチェック設定のファイル名にマッチした場合はマッチ済みファイル名リストに追加(1度のみ)
+				if (matchFile(check, fileName)) {
+					fileChkFileList.add(file.toFile());
+					break;
+				}
+			}
+			// 設定とのマッチ結果によらず次のファイルを見に行く
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
 	}
 }

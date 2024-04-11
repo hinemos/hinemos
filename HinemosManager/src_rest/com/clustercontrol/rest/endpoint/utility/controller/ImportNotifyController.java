@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -230,7 +231,7 @@ public class ImportNotifyController extends AbstractImportController<ImportNotif
 		}
 		
 		// ControllerBean呼び出し
-		new NotifyControllerBean().addNotify(infoReq);
+		new NotifyControllerBean().addNotify(infoReq, true);
 	}
 	
 	private void callModifyNotfy(NotifyRequestForUtility importData) throws InvalidSetting, HinemosUnknown, NotifyDuplicate, InvalidRole, NotifyNotFound{
@@ -365,7 +366,7 @@ public class ImportNotifyController extends AbstractImportController<ImportNotif
 		}
 		
 		// ControllerBean呼び出し
-		new NotifyControllerBean().modifyNotify(infoReq);
+		new NotifyControllerBean().modifyNotify(infoReq, true);
 	}
 	// 下位互換(6.2.x版データ)対応のための補完処理 
 	//  下位版には存在しない必須項目を バージョンアップ時の初期値で補完
@@ -378,5 +379,10 @@ public class ImportNotifyController extends AbstractImportController<ImportNotif
 				target.getNotifyCommandInfo().setCommandSettingType(CommandSettingTypeEnum.DIRECT_COMMAND);
 			}
 		}
+	}
+
+	@Override
+	protected void addCallback(JpaTransactionManager jtm) {
+		new NotifyControllerBean().addImportNotifyCallback(jtm);
 	}
 }

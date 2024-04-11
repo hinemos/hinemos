@@ -600,7 +600,13 @@ public class CollectControllerBean{
 	 */
 	public void deletePerfFile(ArrayList<String> fileNameList) throws HinemosUnknown{
 		m_log.debug("deletePerformanceFile()");
+		
+		ArrayList<String> dirNameList = new ArrayList<>();
+		for (String fileName : fileNameList) {
+			dirNameList.add(fileName.replaceAll("\\.zip$", ""));
+		}
 		ExportCollectDataFile.deleteFile(fileNameList);
+		ExportCollectDataFile.deleteFile(dirNameList);
 	}
 	
 

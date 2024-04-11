@@ -17,6 +17,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import javax.activation.DataHandler;
 import javax.activation.FileDataSource;
@@ -332,10 +334,9 @@ public class FileTransferModuleInfo extends InfraModuleInfo<FileTransferModuleIn
 					getDestAttribute()
 					);
 		} finally {
-			try {
+			try(Stream<Path> stream = Files.list(Paths.get(srcDir))) {
 				final String strFilePrefix = srcFile;
-				Files.list(Paths.get(srcDir))
-					.filter(f -> Files.isRegularFile(f) && 
+				stream.filter(f -> Files.isRegularFile(f) && 
 							(f.getFileName().toString().equals(strFilePrefix)
 									|| f.getFileName().toString().matches(strFilePrefix + WinRMUtil.WINRM_FILE_SPLIT + "[0-9]+")))
 					.forEach(f -> f.toFile().delete());

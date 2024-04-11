@@ -400,6 +400,7 @@ public class IndividualNotifySettingListComposite extends Composite {
 
 	public void reflect(String managerName, String ownerRoleId) {
 		this.managerName = managerName;
+		this.sdmlMonitorTypeMap = SdmlMonitorTypeUtil.getMap(managerName);
 		this.ownerRoleId = ownerRoleId;
 		// すでに設定されている通知IDは一括でクリアする
 		if (this.monitorNotifyRelationMap != null && !this.monitorNotifyRelationMap.isEmpty()) {

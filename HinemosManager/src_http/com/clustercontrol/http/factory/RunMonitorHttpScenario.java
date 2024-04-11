@@ -267,11 +267,13 @@ public class RunMonitorHttpScenario extends RunMonitor {
 									m_monitor));
 						}
 					} else {
+						// 監視ジョブの場合は、最初に取得できた結果を設定して処理終了
 						m_monitorRunResultInfo = new MonitorRunResultInfo();
 						m_monitorRunResultInfo.setPriority(result.getPriority());
 						m_monitorRunResultInfo.setCheckResult(result.getCheckResult());
 						m_monitorRunResultInfo.setNodeDate(m_nodeDate);
 						m_monitorRunResultInfo.setMessageOrg(makeJobOrgMessage(result.getMessageOrg(), result.getMessage()));
+						return ret;
 					}
 
 					// 個々の収集値の登録

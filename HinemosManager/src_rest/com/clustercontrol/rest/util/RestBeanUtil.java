@@ -8,6 +8,7 @@
 package com.clustercontrol.rest.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,6 +43,63 @@ public class RestBeanUtil extends RestBeanUtilBase {
 	private static Log m_log = LogFactory.getLog(RestBeanUtil.class);
 
 	private RestBeanUtil(){
+	}
+	
+	// リフレクションしたメソッドをキャッシュするか
+	private boolean useMethodCacheFlg = false;
+	
+	// スレッド毎に共有されるメソッドのキャッシュ
+	private static final ThreadLocal<Map<Field, Method>> threadLocalGetterMap = new ThreadLocal<Map<Field, Method>>() {
+		@Override
+		protected Map<Field, Method> initialValue() {
+			return new HashMap<>();
+		}
+	};
+	private static final ThreadLocal<Map<Field, Method>> threadLocalSetterMap = new ThreadLocal<Map<Field, Method>>() {
+		@Override
+		protected Map<Field, Method> initialValue() {
+			return new HashMap<>();
+		}
+	};
+
+	/**
+	 * キャッシュまたはリフレクションからGetterメソッドを取得<BR>
+	 * メソッドが存在しない場合はnullを返す。
+	 */
+	private Method getGetter(Class<?> objectClass, Field srcField, String methodName) {
+		// キャッシュを取得
+		Map<Field, Method> methodMap = threadLocalGetterMap.get();
+		if (!methodMap.containsKey(srcField)) {
+			try {
+				// キャッシュに未登録の場合はリフレクションで取得
+				m_log.debug(String.format("put %s#%s on cache.",objectClass.getSimpleName(), methodName));
+				methodMap.put(srcField, objectClass.getMethod(methodName));
+			} catch (NoSuchMethodException | SecurityException e) {
+				m_log.debug(String.format("%s#%s is not found.",objectClass.getSimpleName(), methodName));
+				methodMap.put(srcField, null);
+			}
+		}
+		return methodMap.get(srcField);
+	}
+
+	/**
+	 * キャッシュまたはリフレクションからSetterメソッドを取得<BR>
+	 * メソッドが存在しない場合はnullを返す。
+	 */
+	private Method getSetter(Class<?> objectClass, Field targetField, String methodName, Class<?> valueClass) {
+		// キャッシュを取得
+		Map<Field, Method> methodMap = threadLocalSetterMap.get();
+		if (!methodMap.containsKey(targetField)) {
+			try {
+				// キャッシュに未登録の場合はリフレクションで取得
+				m_log.debug(String.format("put %s#%s on cache.",objectClass.getSimpleName(), methodName));
+				methodMap.put(targetField, objectClass.getMethod(methodName, valueClass));
+			} catch (NoSuchMethodException | SecurityException e) {
+				m_log.debug(String.format("%s#%s is not found.",objectClass.getSimpleName(), methodName));
+				methodMap.put(targetField, null);
+			}
+		}
+		return methodMap.get(targetField);
 	}
 
 	/**
@@ -91,6 +149,12 @@ public class RestBeanUtil extends RestBeanUtilBase {
 		new RestBeanUtil().convertBeanRecursive(srcBean, destBean);
 	}
 	
+	public static void convertBean(Object srcBean, Object destBean, boolean useMethodCacheFlg) throws HinemosUnknown, InvalidSetting {
+		RestBeanUtil util = new RestBeanUtil();
+		util.useMethodCacheFlg = useMethodCacheFlg;
+		util.convertBeanRecursive(srcBean, destBean);
+	}
+
 	/**
 	 * Rest向けDTO <=> INFOクラス(もしくはEntity) 間のデータ変換を行う <BR>
 	 */
@@ -245,6 +309,11 @@ public class RestBeanUtil extends RestBeanUtilBase {
 	@Override
 	// 各フィールドは setAccessible(true) となっている前提。
 	protected Object getSrcMemberValue(Field srcField, Object srcObject) throws IllegalAccessException {
+		if (useMethodCacheFlg) {
+			// useMethodCacheFlgがtrueの場合はメソッドのキャッシュを使用する。
+			return getSrcMemberValueUsingCache(srcField, srcObject);
+		}
+
 		try {
 			// 一部のInfoクラスにてGetterメソッドを経由しないと正常にメンバ値を取得できないタイミングがある事へ対応している
 			// Getterの名称とメンバの名称は一般的な命名規則に従ってる前提。（アノテーション指定があればそちらを優先 ）
@@ -275,6 +344,11 @@ public class RestBeanUtil extends RestBeanUtilBase {
 	 * @throws IllegalAccessException 
 	 */
 	protected void setTargetMemberValue(Field copyTargetField, Object copyTargetObject , Object destValue) throws IllegalAccessException  {
+		if (useMethodCacheFlg) {
+			// useMethodCacheFlgがtrueの場合はメソッドのキャッシュを使用する。
+			setTargetMemberValueUsingCache(copyTargetField, copyTargetObject, destValue);
+			return;
+		}
 
 		try {
 			// 一部のInfoクラスにてSetterメソッドを経由しないと正常にメンバ値を設定できない問題へ対応している
@@ -295,6 +369,71 @@ public class RestBeanUtil extends RestBeanUtilBase {
 			// Setterが生成できない場合は 値を直接メンバ変数に設定
 			copyTargetField.set(copyTargetObject, destValue);
 		} catch (Exception e) {
+			// Setterが生成できない場合は 値を直接メンバ変数に設定
+			copyTargetField.set(copyTargetObject, destValue);
+		}
+		return ;
+	}
+
+	/**
+	 * src側メンバの値を取得する（可能ならGetter経由で取得する） <BR>
+	 */
+	// 各フィールドは setAccessible(true) となっている前提。
+	private Object getSrcMemberValueUsingCache(Field srcField, Object srcObject) throws IllegalAccessException {
+		try {
+			// 一部のInfoクラスにてGetterメソッドを経由しないと正常にメンバ値を取得できないタイミングがある事へ対応している
+			// Getterの名称とメンバの名称は一般的な命名規則に従ってる前提。（アノテーション指定があればそちらを優先 ）
+			Class<?> tagClass = srcObject.getClass();
+			String getterName = "";
+			RestBeanConvertAssignGetter assign = srcField.getAnnotation(RestBeanConvertAssignGetter.class);
+			if (assign != null){
+				getterName = assign.getterName();
+			}else{
+				String memberName = srcField.getName();
+				getterName = "get" + memberName.substring(0, 1).toUpperCase() + memberName.substring(1);
+			}
+			Method method = getGetter(tagClass, srcField, getterName);
+			if (method != null) {
+				return method.invoke(srcObject);
+			} else {
+				// Getterを参照できない場合は 値を直接参照
+				return srcField.get(srcObject);
+			}
+		} catch (RuntimeException | InvocationTargetException e) { 
+			// findbugs対応 RuntimeExceptionのcatchを明示化
+			// Getterが生成できない場合は 値を直接参照
+			return srcField.get(srcObject);
+		}
+
+	}
+
+	/**
+	 * copyTarget側メンバの値を設定する（可能ならSetter経由で設定する） <BR>
+	 * @throws IllegalAccessException 
+	 */
+	private void setTargetMemberValueUsingCache(Field copyTargetField, Object copyTargetObject , Object destValue) throws IllegalAccessException  {
+		try {
+			// 一部のInfoクラスにてSetterメソッドを経由しないと正常にメンバ値を設定できない問題へ対応している
+			// Setterの名称とメンバの名称は一般的な命名規則に従ってる前提。（アノテーション指定があればそちらを優先 ）
+			Class<?> valueClass = destValue.getClass();
+			Class<?> tagClass = copyTargetObject.getClass();
+			String memberName = copyTargetField.getName();
+			String setterName = "";
+			RestBeanConvertAssignSetter assign = copyTargetField.getAnnotation(RestBeanConvertAssignSetter.class);
+			if (assign != null){
+				setterName = assign.setterName();
+			}else{
+				setterName = "set" + memberName.substring(0, 1).toUpperCase() + memberName.substring(1);
+			}
+			Method method = getSetter(tagClass, copyTargetField, setterName, valueClass);
+			if (method != null) {
+				method.invoke(copyTargetObject, destValue);
+			} else {
+				// Setterを参照できない場合は 値を直接メンバ変数に設定
+				copyTargetField.set(copyTargetObject, destValue);
+			}
+		} catch (RuntimeException | InvocationTargetException e) {
+			// findbugs対応 RuntimeExceptionのcatchを明示化
 			// Setterが生成できない場合は 値を直接メンバ変数に設定
 			copyTargetField.set(copyTargetObject, destValue);
 		}

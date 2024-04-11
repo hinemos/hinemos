@@ -464,6 +464,8 @@ public class SelectMonitor {
 		// 参照可能な監視設定を取得する
 		List<Integer> typeList = new ArrayList<>();
 		typeList.add(MonitorTypeConstant.TYPE_STRING);
+		typeList.add(MonitorTypeConstant.TYPE_TRAP);
+		
 		List<MonitorInfo> monitorInfoList 
 			= new MonitorSettingControllerBean().getMonitorListByMonitorType(typeList, ownerRoleId);
 		if (monitorInfoList == null) {

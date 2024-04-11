@@ -8,6 +8,8 @@
 
 package com.clustercontrol.nodemap.view.action;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -16,6 +18,10 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
 
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.util.Messages;
 
@@ -24,6 +30,10 @@ import com.clustercontrol.util.Messages;
  * @since 1.0.0
  */
 public class UpdateAction extends AbstractHandler {
+
+	// ログ
+	private static Log m_log = LogFactory.getLog( UpdateAction.class );
+	
 	/** アクションID */
 	public static final String ID = OpenNodeMapAction.ActionIDBase + UpdateAction.class.getSimpleName();
 
@@ -63,7 +73,12 @@ public class UpdateAction extends AbstractHandler {
 				return null;
 			}
 		}
-		
+		// 履歴コンボボックスの内容を更新
+		try {
+			view.refreshHistoryCombobox();
+		} catch (Exception e) {
+			m_log.debug("execute(), " + e.getMessage());
+		}
 		view.reload();
 		
 		return null;

@@ -71,7 +71,6 @@ import com.clustercontrol.rest.annotation.RestLogFunc.LogFuncName;
 import com.clustercontrol.rest.annotation.RestSystemPrivilege;
 import com.clustercontrol.rest.annotation.cmdtool.ArrayTypeParam;
 import com.clustercontrol.rest.annotation.validation.RestValidateObject;
-import com.clustercontrol.rest.endpoint.calendar.dto.enumtype.OperationStatusEnum;
 import com.clustercontrol.rest.endpoint.calendar.dto.AddCalendarPatternRequest;
 import com.clustercontrol.rest.endpoint.calendar.dto.AddCalendarRequest;
 import com.clustercontrol.rest.endpoint.calendar.dto.CalendarDetailInfoRequest;
@@ -82,6 +81,7 @@ import com.clustercontrol.rest.endpoint.calendar.dto.CalendarMonthResponse;
 import com.clustercontrol.rest.endpoint.calendar.dto.CalendarPatternInfoResponse;
 import com.clustercontrol.rest.endpoint.calendar.dto.ModifyCalendarPatternRequest;
 import com.clustercontrol.rest.endpoint.calendar.dto.ModifyCalendarRequest;
+import com.clustercontrol.rest.endpoint.calendar.dto.enumtype.OperationStatusEnum;
 import com.clustercontrol.rest.exception.ExceptionBody;
 import com.clustercontrol.rest.util.RestBeanUtil;
 import com.clustercontrol.rest.util.RestCommonValitater;
@@ -128,17 +128,21 @@ public class CalendarRestEndpoints {
 		m_log.info("call getCalendarList()");
 
 		List<CalendarInfo> infoResList = new CalendarControllerBean().getCalendarList(ownerRoleId);
+		m_log.debug("get infoResList finished.");
+
 		List<CalendarInfoResponse> dtoResList = new ArrayList<>();
 		for (CalendarInfo info : infoResList) {
 			CalendarInfoResponse dto = new CalendarInfoResponse();
-			RestBeanUtil.convertBean(info, dto);
+			RestBeanUtil.convertBean(info, dto, true);
 
 			// 独自変換処理
 			convertDetailResponse(info.getCalendarDetailList(), dto.getCalendarDetailList());
 			dtoResList.add(dto);
 		}
+		m_log.debug("convert DTO finished.");
 
 		RestLanguageConverter.convertMessages(dtoResList);
+		m_log.debug("tranlation finished.");
 
 		return Response.status(Status.OK).entity(dtoResList).build();
 	}

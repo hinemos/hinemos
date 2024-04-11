@@ -944,7 +944,7 @@ void CreateDataStructure()
 
 	//diskPath
 	for (int i = 0; i < MAX_DRIVE_NUM; i++) {
-		if (bit_drives.at(i)) {
+		if (bit_drives[i]) {
 			//ドライブ文字に基づいて、OIDの末尾を設定する。
 			char drive_char = 'A' + i;
 
@@ -972,7 +972,7 @@ void CreateDataStructure()
 
 	// diskParcent
 	for (int i = 0; i < MAX_DRIVE_NUM; i++) {
-		if (bit_drives.at(i)) {
+		if (bit_drives[i]) {
 			//ドライブ文字に基づいて、OIDの末尾を設定する。
 			char drive_char = 'A' + i;
 
@@ -1059,7 +1059,7 @@ void CreateDataStructure()
 
 	//diskIOIndex
 	for (int i = 0; i < MAX_DRIVE_NUM; i++) {
-		if (bit_drives.at(i)) {
+		if (bit_drives[i]) {
 			//ドライブ文字に基づいて、OIDの末尾を設定する。
 			char drive_char = 'A' + i;
 
@@ -1089,7 +1089,7 @@ void CreateDataStructure()
 
 	//diskIODevice
 	for (int i = 0; i < MAX_DRIVE_NUM; i++) {
-		if (bit_drives.at(i)) {
+		if (bit_drives[i]) {
 			//ドライブ文字に基づいて、OIDの末尾を設定する。
 			char drive_char = 'A' + i;
 
@@ -1116,7 +1116,7 @@ void CreateDataStructure()
 
 	//diskIORead
 	for (int i = 0; i < MAX_DRIVE_NUM; i++) {
-		if (bit_drives.at(i)) {
+		if (bit_drives[i]) {
 			//ドライブ文字に基づいて、OIDの末尾を設定する。
 			char drive_char = 'A' + i;
 
@@ -1142,7 +1142,7 @@ void CreateDataStructure()
 
 	//diskIOWrite
 	for (int i = 0; i < MAX_DRIVE_NUM; i++) {
-		if (bit_drives.at(i)) {
+		if (bit_drives[i]) {
 			//ドライブ文字に基づいて、OIDの末尾を設定する。
 			char drive_char = 'A' + i;
 
@@ -1168,7 +1168,7 @@ void CreateDataStructure()
 
 	//diskIOReads
 	for (int i = 0; i < MAX_DRIVE_NUM; i++) {
-		if (bit_drives.at(i)) {
+		if (bit_drives[i]) {
 			//ドライブ文字に基づいて、OIDの末尾を設定する。
 			char drive_char = 'A' + i;
 
@@ -1194,7 +1194,7 @@ void CreateDataStructure()
 
 	//diskIOWrites
 	for (int i = 0; i < MAX_DRIVE_NUM; i++) {
-		if (bit_drives.at(i)) {
+		if (bit_drives[i]) {
 			//ドライブ文字に基づいて、OIDの末尾を設定する。
 			char drive_char = 'A' + i;
 

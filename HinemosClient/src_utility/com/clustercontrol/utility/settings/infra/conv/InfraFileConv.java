@@ -13,6 +13,7 @@ import org.openapitools.client.model.InfraFileInfoResponse;
 
 import com.clustercontrol.utility.settings.infra.xml.InfraFileInfo;
 import com.clustercontrol.utility.settings.model.BaseConv;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * 環境構築ファイル定義情報をJavaBeanとXML(Bean)のbindingとの間でやりとりを
@@ -24,12 +25,18 @@ import com.clustercontrol.utility.settings.model.BaseConv;
 public class InfraFileConv extends BaseConv {
 	
 	// スキーマのタイプ、バージョン、リビジョンをそれぞれ返す
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
 	@Override
-	protected String getType() {return "G";}
+	protected String getType() {return VersionUtil.getSchemaProperty("INFRA.INFRAFILE.SCHEMATYPE");}
 	@Override
-	protected String getVersion() {return "1";}
+	protected String getVersion() {return VersionUtil.getSchemaProperty("INFRA.INFRAFILE.SCHEMAVERSION");}
 	@Override
-	protected String getRevision() {return "1";}
+	protected String getRevision() {return VersionUtil.getSchemaProperty("INFRA.INFRAFILE.SCHEMAREVISION");}
 	
 	/**
 	 * DTOのBeanからXMLのBeanに変換する。

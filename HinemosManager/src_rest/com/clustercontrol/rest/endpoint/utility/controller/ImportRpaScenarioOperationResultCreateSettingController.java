@@ -10,6 +10,7 @@ package com.clustercontrol.rest.endpoint.utility.controller;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.rest.endpoint.rpa.dto.ModifyRpaScenarioOperationResultCreateSettingRequest;
 import com.clustercontrol.rest.endpoint.utility.dto.ImportRpaScenarioOperationResultCreateSettingRecordRequest;
@@ -40,7 +41,7 @@ public class ImportRpaScenarioOperationResultCreateSettingController extends Abs
 			RpaScenarioOperationResultCreateSetting settingInfo = new RpaScenarioOperationResultCreateSetting();
 			RestBeanUtil.convertBean(importRec.getImportData(), settingInfo);
 			
-			retResponse = new RpaControllerBean().addRpaScenarioOperationResultCreateSetting(settingInfo);
+			retResponse = new RpaControllerBean().addRpaScenarioOperationResultCreateSetting(settingInfo, true);
 		}else{
 			// 変更
 			ModifyRpaScenarioOperationResultCreateSettingRequest requestDto = new ModifyRpaScenarioOperationResultCreateSettingRequest();
@@ -56,7 +57,7 @@ public class ImportRpaScenarioOperationResultCreateSettingController extends Abs
 				settingInfo.setNotifyId(new ArrayList<NotifyRelationInfo>());
 			}
 			
-			retResponse = new RpaControllerBean().modifyRpaScenarioOperationResultCreateSetting(settingInfo);
+			retResponse = new RpaControllerBean().modifyRpaScenarioOperationResultCreateSetting(settingInfo, true);
 		}
 
 		// 処理したデータのIDを返す
@@ -70,5 +71,9 @@ public class ImportRpaScenarioOperationResultCreateSettingController extends Abs
 		return  new RecordRegistrationResponse();
 	}
 
+	@Override
+	protected void addCallback(JpaTransactionManager jtm) {
+		new RpaControllerBean().addImportRpaScenarioOperationResultCreateSettingCallback(jtm);
+	}
 
 }

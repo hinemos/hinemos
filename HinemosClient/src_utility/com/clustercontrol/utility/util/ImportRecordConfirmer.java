@@ -17,6 +17,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.utility.settings.ConvertorException;
 import com.clustercontrol.utility.settings.SettingConstants;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
@@ -63,6 +64,15 @@ public abstract class ImportRecordConfirmer<T,V,S> {
 			log.debug("End Import PlatformRepositoryNode (Error)");
 			return ret;
 		}
+
+		// システム権限チェック（ImportJobMasterRecordConfirmer以外は実装不要）
+		try {
+			hasSystemPrivilege();
+		} catch (Exception e) {
+			log.info(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
+			ret = SettingConstants.ERROR_INPROCESS;
+			return ret;
+		}
 		
 		// import用データ生成（既存レコードか確認しつつ、XMLオブジェクトをRESTAPI向けオブジェクト変換）
 		for (int i = 0; i < importXmlDtoList.length; i++) {
@@ -81,7 +91,7 @@ public abstract class ImportRecordConfirmer<T,V,S> {
 					ret = SettingConstants.ERROR_INPROCESS;
 					continue;
 				}
-			} catch (HinemosUnknown |InvalidSetting e) {
+			} catch (HinemosUnknown |InvalidSetting | ConvertorException e) {
 				log.info(Messages.getString("SettingTools.ImportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
 				ret = SettingConstants.ERROR_INPROCESS;
 				continue;
@@ -151,7 +161,7 @@ public abstract class ImportRecordConfirmer<T,V,S> {
 	 * @throws HinemosUnknown
 	 * @throws InvalidSetting
 	 */
-	protected abstract V convertDtoXmlToRestReq(T xmlDto) throws HinemosUnknown ,InvalidSetting ;
+	protected abstract V convertDtoXmlToRestReq(T xmlDto) throws HinemosUnknown ,InvalidSetting, ConvertorException ;
 
 	/**
 	 * 変換されたRESTDtoを対象に内容の不足がないかをチェック
@@ -189,4 +199,11 @@ public abstract class ImportRecordConfirmer<T,V,S> {
 		return true;
 	}
 
+	/**
+	 * 対象のシステム権限を保持しているか確認する。
+	 * 
+	 * ImportJobMasterRecordConfirmerクラス以外はUtilityRestEndpoints#importXX()クラスでチェックしているため実装不要
+	 */
+	protected void hasSystemPrivilege() throws Exception {
+	}
 }

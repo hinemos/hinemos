@@ -949,7 +949,7 @@ public class MonitorComposite extends Composite {
 		this.m_scopeJobParam.setEnabled(enabled);
 		this.m_scopeJobParamText.setEditable(m_scopeJobParam.getSelection() && enabled);
 		this.m_scopeFixedValue.setEnabled(enabled);
-		this.m_scopeSelect.setEnabled(enabled);
+		this.m_scopeSelect.setEnabled(m_scopeFixedValue.getSelection() && enabled);
 		this.m_allNode.setEnabled(enabled);
 		this.m_retry.setEnabled(enabled);
 		this.m_monitorIdCombo.setEnabled(enabled);

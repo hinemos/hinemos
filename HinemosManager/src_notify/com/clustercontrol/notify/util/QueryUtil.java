@@ -280,6 +280,16 @@ public class QueryUtil {
 		}
 	}
 
+	public static List<NotifyJobInfo> getNotifyJobInfoByNotifyJobType_NONE(Integer notifyJobType) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NotifyJobInfo> list = em.createNamedQuery("NotifyJobInfoEntity.findByNotifyJobType",
+					NotifyJobInfo.class, ObjectPrivilegeMode.NONE).setParameter("notifyJobType", notifyJobType)
+					.getResultList();
+			return list;
+		}
+	}
+
 	public static NotifyLogEscalateInfo getNotifyLogEscalateInfoPK(String pk) throws NotifyNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -376,6 +386,16 @@ public class QueryUtil {
 			= em.createNamedQuery("NotifyInfraInfoEntity.findByInfraExecFacilityId", NotifyInfraInfo.class)
 			.setParameter("facilityId", facilityId)
 			.getResultList();
+			return list;
+		}
+	}
+
+	public static List<NotifyInfraInfo> getAllNotifyInfraInfo_NONE() {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<NotifyInfraInfo> list = em
+					.createNamedQuery("NotifyInfraInfoEntity.findAll", NotifyInfraInfo.class, ObjectPrivilegeMode.NONE)
+					.getResultList();
 			return list;
 		}
 	}
@@ -605,6 +625,15 @@ public class QueryUtil {
 		}
 	}
 
+	public static void deleteNotifyHistoryByFacilityId(String facilityId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			em.createNamedQuery("NotifyHistoryEntity.deleteByFacilityId")
+			.setParameter("facilityId", facilityId)
+			.executeUpdate();
+		}
+	}
+
 	public static List<MonitorStatusEntity> getMonitorStatusWithoutPluginIds(List<String> withoutPluginIds) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -621,6 +650,15 @@ public class QueryUtil {
 			HinemosEntityManager em = jtm.getEntityManager();
 			em.createNamedQuery("MonitorStatusEntity.deleteWithoutPluginIds")
 			.setParameter("withoutPluginIds", withoutPluginIds)
+			.executeUpdate();
+		}
+	}
+
+	public static void deleteMonitorStatusByFacilityId(String facilityId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			em.createNamedQuery("MonitorStatusEntity.deleteByFacilityId")
+			.setParameter("facilityId", facilityId)
 			.executeUpdate();
 		}
 	}

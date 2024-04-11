@@ -242,6 +242,9 @@ public class ResourceComposite extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				// findbugs対応 不要メソッド e.getSource()削除
+				// Cleared text upon toggle between Scope and compute
+				m_computeTargetScopeText.setText("");
+				updateCloudScopeCombo();
 				updateLocationCombo();
 				update();
 			}
@@ -260,6 +263,8 @@ public class ResourceComposite extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				// findbugs対応 不要メソッド e.getSource()削除
+				// Cleared text upon toggle between Scope and compute
+				m_computeTargetScopeText.setText("");
 				updateLocationCombo();
 				update();
 			}
@@ -330,12 +335,10 @@ public class ResourceComposite extends Composite {
 
 				FacilityTreeItemResponse selectedCompute = dialog.getSelectItem();
 				FacilityPath path = new FacilityPath(ClusterControlPlugin.getDefault().getSeparator());
-
-				// 対象クラウドスコープ コンボボックスの更新
-				updateCloudScopeCombo();
 				m_computeTargetScopeText.setText(path.getPath(selectedCompute));
 				m_computeTargetScopeText.setData(KEY_FACILITY, facilityId);
-
+				// 対象クラウドスコープ コンボボックスの更新
+				updateCloudScopeCombo();
 				if (!isScope) {
 					m_computeCloudScopeCombo.setText(node.getCloudScope());
 				}
@@ -693,12 +696,10 @@ public class ResourceComposite extends Composite {
 		m_notifyScopeText.setText("");
 		m_endSuccessText.setText("" + ResourceJobConstant.SUCCESS_VALUE);
 		m_endFailureText.setText("" + ResourceJobConstant.FAILURE_VALUE);
-		updateCloudScopeCombo();
-
 		if (m_resource == null) {
 			return;
 		}
-
+		
 		// 対象リソースの選択反映
 		switch (m_resource.getResourceType()) {
 		case COMPUTE_COMPUTE_ID:
@@ -712,27 +713,30 @@ public class ResourceComposite extends Composite {
 			m_storageRadio.setSelection(true);
 			break;
 		}
-
 		if (m_computeRadio.getSelection()) {
 			try {
-				m_computeCloudScopeCombo.setText(m_resource.getResourceCloudScopeId());
-				
+
 				if (m_resource.getResourceType() == ResourceTypeEnum.COMPUTE_COMPUTE_ID) {
 					// コンピュート
 					m_computeTargetComputeText.setText(m_resource.getResourceTargetId());
+					// Updating cloud scope and setting scope selected.
+					updateCloudScopeCombo();
+					m_computeCloudScopeCombo.setText(m_resource.getResourceCloudScopeId());
+					// Updating location and setting location selected
 					updateLocationCombo();
 					m_computeTargetLocationCombo.setText(m_resource.getResourceLocationId());
 				} else if (m_resource.getResourceType() == ResourceTypeEnum.COMPUTE_FACILITY_ID) {
 					// スコープ ノード
 					m_computeTargetScopeText.setText(getFacilityPath(m_resource.getResourceTargetId()));
 					m_computeTargetScopeText.setData(KEY_FACILITY, m_resource.getResourceTargetId());
+					// Updating cloud scope and setting scope selected.
+					updateCloudScopeCombo();
+					m_computeCloudScopeCombo.setText(m_resource.getResourceCloudScopeId());
 					isScope = isScope(m_resource.getResourceTargetId());
 				}
-
 				// コンピュートノードへのアクション
 				updateComputeActionCombo();
 				m_computeActionCombo.setText(ResourceJobActionMessage.typeEnumToString(m_resource.getResourceAction()));
-
 				// 状態確認期間
 				m_computeComfirmTimeText.setText(m_resource.getResourceStatusConfirmTime().toString());
 
@@ -809,19 +813,11 @@ public class ResourceComposite extends Composite {
 
 		// 対象コンピュート
 		if (m_computeRadio.getSelection()) {
-			
-			if (m_targetComputeRadio.getSelection()) {
-				if (m_computeTargetLocationCombo.getSelectionIndex() != -1) {
-					m_resource.setResourceLocationId(m_computeTargetLocationCombo.getText());
-				} else {
-					return createErrorResult(Messages.getString("message.job.194"));
-				}
-				if (!m_computeTargetComputeText.getText().equals("")) {
-					m_resource.setResourceTargetId(m_computeTargetComputeText.getText());
-				} else {
-					return createErrorResult(Messages.getString("message.job.195"));
-				}
-				// リソース種別
+			if (m_targetScopeRadio.getSelection()) {
+				// リソース種別(スコープ指定)
+				m_resource.setResourceType(JobResourceInfoResponse.ResourceTypeEnum.COMPUTE_FACILITY_ID);
+			} else {
+				// リソース種別(コンピュート)
 				m_resource.setResourceType(JobResourceInfoResponse.ResourceTypeEnum.COMPUTE_COMPUTE_ID);
 			}
 
@@ -829,7 +825,6 @@ public class ResourceComposite extends Composite {
 			if (m_targetScopeRadio.getSelection()) {
 				if (!m_computeTargetScopeText.getText().equals("")) {
 					m_resource.setResourceTargetId((String) m_computeTargetScopeText.getData(KEY_FACILITY));
-					m_resource.setResourceType(JobResourceInfoResponse.ResourceTypeEnum.COMPUTE_FACILITY_ID);
 				} else {
 					return createErrorResult(Messages.getString("message.job.176"));
 				}
@@ -842,7 +837,22 @@ public class ResourceComposite extends Composite {
 				return createErrorResult(Messages.getString("message.job.177"));
 			}
 
-			// コンピュートノードのアクション
+			if (m_targetComputeRadio.getSelection()) {
+				// ロケーション
+				if (m_computeTargetLocationCombo.getSelectionIndex() != -1) {
+					m_resource.setResourceLocationId(m_computeTargetLocationCombo.getText());
+				} else {
+					return createErrorResult(Messages.getString("message.job.194"));
+				}
+				// コンピュートID
+				if (!m_computeTargetComputeText.getText().equals("")) {
+					m_resource.setResourceTargetId(m_computeTargetComputeText.getText());
+				} else {
+					return createErrorResult(Messages.getString("message.job.195"));
+				}
+			}
+
+			// アクション
 			if (m_computeActionCombo.getSelectionIndex() != -1) {
 				m_resource.setResourceAction(ResourceJobActionMessage.typeStringToEnum(m_computeActionCombo.getText()));
 			} else {
@@ -864,16 +874,8 @@ public class ResourceComposite extends Composite {
 			}
 
 		} else {
-
-			// リソース種別
+			// リソース種別（ストレージ）
 			m_resource.setResourceType(JobResourceInfoResponse.ResourceTypeEnum.STORAGE);
-
-			// ストレージのアクション
-			if (ResourceJobActionMessage.typeStringToEnum(m_storageActionCombo.getText()) != null) {
-				m_resource.setResourceAction(ResourceJobActionMessage.typeStringToEnum(m_storageActionCombo.getText()));
-			} else {
-				return createErrorResult(Messages.getString("message.job.178"));
-			}
 
 			// 対象ストレージ
 			if (!m_storageTargetText.getText().equals("")) {
@@ -883,6 +885,13 @@ public class ResourceComposite extends Composite {
 				m_resource.setResourceLocationId(strageData.getLocationId());
 			} else {
 				return createErrorResult(Messages.getString("message.job.181"));
+			}
+
+			// アクション
+			if (ResourceJobActionMessage.typeStringToEnum(m_storageActionCombo.getText()) != null) {
+				m_resource.setResourceAction(ResourceJobActionMessage.typeStringToEnum(m_storageActionCombo.getText()));
+			} else {
+				return createErrorResult(Messages.getString("message.job.178"));
 			}
 
 			// ストレージアクションがアタッチの場合
@@ -1145,21 +1154,20 @@ public class ResourceComposite extends Composite {
 	 * 選択された「クラウドスコープ」によって、ロケーションリスト更新する<BR>
 	 */
 	private void updateLocationCombo() {
+		m_computeTargetLocationCombo.removeAll();
 		// 事前チェック
 		if (m_computeCloudScopeCombo.getText().equals("")) {
 			return;
 		}
 
-		m_computeTargetLocationCombo.removeAll();
 		String cloudScopeId = m_computeCloudScopeCombo.getText();
 		ILocation[] locations = ClusterControlPlugin.getDefault().getHinemosManager(m_managerName).getCloudScopes()
 				.getCloudScope(cloudScopeId).getLocations();
 
 		for (ILocation location : locations) {
-			m_computeTargetLocationCombo.setData(location.getId(), location.getName() +"("+location.getId()+")");
+			m_computeTargetLocationCombo.setData(location.getId(), location.getName() + "(" + location.getId() + ")");
 			m_computeTargetLocationCombo.add(location.getId());
 		}
-
 		if (!ClusterControlPlugin.getDefault().getHinemosManager(m_managerName).getCloudScopes()
 				.getCloudScope(cloudScopeId).getCloudPlatform().getCloudSpec().getPublicCloud()) {
 			m_computeTargetLocationCombo.select(0);
@@ -1171,17 +1179,16 @@ public class ResourceComposite extends Composite {
 	 */
 	private void updateComputeActionCombo() {
 
+		// アクションの選択肢をクリア＆ジョブ対象のクラウド情報取得
+		m_computeActionCombo.removeAll();
 		// 事前チェック
 		if (m_computeCloudScopeCombo.getText().equals("")) {
 			return;
 		}
-
-		// アクションの選択肢をクリア＆ジョブ対象のクラウド情報取得
-		m_computeActionCombo.removeAll();
 		String cloudScopeId = m_computeCloudScopeCombo.getText();
 		String platformId = ClusterControlPlugin.getDefault().getHinemosManager(m_managerName).getCloudScopes()
 				.getCloudScope(cloudScopeId).getPlatformId();
-		
+
 		boolean suspendEnabled = true;
 		boolean snapshotEnabled = true;
 
@@ -1289,7 +1296,11 @@ public class ResourceComposite extends Composite {
 	 */
 	private void updateCloudScopeCombo() {
 		m_computeCloudScopeCombo.removeAll();
-		ICloudScope[] cloudScopes = ClusterControlPlugin.getDefault().getHinemosManager(m_managerName).getCloudScopes().getCloudScopes();
+		if (m_targetScopeRadio.getSelection() && m_computeTargetScopeText.getText().equals("")) {
+			return;
+		}
+		ICloudScope[] cloudScopes = ClusterControlPlugin.getDefault().getHinemosManager(m_managerName).getCloudScopes()
+				.getCloudScopes();
 		for (ICloudScope cloudScope : cloudScopes) {
 			m_computeCloudScopeCombo.add(cloudScope.getId());
 		}

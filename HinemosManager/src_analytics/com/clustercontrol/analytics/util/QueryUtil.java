@@ -82,7 +82,7 @@ public class QueryUtil {
 	public static List<MonitorInfo> getMonitorInfoListFindByLogcount_NONE(String monitorId){
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			// 収集値統合監視
+			// ログ件数監視
 			return em.createNamedQuery("MonitorInfo.findByLogcount", MonitorInfo.class, ObjectPrivilegeMode.NONE)
 			.setParameter("targetMonitorId", monitorId)
 			.getResultList();

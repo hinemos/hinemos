@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
+import com.clustercontrol.version.util.VersionUtil;
+
 /**
  * ツール設定情報を管理するクラス<BR>
  * 
@@ -21,8 +23,8 @@ import java.util.Map;
  */
 public class Config {
 	// ツールの定義情報
-	public static final String hinemosVersion = "7.0";
-	public static final String toolVersion = "7.0.a";
+	public static final String hinemosVersion = VersionUtil.getVersionMajor();
+	public static final String toolVersion = VersionUtil.getVersionTool();
 	public static final String generator = "java";
 	public static final String client= "localhost";
 

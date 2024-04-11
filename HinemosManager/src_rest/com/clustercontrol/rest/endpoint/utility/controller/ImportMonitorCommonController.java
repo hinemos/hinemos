@@ -14,6 +14,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
@@ -71,10 +72,10 @@ public class ImportMonitorCommonController extends AbstractImportController<Impo
 		MonitorsettingRestEndpoints.updateInfo(requestDto, infoReq);
 		if(importRec.getIsNewRecord()){
 			//add
-			new MonitorSettingControllerBean().addMonitor(infoReq);
+			new MonitorSettingControllerBean().addMonitor(infoReq, true);
 		}else{
 			//Modify
-			new MonitorSettingControllerBean().modifyMonitor(infoReq);
+			new MonitorSettingControllerBean().modifyMonitor(infoReq, true);
 		}
 		
 		dtoRecRes.setResult(ImportResultEnum.NORMAL);
@@ -84,6 +85,11 @@ public class ImportMonitorCommonController extends AbstractImportController<Impo
 	@Override
 	protected RecordRegistrationResponse getRecordResponseInstance(){
 		return  new RecordRegistrationResponse();
+	}
+
+	@Override
+	protected void addCallback(JpaTransactionManager jtm) {
+		new MonitorSettingControllerBean().addImportMonitorCallback(jtm);
 	}
 	
 	private AbstractMonitorRequest convertDto(ImportMonitorCommonRecordRequest importRec ) throws HinemosUnknown{

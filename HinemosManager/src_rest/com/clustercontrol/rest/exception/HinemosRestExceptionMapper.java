@@ -27,7 +27,6 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.HinemosUsed;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
-import com.clustercontrol.fault.NodeMapElementNoPrivilege;
 import com.clustercontrol.fault.NodeMapException;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.UnEditableRole;
@@ -60,7 +59,6 @@ public class HinemosRestExceptionMapper implements ExceptionMapper<Throwable> {
 		//  HinemosInvalidの継承だが、個別定義
 		exceptionStatusMap.put(InvalidRole.class.getSimpleName(), Status.FORBIDDEN);
 		exceptionStatusMap.put(ObjectPrivilege_InvalidRole.class.getSimpleName(), Status.FORBIDDEN);
-		exceptionStatusMap.put(NodeMapElementNoPrivilege.class.getSimpleName(), Status.FORBIDDEN);
 
 		//404(NOT_FOUND)
 		//500(INTERNAL_SERVER_ERROR)

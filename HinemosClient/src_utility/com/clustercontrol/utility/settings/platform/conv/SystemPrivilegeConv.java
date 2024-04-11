@@ -15,6 +15,7 @@ import org.openapitools.client.model.SystemPrivilegeInfoResponse;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.platform.xml.SystemPrivilegeInfo;
 import com.clustercontrol.utility.util.OpenApiEnumConverter;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * ユーザ情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -26,9 +27,15 @@ import com.clustercontrol.utility.util.OpenApiEnumConverter;
  */
 public class SystemPrivilegeConv {
 
-	static private final String schemaType="G";
-	static private final String schemaVersion="1";
-	static private final String schemaRevision="3" ;
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private final String schemaType=VersionUtil.getSchemaProperty("PLATFORM.SYSTEMPRIVILEGE.SCHEMATYPE");
+	static private final String schemaVersion=VersionUtil.getSchemaProperty("PLATFORM.SYSTEMPRIVILEGE.SCHEMAVERSION");
+	static private final String schemaRevision=VersionUtil.getSchemaProperty("PLATFORM.SYSTEMPRIVILEGE.SCHEMAREVISION");
 	
 	/* ロガー */
 	private static Log log = LogFactory.getLog(SystemPrivilegeConv.class);

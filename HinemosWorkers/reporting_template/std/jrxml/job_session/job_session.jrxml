@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Created with Jaspersoft Studio version 5.6.2.final using JasperReports Library version 5.6.1  -->
-<!-- 2015-07-22T13:29:22 -->
+<!-- Created with Jaspersoft Studio version 6.16.0.final using JasperReports Library version 6.16.0-48579d909b7943b64690c65c71e07e0b80981928  -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="job_summary" pageWidth="842" pageHeight="595" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="b3555393-5ca6-4c3c-a841-04fcb1f6eb87">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="CSV Data Adapter job_summary"/>
 	<property name="com.jaspersoft.studio.unit." value="pixel"/>
@@ -117,7 +116,7 @@
 		<band height="14">
 			<property name="local_mesure_unitheight" value="pixel"/>
 			<property name="com.jaspersoft.studio.unit.height" value="px"/>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="21" y="0" width="80" height="14" uuid="7b458b65-a7b0-42fc-90fb-ff609a16201c">
 					<property name="local_mesure_unitx" value="pixel"/>
 				</reportElement>
@@ -132,7 +131,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.sessionid}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="141" y="0" width="180" height="14" uuid="e1b6e8ec-ac39-4ad1-9126-d5433e977c6d"/>
 				<box leftPadding="2">
 					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
@@ -145,7 +144,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.startjobid}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="321" y="0" width="80" height="14" uuid="848a3063-6cea-4e60-b134-ec9f02ae005f"/>
 				<box leftPadding="2">
 					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
@@ -158,7 +157,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.startdate}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="401" y="0" width="80" height="14" uuid="051eaffb-e53c-4f9e-afbc-dfbbef50360f"/>
 				<box leftPadding="2">
 					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
@@ -171,7 +170,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.enddate}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="481" y="0" width="41" height="14" uuid="86fb080e-cc5f-42d7-a60a-f129d83c3fa3">
 					<property name="local_mesure_unitx" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.x" value="px"/>
@@ -189,7 +188,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.elpsedtime}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="522" y="0" width="301" height="14" uuid="a029416a-6656-4222-aa5f-96c255868750">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
@@ -205,7 +204,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.triggerinfo}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="101" y="0" width="40" height="14" uuid="4bf2ed30-219e-45ec-94b6-6cf4f3a6c282"/>
 				<box leftPadding="2">
 					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
@@ -236,7 +235,7 @@
 				<reportElement key="abnormal-bg" stretchType="RelativeToTallestObject" mode="Opaque" x="101" y="0" width="40" height="14" backcolor="rgba(255, 0, 0, 0.7529412)" uuid="1b6ccfa9-b432-4147-a2ea-f7329336e815"/>
 				<text><![CDATA[]]></text>
 			</staticText>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement stretchType="RelativeToTallestObject" x="21" y="0" width="80" height="14" uuid="f5b4c14d-0127-4d59-be59-8cb74684b453">
 					<property name="local_mesure_unitx" value="pixel"/>
 				</reportElement>
@@ -264,7 +263,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$F{end_status}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement stretchType="RelativeToTallestObject" x="141" y="0" width="180" height="14" uuid="60df470c-1d8c-49e3-ad3b-157042e6dc2c"/>
 				<box leftPadding="2">
 					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
@@ -277,7 +276,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$F{job_label}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement stretchType="RelativeToTallestObject" x="321" y="0" width="80" height="14" uuid="d440ccc1-23db-4644-904a-40d2155ee519">
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -292,7 +291,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format($F{schedule_date})]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement stretchType="RelativeToTallestObject" x="401" y="0" width="80" height="14" uuid="1f001162-766e-43b6-835d-6548102061ae">
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
@@ -307,7 +306,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$F{end_date} == null ? "" : new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format($F{end_date})]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement stretchType="RelativeToTallestObject" x="522" y="0" width="301" height="14" uuid="cc2f0070-b5b7-4caa-b981-f835d632c247"/>
 				<box leftPadding="2">
 					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>

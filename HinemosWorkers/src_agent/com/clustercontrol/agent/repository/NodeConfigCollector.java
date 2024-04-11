@@ -1759,8 +1759,13 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 						customSetting.getSpecifyUser().booleanValue(), _commandLogin);
 
 				// コマンド実行
-				CommandExecutor cmdExecutor = new CommandExecutor(command, _charset, _timeoutInterval,
-						_customBufferSize);
+				CommandExecutor cmdExecutor = new CommandExecutor(
+						new CommandExecutor.CommandExecutorParams()
+							.setCommand(command)
+							.setCharset(_charset)
+							.setTimeout(_timeoutInterval)
+							.setBufferSize(_customBufferSize)
+							.setForceSigterm(customSetting.getSpecifyUser().booleanValue()));
 				cmdExecutor.execute();
 				ret = cmdExecutor.getResult();
 				if (ret != null && NodeConfigConstant.EXCD_SUCCESS == ret.exitCode.intValue()) {

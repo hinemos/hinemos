@@ -47,6 +47,7 @@ import com.clustercontrol.utility.settings.job.xml.ScheduleData;
 import com.clustercontrol.utility.settings.job.xml.ScheduleInfo;
 import com.clustercontrol.utility.util.OpenApiEnumConverter;
 import com.clustercontrol.utility.util.StringUtil;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * スケジュール定義情報をXMLのBeanとHinemosのDTOの相互変換を行います。<BR>
@@ -59,12 +60,18 @@ import com.clustercontrol.utility.util.StringUtil;
  */
 public class KickConv extends AbstractConvertor {
 
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
 	/** スキーマタイプ */
-	private static final String schemaType="H";
+	private static final String schemaType=VersionUtil.getSchemaProperty("JOB.KICK.SCHEMATYPE");
 	/** スキーマバージョン */
-	private static final String schemaVersion="1";
+	private static final String schemaVersion=VersionUtil.getSchemaProperty("JOB.KICK.SCHEMAVERSION");
 	/** スキーマレビジョン */
-	private static final String schemaRevision ="1";
+	private static final String schemaRevision =VersionUtil.getSchemaProperty("JOB.KICK.SCHEMAREVISION");
 	
 	/** メッセージ定義 入力必須項目が正しくありません。*/
 	private static String MESSAGE_ESSENTIALVALUEINVALID = Messages.getString("SettingTools.EssentialValueInvalid");
@@ -313,18 +320,15 @@ public class KickConv extends AbstractConvertor {
 			// fromXminutesはrequiredの為、仮の値(0)を入力
 			dataXML.setFromXminutes(0);
 		}
+		// everyXminutesはrequiredの為、一旦 仮の値(0)をデフォルトとして設定した後、必要に応じて値を変更
+		dataXML.setEveryXminutes_Hour(0);
+		dataXML.setEveryXminutes_Interval(0);
 		if (jobSchedule.getEveryXminutes() != null) {
 			if(OpenApiEnumConverter.enumToInteger(jobSchedule.getScheduleType()) == ScheduleConstant.TYPE_REPEAT){
 				dataXML.setEveryXminutes_Hour(jobSchedule.getEveryXminutes());
-				dataXML.setEveryXminutes_Interval(0);
 			} else if(OpenApiEnumConverter.enumToInteger(jobSchedule.getScheduleType()) == ScheduleConstant.TYPE_INTERVAL){
 				dataXML.setEveryXminutes_Interval(jobSchedule.getEveryXminutes());
-				dataXML.setEveryXminutes_Hour(0);
 			}
-		} else {
-			// everyXminutesはrequiredの為、仮の値(0)を入力
-			dataXML.setEveryXminutes_Hour(0);
-			dataXML.setEveryXminutes_Interval(0);
 		}
 		
 		// ジョブセッション事前生成有効・無効フラグ

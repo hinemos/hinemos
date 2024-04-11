@@ -72,6 +72,8 @@ final class FileUploadProcessor {
     ServletFileUpload upload = new ServletFileUpload();
     upload.setFileSizeMax( handler.getMaxFileSize() );
     upload.setProgressListener( createProgressListener() );
+    // CVE-2023-24998対応。Hinemosでは1リクエスト1アップロードのみのため、上限値1とする。
+    upload.setFileCountMax(1);
     return upload;
   }
 

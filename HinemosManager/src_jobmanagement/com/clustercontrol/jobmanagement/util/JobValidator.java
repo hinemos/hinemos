@@ -114,6 +114,7 @@ import com.clustercontrol.jobmanagement.rpa.bean.RpaJobTypeConstant;
 import com.clustercontrol.jobmanagement.rpa.util.ReturnCodeConditionChecker;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.NotifyJobType;
 import com.clustercontrol.notify.model.NotifyJobInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.repository.util.FacilityTreeCache;
@@ -611,6 +612,16 @@ public class JobValidator {
 						.filter(jobId -> !jobIdsToAdd.contains(jobId))  // 更新予定を除外
 						.collect(Collectors.toCollection(HashSet::new))  // コレクション化 (contains が効率よく動作するように HashSet を使う)
 		);
+
+		validateNoNotifyRefs(
+				// 最初の JobInfo の jobunitId を採用
+				jobsToDelete.iterator().next().getJobunitId(),
+				// ジョブIDのコレクションを生成
+				jobsToDelete.stream()  // 削除予定ジョブの情報をストリーミング
+						.map(it -> it.getId())  // jobId を抽出
+						.filter(jobId -> !jobIdsToAdd.contains(jobId))  // 更新予定を除外
+						.collect(Collectors.toCollection(HashSet::new))  // コレクション化 (contains が効率よく動作するように HashSet を使う)
+		);
 	}
 
 	/**
@@ -619,6 +630,77 @@ public class JobValidator {
 	 */
 	public static void validateJobunitToDelete(String targetJobunitId) throws InvalidSetting, HinemosUnknown {
 		validateNoKickRefs(targetJobunitId, null);
+		validateNoNotifyRefs(targetJobunitId, null);
+	}
+
+	/**
+	 * 削除予定のジョブを参照している通知がある場合は {@link InvalidSetting} を投げます。
+	 * 
+	 * @param targetJobunitId ジョブユニットID。
+	 * @param targetJobIds 削除予定のジョブIDのコレクション。nullならジョブユニット内の全てのジョブが対象。
+	 */
+	private static void validateNoNotifyRefs(String targetJobunitId, Collection<String> targetJobIds)
+			throws InvalidSetting, HinemosUnknown {
+		// 引数をdebugログ出力
+		if (m_log.isDebugEnabled()) {
+			StringBuilder target = new StringBuilder();
+			target.append(targetJobunitId);
+			if (targetJobIds != null) {
+				target.append(":").append(String.join(",", targetJobIds));
+			}
+			m_log.debug("validateNoNotifyRefs: Target=" + target.toString());
+		}
+
+		List<NotifyJobInfo> notifyList = com.clustercontrol.notify.util.QueryUtil
+				.getNotifyJobInfoByNotifyJobType_NONE(NotifyJobType.TYPE_DIRECT);
+		for (NotifyJobInfo jobNotifyInfo : notifyList) {
+			m_log.debug("validateNoNotifyRefs: jobNotifyId=" + jobNotifyInfo.getNotifyId());
+
+			Set<String> refsJobList = new HashSet<String>();
+			// ジョブユニット全体が削除対象の場合(targetJobId == null)
+			// ジョブ通知の各重要度ごとにジョブユニットIDが削除対象ジョブユニットIDと一致するかチェック
+			if (targetJobIds == null) {
+				if (targetJobunitId.equals(jobNotifyInfo.getInfoJobunitId())) {
+					refsJobList.add(jobNotifyInfo.getInfoJobId());
+				}
+				if (targetJobunitId.equals(jobNotifyInfo.getWarnJobunitId())) {
+					refsJobList.add(jobNotifyInfo.getWarnJobId());
+				}
+				if (targetJobunitId.equals(jobNotifyInfo.getCriticalJobunitId())) {
+					refsJobList.add(jobNotifyInfo.getCriticalJobId());
+				}
+				if (targetJobunitId.equals(jobNotifyInfo.getUnknownJobunitId())) {
+					refsJobList.add(jobNotifyInfo.getUnknownJobId());
+				}
+			} else {
+				// ジョブユニット以外のジョブが削除対象の場合
+				// ジョブ通知の各重要度ごとにジョブユニットIDが一致し、かつジョブIDが削除対象ジョブ群に含まれるかチェック
+				if (targetJobunitId.equals(jobNotifyInfo.getInfoJobunitId())
+						&& targetJobIds.contains(jobNotifyInfo.getInfoJobId())) {
+					refsJobList.add(jobNotifyInfo.getInfoJobId());
+				}
+				if (targetJobunitId.equals(jobNotifyInfo.getWarnJobunitId())
+						&& targetJobIds.contains(jobNotifyInfo.getWarnJobId())) {
+					refsJobList.add(jobNotifyInfo.getWarnJobId());
+				}
+				if (targetJobunitId.equals(jobNotifyInfo.getCriticalJobunitId())
+						&& targetJobIds.contains(jobNotifyInfo.getCriticalJobId())) {
+					refsJobList.add(jobNotifyInfo.getCriticalJobId());
+				}
+				if (targetJobunitId.equals(jobNotifyInfo.getUnknownJobunitId())
+						&& targetJobIds.contains(jobNotifyInfo.getUnknownJobId())) {
+					refsJobList.add(jobNotifyInfo.getUnknownJobId());
+				}
+			}
+
+			// 一致するジョブIDがある場合はInvalidSetting
+			if (refsJobList.size() > 0) {
+				m_log.info("validateNoNotifyRefs: Job[JobUnitId=" + targetJobunitId + ",JobId="
+						+ String.join(",", refsJobList) + "] is referred from " + jobNotifyInfo.getNotifyId());
+				throw new InvalidSetting(MessageConstant.MESSAGE_DELETE_NG_NOTIFY_REFERENCE_TO_JOB.getMessage(
+						new String[] { jobNotifyInfo.getNotifyId(), targetJobunitId, String.join(",", refsJobList) }));
+			}
+		}
 	}
 
 	/**
@@ -892,6 +974,8 @@ public class JobValidator {
 					m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
 					throw e;
 			}
+			CommonValidator.validateString(MessageConstant.START_COMMAND.getMessage(), command.getStartCommand(), false, 0, 1024);
+			
 			// 停止コマンドが存在するかチェック（指定している場合のみ)
 			if (command.getStopType() == CommandStopTypeConstant.EXECUTE_COMMAND) {
 				if (command.getStopCommand() == null || "".equals(command.getStopCommand())) {
@@ -900,6 +984,8 @@ public class JobValidator {
 					throw e;
 				}
 			}
+			CommonValidator.validateString(MessageConstant.STOP_COMMAND.getMessage(), command.getStopCommand(), false, 0, 1024);
+			
 			// 実行ユーザのチェック
 			if (command.getSpecifyUser()) {
 				CommonValidator.validateString(MessageConstant.EFFECTIVE_USER.getMessage(), command.getUser(), true, 1, DataRangeConstant.VARCHAR_64);
@@ -943,9 +1029,8 @@ public class JobValidator {
 			CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES.getMessage(), command.getMessageRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
 			CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES_END_VALUE.getMessage(), command.getMessageRetryEndValue(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
 
-			if (command.getCommandRetryFlg()) {
-				CommonValidator.validateInt(MessageConstant.COMMAND_RETRIES.getMessage(), command.getCommandRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
-			}
+			// コマンドを繰り返し実行する 試行回数
+			CommonValidator.validateInt(MessageConstant.COMMAND_RETRIES.getMessage(), command.getCommandRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
 
 			// スクリプト配布のチェック
 			// スクリプトの最大サイズはHinemosプロパティから取得
@@ -953,7 +1038,7 @@ public class JobValidator {
 			if(command.getManagerDistribution()) {
 				// スクリプト名
 				String scriptName = command.getScriptName();
-				CommonValidator.validateString(MessageConstant.JOB_SCRIPT_NAME.getMessage(), scriptName, true, 1, 256);
+				CommonValidator.validateString(MessageConstant.JOB_SCRIPT_NAME.getMessage(), scriptName, true, 1, 64);
 				// エンコーディング
 				String scriptEncoding = command.getScriptEncoding();
 				CommonValidator.validateString(MessageConstant.JOB_SCRIPT_ENCODING.getMessage(), scriptEncoding, true, 1, 32);
@@ -963,7 +1048,7 @@ public class JobValidator {
 			} else {
 				// スクリプト名
 				String scriptName = command.getScriptName();
-				CommonValidator.validateString(MessageConstant.JOB_SCRIPT_NAME.getMessage(), scriptName, false, 0, 256);
+				CommonValidator.validateString(MessageConstant.JOB_SCRIPT_NAME.getMessage(), scriptName, false, 0, 64);
 				// エンコーディング
 				String scriptEncoding = command.getScriptEncoding();
 				CommonValidator.validateString(MessageConstant.JOB_SCRIPT_ENCODING.getMessage(), scriptEncoding, false, 0, 32);
@@ -1788,14 +1873,16 @@ public class JobValidator {
 							throw e;
 						}
 						
-						// 区切り文字として分割し、入力チェックを行う
-						try{
-							ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(
-									MessageConstant.RPAJOB_END_VALUE_CONDITION_RETURN_CODE.getMessage(), condition.getReturnCode());
-						} catch(InvalidSetting e) {
-							m_log.info("validateJobUnit() : "
-									+ e.getClass().getSimpleName() + ", " + e.getMessage());
-							throw e;
+						// ジョブ変数でなければ、区切り文字として分割し、範囲チェックを行う
+						if(!SystemParameterConstant.isParamFormat(condition.getReturnCode())){
+							try{
+								ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(
+										MessageConstant.RPAJOB_END_VALUE_CONDITION_RETURN_CODE.getMessage(), condition.getReturnCode());
+							} catch(InvalidSetting e) {
+								m_log.info("validateJobUnit() : "
+										+ e.getClass().getSimpleName() + ", " + e.getMessage());
+								throw e;
+							}
 						}
 						// リターンコード判定条件をチェック
 						// 複数指定または範囲指定の場合、判定条件は"="か"!="のみ許可
@@ -2102,9 +2189,21 @@ public class JobValidator {
 			CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), rpa.getMessageRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
 			// コマンド実行失敗時終了値をチェック
 			CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), rpa.getMessageRetryEndValue(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
-			// 繰り返し実行回数をチェック
-			if (rpa.getCommandRetryFlg()) {
-				CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), rpa.getCommandRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
+			// コマンドの繰り返し実行は有効化不可（RPAシナリオジョブなので意味のない項目）で関連項目は入力不可
+			if( rpa.getCommandRetryFlg()){
+				String[] args = { MessageConstant.COMMAND_RETRY_FLG.getMessage() };
+				String message = MessageConstant.MESSAGE_JOB_RPA_INVALID_ITEM.getMessage(args);
+				throw new InvalidSetting(message);
+			}
+			if( rpa.getCommandRetry() != null ){
+				String[] args = { MessageConstant.COMMAND_RETRIES.getMessage() };
+				String message = MessageConstant.MESSAGE_JOB_RPA_INVALID_ITEM.getMessage(args);
+				throw new InvalidSetting(message);
+			}
+			if( rpa.getCommandRetryEndStatus() != null ){
+				String[] args = { MessageConstant.COMMAND_RETRY_END_STATUS.getMessage() };
+				String message = MessageConstant.MESSAGE_JOB_RPA_INVALID_ITEM.getMessage(args);
+				throw new InvalidSetting(message);
 			}
 		}
 
@@ -2254,13 +2353,11 @@ public class JobValidator {
 			validateWaitRuleObject(item);
 
 			// 条件を満たさない場合に終了する
-			if (waitRule.isEndCondition()) {
-				CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), waitRule.getEndValue(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
-				if (waitRule.getEndStatus() == null) {
-					String message = "validateWaitRule() : endStatus(endCondition) is null";
-					m_log.info(message);
-					throw new InvalidSetting(message);
-				}
+			CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), waitRule.getEndValue(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
+			if (waitRule.getEndStatus() == null) {
+				String message = "validateWaitRule() : endStatus(endCondition) is null";
+				m_log.info(message);
+				throw new InvalidSetting(message);
 			}
 			// カレンダのチェック
 			if (waitRule.isCalendar()) {
@@ -2270,6 +2367,9 @@ public class JobValidator {
 					String message = "validateWaitRule() : endStatus(calendar) is null";
 					throw new InvalidSetting(message);
 				}
+			} else{
+				CommonValidator.validateCalenderId(waitRule.getCalendarId(), false);
+				CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), waitRule.getCalendarEndValue(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
 			}
 			// スキップのチェック
 			if (waitRule.isSkip()) {
@@ -2413,17 +2513,16 @@ public class JobValidator {
 				}
 			}
 			//繰り返し設定をチェック
-			if (waitRule.getJobRetryFlg()) {
-				if (waitRule.getJobRetry() == null) {
-					String message = "validateJobUnit() jobRetry is null(job). jobRetry =" + waitRule.getJobRetry();
-					m_log.info(message);
-					throw new InvalidSetting(message);
-				}
-				// 試行回数のチェック
-				CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), waitRule.getJobRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
-				// 試行間隔のチェック
-				CommonValidator.validateInt(MessageConstant.JOB_RETRY_INTERVAL.getMessage(), waitRule.getJobRetryInterval(), 0, JobInfoParameterConstant.JOB_RETRY_INTERVAL_HIGH);
+			if (waitRule.getJobRetry() == null) {
+				String message = "validateJobUnit() jobRetry is null(job). jobRetry =" + waitRule.getJobRetry();
+				m_log.info(message);
+				throw new InvalidSetting(message);
 			}
+			// 試行回数のチェック
+			CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), waitRule.getJobRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
+			// 試行間隔のチェック
+			CommonValidator.validateInt(MessageConstant.JOB_RETRY_INTERVAL.getMessage(), waitRule.getJobRetryInterval(), 0, JobInfoParameterConstant.JOB_RETRY_INTERVAL_HIGH);
+
 			// 同時実行制御キュー設定をチェック
 			if (waitRule.getQueueFlg() != null && waitRule.getQueueFlg().booleanValue()) {
 				String queueId = waitRule.getQueueId();

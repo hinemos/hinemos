@@ -130,14 +130,15 @@ public class SdmlControllerBean {
 	/**
 	 * SDML制御設定を新規に作成します。
 	 * 
-	 * @param info
+	 * @param info 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
 	 * @return
 	 * @throws SdmlControlSettingDuplicate
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public SdmlControlSettingInfo addSdmlControlSetting(SdmlControlSettingInfo info)
+	public SdmlControlSettingInfo addSdmlControlSetting(SdmlControlSettingInfo info, boolean isImport)
 			throws SdmlControlSettingDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
 		logger.debug("addSdmlControlSetting() : start");
 		JpaTransactionManager jtm = null;
@@ -158,8 +159,10 @@ public class SdmlControllerBean {
 					(String) HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.addCallback(new SdmlControlSettingCallback());
-			// コミット後にリフレッシュする
-			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportSdmlControlSettingCallback(jtm);
+			}
 			jtm.commit();
 
 			ret = new SelectSdmlControl().getSdmlControlSettingInfo(info.getApplicationId());
@@ -190,14 +193,15 @@ public class SdmlControllerBean {
 	/**
 	 * SDML制御設定を変更します。
 	 * 
-	 * @param info
+	 * @param info 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
 	 * @return
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 * @throws SdmlControlSettingNotFound
 	 * @throws HinemosUnknown
 	 */
-	public SdmlControlSettingInfo modifySdmlControlSetting(SdmlControlSettingInfo info)
+	public SdmlControlSettingInfo modifySdmlControlSetting(SdmlControlSettingInfo info, boolean isImport)
 			throws InvalidRole, SdmlControlSettingNotFound, HinemosUnknown {
 		logger.debug("modifySdmlControlSetting() : start");
 		JpaTransactionManager jtm = null;
@@ -213,8 +217,10 @@ public class SdmlControllerBean {
 					(String) HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			jtm.addCallback(new SdmlControlSettingCallback());
-			// コミット後にリフレッシュする
-			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportSdmlControlSettingCallback(jtm);
+			}
 			jtm.commit();
 
 			ret = new SelectSdmlControl().getSdmlControlSettingInfo(info.getApplicationId());
@@ -240,6 +246,18 @@ public class SdmlControllerBean {
 			}
 		}
 		return ret;
+	}
+
+	/**
+	 * SDML制御設定の新規登録／変更時に呼び出すコールバックメソッドを設定
+	 * 
+	 * 設定インポートエクスポートでCommit後に呼び出すものだけ定義
+	 * 
+	 * @param jtm JpaTransactionManager
+	 */
+	public void addImportSdmlControlSettingCallback(JpaTransactionManager jtm) {
+		// 通知リレーション情報のキャッシュ更新
+		jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 	}
 
 	/**
@@ -472,12 +490,12 @@ public class SdmlControllerBean {
 			if (validFlag) {
 				if (!info.getValidFlg()) {
 					info.setValidFlg(true);
-					modifySdmlControlSetting(info);
+					modifySdmlControlSetting(info, false);
 				}
 			} else {
 				if (info.getValidFlg()) {
 					info.setValidFlg(false);
-					modifySdmlControlSetting(info);
+					modifySdmlControlSetting(info, false);
 				}
 			}
 			retList.add(getSdmlControlSetting(applicationId));
@@ -520,12 +538,12 @@ public class SdmlControllerBean {
 			if (validFlag) {
 				if (!info.getControlLogCollectFlg()) {
 					info.setControlLogCollectFlg(true);
-					modifySdmlControlSetting(info);
+					modifySdmlControlSetting(info, false);
 				}
 			} else {
 				if (info.getControlLogCollectFlg()) {
 					info.setControlLogCollectFlg(false);
-					modifySdmlControlSetting(info);
+					modifySdmlControlSetting(info, false);
 				}
 			}
 			retList.add(getSdmlControlSetting(applicationId));

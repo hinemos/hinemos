@@ -123,9 +123,9 @@ public class CommandConstant {
 	public static final int WEIGHT_INFRA_SETTING = 851;
 	public static final int WEIGHT_JOBMAP_IMAGE = 900;
 	public static final int WEIGHT_JOB_QUEUE = 910;
-	public static final int WEIGHT_JOB_MST = 920;
+	public static final int WEIGHT_JOB_JOBLINKSEND = 920;
+	public static final int WEIGHT_JOB_MST = 930;
 	public static final int WEIGHT_JOB_KICK = 950;
-	public static final int WEIGHT_JOB_JOBLINKSEND = 960;
 	public static final int WEIGHT_NODE_MAP_SETTING = 1001;
 	public static final int WEIGHT_NODE_MAP_IMAGE = 1000;
 	public static final int WEIGHT_REPORT_SETTING = 1101;

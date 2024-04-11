@@ -37,8 +37,6 @@ import com.clustercontrol.snmptrap.bean.TrapId;
 public class SnmpTrapNotifier {
 	private static final Log log = LogFactory.getLog(SnmpTrapNotifier.class);
 	
-	public static final int _messageMaxLength = 255;
-
 	public static String replaceUnsafeCharacter(String str) {
 
 		String charList = HinemosPropertyCommon.notify_replace_before.getStringValue();
@@ -101,9 +99,11 @@ public class SnmpTrapNotifier {
 
 				String msg = replaceUnsafeCharacter(msgs[0]);
 				String msgOrig = replaceUnsafeCharacter(msgs[1]);
+				
+				int messageMaxLength = HinemosPropertyCommon.monitor_snmptrap_line_max_length.getIntegerValue();
 
-				if (msg.length() > _messageMaxLength) {
-					output.setMessage(msg.substring(0, _messageMaxLength));
+				if (messageMaxLength >= 0 && msg.length() > messageMaxLength) {
+					output.setMessage(msg.substring(0, messageMaxLength));
 				} else {
 					output.setMessage(msg);
 				}

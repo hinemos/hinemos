@@ -434,7 +434,7 @@ public class JobRestClientWrapper {
 		}
 	}
 
-	public JobOperationPropResponse getAvailableStartOperationSessionJob(String sessionId, String jobunitId, String jobId ) throws RestConnectFailed, InvalidUserPass, InvalidRole, HinemosUnknown {
+	public JobOperationPropResponse getAvailableStartOperationSessionJob(String sessionId, String jobunitId, String jobId ) throws RestConnectFailed, InvalidUserPass, InvalidRole, HinemosUnknown, JobInfoNotFound {
 		RestUrlSequentialExecuter<JobOperationPropResponse> proxy = new RestUrlSequentialExecuter<JobOperationPropResponse>(this.connectUnit,this.restKind){
 			@Override
 			public JobOperationPropResponse executeMethod( DefaultApi apiClient) throws Exception{
@@ -444,14 +444,14 @@ public class JobRestClientWrapper {
 		};
 		try {
 			return proxy.proxyExecute();
-		} catch ( RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown def) {//想定内例外 API個別に判断
+		} catch ( RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown | JobInfoNotFound def) {//想定内例外 API個別に判断
 			throw def;
 		} catch ( Exception unknown ){ //想定外の例外の場合HinemosUnknownに変換（通常ここには来ない想定）
 			throw new HinemosUnknown(unknown);
 		}
 	}
 	
-	public JobOperationPropResponse getAvailableStartOperationSessionNode(String sessionId, String jobunitId, String jobId, String facilityId ) throws RestConnectFailed, InvalidUserPass, InvalidRole, HinemosUnknown {
+	public JobOperationPropResponse getAvailableStartOperationSessionNode(String sessionId, String jobunitId, String jobId, String facilityId ) throws RestConnectFailed, InvalidUserPass, InvalidRole, HinemosUnknown, JobInfoNotFound {
 		RestUrlSequentialExecuter<JobOperationPropResponse> proxy = new RestUrlSequentialExecuter<JobOperationPropResponse>(this.connectUnit,this.restKind){
 			@Override
 			public JobOperationPropResponse executeMethod( DefaultApi apiClient) throws Exception{
@@ -461,14 +461,14 @@ public class JobRestClientWrapper {
 		};
 		try {
 			return proxy.proxyExecute();
-		} catch ( RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown def) {//想定内例外 API個別に判断
+		} catch ( RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown | JobInfoNotFound def) {//想定内例外 API個別に判断
 			throw def;
 		} catch ( Exception unknown ){ //想定外の例外の場合HinemosUnknownに変換（通常ここには来ない想定）
 			throw new HinemosUnknown(unknown);
 		}
 	}
 	
-	public JobOperationPropResponse getAvailableStopOperationSessionJob(String sessionId, String jobunitId, String jobId ) throws RestConnectFailed, InvalidUserPass, InvalidRole, HinemosUnknown {
+	public JobOperationPropResponse getAvailableStopOperationSessionJob(String sessionId, String jobunitId, String jobId ) throws RestConnectFailed, InvalidUserPass, InvalidRole, HinemosUnknown, JobInfoNotFound {
 		RestUrlSequentialExecuter<JobOperationPropResponse> proxy = new RestUrlSequentialExecuter<JobOperationPropResponse>(this.connectUnit,this.restKind){
 			@Override
 			public JobOperationPropResponse executeMethod( DefaultApi apiClient) throws Exception{
@@ -478,14 +478,14 @@ public class JobRestClientWrapper {
 		};
 		try {
 			return proxy.proxyExecute();
-		} catch ( RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown def) {//想定内例外 API個別に判断
+		} catch ( RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown | JobInfoNotFound def) {//想定内例外 API個別に判断
 			throw def;
 		} catch ( Exception unknown ){ //想定外の例外の場合HinemosUnknownに変換（通常ここには来ない想定）
 			throw new HinemosUnknown(unknown);
 		}
 	}
 	
-	public JobOperationPropResponse getAvailableStopOperationSessionNode(String sessionId, String jobunitId, String jobId, String facilityId ) throws RestConnectFailed, InvalidUserPass, InvalidRole, HinemosUnknown {
+	public JobOperationPropResponse getAvailableStopOperationSessionNode(String sessionId, String jobunitId, String jobId, String facilityId ) throws RestConnectFailed, InvalidUserPass, InvalidRole, HinemosUnknown, JobInfoNotFound {
 		RestUrlSequentialExecuter<JobOperationPropResponse> proxy = new RestUrlSequentialExecuter<JobOperationPropResponse>(this.connectUnit,this.restKind){
 			@Override
 			public JobOperationPropResponse executeMethod( DefaultApi apiClient) throws Exception{
@@ -495,7 +495,7 @@ public class JobRestClientWrapper {
 		};
 		try {
 			return proxy.proxyExecute();
-		} catch ( RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown def) {//想定内例外 API個別に判断
+		} catch ( RestConnectFailed | InvalidUserPass | InvalidRole | HinemosUnknown | JobInfoNotFound def) {//想定内例外 API個別に判断
 			throw def;
 		} catch ( Exception unknown ){ //想定外の例外の場合HinemosUnknownに変換（通常ここには来ない想定）
 			throw new HinemosUnknown(unknown);

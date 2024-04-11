@@ -43,6 +43,7 @@ import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.rest.ApiClient;
 import com.clustercontrol.rest.ApiException;
 import com.clustercontrol.rest.StringUtil;
+import com.clustercontrol.version.util.VersionUtil;
 
 import okhttp3.Headers;
 import okhttp3.MediaType;
@@ -242,7 +243,7 @@ public class RestConnectUnit {
 		private String restDatetimeFormat = "yyyy/MM/dd HH:mm:ss";
 
 		public static final String _pathPrefix = "api/";
-		private static final String _clientVersion = "7.0";
+		private final String _clientVersion = VersionUtil.getVersionMajor();
 
 		private RestUrlSetting(RestConnectUnit parentUnit, String urlPrefix, RestKind restKind) {
 			this.parentUnit = parentUnit;

@@ -64,6 +64,15 @@ public class SdmlClientOptionManager {
 	}
 
 	/**
+	 * 全てのオプションを取得する
+	 * 
+	 * @return
+	 */
+	public List<ISdmlClientOption> getOptionList() {
+		return new ArrayList<>(sdmlClientOptionMap.values());
+	}
+
+	/**
 	 * 共通オプションを取得する
 	 * 
 	 * @return

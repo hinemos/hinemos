@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Created with Jaspersoft Studio version 6.3.1.final using JasperReports Library version 6.3.1  -->
-<!-- 2019-07-08T14:18:31 -->
+<!-- Created with Jaspersoft Studio version 6.16.0.final using JasperReports Library version 6.16.0-48579d909b7943b64690c65c71e07e0b80981928  -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="node_config_change_history" pageWidth="842" pageHeight="595" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" isFloatColumnFooter="true" uuid="b3555393-5ca6-4c3c-a841-04fcb1f6eb87">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
 	<property name="com.jaspersoft.studio.unit." value="pixel"/>
@@ -103,7 +102,7 @@
 	<columnHeader>
 		<band height="16">
 			<property name="local_mesure_unitheight" value="pixel"/>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="30" y="0" width="100" height="16" uuid="a0a06405-bfcc-4321-83e9-80e050f81290">
 					<property name="local_mesure_unitx" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.x" value="px"/>
@@ -120,7 +119,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.node}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="130" y="0" width="100" height="16" uuid="3099a7a6-fb24-4a5a-8789-c3c99142ccfd">
 					<property name="local_mesure_unitx" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.x" value="px"/>
@@ -138,7 +137,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.updatedate}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="230" y="0" width="100" height="16" uuid="d6732777-5878-47fe-b653-b3dda0eb1d99">
 					<property name="local_mesure_unitx" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.x" value="px"/>
@@ -157,7 +156,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.changecategory}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="330" y="0" width="100" height="16" uuid="8074c808-6817-4353-b2ca-5bf866d08bf0">
 					<property name="local_mesure_unitx" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.x" value="px"/>
@@ -174,7 +173,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.name}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement x="430" y="0" width="300" height="16" uuid="b0fa0e09-8413-43df-8b4a-d59aad55c345">
 					<property name="local_mesure_unitx" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.x" value="px"/>
@@ -197,7 +196,7 @@
 	<detail>
 		<band height="16" splitType="Prevent">
 			<property name="local_mesure_unitheight" value="pixel"/>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement stretchType="RelativeToTallestObject" x="30" y="0" width="100" height="16" isRemoveLineWhenBlank="true" uuid="caea0008-64e6-45e5-8ad7-34330c304a5f">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
@@ -213,7 +212,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$F{node}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement stretchType="RelativeToTallestObject" x="130" y="0" width="100" height="16" isRemoveLineWhenBlank="true" uuid="41edbd99-1ea6-498a-a130-39d0af34991b">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 				</reportElement>
@@ -243,7 +242,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$F{change_category}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement stretchType="RelativeToTallestObject" mode="Opaque" x="330" y="0" width="100" height="16" isRemoveLineWhenBlank="true" uuid="e21a6a85-0e00-4d88-874f-dcacaa065075">
 					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
 				</reportElement>
@@ -258,7 +257,7 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$F{name}]]></textFieldExpression>
 			</textField>
-			<textField isStretchWithOverflow="true">
+			<textField textAdjust="StretchHeight">
 				<reportElement key="" stretchType="RelativeToTallestObject" mode="Opaque" x="430" y="0" width="300" height="16" isRemoveLineWhenBlank="true" uuid="f8bdef9d-b1f8-47d0-9a96-203ba9a09281">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>

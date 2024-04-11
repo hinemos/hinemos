@@ -270,8 +270,12 @@ public class FileCheckJobThread extends AgentThread {
 			jobResult.body.setEndValue(fileCheckInfoRes.getSuccessEndValue());
 			String passedEventTypeStr = FileCheckConstant
 					.resultTypeToMessage(filecheck.getPassedFileCheck().getPassedEventType());
-			jobResult.body.setMessage(MessageConstant.FILE_CHECK_FINISHED.getMessage(passedEventTypeStr,
-					fileCheckInfoRes.getDirectory(), filecheck.getPassedFileCheck().getPassedFileName()));
+			StringBuilder editMessageBuilder = new StringBuilder();
+			editMessageBuilder.append(MessageConstant.FILE_CHECK_STATUS_FINISHED.getMessage() + " ( ");
+			editMessageBuilder.append(MessageConstant.FILE_CHECK_TYPE.getMessage() + ":" + passedEventTypeStr + " ");
+			editMessageBuilder.append(MessageConstant.FILE_CHECK_TARGET_DIR.getMessage() + ":" + fileCheckInfoRes.getDirectory()  + " ");
+			editMessageBuilder.append(MessageConstant.FILE_CHECK_TARGET_FILE.getMessage() + ":" + filecheck.getPassedFileCheck().getPassedFileName() + " )");
+			jobResult.body.setMessage(editMessageBuilder.toString());
 			jobResult.body.setErrorMessage("");
 
 			SetJobResultFileCheckRequest resultFileCheckInfo = new SetJobResultFileCheckRequest();

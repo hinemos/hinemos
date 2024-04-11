@@ -20,6 +20,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.rest.dto.deserializer.ConvertNewlineCharacterDeserializer;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.annotation.EnumerateConstant;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.deserializer.EnumToConstantDeserializer;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.CommandRetryEndStatusEnum;
@@ -77,6 +78,7 @@ public class JobCommandInfo implements Serializable, RequestDto {
 	private String scriptEncoding;
 	
 	/** スクリプト */
+	@JsonDeserialize(using=ConvertNewlineCharacterDeserializer.class)
 	private String scriptContent;
 	
 	/** 起動コマンド */

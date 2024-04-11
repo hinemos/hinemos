@@ -9,6 +9,7 @@ package com.clustercontrol.rest.endpoint.utility.controller;
 
 import java.util.List;
 
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.reporting.session.ReportingControllerBean;
 import com.clustercontrol.rest.endpoint.utility.dto.ImportReportingInfoRecordRequest;
@@ -34,10 +35,10 @@ public class ImportReportingInfoController extends AbstractImportController<Impo
 
 		if(importRec.getIsNewRecord()){
 			//新規登録
-			new ReportingControllerBean().addReporting(infoReq);
+			new ReportingControllerBean().addReporting(infoReq, true);
 		}else{
 			//変更
-			new ReportingControllerBean().modifyReporting(infoReq);
+			new ReportingControllerBean().modifyReporting(infoReq, true);
 		}
 
 		dtoRecRes.setResult(ImportResultEnum.NORMAL);
@@ -49,5 +50,8 @@ public class ImportReportingInfoController extends AbstractImportController<Impo
 		return  new RecordRegistrationResponse();
 	}
 
-
+	@Override
+	protected void addCallback(JpaTransactionManager jtm) {
+		new ReportingControllerBean().addImportReportingCallback(jtm);
+	}
 }

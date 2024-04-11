@@ -32,6 +32,7 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.openapitools.client.model.EditLockResponse;
 import org.openapitools.client.model.GetEditLockRequest;
 import org.openapitools.client.model.GetJobFullListRequest;
+import org.openapitools.client.model.HasSystemPrivilegeRequest;
 import org.openapitools.client.model.ImportJobMasterRecordRequest;
 import org.openapitools.client.model.ImportJobMasterRequest;
 import org.openapitools.client.model.ImportJobMasterResponse;
@@ -42,8 +43,12 @@ import org.openapitools.client.model.JobTreeItemResponseP1;
 import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import org.openapitools.client.model.JobTreeItemResponseP2;
 import org.openapitools.client.model.RecordRegistrationResponse;
+import org.openapitools.client.model.SystemPrivilegeInfoRequestP1;
+import org.openapitools.client.model.SystemPrivilegeInfoRequestP1.SystemFunctionEnum;
+import org.openapitools.client.model.SystemPrivilegeInfoRequestP1.SystemPrivilegeEnum;
 import org.openapitools.client.model.RecordRegistrationResponse.ResultEnum;
 
+import com.clustercontrol.accesscontrol.util.AccessRestClientWrapper;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -76,7 +81,6 @@ import com.clustercontrol.utility.settings.ImportMethod;
 import com.clustercontrol.utility.settings.SettingConstants;
 import com.clustercontrol.utility.settings.job.conv.MasterConv;
 import com.clustercontrol.utility.settings.job.xml.JobMasterDataList;
-import com.clustercontrol.utility.settings.job.xml.JobMasters;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.platform.conv.CommonConv;
@@ -125,6 +129,15 @@ public class JobMasterAction {
 
 		int ret=0;
 		
+		// ジョブの編集モード取得に必要なシステム権限チェックを行う
+		try {
+			hasSystemPrivilegeForGetEditLock();
+		} catch (Exception e) {
+			log.info(Messages.getString("SettingTools.InvalidRole") + " : " + HinemosMessage.replace(e.getMessage()));
+			ret = SettingConstants.ERROR_INPROCESS;
+			return ret;
+		}
+
 		Map<String, Long> jobUnitUpdateTimeMap = getJobUnitUpdateTimeMap(idList);
 		Iterator<String> itr = idList.iterator();
 		String jobunitId = null;
@@ -977,6 +990,38 @@ public class JobMasterAction {
 	}
 
 	/**
+	 * ジョブの編集モード取得に必要なシステム権限チェックを行う
+	 * 
+	 * @throws Exception
+	 */
+	private void hasSystemPrivilegeForGetEditLock() throws Exception {
+		List<String> labels = new ArrayList<>();
+
+		AccessRestClientWrapper access = AccessRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
+
+		HasSystemPrivilegeRequest hasSystemPrivilegeRequest = new HasSystemPrivilegeRequest();
+		hasSystemPrivilegeRequest.setSystemPrivilegeInfo(new SystemPrivilegeInfoRequestP1());
+		hasSystemPrivilegeRequest.getSystemPrivilegeInfo().setSystemFunction(SystemFunctionEnum.JOBMANAGEMENT);
+		hasSystemPrivilegeRequest.getSystemPrivilegeInfo().setSystemPrivilege(SystemPrivilegeEnum.READ);
+		if (!access.hasSystemPrivilege(hasSystemPrivilegeRequest).getResult()) {
+			labels.add(SystemFunctionEnum.JOBMANAGEMENT.getValue() + "." + SystemPrivilegeEnum.READ.getValue());
+		}
+		hasSystemPrivilegeRequest.getSystemPrivilegeInfo().setSystemPrivilege(SystemPrivilegeEnum.ADD);
+		if (!access.hasSystemPrivilege(hasSystemPrivilegeRequest).getResult()) {
+			labels.add(SystemFunctionEnum.JOBMANAGEMENT.getValue() + "." + SystemPrivilegeEnum.ADD.getValue());
+		}
+		hasSystemPrivilegeRequest.getSystemPrivilegeInfo().setSystemPrivilege(SystemPrivilegeEnum.MODIFY);
+		if (!access.hasSystemPrivilege(hasSystemPrivilegeRequest).getResult()) {
+			labels.add(SystemFunctionEnum.JOBMANAGEMENT.getValue() + "." + SystemPrivilegeEnum.MODIFY.getValue());
+		}
+		if (!labels.isEmpty()) {
+			String messageArg = String.join(",", labels);
+			String message = Messages.getString("message.user.auth.not.enough.roll", new String[]{messageArg});
+			throw new InvalidRole(message);
+		}
+	}
+
+	/**
 	 * オブジェクト権限同時インポート
 	 * 
 	 * @param objectType
@@ -1122,6 +1167,10 @@ public class JobMasterAction {
 				}
 			}
 			return ret;
+		}
+		@Override
+		protected void hasSystemPrivilege() throws Exception {
+			hasSystemPrivilegeForGetEditLock();
 		}
 	}
 	

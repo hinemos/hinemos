@@ -11,8 +11,16 @@ package com.clustercontrol.agent.cloud.log;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -37,6 +45,9 @@ import com.clustercontrol.xcloud.bean.CloudConstant;
 
 public class CloudLogMonitorUtil {
 	protected static final String filepath = "/var/xcloud/";
+	protected static final String propfilepath = "/var/xcloud_status/";
+	protected static final String rsFilePrefix = "rs_";
+	protected static final String rsFileDir = "files";
 	private static Log log = LogFactory.getLog(CloudLogMonitor.class);
 	private static SendQueue sendQueue;
 
@@ -57,6 +68,19 @@ public class CloudLogMonitorUtil {
 	}
 
 	/**
+	 * プロパティファイルのストアパスを返却します。
+	 * 
+	 * @param monitorId
+	 * @return
+	 */
+	public static String getPropFileStorePath(String monitorId) {
+		String home = Agent.getAgentHome();
+		String fileName = propfilepath + monitorId;
+		return new File(new File(home), fileName).getAbsolutePath();
+	}
+
+	
+	/**
 	 * 一時ファイルのストアパスを返却します。
 	 * 
 	 * @param monitorId
@@ -68,6 +92,18 @@ public class CloudLogMonitorUtil {
 		return new File(new File(home), fileName).getAbsolutePath();
 	}
 
+	/**
+	 * プロパティファイルのストアパスを返却します。
+	 * 
+	 * @param monitorId
+	 * @return
+	 */
+	public static String getPropFileStorePathRoot() {
+		String home = Agent.getAgentHome();
+		String fileName = propfilepath;
+		return new File(new File(home), fileName).getAbsolutePath();
+	}
+	
 	/**
 	 * クラウドログ監視の固有設定を探し出して、反映します。
 	 * 
@@ -102,6 +138,9 @@ public class CloudLogMonitorUtil {
 		settingConf.setSecret(getCloudLogSetting(list, CloudConstant.cloudLog_secretKey));
 		settingConf.setLocation(getCloudLogSetting(list, CloudConstant.cloudLog_Location));
 		settingConf.setReturnCode(getCloudLogSetting(list, CloudConstant.cloudLog_ReturnCode));
+		settingConf.setPatternHead(getCloudLogSetting(list, CloudConstant.cloudLog_patternHead));
+		settingConf.setPatternTail(getCloudLogSetting(list, CloudConstant.cloudLog_patternTail));
+
 		try {
 			String lastFireTime = getCloudLogSetting(list, CloudConstant.cloudLog_LastFireTime);
 			// lastFireTimeが存在する場合のみパース
@@ -277,10 +316,12 @@ public class CloudLogMonitorUtil {
 	 * @param file
 	 * @throws IOException
 	 */
-	public static void deleteOldFiles(File file) throws IOException {
-		deleteFiles(file, true);
+	public static List<String> deleteOldFiles(File file) throws IOException {
+		List<String> deletedList = deleteFiles(file, true);
 		// ファイル監視によるファイルへの参照を更新
 		CloudLogfileMonitorManager.getInstance().clearReadingStatus();
+		
+		return deletedList;
 	}
 	
 	/**
@@ -292,32 +333,66 @@ public class CloudLogMonitorUtil {
 		deleteFiles(file, false);
 	}
 
-	private static void deleteFiles(File file, boolean onlyOld) throws IOException {
+	/**
+	 * 指定されたフォルダは以下のファイルを削除します。
+	 * 
+	 * @param file
+	 * @param onlyOld trueの場合Agent.propertiesで指定した期間更新がなかったファイルのみ削除
+	 * @return 削除されたファイルのリスト
+	 * @throws IOException
+	 */
+	private static List<String> deleteFiles(File file, final boolean onlyOld) throws IOException {
+		final ArrayList<String> deletedFileLists = new ArrayList<String>();
 		if (!file.exists()) {
-			return;
+			return deletedFileLists;
 		}
 
 		if (file.isDirectory()) {
-			File[] entries = file.listFiles();
-			if (entries != null) {
-				for (File entry : entries) {
+			FileVisitor<Path> fv = new FileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					File f = file.toFile();
 					if (onlyOld) {
-						if (entry.lastModified() != 0 && entry.lastModified() < HinemosTime.currentTimeMillis()
+						if (f.lastModified() != 0 && f.lastModified() < HinemosTime.currentTimeMillis()
 								- CloudLogMonitorProperty.getInstance().getValidDuration()) {
-							log.info("deleteFiles(): delete old file=" + entry.getPath());
-							if (!entry.delete()) {
-								throw new IOException("Failed to delete " + entry);
+							log.info("deleteFiles(): delete old file=" + f.getPath());
+							deletedFileLists.add(f.getName());
+							if (!f.delete()) {
+								throw new IOException("Failed to delete " + f);
 							}
 						}
 					} else {
-						log.info("deleteFiles(): delete file=" + entry.getPath());
-						if (!entry.delete()) {
-							throw new IOException("Failed to delete " + entry);
+						log.info("deleteFiles(): delete file=" + f.getPath());
+						deletedFileLists.add(f.getName());
+						if (!f.delete()) {
+							throw new IOException("Failed to delete " + f);
 						}
 					}
+					return FileVisitResult.CONTINUE;
 				}
-			}
+			
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			
+				@Override
+				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			
+				@Override
+				public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			};
+			
+			// サブディレクトリが作成されることはないので辿る階層は1階層となる
+			Files.walkFileTree(file.toPath(), EnumSet.noneOf(FileVisitOption.class), 1, fv);
+			
 		}
+		
+		return deletedFileLists;
 	}
 
 	/**
@@ -326,32 +401,83 @@ public class CloudLogMonitorUtil {
 	 * @param file
 	 * @throws IOException
 	 */
-	public static void truncateTmpFilesRecursive(File file) {
+	public static void truncateTmpFilesRecursive(File file, final String monitorId) {
 		if (!file.exists()) {
 			return;
 		}
 		if (file.isDirectory()) {
-			File[] entries = file.listFiles();
-			if (entries != null) {
-				for (File entry : entries) {
-					truncateTmpFilesRecursive(entry);
+			FileVisitor<Path> fv = new FileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					File f = file.toFile();
+					truncateTmpFilesRecursive(f,monitorId);
+					return FileVisitResult.CONTINUE;
 				}
+			
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			
+				@Override
+				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			
+				@Override
+				public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			};
+			
+			try {
+				// サブディレクトリが作成されることはないので辿る階層は1階層となる
+				Files.walkFileTree(file.toPath(), EnumSet.noneOf(FileVisitOption.class), 1, fv);
+			} catch (IOException e) {
+				log.warn("truncateTmpFilesRecursive(): failed to walkFileTree. file=" + file.toPath());
 			}
 		} else {
-			log.info("truncateTmpFilesRecursive(): truncate file=" + file.getPath());
-			FileWriter fw = null;
-			try {
-				fw = new FileWriter(file, false);
-				fw.write("");
-				fw.flush();
-			} catch (IOException e) {
-				log.warn("truncateTmpFilesRecursive(): failed to truncate file", e);
-			} finally {
-				if (fw != null) {
-					try {
-						fw.close();
-					} catch (IOException e) {
-						log.warn("truncateTmpFilesRecursive(): failed to close file writer", e);
+			// 監視対象であるか判断に利用するため、リーディングステータスファイル名を特定
+			String targetFileStr = new File(file.getPath()).getName();
+			String targetFileName = targetFileStr.substring(0,targetFileStr.indexOf("."));
+			
+			String rsStorePath = CloudLogfileMonitorManager.getInstance().getReadingStatusStorePath();
+			Path p1 = Paths.get(rsStorePath);
+			Path p2 = Paths.get(rsFilePrefix + monitorId);
+			Path p3 = Paths.get(rsFileDir);
+			File targetDir = p1.resolve(p2).resolve(p3).toFile();
+			File[] rsfiles = targetDir.listFiles();
+			
+			// リーディングステータスファイルが存在する場合は一時ファイルの0バイト化を行う
+			// 存在しない場合は監視対象外とみなし、0バイト化はしない
+			boolean truncateFlg = false;
+			if(rsfiles != null){
+				for (File rsFile : rsfiles){
+					String rsFileName = rsFile.getName().substring(0,rsFile.getName().indexOf("."));
+					if(targetFileName.equals(rsFileName)){
+						truncateFlg = true;
+						log.debug("truncateTmpFilesRecursive(): readingstatus file =" + rsFile.getName());
+						break;
+					}
+				}
+			}
+			
+			if(truncateFlg){
+				log.info("truncateTmpFilesRecursive(): truncate file=" + file.getPath());
+				FileWriter fw = null;
+				try {
+					fw = new FileWriter(file, false);
+					fw.write("");
+					fw.flush();
+				} catch (IOException e) {
+					log.warn("truncateTmpFilesRecursive(): failed to truncate file", e);
+				} finally {
+					if (fw != null) {
+						try {
+							fw.close();
+						} catch (IOException e) {
+							log.warn("truncateTmpFilesRecursive(): failed to close file writer", e);
+						}
 					}
 				}
 			}
@@ -369,13 +495,38 @@ public class CloudLogMonitorUtil {
 			return;
 		}
 		if (file.isDirectory()) {
-			File[] entries = file.listFiles();
-			if (entries != null) {
-				for (File entry : entries) {
-					deleteDirectoryRecursive(entry);
+			FileVisitor<Path> fv = new FileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					File f = file.toFile();
+					deleteDirectoryRecursive(f);
+					return FileVisitResult.CONTINUE;
 				}
+			
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			
+				@Override
+				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			
+				@Override
+				public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			};
+			
+			try {
+				// サブディレクトリが作成されることはないので辿る階層は1階層となる
+				Files.walkFileTree(file.toPath(), EnumSet.noneOf(FileVisitOption.class), 1, fv);
+			} catch (IOException e) {
+				log.warn("deleteDirectoryRecursive(): failed to walkFileTree. file=" + file.getPath());
 			}
 		}
+		
 		log.info("deleteDirectoryRecursive(): delete file=" + file.getPath());
 		if (!file.delete()) {
 			throw new IOException("Failed to delete " + file);
@@ -388,29 +539,50 @@ public class CloudLogMonitorUtil {
 	 * エージェント起動時に呼ばれる
 	 */
 	public static void deleteGarbageFiles() {
-		// 一時ファイルのルートディレクトリを取得
+		// 一時ファイル、プロパティファイルのルートディレクトリを取得
 		File rootDir = new File(getFileStorePathRoot());
-		// 一度もクラウドログ監視が実行されていない場合、ここにくる
-		if (!rootDir.exists()) {
-			log.info("deleteGarbageFiles(): directory does not exists=" + rootDir.getPath());
-			return;
-		}
+		File propRootDir = new File(getPropFileStorePathRoot());
+		File[] rootDirs = { rootDir, propRootDir };
 
-		// 一時ファイルのディレクトリ一覧を取得
-		File[] entries = rootDir.listFiles();
-		if (entries == null || entries.length == 0) {
-			log.debug("deleteGarbageFiles(): No directories to delete.");
-			return;
-		}
+		// 一時ファイル、プロパティファイルを削除する
+		for (File targetDir : rootDirs) {
+			// 一度もクラウドログ監視が実行されていない場合、ここにくる
+			if (!targetDir.exists()) {
+				log.info("deleteGarbageFiles(): directory does not exists=" + targetDir.getPath());
+				continue;
+			}
 
-		for (File file : entries) {
+			FileVisitor<Path> fv = new FileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					File f = file.toFile();
+					deleteDirectoryRecursive(f);
+					return FileVisitResult.CONTINUE;
+				}
+			
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			
+				@Override
+				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			
+				@Override
+				public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			};
+			
 			try {
-				deleteDirectoryRecursive(file);
+				// サブディレクトリが作成されることはないので辿る階層は1階層となる
+				Files.walkFileTree(targetDir.toPath(), EnumSet.noneOf(FileVisitOption.class), 1, fv);
 			} catch (IOException e) {
-				log.warn("deleteGarbageFiles(): Filed to delete directory=" + file.getPath());
+				log.warn("deleteGarbageFiles(): failed to walkFileTree. targetDir=" + targetDir.getPath());
 			}
 		}
-
 	}
 	
 	/**
@@ -432,6 +604,29 @@ public class CloudLogMonitorUtil {
 			if (!directory.mkdir()) {
 				log.error("createRootDire(): failed creating tmp file dir");
 				throw new HinemosUnknown("failed creating tmp file dir");
+			}
+		}
+
+	}
+	/**
+	 * プロパティファイルのディレクトリを作成します。
+	 * @throws HinemosUnknown 
+	 */
+	public static void createPropFileDir(String filePath) throws HinemosUnknown {
+		File directory = new File(CloudLogMonitorUtil.getPropFileStorePathRoot());
+		// プロパティファイル用のルートディレクトリ作成
+		if (!directory.exists()) {
+			if (!directory.mkdir()) {
+				log.error("createPropFileDir(): failed creating prop dir");
+				throw new HinemosUnknown("failed creating root dir");
+			}
+		}
+		directory = new File(filePath);
+		// プロパティファイル用のディレクトリ作成
+		if (!directory.exists()) {
+			if (!directory.mkdir()) {
+				log.error("createPropFileDir(): failed creating prop file dir");
+				throw new HinemosUnknown("failed creating prop file dir");
 			}
 		}
 

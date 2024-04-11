@@ -59,6 +59,7 @@ import com.clustercontrol.notify.model.NotifyJobInfo;
 import com.clustercontrol.notify.model.NotifyLogEscalateInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
+import com.clustercontrol.notify.util.MonitorStatusCacheRemoveByFacilityIdCallback;
 import com.clustercontrol.notify.util.MonitorStatusCacheRemoveCallback;
 import com.clustercontrol.notify.util.NotifyCacheRefreshCallback;
 import com.clustercontrol.notify.util.NotifyCallback;
@@ -98,7 +99,26 @@ public class NotifyControllerBean implements CheckFacility {
 	 *
 	 * @see com.clustercontrol.notify.factory.AddNotify#add(NotifyInfo)
 	 */
-	public NotifyInfo addNotify(NotifyInfo info) throws NotifyDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
+	public NotifyInfo addNotify(NotifyInfo info)
+			throws NotifyDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
+		return addNotify(info, false);
+	}
+
+	/**
+	 * 通知情報を作成します。
+	 *
+	 * @param info 作成対象の通知情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return NotifyInfo 作成に成功した通知情報
+	 * @throws NotifyDuplicate
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 *
+	 * @see com.clustercontrol.notify.factory.AddNotify#add(NotifyInfo)
+	 */
+	public NotifyInfo addNotify(NotifyInfo info, boolean isImport)
+			throws NotifyDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		NotifyInfo ret = null;
 
@@ -120,7 +140,11 @@ public class NotifyControllerBean implements CheckFacility {
 
 			// コミット後にキャッシュクリアを行うため、コールバックを追加する
 			jtm.addCallback(new NotifyCacheRefreshCallback());
-			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportNotifyCallback(jtm);
+			}
 
 			jtm.commit();
 
@@ -161,7 +185,26 @@ public class NotifyControllerBean implements CheckFacility {
 	 *
 	 * @see com.clustercontrol.notify.factory.ModifyNotify#modify(NotifyInfo)
 	 */
-	public NotifyInfo modifyNotify(NotifyInfo info) throws NotifyDuplicate, InvalidRole, HinemosUnknown, InvalidSetting, NotifyNotFound {
+	public NotifyInfo modifyNotify(NotifyInfo info)
+			throws NotifyDuplicate, InvalidRole, HinemosUnknown, InvalidSetting, NotifyNotFound {
+		return modifyNotify(info, false);
+	}
+
+	/**
+	 * 通知情報を変更します。
+	 *
+	 * @param info 変更対象の通知情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return NotifyInfo 変更に成功した通知情報
+	 * @throws NotifyDuplicate
+	 * @throws HinemosUnknown
+	 * @throws InvalidSetting
+	 * @throws InvalidSetting
+	 *
+	 * @see com.clustercontrol.notify.factory.ModifyNotify#modify(NotifyInfo)
+	 */
+	public NotifyInfo modifyNotify(NotifyInfo info, boolean isImport)
+			throws NotifyDuplicate, InvalidRole, HinemosUnknown, InvalidSetting, NotifyNotFound {
 		JpaTransactionManager jtm = null;
 		NotifyInfo ret = null;
 
@@ -182,7 +225,11 @@ public class NotifyControllerBean implements CheckFacility {
 
 			// コミット後にキャッシュクリアを行うため、コールバックを追加する
 			jtm.addCallback(new NotifyCacheRefreshCallback());
-			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportNotifyCallback(jtm);
+			}
+
 			jtm.commit();
 
 			SelectNotify selectNotify = new SelectNotify();
@@ -207,6 +254,18 @@ public class NotifyControllerBean implements CheckFacility {
 				jtm.close();
 		}
 		return ret;
+	}
+
+	/**
+	 * 通知情報の新規登録／変更時に呼び出すコールバックメソッドを設定
+	 * 
+	 * 設定インポートエクスポートでCommit後に呼び出すものだけ定義
+	 * 
+	 * @param jtm JpaTransactionManager
+	 */
+	public void addImportNotifyCallback(JpaTransactionManager jtm) {
+		// 通知リレーション情報のキャッシュ更新
+		jtm.addCallback(new NotifyRelationCacheRefreshCallback());
 	}
 
 	/**
@@ -813,6 +872,71 @@ public class NotifyControllerBean implements CheckFacility {
 	}
 
 	/**
+	 * 通知履歴情報を削除します。
+	 *
+	 * @param facilityId ファシリティID
+	 * @throws HinemosUnknown
+	 */
+	public void deleteNotifyHistoryByFacilityId(String facilityId) throws HinemosUnknown {
+		JpaTransactionManager jtm = null;
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			// 通知履歴を削除する
+			QueryUtil.deleteNotifyHistoryByFacilityId(facilityId);
+
+			jtm.commit();
+		} catch (Exception e) {
+			m_log.warn("deleteNotifyHistoryByFacilityId() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+	}
+
+	/**
+	 * ステータス情報情報を削除します。
+	 *
+	 * @param facilityId ファシリティID
+	 * @throws HinemosUnknown
+	 */
+	public void deleteMonitorStatus(String facilityId) throws HinemosUnknown {
+		JpaTransactionManager jtm = null;
+
+		try {
+			jtm = new JpaTransactionManager();
+			jtm.begin();
+
+			// コミット後に、ステータス情報のキャッシュを削除する
+			jtm.addCallback(new MonitorStatusCacheRemoveByFacilityIdCallback(facilityId));
+
+			// ステータス情報を削除する
+			QueryUtil.deleteMonitorStatusByFacilityId(facilityId);
+
+			jtm.commit();
+		} catch (Exception e){
+			m_log.warn("deleteMonitorStatus() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null) {
+				jtm.rollback();
+			}
+			throw new HinemosUnknown(e.getMessage(), e);
+		} finally {
+			if (jtm != null) {
+				jtm.close();
+			}
+		}
+	}
+
+	/**
 	 *　引数で指定した通知IDを利用している通知グループIDを取得する。
 	 *
 	 * @param notifyIds
@@ -1156,7 +1280,7 @@ public class NotifyControllerBean implements CheckFacility {
 			}
 
 			String mailSubject = sendMail.getSubject(outputBasicInfo, null);
-			String mailBody = sendMail.getContent(outputBasicInfo, null);
+			String mailBody = sendMail.getContentWithMessageOrg(outputBasicInfo);
 
 			if("INTERNAL".equals(outputBasicInfo.getFacilityId())) {
 				List<Integer> list = MultiSmtpServerUtil.getRoleServerList(outputBasicInfo.getFacilityId());
@@ -1391,11 +1515,10 @@ public class NotifyControllerBean implements CheckFacility {
 		}
 		m_log.debug("notify(notifyInfoList=" + Arrays.toString(notifyInfoList.toArray()) + ")");
 
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		try {
-			jtm.begin(true);
-
-			for (OutputBasicInfo notifyInfo : notifyInfoList) {
+		for (OutputBasicInfo notifyInfo : notifyInfoList) {
+			JpaTransactionManager jtm =  new JpaTransactionManager();
+			try {
+				jtm.begin(true);
 				if (notifyInfo == null) {
 					m_log.debug("notify() notifyInfo is NULL, so skip.");
 					continue;
@@ -1434,21 +1557,19 @@ public class NotifyControllerBean implements CheckFacility {
 					new NotifyControllerBean().notify(notifyInfo, notifyIdList);
 				}
 				m_log.debug("notify() release notifyLock. lockKey=" + lockKey + ", duration=" + (System.currentTimeMillis() - startTime) + ", notifyInfo=" + notifyInfo);
-			}
-
-			m_log.debug("notify() start commit.");
-			long commitStartTime = System.currentTimeMillis();
-			jtm.commit();
-			m_log.debug("notify() end commit, commit_duration=" + (System.currentTimeMillis() - commitStartTime));
-		} catch (HinemosUnknown e) {
-			m_log.warn("notify() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null) {
-				jtm.rollback();
-			}
-			throw new RuntimeException(e.getMessage(), e);
-		} finally {
-			if (jtm != null) {
-				jtm.close();
+				m_log.debug("notify() start commit.");
+				long commitStartTime = System.currentTimeMillis();
+				jtm.commit();
+				m_log.debug("notify() end commit, commit_duration=" + (System.currentTimeMillis() - commitStartTime));
+			} catch (HinemosUnknown e) {
+				m_log.warn("notify() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				if (jtm != null) {
+					jtm.rollback();
+				}
+			} finally {
+				if (jtm != null) {
+					jtm.close();
+				}
 			}
 		}
 	}

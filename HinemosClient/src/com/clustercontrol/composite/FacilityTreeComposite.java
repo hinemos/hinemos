@@ -502,7 +502,7 @@ public class FacilityTreeComposite extends Composite {
 					}
 				} else {
 					if(!FacilityTreeItemUtil.removeChild(scope, FacilityTreeAttributeConstant.INTERNAL_SCOPE)){
-						m_log.warn("failed removing " + FacilityTreeAttributeConstant.INTERNAL_SCOPE + ", managerName=" + managerName);
+						m_log.debug("failed removing " + FacilityTreeAttributeConstant.INTERNAL_SCOPE + ", managerName=" + managerName);
 					}
 				}
 			}
@@ -515,7 +515,7 @@ public class FacilityTreeComposite extends Composite {
 					}
 				} else {
 					if(!FacilityTreeItemUtil.removeChild(scope, FacilityTreeAttributeConstant.UNREGISTERED_SCOPE)){
-						m_log.warn("failed removing " + FacilityTreeAttributeConstant.UNREGISTERED_SCOPE + ", managerName=" + managerName);
+						m_log.debug("failed removing " + FacilityTreeAttributeConstant.UNREGISTERED_SCOPE + ", managerName=" + managerName);
 					}
 				}
 			}

@@ -8,7 +8,10 @@
 package com.clustercontrol.rest.endpoint.jobmanagement.dto;
 
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.annotation.RestItemName;
+import com.clustercontrol.rest.annotation.validation.RestValidateString;
 import com.clustercontrol.rest.dto.RequestDto;
+import com.clustercontrol.util.MessageConstant;
 
 public class JobRuntimeParamRunRequest implements RequestDto {
 
@@ -16,6 +19,8 @@ public class JobRuntimeParamRunRequest implements RequestDto {
 	}
 
 	/** ジョブ変数名 */
+	@RestItemName(value = MessageConstant.JOBKICK_PARAM_ID)
+	@RestValidateString(maxLen = 64)
 	private String paramId;
 
 	/** ジョブ変数値 */

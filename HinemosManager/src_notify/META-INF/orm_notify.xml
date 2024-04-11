@@ -206,6 +206,14 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="NotifyHistoryEntity.deleteByFacilityId">
+		<query>
+			<![CDATA[
+				DELETE FROM NotifyHistoryEntity a 
+				WHERE a.id.facilityId = :facilityId
+			]]>
+		</query>
+	</named-query>
 	<!-- MonitorStatusEntity -->
 	<named-query name="MonitorStatusEntity.findWithoutPluginIds">
 		<query>
@@ -220,6 +228,14 @@
 			<![CDATA[
 				DELETE FROM MonitorStatusEntity a
 				WHERE a.id.pluginId NOT IN :withoutPluginIds
+			]]>
+		</query>
+	</named-query>
+	<named-query name="MonitorStatusEntity.deleteByFacilityId">
+		<query>
+			<![CDATA[
+				DELETE FROM MonitorStatusEntity a
+				WHERE a.id.facilityId = :facilityId
 			]]>
 		</query>
 	</named-query>
@@ -276,6 +292,15 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="NotifyJobInfoEntity.findByNotifyJobType">
+		<query>
+			<![CDATA[
+				SELECT a FROM NotifyJobInfo a
+				WHERE a.notifyJobType = :notifyJobType
+				ORDER BY a.notifyId
+			]]>
+		</query>
+	</named-query>
 	<!-- NotifyLogEscalateInfoEntity -->
 	<named-query name="NotifyLogEscalateInfoEntity.findByEscalateFacilityId">
 		<query>
@@ -296,6 +321,14 @@
 			]]>
 		</query>
 	</named-query>
+		<named-query name="NotifyInfraInfoEntity.findAll">
+			<query>
+				<![CDATA[
+					SELECT a FROM NotifyInfraInfo a
+					ORDER BY a.notifyId
+				]]>
+			</query>
+		</named-query>
 	<!--  NotifyCloudInfoEntity -->
 		<named-query name="NotifyCloudInfoEntity.findByCloudExecFacilityId">
 		<query>
@@ -314,6 +347,17 @@
 				SELECT a FROM StatusInfoEntity a
 				WHERE a.id.pluginId = :pluginId
 				AND a.id.monitorId = :monitorId
+			]]>
+		</query>
+	</named-query>
+	<named-query name="StatusInfoEntity.findByPKWithoutMonitorDetailId">
+		<query>
+			<![CDATA[
+				SELECT a FROM StatusInfoEntity a
+				WHERE a.id.pluginId = :pluginId
+				AND a.id.monitorId = :monitorId
+				AND a.id.facilityId = :facilityId
+				ORDER BY a.outputDate desc
 			]]>
 		</query>
 	</named-query>

@@ -17,9 +17,9 @@
 	<classpathentry kind="lib" path="/HinemosManager/lib_rest/hk2-api-2.6.1.jar"/>
 	<classpathentry kind="lib" path="/HinemosManager/lib_rest/hk2-locator-2.6.1.jar"/>
 	<classpathentry kind="lib" path="/HinemosManager/lib_rest/hk2-utils-2.6.1.jar"/>
-	<classpathentry kind="lib" path="/HinemosManager/commonlib/jackson-core-2.12.0.jar" sourcepath="/HinemosCommon/commonlib/jackson-core-2.12.0-sources.jar"/>
-	<classpathentry kind="lib" path="/HinemosManager/commonlib/jackson-databind-2.12.0.jar" sourcepath="/HinemosCommon/commonlib/jackson-databind-2.12.0-sources.jar"/>
-	<classpathentry kind="lib" path="/HinemosManager/lib_rest/jackson-module-jaxb-annotations-2.12.0.jar" sourcepath="/HinemosManager/lib_rest/jackson-module-jaxb-annotations-2.12.0-sources.jar"/>
+	<classpathentry kind="lib" path="/HinemosManager/commonlib/jackson-core-2.15.1.jar" sourcepath="/HinemosCommon/commonlib/jackson-core-2.15.1-sources.jar"/>
+	<classpathentry kind="lib" path="/HinemosManager/commonlib/jackson-databind-2.15.1.jar" sourcepath="/HinemosCommon/commonlib/jackson-databind-2.15.1-sources.jar"/>
+	<classpathentry kind="lib" path="/HinemosManager/lib_rest/jackson-module-jaxb-annotations-2.15.1.jar" sourcepath="/HinemosManager/lib_rest/jackson-module-jaxb-annotations-2.15.1-sources.jar"/>
 	<classpathentry kind="lib" path="/HinemosManager/lib_rest/jakarta.activation-api-1.2.2.jar" sourcepath="/HinemosManager/lib_rest/jakarta.activation-api-1.2.2-sources.jar"/>
 	<classpathentry kind="lib" path="/HinemosManager/lib/jakarta.persistence-api-3.0.0.jar" sourcepath="/HinemosManager/lib/jakarta.persistence-api-3.0.0-sources.jar"/>
 	<classpathentry kind="lib" path="/HinemosManager/lib_rest/jakarta.inject-2.6.1.jar"/>

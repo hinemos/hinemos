@@ -22,6 +22,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.ObjectPrivilegeFilterInfo;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
 import com.clustercontrol.accesscontrol.factory.RoleSelector;
 import com.clustercontrol.accesscontrol.model.ObjectPrivilegeInfo;
 import com.clustercontrol.accesscontrol.model.RoleInfo;
@@ -92,8 +93,18 @@ public class RoleValidator {
 		// description
 		CommonValidator.validateString(MessageConstant.DESCRIPTION.getMessage(), roleInfo.getDescription(), false, 0, 256);
 
+		// reserved roleId check
+		validateReservedRoleId(roleInfo.getRoleId());
 	}
 
+	private static void validateReservedRoleId(String roleId) throws InvalidSetting {
+		if (roleId.equals(RoleSettingTreeConstant.MANAGER)) {
+			String[] args = { RoleSettingTreeConstant.MANAGER };
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_NOT_ALLOWED_IN_ROLE.getMessage(args));
+			m_log.info(" managerRoleInfo() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+	}
 
 	/**
 	 * 他の機能にて、オーナーロールとして使用されているか調査する。

@@ -28,6 +28,7 @@ import org.openapitools.client.model.JobTreeItemResponseP3;
 
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.action.GetNodeDetailTableDefine;
 import com.clustercontrol.jobmanagement.composite.action.NodeDetailSelectionChangedListener;
 import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
@@ -167,6 +168,9 @@ public class NodeDetailComposite extends Composite {
 							Messages.getString("message.accesscontrol.16"));
 					ClientSession.freeDialog();
 				}
+			} catch (JobInfoNotFound e) {
+				// 実行契機削除などでジョブセッション削除のタイミングで履歴情報取得した場合の対策
+				// itemはnullのままにする
 			} catch (Exception e) {
 				m_log.warn("update() getNodeDetailList, " + e.getMessage(), e);
 				if(ClientSession.isDialogFree()){
@@ -216,7 +220,8 @@ public class NodeDetailComposite extends Composite {
 		}
 		
 		// RPAシナリオジョブ種別をアクションボタンの有効・無効の切り替えに使用する
-		if (jobInfo != null) {
+		if (jobInfo != null && jobInfo.getData() != null ) {
+			m_jobType = jobInfo.getData().getType();
 			if (jobInfo.getData().getRpa() != null) {
 				if (jobInfo.getData().getRpa().getRpaJobType() != null) {
 					m_rpaJobType = jobInfo.getData().getRpa().getRpaJobType();

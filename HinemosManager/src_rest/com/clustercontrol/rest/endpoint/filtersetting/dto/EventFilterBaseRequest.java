@@ -27,7 +27,7 @@ import com.clustercontrol.util.MessageConstant;
 public class EventFilterBaseRequest implements RequestDto {
 
 	@RestItemName(MessageConstant.SCOPE)
-	@RestValidateString(type = CheckType.ID, maxLen = FacilityIdConstant.MAX_LEN)
+	@RestValidateString(type = CheckType.NULL, minLen = 1, maxLen = FacilityIdConstant.MAX_LEN)
 	private String facilityId;
 
 	@RestItemName(MessageConstant.FACILITY_TARGET)
@@ -42,10 +42,6 @@ public class EventFilterBaseRequest implements RequestDto {
 
 	@Override
 	public void correlationCheck() throws InvalidSetting {
-		// rootを示すファシリティIDを渡してきた場合も許容する
-		if (FacilityIdConstant.ROOT.equals(facilityId)) {
-			facilityId = null;
-		}
 		// 詳細条件が指定されているならそのチェックをする
 		if (conditions != null) {
 			for (EventFilterConditionRequest cnd : conditions) {

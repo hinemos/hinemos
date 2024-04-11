@@ -17,11 +17,11 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.menus.UIElement;
-import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 
 import com.clustercontrol.fault.OtherUserGetLock;
 import com.clustercontrol.jobmanagement.util.JobEditState;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
@@ -128,6 +128,12 @@ public class PasteJobAction extends BaseAction {
 				}
 			}//リソース制御ジョブ
 			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB){
+				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
+					selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
+					copy = true;
+				}
+			}//RPAシナリオジョブ
+			else if(sourceItem.getData().getType() == JobInfoWrapper.TypeEnum.RPAJOB){
 				if(selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBUNIT ||
 					selectItem.getData().getType() == JobInfoWrapper.TypeEnum.JOBNET){
 					copy = true;

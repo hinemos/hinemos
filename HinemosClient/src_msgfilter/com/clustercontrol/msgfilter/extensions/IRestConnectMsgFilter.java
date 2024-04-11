@@ -11,7 +11,7 @@ public interface IRestConnectMsgFilter {
 
 	String OPTION_NAME = "msgfilter";
 
-	public void connect(String urlStr, String userId, String password, String managerName) throws Exception;
+	public void connect(String userId, String password, String managerName, String urlStr) throws Exception;
 
 	public void disconnect();
 
@@ -30,4 +30,6 @@ public interface IRestConnectMsgFilter {
 	public String getManagerName();
 
 	public int getStatus();
+
+	public boolean isStandalone();
 }

@@ -752,6 +752,12 @@ public class CommandComposite extends Composite {
 		//ユーザー取得
 		if (m_agentUser.getSelection()) {
 			m_execute.setSpecifyUser(false);
+			
+			//実行ユーザー名が設定されている場合、m_agentUserに関わらず設定する
+			if (m_user.getText().length() > 0) {
+				m_execute.setUser(m_user.getText());
+			}
+			
 		} else {
 			if (m_user.getText().length() > 0) {
 				m_execute.setSpecifyUser(true);
@@ -810,7 +816,7 @@ public class CommandComposite extends Composite {
 		m_user.setEditable(m_specifyUser.getSelection() && enabled);
 		m_scopeJobParamRadio.setEnabled(enabled);
 		m_scopeFixedValueRadio.setEnabled(enabled);
-		m_scopeFixedValueSelect.setEnabled(enabled);
+		m_scopeFixedValueSelect.setEnabled(m_scopeFixedValueRadio.getSelection() && enabled);
 		m_allNode.setEnabled(enabled);
 		m_retry.setEnabled(enabled);
 		m_readOnly = !enabled;

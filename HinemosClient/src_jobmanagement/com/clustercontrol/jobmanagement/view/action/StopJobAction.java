@@ -38,6 +38,7 @@ import com.clustercontrol.bean.EndStatusMessage;
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.bean.PropertyDefineConstant;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.OperationMessage;
 import com.clustercontrol.jobmanagement.action.OperationJob;
 import com.clustercontrol.jobmanagement.bean.JobOperationConstant;
@@ -169,6 +170,13 @@ public class StopJobAction extends AbstractHandler implements IElementUpdater {
 			MessageDialog.openInformation(null, Messages.getString("message"),
 					Messages.getString("message.accesscontrol.16"));
 			throw new InternalError("values1 is null");
+		} catch (JobInfoNotFound e) {
+			// 実行契機削除などでジョブセッション削除のタイミングで履歴情報取得した場合の対策
+			MessageDialog.openError(
+					null,
+					Messages.getString("failed"),
+					Messages.getString("message.job.122"));
+			throw new InternalError("values is null.");
 		} catch (Exception e) {
 			m_log.warn("getStopProperty(), " + e.getMessage(), e);
 			MessageDialog.openError(

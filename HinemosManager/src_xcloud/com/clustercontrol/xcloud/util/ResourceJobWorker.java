@@ -410,7 +410,7 @@ public class ResourceJobWorker {
 			JobInfoEntity jobInfo = null;
 			JpaTransactionManager jtm = null;
 			//実行結果
-			ResourceResult result = null;
+			ResourceResult result = new ResourceResult();
 			try {
 				jtm = new JpaTransactionManager();
 				jtm.begin();

@@ -178,18 +178,14 @@ public class RpaScenarioTagListToDialogComposite extends Composite {
 		}
 
 		ArrayList<Object> listInput = new ArrayList<Object>();
-		this.tagNameMap.clear();
-		this.tagPathMap.clear();
-		
 		List<String> tagIdList = new ArrayList<>();
 		for (RpaScenarioTagResponse tag : this.tagList){
 			tagIdList.add(tag.getTagId());
 		}
-		
+		//シナリオタグ一覧情報からタグ名、タグパスを取得
+		setTagMaps(list);
+		//テーブルに表示するオブジェクトの生成
 		for (RpaScenarioTagResponse info : list) {
-			this.tagNameMap.put(info.getTagId(), info.getTagName());
-			this.tagPathMap.put(info.getTagId(), info.getTagPath());
-			
 			ArrayList<Object> obj = new ArrayList<Object>();
 			if(tagIdList.contains(info.getTagId())){
 				obj.add(true);
@@ -203,7 +199,18 @@ public class RpaScenarioTagListToDialogComposite extends Composite {
 		}
 		this.tableViewer.setInput(listInput);
 	}
-	
+	/**
+	 * シナリオタグ一覧情報からタグ名、タグパスをMapにセットします
+	 * Mapの要素は上書きしてセットされます
+	 */
+	private void setTagMaps(List<RpaScenarioTagResponse> list){
+		this.tagNameMap.clear();
+		this.tagPathMap.clear();
+		for (RpaScenarioTagResponse info : list) {
+			this.tagNameMap.put(info.getTagId(), info.getTagName());
+			this.tagPathMap.put(info.getTagId(), info.getTagPath());
+		}
+	}
 	/**
 	 * このコンポジットで選択されているタグを返します。
 	 */

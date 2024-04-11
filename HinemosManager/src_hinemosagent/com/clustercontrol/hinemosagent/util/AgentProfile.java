@@ -23,9 +23,6 @@ import com.clustercontrol.hinemosagent.bean.AgentLibMd5s;
  * @since 6.2.0
  */
 public class AgentProfile {
-	// ver.6.2先行版のバージョン判定に用いるHinemosエージェントのライブラリファイル
-	private static final String V62_SAMPLE_LIB_PATH = "HinemosAgent.jar";
-
 	// logger
 	private static final Log log = LogFactory.getLog(AgentProfile.class);
 
@@ -104,38 +101,6 @@ public class AgentProfile {
 	 */
 	public AgentJavaArch getJavaArch() {
 		return javaArch;
-	}
-
-	/**
-	 * このエージェントが「ver.6.1以前」かどうかを判定します。
-	 * 
-	 * @return ver.6.1以前であればtrue、そうでなければfalse。
-	 */
-	public boolean isV61Earlier() {
-		return javaInfo == null && !isV62Beta();
-	}
-	
-	/**
-	 * このエージェントが「ver.6.2先行版」かどうかを判定します。
-	 * 
-	 * @return ver.6.2先行版であればtrue、そうでなければfalse。
-	 */
-	// TODO: ver.6.2先行版との接続が不要になった場合、本メソッド(あるいはクラス全体)は削除可能です。
-	public boolean isV62Beta() {
-		String md5 = libMd5s.getMd5(V62_SAMPLE_LIB_PATH);
-		if (md5 == null) {
-			log.info(String.format("isV62Beta: '%s' not exist.", V62_SAMPLE_LIB_PATH));
-			return false;
-		}
-		log.debug("isV62Beta: MD5=" + md5);
-
-		String[] sampleMd5s = external.getAgentV62BetaMd5s().split(",");
-		for (String sampleMd5 : sampleMd5s) {
-			if (md5.equalsIgnoreCase(sampleMd5.trim())) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 }

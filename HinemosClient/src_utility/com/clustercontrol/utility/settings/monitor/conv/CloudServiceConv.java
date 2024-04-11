@@ -38,6 +38,7 @@ import com.clustercontrol.utility.settings.monitor.xml.PluginStringValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.TruthValue;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 
@@ -51,9 +52,15 @@ import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 public class CloudServiceConv {
 	private final static Log logger = LogFactory.getLog(CloudServiceConv.class);
 
-	static private String SCHEMA_TYPE = "H";
-	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "3";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private String SCHEMA_TYPE = VersionUtil.getSchemaProperty("MONITOR.CLOUDSERVICE.SCHEMATYPE");
+	static private String SCHEMA_VERSION = VersionUtil.getSchemaProperty("MONITOR.CLOUDSERVICE.SCHEMAVERSION");
+	static private String SCHEMA_REVISION =VersionUtil.getSchemaProperty("MONITOR.CLOUDSERVICE.SCHEMAREVISION");
 	
 	static private String KEY_TARGETS = "targets";
 	static private String REGION = "REGION";

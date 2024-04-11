@@ -50,7 +50,6 @@ import com.clustercontrol.customtrap.bean.CustomTrap;
 import com.clustercontrol.customtrap.bean.CustomTraps;
 import com.clustercontrol.customtrap.util.CustomTrapNotifier;
 import com.clustercontrol.platform.HinemosPropertyDefault;
-import com.clustercontrol.snmptrap.service.ReceivedTrapFilterTask;
 import com.clustercontrol.util.HinemosTime;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -156,19 +155,25 @@ public class CustomTrapMonitorService {
 		HttpHandler handler = new HttpHandler() {
 			public void handle(final HttpExchange exchange) throws IOException {
 				try {
-					logger.debug("serverProcess() : Received HTTP request. url=" + exchange.getRequestURI());
+					if (logger.isDebugEnabled()) {
+						logger.debug("serverProcess() : Received HTTP request. url=" + exchange.getRequestURI());
+					}
 					
 					//　リクエストを処理スレッドプールへ委譲。
 					httpPoolExecutor.execute(new Runnable() {
 						@Override
 						public void run() {
 							try {
-								logger.debug("serverProcess() : CustomTrap customtrapHttpService handle.");
+								if (logger.isDebugEnabled()) {
+									logger.debug("serverProcess() : CustomTrap customtrapHttpService handle.");
+								}
 								
 								String msgBody;
 								try {
 									msgBody = getMsgBody(exchange);
-									logger.debug("serverProcess() : msgbody=" + msgBody);
+									if (logger.isDebugEnabled()) {
+										logger.debug("serverProcess() : msgbody=" + msgBody);
+									}
 								} catch(IOException e) {
 									// リクエストのボディ取得に失敗。
 									logger.warn("serverProcess() : fail to get request body. message=" + e.getMessage(), e);
@@ -197,6 +202,7 @@ public class CustomTrapMonitorService {
 					});
 				} catch(Throwable e) {
 					logger.warn(e.getMessage(), e);
+					exchange.close();
 				}
 			}
 		};
@@ -233,6 +239,9 @@ public class CustomTrapMonitorService {
 		
 		parsedCustomTraps.setFacilityId(receivedCustomTraps.getFacilityId());
 		parsedCustomTraps.setAgentAddr(agentAddr);
+		if (receivedCustomTraps.getCustomTraps() == null) {
+			throw new UnsupportedOperationException();
+		}
 		for (CustomTrap receivedCustomTrap : receivedCustomTraps.getCustomTraps()){
 			try {
 				// Dataチェック
@@ -263,8 +272,11 @@ public class CustomTrapMonitorService {
 				
 				receivedCustomTrap.setReceivedTime(HinemosTime.currentTimeMillis());
 				receivedCustomTrap.setOrgMsg(mapper.writeValueAsString(receivedCustomTrap));
-	
-				logger.debug(receivedCustomTrap.toString());
+
+				if (logger.isDebugEnabled()) {
+					logger.debug(receivedCustomTrap.toString());
+				}
+
 				if (!receivedCustomTrap.isNumberType() && !receivedCustomTrap.isStringType()) {
 					logger.warn("parseCustomTrap() : CustomTrap Type==unknown");
 					throw new UnsupportedOperationException();
@@ -354,11 +366,9 @@ public class CustomTrapMonitorService {
 		executor.setRejectedExecutionHandler(new RejectedExecutionHandler() {
 			@Override
 			public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-				if (handler != null)
-					handler.rejectedExecution(r, executor);
-
-				if (r instanceof ReceivedTrapFilterTask) {
+				if (handler != null) {
 					logger.warn("too many customtrap. customtrap discarded : " + r);
+					handler.rejectedExecution(r, executor);
 				}
 			}
 		});

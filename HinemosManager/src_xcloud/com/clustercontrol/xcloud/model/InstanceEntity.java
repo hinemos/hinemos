@@ -174,4 +174,20 @@ public class InstanceEntity extends LocationResourceEntity implements IAssignabl
 	public void setMemo(String memo) {
 		this.memo = memo;
 	}
+
+	@Override
+	public String toString() {
+		return "InstanceEntity ["
+				+ "name=" + name
+				+ ", facilityId=" + facilityId
+				+ ", instanceStatus=" + instanceStatus
+				+ ", instanceStatusAsPlatform=" + instanceStatusAsPlatform
+				+ ", platform=" + platform
+				+ ", resourceTypeAsPlatform=" + resourceTypeAsPlatform
+				+ ", ipAddresses=" + ipAddresses
+				+ ", memo=" + memo
+				+ ", tags=" + tags
+				+ ", backup=" + backup
+				+ "]";
+	}
 }

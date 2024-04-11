@@ -90,7 +90,6 @@ public class WaitRuleDialog extends CommonDialog {
 	/** 選択されているプロパティ */
 	private Property m_selectProperty = null;
 
-
 	/**
 	 * コンストラクタ
 	 * 
@@ -440,7 +439,7 @@ public class WaitRuleDialog extends CommonDialog {
 		Property property = (Property) m_viewer.getInput();
 		if (property == null || property.getChildren() == null || property.getChildren().length == 0) {
 			m_condition = null;
-		} else  {
+		} else {
 			// 待ち条件群
 			m_condition = new JobObjectGroupInfoResponse();
 			if (m_andCondition.getSelection()) {
@@ -458,7 +457,7 @@ public class WaitRuleDialog extends CommonDialog {
 				JobObjectInfoResponse.TypeEnum type = JudgmentObjectMessage.stringToEnum(propJudgementObject);
 
 				WaitTypeStrategy strategy = createStrategy(type);
-				if(strategy == null){
+				if (strategy == null) {
 					result = new ValidateResult();
 					result.setValid(false);
 					result.setID(Messages.getString("message.hinemos.1"));
@@ -496,7 +495,8 @@ public class WaitRuleDialog extends CommonDialog {
 			}
 
 			// セッション開始後の時間は待ち条件として複数設定できない
-			if (!JobWaitRuleUtil.typeUniqueCheck(m_condition.getJobObjectList(), JobObjectInfoResponse.TypeEnum.START_MINUTE)) {
+			if (!JobWaitRuleUtil.typeUniqueCheck(m_condition.getJobObjectList(),
+					JobObjectInfoResponse.TypeEnum.START_MINUTE)) {
 				result = new ValidateResult();
 				result.setValid(false);
 				result.setID(Messages.getString("message.hinemos.1"));
@@ -514,7 +514,7 @@ public class WaitRuleDialog extends CommonDialog {
 			// ジョブマップからの設定時には経由しないので、その場合はここで行う
 			if (m_parentComposite != null && m_parentComposite instanceof JobMapComposite) {
 				List<JobObjectGroupInfoResponse> copyList = new ArrayList<JobObjectGroupInfoResponse>();
-				for(JobObjectGroupInfoResponse info : m_jobTreeItem.getData().getWaitRule().getObjectGroup()){
+				for (JobObjectGroupInfoResponse info : m_jobTreeItem.getData().getWaitRule().getObjectGroup()) {
 					copyList.add(info);
 				}
 				copyList.add(m_condition);
@@ -676,9 +676,13 @@ public class WaitRuleDialog extends CommonDialog {
 				return result;
 			}
 
+			
 			// 条件値
-			JobObjectInfoResponse.StatusEnum status = (JobObjectInfoResponse.StatusEnum) PropertyUtil
-					.getPropertyValue(prop, WaitRuleProperty.ID_CONDITION_END_STATUS).get(0);
+			JobObjectInfoResponse.StatusEnum status = null;
+			ArrayList<?> statusList = PropertyUtil.getPropertyValue(prop, WaitRuleProperty.ID_CONDITION_END_STATUS);
+			if (statusList.size() > 0 && !(statusList.get(0) instanceof String) && !"".equals(statusList.get(0))) {
+				status = (JobObjectInfoResponse.StatusEnum) statusList.get(0);
+			}
 			result = validateStatus(status);
 			if (result != null) {
 				return result;
@@ -715,8 +719,12 @@ public class WaitRuleDialog extends CommonDialog {
 			}
 
 			// 判定条件
-			JobObjectInfoResponse.DecisionConditionEnum condition = (JobObjectInfoResponse.DecisionConditionEnum) PropertyUtil
-					.getPropertyValue(prop, WaitRuleProperty.ID_END_VALUE_CONDITION).get(0);
+			JobObjectInfoResponse.DecisionConditionEnum condition = null;
+			ArrayList<?> conditionList = PropertyUtil.getPropertyValue(prop, WaitRuleProperty.ID_END_VALUE_CONDITION);
+			if (conditionList.size() > 0 && !(conditionList.get(0) instanceof String)
+					&& !"".equals(conditionList.get(0))) {
+				condition = (JobObjectInfoResponse.DecisionConditionEnum) conditionList.get(0);
+			}
 			if (condition == null) {
 				result = new ValidateResult();
 				result.setValid(false);
@@ -814,9 +822,15 @@ public class WaitRuleDialog extends CommonDialog {
 		public ValidateResult validateProperty(Property prop) {
 			ValidateResult result = null;
 
+
 			// 判定条件
-			JobObjectInfoResponse.DecisionConditionEnum condition = (JobObjectInfoResponse.DecisionConditionEnum) PropertyUtil
-					.getPropertyValue(prop, WaitRuleProperty.ID_DECISION_CONDITION).get(0);
+			JobObjectInfoResponse.DecisionConditionEnum condition = null;
+			ArrayList<?> conditionList = PropertyUtil.getPropertyValue(prop, WaitRuleProperty.ID_DECISION_CONDITION);
+
+			if (conditionList.size() > 0 && !(conditionList.get(0) instanceof String)
+					&& !"".equals(conditionList.get(0))) {
+				condition = (JobObjectInfoResponse.DecisionConditionEnum) conditionList.get(0);
+			}
 			if (condition == null) {
 				result = new ValidateResult();
 				result.setValid(false);
@@ -886,8 +900,12 @@ public class WaitRuleDialog extends CommonDialog {
 			}
 
 			// 条件値
-			JobObjectInfoResponse.StatusEnum status = (JobObjectInfoResponse.StatusEnum) PropertyUtil
-					.getPropertyValue(prop, WaitRuleProperty.ID_CONDITION_END_STATUS).get(0);
+			JobObjectInfoResponse.StatusEnum status = null;
+			ArrayList<?> statusList = PropertyUtil.getPropertyValue(prop, WaitRuleProperty.ID_CONDITION_END_STATUS);
+			if (statusList.size() > 0 && !(statusList.get(0) instanceof String) && !"".equals(statusList.get(0))) {
+				status = (JobObjectInfoResponse.StatusEnum) statusList.get(0);
+			}
+
 			result = validateStatus(status);
 			if (result != null) {
 				return result;
@@ -931,10 +949,14 @@ public class WaitRuleDialog extends CommonDialog {
 			if (result != null) {
 				return result;
 			}
-
+			
 			// 判定条件
-			JobObjectInfoResponse.DecisionConditionEnum condition = (JobObjectInfoResponse.DecisionConditionEnum) PropertyUtil
-					.getPropertyValue(prop, WaitRuleProperty.ID_END_VALUE_CONDITION).get(0);
+			JobObjectInfoResponse.DecisionConditionEnum condition = null;
+			ArrayList<?> conditionList = PropertyUtil.getPropertyValue(prop, WaitRuleProperty.ID_END_VALUE_CONDITION);
+			if(conditionList.size()>0 && !(conditionList.get(0) instanceof String) && !"".equals(conditionList.get(0))){
+				condition = (JobObjectInfoResponse.DecisionConditionEnum)conditionList.get(0);
+			}
+
 			if (condition == null) {
 				result = new ValidateResult();
 				result.setValid(false);
@@ -990,10 +1012,14 @@ public class WaitRuleDialog extends CommonDialog {
 			if (result != null) {
 				return result;
 			}
-
+			
 			// 判定条件
-			JobObjectInfoResponse.DecisionConditionEnum condition = (JobObjectInfoResponse.DecisionConditionEnum) PropertyUtil
-					.getPropertyValue(prop, WaitRuleProperty.ID_RETURN_VALUE_CONDITION).get(0);
+			JobObjectInfoResponse.DecisionConditionEnum condition = null;
+			ArrayList<?> conditionList = PropertyUtil.getPropertyValue(prop, WaitRuleProperty.ID_RETURN_VALUE_CONDITION);
+			if(conditionList.size()>0 && !(conditionList.get(0) instanceof String) && !"".equals(conditionList.get(0))){
+				condition = (JobObjectInfoResponse.DecisionConditionEnum)conditionList.get(0);
+			}
+
 			if (condition == null) {
 				result = new ValidateResult();
 				result.setValid(false);
@@ -1003,7 +1029,8 @@ public class WaitRuleDialog extends CommonDialog {
 			}
 
 			// 判定値
-			String value = (String) PropertyUtil.getPropertyValue(prop, WaitRuleProperty.ID_CONDITION_RETURN_VALUE).get(0);
+			String value = (String) PropertyUtil.getPropertyValue(prop, WaitRuleProperty.ID_CONDITION_RETURN_VALUE)
+					.get(0);
 			result = validateValue(value, condition);
 			if (result != null) {
 				return result;
@@ -1017,7 +1044,8 @@ public class WaitRuleDialog extends CommonDialog {
 			String jobId = findJobId(prop, WaitRuleProperty.ID_RETURN_VALUE_JOB_ID);
 			JobObjectInfoResponse.DecisionConditionEnum condition = (JobObjectInfoResponse.DecisionConditionEnum) PropertyUtil
 					.getPropertyValue(prop, WaitRuleProperty.ID_RETURN_VALUE_CONDITION).get(0);
-			String value = (String) PropertyUtil.getPropertyValue(prop, WaitRuleProperty.ID_CONDITION_RETURN_VALUE).get(0);
+			String value = (String) PropertyUtil.getPropertyValue(prop, WaitRuleProperty.ID_CONDITION_RETURN_VALUE)
+					.get(0);
 			info.setJobId(jobId);
 			info.setDecisionCondition(condition);
 			info.setValue(value);
@@ -1070,8 +1098,7 @@ public class WaitRuleDialog extends CommonDialog {
 	}
 
 	/**
-	 * 値についてバリデーションを行う
-	 * 判定条件がIN(数値)またはNOT IN(数値)の場合のみカンマ、コロンで指定可能
+	 * 値についてバリデーションを行う 判定条件がIN(数値)またはNOT IN(数値)の場合のみカンマ、コロンで指定可能
 	 * それ以外については数値以外は許容しない
 	 * 
 	 * @param value
@@ -1097,13 +1124,13 @@ public class WaitRuleDialog extends CommonDialog {
 						// 範囲指定の場合
 						String[] valueRange = v.split(ValueSeparatorConstant.RANGE);
 						// 最小、最大の2つの値の表現であるかチェック
-						if(valueRange.length != 2){
+						if (valueRange.length != 2) {
 							throw new NumberFormatException("Only two numbers can be specified");
 						}
 						// 最小:最大のように表現されているかチェック
 						int min = Integer.parseInt(valueRange[0]);
 						int max = Integer.parseInt(valueRange[1]);
-						if(min >= max){
+						if (min >= max) {
 							throw new NumberFormatException("Set the minimum value to exceed the maximum value");
 						}
 						// 最小値の範囲チェック
@@ -1146,6 +1173,7 @@ public class WaitRuleDialog extends CommonDialog {
 		}
 		return result;
 	}
+
 	/**
 	 * 数値の-32768～32767の範囲チェックを行う
 	 * 
@@ -1156,23 +1184,20 @@ public class WaitRuleDialog extends CommonDialog {
 		ValidateResult result = null;
 		Integer minSize = DataRangeConstant.SMALLINT_LOW;
 		Integer maxSize = DataRangeConstant.SMALLINT_HIGH;
-		String[] args = {
-				Integer.toString(minSize),
-				Integer.toString(maxSize) };
+		String[] args = { Integer.toString(minSize), Integer.toString(maxSize) };
 
 		if (i == null || i < minSize || maxSize < i) {
 			result = new ValidateResult();
 			result.setValid(false);
 			result.setID(Messages.getString("message.hinemos.1"));
-			result.setMessage(Messages.getString("message.hinemos.8", args ));
+			result.setMessage(Messages.getString("message.hinemos.8", args));
 			return result;
 		}
 		return result;
 	}
 
 	/**
-	 * 判定条件が数値でジョブ変数でないときは実数値チェックを行う
-	 * ジョブ変数では数値範囲はDoubleを許容しているが実数値以外は許容しない
+	 * 判定条件が数値でジョブ変数でないときは実数値チェックを行う ジョブ変数では数値範囲はDoubleを許容しているが実数値以外は許容しない
 	 * 複数の数値のチェックがfalseの場合は数値変換チェックのみ
 	 * 
 	 * @param condition
@@ -1200,7 +1225,7 @@ public class WaitRuleDialog extends CommonDialog {
 				for (String sepVal : separatedValueArray) {
 					// Double.parseDoubleだとスペースを含んでいてもパースしてしまうため
 					// ※ジョブ変数は仕様からスペースを含むことはない NG→#[TEST A]
-					if(sepVal.contains(" ")){
+					if (sepVal.contains(" ")) {
 						throw new NumberFormatException("Cannot contain spaces");
 					}
 					if (sepVal.contains(ValueSeparatorConstant.RANGE)) {
@@ -1244,7 +1269,7 @@ public class WaitRuleDialog extends CommonDialog {
 			try {
 				// Double.parseDoubleだとスペースを含んでいてもパースしてしまうため
 				// ※ジョブ変数は仕様からスペースを含むことはない NG→#[TEST A]
-				if(value.contains(" ")){
+				if (value.contains(" ")) {
 					throw new NumberFormatException("Cannot contain spaces");
 				}
 				if (!pattern.matcher(value).find()) {

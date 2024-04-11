@@ -132,7 +132,7 @@ public class JobOperationProperty {
 		return values;
 	}
 	
-	public ArrayList<ControlEnum> getAvailableStartOperationSessionJob (String sessionId, String jobunitId, String jobId, Locale locale) {
+	public ArrayList<ControlEnum> getAvailableStartOperationSessionJob (String sessionId, String jobunitId, String jobId, Locale locale) throws JobInfoNotFound {
 
 		int status = 0;
 		int jobType = 0;
@@ -159,7 +159,8 @@ public class JobOperationProperty {
 				jobType = JobOperationJudgment.TYPE_JOBNET;
 			}
 		} catch (JobInfoNotFound e) {
-			// 何もしない・
+			// ジョブ情報が見つからない場合はスローする
+			throw e;
 		} catch (Exception e) {
 			// 何もしない・
 			m_log.warn("getAvailableStartOperationSessionJob() : "
@@ -186,7 +187,7 @@ public class JobOperationProperty {
 		return values;
 	}
 	
-	public ArrayList<ControlEnum> getAvailableStartOperationSessionNode (String sessionId, String jobunitId, String jobId, String facilityId, Locale locale) {
+	public ArrayList<ControlEnum> getAvailableStartOperationSessionNode (String sessionId, String jobunitId, String jobId, String facilityId, Locale locale) throws JobInfoNotFound {
 
 		int status = 0;
 		int jobType = 0;
@@ -231,7 +232,8 @@ public class JobOperationProperty {
 				jobType = JobOperationJudgment.TYPE_NODE;
 			}
 		} catch (JobInfoNotFound e) {
-			// 何もしない・
+			// ジョブ情報が見つからない場合はスローする
+			throw e;
 		} catch (Exception e) {
 			// 何もしない・
 			m_log.warn("getAvailableStartOperationSessionNode() : "
@@ -351,7 +353,7 @@ public class JobOperationProperty {
 		return values;
 	}
 
-	public ArrayList<ControlEnum> getAvailableStopOperationSessionJob(String sessionId, String jobunitId, String jobId, Locale locale) {
+	public ArrayList<ControlEnum> getAvailableStopOperationSessionJob(String sessionId, String jobunitId, String jobId, Locale locale) throws JobInfoNotFound {
 
 		int status = 0;
 		int jobType = 0;
@@ -373,7 +375,8 @@ public class JobOperationProperty {
 			}
 			
 		} catch (JobInfoNotFound e) {
-			// 何もしない・
+			// ジョブ情報が見つからない場合はスロー
+			throw e;
 		} catch (Exception e) {
 			// 何もしない・
 			m_log.warn("getAvailableStopOperationSessionJob() : "
@@ -403,7 +406,7 @@ public class JobOperationProperty {
 		return values;
 	}
 	
-	public ArrayList<ControlEnum> getAvailableStopOperationSessionNode(String sessionId, String jobunitId, String jobId, String facilityId, Locale locale) {
+	public ArrayList<ControlEnum> getAvailableStopOperationSessionNode(String sessionId, String jobunitId, String jobId, String facilityId, Locale locale) throws JobInfoNotFound {
 
 		int status = 0;
 		int jobType = 0;
@@ -449,7 +452,8 @@ public class JobOperationProperty {
 				jobType = JobOperationJudgment.TYPE_NODE;
 			}
 		} catch (JobInfoNotFound e) {
-			// 何もしない・
+			// ジョブ情報が見つからない場合はスロー
+			throw e;
 		} catch (Exception e) {
 			// 何もしない・
 			m_log.warn("getAvailableStopOperation() : "

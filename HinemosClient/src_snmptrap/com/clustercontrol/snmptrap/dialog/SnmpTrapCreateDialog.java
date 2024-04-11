@@ -241,9 +241,7 @@ public class SnmpTrapCreateDialog extends CommonMonitorDialog {
 		gridData = new GridData();
 		gridData.horizontalSpan = 3;
 		gridData.horizontalAlignment = GridData.FILL;
-		gridData.verticalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
-		gridData.grabExcessVerticalSpace = true;
 		this.confirmMonitorValid.setLayoutData(gridData);
 		this.confirmMonitorValid.setText(Messages.getString("monitor.run"));
 		this.confirmMonitorValid.addSelectionListener(new SelectionAdapter() {

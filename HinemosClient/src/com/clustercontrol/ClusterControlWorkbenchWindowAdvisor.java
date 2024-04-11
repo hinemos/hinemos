@@ -234,10 +234,21 @@ public class ClusterControlWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor
 		perspective = urls[0];
 		String paramString = urls[1];
 		
+		IRestConnectMsgFilter restConnectMsgFilter = RestConnectMsgFilterExtension.getInstance()
+				.getRestConnectMsgFilter();
 		String[] paramArray = paramString.split("&");
 		for (String param : paramArray) {
 			if (param.indexOf("=") > 0) {
 				String[] p = param.split("=", 2);
+				// BasicAuth による接続は、現在のところフィルタマネージャへの接続には非対応であり、
+				// 接続先は LoginDialog クラスにてHinemosマネージャに固定されている。
+				// Hinemosマネージャへの接続が仕様上できないはずのメッセージフィルタ単独クライアントの場合に、
+				// Hinemosマネージャへ接続しようとするのを防ぐため、BasicAuth の指定は無視する。
+				if (restConnectMsgFilter != null && restConnectMsgFilter.isStandalone()) {
+					if (p[0].equals(RestLoginManager.KEY_BASIC_AUTH)) {
+						continue;
+					}
+				}
 				if (p[0].equals(RestLoginManager.KEY_BASIC_AUTH) ||
 						p[0].equals(RestLoginManager.KEY_URL_LOGIN_URL) || 
 						p[0].equals(RestLoginManager.KEY_URL_UID) ||

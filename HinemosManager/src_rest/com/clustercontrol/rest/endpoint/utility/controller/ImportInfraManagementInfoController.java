@@ -9,6 +9,7 @@ package com.clustercontrol.rest.endpoint.utility.controller;
 
 import java.util.List;
 
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.infra.model.InfraManagementInfo;
 import com.clustercontrol.infra.session.InfraControllerBean;
 import com.clustercontrol.rest.endpoint.infra.InfraRestEndpoints;
@@ -37,9 +38,9 @@ public class ImportInfraManagementInfoController extends AbstractImportControlle
 		InfraRestEndpoints.convertInfraDtoToInfo(importRec.getImportData(), infoReq);
 
 		if(importRec.getIsNewRecord()){
-			new InfraControllerBean().addInfraManagement(infoReq);
+			new InfraControllerBean().addInfraManagement(infoReq, true);
 		}else{
-			new InfraControllerBean().modifyInfraManagement(infoReq);
+			new InfraControllerBean().modifyInfraManagement(infoReq, true);
 		}
 
 		dtoRecRes.setResult(ImportResultEnum.NORMAL);
@@ -51,4 +52,8 @@ public class ImportInfraManagementInfoController extends AbstractImportControlle
 		return  new RecordRegistrationResponse();
 	}
 
+	@Override
+	protected void addCallback(JpaTransactionManager jtm) {
+		new InfraControllerBean().addImportInfraManagementCallback(jtm);
+	}
 }

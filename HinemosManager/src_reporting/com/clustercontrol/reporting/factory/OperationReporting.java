@@ -15,6 +15,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.rest.endpoint.reporting.dto.CreateReportingFileRequest;
@@ -34,8 +35,9 @@ public class OperationReporting {
 	/**
 	 * @param reportId
 	 * @return 作成されるレポートファイル名のリスト
+	 * @throws InvalidSetting
 	 */
-	public List<String> runReporting(String reportId) {
+	public List<String> runReporting(String reportId) throws InvalidSetting {
 		return runReporting(reportId, null);
 	}
 
@@ -43,8 +45,9 @@ public class OperationReporting {
 	 * @param reportId
 	 * @param dtoReq
 	 * @return 作成されるレポートファイル名のリスト
+	 * @throws InvalidSetting
 	 */
-	public List<String> runReporting(String reportId, CreateReportingFileRequest dtoReq) {
+	public List<String> runReporting(String reportId, CreateReportingFileRequest dtoReq) throws InvalidSetting {
 
 		List<String> ret = null;
 		m_log.debug("OperationReporting() : reportId = " + reportId);

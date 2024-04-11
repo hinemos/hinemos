@@ -34,6 +34,7 @@ import com.clustercontrol.bean.StatusConstant;
 import com.clustercontrol.collect.util.CollectDataUtil;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
@@ -86,6 +87,7 @@ import com.clustercontrol.jobmanagement.rpa.bean.RpaJobEndValueConditionTypeCons
 import com.clustercontrol.jobmanagement.rpa.bean.RpaJobErrorTypeConstant;
 import com.clustercontrol.jobmanagement.rpa.bean.RpaJobReturnCodeConditionConstant;
 import com.clustercontrol.jobmanagement.rpa.bean.RpaJobTypeConstant;
+import com.clustercontrol.jobmanagement.session.JobRunManagementBean;
 import com.clustercontrol.jobmanagement.util.FromRunningAfterCommitCallback;
 import com.clustercontrol.jobmanagement.util.JobLinkRcvJobWorker;
 import com.clustercontrol.jobmanagement.util.JobLinkSendJobWorker;
@@ -325,6 +327,11 @@ public class JobSessionNodeImpl {
 		try {
 			JobSessionJobEntity sessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
 
+			// 多重度判定の対象ジョブではない場合は検証をスキップ
+			if (!JobMultiplicityCache.isMultiplicityJob(sessionJob.getJobInfoEntity().getJobType())) {
+				return true;
+			}
+
 			 // 多重度の検証を行う
 		 	if (JobMultiplicityCache.isRunNowWithSession(sessionJob, sessionNode.getId().getFacilityId())) {
 		 		return true;
@@ -383,7 +390,7 @@ public class JobSessionNodeImpl {
 
 	/**
 	 * ノード詳細の中で待機中のものを実行中に遷移させる。
-	 * JobMultiplicityCache.kick()以外から呼ばないこと。
+	 * JobMultiplicityCache.kick()およびkickWithoutQueue()以外から呼ばないこと。
 	 *
 	 * @param sessionId
 	 * @param jobunitId
@@ -605,6 +612,10 @@ public class JobSessionNodeImpl {
 					jobunitId,
 					jobFacilityId,
 					mailTitle);
+			// 承認依頼メール件名が256文字を超えている場合は、先頭256文字のみとする
+			if(mailTitle.length() > 256){
+				mailTitle = mailTitle.substring(0, 256);
+			}
 			job.setApprovalReqMailTitle(mailTitle);
 			
 			// 承認依頼メール本文
@@ -970,8 +981,12 @@ public class JobSessionNodeImpl {
 								validList.add(MessageConstant.FILE_SIZE_MODIFY.getMessage());
 							}
 						}
-						setMessage(sessionNode, MessageConstant.FILE_CHECK_CHECKING
-								.getMessage(String.join(",", validList), job.getDirectory(), job.getFileName()));
+						StringBuilder editMessageBuilder = new StringBuilder();
+						editMessageBuilder.append(MessageConstant.FILE_CHECK_STATUS_CHECKING.getMessage() + " ( ");
+						editMessageBuilder.append(MessageConstant.FILE_CHECK_TYPE.getMessage() + ":" + String.join(",", validList) + " ");
+						editMessageBuilder.append(MessageConstant.FILE_CHECK_TARGET_DIR.getMessage() + ":" + job.getDirectory()  + " ");
+						editMessageBuilder.append(MessageConstant.FILE_CHECK_TARGET_FILE_REGEX.getMessage() + ":" + job.getFileName() + " )");
+						setMessage(sessionNode,editMessageBuilder.toString());
 
 						// ファイルチェック開始時のシステムジョブ変数を格納
 						ParameterUtil.registerSystemJobParamInfo(sessionJob,
@@ -1107,6 +1122,9 @@ public class JobSessionNodeImpl {
 											// シナリオは終了せず、ジョブのみ終了
 											setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_STOP_JOB.getMessage());
 										}
+									} else if (info.getEndValue() != 0) {
+										// 終了値が0以外の場合は異常終了
+										setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_RUN_SCENARIO_ERROR.getMessage());
 									} else {
 										setMessage(sessionNode, MessageConstant.MESSAGE_JOB_RPA_SCENARIO_COMPLETED.getMessage());
 									}
@@ -1547,18 +1565,39 @@ public class JobSessionNodeImpl {
 				//実行状態がコマンド停止以外の場合
 				if(sessionJob.getStatus() != StatusConstant.TYPE_SUSPEND && checkAllNodeEnd(sessionJob)){
 					//ジョブ終了の場合
+					
+					final boolean isFileTransferJob = CommandConstant.GET_FILE_LIST.equals(command);
+					final boolean isFileTransferJobHulft = sessionJob.getId().getJobId().endsWith(CreateHulftJob.UTILIUPDT_S); 
+					
 					//ファイル転送ジョブ(HULFT以外)
-					if(CommandConstant.GET_FILE_LIST.equals(command)){
+					if (isFileTransferJob) {
 						new CreateFileJob().createFileJobNet(
 								sessionJob,
 								fileList);
-					} else if (sessionJob.getId().getJobId().endsWith(CreateHulftJob.UTILIUPDT_S)) {
+					} else if (isFileTransferJobHulft) {
 						JobInfoEntity parentJobInfo = QueryUtil.getJobInfoEntityPK(sessionId, jobunitId, sessionJob.getParentJobId());
 						if (parentJobInfo.getJobType() == JobConstant.TYPE_FILEJOB
 							&& sessionJob.getJobSessionEntity().getExpNodeRuntimeFlg()) {
 							new CreateHulftJob().createHulftFileJobNet(sessionId, jobunitId, sessionJob.getParentJobId());
 						}
 					}
+					
+					if ((isFileTransferJob || isFileTransferJobHulft) && sessionNode.getEndValue() != null && sessionNode.getEndValue() == 0) {
+						// ファイル転送ジョブかつファイルリストの取得が成功
+						JobSessionJobEntity parentJobSessionJobEntity = QueryUtil.getJobSessionJobPK(
+								sessionJob.getId().getSessionId(),
+								sessionJob.getParentJobunitId(),
+								sessionJob.getParentJobId());
+
+						String destFasilityId = parentJobSessionJobEntity.getJobInfoEntity().getDestFacilityId();
+						List<String> nodeIdList = new RepositoryControllerBean().getExecTargetFacilityIdList(destFasilityId, sessionJob.getOwnerRoleId());
+						if (nodeIdList.isEmpty()) {
+							// 受信先ノードが存在しない場合
+							setMessage(sessionNode, MessageConstant.MESSAGE_JOBFILETRANSFER_RECEIVE_NODE_NOT_EXISTS.getMessage(destFasilityId));
+							sessionNode.setEndValue(9);
+						}
+					}
+					
 					//ジョブ終了時関連処理（再帰呼び出し）
 					new JobSessionJobImpl().endJob(sessionId, jobunitId, jobId, sessionNode.getResult(), true);
 				}
@@ -2185,34 +2224,40 @@ public class JobSessionNodeImpl {
 					return ret;
 				}
 
-				/*
-				 * 多重率（ジョブ実行数 / ジョブ多重度)
-				 * 多重率が低いほうが実行される。
-				 * 多重率が同じ場合は、多重度上限が高いほうで実行される。
-				 */
-				// 多重度
-				int multi_s = NodeProperty.getProperty(facilityId_s).getJobMultiplicity();
-				int multi_t = NodeProperty.getProperty(facilityId_t).getJobMultiplicity(); 
-				m_log.debug("job multiplicity. multi_s: " + multi_s + ", multi_t: " + multi_t);
+				// 多重度判定の対象ジョブではない場合はノードの優先度とファシリティIDのみで
+				// 比較するためここは通らない
+				if (JobMultiplicityCache
+						.isMultiplicityJob(s.getJobSessionJobEntity().getJobInfoEntity().getJobType())) {
+					
+					/*
+					 * 多重率（ジョブ実行数 / ジョブ多重度)
+					 * 多重率が低いほうが実行される。
+					 * 多重率が同じ場合は、多重度上限が高いほうで実行される。
+					 */
+					// 多重度
+					int multi_s = NodeProperty.getProperty(facilityId_s).getJobMultiplicity();
+					int multi_t = NodeProperty.getProperty(facilityId_t).getJobMultiplicity(); 
+					m_log.debug("job multiplicity. multi_s: " + multi_s + ", multi_t: " + multi_t);
 
-				// 実行数＋待ち数＋実行予定数のジョブ数
-				int count_s = JobMultiplicityCache.getMultiplicity(facilityId_s);
-				int count_t = JobMultiplicityCache.getMultiplicity(facilityId_t);
-				m_log.debug("job count. count_s: " + count_s + ", count_t: " + count_t);
+					// 実行数＋待ち数＋実行予定数のジョブ数
+					int count_s = JobMultiplicityCache.getMultiplicity(facilityId_s);
+					int count_t = JobMultiplicityCache.getMultiplicity(facilityId_t);
+					m_log.debug("job count. count_s: " + count_s + ", count_t: " + count_t);
 
-				// return (rs / ms - rt / mt) → return (rs * mt - rt * ms)
-				ret = count_s * multi_t - count_t * multi_s;
-				m_log.debug("calculate rate of multiplicity, ret: " + ret);
-				if (ret != 0) {
-					m_log.debug("decided by rate of multiplicity, ret: " + ret);
-					return ret;
-				}
+					// return (rs / ms - rt / mt) → return (rs * mt - rt * ms)
+					ret = count_s * multi_t - count_t * multi_s;
+					m_log.debug("calculate rate of multiplicity, ret: " + ret);
+					if (ret != 0) {
+						m_log.debug("decided by rate of multiplicity, ret: " + ret);
+						return ret;
+					}
 
-				// 多重度順
-				ret = multi_t - multi_s;
-				if (ret != 0) {
-					m_log.debug("decided by job multiplicity, ret: " + ret);
-					return ret;
+					// 多重度順
+					ret = multi_t - multi_s;
+					if (ret != 0) {
+						m_log.debug("decided by job multiplicity, ret: " + ret);
+						return ret;
+					}
 				}
 
 				// facilityId
@@ -2368,7 +2413,20 @@ public class JobSessionNodeImpl {
 					continue;
 				}
 				
-				//実行結果情報を作成
+				ILock lock = JobRunManagementBean.getLock(entity.getId().getSessionId());
+				try {
+					// ジョブの実行結果とエージェント停止を同時に受信した場合への対応
+					// 実行結果の上書きを防止するため、ジョブのステータスが変化していなければ処理を続行する
+					lock.writeLock();
+					JobSessionNodeEntity jobSessionNodeEntity = QueryUtil.getJobSessionNodePK(
+							entity.getId().getSessionId(), entity.getId().getJobunitId(), entity.getId().getJobId(),
+							entity.getId().getFacilityId());
+					em.refresh(jobSessionNodeEntity);
+					if (jobSessionNodeEntity.getStatus() != StatusConstant.TYPE_RUNNING) {
+						continue;
+					}
+
+					// 実行結果情報を作成
 					RunResultInfo info = new RunResultInfo();
 					info.setSessionId(entity.getId().getSessionId());
 					info.setJobunitId(entity.getId().getJobunitId());
@@ -2406,7 +2464,18 @@ public class JobSessionNodeImpl {
 						jtm.rollback();
 						return;
 					}
+				} catch (JobInfoNotFound e) {
+					// JobInfoNotFoundは実際には発生し得ない想定
+					m_log.info(
+							"setting status failure. (sessionId = " + entity.getId().getSessionId() + ", facilityId = "
+									+ entity.getId().getFacilityId() + ", status = " + entity.getStatus() + ")",
+							e);
+					jtm.rollback();
+					return;
+				} finally {
+					lock.writeUnlock();
 				}
+			}
 			jtm.commit();
 		}
 	}

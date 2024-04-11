@@ -225,17 +225,26 @@ public class EventCustomCommandExecutor {
 			CommandCreator.PlatformType _modeType = CommandCreator.convertPlatform(_mode);
 			
 			String[] cmd;
+			boolean specifyUser = false;
 			// コマンドを実行する(実効ユーザが空欄の場合はマネージャ起動ユーザで実行)
 			if (_effectiveUser.isEmpty()) {
-				cmd = CommandCreator.createCommand(_effectiveUser, _execCommand, _modeType, false);
+				specifyUser = false;
+				cmd = CommandCreator.createCommand(_effectiveUser, _execCommand, _modeType, specifyUser);
 			} else {
-				cmd = CommandCreator.createCommand(_effectiveUser, _execCommand, _modeType, true, _login);
+				specifyUser = true;
+				cmd = CommandCreator.createCommand(_effectiveUser, _execCommand, _modeType, specifyUser, _login);
 			}
 
 			m_log.info("call() excuting command. (effectiveUser = " + _effectiveUser + ", command = " + _execCommand + ", mode = " + _modeType + ", timeout = " + _commadTimeout + ")");
 
 			// 戻り値を格納する
-			CommandExecutor cmdExec = new CommandExecutor(cmd, Charset.forName(_charSet), _commadTimeout, _stdoutBuffer);
+			CommandExecutor cmdExec = new CommandExecutor(
+					new CommandExecutor.CommandExecutorParams()
+						.setCommand(cmd)
+						.setCharset(Charset.forName(_charSet))
+						.setTimeout(_commadTimeout)
+						.setBufferSize(_stdoutBuffer)
+						.setForceSigterm(specifyUser));
 			cmdExec.execute();
 			CommandResult ret = cmdExec.getResult();
 

@@ -10,6 +10,7 @@
 <project name="Win_Tasktray" default="all" basedir=".">
 	
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<property file="../HinemosCommon/ant_config/build_common_version.properties" />
 	<import file="../HinemosCommon/ant_config/build_common.xml"/>
 	
 	<property name="project.name" value="HinemosWorkers" />

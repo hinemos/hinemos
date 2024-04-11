@@ -198,13 +198,9 @@ implements IWorkbenchPreferencePage {
 				int cycle = store.getInt(P_HISTORY_UPDATE_CYCLE);
 				boolean flag = store.getBoolean(P_HISTORY_UPDATE_FLG);
 
-				// 本体のジョブ[履歴]ビュー
+				// ジョブ[履歴]ビュー
 				setUpdateSetting(
 						(AutoUpdateView) pages[j].findView(JobHistoryView.ID),
-						cycle, flag);
-				// ジョブマップのジョブ[履歴]ビュー
-				setUpdateSetting(
-						(AutoUpdateView) pages[j].findView("com.clustercontrol.jobmap.view.JobHistoryViewM"),
 						cycle, flag);
 				// ジョブマップのジョブマップ[履歴]ビュー
 				setUpdateSetting(

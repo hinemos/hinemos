@@ -19,4 +19,13 @@
 			]]>
 		</query>
 	</named-query>
+	
+	<named-query name="JmxCheckInfo.findByMasterId">
+		<query>
+			<![CDATA[
+				SELECT a FROM JmxCheckInfo a
+				WHERE a.masterId = :masterId
+			]]>
+		</query>
+	</named-query>
 </entity-mappings>

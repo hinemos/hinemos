@@ -74,6 +74,8 @@ public enum InternalIdCommon implements InternalIdAbstract {
 	SYS_SFC_SYS_024(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.SYSYTEM_SELFCHECK, MessageConstant.MESSAGE_SYS_JOBQUEUE_SIZE),
 	// 同時実行制御キュー({0})のジョブ実行状況が {1} [sec]以上変化していません。
 	SYS_SFC_SYS_025(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.SYSYTEM_SELFCHECK, MessageConstant.MESSAGE_SYS_JOBQUEUE_DEADLOCK),
+	//スケジューラ（{0}:{1}:{2} - 次回実行予定 {3}）の実行予定時刻からの経過時間が起動失敗と判定する閾値を超えたため、実行されませんでした。
+	SYS_SFC_SYS_026(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.SYSYTEM_SELFCHECK, MessageConstant.MESSAGE_SCHEDULER_SKIP_BY_DELAY),
 
 	// 通知の取得に失敗しました。(NotifyId\={0})
 	PLT_NTF_SYS_004(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_NOTIFY, MessageConstant.MESSAGE_SYS_004_NOTIFY),

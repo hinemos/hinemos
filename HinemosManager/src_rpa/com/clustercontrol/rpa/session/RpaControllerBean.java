@@ -2003,8 +2003,16 @@ public class RpaControllerBean implements CheckFacility{
 
 	/**
 	 * シナリオ実績作成設定を登録する。
+	 * 
+	 * @param data 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return
+	 * @throws InvalidSetting
+	 * @throws RpaScenarioOperationResultCreateSettingDuplicate
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
 	 */
-	public RpaScenarioOperationResultCreateSetting addRpaScenarioOperationResultCreateSetting(RpaScenarioOperationResultCreateSetting data)
+	public RpaScenarioOperationResultCreateSetting addRpaScenarioOperationResultCreateSetting(RpaScenarioOperationResultCreateSetting data, boolean isImport)
 			throws InvalidSetting , RpaScenarioOperationResultCreateSettingDuplicate, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		try {
@@ -2036,9 +2044,11 @@ public class RpaControllerBean implements CheckFacility{
 			
 			// スケジュール登録
 			ModifySchedule.updateAnalyzeSchedule(data);			
-			
-			// コミット後にリフレッシュする
-			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportRpaScenarioOperationResultCreateSettingCallback(jtm);
+			}
 			jtm.commit();
 
 			m_log.info("add RPA Scenario Operation Result Create Setting. settingId=" + data.getScenarioOperationResultCreateSettingId());
@@ -2092,8 +2102,17 @@ public class RpaControllerBean implements CheckFacility{
 	
 	/**
 	 * シナリオ実績作成設定の変更。
+	 * 
+	 * @param data 登録情報
+	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
+	 * @return
+	 * @throws HinemosUnknown
+	 * @throws InvalidRole
+	 * @throws RpaScenarioOperationResultCreateSettingNotFound
+	 * @throws InvalidSetting
 	 */
-	public RpaScenarioOperationResultCreateSetting modifyRpaScenarioOperationResultCreateSetting(RpaScenarioOperationResultCreateSetting data) throws HinemosUnknown, InvalidRole, RpaScenarioOperationResultCreateSettingNotFound, InvalidSetting {
+	public RpaScenarioOperationResultCreateSetting modifyRpaScenarioOperationResultCreateSetting(RpaScenarioOperationResultCreateSetting data, boolean isImport)
+			throws HinemosUnknown, InvalidRole, RpaScenarioOperationResultCreateSettingNotFound, InvalidSetting {
 		JpaTransactionManager jtm = null;
 		try {
 			jtm = new JpaTransactionManager();
@@ -2121,8 +2140,11 @@ public class RpaControllerBean implements CheckFacility{
 			// スケジュール更新
 			ModifySchedule.updateAnalyzeSchedule(data);		
 			
-			// コミット後にリフレッシュする
-			jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+			// コールバックメソッド設定
+			if (!isImport) {
+				addImportRpaScenarioOperationResultCreateSettingCallback(jtm);
+			}
+
 			jtm.commit();
 
 			m_log.info("modify RPA Scenario Operation Result Create Setting. settingId=" + data.getScenarioOperationResultCreateSettingId());
@@ -2174,6 +2196,18 @@ public class RpaControllerBean implements CheckFacility{
 		}
 	}
 	
+	/**
+	 * シナリオ実績作成設定の新規登録／変更時に呼び出すコールバックメソッドを設定
+	 * 
+	 * 設定インポートエクスポートでCommit後に呼び出すものだけ定義
+	 * 
+	 * @param jtm JpaTransactionManager
+	 */
+	public void addImportRpaScenarioOperationResultCreateSettingCallback(JpaTransactionManager jtm) {
+		// 通知リレーション情報のキャッシュ更新
+		jtm.addCallback(new NotifyRelationCacheRefreshCallback());
+	}
+
 	/**
 	 * シナリオ作成設定の削除
 	 */

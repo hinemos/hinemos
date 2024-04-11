@@ -25,6 +25,7 @@ import com.clustercontrol.agent.log.ReadingStatus;
  */
 public class ScenarioLogReadingStatusDir extends AbstractReadingStatusDir<MonitorInfoWrapper> {
 	private static Log m_log = LogFactory.getLog(ScenarioLogReadingStatusDir.class);
+	private boolean m_isTail = true;
 
 	public ScenarioLogReadingStatusDir(AbstractFileMonitorManager<MonitorInfoWrapper> fileMonitorManager,
 			String fileRsStatus, String dirPrefix, String monitorTypeDir, String monitorType,
@@ -42,8 +43,17 @@ public class ScenarioLogReadingStatusDir extends AbstractReadingStatusDir<Monito
 	@Override
 	public AbstractReadingStatus<MonitorInfoWrapper> createReadingStatus(String monitorId, File filePath,
 			int firstPartDataCheckSize, File rsFilePath, boolean tail) {
-		// シナリオログの監視の場合は無条件にファイル末尾から監視をスタート（ジョブ開始時点からログを走査したいので）
-		boolean isTail = true;
-		return new ReadingStatus(fileMonitorManager, monitorId, filePath, firstPartDataCheckSize, rsFilePath, isTail);
+		// シナリオログの監視の場合は、シナリオジョブ実行開始後に作成されたファイルは先頭から、開始前に作成済みのファイルは末尾から監視をスタート
+		return new ReadingStatus(fileMonitorManager, monitorId, filePath, firstPartDataCheckSize, rsFilePath, m_isTail);
+	}
+	
+	/**
+	 * 終了値判定対象ファイルを末尾から読み込むか否かを設定する
+	 * @param isTail
+	 * 		true：末尾から読み込み
+	 * 		false：先頭から読み込み
+	 */
+	public void setIsTail(boolean isTail) {
+		this.m_isTail = isTail;
 	}
 }

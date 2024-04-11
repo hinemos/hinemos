@@ -42,9 +42,9 @@ import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.jobmanagement.composite.HistoryComposite;
 import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
+import com.clustercontrol.jobmanagement.view.JobHistoryView;
 import com.clustercontrol.jobmanagement.view.action.HistoryFilterAction;
 import com.clustercontrol.jobmap.util.JobMapRestClientWrapper;
-import com.clustercontrol.jobmap.view.JobHistoryViewM;
 import com.clustercontrol.monitor.action.GetStatusListTableDefine;
 import com.clustercontrol.monitor.composite.StatusListComposite;
 import com.clustercontrol.monitor.view.StatusView;
@@ -145,11 +145,9 @@ public class StatusOpenJobMapViewerAction extends AbstractHandler implements IEl
 						Messages.getString("warning"),
 						com.clustercontrol.jobmap.messages.Messages.getString("expiration.term.invalid"));
 			}
-		} catch (HinemosUnknown | InvalidRole | InvalidUserPass | RestConnectFailed e) {
-			// キーファイルを確認できませんでした。処理を終了します。
-			// Key file not found. This process will be terminated.
+		} catch (Exception e) {
 			MessageDialog.openInformation(null, Messages.getString("message"),
-					com.clustercontrol.jobmap.messages.Messages.getString("message.jobmapkeyfile.notfound.error"));
+					e.getMessage());
 			return null;
 		}
 		// 存在チェック
@@ -180,22 +178,22 @@ public class StatusOpenJobMapViewerAction extends AbstractHandler implements IEl
 		//パースペクティブを開く
 		page.setPerspective(desc);
 
-		JobHistoryViewM historyViewM = (JobHistoryViewM)page.findView(JobHistoryViewM.ID);
-		if (historyViewM == null) {
-			throw new InternalError("historyViewM is null.");
+		JobHistoryView historyView = (JobHistoryView) page.findView(JobHistoryView.ID);
+		if (historyView == null) {
+			throw new InternalError("historyView is null.");
 		}
-		
-		HistoryComposite historyCmpM = historyViewM.getComposite();
 
-		//ジョブID、ジョブユニットIDを取得
-		ArrayList<?> objListM = (ArrayList<?>)historyCmpM.getTableViewer().getInput();
-		if (objListM == null || objListM.size() == 0) {
+		HistoryComposite historyCmp = historyView.getComposite();
+
+		// ジョブID、ジョブユニットIDを取得
+		ArrayList<?> objList = (ArrayList<?>) historyCmp.getTableViewer().getInput();
+		if (objList == null || objList.size() == 0) {
 			return null;
 		}
 
 		//セッションID、ジョブIDをセット
-		historyCmpM.setManagerName(managerName);
-		historyCmpM.setSessionId(monitorId);
+		historyCmp.setManagerName(managerName);
+		historyCmp.setSessionId(monitorId);
 
 		// フィルタボタン
 		ICommandService commandService = (ICommandService)window.getService(ICommandService.class);
@@ -211,11 +209,11 @@ public class StatusOpenJobMapViewerAction extends AbstractHandler implements IEl
 		JobHistoryFilterConditionRequest filterCondition = new JobHistoryFilterConditionRequest();
 		filterCondition.setSessionId(monitorId);
 		sessionIdFilter.addConditionsItem(filterCondition);
-		historyViewM.setFilter(managerName, sessionIdFilter);
-		historyViewM.setFilterEnabled(true);
+		historyView.setFilter(managerName, sessionIdFilter);
+		historyView.setFilterEnabled(true);
 
 		// 画面更新
-		historyViewM.update(false);
+		historyView.update(false);
 
 		return null;
 	}

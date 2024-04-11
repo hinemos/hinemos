@@ -7,17 +7,15 @@
  */
 package com.clustercontrol.rest.session;
 
-import jakarta.persistence.EntityExistsException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.bean.RestHeaderConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.rest.model.RestAgentRequestEntity;
 import com.clustercontrol.util.HinemosTime;
 
 
@@ -69,33 +67,21 @@ public class RestControllerBean {
 		}
 
 		JpaTransactionManager jtm = null;
+		int ret = -1;
 
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			HinemosEntityManager em = jtm.getEntityManager();
 
-			// 重複チェック
-			jtm.checkEntityExists(RestAgentRequestEntity.class, requestId);
-
-			// リクエストの登録
-			RestAgentRequestEntity newRec = new RestAgentRequestEntity(requestId);
-			newRec.setAgentId(agentId);
-			newRec.setSystemFunction(systemFunction);
-			newRec.setResourceMethod(resourceMethod);
-			newRec.setRegDate(HinemosTime.currentTimeMillis());
-			em.persist(newRec);
-			em.flush();
+			// リクエストIDが未登録の場合のみINSERTされるクエリを実行する
+			// 返ってきたINSERT件数でリクエストIDの重複チェックを行う
+			ret = em.createNamedQuery("RestAgentRequestEntity.insertRequestId", Integer.class, ObjectPrivilegeMode.NONE)
+					.setParameter("requestId", requestId).setParameter("agentId", agentId)
+					.setParameter("systemFunction", systemFunction).setParameter("resourceMethod", resourceMethod)
+					.setParameter("regDate", HinemosTime.currentTimeMillis()).executeUpdate();
 
 			jtm.commit();
-		} catch (EntityExistsException e) {
-			//findbugs対応 nullチェック追加
-			if (jtm != null){
-				jtm.rollback();
-			}
-            m_log.info("registerRestAgentRequest() : Duplicate. requestId = " + requestId + ", agentId = " + agentId
-	                + ", systemFunction = " + systemFunction + ", resourceMethod = " + resourceMethod);
-            return false;
 		} catch (Exception e) {
 			if (jtm != null)
 				jtm.rollback();
@@ -105,6 +91,12 @@ public class RestControllerBean {
 		} finally {
 			if (jtm != null)
 				jtm.close();
+		}
+		if (ret == 0) {
+			// INSERT件数が0件の場合はリクエストIDが登録済みのため以降の処理は行わない
+			m_log.info("registerRestAgentRequest() : Duplicate. requestId = " + requestId + ", agentId = " + agentId
+					+ ", systemFunction = " + systemFunction + ", resourceMethod = " + resourceMethod);
+			return false;
 		}
 		
 		return true;

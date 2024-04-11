@@ -66,7 +66,7 @@ public class XMLConstant {
 	public static final String DEFAULT_XML_MONITOR_INTEGRATION = "monitorIntegration.xml";
 	public static final String DEFAULT_XML_MONITOR_CORRELATION = "monitorCorrelation.xml";
 	public static final String DEFAULT_XML_MONITOR_RPA_LOGFILE = "monitorRpaLogfile.xml";
-	public static final String DEFAULT_XML_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE = "monitorRpaManagementToolSerivce.xml";
+	public static final String DEFAULT_XML_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE = "monitorRpaManagementToolService.xml";
 	
 	public static final String DEFAULT_XML_JOB_MST = "jobMaster.xml";
 	public static final String DEFAULT_XML_JOB_SCHEDULE = "jobSchedule.xml";

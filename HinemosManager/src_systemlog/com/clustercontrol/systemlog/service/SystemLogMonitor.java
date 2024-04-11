@@ -61,6 +61,7 @@ import com.clustercontrol.systemlog.util.ResponseHandler;
 import com.clustercontrol.systemlog.util.SyslogHandler;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Singletons;
+import com.clustercontrol.util.XMLUtil;
 
 public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 
@@ -248,10 +249,13 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 									tagsList.add(new StringSampleTag(CollectStringTag.hostname, syslog.hostname));
 								}
 								if(syslog.message != null){
-									tagsList.add(new StringSampleTag(CollectStringTag.message, syslog.message));
+									// メッセージにNULL文字等が含まれる可能性があるため変換する
+									tagsList.add(new StringSampleTag(CollectStringTag.message,
+											XMLUtil.ignoreInvalidString(syslog.message)));
 								}
 								//ログメッセージ
-								sample.set(facilityId, "syslog", syslog.rawSyslog, tagsList);
+								// RAWメッセージにNULL文字等が含まれる可能性があるため変換する
+								sample.set(facilityId, "syslog", XMLUtil.ignoreInvalidString(syslog.rawSyslog), tagsList);
 								
 								collectedSamples.add(sample);
 							}
@@ -334,7 +338,9 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 
 				Set<String> facilityIdSet = resolveFacilityId(syslog);
 				if (facilityIdSet.size() == 0) {
-					log.warn("target facility not found: " + syslog.hostname);
+					if (log.isDebugEnabled()) {
+						log.debug("target facility is not managed: " + syslog.hostname);
+					}
 					continue;
 				}
 				List<String> validFacilityIdList = getValidFacilityIdList(facilityIdSet, monitorInfo, runInstructionInfo);

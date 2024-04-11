@@ -21,6 +21,7 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.maintenance.util.QueryUtil;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
+import com.clustercontrol.sdml.util.SdmlUtil;
 import com.clustercontrol.util.HinemosTime;
 
 /**
@@ -95,6 +96,9 @@ public class MaintenanceCollectStringData extends MaintenanceObject {
 						monitorIdList.add(monitorInfo.getMonitorId());
 					}
 				}
+				// 指定したオーナーロールIDが設定されたSDML制御設定を取得し、収集データ削除対象の監視項目IDリストに追加する
+				monitorIdList.addAll(SdmlUtil.getApplicationIdListByOwnerRoleId(ownerRoleId));
+				
 				if (monitorIdList.isEmpty()) {
 					return ret;
 				}

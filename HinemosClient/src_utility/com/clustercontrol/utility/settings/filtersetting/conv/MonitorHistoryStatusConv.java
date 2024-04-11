@@ -39,6 +39,7 @@ import com.clustercontrol.utility.settings.filtersetting.xml.MonitorHistoryStatu
 import com.clustercontrol.utility.settings.filtersetting.xml.MonitorHistoryStatusInfo;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * 監視設定[イベント]フィルタ設定情報をXMLのBeanとHinemosとDTOとで変換します。<BR>
@@ -49,9 +50,15 @@ public class MonitorHistoryStatusConv {
 	private static Log log = LogFactory.getLog(MonitorHistoryStatusConv.class);
 
 	// 対応スキーマバージョン
-	private static final String schemaType = "K";
-	private static final String schemaVersion = "1";
-	private static final String schemaRevision = "1";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	private static final String schemaType = VersionUtil.getSchemaProperty("FILTERSETTING.MONITORHISTORYSTATUS.SCHEMATYPE");
+	private static final String schemaVersion = VersionUtil.getSchemaProperty("FILTERSETTING.MONITORHISTORYSTATUS.SCHEMAVERSION");
+	private static final String schemaRevision =VersionUtil.getSchemaProperty("FILTERSETTING.MONITORHISTORYSTATUS.SCHEMAREVISION");
 
 	/** 共通フィルタ設定の所有者を表すコード */
 	private static final String COMMON_FILTER_OWNER_VALUE = "TARGET:ALL_USERS";

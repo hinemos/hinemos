@@ -26,12 +26,19 @@ import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.nodemap.xml.Association;
 import com.clustercontrol.utility.settings.nodemap.xml.Contents;
 import com.clustercontrol.utility.settings.nodemap.xml.NodeMapModel;
+import com.clustercontrol.version.util.VersionUtil;
 
 public class NodeMapConv {
 	
-	private static final String schemaType="I";
-	private static final String schemaVersion="1";
-	private static final String schemaRevision="1";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	private static final String schemaType=VersionUtil.getSchemaProperty("NODEMAP.NODEMAP.SCHEMATYPE");
+	private static final String schemaVersion=VersionUtil.getSchemaProperty("NODEMAP.NODEMAP.SCHEMAVERSION");
+	private static final String schemaRevision=VersionUtil.getSchemaProperty("NODEMAP.NODEMAP.SCHEMAREVISION");
 	
 	/**
 	 * Versionなどの共通部分について、DTOからXMLのBeanに変換します。

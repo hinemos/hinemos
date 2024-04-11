@@ -9,7 +9,6 @@
 package com.clustercontrol.plugin.impl;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -33,6 +32,7 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.notify.message.util.HinemosMessageManager;
+import com.clustercontrol.notify.util.ExecCommand;
 import com.clustercontrol.plugin.api.AsyncTaskFactory;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.plugin.util.TaskExecutionAfterCommitCallback;
@@ -376,7 +376,12 @@ public class AsyncWorkerPlugin implements HinemosPlugin {
 		}
 
 		synchronized (_executorLock.get(worker)) {
-			return executor.getQueue().size();
+			int queueSize = executor.getQueue().size();
+			if (worker.equals(NOTIFY_COMMAND_TASK_FACTORY)){
+				// コマンド通知の蓄積数の場合、子スレッドも合算した値を返す
+				queueSize += ExecCommand.getTaskCount();
+			}
+			return queueSize;
 		}
 	}
 

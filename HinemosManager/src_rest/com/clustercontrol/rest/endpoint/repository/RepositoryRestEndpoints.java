@@ -517,7 +517,7 @@ public class RepositoryRestEndpoints {
 
 		m_log.debug("call GetNodePropertyBySNMP()");
 
-		GetNodesBySNMPRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
+		GetNodesBySNMPRequest dtoReq = RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody,
 				GetNodesBySNMPRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
@@ -776,6 +776,21 @@ public class RepositoryRestEndpoints {
 		AddScopeRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, AddScopeRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
+		try {
+			if(dtoReq.getParentFacilityId() != null && !( dtoReq.getParentFacilityId().isEmpty())){
+				new RepositoryControllerBean().checkIsBuildInScope(dtoReq.getParentFacilityId());
+			}
+		} catch (FacilityNotFound e) {
+			InvalidSetting e1 = new InvalidSetting("Scope does not exist! facilityId = " + dtoReq.getParentFacilityId());
+			m_log.info("addScope() : "
+				+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
+			throw e1;
+		} catch (HinemosUnknown e) {
+			InvalidSetting e1 = new InvalidSetting(e.getMessage());
+			m_log.info("addScope() : "
+				+ e1.getClass().getSimpleName() + ", " + e1.getMessage());
+			throw e1;
+		}
 
 		ScopeInfo infoReq = new ScopeInfo();
 		RestBeanUtil.convertBean(dtoReq.getScopeInfo(), infoReq);
@@ -1443,7 +1458,7 @@ public class RepositoryRestEndpoints {
 
 		m_log.debug("call searchNodesBySNMP()");
 
-		SearchNodesBySNMPRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
+		SearchNodesBySNMPRequest dtoReq = RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody,
 				SearchNodesBySNMPRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
@@ -1494,7 +1509,7 @@ public class RepositoryRestEndpoints {
 
 		NodeConfigSettingInfo infoReq = new NodeConfigSettingInfo();
 		RestBeanUtil.convertBean(dtoReq, infoReq);
-		NodeConfigSettingInfo infoRes = new NodeConfigSettingControllerBean().addNodeConfigSettingInfo(infoReq);
+		NodeConfigSettingInfo infoRes = new NodeConfigSettingControllerBean().addNodeConfigSettingInfo(infoReq, false);
 
 		NodeConfigSettingInfoResponse dtoRes = new NodeConfigSettingInfoResponse();
 		RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
@@ -1537,7 +1552,7 @@ public class RepositoryRestEndpoints {
 		RestBeanUtil.convertBean(dtoReq, infoReq);
 		infoReq.setSettingId(settingId);
 
-		NodeConfigSettingInfo infoRes = new NodeConfigSettingControllerBean().modifyNodeConfigSettingInfo(infoReq);
+		NodeConfigSettingInfo infoRes = new NodeConfigSettingControllerBean().modifyNodeConfigSettingInfo(infoReq, false);
 
 		NodeConfigSettingInfoResponse dtoRes = new NodeConfigSettingInfoResponse();
 		RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);

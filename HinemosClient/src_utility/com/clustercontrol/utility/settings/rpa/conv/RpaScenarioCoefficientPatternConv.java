@@ -28,6 +28,7 @@ import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.rpa.xml.RpaScenarioCoefficientPattern;
 import com.clustercontrol.utility.settings.rpa.xml.RpaScenarioCoefficientPatternInfo;
 import com.clustercontrol.utility.settings.rpa.xml.RpaScenarioCoefficientPatterns;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * 自動化効果計算マスタ情報のJavaBeanとXML(Bean)のbindingとのやりとりを行うクラス
@@ -35,9 +36,15 @@ import com.clustercontrol.utility.settings.rpa.xml.RpaScenarioCoefficientPattern
  */
 public class RpaScenarioCoefficientPatternConv {
 	
-	static private final String schemaType="K";
-	static private final String schemaVersion="1";
-	static private String schemaRevision ="1";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private final String schemaType=VersionUtil.getSchemaProperty("RPA.RPASCENARIOCOEFFICIENTPATTERN.SCHEMATYPE");
+	static private final String schemaVersion=VersionUtil.getSchemaProperty("RPA.RPASCENARIOCOEFFICIENTPATTERN.SCHEMAVERSION");
+	static private String schemaRevision =VersionUtil.getSchemaProperty("RPA.RPASCENARIOCOEFFICIENTPATTERN.SCHEMAREVISION");
 	
 	/* ロガー */
 	private static Logger log = Logger.getLogger(RpaScenarioCoefficientPatternConv.class);

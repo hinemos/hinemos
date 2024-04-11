@@ -377,6 +377,8 @@ public class SelectCollectData {
 		// 参照可能な監視設定を取得する
 		List<Integer> typeList = new ArrayList<>();
 		typeList.add(MonitorTypeConstant.TYPE_NUMERIC);
+		typeList.add(MonitorTypeConstant.TYPE_SCENARIO);
+		
 		List<MonitorInfo> monitorInfoList 
 			= new MonitorSettingControllerBean().getMonitorListByMonitorType(typeList, ownerRoleId);
 		for (MonitorInfo monitorInfo : monitorInfoList) {

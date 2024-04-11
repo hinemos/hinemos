@@ -127,7 +127,7 @@ public class CustomTrapPlugin implements HinemosPlugin {
 
 					@Override
 					public Thread newThread(Runnable r) {
-						return new Thread(r, "CustomtrapHttpService-" + _count++);
+						return new Thread(r, "CustomtrapHttpPlugin-" + _count++);
 					}
 				});
 		customtrapService = new CustomTrapMonitorService();

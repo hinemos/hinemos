@@ -64,6 +64,12 @@ public class SdmlCommonClientOption implements ISdmlClientOption {
 	}
 
 	@Override
+	public void updateCaches() {
+		// SDML監視種別マスタを更新する
+		SdmlMonitorTypeUtil.refresh();
+	}
+
+	@Override
 	public String getUtilityFunctionId() {
 		logger.error("getUtilityFunctionId() : Not defined with this Option. url=" + URL);
 		return null; // 共通オプションは返す必要なし

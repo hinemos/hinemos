@@ -56,14 +56,23 @@ public class SelectMonitorIntegration extends SelectMonitor {
 						if (targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC
 								|| targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_STRING) {
 							condition.setTargetMonitorType(targetMonitorInfo.getMonitorType());
+							
+						} else if (targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_TRAP) {
+							condition.setTargetMonitorType(MonitorTypeConstant.TYPE_STRING);
+						
+						} else if (targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_SCENARIO) {
+							condition.setTargetMonitorType(MonitorTypeConstant.TYPE_NUMERIC);
 						}
-						if (targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC) {
+						
+						if (targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_NUMERIC
+								|| targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_SCENARIO) {
 							condition.setTargetItemDisplayName(
 								AnalyticsUtil.getMsgItemName(
 										condition.getTargetItemName(), 
 										condition.getTargetDisplayName(), 
 										condition.getTargetMonitorId()));
-						} else if (targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_STRING) {
+						} else if (targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_STRING
+										|| targetMonitorInfo.getMonitorType() == MonitorTypeConstant.TYPE_TRAP) {
 							condition.setTargetItemDisplayName(condition.getTargetMonitorId());
 						}
 					} catch (MonitorNotFound | InvalidRole e) {

@@ -7,6 +7,8 @@
  */
 package com.clustercontrol.agent;
 
+import com.clustercontrol.version.util.VersionUtil;
+
 /**
  * Hinemosエージェントのバージョンを定義するクラス
  */
@@ -18,5 +20,5 @@ public class AgentVersion {
 	 * AgentInfoに格納されマネージャに送信されます。<BR>
 	 * {メジャーバージョン}.{マイナーバージョン}の形式で定義してください。<BR>
 	 */
-	public static final String VERSION = "7.0";
+	public static final String VERSION = VersionUtil.getVersionMajor();
 }

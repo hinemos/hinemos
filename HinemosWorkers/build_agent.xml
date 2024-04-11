@@ -10,6 +10,7 @@
 <project name="Agent" default="all" basedir=".">
 	
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<property file="../HinemosCommon/ant_config/build_common_version.properties" />
 	<import file="../HinemosCommon/ant_config/build_common.xml"/>
 	<import file="../SDMLController/version_props.xml"/>
 
@@ -20,7 +21,8 @@
 	<!-- <property name="jar.include.properties" value="true" /> -->
 	
 	<!-- Dependency -->
-	<target name="dependency" depends="check_dependency">
+	<target name="dependency" depends="check_version_propertires, check_dependency">
+		<fail unless="version.properties.built" message="file not found. (HinemosCommon/build_common_version.properties)" />
 		<fail unless="HinemosCommon.built" message="file not found. (HinemosCommon/${jar.dir}/${jar.HinemosCommon})" />
 		<fail unless="AgentWebService.built" message="file not found. (HinemosManager/${jar.dir}/${jar.AgentWS})" />
 	</target>
@@ -30,6 +32,7 @@
 	<path id="id.compile.classpath.local">
 		<fileset dir="../">
 			<include name="HinemosCommon/${jar.dir}/HinemosCommon.jar" />
+			<include name="HinemosCommon/${jar.dir}/${jar.Version}" />
 		</fileset>
 		<fileset dir=".">
 			<include name="lib/*.jar"/>
@@ -65,6 +68,9 @@
 	</target>
 
 	<target name="jar_agent" depends="compile,manifest" description="Generate JAR(HinemosAgent.jar) file for non EJB projects">
+		<manifest file="${build.dir}/MANIFEST.MF" mode="update">
+			<attribute name="Class-Path" value="HinemosVersion.jar" />
+		</manifest>
 		<jar jarfile="${jar.dir}/${jar.file.Agent}" manifest="${build.dir}/MANIFEST.MF">
 			<fileset dir="${build.dir}/${class.dir}">
 				<include name="**/*.*" />

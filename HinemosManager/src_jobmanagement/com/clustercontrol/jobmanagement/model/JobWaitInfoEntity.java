@@ -516,4 +516,18 @@ public class JobWaitInfoEntity implements Serializable {
 			// 何もしない
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "JobWaitInfoEntity ["
+				+ "id=" + id
+//				+ ", jobWaitGroupInfoEntity=" + jobWaitGroupInfoEntity	// 再帰になるので出力しない
+				+ ", description=" + description
+				+ ", intValueRangeList=" + intValueRangeList
+				+ ", intValueList=" + intValueList
+				+ ", stringValueRangeList=" + stringValueRangeList
+				+ ", stringValueList=" + stringValueList
+				+ "]";
+	}
+	
 }

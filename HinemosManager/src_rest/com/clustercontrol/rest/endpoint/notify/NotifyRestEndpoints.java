@@ -2061,7 +2061,7 @@ public class NotifyRestEndpoints {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Exec, target = LogTarget.Notify, type = LogType.UPDATE )
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.Notify, modeList = { SystemPrivilegeMode.READ })
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.MonitorResult, modeList = { SystemPrivilegeMode.EXEC })
 	public Response notifyAsMonitor(@Context Request request, @Context UriInfo uriInfo,
 			@RequestBody(description = "notifyAsMonitorBody", content = @Content(schema = @Schema(implementation = NotifyAsMonitorRequest.class))) String requestBody)
 			throws InvalidRole, InvalidUserPass, HinemosUnknown, NotifyNotFound, FacilityNotFound, InvalidSetting {
@@ -2107,7 +2107,7 @@ public class NotifyRestEndpoints {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Exec, target = LogTarget.Event, type = LogType.UPDATE )
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.Notify, modeList = { SystemPrivilegeMode.READ })
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.MonitorResult, modeList = { SystemPrivilegeMode.EXEC })
 	public Response notifyEvent(@Context Request request, @Context UriInfo uriInfo,
 			@RequestBody(description = "notifyEventBody", content = @Content(schema = @Schema(implementation = NotifyEventRequest.class))) String requestBody)
 			throws InvalidRole, InvalidUserPass, InvalidSetting, HinemosUnknown, FacilityNotFound {

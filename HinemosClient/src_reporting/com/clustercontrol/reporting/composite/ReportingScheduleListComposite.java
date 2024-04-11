@@ -157,9 +157,11 @@ public class ReportingScheduleListComposite extends Composite {
 				if(UrlNotFound.class.equals(e.getCause().getClass())) {
 					continue;
 				}
-				errorMsgs.put(managerName, Messages.getString("message.expiration.term"));
-			} catch (InvalidRole | InvalidUserPass | RestConnectFailed e) {
-				errorMsgs.put(managerName, Messages.getString("message.expiration.term"));
+				errorMsgs.put(managerName, e.getMessage());
+				continue;
+			} catch (Exception e) {
+				errorMsgs.put(managerName, e.getMessage());
+				continue;
 			}
 
 			try {

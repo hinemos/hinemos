@@ -13,6 +13,8 @@ import java.util.List;
 
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusAdapter;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -51,6 +53,8 @@ public class HinemosFuncTreeComposite extends Composite {
 	//Listener subItemCheckListener;
 	//Listener ItemCheckDisableListener;
 	//Listener masterItemCheckListener;
+
+	protected UtilityManagerUtil.ManagerChangeListener m_managerChangeListener = null;
 
 	/**
 	 * コンストラクタ
@@ -156,10 +160,20 @@ public class HinemosFuncTreeComposite extends Composite {
 		gridData.horizontalSpan = 1;
 		combo.setLayoutData(gridData);
 		
+		// ログアウト後どのマネージャも選択していない状態でビューを開き直した場合は
+		// 選択を上書きできるようにnullにしておく
+		if ("".equals(UtilityManagerUtil.getCurrentManagerName())) {
+			UtilityManagerUtil.setCurrentManagerName(null);
+		}
+		// currentManagerNameが保持している名前のマネージャをコンボボックスで選択状態にする。
+		// currentManagerNameがnullの状態でUtilityManagerUtil.getCurrentManagerName()を呼ぶと
+		// currentManagerNameがRestConnectManager.getActiveManagerNameListの先頭で上書きされるため、
+		// currentManagerNameがnullでもいずれかのマネージャにログインしていればこの分岐を通りマネージャが選択状態になる。
+		// (ビューの初回描画時などに必要)
 		if(UtilityManagerUtil.getCurrentManagerName() != null){
 			String name = UtilityManagerUtil.getCurrentManagerName();
 			combo.add(name);
-			combo.setText(name);
+			combo.select(combo.indexOf(name));
 		}
 		
 		combo.addFocusListener(new FocusAdapter(){
@@ -183,7 +197,27 @@ public class HinemosFuncTreeComposite extends Composite {
 				UtilityManagerUtil.setCurrentManagerName(combo.getText());
 			}
 		});
-		
+
+		UtilityManagerUtil
+				.addManagerChangeListener(m_managerChangeListener = new UtilityManagerUtil.ManagerChangeListener() {
+					@Override
+					public void notifyManagerChanged() {
+						if ("".equals(UtilityManagerUtil.getCurrentManagerName())) {
+							combo.removeAll();
+							for (String mngName : RestConnectManager.getActiveManagerNameList()) {
+								combo.add(mngName);
+							}
+						}
+					}
+				});
+
+		this.addDisposeListener(new DisposeListener() {
+			@Override
+			public void widgetDisposed(DisposeEvent e) {
+				UtilityManagerUtil.removeManagerChangeListener(m_managerChangeListener);
+			}
+		});
+
 		Tree tree = new Tree(this, SWT.SINGLE | SWT.BORDER | SWT.CHECK);
 
 		gridData = new GridData();

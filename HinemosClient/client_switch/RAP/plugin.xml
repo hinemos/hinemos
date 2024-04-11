@@ -301,11 +301,6 @@
 			id="com.clustercontrol.jobmap.view.JobModuleView"
 			name="%view.job.module">
 		</view>
-		<view
-			class="com.clustercontrol.jobmap.view.JobHistoryViewM"
-			id="com.clustercontrol.jobmap.view.JobHistoryViewM"
-			name="%view.job.history">
-		</view>
 		<!-- NodeMap -->
 		<view
 			allowMultiple="true"
@@ -741,7 +736,7 @@
 				<separator name="enterpriseViewsSeparator" visible="true"></separator>
 				<!-- Enterprise -->
 				<!-- JobMap History -->
-				<menu id="com.clustercontrol.enterprise.jobmap.history" label="%jobmap.history">
+				<menu id="com.clustercontrol.enterprise.jobmap.history" label="%jobmap.historyV">
 					<command
 						commandId="com.clustercontrol.enterprise.jobmanagement.etc.action.JobHistoryAction"
 						label="%view.job.historyH"
@@ -754,7 +749,7 @@
 					</command>
 					<command
 						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobMapHistoryAction"
-						label="%view.jobmap.history"
+						label="%view.jobmap.historyI"
 						style="push">
 					</command>
 					<command
@@ -779,20 +774,20 @@
 					</command>
 				</menu>
 				<!-- JobMap Editor -->
-				<menu id="com.clustercontrol.enterprise.jobmap.editor" label="%jobmap.editor">
+				<menu id="com.clustercontrol.enterprise.jobmap.editor" label="%jobmap.editorE">
 					<command
 						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobTreeAction"
-						label="%view.job.tree"
+						label="%view.job.treeR"
 						style="push">
 					</command>
 					<command
 						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobModuleAction"
-						label="%view.job.module"
+						label="%view.job.moduleM"
 						style="push">
 					</command>
 					<command
 						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobMapEditorAction"
-						label="%view.jobmap.editor"
+						label="%view.jobmap.editorE"
 						style="push">
 					</command>
 					<command
@@ -802,7 +797,7 @@
 					</command>
 					<command
 						commandId="com.clustercontrol.enterprise.jobmap.etc.action.JobMapImageListAction"
-						label="%view.jobmap.icon"
+						label="%view.jobmap.iconI"
 						style="push">
 					</command>
 					<command
@@ -817,115 +812,115 @@
 					</command>
 				</menu>
 				<!-- NodeMap -->
-				<menu id="com.clustercontrol.enterprise.nodemap.viewMenu" label="%nodemap">
+				<menu id="com.clustercontrol.enterprise.nodemap.viewMenu" label="%nodemapB">
 					<command
 						commandId="com.clustercontrol.enterprise.nodemap.etc.action.ScopeTreeViewAction"
-						label="%view.scopetree"
+						label="%view.scopetreeT"
 						style="push">
 					</command>
 					<command
 						commandId="com.clustercontrol.enterprise.nodemap.etc.action.StatusViewMAction"
-						label="%view.status"
+						label="%view.statusS"
 						style="push">
 					</command>
 					<command
 						commandId="com.clustercontrol.enterprise.nodemap.etc.action.EventViewMAction"
-						label="%view.event"
+						label="%view.eventE"
 						style="push">
 					</command>
 				</menu>
 				<!-- Reporting -->
-				<menu id="com.clustercontrol.enterprise.reporting.views" label="%reporting">
+				<menu id="com.clustercontrol.enterprise.reporting.views" label="%reportingT">
 					<command
 						commandId="com.clustercontrol.enterprise.reporting.etc.action.OpenReportingScheduleViewAction"
-						label="%view.reporting.schedule"
+						label="%view.reporting.scheduleS"
 						style="push">
 					</command>
 					<command
 						commandId="com.clustercontrol.enterprise.reporting.etc.action.OpenReportingTemplateSetViewAction"
-						label="%view.reporting.template.set"
+						label="%view.reporting.template.setT"
 						style="push">
 					</command>
 				</menu>
 				<!-- Utility -->
-				<menu id="com.clustercontrol.enterprise.utility.view" label="%settingtools">
+				<menu id="com.clustercontrol.enterprise.utility.view" label="%settingtoolsX">
 					<command
 						commandId="com.clustercontrol.enterprise.utility.settings.ui.etc.action.OpenImportExportExecViewAction"
-						label="%settingtools"
+						label="%view.settingtoolsS"
 						style="push">
 					</command>
 				</menu>
 				<!-- RPA -->
-				<menu id="com.clustercontrol.enterprise.rpa.view" label="%rpa">
+				<menu id="com.clustercontrol.enterprise.rpa.view" label="%rpaG">
 					<command
 						commandId="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaManagementToolAccountViewAction"
-						label="%view.rpa.management.tool.account.list"
+						label="%view.rpa.management.tool.account.listM"
 						style="push">
 					</command>
 					<command
 						commandId="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioOperationResultCreateSettingViewAction"
-						label="%view.rpa.scenario.create.setting.list"
+						label="%view.rpa.scenario.create.setting.listS"
 						style="push">
 					</command>
 					<command
 						commandId="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioTagViewAction"
-						label="%view.rpa.scenariotag.list"
+						label="%view.rpa.scenariotag.listT"
 						style="push">
 					</command>
 				</menu>
-				<menu id="com.clustercontrol.enterprise.rpa.scenario.operation.result" label="%rpaScenarioOperationResultList">
+				<menu id="com.clustercontrol.enterprise.rpa.scenario.operation.result" label="%rpaScenarioOperationResultListL">
 					<command
 						commandId="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioListViewAction"
-						label="%view.rpa.scenario.operation.result.list"
+						label="%view.rpa.scenario.operation.result.listL"
 						style="push">
 					</command>
 					<command
 						commandId="com.clustercontrol.enterprise.rpa.etc.action.OpenRpaScenarioSummaryGraphViewAction"
-						label="%view.rpa.scenario.summary.graph"
+						label="%view.rpa.scenario.summary.graphG"
 						style="push">
 					</command>
 				</menu>
 				<!-- xCloud -->
 				<separator name="xCloudViewsSeparator" visible="true"></separator>
-				<menu id="com.clustercontrol.xcloud.views" label="%category.cloud" tooltip="%category.cloud">
+				<menu id="com.clustercontrol.xcloud.views" label="%category.cloudK" tooltip="%category.cloud">
 					<command commandId="com.clustercontrol.xcloud.ui.views.repositoryView.show"
-						label="%view.repository" style="push" tooltip="%view.repository">
+						label="%view.repositoryP" style="push" tooltip="%view.repository">
 					</command>
 					<command commandId="com.clustercontrol.xcloud.ui.views.instancesView.show"
-						label="%view.compute" style="push">
+						label="%view.computeC" style="push">
 					</command>
 					<command commandId="com.clustercontrol.xcloud.ui.view.instanceBackupView.show"
-						label="%view.compute.history" style="push" tooltip="%view.compute.history">
+						label="%view.compute.historyO" style="push" tooltip="%view.compute.history">
 					</command>
 					<command commandId="com.clustercontrol.xcloud.ui.views.storagesView.show"
-						label="%view.storage" style="push" tooltip="%view.storages">
+						label="%view.storageS" style="push" tooltip="%view.storages">
 					</command>
 					<command
 						commandId="com.clustercontrol.xcloud.ui.views.storageBackupsView.show"
-						label="%view.storage.history" style="push" tooltip="%view.compute">
+						label="%view.storage.historyG" style="push" tooltip="%view.compute">
 					</command>
 					<command commandId="com.clustercontrol.xcloud.ui.views.loginUsersView.show"
-						label="%view.login_user" style="push" tooltip="%view.login_user">
+						label="%view.login_userU" style="push" tooltip="%view.login_user">
 					</command>
 					<command
 						commandId="com.clustercontrol.xcloud.ui.views.roleManagementView.show"
-						label="%view.role" style="push" tooltip="%view.role">
+						label="%view.roleR" style="push" tooltip="%view.role">
 					</command>
 					<command commandId="com.clustercontrol.xcloud.ui.views.serviceStateView.show"
-						label="%view.service.state" style="push" tooltip="%view.service.state">
+						label="%view.service.stateE" style="push" tooltip="%view.service.state">
 					</command>
 					<command commandId="com.clustercontrol.xcloud.ui.views.networksView.show"
-						label="%view.network" style="push" tooltip="%view.network">
+						label="%view.networkN" style="push" tooltip="%view.network">
 					</command>
 					<command commandId="com.clustercontrol.xcloud.ui.views.billingAlarmsView.show"
-						label="%view.charges" style="push" tooltip="%view.charges">
+						label="%view.chargesD" style="push" tooltip="%view.charges">
 					</command>
 					<command
 						commandId="com.clustercontrol.xcloud.ui.views.billingDetailsView.show"
-						label="%view.billing_detail" style="push" tooltip="%view.billing_detail">
+						label="%view.billing_detailB" style="push" tooltip="%view.billing_detail">
 					</command>
 					<command commandId="com.clustercontrol.xcloud.ui.views.cloudScopesView.show"
-						label="%view.cloudscope" style="push" tooltip="%view.cloudscope">
+						label="%view.cloudscopeL" style="push" tooltip="%view.cloudscope">
 					</command>
 				</menu>
 			</menu>
@@ -3640,60 +3635,6 @@
 				label="%update"
 				style="push"
 				tooltip="%update">
-			</command>
-		</menuContribution>
-		<menuContribution locationURI="popup:com.clustercontrol.jobmap.view.JobHistoryViewM" allPopups="false">
-			<command
-				commandId="com.clustercontrol.jobmanagement.view.action.StartJobHistoryAction"
-				icon="icons/resume_co.gif"
-				label="%start"
-				style="push"
-				tooltip="%start">
-			</command>
-			<command
-				commandId="com.clustercontrol.jobmanagement.view.action.StopJobHistoryAction"
-				icon="icons/terminate_co.gif"
-				label="%stop"
-				style="push"
-				tooltip="%stop">
-			</command>
-		</menuContribution>
-		<menuContribution locationURI="toolbar:com.clustercontrol.jobmap.view.JobHistoryViewM" allPopups="false">
-			<command
-				commandId="com.clustercontrol.jobmanagement.view.action.HistoryRefreshAction"
-				icon="icons/refresh_tab.gif"
-				label="%update"
-				style="push"
-				tooltip="%update">
-			</command>
-			<command
-				commandId="com.clustercontrol.jobmanagement.view.action.HistoryFilterAction"
-				icon="icons/searchres.gif"
-				label="%filter"
-				style="toggle"
-				tooltip="%filter">
-			</command>
-			<command
-				commandId="com.clustercontrol.jobmanagement.view.action.JobHistoryFilterSettingAction"
-				icon="icons/filter_setting.png"
-				label="%filter.setting"
-				style="push"
-				tooltip="%filter.setting">
-			</command>
-			<separator name="JobMapEditorSeparator7" visible="true"></separator>
-			<command
-				commandId="com.clustercontrol.jobmanagement.view.action.StartJobHistoryAction"
-				icon="icons/resume_co.gif"
-				label="%start"
-				style="push"
-				tooltip="%start">
-			</command>
-			<command
-				commandId="com.clustercontrol.jobmanagement.view.action.StopJobHistoryAction"
-				icon="icons/terminate_co.gif"
-				label="%stop"
-				style="push"
-				tooltip="%stop">
 			</command>
 		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.jobmap.view.JobTreeView" allPopups="false">
@@ -9500,31 +9441,6 @@
 			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
 			sequence="M2+R">
 		</key>
-		<!-- JobHistoryViewM -->
-		<key
-			commandId="com.clustercontrol.jobmanagement.view.action.StartJobHistoryAction"
-			contextId="com.clustercontrol.jobmap.view.JobHistoryViewM"
-			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-			sequence="M1+ARROW_UP">
-		</key>
-		<key
-			commandId="com.clustercontrol.jobmanagement.view.action.StopJobHistoryAction"
-			contextId="com.clustercontrol.jobmap.view.JobHistoryViewM"
-			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-			sequence="M1+ARROW_DOWN">
-		</key>
-		<key
-			commandId="com.clustercontrol.jobmanagement.view.action.HistoryFilterAction"
-			contextId="com.clustercontrol.jobmap.view.JobHistoryViewM"
-			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-			sequence="M1+F">
-		</key>
-		<key
-			commandId="com.clustercontrol.jobmanagement.view.action.HistoryRefreshAction"
-			contextId="com.clustercontrol.jobmap.view.JobHistoryViewM"
-			schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-			sequence="M1+R">
-		</key>
 		<!-- EventView -->
 		<key
 			commandId="com.clustercontrol.enterprise.jobmap.view.action.EventOpenJobMapViewerAction"
@@ -10015,11 +9931,6 @@
 		<context
 			id="com.clustercontrol.jobmap.view.JobMapImageListView"
 			name="com.clustercontrol.jobmap.view.JobMapImageListView"
-			parentId="org.eclipse.ui.contexts.window">
-		</context>
-		<context
-			id="com.clustercontrol.jobmap.view.JobHistoryViewM"
-			name="com.clustercontrol.jobmap.view.JobHistoryViewM"
 			parentId="org.eclipse.ui.contexts.window">
 		</context>
 		<context

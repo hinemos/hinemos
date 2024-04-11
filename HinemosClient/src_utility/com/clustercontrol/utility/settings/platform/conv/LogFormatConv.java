@@ -24,6 +24,7 @@ import com.clustercontrol.util.Messages;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.platform.xml.LogFormatInfo;
 import com.clustercontrol.utility.settings.platform.xml.LogFormatKey;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * ログフォーマット情報をJavaBeanとXML(Bean)のbindingとのやりとりを
@@ -35,9 +36,15 @@ import com.clustercontrol.utility.settings.platform.xml.LogFormatKey;
  */
 public class LogFormatConv {
 
-	static private final String schemaType="H";
-	static private final String schemaVersion="1";
-	static private final String schemaRevision="1" ;
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private final String schemaType=VersionUtil.getSchemaProperty("PLATFORM.LOGFORMAT.SCHEMATYPE");
+	static private final String schemaVersion=VersionUtil.getSchemaProperty("PLATFORM.LOGFORMAT.SCHEMAVERSION");
+	static private final String schemaRevision=VersionUtil.getSchemaProperty("PLATFORM.LOGFORMAT.SCHEMAREVISION");
 
 	private static Log log = LogFactory.getLog(LogFormatConv.class);
 
@@ -88,6 +95,8 @@ public class LogFormatConv {
 		// Description
 		if(logformat.getDescription() != null){
 			ret.setDescription(logformat.getDescription());
+		} else {
+			ret.setDescription("");
 		}
 
 		// Tags
@@ -95,9 +104,10 @@ public class LogFormatConv {
 		for (LogFormatKey key : logformat.getLogFormatKey()) {
 			logFormatKey = new LogFormatKeyRequest();
 			logFormatKey.setKey(key.getKey());
-			if(key.getDescription() != null
-					&& !"".equals(key.getDescription())){
+			if(key.getDescription() != null) {
 				logFormatKey.setDescription(key.getDescription());
+			} else {
+				logFormatKey.setDescription("");
 			}
 			ValueTypeEnum[] valueTypeList = ValueTypeEnum.values();
 			ValueTypeEnum valueType = valueTypeList[key.getValueType()];
@@ -109,22 +119,26 @@ public class LogFormatConv {
 
 			logFormatKey.setPattern(ifNull2Empty(key.getPattern()));
 			if(key.getValue() != null
-					&& !"".equals(key.getValue())
 					&& key.getKeyType() == 1){
 				logFormatKey.setValue(key.getValue());
+			} else if(key.getValue() == null
+					&& key.getKeyType() == 1) {
+				logFormatKey.setValue("");
 			}
-			
+
 			ret.getKeyPatternList().add(logFormatKey);
 		}
 		// timestamp regex
-		if(logformat.getTimestampRegex() != null
-				&& !"".equals(logformat.getTimestampRegex())){
+		if(logformat.getTimestampRegex() != null){
 			ret.setTimestampRegex(logformat.getTimestampRegex());
+		} else {
+			ret.setTimestampRegex("");
 		}
 		// timestamp format
-		if(logformat.getTimestampFormat() != null
-				&& !"".equals(logformat.getTimestampFormat())){
+		if(logformat.getTimestampFormat() != null){
 			ret.setTimestampFormat(logformat.getTimestampFormat());
+		} else {
+			ret.setTimestampFormat("");
 		}
 
 		ret.setOwnerRoleId(logformat.getOwnerRoleId());

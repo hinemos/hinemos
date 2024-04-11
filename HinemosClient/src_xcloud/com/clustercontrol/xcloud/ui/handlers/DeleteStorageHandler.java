@@ -22,6 +22,7 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.common.ui.dialogs.MessageDialogWithScroll;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.common.CloudStringConstants;
 import com.clustercontrol.xcloud.model.cloud.IStorage;
@@ -37,13 +38,12 @@ public class DeleteStorageHandler extends AbstractCloudOptionHandler implements 
 			storageIds.add(((IStorage)item).getId());
 		}
 
-		if (MessageDialog.openConfirm(
-				null,
-				Messages.getString("confirmed"),
+		MessageDialogWithScroll messageDialogWithScroll = new MessageDialogWithScroll(                    
 				storageIds.size() > 1 ?
 						MessageFormat.format(msgConfirmDeleteStorageMulti, storageIds.size()):
-							MessageFormat.format(msgConfirmDeleteStorage, storage.getName(), storage.getId()))) {
-
+							MessageFormat.format(msgConfirmDeleteStorage, storage.getName(), storage.getId()));
+		
+		if (messageDialogWithScroll.openConfirm()) {
 			String managerName = storage.getCloudScope().getCloudScopes().getHinemosManager().getManagerName();
 			CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(managerName);
 			endpoint.removeStorages(storage.getCloudScope().getId(), storage.getLocation().getId(), String.join(",", storageIds));

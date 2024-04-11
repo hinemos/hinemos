@@ -24,6 +24,7 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.QueryCriteria;
+import com.clustercontrol.commons.util.QueryDivergence;
 import com.clustercontrol.fault.EventLogNotFound;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MonitorNotFound;
@@ -123,6 +124,30 @@ public class QueryUtil {
 		}
 	}
 
+	/**
+	 * ステータス通知のプライマリーキーから監視詳細IDを除いて
+	 * ステータス通知の情報を取得します。
+	 * 
+	 * @param pluginId
+	 * @param monitorId
+	 * @param facilityId
+	 * @return
+	 */
+	public static List<StatusInfoEntity> getStatusInfoByPKWithoutMonitorDetailId(String pluginId,
+			String monitorId,
+			String facilityId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<StatusInfoEntity> list =
+					em.createNamedQuery("StatusInfoEntity.findByPKWithoutMonitorDetailId", StatusInfoEntity.class)
+					.setParameter("pluginId", pluginId)
+					.setParameter("monitorId", monitorId)
+					.setParameter("facilityId", facilityId)
+					.getResultList();
+			return list;
+		}
+	}
+	
 	public static EventLogEntity getEventLogPK(EventLogEntityPK pk) throws EventLogNotFound, InvalidRole {
 		return getEventLogPK(pk, ObjectPrivilegeMode.READ);
 	}
@@ -523,44 +548,101 @@ public class QueryUtil {
 		}
 	}
 
-	public static List<StatusInfoEntity> getStatusInfoByFilter(StatusFilterBaseInfo filter) {
-		List<StatusInfoEntity> rtnList = new ArrayList<>();
+	public static int getStatusCountByFilter(StatusFilterBaseInfo filter) {
+		int countAll = 0;
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 
-			// フィルタからQueryCriteriaを生成
-			List<StatusFilterBaseCriteria> baseCrts = filter.createCriteria(external.getMonitorHistoryFacilityIdMaxCount(), "a");
-			List<StatusFilterConditionCriteria> condCrts = filter.createConditionsCriteria("a");
+			List<TypedQuery<Long>> queryList = createQueryListForGetStatus(em, filter, null, Long.class, "COUNT(DISTINCT a)");
 
-			// 複数条件項目をOR結合
-			StringBuffer exprs = new StringBuffer();
-			String delim = "";
-			for (QueryCriteria crt : condCrts) {
-				exprs.append(delim).append("(").append(crt.buildExpressions()).append(")");
-				delim = " OR ";
+			for (TypedQuery<Long> query : queryList) {
+				countAll += QueryDivergence.countResult(query.getSingleResult());
 			}
+			return countAll;
+		}
+	}
+	
+	public static List<StatusInfoEntity> getStatusInfoByFilter(StatusFilterBaseInfo filter, Integer limit) {
+		List<StatusInfoEntity> rtnList = new ArrayList<>();
+		
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
 
-			// ファシリティIDグループのループ
-			for (QueryCriteria baseCrt : baseCrts) {
-				String jpql = "SELECT a FROM StatusInfoEntity a WHERE ("
-						+ baseCrt.buildExpressions()
-						+ ") AND ("
-						+ exprs.toString()
-						+ ")";
-				m_log.debug("getStatusInfoByFilter: SQL=" + jpql);
-
-				TypedQuery<StatusInfoEntity> query = em.createQuery(jpql, StatusInfoEntity.class);
-				baseCrt.submitParameters(query);
-				for (QueryCriteria condCrt : condCrts) {
-					condCrt.submitParameters(query);
-				}
-
+			List<TypedQuery<StatusInfoEntity>> queryList = createQueryListForGetStatus(em, filter, limit, StatusInfoEntity.class, "a");
+			
+			for (TypedQuery<StatusInfoEntity> query : queryList) {
 				List<StatusInfoEntity> result = query.getResultList();
 				rtnList.addAll(result);
 			}
+			
+			if (limit != null && limit > 0) {
+				// 改めて最終変更日時の降順でソート
+				Collections.sort(rtnList, (o1, o2) -> o2.getOutputDate().compareTo(o1.getOutputDate()));
+				
+				if (rtnList.size() > limit) {
+					return rtnList.subList(0, limit);
+				}
+			}
+			
 			return rtnList;
 		}
+	}
+	
+	private static <T> List<TypedQuery<T>> createQueryListForGetStatus(HinemosEntityManager em, StatusFilterBaseInfo filter, Integer limit, Class<T> clazz, String selectColumn) {
+		List<TypedQuery<T>> queryList = new ArrayList<>();
+
+		// 表示件数に上限設定があるか
+		final boolean isLimited = limit != null && limit > 0;
+		
+		// フィルタからQueryCriteriaを生成
+		List<StatusFilterBaseCriteria> baseCrts = filter.createCriteria(external.getMonitorHistoryFacilityIdMaxCount(), "a");
+		List<StatusFilterConditionCriteria> condCrts = filter.createConditionsCriteria("a");
+		
+		// 複数条件項目をOR結合
+		StringBuilder exprs = new StringBuilder();
+		String delim = "";
+		for (QueryCriteria crt : condCrts) {
+			exprs.append(delim).append("(").append(crt.buildExpressions()).append(")");
+			delim = " OR ";
+		}
+
+		StringBuilder jpql = new StringBuilder();
+
+		// ファシリティIDグループのループ
+		for (QueryCriteria baseCrt : baseCrts) {
+			jpql.delete(0, jpql.length());
+			
+			jpql.append("SELECT ");
+			jpql.append(selectColumn);
+			jpql.append(" FROM StatusInfoEntity a WHERE (");
+			jpql.append(baseCrt.buildExpressions());
+			jpql.append(") AND (");
+			jpql.append(exprs);
+			jpql.append(")");
+			if (isLimited) {
+				jpql.append(" ORDER BY a.outputDate DESC");
+			}
+
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("createGetStatusQueryList: SQL=" + jpql);
+			}
+
+			TypedQuery<T> query = em.createQuery(jpql.toString(), clazz);
+			
+			baseCrt.submitParameters(query);
+			for (QueryCriteria condCrt : condCrts) {
+				condCrt.submitParameters(query);
+			}
+
+			if (isLimited) {
+				query.setMaxResults(limit);
+			}
+			
+			queryList.add(query);
+		}
+		
+		return queryList;
 	}
 
 	public static List<StatusInfoEntity> getStatusInfoByHighPriorityFilter(

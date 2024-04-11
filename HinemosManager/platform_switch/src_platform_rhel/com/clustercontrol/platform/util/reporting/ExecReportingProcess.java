@@ -35,6 +35,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.util.NotifyCallback;
 import com.clustercontrol.platform.HinemosPropertyDefault;
@@ -46,6 +47,7 @@ import com.clustercontrol.rest.endpoint.reporting.dto.CreateReportingFileRequest
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandExecutor;
 import com.clustercontrol.util.CommandExecutor.CommandResult;
+import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -87,8 +89,9 @@ public class ExecReportingProcess {
 	 * @param info
 	 * @param tmpReportingInfo
 	 * @return 作成されるレポートファイル名のリスト
+	 * @throws InvalidSetting
 	 */
-	public static synchronized List<String> execute(ReportingInfo info) {
+	public static synchronized List<String> execute(ReportingInfo info) throws InvalidSetting {
 		return execute(info, null);
 	}
 
@@ -96,8 +99,9 @@ public class ExecReportingProcess {
 	 * @param info
 	 * @param dtoReq
 	 * @return 作成されるレポートファイル名のリスト
+	 * @throws InvalidSetting
 	 */
-	public static synchronized List<String> execute(ReportingInfo info, CreateReportingFileRequest dtoReq) {
+	public static synchronized List<String> execute(ReportingInfo info, CreateReportingFileRequest dtoReq) throws InvalidSetting {
 
 		List<String> fileList = null;
 		String reportId = null;
@@ -148,16 +152,19 @@ public class ExecReportingProcess {
 			}
 			
 			String addOpts = "";
-			if (dtoReq != null &&
-					dtoReq.getOutputPeriodType() != null &&
-					dtoReq.getOutputPeriodBefore() != null &&
-					dtoReq.getOutputPeriodFor() != null) {
-				// 即時実行では期間のみ変更可能
-				StringBuilder builder = new StringBuilder("");
-				builder.append(" -Dhinemos.reporting.output.period.type=" + dtoReq.getOutputPeriodType().getCode());
-				builder.append(" -Dhinemos.reporting.output.period.before=" + dtoReq.getOutputPeriodBefore());
-				builder.append(" -Dhinemos.reporting.output.period.for=" + dtoReq.getOutputPeriodFor());
-				addOpts = builder.toString();
+			if (dtoReq != null) {
+				if (dtoReq.getOutputPeriodType() != null &&
+						dtoReq.getOutputPeriodBefore() != null &&
+						dtoReq.getOutputPeriodFor() != null) {
+					// 即時実行では期間のみ変更可能
+					StringBuilder builder = new StringBuilder("");
+					builder.append(" -Dhinemos.reporting.output.period.type=" + dtoReq.getOutputPeriodType().getCode());
+					builder.append(" -Dhinemos.reporting.output.period.before=" + dtoReq.getOutputPeriodBefore());
+					builder.append(" -Dhinemos.reporting.output.period.for=" + dtoReq.getOutputPeriodFor());
+					addOpts = builder.toString();
+				} else {
+					throw new InvalidSetting(Messages.getString("MESSAGE_REPORTING_17"));
+				}
 			}
 
 			// Generate classpath
@@ -270,6 +277,8 @@ public class ExecReportingProcess {
 			// Manager終了時にこのスレッドの終了を待たない
 			thread.setDaemon(true);
 			thread.start();
+		} catch (InvalidSetting e) {
+			throw e;
 		} catch (Exception e) {
 			m_log.warn(e.getMessage(), e);
 		} finally {

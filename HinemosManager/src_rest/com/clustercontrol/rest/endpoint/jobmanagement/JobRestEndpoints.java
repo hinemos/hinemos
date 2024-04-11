@@ -53,8 +53,11 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.glassfish.grizzly.http.server.Request;
 
+import com.clustercontrol.accesscontrol.bean.FunctionConstant;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
+import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
+import com.clustercontrol.bean.RestHeaderConstant;
 import com.clustercontrol.calendar.util.TimeStringConverter;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.fault.FacilityNotFound;
@@ -139,6 +142,7 @@ import com.clustercontrol.rest.util.RestBeanUtil;
 import com.clustercontrol.rest.util.RestByteArrayConverter;
 import com.clustercontrol.rest.util.RestCommonConverter;
 import com.clustercontrol.rest.util.RestCommonValitater;
+import com.clustercontrol.rest.util.RestHttpBearerAuthenticator;
 import com.clustercontrol.rest.util.RestLanguageConverter;
 import com.clustercontrol.rest.util.RestObjectMapperWrapper;
 import com.clustercontrol.rest.util.RestTempFileType;
@@ -361,7 +365,7 @@ public class JobRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.READ ,SystemPrivilegeMode.MODIFY})
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.READ ,SystemPrivilegeMode.ADD})
 	@RestLog(action = LogAction.Add, target = LogTarget.Jobunit, type = LogType.UPDATE )
 	@IgnoreCommandline
 	public Response registerJobunit(@Context Request request, @Context UriInfo uriInfo,
@@ -370,7 +374,7 @@ public class JobRestEndpoints {
 					throws HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting, JobMasterNotFound, JobInvalid, NotifyNotFound, UserNotFound, JobMasterDuplicate {
 		m_log.info("call registerJobunit()");
 		// JSONからJobTreeItemインスタンス(RegisterJobunitWrapper.jobTreeItem)に変換する。
-		RegisterJobunitWrapper dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, RegisterJobunitWrapper.class);
+		RegisterJobunitWrapper dtoReq = RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, RegisterJobunitWrapper.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 		JobTreeItem topItem = dtoReq.getJobTreeItem();
@@ -451,7 +455,7 @@ public class JobRestEndpoints {
 					throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, NotifyNotFound,UserNotFound {
 		m_log.info("call replaceJobunit()");
 		// JSONからJobTreeItemインスタンス(RegisterJobunitWrapper.jobTreeItem)に変換する。
-		RegisterJobunitWrapper dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, RegisterJobunitWrapper.class);
+		RegisterJobunitWrapper dtoReq = RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, RegisterJobunitWrapper.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 		JobTreeItem topItem = dtoReq.getJobTreeItem();
@@ -515,7 +519,7 @@ public class JobRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.READ ,SystemPrivilegeMode.MODIFY,SystemPrivilegeMode.ADD})
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.READ})
 	@RestLog(action = LogAction.Add, target = LogTarget.Lock, type = LogType.UPDATE )
 	@IgnoreCommandline
 	public Response getEditLock(@Context Request request, @Context UriInfo uriInfo,@PathParam("jobunitId") String jobunitId,
@@ -559,7 +563,7 @@ public class JobRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = EditLockResponse.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Produces(MediaType.APPLICATION_JSON)
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.READ ,SystemPrivilegeMode.MODIFY})
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.READ})
 	@RestLog(action = LogAction.Get, target = LogTarget.Lock, type = LogType.REFERENCE )
 	@IgnoreCommandline
 	public Response checkEditLock(@Context Request request, @Context UriInfo uriInfo,
@@ -594,7 +598,7 @@ public class JobRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_404, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.READ ,SystemPrivilegeMode.MODIFY})
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.READ})
 	@RestLog(action = LogAction.Delete, target = LogTarget.Lock, type = LogType.UPDATE)
 	@IgnoreCommandline
 	public Response releaseEditLock(@Context Request request, @Context UriInfo uriInfo,
@@ -1051,7 +1055,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call addCommandJob()");
 
-		AddCommandJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObject(requestBody, AddCommandJobRequest.class);
+		AddCommandJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, AddCommandJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1094,7 +1098,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call addFileTransferJob()");
 
-		AddFileTransferJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObject(requestBody, AddFileTransferJobRequest.class);
+		AddFileTransferJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, AddFileTransferJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1180,7 +1184,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call addMonitorJob()");
 
-		AddMonitorJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObject(requestBody, AddMonitorJobRequest.class);
+		AddMonitorJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, AddMonitorJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1309,7 +1313,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call addJoblinkRcvJob()");
 
-		AddJobLinkRcvJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObject(requestBody, AddJobLinkRcvJobRequest.class);
+		AddJobLinkRcvJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, AddJobLinkRcvJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1352,7 +1356,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call addJoblinkRcvJob()");
 
-		AddFileCheckJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObject(requestBody, AddFileCheckJobRequest.class);
+		AddFileCheckJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, AddFileCheckJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1395,7 +1399,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call addRpaJob()");
 
-		AddRpaJobRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, AddRpaJobRequest.class);
+		AddRpaJobRequest dtoReq = RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, AddRpaJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1483,7 +1487,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call modifyCommandJob()");
 
-		ModifyCommandJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObject(requestBody, ModifyCommandJobRequest.class);
+		ModifyCommandJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, ModifyCommandJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1527,7 +1531,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call modifyFileTransferJob()");
 
-		ModifyFileTransferJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObject(requestBody, ModifyFileTransferJobRequest.class);
+		ModifyFileTransferJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, ModifyFileTransferJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1615,7 +1619,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call modifyMonitorJob()");
 
-		ModifyMonitorJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObject(requestBody, ModifyMonitorJobRequest.class);
+		ModifyMonitorJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, ModifyMonitorJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1747,7 +1751,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call modifyJobLinkRcvJob()");
 
-		ModifyJobLinkRcvJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObject(requestBody, ModifyJobLinkRcvJobRequest.class);
+		ModifyJobLinkRcvJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, ModifyJobLinkRcvJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1791,7 +1795,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call modifyFileCheckJob()");
 
-		ModifyFileCheckJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObject(requestBody, ModifyFileCheckJobRequest.class);
+		ModifyFileCheckJobRequest dtoReq= RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, ModifyFileCheckJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -1815,7 +1819,7 @@ public class JobRestEndpoints {
 	@PUT
 	@Path("/setting/jobunit/{jobunitId}/rpaJob/{jobId}")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "ModifyRpaJob")
-	@RestLog(action=LogAction.Add, target=LogTarget.RpaJob, type = LogType.UPDATE)
+	@RestLog(action=LogAction.Modify, target=LogTarget.RpaJob, type = LogType.UPDATE)
 	@RestSystemPrivilege(function=SystemPrivilegeFunction.JobManagement, modeList={SystemPrivilegeMode.READ, SystemPrivilegeMode.MODIFY})
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = RpaJobInfoResponse.class)), description = "response"),
@@ -1836,7 +1840,7 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, JobMasterNotFound, JobInvalid, InvalidUserPass, InvalidRole, InvalidSetting, UserNotFound {
 		m_log.info("call modifyRpaJob()");
 
-		ModifyRpaJobRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, ModifyRpaJobRequest.class);
+		ModifyRpaJobRequest dtoReq = RestObjectMapperWrapper.convertJsonToObjectInsensitive(requestBody, ModifyRpaJobRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
@@ -3028,9 +3032,10 @@ public class JobRestEndpoints {
 	@RestLog(action = LogAction.Get, target = LogTarget.OperationProp, type = LogType.REFERENCE)
 	public Response getAvailableStartOperationSessionJob(@Context Request request, @Context UriInfo uriInfo,
 			@PathParam("sessionId") String sessionId, @PathParam("jobunitId") String jobunitId, @PathParam("jobId") String jobId) 
-					throws InvalidUserPass, InvalidRole, HinemosUnknown {
+					throws InvalidUserPass, InvalidRole, HinemosUnknown, JobInfoNotFound {
 		m_log.debug("getAvailableStartOperationSessionJob : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 		
+		// JobInfoNotFoundはコマンドラインツール用（クライアントには返却しない想定）
 		List<ControlEnum> dtolist = new JobControllerBean().getAvailableStartOperationSessionJob(sessionId, jobunitId, jobId, Locale.getDefault());
 
 		JobOperationPropResponse dto = new JobOperationPropResponse();
@@ -3054,10 +3059,11 @@ public class JobRestEndpoints {
 	@RestLog(action = LogAction.Get, target = LogTarget.OperationProp, type = LogType.REFERENCE)
 	public Response getAvailableStartOperationSessionNode(@Context Request request, @Context UriInfo uriInfo,
 			@PathParam("sessionId") String sessionId, @PathParam("jobunitId") String jobunitId, @PathParam("jobId") String jobId, @PathParam("facilityId") String facilityId) 
-					throws InvalidUserPass, InvalidRole, HinemosUnknown {
+					throws InvalidUserPass, InvalidRole, HinemosUnknown, JobInfoNotFound {
 		m_log.debug("getAvailableStartOperationSessionNode : sessionId=" + sessionId +
 				", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId);
 		
+		// JobInfoNotFoundはコマンドラインツール用（クライアントには返却しない想定）
 		List<ControlEnum> dtolist = new JobControllerBean().getAvailableStartOperationSessionNode(sessionId, jobunitId, jobId, facilityId, Locale.getDefault());
 
 		JobOperationPropResponse dto = new JobOperationPropResponse();
@@ -3081,9 +3087,10 @@ public class JobRestEndpoints {
 	@RestLog(action = LogAction.Get, target = LogTarget.OperationProp, type = LogType.REFERENCE)
 	public Response getAvailableStopOperationSessionJob(@Context Request request, @Context UriInfo uriInfo,
 			@PathParam("sessionId") String sessionId, @PathParam("jobunitId") String jobunitId, @PathParam("jobId") String jobId) 
-					throws InvalidUserPass, InvalidRole, HinemosUnknown {
+					throws InvalidUserPass, InvalidRole, HinemosUnknown, JobInfoNotFound {
 		m_log.debug("getAvailableStopOperationSessionJob : sessionId=" + sessionId + ", jobunitId=" + jobunitId + ", jobId=" + jobId);
 
+		// JobInfoNotFoundはコマンドラインツール用（クライアントには返却しない想定）
 		List<ControlEnum> dtolist = new JobControllerBean().getAvailableStopOperationSessionJob(sessionId, jobunitId, jobId, Locale.getDefault());
 
 		JobOperationPropResponse dto = new JobOperationPropResponse();
@@ -3107,10 +3114,11 @@ public class JobRestEndpoints {
 	@RestLog(action = LogAction.Get, target = LogTarget.OperationProp, type = LogType.REFERENCE)
 	public Response getAvailableStopOperationSessionNode(@Context Request request, @Context UriInfo uriInfo,
 			@PathParam("sessionId") String sessionId, @PathParam("jobunitId") String jobunitId, @PathParam("jobId") String jobId, @PathParam("facilityId") String facilityId) 
-					throws InvalidUserPass, InvalidRole, HinemosUnknown {
+					throws InvalidUserPass, InvalidRole, HinemosUnknown, JobInfoNotFound {
 		m_log.debug("getAvailableStopOperationSessionNode : sessionId=" + sessionId +
 				", jobunitId=" + jobunitId + ", jobId=" + jobId + ", facilityId=" + facilityId);
 
+		// JobInfoNotFoundはコマンドラインツール用（クライアントには返却しない想定）
 		List<ControlEnum> dtolist = new JobControllerBean().getAvailableStopOperationSessionNode(sessionId, jobunitId, jobId, facilityId, Locale.getDefault());
 
 		JobOperationPropResponse dto = new JobOperationPropResponse();
@@ -3131,8 +3139,9 @@ public class JobRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.EXEC , SystemPrivilegeMode.MODIFY, SystemPrivilegeMode.READ})
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.EXEC , SystemPrivilegeMode.READ})
 	@RestLog(action = LogAction.Exec, target = LogTarget.Session, type = LogType.UPDATE)
+	@IgnoreCommandline
 	public Response runJob(@Context Request request, @Context UriInfo uriInfo,
 			@RequestBody(description = "RunJobRequest", content = @Content(schema = @Schema(implementation = RunJobRequest.class))) String requestBody, 
 			@PathParam("jobunitId") String jobunitId, @PathParam("jobId") String jobId)
@@ -3145,6 +3154,16 @@ public class JobRestEndpoints {
 		JobTriggerInfo triggerInfo = new JobTriggerInfo();
 		RestBeanUtil.convertBean(dtoReq, triggerInfo);
 		
+		ArrayList<SystemPrivilegeInfo> systemPrivilegeList = new ArrayList<SystemPrivilegeInfo>();
+		 if (triggerInfo.getJobWaitTime() || triggerInfo.getJobWaitMinute() || triggerInfo.getJobCommand()) {
+				systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.EXEC));
+				systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.MODIFY));
+				systemPrivilegeList.add(new SystemPrivilegeInfo(FunctionConstant.JOBMANAGEMENT, SystemPrivilegeMode.READ));
+								
+				String bearerAuthHeader = RestHeaderConstant.AUTH_BEARER + " "+ HinemosSessionContext.getAuthToken();
+				RestHttpBearerAuthenticator.getInstance().authCheck(bearerAuthHeader, systemPrivilegeList, false);
+			}
+		 
 		m_log.debug("runJob : jobunitId=" + jobunitId + ", jobId=" + jobId + ", info=" + null + ", triggerInfo=" + triggerInfo);
 
 		String sessionId = new JobControllerBean().runJob(jobunitId, jobId, null, triggerInfo);
@@ -3156,7 +3175,47 @@ public class JobRestEndpoints {
 
 		return Response.status(Status.OK).entity(dto).build();
 	}
+
 	
+	/**
+	 * コマンドラインツールからジョブ実行契機を直接実行する
+	 */
+	@POST
+	@Path("/session_exec/kick/{jobKickId}")
+	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "RunJobKick")
+	@APIResponses(value = {
+			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = RunJobResponse.class)), description = "response"),
+			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
+			@APIResponse(responseCode = STATUS_CODE_404, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
+			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.EXEC , SystemPrivilegeMode.MODIFY, SystemPrivilegeMode.READ})
+	@RestLog(action = LogAction.Exec, target = LogTarget.Session, type = LogType.UPDATE)
+	public Response runJobKick(@Context Request request, @Context UriInfo uriInfo,
+			@RequestBody(description = "RunJobKickRequest", content = @Content(schema = @Schema(implementation = RunJobKickRequest.class))) String requestBody, 
+			@PathParam("jobKickId") String jobKickId)
+			throws  FacilityNotFound, HinemosUnknown, JobInfoNotFound, JobMasterNotFound, InvalidUserPass, InvalidRole, JobSessionDuplicate, InvalidSetting
+	{
+		RunJobRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, RunJobRequest.class);
+		RestCommonValitater.checkRequestDto(dtoReq);
+		dtoReq.correlationCheck();
+		
+		JobTriggerInfo triggerInfo = new JobTriggerInfo();
+		RestBeanUtil.convertBean(dtoReq, triggerInfo);
+		
+		m_log.debug("runJobKick : jobKickId=" + jobKickId + ", info=" + null + ", triggerInfo=" + triggerInfo);
+
+		String sessionId = new JobControllerBean().runJobKickDirect(jobKickId, triggerInfo);
+		
+		RunJobResponse dto = new RunJobResponse();
+		dto.setSessionId(sessionId);
+
+		RestLanguageConverter.convertMessages(dto);
+
+		return Response.status(Status.OK).entity(dto).build();
+	}
+
 	@POST
 	@Path("/sessionJob_operation/{sessionId}/jobunit/{jobunitId}/job/{jobId}")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "OperationSessionJob")
@@ -4104,8 +4163,6 @@ public class JobRestEndpoints {
 	@Produces(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Get, target = LogTarget.RpaScreenshot, type = LogType.REFERENCE)
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.READ })
-	@IgnoreCommandline
-	@IgnoreReference
 	public Response getRpaScreenshot(@Context Request request, @Context UriInfo uriInfo,
 			@PathParam("sessionId") String sessionId, @PathParam("jobunitId") String jobunitId,
 			@PathParam("jobId") String jobId, @PathParam("facilityId") String facilityId)
@@ -4160,6 +4217,6 @@ public class JobRestEndpoints {
 				RestCommonConverter.convertDTStringToHinemosTime(regDate, MessageConstant.TARGET_DATETIME.getMessage()));
 		File file = RestByteArrayConverter.convertByteArrayToFile(infoRes.getFiledata(), RestTempFileType.JOB_RPA_SCREENSHOT);
 		StreamingOutput stream = RestTempFileUtil.getTempFileStream(file);
-		return Response.ok(stream).header("Content-Disposition", "attachment; name=" + file.getName()).build();
+		return Response.ok(stream).header("Content-Disposition", "attachment; filename=" + file.getName()).build();
 	}
 }

@@ -274,10 +274,7 @@ public class HttpStringCreateDialog extends CommonMonitorStringDialog {
 		HttpCheckInfoResponse httpInfo = monitor.getHttpCheckInfo();
 		if(httpInfo == null){
 			httpInfo = new HttpCheckInfoResponse();
-			httpInfo.setUrlReplace(false);
 			httpInfo.setTimeout(TIMEOUT_SEC);
-			httpInfo.setProxySet(false);
-			httpInfo.setProxyPort(0);
 		}
 		if(httpInfo != null){
 			if (httpInfo.getRequestUrl() != null) {
@@ -455,14 +452,8 @@ public class HttpStringCreateDialog extends CommonMonitorStringDialog {
 		super.setInfoInitialValue(monitor);
 
 		HttpCheckInfoResponse httpCheckInfo = new HttpCheckInfoResponse();
-		// URL置換
-		httpCheckInfo.setUrlReplace(false);
 		// タイムアウト（ミリ秒）
 		httpCheckInfo.setTimeout(TIMEOUT_SEC);
-		// プロキシ設定
-		httpCheckInfo.setProxySet(false);
-		// プロキシ ポート */
-		httpCheckInfo.setProxyPort(0);
 		monitor.setHttpCheckInfo(httpCheckInfo);
 	}
 }

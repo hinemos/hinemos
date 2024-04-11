@@ -45,6 +45,7 @@ import com.clustercontrol.monitor.view.action.EventDetailAction;
 import com.clustercontrol.monitor.view.action.EventModifyMonitorSettingAction;
 import com.clustercontrol.monitor.view.action.EventOpenJobHistoryAction;
 import com.clustercontrol.monitor.view.action.EventUnconfirmAction;
+import com.clustercontrol.nodemap.bean.ReservedFacilityIdConstant;
 import com.clustercontrol.repository.FacilityPath;
 import com.clustercontrol.repository.util.FacilityTreeItemResponse;
 import com.clustercontrol.repository.util.ScopePropertyUtil;
@@ -201,14 +202,14 @@ public class EventView extends ScopeListBaseView {
 			if (item == null) continue;
 
 			List<String> managerList = new ArrayList<String>();
-			String facilityId;
+			// ファシリティIDがnullで検索すると現在のツリーに存在しないノードも対象になってしまうため、
+			// ファシリティIDに"_ROOT_"を設定する。
+			String facilityId = ReservedFacilityIdConstant.ROOT_SCOPE;
 			FacilityInfoResponse itemData = item.getData();
 			if (itemData.getFacilityType() == FacilityTypeEnum.COMPOSITE) {
 				managerList = RestConnectManager.getActiveManagerNameList();
-				facilityId = null;
 			} else if (itemData.getFacilityType() == FacilityTypeEnum.MANAGER) {
 				managerList.add(itemData.getFacilityId());
-				facilityId = null;
 			} else {
 				managerList.add(ScopePropertyUtil.getManager(item).getData().getFacilityId());
 				facilityId = item.getData().getFacilityId();

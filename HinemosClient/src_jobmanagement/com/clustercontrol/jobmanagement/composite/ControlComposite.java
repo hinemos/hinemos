@@ -173,7 +173,7 @@ public class ControlComposite extends Composite {
 		WidgetTestUtil.setTestId(this, "m_calendarId", this.m_calendarId);
 		m_calendarId.setLayoutData(new GridData());
 		this.m_calendarId.setEnabled(false);
-		((GridData)this.m_calendarId.getLayoutData()).widthHint = 350;
+		((GridData)this.m_calendarId.getLayoutData()).widthHint = 600;
 
 		// カレンダ：終了状態（ラベル）
 		Label calendarEndStatusTitle = new Label(calendarConditionGroup, SWT.LEFT);
@@ -691,14 +691,9 @@ public class ControlComposite extends Composite {
 		m_waitRule.setJobRetryFlg(m_jobRetryCondition.getSelection());
 
 		//繰り返し実行終了値取得
+		// 試行回数
 		try {
 			m_waitRule.setJobRetry(Integer.parseInt(m_jobRetryCount.getText()));
-			m_waitRule.setJobRetryInterval(Integer.parseInt(m_jobRetryInterval.getText()));
-			if (getSelectEndStatus(m_jobRetryEndStatus) != null) {
-				m_waitRule.setJobRetryEndStatus(JobWaitRuleInfoResponse.JobRetryEndStatusEnum.fromValue(getSelectEndStatus(m_jobRetryEndStatus)));
-			} else {
-				m_waitRule.setJobRetryEndStatus(null);
-			}
 		} catch (NumberFormatException e) {
 			if (m_waitRule.getJobRetryFlg().booleanValue()) {
 				result = new ValidateResult();
@@ -707,6 +702,25 @@ public class ControlComposite extends Composite {
 				result.setMessage(Messages.getString("message.job.167"));
 				return result;
 			}
+		}
+		// 試行間隔
+		try {
+			m_waitRule.setJobRetryInterval(Integer.parseInt(m_jobRetryInterval.getText()));
+		} catch (NumberFormatException e) {
+			if (m_waitRule.getJobRetryFlg().booleanValue()) {
+				result = new ValidateResult();
+				result.setValid(false);
+				result.setID(Messages.getString("message.hinemos.1"));
+				result.setMessage(Messages.getString("message.job.197"));
+				return result;
+			}
+		}
+
+		// 完了状態
+		if (getSelectEndStatus(m_jobRetryEndStatus) != null) {
+			m_waitRule.setJobRetryEndStatus(JobWaitRuleInfoResponse.JobRetryEndStatusEnum.fromValue(getSelectEndStatus(m_jobRetryEndStatus)));
+		} else {
+			m_waitRule.setJobRetryEndStatus(null);
 		}
 
 		// ジョブキュー

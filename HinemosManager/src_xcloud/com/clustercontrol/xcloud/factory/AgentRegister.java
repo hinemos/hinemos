@@ -66,7 +66,8 @@ public class AgentRegister implements Runnable {
 
 	public void asyncRegistAgent() {
 		logger.info("Start to connect to " + facilityId + "'s agent...");
-		Threading.scheduleWithFixedDelay(this, 0, HinemosPropertyCommon.xcloud_agent_connection_interval.getIntegerValue(), TimeUnit.MILLISECONDS);
+		Threading.scheduleWithFixedDelayForRegistAgent(this, 0,
+				HinemosPropertyCommon.xcloud_agent_connection_interval.getIntegerValue(), TimeUnit.MILLISECONDS);
 	}
 
 	public void registAgent() {

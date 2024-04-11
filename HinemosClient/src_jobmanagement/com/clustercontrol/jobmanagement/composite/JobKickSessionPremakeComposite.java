@@ -133,7 +133,7 @@ public class JobKickSessionPremakeComposite extends Composite {
 		Composite composite = new Composite(this, SWT.NONE);
 		composite.setLayout(new RowLayout());
 		composite.setLayoutData(new RowData());
-		((RowData)composite.getLayoutData()).width = 565;
+		((RowData)composite.getLayoutData()).width = 740;
 
 		// ジョブセッションの事前生成を有効にする（チェックボックス）
 		this.m_btnSessionPremake = new Button(composite, SWT.CHECK);

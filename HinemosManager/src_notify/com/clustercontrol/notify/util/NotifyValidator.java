@@ -11,6 +11,7 @@ package com.clustercontrol.notify.util;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -120,6 +121,12 @@ public class NotifyValidator {
 				info.getUnknownEffectiveUser()
 		};
 
+		// 実効ユーザの文字列長チェック(nullチェックなし)
+		for(String effectiveUser:Arrays.asList(effectiveUsers)){
+			CommonValidator.validateString(MessageConstant.EFFECTIVE_USER.getMessage(), effectiveUser,
+					false, 0, 64);
+		}
+		
 		// 実行コマンド
 		String[] commands = new String[] { info.getInfoCommand(),
 				info.getWarnCommand(), info.getCriticalCommand(),
@@ -127,11 +134,10 @@ public class NotifyValidator {
 
 		for (int i = 0; i < validFlgIndexes.size(); i++) {
 			int validFlgIndex = validFlgIndexes.get(i);
+			// 実効ユーザのnullチェック
 			if (effectiveUsers[validFlgIndex] == null) {
 				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_EFFECTIVEUSER.getMessage());
 			}
-			CommonValidator.validateString("effective.user", effectiveUsers[validFlgIndex],
-					true, 0, 64);
 
 			if (isNullOrEmpty(commands[validFlgIndex])) {
 				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_COMMAND_NOTIFY.getMessage());
@@ -216,12 +222,14 @@ public class NotifyValidator {
 			return false;
 		}
 
+		// 固定スコープを選択している場合の確認
 		if (info.getEscalateFacilityFlg() == ExecFacilityConstant.TYPE_FIX) {
-			// 固定スコープを選択している場合の確認
 			if (info.getEscalateFacility() == null) {
 				throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_SCOPE_NOTIFY.getMessage());
 			}
+		}
 
+		if (info.getEscalateFacility() != null){
 			try {
 				FacilityTreeCache.validateFacilityId(
 						info.getEscalateFacility(),
@@ -619,6 +627,13 @@ public class NotifyValidator {
 				info.getUnknownInfraId()
 		};
 		
+		// 入力されて構築IDについて参照権限に関わらず存在チェック
+		for(String infraId:Arrays.asList(infraIds)){
+			if(infraId != null){
+				InfraManagementValidator.validateInfraManagementId(infraId, true);
+			}
+		}
+		
 		MessageConstant[] priorities = new MessageConstant[] {
 				MessageConstant.INFO,
 				MessageConstant.WARNING,
@@ -640,6 +655,9 @@ public class NotifyValidator {
 
 	private static boolean validateRestInfo(NotifyRestInfo info, NotifyInfo notifyInfo) throws InvalidSetting, InvalidRole {
 		ArrayList<Integer> validFlgIndexes = NotifyUtil.getValidFlgIndexes(info);
+		if (validFlgIndexes.isEmpty()) {
+			return false;
+		}
 
 		String[] restAccessIds = new String[] {
 				info.getInfoRestAccessId(),

@@ -525,6 +525,24 @@ public class CloudUtil {
 		AplLogger.put(internalId, internalId.getMessage(), detailMsg);
 	}
 
+	/**
+	 * INTERNALイベントを通知する。
+	 * 
+	 * 置換文字列で引数を受け取る形式（例：$[A:B]）を使用せずに、<br>
+	 * 過去バージョンと同一のメッセージを保つため、<br>
+	 * メッセージをそのまま指定可能とする。<br>
+	 * 
+	 * @param internalId
+	 * @param msg
+	 * @param detailMsg
+	 */
+	public static void notifyInternalMessage (
+			InternalIdAbstract internalId,
+			String msg,
+			String detailMsg) {
+		AplLogger.put(internalId, msg, detailMsg);
+	}
+
 	public static void notifyInternalMessage (Exception exception) {
 		
 		StringWriter sw = new StringWriter();

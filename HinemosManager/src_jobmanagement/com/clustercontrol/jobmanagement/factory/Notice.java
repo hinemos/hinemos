@@ -62,7 +62,7 @@ public class Notice {
 	 * ジョブの実行契機情報に格納される文字列パターン
 	 * スケジュール、ジョブ連携受信：実行契機種別(実行契機ID)、ファイルチェック：ファイルチェック(実行契機ID) ID=エージェントからの送信識別ID
 	 */
-	private static final Pattern JOB_TRIGGER_INFO_PATTERN = Pattern.compile(".+\\((.+)\\).+");
+	private static final Pattern JOB_TRIGGER_INFO_PATTERN = Pattern.compile(".+\\((.+)\\).*");
 	/**
 	 * セッションID、ジョブユニットID、ジョブIDからジョブ通知情報を取得し、<BR>
 	 * ジョブ通知情報と終了状態を基に、ログ出力情報作成し、監視管理に通知します。

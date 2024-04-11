@@ -25,12 +25,19 @@ import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.report.xml.TemplateDetailInfo;
 import com.clustercontrol.utility.settings.report.xml.TemplateInfo;
 import com.clustercontrol.utility.util.Config;
+import com.clustercontrol.version.util.VersionUtil;
 
 public class ReportTemplateConv {
 	
-	static private final String schemaType="H";
-	static private final String schemaVersion="1";
-	static private final String schemaRevision="1" ;
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private final String schemaType=VersionUtil.getSchemaProperty("REPORT.REPORTTEMPLATE.SCHEMATYPE");
+	static private final String schemaVersion=VersionUtil.getSchemaProperty("REPORT.REPORTTEMPLATE.SCHEMAVERSION");
+	static private final String schemaRevision=VersionUtil.getSchemaProperty("REPORT.REPORTTEMPLATE.SCHEMAREVISION");
 	
 	/* ロガー */
 	private static Logger log = Logger.getLogger(ReportTemplateConv.class);

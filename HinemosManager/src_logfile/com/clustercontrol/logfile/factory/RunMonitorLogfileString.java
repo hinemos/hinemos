@@ -50,18 +50,25 @@ public class RunMonitorLogfileString {
 	public List<OutputBasicInfo> run(String facilityId, LogfileResultDTO result) throws HinemosUnknown {
 		List<OutputBasicInfo> rtn = new ArrayList<>();
 		
-		// 収集処理.
-		if (result.monitorInfo.getCollectorFlg() != null && result.monitorInfo.getCollectorFlg()) {
+		// 監視ジョブ以外の場合、収集処理.
+		if (result.runInstructionInfo == null && result.monitorInfo.getCollectorFlg() != null && result.monitorInfo.getCollectorFlg()) {
 			StringSample sample = new StringSample(new Date(result.msgInfo.getGenerationDate()), result.monitorInfo.getMonitorId());
 			
 			String filePath = new File(new File(result.monitorInfo.getLogfileCheckInfo().getDirectory()), result.monitorInfo.getLogfileCheckInfo().getFileName()).getPath();
+			
+			String messageWithoutBom = result.message;
+			if (result.message.startsWith("\uFEFF")) {
+				// ログにBOMが含まれる場合は除去する
+				messageWithoutBom = result.message.substring(1);
+			}
+			
 			if (SdmlUtil.isCreatedBySdml(result.monitorInfo)) {
 				// SDMLで自動作成されたログファイル監視の場合、独自のタグを抽出する
 				List<StringSampleTag> tagList = SdmlUtil.extractTagsFromMonitoringLog(result.monitorInfo.getMonitorId(), result.message);
 				tagList.add(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getLogfileCheckInfo().getLogfile()));
-				sample.set(facilityId, filePath, result.message.trim(), tagList);
+				sample.set(facilityId, filePath, messageWithoutBom.trim(), tagList);
 			} else {
-				sample.set(facilityId, filePath, result.message.trim(), Arrays.asList(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getLogfileCheckInfo().getLogfile())));
+				sample.set(facilityId, filePath, messageWithoutBom.trim(), Arrays.asList(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getLogfileCheckInfo().getLogfile())));
 			}
 			CollectStringDataUtil.store(Arrays.asList(sample));
 		}

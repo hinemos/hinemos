@@ -219,7 +219,7 @@ public class UploadImageDialog extends CommonDialog {
 			MessageDialog.openInformation(
 				null,
 				Messages.getString("message"),
-				com.clustercontrol.nodemap.messages.Messages.getString("expiration.term"));
+				e.getMessage());
 			super.okPressed();
 			return;
 		}

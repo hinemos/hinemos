@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -89,7 +90,7 @@ public class ClientPathUtil {
 			return value + "utility" + File.separator + "tmp";
 
 		} else {
-			return "../../utility/tmp";
+			return Paths.get(System.getProperty("hinemos.web.home.dir"), "utility/tmp").toString();
 		}
 	}
 	

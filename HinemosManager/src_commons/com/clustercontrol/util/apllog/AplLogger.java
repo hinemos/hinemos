@@ -86,6 +86,18 @@ public class AplLogger {
 
 	/**
 	 *
+	 * ログを出力します。(HinemosSchedulerより呼び出す想定) <BR>
+	 * 
+	 * @param internalId	INTERNALイベント情報
+	 * @param pluginId	プラグインID 
+	 * @param msgArgs		メッセージ置換項目
+	 */
+	public static void put(InternalIdAbstract internalId,String pluginId, String[] msgArgs) {
+		put(internalId, internalId.getPriority(), pluginId, internalId.getMessage(msgArgs), null);
+	}
+
+	/**
+	 *
 	 * ログを出力します。<BR>
 	 *
 	 * @param internalId	INTERNALイベント情報
@@ -367,7 +379,7 @@ public class AplLogger {
 			
 			boolean specifyUser = false;
 			
-			if (commandUser != null && !"".equals(commandUser)) {
+			if (commandUser != null && !"".equals(commandUser) && !CommandCreator.sysUser.equals(commandUser)) {
 				specifyUser = true;
 			}
 			
@@ -377,7 +389,11 @@ public class AplLogger {
 			);
 			
 			String[] cmd = CommandCreator.createCommand(commandUser, command, platformType, specifyUser);
-			CommandExecutor cmdExec = new CommandExecutor(cmd, commandTimeout);
+			CommandExecutor cmdExec = new CommandExecutor(
+					new CommandExecutor.CommandExecutorParams()
+						.setCommand(cmd)
+						.setTimeout(commandTimeout)
+						.setForceSigterm(specifyUser));
 			cmdExec.execute();
 			CommandResult ret = cmdExec.getResult();
 

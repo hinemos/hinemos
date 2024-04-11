@@ -156,4 +156,24 @@ public class SdmlUtil {
 		}
 		return rtn;
 	}
+
+	/**
+	 * 指定したオーナーロールIDが設定されたSDML制御設定のアプリケーションIDの一覧を取得する<br>
+	 * ※バージョンは考慮しない
+	 * 
+	 * @param ownerRoleId
+	 * @return
+	 */
+	public static List<String> getApplicationIdListByOwnerRoleId(String ownerRoleId) {
+		List<String> rtn = new ArrayList<>();
+		try {
+			List<SdmlControlSettingInfo> list = QueryUtil.getSdmlControlSettingInfoFindByOwnerRoleId_NONE(ownerRoleId);
+			for (SdmlControlSettingInfo info : list) {
+				rtn.add(info.getApplicationId());
+			}
+		} catch (Exception e) {
+			logger.warn("getApplicationIdListByOwnerRoleId() : " + e.getMessage(), e);
+		}
+		return rtn;
+	}
 }

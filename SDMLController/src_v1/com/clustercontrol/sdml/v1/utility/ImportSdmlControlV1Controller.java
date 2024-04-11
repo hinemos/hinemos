@@ -9,6 +9,7 @@ package com.clustercontrol.sdml.v1.utility;
 
 import java.util.List;
 
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.rest.endpoint.sdml.dto.ImportSdmlControlRecordRequest;
 import com.clustercontrol.rest.endpoint.utility.controller.AbstractImportController;
 import com.clustercontrol.rest.endpoint.utility.dto.RecordRegistrationResponse;
@@ -44,10 +45,10 @@ public class ImportSdmlControlV1Controller
 		// ControllerBean呼び出し
 		if (importRec.getIsNewRecord()) {
 			// 新規登録
-			new SdmlControllerBean().addSdmlControlSetting(infoReq);
+			new SdmlControllerBean().addSdmlControlSetting(infoReq, true);
 		} else {
 			// 変更
-			new SdmlControllerBean().modifySdmlControlSetting(infoReq);
+			new SdmlControllerBean().modifySdmlControlSetting(infoReq, true);
 		}
 
 		dtoRecRes.setResult(ImportResultEnum.NORMAL);
@@ -59,4 +60,8 @@ public class ImportSdmlControlV1Controller
 		return new RecordRegistrationResponse();
 	}
 
+	@Override
+	protected void addCallback(JpaTransactionManager jtm) {
+		new SdmlControllerBean().addImportSdmlControlSettingCallback(jtm);
+	}
 }

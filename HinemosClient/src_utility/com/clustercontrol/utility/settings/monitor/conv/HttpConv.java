@@ -42,6 +42,7 @@ import com.clustercontrol.utility.settings.monitor.xml.NumericValue;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * HTTP 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -54,9 +55,15 @@ import com.clustercontrol.utility.util.UtilityManagerUtil;
 public class HttpConv {
 	private final static Log logger = LogFactory.getLog(HttpConv.class);
 	
-	static private String SCHEMA_TYPE = "I";
-	static private String SCHEMA_VERSION = "1";
-	static private String SCHEMA_REVISION = "2";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	static private String SCHEMA_TYPE = VersionUtil.getSchemaProperty("MONITOR.HTTP.SCHEMATYPE");
+	static private String SCHEMA_VERSION = VersionUtil.getSchemaProperty("MONITOR.HTTP.SCHEMAVERSION");
+	static private String SCHEMA_REVISION =VersionUtil.getSchemaProperty("MONITOR.HTTP.SCHEMAREVISION");
 	
 	/**
 	 * <BR>
@@ -219,14 +226,8 @@ public class HttpConv {
 		HttpInfo httpInfo = new HttpInfo();
 		httpInfo.setMonitorTypeId(httpCheckInfo.getMonitorType().getValue());
 		httpInfo.setMonitorId(httpCheckInfo.getMonitorId());
-		httpInfo.setProxyHost(httpCheckInfo.getHttpCheckInfo().getProxyHost());
-
-		httpInfo.setProxyPort(Objects.isNull(httpCheckInfo.getHttpCheckInfo().getProxyPort())?0:httpCheckInfo.getHttpCheckInfo().getProxyPort());
-		httpInfo.setProxySet(Objects.isNull(httpCheckInfo.getHttpCheckInfo().getProxySet())?false:httpCheckInfo.getHttpCheckInfo().getProxySet());
 		httpInfo.setRequestUrl(httpCheckInfo.getHttpCheckInfo().getRequestUrl());
 		httpInfo.setTimeout(httpCheckInfo.getHttpCheckInfo().getTimeout());
-
-		httpInfo.setUrlReplace(Objects.isNull(httpCheckInfo.getHttpCheckInfo().getUrlReplace())?false:httpCheckInfo.getHttpCheckInfo().getUrlReplace());
 
 		return httpInfo;
 	}
@@ -238,14 +239,9 @@ public class HttpConv {
 	 */
 	private static HttpCheckInfoResponse createHttpCheckInfo(HttpInfo httpInfo) {
 		HttpCheckInfoResponse httpCheckInfo = new HttpCheckInfoResponse();
-		httpCheckInfo.setProxySet(httpInfo.getProxySet());
-		if(httpInfo.getProxySet()){
-			httpCheckInfo.setProxyHost(httpInfo.getProxyHost());
-			httpCheckInfo.setProxyPort(httpInfo.getProxyPort());
-		}
+
 		httpCheckInfo.setRequestUrl(httpInfo.getRequestUrl());
 		httpCheckInfo.setTimeout(httpInfo.getTimeout());
-		httpCheckInfo.setUrlReplace(httpInfo.getUrlReplace());
 		
 		return httpCheckInfo;
 	}

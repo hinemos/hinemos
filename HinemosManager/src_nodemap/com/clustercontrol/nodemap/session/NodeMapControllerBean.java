@@ -43,7 +43,6 @@ import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.IconFileNotFound;
 import com.clustercontrol.fault.InvalidRole;
-import com.clustercontrol.fault.NodeMapElementNoPrivilege;
 import com.clustercontrol.fault.NodeMapException;
 import com.clustercontrol.fault.NodeMapNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
@@ -191,45 +190,14 @@ public class NodeMapControllerBean {
 	public NodeMapModel registerNodeMapModel(NodeMapModel map) throws InvalidRole, NodeMapException, HinemosUnknown {
 
 		JpaTransactionManager jtm = null;
-		NodeMapModel nodeMapModel = createNodeMapModel(map.getMapId());
-		m_log.debug("OwnerRoleId" + nodeMapModel.getOwnerRoleId());
+
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			HinemosEntityManager em = jtm.getEntityManager();
 
-			try {
-				// オブジェクト権限チェック
-				ObjectPrivilegeUtil.getObjectPrivilegeObject(HinemosModuleConstant.PLATFORM_REPOSITORY,
-						nodeMapModel.getMapId(), ObjectPrivilegeMode.MODIFY);
-			} catch (ObjectPrivilege_InvalidRole e) {
-				m_log.debug("mapId = "  + nodeMapModel.getMapId() + " error");
-				if (!nodeMapModel.isBuiltin()) {
-					try {
-						if("".equals(nodeMapModel.getParentMapId()) || nodeMapModel.getParentMapId() == null || ReservedFacilityIdConstant.ROOT_SCOPE.equals(nodeMapModel.getParentMapId())){
-							m_log.info("getFacilityPK() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
-							if (jtm != null)
-								jtm.rollback();
-							throw new InvalidRole(e.getMessage(), e);
-						}
-						// 親のオブジェクト権限チェック
-						ObjectPrivilegeUtil.getObjectPrivilegeObject(HinemosModuleConstant.PLATFORM_REPOSITORY,
-								nodeMapModel.getParentMapId(), ObjectPrivilegeMode.MODIFY);
-					} catch (ObjectPrivilege_InvalidRole ep) {
-						m_log.info("getFacilityPK() : " + ep.getClass().getSimpleName() + ", " + ep.getMessage());
-						if (jtm != null)
-							jtm.rollback();
-						throw new InvalidRole(e.getMessage(), ep);
-					}
-				} else{
-					// 組み込みスコープの場合、ALL_USERSに所属ユーザの場合は処理をスキップ
-					List<String> roleIds = new AccessControllerBean().getOwnerRoleIdList();
-					if(roleIds.indexOf(RoleIdConstant.ALL_USERS) >= 0){
-						// 何もされないので空のモデルを返す
-						return new NodeMapModel();
-					}
-				}
-			}
+			// オブジェクト権限チェック
+			ObjectPrivilegeUtil.getObjectPrivilegeObject(HinemosModuleConstant.PLATFORM_REPOSITORY, map.getMapId(), ObjectPrivilegeMode.MODIFY);
 
 			// 登録時は、該当のマップの関係（コネクション）と要素を全て削除した後、登録する。
 			try {
@@ -423,6 +391,12 @@ public class NodeMapControllerBean {
 				jtm.rollback();
 			}
 			throw e;
+		} catch (ObjectPrivilege_InvalidRole e) {
+			m_log.info("registerNodeMapModel() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			if (jtm != null)
+				jtm.rollback();
+			throw new InvalidRole(e.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("registerNodeMapModel() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -465,6 +439,8 @@ public class NodeMapControllerBean {
 					}
 				}
 			} catch (FacilityNotFound e) {
+				m_log.warn("getNodeMapModel() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 				throw new NodeMapException (e.getMessage(), e);
 			} catch (Exception e) {
 				m_log.warn("getNodeMapModel() : "
@@ -496,15 +472,6 @@ public class NodeMapControllerBean {
 								// スコープ配下のファシリティIDに、そのスコープ自身も含まれるので、それをスキップする
 								continue;
 							}
-							// 配下スコープのオブジェクト権限チェック（参照権限なければその旨を返却）
-							try {
-								ObjectPrivilegeUtil.getObjectPrivilegeObject(HinemosModuleConstant.PLATFORM_REPOSITORY,
-										fid, ObjectPrivilegeMode.READ);
-							} catch (ObjectPrivilege_InvalidRole e) {
-								String user = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
-								m_log.warn("getNodeMapModel () : mapId = "  + facilityId + " , elementId = "+ fid + " . Privilege is nothing . user =" + user);
-								throw new NodeMapElementNoPrivilege(e.getMessage());
-							}
 							try {
 								// エレメントを生成
 								FacilityElement element = createElementForRepository(facilityId, fid);
@@ -514,7 +481,7 @@ public class NodeMapControllerBean {
 								// 何もしない
 							}
 						}
-					}catch (HinemosUnknown | NodeMapElementNoPrivilege e) {
+					}catch (HinemosUnknown e) {
 						throw e;
 					}catch (Exception e) {
 						m_log.warn("getNodeMapModel() : "
@@ -523,7 +490,7 @@ public class NodeMapControllerBean {
 					}
 					return map;
 				}
-			} catch (HinemosUnknown | NodeMapElementNoPrivilege e) {
+			} catch (HinemosUnknown e) {
 				throw e;
 			} catch (Exception e) {
 				m_log.warn("getNodeMapModel() : "
@@ -551,16 +518,6 @@ public class NodeMapControllerBean {
 					// スコープ配下のファシリティIDに、そのスコープ自身も含まれるので、それをスキップする
 					continue;
 				}
-				// 配下スコープのオブジェクト権限チェック（参照権限なければその旨を返却）
-				try {
-					ObjectPrivilegeUtil.getObjectPrivilegeObject(HinemosModuleConstant.PLATFORM_REPOSITORY,
-							childId, ObjectPrivilegeMode.READ);
-				} catch (ObjectPrivilege_InvalidRole e) {
-					String user = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
-					m_log.warn("getNodeMapModel () : mapId = "  + facilityId + " , elementId = "+ childId + " . Privilege is nothing . user =" + user);
-					throw new NodeMapElementNoPrivilege(e.getMessage());
-				}
-
 				String parentId = facilityId;
 
 				// 対応するファシリティIDの座標情報がDBにあるか否かを調べる
@@ -628,7 +585,7 @@ public class NodeMapControllerBean {
 						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			}
 			jtm.commit();
-		} catch (HinemosUnknown | InvalidRole | NodeMapElementNoPrivilege e) {
+		} catch (HinemosUnknown | InvalidRole | NodeMapException e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
@@ -1083,15 +1040,13 @@ public class NodeMapControllerBean {
 
 			NodeInfo nodeEntity = null;
 			try {
-				nodeEntity = new RepositoryControllerBean().getNodeEntityByPK(fid);
+				nodeEntity = new RepositoryControllerBean().getNodeEntityByPK(fid, ObjectPrivilegeMode.NONE);
 				ipAddressVersion = nodeEntity.getIpAddressVersion();
 				ipAddressV4 = nodeEntity.getIpAddressV4();
 				ipAddressV6 = nodeEntity.getIpAddressV6();
 				nodeName = nodeEntity.getNodeName();
-			} catch (InvalidRole e) {
+			} catch (InvalidRole | FacilityNotFound | HinemosUnknown e) {
 				// 何もしない
-			} catch (FacilityNotFound | HinemosUnknown e) {
-				throw e;
 			} catch (Exception e) {
 				m_log.warn("createElementForRepository() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);

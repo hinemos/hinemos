@@ -26,6 +26,7 @@ import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.rest.ApiClient;
 import com.clustercontrol.rest.client.DefaultApi;
 import com.clustercontrol.rest.util.RestCommonConverter;
+import com.clustercontrol.version.util.VersionUtil;
 
 import okhttp3.OkHttpClient;
 
@@ -43,7 +44,7 @@ public class RestUrlSetting {
 	private HinemosToken token = null;
 
 	public static final String _pathPrefix = "api/";
-	private static final String _clientVersion = "7.0";
+	private static final String _clientVersion = VersionUtil.getVersionMajor();
 
 	// Restの接続種別を定義（接続種別ごとに既定となるURLが変わるため
 	public enum RestKind {

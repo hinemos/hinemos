@@ -10,22 +10,29 @@
 <project name="HinemosCommon" default="all" basedir=".">
 	
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<property file="../HinemosCommon/ant_config/build_common_version.properties" />
 	<import file="../HinemosCommon/ant_config/build_common.xml"/>
 	
 	<property name="project.name" value="HinemosCommon" />
 	<property name="jar.file" value="${jar.HinemosCommon}" />
 	<property name="src.dir" value="src" />
+	<property name="src.version.dir" value="src_version" />
+	<property name="config.version.dir" value="version_config" />
 	<property name="build.dir" value="build" />
 	<property name="jar.include.properties" value="true" />
+	<property name="jar.version" value="${jar.Version}" />
 	
 	<!-- Dependency -->
-	<target name="dependency" depends="check_dependency">
-		
+	<target name="dependency" depends="check_version_propertires, check_dependency">
+		<fail unless="version.properties.built" message="file not found. (HinemosCommon/build_common_version.properties)" />
 	</target>
 	
 	<!-- Classpath -->
 	<path id="id.compile.classpath.local">
 		<path refid="id.compile.classpath" />
+		<fileset dir=".">
+			<include name="${jar.dir}/${jar.Version}" />
+		</fileset>
 	</path>
 	
 	<path id="id.compile.sourcepath.local">
@@ -34,6 +41,7 @@
 	
 	<!-- All -->
 	<target name="all" depends="dependency">
+		<antcall target="jar_version" />
 		<antcall target="jar_common" />
 		<antcall target="install" />
 		
@@ -62,9 +70,9 @@
 		<copy file="commonlib/httpcore5-5.0.3.jar" todir="../HinemosManager/commonlib" />
 		<copy file="commonlib/httpcore5-h2-5.0.3.jar" todir="../HinemosManager/commonlib" />
 		<copy file="commonlib/slf4j-api-1.7.30.jar" todir="../HinemosManager/commonlib" />
-		<copy file="commonlib/jackson-annotations-2.12.0.jar" todir="../HinemosManager/commonlib" />
-		<copy file="commonlib/jackson-core-2.12.0.jar" todir="../HinemosManager/commonlib" />
-		<copy file="commonlib/jackson-databind-2.12.0.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/jackson-annotations-2.15.1.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/jackson-core-2.15.1.jar" todir="../HinemosManager/commonlib" />
+		<copy file="commonlib/jackson-databind-2.15.1.jar" todir="../HinemosManager/commonlib" />
 		
 		<delete dir="../HinemosManager/commonlib_rest" />
 		<copy file="commonlib/jakarta.annotation-api-1.3.5.jar" todir="../HinemosManager/commonlib_rest" />
@@ -107,9 +115,9 @@
 		<copy file="commonlib/gson-2.8.6.jar" todir="../HinemosWorkers/commonlib" />
 		<copy file="commonlib/gson-fire-1.8.5.jar" todir="../HinemosWorkers/commonlib" />
 		<copy file="commonlib/hamcrest-core-1.3.jar" todir="../HinemosWorkers/commonlib" />
-		<copy file="commonlib/jackson-annotations-2.12.0.jar" todir="../HinemosWorkers/commonlib" />
-		<copy file="commonlib/jackson-core-2.12.0.jar" todir="../HinemosWorkers/commonlib" />
-		<copy file="commonlib/jackson-databind-2.12.0.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/jackson-annotations-2.15.1.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/jackson-core-2.15.1.jar" todir="../HinemosWorkers/commonlib" />
+		<copy file="commonlib/jackson-databind-2.15.1.jar" todir="../HinemosWorkers/commonlib" />
 		<copy file="commonlib/jsr305-3.0.2.jar" todir="../HinemosWorkers/commonlib" />
 		<copy file="commonlib/okio-1.17.5.jar" todir="../HinemosWorkers/commonlib" />
 		<copy file="commonlib/swagger-annotations-1.6.2.jar" todir="../HinemosWorkers/commonlib" />
@@ -174,9 +182,9 @@
 		<copy file="commonlib/gson-2.8.6.jar" todir="../HinemosClient/lib" />
 		<copy file="commonlib/gson-fire-1.8.5.jar" todir="../HinemosClient/lib" />
 		<copy file="commonlib/hamcrest-core-1.3.jar" todir="../HinemosClient/lib" />
-		<copy file="commonlib/jackson-annotations-2.12.0.jar" todir="../HinemosClient/lib" />
-		<copy file="commonlib/jackson-core-2.12.0.jar" todir="../HinemosClient/lib" />
-		<copy file="commonlib/jackson-databind-2.12.0.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/jackson-annotations-2.15.1.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/jackson-core-2.15.1.jar" todir="../HinemosClient/lib" />
+		<copy file="commonlib/jackson-databind-2.15.1.jar" todir="../HinemosClient/lib" />
 		<copy file="commonlib/jakarta.annotation-api-1.3.5.jar" todir="../HinemosClient/lib" />
 		<copy file="commonlib/jsr305-3.0.2.jar" todir="../HinemosClient/lib" />
 		<copy file="commonlib/logging-interceptor-3.14.9.jar" todir="../HinemosClient/lib" />
@@ -212,5 +220,68 @@
 				<include name="**/*.java" if="jar.include.src"/>
 			</fileset>
 		</jar>
+	</target>
+	
+	<target name="jar_version" depends="dependency,jar_version_clean,manifest">
+		<copy preservelastmodified="true" overwrite="yes"
+			file="../HinemosCommon/version_config/hinemos_version.properties.tmpl"
+			tofile="../HinemosCommon/version_config/hinemos_version.properties"
+		/>
+		<replace file="../HinemosCommon/version_config/hinemos_version.properties">
+			<replacefilter token="@VERSION@" value="${version}" />
+			<replacefilter token="@VERSION_SHORT@" value="${version.short}" />
+			<replacefilter token="@VERSION_MAJOR@" value="${version.major}" />
+			<replacefilter token="@VERSION_TOOL@" value="${version.tool}" />
+			<replacefilter token="@CLOUD.CLOUDUSER.SCHEMAREVISION@" value="${cloud.clouduser.schemarevision}" />
+			<replacefilter token="@PLATFORM.NOTIFY.SCHEMAREVISION@" value="${platform.notify.schemarevision}" />
+		</replace>
+		
+		<antcall target="compile_jar_version" />
+		
+		<jar jarfile="${jar.dir}/${jar.version}" manifest="${build.dir}/MANIFEST.MF">
+			<fileset dir="${build.dir}/${class.dir}">
+				<include name="**/version/**"/>
+			</fileset>
+			<fileset dir="src_version">
+				<include name="**/*.java" if="jar.include.src"/>
+				<include name="**/model/*.java" if="jar.include.src"/>
+			</fileset>
+			<fileset dir="version_config">
+				<include name="**/*.properties" />
+			</fileset>
+		</jar>
+		
+		<copy file="${jar.dir}/${jar.version}" todir="../HinemosClient/lib" />
+		<copy file="${jar.dir}/${jar.version}" todir="../commandline_importexporttool/ref_lib" />
+	</target>
+	
+	<target name="compile_jar_version">
+		<javac 
+			destdir="${build.dir}/${class.dir}" 
+			failonerror="true" 
+			classpathref="id.compile.classpath.local" 
+			sourcepathref="id.compile.sourcepath.local"
+			source="${compile.version}" 
+			target="${compile.version}"
+			bootclasspath="${boot.classpath}"
+			includeAntRuntime="false"
+			encoding="${compile.encode}"
+			debug="on">
+			<src path="${src.version.dir}" />
+		</javac>
+	</target>
+	
+	<target name="jar_version_clean">
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${build.dir}/${class.dir}" />
+		
+		<mkdir dir="${jar.dir}" />
+		<delete includeemptydirs="true" failonerror="true" verbose="true">
+			<fileset dir="${jar.dir}">
+				<include name="**/${jar.version}" />
+			</fileset>
+		</delete>
+		<delete dir="${build.dir}/${class.dir}" failonerror="true" />
+		<mkdir dir="${build.dir}/${class.dir}" />
 	</target>
 </project>

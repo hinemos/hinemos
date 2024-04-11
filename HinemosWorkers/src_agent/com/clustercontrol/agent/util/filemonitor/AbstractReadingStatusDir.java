@@ -9,20 +9,25 @@
 package com.clustercontrol.agent.util.filemonitor;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
@@ -59,8 +64,8 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 	// 読み込み状態管理インスタンス
 	private AbstractReadingStatusRoot<T> parent;
 
-	/** ファイル最大数超過による無視リスト (RPAシナリオジョブ向け) */
-	private Map<String,String> ignoreListForFileCounter = new ConcurrentHashMap<String,String>();
+	/** ファイル最大数を超過したか否か (RPAシナリオジョブ向け) */
+	private boolean ignoreListForFileCounter = false;
 
 	
 	protected T wrapper;
@@ -155,7 +160,7 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 
 	private void update(boolean init) {
 		
-		ignoreListForFileCounter.clear();
+		ignoreListForFileCounter = false;
 		
 		// 監視設定に関わる情報を格納するルートディレクトリの存在確認。
 		File statusDir = new File(basePath, getDirName());
@@ -229,58 +234,33 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 				log.warn("update() : " + e.getMessage(), e);
 			}
 		}
-
-		// 監視対象ファイル検索用のパターン作成
-		FileFilter fileFilter = null;
+		
+		// ビジターでシーク対象ファイル一覧を取得する
+		Pattern pattern = Pattern.compile(wrapper.getFileName(), Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+		MonitorTargetLogfileFileVisitor fv = new MonitorTargetLogfileFileVisitor(pattern);
+		File dir = new File(directory);
+		if (!dir.isDirectory()) {
+			if (init) {		// 初回のみログ出力
+				log.warn("update() : " + directory + " is not directory. ID=" + wrapper.getId());
+			}
+			return;
+		}
+		Path path = dir.toPath();
 		try {
-			if (fileNameRegex) {
-				fileFilter = new FileFilter() {
-					Pattern pattern = Pattern.compile(wrapper.getFileName(), Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-					@Override
-					public boolean accept(File f) {
-						// ファイル、ファイル名でフィルタリングする(正規表現によるパターンマッチ)
-						return	f.isFile() && pattern.matcher(f.getName()).matches();
-					}
-				};
-			} else {
-				fileFilter = new FileFilter() {
-					@Override
-					public boolean accept(File f) {
-						// ファイル、ファイル名でフィルタリングする(完全一致)
-						return	f.isFile() && wrapper.getFileName().equals(f.getName());
-					}
-				};
-			}
-		} catch (Exception e) {
-			if (init) {
-				// 不正ファイルパターン。処理が継続できないので、処理を戻す。
-				log.warn("update() : " + e.getMessage());
-			}
+			// 辿る階層はログファイル監視設定のディレクトリ直下のみ
+			Files.walkFileTree(path, EnumSet.of(FileVisitOption.FOLLOW_LINKS), 1, fv);
+		} catch (IOException e) {
+			log.warn("update() : " + e.getMessage());
 			return;
 		}
 
-		// シーク対象のファイル一覧を取得。
-		File directory = new File(wrapper.getDirectory()).getAbsoluteFile();
-		File[] seekFiles = directory.listFiles(fileFilter);
-		if (seekFiles == null) {
-			if (init)
-				//null が返されるパターンは、なんらかの異常を示している。
-				log.warn("update() : " + wrapper.getDirectory() + " does not have a reference permission");
-			return;
-		}
-
+		File[] seekFiles = fv.getSeekFiles();
+		log.debug("update() : seekFiles length = " + seekFiles.length);
+		
 		Map<String, AbstractReadingStatus<T>> rsMap = new HashMap<>(statusMap);
-		boolean isReachedMaxFiles = false;//最大監視対象数に到達したか
 		for (File file : seekFiles) {
 			// ファイルが存在しているか確認。
 			log.debug("update() : " + wrapper.getId() + ", file=" + file.getName());
-			// 最大監視対象数に達していないか？
-			if (!parent.isMonitorFile(wrapper, file)) {
-				log.warn("update() : too many files for logfile. not-monitoring file=" + file.getName());
-				isReachedMaxFiles = true;
-				this.ignoreListForFileCounter.put(file.getName(),file.getPath());
-				continue;
-			}
 
 			AbstractReadingStatus<T> found = rsMap.get(file.getName());
 
@@ -294,8 +274,8 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 		}
 		// 最大監視対象数に達している場合通知する。プロパティで0が設定された場合は通知しない
 		// また、監視設定が有効な場合に限り通知する
-		if (isReachedMaxFiles && interval != 0 && wrapper.getMonitorFlg()) {
-			log.debug("isReachedMaxFiles=" + isReachedMaxFiles + ":interval=" + interval + ":lastNotificationTime="
+		if (fv.isReachedMaxFiles() && interval != 0 && wrapper.getMonitorFlg()) {
+			log.debug("isReachedMaxFiles=" + fv.isReachedMaxFiles() + ":interval=" + interval + ":lastNotificationTime="
 					+ lastNotificationTime);
 			if (lastNotificationTime == null || (HinemosTime.currentTimeMillis() - lastNotificationTime) > interval) {
 				if (lastNotificationTime != null) {
@@ -393,11 +373,11 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 	}
 
 	/**
-	 * ファイル最大数超過による無視ファイルリストを取得する。
+	 * ファイル最大数を超過したか否か (RPAシナリオジョブ向け)
 	 * 
 	 * @return
 	 */
-	public Map<String,String> getIgnoreListForFileCounter() {
+	public boolean isIgnoreListForFileCounter() {
 		return this.ignoreListForFileCounter;
 	}
 
@@ -408,4 +388,89 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 
 	public abstract AbstractReadingStatus<T> createReadingStatus(String monitorId, File filePath,
 			int firstPartDataCheckSize, File rsFilePath, boolean tail);
+	
+	// 監視対象ファイルを取得するビジター(update用)
+	private class MonitorTargetLogfileFileVisitor implements FileVisitor<Path> {
+
+		private List<File> seekFileList = new ArrayList<>();
+
+		private boolean isReachedMaxFiles = false;//最大監視対象数に到達したか
+		
+		private Pattern pattern;
+		
+		public MonitorTargetLogfileFileVisitor(final Pattern pattern) {
+			this.pattern = pattern;
+		}
+			
+		public File[] getSeekFiles() {
+			File[] f = new File[seekFileList.size()];
+			seekFileList.toArray(f);
+			return f;
+		}
+		
+		public boolean isReachedMaxFiles() {
+			return isReachedMaxFiles;
+		}
+		
+		@Override
+		public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			
+			// findbugs 対応(nullチェック)
+			Path filePath = file.getFileName();
+			if(filePath == null) {
+				// 想定外の状況
+				// スキップして次へいく
+				log.warn("update() : file.getFileName() is null");
+				return FileVisitResult.CONTINUE;
+			}
+			String fileName = filePath.toString();
+			log.debug("visitFile() : file = " + fileName);
+				
+			// ファイル以外の場合は何もしない
+			if(!file.toFile().isFile()) {
+				return FileVisitResult.CONTINUE;
+			}
+			
+			// ファイル名を正規表現でパターンマッチするかどうか
+			if(fileNameRegex) {
+				// 正規表現にマッチしなければ何もしない
+				if(!pattern.matcher(fileName).matches()) {
+					return FileVisitResult.CONTINUE;
+				}
+			} else {
+				// ファイル名に完全一致しなければ何もしない
+				if(!wrapper.getFileName().equals(fileName)) {
+					return FileVisitResult.CONTINUE;
+				}
+			}
+			
+			// 最大監視対象数に達している場合はログだけ出力する
+			File f = file.toAbsolutePath().toFile();
+			if (!parent.isMonitorFile(wrapper, f)) {
+				log.warn("update() : too many files for logfile. not-monitoring file=" + f.getName());
+				isReachedMaxFiles = true;
+				ignoreListForFileCounter = true;
+				return FileVisitResult.CONTINUE;
+			}
+			
+			seekFileList.add(f);
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
+			return FileVisitResult.CONTINUE;
+		}
+	}
+
 }

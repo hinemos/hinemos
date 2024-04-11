@@ -20,6 +20,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.util.CommandExecutor.CommandResult;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * RPA Windows用のユーティリティ
@@ -37,7 +38,7 @@ public class RpaWindowsUtil {
      *
      * @see com.clustercontrol.agent.AgentVersion.VERSION
      */
-    public static final String VERSION = "7.0";	
+    public static final String VERSION = VersionUtil.getVersionMajor();	
 
 	/** エージェントデータディレクトリ */
     public static final String HINEMOS_AGENT_DATA_DIR_PATH = "%s\\Hinemos\\Agent" + VERSION + "\\rpa";
@@ -188,7 +189,7 @@ public class RpaWindowsUtil {
 			m_log.debug("getActiveUsers() : line=" + line);
 			if (line.indexOf("Active") >= 0) {
 				m_log.debug("getActiveUsers() : found 'Active'. line=" + line);
-				String s[] = line.split("\\s+");
+				String s[] = line.trim().split("\\s+");
 				users.add(s[1]);
 			}
 		}

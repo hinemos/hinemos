@@ -19,6 +19,9 @@ import com.clustercontrol.platform.HinemosPropertyDefault;
  */
 public enum RestTempFileType {
 
+	// イベント
+	EVENT("event-",
+			HinemosPropertyDefault.performance_export_dir.getStringValue()),
 	// 構成情報検索
 	REPOSITORY_NODECONFIG("repository_nodeconfig-",
 			HinemosPropertyDefault.node_config_export_dir.getStringValue()),

@@ -46,20 +46,23 @@ public class CloudLogfileMonitorManager extends AbstractFileMonitorManager<Monit
 	 * @return
 	 */
 	public List<CloudLogfileMonitor> getCloudLogFileMonitor(String id) {
-		ArrayList<CloudLogfileMonitor> list = new ArrayList<CloudLogfileMonitor>();
-		refresh();
-		
-		// ファイル監視設定（監視対象ファイルごと）の一覧から
-		// 監視設定IDに対応するものを取得
-		for (Entry<String, AbstractFileMonitor<MonitorInfoWrapper>> e : logfileMonitorCache.entrySet()) {
-			CloudLogfileMonitor mon = ((CloudLogfileMonitor) e.getValue());
-			log.debug("getCloudLogFileMonitor(): found keys:" + e.getKey());
-			log.debug("getCloudLogFileMonitor(): found id:" + mon.getMonitorId());
-			if (mon.getMonitorId().equals(id)) {
-				list.add(mon);
+
+		synchronized (this) {
+			ArrayList<CloudLogfileMonitor> list = new ArrayList<CloudLogfileMonitor>();
+			refresh();
+
+			// ファイル監視設定（監視対象ファイルごと）の一覧から
+			// 監視設定IDに対応するものを取得
+			for (Entry<String, AbstractFileMonitor<MonitorInfoWrapper>> e : logfileMonitorCache.entrySet()) {
+				CloudLogfileMonitor mon = ((CloudLogfileMonitor) e.getValue());
+				log.debug("getCloudLogFileMonitor(): found keys:" + e.getKey());
+				log.debug("getCloudLogFileMonitor(): found id:" + mon.getMonitorId());
+				if (mon.getMonitorId().equals(id)) {
+					list.add(mon);
+				}
 			}
+			return list;
 		}
-		return list;
 	}
 	
 	/**
@@ -76,8 +79,10 @@ public class CloudLogfileMonitorManager extends AbstractFileMonitorManager<Monit
 	/**
 	 * リーディングステータスの更新を行います。
 	 */
-	public void clearReadingStatus(){
-		refresh();
+	public void clearReadingStatus() {
+		synchronized (this) {
+			refresh();
+		}
 	}
 
 	@Override

@@ -95,25 +95,9 @@ public class ImportCommand extends AbstractHandler implements IElementUpdater {
 								Messages.getString("warning"),
 								Messages.getString("message.expiration.term.invalid"));
 					}
-				} catch (InvalidRole | InvalidUserPass e) {
+				} catch (Exception e) {
 					MessageDialog.openInformation(null, Messages.getString("message"),
 							e.getMessage());
-					return null;
-				} catch (HinemosUnknown e) {
-					if(UrlNotFound.class.equals(e.getCause().getClass())) {
-						MessageDialog.openInformation(null, Messages.getString("message"),
-								Messages.getString("message.expiration.term"));
-						return null;
-					} else {
-						MessageDialog.openInformation(null, Messages.getString("message"),
-								e.getMessage());
-						return null;
-					}
-				} catch (Exception e) {
-					// キーファイルを確認できませんでした。処理を終了します。
-					// Key file not found. This process will be terminated.
-					MessageDialog.openInformation(null, Messages.getString("message"),
-							Messages.getString("message.expiration.term"));
 					return null;
 				}
 				

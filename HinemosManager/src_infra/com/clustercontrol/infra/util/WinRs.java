@@ -40,6 +40,10 @@ public class WinRs {
 	private String password;
 	private String url;
 
+	private String operationTimeout = String.format("PT%.3fS",
+			(double) HinemosPropertyCommon.infra_winrm_operation_timeout.getNumericValue() / 1000);
+	private int httpTimeout = HinemosPropertyCommon.infra_winrm_http_timeout.getIntegerValue();
+
 	public WinRs(String host, int port, String protocol, String username, String password) {
 		this.username = username;
 		this.password = password;
@@ -73,14 +77,14 @@ public class WinRs {
 		shellInst.getBody().setAttribute("CommandId", commandId);
 		shellInst.addProperty("Code", NAMESPACE_SHELL + "/signal/ctrl_c");
 		
-		ref.invoke(shellInst, NAMESPACE_SHELL + "/Signal");
+		ref.invoke(shellInst, NAMESPACE_SHELL + "/Signal", operationTimeout);
 	}
 
 	public void closeShell(String shellId) throws WsmanException {
 		WsmanConnection conn = createConnection();
 		ManagedReference ref = conn.newReference(RESOURCE_URI_CMD);
 		ref.addSelector("ShellId", shellId);
-		ref.delete();
+		ref.delete(operationTimeout);
 	}
 
 	public WinRsCommandOutput getCommandOutput(String shellId, String commandId) throws WsmanException {
@@ -91,7 +95,7 @@ public class WinRs {
 		ManagedInstance shellInst = ref.createMethod(NAMESPACE_SHELL, "Receive");
 		Element property = shellInst.addProperty("DesiredStream", "stdout stderr");
 		property.setAttribute("CommandId", commandId);
-		ManagedInstance resp = ref.invoke(shellInst, NAMESPACE_SHELL + "/Receive");
+		ManagedInstance resp = ref.invoke(shellInst, NAMESPACE_SHELL + "/Receive", operationTimeout);
 
 		return getCommandOutputFromResponse(commandId, resp);
 	}
@@ -113,7 +117,7 @@ public class WinRs {
 			shellInst.addProperty("WorkingDirectory", workingDirectory);
 		}
 
-		ManagedInstance resp = ref.create(shellInst);
+		ManagedInstance resp = ref.create(shellInst, operationTimeout);
 		NodeList nodeList = resp.getBody().getElementsByTagNameNS("http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd", "Selector");
 		Element shellIdElement = null;
 		for (int i = 0; i < nodeList.getLength(); i++) {
@@ -141,7 +145,7 @@ public class WinRs {
 			shellInst.addProperty("Arguments", arg);
 		}
 		
-		ManagedInstance resp = ref.invoke(shellInst, NAMESPACE_SHELL + "/Command");
+		ManagedInstance resp = ref.invoke(shellInst, NAMESPACE_SHELL + "/Command", operationTimeout);
 		
 		Element commandIdNode = WsmanUtils.findChild(resp.getBody(), NAMESPACE_SHELL, "CommandId");
 		return commandIdNode.getTextContent();
@@ -153,7 +157,7 @@ public class WinRs {
 		conn.setAuthenticationScheme("basic");
 		conn.setUsername(username);
 		conn.setUserpassword(password);
-		conn.setTimeout(90000);
+		conn.setTimeout(httpTimeout);
 		
 		boolean sslTrustall = HinemosPropertyCommon.infra_winrm_ssl_trustall.getBooleanValue();
 		if(sslTrustall) {

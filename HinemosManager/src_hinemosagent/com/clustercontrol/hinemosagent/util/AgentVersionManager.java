@@ -25,6 +25,7 @@ import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.factory.JobSessionNodeImpl;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * エージェントのバージョン判定に関するクラス
@@ -36,6 +37,9 @@ public class AgentVersionManager {
 	// TopicInfoに設定するバージョンはここで定義する
 	/** バージョン7.0 */
 	public static final String VERSION_7_0 = "7.0";
+
+	/** 本バージョン */
+	public static final String VERSION_MAJOR = VersionUtil.getVersionMajor();
 
 	private static final Pattern _versionPattern = Pattern.compile("[0-9]{1}\\.[0-9]{1}");
 

@@ -49,13 +49,17 @@ public class JobSessionJobUtil {
 
 	/**
 	 * 先行ジョブの終了状態、または終了値、ジョブの戻り値が後続ジョブの待ち条件を満たしているかを返します。
+	 * 待ち条件「ジョブ（戻り値）」については、先行ジョブの実行対象が1ノードである場合のみ、判定処理を行う
+	 * （0ノードの場合: false、複数ノードの場合: none）。
 	 * 
 	 * @param targetSessionJob
 	 * @param wait
 	 * @return true: 満たしている false: 満たしていない none: 未設定
-	 * @throws HinemosUnknown 
 	 */
-	public static ReturnValue checkStartCondition(JobSessionJobEntity targetSessionJob, JobWaitInfoEntity wait) throws HinemosUnknown {
+	public static ReturnValue checkStartCondition(JobSessionJobEntity targetSessionJob, JobWaitInfoEntity wait) {
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("checkStartCondition() : targetSessionJob=" + targetSessionJob + ", wait=" + wait);
+		}
 		boolean typeIsEndStatus = wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS
 				|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS;
 		boolean typeIsEndValue = wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE
@@ -110,13 +114,19 @@ public class JobSessionJobUtil {
 		}
 
 		if (typeIsReturnValue){
-			// 戻り値での比較
-			// 待ち条件「ジョブ（戻り値）」については、先行ジョブの実行対象が１ノードである場合のみ使用可能とする
-			// 複数設定されていた場合は待機状態となるため判定処理は行われること想定していない。
-			if(targetSessionJob.getJobSessionNodeEntities().size() != 1){
-				HinemosUnknown e = new HinemosUnknown("checkStartCondition() : Cannot select multiple nodes ");
-				m_log.error(e.getClass().getSimpleName() + ", " + e.getMessage() + " targetSessionJob=" + targetSessionJob);
-				throw e;
+			// 待ち条件「ジョブ（戻り値）」での比較
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("checkStartCondition() : targetSessionJob.getJobSessionNodeEntities().size()=" + targetSessionJob.getJobSessionNodeEntities().size());
+			}
+			if (targetSessionJob.getJobSessionNodeEntities().size() == 0) {
+				// 「ジョブ開始時に実行対象ノードを決定する」が有効の場合は0となるため、FALSEを返す。
+				m_log.info("checkStartCondition() : No job session node, so start condition is false.");
+				return ReturnValue.FALSE;
+			}
+			if (targetSessionJob.getJobSessionNodeEntities().size() > 1) {
+				// 複数設定されていた場合はNONEを返す。
+				m_log.warn("checkStartCondition() : multiple job session nodes, so start condition is none. targetSessionJob=" + targetSessionJob);
+				return ReturnValue.NONE;
 			}
 			JobSessionNodeEntity targetSessionNode = targetSessionJob.getJobSessionNodeEntities().get(0);
 			Integer returnValue = targetSessionNode.getEndValue();
@@ -179,9 +189,11 @@ public class JobSessionJobUtil {
 		ReturnValue ok;
 		if (targetCrossSessionJobList.isEmpty()) {
 			// 終了済みのジョブ履歴が無い場合
-			m_log.info("CrossSessionJob no ended target jobs: sessionId=" + startJobInfo.getId().getSessionId()
-					+ ", jobunitId=" + startJobInfo.getId().getJobunitId() + ", jobId="
-					+ startJobInfo.getId().getJobId());
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("CrossSessionJob no ended target jobs: sessionId=" + startJobInfo.getId().getSessionId()
+						+ ", jobunitId=" + startJobInfo.getId().getJobunitId() + ", jobId="
+						+ startJobInfo.getId().getJobId());
+			}
 			ok = ReturnValue.NONE;
 		} else {
 			// セッション横断待ち条件の場合、ジョブ履歴中に複数の先行ジョブ終了履歴がヒットする場合がある
@@ -190,9 +202,11 @@ public class JobSessionJobUtil {
 			for (JobSessionJobEntity crossJob : targetCrossSessionJobList) {
 				if (checkStartCondition(crossJob, startJobInfo).equals(ReturnValue.TRUE)) { // 終了済みのジョブのみを渡すためnullは入らない
 					ok = ReturnValue.TRUE;
-					m_log.info("CrossSessionJob matched target job found: sessionId=" + crossJob.getId().getSessionId()
-							+ ", jobunitId=" + crossJob.getId().getJobunitId() + ", jobId="
-							+ crossJob.getId().getJobId());
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("CrossSessionJob matched target job found: sessionId="
+								+ crossJob.getId().getSessionId() + ", jobunitId=" + crossJob.getId().getJobunitId()
+								+ ", jobId=" + crossJob.getId().getJobId());
+					}
 					break;
 				}
 			}

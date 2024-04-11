@@ -270,6 +270,53 @@ public class CommonValidator {
 	}
 
 	/**
+	 * calendarIdが空文字やnullチェック
+	 * calendarIdが権限に関わらず存在するか確認する
+	 * 
+	 * @param calendarId
+	 * @param nullcheck
+	 * 
+	 * @throws InvalidSetting
+	 * @throws InvalidRole
+	 */
+	public static void validateCalenderId(String calendarId, boolean nullcheck) throws InvalidSetting, InvalidRole {	
+		if("".equals(calendarId)){
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_CALENDAR_ID_IS_NULL.getMessage());
+			m_log.info("validateCalenderId() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+		else if(calendarId == null){
+			if(nullcheck){
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_CALENDAR_ID_IS_NULL.getMessage());
+				m_log.info("validateCalenderId() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+			return;
+		}
+		else{
+			try {
+				// 対象のカレンダ設定を取得できない場合CalendarNotFound、
+				// 参照権限が無い場合はInvalidRoleが発生
+				com.clustercontrol.calendar.util.QueryUtil.getCalInfoPK(calendarId);
+			} catch (CalendarNotFound e) {
+				String[] args = {calendarId};
+				m_log.warn("validateCalenderId() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw new InvalidSetting(MessageConstant.MESSAGE_CALENDAR_ID_NOT_EXIST.getMessage(args));
+			} catch (InvalidRole e) {
+				String[] args = {calendarId};
+				m_log.warn("validateCalenderId() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw new InvalidSetting(MessageConstant.MESSAGE_CALENDAR_NOT_REFERENCE_AUTHORITY_TO_CALENDAR_ID.getMessage(args));
+			}
+		}
+		return;
+	}
+	
+	
+	/**
 	 * notifyIdがnullまたは、対象の通知設定が存在するかを確認する
 	 * 
 	 * @param notifyId

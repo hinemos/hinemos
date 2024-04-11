@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -55,6 +56,8 @@ import com.clustercontrol.notify.monitor.util.QueryUtil;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.repository.bean.FacilityTargetConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.rest.util.RestTempFileType;
+import com.clustercontrol.rest.util.RestTempFileUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.Messages;
@@ -387,9 +390,9 @@ public class SelectEvent {
 	public File getEventFile(EventFilterBaseInfo filter, List<EventSelectionInfo> selectedEvents, String filename, String username, Locale locale)
 			throws IOException {
 
-		String exportDirectory = HinemosPropertyDefault.performance_export_dir.getStringValue();
-		String filepath = exportDirectory + "/" + filename;
-		File file = new File(filepath);
+		Path path = RestTempFileUtil.createTempDirectory(RestTempFileType.EVENT);
+		File file = path.resolve(filename).toFile();
+
 		boolean UTF8_BOM = HinemosPropertyCommon.monitor_common_report_event_bom.getBooleanValue();
 		if (UTF8_BOM) {
 			FileOutputStream fos = new FileOutputStream(file);

@@ -273,12 +273,10 @@ public class ScenarioMonitorThread extends AgentThread {
 						}
 					}
 					// 監視ファイル最大数エラーがあれば通知メッセージに追加
-					if (logMonitorThread != null && logMonitorThread.getIgnoreListForFileCounter() != null
-							&& logMonitorThread.getIgnoreListForFileCounter().size() > 0) {
+					if (logMonitorThread != null && logMonitorThread.isIgnoreListForFileCounter()) {
 						if(m_log.isDebugEnabled()){
-							m_log.info("run() : a job message was set that there is too many file. ,session="
-									+ m_info.getSessionId() + " ,IgnoreListForFileCounter:"
-									+ logMonitorThread.getIgnoreListForFileCounter());
+							m_log.debug("run() : a job message was set that there is too many file. ,session="
+									+ m_info.getSessionId());
 						}
 						message.append(MessageConstant.MESSAGE_JOB_RPA_LOG_FILE_TOO_MANY_FILES.getMessage() + "\n");
 					}

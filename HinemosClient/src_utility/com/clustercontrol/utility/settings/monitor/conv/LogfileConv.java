@@ -33,6 +33,7 @@ import com.clustercontrol.utility.settings.monitor.xml.LogfileMonitors;
 import com.clustercontrol.utility.settings.monitor.xml.SchemaInfo;
 import com.clustercontrol.utility.settings.monitor.xml.StringValue;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * ログファイル 監視設定情報を Castor のデータ構造と DTO との間で相互変換するクラス<BR>
@@ -44,9 +45,15 @@ import com.clustercontrol.utility.util.UtilityManagerUtil;
 public class LogfileConv {
 	private final static Log logger = LogFactory.getLog(LogfileConv.class);
 
-	private final static String SCHEMA_TYPE = "H";
-	private final static String SCHEMA_VERSION = "1";
-	private final static String SCHEMA_REVISION = "2";
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
+	private final static String SCHEMA_TYPE = VersionUtil.getSchemaProperty("MONITOR.LOGFILE.SCHEMATYPE");
+	private final static String SCHEMA_VERSION = VersionUtil.getSchemaProperty("MONITOR.LOGFILE.SCHEMAVERSION");
+	private final static String SCHEMA_REVISION =VersionUtil.getSchemaProperty("MONITOR.LOGFILE.SCHEMAREVISION");
 
 	/**
 	 * <BR>

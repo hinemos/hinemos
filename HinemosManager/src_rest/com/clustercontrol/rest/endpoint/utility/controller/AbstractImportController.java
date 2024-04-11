@@ -48,6 +48,7 @@ public abstract class AbstractImportController<T extends AbstractImportRecordReq
 						this.occurException = true;
 					}
 				}
+				addCallback(jtm);
 				if (this.occurException == false) {
 					jtm.commit();
 				} else {
@@ -82,6 +83,15 @@ public abstract class AbstractImportController<T extends AbstractImportRecordReq
 					}
 				}
 			}
+			if (!this.resultList.isEmpty()) {
+				try (JpaTransactionManager jtm = new JpaTransactionManager()){
+					jtm.begin();
+					addCallback(jtm);
+					jtm.commit();
+				} catch (Throwable e){
+					this.occurException = true;
+				}
+			}
 		}
 	}
 	protected V proccssRecordWithCatch( T importRec ){
@@ -97,6 +107,13 @@ public abstract class AbstractImportController<T extends AbstractImportRecordReq
 		}
 	}
 
+	/**
+	 * [異常レコードをスキップ]の場合に、commit後に実行されるコールバックメソッドを定義
+	 * 
+	 * @param jtm JpaTransactionManager
+	 */
+	protected void addCallback(JpaTransactionManager jtm) {
+	}
 	public boolean getOccurException(){
 		return this.occurException;
 	}

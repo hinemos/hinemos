@@ -13,6 +13,8 @@ import java.util.List;
 
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -39,6 +41,8 @@ public class XMLListComposite extends Composite {
 	protected CommonTableViewer m_viewer = null;
 	/** xmlディレクトリ表示用ラベル */
 	protected Label m_xmlDirLabel = null;
+
+	protected UtilityManagerUtil.ManagerChangeListener m_listener = null;
 
 	/**
 	* コンストラクタ
@@ -112,12 +116,19 @@ public class XMLListComposite extends Composite {
 				1, 1);
 		
 
-		UtilityManagerUtil.addManagerChangeListener(new UtilityManagerUtil.ManagerChangeListener() {
+		UtilityManagerUtil.addManagerChangeListener(m_listener = new UtilityManagerUtil.ManagerChangeListener() {
 			@Override
 			public void notifyManagerChanged() {
 				String dir = MultiManagerPathUtil.getDirectoryPath(SettingToolsXMLPreferencePage.KEY_XML);
 				m_xmlDirLabel.setText(Messages.getString("perference.xml.directory") + " : " + dir);
 				update();
+			}
+		});
+
+		this.addDisposeListener(new DisposeListener(){
+			@Override
+			public void widgetDisposed(DisposeEvent e) {
+				UtilityManagerUtil.removeManagerChangeListener(m_listener);
 			}
 		});
 	}

@@ -128,17 +128,10 @@ public class CloudLogMonitorManager {
 		String tmpVal = "";
 
 		// ファイル監視で読み取る際の一時ファイルのリターンコードはLFで固定
+		// ファイル監視の区切り条件はLF固定なので、先頭、終端パターンは設定しない
 		config.setFileReturnCode(LogfileLineSeparatorConstant.LF);
 
 		for (AgtMonitorPluginStringInfoResponse sInfo : current.getPluginCheckInfo().getMonitorPluginStringInfoList()) {
-			if (sInfo.getKey().equals(CloudConstant.cloudLog_patternHead)) {
-				config.setPatternHead(sInfo.getValue());
-				continue;
-			}
-			if (sInfo.getKey().equals(CloudConstant.cloudLog_patternTail)) {
-				config.setPatternTail(sInfo.getValue());
-				continue;
-			}
 			if (sInfo.getKey().equals(CloudConstant.cloudLog_maxBytes)) {
 				if (sInfo.getValue() != null) {
 					tmpVal = sInfo.getValue();

@@ -67,6 +67,7 @@ import org.openapitools.client.model.JobWaitRuleInfoResponse;
 import com.clustercontrol.accesscontrol.util.ClientSession;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
 import com.clustercontrol.jobmanagement.dialog.WaitRuleDialog;
 import com.clustercontrol.jobmanagement.util.JobEditState;
@@ -1059,6 +1060,15 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 				// アクセス権なしの場合、エラーダイアログを表示する
 				MessageDialog.openInformation(null, Messages.getString("message"),
 						Messages.getString("message.accesscontrol.16"));
+				ClientSession.freeDialog();
+			}
+		} catch (JobInfoNotFound e) {
+			// 実行契機削除などでジョブセッション削除のタイミングで履歴情報取得した場合の対策
+			m_log.error(HinemosMessage.replace(e.getMessage()), e);
+			if (ClientSession.isDialogFree()) {
+				ClientSession.occupyDialog();
+				m_updateSuccess = false;
+				MessageDialog.openInformation(null, Messages.getString("message"), Messages.getString("message.job.122"));
 				ClientSession.freeDialog();
 			}
 		} catch (Exception e) {

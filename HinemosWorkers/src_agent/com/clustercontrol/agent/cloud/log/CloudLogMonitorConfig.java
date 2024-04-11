@@ -43,7 +43,9 @@ public class CloudLogMonitorConfig {
 	boolean isPrefix = false;
 	ArrayList<String> logStreams = new ArrayList<String>();
 	int offset;
-
+	String patternTail = "";
+	String patternHead = "";
+	
 	public AgtRunInstructionInfoRequest getRunInfoReq() {
 		return runInfoReq;
 	}
@@ -93,8 +95,7 @@ public class CloudLogMonitorConfig {
 	}
 
 	/*
-	 * Return codeのみファイル監視に渡すものと、 クラウドログの取得時に使用する設定がことなるので 独自でセット。
-	 * 他はファイル監視設定の物がそのまま使用される。
+	 * 区切り条件はファイル監視に渡すものと、クラウドログの取得時に使用する設定がことなるので独自でセット。
 	 */
 	public void setReturnCode(String retCode) {
 		this.retCode = retCode;
@@ -104,12 +105,20 @@ public class CloudLogMonitorConfig {
 		return retCode;
 	}
 
+	public void setPatternHead(String patternHead) {
+		this.patternHead = patternHead;
+	}
+
 	public String getPatternHead() {
-		return monInfo.getLogfileCheckInfo().getPatternHead();
+		return this.patternHead;
+	}
+
+	public void setPatternTail(String patternTail) {
+		this.patternTail = patternTail;
 	}
 
 	public String getPatternTail() {
-		return monInfo.getLogfileCheckInfo().getPatternTail();
+		return this.patternTail;
 	}
 
 	public int getMaxBytes() {

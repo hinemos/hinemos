@@ -53,6 +53,7 @@ public class AgtMonitorInfoRequest extends AgentRequestDto {
 	private Boolean changeFlg;
 	private Integer changeAnalysysRange;
 	private String changeApplication;
+	private String sdmlMonitorTypeId;
 	// private List<MonitorNumericValueInfo> numericValueInfo = new ArrayList<>();
 	// private PerfCheckInfo perfCheckInfo;
 	// private PingCheckInfo pingCheckInfo;
@@ -328,6 +329,14 @@ public class AgtMonitorInfoRequest extends AgentRequestDto {
 
 	public void setChangeApplication(String changeApplication) {
 		this.changeApplication = changeApplication;
+	}
+
+	public String getSdmlMonitorTypeId() {
+		return sdmlMonitorTypeId;
+	}
+
+	public void setSdmlMonitorTypeId(String sdmlMonitorTypeId) {
+		this.sdmlMonitorTypeId = sdmlMonitorTypeId;
 	}
 
 	public AgtWinEventCheckInfoRequest getWinEventCheckInfo() {

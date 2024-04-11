@@ -31,6 +31,7 @@ import com.clustercontrol.utility.settings.infra.xml.InfraModuleInfo;
 import com.clustercontrol.utility.settings.infra.xml.NotifyId;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.util.OpenApiEnumConverter;
+import com.clustercontrol.version.util.VersionUtil;
 
 /**
  * 環境構築設定情報をJavaBeanとXML(Bean)のbindingとの間でやりとりを
@@ -46,12 +47,18 @@ public class InfraSettingConv extends BaseConv {
 	private static final String ReferModule = "ReferManagementModule";
 	
 	// スキーマのタイプ、バージョン、リビジョンをそれぞれ返す
+	/**
+	 * 同一バイナリ化対応により、スキーマ情報はHinemosVersion.jarのVersionUtilクラスから取得されることになった。
+	 * スキーマ情報の一覧はhinemos_version.properties.implに記載されている。
+	 * スキーマ情報に変更がある場合は、まずbuild_common_version.properties.implを修正し、
+	 * 対象のスキーマ情報が初回の修正であるならばhinemos_version.properties.implも修正する。
+	 */
 	@Override
-	protected String getType() {return "I";}
+	protected String getType() {return VersionUtil.getSchemaProperty("INFRA.SETTING.SCHEMATYPE");}
 	@Override
-	protected String getVersion() {return "1";}
+	protected String getVersion() {return VersionUtil.getSchemaProperty("INFRA.SETTING.SCHEMAVERSION");}
 	@Override
-	protected String getRevision() {return "1";}
+	protected String getRevision() {return VersionUtil.getSchemaProperty("INFRA.SETTING.SCHEMAREVISION");}
 	
 	/**
 	 * DTOのBeanからXMLのBeanに変換する。

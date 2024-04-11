@@ -33,7 +33,6 @@ import org.openapitools.client.model.RegisterNodeMapModelRequest;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidUserPass;
-import com.clustercontrol.fault.NodeMapElementNoPrivilege;
 import com.clustercontrol.fault.NodeMapException;
 import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.nodemap.util.NodeMapRestClientWrapper;
@@ -175,11 +174,6 @@ public class NodeMapAction {
 				NodeMapModelResponse nodeMapModel 
 						= wrapperNodeMap.getNodeMapModel(facilityInfo.getFacilityId());
 				nodeMapList.add(nodeMapModel);
-			} catch (NodeMapElementNoPrivilege e ){
-				// マップ内の要素に対するアクセス権不足ならスキップ
-				if(log.isDebugEnabled()){
-					log.debug("exportNodeMap (): Skip export due to lack of permissions . id=" + facilityInfo.getFacilityId());
-				}
 			} catch (HinemosUnknown 
 					| InvalidRole 
 					| InvalidUserPass | NodeMapException e) {

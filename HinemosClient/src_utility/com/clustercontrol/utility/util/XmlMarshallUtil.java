@@ -7,6 +7,7 @@
  */
 package com.clustercontrol.utility.util;
 
+import java.io.IOException;
 import java.io.Reader;
 
 import org.castor.xml.XMLProperties;
@@ -29,14 +30,27 @@ public class XmlMarshallUtil {
 		xmlContext.setProperty(XMLProperties.LENIENT_SEQUENCE_ORDER, true);
 		Unmarshaller unmarshaller = xmlContext.createUnmarshaller();
 		unmarshaller.setClass(clazz);
+		unmarshaller.setWhitespacePreserve(true);
 		return unmarshaller;
 	}
-	
+
+	/**
+	 * Xmlのunmarshallを実行。
+	 * 本メソッド内で引数のReaderはクローズされる。
+	 */
 	@SuppressWarnings("unchecked")
-	public static  <T> T unmarshall( Class<T> clazz ,Reader reader) throws MarshalException, ValidationException{
+	public static  <T> T unmarshall( Class<T> clazz ,Reader reader) throws MarshalException, ValidationException, IOException{
 		T obj = null;
 		Unmarshaller unmarshaller =getUnmarshaller(clazz);
-		obj = (T) unmarshaller.unmarshal(reader);
+		try {
+			obj = (T) unmarshaller.unmarshal(reader);
+		} finally {
+			try {
+				reader.close();
+			} catch (IOException e) {
+				throw e;
+			}
+		}
 		return obj;
 	}
 	

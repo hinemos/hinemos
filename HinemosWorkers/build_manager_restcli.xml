@@ -10,6 +10,7 @@
 <project name="ManagerRestClient" default="all" basedir=".">
 	
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<property file="../HinemosCommon/ant_config/build_common_version.properties" />
 	<import file="../HinemosCommon/ant_config/build_common.xml"/>
 	
 	<property name="project.name" value="HinemosWorkers" />
@@ -28,6 +29,7 @@
 	<path id="id.compile.classpath.local">
 		<fileset dir="../">
 			<include name="HinemosCommon/${jar.dir}/${jar.HinemosCommon}" />
+			<include name="HinemosCommon/${jar.dir}/${jar.Version}" />
 			<include name="HinemosManager/${jar.dir}/${jar.HinemosManager}" />
 			<include name="HinemosManager/lib/*.jar" />
 			<include name="HinemosManager/lib_rest/*.jar" />

@@ -132,6 +132,9 @@ public class Agent {
 	// Runtime.execのシリアル化実行用Lock Object(他にRuntime.exec用のLock Objectを設けず、必ずJVM内で共有すること)
 	public static final Object runtimeExecLock = new Object();
 
+	/** マネージャとの接続チェック用のフラグ */
+	private static boolean awakePortFlg = false;
+	
 	/**
 	 * メイン処理
 	 * 
@@ -166,14 +169,6 @@ public class Agent {
 			String limitKey = "jdk.xml.entityExpansionLimit"; // TODO JREが変更された場合は、この変数が変更されていないかチェックすること。
 			System.setProperty(limitKey, "0");
 			m_log.info(limitKey + " = " + System.getProperty(limitKey));
-			
-			String jdkTlsClilentProtocolsKey = "jdk.tls.client.protocols";
-			System.setProperty(jdkTlsClilentProtocolsKey, "TLSv1.2");
-			m_log.info(jdkTlsClilentProtocolsKey + " = " + System.getProperty(jdkTlsClilentProtocolsKey));
-			
-			String httpsProtocolsKey = "https.protocols";
-			System.setProperty(httpsProtocolsKey, "TLSv1.2");
-			m_log.info(httpsProtocolsKey + " = " + System.getProperty(httpsProtocolsKey));
 			
 			// TODO プロパティファイルのフォルダの親がagentHome。
 			// あまり良くない実装なので、修正予定。
@@ -296,11 +291,18 @@ public class Agent {
 		}
 	}
 
+	/**
+	 * リポジトリ[ノード]で設定した即時反映ポートの設定をエージェント側に反映する。
+	 * 
+	 * @param awakePort
+	 */
 	public static void setAwakePort(int awakePort) {
 		if (0 < awakePort && Agent.awakePort != awakePort) {
 			m_log.info("awakePort=" + awakePort);
 			Agent.awakePort = awakePort;
 		}
+		// マネージャとの接続に成功し、即時反映ポートの反映処理が行われたのでフラグをたたせる。
+		awakePortFlg = true;
 	}
 	
 	/**
@@ -334,6 +336,22 @@ public class Agent {
 		String awakeListenStr = AgentProperties.getProperty("awake.listen", "true");
 		boolean awakeListen = Boolean.parseBoolean(awakeListenStr);
 		if (awakeListen) {
+			// エージェント起動時はスレッド待機しないようにラッチを解放する
+			m_receiveTopic.releaseLatch();
+			// マネージャと接続しない限り待ち続けるループ
+			while (!awakePortFlg) {
+				try {
+					Thread.sleep(awakeDelay);
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("manager connect waiting...");
+					}
+
+				} catch (InterruptedException e1) {
+					m_log.warn(e1, e1);
+				}
+			}
+			m_log.info("waitAwakeAgent port Listen Start");
+
 			while (true) {
 				/*
 				 * UDPパケットを受信したらflagがtrueになる。
@@ -801,6 +819,9 @@ public class Agent {
 		// クラウドログ監視の停止を待つ
 		CloudLogMonitorManager.shutdownAllCloudLogTask();
 
+		// エージェント内部メッセージの送信を停止
+		SendQueue.termMessageSendExecuter(m_shutdownWaitTime);
+		
 		RunHistoryUtil.logHistory();
 
 		SelfCheckManager.shutdown();

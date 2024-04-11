@@ -48,7 +48,7 @@ public class RunMonitorWinEventString {
 
 		OutputBasicInfo rtn = null;
 
-		if (result.monitorInfo.getCollectorFlg() != null && result.monitorInfo.getCollectorFlg()) {
+		if (result.runInstructionInfo == null && result.monitorInfo.getCollectorFlg() != null && result.monitorInfo.getCollectorFlg()) {
 			StringSample sample = new StringSample(new Date(result.msgInfo.getGenerationDate()), result.monitorInfo.getMonitorId());
 			sample.set(facilityId, "Windows Event Log", result.message);
 			CollectStringDataUtil.store(Arrays.asList(sample));

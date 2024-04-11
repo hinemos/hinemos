@@ -104,7 +104,7 @@ public class JobWaitRuleInfoResponse {
 	private Boolean startDelayTime = false;
 
 	/** 開始遅延時刻の値  HH:mm:ss 個別変換*/ 
-	private String startDelayTimeValue = "00:00:00";
+	private String startDelayTimeValue = null;
 
 	/** 開始遅延判定対象の条件関係 */
 	@RestBeanConvertEnum
@@ -150,7 +150,7 @@ public class JobWaitRuleInfoResponse {
 	private Boolean endDelayTime = false;
 
 	/** 終了遅延時刻の値 HH:mm:ss 個別変換 */
-	private String endDelayTimeValue = "00:00:00";
+	private String endDelayTimeValue = null;
 
 	/** 終了遅延判定対象の条件関係 */
 	@RestBeanConvertEnum

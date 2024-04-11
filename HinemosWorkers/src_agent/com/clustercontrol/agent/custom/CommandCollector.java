@@ -330,6 +330,14 @@ public class CommandCollector implements CollectorTask, Runnable {
 			CommandResult ret = null;
 			Date executeDate = HinemosTime.getDateInstance();
 			Date exitDate = null;
+			// ユーザチェック.
+			if (config.getSpecifyUser() == null || (config.getSpecifyUser().booleanValue()
+					&& (config.getEffectiveUser() == null || config.getEffectiveUser().isEmpty()))) {
+				log.warn(
+						"call0:the setting is invalid. 'specifyUser' or 'effectiveUser' in customized setting is null or empty."
+								+ " facilityId=[" + config.getFacilityId() + "]" + " ,monitorId=["
+								+ config.getMonitorId() + "]");
+			}
 			try {
 				CommandCreator.PlatformType platform = CommandCreator.convertPlatform(_commandMode);
 				command = CommandCreator.createCommand(
@@ -340,7 +348,13 @@ public class CommandCollector implements CollectorTask, Runnable {
 						_commandLogin);
 
 				// execute command
-				CommandExecutor cmdExecutor = new CommandExecutor(command, _charset, config.getTimeout(), _bufferSize);
+				CommandExecutor cmdExecutor = new CommandExecutor(
+						new CommandExecutor.CommandExecutorParams()
+							.setCommand(command)
+							.setCharset(_charset)
+							.setTimeout(config.getTimeout())
+							.setBufferSize(_bufferSize)
+							.setForceSigterm(config.getSpecifyUser()));
 				cmdExecutor.execute();
 
 				// receive result
@@ -369,7 +383,13 @@ public class CommandCollector implements CollectorTask, Runnable {
 						commandStr.append(commandStr.length() == 0 ? arg : " " + arg);
 					}
 				}
-				String user = (config.getSpecifyUser().booleanValue() ? config.getEffectiveUser() : CommandCreator.getSysUser());
+				String user = "";
+				if (config.getSpecifyUser() == null) {
+					user = "";
+				} else {
+					user = (config.getSpecifyUser().booleanValue() ? config.getEffectiveUser()
+							: CommandCreator.getSysUser());
+				}
 				sendResult(ret, values, invalids, user, commandStr.toString(), executeDate, exitDate);
 			}
 		}

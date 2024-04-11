@@ -1024,10 +1024,10 @@ public class AgentRestEndpoints {
 
 	/**
 	 * マネージャが保持している、エージェントのライブラリファイルの一覧を返します。
+	 * REST通信且つ、ver.6.xエージェントはエージェントアップデート対象外のためver.6.xエージェントから呼ばれることは無い。
 	 * <p>
-	 * ver.6.2正式版以降に対しては HinemosJava を含む一覧、
-	 * ver.6.2先行版に対しては HinemosJava を含まない一覧、
-	 * それ以外(通常、ver.6.1以前)に対しては空の一覧を返します。<br/>
+	 * Java情報が送信されてきている場合、 HinemosJava を含む一覧、
+	 * それ以外に対しては空の一覧を返します。<br/>
 	 */
 	@POST
 	@Path("/profile_library_search")
@@ -1296,6 +1296,7 @@ public class AgentRestEndpoints {
 	 * Agentプロパティに基づきスコープの自動割当てを行う。
 	 */
 	private void autoAssignAgentToScope(String facilityId, AgentInfo info){
+		List<String> invalidIdList = new ArrayList<>();
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			String execUser = HinemosSessionContext.getLoginUserId();
 			// 管理者ユーザで変更を実施
@@ -1303,7 +1304,6 @@ public class AgentRestEndpoints {
 			HinemosSessionContext.instance().setProperty(HinemosSessionContext.IS_ADMINISTRATOR, true);
 
 			List<String> scopeIdList = info.getAssignScopeList();
-			List<String> invalidIdList = new ArrayList<>();
 			RepositoryControllerBean repositoryControllerBean = new RepositoryControllerBean();
 
 			for (String scopeId : scopeIdList) {
@@ -1316,17 +1316,18 @@ public class AgentRestEndpoints {
 				}
 			}
 			
-			if (!invalidIdList.isEmpty()) {
-				// 存在しないスコープIDが指定されていた場合、INTERNAL通知を行う。
-				AplLogger.put(InternalIdCommon.AGENT_SYS_001, new String[]{String.join(",", invalidIdList), facilityId});
-			}
-			
 			// ThreadLocalを戻す
 			HinemosSessionContext.instance().setProperty(HinemosSessionContext.LOGIN_USER_ID, execUser);
 			HinemosSessionContext.instance().setProperty(HinemosSessionContext.IS_ADMINISTRATOR, new AccessControllerBean().isAdministrator());
 		} catch (InvalidRole | HinemosUnknown e) {
 			// 想定外エラー
 			m_log.warn(e.getMessage(), e);
+		} finally {
+		
+			if (!invalidIdList.isEmpty()) {
+				// 存在しないスコープIDが指定されていた場合、INTERNAL通知を行う。
+				AplLogger.put(InternalIdCommon.AGENT_SYS_001, new String[]{String.join(",", invalidIdList), facilityId});
+			}
 		}
 	}
 }

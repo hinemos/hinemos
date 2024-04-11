@@ -82,18 +82,18 @@ public class MultiSmtpServerUtil {
 		// インターナルの通知は必ずデフォルトのSMTPサーバに送るように仕込んでおく
 		roleServerMap.put("INTERNAL", new ArrayList<Integer>());
 		roleServerMap.get("INTERNAL").add(0);
-		for (Set<String> set : roleSettingList) {
-			int slot = roleSettingList.indexOf(set) + 1;
+		for (int i = 0; i < roleSettingList.size(); i++) {
+			Set<String> set = roleSettingList.get(i);
 			if (set == null || set.isEmpty()) {
 				continue;
 			}
 
 			for (String roleId : set) {
 				if (roleServerMap.containsKey(roleId)) {
-					roleServerMap.get(roleId).add(slot);
+					roleServerMap.get(roleId).add(i + 1);
 				} else {
 					List<Integer> list = new ArrayList<Integer>();
-					list.add(slot);
+					list.add(i + 1);
 					roleServerMap.put(roleId, list);
 				}
 			}

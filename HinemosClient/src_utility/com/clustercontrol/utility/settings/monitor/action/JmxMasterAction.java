@@ -99,7 +99,7 @@ public class JmxMasterAction extends BaseAction<JmxMasterInfoResponse, JmxMaster
 	@Override
 	protected void exportXml(JmxMaster xmlInfo, String xmlFile) throws Exception {
 		xmlInfo.setCommon(com.clustercontrol.utility.settings.platform.conv.CommonConv.versionMasterDto2Xml(Config.getVersion()));
-		xmlInfo.setSchemaInfo(new com.clustercontrol.utility.settings.master.xml.SchemaInfo());
+		xmlInfo.setSchemaInfo(conv.getSchemaVersion(com.clustercontrol.utility.settings.master.xml.SchemaInfo.class));
 		try(FileOutputStream fos = new FileOutputStream(xmlFile);
 			OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF-8");){
 			xmlInfo.marshal(osw);

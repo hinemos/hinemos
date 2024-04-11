@@ -20,6 +20,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -293,6 +294,18 @@ public class QueryUtil {
 		}
 	}
 
+	public static List<JobMstEntity> getJobMstEntityFindByApprovalReqUserId(String userId){
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			//ジョブ
+			List<JobMstEntity> jobMstList
+			= em.createNamedQuery("JobMstEntity.findByApprovalUserId", JobMstEntity.class, ObjectPrivilegeMode.NONE)
+			.setParameter("approvalReqUserId", userId)
+			.getResultList();
+			return jobMstList;
+		}
+	}
+
 	public static List<JobParamMstEntity> getJobParamMstEntityFindByJobunitIdParamId(String jobunitId, String paramId){
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -398,6 +411,19 @@ public class QueryUtil {
 			.getResultList();
 			
 			return jobSessionJobList;
+		}
+	}
+
+	public static List<JobSessionNodeEntity> getJobSessionNodeByStatus(Integer status, Integer jobType){
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			// セッションノード
+			List<JobSessionNodeEntity> jobSessionNodeList
+			= em.createNamedQuery("JobSessionNodeEntity.findByJobTypeStatus", JobSessionNodeEntity.class)
+			.setParameter("status", status)
+			.setParameter("jobType", jobType)
+			.getResultList();
+			return jobSessionNodeList;
 		}
 	}
 

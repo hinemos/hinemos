@@ -6,6 +6,7 @@
  -->
 <project name="SDMLClientProperties" basedir=".">
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
+	<property file="../HinemosCommon/ant_config/build_common_version.properties" />
 	<import file="sdml_package_props.xml"/>
 	
 	<property name="compile.client.version" value="1.8" />

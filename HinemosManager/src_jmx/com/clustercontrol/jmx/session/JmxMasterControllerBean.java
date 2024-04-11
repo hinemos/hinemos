@@ -16,13 +16,15 @@ import jakarta.persistence.EntityExistsException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.jmx.model.JmxCheckInfo;
 import com.clustercontrol.jmx.model.JmxMasterInfo;
-import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.util.MessageConstant;
 
 /**
@@ -107,13 +109,38 @@ public class JmxMasterControllerBean {
 			HinemosEntityManager em = jtm.getEntityManager();
 			List<JmxMasterInfo> entities = em.createNamedQuery("MonitorJmxMstEntity.findList", JmxMasterInfo.class).setParameter("ids", ids).getResultList();
 			for (JmxMasterInfo entity : entities) {
-				retList.add(entity);
-				// 削除処理
-				em.remove(entity);
-			}
-
-			jtm.commit();
-
+				List<JmxCheckInfo> jmxCheckInfoList = em
+						.createNamedQuery("JmxCheckInfo.findByMasterId", JmxCheckInfo.class, ObjectPrivilegeMode.NONE)
+						.setParameter("masterId", entity.getId()).getResultList();
+				// 他の機能にて、JMXMaster情報が参照状態であるか調査する。
+				if (jmxCheckInfoList.isEmpty()==false )  {
+					StringBuilder sb = new StringBuilder();
+					sb.append(MessageConstant.MONITOR_SETTING.getMessage() + " : ");
+					for (JmxCheckInfo jmxinfo : jmxCheckInfoList) {
+						sb.append(jmxinfo.getMonitorId());
+						sb.append(", ");
+					}
+					sb.append(MessageConstant.MASTER_ID.getMessage() + " : ");
+					sb.append( entity.getId());
+					sb.append("\n");
+					sb.append(MessageConstant.JMX_NOTIFY_DEPENDENCY.getMessage());
+					//sb.append(Messages.getString("messages.notify.jmx.dependency"));
+					UsedFacility e = new UsedFacility(sb.toString());									
+					throw e;																							
+					}
+				else {
+					retList.add(entity);
+					// 削除処理
+					em.remove(entity);
+				}			
+				jtm.commit();
+			}		
+		}
+		catch (UsedFacility e) {
+			m_log.warn("deleteJmxMasterList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage()+"", e);		
 		} catch (Exception e) {
 			m_log.warn("deleteJmxMasterList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
@@ -146,6 +173,28 @@ public class JmxMasterControllerBean {
 
 			List<JmxMasterInfo> entities = em.createNamedQuery("MonitorJmxMstEntity.findAll", JmxMasterInfo.class).getResultList();
 			for (JmxMasterInfo entity : entities) {
+				// 他の機能にて、JMXMaster情報が参照されていないかチェック
+				List<JmxCheckInfo> jmxCheckInfoList = em
+						.createNamedQuery("JmxCheckInfo.findByMasterId", JmxCheckInfo.class, ObjectPrivilegeMode.NONE)
+						.setParameter("masterId", entity.getId()).getResultList();
+				if (jmxCheckInfoList.isEmpty() == false) {
+					m_log.warn("deleteJmxMasterAll() : Jmx master is used. master id:" + entity.getId() );
+					StringBuilder sb = new StringBuilder();
+					sb.append(MessageConstant.MONITOR_SETTING.getMessage() + " : ");
+					for (JmxCheckInfo jmxinfo : jmxCheckInfoList) {
+						sb.append(jmxinfo.getMonitorId());
+						sb.append(", ");
+					}
+					sb.append(MessageConstant.MASTER_ID.getMessage() + " : ");
+					sb.append(entity.getId());
+					sb.append("\n");
+					sb.append(MessageConstant.JMX_NOTIFY_DEPENDENCY.getMessage());
+					UsedFacility e = new UsedFacility(sb.toString());
+					throw e;
+				}
+			}
+
+			for (JmxMasterInfo entity : entities) {
 				retList.add(entity);
 				// 削除処理
 				em.remove(entity);
@@ -153,6 +202,10 @@ public class JmxMasterControllerBean {
 
 			jtm.commit();
 
+		} catch (UsedFacility e) {
+			if (jtm != null)
+				jtm.rollback();
+			throw new HinemosUnknown(e.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("deleteJmxMasterAll() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)

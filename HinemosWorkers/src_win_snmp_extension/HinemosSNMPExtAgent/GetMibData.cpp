@@ -66,7 +66,7 @@ AsnCounter GetCpuRawUser(){
 	}
 
 	// カウンタをクエリーに追加
-	status = PdhAddCounter(hQuery, "\\Processor(_Total)\\% User Time", 0, &hCounter);
+	status = PdhAddCounter(hQuery, "\\Processor Information(_Total)\\% User Time", 0, &hCounter);
 	if(verbose == 1 && CheckErrorCode(status)){
 		PostEvtLog( errorEventLevel, "GetCpuRawUser", "PdhAddCounter", status);
 	}
@@ -124,7 +124,7 @@ AsnCounter GetCpuRawSystem(){
 	}
 
 	// カウンタをクエリーに追加
-	status = PdhAddCounter(hQuery, "\\Processor(_Total)\\% Privileged Time", 0, &hCounter);
+	status = PdhAddCounter(hQuery, "\\Processor Information(_Total)\\% Privileged Time", 0, &hCounter);
 	if(verbose == 1 && CheckErrorCode(status)){
 		PostEvtLog( errorEventLevel, "GetCpuRawSystem", "PdhAddCounter", status);
 	}
@@ -172,7 +172,7 @@ AsnCounter GetCpuRawIdle(){
 	}
 
 	// カウンタをクエリーに追加
-	status = PdhAddCounter(hQuery, "\\Processor(_Total)\\% Idle Time", 0, &hCounter);
+	status = PdhAddCounter(hQuery, "\\Processor Information(_Total)\\% Idle Time", 0, &hCounter);
 	if(verbose == 1 && CheckErrorCode(status)){
 		PostEvtLog( errorEventLevel, "GetCpuRawIdle", "PdhAddCounter", status);
 	}
@@ -236,7 +236,7 @@ AsnCounter GetCpuRawInterrupt(){
 	}
 
 	// カウンタをクエリーに追加
-	status = PdhAddCounter(hQuery, "\\Processor(_Total)\\% Interrupt Time", 0, &hCounter);
+	status = PdhAddCounter(hQuery, "\\Processor Information(_Total)\\% Interrupt Time", 0, &hCounter);
 	if(verbose == 1 && CheckErrorCode(status)){
 		PostEvtLog( errorEventLevel, "GetCpuRawInterrupt", "PdhAddCounter", status);
 	}
@@ -283,7 +283,7 @@ AsnCounter GetRawInterrupts(){
 	}
 
 	// カウンタをクエリーに追加
-	status = PdhAddCounter(hQuery, "\\Processor(_Total)\\Interrupts/sec", 0, &hCounter);
+	status = PdhAddCounter(hQuery, "\\Processor Information(_Total)\\Interrupts/sec", 0, &hCounter);
 	if(verbose == 1 && CheckErrorCode(status)){
 		PostEvtLog( errorEventLevel, "GetRawInterrupts", "PdhAddCounter", status);
 	}

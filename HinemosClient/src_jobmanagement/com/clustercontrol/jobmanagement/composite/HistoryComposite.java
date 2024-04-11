@@ -271,8 +271,12 @@ public class HistoryComposite extends Composite {
 			a.add(TimeToANYhourConverter.toDiffTime(
 					JobTreeItemUtil.convertDtStringtoLong(history.getStartDate()),
 					JobTreeItemUtil.convertDtStringtoLong(history.getEndDate())));
-			a.add(JobTriggerTypeMessage.typeToString(
+			if (history.getJobTriggerType() == null) {
+				a.add("");
+			} else {
+				a.add(JobTriggerTypeMessage.typeToString(
 					JobTriggerTypeEnum.valueOf(history.getJobTriggerType().name()).getCode()));
+			}
 			a.add(history.getTriggerInfo());
 			a.add(null);
 			listInput.add(a);

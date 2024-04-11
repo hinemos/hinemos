@@ -36,9 +36,11 @@ import com.clustercontrol.infra.model.InfraModuleInfo;
 import com.clustercontrol.infra.model.ReferManagementModuleInfo;
 import com.clustercontrol.infra.util.QueryUtil;
 import com.clustercontrol.notify.factory.ModifyNotifyRelation;
+import com.clustercontrol.notify.model.NotifyInfraInfo;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 
 import jakarta.persistence.EntityExistsException;
 
@@ -244,6 +246,28 @@ public class ModifyInfraManagement {
 			m_log.debug(String.format("delete() : managementId = %s", managementId));
 
 			HinemosEntityManager em = jtm.getEntityManager();
+
+			// 利用されている環境構築設定か否かチェックする
+			List<NotifyInfraInfo> notifyList = com.clustercontrol.notify.util.QueryUtil.getAllNotifyInfraInfo_NONE();
+			for (NotifyInfraInfo infraInfo : notifyList) {
+				boolean isUsed = false;
+				if (managementId.equals(infraInfo.getInfoInfraId())) {
+					isUsed = true;
+				}else if(managementId.equals(infraInfo.getWarnInfraId())) {
+					isUsed = true;
+				}else if(managementId.equals(infraInfo.getCriticalInfraId())) {
+					isUsed = true;
+				}else if(managementId.equals(infraInfo.getUnknownInfraId())) {
+					isUsed = true;
+				}
+				if (isUsed) {
+					String[] args = { infraInfo.getNotifyId(), managementId };
+					m_log.info("Failed to delete due to reference from a notify. InfraManagementID=" + managementId
+							+ ",NotifyID=" + infraInfo.getNotifyId());
+					throw new InvalidSetting(
+							MessageConstant.MESSAGE_DELETE_NG_NOTIFY_REFERENCE_TO_INFRA_MANAGEMENT.getMessage(args));
+				}
+			}
 
 			// 監視情報を取得
 			InfraManagementInfo entity = QueryUtil.getInfraManagementInfoPK(managementId, ObjectPrivilegeMode.MODIFY);

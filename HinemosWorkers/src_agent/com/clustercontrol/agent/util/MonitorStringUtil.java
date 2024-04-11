@@ -191,6 +191,7 @@ public class MonitorStringUtil {
 							
 							monitorInfo2.setPriorityChangeJudgmentType(monitorInfo.getPriorityChangeJudgmentType());
 							monitorInfo2.setPriorityChangeFailureType(monitorInfo.getPriorityChangeFailureType());
+							monitorInfo2.setSdmlMonitorTypeId(monitorInfo.getSdmlMonitorTypeId());
 						}
 						
 						if (HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId())) {

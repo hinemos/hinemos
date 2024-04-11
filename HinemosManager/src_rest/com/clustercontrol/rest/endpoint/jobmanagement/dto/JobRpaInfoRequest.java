@@ -36,9 +36,6 @@ public class JobRpaInfoRequest implements RequestDto {
 	/** ファシリティID */
 	private String facilityID;
 
-	/** スコープ */
-	private String scope;
-
 	/** スコープ処理 */
 	@RestBeanConvertEnum
 	private ProcessingMethodEnum processingMethod;
@@ -238,21 +235,6 @@ public class JobRpaInfoRequest implements RequestDto {
 	 */
 	public void setFacilityID(String facilityID) {
 		this.facilityID = facilityID;
-	}
-
-	/**
-	 * @return the scope
-	 */
-	public String getScope() {
-		return scope;
-	}
-
-	/**
-	 * @param scope
-	 *            the scope to set
-	 */
-	public void setScope(String scope) {
-		this.scope = scope;
 	}
 
 	/**
