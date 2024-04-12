@@ -12,7 +12,7 @@
 
 Hinemos is an integrated operations management software that maximizes the cost advantages of open source software to achieve "operational automation" such as "monitoring" and "jobs" for increasingly complex large-scale IT systems.
 
-[README(Japanese version)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v7.0.2#packages)
+[README(Japanese version)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v7.1.0#packages)
 
 ## Installation
 
@@ -20,112 +20,49 @@ Hinemos can be installed with a single command.
 
 - For installing the Manager
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-manager-7.1.0-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-manager-7.1.0-1.el8.x86_64.rpm```
   - RHEL 9.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el9.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-manager-7.1.0-1.el9.x86_64.rpm```
 
 
 - For installing the Web Client
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-web-7.1.0-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-web-7.1.0-1.el8.x86_64.rpm```
   - RHEL 9.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el9.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-web-7.1.0-1.el9.x86_64.rpm```
 
-For details, refer to [Hinemos ver. 7.0 Basic Features Manual](https://github.com/hinemos/hinemos/releases/download/v7.0.2/en_Base_Linux_7.0_rev3.pdf).
+For details, refer to [Hinemos ver. 7.1 Basic Features Manual](https://github.com/hinemos/hinemos/releases/download/v7.1.0/ja_Base_Linux_7.1_rev1.pdf).
+English manual will be available soon.
 
+## ver. 7.1 New Features
 
-## ver. 7.0 New Features
+- Hinemos Migration Assistant (Migration support tool from other products)
+    - #19379 Hinemos Migration Assistant
 
-- Monitor
-    - #13586 SDML(Software Defined Monitoring and Logging)
+## ver. 7.1 Improvements
 
-- Enterprise
-    - #13585 RPA Management Feature
+- General
+    - #17640 TLS1.3 support
+    - #19151 Oracle Linux 9 support
+    - #19155 Amazon Linux 2023 support
 
-- Utility Tool
-    - #13115 Grafana Plugin
+- Mission-critical Feature
+    - #17619 FIP and second split-brain prevention mechanism support on OCI
+    - #19530 Second split-brain prevention mechanism support on Google Cloud
 
-## ver. 7.0 Improvement
+- Cloud Management Feature (Scheduled to be released in July 2024)
+    - #18239 Cloud Management Feature Google Cloud support
+    - #18238 Cloud Management Feature OCI support
 
-- Manager, Agent, and Client
-    - #15254, #15260, #15187 Communication on Hinemos now using TLS1.2 due to default TLS for JRE changed to 1.3.
-
-- Client & Agent
-    - #11218 Storing filtering conditions
-    - #12671 Agent health check
-    - #10237 Records of tying login sessions for operation logs with operations 
-    - #12483 Improving Windows Hinemos Agent Installer
-
-- Repository
-    - #11519 Added cloud and virtualization management items to node information
-    - #12342 Added RPA management items to node information
-    - #12729 DHCP support feature
-    - #12729 Automatic assignment of scopes configured in the Agent setting
-    - #11479 Changes in operation made when "auto" is selected as the customized
-             command operation mode (repository.cmdb.command.mode) in the Node configuration retrieval setting
-
-- Notification
-    - #11692 REST notification
-    - #11611 Added ID to notification results
-    - #11479 Changes in operation made when "auto" is selected as the command execution mode
-             (monitor.event.customcmd.cmdN.mode) in the event custom command setting
-    - #14716 Improved the content of the notification's monitoring details, application, and scope.
-
-- Maintenance
-   - #12256 Added "Delete job integration message" to the maintenance types of history deletion
-   - #11519 Added "Delete RPA scenario records" to the maintenance types of history deletion
-   - #11319 Added a script to output data registered in Hinemos as a file
-
-- Self Check
-    - #10151 Sending syslogs of INTERNAL events occurring in Hinemos Agent
-    - #7227  Enabled to specify mail title to INTERNAL events occurring in Manager
-
-- Monitor
-    - #12427 Improved the specification of the Log Count Monitor feature
-    - #12774 Mission Critical feature support for Custom Trap monitoring
-    - #11714 Improved the specification of priority change in the string monitor feature
-    - #12758 Improved the specification of priority change in the Cloud Service Monitor feature
-    - #11519 Added directory to the node property items for the Logfile Monitor feature
-    - #11479 Changes in operation made when "auto" is selected as the OS platform definition for
-             custom monitor command operation (monitor.custom.command.mode) in the Custom Monitor setting
-    - #12149 Added redirect to the HTTP Monitor (Scenario) feature
-    - #11524 Added NTLM authentication to the WinRM authentication methods used in the Windows Service Monitor feature
-
-- Job
-    - #11318 Pre-generation of job sessions 
-    - #12256 Job Link message
-    - #12487 FileCheck job
-    - #12488 Output stdout as a file
-    - #12639 Coping with outlier in return values
-    - #12486 Setting multiple wait conditions
-    - #12486 Revised judgement logics for wait conditions
-    - #12606 Repeated execution
-    - #11479 Changes in operation made when "auto" is selected as the startup command operation mode
-             (job.command.mode) in the command job setting
-
-- Cloud Management
-    - #12342 Cloud Log monitoring
-    - #12482 Cloud notification
-    - #12395 Mission Critical feature support for cloud resource control job
-    - #12130 Made improvement so that management flags for nodes will change according to the operation to computes
-
-- NodeMap
-    - #11507 Added facility name to the downloaded node configuration
-
-- Other Improvements
-    - #11226 Made improvement so that multiple SMTP servers can be registered for mail delivery
-    - #13144 Added OAuth2.0 authentication for mail delivery
-
-
-For details, refer to [release note](https://github.com/hinemos/hinemos/releases/tag/v7.0.2).
+For details, refer to [release note](https://github.com/hinemos/hinemos/releases).
 
 ## Documentation
 
-English manuals will be available soon.
+English manual will be available soon.
 
 ## License
 
