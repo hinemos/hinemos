@@ -61,7 +61,7 @@ For details, refer to [release note](https://github.com/hinemos/hinemos/releases
 
 ## Documentation
 
-English manual will be available soon.
+- Basic Features Manual ([en_Base_Linux_7.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v7.1.1/en_Base_Linux_7.1_rev1.pdf))
 
 ## License
 
