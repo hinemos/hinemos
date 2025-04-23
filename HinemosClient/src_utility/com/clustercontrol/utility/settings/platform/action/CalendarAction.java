@@ -773,7 +773,11 @@ public class CalendarAction {
 				} else {
 					calendarDetailInfoRequest.setWeekNo(null);
 				}
-				calendarDetailInfoRequest.setWeekXth(CalendarDetailInfoRequest.WeekXthEnum.valueOf(tmp.getWeekXth().name()));
+				if (tmp.getWeekXth() != null) {
+					calendarDetailInfoRequest.setWeekXth(CalendarDetailInfoRequest.WeekXthEnum.valueOf(tmp.getWeekXth().name()));
+				} else {
+					calendarDetailInfoRequest.setWeekXth(null);
+				}
 				
 				calendarDetailInfoRequestList.add(calendarDetailInfoRequest);
 			}

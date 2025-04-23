@@ -487,6 +487,12 @@ public class JobMapImageDialog extends CommonDialog {
 			return result;
 		}
 
+		// イメージファイル
+		if ("".equals(this.m_txtImageFilePath.getText())) {
+			return ValidateResult.messageOf(Messages.getString("message.hinemos.1"),
+					Messages.getString("message.common.1", new String[] { Messages.getString("jobmap.image.file") }));
+		}
+
 		return null;
 	}
 

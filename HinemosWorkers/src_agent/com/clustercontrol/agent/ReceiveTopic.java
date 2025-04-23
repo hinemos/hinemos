@@ -75,6 +75,7 @@ import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.agent.util.CollectorId;
 import com.clustercontrol.agent.util.CollectorManager;
 import com.clustercontrol.agent.util.CommandMonitoringWSUtil;
+import com.clustercontrol.agent.util.AgentRestClientEx.RetryTimeoutException;
 import com.clustercontrol.agent.util.RestAgentBeanUtil;
 import com.clustercontrol.agent.winevent.WinEventMonitor;
 import com.clustercontrol.agent.winevent.WinEventMonitorManager;
@@ -107,6 +108,22 @@ import com.clustercontrol.util.MessageConstant;
  * @version 6.2.0 構成情報関連の対応
  */
 public class ReceiveTopic extends Thread {
+
+	protected static class AbortException extends Exception {
+		private static final long serialVersionUID = -553433058885728852L;
+
+		public AbortException(String messgage) {
+			super(messgage);
+		}
+
+		public AbortException(String messgage, Exception e) {
+			super(messgage, e);
+		}
+
+		public AbortException(Exception e) {
+			super(e);
+		}
+	}
 
 	//ロガー
 	private static Log m_log = LogFactory.getLog(ReceiveTopic.class);
@@ -281,9 +298,10 @@ public class ReceiveTopic extends Thread {
 							return;
 						}
 						// IPアドレスが更新されたタイミング、またはエージェントがマネージャに認識されるまでは、DHCPサポート機能によりノードを更新する(Agentプロパティで有効にしている場合)
+						AgentInfoRequest agentInfo = Agent.getAgentInfoRequest();
 						boolean updateNode = isReloadFlg() || !Agent.isRegistered();
 						m_log.debug(String.format("isReloadFlg=%s, isRegistered=%s, updateNode=%s", isReloadFlg(), Agent.isRegistered(), updateNode));
-						hinemosTopicInfo = AgentRestClientWrapper.getHinemosTopic(Agent.getAgentInfoRequest(), updateNode);
+						hinemosTopicInfo = AgentRestClientWrapper.getHinemosTopic(agentInfo, updateNode);
 					}
 				} catch (Exception e) {
 					/*
@@ -449,8 +467,14 @@ public class ReceiveTopic extends Thread {
 					m_log.debug("infoList.size() = 0");
 				}
 
-				for (AgtRunInstructionInfoResponse info : runInstructionList) {
-					runJob(info);
+				try {
+					for (AgtRunInstructionInfoResponse info : runInstructionList) {
+						runJob(info);
+					}
+				} catch (AbortException e) {
+					clearJobHistory();
+					m_log.warn("run() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+					continue;
 				}
 
 				// 再起動あるいは更新を実行する
@@ -1249,7 +1273,7 @@ public class ReceiveTopic extends Thread {
 		}
 	}
 
-	private void runJob(AgtRunInstructionInfoResponse info) {
+	private void runJob(AgtRunInstructionInfoResponse info) throws AbortException {
 		m_log.debug("onMessage SessionID=" + info.getSessionId()
 				+ ", JobID=" + info.getJobId()
 				+ ", CommandType=" + info.getCommandType());
@@ -1283,14 +1307,24 @@ public class ReceiveTopic extends Thread {
 					thread.start();
 				} else if (info.getCommand().equals(CommandConstant.FILE_CHECK)) {
 					// ファイルチェック用スレッド起動
-					FileCheckJobThread thread = new FileCheckJobThread(info, m_sendQueue);
-					thread.start();
+					try {
+						FileCheckJobThread thread = new FileCheckJobThread(info, m_sendQueue);
+						thread.init(m_runhistoryClearDelay);
+						thread.start();
+					} catch(RetryTimeoutException e) {
+						throw new AbortException(e);
+					}
 				}else if(info.getCommand().equals(CommandConstant.RPA)){
 					if (info.getCommandType() == CommandTypeConstant.NORMAL) {
 						//RPAシナリオジョブのスレッドを実行
 						m_log.debug("onMessage CommandType = RPA");
-						RpaScenarioThread thread = new RpaScenarioThread(info, m_sendQueue);
-						thread.start();
+						try {
+							RpaScenarioThread thread = new RpaScenarioThread(info, m_sendQueue);
+							thread.init(m_runhistoryClearDelay);
+							thread.start();
+						} catch(RetryTimeoutException e) {
+							throw new AbortException(e);
+						}
 					} else if (info.getCommandType() == CommandTypeConstant.SCREENSHOT) {
 						//RPAシナリオスクリーンショットの取得
 						m_log.debug("onMessage CommandType = SCREENSHOT");
@@ -1307,8 +1341,13 @@ public class ReceiveTopic extends Thread {
 				}else if(info.getCommandType() == CommandTypeConstant.NORMAL ||
 						(info.getCommandType() == CommandTypeConstant.STOP && info.getStopType() == CommandStopTypeConstant.EXECUTE_COMMAND)){
 					//コマンド実行
-					CommandThread thread = new CommandThread(info, m_sendQueue);
-					thread.start();
+					try {
+						CommandThread thread = new CommandThread(info, m_sendQueue);
+						thread.init(m_runhistoryClearDelay);
+						thread.start();
+					} catch(RetryTimeoutException e) {
+						throw new AbortException(e);
+					}
 				} else	if (info.getCommandType() == CommandTypeConstant.STOP
 						&& info.getStopType() == CommandStopTypeConstant.DESTROY_PROCESS) {
 					// ここには普通はこないが、ジョブ実行中に再起動した場合にくる
@@ -1345,6 +1384,8 @@ public class ReceiveTopic extends Thread {
 					m_log.info("runJob() : avoid duplicate running");
 				}
 			}
+		} catch(AbortException e) {
+			throw e;
 		} catch(Throwable e) {
 			m_log.warn("runJob() : " + e.getMessage(), e);
 		}

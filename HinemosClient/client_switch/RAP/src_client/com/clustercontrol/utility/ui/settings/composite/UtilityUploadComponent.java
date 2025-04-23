@@ -125,5 +125,7 @@ public class UtilityUploadComponent{
 		return fileUpload.isReady();
 	}
 	
-	
+	public void cleanup() {
+		fileUpload.cleanup();
+	}
 }

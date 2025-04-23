@@ -300,13 +300,20 @@ public class RepositoryView extends AbstractCloudViewPart {
 		 * @param element
 		 * @return
 		 */
-		private String getSortingKey(Object element){
+		private String getSortingKey(Object element) {
 			String key = null;
-			if (element instanceof ICloudRepository)
-				key = ((ICloudRepository)element).getHinemosManager().getManagerName();
-			else if(element instanceof IFacility)
-				key = HinemosMessage.replace(((IFacility)element).getName());
-			return (null==key)? "" : key;
+			if (element instanceof ICloudRepository) {
+				key = ((ICloudRepository) element).getHinemosManager().getManagerName();
+			} else if (element instanceof ICloudScopeRootScope) {
+				key = HinemosMessage.replace(((ICloudScopeRootScope) element).getName());
+			} else if (element instanceof IFacility) {
+				IFacility facility = (IFacility) element;
+				String platformId = facility.getCloudScopeScope().getCloudScope().getPlatformId();
+				ICloudModelContentProvider provider = CloudModelContentProviderExtension
+						.getModelContentProvider(platformId);
+				key = HinemosMessage.replace(provider.getSortingKey(element, ((IFacility) element).getName()));
+			}
+			return (null == key) ? "" : key;
 		}
 
 		@Override

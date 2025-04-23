@@ -658,10 +658,12 @@ public class NodeListFindDialog extends CommonDialog {
 	 * Remove the cached filter.
 	 */
 	public static void removeFilterCache(String secondaryId) {
-		Map<String, GetNodeListRequest> map = (HashMap<String, GetNodeListRequest>)filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.NODELIST_FIND_DIALOG_PROPERTY);
-		if(map != null && map.containsKey(secondaryId)){
-			map.remove(secondaryId);
-		}	
+		if (filterPropertyCache != null) {
+			Map<String, GetNodeListRequest> map = (HashMap<String, GetNodeListRequest>)filterPropertyCache.getFilterPropertyCache(FilterPropertyCache.NODELIST_FIND_DIALOG_PROPERTY);
+			if(map != null && map.containsKey(secondaryId)){
+				map.remove(secondaryId);
+			}	
+		}
 	}
 
 	/**

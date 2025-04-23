@@ -107,6 +107,23 @@
 							</xs:documentation>
 						</xs:annotation>
 					</xs:element>
+					<xs:element name="google" type="GoogleType" minOccurs="0"
+						maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								Google設定情報です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+
+					<xs:element name="oracle" type="OracleType" minOccurs="0"
+						maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								Oracle設定情報です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
 				</xs:sequence>
 			</xs:extension>
 		</xs:complexContent>
@@ -369,4 +386,117 @@
 			</xs:extension>
 		</xs:complexContent>
 	</xs:complexType>
-</xs:schema>
+	<xs:complexType name="GoogleType">
+		<xs:annotation>
+			<xs:documentation>Google設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="projectId" type="xs:string"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						Project ID.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="type" type="xs:string"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						Authentication Type Details.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="googleUser" type="GoogleUserType"
+				minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						GoogleUser設定情報です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="GoogleUserType">
+		<xs:annotation>
+			<xs:documentation>GoogleUser設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="CloudCheckInfo">
+				<xs:sequence>
+					<xs:element name="serviceAccountKeyFileName" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Google Private Key File Name。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="OracleType">
+		<xs:annotation>
+			<xs:documentation>Oracle設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="authenticationType" type="xs:string"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						Authentication Type Details.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="oracleUser" type="OracleUserType"
+				minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						OracleUser設定情報です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="OracleUserType">
+		<xs:annotation>
+			<xs:documentation>OracleUser設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="CloudCheckInfo">
+				<xs:sequence>
+					<xs:element name="tenantId" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Oracle Tentant Id</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="userId" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Oracle User Id</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="fingerprint" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Oracle Finger Print</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="passphrase" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Oracle Passphrase</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="defaultRegion" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Oracle Default Region</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="privateKeyFileName" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Oracle Private Key File Name</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType></xs:schema>

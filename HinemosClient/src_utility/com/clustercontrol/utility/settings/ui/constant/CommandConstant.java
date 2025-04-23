@@ -90,6 +90,8 @@ public class CommandConstant {
 	public static final int WEIGHT_PLATFORM_MAIL_TEMPLATE = 300;
 	public static final int WEIGHT_PLATFORM_LOG_FORMAT = 301;
 	public static final int WEIGHT_PLATFORM_REST_ACCESS = 302;
+	//ジョブ連携送信は依存する通知があるため、通知より優先とする
+	public static final int WEIGHT_JOB_JOBLINKSEND = 303;
 	public static final int WEIGHT_PLATFORM_NOTIFY = 400;
 	public static final int WEIGHT_PLATFORM_NODECONFIG = 410;
 	public static final int WEIGHT_PLATFORM_MAINTENANCE = 500;
@@ -111,19 +113,21 @@ public class CommandConstant {
 	public static final int WEIGHT_MONITOR_HTTP_SCENARIO = 714;
 	public static final int WEIGHT_MONITOR_JMX = 715;
 	public static final int WEIGHT_MONITOR_CUSTOMTRAP = 716;
-	public static final int WEIGHT_MONITOR_LOGCOUNT = 717;
 	public static final int WEIGHT_MONITOR_BINARYFILE = 718;
 	public static final int WEIGHT_MONITOR_PCAP = 719;
-	public static final int WEIGHT_MONITOR_INTEGRATION = 720;
-	public static final int WEIGHT_MONITOR_CORRELATION = 721;
 	public static final int WEIGHT_MONITOR_RPA_LOGFILE = 722;
 	public static final int WEIGHT_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE = 723;
+	//ログ件数監視は他の文字列監視を参照するため、優先度を他の監視より下げる
+	public static final int WEIGHT_MONITOR_LOGCOUNT = 751;
+	//収集値統合監視は他の数値/文字列監視参照するため、優先度を他の監視より下げる
+	public static final int WEIGHT_MONITOR_INTEGRATION = 752;
+	//相関係数監視は他の数値監視を参照するため、優先度を他の監視より下げる
+	public static final int WEIGHT_MONITOR_CORRELATION = 753;
 	public static final int WEIGHT_HUB_TRANSFER = 800;
 	public static final int WEIGHT_INFRA_FILE = 850;
 	public static final int WEIGHT_INFRA_SETTING = 851;
 	public static final int WEIGHT_JOBMAP_IMAGE = 900;
 	public static final int WEIGHT_JOB_QUEUE = 910;
-	public static final int WEIGHT_JOB_JOBLINKSEND = 920;
 	public static final int WEIGHT_JOB_MST = 930;
 	public static final int WEIGHT_JOB_KICK = 950;
 	public static final int WEIGHT_NODE_MAP_SETTING = 1001;

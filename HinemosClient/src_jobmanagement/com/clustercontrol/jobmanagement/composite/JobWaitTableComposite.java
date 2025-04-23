@@ -8,8 +8,10 @@
 package com.clustercontrol.jobmanagement.composite;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -145,6 +147,8 @@ public class JobWaitTableComposite extends Composite {
 				if (dialog.open() == IDialogConstants.OK_ID) {
 					JobObjectGroupInfoResponse groupInfo = dialog.getInputData();
 					if (groupInfo != null) {
+						Integer maxOrderNo = getMaxOrderNo(m_objectGroupList);
+						groupInfo.setOrderNo(maxOrderNo + 1);
 						m_objectGroupList.add(groupInfo);
 						reflectObjectGroup();
 					}
@@ -175,6 +179,14 @@ public class JobWaitTableComposite extends Composite {
 							if (groupInfo == null) {
 								m_objectGroupList.remove((int) orderNo);
 							} else {
+								JobObjectGroupInfoResponse orgInfo = m_objectGroupList.get(orderNo);
+								if(orgInfo == null){
+									//通常ここには来ない想定
+									groupInfo.setOrderNo(orderNo);
+								}else{
+									//OrderNoが引き継がれるようにフォロー
+									groupInfo.setOrderNo(orgInfo.getOrderNo());
+								}
 								m_objectGroupList.set(orderNo, groupInfo);
 							}
 							reflectObjectGroup();
@@ -204,6 +216,8 @@ public class JobWaitTableComposite extends Composite {
 						dialog.setInputData(m_objectGroupList.get(orderNo));
 						if (dialog.open() == IDialogConstants.OK_ID) {
 							JobObjectGroupInfoResponse groupInfo = dialog.getInputData();
+							Integer maxOrderNo = getMaxOrderNo(m_objectGroupList);
+							groupInfo.setOrderNo(maxOrderNo + 1);
 							m_objectGroupList.add(groupInfo);
 							reflectObjectGroup();
 							m_selectItem = null;
@@ -543,5 +557,38 @@ public class JobWaitTableComposite extends Composite {
 		} else {
 			return "";
 		}
+	}
+
+	/**
+	 * List<JobObjectGroupInfoResponse>からOrderNoの最大値を取得
+	 * 
+	 * @param targetList 対象リスト
+	 * @return OrderNoの最大値(対象リストが空なら-1となる)
+	 */
+	private static Integer getMaxOrderNo(List<JobObjectGroupInfoResponse> targetList){
+		Integer ret = -1;
+		try{
+			// 対象リストが空なら-1を返す
+			if (targetList == null || targetList.size() == 0) {
+				return ret;
+			}
+	
+			//OrderNoが設定されていないレコードを取り除く
+			List<JobObjectGroupInfoResponse> filterList = targetList.stream().filter(c -> c.getOrderNo() != null)
+					.collect(Collectors.toList());
+	
+			// OrderNoが設定されたレコードが無い場合も-1を返す
+			if (filterList == null || filterList.size() == 0) {
+				return ret;
+			}
+		
+			// OrderNoの最大値を取得する
+			ret = filterList.stream().max(Comparator.comparingInt(JobObjectGroupInfoResponse::getOrderNo)).get()
+					.getOrderNo();
+		}catch(Exception e){
+			//ここには来ない想定
+			m_log.error("getMaxOrderNo . exception has occurred .message=" + e.getMessage(), e);
+		}
+		return ret;
 	}
 }

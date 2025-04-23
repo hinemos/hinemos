@@ -8,12 +8,16 @@
 package com.clustercontrol.rest.endpoint.notify.dto;
 
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.endpoint.notify.dto.enumtype.NotifyTypeEnum;
 
 public class AddInfraNotifyRequest extends AbstractAddNotifyRequest {
 
 	private InfraNotifyDetailInfoRequest notifyInfraInfo;
 
+	//通知種別は固定のため、コンストラクタでデータを登録する
 	public AddInfraNotifyRequest() {
+		NotifyTypeEnum type = NotifyTypeEnum.INFRA;
+		super.setNotifyType(type);
 	}
 
 	public InfraNotifyDetailInfoRequest getNotifyInfraInfo() {
@@ -22,6 +26,11 @@ public class AddInfraNotifyRequest extends AbstractAddNotifyRequest {
 
 	public void setNotifyInfraInfo(InfraNotifyDetailInfoRequest notifyInfraInfo) {
 		this.notifyInfraInfo = notifyInfraInfo;
+	}
+
+	//ここでは何もしない
+	@Override
+	public void setNotifyType(NotifyTypeEnum notifyType) {
 	}
 
 	@Override

@@ -59,9 +59,9 @@ import com.clustercontrol.rest.endpoint.collect.dto.emuntype.SummaryTypeEnum;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.TimezoneUtil;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
-import com.clustercontrol.repository.bean.FacilityIdConstant;
 /**
  * 性能グラフを表示する補助クラス<BR>
  *
@@ -117,11 +117,6 @@ public class CollectGraphUtil {
 	private Long m_targetConditionEndDate = null;
 	
 	/**
-	 * 前回DBから取得した時間
-	 */
-	private Long m_targetDBAccessDate = null;
-	
-	/**
 	 * 各描画済みグラフ上の最新時間
 	 */
 	private Map <String, Long> m_targetDrawnDateList = new HashMap<>();
@@ -166,6 +161,12 @@ public class CollectGraphUtil {
 	 */
 	private List<CollectKeyInfoResponseP1> m_collectKeyInfoList = new ArrayList<>();
 	
+	/**
+	 * 前回実行時の各マネージャのHinemosTime 
+	 * Map<マネージャ名(String),マネージャのHinemosTime(Long)>
+	 */
+	private Map <String, Long> m_PreviousManagerHinemosTimeMap = new HashMap<>();
+
 	/**
 	 * スライダーの全体開始時刻
 	 */
@@ -250,14 +251,8 @@ public class CollectGraphUtil {
 		int count = 0;
 		boolean allbreak = false;
 
-		// グラフの表示開始時刻、表示終了時刻、今回の処理日時を内部に保持する
-		setTargetConditionStartDate(selectStartDate);
-		setTargetConditionEndDate(selectEndDate);
-		if (now > endDate) {
-			setTargetDBAccessDate(endDate);
-		} else {
-			setTargetDBAccessDate(now);
-		}
+		// 実行開始時点のマネージャのHinemosTimeを取得
+		Map<String, Long> startHinemosTimeMap = getCurrentManagerTimeMap();
 
 		for (CollectKeyInfoResponseP1 collectKeyInfo : getInstance().m_collectKeyInfoList) {
 			String itemNameCode = collectKeyInfo.getItemName();
@@ -267,6 +262,7 @@ public class CollectGraphUtil {
 			for (Map.Entry<String, TreeMap<String, List<Integer>>> entry : getInstance().m_targetManagerFacilityCollectMap.entrySet()) {
 				String managerName = entry.getKey();
 				String targetDrawnDateListKey = getTargetDrawnDateListKey(managerName, monitorId, itemName, displayName);
+				Long preHinemosTimeLong = getPreviousHinemosTimeMap().get(managerName);
 
 				m_log.debug("getGraphJsonData() m_targetDrawnDateList=" + getInstance().m_targetDrawnDateList.toString());
 				Long targetDrawnDate = getInstance().m_targetDrawnDateList.get(targetDrawnDateListKey);
@@ -274,9 +270,19 @@ public class CollectGraphUtil {
 				if (getInstance().useDrawnDateListFlg && targetDrawnDate != null){
 					startDate = targetDrawnDate;
 				}
+				// データ取得開始時間補正。
+				// 今回のグラフの表示範囲に前回のデータ取得以後に新規データが追加された可能性がある範囲があればそこがデータ取得対象となるように補正する。
+				if(preHinemosTimeLong != null && preHinemosTimeLong >= selectStartDate  && preHinemosTimeLong <= selectEndDate  ){
+					if( preHinemosTimeLong < startDate ){
+						startDate = preHinemosTimeLong;
+						if(m_log.isDebugEnabled()){
+							m_log.debug("getGraphJsonData() correction startDate value="+toDatetimeString(startDate));
+						}
+					}
+				}
 				
 				// DBから対象のグラフ情報を取得
-				Map<Integer, List<CollectDataInfoResponse>> graphMap = getGraphDetailDataMap(managerName, monitorId, displayName, itemName, startDate, getTargetDBAccessDate());
+				Map<Integer, List<CollectDataInfoResponse>> graphMap = getGraphDetailDataMap(managerName, monitorId, displayName, itemName, startDate, endDate);
 				String itemNameDisplayNameMonitorId = itemName + displayName + monitorId;
 				Map<String, Integer> collectIdMap = getFacilityCollectMap(itemNameDisplayNameMonitorId, managerName);
 				// plot文字列を取得
@@ -427,6 +433,12 @@ public class CollectGraphUtil {
 		sb.append("\'eventflaginfo\':[" + getEventFlagInfo() + "], ");
 		sb.append(orderItemInfoSelection());
 		sb.append("}");
+
+		// グラフの表示開始時刻、表示終了時刻、マネージャのHinemosTime(次回実行時の参照向け)を内部に保持する
+		setTargetConditionStartDate(selectStartDate);
+		setTargetConditionEndDate(selectEndDate);
+		setPreviousHinemosTimeMap(startHinemosTimeMap);
+
 		return sb;
 	}
 	
@@ -505,8 +517,7 @@ public class CollectGraphUtil {
 		m_log.debug("sortManagerNameFacilityIdMap() managerName:" + managerName + 
 				", facilityId:" + info.getFacilityId() + ", facilityName:" + info.getFacilityName());
 		if (!getInstance().m_managerFacilityDataInfoMap
-				.containsKey(managerName + SQUARE_SEPARATOR + info.getFacilityId())
-				&& !info.getFacilityId().equals(FacilityIdConstant.ROOT)) {
+				.containsKey(managerName + SQUARE_SEPARATOR + info.getFacilityId())) {
 			count++;
 			getInstance().m_managerFacilityDataInfoMap.put(managerName + SQUARE_SEPARATOR + info.getFacilityId(), 
 					new CollectFacilityDataInfo(info.getFacilityId(), info.getFacilityName(), "dummy_" + count));
@@ -1436,20 +1447,6 @@ public class CollectGraphUtil {
 	}
 	/**
 	 * 
-	 * @return 前回DBから取得した時間<br>
-	 */
-	public static Long getTargetDBAccessDate() {
-		return getInstance().m_targetDBAccessDate;
-	}
-	/**
-	 * 
-	 * @param targetDBAccessDate 前回DBから取得した時間<br>
-	 */
-	public static void setTargetDBAccessDate(Long targetDBAccessDate) {
-		getInstance().m_targetDBAccessDate = targetDBAccessDate;
-	}
-	/**
-	 * 
 	 * @param isUseDrawnDateList 各描画済みグラフ上の最新時間をデータ取得の際に使用するか否か<br>
 	 */
 	public static void setUseDrawnDateListFlg(boolean isUseDrawnDateList) {
@@ -1547,6 +1544,22 @@ public class CollectGraphUtil {
 	public static boolean getBarFlg() {
 		return getInstance().barFlg;
 	}
+	
+	/**
+	 * 前回実行時のHinemosTimeをMap形式で返却する。
+	 * @return Map<マネージャ名(String),マネージャのHinemosTime(Long)> 
+	 */
+	protected static Map<String, Long> getPreviousHinemosTimeMap() {
+		return getInstance().m_PreviousManagerHinemosTimeMap;
+	}
+	
+	/**
+	 * 次回の実行時に前回HinemosTimeとして参照される値をMap形式で設定する。
+	 * @param timeMap Map<マネージャ名(String),マネージャのHinemosTime(Long)> 
+	 */
+	protected static void setPreviousHinemosTimeMap(Map<String, Long> timeMap) {
+		getInstance().m_PreviousManagerHinemosTimeMap = timeMap;
+	}
 
 	/**
 	 * JavaScriptにおけるエスケープが必要な文字列を置換する
@@ -1606,6 +1619,39 @@ public class CollectGraphUtil {
 		return now;
 	}
 
+	/**
+	 * マネージャのHinemosTimeを取得し、Map形式で返却する。
+	 * マネージャから取得できない場合は、mapのvalueはnullとする。
+	 * 
+	 * @return Map<マネージャ名(String),マネージャのHinemosTime(Long)> 
+	 */
+	public static Map<String,Long> getCurrentManagerTimeMap() {
+		Map<String,Long> retMap = new HashMap<String,Long>();
+		for(String targetManagerName : RestConnectManager.getActiveManagerNameList()){
+			CommonRestClientWrapper wrapper = CommonRestClientWrapper.getWrapper(targetManagerName);
+			Long managerHinemosTime = null;
+			try {
+				HinemosTimeResponse hinemosTimeResponse = wrapper.getHinemosTime();
+				managerHinemosTime = hinemosTimeResponse.getCurrentTimeMillis();
+				if (m_log.isDebugEnabled()) {
+					m_log.debug("getCurrentManagerTimeMap() hinemosTimeResponse=" + hinemosTimeResponse + ", manager now=" + toDatetimeString(managerHinemosTime));
+				}
+			} catch (InvalidUserPass | InvalidRole | RestConnectFailed | HinemosUnknown | NullPointerException e) {
+				// 例外発生時は警告ログ出力し、続行
+				m_log.warn("getCurrentManagerTimeMap() error occurred at getHinemosTime. targetManagerName =" + targetManagerName + " e=" + e, e);
+			}
+			if (managerHinemosTime == null) {
+				m_log.warn("getCurrentManagerTimeMap() failed to get HinemosTime of manager. targetManagerName =" + targetManagerName + " managerHinemosTime=null");
+			}
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("getCurrentManagerTimeMap() targetManagerName ="+targetManagerName+",nowHinemosTime=" + toDatetimeString(managerHinemosTime));
+			}
+			retMap.put(targetManagerName, managerHinemosTime);
+		}
+		return retMap;
+	}
+
+	
 	/**
 	 * 各描画済みグラフ上の最新時間を更新する
 	 * 

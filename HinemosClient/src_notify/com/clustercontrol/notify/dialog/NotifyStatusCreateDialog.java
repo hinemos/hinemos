@@ -391,7 +391,7 @@ public class NotifyStatusCreateDialog extends NotifyBasicCreateDialog {
 		this.m_radioStatusUpdate = new Button(groupStatus2, SWT.RADIO);
 		WidgetTestUtil.setTestId(this, "update", m_radioStatusUpdate);
 		gridData = new GridData();
-		gridData.horizontalSpan = 8;
+		gridData.horizontalSpan = 11;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_radioStatusUpdate.setLayoutData(gridData);

@@ -9,10 +9,12 @@
 package com.clustercontrol.composite;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -110,7 +112,7 @@ public class FacilityTreeComposite extends Composite {
 
 	/** オーナーロールID */
 	protected String ownerRoleId = null;
-	
+
 	/** チェックボックス付きツリーにするかどうか */
 	private boolean checkflg = false;
 
@@ -119,9 +121,17 @@ public class FacilityTreeComposite extends Composite {
 
 	/** マネージャ名 */
 	protected String managerName = null;
-	
-	/** 選択中のファシリティIDリスト */
+
+	/**
+	 * 選択中のファシリティID階層のリスト
+	 * ファシリティタイプにより、以下の形式となる（「」は実際のID等に置換える。区切り文字はSEPARATOR_HASH_EX_HASH）。
+	 * 0(SCOPE)の場合		：「マネージャ名」#!#「ファシリティID」#!#0
+	 * 1(NODE)の場合		：「マネージャ名」#!#「親スコープのファシリティID」#!#「ファシリティID」#!#1
+	 * 2(COMPOSITE)の場合	：「ファシリティタイプ」
+	 * 3(MANAGER)の場合		：「マネージャ名」#!#「マネージャ名」#!#3
+	 */
 	private List<String> selectFacilityList = null;
+
 	/** 区切り文字(#!#) */
 	private static final String SEPARATOR_HASH_EX_HASH = "#!#";
 
@@ -373,18 +383,23 @@ public class FacilityTreeComposite extends Composite {
 			// チェックボックス選択イベント定義
 			CheckboxTreeViewer checkboxTreeViewer = (CheckboxTreeViewer) treeViewer;
 			checkboxTreeViewer.addCheckStateListener(new ICheckStateListener() {
-				
 				public void checkStateChanged(CheckStateChangedEvent event) {
 					CheckboxTreeViewer checkboxTreeViewer = (CheckboxTreeViewer) treeViewer;
 					Object element = event.getElement();
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("createContents() ... checkStateChanged() start. element=" + element + ", Checked=" + event.getChecked());
+					}
+					// 一旦削除
+					deleteSelectFacilityList();
 					// 親が選択されたら子供も選択し、子の一部のみがチェックされている場合はグレー状態にする
 					if (element instanceof FacilityTreeItemResponse) {
-						FacilityTreeItemResponse item = (FacilityTreeItemResponse)element;
-						checkItems(checkboxTreeViewer, item, event.getChecked());
-						checkPath(checkboxTreeViewer, item, event.getChecked(), false);
+						checkPath(checkboxTreeViewer, (FacilityTreeItemResponse) element, event.getChecked());
 					}
 					// チェック状態を保持する
-					selectFacilityList = getCheckedTreeInfo();
+					getSelectFacilityList();
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("createContents() ... checkStateChanged() end.");
+					}
 				}
 			});
 		}
@@ -404,48 +419,196 @@ public class FacilityTreeComposite extends Composite {
 		// 表示します。
 		this.update();
 	}
-	
+
 	/**
 	 * ツリー上のチェックボックスに値をセットします。
 	 * 子のノードがある場合はそれらもチェックします。
+	 * 
 	 * @param tree CheckBoxTreeViewerのインスタンス
 	 * @param item チェック対象のFacilityTreeItemのインスタンス
-	 * @param checked チェックボックスのチェック状態
+	 * @param state チェックボックスのチェック状態
 	 */
-	protected void checkItems(CheckboxTreeViewer tree, FacilityTreeItemResponse item, boolean checked) {
-		tree.setGrayed(item, false);
-		tree.setChecked(item, checked);
+	protected void setChildrenCheckedRecursively(CheckboxTreeViewer tree, FacilityTreeItemResponse item, boolean state) {
+		tree.setChecked(item, state);
+		tree.setGrayed(item, false);		// グレーも外す
 		List<FacilityTreeItemResponse> children = item.getChildren();
 		for(FacilityTreeItemResponse child: children) {
-			checkItems(tree, child, checked);
+			setChildrenCheckedRecursively(tree, child, state);
 		}
 	}
-	
+
+	/**
+	 * 再帰的に、子のチェックボックスのグレーを変更する。
+	 * 
+	 * @param tree CheckBoxTreeViewerのインスタンス
+	 * @param item チェック対象のFacilityTreeItemのインスタンス
+	 * @param state チェックボックスのグレー状態
+	 */
+	protected void setChildrenGrayedRecursively(CheckboxTreeViewer tree, FacilityTreeItemResponse item, boolean state) {
+		tree.setGrayChecked(item, state);
+		List<FacilityTreeItemResponse> children = item.getChildren();
+		for(FacilityTreeItemResponse child: children) {
+			setChildrenGrayedRecursively(tree, child, state);
+		}
+	}
+
+	/**
+	 * 該当項目の親からルート階層まで再帰的に確認し、チェックボックスにチェックやグレーを設定する。
+	 * 
+	 * @param tree スコープ階層
+	 * @param item 該当項目
+	 * @param checked 該当項目のチェック状態
+	 * @param grayed 該当項目のグレー状態
+	 */
+	private void setParentGrayCheckedRecursively(CheckboxTreeViewer tree, FacilityTreeItemResponse item, boolean checked, boolean grayed) {
+		if (tree == null || item == null) {
+			// 通常は到達しない
+			m_log.warn("setParentGrayCheckedRecursively() tree or item is null.");
+			return;
+		}
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("setParentGrayCheckedRecursively() start. item FacilityId=" + item.getData().getFacilityId() + ", checked=" + checked + ", grayed=" + grayed);
+		}
+
+		FacilityTreeItemResponse parent = item.getParent();
+		if (parent == null || parent.getData() == null || parent.getData().getFacilityId() == null) {
+			// 頂点の番兵はgetFacilityId()がnull
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("setParentGrayCheckedRecursively() end. parent is null.");
+			}
+			return;
+		}
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("setParentGrayCheckedRecursively() parent FacilityId=" + parent.getData().getFacilityId());
+		}
+		// 該当項目がグレーなら親はグレー
+		if (grayed) {
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("setParentGrayCheckedRecursively() parent grayed, too. parent FacilityId=" + parent.getData().getFacilityId());
+			}
+			tree.setGrayChecked(parent, true);
+			// 更に親を確認
+			setParentGrayCheckedRecursively(tree, parent, true, true);
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("setParentGrayCheckedRecursively() end. item FacilityId=" + item.getData().getFacilityId());
+			}
+			return;
+		}
+
+		// 兄弟を確認
+		// チェック入りの兄弟数（該当項目はカウント除外）
+		int checkedBroCnt = 0;
+		// 兄弟にグレーがあるか
+		boolean hasBrothersGray = false;
+		List<FacilityTreeItemResponse> brothers = parent.getChildren();
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("setParentGrayCheckedRecursively() brothers.size()=" + brothers.size());
+		}
+		for (FacilityTreeItemResponse brother : brothers) {
+			if (brother == null || brother.getData() == null || brother.getData().getFacilityId() == null) {
+				if (m_log.isTraceEnabled()) {
+					m_log.trace("setParentGrayCheckedRecursively() brother is null, so skip.");
+				}
+				continue;
+			}
+			if (m_log.isTraceEnabled()) {
+				m_log.trace("setParentGrayCheckedRecursively() brother FacilityId=" + brother.getData().getFacilityId());
+			}
+			// itemはスキップ（tree.getChecked()は高コストなのでできるだけ呼び出したくない）
+			if (brother.getData().getFacilityId().equals(item.getData().getFacilityId())) {
+				if (m_log.isTraceEnabled()) {
+					m_log.trace("setParentGrayCheckedRecursively() brother is same item, so skip.");
+				}
+				continue;
+			}
+			// brotherがグレーの場合はループを抜ける
+			if (tree.getGrayed(brother)) {
+				if (m_log.isTraceEnabled()) {
+					m_log.trace("setParentGrayCheckedRecursively() brother is grayed. brother FacilityId=" + brother.getData().getFacilityId());
+				}
+				hasBrothersGray = true;
+				break;
+			}
+			// brotherがチェックされていればカウントアップ
+			if (tree.getChecked(brother)) {
+				checkedBroCnt++;
+			}
+		}
+		// 兄弟にグレーがあれば親はグレー
+		if (hasBrothersGray) {
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("setParentGrayCheckedRecursively() brother is grayed, so parent grayed, too. parent FacilityId=" + parent.getData().getFacilityId());
+			}
+			tree.setGrayChecked(parent, true);
+			// 更に親を確認
+			setParentGrayCheckedRecursively(tree, parent, true, true);
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("setParentGrayCheckedRecursively() end. item FacilityId=" + item.getData().getFacilityId());
+			}
+			return;
+		}
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("setParentGrayCheckedRecursively() checkedBroCnt=" + checkedBroCnt);
+		}
+
+		boolean parentChecked = false;
+		boolean parentGrayed = false;
+		if (!checked && checkedBroCnt == 0) {
+			// 自身がチェックなしで、兄弟チェック数が0なら、親はチェックなし
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("setParentGrayCheckedRecursively() parent unchecked. parent FacilityId=" + parent.getData().getFacilityId());
+			}
+			tree.setChecked(parent, false);
+			tree.setGrayed(parent, false);
+		} else if (checked && brothers.size() - 1 == checkedBroCnt) {
+			// 全チェックなら親はチェック
+			parentChecked = true;
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("setParentGrayCheckedRecursively() parent checked. parent FacilityId=" + parent.getData().getFacilityId());
+			}
+			tree.setChecked(parent, true);
+			tree.setGrayed(parent, false);
+		} else {
+			// そうでないなら親はグレー
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("setParentGrayCheckedRecursively() parent grayed. parent FacilityId=" + parent.getData().getFacilityId());
+			}
+			parentChecked = true;
+			parentGrayed = true;
+			tree.setGrayChecked(parent, true);
+		}
+
+		// 更に親を確認
+		setParentGrayCheckedRecursively(tree, parent, parentChecked, parentGrayed);
+
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("setParentGrayCheckedRecursively() end. item FacilityId=" + item.getData().getFacilityId());
+		}
+	}
+
 	/**
 	 * チェックボックスの状態をチェックしてツリーに値をセットします。
+	 * 
 	 * @param tree CheckBoxTreeViewerのインスタンス
 	 * @param item チェック対象のFacilityTreeItemのインスタンス
 	 * @param checked チェックボックスのチェック状態
-	 * @param grayed チェックボックスのグレー状態（子の一部のみが選択されている状態）
 	 */
-	protected void checkPath(CheckboxTreeViewer tree, FacilityTreeItemResponse item, boolean checked, boolean grayed) {
-		if(item == null){
+	protected void checkPath(CheckboxTreeViewer tree, FacilityTreeItemResponse item, boolean checked) {
+		if(tree == null || item == null || item.getData() == null || item.getData().getFacilityId() == null){
+			// 通常は到達しない
+			m_log.warn("checkPath() tree or item is null.");
 			return;
 		}
-		if(grayed){
-			checked = true;
-		} else {
-			List<FacilityTreeItemResponse> children = item.getChildren();
-			for (FacilityTreeItemResponse child: children) {
-				if (tree.getGrayed(child) || checked != tree.getChecked(child)) {
-					checked = grayed = true;
-					break;
-				}
-			}
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("checkPath() item FacilityId=" + item.getData().getFacilityId() + ", checked=" + checked);
 		}
-		tree.setChecked(item, checked);
-		tree.setGrayed(item, grayed);
-		checkPath(tree, item.getParent(), checked, grayed);
+
+		// 子全体をチェックに更新
+		// 以下の方が、setChildrenCheckedRecursively()より処理時間が短い
+		setChildrenGrayedRecursively(tree, item, false);	// 一旦グレーを外す、時間がかかる
+		tree.setSubtreeChecked(item, checked);
+		// 親のチェック、グレーを更新
+		setParentGrayCheckedRecursively(tree, item, checked, false);
 	}
 
 	/**
@@ -531,7 +694,7 @@ public class FacilityTreeComposite extends Composite {
 			}
 
 			// SWTアクセスを許可するスレッドからの操作用
-			checkAsyncExec(new Runnable(){
+			checkAsyncExec(new Runnable(){	// Webクライアントはリロード時にここが2回走る
 				@Override
 				public void run() {
 					m_log.trace("FacilityTreeComposite.checkAsyncExec() do runnnable");
@@ -541,7 +704,7 @@ public class FacilityTreeComposite extends Composite {
 						m_log.info("treeViewer is disposed. ");
 						return;
 					}
-					
+
 					FacilityTreeItemResponse oldTreeItem = (FacilityTreeItemResponse)treeViewer.getInput();
 					m_log.debug("run() oldTreeItem=" + oldTreeItem);
 					if( null != oldTreeItem ){
@@ -564,7 +727,7 @@ public class FacilityTreeComposite extends Composite {
 					}
 					if (checkflg) {
 						// チェックをつける
-						setCheckedTreeInfo(selectFacilityList);
+						setCheckedTreeInfo(getSelectFacilityList());
 					}
 				}
 
@@ -694,122 +857,228 @@ public class FacilityTreeComposite extends Composite {
 	
 	/**
 	 * ツリーの選択状態をStringのリストで以下の形式で返します。<br>
-	 * ファシリティタイプが<br>
-	 * 2(COMPOSITE)の場合：ファシリティタイプ<br>
-	 * 0(SCOPE)または3(MANAGER)の場合：マネージャ名 + "#!#" + ファシリティID + "#!#" + ファシリティタイプ<br>
-	 * 1(NODE)の場合：マネージャ名 + "#!#" + 親のファシリティID + "#!#" + ファシリティID + "#!#" + ファシリティタイプ<br>
+	 * このメソッドは時間がかかる
 	 * 
-	 * @return
+	 * @return ファシリティID階層のリスト（メンバ変数selectFacilityListの形式）
 	 */
 	public List<String> getCheckedTreeInfo() {
-		CheckboxTreeViewer tree = (CheckboxTreeViewer)getTreeViewer();
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("getCheckedTreeInfo() start.");
+		}
+
+		CheckboxTreeViewer tree = (CheckboxTreeViewer) getTreeViewer();
 		Object[] treeItemArray = tree.getCheckedElements();
-		List<Object> treeItemList = new ArrayList<Object>();
-		
-		for(Object item:treeItemArray){
-			boolean grayed = tree.getGrayed(item);
-			boolean checked = tree.getChecked(item);
-			if(!grayed && checked){
-				treeItemList.add(item);
+		List<FacilityTreeItemResponse> treeItemList = new ArrayList<>();
+		for (Object item : treeItemArray) {
+			if (!(item instanceof FacilityTreeItemResponse)) {
+				continue;
+			}
+			if (tree.getGrayed(item)) {
+				// グレーはスキップ
+				continue;
+			}
+			if (tree.getChecked(item)) {
+				treeItemList.add((FacilityTreeItemResponse) item);
 			}
 		}
-		List<String> selectFacilityStringList = new ArrayList<>();
-		m_log.debug("SIZE:" + treeItemList.size());
-		for (Object objectItem : treeItemList) {
-			if (objectItem instanceof FacilityTreeItemResponse) {
-				FacilityTreeItemResponse facilityTreeItem = (FacilityTreeItemResponse)objectItem;
-				switch (facilityTreeItem.getData().getFacilityType()) {
-				case COMPOSITE:
-					// findbugs対応 facilityType設定値をordinaryから定数に変更
-					selectFacilityStringList.add(String.valueOf(FacilityConstant.TYPE_COMPOSITE));
-					break;
-				case SCOPE:
-				case MANAGER:
-					// 指定したスコープ配下に含まれる全てのノードを対象
-					String managerName = ScopePropertyUtil.getManager(facilityTreeItem).getData().getFacilityId();
-					String facilityId = facilityTreeItem.getData().getFacilityId();
-					// findbugs対応 facilityType設定値をordinaryから定数に変更
-					Integer facilityType = null;
-					if( facilityTreeItem.getData().getFacilityType()== FacilityInfoResponse.FacilityTypeEnum.SCOPE){
-						facilityType = FacilityConstant.TYPE_SCOPE;
+
+		return getFacilityList(treeItemList);
+	}
+
+	/**
+	 * ツリー項目のリストから、ファシリティID階層のリストに変換する。
+	 * 
+	 * @param treeItemList ツリー項目
+	 * @return ファシリティID階層のリスト（メンバ変数selectFacilityListの形式）
+	 */
+	public List<String> getFacilityList(List<FacilityTreeItemResponse> treeItemList) {
+		m_log.info("getFacilityList() start.");
+		List<String> facilityList = new ArrayList<>();
+		if (treeItemList == null) {
+			// 通常は到達しない
+			m_log.warn("getFacilityList() end. treeItemList is null.");
+			return facilityList;
+		}
+
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("getFacilityList() treeItemList.size:" + treeItemList.size());
+		}
+		for (FacilityTreeItemResponse item : treeItemList) {
+			switch (item.getData().getFacilityType()) {
+			case COMPOSITE:
+				// findbugs対応 facilityType設定値をordinaryから定数に変更
+				facilityList.add(String.valueOf(FacilityConstant.TYPE_COMPOSITE));
+				if (m_log.isTraceEnabled()) {
+					m_log.trace("getFacilityList() COMPOSITE, FacilityId=" + item.getData().getFacilityId());
+				}
+				break;
+			case SCOPE:
+			case MANAGER:
+				// 指定したスコープ配下に含まれる全てのノードを対象
+				String managerName = ScopePropertyUtil.getManager(item).getData().getFacilityId();
+				String facilityId = item.getData().getFacilityId();
+				// findbugs対応 facilityType設定値をordinaryから定数に変更
+				Integer facilityType = null;
+				if (item.getData().getFacilityType() == FacilityInfoResponse.FacilityTypeEnum.SCOPE) {
+					facilityType = FacilityConstant.TYPE_SCOPE;
+				} else if (item.getData().getFacilityType() == FacilityInfoResponse.FacilityTypeEnum.MANAGER) {
+					facilityType = FacilityConstant.TYPE_MANAGER;
+				}
+				String param = managerName + SEPARATOR_HASH_EX_HASH + facilityId + SEPARATOR_HASH_EX_HASH + String.valueOf(facilityType);
+				if (m_log.isTraceEnabled()) {
+					m_log.trace("getFacilityList() TYPE_SCOPE or TYPE_MANAGER, param=" + param);
+				}
+				facilityList.add(param);
+				break;
+			case NODE:
+				managerName = ScopePropertyUtil.getManager(item).getData().getFacilityId();
+				facilityId = item.getData().getFacilityId();
+				String parentFacilityId = item.getParent().getData().getFacilityId();
+				// findbugs対応 facilityType設定値をordinaryから定数に変更
+				param = managerName + SEPARATOR_HASH_EX_HASH + parentFacilityId + SEPARATOR_HASH_EX_HASH + facilityId
+						+ SEPARATOR_HASH_EX_HASH + String.valueOf(FacilityConstant.TYPE_NODE);
+				if (m_log.isTraceEnabled()) {
+					m_log.trace("getFacilityList() TYPE_NODE, param=" + param);
+				}
+				facilityList.add(param);
+				break;
+			default: // 既定の対処はスルー。
+				if (m_log.isTraceEnabled()) {
+					m_log.trace("getFacilityList() default, FacilityType=" + item.getData().getFacilityType());
+				}
+				break;
+			}
+		}
+
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("getFacilityList() end. selectFacilityStringList=" + Arrays.toString(facilityList.toArray()));
+		}
+		return facilityList;
+	}
+
+	/**
+	 * 引数で指定されたfacilityItemListにより、チェックボックのチェックやグレー状態を復元します。
+	 * 
+	 * @param facilityItemList 現状選択しているリスト。形式は、メンバ変数 selectFacilityList と同じ。
+	 */
+	private void setCheckedTreeInfo(List<String> facilityItemList) {
+		if (facilityItemList == null || facilityItemList.size() == 0) {
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("setCheckedTreeInfo() facilityItemList is empty.");
+			}
+			return;
+		}
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("setCheckedTreeInfo() this.treeItem FacilityId=" + this.treeItem.getData().getFacilityId()
+					+ ", facilityItemList=" + Arrays.toString(facilityItemList.toArray()));
+		}
+
+		//選択してる項目、配下のスコープ、ノードも含む
+		List<FacilityTreeItemResponse> treeItemList = new ArrayList<>();
+		//選択してるスコープと配下のスコープ、自身も含む（ノードは含まず）
+		List<FacilityTreeItemResponse> parentItemList = new ArrayList<>();
+		// 選択している項目を取得
+		checkTreeSelect(this.treeItem, facilityItemList, treeItemList, parentItemList);
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("setCheckedTreeInfo() treeItemList Size:" + treeItemList.size() + ", parentItemList size:" + parentItemList.size());
+		}
+		// ツリーの末端でチェックの入っている項目（スコープ、ノード）のリストを作成
+		List<FacilityTreeItemResponse> checkedItemList = new ArrayList<>(treeItemList);
+		for (FacilityTreeItemResponse treeItem : treeItemList) {
+			if (treeItem.getData() == null || treeItem.getData().getFacilityId() == null) {
+				if (m_log.isTraceEnabled()) {
+					m_log.trace("setCheckedTreeInfo() remove treeItem, data or FacilityId is null.");
+				}
+				checkedItemList.remove(treeItem);
+				continue;
+			}
+			if (m_log.isTraceEnabled()) {
+				m_log.trace("setCheckedTreeInfo() treeItem FacilityId=" + treeItem.getData().getFacilityId());
+			}
+			for (FacilityTreeItemResponse parentItem : parentItemList) {
+				if (treeItem.getParent() == null || treeItem.getParent().getData().getFacilityId() == null
+						|| parentItem.getData() == null || parentItem.getData().getFacilityId() == null) {
+					if (m_log.isTraceEnabled()) {
+						m_log.trace("    setCheckedTreeInfo() skip, parent(data or FacilityId) is null.");
 					}
-					if( facilityTreeItem.getData().getFacilityType()== FacilityInfoResponse.FacilityTypeEnum.MANAGER){
-						facilityType = FacilityConstant.TYPE_MANAGER;
-					}
-					String param = managerName +SEPARATOR_HASH_EX_HASH + facilityId + SEPARATOR_HASH_EX_HASH + String.valueOf(facilityType);
-					m_log.debug(param);
-					selectFacilityStringList.add(param);
-	
-					break;
-				case NODE:
-					managerName = ScopePropertyUtil.getManager(facilityTreeItem).getData().getFacilityId();
-					facilityId = facilityTreeItem.getData().getFacilityId();
-					String parentFacilityId = facilityTreeItem.getParent().getData().getFacilityId();
-					// findbugs対応 facilityType設定値をordinaryから定数に変更
-					param = managerName + SEPARATOR_HASH_EX_HASH + parentFacilityId +SEPARATOR_HASH_EX_HASH + facilityId + SEPARATOR_HASH_EX_HASH + String.valueOf(FacilityConstant.TYPE_NODE);
-					m_log.debug(param);
-					selectFacilityStringList.add(param);
-					break;
-				default: // 既定の対処はスルー。
-					break;
+					continue;
+				}
+				if (treeItem.getParent().getData().getFacilityId().equals(parentItem.getData().getFacilityId())) {
+					checkedItemList.remove(treeItem);
 				}
 			}
 		}
-		return selectFacilityStringList;
-	}
-	
-	/**
-	 * 引数で指定されたfacilityItemListを、チェック状態にします。
-	 * 
-	 * @param treeItem
-	 */
-	private void setCheckedTreeInfo(List<String> facilityItemList) {
-		List<FacilityTreeItemResponse> treeItemList = new ArrayList<>();
-		List<FacilityTreeItemResponse> parentItemList = new ArrayList<>();
-		checkTreeSelect(this.treeItem, facilityItemList, treeItemList, parentItemList);
-		m_log.debug("setSelectItemSize:" + treeItemList.size() + ", parentItemList.size:" + parentItemList.size());
-		
-		// チェック状態の復元
-		FacilityTreeItemResponse facilityArr[] = treeItemList.toArray(new FacilityTreeItemResponse[treeItemList.size()]);
-		((CheckboxTreeViewer)getTreeViewer()).setCheckedElements(facilityArr);
-		
-		// 選択状態の親に新たに子供がいた場合は、子供にチェックをつけ,子の一部がチェックされている場合グレー状態にする
-		for (FacilityTreeItemResponse item : treeItemList) {
-			CheckboxTreeViewer tree = (CheckboxTreeViewer)getTreeViewer();
-			checkItems(tree, item, true);
-			checkPath(tree, item, true, false);
+		if (m_log.isTraceEnabled()) {
+			for (FacilityTreeItemResponse parentItem : parentItemList) {
+				m_log.trace("setCheckedTreeInfo() parentItem FacilityId=" + parentItem.getData().getFacilityId());
+			}
+			for (FacilityTreeItemResponse item : checkedItemList) {
+				m_log.trace("setCheckedTreeInfo() checkedItem FacilityId=" + item.getData().getFacilityId());
+			}
 		}
-		Object[] returns = ((CheckboxTreeViewer)getTreeViewer()).getCheckedElements();
-		m_log.debug("selectItemSize:" + returns.length);
+
+		// チェック状態の復元（該当項目のみにチェックが入る）
+		FacilityTreeItemResponse treeItemArr[] = treeItemList.toArray(new FacilityTreeItemResponse[treeItemList.size()]);
+		CheckboxTreeViewer tree = (CheckboxTreeViewer) getTreeViewer();
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("setCheckedTreeInfo() start of call tree.setCheckedElements()");
+		}
+		tree.setCheckedElements(treeItemArr);	// 時間がかかる
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("setCheckedTreeInfo() end of call tree.setCheckedElements()");
+		}
+
+		// チェックとグレーを更新
+		// ・選択項目に新たに子供がいた場合は、子供にチェックをつける。
+		// ・子の一部がチェックされている場合は、親をグレー状態にする。
+		for (FacilityTreeItemResponse item : checkedItemList) {
+			checkPath(tree, item, true);
+		}
 	}
 
 	/**
 	 * 引数で指定されたtreeItemの要素に対して、選択状態にするかチェックし、選択状態にするListと選択状態の子持ちのListを作成します。
 	 * 
 	 * @param treeItem ツリーに表示しているFacilityTreeItem
-	 * @param facilityStringList 選択情報のStringのList
+	 * @param facilityStringList 選択情報のStringのList。形式は、メンバ変数 selectFacilityList と同じ。
 	 * @param facilityList 選択状態にするFacilityTreeItemのリスト(戻り値)
 	 * @param parentFacilityList 選択状態の子持ちのFacilityTreeItemのリスト(戻り値)
 	 */
-	public void checkTreeSelect(FacilityTreeItemResponse treeItem, List<String> facilityStringList, 
+	private void checkTreeSelect(FacilityTreeItemResponse treeItem, List<String> facilityStringList, 
 			List<FacilityTreeItemResponse> facilityList, List<FacilityTreeItemResponse> parentFacilityList) {
-		if (facilityStringList == null || facilityStringList.size() == 0) {
+		if (treeItem == null || facilityStringList == null || facilityList == null || parentFacilityList == null) {
+			m_log.warn("checkTreeSelect() treeItem or facilityStringList or facilityList or parentFacilityList is null, they must not be null.");
 			return;
 		}
+		if (facilityStringList.size() == 0) {
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("checkTreeSelect() facilityStringList is empty.");
+			}
+			return;
+		}
+		if (m_log.isTraceEnabled()) {
+			// 再帰のため大量に出力
+			m_log.trace("checkTreeSelect() treeItem FacilityId=" + treeItem.getData().getFacilityId());
+		}
+
 		List<FacilityTreeItemResponse> treeItemList = treeItem.getChildren();
 		for (FacilityTreeItemResponse childItem : treeItemList) {
 			checkTreeSelect(childItem, facilityStringList, facilityList, parentFacilityList);
 		}
+
+		Pattern splitter = Pattern.compile(SEPARATOR_HASH_EX_HASH);
+		String facilityId = treeItem.getData().getFacilityId();
 		for (String detail : facilityStringList) {
-			String facilityId = treeItem.getData().getFacilityId();
 			String managerName = "";
 			String parentFacilityId = "";
-			String details[] = detail.split(SEPARATOR_HASH_EX_HASH);
+			String details[] = splitter.split(detail);
 			String facilityType = details[details.length-1];
 			if (treeItem.getData().getFacilityType() == FacilityTypeEnum.COMPOSITE) {
 				// 「スコープ」の場合はDetailにFacilityTypeのみ入っている
 				if (details.length == 1) {
-					m_log.debug("selected(have sub:composite) managerName:" + managerName + ", parentFacilityId:" + parentFacilityId + ", facilityId:" + facilityId);
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("checkTreeSelect() selected(have sub:composite) managerName:" + managerName + ", parentFacilityId:" + parentFacilityId + ", facilityId:" + facilityId);
+					}
 					facilityList.add(treeItem);
 					parentFacilityList.add(treeItem);
 				}
@@ -818,27 +1087,53 @@ public class FacilityTreeComposite extends Composite {
 				parentFacilityId = treeItem.getParent().getData().getFacilityId();
 				if (Integer.parseInt(facilityType) == FacilityConstant.TYPE_NODE && details[0].equals(managerName) 
 						&& details[1].equals(parentFacilityId) && details[2].equals(facilityId)) {
-					m_log.debug("selected tree managerName:" + managerName + ", parentFacilityId:" + parentFacilityId + ", facilityId:" + facilityId);
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("checkTreeSelect() selected tree managerName:" + managerName + ", parentFacilityId:" + parentFacilityId + ", facilityId:" + facilityId);
+					}
 					facilityList.add(treeItem);
 				} else if ((Integer.parseInt(facilityType) == FacilityConstant.TYPE_SCOPE || Integer.parseInt(facilityType) == FacilityConstant.TYPE_MANAGER) 
 								&& details[0].equals(managerName) && details[1].equals(facilityId)) {
 					// nodeの場合はmanagerName、facilityId、parentFacilityIdが入っている
 					// scopeまたはmanagerの場合は、managerName、facilityIdが入っている
-					m_log.debug("selected(have sub) managerName:" + managerName + ", parentFacilityId:" + parentFacilityId + ", facilityId:" + facilityId);
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("checkTreeSelect() selected(have sub) managerName:" + managerName + ", parentFacilityId:" + parentFacilityId + ", facilityId:" + facilityId);
+					}
 					facilityList.add(treeItem);
 					parentFacilityList.add(treeItem);
 				}
 			}
 		}
 	}
-	
+
 	/**
-	 * 引数で指定されたListをメンバに設定します。
+	 * 選択中のファシリティID階層のリストを取得します。
+	 * 形式は、selectFacilityListを参照。
 	 * 
-	 * @param selectFacilityList ファシリティツリーの選択情報
+	 * @return 選択中のファシリティID階層のリスト
+	 */
+	public List<String> getSelectFacilityList() {
+		if (this.selectFacilityList == null) {
+			this.selectFacilityList = getCheckedTreeInfo();
+		}
+
+		return this.selectFacilityList;
+	}
+
+	/**
+	 * 選択中のファシリティID階層のリストを設定します。
+	 * 形式は、selectFacilityListを参照。
+	 * 
+	 * @param selectFacilityList 選択中のファシリティID階層のリスト
 	 */
 	public void setSelectFacilityList(List<String> selectFacilityList) {
 		this.selectFacilityList = selectFacilityList;
+	}
+
+	/**
+	 * 選択中のファシリティID階層のリストを削除します。
+	 */
+	public void deleteSelectFacilityList() {
+		this.selectFacilityList = null;
 	}
 
 	/**

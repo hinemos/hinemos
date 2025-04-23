@@ -42,9 +42,7 @@ import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CollectKeyNotFound;
 import com.clustercontrol.fault.HinemosDbTimeout;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.jobmanagement.bean.JobConstant;
-import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.util.ForCollectPreCommitCallback;
@@ -52,6 +50,8 @@ import com.clustercontrol.monitor.run.util.MonitorCollectDataCache;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+
+import jakarta.persistence.Query;
 
 /**
  * 性能情報を登録するユーティティクラス<BR>
@@ -159,14 +159,20 @@ public class CollectDataUtil {
 		}
 
 		// JobMstに存在しないジョブは対象外
-		try {
-			com.clustercontrol.jobmanagement.util.QueryUtil.getJobMstPK_NONE(
-					new JobMstEntityPK(sessionJob.getId().getJobunitId(), sessionJob.getId().getJobId()));
-		} catch (JobMasterNotFound e) {
-			m_log.debug("put(sessionJob) : jobMst is not found. "
-					+ "jobunitId=" + sessionJob.getId().getJobunitId()
-					+ ", jobId=" + sessionJob.getId().getJobId());
-			return;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			//共有キャッシュの書き込みロック中取得時の競合を避けるため、NativeQueryで確認する
+			HinemosEntityManager em = jtm.getEntityManager();
+			Query q = em.createNativeQuery(
+					String.format("SELECT jobunit_id FROM setting.cc_job_mst WHERE jobunit_id = '%s' and job_id = '%s'",
+							sessionJob.getId().getJobunitId(),
+							sessionJob.getId().getJobId())
+					);
+			if (q.getResultList().isEmpty()) {
+				m_log.debug("put(sessionJob) : jobMst is not found. "
+						+ "jobunitId=" + sessionJob.getId().getJobunitId()
+						+ ", jobId=" + sessionJob.getId().getJobId());
+				return;
+			}
 		}
 
 		if (sessionJob.getStartDate() == null
@@ -243,14 +249,20 @@ public class CollectDataUtil {
 		}
 
 		// JobMstに存在しないジョブは対象外
-		try {
-			com.clustercontrol.jobmanagement.util.QueryUtil.getJobMstPK_NONE(
-					new JobMstEntityPK(sessionNode.getId().getJobunitId(), sessionNode.getId().getJobId()));
-		} catch (JobMasterNotFound e) {
-			m_log.debug("put(sessionNode) : jobMst is not found. "
-					+ "jobunitId=" + sessionJob.getId().getJobunitId()
-					+ ", jobId=" + sessionJob.getId().getJobId());
-			return;
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			//共有キャッシュの書き込みロック中取得時の競合を避けるため、NativeQueryで確認する
+			HinemosEntityManager em = jtm.getEntityManager();
+			Query q = em.createNativeQuery(
+					String.format("SELECT jobunit_id FROM setting.cc_job_mst WHERE jobunit_id = '%s' and job_id = '%s'",
+							sessionNode.getId().getJobunitId(),
+							sessionNode.getId().getJobId())
+					);
+			if (q.getResultList().isEmpty()) {
+				m_log.debug("put(sessionNode) : jobMst is not found. "
+						+ "jobunitId=" + sessionJob.getId().getJobunitId()
+						+ ", jobId=" + sessionJob.getId().getJobId());
+				return;
+			}
 		}
 
 		List<Sample> sampleList = new ArrayList<>();

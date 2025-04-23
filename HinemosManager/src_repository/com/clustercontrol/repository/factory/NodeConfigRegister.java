@@ -62,6 +62,7 @@ import com.clustercontrol.repository.util.RepositoryValidator;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
+import com.clustercontrol.util.XMLUtil;
 
 /**
  * 構成情報登録用ファクトリクラス
@@ -597,6 +598,10 @@ public class NodeConfigRegister {
 			if (settingItemInfoList.contains(NodeConfigSettingItem.PACKAGE.name())) {
 				/** 登録処理 (パッケージ情報) */
 				if (m_nodeInfo.getNodePackageRegisterFlag().intValue() == NodeRegisterFlagConstant.GET_SUCCESS) {
+					// ベンダー情報の不正文字(null文字）を置換
+					for (NodePackageInfo packageInfo : m_nodeInfo.getNodePackageInfo()) {
+						packageInfo.setVendor(XMLUtil.ignoreInvalidString(packageInfo.getVendor()));
+					}
 					// 入力チェック
 					List<String> msgList = RepositoryValidator.validateNodePackageConfigInfo(m_nodeInfo.getFacilityId(), m_nodeInfo.getNodePackageInfo());
 					for (String msg : msgList) {

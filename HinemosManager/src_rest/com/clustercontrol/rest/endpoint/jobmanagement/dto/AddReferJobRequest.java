@@ -7,6 +7,8 @@
  */
 package com.clustercontrol.rest.endpoint.jobmanagement.dto;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
 import com.clustercontrol.rest.dto.RequestDto;
@@ -25,6 +27,16 @@ public class AddReferJobRequest extends AbstractAddJobRequest implements Request
 	private ReferJobSelectTypeEnum referJobSelectType;
 
 	public AddReferJobRequest() {
+		//ReferjobではendStatusは不要のため、あらかじめダミーデータを登録する
+		JobEndStatusInfoRequest request1 = new JobEndStatusInfoRequest();
+		JobEndStatusInfoRequest request2 = new JobEndStatusInfoRequest();
+		JobEndStatusInfoRequest request3 = new JobEndStatusInfoRequest();
+		
+		ArrayList<JobEndStatusInfoRequest> referEndStatus = new ArrayList<JobEndStatusInfoRequest>();
+		Collections.addAll(referEndStatus, request1,request2,request3);
+		
+		super.setEndStatus(referEndStatus);
+	
 	}
 
 	public String getReferJobUnitId() {
@@ -49,6 +61,11 @@ public class AddReferJobRequest extends AbstractAddJobRequest implements Request
 
 	public void setReferJobSelectType(ReferJobSelectTypeEnum referJobSelectType) {
 		this.referJobSelectType = referJobSelectType;
+	}
+	
+	//ダミーデータを登録しているため、ここでは何もしない
+	@Override
+	public void setEndStatus(ArrayList<JobEndStatusInfoRequest> endStatus) {
 	}
 
 	@Override

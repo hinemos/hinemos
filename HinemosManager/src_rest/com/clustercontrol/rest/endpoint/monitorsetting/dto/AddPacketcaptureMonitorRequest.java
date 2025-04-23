@@ -7,13 +7,22 @@
  */
 package com.clustercontrol.rest.endpoint.monitorsetting.dto;
 
+import com.clustercontrol.rest.endpoint.monitorsetting.dto.enumtype.RunIntervalEnum;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties({"runInterval"})
 public class AddPacketcaptureMonitorRequest extends AbstractAddBinaryMonitorRequest {
 
 	public AddPacketcaptureMonitorRequest() {
-
+		// runIntervalは、固定値にする
+		super.setRunInterval(RunIntervalEnum.NONE);
 	}
 
 	private PacketCheckInfoRequest packetCheckInfo;
+
+	@Override
+	public void setRunInterval(RunIntervalEnum runInterval) {
+	}
 
 	public PacketCheckInfoRequest getPacketCheckInfo() {
 		return packetCheckInfo;

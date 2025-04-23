@@ -241,13 +241,7 @@ public class HttpScenarioConv {
 		httpScenarioCheckInfo.setProxyFlg(httpScenarioInfo.getProxyFlg());
 		httpScenarioCheckInfo.setProxyUser(httpScenarioInfo.getProxyUser());
 		httpScenarioCheckInfo.setProxyPassword(httpScenarioInfo.getProxyPassword());
-		if(httpScenarioInfo.getProxyFlg()){
-			httpScenarioCheckInfo.setProxyUrl(httpScenarioInfo.getProxyUrl());
-			httpScenarioCheckInfo.setProxyPort(httpScenarioInfo.getProxyPort());
-		} else {
-			//ProxyUrlは未設定時はデフォルトの値（"http://"）に設定する。
-			httpScenarioCheckInfo.setProxyUrl("http://");
-		}
+		httpScenarioCheckInfo.setProxyUrl(httpScenarioInfo.getProxyUrl());
 		httpScenarioCheckInfo.setRequestTimeout(httpScenarioInfo.getRequestTimeout());
 		httpScenarioCheckInfo.setUserAgent(httpScenarioInfo.getUserAgent());
 

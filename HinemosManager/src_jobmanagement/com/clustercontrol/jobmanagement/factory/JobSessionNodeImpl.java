@@ -1012,6 +1012,18 @@ public class JobSessionNodeImpl {
 					//チェック中の場合
 					m_log.debug("agent check OK : status=" + info.getStatus() + ", sessionId=" + info.getSessionId() + ", jobId=" + info.getJobId() + ", facilityId=" + info.getFacilityId());
 
+				} else if (sessionNode.getStartDate().equals(info.getTime())) {
+					// ---- 重複チェック
+					// セッションノードに時刻が設定されている場合は、マネージャは、エージェントから実行要求処理済み
+					// リクエストの時刻とセッションノードの開始時刻が同じ場合、処理済みリクエストと判断し、INTERNALイベントでの通知後、trueを返す
+					String[] args = { info.getSessionId(), info.getJobunitId(), info.getJobId(),info.getFacilityId() };
+					AplLogger.put(InternalIdCommon.JOB_SYS_036, args);
+				
+					m_log.info("endNodeNormalStop() : this messsage is already accepted request." +
+							" sessionId=" + info.getSessionId() +
+							", jobId=" + info.getJobId() +
+							", facilityId=" + info.getFacilityId());
+					return true;
 				}else{
 					m_log.info("endNodeSetStatus() : this messsage is already received. drop message." +
 							" sessionId=" + info.getSessionId() +
@@ -1961,7 +1973,7 @@ public class JobSessionNodeImpl {
 			//リトライ上限を超えたとき
 			// 停止[状態指定](強制)以外での停止処理中の場合、停止させず、一度のみAgentTimeoutErrorのメッセージを出力する
 			if (sessionNode.getStatus() == StatusConstant.TYPE_STOPPING &&
-					sessionNode.getJobSessionJobEntity().getDelayNotifyFlg() != DelayNotifyConstant.STOP_SET_END_VALUE_FORCE){
+					DelayNotifyConstant.getOperation(sessionNode.getJobSessionJobEntity().getDelayNotifyFlg()) != DelayNotifyConstant.STOP_SET_END_VALUE_FORCE){
 				if (!sessionNode.getMessage().contains(MessageConstant.AGENT_TIMEOUT_ERROR.getMessage())){
 					new JobSessionNodeImpl().setMessage(sessionNode,MessageConstant.AGENT_TIMEOUT_ERROR.getMessage() + " (" + retry + ")");
 				}
@@ -2406,7 +2418,7 @@ public class JobSessionNodeImpl {
 
 				// 停止[状態指定](強制)以外での停止処理中の場合、停止させず、一度のみエージェント停止のメッセージを出力する
 				if (entity.getStatus() == StatusConstant.TYPE_STOPPING && 
-						entity.getJobSessionJobEntity().getDelayNotifyFlg() != DelayNotifyConstant.STOP_SET_END_VALUE_FORCE){
+						DelayNotifyConstant.getOperation(entity.getJobSessionJobEntity().getDelayNotifyFlg()) != DelayNotifyConstant.STOP_SET_END_VALUE_FORCE){
 					if (!entity.getMessage().contains(MessageConstant.MESSAGE_AGENT_STOPPED.getMessage())){
 						new JobSessionNodeImpl().setMessage(entity, MessageConstant.MESSAGE_AGENT_STOPPED.getMessage());
 					}

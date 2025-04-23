@@ -1799,6 +1799,7 @@ public class JobRunManagementBean {
 				jtm.commit();
 				isEnd = true;
 			} else {
+				// 注 QueryUtil.getJobLinkMessageの仕様変更（isMatch=trueしか返さない）によって、ここは通過しない実装となった
 				jtm.commit();
 			}
 		} catch(HinemosUnknown e){

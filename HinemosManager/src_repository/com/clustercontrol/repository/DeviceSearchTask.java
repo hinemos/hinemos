@@ -26,6 +26,7 @@ import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.repository.bean.DeviceSearchMessageInfo;
 import com.clustercontrol.repository.bean.NodeInfoDeviceSearch;
+import com.clustercontrol.repository.bean.NodeRegisterFlagConstant;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
@@ -87,8 +88,16 @@ public class DeviceSearchTask implements Callable<Boolean> {
 
 			if (nodeDeviceSearch.getDeviceSearchMessageInfo() != null
 					&& nodeDeviceSearch.getDeviceSearchMessageInfo().size() > 0) {
-				//変更ありの場合はDB更新
-				controller.modifyNode(nodeDeviceSearch.getNewNodeInfo());
+				// 変更ありの場合はDB更新
+				// 自動デバイスサーチでは更新しないものはフラグを設定する
+				NodeInfo newNodeInfo = nodeDeviceSearch.getNewNodeInfo();
+				newNodeInfo.setNodeMemoryRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+				newNodeInfo.setNodeNetstatRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+				newNodeInfo.setNodeProcessRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+				newNodeInfo.setNodePackageRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+				newNodeInfo.setNodeProductRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+				newNodeInfo.setNodeLicenseRegisterFlag(NodeRegisterFlagConstant.NOT_GET);
+				controller.modifyNode(newNodeInfo);
 				//変更ありの場合はイベント登録
 				isOutPutLog = true;
 			}

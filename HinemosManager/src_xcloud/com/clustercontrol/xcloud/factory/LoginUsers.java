@@ -38,6 +38,7 @@ import com.clustercontrol.xcloud.bean.AccessKeyCredential;
 import com.clustercontrol.xcloud.bean.AddCloudLoginUserRequest;
 import com.clustercontrol.xcloud.bean.Credential;
 import com.clustercontrol.xcloud.bean.Filter;
+import com.clustercontrol.xcloud.bean.GenericCredential;
 import com.clustercontrol.xcloud.bean.ModifyCloudLoginUserRequest;
 import com.clustercontrol.xcloud.bean.RoleRelation;
 import com.clustercontrol.xcloud.bean.UserCredential;
@@ -47,6 +48,7 @@ import com.clustercontrol.xcloud.model.AccessKeyCredentialEntity;
 import com.clustercontrol.xcloud.model.CloudLoginUserEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity;
 import com.clustercontrol.xcloud.model.CredentialBaseEntity;
+import com.clustercontrol.xcloud.model.GenericCredentialEntity;
 import com.clustercontrol.xcloud.model.RoleRelationEntity;
 import com.clustercontrol.xcloud.model.UserCredentialEntity;
 import com.clustercontrol.xcloud.persistence.PersistenceUtil;
@@ -85,6 +87,16 @@ public class LoginUsers implements ILoginUsers {
 			entity.setLoginUserId(loginUserId);
 			entity.setUser(credential.getUser());
 			entity.setPassword(credential.getPassword());
+			return entity;
+		}
+
+		@Override
+		public CredentialBaseEntity transform(GenericCredential credential) throws CloudManagerException {
+			GenericCredentialEntity entity = new GenericCredentialEntity();
+			entity.setCloudScopeId(cloudScopeId);
+			entity.setLoginUserId(loginUserId);
+			entity.setPlatform(credential.getPlatform());
+			entity.setJsonCredentialInfo(credential.getJsonCredentialInfo());
 			return entity;
 		}
 	};

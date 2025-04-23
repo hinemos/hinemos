@@ -186,7 +186,7 @@ public class CollectGraphComposite extends Composite {
 			m_browserGraph.setLayoutData(gridData1);
 			
 			loadBrowser();
-			m_log.warn("set URL");
+			m_log.info("set URL");
 
 		} catch (Exception e) {
 			m_log.warn("CollectGraphComposite : " + e.getMessage(), e);
@@ -220,7 +220,6 @@ public class CollectGraphComposite extends Composite {
 				completed = true;
 				new CustomFunction(m_browserGraph, "theJavaFunction");
 				m_log.debug("graph completed!!!!!");
-				m_collectGraphView.setItemCodeCheckedTreeItems();
 			}
 			public void changed(ProgressEvent event) {
 			}
@@ -310,6 +309,12 @@ public class CollectGraphComposite extends Composite {
 						null,
 						Messages.getString("error"),
 						Messages.getString("message.collection.graph.unexpected.error") + " : " + message);
+			} catch (IllegalStateException e) {
+				// Webクライアントのみ、既に別スクリプトが実行中の場合に発生する。
+				// メッセージが分かりにくいため変更する。
+				m_log.warn("Another script is already being executed. message=" + HinemosMessage.replace(e.getMessage()));
+				MessageDialog.openWarning(null, Messages.getString("word.warn"),
+						Messages.getString("message.performance.4"));
 			} catch (Exception e) {
 				m_log.error("グラフ描画時にエラーが発生 message=" + e.getMessage(), e);
 				MessageDialog.openError(
@@ -583,51 +588,43 @@ public class CollectGraphComposite extends Composite {
 			// 表示範囲外プロット消去
 			deletePlots(methodName, xaxis_min, xaxis_max, false);
 
-			// グラフ描画
-			// targetstart:画面に表示している最小x、targetend:画面に表示している最大xだけど<=現在時間
-			// 前側だけ取りに行くパターン(min < targetstart && max < targetend)
-			// 後側だけ取りに行くパターン(min > targetstart && max > targetend, targetend < now)
-			// 前後取りに行くパターン(min < targetstart && max > targetend, targetend < now)
-			// すべて取りに行くパターン(min > targetend || max < targetstart)
+			// グラフを描画する
+			// 以下、グラフ模式図
+			//		　　　 ↓getTargetConditionStartDate()
+			//		　　　　　　 ↓getTargetConditionEndDate()
+			// 現在	────□□□───	現在描画中のグラフ		□グラフ箇所
+			// 新	─■■■□─────	新たに描画するグラフ	□データ取得しない箇所
+			//		　　　　 ↑xaxis_max							■データ取得箇所
+			//		 ↑xaxis_min
 			m_log.debug("updateGraphs() Plotting graphs."
 					+ " TargetConditionStartDate=" + CollectGraphUtil.toDatetimeString(CollectGraphUtil.getTargetConditionStartDate())
 					+ ", TargetConditionEndDate=" + CollectGraphUtil.toDatetimeString(CollectGraphUtil.getTargetConditionEndDate()));
 			m_log.debug("  xaxis_min=" + CollectGraphUtil.toDatetimeString(xaxis_min) + ", xaxis_max=" + CollectGraphUtil.toDatetimeString(xaxis_max));
-			// DBに取りに行く日時（From）
-			long dbStartDate = xaxis_min;
-			// DBに取りに行く日時（To）
-			long dbEndDate = xaxis_max;
-			if (xaxis_max > nowDate) {
-				dbEndDate = nowDate;
-			}
-			m_log.debug("  dbStartDate=" + CollectGraphUtil.toDatetimeString(dbStartDate) + ", dbEndDate=" + CollectGraphUtil.toDatetimeString(dbEndDate));
-
-			if (xaxis_max <= CollectGraphUtil.getTargetConditionStartDate()) {
-				// すべて取りに行く(前側)
-				m_log.debug("updateGraphs() X axis range is at left side, adding graphs plot all.");
-				addGraphPlot(dbStartDate, dbEndDate, xaxis_min, xaxis_max, nowDate);
-			} else if (xaxis_min >= CollectGraphUtil.getTargetConditionEndDate()) {
-				// すべて取りに行く(後側)
-				if (xaxis_min > nowDate) {
-					// グラフ表示最古時間が現在時刻よりも新しい場合はデータが無いのでとりにいかない
-					m_log.debug("updateGraphs() No data in x axis range.");
-				} else {
-					m_log.debug("updateGraphs() X axis range is at right side, adding graphs plot all.");
-					addGraphPlot(dbStartDate, dbEndDate, xaxis_min, xaxis_max, nowDate);
-				}
+			if (xaxis_max <= CollectGraphUtil.getTargetConditionStartDate()
+					|| CollectGraphUtil.getTargetConditionEndDate() <= xaxis_min) {
+				// 新たなグラフ描画範囲が、現在の範囲から外れている場合
+				// 現在	────□□□───
+				// 新	─■■■──────	パターン1
+				// 新	───────■■■─	パターン2
+				m_log.debug("updateGraphs() X axis range is out side, adding graphs plot all.");
+				addGraphPlot(xaxis_min, xaxis_max, xaxis_min, xaxis_max, nowDate);
 			} else {
-				// 前側取りに行く
-				if (xaxis_min < CollectGraphUtil.getTargetConditionStartDate() && xaxis_max >= CollectGraphUtil.getTargetConditionStartDate()) {
+				// 新たなグラフ描画範囲が、現在の範囲と重なる場合は、左側、右側それぞれについてデータ取得する
+				// 左側の部分についてデータ取得
+				// 現在──□□□─
+				// 新　─■□□──
+				if (xaxis_min < CollectGraphUtil.getTargetConditionStartDate()
+						&& CollectGraphUtil.getTargetConditionStartDate() <=  xaxis_max) {
 					m_log.debug("updateGraphs() Adding graph plot at left side.");
-					addGraphPlot(dbStartDate, CollectGraphUtil.getTargetConditionStartDate(), xaxis_min, xaxis_max, nowDate);
+					addGraphPlot(xaxis_min, CollectGraphUtil.getTargetConditionStartDate(), xaxis_min, xaxis_max, nowDate);
 				}
-				// 後側取りに行く
-				m_log.debug("updateGraphs() TargetDBAccessDate=" + CollectGraphUtil.toDatetimeString(CollectGraphUtil.getTargetDBAccessDate()));
-				if (xaxis_max > CollectGraphUtil.getTargetDBAccessDate()) {
+				// 右側の部分についてデータ取得
+				// 現在─□□□──
+				// 新　──□□■─
+				if (xaxis_min < CollectGraphUtil.getTargetConditionEndDate()
+						&& CollectGraphUtil.getTargetConditionEndDate() <= xaxis_max) {
 					m_log.debug("updateGraphs() Adding graph plot at right side.");
-					CollectGraphUtil.setUseDrawnDateListFlg(isAutoGragh);
-					addGraphPlot(CollectGraphUtil.getTargetDBAccessDate() + 1, dbEndDate, xaxis_min, xaxis_max, nowDate);
-					CollectGraphUtil.setUseDrawnDateListFlg(false);
+					addGraphPlot(CollectGraphUtil.getTargetConditionEndDate(), xaxis_max, xaxis_min, xaxis_max, nowDate);
 				}
 			}
 
@@ -661,9 +658,6 @@ public class CollectGraphComposite extends Composite {
 				executeScript(script, m_browserGraph);
 				if(CollectGraphUtil.getTargetConditionStartDate() < startdate){
 					CollectGraphUtil.setTargetConditionStartDate(startdate);
-				}
-				if(CollectGraphUtil.getTargetDBAccessDate() > enddate){
-					CollectGraphUtil.setTargetDBAccessDate(enddate);
 				}
 				if(CollectGraphUtil.getTargetConditionEndDate() > enddate){
 					CollectGraphUtil.setTargetConditionEndDate(enddate);

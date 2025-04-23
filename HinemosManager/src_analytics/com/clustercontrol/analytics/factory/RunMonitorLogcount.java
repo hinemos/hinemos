@@ -9,6 +9,7 @@
 package com.clustercontrol.analytics.factory;
 
 import java.text.SimpleDateFormat;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -19,14 +20,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
-import jakarta.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,8 +47,8 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.hub.bean.StringQueryInfo;
 import com.clustercontrol.hub.bean.StringQueryInfo.Operator;
-import com.clustercontrol.hub.model.CollectStringKeyInfo;
 import com.clustercontrol.hub.bean.StringQueryResult;
+import com.clustercontrol.hub.model.CollectStringKeyInfo;
 import com.clustercontrol.hub.session.HubControllerBean;
 import com.clustercontrol.hub.session.HubControllerBean.Token;
 import com.clustercontrol.monitor.run.bean.MonitorRunResultInfo;
@@ -65,6 +64,8 @@ import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+
+import jakarta.persistence.EntityExistsException;
 
 /**
  * ログ件数監視 数値監視設定を実行するファクトリークラス<BR>
@@ -356,7 +357,7 @@ public class RunMonitorLogcount extends RunMonitorNumericValueType {
 		//前回の監視実行時間
 		Long lastMonitorTime = countTo - interval;
 		
-		Map<String, Double> countMap = new HashMap<String, Double>();
+		List<Entry<String, Double>> countList = new ArrayList<Entry<String, Double>>();
 		
 		for (Long collectTime : collectTimeList) {
 			if (collectTime > lastMonitorTime) {
@@ -372,8 +373,8 @@ public class RunMonitorLogcount extends RunMonitorNumericValueType {
 						.size();
 				String countPeriod = sdf.format(new Date(collectTime - interval)) + " - " + sdf.format(new Date(collectTime));
 				//集計期間と件数をMapに追加
-				countMap.put(countPeriod, count);
-				
+				countList.add(new AbstractMap.SimpleEntry<String, Double>(countPeriod, count));
+
 				//件数が0件だった期間の有無の確認
 				if (!isCheckedZeroPeriod) {
 					nextIdx++;
@@ -384,14 +385,14 @@ public class RunMonitorLogcount extends RunMonitorNumericValueType {
 						if ((collectTime - previousCollectTime) > interval) {
 							//監視間隔以上空いている場合
 							String countZeroPeriod = sdf.format(new Date(previousCollectTime)) + " - " + sdf.format(new Date(collectTime));
-							countMap.put(countZeroPeriod, Double.valueOf(0));
+							countList.add(new AbstractMap.SimpleEntry<String, Double>(countZeroPeriod, Double.valueOf(0)));
 							
 							isCheckedZeroPeriod = true;
 						}
 					} else {
 						//収集データがこれ以上存在しない場合
 						String strMinZeroPeriod = sdf.format(new Date(countFrom)) + " - " + sdf.format(new Date(collectTime));
-						countMap.put(strMinZeroPeriod, Double.valueOf(0));
+						countList.add(new AbstractMap.SimpleEntry<String, Double>(strMinZeroPeriod, Double.valueOf(0)));
 						
 						isCheckedZeroPeriod = true;
 					}
@@ -400,21 +401,20 @@ public class RunMonitorLogcount extends RunMonitorNumericValueType {
 				if(!isExistDataAfterLastMonitor) {
 					//収集日時が前回の監視実行時間より前、かつ、前回の監視実行時間より後の収集データがない場合
 					String strCountPeriod = sdf.format(new Date(collectTime)) + " - " + sdf.format(new Date(countTo));
-					countMap.put(strCountPeriod, Double.valueOf(0));
+					countList.add(new AbstractMap.SimpleEntry<String, Double>(strCountPeriod, Double.valueOf(0)));
 				} 
 				break;
 			}
 		}
 		
-		List<Entry<String, Double>> sortedCountList = new ArrayList<Entry<String, Double>>(countMap.entrySet());
-		Collections.sort(sortedCountList, new Comparator<Entry<String, Double>>() {
-			//収集日時の降順でソート
+		Collections.sort(countList, new Comparator<Entry<String, Double>>() {
+			//件数の降順でソート
 			public int compare(Entry<String, Double> collectData1, Entry<String, Double> collectData2) {
 				return collectData2.getValue().compareTo(collectData1.getValue());
 			}
 		});
 		
-		return sortedCountList;
+		return countList;
 	}
 
 	/**

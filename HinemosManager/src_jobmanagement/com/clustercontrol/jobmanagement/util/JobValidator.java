@@ -99,6 +99,7 @@ import com.clustercontrol.jobmanagement.bean.RpaJobRunParamInfo;
 import com.clustercontrol.jobmanagement.bean.RpaStopTypeConstant;
 import com.clustercontrol.jobmanagement.bean.SystemParameterConstant;
 import com.clustercontrol.jobmanagement.bean.ValueSeparatorConstant;
+import com.clustercontrol.jobmanagement.factory.CreateJobSession;
 import com.clustercontrol.jobmanagement.factory.SelectJobmap;
 import com.clustercontrol.jobmanagement.model.JobKickEntity;
 import com.clustercontrol.jobmanagement.model.JobLinkSendSettingEntity;
@@ -929,10 +930,18 @@ public class JobValidator {
 		// ジョブID
 		String jobId = jobInfo.getId();
 		CommonValidator.validateId(MessageConstant.JOB_ID.getMessage(), jobId, 64);
+		// jobIdについて、予約語（利用不可）を用いていないかをチェック
+		if(isReservedJobId(jobId)){
+			String[] messageArgs = { jobId };
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_JOB_ID_RESERVED_WORD.getMessage(messageArgs));
+			m_log.info("validateJobInfo() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
 
 		// ジョブユニットID
 		String jobunitId = jobInfo.getJobunitId();
 		CommonValidator.validateId(MessageConstant.JOBUNIT_ID.getMessage(), jobunitId, 64);
+		// jobunitIdは、先行の編集ロック獲得（ジョブユニット単位）時に予約語チェック済みなので、ここで予約語チェックは行わない
 
 		// ジョブ名
 		String jobName = jobInfo.getName();
@@ -1500,7 +1509,18 @@ public class JobValidator {
 					executableActionList.add(ResourceJobActionEnum.TYPE_REBOOT.getCode());
 					executableActionList.add(ResourceJobActionEnum.TYPE_SUSPEND.getCode());
 					executableActionList.add(ResourceJobActionEnum.TYPE_SNAPSHOT.getCode());
+				} else if (CloudConstant.platform_GCP.equals(platformId)) {
+					executableActionList.add(ResourceJobActionEnum.TYPE_POWERON.getCode());
+					executableActionList.add(ResourceJobActionEnum.TYPE_POWEROFF.getCode());
+					executableActionList.add(ResourceJobActionEnum.TYPE_REBOOT.getCode());
+					executableActionList.add(ResourceJobActionEnum.TYPE_SNAPSHOT.getCode());
+				} else if (CloudConstant.platform_OCI.equals(platformId)) {
+					executableActionList.add(ResourceJobActionEnum.TYPE_POWERON.getCode());
+					executableActionList.add(ResourceJobActionEnum.TYPE_POWEROFF.getCode());
+					executableActionList.add(ResourceJobActionEnum.TYPE_REBOOT.getCode());
+					executableActionList.add(ResourceJobActionEnum.TYPE_SNAPSHOT.getCode());
 				}
+
 				boolean isExecutableAction = executableActionList.stream().anyMatch(action -> action.equals(resource.getResourceAction()));
 				if (!isExecutableAction) {
 					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(MessageConstant.RESOURCEJOB_ITEM_ACTION.getMessage()));
@@ -1762,46 +1782,12 @@ public class JobValidator {
 			CommonValidator.validateNull(MessageConstant.RPAJOB_SCREENSHOT_END_VALUE.getMessage(), rpa.getRpaScreenshotEndValueFlg());
 			// 直接実行でスクリーンショットを取得する場合のみnullは不可な設定
 			final boolean nullcheckIfDirectAndScreenshot = rpa.getRpaJobType() == RpaJobTypeConstant.DIRECT && rpa.getRpaScreenshotEndValueFlg();
-			// スクリーンショットを取得する終了値をチェック
-			if (rpa.getRpaScreenshotEndValue() == null || "".equals(rpa.getRpaScreenshotEndValue())) {
-				if (nullcheckIfDirectAndScreenshot) {
-					InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_JOB_RPA_PLEASE_SET_SCREENSHOT_END_VALUE.getMessage(rpa.getRpaScreenshotEndValue()));
-					m_log.info("validateJobUnit() : "
-							+ e.getClass().getSimpleName() + ", " + e.getMessage());
-					throw e;
-				}
-			} else if (!rpa.getRpaScreenshotEndValue().matches(ReturnCodeConditionChecker.CONDITION_REGEX)) {
-				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_END_VALUE_INVALID.getMessage(rpa.getRpaScreenshotEndValue()));
-				m_log.info("validateJobUnit() : "
-						+ e.getClass().getSimpleName() + ", " + e.getMessage());
-				throw e;
-			} else {
-				// スクリーンショットを取得する終了値判定条件をチェック
-				// 複数指定または範囲指定の場合、判定条件は"="か"!="のみ許可
-				int minSize = RpaJobReturnCodeConditionConstant.EQUAL_NUMERIC;
-				int maxSize = RpaJobReturnCodeConditionConstant.LESS_THAN_OR_EQUAL_TO;
-				if (rpa.getRpaScreenshotEndValue().matches(ReturnCodeConditionChecker.MULTI_CONDITION_REGEX)
-						|| rpa.getRpaScreenshotEndValue().matches(ReturnCodeConditionChecker.RANGE_CONDITION_REGEX)) {
-					maxSize = RpaJobReturnCodeConditionConstant.NOT_EQUAL_NUMERIC;
-				}
-				if (nullcheckIfDirectAndScreenshot) {
-					CommonValidator.validateInt(MessageConstant.RPAJOB_SCREENSHOT_END_VALUE_CONDITION.getMessage(), rpa.getRpaScreenshotEndValueCondition(), minSize, maxSize);
-				} else {
-					CommonValidator.validateNullableInt(MessageConstant.RPAJOB_SCREENSHOT_END_VALUE_CONDITION.getMessage(), rpa.getRpaScreenshotEndValueCondition(), minSize, maxSize);
-				}
-			}
-			try{
-				// 設定値の範囲チェック
-				// 区切り文字で分割して分割後の値毎にチェック
-				ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(MessageConstant.END_VALUE.getMessage(), rpa.getRpaScreenshotEndValue());
-			}catch(InvalidSetting e){
-				String[] args = { rpa.getRpaScreenshotEndValue() };
-				String errMsg = MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_END_VALUE_INVALID.getMessage(args) + "\n" + e.getMessage();
-				InvalidSetting ex = new InvalidSetting(errMsg);
-				m_log.info("validateJobUnit() : "+ ex.getClass().getSimpleName() + ", " + ex.getMessage());
-				throw ex;
-			}
-			
+			// スクリーンショットを取得する終了値、その条件について値チェック
+			validateRpaEndValuAndCondition(rpa.getRpaScreenshotEndValue(), MessageConstant.END_VALUE.getMessage(),
+					rpa.getRpaScreenshotEndValueCondition(), MessageConstant.RPAJOB_SCREENSHOT_END_VALUE_CONDITION.getMessage(),
+					!nullcheckIfDirectAndScreenshot, false,
+					MessageConstant.MESSAGE_JOB_RPA_PLEASE_SET_SCREENSHOT_END_VALUE,
+					MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_END_VALUE_INVALID);
 
 			// 直接実行でログファイルによる終了値判定条件が存在する場合のみnullは不可な設定
 			final boolean nullcheckIfDirectAndLogEndValue = rpa.getRpaJobType() == RpaJobTypeConstant.DIRECT 
@@ -1864,36 +1850,12 @@ public class JobValidator {
 						CommonValidator.validateNull(MessageConstant.RPAJOB_END_VALUE_CONDITION_CASE_SENSITIVITY.getMessage(), condition.getCaseSensitivityFlg());
 						break;
 					case RpaJobEndValueConditionTypeConstant.RETURN_CODE:
-						// リターンコードをチェック( 数値で複数か範囲あり or ジョブ変数 )
-						if (!(condition.getReturnCode().matches(ReturnCodeConditionChecker.CONDITION_REGEX))
-							&& !(ParameterUtil.isParamFormat(condition.getReturnCode()))) {
-							InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_JOB_RPA_END_VALUE_CONDITION_RETURN_CODE_INVALID.getMessage(condition.getReturnCode()));
-							m_log.info("validateJobUnit() : "
-									+ e.getClass().getSimpleName() + ", " + e.getMessage());
-							throw e;
-						}
-						
-						// ジョブ変数でなければ、区切り文字として分割し、範囲チェックを行う
-						if(!SystemParameterConstant.isParamFormat(condition.getReturnCode())){
-							try{
-								ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(
-										MessageConstant.RPAJOB_END_VALUE_CONDITION_RETURN_CODE.getMessage(), condition.getReturnCode());
-							} catch(InvalidSetting e) {
-								m_log.info("validateJobUnit() : "
-										+ e.getClass().getSimpleName() + ", " + e.getMessage());
-								throw e;
-							}
-						}
-						// リターンコード判定条件をチェック
-						// 複数指定または範囲指定の場合、判定条件は"="か"!="のみ許可
-						if (condition.getReturnCode().matches(ReturnCodeConditionChecker.MULTI_CONDITION_REGEX)
-								|| condition.getReturnCode().matches(ReturnCodeConditionChecker.RANGE_CONDITION_REGEX)) {
-							CommonValidator.validateInt(MessageConstant.RPAJOB_END_VALUE_RETURN_CODE_CONDITION.getMessage(), condition.getReturnCodeCondition(),
-									RpaJobReturnCodeConditionConstant.EQUAL_NUMERIC, RpaJobReturnCodeConditionConstant.NOT_EQUAL_NUMERIC);
-						} else {
-							CommonValidator.validateInt(MessageConstant.RPAJOB_END_VALUE_RETURN_CODE_CONDITION.getMessage(), condition.getReturnCodeCondition(),
-									RpaJobReturnCodeConditionConstant.EQUAL_NUMERIC, RpaJobReturnCodeConditionConstant.LESS_THAN_OR_EQUAL_TO);
-						}
+						// リターンコードと判定条件をチェック
+						validateRpaEndValuAndCondition(condition.getReturnCode(), MessageConstant.RPAJOB_END_VALUE_CONDITION_RETURN_CODE.getMessage(),
+								condition.getReturnCodeCondition(), MessageConstant.RPAJOB_END_VALUE_RETURN_CODE_CONDITION.getMessage(),
+								false, true,
+								MessageConstant.MESSAGE_JOB_RPA_END_VALUE_CONDITION_RETURN_CODE_INVALID,
+								MessageConstant.MESSAGE_JOB_RPA_END_VALUE_CONDITION_RETURN_CODE_INVALID);
 						// コマンドのリターンコードをそのまま終了値とするフラグをチェック
 						CommonValidator.validateNull(MessageConstant.RPAJOB_END_VALUE_CONDITION_USE_COMMAND_RETURN_CODE.getMessage(), condition.getUseCommandReturnCodeFlg());
 						break;
@@ -2295,6 +2257,99 @@ public class JobValidator {
 		//子JobTreeItemを取得
 		for(JobTreeItem child : item.getChildren()){
 			validateJobInfo(child);
+		}
+	}
+
+	/**
+	 * RPAの終了値と判定条件の正当性を確認する。
+	 * 終了値：-32768～32767、null可の場合はnull可、ジョブ変数可の場合はジョブ変数可、
+	 *   判定条件がEQUAL_NUMERIC、NOT_EQUAL_NUMERICの場合は範囲指定（,）および複数指定（:）が可
+	 * 判定条件：RpaJobReturnCodeConditionConstant.EQUAL_NUMERIC～LESS_THAN_OR_EQUAL_TO
+	 * 
+	 * @param endValue 終了値
+	 * @param endValueName 終了値の項目名（メッセージ用）
+	 * @param endValueCondition 判定条件（RpaJobReturnCodeConditionConstantの定数）
+	 * @param endValueConditionName 判定条件の項目名（メッセージ用）
+	 * @param allowNull 終了値と判定条件について、nullを許容するか
+	 * @param allowJobParam 終了値にジョブ変数を許容するか
+	 * @param messageOfNullEndValue 終了値がnullの場合のメッセージ
+	 * @param messageOfInvalidEndValue 終了値が不正な場合のメッセージ
+	 * @throws InvalidSetting 終了値、判定条件、それらの相関チェックで正当でない場合に発生する
+	 */
+	private static void validateRpaEndValuAndCondition(String endValue, String endValueName,
+			Integer endValueCondition, String endValueConditionName,
+			boolean allowNull, boolean allowJobParam,
+			MessageConstant messageOfNullEndValue, MessageConstant messageOfInvalidEndValue) throws InvalidSetting {
+
+		// 判定条件のチェック
+		try {
+			int minSize = RpaJobReturnCodeConditionConstant.EQUAL_NUMERIC;
+			int maxSize = RpaJobReturnCodeConditionConstant.LESS_THAN_OR_EQUAL_TO;
+			if (allowNull) {
+				// null可で値チェック
+				CommonValidator.validateNullableInt(endValueConditionName, endValueCondition, minSize, maxSize);
+			} else {
+				// null不可で値チェック
+				CommonValidator.validateInt(endValueConditionName, endValueCondition, minSize, maxSize);
+			}
+		} catch (InvalidSetting e) {
+			// メッセージが不適切（0以上5以下の数値を指定してください）なので作り直す。
+			String conditionString = "null";
+			if (endValueCondition != null) {
+				conditionString = endValueCondition.toString();
+			}
+			String[] args = { endValueConditionName, conditionString };
+			// 「{0}」が不正です({1})。
+			InvalidSetting ex = new InvalidSetting(MessageConstant.MESSAGE_INVALID_VALUE.getMessage(args));
+			m_log.info("isValidRpaEndValuAndCondition() : " + ex.getClass().getSimpleName() + ", " + ex.getMessage());
+			throw ex;
+		}
+
+		// 終了値のチェック
+		// nullの場合
+		if (endValue == null || endValue.isEmpty()) {
+			if (allowNull) {
+				// null可
+				return;
+			} else {
+				InvalidSetting e = new InvalidSetting(messageOfNullEndValue.getMessage(endValue));
+				m_log.info("isValidRpaEndValuAndCondition() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		}
+
+		// ジョブ変数可で、ジョブ変数なら以降のチェックなしで終了
+		if (allowJobParam && ParameterUtil.isParamFormat(endValue)) {
+			return;
+		}
+
+		// 終了値と判定条件の相関チェック
+		if (endValueCondition == null
+				|| endValueCondition.equals(RpaJobReturnCodeConditionConstant.EQUAL_NUMERIC)
+				|| endValueCondition.equals(RpaJobReturnCodeConditionConstant.NOT_EQUAL_NUMERIC)) {
+			// 判定条件が「（null可なら）null」か"="か"!="の場合は、複数指定、範囲指定の書式でチェックする。
+			if (!endValue.matches(ReturnCodeConditionChecker.MULTI_RANGE_CONDITION_REGEX)) {
+				InvalidSetting e = new InvalidSetting(messageOfInvalidEndValue.getMessage(endValue));
+				m_log.info("isValidRpaEndValuAndCondition() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		} else {
+			// それ以外の場合は、数値書式であることを確認する。
+			if (!endValue.matches(ReturnCodeConditionChecker.NUMBER_REGEX)) {
+				InvalidSetting e = new InvalidSetting(messageOfInvalidEndValue.getMessage(endValue));
+				m_log.info("isValidRpaEndValuAndCondition() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		}
+
+		// 終了値の範囲チェック
+		try {
+			// 区切り文字で分割して分割後の値毎にチェック
+			ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(endValueName, endValue);
+		} catch (InvalidSetting e) {
+			InvalidSetting ex = new InvalidSetting(messageOfInvalidEndValue.getMessage(endValue) + " " + e.getMessage());
+			m_log.info("isValidRpaEndValuAndCondition() : " + ex.getClass().getSimpleName() + ", " + ex.getMessage());
+			throw ex;
 		}
 	}
 
@@ -3130,5 +3185,33 @@ public class JobValidator {
 			}
 		}
 		return;
+	}
+
+	/**
+	 * 予約済み（利用不可）のジョブIDでないかチェックする
+	 * 
+	 * @param jobId
+	 *            ジョブID
+	 */
+	public static boolean isReservedJobId(String jobId) throws InvalidSetting {
+		if (CreateJobSession.TOP_JOB_ID.equals(jobId)) {
+			return true;
+		}
+		return false;
+	}
+	/**
+	 * 予約済み（利用不可）のジョブユニットIDでないかチェックする
+	 * 
+	 * @param jobId
+	 *            ジョブID
+	 */
+	public static boolean isReservedJobUnitId(String jobUnitId) throws InvalidSetting {
+		if (CreateJobSession.TOP_JOB_ID.equals(jobUnitId)) {
+			return true;
+		}
+		if (CreateJobSession.TOP_JOBUNIT_ID.equals(jobUnitId)) {
+			return true;
+		}
+		return false;
 	}
 }

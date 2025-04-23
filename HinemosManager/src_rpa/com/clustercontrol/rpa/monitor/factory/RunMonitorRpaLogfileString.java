@@ -31,6 +31,7 @@ import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.XMLUtil;
 
 /**
  * @see {@link RunMonitorLogfileString}
@@ -47,7 +48,7 @@ public class RunMonitorRpaLogfileString {
 			StringSample sample = new StringSample(new Date(result.msgInfo.getGenerationDate()), result.monitorInfo.getMonitorId());
 			
 			String filePath = new File(new File(result.monitorInfo.getRpaLogFileCheckInfo().getDirectory()), result.monitorInfo.getRpaLogFileCheckInfo().getFileName()).getPath();
-			sample.set(facilityId, filePath, result.message.trim(), Arrays.asList(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getRpaLogFileCheckInfo().getFileName())));
+			sample.set(facilityId, filePath, XMLUtil.ignoreInvalidString(result.message.trim()), Arrays.asList(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getRpaLogFileCheckInfo().getFileName())));
 			CollectStringDataUtil.store(Arrays.asList(sample));
 		}
 		

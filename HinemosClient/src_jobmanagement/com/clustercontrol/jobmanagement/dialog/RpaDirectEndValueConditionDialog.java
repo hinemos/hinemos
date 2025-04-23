@@ -429,8 +429,10 @@ public class RpaDirectEndValueConditionDialog extends CommonDialog {
 						Messages.getString("message.job.rpa.21"));
 			}
 			
+			// ジョブ変数かどうか
+			boolean isParam = SystemParameterConstant.isParamFormat(m_returnCodeText.getText());
 			// ジョブ変数でなければ、区切り文字として分割し、範囲チェックを行う
-			if(!SystemParameterConstant.isParamFormat(m_returnCodeText.getText())){
+			if(!isParam){
 				try{
 					ReturnCodeConditionChecker.comfirmReturnCodeNumberRange(
 							MessageConstant.RPAJOB_END_VALUE_CONDITION_RETURN_CODE.getMessage(), m_returnCodeText.getText());
@@ -447,13 +449,21 @@ public class RpaDirectEndValueConditionDialog extends CommonDialog {
 				return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),
 						Messages.getString("message.job.rpa.38"));
 			}
-			// 複数指定または範囲指定の場合、判定条件は"="か"!="のみ
-			if (m_returnCodeText.getText().matches(ReturnCodeConditionChecker.RANGE_CONDITION_REGEX)
-					|| m_returnCodeText.getText().matches(ReturnCodeConditionChecker.MULTI_CONDITION_REGEX)) {
-				if (selectedCondition != ReturnCodeConditionEnum.EQUAL_NUMERIC
-						&& selectedCondition != ReturnCodeConditionEnum.NOT_EQUAL_NUMERIC) {
-					return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),
-							Messages.getString("message.job.rpa.25"));
+			// 終了値と判定条件の組み合わせチェック
+			if (!isParam) {
+				if (selectedCondition == ReturnCodeConditionEnum.EQUAL_NUMERIC
+						|| selectedCondition == ReturnCodeConditionEnum.NOT_EQUAL_NUMERIC) {
+					// 判定条件が"="か"!="の場合は、複数指定、範囲指定の書式でチェックする。
+					if (!m_returnCodeText.getText().matches(ReturnCodeConditionChecker.MULTI_RANGE_CONDITION_REGEX)) {
+						return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),
+								Messages.getString("message.job.rpa.25"));
+					}
+				} else {
+					// 既に書式チェック済みではあるが、それ以外の場合は、念のために数値書式であることを確認する。
+					if (!m_returnCodeText.getText().matches(ReturnCodeConditionChecker.NUMBER_REGEX)) {
+						return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),
+								Messages.getString("message.job.rpa.25"));
+					}
 				}
 			}
 			m_condition.setReturnCodeCondition(selectedCondition);

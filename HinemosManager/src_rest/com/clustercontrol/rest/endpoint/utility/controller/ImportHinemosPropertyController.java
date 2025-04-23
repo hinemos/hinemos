@@ -9,6 +9,7 @@ package com.clustercontrol.rest.endpoint.utility.controller;
 
 import java.util.List;
 
+import com.clustercontrol.commons.util.InvalidSettingByCloudServiceMode;
 import com.clustercontrol.commons.util.ObjectValidator;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.maintenance.model.HinemosPropertyInfo;
@@ -60,14 +61,20 @@ public class ImportHinemosPropertyController extends AbstractImportController<Im
 		}
 		
 		// ControllerBean呼び出し
-		if(importRec.getIsNewRecord()){
-			//新規登録
-			new HinemosPropertyControllerBean().addHinemosProperty(infoReq);
-		}else{
-			//変更
-			new HinemosPropertyControllerBean().modifyHinemosProperty(infoReq);
+		try{
+			if(importRec.getIsNewRecord()){
+				//新規登録
+				new HinemosPropertyControllerBean().addHinemosProperty(infoReq);
+			}else{
+				//変更
+				new HinemosPropertyControllerBean().modifyHinemosProperty(infoReq);
+			}
+		} catch (InvalidSettingByCloudServiceMode e) {
+			// 設定インポートで作成・変更しようとしたHinemosプロパティが、
+			// クラウドサービスモードによる制限対象のHinemosプロパティであった場合、
+			// その作成・変更処理は無視して何も行わない
 		}
-		
+
 		dtoRecRes.setResult(ImportResultEnum.NORMAL);
 		return dtoRecRes;
 	}

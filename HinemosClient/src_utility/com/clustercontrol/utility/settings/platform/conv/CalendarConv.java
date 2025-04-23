@@ -170,8 +170,12 @@ public class CalendarConv {
 		DayTypeEnum dayTypeEnum = OpenApiEnumConverter.integerToEnum(info.getDayType(), DayTypeEnum.class);
 		ret.setDayType(dayTypeEnum);
 		
-		WeekXthEnum weekXthEnum = OpenApiEnumConverter.integerToEnum(info.getWeekXth(), WeekXthEnum.class); 
-		ret.setWeekXth(weekXthEnum);
+		if (info.hasWeekXth()) {
+			WeekXthEnum weekXthEnum = OpenApiEnumConverter.integerToEnum(info.getWeekXth(), WeekXthEnum.class);
+			ret.setWeekXth(weekXthEnum);
+		} else {
+			ret.setWeekXth(null);
+		}
 		
 		WeekNoEnum weekNoEnum = null;
 		if(info.getWeekNo() == 0){
@@ -194,7 +198,17 @@ public class CalendarConv {
 			ret.setCalPatternId(null);
 		}
 		
-		ret.setAfterDay(info.getAfterDay());
+		if (info.hasAfterDay()) {
+			ret.setAfterDay(info.getAfterDay());
+		} else {
+			if (dayTypeEnum == DayTypeEnum.ALL_DAY) {
+				// "すべての日"指定の場合に前後日はエクスポート対象外。
+				// 上記の場合のデータのインポート時にマネージャ側チェックで必須入力エラーにならないよう補完
+				ret.setAfterDay(0);
+			} else {
+				ret.setAfterDay(null);
+			}
+		}
 		
 		ret.setStartTime(info.getStartTime());
 		ret.setEndTime(info.getEndTime());

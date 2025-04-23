@@ -7,5 +7,8 @@
  */
 package com.clustercontrol.rest.endpoint.notify.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties({"notifyType"})
 public class AbstractModifyNotifyRequest extends AbstractNotifyRequest {
 }

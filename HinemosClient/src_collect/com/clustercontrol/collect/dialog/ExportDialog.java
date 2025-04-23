@@ -9,6 +9,8 @@
 package com.clustercontrol.collect.dialog;
 
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -232,6 +234,7 @@ public class ExportDialog extends Dialog {
 					defaultFileName = defaultFileName.replaceAll(" ", "");
 					this.saveDialog.setFileName(defaultFileName);
 
+					// リッチクライアントのみ保存先ダイアログが開かれる（Webクライアントではデフォルト値が設定される）
 					String filePath = this.saveDialog.open();
 					if( filePath != null ){
 						m_log.debug("filePath = " + filePath + ", defaultFileName = " + defaultFileName);
@@ -283,12 +286,16 @@ public class ExportDialog extends Dialog {
 									progress = writer.getProgress();
 
 									if (monitor.isCanceled()) {
-										throw new InterruptedException("");
+										// ダイアログのキャンセルをクリックした等
+										writer.setCanceled(true);	// writerもキャンセルしないと止まらない
+										throw new InterruptedException("Canceled by user.");
 									}
 									if (writer.isCanceled()) {
+										// タイムアウト等のエラー
 										throw new InterruptedException(writer.getCancelMessage());
 									}
 									Thread.sleep(50);
+
 									monitor.worked(progress - buff);
 									buff = progress;
 								}
@@ -311,13 +318,16 @@ public class ExportDialog extends Dialog {
 									Messages.getString("performance.export.success"));
 						}
 					} catch (InterruptedException e) {
-						// キャンセルされた場合の処理
+						// キャンセル、タイムアウト等のエラーの場合
+						m_log.info("output() : " + e.getMessage());
+						deleteEmptyFile(filePath, writer.getWaitSleep());
 						MessageDialog.openInformation(getShell(),
 								Messages.getString("confirmed"),
 								Messages.getString("performance.export.cancel") + " : " + e.getMessage());
 					} catch (Exception e) {
 						// 異常終了
 						m_log.warn("output() : " + e.getMessage(), e);
+						deleteEmptyFile(filePath, writer.getWaitSleep());
 						MessageDialog.openInformation(getShell(),
 								Messages.getString("confirmed"),
 								Messages.getString("performance.export.cancel") + " : " + e.getMessage() +
@@ -329,9 +339,46 @@ public class ExportDialog extends Dialog {
 						}
 					}
 				}
+
+				/**
+				 * 一時ファイル削除用、空ファイルを削除する
+				 * 
+				 * @param filePath ファイルのフルパス
+				 * @param waitSleep 削除までの待ち時間（ミリ秒）
+				 */
+				private void deleteEmptyFile(String filePath, int waitSleep) {
+					if (filePath == null) {
+						return;
+					}
+
+					// 別スレッドで動作のダウンロード処理にて待ちがあるため、こちらも待つ
+					try {
+						Thread.sleep(waitSleep);
+					} catch (Exception e) {
+						m_log.warn("deleteEmptyFile() " + e.getMessage(), e);
+					}
+
+					try {
+						java.nio.file.Path path = Paths.get(filePath);
+						long size = Files.size(path);
+						if (m_log.isDebugEnabled()) {
+							m_log.debug("deleteEmptyFile() size=" + size);
+						}
+						if (size == 0) {
+							if (m_log.isDebugEnabled()) {
+								m_log.debug("deleteEmptyFile() delete file. path=" + path);
+							}
+							Files.delete(path);
+						}
+					} catch (Exception e) {
+						m_log.warn("deleteEmptyFile() Unable to delete due to error. " + e.getMessage(), e);
+					}
+				}
 			});
+
 		createButton(parent, IDialogConstants.CANCEL_ID, Messages.getString("close"), false);
 	}
+
 	/**
 	 * セパレータの作成
 	 */

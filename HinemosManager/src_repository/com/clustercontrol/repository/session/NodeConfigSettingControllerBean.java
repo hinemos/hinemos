@@ -606,8 +606,7 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 
 			jtm.commit();
 
-		} catch (EntityExistsException | InvalidSetting | FacilityNotFound 
-				| NodeConfigSettingNotFound | InvalidRole | NodeHistoryRegistered | HinemosUnknown e) {
+		} catch (Exception e) {
 			m_log.warn("registerNodeConfigInfo() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 
@@ -624,11 +623,7 @@ public class NodeConfigSettingControllerBean implements CheckFacility {
 					jtm.rollback();
 				}
 				throw new NodeConfigSettingDuplicate(e.getMessage(), e);
-			} else if ((e instanceof InvalidSetting)
-					|| (e instanceof FacilityNotFound)
-					|| (e instanceof NodeConfigSettingNotFound)
-					|| (e instanceof InvalidRole)
-					|| (e instanceof HinemosUnknown)) {
+			} else {
 				if (jtm != null) {
 					jtm.rollback();
 				}

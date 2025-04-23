@@ -108,15 +108,14 @@ public class ScopeTreeDialogForServiceMonitors extends CommonDialog {
 			layout.marginHeight = 0;
 			layout.marginWidth = 0;
 
-			treeComposite.set(this, new FacilityTreeComposite(parent, SWT.NONE, manager,
-					ownerRoleId, true) {
+			treeComposite.set(this, new FacilityTreeComposite(parent, SWT.NONE, manager, ownerRoleId, true) {
 				/**
 				 * ビューの表示内容を更新します。
 				 */
 				@Override
 				public void update() {
-					final CloudRestClientWrapper wrapper = ClusterControlPlugin.getDefault()
-							.getHinemosManager(manager).getWrapper();
+					final CloudRestClientWrapper wrapper = ClusterControlPlugin.getDefault().getHinemosManager(manager)
+							.getWrapper();
 					HRepositoryResponse cloudRepository;
 					try {
 						cloudRepository = wrapper.getRepository(ownerRoleId);
@@ -128,8 +127,7 @@ public class ScopeTreeDialogForServiceMonitors extends CommonDialog {
 
 					FacilityTreeItemResponse treeItem;
 					try {
-						treeItem = RepositoryRestClientWrapper.getWrapper(manager)
-								.getFacilityTree(ownerRoleId);
+						treeItem = RepositoryRestClientWrapper.getWrapper(manager).getFacilityTree(ownerRoleId);
 						if (treeItem != null && treeItem.getChildren() != null
 								&& treeItem.getChildren().get(0) != null) {
 							Collections.sort(treeItem.getChildren().get(0).getChildren(),
@@ -267,7 +265,7 @@ public class ScopeTreeDialogForServiceMonitors extends CommonDialog {
 				result.setID(Messages.getString("message.hinemos.1"));
 				result.setMessage(CloudConstants.bundle_messages.getString("message.select.region"));
 			}
-			
+
 		}
 		return result;
 	}
@@ -290,7 +288,9 @@ public class ScopeTreeDialogForServiceMonitors extends CommonDialog {
 					if (f.getType() == TypeEnum.CLOUDSCOPE || f.getType() == TypeEnum.LOCATION) {
 						// AWSもしくはAzureの場合のみツリーに追加
 						if (f.getPlatformId().equals(CloudConstant.platform_AWS)
-								|| f.getPlatformId().equals(CloudConstant.platform_Azure)) {
+								|| f.getPlatformId().equals(CloudConstant.platform_Azure)
+								|| f.getPlatformId().equals(CloudConstant.platform_GCP)) {
+
 							Iterator<FacilityTreeItemResponse> itemIter = items.iterator();
 							while (itemIter.hasNext()) {
 								FacilityTreeItemResponse i = (FacilityTreeItemResponse) itemIter.next();
@@ -358,11 +358,11 @@ public class ScopeTreeDialogForServiceMonitors extends CommonDialog {
 			}
 		};
 	}
-	
+
 	public FacilityTreeItemResponse getSelectItem() {
 		return this.treeComposite.getSelectItem();
 	}
-	
+
 	@Override
 	protected String getOkButtonText() {
 		return Messages.getString("ok");

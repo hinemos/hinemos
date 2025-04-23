@@ -10,9 +10,6 @@ package com.clustercontrol.rest.endpoint.utility.controller;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.rest.endpoint.cloud.CloudRestEndpoints;
 import com.clustercontrol.rest.endpoint.cloud.dto.AddCloudLoginUserRequest;
@@ -43,7 +40,6 @@ import com.clustercontrol.xcloud.model.PublicCloudScopeEntity;
 
 public class ImportCloudScopeController extends AbstractImportControllerForCloud<ImportCloudScopeRecordRequest, RecordRegistrationResponse> {
 
-	private static Log m_log = LogFactory.getLog(ImportCloudScopeController.class);
 
 	public ImportCloudScopeController(boolean isRollbackIfAbnormal, List<ImportCloudScopeRecordRequest> importList) {
 		super(isRollbackIfAbnormal, importList);

@@ -56,6 +56,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InfraFileBeingUsed;
@@ -385,6 +386,9 @@ public class InfraRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting {
 		m_log.info("call getInfraManagementList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<InfraManagementInfo> infoResList = null;
 		if (ownerRoleId != null) {
 			infoResList = new InfraControllerBean().getInfraManagementListByOwnerRole(ownerRoleId);
@@ -436,6 +440,9 @@ public class InfraRestEndpoints {
 			throws HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting {
 		m_log.info("call getReferManagementIdList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<InfraManagementInfo> infoResList = new InfraControllerBean().getReferManagementList(ownerRoleId);
 		List<InfraManagementInfoResponseP1> dtoResList = new ArrayList<>();
 		for (InfraManagementInfo infoRes : infoResList) {
@@ -853,13 +860,14 @@ public class InfraRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_400, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
+			@APIResponse(responseCode = STATUS_CODE_404, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	public Response modifyInfraFile(@PathParam("fileId") String fileId,
 			@RequestBody(description = "modifyInfraFileBody", content = @Content(schema = @Schema(type = SchemaType.OBJECT, implementation = ModifyInfraFileRequest.class))) @FormDataParam("file") InputStream inputStream,
 			@FormDataParam("infraFileInfo") String requestBody, @Context Request request, @Context UriInfo uriInfo)
-			throws InvalidRole, HinemosUnknown, InfraFileTooLarge, InvalidUserPass, InvalidSetting {
+			throws InvalidRole, HinemosUnknown, InfraFileTooLarge, InvalidUserPass, InvalidSetting, InfraManagementNotFound {
 		m_log.info("call modifyInfraFile()");
 
 		ModifyInfraFileRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
@@ -1045,6 +1053,9 @@ public class InfraRestEndpoints {
 			@Context UriInfo uriInfo) throws InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
 		m_log.info("call getInfraFileList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<InfraFileInfo> infoResList = null;
 		if (ownerRoleId != null) {
 			infoResList = new InfraControllerBean().getInfraFileListByOwnerRoleId(ownerRoleId);

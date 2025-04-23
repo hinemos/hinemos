@@ -29,9 +29,11 @@ import org.eclipse.ui.PlatformUI;
 import org.openapitools.client.model.ExistBgImageResponse;
 import org.openapitools.client.model.ExistIconImageResponse;
 
+import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.infra.dialog.ChangeBackgroundModifyListener;
 import com.clustercontrol.nodemap.util.ImageManager;
 import com.clustercontrol.nodemap.util.NodeMapRestClientWrapper;
 import com.clustercontrol.util.Messages;
@@ -125,6 +127,8 @@ public class UploadImageDialog extends CommonDialog {
 		gridData.minimumWidth = 80;
 		this.fileName.setLayoutData(gridData);
 		this.fileName.setEnabled(true); // 編集可
+		this.fileName.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		this.fileName.addModifyListener(new ChangeBackgroundModifyListener());
 
 		// 3-2
 		this.buttonHost = new Button(group, SWT.NONE);
@@ -206,6 +210,20 @@ public class UploadImageDialog extends CommonDialog {
 	 */
 	@Override
 	protected void okPressed() {
+		/*
+		 * 本来チェックはvalidate()で実施すべきだが、 <br> 
+		 * 本クラスはokPressed()をオーバーライドしてしまっており、<br> 
+		 * 登録処理が行われた後にvalidate()が実行されるため、ここでチェックを行う <br> 
+		 */
+		if ("".equals(fileName.getText())) {
+			ValidateResult result = ValidateResult.messageOf(Messages.getString("message.hinemos.1"),
+					Messages.getString("message.common.1", new String[] { Messages.getString("file") }));
+			if (result != null && !result.isValid()) {
+				this.displayError(result);
+				return;
+			}
+		}
+
 		/*
 		 * filenameは  "file1.gif" "file2.gif" "file3.gif" という内容。
 		 * " " でsplitして配列に戻す。

@@ -87,6 +87,7 @@
 			
 			<!-- Session config -->
 			<property name="eclipselink.session-event-listener" value="com.clustercontrol.commons.util.JpaSessionEventListener"/>
+			<property name="eclipselink.concurrency.manager.maxsleeptime" value="900000"/>
 		</properties>
 
 	</persistence-unit>

@@ -42,7 +42,7 @@ public class ScreenshotFileObserveTask extends ObserveTask {
 				// 指示ファイルが生成するまで待機
 				RoboScreenshotInfo roboScreenshotInfo = roboFileManager.read(RoboScreenshotInfo.class, checkInterval);
 				if (roboScreenshotInfo == null) {
-					m_log.warn("run() : roboScreenshotInfo is null");
+					m_log.info("run() : roboScreenshotInfo is null");
 					return; // 処理終了等で処理が中断された場合
 				}
 				m_log.debug("run() : roboScreenshotInfo=" + roboScreenshotInfo);

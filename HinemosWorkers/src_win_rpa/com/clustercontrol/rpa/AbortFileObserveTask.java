@@ -41,7 +41,7 @@ public class AbortFileObserveTask extends ObserveTask {
 				// 指示ファイルが生成するまで待機
 				RoboAbortInfo roboAbortInfo = roboFileManager.read(RoboAbortInfo.class, checkInterval);
 				if (roboAbortInfo == null) {
-					m_log.warn("run() : roboAbortInfo is null");
+					m_log.info("run() : roboAbortInfo is null");
 					return; // 処理終了等で処理が中断された場合
 				}
 				m_log.debug("run() : roboAbortInfo=" + roboAbortInfo);

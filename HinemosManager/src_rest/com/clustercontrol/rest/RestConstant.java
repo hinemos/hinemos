@@ -15,4 +15,11 @@ public class RestConstant {
 	public static final String STATUS_CODE_404 = "404";
 	public static final String STATUS_CODE_409 = "409";
 	public static final String STATUS_CODE_500 = "500";
+	
+	public static final String DOWNLOAD_FILE_NAME_PREFIX_EVENT = "EventReport-";
+	public static final String DOWNLOAD_FILE_NAME_PREFIX_BINARY = "BinaryColect-";
+	public static final String DOWNLOAD_FILE_NAME_PREFIX_RPA = "scenario_operation_result_";
+	public static final String DOWNLOAD_FILE_TIMESTAMP = "yyyyMMddHHmmssSSS";
+	public static final String DOWNLOAD_FILE_CSV_EXTENSION = ".csv";
+	public static final String DOWNLOAD_FILE_ZIP_EXTENSION = ".zip";
 }

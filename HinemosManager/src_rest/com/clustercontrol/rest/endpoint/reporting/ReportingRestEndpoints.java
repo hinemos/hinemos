@@ -50,6 +50,7 @@ import org.glassfish.grizzly.http.server.Request;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
 import com.clustercontrol.bean.ActivationKeyConstant;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -526,6 +527,9 @@ public class ReportingRestEndpoints {
 			@Context Request request, @Context UriInfo uriInfo) throws HinemosUnknown, ReportingNotFound, InvalidUserPass, InvalidRole {
 		m_log.debug("getTemplateSetList");
 		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<TemplateSetInfo> infoResList = new ReportingControllerBean().getTemplateSetListByOwnerRole(ownerRoleId);
 		
 		List<TemplateSetInfoResponse> dtoResList = new ArrayList<>();
@@ -626,6 +630,9 @@ public class ReportingRestEndpoints {
 	public Response getTemplateIdList(@QueryParam(value = "ownerRoleId") String ownerRoleId,
 			@Context Request request, @Context UriInfo uriInfo) throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.debug("getTemplateIdList");
+		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		List<String> dtoResList = new ReportingControllerBean().getTemplateIdList(ownerRoleId);
 		

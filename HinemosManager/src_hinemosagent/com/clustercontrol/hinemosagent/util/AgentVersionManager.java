@@ -75,6 +75,46 @@ public class AgentVersionManager {
 	}
 
 	/**
+	 * エージェントのバージョンチェック<BR>
+	 * エージェントとマネージャのバージョンが不正でないかを確認し、各バージョンの一致結果を返す<BR>
+	 * 
+	 * @param agentVersion
+	 * @param managerVersion
+	 * @param pattern
+	 * @return true:バージョン一致、false:不一致
+	 * @throws InvalidSetting
+	 */
+	public static boolean isSameVersion(String agentVersion, String managerVersion, Pattern pattern) {
+		if (agentVersion == null || agentVersion.isEmpty() || !pattern.matcher(agentVersion).matches()) {
+			// 判定対象のエージェントのバージョンがない、または形式外の場合は対象外とする。
+			return false;
+		}
+		if (managerVersion == null || managerVersion.isEmpty() || !pattern.matcher(managerVersion).matches()) {
+			logger.error("isSameVersion() : managerVersion is invalid.");
+			// マネージャのバージョンの指定がない、または形式外の場合は対象外とする。通常は到達しない。
+			return false;
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("isSameVersion() : agentVersion=" + agentVersion + ", managerVersion=" + managerVersion);
+		}
+		return agentVersion.equals(managerVersion);
+	}
+
+	/**
+	 * エージェントのバージョンチェック<BR>
+	 * エージェントとマネージャのメジャーバージョンを比較し、対象エージェントをエージェントアップデートの対象とするかを判定する<BR>
+	 * エージェントがマネージャのメジャーバージョンと一致する場合、エージェントアップデートの対象とする<BR>
+	 * 
+	 * @param agentVersion
+	 * @param managerVersion
+	 * @return true:エージェントアップデート対象、false:対象外
+	 * @throws InvalidSetting
+	 */
+	public static boolean isSameVersionMajor(String agentVersion, String managerVersion) {
+		return isSameVersion(agentVersion, managerVersion, _versionPattern);
+	}
+
+	/**
 	 * バージョンチェック後<BR>
 	 * エージェントが該当トピックのサポート対象外だった場合の処理<BR>
 	 * 

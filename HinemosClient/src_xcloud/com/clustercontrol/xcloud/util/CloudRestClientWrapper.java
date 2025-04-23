@@ -92,6 +92,10 @@ public class CloudRestClientWrapper implements ICheckPublishRestClientWrapper {
 		this.connectUnit = endpointUnit;
 	}
 
+	/**
+	 * HinemosUnknown：接続先のマネージャから通信異常以外の想定外の例外出力時以外にもクラウドのエンドポイントURLが存在しない場合も出力されるので利用時は注意すること
+	 *
+	 */
 	@Override
 	public CheckPublishResponse checkPublish() throws RestConnectFailed ,HinemosUnknown, CloudManagerException, InvalidRole, InvalidUserPass {
 		RestUrlSequentialExecuter<CheckPublishResponse> proxy = new RestUrlSequentialExecuter<CheckPublishResponse>(this.connectUnit,this.restKind){

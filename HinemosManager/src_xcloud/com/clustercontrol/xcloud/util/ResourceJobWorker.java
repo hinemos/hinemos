@@ -62,6 +62,7 @@ import com.clustercontrol.xcloud.Session;
 import com.clustercontrol.xcloud.Session.SessionScope;
 import com.clustercontrol.xcloud.bean.InstanceStatus;
 import com.clustercontrol.xcloud.bean.Option;
+import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.common.ErrorCode;
 import com.clustercontrol.xcloud.factory.ActionMode;
 import com.clustercontrol.xcloud.factory.CloudManager;
@@ -760,6 +761,18 @@ public class ResourceJobWorker {
 			queryResults = query.getResultList();
 
 			for (InstanceEntity instanceEntiy : queryResults) {
+				
+				// OCI/GCP個別カスタマイズ
+				if (instanceEntiy.getExtendedProperties() != null && instanceEntiy.getExtendedProperties()
+						.get(CloudConstants.EPROP_SKIP_LOCATION_IN_JOB) != null) {
+					if (Boolean.valueOf(instanceEntiy.getExtendedProperties()
+							.get(CloudConstants.EPROP_SKIP_LOCATION_IN_JOB).getValue())) {
+						log.info("getTargetInstanceMap(): Skip location for instance. Instance ID: "
+								+ instanceEntiy.getResourceId() + " Location ID: " + instanceEntiy.getLocationId());
+						continue;
+					}
+				}
+				
 				List<String> list = locationMap.get(instanceEntiy.getLocationId());
 				if (list == null) {
 					list = new ArrayList<>();

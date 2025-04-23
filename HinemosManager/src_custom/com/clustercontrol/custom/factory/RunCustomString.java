@@ -38,6 +38,7 @@ import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.XMLUtil;
 
 /**
  * コマンド監視(String)の監視処理を実装したクラス<br/>
@@ -151,7 +152,7 @@ public class RunCustomString extends RunCustomBase {
 					StringSample sample = new StringSample(new Date(HinemosTime.currentTimeMillis()),
 							monitor.getMonitorId());
 					// ログメッセージ
-					sample.set(result.getFacilityId(), "custom", msg);
+					sample.set(result.getFacilityId(), "custom", XMLUtil.ignoreInvalidString(msg));
 					
 					sampleList.add(sample);
 					if(!sampleList.isEmpty()){

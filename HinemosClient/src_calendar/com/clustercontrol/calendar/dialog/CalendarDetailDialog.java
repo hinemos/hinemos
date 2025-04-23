@@ -546,12 +546,24 @@ public class CalendarDetailDialog extends CommonDialog{
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.widthHint = 150;
 		int index = 0;
+		int maxLength = 32;
 		this.calDetailCalPatternCombo.setLayoutData(gridData);
 		this.calDetailCalPatternCombo.add("", index);
 		this.calPatternMap = new ConcurrentHashMap<>();
 		for(CalendarPatternInfoResponse str : getCalendarPatternList(this.managerName, this.ownerRoleId)){
-			this.calDetailCalPatternCombo.add(str.getCalendarPatternName(), ++index);
-			calPatternMap.put(str.getCalendarPatternId(), index);
+			String disp = null;
+			String calPatternName = str.getCalendarPatternName();
+			String calPatternId = str.getCalendarPatternId();
+			if (calPatternName != null && calPatternName.length() != 0 && calPatternId != null
+					&& calPatternId.length() != 0) {
+				if (maxLength < calPatternName.length()) {
+					calPatternName = calPatternName.substring(0, maxLength) + "...";
+				}
+				disp = calPatternName + "(" + calPatternId + ")";
+				this.calDetailCalPatternCombo.add(disp, ++index);
+				calPatternMap.put(calPatternId, index);
+			}
+
 		}
 		this.calDetailCalPatternCombo.addModifyListener(new ModifyListener() {
 			@Override

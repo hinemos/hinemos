@@ -214,6 +214,11 @@ public class ZipUtil {
 			if(zip != null){
 				zip.close();
 			}
+			if (zipFile.exists()) {
+				if (!zipFile.delete()) {
+					m_log.warn("Failed delete zipfile=" + zipFile.getAbsolutePath());
+				}
+			}
 		}
 	}
 }

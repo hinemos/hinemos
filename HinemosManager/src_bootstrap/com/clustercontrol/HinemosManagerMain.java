@@ -35,6 +35,7 @@ import com.clustercontrol.binary.session.BinaryControllerBean;
 import com.clustercontrol.calendar.util.CalendarCache;
 import com.clustercontrol.calendar.util.CalendarPatternCache;
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
+import com.clustercontrol.commons.util.AlterModeArgsUtil;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaPersistenceConfig;
@@ -43,6 +44,7 @@ import com.clustercontrol.jobmanagement.factory.FullJob;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.logfile.session.MonitorLogfileControllerBean;
 import com.clustercontrol.maintenance.factory.HinemosPropertyInfoCache;
+import com.clustercontrol.maintenance.util.MaintenanceCloudServiceModeUtil;
 import com.clustercontrol.notify.util.NotifyCache;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.performance.util.CollectorMasterCache;
@@ -207,6 +209,11 @@ public class HinemosManagerMain {
 			// Hinemos独自のタイムゾーン(UTCからのオフセット)をプロパティから取得/設定(ミリ秒単位)
 			int timeZoneOffset = HinemosPropertyCommon.common_timezone.getIntegerValue();
 			HinemosTime.setTimeZoneOffset(timeZoneOffset);
+
+			// クラウドサービスモード用の設定ファイル読み込み(読み込むためにシングルトンインスタンスを取得）
+			if(AlterModeArgsUtil.isCloudServiceMode()){
+				MaintenanceCloudServiceModeUtil.getInstance();
+			}
 			
 			// 参照可能なHinemosPluginを全て生成(create)する
 			HinemosPluginService.getInstance().create();
@@ -236,6 +243,10 @@ public class HinemosManagerMain {
 			long initializeSec = (startupTime - bootTime) / 1000;
 			long initializeMSec = (startupTime - bootTime) % 1000;
 			log.info("Hinemos Manager Started in " + initializeSec + "s:" + initializeMSec + "ms");
+			// 機能の挙動変更の引数を設定されていた場合はここでログ出力する
+			if (AlterModeArgsUtil.isCloudServiceMode()){
+				log.info("Hinemos Manager Started as CloudServiceMode");
+			}
 
 			// Hinemos Managerの起動完了を通知する
 			String[] msgArgsStart = {_hostname};

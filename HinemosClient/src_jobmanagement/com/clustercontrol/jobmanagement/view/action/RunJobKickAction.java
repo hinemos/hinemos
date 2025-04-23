@@ -149,6 +149,7 @@ public class RunJobKickAction extends AbstractHandler implements IElementUpdater
 				triggerInfo.setJobWaitMinute(m_trigger.getJobWaitMinute()); 
 				triggerInfo.setJobCommand(m_trigger.getJobCommand()); 
 				triggerInfo.setJobCommandText(m_trigger.getJobCommandText());
+				triggerInfo.setJobkickId(jobkickId);
 				// ランタイムジョブ変数
 				if (m_trigger.getJobRuntimeParamList() != null) {
 					triggerInfo.getJobRuntimeParamList().addAll(

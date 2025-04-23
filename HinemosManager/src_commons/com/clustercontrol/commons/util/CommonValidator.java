@@ -19,6 +19,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
+import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.PatternConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.ScheduleConstant;
@@ -525,7 +526,30 @@ public class CommonValidator {
 			throw new InvalidSetting(MessageConstant.MESSAGE_OWNERROLEID_NOT_EXIST.getMessage(ownerRoleId), e);
 		}
 	}
-
+	
+	/**
+	 * カレントユーザがオーナーロールに所属しているかチェックする
+	 * この関数は、16051で追加され、REST APIの呼び出し直後に実施
+	 * ownerRoleIdが指定されていない場合は、処理をスルーする
+	 * 既存動作への影響が読めないので、明らかなオーナーロールの違反のみバリデーション
+	 *
+	 * @param ownerRoleId
+	 * @throw InvalidRole
+	 */
+	public static void validateCurrentUserBelongRole(String ownerRoleId) throws InvalidRole {
+		// オーナーロールが指定されていない場合、チェックしない
+		if (ownerRoleId != null) {
+			// カレントユーザが指定のオーナーロールに所属しているか確認
+			String currentUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+			
+			if(!(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR) && 
+					!UserRoleCache.getRoleIdList(currentUser).contains(ownerRoleId)) {
+				String args[] = {currentUser, ownerRoleId};
+				throw new InvalidRole(MessageConstant.MESSAGE_USER_DOES_NOT_BELONG_TO_ROLE.getMessage(args));
+			}
+		}
+	}
+	
 	/**
 	 * 正規表現がnullまたは、有効かを確認する
 	 * 

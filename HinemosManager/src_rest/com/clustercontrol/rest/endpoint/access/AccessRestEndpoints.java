@@ -137,6 +137,7 @@ import com.clustercontrol.rest.util.RestHttpBearerAuthenticator;
 import com.clustercontrol.rest.util.RestLanguageConverter;
 import com.clustercontrol.rest.util.RestObjectMapperWrapper;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.xcloud.bean.AvailableRole;
 
 @Path("/access")
@@ -1125,15 +1126,21 @@ public class AccessRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = UserInfoResponse.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
+			@APIResponse(responseCode = STATUS_CODE_404, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Get, target = LogTarget.User, type = LogType.REFERENCE )
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.AccessControl, modeList = { SystemPrivilegeMode.READ })
 	public Response getUserInfo(@PathParam("userId") String userId, @Context Request request, @Context UriInfo uriInfo)
-			throws InvalidUserPass, InvalidRole, HinemosUnknown {
+			throws InvalidUserPass, InvalidRole,UserNotFound, HinemosUnknown {
 		m_log.info("call getUserInfo()");
 
 		UserInfo infoRes = new AccessControllerBean().getUserInfo(userId);
+
+		if(infoRes == null || infoRes.getUserId() == null){
+			String args[] = {userId};
+			throw new UserNotFound(MessageConstant.MESSAGE_USER_NOT_EXIST.getMessage(args));
+		}
 
 		UserInfoResponse dtoRes = new UserInfoResponse();
 		RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);

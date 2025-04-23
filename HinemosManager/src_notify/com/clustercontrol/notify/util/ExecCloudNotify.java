@@ -49,6 +49,7 @@ public class ExecCloudNotify implements Notifier {
 			m_log.debug("notify() " + requestMessage);
 		}
 		OutputBasicInfo outputInfo = requestMessage.getOutputInfo();
+
 		String notifyId = requestMessage.getNotifyId();
 		executeCloudNotify(outputInfo, notifyId);
 	}
@@ -106,8 +107,22 @@ public class ExecCloudNotify implements Notifier {
 					getDataVersion(outputInfo, cloudInfo, outputInfo.getPriority()));
 			requestMap.put(CloudConstant.notify_azure_data,
 					getJsonData(outputInfo, cloudInfo, outputInfo.getPriority()));
+		} else if (cloudInfo.getPlatformType() == CloudConstant.notify_gcp_platform) {
+			// GCP
+			requestMap.put(CloudConstant.notify_gcp_projectId,
+					getEventBus(outputInfo, cloudInfo, outputInfo.getPriority()));
+			requestMap.put(CloudConstant.notify_gcp_topicId,
+					getSource(outputInfo, cloudInfo, outputInfo.getPriority()));
+			requestMap.put(CloudConstant.notify_gcp_message,
+					getDetailType(outputInfo, cloudInfo, outputInfo.getPriority()));
+			requestMap.put(CloudConstant.notify_gcp_orderingKey,
+					getDataVersion(outputInfo, cloudInfo, outputInfo.getPriority()));
+			requestMap.put(CloudConstant.notify_gcp_attribute,
+					getJsonData(outputInfo, cloudInfo, outputInfo.getPriority()));
+			requestMap.put(CloudConstant.notify_gcp_region_endpoint,
+					cloudInfo.getFacilityId().substring(cloudInfo.getFacilityId().lastIndexOf('_') + 1));
 		} else {
-			// AWS, Azure以外が選択された場合（バリデーションされているので通常あり得ない）
+			// GCP,AWS, Azure以外が選択された場合（バリデーションされているので通常あり得ない）
 			m_log.error(
 					"executeCloudNotify(): Unsupported Platform selected. Notification failed. Selected facility id: "
 							+ cloudInfo.getFacilityId());
@@ -123,23 +138,24 @@ public class ExecCloudNotify implements Notifier {
 			// 通知失敗時にはINTERNAL
 			internalErrorNotify(outputInfo, notifyId, e.getMessage());
 		}
-		
+
 		// バースト時の対策として、一定時間のクールタイムを設ける（無効化も可能）
 		// 注意点として通知スレッドはデフォルト8スレッドあるので、必ずしもここで指定した期間毎に
 		// 通知が送信されるわけではない
-		if(HinemosPropertyCommon.notify_cloud_send_interval.getIntegerValue() > 0){
+		if (HinemosPropertyCommon.notify_cloud_send_interval.getIntegerValue() > 0) {
 			try {
-				m_log.debug("executeCloudNotify(): sleep start for : " + HinemosPropertyCommon.notify_cloud_send_interval.getIntegerValue());
+				m_log.debug("executeCloudNotify(): sleep start for : "
+						+ HinemosPropertyCommon.notify_cloud_send_interval.getIntegerValue());
 				Thread.sleep(HinemosPropertyCommon.notify_cloud_send_interval.getIntegerValue());
 				m_log.debug("executeCloudNotify(): sleep end");
 			} catch (NullPointerException | InterruptedException e) {
-				m_log.error("executeCloudNotify():",e);
+				m_log.error("executeCloudNotify():", e);
 			}
 		}
 	}
 
 	/**
-	 * AWS：EventBus Azure：Endpoint を通知変数を置換し取得するメソッド
+	 * AWS：EventBus Azure：Endpoint GCP:ProjectId を通知変数を置換し取得するメソッド
 	 * 
 	 * @param outputInfo
 	 * @param priority
@@ -201,7 +217,7 @@ public class ExecCloudNotify implements Notifier {
 	}
 
 	/**
-	 * AWS：DetailType Azure：Subject を通知変数を置換し取得するメソッド
+	 * AWS：DetailType Azure：Subject GCP:Message を通知変数を置換し取得するメソッド
 	 * 
 	 * @param outputInfo
 	 * @param priority
@@ -232,7 +248,7 @@ public class ExecCloudNotify implements Notifier {
 	}
 
 	/**
-	 * AWS：Souece Azure：EventType を通知変数を置換し取得するメソッド
+	 * AWS：Souece Azure：EventType GCP: TopicId を通知変数を置換し取得するメソッド
 	 * 
 	 * @param outputInfo
 	 * @param priority
@@ -263,7 +279,7 @@ public class ExecCloudNotify implements Notifier {
 	}
 
 	/**
-	 * AWS：Detail Azure：Data を通知変数を置換し取得するメソッド
+	 * AWS：Detail Azure：Data GCP: Attribute を通知変数を置換し取得するメソッド
 	 * 
 	 * @param outputInfo
 	 * @param priority
@@ -319,7 +335,7 @@ public class ExecCloudNotify implements Notifier {
 	}
 
 	/**
-	 * Azure：DataVersion を通知変数を置換し取得するメソッド
+	 * Azure：DataVersion GCP: OrderingKey を通知変数を置換し取得するメソッド
 	 * 
 	 * @param outputInfo
 	 * @param priority
@@ -400,7 +416,7 @@ public class ExecCloudNotify implements Notifier {
 	 * 通知失敗時の内部エラー通知を定義します
 	 */
 	public void internalErrorNotify(OutputBasicInfo source, String notifyId, String detailMsg) {
-		
+
 		/*
 		 * 通知元のプラグインIDごとにメッセージを分ける
 		 */
@@ -432,7 +448,7 @@ public class ExecCloudNotify implements Notifier {
 		}
 		// 通知元がレポーティングの場合
 		else if (source.getPluginId().matches(HinemosModuleConstant.REPORTING)) {
-			String[] args = { notifyId, source.getMonitorId()};
+			String[] args = { notifyId, source.getMonitorId() };
 			AplLogger.put(InternalIdCommon.PLT_NTF_SYS_029, args, detailMsg);
 		}
 		// 通知元がSDMLの場合
@@ -451,7 +467,7 @@ public class ExecCloudNotify implements Notifier {
 			AplLogger.put(InternalIdCommon.PLT_NTF_SYS_035, args, detailMsg);
 		}
 		// 何らかの理由でプラグインIDがマッチしなかった場合はデフォルト
-		else{
+		else {
 			String[] args = { notifyId, source.getFacilityId(), source.getMonitorId() };
 			// 通知失敗メッセージを出力
 			AplLogger.put(InternalIdCommon.PLT_NTF_SYS_007, args, detailMsg);

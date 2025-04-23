@@ -1,0 +1,45 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"tenantId",
+	"annotations":[
+		{"type":"Column", "columnName":"OracleUserType_tenantId"}
+	]},
+	
+	{
+	"propName":"userId",
+	"annotations":[
+		{"type":"Column", "columnName":"OracleUserType_userId"}
+	]},
+	
+	{
+	"propName":"fingerprint",
+	"annotations":[
+		{"type":"Column", "columnName":"OracleUserType_fingerprint"}
+	]},
+	
+	{
+	"propName":"passphrase",
+	"annotations":[
+		{"type":"Column", "columnName":"OracleUserType_passphrase"}
+	]},
+	
+	{
+	"propName":"defaultRegion",
+	"annotations":[
+		{"type":"Column", "columnName":"OracleUserType_defaultRegion"}
+	]},
+	
+	{
+	"propName":"privateKeyFileName",
+	"annotations":[
+		{"type":"Column", "columnName":"OracleUserType_privateKeyFileName"}
+	]}
+	
+]
+
+}

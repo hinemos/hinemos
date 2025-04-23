@@ -34,6 +34,7 @@ import com.clustercontrol.xcloud.factory.ICloudOption;
 import com.clustercontrol.xcloud.factory.ICloudScopes;
 import com.clustercontrol.xcloud.model.CloudScopeEntity;
 import com.clustercontrol.xcloud.model.CloudScopeEntity.OptionExecutor;
+import com.clustercontrol.xcloud.util.CloudUtil;
 
 public class BillingDetailMonitor {
 	public static final String jobGroupName = "CLOUD_MANAGEMENT";
@@ -84,20 +85,10 @@ public class BillingDetailMonitor {
 					private final AtomicInteger threadNumber = new AtomicInteger(1);
 					@Override
 					public Thread newThread(final Runnable r) {
-						return new Thread(new Runnable() {
-								@Override
-								public void run() {
-									try (SessionScope scope = Session.SessionScope.open()) {
-										HinemosSessionContext.instance().setProperty(HinemosSessionContext.LOGIN_USER_ID, HinemosPropertyCommon.xcloud_internal_thread_admin_user.getStringValue());
-										HinemosSessionContext.instance().setProperty(HinemosSessionContext.IS_ADMINISTRATOR, true);
-										Session.current().setHinemosCredential(new HinemosCredential(HinemosPropertyCommon.xcloud_internal_thread_admin_user.getStringValue()));
-										r.run();
-									}
-								}
-							}, "collect_billing-thread-" + threadNumber.getAndIncrement());
-						}
+						return new Thread(r, "collect_billing-thread-" + threadNumber.getAndIncrement());
 					}
-				);
+				}
+			);
 
 		private static final Set<String> set = new HashSet<String>();
 
@@ -121,15 +112,22 @@ public class BillingDetailMonitor {
 						threadPool.execute(new Runnable() {
 							@Override
 							public void run() {
-								if (!acquire(scope.getId())) return;
+								try (SessionScope sessionScope = Session.SessionScope.open()) {
+									HinemosSessionContext.instance().setProperty(HinemosSessionContext.LOGIN_USER_ID, HinemosPropertyCommon.xcloud_internal_thread_admin_user.getStringValue());
+									HinemosSessionContext.instance().setProperty(HinemosSessionContext.IS_ADMINISTRATOR, true);
+									Session.current().setHinemosCredential(new HinemosCredential(HinemosPropertyCommon.xcloud_internal_thread_admin_user.getStringValue()));
 
-								try {
-									// 課金情報を更新
-									option.getBillingManagement(scope).updateBillingDetail();
-								} catch (CloudManagerException e) {
-									Logger.getLogger(this.getClass()).error(e.toString(), e);
-								} finally {
-									release(scope.getId());
+									if (!acquire(scope.getId())) return;
+
+									try {
+										// 課金情報を更新
+										option.getBillingManagement(scope).updateBillingDetail();
+									} catch (CloudManagerException e) {
+										CloudUtil.notifyInternalMessage(e);
+										Logger.getLogger(this.getClass()).error(e.toString(), e);
+									} finally {
+										release(scope.getId());
+									}
 								}
 							}
 						});
@@ -153,15 +151,22 @@ public class BillingDetailMonitor {
 					threadPool.execute(new Runnable() {
 						@Override
 						public void run() {
-							if (!acquire(scope.getId())) return;
+							try (SessionScope sessionScope = Session.SessionScope.open()) {
+								HinemosSessionContext.instance().setProperty(HinemosSessionContext.LOGIN_USER_ID, HinemosPropertyCommon.xcloud_internal_thread_admin_user.getStringValue());
+								HinemosSessionContext.instance().setProperty(HinemosSessionContext.IS_ADMINISTRATOR, true);
+								Session.current().setHinemosCredential(new HinemosCredential(HinemosPropertyCommon.xcloud_internal_thread_admin_user.getStringValue()));
 
-							try {
-								// 課金情報を更新
-								option.getBillingManagement(scope).updateBillingDetail();
-							} catch (CloudManagerException e) {
-								Logger.getLogger(this.getClass()).error(e.toString(), e);
-							} finally {
-								release(scope.getId());
+								if (!acquire(scope.getId())) return;
+
+								try {
+									// 課金情報を更新
+									option.getBillingManagement(scope).updateBillingDetail();
+								} catch (CloudManagerException e) {
+									CloudUtil.notifyInternalMessage(e);
+									Logger.getLogger(this.getClass()).error(e.toString(), e);
+								} finally {
+									release(scope.getId());
+								}
 							}
 						}
 					});

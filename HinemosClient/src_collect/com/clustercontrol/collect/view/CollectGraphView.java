@@ -61,6 +61,7 @@ public class CollectGraphView extends CommonViewPart {
 
 	/** スコープツリーのコンポジットと右側のコンポジットの割合。 */
 	private int sashPer = 25;
+
 	/** 区切り文字(##@##) */
 	protected static final String SEPARATOR_HASH_HASH_AT_HASH_HASH = "##@##";
 
@@ -162,8 +163,7 @@ public class CollectGraphView extends CommonViewPart {
 				}
 			}
 		});
-		((CheckboxTreeViewer)this.scopeTreeComposite.getTreeViewer()).addCheckStateListener(new ICheckStateListener() {
-			
+		((CheckboxTreeViewer) this.scopeTreeComposite.getTreeViewer()).addCheckStateListener(new ICheckStateListener() {
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				// itemCodeListを取得して画面に反映する
@@ -173,7 +173,6 @@ public class CollectGraphView extends CommonViewPart {
 
 		// チェック状態を復元する
 		setSelectTreeItem(null);
-		
 	}
 
 	/**
@@ -194,13 +193,12 @@ public class CollectGraphView extends CommonViewPart {
 	 * 
 	 */
 	public void setItemCodeCheckedTreeItems() {
-		m_log.debug("setItemCodeCheckedTreeItems()");
+		m_log.info("setItemCodeCheckedTreeItems() start.");
 		// 収集値表示名リスト、サマリータイプ、グラフ種別、折り返しチェックなどをクリアする
 		collectSettingComposite.clearItem();
-		
-		List<String> selectStrList = scopeTreeComposite.getCheckedTreeInfo();
+
+		List<String> selectStrList = scopeTreeComposite.getSelectFacilityList();
 		if (selectStrList != null && selectStrList.size() != 0) {
-			
 			m_log.debug("setItemCodeCheckedTreeItems() itemCodeリストをManager側に取りにいきます");
 			// マネージャ名からitemNameを取得し、画面に反映します
 			collectSettingComposite.setCollectorItemCombo();
@@ -259,9 +257,10 @@ public class CollectGraphView extends CommonViewPart {
 	 * @param treeItem
 	 */
 	private void setSelectTreeItem(List<String> selectNodeMapList) {
-		
-		m_log.debug("setSelectTreeItem ファシリティツリーと収集値表示名をPreference情報を元に復元します");
-		
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("setSelectTreeItem() ファシリティツリーと収集値表示名をPreference情報を元に復元します");
+		}
+
 		// Preferenceから情報取得
 		List<String> selectList = selectNodeMapList;
 		if (selectList == null) {
@@ -270,14 +269,13 @@ public class CollectGraphView extends CommonViewPart {
 
 		// ツリーの選択状態の復元
 		this.scopeTreeComposite.setSelectFacilityList(selectList);
-		
+
 		// ツリーのチェックに応じてitemCodeを取得し画面に反映する
 		if (getCheckedTreeItemList().size() == 0) return;
 		setItemCodeCheckedTreeItems();
 		collectSettingComposite.setDefaultItemInfo();
-		
 	}
-	
+
 	/**
 	 * Preferenceで保持しているP_COLLECT_GRAPH_SELECT_NODE_INFO(ツリー選択状態)を、"##@##"でsplitして、Stringのリストで返します。
 	 * 
@@ -300,7 +298,13 @@ public class CollectGraphView extends CommonViewPart {
 	public FacilityTreeComposite getFacilityTreeComposite() {
 		return this.scopeTreeComposite;
 	}
-	
+
+	/**
+	 * ノードマップから、ファシリティID階層のリストを設定する。
+	 * ノードマップから性能パースペクティブを開く際に使用する。
+	 * 
+	 * @param selectNodeMapList ファシリティID階層のリスト（形式は、FacilityTreeCompositeクラスのメンバ変数selectFacilityListと同じ）
+	 */
 	public void setSelectFacilityListFromNodemap(List<String> selectNodeMapList) {
 		setSelectTreeItem(selectNodeMapList);
 		this.scopeTreeComposite.update();

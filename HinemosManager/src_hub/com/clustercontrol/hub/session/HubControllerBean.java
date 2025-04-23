@@ -1468,7 +1468,7 @@ public class HubControllerBean {
 			}
 			
 			String queryStr = "SELECT DISTINCT d " + dataQueryStr.toString() + " ORDER BY d.time";
-			queryStr = queryStr + " DESC";
+			queryStr = queryStr + " DESC, d.id DESC";
 			logger.debug(String.format("queryCollectStringData() : query data. queryStr=%s, query=%s", queryStr, queryInfo));
 			
 			parameters = new HashMap<String, Object>();

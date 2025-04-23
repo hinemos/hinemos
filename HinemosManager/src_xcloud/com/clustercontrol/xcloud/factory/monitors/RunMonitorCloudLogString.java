@@ -32,6 +32,7 @@ import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.xcloud.bean.CloudConstant;
 
 /**
@@ -119,7 +120,7 @@ public class RunMonitorCloudLogString {
 				tagsList.add(new StringSampleTag(CollectStringTag.CLOUDLOG_AZURE_TABLE, logStream));
 				tagsList.add(new StringSampleTag(CollectStringTag.CLOUDLOG_AZURE_COL, col));
 			}
-			sample.set(facilityId, result.monitorInfo.getMonitorTypeId(), result.message.trim(), tagsList);
+			sample.set(facilityId, result.monitorInfo.getMonitorTypeId(), XMLUtil.ignoreInvalidString(result.message.trim()), tagsList);
 			CollectStringDataUtil.store(Arrays.asList(sample));
 		}
 

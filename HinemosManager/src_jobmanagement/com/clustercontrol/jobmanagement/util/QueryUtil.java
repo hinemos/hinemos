@@ -20,7 +20,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
-import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -1264,7 +1263,7 @@ public class QueryUtil {
 	 * ジョブ連携メッセージ検索処理
 	 * ジョブ連携待機ジョブ、ジョブ連携受信実行契機で使用
 	 * 
-	 * 取得失敗した場合は、スコープ、受信日時、確認済みメッセージ番号のみを条件として取得しなおす。
+	 * 取得失敗した場合は、nullを返す。
 	 * 
 	 * @param facilityId 送信元スコープ
 	 * @param joblinkMessageId ジョブ連携
@@ -1305,9 +1304,6 @@ public class QueryUtil {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 
-			// 再取得用JPQL
-			String strScopeJpql = "";
-
 			StringBuilder sbJpql = new StringBuilder();
 			sbJpql.append("SELECT a FROM JobLinkMessageEntity a");
 			if (expMap != null && expMap.size() > 0) {
@@ -1331,9 +1327,6 @@ public class QueryUtil {
 			if (acceptDateFrom != null) {
 				sbJpql.append(" AND a.acceptDate > :acceptDateFrom");
 			}
-
-			// 再取得用JPQLをここでとっておく
-			strScopeJpql = sbJpql.toString();
 
 			// ジョブ連携メッセージ
 			if (joblinkMessageId.endsWith("%")) {
@@ -1479,41 +1472,7 @@ public class QueryUtil {
 				JobLinkMessageEntity entity = list.get(0);
 				entity.setMatch(true);
 				return entity;
-			}
-
-			
-			// 取得できない場合に、スコープ、受信日時、確認済みメッセージ番号を条件として再取得する
-			sbJpql = new StringBuilder();
-
-			// スコープ、受信日時、確認済みメッセージ番号のJPQL
-			sbJpql.append(strScopeJpql);
-
-			// 検索順設定
-			sbJpql.append(" ORDER BY a.acceptDate ASC");
-
-			typedQuery = em.createQuery(sbJpql.toString(), JobLinkMessageEntity.class);
-
-			// ファシリティID
-			HinemosEntityManager.appendParam(typedQuery, "facilityId", facilityIdList.toArray(new String[facilityIdList.size()]));
-
-			if (joblinkRcvCheckedPosition != null) {
-				// 確認済みメッセージ番号
-				typedQuery = typedQuery.setParameter("position", joblinkRcvCheckedPosition);
-			}
-			// 受信日時
-			if (acceptDateFrom != null) {
-				typedQuery = typedQuery.setParameter("acceptDateFrom", acceptDateFrom);
-			}
-
-			// 1件のみ取得
-			typedQuery = typedQuery.setMaxResults(1);
-			
-			list = typedQuery.getResultList();
-			if (list.size() > 0) {
-				JobLinkMessageEntity entity = list.get(0);
-				entity.setMatch(false);
-				return entity;
-			} else {
+			}else{
 				return null;
 			}
 		}

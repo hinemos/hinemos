@@ -31,9 +31,9 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.openapitools.client.model.CollectKeyInfoResponseP1;
 import org.openapitools.client.model.FacilityInfoResponse;
 import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
-import org.openapitools.client.model.CollectKeyInfoResponseP1;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
@@ -42,7 +42,6 @@ import com.clustercontrol.collect.bean.GraphTypeConstant;
 import com.clustercontrol.collect.bean.SummaryTypeConstant;
 import com.clustercontrol.collect.bean.SummaryTypeMessage;
 import com.clustercontrol.collect.dialog.CollectItemJobDialog;
-
 import com.clustercontrol.collect.util.CollectRestClientWrapper;
 import com.clustercontrol.collect.view.CollectGraphView;
 import com.clustercontrol.fault.HinemosDbTimeout;
@@ -486,10 +485,11 @@ public class CollectSettingComposite extends Composite {
 	 * @param managers マネージャ名の配列
 	 */
 	public void setCollectorItemCombo(){
-		
+		m_log.info("setCollectorItemCombo() start.");
+
 		List<String> allItemList = new ArrayList<>();
 		// 現在のファシリティツリーの選択状態の文字列を取得
-		List<String> selectList = this.m_collectGraphView.getFacilityTreeComposite().getCheckedTreeInfo();
+		List<String> selectList = this.m_collectGraphView.getFacilityTreeComposite().getSelectFacilityList();
 		TreeMap<String, List<String>> managerFacilityMap = new TreeMap<>();
 		for (String selectStr : selectList) {
 			String[] nodeDetail = selectStr.split(SEPARATOR_HASH_EX_HASH);
@@ -502,7 +502,9 @@ public class CollectSettingComposite extends Composite {
 					managerFacilityMap.put(managerName, facilityList);
 				}
 				if (!facilityList.contains(facilityId)) {
-					m_log.debug("収集値表示名を取得する managerName:" + managerName + ", facilityId:" + facilityId);
+					if (m_log.isTraceEnabled()) {
+						m_log.trace("setCollectorItemCombo() 収集値表示名を取得する managerName:" + managerName + ", facilityId:" + facilityId);
+					}
 					facilityList.add(facilityId);
 				}
 			}
@@ -968,6 +970,12 @@ public class CollectSettingComposite extends Composite {
 					Messages.getString("error"),
 					Messages.getString("message.collection.graph.unexpected.error") + " : " + message);
 			m_collectGraphView.getCollectGraphComposite().removeGraphSliderDisp();
+		} catch (IllegalStateException e) {
+			// Webクライアントのみ、既に別スクリプトが実行中の場合に発生する。
+			// メッセージが分かりにくいため変更する。スライダー、グラフは消去しない。
+			m_log.warn("Another script is already being executed. message=" + HinemosMessage.replace(e.getMessage()));
+			MessageDialog.openWarning(null, Messages.getString("word.warn"),
+					Messages.getString("message.performance.4"));
 		} catch (Exception e) {
 			m_log.error("drawGraphs グラフ描画時にエラーが発生 message=" + e.getMessage(), e);
 			MessageDialog.openError(
@@ -1072,7 +1080,7 @@ public class CollectSettingComposite extends Composite {
 	 * @return
 	 */
 	private String storeCheckedTreeInfo() {
-		List<String> selectList = this.m_collectGraphView.getFacilityTreeComposite().getCheckedTreeInfo();
+		List<String> selectList = this.m_collectGraphView.getFacilityTreeComposite().getSelectFacilityList();
 		StringBuilder sb = new StringBuilder();
 		for (String selectParam : selectList) {
 			sb.append(selectParam);

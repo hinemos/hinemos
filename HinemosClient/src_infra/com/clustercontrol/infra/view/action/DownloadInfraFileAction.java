@@ -90,7 +90,7 @@ public class DownloadInfraFileAction extends InfraFileManagerBaseAction {
 				m_log.error(e);
 				InfraFileUtil.showFailureDialog(action, HinemosMessage.replace(e.getMessage()));
 			} finally {
-				
+				FileDownloader.cleanup(selectedFilePath);
 			}
 		}
 

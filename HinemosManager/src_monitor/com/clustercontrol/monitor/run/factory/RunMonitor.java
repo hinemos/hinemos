@@ -69,6 +69,7 @@ import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.util.apllog.AplLogger;
 
 import jakarta.persistence.EntityExistsException;
@@ -616,7 +617,7 @@ abstract public class RunMonitor {
 				if (m_monitor.getMonitorType() == MonitorTypeConstant.TYPE_STRING 
 						|| m_monitor.getMonitorType() == MonitorTypeConstant.TYPE_TRAP ) {
 					if (strSample != null) {
-						strSample.set(facilityId, m_monitor.getMonitorTypeId(), result.getMessageOrg());
+						strSample.set(facilityId, m_monitor.getMonitorTypeId(), XMLUtil.ignoreInvalidString(result.getMessageOrg()));
 					}
 				}
 				
@@ -813,7 +814,11 @@ abstract public class RunMonitor {
 								monitor.getMonitorId()));
 						notifyInfo.setPluginId(m_monitorTypeId);
 						notifyInfo.setMonitorId(monitor.getMonitorId());
-						notifyInfo.setApplication(monitor.getApplication());
+						if (monitor.getApplication() == null) {
+							notifyInfo.setApplication(""); // nullの時は空文字を設定する
+						} else {
+							notifyInfo.setApplication(monitor.getApplication());
+						}
 
 						String facilityPath = new RepositoryControllerBean().getFacilityPath(m_facilityId, null);
 						notifyInfo.setFacilityId(m_facilityId);

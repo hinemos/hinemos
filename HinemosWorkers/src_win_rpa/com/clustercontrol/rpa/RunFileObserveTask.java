@@ -46,7 +46,7 @@ public class RunFileObserveTask extends ObserveTask {
 				// 指示ファイルが生成するまで待機
 				roboRunInfo = roboFileManager.read(RoboRunInfo.class, checkInterval);
 				if (roboRunInfo == null) {
-					m_log.warn("run() : roboRunInfo is null");
+					m_log.info("run() : roboRunInfo is null");
 					return; // 処理終了等で処理が中断された場合
 				}
 				m_log.debug("run() : roboRunInfo=" + roboRunInfo);

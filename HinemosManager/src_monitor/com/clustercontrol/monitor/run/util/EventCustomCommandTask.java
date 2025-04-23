@@ -34,6 +34,7 @@ import com.clustercontrol.notify.monitor.model.EventLogEntity;
 import com.clustercontrol.notify.monitor.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -398,7 +399,8 @@ public class EventCustomCommandTask implements Runnable {
 			res.setStatus(EventCustomCommandStatusConstant.STATUS_ERROR);
 			res.setReturnCode(null);
 			res.setMessage(MessageConstant.MESSAGE_EVENT_CUSTOM_COMMAND_OUT.getMessage(
-					exectorResult.getStdout(), exectorResult.getStderr()
+					XMLUtil.ignoreInvalidString(exectorResult.getStdout()),
+					XMLUtil.ignoreInvalidString(exectorResult.getStderr())
 					));
 		} else {
 			//コマンドが正常に終了した場合
@@ -417,7 +419,8 @@ public class EventCustomCommandTask implements Runnable {
 			}
 			res.setReturnCode(exectorResult.getReturnCode());
 			res.setMessage(MessageConstant.MESSAGE_EVENT_CUSTOM_COMMAND_OUT.getMessage(
-					exectorResult.getStdout(), exectorResult.getStderr()
+					XMLUtil.ignoreInvalidString(exectorResult.getStdout()),
+					XMLUtil.ignoreInvalidString(exectorResult.getStderr())
 					));
 		}
 		

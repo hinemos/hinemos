@@ -75,6 +75,11 @@ public class ModifyInfraManagement {
 			info.setUpdateDate(now);
 			info.setUpdateUser(user);
 
+			int orderNo = 0;
+			for (InfraModuleInfo<?> module : info.getModuleList()) {
+				module.setOrderNo(orderNo++);
+			}
+
 			// 変数情報の反映
 			if (info.getInfraManagementParamList() != null) {
 				for (InfraManagementParamInfo paramInfo : info.getInfraManagementParamList()) {
@@ -191,8 +196,17 @@ public class ModifyInfraManagement {
 
 			List<InfraModuleInfo<?>> webModuleList = new ArrayList<InfraModuleInfo<?>>(webEntity.getModuleList());
 			List<InfraModuleInfo<?>> moduleList = new ArrayList<InfraModuleInfo<?>>(entity.getModuleList());
+
+			//更新用データについて順序は0からの連番で振り直し、ただし順序の番号による並び順そのまま
+			// 順序でListを整列 (いずれかの順序がnullなら今のList順をそのまま採用)
+			if (!(webModuleList.stream().filter(s -> s.getOrderNo() == null).findFirst().isPresent())) {
+				webModuleList.sort((a, b) -> a.getOrderNo() - b.getOrderNo());
+			}
+			//  List順で番号振り直し
+			int[] orderNo = { 0 };
+			webModuleList.stream().forEach(s -> { s.setOrderNo(orderNo[0]++); } );
 			
-			int orderNo = 0;
+			// 更新用データについて既存データとIDの合致するレコードは更新
 			Iterator<InfraModuleInfo<?>> webModuleIter = webModuleList.iterator();
 			while (webModuleIter.hasNext()) {
 				InfraModuleInfo<?> mi = webModuleIter.next();
@@ -205,16 +219,16 @@ public class ModifyInfraManagement {
 							// 権限チェック
 							QueryUtil.getInfraManagementInfoPK_OR(entity.getManagementId(), entity.getOwnerRoleId());
 						}
-						mi.modifyCounterEntity(entity, module, orderNo);
+						mi.modifyCounterEntity(entity, module);
 						
 						webModuleIter.remove();
 						moduleIter.remove();
 						break;
 					}
 				}
-				orderNo++;
 			}
 			
+			// 更新用データについて既存データとIDの合致がなかったレコードは新規なので追加
 			for (InfraModuleInfo<?> webModule: webModuleList) {
 				if (webModule instanceof ReferManagementModuleInfo) {
 					// 権限チェック
@@ -223,6 +237,7 @@ public class ModifyInfraManagement {
 				webModule.addCounterEntity(entity);
 			}
 			
+			// 既存データについて更新用データIDの合致がなかったレコードは不要なので削除
 			for (InfraModuleInfo<?> module: moduleList) {
 				entity.getModuleList().remove(module);
 				module.removeSelf(em);

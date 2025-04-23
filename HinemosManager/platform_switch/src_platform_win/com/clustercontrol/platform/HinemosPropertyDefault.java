@@ -42,7 +42,7 @@ public enum HinemosPropertyDefault implements HinemosPropertyAbstract {
 	reporting_filename(HinemosPropertyBean.string("hinemos_report")),
 	reporting_heap_size(HinemosPropertyBean.string("-Xms256m -Xmx256m -Xss256k")),
 	reporting_output_path(HinemosPropertyBean.string(System.getProperty("hinemos.manager.data.dir") + File.separator + "report")),
-	selfcheck_monitoring_db_validationquery(HinemosPropertyBean.string("SELECT 1")),
+	selfcheck_monitoring_filesystem_usage_list(HinemosPropertyBean.string("C:\\:50")),
 	ws_https_keystore_path(HinemosPropertyBean.string(user_home_dir.getBean().getDefaultStringValue() + "/keystore")),
 	notify_command_charset(HinemosPropertyBean.string("MS932")),
 	performance_export_manager_encode(HinemosPropertyBean.string("MS932")),

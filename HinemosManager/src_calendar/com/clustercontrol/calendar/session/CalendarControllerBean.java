@@ -772,6 +772,8 @@ public class CalendarControllerBean {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 			SelectCalendar select = new SelectCalendar();
+			Calendar now = Calendar.getInstance((HinemosTime.getTimeZone()));
+			now.clear();
 			for (int i = 0; i < 7; i++) {
 				List<CalendarDetailInfo> list =  select.getCalendarWeek(id, year, month, day);
 				if (list != null) {
@@ -783,7 +785,7 @@ public class CalendarControllerBean {
 					ret.addAll(list);
 				}
 
-				Calendar now = Calendar.getInstance((HinemosTime.getTimeZone()));
+				now.set(year, month - 1, day);
 				// 月の変わり目判定
 				if (day + 1 > now.getActualMaximum(Calendar.DAY_OF_MONTH)) {
 					// 年の変わり目判定

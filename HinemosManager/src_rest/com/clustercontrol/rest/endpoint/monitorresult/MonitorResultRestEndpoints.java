@@ -16,6 +16,7 @@ import static com.clustercontrol.rest.RestConstant.STATUS_CODE_500;
 
 import java.io.File;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -71,6 +72,7 @@ import com.clustercontrol.monitor.bean.ViewListInfo;
 import com.clustercontrol.monitor.bean.ViewStatusListInfo;
 import com.clustercontrol.monitor.session.EventCustomCommandBean;
 import com.clustercontrol.monitor.session.MonitorControllerBean;
+import com.clustercontrol.rest.RestConstant;
 import com.clustercontrol.rest.annotation.RestLog;
 import com.clustercontrol.rest.annotation.RestLog.LogAction;
 import com.clustercontrol.rest.annotation.RestLog.LogTarget;
@@ -113,6 +115,7 @@ import com.clustercontrol.rest.util.RestDownloadFile;
 import com.clustercontrol.rest.util.RestLanguageConverter;
 import com.clustercontrol.rest.util.RestObjectMapperWrapper;
 import com.clustercontrol.rest.util.RestTempFileUtil;
+import com.clustercontrol.util.HinemosTime;
 
 @Path("/monitorresult")
 @RestLogFunc(name = LogFuncName.Monitor)
@@ -431,6 +434,13 @@ public class MonitorResultRestEndpoints {
 				m_log.debug(locale.toString() + " is contained in availableLocaleList");
 				targetLocale = locale;
 			}
+		}
+
+		//ファイル名の設定がない場合は画面の自動生成と同じフォーマットで自動補完（コマンドラインツールからの呼び出し向け）
+		if (dtoReq.getFilename() == null || dtoReq.getFilename().length() == 0) {
+			SimpleDateFormat sdf = new SimpleDateFormat(RestConstant.DOWNLOAD_FILE_TIMESTAMP);
+			dtoReq.setFilename(RestConstant.DOWNLOAD_FILE_NAME_PREFIX_EVENT
+					+ sdf.format(HinemosTime.currentTimeMillis()) + RestConstant.DOWNLOAD_FILE_CSV_EXTENSION);
 		}
 
 		RestDownloadFile restDownloadFile = new MonitorControllerBean()

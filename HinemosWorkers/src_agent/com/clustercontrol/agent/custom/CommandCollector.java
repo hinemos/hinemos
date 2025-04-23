@@ -9,6 +9,7 @@
 package com.clustercontrol.agent.custom;
 
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -82,6 +83,11 @@ public class CommandCollector implements CollectorTask, Runnable {
 	public static final String _returnCode;
 	public static final String _returnCodeDefault = "\n";
 
+	public static final String COLLECTION_DATETIME_MODE_START_TIME = "start_time";
+	public static final String COLLECTION_DATETIME_MODE_EXECUTION_TIME = "execution_time";
+	public static final String _collectionDatetimeMode;
+	public static final String _collectionDatetimeModeDefault = COLLECTION_DATETIME_MODE_START_TIME;
+
 	private AgtCustomMonitorInfoResponse config;
 	
 	private static volatile int _schedulerThreadCount = 0;
@@ -149,7 +155,16 @@ public class CommandCollector implements CollectorTask, Runnable {
 			returnCodeStr = _returnCodeDefault;
 		}
 		_returnCode = returnCodeStr;
-		
+
+		// read collection datetime mode
+		String collectionDatetimeModeStr = AgentProperties.getProperty("monitor.custom.collectiondatetime.mode");
+		if (!COLLECTION_DATETIME_MODE_START_TIME.equals(collectionDatetimeModeStr)
+				&& !COLLECTION_DATETIME_MODE_EXECUTION_TIME.equals(collectionDatetimeModeStr)) {
+			log.info("monitor.custom.collectiondatetime.mode uses " + _collectionDatetimeModeDefault);
+			collectionDatetimeModeStr = _collectionDatetimeModeDefault;
+		}
+		_collectionDatetimeMode = collectionDatetimeModeStr;
+
 		// initialize thread pool
 		_executorService = Executors.newFixedThreadPool(
 				_workerThreads,
@@ -217,6 +232,13 @@ public class CommandCollector implements CollectorTask, Runnable {
 	 */
 	@Override
 	public void run() {
+		// スケジューラにより開始されたタイミングで時刻を取得する
+		Date runStartDate = HinemosTime.getDateInstance();
+		if (log.isDebugEnabled()) {
+			log.debug("run() start, " + new SimpleDateFormat("yyyy-MM-dd hh:mm:ss,SSS").format(runStartDate)
+					+ ", monitorId=" + config.getMonitorId());
+		}
+
 		if (config.getRunInstructionInfo() == null && config.getCalendar() != null && !RestCalendarUtil.isRun(config.getCalendar())) {
 			// do nothing because now is not allowed
 			if (log.isDebugEnabled()) {
@@ -231,7 +253,7 @@ public class CommandCollector implements CollectorTask, Runnable {
 			}
 			// start collector task
 			synchronized(_executorServiceLock) {
-				_executorService.submit(new CollectorCommandWorker(config, entry.getFacilityId()));
+				_executorService.submit(new CollectorCommandWorker(config, entry.getFacilityId(), runStartDate));
 			}
 		}
 
@@ -291,14 +313,16 @@ public class CommandCollector implements CollectorTask, Runnable {
 
 		private final AgtCustomMonitorInfoResponse config;
 		private final String facilityId;
+		private final Date runStartDate;
 
 		private final Pattern lineSplitter;
 		private final Pattern stdoutPattern;
 		private final static String _stdoutRegex = "^(.+),\\s*(-?[0-9.]+)$";
 
-		public CollectorCommandWorker(AgtCustomMonitorInfoResponse config2, String facilityId) {
+		public CollectorCommandWorker(AgtCustomMonitorInfoResponse config2, String facilityId, Date runStartDate) {
 			this.config = config2;
 			this.facilityId = facilityId;
+			this.runStartDate = runStartDate;
 
 			lineSplitter = Pattern.compile(_returnCode);
 			stdoutPattern = Pattern.compile(_stdoutRegex);
@@ -482,8 +506,17 @@ public class CommandCollector implements CollectorTask, Runnable {
 			}
 			dto.setInvalidLines(invalidLinesDTO);
 
-			// store generation date (round-down execution time)
-			dto.setCollectDate(executeDate.getTime() - executeDate.getTime() % config.getInterval());
+			// store generation date
+			if (COLLECTION_DATETIME_MODE_START_TIME.equals(_collectionDatetimeMode)) {
+				// 収集時刻を、スケジューラの開始時刻からランダムで設定している監視の遅延時間を引いた時間とする
+				// 遅延時間は、監視間隔以下を想定
+				// コマンドの開始時刻（executeDate）はスレッドの占有状態により遅延する可能性があり、
+				// 収集時刻の重複に繋がってしまうため、スケジューラの開始時刻を元にする
+				dto.setCollectDate(runStartDate.getTime() - runStartDate.getTime() % config.getInterval());
+			} else if (COLLECTION_DATETIME_MODE_EXECUTION_TIME.equals(_collectionDatetimeMode)) {
+				// コマンドの開始時刻（executeDate）をそのまま収集時刻として登録する
+				dto.setCollectDate(executeDate.getTime());
+			}
 
 			// convert execution time
 			dto.setExecuteDate(executeDate.getTime());

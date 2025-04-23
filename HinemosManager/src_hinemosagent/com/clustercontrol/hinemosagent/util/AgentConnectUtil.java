@@ -33,6 +33,7 @@ import java.util.StringTokenizer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.bean.DataRangeConstant;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
@@ -678,6 +679,10 @@ public class AgentConnectUtil {
 			}
 		} else{
 			m_log.trace("MonitorId is SYS, so facilityList is null.");
+		}
+		//監視IDのトリミング（監視ジョブからの通知向け）
+		if (outputBasicInfo.getMonitorId() != null && outputBasicInfo.getMonitorId().length() > DataRangeConstant.VARCHAR_64 ) {
+			outputBasicInfo.setMonitorId(outputBasicInfo.getMonitorId().substring(0, DataRangeConstant.VARCHAR_64));
 		}
 		for (String facilityId : facilityIdList) {
 			if (facilityList != null && !facilityList.contains(facilityId)) {

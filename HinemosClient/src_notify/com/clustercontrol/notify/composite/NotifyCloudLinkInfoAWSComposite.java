@@ -179,4 +179,9 @@ public class NotifyCloudLinkInfoAWSComposite extends AbstractNotifyCloudLinkInfo
 	public String getTableMessage() {
 		return 	Messages.getString("notifies.cloud.detail");
 	}
+
+	@Override
+	public boolean isValidate() {
+		return false;
+	}
 }

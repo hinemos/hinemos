@@ -12,6 +12,8 @@ public class CredentialResponse {
 	private String password;
 	private String accessKey;
 	private String secretKey;
+	private String jsonCredentialInfo;
+	private String platform;
 
 	public CredentialResponse() {
 	}
@@ -46,6 +48,22 @@ public class CredentialResponse {
 
 	public void setSecretKey(String secretKey) {
 		this.secretKey = secretKey;
+	}
+
+	public void setJsonCredentialInfo(String jsonCredentialInfo) {
+		this.jsonCredentialInfo = jsonCredentialInfo;
+	}
+
+	public String getJsonCredentialInfo() {
+		return jsonCredentialInfo;
+	}
+
+	public void setPlatform(String platform) {
+		this.platform = platform;
+	}
+
+	public String getPlatform() {
+		return this.platform;
 	}
 
 }

@@ -44,8 +44,10 @@ import org.eclipse.ui.PlatformUI;
 
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
+import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.infra.dialog.ChangeBackgroundModifyListener;
 import com.clustercontrol.utility.traputil.action.MibManager;
 import com.clustercontrol.utility.traputil.action.ParseMib;
 import com.clustercontrol.utility.traputil.bean.SnmpTrapMasterInfo;
@@ -191,6 +193,8 @@ public class MibFileInputDialog extends CommonDialog {
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textInputMIB.setLayoutData(gridData);
+		this.m_textInputMIB.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		this.m_textInputMIB.addModifyListener(new ChangeBackgroundModifyListener());
 
 		// 入力MIBファイル指定ボタン
 		this.m_buttonInputFile = new Button(parent, SWT.NONE);

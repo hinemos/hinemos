@@ -148,9 +148,19 @@ public class CloudLogMonitorProperty {
 		aws_client_proxy_host = AgentProperties.getProperty(AWS_CLIENT_PROXY_HOST, "");
 		aws_client_proxy_password = AgentProperties.getProperty(AWS_CLIENT_PROXY_PASSWORD, "");
 		try {
-			aws_client_proxy_port = Integer.parseInt(AgentProperties.getProperty(AWS_CLIENT_PROXY_PORT, "-1"));
+			aws_client_proxy_port = Integer.parseInt(AgentProperties.getProperty(AWS_CLIENT_PROXY_PORT, "0"));
+			
+			// プロキシのポート番号に負数が指定された場合、
+			// AWS SDK for Javaの内部処理がOSの環境変数"HTTPS_PROXY"のポート番号を参照しにいく
+			// "HTTPS_PROXY"の利用を避けるため、0に変換する
+			// プロキシ番号に0を指定すると、AWS SDK for Javaは、"HTTPS_PROXY"を参照しなくなる
+			if (aws_client_proxy_port < 0) {
+				aws_client_proxy_port = 0;
+				m_log.info("CloudLogMonitorProperty(): Negative number specified for proxy port is converted to 0 to disable proxy.");
+			}
+			
 		} catch (Exception e) {
-			aws_client_proxy_port = -1;
+			aws_client_proxy_port = 0;
 			m_log.warn("CloudLogMonitorProperty(): Failed loading" + AWS_CLIENT_PROXY_PORT + ". Use default");
 		}
 		aws_client_proxy_username = AgentProperties.getProperty(AWS_CLIENT_PROXY_USERNAME, "");

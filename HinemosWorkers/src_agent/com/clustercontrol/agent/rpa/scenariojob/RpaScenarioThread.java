@@ -23,16 +23,15 @@ import org.openapitools.client.model.AgtRunInstructionInfoResponse;
 import org.openapitools.client.model.SetJobResultRequest;
 import org.openapitools.client.model.SetJobResultRequest.RpaJobErrorTypeEnum;
 import org.openapitools.client.model.SetJobStartRequest;
-import org.openapitools.client.model.SetJobStartResponse;
 
-import com.clustercontrol.agent.AgentRestClientWrapper;
-import com.clustercontrol.agent.ReceiveTopic;
 import com.clustercontrol.agent.SendQueue;
 import com.clustercontrol.agent.SendQueue.JobResultSendableObject;
 import com.clustercontrol.agent.job.AgentThread;
 import com.clustercontrol.agent.job.RunHistoryUtil;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.agent.util.AgentRequestId;
+import com.clustercontrol.agent.util.AgentRestClientEx;
+import com.clustercontrol.agent.util.AgentRestClientEx.RetryTimeoutException;
 import com.clustercontrol.agent.util.RestAgentBeanUtil;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
@@ -71,6 +70,8 @@ public class RpaScenarioThread extends AgentThread {
 	/** シナリオ開始スレッド開始完了待ち（ミリ秒） */
 	private static final int MONITOR_START_WAIT = 10000;
 
+	/** RPAシナリオジョブを開始するかのフラグ */
+	private boolean isRun = false;
 
 	static {
 		try {
@@ -124,7 +125,7 @@ public class RpaScenarioThread extends AgentThread {
 		}
 		m_log.info("run() : end");
 	}
-
+	
 	/**
 	 * 確認を行い問題なければRPAシナリオ実行を開始します。
 	 * <ol>
@@ -137,10 +138,11 @@ public class RpaScenarioThread extends AgentThread {
 	private void execute() throws InterruptedException {
 		long start = HinemosTime.currentTimeMillis();
 
-		// 開始メッセージ送信
-		if (!sendStartMessage()) {
+		// 開始メッセージ送信の結果、ジョブを実施するか否か
+		if (!isRun) {
 			return;
 		}
+
 		m_log.debug("execute() : start. m_info=" + m_info);
 
 		// 実行履歴に追加
@@ -343,11 +345,22 @@ public class RpaScenarioThread extends AgentThread {
 	}
 
 	/**
+	 * スレッドを開始する前に実行すること。
+	 * ジョブの開始メッセージ送信を行う。
+	 * @param timeout マネージャアクセスの再実行期間
+	 * @throws RetryTimeoutException
+	 */
+	public void init(long timeout) throws RetryTimeoutException {
+		// 開始メッセージ送信
+		isRun = sendStartMessage(timeout);
+	}
+	/**
 	 * 開始メッセージを送信します。
 	 * 
 	 * @return ジョブがすでに起動している場合falseを返します。
+	 * @throws RetryTimeoutException 
 	 */
-	private boolean sendStartMessage() {
+	private boolean sendStartMessage(long timeout) throws RetryTimeoutException {
 		JobResultSendableObject jobResult = new JobResultSendableObject();
 		jobResult.sessionId = m_info.getSessionId();
 		jobResult.jobunitId = m_info.getJobunitId();
@@ -373,36 +386,15 @@ public class RpaScenarioThread extends AgentThread {
 		// マネージャに開始メッセージが届く前にジョブのコマンドが実行されることと
 		// VIPの切り替えが起こった場合に、ジョブが複数のエージェントで起動することを防ぐために
 		// ジョブの開始報告は同期した動作とする
-		AgentRequestId agentRequestId = new AgentRequestId();
-
-		while (!ReceiveTopic.isHistoryClear()) {
-			try {
-				SetJobStartResponse res = AgentRestClientWrapper.setJobStart(jobResult.sessionId, jobResult.jobunitId,
-						jobResult.jobId, jobResult.facilityId, setJobStartRequest,
-						agentRequestId.toRequestHeaderValue());
-
-				if (res == null) {
-					// setJobStartがマネージャ側で重複した場合
-					// 異常終了の旨をメッセージ送信
-					m_log.warn("Agent Request ID is duplicated. Job terminated abnormally. SessionID="
-							+ jobResult.sessionId + ", JobID=" + jobResult.jobId);
-					sendErrorMessage(SetJobResultRequest.RpaJobErrorTypeEnum.OTHER, "Agent Request ID is duplicated.");
-					return false;
-				}
-
-				if (!res.getJobRunnable().booleanValue()) {
-					// ジョブがすでに起動している場合
-					m_log.warn("This job already run by other agent. SessionID=" + jobResult.sessionId + ", JobID="
-							+ jobResult.jobId);
-					return false;
-				}
-				return true;
-			} catch (Exception e) {
-				m_log.error("sendJobStartMessage() : " + e.getMessage(), e);
-				return false;
-			}
+		try {
+			AgentRequestId agentRequestId = new AgentRequestId();
+			return AgentRestClientEx.setJobStart(jobResult.sessionId, jobResult.jobunitId, jobResult.jobId, jobResult.facilityId, setJobStartRequest, agentRequestId.toRequestHeaderValue(), timeout);
+		} catch (RetryTimeoutException e) {
+			throw e;
+		} catch (Exception e) {
+			m_log.warn(e.getMessage(), e);
+			return false;
 		}
-		return true;
 	}
 
 	/**

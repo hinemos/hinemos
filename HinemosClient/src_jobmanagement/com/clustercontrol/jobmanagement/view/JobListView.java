@@ -202,6 +202,14 @@ public class JobListView extends CommonViewPart implements ObjectPrivilegeTarget
 		WidgetTestUtil.setTestId(this, null, listMenu);
 		m_jobList.getTable().setMenu(listMenu);
 		getSite().registerContextMenu( menuManager, this.m_jobList.getTableViewer() );
+		menuManager.addMenuListener( new IMenuListener(){
+			@Override
+			public void menuAboutToShow( IMenuManager manager ){
+				JobListSelectionChangedListener.updateSelectedJobOnView(
+						(StructuredSelection)m_jobList.getTableViewer().getSelection(),
+						m_jobList.getJobTreeItem());
+			}
+		} );
 	}
 
 	/**

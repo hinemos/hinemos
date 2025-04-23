@@ -47,6 +47,7 @@ import org.glassfish.grizzly.http.server.Request;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -1530,6 +1531,9 @@ public class NotifyRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getNotifyList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		// ControllerBean呼び出し
 		List<NotifyInfo> infoResList = null;
 		if (ownerRoleId == null || ownerRoleId.equals("")) {
@@ -1571,6 +1575,9 @@ public class NotifyRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getStatusNotifyList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<NotifyInfo> infoResList = null;
 		if (ownerRoleId == null || ownerRoleId.equals("")) {
 			infoResList = new NotifyControllerBean().getNotifyList(NotifyTypeConstant.TYPE_STATUS);
@@ -1610,6 +1617,9 @@ public class NotifyRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getEventNotifyList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<NotifyInfo> infoResList = null;
 		if (ownerRoleId == null || ownerRoleId.equals("")) {
 			infoResList = new NotifyControllerBean().getNotifyList(NotifyTypeConstant.TYPE_EVENT);
@@ -1649,6 +1659,9 @@ public class NotifyRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getMailNotifyList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<NotifyInfo> infoResList = null;
 		if (ownerRoleId == null || ownerRoleId.equals("")) {
 			infoResList = new NotifyControllerBean().getNotifyList(NotifyTypeConstant.TYPE_MAIL);
@@ -1688,6 +1701,9 @@ public class NotifyRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getJobNotifyList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<NotifyInfo> infoResList = null;
 		if (ownerRoleId == null || ownerRoleId.equals("")) {
 			infoResList = new NotifyControllerBean().getNotifyList(NotifyTypeConstant.TYPE_JOB);
@@ -1727,6 +1743,9 @@ public class NotifyRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getLogEscalateNotifyList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<NotifyInfo> infoResList = null;
 		if (ownerRoleId == null || ownerRoleId.equals("")) {
 			infoResList = new NotifyControllerBean().getNotifyList(NotifyTypeConstant.TYPE_LOG_ESCALATE);
@@ -1766,6 +1785,9 @@ public class NotifyRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getCommandNotifyList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<NotifyInfo> infoResList = null;
 		if (ownerRoleId == null || ownerRoleId.equals("")) {
 			infoResList = new NotifyControllerBean().getNotifyList(NotifyTypeConstant.TYPE_COMMAND);
@@ -1805,6 +1827,9 @@ public class NotifyRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getInfraNotifyList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<NotifyInfo> infoResList = null;
 		if (ownerRoleId == null || ownerRoleId.equals("")) {
 			infoResList = new NotifyControllerBean().getNotifyList(NotifyTypeConstant.TYPE_INFRA);
@@ -1844,7 +1869,9 @@ public class NotifyRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getRestNotifyList()");
 
-
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<NotifyInfo> infoResList = null;
 		if (ownerRoleId == null || ownerRoleId.equals("")) {
 			infoResList = new NotifyControllerBean().getNotifyList(NotifyTypeConstant.TYPE_REST);
@@ -1941,6 +1968,9 @@ public class NotifyRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getMessageNotifyList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<NotifyInfo> infoResList = null;
 		if (ownerRoleId == null || ownerRoleId.equals("")) {
 			infoResList = new NotifyControllerBean().getNotifyList(NotifyTypeConstant.TYPE_MESSAGE);

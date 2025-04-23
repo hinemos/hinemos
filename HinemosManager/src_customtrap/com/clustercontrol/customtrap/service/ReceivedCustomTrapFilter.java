@@ -65,6 +65,7 @@ import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -285,13 +286,13 @@ public class ReceivedCustomTrapFilter {
 								tags.add(tagType);
 								StringSampleTag tagKey = new StringSampleTag(CollectStringTag.KEY, receivedCustomTrap.getKey());
 								tags.add(tagKey);
-								StringSampleTag tagMsg = new StringSampleTag(CollectStringTag.MSG, receivedCustomTrap.getMsg());
+								StringSampleTag tagMsg = new StringSampleTag(CollectStringTag.MSG, XMLUtil.ignoreInvalidString(receivedCustomTrap.getMsg()));
 								tags.add(tagMsg);
 								StringSampleTag tagFacility = new StringSampleTag(CollectStringTag.FacilityID, facilityIdElement);
 								tags.add(tagFacility);
 
 								// ログメッセージ
-								stringSample.set(facilityIdElement, "customtrap", receivedCustomTrap.getOrgMsg(), tags);
+								stringSample.set(facilityIdElement, "customtrap", XMLUtil.ignoreInvalidString(receivedCustomTrap.getOrgMsg()), tags);
 
 								collectedStringSamples.add(stringSample);
 								break;

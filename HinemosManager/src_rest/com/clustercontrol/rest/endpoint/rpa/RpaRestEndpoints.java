@@ -17,6 +17,7 @@ import static com.clustercontrol.rest.RestConstant.STATUS_CODE_409;
 import static com.clustercontrol.rest.RestConstant.STATUS_CODE_500;
 
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,6 +52,7 @@ import org.glassfish.grizzly.http.server.Request;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -66,6 +68,7 @@ import com.clustercontrol.fault.RpaScenarioOperationResultNotFound;
 import com.clustercontrol.fault.RpaScenarioTagDuplicate;
 import com.clustercontrol.fault.RpaScenarioTagNotFound;
 import com.clustercontrol.fault.UsedFacility;
+import com.clustercontrol.rest.RestConstant;
 import com.clustercontrol.rest.annotation.RestLog;
 import com.clustercontrol.rest.annotation.RestLog.LogAction;
 import com.clustercontrol.rest.annotation.RestLog.LogTarget;
@@ -135,6 +138,7 @@ import com.clustercontrol.rpa.scenario.model.RpaScenarioOperationResultCreateSet
 import com.clustercontrol.rpa.scenario.model.RpaScenarioTag;
 import com.clustercontrol.rpa.scenario.model.UpdateRpaScenarioOperationResultInfo;
 import com.clustercontrol.rpa.session.RpaControllerBean;
+import com.clustercontrol.util.HinemosTime;
 
 /**
  * RPAシナリオ用のWebAPIエンドポイント
@@ -880,6 +884,9 @@ public class RpaRestEndpoints {
 			@Context Request request, @Context UriInfo uriInfo) throws HinemosUnknown, RpaScenarioTagNotFound, InvalidUserPass, InvalidRole {
 		m_log.info("call getRpaSinarioTagList()");
 		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<RpaScenarioTag> infoResList = new RpaControllerBean().getRpaScenarioTagListByOwnerRole(ownerRoleId);
 		
 		List<RpaScenarioTagResponse> dtoResList = new ArrayList<>();
@@ -1419,6 +1426,12 @@ public class RpaRestEndpoints {
 				m_log.debug(locale.toString() + " is contained in availableLocaleList");
 				targetLocale = locale;
 			}
+		}
+		//ファイル名の設定がない場合は画面の自動生成と同じフォーマットで自動補完（コマンドラインツールからの呼び出し向け）
+		if (dtoReq.getFilename() == null || dtoReq.getFilename().length() == 0) {
+			SimpleDateFormat sdf = new SimpleDateFormat(RestConstant.DOWNLOAD_FILE_TIMESTAMP);
+			dtoReq.setFilename(RestConstant.DOWNLOAD_FILE_NAME_PREFIX_RPA
+					+ sdf.format(HinemosTime.currentTimeMillis()) + RestConstant.DOWNLOAD_FILE_ZIP_EXTENSION);
 		}
 		
 		// マネージャに一時ファイルを出力

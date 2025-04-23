@@ -142,7 +142,7 @@ public class AgentStatusCollector {
 					agent.setUpdateStatus(AgentUpdateStatus.UNKNOWN);
 				} else if (agentLibMgr.isLatest(prof)) {
 					agent.setUpdateStatus(AgentUpdateStatus.DONE);
-				} else if ((AgentVersionManager.checkVersion(AgentConnectUtil.getAgentVersion(facilityId),
+				} else if ((AgentVersionManager.isSameVersionMajor(AgentConnectUtil.getAgentVersion(facilityId),
 						AgentVersionManager.VERSION_MAJOR)) == false) {
 					agent.setUpdateStatus(AgentUpdateStatus.UNSUPPORTED);
 				} else {

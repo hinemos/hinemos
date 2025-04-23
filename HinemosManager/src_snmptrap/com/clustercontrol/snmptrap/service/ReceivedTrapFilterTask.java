@@ -464,15 +464,21 @@ public class ReceivedTrapFilterTask implements Runnable {
 			}
 		}
 
+		String conversion = HinemosPropertyCommon.monitor_snmptrap_org_message_text_conversion.getStringValue();
+		boolean checkConversion = "CharacterCode".equals(conversion);
 		List<SnmpVarBind> varBinds = receivedTrap.getVarBinds();
 		String[] varBindStrs = new String[varBinds.size()];
 		for (int i = 0; i < varBinds.size(); i++) {
 			switch (varBinds.get(i).getType()) {
 			case OctetString :
 			case Opaque :
-				if (StringUtil.checkEncode(varBinds.get(i).getObject(), charset)) {
+				// SNMPTRAP監視で受信した文字列を監視設定で、指定した文字コードに変換できるか
+				// または、monitor.snmptrap.org.message.text.conversionにCharacterCodeが指定されているか
+				if (StringUtil.checkEncode(varBinds.get(i).getObject(), charset) || checkConversion) {
+					// 指定された文字コードに変換する
 					varBindStrs[i] = new String(varBinds.get(i).getObject(), charset);
 				} else {
+					// 16進数文字列に変換する
 					varBindStrs[i] = DatatypeConverter.printHexBinary(varBinds.get(i).getObject());
 				}
 				break;

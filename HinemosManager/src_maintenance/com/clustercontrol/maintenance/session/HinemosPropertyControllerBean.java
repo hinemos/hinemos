@@ -14,6 +14,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.clustercontrol.commons.util.AlterModeArgsUtil;
 import com.clustercontrol.commons.util.HinemosPropertyInfoCacheRefreshCallback;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
@@ -21,6 +22,7 @@ import com.clustercontrol.fault.HinemosPropertyDuplicate;
 import com.clustercontrol.fault.HinemosPropertyNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.MaintenanceDuplicate;
 import com.clustercontrol.fault.MaintenanceNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
@@ -28,6 +30,8 @@ import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.maintenance.factory.ModifyHinemosProperty;
 import com.clustercontrol.maintenance.factory.SelectHinemosPropertyInfo;
 import com.clustercontrol.maintenance.model.HinemosPropertyInfo;
+import com.clustercontrol.maintenance.util.MaintenanceCloudServiceModeUtil;
+import com.clustercontrol.maintenance.util.MaintenanceValidator;
 import com.clustercontrol.notify.util.NotifyRelationCache;
 
 import jakarta.persistence.EntityExistsException;
@@ -49,14 +53,19 @@ public class HinemosPropertyControllerBean {
 	 * @throws HinemosUnknown
 	 * @throws MaintenanceDuplicate
 	 * @throws InvalidRole
+	 * @throws InvalidSetting 
 	 */
 	public HinemosPropertyInfo addHinemosProperty(HinemosPropertyInfo info)
-			throws HinemosUnknown, HinemosPropertyDuplicate, InvalidRole {
+			throws HinemosUnknown, HinemosPropertyDuplicate, InvalidRole, InvalidSetting {
 		m_log.debug("addMaintenance");
 
 		JpaTransactionManager jtm = null;
 		HinemosPropertyInfo ret = null;
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+
+		// 入力チェック
+		// クラウドサービスモード時にバリデーションエラーでもインポート続行のケースがあるためトランザクションの外で行う
+		MaintenanceValidator.validateHinemosPropertyInfo(info);
 
 		// メイン処理
 		try {
@@ -108,13 +117,18 @@ public class HinemosPropertyControllerBean {
 	 * @throws NotifyNotFound
 	 * @throws MaintenanceNotFound
 	 * @throws InvalidRole
+	 * @throws InvalidSetting
 	 */
-	public HinemosPropertyInfo modifyHinemosProperty(HinemosPropertyInfo info) throws HinemosUnknown, HinemosPropertyNotFound, InvalidRole {
+	public HinemosPropertyInfo modifyHinemosProperty(HinemosPropertyInfo info) throws HinemosUnknown, HinemosPropertyNotFound, InvalidRole, InvalidSetting {
 		m_log.debug("modifyHinemosProperty");
 
 		JpaTransactionManager jtm = null;
 		HinemosPropertyInfo ret = null;
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+
+		// 入力チェック
+		// クラウドサービスモード時にバリデーションエラーでもインポート続行のケースがあるためトランザクションの外で行う
+		MaintenanceValidator.validateHinemosPropertyInfo(info);
 
 		// メイン処理
 		try {
@@ -176,6 +190,9 @@ public class HinemosPropertyControllerBean {
 			// 共通設定情報を削除
 			ModifyHinemosProperty property = new ModifyHinemosProperty();
 			for(String key : keyList) {
+				// 入力チェック
+				MaintenanceValidator.validateHinemosPropertyKey(key);
+
 				retList.add(new SelectHinemosPropertyInfo().getHinemosPropertyInfo(key));
 				property.deleteHinemosProperty(key);
 			}

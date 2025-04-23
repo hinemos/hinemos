@@ -906,8 +906,8 @@ public class FileOutputComposite extends Composite {
 			m_operation_Out.setEnabled(true);
 			m_operationType_Out.setEnabled(m_operation_Out.getSelection());
 			JobOutputInfoResponse.FailureOperationTypeEnum type = getSelectOperation(m_operationType_Out);
-			if (m_operation_Out.getSelection()
-					&& type == JobOutputInfoResponse.FailureOperationTypeEnum.SUSPEND) {
+			if (!m_operation_Out.getSelection() || (m_operation_Out.getSelection()
+					&& type == JobOutputInfoResponse.FailureOperationTypeEnum.SUSPEND)) {
 				m_operationEndStatus_Out.setEnabled(false);
 				m_operationEndValue_Out.setEditable(false);
 			} else {
@@ -939,12 +939,12 @@ public class FileOutputComposite extends Composite {
 			m_sameNormal_Err.setEnabled(m_valid_Err.getSelection());
 			m_directory_Err.setEditable(!m_sameNormal_Err.getSelection());
 			m_fileName_Err.setEditable(!m_sameNormal_Err.getSelection());
-			m_append_Err.setEnabled(true);
+			m_append_Err.setEnabled(!m_sameNormal_Err.getSelection());
 			m_operation_Err.setEnabled(true);
 			m_operationType_Err.setEnabled(m_operation_Err.getSelection());
 			JobOutputInfoResponse.FailureOperationTypeEnum type = getSelectOperation(m_operationType_Err);
-			if (m_operation_Err.getSelection()
-					&& type == JobOutputInfoResponse.FailureOperationTypeEnum.SUSPEND) {
+			if (!m_operation_Err.getSelection() || (m_operation_Err.getSelection()
+					&& type == JobOutputInfoResponse.FailureOperationTypeEnum.SUSPEND)) {
 				m_operationEndStatus_Err.setEnabled(false);
 				m_operationEndValue_Err.setEditable(false);
 			} else {

@@ -38,7 +38,9 @@ import com.clustercontrol.util.RestLoginManager;
 import com.clustercontrol.utility.settings.ExportMethod;
 import com.clustercontrol.utility.settings.ImportMethod;
 import com.clustercontrol.utility.settings.SettingConstants;
+import com.clustercontrol.utility.settings.job.action.JobMasterAction;
 import com.clustercontrol.utility.settings.job.conv.MasterConv;
+import com.clustercontrol.utility.settings.job.xml.JobInfo;
 import com.clustercontrol.utility.settings.job.xml.JobMasterDataList;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.conv.CommonConv;
@@ -547,6 +549,7 @@ public class JobConvert {
 			return false;
 		}
 		// 各JobInfoに設定された親ジョブIDが同一ジョブユニット内に存在するかチェック
+		Set<String> checkedJobIdSet = new HashSet<String>();
 		for (int i = 0; i < jobMastersXML.length; i++) {
 			// ジョブユニット自身の場合はノーチェック
 			if (jobMastersXML[i].getType() == JobConstant.TYPE_JOBUNIT) {
@@ -585,6 +588,19 @@ public class JobConvert {
 				MessageDialog.openError(null, Messages.getString("warning"),
 						Messages.getString("SettingTools.InvalidParentJobId", mesArgs));
 				return false;
+			}
+			//親ジョブIDが循環参照になっている場合はエラー
+			if (!checkedJobIdSet.contains(jobMastersXML[i].getId())) {
+				Set<String> newJobIdSet = new HashSet<String>();
+				JobInfo errJob = JobMasterAction.checkCycle(jobMastersXML,  jobMastersXML[i].getJobunitId(), jobMastersXML[i].getParentJobId(), newJobIdSet, checkedJobIdSet);
+				if (errJob != null) {
+					String[] mesArgs = { jobMastersXML[i].getJobunitId(), errJob.getId(), errJob.getParentJobId() };
+	 				log.error( Messages.getString("SettingTools.InvalidCircularReference",mesArgs) );
+					MessageDialog.openError(null, Messages.getString("warning"),
+							Messages.getString("SettingTools.InvalidCircularReference", mesArgs));
+					return false;
+				}
+				checkedJobIdSet.addAll(newJobIdSet);
 			}
 		}
 		return ret;

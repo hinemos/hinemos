@@ -56,17 +56,26 @@ public abstract class CredentialBaseEntity {
 	
 	public interface IVisitor {
 		void visit(AccessKeyCredentialEntity credential) throws CloudManagerException;
+		default void visit(GenericCredentialEntity credential) throws CloudManagerException{};
 		void visit(UserCredentialEntity credential) throws CloudManagerException;
+		
 	}
 	
 	public interface ITransformer<T> {
 		T transform(AccessKeyCredentialEntity credential) throws CloudManagerException;
+		default T transform(GenericCredentialEntity credential) throws CloudManagerException {
+			throw new InternalManagerError();
+		};
 		T transform(UserCredentialEntity credential) throws CloudManagerException;
 	}
 	
 	public static class Visitor implements IVisitor {
 		@Override
 		public void visit(AccessKeyCredentialEntity credential) throws CloudManagerException {
+			throw new InternalManagerError();
+		}
+		@Override
+		public void visit(GenericCredentialEntity credential) throws CloudManagerException {
 			throw new InternalManagerError();
 		}
 		@Override
@@ -78,6 +87,10 @@ public abstract class CredentialBaseEntity {
 	public static class Transformer<T> implements ITransformer<T> {
 		@Override
 		public T transform(AccessKeyCredentialEntity credential) throws CloudManagerException {
+			throw new InternalManagerError();
+		}
+		@Override
+		public T transform(GenericCredentialEntity credential) throws CloudManagerException {
 			throw new InternalManagerError();
 		}
 		@Override

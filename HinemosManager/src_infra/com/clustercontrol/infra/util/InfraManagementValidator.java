@@ -8,6 +8,9 @@
 
 package com.clustercontrol.infra.util;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.log4j.Logger;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
@@ -123,6 +126,16 @@ public class InfraManagementValidator {
 		
 		for (InfraModuleInfo<?> infraModuleInfo: infraManagementInfo.getModuleList()) {
 			infraModuleInfo.validate(infraManagementInfo);
+		}
+		
+		// 順序の重複チェック
+		Set<Integer> orderNoSet = new HashSet<Integer>();
+		for (InfraModuleInfo<?> infraModuleInfo: infraManagementInfo.getModuleList()) {
+			if (orderNoSet.contains(infraModuleInfo.getOrderNo())) {
+				throw new InvalidSetting(MessageConstant.MESSAGE_DUPLICATED.getMessage(
+						"order_no", String.valueOf(infraModuleInfo.getOrderNo())));
+			}
+			orderNoSet.add(infraModuleInfo.getOrderNo());
 		}
 	}
 	

@@ -12,7 +12,7 @@
 
 Hinemos is an integrated operations management software that maximizes the cost advantages of open source software to achieve "operational automation" such as "monitoring" and "jobs" for increasingly complex large-scale IT systems.
 
-[README(Japanese version)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v7.1.0#packages)
+[README(Japanese version)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v7.1.1#packages_711)
 
 ## Installation
 
@@ -20,23 +20,22 @@ Hinemos can be installed with a single command.
 
 - For installing the Manager
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-manager-7.1.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-manager-7.1.1-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-manager-7.1.0-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-manager-7.1.1-1.el8.x86_64.rpm```
   - RHEL 9.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-manager-7.1.0-1.el9.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-manager-7.1.1-1.el9.x86_64.rpm```
 
 
 - For installing the Web Client
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-web-7.1.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-web-7.1.1-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-web-7.1.0-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-web-7.1.1-1.el8.x86_64.rpm```
   - RHEL 9.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-web-7.1.0-1.el9.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-web-7.1.1-1.el9.x86_64.rpm```
 
-For details, refer to [Hinemos ver. 7.1 Basic Features Manual](https://github.com/hinemos/hinemos/releases/download/v7.1.0/ja_Base_Linux_7.1_rev1.pdf).
-English manual will be available soon.
+For details, refer to [Hinemos ver. 7.1 Basic Features Manual](https://github.com/hinemos/hinemos/releases/download/v7.1.1/en_Base_Linux_7.1_rev1.pdf).
 
 ## ver. 7.1 New Features
 

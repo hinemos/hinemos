@@ -53,7 +53,9 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.binary.model.BinaryCheckInfo;
 import com.clustercontrol.binary.session.BinaryControllerBean;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.custom.bean.CustomConstant.CommandExecType;
+import com.clustercontrol.fault.CollectorNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -71,6 +73,7 @@ import com.clustercontrol.monitor.run.bean.MonitorInfoBean;
 import com.clustercontrol.monitor.run.bean.MonitorTypeConstant;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.monitor.session.MonitorSettingControllerBean;
+import com.clustercontrol.performance.monitor.model.CollectorItemCodeMstEntity;
 import com.clustercontrol.rest.annotation.RestLog;
 import com.clustercontrol.rest.annotation.RestLog.LogAction;
 import com.clustercontrol.rest.annotation.RestLog.LogTarget;
@@ -358,6 +361,9 @@ public class MonitorsettingRestEndpoints {
 			throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.info("call getStringMonitoInfoList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<MonitorInfo> infoResList = new MonitorSettingControllerBean().getStringMonitoInfoListForAnalytics(facilityId, ownerRoleId);
 		List<MonitorInfoResponseP1> dtoResList = new ArrayList<>();
 		for (MonitorInfo info : infoResList) {
@@ -4367,6 +4373,9 @@ public class MonitorsettingRestEndpoints {
 			throws MonitorNotFound, InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.info("call getStringAndTrapMonitorInfoList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<MonitorInfoBeanResponse> dtoResList = new ArrayList<>();
 		if (facilityId != null && !facilityId.isEmpty()) {
 			
@@ -5075,8 +5084,9 @@ public class MonitorsettingRestEndpoints {
 	 * 
 	 * @param srcInfo
 	 * @param destInfo
+	 * @throws InvalidSetting 
 	 */
-	public static void updateInfo(AbstractMonitorRequest srcInfo, MonitorInfo destInfo) {
+	public static void updateInfo(AbstractMonitorRequest srcInfo, MonitorInfo destInfo) throws InvalidSetting {
 
 		// 監視種別
 		if (srcInfo instanceof AbstractAddTruthMonitorRequest || srcInfo instanceof AbstractModifyTruthMonitorRequest) {
@@ -5142,7 +5152,54 @@ public class MonitorsettingRestEndpoints {
 				destInfo.getWinEventCheckInfo().reflect();
 			}
 		}
-		
+
+		// JMX監視情報
+		// 収集値表示名と収集値単位に、監視項目を基に取得した値を上書きする
+		if (srcInfo instanceof AddJmxMonitorRequest || srcInfo instanceof ModifyJmxMonitorRequest) {
+			JmxCheckInfoRequest checkInfo = null;
+			if (srcInfo instanceof AddJmxMonitorRequest) {
+				checkInfo = ((AddJmxMonitorRequest) srcInfo).getJmxCheckInfo();
+			} else if (srcInfo instanceof ModifyJmxMonitorRequest) {
+				checkInfo = ((ModifyJmxMonitorRequest) srcInfo).getJmxCheckInfo();
+			}
+			if (checkInfo != null && checkInfo.getMasterId() != null && !checkInfo.getMasterId().isEmpty()) {
+				try {
+					JmxMasterInfo jmxMasterInfo = com.clustercontrol.jmx.util.QueryUtil
+							.getJmxMasterInfoPK(checkInfo.getMasterId());
+					destInfo.setItemName(jmxMasterInfo.getName());
+					destInfo.setMeasure(jmxMasterInfo.getMeasure());
+				} catch (MonitorNotFound e) {
+					InvalidSetting invalidSetting = new InvalidSetting("Item code is invalid. monitorId = " + destInfo.getMonitorId() +", Item code = "+ checkInfo.getMasterId() );
+					m_log.info("updateInfo() : "
+							+ invalidSetting.getClass().getSimpleName() + ", " + invalidSetting.getMessage());
+					throw invalidSetting;
+				}
+			}
+		}
+
+		// リソース監視情報
+		// 収集値表示名と収集値単位に、監視項目を基に取得した値を上書きする
+		if (srcInfo instanceof AddPerformanceMonitorRequest || srcInfo instanceof ModifyPerformanceMonitorRequest) {
+			PerfCheckInfoRequest checkInfo = null;
+			if (srcInfo instanceof AddPerformanceMonitorRequest) {
+				checkInfo = ((AddPerformanceMonitorRequest) srcInfo).getPerfCheckInfo();
+			} else if (srcInfo instanceof ModifyPerformanceMonitorRequest) {
+				checkInfo = ((ModifyPerformanceMonitorRequest) srcInfo).getPerfCheckInfo();
+			}
+			if (checkInfo != null && checkInfo.getItemCode() != null && !checkInfo.getItemCode().isEmpty()) {
+				try {
+					CollectorItemCodeMstEntity collectorItemCodeMstEntity = com.clustercontrol.performance.monitor.util.QueryUtil
+							.getCollectorItemCodeMstPK(checkInfo.getItemCode());
+					destInfo.setItemName(collectorItemCodeMstEntity.getItemName());
+					destInfo.setMeasure(collectorItemCodeMstEntity.getMeasure());
+				} catch (CollectorNotFound e) {
+					InvalidSetting invalidSetting = new InvalidSetting("Item code is invalid. monitorId = " + destInfo.getMonitorId() +", Item code = "+ checkInfo.getItemCode() );
+					m_log.info("updateInfo() : "
+							+ invalidSetting.getClass().getSimpleName() + ", " + invalidSetting.getMessage());
+					throw invalidSetting;
+				}
+			}
+		}
 	}
 	
 	@GET
@@ -5160,6 +5217,9 @@ public class MonitorsettingRestEndpoints {
 			@PathParam("monitorId") String monitorId,
 			@QueryParam("ownerRoleId") String ownerRoleId) throws InvalidRole, HinemosUnknown, MonitorNotFound {
 		m_log.info("call getMonitorStringTagList()");
+		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		List<GetMonitorStringTagListResponse> dtoResList = new ArrayList<>();
 		

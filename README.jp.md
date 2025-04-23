@@ -12,7 +12,7 @@
 
 Hinemosは大規模、複雑化するITシステムの「監視」や「ジョブ」といった「運用業務の自動化」を実現し、オープンソースソフトウェアが持つコストメリットを最大限に活用できる統合運用管理ソフトウェアです。
 
-[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v7.1.0#packages)
+[README(English)](README.md) | [Hinemosポータル](http://www.hinemos.info/) | [パッケージダウンロード](https://github.com/hinemos/hinemos/releases/tag/v7.1.1#packages_711)
 
 ## インストール
 
@@ -20,22 +20,22 @@ Hinemosはコマンドひとつでインストールできます。
 
 - マネージャのインストール
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-manager-7.1.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-manager-7.1.1-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-manager-7.1.0-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-manager-7.1.1-1.el8.x86_64.rpm```
   - RHEL 9.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-manager-7.1.0-1.el9.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-manager-7.1.1-1.el9.x86_64.rpm```
 
 
 - Webクライアントのインストール
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-web-7.1.0-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-web-7.1.1-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-web-7.1.0-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-web-7.1.1-1.el8.x86_64.rpm```
   - RHEL 9.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.0/hinemos-7.1-web-7.1.0-1.el9.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.1.1/hinemos-7.1-web-7.1.1-1.el9.x86_64.rpm```
 
-詳細は[Hinemos ver.7.1 基本機能マニュアル](https://github.com/hinemos/hinemos/releases/download/v7.1.0/ja_Base_Linux_7.1_rev1.pdf)をご覧下さい。
+詳細は[Hinemos ver.7.1 基本機能マニュアル](https://github.com/hinemos/hinemos/releases/download/v7.1.1/ja_Base_Linux_7.1_rev8.pdf)をご覧下さい。
 
 
 ## ver.7.1新機能
@@ -62,7 +62,7 @@ Hinemosはコマンドひとつでインストールできます。
 
 ## ドキュメント
 
-- Hinemos ver.7.1 基本機能マニュアル ([ja_Base_Linux_7.1_rev1.pdf](https://github.com/hinemos/hinemos/releases/download/v7.1.0/ja_Base_Linux_7.1_rev1.pdf) )
+- Hinemos ver.7.1 基本機能マニュアル ([ja_Base_Linux_7.1_rev8.pdf](https://github.com/hinemos/hinemos/releases/download/v7.1.1/ja_Base_Linux_7.1_rev8.pdf) )
 
 ## ライセンス
 

@@ -166,7 +166,7 @@ public abstract class InfraModuleInfo<E extends InfraModuleInfo<?>> implements S
 			module.setId(new InfraModuleInfoPK(management.getManagementId(), getModuleId()));
 			jtm.checkEntityExists(InfraModuleInfo.class, module.getId());
 			module.setName(getName());
-			module.setOrderNo(management.getModuleList().size());
+			module.setOrderNo(getOrderNo());
 			module.setValidFlg(getValidFlg());
 			module.setStopIfFailFlg(getStopIfFailFlg());
 			module.setPrecheckFlg(getPrecheckFlg());
@@ -186,12 +186,12 @@ public abstract class InfraModuleInfo<E extends InfraModuleInfo<?>> implements S
 	
 	protected abstract Class<E> getEntityClass();
 	
-	public void modifyCounterEntity(InfraManagementInfo management, InfraModuleInfo<?> module, Integer orderNo) throws HinemosUnknown {
+	public void modifyCounterEntity(InfraManagementInfo management, InfraModuleInfo<?> module ) throws HinemosUnknown {
 		if (!module.getId().getModuleId().equals(this.getModuleId())) {
 			throw new HinemosUnknown("Not match moduleIds between web and db on modifying infra module.");
 		}
 		module.setName(getName());
-		module.setOrderNo(orderNo);
+		module.setOrderNo(getOrderNo());
 		module.setValidFlg(getValidFlg());
 		module.setStopIfFailFlg(getStopIfFailFlg());
 		module.setPrecheckFlg(getPrecheckFlg());

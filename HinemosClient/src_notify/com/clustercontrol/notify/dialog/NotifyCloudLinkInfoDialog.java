@@ -28,6 +28,7 @@ import com.clustercontrol.dialog.ValidateResult;
 import com.clustercontrol.notify.composite.AbstractNotifyCloudLinkInfoComposite;
 import com.clustercontrol.notify.composite.NotifyCloudLinkInfoAWSComposite;
 import com.clustercontrol.notify.composite.NotifyCloudLinkInfoAzureComposite;
+import com.clustercontrol.notify.composite.NotifyCloudLinkInfoGCPComposite;
 import com.clustercontrol.util.Messages;
 
 /**
@@ -37,6 +38,7 @@ public class NotifyCloudLinkInfoDialog extends CommonDialog {
 
 	private static Log m_log = LogFactory.getLog(NotifyCloudLinkInfoDialog.class);
 	private boolean isAWS = false;
+	private boolean isGCP = false;
 
 	// 連携情報の一時保存用
 	private boolean hasSetting = false;
@@ -54,10 +56,11 @@ public class NotifyCloudLinkInfoDialog extends CommonDialog {
 	 * @param parent
 	 *            親のシェルオブジェクト
 	 */
-	public NotifyCloudLinkInfoDialog(Shell parent, boolean isAWS) {
+	public NotifyCloudLinkInfoDialog(Shell parent, boolean isAWS, boolean isGCP) {
 		super(parent);
 		setShellStyle(getShellStyle() | SWT.RESIZE | SWT.MAX);
 		this.isAWS = isAWS;
+		this.isGCP = isGCP;
 	}
 
 	// 後でpackするためsizeXはダミーの値。
@@ -105,7 +108,10 @@ public class NotifyCloudLinkInfoDialog extends CommonDialog {
 		if (isAWS) {
 			// awsの場合
 			eventGroup = new NotifyCloudLinkInfoAWSComposite(parent, SWT.NONE);
-		} else {
+		} else if (isGCP) {
+			// GCPの場合
+			eventGroup = new NotifyCloudLinkInfoGCPComposite(parent, SWT.NONE);
+		}else {
 			// azureの場合
 			eventGroup = new NotifyCloudLinkInfoAzureComposite(parent, SWT.NONE);
 		}
@@ -170,11 +176,25 @@ public class NotifyCloudLinkInfoDialog extends CommonDialog {
 	public boolean isAWS() {
 		return this.isAWS;
 	}
+	
+	public boolean isGCP() {
+		return this.isGCP;
+	}
 
 	@Override
 	protected ValidateResult validate() {
+		ValidateResult result = null;
 		setInputData();
+		//To Validate GCP Ordering Key
+		if (eventGroup.isValidate()) {
+			result = new ValidateResult();
+			result.setValid(false);
+			result.setID(Messages.getString("message.hinemos.1"));
+			result.setMessage(Messages.getString("message.ordering.key"));
+			return result;
+		}
 		return super.validate();
+
 	}
 
 	/**

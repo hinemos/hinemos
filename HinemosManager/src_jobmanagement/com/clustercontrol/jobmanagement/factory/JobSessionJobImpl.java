@@ -154,7 +154,9 @@ public class JobSessionJobImpl {
 		Map<String, Map<String, List<String>>> sessionCache = new ConcurrentHashMap<String, Map<String,List<String>>>();
 		sessionCache.put(jobunitId, jobunitCache);
 		jobSessionJobChildrenCache.put(sessionId, sessionCache);
-		m_log.debug("makeJobSessionJobChildrenCache(), end. jobSessionJobChildrenCache=" + jobSessionJobChildrenCache);
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("makeJobSessionJobChildrenCache(), end. jobSessionJobChildrenCache=" + jobSessionJobChildrenCache);
+		}
 	}
 
 	/**

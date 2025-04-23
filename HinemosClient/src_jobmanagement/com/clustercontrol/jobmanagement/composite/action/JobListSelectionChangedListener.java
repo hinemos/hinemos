@@ -64,12 +64,20 @@ public class JobListSelectionChangedListener implements ISelectionChangedListene
 	 */
 	@Override
 	public void selectionChanged(SelectionChangedEvent event) {
+		updateSelectedJobOnView((StructuredSelection)event.getSelection(), m_list.getJobTreeItem());
+	}
+
+	/**
+	 * 選択したジョブを更新する
+	 * 
+	 * @param selection 選択したジョブ
+	 * @param jobTreeItem ジョブツリー
+	 */
+	public static void updateSelectedJobOnView(StructuredSelection selection, JobTreeItemWrapper jobTreeItem) {
+
 		//ジョブ[登録]ビューのインスタンスを取得
 		IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 		IViewPart viewPart = page.findView(JobListView.ID);
-
-		//選択アイテムを取得
-		StructuredSelection selection = (StructuredSelection) event.getSelection();
 
 		if ( viewPart != null && selection != null ){
 			JobListView view = (JobListView) viewPart.getAdapter(JobListView.class);
@@ -94,8 +102,8 @@ public class JobListSelectionChangedListener implements ISelectionChangedListene
 					ArrayList<?> item = (ArrayList<?>)obj;
 					String jobId = (String) item.get(GetJobTableDefine.JOB_ID);
 
-					if (m_list.getJobTreeItem() != null) {
-						List<JobTreeItemWrapper> items = m_list.getJobTreeItem().getChildren();
+					if (jobTreeItem != null) {
+						List<JobTreeItemWrapper> items = jobTreeItem.getChildren();
 
 						for (int i = 0; i < items.size(); i++) {
 							if (jobId.equals(items.get(i).getData().getId())) {
@@ -107,7 +115,6 @@ public class JobListSelectionChangedListener implements ISelectionChangedListene
 					}
 				}
 			}
-
 			view.setEnabledAction(selectJobTreeItem, itemList, false);
 		}
 	}

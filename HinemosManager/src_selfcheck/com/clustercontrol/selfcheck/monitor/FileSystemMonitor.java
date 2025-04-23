@@ -20,6 +20,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.InternalIdCommon;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.selfcheck.FileSystemUsageConfig;
 import com.clustercontrol.selfcheck.util.FileSystemPoller;
 import com.clustercontrol.util.apllog.AplLogger;
@@ -79,7 +80,7 @@ public class FileSystemMonitor extends SelfCheckMonitorBase {
 		snmpTimeout = HinemosPropertyCommon.selfcheck_snmp_timeout.getIntegerValue();
 
 		/** ローカル変数 */
-		String fsUsageRaw = HinemosPropertyCommon.selfcheck_monitoring_filesystem_usage_list.getStringValue();
+		String fsUsageRaw = HinemosPropertyDefault.selfcheck_monitoring_filesystem_usage_list.getStringValue();
 		List<FileSystemUsageConfig> fsUsages = new ArrayList<FileSystemUsageConfig>();
 		Pattern p = Pattern.compile("(.*):([0-9]+)");
 		for (String fs : fsUsageRaw.split(",")) {

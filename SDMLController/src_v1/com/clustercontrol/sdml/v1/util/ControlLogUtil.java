@@ -35,6 +35,7 @@ import com.clustercontrol.sdml.model.SdmlControlSettingInfo;
 import com.clustercontrol.sdml.v1.bean.SdmlControlLogDTO;
 import com.clustercontrol.sdml.v1.constant.SdmlCollectStringTag;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -115,7 +116,7 @@ public class ControlLogUtil {
 			if (value == null) {
 				value = "";
 			}
-			CollectStringData collectData = new CollectStringData(pk, HinemosTime.currentTimeMillis(), value);
+			CollectStringData collectData = new CollectStringData(pk, HinemosTime.currentTimeMillis(), XMLUtil.ignoreInvalidString(value));
 
 			if (!data.getTagList().isEmpty()) {
 				Map<String, CollectDataTag> tagMap = new HashMap<>();

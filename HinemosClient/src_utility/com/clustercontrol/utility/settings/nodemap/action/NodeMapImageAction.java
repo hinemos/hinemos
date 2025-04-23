@@ -205,8 +205,17 @@ public class NodeMapImageAction {
 				log.debug("bigImageName = " + bigImageName.getFilename());
 			}
 			for (MapBgImageInfoResponse bigImageName : bigImageNames){
-				File file = wrapper.downloadBgImage(bigImageName.getFilename());
-				fileData= getFileData(file);
+				File file = null;
+				try {
+					file = wrapper.downloadBgImage(bigImageName.getFilename());
+					fileData= getFileData(file);
+				} finally {
+					if (file != null && file.exists()) {
+						if (!file.delete()) {
+							log.warn("failed temporary nodemap bgimage."+ " filepath=" + file.getAbsolutePath());
+						}
+					}
+				}
 				String path = getFilePath(bigImageName.getFilename(), bgFolderPath);
 				log.debug("path = " + path);
 				FileOutputStream fileOutStm = null;
@@ -232,8 +241,17 @@ public class NodeMapImageAction {
 				log.debug("iconName = " + iconName.getFilename());
 			}
 			for (MapIconImageInfoResponse iconName : iconNames){
-				File file = wrapper.downloadIconImage(iconName.getFilename());
-				fileData= getFileData(file);
+				File file = null;
+				try {
+					file = wrapper.downloadIconImage(iconName.getFilename());
+					fileData= getFileData(file);
+				} finally {
+					if (file != null && file.exists()) {
+						if (!file.delete()) {
+							log.warn("Failed temporary nodemap iconimage."+ " FilePath=" + file.getAbsolutePath());
+						}
+					}
+				}
 				String path = getFilePath(iconName.getFilename(), iconFolderPath);
 				log.debug("path = " + path);
 				FileOutputStream fileOutStm = null;

@@ -188,10 +188,11 @@ public class CalendarWeekComposite extends Composite {
 				m_log.trace("detailList.size=" + detailList.size() + ", " +
 						year + "/" + month + "/" + day);
 				
+				year = now.get(Calendar.YEAR);
+				month = now.get(Calendar.MONTH) + 1;
+				day = now.get(Calendar.DAY_OF_MONTH);
+
 				for(CalendarDetailInfoResponseP1 detail : detailList){
-					year = now.get(Calendar.YEAR);
-					month = now.get(Calendar.MONTH) + 1;
-					day = now.get(Calendar.DAY_OF_MONTH);
 					//日付が一致するかどうかチェック 
 					if(now.get(Calendar.DATE) == detail.getDayNo()){
 						addScheduleBar(m_panel,dayOfWeek,detail.getStartTime(),detail.getEndTime(),detail.getExecuteFlg());

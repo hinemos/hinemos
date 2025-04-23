@@ -76,7 +76,13 @@ public class Notice {
 				//プラグインID
 				rtn.setPluginId(HinemosModuleConstant.REPORTING);
 				//アプリケーション
-				rtn.setApplication(MessageConstant.REPORTING.getMessage());
+				//7.0.0との互換性保持のため、Hinemosプロパティで出力するか制御
+				boolean flgApp = HinemosPropertyCommon.notify_output_app_$.getBooleanValue(HinemosModuleConstant.REPORTING);
+				if (flgApp) {
+					rtn.setApplication(MessageConstant.REPORTING.getMessage());
+				} else {
+					rtn.setApplication("REPORTING");
+				}
 				//監視項目ID
 				rtn.setMonitorId(reportId);
 				//監視詳細

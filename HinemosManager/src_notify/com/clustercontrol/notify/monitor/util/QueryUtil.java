@@ -334,14 +334,12 @@ public class QueryUtil {
 					condCrt.submitParameters(query);
 				}
 
-				int offset = 0;
 				while (true) {
-					query.setFirstResult(offset).setMaxResults(blockSize);
+					query.setMaxResults(blockSize);
 					List<EventLogEntity> events = query.getResultList();
 					if (events.size() == 0) break;
 					Boolean res = blockOperation.apply(events);
 					if (res == null || !res.booleanValue()) break;
-					offset += blockSize;
 				}
 			}
 		}

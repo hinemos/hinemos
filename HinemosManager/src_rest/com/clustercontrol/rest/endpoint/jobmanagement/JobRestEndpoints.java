@@ -19,6 +19,7 @@ import static com.clustercontrol.rest.RestConstant.STATUS_CODE_500;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +60,7 @@ import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMo
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
 import com.clustercontrol.bean.RestHeaderConstant;
 import com.clustercontrol.calendar.util.TimeStringConverter;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -182,8 +184,11 @@ public class JobRestEndpoints {
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.JobManagement, modeList = { SystemPrivilegeMode.READ })
 	@RestLog(action = LogAction.Get, target = LogTarget.Job, type = LogType.REFERENCE )
 	public Response getJobTree(@Context Request request, @Context UriInfo uriInfo, @QueryParam("ownerRoleId") String ownerRoleId)
-			throws NotifyNotFound, HinemosUnknown, JobMasterNotFound, UserNotFound, InvalidRole, InvalidRole ,InvalidUserPass {
+			throws NotifyNotFound, HinemosUnknown, JobMasterNotFound, UserNotFound, InvalidRole, InvalidUserPass {
 		m_log.info("call getJobTree()");
+		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		JobTreeItemResponseP1 retOrg = new JobControllerBean().getJobTree(ownerRoleId, Locale.getDefault());
 
@@ -219,6 +224,9 @@ public class JobRestEndpoints {
 	public Response getJobTreeJobInfoFull(@Context Request request, @Context UriInfo uriInfo, @QueryParam("ownerRoleId") String ownerRoleId)
 			throws HinemosUnknown, InvalidRole, InvalidUserPass, NotifyNotFound, JobMasterNotFound, UserNotFound {
 		m_log.info("call getJobTreeJobInfoFull()");
+		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		JobTreeItem retOrg= new JobControllerBean().getJobTreeFullInfo(ownerRoleId, Locale.getDefault());
 
@@ -2007,36 +2015,22 @@ public class JobRestEndpoints {
 
 		if(dto.getWaitRule() != null){
 			// JobInfo->JobWaitRuleInfoの startDelayTimeValue と endDelayTimeValue の 個別変換
-			info.getWaitRule()
-				.setStart_delay_time_value(convertTimeStringToLong(dto.getWaitRule().getStartDelayTimeValue(), "startDelayTimeValue"));
-			info.getWaitRule()
-				.setEnd_delay_time_value(convertTimeStringToLong(dto.getWaitRule().getEndDelayTimeValue(), "endDelayTimeValue"));
+			// 開始遅延 時刻
+			info.getWaitRule().setStart_delay_time_value(convertTimeStringToLong(
+					dto.getWaitRule().getStartDelayTimeValue(),
+					MessageConstant.START_DELAY.getMessage() + ", " + MessageConstant.TIMESTAMP.getMessage()));
+			// 終了遅延 時刻
+			info.getWaitRule().setEnd_delay_time_value(convertTimeStringToLong(
+					dto.getWaitRule().getEndDelayTimeValue(),
+					MessageConstant.END_DELAY.getMessage() + ", " + MessageConstant.TIMESTAMP.getMessage()));
 			// JobInfo->JobWaitRuleInfoの jobRetryEndStatusにnullが入っている場合の適用
 			if (dto.getWaitRule().getJobRetryEndStatus() == null) {
 				info.getWaitRule().setJobRetryEndStatus(null);
 			}
 			// JobInfo->WaiRule->JobObjectGroupInfo->JobObjectInfo の個別変換（timeの個別変換向け）
 			if (dto.getWaitRule().getObjectGroup() != null) {
-				info.getWaitRule().setObjectGroup(new ArrayList<>());
-				int orderNo = 0;
-				for (JobObjectGroupInfoRequest dtoObjectGroup : dto.getWaitRule().getObjectGroup()) {
-					if (dtoObjectGroup.getJobObjectList() == null) {
-						continue;
-					}
-					JobObjectGroupInfo infoObjectGroup = new JobObjectGroupInfo();
-					RestBeanUtil.convertBeanNoInvalid(dtoObjectGroup, infoObjectGroup);
-					infoObjectGroup.setJobObjectList(new ArrayList<>());
-					for (JobObjectInfoRequest dtoObject : dtoObjectGroup.getJobObjectList()) {
-						JobObjectInfo infoObject = new JobObjectInfo();
-						RestBeanUtil.convertBeanNoInvalid(dtoObject, infoObject);
-						infoObject.setTime(convertTimeStringToLong(dtoObject.getTime(), "time"));
-						infoObjectGroup.getJobObjectList().add(infoObject);
-					}
-					infoObjectGroup.setOrderNo(orderNo);
-					infoObjectGroup.setIsGroup(infoObjectGroup.getJobObjectList().size() > 1);
-					orderNo++;
-					info.getWaitRule().getObjectGroup().add(infoObjectGroup);
-				}
+				info.getWaitRule()
+						.setObjectGroup(converObjectGroupListFromResuestDto(dto.getWaitRule().getObjectGroup()));
 			}
 		}
 		
@@ -2144,23 +2138,34 @@ public class JobRestEndpoints {
 		return dto;
 	}
 
-	// 時刻（HH:mm:ss 24時以降対応）をエポックミリ秒に変換
-	private static Long convertTimeStringToLong( String time, String itemName ) throws InvalidSetting{
+	/**
+	 * 時刻をエポックミリ秒に変換
+	 * 
+	 * @param time 変換する時刻文字列（HH:mm:ss 24時以降対応）
+	 * @param itemName エラー時に出力する項目名
+	 * @return エポックミリ秒
+	 * @throws InvalidSetting 変換できなかった場合、エラーの場合
+	 */
+	private static Long convertTimeStringToLong(String time, String itemName) throws InvalidSetting {
 		if (time == null) {
 			return null;
 		}
 		//クライアントとマネージャのタイムゾーンは一致している前提の処理である。
-		// TODO REST対応 変換エラー時の InvalidSetting メッセージの編集。パラメータに項目名を追加して、その名称でエラーメッセージを変数する必要あり
 		Long longTime;
 		Date dateTime = null;
 		try {
 			dateTime = TimeStringConverter.parseTime(time);
+		} catch (ParseException e) {
+			m_log.warn(e);
+			// 変換エラー時の InvalidSetting メッセージ作成
+			String message = MessageConstant.MESSAGE_INVALID_VALUE.getMessage(itemName, time);
+			throw  new InvalidSetting(message);
 		} catch (Exception e) {
-			throw new InvalidSetting(e.getMessage(),e);
+			m_log.warn(e);
+			throw new InvalidSetting(e.getMessage(), e);
 		}
 		longTime = dateTime.getTime();
 		return longTime;
-
 	}
 
 	//エポックミリ秒を 時刻（HH:mm:ss 24時以降対応）に変換
@@ -2191,22 +2196,8 @@ public class JobRestEndpoints {
 
 			// JobInfo->WaiRule->JobObjectGroupInfo->JobObjectInfo の個別変換（timeの個別変換向け）
 			if (dto.getWaitRule().getObjectGroup() != null) {
-				info.getWaitRule().setObjectGroup(new ArrayList<>());
-				for (JobObjectGroupInfoRequest dtoObjectGroup : dto.getWaitRule().getObjectGroup()) {
-					if (dtoObjectGroup.getJobObjectList() == null) {
-						continue;
-					}
-					JobObjectGroupInfo infoObjectGroup = new JobObjectGroupInfo();
-					RestBeanUtil.convertBeanNoInvalid(dtoObjectGroup, infoObjectGroup);
-					infoObjectGroup.setJobObjectList(new ArrayList<>());
-					for (JobObjectInfoRequest dtoObject : dtoObjectGroup.getJobObjectList()) {
-						JobObjectInfo infoObject = new JobObjectInfo();
-						RestBeanUtil.convertBeanNoInvalid(dtoObject, infoObject);
-						infoObject.setTime(convertTimeStringToLong(dtoObject.getTime(), "time"));
-						infoObjectGroup.getJobObjectList().add(infoObject);
-					}
-					info.getWaitRule().getObjectGroup().add(infoObjectGroup);
-				}
+				info.getWaitRule()
+						.setObjectGroup(converObjectGroupListFromResuestDto(dto.getWaitRule().getObjectGroup()));
 			}
 		}
 		return info;
@@ -2229,22 +2220,8 @@ public class JobRestEndpoints {
 
 			// JobInfo->WaiRule->JobObjectGroupInfo->JobObjectInfo の個別変換（timeの個別変換向け）
 			if (dto.getWaitRule().getObjectGroup() != null) {
-				info.getWaitRule().setObjectGroup(new ArrayList<>());
-				for (JobObjectGroupInfoRequest dtoObjectGroup : dto.getWaitRule().getObjectGroup()) {
-					if (dtoObjectGroup.getJobObjectList() == null) {
-						continue;
-					}
-					JobObjectGroupInfo infoObjectGroup = new JobObjectGroupInfo();
-					RestBeanUtil.convertBeanNoInvalid(dtoObjectGroup, infoObjectGroup);
-					infoObjectGroup.setJobObjectList(new ArrayList<>());
-					for (JobObjectInfoRequest dtoObject : dtoObjectGroup.getJobObjectList()) {
-						JobObjectInfo infoObject = new JobObjectInfo();
-						RestBeanUtil.convertBeanNoInvalid(dtoObject, infoObject);
-						infoObject.setTime(convertTimeStringToLong(dtoObject.getTime(), "time"));
-						infoObjectGroup.getJobObjectList().add(infoObject);
-					}
-					info.getWaitRule().getObjectGroup().add(infoObjectGroup);
-				}
+				info.getWaitRule()
+						.setObjectGroup(converObjectGroupListFromResuestDto(dto.getWaitRule().getObjectGroup()));
 			}
 		}
 		return info;
@@ -3573,6 +3550,9 @@ public class JobRestEndpoints {
 	public Response getJobmapIconImageIdListForSelect(@Context Request request, @Context UriInfo uriInfo, @QueryParam("ownerRoleId") String ownerRoleId) throws IconFileNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.debug("getJobmapIconImageIdListForSelect : ownerRoleId=" + ownerRoleId);
 		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<String> iconIdList = new JobControllerBean().getJobmapIconImageIdListForSelect(ownerRoleId);
 		JobmapIconImageInfoResponseP1 infoRes = new JobmapIconImageInfoResponseP1();
 		infoRes.setIconIdList(iconIdList);
@@ -3638,6 +3618,9 @@ public class JobRestEndpoints {
 			@Context UriInfo uriInfo) throws HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting {
 		m_log.info("call getJobLinkSendSettingList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<JobLinkSendSettingEntity> infoResList = new JobControllerBean().getJobLinkSendSettingList(ownerRoleId);
 		List<JobLinkSendSettingResponse> dtoResList = new ArrayList<>();
 		for (JobLinkSendSettingEntity info : infoResList) {
@@ -4218,5 +4201,44 @@ public class JobRestEndpoints {
 		File file = RestByteArrayConverter.convertByteArrayToFile(infoRes.getFiledata(), RestTempFileType.JOB_RPA_SCREENSHOT);
 		StreamingOutput stream = RestTempFileUtil.getTempFileStream(file);
 		return Response.ok(stream).header("Content-Disposition", "attachment; filename=" + file.getName()).build();
+	}
+	
+	/**
+	 * 待ち条件グループのリストについてRequestDtoをInfoに変換します。
+	 *  orderNoはArrayListの順番で自動設定しています。
+	 *  isGroupはObjectListの件数を元に自動設定しています。
+	 * @param dtoList
+	 * @return List<JobObjectGroupInfo>
+	 * @throws HinemosUnknown
+	 * @throws InvalidSetting 
+	 */
+	private static ArrayList<JobObjectGroupInfo> converObjectGroupListFromResuestDto(List<JobObjectGroupInfoRequest> dtoList) throws HinemosUnknown,InvalidSetting {
+		ArrayList<JobObjectGroupInfo> retList = new ArrayList<JobObjectGroupInfo>();
+		int orderNo = 0;
+		for (JobObjectGroupInfoRequest dtoObjectGroup : dtoList) {
+			JobObjectGroupInfo infoObjectGroup = new JobObjectGroupInfo();
+			RestBeanUtil.convertBeanNoInvalid(dtoObjectGroup, infoObjectGroup);
+			infoObjectGroup.setJobObjectList(new ArrayList<>());
+			infoObjectGroup.setOrderNo(orderNo);
+
+			if (dtoObjectGroup.getJobObjectList() == null) {
+				infoObjectGroup.setIsGroup(false);
+			} else {
+				infoObjectGroup.setIsGroup(infoObjectGroup.getJobObjectList().size() > 1);
+				for (JobObjectInfoRequest dtoObject : dtoObjectGroup.getJobObjectList()) {
+					JobObjectInfo infoObject = new JobObjectInfo();
+					RestBeanUtil.convertBeanNoInvalid(dtoObject, infoObject);
+					// 待ち条件 時間
+					infoObject.setTime(convertTimeStringToLong(dtoObject.getTime(),
+									MessageConstant.WAIT_RULE.getMessage() + ", " + MessageConstant.TIMESTAMP.getMessage()));
+
+					infoObjectGroup.getJobObjectList().add(infoObject);
+				}
+			}
+
+			retList.add(infoObjectGroup);
+			orderNo++;
+		}
+		return retList; 
 	}
 }

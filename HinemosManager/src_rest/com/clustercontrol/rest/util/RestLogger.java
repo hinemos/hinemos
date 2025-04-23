@@ -46,8 +46,11 @@ public class RestLogger {
 	private static Log log = LogFactory.getLog(RestLogger.class);
 	private static Log m_opelog = LogFactory.getLog("HinemosOperation");
 	
-	// 以下リストに含まれる文字列に部分一致するJSONプロパティ値がマスクされる
-	private static final List<String> MASK_CHECK_LIST = Arrays.asList("password", "Password", "secretKey", "sshPrivateKeyPassphrase", "AccessKey");
+	// 以下リストに含まれる文字列に部分一致するJSONプロパティ値がマスクされる（大文字小文字を区別する）
+	private static final List<String> MASK_CHECK_LIST = Arrays.asList("password", "Password", "secretKey",
+			"sshPrivateKeyPassphrase", "AccessKey", "accessKey", "jsonCredentialInfo", "authPass", "privPass",
+			"infraManagementParamInfoEntities" // passwordFlgがtrueの時valueのマスクが必要だが、個別対応が難しいので丸ごとマスクする
+			);
 	// 除外リストに完全一致するJSONプロパティはマスクされない
 	private static final List<String> MASK_CHECK_EXCLUSION_LIST = Arrays.asList();
 	private static final String MASK_STRING = "*****";
@@ -246,6 +249,13 @@ public class RestLogger {
 			// ネストされた要素は再帰的に処理
 			if(entry.getValue() instanceof Map) {
 				mask((Map<String, Object>)entry.getValue());
+			} else if (entry.getValue() instanceof List) {
+				// 要素がListだった場合は順に再帰的に処理
+				for (Object obj : (List<Object>) entry.getValue()) {
+					if (obj instanceof Map) {
+						mask((Map<String, Object>) obj);
+					}
+				}
 			}
 			
 			if(MASK_CHECK_EXCLUSION_LIST.contains(entry.getKey())) {

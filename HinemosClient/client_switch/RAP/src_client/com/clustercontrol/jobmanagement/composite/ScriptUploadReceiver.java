@@ -16,6 +16,8 @@ import java.io.OutputStream;
 import org.eclipse.rap.addons.fileupload.FileDetails;
 import org.eclipse.rap.addons.fileupload.FileUploadReceiver;
 
+import com.clustercontrol.bean.DataRangeConstant;
+
 /**
  * ScriptUploadReceiver
  * 
@@ -46,12 +48,18 @@ public class ScriptUploadReceiver extends FileUploadReceiver{
 	}
 
 	private static void copy(InputStream inputStream, OutputStream outputStream) throws IOException {
+		final long MAX_LENGTH = (DataRangeConstant.TEXT + 2) * 4;
 		byte[] buffer = new byte[BUFFER_SIZE];
 		boolean finished = false;
+		long readLength = 0;
 		while(!finished) {
 			int bytesRead = inputStream.read(buffer);
 			if(bytesRead != -1) {
 				outputStream.write(buffer, 0, bytesRead);
+				readLength += bytesRead;
+				if (readLength > MAX_LENGTH) {
+					finished = true;
+				}
 			} else {
 				finished = true;
 			}

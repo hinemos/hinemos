@@ -44,8 +44,10 @@ import org.eclipse.swt.widgets.Text;
 
 import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.dialog.ValidateResult;
+import com.clustercontrol.infra.dialog.ChangeBackgroundModifyListener;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.PriorityMessage;
+import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.utility.traputil.action.MibManager;
 import com.clustercontrol.utility.traputil.action.ParseMib;
 import com.clustercontrol.utility.traputil.bean.SnmpTrapMasterInfo;
@@ -113,6 +115,9 @@ public class MibFileInputDialog extends CommonDialog {
 
 	/** 対象MIBファイル */
 	private String mibFile = null;
+
+	/** 対象MIBファイル 指定フラグ( 0:初期 1:ファイル指定 2:ディレクトリ指定) */
+	private int mibSetFlg = 0;
 
 	/** MIBファイル解析時の検索パス */
 	private String searchPath = null;
@@ -193,11 +198,14 @@ public class MibFileInputDialog extends CommonDialog {
 
 		// テキスト
 		this.m_textInputMIB = new Text(parent, SWT.BORDER | SWT.LEFT);
+		this.m_textInputMIB.setEditable(false);
 		gridData = new GridData();
 		gridData.horizontalSpan = 12;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		this.m_textInputMIB.setLayoutData(gridData);
+		this.m_textInputMIB.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
+		this.m_textInputMIB.addModifyListener(new ChangeBackgroundModifyListener());
 
 		// 入力MIBファイル指定ボタン
 		this.m_buttonInputFile = new UtilityFileUpload(parent, SWT.NONE);
@@ -217,7 +225,7 @@ public class MibFileInputDialog extends CommonDialog {
 				fileUpload.cleanup();
 				
 				m_textInputMIB.setText(fileUpload.getFileName());
-
+				mibSetFlg = 1;
 				fileUpload.setBusy();
 
 				// Start upload direct
@@ -253,6 +261,7 @@ public class MibFileInputDialog extends CommonDialog {
 				}
 				fileUpload.cleanup();
 				m_textInputMIB.setText(fileUpload.getFileName());
+				mibSetFlg = 2;
 
 				fileUpload.setBusy();
 
@@ -284,6 +293,7 @@ public class MibFileInputDialog extends CommonDialog {
 
 		// テキスト
 		this.m_textSearchDir = new Text(parent, SWT.BORDER | SWT.LEFT);
+		this.m_textSearchDir.setEditable(false);
 		gridData = new GridData();
 		gridData.horizontalSpan = 12;
 		gridData.horizontalAlignment = GridData.FILL;
@@ -460,11 +470,14 @@ public class MibFileInputDialog extends CommonDialog {
 		ValidateResult validateResult = null;
 
 		
-		if (this.m_textInputMIB.getText() != null
-                && !"".equals((this.m_textInputMIB.getText()).trim())) {
-			if(m_buttonInputFile.getFilePath() != null){
+		if (mibSetFlg != 0) {
+			if (mibSetFlg == 1) {
+				if (!m_buttonInputFile.isReady()) {
+					return ValidateResult.messageOf(Messages.getString("upload"),
+							Messages.getString("upload.busy.message"));
+				}
 				this.mibFile = m_buttonInputFile.getFilePath();
-			} else {
+			} else if (mibSetFlg == 2) {
 				try {
 					ClientPathUtil pathUtil = ClientPathUtil.getInstance();
 					if(!pathUtil.lock(MIB_PATH)){
@@ -488,7 +501,20 @@ public class MibFileInputDialog extends CommonDialog {
 					}
 				} catch (Exception e) {
 					log.error("Unzip failed " + e.getMessage(),e);
+					validateResult = new ValidateResult();
+					validateResult.setValid(false);
+					validateResult.setID(Messages.getString("message.hinemos.1"));
+					validateResult.setMessage(Messages.getString("message.traputil.28"));
+					return validateResult;
 				}
+			} else {
+				// 通常ここには来ない想定（mibSetFlgについて 0,1,2以外の設定値はあり得ないため）
+				log.error("unexpected error. mibSetFlg is abnormal. mibSetFlg=" + mibSetFlg);
+				validateResult = new ValidateResult();
+				validateResult.setValid(false);
+				validateResult.setID(Messages.getString("message.hinemos.1"));
+				validateResult.setMessage(Messages.getString("message.unexpected_error"));
+				return validateResult;
 			}
         }
 		else {
@@ -539,6 +565,11 @@ public class MibFileInputDialog extends CommonDialog {
 				}
 			} catch (Exception e) {
 				log.error("Unzip failed " + e.getMessage(),e);
+				validateResult = new ValidateResult();
+				validateResult.setValid(false);
+				validateResult.setID(Messages.getString("message.hinemos.1"));
+				validateResult.setMessage(Messages.getString("message.traputil.29"));
+				return validateResult;
 			}
 		}
 		else {
@@ -755,6 +786,7 @@ public class MibFileInputDialog extends CommonDialog {
 		this.m_textInputMIB.setText("");
 		this.m_textSearchDir.setText("");
 		this.mibFile = null;
+		this.mibSetFlg = 0;
 		this.searchPath = null;
 						
 		tmpClear();		
@@ -803,5 +835,13 @@ public class MibFileInputDialog extends CommonDialog {
 
 	public void setMibListComposite(MibListComposite mibListComposite) {
 		this.mibListComposite = mibListComposite;
+	}
+
+	@Override
+	public boolean close() {
+		m_buttonInputFile.cleanup();
+		m_buttonInputDir.cleanup();
+		m_buttonInputSearchDir.cleanup();
+		return super.close();
 	}
 }

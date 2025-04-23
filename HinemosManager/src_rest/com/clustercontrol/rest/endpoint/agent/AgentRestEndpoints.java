@@ -391,12 +391,6 @@ public class AgentRestEndpoints {
 			@PathParam("facilityId") String facilityId)
 			throws InvalidSetting, InvalidRole, JobInfoNotFound, HinemosUnknown, SessionIdLocked {
 		m_log.debug("setjobStart: Start.");
-
-		// ---- 重複チェック
-		boolean first = new RestControllerBean().registerRestAgentRequest("", "setjobStart");
-		if (!first) {
-			return Response.status(Status.OK).build();
-		}
 		
 		// ---- リクエスト解析
 		SetJobStartRequest req = RestObjectMapperWrapper.convertJsonToObject(requestBody, SetJobStartRequest.class);
@@ -514,7 +508,8 @@ public class AgentRestEndpoints {
 				info.getCommandType() + ", " +
 				command + ", " +
 				info.getStatus() + ", " +
-				info.getFacilityId() + ", ");
+				info.getFacilityId() + ", " + 
+				info.getEndValue());
 
 		try{
 			new JobRunManagementBean().checkSessionIdLocked(info);
@@ -757,6 +752,20 @@ public class AgentRestEndpoints {
 				trigger.setDirectory(directory);
 				OutputBasicInfo output = null;
 				for (String facilityId : AgentConnectUtil.getFacilityIds(agentInfo)) {
+					boolean valid = false;
+					try {
+						valid = new RepositoryControllerBean().getNode(facilityId).getValid();
+					} catch (FacilityNotFound | HinemosUnknown e) {
+						m_log.warn("setFileCheckResult() : facilityId=" + facilityId + " :"
+								+ e.getClass().getSimpleName() + "," + e.getMessage());
+					}
+					if (!valid) {
+						// エージェントから送られてきたfacilityIdが管理対象外なら、ジョブセッションは起動しない
+						if(m_log.isDebugEnabled()){
+							m_log.debug("setFileCheckResult() : facilityId=" + facilityId + " : this is not managed");
+						}
+						continue;
+					}
 					ArrayList<String> facilityList =
 							FacilitySelector.getFacilityIdList(jobFileCheck.getFacilityId(), jobFileCheck.getOwnerRoleId(), 0, false, false);
 					if (facilityList.contains(facilityId)) {

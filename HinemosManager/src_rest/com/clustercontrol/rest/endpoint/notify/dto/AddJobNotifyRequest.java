@@ -8,12 +8,16 @@
 package com.clustercontrol.rest.endpoint.notify.dto;
 
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.rest.endpoint.notify.dto.enumtype.NotifyTypeEnum;
 
 public class AddJobNotifyRequest extends AbstractAddNotifyRequest {
 
 	private JobNotifyDetailInfoRequest notifyJobInfo;
 
+	//通知種別は固定のため、コンストラクタでデータを登録する
 	public AddJobNotifyRequest() {
+		NotifyTypeEnum type = NotifyTypeEnum.JOB;
+		super.setNotifyType(type);
 	}
 
 	public JobNotifyDetailInfoRequest getNotifyJobInfo() {
@@ -22,6 +26,11 @@ public class AddJobNotifyRequest extends AbstractAddNotifyRequest {
 
 	public void setNotifyJobInfo(JobNotifyDetailInfoRequest notifyJobInfo) {
 		this.notifyJobInfo = notifyJobInfo;
+	}
+
+	//ここでは何もしない
+	@Override
+	public void setNotifyType(NotifyTypeEnum notifyType) {
 	}
 
 	@Override
