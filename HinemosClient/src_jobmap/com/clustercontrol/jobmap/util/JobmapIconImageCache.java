@@ -740,6 +740,12 @@ public class JobmapIconImageCache {
 		} catch (IOException e) {
 			m_log.warn("createCacheEntry : " + e.getMessage());
 			throw new HinemosUnknown(e);
+		} finally {
+			if (iconImageFile.exists()) {
+				if (!iconImageFile.delete()) {
+					m_log.warn("Failed delete. file=" + iconImageFile.getAbsolutePath());
+				}
+			}
 		}
 		return cacheEntry;
 	}

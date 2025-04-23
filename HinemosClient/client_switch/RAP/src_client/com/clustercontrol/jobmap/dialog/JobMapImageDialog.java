@@ -592,7 +592,26 @@ public class JobMapImageDialog extends CommonDialog {
 			return result;
 		}
 
+		// イメージファイル
+		if ("".equals(this.m_txtImageFilePath.getText())) {
+			return ValidateResult.messageOf(Messages.getString("message.hinemos.1"),
+					Messages.getString("message.common.1", new String[] { Messages.getString("jobmap.image.file") }));
+		}
+		if (!isFileUploadReady()) {
+			return ValidateResult.messageOf(Messages.getString("upload"), Messages.getString("upload.busy.message"));
+		}
+
 		return null;
+	}
+
+	/**
+	 * ファイルアップロードが完了しているかどうかを返す
+	 * 
+	 * @return
+	 */
+	private boolean isFileUploadReady() {
+		return m_fileUpload.getEnabled()
+				&& ((null != m_receiver.getTargetFile()) && m_receiver.getTargetFile().canRead());
 	}
 
 	/**

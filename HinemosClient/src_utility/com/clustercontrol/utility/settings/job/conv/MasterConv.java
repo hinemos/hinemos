@@ -366,7 +366,16 @@ public class MasterConv {
 			info.setReferJobSelectType(OpenApiEnumConverter.integerToEnum(jobMasterXML.getReferJobSelectType(), JobInfoResponse.ReferJobSelectTypeEnum.class) );
 		}
 
-		info.setUpdateTime(DateUtil.convDateFormatIso86012Hinemos(jobMasterXML.getUpdateTime()));
+		// ジョブユニットの最終変更日時
+		try {
+			info.setUpdateTime(DateUtil.convDateFormatIso86012Hinemos(jobMasterXML.getUpdateTime()));
+		} catch (ParseException e) {
+			log.warn(e);
+			String[] args = { Messages.getString("jobunit") + ", " + Messages.getString("update.time"),
+					jobMasterXML.getUpdateTime(), jobMasterXML.getId(), jobMasterXML.getId() };
+			String err = Messages.getString("message.import.error4", args);
+			throw new ParseException(err, e.getErrorOffset());
+		}
 
 		// ジョブ連携送信ジョブ
 		if(jobMasterXML.getType() == JobConstant.TYPE_JOBLINKSENDJOB){
@@ -1900,9 +1909,17 @@ public class MasterConv {
 				}
 
 				jobXML.setExclusiveBranch(ruleInfo.getExclusiveBranch());
-				if (ruleInfo.getExclusiveBranch()) {
+				if (ruleInfo.getExclusiveBranchEndStatus() == null) {
+					jobXML.deleteExclusiveBranchEndStatus();
+				}else{
 					jobXML.setExclusiveBranchEndStatus(OpenApiEnumConverter.enumToInteger(ruleInfo.getExclusiveBranchEndStatus()));
+				}
+				if (ruleInfo.getExclusiveBranchEndValue() == null) {
+					jobXML.deleteExclusiveBranchEndValue();
+				}else{
 					jobXML.setExclusiveBranchEndValue(ruleInfo.getExclusiveBranchEndValue());
+				}
+				if (ruleInfo.getExclusiveBranch()) {
 					List<ExclusiveJobValue> values = new ArrayList<>();
 					int order = 0;
 					for (JobNextJobOrderInfoResponse nextJob : ruleInfo.getExclusiveBranchNextJobOrderList()) {
@@ -2227,7 +2244,7 @@ public class MasterConv {
 			objectInfo.setType(OpenApiEnumConverter.enumToInteger(info.getType()));
 			objectInfo.setJobId("");
 			objectInfo.setTime("");
-			objectInfo.setStatus(0);
+			objectInfo.deleteStatus();
 			objectInfo.setDescription(info.getDescription());
 			objectInfo.setDecisionValue("");
 			objectInfo.setValue("");

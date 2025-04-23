@@ -15,7 +15,6 @@ import java.nio.charset.Charset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,22 +24,19 @@ import org.openapitools.client.model.GetScriptResponse;
 import org.openapitools.client.model.SetJobOutputResultRequest;
 import org.openapitools.client.model.SetJobResultRequest;
 import org.openapitools.client.model.SetJobStartRequest;
-import org.openapitools.client.model.SetJobStartResponse;
 
 import com.clustercontrol.agent.Agent;
-import com.clustercontrol.agent.AgentRestClientWrapper;
-import com.clustercontrol.agent.ReceiveTopic;
 import com.clustercontrol.agent.SendQueue;
 import com.clustercontrol.agent.SendQueue.JobResultSendableObject;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.agent.util.AgentRequestId;
+import com.clustercontrol.agent.util.AgentRestClientEx;
+import com.clustercontrol.agent.util.AgentRestClientEx.RetryTimeoutException;
 import com.clustercontrol.agent.util.JobCommandExecutor;
 import com.clustercontrol.agent.util.JobCommandExecutor.CommandResult;
 import com.clustercontrol.agent.util.OutputString;
 import com.clustercontrol.agent.util.RestAgentBeanUtil;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.fault.RestConnectFailed;
-import com.clustercontrol.fault.SessionIdLocked;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandExecutor;
@@ -69,9 +65,7 @@ public class CommandThread extends AgentThread {
 	private String scriptFile;
 	
 	private final String REPLACE_STARTCOMMAND = "#[SCRIPT]";
-	
-	// Hinemosマネージャに開始メッセージ送信のリトライ間隔(ミリ秒)
-	private long interval = Long.parseLong(AgentProperties.getProperty("job.reconnection.interval"));
+
 
 	/**
 	 * デバッグ用メイン処理
@@ -118,12 +112,8 @@ public class CommandThread extends AgentThread {
 		// スクリプト削除有無フラグを設定
 		m_scriptDelete = Boolean.parseBoolean(AgentProperties.getProperty("job.script.delete", "true"));
 		m_log.info("job.stream.charset = " + m_inputEncoding + " job.script.delete = " + m_scriptDelete);
-		
-		// ---------------------------
-		// -- 開始メッセージ送信
-		// ---------------------------
 
-		// メッセージ作成
+		// 開始メッセージ作成
 		jobResult = new JobResultSendableObject();
 		jobResult.sessionId = m_info.getSessionId();
 		jobResult.jobunitId = m_info.getJobunitId();
@@ -135,6 +125,18 @@ public class CommandThread extends AgentThread {
 		jobResult.body.setStopType(m_info.getStopType());
 		jobResult.body.setStatus(RunStatusConstant.START);
 		jobResult.body.setTime(HinemosTime.getDateInstance().getTime());
+	}
+	
+	/**
+	 * スレッドを開始する前に実行すること。
+	 * ジョブの開始メッセージ送信を行い、コマンドジョブに#[SCRIPT]が含まれていた場合、スクリプトの取得を実行する。
+	 * @param timeout マネージャアクセスの再実行
+	 * @throws RetryTimeoutException
+	 */
+	public void init(long timeout) throws RetryTimeoutException {
+		// ---------------------------
+		// -- 開始メッセージ送信
+		// ---------------------------
 		SetJobStartRequest setJobStartRequest = new SetJobStartRequest();
 		try {
 			RestAgentBeanUtil.convertBeanSimple(jobResult.body, setJobStartRequest);
@@ -149,74 +151,46 @@ public class CommandThread extends AgentThread {
 		// マネージャに開始メッセージが届く前にジョブのコマンドが実行されることと
 		// VIPの切り替えが起こった場合に、ジョブが複数のエージェントで起動することを防ぐために
 		// ジョブの開始報告は同期した動作とする
-		AgentRequestId agentRequestId = new AgentRequestId();
-		
-		while(!ReceiveTopic.isHistoryClear()){
-			try {
-				SetJobStartResponse res = AgentRestClientWrapper.setJobStart(
-						jobResult.sessionId, jobResult.jobunitId, jobResult.jobId, jobResult.facilityId, setJobStartRequest,agentRequestId.toRequestHeaderValue());
-	
-				if(res == null){
-					// setJobStartがマネージャ側で重複した場合
-					// 異常終了の旨をメッセージ送信
-					JobResultSendableObject snd = new JobResultSendableObject();
-					snd.sessionId = m_info.getSessionId();
-					snd.jobunitId = m_info.getJobunitId();
-					snd.jobId = m_info.getJobId();
-					snd.facilityId = m_info.getFacilityId();
-					snd.body = new SetJobResultRequest();
-					snd.body.setCommand(m_info.getCommand());
-					snd.body.setCommandType(m_info.getCommandType());
-					snd.body.setStopType(m_info.getStopType());
-					snd.body.setStatus(RunStatusConstant.ERROR);
-					snd.body.setTime(HinemosTime.getDateInstance().getTime());
-					snd.body.setErrorMessage("Agent Request ID is duplicated.");
-					snd.body.setMessage("");
-					m_sendQueue.put(snd);
-					
-					m_log.warn("Agent Request ID is duplicated. Job terminated abnormally. SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
-					return;
-				}
-				if (!res.getJobRunnable().booleanValue()) {
-					// ジョブがすでに起動している場合
-					m_log.warn("This job already run by other agent. SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
-					return;
-				}
-				
-				break;
-			} catch(SessionIdLocked e){
-				// 開始メッセージがリジェクトされた場合、一定時間後リトライ
-				try {
-					m_log.warn("Rejected because sessionID is locked. setJobStart retry after "+ interval + "[ms]. " + "SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
-					Thread.sleep(interval);
-				} catch (InterruptedException e1) {
-					m_log.error("CommandThread() : " + e.getMessage(), e);
-					return;
-				}
-			} catch (RestConnectFailed | RejectedExecutionException e) {
-				 // 通信エラー、マネージャ側のキュー制限によるエラーの場合、一定時間後リトライ
-				try {
-					m_log.warn("Connect Failed. setJobStart retry after "+ interval + "[ms]. " + "SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
-					Thread.sleep(interval);
-				} catch (InterruptedException e1) {
-					m_log.error("CommandThread() : " + e.getMessage(), e);
-					return;
-				}
-			} catch (Exception e) { // その他の例外の場合はエラー内容の出力のみ行う
-				m_log.error("CommandThread() : " + e.getMessage(), e);
+		try {
+			AgentRequestId agentRequestId = new AgentRequestId();
+			if (!AgentRestClientEx.setJobStart(
+					jobResult.sessionId, jobResult.jobunitId, jobResult.jobId, jobResult.facilityId,
+					setJobStartRequest, agentRequestId.toRequestHeaderValue(),
+					timeout)) {
+				// ジョブがすでに別エージェントで起動しているか、終了している場合
 				return;
 			}
+		} catch (RetryTimeoutException e) {
+			throw e;
+		} catch (Exception e) {
+			m_log.warn(e.getMessage(), e);
+			return;
 		}
 
-		
 		// mode取得
 		String mode = AgentProperties.getProperty("job.command.mode");
 		CommandCreator.PlatformType platform = CommandCreator.convertPlatform(mode);
 
-		//スクリプトの取得
+		// スクリプトの取得
 		if (m_info.getCommand().contains(REPLACE_STARTCOMMAND)) {
+			
+			GetScriptResponse res = null;
+			String errorMessage = "script cannot be retrieved in time, so the job is terminated.";
 			try {
-				GetScriptResponse res = AgentRestClientWrapper.getScript(m_info.getSessionId(), m_info.getJobunitId(), m_info.getJobId());
+				res = AgentRestClientEx.getScript(jobResult.sessionId, jobResult.jobunitId, jobResult.jobId, timeout);
+			} catch (AgentRestClientEx.RetryTimeoutException e) {
+				errorMessage = errorMessage + " timeout occured. elapsedtime=" + timeout + "ms";
+				throw e;
+			} catch (Exception e) {
+				errorMessage = errorMessage + e.getMessage();
+				return;
+			} finally {
+				if (res == null) {
+					// マネージャでコマンド終了待ちになっているため、終了通知を送る
+					sendJobResultError(errorMessage);
+				}
+			}
+			try {
 				if (!res.getEmpty().booleanValue()) {
 					scriptFile = scriptDir + m_info.getSessionId() + "_" + m_info.getJobId() + "_" + res.getScriptName();
 					createScriptFile(res.getScriptContent(), res.getScriptEncoding());
@@ -230,7 +204,9 @@ public class CommandThread extends AgentThread {
 					}
 				}
 			} catch (Exception e) {
-				m_log.error("CommandThread() : " + e.getMessage(), e);
+				//マネージャでコマンド終了待ちになっているため、終了通知を送る
+				sendJobResultError("Failed to create script file. "+ e.getMessage());
+				m_log.error("init() : " + e.getMessage(), e);
 				// ファイル削除
 				deleteScript();
 				return;
@@ -268,7 +244,7 @@ public class CommandThread extends AgentThread {
 
 		/** 指定されたモードでコマンド生成の処理を切り替える */
 		try {
-			Map<String, String> envMap = getCmdEnvExportMap(info.getJobEnvVariableInfoList());
+			Map<String, String> envMap = getCmdEnvExportMap(m_info.getJobEnvVariableInfoList());
 			cmd = CommandCreator.createCommand(m_info.getUser(), m_info.getCommand(), platform, m_info.getSpecifyUser().booleanValue(),
 					loginFlag, envConvertExportFlag, envMap);
 			// ---------------------------
@@ -284,7 +260,7 @@ public class CommandThread extends AgentThread {
 			cmdExec = new JobCommandExecutor(cmd, Charset.forName(m_inputEncoding), JobCommandExecutor._disableTimeout, m_limit_jobmsg);
 			// クラウド管理のテンプレート機能で使用する環境変数を追加
 			cmdExec.addEnvironment("HINEMOS_AGENT_HOME", Agent.getAgentHome());
-			for (AgtJobEnvVariableInfoResponse env : info.getJobEnvVariableInfoList()) {
+			for (AgtJobEnvVariableInfoResponse env : m_info.getJobEnvVariableInfoList()) {
 				cmdExec.addEnvironment(env.getEnvVariableId(), env.getValue());
 			}
 
@@ -445,5 +421,23 @@ public class CommandThread extends AgentThread {
 		}
 
 		return ret;
+	}
+
+	private void sendJobResultError(String errorMsg) {
+		// メッセージ作成
+		JobResultSendableObject runErrorInfo = new JobResultSendableObject();
+		runErrorInfo.sessionId = m_info.getSessionId();
+		runErrorInfo.jobunitId = m_info.getJobunitId();
+		runErrorInfo.jobId = m_info.getJobId();
+		runErrorInfo.facilityId = m_info.getFacilityId();
+		runErrorInfo.body = new SetJobResultRequest();
+		runErrorInfo.body.setCommand(m_info.getCommand());
+		runErrorInfo.body.setCommandType(m_info.getCommandType());
+		runErrorInfo.body.setStopType(m_info.getStopType());
+		runErrorInfo.body.setStatus(RunStatusConstant.ERROR);
+		runErrorInfo.body.setTime(HinemosTime.getDateInstance().getTime());
+		runErrorInfo.body.setErrorMessage(errorMsg);
+		runErrorInfo.body.setMessage("");
+		m_sendQueue.put(runErrorInfo);
 	}
 }

@@ -47,6 +47,7 @@ import org.glassfish.grizzly.http.server.Request;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -128,6 +129,10 @@ public class HubRestEndpoints {
 	public Response getLogFormatIdList(@Context Request request, @Context UriInfo uriInfo,
 			@QueryParam("ownerRoleId") String ownerRoleId) throws InvalidRole, HinemosUnknown {
 		m_log.info("call getLogFormatIdList()");
+		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<LogFormatResponseP1> dtoResList = new ArrayList<>();
 		List<String> idList = new HubControllerBean().getLogFormatIdList(ownerRoleId);
 		for (String id : idList) {
@@ -154,6 +159,10 @@ public class HubRestEndpoints {
 	public Response getLogFormatListByOwnerRole(@Context Request request, @Context UriInfo uriInfo,
 			@QueryParam("ownerRoleId") String ownerRoleId) throws InvalidRole, HinemosUnknown {
 		m_log.info("call getLogFormatListByOwnerRole()");
+		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<LogFormatResponse> dtoResList = new ArrayList<>();
 		List<LogFormat> infoResList = new HubControllerBean().getLogFormatListByOwnerRole(ownerRoleId);
 		for (LogFormat infoRes : infoResList){
@@ -321,6 +330,10 @@ public class HubRestEndpoints {
 	public Response getTransferInfoIdList(@Context Request request, @Context UriInfo uriInfo,
 			@QueryParam("ownerRoleId") String ownerRoleId) throws InvalidRole, HinemosUnknown {
 		m_log.info("call getTransferInfoIdList()");
+		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<TransferInfoResponseP1> dtoResList = new ArrayList<>();
 		List<String> idList = new HubControllerBean().getTransferInfoIdList(ownerRoleId);
 		for (String id : idList) {
@@ -347,6 +360,10 @@ public class HubRestEndpoints {
 	public Response getTransferInfoListByOwnerRole(@Context Request request, @Context UriInfo uriInfo,
 			@QueryParam("ownerRoleId") String ownerRoleId) throws InvalidRole, HinemosUnknown {
 		m_log.info("call getTransferInfoListByOwnerRole()");
+		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<TransferInfoResponse> dtoResList = new ArrayList<>();
 		List<TransferInfo> infoResList = new HubControllerBean().getTransferInfoListByOwnerRole(ownerRoleId);
 		for (TransferInfo infoRes : infoResList) {

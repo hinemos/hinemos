@@ -12,7 +12,9 @@
 			"AmazonType",
 			"VMwareType",
 			"HypervType",
-			"AzureType"
+			"AzureType",
+			"GoogleType",
+			"OracleType"
 		]
 	}
 ],

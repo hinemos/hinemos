@@ -454,7 +454,7 @@ public class CollectorItemCodeTable {
 
 		// 対象のファシリティIDリスト
 		// targetFacilityIdListはノードのみ含まれる。
-		List<String> targetFacilityIdList = FacilitySelector.getNodeFacilityIdList(facilityId, null, RepositoryControllerBean.ALL, false, null);
+		List<String> targetFacilityIdList = FacilitySelector.getNodeFacilityIdList(facilityId, null, RepositoryControllerBean.ALL, false, true);
 		List<NodeDeviceInfo> checkTargetList = null;
 		for (String targetFacilityId : targetFacilityIdList){
 

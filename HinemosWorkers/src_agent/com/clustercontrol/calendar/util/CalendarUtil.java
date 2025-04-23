@@ -465,7 +465,7 @@ public class CalendarUtil {
 	 * @return
 	 */
 	public static long parseDate(int hour) {
-		long msecTime = 1000*(hour*3600);
+		long msecTime = 1000*(hour*3600L);
 		Date dateTime = new Date(msecTime - HinemosTime.getTimeZoneOffset());
 		return dateTime.getTime();
 	}

@@ -261,6 +261,8 @@ public enum InternalIdCommon implements InternalIdAbstract {
 	JOB_SYS_034(PriorityConstant.TYPE_INFO, HinemosModuleConstant.JOB, MessageConstant.MESSAGE_SYS_034_JOB),
 	// ジョブ連携メッセージの手動送信に失敗しました(ジョブ連携メッセージID={0},ファシリティID={1},送信日時={2})
 	JOB_SYS_035(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.JOB, MessageConstant.MESSAGE_SYS_035_JOB),
+	// 受理済みの開始メッセージと重複するリクエストを受信しました。ジョブセッションID={0},ジョブユニットID={1}、ジョブID={2}、ファシリティID={3}
+	JOB_SYS_036(PriorityConstant.TYPE_INFO, HinemosModuleConstant.JOB, MessageConstant.MESSAGE_JOB_ALLREADY_ACCEPTED_REQUEST),
 
 	// 同時実行制御キューのサイズが上限値を超えたため、ジョブが異常終了しました。(キューID={0},セッションID={1},ジョブID={2})
 	JOB_QUEUE_SYS_001(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.JOB_QUEUE, MessageConstant.MESSAGE_JOBQUEUE_EXCEEDED),

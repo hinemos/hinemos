@@ -207,7 +207,7 @@ public class NotifyJobLinkSendComposite extends Composite {
 		this.m_retryCount = new Text(retryComposite, SWT.BORDER);
 		this.m_retryCount.setLayoutData(new RowData(100, SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_retryCount.addVerifyListener(
-				new NumberVerifyListener(DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH));
+				new NumberVerifyListener(0, DataRangeConstant.SMALLINT_HIGH));
 		this.m_retryCount.addModifyListener(new ModifyListener(){
 			@Override
 			public void modifyText(ModifyEvent arg0) {

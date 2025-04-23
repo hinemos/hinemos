@@ -38,6 +38,11 @@ public class CloudConstants {
 	public final static String EPROP_Location = "cloud_location";
 	public final static String EPROP_Instance = "cloud_instance";
 	public final static String EPROP_Entity = "cloud_entity";
+	// GCP/OCI対応で追加
+	public final static String EPROP_SKIP_UPDATE_INSTANCE_LOCATION = "SKIP_UPDATE_INSTANCE_LOCATION";
+	public final static String EPROP_SKIP_RELEASE_NODE_FACILITY_IDS = "SKIP_RELEASE_NODE_FACILITY_IDS";
+	public final static String EPROP_SKIP_LOCATION_IN_JOB = "SKIP_LOCATION_IN_JOB";
+
 
 	// ノードを追加した際のイベント
 	public static final String Node_Instance = "Node_Instance";

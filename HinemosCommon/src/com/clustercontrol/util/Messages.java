@@ -38,7 +38,9 @@ public class Messages {
 		"messages_xcloud_common_hyperv",
 		"messages_xcloud_common_azure",
 		"messages_xcloud_common_kvm",
-		"messages_xcloud_common_vmware"
+		"messages_xcloud_common_vmware",
+		"messages_xcloud_common_gcp",
+		"messages_xcloud_common_oci"
 	};
 	
 	private final static String[] CLIENT_BUNDLE_NAMES = {
@@ -47,7 +49,9 @@ public class Messages {
 		"messages_xcloud_client_hyperv",
 		"messages_xcloud_client_azure",
 		"messages_xcloud_client_kvm",
-		"messages_xcloud_client_vmware" 
+		"messages_xcloud_client_vmware",
+		"messages_xcloud_client_gcp",
+		"messages_xcloud_client_oci"
 	};
 	
 	private static Map<Locale, Set<String>> missing = new HashMap<Locale, Set<String>>();

@@ -81,6 +81,7 @@ import com.clustercontrol.jobmanagement.model.JobRpaOptionMstEntity;
 import com.clustercontrol.jobmanagement.model.JobRpaRunParamInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobRpaRunParamMstEntity;
 import com.clustercontrol.jobmanagement.model.JobRuntimeParamEntity;
+import com.clustercontrol.jobmanagement.model.JobRuntimeParamEntityPK;
 import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntityPK;
@@ -334,7 +335,9 @@ public class CreateJobSession {
 				//JobSessionJobを作成
 				//jobIdMapにリネーム情報がある場合、上位が参照ジョブネットであるためjobIdをリネームする
 				//リネームリスト内のjobと同名のjobIdの場合、リネーム後のjobIdでJobSessionJobEntity,JobInfoEntityを作成する
+				String referJobnetChildJobId = null;
 				if(jobIdMap != null && !jobIdMap.isEmpty() && jobIdMap.get(jobId) != null){
+					referJobnetChildJobId = jobId;
 					jobId = jobIdMap.get(jobId);
 					m_log.debug("rename jobId at JobSessionJobEntity:" + job.getId().getJobId() + "->" + jobId);
 				}
@@ -1222,6 +1225,7 @@ public class CreateJobSession {
 							jobParamInfoEntity.relateToJobInfoEntity(jobInfoEntity);
 						}
 						jobParamInfoEntity.setValue(entry.getValue());
+						jobParamInfoEntity.setDescription("");
 						jobParamInfoEntity.setParamType(JobParamTypeConstant.TYPE_SYSTEM_JOB);
 					}
 					// ジョブ契機（ジョブスケジュール、ファイルチェック、ジョブ連携受信実行契機）ランタイムジョブ変数デフォルト情報を設定
@@ -1244,6 +1248,7 @@ public class CreateJobSession {
 									jobParamInfoEntity.relateToJobInfoEntity(jobInfoEntity);
 								}
 								jobParamInfoEntity.setValue(jobRuntimeParamEntity.getDefaultValue());
+								jobParamInfoEntity.setDescription(jobRuntimeParamEntity.getDescription());
 								jobParamInfoEntity.setParamType(JobParamTypeConstant.TYPE_RUNTIME);
 							}
 						}
@@ -1264,6 +1269,14 @@ public class CreateJobSession {
 								jobParamInfoEntity.relateToJobInfoEntity(jobInfoEntity);
 							}
 							jobParamInfoEntity.setValue(JobRuntimeParamRun.getValue());
+							jobParamInfoEntity.setDescription("");
+							if (triggerInfo.getJobkickId() != null) {
+								JobRuntimeParamEntityPK jobRuntimeParamEntityPK = new JobRuntimeParamEntityPK(triggerInfo.getJobkickId(), JobRuntimeParamRun.getParamId());
+								JobRuntimeParamEntity jobRuntimeParamEntity = em.find(JobRuntimeParamEntity.class, jobRuntimeParamEntityPK, ObjectPrivilegeMode.READ);
+								if (jobRuntimeParamEntity != null) {
+									jobParamInfoEntity.setDescription(jobRuntimeParamEntity.getDescription());
+								}
+							}		
 							jobParamInfoEntity.setParamType(JobParamTypeConstant.TYPE_RUNTIME);
 						}
 					}
@@ -1482,6 +1495,9 @@ public class CreateJobSession {
 				if(referJob != null){
 					//参照ジョブの場合
 				    tmpJobInfo = FullJob.getJobFullFromCache(referJob.getReferJobUnitId(), referJob.getReferJobId());
+				} else if (referJobnetChildJobId != null) {
+                    //参照ジョブネット配下のジョブの場合
+                    tmpJobInfo = FullJob.getJobFullFromCache(jobunitId, referJobnetChildJobId);					
 				} else {
 				    tmpJobInfo = FullJob.getJobFullFromCache(jobunitId, jobId);
 				}

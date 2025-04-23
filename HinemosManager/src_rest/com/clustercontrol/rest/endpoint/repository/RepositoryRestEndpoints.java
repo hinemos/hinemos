@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -55,6 +56,7 @@ import org.glassfish.grizzly.http.server.Request;
 import com.clustercontrol.HinemosManagerMain;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.fault.FacilityDuplicate;
 import com.clustercontrol.fault.FacilityNotFound;
@@ -200,6 +202,9 @@ public class RepositoryRestEndpoints {
 		m_log.debug("call getFacilityTree()");
 		Integer size = RestCommonConverter.convertInteger(MessageConstant.SIZE.getMessage(), sizeStr, false, 1, null);
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		FacilityTreeItem facilityTreeItem = new RepositoryControllerBean().getFacilityTree(ownerRoleId,
 				Locale.getDefault());
 
@@ -246,6 +251,9 @@ public class RepositoryRestEndpoints {
 
 		m_log.debug("call getExecTargetFacilityTreeByFacilityId()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		FacilityTreeItem facilityTreeItem = new RepositoryControllerBean().getExecTargetFacilityTree(targetFacilityId,
 				ownerRoleId, Locale.getDefault());
 
@@ -275,6 +283,9 @@ public class RepositoryRestEndpoints {
 
 		m_log.debug("call getNodeFacilityTree()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		FacilityTreeItem facilityTreeItem = new RepositoryControllerBean().getNodeFacilityTree(Locale.getDefault(),
 				ownerRoleId);
 
@@ -348,6 +359,9 @@ public class RepositoryRestEndpoints {
 
 		m_log.debug("call getExecTargetFacilityIdList()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		List<String> infoResList = new RepositoryControllerBean().getExecTargetFacilityIdList(facilityId, ownerRoleId);
 
 		List<FacilityInfoResponseP1> dtoResList = new ArrayList<>();
@@ -684,6 +698,7 @@ public class RepositoryRestEndpoints {
 			RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
 			dtoResList.add(dtoRes);
 		}
+		dtoResList.sort(Comparator.comparing(FacilityInfoResponse::getFacilityId));
 
 		RestLanguageConverter.convertMessages(dtoResList);
 
@@ -1036,6 +1051,9 @@ public class RepositoryRestEndpoints {
 		if (level == null) {
 			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_DISPLAY_REPOSITORY_LEVEL.getMessage());
 		}
+		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 
 		List<String> infoResList = new RepositoryControllerBean().getNodeFacilityIdList(parentFacilityId, ownerRoleId,
 				level.getCode());
@@ -1093,6 +1111,7 @@ public class RepositoryRestEndpoints {
 			RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
 			dtoResList.add(dtoRes);
 		}
+		dtoResList.sort(Comparator.comparing(FacilityRelationInfoResponse::getFacilityId));
 
 		RestLanguageConverter.convertMessages(dtoResList);
 
@@ -1139,6 +1158,7 @@ public class RepositoryRestEndpoints {
 			RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
 			dtoResList.add(dtoRes);
 		}
+		dtoResList.sort(Comparator.comparing(FacilityRelationInfoResponse::getFacilityId));
 
 		RestLanguageConverter.convertMessages(dtoResList);
 
@@ -1513,6 +1533,9 @@ public class RepositoryRestEndpoints {
 
 		NodeConfigSettingInfoResponse dtoRes = new NodeConfigSettingInfoResponse();
 		RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
+		if (dtoRes.getNodeConfigSettingItemList() != null) {
+			dtoRes.getNodeConfigSettingItemList().sort(Comparator.comparing(item -> item.getSettingItemId().name()));
+		}
 
 		RestLanguageConverter.convertMessages(dtoRes);
 
@@ -1556,6 +1579,9 @@ public class RepositoryRestEndpoints {
 
 		NodeConfigSettingInfoResponse dtoRes = new NodeConfigSettingInfoResponse();
 		RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
+		if (dtoRes.getNodeConfigSettingItemList() != null) {
+			dtoRes.getNodeConfigSettingItemList().sort(Comparator.comparing(item -> item.getSettingItemId().name()));
+		}
 
 		RestLanguageConverter.convertMessages(dtoRes);
 
@@ -1593,6 +1619,9 @@ public class RepositoryRestEndpoints {
 		for (NodeConfigSettingInfo infoRes : infoResList) {
 			NodeConfigSettingInfoResponse dtoRes = new NodeConfigSettingInfoResponse();
 			RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
+			if (dtoRes.getNodeConfigSettingItemList() != null) {
+				dtoRes.getNodeConfigSettingItemList().sort(Comparator.comparing(item -> item.getSettingItemId().name()));
+			}
 			dtoResList.add(dtoRes);
 		}
 
@@ -1636,6 +1665,9 @@ public class RepositoryRestEndpoints {
 		for (NodeConfigSettingInfo infoRes : infoResList) {
 			NodeConfigSettingInfoResponse dtoRes = new NodeConfigSettingInfoResponse();
 			RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
+			if (dtoRes.getNodeConfigSettingItemList() != null) {
+				dtoRes.getNodeConfigSettingItemList().sort(Comparator.comparing(item -> item.getSettingItemId().name()));
+			}
 			dtoResList.add(dtoRes);
 		}
 
@@ -1668,6 +1700,9 @@ public class RepositoryRestEndpoints {
 
 		NodeConfigSettingInfoResponse dtoRes = new NodeConfigSettingInfoResponse();
 		RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
+		if (dtoRes.getNodeConfigSettingItemList() != null) {
+			dtoRes.getNodeConfigSettingItemList().sort(Comparator.comparing(item -> item.getSettingItemId().name()));
+		}
 
 		RestLanguageConverter.convertMessages(dtoRes);
 
@@ -1699,6 +1734,9 @@ public class RepositoryRestEndpoints {
 		for (NodeConfigSettingInfo infoRes : infoResList) {
 			NodeConfigSettingInfoResponse dtoRes = new NodeConfigSettingInfoResponse();
 			RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
+			if (dtoRes.getNodeConfigSettingItemList() != null) {
+				dtoRes.getNodeConfigSettingItemList().sort(Comparator.comparing(item -> item.getSettingItemId().name()));
+			}
 			dtoResList.add(dtoRes);
 		}
 
@@ -1871,6 +1909,7 @@ public class RepositoryRestEndpoints {
 			RestBeanUtil.convertBeanNoInvalid(facilityInfo, res);
 			facilityInfoResList.add(res);
 		}
+		facilityInfoResList.sort(Comparator.comparing(FacilityInfoResponse::getFacilityId));
 		dtoRes.setFacilityInfos(facilityInfoResList.toArray(new FacilityInfoResponse[facilityInfoResList.size()]));
 
 		RestLanguageConverter.convertMessages(dtoRes);

@@ -87,4 +87,6 @@ public abstract class AbstractCacheManager implements ICacheManager {
 
 	public static final String KEY_SDML_CONTROL_SETTING = "SDML_CONTROL_SETTING";
 	public static final String KEY_AWS_RSS_INFO = "AWSRSSINFO";
+	public static final String KEY_GCP_STATUS_INFO = "GCPSTATUSINFO";
+	public static final String KEY_OCI_STATUS_INFO = "OCISTATUSINFO"; 
 }

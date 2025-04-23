@@ -137,7 +137,7 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 	// クラウドプラットフォームの定数
 	private final String AWS_PLT_ID = "_" + CloudConstant.platform_AWS + "_";
 	private final String AZURE_PLT_ID = "_" + CloudConstant.platform_Azure + "_";
-
+	private final String GCP_PLT_ID = "_" + CloudConstant.platform_GCP + "_";
 	// ----- コンストラクタ ----- //
 
 	/**
@@ -286,14 +286,14 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 					}
 					dialog = new ScopeTreeDialogForServiceMonitors(getShell(), managerName,
 							m_notifyBasic.m_ownerRoleId.getText());
-					
+
 					dialogPressType = dialog.open();
 				} catch (InvalidStateException e1) {
 					// クラウド仮想化の参照権限がない場合等に到達
 					// ダイアログを出力して処理を終了
 					MessageDialog.openInformation(null, Messages.getString("message"), e1.getMessage());
 					return;
-				} catch (Exception e2){
+				} catch (Exception e2) {
 					// 想定外例外はログに出力するのみ(ここには到達しない想定)
 					m_log.warn("customizeSettingDialog(): ", e2);
 					return;
@@ -533,7 +533,7 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 			m_checkCloudNotifyCritical.setEnabled(true);
 			m_checkCloudNotifyUnknown.setEnabled(true);
 		}
-		
+
 		// 連携情報の参照ボタンの必須有無
 		// 重要度のチェックが無い場合は、灰色に戻す
 		if (m_checkCloudNotifyInfo.getSelection()) {
@@ -577,15 +577,16 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 		}
 
 	}
-	
+
 	@Override
 	/**
 	 * オーナーロール変更時にスコープをクリアする
+	 * 
 	 * @param ownerRoleId
 	 */
 	public void updateOwnerRole(String ownerRoleId) {
 		super.updateOwnerRole(ownerRoleId);
-		
+
 		// 選択済みスコープをクリア
 		m_facilityPath = "";
 		m_facilityId = "";
@@ -736,8 +737,10 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 				notify.setPlatformType(CloudNotifyDetailInfoResponse.PlatformTypeEnum.AWS);
 			} else if (this.m_facilityId.contains(AZURE_PLT_ID)) {
 				notify.setPlatformType(CloudNotifyDetailInfoResponse.PlatformTypeEnum.AZURE);
+			} else if (this.m_facilityId.contains(GCP_PLT_ID)) {
+				notify.setPlatformType(CloudNotifyDetailInfoResponse.PlatformTypeEnum.GCP);
 			} else {
-				// AWS, Azure以外はバリデーションで弾く
+				// AWS,GCP Azure以外はバリデーションで弾く
 				notify.setPlatformType(CloudNotifyDetailInfoResponse.PlatformTypeEnum.OTHER);
 			}
 		}
@@ -994,7 +997,8 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (priority == PriorityConstant.TYPE_INFO) {
-					m_InfoNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId));
+					m_InfoNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId),
+							isGCPFacility(m_facilityId));
 					if (m_InfoLinkInfo != null) {
 						m_InfoNotifyCloudLinkInfoDialog.setLinkInfoData(priority, m_InfoLinkInfo.getEventBus(),
 								m_InfoLinkInfo.getAccessKey(), m_InfoLinkInfo.getDataVersion(),
@@ -1008,7 +1012,8 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 					}
 
 				} else if (priority == PriorityConstant.TYPE_WARNING) {
-					m_WanrNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId));
+					m_WanrNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId),
+							isGCPFacility(m_facilityId));
 					if (m_WarnLinkInfo != null) {
 						m_WanrNotifyCloudLinkInfoDialog.setLinkInfoData(priority, m_WarnLinkInfo.getEventBus(),
 								m_WarnLinkInfo.getAccessKey(), m_WarnLinkInfo.getDataVersion(),
@@ -1021,7 +1026,8 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 						update();
 					}
 				} else if (priority == PriorityConstant.TYPE_CRITICAL) {
-					m_CritNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId));
+					m_CritNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId),
+							isGCPFacility(m_facilityId));
 					if (m_CritLinkInfo != null) {
 						m_CritNotifyCloudLinkInfoDialog.setLinkInfoData(priority, m_CritLinkInfo.getEventBus(),
 								m_CritLinkInfo.getAccessKey(), m_CritLinkInfo.getDataVersion(),
@@ -1034,7 +1040,8 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 						update();
 					}
 				} else if (priority == PriorityConstant.TYPE_UNKNOWN) {
-					m_UnkNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId));
+					m_UnkNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId),
+							isGCPFacility(m_facilityId));
 					if (m_UnkLinkInfo != null) {
 						m_UnkNotifyCloudLinkInfoDialog.setLinkInfoData(priority, m_UnkLinkInfo.getEventBus(),
 								m_UnkLinkInfo.getAccessKey(), m_UnkLinkInfo.getDataVersion(),
@@ -1061,13 +1068,16 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 		linkInfo.setDetailType(dialog.getComposite().getDetailType());
 		linkInfo.setSource(dialog.getComposite().getSource());
 
-		if (!dialog.isAWS()) {
+		if (dialog.isGCP()) {
+			linkInfo.setDataVersion(dialog.getComposite().getDataVersion());
+		}
+
+		if (!dialog.isAWS() && !dialog.isGCP()) {
 			linkInfo.setAccessKey(dialog.getComposite().getAccessKey());
 			linkInfo.setDataVersion(dialog.getComposite().getDataVersion());
 		}
-	
+
 		linkInfo.setDataList(dialog.getComposite().getDataList());
-	
 
 		if (priority == PriorityConstant.TYPE_INFO) {
 			m_InfoLinkInfo = linkInfo;
@@ -1094,20 +1104,24 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (priority == PriorityConstant.TYPE_INFO) {
-					m_InfoNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId));
+					m_InfoNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId),
+							isGCPFacility(m_facilityId));
 
 					copyDialog(priority, m_InfoNotifyCloudLinkInfoDialog, m_infoCopyCombo);
 
 				} else if (priority == PriorityConstant.TYPE_WARNING) {
-					m_WanrNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId));
+					m_WanrNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId),
+							isGCPFacility(m_facilityId));
 					copyDialog(priority, m_WanrNotifyCloudLinkInfoDialog, m_warnCopyCombo);
 
 				} else if (priority == PriorityConstant.TYPE_CRITICAL) {
-					m_CritNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId));
+					m_CritNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId),
+							isGCPFacility(m_facilityId));
 					copyDialog(priority, m_CritNotifyCloudLinkInfoDialog, m_errorCopyCombo);
 
 				} else if (priority == PriorityConstant.TYPE_UNKNOWN) {
-					m_UnkNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId));
+					m_UnkNotifyCloudLinkInfoDialog = new NotifyCloudLinkInfoDialog(shell, isAWSFacility(m_facilityId),
+							isGCPFacility(m_facilityId));
 					copyDialog(priority, m_UnkNotifyCloudLinkInfoDialog, m_unkCopyCombo);
 				}
 
@@ -1149,13 +1163,18 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 		return facilityID.contains(AWS_PLT_ID);
 	}
 
+	// facilityIDがGCPの物であるかを確認
+	private boolean isGCPFacility(String facilityID) {
+		return facilityID.contains(GCP_PLT_ID);
+	}
+
 	/**
 	 * クラウド通知の連携情報を一時的に保持するプライベートクラス
 	 *
 	 */
 	private static class LinkInfo {
 		// findbugs対応 不要な変数 priority を除去
-		
+
 		// Azureの場合エンドポイント
 		private String eventBus = "";
 		// Azureの場合サブジェクト
@@ -1232,7 +1251,7 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 		public void setDataList(List<CloudNotifyLinkInfoKeyValueObjectResponse> list) {
 			if (list == null) {
 				this.dataList = new ArrayList<CloudNotifyLinkInfoKeyValueObjectResponse>();
-				
+
 				return;
 			}
 			// DeepCopy
@@ -1250,6 +1269,5 @@ public class NotifyCloudCreateDialog extends NotifyBasicCreateDialog {
 	public ICheckPublishRestClientWrapper getCheckPublishWrapper(String managerName) {
 		return CloudRestClientWrapper.getWrapper(managerName);
 	}
-	
 
 }

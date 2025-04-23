@@ -141,7 +141,7 @@ public class HinemosMessageManager {
 	private static String integrateMessage(List<String> messageList) {
 
 		// 日付フォーマッタ（ミリ秒精度のISO8601）
-		String formatString = "yyyy-MM-dd'T'hh:mm:ss.SSSXXX";
+		String formatString = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
 		SimpleDateFormat format = new SimpleDateFormat(formatString);
 		Date nowDate = HinemosTime.getDateInstance();
 

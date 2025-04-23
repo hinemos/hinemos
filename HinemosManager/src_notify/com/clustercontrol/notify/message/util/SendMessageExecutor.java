@@ -100,6 +100,22 @@ public class SendMessageExecutor {
 	private static void sendReqest(String hinemosMessage) throws Exception {
 
 		List<String> bearerTokenList = TokenManager.getTokenList();
+		// トークンが空の場合は、INTERNALイベント出力用例外を投げる
+		if (bearerTokenList == null || bearerTokenList.size() <= 0) {
+			throw new HinemosUnknown("No access token.");
+		} else {
+			// 複数トークンで全てが空トークンの場合、getTokenList()は空リスト返却だが、念のためチェック
+			boolean isAllEmpty = true;
+			for (String token : bearerTokenList) {
+				if (token != null && token.length() > 0) {
+					isAllEmpty = false;
+					break;
+				}
+			}
+			if (isAllEmpty) {
+				throw new HinemosUnknown("No access token.");
+			}
+		}
 
 		String url = HinemosPropertyCommon.notify_message_webapi_url.getStringValue();
 
@@ -131,7 +147,16 @@ public class SendMessageExecutor {
 
 			// 1回の試行の中で、フィルタマネージャの認証に失敗した場合、トークンを切り替えていく
 			for (int tokenIndex = 0; tokenIndex < bearerTokenList.size(); tokenIndex++) {
-				try (SendMessageHttpClient client = builder.setBearerToken(bearerTokenList.get(tokenIndex)).build()) {
+				String token = bearerTokenList.get(tokenIndex);
+				// トークンがnullまたは空の場合、スキップ
+				if (token == null || token.length() <= 0) {
+					if (log.isDebugEnabled()) {
+						log.debug("Access token is null or empty. index=" + tokenIndex);
+					}
+					continue;
+				}
+
+				try (SendMessageHttpClient client = builder.setBearerToken(token).build()) {
 
 					result = client.execute(url, hinemosMessage);
 
@@ -148,7 +173,7 @@ public class SendMessageExecutor {
 						detailMsg.append("Response: ").append(client.getResponseBody()).append("\n");
 						internalMessage = detailMsg.toString();
 					} else {
-						TokenManager.notifySuccessToken(bearerTokenList.get(tokenIndex));
+						TokenManager.notifySuccessToken(token);
 					}
 					break;
 				}

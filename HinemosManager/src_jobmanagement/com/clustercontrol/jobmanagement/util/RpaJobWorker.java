@@ -193,12 +193,6 @@ public class RpaJobWorker {
 	private static class RpaJobTask implements Callable<Boolean> {
 		/** ロガー */
 		private static Log tasklog = LogFactory.getLog(RpaJobTask.class);
-		/** リトライ間隔 */
-		private static final long retryInterval = HinemosPropertyCommon.job_rpa_request_retry_interval
-				.getIntegerValue();
-		/** 実行結果確認間隔 */
-		private static final long checkInterval = HinemosPropertyCommon.job_rpa_request_check_interval
-				.getIntegerValue();
 		/** 実行指示情報 */
 		private RunInstructionInfo runInstructionInfo = null;
 		/** ジョブ情報 */
@@ -327,6 +321,7 @@ public class RpaJobWorker {
 				throws RpaManagementRestRunFailed, InterruptedException {
 			long loopCount = 0;
 			long retryCount = 0;
+			final long retryInterval = HinemosPropertyCommon.job_rpa_request_retry_interval.getIntegerValue();
 			while (true) {
 				loopCount++;
 				try (CloseableHttpClient client = RpaUtil.createHttpClient(this.account,
@@ -500,6 +495,7 @@ public class RpaJobWorker {
 			tasklog.debug("execCheck() : endStatusList=" + endStatusList);
 			long loopCount = 0;
 			long retryCount = 0;
+			final long checkInterval = HinemosPropertyCommon.job_rpa_request_check_interval.getIntegerValue();
 			while (true) {
 				loopCount++;
 				try (CloseableHttpClient client = RpaUtil.createHttpClient(this.account,

@@ -26,6 +26,7 @@ import com.clustercontrol.jobmanagement.bean.JobConstant;
 import com.clustercontrol.jobmanagement.bean.RetryWaitStatusConstant;
 import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
+import com.clustercontrol.jobmanagement.util.QueryUtil;
 
 public class JobSessionImpl {
 	/** ログ出力のインスタンス */
@@ -116,11 +117,31 @@ public class JobSessionImpl {
 		//ジョブの実行前に現在の待機中の対象ジョブのリストをclearしておく
 		jobImpl.clearWaitCheckMap(sessionId);
 
+		if (waitCheckJobIdList == null) {
+			return;
+		}
 		for (String[] jobunitIdJobId : waitCheckJobIdList){
 			String jobunitId = jobunitIdJobId[0];
 			String jobId = jobunitIdJobId[1];
-			m_log.debug("waitingCheck() target : sessionId = " + sessionId + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
-			jobImpl.startJob(sessionId, jobunitId, jobId);
+			if( m_log.isDebugEnabled()){
+				m_log.debug("waitingCheck() target : sessionId = " + sessionId + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
+			}
+			JobSessionJobEntity parentSessionJob = null;
+			try{
+				// 親ジョブが停止となっている場合があるので、親ジョブが実行中の場合のみ開始を試行
+				//  実行中でないなら以後の定期チェックは一旦不要。（再度実行中になった時に必要に応じて再開される）
+				//  再度の定期チェックが必要なら、startJob内にてチェックリストに再登録される前提である。
+				JobSessionJobEntity targetSessionJob = QueryUtil.getJobSessionJobPK(sessionId, jobunitId, jobId);
+				parentSessionJob = QueryUtil.getJobSessionJobPK(sessionId,
+						targetSessionJob.getParentJobunitId(), targetSessionJob.getParentJobId());
+				if (parentSessionJob.getStatus() == StatusConstant.TYPE_RUNNING ) {
+					jobImpl.startJob(sessionId, jobunitId, jobId);
+				}
+			}catch (JobInfoNotFound | InvalidRole e){
+				//親ジョブ情報の取得でエラーとなった場合、該当セッションの情報が削除されたものとみなす。
+				m_log.warn("waitingCheck() not exist target job : sessionId = " + sessionId + ", jobunitId = " + jobunitId + ", jobId = " + jobId);
+			}
+			
 		}
 	}
 

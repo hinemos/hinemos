@@ -44,8 +44,8 @@ import com.clustercontrol.utility.settings.infra.xml.InfraFileInfo;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
-import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
+import com.clustercontrol.utility.settings.ui.dialog.UtilityProcessDialog;
 import com.clustercontrol.utility.settings.ui.preference.SettingToolsXMLPreferencePage;
 import com.clustercontrol.utility.settings.ui.util.BackupUtil;
 import com.clustercontrol.utility.settings.ui.util.DeleteProcessMode;
@@ -120,8 +120,9 @@ public class InfraFileAction extends BaseAction<InfraFileInfoResponse, InfraFile
 		FileOutputStream fos = null;
 		String infraFolderPath = getFolderPath(backup);
 		for(InfraFileInfo info: xmlInfo.getInfraFileInfo()){
+			File downloadFile = null;
 			try {
-				File downloadFile =  endpoint.downloadInfraFile(info.getFileId());
+				downloadFile =  endpoint.downloadInfraFile(info.getFileId());
 				FileDataSource source = new FileDataSource(downloadFile);
 				DataHandler handler = new DataHandler(source);
 				
@@ -136,6 +137,11 @@ public class InfraFileAction extends BaseAction<InfraFileInfoResponse, InfraFile
 					try {
 						fos.close();
 					} catch (IOException e) {
+					}
+				}
+				if (downloadFile != null && downloadFile.exists()) {
+					if (!downloadFile.delete()) {
+						log.warn("Failed temporary infra file."+ " FilePath=" + downloadFile.getAbsolutePath());
 					}
 				}
 			}

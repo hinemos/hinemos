@@ -149,7 +149,7 @@ public class RoleValidator {
 			// ジョブ実行契機
 			list = QueryUtil.getObjectPrivilegeIdsByOwnerRoleId_NONE(JobKickEntity.class, roleId);
 			if (list != null && list.size() > 0) {
-				map.put(MessageConstant.JOB_KICK.getMessage(), new ArrayList<>(list));
+				map.put(MessageConstant.JOB_KICK_NAME.getMessage(), new ArrayList<>(list));
 			}
 
 			// ジョブキュー
@@ -350,7 +350,7 @@ public class RoleValidator {
 						break;
 					// ジョブ実行契機
 					case HinemosModuleConstant.JOB_KICK:
-						str = MessageConstant.JOB_KICK.getMessage();
+						str = MessageConstant.JOB_KICK_NAME.getMessage();
 						break;
 					// ジョブキュー
 					case HinemosModuleConstant.JOB_QUEUE:

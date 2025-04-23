@@ -69,7 +69,11 @@ import com.clustercontrol.utility.util.UtilityRestClientWrapper;
 import com.clustercontrol.utility.util.XmlMarshallUtil;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.bean.CloudConstant;
+import com.clustercontrol.xcloud.model.cloud.ILoginUser;
 import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * 
@@ -153,9 +157,12 @@ public class CloudUserAction {
 			}
 			try {
 				cloudScope.addICloudScope(CloudUserConv.getICloudScope(cloudScopeEndpoint));
+				if (cloudScopeEndpoint.getPlatformId().equals(CloudConstant.platform_GCP) || cloudScopeEndpoint.getPlatformId().equals(CloudConstant.platform_OCI)) {
+					CloudUserConv.getPrivateKeyFileContent(cloudScopeEndpoint, xmlFile, cloudScopeEndpoint.getPlatformId());
+				}
 			} catch (RuntimeException e) {
 				// キー情報保護の有効確認でエラーが出た場合は終了する
-				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()));
+				log.error(Messages.getString("SettingTools.ExportFailed") + " : " + HinemosMessage.replace(e.getMessage()), e);
 				ret = SettingConstants.ERROR_INPROCESS;
 				return ret;
 			}
@@ -195,7 +202,7 @@ public class CloudUserAction {
 	@ImportMethod
 	public int importUser(String xmlFile){
 		log.debug("Start Import Cloud.user ");
-
+		
 		if(ImportProcessMode.getProcesstype() == UtilityDialogConstant.CANCEL){
 			log.info(Messages.getString("SettingTools.ImportSucceeded.Cancel"));
 			log.debug("End Import Cloud.user (Cancel)");
@@ -251,6 +258,10 @@ public class CloudUserAction {
 					requestData = CloudUserConv.getHyperVCloudScopeRequestDto(xmlDto);
 				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_Azure)) {
 					requestData = CloudUserConv.getAzureCloudScopeRequestDto(xmlDto);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_GCP)) {
+					requestData = CloudUserConv.getGCPCloudScopeRequestDto(xmlDto, xmlFile);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_OCI)) {
+					requestData = CloudUserConv.getOCICloudScopeRequestDto(xmlDto, xmlFile);
 				} else {
 					log.warn(Messages.getString("SettingTools.InvalidSetting") +
 							" : " + xmlDto.getCloudScopeId() + " ( " +xmlDto.getCloudPlatformId() + " )");
@@ -273,20 +284,25 @@ public class CloudUserAction {
 					CloudUserConv.convertHyperVCloudUserRequestDto(xmlDto, requestData, addRequestList, idList);
 				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_Azure)) {
 					CloudUserConv.convertAzureCloudUserRequestDto(xmlDto, requestData, addRequestList, idList);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_GCP)) {
+					CloudUserConv.convertGCPCloudUserRequestDto(xmlDto, requestData, addRequestList, idList, xmlFile);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_OCI)) {
+					CloudUserConv.convertOCICloudUserRequestDto(xmlDto, requestData, addRequestList, idList, xmlFile);
 				}
+		
 				dtoRec.setSubUserList(addRequestList);
 				dtoRec.setPriorityArrayList(idList);
-				
-				//課金情報
+
+				// 課金情報
 				ModifyBillingSettingRequest billingSetting = CloudUserConv.createBillingSettingRequest(xmlDto);
 				dtoRec.setBillingSetting(billingSetting);
-				
 				return dtoRec;
 			}
+
 			@Override
 			protected Set<String> getExistIdSet() throws Exception {
 				Set<String> retSet = new HashSet<String>();
-				for( com.clustercontrol.xcloud.model.cloud.ICloudScope root : CloudTools.getCloudScopeList() ){
+				for (com.clustercontrol.xcloud.model.cloud.ICloudScope root : CloudTools.getCloudScopeList()) {
 					retSet.add(root.getId());
 				}
 				return retSet;
@@ -541,4 +557,70 @@ public class CloudUserAction {
 	public Logger getLogger() {
 		return log;
 	}
+
+	/**
+	 * Invoked for import functionality Purpose: This method will check if the
+	 * existing cloud scope contains service account details.
+	 * 
+	 * @param cloudScopeId
+	 * @param account
+	 * @return boolean value (true/false)
+	 */
+	public static boolean checkServiceAccountDetailsExistinDB(String cloudScopeId, AddCloudLoginUserRequest account,
+			boolean isSub) {
+
+		List<com.clustercontrol.xcloud.model.cloud.ICloudScope> roots = CloudTools.getCloudScopeList();
+
+		ObjectMapper objMapper = new ObjectMapper();
+		JsonNode serviceAccountJsonNode = null;
+
+		for (com.clustercontrol.xcloud.model.cloud.ICloudScope cloudScopeEndpoint : roots) {
+			ILoginUser accountUser = cloudScopeEndpoint.getLoginUsers().getLoginUser(account.getLoginUserId());
+			if (cloudScopeEndpoint.getPlatformId().equals(CloudConstant.platform_GCP)) {
+				if (accountUser != null && cloudScopeId.equals(accountUser.getCloudScopeId())) {
+					try {
+						serviceAccountJsonNode = objMapper
+								.readTree(accountUser.getCredential().getJsonCredentialInfo());
+						if (serviceAccountJsonNode.get(CloudConstant.AuthenticationType) != null) {
+							String authType = serviceAccountJsonNode.get(CloudConstant.AuthenticationType).asText();
+							if (authType.equals(CloudConstant.ServiceAccountKey)) {
+								account.setJsonCredentialInfo(accountUser.getCredential().getJsonCredentialInfo());
+								return true;
+							}
+						} else if (isSub) {
+							// sub account is always ServiceAccountKey
+							account.setJsonCredentialInfo(accountUser.getCredential().getJsonCredentialInfo());
+							return true;
+						}
+					} catch (JsonProcessingException e) {
+						log.warn("Error while parsing json" + e.getMessage());
+					}
+				}
+			} else if (cloudScopeEndpoint.getPlatformId().equals(CloudConstant.platform_OCI)) {
+				accountUser = cloudScopeEndpoint.getLoginUsers().getLoginUser(account.getLoginUserId());
+				if (accountUser != null && cloudScopeId.equals(accountUser.getCloudScopeId())) {
+					try {
+						serviceAccountJsonNode = objMapper
+								.readTree(accountUser.getCredential().getJsonCredentialInfo());
+						if (serviceAccountJsonNode.get(CloudConstant.authenticationType) != null) {
+							String authType = serviceAccountJsonNode.get(CloudConstant.authenticationType).asText();
+							if (authType.equals(CloudConstant.apiKeyBasedAuthentication)) {
+								account.setJsonCredentialInfo(accountUser.getCredential().getJsonCredentialInfo());
+								return true;
+							}
+						} else if (isSub) {
+							// sub account is always API keyfile
+							account.setJsonCredentialInfo(accountUser.getCredential().getJsonCredentialInfo());
+							return true;
+						}
+
+					} catch (JsonProcessingException e) {
+						log.warn("Error while parsing json" + e.getMessage());
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 }

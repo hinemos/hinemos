@@ -217,26 +217,30 @@ public class RecordDataWriter implements Runnable {
 			fileOutputStream = new FileOutputStream(file);
 			
 			// 指定回数だけファイル存在確認をする
-			m_log.info("download perf file = " + name + ", waitCount = " + waitCount);
+			m_log.info("download perf file = " + name + ", waitCount = " + waitCount + ", waitSleep=" + waitSleep);
 			
 			for (Map.Entry<String, List<String>> entry : m_targetManagerFacilityMap.entrySet()) {
 				String managerName = entry.getKey();
 				for (int i = 0; i < waitCount; i++) {
-					if(!this.canceled){
-						Thread.sleep(waitSleep);
-						m_log.debug("download perf file = " + name + ", create check. count = " + i);
-						// クライアントのヒープが小さい場合は下記の行で落ちる。(out of memory)
-						CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
-						try {
-							file = wrapper.downloadPerfFile(prefName);
-						} catch (PerfFileNotFound e) {
-							// ファイルの作成が完了していない場合はリトライ
-							file = null;
-						}
-						if(file != null){
-							m_log.info("download perf file = " + name + ", created !");
-							break;
-						}
+					if (this.canceled) {
+						break;
+					}
+					Thread.sleep(waitSleep);
+					if (this.canceled) {
+						break;
+					}
+					m_log.debug("download perf file = " + name + ", create check. count = " + i);
+					// クライアントのヒープが小さい場合は下記の行で落ちる。(out of memory)
+					CollectRestClientWrapper wrapper = CollectRestClientWrapper.getWrapper(managerName);
+					try {
+						file = wrapper.downloadPerfFile(prefName);
+					} catch (PerfFileNotFound e) {
+						// ファイルの作成が完了していない場合はリトライ
+						file = null;
+					}
+					if(file != null){
+						m_log.info("download perf file = " + name + ", created !");
+						break;
 					}
 				}
 				if(file == null){
@@ -395,4 +399,13 @@ public class RecordDataWriter implements Runnable {
 	public void setCancelMessage(String cancelMessage) {
 		this.cancelMessage = cancelMessage;
 	}
+
+	/**
+	 * 待ち時間の取得
+	 * @return 待ち時間
+	 */
+	public int getWaitSleep() {
+		return waitSleep;
+	}
+
 }

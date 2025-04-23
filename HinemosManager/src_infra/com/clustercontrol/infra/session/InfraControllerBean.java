@@ -55,7 +55,6 @@ import com.clustercontrol.infra.model.InfraFileInfo;
 import com.clustercontrol.infra.model.InfraManagementInfo;
 import com.clustercontrol.infra.util.InfraManagementValidator;
 import com.clustercontrol.infra.util.QueryUtil;
-import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.notify.util.NotifyRelationCacheRefreshCallback;
 import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.rest.util.RestDownloadFile;
@@ -830,7 +829,7 @@ public class InfraControllerBean implements CheckFacility {
 			m_log.debug("Fail to delete " + file.getAbsolutePath());
 	}
 
-	public InfraFileInfo modifyInfraFile(InfraFileInfo fileInfo, DataHandler fileContent) throws InvalidRole, HinemosUnknown, InfraFileTooLarge {
+	public InfraFileInfo modifyInfraFile(InfraFileInfo fileInfo, DataHandler fileContent) throws InvalidRole, HinemosUnknown, InfraFileTooLarge, InfraManagementNotFound {
 		synchronized (LOCK) {
 			JpaTransactionManager jtm = null;
 			InfraFileInfo ret = new InfraFileInfo();
@@ -869,6 +868,10 @@ public class InfraControllerBean implements CheckFacility {
 				if (jtm != null)
 					jtm.rollback();
 				throw new HinemosUnknown(e.getMessage(), e);
+			} catch (InfraManagementNotFound e) {
+				if (jtm != null)
+					jtm.rollback();
+				throw e;
 			} catch (Exception e){
 				m_log.warn("modifyInfraFile() : " + e.getClass().getSimpleName() +
 						", " + e.getMessage(), e);

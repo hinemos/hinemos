@@ -27,6 +27,8 @@ import org.openapitools.client.model.LocationInfoResponse;
 import org.openapitools.client.model.StorageBackupInfoResponse;
 import org.openapitools.client.model.StorageInfoResponse;
 
+import com.clustercontrol.xcloud.extensions.CloudModelContentProviderExtension;
+import com.clustercontrol.xcloud.extensions.ICloudModelContentProvider;
 import com.clustercontrol.xcloud.model.CloudModelException;
 import com.clustercontrol.xcloud.model.base.Element;
 import com.clustercontrol.xcloud.util.CollectionComparator;
@@ -85,8 +87,12 @@ public class CloudScopes extends Element implements ICloudScopes {
 			public void instanceNode(HFacilityResponse f) {
 				InstanceInfoResponse i = f.getInstance();
 				if (!currentScope.getEntity().getCloudScopeId().equals(i.getCloudScopeId()) || !currentLocation.getId().equals(i.getLocationId())) {
-					logger.warn(String.format("instance is placed in another cloudscope tree. cloudscopeId=%s, locationId=%s, instanceId=%s",
-							i.getCloudScopeId(), i.getLocationId(), i.getId()));
+					ICloudModelContentProvider provider = CloudModelContentProviderExtension.getModelContentProvider(f.getPlatformId());
+					if (!provider.skipDuplicateFacilityWarning()) {
+						logger.warn(String.format(
+								"instance is placed in another cloudscope tree. cloudscopeId=%s, locationId=%s, instanceId=%s",
+								i.getCloudScopeId(), i.getLocationId(), i.getId()));
+					}
 				} else {
 					List<String> key = Arrays.asList(i.getCloudScopeId(), i.getLocationId());
 					Set<InstanceInfoResponse> instances = webInstanceMap.get(key);

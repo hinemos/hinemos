@@ -22,8 +22,10 @@ import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMo
 import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.session.CheckFacility;
+import com.clustercontrol.commons.util.AlterModeArgsUtil;
 import com.clustercontrol.commons.util.AsyncTaskPersistentConfig;
 import com.clustercontrol.commons.util.HinemosSessionContext;
+import com.clustercontrol.commons.util.InvalidSettingByCloudServiceMode;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.MultiSmtpServerUtil;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
@@ -46,6 +48,7 @@ import com.clustercontrol.monitor.run.util.EventUtil;
 import com.clustercontrol.notify.bean.EventNotifyInfo;
 import com.clustercontrol.notify.bean.NotifyCheckIdResultInfo;
 import com.clustercontrol.notify.bean.NotifyTriggerType;
+import com.clustercontrol.notify.bean.NotifyTypeConstant;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.notify.factory.ModifyNotify;
 import com.clustercontrol.notify.factory.ModifyNotifyRelation;
@@ -121,6 +124,14 @@ public class NotifyControllerBean implements CheckFacility {
 			throws NotifyDuplicate, InvalidSetting, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		NotifyInfo ret = null;
+
+		// 登録するものがコマンド通知である、かつクラウドサービスモード中の場合には例外をthrowする
+		if (info != null && info.getNotifyType() == NotifyTypeConstant.TYPE_COMMAND) {
+			if (AlterModeArgsUtil.isCloudServiceMode()) {
+				throw new InvalidSettingByCloudServiceMode(
+						"Add Command Notify is blocked, because Hinemos Manager is in CloudServiceMode.");
+			}
+		}
 
 		// 通知情報を登録
 		try {
@@ -207,6 +218,14 @@ public class NotifyControllerBean implements CheckFacility {
 			throws NotifyDuplicate, InvalidRole, HinemosUnknown, InvalidSetting, NotifyNotFound {
 		JpaTransactionManager jtm = null;
 		NotifyInfo ret = null;
+
+		// 変更するものがコマンド通知である、かつクラウドサービスモード中の場合には例外をthrowする
+		if (info != null && info.getNotifyType() == NotifyTypeConstant.TYPE_COMMAND) {
+			if (AlterModeArgsUtil.isCloudServiceMode()) {
+				throw new InvalidSettingByCloudServiceMode(
+						"Modify Command Notify is blocked, because Hinemos Manager is in CloudServiceMode.");
+			}
+		}
 
 		// 通知情報を更新
 		try {

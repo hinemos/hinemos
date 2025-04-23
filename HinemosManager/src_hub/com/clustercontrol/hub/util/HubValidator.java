@@ -14,12 +14,16 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.CommonValidator;
+import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.LogFormatKeyPatternDuplicate;
 import com.clustercontrol.fault.LogFormatUsed;
+import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.hub.model.LogFormat;
 import com.clustercontrol.hub.model.LogFormatKey;
 import com.clustercontrol.hub.model.TransferInfo;
@@ -116,6 +120,23 @@ public class HubValidator {
 		if (!isModify) {
 			//OwnerRoleId
 			CommonValidator.validateOwnerRoleId(transferInfo.getOwnerRoleId(), true, transferInfo.getTransferId(), HinemosModuleConstant.HUB_TRANSFER);
+		} else {
+			// TransferDataType (画面からの変更の場合はnullが設定されてくるので、その場合はチェックしない)
+			if (transferInfo.getDataType() != null) {
+				try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+
+					HinemosEntityManager em = jtm.getEntityManager();
+					TransferInfo entity = em.find(TransferInfo.class, transferInfo.getTransferId(),
+							ObjectPrivilegeMode.NONE);
+					if (entity != null && entity.getDataType() != transferInfo.getDataType()) {
+						throwInvalidSetting(MessageConstant.MESSAGE_TRANSFER_DATA_TYPE_CHANGE_NG.getMessage());
+					}
+				} catch (ObjectPrivilege_InvalidRole e) {
+					// オブジェクト権限チェックは行わないので、ここに入ってこない想定
+					m_log.error("validateTransferInfo() : ID=" + transferInfo.getTransferId() + " : "
+							+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				}
+			}
 		}
 		
 		// 転送種別

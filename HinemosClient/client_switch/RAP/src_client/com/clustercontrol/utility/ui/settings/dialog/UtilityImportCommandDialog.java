@@ -204,6 +204,7 @@ public class UtilityImportCommandDialog extends CommonDialog {
 			} else {
 				FileUtil.moveFile2OtherDir(uploadComponent.getFilePath(), filePath + File.separator + uploadComponent.getFileName());
 			}
+		
 			File tmpFile = new File(filePath);
 			File[] tmpFiles = tmpFile.listFiles();
 			if(tmpFiles != null){
@@ -212,7 +213,8 @@ public class UtilityImportCommandDialog extends CommonDialog {
 							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_INFRA)) && 
 							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_JOBMAP_IMAGE_FOLDER)) && 
 							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_NODEMAP_BG_FOLDER)) && 
-							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_NODEMAP_ICON_FOLDER))){
+							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_NODEMAP_ICON_FOLDER)) && 
+							!file.getName().equals(MultiManagerPathUtil.getCloudScopeFolder())){
 						FileUtil.moveAllFiles2OtherDir(file.getAbsolutePath(), tmpFile.getAbsolutePath());
 						if (!file.delete())
 							log.warn(String.format("Fail to delete Directory. %s", file.getAbsolutePath()));
@@ -235,5 +237,11 @@ public class UtilityImportCommandDialog extends CommonDialog {
 
 	public void setFilePath(String filePath) {
 		this.filePath = filePath;
+	}
+
+	@Override
+	public boolean close() {
+		uploadComponent.cleanup();
+		return super.close();
 	}
 }

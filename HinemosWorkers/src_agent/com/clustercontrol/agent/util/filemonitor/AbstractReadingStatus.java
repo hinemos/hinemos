@@ -214,6 +214,7 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 		boolean falseFileExists = java.nio.file.Files.exists(Paths.get(getRsTempFilePath(false)));
 		long trueUpdateCount = 0;
 		long falseUpdateCount = 0;
+		// カウンタ値を取得して判定する
 		if (trueFileExists) {
 			trueUpdateCount = getUpdateCount(rsTrueFile);
 		}
@@ -239,11 +240,14 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 			asCurrent = true;
 		}
 
+		// ReadingStatusファイルの破損チェック
 		if (!trueFileExists) {
 			log.info("organizeRsFlag():" + rsTrueFile.getAbsolutePath() + " is nothing");
 		} else {
 			// ReadingStatusファイル(true)ファイルが破損しているか(0バイトファイルもしくは無効な内容)どうかの判定し、該当なら削除
-			if (rsTrueFile.length() == 0 || !(isValidContentFile(rsTrueFile))) {
+			if (rsTrueFile.length() == 0
+				|| !(isValidContentFile(rsTrueFile))
+				|| trueUpdateCount == Long.MIN_VALUE) {
 				log.info("organizeRsFlag():" + rsTrueFile.getAbsolutePath() + " is 0 bytes or invalid file." + " size="
 						+ rsTrueFile.length() + " content=" + printFile(rsTrueFile));
 				if (!rsTrueFile.delete()) {
@@ -257,7 +261,9 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 			log.info("organizeRsFlag():" + rsFalseFile.getAbsolutePath() + " is nothing");
 		} else {
 			// ReadingStatusファイル(false)ファイルが破損しているか(0バイトファイルもしくは無効な内容)どうかの判定し、該当なら削除
-			if (rsFalseFile.length() == 0 || !(isValidContentFile(rsFalseFile))) {
+			if (rsFalseFile.length() == 0
+				|| !(isValidContentFile(rsFalseFile))
+				|| falseUpdateCount== Long.MIN_VALUE) {
 				log.info("organizeRsFlag():" + rsFalseFile.getAbsolutePath() + " is 0 bytes or invalid file." + " size="
 						+ rsFalseFile.length() + " content=" + printFile(rsFalseFile));
 				//findbugs対応 戻り値をチェックしてログを出力とした。
@@ -282,9 +288,12 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 					monitorId, null);
 			// 監視対象ファイルについて、現時点以後の差分を監視するようにフラグを調整
 			tail = true;
-		} else if ((asCurrent == true && isTrueFileInValid) || (asCurrent == false && isFalseFileInValid)) {
-			// 最新のReadingStatusファイル のみ破損の場合
-			// バックアップからの差分を監視する旨を通知
+		} else if ((asCurrent == true && isTrueFileInValid)
+					|| (asCurrent == false && isFalseFileInValid)
+					|| trueUpdateCount == Long.MIN_VALUE
+					|| falseUpdateCount == Long.MIN_VALUE) {
+			// 最新のReadingStatusファイル のみ破損の場合、バックアップからの差分を監視する旨を通知
+			// またカウントが取得できないファイルがある場合は最新のReadingStatusファイルが不透明になるため、一律バックアップ扱いとする
 			String breakPath = "";
 			if (asCurrent == true) {
 				breakPath = rsTrueFile.getAbsolutePath();
@@ -376,11 +385,17 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 
 	/**
 	 * 有効な内容のReadingStatusファイルである確認する
+	 * UPDATE_COUNT_KEYはgetUpdateCountメソッド検証するため、
+	 * ここで検証しない
 	 * 
 	 * @return 有効な場合はtrue。そうでない場合はfalse
 	 */
 	private boolean isValidContentFile(File f) {
 		boolean isValid = true;
+		// ログ用変数定義
+		String logPosition = "";
+		String logPrevSize = "";
+
 		try (FileInputStream fi = new FileInputStream(f)) {
 			// ファイルを読み込む
 			Properties props = new Properties();
@@ -394,6 +409,24 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 				isValid = false;
 			}
 
+			// 取得したプロパティが数値かのチェックを行う
+			if (isValid) {
+				// ログ用に変数読み取り
+				logPosition = props.getProperty(POSITION_KEY);
+				logPrevSize = props.getProperty(PREV_SIZE_KEY);
+				// 数値置換検証
+				Long.parseLong(logPosition);
+				Long.parseLong(logPrevSize);
+			}
+
+		} catch (NumberFormatException e) {
+			isValid = false;
+			log.warn("Non-numeric value was entered. file :" + f.getName()
+				+ ", " + POSITION_KEY + " : " + logPosition
+				+ ", " + PREV_SIZE_KEY + " : " + logPrevSize);
+			if (log.isDebugEnabled()) {
+				log.debug(e.getMessage(), e);
+			}
 		} catch (Exception e) {
 			isValid = false;
 			log.warn(e.getMessage(), e);
@@ -591,6 +624,15 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 		return initialized;
 	}
 
+	/**
+	 * リーディングステータスファイルのカウント値を参照する
+	 * 読み込み時に異常がある場合はMIN_VALUEを返却する
+	 * このメソッドの返却値がリーディングステータスファイルの
+	 * 書き込みに使う値にはならない
+	 * 
+	 * @param rsFile
+	 * @return
+	 */
 	private long getUpdateCount(File rsFile){
 		long retUpdateCount = 0;
 		try (FileInputStream fi = new FileInputStream(rsFile)) {
@@ -601,6 +643,8 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 		} catch (IOException | NumberFormatException e) {
 			log.warn("UpdateCount Nothing. file :" + rsFile.getName());
 			log.debug(e.getMessage(), e);
+			// ファイルが読み込めなかった場合は異常値として返却
+			retUpdateCount = Long.MIN_VALUE;
 		}
 		return retUpdateCount;
 	}

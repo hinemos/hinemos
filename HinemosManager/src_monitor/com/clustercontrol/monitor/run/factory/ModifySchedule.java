@@ -138,20 +138,29 @@ public class ModifySchedule {
 				m_log.warn(msg, e);
 				throw new HinemosUnknown(msg, e);
 			}
+
+			String monitorTypeId = entity.getMonitorTypeId();
+			Integer monitorType = entity.getMonitorType();
+			String triggerType = entity.getTriggerType();
+			Integer runInterval = entity.getRunInterval();
+			Integer delayTime = entity.getDelayTime();
+			Boolean monitorFlg = entity.getMonitorFlg();
+			Boolean collectorFlg = entity.getCollectorFlg();
+			Boolean changeFlg = entity.getChangeFlg();
+			Boolean predictionFlg = entity.getPredictionFlg();
 			
-			final MonitorInfo entityCopy = entity;
 			jtm.addCallback(new EmptyJpaTransactionCallback() {
 				@Override
 				public void postCommit() {
 					try {
 						updateSchedule(
-								entityCopy.getMonitorId(),
-								entityCopy.getMonitorTypeId(),
-								entityCopy.getMonitorType(),
-								entityCopy.getTriggerType(),
-								entityCopy.getRunInterval(),
-								entityCopy.getDelayTime(),
-								(entityCopy.getMonitorFlg() || entityCopy.getCollectorFlg() || entityCopy.getChangeFlg() || entityCopy.getPredictionFlg()),
+								monitorId,
+								monitorTypeId,
+								monitorType,
+								triggerType,
+								runInterval,
+								delayTime,
+								(monitorFlg || collectorFlg || changeFlg || predictionFlg),
 								false);
 					} catch (HinemosUnknown e) {
 						m_log.error(e);

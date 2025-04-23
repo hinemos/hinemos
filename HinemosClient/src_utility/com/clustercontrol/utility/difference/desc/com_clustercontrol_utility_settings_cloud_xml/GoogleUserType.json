@@ -1,0 +1,13 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"serviceAccountKeyFileName",
+	"annotations":[
+		{"type":"Column", "columnName":"GoogleUserType_serviceAccountKeyFileName"}
+	]}
+]
+}

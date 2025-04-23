@@ -70,6 +70,12 @@ public abstract class AbstractNotifyCloudLinkInfoComposite extends Composite {
 	protected Text m_eventType;
 	protected Text m_dataVersion;
 	protected Text m_eventBus;
+	//GCP Specific fields
+	protected Text m_projectId;
+	protected Text m_topicId;
+	protected Text m_message;
+	protected Text m_orderingKey;
+	protected Button m_useOrdering = null;
 
 	/** シェル */
 	protected Shell m_shell = null;
@@ -378,6 +384,8 @@ public abstract class AbstractNotifyCloudLinkInfoComposite extends Composite {
 	public abstract void setInputData();
 
 	public abstract void update();
+
+	public abstract boolean isValidate();
 
 	public abstract Composite createComposite(Composite parent);
 	

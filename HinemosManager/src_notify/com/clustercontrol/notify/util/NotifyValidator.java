@@ -872,15 +872,55 @@ public class NotifyValidator {
 			}
 			
 			break;
-			
+		case CloudConstant.notify_gcp_platform:
+			// gcp
+			if (cloudInfo.getInfoValidFlg()) {
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_PROJECT_ID.getMessage(),
+						cloudInfo.getInfoEventBus(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_TOPIC_ID.getMessage(),
+						cloudInfo.getInfoSource(), true, 1, 4096);
+				if ((cloudInfo.getInfoDetailType() == null || cloudInfo.getInfoDetailType().isEmpty())
+						&& (cloudInfo.getInfoJsonData() == null || cloudInfo.getInfoJsonData().isEmpty())) {
+					throwInvalidSetting(MessageConstant.XCLOUD_NOTIFY_MESSAGE_ATTRIBUTE.getMessage());
+				}
+			}
+			if (cloudInfo.getWarnValidFlg()) {
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_PROJECT_ID.getMessage(),
+						cloudInfo.getWarnEventBus(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_TOPIC_ID.getMessage(),
+						cloudInfo.getWarnSource(), true, 1, 4096);
+				if ((cloudInfo.getWarnDetailType() == null || cloudInfo.getWarnDetailType().isEmpty())
+						&& (cloudInfo.getWarnJsonData() == null || cloudInfo.getWarnJsonData().isEmpty())) {
+					throwInvalidSetting(MessageConstant.XCLOUD_NOTIFY_MESSAGE_ATTRIBUTE.getMessage());
+				}
+			}
+			if (cloudInfo.getCriticalValidFlg()) {
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_PROJECT_ID.getMessage(),
+						cloudInfo.getCritEventBus(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_TOPIC_ID.getMessage(),
+						cloudInfo.getCritSource(), true, 1, 4096);
+				if ((cloudInfo.getCritDetailType() == null || cloudInfo.getCritDetailType().isEmpty())
+						&& (cloudInfo.getCritJsonData() == null || cloudInfo.getCritJsonData().isEmpty())) {
+					throwInvalidSetting(MessageConstant.XCLOUD_NOTIFY_MESSAGE_ATTRIBUTE.getMessage());
+				}
+			}
+			if (cloudInfo.getUnknownValidFlg()) {
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_PROJECT_ID.getMessage(),
+						cloudInfo.getUnkEventBus(), true, 1, 4096);
+				CommonValidator.validateString(MessageConstant.XCLOUD_NOTIFY_TOPIC_ID.getMessage(),
+						cloudInfo.getUnkSource(), true, 1, 4096);
+				if ((cloudInfo.getUnkDetailType() == null || cloudInfo.getUnkDetailType().isEmpty())
+						&& (cloudInfo.getUnkJsonData() == null || cloudInfo.getUnkJsonData().isEmpty())) {
+					throwInvalidSetting(MessageConstant.XCLOUD_NOTIFY_MESSAGE_ATTRIBUTE.getMessage());
+				}
+			}
+			break;
 			
 		default:
 			throwInvalidSetting(MessageConstant.MESSAGE_PLEASE_SELECT_PUBLIC_CLOUD.getMessage());
 			
 		}
-		
-		
-		
+					
 		return true;
 	}
 	

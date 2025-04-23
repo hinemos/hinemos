@@ -7,14 +7,22 @@
  */
 package com.clustercontrol.rest.endpoint.monitorsetting.dto;
 
+import com.clustercontrol.rest.endpoint.monitorsetting.dto.enumtype.RunIntervalEnum;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties({"runInterval"})
 public class ModifyLogfileMonitorRequest extends AbstractModifyStringMonitorRequest {
 
 	public ModifyLogfileMonitorRequest() {
-
+		// runIntervalは、固定値にする
+		super.setRunInterval(RunIntervalEnum.NONE);
 	}
 
 	private LogfileCheckInfoRequest logfileCheckInfo;
 
+	@Override
+	public void setRunInterval(RunIntervalEnum runInterval) {
+	}
 	
 	public LogfileCheckInfoRequest getLogfileCheckInfo() {
 		return logfileCheckInfo;

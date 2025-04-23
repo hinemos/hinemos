@@ -17,6 +17,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.util.RestConnectManager;
+import com.clustercontrol.utility.settings.ui.constant.XMLConstant;
 import com.clustercontrol.utility.settings.ui.preference.PreferencePageConstant;
 
 public class MultiManagerPathUtil {
@@ -138,5 +139,23 @@ public class MultiManagerPathUtil {
 			return true;
 		}
 		return false;
+	}
+	
+	/**
+	 * クラウド管理機能OCI/GCPで使用
+	 * 認証情報ファイルのフォルダ名を取得
+	 * @return
+	 */
+	public static String getCloudScopeFolder(){
+		String cloudFolderName = "";
+		
+		try{
+			cloudFolderName = getPreference(XMLConstant.DEFAULT_XML_CLOUD_USER)
+				.substring(0, getPreference(XMLConstant.DEFAULT_XML_CLOUD_USER).lastIndexOf("."));
+		} catch (IndexOutOfBoundsException e){
+			logger.warn("getCloudScopeFolder(): failed to get CloudScope folder name", e);
+		}
+		
+		return cloudFolderName;
 	}
 }

@@ -154,6 +154,9 @@ public class UploadComponent{
 
 				// Stop push session after all
 				pushSession.stop();
+				
+				// delete temporary file if exist
+				cleanup();
 			}
 		});
 		return uploadHandler.getUploadUrl();

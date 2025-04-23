@@ -14,4 +14,10 @@ public interface ICloudModelContentProvider {
 	public String getText(Object o, String defaultName);
 	public Image getImage(Object o, Image defaultImage);
 	public <T> T[] getChildren(Object o, T[] defaultChildren);
+	default public String getSortingKey(Object o, String defaultKey){
+		return defaultKey;
+	}
+	default boolean skipDuplicateFacilityWarning(){
+		return false;
+	}
 }

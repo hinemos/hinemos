@@ -8,6 +8,7 @@
 package com.clustercontrol.xcloud.factory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -34,6 +35,7 @@ import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.InternalManagerError;
 import com.clustercontrol.xcloud.Session;
+import com.clustercontrol.xcloud.common.CloudConstants;
 import com.clustercontrol.xcloud.common.ErrorCode;
 import com.clustercontrol.xcloud.factory.IResourceManagement.Entity;
 import com.clustercontrol.xcloud.factory.IResourceManagement.Folder;
@@ -226,6 +228,25 @@ public class LocationRepositoryUpdater {
 								FacilityIdUtil.getAllNodeScopeId(cloudScope.getPlatformId(), cloudScope.getCloudScopeId()).equals(facility.getData().getFacilityId())
 								) {
 								return;
+							}
+						}
+						// OCI個別カスタマイズ
+						// Entityを複数のロケーションスコープに割り当てているため
+						// EPROP_SKIP_RELEASE_NODE_FACILITY_IDSに存在するファシリティIDは
+						// スコープからリリースしない
+						if (parentFolder.getLocation() != null) {
+							for (com.clustercontrol.xcloud.factory.IResourceManagement.ExtendedProperty eprop : parentFolder
+									.getLocation().getExtendedProperties()) {
+								if (eprop.getName().equals(CloudConstants.EPROP_SKIP_RELEASE_NODE_FACILITY_IDS)
+										&& eprop.getValue() != null) {
+									List<String> facilityList = Arrays.asList(eprop.getValue().split(","));
+									if (facilityList != null
+											&& facilityList.contains(facility.getData().getFacilityId())) {
+										return;
+									} else {
+										break;
+									}
+								}
 							}
 						}
 						behavior.removeFacility(parentFacility.getData().getFacilityId(), facility);

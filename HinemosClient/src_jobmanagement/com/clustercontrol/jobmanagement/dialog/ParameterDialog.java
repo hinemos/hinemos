@@ -167,6 +167,10 @@ public class ParameterDialog extends CommonDialog {
 
 				//説明
 				String description = (String) m_parameter.get(GetParameterTableDefine.DESCRIPTION);
+				if (description == null) {
+					//説明がnullだと表示の際にエラーが出るので空文字で補完しておく。
+					description = "";
+				}
 				((Property) list.get(2)).setValue(description);
 				m_viewer.setInput(property);
 			}

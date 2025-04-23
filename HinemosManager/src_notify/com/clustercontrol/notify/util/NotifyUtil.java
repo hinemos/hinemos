@@ -326,10 +326,10 @@ public class NotifyUtil {
 			entity.setJobExecFacilityFlg(job.getJobExecFacilityFlg());
 			entity.setJobExecFacility(job.getJobExecFacility());
 
-			entity.setRetryFlg(null);
+			entity.setRetryFlg(false);
 			entity.setRetryCount(null);
-			entity.setSuccessInternalFlg(null);
-			entity.setFailureInternalFlg(null);
+			entity.setSuccessInternalFlg(false);
+			entity.setFailureInternalFlg(false);
 			entity.setJoblinkSendSettingId(null);
 
 		} else if (job.getNotifyJobType() == NotifyJobType.TYPE_JOB_LINK_SEND) {

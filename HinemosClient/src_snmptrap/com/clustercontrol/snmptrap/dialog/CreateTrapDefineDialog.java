@@ -753,9 +753,11 @@ public class CreateTrapDefineDialog extends CommonDialog {
 			if(inputData.getDescription() != null){
 				txtMessageDetail.setText(inputData.getDescription());
 			}
+			if (inputData.getPriorityAnyVarBind() != null) {
+				cmbPriority.select(cmbPriority.indexOf(PriorityMessage.codeToString(inputData.getPriorityAnyVarBind().toString())));
+			}
 			if(!inputData.getProcVarbindSpecified()){
 				btnNotifyIgnoreVariable.setSelection(true);
-				cmbPriority.select(cmbPriority.indexOf(PriorityMessage.codeToString(inputData.getPriorityAnyVarBind().toString())));
 				txtTargetString.setText(DEFAULT_TARGET_STRING);
 			} else {
 				btnNotifyUseVariable.setSelection(true);
@@ -862,10 +864,10 @@ public class CreateTrapDefineDialog extends CommonDialog {
 		info.setLogmsg(txtMessage.getText());
 		info.setDescription(txtMessageDetail.getText());
 
+		info.setPriorityAnyVarBind(PriorityMessage.stringToEnum(
+				cmbPriority.getText(), TrapValueInfoResponse.PriorityAnyVarBindEnum.class));
 		if(btnNotifyIgnoreVariable.getSelection()){
 			info.setProcVarbindSpecified(false);
-			info.setPriorityAnyVarBind(PriorityMessage.stringToEnum(
-					cmbPriority.getText(), TrapValueInfoResponse.PriorityAnyVarBindEnum.class));
 		} else {
 			info.setProcVarbindSpecified(true);
 			info.setFormatVarBinds(txtTargetString.getText());

@@ -152,6 +152,7 @@ import com.clustercontrol.xcloud.bean.CloudLoginUser;
 import com.clustercontrol.xcloud.bean.CloudPlatform;
 import com.clustercontrol.xcloud.bean.CloudScope;
 import com.clustercontrol.xcloud.bean.Credential;
+import com.clustercontrol.xcloud.bean.GenericCredential;
 import com.clustercontrol.xcloud.bean.HRepository;
 import com.clustercontrol.xcloud.bean.Instance;
 import com.clustercontrol.xcloud.bean.InstanceBackup;
@@ -445,7 +446,8 @@ public class CloudRestEndpoints {
 					AddCloudScopeRequest.class);
 			RestCommonValitater.checkRequestDto(dtoReq);
 
-			CloudPlatformEntity platform = Session.current().getEntityManager().find(CloudPlatformEntity.class, dtoReq.getPlatformId(), ObjectPrivilegeMode.READ);
+			CloudPlatformEntity platform = Session.current().getEntityManager().find(CloudPlatformEntity.class,
+					dtoReq.getPlatformId(), ObjectPrivilegeMode.READ);
 			if (platform == null) {
 				throw new InvalidSetting(ErrorCode.CLOUD_PLATFORM_NOT_FOUND.cloudManagerFault(dtoReq.getPlatformId()));
 			}
@@ -480,6 +482,7 @@ public class CloudRestEndpoints {
 									throw new CloudManagerException(e.getMessage());
 								}
 							}
+
 							@Override
 							public void visit(IPublicCloudOption cloudOption) throws CloudManagerException {
 								throw new CloudManagerException();
@@ -501,7 +504,8 @@ public class CloudRestEndpoints {
 				@Override
 				public CloudScope transform(AddPublicCloudScopeRequest request) throws CloudManagerException {
 					try {
-						return new PublicCloudScope(CloudManager.singleton().getCloudScopes().addPublicCloudScope(request));
+						return new PublicCloudScope(
+								CloudManager.singleton().getCloudScopes().addPublicCloudScope(request));
 					} catch (Exception e) {
 						throw new CloudManagerException(e);
 					}
@@ -510,7 +514,8 @@ public class CloudRestEndpoints {
 				@Override
 				public CloudScope transform(AddPrivateCloudScopeRequest request) throws CloudManagerException {
 					try {
-					return new PrivateCloudScope(CloudManager.singleton().getCloudScopes().addPrivateCloudScope(request));
+						return new PrivateCloudScope(
+								CloudManager.singleton().getCloudScopes().addPrivateCloudScope(request));
 					} catch (Exception e) {
 						throw new CloudManagerException(e);
 					}
@@ -519,7 +524,7 @@ public class CloudRestEndpoints {
 			CloudScopeInfoResponse dtoRes = new CloudScopeInfoResponse();
 			RestBeanUtil.convertBeanNoInvalid(infoRes, dtoRes);
 			dtoRes.getEntity().setPublic(isPublic);
-			
+
 			RestLanguageConverter.convertMessages(dtoRes);
 
 			res = Response.status(Status.OK).entity(dtoRes).build();
@@ -611,17 +616,18 @@ public class CloudRestEndpoints {
 			dtoReq.correlationCheck();
 			CloudScopeEntity scope;
 			HinemosEntityManager em = Session.current().getEntityManager();
-			TypedQuery<CloudScopeEntity> query = em.createNamedQuery("findCloudScopeByHinemosUserAsAdmin", CloudScopeEntity.class);
+			TypedQuery<CloudScopeEntity> query = em.createNamedQuery("findCloudScopeByHinemosUserAsAdmin",
+					CloudScopeEntity.class);
 			query.setParameter("userId", Session.current().getHinemosCredential().getUserId());
 			query.setParameter("cloudScopeId", cloudScopeId);
 			query.setParameter("ADMINISTRATORS", RoleIdConstant.ADMINISTRATORS);
 			query.setParameter("accountType", CloudLoginUserEntity.CloudUserType.account);
-			
+
 			try {
 				scope = query.getSingleResult();
-			}
-			catch (NoResultException e) {
-				throw ErrorCode.NEED_ADMINISTRATORS_ROLE_OR_ACCOUNT_USER.cloudManagerFault(Session.current().getHinemosCredential().getUserId(), cloudScopeId);
+			} catch (NoResultException e) {
+				throw ErrorCode.NEED_ADMINISTRATORS_ROLE_OR_ACCOUNT_USER
+						.cloudManagerFault(Session.current().getHinemosCredential().getUserId(), cloudScopeId);
 			}
 
 			Boolean isPublic = isPublic(scope.getPlatformId());
@@ -702,7 +708,8 @@ public class CloudRestEndpoints {
 
 	/**
 	 * オーナーロールIDを指定してクラウドスコープを取得するAPI
-	 * @throws InvalidSetting 
+	 * 
+	 * @throws InvalidSetting
 	 */
 	@GET
 	@Path("/cloudScope")
@@ -716,11 +723,13 @@ public class CloudRestEndpoints {
 	@Produces(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Get, target = LogTarget.CloudScope, type = LogType.REFERENCE)
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.CloudManagement, modeList = { SystemPrivilegeMode.READ })
-	public Response getCloudScopes(@QueryParam(value = "ownerRoleId") String ownerRoleId, @Context Request request, @QueryParam(value = "size") String sizeStr,
-			@Context UriInfo uriInfo) throws CloudManagerException, InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
+	public Response getCloudScopes(@QueryParam(value = "ownerRoleId") String ownerRoleId, @Context Request request,
+			@QueryParam(value = "size") String sizeStr, @Context UriInfo uriInfo)
+			throws CloudManagerException, InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
 		Response res = null;
 		try (RestSessionScope sessionScope = RestSessionScope.open()) {
-			Integer size = RestCommonConverter.convertInteger(MessageConstant.SIZE.getMessage(), sizeStr, false, 1, null);
+			Integer size = RestCommonConverter.convertInteger(MessageConstant.SIZE.getMessage(), sizeStr, false, 1,
+					null);
 			List<CloudScopeInfoResponse> dtoResList = new ArrayList<>();
 			if (ownerRoleId != null) {
 				RestValidationUtil.identityValidate(XCLOUD_CORE_ROLE_ID, ownerRoleId);
@@ -781,10 +790,10 @@ public class CloudRestEndpoints {
 						break;
 					}
 				}
-			}else{
+			} else {
 				dtoResListZap = dtoResList;
 			}
-			
+
 			RestLanguageConverter.convertMessages(dtoResListZap);
 			GetCloudScopesResponse dtoRes = new GetCloudScopesResponse();
 			dtoRes.setCloudScopeInfoList(dtoResListZap);
@@ -860,6 +869,13 @@ public class CloudRestEndpoints {
 						credRes.setUser(credential.getUser());
 						credRes.setPassword(credential.getPassword());
 					}
+
+					@Override
+					public void visit(GenericCredential credential) throws CloudManagerException {
+						credRes.setPlatform(credential.getPlatform());
+						credRes.setJsonCredentialInfo(credential.getJsonCredentialInfo());
+						
+					}
 				});
 				dtoRes.setCredential(credRes);
 				dtoResList.add(dtoRes);
@@ -905,7 +921,7 @@ public class CloudRestEndpoints {
 			Boolean isPublic = isPublic(scope.getPlatformId());
 			dtoReq.setPublic(isPublic);
 			dtoReq.correlationCheck();
-			
+
 			// クラウド側にユーザー情報が存在するか確認。
 			scope.optionExecute(new CloudScopeEntity.OptionExecutor() {
 				@Override
@@ -1066,28 +1082,33 @@ public class CloudRestEndpoints {
 			ModifyCloudLoginUserRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
 					ModifyCloudLoginUserRequest.class);
 			RestCommonValitater.checkRequestDto(dtoReq);
-			
+
 			if (!AuthorizingUtil.checkHinemousUser_administrators_account_self(
 					Session.current().getHinemosCredential().getUserId(), cloudScopeId, cloudLoginUserId)) {
-				throw ErrorCode.NEED_ADMINISTRATORS_ROLE_OR_ACCOUT_USER_OR_SELF
-						.cloudManagerFault(Session.current().getHinemosCredential().getUserId(), cloudScopeId, cloudLoginUserId);
+				throw ErrorCode.NEED_ADMINISTRATORS_ROLE_OR_ACCOUT_USER_OR_SELF.cloudManagerFault(
+						Session.current().getHinemosCredential().getUserId(), cloudScopeId, cloudLoginUserId);
 			}
 
 			CloudScopeEntity scope = CloudManager.singleton().getCloudScopes().getCloudScope(cloudScopeId);
 			isPublic = isPublic(scope.getPlatformId());
 			dtoReq.setPublic(isPublic);
 			dtoReq.correlationCheck();
-			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers().getCloudLoginUser(cloudScopeId, cloudLoginUserId);
+			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers().getCloudLoginUser(cloudScopeId,
+					cloudLoginUserId);
 			switch (user.getCloudUserType()) {
 			case account:
 				user.getCloudScope().optionExecuteEx(new CloudScopeEntity.OptionExecutorEx() {
 					@Override
-					public void execute(PublicCloudScopeEntity scope, IPublicCloudOption option) throws CloudManagerException {
+					public void execute(PublicCloudScopeEntity scope, IPublicCloudOption option)
+							throws CloudManagerException {
 						option.validCredentialAsAccount(dtoReq.getCredential());
 					}
+
 					@Override
-					public void execute(PrivateCloudScopeEntity scope, IPrivateCloudOption option) throws CloudManagerException {
-						option.validCredentialEntityAsAccount(dtoReq.getCredential(), new ArrayList<>(scope.getPrivateLocations().values()));
+					public void execute(PrivateCloudScopeEntity scope, IPrivateCloudOption option)
+							throws CloudManagerException {
+						option.validCredentialEntityAsAccount(dtoReq.getCredential(),
+								new ArrayList<>(scope.getPrivateLocations().values()));
 					}
 				});
 				break;
@@ -1353,8 +1374,7 @@ public class CloudRestEndpoints {
 	}
 
 	/**
-	 * コンピュートノードを起動するAPI
-	 * (対象となるインスタンスの起動を実施するため、POSTリクエスト)
+	 * コンピュートノードを起動するAPI (対象となるインスタンスの起動を実施するため、POSTリクエスト)
 	 */
 	@POST
 	@Path("/xcloud_instance_powerOn/cloudScope/{cloudScopeId}/location/{locationId}/resource")
@@ -1371,17 +1391,17 @@ public class CloudRestEndpoints {
 	public Response powerOnInstances(@PathParam(value = "cloudScopeId") String cloudScopeId,
 			@PathParam(value = "locationId") String locationId,
 			@RequestBody(description = "powerOnInstancesBody", content = @Content(schema = @Schema(implementation = PowerOnInstancesRequest.class))) String requestBody,
-			@Context Request request,
-			@Context UriInfo uriInfo) throws CloudManagerException, InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
+			@Context Request request, @Context UriInfo uriInfo)
+			throws CloudManagerException, InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
 		Response res = null;
 		try (RestSessionScope sessionScope = RestSessionScope.open()) {
-			
+
 			PowerOnInstancesRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
 					PowerOnInstancesRequest.class);
 			RestCommonValitater.checkRequestDto(dtoReq);
 			dtoReq.correlationCheck();
 
-			if (dtoReq.getInstanceIds() == null || dtoReq.getInstanceIds().isEmpty() ) {
+			if (dtoReq.getInstanceIds() == null || dtoReq.getInstanceIds().isEmpty()) {
 				return res;
 			}
 			AuthorizingValidator.validateScopeLocation(cloudScopeId, locationId);
@@ -1402,8 +1422,7 @@ public class CloudRestEndpoints {
 	}
 
 	/**
-	 * コンピュートノードを停止するAPI
-	 * (対象となるインスタンスの停止を実施するため、POSTリクエスト)
+	 * コンピュートノードを停止するAPI (対象となるインスタンスの停止を実施するため、POSTリクエスト)
 	 */
 	@POST
 	@Path("/xcloud_instance_powerOff/cloudScope/{cloudScopeId}/location/{locationId}/resource")
@@ -1420,8 +1439,8 @@ public class CloudRestEndpoints {
 	public Response powerOffInstances(@PathParam(value = "cloudScopeId") String cloudScopeId,
 			@PathParam(value = "locationId") String locationId,
 			@RequestBody(description = "powerOffInstancesBody", content = @Content(schema = @Schema(implementation = PowerOffInstancesRequest.class))) String requestBody,
-			@Context Request request,
-			@Context UriInfo uriInfo) throws CloudManagerException, InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
+			@Context Request request, @Context UriInfo uriInfo)
+			throws CloudManagerException, InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
 		Response res = null;
 		try (RestSessionScope sessionScope = RestSessionScope.open()) {
 
@@ -1430,7 +1449,7 @@ public class CloudRestEndpoints {
 			RestCommonValitater.checkRequestDto(dtoReq);
 			dtoReq.correlationCheck();
 
-			if (dtoReq.getInstanceIds() == null || dtoReq.getInstanceIds().isEmpty() ) {
+			if (dtoReq.getInstanceIds() == null || dtoReq.getInstanceIds().isEmpty()) {
 				return res;
 			}
 			AuthorizingValidator.validateScopeLocation(cloudScopeId, locationId);
@@ -1451,8 +1470,7 @@ public class CloudRestEndpoints {
 	}
 
 	/**
-	 * コンピュートノードを一時停止するAPI
-	 * (対象となるインスタンスの一時停止を実施するため、POSTリクエスト)
+	 * コンピュートノードを一時停止するAPI (対象となるインスタンスの一時停止を実施するため、POSTリクエスト)
 	 */
 	@POST
 	@Path("/xcloud_instance_suspend/cloudScope/{cloudScopeId}/location/{locationId}/resource")
@@ -1469,18 +1487,18 @@ public class CloudRestEndpoints {
 	public Response suspendInstances(@PathParam(value = "cloudScopeId") String cloudScopeId,
 			@PathParam(value = "locationId") String locationId,
 			@RequestBody(description = "suspendInstancesBody", content = @Content(schema = @Schema(implementation = SuspendInstancesRequest.class))) String requestBody,
-			@Context Request request,
-			@Context UriInfo uriInfo) throws CloudManagerException, InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
+			@Context Request request, @Context UriInfo uriInfo)
+			throws CloudManagerException, InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
 		Response res = null;
 		try (RestSessionScope sessionScope = RestSessionScope.open()) {
 			SuspendInstancesRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
 					SuspendInstancesRequest.class);
 			RestCommonValitater.checkRequestDto(dtoReq);
 			dtoReq.correlationCheck();
-			
+
 			// Validation
 			// instanceIdsは未指定なら何もしない
-			if (dtoReq.getInstanceIds() == null || dtoReq.getInstanceIds().isEmpty() ) {
+			if (dtoReq.getInstanceIds() == null || dtoReq.getInstanceIds().isEmpty()) {
 				return res;
 			}
 			AuthorizingValidator.validateScopeLocation(cloudScopeId, locationId);
@@ -1502,8 +1520,7 @@ public class CloudRestEndpoints {
 	}
 
 	/**
-	 * コンピュートノードを再起動するAPI
-	 * (対象となるインスタンスの再起動を実施するため、POSTリクエスト)
+	 * コンピュートノードを再起動するAPI (対象となるインスタンスの再起動を実施するため、POSTリクエスト)
 	 */
 	@POST
 	@Path("/xcloud_instance_reboot/cloudScope/{cloudScopeId}/location/{locationId}/resource")
@@ -1520,19 +1537,19 @@ public class CloudRestEndpoints {
 	public Response rebootInstances(@PathParam(value = "cloudScopeId") String cloudScopeId,
 			@PathParam(value = "locationId") String locationId,
 			@RequestBody(description = "rebootInstancesBody", content = @Content(schema = @Schema(implementation = RebootInstancesRequest.class))) String requestBody,
-			@Context Request request,
-			@Context UriInfo uriInfo) throws CloudManagerException, InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
+			@Context Request request, @Context UriInfo uriInfo)
+			throws CloudManagerException, InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
 		Response res = null;
 		try (RestSessionScope sessionScope = RestSessionScope.open()) {
-			
+
 			RebootInstancesRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
 					RebootInstancesRequest.class);
 			RestCommonValitater.checkRequestDto(dtoReq);
 			dtoReq.correlationCheck();
-			
+
 			// Validation
 			// instanceIdsは未指定なら何もしない
-			if (dtoReq.getInstanceIds() == null || dtoReq.getInstanceIds().isEmpty() ) {
+			if (dtoReq.getInstanceIds() == null || dtoReq.getInstanceIds().isEmpty()) {
 				return res;
 			}
 			AuthorizingValidator.validateScopeLocation(cloudScopeId, locationId);
@@ -1605,7 +1622,7 @@ public class CloudRestEndpoints {
 
 	/**
 	 * コンピュートノードのスナップショットを削除するAPI
-	 */	
+	 */
 	@DELETE
 	@Path("/xcloud_instanceBackup/cloudScope/{cloudScopeId}/location/{locationId}/resource/{instanceId}/snapshot")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "DeleteInstanceSnapshots")
@@ -1807,8 +1824,7 @@ public class CloudRestEndpoints {
 	@POST
 	@Path("/xcloud_instacne_attachStorage/cloudScope/{cloudScopeId}/location/{locationId}/resource/{instanceId}")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "AttachStorage")
-	@APIResponses(value = {
-			@APIResponse(responseCode = STATUS_CODE_200, description = "response"),
+	@APIResponses(value = { @APIResponse(responseCode = STATUS_CODE_200, description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_400, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
@@ -1842,7 +1858,7 @@ public class CloudRestEndpoints {
 			CloudManager.singleton().getStorages(user, user.getCloudScope().getLocation(locationId))
 					.attachStorage(instanceId, dtoReq.getStorageId(), options);
 		}
-		
+
 		return Response.status(Status.OK).build();
 	}
 
@@ -1852,8 +1868,7 @@ public class CloudRestEndpoints {
 	@POST
 	@Path("/xcloud_instacne_detachStorage/cloudScope/{cloudScopeId}/location/{locationId}/resource")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "DetachStorage")
-	@APIResponses(value = {
-			@APIResponse(responseCode = STATUS_CODE_200, description = "response"),
+	@APIResponses(value = { @APIResponse(responseCode = STATUS_CODE_200, description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_400, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
@@ -1880,7 +1895,7 @@ public class CloudRestEndpoints {
 			CloudManager.singleton().getStorages(user, user.getCloudScope().getLocation(locationId))
 					.detachStorage(dtoReq.getStorageIds());
 		}
-		
+
 		return Response.status(Status.OK).build();
 	}
 
@@ -1961,7 +1976,7 @@ public class CloudRestEndpoints {
 
 			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
 					.getPrimaryCloudLoginUserByCurrent(cloudScopeId);
-			
+
 			List<StorageEntity> entityList = null;
 			ILock lock = CloudUtil.getLock(CloudRestEndpoints.class.getName() + "getStorages", cloudScopeId,
 					locationId);
@@ -2075,7 +2090,7 @@ public class CloudRestEndpoints {
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.CloudManagement, modeList = { SystemPrivilegeMode.EXEC,
 			SystemPrivilegeMode.READ })
 	public Response deleteStorageSnapshots(@PathParam(value = "cloudScopeId") String cloudScopeId,
-			@PathParam(value = "locationId") String locationId, 
+			@PathParam(value = "locationId") String locationId,
 			@RequestBody(description = "deleteStorageSnapshotRequestBody", content = @Content(schema = @Schema(implementation = DeleteStorageSnapshotRequest.class))) String requestBody,
 			@Context Request request, @Context UriInfo uriInfo)
 			throws CloudManagerException, InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
@@ -2084,7 +2099,8 @@ public class CloudRestEndpoints {
 			// Validation
 			AuthorizingValidator.validateScopeLocation(cloudScopeId, locationId);
 
-			DeleteStorageSnapshotRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody, DeleteStorageSnapshotRequest.class);
+			DeleteStorageSnapshotRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
+					DeleteStorageSnapshotRequest.class);
 			RestCommonValitater.checkRequestDto(dtoReq);
 			dtoReq.correlationCheck();
 
@@ -2266,14 +2282,17 @@ public class CloudRestEndpoints {
 			// 各Facilityに親クラウドスコープID、プラットフォームをセット
 			for (HFacilityResponse rootFacility : dtoRes.getFacilities()) {
 				for (HFacilityResponse cloudScopeFacility : rootFacility.getFacilities()) {
-					recursiveSetParentCloudScopeIdwithPlatform(cloudScopeFacility.getCloudScope().getEntity().getCloudScopeId(), cloudScopeFacility.getCloudScope().getEntity().getPlatformId(), cloudScopeFacility);
-					cloudScopeFacility.getCloudScope().getEntity().setPublic(isPublic(cloudScopeFacility.getCloudScope().getEntity().getPlatformId()));
+					recursiveSetParentCloudScopeIdwithPlatform(
+							cloudScopeFacility.getCloudScope().getEntity().getCloudScopeId(),
+							cloudScopeFacility.getCloudScope().getEntity().getPlatformId(), cloudScopeFacility);
+					cloudScopeFacility.getCloudScope().getEntity()
+							.setPublic(isPublic(cloudScopeFacility.getCloudScope().getEntity().getPlatformId()));
 				}
 			}
 			for (CloudScopeInfoResponse dtoCloudScope : dtoRes.getCloudScopes()) {
 				dtoCloudScope.getEntity().setPublic(isPublic(dtoCloudScope.getEntity().getPlatformId()));
 			}
-			
+
 			// CloudSpecを変換
 			List<CloudPlatform> infoCloudPlatforms = infoRes.getPlatforms();
 			for (CloudPlatform infoCloudPlatform : infoCloudPlatforms) {
@@ -2322,8 +2341,11 @@ public class CloudRestEndpoints {
 			// 各Facilityに親クラウドスコープID、プラットフォームをセット
 			for (HFacilityResponse rootFacility : dtoRes.getFacilities()) {
 				for (HFacilityResponse cloudScopeFacility : rootFacility.getFacilities()) {
-					recursiveSetParentCloudScopeIdwithPlatform(cloudScopeFacility.getCloudScope().getEntity().getCloudScopeId(), cloudScopeFacility.getCloudScope().getEntity().getPlatformId(), cloudScopeFacility);
-					cloudScopeFacility.getCloudScope().getEntity().setPublic(isPublic(cloudScopeFacility.getCloudScope().getEntity().getPlatformId()));
+					recursiveSetParentCloudScopeIdwithPlatform(
+							cloudScopeFacility.getCloudScope().getEntity().getCloudScopeId(),
+							cloudScopeFacility.getCloudScope().getEntity().getPlatformId(), cloudScopeFacility);
+					cloudScopeFacility.getCloudScope().getEntity()
+							.setPublic(isPublic(cloudScopeFacility.getCloudScope().getEntity().getPlatformId()));
 				}
 			}
 			for (CloudScopeInfoResponse cloudScope : dtoRes.getCloudScopes()) {
@@ -2404,7 +2426,7 @@ public class CloudRestEndpoints {
 		}
 		return res;
 	}
-	
+
 	/**
 	 * クラウドサービスが提供する各種サービスの状態を変更するAPI
 	 */
@@ -2419,7 +2441,8 @@ public class CloudRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@RestLog(action = LogAction.Get, target = LogTarget.Role, type = LogType.UPDATE)
-	@RestSystemPrivilege(function = SystemPrivilegeFunction.CloudManagement, modeList = { SystemPrivilegeMode.READ,SystemPrivilegeMode.EXEC })
+	@RestSystemPrivilege(function = SystemPrivilegeFunction.CloudManagement, modeList = { SystemPrivilegeMode.READ,
+			SystemPrivilegeMode.EXEC })
 	public Response modifyPlatformServiceCondition(@PathParam(value = "cloudScopeId") String cloudScopeId,
 			@RequestBody(description = "modifyPlatformServiceConditionBody", content = @Content(schema = @Schema(implementation = ModifyPlatformServiceConditionRequest.class))) String requestBody,
 			@Context Request request, @Context UriInfo uriInfo)
@@ -2443,7 +2466,8 @@ public class CloudRestEndpoints {
 			RestBeanUtil.convertBeanNoInvalid(dtoReq, infoReq);
 			infoReq.setCloudScopeId(cloudScopeId);
 			infoReq.setLocationId(locationId);
-			List<PlatformServiceCondition> infoResList = CloudManager.singleton().getCloudScopes().modifyPlatformServiceCondition(infoReq);
+			List<PlatformServiceCondition> infoResList = CloudManager.singleton().getCloudScopes()
+					.modifyPlatformServiceCondition(infoReq);
 
 			List<PlatformServiceConditionResponse> dtoResList = new ArrayList<>();
 			for (PlatformServiceCondition infoRes : infoResList) {
@@ -2482,7 +2506,7 @@ public class CloudRestEndpoints {
 
 			CloudLoginUserEntity user = CloudManager.singleton().getLoginUsers()
 					.getPrimaryCloudLoginUserByCurrent(cloudScopeId);
-			
+
 			List<Network> infoResList = null;
 			ILock lock = CloudUtil.getLock(CloudRestEndpoints.class.getName() + "getAllNetworks", cloudScopeId,
 					locationId);
@@ -2686,8 +2710,8 @@ public class CloudRestEndpoints {
 			}
 
 			IBillings billings = CloudManager.singleton().getBillings();
-			String fileName = billings.writeBillingDetailsByCloudScope(cloudScopeId,
-					Integer.valueOf(year), Integer.valueOf(month), tempFile);
+			String fileName = billings.writeBillingDetailsByCloudScope(cloudScopeId, Integer.valueOf(year),
+					Integer.valueOf(month), tempFile);
 
 			res = Response.ok(RestTempFileUtil.getTempFileStream(tempFile))
 					.header("Content-Disposition", "filename=\"" + fileName + "\"").build();
@@ -2731,8 +2755,8 @@ public class CloudRestEndpoints {
 			}
 
 			IBillings billings = CloudManager.singleton().getBillings();
-			String fileName = billings.writeBillingDetailsByFacility(facilityId,
-					Integer.valueOf(year), Integer.valueOf(month), tempFile);
+			String fileName = billings.writeBillingDetailsByFacility(facilityId, Integer.valueOf(year),
+					Integer.valueOf(month), tempFile);
 
 			res = Response.ok(RestTempFileUtil.getTempFileStream(tempFile))
 					.header("Content-Disposition", "filename=\"" + fileName + "\"").build();
@@ -2746,16 +2770,15 @@ public class CloudRestEndpoints {
 	@POST
 	@Path("/billingDetail")
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "RefreshBillingDetails")
-	@APIResponses(value = {
-			@APIResponse(responseCode = STATUS_CODE_200, description = "response"),
+	@APIResponses(value = { @APIResponse(responseCode = STATUS_CODE_200, description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@RestLog(action = LogAction.Get, target = LogTarget.BillingDetail, type = LogType.REFERENCE)
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.CloudManagement, modeList = { SystemPrivilegeMode.MODIFY })
 	public Response refreshBillingDetails(
 			@RequestBody(description = "refreshBillingDetailsBody", content = @Content(schema = @Schema(implementation = RefreshBillingDetailsRequest.class))) String requestBody,
-			@Context Request request,
-			@Context UriInfo uriInfo) throws CloudManagerException, InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
+			@Context Request request, @Context UriInfo uriInfo)
+			throws CloudManagerException, InvalidUserPass, InvalidRole, InvalidSetting, HinemosUnknown {
 
 		RefreshBillingDetailsRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
 				RefreshBillingDetailsRequest.class);
@@ -2768,7 +2791,7 @@ public class CloudRestEndpoints {
 		try (RestSessionScope sessionScope = RestSessionScope.open()) {
 			CloudManager.singleton().getBillings().refreshBillingDetails(cloudScopeId);
 		}
-		
+
 		return Response.status(Status.OK).build();
 	}
 
@@ -2952,7 +2975,7 @@ public class CloudRestEndpoints {
 
 			CheckPublishResponse dtoRes = new CheckPublishResponse();
 			dtoRes.setPublish(publish);
-			
+
 			RestLanguageConverter.convertMessages(dtoRes);
 
 			res = Response.status(Status.OK).entity(dtoRes).build();
@@ -3033,8 +3056,9 @@ public class CloudRestEndpoints {
 
 		void throwException(List<String> failedLocations) throws CloudManagerException;
 	}
-	
-	private void recursiveSetParentCloudScopeIdwithPlatform(String parentCloudScopeId, String platformId, HFacilityResponse facility) {
+
+	private void recursiveSetParentCloudScopeIdwithPlatform(String parentCloudScopeId, String platformId,
+			HFacilityResponse facility) {
 		facility.setParentCloudScopeId(parentCloudScopeId);
 		facility.setPlatformId(platformId);
 		for (HFacilityResponse child : facility.getFacilities()) {

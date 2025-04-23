@@ -280,29 +280,39 @@ public class MonitorValidator {
 		}
 
 		// runInterval : not implemented
-		if(monitorInfo.getRunInterval() != RunInterval.TYPE_SEC_30.toSec()
-				&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_01.toSec()
-				&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_05.toSec()
-				&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_10.toSec()
-				&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_30.toSec()
-				&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_60.toSec()){
-
-			// if polling type monitoring
-			if(!HinemosModuleConstant.MONITOR_SNMPTRAP.equals(monitorInfo.getMonitorTypeId()) &&
-					!HinemosModuleConstant.MONITOR_SYSTEMLOG.equals(monitorInfo.getMonitorTypeId()) &&
-					!HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId()) &&
-					!HinemosModuleConstant.MONITOR_RPA_LOGFILE.equals(monitorInfo.getMonitorTypeId()) &&
-					!HinemosModuleConstant.MONITOR_WINEVENT.equals(monitorInfo.getMonitorTypeId()) && 
-					!HinemosModuleConstant.MONITOR_CUSTOMTRAP_N.equals(monitorInfo.getMonitorTypeId()) &&
-					!HinemosModuleConstant.MONITOR_CUSTOMTRAP_S.equals(monitorInfo.getMonitorTypeId()) &&
-					!HinemosModuleConstant.MONITOR_BINARYFILE_BIN.equals(monitorInfo.getMonitorTypeId()) &&
-					!HinemosModuleConstant.MONITOR_PCAP_BIN.equals(monitorInfo.getMonitorTypeId())
-					){
-				InvalidSetting e = new InvalidSetting("RunInterval is not 1 min / 5 min / 10 min / 30 min / 60 min.");
+		// check monitor type
+		if(!HinemosModuleConstant.MONITOR_SNMPTRAP.equals(monitorInfo.getMonitorTypeId()) &&
+				!HinemosModuleConstant.MONITOR_SYSTEMLOG.equals(monitorInfo.getMonitorTypeId()) &&
+				!HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId()) &&
+				!HinemosModuleConstant.MONITOR_RPA_LOGFILE.equals(monitorInfo.getMonitorTypeId()) &&
+				!HinemosModuleConstant.MONITOR_WINEVENT.equals(monitorInfo.getMonitorTypeId()) && 
+				!HinemosModuleConstant.MONITOR_CUSTOMTRAP_N.equals(monitorInfo.getMonitorTypeId()) &&
+				!HinemosModuleConstant.MONITOR_CUSTOMTRAP_S.equals(monitorInfo.getMonitorTypeId()) &&
+				!HinemosModuleConstant.MONITOR_BINARYFILE_BIN.equals(monitorInfo.getMonitorTypeId()) &&
+				!HinemosModuleConstant.MONITOR_PCAP_BIN.equals(monitorInfo.getMonitorTypeId())
+				){
+			if((monitorInfo.getRunInterval() == null)||
+					(monitorInfo.getRunInterval() != RunInterval.TYPE_SEC_30.toSec()
+					&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_01.toSec()
+					&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_05.toSec()
+					&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_10.toSec()
+					&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_30.toSec()
+					&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_60.toSec())){
+				InvalidSetting e = new InvalidSetting("RunInterval is not 30 sec / 1 min / 5 min / 10 min / 30 min / 60 min.");
 				m_log.info("validateMonitorCommonSettings() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;
 			}
+		}
+
+		// collectorFlg : 真偽値監視以外はcollectorFlgを必須としてチェックする
+		if (monitorInfo.getCollectorFlg() == null &&
+				monitorInfo.getMonitorType() != MonitorTypeConstant.TYPE_TRUTH) {
+			
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_INPUT_ILLEGAL_VALUE.getMessage(new String[] { "collectorFlg ", "null" }));
+			m_log.info("validateMonitorCommonSettings() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
 		}
 
 		// delayTime : not implemented
@@ -620,12 +630,13 @@ public class MonitorValidator {
 		// ----レコード分割方法:時間区切りの場合のチェック.
 		// 監視間隔 : 時間区切りの場合は必須.
 		if (BinaryConstant.CUT_TYPE_INTERVAL.equals(binaryInfo.getCutType())) {
-			if (monitorInfo.getRunInterval() != RunInterval.TYPE_SEC_30.toSec()
-					&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_01.toSec()
-					&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_05.toSec()
-					&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_10.toSec()
-					&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_30.toSec()
-					&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_60.toSec()) {
+			if ((monitorInfo.getRunInterval() == null)
+					|| (monitorInfo.getRunInterval() != RunInterval.TYPE_SEC_30.toSec()
+							&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_01.toSec()
+							&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_05.toSec()
+							&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_10.toSec()
+							&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_30.toSec()
+							&& monitorInfo.getRunInterval() != RunInterval.TYPE_MIN_60.toSec())) {
 				// if polling type monitoring
 				InvalidSetting e = new InvalidSetting(
 						"RunInterval is not 30 sec / 1 min / 5 min / 10 min / 30 min / 60 min.");
@@ -1536,9 +1547,10 @@ public class MonitorValidator {
 			}
 			// deviceDisplayName : does not exist
 			if(!(isMatch)){
-				InvalidSetting e = new InvalidSetting("Target Device Display Name does not match with the existing list.");
+				String[] mesArge = { checkInfo.getDeviceDisplayName()};
+				InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_MONITOR_ITEM_USE_DEVICE_WITHIN_SCOPE_NOTHING.getMessage(mesArge));
 				m_log.info("validatePerformance() : "
-						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+						+ e.getClass().getSimpleName() + ", " + "Target Device Display Name does not match with the existing list. deviceDisplayName="+checkInfo.getDeviceDisplayName());
 				throw e;
 			}
 		}
@@ -1587,16 +1599,6 @@ public class MonitorValidator {
 		}
 		CommonValidator.validateInt(MessageConstant.RUN_COUNT.getMessage(),
 				checkInfo.getRunCount(), 1, 9);
-
-		// runInterval : implement
-		if(checkInfo.getRunInterval() == null) {
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_RUNINTERVAL.getMessage());
-			m_log.info("validatePing() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
-		CommonValidator.validateInt(MessageConstant.RUN_INTERVAL.getMessage(),
-				checkInfo.getRunInterval(), 0, 5  * 1000);
 
 		// timeout
 		if(checkInfo.getTimeout() == null) {
@@ -1687,16 +1689,6 @@ public class MonitorValidator {
 		}
 		CommonValidator.validateInt(MessageConstant.RUN_COUNT.getMessage(),
 				checkInfo.getRunCount(), 1, 9);
-
-		// runInterval : not implemented
-		if(checkInfo.getRunInterval() == null) {
-			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_INTERVAL.getMessage());
-			m_log.info("validatePort() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage());
-			throw e;
-		}
-		CommonValidator.validateInt(MessageConstant.RUN_INTERVAL.getMessage(),
-				checkInfo.getRunInterval(), 0, 5  * 1000);
 
 		// timeout
 		if(checkInfo.getTimeout() == null) {

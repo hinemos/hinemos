@@ -15,10 +15,7 @@ import org.openapitools.client.model.AgtRunInstructionInfoResponse;
 import org.openapitools.client.model.SetJobResultFileCheckRequest;
 import org.openapitools.client.model.SetJobResultRequest;
 import org.openapitools.client.model.SetJobStartRequest;
-import org.openapitools.client.model.SetJobStartResponse;
 
-import com.clustercontrol.agent.AgentRestClientWrapper;
-import com.clustercontrol.agent.ReceiveTopic;
 import com.clustercontrol.agent.SendQueue;
 import com.clustercontrol.agent.SendQueue.JobResultSendableObject;
 import com.clustercontrol.agent.SendQueue.MessageSendableObject;
@@ -26,11 +23,12 @@ import com.clustercontrol.agent.filecheck.FileCheck;
 import com.clustercontrol.agent.filecheck.FileCheckInfo;
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.agent.util.AgentRequestId;
+import com.clustercontrol.agent.util.AgentRestClientEx;
+import com.clustercontrol.agent.util.AgentRestClientEx.RetryTimeoutException;
 import com.clustercontrol.agent.util.RestAgentBeanUtil;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.fault.HinemosUnknown;
-import com.clustercontrol.fault.SessionIdLocked;
 import com.clustercontrol.jobmanagement.bean.CommandStopTypeConstant;
 import com.clustercontrol.jobmanagement.bean.CommandTypeConstant;
 import com.clustercontrol.jobmanagement.bean.FileCheckConstant;
@@ -61,9 +59,6 @@ public class FileCheckJobThread extends AgentThread {
 	private static final int END_VALUE_FORCE_STOP = 9;
 	// 異常終了した場合の終了値
 	private static final int END_VALUE_ERROR = -1;
-
-	// Hinemosマネージャに開始メッセージ送信のリトライ間隔(ミリ秒)
-	private long interval = Long.parseLong(AgentProperties.getProperty("job.reconnection.interval"));
 
 	/**
 	 * コンストラクタ
@@ -110,17 +105,25 @@ public class FileCheckJobThread extends AgentThread {
 		} catch (Exception e) {
 			logger.warn("FileCheckJobThread() : " + e.getMessage());
 		}
-
-		// ---------------------------
-		// -- 開始メッセージ送信
-		// ---------------------------
-
-		// メッセージ作成
+		
+		// ジョブの開始メッセージ作成
 		jobResult.body.setCommand(m_info.getCommand());
 		jobResult.body.setCommandType(m_info.getCommandType());
 		jobResult.body.setStopType(m_info.getStopType());
 		jobResult.body.setStatus(RunStatusConstant.START);
 		jobResult.body.setTime(HinemosTime.getDateInstance().getTime());
+	}
+
+	/**
+	 * スレッドを開始する前に実行すること。
+	 * ジョブの開始メッセージ送信を行う。
+	 * @param timeout マネージャアクセスの再実行期間
+	 * @throws RetryTimeoutException
+	 */
+	public void init(long timeout) throws RetryTimeoutException {
+		// ---------------------------
+		// -- 開始メッセージ送信
+		// ---------------------------
 		SetJobStartRequest setJobStartRequest = new SetJobStartRequest();
 		try {
 			RestAgentBeanUtil.convertBeanSimple(jobResult.body, setJobStartRequest);
@@ -135,59 +138,17 @@ public class FileCheckJobThread extends AgentThread {
 		// マネージャに開始メッセージが届く前にジョブのコマンドが実行されることと
 		// VIPの切り替えが起こった場合に、ジョブが複数のエージェントで起動することを防ぐために
 		// ジョブの開始報告は同期した動作とする
-		AgentRequestId agentRequestId = new AgentRequestId();
-		while (!ReceiveTopic.isHistoryClear()) {
-			try {
-				SetJobStartResponse res = AgentRestClientWrapper.setJobStart(jobResult.sessionId, jobResult.jobunitId,
-						jobResult.jobId, jobResult.facilityId, setJobStartRequest,
-						agentRequestId.toRequestHeaderValue());
-
-				if (res == null) {
-					// setJobStartがマネージャ側で重複した場合
-					// 異常終了の旨をメッセージ送信
-					JobResultSendableObject snd = new JobResultSendableObject();
-					snd.sessionId = m_info.getSessionId();
-					snd.jobunitId = m_info.getJobunitId();
-					snd.jobId = m_info.getJobId();
-					snd.facilityId = m_info.getFacilityId();
-					snd.body = new SetJobResultRequest();
-					snd.body.setCommand(m_info.getCommand());
-					snd.body.setCommandType(m_info.getCommandType());
-					snd.body.setStopType(m_info.getStopType());
-					snd.body.setStatus(RunStatusConstant.ERROR);
-					snd.body.setTime(HinemosTime.getDateInstance().getTime());
-					snd.body.setErrorMessage("Agent Request ID is duplicated.");
-					snd.body.setMessage("");
-					m_sendQueue.put(snd);
-
-					logger.warn("Agent Request ID is duplicated. Job terminated abnormally. SessionID="
-							+ jobResult.sessionId + ", JobID=" + jobResult.jobId);
-					run = false;
-					return;
-				}
-				if (!res.getJobRunnable().booleanValue()) {
-					// ジョブがすでに起動している場合
-					logger.warn("This job already run by other agent. SessionID=" + jobResult.sessionId + ", JobID="
-							+ jobResult.jobId);
-					run = false;
-					return;
-				}
-
-				break;
-			} catch (SessionIdLocked e) {
-				// 開始メッセージがリジェクトされた場合、一定時間後リトライ
-				try {
-					logger.warn("Rejected because sessionID is locked. setJobStart retry after " + interval + "[ms]. "
-							+ "SessionID=" + jobResult.sessionId + ", JobID=" + jobResult.jobId);
-					Thread.sleep(interval);
-				} catch (InterruptedException e1) {
-					logger.error("FileCheckJobThread() : " + e.getMessage(), e);
-					run = false;
-					return;
-				}
-			} catch (Exception e) {
-				logger.error("FileCheckJobThread() : " + e.getMessage(), e);
-				run = false;
+		try {
+			AgentRequestId agentRequestId = new AgentRequestId();
+			run = AgentRestClientEx.setJobStart(jobResult.sessionId, jobResult.jobunitId, jobResult.jobId, jobResult.facilityId, setJobStartRequest, agentRequestId.toRequestHeaderValue(), timeout);
+		} catch (RetryTimeoutException e) {
+			run = false;
+			throw e;
+		} catch (Exception e) {
+			run = false;
+			logger.warn(e.getMessage(), e);
+		} finally {
+			if (!run) {
 				return;
 			}
 		}

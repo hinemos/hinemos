@@ -242,4 +242,9 @@ public class NotifyCloudLinkInfoAzureComposite extends AbstractNotifyCloudLinkIn
 	public String getTableMessage() {
 		return 	Messages.getString("notifies.cloud.data");
 	}
+
+	@Override
+	public boolean isValidate() {
+		return false;
+	}
 }

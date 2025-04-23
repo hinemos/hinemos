@@ -264,5 +264,10 @@ public class JobImportDialog extends CommonDialog {
 
 		return validateResult;
 	}
-	
+
+	@Override
+	public boolean close() {
+		uploadComponent.cleanup();
+		return super.close();
+	}
 }

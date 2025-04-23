@@ -724,12 +724,20 @@ public class RpaDirectControlComposite extends Composite {
 				.getSelection();
 		RpaScreenshotEndValueConditionEnum selectedCondition = (RpaScreenshotEndValueConditionEnum) endValueConditionSelection
 				.getFirstElement();
-		// スクリーンショット取得を行う終了値判定条件
-		// 複数指定または範囲指定の場合、判定条件は"="か"!="のみ
-		if (m_screenshotEndValueText.getText().matches(ReturnCodeConditionChecker.RANGE_CONDITION_REGEX)
-				|| m_screenshotEndValueText.getText().matches(ReturnCodeConditionChecker.MULTI_CONDITION_REGEX)) {
-			if (selectedCondition != RpaScreenshotEndValueConditionEnum.EQUAL_NUMERIC
-					&& selectedCondition != RpaScreenshotEndValueConditionEnum.NOT_EQUAL_NUMERIC) {
+		// スクリーンショット取得を行う終了値と判定条件の組み合わせチェック
+		if (!m_screenshotEndValueButton.getSelection()
+				&& (m_screenshotEndValueText.getText() == null || m_screenshotEndValueText.getText().isEmpty())) {
+			// 「以下の終了値の場合、スクリーンショットを取得する」がオフ、終了値がnullの場合は、何もしない
+		} else if (selectedCondition == RpaScreenshotEndValueConditionEnum.EQUAL_NUMERIC
+				|| selectedCondition == RpaScreenshotEndValueConditionEnum.NOT_EQUAL_NUMERIC) {
+			// 判定条件が"="か"!="の場合は、複数指定、範囲指定の書式でチェックする。
+			if (!m_screenshotEndValueText.getText().matches(ReturnCodeConditionChecker.MULTI_RANGE_CONDITION_REGEX)) {
+				return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),
+						Messages.getString("message.job.rpa.24"));
+			}
+		} else {
+			// 既に書式チェック済みではあるが、それ以外の場合は、念のために数値書式であることを確認する。
+			if (!m_screenshotEndValueText.getText().matches(ReturnCodeConditionChecker.NUMBER_REGEX)) {
 				return JobDialogUtil.getValidateResult(Messages.getString("message.hinemos.1"),
 						Messages.getString("message.job.rpa.24"));
 			}

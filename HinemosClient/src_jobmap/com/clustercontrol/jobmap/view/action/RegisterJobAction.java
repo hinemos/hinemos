@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,6 +31,7 @@ import com.clustercontrol.jobmanagement.util.JobPropertyUtil;
 import com.clustercontrol.jobmanagement.util.JobRestClientWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
+import com.clustercontrol.jobmanagement.util.JobWaitRuleUtil;
 import com.clustercontrol.jobmap.composite.JobMapTreeComposite;
 import com.clustercontrol.jobmap.util.JobMapActionUtil;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
@@ -171,6 +173,10 @@ public class RegisterJobAction extends BaseAction {
 							updateRes = wrapper.registerJobunit(request);
 						}else{
 							m_log.debug("mod jobunit " + jobunit.getData().getJobunitId());
+
+							// ジョブの待ち条件等の変更に従い、他ジョブの後続ジョブ実行設定を更新する
+							updateNextJobOrderInfo(jobunit.getChildren());
+
 							ReplaceJobunitRequest request = new ReplaceJobunitRequest();
 							request.setJobTreeItem(JobTreeItemUtil.getRequestFromItem(jobunit));
 							updateRes = wrapper.replaceJobunit(jobunit.getData().getJobunitId(), request);
@@ -256,5 +262,25 @@ public class RegisterJobAction extends BaseAction {
 		m_log.debug("registerJob end   " + new Date());
 		
 		return null;
+	}
+
+	/**
+	 * ジョブの待ち条件等の変更に従い、他ジョブの後続ジョブ実行設定を更新します
+	 * @param treeItemList
+	 */
+	private void updateNextJobOrderInfo(List<JobTreeItemWrapper> treeItemList) {
+		if (treeItemList == null || treeItemList.size() == 0) {
+			return;
+		}
+		for (JobTreeItemWrapper treeItem : treeItemList) {
+			JobInfoWrapper jobInfo = treeItem.getData();
+			if (jobInfo.getWaitRule() != null && jobInfo.getWaitRule().getExclusiveBranch().booleanValue()) {
+				JobWaitRuleUtil.updateNextJobOrderInfo(treeItem, null);
+			}
+			// 再帰処理
+			if (treeItem.getChildren() != null && treeItem.getChildren().size() > 0) {
+				updateNextJobOrderInfo(treeItem.getChildren());
+			}
+		}
 	}
 }

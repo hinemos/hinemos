@@ -314,7 +314,8 @@ public class SendQueue {
 						"SessionID=" + o.sessionId +
 						", JobID=" + o.jobId +
 						", CommandType=" + o.body.getCommandType() +
-						", Status=" + o.body.getStatus());
+						", Status=" + o.body.getStatus() +
+						", endValue=" + o.body.getEndValue());
 				m_log.debug("Sender Send agentRequestId : " + m_agentRequestId);
 
 				try {

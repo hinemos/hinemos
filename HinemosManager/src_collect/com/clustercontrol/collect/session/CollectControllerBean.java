@@ -45,6 +45,7 @@ import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.monitor.bean.EventDataInfo;
 import com.clustercontrol.monitor.factory.SelectEvent;
 import com.clustercontrol.notify.monitor.model.EventLogEntity;
+import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.MessageConstant;
 
 
@@ -201,10 +202,13 @@ public class CollectControllerBean{
 				= new SelectCollectData().getCollectKeyListFindByNumFacility_OR(facilityId, ownerRoleId);
 			if (list != null) {
 				for (CollectKeyInfo collectKeyInfo : list) {
-					map.put(AnalyticsUtil.getMsgItemName( 
-							collectKeyInfo.getItemName(), collectKeyInfo.getDisplayName(), collectKeyInfo.getMonitorId())
-							,new CollectKeyInfo(collectKeyInfo.getItemName(), collectKeyInfo.getDisplayName(),
-									collectKeyInfo.getMonitorId(), collectKeyInfo.getFacilityid()));
+					if (collectKeyInfo.getFacilityid().equals(facilityId) || new RepositoryControllerBean()
+							.getFacilityIdList(facilityId, 0).contains(collectKeyInfo.getFacilityid())) {
+						map.put(AnalyticsUtil.getMsgItemName(collectKeyInfo.getItemName(),
+								collectKeyInfo.getDisplayName(), collectKeyInfo.getMonitorId()),
+								new CollectKeyInfo(collectKeyInfo.getItemName(), collectKeyInfo.getDisplayName(),
+										collectKeyInfo.getMonitorId(), collectKeyInfo.getFacilityid()));
+					}
 				}
 			}
 			jtm.commit();

@@ -110,31 +110,31 @@ public class CalendarValidator {
 		if (detailInfo.getYear() == null || detailInfo.getYear() < 0) {
 			String[] args = { "(" + MessageConstant.YEAR.getMessage() + ")" };
 			m_log.warn("ValidYear:" + args[0]);
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(Arrays.toString(args)));
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(args));
 		}
 		//月は必須項目のためチェック（コンボボックス入力だが、一応）
 		if (detailInfo.getMonth() == null || detailInfo.getMonth() < 0) {
 			String[] args = { "(" + MessageConstant.MONTH.getMessage() + ")" };
 			m_log.warn("ValidMonth:" + Arrays.toString(args));
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(Arrays.toString(args)));
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(args));
 		}
 		//日は必須項目のためチェック
 		if (detailInfo.getDayType() == null || detailInfo.getDayType() < 0 || detailInfo.getDayType() > 3) {
 			String[] args = { "(" + MessageConstant.CALENDAR_DETAIL_DATE_TYPE.getMessage() + ")" };
 			m_log.warn("ValidDateType:" + Arrays.toString(args));
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(Arrays.toString(args)));
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(args));
 		}
 		//日タイプが「1」の場合、第x週、曜日が必須項目となるためチェック
 		if(detailInfo.getDayType() == 1){
 			if(detailInfo.getDayOfWeekInMonth() == null || detailInfo.getDayOfWeekInMonth() < 0){
 				String[] args = { "(" + MessageConstant.CALENDAR_DETAIL_XTH.getMessage() + ")" };
 				m_log.warn("ValidXth:" + Arrays.toString(args));
-				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(Arrays.toString(args)));
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(args));
 			}
 			if(detailInfo.getDayOfWeek() == null || detailInfo.getDayOfWeek() < 1 || detailInfo.getDayOfWeek() > 7){
 				String[] args = { "(" + MessageConstant.WEEKDAY.getMessage() + ")" };
 				m_log.warn("ValidWeekDay:" + Arrays.toString(args));
-				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(Arrays.toString(args)));
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(args));
 			}
 		}
 		//日タイプが「2」の場合、日が必須項目となるためチェック
@@ -142,7 +142,7 @@ public class CalendarValidator {
 			if(detailInfo.getDate() == null || detailInfo.getDate() < 0){
 				String[] args = { "(" +MessageConstant.MONTHDAY.getMessage() + ")" };
 				m_log.warn("ValidMonthDay:" + Arrays.toString(args));
-				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(Arrays.toString(args)));
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(args));
 			}
 		}
 		//日タイプが「3」の場合、カレンダパターンが必須項目となるためチェック
@@ -150,7 +150,7 @@ public class CalendarValidator {
 			if(detailInfo.getCalPatternId() == null){
 				String[] args = { "(" + MessageConstant.CALENDAR_PATTERN.getMessage() + ")" };
 				m_log.warn("ValidCalendarPattern:" + Arrays.toString(args));
-				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(Arrays.toString(args)));
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(args));
 			}
 			//IDと一致するカレンダパターン情報が存在しない場合
 			try {
@@ -159,7 +159,7 @@ public class CalendarValidator {
 			} catch (CalendarNotFound e) {
 				String[] args = { "(" + detailInfo.getCalPatternId() + ")" };
 				m_log.warn("ValidCalendarPattern:" + Arrays.toString(args));
-				throw new InvalidSetting(MessageConstant.MESSAGE_FILE_NOT_FOUND.getMessage(Arrays.toString(args)));
+				throw new InvalidSetting(MessageConstant.MESSAGE_CALENDAR_PATTERN_ID_NOT_EXIST.getMessage(args));
 			} catch (InvalidRole e) {
 				m_log.warn("ValidCalendarPattern: "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -173,7 +173,7 @@ public class CalendarValidator {
 			String[] args = {MessageConstant.CALENDAR_DETAIL_BEFORE_AFTER.getMessage(),
 					"-32768", "32767"};
 			m_log.warn("ValidAfterDay:" + Arrays.toString(args));
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_RANGE.getMessage(Arrays.toString(args)));
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_RANGE.getMessage(args));
 		}
 		
 		// 振り替え
@@ -184,38 +184,30 @@ public class CalendarValidator {
 			if (detailInfo.getSubstituteTime() == 0 || detailInfo.getSubstituteTime() < (-24*366) || detailInfo.getSubstituteTime() > (24*366)) {
 				String[] args = {MessageConstant.CALENDAR_DETAIL_SUBSTITUTE_TIME.getMessage(), "0", String.valueOf((-24*366)), String.valueOf((24*366))};
 				m_log.warn("ValidSubstituteTime:" + Arrays.toString(args));
-				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_VALUE_AND_RANGE.getMessage(Arrays.toString(args)));
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_VALUE_AND_RANGE.getMessage(args));
 			}
 		} else {
 			String[] args = {MessageConstant.CALENDAR_DETAIL_SUBSTITUTE_TIME.getMessage()};
 			m_log.warn("ValidSubstituteTime:" + Arrays.toString(args));
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(Arrays.toString(args)));
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(args));
 		}
 		if (detailInfo.getSubstituteLimit() != null) {
 			if (detailInfo.getSubstituteLimit() < 1 || detailInfo.getSubstituteLimit() > 99) {
 				String[] args = {MessageConstant.CALENDAR_DETAIL_SUBSTITUTE_LIMIT.getMessage(), "1", "99"};
 				m_log.warn("ValidSubstituteLimit:" + Arrays.toString(args));
-				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_RANGE.getMessage(Arrays.toString(args)));
+				throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_RANGE.getMessage(args));
 			}
 		} else {
 			String[] args = {MessageConstant.CALENDAR_DETAIL_SUBSTITUTE_LIMIT.getMessage()};
 			m_log.warn("ValidSubstituteLimit:" + Arrays.toString(args));
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(Arrays.toString(args)));
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_CALENDAR_DETAIL.getMessage(args));
 		}
-		
-////	if(cal.getStartTime() != null){
-////	info.setTimeFrom(cal.getStartTime().getTime());
-////}
-//////終了時間
-////if(cal.getEndTime() != null){
-////	info.setTimeTo(cal.getEndTime().getTime());
-		
 		
 		//時間：開始時間、終了時間は必須項目のためチェック
 		if (detailInfo.getTimeFrom() == null) {
 			String[] args = { "(" + MessageConstant.START.getMessage() + ")" };
 			m_log.warn("ValidTimeFrom :" + Arrays.toString(args));
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_TIME.getMessage(Arrays.toString(args)));
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_TIME.getMessage(args));
 		}
 		if(detailInfo.getTimeFrom() < DATETIME_VALUE_MIN || DATETIME_VALUE_MAX < detailInfo.getTimeFrom()){
 			String[] args = {DATETIME_STRING_MIN, DATETIME_STRING_MAX};
@@ -225,7 +217,7 @@ public class CalendarValidator {
 		if (detailInfo.getTimeTo() == null) {
 			String[] args = { "(" + MessageConstant.END.getMessage() + ")" };
 			m_log.warn("ValidTimeTo :" + Arrays.toString(args));
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_TIME.getMessage(Arrays.toString(args)));
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT_TIME.getMessage(args));
 		}
 		if(detailInfo.getTimeTo() < DATETIME_VALUE_MIN || DATETIME_VALUE_MAX < detailInfo.getTimeTo()){
 			String[] args = {DATETIME_STRING_MIN, DATETIME_STRING_MAX};
@@ -237,7 +229,7 @@ public class CalendarValidator {
 			String[] args = { MessageConstant.TIME.getMessage() + "(" + MessageConstant.END.getMessage() + ")",
 					MessageConstant.TIME.getMessage() + "(" + MessageConstant.START.getMessage() + ")" };
 			m_log.warn("ValidFromTo:" + Arrays.toString(args));
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_LATER_TIME.getMessage(Arrays.toString(args)));
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_LATER_TIME.getMessage(args));
 		}
 	}
 	/**

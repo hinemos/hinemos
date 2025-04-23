@@ -9,6 +9,7 @@
 package com.clustercontrol.jobmanagement.composite;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -208,16 +209,24 @@ public class ScriptComponent {
 					MessageDialog.openError(null, Messages.getString("failed"), Messages.getString("message.job.156"));
 				}
 				m_scriptName.setText(filename.toString());
-				try {
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					Files.copy(p, baos);
-					String scriptContent = baos.toString(m_scriptEncoding.getText());
-					scriptContent.replace("\r\n", "\n");
-					m_scriptContent.setText(scriptContent);
-				} catch (IOException ex) {
-					m_log.warn("falied to upload script content " + ex.getClass().getSimpleName() + ":" + ex.getMessage());
-					MessageDialog.openError(null, Messages.getString("failed"),
-							Messages.getString("message.job.156"));
+				
+				File file = new File(selectedFilePath);
+				if (file.length() > (DataRangeConstant.TEXT + 2) * 4) {
+					String[] args = { String.valueOf(DataRangeConstant.TEXT) };
+					MessageDialog.openWarning(null,	Messages.getString("message.hinemos.1"),
+							Messages.getString("message.hinemos.7", args ));
+				} else {
+					try {
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						Files.copy(p, baos);
+						String scriptContent = baos.toString(m_scriptEncoding.getText());
+						scriptContent.replace("\r\n", "\n");
+						m_scriptContent.setText(scriptContent);
+					} catch (IOException ex) {
+						m_log.warn("falied to upload script content " + ex.getClass().getSimpleName() + ":" + ex.getMessage());
+						MessageDialog.openError(null, Messages.getString("failed"),
+								Messages.getString("message.job.156"));
+					}
 				}
 			}
 		}

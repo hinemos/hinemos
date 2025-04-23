@@ -47,6 +47,7 @@ import org.glassfish.grizzly.http.server.Request;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -265,6 +266,9 @@ public class SdmlRestEndpoints {
 			@Context Request request, @Context UriInfo uriInfo) throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		logger.info("call getSdmlControlSettingListV1()");
 
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		// バージョンを指定して取得する
 		List<SdmlControlSettingInfo> infoResList = new SdmlControllerBean()
 				.getSdmlControlSettingList(SdmlV1Option.VERSION, ownerRoleId);

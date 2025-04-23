@@ -17,6 +17,7 @@ import static com.clustercontrol.rest.RestConstant.STATUS_CODE_500;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -89,6 +90,7 @@ import com.clustercontrol.performance.session.PerformanceCollectMasterController
 import com.clustercontrol.performance.session.PerformanceControllerBean;
 import com.clustercontrol.performance.util.code.CollectorItemTreeItem;
 import com.clustercontrol.platform.HinemosPropertyDefault;
+import com.clustercontrol.rest.RestConstant;
 import com.clustercontrol.rest.annotation.RestLog;
 import com.clustercontrol.rest.annotation.RestLog.LogAction;
 import com.clustercontrol.rest.annotation.RestLog.LogTarget;
@@ -852,6 +854,9 @@ public class CollectRestEndpoints {
 
 		CommonValidator.validateNull(MessageConstant.OWNER_ROLE_ID.getMessage(), ownerRoleId);
 		
+		// カレントユーザがオーナーロールに所属しているかチェックする
+		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
+		
 		Map<String, CollectKeyInfo> collectKeyMapForAnalytics = new CollectControllerBean().getCollectKeyMapForAnalytics(facilityId, ownerRoleId);
 
 		Map<String, CollectKeyInfoResponseP1> map = new ConcurrentHashMap<>();
@@ -1402,6 +1407,12 @@ public class CollectRestEndpoints {
 				DownloadBinaryRecordsRequest.class);
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
+
+		if (dtoReq.getFilename() == null || dtoReq.getFilename().length() == 0) {
+			SimpleDateFormat sdf = new SimpleDateFormat(RestConstant.DOWNLOAD_FILE_TIMESTAMP);
+			dtoReq.setFilename(RestConstant.DOWNLOAD_FILE_NAME_PREFIX_BINARY
+					+ sdf.format(HinemosTime.currentTimeMillis()) + RestConstant.DOWNLOAD_FILE_ZIP_EXTENSION);
+		}
 
 		// ファイル統合用にダウンロード条件リストの順序をレコードキーで整列.
 		Collections.sort(dtoReq.getRecords(), new Comparator<DownloadBinaryRecordsKeyRequest>() {

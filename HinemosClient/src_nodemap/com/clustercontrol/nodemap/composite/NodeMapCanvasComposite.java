@@ -62,7 +62,6 @@ import org.openapitools.client.model.FacilityElementResponse;
 import org.openapitools.client.model.MapAssociationInfoResponse;
 import org.openapitools.client.model.NodeInfoResponse;
 import org.openapitools.client.model.PingResultResponse;
-import org.openapitools.client.model.FacilityInfoResponse.FacilityTypeEnum;
 
 import com.clustercontrol.ClusterControlPlugin;
 import com.clustercontrol.accesscontrol.dialog.ObjectPrivilegeListDialog;
@@ -141,8 +140,6 @@ public class NodeMapCanvasComposite extends Composite{
 	
 	private String m_managerName;
 
-	/** 区切り文字(#!#) */
-	private static final String SEPARATOR_HASH_EX_HASH = "#!#";
 	/**
 	 * マウス操作の状態
 	 */
@@ -1583,34 +1580,19 @@ public class NodeMapCanvasComposite extends Composite{
 	 */
 	private void openCollectPerspective(FileImageFigure figure) {
 		String facilityId = figure.getFacilityId();
-		m_log.debug("managername:" + m_managerName + ", currentScop:" + m_controller.getCurrentScope() + ", facilityId:" + facilityId);
-		FacilityTreeItemResponse targetTreeItem = RelationViewController.getScopeTreeView(m_controller.getCurrentScope(), facilityId);
-		String path = m_managerName + SEPARATOR_HASH_EX_HASH;
-		
-		if (m_controller.getCurrentScope().equals(ReservedFacilityIdConstant.ROOT_SCOPE)) {
-			path += facilityId + SEPARATOR_HASH_EX_HASH + FacilityConstant.TYPE_SCOPE;
-		} else if (targetTreeItem.getData().getFacilityType().equals(FacilityTypeEnum.NODE)) {
-			path += targetTreeItem.getParent().getData().getFacilityId() 
-					+ SEPARATOR_HASH_EX_HASH + targetTreeItem.getData().getFacilityId() 
-					+ SEPARATOR_HASH_EX_HASH + FacilityConstant.TYPE_NODE;
-
-		} else if (targetTreeItem.getData().getFacilityType().equals(FacilityTypeEnum.SCOPE)) {
-			path += targetTreeItem.getData().getFacilityId() 
-					+ SEPARATOR_HASH_EX_HASH + FacilityConstant.TYPE_SCOPE;
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("openCollectPerspective() start. managerName:" + m_managerName + ", currentScop:" + m_controller.getCurrentScope() + ", facilityId:" + facilityId);
 		}
-		m_log.debug("path:" + path);
-		
+		FacilityTreeItemResponse targetTreeItem = RelationViewController.getScopeTreeView(m_controller.getCurrentScope(), facilityId);
+
 		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		String perspectiveName = com.clustercontrol.nodemap.messages.Messages.getString("perspective.collect");
-		m_log.debug("perspective name:" + perspectiveName);
-		IPerspectiveDescriptor perspective 
-		= PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(perspectiveName);
-
+		IPerspectiveDescriptor perspective = PlatformUI.getWorkbench().getPerspectiveRegistry().findPerspectiveWithId(perspectiveName);
 		if (perspective == null || window == null) {
 			m_log.debug("perspective == null or window == null. return.");
 			return;
 		}
-		
+
 		window.getActivePage().setPerspective(perspective);
 		IWorkbenchPage page = window.getActivePage();
 
@@ -1619,25 +1601,49 @@ public class NodeMapCanvasComposite extends Composite{
 		if (collectView == null) {
 			throw new InternalError("collectGraphView is null.");
 		}
-		List<String> selectNodeInfoList = new ArrayList<>();
-		selectNodeInfoList.add(path);
+
+		// targetTreeItemの下の階層を含むリストを作成
+		List<FacilityTreeItemResponse> treeItemList = new ArrayList<>();
+		getChildrendList(targetTreeItem, treeItemList);
+		List<String> selectNodeInfoList = collectView.getFacilityTreeComposite().getFacilityList(treeItemList);
 		collectView.setSelectFacilityListFromNodemap(selectNodeInfoList);
-		
-		if(!collectView.getFacilityTreeComposite().isDisposed()){
-			m_log.trace("CollectSettingComposite.checkAsyncExec() is true");
-			collectView.getFacilityTreeComposite().getDisplay().asyncExec(new Runnable(){
+		if (!collectView.getFacilityTreeComposite().isDisposed()) {
+			if (m_log.isTraceEnabled()) {
+				m_log.trace("CollectSettingComposite.checkAsyncExec() is true");
+			}
+			collectView.getFacilityTreeComposite().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
 					// 選択状態の復元
 					collectView.setItemCodeCheckedTreeItems();
 				}
 			});
-		}
-		else{
-			m_log.trace("CollectSettingComposite.checkAsyncExec() is false");
+		} else {
+			if (m_log.isTraceEnabled()) {
+				m_log.trace("CollectSettingComposite.checkAsyncExec() is false");
+			}
 		}
 	}
-	
+
+	/**
+	 * 再帰的に子を取得し、リストに設定する。
+	 * 
+	 * @param item ツリー項目
+	 * @param list 【戻り値】該当項目配下の項目を含むリスト
+	 */
+	private void getChildrendList(FacilityTreeItemResponse item, List<FacilityTreeItemResponse> list) {
+		if (item == null || list == null) {
+			// 通常は到達しない
+			m_log.warn("getChildrendList() item or list is null.");
+			return;
+		}
+
+		list.add(item);
+		for(FacilityTreeItemResponse child: item.getChildren()) {
+			getChildrendList(child, list);
+		}
+	}
+
 	public void setErrorMessage(String str) {
 		Label label = new Label(str);
 		label.setText(str);

@@ -80,6 +80,7 @@ import com.clustercontrol.utility.settings.ExportMethod;
 import com.clustercontrol.utility.settings.ImportMethod;
 import com.clustercontrol.utility.settings.SettingConstants;
 import com.clustercontrol.utility.settings.job.conv.MasterConv;
+import com.clustercontrol.utility.settings.job.xml.JobInfo;
 import com.clustercontrol.utility.settings.job.xml.JobMasterDataList;
 import com.clustercontrol.utility.settings.model.BaseAction;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
@@ -253,6 +254,10 @@ public class JobMasterAction {
 
 		try {
 			jti = MasterConv.masterXml2Dto(jobXML.getJobInfo(), jobunitList);
+		} catch (ParseException pe) {
+			log.warn(Messages.getString("SettingTools.ImportFailed") + " : " + pe.getMessage());
+			ret = SettingConstants.ERROR_INPROCESS;
+			return ret;
 		} catch (Exception e) {
 			log.warn(Messages.getString("SettingTools.ImportFailed"), e);
 			ret = SettingConstants.ERROR_INPROCESS;
@@ -354,6 +359,7 @@ public class JobMasterAction {
 		}
 
 		//各JobInfoに設定された親ジョブIDが同一ジョブユニット内に存在するかチェック
+		Set<String> checkedJobIdSet = new HashSet<String>();
 		for (int i = 0; i < jobMastersXML.length; i++) {
 			//ジョブユニット自身の場合はノーチェック
 			if (jobMastersXML[i].getType() == JobConstant.TYPE_JOBUNIT) {
@@ -385,9 +391,56 @@ public class JobMasterAction {
  				log.error( Messages.getString("SettingTools.InvalidParentJobId",mesArgs) );
 
 				ret =false;
+				continue;
+			}
+			//親ジョブIDが循環参照になっている場合はエラー
+			if (!checkedJobIdSet.contains(jobMastersXML[i].getId())) {
+				Set<String> newJobIdSet = new HashSet<String>();
+				JobInfo errJob = checkCycle(jobMastersXML,  jobMastersXML[i].getJobunitId(), jobMastersXML[i].getParentJobId(), newJobIdSet, checkedJobIdSet);
+				if (errJob != null) {
+					String[] mesArgs = { jobMastersXML[i].getJobunitId(), errJob.getId(), errJob.getParentJobId() };
+	 				log.error( Messages.getString("SettingTools.InvalidCircularReference",mesArgs) );
+					ret =false;
+				}
+				checkedJobIdSet.addAll(newJobIdSet);
 			}
 		}
 		return ret;
+	}
+	
+	/**
+	 * 循環参照をチェックする。
+	 * 
+	 * @param XMLファイルのjobInfo
+	 * @param ジョブユニットID
+	 * @param チェック対象ジョブID
+	 * @param 親ジョブID
+	 * @return エラージョブ
+	 */
+	public static JobInfo checkCycle(JobInfo[] jobMastersXML, String jobunitId, String jobid, Set<String> jobIdSet, Set<String> checkedJobIdSet) {
+		jobIdSet.add(jobid);
+		for (JobInfo jobInfo : jobMastersXML) {
+			if (jobInfo.getId() == null || !jobInfo.getId().equals(jobid)) {
+				continue;
+			}
+			if (jobInfo.getJobunitId() == null || !jobInfo.getJobunitId().equals(jobunitId)) {
+				return null;	// 親ユニットが不正なため本チェックの対象外
+			}
+			if (jobInfo.getType() == JobConstant.TYPE_JOBUNIT) {
+				return null;	// 親がユニットならチェック終了
+			}
+			if (jobInfo.getParentJobId() == null) {
+				return null;	// 親ジョブID不正はチェックの対象外
+			}
+			if (checkedJobIdSet.contains(jobInfo.getParentJobId())) {
+				return null;	// 既にチェック済
+			}
+			if (jobIdSet.contains(jobInfo.getParentJobId())) {
+				return jobInfo;	// 循環参照エラー
+			}
+			return checkCycle(jobMastersXML, jobunitId, jobInfo.getParentJobId(), jobIdSet, checkedJobIdSet);
+		}
+		return null;	// 親ジョブIDが不正なのでチェックの対象外
 	}
 
 	/**

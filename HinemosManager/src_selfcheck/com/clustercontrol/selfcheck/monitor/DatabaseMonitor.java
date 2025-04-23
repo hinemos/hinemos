@@ -16,7 +16,6 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -71,7 +70,7 @@ public class DatabaseMonitor extends SelfCheckMonitorBase {
 		HinemosEntityManager em = null;
 		boolean warn = true;
 		
-		validationQuery = HinemosPropertyDefault.selfcheck_monitoring_db_validationquery.getStringValue();
+		validationQuery = HinemosPropertyCommon.selfcheck_monitoring_db_validationquery.getStringValue();
 
 		/** メイン処理 */
 		m_log.debug("monitoring datasource. (query = " + validationQuery + ")");

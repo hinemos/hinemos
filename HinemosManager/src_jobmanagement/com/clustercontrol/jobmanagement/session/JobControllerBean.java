@@ -1756,6 +1756,7 @@ public class JobControllerBean implements CheckFacility {
 					triggerInfo.getJobRuntimeParamList().add(runtimeParamRun);
 				}
 			}
+			triggerInfo.setJobkickId(jobKickId);
 
 			// ジョブ実行
 			return runJob(jobKick.getJobunitId(), jobKick.getJobId(), null, triggerInfo);
@@ -2040,6 +2041,7 @@ public class JobControllerBean implements CheckFacility {
 			jobKickEntity.setJoblinkRcvCheckedPosition(jobLinkMessageEntity.getPosition());
 			if (!jobLinkMessageEntity.isMatch()) {
 				// 検索条件に一致するレコードが存在しない場合は終了
+				// 注 QueryUtil.getJobLinkMessageの仕様変更（isMatch=trueしか返さない）によって、ここは通過しない実装となった
 				jtm.commit();
 				return;
 			}
@@ -4241,6 +4243,12 @@ public class JobControllerBean implements CheckFacility {
 		Integer editSession = null;
 
 		try {
+			// Idについて、予約語（利用不可）を用いていないかをチェック
+			if(JobValidator.isReservedJobUnitId(jobunitId)){
+				m_log.warn("getEditLock() : job unit ID  is a reserved ID, jobunitId=" + jobunitId);
+				String[] messageArgs = { jobunitId };
+				throw new JobInvalid(MessageConstant.MESSAGE_JOB_ID_RESERVED_WORD.getMessage(messageArgs));
+			}
 			jtm.begin();
 			HinemosEntityManager em = jtm.getEntityManager();
 
@@ -4315,7 +4323,7 @@ public class JobControllerBean implements CheckFacility {
 			m_log.info("getEditLock() : get edit lock(jobunitid="+ jobunitId + ", user=" + userName + ", ipAddress=" + ipAddress + ", editSession=" + editSession +")");
 
 			jtm.commit();
-		} catch (OtherUserGetLock | UpdateTimeNotLatest e) {
+		} catch (OtherUserGetLock | UpdateTimeNotLatest | JobInvalid e) {
 			jtm.rollback();
 			throw e;
 		} catch (ObjectPrivilege_InvalidRole e) {

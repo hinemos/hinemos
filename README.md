@@ -12,7 +12,7 @@
 
 Hinemos is an integrated operations management software that maximizes the cost advantages of open source software to achieve "operational automation" such as "monitoring" and "jobs" for increasingly complex large-scale IT systems.
 
-[README(Japanese version)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v7.0.2#packages)
+[README(Japanese version)](README.jp.md)  | [Hinemos Portal](http://www.hinemos.info/en/top) | [Latest Packages](https://github.com/hinemos/hinemos/releases/tag/v7.0.3#packages_703)
 
 ## Installation
 
@@ -20,22 +20,22 @@ Hinemos can be installed with a single command.
 
 - For installing the Manager
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.3/hinemos-7.0-manager-7.0.3-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.3/hinemos-7.0-manager-7.0.3-1.el8.x86_64.rpm```
   - RHEL 9.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-manager-7.0.2-1.el9.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.3/hinemos-7.0-manager-7.0.3-1.el9.x86_64.rpm```
 
 
 - For installing the Web Client
   - RHEL 7.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el7.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.3/hinemos-7.0-web-7.0.3-1.el7.x86_64.rpm```
   - RHEL 8.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el8.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.3/hinemos-7.0-web-7.0.3-1.el8.x86_64.rpm```
   - RHEL 9.x  
-```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.2/hinemos-7.0-web-7.0.2-1.el9.x86_64.rpm```
+```$ rpm -ivh https://github.com/hinemos/hinemos/releases/download/v7.0.3/hinemos-7.0-web-7.0.3-1.el9.x86_64.rpm```
 
-For details, refer to [Hinemos ver. 7.0 Basic Features Manual](https://github.com/hinemos/hinemos/releases/download/v7.0.2/en_Base_Linux_7.0_rev3.pdf).
+For details, refer to [Hinemos ver. 7.0 Basic Features Manual](https://github.com/hinemos/hinemos/releases/download/v7.0.3/en_Base_Linux_7.0_rev4.pdf).
 
 
 ## ver. 7.0 New Features
@@ -121,7 +121,7 @@ For details, refer to [Hinemos ver. 7.0 Basic Features Manual](https://github.co
     - #13144 Added OAuth2.0 authentication for mail delivery
 
 
-For details, refer to [release note](https://github.com/hinemos/hinemos/releases/tag/v7.0.2).
+For details, refer to [release note](https://github.com/hinemos/hinemos/releases/tag/v7.0.3).
 
 ## Documentation
 

@@ -48,8 +48,6 @@ public class RpaJobLoginWorker {
 	private static MonitoredThreadPoolExecutor service;
 	/** ワーカースレッド名 */
 	private static String workerName = "RpaJobLoginWorker";
-	/** ログインのリトライ間隔 */
-	private static int retryInterval = HinemosPropertyCommon.job_rpa_login_retry_interval.getIntegerValue();
 	/** スレッドプールサイズ */
 	private static int maxThreadPoolSize = HinemosPropertyCommon.job_rpa_login_thread_pool_size.getIntegerValue();
 	/** 処理を中断する際に使用するFutureオブジェクトのキャッシュ */
@@ -94,7 +92,7 @@ public class RpaJobLoginWorker {
 						runInstructionInfo.getFacilityId());
 				new JobSessionNodeImpl().setMessage(sessionNode,
 						MessageConstant.MESSAGE_JOB_RPA_TOO_MANY_LOGIN.getMessage(String
-								.valueOf(HinemosPropertyCommon.job_rpa_login_thread_pool_size.getIntegerValue())));
+								.valueOf(maxThreadPoolSize)));
 			}
 			Future<Boolean> future = service.submit(new JobLoginTask(runInstructionInfo, parameter, retry));
 			// 処理をキャンセルできるようMapに保持しておく
@@ -152,6 +150,7 @@ public class RpaJobLoginWorker {
 
 			LoginExecutor executor = new LoginExecutor(parameter);
 			LoginResultEnum result = LoginResultEnum.UNKNOWN;
+			final int retryInterval = HinemosPropertyCommon.job_rpa_login_retry_interval.getIntegerValue();
 			int retryCount = 0;
 			// ログイン実行
 			m_log.debug("call() : login, maxRetry=" + retry + ", sleep " + retryInterval + "ms");

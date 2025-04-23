@@ -394,4 +394,10 @@ public class InfraFileDialog extends CommonDialog {
 			return new JSON().serialize(this);
 		}
 	}
+
+	@Override
+	public boolean close() {
+		uploadComponent.cleanup();
+		return super.close();
+	}
 }

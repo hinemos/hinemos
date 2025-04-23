@@ -119,79 +119,13 @@ public class MonitorStringUtil {
 						
 						AgtMonitorInfoResponse monitorInfo2 = null;
 						if (filename != null) {
-							monitorInfo2 = new AgtMonitorInfoResponse();
-							monitorInfo2.setApplication(monitorInfo.getApplication());
-							monitorInfo2.setCalendar(monitorInfo.getCalendar());
-							monitorInfo2.setCalendarId(monitorInfo.getCalendarId());
-							monitorInfo2.setCollectorFlg(monitorInfo.getCollectorFlg());
-							//[REST対応で除外]monitorInfo2.setCustomCheckInfo(monitorInfo.getCustomCheckInfo());
-							//[REST対応で除外]monitorInfo2.setCustomTrapCheckInfo(monitorInfo.getCustomTrapCheckInfo());
-							monitorInfo2.setDelayTime(monitorInfo.getDelayTime());
-							monitorInfo2.setDescription(monitorInfo.getDescription());
-							monitorInfo2.setFacilityId(monitorInfo.getFacilityId());
-							monitorInfo2.setFailurePriority(monitorInfo.getFailurePriority());
-							//[REST対応で除外]monitorInfo2.setHttpCheckInfo(monitorInfo.getHttpCheckInfo());
-							//[REST対応で除外]monitorInfo2.setHttpScenarioCheckInfo(monitorInfo.getHttpScenarioCheckInfo());
-							monitorInfo2.setItemName(monitorInfo.getItemName());
-							//[REST対応で除外]monitorInfo2.setJmxCheckInfo(monitorInfo.getJmxCheckInfo());
-							
-							// ログファイル監視、クラウドログ監視、RPAログファイル監視だけがここを通る
+							monitorInfo2 = cloneAgtMonitorInfoResponse(monitorInfo);
 							if (HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId())
 									|| HinemosModuleConstant.MONITOR_CLOUD_LOG.equals(monitorInfo.getMonitorTypeId())) {
-								// LogfileCheckInfoをコピー
-								AgtLogfileCheckInfoResponse logFileCheckInfo = new AgtLogfileCheckInfoResponse();
-								logFileCheckInfo.setDirectory(monitorInfo.getLogfileCheckInfo().getDirectory());
-								logFileCheckInfo.setFileEncoding(monitorInfo.getLogfileCheckInfo().getFileEncoding());
-								logFileCheckInfo.setFileName(monitorInfo.getLogfileCheckInfo().getFileName());
-								logFileCheckInfo.setFileReturnCode(monitorInfo.getLogfileCheckInfo().getFileReturnCode());
-								logFileCheckInfo.setLogfile(monitorInfo.getLogfileCheckInfo().getLogfile());
-								logFileCheckInfo.setMaxBytes(monitorInfo.getLogfileCheckInfo().getMaxBytes());
-								logFileCheckInfo.setMonitorId(monitorInfo.getLogfileCheckInfo().getMonitorId());
-								logFileCheckInfo.setMonitorTypeId(monitorInfo.getLogfileCheckInfo().getMonitorTypeId());
-								logFileCheckInfo.setPatternHead(monitorInfo.getLogfileCheckInfo().getPatternHead());
-								logFileCheckInfo.setPatternTail(monitorInfo.getLogfileCheckInfo().getPatternTail());
-								monitorInfo2.setLogfileCheckInfo(logFileCheckInfo);
-
 								monitorInfo2.getLogfileCheckInfo().setLogfile(filename);
 							} else if (HinemosModuleConstant.MONITOR_RPA_LOGFILE.equals(monitorInfo.getMonitorTypeId())) {
-								// RpaLogfileCheckInfoをコピー
-								AgtRpaLogFileCheckInfoResponse RpalogFileCheckInfo = new AgtRpaLogFileCheckInfoResponse();
-								RpalogFileCheckInfo.setDirectory(monitorInfo.getRpaLogFileCheckInfo().getDirectory());
-								RpalogFileCheckInfo.setFileEncoding(monitorInfo.getRpaLogFileCheckInfo().getFileEncoding());
-								RpalogFileCheckInfo.setFileName(filename);
-								monitorInfo2.setRpaLogFileCheckInfo(RpalogFileCheckInfo);
+								monitorInfo2.getRpaLogFileCheckInfo().setFileName(filename);
 							}
-
-							monitorInfo2.setLogFormatId(monitorInfo.getLogFormatId());
-							monitorInfo2.setMeasure(monitorInfo.getMeasure());
-							monitorInfo2.setMonitorFlg(monitorInfo.getMonitorFlg());
-							monitorInfo2.setMonitorId(monitorInfo.getMonitorId());
-							monitorInfo2.setMonitorType(monitorInfo.getMonitorType());
-							monitorInfo2.setMonitorTypeId(monitorInfo.getMonitorTypeId());
-							monitorInfo2.setNotifyGroupId(monitorInfo.getNotifyGroupId());
-							//[REST対応で除外]monitorInfo2.setOwnerRoleId(monitorInfo.getOwnerRoleId());
-							//[REST対応で除外]monitorInfo2.setPerfCheckInfo(monitorInfo.getPerfCheckInfo());
-							//[REST対応で除外]monitorInfo2.setPingCheckInfo(monitorInfo.getPingCheckInfo());
-							//[REST対応で除外]monitorInfo2.setPluginCheckInfo(monitorInfo.getPluginCheckInfo());
-							//[REST対応で除外]monitorInfo2.setPortCheckInfo(monitorInfo.getPortCheckInfo());
-							//[REST対応で除外]monitorInfo2.setProcessCheckInfo(monitorInfo.getProcessCheckInfo());
-							monitorInfo2.setRegDate(monitorInfo.getRegDate());
-							monitorInfo2.setRegUser(monitorInfo.getRegUser());
-							monitorInfo2.setRunInterval(monitorInfo.getRunInterval());
-							monitorInfo2.setScope(monitorInfo.getScope());
-							//[REST対応で除外]monitorInfo2.setSnmpCheckInfo(monitorInfo.getSnmpCheckInfo());
-							//[REST対応で除外]monitorInfo2.setSqlCheckInfo(monitorInfo.getSqlCheckInfo());
-							//[REST対応で除外]monitorInfo2.setTrapCheckInfo(monitorInfo.getTrapCheckInfo());
-							monitorInfo2.setTriggerType(monitorInfo.getTriggerType());
-							monitorInfo2.setUpdateDate(monitorInfo.getUpdateDate());
-							monitorInfo2.setUpdateUser(monitorInfo.getUpdateUser());
-							monitorInfo2.setWinEventCheckInfo(monitorInfo.getWinEventCheckInfo());
-							//[REST対応で除外]monitorInfo2.setWinServiceCheckInfo(monitorInfo.getWinServiceCheckInfo());
-							monitorInfo2.setPluginCheckInfo(monitorInfo.getPluginCheckInfo());
-							
-							monitorInfo2.setPriorityChangeJudgmentType(monitorInfo.getPriorityChangeJudgmentType());
-							monitorInfo2.setPriorityChangeFailureType(monitorInfo.getPriorityChangeFailureType());
-							monitorInfo2.setSdmlMonitorTypeId(monitorInfo.getSdmlMonitorTypeId());
 						}
 						
 						if (HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId())) {
@@ -245,38 +179,45 @@ public class MonitorStringUtil {
 
 		if (!processed && monitorInfo.getCollectorFlg().booleanValue() && monitorInfo.getSdmlMonitorTypeId() == null) {
 			AgtMessageInfoRequest logmsg = generateAgtMessageInfoRequest(line, generationDate);
+			//processedがtrueとなる監視判定マッチ時の送信では filenameによって monitorInfo と  monitorInfo2 を使い分けているが、
+			//ここでは sendMonitorInfoに統一して、filenameがnullでないなら monitorInfo のクローンを立てる形式としている。
+			AgtMonitorInfoResponse sendMonitorInfo =  monitorInfo;
 			
 			if (filename != null) {
+				sendMonitorInfo =  cloneAgtMonitorInfoResponse(monitorInfo);
 				if (HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId())
 						|| HinemosModuleConstant.MONITOR_CLOUD_LOG.equals(monitorInfo.getMonitorTypeId())) {
-					monitorInfo.getLogfileCheckInfo().setLogfile(filename);
+					sendMonitorInfo.getLogfileCheckInfo().setLogfile(filename);
 				} else if (HinemosModuleConstant.MONITOR_RPA_LOGFILE.equals(monitorInfo.getMonitorTypeId())) {
-					monitorInfo.getRpaLogFileCheckInfo().setFileName(filename);
+					sendMonitorInfo.getRpaLogFileCheckInfo().setFileName(filename);
 				}
 			}
 			
 			if (HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId())) {
-				LogfileResultForwarder.getInstance().add(line, logmsg, monitorInfo, null, runInstructionInfo);
+				LogfileResultForwarder.getInstance().add(line, logmsg, sendMonitorInfo, null, runInstructionInfo);
 			} else if (HinemosModuleConstant.MONITOR_RPA_LOGFILE.equals(monitorInfo.getMonitorTypeId())) {
-				RpaLogfileResultForwarder.getInstance().add(line, logmsg, monitorInfo, null, runInstructionInfo);
+				RpaLogfileResultForwarder.getInstance().add(line, logmsg, sendMonitorInfo, null, runInstructionInfo);
 			} else if (HinemosModuleConstant.MONITOR_WINEVENT.equals(monitorInfo.getMonitorTypeId())) {
-				WinEventResultForwarder.getInstance().add(line, logmsg, monitorInfo, null, runInstructionInfo);
+				WinEventResultForwarder.getInstance().add(line, logmsg, sendMonitorInfo, null, runInstructionInfo);
 			} else if (HinemosModuleConstant.MONITOR_CLOUD_LOG.equals(monitorInfo.getMonitorTypeId())) {
-				CloudLogResultForwarder.getInstance().add(line, logmsg, monitorInfo, null, runInstructionInfo);
+				CloudLogResultForwarder.getInstance().add(line, logmsg, sendMonitorInfo, null, runInstructionInfo);
 			}
 		} else if (!processed && monitorInfo.getCollectorFlg().booleanValue() && monitorInfo.getSdmlMonitorTypeId() != null) {
 			for(SdmlMonitorTypeEnum sdmlMonitorType : SdmlMonitorTypeEnum.values()){
 				if(monitorInfo.getSdmlMonitorTypeId().equals(sdmlMonitorType.getId())){
 					if(sdmlMonitorType.getFormat().matcher(line).matches()){
 						AgtMessageInfoRequest logmsg = generateAgtMessageInfoRequest(line, generationDate);
-
+						//processedがtrueとなる監視判定マッチ時の送信では filenameによって monitorInfo と  monitorInfo2 を使い分けているが、
+						//ここでは sendMonitorInfoに統一して、filenameがnullでないなら monitorInfo のクローンを立てる形式としている。
+						AgtMonitorInfoResponse sendMonitorInfo =  monitorInfo;
 						if (filename != null) {
-							monitorInfo.getLogfileCheckInfo().setLogfile(filename);
+							sendMonitorInfo =  cloneAgtMonitorInfoResponse(monitorInfo);
+							sendMonitorInfo.getLogfileCheckInfo().setLogfile(filename);
 						}
 
 						// SDMLで自動生成された監視の場合でここに来るのは必ずログファイル監視だが念のため判定する
 						if (HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId())) {
-							LogfileResultForwarder.getInstance().add(line, logmsg, monitorInfo, null, runInstructionInfo);
+							LogfileResultForwarder.getInstance().add(line, logmsg, sendMonitorInfo, null, runInstructionInfo);
 						} 
 					}
 
@@ -301,6 +242,84 @@ public class MonitorStringUtil {
 		}
 		logmsg.setHostName(Agent.getAgentInfoRequest().getHostname());
 		return logmsg;
+	}
+	
+	private static AgtMonitorInfoResponse cloneAgtMonitorInfoResponse (AgtMonitorInfoResponse monitorInfo) {
+		AgtMonitorInfoResponse monitorInfo2 = new AgtMonitorInfoResponse();
+		monitorInfo2.setApplication(monitorInfo.getApplication());
+		monitorInfo2.setCalendar(monitorInfo.getCalendar());
+		monitorInfo2.setCalendarId(monitorInfo.getCalendarId());
+		monitorInfo2.setCollectorFlg(monitorInfo.getCollectorFlg());
+		//[REST対応で除外]monitorInfo2.setCustomCheckInfo(monitorInfo.getCustomCheckInfo());
+		//[REST対応で除外]monitorInfo2.setCustomTrapCheckInfo(monitorInfo.getCustomTrapCheckInfo());
+		monitorInfo2.setDelayTime(monitorInfo.getDelayTime());
+		monitorInfo2.setDescription(monitorInfo.getDescription());
+		monitorInfo2.setFacilityId(monitorInfo.getFacilityId());
+		monitorInfo2.setFailurePriority(monitorInfo.getFailurePriority());
+		//[REST対応で除外]monitorInfo2.setHttpCheckInfo(monitorInfo.getHttpCheckInfo());
+		//[REST対応で除外]monitorInfo2.setHttpScenarioCheckInfo(monitorInfo.getHttpScenarioCheckInfo());
+		monitorInfo2.setItemName(monitorInfo.getItemName());
+		//[REST対応で除外]monitorInfo2.setJmxCheckInfo(monitorInfo.getJmxCheckInfo());
+		
+		// ログファイル監視、クラウドログ監視、RPAログファイル監視だけがここを通る
+		if (HinemosModuleConstant.MONITOR_LOGFILE.equals(monitorInfo.getMonitorTypeId())
+				|| HinemosModuleConstant.MONITOR_CLOUD_LOG.equals(monitorInfo.getMonitorTypeId())) {
+			// LogfileCheckInfoをコピー
+			AgtLogfileCheckInfoResponse logFileCheckInfo = new AgtLogfileCheckInfoResponse();
+			logFileCheckInfo.setDirectory(monitorInfo.getLogfileCheckInfo().getDirectory());
+			logFileCheckInfo.setFileEncoding(monitorInfo.getLogfileCheckInfo().getFileEncoding());
+			logFileCheckInfo.setFileName(monitorInfo.getLogfileCheckInfo().getFileName());
+			logFileCheckInfo.setFileReturnCode(monitorInfo.getLogfileCheckInfo().getFileReturnCode());
+			logFileCheckInfo.setLogfile(monitorInfo.getLogfileCheckInfo().getLogfile());
+			logFileCheckInfo.setMaxBytes(monitorInfo.getLogfileCheckInfo().getMaxBytes());
+			logFileCheckInfo.setMonitorId(monitorInfo.getLogfileCheckInfo().getMonitorId());
+			logFileCheckInfo.setMonitorTypeId(monitorInfo.getLogfileCheckInfo().getMonitorTypeId());
+			logFileCheckInfo.setPatternHead(monitorInfo.getLogfileCheckInfo().getPatternHead());
+			logFileCheckInfo.setPatternTail(monitorInfo.getLogfileCheckInfo().getPatternTail());
+			logFileCheckInfo.setLogfile(monitorInfo.getLogfileCheckInfo().getLogfile());
+			monitorInfo2.setLogfileCheckInfo(logFileCheckInfo);
+
+		} else if (HinemosModuleConstant.MONITOR_RPA_LOGFILE.equals(monitorInfo.getMonitorTypeId())) {
+			// RpaLogfileCheckInfoをコピー
+			AgtRpaLogFileCheckInfoResponse RpalogFileCheckInfo = new AgtRpaLogFileCheckInfoResponse();
+			RpalogFileCheckInfo.setDirectory(monitorInfo.getRpaLogFileCheckInfo().getDirectory());
+			RpalogFileCheckInfo.setFileEncoding(monitorInfo.getRpaLogFileCheckInfo().getFileEncoding());
+			RpalogFileCheckInfo.setFileName(monitorInfo.getRpaLogFileCheckInfo().getFileName());
+			monitorInfo2.setRpaLogFileCheckInfo(RpalogFileCheckInfo);
+		}
+
+		monitorInfo2.setLogFormatId(monitorInfo.getLogFormatId());
+		monitorInfo2.setMeasure(monitorInfo.getMeasure());
+		monitorInfo2.setMonitorFlg(monitorInfo.getMonitorFlg());
+		monitorInfo2.setMonitorId(monitorInfo.getMonitorId());
+		monitorInfo2.setMonitorType(monitorInfo.getMonitorType());
+		monitorInfo2.setMonitorTypeId(monitorInfo.getMonitorTypeId());
+		monitorInfo2.setNotifyGroupId(monitorInfo.getNotifyGroupId());
+		//[REST対応で除外]monitorInfo2.setOwnerRoleId(monitorInfo.getOwnerRoleId());
+		//[REST対応で除外]monitorInfo2.setPerfCheckInfo(monitorInfo.getPerfCheckInfo());
+		//[REST対応で除外]monitorInfo2.setPingCheckInfo(monitorInfo.getPingCheckInfo());
+		//[REST対応で除外]monitorInfo2.setPluginCheckInfo(monitorInfo.getPluginCheckInfo());
+		//[REST対応で除外]monitorInfo2.setPortCheckInfo(monitorInfo.getPortCheckInfo());
+		//[REST対応で除外]monitorInfo2.setProcessCheckInfo(monitorInfo.getProcessCheckInfo());
+		monitorInfo2.setRegDate(monitorInfo.getRegDate());
+		monitorInfo2.setRegUser(monitorInfo.getRegUser());
+		monitorInfo2.setRunInterval(monitorInfo.getRunInterval());
+		monitorInfo2.setScope(monitorInfo.getScope());
+		//[REST対応で除外]monitorInfo2.setSnmpCheckInfo(monitorInfo.getSnmpCheckInfo());
+		//[REST対応で除外]monitorInfo2.setSqlCheckInfo(monitorInfo.getSqlCheckInfo());
+		//[REST対応で除外]monitorInfo2.setTrapCheckInfo(monitorInfo.getTrapCheckInfo());
+		monitorInfo2.setTriggerType(monitorInfo.getTriggerType());
+		monitorInfo2.setUpdateDate(monitorInfo.getUpdateDate());
+		monitorInfo2.setUpdateUser(monitorInfo.getUpdateUser());
+		monitorInfo2.setWinEventCheckInfo(monitorInfo.getWinEventCheckInfo());
+		//[REST対応で除外]monitorInfo2.setWinServiceCheckInfo(monitorInfo.getWinServiceCheckInfo());
+		monitorInfo2.setPluginCheckInfo(monitorInfo.getPluginCheckInfo());
+		
+		monitorInfo2.setPriorityChangeJudgmentType(monitorInfo.getPriorityChangeJudgmentType());
+		monitorInfo2.setPriorityChangeFailureType(monitorInfo.getPriorityChangeFailureType());
+		monitorInfo2.setSdmlMonitorTypeId(monitorInfo.getSdmlMonitorTypeId());
+
+		return monitorInfo2;
 	}
 
 }

@@ -34,19 +34,38 @@ import com.clustercontrol.util.MessageConstant;
 public class ReturnCodeConditionChecker {
 	/** ロガー */
 	static private Log m_log = LogFactory.getLog(ReturnCodeConditionChecker.class);
+
 	/** 複数指定の区切り文字 */
 	private static final String DELIMITER = ",";
-	/** 判定条件の文字列にマッチする正規表現 */
+
+	/** 
+	 * 終了値の文字列にマッチする正規表現
+	 * ",1"でもマッチしてしまうので注意。現状別のチェックがあるため問題なし。
+	 */
 	public static final String CONDITION_REGEX = "((^|,)([+-]?\\d+)(:([+-]?\\d+))?)+$";
+
 	/** 複数指定の文字列にマッチする正規表現 */
 	public static final String MULTI_CONDITION_REGEX = "([+-]?\\d+),([+-]?\\d+)";
+
 	/** 範囲指定の文字列にマッチする正規表現 */
 	public static final String RANGE_CONDITION_REGEX = "([+-]?\\d+):([+-]?\\d+)";
+
+	/** 
+	 * 複数指定、範囲指定の、終了値の文字列にマッチする正規表現
+	 * 数値(:数値){0回or1回}(,数値(:数値){0回or1回}){0回以上}
+	 */
+	public static final String MULTI_RANGE_CONDITION_REGEX = "(([+-]?\\d+)(:([+-]?\\d+))?)(,(([+-]?\\d+)(:([+-]?\\d+))?))*";
+
+	/** 終了値の数値 */
+	public static final String NUMBER_REGEX = "[+-]?\\d+";
+
 	/**
 	 * コロンによる範囲指定にマッチする正規表現<br>
 	 * 例： 1:10, -1:+1
 	 */
 	private static Pattern rangePattern = Pattern.compile(RANGE_CONDITION_REGEX);
+
+
 
 	/**
 	 * リターンコードが判定条件を満たしているかどうかを判定します。
@@ -205,15 +224,21 @@ public class ReturnCodeConditionChecker {
 		for(String targetValue :  retCodeValues ){
 			Matcher matcher = rangePattern.matcher(targetValue);
 			if ( matcher.matches() && matcher.groupCount() == 2) {
-				comfirmShortString(name,matcher.group(1));
-				comfirmShortString(name,matcher.group(2));
+				int intValue1 = comfirmShortString(name,matcher.group(1));
+				int intValue2 = comfirmShortString(name,matcher.group(2));
+				// 大小チェック
+				if (intValue1 >= intValue2) {
+					String[] args = { name, returnCode };
+					// 「{0}」が不正です({1})。
+					throw new InvalidSetting(MessageConstant.MESSAGE_INVALID_VALUE.getMessage(args));
+				}
 			} else {
 				comfirmShortString(name,targetValue);
 			}
 		}
 	}
 	
-	private static void comfirmShortString(String name, String strValue ) throws InvalidSetting {
+	private static int comfirmShortString(String name, String strValue ) throws InvalidSetting {
 		int minValue = Short.MIN_VALUE;
 		int maxValue = Short.MAX_VALUE;
 		String[] args = { name + " " +strValue, Integer.toString(minValue), Integer.toString(maxValue) };
@@ -230,8 +255,7 @@ public class ReturnCodeConditionChecker {
 		if (intValue < minValue || intValue > maxValue) {
 			throw new InvalidSetting(MessageConstant.MESSAGE_INPUT_BETWEEN.getMessage(args));
 		}
-		return;
+		return intValue;
 	}
-
 
 }

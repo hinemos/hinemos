@@ -775,9 +775,20 @@ public class InstanceUpdater {
 				if (HinemosPropertyCommon.xcloud_node_property_cloud_location_update.getBooleanValue()) {
 					String oldValue = nodeInfo.getCloudLocation();
 					String newValue = instanceEntity.getLocationId();
-					if((null==oldValue && null!=newValue) || (null!=oldValue && !oldValue.equals(newValue))){
-						nodeInfo.setCloudLocation(newValue);
-						changeLog.append("CloudLocation:").append(oldValue).append("->").append(newValue).append(";");
+					// GCP/OCI固有カスタマイズ
+					// Regjonスコープ配下とProject/Compartmentスコープ配下で同一のインスタンスが2度検知される
+					// 両方でクラウドロケーションを更新すると、Regionで自動検知が行われた場合とProjectで自動検知が行われた場合の2回で
+					// 同じインスタンスのロケーションを更新することになるため、以下の理由からProject配下のロケーションの場合、ロケーションを更新しない
+					// - Region、Projectの自動検知で毎回クラウドロケーション変更のINTERNALイベントが発生する
+					// - クラウドロケーションの利用方法として、リージョンIDが入るほうが正しい
+					ExtendedProperty ep = instanceEntity.getExtendedProperties().get(CloudConstants.EPROP_SKIP_UPDATE_INSTANCE_LOCATION);
+					if (ep == null || !Boolean.valueOf(ep.getValue())) {
+						if ((null == oldValue && null != newValue)
+								|| (null != oldValue && !oldValue.equals(newValue))) {
+							nodeInfo.setCloudLocation(newValue);
+							changeLog.append("CloudLocation:").append(oldValue).append("->").append(newValue)
+									.append(";");
+						}
 					}
 				}
 				

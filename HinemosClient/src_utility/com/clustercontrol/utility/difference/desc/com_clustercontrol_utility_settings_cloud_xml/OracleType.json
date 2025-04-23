@@ -1,0 +1,21 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+
+	{
+	"propName":"authenticationType",
+	"annotations":[
+		{"type":"Column", "columnName":"OracleType_authenticationType"}
+	]},
+	
+	{
+	"propName":"oracleUser",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudScopeBaseInfoType_accountId"},
+		{"type":"Array", "idType":"props", "props":["accountId"]},
+		{"type":"Ignore", "propNames":["accountId"]}
+	]}
+]
+}

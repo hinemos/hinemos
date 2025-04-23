@@ -18,6 +18,7 @@ import javax.activation.FileDataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.openapitools.client.model.CreateReportingFileResponse;
 import org.openapitools.client.model.CreateReportingFileRequest;
 
@@ -36,6 +37,7 @@ import com.clustercontrol.reporting.util.ReportingRestClientWrapper;
 import com.clustercontrol.rest.util.RestCodecUtil;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
+import com.clustercontrol.util.UIManager;
 
 /**
  * レポート作成を実行するクラス
@@ -270,6 +272,17 @@ public class ReportingRunner implements Runnable {
 			// ダウンロード
 			download(managerName, downloadFileList.get(0));
 			if (isCanceled()) {
+				//エラーダイアログを表示
+				UIManager.checkAsyncExec(new Runnable(){
+					@Override
+					public void run() {
+						MessageDialog.openError(
+								null,
+								Messages.getString("message.reporting.25"),
+								Messages.getString("message.reporting.27") + "\r\n" + downloadFileList.get(0) + "\r\n"
+										+ getCancelMessage());
+					}}
+				);
 				m_log.warn("canceled:" + getCancelMessage());
 			}
 		}catch(Throwable e){

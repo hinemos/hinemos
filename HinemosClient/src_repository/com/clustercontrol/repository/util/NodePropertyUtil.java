@@ -4235,8 +4235,8 @@ public class NodePropertyUtil {
 		}
 		
 		// SNMP
-		if (nodeInfo.getSnmpUser() == null || "".equals(nodeInfo.getSnmpUser())) {
-			nodeInfo.setSnmpUser("root");
+		if (nodeInfo.getSnmpUser() == null) {
+			nodeInfo.setSnmpUser("");
 		}
 		if (nodeInfo.getSnmpAuthPassword() == null) {
 			nodeInfo.setSnmpAuthPassword("");
@@ -4322,8 +4322,8 @@ public class NodePropertyUtil {
 		if (nodeInfo.getWinrmUserPassword() == null) {
 			nodeInfo.setWinrmUserPassword("");
 		}
-		if (nodeInfo.getWinrmVersion() == null || "".equals(nodeInfo.getWinrmVersion())) {
-			nodeInfo.setWinrmVersion("2.0");
+		if (nodeInfo.getWinrmVersion() == null) {
+			nodeInfo.setWinrmVersion("");
 		}
 		if (nodeInfo.getWinrmPort() == null || nodeInfo.getWinrmPort() == -1) {
 			nodeInfo.setWinrmPort(5985);

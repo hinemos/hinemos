@@ -45,6 +45,21 @@ public class ValidateResult {
 		return instance;
 	}
 
+	/**
+	 * メッセージを元にinvalidに設定したオブジェクトを返します。
+	 * 
+	 * @param idMessage IDプロパティへ設定する文字列。
+	 * @param contentMessage messageプロパティへ設定する文字列。
+	 * @return パラメータをもとにinvalidとして生成したオブジェクト。
+	 */
+	public static ValidateResult messageOf(String idMessage, String contentMessage) {
+		ValidateResult instance = new ValidateResult();
+		instance.setValid(false);
+		instance.setID(idMessage);
+		instance.setMessage(contentMessage);
+		return instance;
+	}
+
 	// ----- instance メソッド ----- //
 
 	/**

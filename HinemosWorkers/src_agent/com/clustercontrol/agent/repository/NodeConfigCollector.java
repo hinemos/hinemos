@@ -76,6 +76,7 @@ import com.clustercontrol.util.CommandExecutor.CommandResult;
 import com.clustercontrol.util.DateUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.XMLUtil;
 
 /**
  * Collector using command (register one Collector against one Command
@@ -1811,7 +1812,7 @@ public class NodeConfigCollector implements CollectorTask, Runnable {
 			log.trace(methodName + DELIMITER + "succeeded to execute customized commands."//
 					+ " settingID=[" + this.config.getSettingId() + "]"//
 					+ ", customID=[" + customSetting.getSettingCustomId() + "]");
-			returnCustomInfo.setValue(ret.stdout);
+			returnCustomInfo.setValue(XMLUtil.ignoreInvalidString(ret.stdout));
 			returnCustomInfo.setRegisterFlag(NodeRegisterFlagConstant.GET_SUCCESS);
 			returnList.add(returnCustomInfo);
 		}

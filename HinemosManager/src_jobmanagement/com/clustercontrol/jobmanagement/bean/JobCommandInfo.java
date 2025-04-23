@@ -756,10 +756,10 @@ public class JobCommandInfo implements Serializable, RequestDto {
 	@Override
 	public void correlationCheck() throws InvalidSetting {
 		if (normalJobOutputInfo != null) {
-			normalJobOutputInfo.correlationCheck();
+			normalJobOutputInfo.correlationCheck(false);
 		}
 		if (errorJobOutputInfo != null) {
-			errorJobOutputInfo.correlationCheck();
+			errorJobOutputInfo.correlationCheck(true);
 		}
 		if (jobCommandParamList != null) {
 			for (JobCommandParam req : jobCommandParamList) {

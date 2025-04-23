@@ -14,6 +14,7 @@ public enum NotifyCloudPlatformTypeEnum implements EnumDto<Integer> {
 
 	AWS(CloudConstant.notify_aws_platform),
 	AZURE(CloudConstant.notify_azure_platform),
+	GCP(CloudConstant.notify_gcp_platform),
 	OTHER(-1);
 
 	private final Integer code;

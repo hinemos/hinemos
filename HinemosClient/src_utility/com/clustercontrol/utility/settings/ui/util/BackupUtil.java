@@ -148,7 +148,7 @@ public class BackupUtil {
 				}
 			}
 		}
-		
+
 		if (info.getId().equals(HinemosModuleConstant.INFRA_FILE)){
 			moveBinaryFile(MultiManagerPathUtil.getPreference(
 					SettingToolsXMLPreferencePage.VALUE_INFRA), timestamp);
@@ -160,6 +160,8 @@ public class BackupUtil {
 					SettingToolsXMLPreferencePage.VALUE_NODEMAP_BG_FOLDER), timestamp);
 			moveBinaryFile(MultiManagerPathUtil.getPreference(
 					SettingToolsXMLPreferencePage.VALUE_NODEMAP_ICON_FOLDER), timestamp);
+		} else if (info.getId().equals(HinemosModuleConstant.CLOUD_USER)) {
+			moveBinaryFile(MultiManagerPathUtil.getCloudScopeFolder(), timestamp);
 		}
 		
 		return true;

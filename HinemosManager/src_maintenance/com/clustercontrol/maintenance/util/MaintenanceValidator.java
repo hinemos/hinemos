@@ -12,10 +12,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.bean.DataRangeConstant;
+import com.clustercontrol.bean.HinemosModuleConstant;
+import com.clustercontrol.commons.util.AlterModeArgsUtil;
 import com.clustercontrol.commons.util.CommonValidator;
+import com.clustercontrol.commons.util.InvalidSettingByCloudServiceMode;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.maintenance.factory.SelectMaintenanceTypeMst;
+import com.clustercontrol.maintenance.model.HinemosPropertyInfo;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.model.MaintenanceTypeMst;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
@@ -51,9 +55,12 @@ public class MaintenanceValidator {
 		CommonValidator.validateId(MessageConstant.MAINTENANCE_ID.getMessage(), maintenanceInfo.getMaintenanceId(), 64);
 
 		// ownerRoleId
-		if(!isModify){
-			CommonValidator.validateString(MessageConstant.OWNER_ROLE_ID.getMessage(), maintenanceInfo.getOwnerRoleId(), true, 1, 64);	
-		} 
+		if (!isModify) {
+			CommonValidator.validateString(MessageConstant.OWNER_ROLE_ID.getMessage(), maintenanceInfo.getOwnerRoleId(),
+					true, 1, 64);
+			CommonValidator.validateOwnerRoleId(maintenanceInfo.getOwnerRoleId(), false,
+					maintenanceInfo.getOwnerRoleId(), HinemosModuleConstant.SYSYTEM_MAINTENANCE);
+		}
 
 		// schedule
 		CommonValidator.validateScheduleHour(maintenanceInfo.getSchedule());
@@ -123,4 +130,36 @@ public class MaintenanceValidator {
 		CommonValidator.validateString(MessageConstant.APPLICATION.getMessage(),
 				maintenanceInfo.getApplication(), true, 0, 64);
 	}
+
+	/**
+	 * Hinemosプロパティの妥当性チェック
+	 * @param info Hinemosプロパティ
+	 * @throws InvalidSetting
+	 */
+	public static void validateHinemosPropertyInfo(HinemosPropertyInfo info) throws InvalidSetting{
+		validateHinemosPropertyKey(info.getKey());
+	}
+
+	/**
+	 * Hinemosプロパティのキーの妥当性チェック
+	 * @param key Hinemosプロパティのキー
+	 * @throws InvalidSetting
+	 */
+	public static void validateHinemosPropertyKey(String key) throws InvalidSetting{
+		// クラウドサービスモード以外は妥当性チェック不要
+		if(!AlterModeArgsUtil.isCloudServiceMode()){
+			return;
+		}
+		
+		// 登録・更新不可能なHinemosプロパティのキー名の場合はバリデーションエラー
+		if(MaintenanceCloudServiceModeUtil.getInstance().isRestrictedHinemosProperty(key)){
+			String[] args = { MessageConstant.HINEMOS_PROPERTY_KEY.getMessage(), key };
+			InvalidSetting e = new InvalidSettingByCloudServiceMode(MessageConstant.MESSAGE_INVALID_VALUE.getMessage(args));
+
+			m_log.info("validateHinemosPropertyInfo() HinemosProperty Key Cloud Service Mode: "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+	}
+
 }

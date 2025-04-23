@@ -304,10 +304,10 @@ public class JobCommandInfoRequest implements RequestDto {
 	@Override
 	public void correlationCheck() throws InvalidSetting {
 		if (normalJobOutputInfo != null) {
-			normalJobOutputInfo.correlationCheck();
+			normalJobOutputInfo.correlationCheck(false);
 		}
 		if (errorJobOutputInfo != null) {
-			errorJobOutputInfo.correlationCheck();
+			errorJobOutputInfo.correlationCheck(true);
 		}
 		if (jobCommandParamList != null) {
 			for (JobCommandParamRequest req : jobCommandParamList) {
@@ -318,12 +318,6 @@ public class JobCommandInfoRequest implements RequestDto {
 			for (JobEnvVariableInfoRequest req : envVariable) {
 				req.correlationCheck();
 			}
-		}
-
-		// [標準出力と同じ出力先を使用する]がNullの場合はエラー
-		if (errorJobOutputInfo != null && errorJobOutputInfo.getSameNormalFlg() == null) {
-			String r1 = RestItemNameResolver.resolveItenName(errorJobOutputInfo.getClass(), "sameNormalFlg");
-			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_INPUT.getMessage(r1));
 		}
 
 		//標準エラー出力設定の出力先が同じとする設定の場合、標準出力の設定がなかったら不正な設定とする

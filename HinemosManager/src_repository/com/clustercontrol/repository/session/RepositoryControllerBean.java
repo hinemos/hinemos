@@ -32,8 +32,10 @@ import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.SnmpSecurityLevelConstant;
 import com.clustercontrol.bean.SnmpVersionConstant;
 import com.clustercontrol.commons.bean.SettingUpdateInfo;
+import com.clustercontrol.commons.util.AlterModeArgsUtil;
 import com.clustercontrol.commons.util.EmptyJpaTransactionCallback;
 import com.clustercontrol.commons.util.HinemosSessionContext;
+import com.clustercontrol.commons.util.InvalidSettingByCloudServiceMode;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityDuplicate;
 import com.clustercontrol.fault.FacilityNotFound;
@@ -86,6 +88,7 @@ import com.clustercontrol.repository.model.FacilityInfo;
 import com.clustercontrol.repository.model.NodeHostnameInfo;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.model.ScopeInfo;
+import com.clustercontrol.repository.util.CloudServiceModeRepositoryConstraintUtil;
 import com.clustercontrol.repository.util.FacilityIdCacheInitCallback;
 import com.clustercontrol.repository.util.FacilityTreeCache;
 import com.clustercontrol.repository.util.FacilityTreeCacheRefreshCallback;
@@ -131,6 +134,9 @@ public class RepositoryControllerBean {
 
 	// 構成情報検索でまとめて検索を行う上限
 	private static final int NODE_CONFIG_SEARCH_MAX_COUNT = 10000;
+	
+	// クラウドサービスモード: リポジトリ登録制限判定用ユーティリティ
+	private static final CloudServiceModeRepositoryConstraintUtil cloudSrvConstraint = new CloudServiceModeRepositoryConstraintUtil();
 
 	/**
 	 * ファシリティIDを条件としてFacilityEntity を取得します。
@@ -1239,6 +1245,10 @@ public class RepositoryControllerBean {
 		JpaTransactionManager jtm = new JpaTransactionManager();
 
 		try {
+
+			// クラウドサービスモード: 登録値許可チェック
+			checkAllowedByConstraintOrThrow(nodeInfo);
+
 			jtm.begin();
 
 			// メンバ変数にnullが含まれていることがあるので、nullをデフォルト値に変更する。
@@ -1349,6 +1359,10 @@ public class RepositoryControllerBean {
 		boolean flag = false;
 
 		try{
+
+			// クラウドサービスモード: 登録値許可チェック
+			checkAllowedByConstraintOrThrow(info);
+
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
@@ -1407,6 +1421,36 @@ public class RepositoryControllerBean {
 		}
 		
 		return ret;
+	}
+	
+	/**
+	 * リポジトリ情報として登録されようとしている値が、
+	 * クラウドサービスモードで制限されている値であるかをチェックする。
+	 * 制限されている値だった場合は例外を投げ、そうでない場合は何も起きない。
+	 */
+	private void checkAllowedByConstraintOrThrow(NodeInfo nodeInfo) throws IOException, InvalidSetting {
+		if (!AlterModeArgsUtil.isCloudServiceMode()) {
+			// クラウドサービスモードでない場合は、何が来ても許可する
+			return;
+		}
+
+		if (!cloudSrvConstraint.isAllowedNodename(nodeInfo.getNodeName())) {
+			throw new InvalidSettingByCloudServiceMode(String.format(
+					"NodeName \"%s\" is not allowed by cloud service mode constraint.",
+					nodeInfo.getNodeName()));
+		}
+		
+		if (!cloudSrvConstraint.isAllowedIpv4(nodeInfo.getIpAddressV4())) {
+			throw new InvalidSettingByCloudServiceMode(String.format(
+					"IpAddressV4 \"%s\" is not allowed by cloud service mode constraint.",
+					nodeInfo.getIpAddressV4()));
+		}
+		
+		if (!cloudSrvConstraint.isAllowedIpv6(nodeInfo.getIpAddressV6())) {
+			throw new InvalidSettingByCloudServiceMode(String.format(
+					"IpAddressV6 \"%s\" is not allowed by cloud service mode constraint.",
+					nodeInfo.getIpAddressV6()));
+		}
 	}
 
 	/**
@@ -2733,9 +2777,9 @@ public class RepositoryControllerBean {
 						m_log.info("restartAgent: Skip no profile. facilityId=" + facilityId);
 						continue;
 					}
-					if ((AgentVersionManager.checkVersion(AgentConnectUtil.getAgentVersion(facilityId),
+					if ((AgentVersionManager.isSameVersionMajor(AgentConnectUtil.getAgentVersion(facilityId),
 							AgentVersionManager.VERSION_MAJOR)) == false) {
-						m_log.info("restartAgent: Skip under ver." + AgentVersionManager.VERSION_MAJOR + ". facilityId=" + facilityId);
+						m_log.info("restartAgent: Skip not ver." + AgentVersionManager.VERSION_MAJOR + ". facilityId=" + facilityId);
 						continue;
 					}
 					if (libman.isLatest(prof)) {

@@ -284,6 +284,11 @@ public class WaitRuleDialog extends CommonDialog {
 					if (objectInfo == null || objectInfo.getType() == null) {
 						continue;
 					}
+					if (objectInfo.getDescription() == null) {
+						//説明がnullだと表示の際にエラーが出るので空文字で補完しておく。
+						objectInfo.setDescription("");
+					}
+					
 					// 判定対象を設定
 					JobObjectInfoResponse.TypeEnum typeEnum = (JobObjectInfoResponse.TypeEnum) objectInfo.getType();
 					// プロパティ取得

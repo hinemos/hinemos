@@ -202,7 +202,8 @@ public class UtilityDiffCommandDialog extends CommonDialog {
 							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_INFRA)) && 
 							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_JOBMAP_IMAGE_FOLDER)) && 
 							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_NODEMAP_BG_FOLDER)) && 
-							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_NODEMAP_ICON_FOLDER))){
+							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_NODEMAP_ICON_FOLDER)) &&
+							!file.getName().equals(MultiManagerPathUtil.getCloudScopeFolder())){
 						FileUtil.moveAllFiles2OtherDir(file.getAbsolutePath(), tmpFile.getAbsolutePath());
 						pathUtil.delete(file);
 					}
@@ -231,7 +232,8 @@ public class UtilityDiffCommandDialog extends CommonDialog {
 							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_INFRA)) && 
 							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_JOBMAP_IMAGE_FOLDER)) && 
 							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_NODEMAP_BG_FOLDER)) && 
-							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_NODEMAP_ICON_FOLDER))){
+							!file.getName().equals(MultiManagerPathUtil.getPreference(SettingToolsXMLPreferencePage.VALUE_NODEMAP_ICON_FOLDER)) &&
+							!file.getName().equals(MultiManagerPathUtil.getCloudScopeFolder())){
 						FileUtil.moveAllFiles2OtherDir(file.getAbsolutePath(), diffTmpFile.getAbsolutePath());
 						pathUtil.delete(file);
 					}
@@ -258,5 +260,12 @@ public class UtilityDiffCommandDialog extends CommonDialog {
 
 	public void setDiffFilePath(String diffFilePath) {
 		this.diffFilePath = diffFilePath;
+	}
+
+	@Override
+	public boolean close() {
+		xmlUploadComponent.cleanup();
+		diffUploadComponent.cleanup();
+		return super.close();
 	}
 }

@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.clustercontrol.calendar.model.CalendarDetailInfo;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
@@ -24,16 +27,19 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.endpoint.calendar.dto.CalendarDetailInfoRequest;
 import com.clustercontrol.rest.endpoint.utility.dto.ImportCalendarRecordRequest;
 import com.clustercontrol.rest.endpoint.utility.dto.RecordRegistrationResponse;
+import com.clustercontrol.rest.endpoint.utility.dto.enumtype.ImportResultEnum;
 import com.clustercontrol.rest.util.RestBeanUtil;
 import com.clustercontrol.rest.util.RestCommonValitater;
-import com.clustercontrol.rest.endpoint.utility.dto.enumtype.ImportResultEnum;
-import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 
 public class ImportCalendarController extends AbstractImportController<ImportCalendarRecordRequest, RecordRegistrationResponse>{
+
+	private static Log m_log = LogFactory.getLog(ImportCalendarController.class);
 
 	public ImportCalendarController(boolean isRollbackIfAbnormal, List<ImportCalendarRecordRequest> importList ) {
 		super(isRollbackIfAbnormal, importList);
 	}
+
 	@Override
 	public RecordRegistrationResponse proccssRecord( ImportCalendarRecordRequest importRec ) throws CalendarDuplicate, InvalidSetting, InvalidRole, HinemosUnknown, CalendarNotFound, ParseException {
 		
@@ -47,15 +53,36 @@ public class ImportCalendarController extends AbstractImportController<ImportCal
 		
 		// 個別セット
 		List<CalendarDetailInfo> calendarDetailList = new ArrayList<CalendarDetailInfo>();
-		for(CalendarDetailInfoRequest tmp:importRec.getImportData().getCalendarDetailList()){
+		for (CalendarDetailInfoRequest tmp : importRec.getImportData().getCalendarDetailList()) {
 			CalendarDetailInfo calendarDetailInfo = new CalendarDetailInfo();
 			RestBeanUtil.convertBean(tmp,calendarDetailInfo);
-			
-			Date parseDate = TimeStringConverter.parseTime(tmp.getStartTime());
+
+			// カレンダ詳細定義 開始時刻
+			Date parseDate = null;
+			try {
+				parseDate = TimeStringConverter.parseTime(tmp.getStartTime());
+			} catch (ParseException e) {
+				m_log.warn(e);
+				// 変換エラー時の InvalidSetting メッセージ作成
+				String message = MessageConstant.MESSAGE_INVALID_VALUE.getMessage(
+						MessageConstant.CALENDAR_DETAIL.getMessage() + ", " + MessageConstant.START_TIME.getMessage(),
+						tmp.getStartTime());
+				throw  new InvalidSetting(message);
+			}
 			Long startTimeLong = parseDate.getTime();
 			calendarDetailInfo.setTimeFrom(startTimeLong);
-			
-			parseDate = TimeStringConverter.parseTime(tmp.getEndTime());
+
+			// カレンダ詳細定義 終了時刻
+			try {
+				parseDate = TimeStringConverter.parseTime(tmp.getEndTime());
+			} catch (ParseException e) {
+				m_log.warn(e);
+				// 変換エラー時の InvalidSetting メッセージ作成
+				String message = MessageConstant.MESSAGE_INVALID_VALUE.getMessage(
+						MessageConstant.CALENDAR_DETAIL.getMessage() + ", " + MessageConstant.END_TIME.getMessage(),
+						tmp.getEndTime());
+				throw  new InvalidSetting(message);
+			}
 			Long timeToLong = parseDate.getTime();
 			calendarDetailInfo.setTimeTo(timeToLong);
 			

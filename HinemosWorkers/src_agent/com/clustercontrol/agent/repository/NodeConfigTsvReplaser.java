@@ -25,6 +25,7 @@ import com.clustercontrol.bean.IpAddressInfo;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.util.NetworkInterfaceUtil;
+import com.clustercontrol.util.XMLUtil;
 
 public class NodeConfigTsvReplaser {
 
@@ -514,7 +515,7 @@ public class NodeConfigTsvReplaser {
 		}
 
 		if (idx < params.length) {
-			return params[idx];
+			return XMLUtil.ignoreInvalidString(params[idx]);
 		}
 
 		String message = "failed to replace from TSV to JavaDTO, because columns output to TSV are insufficient." //

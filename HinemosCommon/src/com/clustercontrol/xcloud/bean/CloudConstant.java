@@ -21,6 +21,8 @@ public class CloudConstant {
 	public static final String platform_vCenter = "vCenter";
 	public static final String platform_HyperV = "Hyper-V";
 	public static final String platform_Azure = "AZURE";
+	public static final String platform_GCP = "GOOGLECLOUD";
+	public static final String platform_OCI = "OCI";
 	
 	// プライベートクラウドのロケーションID
 	public static final String location_ESXi = "ESXi";
@@ -60,6 +62,14 @@ public class CloudConstant {
 	public static final String notify_azure_dataVersion = "DataVersion";
 	public static final String notify_azure_data = "Data";
 	public static final int notify_azure_platform = 1;
+	//GCP
+	public static final String notify_gcp_projectId = "ProjectId";
+	public static final String notify_gcp_topicId = "TopicId";
+	public static final String notify_gcp_message = "Message";
+	public static final String notify_gcp_orderingKey = "OrderingKey";
+	public static final String notify_gcp_attribute = "Attribute";
+	public static final String notify_gcp_region_endpoint = "Endpoint";
+	public static final int notify_gcp_platform = 2;	
 	
 		// クラウドログ監視で使用するキー
 	public static final String cloudLog_targetScope = "targetScope";
@@ -79,7 +89,29 @@ public class CloudConstant {
 	public static final String cloudLog_Col="col";
 	public static final String cloudLog_isPrefix="prefix";
 	public static final String cloudLog_Offset="offset";
-
+	
+	// GCP specific constants
+	public static final String PrivateKeyFileName = "PrivateKeyFileName";
+	public static final String ClientEmail = "client_email";
+	public static final String PrivateKey = "private_key";
+	public static final String ProjectId = "project_id";
+	public static final String AuthenticationType = "type";
+	public static final String ServiceAccountKey = "service_account";
+	public static final String AttachedServiceAccount = "AttachedServiceAccount";
+	public static final String UseProjectId = "use_projectId";
+	
+	//OCI Specific constants
+	public static final String tenantIdConst = "tenancy";
+	public static final String userIdConst = "user";
+	public static final String fingerprintConst = "fingerprint";
+	public static final String privateKeyConst = "privateKey";
+	public static final String privateKeyFileNameConst = "key_file";
+	public static final String passPhraseConst = "passphrase";
+	public static final String regionConst = "region";
+	public static final String apiKeyBasedAuthentication="apiKeyBasedAuthentication";
+	public static final String instancePrincipalAuthentication="instancePrincipalAuthentication";
+	public static final String authenticationType= "authenticationType";
+	
 	// Hyper-Vの接続に利用するプロトコル
 	// ※xCloudのHyperVConstantsにも同様のEnumがあるため整合性に注意してください
 	public static enum HyperVProtocol {

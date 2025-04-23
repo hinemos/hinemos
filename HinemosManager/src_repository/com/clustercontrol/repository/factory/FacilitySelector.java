@@ -2132,7 +2132,11 @@ public class FacilitySelector {
 			String managerName, List<NodeConfigSettingItem> nodeConfigSettingItemList, boolean needHeaderInfo)
 			throws HinemosUnknown, IOException {
 
-		Path tempFile = RestTempFileUtil.createTempFile(RestTempFileType.NODEMAP_NODECONFIG);
+		Path tempFile = RestTempFileUtil.createTempFile(RestTempFileType.REPOSITORY_NODECONFIG);
+		if (m_log.isDebugEnabled()){
+			m_log.debug("Create NodeConfigTempFile to: " + tempFile);
+		}
+		
 		FileWriter filewriter = new FileWriter(tempFile.toFile(), true);
 
 		try {

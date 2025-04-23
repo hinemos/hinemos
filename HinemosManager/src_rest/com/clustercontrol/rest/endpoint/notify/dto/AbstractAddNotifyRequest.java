@@ -9,7 +9,9 @@ package com.clustercontrol.rest.endpoint.notify.dto;
 
 import com.clustercontrol.rest.annotation.RestItemName;
 import com.clustercontrol.util.MessageConstant;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@JsonIgnoreProperties({"notifyType"})
 public abstract class AbstractAddNotifyRequest extends AbstractNotifyRequest {
 
 	@RestItemName(value = MessageConstant.NOTIFY_ID)

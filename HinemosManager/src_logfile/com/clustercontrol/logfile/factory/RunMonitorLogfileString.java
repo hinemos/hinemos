@@ -41,6 +41,7 @@ import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.sdml.util.SdmlUtil;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.util.XMLUtil;
 
 public class RunMonitorLogfileString {
 	
@@ -64,11 +65,11 @@ public class RunMonitorLogfileString {
 			
 			if (SdmlUtil.isCreatedBySdml(result.monitorInfo)) {
 				// SDMLで自動作成されたログファイル監視の場合、独自のタグを抽出する
-				List<StringSampleTag> tagList = SdmlUtil.extractTagsFromMonitoringLog(result.monitorInfo.getMonitorId(), result.message);
+				List<StringSampleTag> tagList = SdmlUtil.extractTagsFromMonitoringLog(result.monitorInfo.getMonitorId(), XMLUtil.ignoreInvalidString(result.message));
 				tagList.add(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getLogfileCheckInfo().getLogfile()));
-				sample.set(facilityId, filePath, messageWithoutBom.trim(), tagList);
+				sample.set(facilityId, filePath, XMLUtil.ignoreInvalidString(messageWithoutBom.trim()), tagList);
 			} else {
-				sample.set(facilityId, filePath, messageWithoutBom.trim(), Arrays.asList(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getLogfileCheckInfo().getLogfile())));
+				sample.set(facilityId, filePath, XMLUtil.ignoreInvalidString(messageWithoutBom.trim()), Arrays.asList(new StringSampleTag(CollectStringTag.filename, result.monitorInfo.getLogfileCheckInfo().getLogfile())));
 			}
 			CollectStringDataUtil.store(Arrays.asList(sample));
 		}
