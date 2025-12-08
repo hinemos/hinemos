@@ -84,7 +84,7 @@ import com.clustercontrol.util.MessageConstant;
  */
 public class NotifyControllerBean implements CheckFacility {
 	/** ログ出力のインスタンス。 */
-	private static Log m_log = LogFactory.getLog( NotifyControllerBean.class );
+	private static Log m_log = LogFactory.getLog(NotifyControllerBean.class);
 
 	private static SendMail m_reportingSendMail = null;
 
@@ -110,7 +110,7 @@ public class NotifyControllerBean implements CheckFacility {
 	/**
 	 * 通知情報を作成します。
 	 *
-	 * @param info 作成対象の通知情報
+	 * @param info     作成対象の通知情報
 	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
 	 * @return NotifyInfo 作成に成功した通知情報
 	 * @throws NotifyDuplicate
@@ -138,16 +138,17 @@ public class NotifyControllerBean implements CheckFacility {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			//入力チェック
+			// 入力チェック
 			NotifyValidator.validateNotifyInfo(info, true);
 
-			//ユーザがオーナーロールIDに所属しているかチェック
+			// ユーザがオーナーロールIDに所属しているかチェック
 			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
-					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
-					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
+					(String) HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+					(Boolean) HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
 
 			ModifyNotify notify = new ModifyNotify();
-			notify.add(info,(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+			notify.add(info,
+					(String) HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			// コミット後にキャッシュクリアを行うため、コールバックを追加する
 			jtm.addCallback(new NotifyCacheRefreshCallback());
@@ -162,7 +163,7 @@ public class NotifyControllerBean implements CheckFacility {
 			SelectNotify selectNotify = new SelectNotify();
 			ret = selectNotify.getNotify(info.getNotifyId());
 		} catch (NotifyDuplicate | InvalidSetting | HinemosUnknown | InvalidRole e) {
-			if (jtm != null){
+			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
@@ -170,7 +171,7 @@ public class NotifyControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
+		} catch (Exception e) {
 			m_log.warn("addNotify() : " + e.getClass().getSimpleName() +
 					", " + e.getMessage(), e);
 			if (jtm != null)
@@ -204,7 +205,7 @@ public class NotifyControllerBean implements CheckFacility {
 	/**
 	 * 通知情報を変更します。
 	 *
-	 * @param info 変更対象の通知情報
+	 * @param info     変更対象の通知情報
 	 * @param isImport true:設定インポートエクスポートから実行、false:それ以外
 	 * @return NotifyInfo 変更に成功した通知情報
 	 * @throws NotifyDuplicate
@@ -236,11 +237,12 @@ public class NotifyControllerBean implements CheckFacility {
 			NotifyInfo notifyInfo = QueryUtil.getNotifyInfoPK(info.getNotifyId(), ObjectPrivilegeMode.READ);
 			info.setOwnerRoleId(notifyInfo.getOwnerRoleId());
 
-			//入力チェック
+			// 入力チェック
 			NotifyValidator.validateNotifyInfo(info, false);
 
 			ModifyNotify notify = new ModifyNotify();
-			notify.modify(info,(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
+			notify.modify(info,
+					(String) HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
 			// コミット後にキャッシュクリアを行うため、コールバックを追加する
 			jtm.addCallback(new NotifyCacheRefreshCallback());
@@ -254,7 +256,7 @@ public class NotifyControllerBean implements CheckFacility {
 			SelectNotify selectNotify = new SelectNotify();
 			ret = selectNotify.getNotify(info.getNotifyId());
 		} catch (NotifyDuplicate | InvalidSetting | HinemosUnknown | InvalidRole | NotifyNotFound e) {
-			if (jtm != null){
+			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
@@ -262,7 +264,7 @@ public class NotifyControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
+		} catch (Exception e) {
 			m_log.warn("modifyNotify() : " + e.getClass().getSimpleName() +
 					", " + e.getMessage(), e);
 			if (jtm != null)
@@ -300,7 +302,7 @@ public class NotifyControllerBean implements CheckFacility {
 	 */
 	public List<NotifyInfo> deleteNotify(String[] notifyIds) throws NotifyNotFound, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
-		List<NotifyInfo> retList = new ArrayList<>(); 
+		List<NotifyInfo> retList = new ArrayList<>();
 
 		// 通知情報を削除
 		ModifyNotify notify = new ModifyNotify();
@@ -322,8 +324,8 @@ public class NotifyControllerBean implements CheckFacility {
 			// ジョブ定義のキャッシュも合わせて更新
 			FullJob.updateCacheForNotifyId(notifyIds);
 
-		} catch(NotifyNotFound | HinemosUnknown | InvalidRole e) {
-			if (jtm != null){
+		} catch (NotifyNotFound | HinemosUnknown | InvalidRole e) {
+			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
@@ -331,7 +333,7 @@ public class NotifyControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
+		} catch (Exception e) {
 			m_log.warn("deleteNotify() : " + e.getClass().getSimpleName() +
 					", " + e.getMessage(), e);
 			if (jtm != null)
@@ -347,7 +349,7 @@ public class NotifyControllerBean implements CheckFacility {
 	/**
 	 * 引数で指定された通知情報を返します。
 	 *
-	 * @param notifyId 取得対象の通知ID
+	 * @param notifyId   取得対象の通知ID
 	 * @param notifyType 取得対象の通知種別
 	 * @return 通知情報
 	 * @throws NotifyNotFound
@@ -356,7 +358,8 @@ public class NotifyControllerBean implements CheckFacility {
 	 *
 	 * @see com.clustercontrol.notify.factory.SelectNotify#getNotify(String)
 	 */
-	public NotifyInfo getNotify(String notifyId, Integer notifyType) throws NotifyNotFound, InvalidRole, HinemosUnknown {
+	public NotifyInfo getNotify(String notifyId, Integer notifyType)
+			throws NotifyNotFound, InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		// 通知情報を取得
@@ -368,8 +371,8 @@ public class NotifyControllerBean implements CheckFacility {
 
 			info = notify.getNotify(notifyId, notifyType);
 			jtm.commit();
-		} catch (NotifyNotFound | HinemosUnknown | InvalidRole e){
-			if (jtm != null){
+		} catch (NotifyNotFound | HinemosUnknown | InvalidRole e) {
+			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
@@ -414,7 +417,7 @@ public class NotifyControllerBean implements CheckFacility {
 			list = notify.getNotifyList();
 			jtm.commit();
 		} catch (NotifyNotFound | InvalidRole e) {
-			if (jtm != null){
+			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
@@ -458,7 +461,7 @@ public class NotifyControllerBean implements CheckFacility {
 			list = notify.getNotifyList(notifyType);
 			jtm.commit();
 		} catch (NotifyNotFound | InvalidRole e) {
-			if (jtm != null){
+			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
@@ -479,7 +482,7 @@ public class NotifyControllerBean implements CheckFacility {
 
 		return list;
 	}
-	
+
 	/**
 	 * オーナーロールIDを指定して通知情報一覧を返します。
 	 *
@@ -523,12 +526,13 @@ public class NotifyControllerBean implements CheckFacility {
 	 * オーナーロールIDを指定して指定種別の通知情報一覧を返します。
 	 *
 	 * @param ownerRoleId オーナーロールID
-	 * @param notifyType 通知種別
+	 * @param notifyType  通知種別
 	 * @return 通知情報一覧（Objectの2次元配列）
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public ArrayList<NotifyInfo> getNotifyListByOwnerRole(String ownerRoleId, Integer notifyType) throws InvalidRole, HinemosUnknown {
+	public ArrayList<NotifyInfo> getNotifyListByOwnerRole(String ownerRoleId, Integer notifyType)
+			throws InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		// 通知一覧を取得
@@ -561,7 +565,7 @@ public class NotifyControllerBean implements CheckFacility {
 	/**
 	 * 指定された通知種別の通知情報一覧を返します。
 	 *
-	 * @param notifyType 指定必須
+	 * @param notifyType  指定必須
 	 * @param ownerRoleId 絞り込み条件として不要な場合はnullでよい
 	 * @return 通知情報一覧
 	 * @throws NotifyNotFound
@@ -570,7 +574,8 @@ public class NotifyControllerBean implements CheckFacility {
 	 *
 	 * @see com.clustercontrol.notify.factory.SelectNotify#getNotifyListByNotifyType
 	 */
-	public ArrayList<NotifyInfo> getNotifyListByNotifyType(Integer notifyType ,String ownerRoleId)  throws HinemosUnknown {
+	public ArrayList<NotifyInfo> getNotifyListByNotifyType(Integer notifyType, String ownerRoleId)
+			throws HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		// 通知一覧を取得
 		SelectNotify notify = new SelectNotify();
@@ -598,13 +603,13 @@ public class NotifyControllerBean implements CheckFacility {
 	/**
 	 * 通知グループに対応する通知を取得します。
 	 *
-	 * @param notifyGroupId  通知グループID
+	 * @param notifyGroupId 通知グループID
 	 * @return 通知
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 *
 	 */
-	public  ArrayList<NotifyRelationInfo> getNotifyRelation(String notifyGroupId) throws HinemosUnknown {
+	public ArrayList<NotifyRelationInfo> getNotifyRelation(String notifyGroupId) throws HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		SelectNotifyRelation notify = new SelectNotifyRelation();
@@ -628,11 +633,10 @@ public class NotifyControllerBean implements CheckFacility {
 		}
 	}
 
-
 	/**
 	 * 通知グループを変更します。
 	 *
-	 * @param info 通知のセット
+	 * @param info          通知のセット
 	 * @param notifyGroupId 通知グループID
 	 * @return 変更に成功した場合、<code> true </code>
 	 * @throws NotifyNotFound
@@ -654,8 +658,8 @@ public class NotifyControllerBean implements CheckFacility {
 
 			flag = notify.modify(info, notifyGroupId);
 			jtm.commit();
-		} catch (NotifyNotFound | HinemosUnknown e){
-			if (jtm != null){
+		} catch (NotifyNotFound | HinemosUnknown e) {
+			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
@@ -663,7 +667,7 @@ public class NotifyControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
+		} catch (Exception e) {
 			m_log.warn("modifyNotifyRelation() : " + e.getClass().getSimpleName() +
 					", " + e.getMessage(), e);
 			if (jtm != null)
@@ -679,9 +683,9 @@ public class NotifyControllerBean implements CheckFacility {
 	/**
 	 * 通知グループを変更します。
 	 *
-	 * @param info 通知のセット
+	 * @param info          通知のセット
 	 * @param notifyGroupId 通知グループID
-	 * @param ownerRoleId オーナーロールID
+	 * @param ownerRoleId   オーナーロールID
 	 * @return 変更に成功した場合、<code> true </code>
 	 * @throws NotifyNotFound
 	 * @throws InvalidRole
@@ -702,8 +706,8 @@ public class NotifyControllerBean implements CheckFacility {
 
 			flag = notify.modify(info, notifyGroupId, ownerRoleId);
 			jtm.commit();
-		} catch (NotifyNotFound | HinemosUnknown e){
-			if (jtm != null){
+		} catch (NotifyNotFound | HinemosUnknown e) {
+			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
@@ -711,7 +715,7 @@ public class NotifyControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
+		} catch (Exception e) {
 			m_log.warn("modifyNotifyRelation() : " + e.getClass().getSimpleName() +
 					", " + e.getMessage(), e);
 			if (jtm != null)
@@ -750,10 +754,10 @@ public class NotifyControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (HinemosUnknown e){
+		} catch (HinemosUnknown e) {
 			jtm.rollback();
 			throw e;
-		} catch (Exception e){
+		} catch (Exception e) {
 			m_log.warn("deleteNotifyRelation() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
@@ -778,7 +782,7 @@ public class NotifyControllerBean implements CheckFacility {
 		JpaTransactionManager jtm = null;
 
 		// システム通知情報を登録
-		if(info != null){
+		if (info != null) {
 			ModifyNotifyRelation notify = new ModifyNotifyRelation();
 			boolean flag;
 			try {
@@ -792,10 +796,10 @@ public class NotifyControllerBean implements CheckFacility {
 				if (jtm != null)
 					jtm.rollback();
 				throw new InvalidRole(e.getMessage(), e);
-			} catch (HinemosUnknown e){
+			} catch (HinemosUnknown e) {
 				jtm.rollback();
 				throw e;
-			} catch (Exception e){
+			} catch (Exception e) {
 				m_log.warn("addNotifyRelation() : " + e.getClass().getSimpleName() +
 						", " + e.getMessage(), e);
 				if (jtm != null)
@@ -806,7 +810,7 @@ public class NotifyControllerBean implements CheckFacility {
 					jtm.close();
 			}
 			return flag;
-		}else{
+		} else {
 			return true;
 		}
 	}
@@ -814,17 +818,18 @@ public class NotifyControllerBean implements CheckFacility {
 	/**
 	 * 通知グループを作成します。
 	 *
-	 * @param info 通知グループ
+	 * @param info        通知グループ
 	 * @param ownerRoleId オーナーロールID
 	 * @return 作成に成功した場合、<code> true </code>
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public boolean addNotifyRelation(Collection<NotifyRelationInfo> info, String ownerRoleId) throws InvalidRole, HinemosUnknown {
+	public boolean addNotifyRelation(Collection<NotifyRelationInfo> info, String ownerRoleId)
+			throws InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		// システム通知情報を登録
-		if(info != null){
+		if (info != null) {
 			ModifyNotifyRelation notify = new ModifyNotifyRelation();
 			boolean flag;
 			try {
@@ -838,10 +843,10 @@ public class NotifyControllerBean implements CheckFacility {
 				if (jtm != null)
 					jtm.rollback();
 				throw new InvalidRole(e.getMessage(), e);
-			} catch (HinemosUnknown e){
+			} catch (HinemosUnknown e) {
 				jtm.rollback();
 				throw e;
-			} catch (Exception e){
+			} catch (Exception e) {
 				m_log.warn("addNotifyRelation() : " + e.getClass().getSimpleName() +
 						", " + e.getMessage(), e);
 				if (jtm != null)
@@ -852,7 +857,7 @@ public class NotifyControllerBean implements CheckFacility {
 					jtm.close();
 			}
 			return flag;
-		}else{
+		} else {
 			return true;
 		}
 	}
@@ -860,7 +865,7 @@ public class NotifyControllerBean implements CheckFacility {
 	/**
 	 * 通知履歴情報を削除します。
 	 *
-	 * @param pluginId プラグインID
+	 * @param pluginId  プラグインID
 	 * @param monitorId 通知設定先ID
 	 * @throws HinemosUnknown
 	 */
@@ -878,7 +883,7 @@ public class NotifyControllerBean implements CheckFacility {
 			QueryUtil.deleteNotifyHistoryByPluginIdAndMonitorId(pluginId, monitorId);
 
 			jtm.commit();
-		} catch (Exception e){
+		} catch (Exception e) {
 			m_log.warn("deleteNotifyHistory() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null)
@@ -887,6 +892,31 @@ public class NotifyControllerBean implements CheckFacility {
 		} finally {
 			if (jtm != null)
 				jtm.close();
+		}
+	}
+
+	/**
+	 * 通知履歴情報を削除します。
+	 * 
+	 * @param pluginId  プラグインID
+	 * @param monitorId 通知設定先ID
+	 * @param jtm       トランザクションマネージャ
+	 * @throws HinemosUnknown
+	 * @since 6.2.2
+	 */
+	public void deleteNotifyHistory(String pluginId, String monitorId, JpaTransactionManager jtm)
+			throws HinemosUnknown {
+		try {
+			// コミット後に、設定の結果状態を削除する
+			jtm.addCallback(new MonitorStatusCacheRemoveCallback(pluginId, monitorId));
+
+			// 通知履歴を削除する
+			QueryUtil.deleteNotifyHistoryByPluginIdAndMonitorId(pluginId, monitorId, jtm);
+
+		} catch (Exception e) {
+			m_log.warn("deleteNotifyHistory() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw new HinemosUnknown(e.getMessage(), e);
 		}
 	}
 
@@ -941,7 +971,7 @@ public class NotifyControllerBean implements CheckFacility {
 			QueryUtil.deleteMonitorStatusByFacilityId(facilityId);
 
 			jtm.commit();
-		} catch (Exception e){
+		} catch (Exception e) {
 			m_log.warn("deleteMonitorStatus() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			if (jtm != null) {
@@ -956,10 +986,10 @@ public class NotifyControllerBean implements CheckFacility {
 	}
 
 	/**
-	 *　引数で指定した通知IDを利用している通知グループIDを取得する。
+	 * 引数で指定した通知IDを利用している通知グループIDを取得する。
 	 *
 	 * @param notifyIds
-	 * @return　通知グループIDのリスト
+	 * @return 通知グループIDのリスト
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
@@ -984,7 +1014,7 @@ public class NotifyControllerBean implements CheckFacility {
 			if (jtm != null)
 				jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e){
+		} catch (Exception e) {
 			m_log.warn("checkNotifyId() : " + e.getClass().getSimpleName() +
 					", " + e.getMessage(), e);
 			if (jtm != null)
@@ -998,7 +1028,7 @@ public class NotifyControllerBean implements CheckFacility {
 	}
 
 	/**
-	 *　指定した通知IDを有効化/無効化する。
+	 * 指定した通知IDを有効化/無効化する。
 	 *
 	 * @param notifyIds
 	 * @return List<NotifyInfo>
@@ -1007,19 +1037,20 @@ public class NotifyControllerBean implements CheckFacility {
 	 * @throws NotifyDuplicate
 	 * @throws InvalidRole
 	 */
-	public List<NotifyInfo> setNotifyValid(List<String> notifyIds, boolean validFlag) throws HinemosUnknown, NotifyNotFound, NotifyDuplicate, InvalidRole {
+	public List<NotifyInfo> setNotifyValid(List<String> notifyIds, boolean validFlag)
+			throws HinemosUnknown, NotifyNotFound, NotifyDuplicate, InvalidRole {
 		JpaTransactionManager jtm = null;
 		List<NotifyInfo> ret = new ArrayList<>();
 
 		// null check
-		if(notifyIds == null || notifyIds.size() == 0){
+		if (notifyIds == null || notifyIds.size() == 0) {
 			HinemosUnknown e = new HinemosUnknown("target notifyId is null or empty.");
 			m_log.info("setNotifyValid() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
 		}
 
-		try{
+		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
@@ -1045,7 +1076,7 @@ public class NotifyControllerBean implements CheckFacility {
 				ret.add(notify.getNotify(notifyId));
 			}
 		} catch (NotifyNotFound | NotifyDuplicate | HinemosUnknown | InvalidRole e) {
-			if (jtm != null){
+			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
@@ -1094,8 +1125,8 @@ public class NotifyControllerBean implements CheckFacility {
 				}
 				message += sb.toString();
 			}
-			List<NotifyLogEscalateInfo> notifyLogEscalateInfoEntityList
-			= QueryUtil.getNotifyLogEscalateInfoByEscalateFacilityId(facilityId);
+			List<NotifyLogEscalateInfo> notifyLogEscalateInfoEntityList = QueryUtil
+					.getNotifyLogEscalateInfoByEscalateFacilityId(facilityId);
 			if (notifyLogEscalateInfoEntityList != null
 					&& notifyLogEscalateInfoEntityList.size() > 0) {
 				// ID名を取得する
@@ -1106,8 +1137,8 @@ public class NotifyControllerBean implements CheckFacility {
 				}
 				message += listID.toString();
 			}
-			List<NotifyInfraInfo> notifyInfraInfoEntityList
-			= QueryUtil.getNotifyInfraInfoByInfraExecFacilityId(facilityId);
+			List<NotifyInfraInfo> notifyInfraInfoEntityList = QueryUtil
+					.getNotifyInfraInfoByInfraExecFacilityId(facilityId);
 			if (notifyInfraInfoEntityList != null
 					&& notifyInfraInfoEntityList.size() > 0) {
 				// ID名を取得する
@@ -1118,8 +1149,8 @@ public class NotifyControllerBean implements CheckFacility {
 				}
 				message += listID.toString();
 			}
-			List<NotifyCloudInfo> notifyCloudInfoEntityList
-			= QueryUtil.getNotifyCloudInfoByCloudExecFacilityId(facilityId);
+			List<NotifyCloudInfo> notifyCloudInfoEntityList = QueryUtil
+					.getNotifyCloudInfoByCloudExecFacilityId(facilityId);
 			if (notifyCloudInfoEntityList != null
 					&& notifyCloudInfoEntityList.size() > 0) {
 				// ID名を取得する
@@ -1130,7 +1161,7 @@ public class NotifyControllerBean implements CheckFacility {
 				}
 				message += listID.toString();
 			}
-			
+
 			if (message.trim().length() > 0) {
 				UsedFacility e = new UsedFacility(MessageConstant.NOTIFY.getMessage() + " : " + message);
 				m_log.info("isUseFacilityId() : " + e.getClass().getSimpleName() +
@@ -1160,7 +1191,7 @@ public class NotifyControllerBean implements CheckFacility {
 	 * @throws HinemosUnknown
 	 * @throws InvalidRole
 	 */
-	public void insertEventLog(OutputBasicInfo output, int confirmState) throws InvalidRole, HinemosUnknown{
+	public void insertEventLog(OutputBasicInfo output, int confirmState) throws InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		try {
@@ -1226,14 +1257,16 @@ public class NotifyControllerBean implements CheckFacility {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public void sendAfterConvertHostname(String ipAddress, int port, String facility, String severity, String facilityId, String message, String timeStamp) throws InvalidRole, HinemosUnknown{
+	public void sendAfterConvertHostname(String ipAddress, int port, String facility, String severity,
+			String facilityId, String message, String timeStamp) throws InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		try {
 			jtm = new JpaTransactionManager();
 			jtm.begin();
 
-			new SendSyslog().sendAfterConvertHostname(ipAddress, port, facility, severity, facilityId, message, timeStamp);
+			new SendSyslog().sendAfterConvertHostname(ipAddress, port, facility, severity, facilityId, message,
+					timeStamp);
 
 			jtm.commit();
 		} catch (ObjectPrivilege_InvalidRole e) {
@@ -1254,9 +1287,9 @@ public class NotifyControllerBean implements CheckFacility {
 
 	private static Object lock = new Object();
 
-	private static void initReportMail () throws HinemosUnknown {
+	private static void initReportMail() throws HinemosUnknown {
 		synchronized (lock) {
-			if(m_reportingSendMail == null) {
+			if (m_reportingSendMail == null) {
 				String sendMailClass = "com.clustercontrol.notify.util.ReportingSendMail";
 				try {
 					@SuppressWarnings("unchecked")
@@ -1287,7 +1320,7 @@ public class NotifyControllerBean implements CheckFacility {
 			SendMail sendMail;
 
 			// レポーティングオプション用添付ファイル対応
-			if(outputBasicInfo.getPluginId().equals(HinemosModuleConstant.REPORTING)
+			if (outputBasicInfo.getPluginId().equals(HinemosModuleConstant.REPORTING)
 					&& outputBasicInfo.getSubKey() != null) {
 				initReportMail();
 				m_log.debug("m_reportingSendMail.notify");
@@ -1301,10 +1334,10 @@ public class NotifyControllerBean implements CheckFacility {
 			String mailSubject = sendMail.getSubject(outputBasicInfo, null);
 			String mailBody = sendMail.getContentWithMessageOrg(outputBasicInfo);
 
-			if("INTERNAL".equals(outputBasicInfo.getFacilityId())) {
+			if ("INTERNAL".equals(outputBasicInfo.getFacilityId())) {
 				List<Integer> list = MultiSmtpServerUtil.getRoleServerList(outputBasicInfo.getFacilityId());
 				Boolean sendAll = MultiSmtpServerUtil.isSendAll();
-				for(int i : list) {
+				for (int i : list) {
 					sendMail.sendMail(address, mailSubject, mailBody, i);
 					if (sendAll == false) {
 						break;
@@ -1339,7 +1372,8 @@ public class NotifyControllerBean implements CheckFacility {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public void sendJobLinkMessage(OutputBasicInfo outputBasicInfo, List<JobLinkExpInfo> expList) throws InvalidRole, HinemosUnknown {
+	public void sendJobLinkMessage(OutputBasicInfo outputBasicInfo, List<JobLinkExpInfo> expList)
+			throws InvalidRole, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 
 		try {
@@ -1368,17 +1402,17 @@ public class NotifyControllerBean implements CheckFacility {
 	/**
 	 * 外部から直接通知処理を実行します。
 	 *
-	 * @param pluginId プラグインID
-	 * @param monitorId 監視項目ID
-	 * @param facilityId ファシリティID
-	 * @param subKey 抑制用のサブキー（任意の文字列）
+	 * @param pluginId       プラグインID
+	 * @param monitorId      監視項目ID
+	 * @param facilityId     ファシリティID
+	 * @param subKey         抑制用のサブキー（任意の文字列）
 	 * @param generationDate 出力日時（エポック秒）
-	 * @param priority 重要度
-	 * @param application アプリケーション
-	 * @param message メッセージ
-	 * @param messageOrg オリジナルメッセージ
-	 * @param notifyIdList 通知IDのリスト
-	 * @param srcId 送信元を特定するためのID
+	 * @param priority       重要度
+	 * @param application    アプリケーション
+	 * @param message        メッセージ
+	 * @param messageOrg     オリジナルメッセージ
+	 * @param notifyIdList   通知IDのリスト
+	 * @param srcId          送信元を特定するためのID
 	 * @throws FacilityNotFound
 	 * @throws NotifyNotFound
 	 * @throws HinemosUnknown
@@ -1406,36 +1440,35 @@ public class NotifyControllerBean implements CheckFacility {
 				+ ", application = " + application
 				+ ", message = " + message
 				+ ", messageOrg = " + messageOrg
-				+ ", srcId = " + srcId
-				);
+				+ ", srcId = " + srcId);
 
 		JpaTransactionManager jtm = null;
 
 		// パラメータのnullチェック
-		if(pluginId == null){
+		if (pluginId == null) {
 			m_log.info("notify() Invalid argument. pluginId is null.");
 			return;
-		} else if(monitorId == null){
+		} else if (monitorId == null) {
 			m_log.info("notify() Invalid argument. monitorId is null.");
 			return;
-		} else if(facilityId == null){
+		} else if (facilityId == null) {
 			m_log.info("notify() Invalid argument. facilityId is null.");
 			return;
-		} else if(application == null){
+		} else if (application == null) {
 			m_log.info("notify() Invalid argument. application is null.");
 			return;
-		} else if(message == null){
+		} else if (message == null) {
 			m_log.info("notify() Invalid argument. message is null.");
 			return;
-		} else if(messageOrg == null){
+		} else if (messageOrg == null) {
 			m_log.info("notify() Invalid argument. messageOrg is null.");
 			return;
-		} else if(notifyIdList == null){
+		} else if (notifyIdList == null) {
 			m_log.info("notify() Invalid argument. notifyIdList is null.");
 			return;
 		}
 
-		if(subKey == null){
+		if (subKey == null) {
 			// エラーとして扱わず空文字を設定する。
 			subKey = "";
 		}
@@ -1451,7 +1484,7 @@ public class NotifyControllerBean implements CheckFacility {
 			new RepositoryControllerBean().getFacilityEntityByPK(facilityId);
 
 			// 指定の通知設定が存在するか確認
-			for(String notifyId : notifyIdList){
+			for (String notifyId : notifyIdList) {
 				QueryUtil.getNotifyInfoPK(notifyId);
 			}
 
@@ -1474,7 +1507,7 @@ public class NotifyControllerBean implements CheckFacility {
 				// 存在しない場合はエラーとする
 				throw new HinemosUnknown("Could Not find " + monitorId + ". Please check monitorId or pluginId.");
 			}
-			
+
 			try {
 				String facilityPath = new RepositoryControllerBean().getFacilityPath(facilityId, null);
 				output.setScopeText(facilityPath);
@@ -1506,7 +1539,7 @@ public class NotifyControllerBean implements CheckFacility {
 
 			jtm.commit();
 		} catch (NotifyNotFound | InvalidRole | FacilityNotFound | HinemosUnknown e) {
-			if (jtm != null){
+			if (jtm != null) {
 				jtm.rollback();
 			}
 			throw e;
@@ -1535,7 +1568,7 @@ public class NotifyControllerBean implements CheckFacility {
 		m_log.debug("notify(notifyInfoList=" + Arrays.toString(notifyInfoList.toArray()) + ")");
 
 		for (OutputBasicInfo notifyInfo : notifyInfoList) {
-			JpaTransactionManager jtm =  new JpaTransactionManager();
+			JpaTransactionManager jtm = new JpaTransactionManager();
 			try {
 				jtm.begin(true);
 				if (notifyInfo == null) {
@@ -1564,7 +1597,8 @@ public class NotifyControllerBean implements CheckFacility {
 				synchronized (m_lockObjectMap.get(lockKey)) {
 					if (m_log.isDebugEnabled()) {
 						long duration = System.currentTimeMillis() - startTime;
-						String logStr = "notify() got notifyLock. lockKey=" + lockKey + ", duration=" + duration + ", notifyInfo=" + notifyInfo;
+						String logStr = "notify() got notifyLock. lockKey=" + lockKey + ", duration=" + duration
+								+ ", notifyInfo=" + notifyInfo;
 						if (duration < 100) {
 							m_log.debug(logStr);
 						} else {
@@ -1575,7 +1609,8 @@ public class NotifyControllerBean implements CheckFacility {
 					// 通知処理を行う
 					new NotifyControllerBean().notify(notifyInfo, notifyIdList);
 				}
-				m_log.debug("notify() release notifyLock. lockKey=" + lockKey + ", duration=" + (System.currentTimeMillis() - startTime) + ", notifyInfo=" + notifyInfo);
+				m_log.debug("notify() release notifyLock. lockKey=" + lockKey + ", duration="
+						+ (System.currentTimeMillis() - startTime) + ", notifyInfo=" + notifyInfo);
 				m_log.debug("notify() start commit.");
 				long commitStartTime = System.currentTimeMillis();
 				jtm.commit();
@@ -1600,29 +1635,30 @@ public class NotifyControllerBean implements CheckFacility {
 		// 通知キューへの登録処理を実行
 		NotifyDispatcher.notifyAction(notifyInfo, notifyIdList, persist);
 	}
-	
+
 	/**
 	 * 外部から直接イベント通知処理を実行します。
 	 *
 	 * @param eventNotifyInfo イベント通知情報
 	 * 
-	 * @throws HinemosUnknown 
-	 * @throws InvalidSetting 
+	 * @throws HinemosUnknown
+	 * @throws InvalidSetting
 	 */
-	public static EventDataInfo notifyUserExtentionEvent(EventNotifyInfo eventNotifyInfo) 
+	public static EventDataInfo notifyUserExtentionEvent(EventNotifyInfo eventNotifyInfo)
 			throws FacilityNotFound, HinemosUnknown, InvalidRole, InvalidSetting {
-		
+
 		if (eventNotifyInfo == null) {
 			throw new HinemosUnknown("eventNotifyInfo is null");
 		}
-		
+
 		JpaTransactionManager jtm = null;
 		EventDataInfo info = null;
-		
-		//Hinemosプロパティを取得
-		Map<Integer, EventUserExtensionItemInfo> userItemInfoMap = SelectEventHinemosProperty.getEventUserExtensionItemInfo();
-		
-		//validation
+
+		// Hinemosプロパティを取得
+		Map<Integer, EventUserExtensionItemInfo> userItemInfoMap = SelectEventHinemosProperty
+				.getEventUserExtensionItemInfo();
+
+		// validation
 		NotifyValidator.validateEventNotify(eventNotifyInfo, userItemInfoMap);
 
 		try {
@@ -1630,18 +1666,17 @@ public class NotifyControllerBean implements CheckFacility {
 			jtm.begin();
 
 			EventLogEntity event = new OutputEvent().insertEventLog(
-					eventNotifyInfo.toOutputBasicInfo(), 
+					eventNotifyInfo.toOutputBasicInfo(),
 					eventNotifyInfo.getConfirmFlg(),
 					null,
 					userItemInfoMap,
-					eventNotifyInfo.getOwnerRoleId()
-					);
-			
+					eventNotifyInfo.getOwnerRoleId());
+
 			jtm.commit();
-			
-			info = new EventDataInfo(); 
+
+			info = new EventDataInfo();
 			EventUtil.copyEventLogEntityToEventDataInfo(event, info);
-			
+
 		} catch (ObjectPrivilege_InvalidRole e) {
 			if (jtm != null)
 				jtm.rollback();
@@ -1660,5 +1695,4 @@ public class NotifyControllerBean implements CheckFacility {
 		return info;
 	}
 
-	
 }
