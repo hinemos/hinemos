@@ -45,13 +45,14 @@ import jakarta.persistence.NoResultException;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */
-	private static Log m_log = LogFactory.getLog( QueryUtil.class );
+	private static Log m_log = LogFactory.getLog(QueryUtil.class);
 
 	public static NotifyInfo getNotifyInfoPK(String notifyId) throws NotifyNotFound, InvalidRole {
 		return getNotifyInfoPK(notifyId, ObjectPrivilegeMode.READ);
 	}
 
-	public static NotifyInfo getNotifyInfoPK(String notifyId, ObjectPrivilegeMode mode) throws NotifyNotFound, InvalidRole {
+	public static NotifyInfo getNotifyInfoPK(String notifyId, ObjectPrivilegeMode mode)
+			throws NotifyNotFound, InvalidRole {
 		NotifyInfo entity = null;
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -71,7 +72,8 @@ public class QueryUtil {
 		return entity;
 	}
 
-	public static NotifyInfo getNotifyInfoPK_OR(String notifyId, String ownerRoleId) throws NotifyNotFound, InvalidRole {
+	public static NotifyInfo getNotifyInfoPK_OR(String notifyId, String ownerRoleId)
+			throws NotifyNotFound, InvalidRole {
 		NotifyInfo entity = null;
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -91,7 +93,8 @@ public class QueryUtil {
 		return entity;
 	}
 
-	public static NotifyInfo getNotifyInfoFindByNotifyIdAndNotifyType(String notifyId, Integer notifyType) throws NotifyNotFound, InvalidRole {
+	public static NotifyInfo getNotifyInfoFindByNotifyIdAndNotifyType(String notifyId, Integer notifyType)
+			throws NotifyNotFound, InvalidRole {
 		NotifyInfo entity = null;
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -113,8 +116,9 @@ public class QueryUtil {
 		return entity;
 	}
 
-	public static List<NotifyInfo> getNotifyInfoFindByNotifyType( Integer notifyType) throws NotifyNotFound, InvalidRole {
-		List<NotifyInfo> list =null;
+	public static List<NotifyInfo> getNotifyInfoFindByNotifyType(Integer notifyType)
+			throws NotifyNotFound, InvalidRole {
+		List<NotifyInfo> list = null;
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			list = em.createNamedQuery("NotifyInfoEntity.findByNotifyType", NotifyInfo.class)
@@ -124,11 +128,12 @@ public class QueryUtil {
 		return list;
 	}
 
-	public static List<NotifyInfo> getNotifyInfoFindByNotifyType_OR( Integer notifyType, String ownerRoleId ) throws NotifyNotFound, InvalidRole {
-		List<NotifyInfo> list =null;
+	public static List<NotifyInfo> getNotifyInfoFindByNotifyType_OR(Integer notifyType, String ownerRoleId)
+			throws NotifyNotFound, InvalidRole {
+		List<NotifyInfo> list = null;
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			list = em.createNamedQuery_OR("NotifyInfoEntity.findByNotifyType", NotifyInfo.class,ownerRoleId)
+			list = em.createNamedQuery_OR("NotifyInfoEntity.findByNotifyType", NotifyInfo.class, ownerRoleId)
 					.setParameter("notifyType", notifyType)
 					.getResultList();
 		}
@@ -138,21 +143,22 @@ public class QueryUtil {
 	public static List<NotifyInfo> getAllNotifyInfo() {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyInfo> list
-			= em.createNamedQuery("NotifyInfoEntity.findAll", NotifyInfo.class).getResultList();
+			List<NotifyInfo> list = em.createNamedQuery("NotifyInfoEntity.findAll", NotifyInfo.class).getResultList();
 			return list;
 		}
 	}
 
 	/**
-	 *  オブジェクト権限チェックなし
+	 * オブジェクト権限チェックなし
+	 * 
 	 * @return
 	 */
 	public static List<NotifyInfo> getAllNotifyInfo_NONE() {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyInfo> list
-			= em.createNamedQuery("NotifyInfoEntity.findAll", NotifyInfo.class, ObjectPrivilegeMode.NONE).getResultList();
+			List<NotifyInfo> list = em
+					.createNamedQuery("NotifyInfoEntity.findAll", NotifyInfo.class, ObjectPrivilegeMode.NONE)
+					.getResultList();
 			return list;
 		}
 	}
@@ -160,8 +166,8 @@ public class QueryUtil {
 	public static List<NotifyInfo> getAllNotifyInfoOrderByNotifyId() {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyInfo> list
-			= em.createNamedQuery("NotifyInfoEntity.findAllOrderByNotifyId", NotifyInfo.class).getResultList();
+			List<NotifyInfo> list = em.createNamedQuery("NotifyInfoEntity.findAllOrderByNotifyId", NotifyInfo.class)
+					.getResultList();
 			return list;
 		}
 	}
@@ -169,21 +175,20 @@ public class QueryUtil {
 	public static List<NotifyInfo> getNotifyInfoByNotifyTypeOrderByNotifyId(Integer notifyType) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyInfo> list
-			= em.createNamedQuery("NotifyInfoEntity.findByNotifyTypeOrderByNotifyId", NotifyInfo.class)
-				.setParameter("notifyType", notifyType)
-				.getResultList();
+			List<NotifyInfo> list = em
+					.createNamedQuery("NotifyInfoEntity.findByNotifyTypeOrderByNotifyId", NotifyInfo.class)
+					.setParameter("notifyType", notifyType)
+					.getResultList();
 			return list;
 		}
 	}
-	
+
 	public static List<NotifyInfo> getAllNotifyInfoOrderByNotifyId_OR(String ownerRoleId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyInfo> list
-			= em
-			.createNamedQuery_OR("NotifyInfoEntity.findAllOrderByNotifyId", NotifyInfo.class, ownerRoleId)
-			.getResultList();
+			List<NotifyInfo> list = em
+					.createNamedQuery_OR("NotifyInfoEntity.findAllOrderByNotifyId", NotifyInfo.class, ownerRoleId)
+					.getResultList();
 			return list;
 		}
 	}
@@ -191,33 +196,33 @@ public class QueryUtil {
 	public static List<NotifyInfo> getNotifyInfoByNotifyTypeOrderByNotifyId_OR(String ownerRoleId, Integer notifyType) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyInfo> list
-			= em
-			.createNamedQuery_OR("NotifyInfoEntity.findByNotifyTypeOrderByNotifyId", NotifyInfo.class, ownerRoleId)
-			.setParameter("notifyType", notifyType)
-			.getResultList();
+			List<NotifyInfo> list = em
+					.createNamedQuery_OR("NotifyInfoEntity.findByNotifyTypeOrderByNotifyId", NotifyInfo.class,
+							ownerRoleId)
+					.setParameter("notifyType", notifyType)
+					.getResultList();
 			return list;
 		}
 	}
-	
+
 	public static List<NotifyInfo> getNotifyInfoFindByOwnerRoleId_NONE(String roleId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyInfo> list
-			= em.createNamedQuery("NotifyInfoEntity.findByOwnerRoleId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
-			.setParameter("ownerRoleId", roleId)
-			.getResultList();
+			List<NotifyInfo> list = em
+					.createNamedQuery("NotifyInfoEntity.findByOwnerRoleId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
+					.setParameter("ownerRoleId", roleId)
+					.getResultList();
 			return list;
 		}
 	}
-	
+
 	public static List<NotifyInfo> getNotifyInfoFindByCalendarId_NONE(String calendarId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyInfo> list
-			= em.createNamedQuery("NotifyInfoEntity.findByCalendarId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
-			.setParameter("calendarId", calendarId)
-			.getResultList();
+			List<NotifyInfo> list = em
+					.createNamedQuery("NotifyInfoEntity.findByCalendarId", NotifyInfo.class, ObjectPrivilegeMode.NONE)
+					.setParameter("calendarId", calendarId)
+					.getResultList();
 			return list;
 		}
 	}
@@ -272,10 +277,10 @@ public class QueryUtil {
 	public static List<NotifyJobInfo> getNotifyJobInfoByJobExecFacilityId(String facilityId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyJobInfo> list
-			= em.createNamedQuery("NotifyJobInfoEntity.findByJobExecFacilityId", NotifyJobInfo.class)
-			.setParameter("facilityId", facilityId)
-			.getResultList();
+			List<NotifyJobInfo> list = em
+					.createNamedQuery("NotifyJobInfoEntity.findByJobExecFacilityId", NotifyJobInfo.class)
+					.setParameter("facilityId", facilityId)
+					.getResultList();
 			return list;
 		}
 	}
@@ -308,10 +313,11 @@ public class QueryUtil {
 	public static List<NotifyLogEscalateInfo> getNotifyLogEscalateInfoByEscalateFacilityId(String facilityId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyLogEscalateInfo> list
-			= em.createNamedQuery("NotifyLogEscalateInfoEntity.findByEscalateFacilityId", NotifyLogEscalateInfo.class)
-			.setParameter("facilityId", facilityId)
-			.getResultList();
+			List<NotifyLogEscalateInfo> list = em
+					.createNamedQuery("NotifyLogEscalateInfoEntity.findByEscalateFacilityId",
+							NotifyLogEscalateInfo.class)
+					.setParameter("facilityId", facilityId)
+					.getResultList();
 			return list;
 		}
 	}
@@ -346,7 +352,7 @@ public class QueryUtil {
 			return entity;
 		}
 	}
-	
+
 	public static NotifyInfraInfo getNotifyInfraInfoPK(String pk) throws NotifyNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -382,10 +388,10 @@ public class QueryUtil {
 	public static List<NotifyInfraInfo> getNotifyInfraInfoByInfraExecFacilityId(String facilityId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyInfraInfo> list
-			= em.createNamedQuery("NotifyInfraInfoEntity.findByInfraExecFacilityId", NotifyInfraInfo.class)
-			.setParameter("facilityId", facilityId)
-			.getResultList();
+			List<NotifyInfraInfo> list = em
+					.createNamedQuery("NotifyInfraInfoEntity.findByInfraExecFacilityId", NotifyInfraInfo.class)
+					.setParameter("facilityId", facilityId)
+					.getResultList();
 			return list;
 		}
 	}
@@ -399,7 +405,7 @@ public class QueryUtil {
 			return list;
 		}
 	}
-	
+
 	public static NotifyCloudInfo getNotifyCloudInfoPK(String pk) throws NotifyNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -415,18 +421,18 @@ public class QueryUtil {
 			return entity;
 		}
 	}
-	
+
 	public static List<NotifyCloudInfo> getNotifyCloudInfoByCloudExecFacilityId(String facilityId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyCloudInfo> list
-			= em.createNamedQuery("NotifyCloudInfoEntity.findByCloudExecFacilityId", NotifyCloudInfo.class)
-			.setParameter("facilityId", facilityId)
-			.getResultList();
+			List<NotifyCloudInfo> list = em
+					.createNamedQuery("NotifyCloudInfoEntity.findByCloudExecFacilityId", NotifyCloudInfo.class)
+					.setParameter("facilityId", facilityId)
+					.getResultList();
 			return list;
 		}
 	}
-	
+
 	public static NotifyHistoryEntity getNotifyHistoryPK(NotifyHistoryEntityPK pk) throws NotifyNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -473,10 +479,10 @@ public class QueryUtil {
 	public static List<NotifyHistoryEntity> getNotifyHistoryByNotifyId(String notifyId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyHistoryEntity> list
-			= em.createNamedQuery("NotifyHistoryEntity.findByNotifyId", NotifyHistoryEntity.class)
-			.setParameter("notifyId", notifyId)
-			.getResultList();
+			List<NotifyHistoryEntity> list = em
+					.createNamedQuery("NotifyHistoryEntity.findByNotifyId", NotifyHistoryEntity.class)
+					.setParameter("notifyId", notifyId)
+					.getResultList();
 			return list;
 		}
 	}
@@ -485,17 +491,17 @@ public class QueryUtil {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			em.createNamedQuery("NotifyHistoryEntity.deleteByNotifyId")
-			.setParameter("notifyId", notifyId)
-			.executeUpdate();
+					.setParameter("notifyId", notifyId)
+					.executeUpdate();
 		}
 	}
 
 	public static List<NotifyRelationInfo> getAllNotifyRelationInfo() {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyRelationInfo> list
-			=  em.createNamedQuery("NotifyRelationInfoEntity.findAll", NotifyRelationInfo.class)
-			.getResultList();
+			List<NotifyRelationInfo> list = em
+					.createNamedQuery("NotifyRelationInfoEntity.findAll", NotifyRelationInfo.class)
+					.getResultList();
 			return list;
 		}
 	}
@@ -503,31 +509,34 @@ public class QueryUtil {
 	/**
 	 * 通知関連情報より、ジョブ設定を対象としたもののみを抽出する
 	 * オブジェクト権限チェックなし
+	 * 
 	 * @return
 	 */
 	public static List<NotifyRelationInfo> getNotifyRelationInfoJob() {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			
+
 			List<String> functionPrefixList = new ArrayList<String>();
 			functionPrefixList.add(FunctionPrefixEnum.JOB_MASTER.name());
-			
-			List<NotifyRelationInfo> list
-			=  em.createNamedQuery("NotifyRelationInfoEntity.findByFunctionPrefix", NotifyRelationInfo.class, ObjectPrivilegeMode.NONE)
-			.setParameter("functionPrefix", functionPrefixList)
-			.getResultList();
+
+			List<NotifyRelationInfo> list = em
+					.createNamedQuery("NotifyRelationInfoEntity.findByFunctionPrefix", NotifyRelationInfo.class,
+							ObjectPrivilegeMode.NONE)
+					.setParameter("functionPrefix", functionPrefixList)
+					.getResultList();
 			return list;
 		}
 	}
 
 	/**
 	 * オブジェクト権限チェックなし
+	 * 
 	 * @return
 	 */
 	public static List<NotifyRelationInfo> getAllNotifyRelationInfoWithoutJob() {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			
+
 			List<String> functionPrefixList = new ArrayList<String>();
 			functionPrefixList.add(FunctionPrefixEnum.MONITOR.name());
 			functionPrefixList.add(FunctionPrefixEnum.PREDICTION.name());
@@ -539,11 +548,12 @@ public class QueryUtil {
 			functionPrefixList.add(FunctionPrefixEnum.SDML_CONTROL.name());
 			functionPrefixList.add(FunctionPrefixEnum.RPA_SCENARIO_CREATE.name());
 			functionPrefixList.add(FunctionPrefixEnum.RPA_SCENARIO_CORRECT.name());
-			
-			List<NotifyRelationInfo> list
-			=  em.createNamedQuery("NotifyRelationInfoEntity.findByFunctionPrefix", NotifyRelationInfo.class, ObjectPrivilegeMode.NONE)
-			.setParameter("functionPrefix", functionPrefixList)
-			.getResultList();
+
+			List<NotifyRelationInfo> list = em
+					.createNamedQuery("NotifyRelationInfoEntity.findByFunctionPrefix", NotifyRelationInfo.class,
+							ObjectPrivilegeMode.NONE)
+					.setParameter("functionPrefix", functionPrefixList)
+					.getResultList();
 			return list;
 		}
 	}
@@ -551,31 +561,31 @@ public class QueryUtil {
 	public static List<NotifyRelationInfo> getNotifyRelationInfoByNotifyGroupId(String notifyGroupId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyRelationInfo> list
-			=  em.createNamedQuery("NotifyRelationInfoEntity.findByNotifyGroupId", NotifyRelationInfo.class)
-			.setParameter("notifyGroupId", notifyGroupId)
-			.getResultList();
+			List<NotifyRelationInfo> list = em
+					.createNamedQuery("NotifyRelationInfoEntity.findByNotifyGroupId", NotifyRelationInfo.class)
+					.setParameter("notifyGroupId", notifyGroupId)
+					.getResultList();
 			m_log.debug("queryUtil " + list.size() + "," + notifyGroupId);
 			return list;
 		}
 	}
-	
+
 	public static void deleteNotifyRelationInfoByNotifyGroupId(String notifyGroupId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			em.createNamedQuery("NotifyRelationInfoEntity.deleteByNotifyGroupId", NotifyRelationInfo.class)
-			.setParameter("notifyGroupId", notifyGroupId)
-			.executeUpdate();
+					.setParameter("notifyGroupId", notifyGroupId)
+					.executeUpdate();
 		}
 	}
 
 	public static List<NotifyRelationInfo> getNotifyRelationInfoByNotifyId(String notifyId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyRelationInfo> list
-			=  em.createNamedQuery("NotifyRelationInfoEntity.findByNotifyId", NotifyRelationInfo.class)
-			.setParameter("notifyId", notifyId)
-			.getResultList();
+			List<NotifyRelationInfo> list = em
+					.createNamedQuery("NotifyRelationInfoEntity.findByNotifyId", NotifyRelationInfo.class)
+					.setParameter("notifyId", notifyId)
+					.getResultList();
 			return list;
 		}
 	}
@@ -584,16 +594,16 @@ public class QueryUtil {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			em.createNamedQuery("NotifyRelationInfoEntity.deleteByNotifyId")
-			.setParameter("notifyId", notifyId)
-			.executeUpdate();
+					.setParameter("notifyId", notifyId)
+					.executeUpdate();
 		}
 	}
 
 	public static List<NotifyHistoryEntity> getNotifyHistoryByPluginIdAndMonitorId(String pluginId, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyHistoryEntity> list =
-					em.createNamedQuery("NotifyHistoryEntity.findByPluginIdAndMonitorId", NotifyHistoryEntity.class)
+			List<NotifyHistoryEntity> list = em
+					.createNamedQuery("NotifyHistoryEntity.findByPluginIdAndMonitorId", NotifyHistoryEntity.class)
 					.setParameter("pluginId", pluginId)
 					.setParameter("monitorId", monitorId)
 					.getResultList();
@@ -601,13 +611,20 @@ public class QueryUtil {
 		}
 	}
 
+	}
+
+	public static void deleteNotifyHistoryByPluginIdAndMonitorId(String pluginId, String monitorId,
+			JpaTransactionManager jtm) {
+		HinemosEntityManager em = jtm.getEntityManager();
+		em.createNamedQuery("NotifyHistoryEntity.deleteByPluginIdAndMonitorId", NotifyHistoryEntity.class)
+				.setParameter("pluginId", pluginId)
+				.setParameter("monitorId", monitorId)
+				.executeUpdate();
+	}
+
 	public static void deleteNotifyHistoryByPluginIdAndMonitorId(String pluginId, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
-			HinemosEntityManager em = jtm.getEntityManager();
-			em.createNamedQuery("NotifyHistoryEntity.deleteByPluginIdAndMonitorId", NotifyHistoryEntity.class)
-			.setParameter("pluginId", pluginId)
-			.setParameter("monitorId", monitorId)
-			.executeUpdate();
+			deleteNotifyHistoryByPluginIdAndMonitorId(pluginId, monitorId, jtm);
 		}
 	}
 
@@ -615,8 +632,9 @@ public class QueryUtil {
 			String pluginId, String monitorId, String facilityId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyHistoryEntity> list =
-					em.createNamedQuery("NotifyHistoryEntity.findByPluginIdAndMonitorIdAndFacilityId", NotifyHistoryEntity.class)
+			List<NotifyHistoryEntity> list = em
+					.createNamedQuery("NotifyHistoryEntity.findByPluginIdAndMonitorIdAndFacilityId",
+							NotifyHistoryEntity.class)
 					.setParameter("pluginId", pluginId)
 					.setParameter("monitorId", monitorId)
 					.setParameter("facilityId", facilityId)
@@ -629,18 +647,18 @@ public class QueryUtil {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			em.createNamedQuery("NotifyHistoryEntity.deleteByFacilityId")
-			.setParameter("facilityId", facilityId)
-			.executeUpdate();
+					.setParameter("facilityId", facilityId)
+					.executeUpdate();
 		}
 	}
 
 	public static List<MonitorStatusEntity> getMonitorStatusWithoutPluginIds(List<String> withoutPluginIds) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<MonitorStatusEntity> list
-			=  em.createNamedQuery("MonitorStatusEntity.findWithoutPluginIds", MonitorStatusEntity.class)
-			.setParameter("withoutPluginIds", withoutPluginIds)
-			.getResultList();
+			List<MonitorStatusEntity> list = em
+					.createNamedQuery("MonitorStatusEntity.findWithoutPluginIds", MonitorStatusEntity.class)
+					.setParameter("withoutPluginIds", withoutPluginIds)
+					.getResultList();
 			return list;
 		}
 	}
@@ -649,8 +667,8 @@ public class QueryUtil {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			em.createNamedQuery("MonitorStatusEntity.deleteWithoutPluginIds")
-			.setParameter("withoutPluginIds", withoutPluginIds)
-			.executeUpdate();
+					.setParameter("withoutPluginIds", withoutPluginIds)
+					.executeUpdate();
 		}
 	}
 
@@ -658,8 +676,8 @@ public class QueryUtil {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			em.createNamedQuery("MonitorStatusEntity.deleteByFacilityId")
-			.setParameter("facilityId", facilityId)
-			.executeUpdate();
+					.setParameter("facilityId", facilityId)
+					.executeUpdate();
 		}
 	}
 
@@ -678,7 +696,8 @@ public class QueryUtil {
 		}
 	}
 
-	public static MonitorStatusEntity getMonitorStatusPK(MonitorStatusEntityPK pk, ObjectPrivilegeMode mode) throws NotifyNotFound {
+	public static MonitorStatusEntity getMonitorStatusPK(MonitorStatusEntityPK pk, ObjectPrivilegeMode mode)
+			throws NotifyNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			MonitorStatusEntity entity = em.find(MonitorStatusEntity.class, pk, mode);
@@ -707,9 +726,9 @@ public class QueryUtil {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
 			em.createNamedQuery("MonitorStatusEntity.deleteByPluginIdAndMonitorId")
-			.setParameter("pluginId", pluginId)
-			.setParameter("monitorId", monitorId)
-			.executeUpdate();
+					.setParameter("pluginId", pluginId)
+					.setParameter("monitorId", monitorId)
+					.executeUpdate();
 		}
 	}
 
@@ -717,8 +736,8 @@ public class QueryUtil {
 			String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<StatusInfoEntity> list =
-					em.createNamedQuery("StatusInfoEntity.findByPluginIdAndMonitorId", StatusInfoEntity.class)
+			List<StatusInfoEntity> list = em
+					.createNamedQuery("StatusInfoEntity.findByPluginIdAndMonitorId", StatusInfoEntity.class)
 					.setParameter("pluginId", pluginId)
 					.setParameter("monitorId", monitorId)
 					.getResultList();
@@ -726,11 +745,13 @@ public class QueryUtil {
 		}
 	}
 
-	public static CommandTemplateInfo getCommandTemplateInfoPK(String commandTemplateId) throws CommandTemplateNotFound, InvalidRole {
+	public static CommandTemplateInfo getCommandTemplateInfoPK(String commandTemplateId)
+			throws CommandTemplateNotFound, InvalidRole {
 		return getCommandTemplateInfoPK(commandTemplateId, ObjectPrivilegeMode.READ);
 	}
 
-	public static CommandTemplateInfo getCommandTemplateInfoPK(String commandTemplateId, ObjectPrivilegeMode mode) throws CommandTemplateNotFound, InvalidRole {
+	public static CommandTemplateInfo getCommandTemplateInfoPK(String commandTemplateId, ObjectPrivilegeMode mode)
+			throws CommandTemplateNotFound, InvalidRole {
 		CommandTemplateInfo entity = null;
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
@@ -753,9 +774,9 @@ public class QueryUtil {
 	public static List<CommandTemplateInfo> getAllCommandTemplateOrderByCommandTemplateId() {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<CommandTemplateInfo> list
-			= em.createNamedQuery("CommandTemplateInfo.findAllOrderByCommandTemplateId", CommandTemplateInfo.class)
-			.getResultList();
+			List<CommandTemplateInfo> list = em
+					.createNamedQuery("CommandTemplateInfo.findAllOrderByCommandTemplateId", CommandTemplateInfo.class)
+					.getResultList();
 			return list;
 		}
 	}
@@ -763,9 +784,10 @@ public class QueryUtil {
 	public static List<CommandTemplateInfo> getAllCommandTemplateOrderByCommandTemplateId_OR(String ownerRoleId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<CommandTemplateInfo> list
-			= em.createNamedQuery_OR("CommandTemplateInfo.findAllOrderByCommandTemplateId", CommandTemplateInfo.class, ownerRoleId)
-			.getResultList();
+			List<CommandTemplateInfo> list = em
+					.createNamedQuery_OR("CommandTemplateInfo.findAllOrderByCommandTemplateId",
+							CommandTemplateInfo.class, ownerRoleId)
+					.getResultList();
 			return list;
 		}
 	}
@@ -773,10 +795,10 @@ public class QueryUtil {
 	public static List<NotifyCommandInfo> getNotifyCommandInfoByCommandSettingType(Integer commandSettingType) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<NotifyCommandInfo> list
-			= em.createNamedQuery("NotifyCommandInfo.findByCommandSettingType", NotifyCommandInfo.class)
-			.setParameter("commandSettingType", commandSettingType)
-			.getResultList();
+			List<NotifyCommandInfo> list = em
+					.createNamedQuery("NotifyCommandInfo.findByCommandSettingType", NotifyCommandInfo.class)
+					.setParameter("commandSettingType", commandSettingType)
+					.getResultList();
 			return list;
 		}
 	}
@@ -785,13 +807,15 @@ public class QueryUtil {
 	 * ジョブ連携送信設定IDが設定されているジョブ通知情報を検索
 	 * 
 	 * @param joblinkSendSettingId ジョブ連携送信設定ID
-	 * @param mode オブジェクト権限種別
+	 * @param mode                 オブジェクト権限種別
 	 * @return ジョブ通知情報一覧
 	 */
 	public static List<NotifyJobInfo> getNotifyJobInfoByJoblinkSendSettingId_NONE(String joblinkSendSettingId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			return em.createNamedQuery("NotifyJobInfoEntity.findByJoblinkSendSettingId", NotifyJobInfo.class, ObjectPrivilegeMode.NONE)
+			return em
+					.createNamedQuery("NotifyJobInfoEntity.findByJoblinkSendSettingId", NotifyJobInfo.class,
+							ObjectPrivilegeMode.NONE)
 					.setParameter("joblinkSendSettingId", joblinkSendSettingId).getResultList();
 		}
 	}
