@@ -246,6 +246,17 @@ public class ReceiveTopic extends Thread {
 
 		m_log.info("run start");
 
+		boolean forceReloadLogfileMonitor = false;
+		boolean forceReloadRpaLogfileMonitor = false;
+		boolean forceReloadBinaryMonitor = false;
+		boolean forceReloadCustomMonitor = false;
+		boolean forceReloadNodeConfigSetting = false;
+		boolean forceReloadNodeConfigRunCollect = false;
+		boolean forceReloadWinEventMonitor = false;
+		boolean forceReloadJobFileCheck = false;
+		boolean forceReloadSdmlSetting = false;
+		boolean forceReloadCloudLogMonitor = false;
+
 		while (true) {
 			// ノード自動登録、Manager接続に失敗した場合はリトライ.
 			if(retryToRegNode){
@@ -350,16 +361,16 @@ public class ReceiveTopic extends Thread {
 				 */
 				m_log.debug("run : disconnectCounter=" + disconnectCounter);
 				if (disconnectCounter != 0 || isReloadFlg()) {
-					reloadLogfileMonitor(updateInfo, true);
-					reloadRpaLogfileMonitor(updateInfo, true);
-					reloadBinaryMonitor(updateInfo, true);
-					reloadCustomMonitor(updateInfo, true);
-					reloadNodeConfigSetting(updateInfo, true);
-					reloadNodeConfigRunCollect(updateInfo, true);
-					reloadWinEventMonitor(updateInfo, true);
-					reloadJobFileCheck(updateInfo, true);
-					SdmlReceiveTopic.getInstance().reloadSdmlSetting(updateInfo, settingLastUpdateInfo, true);
-					reloadCloudLogMonitor(updateInfo, true);
+					forceReloadLogfileMonitor = true;
+					forceReloadRpaLogfileMonitor = true;
+					forceReloadBinaryMonitor = true;
+					forceReloadCustomMonitor = true;
+					forceReloadNodeConfigSetting = true;
+					forceReloadNodeConfigRunCollect = true;
+					forceReloadWinEventMonitor = true;
+					forceReloadJobFileCheck = true;
+					forceReloadSdmlSetting = true;
+					forceReloadCloudLogMonitor = true;
 					try {
 						updater.sendProfile();
 						// マネージャとの接続初回での、プロファイル送信成功なら、バックアップを削除する。
@@ -416,48 +427,114 @@ public class ReceiveTopic extends Thread {
 							(topicFlag & TopicFlagConstant.NEW_FACILITY) != 0 ||
 							(topicFlag & TopicFlagConstant.CALENDAR_CHANGED) != 0 ||
 							(topicFlag & TopicFlagConstant.LOGFILE_CHANGED) != 0) {
-						reloadLogfileMonitor(updateInfo, true);
+						forceReloadLogfileMonitor = true;
 					}
 					if ((topicFlag & TopicFlagConstant.REPOSITORY_CHANGED) != 0 ||
 							(topicFlag & TopicFlagConstant.NEW_FACILITY) != 0 ||
 							(topicFlag & TopicFlagConstant.CALENDAR_CHANGED) != 0 ||
+							(topicFlag & TopicFlagConstant.BINARY_CHANGED) != 0) {
+						forceReloadBinaryMonitor = true;
+ 					}
+					if ((topicFlag & TopicFlagConstant.REPOSITORY_CHANGED) != 0 ||
+							(topicFlag & TopicFlagConstant.NEW_FACILITY) != 0 ||
+							(topicFlag & TopicFlagConstant.CALENDAR_CHANGED) != 0 ||
 							(topicFlag & TopicFlagConstant.CUSTOM_CHANGED) != 0) {
-						reloadCustomMonitor(updateInfo, true);
+						forceReloadCustomMonitor = true;
 					}
 					if ((topicFlag & TopicFlagConstant.REPOSITORY_CHANGED) != 0 ||
 							(topicFlag & TopicFlagConstant.NEW_FACILITY) != 0 ||
 							(topicFlag & TopicFlagConstant.CALENDAR_CHANGED) != 0 ||
 							(topicFlag & TopicFlagConstant.WINEVENT_CHANGED) != 0) {
-						reloadWinEventMonitor(updateInfo, true);
+						forceReloadWinEventMonitor = true;
 					}
 					if ((topicFlag & TopicFlagConstant.REPOSITORY_CHANGED) != 0 ||
 							(topicFlag & TopicFlagConstant.NEW_FACILITY) != 0 ||
 							(topicFlag & TopicFlagConstant.CALENDAR_CHANGED) != 0 ||
 							(topicFlag & TopicFlagConstant.FILECHECK_CHANGED) != 0) {
-						reloadJobFileCheck(updateInfo, true);
+						forceReloadJobFileCheck = true;
 					}
 					if ((topicFlag & TopicFlagConstant.REPOSITORY_CHANGED) != 0 ||
 							(topicFlag & TopicFlagConstant.NEW_FACILITY) != 0 ||
 							(topicFlag & TopicFlagConstant.CALENDAR_CHANGED) != 0 ||
 							(topicFlag & TopicFlagConstant.NODE_CONFIG_SETTING_CHANGED) != 0) {
-						reloadNodeConfigSetting(updateInfo, true);
+						forceReloadNodeConfigSetting = true;
 					}
 					if ((topicFlag & TopicFlagConstant.NODE_CONFIG_RUN_COLLECT) != 0) {
-						reloadNodeConfigRunCollect(updateInfo, true);
+						forceReloadNodeConfigRunCollect = true;
 					}
 				}
 
-				reloadLogfileMonitor(updateInfo, false);
-				reloadRpaLogfileMonitor(updateInfo, false);
-				reloadBinaryMonitor(updateInfo, false);
-				reloadCustomMonitor(updateInfo, false);
-				reloadNodeConfigSetting(updateInfo, false);
-				reloadNodeConfigRunCollect(updateInfo, false);
-				reloadWinEventMonitor(updateInfo, false);
-				reloadJobFileCheck(updateInfo, false);
-				SdmlReceiveTopic.getInstance().reloadSdmlSetting(updateInfo, settingLastUpdateInfo, false);
-				reloadCloudLogMonitor(updateInfo, false);
-				
+				try {
+					reloadLogfileMonitor(updateInfo, forceReloadLogfileMonitor);
+					forceReloadLogfileMonitor = false;
+				} catch(Exception e) {
+					m_log.warn("fail to call realoadLogfileMonitor : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					forceReloadLogfileMonitor = true;
+				}
+				try {
+					reloadRpaLogfileMonitor(updateInfo, forceReloadRpaLogfileMonitor);
+					forceReloadRpaLogfileMonitor = false;
+				} catch(Exception e) {
+					m_log.warn("fail to call reloadRpaLogfileMonitor : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					forceReloadRpaLogfileMonitor = true;
+				}
+				try {
+					reloadBinaryMonitor(updateInfo, forceReloadBinaryMonitor);
+					forceReloadBinaryMonitor = false;
+				} catch(Exception e) {
+					m_log.warn("fail to call reloadBinaryMonitor : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					forceReloadBinaryMonitor = true;
+				}
+				try {
+					reloadCustomMonitor(updateInfo, forceReloadCustomMonitor);
+					forceReloadCustomMonitor = false;
+				} catch(Exception e) {
+					m_log.warn("fail to call reloadCustomMonitor : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					forceReloadCustomMonitor = true;
+				}
+				try {
+					reloadNodeConfigSetting(updateInfo, forceReloadNodeConfigSetting);
+					forceReloadNodeConfigSetting = false;
+				} catch(Exception e) {
+					m_log.warn("fail to call reloadNodeConfigSetting : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					forceReloadNodeConfigSetting = true;
+				}
+				try {
+					reloadNodeConfigRunCollect(updateInfo, forceReloadNodeConfigRunCollect);
+					forceReloadNodeConfigRunCollect = false;
+				} catch(Exception e) {
+					m_log.warn("fail to call reloadNodeConfigRunCollect : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					forceReloadNodeConfigRunCollect = true;
+				}
+				try {
+					reloadWinEventMonitor(updateInfo, forceReloadWinEventMonitor);
+					forceReloadWinEventMonitor = false;
+				} catch(Exception e) {
+					m_log.warn("fail to call reloadWinEventMonitor : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					forceReloadWinEventMonitor = true;
+				}
+				try {
+					reloadJobFileCheck(updateInfo, forceReloadJobFileCheck);
+					forceReloadJobFileCheck = false;
+				} catch(Exception e) {
+					m_log.warn("fail to call reloadJobFileCheck : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					forceReloadJobFileCheck = true;
+				}
+				try {
+					SdmlReceiveTopic.getInstance().reloadSdmlSetting(updateInfo, settingLastUpdateInfo, forceReloadSdmlSetting);
+					forceReloadSdmlSetting = false;
+				} catch(Exception e) {
+					m_log.warn("fail to call reloadSdmlSetting : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					forceReloadSdmlSetting = true;
+				}
+				try {
+					reloadCloudLogMonitor(updateInfo, forceReloadCloudLogMonitor);
+					forceReloadCloudLogMonitor = false;
+				} catch(Exception e) {
+					m_log.warn("fail to call reloadCloudLogMonitor : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+					forceReloadCloudLogMonitor = true;
+				}
+
 				settingLastUpdateInfo = updateInfo;
 
 				m_log.debug("getTopic " + Agent.getAgentStr() + " end");
@@ -676,7 +753,7 @@ public class ReceiveTopic extends Thread {
 		}
 	}
 
-	private void reloadCustomMonitor(SettingUpdateInfoResponse updateInfo, boolean force) {
+	private void reloadCustomMonitor(SettingUpdateInfoResponse updateInfo, boolean force) throws RestConnectFailed {
 		if (!isCustomMonitorReload(updateInfo) && !force) {
 			return;
 		}
@@ -711,12 +788,12 @@ public class ReceiveTopic extends Thread {
 			}
 		} catch (HinemosUnknown e) {
 			m_log.error(e, e);
-		} catch (InvalidRole | InvalidUserPass | InvalidSetting | RestConnectFailed e) {
+		} catch (InvalidRole | InvalidUserPass | InvalidSetting e) {
 			m_log.warn("reloadCustomMonitor: " + e.getMessage());
 		}
 	}
 
-	private void reloadNodeConfigSetting(SettingUpdateInfoResponse updateInfo, boolean force) {
+	private void reloadNodeConfigSetting(SettingUpdateInfoResponse updateInfo, boolean force) throws RestConnectFailed {
 		if (!isNodeConfigSettingReload(updateInfo) && !force) {
 			return;
 		}
@@ -756,7 +833,7 @@ public class ReceiveTopic extends Thread {
 			}
 		} catch (HinemosUnknown e) {
 			m_log.warn("unexpected error.", e);
-		} catch (InvalidRole | InvalidUserPass | InvalidSetting | NodeConfigSettingNotFound | RestConnectFailed e) {
+		} catch (InvalidRole | InvalidUserPass | InvalidSetting | NodeConfigSettingNotFound e) {
 			m_log.warn("reloadNodeConfigSetting: " + e.getMessage());
 		} catch (FacilityNotFound e) {
 			m_log.warn("reloadNodeConfigSetting: FacilityNotFound. " + e.getMessage());
@@ -769,7 +846,7 @@ public class ReceiveTopic extends Thread {
 		}
 	}
 
-	private void reloadNodeConfigRunCollect(SettingUpdateInfoResponse updateInfo, boolean force) {
+	private void reloadNodeConfigRunCollect(SettingUpdateInfoResponse updateInfo, boolean force) throws RestConnectFailed {
 		//
 		if (!isNodeConfigRunCollectReload(updateInfo) && !force) {
 			return;
@@ -787,7 +864,7 @@ public class ReceiveTopic extends Thread {
 		} catch (HinemosUnknown e) {
 			m_log.warn("unexpected error", e);
 			return;
-		} catch (InvalidRole | InvalidUserPass | InvalidSetting | FacilityNotFound | RestConnectFailed e) {
+		} catch (InvalidRole | InvalidUserPass | InvalidSetting | FacilityNotFound e) {
 			m_log.warn("reloadNodeConfigRunCollectInfo: " + e.getMessage());
 			return;
 		}
@@ -839,14 +916,17 @@ public class ReceiveTopic extends Thread {
 			// 監視ジョブ以外
 			GetMonitorForAgentResponse res = AgentRestClientWrapper.getMonitorLogfile(Agent.getAgentInfoRequest());
 			List<AgtMonitorInfoResponse> list = res.getList();
-			for (AgtMonitorInfoResponse info : list) {
-				m_log.info("logfile: " +
-						"directory=" + info.getLogfileCheckInfo().getDirectory() +
-						", filename=" + info.getLogfileCheckInfo().getFileName() +
-						", fileencoding=" + info.getLogfileCheckInfo().getFileEncoding() +
-						", monitorId=" + info.getMonitorId() +
-						", monitorFlg=" + info.getMonitorFlg());
-			}
+
+			list.forEach(info -> m_log.info("logfile: " +
+					"directory=" + info.getLogfileCheckInfo().getDirectory() +
+					", filename=" + info.getLogfileCheckInfo().getFileName() +
+					", fileencoding=" + info.getLogfileCheckInfo().getFileEncoding() +
+					", monitorId=" + info.getMonitorId() +
+					", monitorFlg=" + info.getMonitorFlg() +
+					", collectorFlg=" + info.getCollectorFlg()));
+
+			// 監視も収集も無効となっているログファイル監視は動作させない
+			list.removeIf(info -> !info.getMonitorFlg() && !info.getCollectorFlg());
 
 			// 監視ジョブ
 			GetMonitorJobMapRequest getMonitorJobMapRequest = new GetMonitorJobMapRequest();
@@ -915,11 +995,11 @@ public class ReceiveTopic extends Thread {
 		} catch (InvalidSetting | HinemosUnknown e) {
 			m_log.error(e,e);
 		} catch (InvalidRole e) {
-			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
+			m_log.warn("reloadRpaLogfileMonitor: " + e.getMessage());
 		} catch (InvalidUserPass e) {
-			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
+			m_log.warn("reloadRpaLogfileMonitor: " + e.getMessage());
 		} catch (MonitorNotFound e) {
-			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
+			m_log.warn("reloadRpaLogfileMonitor: " + e.getMessage());
 		}
 	}
 
@@ -1044,14 +1124,14 @@ public class ReceiveTopic extends Thread {
 		} catch (InvalidSetting | HinemosUnknown e) {
 			m_log.error("reloadCloudLogMonitor: ", e);
 		} catch (InvalidRole | InvalidUserPass | MonitorNotFound e) {
-			m_log.warn("reloadCloudLogfileMonitor: ", e);
+			m_log.warn("reloadCloudLogMonitor: ", e);
 		}
 	}
 	
 	/**
 	 * バイナリ監視読込処理.
 	 */
-	private void reloadBinaryMonitor(SettingUpdateInfoResponse updateInfo, boolean force) {
+	private void reloadBinaryMonitor(SettingUpdateInfoResponse updateInfo, boolean force) throws RestConnectFailed {
 		// バイナリ監視読込判定.
 		if (!isBinaryMonitorReload(updateInfo) && !force) {
 			return;
@@ -1133,12 +1213,12 @@ public class ReceiveTopic extends Thread {
 
 		} catch (HinemosUnknown e) {
 			m_log.error(e, e);
-		} catch (InvalidRole | InvalidUserPass | InvalidSetting | MonitorNotFound | RestConnectFailed e) {
-			m_log.warn("realoadLogfileMonitor: " + e.getMessage());
+		} catch (InvalidRole | InvalidUserPass | InvalidSetting | MonitorNotFound e) {
+			m_log.warn("reloadBinaryMonitor: " + e.getMessage());
 		}
 	}
 
-	private void reloadWinEventMonitor (SettingUpdateInfoResponse updateInfo, boolean force) {
+	private void reloadWinEventMonitor (SettingUpdateInfoResponse updateInfo, boolean force) throws RestConnectFailed {
 		if (!isWinEventMonitorReload(updateInfo) && !force) {
 			return;
 		}
@@ -1239,7 +1319,7 @@ public class ReceiveTopic extends Thread {
 			WinEventMonitorManager.sendMessage(PriorityConstant.TYPE_CRITICAL,
 				MessageConstant.MESSAGE_WINEVENT_STOP_MONITOR_FAILED_TO_GET_WINDOWS_EVENTLOG.getMessage(),
 				"Failed to exec reloadWinEventMonitor." + e.getClass().getCanonicalName() + ", "+ e.getMessage(), HinemosModuleConstant.SYSYTEM, null);
-		} catch (HinemosUnknown | MonitorNotFound | InvalidRole | InvalidUserPass | RestConnectFailed | InvalidSetting e) {
+		} catch (HinemosUnknown | MonitorNotFound | InvalidRole | InvalidUserPass | InvalidSetting e) {
 			m_log.error("reloadWinEventMonitor: Failed to reload.", e);
 			WinEventMonitorManager.sendMessage(
 					PriorityConstant.TYPE_CRITICAL,
@@ -1250,7 +1330,7 @@ public class ReceiveTopic extends Thread {
 		}
 	}
 
-	private void reloadJobFileCheck(SettingUpdateInfoResponse updateInfo, boolean force) {
+	private void reloadJobFileCheck(SettingUpdateInfoResponse updateInfo, boolean force) throws RestConnectFailed {
 		if (!isJobFileCheckReload(updateInfo) && !force) {
 			return;
 		}
@@ -1268,7 +1348,7 @@ public class ReceiveTopic extends Thread {
 			FileCheckManager.setFileCheck(list);
 		} catch (HinemosUnknown e) {
 			m_log.error(e, e);
-		} catch (InvalidRole | InvalidUserPass | InvalidSetting | JobMasterNotFound | RestConnectFailed e) {
+		} catch (InvalidRole | InvalidUserPass | InvalidSetting | JobMasterNotFound e) {
 			m_log.warn("reloadJobFileCheck: " + e.getMessage());
 		}
 	}

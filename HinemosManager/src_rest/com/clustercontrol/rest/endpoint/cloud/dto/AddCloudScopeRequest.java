@@ -25,7 +25,7 @@ public class AddCloudScopeRequest implements RequestDto {
 	@RestValidateString(notNull = true, minLen = 1, type = CheckType.ID)
 	private String cloudScopeId;
 	@RestItemName(MessageConstant.XCLOUD_CORE_CLOUDSCOPE_NAME)
-	@RestValidateString(notNull = true, maxLen=256)
+	@RestValidateString(notNull = true, minLen = 1, maxLen=256)
 	private String scopeName;
 	@RestItemName(MessageConstant.XCLOUD_CORE_OWNERROLE_ID)
 	@RestValidateString(notNull = true, minLen = 1, type = CheckType.ID)
@@ -46,6 +46,9 @@ public class AddCloudScopeRequest implements RequestDto {
 	
 	@Override
 	public void correlationCheck() throws InvalidSetting {
+		if (account != null) {
+			account.correlationCheck();
+		}
 	}
 
 	public String getPlatformId() {

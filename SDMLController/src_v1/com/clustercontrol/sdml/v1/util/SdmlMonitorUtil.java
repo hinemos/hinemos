@@ -508,13 +508,11 @@ public class SdmlMonitorUtil {
 
 		// SDML制御設定と同様のオブジェクト権限を自動作成される監視設定に設定する
 		List<ObjectPrivilegeInfo> destList = new ArrayList<>();
-		if (srcList != null) {
-			for (ObjectPrivilegeInfo srcInfo : srcList) {
-				ObjectPrivilegeInfo destInfo = new ObjectPrivilegeInfo();
-				destInfo.setRoleId(srcInfo.getRoleId());
-				destInfo.setObjectPrivilege(srcInfo.getObjectPrivilege());
-				destList.add(destInfo);
-			}
+		for (ObjectPrivilegeInfo srcInfo : srcList) {
+			ObjectPrivilegeInfo destInfo = new ObjectPrivilegeInfo();
+			destInfo.setRoleId(srcInfo.getRoleId());
+			destInfo.setObjectPrivilege(srcInfo.getObjectPrivilege());
+			destList.add(destInfo);
 		}
 		try {
 			new AccessControllerBean().replaceObjectPrivilegeInfo(HinemosModuleConstant.MONITOR, monInfo.getMonitorId(),

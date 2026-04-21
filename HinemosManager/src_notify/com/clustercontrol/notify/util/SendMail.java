@@ -9,6 +9,7 @@
 package com.clustercontrol.notify.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,6 +78,9 @@ public class SendMail implements Notifier {
 	/** 監視のオリジナルメッセージキー。 */
 	private static final String _KEY_ORG_MESSAGE = "ORG_MESSAGE";
 
+	/** ファシリティID */
+	private String facilityId = "";
+	
 	static {
 		m_log.debug(" send all mode : " + MultiSmtpServerUtil.isSendAll());
 	}
@@ -270,17 +274,11 @@ public class SendMail implements Notifier {
 					m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + " : " + e.getClass().getSimpleName()
 							+ ", " + e.getMessage());
 					internalErrorNotifyMailSendFailed(notifyId, outputInfo, detailMsg);
-				} catch (MessagingException e) {
+				} catch (MessagingException | UnsupportedEncodingException | OAuthException e) {
 					String detailMsg = e.getCause() != null ? e.getMessage() + " Cause : " + e.getCause().getMessage()
 							: e.getMessage();
 					m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + " : " + e.getClass().getSimpleName()
 							+ ", " + e.getMessage());
-					internalErrorNotifyMailSendFailed(notifyId, outputInfo, detailMsg);
-				} catch (UnsupportedEncodingException e) {
-					String detailMsg = e.getCause() != null ? e.getMessage() + " Cause : " + e.getCause().getMessage()
-							: e.getMessage();
-					m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + detailMsg + " : "
-							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 					internalErrorNotifyMailSendFailed(notifyId, outputInfo, detailMsg);
 				}
 			}
@@ -293,7 +291,7 @@ public class SendMail implements Notifier {
 
 			}
 
-		} catch (RuntimeException | NotifyNotFound | OAuthException e1) {
+		} catch (RuntimeException | NotifyNotFound e1) {
 			String detailMsg = e1.getCause() != null ? e1.getMessage() + " Cause : " + e1.getCause().getMessage() : e1.getMessage();
 			m_log.warn("sendMail() " + e1.getMessage() + " : " + detailMsg + detailMsg + " : "
 					+ e1.getClass().getSimpleName() + ", " + e1.getMessage(), e1);
@@ -347,9 +345,11 @@ public class SendMail implements Notifier {
 			return;
 		}
 
+		String setKeySlot = "";
 		MailServerSettings mailServerSettings;
 		if (slot > 0 && slot < 11) {
 			mailServerSettings = MultiSmtpServerUtil.getMailServerSettings(slot);
+			setKeySlot = "." + slot;
 		} else {
 			mailServerSettings = new MailServerSettings();
 		}
@@ -376,6 +376,30 @@ public class SendMail implements Notifier {
 				+ ", tries = " + _transportTries
 				+ ", tries-interval = " + _transportTriesInterval
 				+ ", Charset [address:subject:content] = [" + _charsetAddress + ":" + _charsetSubject + ":" + _charsetContent + "]");
+
+		// 文字コードチェック結果
+		List<String> badKey = new ArrayList<>();
+		// NGの場合、デフォルトのUTF-8を再設定する。
+		if (!Charset.isSupported(_charsetAddress)) {
+			badKey.add("mail" + setKeySlot + ".charset.address");
+			_charsetAddress = "UTF-8";
+		}
+		if (!Charset.isSupported(_charsetSubject)) {
+			badKey.add("mail" + setKeySlot + ".charset.subject");
+			_charsetSubject = "UTF-8";
+		}
+		if (!Charset.isSupported(_charsetContent)) {
+			badKey.add("mail" + setKeySlot + ".charset.content");
+			_charsetContent = "UTF-8";
+		}
+
+		// インターナルイベントによるメールかチェック
+		if(!"INTERNAL".equals(this.facilityId)) {
+			// 文字コードに不備があった場合、AplLogger出力
+			if(badKey.size() != 0) {
+				AplLogger.put(InternalIdCommon.PLT_NTF_SYS_036, new String[] {String.join(",", badKey)});
+			}
+		}
 
 		// JavaMail Sessionリソース検索
 		Session session = Session.getInstance(_properties);
@@ -712,4 +736,16 @@ public class SendMail implements Notifier {
 			AplLogger.put(InternalIdCommon.PLT_NTF_SYS_007, args, detailMsg);
 		}
 	}
+	
+	/**
+	 * メールのFacilityIdを取得する。
+	 *
+	 * @param FacilityId
+	 *            FacilityId
+	 * @return なし
+	 */
+	public void setFacilityId(String _facilityId) {
+		this.facilityId = _facilityId;
+	}
+	
 }

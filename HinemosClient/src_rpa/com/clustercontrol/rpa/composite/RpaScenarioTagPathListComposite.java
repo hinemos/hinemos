@@ -8,6 +8,7 @@
 
 package com.clustercontrol.rpa.composite;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,11 +24,14 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
 import org.openapitools.client.model.RpaScenarioTagResponse;
 
+import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.UrlNotFound;
 import com.clustercontrol.rpa.util.RpaRestClientWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
+import com.clustercontrol.utility.util.UtilityRestClientWrapper;
 
 
 /**
@@ -131,8 +135,24 @@ public class RpaScenarioTagPathListComposite extends Composite {
 	 */
 	public void createTagPathList() {
 		List<RpaScenarioTagResponse> dtoList = null;
-		// データ取得
-		dtoList = callTagList();
+		// マルチマネージャ接続なら初期表示対象マネージャがエンタープライズ機能無効のケースを考慮。publishを確認してデータを取得
+		UtilityRestClientWrapper wrapper = UtilityRestClientWrapper.getWrapper(managerName);
+		boolean  isPublish = false;
+		try{
+			isPublish = wrapper.checkPublish().getPublish();
+		}catch(Exception e){
+			if ( (e instanceof HinemosUnknown) && UrlNotFound.class.equals(e.getCause().getClass())){
+				log.warn("createTagPathList(). checkPublish is failed because endpoint is not publish .managerName=" + managerName + ". message = "+e.getMessage());
+			}else{
+				//UrlNotFound以外の理由でエラーになるのは想定外なのでエラーログ出力とする。
+				log.error("createTagPathList(). checkPublish is failed.managerName=" + managerName + ". message = "+e.getMessage());
+			}
+		}
+		if(isPublish){
+			dtoList = callTagList();
+		}else{
+			dtoList = new ArrayList<RpaScenarioTagResponse>();
+		}
 
 		if(dtoList != null){
 			String tagPathOld = this.comboScenarioTagPath.getText();

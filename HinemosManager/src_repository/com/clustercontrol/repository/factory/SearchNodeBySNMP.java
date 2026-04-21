@@ -314,7 +314,8 @@ public class SearchNodeBySNMP {
 			m_log.debug("Find Disk : fullOid = " + fullOid);
 
 			String i = fullOid.substring(fullOid.lastIndexOf(".") + 1);
-			String disk = (String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidDiskName()+"."+i)).getValue();
+			TableEntry entryDiskName = ret.getValue(getEntryKey(SearchDeviceProperties.getOidDiskName()+"."+i));
+			String disk = entryDiskName == null ? "" : (String)entryDiskName.getValue();
 			Long ionRead = ret.getValue(getEntryKey(SearchDeviceProperties.getOidDiskIonRead() + "." + i)) == null ? Long.valueOf(0) :
 				(Long)ret.getValue(getEntryKey(SearchDeviceProperties.getOidDiskIonRead() + "." + i)).getValue();
 			Long ionWrite = ret.getValue(getEntryKey(SearchDeviceProperties.getOidDiskIonWrite() + "." + i)) == null ? Long.valueOf(0) :
@@ -366,7 +367,6 @@ public class SearchNodeBySNMP {
 				continue;
 			}
 			String tmpIndex = fullOid.substring(fullOid.lastIndexOf(".") + 1);
-			String deviceName = "";
 			if(ret.getValue(fullOid) == null ||
 				ret.getValue(fullOid).getValue() == null ||
 				((Long)ret.getValue(fullOid).getValue()) == 0){
@@ -374,7 +374,10 @@ public class SearchNodeBySNMP {
 			}
 			m_log.debug("Find Nic : fullOid = " + fullOid);
 
-			deviceName = XMLUtil.ignoreInvalidString((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidNicName() + "." + tmpIndex)).getValue());
+			TableEntry entryNicName = ret
+					.getValue(getEntryKey(SearchDeviceProperties.getOidNicName() + "." + tmpIndex));
+			String deviceName = entryNicName == null ? ""
+					: XMLUtil.ignoreInvalidString((String) entryNicName.getValue());
 
 			String nicMacAddress = "";
 			if (ret.getValue(getEntryKey(SearchDeviceProperties.getOidNicMacAddress() + "." + tmpIndex)) != null) {
@@ -411,8 +414,11 @@ public class SearchNodeBySNMP {
 								}
 
 								// set first matched address
-								nicIpAddress = matcher.group(1);
-								break;
+								String tempNicIpAddress = matcher.group(1);
+								//NICに複数のIPが割り付けられた場合は文字列としての昇順で一番前のIPをセットする
+								if ("".equals(nicIpAddress) || tempNicIpAddress.compareTo(nicIpAddress) < 0) {
+									nicIpAddress = tempNicIpAddress;
+								}
 							}
 						}
 					}
@@ -443,12 +449,16 @@ public class SearchNodeBySNMP {
 								}
 
 								// set first matched address
+								String tempNicIpAddress="";
 								String hex = "";
 								for (int i = 1; i < 17; i++) {
 									hex = String.format("%02x", Integer.parseInt(matcher.group(i + 1))).toUpperCase();
-									nicIpAddress += "".equals(nicIpAddress) ? hex : ":" + hex;
+									tempNicIpAddress += "".equals(tempNicIpAddress) ? hex : ":" + hex;
 								}
-								break;
+								//NICに複数のIPが割り付けられた場合は文字列としての昇順で一番前のIPをセットする
+								if ("".equals(nicIpAddress) || tempNicIpAddress.compareTo(nicIpAddress) < 0) {
+									nicIpAddress = tempNicIpAddress;
+								}
 							}
 						}
 					}
@@ -518,7 +528,12 @@ public class SearchNodeBySNMP {
 			//hrStrageFixedDiskの場合のみノード情報に追加
 			//.1.3.6.1.2.1.25.2.1.4←hrStrageFixedDisk
 			String i = fullOid.substring(fullOid.lastIndexOf(".") + 1);
-			String strageType =  ret.getValue(getEntryKey(SearchDeviceProperties.getOidFilesystemType()+"."+i)).getValue().toString();
+			String oidStorageType = SearchDeviceProperties.getOidFilesystemType() + "." + i;
+			TableEntry entryStrageType = ret.getValue(getEntryKey(oidStorageType));
+			String strageType = entryStrageType == null ? "" : entryStrageType.getValue().toString();
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("oidStorageType=" + oidStorageType + ",strageType=" + strageType);
+			}
 
 			if(strageType.equals(".1.3.6.1.2.1.25.2.1.4")){
 
@@ -529,13 +544,16 @@ public class SearchNodeBySNMP {
 					continue;
 				}
 
+				TableEntry entryFileSystemName = ret
+						.getValue(getEntryKey(SearchDeviceProperties.getOidFilesystemName() + "." + i));
+				String fileSystemName = entryFileSystemName == null ? "" : (String) entryFileSystemName.getValue();
 				NodeFilesystemInfo filesystem = new NodeFilesystemInfo(facilityId,
 						((Long)ret.getValue(getEntryKey(SearchDeviceProperties.getOidFilesystemIndex()+"."+i)).getValue()).intValue(),
 						DeviceTypeConstant.DEVICE_FILESYSTEM,
-						((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidFilesystemName()+"."+i)).getValue()));
+						fileSystemName);
 
 				//表示名
-				filesystem.setDeviceDisplayName(convStringFilessystem(((String)ret.getValue(getEntryKey(SearchDeviceProperties.getOidFilesystemName()+"."+i)).getValue())));
+				filesystem.setDeviceDisplayName(convStringFilessystem(fileSystemName));
 				deviceCount++;
 				filesystemList.add(filesystem);
 			}

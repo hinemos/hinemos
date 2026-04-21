@@ -26,10 +26,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
-import org.castor.xml.XMLProperties;
 import org.exolab.castor.xml.Marshaller;
-import org.exolab.castor.xml.Unmarshaller;
-import org.exolab.castor.xml.XMLContext;
 import org.openapitools.client.model.ImportMonitorCommonRecordRequest;
 import org.openapitools.client.model.ImportMonitorCommonRequest;
 import org.openapitools.client.model.ImportMonitorCommonResponse;
@@ -57,6 +54,10 @@ import com.clustercontrol.utility.settings.DiffMethod;
 import com.clustercontrol.utility.settings.ExportMethod;
 import com.clustercontrol.utility.settings.ImportMethod;
 import com.clustercontrol.utility.settings.SettingConstants;
+import com.clustercontrol.utility.settings.cloud.action.CloudTools;
+import com.clustercontrol.utility.settings.monitor.xml.BillingMonitors;
+import com.clustercontrol.utility.settings.monitor.xml.CloudLogMonitors;
+import com.clustercontrol.utility.settings.monitor.xml.CloudServiceMonitors;
 import com.clustercontrol.utility.settings.platform.action.ObjectPrivilegeAction;
 import com.clustercontrol.utility.settings.ui.dialog.DeleteProcessDialog;
 import com.clustercontrol.utility.settings.ui.dialog.UtilityDialogInjector;
@@ -96,6 +97,14 @@ public abstract class AbstractMonitorAction<T> {
 			return SettingConstants.ERROR_INPROCESS;
 	    }
 
+		//クラウド・ＶＭ系監視なら機能の有効を確認する。
+		if( isCloud() ){
+			int retCheck = CloudTools.checkCurrentManagerCloudPublish(getLogger());
+			if(retCheck != SettingConstants.SUCCESS){
+				return retCheck;
+			}
+		}
+		
 		int returnValue = SettingConstants.SUCCESS;
 
 		// XMLファイルからの読み込み
@@ -275,6 +284,14 @@ public abstract class AbstractMonitorAction<T> {
 	public int exportDTO(String filePath) throws ConvertorException {
 		getLogger().debug("Start Export " + getDataClass().getSimpleName());
 
+		//クラウド・ＶＭ系監視なら機能の有効を確認する。
+		if( isCloud() ){
+			int retCheck = CloudTools.checkCurrentManagerCloudPublish(getLogger());
+			if(retCheck != SettingConstants.SUCCESS){
+				return retCheck;
+			}
+		}
+		
 		// エージェント監視情報を取得。
 		List<MonitorInfoResponse> monitorInfoList_dto = null;
 		try {
@@ -469,6 +486,14 @@ public abstract class AbstractMonitorAction<T> {
 	public int clear() throws ConvertorException {
 		getLogger().debug("Start Clear " + getDataClass().getSimpleName());
 
+		//クラウド・ＶＭ系監視なら機能の有効を確認する。
+		if( isCloud() ){
+			int retCheck = CloudTools.checkCurrentManagerCloudPublish(getLogger());
+			if(retCheck != SettingConstants.SUCCESS){
+				return retCheck;
+			}
+		}
+		
 		// 対象種別の監視ID一覧の取得
 		List<MonitorInfoResponse> monitorList = null;
 		try {
@@ -618,5 +643,12 @@ public abstract class AbstractMonitorAction<T> {
 					objectIdList,
 					getLogger());
 		}
+	}
+	
+	private boolean isCloud(){
+		if( getDataClass() == BillingMonitors.class || getDataClass() == CloudLogMonitors.class ||getDataClass() == CloudServiceMonitors.class ){
+			return true;
+		}
+		return false;
 	}
 }

@@ -8,6 +8,7 @@
 <!-- execute Ant (Run in the same JRE as the workspace -->
 
 <project name="Agent" default="all" basedir=".">
+	<property name="compile.agent.version" value="1.8" />
 	
 	<property file="../HinemosCommon/ant_config/build_common.properties" />
 	<property file="../HinemosCommon/ant_config/build_common_version.properties" />
@@ -51,9 +52,24 @@
 			failonerror="true" 
 			classpathref="id.compile.classpath.local" 
 			sourcepathref="id.compile.sourcepath.local"
-			source="${compile.version}" 
-			target="${compile.version}"
-			bootclasspath="${boot.classpath}"
+			source="${compile.agent.version}" 
+			target="${compile.agent.version}"
+			includeAntRuntime="false"
+			encoding="${compile.encode}"
+			debug="on">
+			<src path="src_agent" />
+			<src path="src_agent_sdml" />
+		</javac>
+	</target>
+	
+	<target name="compile_jar_agent" depends="clean">
+		<javac 
+			destdir="${build.dir}/${class.dir}" 
+			failonerror="true" 
+			classpathref="id.compile.classpath.local" 
+			sourcepathref="id.compile.sourcepath.local"
+			source="${compile.version.base}" 
+			target="${compile.version.base}"
 			includeAntRuntime="false"
 			encoding="${compile.encode}"
 			debug="on">
@@ -67,7 +83,7 @@
 		<antcall target="jar_agent_sdml" />
 	</target>
 
-	<target name="jar_agent" depends="compile,manifest" description="Generate JAR(HinemosAgent.jar) file for non EJB projects">
+	<target name="jar_agent" depends="compile_jar_agent,manifest" description="Generate JAR(HinemosAgent.jar) file for non EJB projects">
 		<manifest file="${build.dir}/MANIFEST.MF" mode="update">
 			<attribute name="Class-Path" value="HinemosVersion.jar" />
 		</manifest>
@@ -101,6 +117,7 @@
 
 	<!-- All -->
 	<target name="all" depends="dependency">
+			
 		<pathconvert property="openapi_jar_exist" setonempty="false" pathsep=" ">
 			<path>
 				<fileset dir="lib/" includes="openapi-java-client.jar" />

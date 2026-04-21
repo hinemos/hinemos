@@ -196,9 +196,11 @@ public class JobExportDialog extends CommonDialog {
 
 	public void setSelectJob(JobTreeItemWrapper item) {
 		this.item = item.getData();
+		String tempManagerName = UtilityManagerUtil.getCurrentManagerName();
 		UtilityManagerUtil.setCurrentManagerName(JobTreeItemUtil.getManager(item).getData().getName());
 		file = new File(MultiManagerPathUtil.getDirectoryPathTemporary(SettingToolsXMLPreferencePage.KEY_XML) +
 				File.separator +
 				MultiManagerPathUtil.getXMLFileName(XMLConstant.DEFAULT_XML_JOB_MST)); 
+		UtilityManagerUtil.setCurrentManagerName(tempManagerName);
 	}
 }

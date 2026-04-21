@@ -236,7 +236,7 @@ public class ResourceComposite extends Composite {
 		// コンピュートノード：制御対象：スコープ指定選択（ラジオボタン）
 		m_targetScopeRadio = new Button(targetGroup, SWT.RADIO);
 		m_targetScopeRadio.setText(Messages.getString("target.type.scope"));
-		m_targetScopeRadio.setLayoutData(new GridData(100, SizeConstant.SIZE_BUTTON_HEIGHT));
+		m_targetScopeRadio.setLayoutData(new GridData(200, SizeConstant.SIZE_BUTTON_HEIGHT));
 		((GridData) m_targetScopeRadio.getLayoutData()).horizontalSpan = 3;
 		m_targetScopeRadio.addSelectionListener(new SelectionListener() {
 			@Override
@@ -257,7 +257,7 @@ public class ResourceComposite extends Composite {
 		// コンピュートノード：制御対象：コンピュートID指定選択（ラジオボタン）
 		m_targetComputeRadio = new Button(targetGroup, SWT.RADIO);
 		m_targetComputeRadio.setText(Messages.getString("target.type.compute"));
-		m_targetComputeRadio.setLayoutData(new GridData(100, SizeConstant.SIZE_BUTTON_HEIGHT));
+		m_targetComputeRadio.setLayoutData(new GridData(200, SizeConstant.SIZE_BUTTON_HEIGHT));
 		((GridData) m_targetComputeRadio.getLayoutData()).horizontalSpan = 3;
 		m_targetComputeRadio.addSelectionListener(new SelectionListener() {
 			@Override

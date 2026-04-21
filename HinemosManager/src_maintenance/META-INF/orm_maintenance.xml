@@ -320,15 +320,16 @@
 	</named-query>
 	
 	<!-- MaintenanceCollectData -->
-	<named-query name="CollectData.selectTargetDateByDateTimeAndMonitorId">
-		<query>
-			<![CDATA[
-				SELECT a.id.time FROM CollectData a WHERE a.id.time < :dateTime
-					AND a.id.collectorid IN (SELECT c.collectorid FROM CollectKeyInfo c WHERE c.id.monitorId = :monitorId)
-				GROUP BY a.id.time ORDER BY a.id.time
-			]]>
-		</query>
-	</named-query>
+	<named-native-query name="CollectData.selectTargetDateByDateTimeAndMonitorId">
+        <query>
+            <![CDATA[
+                SELECT DATE(TO_TIMESTAMP(time / 1000)) as dateTime FROM log.cc_collect_data_raw WHERE (time < ?dateTime) 
+                    AND log.cc_collect_data_raw.collector_id 
+                        IN (SELECT collector_id FROM log.cc_collect_key WHERE monitor_id = ?monitorId)
+                GROUP BY dateTime ORDER BY dateTime;
+            ]]>
+        </query>
+    </named-native-query>
 	<named-query name="CollectData.deleteByDateTimeAndMonitorId">
 		<query>
 			<![CDATA[
@@ -337,14 +338,14 @@
 			]]>
 		</query>
 	</named-query>
-	<named-query name="CollectData.selectTargetDateByDateTime">
-		<query>
-			<![CDATA[
-				SELECT a.id.time FROM CollectData a WHERE a.id.time < :dateTime
-				GROUP BY a.id.time ORDER BY a.id.time
-			]]>
-		</query>
-	</named-query>
+	<named-native-query name="CollectData.selectTargetDateByDateTime">
+        <query>
+            <![CDATA[
+                SELECT DATE(TO_TIMESTAMP(time / 1000)) as dateTime FROM log.cc_collect_data_raw WHERE (time < ?dateTime) 
+                GROUP BY dateTime ORDER BY dateTime;
+            ]]>
+        </query>
+    </named-native-query>
 	<named-query name="CollectData.deleteByDateTime">
 		<query>
 			<![CDATA[
@@ -462,15 +463,16 @@
 			]]>
 		</query>
 	</named-query>
-	<named-query name="CollectStringData.selectTargetDateByDateTimeAndMonitorId">
-		<query>
-			<![CDATA[
-				SELECT a.time FROM CollectStringData a WHERE a.time < :dateTime
-					AND a.id.collectId IN (SELECT c.collectId FROM CollectStringKeyInfo c WHERE c.id.monitorId = :monitorId)
-				GROUP BY a.time ORDER BY a.time
-			]]>
-		</query>
-	</named-query>
+	<named-native-query name="CollectStringData.selectTargetDateByDateTimeAndMonitorId">
+        <query>
+            <![CDATA[
+                SELECT DATE(TO_TIMESTAMP(time / 1000)) as dateTime FROM log.cc_collect_data_string WHERE (time < ?dateTime) 
+				    AND log.cc_collect_data_string.collect_id 
+				        IN (SELECT collect_id FROM log.cc_collect_string_key WHERE monitor_id = ?monitorId)
+                GROUP BY dateTime ORDER BY dateTime;
+            ]]>
+        </query>
+    </named-native-query>
 	<named-query name="CollectStringData.deleteByDateTimeAndMonitorId">
 		<query>
 			<![CDATA[
@@ -479,14 +481,14 @@
 			]]>
 		</query>
 	</named-query>
-	<named-query name="CollectStringData.selectTargetDateDateTime">
-		<query>
-			<![CDATA[
-				SELECT a.time  FROM CollectStringData a WHERE a.time < :dateTime
-				GROUP BY a.time ORDER BY a.time
-			]]>
-		</query>
-	</named-query>
+	<named-native-query name="CollectStringData.selectTargetDateDateTime">
+        <query>
+            <![CDATA[
+				SELECT DATE(TO_TIMESTAMP(time / 1000)) as dateTime FROM log.cc_collect_data_string WHERE (time < ?dateTime) 
+				GROUP BY dateTime ORDER BY dateTime;
+            ]]>
+        </query>
+    </named-native-query>
 	<named-query name="CollectStringData.deleteByDateTime">
 		<query>
 			<![CDATA[

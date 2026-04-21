@@ -9,9 +9,17 @@
 package com.clustercontrol.agent.job;
 
 import java.io.File;
-import java.io.FileFilter;
+import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -36,6 +44,51 @@ import com.clustercontrol.util.HinemosTime;
  *
  */
 public class FileListThread extends AgentThread {
+
+	// 転送元ファイルを取得するビジター
+	private static class TargetFileVisitor extends SimpleFileVisitor<Path> {
+		private List<String> matchFiles = new ArrayList<>();
+		private String filterFileName;
+
+		public TargetFileVisitor(String filterFileName) {
+			this.filterFileName = filterFileName;
+		}
+
+		@Override
+		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			Path fileNamePath = file.getFileName();
+			if (fileNamePath == null) {
+				// 想定外の状況 スキップして次へいく
+				m_log.warn("visitFile() : Path.getFileName() is null");
+				return FileVisitResult.CONTINUE;
+			}
+			String fileName = fileNamePath.toString();
+			m_log.debug("visitFile() : file = " + fileName);
+
+			File f = file.toFile();
+			// ファイル、隠しファイル以外、ファイル名でフィルタリングする
+			if(f.isFile() &&
+				!f.isHidden() &&
+				fileName.matches(filterFileName)) {
+				// 対象に追加する
+				matchFiles.add(f.getCanonicalPath());
+			}
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
+			// 想定外の状況 スキップして次へいく
+			m_log.warn(String.format("visitFileFailed() : occurred error file=%s, %s",
+					file.toAbsolutePath(),
+					e.getMessage()));
+			return FileVisitResult.CONTINUE;
+		}
+
+		public List<String> getMatchFiles() {
+			return matchFiles;
+		}
+	}
 
 	//ロガー
 	private static Log m_log = LogFactory.getLog(FileListThread.class);
@@ -139,27 +192,11 @@ public class FileListThread extends AgentThread {
 				fileName = ".*";
 			}
 
-			//Fileを指定パスで作成
-			File fi = new File(dir);
-
-			final String filterFileName = fileName;
-			// ファイルのフィルタ条件
-			FileFilter fileFilter = new FileFilter() {
-				@Override
-				public boolean accept(File f) {
-					// ファイル、隠しファイル以外、ファイル名でフィルタリングする
-					return f.isFile() && !f.isHidden() && f.getName().matches(filterFileName);
-				}
-			};
-
-			File[] files = fi.listFiles(fileFilter);
-			if (files != null) {
-				for(int i = 0; i < files.length; i++){
-					fileList.add(files[i].getCanonicalPath());
-				}
-			} else {
-				m_log.warn(dir +" is not directory or does not have a reference permission");
-			}
+			// ビジターでシーク対象ファイル一覧を取得する
+			TargetFileVisitor fv = new TargetFileVisitor(fileName);
+			// 辿る階層は設定ファイルの指定ディレクトリ直下のみ
+			Files.walkFileTree(Paths.get(dir), EnumSet.of(FileVisitOption.FOLLOW_LINKS), 1, fv);
+			fileList = fv.getMatchFiles();
 		}
 		catch(Exception e){
 			m_log.warn("getFileList error. " + e.getMessage(), e);

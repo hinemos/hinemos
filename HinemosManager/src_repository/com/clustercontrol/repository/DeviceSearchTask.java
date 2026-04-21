@@ -20,6 +20,7 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.SnmpResponseError;
 import com.clustercontrol.monitor.bean.EventConfirmConstant;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -100,6 +101,16 @@ public class DeviceSearchTask implements Callable<Boolean> {
 				controller.modifyNode(newNodeInfo);
 				//変更ありの場合はイベント登録
 				isOutPutLog = true;
+			}
+		} catch (InvalidSetting e) {
+			// SNMPによってNIC、ディスク、ファイルシステムの名前が取得できなかった場合、
+			// 必須項目であるデバイス名と表示名が空になるためノード変更時にInvalidSettingが発生する
+			// イベントは非公開プロパティで通知を制御できるようにしているが、取得失敗が続くと通知も毎回されてしまう
+			// 初回のみ通知するようにしたいが、DBへの修正が必要となる見込みのため対応は見送り（#21140参照）
+			isExceptionOccur = true;
+			isOutPutLog = HinemosPropertyCommon.repository_auto_device_find_log.getBooleanValue();
+			if (m_log.isDebugEnabled()) {
+				m_log.debug("run() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 			}
 		} catch (SnmpResponseError e) {
 			//SNMPの応答エラー時にイベント登録有無を取得

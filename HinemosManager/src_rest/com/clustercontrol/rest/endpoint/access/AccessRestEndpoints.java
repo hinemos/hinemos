@@ -59,6 +59,7 @@ import com.clustercontrol.accesscontrol.model.UserInfo;
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.accesscontrol.util.OptionManager;
 import com.clustercontrol.accesscontrol.util.PasswordHashUtil;
+import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.RestHeaderConstant;
 import com.clustercontrol.commons.util.HinemosSessionContext;
@@ -1254,6 +1255,8 @@ public class AccessRestEndpoints {
 		RestCommonValitater.checkRequestDto(dtoReq);
 		dtoReq.correlationCheck();
 
+		RoleValidator.validateUserAssignAdminRole(roleId);
+		
 		List<String> userIdList = dtoReq.getUserIdList();
 		RoleInfo infoRes = new AccessControllerBean().assignUserRole(roleId,
 				dtoReq.getUserIdList().toArray(new String[userIdList.size()]));

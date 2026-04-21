@@ -40,6 +40,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
+import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
 import com.clustercontrol.fault.UserNotFound;
 import com.clustercontrol.jobmanagement.bean.JobCommandInfo;
 import com.clustercontrol.jobmanagement.bean.JobCommandParam;
@@ -74,6 +75,7 @@ import com.clustercontrol.jobmanagement.model.JobEnvVariableMstEntity;
 import com.clustercontrol.jobmanagement.model.JobLinkInheritMstEntity;
 import com.clustercontrol.jobmanagement.model.JobLinkJobExpMstEntity;
 import com.clustercontrol.jobmanagement.model.JobMstEntity;
+import com.clustercontrol.jobmanagement.model.JobMstEntityPK;
 import com.clustercontrol.jobmanagement.model.JobNextJobOrderMstEntity;
 import com.clustercontrol.jobmanagement.model.JobOutputMstEntity;
 import com.clustercontrol.jobmanagement.model.JobParamMstEntity;
@@ -543,6 +545,71 @@ public class FullJob {
 		return jobInfo;
 	}
 
+	/**
+	 * ジョブ情報{@link com.clustercontrol.jobmanagement.bean.JobInfo}を作成します。<BR>
+	 * ジョブマスタを基に、ジョブ情報を作成し、オブジェクト権限のチェックを行います。
+	 * FullJob.getJobFull(JobInfo jobInfo)にオブジェクト権限のチェック処理を追加したメソッドです。
+	 *
+	 * @param job ジョブマスタ
+	 * @param treeOnly treeOnly true=ジョブ情報を含まない, false=ジョブ情報含む
+	 * @return ジョブ情報
+	 * @throws HinemosUnknown
+	 * @throws JobMasterNotFound
+	 * @throws UserNotFound
+	 * @throws InvalidRole
+	 */
+	public static JobInfo getJobFullandCheck(JobInfo jobInfo)
+			throws HinemosUnknown, JobMasterNotFound, UserNotFound, InvalidRole {
+		// TODO: UserNotFound は投げないように見える。
+		// 発見したのは新機能追加作業中のため修正は避けておく。どこかのメンテナンスコミットで削除すべき。
+		m_log.trace("createJobData() : " + jobInfo.getJobunitId() + ", " + jobInfo.getId() + ","
+				+ jobInfo.isPropertyFull());
+		if (jobInfo.isPropertyFull()) {
+			return jobInfo;
+		}
+
+		String jobunitId = jobInfo.getJobunitId();
+		String jobId = jobInfo.getId();
+
+		try {
+			_lock.readLock();
+
+			Map<String, Map<String, JobInfo>> jobInfoCache = getJobInfoCache();
+			Map<String, JobInfo> jobInfoUnitCache = jobInfoCache.get(jobunitId);
+			if (jobInfoUnitCache != null) {
+				JobInfo ret = jobInfoUnitCache.get(jobId);
+				if (ret != null) {
+					m_log.trace("cache hit " + jobunitId + "," + jobId + ", hit=" + jobInfoUnitCache.size());
+					// オブジェクト権限のチェックを実施
+					jobPrivilegeCheck(jobId, jobunitId, jobInfo.getOwnerRoleId());
+					return ret;
+				}
+			} else {
+				m_log.trace("cache didn't hit " + jobunitId + "," + jobId);
+			}
+		} finally {
+			_lock.readUnlock();
+		}
+
+		m_log.trace("createJobData() : " + jobunitId + ", " + jobId);
+		JobMstEntity jobMstEntity = null;
+		try {
+			_lock.readLock();
+			jobMstEntity = getJobMstEntityFromLocal(jobunitId, jobId);
+			if (jobMstEntity == null) {
+				jobMstEntity = QueryUtil.getJobMstPK(jobunitId, jobId);
+			} else {
+				// キャッシュから値を取得していた場合オブジェクト権限のチェックを実施する
+				jobPrivilegeCheck(jobId, jobunitId, jobMstEntity.getOwnerRoleId());
+			}
+		} finally {
+			_lock.readUnlock();
+		}
+
+		jobInfo = createJobInfo(jobMstEntity, null, null, null, null, null, null, null);
+		return jobInfo;
+	}
+	
 	/**
 	 * ジョブ情報を作成します。<BR>
 	 *
@@ -1422,6 +1489,11 @@ public class FullJob {
 			waitRule.setMultiplicityEndValue(jobMstEntity.getMultiplicityEndValue());
 			waitRule.setQueueFlg(jobMstEntity.getQueueFlg());
 			waitRule.setQueueId(jobMstEntity.getQueueId());
+		}else{
+			//waitRule内の後続ジョブ関連設定についてメンバデフォルト値をnull化に伴い、従来動作維持のため従来デフォルト値での補完を実施
+			waitRule.setExclusiveBranch(false);
+			waitRule.setExclusiveBranchEndStatus(EndStatusConstant.TYPE_NORMAL);
+			waitRule.setExclusiveBranchEndValue(1);
 		}
 
 		//待ち条件を取得
@@ -2153,5 +2225,16 @@ public class FullJob {
 		String strTime = null;
 		strTime = TimeStringConverter.formatTime(new Date(time));
 		return strTime;
+	}
+	
+	private static void jobPrivilegeCheck(String jobId, String jobUnit, String ownerRole) throws InvalidRole{
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			em.privilegeCheck(JobMstEntity.class, new JobMstEntityPK(jobUnit, jobId), ObjectPrivilegeMode.READ);
+		} catch (ObjectPrivilege_InvalidRole e) {
+			m_log.info("jobPrivilegeCheck() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw new InvalidRole(e.getMessage(), e);
+		}
 	}
 }

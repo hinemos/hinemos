@@ -33,12 +33,20 @@ import com.clustercontrol.xcloud.validation.annotation.Size;
 @CustomEntityValidation(ModifyCloudScopeRequest.ModifyCloudScopeValidator.class)
 public abstract class ModifyCloudScopeRequest extends Request {
 	public interface IVisitor {
-		void visit(ModifyPublicCloudScopeRequest request) throws CloudManagerException, InvalidRole;
-		void visit(ModifyPrivateCloudScopeRequest request) throws CloudManagerException, InvalidRole;
+		default void visit(ModifyPublicCloudScopeRequest request) throws CloudManagerException, InvalidRole {
+			throw new UnsupportedOperationException();
+		}
+		default void visit(ModifyPrivateCloudScopeRequest request) throws CloudManagerException, InvalidRole  {
+			throw new UnsupportedOperationException();
+		}
 	}
 	public interface ITransformer<T> {
-		T transform(ModifyPublicCloudScopeRequest request) throws CloudManagerException, InvalidRole;
-		T transform(ModifyPrivateCloudScopeRequest request) throws CloudManagerException, InvalidRole;
+		default T transform(ModifyPublicCloudScopeRequest request) throws CloudManagerException, InvalidRole {
+			throw new UnsupportedOperationException();
+		}
+		default T transform(ModifyPrivateCloudScopeRequest request) throws CloudManagerException, InvalidRole {
+			throw new UnsupportedOperationException();
+		}
 	}
 	
 	public static class ModifyCloudScopeValidator implements CustomEntityValidator<ModifyCloudScopeRequest>, ValidationConstants {

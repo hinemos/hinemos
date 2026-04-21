@@ -31,6 +31,20 @@ public enum InternalIdCommon implements InternalIdAbstract {
 	MNG_SYS_024(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.HINEMOS_MANAGER_MONITOR, MessageConstant.MESSAGE_SYS_024_MNG),
 	// データベースの更新エラーが発生しました。既にその情報は登録されています。
 	MNG_SYS_025(PriorityConstant.TYPE_INFO, HinemosModuleConstant.HINEMOS_MANAGER_MONITOR, MessageConstant.MESSAGE_SYS_025_MNG),
+	// スケジューラ実行中にエラーが発生しました。
+	// 現在、自動でリトライによる復旧を試みています。（{0}回目）
+	// 復旧処理中は、スケジュール実行されるジョブ、監視、履歴削除などが停止します。
+	// この通知が頻繁に続く場合は、リトライでの復旧が困難な可能性があります。
+	// その際は、マネージャの再起動をご検討ください。
+	// 現在リトライ中のスケジューラは以下の通りです。
+	// {1}:{2}:{3} - 次回実行予定 {4}
+	MNG_SYS_040(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.HINEMOS_MANAGER_MONITOR, MessageConstant.MESSAGE_SCHEDULER_DB_FAILED),
+	// スケジューラのエラーが解消し、正常に復旧しました。
+	// 停止していたスケジュール実行は、順次再開されます。
+	// 遅延した処理が多い場合、スケジュールが集中して実行されることで、マネージャやエージェントの負荷が一時的に上昇する可能性があります。
+	// 復旧したスケジューラは以下の通りです。
+	// {0}:{1}:{2} - 次回実行予定 {3}
+	MNG_SYS_041(PriorityConstant.TYPE_INFO, HinemosModuleConstant.HINEMOS_MANAGER_MONITOR, MessageConstant.MESSAGE_SCHEDULER_DB_RECOVERED),
 
 	// データベースが利用できません。定常的に出力される場合、同時に実行される処理量（監視など）が過多であるため、設定量を削減してください。
 	SYS_SFC_SYS_001(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.SYSYTEM_SELFCHECK, MessageConstant.MESSAGE_SYS_001_SYS_SFC),
@@ -76,6 +90,10 @@ public enum InternalIdCommon implements InternalIdAbstract {
 	SYS_SFC_SYS_025(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.SYSYTEM_SELFCHECK, MessageConstant.MESSAGE_SYS_JOBQUEUE_DEADLOCK),
 	//スケジューラ（{0}:{1}:{2} - 次回実行予定 {3}）の実行予定時刻からの経過時間が起動失敗と判定する閾値を超えたため、実行されませんでした。
 	SYS_SFC_SYS_026(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.SYSYTEM_SELFCHECK, MessageConstant.MESSAGE_SCHEDULER_SKIP_BY_DELAY),
+	// セルフチェック「{0}」実行時に異常が発生したため、セルフチェックをスキップしました。
+	SYS_SFC_SYS_030(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.SYSYTEM_SELFCHECK, MessageConstant.MESSAGE_SYS_CHECK_FAILED_SYS_SFC),
+	// Hinemosマネージャに送信されたカスタムトラップが多く(処理待ちのカスタムトラップ数 {0} > 閾値 {1})、処理遅延が生じています。監視対象から大量のカスタムトラップが送信されていないかを確認してください。
+	SYS_SFC_SYS_031(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.SYSYTEM_SELFCHECK, MessageConstant.MESSAGE_SYS_CUSTOM_TRAP_DELAY),
 
 	// 通知の取得に失敗しました。(NotifyId\={0})
 	PLT_NTF_SYS_004(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_NOTIFY, MessageConstant.MESSAGE_SYS_004_NOTIFY),
@@ -115,7 +133,8 @@ public enum InternalIdCommon implements InternalIdAbstract {
 	PLT_NTF_SYS_022(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.PLATFORM_NOTIFY, MessageConstant.MESSAGE_SYS_027_NOTIFY),
 	// 通知に失敗しました。設定の内容に問題があります。(NotifyId\={0},RestAccessId\={1})
 	PLT_NTF_SYS_023(PriorityConstant.TYPE_CRITICAL, HinemosModuleConstant.PLATFORM_NOTIFY, MessageConstant.MESSAGE_SYS_028_NOTIFY),
-
+	// 「{0}」に設定されている文字コードが無効である可能性があります。「{0}」のデフォルト値でエンコードを行います。
+	PLT_NTF_SYS_036(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_NOTIFY, MessageConstant.MESSAGE_SYS_005_MAIL),
 	/**
 	 * クラウド通知の通知失敗メッセージ
 	 */
@@ -153,6 +172,11 @@ public enum InternalIdCommon implements InternalIdAbstract {
 	PLT_REP_AREG_SYS_001(PriorityConstant.TYPE_INFO, HinemosModuleConstant.PLATFORM_REPSITORY_AUTO_REGISTER, MessageConstant.MESSAGE_AUTO_REGISTER_NODE_NONE),
 	// ノード自動登録に失敗しました。({0}\:{1})
 	PLT_REP_AREG_SYS_002(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_REPSITORY_AUTO_REGISTER, MessageConstant.MESSAGE_AUTO_REGISTER_NODE_FAILED),
+
+	// ノード情報のデバイス間でデバイス表示名が重複しています。
+	// デバイス間でデバイス表示名が重複するとリソース監視の収集が正常に行われません。
+	// 重複しないようデバイス表示名の変更、不要なデバイスの削除をお願いいたします。
+	NODE_REG_SYS_001(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_REPOSITORY, MessageConstant.MESSAGE_SYS_NODE_DUPLICATED_DEVICE),
 
 	// repository.autoassign.scopeidsに存在しないスコープID({0})が指定されています。(ファシリティID: {1})
 	AGENT_SYS_001(PriorityConstant.TYPE_WARNING, HinemosModuleConstant.PLATFORM_REPSITORY_SCOPE, MessageConstant.MESSAGE_AGENT_AUTO_ASSIGN_TO_INVALID_SCOPE),

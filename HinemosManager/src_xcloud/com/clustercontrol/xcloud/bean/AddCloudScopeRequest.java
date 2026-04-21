@@ -44,12 +44,20 @@ public abstract class AddCloudScopeRequest extends Request {
 	}
 	
 	public interface IVisitor {
-		void visit(AddPublicCloudScopeRequest request) throws CloudManagerException, InvalidRole;
-		void visit(AddPrivateCloudScopeRequest request) throws CloudManagerException, InvalidRole;
+		default void visit(AddPublicCloudScopeRequest request) throws CloudManagerException, InvalidRole {
+			throw new UnsupportedOperationException();
+		}
+		default void visit(AddPrivateCloudScopeRequest request) throws CloudManagerException, InvalidRole {
+			throw new UnsupportedOperationException();
+		}
 	}
 	public interface ITransformer<T> {
-		T transform(AddPublicCloudScopeRequest request) throws CloudManagerException, InvalidRole;
-		T transform(AddPrivateCloudScopeRequest request) throws CloudManagerException, InvalidRole;
+		default T transform(AddPublicCloudScopeRequest request) throws CloudManagerException, InvalidRole {
+			throw new UnsupportedOperationException();
+		}
+		default T transform(AddPrivateCloudScopeRequest request) throws CloudManagerException, InvalidRole  {
+			throw new UnsupportedOperationException();
+		}
 	}
 	
 	public static class Account {

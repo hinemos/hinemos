@@ -130,6 +130,8 @@ public class TableColumnInfo implements Serializable {
 	/** RPAシナリオジョブ 判定条件 */
 	public static final int RPA_JUDGMENT_CONDITION = 35;
 	
+	/** ジョブ階層 */
+	public static final int TYPEICON_JOBNAME = 36;
 	
 	/** カラム名 */
 	private String m_name = null;

@@ -357,7 +357,7 @@ public class MonitorCloudLogControllerBean {
 		}
 
 		String targetFacility = "";
-		int max = 0;
+		int max = -1;
 		// 最も優先度が高いノードを取得
 		for (String s : activeFacilityList) {
 			NodeInfo tmp = new RepositoryControllerBean().getNode(s);
@@ -794,26 +794,24 @@ public class MonitorCloudLogControllerBean {
 	 * 監視設定がなくなった場合には、スケジューラを停止します。
 	 * @param monitorList
 	 */
-	private void initAgentMonitorThread(ArrayList<MonitorInfo> monitorList) {
+	private static synchronized void initAgentMonitorThread(ArrayList<MonitorInfo> monitorList) {
 		// intervalが0未満の場合、エージェント疎通確認は行わない
 		long interval = HinemosPropertyCommon.xcloud_cloudlog_agent_monitor_interval.getNumericValue();
-
-		synchronized (this) {
-			if (_scheduler == null && monitorList != null && !monitorList.isEmpty() && interval > 0) {
-				m_log.info("initAgentMonitorThread(): initialize and start Agent Monitor.");
-				_scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
-					@Override
-					public Thread newThread(Runnable r) {
-						return new Thread(r, "AgentMonitorForCloudLog");
-					}
-				});
-				_scheduler.scheduleWithFixedDelay(new AgentMonitorForCloudLog(), 0, interval, TimeUnit.MILLISECONDS);
-			} else {
-				if (_scheduler != null && (monitorList == null || monitorList.isEmpty() || interval <= 0)) {
-					m_log.info("initAgentMonitorThread(): stop Agent Monitor.");
-					_scheduler.shutdownNow();
-					_scheduler = null;
+		
+		if (_scheduler == null && monitorList != null && !monitorList.isEmpty() && interval > 0) {
+			m_log.info("initAgentMonitorThread(): initialize and start Agent Monitor.");
+			_scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+				@Override
+				public Thread newThread(Runnable r) {
+					return new Thread(r, "AgentMonitorForCloudLog");
 				}
+			});
+			_scheduler.scheduleWithFixedDelay(new AgentMonitorForCloudLog(), 0, interval, TimeUnit.MILLISECONDS);
+		} else {
+			if (_scheduler != null && (monitorList == null || monitorList.isEmpty() || interval <= 0)) {
+				m_log.info("initAgentMonitorThread(): stop Agent Monitor.");
+				_scheduler.shutdownNow();
+				_scheduler = null;
 			}
 		}
 	}
@@ -821,7 +819,7 @@ public class MonitorCloudLogControllerBean {
 	/**
 	 * エージェント疎通確認を行うワーカークラスです。
 	 */
-	private class AgentMonitorForCloudLog implements Runnable {
+	private static class AgentMonitorForCloudLog implements Runnable {
 		private Log m_log = LogFactory.getLog(AgentMonitorForCloudLog.class);
 		private HashSet<String> prevFacilityIds = new HashSet<String>();
 

@@ -204,7 +204,7 @@ public class InfraSettingConv extends BaseConv {
 		
 		ret.setAbnormalPriorityCheck(OpenApiEnumConverter.integerToEnum(info.getAbnormalPriorityCheck(), InfraManagementInfoResponse.AbnormalPriorityCheckEnum.class));
 		ret.setAbnormalPriorityRun(OpenApiEnumConverter.integerToEnum(info.getAbnormalPriorityRun() , InfraManagementInfoResponse.AbnormalPriorityRunEnum.class));
-		ret.setDescription(ifNull2Empty(info.getDescription()));
+		ret.setDescription(ifEmpty2Null(info.getDescription()));
 		ret.setOwnerRoleId(ifNull2Empty(info.getOwnerRoleId()));
 		if(!SystemParameterConstant.isParam(
 				ifNull2Empty(info.getFacilityId()),

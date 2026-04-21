@@ -54,6 +54,7 @@ import org.glassfish.grizzly.http.server.Request;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
 import com.clustercontrol.collect.session.CollectControllerBean;
+import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.fault.EventLogNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -116,6 +117,7 @@ import com.clustercontrol.rest.util.RestLanguageConverter;
 import com.clustercontrol.rest.util.RestObjectMapperWrapper;
 import com.clustercontrol.rest.util.RestTempFileUtil;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 
 @Path("/monitorresult")
 @RestLogFunc(name = LogFuncName.Monitor)
@@ -489,6 +491,8 @@ public class MonitorResultRestEndpoints {
 		GetEventInfoRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
 				GetEventInfoRequest.class);
 		
+		CommonValidator.validateNull(MessageConstant.OUTPUT_DATE.getMessage(), dtoReq.getOutputDate());
+		
 		EventDataInfo eventDataInfo =new MonitorControllerBean().getEventInfo(dtoReq.getMonitorId(), 
 				dtoReq.getMonitorDetailId(), dtoReq.getPluginId(), dtoReq.getFacilityId(), RestCommonConverter.convertDTStringToHinemosTime(dtoReq.getOutputDate(), ""));
 		
@@ -549,13 +553,20 @@ public class MonitorResultRestEndpoints {
 		
 		m_log.info("call modifyComment");
 		
+		Long commentDateEpoc = null;
+				
 		//Request
 		ModifyCommnetRequest dtoReq = RestObjectMapperWrapper.convertJsonToObject(requestBody,
 				ModifyCommnetRequest.class);
 		
+		CommonValidator.validateNull(MessageConstant.OUTPUT_DATE.getMessage(), dtoReq.getOutputDate());
+		if(dtoReq.getCommentDate() != null){
+			commentDateEpoc = RestCommonConverter.convertDTStringToHinemosTime(dtoReq.getCommentDate(), MessageConstant.COMMENT_DATE.getMessage());
+		}
+		
 		new MonitorControllerBean().modifyComment(dtoReq.getMonitorId(), dtoReq.getMonitorDetailId(), dtoReq.getPluginId(), 
 				dtoReq.getFacilityId(), RestCommonConverter.convertDTStringToHinemosTime(dtoReq.getOutputDate(), ""), 
-				dtoReq.getComment(), RestCommonConverter.convertDTStringToHinemosTime(dtoReq.getCommentDate(), ""), 
+				dtoReq.getComment(), commentDateEpoc, 
 				dtoReq.getCommentUser());
 		
 		//更新したEventDataInfoを再度取得

@@ -509,7 +509,7 @@
 			id="com.clustercontrol.xcloud.ui.StoragePerspective" name="%perspective.cloud.storage">
 		</perspective>
 		<perspective class="com.clustercontrol.xcloud.ui.NetworkPerspective"
-			id="com.clustercontrol.xcloud.ui.NetWorkPerspective" name="%perspective.cloud.network">
+			id="com.clustercontrol.xcloud.ui.NetworkPerspective" name="%perspective.cloud.network">
 		</perspective>
 		<perspective class="com.clustercontrol.xcloud.ui.BillingPerspective"
 			id="com.clustercontrol.xcloud.ui.BillingPerspective" name="%perspective.cloud.billing">
@@ -1042,6 +1042,35 @@
 		</menuContribution>
 		<menuContribution locationURI="toolbar:com.clustercontrol.jobmanagement.view.JobDetailView" allPopups="false">
 			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.JobDetailFlatViewAction"
+				icon="icons/flatLayout.gif" label="%flat" style="toggle" tooltip="%flat">
+			</command>
+			<separator name="jobDetailViewSeparator3" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.JobDetailSelectedViewAction"
+				icon="icons/booleantrue_light.gif" label="%filter.by.selection" style="toggle" tooltip="%filter.by.selection">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.JobDetailFilteredViewAction"
+				icon="icons/filter_ps.gif" label="%filter.by.settings" style="toggle" tooltip="%filter.by.settings">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.JobDetailFilterSettingAction"
+				icon="icons/searchres.gif" label="%filter" style="push" tooltip="%filter">
+			</command>
+			<separator name="jobDetailViewSeparator2" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.StartSelectedJobDetailAction"
+				icon="icons/selected_resume_co.gif" label="%start.selected.jobs" style="push"
+				tooltip="%start.selected.jobs">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.StopSelectedJobDetailAction"
+				icon="icons/selected_terminate_co.gif" label="%stop.selected.jobs" style="push"
+				tooltip="%stop.selected.jobs">
+			</command>
+			<separator name="jobDetailViewSeparator1" visible="true"></separator>
+			<command
 				commandId="com.clustercontrol.jobmanagement.view.action.StartJobDetailAction"
 				icon="icons/enable/resume_co.gif" label="%start" style="push"
 				tooltip="%start">
@@ -1052,6 +1081,35 @@
 			</command>
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.jobmanagement.view.JobDetailView" allPopups="false">
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.JobDetailFlatViewAction"
+				icon="icons/flatLayout.gif" label="%flat" style="toggle" tooltip="%flat">
+			</command>
+			<separator name="jobDetailViewSeparator3" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.JobDetailSelectedViewAction"
+				icon="icons/booleantrue_light.gif" label="%filter.by.selection" style="toggle" tooltip="%filter.by.selection">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.JobDetailFilteredViewAction"
+				icon="icons/filter_ps.gif" label="%filter.by.settings" style="toggle" tooltip="%filter.by.settings">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.JobDetailFilterSettingAction"
+				icon="icons/searchres.gif" label="%filter" style="push" tooltip="%filter">
+			</command>
+			<separator name="jobDetailViewSeparator2" visible="true"></separator>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.StartSelectedJobDetailAction"
+				icon="icons/selected_resume_co.gif" label="%start.selected.jobs" style="push"
+				tooltip="%start.selected.jobs">
+			</command>
+			<command
+				commandId="com.clustercontrol.jobmanagement.view.action.StopSelectedJobDetailAction"
+				icon="icons/selected_terminate_co.gif" label="%stop.selected.jobs" style="push"
+				tooltip="%stop.selected.jobs">
+			</command>
+			<separator name="jobDetailViewSeparator1" visible="true"></separator>
 			<command
 				commandId="com.clustercontrol.jobmanagement.view.action.StartJobDetailAction"
 				icon="icons/enable/resume_co.gif" label="%start" style="push"
@@ -1657,6 +1715,11 @@
 			</command>
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.monitor.view.StatusView" allPopups="false">
+			<command commandId="com.clustercontrol.monitor.view.action.ShowNodePropertyAction"
+				icon="icons/catchup_rls.gif" label="%show.node.property" tooltip="%show.node.property"
+				style="push">
+			</command>
+			<separator name="StatusViewSeparator1" visible="true"></separator>
 			<command
 				commandId="com.clustercontrol.monitor.view.action.StatusModifyMonitorSettingAction"
 				icon="icons/write_obj.gif" label="%modifyMonitorSetting" style="push"
@@ -1736,6 +1799,10 @@
 			</command>
 		</menuContribution>
 		<menuContribution locationURI="popup:com.clustercontrol.monitor.view.EventView" allPopups="false">
+			<command commandId="com.clustercontrol.monitor.view.action.ShowNodePropertyAction"
+				icon="icons/catchup_rls.gif" label="%show.node.property" tooltip="%show.node.property"
+				style="push">
+			</command>
 			<command commandId="com.clustercontrol.monitor.view.action.EventDetailAction"
 				icon="icons/event_detail.gif" label="%detail" style="push" tooltip="%detail">
 			</command>
@@ -3366,12 +3433,12 @@
 			</command>
 			<separator name="JobMapEditorSeparator4" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommandJobTree"
 				icon="icons/import.gif" label="%import" style="push"
 				tooltip="%import">
 			</command>
 			<command
-				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommandJobTree"
 				icon="icons/export.gif" label="%export" style="push"
 				tooltip="%export">
 			</command>
@@ -3544,12 +3611,12 @@
 			</command>
 			<separator name="JobMapEditorToolbarSeparator5" visible="true"></separator>
 			<command
-				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommandJobTree"
 				icon="icons/import.gif" label="%import" style="push"
 				tooltip="%import">
 			</command>
 			<command
-				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand"
+				commandId="com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommandJobTree"
 				icon="icons/export.gif" label="%export" style="push"
 				tooltip="%export">
 			</command>
@@ -5815,6 +5882,36 @@
 			name="refreshJobQueueReferrer">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.JobDetailFilterSettingAction"
+			id="com.clustercontrol.jobmanagement.view.action.JobDetailFilterSettingAction"
+			name="jobDetailFilterSettingAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.JobDetailFlatViewAction"
+			id="com.clustercontrol.jobmanagement.view.action.JobDetailFlatViewAction"
+			name="JobDetailFlatViewAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.JobDetailSelectedViewAction"
+			id="com.clustercontrol.jobmanagement.view.action.JobDetailSelectedViewAction"
+			name="jobDetailSelectedViewAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.JobDetailFilteredViewAction"
+			id="com.clustercontrol.jobmanagement.view.action.JobDetailFilteredViewAction"
+			name="jobDetailFilteredViewAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.StartSelectedJobDetailAction"
+			id="com.clustercontrol.jobmanagement.view.action.StartSelectedJobDetailAction"
+			name="startSelectedJobDetailAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
+			defaultHandler="com.clustercontrol.jobmanagement.view.action.StopSelectedJobDetailAction"
+			id="com.clustercontrol.jobmanagement.view.action.StopSelectedJobDetailAction"
+			name="stopSelectedJobDetailAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Job"
 			defaultHandler="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueActivityAction"
 			id="com.clustercontrol.jobmanagement.view.action.RefreshJobQueueActivityAction"
 			name="refreshJobQueueActivity">
@@ -5994,6 +6091,11 @@
 		<command categoryId="com.clustercontrol.categories.Monitor"
 			defaultHandler="com.clustercontrol.monitor.view.action.EventDetailAction"
 			id="com.clustercontrol.monitor.view.action.EventDetailAction" name="eventDetailAction">
+		</command>
+		<command categoryId="com.clustercontrol.categories.Monitor"
+			defaultHandler="com.clustercontrol.monitor.view.action.ShowNodePropertyAction"
+			id="com.clustercontrol.monitor.view.action.ShowNodePropertyAction"
+			name="ShowNodePropertyAction">
 		</command>
 		<command categoryId="com.clustercontrol.categories.Notify"
 			defaultHandler="com.clustercontrol.notify.view.action.NotifyDisableAction"
@@ -11229,8 +11331,24 @@
 			description="Option UI elements will be hidden while the relevant option is not available" />
 		<activityPatternBinding
 			activityId="com.clustercontrol.activities.enableOption.enterprise"
-			pattern=".*/com\.clustercontrol\.enterprise\..*"
+			pattern=".*/com\.clustercontrol\.enterprise\.(?!rpa\.)(?!.*\.RpaScenarioOperationResultPerspective)(?!.*\.CreateRpaJobAction).*"
 			isEqualityPattern="false" />
+		
+		<!-- RPA機能の有効/無効制御 -->
+		<activity
+			id="com.clustercontrol.activities.enableOption.rpa" name="Rpa enablement"
+			description="Option UI elements will be hidden while the relevant option is not available" />
+		<!-- com.clustercontrol.enterpriseで始まる機能分 -->
+		<activityPatternBinding
+			activityId="com.clustercontrol.activities.enableOption.rpa"
+			pattern=".*/com\.clustercontrol\.enterprise\.((rpa\..*)|(.*\.RpaScenarioOperationResultPerspective)|(.*\.CreateRpaJobAction))"
+			isEqualityPattern="false" />
+		<!-- com.clustercontrol.enterpriseで始まらない機能分 -->
+		<activityPatternBinding
+			activityId="com.clustercontrol.activities.enableOption.rpa"
+			pattern=".*/.*\.(TakeScreenshotJobNodeDetailAction|CreateRpaJobAction|RpaPreferencePage)"
+			isEqualityPattern="false" />
+			
 		<activity
 			id="com.clustercontrol.activities.enableOption.xcloud" name="xCloud enablement"
 			description="Option UI elements will be hidden while the relevant option is not available" />

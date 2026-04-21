@@ -8,11 +8,18 @@
 
 package com.clustercontrol.agent.log;
 
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.agent.util.AgentProperties;
 import com.clustercontrol.agent.util.filemonitor.FileMonitorConfig;
+import com.clustercontrol.bean.PriorityConstant;
+
+import jdk.nashorn.internal.runtime.regexp.joni.exception.InternalException;
 
 public class LogfileMonitorConfig implements FileMonitorConfig{
 
@@ -43,6 +50,23 @@ public class LogfileMonitorConfig implements FileMonitorConfig{
 
 	private static final String MAX_FILE_NOTIFY_INTERVAL_KEY = "monitor.logfile.filter.maxfiles.notify.interval";
 
+	private static final String FLUSH_TIME = "monitor.logfile.carryover.flush";
+
+	private static final String FLUSH_TIME_START = "monitor.logfile.carryover.flush.startregex";
+
+	private static final String FLUSH_TIME_END = "monitor.logfile.carryover.flush.endregex";
+	
+	private static final String FLUSH_TIME_SEP = "monitor.logfile.carryover.flush.separator";
+
+	private static final String FLUSH_TIME_NOTIFY = "monitor.logfile.carryover.flush.notify";
+	private static final String FLUSH_TIME_NOTIFY_PRIORITY = "monitor.logfile.carryover.flush.notify.priority";
+	
+	private static final String FLUSH_TIME_POLICY = "monitor.logfile.carryover.flush.policy";
+
+	private static final String FLUSH_SPECIFICTIME = "monitor.logfile.carryover.flush.specifictime";
+
+	private static final String FLUSH_TIMEOUT = "monitor.logfile.carryover.flush.timeout";
+	
 	/** ログファイル監視スレッド数上限 */
 	private int maxThreads = 2;
 
@@ -79,6 +103,22 @@ public class LogfileMonitorConfig implements FileMonitorConfig{
 	private String program = HINEMOS_LOG_AGENT;
 
 	private long logfileMaxFileNotifyInterval = 0;
+
+	private boolean carryoverFlushSupported = true;
+	//先頭パターン区切り条件時に時間区切りを実施するかのフラグ
+	private boolean carryoverFlushStartRegex = false;
+	//終端パターン区切り条件時に時間区切りを実施するかのフラグ
+	private boolean carryoverFlushEndRegex = false;
+	//行区切り条件時に時間区切りを実施するかのフラグ
+	private boolean carryoverFlushReturnCode = false;
+
+	private boolean carryoverFlushNotifyEnabled = true;
+	private int priority = PriorityConstant.TYPE_INFO;
+
+	private CarryoverFlushPolicy policy = CarryoverFlushPolicy.TIMEOUT;
+	private Long timeout;
+	private LocalTime specificTime;
+	private ZoneId specificTimeOffset = ZoneId.systemDefault();
 	
 	private static LogfileMonitorConfig instance = new LogfileMonitorConfig();
 
@@ -220,6 +260,109 @@ public class LogfileMonitorConfig implements FileMonitorConfig{
 				m_log.warn("LogfileMonitorConfig() : " + MAX_FILE_NOTIFY_INTERVAL_KEY, e);
 		}
 		m_log.debug(MAX_FILE_NOTIFY_INTERVAL_KEY + " = " + logfileReadCarryOverLength);
+
+		String flush_str = AgentProperties.getProperty(FLUSH_TIME, "true");
+		try {
+			carryoverFlushSupported = Boolean.parseBoolean(flush_str);
+		} catch (Exception e) {
+			m_log.warn("LogfileMonitorConfig() : " + carryoverFlushSupported + e.getMessage());
+		}
+		m_log.debug(FLUSH_TIME + " = " + carryoverFlushSupported);
+
+		if (carryoverFlushSupported) {
+			String flush_startregex_str = AgentProperties.getProperty(FLUSH_TIME_START);
+			try {
+				carryoverFlushStartRegex = Boolean.parseBoolean(flush_startregex_str);
+			} catch (Exception e) {
+				m_log.warn("LogfileMonitorConfig() : " + FLUSH_TIME_START + " invalid " + flush_startregex_str);
+			}
+			m_log.debug(FLUSH_TIME_START + " = " + carryoverFlushStartRegex);
+
+			String flush_endregex_str = AgentProperties.getProperty(FLUSH_TIME_END);
+			try {
+				carryoverFlushEndRegex = Boolean.parseBoolean(flush_endregex_str);
+			} catch (Exception e) {
+				m_log.warn("LogfileMonitorConfig() : " + FLUSH_TIME_END+ " invalid " + flush_endregex_str);
+			}
+			m_log.debug(FLUSH_TIME_END + " = " + carryoverFlushEndRegex);
+
+			String flush_separator_str = AgentProperties.getProperty(FLUSH_TIME_SEP);
+			try {
+				carryoverFlushReturnCode = Boolean.parseBoolean(flush_separator_str);
+			} catch (Exception e) {
+				m_log.warn("LogfileMonitorConfig() : " + FLUSH_TIME_SEP + " invalid " + flush_separator_str);
+			}
+			m_log.debug(FLUSH_TIME_SEP + " = " + carryoverFlushReturnCode);
+
+			String flush_notify_str = AgentProperties.getProperty(FLUSH_TIME_NOTIFY, "true");
+			try {
+				carryoverFlushNotifyEnabled = Boolean.parseBoolean(flush_notify_str);
+			} catch (Exception e) {
+				m_log.warn("LogfileMonitorConfig() : " + FLUSH_TIME_NOTIFY + " invalid " + flush_notify_str);
+			}
+			m_log.debug(FLUSH_TIME_NOTIFY + " = " + carryoverFlushNotifyEnabled);
+			
+			String priority_str = AgentProperties.getProperty(FLUSH_TIME_NOTIFY_PRIORITY, "info");
+			if (priority_str.matches("info")) {
+				priority = PriorityConstant.TYPE_INFO;
+			} else if (priority_str.matches("warning")) {
+				priority = PriorityConstant.TYPE_WARNING;
+			} else if (priority_str.matches("critical")) {
+				priority = PriorityConstant.TYPE_CRITICAL;
+			} else if (priority_str.matches("unknown")) {
+				priority = PriorityConstant.TYPE_UNKNOWN;
+			} else {
+				m_log.warn("LogfileMonitorConfig() : unknown setting "
+						+ FLUSH_TIME_NOTIFY_PRIORITY + " = " + priority_str
+						+ " (priority uses info)");
+			}
+
+			String policy_str = AgentProperties.getProperty(FLUSH_TIME_POLICY, "timeout");
+			try {
+				policy = CarryoverFlushPolicy.fromProperty(policy_str);
+			} catch (Exception e) {
+				m_log.warn("LogfileMonitorConfig() : invalid setting. " + FLUSH_TIME_POLICY + ", " + e.getMessage());
+			}
+			switch (policy) {
+			case TIMEOUT:
+				String flush_timeout_str = AgentProperties.getProperty(FLUSH_TIMEOUT, "0");
+				try {
+					if (flush_timeout_str == null) {
+						throw new InternalException("timeout must be set.");
+					}
+					long min = Long.parseLong(flush_timeout_str);
+					if (0 >= min) {
+						throw new InternalException(flush_timeout_str + " is invalid.");
+					}
+					timeout = min;
+				} catch (NumberFormatException e) {
+					m_log.warn("LogfileMonitorConfig() : No time-based monitoring is performed. " + FLUSH_TIMEOUT + ", " + e.getMessage());
+					carryoverFlushSupported = false;
+					return;
+				} catch (Exception e) {
+					m_log.warn("LogfileMonitorConfig() : No time-based monitoring is performed. " + FLUSH_TIMEOUT + ", " + e.getMessage());
+					carryoverFlushSupported = false;
+					return;
+				}
+				m_log.debug(FLUSH_TIME_POLICY + " = " + policy + ", " + FLUSH_TIMEOUT + " = " + timeout);
+				break;
+
+			case SPECIFIC_TIME:
+				String flush_specifictime_str = AgentProperties.getProperty(FLUSH_SPECIFICTIME);
+				try {
+					parseCarryoverFlushSpecificTime(flush_specifictime_str);
+				} catch (Exception e) {
+					m_log.warn("LogfileMonitorConfig() : No time-based monitoring is performed. " + FLUSH_SPECIFICTIME + ", " + e.getMessage());
+					carryoverFlushSupported = false;
+					return;
+				}
+				m_log.debug(String.format("%s = %s, %s = %s, %s offset = %s",
+						FLUSH_TIME_POLICY, policy,
+						FLUSH_SPECIFICTIME, specificTime,
+						FLUSH_SPECIFICTIME, specificTimeOffset));
+				break;
+			}
+		}
 	}
 
 	public static LogfileMonitorConfig getInstance() {
@@ -292,5 +435,70 @@ public class LogfileMonitorConfig implements FileMonitorConfig{
 		return logfileMaxFileNotifyInterval;
 	}
 
+	@Override
+	public boolean isCarryoverFlushEnabledForStartRegex() {
+		return carryoverFlushStartRegex;
+	}
+	@Override
+	public boolean isCarryoverFlushEnabledForEndRegex() {
+		return carryoverFlushEndRegex;
+	}
+	@Override
+	public boolean isCarryoverFlushEnabledForReturnCode() {
+		return carryoverFlushReturnCode;
+	}
+
+	@Override
+	public long getCarryoverFlushTimeout() {
+		return timeout;
+	}
+
+	@Override
+	public LocalTime getCarryoverFlushSpecificTime() {
+		return specificTime;
+	}
+
+	@Override
+	public ZoneId getCarryoverFlushSpecificTimeOffset() {
+		return specificTimeOffset;
+	}
+
+	@Override
+	public boolean isCarryoverFlushNotifyEnabled() {
+		return carryoverFlushNotifyEnabled;
+	}
+
+	@Override
+	public int getCarryoverFlushNotifyPriority() {
+		return priority;
+	}
+
+	@Override
+	public CarryoverFlushPolicy getCarryoverFlushPolicy() {
+		return policy;
+	}
+
+	@Override
+	public boolean isCarryoverFlushSupported() {
+		return carryoverFlushSupported;
+	}
 	
+	private void parseCarryoverFlushSpecificTime(String raw) {
+		if (raw == null) {
+			throw new InternalException("unparseable date:null");
+		}
+		String value = raw.trim();
+		if (value.length() < 5) {
+			throw new InternalException("unparseable date:" + raw);
+		}
+		specificTime = LocalTime.parse(value.substring(0, 5));
+		if (value.length() == 5) {
+			return;
+		}
+		String offset = value.substring(5);
+		if (!offset.matches("[+-][0-9]{2}:[0-9]{2}")) {
+			throw new InternalException("unparseable date:" + raw);
+		}
+		specificTimeOffset = ZoneOffset.of(offset);
+	}
 }

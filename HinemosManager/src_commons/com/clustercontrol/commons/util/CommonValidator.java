@@ -19,7 +19,6 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
-import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.PatternConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.bean.ScheduleConstant;
@@ -255,6 +254,9 @@ public class CommonValidator {
 		else{
 			try {
 				//対象のカレンダ設定を取得できない場合にExceptionエラーを発生させる。
+				//存在チェック
+				com.clustercontrol.calendar.util.QueryUtil.getCalInfoPK(calendarId);
+				//オーナーロールチェック
 				com.clustercontrol.calendar.util.QueryUtil.getCalInfoPK_OR(calendarId, ownerRoleId);
 			} catch (CalendarNotFound e) {
 				String[] args = {calendarId};
@@ -264,7 +266,8 @@ public class CommonValidator {
 			} catch (InvalidRole e) {
 				m_log.warn("validateCalenderId() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage());
-				throw e;
+				String[] args = {calendarId,ownerRoleId};
+				throw new InvalidRole(MessageConstant.MESSAGE_CALENDAR_ID_CANT_BE_REFERENCED_BY_OWNER_ROLE.getMessage(args));
 			}
 		}
 		return;
@@ -371,6 +374,9 @@ public class CommonValidator {
 		}
 		try {
 			//対象のジョブ連携送信設定を取得できない場合にExceptionエラーを発生させる。
+			//存在チェック
+			com.clustercontrol.jobmanagement.util.QueryUtil.getJobLinkSendSettingPK(joblinkSendSettindId,ObjectPrivilegeMode.READ );
+			//オーナーロールチェック
 			com.clustercontrol.jobmanagement.util.QueryUtil.getJobLinkSendSettingPK_OR(joblinkSendSettindId, ownerRoleId);
 		} catch (JobMasterNotFound e) {
 			String[] args = {joblinkSendSettindId};
@@ -378,7 +384,10 @@ public class CommonValidator {
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw new InvalidSetting(MessageConstant.MESSAGE_JOB_LINK_SEND_ID_NOT_EXIST.getMessage(args));
 		} catch (InvalidRole e) {
-			throw e;
+			String[] args = {joblinkSendSettindId,ownerRoleId};
+			m_log.warn("validateJoblinkSendSettingId() : "
+					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw new InvalidRole(MessageConstant.MESSAGE_JOB_LINK_SEND_ID_CANT_BE_REFERENCED_BY_OWNER_ROLE.getMessage(args));
 		}
 		return;
 	}
@@ -524,29 +533,6 @@ public class CommonValidator {
 
 		} catch (RoleNotFound e) {
 			throw new InvalidSetting(MessageConstant.MESSAGE_OWNERROLEID_NOT_EXIST.getMessage(ownerRoleId), e);
-		}
-	}
-	
-	/**
-	 * カレントユーザがオーナーロールに所属しているかチェックする
-	 * この関数は、16051で追加され、REST APIの呼び出し直後に実施
-	 * ownerRoleIdが指定されていない場合は、処理をスルーする
-	 * 既存動作への影響が読めないので、明らかなオーナーロールの違反のみバリデーション
-	 *
-	 * @param ownerRoleId
-	 * @throw InvalidRole
-	 */
-	public static void validateCurrentUserBelongRole(String ownerRoleId) throws InvalidRole {
-		// オーナーロールが指定されていない場合、チェックしない
-		if (ownerRoleId != null) {
-			// カレントユーザが指定のオーナーロールに所属しているか確認
-			String currentUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
-			
-			if(!(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR) && 
-					!UserRoleCache.getRoleIdList(currentUser).contains(ownerRoleId)) {
-				String args[] = {currentUser, ownerRoleId};
-				throw new InvalidRole(MessageConstant.MESSAGE_USER_DOES_NOT_BELONG_TO_ROLE.getMessage(args));
-			}
 		}
 	}
 	

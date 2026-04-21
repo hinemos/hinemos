@@ -23,6 +23,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 import org.openapitools.client.model.MapBgImageInfoResponse;
 import org.openapitools.client.model.MapIconImageInfoResponse;
 
@@ -93,9 +94,6 @@ public class RegisterImageDialog extends CommonDialog {
 
 		// タイトル
 		String title = com.clustercontrol.nodemap.messages.Messages.getString("file.select.image");
-		if (m_figure != null) {
-			title += " [" + HinemosMessage.replace(m_figure.getFacilityId()) + "]";
-		}
 		shell.setText(title);
 
 		layout = new GridLayout(1,true);
@@ -103,6 +101,17 @@ public class RegisterImageDialog extends CommonDialog {
 		layout.marginHeight = 10;
 		layout.numColumns = 1;
 		parent.setLayout(layout);
+
+		if (m_figure != null) {
+			Text facilityIdText = new Text(parent, SWT.READ_ONLY | SWT.WRAP | SWT.MULTI );
+			gridData = new GridData();
+			gridData.horizontalAlignment = GridData.FILL;
+			gridData.grabExcessHorizontalSpace = true;
+			gridData.horizontalSpan = 1;
+			facilityIdText.setLayoutData(gridData);
+			facilityIdText.setText(
+					Messages.getString("facility.id") + "[" + HinemosMessage.replace(m_figure.getFacilityId()) + "]");
+		}
 
 		Group group = new Group(parent, SWT.SHADOW_NONE);
 

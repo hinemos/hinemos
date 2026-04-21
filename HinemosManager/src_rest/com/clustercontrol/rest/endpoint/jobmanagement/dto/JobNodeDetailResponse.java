@@ -17,6 +17,7 @@ public class JobNodeDetailResponse {
 	private StatusEnum status = null;
 	private Integer endValue = null;
 	private String facilityId = null;
+	@RestPartiallyTransrateTarget
 	private String nodeName = null;
 	@RestBeanConvertDatetime
 	private String startDate = null;

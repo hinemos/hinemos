@@ -204,6 +204,9 @@ public class StatusImageConstant extends StatusConstant {
 		if (type.equals(JobDetailInfoResponse.StatusEnum.END_FAILED_OUTPUT.getValue())) {
 			return true;
 		}
+		if (type.equals(JobDetailInfoResponse.StatusEnum.END_QUEUE_LIMIT.getValue())) {
+			return true;
+		}
 		return false;
 	}
 

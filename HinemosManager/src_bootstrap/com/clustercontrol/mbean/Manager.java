@@ -24,6 +24,7 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaSessionEventListener;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.hinemosagent.util.AgentConnectUtil;
 import com.clustercontrol.jobmanagement.factory.FullJob;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
@@ -32,6 +33,7 @@ import com.clustercontrol.notify.model.MonitorStatusEntity;
 import com.clustercontrol.notify.model.NotifyHistoryEntity;
 import com.clustercontrol.notify.util.MonitorStatusCache;
 import com.clustercontrol.plugin.impl.AsyncWorkerPlugin;
+import com.clustercontrol.plugin.impl.CustomTrapPlugin;
 import com.clustercontrol.plugin.impl.RestServiceAgentPlugin;
 import com.clustercontrol.plugin.impl.RestServicePlugin;
 import com.clustercontrol.plugin.impl.SchedulerInfo;
@@ -122,6 +124,18 @@ public class Manager implements ManagerMXBean {
 		return String.format("%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS", SelfCheckTaskSubmitter.lastMonitorDate);
 	}
 
+	@Override
+	public String getCustomTrapStatistics() {
+		String str = "";
+		str += "[CustomTrap Statistics]" + System.getProperty("line.separator");
+		str += "received : " + CustomTrapPlugin.getReceivedCount() + System.getProperty("line.separator");
+		str += "queued : " + CustomTrapPlugin.getQueuedCount() + System.getProperty("line.separator");
+		str += "discarded : " + CustomTrapPlugin.getDiscardedCount() + System.getProperty("line.separator");
+		str += "notified : " + CustomTrapPlugin.getNotifiedCount() + System.getProperty("line.separator");
+		return str;
+	}
+
+	
 	@Override
 	public String getSyslogStatistics() {
 		String str = "";
@@ -317,7 +331,11 @@ public class Manager implements ManagerMXBean {
 	public int getSyslogQueueCount() {
 		return SystemLogPlugin.getQueuedCount();
 	}
-	
+
+	@Override
+	public int getCustomTrapQueueCount(){
+		return CustomTrapPlugin.getQueuedCount();
+	}
 	@Override
 	public int getWebServiceForAgentQueueCount() {
 		return WebServiceAgentPlugin.getAgentQueueSize();
@@ -400,7 +418,7 @@ public class Manager implements ManagerMXBean {
 	}
 
 	@Override
-	public long getTableRecordCount(String tableName) {
+	public long getTableRecordCount(String tableName) throws InvalidSetting {
 		return TableSizeMonitor.getTableCount(tableName);
 	}
 

@@ -514,9 +514,10 @@ public class JobSessionNodeImpl {
 				directory = outputInfoEntity.getDirectory();
 				fileName = outputInfoEntity.getFileName();
 			}
-			directory = ParameterUtil.replaceSessionParameterValue(sessionId, facilityId, directory);
+			
+			directory = ParameterUtil.replaceSessionParameterValue(job, facilityId, directory);
 			outputInfo.setDirectory(directory);
-			fileName = ParameterUtil.replaceSessionParameterValue(sessionId, facilityId, fileName);
+			fileName = ParameterUtil.replaceSessionParameterValue(job, facilityId, fileName);
 			outputInfo.setFileName(fileName);
 			outputInfo.setAppendFlg(outputInfoEntity.getAppendFlg());
 			outputInfo.setValid(outputInfoEntity.getValid());
@@ -533,7 +534,7 @@ public class JobSessionNodeImpl {
 			JobEnvVariableInfo envInfo = new JobEnvVariableInfo();
 			envInfo.setEnvVariableId(envEntity.getId().getEnvVariableId());
 			String value = envEntity.getValue();
-			String replacedValue = ParameterUtil.replaceSessionParameterValue(sessionId, facilityId, value);
+			String replacedValue = ParameterUtil.replaceSessionParameterValue(job, facilityId, value);
 			envInfo.setValue(replacedValue);
 			envInfo.setDescription(envEntity.getDescription());
 			envInfoList.add(envInfo);
@@ -599,8 +600,7 @@ public class JobSessionNodeImpl {
 			// 承認依頼文
 			String reqSentence = job.getApprovalReqSentence();
 			reqSentence = ParameterUtil.replaceAllSessionParameterValue(
-					sessionId,
-					jobunitId,
+					job,
 					jobFacilityId,
 					reqSentence);
 			job.setApprovalReqSentence(reqSentence);
@@ -608,8 +608,7 @@ public class JobSessionNodeImpl {
 			// 承認依頼メール件名
 			String mailTitle = job.getApprovalReqMailTitle();
 			mailTitle = ParameterUtil.replaceAllSessionParameterValue(
-					sessionId,
-					jobunitId,
+					job,
 					jobFacilityId,
 					mailTitle);
 			// 承認依頼メール件名が256文字を超えている場合は、先頭256文字のみとする
@@ -621,8 +620,7 @@ public class JobSessionNodeImpl {
 			// 承認依頼メール本文
 			String mailBody = job.getApprovalReqMailBody();
 			mailBody = ParameterUtil.replaceAllSessionParameterValue(
-					sessionId,
-					jobunitId,
+					job,
 					jobFacilityId,
 					mailBody);
 			job.setApprovalReqMailBody(mailBody);
@@ -668,7 +666,7 @@ public class JobSessionNodeImpl {
 				Function<String, String> replaceParam = source -> {
 					if (source != null) {
 						try {
-							return ParameterUtil.replaceAllSessionParameterValue(sessionId, jobunitId,
+							return ParameterUtil.replaceAllSessionParameterValue(job,
 									sessionNode.getId().getFacilityId(), source);
 						} catch (Exception e) {
 							m_log.warn("runJobSessionNode() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -808,8 +806,7 @@ public class JobSessionNodeImpl {
 	
 			// ジョブ変数のパラメータを置き換える
 			startCommand = ParameterUtil.replaceAllSessionParameterValue(
-					sessionId,
-					jobunitId,
+					job,
 					sessionNode.getId().getFacilityId(),
 					job.getStartCommand());
 			instructionInfo.setCommand(startCommand);
@@ -1222,8 +1219,7 @@ public class JobSessionNodeImpl {
 										}
 										// 値へのジョブ変数適用
 										value = ParameterUtil.replaceAllSessionParameterValue(
-												job.getId().getSessionId(),
-												info.getJobunitId(),
+												job,
 												info.getFacilityId(),
 												value);
 										// 重複チェック
@@ -2359,6 +2355,7 @@ public class JobSessionNodeImpl {
 				//DB更新
 				setMessage(sessionNode, "stdout=" + info.getMessage() + ", stderr=" + info.getErrorMessage());
 				setMessage(sessionNode, MessageConstant.RETRYING.getMessage() + "(" + errorCount + ")");
+				sessionNode.setRetryCount(0);
 				sessionNode.setErrorRetryCount(errorCount);
 				sessionNode.setStatus(StatusConstant.TYPE_WAIT);
 				sessionNode.setStartDate(null);

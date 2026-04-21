@@ -124,6 +124,14 @@
 							</xs:documentation>
 						</xs:annotation>
 					</xs:element>
+					<xs:element name="kvm" type="KVMType" minOccurs="0"
+						maxOccurs="1">
+						<xs:annotation>
+							<xs:documentation>
+								KVM設定情報です。
+							</xs:documentation>
+						</xs:annotation>
+					</xs:element>
 				</xs:sequence>
 			</xs:extension>
 		</xs:complexContent>
@@ -499,4 +507,84 @@
 				</xs:sequence>
 			</xs:extension>
 		</xs:complexContent>
-	</xs:complexType></xs:schema>
+	</xs:complexType>
+
+	<xs:complexType name="KVMType">
+		<xs:annotation>
+			<xs:documentation>KVM設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="host" type="xs:string"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						ホスト名です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="port" type="xs:int"
+				minOccurs="0" maxOccurs="1" default="-1">
+				<xs:annotation>
+					<xs:documentation>
+						ポート番号です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="mode" type="xs:string"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						接続モードです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="extraParameters" type="xs:string"
+				minOccurs="0" maxOccurs="1">
+				<xs:annotation>
+					<xs:documentation>
+						追加パラメータです。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="kvmUser" type="KVMUserType"
+				minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						KVMUser設定情報です。
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="KVMUserType">
+		<xs:annotation>
+			<xs:documentation>KVMUser設定情報です。</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="CloudCheckInfo">
+				<xs:sequence>
+					<xs:element name="userName" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>KVMの接続ユーザです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="password" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>KVMの接続パスワードです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="keyFile" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>KVM接続時の秘密鍵のパスです。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="accountDesc" type="xs:string" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>KVM管理アカウントの説明です。</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

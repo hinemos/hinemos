@@ -43,6 +43,8 @@ import org.eclipse.swt.dnd.DropTargetEvent;
 import org.eclipse.swt.dnd.DropTargetListener;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.events.MenuEvent;
+import org.eclipse.swt.events.MenuListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Color;
@@ -86,7 +88,6 @@ import com.clustercontrol.nodemap.view.NodeMapView.Mode;
 import com.clustercontrol.repository.action.DeleteNodeProperty;
 import com.clustercontrol.repository.action.DeleteScopeProperty;
 import com.clustercontrol.repository.bean.FacilityConstant;
-import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.dialog.NodeAssignDialog;
 import com.clustercontrol.repository.dialog.NodeCreateDialog;
 import com.clustercontrol.repository.dialog.NodeReleaseDialog;
@@ -203,6 +204,26 @@ public class NodeMapCanvasComposite extends Composite{
 			public void focusLost(org.eclipse.swt.events.FocusEvent e) {
 			}
 
+		});
+
+		// マウスリスナー設定（右クリックメニュー表示のクリア用）
+		// これがないと Figure 以外（背景画像の外）をクリックした時、メニューが不正な状態（項目が重複して表示される）になる場合がある
+		m_canvas.addMouseListener(new org.eclipse.swt.events.MouseAdapter() {
+			@Override
+			public void mouseDown(org.eclipse.swt.events.MouseEvent event) {
+				// ノードマップ全体をクリックしたときに呼び出される
+				// Figure をクリックした場合は MouseListener の mousePressed の後に実行される
+				if (event.button == 3) {
+					// m_canvas.setMenu(null); ではコンテキストメニュー自体が表示されなくなるため、以下の方法でメニューを初期化する
+					Menu menubefore = m_canvas.getMenu();
+					if (menubefore != null) {
+						MenuItem[] menuItems = menubefore.getItems();
+						for (MenuItem item : menuItems) {
+							item.dispose();
+						}
+					}
+				}
+			}
 		});
 
 		// スクロール可能なレイヤの作成
@@ -437,40 +458,6 @@ public class NodeMapCanvasComposite extends Composite{
 		m_layer.removeAll();
 	}
 
-	// 個別に設定したメニューが残っている場合があるのでその場合は消しておく
-	public void setEnabled(boolean enable) {
-		Menu menu = m_canvas.getMenu();
-
-		if (menu != null) {
-			MenuItem[] menuItems = menu.getItems();
-
-			for (MenuItem item : menuItems) {
-				if (item.getText()
-						.equals(com.clustercontrol.nodemap.messages.Messages
-								.getString("select.contextmenu.collectgraph"))
-						|| item.getText().equals(
-								com.clustercontrol.nodemap.messages.Messages.getString("select.contextmenu.ping"))) {
-					item.setEnabled(true);
-				} else if (item.getText()
-						.indexOf(com.clustercontrol.nodemap.messages.Messages.getString("tooltip.facilityid")) == 0 ) {
-					// ファシリティIDは常に選択不能
-					item.setEnabled(false);
-				} else if (
-						( _view.getMode() == NodeMapView.Mode.FLOATING_MODE || 
-						  _view.getMode() == NodeMapView.Mode.EDIT_CONNECTION_MODE )
-						&&
-						( item.getText().equals(com.clustercontrol.nodemap.messages.Messages.getString("file.select.image.bg")) ||
-						  item.getText().equals(com.clustercontrol.nodemap.messages.Messages.getString("object.privilege.setting")))
-						) {
-					// ノード・スコープ移動またはコネクタ作成での背景画像・オブジェクト権限設定は常に選択可能
-					item.setEnabled(true);
-				} else {
-					item.setEnabled(enable);
-				}
-			}
-		}
-	}
-
 	public void setCanvasFocus() {
 		if(m_controller != null){
 			m_log.debug("call setFocus() " + m_controller.getCurrentScope());
@@ -543,138 +530,160 @@ public class NodeMapCanvasComposite extends Composite{
 			// 右クリックの場合
 			if (me.button == 3){
 				m_log.debug("focusFigure class = " + figure.getClass().getSimpleName());
+				// mouseDown 側の初期化のみだと背景画像の縁付近を右クリックしたときに
+				// メニューが不正な状態（項目が重複して表示される）になる場合がある
+				// こちらでも初期化することで発生しなくなる
+				Menu menubefore = m_canvas.getMenu();
+				if (menubefore != null) {
+					MenuItem[] menuItems = menubefore.getItems();
+					for (MenuItem item : menuItems) {
+						item.dispose();
+					}
+				}
 				Menu menu = new Menu(shell, SWT.POP_UP);
 				m_canvas.setMenu(menu);
-				if (figure instanceof FileImageFigure) {
-					MenuItem item = new MenuItem(menu, SWT.PUSH);
-					String facilityName = ((FileImageFigure)figure).getFacilityName();
-					item.setText(com.clustercontrol.util.Messages.getString("facility.id") +
-							" : " + HinemosMessage.replace(facilityName));
-					item.setEnabled(false);
-					item = new MenuItem(menu, SWT.SEPARATOR);
-				}
-
-				// 選択されているアイコンがスコープの場合
-				if(figure instanceof ScopeFigure) {
-					focusFigure = (ScopeFigure)figure;
-
-					// POPUPメニュー設定 (新規ビュー)
-					MenuItem item = new MenuItem(menu, SWT.PUSH);
-					String targetScopeFacilityId = focusFigure.getFacilityId();
-					item.setText(com.clustercontrol.nodemap.messages.Messages.getString("view.new"));
-					item.addSelectionListener(new SelectionListener() {
-						@Override
-						public void widgetDefaultSelected(SelectionEvent event) {
-							m_log.debug("new view widgetDefaultSelected");
+				// MenuListener の menuShown はコンテキストメニューの表示直前に行われる
+				menu.addMenuListener(new MenuListener() {
+					@Override
+					public void menuShown(MenuEvent e) {
+						if (figure instanceof FileImageFigure) {
+							MenuItem item = new MenuItem(menu, SWT.PUSH);
+							String facilityName = ((FileImageFigure)figure).getFacilityName();
+							item.setText(com.clustercontrol.util.Messages.getString("facility.id") +
+									" : " + HinemosMessage.replace(facilityName));
+							item.setEnabled(false);
+							item = new MenuItem(menu, SWT.SEPARATOR);
 						}
-						@Override
-						public void widgetSelected(SelectionEvent event) {
-							m_log.debug("new view widgetSelected");
-							// 遷移対象のファシリティIDを取得
 
-							// 新規ビューで対象スコープのマップを表示する
-							RelationViewController.createNewView(((ScopeFigure)focusFigure).getManagerName(), targetScopeFacilityId, NodeMapView.class);
-						}
-					});
+						// 選択されているアイコンがスコープの場合
+						if(figure instanceof ScopeFigure) {
+							focusFigure = (ScopeFigure)figure;
 
-					item = new MenuItem(menu, SWT.SEPARATOR);
-					
-					// POPUPメニュー設定 (イメージ変更)
-					item = new MenuItem(menu, SWT.PUSH);
-					item.setText(com.clustercontrol.nodemap.messages.Messages.getString(
-					"file.select.image.icon"));
-					item.addSelectionListener(new SelectionListener() {
-						@Override
-						public void widgetDefaultSelected(SelectionEvent event) {
-							m_log.debug("select image icon widgetDefaultSelected");
-						}
-						@Override
-						public void widgetSelected(SelectionEvent event) {
-							m_log.debug("select image icon widgetSelected");
-							// アイコン選択ダイアログを開く
-							RegisterImageDialog dialog = new RegisterImageDialog(
-									shell, m_controller, focusFigure);
-							if (dialog.open() == IDialogConstants.OK_ID) {
-								_view.setEditing(true);
-							}
-						}
-					});
-					// 編集不可モードの場合は、メニューを選択できなくする
-					if(_view.getMode() == Mode.FIXED_MODE){
-						item.setEnabled(false);
-					}
+							// POPUPメニュー設定 (新規ビュー)
+							MenuItem item = new MenuItem(menu, SWT.PUSH);
+							String targetScopeFacilityId = focusFigure.getFacilityId();
+							item.setText(com.clustercontrol.nodemap.messages.Messages.getString("view.new"));
+							item.addSelectionListener(new SelectionListener() {
+								@Override
+								public void widgetDefaultSelected(SelectionEvent event) {
+									m_log.debug("new view widgetDefaultSelected");
+								}
+								@Override
+								public void widgetSelected(SelectionEvent event) {
+									m_log.debug("new view widgetSelected");
+									// 遷移対象のファシリティIDを取得
 
-					new MenuItem(menu, SWT.SEPARATOR);
+									// 新規ビューで対象スコープのマップを表示する
+									RelationViewController.createNewView(((ScopeFigure)focusFigure).getManagerName(), targetScopeFacilityId, NodeMapView.class);
+								}
+							});
 
-
-					editRepositoryForScope(menu);
-					editRepository(menu, focusFigure);
-
-				} else if (figure instanceof NodeFigure){
-					focusFigure = (NodeFigure)figure;
-					// POPUPメニュー設定 (イメージ変更)
-					MenuItem item = new MenuItem(menu, SWT.PUSH);
-					item.setText(com.clustercontrol.nodemap.messages.Messages.getString(
-					"file.select.image.icon"));
-					item.addSelectionListener(new SelectionListener() {
-						@Override
-						public void widgetDefaultSelected(SelectionEvent event) {
-							m_log.debug("select image icon widgetDefaultSelected");
-						}
-						@Override
-						public void widgetSelected(SelectionEvent event) {
-							m_log.debug("select image icon widgetSelected");
-							// アイコン選択ダイアログを開く
-							RegisterImageDialog dialog = new RegisterImageDialog(
-									shell, m_controller, focusFigure);
-							if (dialog.open() == IDialogConstants.OK_ID) {
-								_view.setEditing(true);
-							}
+							item = new MenuItem(menu, SWT.SEPARATOR);
 							
-						}
-					});
-					// 編集不可モードの場合は、メニューを選択できなくする
-					if(_view.getMode() == Mode.FIXED_MODE){
-						item.setEnabled(false);
-					}
-
-					new MenuItem(menu, SWT.SEPARATOR);
-
-					editRepositoryForNode(menu);
-					editRepository(menu, focusFigure);
-
-				} else if (figure instanceof BgFigure) {
-					focusFigure = (BgFigure)figure;
-					// POPUPメニュー設定
-					MenuItem item = new MenuItem(menu, SWT.PUSH);
-					item.setText(com.clustercontrol.nodemap.messages.Messages.getString(
-					"file.select.image.bg"));
-					item.addSelectionListener(new SelectionListener() {
-						@Override
-						public void widgetDefaultSelected(SelectionEvent event) {
-							m_log.debug("select image bg widgetDefaultSelected");
-						}
-						@Override
-						public void widgetSelected(SelectionEvent event) {
-							m_log.debug("select image bg widgetSelected");
-							RegisterImageDialog dialog = new RegisterImageDialog(
-									shell, m_controller, focusFigure);
-							if (dialog.open() == IDialogConstants.OK_ID) {
-								_view.setEditing(true);
+							// POPUPメニュー設定 (イメージ変更)
+							item = new MenuItem(menu, SWT.PUSH);
+							item.setText(com.clustercontrol.nodemap.messages.Messages.getString(
+							"file.select.image.icon"));
+							item.addSelectionListener(new SelectionListener() {
+								@Override
+								public void widgetDefaultSelected(SelectionEvent event) {
+									m_log.debug("select image icon widgetDefaultSelected");
+								}
+								@Override
+								public void widgetSelected(SelectionEvent event) {
+									m_log.debug("select image icon widgetSelected");
+									// アイコン選択ダイアログを開く
+									RegisterImageDialog dialog = new RegisterImageDialog(
+											shell, m_controller, focusFigure);
+									if (dialog.open() == IDialogConstants.OK_ID) {
+										_view.setEditing(true);
+									}
+								}
+							});
+							// 編集不可モードの場合は、メニューを選択できなくする
+							if(_view.getMode() == Mode.FIXED_MODE){
+								item.setEnabled(false);
 							}
-						}
-					});
 
-					// 編集不可モードの場合は、メニューを選択できなくする
-					if(_view.getMode() == Mode.FIXED_MODE){
-						item.setEnabled(false);
+							new MenuItem(menu, SWT.SEPARATOR);
+
+
+							editRepositoryForScope(menu);
+							editRepository(menu, focusFigure);
+
+						} else if (figure instanceof NodeFigure){
+							focusFigure = (NodeFigure)figure;
+							// POPUPメニュー設定 (イメージ変更)
+							MenuItem item = new MenuItem(menu, SWT.PUSH);
+							item.setText(com.clustercontrol.nodemap.messages.Messages.getString(
+							"file.select.image.icon"));
+							item.addSelectionListener(new SelectionListener() {
+								@Override
+								public void widgetDefaultSelected(SelectionEvent event) {
+									m_log.debug("select image icon widgetDefaultSelected");
+								}
+								@Override
+								public void widgetSelected(SelectionEvent event) {
+									m_log.debug("select image icon widgetSelected");
+									// アイコン選択ダイアログを開く
+									RegisterImageDialog dialog = new RegisterImageDialog(
+											shell, m_controller, focusFigure);
+									if (dialog.open() == IDialogConstants.OK_ID) {
+										_view.setEditing(true);
+									}
+									
+								}
+							});
+							// 編集不可モードの場合は、メニューを選択できなくする
+							if(_view.getMode() == Mode.FIXED_MODE){
+								item.setEnabled(false);
+							}
+
+							new MenuItem(menu, SWT.SEPARATOR);
+
+							editRepositoryForNode(menu);
+							editRepository(menu, focusFigure);
+
+						} else if (figure instanceof BgFigure) {
+							focusFigure = (BgFigure)figure;
+							// POPUPメニュー設定
+							MenuItem item = new MenuItem(menu, SWT.PUSH);
+							item.setText(com.clustercontrol.nodemap.messages.Messages.getString(
+							"file.select.image.bg"));
+							item.addSelectionListener(new SelectionListener() {
+								@Override
+								public void widgetDefaultSelected(SelectionEvent event) {
+									m_log.debug("select image bg widgetDefaultSelected");
+								}
+								@Override
+								public void widgetSelected(SelectionEvent event) {
+									m_log.debug("select image bg widgetSelected");
+									RegisterImageDialog dialog = new RegisterImageDialog(
+											shell, m_controller, focusFigure);
+									if (dialog.open() == IDialogConstants.OK_ID) {
+										_view.setEditing(true);
+									}
+								}
+							});
+
+							// 編集不可モードの場合は、メニューを選択できなくする
+							if(_view.getMode() == Mode.FIXED_MODE){
+								item.setEnabled(false);
+							}
+
+							new MenuItem(menu, SWT.SEPARATOR);
+
+							editRepositoryForScope(menu);
+
+						}
 					}
 
-					new MenuItem(menu, SWT.SEPARATOR);
+					@Override
+					public void menuHidden(MenuEvent e) {
+						// NOP
+					}
+				});
 
-					editRepositoryForScope(menu);
-
-				}
 			}
 
 			// クリックした際にFigureを選択している場合は、そのFigureにフォーカスをあわせる
@@ -759,8 +768,12 @@ public class NodeMapCanvasComposite extends Composite{
 						// ノード登録後にノード割り当てをする
 						// 最上位スコープ、登録ノード全て、未登録ノード、Hinemos内部スコープの場合は、割り当てない。
 						String scopeFacilityId = _view.getController().getCurrentScope();
-						boolean isScopeBuildin = FacilityTreeAttributeConstant.isBuiltinScope(scopeFacilityId);
-						if (!focusFigure.isBuiltin() && !isScopeBuildin &&
+						boolean mapBuiltin = _view.getController().isMapBuiltin();
+						if (m_log.isDebugEnabled()) {
+							m_log.debug("mapId:" + _view.getController().getMapId() + ", builtin:" + mapBuiltin);
+						}
+						// focusFigure.isBuiltin() はコピー元ノード、 mapBuiltin は現在表示しているスコープの組み込みスコープ判定
+						if (!focusFigure.isBuiltin() && !mapBuiltin &&
 								MessageDialog.openQuestion(
 										null,
 										com.clustercontrol.nodemap.messages.Messages.getString("node.assign.title"),

@@ -138,4 +138,7 @@ public class UploadComponent{
 		// Do nothing
 	}
 
+	public void close(){
+		// Do nothing
+	}
 }

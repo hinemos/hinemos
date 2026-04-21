@@ -150,7 +150,7 @@ public class SdmlControlLogForwarder {
 		result.setMessage(message);
 		result.setOrgLogLine(orgLogLine);
 
-		transporter.add(result);
+		transporter.addWithWait(result);
 	}
 
 	private static class SdmlControlLogSendProcessor implements TransportProcessor<AgtSdmlControlLogDTORequest> {

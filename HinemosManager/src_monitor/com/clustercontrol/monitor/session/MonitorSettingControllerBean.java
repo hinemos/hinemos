@@ -1689,12 +1689,19 @@ public class MonitorSettingControllerBean {
 	 * @return タグ一覧 
 	 * @throws MonitorNotFound
 	 * @throws InvalidRole
+	 * @throws InvalidSetting
 	 * @throws HinemosUnknown
 	 */
 	public List<String> getMonitorStringTagList(String monitorId, String ownerRoleId) 
-			throws MonitorNotFound, InvalidRole, HinemosUnknown {
+			throws MonitorNotFound, InvalidRole, InvalidSetting, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		List<String> ret = null;
+
+		if (ownerRoleId == null) {
+			InvalidSetting e = new InvalidSetting("ownerRoleId is not defined. monitorId = " + monitorId);
+			m_log.warn("getMonitorStringTagList() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+			throw e;
+		}
 
 		try {
 			// トランザクション開始

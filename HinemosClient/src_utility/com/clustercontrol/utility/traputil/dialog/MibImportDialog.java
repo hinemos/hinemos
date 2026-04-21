@@ -66,10 +66,12 @@ public class MibImportDialog extends CommonDialog {
 	private ArrayList<SnmpTrapMasterInfo> mibList = new ArrayList<>();
 	
 	private String monitorId;
+	private String managerName;
 	
-	public MibImportDialog(Shell parent, String monitorId) {
+	public MibImportDialog(Shell parent, String monitorId, String managerName) {
 		super(parent);
 		this.monitorId = monitorId;
+		this.managerName = managerName;
 	}
 
 	public void setDetailList(List<SnmpTrapMasterInfo> detailList){
@@ -209,7 +211,7 @@ public class MibImportDialog extends CommonDialog {
 		
 			Set<String> registeredSet = new HashSet<>();
 			try {
-				MonitorInfoResponse info = MonitorsettingRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName()).getMonitor(monitorId);
+				MonitorInfoResponse info = MonitorsettingRestClientWrapper.getWrapper(managerName).getMonitor(monitorId);
 				for(TrapValueInfoResponse trap: info.getTrapCheckInfo().getMonitorTrapValueInfoEntities()){
 					registeredSet.add(trap.getTrapOid() + trap.getGenericId() + trap.getSpecificId() + trap.getMib());
 				}

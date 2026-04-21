@@ -114,7 +114,7 @@ public class LocationRepositoryUpdater {
 				RepositoryControllerBean bean = RepositoryControllerBeanWrapper.bean();
 				switch (item.getData().getFacilityType()) {
 				case FacilityConstant.TYPE_SCOPE:
-					bean.deleteScope(new String[]{item.getData().getFacilityId()});
+					bean.deleteScope(new String[]{item.getData().getFacilityId()}, false);
 					break;
 				case FacilityConstant.TYPE_NODE:
 					bean.releaseNodeScope(parentFacilityId, new String[]{item.getData().getFacilityId()});

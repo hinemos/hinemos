@@ -34,6 +34,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import com.clustercontrol.bean.ActivationKeyConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.plugin.api.HinemosPlugin;
 import com.clustercontrol.plugin.util.RestApiHttpServerFactory;
 import com.clustercontrol.rest.exception.HinemosRestExceptionMapper;
@@ -224,7 +225,7 @@ public abstract class RestServicePlugin implements HinemosPlugin {
 		SSLContextConfigurator sslContext = new SSLContextConfigurator();
 		String protocol = HinemosPropertyCommon.ws_https_protocol.getStringValue();
 		sslContext.setSecurityProtocol(protocol);
-		String keystorePath = HinemosPropertyCommon.ws_https_keystore_path.getStringValue();
+		String keystorePath = HinemosPropertyDefault.ws_https_keystore_path.getStringValue();
 		sslContext.setKeyStoreFile(keystorePath);
 		String keystorePassword = HinemosPropertyCommon.ws_https_keystore_password.getStringValue();
 		sslContext.setKeyStorePass(keystorePassword);

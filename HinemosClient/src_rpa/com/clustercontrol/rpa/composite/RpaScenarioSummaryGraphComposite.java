@@ -577,6 +577,14 @@ public class RpaScenarioSummaryGraphComposite extends Composite {
 				// 権限なし
 				errorMsgs.put( managerName, Messages.getString("message.accesscontrol.16") );
 			} catch (Exception e) {
+				if ( (e instanceof HinemosUnknown) && UrlNotFound.class.equals(e.getCause().getClass())){
+					// マルチマネージャログイン時ならエンタープライズ機能が無効なマネージャ（RPA向けのWEBAPIがNotFound）もあり得るので、
+					// その場合はWARN出力してスキップ
+					log.warn(
+							"setValueForPieChart(). getRpaScenarioOperationResultSummaryForPie is failed because endpoint is not publish .managerName="
+									+ managerName + ". message = " + e.getMessage());
+					continue;
+				}
 				// 上記以外の例外
 				String errMessage = HinemosMessage.replace(e.getMessage());
 				log.warn("update(), " + errMessage, e);

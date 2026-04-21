@@ -43,6 +43,7 @@ import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.factory.Notice;
 import com.clustercontrol.reporting.util.ReportFileFailureListManager;
+import com.clustercontrol.reporting.util.ReportingUtil;
 import com.clustercontrol.rest.endpoint.reporting.dto.CreateReportingFileRequest;
 import com.clustercontrol.util.CommandCreator;
 import com.clustercontrol.util.CommandExecutor;
@@ -83,6 +84,16 @@ public class ExecReportingProcess {
 			}
 		}
 		return basePath;
+	}
+
+
+	/**
+	* ベースディレクトリの値が空であった場合にHinemosプロパティから値を取得する
+	*/
+	public static void checkBasePath(){
+		if(basePath == null){
+			basePath = HinemosPropertyDefault.reporting_output_path.getStringValue();
+		}
 	}
 
 	/**
@@ -138,7 +149,7 @@ public class ExecReportingProcess {
 					" -Dhinemos.manager.home.dir=" + System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") +
 					" -Dhinemos.manager.etc.dir=" + System.getProperty("hinemos.manager.etc.dir", "/opt/hinemos/etc") +
 					" -Dhinemos.manager.log.dir=" + System.getProperty("hinemos.manager.log.dir", "/opt/hinemos/var/log") +
-					" " + HinemosPropertyDefault.reporting_heap_size.getStringValue() +
+					" " + ReportingUtil.buildJvmOptions() +
 					" -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=" + System.getProperty("hinemos.manager.log.dir", "/opt/hinemos/var/log") + 
 					" -javaagent:" + System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") + "/lib/eclipselink-3.0.2.jar";
 					

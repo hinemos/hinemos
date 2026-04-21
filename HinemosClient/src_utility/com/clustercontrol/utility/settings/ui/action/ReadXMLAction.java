@@ -11,6 +11,7 @@ package com.clustercontrol.utility.settings.ui.action;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -163,12 +164,20 @@ public class ReadXMLAction {
 			return funcName;
 		}
 		
+		private static final List<XMLFileName> rpas = Arrays.asList(RPA_SCENARIO_TAG, RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING, RPA_MANAGEMENT_TOOL_ACCOUNT, RPA_MANAGEMENT_TOOL_ACCOUNT, RPA_SCENARIO_COEFFICIENT_PATTERN, MONITOR_RPA_LOGFILE, MONITOR_RPA_MANAGEMENT_TOOL_SERVICE);
+		
 		public boolean checkOption(Set<String> options) {
 			if (optionKey.length != 0) {
 				boolean ret = false;
 				for (String key : optionKey) {
 					if (options.contains(key)) {
-						ret = true;
+						// RPA関連機能は、RPA無効が指定されているなら
+						if (!rpas.contains(this) || !options.contains(OptionUtil.TYPE_NORPA)) {
+							ret = true;
+						} else {
+							ret = false;
+						}
+						break;
 					}
 				}
 				return ret;

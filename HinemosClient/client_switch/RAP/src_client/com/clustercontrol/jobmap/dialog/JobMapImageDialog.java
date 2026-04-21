@@ -17,7 +17,6 @@ import org.eclipse.draw2d.ColorConstantsWrapper;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.rap.addons.fileupload.FileDetails;
 import org.eclipse.rap.addons.fileupload.FileUploadEvent;
-import org.eclipse.rap.addons.fileupload.FileUploadHandler;
 import org.eclipse.rap.addons.fileupload.FileUploadListener;
 import org.eclipse.rap.rwt.service.ServerPushSession;
 import org.eclipse.rap.rwt.widgets.FileUpload;
@@ -56,6 +55,7 @@ import com.clustercontrol.jobmanagement.util.JobmapIconImageUtil;
 import com.clustercontrol.jobmap.util.ImageFileUploadReceiver;
 import com.clustercontrol.jobmap.util.JobMapRestClientWrapper;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
+import com.clustercontrol.util.FileUploadHandlerWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
@@ -103,6 +103,7 @@ public class JobMapImageDialog extends CommonDialog {
 	/** シェル */
 	private Shell m_shell = null;
 
+	private FileUploadHandlerWrapper uploadHandler;
 	private ImageFileUploadReceiver m_receiver = null;
 	private FileUpload m_fileUpload;
 	private ServerPushSession m_pushSession;
@@ -323,7 +324,7 @@ public class JobMapImageDialog extends CommonDialog {
 	private String startUploadReceiver() {
 		this.m_receiver = new ImageFileUploadReceiver();
 		this.m_pushSession = new ServerPushSession();
-		FileUploadHandler uploadHandler = new FileUploadHandler(this.m_receiver);
+		this.uploadHandler = new FileUploadHandlerWrapper(this.m_receiver);
 		uploadHandler.addUploadListener(new FileUploadListener() {
 			@Override
 			public void uploadProgress(FileUploadEvent event){
@@ -681,5 +682,13 @@ public class JobMapImageDialog extends CommonDialog {
 					Messages.getString("message.hinemos.failure.unexpected") + ", " + HinemosMessage.replace(e.getMessage()));
 		}
 		return result;
+	}
+
+	@Override
+	public boolean close() {
+		if (uploadHandler != null) {
+			uploadHandler.dispose();
+		}
+		return super.close();
 	}
 }

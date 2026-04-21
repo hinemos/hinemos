@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -124,7 +125,7 @@ public class RestLoginManager {
 	public static final String URL_MSG_FILTER = LoginConstant.URL_MSG_FILTER;
 
 	// Count login attempts
-	private int loginAttempts = 0;
+	private AtomicInteger loginAttempts = new AtomicInteger(0);
 
 	/**
 	 * Session Singleton
@@ -206,7 +207,7 @@ public class RestLoginManager {
 	* @return loginAttempts
 	*/
 	public static int getLoginAttempts() {
-		return getInstance().loginAttempts;
+		return getInstance().loginAttempts.get();
 	}
 
 	/**
@@ -442,7 +443,7 @@ public class RestLoginManager {
 		int returnCode = IDialogConstants.RETRY_ID;
 
 		// Increase login attempt time
-		getInstance().loginAttempts ++;
+		getInstance().loginAttempts.incrementAndGet();
 
 		//ログインダイアログ表示
 		LoginDialog dialog = new LoginDialog(shell , map);

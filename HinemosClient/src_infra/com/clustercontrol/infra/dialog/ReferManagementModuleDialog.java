@@ -105,7 +105,7 @@ public class ReferManagementModuleDialog extends CommonDialog {
 	 * コンストラクタ
 	 * 変更時、コピー時
 	 * @param parent
-	 * @param id
+	 * @param name
 	 */
 	public ReferManagementModuleDialog(Shell parent, String managerName, String managementId) {
 		super(parent);

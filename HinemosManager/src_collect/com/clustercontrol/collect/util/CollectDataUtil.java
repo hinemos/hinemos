@@ -17,7 +17,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -76,6 +80,41 @@ public class CollectDataUtil {
 	private static Map<Integer, SummaryInfo> summaryDayInfoMap = new ConcurrentHashMap<>();
 	private static Map<Integer, SummaryInfo> summaryMonthInfoMap = new ConcurrentHashMap<>();
 
+	private static ExecutorService service = Executors.newSingleThreadExecutor();
+
+	// 収集キーの登録用のCallableTask
+	// 収集キーはDBとキャッシュに同時に登録するが、
+	// その後の収集データ登録にてエラーとなった際に収集キーもロールバックされないように
+	// 収集キーの登録を別トランザクションで実施するために、
+	// 別スレッドで実行できるように本クラスを定義する。
+	private static class CollectKeyCommitTask implements Callable<Boolean> {
+		private CollectKeyInfo collectKeyInfo;
+
+		public CollectKeyCommitTask(CollectKeyInfo collectKeyInfo) {
+			this.collectKeyInfo = collectKeyInfo;
+		}
+
+		@Override
+		public Boolean call() throws Exception {
+			try (JpaTransactionManager jtm = new JpaTransactionManager()){
+				try {
+					jtm.begin();
+					HinemosEntityManager em = jtm.getEntityManager();
+					em.persist(this.collectKeyInfo);
+					em.flush();
+					jtm.commit();
+				} catch (Exception e) {
+					m_log.warn("CollectKeyCommitTask call() Exception", e);
+					if (jtm != null) {
+						jtm.rollback();
+					}
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+
 	static {
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		if (!jtm.isNestedEm()) {
@@ -100,27 +139,33 @@ public class CollectDataUtil {
 		}
 	}
 
-	private static Integer getId(String itemName, String displayName, String monitorId, String facilityId, JpaTransactionManager jtm) {
-		synchronized(maxLock) {
+	private static Integer getId(String itemName, String displayName, String monitorId, String facilityId) {
+		synchronized (maxLock) {
 			// collectKeyInfo(のcollectorid)を取ってくることができるか確認
 			CollectKeyInfoPK collectKeyInfoPK = new CollectKeyInfoPK(itemName, displayName, monitorId, facilityId);
+
 			if (collectKeyInfoMap.containsKey(collectKeyInfoPK)) {
 				return collectKeyInfoMap.get(collectKeyInfoPK);
 			}
+
 			// collectorIdが存在しなかった場合は新たに作る
-			maxId++;
-			Integer collectorId = maxId;
+			// トランザクションを分離するために、別スレッドで実行する
+			Integer collectorId = maxId + 1;
+			CollectKeyCommitTask task = new CollectKeyCommitTask(
+					new CollectKeyInfo(itemName, displayName, monitorId, facilityId, collectorId));
+
 			try {
-				HinemosEntityManager em = jtm.getEntityManager();
-				em.persist(new CollectKeyInfo(itemName, displayName, monitorId, facilityId, collectorId));
-				em.flush();
-				collectKeyInfoMap.put(collectKeyInfoPK, collectorId);
-				return collectorId;
+				Future<Boolean> future = service.submit(task);
+				// 別スレッドによる収集キーの登録を待つ
+				Boolean result = future.get();
+				if (result) {
+					collectKeyInfoMap.put(collectKeyInfoPK, collectorId);
+					// 正常に登録が完了した後にmaxIdをインクリメントする
+					maxId++;
+					return collectorId;
+				}
 			} catch (Exception e1) {
 				m_log.warn("put() : " + e1.getClass().getSimpleName() + ", " + e1.getMessage(), e1);
-				if (jtm != null) {
-					jtm.rollback();
-				}
 			}
 		}
 		m_log.warn("getId : error");
@@ -329,7 +374,11 @@ public class CollectDataUtil {
 					SummaryInfo summaryDay_c = null;
 					SummaryInfo summaryMonth_c = null;
 
-					Integer collectorid = getId(itemName, displayName, monitorId, facilityId, jtm);
+					Integer collectorid = getId(itemName, displayName, monitorId, facilityId);
+					if (collectorid == null) {
+						m_log.debug("put() : collectorid is null.");
+						continue;
+					}
 					CollectDataPK pk = new CollectDataPK(collectorid, time);
 					Float value = null;
 					if(data.getValue() != null){
@@ -506,7 +555,11 @@ public class CollectDataUtil {
 				String itemName = entry.getKey().getItemName();
 				String facilityId = entry.getKey().getFacilityid();
 				String displayName = entry.getKey().getDisplayName();
-				Integer collectorid = getId(itemName, displayName, monitorId, facilityId, jtm);
+				Integer collectorid = getId(itemName, displayName, monitorId, facilityId);
+				if (collectorid == null) {
+					m_log.debug("replace() : collectorid is null.");
+					continue;
+				}
 
 				// 日時の昇順にソートする
 				Comparator<LogcountCollectData> comparator = new Comparator<LogcountCollectData>() {

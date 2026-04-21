@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2020 NTT DATA Corporation
+Copyright (C) 2020 NTT DATA INTELLILINK Corporation. All rights reserved.
 
 This program is free software; you can redistribute it and/or
 Modify it under the terms of the GNU General Public License

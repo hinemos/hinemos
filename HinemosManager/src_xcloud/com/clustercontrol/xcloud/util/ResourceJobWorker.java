@@ -34,6 +34,7 @@ import com.clustercontrol.commons.util.MonitoredThreadPoolExecutor;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.jobmanagement.bean.CommandConstant;
@@ -48,6 +49,7 @@ import com.clustercontrol.jobmanagement.model.JobInfoEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionJobEntity;
 import com.clustercontrol.jobmanagement.model.JobSessionNodeEntity;
 import com.clustercontrol.jobmanagement.session.JobRunManagementBean;
+import com.clustercontrol.jobmanagement.util.ParameterUtil;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.rest.endpoint.cloud.RestSessionScope;
@@ -565,7 +567,7 @@ public class ResourceJobWorker {
 	/**
 	 * クラウドリソース制御API実行
 	 */
-	private static ResourceResult executeCloudAPI(JobInfoEntity jobInfo) throws FacilityNotFound, CloudManagerException, HinemosUnknown, InvalidUserPass, InvalidRole {
+	private static ResourceResult executeCloudAPI(JobInfoEntity jobInfo) throws FacilityNotFound, CloudManagerException, HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting {
 
 		ResourceResult result = null;
 		try(RestSessionScope sessionScope = RestSessionScope.open()) {
@@ -602,7 +604,7 @@ public class ResourceJobWorker {
 	 * コンピュートノードの起動、停止、再起動、サスペンドのみ確認可能<BR>
 	 */
 	private static ResourceResult checkCloudAPISuccess(JobInfoEntity jobInfo, ResourceResult result)
-			throws CloudManagerException {
+			throws CloudManagerException, InvalidSetting {
 
 		try(RestSessionScope sessionScope = RestSessionScope.open()) {
 
@@ -790,19 +792,19 @@ public class ResourceJobWorker {
 	 * コンピュートノード：起動
 	 */
 	private static ResourceResult powerOnCompute(JobInfoEntity jobInfo)
-			throws CloudManagerException {
+			throws CloudManagerException, InvalidSetting {
 
 		ResourceResult result = new ResourceResult();
 		if (jobInfo.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode())) {
 			//インスタンスＩＤを指定
-			List<String> targetInstanceIds = Arrays.asList(jobInfo.getResourceTargetId());
+			String instanceIds = replaceJobParametersIfCondition(jobInfo, jobInfo.getResourceTargetId());
 			CloudLoginUserEntity user = getCloudLoginUser(jobInfo.getResourceCloudScopeId(), jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 			IInstances instances = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(jobInfo.getResourceLocationId()));
 			// コンピュートノードの存在チェック
-			instances.getInstance(jobInfo.getResourceTargetId());
+			instances.getInstance(instanceIds);
 
-			instances.powerOnInstances(targetInstanceIds);
-			result.checkIdList.add(jobInfo.getResourceTargetId());
+			instances.powerOnInstances(Arrays.asList(instanceIds));
+			result.checkIdList.add(instanceIds);
 		} else {
 			//スコープ、ノードのファシリティＩＤを指定
 			InstancesExecutor powerOnExcecutor = new InstancesExecutor() {
@@ -828,19 +830,19 @@ public class ResourceJobWorker {
 	 * コンピュートノード：停止
 	 */
 	private static ResourceResult powerOffCompute(JobInfoEntity jobInfo)
-			throws CloudManagerException {
+			throws CloudManagerException, InvalidSetting {
 
 		ResourceResult result = new ResourceResult();
 		if (jobInfo.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode())) {
 			//インスタンスＩＤを指定
-			List<String> targetInstanceIds = Arrays.asList(jobInfo.getResourceTargetId());
+			String instanceIds = replaceJobParametersIfCondition(jobInfo, jobInfo.getResourceTargetId());
 			CloudLoginUserEntity user = getCloudLoginUser(jobInfo.getResourceCloudScopeId(), jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 			IInstances instances = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(jobInfo.getResourceLocationId()));
 			// コンピュートノードの存在チェック
-			instances.getInstance(jobInfo.getResourceTargetId());
+			instances.getInstance(instanceIds);
 
-			instances.powerOffInstances(targetInstanceIds);
-			result.checkIdList.add(jobInfo.getResourceTargetId());
+			instances.powerOffInstances(Arrays.asList(instanceIds));
+			result.checkIdList.add(instanceIds);
 		} else {
 			//スコープ、ノードのファシリティＩＤを指定
 			InstancesExecutor powerOffExcecutor = new InstancesExecutor() {
@@ -867,19 +869,19 @@ public class ResourceJobWorker {
 	 * コンピュートノード：一時停止
 	 */
 	private static ResourceResult suspendCompute(JobInfoEntity jobInfo)
-			throws CloudManagerException {
+			throws CloudManagerException, InvalidSetting {
 
 		ResourceResult result = new ResourceResult();
 		if (jobInfo.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode())) {
 			//インスタンスＩＤを指定
-			List<String> targetInstanceIds = Arrays.asList(jobInfo.getResourceTargetId());
+			String instanceIds = replaceJobParametersIfCondition(jobInfo, jobInfo.getResourceTargetId());
 			CloudLoginUserEntity user = getCloudLoginUser(jobInfo.getResourceCloudScopeId(), jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 			IInstances instances = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(jobInfo.getResourceLocationId()));
 			// コンピュートノードの存在チェック
-			instances.getInstance(jobInfo.getResourceTargetId());
+			instances.getInstance(instanceIds);
 			
-			instances.suspendInstances(targetInstanceIds);
-			result.checkIdList.add(jobInfo.getResourceTargetId());
+			instances.suspendInstances(Arrays.asList(instanceIds));
+			result.checkIdList.add(instanceIds);
 		} else {
 			//スコープ、ノードのファシリティＩＤを指定
 			InstancesExecutor suspendExcecutor = new InstancesExecutor() {
@@ -905,19 +907,19 @@ public class ResourceJobWorker {
 	 * コンピュートノード：再起動
 	 */
 	private static ResourceResult rebootCompute(JobInfoEntity jobInfo)
-			throws CloudManagerException {
+			throws CloudManagerException, InvalidSetting {
 
 		ResourceResult result = new ResourceResult();
 		if (jobInfo.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode())) {
 			//インスタンスＩＤを指定
-			List<String> targetInstanceIds = Arrays.asList(jobInfo.getResourceTargetId());
+			String instanceIds = replaceJobParametersIfCondition(jobInfo, jobInfo.getResourceTargetId());
 			CloudLoginUserEntity user = getCloudLoginUser(jobInfo.getResourceCloudScopeId(), jobInfo.getJobSessionJobEntity().getOwnerRoleId());
 			IInstances instances = CloudManager.singleton().getInstances(user, user.getCloudScope().getLocation(jobInfo.getResourceLocationId()));
 			// コンピュートノードの存在チェック
-			instances.getInstance(jobInfo.getResourceTargetId());
+			instances.getInstance(instanceIds);
 
-			instances.rebootInstances(targetInstanceIds);
-			result.checkIdList.add(jobInfo.getResourceTargetId());
+			instances.rebootInstances(Arrays.asList(instanceIds));
+			result.checkIdList.add(instanceIds);
 		} else {
 			//スコープ、ノードのファシリティＩＤを指定
 			InstancesExecutor rebootExcecutor = new InstancesExecutor() {
@@ -944,12 +946,12 @@ public class ResourceJobWorker {
 	 * スナップショット作成後、状態チェックしないため、スナップショット作成APIが実施できた時点で成功対象とみなす
 	 */
 	private static ResourceResult snapshotCompute(JobInfoEntity jobInfo)
-			throws CloudManagerException {
+			throws CloudManagerException, InvalidSetting {
 
 		ResourceResult result = new ResourceResult();
 		String cloudScopeId = jobInfo.getResourceCloudScopeId();
 		String locationId = jobInfo.getResourceLocationId();
-		String instanceId = jobInfo.getResourceTargetId();
+		String instanceId = replaceJobParametersIfCondition(jobInfo, jobInfo.getResourceTargetId());
 
 		Date now = HinemosTime.getDateInstance();
 		String snapshotName = instanceId + "-" + new SimpleDateFormat("yyyyMMddHHmmss").format(now);
@@ -963,7 +965,7 @@ public class ResourceJobWorker {
 			instances.getInstance(instanceId);
 
 			instances.takeInstanceSnapshot(instanceId, snapshotName, snapshotDescription, null);
-			result.successIdList.add(jobInfo.getResourceTargetId());
+			result.successIdList.add(instanceId);
 		} else {
 			//ノードのファシリティＩＤを指定
 			InstancesExecutor snapshotExcecutor = new InstancesExecutor() {
@@ -1055,10 +1057,10 @@ public class ResourceJobWorker {
 	 * クラウドリソース制御API実行後の確認に使用する
 	 */
 	private static ResourceResult isSpecifiedStatus(JobInfoEntity jobInfo, InstanceStatus status, ResourceResult result)
-			throws CloudManagerException {
+			throws CloudManagerException, InvalidSetting {
 
 		String cloudScopeId = jobInfo.getResourceCloudScopeId();
-		String targetId = jobInfo.getResourceTargetId();
+		String targetId = replaceJobParametersIfCondition(jobInfo, jobInfo.getResourceTargetId());
 
 		if (jobInfo.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode())) {
 			// インスタンス単体の場合
@@ -1182,5 +1184,22 @@ public class ResourceJobWorker {
 		}
 		
 		return ret;
+	}
+
+	/**
+	 * コンピュートID指定時、該当のHinemosプロパティがtrueの場合はジョブ変数を置換する
+	 * @throws InvalidSetting 
+	 */
+	private static String replaceJobParametersIfCondition(JobInfoEntity jobInfo, String instanceIds)
+			throws InvalidSetting {
+		if (HinemosPropertyCommon.xcloud_resourcecontroljob_jobvariable.getBooleanValue()) {
+			try {
+				instanceIds = ParameterUtil.replaceAllSessionParameterValue(
+						jobInfo, null, instanceIds);
+			} catch (JobInfoNotFound | FacilityNotFound | InvalidRole | HinemosUnknown e) {
+				throw new InvalidSetting(e);
+			}
+		}
+		return instanceIds;
 	}
 }

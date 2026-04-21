@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +35,7 @@ import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.ILock;
 import com.clustercontrol.commons.util.ILockManager;
 import com.clustercontrol.commons.util.InternalIdCommon;
+import com.clustercontrol.commons.util.JpaTransactionCallback;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LocalInfoUtil;
 import com.clustercontrol.commons.util.LockManagerFactory;
@@ -902,7 +904,7 @@ public class JobRunManagementBean {
 
 			//ジョブタイプとジョブの実行状態から操作可能かチェック
 			if(!JobOperationJudgment.judgment(control, jobType, status)){
-				IllegalStateException e = new IllegalStateException("illegal status " + status);
+				IllegalStateException e = new IllegalStateException(MessageConstant.MESSAGE_JOB_OPERATION_FAILED_TO_CHANGE_STATUS.getMessage());
 				m_log.info("operationJob() : "
 						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 				throw e;
@@ -1069,7 +1071,7 @@ public class JobRunManagementBean {
 	 * @see com.clustercontrol.jobmanagement.factory.OperationJob#endNode(RunResultInfo)
 	 */
 	public boolean endNode(RunResultInfo info) throws HinemosUnknown, JobInfoNotFound, InvalidRole {
-		return endNode(info, null);
+		return endNode(info, null, Optional.empty());
 	}
 
 	/**
@@ -1083,7 +1085,7 @@ public class JobRunManagementBean {
 	 * 
 	 * @see com.clustercontrol.jobmanagement.factory.OperationJob#endNode(RunResultInfo)
 	 */
-	public boolean endNode(RunResultInfo info, RunOutputResultInfo outputInfo) throws HinemosUnknown, JobInfoNotFound, InvalidRole {
+	public boolean endNode(RunResultInfo info, RunOutputResultInfo outputInfo, Optional<JpaTransactionCallback> callback) throws HinemosUnknown, JobInfoNotFound, InvalidRole {
 		m_log.trace("endNode() : sessionId=" + info.getSessionId() + ", jobId=" + info.getJobId() + ", facilityId=" + info.getFacilityId());
 		JpaTransactionManager jtm = null;
 
@@ -1135,6 +1137,9 @@ public class JobRunManagementBean {
 				}
 
 				result = nodeImpl.endNode(info, outputInfo);
+				if (callback.isPresent()) {
+					jtm.addCallback(callback.get());
+				}
 				jtm.commit();
 			} catch (JobInfoNotFound | HinemosUnknown | InvalidRole e) {
 				if (jtm != null){
@@ -1163,8 +1168,7 @@ public class JobRunManagementBean {
 		}
 		return result;
 	}
-
-
+	
 	/**
 	 * ジョブ監視より実行する監視
 	 * 
@@ -1463,8 +1467,7 @@ public class JobRunManagementBean {
 					expInfo.setKey(expEntity.getId().getKey());
 					expInfo.setValue(
 						ParameterUtil.replaceAllSessionParameterValue(
-							runInstructionInfo.getSessionId(),
-							runInstructionInfo.getJobunitId(),
+							jobInfoEntity,
 							runInstructionInfo.getFacilityId(),
 							expEntity.getValue()));
 					expList.add(expInfo);
@@ -1490,8 +1493,7 @@ public class JobRunManagementBean {
 			request.setMessage(JobLinkUtil.getMessageMaxString(
 					HinemosMessage.replace(
 					ParameterUtil.replaceAllSessionParameterValue(
-						runInstructionInfo.getSessionId(),
-						runInstructionInfo.getJobunitId(),
+						jobInfoEntity,
 						runInstructionInfo.getFacilityId(),
 						jobInfoEntity.getMessage())
 					, Locale.getDefault())));
@@ -1728,6 +1730,33 @@ public class JobRunManagementBean {
 		}
 
 		RunInstructionInfo runInstructionInfo = JobLinkRcvJobWorker.getRunInstructionInfo(key);
+		try {
+			// ジョブセッションが存在するかをチェック
+			QueryUtil.getJobSessionPK(runInstructionInfo.getSessionId());
+		} catch (JobInfoNotFound jobNotFoundEx) {
+			// ジョブセッションが存在しない場合、残留したDBMSスケジューラによるジョブとみなしDBMSスケジューラと実行履歴を削除する
+			ILock scheduleLock = JobLinkRcvJobWorker.getSchedulerLock(key);
+			if (scheduleLock == null) {
+				return;
+			}
+			try {
+				scheduleLock.writeLock();
+				// 実行履歴削除
+				RunHistoryUtil.delRunHistory(runInstructionInfo);
+				// DBMSスケジューラ削除
+				JobLinkRcvJobWorker.deleteScheduleByScheduler(runInstructionInfo);
+				// スケジューラ制御用ロック削除
+				JobLinkRcvJobWorker.deleteSchedulerLock(key);
+			} catch (HinemosUnknown unknownEx) {
+				// エラーとしない
+				if (m_log.isDebugEnabled()) {
+					m_log.debug("schedule is not found. key=" + key);
+				}
+			} finally {
+				scheduleLock.writeUnlock();
+			}
+			return;
+		}
 		ILock sessionLock = getLock(runInstructionInfo.getSessionId());
 		ILock scheduleLock = JobLinkRcvJobWorker.getSchedulerLock(key);
 		if (scheduleLock == null) {

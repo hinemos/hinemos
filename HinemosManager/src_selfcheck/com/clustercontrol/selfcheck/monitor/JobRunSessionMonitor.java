@@ -22,6 +22,7 @@ import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.QueryDivergence;
 import com.clustercontrol.jobmanagement.factory.CreateJobSession;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -45,7 +46,7 @@ public class JobRunSessionMonitor extends SelfCheckMonitorBase {
 	 */
 	@Override
 	public String toString() {
-		return "monitoring running job session (thresdhold = " + threshold + ")";
+		return MessageConstant.SELFCHECK_TYPE_RUNNING_JOB_SESSION.getMessage();
 	}
 
 	/**
@@ -85,15 +86,13 @@ public class JobRunSessionMonitor extends SelfCheckMonitorBase {
 			// 判定対象値を取得する
 			count = getJobRunSessionCount();
 
-			if (count == -1) {
-				m_log.info("skipped monitoring job session running. (threshold=" + threshold);
-				return;
-			} else if (count <= threshold) {
+			if (count <= threshold) {
 				m_log.debug("job session running size is low. (count = " + count + ", threshold = " + threshold + ")");
 				warn = false;
 			}
 		} catch (Exception e) {
 			m_log.warn("monitoring job run session failure. (threshold=" + threshold, e);
+			throw e;
 		} finally {
 			if (tm != null) {
 				tm.close();
@@ -141,29 +140,24 @@ public class JobRunSessionMonitor extends SelfCheckMonitorBase {
 						+ "(" + String.join(",", Collections.nCopies(unendStatusList.size(), "%d")) + ")",
 				queryParams.toArray());
 
-		long count = -1;
-
 		// メイン処理
 		try {
 			tm = new JpaTransactionManager();
 			tm.begin();
 			em = tm.getEntityManager();
 
-			Long row = QueryDivergence.countResult(em.createNativeQuery(query).getSingleResult());
-			if (row != null) {
-				count = row;
-			}
+			long count = QueryDivergence.countResult(em.createNativeQuery(query).getSingleResult());
 
 			tm.commit();
+			return count;
 		} catch (Exception e) {
 			m_log.warn("database query execution failure. (" + query + ")", e);
+			throw e;
 		} finally {
 			if ( tm != null) {
 				tm.close();
 			}
 		}
-
-		return count;
 	}
 
 }

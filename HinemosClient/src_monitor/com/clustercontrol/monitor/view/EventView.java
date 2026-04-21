@@ -144,6 +144,9 @@ public class EventView extends ScopeListBaseView {
 			this.stopAutoReload();
 		}
 
+		// 選択項目の汎用的な共有機構にビューアを登録
+		getSite().setSelectionProvider(tableComposite.getTableViewer());
+
 		// ボタン（アクション）を制御するリスナーを登録
 		this.tableComposite.getTableViewer().addSelectionChangedListener(
 				new EventListSelectionChangedListener());

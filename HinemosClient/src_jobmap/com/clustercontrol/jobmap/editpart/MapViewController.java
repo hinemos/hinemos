@@ -58,8 +58,10 @@ import com.clustercontrol.jobmap.composite.JobMapComposite;
 import com.clustercontrol.jobmap.figure.JobFigure;
 import com.clustercontrol.jobmap.figure.JobMapColor;
 import com.clustercontrol.jobmap.preference.JobMapPreferencePage;
+import com.clustercontrol.jobmap.util.JobMapActionUtil;
 import com.clustercontrol.jobmap.util.JobMapRestClientWrapper;
 import com.clustercontrol.jobmap.util.JobmapImageCacheUtil;
+import com.clustercontrol.jobmap.view.JobTreeView;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 
@@ -302,6 +304,12 @@ public class MapViewController {
 			String errMsg = com.clustercontrol.jobmap.messages.Messages.getString("message.jobmapkeyfile.notfound.error");
 			m_composite.clearCanvas();
 			m_composite.setErrorMessage(errMsg);
+			//ボタン有効無効設定の初期化（ツリー側で保持してる直前の選択結果をリセットしてから再設定）
+			JobTreeView view = JobMapActionUtil.getJobTreeView();
+			if( view != null) {
+				view.setEnabledAction(null,null,null);
+			}
+			m_composite.setEnabledActionIfEditer();
 			return;
 		}
 		// マネージャからジョブのセッション情報を取得

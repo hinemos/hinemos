@@ -56,7 +56,6 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
-import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InfraFileBeingUsed;
@@ -385,9 +384,6 @@ public class InfraRestEndpoints {
 			@Context Request request, @Context UriInfo uriInfo)
 			throws NotifyNotFound, HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting {
 		m_log.info("call getInfraManagementList()");
-
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		List<InfraManagementInfo> infoResList = null;
 		if (ownerRoleId != null) {
@@ -439,9 +435,6 @@ public class InfraRestEndpoints {
 			@Context Request request, @Context UriInfo uriInfo)
 			throws HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting {
 		m_log.info("call getReferManagementIdList()");
-
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		List<InfraManagementInfo> infoResList = new InfraControllerBean().getReferManagementList(ownerRoleId);
 		List<InfraManagementInfoResponseP1> dtoResList = new ArrayList<>();
@@ -1052,9 +1045,6 @@ public class InfraRestEndpoints {
 	public Response getInfraFileList(@QueryParam(value = "ownerRoleId") String ownerRoleId, @Context Request request,
 			@Context UriInfo uriInfo) throws InvalidUserPass, InvalidRole, HinemosUnknown, InvalidSetting {
 		m_log.info("call getInfraFileList()");
-
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		List<InfraFileInfo> infoResList = null;
 		if (ownerRoleId != null) {

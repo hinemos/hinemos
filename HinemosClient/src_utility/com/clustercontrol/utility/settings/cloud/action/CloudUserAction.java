@@ -103,9 +103,16 @@ public class CloudUserAction {
 	public int clearUser(){
 		
 		log.debug("Start Clear Cloud.user ");
+		
+		//クラウド・ＶＭ機能の有効を確認する。
+		int retCheck = CloudTools.checkCurrentManagerCloudPublish(log);
+		if (retCheck != SettingConstants.SUCCESS) {
+			return retCheck;
+		}
+		
 		int ret = 0;
 		
-		List<com.clustercontrol.xcloud.model.cloud.ICloudScope> roots = CloudTools.getCloudScopeList();
+		List<com.clustercontrol.xcloud.model.cloud.ICloudScope> roots = CloudTools.getCurrentManagerCloudScopeList();
 		
 		CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(UtilityManagerUtil.getCurrentManagerName());
 		for (com.clustercontrol.xcloud.model.cloud.ICloudScope cloudScope:roots){
@@ -143,9 +150,15 @@ public class CloudUserAction {
 
 		log.debug("Start Export Cloud.user ");
 
+		//クラウド・ＶＭ機能の有効を確認する。
+		int retCheck = CloudTools.checkCurrentManagerCloudPublish(log);
+		if (retCheck != SettingConstants.SUCCESS) {
+			return retCheck;
+		}
+		
 		int ret = 0;
 		List<String> platformIdList = CloudTools.getValidPlatfomIdList();
-		List<com.clustercontrol.xcloud.model.cloud.ICloudScope> roots = CloudTools.getCloudScopeList();
+		List<com.clustercontrol.xcloud.model.cloud.ICloudScope> roots = CloudTools.getCurrentManagerCloudScopeList();
 		
 		
 		CloudScope cloudScope = new CloudScope();
@@ -209,6 +222,12 @@ public class CloudUserAction {
 			return SettingConstants.ERROR_INPROCESS;
 		}
 		
+		//クラウド・ＶＭ機能の有効を確認する。
+		int retCheck = CloudTools.checkCurrentManagerCloudPublish(log);
+		if (retCheck != SettingConstants.SUCCESS) {
+			return retCheck;
+		}
+		
 		int ret = 0;
 		
 		// XMLファイルからの読み込み
@@ -262,6 +281,8 @@ public class CloudUserAction {
 					requestData = CloudUserConv.getGCPCloudScopeRequestDto(xmlDto, xmlFile);
 				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_OCI)) {
 					requestData = CloudUserConv.getOCICloudScopeRequestDto(xmlDto, xmlFile);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_KVM)) {
+					requestData = CloudUserConv.getKVMCloudScopeRequestDto(xmlDto, xmlFile);
 				} else {
 					log.warn(Messages.getString("SettingTools.InvalidSetting") +
 							" : " + xmlDto.getCloudScopeId() + " ( " +xmlDto.getCloudPlatformId() + " )");
@@ -288,6 +309,8 @@ public class CloudUserAction {
 					CloudUserConv.convertGCPCloudUserRequestDto(xmlDto, requestData, addRequestList, idList, xmlFile);
 				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_OCI)) {
 					CloudUserConv.convertOCICloudUserRequestDto(xmlDto, requestData, addRequestList, idList, xmlFile);
+				} else if (xmlDto.getCloudPlatformId().equals(CloudConstant.platform_KVM)) {
+					CloudUserConv.convertKVMCloudUserRequestDto(xmlDto, requestData, addRequestList, idList, xmlFile);
 				}
 		
 				dtoRec.setSubUserList(addRequestList);
@@ -302,7 +325,7 @@ public class CloudUserAction {
 			@Override
 			protected Set<String> getExistIdSet() throws Exception {
 				Set<String> retSet = new HashSet<String>();
-				for (com.clustercontrol.xcloud.model.cloud.ICloudScope root : CloudTools.getCloudScopeList()) {
+				for (com.clustercontrol.xcloud.model.cloud.ICloudScope root : CloudTools.getCurrentManagerCloudScopeList() ) {
 					retSet.add(root.getId());
 				}
 				return retSet;
@@ -404,7 +427,7 @@ public class CloudUserAction {
 	}
 	
 	protected void checkDelete(CloudScopeType xmlElements){
-		List<com.clustercontrol.xcloud.model.cloud.ICloudScope> subList = CloudTools.getCloudScopeList();
+		List<com.clustercontrol.xcloud.model.cloud.ICloudScope> subList = CloudTools.getCurrentManagerCloudScopeList() ;
 		List<ICloudScope> xmlElementList = new ArrayList<>(Arrays.asList(xmlElements.getICloudScope()));
 		
 		for(com.clustercontrol.xcloud.model.cloud.ICloudScope mgrInfo: new ArrayList<>(subList)){

@@ -966,7 +966,8 @@ public class SchedulerPlugin implements HinemosPlugin {
 			return SchedulerPlugin.SchedulerType.DBMS;
 		}
 		//グループ：ジョブなら専用タイプあり
-		if( com.clustercontrol.jobmanagement.bean.QuartzConstant.GROUP_NAME.equals(group)){
+		if (com.clustercontrol.jobmanagement.bean.QuartzConstant.GROUP_NAME.equals(group)
+				|| com.clustercontrol.jobmanagement.bean.QuartzConstant.GROUP_NAME_FOR_JOBLINKRCVJOB.equals(group)) {
 			return SchedulerPlugin.SchedulerType.DBMS_JOB;
 		}
 		//グループ：メンテナンスなら専用タイプあり

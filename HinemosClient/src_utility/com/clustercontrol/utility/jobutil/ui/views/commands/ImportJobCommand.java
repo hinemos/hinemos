@@ -220,7 +220,9 @@ public class ImportJobCommand extends AbstractHandler implements IElementUpdater
 				jobunitId = importTopJob.getData().getId();
 			} else if (importTopJob.getData().getType().equals(JobInfoWrapper.TypeEnum.JOBNET)) {
 				jobunitId = selection.getData().getJobunitId();
-				editMode(managerName, JobConvert.getJobUnit(selection), true, JobInfoWrapper.TypeEnum.JOBNET);
+				//編集ロック取得済みなら、ジョブユニットバックアップなしで実施（必要なら取得済みのため）
+				boolean backupTree =!editState.isLockedJobunitId(jobunitId);
+				editMode(managerName, JobConvert.getJobUnit(selection), backupTree, JobInfoWrapper.TypeEnum.JOBNET);
 			}
 			
 			// edit mode に変わっていなければとりやめる

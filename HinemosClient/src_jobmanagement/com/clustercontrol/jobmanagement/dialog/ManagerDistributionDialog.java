@@ -303,4 +303,10 @@ public class ManagerDistributionDialog extends CommonDialog {
 		}
 		return maxsize;
 	}
+
+	@Override
+	public boolean close() {
+		m_component.close();
+		return super.close();
+	}
 }

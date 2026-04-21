@@ -127,9 +127,6 @@ public class CalendarRestEndpoints {
 			@Context UriInfo uriInfo) throws HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting {
 		m_log.info("call getCalendarList()");
 
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		List<CalendarInfo> infoResList = new CalendarControllerBean().getCalendarList(ownerRoleId);
 		m_log.debug("get infoResList finished.");
 
@@ -510,9 +507,6 @@ public class CalendarRestEndpoints {
 			throws HinemosUnknown, InvalidUserPass, InvalidRole, CalendarNotFound, InvalidSetting {
 		m_log.info("call getCalendarPatternList()");
 
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		List<CalendarPatternInfo> infoResList = new CalendarControllerBean().getCalendarPatternList(ownerRoleId);
 		List<CalendarPatternInfoResponse> dtoResList = new ArrayList<>();
 

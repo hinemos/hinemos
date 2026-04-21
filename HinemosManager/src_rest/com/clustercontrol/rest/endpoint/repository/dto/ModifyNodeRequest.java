@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.clustercontrol.fault.InvalidSetting;
+import com.clustercontrol.repository.util.RepositoryValidator;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
 import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.rest.endpoint.repository.dto.enumtype.IpaddressVersionEnum;
@@ -21,6 +22,7 @@ import com.clustercontrol.rest.endpoint.repository.dto.enumtype.SnmpSecurityLeve
 import com.clustercontrol.rest.endpoint.repository.dto.enumtype.SnmpVersionEnum;
 import com.clustercontrol.rest.endpoint.repository.dto.enumtype.WbemProtocolEnum;
 import com.clustercontrol.rest.endpoint.repository.dto.enumtype.WinrmProtocolEnum;
+import com.clustercontrol.util.MessageConstant;
 
 public class ModifyNodeRequest implements RequestDto {
 
@@ -784,5 +786,19 @@ public class ModifyNodeRequest implements RequestDto {
 
 	@Override
 	public void correlationCheck() throws InvalidSetting {
+		// Hinemosが自動で登録する箇所を除いてユーザが手入力可能な箇所のチェックを行うため、
+		// こちらでチェックの実装を行う
+		List<NodeNetworkInterfaceInfoRequest> chkNodeNetworkList = getNodeNetworkInterfaceInfo();
+		for(NodeNetworkInterfaceInfoRequest nodeNetworkInterfaceInfoRequest : chkNodeNetworkList) {
+			// NIC情報のMACアドレスの入力チェックを行う
+			RepositoryValidator.validateNicMacAddress(nodeNetworkInterfaceInfoRequest.getNicMacAddress());
+		}
+		// ipAddressV6 の主な形式チェックは com.clustercontrol.repository.util.RepositoryValidator.validateNodeInfo(NodeInfo, boolean)で実施しているが
+		// 該当の処理はエージェントやマネージャによる自動登録でも利用されている。
+		// IPv6アドレスに"%"を用いたスコープID(ゾーンID)指定を書式エラーとするバリデーションは、ユーザ入力時のみとしたいので
+		// 本メソッドにてバリテーションとする。（自動登録の場合、途中処理でスコープIDがあっても除外される）
+		if (this.ipAddressV6 != null && this.ipAddressV6.contains("%")) {
+			throw new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_IPV6_CORRECT_FORMAT.getMessage() + "(" + ipAddressV6 + ")");
+		}
 	}
 }

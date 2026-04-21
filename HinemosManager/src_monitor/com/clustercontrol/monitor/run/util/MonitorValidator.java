@@ -1411,10 +1411,14 @@ public class MonitorValidator {
 		}
 		MonitorInfo targetMonitorInfo = null;
 		try {
+			//存在チェック
+			com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK(targetMonitorId);
+			//オーナーロールチェック
 			targetMonitorInfo = com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK_OR(
 					targetMonitorId, monitorInfo.getOwnerRoleId());
 		} catch (InvalidRole e) {
-			throw e;
+			throw new InvalidRole(MessageConstant.MESSAGE_MONITOR_ID_CANT_BE_REFERENCED_BY_OWNER_ROLE
+					.getMessage(new String[] { targetMonitorId, monitorInfo.getOwnerRoleId() }));
 		} catch (Exception e) {
 			InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_TARGET_MONITOR_NOT_FOUND.getMessage(new String[]{targetMonitorId}));
 			m_log.info("validateLogcount() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -2506,10 +2510,14 @@ public class MonitorValidator {
 		MonitorInfo targetMonitorInfo = null;
 		// 監視設定IDのみ存在チェックを行う
 		try {
+			//存在チェック
+			com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK(targetMonitorId);
+			//オーナーロールチェック
 			targetMonitorInfo = com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK_OR(
 					targetMonitorId, monitorInfo.getOwnerRoleId());
 		} catch (InvalidRole e) {
-			throw e;
+			throw new InvalidRole(MessageConstant.MESSAGE_MONITOR_ID_CANT_BE_REFERENCED_BY_OWNER_ROLE
+					.getMessage(new String[] { targetMonitorId, monitorInfo.getOwnerRoleId() }));
 		} catch (Exception e) {
 			InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_TARGET_MONITOR_NOT_FOUND.getMessage(new String[]{targetMonitorId}));
 			m_log.info("validateCorrelation() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -2555,10 +2563,14 @@ public class MonitorValidator {
 		MonitorInfo referMonitorInfo = null;
 		// 監視設定IDのみ存在チェックを行う
 		try {
+			//存在チェック
+			com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK(referMonitorId);
+			//オーナーロールチェック
 			referMonitorInfo = com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK_OR(
 					referMonitorId, monitorInfo.getOwnerRoleId());
 		} catch (InvalidRole e) {
-			throw e;
+			throw new InvalidRole(MessageConstant.MESSAGE_MONITOR_ID_CANT_BE_REFERENCED_BY_OWNER_ROLE
+					.getMessage(new String[] { referMonitorId, monitorInfo.getOwnerRoleId() }));
 		} catch (Exception e) {
 			InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_TARGET_MONITOR_NOT_FOUND.getMessage(new String[]{referMonitorId}));
 			m_log.info("validateCorrelation() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -2689,10 +2701,14 @@ public class MonitorValidator {
 			MonitorInfo targetMonitorInfo = null;
 			// 監視設定IDのみ存在チェックを行う
 			try {
+				//存在チェック
+				com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK(targetMonitorId);
+				//オーナーロールチェック
 				targetMonitorInfo = com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK_OR(
 						targetMonitorId, monitorInfo.getOwnerRoleId());
 			} catch (InvalidRole e) {
-				throw e;
+				throw new InvalidRole(MessageConstant.MESSAGE_MONITOR_ID_CANT_BE_REFERENCED_BY_OWNER_ROLE
+						.getMessage(new String[] { targetMonitorId, monitorInfo.getOwnerRoleId() }));
 			} catch (Exception e) {
 				InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_TARGET_MONITOR_NOT_FOUND.getMessage(new String[]{targetMonitorId}));
 				m_log.info("validateIntegration() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
@@ -2929,9 +2945,17 @@ public class MonitorValidator {
 			targetVal = getPluginInfoValue(CloudConstant.cloudLog_ResourceGroup, monitorInfo);
 			CommonValidator.validateString(targetName, targetVal, true, 1, Integer.MAX_VALUE);
 		}
-		
+
+		// 改行コード
+		String returnCode = getPluginInfoValue(CloudConstant.cloudLog_ReturnCode, monitorInfo);
+		if (returnCode == null || !LogfileLineSeparatorConstant.LIST.contains(returnCode)) {
+			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_FILE_RETURNCODE.getMessage());
+			m_log.info("validateCloudLogMonitor() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+
 		//区切り条件
-		CommonValidator.validateString(MessageConstant.FILE_RETURNCODE.getMessage(), getPluginInfoValue(CloudConstant.cloudLog_ReturnCode, monitorInfo), true, 1, 16);
+		CommonValidator.validateString(MessageConstant.FILE_RETURNCODE.getMessage(), returnCode, true, 1, 16);
 		if (!getPluginInfoValue(CloudConstant.cloudLog_patternHead, monitorInfo).isEmpty()
 				&& !getPluginInfoValue(CloudConstant.cloudLog_patternTail, monitorInfo).isEmpty()) {
 			InvalidSetting e = new InvalidSetting(MessageConstant.MESSAGE_PLEASE_SET_FILE_PATTERN_HEAD_OR_TAIL.getMessage());

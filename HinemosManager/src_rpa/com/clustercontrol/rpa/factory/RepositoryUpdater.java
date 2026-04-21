@@ -112,7 +112,7 @@ public class RepositoryUpdater {
 			
 			// RPA管理ツールアカウントスコープを削除
 			m_log.trace(String.format("remove() remove Scope. facilityId=%s", parentFacilityId));
-			bean.deleteScope(new String[]{parentFacilityId});
+			bean.deleteScope(new String[]{parentFacilityId}, false);
 			
 			jtm.commit();
 		} catch (RpaManagementToolMasterNotFound | FacilityNotFound e) {
@@ -188,7 +188,7 @@ public class RepositoryUpdater {
 			default:
 				// スコープの場合は削除する。
 				try {
-					bean.deleteScope(new String[] {facility.getFacilityId()});
+					bean.deleteScope(new String[] {facility.getFacilityId()}, false);
 				} catch (UsedFacility | InvalidRole | FacilityNotFound e) {
 					m_log.warn("update(): failed to delete scope, facilityId = " + facility.getFacilityId() + ", " + e.getMessage(), e);
 				}

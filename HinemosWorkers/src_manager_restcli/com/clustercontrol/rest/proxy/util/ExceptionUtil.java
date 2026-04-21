@@ -8,6 +8,8 @@
 
 package com.clustercontrol.rest.proxy.util;
 
+import java.util.concurrent.RejectedExecutionException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openapitools.client.model.ExceptionBody;
@@ -57,8 +59,18 @@ public class ExceptionUtil {
 		try {
 			eb = mapper.readValue(apiException.getResponseBody(), ExceptionBody.class);
 			@SuppressWarnings({ "unchecked", "rawtypes" })
-			Class<? extends HinemosException> clazz = (Class) Class.forName(eb.getException());
-			throwTarget = clazz.getConstructor(String.class).newInstance(eb.getMessage());
+			Class<? extends Exception> clazz = (Class) Class.forName(eb.getException());
+			if (HinemosException.class.isAssignableFrom(clazz)) {
+				// Hinemosの例外インスタンスを作成
+				throwTarget = (HinemosException) clazz.getConstructor(String.class).newInstance(eb.getMessage());
+			} else if (RejectedExecutionException.class.isAssignableFrom(clazz)) {
+				// RejectedExecutionExceptionは予期された例外のためにインスタンスを作成して返す
+				return (RejectedExecutionException) clazz.getConstructor(String.class).newInstance(eb.getMessage());
+			} else {
+				// 上記以外は予期されていない例外が出力されている(例えばNullPointerExceptionなど)
+				m_log.warn("conversionApiException :Unknown error occurred." + eb.getMessage());
+				return new HinemosUnknown(eb.getMessage());
+			}
 		} catch (Exception e) {
 			// 想定外エラー 取得したレスポンスが不正なフォーマットなら発生する。通常はありえない。
 			m_log.warn("conversionApiException :An error occurred during data object conversion.  getResponseBody() ="

@@ -8,7 +8,9 @@
 package com.clustercontrol.rest.endpoint.jobmanagement.dto;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
@@ -16,7 +18,6 @@ import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.CommandRetryEndStatusEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ProcessingMethodEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.StopTypeEnum;
-import com.clustercontrol.rest.util.RestItemNameResolver;
 import com.clustercontrol.util.MessageConstant;
 
 /* 
@@ -310,13 +311,31 @@ public class JobCommandInfoRequest implements RequestDto {
 			errorJobOutputInfo.correlationCheck(true);
 		}
 		if (jobCommandParamList != null) {
+			Set<String> existIds = new HashSet<String>();
 			for (JobCommandParamRequest req : jobCommandParamList) {
 				req.correlationCheck();
+				//ID重複チェック
+				if (req.getParamId() != null && !req.getParamId().isEmpty()) {
+					if (existIds.contains(req.getParamId())) {
+						String[] args ={ req.getParamId(),  MessageConstant.JOB_RESULT_VAL_ID.getMessage() };
+						throw new InvalidSetting(MessageConstant.MESSAGE_DUPLICATED.getMessage(args));
+					}
+					existIds.add(req.getParamId());
+				}
 			}
 		}
 		if (envVariable != null) {
+			Set<String> existIds = new HashSet<String>();
 			for (JobEnvVariableInfoRequest req : envVariable) {
 				req.correlationCheck();
+				//ID重複チェック
+				if (req.getEnvVariableId() != null && !req.getEnvVariableId().isEmpty()) {
+					if (existIds.contains(req.getEnvVariableId())) {
+						String[] args ={ req.getEnvVariableId(),  MessageConstant.JOB_ENV_ID.getMessage() };
+						throw new InvalidSetting(MessageConstant.MESSAGE_DUPLICATED.getMessage(args));
+					}
+					existIds.add(req.getEnvVariableId());
+				}
 			}
 		}
 

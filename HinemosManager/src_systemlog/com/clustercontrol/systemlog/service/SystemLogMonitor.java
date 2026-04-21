@@ -495,7 +495,26 @@ public class SystemLogMonitor implements SyslogHandler, ResponseHandler<byte[]>{
 			
 			// マルチテナント制御 : 送信元IPアドレスがアドレスグループの範囲内であるノードに限定
 			if (facilityIdSet != null) {
-				facilityIdSet = Singletons.get(MultiTenantSupport.class).filterNodes(facilityIdSet, syslog.ipAddress);
+				//マルチテナント制御が有効なら判定処理を実施
+				if(Singletons.get(MultiTenantSupport.class).isEnabled()){
+					if( facilityIdSet.size() == 0 ){
+						// 該当ノードが全て管理対象フラグ「無効」の場合
+						// 管理対象フラグ「無効」の該当ノードを取得してアドレス判定を実施
+						Set<String> tmpFacilityIdSet = new RepositoryControllerBean().getNodeListAllByNodename(shortHostname);
+						if(tmpFacilityIdSet != null){
+							tmpFacilityIdSet.removeAll(new RepositoryControllerBean().getNodeListByNodename(shortHostname));
+							tmpFacilityIdSet = Singletons.get(MultiTenantSupport.class).filterNodes(tmpFacilityIdSet, syslog.ipAddress);
+						}
+						if (tmpFacilityIdSet == null ){
+							//アドレス判定の結果範囲外のみ、なら該当なし判定に変更
+							facilityIdSet = null;
+						}
+					}else{
+						// 管理対象フラグ「有効」のノードがある場合、該当ノードを対象にアドレス判定を実施
+						// 範囲外のみなら該当なし判定に変更
+						facilityIdSet = Singletons.get(MultiTenantSupport.class).filterNodes(facilityIdSet, syslog.ipAddress);
+					}
+				}
 			}
 
 			if (facilityIdSet == null) {

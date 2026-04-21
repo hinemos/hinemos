@@ -174,6 +174,8 @@ public class HinemosModuleConstant {
 	public static final String JOB_QUEUE_END = "JOB_QUEUE_END";
 	/** ジョブ管理 ジョブ-多重度超過 */
 	public static final String JOB_EXCEEDED_MULTIPLICITY = "JOB_EXCEEDED_MULTIPLICITY";
+	/** ジョブ管理 ジョブ-ファイル出力失敗 */
+	public static final String JOB_COMMAND_OUTPUT_FAILED = "JOB_COMMAND_OUTPUT_FAILED";
 
 	/** 自動デバイスサーチ */
 	public static final String REPOSITORY_DEVICE_SEARCH = "REP_DS";

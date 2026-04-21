@@ -196,9 +196,9 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						}
 					}
 
-					if (this.maxval < Double.valueOf(result[4])) {
-						this.maxval = Double.valueOf(result[4]) + 1;
-					} else if (this.minval > Double.valueOf(result[4])) {
+					if (this.maxval < Double.parseDouble(result[4])) {
+						this.maxval = Double.parseDouble(result[4]) + 1;
+					} else if (this.minval > Double.parseDouble(result[4])) {
 						this.minval = Double.valueOf(result[4]);
 					}
 					itemDataMap.get(nextItemCode).add(result);
@@ -269,9 +269,9 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						}
 					}
 
-					if (this.maxval < Double.valueOf(result[4])) {
-						this.maxval = Double.valueOf(result[4]) + 1;
-					} else if (this.minval > Double.valueOf(result[4])) {
+					if (this.maxval < Double.parseDouble(result[4])) {
+						this.maxval = Double.parseDouble(result[4]) + 1;
+					} else if (this.minval > Double.parseDouble(result[4])) {
 						this.minval = Double.valueOf(result[4]);
 					}
 					itemDataMap.get(nextItemCode).add(result);
@@ -342,9 +342,9 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						}
 					}
 
-					if (this.maxval < Double.valueOf(result[4])) {
-						this.maxval = Double.valueOf(result[4]) + 1;
-					} else if (this.minval > Double.valueOf(result[4])) {
+					if (this.maxval < Double.parseDouble(result[4])) {
+						this.maxval = Double.parseDouble(result[4]) + 1;
+					} else if (this.minval > Double.parseDouble(result[4])) {
 						this.minval = Double.valueOf(result[4]);
 					}
 					itemDataMap.get(nextItemCode).add(result);
@@ -415,9 +415,9 @@ public class DatasourceJMXSumUpGraph extends DatasourceSamePattern {
 						}
 					}
 
-					if (this.maxval < Double.valueOf(result[4])) {
-						this.maxval = Double.valueOf(result[4]) + 1;
-					} else if (this.minval > Double.valueOf(result[4])) {
+					if (this.maxval < Double.parseDouble(result[4])) {
+						this.maxval = Double.parseDouble(result[4]) + 1;
+					} else if (this.minval > Double.parseDouble(result[4])) {
 						this.minval = Double.valueOf(result[4]);
 					}
 					itemDataMap.get(nextItemCode).add(result);

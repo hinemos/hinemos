@@ -18,6 +18,7 @@ import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.jobmanagement.queue.JobQueue;
 import com.clustercontrol.jobmanagement.queue.JobQueueContainer;
 import com.clustercontrol.util.InternalIdAbstract;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.Singletons;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -30,6 +31,8 @@ public class JobQueueMonitor extends SelfCheckMonitorBase {
 	private static final String MONITOR_ID = "SYS_JOBQUEUE";
 	private static final String SUBKEY_SIZE = "size";
 	private static final String SUBKEY_DEADLOCK = "deadlock";
+
+	public String selfcheckName = "monitoring job queue";
 
 	// 外部依存動作をモックへ置換できるように分離
 	private External external;
@@ -71,10 +74,12 @@ public class JobQueueMonitor extends SelfCheckMonitorBase {
 		this.external = external;
 	}
 
-	// これどこで使っているんだろう
+	/**
+	 * セルフチェック処理名
+	 */
 	@Override
 	public String toString() {
-		return "monitoring job queue";
+		return selfcheckName;
 	}
 
 	@Override
@@ -102,6 +107,7 @@ public class JobQueueMonitor extends SelfCheckMonitorBase {
 
 	// キューサイズ チェック
 	private void checkSize(JobQueue queue) {
+		selfcheckName = MessageConstant.SELFCHECK_TYPE_JOB_QUEUE_SIZE.getMessage();
 		long size = queue.getSize();
 		int limit = external.getSizeThreshold();
 		boolean harmful = size > limit;
@@ -121,6 +127,7 @@ public class JobQueueMonitor extends SelfCheckMonitorBase {
 
 	// デッドロック チェック
 	private void checkDeadlock(JobQueue queue) {
+		selfcheckName = MessageConstant.SELFCHECK_TYPE_JOB_QUEUE_DEADLOCK.getMessage();
 		long freezingTime = queue.getFreezingTime();
 		int interval = external.getDeadlockThreshold();
 		boolean harmful = freezingTime > TimeUnit.SECONDS.toMillis(interval);

@@ -25,6 +25,7 @@ import com.clustercontrol.reporting.model.TemplateSetDetailInfoEntity;
 import com.clustercontrol.reporting.model.TemplateSetDetailInfoEntityPK;
 import com.clustercontrol.reporting.model.TemplateSetInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
+import com.clustercontrol.util.HinemosTime;
 
 /**
  * テンプレートセット情報を変更するためのクラスです。
@@ -60,7 +61,7 @@ public class ModifyTemplateSet {
 			entity.setTemplateSetName(info.getTemplateSetName());
 			entity.setDescription(info.getDescription());
 			entity.setOwnerRoleId(info.getOwnerRoleId());
-			entity.setUpdateDate(new Date().getTime());
+			entity.setUpdateDate(HinemosTime.currentTimeMillis());
 			entity.setUpdateUser(name);
 			
 			// テンプレートセット詳細を登録

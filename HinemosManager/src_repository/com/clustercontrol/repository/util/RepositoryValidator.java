@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -786,14 +787,6 @@ public class RepositoryValidator {
 					continue;
 				}
 
-				if (itemInfo.getItem() == null) {
-					// 項目名が構成情報項目でない場合はエラー
-					InvalidSetting e = new InvalidSetting(
-							String.format("Incorrect value is set in the item name. NodeConfigSettingItem=%s, ItemName=%s, ComparisonMethod=%s, Value=%s",
-							filterInfo.getNodeConfigSettingItemName(), itemInfo.getItemName(), itemInfo.getMethod(), itemInfo.getItemValue().toString()));
-					m_log.warn("validateFilterNodeInfo() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
-					throw e;
-				}
 				if (itemInfo.getItem().nodeConfigSettingItem() != filterInfo.getNodeConfigSettingItem()) {
 					// 項目名と構成情報がアンマッチの場合はエラー
 					InvalidSetting e = new InvalidSetting(
@@ -1482,6 +1475,32 @@ public class RepositoryValidator {
 		}
 		return messageList;
 	}
+
+	/**
+	 * 構成情報(NIC)のMACアドレスの入力チェック
+	 * 画面等で任意の入力された値に対して入力チェックを行う
+	 * 
+	 * @param macAddress MAC アドレス
+	 * @return 検証結果
+	 * @throws InvalidSetting
+	 */
+	public static boolean validateNicMacAddress(String macAddress) throws InvalidSetting {
+		// nullおよび空白チェック
+		if (!StringUtils.isEmpty(macAddress)) {
+			// 正規表現によるMACアドレスの形式検証
+			if (!macAddress.matches("^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")) {
+				InvalidSetting e = new InvalidSetting(
+						MessageConstant.MESSAGE_PLEASE_INPUT_FORMAT.getMessage(
+								MessageConstant.NIC_MAC_ADDRESS.getMessage(),
+								MessageConstant.NIC_MAC_ADDRESS_EXAMPLE.getMessage()));
+				m_log.info("validateNodeInfo() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
+		}
+		return true;
+	}
+
 
 	/**
 	 * 構成情報(ネットワーク接続)の入力チェック

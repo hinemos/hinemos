@@ -8,12 +8,6 @@
 
 package com.clustercontrol.commons.util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.util.Properties;
@@ -56,7 +50,8 @@ public class MailServerSettings {
 	private String mailHost;
 	
 	// OAuth認証
-	private String refreshToken;
+	private String refreshTokenPath;
+	private String refreshTokenFileName;
 	private String oauthResponseKey;
 	private String oauthUrl;
 	private String oauthParamKey1;
@@ -161,7 +156,8 @@ public class MailServerSettings {
 
 		this.authMechanisms = HinemosPropertyCommon.mail_$_auth_mechanisms.getStringValue(this.protocol);
 		this.mailHost = HinemosPropertyCommon.mail_$_host.getStringValue(this.protocol);
-		this.refreshToken = getRefreshToken(HinemosPropertyCommon.mail_oauth_refresh_token_path.getStringValue(), 0);
+		this.refreshTokenPath = HinemosPropertyCommon.mail_oauth_refresh_token_path.getStringValue();
+		this.refreshTokenFileName = REFRESH_TOKEN_FILE_NAME;
 		this.oauthResponseKey = HinemosPropertyCommon.mail_oauth_response_key.getStringValue();
 		this.oauthUrl = HinemosPropertyCommon.mail_oauth_url.getStringValue();
 		this.oauthParamKey1 = HinemosPropertyCommon.mail_oauth_param_key1.getStringValue();
@@ -217,7 +213,8 @@ public class MailServerSettings {
 		this.charsetSubject = HinemosPropertyCommon.mail_$_charset_subject.getStringValue(str);
 		this.charsetContent = HinemosPropertyCommon.mail_$_charset_content.getStringValue(str);
 
-		this.refreshToken = getRefreshToken(HinemosPropertyCommon.mail_$_oauth_refresh_token_path.getStringValue(str), slot);
+		this.refreshTokenPath = HinemosPropertyCommon.mail_$_oauth_refresh_token_path.getStringValue(str);
+		this.refreshTokenFileName = REFRESH_TOKEN_FILES_NAME.replace("$", str);
 		this.oauthResponseKey = HinemosPropertyCommon.mail_$_oauth_response_key.getStringValue(str);
 		this.oauthUrl = HinemosPropertyCommon.mail_$_oauth_url.getStringValue(str);
 		this.oauthParamKey1 = HinemosPropertyCommon.mail_$_oauth_param_key1.getStringValue(str);
@@ -422,8 +419,12 @@ public class MailServerSettings {
 		return mailHost;
 	}
 
-	public String getRefreshToken() {
-		return refreshToken;
+	public String getOauthRefreshTokenPath() {
+		return refreshTokenPath;
+	}
+
+	public String getOauthRefreshTokenFileName() {
+		return refreshTokenFileName;
 	}
 
 	public String getOauthUrl() {
@@ -594,81 +595,5 @@ public class MailServerSettings {
 			// 上記以外はなにもしない
 			break;
 		}
-	}
-
-	/**
-	 * リフレッシュトークンを取得します。
-	 * 
-	 * @param refreshTokenPath リフレッシュトークンパス
-	 * @param slot 指数
-	 * @return リフレッシュトークン
-	 */
-	private String getRefreshToken(String refreshTokenPath, int slot) {
-		if (refreshTokenPath ==null || refreshTokenPath.isEmpty()) {
-			m_log.info("refresh_token_path is not set. " + refreshTokenPath);
-			return null;
-		}
-
-		String fileName = "";
-		if (slot > 0 && slot < 11) {
-			String str = slot + "";
-			fileName = REFRESH_TOKEN_FILES_NAME.replace("$", str);
-		} else {
-			fileName = REFRESH_TOKEN_FILE_NAME;
-		}
-
-		String homedir = normalize(refreshTokenPath);
-		FileInputStream fis = null;
-		InputStreamReader isr = null;
-		BufferedReader br = null;
-		String refreshToken = null;
-
-		String path = homedir + File.separator + fileName;
-
-		try {
-			fis = new FileInputStream(path);
-			isr = new InputStreamReader(fis);
-			br = new BufferedReader(isr);
-
-			// 取得するのは1行目だけ
-			refreshToken = br.readLine();
-		} catch (FileNotFoundException e) {
-			m_log.warn("configuration file not found. [" + refreshTokenPath + "]"
-					+ e.getClass().getName() + ", " + e.getMessage());
-		} catch (IOException e) {
-			m_log.warn("configuration read error. [" + refreshTokenPath +"]"
-					+ e.getClass().getName() + ", " + e.getMessage());
-		} finally {
-			if (br != null) {
-				try {
-					br.close();
-				} catch (IOException e) {
-				}
-			}
-			if (isr != null) {
-				try {
-					isr.close();
-				} catch (IOException e) {
-				}
-			}
-			if (fis != null) {
-				try {
-					fis.close();
-				} catch (IOException e) {
-				}
-			}
-		}
-		return refreshToken;
-	}
-
-	// 
-	/**
-	 * ファイルセパレータをマネージャ側の形式に統一します。
-	 * 
-	 * @param filepath ファイルパス
-	 * @return 統一したファイルパス
-	 */
-	private static String normalize(String filepath) {
-		return filepath.replace("/", File.separator).replace("\\", File.separator);
 	}
 }

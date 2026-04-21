@@ -546,10 +546,10 @@ public class DiffChecker {
 					if (notDiffTags) {
 						if (prop1 == null || prop2 == null) {
 							if (column != null) {
-								if (prop1 == null && (prop2 != null && prop2.toString() == "")) {
+								if (prop1 == null && (prop2 != null && prop2.toString().equals(""))) {
 									diff = diffAsColumn = false;
 								}
-								else if (prop2 == null && (prop1 != null && prop1.toString() == "")) {
+								else if (prop2 == null && (prop1 != null && prop1.toString().equals(""))) {
 									diff = diffAsColumn = false;
 								}
 								else {

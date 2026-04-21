@@ -9,6 +9,7 @@ package com.clustercontrol.jobmanagement.composite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -431,7 +432,8 @@ public class RpaDirectScenarioComposite extends Composite {
 				if (m_selectScenarioParameter != null) {
 					int index = parameterRows.indexOf(m_selectScenarioParameter);
 					if (index > 0) {
-						Collections.swap(parameterRows, index, index - 1);
+						parameterRows.get(index).set(GetRpaDirectParameterTableDefine.ORDER_NO, index - 1);
+						parameterRows.get(index - 1).set(GetRpaDirectParameterTableDefine.ORDER_NO, index);
 						refreshParameterOrder(parameterRows);
 						m_scenarioParameterViewer.setInput(parameterRows);
 						m_scenarioParameterViewer.refresh();
@@ -457,7 +459,8 @@ public class RpaDirectScenarioComposite extends Composite {
 				if (m_selectScenarioParameter != null) {
 					int index = parameterRows.indexOf(m_selectScenarioParameter);
 					if (index < parameterRows.size() - 1) {
-						Collections.swap(parameterRows, index, index + 1);
+						parameterRows.get(index).set(GetRpaDirectParameterTableDefine.ORDER_NO, index + 1);
+						parameterRows.get(index + 1).set(GetRpaDirectParameterTableDefine.ORDER_NO, index);
 						refreshParameterOrder(parameterRows);
 						m_scenarioParameterViewer.setInput(parameterRows);
 						m_scenarioParameterViewer.refresh();
@@ -527,6 +530,8 @@ public class RpaDirectScenarioComposite extends Composite {
 	private void refreshParameterOrder(List<List<Object>> parameterRows) {
 		// 順序を更新
 		int order = 1;
+		// 現状のORDER_NOで昇順ソートを実施
+		parameterRows.sort(Comparator.comparing(o -> (Integer) o.get(GetRpaDirectParameterTableDefine.ORDER_NO)));
 		for (List<Object> parameterRow : parameterRows) {
 			parameterRow.set(GetRpaDirectParameterTableDefine.ORDER_NO, order++);
 		}
@@ -581,6 +586,8 @@ public class RpaDirectScenarioComposite extends Composite {
 			}
 			// 実行パラメータ
 			if (m_rpa.getRpaJobOptionInfos() != null) {
+				// JobRpaOptionInfoResponseをソート
+				m_rpa.getRpaJobOptionInfos().sort(Comparator.comparing(o -> (Integer) o.getOrderNo()));
 				List<Object> tableData = new ArrayList<Object>();
 				for (JobRpaOptionInfoResponse param : m_rpa.getRpaJobOptionInfos()) {
 					ArrayList<Object> tableLineData = new ArrayList<Object>();

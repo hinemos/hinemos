@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.ClientProtocolException;
@@ -137,51 +138,95 @@ public class WinactorManagerOnCloudRestDefine extends RpaManagementRestDefine {
 		return new BasicHeader("Authorization", token);
 	}
 	
+	protected long getListPageSize() {
+		return HinemosPropertyCommon.rpa_management_rest_winactor_moc_list_page_size.getNumericValue();
+	}
+
 	@Override
 	public List<RpaResourceInfo> getRpaResourceInfo(String baseUrl, String token, HttpClient client) throws IOException {
-		// GETリクエスト		
-		HttpUriRequest getDevicesRequest = 
-		createRequest(new HttpGet(StringUtils.join(new String[]{baseUrl, winActorApiVersion, "winactors"}, "/")),
-				new Header[] {getAuthTokenHeader(token)}, null);
+		List<RpaResourceInfo> allResources = new ArrayList<>();
+		AtomicLong total = new AtomicLong(0);
+		long requestSize = getListPageSize(); // 一度のリクエストで取得するサイズ
 
-		// ハンドラ
-		RpaManagementRestResponseHandler<List<RpaResourceInfo>> getDevicesResponseHandler = 
-				new RpaManagementRestResponseHandler<List<RpaResourceInfo>>() {
-					@Override
-					public List<RpaResourceInfo> handleRpaManagementResponse(ClassicHttpResponse response) throws IOException {
-						final HttpEntity responseEntity = response.getEntity();
-						JsonFactory jsonFactory = new JsonFactory();
-						ObjectMapper objectMapper = new ObjectMapper(jsonFactory);
-						try (InputStream inputStream = responseEntity.getContent()) {
-							// "items"から各WinActorの情報を取得
-							JsonNode value = objectMapper.readTree(inputStream).get("items");
-							List<RpaResourceInfo> ret = new ArrayList<>();
-							
-							for (Iterator<JsonNode> itr = value.elements();itr.hasNext();) {
-								// RpaResourceInfoに格納
-								JsonNode winactor = itr.next();
-								String pcName = winactor.get("pcName").textValue();
-								String userName =  winactor.get("userName").textValue();
-								String id = winactor.get("id").textValue();
-								
-								RpaResourceInfo resourceInfo = new RpaResourceInfo();
-								resourceInfo.setFacilityName(pcName);
-								resourceInfo.setIpAddress("");
-								resourceInfo.setNodeName(pcName);
-								resourceInfo.setHostName(pcName);
-								resourceInfo.setRpaUser(userName);
-								resourceInfo.setRpaExecEnvId(id);
-								
-								ret.add(resourceInfo);
-							}
-							return ret;
-					    } catch (UnsupportedOperationException | IOException e1) {
-					    	throw new ClientProtocolException(getMessage(response));
-						}	
+		for (int i = 0; i < 2; i++) {
+			// GETリクエスト
+			HttpUriRequest getDevicesRequest = null;
+			try {
+				// リクエストのURLを作成
+				URIBuilder uriBuilder = new URIBuilder(
+						StringUtils.join(new String[] { baseUrl, winActorApiVersion, "winactors" }, "/"));
+				uriBuilder.addParameter("page", "1"); // 1ページで取得
+				uriBuilder.addParameter("size", String.valueOf(requestSize));
+
+				getDevicesRequest = createRequest(new HttpGet(uriBuilder.build()),
+						new Header[] { getAuthTokenHeader(token) }, null);
+			} catch (URISyntaxException e) {
+				m_log.warn("getRpaResourceInfo(): " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				// 通常到達しない、IOExceptionでラップして投げる
+				throw new IOException(e);
+			}
+
+			// ハンドラ
+			RpaManagementRestResponseHandler<List<RpaResourceInfo>> getDevicesResponseHandler = 
+					new RpaManagementRestResponseHandler<List<RpaResourceInfo>>() {
+				@Override
+				public List<RpaResourceInfo> handleRpaManagementResponse(ClassicHttpResponse response)
+						throws IOException {
+					final HttpEntity responseEntity = response.getEntity();
+					JsonFactory jsonFactory = new JsonFactory();
+					ObjectMapper objectMapper = new ObjectMapper(jsonFactory);
+					try (InputStream inputStream = responseEntity.getContent()) {
+						JsonNode rootNode = objectMapper.readTree(inputStream);
+						// "items"から各WinActorの情報を取得
+						JsonNode itemsNode = rootNode.get("items");
+						List<RpaResourceInfo> ret = new ArrayList<>();
+
+						for (Iterator<JsonNode> itr = itemsNode.elements(); itr.hasNext();) {
+							// RpaResourceInfoに格納
+							JsonNode winactor = itr.next();
+							String pcName = winactor.get("pcName").textValue();
+							String userName = winactor.get("userName").textValue();
+							String id = winactor.get("id").textValue();
+
+							RpaResourceInfo resourceInfo = new RpaResourceInfo();
+							resourceInfo.setFacilityName(pcName);
+							resourceInfo.setIpAddress("");
+							resourceInfo.setNodeName(pcName);
+							resourceInfo.setHostName(pcName);
+							resourceInfo.setRpaUser(userName);
+							resourceInfo.setRpaExecEnvId(id);
+
+							ret.add(resourceInfo);
+						}
+						// "total"の件数を取得
+						total.set(rootNode.get("total").asLong());
+
+						return ret;
+					} catch (UnsupportedOperationException | IOException e1) {
+						throw new ClientProtocolException(getMessage(response));
 					}
-				};
+				}
+			};
+			// リクエスト実行して結果を取得（結果は上書き）
+			allResources = client.execute(getDevicesRequest, getDevicesResponseHandler);
 
-		return client.execute(getDevicesRequest, getDevicesResponseHandler);
+			if (total.get() <= requestSize) {
+				// totalが指定した件数以下なら、全件取得できているので終了
+				break;
+			} else {
+				// 全件取得できていなければ次回はtotal+バッファ分取得
+				// バッファは初回リクエストのサイズとする
+				// totalを元にバッファを加えているため、2回目でほぼ確実に取得できる想定
+				requestSize = total.get() + getListPageSize();
+				m_log.info("getRpaResourceInfo(): failed to get all resorces, try again. total=" + total.get()
+						+ ", next size=" + requestSize);
+			}
+		}
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("getRpaResourceInfo(): All resources successfully acquired. total=" + total.get()
+					+ ", resources size=" + allResources.size());
+		}
+		return allResources;
 	}
 
 	@Override

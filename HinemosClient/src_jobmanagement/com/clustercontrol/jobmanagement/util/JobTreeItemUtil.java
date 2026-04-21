@@ -31,6 +31,7 @@ import org.openapitools.client.model.JobObjectGroupInfoResponse;
 import org.openapitools.client.model.JobObjectInfoResponse;
 import org.openapitools.client.model.JobParameterInfoResponse;
 import org.openapitools.client.model.JobResourceInfoResponse;
+import org.openapitools.client.model.JobRpaEndValueConditionInfoResponse;
 import org.openapitools.client.model.JobRpaInfoResponse;
 import org.openapitools.client.model.JobTreeItemRequest;
 import org.openapitools.client.model.JobTreeItemResponseP1;
@@ -332,7 +333,22 @@ public class JobTreeItemUtil {
 				rpaJobInfo.setRpaJobOptionInfos(orgInfo.getRpa().getRpaJobOptionInfos());
 				rpaJobInfo.setRpaJobEndValueConditionInfos(new ArrayList<>());
 				if (orgInfo.getRpa().getRpaJobEndValueConditionInfos() != null){
-					rpaJobInfo.getRpaJobEndValueConditionInfos().addAll(orgInfo.getRpa().getRpaJobEndValueConditionInfos());
+					List<JobRpaEndValueConditionInfoResponse> rpaEndValueConditionList = new ArrayList<>();
+					for(JobRpaEndValueConditionInfoResponse itemGroup : orgInfo.getRpa().getRpaJobEndValueConditionInfos()) {
+						JobRpaEndValueConditionInfoResponse rpaEndValueConditionInfo = new JobRpaEndValueConditionInfoResponse();
+						rpaEndValueConditionInfo.setCaseSensitivityFlg(itemGroup.getCaseSensitivityFlg());
+						rpaEndValueConditionInfo.setConditionType(itemGroup.getConditionType());
+						rpaEndValueConditionInfo.setDescription(itemGroup.getDescription());
+						rpaEndValueConditionInfo.setOrderNo(itemGroup.getOrderNo());
+						rpaEndValueConditionInfo.setEndValue(itemGroup.getEndValue());
+						rpaEndValueConditionInfo.setPattern(itemGroup.getPattern());
+						rpaEndValueConditionInfo.setProcessType(itemGroup.getProcessType());
+						rpaEndValueConditionInfo.setReturnCode(itemGroup.getReturnCode());
+						rpaEndValueConditionInfo.setReturnCodeCondition(itemGroup.getReturnCodeCondition());
+						rpaEndValueConditionInfo.setUseCommandReturnCodeFlg(itemGroup.getUseCommandReturnCodeFlg());
+						rpaEndValueConditionList.add(rpaEndValueConditionInfo);
+					}
+					rpaJobInfo.setRpaJobEndValueConditionInfos(rpaEndValueConditionList);
 				}
 				// 間接実行
 				rpaJobInfo.setRpaScopeId(orgInfo.getRpa().getRpaScopeId());
@@ -1087,7 +1103,7 @@ public class JobTreeItemUtil {
 	}
 
 	
-	private static JobWaitRuleInfoResponse createJobWaitRuleInfoResponse() {
+	public static JobWaitRuleInfoResponse createJobWaitRuleInfoResponse() {
 		// 旧 JobWaitだと生成時にNullでなかった項目あるので補完して生成
 		JobWaitRuleInfoResponse ret = new JobWaitRuleInfoResponse();
 		paddingJobWaitRuleInfoResponse(ret);

@@ -103,6 +103,9 @@ public class AddCalendarRequest implements RequestDto {
 
 	@Override
 	public void correlationCheck() throws InvalidSetting {
+		for(CalendarDetailInfoRequest target : calendarDetailList){
+			target.correlationCheck();
+		}
 	}
 
 }

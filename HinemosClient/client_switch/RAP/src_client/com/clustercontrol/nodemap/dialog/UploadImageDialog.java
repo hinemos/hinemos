@@ -39,6 +39,7 @@ import com.clustercontrol.infra.dialog.ChangeBackgroundModifyListener;
 import com.clustercontrol.nodemap.util.ImageFileUploadReceiver;
 import com.clustercontrol.nodemap.util.ImageManager;
 import com.clustercontrol.nodemap.util.NodeMapRestClientWrapper;
+import com.clustercontrol.util.FileUploadHandlerWrapper;
 import com.clustercontrol.util.Messages;
 
 /**
@@ -58,6 +59,7 @@ public class UploadImageDialog extends CommonDialog {
 	private Button radioBg = null;
 	private String m_managerName = null;
 	
+	private FileUploadHandlerWrapper uploadHandler;
 	private ImageFileUploadReceiver receiver = null;
 	private FileUpload fileUpload;
 	private ServerPushSession pushSession;
@@ -168,7 +170,7 @@ public class UploadImageDialog extends CommonDialog {
 	private String startUploadReceiver() {
 		receiver = new ImageFileUploadReceiver();
 		pushSession = new ServerPushSession();
-		FileUploadHandler uploadHandler = new FileUploadHandler(receiver);
+		uploadHandler = new FileUploadHandlerWrapper(receiver);
 		uploadHandler.addUploadListener(new FileUploadListener() {
 			@Override
 			public void uploadProgress(FileUploadEvent event){
@@ -404,5 +406,13 @@ public class UploadImageDialog extends CommonDialog {
 			}
 		}
 		super.okPressed();
+	}
+
+	@Override
+	public boolean close() {
+		if (uploadHandler != null) {
+			uploadHandler.dispose();
+		}
+		return super.close();
 	}
 }

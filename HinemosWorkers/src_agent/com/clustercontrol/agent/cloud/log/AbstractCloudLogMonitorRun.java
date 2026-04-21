@@ -52,6 +52,7 @@ public abstract class AbstractCloudLogMonitorRun implements Runnable {
 	protected boolean hasNotifiedINC = false;
 	protected boolean hasNotifiedOthers = false;
 	protected boolean hasNotifiedTPE = false;
+	protected boolean hasNotifiedNC = false;
 	protected int CNFcount = 0;
 	protected long lastFailedTime = 0;
 	protected Map<String, CloudLogMonitorStatus> statusMap = new HashMap<String, CloudLogMonitorStatus>();
@@ -190,29 +191,29 @@ public abstract class AbstractCloudLogMonitorRun implements Runnable {
 				.getCloudLogFileMonitor(config.getMonitorId());
 
 		// 日時情報取得エラー用
-		String orgMessage = "";
+		StringBuilder orgMessage = new StringBuilder();
 		for (CloudLogfileMonitor logMng : logMngList) {
 			
 			setStreamNameForCloudLogfileMonitor(logMng);
 			logMng.run();
 			// 日時情報取得失敗のINTERNAL用
 			if (!logMng.getOrgMessageForDateNotFound().isEmpty()) {
-				orgMessage += logMng.getOrgMessageForDateNotFound() + "\n";
+				orgMessage.append(logMng.getOrgMessageForDateNotFound()).append("\n");
 			}
 			logMng.resetDateNotFoundNotify();
 		}
 
-		if (!orgMessage.isEmpty()) {
+		if (orgMessage.length() != 0) {
 			String msg = "execFileMonitor(): date info not found for file monitor.";
 			// 通知を行う際の上限は4096文字を上限にする
 			if (orgMessage.length() > 4096) {
-				orgMessage = orgMessage.substring(0, 4096);
+				orgMessage.delete(4096, orgMessage.length());
 				msg += " orgMessage truncated at length of 4096.";
 				
 			}
 			log.warn(msg);
 			CloudLogMonitorUtil.sendMessage(config, PriorityConstant.TYPE_WARNING, MessageConstant.AGENT.getMessage(),
-					MessageConstant.MESSAGE_CLOUD_LOG_MONITOR_DATE_NOT_FOUND.getMessage(), orgMessage);
+					MessageConstant.MESSAGE_CLOUD_LOG_MONITOR_DATE_NOT_FOUND.getMessage(), orgMessage.toString());
 		}
 	}
 	
@@ -512,5 +513,9 @@ public abstract class AbstractCloudLogMonitorRun implements Runnable {
 	protected abstract String getPropFileName(String fileKey);
 	
 	protected abstract void setStreamNameForCloudLogfileMonitor(CloudLogfileMonitor mon);
+	
+	public void shutdown(){
+		return;
+	}
 
 }

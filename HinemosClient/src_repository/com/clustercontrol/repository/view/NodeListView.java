@@ -8,6 +8,9 @@
 
 package com.clustercontrol.repository.view;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.swt.SWT;
@@ -17,6 +20,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
+import org.eclipse.ui.part.ISetSelectionTarget;
 
 import com.clustercontrol.bean.Property;
 import com.clustercontrol.repository.bean.NodeFilterConstant;
@@ -28,6 +32,7 @@ import com.clustercontrol.repository.view.action.NodeFilterAction;
 import com.clustercontrol.repository.view.action.NodeModifyAction;
 import com.clustercontrol.repository.view.action.ProgramExecutionAction;
 import com.clustercontrol.repository.view.action.RefreshAction;
+import com.clustercontrol.ui.IElementProvider;
 import com.clustercontrol.util.FilterPropertyUpdater;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.view.CommonViewPart;
@@ -38,7 +43,7 @@ import com.clustercontrol.view.CommonViewPart;
  * @version 5.0.0
  * @since 1.0.0
  */
-public class NodeListView extends CommonViewPart {
+public class NodeListView extends CommonViewPart implements ISetSelectionTarget, IElementProvider {
 	public static final String ID = NodeListView.class.getName();
 
 	// ----- instance フィールド ----- //
@@ -182,5 +187,34 @@ public class NodeListView extends CommonViewPart {
 			getViewSite().getActionBars().getToolBarManager().update(false);
 
 		}
+	}
+	
+	/*
+	 * 指定されたノードを選択中の項目として表示する
+	 */
+	@Override
+	public void selectReveal(ISelection selection) {
+		composite.getTableViewer().setSelection(selection, true);
+	}
+	
+	/*
+	 * ビュー内で管理する全要素を返す
+	 */
+	@Override
+	public Collection<?> getAllElements() {
+		Object input = getComposite().getTableViewer().getInput();
+		if (input instanceof Collection) {
+			return (Collection<?>) input;
+		} else {
+			return Collections.emptyList();
+		}
+	}
+	
+	/*
+	 * ノードのテーブルコントロールをビューのフォーカス先とする
+	 */
+	@Override
+	public void setFocus() {
+		composite.getTable().setFocus();
 	}
 }

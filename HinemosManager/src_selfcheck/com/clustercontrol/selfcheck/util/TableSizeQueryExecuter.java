@@ -13,6 +13,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.fault.InvalidSetting;
 
 /**
  * TableSizeMonitorクラス<BR>
@@ -34,7 +35,6 @@ public class TableSizeQueryExecuter {
 		HinemosEntityManager em = null;
 
 		String query = "SELECT pg_total_relation_size('" + tableName + "') as size"; // byte
-		long physicalSize = -1;
 
 		// メイン処理
 		try {
@@ -43,37 +43,35 @@ public class TableSizeQueryExecuter {
 
 			em = tm.getEntityManager();
 
-			Long row = (Long)em.createNativeQuery(query).getSingleResult();
-			if (row != null) {
-				physicalSize = row;
-			}
+			long physicalSize = (Long)em.createNativeQuery(query).getSingleResult();
 
 			tm.commit();
+			return physicalSize;
 		} catch (Exception e) {
 			m_log.warn("database query execution failure. (" + query + ")", e);
+			throw e;
 		} finally {
 			if (tm != null) {
 				tm.close();
 			}
 		}
-
-		return physicalSize;
 	}
 	
 	/**
 	 * 特定のテーブルのレコード数（統計情報から取得した概算値）を返すメソッド
 	 * @param tableName 対象とするテーブル名（スキーマ.テーブルの形式でなくてはならない）
 	 * @return レコード数
+	 * @throws InvalidSetting 
 	 */
-	public static long getTableCount(String tableName) {
+	public static long getTableCount(String tableName) throws InvalidSetting {
 		JpaTransactionManager tm = null;
 		HinemosEntityManager em = null;
-		long count = -1;
 
 		String[] tableNamePart = tableName.split("\\.");
 		if (tableNamePart.length != 2) {
-			m_log.warn("invalid table name. (" + tableName + ")");
-			return count;
+			String message = "invalid table name. (" + tableName + ")";
+			m_log.warn(message);
+			throw new InvalidSetting(message);
 		}
 		
 		String query = "SELECT n_live_tup FROM pg_stat_user_tables WHERE schemaname = '" +
@@ -86,21 +84,18 @@ public class TableSizeQueryExecuter {
 
 			em = tm.getEntityManager();
 
-			Long row = (Long)em.createNativeQuery(query).getSingleResult();
-			if (row != null) {
-				count = row;
-			}
+			long count = (Long)em.createNativeQuery(query).getSingleResult();
 
 			tm.commit();
+			return count;
 		} catch (Exception e) {
 			m_log.warn("database query execution failure. (" + query + ")", e);
+			throw e;
 		} finally {
 			if (tm != null) {
 				tm.close();
 			}
 		}
-
-		return count;
 	}
 
 }

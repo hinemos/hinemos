@@ -115,6 +115,8 @@ public class Notice {
 			info.setJobunitId(jobunitId);
 			//ジョブID
 			info.setJobId(jobId);
+			//ジョブ名
+			info.setJobName(job.getJobName());
 			// 監視詳細
 			boolean flg = HinemosPropertyCommon.notify_output_trigger_subkey_$.getBooleanValue(HinemosModuleConstant.JOB);
 			if (flg) {
@@ -555,6 +557,8 @@ public class Notice {
 			info.setJobunitId(jobunitId);
 			//ジョブID
 			info.setJobId(jobId);
+			//ジョブ名
+			info.setJobName(job.getJobName());
 
 			//ファシリティID
 			String facilityId = ParameterUtil.replaceFacilityId(sessionId, job.getFacilityId());
@@ -581,6 +585,9 @@ public class Notice {
 
 			info.setMessage(message);
 			info.setMessageOrg(org);
+
+			info.setJoblinkMessageId(JobLinkMessageId.getIdForJob(
+					NotifyTriggerType.JOB_COMMAND_OUTPUT_FAILED, jobunitId, jobId));
 
 			//メッセージ送信
 			if (m_log.isDebugEnabled()) {

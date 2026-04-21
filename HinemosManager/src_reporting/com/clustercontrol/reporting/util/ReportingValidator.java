@@ -21,6 +21,7 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.fault.ReportingNotFound;
 import com.clustercontrol.notify.model.NotifyRelationInfo;
 import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.reporting.bean.TemplateSetDetailInfo;
@@ -46,8 +47,9 @@ public class ReportingValidator {
 	 * @param reportingInfo
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
+	 * @throws ReportingNotFound
 	 */
-	public static void validateReportingInfo(ReportingInfo reportingInfo, boolean isModify) throws InvalidSetting, InvalidRole {
+	public static void validateReportingInfo(ReportingInfo reportingInfo, boolean isModify) throws InvalidSetting, InvalidRole, ReportingNotFound {
 
 		// reportId
 		if (reportingInfo.getReportScheduleId() == null ||
@@ -102,6 +104,12 @@ public class ReportingValidator {
 		else {
 			m_log.info("validateReportingInfo() : getOutputPeriodFor = " + reportingInfo.getOutputPeriodFor());
 		}
+
+		// templateSetId 存在確認 エラー時はReportingNotFound
+		QueryUtil.getTemplateSetInfoPK(reportingInfo.getTemplateSetId());
+
+		// templateSetId オーナーロール権限の確認 エラー時はInvalidRole
+		QueryUtil.getTemplateSetInfoPKAndOR(reportingInfo.getTemplateSetId(), reportingInfo.getOwnerRoleId());
 		
 		// outputType
 		if(reportingInfo.getOutputType() == null

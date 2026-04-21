@@ -8,12 +8,22 @@
 
 package com.clustercontrol.agent.cloud.log;
 
+import java.net.URI;
+import java.time.Duration;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
+//import com.amazonaws.ClientConfiguration;
+//import com.amazonaws.Protocol;
 import com.clustercontrol.agent.util.AgentProperties;
+
+import software.amazon.awssdk.core.Protocol;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.apache.ProxyConfiguration;
+import software.amazon.awssdk.retries.StandardRetryStrategy;
 
 public class CloudLogMonitorProperty {
 	/*
@@ -197,21 +207,64 @@ public class CloudLogMonitorProperty {
 	 * 
 	 * @return
 	 */
-	public ClientConfiguration createClientConfiguration() {
-		ClientConfiguration conf = new ClientConfiguration();
-		conf.setConnectionTimeout(connectionTimeout);
-		conf.setMaxConnections(aws_max_connection);
-		conf.setMaxErrorRetry(aws_client_retry);
-		conf.setProtocol(Protocol.HTTP.toString().equals(aws_client_protocol) ? Protocol.HTTP : Protocol.HTTPS);
-		conf.setProxyDomain(aws_client_proxy_domain);
-		conf.setProxyHost(aws_client_proxy_host);
-		conf.setProxyPassword(aws_client_proxy_password);
-		conf.setProxyPort(aws_client_proxy_port);
-		conf.setProxyUsername(aws_client_proxy_username);
-		conf.setProxyWorkstation(aws_client_proxy_workstation);
-		conf.setSocketTimeout(connectionTimeout);
-		return conf;
+//	public ClientConfiguration createClientConfiguration() {
+//		ClientConfiguration conf = new ClientConfiguration();
+//		conf.setConnectionTimeout(connectionTimeout);
+//		conf.setMaxConnections(aws_max_connection);
+//		conf.setMaxErrorRetry(aws_client_retry);
+//		conf.setProtocol(Protocol.HTTP.toString().equals(aws_client_protocol) ? Protocol.HTTP : Protocol.HTTPS);
+//		conf.setProxyDomain(aws_client_proxy_domain);
+//		conf.setProxyHost(aws_client_proxy_host);
+//		conf.setProxyPassword(aws_client_proxy_password);
+//		conf.setProxyPort(aws_client_proxy_port);
+//		conf.setProxyUsername(aws_client_proxy_username);
+//		conf.setProxyWorkstation(aws_client_proxy_workstation);
+//		conf.setSocketTimeout(connectionTimeout);
+//		return conf;
+//	}
+
+	public SdkHttpClient createHttpClient() {
+
+		ApacheHttpClient.Builder httpclientBuilder = ApacheHttpClient.builder()
+				.connectionTimeout(Duration.ofMillis(connectionTimeout))
+				.socketTimeout(Duration.ofMillis(connectionTimeout))
+				.maxConnections(aws_max_connection);
+
+		// proxy
+		String proxyHost = aws_client_proxy_host;
+		int proxyPort = aws_client_proxy_port;
+		if (proxyPort < 0) {
+			proxyPort = -1;
+		}
+		String proxyScheme = Protocol.HTTP.toString()
+				.equals(aws_client_protocol)
+						? Protocol.HTTP.toString() : Protocol.HTTPS.toString();
+
+		URI proxyEndpoint = URI.create(proxyScheme + "://" + proxyHost + ":" + proxyPort);
+
+		ProxyConfiguration.Builder proxyBuilder = ProxyConfiguration.builder().endpoint(proxyEndpoint)
+				.username(aws_client_proxy_username)
+				.password(aws_client_proxy_password)
+				.ntlmDomain(aws_client_proxy_domain)
+				.ntlmWorkstation(aws_client_proxy_workstation);
+
+		httpclientBuilder.proxyConfiguration(proxyBuilder.build());
+
+		return httpclientBuilder.build();
 	}
+
+	public ClientOverrideConfiguration createOverrideConfiguration() {
+		int retry = 1;
+		int proRetry = aws_client_retry;
+		if (proRetry > 0) {
+			retry += proRetry;
+		}
+
+		return ClientOverrideConfiguration.builder()
+				.retryStrategy(StandardRetryStrategy.builder().maxAttempts(retry).build()).build();
+	}
+	
+	
 
 	public long getMaxFileSize() {
 		return maxFileSize;

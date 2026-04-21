@@ -21,6 +21,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.ObjectPrivilegeFilterInfo;
+import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
 import com.clustercontrol.accesscontrol.bean.RoleSettingTreeConstant;
 import com.clustercontrol.accesscontrol.factory.RoleSelector;
@@ -31,10 +32,12 @@ import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.model.CalendarPatternInfo;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
+import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.MailTemplateNotFound;
@@ -685,6 +688,25 @@ public class RoleValidator {
 		if(!isAdmin && !UserRoleCache.getRoleIdList(user).contains(role)) {
 			String args[] = {user, role};
 			throw new InvalidSetting(MessageConstant.MESSAGE_USER_DOES_NOT_BELONG_TO_ROLE.getMessage(args));
+		}
+	}
+	
+	/**
+	 * 管理者権限チェック。
+	 * ADMINISTRATORSロールに対する管理者以外の操作を制限する。
+	 * 
+	 * @param ownerRoleId
+	 * 
+	 */
+	public static void validateUserAssignAdminRole(String ownerRoleId) throws InvalidRole {
+		// ADMINISTRATORS所属有無チェック（スレッドローカルのユーザIDで実施）
+		boolean isAdministrator = 
+				Boolean.TRUE.equals(HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
+		boolean isAdminRole = RoleIdConstant.ADMINISTRATORS.equals(ownerRoleId);
+		
+		if (isAdminRole && !isAdministrator) {
+			String message = MessageConstant.MESSAGE_USER_AUTH_NEED_ADMINISTRATORS_ROLE.getMessage();
+			throw new InvalidRole(message);
 		}
 	}
 }

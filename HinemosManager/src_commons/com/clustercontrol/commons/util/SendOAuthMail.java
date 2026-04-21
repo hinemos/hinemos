@@ -8,9 +8,16 @@
 
 package com.clustercontrol.commons.util;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.Message;
@@ -65,7 +72,7 @@ public class SendOAuthMail {
 		
 		boolean authFlag = mailServerSettings.getAuthFlag();
 		String authMechanisms = mailServerSettings.getAuthMechanisms();
-		String refreshToken = mailServerSettings.getRefreshToken();
+		String refreshToken = RefleshTokenProvider.getRefreshToken(mailServerSettings);
 		// mail.smtp.auth（SMTP AUTHの利用有無）がtrue 
 		// かつ、mail_oauth_mechanismsがXOAUTH2の際にOauth2.0認証をする
 		if (authFlag && STRING_AOUTH_MECHANISMS_XOAUTH2.equals(authMechanisms)) {
@@ -276,6 +283,52 @@ public class SendOAuthMail {
 			} else {
 				urlParameters.add(new BasicNameValuePair(key, value));
 			}
+		}
+	}
+
+	public static class RefleshTokenProvider {
+		/**
+		 * リフレッシュトークンを取得します。
+		 * 
+		 * @param settings メールサーバの設定
+		 * @return リフレッシュトークン
+		 */
+		public static String getRefreshToken(MailServerSettings settings) {
+			String refreshTokenPath = settings.getOauthRefreshTokenPath();
+
+			if (refreshTokenPath == null || refreshTokenPath.isEmpty()) {
+				m_log.info("refresh_token_path is not set.");
+				return null;
+			}
+
+			String homedir = normalize(refreshTokenPath);
+			String refreshToken = null;
+
+			String path = homedir + File.separator + settings.getOauthRefreshTokenFileName();
+
+			try (Stream<String> lines = Files.lines(Paths.get(path), StandardCharsets.UTF_8)) {
+				refreshToken = lines.findFirst().orElse(null);
+			} catch (NoSuchFileException e) {
+				m_log.warn("configuration file not found. [" + refreshTokenPath + "]" + e.getClass().getName() + ", "
+						+ e.getMessage());
+			} catch (IOException | UncheckedIOException e) {
+				m_log.warn("configuration read error. [" + refreshTokenPath + "]" + e.getClass().getName() + ", "
+						+ e.getMessage());
+			} catch (SecurityException e) {
+				m_log.warn("configuration access denied. [" + refreshTokenPath + "]" + e.getClass().getName() + ", "
+						+ e.getMessage());
+			}
+			return refreshToken;
+		}
+
+		/**
+		 * ファイルセパレータをマネージャ側の形式に統一します。
+		 * 
+		 * @param filepath ファイルパス
+		 * @return 統一したファイルパス
+		 */
+		private static String normalize(String filepath) {
+			return filepath.replace("/", File.separator).replace("\\", File.separator);
 		}
 	}
 }

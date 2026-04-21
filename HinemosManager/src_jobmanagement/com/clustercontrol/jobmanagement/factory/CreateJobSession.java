@@ -1504,14 +1504,12 @@ public class CreateJobSession {
 				if (tmpJobInfo != null) {
 					List<NotifyRelationInfo> ct = tmpJobInfo.getNotifyRelationInfos();
 					// JobNoticeInfo用の通知グループIDで、通知関連テーブルのコピーを作成する
-					List<NotifyRelationInfo> infoNotifyRelationList = new ArrayList<>();
 					if (ct != null) {
 						for (NotifyRelationInfo relation : ct) {
 							NotifyRelationInfo nri = new NotifyRelationInfo(infoNotifyGroupId, relation.getNotifyId());
 							em.persist(nri);
 							nri.setNotifyType(relation.getNotifyType());
 							nri.setFunctionPrefix(FunctionPrefixEnum.JOB_SESSION.name());
-							infoNotifyRelationList.add(nri);
 						}
 					}
 				}

@@ -60,7 +60,7 @@ public class PluginException extends HinemosException {
 	}
 
 	public PluginException(Throwable cause) {
-		this(getMessage(cause), getCode(cause), cause);
+		this(cause.getMessage(), getCode(cause), cause);
 	}
 
 	public void setErrorCode(String errorCode) {
@@ -71,21 +71,12 @@ public class PluginException extends HinemosException {
 		return this.faultInfo.getErrorCode();
 	}
 
-	@Override
-	public String getMessage() {
-		return super.getMessage() + " : ErrorCode=" + this.faultInfo.getErrorCode();
-	}
-
 	public String getUndecoratedMessage() {
 		return super.getMessage();
 	}
 
 	public PluginExceptionBean getFaultInfo() {
 		return faultInfo;
-	}
-
-	public static String getMessage(Throwable cause) {
-		return cause instanceof PluginException ? ((PluginException)cause).getUndecoratedMessage():(cause.getMessage() == null ? cause.toString(): cause.getMessage());
 	}
 
 	public static String getCode(Throwable cause) {

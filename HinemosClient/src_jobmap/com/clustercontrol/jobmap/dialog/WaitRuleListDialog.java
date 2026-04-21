@@ -164,14 +164,17 @@ public class WaitRuleListDialog extends CommonDialog {
 				dialog.setInputData(objectGroupInfo);
 				if (dialog.open() == IDialogConstants.OK_ID) {
 					JobObjectGroupInfoResponse groupInfo = dialog.getInputData();
-					objectGroupList.set(orderNo, groupInfo);
-					result = JobWaitRuleUtil.validateWaitGroup(objectGroupList);
-					if (result != null) {
-						objectGroupList.get(orderNo).setJobObjectList(clone);
-						displayError(result);
-						return;
+					if (groupInfo != null) {
+						objectGroupList.set(orderNo, groupInfo);
+						result = JobWaitRuleUtil.validateWaitGroup(objectGroupList);
+						if (result != null) {
+							objectGroupList.get(orderNo).setJobObjectList(clone);
+							displayError(result);
+							return;
+						}
+						super.okPressed();
 					}
-					super.okPressed();
+					objectGroupList.get(orderNo).setJobObjectList(clone);
 				} else {
 					objectGroupList.get(orderNo).setJobObjectList(clone);
 				}

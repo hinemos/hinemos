@@ -638,6 +638,8 @@ public class JobFigure extends Figure implements ISelection {
 			subPanel.add(new Label(addMessage));
 			tooltip.add(subPanel);
 		}
+		// レイアウトを再計算し適切なサイズで表示されるようにする
+		tooltip.validate();
 		waitImageFigure.setToolTip(tooltip);
 		return waitImageFigure;
 	}
@@ -665,6 +667,8 @@ public class JobFigure extends Figure implements ISelection {
 			subPanel.add(new Label(message));
 			tooltip.add(subPanel);
 		}
+		// レイアウトを再計算し適切なサイズで表示されるようにする
+		tooltip.validate();
 		figure.setToolTip(tooltip);
 
 		return figure;
@@ -900,6 +904,8 @@ public class JobFigure extends Figure implements ISelection {
 					tooltip.add(new Label( messageBuilder.toString()));
 				}
 			}
+			// レイアウトを再計算し適切なサイズで表示されるようにする
+			tooltip.validate();
 			return tooltip;
 		}
 
@@ -959,6 +965,8 @@ public class JobFigure extends Figure implements ISelection {
 			tooltip.add(new Label(Messages.getString("job.run.count") + " : " + m_jobTreeItem.getDetail().getRunCount()));
 		}
 
+		// レイアウトを再計算し適切なサイズで表示されるようにする
+		tooltip.validate();
 		return tooltip;
 	}
 

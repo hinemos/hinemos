@@ -47,6 +47,15 @@
 			]]>
 		</query>
 	</named-query>
+	<named-query name="TemplateSetInfoEntity.findBytemplateSetIdAndOwnerRoleId">
+		<query>
+			<![CDATA[
+				SELECT a FROM TemplateSetInfoEntity a
+				WHERE a.templateSetId = :templateSetId
+				AND a.ownerRoleId = :ownerRoleId
+			]]>
+		</query>
+	</named-query>
 	
 	<!-- TemplateSetDetailInfoEntity -->
 	<named-query name="TemplateSetDetailInfoEntity.findByTemplateSetId">
